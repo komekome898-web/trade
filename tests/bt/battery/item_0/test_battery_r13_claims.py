@@ -264,7 +264,9 @@ def _cases():
     plain = next(s for s in scenes.SCENES if s.id == "p4-received-time")             # no delivered list
     for s, status, delivered, called, subst, req, rr, own in itertools.product(
             (carrier, runs, no_kinds, plain), ("ok", "not_supported", "error"),
-            (None, ["trade"], ["trade", "bar"], ["bar"]), (True, False), ([], ["trade"]),
+            # round r15-1 (the lead's answer to br13-1-3): a target's own form ("tick", as the gobacktest adapter
+            # builds from a trade) reaching the strategy is not the handed trade
+            (None, ["trade"], ["trade", "bar"], ["bar"], ["tick"], ["tick", "bar"]), (True, False), ([], ["trade"]),
             ([], ["place"], ["timer", "place", "cancel"]), (True, False),
             ([], ["trade"], list(MARKET_JP))):
         if delivered is None:
@@ -285,7 +287,7 @@ def test_records_of_on_every_case():
     for args, oracle_args in _cases():
         assert run_battery.records_of(*args) == _oracle_records(*oracle_args), (args[0].id, args[1:], oracle_args)
         n += 1
-    assert n == 4 * 3 * 4 * 2 * 2 * 3 * 2 * 3
+    assert n == 4 * 3 * 6 * 2 * 2 * 3 * 2 * 3
 
 
 # ---------------------------------------------------------------- family 7: not_entered

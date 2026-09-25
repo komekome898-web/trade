@@ -9,7 +9,7 @@ from .events import ALL_EVENT_CLASSES, MARKET_EVENT_TYPES, NOTICE_EVENT_TYPES, S
 from .interfaces import REPORT_CLASSES, SOCKETS, FillNotice, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
-from .values import FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE
+from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
 CORE_VERSION = "core-15"
@@ -23,6 +23,9 @@ PATH_CARRIERS: tuple[type, ...] = (
     FillNotice,
     *ALL_EVENT_CLASSES,
 )
+# every carrier's copier and rebuilder, made now, once (values.bind_carriers;
+# round 15, i0-r14-02): nothing of them is made at run time
+bind_carriers(PATH_CARRIERS)
 
 CORE_CONTRACT: dict = {
     "version": CORE_VERSION,
@@ -137,34 +140,67 @@ CORE_CONTRACT: dict = {
                  "by is never process-wide state any party can change at run time: see process_state",
         "process_state": "what the core accepts, refuses or computes is decided by the value and by objects "
                          "bound when the core was loaded -- never by process-wide state read at run time "
-                         "(round 14, i0-r13-01): no ABC is asked about a class (their registrations, caches "
-                         "and the hooks of their subclasses are changed by register or by defining a class, "
-                         "and the change stays for the process): a number's kind is read from "
+                         "(round 14, i0-r13-01), neither by the core's own code nor by the library code it "
+                         "runs (round 15, i0-r14-01/02): no ABC is asked about a class (their registrations, "
+                         "caches and the hooks of their subclasses are changed by register or by defining a "
+                         "class, and the change stays for the process): a number's kind is read from "
                          "values.NUMBER_BASES (numbers.Integral / Real / Complex as bases, and numpy's "
                          "integer / floating / inexact, the bases numpy registers with them), a mapping from "
                          "dict / mappingproxy / collections.abc.Mapping, both by identity on the class's own "
                          "MRO, so a class only registered with an ABC is neither (a FrozenDict compares with "
-                         "another by the same rule, not by the inherited Mapping.__eq__, which asks the "
-                         "Mapping ABC; the core compares keys whenever their hashes collide); a str is made "
-                         "anew by str's own slicing, never by a codec, so the registry of codec error "
-                         "handlers (codecs.register_error) is never asked; numpy's classes are bound "
-                         "once, when the core is loaded (numpy is loaded with it; the core refuses to load "
-                         "if they are not numpy's own C classes), and sys.modules or a module's attributes "
-                         "are never read to decide; to_nanos computes in a decimal context of its own, made "
-                         "for each call from fixed settings (never the thread's); an int in an error text is "
-                         "written out up to " + str(INT_TEXT_BITS) + " bits and by its size beyond, so "
-                         "the interpreter's int-to-str digit limit never changes a refusal; plain data nests "
-                         "at most " + str(MAX_NESTING) + " containers, counted from the field that holds it "
-                         "(the core's own bound, not the recursion limit or the stack depth of the call). "
-                         "So a registration, a subclass hook, a codec error handler, a changed decimal context "
-                         "or digit limit, warnings made errors, numpy's error state, or a renamed numpy attribute -- made by any party, in any earlier run of the process "
-                         "-- changes no value, refusal or result of the core, and runs no code of that "
-                         "party. Not covered: rebinding a name the core CALLS (a builtin such as len or "
-                         "type, a library's function such as heapq.heappush, the core's own module "
-                         "globals), which changes the program's code; interpreter hooks (sys.settrace / "
-                         "setprofile, audit hooks, gc callbacks, signal handlers, threads a party starts); "
-                         "a recursion limit set below what the core needs (3 frames a nesting level, about "
-                         "20 for a run); memory",
+                         "another by the same rule, not by the inherited Mapping.__eq__); the values the core "
+                         "builds compare and hash by C code of the built-in types or by the core's own code -- "
+                         "a Fraction or Decimal is built as values.PlainFraction / PlainDecimal, whose == "
+                         "compares the exact values (the library's Fraction.__eq__ and the C decimal's "
+                         "comparison ask the numbers ABCs, and a Decimal compared with a float writes a flag "
+                         "into the thread's decimal context), and a FrozenDict's hash is made when it is made "
+                         "without comparing its items -- so the dicts and sets the core builds, and the ones "
+                         "a receiver's extra_dict() builds, compare keys whose hashes collide without asking "
+                         "anything; a str is made anew by str's own slicing, never by a codec; numpy's classes "
+                         "are bound once, when the core is loaded (numpy is loaded with it; the core refuses "
+                         "to load if they are not numpy's own C classes); the core imports nothing at run "
+                         "time and fills no table at run time: the carriers' copiers and rebuilders are made "
+                         "when the core is loaded (values.bind_carriers), so sys.modules or a module's "
+                         "attributes are never read to decide, and nothing a run does changes the core's "
+                         "module state for a later run; every decimal operation of the core (to_nanos, the "
+                         "equality and the text of a Decimal) runs in a context made for that call from fixed "
+                         "settings (values.exact_context), never the thread's, which it neither reads nor "
+                         "writes; an int in an error text is written out up to " + str(INT_TEXT_BITS) + " "
+                         "bits and by its size beyond, so the interpreter's int-to-str digit limit never "
+                         "changes a refusal; plain data nests at most " + str(MAX_NESTING) + " containers, "
+                         "counted from the field that holds it, and the core's walks over it are iterative "
+                         "(round 15, i0-r14-05): an entry of the core needs at most " + str(CALL_FRAMES) + " "
+                         "frames of the interpreter's recursion limit below its caller whatever the nesting "
+                         "(measured: at most 22, place_order called from inside on_event), and with that much "
+                         "headroom whether a value is taken never depends on the stack depth of the call. "
+                         "What is left of the interpreter's own recursion: when two DISTINCT nested values "
+                         "whose hashes are equal are keys of one dict or elements of one set, the interpreter "
+                         "compares them, one level of its recursion limit per container of the two (measured: "
+                         "two distinct 98-level values need 106 frames of headroom); with less, such a value "
+                         "is refused with the entry's own error (never RecursionError). MAX_NESTING is 100: "
+                         "set in round 14 from the then recursive walks (3 frames a nesting level, about 20 "
+                         "for a run: within half of the default limit 1000) and kept, now bounding the "
+                         "interpreter's own recursion over one value. So a registration, a subclass hook, a "
+                         "codec error handler, a changed decimal context or digit limit, warnings made errors, "
+                         "numpy's error state, a renamed numpy attribute, or a module swapped in sys.modules "
+                         "-- made by any party, in any earlier run of the process -- changes no value, "
+                         "refusal or result of the core, and runs no code of that party. Measured, with no "
+                         "change found (tests/bt/item_0/test_bt0_r14_process_state.py and "
+                         "test_bt0_r15_library_code.py, each change made by a strategy in its own call, in a "
+                         "fresh process): every ABC of numbers and collections.abc registered with every type "
+                         "handed over and hooked by a subclass; the decimal context (precision, rounding, "
+                         "traps on and off, capitals, exponent range); the digit limit; warnings made errors; "
+                         "numpy's floating-point errors raised; codec error handlers; ten numpy names "
+                         "rebound; every module the core imports swapped in sys.modules for one callback; "
+                         "the library code the core runs is listed by running it (sys.setprofile) and each "
+                         "piece reviewed. Not covered, and not measured: rebinding a name the core CALLS (a "
+                         "builtin such as len or type, a library's function such as heapq.heappush or "
+                         "dataclasses.replace, the core's own module globals), which changes the program's "
+                         "code; interpreter hooks (sys.settrace / setprofile, audit hooks, gc callbacks, "
+                         "signal handlers, threads a party starts); a recursion limit set below what the core "
+                         "needs (" + str(CALL_FRAMES) + " frames); an interpreter started with -b, under "
+                         "which comparing bytes with str warns through the warnings filters (an interpreter "
+                         "option, like -O); memory",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,

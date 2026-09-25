@@ -622,16 +622,24 @@ assert set(COVERS) == {s.id for s in SCENES}, sorted(set(COVERS) ^ {s.id for s i
 REQUEST_TYPES = {"timer": ("時計",), "place": (_ACC, _REJ, _FIL), "cancel": (_CANCEL,)}
 
 
-def input_types(scene: Scene) -> set:
-    """The event types that come out of the scene's input by machine (round r13-1, ROOTCAUSE_r13-1.md section 3):
-    the type field of every event of `events` and of every stream (a `type_plan` scene: the input built for a target
-    with all six types), and the types the `requests` field gives. An event without a type field gives nothing; a
-    type outside the six market types or an unknown request raises ValueError (never dropped silently)."""
+def input_events(scene: Scene) -> list:
+    """The event items of the scene's input: every item of `events` and of every stream, in that order (a `type_plan`
+    scene: the input built for a target with all six types; none when the target would have too few). Round r15-1:
+    the one reader of the input's events that `input_types` and grid_c.unplaced share."""
     built = for_target_types(scene, TYPE_ORDER) if scene.type_plan is not None else scene
     inp = built.input if built is not None and isinstance(built.input, dict) else {}
     evs = list(inp.get("events") or [])
     for stream in (inp.get("streams") or {}).values():
         evs += list(stream)
+    return evs
+
+
+def input_types(scene: Scene) -> set:
+    """The event types that come out of the scene's input by machine (round r13-1, ROOTCAUSE_r13-1.md section 3):
+    the type field of every event of `events` and of every stream (a `type_plan` scene: the input built for a target
+    with all six types), and the types the `requests` field gives. An event without a type field gives nothing; a
+    type outside the six market types or an unknown request raises ValueError (never dropped silently)."""
+    evs = input_events(scene)
     out = set()
     for e in evs:
         if isinstance(e, dict) and "kind" in e:

@@ -114,3 +114,129 @@
 - 問い 1(MAX_NESTING = 100): **上限を置くこと自体は採る**(再帰の上限というプロセスの状態を核が読まない形にするには核自身の上限が要る)。**値 100 も採る。**根拠は作業者の実測(1 段 3 フレーム、run の中の積み上がり約 20、既定の再帰の上限 1000 の半分)で、これを契約の文に逐語で残す(A-12 = 根拠のない設定値を置かない、の要件は実測で満たす)。101 段で落ちるのが RecursionError でなく核の型つきの断りであることは格子 4(0〜103 段 × 積み上がり {0, 300})が示している。批評家が読む。
 - 問い 2(process_state の対象外の範囲): **採る。**名前の付け替えと解釈系のフックは「プログラムのコードを変えること」で、核が呼ぶ標準ライブラリも同じ builtins を引くという理由は成り立つ。条件: 対象外の各項に「測っていない」と「測って変化 0 だった」(numpy の名前 10 種・sys.modules の差し替え)を分けて契約に書く(§5.2 「棄却には射程を書く」)。
 - 問い 3(振る舞いの変化 2 つ): (1) 登録だけの class を断る = **採る**(批評家 i0-r13-01 の指定した直し方で、素のプロセスで答えが変わる型 0 件を試験で示した)。(2) 読み込み時の numpy の import = **採る。**項目 11(参照実装は委任文 §2 と要件だけから書く)は契約 core-15 を読む前提で足りる。項目 13(統合)には次の起動の lead_notes["13"] に「核は読み込み時に numpy を import し、numpy が読み込み前に書き換えられていれば読み込みを止める(core-15)」の 1 行を足す。段の途中で規則は足さない。
+
+### 批評家 0#14 の出力(逐語。06:40 UTC の見回りで写した)
+
+- **i0-r14-01** [止める](target: 実装, repeat_of: i0-r13-01, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/contract.py'])
+  核は落ち着かせた値から集合と辞書を作り直すとき(values.py 570・576 行 _settle、848・851 行 _freeze)、hash の衝突した要素どうしを比べる。Fraction と Decimal(float・complex)の等しさはライブラリのコードで numbers の ABC に聞く(Fraction.__eq__ の isinstance(b, numbers.Rational)、C の decimal の isinstance(w, Rational))。Fraction(1) と Decimal(2**61) は hash が同じで等しくない。(a) 再現性: その 2 つを鍵に持つ extra の注文を出す同じ実行が、新しいプロセスでは run ok、別の実行の戦略が numbers.Rational.register(Decimal) を呼んだあとは同じプロセスで AttributeError で止まる。(b) 戦略の登録だけで、別の者(口座)の強制注文が AttributeError で止まる。(c) 戦略が Rational の子でメタクラスに __subclasscheck__ を持つ class を作ると、核が注文を作り直すとき(_settled_request → _frozen_extra → freeze、on_event の外)にそのフックが走り、True なら断りが OrderApiError でなく AttributeError。契約 process_state の「a registration, a subclass hook … in any earlier run of the process -- changes no value, refusal or result of the core, and runs no code of that party」に反する。根本原因: 作業者の格子は核のソースの isinstance/issubclass/is_a を読んで「ABC に聞かない」を示したが、核が呼ぶライブラリのコードが ABC に聞くことと、数の型をまたぐ hash の衝突は列の外だった。再現性の崩れなので [止める]。族は i0-r13-01。
+  証拠: PYTHONPATH=src python3 <S>/r14_critic/item0_r14_critic_probe_fraction_decimal_eq.py {none,hook,hook_outside_true,register,rerun,account}(1 つずつ新しいプロセス)→ 'none -> ("run ok", [])' / "hook -> ('run ok', [('hook', 'inside', 'Decimal'), ('hook', 'OUTSIDE on_event', 'Decimal')])" / 'run A, fresh process : ("run ok", [])' / "run B (registers Decimal) : ('run raised AttributeError: 'decimal.Decimal' object has no attribute 'numerator'')" / 'run A again, same input : (run raised AttributeError …)' / "account's forced order, strategy registers nothing: run ok" / '… strategy registered Decimal with Rational in its on_event: run raised AttributeError'。<S>/r14_critic/item0_r14_critic_probe_eq_sites.out: 登録のあと values.settle / values.freeze / settle(frozenset) が AttributeError(fractions.py 683 行)。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r14_process_state_through_library_code.py -p no:cacheprovider → 4 failed のうち 3 件がこの指摘('the same run in one process: ok before, AttributeError after another run's registration' / 'ok without, AttributeError after the strategy's registration' / "ok | ['Decimal']")。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r14-02** [止める](target: 実装, repeat_of: i0-r13-01, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/contract.py'])
+  values.py の _make_copier(948 行)と _make_rebuilder(985 行)は関数の中で import dataclasses を実行し(実行中に sys.modules を読む)、作った copier / rebuilder を carrier の class を初めて写す・取るときに作って、モジュールの表 _COPIERS(929 行)・_REBUILDERS(964 行)にプロセスの残りの間置く。戦略が自分の 1 回の呼び出しの間だけ sys.modules['dataclasses'] を自分のモジュールに替え、次の呼び出しで戻すと、(a) 約定の模型の Fill(liquidity='maker') が口座に 'taker' で届く(黙って誤った値。戦略の fields が liquidity を落とし既定値が入る)、(b) sys.modules を戻したあと同じプロセスで走らせた別の(何もしない)戦略の実行も 'taker'(新しいプロセスでは 'maker')= 核自身の表が影響を持ち越す、(c) 戦略の fields が戦略の呼び出しの外で 7 回走る。契約 process_state の「sys.modules or a module's attributes are never read to decide」「in any earlier run of the process -- changes no value」と、作業者の「sys.modules の差し替えは格子で変化 0」(格子が替えたのは numpy だけ)に反する。関数の名前の付け替え(契約の対象外)ではなく sys.modules のモジュールの差し替え。黙って誤った値と再現性の崩れで [止める]。族は i0-r13-01 (d)。i0-r14-01 と同じ根(探し方が核のソースの文字列の grep で、実行中に走る import・遅れて作る表・ライブラリのコードを列べていない)。
+  証拠: PYTHONPATH=src python3 <S>/r14_critic/item0_r14_critic_probe_lazy_rebuilder_cache.py fresh → "run B (clean strategy), fresh process : ['maker']"。同 poisoned → "run A (its strategy swaps sys.modules['dataclasses'] for one callback): ['taker']" / "sys.modules['dataclasses'] is the real module again: True" / "run B (clean strategy), same process, after run A : ['taker']" / "strategy's fields() ran OUTSIDE its call for OrderRequest / Ack / Fill / Ack / FillNotice / Fill / OrderAckEvent"(…_lazy_rebuilder_cache.out)。試験(残す): tests/bt/critic/item_0/test_i0r14_process_state_through_library_code.py::test_a_module_swapped_in_sys_modules_for_one_callback_changes_nothing_in_this_or_a_later_run → "run A (its strategy swapped sys.modules['dataclasses'] for one callback): taker"。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r14-03** [止める](target: 実装, repeat_of: None, fix_files: ['src/bot/bt/core/time.py', 'src/bot/bt/core/values.py'])
+  to_nanos は「Conversion is exact」「rounding: none (inputs with sub-nanosecond digits are rejected)」(time.py 8・63 行)と書くが、Fraction を先に float にし(174 行 float.__repr__(float(v)))、numpy の longdouble を scalar(162 行。NUMBER_BASES の numpy.floating → float)で float にしてから正確さを検めるので、値が持つ桁を落とした結果を黙って受け付ける。to_nanos(Fraction(1700000000123456789), 'ns') → 1700000000123456800(11 ns ずれる)、Fraction(…, 10**9) を 's' で → …700(89 ns)、np.longdouble('1700000000.123456789')(この桁を持つ)を 's' で → …700。要件 §1「時刻は UTC の int64 ナノ秒」と観点 P0-2 に対し、核の唯一の時刻の変換口が黙って誤った時刻を返す(前の周からある振る舞いで、場面集の P0-2 は ISO と int しか入れない)。黙って誤った値で [止める]。
+  証拠: PYTHONPATH=src python3 <S>/r14_critic/item0_r14_critic_probe_to_nanos_exact.py → 'longdouble holds: 1700000000.123456789' / 'to_nanos(longdouble, s) -> 1700000000123456700' / 'Fraction exact ns: 1700000000123456789' / 'to_nanos(Fraction, s) -> 1700000000123456700' / 'to_nanos(Fraction(1700000000123456789), ns) -> 1700000000123456800' / 'to_nanos(1700000000123456789, ns) (int, for comparison) -> 1700000000123456789'。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r14_time_values_silently_changed.py -p no:cacheprovider → '10 failed'、うち test_to_nanos_is_exact_or_refuses の 4 件('gave 1700000000123456700, the value states 1700000000123456789 (off by -89 ns)' ほか)。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r14-04** [止める](target: 実装, repeat_of: None, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/time.py', 'src/bot/bt/core/contract.py'])
+  numpy.timedelta64 は numpy.signedinteger の子なので values.NUMBER_BASES(269 行)が int と決め、int() がその単位での数を返す。単位を持つ長さが、その数のナノ秒として黙って受け付けられる。時刻の関門 validate_nanos(time.py 105・121 行 as_int)・values.settle・差し込み口の答え(take_int)で起きる: validate_nanos(np.timedelta64(5,'Y')) → 5、(5,'M') → 5、(5000,'fs')(5 ps)→ 5000、(5,'ps') → 5。ms・us の小さな数は断られるが np.timedelta64(1700000000000000000,'ms') は 1700000000000000000 として通る(単位と数の大きさで断るか黙って数を取るかが変わる)。遅延の模型が np.timedelta64(5000,'ps')(= 5 ns)を返すと、注文は 5000 ns 後に取引所に着く。要件 §1 の int64 ナノ秒と遅延模型の口に対し、黙って 1000 倍・年や月の数が入る。この周に数の種類を表で決め直したときも列の外だった。黙って誤った値で [止める]。
+  証拠: PYTHONPATH=src python3 <S>/r14_critic/item0_r14_critic_probe_timedelta_unit.py → "MRO: ['timedelta64', 'signedinteger', 'integer', 'number', 'generic', 'object']" / "number_kind(timedelta64): <class 'int'>" / "np.timedelta64(5, 'ps') validate_nanos -> 5" / "np.timedelta64(5000, 'fs') validate_nanos -> 5000" / "np.timedelta64(5, 'Y') validate_nanos -> 5" / "np.timedelta64(5, 'M') settle -> 5" / "np.timedelta64(5, 'ms') settle -> raised Unsettled" / "np.timedelta64(1700000000000000000, 'ms') validate_nanos -> 1700000000000000000" / "run ok | what the strategy saw: [..., ('OrderAckEvent', 5000), ('OrderFillEvent', 5000), ...]"。試験(残す): tests/bt/critic/item_0/test_i0r14_time_values_silently_changed.py の test_a_duration_with_a_unit_is_not_taken_as_that_many_ns 5 件と test_the_latency_models_delay_in_picoseconds_is_not_taken_as_nanoseconds('the order reached the venue [5000] ns after it was sent; the model said 5 ns')。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r14-05** [直す](target: 実装, repeat_of: i0-r13-01, fix_files: ['src/bot/bt/core/values.py', 'src/bot/bt/core/contract.py'])
+  契約 process_state(contract.py 158 行)は入れ子の上限を「the core's own bound, not the recursion limit or the stack depth of the call」と書き、リードの答えは格子 4 を「101 段で落ちるのが RecursionError でなく核の型つきの断り」を示すものと読んだ(批評家が読む、とした)。格子 4 が試した戦略自身の積み上がりは {0, 300} だけで、戦略が積み上がり 800 から extra の入れ子 98 段(MAX_NESTING 100 の中)の注文を出すと RecursionError、900 からなら 50 段でも同じ(0・300・600 からは受け付ける)。受け付けるか・断りの型が呼び出しの積み上がりで変わり、契約の文と食い違う。起きるのは戦略自身の呼び出しの中で、黙って誤った値は無く、同じ戦略なら毎回同じなので、前の周の同じ格(断りの型が契約と違う、i0-r11-01・03)に合わせて [直す]。契約の文を事実に合わせる(核が要る残りの深さを書く)か、核の歩きで RecursionError を入口の誤りに替えるかが要る。
+  証拠: PYTHONPATH=src python3 <S>/r14_critic/item0_r14_critic_probe_stack_depth.py → 'strategy's own depth 600 | extra nesting 98 -> place_order: accepted' / 'strategy's own depth 800 | extra nesting 98 -> place_order: RecursionError: maximum recursion depth exceeded while getting the str of an object' / 'strategy's own depth 900 | extra nesting 50 -> place_order: RecursionError …'。試験(残す): PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r14_nesting_refusal_depends_on_the_callers_stack.py -p no:cacheprovider → '3 failed, 12 passed'('extra nesting 98 (<= MAX_NESTING 100) from the strategy's stack depth 800: RecursionError; from depth 0: taken' ほか)。<S> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt
+- **i0-r14-06** [直す](target: 場面集, repeat_of: i0-r11-02, fix_files: ['tests/bt/battery/item_0/grid_c.py', 'tests/bt/battery/item_0/scenes.py', 'tests/bt/battery/item_0/gen_definitions.py'])
+  升目の表の P0-2 は「升目 160: 場面にした 0 / 測っていない(固定した測り方の外) 160」で、全升目の判断が「固定した測り方の外」(DEFINITIONS.md 163 行〜)。P0-2 の固定した測り方「既知の時刻を投入し、核が保持する値が同じ int64 ナノ秒と一致するか」を、p2-iso-utc・p2-iso-offset(ISO → int64 ナノ秒)と p2-event-time-exact・p2-one-ns-apart はそのまま測っている。0 になったのは第 r13-1 回の正の定義(F)で升目の事象の型を入力から機械で出すことにし、p2-iso-* は事象を持たず、p2-event-time-* は型を対象が選ぶため、どの升目にも当たらなくなったから。升目の軸に「事象の型を入力が決めない場面」「事象を持たない変換の場面」を載せる行が無く、オーナーへ渡る「測っていない範囲の記録」で P0-2 が 1 つも測られていないと読める。向きは通過に不利(測った物を測っていない側に置く)で、場面・正解・比較の表のセルは変わらないので [直す]。r11-02(升目の判断が場面の測る物と合わない)と同じ族で向きが逆。F の文どおりの結果なので、場面係は F の範囲で「固定した測り方の外」と「測ったが升目の型を入力が決めない」を分ける形があるかを確かめ、無ければリードに聞く。
+  証拠: sed -n 163,175p tests/bt/battery/item_0/DEFINITIONS.md → '### P0-2(升目 160: 場面にした 0 / 測っていない(固定した測り方の外) 160)' と '| 約定 | 戦略の呼び出しに届く物 | int64 ナノ秒 | 測っていない(固定した測り方の外) | — |' ほか。同じファイル 715-747 行に p2-iso-utc・p2-iso-offset・p2-event-time-exact・p2-one-ns-apart の定義(値の場面・能力の場面)。PYTHONPATH=src python3 tests/bt/battery/item_0/gen_definitions.py --check → 'OK'(表は機械の出力どおりで、F の文の結果であることを確かめた)
+
+`structural_change_since_prev`: True。記録: `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_14/CRITIC.md`。
+
+### 審査員 0#14(構造の変化ありのため 6 体が起きた。逐語)
+
+| 段 | 開始 | 終了 |
+|---|---|---|
+| 批評:0#14 | 05:33:32 | 05:58:11 |
+| 盲検:0#14:current0〜2 | 05:58:12 | 05:58:45 |
+| 盲検:0#14:survey0〜2 | 05:58:38 | 05:59:30 |
+| 作る:0#15 / 場面の直し:0#r15-1 | 05:59:31 | (進行中) |
+
+#### 盲検:0#14:current0
+
+- choice: 左
+- reasons(逐語): 表のセルを自分で数え直した。「正解と一致」の数は観点ごとに次のとおりで、表の集計行と一致した。行 A: P0-1 3/3、P0-2 4/4、P0-3 11/11、P0-4 3/3、P0-5 3/3、P0-6 3/3、P0-7 5/5、計 32/32。行 B: P0-1 1/3(p1-one-call-per-event のみ一致、ほか 2 件は対応なし)、P0-2 2/4(p2-event-time-exact と p2-one-ns-apart が一致、p2-iso-utc と p2-iso-offset は対応なし)、P0-3 1/11(p3-bar のみ一致、ほか 10 件は対応なし)、P0-4 1/3(p4-visible-at-step が一致、p4-received-time は対応なし、p4-future-read-attempt は不一致で every_attempt_stopped_by_error=false)、P0-5 1/3(p5-same-stream-order のみ一致)、P0-6 0/3(3 件とも対応なし)、P0-7 2/5(fill-model-swap と cost-model-swap が一致、latency-model-swap・cost-per-unit・account-swap は対応なし)、計 8/32。
+再現(2 回の実行で同じ)は両方とも全観点で満点(A 32/32、B 32/32)なので、再現では差が無い。
+正しさでは、7 観点のすべてで A が B 以上で、どの観点でも A が上回っている(P0-6 は B が 0/3)。場面の多い P0-3 を除いても、残りの 6 観点すべてで A が上である。B には対応なしに加えて、P0-4 の未来の読み出しの試しで黙って違う結果を返した不一致が 1 件ある(A はこの場面で正解と一致)。表の注記によると、行 B の対象には 15 の升目で型が入っていない(P0-3 の 6 升目、P0-1 と P0-5 の約定・板の写真・板の差分など)。行 A にはそのような升目が無い。よって A の方が正しく、再現性は同等である。
+- missing_in_choice(逐語): 行 A は、表に載った 32 場面のすべてで正解と一致し、2 回の実行でも同じだった。表の結果の中に A の欠けは無い。ただし定義の升目の表を見ると、場面にしていない升目が多く残っている。P0-1 は 40 升目のうち場面にした物が 4、P0-2 は 160 升目のうち 0 で、時刻の単位を升目として測る場面が無い。加えて、資金調達・清算・時計・通知が発注や取消の呼び出しでその場で返る道、戦略が公開の手段で読む道も場面になっていない。これらについて A の能力は、この表からは分からない(未確認)。
+
+#### 盲検:0#14:current1
+
+- choice: 右
+- reasons(逐語): 表から自分で数え直した結果。正しさ(正解と一致の数)は観点ごとに行 A と行 B の順で、P0-1: 1/3 と 3/3(A は p1-one-call-per-event だけ一致、merge-by-time と typed-events は対応なし)、P0-2: 2/4 と 4/4(A は iso-utc と iso-offset が対応なし)、P0-3: 1/11 と 11/11(A は p3-bar だけ一致、残りの 10 件は対応なし)、P0-4: 1/3 と 3/3(A は received-time が対応なし、future-read-attempt が不一致 {"every_attempt_stopped_by_error": false, "future_value_obtained": false})、P0-5: 1/3 と 3/3(A は same-stream-order だけ一致)、P0-6: 0/3 と 3/3(A は 3 件とも対応なし)、P0-7: 2/5 と 5/5(A は fill-model-swap と cost-model-swap だけ一致)。合計は A が 8/32、B が 32/32 で、表の集計の行と一致する。7 観点のすべてで B が A を上回り、A が上回る観点も並ぶ観点も無い。したがって場面の多い P0-3 に引きずられた差ではない。能力の場面(typed-events・one-ns-apart は A も一致・future-read-attempt・hand-over-order・cancel-notice・fill-seen・latency/account swap など)でも、A には「対応なし」または「不一致」が多い。再現(2 回の実行で同じ)は、A も B も全観点で満点(32/32)なので差は無い。注記によると、A は 15 の升目で型が入らなかった。B は入らなかった升目も、頼みの記録が無く入ったかを決められない升目も「無し」である。以上から、正しさで B が全観点で優れ、再現は同等なので、行 B(右)を選ぶ。
+- missing_in_choice(逐語): 行 B に足りない場面は、表の上では無い。定義にある 32 場面(P0-1 は 3、P0-2 は 4、P0-3 は 11、P0-4 は 3、P0-5 は 3、P0-6 は 3、P0-7 は 5)がすべて表に載っており、B はすべてで「正解と一致」かつ「2 回の実行で同じ」である。型が入らなかった升目も、決められない升目も「無し」。ただし、この表は場面にした升目(計 27)だけを測っている。場面にしていない升目については、B の能力を表からは判断できない。
+
+#### 盲検:0#14:current2
+
+- choice: 左
+- reasons(逐語): 表の各セルから数え直した。数え直した数は表の集計行と一致した。
+
+【正しさ(正解と一致の数)】7 つの観点のすべてで行 A が上回るか同じで、下回る観点は 1 つも無い。
+- P0-1: A 3/3、B 1/3。B は p1-merge-by-time と p1-typed-events が「対応なし」。
+- P0-2: A 4/4、B 2/4。B は p2-iso-utc と p2-iso-offset が「対応なし」。
+- P0-3: A 11/11、B 1/11。B で一致したのは p3-bar だけで、残りの 10 件は「対応なし」。
+- P0-4: A 3/3、B 1/3。B は p4-received-time が「対応なし」。p4-future-read-attempt は「不一致」で、値は every_attempt_stopped_by_error=false。未来の値は取れていないが、すべての試みが誤りで止められてはいない。
+- P0-5: A 3/3、B 1/3。B は p5-same-time-twice と p5-hand-over-order が「対応なし」。
+- P0-6: A 3/3、B 0/3。B は 3 件すべてが「対応なし」。
+- P0-7: A 5/5、B 2/5。B は p7-latency-model-swap、p7-cost-per-unit、p7-account-swap が「対応なし」。
+- 計: A 32/32、B 8/32。
+B は 7 つの観点のすべてで A を下回る。場面の数が多い P0-3 を除いても、残りの 6 観点すべてで A が上なので、場面数の偏りに引きずられた判断ではない。
+能力の場面でも差がある。B は p1-typed-events・P0-3 の能力の場面(p3-bar を除く)・p5-hand-over-order・p6-cancel-notice・p6-fill-seen-by-strategy・p7-latency-model-swap・p7-account-swap で能力を示していない。表の注記には、B に型が入らなかった升目が 15 個あると書かれている。
+
+【再現(2 回の実行で同じ数)】A も B も、7 つの観点すべてで満点(計 32/32)。この観点では差が無い。
+
+以上から、正しさでは全観点で A が上、再現では同等なので、A(左)を選ぶ。
+- missing_in_choice(逐語): 表の範囲では、行 A に足りない場面は無い。全 32 場面が「正解と一致」かつ「2 回の実行で同じ」で、注記も「型が入らなかった升目: 無し」。ただし表に載っていない升目(定義側で場面にしていない組)での振る舞いは、この表からは分からない(未確認)。
+
+#### 盲検:0#14:survey0
+
+- choice: 左
+- reasons(逐語): 表の各セルを自分で数え直した(行ごとに「正解と一致」「2 回の実行で同じ」の出現数を数えた)。表の集計と一致した。
+正しさ(正解と一致の数、A / B): P0-1 3/3 と 3/3、P0-2 4/4 と 4/4、P0-3 11/11 と 10/11、P0-4 3/3 と 3/3、P0-5 3/3 と 3/3、P0-6 3/3 と 3/3、P0-7 5/5 と 5/5。計は A 32/32、B 31/32。
+再現(2 回の実行で同じ、A / B): 7 観点すべてで両者とも満点。P0-1 3、P0-2 4、P0-3 11、P0-4 3、P0-5 3、P0-6 3、P0-7 5 で、計はどちらも 32/32。
+観点ごとに比べると、7 観点のうち 6 観点(P0-1・P0-2・P0-4・P0-5・P0-6・P0-7)は正しさも再現も同点。差が出たのは P0-3 だけ。B は場面 p3-mixed-one-run(値の場面。8 種の事象を 1 回の実行に混ぜる)が「対応なし」で、A は「正解と一致」。定められた良い順は 正解と一致 > 対応なし なので、この場面では A が上になる。B が A より上の観点・場面は 1 つも無い。再現はどちらも満点なので差にならない。
+この差は場面の多い P0-3 の中の 1 場面にすぎないが、他の観点がすべて同点なので、観点ごとに比べた上でも A が一方的に上になる。したがって行 A(左)を選ぶ。差は 1 場面と小さい。
+補足: 注記によると行 B は 54 の設定つき対象から場面ごとに最良の結果を寄せた行で、行 A は 1 つの対象の行。採点は表の結果だけで行い、この違いは判定に使っていない。
+- missing_in_choice(逐語): 選んだ行 A に足りない場面は、この表の上では無い(32 場面すべてで「正解と一致」かつ「2 回の実行で同じ」)。参考として、行 B に足りない場面は P0-3 の p3-mixed-one-run(対応なし)の 1 件。
+
+#### 盲検:0#14:survey1
+
+- choice: 右
+- reasons(逐語): 表の各セルを自分で数え直した(行ごとに「正解と一致」「対応なし」「2 回の実行で同じ」を数えた)。数えた値は表の上の集計表と一致した。
+正しさ(正解と一致の数、A / B): P0-1 3/3 と 3/3、P0-2 4/4 と 4/4、P0-3 10/11 と 11/11、P0-4 3/3 と 3/3、P0-5 3/3 と 3/3、P0-6 3/3 と 3/3、P0-7 5/5 と 5/5、計 31/32 と 32/32。A には不一致も結果なしも無く、「正解と一致」でない 1 件は P0-3 の p3-mixed-one-run の「対応なし」である。この場面は 8 種の事象を 1 回の実行に混ぜる値の場面。B はここで正解と一致している。
+再現(2 回の実行で同じ): 7 観点すべてで A・B とも満点(計 32/32 ずつ)なので、差は無い。
+観点ごとに見ると、6 観点(P0-1・P0-2・P0-4・P0-5・P0-6・P0-7)は正しさも再現も同点。差があるのは P0-3 の 1 観点だけで、そこでは B が上回る。B が下回る観点は無い。
+補足として、行 A は 54 の設定つき対象から最も良い結果を寄せた行である。p3-bar では寄せた対象のうち 1 件が TypeError で結果なしになり、他の対象の結果で埋めている。また注記には、型が入らなかった升目や、入ったかを決められない升目が多く並ぶ。これに対して行 B は、型が入らなかった升目も決められない升目も「無し」と書かれている。
+以上から、差は 1 観点・1 場面と小さいものの、観点を単位に見て B が片方向に優れている。よって B(右)を選ぶ。
+- missing_in_choice(逐語): B は表の 32 場面をすべて正解と一致させ、2 回の実行でも同じ結果を出した。表の中に、B が足りない場面は無い。
+ただし DEFINITIONS.md の升目の表(第 13 周の後の版)を見ると、場面にしていない升目が大きく残っている。B について未確認なのはこの部分である。
+- P0-1: 升目 40 のうち 4 だけ場面にした
+- P0-2: 升目 160 のうち 0(時刻の表現は p2-* の 4 場面でしか測っていない)
+- P0-3: 升目 40 のうち 13
+- P0-4: 升目 40 のうち 2
+- P0-5: 升目 40 のうち 4
+- P0-6: 升目 40 のうち 1
+- P0-7: 升目 160 のうち 3(約定模型・遅延模型・費用・口座を差し替えた組み合わせの大半が未測定)
+特に次の場面が足りない。
+- P0-2 の升目をひとつも場面にしていない
+- P0-7 で、注文の約定の通知が戦略の呼び出しに届く経路を、約定模型・遅延模型・費用と組み合わせた場面
+- P0-6 で、戦略が公開の手段で約定の通知を読む升目以外の側面
+
+#### 盲検:0#14:survey2
+
+- choice: 左
+- reasons(逐語): 表の各セル(A・B 各 32 場面、計 64 セル)を自分で数え直した結果は次のとおり。grep で「正しさ: 正解と一致」63 件、「正しさ: 対応なし」1 件、「再現: 2 回の実行で同じ」64 件で、表の集計の行と合っている。
+観点ごとの正しさ(A / B):
+- P0-1: 3/3 対 3/3
+- P0-2: 4/4 対 4/4
+- P0-3: 11/11 対 10/11。B は p3-mixed-one-run が「対応なし」。6 種の市場の事象を 1 回の実行に混ぜる場面。
+- P0-4: 3/3 対 3/3
+- P0-5: 3/3 対 3/3
+- P0-6: 3/3 対 3/3
+- P0-7: 5/5 対 5/5
+- 計: A 32/32、B 31/32
+再現は全観点で両方とも満点(A 32/32、B 32/32)。差が出たのは P0-3 の 1 場面だけで、ほかの 6 観点はすべて同点。場面の数が多い P0-3 に引きずられないよう観点ごとに比べると、A が上回るのは 1 観点、B が上回る観点は 0。したがって A は、正しさで同等以上かつ一部で上、再現では同等になる。
+さらに注記によると、行 B は 54 件の設定つき対象から場面ごとに最良を寄せた行で、1 つの道具・1 つの設定の振る舞いではない。その寄せ集めでも p3-mixed-one-run は正解に届かなかった。多くの設定つき対象には「場面にしたが型が入らなかった升目」があり、多数の場面で結果なしが出ている(例: p2-iso-utc 13 件、p6 16 件、p7-fill-model-swap 18 件)。行 A は実行の前に決めた 1 つの対象で全場面が一致し、型が入らなかった升目も「無し」。このことも A を選ぶ理由になる(推定)。
+- missing_in_choice(逐語): 表の結果の範囲では、行 A に足りない場面は無い(32 場面すべてが正解と一致、かつ 2 回の実行で同じ)。表は、「場面にした」とされた升目 27 個に対応する 32 場面しか測っていない。「測っていない(固定した測り方の外)」とされた升目での A の振る舞いは、この表からは分からない。例: P0-3 で、発注・取消の呼び出しがその場で返す物、戦略が公開の手段で読む物(一部を除く)。
+
+### リードの読み(2026-09-25 06:45 UTC)
+
+- 第 14 周は実装の側の [止める] 4(i0-r14-01・02 = i0-r13-01 と同じ根 = 核が呼ぶライブラリのコードと遅れて作る表が ABC・sys.modules を読む / 03 = to_nanos が Fraction・longdouble の桁を落として黙って受け付ける / 04 = numpy.timedelta64 の単位を落として int と数える)・[直す] 1(i0-r14-05 = 入れ子の断りが呼び手の積み上がりで変わる)・場面集の側の [直す] 1(i0-r14-06 = P0-2 の升目が F の文どおり 0 になり測った物が「測っていない」側に置かれる。向きは通過に不利)。
+- 審査員は対現状・対調査とも 3 体が新実装の側を選んだ(左右の割り当ては `round_14/materials/mapping.tsv`。current1・survey1 は右 = 新実装が右の表)。連敗の鎖は 0/0 のまま。
+- i0-r14-01・02 は作業者の格子(核のソースの grep)の外で、批評家が根本原因を「探し方」に置いている。第 15 周の作業者はこの探し方の穴(核が呼ぶライブラリのコード・実行中の import・遅れて作る表)ごと直す。リードは段の途中で規則を足さない。
+- i0-r14-06 は F の文どおりの結果で、場面係が F の範囲で「固定した測り方の外」と「測ったが升目の型を入力が決めない」を分ける形を確かめ、無ければ `lead_answer_changes` で聞く(批評家の指示のとおり)。リードの事前の答え: 分ける形を採ってよい(升目の軸に「事象を持たない変換の場面」「型を対象が選ぶ場面」の行を足す = F が数えない升目を「場面にした」に足すのではなく、測った物を別の欄に出す)。

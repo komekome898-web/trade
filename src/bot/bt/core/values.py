@@ -36,29 +36,46 @@ become values, used by every field function below (i0-r6-03):
 * the accepted types are one table, `BUILD`: None, bool, int, float,
   complex, str, bytes, Decimal, Fraction. For each, the value is read by
   that type's OWN method or slot descriptor (`int.__neg__`,
-  `float.__mul__`, `str.__getitem__`, `bytes.hex`, `complex.real`,
-  `Decimal.__str__`, `Fraction`'s `_numerator` / `_denominator` slots)
-  and a new object is built from what was read, so no method of the
-  sender's class runs and nothing of the sender's object is kept;
+  `float.__mul__`, `str.__getitem__`, `bytes.hex`, `complex.real`, a
+  Decimal written by a decimal context of the core's own, `Fraction`'s
+  `_numerator` / `_denominator` slots) and a new object is built from what
+  was read, so no method of the sender's class runs and nothing of the
+  sender's object is kept;
+* a Fraction or a Decimal is built as the core's own subclass,
+  `PlainFraction` / `PlainDecimal` (slotted), whose `==`, `!=` and hash are
+  the core's (round 15, i0-r14-01): the library's `Fraction.__eq__` and the
+  C decimal's comparison ask the numbers ABCs about the other operand (and
+  a Decimal compared with a float writes a flag into the thread's decimal
+  context), so the equality of a value -- asked whenever two keys of a set
+  or a dict the core builds share a hash, and by every receiver's own dict
+  or set -- would be decided by process-wide state any party can change.
+  The core's equality compares the exact values (`_number_equal`), its
+  hash is the library's (the numeric hash every equal number shares);
+  arithmetic on them is the library's;
 * an instance of a SUBCLASS of one of those types (`IntEnum` / `StrEnum`
   members, numpy.float64, numpy.str_, a `Fraction` or `Decimal`
   subclass, ...) is read the same way, by the base type's own method,
-  and built as the base type;
+  and built as the base type (a Fraction or Decimal as the core's own);
 * a numpy bool (what numpy and pandas comparisons give) is stored as the
   `bool` it holds, read by numpy's own method;
 * a number of the numeric tower -- a class whose own MRO holds
   `numbers.Integral` / `numbers.Real` / `numbers.Complex`, or numpy's
   `integer` / `floating` / `inexact` (the bases numpy registers with those
   ABCs): numpy.int64, numpy.float32, ... -> int / float / complex -- is
-  converted once, NOW, and what the conversion returned is built anew as
-  the built-in type itself. The kind is read from the table
+  converted once, NOW, EXACTLY (round 15, i0-r14-03/04): numpy's
+  `longdouble` / `clongdouble` hold digits a float / complex may not, and a
+  value the conversion would round is refused; numpy's `timedelta64` /
+  `datetime64` are a count in a UNIT of their own (a timedelta64 derives
+  from numpy's signedinteger, and `int()` of it is its count in that unit)
+  and are not numbers here. The kind is read from the table
   `NUMBER_BASES`, bound when the core is loaded, by identity: no ABC is
   asked, so no registration, cache or subclass hook of anyone's decides
   it (round 14, i0-r13-01), and a class merely registered with an ABC is
   not a number here;
 * plain data nests at most `MAX_NESTING` containers, counted from the
-  field that holds it (a bound of the core's, not the interpreter's
-  recursion limit);
+  field that holds it (a bound of the core's). The core's walks over it
+  are iterative (round 15, i0-r14-05): they take the same few frames of
+  the interpreter's stack whatever the nesting;
 * anything else -- a plain `Enum` member (its class is the sender's), a
   function (it can read the sender's state when it is called, later), an
   arbitrary object, a generator, a container that holds itself -- raises
@@ -78,7 +95,11 @@ set of fresh values.
 from __future__ import annotations
 
 import collections.abc as _collections_abc
+import dataclasses as _dataclasses  # at load: the core imports nothing at run time (round 15, i0-r14-02)
+import decimal as _decimal
+import math as _math
 import numbers
+import sys as _sys
 import types
 from decimal import Decimal
 from fractions import Fraction
@@ -126,25 +147,237 @@ def _new_bytes(x: bytes) -> bytes:
     return bytes.fromhex(bytes.hex(x))
 
 
-def _new_decimal(x: Decimal) -> Decimal:
-    return Decimal(Decimal.__str__(x))  # text -> Decimal is exact (no context rounding)
+# ---- a decimal context of the core's own (round 14 / round 15) ------------------------
+# The core never reads or writes the thread's decimal context (process state
+# any party can change: its precision, rounding, traps and capitals would
+# decide results, and its flags are written by comparisons). Every decimal
+# operation of the core runs in a context made for that call from these
+# constants (read once, here): exact (the largest precision), every error
+# trapped.
+_CONTEXT = _decimal.Context
+_DECIMAL_SETTINGS = (_decimal.MAX_PREC, _decimal.ROUND_HALF_EVEN, _decimal.MIN_EMIN, _decimal.MAX_EMAX)
+_DECIMAL_TRAPS = (_decimal.InvalidOperation, _decimal.DivisionByZero, _decimal.Overflow)
+DECIMAL_ERRORS = (_decimal.DecimalException,)
+
+
+def exact_context() -> "_decimal.Context":
+    """A new decimal context of the core's own: exact, every error trapped,
+    capitals on. Never the thread's."""
+    prec, rounding, emin, emax = _DECIMAL_SETTINGS
+    return _CONTEXT(prec=prec, rounding=rounding, Emin=emin, Emax=emax, capitals=1, clamp=0, flags=[],
+                    traps=list(_DECIMAL_TRAPS))
+
+
+_DECIMAL_NEW = Decimal.__new__
+_DEC_IS_NAN = Decimal.is_nan
+_DEC_IS_SNAN = Decimal.is_snan
+_DEC_IS_INFINITE = Decimal.is_infinite
+_DEC_IS_SIGNED = Decimal.is_signed
+_DEC_HASH = Decimal.__hash__
+
+
+def _new_decimal(x: Decimal) -> "PlainDecimal":
+    """A new PlainDecimal of the value `x` holds: written by a context of the
+    core's own (its text is exact and never depends on the thread's context)
+    and read back exactly from that text."""
+    ctx = exact_context()
+    return _DECIMAL_NEW(PlainDecimal, ctx.to_sci_string(x), ctx)
 
 
 _NUMERATOR = Fraction.__dict__["_numerator"].__get__
 _DENOMINATOR = Fraction.__dict__["_denominator"].__get__
+_SET_NUMERATOR = Fraction.__dict__["_numerator"].__set__
+_SET_DENOMINATOR = Fraction.__dict__["_denominator"].__set__
+_GCD = _math.gcd
+_OBJECT_NEW = object.__new__
 
 
-def _new_fraction(x: Fraction) -> Fraction:
+def fraction_parts(x: Fraction) -> tuple[int, int]:
+    """(numerator, denominator) of a Fraction, read by the class's own slots;
+    ValueError for a Fraction whose slots were broken."""
     try:
         n, d = _NUMERATOR(x), _DENOMINATOR(x)
     except AttributeError:
         raise ValueError("a Fraction without its numerator or denominator") from None
-    if not (issubclass(type(n), int) and issubclass(type(d), int)) or type(n) is bool or type(d) is bool:
+    tn, td = type(n), type(d)
+    if tn is bool or td is bool or not (derives(tn, int) and derives(td, int)):
         raise ValueError(f"a Fraction whose parts are not ints ({type_name(n)}, {type_name(d)})")
+    n, d = _new_int(n), _new_int(d)
+    if d == 0:
+        raise ValueError("a Fraction with a zero denominator")
+    return n, d
+
+
+def _make_fraction(n: int, d: int) -> "PlainFraction":
+    """A new PlainFraction n/d (ints, d != 0), in lowest terms, made by the
+    core itself (no library constructor runs)."""
+    if d < 0:
+        n, d = -n, -d
+    g = _GCD(n, d)
+    if g != 1:
+        n, d = n // g, d // g
+    out = _OBJECT_NEW(PlainFraction)
+    _SET_NUMERATOR(out, n)
+    _SET_DENOMINATOR(out, d)
+    return out
+
+
+def _new_fraction(x: Fraction) -> "PlainFraction":
+    n, d = fraction_parts(x)
+    return _make_fraction(n, d)
+
+
+# ---- the core's equality of numbers (round 15, i0-r14-01) -------------------------------
+
+_Q, _INF, _NAN, _CPLX, _DEC = "q", "inf", "nan", "c", "d"
+
+
+def _number_parts(x: Any) -> Any:
+    """How the core reads a number to compare it, by the real type's own MRO
+    (compared by identity) and the base type's own methods: (_Q, n, d) an
+    exact rational, (_INF, sign), (_NAN,), (_CPLX, re, im) a complex with a
+    non-zero imaginary part (floats), (_DEC, the Decimal); None for
+    anything else (not a number the core reads by value)."""
+    t = type(x)
+    if derives(t, Decimal):
+        return (_DEC, x)
+    if derives(t, Fraction):
+        try:
+            n, d = fraction_parts(x)
+        except ValueError:
+            return None
+        return (_Q, n, d)
+    if derives(t, int):  # bool too: True == 1
+        return (_Q, _new_int(x), 1)
+    if derives(t, float):
+        return _float_parts(_new_float(x))
+    if derives(t, complex):
+        re, im = _new_float(_REAL(x)), _new_float(_IMAG(x))
+        if float.__eq__(im, 0.0):
+            return _float_parts(re)
+        return (_CPLX, re, im)
+    if is_static(t) and number_kind(t) is not None and not derives(t, _NP_BOOL):
+        # a number of a static (C) class (numpy's): converted exactly by its own
+        # C code, then read as the built-in number (a value that does not convert
+        # exactly is not read)
+        try:
+            return _number_parts(_now(number_kind(t), x, "value"))
+        except ValueError:
+            return None
+    return None
+
+
+def _float_parts(f: float) -> tuple:
+    if float.__ne__(f, f):
+        return (_NAN,)
+    if float.__eq__(f, _INFINITY) or float.__eq__(f, -_INFINITY):
+        return (_INF, 1 if float.__gt__(f, 0.0) else -1)
+    n, d = float.as_integer_ratio(f)
+    return (_Q, n, d)
+
+
+_INFINITY = float("inf")
+
+
+def _decimal_equal(dec: Decimal, other: tuple) -> bool:
+    """A Decimal against another number's parts, exactly, in a context of the
+    core's own (no huge int is made: the Decimal keeps its exponent)."""
+    if _DEC_IS_NAN(dec):
+        return False
+    kind = other[0]
+    if kind == _NAN or kind == _CPLX:
+        return False
+    if kind == _INF:
+        return _DEC_IS_INFINITE(dec) and (_DEC_IS_SIGNED(dec) == (other[1] < 0))
+    ctx = exact_context()
     try:
-        return Fraction(_new_int(n), _new_int(d))
-    except ZeroDivisionError:
-        raise ValueError("a Fraction with a zero denominator") from None
+        if kind == _DEC:
+            o = other[1]
+            if _DEC_IS_NAN(o):
+                return False
+            return ctx.compare(dec, o).is_zero()
+        if _DEC_IS_INFINITE(dec):
+            return False
+        n, d = other[1], other[2]
+        return ctx.compare(ctx.multiply(dec, ctx.create_decimal(d)), ctx.create_decimal(n)).is_zero()
+    except DECIMAL_ERRORS:  # pragma: no cover - exact context: no condition on finite operands
+        return False
+
+
+def _number_equal(a: Any, b: Any) -> Any:
+    """Is number `a` (the core's PlainFraction / PlainDecimal) equal to `b`?
+    The exact values are compared -- Python's own numeric equality, decided
+    by the core without asking any ABC or reading the thread's decimal
+    context; NotImplemented when `b` is not a number the core reads (int,
+    float, complex, Fraction, Decimal, or a subclass of one). A NaN is
+    equal to nothing; a signaling NaN too (Python raises or not by the
+    thread's traps; the core answers False)."""
+    pb = _number_parts(b)
+    if pb is None:
+        return NotImplemented
+    pa = _number_parts(a)
+    if pa is None:  # pragma: no cover - a is the core's own number
+        return NotImplemented
+    if pa[0] == _DEC:
+        return _decimal_equal(pa[1], pb)
+    if pb[0] == _DEC:
+        return _decimal_equal(pb[1], pa)
+    if pa[0] == _NAN or pb[0] == _NAN or pa[0] != pb[0]:
+        return False
+    if pa[0] == _Q:
+        return pa[1] * pb[2] == pb[1] * pa[2]
+    if pa[0] == _INF:
+        return pa[1] == pb[1]
+    return float.__eq__(pa[1], pb[1]) and float.__eq__(pa[2], pb[2])
+
+
+def _not_equal(a: Any, b: Any) -> Any:
+    eq = _number_equal(a, b)
+    return eq if eq is NotImplemented else not eq
+
+
+_HASH_MODULUS = _sys.hash_info.modulus
+_HASH_INF = _sys.hash_info.inf
+
+
+def _fraction_hash(x: "PlainFraction") -> int:
+    """The numeric hash of n/d (the one every equal int, float, Decimal and
+    Fraction shares), computed by the core from the Fraction's own slots."""
+    n, d = _NUMERATOR(x), _DENOMINATOR(x)
+    try:
+        dinv = pow(d, -1, _HASH_MODULUS)
+    except ValueError:  # d is a multiple of the modulus: no inverse
+        h = _HASH_INF
+    else:
+        h = int.__hash__(int.__hash__(n if n >= 0 else -n) * dinv)
+    h = h if n >= 0 else -h
+    return -2 if h == -1 else h
+
+
+class PlainFraction(Fraction):
+    """A Fraction the core built (round 15): the library's Fraction, whose
+    ==, != and hash are the core's (`_number_equal`, the numeric hash), so
+    comparing it asks no ABC. Slotted; arithmetic gives library Fractions."""
+
+    __slots__ = ()
+
+    __eq__ = _number_equal
+    __ne__ = _not_equal
+    __hash__ = _fraction_hash
+
+
+class PlainDecimal(Decimal):
+    """A Decimal the core built (round 15): the library's Decimal, whose ==
+    and != are the core's (`_number_equal`: exact, in a context of the
+    core's own; never the thread's context) and whose hash is Decimal's (C,
+    computed in a context of its own). Slotted; arithmetic gives library
+    Decimals."""
+
+    __slots__ = ()
+
+    __eq__ = _number_equal
+    __ne__ = _not_equal
+    __hash__ = _DEC_HASH
 
 
 # THE table of accepted scalar types (module docstring): each type -> the
@@ -161,6 +394,8 @@ BUILD: dict[type, Callable[[Any], Any]] = {
     bytes: _new_bytes,
     Decimal: _new_decimal,
     Fraction: _new_fraction,
+    PlainDecimal: _new_decimal,
+    PlainFraction: _new_fraction,
 }
 # the bases a subclass is read as (bool cannot be subclassed; checked in
 # this order, after the exact type)
@@ -170,17 +405,22 @@ PLAIN_DATA_RULE = (
     "every value is built anew by the core (nothing a sender hands over is kept; None, True and False "
     "are the one objects kept); accepted scalars are the table BUILD: None, bool, int, float, complex, "
     "str, bytes, Decimal, Fraction, each read by that type's own method or slot and built as a new "
-    "object; an instance of a subclass of one of them (IntEnum and StrEnum members, numpy's, a Fraction "
-    "or Decimal subclass) is read by the base type and built as the base type (the subclass's methods "
-    "never run); a numpy bool is stored as the bool it holds; a number of the numeric tower -- a class "
-    "whose own MRO holds numbers.Integral / Real / Complex or numpy's integer / floating / inexact (the "
-    "table NUMBER_BASES, bound when the core is loaded and compared by identity: no ABC registry, cache or "
-    "hook is asked, so a class only registered with an ABC is not a number) -- is converted once, when it "
-    "is sent, and built anew as int / float / complex; types are decided by the real type's own MRO, "
-    "never by what the object claims (__class__); tuple / list / dict / set / frozenset of plain data "
-    "become new immutable containers and are read back as fresh copies, nested at most MAX_NESTING (100) "
-    "containers deep counted from the field that holds them; anything else (a plain Enum member, a "
-    "function, any other object) is refused"
+    "object; a Fraction or Decimal is built as the core's own subclass PlainFraction / PlainDecimal, whose "
+    "== and hash are the core's (the exact values compared, the numeric hash), so no ABC and no thread's "
+    "decimal context decides an equality (round 15); an instance of a subclass of one of them (IntEnum and "
+    "StrEnum members, numpy's, a Fraction or Decimal subclass) is read by the base type and built as the "
+    "base type (the subclass's methods never run); a numpy bool is stored as the bool it holds; a number of "
+    "the numeric tower -- a class whose own MRO holds numbers.Integral / Real / Complex or numpy's integer / "
+    "floating / inexact (the table NUMBER_BASES, bound when the core is loaded and compared by identity: no "
+    "ABC registry, cache or hook is asked, so a class only registered with an ABC is not a number) -- is "
+    "converted once, when it is sent, exactly, and built anew as int / float / complex: a numpy longdouble "
+    "or clongdouble whose value the float / complex does not hold exactly is refused, and numpy's "
+    "timedelta64 / datetime64 (a count in a unit of their own) are not numbers (round 15); types are "
+    "decided by the real type's own MRO, never by what the object claims (__class__); tuple / list / dict "
+    "/ set / frozenset of plain data become new immutable containers and are read back as fresh copies, "
+    "nested at most MAX_NESTING (100) containers deep counted from the field that holds them; two keys of a "
+    "dict or two elements of a set that are distinct in the sender's container but equal as plain data are "
+    "refused (never merged); anything else (a plain Enum member, a function, any other object) is refused"
 )
 
 FIELD_RULE = (
@@ -271,19 +511,59 @@ NUMBER_BASES: tuple = (
     (numbers.Real, float), (_static_numpy("floating"), float),
     (numbers.Complex, complex), (_static_numpy("inexact"), complex),
 )
+# numpy's counts in a unit of their own (round 15, i0-r14-04): a timedelta64
+# derives from numpy's signedinteger and int() of it is its count in ITS unit
+# (picoseconds, years ...); neither it nor a datetime64 is a number here
+UNIT_CLASSES: tuple = (_static_numpy("timedelta64"), _static_numpy("datetime64"))
+# numpy's classes that may hold more than the built-in type they convert to
+# (round 15, i0-r14-03): the conversion is checked to be exact, by the
+# class's own C method `as_integer_ratio` (a longdouble; the parts of a
+# clongdouble) against the float's
+_NP_LONGDOUBLE = _static_numpy("longdouble")
+_NP_CLONGDOUBLE = _static_numpy("clongdouble")
+_LD_RATIO = _NP_LONGDOUBLE.__dict__["as_integer_ratio"]
+_NP_REAL = _static_numpy("generic").__dict__["real"].__get__
+_NP_IMAG = _static_numpy("generic").__dict__["imag"].__get__
 
 
 def number_kind(t: type) -> Any:
     """`int`, `float` or `complex` for a class of the numeric tower, else
     None: decided by class `t`'s own MRO compared by identity with
     `NUMBER_BASES` -- no ABC is asked, so no registration, cache or hook of
-    anyone's decides it."""
+    anyone's decides it. numpy's timedelta64 / datetime64 are not numbers."""
     mro = _MRO(t)
+    for c in mro:
+        if c is UNIT_CLASSES[0] or c is UNIT_CLASSES[1]:
+            return None
     for base, kind in NUMBER_BASES:
         for c in mro:
             if c is base:
                 return kind
     return None
+
+
+def _same_real(wide: Any, f: float) -> bool:
+    """Does float `f` hold exactly the value of numpy longdouble `wide`?"""
+    try:
+        ratio = _LD_RATIO(wide)
+    except (OverflowError, ValueError):  # inf or nan: float() gave the same inf or nan
+        return float.__ne__(f, f) or float.__eq__(f, _INFINITY) or float.__eq__(f, -_INFINITY)
+    if float.__ne__(f, f) or float.__eq__(f, _INFINITY) or float.__eq__(f, -_INFINITY):
+        return False  # a finite longdouble beyond the float's range
+    n, d = ratio
+    return float.as_integer_ratio(f) == (int(n), int(d))
+
+
+def _exactly_converted(value: Any, out: Any) -> bool:
+    """Is `out` (what int() / float() / complex() gave for numpy scalar
+    `value`) the same value? Only numpy's longdouble and clongdouble can
+    hold more than the built-in type; every other class converts exactly."""
+    t = type(value)
+    if derives(t, _NP_LONGDOUBLE):
+        return _same_real(value, out)
+    if derives(t, _NP_CLONGDOUBLE):
+        return _same_real(_NP_REAL(value), _REAL(out)) and _same_real(_NP_IMAG(value), _IMAG(out))
+    return True
 
 
 # the mapping classes: dict, the read-only proxy (which collections.abc
@@ -329,12 +609,23 @@ def value_text(value: Any) -> str:
 
 
 # How deep plain data may nest, counted in containers from the field that
-# holds it (a bound of the core's, the same whatever the interpreter's
-# recursion limit and the stack depth of the call: round 14). The core's
-# deepest walk (`renew`) takes 3 frames a level and a run adds about 20, so
-# 100 levels stay within half of the interpreter's default limit (1000);
-# the interpreter's own hash / == of nested tuples recurse as deep.
+# holds it: a bound of the core's. The core's own walks over plain data are
+# iterative (round 15, i0-r14-05) and take no frame per level; the bound keeps
+# what the INTERPRETER itself does over one value -- comparing two distinct
+# nested values of equal hash in one set or dict, one level of its recursion
+# limit per container (measured round 15: two distinct 98-level values need 106
+# frames of headroom) -- well inside its default limit (1000). The value 100 was
+# set in round 14 from the recursive walks of then (3 frames a level, about 20
+# for a run: half of 1000) and kept.
 MAX_NESTING = 100
+# The frames of the interpreter's recursion limit an entry of the core needs
+# below its caller, whatever the nesting of the value (round 15, measured: at
+# most 22, for place_order called from inside on_event; 30 leaves a margin).
+# With less headroom than this a call may fail with RecursionError; with at
+# least this much, whether a value is taken never depends on the stack depth
+# of the call -- except for the interpreter's comparison above, which needs
+# one more frame per container of the two values it compares.
+CALL_FRAMES = 30
 
 
 class IdTable:
@@ -441,9 +732,10 @@ def exception_text(exc: BaseException) -> str:
 
 
 def _now(convert: Any, value: Any, where: str) -> Any:
-    """Convert a foreign number once, now, and build what the conversion
-    returned anew as the built-in type itself; an error in the sender's
-    conversion is a ValueError of this module."""
+    """Convert a foreign number once, now, EXACTLY, and build what the
+    conversion returned anew as the built-in type itself; an error in the
+    sender's conversion, or a value the conversion would round (numpy's
+    longdouble / clongdouble), is a ValueError of this module."""
     try:
         out = convert(value)
     except Exception as exc:  # the sender's own conversion code, or a number too large
@@ -452,9 +744,31 @@ def _now(convert: Any, value: Any, where: str) -> Any:
             f"{where} must be a number {article} {convert.__name__} can hold, got a "
             f"{type_name(value)} ({exception_text(exc)})"  # no code of the sender's exception runs
         ) from None
-    if not issubclass(type(out), convert):  # pragma: no cover - int() / float() / complex() check it
+    if not derives(type(out), convert):  # pragma: no cover - int() / float() / complex() check it
         raise ValueError(f"{where}: {convert.__name__}() gave a {type_name(out)}")
+    if not _exactly_converted(value, out):
+        raise ValueError(f"{where} holds a {type_name(value)} whose value a {convert.__name__} cannot hold "
+                         f"exactly; the core does not round (convert it yourself)")
     return BUILD[convert](out)
+
+
+def fraction_float(x: Fraction) -> float:
+    """A Fraction as the nearest float, by int division (correctly rounded;
+    no library code); ValueError when it is beyond a float's range."""
+    n, d = fraction_parts(x)
+    try:
+        return int.__truediv__(n, d)
+    except OverflowError:
+        raise ValueError("a Fraction beyond a float's range") from None
+
+
+def decimal_float(x: Decimal) -> float:
+    """A Decimal as the nearest float, from its text written by a context
+    of the core's own; ValueError for a signaling NaN."""
+    try:
+        return float(exact_context().to_sci_string(x))
+    except ValueError:
+        raise ValueError("a signaling NaN is not a float") from None
 
 
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses
@@ -526,7 +840,7 @@ def settle(value: Any) -> Any:
     call returned: the outbox (engine.py `_take_message`), a plug-in's
     number (`take_int` / `take_float`), a carrier it makes again
     (`rebuild_carrier`)."""
-    return _settle(value, set())
+    return _walk(value, "value", 0, _settle_open, _settle_leaf, _settle_fail)
 
 
 def _too_deep(where: str) -> str:
@@ -534,51 +848,150 @@ def _too_deep(where: str) -> str:
             f"plain data is refused beyond that depth")
 
 
+# ---- the walks over plain data (round 15, i0-r14-05) ------------------------------------
+# One iterative walk rebuilds nested plain data for freeze, settle, renew and
+# thaw: an explicit stack instead of recursion, so the frames of the
+# interpreter's stack a walk takes are the same few whatever the nesting, and
+# whether a value is taken never depends on how deep the caller's stack is.
+# What is left of the interpreter's own recursion: comparing two DISTINCT
+# nested values whose hashes are equal, when both are keys of one dict or
+# elements of one set (the interpreter compares them, one level of its
+# recursion limit a container) -- caught at the walk and refused with the
+# entry's own error, never RecursionError.
+
+_CYCLE, _DEEP, _RECURSION = "cycle", "deep", "recursion"
+
+
+def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable, fail: Callable) -> Any:
+    """Rebuild `root` depth first, without recursion. `open_node(v, where)`
+    is None for a leaf -- then `leaf(v, where)` is its new value -- or
+    (children, finish): `children` a list of (value, where) rebuilt in
+    order, `finish(list of the new children)` the new container. A
+    container on the path again (a cycle), or deeper than MAX_NESTING
+    counted from the field (`outer` containers around `root`), raises
+    `fail(kind, value, where)`; so does the interpreter's recursion limit
+    reached while a finished container is built (kind _RECURSION)."""
+    try:
+        opened = open_node(root, where)
+        if opened is None:
+            return leaf(root, where)
+        path: set = set()
+        stack: list = []
+        v, w, node = root, where, opened
+        while True:
+            if node is not None:  # enter the container v
+                key = id(v)
+                if key in path:
+                    raise fail(_CYCLE, v, w)
+                if outer + len(path) >= MAX_NESTING:
+                    raise fail(_DEEP, v, w)
+                path.add(key)
+                stack.append([key, node[0], 0, [], node[1]])
+            top = stack[-1]
+            children, i = top[1], top[2]
+            if i < len(children):
+                top[2] = i + 1
+                v, w = children[i]
+                node = open_node(v, w)
+                if node is None:
+                    top[3].append(leaf(v, w))
+                continue
+            node = None
+            stack.pop()
+            path.discard(top[0])
+            built = top[4](top[3])
+            if not stack:
+                return built
+            stack[-1][3].append(built)
+    except RecursionError:
+        raise fail(_RECURSION, root, where) from None
+
+
+def _recursion_text(where: str) -> str:
+    return (f"{where}: two distinct nested values of equal hash in one set or dict are compared by the "
+            f"interpreter one level of its recursion limit per container, and the stack of this call "
+            f"has no room left for that; refused")
+
+
+def _pairs_of(out: list) -> list:
+    return [(out[i], out[i + 1]) for i in range(0, len(out), 2)]
+
+
+def _dict_of(pairs: list, err: type, where: str) -> dict:
+    """A dict of the new keys, refusing keys that were distinct in the
+    sender's container but are equal as plain data (never merged)."""
+    d: dict = {}
+    for k, x in pairs:
+        d[k] = x
+    if len(d) != len(pairs):
+        raise err(f"{where}: keys that differ in the sender's dict are equal as plain data; refused, not merged")
+    return d
+
+
+def _set_of(make: Callable, out: list, err: type, where: str) -> Any:
+    got = make(out)
+    if len(got) != len(out):
+        raise err(f"{where}: elements that differ in the sender's set are equal as plain data; refused, "
+                  f"not merged")
+    return got
+
+
 _CONTAINERS = (tuple, list, set, frozenset, dict)
 
 
-def _settle(value: Any, path: set[int]) -> Any:
+def _settle_open(value: Any, where: str) -> Any:
     t = type(value)
-    build = _BUILDER.get(t)
-    if build is not None:
-        return build(value)
+    if _BUILDER.get(t) is not None:
+        return None
+    if t is FrozenDict:
+        try:
+            pairs = _FD_ITEMS(value)
+        except AttributeError:
+            pairs = None
+        if type(pairs) is not tuple or any(type(p) is not tuple or tuple.__len__(p) != 2
+                                           for p in tuple.__iter__(pairs)):
+            raise Unsettled("a FrozenDict whose pairs were replaced is not plain data")
+        children = []
+        for p in tuple.__iter__(pairs):
+            children.append((tuple.__getitem__(p, 0), where))
+            children.append((tuple.__getitem__(p, 1), where))
+        return children, lambda out: FrozenDict._from_pairs(tuple(_dict_of(_pairs_of(out), Unsettled, where).items()))
     container = None
     for c in _CONTAINERS:
         if derives(t, c):
             container = c
             break
-    if container is not None or t is FrozenDict:
-        key = id(value)
-        if key in path:
-            raise Unsettled(f"a {type_name(value)} that holds itself (a cycle) is not plain data")
-        if len(path) >= MAX_NESTING:
-            raise Unsettled(_too_deep(f"a {type_name(value)}"))
-        path.add(key)
-        try:
-            if t is FrozenDict:
-                try:
-                    pairs = _FD_ITEMS(value)
-                except AttributeError:
-                    pairs = None
-                if type(pairs) is not tuple or any(type(p) is not tuple or tuple.__len__(p) != 2
-                                                   for p in tuple.__iter__(pairs)):
-                    raise Unsettled("a FrozenDict whose pairs were replaced is not plain data")
-                return FrozenDict._from_pairs(tuple(
-                    (_settle(tuple.__getitem__(p, 0), path), _settle(tuple.__getitem__(p, 1), path))
-                    for p in tuple.__iter__(pairs)))
-            if container is dict:
-                return {_settle(k, path): _settle(v, path) for k, v in dict.items(value)}
-            items = [_settle(v, path) for v in container.__iter__(value)]
-            if t is FrozenList:
-                return FrozenList(items)
-            if t is FrozenSet:
-                return FrozenSet(items)
-            return container(items)
-        finally:
-            path.discard(key)
-    base = _base_of(t)
-    if base is not None:
-        return BUILD[base](value)
+    if container is None:
+        return None
+    if container is dict:
+        children = []
+        for k, x in dict.items(value):
+            children.append((k, where))
+            children.append((x, where))
+        return children, lambda out: _dict_of(_pairs_of(out), Unsettled, where)
+    children = [(x, where) for x in container.__iter__(value)]
+    if t is FrozenList:
+        return children, FrozenList
+    if t is FrozenSet:
+        return children, lambda out: _set_of(FrozenSet, out, Unsettled, where)
+    if container is set or container is frozenset:
+        return children, lambda out: _set_of(container, out, Unsettled, where)
+    return children, container
+
+
+def _settle_leaf(value: Any, where: str) -> Any:
+    t = type(value)
+    try:
+        build = _BUILDER.get(t)
+        if build is not None:
+            return build(value)
+        base = _base_of(t)
+        if base is not None:
+            return BUILD[base](value)
+    except Unsettled:
+        raise
+    except ValueError as exc:  # a broken Fraction
+        raise Unsettled(str(exc)) from None
     if derives(t, _NP_BOOL):
         return _NP_BOOL_TRUTH(value)
     if is_static(t):
@@ -593,6 +1006,14 @@ def _settle(value: Any, path: set[int]) -> Any:
     raise Unsettled(
         f"a {type_name(value)} cannot be read without running its own code (or is not plain data)"
     )
+
+
+def _settle_fail(kind: str, value: Any, where: str) -> Exception:
+    if kind == _CYCLE:
+        return Unsettled(f"a {type_name(value)} that holds itself (a cycle) is not plain data")
+    if kind == _DEEP:
+        return Unsettled(_too_deep(f"a {type_name(value)}"))
+    return Unsettled(_recursion_text(f"a {type_name(value)}"))
 
 
 def take_int(value: Any, where: str) -> int:
@@ -612,8 +1033,10 @@ def take_float(value: Any, where: str) -> float:
     t = type(got)
     if t is float:
         return got
-    if t is int or t is Fraction:
+    if t is int:
         return _now(float, got, where)
+    if t is PlainFraction:
+        return fraction_float(got)
     raise ValueError(f"{where} must be a number, got {type_name(value)}")
 
 
@@ -712,8 +1135,18 @@ def as_float(value: Any, where: str, *, numbers_only: bool = True) -> float:
     t = type(got)
     if t is float:
         return got
-    if t is int or t is Fraction or (t is Decimal and not numbers_only):
+    if t is int:
         return _now(float, got, where)
+    if t is PlainFraction:
+        try:
+            return fraction_float(got)
+        except ValueError as exc:
+            raise ValueError(f"{where}: {exc}") from None
+    if t is PlainDecimal and not numbers_only:
+        try:
+            return decimal_float(got)
+        except ValueError as exc:
+            raise ValueError(f"{where}: {exc}") from None
     if t is str and not numbers_only:
         try:
             return float(got)
@@ -740,26 +1173,53 @@ class FrozenSet(frozenset):
         return f"FrozenSet({set(self)!r})"
 
 
+class _HashOnly:
+    """An element whose hash is a given int and whose == is identity: a
+    frozenset of these hashes as the frozenset of the objects the ints are
+    the hashes of (CPython's frozenset hash is made from its elements'
+    hashes and their number), without comparing those objects."""
+
+    __slots__ = ("_h",)
+
+    def __init__(self, h: int) -> None:
+        self._h = h
+
+    def __hash__(self) -> int:
+        return self._h
+
+
+_UNHASHABLE = object()
+
+
+def _pairs_hash(pairs: tuple) -> Any:
+    """hash(frozenset(pairs)) for distinct pairs, made without comparing two
+    pairs (round 15): each pair's hash is taken (a FrozenDict inside hashes by
+    the hash it stored when it was made: no frame per nesting level), and
+    the frozenset is made of objects that compare by identity. A pair that
+    cannot be hashed (a signaling-NaN Decimal) leaves the FrozenDict
+    unhashable."""
+    try:
+        return hash(frozenset([_HashOnly(hash(p)) for p in pairs]))
+    except TypeError:
+        return _UNHASHABLE
+
+
 class FrozenDict(Mapping):
     """An immutable, hashable dict (was a `dict` when given). Keeps the
     given order; equal to any mapping with the same items. Its lookup
     table is a read-only mapping proxy: no dict of it is reachable by
-    attribute access."""
+    attribute access. Its hash is made when it is made (the value of
+    hash(frozenset(its items))), so hashing never walks it."""
 
     __slots__ = ("_items", "_map", "_hash")
 
     def __init__(self, items: Mapping) -> None:
-        pairs = tuple(items.items())
-        object.__setattr__(self, "_items", pairs)
-        object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
-        object.__setattr__(self, "_hash", None)
+        _fd_fill(self, tuple(items.items()))
 
     @classmethod
     def _from_pairs(cls, pairs: tuple) -> "FrozenDict":
         self = object.__new__(cls)
-        object.__setattr__(self, "_items", pairs)
-        object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
-        object.__setattr__(self, "_hash", None)
+        _fd_fill(self, pairs)
         return self
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -782,10 +1242,9 @@ class FrozenDict(Mapping):
         # decided without asking an ABC (round 14): the inherited Mapping.__eq__
         # asks isinstance(other, Mapping), whose registry any party can change,
         # and the core compares keys whenever their hashes collide while it
-        # builds a dict or a set (a FrozenDict hashes as the frozenset of its
-        # items). Another FrozenDict or a class deriving from a mapping base
-        # (is_mapping: the class's own MRO) compares by its items; anything
-        # else is not a mapping.
+        # builds a dict or a set. Another FrozenDict or a class deriving from a
+        # mapping base (is_mapping: the class's own MRO) compares by its items;
+        # anything else is not a mapping.
         t = type(other)
         if t is FrozenDict:
             return dict(_FD_ITEMS(self)) == dict(_FD_ITEMS(other))
@@ -795,13 +1254,18 @@ class FrozenDict(Mapping):
 
     def __hash__(self) -> int:
         h = self._hash
-        if h is None:
-            h = hash(frozenset(self._items))
-            object.__setattr__(self, "_hash", h)
+        if h is _UNHASHABLE:
+            raise TypeError("unhashable FrozenDict: it holds a value that has no hash (a signaling-NaN Decimal)")
         return h
 
     def __repr__(self) -> str:
         return f"FrozenDict({dict(self._items)!r})"
+
+
+def _fd_fill(self: FrozenDict, pairs: tuple) -> None:
+    object.__setattr__(self, "_items", pairs)
+    object.__setattr__(self, "_map", types.MappingProxyType(dict(pairs)))
+    object.__setattr__(self, "_hash", _pairs_hash(pairs))
 
 
 _FD_ITEMS = FrozenDict.__dict__["_items"].__get__
@@ -814,44 +1278,45 @@ def freeze(value: Any, where: str = "value", outer: int = 0) -> Any:
     """An equal, deeply immutable form of plain data; `ValueError` for
     anything that is not plain data (module docstring). `outer` is the
     number of containers around `value` in the field that holds it (the
-    nesting bound `MAX_NESTING` counts from the field)."""
-    return _freeze(value, where, set(), outer)
+    nesting bound `MAX_NESTING` counts from the field). Iterative (round
+    15): the same few frames whatever the nesting."""
+    return _walk(value, where, outer, _freeze_open, scalar, _freeze_fail)
 
 
 def _key_text(k: Any) -> str:
     return value_text(k)  # a sender's key, named without running its code (round 14)
 
 
-def _freeze(value: Any, where: str, path: set[int], outer: int = 0) -> Any:
+def _freeze_open(value: Any, where: str) -> Any:
     t = type(value)
     if not is_one_of(t, _FREEZE_TYPES):
-        return scalar(value, where)
-    key = id(value)
-    if key in path:
-        raise ValueError(f"{where} holds itself (a cycle); plain data has no cycles")
-    if outer + len(path) >= MAX_NESTING:
-        raise ValueError(_too_deep(where))
-    path.add(key)
-    try:
-        if t in (tuple, FrozenList):
-            items = tuple([_freeze(v, f"{where}[{i}]", path, outer) for i, v in enumerate(tuple.__iter__(value))])
-            return FrozenList(items) if t is FrozenList else items
-        if t is list:
-            return FrozenList([_freeze(v, f"{where}[{i}]", path, outer) for i, v in enumerate(list.__iter__(value))])
-        if t in (dict, FrozenDict):
-            # read by the real type's own methods (a dict's, or the core's
-            # FrozenDict's pairs), then built anew
-            src = dict.items(value) if t is dict else _frozen_pairs(value, where)
-            frozen: dict = {}
-            for k, v in src:
-                fk = _freeze(k, f"{where} key {_key_text(k)}", path, outer)
-                frozen[fk] = _freeze(v, f"{where}[{_key_text(k)}]", path, outer)
-            return FrozenDict._from_pairs(tuple(frozen.items()))
-        each = set.__iter__(value) if t is set else frozenset.__iter__(value)
-        items = frozenset([_freeze(v, f"{where} element", path, outer) for v in each])
-        return FrozenSet(items) if t in (set, FrozenSet) else items
-    finally:
-        path.discard(key)
+        return None
+    if t is tuple or t is FrozenList:
+        return ([(v, f"{where}[{i}]") for i, v in enumerate(tuple.__iter__(value))],
+                tuple if t is tuple else FrozenList)
+    if t is list:
+        return [(v, f"{where}[{i}]") for i, v in enumerate(list.__iter__(value))], FrozenList
+    if t is dict or t is FrozenDict:
+        # read by the real type's own methods (a dict's, or the core's
+        # FrozenDict's pairs), then built anew
+        src = dict.items(value) if t is dict else _frozen_pairs(value, where)
+        children = []
+        for k, v in src:
+            text = _key_text(k)
+            children.append((k, f"{where} key {text}"))
+            children.append((v, f"{where}[{text}]"))
+        return children, lambda out: FrozenDict._from_pairs(tuple(_dict_of(_pairs_of(out), ValueError, where).items()))
+    each = set.__iter__(value) if t is set else frozenset.__iter__(value)
+    make = FrozenSet if (t is set or t is FrozenSet) else frozenset
+    return [(v, f"{where} element") for v in each], lambda out: _set_of(make, out, ValueError, where)
+
+
+def _freeze_fail(kind: str, value: Any, where: str) -> Exception:
+    if kind == _CYCLE:
+        return ValueError(f"{where} holds itself (a cycle); plain data has no cycles")
+    if kind == _DEEP:
+        return ValueError(_too_deep(where))
+    return ValueError(_recursion_text(where))
 
 
 def _frozen_pairs(value: "FrozenDict", where: str) -> tuple:
@@ -870,63 +1335,96 @@ def _frozen_pairs(value: "FrozenDict", where: str) -> tuple:
 def thaw(value: Any) -> Any:
     """A fresh, changeable copy of frozen plain data, with the containers
     as they were given (list, dict, set) and every value built anew;
-    changing it changes nothing else."""
+    changing it changes nothing else. Iterative (round 15)."""
+    return _walk(value, "value", 0, _thaw_open, _thaw_leaf, _core_fail)
+
+
+def _thaw_open(value: Any, where: str) -> Any:
     t = type(value)
-    if t is FrozenList:
-        return [thaw(v) for v in value]
-    if t is tuple:
-        return tuple([thaw(v) for v in value])
+    if t is FrozenList or t is tuple:
+        return [(v, where) for v in tuple.__iter__(value)], (list if t is FrozenList else tuple)
     if t is FrozenDict:
-        return {thaw(k): thaw(v) for k, v in value._items}
+        children = []
+        for k, v in _FD_ITEMS(value):
+            children.append((k, where))
+            children.append((v, where))
+        return children, lambda out: dict(_pairs_of(out))
     if t is FrozenSet:
-        return {thaw(v) for v in value}
+        return [(v, where) for v in frozenset.__iter__(value)], set
     if t is frozenset:
-        return frozenset([thaw(v) for v in value])
+        return [(v, where) for v in frozenset.__iter__(value)], frozenset
+    return None
+
+
+def _thaw_leaf(value: Any, where: str) -> Any:
     return renew(value)
 
 
-def _renew_tuple(v: tuple) -> tuple:
-    return tuple([renew(x) for x in v])
+def _core_fail(kind: str, value: Any, where: str) -> Exception:
+    """renew / thaw: a value the core built is within the bounds and has no
+    cycle, so only the interpreter's comparison can stop them."""
+    if kind == _RECURSION:
+        return ValueError(_recursion_text(f"a {type_name(value)}"))
+    return TypeError(f"a {type_name(value)} the core built {'holds itself' if kind == _CYCLE else 'nests too deep'}")
 
 
-def _renew_frozen_list(v: FrozenList) -> FrozenList:
-    return FrozenList([renew(x) for x in v])
-
-
-def _renew_frozenset(v: frozenset) -> frozenset:
-    return frozenset([renew(x) for x in v])
-
-
-def _renew_frozen_set(v: FrozenSet) -> FrozenSet:
-    return FrozenSet([renew(x) for x in v])
-
-
-def _renew_frozen_dict(v: FrozenDict) -> FrozenDict:
-    return FrozenDict._from_pairs(tuple([(renew(k), renew(x)) for k, x in v._items]))
-
-
-_RENEW: dict[type, Callable[[Any], Any]] = {
-    **BUILD,
-    tuple: _renew_tuple,
-    FrozenList: _renew_frozen_list,
-    frozenset: _renew_frozenset,
-    FrozenSet: _renew_frozen_set,
-    FrozenDict: _renew_frozen_dict,
-}
+_RENEW_SCALAR = IdTable(BUILD.items())
+_RENEW_CONTAINERS = (tuple, FrozenList, frozenset, FrozenSet, FrozenDict)
 
 
 def renew(value: Any) -> Any:
     """The core's own new copy of a value the core built (a field of a
     carrier, made by the functions above): equal, sharing no object with
     it (but None, True, False and what the interpreter keeps one of per
-    value). A value of any other type is a bug of the core: TypeError."""
-    make = _RENEW.get(type(value))
+    value). A value of any other type is a bug of the core: TypeError.
+    Iterative (round 15)."""
+    make = _RENEW_SCALAR.get(type(value))
+    if make is not None:
+        return make(value)
+    return _walk(value, "value", 0, _renew_open, _renew_leaf, _core_fail)
+
+
+def _renew_open(value: Any, where: str) -> Any:
+    t = type(value)
+    if t is tuple or t is FrozenList:
+        return [(v, where) for v in tuple.__iter__(value)], t
+    if t is frozenset or t is FrozenSet:
+        return [(v, where) for v in frozenset.__iter__(value)], t
+    if t is FrozenDict:
+        children = []
+        for k, v in _FD_ITEMS(value):
+            children.append((k, where))
+            children.append((v, where))
+        return children, lambda out: FrozenDict._from_pairs(tuple(_pairs_of(out)))
+    return None
+
+
+def _renew_leaf(value: Any, where: str) -> Any:
+    make = _RENEW_SCALAR.get(type(value))
     if make is None:
         raise TypeError(f"renew: a {type_name(value)} is not a value the core builds")
     return make(value)
 
 
-_COPIERS: dict[type, Callable[[Any], Any]] = {}
+# ---- the carriers' copiers and rebuilders: made when the core is loaded ----------------
+# (round 15, i0-r14-02): one function per carrier class of the core
+# (contract.PATH_CARRIERS), made once, by `bind_carriers`, when the core is
+# loaded -- never on first use, so nothing the core makes at run time depends
+# on the state of the process at that moment (a module swapped in
+# sys.modules), and no table fills up during a run and carries into later
+# runs. A class not in the tables is not a carrier of the core: TypeError.
+
+_CARRIER_TABLES: list = []  # [copiers, rebuilders]: IdTables, filled once by bind_carriers
+
+
+def bind_carriers(classes: tuple) -> None:
+    """Make the copier and the rebuilder of every carrier class, once (the
+    core calls this when it is loaded, right after PATH_CARRIERS is made)."""
+    if _CARRIER_TABLES:
+        raise RuntimeError("the carrier classes are bound once, when the core is loaded")
+    copiers = IdTable([(cls, _make_copier(cls)) for cls in classes])
+    rebuilders = IdTable([(cls, _make_rebuilder(cls)) for cls in classes])
+    _CARRIER_TABLES.extend((copiers, rebuilders))
 
 
 def copy_carrier(obj: Any) -> Any:
@@ -934,10 +1432,9 @@ def copy_carrier(obj: Any) -> Any:
     dataclass whose fields the core made): the same class, every field
     `renew`ed. Used for every hand-over to a receiver (engine.py), so each
     receiver holds objects no one else holds."""
-    cls = type(obj)
-    copier = _COPIERS.get(cls)
+    copier = _CARRIER_TABLES[0].get(type(obj))
     if copier is None:
-        copier = _COPIERS[cls] = _make_copier(cls)
+        raise TypeError(f"copy_carrier: a {type_name(obj)} is not a carrier class of the core")
     return copier(obj)
 
 
@@ -945,23 +1442,18 @@ def _make_copier(cls: type) -> Callable[[Any], Any]:
     """One function per carrier class that reads each field and sets its
     renewed value on a new instance (written out field by field: about a
     quarter faster than a loop over the names)."""
-    import dataclasses
-
-    names = [f.name for f in dataclasses.fields(cls)]
+    names = [f.name for f in _dataclasses.fields(cls)]
     for name in names:
         if not name.isidentifier():  # pragma: no cover - dataclass field names are identifiers
             raise TypeError(f"{cls.__qualname__}.{name}")
     lines = ["def copier(src):", "    out = new(cls)"]
     for name in names:
-        lines.append(f"    v = src.{name}")
-        lines.append(f"    put(out, {name!r}, table[type(v)](v))")
+        lines.append(f"    put(out, {name!r}, renew(src.{name}))")
     lines.append("    return out")
-    namespace = {"new": object.__new__, "put": object.__setattr__, "table": _RENEW, "cls": cls}
-    exec("\n".join(lines), namespace)  # noqa: S102 - source built above from the class's own field names
+    namespace = {"new": object.__new__, "put": object.__setattr__, "renew": renew, "cls": cls}
+    code = compile("\n".join(lines), f"<bot.bt.core.values copier of {cls.__qualname__}>", "exec")
+    exec(code, namespace)  # noqa: S102 - source built above from the class's own field names
     return namespace["copier"]
-
-
-_REBUILDERS: dict[type, Callable[[Any], Any]] = {}
 
 
 def rebuild_carrier(obj: Any) -> Any:
@@ -974,23 +1466,22 @@ def rebuild_carrier(obj: Any) -> Any:
     every field passes the field functions above again (new objects,
     checked) and the class's own checks run again. The sender's object is
     never kept."""
-    cls = type(obj)
-    rebuilder = _REBUILDERS.get(cls)
+    rebuilder = _CARRIER_TABLES[1].get(type(obj))
     if rebuilder is None:
-        rebuilder = _REBUILDERS[cls] = _make_rebuilder(cls)
+        raise TypeError(f"rebuild_carrier: a {type_name(obj)} is not a carrier class of the core")
     return rebuilder(obj)
 
 
 def _make_rebuilder(cls: type) -> Callable[[Any], Any]:
-    import dataclasses
-
-    fields = [f for f in dataclasses.fields(cls) if f.init]
+    fields = [f for f in _dataclasses.fields(cls) if f.init]
     for f in fields:
         if not f.name.isidentifier():  # pragma: no cover
             raise TypeError(f"{cls.__qualname__}.{f.name}")
     args = ", ".join(f"{f.name}=take(src.{f.name})" for f in fields)
     namespace = {"cls": cls, "take": _as_taken}
-    exec(f"def rebuilder(src):\n    return cls({args})", namespace)  # noqa: S102 - the class's own field names
+    code = compile(f"def rebuilder(src):\n    return cls({args})",
+                   f"<bot.bt.core.values rebuilder of {cls.__qualname__}>", "exec")
+    exec(code, namespace)  # noqa: S102 - the class's own field names
     return namespace["rebuilder"]
 
 

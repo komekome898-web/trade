@@ -145,6 +145,80 @@ def problems(scenes, rows) -> list[tuple]:
     return out
 
 
+# ---------------------------------------------------------------- round r15-1: the scenes the cells do not place
+# Critic i0-r14-06 (repeat_of i0-r11-02; ROOTCAUSE_r15-1.md sections 2-4): the table shows a scene only where it
+# counts a cell, so a scene that measures its viewpoint but counts no cell under F vanished from it (P0-2's four,
+# p6-place-then-cancel, p7-account-swap). `unplaced` lists them per viewpoint, with the class the scene's input gives by
+# machine; it never changes a cell's verdict (F and LEAD_DESIGN.md section 8.2 item 1: two values).
+NO_EVENT = "事象を持たない"
+TYPE_NOT_IN_INPUT = "事象の型を入力が決めない"
+NO_CELL_DECLARED = "入力から型は出るが、その型の升目を宣言していない"
+HAS_UNTYPED = "升目に当たるが、型の欄の無い事象を含む"
+UNPLACED_CLASSES = (NO_EVENT, TYPE_NOT_IN_INPUT, NO_CELL_DECLARED)  # the classes of scenes no cell places
+
+
+def unplaced(scenes) -> list[dict]:
+    """[{"viewpoint", "scene", "class"}] in the scenes' order: every scene whose counted cells (scenes.covers_of) are
+    none -- 事象を持たない (no event item and no type), 事象の型を入力が決めない (event items, no type),
+    入力から型は出るが、その型の升目を宣言していない (the input gives a type) -- and every scene that counts cells but
+    holds an event item without a type field (升目に当たるが、型の欄の無い事象を含む). An input F refuses raises
+    ValueError (scenes.input_types)."""
+    import scenes as _scenes
+    out = []
+    for sc in scenes:
+        if not isinstance(sc, _scenes.Scene):
+            raise TypeError(f"not a scenes.Scene: {type(sc).__name__}")
+        types = _scenes.input_types(sc)
+        counted = _scenes.covers_of(sc)
+        evs = _scenes.input_events(sc)
+        untyped = [e for e in evs if not (isinstance(e, dict) and "kind" in e)]
+        if not counted:
+            cls = NO_EVENT if not evs and not types else TYPE_NOT_IN_INPUT if not types else NO_CELL_DECLARED
+        elif untyped:
+            cls = HAS_UNTYPED
+        else:
+            continue
+        out.append({"viewpoint": sc.viewpoint, "scene": sc.id, "class": cls})
+    return out
+
+
+# ---------------------------------------------------------------- round r15-1: who records the strategy's requests
+# The lead's answer to br13-1-2 (VERDICTS run11): the note of the cell table says, with the numbers, which adapters
+# do not record the strategy's requests (their clock and order-notice cells are "記録なし" in the materials role's
+# note, never "entered"). Read from run_battery.py's target tables and each adapter file's syntax tree (an opponent
+# adapter imports only in its own venv, so it is not imported here).
+RECORDING_GROUPS = ("新実装・当方の現状・試金石", "相手", "再現")
+
+
+def request_recording() -> dict:
+    """{group: {"records": [(target, configured targets)], "not": [...]}} for the three groups of targets."""
+    import ast
+    import run_battery as R
+    bases = {RECORDING_GROUPS[0]: ["new_impl", "current_impl", "mutant"], RECORDING_GROUPS[1]: list(R.OPPONENTS),
+             RECORDING_GROUPS[2]: list(R._repro_targets())}
+    table = {**R.OPPONENTS, **R._repro_targets()}
+    out = {}
+    for g, bs in bases.items():
+        rec, non = [], []
+        for b in bs:
+            cls = table.get(b, (None, None))[1]
+            says = False
+            for node in ast.walk(ast.parse(R._module_path(b).read_text(encoding="utf-8"))):
+                if isinstance(node, ast.ClassDef) and (cls is None or node.name == cls):
+                    for st in node.body:
+                        if (isinstance(st, ast.Assign) and isinstance(st.value, ast.Constant) and st.value.value is True
+                                and any(isinstance(x, ast.Name) and x.id == "records_requests" for x in st.targets)):
+                            says = True
+            (rec if says else non).append((b, len(R.configured_targets(b))))
+        out[g] = {"records": rec, "not": non}
+    return out
+
+
+def request_recording_sentence(counts: dict) -> str:
+    return "。".join(f"{g}: 記録する {len(v['records'])}(設定つき対象 {sum(n for _, n in v['records'])})/ "
+                    f"記録しない {len(v['not'])}(設定つき対象 {sum(n for _, n in v['not'])})" for g, v in counts.items())
+
+
 # ---------------------------------------------------------------- round r13-1: the materials role's note
 # LEAD_DESIGN.md section 9.2 item 33: per configured target, the cells the table counts ("場面にした") whose event type
 # entered none of the covering scenes' runs for that target. Made from the table and the runner's records only; it

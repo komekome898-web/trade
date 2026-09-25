@@ -163,6 +163,31 @@ def _records_mismatches() -> int:
     return sum(1 for args, oargs in CL._cases() if run_battery.records_of(*args) != CL._oracle_records(*oargs))
 
 
+def _tick_as_trade(res):
+    """The result with every "tick" in the delivered lists renamed "trade" (a record that takes a target's own form
+    for the handed type)."""
+    import copy
+    out = copy.deepcopy(res.output) if isinstance(res.output, dict) else res.output
+    lists = [out.get("sequence")] if isinstance(out, dict) else []
+    if isinstance(out, dict):
+        lists += [r.get("order") for r in (out.get("runs") or []) if isinstance(r, dict)]
+    for lst in lists:
+        for item in lst or []:
+            if isinstance(item, list) and item and item[0] == "tick":
+                item[0] = "trade"
+    return type(res)(res.status, output=out, detail=res.detail, provenance=res.provenance)
+
+
+def test_a_record_that_takes_a_targets_own_form_for_the_trade_is_caught_only_by_the_tick_cases(monkeypatch):
+    """The br13-1-3 cases are the ones that catch this mutant: without them the grid has no delivered "tick"."""
+    import run_battery
+    orig = run_battery.records_of
+    monkeypatch.setattr(run_battery, "records_of", lambda sr, res, called, subst, req, rr, own: orig(
+        sr, _tick_as_trade(res), called, subst, req, rr, own))
+    bad = [oargs for args, oargs in CL._cases() if run_battery.records_of(*args) != CL._oracle_records(*oargs)]
+    assert bad and all("tick" in (oargs[1] or []) for oargs in bad)
+
+
 def test_mutants_of_the_records_machine_are_caught(monkeypatch):
     import run_battery
     orig = run_battery.records_of
@@ -174,6 +199,9 @@ def test_mutants_of_the_records_machine_are_caught(monkeypatch):
             **orig(sr, res, called, subst, req, rr, own), "requests": list(req)},
         "届いた列を読まない": lambda sr, res, called, subst, req, rr, own: orig(
             sr, type(res)("not_supported"), called, subst, req, rr, own),
+        # round r15-1 (br13-1-3): caught only by the cases where a target's own form ("tick") reached the strategy
+        "対象自身の形の型を渡した約定と数える": lambda sr, res, called, subst, req, rr, own: orig(
+            sr, _tick_as_trade(res), called, subst, req, rr, own),
     }
     for name, m in mutants.items():
         monkeypatch.setattr(run_battery, "records_of", m)

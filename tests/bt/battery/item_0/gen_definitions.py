@@ -107,15 +107,34 @@ def grid_section() -> str:
              "批評家が読む。宣言の型が入力から出ない升目があれば試験が落ちる。設定つき対象ごとに、この表で場面にした升目のうち入らなかった型の升目は、"
              "runner の記録から資料係が表の注記に出す(上の「資料係への申し送り」)。",
              "",
+             "観点ごとの見出しの下の一覧は、その観点の場面のうち、どの升目にも当たらない場面(見出しの「升目に当たらない場面」の数)と、升目に当たるが"
+             "型の欄の無い事象を含む場面を、場面の入力から機械で区分して出す(`grid_c.unplaced`、第 r15-1 回、批評家 i0-r14-06): "
+             f"「{grid_c.NO_EVENT}」= 入力に事象も型も無い、「{grid_c.TYPE_NOT_IN_INPUT}」= 入力に事象はあるが型の欄が無い(型は対象の側で決まる)、"
+             f"「{grid_c.NO_CELL_DECLARED}」= 入力から型は出るが、場面の宣言にその型の升目が無い(読む物か見る道が升目の軸に無い。"
+             f"宣言が合うかは批評家が読む)、「{grid_c.HAS_UNTYPED}」。一覧の場面はその観点を測っているが、升目の判断は上の 2 つの値のままで、"
+             "一覧は判断を変えない。場面が何を測るかは、下の観点ごとの節の場面の定義にある。",
+             "",
+             "- `requests` の記録(adapter のクラスの `records_requests = True`、`grid_c.request_recording`。第 r15-1 回): "
+             + grid_c.request_recording_sentence(grid_c.request_recording())
+             + "。記録しない設定つき対象では、資料係の注記は時計と注文の通知の升目を「入った」と数えず「記録なし」と分けて出す。",
+             "",
              f"- 事象の軸({len(ev)}): " + " / ".join(ev),
              f"- 見る道({len(see)}): " + " / ".join(see)]
     for (vp, ax), vals in extra.items():
         lines.append(f"- {vp} の {ax}({len(vals)}): " + " / ".join(vals))
+    listed = grid_c.unplaced(scenes.SCENES)
+    by_id = {s.id: s for s in scenes.SCENES}
+    kind_jp = {"value": "値の場面", "capability": "能力の場面"}
     for vp in grid_c.VIEWPOINTS:
         mine = [r for r in rows if r["viewpoint"] == vp]
         n_done = sum(1 for r in mine if r["verdict"] == done)
-        lines += ["", f"### {vp}(升目 {len(mine)}: {done} {n_done} / {not_measured} {len(mine) - n_done})", "",
+        un = [x for x in listed if x["viewpoint"] == vp]
+        n_un = sum(1 for x in un if x["class"] in grid_c.UNPLACED_CLASSES)
+        items = [f"- `{x['scene']}`({kind_jp[by_id[x['scene']].kind]}): {x['class']}" for x in un] or ["- 無し"]
+        lines += ["", f"### {vp}(升目 {len(mine)}: {done} {n_done} / {not_measured} {len(mine) - n_done}"
+                      f" / 升目に当たらない場面 {n_un})", "",
                   f"固定した測り方: 「{grid_c.measure_text(vp)}」", "",
+                  "升目の表に全部は現れない場面(`grid_c.unplaced`。升目の判断は変えない):", "", *items, "",
                   "| 事象 | 見る道 | 追加の軸 | 判断 | 場面 |", "|---|---|---|---|---|"]
         for r in mine:
             what = ", ".join(f"`{i}`" for i in r["scenes"]) or "—"
