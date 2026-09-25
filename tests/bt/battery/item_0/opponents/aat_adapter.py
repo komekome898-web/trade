@@ -223,12 +223,63 @@ class AatAdapter(Adapter):
                   {"carriers": _carriers(out)})
 
     # ---------------- P0-2
+    # Round r16-1 (ROOTCAUSE_r16-1.md section 6): the tool's own reader of times in files is its CSV exchange
+    # (`aat.exchange.generic.csv.CSV.connect`, lines 45-50 of the clone's aat/exchange/generic/csv.py: a row's "time" by
+    # `datetime.fromtimestamp(float(row["time"]))` = seconds, naive local time; "date" / "datetime" by
+    # `datetime.fromisoformat`). The ISO scenes and the unit scenes both go through it (until round r16-1 the ISO scenes
+    # did not, calling it one exchange among others; the same entry is now used for every P0-2 scene that hands a time).
+    @staticmethod
+    def _csv_time(column: str, text: str):
+        """The tool's CSV exchange reading one row whose `column` holds `text`: the timestamp of the first event it yields."""
+        import csv as _csv
+        import tempfile
+        from aat.config import TradingType
+        from aat.exchange.generic.csv import CSV
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "rows.csv"
+            with path.open("w", newline="", encoding="utf-8") as f:
+                w = _csv.DictWriter(f, fieldnames=["symbol", "volume", "close", column])
+                w.writeheader()
+                w.writerow({"symbol": "X-equity", "volume": "1", "close": "1", column: text})
+            ex = CSV(TradingType.BACKTEST, False, str(path))
+
+            async def first():
+                await ex.connect()
+                async for event in ex.tick():
+                    return event.target.timestamp
+            # a loop of its own, never made the thread's current loop: asyncio.run would leave the thread without a current
+            # loop and the tool's TradingEngine of the later scenes asks for one (measured: RuntimeError in every later scene)
+            loop = asyncio.new_event_loop()
+            try:
+                return loop.run_until_complete(first())
+            finally:
+                loop.close()
+
     def _iso(self, sc):
-        return not_supported("日時の文字列を読む口が無い(事象の時刻は datetime で、取引所の書き手が作って渡す。道具の CSV の取引所は "
-                             "datetime.fromisoformat で読むが、それは取引所の実装の一つ)。試したこと: Data(timestamp=文字列).timestamp "
-                             + _try(lambda: Data(instrument=INST, exchange=EXCH, data={}, timestamp=sc.input["iso"]).timestamp))
+        from aat.exchange.generic.csv import CSV
+        try:
+            got = self._csv_time("datetime", sc.input["iso"])
+        except Exception as exc:  # noqa: BLE001
+            return not_supported(f"道具の CSV の取引所(CSV.connect、datetime の欄を datetime.fromisoformat で読む)に ISO の文字列を 1 行書いた -> "
+                                 f"{type(exc).__name__}: {str(exc)[:160]}")
+        return ok(_ns(got), f"道具の CSV の取引所(CSV.connect、datetime の欄を datetime.fromisoformat で読む)に ISO の文字列を 1 行書き、"
+                  f"tick が出した最初の事象の時刻 {got!r}", {"reader": C.qualname(CSV.connect)})
+
+    def _units(self, sc):
+        import time as _time
+        from aat.exchange.generic.csv import CSV
+        # the CSV cell is text: a text as it is, an int in decimal, a float as its repr (float() of it is the same float)
+        text = lambda v: v if isinstance(v, str) else repr(v)  # noqa: E731
+        return C.unit_time(sc, [{"unit": "s", "forms": ("str", "int", "float"),
+                                 "how": f"道具の CSV の取引所(CSV.connect、time の欄を datetime.fromtimestamp(float(…)) で読む。地方時の tz 無し、"
+                                        f"この環境の地方時 {_time.tzname})",
+                                 "reader": CSV.connect, "call": lambda v: self._csv_time("time", text(v))}],
+                           tried="この道具が時刻を読む入口は CSV の取引所の time(秒)と date / datetime(ISO)の欄だけ")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
 
     def _obs(self, sc):
         evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]

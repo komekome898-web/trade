@@ -212,7 +212,9 @@ def definitions_problems(text: str) -> list:
             continue
         i = heads[0] + 1
         body = []
-        while i < len(lines) and not lines[i].startswith("| 事象 |"):
+        # round r16-1: the list ends where the next list of the section (the values the viewpoint's text names,
+        # test_battery_r16_units.py) or the table begins
+        while i < len(lines) and not lines[i].startswith("| 事象 |") and not lines[i].startswith("観点の文が名指す値ごとの場面"):
             body.append(lines[i])
             i += 1
         got = [ln for ln in body if ln.startswith("- ")]

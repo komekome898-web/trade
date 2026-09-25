@@ -135,6 +135,35 @@ class PyalgotradeAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): pyalgotrade.utils.dt.timestamp_to_datetime (a UTC timestamp in
+    # seconds, `utcfromtimestamp`, utils/dt.py lines 61-66) and the bitcoincharts trade feed (CSVTradeFeed, the unixtime
+    # cell read by `int(...)` and timestamp_to_datetime, bitcoincharts/barfeed.py lines 111-115). None reads ms or us.
+    @staticmethod
+    def _csv_trades(text: str):
+        import tempfile
+        from pyalgotrade.bitcoincharts import barfeed as bcf
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "trades.csv"
+            path.write_text(f"{text},1,1\n", encoding="utf-8")
+            feed = bcf.CSVTradeFeed()
+            feed.addBarsFromCSV(str(path))
+            bars = feed.getNextBars()
+        return bars["BTC"].getDateTime() if bars is not None else None
+
+    def _units(self, sc):
+        from pyalgotrade.bitcoincharts import barfeed as bcf
+        from pyalgotrade.utils import dt as pdt
+        return C.unit_time(sc, [
+            {"unit": "s", "forms": ("int", "float"), "how": "pyalgotrade.utils.dt.timestamp_to_datetime(UTC の秒)",
+             "reader": pdt.timestamp_to_datetime, "call": pdt.timestamp_to_datetime},
+            {"unit": "s", "forms": ("str",), "how": "pyalgotrade.bitcoincharts.barfeed.CSVTradeFeed(unixtime の欄を int で読む)",
+             "reader": bcf.CSVTradeFeed, "call": self._csv_trades}],
+            tried="ミリ秒・マイクロ秒を読む変換は無い")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [C.substitute(e, "trade", price=100.0) for e in C.events(sc)]
         car = []

@@ -291,6 +291,15 @@ def s_p2_iso(scene):
     return int(core.to_nanos(scene.input["iso"], "iso"))
 
 
+def s_p2_unit(scene):
+    """P0-2 unit scenes (the scene keeper's, round r16-1): the core's own
+    conversion of the time in the unit; a refusal gives no ns."""
+    try:
+        return {"ns": int(core.to_nanos(scene.input["time"], scene.input["unit"]))}
+    except core.TimestampUnitError as exc:
+        return {"ns": None, "refused": str(exc)}
+
+
 def s_p2_observed(scene):
     p, _ = run(events_of(scene))
     return {"observed_ts_ns": p.now}
@@ -545,6 +554,7 @@ DRIVERS: dict[str, Callable] = {
     "p2-iso-offset": s_p2_iso,
     "p2-event-time-exact": s_p2_observed,
     "p2-one-ns-apart": s_p2_observed,
+    **{i: s_p2_unit for i in getattr(SC, "UNIT_SCENES", [])},
     **{f"p3-{k}": s_p3_single for k in ("trade", "book_snapshot", "book_delta", "bar", "funding", "liquidation")},
     "p3-mixed-one-run": s_sequence,
     "p3-clock-timer": s_p3_clock_timer,
@@ -608,7 +618,12 @@ def test_scene_matches_expected_twice(scene_id):
     scene = SCENES[scene_id]
     out1 = DRIVERS[scene_id](scene)
     out2 = DRIVERS[scene_id](scene)
-    assert _matches(scene, out1), (_graded(scene, out1), scene.expected)
+    if isinstance(scene.expected, dict) and scene.expected.get("int64_ns") == getattr(SC, "NO_INT", object()):
+        # no int is the right time (sub-ns digits): the best result is a refusal
+        # (the scene set's rule 5: 対応なし above 不一致)
+        assert out1.get("ns") is None and out1.get("refused"), out1
+    else:
+        assert _matches(scene, out1), (_graded(scene, out1), scene.expected)
     assert json.dumps(out1, sort_keys=True, default=repr) == json.dumps(out2, sort_keys=True, default=repr)
 
 

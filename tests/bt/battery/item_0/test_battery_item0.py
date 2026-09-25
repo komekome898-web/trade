@@ -1304,10 +1304,13 @@ def test_a_setting_counts_only_when_made_through_the_targets_code_from_knowable_
 
 def test_every_ok_survey_row_records_the_settings_of_its_run():
     """Round r8-1: each survey row the runner graded from an engine's run carries the settings of that run
-    (`settings_1`, made by common.configure*). The ISO scenes call a reader and make no setting."""
+    (`settings_1`, made by common.configure*). The scenes whose value is a time a reader made (the ISO scenes and,
+    round r16-1, the unit scenes: run_battery.READER_SCENES) may make no setting; a setting they make is checked."""
     for t, rows in _records().items():
         for r in rows:
-            if r["status_1"] != "ok" or r["scene_id"] in ("p2-iso-utc", "p2-iso-offset"):
+            if r["status_1"] != "ok":
+                continue
+            if r["scene_id"] in run_battery.READER_SCENES and json.loads(r["settings_1"]) == []:
                 continue
             st = json.loads(r["settings_1"])
             assert isinstance(st, list) and st, (t, r["scene_id"])
@@ -1366,8 +1369,13 @@ def _grid_axes_from_the_requirements():
     lines = (run_battery.REPO / "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md").read_text(
         encoding="utf-8").split("\n")
     segs = []
-    for n, c in [(9, 4)] + [(n, c) for n in range(17, 24) for c in (2, 3)]:
-        cell = [x.strip() for x in lines[n - 1].strip().strip("|").split("|")][c - 1]
+    # round r16-1: the rows are found by their first cell (the lead's L-445 edit moved them; fixed line numbers broke)
+    rows = [[x.strip() for x in ln.strip().strip("|").split("|")] for ln in lines if ln.startswith("|")]
+    picked = [(r, 4) for r in rows if r[0] == "0"] + [(r, c) for i in range(1, 8) for r in rows if r[0] == f"P0-{i}"
+                                                      for c in (2, 3)]
+    assert len(picked) == 1 + 14, len(picked)
+    for r, c in picked:
+        cell = r[c - 1]
         segs += [x.strip() for x in re.split(r"[・、。()（）/「」:]|\*\*|\+", cell) if x.strip()]
     with (HERE / "grid_c_judgments.tsv").open(encoding="utf-8") as f:
         judged = [r for r in csv.reader(f, delimiter="\t") if r and not r[0].startswith("#")]
@@ -1384,10 +1392,11 @@ def test_grid_every_requirement_segment_has_one_judgment():                     
 
 # ------------------------------------------------------------------ round r11-1: the cells' verdicts, two values
 # The rule (LEAD_DESIGN.md section 8.2 items 1-2): a cell is "場面にした" (with the ids of the scenes) when a scene
-# of the same viewpoint has the cell in `covers`, and "測っていない(固定した測り方の外)" otherwise; nothing else.
+# of the same viewpoint has the cell in `covers`, and "測っていない" otherwise; nothing else (round r16-1: the value's name;
+# its reason is test_battery_r16_units.py's).
 # The oracle below is written from that sentence alone (not from grid_c's code); the axes are rebuilt here from
 # the requirements' text and the judgments.
-GRID_DONE, GRID_NOT_MEASURED = "場面にした", "測っていない(固定した測り方の外)"
+GRID_DONE, GRID_NOT_MEASURED = "場面にした", "測っていない"
 GRID_MEANING = ("この表は測っていない範囲の記録である。要件を広げるかはオーナーの判断で、項目 0 の通過のあとに"
                 "『欠けているもの』の批評家の経路で上げる。")
 

@@ -317,7 +317,7 @@ def test_not_entered_on_every_case():
     rows = [{"viewpoint": "P0-3", "event": e, "see": "戦略の呼び出しに届く物", "extra": "", "verdict": v, "scenes": ids}
             for e, v, ids in (("約定", "場面にした", ["a", "b"]), ("足", "場面にした", ["a"]),
                               ("時計", "場面にした", ["c"]), ("注文の受付の通知", "場面にした", ["c", "d"]),
-                              ("清算", "測っていない(固定した測り方の外)", []))]
+                              ("清算", "測っていない", []))]  # round r16-1: the value's name
     rec_values = [None, {"types_in": [], "requests": None}, {"types_in": ["約定"], "requests": []},
                   {"types_in": ["足"], "requests": ["timer"]}, {"types_in": ["約定", "足"], "requests": ["place"]}]
     n = 0

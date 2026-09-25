@@ -144,6 +144,39 @@ class BarterAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): the tool's own epoch deserializers, barter_integration::serde::de
+    # (barter-integration/src/serde/de/util.rs of the clone): de_u64_epoch_ms_as_datetime_utc (a u64 of ms),
+    # de_str_f64_epoch_ms_as_datetime_utc (a text of an f64 of ms, `as u64`), de_str_f64_epoch_s_as_datetime_utc (a text
+    # of an f64 of s, Duration::from_secs_f64). The driver calls them on the value (survey_results/attempts/61.log, round
+    # r16-1) and reads the DateTime<Utc> with chrono's timestamp_nanos_opt. A float for a text deserializer is written as
+    # its repr (parsing it as f64 gives the same float). None reads microseconds.
+    @staticmethod
+    def _de(name: str, value):
+        r = drv({"de": name, "value": value})
+        row = r[0] if r else {}
+        if "de_ns" not in row:
+            raise ValueError(row.get("de_error", f"no output: {r}"))
+        return int(row["de_ns"])
+
+    def _units(self, sc):
+        text = lambda v: v if isinstance(v, str) else repr(v)  # noqa: E731
+        de = "rust:barter_integration::serde::de::"
+        return C.unit_time(sc, [
+            {"unit": "s", "forms": ("str", "float"), "how": "barter_integration::serde::de::de_str_f64_epoch_s_as_datetime_utc(秒の f64 の文字)",
+             "reader": C.compiled(de + "de_str_f64_epoch_s_as_datetime_utc"),
+             "call": lambda v: self._de("de_str_f64_epoch_s_as_datetime_utc", text(v))},
+            {"unit": "ms", "forms": ("int",), "how": "barter_integration::serde::de::de_u64_epoch_ms_as_datetime_utc(ミリ秒の u64)",
+             "reader": C.compiled(de + "de_u64_epoch_ms_as_datetime_utc"),
+             "call": lambda v: self._de("de_u64_epoch_ms_as_datetime_utc", v)},
+            {"unit": "ms", "forms": ("str", "float"), "how": "barter_integration::serde::de::de_str_f64_epoch_ms_as_datetime_utc(ミリ秒の f64 の文字)",
+             "reader": C.compiled(de + "de_str_f64_epoch_ms_as_datetime_utc"),
+             "call": lambda v: self._de("de_str_f64_epoch_ms_as_datetime_utc", text(v))}],
+            tried="マイクロ秒を読む変換は無い(barter_integration::serde::de の時刻の変換は秒とミリ秒だけ)")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _obs(self, sc):
         evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         rows = self._run(evs)

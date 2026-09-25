@@ -315,6 +315,27 @@ class BasanaAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): basana.external.binance.helpers.timestamp_to_datetime (an int of
+    # ms, `datetime.fromtimestamp(timestamp / 1e3, tz=utc)`, helpers.py line 90) and the Bitstamp message's
+    # `microtimestamp` (an integer of us given as text, `int(json["microtimestamp"]) / 1e6`, bitstamp/trades.py line 41).
+    # None reads seconds.
+    def _units(self, sc):
+        from basana.external.binance import helpers as bnh
+        from basana.external.bitstamp import trades as bst
+
+        def bitstamp(v):
+            return bst.Trade(PAIR, {"id": 1, "microtimestamp": v, "price": "1", "amount": "1", "type": 0}).datetime
+        return C.unit_time(sc, [
+            {"unit": "ms", "forms": ("int",), "how": "basana.external.binance.helpers.timestamp_to_datetime(ミリ秒の int)",
+             "reader": bnh.timestamp_to_datetime, "call": bnh.timestamp_to_datetime},
+            {"unit": "us", "forms": ("str", "int"), "how": "basana.external.bitstamp.trades.Trade の datetime(microtimestamp = マイクロ秒の整数)",
+             "reader": bst.Trade, "call": bitstamp}],
+            tried="秒を読む変換は無い")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0)
                for e in C.events(sc)]

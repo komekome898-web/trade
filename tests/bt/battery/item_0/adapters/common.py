@@ -137,8 +137,9 @@ def unit_time(sc, entries: list[dict], tried: str = ""):
     function / class (or a `compiled` name), "call": fn(value) -> the target's time object}], in the adapter's fixed
     order. The first entry whose unit is the scene's unit and whose forms hold the input's form is called with the
     input's object itself (nothing converted); none -> not supported (with `tried`: what was tried); the entry raising
-    -> not supported (the target refused, with the exception). The result is read with `time_to_ns`."""
-    from protocol import not_supported, ok
+    -> not supported (an explicit refusal, with the exception); the entry making no time and raising nothing (the call
+    returns None: a row dropped without a word) -> error (no result). The result is read with `time_to_ns`."""
+    from protocol import SceneResult, not_supported, ok
     u, v = sc.input["unit"], sc.input["time"]
     form = _FORM.get(type(v), type(v).__name__)
     pick = [e for e in entries if e["unit"] == u and form in e["forms"]]
@@ -146,13 +147,32 @@ def unit_time(sc, entries: list[dict], tried: str = ""):
     if not pick:
         return not_supported(f"単位 {u} の時刻を {form} で読む入口が無い(この道具の時刻の入口: {have})。{tried}")
     e = pick[0]
+    shown = f"{v!r}" if type(v) is not float else f"{v!r}(float の正確な値 {__import__('decimal').Decimal(v)})"
     try:
         got = e["call"](v)
     except Exception as exc:  # noqa: BLE001 - the target's own refusal
-        return not_supported(f"{e['how']} に {v!r}(単位 {u})を渡した -> 道具が断った {type(exc).__name__}: {str(exc)[:200]}")
+        return not_supported(f"{e['how']} に {shown}(単位 {u})を渡した -> 例外で止まった {type(exc).__name__}: {str(exc)[:200]}")
+    if got is None:
+        return SceneResult("error", detail=f"{e['how']} に {shown}(単位 {u})を渡した -> 時刻を作らず、断りもしなかった(結果なし)")
     reader = e["reader"] if isinstance(e["reader"], Made) else qualname(e["reader"])
-    return ok({"ns": time_to_ns(got)}, f"{e['how']} に {v!r}(単位 {u})を渡し、道具が作った時刻 {got!r:.160} を int ナノ秒に読んだ",
+    return ok({"ns": time_to_ns(got)}, f"{e['how']} に {shown}(単位 {u})を渡し、道具が作った時刻 {got!r:.160} を int ナノ秒に読んだ",
               {"reader": reader})
+
+
+def iso_entry_tried(iso_fn, sc) -> str:
+    """For a target without an entry that reads a time in a unit (round r16-1): what its entry for time texts (the
+    adapter's own p2-iso-* method) makes of the input's value written as text -- evidence of the entry, never graded."""
+    from dataclasses import replace as _replace
+    import scenes as _scenes
+    v = sc.input["time"]
+    text = v if isinstance(v, str) else repr(v)
+    iso = next(s for s in _scenes.SCENES if s.id == "p2-iso-utc")
+    try:
+        r = iso_fn(_replace(iso, input={**iso.input, "iso": text}))
+        got = f"{r.status}: 出力 {r.output!r:.80}。{r.detail[:220]}"
+    except Exception as exc:  # noqa: BLE001 - recorded as what happened
+        got = f"{type(exc).__name__}: {str(exc)[:160]}"
+    return f"試したこと: 時刻の文字列を受ける同じ入口(p2-iso-* の場面の入口)に {text!r} を渡した -> {got}"
 
 
 # ---------------------------------------------------------------- P0-4 reads

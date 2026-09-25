@@ -98,3 +98,31 @@ float の欄(`as_float`・`take_float`)は、int・Fraction・Decimal・文字�
 - **格子 F(衝突した入れ子の比べ)**: §5 のとおり。
 
 列に入れなかったもの(試験のファイルに書く): numpy の複素数の欄(複素数は float の欄では断るので、型だけ 1 つ置く)、`datetime` の値(時刻の入口は `to_nanos(…, "iso")` で文字列だけ)、スレッドの文脈を替えた状態での格子 T(第 15 周の格子 B で `to_nanos` を含めて測った)。
+
+## 7. 厳しい批評家が [止める] にしそうな点と、返す前に潰した結果
+
+1. **float の時刻を持つ値で読むと、打った十進と違う時刻を返さないか**(`float("1700000000123456.8")` は ...456750 ns になる)→ 核が受け取るのは float だけで、その float は Python でも `== 1700000000123456.75`。打った十進は float に残っていない。十進の時刻は文字列か Decimal で渡す、と `time.py` の説明と断りの文に書いた。場面係の単位の場面(持つ値 × 倍率)とも、批評家の i0-r15-01 の神託とも合う(`test_bt0_scene_set.py` の単位の場面が全部通る)。
+2. **float の時刻で受け付けを狭めた(`1700000000.123456` s を断る)のは「機能を外して要件から逃げる」ではないか** → 持つ値にナノ秒より細かい桁がある値を丸めずに断る、は契約の「rounding: none」そのもの。int・文字列・Decimal は全部の時刻を運べる。断りの文に持つ値を書く。前の周まで受け付けていたのは最短表記で読んで値を替えていたから(i0-r15-01)。自分の試験 `test_bt0_time.py` の 1 か所を理由つきで書き替えた。
+3. **float の欄で桁の多い値を丸めて受け付けるのは「黙って値を替える」ではないか** → 欄の型が float と宣言されているので、最も近い float は欄の意味(文字列の価格 "0.1" も同じ)。変えたのは、型によって丸めと断りが分かれていたこと(同じ値の答えが型で違う)で、今は全ての型で同じ答え(格子 N の `test_one_value_is_taken_alike_by_every_class_that_holds_it`)。有限の値を inf にすることはしない(範囲の外は全ての型で同じ文で断る = `_beyond`)。平らな値(`freeze`・`settle`)は今も正確でなければ断る(`_now`、int → float の検めを足した)。
+4. **核の比べ `_plain_equal` が Python の `==` と違う答えを出さないか** → 格子 F の (a) と、種 16 の乱数の核の値 200 個の組 3,000 以上を、ライブラリの型に写した神託(同じ物は同じ写しにして、インタプリタの同一性の近道を保つ)と照らした。核が作らない入れ物(公開の `FrozenDict(...)` に入れた dict など)はその型の `==` に任せる(`test_a_caller_made_frozendict_holding_a_dict_compares_as_python_says`)。
+5. **hash の検めを足した所は、入口の誤りに替える以外に振る舞いを変えないか** → hash を持つ値の道は同じ(`_hashed` は hash を取るだけ)。hash を持たない値は前もインタプリタの TypeError で止まっていたので、受け付けが狭まった値は無い。値や list の要素の sNaN は今も受け付け、thaw・renew も通る(格子 E)。
+6. **i0-r15-03 は批評家の試験の上限(2 × 段数)に合わせただけではないか** → 比べの作りを反復に替え、FrozenDict から下は段数によらず 11〜14 枠(実測)。自分の試験は契約の文どおりの「CALL_FRAMES + 段数」で縛り、批評家の上限より厳しい。
+7. **場面集だけを特別扱いしていないか** → 核の変更に場面の id・場面の値の分岐は無い(`git diff 0f2e07d -- src/bot/bt/core` に scenes の語は無い)。場面集は読むだけで、自分の場面の試験(`tests/bt/item_0/test_bt0_scene_set.py`)に単位の場面の駆動を足した(正解が「無い」場面は断ることを確かめる = 規則 5)。
+8. **速さ** → 第 15 周と同じ測り(2 万本の足、ほかの試験と同時): この周 77.89 / 72.74 us/bar、直す前の核(0f2e07d)72.80 / 70.32 us/bar(`<W>/item0_r16_worker_speed.out`)。ほかの試験が同時に走っていて揺れが大きく、差は揺れの中と読む(未確認: 静かな機械で測っていない)。
+
+## 8. 直したあとの確かめ(コマンドと出力)
+
+直した場所(ファイル:行は直した後の作業木。リードが途中の版を 2786cd4 にコミットしたので、差分は `git diff 0f2e07d` で見る):
+- i0-r15-01・07: `src/bot/bt/core/time.py` 175 行(longdouble は `values.longdouble_ratio` で持つ値)、201 行(float は `float.as_integer_ratio`)、212 行(断りの文に持つ値)、188 行(数の変換の失敗の理由を残す)、80 行(`TIME_CONTRACT` の rounding)、説明の文 13〜31 行。`values.py` 1205 行 `is_longdouble`・1210 行 `longdouble_ratio`・1221 行 `plain_scalar`。
+- i0-r15-04: `values.py` 827 行 `_beyond`・834 行 `_nearest_of`・868 行 `_longdouble_nearest`・794 行 `decimal_float`(有限の値を inf にしない)・1155 行 `take_float`・1279 行 `as_float`・588 行(`_exactly_converted` に int → float の検め。`_now` の「EXACTLY」を事実にした)。
+- i0-r15-02: `values.py` 1032 行 `_hashed`、1043 行 `_dict_of`、1056 行 `_set_of`。
+- i0-r15-03: `values.py` 1429 行 `_container_kind`・1439 行 `_match`・1471 行 `_plain_equal`、1387 行(`FrozenDict.__eq__` が使う)、647・657 行の注釈。
+- 契約: `contract.py` 15 行(版 `core-17`)、process_state の比べの文(182 行から)と hash の無い鍵の文、plug_in_answers の fee の文。`PLAIN_DATA_RULE`・`FIELD_RULE`(values.py)。
+
+確かめ:
+- 批評家の第 15 周の試験 3 本 + 第 14 周の時刻の試験: `PYTHONPATH=src python -m pytest tests/bt/critic/item_0/test_i0r15_float_time_rounded_by_shortest_repr.py tests/bt/critic/item_0/test_i0r15_unhashable_key_refusal_type.py tests/bt/critic/item_0/test_i0r15_colliding_frozendict_frames.py tests/bt/critic/item_0/test_i0r14_time_values_silently_changed.py -p no:cacheprovider` → `50 passed in 0.21s`(`<W>/pytest_item0_r16_worker_critic_after.log`)。直す前は第 15 周の 3 本が `28 failed, 12 passed`。
+- 批評家の試し `item0_r15_critic_probe_float_field_exactness.py` → int・numpy int64・Fraction・numpy longdouble の 2**53+1 が全部 `9007199254740992.0`、Fraction 1/3 と longdouble 1/3 が全部 `0.3333333333333333`(前は longdouble だけ断った)。
+- 新しい格子(§6、`tests/bt/item_0/test_bt0_r16_one_reading.py`): 直す前の核(`git archive 0f2e07d src/bot` を `<W>/head_src` に取り出し、`-o pythonpath=` で差し替え)で `563 failed, 2466 passed`(`<W>/pytest_item0_r16_worker_prefix3.log`: 格子 T 499・格子 N 31 + 5 + 1・格子 E 16・格子 F 9 ほか)。直した後 `3029 passed`。
+- 衝突した入れ子の値の freeze が要る枠(`<W>/item0_r16_worker_probe_frames_after.out`): tuple・FrozenList・frozenset・FrozenSet は 1・10・30・48・97 段で 10・16・36・54・103、FrozenDict の値の側は 10・11・11・11・11、鍵の側は 10・12・12・12・12、混ぜた並びは 10・13・13・13・14。直す前の FrozenDict は 10 段 34・30 段 94・48 段 148(1 段 3 枠)。
+- 項目 0・批評家・場面集を含む全試験(切り離して 1 回。場面集の実行はこの 1 回): `PYTHONPATH=src python -m pytest -p no:cacheprovider -rf` → `13 failed, 9349 passed, 6 skipped, 4 warnings in 987.24s (0:16:27)`(`<W>/pytest_item0_r16_worker_full.log`)。落ちた 13 件は全部 `tests/bt/battery/item_0/` の場面集の試験で、場面係が並行して直している途中の物(落ち方の文: 升目の判断の文言が「測っていない」と「測っていない(固定した測り方の外)」で食い違う / 足した単位の場面 `p2-*-{text,int,float-*}` を相手の結果がまだ持たない `('1', 'opp_basana')` / DEFINITIONS の段落の数 108 と 105)。`git status --short tests/bt/battery` で場面係の未コミットの変更(adapter・grid_c・CONSIDERED ほか)が見える。核の値に触れる落ち方は無い。`tests/bt/item_0` と `tests/bt/critic/item_0` に落ちたものは無い。
+- 書き直した自分の試験(消した試験は無い): `test_bt0_time.py`(float 1700000000.123456 s は持つ値にナノ秒より細かい桁があるので断る、に書き替え。1700000000.5 s と文字列を足した)、`test_bt0_r15_library_code.py`(格子 C の神託 `_stated_ns` を最短表記から持つ値に。longdouble も持つ値)、`test_bt0_r14_process_state.py`(版 `core-17`)、`test_bt0_scene_set.py`(場面係が足した単位の場面の駆動。正解が「無い」場面は断ることを確かめる)。

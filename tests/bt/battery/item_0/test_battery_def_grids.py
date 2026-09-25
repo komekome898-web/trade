@@ -226,7 +226,7 @@ PROBES: dict[str, dict[str, dict[str, object]]] = {
         },
         "升目の判断": {
             "場面にした": lambda: _grid_verdict_accepted("場面にした"),
-            "測っていない(固定した測り方の外)": lambda: _grid_verdict_accepted("測っていない(固定した測り方の外)"),
+            "測っていない": lambda: _grid_verdict_accepted("測っていない"),  # round r16-1: the value's name (ROOTCAUSE_r16-1.md section 5.1)
             N: lambda: _grid_verdict_accepted("未決"),
         },
         "升目の判断の決め方": {
@@ -300,7 +300,7 @@ def _grid_rule_accepted(other) -> bool:
     rows = [dict(r) for r in grid_c.table(scenes.SCENES)]
     for r in rows:
         if other == "all_not_measured" or (other == "words" and r["viewpoint"] == "P0-7" and r["see"] == "戦略の呼び出しに届く物"):
-            r["verdict"], r["scenes"] = "測っていない(固定した測り方の外)", []
+            r["verdict"], r["scenes"] = "測っていない", []
     return not grid_c.problems(scenes.SCENES, rows)
 
 

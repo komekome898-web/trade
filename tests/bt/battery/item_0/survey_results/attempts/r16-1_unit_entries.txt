@@ -1,0 +1,1422 @@
+# round r16-1 (scene keeper): where each survey tool reads a time given as a number (the search behind the P0-2 unit scenes' adapters).
+# command: for each tool's venv, the tool's package directory (python -c 'import <module>; print(dirname(__file__))'), then
+#   grep -rnE 'fromtimestamp|utcfromtimestamp|unit=["'"'"'](s|ms|us)|timestamp_to_datetime|datetime64\[(s|ms|us)\]|/ ?1000\b|/ ?1e3|\* ?1000\b|\* ?1_000|1e6|1e9|dtformat|epoch' --include=*.py (tests and _static_dependencies left out);
+#   compiled tools: grep -rnE 'Unix|unix|epoch|time\.Unix|from_timestamp|timestamp_millis|ms\b' over their sources (first 40 lines each).
+# paths: <V> = the scratchpad's bt/venvs/item_0
+== venv=basana module=basana dir=<V>/basana/lib/python3.11/site-packages/basana
+<V>/basana/lib/python3.11/site-packages/basana/core/dt.py:38:        return _start_utc + datetime.timedelta(microseconds=delta_ns // 1000)
+<V>/basana/lib/python3.11/site-packages/basana/core/logs.py:35:        record.msecs = int(record_dt.microsecond / 1000)
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/helpers.py:38:    timestamp = str(int(round(time.time() * 1000)))
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/order_book.py:52:        timestamp = int(self.json["microtimestamp"]) / 1e6
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/order_book.py:53:        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/trades.py:41:        timestamp = int(self.json["microtimestamp"]) / 1e6
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/trades.py:42:        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/tools/download_bars.py:79:        dt_col = datetime.datetime.fromtimestamp(ohlc.open_timestamp, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/orders.py:40:        timestamp = int(self.json["microtimestamp"]) / 1e6
+<V>/basana/lib/python3.11/site-packages/basana/external/bitstamp/orders.py:41:        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/helpers.py:55:def timestamp_to_datetime(timestamp: int) -> datetime.datetime:
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/helpers.py:56:    return datetime.datetime.fromtimestamp(timestamp / 1e3, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/bars.py:38:        begin = helpers.timestamp_to_datetime(self.timestamp)
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/order_book.py:95:            when = helpers.timestamp_to_datetime(int(timestamp))
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/trades.py:42:        return helpers.timestamp_to_datetime(int(self.raw["timestamp"]))
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/trades.py:95:            when = helpers.timestamp_to_datetime(int(trade["timestamp"]))
+<V>/basana/lib/python3.11/site-packages/basana/external/ccxt/orders.py:39:                self._sort_key = helpers.timestamp_to_datetime(int(value))
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/common.py:62:        return helpers.timestamp_to_datetime(self.json["time"])
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/common.py:241:        return helpers.timestamp_to_datetime(self.json["transactTime"])
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/common.py:329:        return helpers.timestamp_to_datetime(self.json["time"])
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/common.py:363:        return helpers.timestamp_to_datetime(self.json["transactionTime"])
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/user_data.py:178:            helpers.timestamp_to_datetime(int(message["E"])),  # Event time
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/websockets.py:112:        self._next_msg_id = int(time.time() * 1000)
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/websockets.py:219:        self._next_msg_id = int(time.time() * 1000)
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/websockets.py:280:            "timestamp": int(round(time.time() * 1000)),
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/helpers.py:90:def timestamp_to_datetime(timestamp: int) -> datetime.datetime:
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/helpers.py:91:    return datetime.datetime.fromtimestamp(timestamp / 1e3, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/order_book_diff.py:96:            helpers.timestamp_to_datetime(int(message["E"])),  # Event time
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/trades.py:47:        return helpers.timestamp_to_datetime(int(self.json["T"]))
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/trades.py:91:            helpers.timestamp_to_datetime(int(message["E"])),  # Event time
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/tools/download_bars.py:81:        dt_col = datetime.datetime.fromtimestamp(candlestick.open_timestamp / 1000, tz=datetime.timezone.utc)
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/tools/download_bars.py:112:    step = step * 1000
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/client/base.py:118:                qs_params["timestamp"] = int(round(time.time() * 1000))
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/klines.py:30:        start = helpers.timestamp_to_datetime(int(json["t"]))
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/klines.py:31:        close = helpers.timestamp_to_datetime(int(json["T"]))
+<V>/basana/lib/python3.11/site-packages/basana/external/binance/klines.py:52:            helpers.timestamp_to_datetime(int(message["E"])),  # Event time
+== venv=ziplime module=ziplime dir=<V>/ziplime/lib/python3.12/site-packages/ziplime
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:169:        start_date : int (seconds since epoch)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:170:        end_date : int (seconds since epoch)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:377:            dates.values.astype('datetime64[s]').view(np.int64)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:505:            [pd.Timestamp(adjustment[0], unit="s"), adjustment[1]]
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:510:        # seconds = date.value / int(1e9)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:526:                    pd.Timestamp(row[2], unit="s", tz="UTC"),
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:537:        # seconds = date.value / int(1e9)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:558:                    pd.Timestamp(row[3], unit="s", tz="UTC"),
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:696:                    "datetime64[s]",
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:813:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:818:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:823:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:828:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:841:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:846:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:851:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:856:                .values.astype("datetime64[s]")
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:880:                  The date, represented as seconds since Unix epoch, on which
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:891:                  The date, represented as seconds since Unix epoch, on which
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:968:        # convert dt to # of seconds since epoch, because that's what we use
+<V>/ziplime/lib/python3.12/site-packages/ziplime/assets/repositories/sqlalchemy_adjustments_repository.py:970:        # seconds = int(dt.value / 1e9)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/pipeline/loaders/synthetic.py:36:    return nanos / (1000 * 1000 * 1000)
+<V>/ziplime/lib/python3.12/site-packages/ziplime/pipeline/loaders/synthetic.py:83:    while also the produced values smaller than UINT32_MAX / 1000.
+<V>/ziplime/lib/python3.12/site-packages/ziplime/pipeline/loaders/synthetic.py:130:            asset_id * 100 * 1000,
+<V>/ziplime/lib/python3.12/site-packages/ziplime/pipeline/loaders/synthetic.py:135:        data[:, :5] += np.arange(5, dtype=np.uint32) * 1000
+<V>/ziplime/lib/python3.12/site-packages/ziplime/pipeline/loaders/synthetic.py:175:    from_colname = OHLCV.index(colname) * 1000
+<V>/ziplime/lib/python3.12/site-packages/ziplime/lib/adjustment.py:869:    since the epoch.
+== venv=zipline-reloaded module=zipline dir=<V>/zipline-reloaded/lib/python3.11/site-packages/zipline
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:388:def _dt_to_epoch_ns(dt_series: pd.Series) -> pd.Index:
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:389:    """Convert a timeseries into an Int64Index of nanoseconds since the epoch.
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:399:        The index converted to nanoseconds since the epoch.
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:825:                df[column] = _dt_to_epoch_ns(df[column])
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:955:            equities_output[col] = _dt_to_epoch_ns(equities_output[col])
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:975:            futures_output[col] = _dt_to_epoch_ns(futures_output[col])
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/assets/asset_writer.py:986:            mappings_output[col] = _dt_to_epoch_ns(mappings_output[col])
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/pipeline/loaders/synthetic.py:30:    return nanos / (1000 * 1000 * 1000)
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/pipeline/loaders/synthetic.py:224:    while also the produced values smaller than UINT32_MAX / 1000.
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/pipeline/loaders/synthetic.py:271:            asset_id * 100 * 1000,
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/pipeline/loaders/synthetic.py:276:        data[:, :5] += np.arange(5, dtype=np.uint32) * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/pipeline/loaders/synthetic.py:316:    from_colname = OHLCV.index(colname) * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_minute_bars.py:398:    as integer nanoseconds since the epoch into the `minute_index` key.
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_minute_bars.py:922:        # which is the minute epoch of that date.
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_minute_bars.py:1149:        minute_epoch = minute_value(
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_minute_bars.py:1153:        return pd.Timestamp(minute_epoch, tz="UTC", unit="m")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:220:            [pd.Timestamp(adjustment[0], unit="s"), adjustment[1]]
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:225:        seconds = date.value / int(1e9)
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:240:                    pd.Timestamp(row[2], unit="s", tz="UTC"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:248:        seconds = date.value / int(1e9)
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:267:                    pd.Timestamp(row[3], unit="s", tz="UTC"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:433:                    "datetime64[s]",
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:550:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:555:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:560:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:565:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:578:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:583:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:588:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:593:                .values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:617:                  The date, represented as seconds since Unix epoch, on which
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/adjustments.py:628:                  The date, represented as seconds since Unix epoch, on which
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:283:            asset_first_day = pd.Timestamp(table["day"][0], unit="s").normalize()
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:284:            asset_last_day = pd.Timestamp(table["day"][-1], unit="s").normalize()
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:292:                    pd.to_datetime(np.array(table["day"]), unit="s")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:296:                    pd.to_datetime(np.array(table["day"]), unit="s")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:342:        processed = (raw_data[list(OHLC)] * 1000).round().astype("uint32")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:343:        dates = raw_data.index.values.astype("datetime64[s]")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/bcolz_daily_bars.py:480:            return pd.Timestamp(self._table.attrs["first_trading_day"], unit="s")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1101:        # convert dt to # of seconds since epoch, because that's what we use
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1103:        seconds = int(dt.value / 1e9)
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1140:        start_dt = trading_days[0].value / 1e9
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1141:        end_dt = trading_days[-1].value / 1e9
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1158:                    "declared_date": pd.Timestamp(dividend_tuple[0], unit="s"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1159:                    "ex_date": pd.Timestamp(dividend_tuple[1], unit="s"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1160:                    "pay_date": pd.Timestamp(dividend_tuple[2], unit="s"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/data/data_portal.py:1163:                    "record_date": pd.Timestamp(dividend_tuple[5], unit="s"),
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/testing/core.py:51:    return pd.Timestamp(seconds, unit="s")
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/testing/core.py:606:                opens[idx] = trade.open_price * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/testing/core.py:607:                highs[idx] = trade.high * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/testing/core.py:608:                lows[idx] = trade.low * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/testing/core.py:609:                closes[idx] = trade.close_price * 1000
+<V>/zipline-reloaded/lib/python3.11/site-packages/zipline/utils/paths.py:57:    return pd.Timestamp(Path(path).stat().st_mtime, unit="s", tz="UTC")
+== venv=lib-pybroker module=pybroker dir=<V>/lib-pybroker/lib/python3.11/site-packages/pybroker
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/common.py:586:        # epoch-nanosecond ints, which would skip the ISO formatting.
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/interval.py:782:    epoch_ns: NDArray[np.int64] = unique_dates.astype(np.int64)
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/interval.py:783:    deltas_ns: NDArray[np.int64] = np.diff(epoch_ns)
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/interval.py:787:    gaps: NDArray[np.float64] = positive.astype(np.float64) / 1e9
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/interval.py:874:    epoch_ns = dates.astype("datetime64[ns]").astype(np.int64)
+<V>/lib-pybroker/lib/python3.11/site-packages/pybroker/interval.py:875:    return epoch_ns // (seconds * 1_000_000_000)
+== venv=qf-lib module=qf_lib dir=<V>/qf-lib/lib/python3.11/site-packages/qf_lib
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/brokers/binance_broker/binance_broker.py:282:            transaction_fill_time = datetime.fromtimestamp(response['transactTime'] / 1000)
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/common/utils/dateutils/datetime64_to_datetime.py:34:    return datetime.datetime.utcfromtimestamp((np_datetime64 - datetime64(0, 's')) / timedelta64(1, 's'))
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/data_providers/binance_dp/binance_data_provider.py:162:            res_dict['Dates'].append(datetime.fromtimestamp(i[0] / 1000).strftime('%Y-%m-%d %H:%M:%S'))
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/data_providers/bloomberg_dl/utils/sse_client.py:101:        self.retry_interval = self.DEFAULT_RETRY_INTERVAL_MS / 1000.0
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/data_providers/bloomberg_dl/utils/sse_client.py:155:                self.retry_interval = (event.retry or self.DEFAULT_RETRY_INTERVAL_MS) / 1000.0
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/data_providers/bloomberg_dl/utils/bloomberg_dl_session.py:74:        self.logger.debug(f"OAuth2 token acquired, expires at epoch {self._token_expires_at}")
+<V>/qf-lib/lib/python3.11/site-packages/qf_lib/plotting/decorators/line_decorators.py:102:                value: moment({{ value }} * 1000).toDate(),
+== venv=backtrader module=backtrader dir=<V>/backtrader/lib/python3.11/site-packages/backtrader
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/ibstore.py:50:    usec = msec * 1000
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/ibstore.py:51:    return datetime.utcfromtimestamp(sec).replace(microsecond=usec)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/ibstore.py:563:        curtime = datetime.fromtimestamp(float(msg.time))
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/ibstore.py:932:        msg.time = datetime.utcfromtimestamp(float(msg.time))
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/ibstore.py:976:                msg.date = datetime.utcfromtimestamp(long(dtstr))
+<V>/backtrader/lib/python3.11/site-packages/backtrader/stores/vcstore.py:83:    # Timeout expected as float in seconds - *1000 to miliseconds
+<V>/backtrader/lib/python3.11/site-packages/backtrader/analyzer.py:397:            point = point * 1e6 + dt.microsecond
+<V>/backtrader/lib/python3.11/site-packages/backtrader/analyzer.py:418:            ph, pm = divmod(point, 60 * 60 * 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/analyzer.py:419:            pm, psec = divmod(pm, 60 * 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/analyzer.py:420:            ps, pus = divmod(psec, 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/sierrachart.py:36:      - Uses GenericCSVData and simply modifies the dateformat (dtformat) to
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/sierrachart.py:39:    params = (('dtformat', '%Y/%m/%d'),)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/oanda.py:336:                dtend = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/oanda.py:399:        dtobj = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/oanda.py:421:        dtobj = datetime.utcfromtimestamp(int(msg['time']) / 10 ** 6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:52:      - ``dtformat``: Format used to parse the datetime CSV field. See the
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:74:        ('dtformat', '%Y-%m-%d %H:%M:%S'),
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:91:        if isinstance(self.p.dtformat, string_types):
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:93:        elif isinstance(self.p.dtformat, integer_types):
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:94:            idt = int(self.p.dtformat)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:96:                self._dtconvert = lambda x: datetime.utcfromtimestamp(int(x))
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:98:                self._dtconvert = lambda x: datetime.utcfromtimestamp(float(x))
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:101:            self._dtconvert = self.p.dtformat
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:107:            dtformat = self.p.dtformat
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:112:                dtformat += 'T' + self.p.tmformat
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/csvgeneric.py:114:            dt = datetime.strptime(dtfield, dtformat)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/feeds/mt4csv.py:42:        ('dtformat', '%Y.%m.%d'),
+<V>/backtrader/lib/python3.11/site-packages/backtrader/resamplerfilter.py:256:                point = point * 1e6 + tm.microsecond
+<V>/backtrader/lib/python3.11/site-packages/backtrader/resamplerfilter.py:395:            ph, pm = divmod(point, 60 * 60 * 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/resamplerfilter.py:396:            pm, psec = divmod(pm, 60 * 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/resamplerfilter.py:397:            ps, pus = divmod(psec, 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/plot/locator.py:148:        numMicroseconds = np.floor(tdelta.total_seconds() * 1e6)
+<V>/backtrader/lib/python3.11/site-packages/backtrader/utils/dateintern.py:143:MUSECONDS_PER_SECOND = 1e6
+<V>/backtrader/lib/python3.11/site-packages/backtrader/utils/dateintern.py:189:        dt += datetime.timedelta(microseconds=1e6 - microsecond)
+== venv=hftbacktest module=hftbacktest dir=<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/stats/stats.py:290:            time_unit: The unit of time of the timesteps since epoch time. This internally uses `Polars`, please see
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/stats/stats.py:291:                       `polars.from_epoch <https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.from_epoch.html>`_
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/stats/stats.py:367:                pl.from_epoch('timestamp', time_unit=self._time_unit)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/hyperliquid.py:43:        1736682893953732482 {"channel":"trades","data":[{"coin":"HYPE","side":"A","px":"21.269","sz":"7.78","time":1736682877317,"hash":"0x0190932c67e6b94b2bc6041b482c76013b00c5a4dc99c1611ca5bdc1edcd2786","tid":185481619581124,"users":["0x010461c14e146ac35fe42271bdc1134ee31c703a","0x475d0900e45e9d9f4661f30e616e2395da592720"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"3.29","time":1736682878040,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":680159081286628,"users":["0x6844b345852a97d87c2bed4e0c123ee5c935c000","0xa1cb16d2b17202c336138f765559dfc73830b1fb"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"0.55","time":1736682878040,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":430781595823972,"users":["0xdbe452f1a0d0190e161b5fae8ee3a530f099d9a3","0xa1cb16d2b17202c336138f765559dfc73830b1fb"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"4.65","time":1736682880335,"hash":"0xa105b47441ecc649b68c041b482ca5013f00c4ba6114fe23110f14dd364eda0a","tid":679380818995751,"users":["0x43205e893e4a958fb993c9a0df436530f47aefb8","0x739f081428592c9c4b0a6a88dec5f0308e6788a0"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"2.41","time":1736682880518,"hash":"0x3fc2541a75d20cb2f607041b482ca70155001953351c0f0610392ac90a283353","tid":471300372581745,"users":["0x38b9a6c32685df04afb3282ecc103cbdba7ab9ff","0xa554e2958a076e273552cbaaa795494089e2308c"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"2.24","time":1736682880518,"hash":"0x3fc2541a75d20cb2f607041b482ca70155001953351c0f0610392ac90a283353","tid":824956871283458,"users":["0x38b9a6c32685df04afb3282ecc103cbdba7ab9ff","0x739f081428592c9c4b0a6a88dec5f0308e6788a0"]},{"coin":"HYPE","side":"A","px":"21.279","sz":"18.28","time":1736682881724,"hash":"0xd65c56f65c3d8b89e085041b482cbb012c006342f8cbcc361981dfd6f5d8f4cd","tid":109504214426929,"users":["0x924b0b9147f3562065d180d6995dd30c95c12eac","0x972baee8b44ad0b1e73dee6c20f34e17dd01fe47"]},{"coin":"HYPE","side":"A","px":"21.273","sz":"68.65","time":1736682881724,"hash":"0xd65c56f65c3d8b89e085041b482cbb012c006342f8cbcc361981dfd6f5d8f4cd","tid":170899955875792,"users":["0x31ca8395cf837de08b24da3f660e77761dfb974b","0x972baee8b44ad0b1e73dee6c20f34e17dd01fe47"]},{"coin":"HYPE","side":"B","px":"21.289","sz":"19.74","time":1736682882067,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":663835145561653,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0x739f081428592c9c4b0a6a88dec5f0308e6788a0"]},{"coin":"HYPE","side":"B","px":"21.291","sz":"4.7","time":1736682882067,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":68532102663456,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"B","px":"21.292","sz":"15.58","time":1736682882067,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":43588775356743,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0xa1cb16d2b17202c336138f765559dfc73830b1fb"]},{"coin":"HYPE","side":"B","px":"21.292","sz":"42.63","time":1736682882067,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":309212071809688,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0x2994bf69adee67aba8e3b28bec460ed2001df759"]},{"coin":"HYPE","side":"B","px":"21.294","sz":"2.87","time":1736682882930,"hash":"0x30b9df8c28987268a1a3041b482cce01440090b85064d8547ec0e75c8bab188e","tid":651550759705720,"users":["0x1341c77a124edb0c90bd98442f6a4d0baa5ba824","0x9d9cbc11c85848a3ebf181940f2bec9f5fc75396"]},{"coin":"HYPE","side":"B","px":"21.294","sz":"1.78","time":1736682882930,"hash":"0x30b9df8c28987268a1a3041b482cce01440090b85064d8547ec0e75c8bab188e","tid":701267030078115,"users":["0x1341c77a124edb0c90bd98442f6a4d0baa5ba824","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"B","px":"21.293","sz":"29.51","time":1736682883935,"hash":"0x3a8d19c41d366f4fd1c8041b482cde015a00275e602c0c3c97410f75181c87fd","tid":73469641722474,"users":["0x28547f2cce3bc73d5da5356745b6baeb6c53ed93","0x2994bf69adee67aba8e3b28bec460ed2001df759"]},{"coin":"HYPE","side":"B","px":"21.294","sz":"2.92","time":1736682883935,"hash":"0x3a8d19c41d366f4fd1c8041b482cde015a00275e602c0c3c97410f75181c87fd","tid":907055023121248,"users":["0x28547f2cce3bc73d5da5356745b6baeb6c53ed93","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"B","px":"21.299","sz":"203.8","time":1736682883935,"hash":"0x3a8d19c41d366f4fd1c8041b482cde015a00275e602c0c3c97410f75181c87fd","tid":114855171699084,"users":["0x28547f2cce3bc73d5da5356745b6baeb6c53ed93","0x023a3d058020fb76cca98f01b3c48c8938a22355"]},{"coin":"HYPE","side":"B","px":"21.3","sz":"0.84","time":1736682885011,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":414458082088382,"users":["0x6844b345852a97d87c2bed4e0c123ee5c935c000","0x9d9cbc11c85848a3ebf181940f2bec9f5fc75396"]},{"coin":"HYPE","side":"B","px":"21.3","sz":"2.29","time":1736682886016,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":516578515032737,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0x9d9cbc11c85848a3ebf181940f2bec9f5fc75396"]},{"coin":"HYPE","side":"B","px":"21.304","sz":"1.18","time":1736682886016,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":977487737665395,"users":["0x2657a9d65dc2e832dd0f6e05a556408353a149bc","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"B","px":"21.304","sz":"3.28","time":1736682892095,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":725923874460472,"users":["0x6844b345852a97d87c2bed4e0c123ee5c935c000","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"A","px":"21.286","sz":"2.45","time":1736682893100,"hash":"0x0000000000000000000000000000000000000000000000000000000000000000","tid":534132059665492,"users":["0xa1cb16d2b17202c336138f765559dfc73830b1fb","0xce43a7498e65b6f6c8741fd9a7efc3f78efc78c4"]},{"coin":"HYPE","side":"A","px":"21.286","sz":"15.97","time":1736682893100,"hash":"0x051810961666d7bb85c4041b482d72011f0031d0f6508508e450796bb5be327c","tid":1025215867692119,"users":["0xa1cb16d2b17202c336138f765559dfc73830b1fb","0xe30dc1eba82267d5e55391d3cdc7d6f72de9c227"]},{"coin":"HYPE","side":"A","px":"21.285","sz":"237.82","time":1736682893100,"hash":"0x051810961666d7bb85c4041b482d72011f0031d0f6508508e450796bb5be327c","tid":1028589439832641,"users":["0x023a3d058020fb76cca98f01b3c48c8938a22355","0xe30dc1eba82267d5e55391d3cdc7d6f72de9c227"]},{"coin":"HYPE","side":"A","px":"21.28","sz":"4.7","time":1736682893100,"hash":"0x051810961666d7bb85c4041b482d72011f0031d0f6508508e450796bb5be327c","tid":864606086107572,"users":["0xe72d9d94337cc12659ee9d1f3aea5475035fec5a","0xe30dc1eba82267d5e55391d3cdc7d6f72de9c227"]},{"coin":"HYPE","side":"A","px":"21.277","sz":"41.05","time":1736682893100,"hash":"0x051810961666d7bb85c4041b482d72011f0031d0f6508508e450796bb5be327c","tid":999086141165990,"users":["0x31ca8395cf837de08b24da3f660e77761dfb974b","0xe30dc1eba82267d5e55391d3cdc7d6f72de9c227"]},{"coin":"HYPE","side":"B","px":"21.304","sz":"0.23","time":1736682893702,"hash":"0x75013367f492e899e498041b482d7b0145005169149be7e7181a0ca2aecc305e","tid":185973078898076,"users":["0xc1995c6b6a101cf9ac7547688908afaf88b01302","0xe72d9d94337cc12659ee9d1f3aea5475035fec5a"]},{"coin":"HYPE","side":"B","px":"21.304","sz":"0.56","time":1736682893702,"hash":"0x75013367f492e899e498041b482d7b0145005169149be7e7181a0ca2aecc305e","tid":98226337118421,"users":["0xc1995c6b6a101cf9ac7547688908afaf88b01302","0xb6bf1eab724da50cc99e9489f4523de277d815b7"]},{"coin":"HYPE","side":"B","px":"21.305","sz":"18.42","time":1736682893702,"hash":"0x75013367f492e899e498041b482d7b0145005169149be7e7181a0ca2aecc305e","tid":627730381177664,"users":["0xc1995c6b6a101cf9ac7547688908afaf88b01302","0xa1cb16d2b17202c336138f765559dfc73830b1fb"]},{"coin":"HYPE","side":"B","px":"21.306","sz":"906.75","time":1736682893702,"hash":"0x75013367f492e899e498041b482d7b0145005169149be7e7181a0ca2aecc305e","tid":996720750934958,"users":["0xc1995c6b6a101cf9ac7547688908afaf88b01302","0xb9cd6cde81e55e1e6714d21b4f228faf98999eed"]}]}
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/databento.py:74:        exch_ts = int(ts_event.timestamp() * 1_000_000_000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/databento.py:75:        local_ts = int(ts_recv.timestamp() * 1_000_000_000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:145:                    (pl.col('timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:148:                    (pl.col('local_timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:175:                    (pl.col('timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:178:                    (pl.col('local_timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:525:            (pl.col('timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:528:            (pl.col('local_timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:556:            (pl.col('timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:559:            (pl.col('local_timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:580:            (pl.col('timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/tardis.py:583:            (pl.col('local_timestamp') * 1000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/mexc.py:22:        exch_ts_multiplier: float = 1e6,
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/bybithistmktdata.py:63:                timestamp_ns: int = int(float(obj["ts"]) * 1_000_000)
+<V>/hftbacktest/lib/python3.11/site-packages/hftbacktest/data/utils/bybithistmktdata.py:141:            exch_ts = int(float(row[timestamp_col]) * 1_000_000_000)
+== venv=rqalpha module=rqalpha dir=<V>/rqalpha/lib/python3.11/site-packages/rqalpha
+<V>/rqalpha/lib/python3.11/site-packages/rqalpha/utils/datetime_func.py:78:    dt = convert_int_to_datetime(dt_int).replace(microsecond=ms_int * 1000)
+<V>/rqalpha/lib/python3.11/site-packages/rqalpha/utils/datetime_func.py:91:                      microsecond=millisecond * 1000)
+== venv=backtesting module=backtesting dir=<V>/backtesting/lib/python3.11/site-packages/backtesting
+<V>/backtesting/lib/python3.11/site-packages/backtesting/lib.py:520:    and defaults to one [satoshi]. For μBTC trading, pass `fractional_unit=1/1e6`.
+== venv=qstrader module=qstrader dir=<V>/qstrader/lib/python3.11/site-packages/qstrader
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:67:        list of tuples indexed by milliseconds since epoch.
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:77:            The list of epoch-indexed tuple values.
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:84:                    ).timestamp() * 1000.0
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:94:        list of tuples indexed by milliseconds since epoch.
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:104:            The list of epoch-indexed tuple values.
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:114:                        ).timestamp() * 1000.0
+<V>/qstrader/lib/python3.11/site-packages/qstrader/statistics/json_statistics.py:299:        milliseconds since epoch representation.
+<V>/qstrader/lib/python3.11/site-packages/qstrader/trading/backtest.py:75:        initial_cash=1e6,
+== venv=quantcore module=quantcore dir=<V>/quantcore/lib/python3.11/site-packages/quantcore
+<V>/quantcore/lib/python3.11/site-packages/quantcore/calendar.py:40:_NS_PER_DAY = 86_400 * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/calendar.py:45:    dt = datetime.datetime.fromtimestamp(
+<V>/quantcore/lib/python3.11/site-packages/quantcore/tick_parquet_loader.py:58:    if   max_val < 4_000_000_000:               return values * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/tick_parquet_loader.py:59:    elif max_val < 4_000_000_000_000:           return values * 1_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/tick_parquet_loader.py:60:    elif max_val < 4_000_000_000_000_000:       return values * 1_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/plotting.py:42:            ns_per_day      = 86_400 * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/plotting.py:59:    AutoDateLocator can default to epoch 0 when it fires before the axis
+<V>/quantcore/lib/python3.11/site-packages/quantcore/analytics.py:50:    ns_per_year = 365.25 * 24 * 3600 * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/analytics.py:58:            f"{median_gap_ns / 1e6:.3f} ms, which extrapolates to "
+<V>/quantcore/lib/python3.11/site-packages/quantcore/analytics.py:525:        ns_per_day = 86_400 * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/corporate_actions.py:186:        ex_date may be an integer epoch (s/ms/us/ns) or ISO 8601 date string.
+<V>/quantcore/lib/python3.11/site-packages/quantcore/corporate_actions.py:210:    """Convert a date string or integer epoch to nanoseconds."""
+<V>/quantcore/lib/python3.11/site-packages/quantcore/corporate_actions.py:214:            return v * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/corporate_actions.py:216:            return v * 1_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/corporate_actions.py:218:            return v * 1_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/parquet_loader.py:93:        return values * 1_000_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/parquet_loader.py:95:        return values * 1_000_000
+<V>/quantcore/lib/python3.11/site-packages/quantcore/parquet_loader.py:97:        return values * 1_000
+== venv=quanttrader module=quanttrader dir=<V>/quanttrader/lib/python3.11/site-packages/quanttrader
+<V>/quanttrader/lib/python3.11/site-packages/quanttrader/brokerage/ib_brokerage.py:899:        # tick_event.timestamp = datetime.fromtimestamp(int(value))
+<V>/quanttrader/lib/python3.11/site-packages/quanttrader/brokerage/ib_brokerage.py:934:        msg = f'ReqId: {reqId}, Time: {datetime.fromtimestamp(time).strftime("%Y%m%d %H:%M:%S")}, ' \
+<V>/quanttrader/lib/python3.11/site-packages/quanttrader/brokerage/ib_brokerage.py:943:        msg = f'BidAsk. ReqId: {reqId}, Time: {datetime.fromtimestamp(time).strftime("%Y%m%d %H:%M:%S")}, ' \
+<V>/quanttrader/lib/python3.11/site-packages/quanttrader/brokerage/ib_brokerage.py:950:        msg = 'Midpoint. ReqId: {reqId}, Time: {datetime.fromtimestamp(time).strftime("%Y%m%d %H:%M:%S")}, MidPoint: {midPoint}'
+<V>/quanttrader/lib/python3.11/site-packages/quanttrader/brokerage/ib_brokerage.py:1164:        msg = f'CurrentTime: {datetime.fromtimestamp(time).strftime("%H:%M:%S.%f")}'
+== venv=pyalgotrade module=pyalgotrade dir=<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/bitcoincharts/barfeed.py:115:        dateTime = dt.timestamp_to_datetime(unixTime)
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/barfeed/sqlitefeed.py:130:            dateTime = dt.timestamp_to_datetime(row[0])
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/resamplebase.py:54:        self.__begin = dt.timestamp_to_datetime(slotTs, not dt.datetime_is_naive(dateTime))
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/utils/dt.py:57:    diff = as_utc(dateTime) - epoch_utc
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/utils/dt.py:61:def timestamp_to_datetime(timeStamp, localized=True):
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/utils/dt.py:63:    ret = datetime.datetime.utcfromtimestamp(timeStamp)
+<V>/pyalgotrade/lib/python3.11/site-packages/pyalgotrade/utils/dt.py:85:epoch_utc = as_utc(datetime.datetime(1970, 1, 1))
+== venv=freqtrade module=freqtrade dir=<V>/freqtrade/lib/python3.11/site-packages/freqtrade
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:41:        return int(dt.timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:42:    return int(time() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:51:        return int(dt.timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:61:        return int(dt.timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:78:    return datetime.fromtimestamp(timestamp, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:122:    : epoch-string in ms
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/util/datetime_helpers.py:130:    : epoch-string in ms
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/misc.py:237:        dataframe["date"] = pd.to_datetime(dataframe["date"], unit="ms", utc=True)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/trade_model.py:244:            "timestamp": int(self.order_date_utc.timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/trade_model.py:286:                        int(self.order_date.replace(tzinfo=UTC).timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/trade_model.py:1637:            open_date=datetime.fromtimestamp(data["open_timestamp"] // 1000, tz=UTC),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/trade_model.py:1642:                datetime.fromtimestamp(data["close_timestamp"] // 1000, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/trade_model.py:1687:                    datetime.fromtimestamp(order["order_filled_timestamp"] // 1000, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/pairlock.py:77:            "lock_timestamp": int(self.lock_time.replace(tzinfo=UTC).timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/persistence/pairlock.py:79:            "lock_end_timestamp": int(self.lock_end_time.replace(tzinfo=UTC).timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/rpc/external_message_consumer.py:278:                    latency = await asyncio.wait_for(pong, timeout=self.ping_timeout) * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/rpc/rpc.py:1496:                r.created * 1000,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/rpc/rpc.py:1506:        # [logtime-formatted, logepoch, logger-name, loglevel, message \n + exception]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/rpc/rpc.py:1690:                    since_ms=timerange_parsed.startts * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/rpc/rpc.py:1695:                    until_ms=timerange_parsed.stopts * 1000 if timerange_parsed.stopts else None,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:259:        "epochs": {
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:260:            "description": "Number of training epochs for Hyperopt.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:266:                "Early stop hyperopt if no improvement after <epochs>. Set to 0 to disable."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:280:        "analyze_per_epoch": {
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:281:            "description": "Perform analysis after each epoch in Hyperopt.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/config_schema/config_schema.py:305:            "description": "Minimum number of trades per epoch for hyperopt.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/config_validation.py:328:    analyze_per_epoch = conf.get("analyze_per_epoch", False)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/config_validation.py:329:    if analyze_per_epoch and freqai_enabled:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/config_validation.py:331:            "Using analyze-per-epoch parameter is not supported with a FreqAI strategy."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:349:            ("epochs", "Parameter --epochs detected ... Will run Hyperopt with for {} epochs ..."),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:351:            ("analyze_per_epoch", "Parameter --analyze-per-epoch detected."),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:355:        es_epochs = self.args.get("early_stop", 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:356:        if es_epochs > 0:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:357:            if es_epochs < 20:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:359:                    f"Early stop epochs {es_epochs} lower than 20. It will be replaced with 20."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/configuration.py:366:                f"after {config.get('early_stop')} epochs ..."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/timerange.py:18:# Datetime formats are interpreted as UTC - a format of None means "epoch"
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/timerange.py:172:                return int(text) // 1000 if len(text) == 13 else int(text)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/configuration/timerange.py:181:        yyyymmdd, yyyymmddThhmm, yyyymmddThhmmss, epoch (seconds) or epoch (milliseconds).
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/constants.py:18:HYPEROPT_EPOCH = 100  # epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange_utils_timeframe.py:29:    return ccxt.Exchange.parse_timeframe(timeframe) * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange_utils_timeframe.py:79:    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_DOWN) // 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange_utils_timeframe.py:92:    new_timestamp = ccxt.Exchange.round_timeframe(timeframe, dt_ts(date), ROUND_UP) // 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/binance.py:182:                    f"{datetime.fromtimestamp(since_ms // 1000, tz=UTC).isoformat()}."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/bitpanda.py:37:        params = {"to": int(datetime.now(UTC).timestamp() * 1000)}
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange_ws.py:147:                if last_refresh > 0 and (dt_ts() - last_refresh) > ((timeframe_s + 20) * 1000):
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange_ws.py:253:                    f"in {(dt_ts() - start) / 1000:.3f}s"
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/bybit.py:325:                14 * 24 * 60 * 60 * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/bitget.py:65:        * 1000 candles for up-to-date data
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/bitget.py:285:                14 * 24 * 60 * 60 * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:297:            exchange_conf.get("markets_refresh_interval", 60) * 60 * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:1957:            since_ms = int((since.timestamp() - 10) * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:2436:                int((since.replace(tzinfo=UTC).timestamp() - 5) * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:2778:            since_ms = dt_ts(now - timedelta(seconds=move_to // 1000))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:3133:        return int((now - timedelta(seconds=move_to)).timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:3194:                    until = int(timeframe_to_prev_date(timeframe).timestamp()) * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/exchange.py:3295:            * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/binance_public_data.py:287:                                np.where(df["date"] > 1e13, df["date"] // 1000, df["date"]),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/binance_public_data.py:288:                                unit="ms",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/exchange/binance_public_data.py:380:        df["timestamp"] // 1000,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/prediction_models/PyTorchMLPClassifier.py:33:                    "n_epochs": null,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/prediction_models/PyTorchTransformerRegressor.py:43:                    "n_epochs": null
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/prediction_models/PyTorchMLPRegressor.py:34:                    "n_epochs": null,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/tensorboard/tensorboard.py:40:        self, model, epoch: int, evals_log: callback.TrainingCallback.EvalsLog
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/tensorboard/tensorboard.py:51:                self.writer.add_scalar(f"{eval_}-{metric_name}", score, epoch)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/tensorboard/base_tensorboard.py:26:    def after_iteration(self, model, epoch: int, evals_log: TrainingCallback.EvalsLog) -> bool:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/freqai_interface.py:79:        self.current_candle: datetime = datetime.fromtimestamp(637887600, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:42:        :param n_steps: used to calculate n_epochs. The number of training iterations to run.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:44:            ignored if n_epochs is set.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:45:        :param n_epochs: The maximum number batches to use for evaluation.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:55:        self.n_epochs: int | None = kwargs.get("n_epochs", 10)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:57:        if self.n_steps is None and not self.n_epochs:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:58:            raise ValueError("Either `n_steps` or `n_epochs` should be set.")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:89:        n_epochs = self.n_epochs or self.calc_n_epochs(n_obs=n_obs)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:91:        for _ in range(n_epochs):
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:119:                                f"epochs without improvement. "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:181:    def calc_n_epochs(self, n_obs: int) -> int:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:183:        Calculates the number of epochs required to reach the maximum number
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:190:            raise ValueError("Either `n_steps` or `n_epochs` should be set.")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:192:        n_epochs = max(self.n_steps // n_batches, 1)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:193:        if n_epochs <= 10:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:195:                f"Setting low n_epochs: {n_epochs}. "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/freqai/torch/PyTorchModelTrainer.py:199:        return n_epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/btanalysis/bt_fileutils.py:369:                backtest_date = datetime.fromtimestamp(backtest_date, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/btanalysis/bt_fileutils.py:537:        df["close_date"] = pd.to_datetime(df["close_timestamp"], unit="ms", utc=True)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/btanalysis/bt_fileutils.py:538:        df["open_date"] = pd.to_datetime(df["open_timestamp"], unit="ms", utc=True)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/converter/orderflow.py:72:        df["datetime"] = pd.to_datetime(df["date"], unit="ms")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/converter/trade_converter.py:50:    trades["date"] = to_datetime(trades["timestamp"], unit="ms", utc=True)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/converter/converter.py:70:    df["date"] = to_datetime(df["date"], unit="ms", utc=True).dt.floor(resample_interval)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:230:    start_ms = int(start.timestamp() * 1000) if start else None
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:231:    end_ms = int(end.timestamp() * 1000) if end else None
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:315:                    else int((dt_now() - timedelta(days=new_pairs_days)).timestamp()) * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:506:            since = timerange.startts * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:543:            since = timerange.startts * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:545:            until = timerange.stopts * 1000
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/history_utils.py:565:        since = int(trades.iloc[-1]["timestamp"] - (5 * 1000))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:103:                datetime.fromtimestamp(0, tz=UTC),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:104:                datetime.fromtimestamp(0, tz=UTC),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:244:                datetime.fromtimestamp(0, tz=UTC),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:245:                datetime.fromtimestamp(0, tz=UTC),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:249:            to_datetime(df.iloc[0]["timestamp"], unit="ms", utc=True).to_pydatetime(),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/idatahandler.py:250:            to_datetime(df.iloc[-1]["timestamp"], unit="ms", utc=True).to_pydatetime(),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/history/datahandlers/jsondatahandler.py:84:        pairdata["date"] = to_datetime(pairdata["date"], unit="ms", utc=True).dt.as_unit("ms")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/dataprovider.py:281:            return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/dataprovider.py:286:            return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/dataprovider.py:421:                    return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/dataprovider.py:424:            return (DataFrame(), datetime.fromtimestamp(0, tz=UTC))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/data/dataprovider.py:454:        # otherwise they're reloaded each time during hyperopt due to with analyze_per_epoch
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/loggers/ft_rich_handler.py:24:                datetime.fromtimestamp(record.created).strftime("%Y-%m-%d %H:%M:%S,%f")[:-3]  # noqa: DTZ006
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/strategy/parameters.py:85:        indicators. Without --analyze-per-epoch, indicators are only calculated once at
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/strategy/parameters.py:87:        and all epochs are evaluated with its static start value.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/strategy/parameters.py:99:                f"startup. All epochs will be evaluated with its static start value "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/strategy/parameters.py:101:                "Use the '.range' functionality or run hyperopt with '--analyze-per-epoch' to "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_loss/hyperopt_loss_multi_metric.py:43:LARGE_NUMBER = 1e6
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_loss/hyperopt_loss_interface.py:18:    Defines the custom loss function (`hyperopt_loss_function()` which is evaluated every epoch.)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:9:def hyperopt_filter_epochs(epochs: list, filteroptions: dict, log: bool = True) -> list:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:14:        epochs = [x for x in epochs if x["is_best"]]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:16:        epochs = [x for x in epochs if x["results_metrics"].get("profit_total", 0) > 0]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:18:    epochs = _hyperopt_filter_epochs_trade_count(epochs, filteroptions)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:20:    epochs = _hyperopt_filter_epochs_duration(epochs, filteroptions)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:22:    epochs = _hyperopt_filter_epochs_profit(epochs, filteroptions)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:24:    epochs = _hyperopt_filter_epochs_objective(epochs, filteroptions)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:27:            f"{len(epochs)} "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:30:            + "epochs found."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:32:    return epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:35:def _hyperopt_filter_epochs_trade(epochs: list, trade_count: int):
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:37:    Filter epochs with trade-counts > trades
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:39:    return [x for x in epochs if x["results_metrics"].get("total_trades", 0) > trade_count]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:42:def _hyperopt_filter_epochs_trade_count(epochs: list, filteroptions: dict) -> list:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:44:        epochs = _hyperopt_filter_epochs_trade(epochs, filteroptions["filter_min_trades"])
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:47:        epochs = [
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:49:            for x in epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:52:    return epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:55:def _hyperopt_filter_epochs_duration(epochs: list, filteroptions: dict) -> list:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:67:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:68:        epochs = [x for x in epochs if get_duration_value(x) > filteroptions["filter_min_avg_time"]]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:70:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:71:        epochs = [x for x in epochs if get_duration_value(x) < filteroptions["filter_max_avg_time"]]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:73:    return epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:76:def _hyperopt_filter_epochs_profit(epochs: list, filteroptions: dict) -> list:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:78:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:79:        epochs = [
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:81:            for x in epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:86:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:87:        epochs = [
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:89:            for x in epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:94:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:95:        epochs = [
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:97:            for x in epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:102:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:103:        epochs = [
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:105:            for x in epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:109:    return epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:112:def _hyperopt_filter_epochs_objective(epochs: list, filteroptions: dict) -> list:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:114:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:116:        epochs = [x for x in epochs if x["loss"] < filteroptions["filter_min_objective"]]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:118:        epochs = _hyperopt_filter_epochs_trade(epochs, 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:120:        epochs = [x for x in epochs if x["loss"] > filteroptions["filter_max_objective"]]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_epoch_filters.py:122:    return epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_output.py:53:        total_epochs: int,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_output.py:88:                    f"{r['current_epoch']}/{total_epochs}",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:85:        self.analyze_per_epoch = self.config.get("analyze_per_epoch", False)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:102:        self.es_epochs = config.get("early_stop", 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:103:        if self.es_epochs > 0 and self.es_epochs < 0.2 * config.get("epochs", 0):
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:104:            logger.warning(f"Early stop epochs {self.es_epochs} lower than 20% of total epochs")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:269:        Called once per epoch to optimize whatever is configured.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:317:        if self.analyze_per_epoch:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:432:        if self.es_epochs > 0:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:435:                self.es_terminator = Terminator(BestValueStagnationEvaluator(self.es_epochs))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_optimizer.py:459:        if not self.analyze_per_epoch:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:48:        self.analyze_per_epoch = self.config.get("analyze_per_epoch", False)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:61:        self.total_epochs = config.get("epochs", 0)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:67:        self.num_epochs_saved = 0
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:68:        self.current_best_epoch: dict[str, Any] | None = None
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:79:        self.count_skipped_epochs = 0
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:95:    def _save_result(self, epoch: dict) -> None:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:98:        Store one line per epoch.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:100:        :param epoch: result dictionary for this epoch.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:102:        epoch[FTHYPT_FILEVERSION] = 2
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:105:                epoch,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:112:        self.num_epochs_saved += 1
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:114:            f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:132:                self.total_epochs,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:188:            if self.count_skipped_epochs == 0:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:190:            self.count_skipped_epochs += n_points - len(asked_non_tried)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:198:        val["current_epoch"] = current
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:201:        logger.debug("Optimizer epoch evaluated: %s", val)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:214:            self.current_best_epoch = val
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:237:                    task = pbar.add_task("Epochs", total=self.total_epochs)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:241:                    if self.analyze_per_epoch:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:242:                        # First analysis not in parallel mode when using --analyze-per-epoch.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:253:                    evals = ceil((self.total_epochs - start) / jobs)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:255:                        # Correct the number of epochs to be processed for the last
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:256:                        # iteration (should not exceed self.total_epochs in total)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:257:                        n_rest = (i + 1) * jobs - (self.total_epochs - start)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:283:                            self.hyperopter.es_epochs > 0
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:286:                            logger.info(f"Early stopping after {(i + 1) * jobs} epochs")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:292:        if self.count_skipped_epochs > 0:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:294:                f"{self.count_skipped_epochs} {plural(self.count_skipped_epochs, 'epoch')} "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:299:            f"{self.num_epochs_saved} {plural(self.num_epochs_saved, 'epoch')} "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:303:        if self.current_best_epoch:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:307:                self.current_best_epoch,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:310:            HyperoptTools.show_epoch_details(
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:311:                self.current_best_epoch, self.total_epochs, self.print_json
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:313:        elif self.num_epochs_saved > 0:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:315:                f"No good result found for given optimization function in {self.num_epochs_saved} "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:316:                f"{plural(self.num_epochs_saved, 'epoch')}."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:319:            # This is printed when Ctrl+C is pressed quickly, before first epochs have
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt.py:321:            print("No epochs evaluated yet, no best result.")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt/hyperopt_logger.py:19:    This is called once per epoch - but the worker process itself is reused for the whole run.
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:16:from freqtrade.optimize.hyperopt_epoch_filters import hyperopt_filter_epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:123:        logger.info(f"Reading epochs from '{results_file}'")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:167:        epochs = []
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:168:        total_epochs = 0
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:169:        for epochs_tmp in HyperoptTools._read_results(results_file):
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:170:            if total_epochs == 0 and epochs_tmp[0].get("is_best") is None:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:175:            total_epochs += len(epochs_tmp)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:176:            epochs += hyperopt_filter_epochs(epochs_tmp, filteroptions, log=False)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:178:        logger.info(f"Loaded {total_epochs} previous evaluations from disk.")
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:181:        epochs = hyperopt_filter_epochs(epochs, filteroptions, log=True)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:183:        return epochs, total_epochs
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:186:    def show_epoch_details(
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:188:        total_epochs: int,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:204:            explanation_str = HyperoptTools._format_explanation_string(results, total_epochs)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:349:    def _format_explanation_string(results, total_epochs) -> str:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:352:            + f"{results['current_epoch']:5d}/{total_epochs}: "
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/hyperopt_tools.py:381:            "current_epoch",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:91:        "low_ts": int(low_date.timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:93:        "high_ts": int(high_date.timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:104:            int(drawdown.high_date.timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:114:            int(drawdown.low_date.timestamp() * 1000)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:405:                    "date_ts": int(name.to_pydatetime().timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:689:        "backtest_start_ts": int(min_date.timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:691:        "backtest_end_ts": int(max_date.timestamp() * 1000),
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:756:                "drawdown_start_ts": drawdown.high_date.timestamp() * 1000,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/optimize_reports/optimize_reports.py:758:                "drawdown_end_ts": drawdown.low_date.timestamp() * 1000,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/optimize/analysis/base_analysis.py:53:            self.full_varHolder.from_dt = datetime.fromtimestamp(0, tz=UTC)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:14:    List hyperopt epochs previously evaluated
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:34:    epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:41:                epochs,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:42:                total_epochs,
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:50:    if epochs and not no_details:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:51:        sorted_epochs = sorted(epochs, key=itemgetter("loss"))
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:52:        results = sorted_epochs[0]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:53:        HyperoptTools.show_epoch_details(results, total_epochs, print_json, no_header)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:55:    if epochs and export_csv:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:56:        HyperoptTools.export_csv_file(config, epochs, export_csv)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:61:    Show details of a hyperopt epoch previously evaluated
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:79:    epochs, total_epochs = HyperoptTools.load_filtered_results(results_file, config)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:81:    filtered_epochs = len(epochs)
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:83:    if n > filtered_epochs:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:85:            f"The index of the epoch to show should be less than {filtered_epochs + 1}."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:87:    if n < -filtered_epochs:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:89:            f"The index of the epoch to show should be greater than {-filtered_epochs - 1}."
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:92:    # Translate epoch index from human-readable format to pythonic
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:96:    if epochs:
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:97:        val = epochs[n]
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:111:        HyperoptTools.show_epoch_details(
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/hyperopt_commands.py:112:            val, total_epochs, print_json, no_header, header_str="Epoch details"
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:284:    "epochs": Arg(
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:286:        "--epochs",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:287:        help="Specify number of epochs (default: %(default)d).",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:294:        help="Early stop hyperopt if no improvement after (default: %(default)d) epochs.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:309:    "analyze_per_epoch": Arg(
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:310:        "--analyze-per-epoch",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:311:        help="Run populate_indicators once per epoch.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:645:        help="Select only profitable epochs.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:650:        help="Select only best epochs.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:655:        help="Select epochs with more than INT trades.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:661:        help="Select epochs with less than INT trades.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:667:        help="Select epochs above average time.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:673:        help="Select epochs below average time.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:679:        help="Select epochs above average profit.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:685:        help="Select epochs below average profit.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:691:        help="Select epochs above total profit.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:697:        help="Select epochs below total profit.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:703:        help="Select epochs above objective.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:709:        help="Select epochs below objective.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:715:        help="Do not print best epoch details.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:721:        help="Specify the index of the epoch to print details for.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/cli_options.py:727:        help="Do not print epoch details header.",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/arguments.py:73:    "epochs",
+<V>/freqtrade/lib/python3.11/site-packages/freqtrade/commands/arguments.py:83:    "analyze_per_epoch",
+== venv=vnpy module=vnpy dir=<V>/vnpy/lib/python3.11/site-packages/vnpy
+<V>/vnpy/lib/python3.11/site-packages/vnpy/rpc/client.py:132:        pull_tolerance: int = HEARTBEAT_TOLERANCE * 1000
+<V>/vnpy/lib/python3.11/site-packages/vnpy/trader/ui/widget.py:202:        millisecond: int = int(content.microsecond / 1000)
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:40:        n_epochs: int = 300,
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:60:        n_epochs : int, default 300
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:81:        self.n_epochs: int = n_epochs
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:195:        for step in range(1, self.n_epochs + 1):
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:206:            if step % self.eval_steps == 0 or step == self.n_epochs:
+<V>/vnpy/lib/python3.11/site-packages/vnpy/alpha/model/models/mlp_model.py:325:            self.scheduler.step(metrics=valid_loss, epoch=step)
+== venv=vnpy module=vnpy_ctastrategy dir=<V>/vnpy/lib/python3.11/site-packages/vnpy_ctastrategy
+<V>/vnpy/lib/python3.11/site-packages/vnpy_ctastrategy/strategies/test_strategy.py:71:                time_cost: float = (time() - start) * 1000
+== venv=c37 module=trading_simulator dir=<V>/c37/lib/python3.11/site-packages/trading_simulator
+<V>/c37/lib/python3.11/site-packages/trading_simulator/connectivity/router.py:76:            time.sleep(venue.latency_ms / 1000.0)
+<V>/c37/lib/python3.11/site-packages/trading_simulator/connectivity/router.py:86:                    time.sleep(self.retry_backoff_ms / 1000.0)
+== venv=c65 module=aat dir=<V>/_dl/c65/aat
+<V>/_dl/c65/aat/engine/engine.py:171:            datetime.fromtimestamp(0, tz=self.tz) if self._offline() else datetime.now()
+<V>/_dl/c65/aat/engine/engine.py:417:                        self._latest != datetime.fromtimestamp(0, tz=self.tz)
+<V>/_dl/c65/aat/engine/dispatch/portfolio/portfolio.py:592:                    (p1, datetime.fromtimestamp(p2)) for p1, p2 in v
+<V>/_dl/c65/aat/exchange/generic/csv.py:47:                    order.timestamp = datetime.fromtimestamp(float(row["time"]))
+<V>/_dl/c65/aat/strategy/sample/iex/momentum.py:247:            # "aat.exchange.public.iex:IEX,Tpk_ecc89ddf30a611e9958142010a80043c,True,1d,20210821",
+<V>/_dl/c65/aat/strategy/sample/iex/momentum.py:259:        aat.exchange.public.iex:IEX,Tpk_ecc89ddf30a611e9958142010a80043c,True,1m,,,,
+<V>/_dl/c65/aat/core/position/cash.py:91:        kwargs["timestamp"] = datetime.fromtimestamp(jsn["timestamp"])
+<V>/_dl/c65/aat/core/position/cash.py:97:            (x, datetime.fromtimestamp(y)) for x, y in jsn["notional_history"]
+<V>/_dl/c65/aat/core/position/position.py:288:        kwargs["timestamp"] = datetime.fromtimestamp(jsn["timestamp"])
+<V>/_dl/c65/aat/core/position/position.py:301:            (x, datetime.fromtimestamp(y)) for x, y in jsn["size_history"]
+<V>/_dl/c65/aat/core/position/position.py:304:            (x, datetime.fromtimestamp(y)) for x, y in jsn["notional_history"]
+<V>/_dl/c65/aat/core/position/position.py:307:            (x, datetime.fromtimestamp(y)) for x, y in jsn["price_history"]
+<V>/_dl/c65/aat/core/position/position.py:310:            (x, datetime.fromtimestamp(y)) for x, y in jsn["investment_history"]
+<V>/_dl/c65/aat/core/position/position.py:313:            (x, datetime.fromtimestamp(y)) for x, y in jsn["instrumentPrice_history"]
+<V>/_dl/c65/aat/core/position/position.py:316:            (x, datetime.fromtimestamp(y)) for x, y in jsn["pnl_history"]
+<V>/_dl/c65/aat/core/position/position.py:319:            (x, datetime.fromtimestamp(y)) for x, y in jsn["unrealizedPnl_history"]
+<V>/_dl/c65/aat/core/instrument/instrument.py:445:            kwargs["expiration"] = datetime.fromtimestamp(jsn["expiration"])
+== venv=luczinsritter module=backtest_engine dir=<V>/_dl/luczinsritter
+== venv=c98 module=src dir=<V>/_dl/c98/src
+== venv=c99 module=matching_engine dir=<V>/_dl/c99
+<V>/_dl/c99/app.py:229:            "time": datetime.fromtimestamp(t.timestamp),
+<V>/_dl/c99/app.py:278:        times = [datetime.fromtimestamp(t.timestamp) for t in history]
+<V>/_dl/c99/app.py:569:                    datetime.fromtimestamp(t.timestamp).strftime("%H:%M:%S")
+== venv=c99 module=models dir=<V>/_dl/c99
+<V>/_dl/c99/app.py:229:            "time": datetime.fromtimestamp(t.timestamp),
+<V>/_dl/c99/app.py:278:        times = [datetime.fromtimestamp(t.timestamp) for t in history]
+<V>/_dl/c99/app.py:569:                    datetime.fromtimestamp(t.timestamp).strftime("%H:%M:%S")
+== venv=c105 module=slippage dir=<V>/c105/lib/python3.11/site-packages/slippage
+<V>/c105/lib/python3.11/site-packages/slippage/cli.py:205:        lot = args.lot_size if args.lot_size is not None else args.quantity / 1000
+<V>/c105/lib/python3.11/site-packages/slippage/scheduling.py:46:# number, so 1e6 / 1e3 counts as 1000 lots despite binary rounding.
+== venv=c3 module=sysdata dir=<V>/_dl/c3/sysdata
+== venv=c3 module=systems dir=<V>/_dl/c3/systems
+== venv=c91 module=services dir=<V>/_dl/c91/backend/services
+<V>/_dl/c91/backend/services/optimization/parallel_executor.py:148:                total_latency_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/optimization/parallel_executor.py:163:                timeout=self.max_latency_ms / 1000,
+<V>/_dl/c91/backend/services/optimization/parallel_executor.py:198:        total_latency = (time.perf_counter() - start_time) * 1000
+<V>/_dl/c91/backend/services/optimization/parallel_executor.py:251:            latency = (time.perf_counter() - start) * 1000
+<V>/_dl/c91/backend/services/optimization/parallel_executor.py:286:            latency = (time.perf_counter() - start) * 1000
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:191:        init_time = (time.perf_counter() - start_time) * 1000
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:258:                solve_time_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:288:                elapsed = (time.perf_counter() - start_time) * 1000
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:335:                    solve_time_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:354:                    solve_time_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:372:                    solve_time_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/optimization/frank_wolfe.py:420:            solve_time_ms=(time.perf_counter() - start_time) * 1000,
+<V>/_dl/c91/backend/services/trader_orchestrator_state.py:4907:            copy_latency_ms = max(0.0, (created_at_utc.astimezone(timezone.utc) - parsed_detected_at.astimezone(timezone.utc)).total_seconds() * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator_state.py:6413:                    * 1000.0,
+<V>/_dl/c91/backend/services/backtest/latency_model.py:151:            ts_ms = float(at.timestamp()) * 1000.0
+<V>/_dl/c91/backend/services/backtest/latency_model.py:154:                ts_ms = float(at) * 1000.0
+<V>/_dl/c91/backend/services/backtest/job_runner.py:456:    elapsed_ms = (time.perf_counter() - started_perf) * 1000.0
+<V>/_dl/c91/backend/services/backtest/job_runner.py:484:                f"{elapsed_ms / 1000.0:.1f}s"
+<V>/_dl/c91/backend/services/backtest/decision_parity.py:205:        return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/backtest/fill_calibration.py:79:        return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/backtest/unified_runner.py:685:        "trained_at_epoch": snap.trained_at_epoch,
+<V>/_dl/c91/backend/services/backtest/unified_runner.py:686:        "promoted_at_epoch": snap.promoted_at_epoch,
+<V>/_dl/c91/backend/services/backtest/unified_runner.py:961:        "measured_at_epoch": constants.measured_at_epoch,
+<V>/_dl/c91/backend/services/backtest/unified_runner.py:1288:    total_time_ms = (time.perf_counter() - started_perf) * 1000.0
+<V>/_dl/c91/backend/services/backtest/outcome_resolver.py:177:            "built_at_epoch": self._index.built_at,
+<V>/_dl/c91/backend/services/intent_runtime.py:161:    return max(default_ttl, max(100.0, scanner_max_age_ms) / 1000.0)
+<V>/_dl/c91/backend/services/intent_runtime.py:198:            return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/intent_runtime.py:450:    strict_max_age_ms = max(100, int(_strict_ws_ttl_seconds_for_source("scanner") * 1000.0))
+<V>/_dl/c91/backend/services/intent_runtime.py:881:        min_observed_at_epoch: float | None = None,
+<V>/_dl/c91/backend/services/intent_runtime.py:902:                if not quote_current and normalized_source == "scanner" and min_observed_at_epoch is None:
+<V>/_dl/c91/backend/services/intent_runtime.py:914:                if min_observed_at_epoch is not None:
+<V>/_dl/c91/backend/services/intent_runtime.py:915:                    observed_at_epoch = feed_manager.cache.get_observed_at_epoch(token_id)
+<V>/_dl/c91/backend/services/intent_runtime.py:916:                    if observed_at_epoch is None or float(observed_at_epoch) + 1e-9 < float(min_observed_at_epoch):
+<V>/_dl/c91/backend/services/intent_runtime.py:928:        min_observed_at_epoch: float | None = None,
+<V>/_dl/c91/backend/services/intent_runtime.py:938:                min_observed_at_epoch=min_observed_at_epoch,
+<V>/_dl/c91/backend/services/intent_runtime.py:1031:        observed_at_epoch = None
+<V>/_dl/c91/backend/services/intent_runtime.py:1033:            observed_at_epoch = feed_manager.cache.get_observed_at_epoch(selected_token_id)
+<V>/_dl/c91/backend/services/intent_runtime.py:1035:            observed_at_epoch = None
+<V>/_dl/c91/backend/services/intent_runtime.py:1036:        if observed_at_epoch is None:
+<V>/_dl/c91/backend/services/intent_runtime.py:1043:            observed_at_epoch = time.time() - max(0.0, float(staleness_seconds))
+<V>/_dl/c91/backend/services/intent_runtime.py:1045:        observed_at_epoch = float(observed_at_epoch)
+<V>/_dl/c91/backend/services/intent_runtime.py:1046:        now_epoch = time.time()
+<V>/_dl/c91/backend/services/intent_runtime.py:1047:        market_data_age_ms = max(0.0, (now_epoch - observed_at_epoch) * 1000.0)
+<V>/_dl/c91/backend/services/intent_runtime.py:1048:        strict_max_age_ms = max(100, int(_strict_ws_ttl_seconds_for_source(source) * 1000.0))
+<V>/_dl/c91/backend/services/intent_runtime.py:1055:                        max_age_seconds=(strict_max_age_ms / 1000.0),
+<V>/_dl/c91/backend/services/intent_runtime.py:1085:            "source_observed_at": _to_iso(datetime.fromtimestamp(observed_at_epoch, tz=timezone.utc)),
+<V>/_dl/c91/backend/services/intent_runtime.py:1087:            "market_data_age_seconds": market_data_age_ms / 1000.0,
+<V>/_dl/c91/backend/services/intent_runtime.py:1105:        required_max_age_ms = max(100, int(_strict_ws_ttl_seconds_for_source("scanner") * 1000.0))
+<V>/_dl/c91/backend/services/intent_runtime.py:1142:        min_observed_at_epoch = None
+<V>/_dl/c91/backend/services/intent_runtime.py:1145:            min_observed_at_epoch = deferred_min_observed_at.timestamp()
+<V>/_dl/c91/backend/services/intent_runtime.py:1150:                max_age_seconds = max(0.01, int(required_max_age_ms) / 1000.0)
+<V>/_dl/c91/backend/services/intent_runtime.py:1160:            if min_observed_at_epoch is None:
+<V>/_dl/c91/backend/services/intent_runtime.py:1163:                    min_observed_at_epoch = armed_at.timestamp()
+<V>/_dl/c91/backend/services/intent_runtime.py:1167:                min_observed_at_epoch=min_observed_at_epoch,
+<V>/_dl/c91/backend/services/intent_runtime.py:1178:                min_observed_at_epoch=min_observed_at_epoch,
+<V>/_dl/c91/backend/services/event_loop_watchdog.py:230:            probe_sleep_ms=int(_PROBE_SLEEP_SECONDS * 1000),
+<V>/_dl/c91/backend/services/event_loop_watchdog.py:231:            stall_threshold_ms=int(_STALL_THRESHOLD_SECONDS * 1000),
+<V>/_dl/c91/backend/services/ws_feeds.py:113:def _normalize_epoch_timestamp(value: Any) -> float | None:
+<V>/_dl/c91/backend/services/ws_feeds.py:266:    updated_at_epoch: float = 0.0  # wall-clock ingest timestamp (seconds)
+<V>/_dl/c91/backend/services/ws_feeds.py:278:    timestamp: float  # epoch seconds
+<V>/_dl/c91/backend/services/ws_feeds.py:353:        now_epoch = time.time()
+<V>/_dl/c91/backend/services/ws_feeds.py:360:        parsed_exchange_ts = float(exchange_ts) if exchange_ts is not None and exchange_ts > 0 else now_epoch
+<V>/_dl/c91/backend/services/ws_feeds.py:366:            updated_at_epoch=now_epoch,
+<V>/_dl/c91/backend/services/ws_feeds.py:376:            history.append((now_epoch, safe_new_mid, best_bid, best_ask))
+<V>/_dl/c91/backend/services/ws_feeds.py:405:                        entry.updated_at_epoch,
+<V>/_dl/c91/backend/services/ws_feeds.py:543:    def get_observed_at_epoch(self, token_id: str) -> Optional[float]:
+<V>/_dl/c91/backend/services/ws_feeds.py:544:        """Return wall-clock ingest timestamp in epoch seconds, or ``None``."""
+<V>/_dl/c91/backend/services/ws_feeds.py:546:        if entry is None or entry.updated_at_epoch <= 0.0:
+<V>/_dl/c91/backend/services/ws_feeds.py:548:        return float(entry.updated_at_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:589:                "timestamp": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat(),
+<V>/_dl/c91/backend/services/ws_feeds.py:634:            "current_timestamp": datetime.fromtimestamp(current_ts, tz=timezone.utc).isoformat(),
+<V>/_dl/c91/backend/services/ws_feeds.py:635:            "prior_timestamp": datetime.fromtimestamp(prior_ts, tz=timezone.utc).isoformat(),
+<V>/_dl/c91/backend/services/ws_feeds.py:926:                    recv_time_epoch = time.time()
+<V>/_dl/c91/backend/services/ws_feeds.py:952:                                    self._handle_message(item, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:954:                            self._handle_message(data, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1004:                    self.stats.last_latency_ms = (time.monotonic() - start) * 1000
+<V>/_dl/c91/backend/services/ws_feeds.py:1026:    def _handle_message(self, data: dict, recv_time_epoch: float) -> None:
+<V>/_dl/c91/backend/services/ws_feeds.py:1031:            self._apply_trade(data, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1043:            self._apply_book_update(data, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1049:            self._apply_book_update(nested, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1053:                    self._apply_book_update(item, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1056:    def _apply_book_update(self, data: dict, recv_time_epoch: float) -> None:
+<V>/_dl/c91/backend/services/ws_feeds.py:1068:        exchange_ts = _normalize_epoch_timestamp(data.get("timestamp"))
+<V>/_dl/c91/backend/services/ws_feeds.py:1084:                int(recv_time_epoch * 1000.0),
+<V>/_dl/c91/backend/services/ws_feeds.py:1092:                self.stats.last_latency_ms = max(0.0, (recv_time_epoch - exchange_ts) * 1000.0)
+<V>/_dl/c91/backend/services/ws_feeds.py:1096:    def _apply_trade(self, data: dict, recv_time_epoch: float) -> None:
+<V>/_dl/c91/backend/services/ws_feeds.py:1107:            timestamp = _normalize_epoch_timestamp(data.get("timestamp"))
+<V>/_dl/c91/backend/services/ws_feeds.py:1109:                timestamp = recv_time_epoch
+<V>/_dl/c91/backend/services/ws_feeds.py:1330:                    recv_time_epoch = time.time()
+<V>/_dl/c91/backend/services/ws_feeds.py:1335:                        self._handle_message(data, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1387:                    self.stats.last_latency_ms = (time.monotonic() - start) * 1000
+<V>/_dl/c91/backend/services/ws_feeds.py:1399:    def _handle_message(self, data: dict, recv_time_epoch: float) -> None:
+<V>/_dl/c91/backend/services/ws_feeds.py:1411:            self._apply_orderbook(payload, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1413:            self._apply_orderbook(payload, recv_time_epoch)
+<V>/_dl/c91/backend/services/ws_feeds.py:1415:    def _apply_orderbook(self, payload: dict, recv_time_epoch: float) -> None:
+<V>/_dl/c91/backend/services/ws_feeds.py:1443:        exchange_ts = _normalize_epoch_timestamp(payload.get("timestamp") or payload.get("ts"))
+<V>/_dl/c91/backend/services/ws_feeds.py:1446:            self.stats.last_latency_ms = max(0.0, (recv_time_epoch - exchange_ts) * 1000.0)
+<V>/_dl/c91/backend/services/ws_feeds.py:1997:        await asyncio.sleep(self._coalesce_ms / 1000.0)
+<V>/_dl/c91/backend/services/ws_feeds.py:2298:    observed_at_us = int(event.timestamp.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/polymarket.py:10:from utils.utcnow import utcnow, utcfromtimestamp
+<V>/_dl/c91/backend/services/polymarket.py:1476:                return utcfromtimestamp(ts)
+<V>/_dl/c91/backend/services/polymarket.py:1487:                return utcfromtimestamp(numeric)
+<V>/_dl/c91/backend/services/polymarket.py:1868:                        enriched_trade["timestamp_iso"] = utcfromtimestamp(ts).isoformat() + "Z"
+<V>/_dl/c91/backend/services/polymarket.py:1875:                            enriched_trade["timestamp_iso"] = utcfromtimestamp(float(ts)).isoformat() + "Z"
+<V>/_dl/c91/backend/services/polymarket.py:2079:        Returns a normalized list of ``{"t": epoch_ms, "p": price}`` points.
+<V>/_dl/c91/backend/services/ai/llm_provider.py:812:        start_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/ai/llm_provider.py:832:        latency_ms = int(time.time() * 1000) - start_ms
+<V>/_dl/c91/backend/services/ai/llm_provider.py:1170:        start_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/ai/llm_provider.py:1194:        latency_ms = int(time.time() * 1000) - start_ms
+<V>/_dl/c91/backend/services/ai/llm_provider.py:1522:        start_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/ai/llm_provider.py:1549:        latency_ms = int(time.time() * 1000) - start_ms
+<V>/_dl/c91/backend/services/ai/llm_provider.py:2806:            latency_ms = int((time.time() - start_time) * 1000)
+<V>/_dl/c91/backend/services/ai/llm_provider.py:2824:            latency_ms = int((time.time() - start_time) * 1000)
+<V>/_dl/c91/backend/services/ai/tools/provider_tools.py:236:        start_ms=int(start.timestamp() * 1000),
+<V>/_dl/c91/backend/services/ai/tools/provider_tools.py:237:        end_ms=int(end.timestamp() * 1000),
+<V>/_dl/c91/backend/services/trader_data_access.py:26:from utils.utcnow import utcfromtimestamp, utcnow
+<V>/_dl/c91/backend/services/trader_data_access.py:70:            return utcfromtimestamp(float(value))
+<V>/_dl/c91/backend/services/trader_data_access.py:85:            return utcfromtimestamp(float(text))
+<V>/_dl/c91/backend/services/recorder_subscription_service.py:112:        "last_run_at_epoch": _state.last_run_at,
+<V>/_dl/c91/backend/services/recorder_subscription_service.py:354:            _state.last_run_duration_ms = (time.monotonic() - started) * 1000
+<V>/_dl/c91/backend/services/recorder_subscription_service.py:392:        _state.last_run_duration_ms = (time.monotonic() - started) * 1000
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:21:from utils.utcnow import utcnow, utcfromtimestamp
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:457:    maker_amount = parsed["maker_amount_filled"] / 1e6
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:458:    taker_amount = parsed["taker_amount_filled"] / 1e6
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:1874:            block_dt = utcfromtimestamp(block_timestamp)
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:1879:        latency_ms = (detected_at - block_dt).total_seconds() * 1000.0
+<V>/_dl/c91/backend/services/wallet_ws_monitor.py:1897:            fee_usd=float(parsed.get("fee") or 0) / 1e6,
+<V>/_dl/c91/backend/services/reference_runtime.py:169:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/reference_runtime.py:175:            "age_seconds": (round((now_ms - updated_at_ms) / 1000.0, 3) if updated_at_ms > 0 else None),
+<V>/_dl/c91/backend/services/reference_runtime.py:180:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/reference_runtime.py:188:                "age_seconds": (round((now_ms - updated_at_ms) / 1000.0, 3) if updated_at_ms > 0 else None),
+<V>/_dl/c91/backend/services/reference_runtime.py:219:            cutoff_ms = int(time.time() * 1000) - int(float(max_age_seconds) * 1000)
+<V>/_dl/c91/backend/services/reference_runtime.py:265:            summary["history_coverage_seconds"] = max(0.0, (latest_ts_ms - oldest_ts_ms) / 1000.0)
+<V>/_dl/c91/backend/services/reference_runtime.py:294:        target_ts_ms = latest_ts_ms - int(max(1.0, float(lookback_seconds)) * 1000.0)
+<V>/_dl/c91/backend/services/reference_runtime.py:318:                actual_lookback_seconds = max(0.0, (latest_ts_ms - ts_ms) / 1000.0)
+<V>/_dl/c91/backend/services/reference_runtime.py:328:        actual_lookback_seconds = max(0.0, (latest_ts_ms - prior_ts_ms) / 1000.0)
+<V>/_dl/c91/backend/services/reference_runtime.py:346:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/reference_runtime.py:354:                    round((now_ms - latest_chainlink_ms) / 1000.0, 3)
+<V>/_dl/c91/backend/services/reference_runtime.py:364:                    round((now_ms - last_binance_ms) / 1000.0, 3)
+<V>/_dl/c91/backend/services/latency_tracker.py:77:            elapsed_ms = (time.monotonic() - self._stage_start) * 1000
+<V>/_dl/c91/backend/services/latency_tracker.py:84:            total = (time.monotonic() - self._pipeline_start) * 1000
+<V>/_dl/c91/backend/services/recorded_event_bus/backtest_bridge.py:169:        start_us=int(start_dt.replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/backtest_bridge.py:171:            else int(start_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/recorded_event_bus/backtest_bridge.py:172:        end_us=int(end_dt.replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/backtest_bridge.py:174:            else int(end_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/recorded_event_bus/envelope.py:100:    """UTC microseconds since epoch.  Used as the default for
+<V>/_dl/c91/backend/services/recorded_event_bus/envelope.py:102:    return int(datetime.now(timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/envelope.py:115:      observed_at_us  Microseconds since epoch UTC, when the event
+<V>/_dl/c91/backend/services/recorded_event_bus/envelope.py:118:      ingested_at_us  Microseconds since epoch UTC, when we recorded
+<V>/_dl/c91/backend/services/recorded_event_bus/envelope.py:246:            return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/decision_recorder.py:56:    return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/parquet_backend.py:153:            datetime.fromtimestamp(event.observed_at_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/parquet_backend.py:333:    fname = f"events__{int(time.time()*1000):013d}_{uuid.uuid4().hex[:8]}.parquet"
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/parquet_backend.py:410:    start_day = datetime.fromtimestamp(window.start_us / 1e6, tz=timezone.utc).date()
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/parquet_backend.py:411:    end_day = datetime.fromtimestamp(window.end_us / 1e6, tz=timezone.utc).date()
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:53:    return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:108:        sequence=int(block_number) * 1_000_000 + int(log_index or 0)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:120:    start_dt = datetime.fromtimestamp(window.start_us / 1e6, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:121:    end_dt = datetime.fromtimestamp(window.end_us / 1e6, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:147:    start_dt = datetime.fromtimestamp(window.start_us / 1e6, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/sql_adapters.py:148:    end_dt = datetime.fromtimestamp(window.end_us / 1e6, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/external_parquet.py:113:        win_start_us = int(window_start_dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/recorded_event_bus/storage/external_parquet.py:114:        win_end_us = int(window_end_dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/market_runtime.py:1286:                    observed_at_epoch = feed_manager.cache.get_observed_at_epoch(yes_token)
+<V>/_dl/c91/backend/services/market_runtime.py:1288:                    observed_at_epoch = None
+<V>/_dl/c91/backend/services/market_runtime.py:1289:                if observed_at_epoch is not None:
+<V>/_dl/c91/backend/services/market_runtime.py:1290:                    row["yes_price_updated_at"] = datetime.fromtimestamp(
+<V>/_dl/c91/backend/services/market_runtime.py:1291:                        float(observed_at_epoch),
+<V>/_dl/c91/backend/services/market_runtime.py:1298:                    observed_at_epoch = feed_manager.cache.get_observed_at_epoch(no_token)
+<V>/_dl/c91/backend/services/market_runtime.py:1300:                    observed_at_epoch = None
+<V>/_dl/c91/backend/services/market_runtime.py:1301:                if observed_at_epoch is not None:
+<V>/_dl/c91/backend/services/market_runtime.py:1302:                    row["no_price_updated_at"] = datetime.fromtimestamp(
+<V>/_dl/c91/backend/services/market_runtime.py:1303:                        float(observed_at_epoch),
+<V>/_dl/c91/backend/services/market_runtime.py:1376:                    target_ms = int(start_dt.timestamp() * 1000)
+<V>/_dl/c91/backend/services/market_runtime.py:2025:                        observed_at_epoch = feed_manager.cache.get_observed_at_epoch(token_ids[0])
+<V>/_dl/c91/backend/services/market_runtime.py:2027:                        observed_at_epoch = None
+<V>/_dl/c91/backend/services/market_runtime.py:2028:                    if observed_at_epoch is not None:
+<V>/_dl/c91/backend/services/market_runtime.py:2029:                        row["up_price_updated_at"] = datetime.fromtimestamp(
+<V>/_dl/c91/backend/services/market_runtime.py:2030:                            float(observed_at_epoch),
+<V>/_dl/c91/backend/services/market_runtime.py:2037:                        observed_at_epoch = feed_manager.cache.get_observed_at_epoch(token_ids[1])
+<V>/_dl/c91/backend/services/market_runtime.py:2039:                        observed_at_epoch = None
+<V>/_dl/c91/backend/services/market_runtime.py:2040:                    if observed_at_epoch is not None:
+<V>/_dl/c91/backend/services/market_runtime.py:2041:                        row["down_price_updated_at"] = datetime.fromtimestamp(
+<V>/_dl/c91/backend/services/market_runtime.py:2042:                            float(observed_at_epoch),
+<V>/_dl/c91/backend/services/market_runtime.py:2088:            enrich_crypto_market_row(row, now_ms=int(now_dt.timestamp() * 1000))
+<V>/_dl/c91/backend/services/market_runtime.py:2200:    observed_at_us = int(event.timestamp.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/binance_feed.py:91:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/binance_feed.py:167:                            now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/binance_feed.py:170:                            stale_threshold_ms = int(stale_timeout * 1000)
+<V>/_dl/c91/backend/services/binance_feed.py:202:                await asyncio.sleep(RECONNECT_AFTER_STALE_MS / 1000.0)
+<V>/_dl/c91/backend/services/binance_feed.py:205:            await asyncio.sleep(reconnect_ms / 1000.0)
+<V>/_dl/c91/backend/services/binance_feed.py:245:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/wallet_state_cache.py:82:        ts = ts / 1000.0
+<V>/_dl/c91/backend/services/wallet_state_cache.py:84:        return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/shared_state.py:1634:                        "epoch",
+<V>/_dl/c91/backend/services/shared_state.py:1639:                    func.extract("epoch", now_naive - OpportunityState.last_seen_at)
+<V>/_dl/c91/backend/services/shared_state.py:2331:        observed_at_us=int(updated_at.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/shared_state.py:2332:            if isinstance(updated_at, datetime) else int(time.time() * 1_000_000),
+<V>/_dl/c91/backend/services/crypto_service.py:83:    end_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/crypto_service.py:84:    start_ms = end_ms - max(60, int(lookback_seconds)) * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:360:    age_seconds = round((time.time() * 1000 - int(updated_ms)) / 1000, 1) if updated_ms else None
+<V>/_dl/c91/backend/services/crypto_service.py:662:        now_ms = time.time() * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:671:                end_ms = datetime.fromisoformat(end_str.replace("Z", "+00:00")).timestamp() * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:683:        now_ms = time.time() * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:695:                end_ms = datetime.fromisoformat(end_str.replace("Z", "+00:00")).timestamp() * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:704:                    start_ms = datetime.fromisoformat(start_str.replace("Z", "+00:00")).timestamp() * 1000
+<V>/_dl/c91/backend/services/crypto_service.py:984:                start_timestamp_ms=int(start_ts * 1000.0),
+<V>/_dl/c91/backend/services/crypto_service.py:1126:                        round((time.time() * 1000 - oracle.updated_at_ms) / 1000, 1) if oracle.updated_at_ms else None
+<V>/_dl/c91/backend/services/external_data/parquet_schema.py:55:        ("observed_at_us", pa.int64()),  # epoch microseconds (sortable)
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:405:                "elapsed_ms": int(response.elapsed.total_seconds() * 1000)
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:499:        # Convert ms-epoch to ISO 8601 — polybacktest v2 accepts both,
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:582:    observed_at_ms = int(observed_at.timestamp() * 1000)
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:705:            v = v / 1000.0
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:707:            return datetime.fromtimestamp(v, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/polybacktest_client.py:726:        datetime.fromtimestamp(int(ms) / 1000.0, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_client.py:335:            "elapsed_ms": int(response.elapsed.total_seconds() * 1000)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:249:    span_start = datetime.fromtimestamp(first_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:250:    span_end = datetime.fromtimestamp(last_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:351:    span_start = datetime.fromtimestamp(first_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:352:    span_end = datetime.fromtimestamp(last_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:463:    span_start = datetime.fromtimestamp(first_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/telonex_import_service.py:464:    span_end = datetime.fromtimestamp(last_us / 1e6, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:444:def _read_scan_stamp_epoch() -> float:
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:588:                "elapsed_ms": (time.monotonic() - root_started) * 1000.0,
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:595:        elapsed_ms = (time.monotonic() - started) * 1000.0
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:608:            "scanned_at_epoch": _LAST_SCAN_AT,
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:666:        "elapsed_ms": (time.monotonic() - started) * 1000.0,
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:687:    stamp_epoch = _read_scan_stamp_epoch()
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:688:    if stamp_epoch and (time.time() - stamp_epoch) <= max_age_seconds:
+<V>/_dl/c91/backend/services/external_data/parquet_scanner.py:689:        _LAST_SCAN_AT = stamp_epoch
+<V>/_dl/c91/backend/services/external_data/book_parquet_sink.py:139:        "observed_at_us": int(observed_at.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/external_data/book_parquet_sink.py:159:        "observed_at_us": int(observed_at.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/external_data/book_parquet_sink.py:336:        start = datetime.fromtimestamp(bucket, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/book_parquet_sink.py:337:        end = datetime.fromtimestamp(bucket + _WINDOW_SECONDS, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/provider_import_service.py:117:    job_id = f"prov-{int(time.time() * 1000)}-{_short_hash(spec.market_ids)}"
+<V>/_dl/c91/backend/services/external_data/provider_import_service.py:498:    return datetime.fromtimestamp(int(ms) / 1000.0, tz=timezone.utc)
+<V>/_dl/c91/backend/services/external_data/provider_import_service.py:573:        observed_us = [int(s.observed_at_ms) * 1000 for s in snaps]
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:115:    downloaded_at_epoch: Optional[float]
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:125:                             downloaded_at_epoch=None, rows=None, path=str(p))
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:131:            downloaded_at = data.get("downloaded_at_epoch")
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:139:        downloaded_at_epoch=downloaded_at,
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:184:                "downloaded_at_epoch": time.time(),
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:215:    """Convert microseconds-epoch to ISO-8601 UTC.  Returns None for
+<V>/_dl/c91/backend/services/external_data/telonex_markets_cache.py:236:        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+<V>/_dl/c91/backend/services/strategies/crypto_spike_reversion.py:276:                and fallback_age_seconds * 1000.0 <= max_oracle_age_ms
+<V>/_dl/c91/backend/services/strategies/crypto_spike_reversion.py:279:                oracle_age_ms = float(fallback_age_seconds) * 1000.0
+<V>/_dl/c91/backend/services/strategies/base.py:447:    Boundaries are aligned to the unix epoch — i.e. for a 5-minute
+<V>/_dl/c91/backend/services/strategies/base.py:454:    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/base.py:455:    elapsed = (now - epoch).total_seconds()
+<V>/_dl/c91/backend/services/strategies/base.py:457:    return epoch + _timedelta_seconds(floored)
+<V>/_dl/c91/backend/services/strategies/base.py:808:            return datetime.fromtimestamp(self._replay_now_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/base.py:812:            return datetime.fromtimestamp(us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/base.py:816:        """Strategy clock in epoch milliseconds (see ``now``)."""
+<V>/_dl/c91/backend/services/strategies/base.py:818:            return self._replay_now_us // 1000
+<V>/_dl/c91/backend/services/strategies/base.py:819:        return int(self.now().timestamp() * 1000)
+<V>/_dl/c91/backend/services/strategies/base.py:822:        """Strategy clock in epoch microseconds (see ``now``)."""
+<V>/_dl/c91/backend/services/strategies/base.py:825:        return int(self.now().timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/strategies/traders_confluence.py:264:                return datetime.fromtimestamp(float(text), tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/temporal_decay.py:275:            first_seen_dt = datetime.fromtimestamp(history[0][0], tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/crypto_distance_edge.py:436:        seconds_left = (end_ms_value - now_ms) / 1000.0
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1362:                    (utcnow() - observed_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1750:        now_epoch_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1754:            now_ms=now_epoch_ms,
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1757:        oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1764:            else max(100.0, max_oracle_age_seconds_cfg * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1766:        max_oracle_age_seconds = max_oracle_age_ms / 1000.0
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:1842:                    oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:2129:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:2169:        reentry_cooldown_ms = int(reentry_cooldown_seconds * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:3992:                self._paused_until_ms = int(utcnow().timestamp() * 1000.0) + int(pause_minutes * 60_000)
+<V>/_dl/c91/backend/services/strategies/btc_eth_directional_edge.py:4006:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1328:                    (utcnow() - observed_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1716:        now_epoch_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1720:            now_ms=now_epoch_ms,
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1723:        oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1730:            else max(100.0, max_oracle_age_seconds_cfg * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1732:        max_oracle_age_seconds = max_oracle_age_ms / 1000.0
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:1808:                    oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:2095:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:2135:        reentry_cooldown_ms = int(reentry_cooldown_seconds * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:3958:                self._paused_until_ms = int(utcnow().timestamp() * 1000.0) + int(pause_minutes * 60_000)
+<V>/_dl/c91/backend/services/strategies/btc_eth_maker_quote.py:3972:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/crypto_entropy_maker.py:333:                and fallback_age_seconds * 1000.0 <= max_oracle_age_ms
+<V>/_dl/c91/backend/services/strategies/crypto_entropy_maker.py:336:                oracle_age_ms = float(fallback_age_seconds) * 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_5m_midcycle.py:301:        now_ms = int(utcnow().timestamp() * 1000)
+<V>/_dl/c91/backend/services/strategies/crypto_5m_midcycle.py:392:        seconds_into_cycle = max(0.0, 300.0 - (end_ms_value - now_ms) / 1000.0)
+<V>/_dl/c91/backend/services/strategies/crypto_5m_midcycle.py:405:        seconds_left = (end_ms_value - now_ms) / 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_strategy_utils.py:23:            return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategies/crypto_strategy_utils.py:193:        return float(age_seconds) * 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_strategy_utils.py:274:    return _time.time() * 1000.0
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1330:                    (utcnow() - observed_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1718:        now_epoch_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1722:            now_ms=now_epoch_ms,
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1725:        oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1732:            else max(100.0, max_oracle_age_seconds_cfg * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1734:        max_oracle_age_seconds = max_oracle_age_ms / 1000.0
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:1810:                    oracle_age_seconds = (oracle_age_ms / 1000.0) if oracle_age_ms is not None else None
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:2097:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:2137:        reentry_cooldown_ms = int(reentry_cooldown_seconds * 1000.0)
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:3960:                self._paused_until_ms = int(utcnow().timestamp() * 1000.0) + int(pause_minutes * 60_000)
+<V>/_dl/c91/backend/services/strategies/btc_eth_convergence.py:3974:        now_ms = int(utcnow().timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategies/crypto_digital_sigma_edge.py:164:    cutoff_ms = now_ms - lookback_seconds * 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_digital_sigma_edge.py:177:    span_seconds = (pts[-1][0] - pts[0][0]) / 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_digital_sigma_edge.py:182:        dt = (t1 - t0) / 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_digital_sigma_edge.py:260:        now_ms = utcnow().timestamp() * 1000.0
+<V>/_dl/c91/backend/services/strategies/crypto_digital_sigma_edge.py:332:        seconds_left = (end_ms - now_ms) / 1000.0
+<V>/_dl/c91/backend/services/wallet_intelligence.py:1007:        """Parse a timestamp value into a Unix epoch float."""
+<V>/_dl/c91/backend/services/search/service.py:190:    latency_ms = (time.monotonic() - started) * 1000.0
+<V>/_dl/c91/backend/services/search/collectors.py:770:    duration_ms = (utcnow() - started).total_seconds() * 1000.0
+<V>/_dl/c91/backend/services/search/collectors.py:786:    duration_ms = (utcnow() - started).total_seconds() * 1000.0
+<V>/_dl/c91/backend/services/signal_bus.py:429:            return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/signal_bus.py:441:        return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/ctf_execution.py:1204:            "wallet_balance_shares": float,   # ERC1155 balanceOf / 1e6
+<V>/_dl/c91/backend/services/ctf_execution.py:1368:        gwei = float(wei or 0) / 1e9
+<V>/_dl/c91/backend/services/live_execution_service.py:253:            return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/live_execution_service.py:458:            timestamp = timestamp / 1000.0
+<V>/_dl/c91/backend/services/live_execution_service.py:459:        return datetime.fromtimestamp(timestamp, tz=timezone.utc)
+<V>/_dl/c91/backend/services/live_execution_service.py:2849:                    elapsed_ms = (_time.monotonic() - t0) * 1000.0
+<V>/_dl/c91/backend/services/live_execution_service.py:2879:                        elapsed_ms=round((_time.monotonic() - t0) * 1000.0, 1),
+<V>/_dl/c91/backend/services/live_execution_service.py:2885:                        elapsed_ms=round((_time.monotonic() - t0) * 1000.0, 1),
+<V>/_dl/c91/backend/services/live_execution_service.py:2993:            elapsed_ms = (_time.monotonic() - started_mono) * 1000.0
+<V>/_dl/c91/backend/services/live_execution_service.py:3156:                        (_time.monotonic() - _persist_started) * 1000.0, 1
+<V>/_dl/c91/backend/services/live_execution_service.py:3586:            elapsed_ms = (_time.monotonic() - started_mono) * 1000.0
+<V>/_dl/c91/backend/services/live_execution_service.py:3679:                        (_time.monotonic() - _prs_started) * 1000.0, 1
+<V>/_dl/c91/backend/services/live_execution_service.py:4870:            elapsed_ms = (_time.monotonic() - started_mono) * 1000.0
+<V>/_dl/c91/backend/services/live_execution_service.py:5029:                                    + (_time.monotonic() - t_create) * 1000.0,
+<V>/_dl/c91/backend/services/live_execution_service.py:5038:                                    + (_time.monotonic() - t_post) * 1000.0,
+<V>/_dl/c91/backend/services/live_execution_service.py:5084:                                    + (_time.monotonic() - t_create) * 1000.0,
+<V>/_dl/c91/backend/services/live_execution_service.py:5093:                                    + (_time.monotonic() - t_post) * 1000.0,
+<V>/_dl/c91/backend/services/live_execution_service.py:5617:        _po_total_ms = round((_time.monotonic() - _po_started) * 1000.0, 1)
+<V>/_dl/c91/backend/services/live_execution_service.py:5647:            now_ms = int(_time.time() * 1000)
+<V>/_dl/c91/backend/services/wallet_discovery.py:27:from utils.utcnow import as_utc_naive, utcnow, utcfromtimestamp
+<V>/_dl/c91/backend/services/wallet_discovery.py:669:        if raw_limit >= Decimal("1e6"):
+<V>/_dl/c91/backend/services/wallet_discovery.py:3421:                return utcfromtimestamp(raw)
+<V>/_dl/c91/backend/services/crypto_latency_trace.py:101:    ``now_ms = int(time.time() * 1000)`` once per message).
+<V>/_dl/c91/backend/services/crypto_latency_trace.py:108:        ts = int(ts_ms) if ts_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/crypto_latency_trace.py:255:        delta = (end - started_mono) * 1000.0
+<V>/_dl/c91/backend/services/crypto_latency_trace.py:273:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/chainlink_direct_feed.py:85:    ts = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/chainlink_direct_feed.py:337:        obs_ts_ms = obs_ts_s * 1000 if obs_ts_s and obs_ts_s < 1e12 else obs_ts_s
+<V>/_dl/c91/backend/services/chainlink_direct_feed.py:339:            obs_ts_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/chainlink_direct_feed.py:347:            received_at_ms=int(time.time() * 1000),
+<V>/_dl/c91/backend/services/opportunity_recorder.py:823:    now_us = int(datetime.now(timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/opportunity_recorder.py:829:            obs_us = int(detected_at.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/strategy_sdk.py:130:    return max(0.0, (_now().timestamp() - ts_f) * 1000.0)
+<V>/_dl/c91/backend/services/strategy_sdk.py:266:    #         live_market=lm, payload=p, now_ms=int(time.time() * 1000),
+<V>/_dl/c91/backend/services/strategy_sdk.py:273:    # to_epoch_ms, compute_age_ms), timeframe (normalize_timeframe,
+<V>/_dl/c91/backend/services/strategy_sdk.py:3202:            "staleness_ms": round(staleness_s * 1000.0, 1),
+<V>/_dl/c91/backend/services/strategy_sdk.py:3343:        """Best-effort extract a resolution-time epoch-millis int from
+<V>/_dl/c91/backend/services/strategy_sdk.py:3356:                return int(value.timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategy_sdk.py:3382:                    return int(dt.timestamp() * 1000.0)
+<V>/_dl/c91/backend/services/strategy_sdk.py:3407:                a ``datetime``, or a raw epoch-millis int/float.
+<V>/_dl/c91/backend/services/strategy_sdk.py:3408:            now_ms: Wall-clock millis. Defaults to ``time.time() * 1000``.
+<V>/_dl/c91/backend/services/strategy_sdk.py:3418:        now = int(now_ms) if now_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_sdk.py:3419:        return (end_ms - now) / 1000.0
+<V>/_dl/c91/backend/services/strategy_sdk.py:3561:                cutoff_ms = (time.time() - max(1, int(lookback_seconds))) * 1000.0
+<V>/_dl/c91/backend/services/discovery_profile_sdk.py:1251:                return datetime.utcfromtimestamp(raw)
+<V>/_dl/c91/backend/services/recording_session_service.py:335:            t = datetime.fromtimestamp(tc.end_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/wallet_rtds_feed.py:269:        block_dt = datetime.fromtimestamp(ts_seconds, tz=timezone.utc)
+<V>/_dl/c91/backend/services/wallet_rtds_feed.py:272:            (detected_at - block_dt).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/chainlink_feed.py:36:HISTORY_MAX_AGE_MS = 3 * 60 * 60 * 1000
+<V>/_dl/c91/backend/services/chainlink_feed.py:70:        self.updated_at_ms = updated_at_ms or int(time.time() * 1000)
+<V>/_dl/c91/backend/services/chainlink_feed.py:78:            "age_seconds": (time.time() * 1000 - self.updated_at_ms) / 1000 if self.updated_at_ms else None,
+<V>/_dl/c91/backend/services/chainlink_feed.py:149:        cutoff = int(time.time() * 1000) - HISTORY_MAX_AGE_MS
+<V>/_dl/c91/backend/services/chainlink_feed.py:201:        target_ms = timestamp_s * 1000
+<V>/_dl/c91/backend/services/chainlink_feed.py:241:        target_ms = int(float(timestamp_s) * 1000.0)
+<V>/_dl/c91/backend/services/chainlink_feed.py:242:        max_delay_ms = max(0, int(float(max_delay_seconds) * 1000.0))
+<V>/_dl/c91/backend/services/chainlink_feed.py:283:        cutoff = int(time.time() * 1000) - HISTORY_MAX_AGE_MS
+<V>/_dl/c91/backend/services/chainlink_feed.py:329:        cutoff = int(time.time() * 1000) - HISTORY_MAX_AGE_MS
+<V>/_dl/c91/backend/services/chainlink_feed.py:404:                await asyncio.sleep(reconnect_ms / 1000.0)
+<V>/_dl/c91/backend/services/chainlink_feed.py:492:                    updated_at_ms = int(ts_float * 1000) if ts_float < 1e12 else int(ts_float)
+<V>/_dl/c91/backend/services/chainlink_feed.py:496:                updated_at_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/chainlink_feed.py:526:                    record_wire_event("chainlink", asset, int(time.time() * 1000))
+<V>/_dl/c91/backend/services/chainlink_feed.py:545:            cutoff = int(time.time() * 1000) - HISTORY_MAX_AGE_MS
+<V>/_dl/c91/backend/services/smart_wallet_pool.py:18:from utils.utcnow import as_utc, as_utc_naive, utcnow, utcfromtimestamp
+<V>/_dl/c91/backend/services/smart_wallet_pool.py:2840:                return utcfromtimestamp(ts)
+<V>/_dl/c91/backend/services/smart_wallet_pool.py:2856:                    return utcfromtimestamp(ts)
+<V>/_dl/c91/backend/services/trader_orchestrator/session_engine.py:779:            elapsed_ms = max(0.0, (_time.monotonic() - started_at) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/session_engine.py:786:            timing["total_ms"] = round(max(0.0, (_time.monotonic() - _execution_started_at) * 1000.0), 3)
+<V>/_dl/c91/backend/services/trader_orchestrator/fast_submit.py:715:                return max(0, int((end - start).total_seconds() * 1000))
+<V>/_dl/c91/backend/services/trader_orchestrator/fast_submit.py:821:            return datetime.fromtimestamp(float(ts), tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/trader_orchestrator/gate_pipeline.py:521:            elapsed_ms = max(0.0, (time.monotonic() - gate_start) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/gate_pipeline.py:549:        total_ms = max(0.0, (time.monotonic() - run_start) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/gate_pipeline.py:604:            elapsed_ms = max(0.0, (time.monotonic() - gate_start) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/gate_pipeline.py:631:        total_ms = max(0.0, (time.monotonic() - run_start) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/order_manager.py:586:        book_age_ms = staleness * 1000.0 if staleness is not None else None
+<V>/_dl/c91/backend/services/trader_orchestrator/order_manager.py:700:        elapsed_ms = (time.monotonic() - started_mono) * 1000.0
+<V>/_dl/c91/backend/services/trader_orchestrator/order_manager.py:1470:            await asyncio.sleep(_retry_backoff_ms / 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/order_manager.py:1575:        (time.monotonic() - _leg_started_total) * 1000.0, 1
+<V>/_dl/c91/backend/services/trader_orchestrator/decision_gates.py:231:            max_age_seconds = max(0.05, float(max_age_ms) / 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/decision_gates.py:391:            (datetime.now(timezone.utc) - observed_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/trader_orchestrator/decision_gates.py:1064:                (datetime.now(timezone.utc) - live_observed_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/trader_orchestrator/decision_gates.py:1073:                (datetime.now(timezone.utc) - live_fetched_at.astimezone(timezone.utc)).total_seconds() * 1000.0,
+<V>/_dl/c91/backend/services/trader_orchestrator/position_lifecycle.py:3083:                ts = ts / 1000.0
+<V>/_dl/c91/backend/services/trader_orchestrator/position_lifecycle.py:3084:            return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/trader_orchestrator/position_lifecycle.py:3680:                ts = ts / 1000.0
+<V>/_dl/c91/backend/services/trader_orchestrator/position_lifecycle.py:3681:            return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:112:    return max(default_ttl, max(100.0, scanner_max_age_ms) / 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:127:            return datetime.fromtimestamp(ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:202:def _iso_from_epoch_seconds(epoch_seconds: float | None) -> Optional[str]:
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:203:    if epoch_seconds is None:
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:206:        return datetime.fromtimestamp(float(epoch_seconds), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:211:def _epoch_seconds_from_market_timestamp(value: Any) -> Optional[float]:
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:578:    cutoff = now_ms - (max(1, int(window_seconds)) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:598:    now_ms = float(time.time() * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:600:        cutoff_ms = now_ms - (max_history_seconds * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:695:        ts = _epoch_seconds_from_market_timestamp(item.get("timestamp"))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:699:        normalized_cached.append({"t": ts * 1000.0, "p": float(mid)})
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:810:        "market_data_age_seconds": ((selected_age_ms / 1000.0) if selected_age_ms is not None else None),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:855:    now_epoch = time.time()
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:912:            observed_at_s = None if age_s is None else (now_epoch - max(0.0, float(age_s)))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:913:            age_ms = None if age_s is None else max(0.0, float(age_s) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:914:            return float(mid), age_ms, _iso_from_epoch_seconds(observed_at_s), subscription_current
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:940:                    observed_at_s = _epoch_seconds_from_market_timestamp(market_info.get(observed_key))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:949:                    max(0.0, (now_epoch - observed_at_s) * 1000.0) if observed_at_s is not None else None
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:954:                    _iso_from_epoch_seconds(observed_at_s),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:978:                        and hint_yes_age_ms <= max(0.0, strict_ttl * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1010:                        and hint_no_age_ms <= max(0.0, strict_ttl * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1267:    now_epoch = time.time()
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1297:            age_ms = max(0.0, (now_epoch - float(observed_at_s)) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1321:            "observed_at": _iso_from_epoch_seconds(observed_at_s),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1339:            snapshot_observed_s = _epoch_seconds_from_market_timestamp(info.get(key))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1357:            observed = _epoch_seconds_from_market_timestamp(info.get(key))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1370:            observed = _epoch_seconds_from_market_timestamp(info.get(key))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1465:                    observed_at_s = now_epoch - max(0.0, float(age_s))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1480:                        observed_at_s = now_epoch
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1518:                observed_at_s=now_epoch,
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1559:                ts = _epoch_seconds_from_market_timestamp(item.get("timestamp"))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1563:                normalized_cached.append({"t": ts * 1000.0, "p": float(mid)})
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1614:    fetched_at_epoch = fetched_at_dt.timestamp()
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1641:            snapshot_observed_s = _epoch_seconds_from_market_timestamp(market_info.get(key))
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1651:                    "observed_at": _iso_from_epoch_seconds(snapshot_observed_s),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1653:                        max(0.0, (now_epoch - snapshot_observed_s) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1665:                    "observed_at": _iso_from_epoch_seconds(snapshot_observed_s),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1667:                        max(0.0, (now_epoch - snapshot_observed_s) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1698:                selected_history_ts_s = selected_history_ts_s / 1000.0
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1702:                "observed_at": _iso_from_epoch_seconds(selected_history_ts_s),
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1704:                    max(0.0, (now_epoch - selected_history_ts_s) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1738:            selected_observed_s = _epoch_seconds_from_market_timestamp(selected_observed_at)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1740:                selected_age_ms = max(0.0, (fetched_at_epoch - selected_observed_s) * 1000.0)
+<V>/_dl/c91/backend/services/trader_orchestrator/live_market_context.py:1767:            "market_data_age_seconds": ((selected_age_ms / 1000.0) if selected_age_ms is not None else None),
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:57:        ``ts_ms`` defaults to wall-clock now (``time.time() * 1000``) so
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:60:        ts = int(ts_ms) if ts_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:65:        cutoff = now_ms - int(self.window_seconds * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:97:        prior = self.at_or_before(latest_ts - int(seconds_ago * 1000))
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:134:                dt_s = max(0.001, (ts - prev_ts) / 1000.0)
+<V>/_dl/c91/backend/services/strategy_helpers/price_window.py:224:        ts = int(ts_ms) if ts_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/crypto_strategy_utils.py:179:        age_ms = float(oracle_age_seconds) * 1000.0
+<V>/_dl/c91/backend/services/strategy_helpers/crypto_strategy_utils.py:302:        now_ms = int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/crypto_strategy_utils.py:339:                    * 1000.0,
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:30:    # timestamp in epoch millis:
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:50:    start is derived from ``end_ts_ms - cycle_seconds * 1000`` on every
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:88:            end_ts_ms: The cycle's resolution timestamp (epoch millis).
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:89:            now_ms: Wall-clock millis. Defaults to ``time.time() * 1000``.
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:101:        now = int(now_ms) if now_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:102:        cycle_start_ms = cid - int(self.cycle_seconds * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:103:        elapsed_s = (now - cycle_start_ms) / 1000.0
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:129:        now = int(now_ms) if now_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:130:        cycle_start_ms = int(end_ts_ms) - int(self.cycle_seconds * 1000)
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:131:        elapsed_s = max(0.0, (now - cycle_start_ms) / 1000.0)
+<V>/_dl/c91/backend/services/strategy_helpers/cycle_tracker.py:132:        remaining_s = max(0.0, (int(end_ts_ms) - now) / 1000.0)
+<V>/_dl/c91/backend/services/strategy_backtester.py:545:    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+<V>/_dl/c91/backend/services/strategy_backtester.py:546:    step_ms = _timeframe_to_seconds(timeframe) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:547:    start_ms = now_ms - (max(1, int(lookback_hours)) * 3600 * 1000)
+<V>/_dl/c91/backend/services/strategy_backtester.py:802:    bt_slug = f"_sweep_{slug}_{int(time.time() * 1000)}"
+<V>/_dl/c91/backend/services/strategy_backtester.py:843:        result.sweep_time_ms = (time.monotonic() - sweep_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:849:        result.sweep_time_ms = (time.monotonic() - sweep_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:862:        result.sweep_time_ms = (time.monotonic() - sweep_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:866:    now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+<V>/_dl/c91/backend/services/strategy_backtester.py:867:    step_ms = _timeframe_to_seconds(_DEFAULT_REPLAY_TIMEFRAME) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:868:    start_ms = now_ms - (_DEFAULT_REPLAY_LOOKBACK_HOURS * 3600 * 1000)
+<V>/_dl/c91/backend/services/strategy_backtester.py:950:        result.sweep_time_ms = (time.monotonic() - sweep_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:995:    result.sweep_time_ms = (time.monotonic() - sweep_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1023:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1037:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1040:        result.load_time_ms = (time.monotonic() - load_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1083:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1086:        result.data_fetch_time_ms = (time.monotonic() - data_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1149:        result.detect_time_ms = (time.monotonic() - detect_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1157:    result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1212:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1226:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1229:        result.load_time_ms = (time.monotonic() - load_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1233:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1251:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1254:        result.data_fetch_time_ms = (time.monotonic() - data_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1412:        result.evaluate_time_ms = (time.monotonic() - eval_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1419:    result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1475:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1489:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1492:        result.load_time_ms = (time.monotonic() - load_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1496:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1522:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1525:        result.data_fetch_time_ms = (time.monotonic() - data_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1682:        result.exit_time_ms = (time.monotonic() - exit_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:1689:    result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:2594:        int(start_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:2595:        int(end_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:2621:            start_us=int(start_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:2622:            end_us=int(end_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:2716:        return datetime.fromtimestamp(int(us) / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_backtester.py:2923:        ts = datetime.fromtimestamp(envelope.observed_at_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_backtester.py:3022:        int(start_dt.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:3023:        int(ticks[-1].timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:3074:            ev_ts = datetime.fromtimestamp(envelope.observed_at_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_backtester.py:3427:        # ``ts`` is integer epoch seconds (mirroring the live snapshot's
+<V>/_dl/c91/backend/services/strategy_backtester.py:3432:        ts_epoch = int(observed.timestamp()) if observed is not None else 0
+<V>/_dl/c91/backend/services/strategy_backtester.py:3446:            "ts": ts_epoch,
+<V>/_dl/c91/backend/services/strategy_backtester.py:3447:            "ingest_ts": ts_epoch,
+<V>/_dl/c91/backend/services/strategy_backtester.py:3448:            "exchange_ts": ts_epoch,
+<V>/_dl/c91/backend/services/strategy_backtester.py:3962:                    now_us=int(tick_t.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:3993:                    now_us=int(tick_t.timestamp() * 1_000_000),
+<V>/_dl/c91/backend/services/strategy_backtester.py:4476:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:4516:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:4519:        result.load_time_ms = (time.monotonic() - load_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:4951:                result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:5738:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:5741:        result.data_fetch_time_ms = (time.monotonic() - data_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:5896:        result.run_time_ms = (time.monotonic() - run_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:5897:        result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:5900:        result.run_time_ms = (time.monotonic() - run_start) * 1000
+<V>/_dl/c91/backend/services/strategy_backtester.py:6018:    result.total_time_ms = (time.monotonic() - total_start) * 1000
+<V>/_dl/c91/backend/services/session_gate.py:118:        avg_wait_ms = round((total_wait / holds) * 1000.0, 2) if holds > 0 else 0.0
+<V>/_dl/c91/backend/services/position_mark_state.py:33:    mark_updated_at: float = 0.0  # epoch seconds
+<V>/_dl/c91/backend/services/kalshi_client.py:696:            {ticker: [{"t": epoch_ms, "yes": float, "no": float}, ...], ...}
+<V>/_dl/c91/backend/services/kalshi_client.py:761:                ts_ms = int(ts_num * 1000.0) if ts_num < 10_000_000_000 else int(ts_num)
+<V>/_dl/c91/backend/services/news/workflow_orchestrator.py:261:        # key -> expiry timestamp (float, UTC epoch seconds)
+<V>/_dl/c91/backend/services/news/workflow_orchestrator.py:1730:        price_bucket = int(round(float(market_price or 0.0) * 1000))
+<V>/_dl/c91/backend/services/news/workflow_orchestrator.py:1742:        mkt_bucket = int(round(float(market_price or 0.0) * 1000))
+<V>/_dl/c91/backend/services/news/workflow_orchestrator.py:1743:        mdl_bucket = int(round(float(model_probability or 0.0) * 1000))
+<V>/_dl/c91/backend/services/marketdata/book.py:29:    return int(aware.astimezone(timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/book.py:33:    return datetime.fromtimestamp(us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/marketdata/coverage.py:113:    start_us = int(start.astimezone(timezone.utc).timestamp() * 1_000_000) if start.tzinfo else int(start.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/coverage.py:114:    end_us = int(end.astimezone(timezone.utc).timestamp() * 1_000_000) if end.tzinfo else int(end.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/coverage.py:157:        ds_start_us = int(r.start_ts.replace(tzinfo=timezone.utc).timestamp() * 1_000_000) if r.start_ts else None
+<V>/_dl/c91/backend/services/marketdata/coverage.py:158:        ds_end_us = int(r.end_ts.replace(tzinfo=timezone.utc).timestamp() * 1_000_000) if r.end_ts else None
+<V>/_dl/c91/backend/services/marketdata/pins.py:51:            "expires_at_us": int((time.time() + max(1, int(ttl_seconds))) * 1_000_000),
+<V>/_dl/c91/backend/services/marketdata/pins.py:79:    now_us = int(time.time() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/deltas.py:31:    return int(aware.astimezone(timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/deltas.py:43:        w_start = int(datetime.strptime(m.group("start"), "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/deltas.py:44:        w_end = int(datetime.strptime(m.group("end"), "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:55:    return int(dt.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:144:            start_us = int(r.start_ts.replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:146:            end_us = int(r.end_ts.replace(tzinfo=timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:195:    ts_us = int(tick.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:216:    ts_us = int(tick.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:252:    return datetime.fromtimestamp(us / 1_000_000, tz=timezone.utc).isoformat().replace("+00:00", "Z")
+<V>/_dl/c91/backend/services/marketdata/projection.py:425:    cadence_us = max(1, int(cadence_seconds * 1_000_000))
+<V>/_dl/c91/backend/services/marketdata/projection.py:426:    start_us = int(start.astimezone(timezone.utc).timestamp() * 1_000_000) if start.tzinfo else int(start.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:427:    end_us = int(end.astimezone(timezone.utc).timestamp() * 1_000_000) if end.tzinfo else int(end.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:433:        tick = datetime.fromtimestamp(tick_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/marketdata/projection.py:532:    cadence_us = max(1, int(cadence_seconds * 1_000_000))
+<V>/_dl/c91/backend/services/marketdata/projection.py:533:    start_us = int(start.astimezone(timezone.utc).timestamp() * 1_000_000) if start.tzinfo else int(start.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:534:    end_us = int(end.astimezone(timezone.utc).timestamp() * 1_000_000) if end.tzinfo else int(end.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/projection.py:540:        tick = datetime.fromtimestamp(tick_us / 1_000_000, tz=timezone.utc)
+<V>/_dl/c91/backend/services/marketdata/quality.py:26:    return int(aware.astimezone(timezone.utc).timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/marketdata/quality.py:102:        "first_observed": datetime.fromtimestamp(first_us / 1e6, tz=timezone.utc).isoformat(),
+<V>/_dl/c91/backend/services/marketdata/quality.py:103:        "last_observed": datetime.fromtimestamp(last_us / 1e6, tz=timezone.utc).isoformat(),
+<V>/_dl/c91/backend/services/marketdata/asof.py:19:All timestamps are integer microseconds since the Unix epoch (the canonical
+<V>/_dl/c91/backend/services/marketdata/view.py:108:                    mtime_us=int(st.st_mtime * 1_000_000),
+<V>/_dl/c91/backend/services/marketdata/view.py:143:        max_stale_us = int(max_staleness_seconds * 1_000_000) if max_staleness_seconds is not None else None
+<V>/_dl/c91/backend/services/marketdata/manifest.py:157:        mtime_us=int(st.st_mtime * 1_000_000),
+<V>/_dl/c91/backend/services/marketdata/manifest.py:198:        created_at_us=int(created_at_us if created_at_us is not None else time.time() * 1_000_000),
+<V>/_dl/c91/backend/services/polymarket_trade_verifier.py:326:        return datetime.fromtimestamp(float(ts), tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:88:    target_epoch = int(tgt.timestamp())
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:112:        diff = abs(int(dt_utc.timestamp()) - target_epoch)
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:555:        target_epoch = int(target_time.replace(tzinfo=timezone.utc).timestamp())
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:561:                diff = abs(int(dt.timestamp()) - target_epoch)
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:717:            target_epoch = int(target_utc.timestamp())
+<V>/_dl/c91/backend/services/weather/adapters/open_meteo.py:723:                    diff = abs(int(dt.timestamp()) - target_epoch)
+<V>/_dl/c91/backend/services/worker_state.py:610:            commit_call_ms = int((time.monotonic() - commit_started) * 1000)
+<V>/_dl/c91/backend/services/worker_state.py:611:            total_ms = int((time.monotonic() - total_started) * 1000)
+<V>/_dl/c91/backend/services/trader_cycle_context.py:379:            _step_timings_ms[label] = int((time.monotonic() - started_mono) * 1000.0)
+<V>/_dl/c91/backend/services/live_price_snapshot.py:38:def _coerce_epoch_ms(value: object) -> int | None:
+<V>/_dl/c91/backend/services/live_price_snapshot.py:53:                return int(dt.timestamp() * 1000)
+<V>/_dl/c91/backend/services/live_price_snapshot.py:123:        ts_ms = _coerce_epoch_ms(
+<V>/_dl/c91/backend/services/live_price_snapshot.py:142:    now_value = now_ms if now_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/live_price_snapshot.py:143:    cutoff_ms = now_value - max(60, int(window_seconds)) * 1000
+<V>/_dl/c91/backend/services/live_price_snapshot.py:176:    last_ts = _coerce_epoch_ms(last.get("t"))
+<V>/_dl/c91/backend/services/live_price_snapshot.py:180:    if now_ms - last_ts >= max(1, int(min_append_seconds)) * 1000:
+<V>/_dl/c91/backend/services/live_price_snapshot.py:207:    now_value = now_ms if now_ms is not None else int(time.time() * 1000)
+<V>/_dl/c91/backend/services/trader_order_verification.py:49:        return datetime.fromtimestamp(value, tz=timezone.utc)
+<V>/_dl/c91/backend/services/scanner.py:145:        # market_id -> [{t: epoch_ms, idx_0: float, idx_1: float, ...}, ...]
+<V>/_dl/c91/backend/services/scanner.py:159:        self._market_history_sample_interval_ms: int = spark_sample_seconds * 1000
+<V>/_dl/c91/backend/services/scanner.py:168:        self._market_history_backfill_retry_ms: int = 5 * 60 * 1000
+<V>/_dl/c91/backend/services/scanner.py:456:        now_ms = int(ts.timestamp() * 1000)
+<V>/_dl/c91/backend/services/scanner.py:457:        cutoff_ms = now_ms - int(self._market_history_retention_seconds * 1000)
+<V>/_dl/c91/backend/services/scanner.py:831:                max(100.0, float(getattr(settings, "SCANNER_STRICT_WS_MAX_AGE_MS", 30000) or 30000.0)) / 1000.0,
+<V>/_dl/c91/backend/services/scanner.py:1522:        return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None).isoformat() + "Z"
+<V>/_dl/c91/backend/services/scanner.py:1720:                opp.last_priced_at = datetime.fromtimestamp(opp_last_priced_ts, tz=timezone.utc)
+<V>/_dl/c91/backend/services/scanner.py:2157:        cutoff_ms = now_ms - int(self._market_history_retention_seconds * 1000)
+<V>/_dl/c91/backend/services/scanner.py:2208:        now_ms = int(now.timestamp() * 1000)
+<V>/_dl/c91/backend/services/scanner.py:2209:        window_ms = int(self._market_history_retention_seconds * 1000)
+<V>/_dl/c91/backend/services/scanner.py:2211:        start_s = start_ms // 1000
+<V>/_dl/c91/backend/services/scanner.py:2212:        now_s = now_ms // 1000
+<V>/_dl/c91/backend/services/scanner.py:2789:        now_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+<V>/_dl/c91/backend/services/fill_simulator/cox_inference.py:67:    trained_at_epoch: float
+<V>/_dl/c91/backend/services/fill_simulator/cox_inference.py:68:    promoted_at_epoch: float | None
+<V>/_dl/c91/backend/services/fill_simulator/cox_inference.py:203:            trained_at_epoch=row.trained_at.timestamp() if row.trained_at else 0.0,
+<V>/_dl/c91/backend/services/fill_simulator/cox_inference.py:204:            promoted_at_epoch=row.promoted_at.timestamp() if row.promoted_at else None,
+<V>/_dl/c91/backend/services/fill_simulator/counterfactual_replay.py:187:                observed_at=datetime.fromtimestamp(int(d["observed_at_us"][i]) / 1e6, tz=timezone.utc),
+<V>/_dl/c91/backend/services/fill_simulator/counterfactual_replay.py:274:    ts_us_max = int(placed_at.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/fill_simulator/counterfactual_replay.py:292:    start_us = int(start_at.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/fill_simulator/counterfactual_replay.py:293:    end_us = int(end_at.timestamp() * 1_000_000)
+<V>/_dl/c91/backend/services/fill_simulator/cox_trainer.py:260:            "_created_at_epoch": float(ca.timestamp()) if ca else 0.0,
+<V>/_dl/c91/backend/services/fill_simulator/cox_trainer.py:410:    The split is by ``_created_at_epoch`` so the test cohort is
+<V>/_dl/c91/backend/services/fill_simulator/cox_trainer.py:416:    sort_col = "_created_at_epoch" if "_created_at_epoch" in df.columns else "duration_seconds"
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:53:    measured_at_epoch: float = 0.0
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:60:    last_refresh_epoch: float = 0.0
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:83:        measured_at_epoch=base.measured_at_epoch,
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:158:        _state.last_refresh_epoch = time.monotonic()
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:165:        _state.last_refresh_epoch = time.monotonic()
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:173:            _state.last_refresh_epoch = time.monotonic()
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:220:            measured_at_epoch=time.time(),
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:227:        _state.last_refresh_epoch = time.monotonic()
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:231:        _state.last_refresh_epoch = time.monotonic()
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:236:    if _state.last_refresh_epoch <= 0:
+<V>/_dl/c91/backend/services/fill_simulator/empirical_constants.py:238:    return time.monotonic() - _state.last_refresh_epoch
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_profile.py:184:                v = v / 1000.0
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_profile.py:185:            return datetime.fromtimestamp(v, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_profile.py:197:                v = v / 1000.0
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_profile.py:198:            return datetime.fromtimestamp(v, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/market_resolution.py:211:    slugs against our needed set.  The wallet's slugs encode an epoch
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/market_resolution.py:212:    timestamp, so we sort our needed set by epoch (newest first) to
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/analytical_report_runner.py:266:            id=f"reit-{int(time.time() * 1000)}-{_uuid.uuid4().hex[:8]}",
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_analytics.py:1186:    ``btc-updown-{horizon}-{epoch}`` (where ``epoch`` is the start
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_analytics.py:1248:        start_epoch = int(parts[-1])
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/wallet_analytics.py:1255:    start_dt = datetime.fromtimestamp(start_epoch, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/service.py:66:    job_id = f"re-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/service.py:385:        strategy_id = f"strat-{int(time.time() * 1000)}-{uuid.uuid4().hex[:6]}"
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:325:                v = v / 1000.0
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:326:            return datetime.fromtimestamp(v, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:338:                v = v / 1000.0
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:339:            return datetime.fromtimestamp(v, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:525:    epoch = int(ts.timestamp())
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:526:    floored = epoch - (epoch % max(1, granularity_seconds))
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/scoring.py:527:    return datetime.fromtimestamp(floored, tz=timezone.utc)
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/agent.py:249:    iter_id = f"reit-{int(time.time() * 1000)}-{uuid.uuid4().hex[:8]}"
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/agent.py:303:    duration_ms = (utcnow() - started_at).total_seconds() * 1000.0
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/tools.py:899:                start_ms=int(start_dt.timestamp() * 1000),
+<V>/_dl/c91/backend/services/strategy_reverse_engineer/tools.py:900:                end_ms=int(end_dt.timestamp() * 1000),
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:49:    def _to_epoch_ms(dt_value: datetime | None) -> int | None:
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:54:        return int(dt_value.timestamp() * 1000)
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:269:        start_ms = self._to_epoch_ms(start_dt)
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:270:        end_ms = self._to_epoch_ms(end_dt)
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:393:            emission_ts_ms = self._to_epoch_ms(emission_ts)
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:580:                    event_at=datetime.fromtimestamp(int(replay_point.get("t") or 0) / 1000, tz=timezone.utc),
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:626:                event_at=datetime.fromtimestamp(int(replay_point.get("t") or 0) / 1000, tz=timezone.utc),
+<V>/_dl/c91/backend/services/simulation/execution_simulator.py:666:                event_at=datetime.fromtimestamp(int(final_point.get("t") or 0) / 1000, tz=timezone.utc),
+<V>/_dl/c91/backend/services/simulation/historical_data_provider.py:39:        return parsed // 1000
+<V>/_dl/c91/backend/services/simulation/historical_data_provider.py:48:        return parsed * 1000
+<V>/_dl/c91/backend/services/simulation/historical_data_provider.py:68:    return datetime.fromtimestamp(normalized / 1000.0, tz=timezone.utc)
+<V>/_dl/c91/backend/services/simulation/historical_data_provider.py:106:        bucket_ms = int(timeframe_seconds * 1000)
+<V>/_dl/c91/backend/services/simulation/historical_data_provider.py:331:        age_ms = (event_dt - observed).total_seconds() * 1000.0
+<V>/_dl/c91/backend/services/data_source_runner.py:188:            return datetime.fromtimestamp(mktime(value), tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/data_source_runner.py:199:                ts = ts / 1000.0
+<V>/_dl/c91/backend/services/data_source_runner.py:200:            return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/data_source_runner.py:824:            duration_ms=int((completed_at - started_at).total_seconds() * 1000),
+<V>/_dl/c91/backend/services/data_source_runner.py:898:        duration_ms=int((completed_at - started_at).total_seconds() * 1000),
+<V>/_dl/c91/backend/services/data_source_runner.py:984:    started_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
+<V>/_dl/c91/backend/services/data_source_runner.py:1028:    elapsed_ms = int(datetime.now(timezone.utc).timestamp() * 1000) - started_ms
+<V>/_dl/c91/backend/services/signal_cache.py:272:            return datetime.fromtimestamp(float(value), tz=timezone.utc)
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:35:    recorded_at_epoch: float
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:90:                    recorded_at_epoch=float(time.time()),
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:97:            now_epoch = float(time.time())
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:99:            cutoff_epoch = now_epoch - float(window_seconds)
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:100:            samples = [sample for sample in self._samples if float(sample.recorded_at_epoch) >= cutoff_epoch]
+<V>/_dl/c91/backend/services/execution_latency_metrics.py:161:                recorded_at_epoch=row.created_at.replace(tzinfo=timezone.utc).timestamp() if row.created_at else 0.0,
+<V>/_dl/c91/backend/services/market_data_ingestor.py:200:def _epoch_to_utc(value: float | None) -> datetime:
+<V>/_dl/c91/backend/services/market_data_ingestor.py:203:    return datetime.fromtimestamp(float(value), tz=timezone.utc)
+<V>/_dl/c91/backend/services/market_data_ingestor.py:229:    # Last observed_ts seen for this token (epoch seconds).
+<V>/_dl/c91/backend/services/market_data_ingestor.py:234:    # Last snapshot persistence time (epoch seconds).  Throttle gate
+<V>/_dl/c91/backend/services/market_data_ingestor.py:405:                observed_at=_epoch_to_utc(venue_ts if venue_ts > 0 else now),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:406:                exchange_ts_ms=int((venue_ts if venue_ts > 0 else now) * 1000),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:540:                    observed_at=_epoch_to_utc(ingest),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:541:                    exchange_ts_ms=int(float(exchange_ts or ingest) * 1000),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:587:                        observed_at=_epoch_to_utc(observed_ts),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:588:                        exchange_ts_ms=int(observed_ts * 1000),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:611:                        observed_at=_epoch_to_utc(observed_ts),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:612:                        exchange_ts_ms=int(observed_ts * 1000),
+<V>/_dl/c91/backend/services/market_data_ingestor.py:942:        latency_ms = (time.perf_counter() - t0) * 1000.0
+<V>/_dl/c91/backend/services/data_source_sdk.py:390:                return datetime.fromtimestamp(mktime(value), tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/data_source_sdk.py:400:                    ts = ts / 1000.0
+<V>/_dl/c91/backend/services/data_source_sdk.py:401:                return datetime.fromtimestamp(ts, tz=timezone.utc).replace(tzinfo=None)
+<V>/_dl/c91/backend/services/data_events.py:101:        "timestamp": float,   # epoch seconds
+== venv=c87 module=trading dir=<V>/_dl/c87/trading
+== venv=c103 module=order_book_simulator dir=<V>/c103/lib/python3.14/site-packages/order_book_simulator
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/matching/order_consumer.py:240:            kafka_latency = (datetime.now(UTC) - gateway_time).total_seconds() * 1000
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/matching/order_consumer.py:247:            process_time = (datetime.now(UTC) - start_process).total_seconds() * 1000
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/matching/order_consumer.py:248:            total_latency = (datetime.now(UTC) - gateway_time).total_seconds() * 1000
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/matching/order_book.py:216:            entry_time=int(order["created_at"].timestamp() * 1_000_000),
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/market_data/db_consumer.py:55:        self.batch_timeout: float = batch_timeout_ms / 1000.0
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/market_data/db_consumer.py:57:        self.retry_backoff: float = retry_backoff_ms / 1000.0
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/market_data/db_consumer.py:185:                    timeout_ms=max(1, int(self.batch_timeout * 1000)),
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/market_data/analytics.py:149:        start_time = int((now - window).timestamp() * 1000)
+<V>/c103/lib/python3.14/site-packages/order_book_simulator/market_data/analytics.py:153:        end_id = f"{int(now.timestamp() * 1000)}-0"
+== venv=pybotters module=pybotters dir=<V>/pybotters/lib/python3.11/site-packages/pybotters
+<V>/pybotters/lib/python3.11/site-packages/pybotters/helpers/hyperliquid.py:299:    return int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/helpers/bitbank.py:87:DEFAULT_SUBSCRIBE_KEY: Final[str] = "sub-c-ecebae8e-dd60-11e6-b6b1-02ee2ddab7fe"
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:37:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:77:        expires = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:110:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:133:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:160:        nonce = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:191:        expires = str(int((time.time() + 5.0) * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:239:        nonce = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:296:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:325:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:358:        timestamp = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/auth.py:392:        now = int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:409:                ts = int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:415:                ts = int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:439:        expires = int((time.time() + 5.0) * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:462:        timestamp = int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:725:        nonce = str(int(time.time() * 1000))
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:890:            before = datetime.datetime.fromtimestamp(data["serverTime"] / 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:895:                after = datetime.datetime.fromtimestamp(data["serverTime"] / 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:923:        params["timestamp"] = int(time.time() * 1000)
+<V>/pybotters/lib/python3.11/site-packages/pybotters/ws.py:936:            data["header"] = {"X-BAPI-TIMESTAMP": str(int(time.time() * 1000))}
+== venv=finmarketpy module=finmarketpy dir=<V>/finmarketpy/lib/python3.11/site-packages/finmarketpy
+== venv=c35_run module=src dir=<V>/c35_run/src
+== venv=v5f module=fast_trade dir=<V5F>/lib/python3.11/site-packages/fast_trade
+<V5F>/lib/python3.11/site-packages/fast_trade/summary/trades.py:90:        zero = pd.to_timedelta(0, unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/summary/trades.py:95:    mean_trade_time_held = pd.to_timedelta(seconds.mean(), unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/summary/trades.py:96:    max_trade_time_held = pd.to_timedelta(seconds.max(), unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/summary/trades.py:97:    min_trade_time_held = pd.to_timedelta(seconds.min(), unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/summary/trades.py:98:    median_time_held = pd.to_timedelta(seconds.median(), unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/ml/hmm_data.py:153:    df["date"] = pd.to_datetime(df["date"], unit="s", utc=True)
+<V5F>/lib/python3.11/site-packages/fast_trade/ml/hmm_data.py:200:    end_ms = int(utc_now().timestamp() * 1000)
+<V5F>/lib/python3.11/site-packages/fast_trade/ml/hmm_data.py:201:    start_ms = int((utc_now() - dt.timedelta(days=lookback_days)).timestamp() * 1000)
+<V5F>/lib/python3.11/site-packages/fast_trade/ml/hmm_data.py:227:    df["date"] = pd.to_datetime(df["date"], unit="ms", utc=True)
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/coinbase_api.py:164:    new_df.index = pd.to_datetime(new_df.date, unit="s")
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/binance_api.py:73:    endTime = int(datetime.datetime.utcnow().timestamp() * 1000)
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/binance_api.py:79:        oldest_date = datetime.datetime.fromtimestamp(data[0][0] / 1000)
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/binance_api.py:115:        startTime = int(curr_date.timestamp()) * 1000
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/binance_api.py:116:        endTime = int(next_end_date.timestamp()) * 1000
+<V5F>/lib/python3.11/site-packages/fast_trade/archive/binance_api.py:185:    new_df.index = pd.to_datetime(new_df.date, unit="ms")
+<V5F>/lib/python3.11/site-packages/fast_trade/utils.py:8:    df["time"] = pd.to_datetime(df["time"], unit="s")
+== compiled c69
+== compiled c70
+<V>/_dl/c70/src/ta_moving_averages.cpp:61://     |c| of a power of two, and on negative sources the two forms differ and
+<V>/_dl/c70/src/ta_moving_averages.cpp:66://     7,016/7,016 each, bit-exact), the stdev sums 7,029/7,029 x2, and 1,003
+<V>/_dl/c70/src/str_utils.cpp:30:std::string str_format_time(long long timestamp_ms,
+<V>/_dl/c70/src/str_utils.cpp:33:    time_t secs = static_cast<time_t>(timestamp_ms / 1000);
+<V>/_dl/c70/src/native_matching.hpp:56:// The nanotick boundary guard on the directional forms mirrors the reference
+<V>/_dl/c70/src/native_matching.hpp:66:// forms hand such a price back unchanged instead of re-spelling it as k *
+<V>/_dl/c70/src/c_abi.cpp:367:PF_API void strategy_set_trade_start_time(pf_strategy_t s, int64_t timestamp_ms) {
+<V>/_dl/c70/src/c_abi.cpp:612:    *out = pf_stream_order_action_t{a.sequence, a.timestamp_ms, a.bar_index,
+<V>/_dl/c70/src/c_abi.cpp:655:PF_API int strategy_stream_advance_time(pf_strategy_t s, int64_t timestamp_ms) {
+<V>/_dl/c70/src/c_abi.cpp:659:            ->stream_advance_time(timestamp_ms) ? 0 : -1;
+<V>/_dl/c70/src/c_abi.cpp:762:        pf_strategy_t s, const int64_t* effective_from_ms,
+<V>/_dl/c70/src/c_abi.cpp:768:                           effective_from_ms, account_per_quote, n)
+<V>/_dl/c70/src/c_abi.cpp:895:        if (curve->n > 0 && (!curve->effective_from_ms || !curve->account_per_quote)) return -1;
+<V>/_dl/c70/src/c_abi.cpp:902:            cpp.effective_from_ms.assign(curve->effective_from_ms,
+<V>/_dl/c70/src/c_abi.cpp:903:                                         curve->effective_from_ms + n);
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:228:    staged.account_fx_effective_from_ms = account_currency_fx_timestamps_;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:286:    if (!staged.account_fx_effective_from_ms.empty() && effective.calc_on_order_fills)
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:289:    if (!staged.account_fx_effective_from_ms.empty() && args.bar_magnifier)
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:533:        const std::int64_t script_open = context.script_bar_open_ms;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:687:native_order::ExecutionTerms source::PineStrategyHost::resolve_execution_terms(
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:689:    return adapter_.resolve_terms(facts);
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:723:    // L10j: an exit leg carrying priced stop/limit/trailing terms folds its
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:747:    // resolve_terms.
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:845:        current.script_bar_open_ms = adapter_.last_broker_open_ms_;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1033:        context.sub_bar_open_ms = current_bar_.timestamp;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1034:        context.script_bar_open_ms = current_bar_.timestamp;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1036:    const BarTime time = fixture_chart_time(context.sub_bar_open_ms);
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1037:    return {context.sub_bar_open_ms,
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1049:        context.sub_bar_open_ms = current_bar_.timestamp;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1050:        context.script_bar_open_ms = current_bar_.timestamp;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1061:        std::int64_t timestamp_ms) const {
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1062:    const std::time_t seconds = static_cast<std::time_t>(timestamp_ms / 1000);
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1493:    const int64_t script_tf_ms =
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1500:                + static_cast<int64_t>(horizon - n) * script_tf_ms;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1504:            + static_cast<int64_t>(horizon - 1) * script_tf_ms;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1616:        const Bar& bar, std::int64_t next_input_ms, bool calling_bar_complete,
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1618:    security_next_input_ms_ = next_input_ms;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1640:        const Bar& bar, std::int64_t next_input_ms) {
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1641:    security_next_input_ms_ = next_input_ms;
+<V>/_dl/c70/src/source/pine_strategy_host.cpp:1696:    current_bar_.timestamp = equity_curve_.back().time_ms;
+== compiled c107
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:211:    cumsums: HashMap<String, CumsumState>,
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:221:            cumsums: HashMap::new(),
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:243:        self.cumsums.insert(name.to_string(), CumsumState::new());
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:277:        self.cumsums
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:310:                let state = self.cumsums.get_mut(name)
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:342:                if let Some(state) = self.cumsums.get_mut(name) {
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:361:        self.cumsums.clear();
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:414:    pub fn register_computation(&mut self, column: &str, name: &str, op: &str, params: &[usize]) {
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:418:            "rolling_mean" => compute.register_rolling_mean(name, params.first().copied().unwrap_or(20)),
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:419:            "rolling_std" => compute.register_rolling_std(name, params.first().copied().unwrap_or(20)),
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:420:            "ema" => compute.register_ema(name, params.first().copied().unwrap_or(20)),
+<V>/_dl/c107/crates/sig_runtime/src/incremental.rs:422:            "rsi" => compute.register_rsi(name, params.first().copied().unwrap_or(14)),
+<V>/_dl/c107/crates/sig_runtime/src/rigor.rs:314:pub fn permutation_sharpe_pvalue(returns: &[f64], num_perms: usize, seed: u64) -> f64 {
+<V>/_dl/c107/crates/sig_runtime/src/rigor.rs:318:    if returns.len() < 2 || num_perms == 0 {
+<V>/_dl/c107/crates/sig_runtime/src/rigor.rs:325:    for _ in 0..num_perms {
+<V>/_dl/c107/crates/sig_runtime/src/rigor.rs:334:    (at_least as f64 + 1.0) / (num_perms as f64 + 1.0)
+<V>/_dl/c107/crates/sig_runtime/src/portfolio_opt.rs:1://! Portfolio optimization algorithms
+<V>/_dl/c107/crates/sig_runtime/src/walk_forward.rs:81:    pub best_params: HashMap<String, f64>,
+<V>/_dl/c107/crates/sig_runtime/src/walk_forward.rs:230:                best_params: HashMap::new(),
+<V>/_dl/c107/crates/sig_runtime/src/audit.rs:26:        duration_ms: u64,
+<V>/_dl/c107/crates/sig_runtime/src/audit.rs:47:        duration_ms: u64,
+<V>/_dl/c107/crates/sig_runtime/src/audit.rs:149:            AuditEvent::CompileComplete { source_hash, node_count, duration_ms, cache_hit } => {
+<V>/_dl/c107/crates/sig_runtime/src/audit.rs:152:                    duration_ms = duration_ms, cache_hit = cache_hit);
+<V>/_dl/c107/crates/sig_runtime/src/audit.rs:255:            duration_ms: 1000,
+<V>/_dl/c107/crates/sig_runtime/src/safety.rs:1://! Trading safety systems
+<V>/_dl/c107/crates/sig_runtime/src/safety.rs:589:/// Safety manager combining all safety systems
+<V>/_dl/c107/crates/sig_runtime/src/safety.rs:622:    /// Check all safety systems before executing
+<V>/_dl/c107/crates/sig_runtime/src/lib.rs:61:    Bars, parse_stooq_csv, parse_ken_french, parse_yahoo_chart_json, yyyymmdd_to_unix,
+<V>/_dl/c107/crates/sig_runtime/src/simd_kernels.rs:228:    // Sliding window with running sums
+<V>/_dl/c107/crates/sig_runtime/src/integrations.rs:84:        // Parse dates to Unix timestamps
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:371:pub struct StrategyParams {
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:373:    pub params: HashMap<String, f64>,
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:376:impl StrategyParams {
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:378:        StrategyParams {
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:379:            params: HashMap::new(),
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:384:        self.params.insert(name.to_string(), value);
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:389:        self.params.get(name).copied()
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:393:        self.params.get(name).copied().unwrap_or(default)
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:448:        let mut params = StrategyParams::new();
+<V>/_dl/c107/crates/sig_runtime/src/config.rs:449:        params.set("window", 20.0).set("threshold", 0.5);
+== compiled c33
+<V>/_dl/c33/build/CMakeFiles/3.28.3/CompilerIdCXX/CMakeCXXCompilerId.cpp:449:/* Identify known platforms by name.  */
+<V>/_dl/c33/cpp/data/market_data_feed.hpp:85:        int64_t tick_interval_ns = NANOSECONDS_PER_MILLISECOND * 100  // 100ms default
+<V>/_dl/c33/cpp/benchmarks/benchmark_main.cpp:255:    // Generate one day of ticks at 10ms intervals
+<V>/_dl/c33/cpp/benchmarks/benchmark_main.cpp:256:    // 6.5 hours = 23,400 seconds = 2,340,000 ticks at 10ms
+<V>/_dl/c33/cpp/benchmarks/benchmark_main.cpp:296:        std::cout << "  Wall Clock Time: " << duration.count() << " ms\n";
+<V>/_dl/c33/cpp/core/types.hpp:37:using Timestamp = int64_t;  // Nanoseconds since epoch
+<V>/_dl/c33/cpp/core/types.hpp:42:        now.time_since_epoch()).count();
+== compiled c101
+<V>/_dl/c101/build/CMakeFiles/3.28.3/CompilerIdCXX/CMakeCXXCompilerId.cpp:449:/* Identify known platforms by name.  */
+<V>/_dl/c101/benchmarks/benchmark_order_book.cpp:309:              << result.seconds * 1000.0 << " ms"
+== compiled c102
+<V>/_dl/c102/build/CMakeFiles/3.28.3/CompilerIdCXX/CMakeCXXCompilerId.cpp:449:/* Identify known platforms by name.  */
+== compiled c104
+<V>/_dl/c104/src/exchange/SymbolManager.cpp:71:                {Symbol::META, "META", "Meta Platforms Inc"}
+<V>/_dl/c104/src/client/main.cpp:92:                      << "  --stats-interval <ms>   Statistics interval in ms (default: 5000)\n"
+<V>/_dl/c104/lib/OrderEntry/python/bindings.cpp:15:    // Enums
+<V>/_dl/c104/lib/OrderEntry/include/messages/OrderMessages.h:178:        std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+<V>/_dl/c104/lib/OrderEntry/include/messages/OrderMessages.h:193:    const uint64_t timestamp_ms = timestamp_ns / 1000000;
+<V>/_dl/c104/lib/OrderEntry/include/messages/OrderMessages.h:194:    const uint64_t ms = timestamp_ms % 1000;
+<V>/_dl/c104/lib/OrderEntry/include/messages/OrderMessages.h:195:    const std::time_t time_seconds = timestamp_ms / 1000;
+<V>/_dl/c104/lib/OrderEntry/include/messages/OrderMessages.h:199:    oss << std::put_time(tm_ptr, "%H:%M:%S") << '.' << std::setw(3) << std::setfill('0') << ms;
+<V>/_dl/c104/lib/MDFeed/python/bindings.cpp:15:    // Enums
+<V>/_dl/c104/lib/MDFeed/include/messages/Messages.h:189:        std::chrono::high_resolution_clock::now().time_since_epoch()
+<V>/_dl/c104/lib/MDFeed/include/messages/Messages.h:205:    const uint64_t timestamp_ms = timestamp_ns / 1000000;
+<V>/_dl/c104/lib/MDFeed/include/messages/Messages.h:206:    const uint64_t ms = timestamp_ms % 1000;
+<V>/_dl/c104/lib/MDFeed/include/messages/Messages.h:207:    const std::time_t time_seconds = timestamp_ms / 1000;
+<V>/_dl/c104/lib/MDFeed/include/messages/Messages.h:213:            << '.' << std::setw(3) << std::setfill('0') << ms;

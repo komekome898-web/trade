@@ -70,6 +70,14 @@ class FastTradeAdapter(VectorBase):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): no entry that reads a time in a unit
+    def _units(self, sc):
+        return C.unit_time(sc, [], tried='入力は利用者が作る DataFrame で、その DatetimeIndex を作る変換は利用者の側。数の時刻を読む変換は無い' + '(r16-1 の場面係が道具の配布物を fromtimestamp・unit=・timestamp_to_datetime・datetime64[s/ms/us]・/1000・*1000・epoch で検索した範囲。記録 survey_results/attempts/r16-1_unit_entries.txt)' + "。" + C.iso_entry_tried(self._iso, sc))
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def scene_p4_future_read_attempt(self, sc):
         bars = C.events(sc)
         r, msg = _run(_bt([["close", "=", 104.0, -1]]), bars)

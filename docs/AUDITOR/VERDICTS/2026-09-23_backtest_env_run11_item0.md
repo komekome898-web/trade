@@ -486,3 +486,36 @@ A の「対応なし」は、表の注記によると多くが「この対象に
 - 作業者の問い 2(hash の等しい入れ子の値の比較で残る枠数の依存。extra の tuple / frozenset を核の class にする案): **進める。**批評家 i0-r15-03 も同じ根を [直す] とし「FrozenDict の比べを枠を積まない形にする」を挙げている。型が変わることは契約に書く(PlainFraction と同じ形 = isinstance は真のまま)。「契約の文を事実に合わせる」だけで閉じる方は採らない(要件から逃げる直し)。
 - 作業者の問い 3(MAX_NESTING = 100 の根拠の変更、CALL_FRAMES = 30): **値は両方とも採る。**根拠の文を契約で書き換える(100 = インタプリタ自身の 1 つの値への再帰(比較・repr)を抑える上限 / 30 = 実測の最大 22 に余裕を足した)。A-12 の要件は実測で満たす。
 - i0-r15-05(場面集の [止める]): 第 16 周の場面係が批評家の「直し方の向き」のとおり(既知の時刻を秒・ミリ・マイクロ秒で、文字列と float(正確に持つ値と持たない値)で入れ、対象自身の変換で int ナノ秒にした値を手計算の正解と照らす値の場面)に直す。リードの事前の答え: 正解は手計算の int ナノ秒 1 つで、float が正確に持たない値では「断る」も正解に入れる(黙って丸めた値は不一致)。これは F の升目の判断を変えない(秒・ミリの升目が「場面にした」に入るのは入力から機械で出るときだけ)。
+
+## 第 16 周(進行中。09:48 UTC の見回りで写した分)
+
+**終わった項目 0 / 14。項目 0 は第 16 周。通過に残るもの = 第 16 周の批評家の実装の側の [止める] 0(L-445 の射程の中だけが対象)。**
+
+| 段 | 開始 | 終了 |
+|---|---|---|
+| 作る:0#16 | 08:41:53 | 09:34:12 |
+| 場面の直し:0#r16-1 | 08:41:53 | (進行中、09:46:46 に書き込みあり) |
+
+### 作業者 0#16 の返り値(逐語)
+
+- `structural_change`: 時刻の変換 to_nanos は、float と numpy longdouble を持つ正確な値(as_integer_ratio)で読むようにした。最短の十進表記は読まない。float の欄(as_float・take_float)は、受け付ける全ての実数を「正確な値に最も近い float」という 1 つの規則で読むようにし、有限の値を inf にせず断る。核が辞書と集合を作るときは、鍵と要素の hash を先に取り、hash を持たない値は入口の誤りで断る。FrozenDict どうしの等しさは、核の反復の比べ values._plain_equal(明示の積み上げ + hash の表による対応づけ)で決めるようにした。これで、衝突した入れ子の比べは FrozenDict から下で段数によらない枠数になる。契約は core-17。
+- `tests_added`: 3030 / `test_tail`: 13 failed, 9349 passed, 6 skipped, 4 warnings in 987.24s (0:16:27)。落ちた 13 件は全部 tests/bt/battery/item_0/ の場面集の試験(test_battery_def_grids.py 3 件、test_battery_item0.py 7 件、test_battery_r15_unplaced.py 2 件、test_battery_r16_units.py 1 件)で、場面係が並行して直している途中の物。落ち方の文は次の 3 種で、核の値に触れるものは無い: (1) 升目の判断の文言が「測っていない」と「測っていない(固定した測り方の外)」で食い違う、(2) 足した単位の場面を相手の結果がまだ持たない('1', 'opp_basana')、(3) DEFINITIONS の段落の数が 108 と 105 で合わない。tests/bt/item_0 と tests/bt/critic/item_0 に落ちたものは無い。批評家の第 15 周の試験 3 本 + 第 14 周の時刻の試験 → 50 passed in 0.21s(直す前は第 15 周の 3 本が 28 failed, 12 passed)。新しい格子 test_bt0_r16_one_reading.py → 3029 passed(直す前の核 0f2e07d では 563 failed, 2466 passed)。test_bt0_scene_set.py → 51 passed。tests_added の 3030 は新しい格子 3029 件と、場面の試験の単位の場面の駆動(1 関数。場面 15 件を足した)を合わせた数。
+- `changed_files`: ["/home/user/trade/src/bot/bt/core/time.py", "/home/user/trade/src/bot/bt/core/values.py", "/home/user/trade/src/bot/bt/core/contract.py", "/home/user/trade/tests/bt/item_0/test_bt0_r16_one_reading.py", "/home/user/trade/tests/bt/item_0/test_bt0_time.py", "/home/user/trade/tests/bt/item_0/test_bt0_r15_library_code.py", "/home/user/trade/tests/bt/item_0/test_bt0_r14_process_state.py", "/home/user/trade/tests/bt/item_0/test_bt0_scene_set.py", "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_16/ROOTCAUSE.md"]
+- `unmet`:
+  - 満たせなかった要件の行: 無し。以下は提出前の吟味の記録(委任文 §3。全文は round_16/ROOTCAUSE.md §7・§8)。
+  - (1) 指摘ごとの直した根拠: i0-r15-01 = time.py 175 行(longdouble は持つ値)・201 行(float.as_integer_ratio)・212 行(断りの文に持つ値)。to_nanos(1700000000123456.75,'us') → 1700000000123456750、to_nanos(1700000000.123,'s') → 断る。断りの文は 'it holds 1700000000.1229999065399169921875'。i0-r15-02 = values.py 1032 行 _hashed を 1043 行 _dict_of と 1056 行 _set_of から呼ぶ。批評家の試験 25 件が全部通る。i0-r15-03 = values.py 1429〜1500 行 _container_kind・_match・_plain_equal、1387 行。freeze に要る枠の実測は、FrozenDict の値の側で 1・10・30・48・97 段とも 10〜11(前は 30 段 94・48 段 148)。i0-r15-04 = values.py 827 行 _beyond・834 行 _nearest_of・868 行 _longdouble_nearest・588 行(_now の int → float の検め)。批評家の試しで 2**53+1 が全部の型で 9007199254740992.0 になった。i0-r15-07 = time.py 188 行と、longdouble を持つ値で読む形にしたこと。断りの文は型ではなく「持つ値にナノ秒より細かい桁がある」を言う。
+  - (2) 同じ根の全箇所: 核で数を文字の表記を通して読む所を grep で列べた。値の読みに使っていたのは time.py の float.__repr__ だけで、api.py 243 行・events.py 112/119 行の float.__repr__ は断りの文の中だけ。float の欄の入口は as_float と take_float の 2 つで、events.py の _finite・carrier の欄・fee を通る。辞書と集合を作る所は _dict_of と _set_of だけで、freeze・settle の全ての入れ物がここを通る。thaw と renew は核が作った入れ物からだけ作るので、変えていない(格子 E で確かめた)。
+  - (3) 試験: tests/bt/item_0 と tests/bt/critic/item_0 に落ちたものは無い(全試験の実行で確かめた)。場面集の 13 件は場面係の途中の変更で落ちている(test_tail)。
+  - (4) 厳しい批評家が止めそうな点は ROOTCAUSE §7 の 8 項に書いた。主なものは次のとおり。float の時刻を持つ値で読むと、打った十進(…456.8)と違う時刻(…456.75)になる → 核が見えるのは float だけで、Python でも両者は同じ float。十進の時刻は str か Decimal で渡す、と説明と断りの文に書いた。float の時刻で受け付けが狭まった(1700000000.123456 s を断る) → 持つ値にナノ秒より細かい桁がある値を丸めずに断るのは契約の「rounding: none」そのもの。_plain_equal と Python の == の一致は、乱数の組 3,000 以上とライブラリの神託で照らした。
+  - (5) 場当たりでないこと: 核の差分に場面の id・場面集の語は無い(git diff 0f2e07d -- src/bot/bt/core | grep -ciE 'scene|p2-|battery' → 0)。批評家の試験は変えていない。自分の試験の枠の上限は、批評家の上限(2 × 段数)より厳しい契約どおりの CALL_FRAMES + 段数にした。
+  - (6) 敵対者の格子を先に書いた: tests/bt/item_0/test_bt0_r16_one_reading.py。格子 T(時刻)・N(float の欄)・E(hash の無い値)・F(衝突した入れ子の比べ + 乱数の核の値)の 4 つ。神託はライブラリで入力から計算し、実装の場合分けからは作っていない。列に入れなかったもの(numpy の複素数は complex128 の 1 つだけ、datetime の値、スレッドの文脈を替えた状態の格子 T、clongdouble)は試験のファイルの先頭に書いた。
+  - 途中で規則を 1 回替えた(ROOTCAUSE §2 の「途中で規則を替えた記録」): 最初は、float の時刻を「持つ値と最短表記が一致するときだけ」受け付ける規則にした。書いた後、場面係の単位の場面の正解が「float が持つ値 × 倍率」と置かれていること(ROOTCAUSE_r16-1 の主張 11)、批評家 i0-r15-01 の向きも同じであることを読み、持つ値で読む規則に替えた。場面集は読むだけで、変えていない。
+  - 速さの測りは、ほかの試験と同時に走らせたので揺れが大きい。この周 77.89 / 72.74 us/bar、直す前 72.80 / 70.32 us/bar。静かな機械では測っていない(未確認)。
+- `questions_for_lead`:
+  - [振る舞いの変化の周知] to_nanos は、float と numpy longdouble の時刻を持つ正確な値で読むようになった(core-17)。持つ値にナノ秒より細かい桁がある float(例: 1700000000.123 s)は断る。前は最短表記で読み、1700000000123000000 として受け付けていた。項目 1(データ層)が float の秒やミリ秒の時刻を to_nanos に渡すなら、文字列・Decimal・int で渡す必要がある。項目 1 の要件を固定するときに、この 1 行を lead_notes に入れるかを決めてほしい(契約と time.py の説明には書いた)。
+  - [L-444 との関係] LEAD_DESIGN.md §12 の案 1(射程を要件に書く)は、この周の作業では前提にしていない。この周に直した 4 件のうち、i0-r15-01(float の時刻の丸め)と i0-r15-04(float の欄の規則が型で分かれる)は、プロセスを書き換えなくても起きる値の誤り・食い違いで、案 1 の射程の中にある。i0-r15-02・03 は断りの型と枠の事実の問題。オーナーの決定のあと、批評家に渡す射程の文を決めるとき、この区別を使えるかを確かめてほしい。
+
+### リードの答え(2026-09-25 09:50 UTC。段の途中で規則は足さない。次の起動の lead_notes に写す)
+
+- 問い 1(to_nanos が float の時刻を持つ値で読む = 十進の時刻は str か Decimal で渡す): **項目 1 の lead_notes に入れる。**文面「核の to_nanos は float・longdouble を持つ正確な値で読み、ナノ秒より細かい桁があれば断る(core-17)。秒・ミリ秒の時刻は str・Decimal・int で渡す」。
+- 問い 2(L-444/L-445 の射程との区別): **そのとおり。**i0-r15-01・04 はプロセスを書き換えなくても起きる値の誤りで射程の中、i0-r15-02・03 は断りの型と枠の事実の問題で射程の中(断りの型が契約と違うのは射程の外ではない)。射程の外に置くのは「戦略が Python のプロセス自体を書き換える形」(sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定)だけで、要件 §0 に L-445 の文としてもう置いてある(09:05 UTC。この周の作業者が読んだ版より後)。第 16 周の批評家はこの §0 で測る。

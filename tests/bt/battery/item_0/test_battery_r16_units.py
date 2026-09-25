@@ -24,8 +24,9 @@ Family 13 -- the unit scenes' provenance, and `common.unit_time`: an entry is us
   unit and its forms hold the input's form (the first such entry, in the adapter's order); none -> not supported; the
   entry raising -> not supported (the tool refused); otherwise the tool's time object read to int ns exactly (an int
   as it is, a numpy integer as int, a pandas Timestamp by .value, an aware datetime by its fields, a naive datetime as
-  UTC, a numpy datetime64 at ns); anything else is reported as it is (the grader then gives null). The value handed to
-  the entry is the input's object itself (the adapter converts nothing).
+  UTC, a numpy datetime64 at ns); anything else is reported as it is (the grader then gives null); the entry
+  returning None (no time made, no refusal) -> error (no result). The value handed to the entry is the input's object
+  itself (the adapter converts nothing).
 Family 14 -- a viewpoint's title is REQUIREMENTS.md section 2, column 2, character for character.
 Family 1'' -- a cell no scene counts is "測っていない" with the reason: "宣言した場面はあるが、その事象の型が場面の入力から出ない"
   when a scene of the viewpoint declares it, else "この升目を宣言した場面が無い"; values stay two.
@@ -521,7 +522,7 @@ def oracle_ns(r):
 OUTCOMES = [7, True, 7.0, np.int64(7), dt.datetime(2024, 1, 1, 0, 0, 0, 123456, tzinfo=dt.timezone.utc),
             dt.datetime(2024, 1, 1, 9, 0, 0, 123456, tzinfo=dt.timezone(dt.timedelta(hours=9))),
             dt.datetime(2024, 1, 1, 0, 0, 0, 123456), pd.Timestamp(K_NS, unit="ns", tz="UTC"), pd.Timestamp(K_NS),
-            np.datetime64(K_NS, "ns"), np.datetime64(1704067200123, "ms"), "2024", ValueError("refused")]
+            np.datetime64(K_NS, "ns"), np.datetime64(1704067200123, "ms"), "2024", None, ValueError("refused")]
 ENTRY_SETS = {
     "none": [],
     "s str": [("s", ("str",))],
@@ -564,6 +565,10 @@ def unit_time_problems(unit_time) -> list:
                 if isinstance(r, Exception):
                     if res.status != "not_supported":
                         out.append(key + ("want not_supported on refusal", res.status))
+                    continue
+                if r is None:
+                    if res.status != "error":
+                        out.append(key + ("want error (no result) on None", res.status))
                     continue
                 want = oracle_ns(r)
                 got = res.output.get("ns") if res.status == "ok" and isinstance(res.output, dict) else "no output"
@@ -652,7 +657,7 @@ def test_every_not_measured_cell_has_the_reason_the_rule_gives():
     vp = None
     n = 0
     for ln in text.split("\n"):
-        m = re.match(r"### (P0-\d)(升目 ", ln)
+        m = re.match(r"### (P0-\d)\(升目 ", ln)
         if m:
             vp = m.group(1)
         elif vp and ln.startswith("| ") and not ln.startswith("| 事象") and ln.count("|") == 6:

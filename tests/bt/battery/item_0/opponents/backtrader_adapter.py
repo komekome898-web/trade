@@ -177,6 +177,45 @@ class BacktraderAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): GenericCSVData's `dtformat` (backtrader/feeds/csvgeneric.py lines
+    # 52-62 and 93-98 of the venv's copy): 1 = a Unix timestamp in seconds of type int (utcfromtimestamp(int(cell))),
+    # 2 = of type float (utcfromtimestamp(float(cell))). No dtformat reads milliseconds or microseconds. The CSV cell is
+    # text: a text as it is, an int in decimal, a float as its repr (float() of it is the same float). The feed's
+    # timeframe is Ticks: with the default (Days) the tool moves a bar's time to the session's end (measured: 23:59:59.999989).
+    @staticmethod
+    def _csv_dt(text: str, dtformat: int):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "bars.csv"
+            path.write_text(f"datetime,open,high,low,close,volume,openinterest\n{text},1,1,1,1,1,0\n", encoding="utf-8")
+            cer = bt.Cerebro(stdstats=False)
+            # the time format of the cell (dtformat) is a setting through the tool's public means, decided by the scene's
+            # input (its unit and its form); positive definition A (1): recorded by common.configure
+            # timeframe: the cell is a point in time (not a daily bar, whose time backtrader moves to the session's end)
+            cer.adddata(C.configure(bt.feeds.GenericCSVData, dataname=str(path), dtformat=dtformat, timeframe=bt.TimeFrame.Ticks,
+                                    what=f"GenericCSVData(dtformat={dtformat}, timeframe=Ticks)", decided_from=("場面の入力",)))
+            seen = []
+
+            class S(bt.Strategy):
+                def next(self):
+                    seen.append(bt.num2date(self.datetime[0]))
+
+            cer.addstrategy(S)
+            cer.run()
+        return seen[0] if seen else None
+
+    def _units(self, sc):
+        return C.unit_time(sc, [
+            {"unit": "s", "forms": ("int",), "how": "GenericCSVData(dtformat=1)(秒の int、utcfromtimestamp(int(欄)))",
+             "reader": bt.feeds.GenericCSVData, "call": lambda v: self._csv_dt(str(v), 1)},
+            {"unit": "s", "forms": ("str", "float"), "how": "GenericCSVData(dtformat=2)(秒の float、utcfromtimestamp(float(欄)))",
+             "reader": bt.feeds.GenericCSVData, "call": lambda v: self._csv_dt(v if isinstance(v, str) else repr(v), 2)}],
+            tried="ミリ秒・マイクロ秒を読む dtformat は無い(1 と 2 は秒、ほかは strptime の書式か利用者の関数)")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [C.substitute(e, "trade", price=100.0) for e in C.events(sc)]
         car = []

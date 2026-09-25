@@ -356,3 +356,35 @@ async fn main() {
    Compiling battery61 v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61)
     Finished `dev` profile [unoptimized] target(s) in 43.79s
 14:37:24
+
+=== round r16-1 (scene keeper, 2026-09-25): driver rebuilt with a mode that calls the tool's own epoch deserializers (P0-2 unit scenes)
+--- change in battery61/src/main.rs and battery61/Cargo.toml (diff against the copies taken before the edit):
+2c2,3
+< //! stdin: one JSON object {"events": [...], "cfg": {...}} or {"parse": "<MarketStreamEvent JSON line>"}.
+---
+> //! stdin: one JSON object {"events": [...], "cfg": {...}} or {"parse": "<MarketStreamEvent JSON line>"}
+> //! or {"de": "<a barter_integration::serde::de epoch deserializer>", "value": <JSON value>} (round r16-1).
+236a238,254
+>     if let Some(which) = input["de"].as_str() {
+>         // round r16-1 (scene set): the tool's own epoch deserializers (barter_integration::serde::de), handed the value as given
+>         use barter_integration::serde::de as bde;
+>         let v = &input["value"];
+>         let r: Result<DateTime<Utc>, serde_json::Error> = match which {
+>             "de_u64_epoch_ms_as_datetime_utc" => bde::de_u64_epoch_ms_as_datetime_utc(v),
+>             "de_str_u64_epoch_ms_as_datetime_utc" => bde::de_str_u64_epoch_ms_as_datetime_utc(v),
+>             "de_str_f64_epoch_ms_as_datetime_utc" => bde::de_str_f64_epoch_ms_as_datetime_utc(v),
+>             "de_str_f64_epoch_s_as_datetime_utc" => bde::de_str_f64_epoch_s_as_datetime_utc(v),
+>             _ => { println!("{}", json!({"de_error": format!("unknown deserializer {which}")})); return; }
+>         };
+>         match r {
+>             Ok(t) => println!("{}", json!({"de_ns": ns(&t)})),
+>             Err(err) => println!("{}", json!({"de_error": err.to_string()})),
+>         }
+>         return;
+>     }
+9a10
+> barter-integration = { workspace = true }
+--- build: cd _dl/c61 && CARGO_HOME=_cargo CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo build --offline -p battery61 (09:06:57-09:07:01Z, rc=0); binary copied to c61/bin/c61_driver
+   Compiling battery61 v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61)
+    Finished `dev` profile [unoptimized] target(s) in 3.66s
+--- probes: {"de":"de_u64_epoch_ms_as_datetime_utc","value":1704067200123} -> {"de_ns":1704067200123000000}; value 1704067200123.015625 -> de_error invalid type: floating point, expected u64; de_str_f64_epoch_s_as_datetime_utc "1704067200.123456789" -> 1704067200123456717

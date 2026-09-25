@@ -263,6 +263,49 @@ class HftbacktestAdapter(Adapter):
 
     scene_p2_iso_offset = scene_p2_iso_utc
 
+    # ---------------- P0-2 unit scenes (round r16-1): the tool's own converters of raw feed files (hftbacktest/data/utils):
+    # binancefutures.convert reads the Binance Futures stream (a trade's T = an integer of ms, `int(T) * 1000000`,
+    # binancefutures.py lines 76-103), tardis.convert reads Tardis CSV files (timestamp = an integer of us, `* 1000`,
+    # tardis.py lines 145-148). The value is written into the file as the feed carries it (JSON number / CSV decimal).
+    # None reads seconds.
+    @staticmethod
+    def _binance(v):
+        import gzip, json, os, tempfile  # noqa: E401
+        from hftbacktest.data.utils import binancefutures
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "feed.gz")
+            msg = {"stream": "btcusdt@trade", "data": {"e": "trade", "E": v, "T": v, "s": "BTCUSDT", "t": 1, "p": "100.0",
+                                                       "q": "1.0", "X": "MARKET", "m": True}}
+            with gzip.open(path, "wt") as f:
+                f.write(f"{1_704_067_300_000_000_000:019d} {json.dumps(msg)}\n")
+            arr = binancefutures.convert(path, buffer_size=16)
+        return arr["exch_ts"][0] if len(arr) else None
+
+    @staticmethod
+    def _tardis(v):
+        import gzip, os, tempfile  # noqa: E401
+        from hftbacktest.data.utils import tardis
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "trades.csv.gz")
+            with gzip.open(path, "wt") as f:
+                f.write("exchange,symbol,timestamp,local_timestamp,id,side,price,amount\n")
+                f.write(f"binance-futures,BTCUSDT,{v},{v},1,buy,100.0,1.0\n")
+            arr = tardis.convert([path], buffer_size=16)
+        return arr["exch_ts"][0] if len(arr) else None
+
+    def _units(self, sc):
+        from hftbacktest.data.utils import binancefutures, tardis
+        return C.unit_time(sc, [
+            {"unit": "ms", "forms": ("int",), "how": "hftbacktest.data.utils.binancefutures.convert(配信の T = ミリ秒の整数)",
+             "reader": binancefutures.convert, "call": self._binance},
+            {"unit": "us", "forms": ("int",), "how": "hftbacktest.data.utils.tardis.convert(CSV の timestamp = マイクロ秒の整数)",
+             "reader": tardis.convert, "call": self._tardis}],
+            tried="秒を読む変換は無い")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [C.substitute(e, "trade", price=100.0, qty=0.01, side="buy") for e in C.events(sc)]
         calls = run(evs)

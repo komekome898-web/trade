@@ -62,7 +62,7 @@
 
 | 主張の族 | (a) 導く関数 | (b) 手書きが残る部分と、機械で導けない理由 | (c) 手書きの主張が 1 つでも残っていれば落ちる試験 | (d) 主張を作る機械への mutant の試験 |
 |---|---|---|---|---|
-| 10. 観点の文が名指す軸の値を、その観点の場面の入力が覆う(事象の軸と追加の軸) | `grid_c.py:named_values`(要件の行の切片の判断から)→ `scenes.py:extra_values_of`・`scenes.py:input_types` → `grid_c.py:named_coverage` → `gen_definitions.py:grid_section` | 単位の略号 → 要件の語の対応 `scenes.UNIT_WORDS`(3 つ。要件の語は日本語の単位名で、入力の略号は対象の変換に渡す値なので、どちらかからもう一方を機械で作れない)と、軸の外の値の理由 `scenes.OUTSIDE_EXTRA`。見る道の軸の値は場面の宣言のまま(その道を実際に呼ぶ入力かは批評家が読む = LEAD_DESIGN.md §8.5 の 24) | `test_battery_r16_units.py:test_every_value_a_viewpoint_names_is_given_by_an_input`(観点ごとに、名指す事象と追加の軸の値の全部を、場面の入力から出す神託で照らす)、同 `test_extra_values_follow_the_rule_on_every_copy`(入力の写しの全格子で `extra_values_of` を規則の文から書いた神託と照らす)、同 `test_the_definitions_show_the_coverage_the_rule_gives` | 同 `test_mutants_of_the_coverage_machine_are_caught`(`extra_values_of` に: `unit` を読まない / `iso` を読まない / 事象の時刻を読まない / `plug` を読まない、`named_values` に: 別の行を読む、`named_coverage` に: 別の観点の場面を数える) |
+| 10. 観点の文が名指す軸の値を、その観点の場面の入力が覆う(事象の軸と追加の軸) | `grid_c.py:named_values`(要件の行の切片の判断から)→ `scenes.py:extra_values_of`・`scenes.py:input_types` → `grid_c.py:named_coverage` → `gen_definitions.py:grid_section` | 単位の略号 → 要件の語の対応 `scenes.UNIT_WORDS`(3 つ。要件の語は日本語の単位名で、入力の略号は対象の変換に渡す値なので、どちらかからもう一方を機械で作れない)と、軸の外の値の理由 `scenes.OUTSIDE_EXTRA`。見る道の軸の値は場面の宣言のまま(その道を実際に呼ぶ入力かは批評家が読む = LEAD_DESIGN.md §8.5 の 24) | `test_battery_r16_units.py:test_every_value_a_viewpoint_names_is_given_by_an_input`(観点ごとに、名指す事象と追加の軸の値の全部を、場面の入力から出す神託で照らす)、同 `test_extra_values_follow_the_rule_on_every_copy`(入力の写しの全格子で `extra_values_of` を規則の文から書いた神託と照らす)、同 `test_the_definitions_show_the_coverage_the_rule_gives` | 同 `test_mutants_of_the_coverage_machine_are_caught`(`extra_values_of` に: `unit` を読まない / `iso` を読まない / 事象の時刻を読まない / `plug` を読まない、`named_values` に: 別の行を読む)、同 `test_a_mutant_coverage_counting_another_viewpoint_is_caught`(`named_coverage` に: 別の観点の場面を数える) |
 | 11. P0-2 の単位の場面の正解(入力が持つ値 × 倍率 がナノ秒の整数ならその整数、でなければ「正解の整数は無い」)と、形の格子(単位 × 形) | 無い(正解は場面係が手で書く = 委任文 §3「値の場面 … エンジンを見ずに手計算・閉じた式で出した正解」) | 正解の値と導き方の文は手書き。場面の正解は走らせる前に場面係が決める物で、機械で作れば「手計算の正解」でなくなる | `test_battery_r16_units.py:test_unit_scene_answers_are_the_closed_form`(`fractions.Fraction` で入力が持つ値 × 倍率 を作り直して照らす。float は `float.as_integer_ratio`)、同 `test_unit_scenes_cover_every_form_of_every_unit`(単位 × 形の格子。作れない形は float の刻みから機械で示す)、同 `test_float_inputs_show_their_exact_value`(導き方の文と定義の文が float の正確な十進を持つ) | 同 `test_mutants_of_the_answer_oracle_are_caught`(神託に: float を最短の表記で読む / 端数を切り捨てる / 倍率を取り違える、を入れると照らしが落ちる) |
 | 12. 単位の場面の採点の値(対象が作った値が int64 の範囲の整数のときだけその整数) | `run_battery.py:_grade_unit_time`(`GRADERS`) | 無い | `test_battery_r16_units.py:test_unit_grader_on_every_value_type`(値の型の全格子: int・bool・float(整数に等しい値を含む)・numpy の整数と浮動小数・Decimal・Fraction・文字列・None・範囲の外の int・欄が無い、を規則の文から書いた神託と照らす) | 同 `test_mutants_of_the_unit_grader_are_caught`(float が整数に等しければ通す / bool を通す / 範囲を見ない) |
 | 13. 単位の場面の値は対象の読みの関数から出た物だけを数える(出所) | `run_battery.py:provenance_problem`・`_reader_problem`、`adapters/common.py:unit_time` | 各道具のどの入口がどの単位を読むかは道具のコードか文書の読みで、adapter の注釈に行を書く(道具ごとの読みは機械で導けない。批評家が読む) | `test_battery_r16_units.py:test_unit_scenes_are_provenance_checked`(単位の場面の全部が出所の検めを通り、場面集の関数を reader にした結果が「結果なし」になる)、同 `test_unit_time_uses_only_an_entry_of_the_scenes_unit`(入口の単位・形の全格子で `unit_time` を規則の文から書いた神託と照らす) | 同 `test_mutants_of_unit_time_are_caught`(別の単位の入口を使う / 断りを「結果なし」にする / adapter が換算する) |
@@ -76,3 +76,76 @@
 ### 5.1 リードの答えの内容を変えた点(返り値の `lead_answer_changes` と同じ文)
 
 1. **判断の第 2 の値の名**: LEAD_DESIGN.md §8.2 の 1 の「測っていない(固定した測り方の外)」を「測っていない」に替え、括弧に、その升目を数える場面が無い理由を宣言と入力から機械で出す(「この升目を宣言した場面が無い」/「宣言した場面はあるが、その事象の型が場面の入力から出ない」)。値は 2 つのまま、決め方(covers から機械で)は変えない。理由: §8.2 の 1 は判定の基準(測り方の文が名指す組)を撤回して「covers に持つ場面が無い」に置き換えたが、値の名には撤回した基準の理由「固定した測り方の外」が残り、機械はそれを確かめていない(批評家 i0-r15-06)。同じ名が正の定義 C の凍結した段落(`gen_definitions.py` の `FROZEN_DEFINITIONS['C']`)にあるので、その 1 か所を新しい名と「括弧の理由は機械で出す」に替える(C の段落のほかの文は変えない)。F は変えない。
+
+### 5.2 聞くこと(この回に決めずに残した物と、決めた物のうちリードが違うと言えば戻す物)
+
+1. **正解の整数が無い場面の最良**: `p2-*-text-subns`・`p2-s-float-subns`・`p2-ms-float-subns` の 5 場面は、入力が持つ値がナノ秒の整数にならないので正解の int64 ナノ秒が無い(期待は `scenes.NO_INT`)。対象が断れば「対応なし」、整数を返せば「不一致」で、どの対象も「正解と一致」にならない。規則 5 の順(正解と一致 > 対応なし > 不一致)をそのまま当て、断ることを正解とする別の採点は作っていない(場面ごとに採点の規則を変えないため)。断ることを「正解と一致」に数える形にするかはリードが決める。
+2. **マイクロ秒は P0-2 の軸の外**: 要件 P0-2 の文は括弧で「秒・ミリ・ISO 文字列」を列べ、マイクロ秒を列べない。軸の値は要件の文の切片から機械で作る(`grid_c`)ので軸には足さず、「軸の外の値」として理由(`scenes.OUTSIDE_EXTRA`)つきで一覧に出した。軸に足すかは要件の変更で、リード(とオーナー)が決める。
+3. **調査結果の側の入口の選び方(道具ごとの読み)**: 各道具のどの入口がどの単位・型を読むかは、道具のコードか文書の行で確かめて adapter の注釈に書いた(§6.2 の表)。次の 3 つは場面係が決めたので、違うと読むなら戻す: (a) aat の CSV の取引所(`aat.exchange.generic.csv.CSV`)を道具の時刻の入口と読み、単位の場面に加えて ISO の場面もこの入口にそろえた(ISO の結果が「対応なし」から「不一致」に変わった。第 r15 周までの adapter は「取引所の実装の一つ」として使っていなかった)/ (b) backtrader の CSV の入口に `timeframe=Ticks` を設定の操作として渡した(既定の Days では道具が時刻を日の終わりに移す。`common.configure` で記録)/ (c) quantcore の Parquet の読み込みのために pyarrow を venv に入れ(検査は `survey_results/attempts/34.log`)、道具より先に読み込む順にした(後に読み込むと SIGSEGV)。
+4. **要件のファイルの行が動いた**: この起動の途中(09:07:42 UTC、リードのコミット abb256d、オーナー決定 L-445)で REQUIREMENTS.md に §0 が足され、要件の表の行が 6 行下がった。`grid_c` は行番号を固定で持っていたので(`SOURCE_CELLS = [(9, 4)] + …`)、別の行を読むところだった。行を最初の欄の値(`0`・`P0-1`〜`P0-7`)で探す形に直した(§6.1)。要件の文そのもの(要件の表の行の文)は変わっていない(切片と判断の数と文字が同じことを `test_grid_every_requirement_segment_has_one_judgment` が照らす)。委任文もこのコミットで変わった(起動文の指紋 cdf623e4fb24 から。変わったのは核の約束の射程 L-445 の行と批評家の格付けの文で、場面係の指示の文は変わっていない)。
+
+## 6. 直した結果(指摘ごとの根拠。§1〜§5 を書いたあとに直した)
+
+`<S>` の出力のファイル名は `item0_r16-1_scenekeeper_*`。版: 起動の始めの HEAD 0f2e07d。途中でリードが 2 回コミットした(2786cd4・abb256d。abb256d はこの回の書きかけの scenes.py・grid_c.py・common.py・試験などを含む)。
+
+### 6.1 i0-r15-05(主張の族 10・11・12・13・14)
+
+- **場面**(`scenes.py` の `_UNIT_PLAN`): P0-2 に 14 場面を足した。秒・ミリ・マイクロ秒 × 形(ナノ秒で割り切れる十進の文字列 / ナノ秒より細かい桁の十進の文字列 / 整数 / float が持つ値がナノ秒で割り切れる / float が持つ値にナノ秒より細かい端数がある)。マイクロ秒の最後の形は作れない(この時刻の近くの float の刻みは 0.25 µs = 250 ns で、どの float もナノ秒で割り切れる値を持つ)ことを試験が float の刻みから示す(`test_unit_scenes_cover_every_form_of_every_unit`)。十進の文字列の場面の既知の時刻は、どの単位でも p2-iso-utc と同じ 2024-01-01T00:00:00.123456789Z(試験が照らす)。float の場面の導き方は float が持つ正確な十進を書き、DEFINITIONS.md の入力の行にも JSON の最短の表記に並べて出す(根 5、`gen_definitions.fmt_input`)。導き方の算術は Python の `fractions` で照らした(0.123456789 × 2^22 = 517,815.30… → 517815、0.456789 × 4096 = 1,871.007… → 1871。最初の版は 517816 と書いていたのを直した)。
+- **採点**(`run_battery.py:_grade_unit_time`): adapter が出す `ns` を runner が int64 の整数か(bool でない int か numpy の整数、範囲の中)で採点する。float が整数に等しくても整数に数えない(1,704,067,200,000,000,000 は float が正確に持てるので、型を見ないと float を返す対象が正解になる)。
+- **出所**(`run_battery.py` の `READER_SCENES`): 単位の場面を ISO の場面と同じ「時刻を読んだ関数は対象の物か」の検めに入れた。barter の変換は同じ作業空間の crate `barter_integration` にあるので、対象の場所に `rust:barter_integration::` を足した(`TARGET_DISTS`)。
+- **adapter の共通の手順**(`adapters/common.py:unit_time`・`time_to_ns`・`iso_entry_tried`): 場面の単位と入力の型を読む入口だけを、入力の物そのままで呼ぶ。入口が無ければ「対応なし」と試したこと、入口が例外で止まれば「対応なし」と例外、時刻を作らず断りもしなければ「結果なし」。結果は対象の時刻の型から整数の算術で ns に読む(float を通さない)。
+- **観点の要約**(`scenes.py` の `VIEWPOINTS`): 要件 §2 の 2 列目の文をそのまま読む。HEAD の要約と比べて落ちていたもの: P0-1「同期のバー逐次ループではないこと」/ P0-2「他の単位(秒・ミリ・ISO 文字列)が核の内部表現に混入しないこと」/ P0-4「注意書きや呼び出し規約ではなく」/ P0-5「明記され」「同じ入力を 2 回実行して同じ順序・同じ結果」/ P0-6「戦略側がこれらを直接呼べること」(`git show 0f2e07d:tests/bt/battery/item_0/scenes.py` の 94-102 行と要件 §2 の 2 列目を照らした)。
+- **観点の文が名指す値の覆い**(`grid_c.named_values`・`named_coverage`、`scenes.extra_values_of`、DEFINITIONS.md の観点ごとの節): 観点の §2 の行が名指す事象の軸と追加の軸の値ごとに、入力がその値を持つ場面を機械で列べる。どの値にも場面があることを試験が照らす(HEAD の場面集なら P0-2 の秒・ミリが空で落ちる)。P0-7 の `plug` の文の頭を要件の語(約定模型・遅延模型・費用・口座)にそろえた(入力の欄から機械で読むため。adapter は `plug` の文を読まない = `grep -rn '"plug"\]\|\["plug"\|get("plug")' adapters opponents` は gobacktest の自分の payload の欄だけ)。
+- **全 adapter**: 新実装(`core.to_nanos(値, 単位)`)・当方の現状・相手 37・再現 1 に単位の場面を足した。入口のある道具と、その入口が読む単位と型(行は adapter の注釈):
+
+| 道具 | 秒 | ミリ秒 | マイクロ秒 |
+|---|---|---|---|
+| 新実装 | `to_nanos`(文字列・整数・float) | 同じ | 同じ |
+| aat | CSV の取引所の time 欄(文字列・整数・float、`float()` で読む) | 無し | 無し |
+| backtrader | GenericCSVData dtformat=1(整数)/ 2(文字列・float) | 無し | 無し |
+| barter | `de_str_f64_epoch_s_as_datetime_utc`(文字列・float) | `de_u64_epoch_ms_as_datetime_utc`(整数)/ `de_str_f64_epoch_ms_as_datetime_utc`(文字列・float) | 無し |
+| basana | 無し | binance の `timestamp_to_datetime`(整数) | bitstamp の Trade の microtimestamp(文字列・整数) |
+| freqtrade | `dt_from_ts`(整数・float) | `dt_from_ts`(整数・float)、`ohlcv_to_dataframe`(整数) | 無し |
+| hftbacktest | 無し | `binancefutures.convert`(整数) | `tardis.convert`(整数) |
+| pyalgotrade | `utils.dt.timestamp_to_datetime`(整数・float)/ bitcoincharts の CSVTradeFeed(文字列) | 無し | 無し |
+| quantcore | `ParquetDataLoader.load`(整数) | 同じ | 同じ |
+
+  ほかの道具は入口が無い(探した範囲とコマンドは `survey_results/attempts/r16-1_unit_entries.txt`、この環境の各 venv の配布物。オーナー PC は未確認)。入口の無い道具は、ISO の場面の入口に値を文字にして渡した結果を「試したこと」に書いた(採点しない)。barter は driver に道具の変換を呼ぶ口を足して作り直した(`survey_results/attempts/61.log`)。
+- **全対象の走らせ直し**: `<S>item0_r16-1_scenekeeper_run_all.sh`、記録 `<S>logs/run_all.log`: `run_battery.py --list-targets` の 57 の設定つき対象が全部 rc=0(09:23:34〜09:37:02 UTC)。aat は、CSV の取引所の読みで `asyncio.run` がスレッドの今のループを外し、後の場面が全部 RuntimeError になったので、別のループで回す形に直して走らせ直した(rc=0)。相手と再現の 54 の出力を `survey_results/` に写した。
+- **走らせ直しの前後**(`<S>item0_r16-1_scenekeeper_compare_runs.txt`、HEAD の `survey_results` と照らす): 両方にある場面の 1,728 件のうち、正しさ・再現・状態・出力が違うのは 5 件: aat の p2-iso-utc・p2-iso-offset(§5.2 の 3 (a) の入口の変更で「対応なし」→「不一致」)、predictivedev の p7-latency-model-swap(前から「2 回で違う」の壁時計の値)、ziplime 2 つの p4-future-read-attempt(出力の中の一時フォルダの名だけ)。
+- **P0-2 の結果**(`<S>item0_r16-1_scenekeeper_unit_results.txt`、表の値は資料係が作る): 調査結果の側の最良が「正解と一致」なのは p2-s-int・p2-s-float-held・p2-ms-int・p2-us-int と ISO の 2 場面。
+- 試金石: `mutant.py --check` →「changed scenes: ['p4-received-time']」「OK」。
+
+### 6.2 i0-r15-06(主張の族 1'')
+
+- 判断の第 2 の値を「測っていない」にし、表の判断の欄は「測っていない(理由)」で出す。理由は `grid_c.why` が宣言と入力から決める(この場面集では全部「この升目を宣言した場面が無い」。もう一方の「宣言した場面はあるが、その事象の型が場面の入力から出ない」は `covers_problems` の試験が今の場面集では起こさせないが、機械は格子で試す)。見出しは「場面にした N / 測っていない M / 升目に当たらない場面 K」。正の定義 C の凍結した段落の中の値の名を替え(§5.1)、その切片の判断(`def_axes/jC.tsv` の 56〜61 行と続く番号)を直した。
+- 値の名を名指す既存の試験 4 ファイルを新しい名に直した(`test_battery_item0.py` の `GRID_NOT_MEASURED`、`test_battery_def_grids.py` の探り 2 か所、`test_battery_r13_claims.py` の 1 行、`test_battery_r15_unplaced.py` の一覧の読み(新しい一覧の見出しで止まる))。`test_battery_item0.py` の設定の記録の試験は、ISO の場面と同じく単位の場面も設定なしを許す形にした(`READER_SCENES`)。消した試験は無い。
+
+### 6.3 同じ種類の欠陥を探した結果
+
+- 観点の文が名指す値: 7 観点の事象の軸と追加の軸の値の全部に、入力がその値を持つ同じ観点の場面がある(`test_every_value_a_viewpoint_names_is_given_by_an_input`)。見る道の軸は宣言のまま(§4 の族 10 の (b))。
+- 手で書いた位置: `grid_c` の要件の行番号(§5.2 の 4)と `test_battery_item0.py` の同じ行番号を、行の最初の欄で探す形に直した。
+- 観点の要約: 7 観点の全部(§6.1)。
+- 検討表: P0-2 の節の能力の文に(能 3)を足した。行は増えない(P0-2 の動かせなかった候補は 44・58 の 2 件で、どちらも「再現できない(危険)」)。`check_bt_considered.py … --write` →「OK 誤り 0 件」。
+
+## 7. 提出前の吟味(委任文 §3「提出前の吟味」(1)〜(6))
+
+読み直した物: 委任文(全文。途中で abb256d により変わった版も)、固定した要件 REQUIREMENTS.md(§0〜§2)、場面集の規則 1〜9、LEAD_DESIGN.md の §8.2・§8.5・§9・§11、第 15 周の CRITIC.md の i0-r15-01〜07、ROOTCAUSE_r15-1.md の全部。
+
+| 非常に厳しい批評家なら [止める]・[直す] にする候補 | 何をしたか |
+|---|---|
+| i0-r15-05: 秒・ミリの場面が無い | 秒・ミリ・マイクロ秒 × 5 形の値の場面を足した(§6.1)。観点の文が名指す値ごとに入力で覆うことを試験にした(HEAD の場面集なら落ちる) |
+| 同じ族の別の形: 観点の要約が要件の文を落とす | 7 観点の全部を要件の文そのものにした。手で書いた要約は残っていない(試験と mutant) |
+| 同じ族の別の形: P0-7 の差し込む口の値 | 入力の `plug` の頭から機械で読み、4 つの口に場面があることを同じ試験が照らす |
+| 正解が新実装の内部を写している | 正解は入力が持つ値 × 倍率(閉じた式)で、試験は `fractions` で作り直して照らす。新実装の関数名・形は場面に出ない(adapter だけが `to_nanos` を呼ぶ) |
+| float の場面の入力が表の上で違う値に見える | 定義の入力の行と導き方に float が持つ正確な十進を並べた(試験あり) |
+| 手計算の誤り | 導き方の算術を `fractions` で照らし、517816 の誤りを直した(§6.1) |
+| float を返す対象が整数の正解に当たる | 採点で型を見る(bool・float・Decimal・文字列・範囲外を格子で試験、mutant 3 種) |
+| adapter が数を換算して対象の変換に見せる | `unit_time` は入力の物そのものを入口に渡す(試験が物の同一性を照らす)。CSV・JSON の入口では文字に書く(文字列はそのまま、整数は十進、float は repr で、道具の `float()` と f64 の読みで同じ float に戻る) |
+| 弱い入口を選んで相手を弱めた | 入口は道具の文書・コードが読む単位と型で決め、道具ごとに行を注釈に書いた。backtrader の日足の既定は設定の操作で外した(§5.2 の 3)。入口の無い道具は探した範囲とコマンドを残した |
+| 走らせ直しで別の場面の結果が変わった | HEAD と照らし、違いは 5 件で理由つき(§6.1)。aat の後の場面が全部落ちた誤りは直して走らせ直した |
+| i0-r15-06: 判断の括弧が事実と違う | 括弧を機械の理由に替えた。値は 2 つのまま(§5.1 でリードに上げた) |
+| 要件の行番号の固定 | 行を最初の欄で探す形にした(§5.2 の 4)。同じ固定が試験にもあったので同じ形にした |
+| 実装(`src/bot/bt/`)と作業者の試験(`tests/bt/item_0/`)に触れる | 触れていない(§8) |
+| 既存の試験を弱めた・消した | 消していない。値の名を替えた 4 ファイルと、設定の記録の試験の読み取りの場面の扱いだけを変えた(§6.2) |
+| 自分の作業の採点を書く(O-10) | この表は候補と、したことだけを書く |

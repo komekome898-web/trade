@@ -264,6 +264,13 @@ class Adapter(Adapter):  # noqa: F811 - run_battery loads `Adapter` from a repro
 
     scene_p2_iso_offset = scene_p2_iso_utc
 
+    def _units(self, sc):  # round r16-1: the same scope as p2-iso-* (the reproduction covers LEAN's data path only)
+        return _no_result("単位つきの数の時刻(秒・ミリ秒・マイクロ秒)の読み")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [_as_one_type(C.substitute(e, "trade", price=100.0, qty=0.01), self.choose["one_type"])
                for e in C.events(sc)]

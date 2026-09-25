@@ -302,7 +302,7 @@ TARGET_DISTS: dict[str, dict] = {
     "opp_homerun": {"py": ["services"]}, "opp_aat": {"py": ["aat"]},
     "opp_gobacktest": {"compiled": ["go:*gobacktest.", "go:github.com/dirkolbrich/gobacktest"]},
     "opp_pineforge": {"compiled": ["c:pineforge"]},
-    "opp_barter": {"compiled": ["rust:barter_data::", "rust:barter::"]},
+    "opp_barter": {"compiled": ["rust:barter_data::", "rust:barter::", "rust:barter_integration::"]},  # r16-1: + the workspace crate of the epoch deserializers
     "opp_pytrendfollow": {"py": ["trading"]}, "opp_thirupathikannan_execsim": {"py": ["src"]}, "opp_isaaccheng_obsim": {"py": ["order_book_simulator"]},
 }
 COMPILED = ("rust:", "go:", "c:", "cpp:")

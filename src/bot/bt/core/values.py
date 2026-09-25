@@ -824,6 +824,13 @@ _INT_FLOAT = int.__float__
 # inf). One value is never rounded by one class and refused by another. (Plain
 # data -- `freeze`, `settle` -- keeps values exactly or refuses them: `_now`.)
 
+def _beyond(where: str, value: Any) -> ValueError:
+    """The one refusal of a finite value beyond a float's range, whatever
+    its class."""
+    return ValueError(f"{where} must be a number a float can hold, got a {type_name(value)} beyond a "
+                      f"float's range")
+
+
 def _nearest_of(got: Any, value: Any, where: str, numbers_only: bool) -> float:
     """The float field's value of `got`, what the scalar rule built of
     `value`."""
@@ -834,24 +841,26 @@ def _nearest_of(got: Any, value: Any, where: str, numbers_only: bool) -> float:
         try:
             return _INT_FLOAT(got)  # correctly rounded, in C
         except OverflowError:
-            raise ValueError(f"{where} holds an int beyond a float's range") from None
+            raise _beyond(where, value) from None
     if t is PlainFraction:
         try:
             return fraction_float(got)
-        except ValueError as exc:
-            raise ValueError(f"{where}: {exc}") from None
+        except ValueError:
+            raise _beyond(where, value) from None
     if t is PlainDecimal and not numbers_only:
+        if _DEC_IS_SNAN(got):
+            raise ValueError(f"{where}: a signaling NaN is not a float")
         try:
             return decimal_float(got)
-        except ValueError as exc:
-            raise ValueError(f"{where}: {exc}") from None
+        except ValueError:
+            raise _beyond(where, value) from None
     if t is str and not numbers_only:
         try:
             f = float(got)  # correctly rounded (the interpreter's text reader)
         except ValueError:
             raise ValueError(f"{where} must be a number, got the text {got!r}") from None
         if _is_inf(f) and str.lower(str.lstrip(str.strip(got), "+-")) not in _INF_TEXTS:
-            raise ValueError(f"{where} holds the text of a number beyond a float's range")
+            raise _beyond(where, value)
         return f
     raise ValueError(f"{where} must be a number, got {type_name(value)}")
 
@@ -871,7 +880,7 @@ def _longdouble_nearest(value: Any, where: str) -> float:
     try:
         return int.__truediv__(_new_int(n), _new_int(d))
     except OverflowError:
-        raise ValueError(f"{where} holds a {type_name(value)} beyond a float's range") from None
+        raise _beyond(where, value) from None
 
 
 _NOT_PLAIN = object()  # what `_plain_scalar` gives for a value the scalar rule refuses

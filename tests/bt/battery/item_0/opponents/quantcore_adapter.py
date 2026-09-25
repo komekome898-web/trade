@@ -23,6 +23,10 @@ sys.path.insert(0, str(HERE.parent / "adapters"))
 from protocol import Adapter, not_supported, ok  # noqa: E402
 import common as C  # noqa: E402
 
+# round r16-1: pyarrow (the Parquet reader the tool's ParquetDataLoader needs; installed for the unit scenes,
+# survey_results/attempts/34.log) is loaded before the tool: loaded after the tool's compiled core, pyarrow's Parquet
+# writer ends the process with SIGSEGV (measured, the record in the same log). Nothing else in this adapter uses it.
+import pyarrow.parquet  # noqa: E402,F401
 import quantcore as qc  # noqa: E402
 
 
@@ -141,6 +145,32 @@ class QuantcoreAdapter(Adapter):
                                  f"試したこと: TradingCalendar('NYSE').parse(iso) -> {type(exc).__name__}: {str(exc)[:120]}")
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
+
+    # ---------------- P0-2 unit scenes (round r16-1): quantcore.parquet_loader.ParquetDataLoader.load reads the timestamp
+    # column of a Parquet file; integers are taken as s / ms / us / ns by their size and made int64 ns
+    # (`_to_timestamp_ns`, parquet_loader.py lines 75-98: "integer seconds / milliseconds / microseconds / nanoseconds").
+    # Reading Parquet needs pyarrow, which the tool does not declare; it was installed into the venv for this
+    # (survey_results/attempts/34.log, round r16-1). The adapter writes the int column with pandas as it is.
+    @staticmethod
+    def _parquet(v):
+        import os, tempfile  # noqa: E401
+        import pandas as pd
+        from quantcore.parquet_loader import ParquetDataLoader
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "bars.parquet")
+            pd.DataFrame({"timestamp": [v], "open": [1.0], "high": [1.0], "low": [1.0], "close": [1.0], "volume": [1.0]}).to_parquet(path)
+            bars = ParquetDataLoader.load(path, "X")
+        return bars[0].timestamp_ns if bars else None
+
+    def _units(self, sc):
+        from quantcore.parquet_loader import ParquetDataLoader
+        return C.unit_time(sc, [{"unit": u, "forms": ("int",), "how": "quantcore.parquet_loader.ParquetDataLoader.load(timestamp の欄の整数を大きさで秒 / ミリ秒 / マイクロ秒 / ナノ秒と見分ける)",
+                                 "reader": ParquetDataLoader.load, "call": self._parquet} for u in ("s", "ms", "us")],
+                           tried="文字列と float の時刻を読む入口は無い(文書の型は整数)")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
 
     def _ts(self, sc):
         evs = [C.substitute(e, "trade", price=100.0, qty=0.01) for e in C.events(sc)]

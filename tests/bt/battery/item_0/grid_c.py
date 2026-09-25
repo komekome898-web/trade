@@ -35,16 +35,36 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 REQUIREMENTS = "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/REQUIREMENTS.md"
-# (line, column) of the text written out: section 1's row, column 4; section 2's rows, columns 2 and 3
-SOURCE_CELLS = [(9, 4)] + [(n, c) for n in range(17, 24) for c in (2, 3)]
 DELIMITERS = r"[・、。()（）/「」:]|\*\*|\+"
 JUDGMENTS = HERE / "grid_c_judgments.tsv"
 VIEWPOINTS = [f"P0-{i}" for i in range(1, 8)]
-MEASURE_LINE = {f"P0-{i}": 16 + i for i in range(1, 8)}  # the section 2 row of each viewpoint
 
 
 def requirement_lines() -> list[str]:
     return (REPO / REQUIREMENTS).read_text(encoding="utf-8").split("\n")
+
+
+def _row_lines() -> dict[str, int]:
+    """The line of each table row the axes are written from, found by the row's first cell (round r16-1: the lead's
+    L-445 edit added a section 0 and moved every row; fixed line numbers had pointed at other lines): the section 1
+    row of item 0 (first cell "0") and the section 2 rows P0-1 .. P0-7. Each must occur exactly once."""
+    found: dict[str, list[int]] = {}
+    for n, ln in enumerate(requirement_lines(), 1):
+        if ln.startswith("|"):
+            first = ln.strip().strip("|").split("|")[0].strip()
+            if first in ("0", *VIEWPOINTS):
+                found.setdefault(first, []).append(n)
+    bad = {k: v for k, v in found.items() if len(v) != 1}
+    missing = [k for k in ("0", *VIEWPOINTS) if k not in found]
+    if bad or missing:
+        raise ValueError(f"REQUIREMENTS.md rows: repeated {bad}, missing {missing}")
+    return {k: v[0] for k, v in found.items()}
+
+
+_ROWS = _row_lines()
+# (line, column) of the text written out: section 1's row, column 4; section 2's rows, columns 2 and 3
+SOURCE_CELLS = [(_ROWS["0"], 4)] + [(_ROWS[vp], c) for vp in VIEWPOINTS for c in (2, 3)]
+MEASURE_LINE = {vp: _ROWS[vp] for vp in VIEWPOINTS}  # the section 2 row of each viewpoint
 
 
 def table_cell(line: int, column: int) -> str:

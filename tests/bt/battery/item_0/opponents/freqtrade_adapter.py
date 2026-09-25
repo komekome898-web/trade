@@ -229,6 +229,25 @@ class FreqtradeAdapter(Adapter):
 
     scene_p2_iso_utc = scene_p2_iso_offset = _iso
 
+    # ---------------- P0-2 unit scenes (round r16-1): freqtrade.util.dt_from_ts (a number of seconds or milliseconds; above
+    # 1e10 it is taken as ms and divided by 1000; datetime.fromtimestamp(tz=UTC); freqtrade/util/datetime_helpers.py
+    # lines 71-79) and the candle rows' own conversion ohlcv_to_dataframe (date = an integer of ms, then floored to the
+    # timeframe, the same "1d" as p2-iso-*). None reads microseconds.
+    def _units(self, sc):
+        from freqtrade.data.converter import ohlcv_to_dataframe
+        from freqtrade.util import dt_from_ts
+        entries = [{"unit": u, "forms": ("int", "float"), "how": "freqtrade.util.dt_from_ts(秒かミリ秒の数)",
+                    "reader": dt_from_ts, "call": dt_from_ts} for u in ("s", "ms")]
+        entries.append({"unit": "ms", "forms": ("int",), "how": "freqtrade.data.converter.ohlcv_to_dataframe(date = ミリ秒の整数)",
+                        "reader": ohlcv_to_dataframe,
+                        "call": lambda v: ohlcv_to_dataframe([[v, 1.0, 1.0, 1.0, 1.0, 1.0]], "1d", PAIR, fill_missing=False,
+                                                             drop_incomplete=False)["date"].iloc[0]})
+        return C.unit_time(sc, entries, tried=f"マイクロ秒を読む変換は無い。{_net()}")
+
+    scene_p2_s_text = scene_p2_s_text_subns = scene_p2_s_int = scene_p2_s_float_held = scene_p2_s_float_subns = \
+        scene_p2_ms_text = scene_p2_ms_text_subns = scene_p2_ms_int = scene_p2_ms_float_held = scene_p2_ms_float_subns = \
+        scene_p2_us_text = scene_p2_us_text_subns = scene_p2_us_int = scene_p2_us_float_held = _units  # round r16-1
+
     def _ts(self, sc):
         evs = [C.substitute(e, "bar", open=100.0, high=100.0, low=100.0, close=100.0, volume=1.0)
                for e in C.events(sc)]
