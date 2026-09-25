@@ -74,7 +74,7 @@ def test_lead_notes_must_reach_the_battery_auditors_and_fixers():
           "const au = await agent(`検査 ${(args.lead_notes || {})[0]}`, { label: `監査役(場面):0#1`, agentType: 'owner-auditor', model: M })\n")
     assert cbd.check_script(ok) == []
     bad = ("const a = await agent(`作業 ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
-           "const au = await agent(`検査`, { label: `監査役(定義):0#1`, agentType: 'owner-auditor', model: M })\n")
+           "const au = await agent(`検査`, { label: `監査役(場面):0#1`, agentType: 'owner-auditor', model: M })\n")
     errs = cbd.check_script(bad)
     assert sum("lead_notes" in e for e in errs) == 2
 
