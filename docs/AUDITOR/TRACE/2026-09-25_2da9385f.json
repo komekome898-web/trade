@@ -3501,9 +3501,9 @@
    "move": 124,
    "tools": {
     "Read": 1,
-    "Bash": 1
+    "Bash": 3
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
