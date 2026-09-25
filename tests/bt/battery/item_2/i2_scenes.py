@@ -19,7 +19,8 @@ Expected-answer keys (read by `i2_judge.py`):
   fee.<ref>           sum of the ref's fill fees (paid; rebate negative)
   lat_in.<ref>        first_fill_t - send time (for latency drawn from a set)
   sent.<ref>          submissions of the ref that reached the venue
-  notice.<ref>.<kind> local time the strategy saw the ref's notice of kind
+  notice.<ref>.<kind> local time the strategy saw the ref's notice of kind (ack / reject /
+                      fill / cancel; "terminal" = the earlier of reject and cancel)
   seen.<label>        local time the strategy saw the labelled market event
   account.<field>     account figure at the end of the scene
   costs.<field>       funding / swap paid over the scene (credit negative)
@@ -202,12 +203,12 @@ def _o_postonly(inp):
     crosses = a1["px"] >= b["asks"][0][0]
     rests = a2["px"] < b["asks"][0][0] and not any(e["px"] <= a2["px"] for e in trades_after(inp, a2["t"]))
     assert crosses and rests
-    return {"status.o1": "rejected", "filled.o1": 0.0, "status.o2": "open", "filled.o2": 0.0}
+    return {"status.o1": op_in(["rejected", "canceled"]), "filled.o1": 0.0, "status.o2": "open", "filled.o2": 0.0}
 
 
 scene("c2-1-postonly", "C2-1", "値", "post-only は、出した時に反対側の気配に届く値なら拒否され、届かない値なら待つ",
       "post-only の拒否と待機(規則 post_only = reject_if_crossing)",
-      "o1 = 10001 の post-only 買い。出した時の最良の売りが 10001 なので取る側になる → 拒否、約定 0。"
+      "o1 = 10001 の post-only 買い。出した時の最良の売りが 10001 なので取る側になる → 約定 0 で終わる(拒否か、着いた時点の取消)。"
       "o2 = 9990 の post-only 買い(対照)。最良の売り未満で、以後の約定は 9990 以下に来ない → 待ったまま(open)、約定 0。",
       base_input(market=mkt0() + [trade(T0 + 10 * MS, 10001, 1, "buy")],
                  actions=[place(T0 + 1 * MS, "o1", "buy", "limit", 1, px=10001, post_only=True),
@@ -892,12 +893,13 @@ def _o_notice(inp):
     L = inp["latency"]
     a1, a2 = action(inp, "o1"), action(inp, "o2")
     d = L["order"]["ns"] + L["notice"]["ns"]
-    return {"notice.o1.reject": a1["t"] + d, "notice.o2.ack": a2["t"] + d, "status.o1": "rejected", "status.o2": "open"}
+    return {"notice.o1.terminal": a1["t"] + d, "notice.o2.ack": a2["t"] + d,
+            "status.o1": op_in(["rejected", "canceled"]), "status.o2": "open"}
 
 
 scene("c2-9-notice", "C2-9", "値", "受付と拒否の知らせも事象で、発注の遅れ + 知らせの遅れの後に戦略に届く",
       "受付・拒否の知らせの事象と遅れ",
-      "発注の遅れ 10ms、知らせの遅れ 7ms。o1 = 交差する post-only(T0+1ms)→ 拒否の知らせ T0+18ms。o2 = 交差しない post-only(T0+2ms)→ 受付の知らせ T0+19ms。",
+      "発注の遅れ 10ms、知らせの遅れ 7ms。o1 = 交差する post-only(T0+1ms)→ 約定なしで終わった知らせ(拒否か取消)が T0+18ms。o2 = 交差しない post-only(T0+2ms)→ 受付の知らせ T0+19ms。",
       base_input(market=mkt0(), actions=[place(T0 + 1 * MS, "o1", "buy", "limit", 1, px=10001, post_only=True),
                                           place(T0 + 2 * MS, "o2", "buy", "limit", 1, px=9990, post_only=True)],
                  latency=lat(order=10 * MS, notice=7 * MS)),

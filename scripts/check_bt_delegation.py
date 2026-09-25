@@ -244,21 +244,23 @@ def check_bound(doc: str, script: str = "", args_text: str = "") -> list[str]:
         if "終わりの上限:" not in l:
             errs.append("通過の判定の行に「終わりの上限:」の欄が無い(I-013: 終わる条件と上限を書く)")
             continue
-        m = re.search(r"終わりの上限:[^|]*?最大 (\d+) 周", l)
-        if not m:
+        field = l[l.index("終わりの上限:"):]
+        field = field[:field.index(" | ")] if " | " in field else field
+        nums = [int(x) for x in re.findall(r"最大 (\d+) 周", field)]
+        if not nums:
             errs.append("「終わりの上限:」の欄に「最大 N 周」が無い")
             continue
-        n = int(m.group(1))
-        ms = re.search(r"const CAP = Number\(args\.round_cap\) \|\| (\d+)", script)
-        if script and (not ms or int(ms.group(1)) != n):
-            errs.append(f"台本の CAP の既定({ms.group(1) if ms else '無し'})が委任文の上限({n})と違う(66-4)")
+        if script and not re.search(r"const CAP = capOf\(args\.round_cap, item\.id\)", script):
+            errs.append("台本の CAP が args.round_cap を項目ごとに読んでいない(L-454)")
         if args_text:
             try:
                 rc = json.loads(args_text).get("round_cap")
             except Exception:
                 rc = None
-            if rc is not None and int(rc) != n:
-                errs.append(f"引数の round_cap({rc})が委任文の上限({n})と違う(66-4)")
+            vals = list(rc.values()) if isinstance(rc, dict) else ([rc] if rc is not None else [])
+            bad = [v for v in vals if int(v) not in nums]
+            if bad:
+                errs.append(f"引数の round_cap の値 {bad} が委任文の上限 {nums} に無い(66-4 / L-454)")
     return errs
 
 

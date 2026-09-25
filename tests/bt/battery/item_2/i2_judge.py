@@ -65,7 +65,13 @@ def derive(obs: dict, key: str, send_times: dict):
         return int(obs.get("sent", {})[rest])
     if head == "notice":
         ref, kind = rest.split(".")
-        return int(obs["notices"][ref][kind])
+        n = obs["notices"][ref]
+        if kind == "terminal":  # the order ended without a fill: rejected, or canceled / expired on arrival
+            ts = [n[k] for k in ("reject", "cancel") if k in n]
+            if not ts:
+                raise KeyError(f"no reject/cancel notice for {ref}")
+            return int(min(ts))
+        return int(n[kind])
     if head == "seen":
         return int(obs["seen"][rest])
     if head in ("account", "costs"):

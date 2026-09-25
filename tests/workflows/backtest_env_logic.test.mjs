@@ -19,6 +19,10 @@ function cut(name) {
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
 const judgeRound = new Function(`${cut('judgeRound')}; return judgeRound`)()
 const passCandidate = new Function(`${cut('passCandidate')}; return passCandidate`)()
+const capOf = new Function(`${cut('capOf')}; return capOf`)()
+test('round cap per item (L-454) or one number, default 10', () => {
+  assert.equal(capOf({ '1': 1, '4': 2 }, 1), 1); assert.equal(capOf({ '1': 1, '4': 2 }, 4), 2); assert.equal(capOf({ '1': 1 }, 3), 10); assert.equal(capOf(5, 2), 5); assert.equal(capOf(undefined, 2), 10)
+})
 const checkBattery = new Function(`${cut('checkBattery')}; return checkBattery`)()
 // L-448: the follow-up has no audit agent; the machine check reads the repair's own return
 const makeFollowUp = (st) => new Function('repairBattery', 'checkBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
@@ -116,4 +120,7 @@ test('pass candidate (L-451 / I-013): items 1..4 pass on a full battery match an
   assert.equal(passCandidate({ id: 1 }, true, true, [], { new_impl_all_correct: true }, null).candidate, false)
   assert.equal(passCandidate({ id: 0 }, true, true, [s], { new_impl_all_correct: true }, ok).candidate, false)
   assert.equal(passCandidate({ id: 0 }, true, true, [], null, null).candidate, true)
+  // L-454 (案 B): an item run without a critic passes on the table maker's recount alone
+  assert.equal(passCandidate({ id: 2 }, true, true, [], { new_impl_all_correct: true }, { skipped: true, findings: [] }).candidate, true)
+  assert.equal(passCandidate({ id: 2 }, true, true, [], { new_impl_all_correct: false }, { skipped: true, findings: [] }).candidate, false)
 })

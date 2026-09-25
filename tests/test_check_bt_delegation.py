@@ -138,8 +138,9 @@ def test_cut_function_ignores_braces_inside_strings_templates_and_comments():
 
 
 def test_end_bound_number_must_match_the_script_default_and_args():
-    row = "| 通過の判定 = x **終わりの上限:** 項目 1〜4 は 1 項目あたり最大 10 周 | L-407 |\n"
-    assert cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 10}') == []
-    assert any("台本" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 5", '{"round_cap": 10}'))
-    assert any("引数" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 5}'))
+    row = "| 通過の判定 = x **終わりの上限:** 項目 1〜3 は最大 1 周、項目 4 は最大 2 周 | L-454 |\n"
+    ok = "const CAP = capOf(args.round_cap, item.id)"
+    assert cbd.check_bound(row, ok, '{"round_cap": {"1": 1, "2": 1, "3": 1, "4": 2}}') == []
+    assert any("台本" in e for e in cbd.check_bound(row, "const CAP = Number(args.round_cap) || 10", '{"round_cap": 1}'))
+    assert any("引数" in e for e in cbd.check_bound(row, ok, '{"round_cap": {"1": 5}}'))
     assert any("欄が無い" in e for e in cbd.check_bound("| 通過の判定 = x | L-407 |\n"))

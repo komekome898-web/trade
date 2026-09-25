@@ -52,17 +52,13 @@ def _fill_models(fm):
     if fm.get("tier") != 5:
         return f"段 {fm.get('tier')} の約定の模型が無い(列の模型 = 段 5 だけ)"
     if fm.get("cancel_stance") not in ("snapshot_cap", "prob"):
-        if fm.get("cancel_stance") == "none" and not _depth_changes_after_first_order(fm):
-            return None
+        if fm.get("cancel_stance") == "none" and _CTX.get("no_depth_change"):
+            return None  # with no depth change after the order, risk_adverse keeps the queue ahead as displayed
         return f"先行の取消の扱い {fm.get('cancel_stance')} の列の模型が無い(risk_adverse = 写真で上限、prob = 確率型)"
     return None
 
 
 _CTX = {}
-
-
-def _depth_changes_after_first_order(_fm):
-    return _CTX.get("no_depth_change", False)
 
 
 def _rows(inp, feed):
@@ -101,12 +97,12 @@ class Hftbacktest:
         _CTX["no_depth_change"] = sum(1 for b in books if b["t"] > first_place) == 0
         C.gate(inp, tool=TOOL, orders=("market", "limit", "IOC", "FOK", "post_only", "cancel", "amend"),
                events=("book", "trade"), fill_models=_fill_models, latency=("feed", "order", "notice"),
-               costs=("maker_rate", "taker_rate"), account=("cash",))
+               costs=("maker_rate", "taker_rate", "spread"), account=("cash",))
         if not books:
             raise NotExpressible(f"{TOOL}: 板の事象が無い場面は渡せない(約定は板の深さの事象と約定の事象から決まる)")
         lat = inp.get("latency") or {}
         g = lambda k: int((lat.get(k) or {}).get("ns", 0))  # noqa: E731
-        if g("cancel") != g("order"):
+        if any(a["op"] == "cancel" for a in inp["actions"]) and g("cancel") != g("order"):
             raise NotExpressible(f"{TOOL}: 取消の遅れを発注の遅れと別に渡す口が無い(constant_order_latency(entry, response) は発注と取消に同じ entry を使う)")
         feed = g("feed")
         prod = inp["product"]
@@ -148,7 +144,10 @@ class Hftbacktest:
         ai = 0
         fee_prev = 0.0
         labels = [(e["t"] + feed, e["label"]) for e in inp["market"] if e.get("label")]
+        data_start = min(e["t"] for e in inp["market"])  # the tool's clock starts at the first exchange time
         now = hbt.current_timestamp
+        if now > inp["end_t"] + 10**15:  # the tool reports int64 max until the first elapse
+            now = data_start
         for st in steps:
             if st > now:
                 if hbt.elapse(st - now) != 0 and st < inp["end_t"]:
@@ -196,7 +195,7 @@ class Hftbacktest:
                     kind = {NEW: "ack", REJECTED: "reject", EXPIRED: "cancel", CANCELED: "cancel",
                             FILLED: "fill", PARTIALLY_FILLED: "fill"}.get(o.status)
                     if kind and kind not in n:
-                        n[kind] = int(o.local_timestamp)
+                        n[kind] = int(now)  # the local time this loop first saw the new status
                     last_status[ref] = o.status
                 del q
             dfee = fee_now - fee_prev

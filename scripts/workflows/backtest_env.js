@@ -185,8 +185,9 @@ function splitStops(item, stops) {
 // structural = the critic saw a structural change (a missing critic counts as one, the conservative side for the
 // round count); judgeNow = first round, or a pass candidate (no implementation-side [止める]), or structural.
 // L-451 (owner) / I-013: a part (items 1..4) is a pass candidate when the new implementation matches every battery scene
-// (the table maker's recount) and both judge pairs are at least even (item 4: 圧倒); the critic's stops no longer gate the
-// pass except a patchwork one (L-433 場当たり). Unfixed stops are carried over, recorded verbatim, and repaired in the next
+// (the table maker's recount, confirmed by the critic's own recount = audit 66-2) and both judge pairs are at least even
+// (item 4: 圧倒); the critic's stops no longer gate the pass except a patchwork one (L-433 場当たり) and a recount that
+// disagrees with the table maker (66-2). Unfixed stops are carried over, recorded verbatim, and repaired in the next
 // item's rounds (item 4 is the last). Item 0 keeps the old rule (it is carried as passed by args.passed_items). Pure: node --test.
 function passCandidate(item, okC, okS, stopsImpl, table, critic) {
   if (!(okC && okS)) return { candidate: false, why: '審査員が同等以上でない' }
@@ -194,10 +195,15 @@ function passCandidate(item, okC, okS, stopsImpl, table, critic) {
   const patch = stopsImpl.filter(f => f.patchwork)
   if (patch.length) return { candidate: false, why: `場当たりの直しの [止める] ${patch.length} 件` }
   if (!table || table.new_impl_all_correct !== true) return { candidate: false, why: `場面集で新実装が全部正解でない(${table ? table.new_impl_correct : '表なし'})` }
+  // L-454 (案 B): an item run without a critic passes on the table maker's recount alone (reported as unverified)
+  if (critic && critic.skipped) return { candidate: true, why: '' }
   // audit 66-2: the table maker's value is a self-report; the critic's own recount must agree
   if (!critic || critic.table_recount_ok !== true) return { candidate: false, why: `批評家の数え直しが資料係の申告と合わない(${critic ? critic.table_recount : '批評家なし'})` }
   return { candidate: true, why: '' }
 }
+// L-454 (案 B): the round cap is per item ({"1": 1, "2": 1, "3": 1, "4": 2}) or one number for all; default 10 (L-407 C)
+function capOf(cap, id) { return (cap && typeof cap === 'object') ? (Number(cap[id]) || 10) : (Number(cap) || 10) }
+const SKIP_CRITIC = (args.skip_critic || []).map(Number)
 function judgeRound(attempt, c, stopsImpl) {
   const structural = attempt === 1 || (c ? !!c.structural_change_since_prev : true)
   return { structural, judgeNow: attempt === 1 || stopsImpl.length === 0 || structural }
@@ -229,7 +235,7 @@ async function runItem(item) {
   const lossStreak = { current: 0, survey: 0, ...((prior.loss_streak && typeof prior.loss_streak === 'object') ? prior.loss_streak : {}) }
   let attempt = pre ? pre.attempt_offset : 0
   if (pre) history.push({ attempt, seeded: true, critic: { findings: pre.last_findings }, judges: pre.judges || {}, audit: null })
-  const CAP = Number(args.round_cap) || 10  // I-013: the end bound (委任文 通過の判定「終わりの上限」); item 0 has none (L-433)
+  const CAP = capOf(args.round_cap, item.id)  // I-013: the end bound (委任文 通過の判定「終わりの上限」); item 0 has none (L-433); L-454: per item
   while (item.id === 0 || counted < CAP) {
     attempt++
     const d = dir(item, attempt)
@@ -285,19 +291,21 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
 3. 委任文 §3「比較の表」と「場面集の規則」3〜5 に従う(観点ごとにまとめ、観点ごとの一致の数を出す / 動かせた道具は全場面に通し、動かなかった場面は試したこととエラーと実測の時間を注記 / セルは正しさと再現の 2 欄 / 最も良い結果の順 = 正解と一致 > 対応なし > 不一致 > 結果なし、同じなら再現の欄で上下)。スクリプトで次の 6 つの表を ${d}/ に作る。行は 2 つだけで記号「A」「B」で伏せる。列 = 場面(観点ごとにまとめる)、セルは 2 つの欄(正しさ = 正解と一致 / 対応なし / 不一致(値)/ 結果なし、再現 = 2 回の実行で同じ / 2 回で違う(値)/ 結果なし)。調査結果の側は場面ごとに動かせた道具のうち最も良い結果を 1 行に寄せる(どの道具かは伏せる)。
    current_1(A = 新実装、B = 当方の現状)/ current_2(A と B を入れ替え)/ survey_1(A = 新実装、B = 調査結果の側)/ survey_2(入れ替え)/ mutant_1(A = 新実装、B = 試金石)/ mutant_2(入れ替え)。
    ファイル名は ${d}/表_<ランダムな 6 文字>.md にし、どの表が何かは表のファイルに書かない(返り値の tables と ${d}/materials/ の対応表に書く)。${d}/ に表_*.md がこの周の 6 枚のほかにあれば、前の起動のものなので ${d}/materials/stale/ に移し、移したことを commands に書く。
-4. 表を作るスクリプト・実行の記録・対応表・確認に打ったコマンドの出力は、全部 ${d}/materials/ にファイルで保存する(scratchpad だけに置かない)。表の注記に道具を特定できる具体(道具の名前・時刻など)を書かず、それは materials の記録に書く(委任文 §3「比較の表」)。
+4. 対象ごとの場面集の実行の出力は ${d}/materials/runs/<対象の名>.tsv(2 回目の実行は ${d}/materials/runs_2/)に置く(監査 67-6: 批評家が同じ path から数え直す)。表を作るスクリプト・実行の記録・対応表・確認に打ったコマンドの出力は、全部 ${d}/materials/ にファイルで保存する(scratchpad だけに置かない)。表の注記に道具を特定できる具体(道具の名前・時刻など)を書かず、それは materials の記録に書く(委任文 §3「比較の表」)。
 5. 各組の 2 通りの表(current_1 と current_2 など)がバイト単位で同じかを md5sum で確かめ、出力を materials に保存し、identical に返す(同じなら委任文 §0 の L-422 でその組は同等)。
 6. 相手の道具の結果は、場面集の指紋(委任文 §3「相手の道具の結果の再利用」のコマンド)が前の周と同じなら前の周の materials の結果を使ってよい(使ったことと指紋を materials と notes に記録)。新実装と試金石は毎周走らせる。${SCRUTINY_TABLE}
-実データから出た数値は入れない。打ったコマンドを commands に返す。**通過の判定の入力(L-451・I-013)**: 新実装の「正解と一致」の数を runs/*.tsv から make_tables.py を使わずに数え直し(recount)、new_impl_correct に「一致の数/場面の数」(例 41/46)を、全場面が一致なら new_impl_all_correct=true、1 つでも外れれば false を入れる(表の集計の行と一致させる。申告は批評家が表で確かめる)。`,
+実データから出た数値は入れない。打ったコマンドを commands に返す。**通過の判定の入力(L-451・I-013)**: 新実装の「正解と一致」の数を ${d}/materials/runs/*.tsv から make_tables.py を使わずに数え直し(recount)、new_impl_correct に「一致の数/場面の数」(例 41/46)を、全場面が一致なら new_impl_all_correct=true、1 つでも外れれば false を入れる(表の集計の行と一致させる。申告は批評家が表で確かめる)。`,
       { label: `表:${item.id}#${attempt}`, phase: '比較資料', schema: TABLE_SCHEMA, model: IMPL_MODEL, effort: 'medium' })
     if (!t) return { item, status: 'error', stage: 'table', attempt, history }
 
-    const critic = agent(`${HEAD2}
+    // L-454 (owner, 案 B): items listed in args.skip_critic run with no critic (1 round: 要件 → 場面集 → 作る → 表 → 審査員);
+    // the table maker's recount then stands unverified and the pass report says so
+    const critic = SKIP_CRITIC.includes(item.id) ? Promise.resolve({ findings: [], structural_change_since_prev: true, record_path: '', table_recount_ok: null, table_recount: '批評家なし(L-454 案 B)', skipped: true }) : agent(`${HEAD2}
 あなたは項目 ${item.id}「${item.title}」の批評家(第 ${attempt} 周。新しく起こされた者)です。**非常に厳しく**。固定した要件 ${req.path}、場面集 ${bat.definitions}、調査結果の該当行を手元に置く。
 自分で試験を書いて壊しにいく(試験は tests/bt/critic/item_${item.id}/ に置く。壊れた試験は残し、作業者が直す)。前の周までの批評家の試験のうち、作業者が「試験自身の誤り」と報告したものを確かめ、誤りなら直すか理由を書いて取り下げる(委任文 §3「場面集の規則」8)。場面集が規則 1〜9 を守っているか(能力を申告で数えていないか等)も見る。前の周で「直った」とされた点も自分で確かめ直す。資料係の adapter(${JSON.stringify(t.adapters_changed).slice(0, 2000)})が対象を公平に呼んでいるか(新実装だけ有利・他が不利になる呼び方でないか)、場面係の検討表(${bat.battery_dir}/opponents/CONSIDERED.md)のスキップの理由が調査結果の行で裏付けられているか、再現(${bat.battery_dir}/opponents/)が一次資料どおりで弱められていないか、場面集が要件の観点を全部覆っているかも見る。
 ${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
 場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。**場面係の申告の裏取り(L-448、監査 64-6)**: この周の前に場面係が直していれば、その返り値の changed_files・tests_passed は申告なので、自分で「git diff --name-only HEAD」「git status --short」を打って場面集の外(src/bot/bt/・tests/bt/item_${item.id}/・tests/bt/critic/)に変更が無いか、場面集の試験(tests/bt/battery/item_${item.id}/)と自分の前の周までの試験を自分で回して通るかを確かめ、違えば [止める](target=場面集、fix_files に該当のファイル)にする。${item.id === 4 ? '項目 0 の場面集(tests/bt/battery/item_0/)も読む(L-448 で周ごとの監査役(場面)を外し、項目 0 の通過後の並行の直しは機械の検査だけなので、その中身の欠陥はこの批評家が読む)。欠陥は target=場面集、fix_files に tests/bt/battery/item_0/ の path で返す(この項目の場面係が直す)。**参照実装の独立(監査 65-3)**: src/bot/bt/reference/ と tests/bt/item_4/reference/ が核 src/bot/bt/core/ を見ずに要件だけから書かれたかを、成果物の形で読む(核の内部の名前・構造・コメントの写し、核のモジュールの import があれば [止める] target=実装、fix_files に reference/ の path。agent の記録は読めないので成果物だけで判断し、判断の根拠を CRITIC.md に書く)。' : ''}格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。要件のファイル §0「核の約束の射程」(L-445)の外の反例(戦略が Python のプロセス自体 = sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定を書き換える形)は [止める] にせず [示唆] にし、射程の外と書く。
-**資料係の申告の裏取り(監査 66-2、L-451・I-013)**: 資料係は new_impl_correct=${t.new_impl_correct}・new_impl_all_correct=${t.new_impl_all_correct} と申告した。runs/*.tsv(表の materials)から新実装の「正解と一致」の数を自分で数え直し、table_recount に「一致の数/場面の数」を、申告と一致すれば table_recount_ok=true、違えば false(理由を findings に [止める] target=場面集で)を返す。通過の判定はこの値で決まる。${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
+**資料係の申告の裏取り(監査 66-2、L-451・I-013)**: 資料係は new_impl_correct=${t.new_impl_correct}・new_impl_all_correct=${t.new_impl_all_correct} と申告した。${d}/materials/runs/*.tsv(資料係の置き場所 = 監査 67-6)から新実装の「正解と一致」の数を自分で数え直し、table_recount に「一致の数/場面の数」を、申告と一致すれば table_recount_ok=true、違えば false(理由を findings に [止める] target=場面集で)を返す。通過の判定はこの値で決まる。${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
 指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。fix_files に、その指摘を直すために変えるべきファイルの path(リポジトリ相対)を全部書く(相手の根拠。src/bot/bt/ の下が 1 つでもあれば台本は相手を「実装」と数える = 付け違いで通過の判定が変わらないための機械、監査 58-3)。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
       { label: `批評:${item.id}#${attempt}`, phase: '批評', schema: CRITIC_SCHEMA, model: IMPL_MODEL, effort: 'high' })
 
@@ -361,7 +369,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     const pass = audit !== null && auditStops.length === 0
     if (!cand.candidate) log(`項目 ${item.id} 第 ${attempt} 周: 通過の候補でない = ${cand.why}`)
     log(`項目 ${item.id} 第 ${attempt} 周: 対現状 ${eqC ? '同等(表が同一)' : `新 ${winsC}・相手 ${lossC}・同等 ${jc.length - winsC - lossC}`}・対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件(実装 ${stopsImpl.length}・場面集 ${stopsBat.length})・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
-    if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], carriedImpl: stopsImpl, bchain: cbchain }
+    if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], carriedImpl: c ? c.findings : [], bchain: cbchain }  // audit 67-9: every level is carried (止める・直す・示唆), not only the stops
 
     // counting rules (委任文 §3 根本的解決)
     const structural = structNow  // audit 62-2: one definition (judgeRound), a missing critic counts as structural
@@ -458,10 +466,10 @@ if (blocked.length) return finish({ stopped_at: 'parallel', results: Object.valu
 
 // stage 3: item 4 統合と答え合わせ (L-447: 参照実装 + 統合 + 旧エンジンとの互換; 圧倒の判定)
 // audit 66-3: the stops items 1..3 carried over (L-451 / I-013) reach item 4's worker and critic in this launch
-const carried = mid.map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(x => x.findings.length)
+const carried = mid.map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(x => x.findings.length)  // 67-9: all levels
 if (carried.length) {
   log(`持ち越しの指摘 ${carried.reduce((n, x) => n + x.findings.length, 0)} 件を項目 4 に渡す`)
-  byId[4] = { ...byId[4], extra: `${byId[4].extra || ''}\n持ち越しの指摘(項目 1〜3 の批評家の [止める]。L-451・I-013: 通過を止めずに持ち越したもの。この項目の作業者が直し、批評家が直りを確かめる。逐語): ${JSON.stringify(carried).slice(0, 12000)}` }
+  byId[4] = { ...byId[4], extra: `${byId[4].extra || ''}\n持ち越しの指摘(項目 1〜3 の批評家の [止める]・[直す]・[示唆]。L-451・I-013: 通過を止めずに持ち越したもの。この項目の作業者が直し、批評家が直りを確かめる。逐語): ${JSON.stringify(carried).slice(0, 12000)}` }
 }
 for (const id of [4]) {
   if (only && !only.includes(id)) continue
