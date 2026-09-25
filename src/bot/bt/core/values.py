@@ -36,7 +36,7 @@ become values, used by every field function below (i0-r6-03):
 * the accepted types are one table, `BUILD`: None, bool, int, float,
   complex, str, bytes, Decimal, Fraction. For each, the value is read by
   that type's OWN method or slot descriptor (`int.__neg__`,
-  `float.__mul__`, `str.encode`, `bytes.hex`, `complex.real`,
+  `float.__mul__`, `str.__getitem__`, `bytes.hex`, `complex.real`,
   `Decimal.__str__`, `Fraction`'s `_numerator` / `_denominator` slots)
   and a new object is built from what was read, so no method of the
   sender's class runs and nothing of the sender's object is kept;
@@ -46,10 +46,19 @@ become values, used by every field function below (i0-r6-03):
   and built as the base type;
 * a numpy bool (what numpy and pandas comparisons give) is stored as the
   `bool` it holds, read by numpy's own method;
-* a number of the numeric tower (`numbers.Integral` -> int,
-  `numbers.Real` -> float, `numbers.Complex` -> complex; numpy.int64,
-  numpy.float32, ...) is converted once, NOW, and what the conversion
-  returned is built anew as the built-in type itself;
+* a number of the numeric tower -- a class whose own MRO holds
+  `numbers.Integral` / `numbers.Real` / `numbers.Complex`, or numpy's
+  `integer` / `floating` / `inexact` (the bases numpy registers with those
+  ABCs): numpy.int64, numpy.float32, ... -> int / float / complex -- is
+  converted once, NOW, and what the conversion returned is built anew as
+  the built-in type itself. The kind is read from the table
+  `NUMBER_BASES`, bound when the core is loaded, by identity: no ABC is
+  asked, so no registration, cache or subclass hook of anyone's decides
+  it (round 14, i0-r13-01), and a class merely registered with an ABC is
+  not a number here;
+* plain data nests at most `MAX_NESTING` containers, counted from the
+  field that holds it (a bound of the core's, not the interpreter's
+  recursion limit);
 * anything else -- a plain `Enum` member (its class is the sender's), a
   function (it can read the sender's state when it is called, later), an
   arbitrary object, a generator, a container that holds itself -- raises
@@ -68,12 +77,14 @@ set of fresh values.
 """
 from __future__ import annotations
 
+import collections.abc as _collections_abc
 import numbers
-import sys
 import types
 from decimal import Decimal
 from fractions import Fraction
 from typing import Any, Callable, Iterator, Mapping, Optional
+
+import numpy as _numpy  # a declared dependency (pyproject.toml); its scalar types are bound below, at load
 
 
 def _same(x: Any) -> Any:  # None, True, False: one object each
@@ -97,7 +108,18 @@ def _new_complex(x: complex) -> complex:
 
 
 def _new_str(x: str) -> str:
-    return str.encode(x, "utf-8", "surrogatepass").decode("utf-8", "surrogatepass")
+    # a new str of the same code points, made by str's own slicing and
+    # concatenation (round 14): no codec runs, so the process-wide registry of
+    # codec error handlers -- which any party can change with
+    # codecs.register_error, and which decoding a lone surrogate consults -- is
+    # never asked. A str of 0 or 1 characters may come back as the one object
+    # the interpreter keeps for it.
+    n = str.__len__(x)
+    if n == 0:
+        return ""
+    if n == 1:
+        return str.__getitem__(x, 0)
+    return str.__add__(str.__getitem__(x, slice(0, 1)), str.__getitem__(x, slice(1, n)))
 
 
 def _new_bytes(x: bytes) -> bytes:
@@ -150,12 +172,15 @@ PLAIN_DATA_RULE = (
     "str, bytes, Decimal, Fraction, each read by that type's own method or slot and built as a new "
     "object; an instance of a subclass of one of them (IntEnum and StrEnum members, numpy's, a Fraction "
     "or Decimal subclass) is read by the base type and built as the base type (the subclass's methods "
-    "never run); a numpy bool is stored as the bool it holds; a number of the numeric tower "
-    "(numbers.Integral / Real / Complex, numpy's included) is converted once, when it is sent, and built "
-    "anew as int / float / complex; types are decided by the real type, never by what the object claims "
-    "(__class__); tuple / list / dict / set / frozenset of plain data become new immutable containers "
-    "and are read back as fresh copies; anything else (a plain Enum member, a function, any other "
-    "object) is refused"
+    "never run); a numpy bool is stored as the bool it holds; a number of the numeric tower -- a class "
+    "whose own MRO holds numbers.Integral / Real / Complex or numpy's integer / floating / inexact (the "
+    "table NUMBER_BASES, bound when the core is loaded and compared by identity: no ABC registry, cache or "
+    "hook is asked, so a class only registered with an ABC is not a number) -- is converted once, when it "
+    "is sent, and built anew as int / float / complex; types are decided by the real type's own MRO, "
+    "never by what the object claims (__class__); tuple / list / dict / set / frozenset of plain data "
+    "become new immutable containers and are read back as fresh copies, nested at most MAX_NESTING (100) "
+    "containers deep counted from the field that holds them; anything else (a plain Enum member, a "
+    "function, any other object) is refused"
 )
 
 FIELD_RULE = (
@@ -166,16 +191,17 @@ FIELD_RULE = (
 )
 
 
-def is_a(value: Any, cls: Any) -> bool:
+def is_a(value: Any, cls: type) -> bool:
     """Is the REAL type of `value` `cls` or a subclass of it? Unlike
     `isinstance`, it does not ask the object (an object may claim any
-    class through `__class__`). For a `cls` whose own metaclass is `type`
-    itself (the core's classes, the built-in types) `issubclass` walks the
-    real type's MRO by identity and runs nothing of the value's class; an
-    ABC (`Mapping`) asks the ABC machinery, which may consult classes
-    others wrote -- used only inside the caller's own call (the engine's
-    constructor), never on what a party handed over after its call."""
-    return issubclass(type(value), cls)
+    class through `__class__`), and unlike `issubclass` it asks no one:
+    it walks the real type's own MRO (read by `type`'s slot) and compares
+    each class with `cls` by identity (`derives`), so no metaclass hook and
+    no ABC registry, cache or subclass hook is consulted (round 14,
+    i0-r13-01: those are process-wide state any party can change). A class
+    counts as `cls` only if it derives from it; one merely registered with
+    an ABC does not."""
+    return derives(type(value), cls)
 
 
 # ---- decisions on a type by identity only (round 12, i0-r11-01) ----------------------
@@ -214,6 +240,101 @@ def is_static(t: type) -> bool:
     `type` itself: no one outside can change what its methods do (the
     built-in types, numpy's scalar types)."""
     return type(t) is type and not (_TYPE_FLAGS(t) & _HEAPTYPE)
+
+
+# ---- what the core decides by: bound when the core is loaded (round 14, i0-r13-01) ------
+# The core never asks process-wide state what a value is: not the ABCs (their
+# registries, caches and the hooks of their subclasses can be changed by any
+# party at run time, by `register` or by defining a class, and the change
+# stays for the rest of the process), not `sys.modules` or a module's
+# attributes. The classes it decides by are bound here, once, and compared by
+# identity with the classes in a value's own MRO.
+
+
+def _static_numpy(name: str) -> type:
+    t = _numpy.__dict__[name]  # read once, at load
+    if not is_static(t):
+        raise ImportError(f"numpy.{name} is not numpy's own C class (numpy was changed before the core "
+                          f"was loaded); the core decides numbers by numpy's classes and refuses to load")
+    return t
+
+
+_NP_BOOL = _static_numpy("bool_")
+_NP_BOOL_TRUTH = _NP_BOOL.__dict__["__bool__"]  # numpy's own C slot, read once
+# THE table a number's kind is decided by: the numbers ABCs as BASES (a class
+# counts only if its own MRO holds one) and the bases numpy registers with them
+# (numpy/_core/numerictypes.py: numbers.Integral.register(integer),
+# numbers.Complex.register(inexact), numbers.Real.register(floating)), in the
+# order the tower is asked: an integral kind before a real before a complex
+NUMBER_BASES: tuple = (
+    (numbers.Integral, int), (_static_numpy("integer"), int),
+    (numbers.Real, float), (_static_numpy("floating"), float),
+    (numbers.Complex, complex), (_static_numpy("inexact"), complex),
+)
+
+
+def number_kind(t: type) -> Any:
+    """`int`, `float` or `complex` for a class of the numeric tower, else
+    None: decided by class `t`'s own MRO compared by identity with
+    `NUMBER_BASES` -- no ABC is asked, so no registration, cache or hook of
+    anyone's decides it."""
+    mro = _MRO(t)
+    for base, kind in NUMBER_BASES:
+        for c in mro:
+            if c is base:
+                return kind
+    return None
+
+
+# the mapping classes: dict, the read-only proxy (which collections.abc
+# registers with Mapping when it is loaded) and whatever derives from Mapping
+_MAPPING_BASES: tuple = (dict, types.MappingProxyType, _collections_abc.Mapping)
+
+
+def is_mapping(t: type) -> bool:
+    """Is class `t` a mapping (by its own MRO, compared by identity)?"""
+    return any(derives(t, base) for base in _MAPPING_BASES)
+
+
+# An int as text whatever the interpreter's int <-> str digit limit is (a
+# process-wide setting, 4300 digits by default, 640 at the least): an int of at
+# most 2000 bits (603 digits) is written out, a longer one by its size.
+INT_TEXT_BITS = 2000
+
+
+def int_text(n: int) -> str:
+    """Int `n` (an int itself) as text, never failing on its length."""
+    bits = int.bit_length(n)
+    if bits <= INT_TEXT_BITS:
+        return int.__repr__(n)
+    return f"{'a negative' if int.__lt__(n, 0) else 'an'} int of {bits} bits"
+
+
+def value_text(value: Any) -> str:
+    """A value a sender handed over, as text for an error message, made
+    without running any of its code and never failing: a str, int, float,
+    bool or None itself by its own type's method (a str cut at 300
+    characters), anything else by its real type's name."""
+    t = type(value)
+    if t is str:
+        text = str.__repr__(value)
+        return text if len(text) <= _TEXT_LIMIT else text[:_TEXT_LIMIT] + "..."
+    if value is None or t is bool:
+        return "None" if value is None else ("True" if value else "False")
+    if t is int:
+        return int_text(value)
+    if t is float:
+        return float.__repr__(value)
+    return f"<a {type_name(value)}>"
+
+
+# How deep plain data may nest, counted in containers from the field that
+# holds it (a bound of the core's, the same whatever the interpreter's
+# recursion limit and the stack depth of the call: round 14). The core's
+# deepest walk (`renew`) takes 3 frames a level and a run adds about 20, so
+# 100 levels stay within half of the interpreter's default limit (1000);
+# the interpreter's own hash / == of nested tuples recurse as deep.
+MAX_NESTING = 100
 
 
 class IdTable:
@@ -291,7 +412,7 @@ def _arg_text(arg: Any) -> str:
     if arg is None or t is bool:
         return "None" if arg is None else ("True" if arg else "False")
     if t is int:
-        return int.__repr__(arg)
+        return int_text(arg)
     if t is float:
         return float.__repr__(arg)
     return f"<a {type_name(arg)}>"
@@ -317,12 +438,6 @@ def exception_text(exc: BaseException) -> str:
         text = text[:_TEXT_LIMIT] + "..."
     name = type_name(exc)
     return f"{name}: {text}" if text else name
-
-
-def _numpy_bool() -> Any:
-    # numpy is not imported for this: a numpy bool exists only once numpy is
-    np = sys.modules.get("numpy")
-    return getattr(np, "bool_", None) if np is not None else None
 
 
 def _now(convert: Any, value: Any, where: str) -> Any:
@@ -372,18 +487,15 @@ def _plain_scalar(value: Any, where: str) -> Any:
     base = _base_of(t)
     if base is not None:
         return BUILD[base](value)
-    nb = _numpy_bool()
-    if nb is not None and derives(t, nb):
-        return nb.__bool__(value)
-    # the numeric tower: asked of the ABCs, inside the sender's own call (a
-    # field made when its carrier is made); after a party's call the core
-    # takes values by `settle` instead, which runs no code of a Python class
-    if issubclass(t, numbers.Integral):
-        return _now(int, value, where)
-    if issubclass(t, numbers.Real):
-        return _now(float, value, where)
-    if issubclass(t, numbers.Complex):
-        return _now(complex, value, where)
+    if derives(t, _NP_BOOL):
+        return _NP_BOOL_TRUTH(value)
+    # the numeric tower, decided by the class's own MRO (`number_kind`), and
+    # converted inside the sender's own call (a field made when its carrier is
+    # made); after a party's call the core takes values by `settle` instead,
+    # which runs no code of a Python class
+    kind = number_kind(t)
+    if kind is not None:
+        return _now(kind, value, where)
     return _NOT_PLAIN
 
 
@@ -417,6 +529,11 @@ def settle(value: Any) -> Any:
     return _settle(value, set())
 
 
+def _too_deep(where: str) -> str:
+    return (f"{where} nests deeper than {MAX_NESTING} containers (counted from the field that holds it); "
+            f"plain data is refused beyond that depth")
+
+
 _CONTAINERS = (tuple, list, set, frozenset, dict)
 
 
@@ -434,6 +551,8 @@ def _settle(value: Any, path: set[int]) -> Any:
         key = id(value)
         if key in path:
             raise Unsettled(f"a {type_name(value)} that holds itself (a cycle) is not plain data")
+        if len(path) >= MAX_NESTING:
+            raise Unsettled(_too_deep(f"a {type_name(value)}"))
         path.add(key)
         try:
             if t is FrozenDict:
@@ -460,19 +579,17 @@ def _settle(value: Any, path: set[int]) -> Any:
     base = _base_of(t)
     if base is not None:
         return BUILD[base](value)
-    nb = _numpy_bool()
-    if nb is not None and derives(t, nb):
-        return nb.__bool__(value)
+    if derives(t, _NP_BOOL):
+        return _NP_BOOL_TRUTH(value)
     if is_static(t):
-        # a C class: asking the numbers ABCs about it hashes the class by
-        # `type`'s own hash (its metaclass is `type` itself), and its
-        # conversion is C code
-        for abc, convert in ((numbers.Integral, int), (numbers.Real, float), (numbers.Complex, complex)):
-            if issubclass(t, abc):
-                try:
-                    return _now(convert, value, "value")
-                except ValueError as exc:
-                    raise Unsettled(str(exc)) from None
+        # a C class of the numeric tower (numpy's): its kind from the table
+        # bound at load (`number_kind`), its conversion its own C code
+        kind = number_kind(t)
+        if kind is not None:
+            try:
+                return _now(kind, value, "value")
+            except ValueError as exc:
+                raise Unsettled(str(exc)) from None
     raise Unsettled(
         f"a {type_name(value)} cannot be read without running its own code (or is not plain data)"
     )
@@ -661,6 +778,21 @@ class FrozenDict(Mapping):
     def __len__(self) -> int:
         return len(self._items)
 
+    def __eq__(self, other: Any) -> Any:
+        # decided without asking an ABC (round 14): the inherited Mapping.__eq__
+        # asks isinstance(other, Mapping), whose registry any party can change,
+        # and the core compares keys whenever their hashes collide while it
+        # builds a dict or a set (a FrozenDict hashes as the frozenset of its
+        # items). Another FrozenDict or a class deriving from a mapping base
+        # (is_mapping: the class's own MRO) compares by its items; anything
+        # else is not a mapping.
+        t = type(other)
+        if t is FrozenDict:
+            return dict(_FD_ITEMS(self)) == dict(_FD_ITEMS(other))
+        if is_mapping(t):
+            return dict(_FD_ITEMS(self)) == dict(other.items())
+        return NotImplemented
+
     def __hash__(self) -> int:
         h = self._hash
         if h is None:
@@ -678,37 +810,45 @@ _FD_ITEMS = FrozenDict.__dict__["_items"].__get__
 _FREEZE_TYPES = (tuple, list, dict, set, frozenset, FrozenList, FrozenDict, FrozenSet)
 
 
-def freeze(value: Any, where: str = "value") -> Any:
+def freeze(value: Any, where: str = "value", outer: int = 0) -> Any:
     """An equal, deeply immutable form of plain data; `ValueError` for
-    anything that is not plain data (module docstring)."""
-    return _freeze(value, where, set())
+    anything that is not plain data (module docstring). `outer` is the
+    number of containers around `value` in the field that holds it (the
+    nesting bound `MAX_NESTING` counts from the field)."""
+    return _freeze(value, where, set(), outer)
 
 
-def _freeze(value: Any, where: str, path: set[int]) -> Any:
+def _key_text(k: Any) -> str:
+    return value_text(k)  # a sender's key, named without running its code (round 14)
+
+
+def _freeze(value: Any, where: str, path: set[int], outer: int = 0) -> Any:
     t = type(value)
     if not is_one_of(t, _FREEZE_TYPES):
         return scalar(value, where)
     key = id(value)
     if key in path:
         raise ValueError(f"{where} holds itself (a cycle); plain data has no cycles")
+    if outer + len(path) >= MAX_NESTING:
+        raise ValueError(_too_deep(where))
     path.add(key)
     try:
         if t in (tuple, FrozenList):
-            items = tuple([_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(tuple.__iter__(value))])
+            items = tuple([_freeze(v, f"{where}[{i}]", path, outer) for i, v in enumerate(tuple.__iter__(value))])
             return FrozenList(items) if t is FrozenList else items
         if t is list:
-            return FrozenList([_freeze(v, f"{where}[{i}]", path) for i, v in enumerate(list.__iter__(value))])
+            return FrozenList([_freeze(v, f"{where}[{i}]", path, outer) for i, v in enumerate(list.__iter__(value))])
         if t in (dict, FrozenDict):
             # read by the real type's own methods (a dict's, or the core's
             # FrozenDict's pairs), then built anew
             src = dict.items(value) if t is dict else _frozen_pairs(value, where)
             frozen: dict = {}
             for k, v in src:
-                fk = _freeze(k, f"{where} key {k!r}", path)
-                frozen[fk] = _freeze(v, f"{where}[{k!r}]", path)
+                fk = _freeze(k, f"{where} key {_key_text(k)}", path, outer)
+                frozen[fk] = _freeze(v, f"{where}[{_key_text(k)}]", path, outer)
             return FrozenDict._from_pairs(tuple(frozen.items()))
         each = set.__iter__(value) if t is set else frozenset.__iter__(value)
-        items = frozenset([_freeze(v, f"{where} element", path) for v in each])
+        items = frozenset([_freeze(v, f"{where} element", path, outer) for v in each])
         return FrozenSet(items) if t in (set, FrozenSet) else items
     finally:
         path.discard(key)

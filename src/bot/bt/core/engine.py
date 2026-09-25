@@ -201,8 +201,9 @@ from .ordering import (
 from .history import DeliveredHistory, HistoryLists, read_dropped
 from .strategy import Strategy
 from .time import validate_nanos
-from .values import (IdTable, Unsettled, as_int, as_text, class_parts, copy_carrier, exception_text, is_a,
-                     is_one_of, rebuild_carrier, renew, settle, take_float, take_int, take_items, type_name)
+from .values import (IdTable, Unsettled, as_int, as_text, class_parts, copy_carrier, exception_text, int_text,
+                     is_a, is_mapping, is_one_of, rebuild_carrier, renew, settle, take_float, take_int,
+                     take_items, type_name, value_text)
 from .window import EventWindow
 
 _K_VENUE_MARKET = 0
@@ -551,7 +552,7 @@ def _check_delay(value: Any, what: str) -> int:
     except ValueError as exc:
         raise LatencyModelError(f"{what} must return an int of ns: {exc}") from None
     if ivalue < 0:
-        raise LatencyModelError(f"{what} returned a negative delay {ivalue}")
+        raise LatencyModelError(f"{what} returned a negative delay {int_text(ivalue)}")
     return ivalue
 
 
@@ -649,7 +650,7 @@ class _SourceMerger:
             except ValueError:
                 raise TypeError(f"stream names must be non-empty str, got a {type_name(key)}") from None
             if not name:
-                raise TypeError(f"stream names must be non-empty str, got {key!r}")
+                raise TypeError(f"stream names must be non-empty str, got {name!r}")
             if name in by_name:
                 raise TypeError(f"stream name {name!r} given twice")
             by_name[name] = stream
@@ -760,7 +761,7 @@ class CoreEngine:
         self._strategy = strategy
         time_span = _validate_time_span(time_span_ns)
         self._time_span = time_span
-        if is_a(events, Mapping):  # the real type, not what the object claims
+        if is_mapping(type(events)):  # the real type's own MRO, no ABC asked (values.is_mapping, round 14)
             streams = events
         else:
             streams = {SINGLE_STREAM_NAME: events}
@@ -814,7 +815,7 @@ class CoreEngine:
             except ValueError as exc:
                 raise ValueError(f"history_limit must be a positive int or None: {exc}") from None
             if history_limit < 1:
-                raise ValueError(f"history_limit must be a positive int or None, got {history_limit}")
+                raise ValueError(f"history_limit must be a positive int or None, got {int_text(history_limit)}")
         self._history_limit = history_limit
 
         self._heap: list[tuple] = []
@@ -869,7 +870,7 @@ class CoreEngine:
             t = int(validate_nanos(time_ns))
         except TimestampUnitError as exc:
             raise TimestampUnitError(
-                f"queue time {time_ns!r} for {type(payload).__name__} is not an int64 of ns "
+                f"queue time {value_text(time_ns)} for {type(payload).__name__} is not an int64 of ns "
                 f"(a latency model or timer produced an out-of-range time): {exc}"
             ) from exc
         if position is None:

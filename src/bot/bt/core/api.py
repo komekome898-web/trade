@@ -106,11 +106,13 @@ from .values import (
     as_text,
     copy_carrier,
     freeze,
+    int_text,
     is_a,
     rebuild_carrier,
     renew,
     thaw,
     type_name,
+    value_text,
 )
 from .history import dropped_before, dropped_in_range
 from .window import DeliveredEvents, EventWindow
@@ -196,7 +198,8 @@ def _frozen_extra(extra: Any) -> tuple:
             raise OrderApiError(f"extra: key {key!r} given twice")
         seen.add(key)
         try:
-            pairs.append((key, freeze(value, f"extra[{key!r}]")))
+            # the pair's value sits in extra's tuple and its pair: 2 containers of the field
+            pairs.append((key, freeze(value, f"extra[{key!r}]", outer=2)))
         except ValueError as exc:
             raise OrderApiError(str(exc)) from None
     return tuple(pairs)
@@ -237,7 +240,7 @@ def fresh_request(request: Any, cls: type, error: type, who: str) -> Any:
 def _require_positive(name: str, value: Any) -> float:
     f = _order_field(as_float, name, value)  # the one number rule (values.py), never a bool
     if not math.isfinite(f) or f <= 0:
-        raise OrderApiError(f"{name} must be finite and > 0, got {value!r}")
+        raise OrderApiError(f"{name} must be finite and > 0, got {float.__repr__(f)}")
     return f
 
 
@@ -862,7 +865,8 @@ class StrategyContext:
             remedy += f", or n <= {kept_after} (its newest {kept_after} events are kept)"
         raise HistoryTruncatedError(
             f"visible_events(event_type={None if event_type is None else event_type.value}, "
-            f"since_ns={since}, until_ns={until}, n={count}) asks for delivery #{seq} "
+            f"since_ns={since}, until_ns={until}, n={None if count is None else int_text(count)}) "
+            f"asks for delivery #{seq} "
             f"({_TYPES[p].value} received at {recv}), which history_limit dropped "
             f"({total} dropped event{'s' if total > 1 else ''} in its answer); to read kept events "
             f"only: {remedy}"
@@ -914,7 +918,7 @@ def _count_arg(n: Optional[int]) -> Optional[int]:
         return None
     n = _order_field(as_int, "n", n)  # the one int rule (values.py): never a bool
     if n < 0:
-        raise OrderApiError(f"n is a count of events and must be >= 0, got {n}")
+        raise OrderApiError(f"n is a count of events and must be >= 0, got {int_text(n)}")
     return n
 
 

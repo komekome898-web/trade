@@ -109,14 +109,14 @@ def _finite(name: str, value: Any) -> float:
     # what float() accepts (a numeric string included), as a float itself
     f = _value(lambda v, n: as_float(v, n, numbers_only=False), name, value)
     if not math.isfinite(f):
-        raise EventValidationError(f"{name} must be finite, got {value!r}")
+        raise EventValidationError(f"{name} must be finite, got {float.__repr__(f)}")
     return f
 
 
 def _positive(name: str, value: Any) -> float:
     f = _finite(name, value)
     if f <= 0:
-        raise EventValidationError(f"{name} must be > 0, got {value!r}")
+        raise EventValidationError(f"{name} must be > 0, got {float.__repr__(f)}")
     return f
 
 

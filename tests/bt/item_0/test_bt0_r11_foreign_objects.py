@@ -910,7 +910,8 @@ def _number_points():
 
 
 def _failing_number(kind, want):
-    """A number of the numeric tower (registered, so `issubclass` says so)
+    """A number of the numeric tower (derived from the numbers ABC: round 14,
+    the core decides a number by the class's own MRO, not by a registration)
     whose conversion raises an exception of `kind` (EXCEPTION_KINDS)."""
     make, _name = EXCEPTION_KINDS[kind]
 
@@ -919,9 +920,10 @@ def _failing_number(kind, want):
         _Watch.armed = True
         raise exc
 
-    cls = type("FailingNumber", (), {"__int__": convert, "__index__": convert, "__float__": convert,
-                                     "__trunc__": convert})
-    (numbers.Integral if want is int else numbers.Real).register(cls)
+    base = numbers.Integral if want is int else numbers.Real
+    cls = type(base)("FailingNumber", (base,), {"__int__": convert, "__index__": convert, "__float__": convert,
+                                                "__trunc__": convert})
+    cls.__abstractmethods__ = frozenset()
     return cls()
 
 

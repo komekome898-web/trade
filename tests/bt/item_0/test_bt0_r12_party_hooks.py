@@ -71,10 +71,10 @@ Grid 2 (`test_what_the_strategy_plants_in_what_it_reaches_changes_nothing`):
 NOT in the grids (A-10): construction hooks (`__new__`, `__init__`,
 `__init_subclass__`, `__prepare__`, `__class_getitem__`, `__set_name__`) --
 they run when the party builds the object, inside its own call;
-`__subclasshook__` and classes registered with the numbers ABCs that carry
-a metaclass hook (the ABC machinery that decides whether a C number type is
-a number consults them: defining such classes changes the program, the
-contract's `scope`); finalizers (`__del__`, weakref callbacks: the contract
+`__subclasshook__`, ABC registrations and the metaclass hooks of ABC
+subclasses (round 14: the core asks no ABC; grid 1 of
+test_bt0_r14_process_state.py sets them for every ABC of numbers and
+collections.abc, the contract's `process_state`); finalizers (`__del__`, weakref callbacks: the contract
 leaves them out); `__class__` (not a method); ctypes, frames, gc referrers
 (interpreter introspection); changing the CONTENT of what the strategy
 reaches (round 11's grid 2 and round 9's outbox grid); hooks planted on the
@@ -167,7 +167,7 @@ NOT_HOOKS = {
     "__prepare__": "class construction",
     "__class_getitem__": "construction of a generic alias",
     "__set_name__": "class construction",
-    "__subclasshook__": "ABC machinery (the contract's scope: defining classes changes the program)",
+    "__subclasshook__": "ABC machinery, which the core never asks (round 14: test_bt0_r14_process_state.py)",
     "__del__": "finalizers (the contract's scope)",
     "__class__": "not a method",
     "__subclasses__": "a class's own list, never asked of a planted object",

@@ -345,11 +345,11 @@ def test_a_senders_failing_conversion_is_the_places_error():
 
     import numbers
 
-    class NotConvertible:
+    class NotConvertible(numbers.Real):  # a number by its own MRO (round 14: registering does not count)
         def __float__(self):
             raise RuntimeError("the sender's code")
 
-    numbers.Real.register(NotConvertible)
+    NotConvertible.__abstractmethods__ = frozenset()
     with pytest.raises(OrderApiError, match="RuntimeError"):
         req(size=NotConvertible())
     assert req(size=Bad(2.0)).size == 2.0 and type(req(size=Bad(2.0)).size) is float

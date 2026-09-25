@@ -56,9 +56,9 @@ core's CODE (classes, functions, modules, Enum members; a function's
 built-in type whose `__class__` cannot be assigned (dict, list, tuple,
 array, int, str, function, cell, method: counted and printed by grid 2 --
 their methods are C code, which runs no strategy code); a class change
-made while the strategy's own API call runs (inside its call); subclasses
-of `numbers` ABCs with a `__subclasshook__` (defining classes changes the
-program); the bool fields' subclass kind (bool cannot be subclassed).
+made while the strategy's own API call runs (inside its call); ABC
+registrations and hooks (round 14: the core asks no ABC; grid 1 of
+test_bt0_r14_process_state.py); the bool fields' subclass kind (bool cannot be subclassed).
 """
 from __future__ import annotations
 

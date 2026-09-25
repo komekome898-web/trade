@@ -9,10 +9,10 @@ from .events import ALL_EVENT_CLASSES, MARKET_EVENT_TYPES, NOTICE_EVENT_TYPES, S
 from .interfaces import REPORT_CLASSES, SOCKETS, FillNotice, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
-from .values import FIELD_RULE, PLAIN_DATA_RULE
+from .values import FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-14"
+CORE_VERSION = "core-15"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -133,10 +133,38 @@ CORE_CONTRACT: dict = {
                  "them, inside a step too -- they reach only what the strategy reaches, which the core "
                  "does not decide from; the __subclasscheck__ of the metaclass of an exception a party "
                  "raised, which the interpreter itself asks while the exception propagates through any "
-                 "frame (the core re-raises the exception unchanged, lifecycle); classes derived from or "
-                 "registered with the numbers ABCs that carry a __subclasshook__ or a metaclass hook, "
-                 "which the ABC machinery consults when the core asks whether a static (C) number class "
-                 "is a number (defining classes changes the program)",
+                 "frame (the core re-raises the exception unchanged, lifecycle). What the core decides "
+                 "by is never process-wide state any party can change at run time: see process_state",
+        "process_state": "what the core accepts, refuses or computes is decided by the value and by objects "
+                         "bound when the core was loaded -- never by process-wide state read at run time "
+                         "(round 14, i0-r13-01): no ABC is asked about a class (their registrations, caches "
+                         "and the hooks of their subclasses are changed by register or by defining a class, "
+                         "and the change stays for the process): a number's kind is read from "
+                         "values.NUMBER_BASES (numbers.Integral / Real / Complex as bases, and numpy's "
+                         "integer / floating / inexact, the bases numpy registers with them), a mapping from "
+                         "dict / mappingproxy / collections.abc.Mapping, both by identity on the class's own "
+                         "MRO, so a class only registered with an ABC is neither (a FrozenDict compares with "
+                         "another by the same rule, not by the inherited Mapping.__eq__, which asks the "
+                         "Mapping ABC; the core compares keys whenever their hashes collide); a str is made "
+                         "anew by str's own slicing, never by a codec, so the registry of codec error "
+                         "handlers (codecs.register_error) is never asked; numpy's classes are bound "
+                         "once, when the core is loaded (numpy is loaded with it; the core refuses to load "
+                         "if they are not numpy's own C classes), and sys.modules or a module's attributes "
+                         "are never read to decide; to_nanos computes in a decimal context of its own, made "
+                         "for each call from fixed settings (never the thread's); an int in an error text is "
+                         "written out up to " + str(INT_TEXT_BITS) + " bits and by its size beyond, so "
+                         "the interpreter's int-to-str digit limit never changes a refusal; plain data nests "
+                         "at most " + str(MAX_NESTING) + " containers, counted from the field that holds it "
+                         "(the core's own bound, not the recursion limit or the stack depth of the call). "
+                         "So a registration, a subclass hook, a codec error handler, a changed decimal context "
+                         "or digit limit, warnings made errors, numpy's error state, or a renamed numpy attribute -- made by any party, in any earlier run of the process "
+                         "-- changes no value, refusal or result of the core, and runs no code of that "
+                         "party. Not covered: rebinding a name the core CALLS (a builtin such as len or "
+                         "type, a library's function such as heapq.heappush, the core's own module "
+                         "globals), which changes the program's code; interpreter hooks (sys.settrace / "
+                         "setprofile, audit hooks, gc callbacks, signal handlers, threads a party starts); "
+                         "a recursion limit set below what the core needs (3 frames a nesting level, about "
+                         "20 for a run); memory",
     },
     "lifecycle": {
         "failed_after_escaped_exception": True,
@@ -228,7 +256,8 @@ CORE_CONTRACT: dict = {
                            "the engine's constructor (a stream name) is read inside the caller's call",
         "type_decisions": "every decision on the type of a value a sender hands the core (a field, a "
                           "plug-in's answer, a source's event, a read argument, a run setting) reads the "
-                          "value's REAL type (values.is_a: issubclass(type(x), C)), never what the object "
+                          "value's REAL type (values.is_a: the real type's own MRO compared with C by identity, "
+                          "round 14 -- no ABC is asked), never what the object "
                           "claims through __class__, and compares classes by identity only (values.is_one_of, "
                           "derives, IdTable: a class is never hashed, compared with == or looked up; round "
                           "12); a type's names in a text are read without a lookup (values.type_name / "

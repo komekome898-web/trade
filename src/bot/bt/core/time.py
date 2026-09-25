@@ -28,13 +28,14 @@ data's era passes `plausible=(min_ns, max_ns)` to catch that direction too
 from __future__ import annotations
 
 import datetime as dt
+import decimal
 import re
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from typing import NewType, Union
 
 from .errors import TimestampUnitError
-from .values import as_int, as_text, scalar, type_name
+from .values import as_int, as_text, int_text, scalar, type_name, value_text
 
 Nanos = NewType("Nanos", int)
 
@@ -72,6 +73,35 @@ _ISO_RE = re.compile(
 )
 
 
+# The decimal arithmetic of `to_nanos` never reads the thread's decimal context
+# (process state any party can change: its precision, rounding and traps would
+# decide the result; round 14, i0-r13-01). Each conversion makes a context of
+# its own from these constants: exact (the largest precision), every error
+# trapped.
+# The settings are read from the decimal module once, here, into a tuple (the
+# module's attributes are not read at run time).
+_CONTEXT = decimal.Context
+_DECIMAL_SETTINGS = (decimal.MAX_PREC, decimal.ROUND_HALF_EVEN, decimal.MIN_EMIN, decimal.MAX_EMAX)
+_DECIMAL_TRAPS = (decimal.InvalidOperation, decimal.DivisionByZero, decimal.Overflow)
+# a scaled value whose exponent says it has more than this many digits is far
+# outside int64 (19 digits); it is refused before an int is made of it
+_MAX_SCALED_DIGITS = 30
+
+
+def _decimal_context() -> decimal.Context:
+    prec, rounding, emin, emax = _DECIMAL_SETTINGS
+    return _CONTEXT(prec=prec, rounding=rounding, Emin=emin, Emax=emax, capitals=1, clamp=0, flags=[],
+                    traps=list(_DECIMAL_TRAPS))
+
+
+def _shown(value: object, ctx: "decimal.Context") -> str:
+    """A caller's value in an error text, made without running its code and
+    never failing (a Decimal written by the fixed context, not the thread's)."""
+    if type(value) is Decimal:
+        return f"Decimal('{ctx.to_sci_string(value)}')"
+    return value_text(value)
+
+
 def validate_nanos(value: object) -> Nanos:
     """The choke point every event timestamp passes through.
 
@@ -94,7 +124,7 @@ def validate_nanos(value: object) -> Nanos:
             f"timestamp must be an int of nanoseconds, got {type_name(value)}"
         ) from None
     if not (INT64_MIN <= ivalue <= INT64_MAX):
-        raise TimestampUnitError(f"{ivalue} does not fit in int64")
+        raise TimestampUnitError(f"{int_text(ivalue)} does not fit in int64")
     return Nanos(ivalue)
 
 
@@ -102,8 +132,8 @@ def _check_plausible(ns: int, what: str, plausible: tuple[int, int]) -> Nanos:
     lo, hi = plausible
     if not (lo <= ns <= hi):
         raise TimestampUnitError(
-            f"{what} converts to {ns} ns, outside the plausible window "
-            f"[{lo}, {hi}] -- likely a unit mismatch"
+            f"{what} converts to {int_text(ns)} ns, outside the plausible window "
+            f"[{value_text(lo)}, {value_text(hi)}] -- likely a unit mismatch"
         )
     return validate_nanos(ns)
 
@@ -134,20 +164,28 @@ def to_nanos(
         v = None
     if type(v) is bool:
         raise TimestampUnitError(f"a bool ({type_name(value)}) is not a timestamp")
+    ctx = _decimal_context()
+    shown = _shown(value, ctx)
     if type(v) is int:
         ns = v * factor
     elif type(v) in (float, str, Decimal, Fraction):
-        text = v.strip() if type(v) is str else (str(v) if type(v) is Decimal else repr(float(v)))
         try:
-            dec = Decimal(text)
+            text = (v.strip() if type(v) is str
+                    else ctx.to_sci_string(v) if type(v) is Decimal else float.__repr__(float(v)))
+        except (OverflowError, ValueError):  # a Fraction too large for a float
+            raise TimestampUnitError(f"{shown} labelled unit={unit!r} is not a finite float") from None
+        try:
+            dec = ctx.create_decimal(text)
         except InvalidOperation as exc:
-            raise TimestampUnitError(f"not a number: {value!r}") from exc
+            raise TimestampUnitError(f"not a number: {shown}") from exc
         if not dec.is_finite():
-            raise TimestampUnitError(f"non-finite timestamp {value!r}")
-        scaled = dec * factor
-        if scaled != scaled.to_integral_value():
+            raise TimestampUnitError(f"non-finite timestamp {shown}")
+        scaled = ctx.multiply(dec, Decimal(factor))
+        if not scaled.is_zero() and scaled.adjusted() >= _MAX_SCALED_DIGITS:
+            raise TimestampUnitError(f"{shown} labelled unit={unit!r} is far outside int64 ns")
+        if scaled != ctx.to_integral_value(scaled):
             raise TimestampUnitError(
-                f"{value!r} {unit} has sub-nanosecond digits; refusing to round"
+                f"{shown} {unit} has sub-nanosecond digits; refusing to round"
             )
         ns = int(scaled)
     else:
@@ -155,7 +193,7 @@ def to_nanos(
             f"timestamp value for unit {unit!r} must be int, float, Decimal or "
             f"numeric str, got {type_name(value)}"
         )
-    return _check_plausible(ns, f"{value!r} labelled unit={unit!r}", plausible)
+    return _check_plausible(ns, f"{shown} labelled unit={unit!r}", plausible)
 
 
 def _iso_to_nanos(value: object, plausible: tuple[int, int]) -> Nanos:

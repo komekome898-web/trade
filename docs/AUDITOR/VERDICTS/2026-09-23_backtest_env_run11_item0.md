@@ -57,3 +57,60 @@
 - br13-1-3 [聞く]: リードの答え = **次の場面集の直しで、gobacktest の trade → tick の作り替えを族 5 の格子の 1 ケースとして試験に入れる**(`types_in` がこの経路を「代えた型」として除外していることの実測を ROOTCAUSE に書く)。今は場面係の §6.3 の理由だけで、リードも実測していない(未確認)。
 - 作業者の問い 1(数の ABC の対象外): **直す。**この問いは第 12 周の版から 3 回繰り返されていて、リードが答えていなかった(リードの側の不履行 = 第 12 周の戻しと同じ「答えの時機」の族)。批評家 i0-r13-01 が同じ根を [止める] にしたので、第 14 周の作業者は批評家の指摘のとおり直す(数の種類を ABC の登録に聞かない = 静的な型の MRO を核が持つ型の表と同一性で比べる / `sys.modules` をたどらない)。numpy の型の扱いが同じになるかは試験で測って報告に書く(未確認のまま通さない)。
 - 作業者の問い 2(「about 64 bytes」の直し): **範囲の中。**同じ文の事実の誤りを実測の値に直すのは §9.3 の 38 の「実測を残す」に含まれる。戻さない。
+
+## 第 14 周(進行中。05:37 UTC の見回りで写した分)
+
+| 段 | 開始 | 終了 |
+|---|---|---|
+| 作る:0#14 | 04:25:30 | 05:28:17 |
+| 表:0#14 | 05:28:19 | 05:33:31 |
+| 批評:0#14 | 05:33:32 | (進行中) |
+
+### 作業者 0#14 の返り値(逐語。`unmet` は提出前の吟味の記録)
+
+- `structural_change`: 核が値を受け付ける・断る・計算するときに、プロセス全体の状態を実行中に読まない形にした。読まなくなった状態は、ABC の登録簿と覚え、sys.modules とモジュールの属性、スレッドの十進の文脈、codecs の誤り処理の登録簿、int と文字列の桁の上限、再帰の上限と積み上がり。数の種類と写像は、読み込み時に束ねた表(values.NUMBER_BASES・_MAPPING_BASES、numpy の型を含む)と型自身の MRO の同一性で決める(values.is_a も MRO の同一性にした)。FrozenDict は ABC を問わない自分の __eq__ を持つ。str は切り出しで作る。to_nanos は呼ぶたびに固定の設定から文脈を作る。エラー文の int は長さに依らず作り(int_text・value_text)、平らな値の入れ子は核の上限 MAX_NESTING=100 で、値を持つ欄から数える。
+- `tests_added`: 94 / `test_tail`: 項目 0・批評家・場面集の試験(最後の版): 「2101 passed, 2 skipped in 463.15s (0:07:43)」。全試験: 「5002 passed, 6 skipped, 1 warning in 887.46s (0:14:47)」。全試験を走らせている途中で time.py の十進の設定を読み込み時の tuple に束ね直したので、そのあと最後の版で項目 0・批評家・場面集を回し直した(上の 2101 passed)。批評家の i0-r13-01 の試験は、直す前が「7 failed, 23 passed」、直した後が「30 passed in 1.54s」(i0-r11 の 3 本を含む)。新しい格子は「94 passed in 12.59s」。
+- `changed_files`: ["src/bot/bt/core/values.py", "src/bot/bt/core/time.py", "src/bot/bt/core/engine.py", "src/bot/bt/core/ordering.py", "src/bot/bt/core/api.py", "src/bot/bt/core/events.py", "src/bot/bt/core/contract.py", "tests/bt/item_0/test_bt0_r14_process_state.py(新規)", "tests/bt/item_0/_r14_state_child.py(新規。上の試験が新しいプロセスで走らせる子のプログラム)", "tests/bt/item_0/test_bt0_sender_types.py(書き直し: 登録ではなく numbers.Real の継承で数にする)", "tests/bt/item_0/test_bt0_r11_foreign_objects.py(書き直し: _failing_number を継承で数にする)", "tests/bt/item_0/test_bt0_r12_party_hooks.py(説明文だけ)", "tests/bt/item_0/test_bt0_r10_strategy_side.py(説明文だけ)", "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_14/ROOTCAUSE.md(新規。直す前に書いた根本原因と構造、作業中に見つけた同じ根の 2 つ、確かめ)"]
+- `unmet`:
+  - 満たせなかった要件の行: 無し。以下は委任文 §3「提出前の吟味」の記録。<W> = /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r14_worker。
+  - (1) i0-r13-01([止める]、実装)。直した根拠は次のとおり。values.py:276 number_kind と :269 NUMBER_BASES(numbers の ABC を継承の基として扱い、numpy が自分で登録する integer / floating / inexact を並べた表。numpy/_core/numerictypes.py 627-629 行を写した)を置いた。これを _plain_scalar(:479)と _settle(:540)が使い、ABC には問わない。numpy の bool は values.py:262 _NP_BOOL で読み込み時に束ねた(sys.modules を読まない)。確かめ: 批評家の試験は直す前が「7 failed, 23 passed in 1.68s」(<W>/pytest_item0_r14_worker_start.log)、直した後が「30 passed in 1.54s」。
+  - (1) i0-r11-01・i0-r11-03([直す]、第 12 周に直した)。この周の初めと終わりに批評家の試験を回した。上の 30 passed の中に test_i0r11_class_dict_key_runs_foreign_code.py・test_i0r11_pinned_dropped_facts_fail_the_core_step.py・test_i0r11_history_limit_exact_refusal.py が入っている。第 13 周の批評家も直りを確かめている(round_13/CRITIC.md)。この周は構造を変えていない。
+  - (2) 同じ根の全箇所。核の全ファイルで ABC への問い合わせ・sys.modules・実行中の設定の読みを grep し、1 つずつ試した(ROOTCAUSE.md §A の表の 1〜9)。(4) engine.py:764・ordering.py:189 の is_a(events, Mapping) を values.py:294 is_mapping に替えた(<W>/item0_r14_worker_probe_other_global_state.out: 前の実行の戦略が登録すると、後の実行の構築が AttributeError になり、前の戦略のフックが走っていた)。(5) time.py の to_nanos を time.py:91 _decimal_context に替えた(同じ出力: prec=5 で 1700000000123456789 → 1700000000000000000 と黙って誤っていた)。(6) 大きな int の文を values.py:305 int_text・:313 value_text にし、time.py・engine.py:555,873・api.py の _count_arg と読みの断り・exception_text で使う(<W>/item0_r14_worker_probe_limits.out: 5000 桁で ValueError になっていた)。(7) 入れ子の上限 values.py:337 MAX_NESTING を置き、freeze(:825)と _settle で数える。extra は api.py:179 で outer=2 とした(<W>/item0_r14_worker_probe_depth.out: 600 段で RecursionError になっていた)。(8) FrozenDict.__eq__(values.py:781)。継いだ Mapping.__eq__ が Mapping の登録簿を問うていた(<W>/item0_r14_worker_probe_frozendict_eq.out: 継いだままだと 16 of 16、直すと 0 of 16)。(9) values.py:110 _new_str を切り出しと連結にし、codecs の登録簿を引かないようにした(<W>/pytest_item0_r14_worker_after5.log で codecs_error:surrogatepass が落ち、after6 で通る)。付随: freeze の where の文は鍵の repr を使わない(values.py _key_text)。数の欄の断りの文は、送り手の repr ではなく変換した float を載せる(api.py _require_positive、events.py _finite/_positive)。
+  - (3) 批評家の試験と場面集の試験を全部回し、落ちるものは無い(最後の版で 2101 passed, 2 skipped)。規則 8(批評家の試験自身の誤り)に当たるものは無い。
+  - (4) 厳しい批評家が [止める] にしそうな点と、その処置。(a) 登録だけの Python の class を数と数えなくした。これは批評家が指定した直し方(登録簿に聞かない)どおりで、数であることは class 自身の継承で示せる。素のプロセスで答えが変わる型は 0 件だった(試験 test_in_a_clean_process_the_core_decides_numbers_and_mappings_as_the_abcs_do。numpy・pandas・核を読み込み、全ての class を列べた)。振る舞いは契約 contract.py:138 process_state と PLAIN_DATA_RULE に書き、試験 test_the_battery_itself_decides_the_values_by_the_rule で縛った。(b) numpy を読み込みの前に書き換えた場合は、核の読み込みを止める(試験 test_the_core_refuses_to_load_with_a_numpy_changed_before_it、4 件)。(c) 残る対象外は契約に書いた。核が呼ぶ名前の付け替え(builtins・heapq・核のモジュール)、解釈系のフック、核が要る深さより低い再帰の上限、メモリ。核が型や値を決めるために実行中に引く名前は無い。numpy の名前の付け替え 10 種と sys.modules の差し替えは、格子で変化 0 を示した。(d) 格子の中の試験の誤りを 1 つ直した。hook:collections.abc.Mapping は最初、負の覚えを消すための Sized.register がフック自身に「既に Sized」と答えられ、登録が起きていなかった。自分の ABC に登録する形に直すと、直す前の核で AttributeError と hooks_in_core 3 件が出た(ROOTCAUSE.md §C)。
+  - (5) 場当たりの直しはしていない。試験だけを特別扱いする所・閾値や既定値をずらした所・文言だけ合わせた所・機能を外した所は無い。MAX_NESTING=100 は新しい上限で、根拠は実測(1 段あたり最大 3 フレーム、run の中は約 20、<W>/item0_r14_worker_frames.out)。値はリードに聞く。
+  - (6) 直した規則ごとに、入力の空間を全格子で列べる試験を先に書き、直す前に落ちることを確かめてから直した。tests/bt/item_0/test_bt0_r14_process_state.py は 4 つの格子からなる。格子 1 はプロセスの状態の変更 80 通り(numbers と collections.abc の全 ABC × {全型の登録, True を返すフック}、十進の文脈 5 種、桁の上限 640、numpy の名前 10 種、sys.modules、警告を誤りに、np.seterr、codecs の誤り処理 2 種)× 核が値を決める全ての場所 × numpy の全ての数の型と組み込みの型ほか。格子 2 は素のプロセスでの等価性。格子 3 は大きな int が入る入口 19 × 値 7 × 桁の上限 2。格子 4 は入れ子の深さ 0〜103 × 容器 5 × 入口 5 × 先に使った積み上がり {0, 300}。列に入れなかったもの(核が呼ぶ名前の付け替え、解釈系のフック、低い再帰の上限、ほかのモジュールの ABC とその理由)は試験の説明文に書いた。消した試験は無い。書き直した既存の試験は 2 本(test_bt0_sender_types.py の 1 件、test_bt0_r11_foreign_objects.py の _failing_number)で、どちらも登録ではなく継承で数にした。理由は、この周の規則で登録だけでは数と数えなくなったこと。
+- `questions_for_lead`:
+  - 入れ子の上限 MAX_NESTING = 100(values.py:337)は、この周に私が置いた値です。根拠は実測で、核の最も深い歩き(renew)が 1 段あたり 3 フレーム、run の中の積み上がりが約 20 でした(/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r14_worker/item0_r14_worker_frames.out)。この値なら既定の再帰の上限 1000 の半分に収まります。数え方は値を持つ欄から数え、extra ではその tuple と組の 2 段を含みます。上限を置くこと自体と、この値のままでよいかを決めてください。
+  - 契約の process_state の「対象外」(contract.py:138)を次の範囲にしました。核が呼ぶ名前の付け替え(builtins・heapq などライブラリの関数・核のモジュールの名前)、解釈系のフック(sys.settrace/setprofile・監査のフック・gc の知らせ・信号・戦略が立てたスレッド)、核が要る深さより低い再帰の上限、メモリです。付け替えを外した理由は、プログラムのコードを変えることにあたり、核が呼ぶ標準ライブラリの Python のコードも同じ builtins を引くからです。この範囲でよいかを確かめたいです。
+  - 振る舞いの変化が 2 つあります(契約 core-15 と PLAIN_DATA_RULE に書きました)。(1) numbers の ABC に登録しただけで継承していない Python の class は、数と数えず断ります。素のプロセスでは、この変化で答えが変わる型は 0 件でした。(2) 核は読み込み時に numpy を import します(依存に既にあります)。項目 11・13 は契約を読む前提ですが、別の周知が要るかを決めてください。
+
+### 表 0#14 の `notes`(逐語)
+
+再利用(L-435): 場面集の指紋 dff3bc733c6e6041c1e9759c20085ab29c5501088417d583c17e583185b6ca98 は第 13 周と同じだった。当方の現状と調査結果の側の設定つき対象 54 件の結果は、第 13 周の materials の runs/・runs_2/ から写して使った(写した記録は materials/reuse_round13.sh と logs/reuse_round13.out、指紋は logs/scene_set_fingerprint.txt)。新実装と試金石はこの周に 2 回ずつ走らせ、4 回とも rc=0 だった。
+
+手順 1: 新実装の adapter tests/bt/battery/item_0/adapters/new_impl.py は既にあったので変えていない。この周の核でも、使う公開の名前 18 個がすべて __all__ にあり、32 場面を通った。adapter を変えると場面集の指紋が変わる。
+
+提出前の吟味:
+- 観点ごとの一致の数は、runs/*.tsv から make_tables.py を使わずに recount.py で数え直した。6 枚の表の数の行との不一致は 0。表のセルを数える recount_cells.py でも不一致は 0。
+- 数の行の中身:
+  - 新実装: 正しさ 32/32、再現 32/32
+  - 当方の現状: 正しさ 8/32(P0-1 1/3、P0-2 2/4、P0-3 1/11、P0-4 1/3、P0-5 1/3、P0-6 0/3、P0-7 2/5)、再現 32/32
+  - 調査結果の側: 正しさ 31/32(P0-3 10/11)、再現 32/32
+  - 試金石: 正しさ 31/32(P0-4 2/3)、再現 32/32
+- 全対象を全場面に通したか: 57 対象がすべて 32 場面の行を持つ(make_tables の load が欠けを検める)。場面ごとの結果なしは、調査の側の注記に「試したこと・出たもの・実測の所要の秒数」として出ている。grep '未記録' は 6 枚とも 0。
+- 注記に道具を特定できる語が無いか: 175 語の型で grep した。当たったのは調査の側の 2 枚の候補の注記の一般の語「書き直」2 件だけ。全対象の base 名 41 が型に入っていることは check_notes.py で確かめた(漏れ 0)。時刻の形も 6 枚とも 0。型の組の 1 文は 6 枚とも 1 回ある。
+- 注記の行は、grid_c.py の CLI の出力と照らした。not_entered.tsv との違いは 0、表の注記で not_entered.tsv に無い行も 0。
+- md5: 組ごとの 2 通りの表は 3 組とも違う(identical は全部 false)。第 1 回と第 2 回の実行から作った同じ表 id の表は、pass2_tables では 6 枚ともバイト単位で同じだった。pass2_tables_ownlog では、調査の側の 2 枚が注記の所要の秒数だけ違う。
+- 記録は全部 materials/ に置いた(対応表.md・mapping.tsv・commands.txt・logs/ ほか)。
+
+未確認の点:
+- 6 枚とも、同じ表 id の第 13 周の表と題の周番号を除いて同じだった。新実装の結果が第 13 周と同じ 32/32 のため。
+- 核のファイルの sha256 は、走らせたあとにだけ記録した(logs/final_state.txt)。走らせる前の値は記録していないので、走らせている間に核が変わらなかったかは未確認。
+- 写した 3 対象で、第 1 回と第 2 回の出力の値の欄が違う(正しさと再現の欄は同じ)。第 13 周と同じ具体で、表のセルには出ない。
+
+### リードの答え(作業者 0#14 の問い。段の途中で規則は足さない。次の起動の lead_notes に写す)
+
+- 問い 1(MAX_NESTING = 100): **上限を置くこと自体は採る**(再帰の上限というプロセスの状態を核が読まない形にするには核自身の上限が要る)。**値 100 も採る。**根拠は作業者の実測(1 段 3 フレーム、run の中の積み上がり約 20、既定の再帰の上限 1000 の半分)で、これを契約の文に逐語で残す(A-12 = 根拠のない設定値を置かない、の要件は実測で満たす)。101 段で落ちるのが RecursionError でなく核の型つきの断りであることは格子 4(0〜103 段 × 積み上がり {0, 300})が示している。批評家が読む。
+- 問い 2(process_state の対象外の範囲): **採る。**名前の付け替えと解釈系のフックは「プログラムのコードを変えること」で、核が呼ぶ標準ライブラリも同じ builtins を引くという理由は成り立つ。条件: 対象外の各項に「測っていない」と「測って変化 0 だった」(numpy の名前 10 種・sys.modules の差し替え)を分けて契約に書く(§5.2 「棄却には射程を書く」)。
+- 問い 3(振る舞いの変化 2 つ): (1) 登録だけの class を断る = **採る**(批評家 i0-r13-01 の指定した直し方で、素のプロセスで答えが変わる型 0 件を試験で示した)。(2) 読み込み時の numpy の import = **採る。**項目 11(参照実装は委任文 §2 と要件だけから書く)は契約 core-15 を読む前提で足りる。項目 13(統合)には次の起動の lead_notes["13"] に「核は読み込み時に numpy を import し、numpy が読み込み前に書き換えられていれば読み込みを止める(core-15)」の 1 行を足す。段の途中で規則は足さない。
