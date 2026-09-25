@@ -11,7 +11,7 @@ export const meta = {
   ],
 }
 
-const DOC = 'docs/DATA/delegations/20260923_backtest_env_prompt.md'
+const DOC = 'docs/DATA/delegations/20260925_backtest_env_prompt.md'
 const MARK = args.marker
 const REC = 'docs/DISCUSSIONS/2026-09-23_backtest_env'
 const SCR = args.scratch
@@ -199,7 +199,6 @@ async function runItem(item) {
   // L-421/L-424: the battery-side chain carries across launches under prior_rounds[id].battery_chain (the key the lead
   // writes; `chain` is accepted for older args) and continues into the in-round repairs of this launch
   const bchain = { ...(prior.battery_chain || prior.chain || {}) }
-  let prevF = prior.findings
   // L-448 (案 1): no battery audit before the worker's first round — the first critic reads the battery.
   const history = []
   let counted = prior.rounds + batHist.length, nonStructural = 0  // L-418: battery audits count toward the same 10; L-420: carried across launches
