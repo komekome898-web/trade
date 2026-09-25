@@ -87,3 +87,24 @@
 3. FrozenDict の hash を遅らせると、hash の無い値(sNaN)の断りの時機が変わらないか → 核が鍵・要素にする所(`_dict_of`・`_set_of`)で hash を取るので、そこで入口の誤りになるのは同じ。値の位置の sNaN は前も今も受け付ける。
 4. 比べを課題の積み上げにしたとき、Python の `==` と答えが違わないか → 格子 C の神託と、第 16 周の格子 F の乱数の組を回し直す。
 5. 速さ(1 本の足あたりの時間)が落ちないか → 第 16 周と同じ測りで比べる。
+
+## 7. 直した場所と、直したあとの確かめ(コマンドと出力)
+
+直した場所(ファイル:行は直した後の作業木。リードが途中の版を a77c0af に記録したので、差分は `git diff 1d8a107 -- src/bot/bt/core` で見る):
+- i0-r16-03(物ごとに 1 回): `values.py` 1002 行 `_walk`(1020 行の覚え、1038 行の再利用と高さの確かめ)。FrozenDict の hash を要るときに 1 回: 1445 行 `__hash__`、1458 行 `_fd_fill`(作った時点では取らない)、1466 行 `_fd_of_table`(核が作った辞書をそのまま表にし、鍵の hash を取り直さない)、1478 行 `_fd_hash`(下から反復で)、1356 行 `_HashOnly`(int の子。hash と == は C の slot で、frozenset を作る間に Python の枠が走らない)、1374-1375 行(「hash が無い」「まだ」の印をインタプリタが 1 つだけ持つ `False`・`None` にした。`object()` だと受け手どうしが同じ物を持つことになり、第 8 周の送り手の敵対者の試験が落ちた)。
+- i0-r16-01(候補が複数の段): `values.py` 1546 行 `_plain_equal`(課題の積み上げ、1550 行の答えの覚え、1559 行)、1644 行 `_match`(候補が複数なら「探す」項目を積む。hash は比べ 1 回の中で物ごとに 1 回)。
+- i0-r16-02(位置で戻す): `values.py` 1730 行 `thaw`、1747 行の 2 つの位置、1750 行 `_thaw_open`(鍵・要素の位置は `_renew_open` と同じ不変の写し)。`api.py` 164-168 行 `extra_dict` の説明。
+- 契約: `contract.py` 15 行(版 `core-18`)、process_state の比べの文(候補が複数の段)と仕事の単位の文(i0-r16-03)、要る枠の実測(22 → 24)。`values.py` の説明の文と `PLAIN_DATA_RULE`。
+
+確かめ:
+- 批評家の第 16 周の試験 3 本(実装の側): 直す前 `15 failed, 1 passed in 40.47s`(`materials/pytest_item0_r17_worker_start.log`)→ 直した後、第 15 周の 2 本と合わせて `47 passed in 0.82s`。
+- 新しい格子 `tests/bt/item_0/test_bt0_r17_shared_and_placed.py`(495 件): 直す前の核(`git archive 1d8a107 src/bot` を `<W>/head_src` に取り出し、`-o pythonpath=` と PYTHONPATH で差し替え。子のプロセスも親と同じ `bot` を読む)で `334 failed, 161 passed in 679.23s`(`materials/pytest_item0_r17_worker_grid_before_fix.log`。格子 K 308・格子 S 18(子のプロセスの 9 入口は全部 60 秒で終わらない)・格子 C 8)。直した後 `495 passed`。途中で試験の側の誤りを 3 つ直した(renew の神託を渡した値でなく凍った値と比べる / FrozenSet を FrozenDict に入れる形が 1 段で 2 つの入れ物になり 90 段で上限を超えた → 1 段 1 つで交互に / 子のプロセスが編集可能な導入の `bot` を読み、直す前の核で走っていなかった → 親の `bot` の場所を PYTHONPATH に置き、子で確かめる)。直す前の記録は 3 回目(子の直しの後)のもの。
+- 共有された値の仕事(`materials/item0_r17_worker_probe_after.out`): 8 形 × freeze・settle・renew・thaw・別々に作った 2 つの `==` の 40 通りが全部 5 ミリ秒以下(直す前は入れ子 18 で 0.68〜8.9 秒、`materials/item0_r17_worker_probe_before.out`)。
+- 衝突の鎖(`materials/item0_r17_worker_chain_times.out`): 深い候補 3 つ・90 段で 2.78 秒以下。段数に対しておよそ 2 乗で増える(インタプリタが辞書を作るときの鍵の比べは呼び出しごとに新しい覚えで始まる。送り手の公開の構築 `FrozenDict({...})` も同じ比べをする)。
+- 要る枠(`materials/item0_r17_worker_headroom.py` を直す前後の核で): 戦略の呼び出しの中の place_order は、list・tuple・set の入れ子で 19(前後同じ)、dict で 20(前は 22)、FrozenDict の鍵の入れ子で 24(前は 22)。CALL_FRAMES = 30 の中。最初の版は `_hashed` の下に `_fd_hash → _pairs_hash → 内包表記 → _HashOnly.__init__` が積まれて 30 を超え、第 15 周の自分の格子 D が落ちた(`test_an_entry_takes_a_value_alike_at_every_stack_depth[frozendict_key-place_order]`)。内包表記を繰り返しに、`_HashOnly` を C の slot だけの int の子にして 24 に戻した。
+- 速さ(`materials/item0_r17_worker_speed.out`、2 万本の足、10 本ごとに extra つきの発注、3 回の最良、同じ機械で交互に 5 組): 直した後 140.92〜154.87 us/bar、直す前 141.60〜152.95 us/bar。差は揺れの中。
+- 自分の項目と批評家の試験(直す途中の版、切り離して 1 回): `5 failed, 6689 passed, 2 skipped`(`<W>/pytest_item0_r17_worker_item_critic.log`)。落ちた 5 件は、上の枠の 1 件、送り手の敵対者の 2 件(印の `object()`)、格子 C の子の 2 件(実行の途中で試験のファイルを書き換えた)。直した後、該当の 7 ファイルで `4691 passed`(`<W>/affected.log`)。全試験は §8。
+- 書き直した自分の試験(消した試験は無い): `test_bt0_r14_process_state.py`(版 `core-18` と理由の注釈)。
+
+## 8. 全試験
+(全試験の結果を返り値の test_tail に書く。)

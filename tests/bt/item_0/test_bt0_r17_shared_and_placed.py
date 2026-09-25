@@ -37,7 +37,10 @@ Grid S (`test_s_*`): shape of sharing {tuple, list, dict, FrozenList,
   where the sender shared it (two equal objects the sender did NOT share
   stay two). MAX_NESTING holds for a shared object whatever path reaches it
   first (grid D: shallow-then-deep and deep-then-shallow, depths 95..101,
-  against an unshared copy of the same value).
+  against an unshared copy of the same value). Plus random values whose
+  containers reuse earlier ones and whose leaves collide in hash across
+  types (seed 170): the core's == (and `_plain_equal`) equals the library's
+  == on a copy made of library types with the same sharing.
 
 Grid C (`test_c_*`): chains whose keys collide in hash at every level: c
   deep colliding keys a level (1 deep + {1, 2, 3} ints; or 2 / 3 deep) x
@@ -609,3 +612,84 @@ def test_c_chains_with_several_deep_colliding_keys_finish(deep):
     out, err, rc = _child(code, [str(deep), SRC], 60)
     rows = [line.split() for line in out.splitlines() if line.strip()]
     assert rc == 0 and len(rows) == len(C_CONTAINERS) * 4, (deep, out, err[-2000:])
+
+
+# ---- the core's equality over shared values equals the library's --------------------------
+
+class _D:
+    """The oracle's FrozenDict: equal to another _D with the same items."""
+
+    def __init__(self, items):
+        self.items = frozenset(items)
+
+    def __eq__(self, other):
+        return type(other) is _D and self.items == other.items
+
+    def __hash__(self):
+        return hash(self.items)
+
+
+def _library(x, memo):
+    """The oracle's copy of a core value: library types only, one copy per
+    object (so sharing -- and the interpreter's identity shortcut -- is kept)."""
+    got = memo.get(id(x))
+    if got is not None:
+        return got[1]
+    t = type(x)
+    if t is V.FrozenDict:
+        out = _D((_library(k, memo), _library(v, memo)) for k, v in x.items())
+    elif t in (tuple, V.FrozenList):
+        out = tuple(_library(v, memo) for v in x)
+    elif t in (frozenset, V.FrozenSet):
+        out = frozenset(_library(v, memo) for v in x)
+    elif t is V.PlainFraction:
+        out = Fraction(*V.fraction_parts(x))
+    elif t is V.PlainDecimal:
+        out = Decimal(str(x))
+    else:
+        out = x
+    memo[id(x)] = (x, out)
+    return out
+
+
+def _random_shared(rng, pool, depth):
+    """A value whose containers reuse earlier ones (`pool`) and whose leaves
+    collide in hash across types (-1 / -2, 1 / 1.0 / True / Fraction(1))."""
+    leaves = [-1, -2, 1, 1.0, True, Fraction(1), Decimal(1), 0.5, "a", None, 5, 5 + M]
+    if pool and rng.random() < 0.35:
+        return rng.choice(pool)
+    if depth == 0 or rng.random() < 0.25:
+        return rng.choice(leaves)
+    kind = rng.choice(["tuple", "FrozenList", "frozenset", "FrozenSet", "FrozenDict"])
+    items = [_random_shared(rng, pool, depth - 1) for _ in range(rng.randrange(0, 4))]
+    if kind == "tuple":
+        out = tuple(items)
+    elif kind == "FrozenList":
+        out = V.FrozenList(items)
+    elif kind == "frozenset":
+        out = frozenset(items)
+    elif kind == "FrozenSet":
+        out = V.FrozenSet(items)
+    else:
+        out = V.FrozenDict({k: _random_shared(rng, pool, depth - 1) for k in items})
+    pool.append(out)
+    return out
+
+
+def test_s_the_cores_equality_of_shared_values_is_the_librarys():
+    rng = random.Random(170)
+    checked = equal = 0
+    for _ in range(300):
+        pool: list = []
+        vals = [V.freeze(_random_shared(rng, pool, 4)) for _ in range(6)]
+        vals += [V.renew(v) for v in vals[:3]]  # equal by construction, no object shared with the first
+        for a in vals:
+            for b in vals:
+                memo: dict = {}
+                want = _library(a, memo) == _library(b, memo)
+                assert (a == b) == want, (a, b)
+                if type(a) is V.FrozenDict and type(b) is V.FrozenDict:
+                    assert V._plain_equal(a, b) == want
+                checked += 1
+                equal += want
+    assert checked > 20000 and equal > 3000, (checked, equal)
