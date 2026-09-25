@@ -87,7 +87,7 @@ ROLE_SCRUTINY = (("要件:", "SCRUTINY_BUILD"), ("場面:", "SCRUTINY_BUILD"), (
                  ("作る:", "SCRUTINY_FIX"), ("表:", "SCRUTINY_TABLE"), ("批評:", "SCRUTINY_CRITIC"),
                  ("盲検:", "SCRUTINY_JUDGE"), ("欠けているもの", "SCRUTINY_GAPS"))
 # roles that must receive the lead's notes and the prior battery record (audit 49 #3 / audit 50 #2)
-ROLE_NOTES = ("監査役(場面):", "場面の直し:", "作る:")  # the 定義 roles are gone (L-443)
+ROLE_NOTES = ("場面の直し:", "作る:")  # the 定義 roles are gone (L-443); 監査役(場面) is gone (L-448)
 # roles that only write a fixed text to a file (no judgement, so no scrutiny text): audit 59-4 stop notice
 ROLE_MECHANICAL = ("並行の直しの戻し:",)
 
@@ -243,7 +243,8 @@ def check_fingerprint(delegation_text: str, script: str) -> list[str]:
     return []
 
 
-NO_TOUCH = (("repairBattery", ("git diff --name-only HEAD", "触れない")), ("auditBattery", ("git diff --name-only HEAD",)))
+# L-448: the audit agent is gone; the machine check (checkBattery) must read the pasted diff against tests/bt/battery/
+NO_TOUCH = (("repairBattery", ("git diff --name-only HEAD", "触れない", "changed_files")), ("checkBattery", ("tests/bt/battery/", "changed_files")))
 
 
 def check_no_touch(script: str) -> list[str]:
@@ -252,9 +253,14 @@ def check_no_touch(script: str) -> list[str]:
     for fn, phrases in NO_TOUCH:
         i = script.find(f"async function {fn}(")
         if i < 0:
+            i = script.find(f"\nfunction {fn}(")
+        if i < 0:
             errs.append(f"台本: {fn} が無い")
             continue
         j = script.find("\nasync function", i + 1)
+        j2 = script.find("\nfunction ", i + 1)
+        if j2 > 0 and (j < 0 or j2 < j):
+            j = j2
         body = script[i:j if j > 0 else len(script)]
         for ph in phrases:
             if ph not in body:

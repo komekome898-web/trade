@@ -71,10 +71,10 @@ def test_lint_script_reports_undefined_names_the_way_run_7_died():
 
 def test_lead_notes_must_reach_the_battery_auditors_and_fixers():
     ok = ("const a = await agent(`作業 ${(args.lead_notes || {})[0]} ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
-          "const au = await agent(`検査 ${(args.lead_notes || {})[0]}`, { label: `監査役(場面):0#1`, agentType: 'owner-auditor', model: M })\n")
+          "const au = await agent(`直す ${(args.lead_notes || {})[0]} ${SCRUTINY_FIX}`, { label: `場面の直し:0#1`, model: M })\n")
     assert cbd.check_script(ok) == []
     bad = ("const a = await agent(`作業 ${SCRUTINY_FIX}`, { label: `作る:0#1`, model: M })\n"
-           "const au = await agent(`検査`, { label: `監査役(場面):0#1`, agentType: 'owner-auditor', model: M })\n")
+           "const au = await agent(`直す ${SCRUTINY_FIX}`, { label: `場面の直し:0#1`, model: M })\n")
     errs = cbd.check_script(bad)
     assert sum("lead_notes" in e for e in errs) == 2
 
@@ -104,11 +104,11 @@ def test_scene_keeper_write_destination_is_the_same_pair_everywhere():
 
 
 def test_no_touch_wiring_is_required_in_repair_and_audit_prompts():
-    good = "async function repairBattery(a) {\n  x`触れない git diff --name-only HEAD`\n}\nasync function auditBattery(b) {\n  y`git diff --name-only HEAD`\n}\n"
+    good = "async function repairBattery(a) {\n  x`触れない git diff --name-only HEAD changed_files`\n}\nfunction checkBattery(b) {\n  return b.changed_files.filter(x => !x.startsWith('tests/bt/battery/'))\n}\n"
     assert cbd.check_no_touch(good) == []
-    bad = "async function repairBattery(a) {\n  x`直す`\n}\nasync function auditBattery(b) {\n  y`検める`\n}\n"
+    bad = "async function repairBattery(a) {\n  x`直す`\n}\nfunction checkBattery(b) {\n  return []\n}\n"
     errs = cbd.check_no_touch(bad)
-    assert any("repairBattery" in e for e in errs) and any("auditBattery" in e for e in errs)
+    assert any("repairBattery" in e for e in errs) and any("checkBattery" in e for e in errs)
 
 
 def test_framework_fingerprint_changes_with_roles_stages_or_pass_rule_only():

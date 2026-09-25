@@ -132,23 +132,24 @@ const BAT2_SCHEMA = { type: 'object', properties: {
   survey_run: { type: 'array', items: { type: 'string' } },
   survey_not_run: { type: 'array', items: { type: 'string' } },
   lead_answer_changes: { type: 'array', items: { type: 'string' } },  // audit 56-3 / L-443: what the repair changed in the lead's answer and why (empty if nothing)
-  rootcause: { type: 'string' }, check_output: { type: 'string' } },
-  required: ['battery_dir', 'definitions', 'runner', 'scenarios', 'mutant', 'survey_run', 'survey_not_run', 'rootcause', 'check_output', 'lead_answer_changes'] }
+  rootcause: { type: 'string' }, check_output: { type: 'string' },
+  changed_files: { type: 'array', items: { type: 'string' } },  // L-448: the output of `git diff --name-only HEAD`, read by checkBattery
+  tests_passed: { type: 'boolean' }, test_tail: { type: 'string' } },
+  required: ['battery_dir', 'definitions', 'runner', 'scenarios', 'mutant', 'survey_run', 'survey_not_run', 'rootcause', 'check_output', 'lead_answer_changes', 'changed_files', 'tests_passed', 'test_tail'] }
 
-const BAT_AUDIT_SCHEMA = { type: 'object', properties: {
-  findings: { type: 'array', items: { type: 'object', properties: {
-    id: { type: 'string' }, level: { type: 'string', enum: ['止める', '直す', '聞く'] }, text: { type: 'string' },
-    repeat_of: { type: ['string', 'null'] } }, required: ['id', 'level', 'text', 'repeat_of'] } } },
-  required: ['findings'] }
-
-async function auditBattery(item, bat, n, prev) {
-  return agent(`検査対象: 項目 ${item.id}「${item.title}」の場面集 ${bat.definitions} と、その置き場所 ${bat.battery_dir}(検めるのは差分と試験の結果(L-443): 場面係の直しが tests/bt/battery/ の外(実装 src/bot/bt/・作業者の試験 tests/bt/item_${item.id}/・批評家の試験 tests/bt/critic/item_${item.id}/)に触れていないかを「git diff --name-only HEAD」と「git status --short」で自分で検め、ROOTCAUSE の主張の表の (c)(d) の試験と場面集の試験・mutant を自分で走らせて通るかを見る。散文の定義は求めない = 場面集の側とされた指摘が実は実装の欠陥だった(相手の付け違い)ときの独立の照合、監査 60-3。runner・当方の現状と調査結果の側の adapter・検討表 opponents/CONSIDERED.md・再現 opponents/・mutant)。作業者はまだ動いていない(この監査は作業者の 1 周目の前)。委任文 ${DOC} §3「盲検の作り直し」「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」と照らす。python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md を自分で走らせ、出力を見る(道具が見るのは形だけ。理由の中身・再現が一次資料どおりかは読んで確かめる)。場面が新実装に有利な範囲に偏っていないか、場面が振る舞いでなく作りの形を試していないか(期待の値が要件の文から独立に出せるか)、出所を示す語、断定と範囲、動かせなかった候補の記録を検査する。${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}指摘は [止める] / [直す] / [聞く] の印つきで返し、id を b${n}-1, b${n}-2, … と振る。${prev ? `前の回の指摘(id つき): ${JSON.stringify(prev).slice(0, 8000)}。` : ''}指摘ごとに repeat_of を必ず埋める: 前の回までの指摘と同じ理由なら前の指摘の id、そうでなければ null。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。「同じ型の穴」と書くなら repeat_of を付ける(直ったものは挙げない。直ったかは自分で確かめる)。委任文 §3「周回の数え方と止める条件」4。`,
-    { label: `監査役(場面):${item.id}#${n}`, phase: '批評', schema: BAT_AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
+// L-448 (案 1, owner): the per-round battery audit agent (監査役(場面)) is gone. The machine check reads the 場面係's own
+// return: a file outside tests/bt/battery/ in `git diff --name-only HEAD`, or failing tests, stops the repair. The content
+// of the battery is read by the next round's critic (and item 0's battery by item 4's critic after item 0 passes).
+// Self-reported values: the critic re-checks them next round. Pure: tested by node --test.
+function checkBattery(fixed, n, prev) {
+  const out = []
+  const same = kind => { const f = (prev || []).find(x => String(x.id).endsWith(kind)); return f ? f.id : null }
+  const outside = (fixed.changed_files || []).map(x => String(x).replace(/^\.\//, '')).filter(x => !x.startsWith('tests/bt/battery/'))
+  if (outside.length) out.push({ id: `b${n}-touch`, level: '止める', repeat_of: same('-touch'), text: `場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): ${outside.join(', ')}` })
+  if (fixed.tests_passed !== true) out.push({ id: `b${n}-tests`, level: '止める', repeat_of: same('-tests'), text: `場面集の試験が通っていない(L-448 の機械の検査): ${String(fixed.test_tail || '').slice(0, 300)}` })
+  return { findings: out }
 }
 
-// L-443 (2): the definition step (場面係 writes a prose definition, 監査役(定義) audits it) is gone; a battery repair
-// carries its own machine (claim table: deriving function / hand-written remainder / failing test / mutant) and the
-// battery auditor reads the diff and the test results, not prose (owner: 「その案に賛成します。今すぐ体制を変えて進めてください。」)
 async function repairBattery(item, req, bat, findings, n) {
   return agent(`${HEAD2}
 あなたは項目 ${item.id}「${item.title}」の場面係です(場面集の第 ${n} 回の直し。作業者でも資料係でもない)。固定した要件: ${req.path}。場面集 ${bat.definitions}(置き場所 ${bat.battery_dir})に、監査役が次の指摘を出した(逐語):
@@ -158,7 +159,7 @@ ${JSON.stringify(findings).slice(0, 12000)}
 ${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}
 **直す前に** ${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と「どの作りを変えるか」を書く(委任文 §3「根本的解決」)。[聞く] にはそこで答える。指摘の文言だけに合わせる直しをしない: 同じ種類の欠陥を場面集の全体(全観点・全場面・検討表の全行)で探して直す。
 そのうえで委任文 §3「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」に合わせて、場面の定義・runner・当方の現状と調査結果の側の adapter・検討表・再現・mutant を直す([直す] も直す)。**実装(src/bot/bt/ の下)と作業者の試験(tests/bt/item_${item.id}/)には触れない**(場面集の側の直しが実装に及ぶなら、それは相手の付け違い = rootcause に書いて止める。監査 60-3)。返す前に「git diff --name-only HEAD」を走らせ、その出力を rootcause のファイルの末尾に貼る(tests/bt/battery/ の外のファイルがあれば理由を書く)。場面の期待は要件の文から独立に出せる振る舞いで書き、新実装の内部の名前・形を写さない(規則 2)。
-検討表は返す前に python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md --write を走らせて誤り 0 件にし、出力の最後の行を check_output に入れる(規則 9)。rootcause には ROOTCAUSE の path を入れる。
+検討表は返す前に python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md --write を走らせて誤り 0 件にし、出力の最後の行を check_output に入れる(規則 9)。rootcause には ROOTCAUSE の path を入れる。**機械の検査(L-448。周ごとの監査役(場面)は無い)**: 返す前に「git diff --name-only HEAD」の出力の全行を changed_files に(1 行 1 要素。場面集の外のファイルがあれば台本が止める)、場面集の試験(tests/bt/battery/item_${item.id}/ と批評家の試験 tests/bt/critic/item_${item.id}/)を回した結果の末尾の行を test_tail に、全部通ったかを tests_passed に入れる(通っていなければ台本が止める。偽の申告は次の周の批評家が読む)。
 ${SCRUTINY_FIX}
 作業者はこの場面集を読めるが変えない。`, { label: `場面の直し:${item.id}#${n}`, phase: '要件の固定', schema: BAT2_SCHEMA, model: IMPL_MODEL, effort: 'high' })
 }
@@ -199,21 +200,7 @@ async function runItem(item) {
   // writes; `chain` is accepted for older args) and continues into the in-round repairs of this launch
   const bchain = { ...(prior.battery_chain || prior.chain || {}) }
   let prevF = prior.findings
-  for (let n = 1; !pre; n++) {
-    if (item.id !== 0 && prior.rounds + n > 10) return { item, status: 'escalate', reason: '場面集の監査が 10 回に達した(L-407 の最大 10 周。L-418 で作業者の周と共有)', attempts: 0, req, bat, batteryHistory: batHist, history: [] }
-    const a = await auditBattery(item, bat, n, prevF)
-    const fs = a ? a.findings : [{ id: `b${n}-x`, level: '止める', text: '監査役が返らなかった' }]
-    batHist.push({ n, findings: fs })
-    const stops = fs.filter(f => f.level === '止める')
-    if (!stops.length) break
-    stops.forEach(f => { bchain[f.id] = f.repeat_of && bchain[f.repeat_of] ? bchain[f.repeat_of] + 1 : 1 })
-    const rep3 = stops.find(f => bchain[f.id] >= 3)
-    if (rep3) return { item, status: 'escalate', reason: `場面集の監査で同じ未達の理由が 3 回続いた(L-407): ${rep3.text.slice(0, 300)}`, attempts: 0, req, bat, batteryHistory: batHist, history: [] }
-    const fixed = await repairBattery(item, req, bat, fs, n)
-    if (!fixed) return { item, status: 'error', stage: 'battery_repair', batteryHistory: batHist, history: [] }
-    bat = { ...bat, ...fixed }
-    prevF = fs
-  }
+  // L-448 (案 1): no battery audit before the worker's first round — the first critic reads the battery.
   const history = []
   let counted = prior.rounds + batHist.length, nonStructural = 0  // L-418: battery audits count toward the same 10; L-420: carried across launches
   const chain = { ...(prior.critic_chain || {}) }  // L-421: the same-reason count carries across launches
@@ -238,8 +225,7 @@ async function runItem(item) {
         const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`)
         if (!fixed) return { error: 'battery_repair_in_round' }
         bat = { ...bat, ...fixed }
-        const a = await auditBattery(item, bat, `r${attempt}-${k}`, fixList)
-        const fs = a ? a.findings : [{ id: `b-r${attempt}-${k}-x`, level: '止める', text: '監査役が返らなかった' }]
+        const fs = checkBattery(fixed, `r${attempt}-${k}`, midAudits.length ? midAudits[midAudits.length - 1].findings : []).findings  // L-448
         midAudits.push({ k, findings: fs })
         const bst = fs.filter(f => f.level === '止める')
         if (!bst.length) return null
@@ -285,7 +271,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
 あなたは項目 ${item.id}「${item.title}」の批評家(第 ${attempt} 周。新しく起こされた者)です。**非常に厳しく**。固定した要件 ${req.path}、場面集 ${bat.definitions}、調査結果の該当行を手元に置く。
 自分で試験を書いて壊しにいく(試験は tests/bt/critic/item_${item.id}/ に置く。壊れた試験は残し、作業者が直す)。前の周までの批評家の試験のうち、作業者が「試験自身の誤り」と報告したものを確かめ、誤りなら直すか理由を書いて取り下げる(委任文 §3「場面集の規則」8)。場面集が規則 1〜9 を守っているか(能力を申告で数えていないか等)も見る。前の周で「直った」とされた点も自分で確かめ直す。資料係の adapter(${JSON.stringify(t.adapters_changed).slice(0, 2000)})が対象を公平に呼んでいるか(新実装だけ有利・他が不利になる呼び方でないか)、場面係の検討表(${bat.battery_dir}/opponents/CONSIDERED.md)のスキップの理由が調査結果の行で裏付けられているか、再現(${bat.battery_dir}/opponents/)が一次資料どおりで弱められていないか、場面集が要件の観点を全部覆っているかも見る。
 ${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
-場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。要件のファイル §0「核の約束の射程」(L-445)の外の反例(戦略が Python のプロセス自体 = sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定を書き換える形)は [止める] にせず [示唆] にし、射程の外と書く。
+場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。${item.id === 4 ? '項目 0 の場面集(tests/bt/battery/item_0/)も読む(L-448 で周ごとの監査役(場面)を外し、項目 0 の通過後の並行の直しは機械の検査だけなので、その中身の欠陥はこの批評家が読む)。欠陥は target=場面集、fix_files に tests/bt/battery/item_0/ の path で返す(この項目の場面係が直す)。' : ''}格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。要件のファイル §0「核の約束の射程」(L-445)の外の反例(戦略が Python のプロセス自体 = sys.modules・builtins・class の定義・ABC への登録・インタプリタの設定を書き換える形)は [止める] にせず [示唆] にし、射程の外と書く。
 ${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
 指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。fix_files に、その指摘を直すために変えるべきファイルの path(リポジトリ相対)を全部書く(相手の根拠。src/bot/bt/ の下が 1 つでもあれば台本は相手を「実装」と数える = 付け違いで通過の判定が変わらないための機械、監査 58-3)。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
       { label: `批評:${item.id}#${attempt}`, phase: '批評', schema: CRITIC_SCHEMA, model: IMPL_MODEL, effort: 'high' })
@@ -337,7 +323,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     const winsC = jc.filter(j => j.new_chosen).length, winsS = jsv.filter(j => j.new_chosen).length
     // L-431/L-432: parts pass on 'equal or better' (the opponent must not have a majority); item 13 needs 圧倒 (L-407 D 案2)
     const lossC = jc.filter(j => j.opp_chosen).length, lossS = jsv.filter(j => j.opp_chosen).length
-    const overwhelm = item.id === 13
+    const overwhelm = item.id === 4  // L-447: item 4 (統合と答え合わせ) carries the 圧倒 judgement (was item 13)
     const okC = eqC || (jc.length === 3 && (overwhelm ? winsC >= 2 : lossC < 2)), okS = eqS || (jsv.length === 3 && (overwhelm ? winsS >= 2 : lossS < 2))
     let audit = null
     if (okC && okS && stopsImpl.length === 0) {
@@ -385,17 +371,16 @@ async function batteryFollowUp(item, req, bat, findings, chainObj) {
     return out
   }
   log(`並行の直し(項目 ${item.id})を始める: 指摘 ${findings.length} 件(止める ${findings.filter(f => f.level === '止める').length})`)
-  // no repair cap: item 0 has no round cap (L-433); the follow-up ends on a clean battery audit or the family rule (3)
+  // no repair cap: item 0 has no round cap (L-433); the follow-up ends on a clean machine check or the family rule (3)
   for (let k = 1; ; k++) {
     const n = `f${k}`
     const fixed = await repairBattery(item, req, bat, fixList, n)
     if (!fixed) return done({ status: 'error', stage: 'battery_followup', history: hist, bat })
     bat = { ...bat, ...fixed }
-    const a = await auditBattery(item, bat, n, fixList)
-    const fs = a ? a.findings : [{ id: `b${n}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
+    const fs = checkBattery(fixed, n, hist.length ? hist[hist.length - 1].findings : []).findings  // L-448: no audit agent; item 4's critic reads the content
     hist.push({ k: n, findings: fs })
     const stops = fs.filter(f => f.level === '止める')
-    log(`並行の直し(項目 ${item.id}) ${n}: 監査役(場面)の止める ${stops.length} 件`)
+    log(`並行の直し(項目 ${item.id}) ${n}: 機械の検査の止める ${stops.length} 件`)
     if (!stops.length) return done({ status: 'pass', history: hist, bat })
     stops.forEach(f => { chainObj[f.id] = f.repeat_of && chainObj[f.repeat_of] ? chainObj[f.repeat_of] + 1 : 1 })
     const r3 = stops.find(f => chainObj[f.id] >= 3)
@@ -419,41 +404,46 @@ const results = {}
 const only = args.only || null
 const byId = Object.fromEntries(ITEMS.map(it => [it.id, it]))
 
-// stage 1: core
-if (!only || only.includes(0)) {
+// stage 1: core. L-447: a launch after item 0's pass carries it as passed (args.passed_items) with the open battery-side
+// findings (args.open_battery) so the follow-up repair continues in this run
+const passed = args.passed_items || []
+if (passed.includes(0)) {
+  const pre0 = (args.prebuilt || {})[0] || {}
+  results[0] = { item: byId[0], status: 'pass', carried: true, history: [], req: { path: pre0.req }, bat: pre0.bat, openBattery: args.open_battery || [], bchain: pre0.battery_chain || {} }
+} else if (!only || only.includes(0)) {
   results[0] = await runItem(byId[0])
   if (results[0].status !== 'pass') return { stopped_at: 'core', results: Object.values(results).map(brief) }
 }
 // L-441 (案 2): the battery-side findings left open at item 0's pass are repaired while items 1..12 run
 let batteryFollow = null
 if (results[0] && results[0].openBattery && results[0].openBattery.length) {
-  log(`L-441: 項目 0 は実装の側で通過。場面集の側の指摘 ${results[0].openBattery.length} 件は項目 1〜12 と並行して場面係が直す`)
+  log(`L-441: 項目 0 は実装の側で通過。場面集の側の指摘 ${results[0].openBattery.length} 件は項目 1〜3 と並行して場面係が直す`)
   batteryFollow = batteryFollowUp(byId[0], results[0].req, results[0].bat, results[0].openBattery, results[0].bchain || {})
 }
 async function finish(out) { out.battery_followup = batteryFollow ? await batteryFollow : null; return out }
 
-// stage 2: items 1..12 in parallel
-const mid = ITEMS.filter(it => it.id >= 1 && it.id <= 12 && (!only || only.includes(it.id)))
+// stage 2: items 1..3 in parallel (L-447: データと時刻 / 執行の模型 / 検証・再現・出力)
+const mid = ITEMS.filter(it => it.id >= 1 && it.id <= 3 && (!only || only.includes(it.id)))
 const midRes = await parallel(mid.map(it => () => runItem(it)))
 midRes.forEach((r, i) => { results[mid[i].id] = r || { item: mid[i], status: 'error' } })
 const blocked = Object.values(results).filter(r => r.status !== 'pass')
 if (blocked.length) return finish({ stopped_at: 'parallel', results: Object.values(results).map(brief) })
 
-// stage 3: compat (14), then integration (13)
-for (const id of [14, 13]) {
+// stage 3: item 4 統合と答え合わせ (L-447: 参照実装 + 統合 + 旧エンジンとの互換; 圧倒の判定)
+for (const id of [4]) {
   if (only && !only.includes(id)) continue
   results[id] = await runItem(byId[id])
   if (results[id].status !== 'pass') return finish({ stopped_at: `item_${id}`, results: Object.values(results).map(brief) })
 }
 
 // stage 4: completeness critic loop
-let nextId = 15
+let nextId = 5
 let gapRounds = 0
 const extra = []
 while (true) {
   const leftovers = Object.values(results).flatMap(r => {
-    const last = r.history[r.history.length - 1]
-    return (last.critic ? last.critic.findings : []).filter(f => f.level !== '止める').map(f => ({ item: r.item.id, ...f }))
+    const last = r.history && r.history[r.history.length - 1]  // a carried item 0 (L-447) has no history
+    return (last && last.critic ? last.critic.findings : []).filter(f => f.level !== '止める').map(f => ({ item: r.item.id, ...f }))
   })
   const gap = await agent(`${HEAD2}
 あなたは「欠けているものは何か」の批評家です(委任文 §3 の最後の段)。オーナーの完了の形「このプロジェクトで実施し得る全てのバックテストが可能な汎用バックテスト環境」「すべてが調査結果以上の信頼性と再現性に優れたもの」「そのバックテストの内容を項目別にダッシュボードから確認できるように」に照らし、

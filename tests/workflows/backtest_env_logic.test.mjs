@@ -18,8 +18,11 @@ function cut(name) {
 }
 const splitStops = new Function(`${cut('splitStops')}; return splitStops`)()
 const judgeRound = new Function(`${cut('judgeRound')}; return judgeRound`)()
-const makeFollowUp = (st) => new Function('repairBattery', 'auditBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
-  st.repairBattery, st.auditBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
+const checkBattery = new Function(`${cut('checkBattery')}; return checkBattery`)()
+// L-448: the follow-up has no audit agent; the machine check reads the repair's own return
+const makeFollowUp = (st) => new Function('repairBattery', 'checkBattery', 'log', 'agent', 'HEAD2', 'REC', 'MODEL', `${cut('batteryFollowUp')}; return batteryFollowUp`)(
+  st.repairBattery, checkBattery, st.log || (() => {}), st.agent || (async () => 'ok'), '', '/rec', 'm')
+const clean = (x = {}) => ({ changed_files: ['tests/bt/battery/item_0/scenes.py'], tests_passed: true, test_tail: '170 passed', ...x })
 
 const stop = (id, target, fix_files = [], repeat_of = null) => ({ id, level: '止める', target, fix_files, repeat_of, text: id, evidence: '', patchwork: false })
 
@@ -39,38 +42,42 @@ test('other items: every stop blocks the pass', () => {
   assert.equal(r.impl.length, 1); assert.equal(r.bat.length, 0)
 })
 
-test('follow-up passes when the battery audit has no stop', async () => {
+test('follow-up passes when the repair touches only the battery and its tests pass (L-448 machine check)', async () => {
   const logs = []
-  const f = makeFollowUp({ defineThenAudit: async () => ({ definition: 'd' }), repairBattery: async () => ({ scenarios: 33 }),
-    auditBattery: async () => ({ findings: [{ id: 'x', level: '直す', text: '', repeat_of: null }] }), log: m => logs.push(m) })
+  const f = makeFollowUp({ repairBattery: async () => clean({ scenarios: 33 }), log: m => logs.push(m) })
   const out = await f({ id: 0 }, {}, { scenarios: 32 }, [stop('i0-r11-02', '場面集')], {})
   assert.equal(out.status, 'pass'); assert.equal(out.bat.scenarios, 33); assert.equal(out.history.length, 1)
   assert.ok(logs.some(m => m.includes('pass')))
 })
 
-test('follow-up returns to the lead when the same family stops 3 times', async () => {
-  let k = 0
-  const f = makeFollowUp({ defineThenAudit: async () => ({ definition: 'd' }), repairBattery: async () => ({}),
-    auditBattery: async () => { k++; return { findings: [{ id: `s${k}`, level: '止める', text: 'same', repeat_of: k > 1 ? `s${k - 1}` : null }] } } })
-  const chain = {}
-  const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], chain)
-  assert.equal(out.status, 'escalate'); assert.match(out.reason, /3 回続いた/); assert.equal(k, 3); assert.equal(chain.s3, 3)
+test('machine check: a file outside tests/bt/battery/ or failing tests is a stop; the same kind chains via repeat_of', () => {
+  const a = checkBattery(clean({ changed_files: ['tests/bt/battery/item_0/x.py', './src/bot/bt/core/engine.py'] }), 'f1', [])
+  assert.deepEqual(a.findings.map(f => f.id), ['bf1-touch']); assert.equal(a.findings[0].repeat_of, null)
+  const b = checkBattery(clean({ tests_passed: false, test_tail: '2 failed' }), 'f2', a.findings)
+  assert.deepEqual(b.findings.map(f => f.id), ['bf2-tests']); assert.equal(b.findings[0].repeat_of, null)
+  const c = checkBattery(clean({ changed_files: ['docs/x.md'] }), 'f3', a.findings)
+  assert.equal(c.findings[0].repeat_of, 'bf1-touch')
+  assert.deepEqual(checkBattery(clean(), 'f4', []).findings, [])
 })
 
-test('follow-up has no repair cap (L-433): new families keep being repaired until the audit is clean', async () => {
+test('follow-up returns to the lead when the same machine stop repeats 3 times', async () => {
   let k = 0
-  const f = makeFollowUp({ defineThenAudit: async () => ({ definition: 'd' }), repairBattery: async () => ({}),
-    auditBattery: async () => { k++; return { findings: k < 7 ? [{ id: `n${k}`, level: '止める', text: 'new', repeat_of: null }] : [] } } })
+  const f = makeFollowUp({ repairBattery: async () => { k++; return clean({ changed_files: ['src/bot/bt/core/engine.py'] }) } })
+  const chain = {}
+  const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], chain)
+  assert.equal(out.status, 'escalate'); assert.match(out.reason, /3 回続いた/); assert.equal(k, 3); assert.equal(chain['bf3-touch'], 3)
+})
+
+test('follow-up has no repair cap (L-433): alternating kinds keep being repaired until the check is clean', async () => {
+  let k = 0
+  const f = makeFollowUp({ repairBattery: async () => { k++; return k < 7 ? clean(k % 2 ? { tests_passed: false } : { changed_files: ['docs/x.md'] }) : clean() } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
   assert.equal(out.status, 'pass'); assert.equal(k, 7)
 })
 
 test('a follow-up that does not pass is written to a file by an agent (59-4)', async () => {
   const calls = []
-  let k = 0
-  const f = makeFollowUp({ repairBattery: async () => ({}),
-    auditBattery: async () => { k++; return { findings: [{ id: `s${k}`, level: '止める', text: 'same', repeat_of: k > 1 ? `s${k - 1}` : null }] } },
-    agent: async (prompt, opts) => { calls.push({ prompt, opts }); return 'ok' } })
+  const f = makeFollowUp({ repairBattery: async () => clean({ tests_passed: false }), agent: async (prompt, opts) => { calls.push({ prompt, opts }); return 'ok' } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
   assert.equal(out.status, 'escalate'); assert.equal(calls.length, 1)
   assert.equal(calls[0].opts.label, '並行の直しの戻し:0'); assert.match(calls[0].prompt, /FOLLOWUP_STOPPED\.md/)
@@ -78,7 +85,7 @@ test('a follow-up that does not pass is written to a file by an agent (59-4)', a
 
 test('a repair that returns nothing ends the follow-up as an error, also written to the file', async () => {
   const calls = []
-  const f = makeFollowUp({ repairBattery: async () => null, auditBattery: async () => ({ findings: [] }), agent: async (prompt, opts) => { calls.push(opts.label); return 'ok' } })
+  const f = makeFollowUp({ repairBattery: async () => null, agent: async (prompt, opts) => { calls.push(opts.label); return 'ok' } })
   const out = await f({ id: 0 }, {}, {}, [stop('i0', '場面集')], {})
   assert.equal(out.status, 'error'); assert.deepEqual(calls, ['並行の直しの戻し:0'])
 })
