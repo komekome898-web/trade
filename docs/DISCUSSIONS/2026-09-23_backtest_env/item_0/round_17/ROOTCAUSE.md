@@ -107,4 +107,6 @@
 - 書き直した自分の試験(消した試験は無い): `test_bt0_r14_process_state.py`(版 `core-18` と理由の注釈)。
 
 ## 8. 全試験
-(全試験の結果を返り値の test_tail に書く。)
+
+- 1 回目(11:52 UTC〜): ディスクの空きが 19M になり、88% 以降の多くの試験が準備の段の誤り(E)で止まり、報告の書き出しの途中でログが切れた(`df -h /` → `252G 38G 19M 100%`)。自分の実行の一時フォルダ `/tmp/pytest-of-root/pytest-487`(217M、11:55〜12:09 に作られた)だけを消した(空き 236M)。ほかの者の全試験(12:10〜12:31)が終わるのを待った。
+- 2 回目(12:31 UTC〜、一時フォルダを試験ごとに消す設定 `-o tmp_path_retention_policy=none`。場面集を含む。場面集の実行はこの 1 回): `PYTHONPATH=src python -m pytest -p no:cacheprovider -rf -o tmp_path_retention_policy=none` → `9891 passed, 6 skipped, 4 warnings in 1150.47s (0:19:10)`(`materials/pytest_item0_r17_worker_full_tail.log`)。落ちたものは無い(批評家の第 16 周の試験 4 本のうち場面集の側の 1 本 `test_i0r16_no_int_scene_tells_refusal_from_no_entry.py` も、並行の場面係の直しの後の場面集で通った)。
