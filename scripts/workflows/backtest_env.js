@@ -56,8 +56,9 @@ const FINDING = { type: 'object', properties: {
   id: { type: 'string' }, level: { type: 'string', enum: ['止める', '直す', '示唆'] },
   text: { type: 'string' }, evidence: { type: 'string' },
   repeat_of: { type: ['string', 'null'] }, patchwork: { type: 'boolean' },
-  target: { type: 'string', enum: ['場面集', '実装'] } },
-  required: ['id', 'level', 'text', 'evidence', 'repeat_of', 'patchwork', 'target'] }
+  target: { type: 'string', enum: ['場面集', '実装'] },
+  fix_files: { type: 'array', items: { type: 'string' } } },  // audit 58-3: the files the fix must change — the machine's basis for the side
+  required: ['id', 'level', 'text', 'evidence', 'repeat_of', 'patchwork', 'target', 'fix_files'] }
 const CRITIC_SCHEMA = { type: 'object', properties: {
   findings: { type: 'array', items: FINDING },
   structural_change_since_prev: { type: 'boolean' }, record_path: { type: 'string' } },
@@ -191,6 +192,15 @@ ${SCRUTINY_FIX}
 作業者はこの場面集を読めるが変えない。`, { label: `場面の直し:${item.id}#${n}`, phase: '要件の固定', schema: BAT2_SCHEMA, model: IMPL_MODEL, effort: 'high' })
 }
 
+// L-441 (案 2) + audit 58-3: item 0 passes on the implementation-side [止める] only. The side is not the critic's tag
+// alone: a [止める] whose fix_files touch src/bot/bt/ is implementation-side whatever its tag (a mis-tag cannot open
+// the gate), and the report auditor re-reads every battery-tagged [止める] (prompt below). Pure: tested by node --test.
+function splitStops(item, stops) {
+  if (item.id !== 0) return { impl: stops, bat: [] }
+  const isImpl = f => f.target === '実装' || (f.fix_files || []).some(x => String(x).replace(/^\.\//, '').startsWith('src/bot/bt/'))
+  return { impl: stops.filter(isImpl), bat: stops.filter(f => !isImpl(f)) }
+}
+
 async function runItem(item) {
   // pre = a launch that continues from an existing, audited battery (L-426/L-427): skip requirements, battery build and the pre-worker audit
   const pre = (args.prebuilt || {})[item.id] || null
@@ -299,7 +309,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
 ${attempt > 1 ? `前の周までの指摘(場面集の側は、この周の前に場面係が直し監査役が見た = 委任文 §3「場面集」): ${JSON.stringify(allFix).slice(0, 12000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : (prior.critic_findings ? `前の起動の最後に数えた周の批評家の指摘(委任文 §3「周回の数え方と止める条件」4。id つき): ${JSON.stringify(prior.critic_findings).slice(0, 10000)}。同じ理由の指摘には repeat_of に前の指摘の id を入れ、そうでなければ null(必ず埋める)。「同じ理由」= 同じ根本原因の族(前の指摘と同じ機構の別の形。例: 帰属の穴が dict → 対象の class → 戦略の外の呼び出し、と形を変えたもの)。同じ場所・同じ文言に限らない。(直ったものは挙げない。直ったかは自分で確かめる)。` : '')}
 場当たりの直し(試験や場面だけの特別扱い・閾値や既定値をずらす・文言合わせ・機能を外して要件から逃げる)を見つけたら patchwork=true の [止める] にする。格付けは委任文 §3「批評家」の「格付けの基準」どおり(要件・観点を 1 つでも満たさない / 正解と合わない / 試験が落ちる / 信頼性・再現性を崩す / 場当たり / §4 の禁止 / 場面集の規則違反 は [止める]。迷ったら重い方)。前の周の [直す]・[示唆] に [止める] の基準に当たるものがあれば付け直して理由を書く。
 ${attempt > 1 ? `前の周から構造の変化が無ければ structural_change_since_prev=false(作業者の申告: ${w.structural_change.slice(0, 1000)})。` : 'structural_change_since_prev は true。'}
-指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
+指摘ごとに target を付ける: 場面集の側(tests/bt/battery/ の下 = 場面の定義・正解・runner・adapter・検討表・再現・mutant、資料係の表)なら「場面集」、新実装(src/bot/bt/)と作業者の試験なら「実装」。fix_files に、その指摘を直すために変えるべきファイルの path(リポジトリ相対)を全部書く(相手の根拠。src/bot/bt/ の下が 1 つでもあれば台本は相手を「実装」と数える = 付け違いで通過の判定が変わらないための機械、監査 58-3)。場面集の側の指摘は次の周の前に場面係が直す(委任文 §3「場面集」)。指摘の id は「i${item.id}-r${attempt}-<連番>」。根拠はファイル:行か、実行したコマンドと出力。記録を ${d}/CRITIC.md に書く。${SCRUTINY_CRITIC}`,
       { label: `批評:${item.id}#${attempt}`, phase: '批評', schema: CRITIC_SCHEMA, model: IMPL_MODEL, effort: 'high' })
 
     const judge = (key, file, newIsA, k) => agent(`あなたは盲検の審査員です。読むのは次の 2 つのファイルだけ(リポジトリの他の場所を開かない)。
@@ -338,11 +348,10 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     const stops = c ? c.findings.filter(f => f.level === '止める') : [{ id: 'critic-missing', level: '止める', text: '批評家が返らなかった', evidence: '', repeat_of: null, patchwork: false }]
     // L-441 (案 2): item 0 passes on the implementation-side [止める] only; its battery-side [止める] are repaired in
     // parallel by batteryFollowUp() and do not hold items 1..12 (owner: 「案2 実装の通過と場面集の直しを分ける」)
-    const stopsImpl = item.id === 0 ? stops.filter(f => f.target !== '場面集') : stops
-    const stopsBat = item.id === 0 ? stops.filter(f => f.target === '場面集') : []
+    const { impl: stopsImpl, bat: stopsBat } = splitStops(item, stops)
     let audit = null
     if (okC && okS && stopsImpl.length === 0) {
-      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。${stopsBat.length ? `場面集の側の [止める] ${stopsBat.length} 件は、オーナー決定 L-441(「案2 実装の通過と場面集の直しを分ける」)により項目 0 の通過を止めず、通過のあと場面係が項目 1〜12 と並行して直す(台本の batteryFollowUp)。場面集の側の [止める] が残っていること自体はこの監査の [止める] の根拠にしない。リードはオーナーへの通過の報告にその件数と逐語を「並行して直しているもの」として書く。` : ''}round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。${stopsBat.length ? `場面集の側の [止める] ${stopsBat.length} 件は、オーナー決定 L-441(「案2 実装の通過と場面集の直しを分ける」)により項目 0 の通過を止めず、通過のあと場面係が項目 1〜12 と並行して直す(台本の batteryFollowUp)。場面集の側の [止める] が残っていること自体はこの監査の [止める] の根拠にしない。**ただし、場面集の側とされた [止める] の 1 件ごとに、本文・根拠・fix_files を読み、直すべき物が実装(src/bot/bt/)なら付け違い = 通過の迂回として [止める] にする**(監査 58-3)。付け違いの候補(逐語): ${JSON.stringify(stopsBat.map(f => ({ id: f.id, target: f.target, fix_files: f.fix_files, text: f.text.slice(0, 600) }))).slice(0, 6000)}。リードはオーナーへの通過の報告にその件数と逐語を「並行して直しているもの」として書く。` : ''}round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役:${item.id}#${attempt}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     }
     const auditStops = audit ? audit.findings.filter(f => f.level === '止める') : []
@@ -375,22 +384,25 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
 async function batteryFollowUp(item, req, bat, findings, chainObj) {
   const hist = []
   let fixList = findings
+  const done = out => { log(`並行の直し(項目 ${item.id}): ${out.status}${out.reason ? ' — ' + out.reason : ''}(直し ${hist.length} 回)`); return out }
+  log(`並行の直し(項目 ${item.id})を始める: 指摘 ${findings.length} 件(止める ${findings.filter(f => f.level === '止める').length})`)
   for (let k = 1; ; k++) {
-    if (k > 5) return { status: 'escalate', reason: '場面集の並行の直しが 5 回に達した(L-441)', history: hist, bat }
+    if (k > 5) return done({ status: 'escalate', reason: '場面集の並行の直しが 5 回に達した(L-441)', history: hist, bat })
     const n = `f${k}`
     const def = fixList.some(f => f.level === '止める') ? await defineThenAudit(item, req, bat, fixList, n, chainObj, hist) : { definition: null }
-    if (def.escalate) return { status: 'escalate', reason: def.escalate, history: hist, bat }
+    if (def.escalate) return done({ status: 'escalate', reason: def.escalate, history: hist, bat })
     const fixed = await repairBattery(item, req, bat, fixList, n, def.definition)
-    if (!fixed) return { status: 'error', stage: 'battery_followup', history: hist, bat }
+    if (!fixed) return done({ status: 'error', stage: 'battery_followup', history: hist, bat })
     bat = { ...bat, ...fixed }
     const a = await auditBattery(item, bat, n, fixList)
     const fs = a ? a.findings : [{ id: `b${n}-x`, level: '止める', text: '監査役が返らなかった', repeat_of: null }]
     hist.push({ k: n, findings: fs })
     const stops = fs.filter(f => f.level === '止める')
-    if (!stops.length) return { status: 'pass', history: hist, bat }
+    log(`並行の直し(項目 ${item.id}) ${n}: 監査役(場面)の止める ${stops.length} 件`)
+    if (!stops.length) return done({ status: 'pass', history: hist, bat })
     stops.forEach(f => { chainObj[f.id] = f.repeat_of && chainObj[f.repeat_of] ? chainObj[f.repeat_of] + 1 : 1 })
     const r3 = stops.find(f => chainObj[f.id] >= 3)
-    if (r3) return { status: 'escalate', reason: `場面集の並行の直しの監査で同じ未達の理由が 3 回続いた(L-407): ${r3.text.slice(0, 300)}`, history: hist, bat }
+    if (r3) return done({ status: 'escalate', reason: `場面集の並行の直しの監査で同じ未達の理由が 3 回続いた(L-407): ${r3.text.slice(0, 300)}`, history: hist, bat })
     fixList = fs
   }
 }

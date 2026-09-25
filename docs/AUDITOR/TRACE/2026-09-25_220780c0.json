@@ -13596,10 +13596,11 @@
   {
    "move": 500,
    "tools": {
-    "Read": 1,
-    "Bash": 4
+    "Read": 2,
+    "Bash": 6,
+    "ReadNotifications": 1
    },
-   "n_tools": 5,
+   "n_tools": 9,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
