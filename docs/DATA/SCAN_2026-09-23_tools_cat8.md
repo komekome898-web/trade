@@ -19088,3 +19088,903 @@ K12 検査の出力の貼付           1 件
 ```
 0
 ```
+## 区分8 — 15 回目の実行(2026-09-25)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。
+
+### 出典
+
+- `great-expectations/great_expectations`(GitHub。正規の場所は現在`fivetran/great_expectations`への組織移管で、ungh.ccの`id`が同一であることを14回目に確認済み)。この回に`scripts/cat8_repo_fetch.sh`で取り直した。取得日 2026-09-25
+- `OpenBB-finance/OpenBB`(GitHub)。この回に`scripts/cat8_repo_fetch.sh`で取り直した。取得日 2026-09-25
+- PyPI(`https://pypi.org/pypi/great_expectations/json`・`https://pypi.org/pypi/openbb/json`)。requires_pythonの確認。取得日 2026-09-25
+- `ungh.cc`(`/repos/<owner>/<repo>/contributors`)。GitHub貢献者の上位一覧。取得日 2026-09-25
+- `https://greatexpectations.io/pricing`(`cat8_render.js`で描画)。取得日 2026-09-25
+- `https://openbb.co/pricing`(`cat8_render.js`で描画)。取得日 2026-09-25
+- `https://api.github.com/repos/...`(この環境のセッションでは403で到達不可。§0.2 O-2に照らし、範囲と方法を明記: この環境からCCRプロキシ経由で`curl`により2回試した。到達できなかったのはこの経路のみで、ungh.ccの`/contributors`エンドポイントでは同等の情報の一部(上位30名の貢献者)を取得できた)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Great Expectations` / GitHub API: 「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」(`api.github.com`はこの環境のセッションではCCRのアクセス制御で403になり、DNSやTLSの到達不可ではない) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3423 |
+| 2 | `Great Expectations` / ungh.ccには`/repos/<owner>/<repo>/contributors`という貢献者一覧の経路があり、`api.github.com`が塞がれていてもコミット貢献の上位30名(ユーザー名・contributions数)を取得できる | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3432 |
+| 3 | `Great Expectations` / GX Cloudの料金ページ(`greatexpectations.io/pricing`)は素の`curl`ではプランの金額・上限を含まない(クライアント側レンダリング)。`cat8_render.js`で描画すると「Developer」「Team」「Enterprise」の3プランと機能表が取得できる | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:4513 docs/DATA/probes/20260923_tools_8_run15.log:4525 |
+| 4 | `Great Expectations` / 隔離venvへの`pip install great_expectations`はposthog等のテレメトリ用パッケージを一切導入しない(`pip freeze`にposthog・segment・telemetryの語を含む行が0件) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:5024 |
+| 5 | `Great Expectations` / 最小実行(合成pandas DataFrame・`ExpectColumnValuesToBeBetween`)は、`GX_ANALYTICS_ENABLED=false`かつ`HTTPS_PROXY`等を外した状態(外部送信があればエラーで顕在化する条件)でも正常終了し、意図的な外れ値(100)を`unexpected_count: 1`として検出した | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| 6 | `OpenBB Terminal` / `pip install openbb`単体では`openbb-technical`等の拡張(ichimoku等のテクニカル指標)は入らず、追加で`pip install openbb-technical`が要る | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3535 |
+| 7 | `OpenBB Terminal` / `pandas-ta-openbb`(`openbb-technical`の依存)には`pandas_ta/maps.py`が`importlib.metadata`をサブモジュールimportせずに使うバグがあり、呼び出し側で`import importlib.metadata`していないと`AttributeError: module 'importlib' has no attribute 'metadata'`で落ちる(回避策: 呼び出し側で先に`import importlib.metadata`する) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3571 docs/DATA/probes/20260923_tools_8_run15.log:3583 |
+| 8 | `OpenBB Terminal` / `ichimoku()`関数を合成OHLCで実行すると、`lookahead=False`のときだけ結果のDataFrameから`ICS_26`(Chikou Span)列が除外される。「drops the Chikou Span Column to prevent potential data leak」というdocstringどおりの挙動を実測で確認した | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3583 docs/DATA/probes/20260923_tools_8_run15.log:5030 |
+| 9 | `OpenBB Terminal` / openbb.co/pricingは「Community」(無料・個人ライセンス)「Lite」($2,400/year、50%オフ中$1,200/year)「Pro」(Custom)「Snowflake」($500/year/seat)の4プランで、Communityの「OpenBB Copilot」は「20 queries/day」という具体的な無料枠の上限がある | 一次資料 | docs/DATA/probes/20260923_tools_8_run15.log:4603、取得日 2026-09-25 |
+| 10 | `OpenBB Terminal` / 隔離venvへの`pip install openbb`はposthog等のテレメトリ用パッケージを一切導入しない(`pip freeze`にposthog・segment・telemetryの語を含む行が0件) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:5027 |
+| 11 | `Great Expectations` E3a・E3b / `leak`の当たり39件は一貫してパスワード漏洩検出Expectation・DBコネクション/メモリのリーク・シークレットのログ漏洩・テスト隔離(状態が別テストに漏れない)の5種の意味で使われ、設計票§3のE3a述語(その時点で知り得ない情報の使用を検出・報告する機能)に当たる用例は1件も無かった | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:831 |
+| 12 | `Great Expectations` E4 / `record`の当たり(488+257+316件超)の大半は、GE自身のテストスイート(`tests/test_data_source_registry.py`等)が使う内部DSLの語彙で、「record」をテスト設定のレジストリ登録エントリ、DataFrame/テーブルの1行の意味で使っている。市場データを時刻順に再生する機能を指す用例は1件も無かった | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:900 |
+| 13 | `OpenBB Terminal` E3a / SEC財務諸表の`pit_mode`(既にE3bとして印を付けた防止機能)に関する説明(`STATEMENT_SCHEMA_README.md`の「13.5 Point-in-Time Considerations」)は、look-ahead biasのリスクを解説し緩和策を案内する設計文書であり、検出・報告を自動で行う機能の記述ではない | 一次資料 | docs/DATA/probes/20260923_tools_8_run15.log:3248 |
+| 14 | `OpenBB Terminal` E3a / `html2markdown.py`の`lookahead_count`はHTMLテーブルのヘッダ行数を構文解析で先読みするための変数で、金融データの時点先取り(ルックアヘッドバイアス)とは異なる意味で使われている | 一次資料 | docs/DATA/probes/20260923_tools_8_run15.log:3248 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — great-expectations/great_expectations(正規の場所は現在fivetran/great_expectations)をこの回に取り直し(N=3,734。1MB超で取得できなかった33件はabsent、バイナリ287件を除外してN=3,447)、E3a・E3b・E4を『なし』に確定した(検索からやり直し。E3aは39件/18ファイル、E3bは2件/2ファイル、E4は1,793件/308ファイルの当たりを全件判定。E4はcat8_classify.pyの決まり22本で1,503件を分類し、残り290件は1件ずつ読んで理由を書いた)。E1a・E1b・E2・E5・E6は台帳の値のまま。§4.0の表の未確認13項目のうち、導入可否・install所要秒・pip check・最小実行の可否/中身・実行所要秒・外部送信・当方データ投入・コミット数・保守者数を隔離venvでの実測で埋めた(無料枠の上限・課金開始条件は引き続き未確認) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — OpenBB-finance/OpenBBをこの回に取り直し(N=2,166。1MB超で取得できなかった25件はabsent、バイナリ58件を除外してN=2,108)、E3aを『なし』に確定した(検索からやり直し。66件/29ファイルの当たりを全件、`### 当たりの判定`の表に理由つきで判定)。E1a・E1b・E2・E3b・E4・E5・E6は台帳の値のまま。§4.0の表の未確認13項目のうち、導入可否・install所要秒・pip check・最小実行の可否/中身・実行所要秒・外部送信・当方データ投入・コミット数・保守者数を隔離venvでの実測で埋めた(無料枠の上限・課金開始条件は引き続き未確認) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま。この回は16回目に回すため手を付けていない) — 状態: 判別に一次資料が要る
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 未着手
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 未着手
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 未着手
+37. `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 未着手
+38. `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 未着手
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. `Oryon` (8-041) — (台帳の値のまま) — 状態: 未着手
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 「なし」。一覧 3447 件 / 読んだ 3447 件。当たり 18 ファイル / 39 行(`### 当たりの判定`参照)。「leak」はパスワード漏洩検出Expectation(`ExpectColumnValuesPasswordIsNotLeaked`)・DBコネクションプールやメモリのリーク・シークレットのログ漏洩・テスト隔離(状態が他のテストに漏れない)を指す一般語で、「point-in-time」はデータ品質ユースケース解説文書中の一般論(distribution.md・volume.md)。その時点で知り得ない情報の使用を検出・報告する機能の記述は見つからない | docs/DATA/probes/20260923_tools_8_run15.log:831 |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 「なし」。一覧 3447 件 / 読んだ 3447 件。当たり 2 ファイル / 2 行(`### 当たりの判定`参照)。E3aと同じ2件(distribution.md・volume.mdの「point-in-time checks」という一般的な説明文)で、embargo・purged CV・時点を揃えた結合のような、知り得ない情報の混入を防ぐ仕組みは見つからない | docs/DATA/probes/20260923_tools_8_run15.log:892 |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 「なし」。一覧 3447 件 / 読んだ 3447 件。当たり 308 ファイル / 1793 行(`### 当たりの判定`参照)。cat8_classify.pyの決まり22本で1503行を分類(内訳は`### 決まりの一覧`)、決まりに当たらなかった290行は`### 当たりの判定(行ごと)`に1行ずつ理由を書いた。「record」はテーブル・DataFrameの1行またはGE自身のテスト設定レジストリDSLの語彙、「capture」はログ・正規表現・サブプロセス出力の捕捉、「replay」はドキュメントサイトのSentryセッションリプレイ依存(yarn.lock)、「rerun」はCheckpointの再実行またはflakyテストの再試行で、記録した市場データを時刻順に再生する機能は見つからない | docs/DATA/probes/20260923_tools_8_run15.log:900 |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 「なし」。一覧 2108 件 / 読んだ 2108 件。当たり 29 ファイル / 66 行(`### 当たりの判定`参照)。「lookahead」はichimoku関数のlookaheadパラメータ(E3bとして印を付けた防止機能。呼び出し側テストのfixture値を含む)、「leak」はVCRカセットに録画された実在の製品リーク報道記事・base64エンコードされた二値データの偶然の一致・地名(Leake County)・依存パッケージ名(psleak)、「point-in-time」「as-of」はSEC財務諸表のpit_modeやNY Fed APIの説明文(いずれもE3bやドキュメントの防止・説明であって検出・報告ではない)。html2markdown.pyの「lookahead」はHTMLテーブルのヘッダ行を先読みするパース処理の変数名で、金融データの時点先取りとは無関係。その時点で知り得ない情報の使用を検出・報告する機能の記述は見つからない | docs/DATA/probes/20260923_tools_8_run15.log:3248 |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `MetaTrader の Strategy Tester` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `dbt` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AI Trading Lab` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `AlgoNetwork` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NinjaTrader` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+| `Oryon` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(14回目の節) | |
+
+### ツール1件ごとの表
+
+`Great Expectations`・`OpenBB Terminal`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、13回目・14回目の同節に加え、この回の`### 4.0 機械可読の表`(隔離venvでの導入可否・install所要秒・pip check・最小実行・外部送信等の実測)と`### 当たりの判定`(E3a・E3b・E4の当たりの判定)を参照。この回は新しい列挙のし直しをしない(数値の重複を避けるため)。
+
+### 4.0 機械可読の表(この回に値が変わった項目のみ。13〜14回目の他の項目は不変で、この回は再掲しない)
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Great Expectations` | 言語と動作環境 | Python(`<3.14,>=3.10`。PyPI requires_python) | 一次資料 | PyPI docs/DATA/probes/20260923_tools_8_run15.log:5018 |
+| `Great Expectations` | コミット数 | 推定(ungh.cc contributorsが返した上位30名のcontributions合計=10738。GitHub貢献者統計の上位30名分の下限値であり、全コミット数そのものではない) | 推定 | ungh.cc contributors(30名分)からの外挿 docs/DATA/probes/20260923_tools_8_run15.log:3432 |
+| `Great Expectations` | 保守者数 | 未確認(試した手段: `api.github.com`はこの環境のセッションでは403(`GitHub access to this repository is not enabled for this session`)、ungh.ccのcontributorsは貢献順の一覧のみで「保守者」を明示する項目が無い) | 未確認 | docs/DATA/probes/20260923_tools_8_run15.log:3420-3432 |
+| `Great Expectations` | 無料枠の上限 | GX Cloud「Developer」(無料)は「Up to 3 users」「Validated Data Assets: 5 included per month」「Auditing and logging: 1 year retention」。OSS本体(pip)は無料枠の概念自体が無く無制限 | 一次資料 | greatexpectations.io/pricing(cat8_render.js) docs/DATA/probes/20260923_tools_8_run15.log:4525、取得日 2026-09-25 |
+| `Great Expectations` | 課金開始条件 | 「Team」「Enterprise」は共に価格「Custom」(問い合わせ制、逐語の金額は非公開)。逐語「Use GX Cloud free with our Developer option or upgrade to the Team or Enterprise solutions for greater flexibility」のとおり、Developer枠(3ユーザー・月5 Validated Data Assets)を超える利用やSSO・複数ワークスペース・専用Slackサポート等が必要になった時点で契約が要ると読める | 一次資料 | greatexpectations.io/pricing(cat8_render.js) docs/DATA/probes/20260923_tools_8_run15.log:4525、取得日 2026-09-25 |
+| `Great Expectations` | 導入可否 | 可。`pip install great_expectations`が隔離venvで成功(35パッケージ導入) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3350 |
+| `Great Expectations` | install所要秒 | 21.76 | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3350 |
+| `Great Expectations` | pip check | `No broken requirements found.` | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3396 |
+| `Great Expectations` | 最小実行の可否 | 可 | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| `Great Expectations` | 最小実行の中身 | 合成のpandas DataFrame(`{"a":[1,2,3,4,100]}`)をephemeral DataContextの`add_dataframe_asset`に投入し、`ExpectColumnValuesToBeBetween(column="a", min_value=0, max_value=10)`をwhole-dataframeバッチで検証。意図的な外れ値100により`success: False`・`unexpected_count: 1`を実測(検証機能が実際に働くことを確認) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| `Great Expectations` | 実行所要秒 | スクリプト内計測2.53(elapsed_s: 2.527)/cat8_step計測3.10(time_s=3.098、venv起動込み) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| `Great Expectations` | 外部送信 | 実測した範囲では確認されず。`GX_ANALYTICS_ENABLED=false`かつ`HTTPS_PROXY`等の環境変数を外した状態(外部送信があればエラーとして見える形)で最小実行が正常終了。`pip freeze`にposthog・segment・telemetryの語を含むパッケージは0件(実測)。`GX_ANALYTICS_ENABLED`という制御フラグは一次資料(`abstract_data_context.py`のenable_analytics)にあるが、実際に送信される宛先やCloud接続時の挙動は未確認(この回はephemeralかつAnalytics無効での実行のみ) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402、テレメトリ依存の不在 docs/DATA/probes/20260923_tools_8_run15.log:5024 |
+| `Great Expectations` | 当方データ投入 | 可。合成のpandas DataFrameを`add_dataframe_asset`経由でそのまま検証に投入できることを最小実行で実演(当方のcsv.gz形式そのものではなく、pandas読込後のDataFrームとして投入する形) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| `Great Expectations` | 規模の見積 | 推定。合成データ5行に対する最小実行(スクリプト内計測2.53秒。うちimportのオーバーヘッドが大半を占めると見られる)からの外挿で、456日分のtick/OHLC相当の行数(数百万行規模)に対する所要時間・メモリは、行数を増やした追加実測なしには見積もれない(この回はここまで) | 推定 | 5行での実行時間からの外挿(根拠薄弱、追加実測が要る) docs/DATA/probes/20260923_tools_8_run15.log:3402 |
+| `OpenBB Terminal` | 言語と動作環境 | Python(`<4,>=3.10`。PyPI requires_python) | 一次資料 | PyPI docs/DATA/probes/20260923_tools_8_run15.log:5021 |
+| `OpenBB Terminal` | コミット数 | 推定(ungh.cc contributorsが返した上位30名のcontributions合計=5004。GitHub貢献者統計の上位30名分の下限値であり、全コミット数そのものではない) | 推定 | ungh.cc contributors(30名分)からの外挿 docs/DATA/probes/20260923_tools_8_run15.log:3590 |
+| `OpenBB Terminal` | 保守者数 | 未確認(試した手段: `api.github.com`はこの環境のセッションでは403(`GitHub access to this repository is not enabled for this session`)、ungh.ccのcontributorsは貢献順の一覧のみで「保守者」を明示する項目が無い) | 未確認 | docs/DATA/probes/20260923_tools_8_run15.log:3420-3423(同種のGitHub API 403をGEで確認した際の手段と同じ経路をOpenBBにも適用) |
+| `OpenBB Terminal` | 無料枠の上限 | openbb.co/pricingの「Community」(個人ライセンス、無料)は「Integrate your data: Unlimited」「OpenBB Copilot: Yes, with 20 queries/day」「Export data and dashboards: No」「Add-in for Excel: No」。OSS本体(pip install openbb)自体は無料枠の概念が無く無制限 | 一次資料 | openbb.co/pricing(cat8_render.js) docs/DATA/probes/20260923_tools_8_run15.log:4603、取得日 2026-09-25 |
+| `OpenBB Terminal` | 課金開始条件 | 「Lite」は$2,400/year(記事取得時点で50%オフ中$1,200/year、チームライセンス、自己ホスト、<10人チーム向け)、「Pro」はCustom pricing(問い合わせ制)、「Snowflake」版は$500/year/seat。Communityの制限(データのエクスポート不可・Excelアドイン不可・Copilot 20クエリ/日)を超える利用や自己ホスト・大規模チームが必要になった時点で契約が要ると読める | 一次資料 | openbb.co/pricing(cat8_render.js) docs/DATA/probes/20260923_tools_8_run15.log:4603、取得日 2026-09-25 |
+| `OpenBB Terminal` | 導入可否 | 可。`pip install openbb`が隔離venvで成功(openbb-core等の下位パッケージ含め98パッケージ導入) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3439 |
+| `OpenBB Terminal` | install所要秒 | 29.49 | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3439 |
+| `OpenBB Terminal` | pip check | `No broken requirements found.` | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3505 |
+| `OpenBB Terminal` | 最小実行の可否 | 可(`openbb-technical`拡張を追加導入したうえで) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3583 |
+| `OpenBB Terminal` | 最小実行の中身 | 合成OHLCデータ(乱数種固定、120日分)を`openbb_technical.technical_router.ichimoku()`関数に`lookahead=False`/`lookahead=True`の両方で渡して呼び出し、`lookahead=False`のときだけChikou Span列(`ICS_26`)が結果から除外されることを実測(E3bの防止機能が実際に働くことを確認)。1回目・2回目の実行は`AttributeError: 'DataFrame' object has no attribute 'ta'`(pandas_taの未import)→`AttributeError: module 'importlib' has no attribute 'metadata'`(pandas_ta_openbbのバグ。`importlib.metadata`をサブモジュールとして明示importしないと`pandas_ta/maps.py`が壊れる)で失敗し、3回目に回避策(`import importlib.metadata`を先に実行)で成功した | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3558(1回目失敗) docs/DATA/probes/20260923_tools_8_run15.log:3571(2回目失敗) docs/DATA/probes/20260923_tools_8_run15.log:3583(3回目成功) |
+| `OpenBB Terminal` | 実行所要秒 | スクリプト内計測4.95(elapsed_s: 4.954)/cat8_step計測6.08(time_s=6.084、venv起動込み) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3583 |
+| `OpenBB Terminal` | 外部送信 | 実測した範囲では確認されず。`HTTPS_PROXY`等の環境変数を外した状態(外部送信があればエラーとして見える形)で最小実行(合成データのみ、プロバイダ呼び出しなし)が正常終了。`pip freeze`にposthog・segment・telemetryの語を含むパッケージは0件(実測)。各データプロバイダ(fmp/yfinance/sec等)自体は当然に外部APIへ接続する設計(§4.0「外部URL取得」参照)だが、この最小実行ではプロバイダを呼んでいない | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3583、テレメトリ依存の不在 docs/DATA/probes/20260923_tools_8_run15.log:5027 |
+| `OpenBB Terminal` | 当方データ投入 | 可。合成のOHLC相当データ(`openbb_core.provider.abstract.data.Data`のリスト)を`ichimoku()`にそのまま投入できることを最小実行で実演(当方のcsv.gzそのものではなく、`Data`オブジェクトのリストへ変換して投入する形) | 実測 | docs/DATA/probes/20260923_tools_8_run15.log:3583 |
+| `OpenBB Terminal` | 規模の見積 | 推定。合成データ120行に対する最小実行(スクリプト内計測4.95秒。ichimoku等のpandas_ta計算はO(行数)程度と見られるが未検証)からの外挿で、456日分のtick相当行数(120行よりはるかに多い)に対する所要時間は、行数を増やした追加実測なしには見積もれない(この回はここまで) | 推定 | 120行での実行時間からの外挿(根拠薄弱、追加実測が要る) docs/DATA/probes/20260923_tools_8_run15.log:3583 |
+
+### 当たりの判定
+
+GE_E4(生ログ:900行目)はcat8_classify.pyで決まりに分類済み(`### 決まりの一覧`・`### 当たりの判定(行ごと)`を参照)なので、ここには含めない。
+
+#### Great Expectations E3a の当たりの判定
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/contrib/great_expectations_semantic_types_expectations/great_expectations_semantic_types_expectations/expectations/__init__.py | 2 | `ExpectColumnValuesPasswordIsNotLeaked`(パスワード漏洩検出Expectation)のimport文。「leak」はパスワードがHaveIBeenPwned等で漏洩済みかの検証機能を指し、時点で知り得ない情報の使用検出ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/contrib/great_expectations_semantic_types_expectations/great_expectations_semantic_types_expectations/expectations/expect_column_values_password_is_not_leaked.py | 12 | 同Expectationの本体定義。「leak」は一貫してパスワード漏洩の意味で、ルックアヘッドの検出・報告とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md | 5 | 変更履歴。「leaking」はDBコネクションプールやメモリのリーク(バグ修正)、シークレットのログ漏洩防止の意味で、ルックアヘッド検出とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/distribution.md | 1 | 「point-in-time checks」というデータ品質ユースケース解説文書中の一般的な説明で、検出・報告する機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/volume.md | 1 | 同上(volume.mdの同種の一般論) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/yarn.lock | 3 | npm依存`jest-leak-detector`(JestのメモリリークをテストするJS開発ツール、ドキュメントサイトのビルド依存)。GE本体の機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/core/config_substitutor.py | 1 | 「@lru_cache decorator ... can create memory leaks」というPythonのキャッシュに関するコードコメントで、ルックアヘッドとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/scripts/mint_databricks_token.py | 1 | 「does not leak into logs」(発行したトークンがログに漏れない)というセキュリティ上の注記 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_skill_content.py | 1 | 「would leak a process-wide action registry as a side effect」というテスト隔離(状態が他のテストに漏れない)についてのコメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/data_context/test_data_context_utils.py | 1 | 「value leaked into masked output」というテスト(秘匿値がマスク処理後の出力に漏れていないかを検証) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/data_context/test_gx_cloud_shutdown.py | 1 | 「no ambient GX_CLOUD_* configuration leaks into a test」というテスト隔離のコメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_config_str.py | 2 | `test_leakage`という関数名と「config values are not leaked in the repr or str」というテスト(設定値がrepr/str出力に漏れないかを検証) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/conftest.py | 1 | 「leaking sqlite3.Connection objects」というテストフィクスチャのリソースリークに関するコメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/common_workflows/test_cross_family_batch_parameters.py | 1 | 「must not leak into what gets recorded back to the user」というテスト隔離のコメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md | 2 | 「throwaway records without leaking them into the real set」「nothing it does leaks」というテスト隔離の説明 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/scripts/test_mypy_config_guard.py | 1 | 「a leak would matter most: a regression alongside stale drift」というmypy設定チェックの比喩的なコメントで、市場データのルックアヘッドとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py | 2 | 「registration that also leaked into the config view」「obligations leaked into the unclaimed case」というGE自身のテスト設定レジストリDSLの内部コメント(状態の漏れ) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/validator/test_metrics_calculator.py | 1 | 「test leakage」という語を含むモッキング方針についてのdocstring(テスト設計上の比喩) |
+
+#### Great Expectations E3b の当たりの判定
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/distribution.md | 1 | 「point-in-time checks」というデータ品質ユースケース解説文書中の一般的な説明で、知り得ない情報の混入を防ぐ仕組み(embargo・purged CV・時点を揃えた結合)の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/volume.md | 1 | 同上(volume.mdの同種の一般論) |
+
+#### OpenBB Terminal E3a の当たりの判定
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/examples/riskReturnAnalysis.ipynb | 1 | Jupyterノートブックに埋め込まれたbase64エンコードの画像データ(セル出力)中に「leak」の文字列が偶然出現しただけで、テキストとしての意味を持たない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/core/openbb_core/provider/utils/options_chains_properties.py | 6 | 「Includes the as-of date if it is historical EOD data.」というコードコメント(データ項目の説明)6箇所。時点で知り得ない情報の使用を検出・報告する機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/devtools/poetry.lock | 2 | 開発用依存のロックファイル中のパッケージ名`psleak`(プロセスリーク検出用のPythonツール)の2箇所。金融データのルックアヘッドとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/economy/openbb_economy/economy_router.py | 1 | 「Get the balance sheet holdings as-of a historical date.」というAPIエンドポイントの説明文(データ取得機能の説明であって検出機能ではない) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/platform_api/tests/mock_openapi.json | 1 | テスト用のモックOpenAPI仕様中の「'instant' (point-in-time)」というフィールド説明文字列 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/platform_api/tests/mock_widgets.json | 1 | テスト用のモックウィジェット設定中の同種のツールチップ文字列 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/technical/integration/test_technical_api.py | 2 | ichimoku関数のAPI統合テストが`lookahead`パラメータ(E3bとして印を付けた防止機能)に空文字・trueを渡すテストfixture |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/technical/integration/test_technical_python.py | 2 | 同上のPythonクライアント向けテストfixture |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/extensions/technical/openbb_technical/technical_router.py | 5 | ichimoku関数の`lookahead`パラメータの定義・docstring・呼び出し(E3bとして既に印を付けた防止機能の定義そのもの。検出・報告ではない) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/obbject_extensions/charting/indicators.md | 2 | 同`lookahead`パラメータのドキュメント記述(E3bの説明) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/obbject_extensions/charting/openbb_charting/query_params.py | 2 | 同`lookahead`パラメータのpydantic Fieldの定義(E3bの定義そのもの) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/benzinga/tests/record/http/test_benzinga_fetchers/test_benzinga_company_news_fetcher_urllib3_v2.yaml | 3 | VCRカセットに録画された実在のBenzingaニュース記事本文(Apple製品の「リーク」報道)。プロバイダ機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/bls/openbb_bls/assets/sla_codes.json | 1 | 地名「Leake County, MS」を含む米国郡コードの参照データ。「leak」は地名の一部に過ぎない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/cboe/tests/record/http/test_cboe_fetchers/test_cboe_equity_historical_fetcher_urllib3_v2.yaml | 1 | VCRカセットに録画されたgzip圧縮・base64エンコードのバイナリ応答本文中に「leak」の文字列が偶然出現(意味を持たない符号化データ) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/cboe/tests/record/http/test_cboe_fetchers/test_cboe_options_chains_fetcher_urllib3_v2.yaml | 1 | 同上(オプションチェーンのバイナリ応答データ) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/federal_reserve/openbb_federal_reserve/utils/ny_fed_api.py | 9 | NY Fed SOMA保有データを取得するAPI関数群のdocstring中の「as-of dates」(データ取得のパラメータ説明であって検出機能ではない) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/balance_sheet.py | 1 | 「Point-in-time mode. When True, returns data as originally...」というpit_modeパラメータのdescription(E3bとして既に印を付けた防止機能の定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/balance_sheet_growth.py | 1 | 同上(balance_sheet_growthモデルのpit_mode定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/cash_flow.py | 1 | 同上(cash_flowモデルのpit_mode定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/cash_flow_growth.py | 1 | 同上(cash_flow_growthモデルのpit_mode定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/income_statement.py | 1 | 同上(income_statementモデルのpit_mode定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/income_statement_growth.py | 1 | 同上(income_statement_growthモデルのpit_mode定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/management_discussion_analysis.py | 1 | 「so we don't splice mid-tag and leak」というHTML解析コードのコメント(タグの境界を壊さないための処理)で、金融データのルックアヘッドとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/models/schema_files.py | 1 | 「'instant' (point-in-time) or 'duration'」という財務諸表スキーマのフィールド説明文字列 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/utils/STATEMENT_SCHEMA_README.md | 4 | 「13.5 Point-in-Time Considerations」の節。look-ahead biasのリスクを解説し`pit_mode`という緩和策(E3bとして既に印)を案内する設計文書で、検出・報告する自動化された機能の記述ではない(人が読む注意書き) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/utils/company_facts.py | 2 | 「preserving point-in-time fidelity for backtesting」というpit_mode実装のdocstring(E3bの定義) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/sec/openbb_sec/utils/html2markdown.py | 8 | HTMLテーブルをMarkdownへ変換する内部処理の変数`lookahead_count`・コメント「use look-ahead」。表のヘッダ行数を数えるための構文解析上の先読みで、金融データの時点先取り(ルックアヘッドバイアス)とは異なる意味 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/tiingo/tests/record/http/test_tiingo_fetchers/test_tiingo_world_news_fetcher_urllib3_v2.yaml | 2 | VCRカセットに録画された実在のTiingoニュース記事本文(Samsung製品の「リーク」報道)。プロバイダ機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-020/openbb/openbb_platform/providers/tmx/tests/record/http/test_tmx_fetchers/test_tmx_options_chains_fetcher_urllib3_v2.yaml | 2 | VCRカセットに録画されたbase64エンコードのオプションチェーン応答データ中に「leak」の文字列が偶然出現(意味を持たない符号化データ) |
+
+### 当たりの判定(行ごと)
+
+Great Expectations E4(生ログ:900行目)の検索で、cat8_classify.pyの決まり(`### 決まりの一覧`)のどれにも当たらなかった290行。名前の定義(DEF_KWの語に続く識別子)を含む126行を含む。
+
+| ファイルの道と行 | 当たった行の字 | その語がその行で何を指し、なぜ述語に当たらないか |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/.github/workflows/cla-label-sync.yml:24 | #                      integration), or replayed for self-healing. Runs from the | GitHub Actionsワークフローのコメント文中の一般語「replayed」(自己修復のための再実行の意味の比喩)で、GE自身が市場データを再生する機能を示すものではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/assets/scripts/AlgoliaScripts/upload_s3_expectation_to_algolia.js:154 | console.log('Successfully fetched sample record from algolia !') | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/adr/0001-record-architecture-decisions.md:1 | # 1. Record architecture decisions | Architecture Decision Record(ADR、設計判断の記録)という文書形式のタイトルで、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/core/set_up_a_gx_environment/install_agent_skills.md:192 | `skills list` reads each destination's record of what was installed, not the files themselves, so a GX-installed skill that you have edited locally is reported exactly like an untouched one. The install command is what detects local edits. | スキルのインストーラが「何をインストールしたか」を記録する説明文で、市場データの再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/core/set_up_a_gx_environment/install_agent_skills.md:196 | There is no uninstall command. Removing the skills is the manual procedure below: delete the directories the install command created. Each skill's record of what GX installed lives inside that skill's own directory, and the install command writes nothing outside these paths, so there is no other sta | スキルのインストーラが「何をインストールしたか」を記録する説明文で、市場データの再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:194 | - Generalized the test harness's data source declaration record so non-SQL data sources can declare support tiers, and derived the lists that gate CI from those declarations rather than maintaining them by hand. ([#12110](https://github.com/fivetran/great_expectations/pull/12110)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:352 | - Trino is onboarded onto the SQL backend integration-test harness with a pinned container, a declared backend record, corrected double-quote identifier quoting for the dialect, and full curated-tier coverage. ([#12050](https://github.com/fivetran/great_expectations/pull/12050)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:353 | [行の長さ 439 字。当たった 1 か所の前後 200 字] …- The SQL integration test harness gains a declarative backend framework: a new SQL backend is onboarded by declaring one frozen backend record (schema support, column type overrides, transaction mode, insert parameter limits, table schema items, tiers, and CI wiring | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:794 | - Compound and within-record uniqueness expectations no longer fail on Spark DataFrames containing timestamp columns under Pandas 2.x, and unexpected-value lists now contain native Python values. ([#11861](https://github.com/fivetran/great_expectations/pull/11861)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:2534 | - When a multi-source query comparison produces exactly one differing record in a single column, the validation result now renders the observed and expected values as plain single values instead of a table. ([#11186](https://github.com/fivetran/great_expectations/pull/11186)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:3453 | - Added an architecture decision record describing the docstring requirements for public API objects. ([#10798](https://github.com/fivetran/great_expectations/pull/10798)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:3709 | - Documented an architecture decision record explaining why meta fields are not used. ([#10672](https://github.com/fivetran/great_expectations/pull/10672)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/oss/changelog.md:4401 | - Documentation feedback tickets now record the page path the feedback came from. ([#10312](https://github.com/fivetran/great_expectations/pull/10312)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/uniqueness.md:62 | **Example**: Expect that the combination of `country_code` and `government_id` to uniquely identify a customer record. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/uniqueness.md:94 | ### Expect select column values to be unique within record | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/data_quality_use_cases/uniqueness.md:98 | **Example**: Expect each customer record to have a unique `email_address` and `secondary_email`. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/integrations/dbt_tutorial.md:370 | - Click on the + to add a new record | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/docs/reference/learn/integrations/dbt_tutorial.md:380 | - Still inside Admin > Connections click + to add a new record | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/cloud/_try_gx_cloud.md:66 | 4. Optional. If you created a temporary file to record your user access token and Organization ID, delete it. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/cloud/connect/connect_python.md:71 | 2. Optional. If you created a temporary file to record your user access token and Organization ID, delete it. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/cloud/deploy_gx_agent.md:142 | 3. Optional. If you created a temporary file to record your user access token and Organization ID, delete it. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/cloud/deploy_gx_agent.md:171 | 3. Optional. If you created a temporary file to record your user access token and Organization ID, delete it. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/cloud/deploy_gx_agent.md:235 | 4. Optional. If you created a temporary file to record your user access token and Organization ID, delete it. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/core/introduction/introduction.md:19 | - Streamline knowledge capture from subject-matter experts and make implicit knowledge explicit. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/oss/changelog.md:4162 | * [FEATURE] Replace MetricFunctionTypes.IDENTITY domain type with convenience method get_domain_records() for SparkDFExecutionEngine ([#3226](https://github.com/great-expectations/great_expectations/pull/3226)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/oss/changelog.md:4163 | * [FEATURE] Replace MetricFunctionTypes.IDENTITY domain type with convenience method get_domain_records() for SqlAlchemyExecutionEngine ([#3215](https://github.com/great-expectations/great_expectations/pull/3215)) | 変更履歴の1行。architecture decision record(設計判断の記録文書)・データの1件・UI操作等の一般的な意味で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/oss/guides/connecting_to_your_data/fluent/filesystem/connect_filesystem_source_data.md:471 | Modify the following code to connect to your <TechnicalTag tag="datasource" text="Data Source"/>. If you don't have data available for testing, you can use the [NYC taxi data](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page). The NYC taxi data is open source, and it is updated every mon | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/oss/guides/setup/configuring_data_docs/host_and_share_data_docs.md:90 | 5. Record the Primary endpoint URL. Your team will use this URL to view the Data Doc. A container named ``$web`` is added to your storage account to help you map a custom domain to this endpoint. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/docusaurus/versioned_docs/version-0.18/reference/learn/usage_statistics.md:5 | [行の長さ 589 字。当たった 1 か所の前後 200 字] …ata when certain Data Context-enabled commands are run. Our [blog post from April 2020](https://greatexpectations.io/blog/anonymized-usage-statistics) explains a little bit more about what we want to capture with usage statistics and why! The usage statistics include | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/docs/sphinx_api_docs_source/public_api_report.py:21 | their definitions, and capture the definition file location. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-checkpoint/references/robustness.md:217 | during metric resolution as a **`WARNING`-level log record on the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-checkpoint/references/robustness.md:219 | stdout. Attach a handler to that logger before the probe so you capture the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-checkpoint/references/robustness.md:220 | record directly, rather than trusting the `KeyError`'s own text or scanning | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-checkpoint/references/robustness.md:233 | class _CaptureHandler(logging.Handler): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-checkpoint/references/write-out.md:90 | try block, and keep a running record of what succeeded and what didn't. The | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-data-source/references/robustness.md:217 | during metric resolution as a **`WARNING`-level log record on the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-data-source/references/robustness.md:219 | stdout. Attach a handler to that logger before the probe so you capture the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-data-source/references/robustness.md:220 | record directly, rather than trusting the `KeyError`'s own text or scanning | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-data-source/references/robustness.md:233 | class _CaptureHandler(logging.Handler): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-data-source/references/write-out.md:90 | try block, and keep a running record of what succeeded and what didn't. The | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-expectations/references/robustness.md:217 | during metric resolution as a **`WARNING`-level log record on the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-expectations/references/robustness.md:219 | stdout. Attach a handler to that logger before the probe so you capture the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-expectations/references/robustness.md:220 | record directly, rather than trusting the `KeyError`'s own text or scanning | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-expectations/references/robustness.md:233 | class _CaptureHandler(logging.Handler): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/.agents/skills/gx-configure-expectations/references/write-out.md:90 | try block, and keep a running record of what succeeded and what didn't. The | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/data_context/store/html_site_store.py:236 | # NOTE: Instead of using the filesystem as the source of record for keys, | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/datasource/fluent/batch_parameter_normalization.py:59 | # Per-process record of (message, user call-site file, user call-site line) triples | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/datasource/fluent/batch_request.py:42 | # will capture all data along this dimension. For example, if we have a year and month | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/execution_engine/execution_engine.py:303 | def get_domain_records( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/execution_engine/pandas_execution_engine.py:562 | def get_domain_records(  # noqa: C901, PLR0912 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/execution_engine/sparkdf_execution_engine.py:691 | def get_domain_records(  # noqa: C901, PLR0912, PLR0915 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/execution_engine/sqlalchemy_execution_engine.py:645 | def get_domain_records(  # noqa: C901, PLR0912, PLR0915 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/execution_engine/sqlalchemy_execution_engine.py:679 | # (i.e. multiple record sets (tables) in one batch | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/core/expect_select_column_values_to_be_unique_within_record.py:65 | class ExpectSelectColumnValuesToBeUniqueWithinRecord(MulticolumnMapExpectation): | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/core/expect_select_column_values_to_be_unique_within_record.py:222 | title = "Expect select column values to be unique within record" | Expectationの名称・テストの「1行内で値が一意である」ことを検証する機能名(record=データの1行)で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/core/schemas/ExpectSelectColumnValuesToBeUniqueWithinRecord.json:2 | "title": "Expect select column values to be unique within record", | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/column_pair_map_condition_auxilliary_methods.py:110 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/column_pair_map_condition_auxilliary_methods.py:195 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/column_pair_map_condition_auxilliary_methods.py:282 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/multicolumn_map_condition_auxilliary_methods.py:96 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/multicolumn_map_condition_auxilliary_methods.py:181 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/map_metric_provider/multicolumn_map_condition_auxilliary_methods.py:271 | """Return record counts from the specified domain that match the map-style metric in the metrics dictionary."""  # noqa: E501 # FIXME CoP | 列マップ条件の補助関数が扱う「record」(データの1行)を指す変数・コメントで、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/multicolumn_map_metrics/select_column_values_unique_within_record.py:23 | class SelectColumnValuesUniqueWithinRecord(MulticolumnMapMetricProvider): | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/expectations/metrics/query_metric_provider.py:226 | def _get_sqlalchemy_records_from_substituted_batch_subquery( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/experimental/metric_repository/metric_retriever.py:97 | "Unknown"  # Note: we currently only capture the message and traceback, not the type | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/experimental/metric_repository/metric_retriever.py:126 | # that are thrown when computing metrics. This is so we can capture the error for later | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/render/util.py:456 | # "No group keys passed!", so aggregate every record into a single row. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/great_expectations/self_check/util.py:1861 | :param raise_exception: (bool) If False, capture any failed AssertionError from the call to check_json_test_result and return with validation_result | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/scripts/mint_databricks_token.py:7 | This script prints ONLY the access token to stdout so a caller can capture it into | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/setup.py:171 | # cannot record an empty directory anyway. Scoped to the skills tree | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_installer.py:596 | def install_and_record(project: pathlib.Path, bundle: Bundle) -> InstalledProject: | GEのagent skillsインストーラのテスト識別子。「record」はインストール状態の記録を指し、市場データの再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_installer.py:1080 | def stop_comparing_the_recorded_hash(monkeypatch: pytest.MonkeyPatch) -> None: | GEのagent skillsインストーラのテスト識別子。「record」はインストール状態の記録を指し、市場データの再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_installer.py:2157 | record has more than one way to stop being true, and a single one of them stands in | スキルのインストーラが「何をインストールしたか」を記録する説明文で、市場データの再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_snippets.py:1826 | """The reference's own capture snippet is executed, not paraphrased.""" | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_snippets.py:1831 | snippet = sole_block_containing(document, "class _CaptureHandler") | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_snippets.py:1837 | "the capture snippet's KeyError branch never ran, so nothing was recovered" | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_snippets.py:1840 | f"the capture snippet in {document} no longer recovers the underlying database" | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/agent_skills/test_snippets.py:2346 | def test_a_fresh_context_reruns_the_persisted_written_out_checkpoint_unmodified( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/crud_contract.py:478 | # Published record-coverage literals | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/crud_contract.py:488 | "spark",  # the Spark DataFrame data source; the only Spark record names the filesystem type | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/crud_contract.py:491 | "fabric_powerbi",  # Power BI semantic models; the Fabric record names the SQL-family type | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_batch_parameter_normalization.py:113 | with pytest.warns(GxDeprecationWarning) as record: | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_batch_parameter_normalization.py:116 | message = str(record[0].message) | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_batch_parameter_normalization.py:128 | with pytest.warns(GxDeprecationWarning) as record: | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_batch_parameter_normalization.py:131 | message = str(record[0].message) | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_fabric.py:58 | def capture_reader_fn_params( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_fabric.py:62 | Capture the `reader_options` arguments being passed to the `PandasExecutionEngine`. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_pandas_datasource.py:71 | def capture_reader_fn_params(monkeypatch: MonkeyPatch): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_pandas_datasource.py:73 | Capture the `reader_options` arguments being passed to the `PandasExecutionEngine`. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_pandas_filesystem_datasource.py:62 | def capture_reader_fn_params(monkeypatch: MonkeyPatch): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_pandas_filesystem_datasource.py:64 | Capture the `reader_options` arguments being passed to the `PandasExecutionEngine`. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_pandas_filesystem_datasource.py:459 | def test_numeric_coercion_limited_to_params_both_declared_and_captured( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_spark_filesystem_datasource.py:1265 | def expected_num_records_directory_asset_no_partitioner_2020_passenger_count_2( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_spark_filesystem_datasource.py:1429 | def expected_num_records_file_asset_no_partitioner_2020_10_passenger_count_2( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/datasource/fluent/test_spark_filesystem_datasource.py:1445 | def expected_num_records_file_asset_no_partitioner_2020_10( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_pandas_execution_engine.py:73 | def test_get_domain_records_with_column_domain(): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_pandas_execution_engine.py:95 | def test_get_domain_records_with_column_pair_domain(): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_pandas_execution_engine.py:172 | def test_get_domain_records_with_multicolumn_domain(): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:105 | def test_get_domain_records_with_column_domain( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:128 | def test_get_domain_records_with_column_domain_and_filter_conditions( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:157 | def test_get_domain_records_with_different_column_domain_and_filter_conditions( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:186 | def test_get_domain_records_with_different_column_domain_and_multiple_filter_conditions( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:219 | def test_get_domain_records_with_column_pair_domain( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:314 | def test_get_domain_records_with_multicolumn_domain( | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:851 | def test_get_domain_records_with_row_condition_alt(spark_session): | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sparkdf_execution_engine.py:877 | def test_get_domain_records_with_unmeetable_row_condition_alt(spark_session): | 「record」はテーブル・DataFrameの1行(データの行)を指す識別子・テスト名で、時刻順の再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:394 | def test_get_domain_records_with_column_domain(sa): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:420 | def test_get_domain_records_with_column_domain_and_filter_conditions(sa): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:452 | def test_get_domain_records_with_different_column_domain_and_filter_conditions(sa): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:484 | def test_get_domain_records_with_column_domain_and_filter_conditions_raises_error_on_multiple_conditions(  # noqa: E501 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:510 | def test_get_domain_records_with_column_pair_domain(sa): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/execution_engine/test_sqlalchemy_execution_engine.py:604 | def test_get_domain_records_with_multicolumn_domain(sa): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/query_metrics/test_query_metrics.py:150 | def test_sqlalchemy_query_metrics_that_return_records( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_core.py:2849 | def capture_sql(conn, cursor, statement, parameters, context, executemany): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_core.py:2935 | def capture_sql(conn, cursor, statement, parameters, context, executemany): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_core.py:6729 | def test_map_select_column_values_unique_within_record_pd():  # noqa: PLR0915 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_core.py:6966 | def test_map_select_column_values_unique_within_record_sa(sa):  # noqa: PLR0915 # FIXME CoP | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_core.py:7175 | def test_map_select_column_values_unique_within_record_spark(  # noqa: PLR0915 # 56 | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_map_metric.py:374 | with pytest.warns(DeprecationWarning) as record: | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_map_metric.py:383 | with pytest.warns(DeprecationWarning) as record: | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_metric_providers.py:508 | def test_get_sqlalchemy_records_from_query_and_batch_selectable__query( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/metrics/test_metric_providers.py:534 | def test_get_sqlalchemy_records_from_query_and_batch_selectable__record_count( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/expectations/test_expectation_atomic_renderers.py:1834 | def test_atomic_prescriptive_summary_expect_select_column_values_to_be_unique_within_record( | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:96 | tested or merely declared — states one **record** describing what it is and how its tests are | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:171 | A config states its record as the class variable `DATA_SOURCE_SPEC`, once. A non-SQL config | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:251 | an absence nobody can see. Every record is held to the same registration rules whichever entry | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:277 | second record to declare it would be rejecting a true statement. | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:282 | every record that declares no scope. | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:293 | so a config-bound record always declares a marker, while a declaration-only one need not. | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:303 | hatch — each for its own dialect reason, which its record's comment states (ClickHouse has no | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:397 | The consequence of the guarded shape is that the declared record becomes environment-dependent: populated where | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:458 | to the claim rather than imposed on every record precisely so that *not* claiming a tier stays an | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:481 | the supported way to record that is a per-case entry in `tier_case_exclusions`, attributed to the | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:518 | ceiling. The count is a property of one declaration in isolation (it needs no other record's state | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:563 | choice to record, not a declaration to make: either the failure is real and the data source does | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:681 | \| A `tier_case_exclusions` entry has an empty or whitespace-only reason \| Record why the case is excluded — an unexplained exclusion is exactly the silent narrowing the mechanism exists to prevent. \| | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:706 | \| `@register_sql_config` on a config whose record is not a `SqlBackendSpec` \| Declare a `SqlBackendSpec`, or register through `@register_data_source_config` if the data source has no dialect facts. \| | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:743 | isolation; the wiring drift check cross-references every *registered* record's declared | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/README.md:772 | provisioning, start the container first — each such record names a directory under | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:49 | Every shape-two data source below **is** registered, and its record is what makes it visible to | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:155 | Each of the eight below has a registered record and no suite validating expectations against | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:287 | resolves to a registered record. Four registered data sources are absent from that list, and two | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:293 | \| Data source \| Registered record \| Provisioning \| Marker and lane \| Where the reference mentions it \| | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:324 | environments rather than distinct data sources, and none of them has a registered record, a pytest | 設計メモ・READMEの一般的な文章中の「record/capture」で、機能の説明ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_backlog.md:648 | cleanly-raised dialect limitation, not the Snowflake class recorded above. Snowflake's regex failure | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/data_source_lists.py:65 | **Declared, not derived, and it cannot be derived today**: no field on a data source's record | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/expectations/test_expect_column_values_to_match_regex.py:275 | assert messages, "expected the result to record an exception" | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/gallery_expectation_case_table.py:7 | `great_expectations`, imports the pure data and record shape from | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/gallery_expectation_case_table.py:751 | # every record. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/gallery_expectation_cases.py:1 | """The declarative case record shape for the gallery-tier expectation suite, and its shared | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/gallery_expectation_cases.py:4 | This module holds pure data: the `GalleryCase` record shape, the fixture-shape vocabulary a case | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/test_gallery_expectation_cases.py:1 | """Unit coverage for the gallery-tier case record and its shared fixture data. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/test_gallery_expectation_suite.py:1119 | # entry -- nothing in this test declared one, so the registry's own record of that | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/test_gallery_expectation_suite.py:1123 | def test_data_source_with_no_recorded_engine_is_dropped(self) -> None: | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/data_sources_and_expectations/test_gallery_expectation_suite.py:1354 | class _RecordedParametrizeCall: | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/fluent/test_sql_datasources.py:198 | def capture_engine_logs(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture: | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_script_runner.py:97 | def delay_rerun(*args): | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/backend_spec.py:5 | rather than on the universal record means a non-SQL declaration cannot express them and a reader | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/backend_spec.py:8 | Its one intra-package import is the module holding the universal record and the vocabulary every | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/backend_spec.py:51 | required ``uses_schema`` field below to follow the base record's defaulted fields at all; | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/backend_spec.py:103 | supported shape: the declared record is populated where the dialect is installed and empty | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/data_source_spec.py:3 | This module holds only data: the universal record a data source declares to describe itself, | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/data_source_spec.py:119 | """The universal record: what a data source is, and how its tests are selected. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:24 | every record would make the honest declaration unexpressible; applying none of them would let a | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:76 | # The criterion every config-bound record with a declared execution engine has to declare: the | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:86 | # after their reason expires: one fails if an entry names a label no registered record has, and one | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:202 | every record regardless of what it claims. Each optional field is checked only where it is | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:253 | These obligations are scaled to the claim rather than imposed on every record. Membership in | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:454 | scope as shared would silently drop the collision check for every record that declares no | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:499 | colliding dedicated marker, or any invariant violation in its declared record. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:511 | f"dialect facts through the plain record registration instead" | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:551 | """Every registered entry, ordered by record label.""" | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/registry.py:556 | """Every registered record, ordered by label.""" | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/sql.py:129 | server, no credentials and no engine, which is what lets a test record the answer for every | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/sql_config.py:45 | narrowed accessor would restate what the base already computes from the same record. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/sql_config.py:127 | record type it declared, so no registered SQL config can reach this property with a | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/data_source_config/sql_config.py:128 | record that carries no dialect facts. The class variable itself is deliberately not | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/test_shared_column_type_renderings.py:116 | class TestEveryBackendResolvesTheColumnTypesRecordedHere: | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/test_shared_column_type_renderings.py:126 | def test_the_recorded_types_are_what_this_backend_resolves(self, spec: SqlBackendSpec) -> None: | 識別子・テスト名の一部としての「record/capture」で、市場データの記録・再生機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/test_sql_batch_test_setup.py:403 | """Patch `sa.Connection.execute` to record every `Insert` statement issued through it, and | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/integration/test_utils/test_sql_batch_test_setup.py:620 | class _RecordingConnection: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/scripts/test_mypy_config_guard.py:768 | reconcile it: prune stale entries and record newly-applied strictness. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:816 | class TestSharedConfigBaseDerivesIdentityFromACoreRecord: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:989 | def test_its_declared_record_still_passes_registration_validation(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:993 | This registers the *record*, not the config class, and that distinction is the whole | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1276 | because the list is derived from the registry and the registry orders every accessor by record | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1330 | rather than three derivations concatenated, and every registry accessor orders by record | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1350 | class TestRelocatedDataSourceListsMatchTheirCapturedMembership: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1369 | The literals below are that capture, transcribed by label. `generic_sql` is spelled with an | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1458 | def test_non_sql_data_sources_match_the_captured_membership(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1466 | def test_date_comparison_data_sources_match_the_captured_membership(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1477 | def test_just_pandas_data_sources_match_the_captured_membership(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1581 | # The same capture, for the same reason, over the two engine-keyed lists. `tiers.py` builds | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1767 | # is unsafe to touch with no driver installed - is a property of every record. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1820 | def test_a_constructed_record_cannot_be_mutated(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1897 | record = module.DataSourceSpec( | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1903 | assert record.pytest_mark == pytest.mark.sqlite | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1930 | def test_the_record_module_loads_with_no_harness_no_dialect_and_no_spark(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1945 | class TestRecordRegisteredWithoutAConfigClass: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1960 | def test_a_record_with_no_config_class_is_returned_by_the_record_accessor(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1967 | def test_a_record_with_no_config_class_is_returned_by_the_spec_accessor(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1974 | def test_registration_returns_the_record_so_a_module_can_bind_it(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1979 | def test_a_record_with_no_config_class_is_absent_from_the_config_accessor(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1984 | def test_a_record_with_no_config_class_is_absent_from_the_tier_accessor(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:1996 | def test_a_record_with_no_config_class_is_absent_from_the_engine_accessor(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2012 | def test_the_stored_entry_carries_both_the_record_and_the_class(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2028 | class TestRecordAccessorsOrderByLabel: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2055 | class TestRecordAccessorsReadLiveState: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2165 | class TestIsolatedRegistryClearsRecordStorageBeforeYielding: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2175 | def test_a_record_registered_outside_the_seam_is_invisible_inside_it(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2214 | # live registry directly would see an empty one and pass vacuously. This one is the *record* view, | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2297 | class TestDeclarationOnlyRecordsJoinTheRegistryWithoutConfigs: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2300 | Two halves, and both are load-bearing. They must reach the *record* accessors, or the | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2307 | def test_the_record_accessor_holds_the_eight_declaration_only_labels(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2328 | def test_the_record_accessor_is_wider_than_the_config_accessor_by_exactly_eight(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2372 | def test_citus_records_its_costed_onboarding_surfaces_in_its_provisioning_note(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2392 | def test_fabric_records_the_service_principal_requirement_in_its_note(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2422 | class TestRegisteredRecordsEqualTheTwentyThreeInLabelOrder: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2423 | """The second half of the registered-set pin: every registered *record*, in label order. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2445 | def test_registered_record_labels_equal_the_twenty_three_in_label_order(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2652 | # What each retrofitted config's record is expected to declare, written out here rather than read | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2718 | """The three non-SQL configs, each against a control declaring an equivalent record. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2731 | def test_declares_exactly_the_reviewed_record(self, label: str) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2889 | class TestEveryRegisteredRecordSurvivesAnAbsentDialectPackage: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2890 | """The dialect-absent guard, widened from the registered configs to every registered record. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2892 | Its narrower neighbour reads every field of every *config-bound* record and constructs every | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2903 | def test_every_field_of_every_registered_record_reads_without_a_driver(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2920 | class TestMarkerScopeRelaxationsProvenWithThrowawayRecords: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2938 | def test_two_records_sharing_one_marker_both_declared_shared_register_cleanly(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2948 | def test_two_records_sharing_one_marker_both_declared_dedicated_are_rejected_naming_both( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2969 | def test_one_dedicated_and_one_shared_record_sharing_a_marker_register_cleanly(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:2998 | def test_two_records_declaring_no_marker_at_all_register_cleanly(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3020 | record". The second half of each pair — the identical record with no tier claimed, registering | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3028 | record either claims a tier and satisfies all three obligations or claims none, so the real | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3038 | def test_the_same_record_claiming_no_tier_registers_cleanly(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3049 | def test_the_same_record_with_a_marker_and_no_lane_claiming_no_tier_registers_cleanly( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3070 | def test_the_same_containerized_record_claiming_no_tier_registers_cleanly(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3109 | def test_a_gallery_claim_with_no_marker_is_rejected_naming_the_record_and_the_tier( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3122 | def test_a_gallery_claim_with_no_ci_lane_is_rejected_naming_the_record_and_the_tier( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3159 | def _exemptions_naming_no_registered_record( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3162 | """Exempted labels no registered record answers to. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3171 | def _exemptions_naming_a_declaring_record( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3189 | class TestSharedParameterizationDeclarationIsMandatoryProvenWithThrowawayRecords: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3198 | same record, differing only in whether its label is exempt, is rejected in one case and | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3204 | def test_a_config_bound_record_with_an_engine_and_no_criterion_is_rejected(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3219 | # this rejection and no other, and the label and criterion pin which record and which | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3225 | def test_the_same_record_registers_cleanly_once_it_declares_the_criterion(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3240 | def test_the_same_record_registers_cleanly_when_its_label_is_exempt(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3241 | """The near-miss: identical in every respect to the rejected record except its label, | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3259 | def test_a_record_with_no_config_class_is_not_subject_to_the_rule(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3284 | Both are read from the module-scope record snapshot rather than the live registry: the autouse | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3301 | def test_every_exempted_label_resolves_to_a_registered_record(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3324 | def test_that_check_fails_on_a_literal_naming_a_record_that_declares_the_criterion( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3380 | """Every record whose public name is exactly `public_name`, in label order. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3392 | def _members_reaching_no_record( | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3453 | def test_every_core_vocabulary_member_resolves_to_at_least_one_registered_record(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_registry.py:3472 | def test_a_fabricated_member_naming_no_record_is_reported_with_both_remedies(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:25 | that every *registered* record is wired, not that every wiring entry has a registered record - | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:125 | # every record is wired. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:130 | def _name_for_record(spec: DataSourceSpec, config_class: Optional[type]) -> str: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:149 | def _record_label(spec: DataSourceSpec) -> str: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:193 | # per registered record below, and once more per synthetic, deliberately-broken declaration in | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:275 | owed: `_assert_tier_claim_carries_evidence` below requires a lane of every record that claims a | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:276 | tier. Demanding one of every record would fail Azure Blob Storage and the postgres-compatible | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:345 | # about its *own* lane. A gallery-tier record is additionally restated as a cell in the gallery | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:350 | # rather than through any per-record coordinate. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:355 | """The marker token each gallery-tier record's own CI lane runs under. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:507 | # from one that returns early for every record in the registry. | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:533 | def test_missing_requirements_file_names_record_and_path(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:554 | def test_unknown_task_runner_key_names_record_and_path(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:628 | def test_unknown_workflow_job_names_record_and_path(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:649 | def test_absent_container_service_names_record_and_path(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:672 | isolation seam, so the token it collects for a gallery-tier record is proven to come from a | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:758 | def test_tier_claimed_with_no_lane_names_the_record(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_data_source_wiring.py:782 | def test_tier_claimed_with_no_marker_names_the_record(self) -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_deprecation.py:111 | This test is meant to capture instances where one or the other is missing. | 「record/capture」を一般名詞・変数として使う文で、これまで読んだ同種の用例(データの行・ログ捕捉・テストのレジストリ語彙等)と同じ意味であり、市場データの記録・再生機能を示す記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:5 | good as two things lining up: every type a claiming record names must actually have a contract | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:37 | def _fluent_api_records() -> tuple[DataSourceSpec, ...]: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:51 | def _assert_every_claiming_record_names_only_covered_types() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:64 | def _assert_every_claiming_record_names_a_registered_type() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:88 | def test_every_fluent_api_record_names_only_covered_types() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:89 | """Every fluent type a tier-claiming record names must have a contract table entry.""" | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:93 | def test_every_fluent_api_record_names_a_registered_type() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:94 | """Every fluent type a tier-claiming record names must exist in the fluent type registry.""" | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:98 | def test_fluent_types_named_by_no_record_matches_the_pinned_set() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:114 | def test_records_unable_to_claim_the_tier_matches_the_pinned_set() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:136 | def test_a_record_claiming_the_tier_with_an_uncovered_type_is_rejected() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:139 | Registered inside the isolation seam so the failing record never reaches the real registry; | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:167 | def test_a_record_naming_an_unregistered_fluent_type_is_rejected() -> None: | GE自身のテスト設定レジストリDSLの識別子・テスト関数名。recordはテスト設定のレジストリ登録エントリを指し、時刻順の市場データ再生とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-017/great_expectations/tests/test_fluent_api_tier.py:170 | Registered inside the isolation seam so the failing record never reaches the real registry; | GE自身のテスト設定レジストリDSLの語彙(recordはテスト設定のレジストリ登録エントリ)で、市場データの記録・再生とは無関係 |
+
+### 決まりの一覧
+
+Great Expectations E4(検索の手 `docs/DATA/probes/20260923_tools_8_run15.log:900`)の当たり1793行に`scripts/cat8_classify.py`(決まりのファイル `/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/rules/ge_e4_rules.tsv`、決まり22本)を掛けた(生ログ 3593行目)。matched=1503 / unmatched=290 / rules=22。
+
+| 検索の手の行 | 決まりの id | 正規表現 | 理由 | 取った行の数 | 取った行のあるファイルの数 |
+|---|---|---|---|---|---|
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_records | `(?i)records\b` | 「records」(複数形)。データの行・レコード群を指す一般名詞(Data Asset内の行、DataFrameのrecords、テスト記録など)で、市場データを時刻順に再生する機能を指さない | 488 | 136 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_recorded | `(?i)recorded\b` | 「recorded」。値・設定・状態がどこかに記録された(書き込まれた)ことを指す一般語で、記録した市場データを再生する機能を指さない | 96 | 36 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_recording | `(?i)recording[s]?\b` | 「recording」「recordings」。Sentryのセッションリプレイ依存(@sentry-internal/replay-canvas等)や一般名詞「記録・録画」の意味で、GE自身が市場データを記録・再生する機能ではない | 17 | 14 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_kwarg | `(?i)record\s*=\s*(True\|False)` | Pythonの`warnings.catch_warnings(record=True)`等のキーワード引数(警告オブジェクトの捕捉フラグ)で、記録した市場データの再生とは無関係 | 22 | 7 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_attr | `(?i)record\.(list\|tolist\|message)` | テストコード中の`record`という変数(pytestの`recwarn`由来の警告オブジェクト)への属性アクセスで、市場データの記録・再生ではない | 15 | 9 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_article | `(?i)\b(a\|the\|this\|that\|one\|each\|per\|any\|no\|single\|duplicate\|throwaway\|declaration-only\|whole-record)\s+records?\b` | 「a record」「the record」等、データの1行・1エントリを指す一般名詞句で、市場データの再生機能を指さない | 257 | 25 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_verbphrase | `(?i)records?\s+(does\|equality\|declares\|extends\|matches?\|match\b\|to itself\|back to\|it as\|only need\|exclusions)` | テストのコメント・アサーション文中で「record」を一般名詞・動詞として使う言い回しで、機能の説明ではない | 3 | 3 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_glossary | `(?i)(within\|of\|from\|for)\s+(a\|the)?\s*data\s+(asset\|source)\|nyc taxi trip record data\|financial transfers recorded\|patient records\|trip records\|failing rows.{0,80}records\|incomplete records` | 用語集・チュートリアル文書中の「データの行」の意味での使用で、機能の説明ではない | 1 | 1 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_rerun_checkpoint | `(?i)re-?run\s*[=._]\|re-?run.{0,80}[Cc]heckpoint\|[Cc]heckpoint.{0,80}re-?run\b\|rerun_filter` | 既存のCheckpoint(検証の設定)を人が明示的に同じ入力へもう一度走らせる操作、またはflakyテストの再試行機構で、記録したデータを時刻順に自動再生する機能ではない | 7 | 3 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_sentry_replay | `(?i)@sentry-internal/replay\|sentry.{0,20}replay` | docsサイト(Docusaurus)のフロントエンドがSentryの「セッションリプレイ」(ブラウザ操作の録画)をyarn.lockに依存として持つだけで、GE自身が市場データを再生する機能ではない | 7 | 1 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_result | `(?i)capture\s+(result\|errors?\|schema_name)` | Checkpointの実行結果や例外を変数へ捕捉する一般的な言い回しで、記録データの再生機能ではない | 6 | 6 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_group | `(?i)capture\s+groups?\b` | 正規表現の「キャプチャグループ」(データコネクタのファイル名パターン)の意味で、記録データの再生機能ではない | 6 | 6 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_analytics | `(?i)capture\s+(usage statistics\|default pageviews\|events?\b\|pageviews?)` | ドキュメントサイトのアクセス解析(PostHog/Sentry)が何を収集するかの説明で、記録データの再生機能ではない | 1 | 1 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_narrative | `(?i)capture\s+(the\s+)?(underlying distribution\|critical aspects\|what we want\|schema_name)` | 一般的な説明文中の「捉える」の意味(分布の特徴を捉える、等)で、機能の説明ではない | 2 | 2 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_output | `(?i)capture_output` | Pythonの`subprocess.run(..., capture_output=True)`という標準ライブラリの引数名(サブプロセスの標準出力・エラー出力を捕捉するだけ)で、市場データの記録・再生機能ではない | 29 | 15 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_pageview2 | `(?i)capture\s+(documentation\|page)\|page-view capture\|automatic capture` | ドキュメントサイトのページビュー計測(PostHog)の説明で、記録データの再生機能ではない | 2 | 1 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_test_registry_vocab | `(?i)\b(core\|sub\|throwaway\|declaration-only\|hand-written\|retired)[- ]?record\b\|records?\s+(claims?\|derives?\|registers?\|pins?\|orders?\|enrolls?\|carries?\|satisfies\|stating\|is well-formed\|passes\|here\|declare\|may\b)\|captured\s+(membership\|values?\|at module-import\|from)\|track record` | Great Expectations自身のテストスイート(`tests/test_data_source_registry.py`等)が使う内部の語彙で、「record」をテスト設定のレジストリ登録エントリ、「captured」をテストのフィクスチャ値の意味で使っており、市場データを時刻順に記録・再生する機能を指さない | 48 | 13 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_compound_id | `(?i)[A-Za-z_]record\|record[A-Za-z_]` | 識別子の一部として"record"を含む語(`domain_records_df`・`MAX_RESULT_RECORDS`・`WithinRecord`・`record_count`等、アンダースコアや大文字で連結された複合識別子)。GEのコード全体で一貫して「record」はテーブル・DataFrameの1行(データの行)を指す構成要素として使われており、これまで読んだ全用例で時刻順の再生を指すものは無い | 316 | 90 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_compound | `(?i)[A-Za-z_]capture\|capture[A-Za-z_]` | 識別子・活用形の一部として"capture"を含む語(`captured`・`capturing`・`recapture`等)。GEのテストスイートでは、テスト対象のリスト・値をモジュールのimport時にPythonの定数として書き写す(スナップショットする)意味で一貫して使われており、市場データの記録・再生を指す用例はこれまでの実測で1件も無い | 155 | 55 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_log_fixture | `(?i)capture\s+(log\|sqlalchemy\|known fields\|error\|message)\|log capture\|caplog` | pytestのログ捕捉フィクスチャ(`caplog`)やSQLAlchemyエンジンのログを捕捉してテスト失敗時に表示する処理の説明で、市場データの記録・再生機能ではない | 5 | 4 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_capture_regex_group | `(?i)string capture\|regex capture\|zero-padded.{0,20}capture\|capture[\"']?\)` | 正規表現の「キャプチャグループ」(ゼロ埋め文字列のパターンマッチ)を指すテストIDの説明で、記録データの再生機能ではない | 7 | 2 |
+| docs/DATA/probes/20260923_tools_8_run15.log:900 | r_record_loopvar_docstring | `(?i)for record in\|record,\s*column_type_info\|f"record\s\|record\s+(a whole tree\|what was installed\|the state\|who installed\|which object\|any strictness\|the pre-split\|the new gap\|the call site\|why it exists\|the new gap)` | DataFrameの行(record)へのループ変数、またはインストーラのテストが「何がインストールされたか」を記録する(installer側の状態記録)の意味で、市場データを時刻順に再生する機能ではない | 13 | 10 |
+
+決まりの見直し: この回は1回で確定させた(打ち直しは無い)。
+
+### 代替経路
+
+この回は『この環境から不可』と書いた項目なし。`api.github.com`(GitHubのcommit/contributor統計API)はこの環境のセッションでは403(`GitHub access to this repository is not enabled for this session`)だったが、`ungh.cc`の`/repos/<owner>/<repo>/contributors`エンドポイントで同等の情報の一部(貢献上位30名の一覧)を代替的に取得できた。GX Cloud・OpenBB Hubの料金ページは素の`curl`では金額を含まなかったが、`cat8_render.js`で描画して取得できた。第2経路(オーナーPC)でそのまま打てるコマンドは無し(この回はすべてこの環境の経路で完了したため)。
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] `Great Expectations`のGX Cloud「無料枠の上限」「課金開始条件」はcat8_render.jsで描画した`greatexpectations.io/pricing`から読んだが、この描画結果を`印`(E1a〜E6ではなく§4.0の項目)の根拠として使ってよいかの一般的な扱いは、設計票・追補に明文が無い(14回目までE1a〜E6の`印`の根拠としての描画の条件(i)(ii)(iii)は定められているが、§4.0の料金項目への適用は今回が初めて)。この回は同じ条件(i)(ii)(iii)を満たすことを確認したうえで一次資料として使ったが、リードの判断を仰ぎたい。
+2. [それ以外の問い] `コミット数`をungh.ccのcontributors(上位30名のcontributions合計)から「推定」として書いたが、これは全コミット数の下限であって真の合計ではない。設計票の語彙表に「コミット数」の定義(git logの総数か、GitHub統計上のcontributions合計か)が無いため、この回は「下限の推定値」として明記したが、この扱いでよいか。
+3. [それ以外の問い] `OpenBB Terminal`の最小実行のために`pip install openbb-technical`という追加の拡張パッケージを導入した。これは「本体(`pip install openbb`)の最小実行」の範囲を超えているのではないか(本体だけでは技術指標の呼び出し口が無いため、何らかの拡張を追加導入しないとE3bの防止機能を実演できない)。設計票・追補は「最小実行は種別の中核を1回動かす」と定めるが、中核の実演に追加拡張の導入が要る場合の扱いが明文に無い。
+4. [それ以外の問い] `Great Expectations`の`保守者数`は、GitHubの「保守者(maintainer)」を明示するAPIが無く、`ungh.cc`のcontributorsも「保守者」ではなく「貢献者(コミット数順)」である。この項目を恒久的に`未確認`のままとするか、`保守者数`の定義を「貢献者数の上位N名」等に読み替えてよいかの判断を仰ぎたい(この回は読み替えず`未確認`のままにした)。
+
+### 受け入れ検査の出力
+
+```
+K1 太字                  1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+K2 括弧                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             18 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 21 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 21 件
+```
