@@ -480,14 +480,28 @@ def classified_searches(rnd, line_judged, errs, rule_table=None):
     # 許す。前の回の手は数えずに名前だけ出す = 監査 80 回目の指摘 1)。
     # 一度 unmatched に出た行は、打ち直した回で決まりに取られても行の表に理由が要る(打ち直しで行を決まりに
     # 移して消すことを止める = 監査 81 回目の指摘 1)。行の表の行は、どれかの回の unmatched に出た行に限る。
+    # 終わりの行の無い手(--keep が足りずに切れた手・途中で落ちた手)も、コマンドの --step で手を決めて、出た
+    # unmatched の行を ever に入れる(監査 82 回目の指摘 1)。数える(last)のは終わりの行のある手だけ。
+    import shlex
     last, ever = {}, {}
     for blk in re.split(r"(?m)^(?=--- )", lp.read_text()):
-        m = CLASSIFY_RE.search(blk)
-        if not m or m.group(1) != fname:
+        bl = blk.split("\n")
+        cmd = bl[1] if len(bl) > 1 and bl[1].startswith("$ ") else ""
+        if "cat8_classify.py" not in cmd:
             continue
-        st0 = step_start(fname, int(m.group(2)))
-        last[st0] = (blk, m)
+        try:
+            toks = shlex.split(cmd[2:])
+            st_arg = int(toks[toks.index("--step") + 1])
+            log_arg = toks[toks.index("--log") + 1]
+        except (ValueError, IndexError):
+            continue
+        if log_arg.split("/")[-1] != fname:
+            continue
+        st0 = step_start(fname, st_arg)
         ever.setdefault(st0, set()).update(re.findall(r"^unmatched\t(\S+:\d+)\t", blk, re.M))
+        m = CLASSIFY_RE.search(blk)
+        if m and m.group(1) == fname:
+            last[st0] = (blk, m)
     all_unmatched = set().union(*ever.values()) if ever else set()
     stale = [k for k in line_judged if k not in all_unmatched]
     if stale:
