@@ -21,6 +21,7 @@ TARGETS: dict[str, dict] = {
 
 # Survey side (catalogue number in `cand`). Adapters are in opponents/.
 SURVEY: dict[str, dict] = {
+    "opp_backtrader": {"module": "opponents/backtrader_adapter.py", "venv": "item_0/backtrader", "cand": 2},
     "opp_hftbacktest": {"module": "opponents/hftbacktest_adapter.py", "venv": "item_0/hftbacktest", "cand": 23},
 }
 TARGETS.update(SURVEY)

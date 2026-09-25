@@ -477,16 +477,19 @@ def _o_jpx_limit(inp):
     base, width = inp["rules"]["price_limit"]["base"], inp["rules"]["price_limit"]["width"]
     a1, a2 = action(inp, "o1"), action(inp, "o2")
     assert not (base - width <= a1["px"] <= base + width) and base - width <= a2["px"] <= base + width
+    b = book_at(inp, a2["t"])
+    assert a2["px"] < b["asks"][0][0] and a2["px"] not in [p for p, _ in b["bids"]]  # rests with nothing ahead
     return {"status.o1": "rejected", "filled.o1": 0.0, "filled.o2": a2["qty"], "avg_px.o2": a2["px"]}
 
 
 scene("c2-3-jpx-limit", "C2-3", "値", "JPX の値幅制限の外の指値は拒否され、内の指値は受け付けられる",
       "JPX の値幅制限(基準値 1000 円 → 制限値幅 300 円 = 700〜1300 円)",
-      "基準値 1000・値幅 300 → 700〜1300。o1 = 買い 1350 は外 → 拒否。o2 = 買い 1250(対照)は内 → 1250 の約定で 100 埋まる。",
+      "基準値 1000・値幅 300 → 700〜1300。o1 = 買い 1350 は外 → 拒否(受け付けたら最良の売り 1252 に当たる)。"
+      "o2 = 買い 1250(対照)は内で、最良の売り 1252 未満・1250 に外部の待ちなし → 待ち、1250 の約定で 100 が 1250 で埋まる。",
       base_input(product=JPX_STOCK,
                  rules=dict(JPX_RULES, price_limit={"base": 1000.0, "width": 300.0,
                                                     "source": "東京証券取引所の制限値幅の表(基準値段 1,000 円以上 1,500 円未満 → 300 円)。一次資料の頁の確認は本役では未実施(委任文 §4)"}),
-                 market=[book(jst(10, 0), [(1199, 5000)], [(1201, 5000)]), trade(jst(10, 0), 1200, 100, "buy"),
+                 market=[book(jst(10, 0), [(1249, 5000)], [(1252, 5000)]), trade(jst(10, 0), 1251, 100, "buy"),
                          trade(jst(10, 5), 1250, 1000, "sell"), trade(jst(10, 6), 1240, 1000, "sell")],
                  actions=[place(jst(10, 1), "o1", "buy", "limit", 100, px=1350),
                           place(jst(10, 2), "o2", "buy", "limit", 100, px=1250)], end_t=jst(10, 30)),

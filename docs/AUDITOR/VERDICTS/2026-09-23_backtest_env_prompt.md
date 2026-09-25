@@ -1840,3 +1840,64 @@ python3 -c "import sys; sys.path.insert(0,'scripts'); import check_bt_delegation
 - 66-6〜12 [確認]: 対策 (5)(6) が運用の規律だけで機械で強制されないことはそのとおり(記録する)。
 
 処置後の実測(逐語): `node --check` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → pass 11 / fail 0 / pytest `tests/test_check_bt_delegation.py` → 15 passed / `python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json` → `OK 誤り 0 件`。
+
+
+## 監査 67 回目(委任文 `docs/DATA/delegations/20260925_backtest_env_prompt.md@db058092f29c`、指紋 26ed6c67e4e1。66 回目の処置の版。2026-09-25 15:00 UTC)
+
+### 監査役の出力(逐語)
+
+検査対象: `docs/DATA/delegations/20260925_backtest_env_prompt.md`(sha256 先頭 12 桁 db058092f29c、指紋 26ed6c67e4e1)、`scripts/workflows/backtest_env.js`(コミット 8b8ac70)、`/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/bt_args_run12.json`、`scripts/check_bt_delegation.py`。実測: `node --test tests/workflows/backtest_env_logic.test.mjs` → pass 11/fail 0(自分で再実行して確認)。`python3 scripts/check_bt_delegation.py docs/DATA/delegations/20260925_backtest_env_prompt.md docs/OWNER_LOG.md docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md scripts/workflows/backtest_env.js /tmp/.../bt_args_run12.json` → `OK 誤り 0 件`(自分で再実行して確認)。`python3 -c "...json.load(open('bt_args_run12.json'))['marker']"` → `20260925_backtest_env_prompt.md@db058092f29c`(委任文の現行 sha256[:12] と一致、`round_cap`=10)。
+
+以下、指摘 1 件ごとに印・ファイル:行・根拠を全文で出す。
+
+---
+
+1. [確認] `git diff a51306f 8b8ac70` — 66-1 は閉じている。委任文 138 行の「格付けの基準」の括弧が「(通過の判定…は [止める] が 0 件かで決まるので、格下げで素通りさせない)」から「(2026-09-25 まで通過の判定は [止める] が 0 件かで決まっていた。L-451・I-013 以後…)」に書き換わっている(diff 実測済み)。66 回目の指摘文言(「L-451 以後の形に書き換え」)と一致。
+
+2. [確認] 66-2 は閉じている。`scripts/workflows/backtest_env.js` の `CRITIC_SCHEMA` に `table_recount_ok`・`table_recount` を追加(required にも追加)、`passCandidate(item, okC, okS, stopsImpl, table, critic)` に `critic` 引数を追加し `if (!critic || critic.table_recount_ok !== true) return { candidate: false, ... }`(197〜198 行)を追加、批評家プロンプトに「**資料係の申告の裏取り(監査 66-2、L-451・I-013)**」の段落(300 行)を追加。`tests/workflows/backtest_env_logic.test.mjs` に `ok`/`bad` の 2 ケースを追加し node --test で pass を実測。
+
+3. [確認] 66-3 は閉じている。`backtest_env.js` 460〜465 行に `const carried = mid.map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(...)` を追加し、`byId[4] = { ...byId[4], extra: ...JSON.stringify(carried)... }` で項目 4 の起動文に逐語で渡す配線を実装(diff 実測済み)。
+
+4. [確認] 66-4([直す])は閉じている。`scripts/check_bt_delegation.py` の `check_bound` に「終わりの上限:…最大 (\d+) 周」を正規表現で抜き、台本の `const CAP = Number(args.round_cap) || (\d+)` および引数 `round_cap` と数値を突き合わせる分岐を追加(236〜260 行)。`tests/test_check_bt_delegation.py` に `test_end_bound_number_must_match_the_script_default_and_args` を追加、pytest で pass を実測。
+
+5. [確認] 66-5([聞く])は妥当に処理されている。委任文 50 行に「項目 0 だけでなく項目 1〜4 に当てるのはリードの判断(CLAUDE.md §0.1「終わる条件」の規則の適用)で、オーナーの逐語には項目 1〜4 を名指す語は無い = 監査 66-5。オーナーが違うと言えば戻す」と明記(diff 実測済み)。[聞く] は「解消」ではなく「記録して残す」が正しい処置であり、そうなっている。
+
+---
+
+6. [止める] `scripts/workflows/backtest_env.js:291` と `:300`(批評家の「資料係の申告の裏取り」段落) — 66-2 が新設した「批評家が `runs/*.tsv` から独立に数え直す」という仕組みの根拠になる `runs/*.tsv` の置き場所が、資料係(表)の実行指示(282〜290 行、項目 1〜6)にも、場面係が書く runner の仕様(124 行「引数 --target と --out」)にもどこにも定義されていない。
+
+根拠(実測): `grep -n "runs/\|--out\b" scripts/workflows/backtest_env.js` → ヒットは 89(無関係)・124(runner の `--out` の存在のみ、出力先の命名規則なし)・291(資料係自身への recount 指示「runs/*.tsv から…数え直し」)・300(批評家への同一指示「runs/*.tsv(表の materials)から」)の 4 箇所のみ。資料係の実行手順(282〜290 行、`${d}/materials/` にファイル保存すると明記)には「runs」というディレクトリ名・ファイル命名規則が一度も出てこない。`grep -rn "make_tables" .`(除く node_modules)→ `runs/` ディレクトリと `make_tables.py` は `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_*/materials/runs/` に過去の項目 0 の周(旧方式、L-451 以前)で agent が自発的に命名した成果物としてのみ存在し、今回の委任文・台本のどこにもこの命名を指示する文が無い(`find docs/DISCUSSIONS/2026-09-23_backtest_env -type d -iname runs` の結果はすべて item_0 の過去の周)。つまり「資料係が書く場所」と「批評家が読む場所」が同じパスを指す保証が、指示文中に存在しない。66-2 は「資料係の自己申告 `new_impl_all_correct` を批評家が独立に数え直す」という、I-013(「特大のインシデント」)の直接の再発防止策の中核だが、その独立性を担保する具体的な入力(ファイルパス)が指示として固定されていない。項目 1〜4 はまだこの新方式で 1 周も走っていないため、この穴はまだ発現していないが、発現すれば「独立の数え直し」が名ばかりになるか、批評家がファイルを見つけられず毎回 [止める] になる。
+
+---
+
+7. [直す] `scripts/workflows/backtest_env.js:189〜191`(コメント)・`docs/DATA/delegations/20260925_backtest_env_prompt.md:61` — 「批評家の [止める] は通過を止めない(場当たりの直し patchwork=true の [止める] だけは止める)」という要約文が、66-2 で追加された第二の遮断経路(`critic.table_recount_ok !== true` による `passCandidate` の直接拒否)を反映していない。
+
+根拠(実測): `passCandidate` の該当行(196〜198 行、上記 #2 の diff)は `patch.length` のチェック(patchwork 経由)とは別に、`if (!critic || critic.table_recount_ok !== true) return { candidate: false, ... }` という独立した拒否経路を持つ。この経路は `stopsImpl`(止める一覧)にもたどらず patchwork タグの有無も見ない。しかし台本のコメント(189〜191 行、diff で変更されていない旧文のまま)は「the critic's stops no longer gate the pass except a patchwork one」と書き、委任文 61 行も「**批評家の [止める] は通過を止めない**(場当たりの直し patchwork=true の [止める] だけは止める)」と書く。table_recount_ok=false になる指摘は批評家自身が「理由を findings に [止める] target=場面集で」返す指示(300 行)になっており、この [止める] は patchwork でなくても実質的に通過を止める(別経路で)。委任文・コード双方のこの要約文は、66-2 で増えた例外を書き漏らしている。
+
+8. [確認] `scripts/workflows/backtest_env.js:176〜182`(`splitStops`)— 項目 1〜4(`item.id !== 0`)では `target` に関わらず全指摘が `impl` 側に入る(`{ impl: stops, bat: [] }`)仕様は、現状の `passCandidate` の実装とは矛盾していない(id!=0 では `stopsImpl` は patchwork フィルタにしか使われず、`target === '場面集'` の指摘は `batFix`(239 行、`item.id` を条件にしない共通処理)によって別途場面係へ回される)。ただし委任文にはこの「項目 1〜4 では target による通過阻止の分岐は無い(item 0 限定の仕組み)」という設計上の事実そのものは明記されておらず、#7 の要約文の不正確さと合わせて読むと誤解を招きやすい。
+
+---
+
+9. [止める] `docs/DATA/delegations/20260925_backtest_env_prompt.md:61,135` と `scripts/workflows/backtest_env.js:364,460〜465` — 委任文は「残った [止める]・[直す]・[示唆] は持ち越しとして逐語で記録し、次の項目(項目 4 は最終)の周で直す」(61 行)、「残った [直す] は項目の報告に全部書き、「欠けているもの」の批評家と §5 の納品の監査役に渡す」(135 行)と書くが、66-3 の配線(`carriedImpl`)は **[止める] だけ** を項目 4 の起動文(`extra`)に渡し、[直す]・[示唆] は項目 4 の周には一切渡らない。
+
+根拠(実測): `carriedImpl: stopsImpl`(364 行)の `stopsImpl` は `stops.filter(f => f.level === '止める')`(333 行付近)からさらに `splitStops` を通した値で、`level` は「止める」に固定されている(`直す`・`示唆` は含まれない)。460〜465 行の `carried` もこの `carriedImpl` をそのまま集約するだけで、[直す]・[示唆] を運ぶ別経路は無い。[直す]・[示唆] が実際に読まれるのは stage 4 の「欠けているもの」批評家(477〜480 行、`leftovers = ...filter(f => f.level !== '止める')`)のみで、これは項目 4 が**通過したあと**に、新項目の要否を判断する別ループの入力として渡るだけであり、「項目 4 の周で直す」対象にはならない。委任文の 2 か所(61 行・135 行)が約束する「持ち越し先」と、実装が実際に運ぶ内容・タイミングが一致していない。
+
+---
+
+10. [確認] `grep -n "0 件" docs/DATA/delegations/20260925_backtest_env_prompt.md` → 5 件ヒット(12・50・61・95・138 行)。すべて (a) 過去の選択の逐語記録(12 行、L-407「D 案2」の原文引用)、(b) L-451 以後の版として明示的に廃止されたと書かれた記述(61・138 行「2026-09-25 まではここが…」)、(c) 項目 0 限定と明記された現行の例外(61 行「項目 0 の例外(実装の側の [止める] 0 で通過…)は §0 の L-441 の行に 1 か所だけ書く」)、(d) 無関係な「[止める]・[直す]」の一般語(95 行)のいずれかであり、**現行の指示として「[止める] が 0 件」を項目 1〜4 に課す文は残っていない**。
+
+11. [確認] `docs/DATA/delegations/20260925_backtest_env_prompt.md:50` と `docs/OWNER_LOG.md:451〜454`(L-450〜L-453)の突き合わせ — 委任文 50 行は L-451「**は？？？案1みたいなこと前に承認しましたよね？なぜあいもかわらず無限の無意味な作業を続けてるんですか？**」・L-452「**自分で質問して記録しておきながら私の言うこと無視するってどういうことですか？**」・L-453「**特大のインシデントとして記録してください**」を太字 「」 で引用しており、`check_bt_delegation.py` の検査 2(太字引用の逐語照合)が「OK 誤り 0 件」を返している(実測済み)ので、引用そのものはオーナーの逐語と一致する。項目 1〜4 への一般化(「項目 0 だけでなく項目 1〜4 に当てるのは…」)はこの引用の外側、括弧内の地の文としてリードの語であると明記されており、L-452 の `OWNER_LOG.md` 行の「リードの答え」欄(453 行、引用符の外)に「項目1〜4に同じ条件が残っているので…」という一般化の根拠(リード自身の答弁)があるのみで、オーナー本人の「」内の逐語には項目 1〜4 を名指す語が無いことも確認した。**リードの語をオーナーの語として書いている箇所は見つからなかった。**
+
+---
+
+以上 11 件(確認 7・止める 3・直す 1)。特に #6・#9 は、L-451〜L-453 の「特大のインシデント」(I-013、自己申告への依存を断ち切る目的の 66-2/持ち越しの明記)そのものの実効性に関わる欠落であり、次にこの通過の判定が実際に項目 1〜4 で発火する前に埋めておくべき箇所として重い(#6 は独立検算の入力先が指示に無い、#9 は「持ち越して直す」という約束の実装が [止める] にしか及んでいない)。
+
+### リードの処置(2026-09-25 15:15 UTC。処置後の版 fcb48cb4d261、指紋 2c19e69c0755。同じ版で L-454(案 B)も当てたので、68 回目に出す)
+
+- 67-6 [止める]: 当たっている。資料係の文に「対象ごとの実行の出力は round_<k>/materials/runs/<対象の名>.tsv(2 回目は runs_2/)」を決め、資料係の recount と批評家の数え直しは同じ path を読むと書いた。委任文の通過の判定の行にも同じ文。
+- 67-7 [直す]: 台本のコメントと委任文の要約文に「批評家の数え直しが資料係の申告と合わないときも止まる」を足した。
+- 67-8 [確認]: 委任文に「項目 1〜4 では相手(実装 / 場面集)による通過の分岐は無い(項目 0 だけの仕組み)。場面集の側の指摘は場面係が周の中で直す」と書いた。
+- 67-9 [止める]: 当たっている。`carriedImpl` を批評家の指摘の全部(止める・直す・示唆)にし、項目 4 の起動文に全部を渡す。委任文の文と一致させた。
+- 67-1〜5・10・11 [確認]: 記録する。
+
+処置後の実測(逐語): `node --check` → エラー無し / `node --test tests/workflows/backtest_env_logic.test.mjs` → pass 12 / fail 0 / pytest → 15 passed / 検査器(同じ 5 引数)→ `OK 誤り 0 件`。
