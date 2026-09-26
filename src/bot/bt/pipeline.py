@@ -724,7 +724,8 @@ class ArrivalGate:
       I-1  a market order is priced at the FIRST observation of the instrument's price dataset at or after its
            arrival (a trade's price, a quote's book, a bar's open) -- not the last one before it;
       I-2  an order that arrives before the first observation fills at the first observation;
-      I-3  an instrument priced from trades with a book riding along: the optimistic side's tier walks the book;
+      I-3  an instrument priced from trades with a book riding along: the optimistic side's tier walks the FIRST
+           book snapshot at or after the arrival (the gate waits for that snapshot, not for a trade);
            a side whose tier is in BOOKLESS_TIERS (tier 1: price crosses) prices from the trade +- half the spread
            (the venue is not shown the book on that side);
       I-4  a bar instrument: the open of the first bar that STARTS at or after the order's arrival (+- half the
@@ -978,8 +979,12 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
         product=product, currency=acc["currency"], cash=acc["cash"], leverage=acc["leverage"], liquidation=liq,
         mark=acc["mark"], costs=costs, fx=None, reference=None,
         open_orders=venue.open_orders if acc["margin_check"] == "open_orders" else None))
-    gate = ArrivalGate(venue, price_type, hide_book=price_type is TradeEvent and spec.tier in BOOKLESS_TIERS,
-                       account=account)
+    hide_book = price_type is TradeEvent and spec.tier in BOOKLESS_TIERS
+    book_rides = any(_PRICE_EVENT.get(d["kind"]) is BookSnapshotEvent for d in plan.datasets if d["name"] in it["with"])
+    # I-3: a side that walks the book is priced by the first BOOK snapshot at or after the arrival (the trades only
+    # price a side that is not shown the book, or an instrument with no book riding along)
+    obs_type = BookSnapshotEvent if price_type is TradeEvent and book_rides and not hide_book else price_type
+    gate = ArrivalGate(venue, obs_type, hide_book=hide_book, account=account)
     latency = _latency_model(plan.latency)
     end = max(times)
     try:
