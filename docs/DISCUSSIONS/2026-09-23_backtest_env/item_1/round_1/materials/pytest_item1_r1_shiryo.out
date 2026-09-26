@@ -1,6 +1,4 @@
+tests/bt/battery/item_1/adapters/new_impl.py:81: KeyError
 =========================== short test summary info ============================
 FAILED tests/bt/battery/item_1/test_battery_item1.py::test_new_impl_is_the_mouth_only
-1 failed, 3969 passed in 22.22s
-=========================== short test summary info ============================
-FAILED tests/bt/battery/item_1/test_battery_item1.py::test_new_impl_is_the_mouth_only
-1 failed, 79 passed in 2.37s
+1 failed, 3969 passed in 23.68s

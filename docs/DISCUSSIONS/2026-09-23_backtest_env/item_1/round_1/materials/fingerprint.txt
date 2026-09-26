@@ -1,5 +1,4 @@
-## battery fingerprint (委任文 §3 の式, working tree, after the table-maker wrote adapters/new_impl.py)
-fd528e42f06650623af06b948c045ca0090f0cd9f707f1ee9782f340b13d39cf  -
-## same formula on HEAD content (before the adapter body)
-283aff43c84240d48e045fc9e3ae35a0c9406dd0217c293d30f75d5cf03757a0  -
- M tests/bt/battery/item_1/adapters/new_impl.py
+## battery fingerprint (委任文 §3 の式), working tree after this rebuild's adapter change
+8317191d1c18d8dcdfc7d3e2040abd17ce3326008cec1e4ec0e212a40118f503  -
+## git status of the battery (empty = working tree equals HEAD; HEAD db30838 already carries the adapter change of this rebuild, committed by the lead's checkpoint at 01:42:45Z)
+## previous build (ae9eb44, adapter with abspath/join): 283aff43c842... before its body, fd528e42f066... with its body (logs/previous_build_abs_root/fingerprint.txt)

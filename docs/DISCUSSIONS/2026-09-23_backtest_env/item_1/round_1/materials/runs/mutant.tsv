@@ -1,0 +1,36 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+v1-bitflyer-rest	V1	値	正解と一致		5ee6cae867158215	正解と一致		5ee6cae867158215	2 回の実行で同じ	0.002	0.002
+v1-bitflyer-us-gz	V1	値	正解と一致		83de9cf731eeb8e4	正解と一致		83de9cf731eeb8e4	2 回の実行で同じ	0.001	0.002
+v1-binance-aggtrades	V1	値	正解と一致		cfabfc9d509c6122	正解と一致		cfabfc9d509c6122	2 回の実行で同じ	0.001	0.001
+v1-fx-ticks	V1	値	正解と一致		79b98e1fae76eca6	正解と一致		79b98e1fae76eca6	2 回の実行で同じ	0.001	0.001
+v1-jpx-1m	V1	値	不一致	events.jpx_1m[0].start_ns: 1767602700000000000(正解 1767570300000000000)	751685f668fe86ee	不一致	events.jpx_1m[0].start_ns: 1767602700000000000(正解 1767570300000000000)	751685f668fe86ee	2 回の実行で同じ	0.001	0.002
+v1-bitflyer-board-top10	V1	値	正解と一致		41299ea1f6da6302	正解と一致		41299ea1f6da6302	2 回の実行で同じ	0.001	0.002
+v1-funding-and-liquidations	V1	値	正解と一致		4160cd29e1fc2f55	正解と一致		4160cd29e1fc2f55	2 回の実行で同じ	0.002	0.002
+v1-all-assets-one-call	V1	能力	不一致	events.jpx_1m[0].start_ns: 1767602700000000000(正解 1767570300000000000)	6c0fba8fb28fe041	不一致	events.jpx_1m[0].start_ns: 1767602700000000000(正解 1767570300000000000)	6c0fba8fb28fe041	2 回の実行で同じ	0.005	0.007
+v1-generic-shape	V1	能力	正解と一致		77b13cbd11080645	正解と一致		77b13cbd11080645	2 回の実行で同じ	0.003	0.004
+v2-same-instant-4-units	V2	値	正解と一致		980d2ca3cc323489	正解と一致		980d2ca3cc323489	2 回の実行で同じ	0.003	0.004
+v2-iso-offsets	V2	値	正解と一致		35a00860dc638211	正解と一致		35a00860dc638211	2 回の実行で同じ	0.001	0.002
+v2-naive-local-tz	V2	値	不一致	events.jst_trades[0].t_ns: 1767603599000000000(正解 1767571199000000000)	6327ae6460722785	不一致	events.jst_trades[0].t_ns: 1767603599000000000(正解 1767571199000000000)	6327ae6460722785	2 回の実行で同じ	0.002	0.003
+v3-clean-control	V3	値	正解と一致		82c19b4e7f0dea2c	正解と一致		82c19b4e7f0dea2c	2 回の実行で同じ	0.001	0.002
+v3-duplicate-and-conflict	V3	値	正解と一致		35b646cb858da50c	正解と一致		35b646cb858da50c	2 回の実行で同じ	0.001	0.003
+v3-backward	V3	値	正解と一致		3b0f27129a141178	正解と一致		3b0f27129a141178	2 回の実行で同じ	0.001	0.001
+v3-gap-bars	V3	値	正解と一致		2cf5286c8e3a71ae	正解と一致		2cf5286c8e3a71ae	2 回の実行で同じ	0.001	0.002
+v3-generations	V3	値	正解と一致		b194d43251b78b38	正解と一致		b194d43251b78b38	2 回の実行で同じ	0.002	0.002
+v4-sha256-values	V4	値	正解と一致		36e1455a51011dc9	正解と一致		36e1455a51011dc9	2 回の実行で同じ	0.002	0.003
+v4-sha256-distinguishes	V4	能力	正解と一致		6c649dfe379f6b66	正解と一致		6c649dfe379f6b66	2 回の実行で同じ	0.002	0.004
+v5-reject-qa	V5	能力	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/qa_known_answer_synth/executions_20260105.csv' refused (written path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/qa_known_answer_synth/executions_20260105.csv' refused (written path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	2 回の実行で同じ	0.002	0.003
+v5-reject-o3c	V5	能力	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/o3c_signal_synth/executions_20260105.csv' refused (written path backtest_data/o3c_signal_synth/executions_20260105.csv): research intermediate (o3c_*): component 'o3c_signal_synth'	b287fe1d62647747	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/o3c_signal_synth/executions_20260105.csv' refused (written path backtest_data/o3c_signal_synth/executions_20260105.csv): research intermediate (o3c_*): component 'o3c_signal_synth'	b287fe1d62647747	2 回の実行で同じ	0.002	0.003
+v5-reject-phase2-runs	V5	能力	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/phase2_runs/unit_synth/executions_20260105.csv' refused (written path backtest_data/phase2_runs/unit_synth/executions_20260105.csv): research run outputs (phase2_runs): component 'phase2_runs'	b287fe1d62647747	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/phase2_runs/unit_synth/executions_20260105.csv' refused (written path backtest_data/phase2_runs/unit_synth/executions_20260105.csv): research run outputs (phase2_runs): component 'phase2_runs'	b287fe1d62647747	2 回の実行で同じ	0.002	0.003
+v5-reject-dotdot	V5	能力	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/bf_exec_synth_20260105/../qa_known_answer_synth/executions_20260105.csv' refused (written path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/bf_exec_synth_20260105/../qa_known_answer_synth/executions_20260105.csv' refused (written path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	2 回の実行で同じ	0.003	0.003
+v5-reject-symlink	V5	能力	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/bf_exec_link_synth/executions_20260105.csv' refused (real path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	正解と一致	変形を拒んだ: PathRefused: 'backtest_data/bf_exec_link_synth/executions_20260105.csv' refused (real path backtest_data/qa_known_answer_synth/executions_20260105.csv): synthetic known-answer data (qa_*): component 'qa_known_answer_synth'	b287fe1d62647747	2 回の実行で同じ	0.003	0.004
+v5-seal-boundary	V5	値	正解と一致	変形を拒んだ: SealedRangeError: 'backtest_data/bf_exec_sealtest_20260105/trades.csv': range end 1767596400000000001 ns is after the seal cutoff 1767596400000000000 ns (unit SYNTH-UNIT); the half-open range would reach sealed rows	ba7e2547661802b3	正解と一致	変形を拒んだ: SealedRangeError: 'backtest_data/bf_exec_sealtest_20260105/trades.csv': range end 1767596400000000001 ns is after the seal cutoff 1767596400000000000 ns (unit SYNTH-UNIT); the half-open range would reach sealed rows	ba7e2547661802b3	2 回の実行で同じ	0.003	0.004
+v5-sealed-window	V5	能力	正解と一致	変形を拒んだ: SealedRangeError: 'backtest_data/bf_exec_sealtest_20260105/trades.csv': range end 1767603600000000001 ns is after the seal cutoff 1767596400000000000 ns (unit SYNTH-UNIT); the half-open range would reach sealed rows	833d403a74edf6d8	正解と一致	変形を拒んだ: SealedRangeError: 'backtest_data/bf_exec_sealtest_20260105/trades.csv': range end 1767603600000000001 ns is after the seal cutoff 1767596400000000000 ns (unit SYNTH-UNIT); the half-open range would reach sealed rows	833d403a74edf6d8	2 回の実行で同じ	0.002	0.004
+v6-split	V6	値	正解と一致		1f1cf3ef00d0ff69	正解と一致		1f1cf3ef00d0ff69	2 回の実行で同じ	0.0	0.0
+v6-reverse-split	V6	値	正解と一致		d523cbe479438cb0	正解と一致		d523cbe479438cb0	2 回の実行で同じ	0.0	0.0
+v6-point-in-time	V6	値	正解と一致		f6eb8cd41a689ec5	正解と一致		f6eb8cd41a689ec5	2 回の実行で同じ	0.0	0.0
+v6-code-change	V6	値	正解と一致		4c50f31192183bce	正解と一致		4c50f31192183bce	2 回の実行で同じ	0.0	0.0
+v6-universe-survivorship	V6	能力	正解と一致		11c168fdb1ae11c7	正解と一致		11c168fdb1ae11c7	2 回の実行で同じ	0.0	0.0
+v7-bars-from-trades	V7	値	正解と一致		fecdf26058b799fa	正解と一致		fecdf26058b799fa	2 回の実行で同じ	0.001	0.002
+v7-rule-integer	V7	値	正解と一致		a66025b1545d00d5	正解と一致		a66025b1545d00d5	2 回の実行で同じ	0.001	0.002
+v7-rule-fractional	V7	値	正解と一致		a6d06eadccc7b3ec	正解と一致		a6d06eadccc7b3ec	2 回の実行で同じ	0.001	0.001
+v7-speed	V7	能力	正解と一致		e49601102a48a90e	正解と一致		e49601102a48a90e	2 回の実行で同じ	1.796	1.888

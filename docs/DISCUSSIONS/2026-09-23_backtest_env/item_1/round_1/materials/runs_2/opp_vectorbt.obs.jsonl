@@ -1,0 +1,35 @@
+{"scene": "v1-bitflyer-rest", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-bitflyer-us-gz", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-binance-aggtrades", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-fx-ticks", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-jpx-1m", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-bitflyer-board-top10", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-funding-and-liquidations", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-all-assets-one-call", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v1-generic-shape", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v2-same-instant-4-units", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v2-iso-offsets", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v2-naive-local-tz", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v3-clean-control", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v3-duplicate-and-conflict", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v3-backward", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v3-gap-bars", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v3-generations", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v4-sha256-values", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v4-sha256-distinguishes", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-reject-qa", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-reject-o3c", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-reject-phase2-runs", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-reject-dotdot", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-reject-symlink", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-seal-boundary", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v5-sealed-window", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v6-split", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v6-reverse-split", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v6-point-in-time", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v6-code-change", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v6-universe-survivorship", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v7-bars-from-trades", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "v7-rule-integer", "pass1": {"control": {"paths": {"event": {"sma": [null, null, 103.0, 103.33333333333333, 102.0, 101.33333333333333, 103.66666666666667, 106.33333333333333, 106.0, 106.66666666666667], "position": [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999995.0, 999995.0, 999995.0, 999999.0, 999998.0, 999994.0, 999994.0]}, "vector": {"sma": [null, null, 103.0, 103.33333333333333, 102.0, 101.33333333333333, 103.66666666666667, 106.33333333333333, 106.0, 106.66666666666667], "position": [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999995.0, 999995.0, 999995.0, 999999.0, 999998.0, 999994.0, 999994.0]}}, "timing": {"event_s": 4.954140938000023, "vector_s": 0.03467908200002512}}}, "pass2": {"control": {"paths": {"event": {"sma": [null, null, 103.0, 103.33333333333333, 102.0, 101.33333333333333, 103.66666666666667, 106.33333333333333, 106.0, 106.66666666666667], "position": [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999995.0, 999995.0, 999995.0, 999999.0, 999998.0, 999994.0, 999994.0]}, "vector": {"sma": [null, null, 103.0, 103.33333333333333, 102.0, 101.33333333333333, 103.66666666666667, 106.33333333333333, 106.0, 106.66666666666667], "position": [0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999995.0, 999995.0, 999995.0, 999999.0, 999998.0, 999994.0, 999994.0]}}, "timing": {"event_s": 4.796525292999945, "vector_s": 0.03649604600002476}}}}
+{"scene": "v7-rule-fractional", "pass1": {"control": {"paths": {"event": {"sma": [null, null, 101.39999999999999, 101.30000000000001, 101.06666666666668, 101.46666666666668, 101.96666666666665, 102.09999999999998, 101.8, 101.76666666666665], "position": [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999998.7000000001, 999998.7000000001, 1000000.5000000001, 999999.5000000001, 999999.5000000001, 999999.5000000001, 999999.3000000002]}, "vector": {"sma": [null, null, 101.39999999999999, 101.30000000000001, 101.06666666666668, 101.46666666666668, 101.96666666666665, 102.09999999999998, 101.8, 101.76666666666665], "position": [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999998.7000000001, 999998.7000000001, 1000000.5000000001, 999999.5000000001, 999999.5000000001, 999999.5000000001, 999999.3000000002]}}, "timing": {"event_s": 0.00349502599999596, "vector_s": 0.005757717999927081}}}, "pass2": {"control": {"paths": {"event": {"sma": [null, null, 101.39999999999999, 101.30000000000001, 101.06666666666668, 101.46666666666668, 101.96666666666665, 102.09999999999998, 101.8, 101.76666666666665], "position": [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999998.7000000001, 999998.7000000001, 1000000.5000000001, 999999.5000000001, 999999.5000000001, 999999.5000000001, 999999.3000000002]}, "vector": {"sma": [null, null, 101.39999999999999, 101.30000000000001, 101.06666666666668, 101.46666666666668, 101.96666666666665, 102.09999999999998, 101.8, 101.76666666666665], "position": [0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0], "equity": [1000000.0, 1000000.0, 1000000.0, 999998.7000000001, 999998.7000000001, 1000000.5000000001, 999999.5000000001, 999999.5000000001, 999999.5000000001, 999999.3000000002]}}, "timing": {"event_s": 0.0037064639999471183, "vector_s": 0.0059387920000517624}}}}
+{"scene": "v7-speed", "pass1": {"control": {"timing": {"event_s": 0.42429524700003185, "vector_s": 0.02709690699998646}, "lengths": {"event": {"sma": 20000, "position": 20000, "equity": 20000}, "vector": {"sma": 20000, "position": 20000, "equity": 20000}}}}, "pass2": {"control": {"timing": {"event_s": 0.4146269090000487, "vector_s": 0.028466816999980438}, "lengths": {"event": {"sma": 20000, "position": 20000, "equity": 20000}, "vector": {"sma": 20000, "position": 20000, "equity": 20000}}}}}

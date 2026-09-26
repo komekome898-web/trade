@@ -18,6 +18,7 @@ from __future__ import annotations
 import csv
 import os
 import random
+import re
 import shutil
 import string
 import sys
@@ -60,7 +61,7 @@ def why_none(detail: str) -> str:
     """Category of a 「結果なし」 (no tool name, no clock time)."""
     d = detail or ""
     if d.startswith("adapter:") or d.startswith("対照: adapter:") or d.startswith("変形: adapter:"):
-        return "対象の公開の口に、この場面を渡す手段が見つからなかった(探した場所は資料係の記録)"
+        return "対象の公開の口に、この場面を渡す手段が見つからなかった"
     if d.startswith("対象を読み込めない"):
         return "対象を読み込めなかった(例外)"
     if "時間の上限" in d:
@@ -68,6 +69,46 @@ def why_none(detail: str) -> str:
     if d.startswith("実行が行を残さなかった"):
         return "実行が結果の行を残さなかった"
     return "対象の呼び出しが例外で終わった(対象が拒んだのではない)"
+
+
+# ASCII words that name no tool (formats, units, column words, time zones,
+# generic commands).  Every other ASCII word or path in an error text is
+# replaced by 〔名〕 before it reaches a table (委任文 §3: no tool-identifying
+# words in the notes; the verbatim text stays in runs/*.tsv and
+# survey_breakdown.tsv).
+KEEP = {
+    "CSV", "csv", "OHLC", "UTC", "JST", "ISO", "Asia/Tokyo", "sha256", "md5", "WebSocket", "HTTP",
+    "Open", "High", "Low", "Close", "Volume", "Date", "Adj", "open", "high", "low", "close", "volume",
+    "date", "time", "timestamp", "symbol", "trade", "trades", "quote", "book", "funding", "bar",
+    "float32", "grep", "-rn", "-rni", "adapter:", "split", "delist", "universe", "V1", "V2", "V3", "V4",
+    "V5", "V6", "V7", "/", "-", "gzip",
+}
+_TOKEN = re.compile(r"[A-Za-z_./$<>\-][\w./$<>\-:]*")
+_CLOCK = re.compile(r"\d{1,2}:\d{2}(:\d{2})?")
+
+
+# Japanese words that would tell which row is which (our current state, a
+# reproduction) or narrow a tool down by its kind; replaced the same way.
+HIDE_JA = ("ティックと板の模擬器", "執行費用の分析の道具", "暗号資産の道具", "通信の道具", "先物の道具", "調査報告",
+           "現状", "再現")
+
+
+def redact(text: str) -> str:
+    t = _CLOCK.sub("〔時刻〕", text or "")
+    for w in HIDE_JA:
+        t = t.replace(w, "〔名〕")
+    t = _TOKEN.sub(lambda m: m.group(0) if m.group(0) in KEEP else "〔名〕", t)
+    t = re.sub(r"〔名〕(?:[ ._:/-]*〔名〕)+", "〔名〕", t)
+    return esc(t)
+
+
+def said(c: dict) -> str:
+    """The error text(s) a 「結果なし」 cell came from, verbatim but redacted."""
+    a = redact(c["detail"])
+    b = redact(c.get("detail_2", ""))
+    if c.get("class_2") == "結果なし" and b and b != a:
+        return f"1 回目「{a}」/ 2 回目「{b}」"
+    return f"「{a}」(2 回とも同じ文)"
 
 
 def cell_of(r: dict) -> dict:
@@ -121,19 +162,21 @@ def notes_for(label: str, name: str, row: dict, n_survey: int) -> list[str]:
         if c["class"] != "結果なし":
             continue
         if name == "survey_best":
-            cats: dict[str, int] = {}
+            texts: dict[str, int] = {}
             for x in c["folded"].values():
-                k = why_none(x["detail"]) if x["class"] == "結果なし" else x["class"]
-                cats[k] = cats.get(k, 0) + 1
+                k = f"{why_none(x['detail'])}: 「{redact(x['detail'])}」" if x["class"] == "結果なし" else x["class"]
+                texts[k] = texts.get(k, 0) + 1
             secs = max(x["secs"] for x in c["folded"].values())
-            parts = "、".join(f"{k} {v} 件" for k, v in sorted(cats.items(), key=lambda kv: (-kv[1], kv[0])))
-            out.append(f"注記: 場面 {s['id']}: 行 {label} に寄せた {n_survey} 対象の全部が結果なし。試したこと: 場面の定義どおりに、"
-                       f"各対象を別々のプロセスで 2 回ずつ、各対象の公開の口で走らせた。出たもの: {parts}。"
+            parts = " / ".join(f"{k}({v} 対象)" for k, v in sorted(texts.items(), key=lambda kv: (-kv[1], kv[0])))
+            out.append(f"注記: 場面 {s['id']}: 行 {label} に寄せた {n_survey} 対象の全部が結果なし。試したこと: 場面の入力"
+                       f"(場面の定義の「入力」)を各対象の公開の口に渡し、別々のプロセスで 2 回ずつ走らせた。"
+                       f"出たエラーの文(逐語。道具を特定できる語は〔名〕に置き換えた): {parts}。"
                        f"実測の時間: 1 回の実行でこの場面にかかった時間の最長 {secs:.3f} 秒(時間の上限は 1 場面 300 秒)。")
         else:
             secs = c["secs"]
-            out.append(f"注記: 場面 {s['id']}: 行 {label} は結果なし。試したこと: 場面の定義どおりに、別々のプロセスで 2 回、"
-                       f"対象の公開の口で走らせた。出たもの: {why_none(c['detail'])}。"
+            out.append(f"注記: 場面 {s['id']}: 行 {label} は結果なし。試したこと: 場面の入力(場面の定義の「入力」)を"
+                       f"対象の公開の口に渡し、別々のプロセスで 2 回走らせた。{why_none(c['detail'])}。"
+                       f"出たエラーの文(逐語。道具を特定できる語は〔名〕に置き換えた): {said(c)}。"
                        f"実測の時間: 1 回の実行でこの場面にかかった時間の最長 {secs:.3f} 秒(時間の上限は 1 場面 300 秒)。")
     return out
 
