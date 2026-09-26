@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""区分 8 の回の最後に、起動文 §7 の 4 つの検査と大きさを打ち、出力の全文を報告の末尾に書き足す道具(調査班が最後に 1 回打つ)。
+
+置いた理由(2026-09-26、35 回目の検収 監査 134 回目の指摘 1): 起動文 §7 で「1〜4 の出力を全部貼る」と書いても、
+24〜26・32・35 回目に 2〜4 の出力が報告に貼られなかった。規則ではなく道具で貼る。
+
+使い方:
+  python3 scripts/cat8_final_checks.py --round <回> [--report docs/DATA/SCAN_2026-09-23_tools_cat8.md]
+
+報告の末尾に `### 受け入れ検査の出力(道具が貼った)` の小節を 1 つ足す。打ったコマンドと出力をそのまま書く。
+検査 4(過去の節から消えた行)は HEAD との差で数えるので、この道具が書き足す前に打つ。
+"""
+import argparse, pathlib, subprocess
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--round", type=int, required=True)
+ap.add_argument("--report", default="docs/DATA/SCAN_2026-09-23_tools_cat8.md")
+a = ap.parse_args()
+n = a.round
+logs = " ".join("docs/DATA/probes/20260923_tools_8_run%d.log" % i for i in range(1, n + 1))
+log = "docs/DATA/probes/20260923_tools_8_run%d.log" % n
+cmds = [
+    "python3 scripts/check_scan_report.py %s %s" % (a.report, logs),
+    "python3 scripts/cat8_ledger.py check-elements %s --round %d" % (a.report, n),
+    'python3 scripts/cat8_ledger.py check "" %s' % log,
+    "git diff -U0 HEAD -- %s | grep '^-[^-]' | wc -l" % a.report,
+    "wc -c %s %s" % (a.report, log),
+]
+out = ["", "### 受け入れ検査の出力(道具が貼った)", "",
+       "`scripts/cat8_final_checks.py --round %d` が打った。コマンドと出力の全文。" % n, ""]
+for c in cmds:
+    p = subprocess.run(["bash", "-c", c], capture_output=True, text=True, errors="replace")
+    out += ["```", "$ " + (c if len(c) < 400 else c[:200] + " … (生ログ 1〜%d 本)" % n), (p.stdout + p.stderr).rstrip("\n"), "```", ""]
+with open(a.report, "a") as f:
+    f.write("\n".join(out))
+print("\n".join(out))

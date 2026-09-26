@@ -47214,3 +47214,27 @@ K12 検査の出力の貼付           1 件
 ---- 検査対象の合計 66 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 67 件
 ```
+
+### リードの追記(検収、監査 134 回目)
+
+全文は `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run35.md`。要点:
+
+- この回の実測は受け取る(§6-1 の結論の後に導入)。
+- 台帳に入れた値: E1a 印・段 4(段 4 の逐語: 生ログ 1703〜1706 行「actual : array_like」「desired : array_like」)/ E1b 印・段 2 / **E2 未判別**(`genfromtxt` は一般の配列を読む関数で、述語の「時系列・約定・板・足・参照データについて」を言う逐語が無い)/ E3a なし / E3b なし / E4 未判別(案 B の記録あり)/ E5 印・段 2 / E6 印・段 4。8-039 は E2 に案 B の記録が無いので「残り」に数える。
+- 訂正: E3a の当たりの判定の表の `1.20.0-changelog.rst` の行の例「* Carl Leake +」は貢献者の姓で、リークの修正の記録ではない(10 件のうち 9 件がリークの修正、1 件が姓)。結論は変わらない。
+- 調査班が貼らなかった検査の出力(リードの打ち直し):
+
+```
+---- 検査対象の合計 66 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 66 件
+$ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 35
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 20 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+$ python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run35.log
+参考: docs/DATA/probes/20260923_tools_8_run35.log の最初の手 2026-09-26T21:18:29Z / 最後の手 2026-09-26T21:45:12Z / 手の数 80
+---- 合計 0 件
+$ git diff -U0 22ccfa3~1 22ccfa3 -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l
+0
+$ wc -c docs/DATA/probes/20260923_tools_8_run35.log
+282620 docs/DATA/probes/20260923_tools_8_run35.log
+```
