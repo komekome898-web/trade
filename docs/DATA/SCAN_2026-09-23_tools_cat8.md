@@ -39126,3 +39126,529 @@ K12 検査の出力の貼付           1 件
 - **除いたファイルの数(指摘 3)**: 生ログ 227 行の正規表現では、除いた数 2,281(= 3,902 − 1,621)。一覧の件数からは 2,264(= 3,902 − 1,638)。差の 17 件の内訳は確かめていない(未確認)。
 - **§4.0 の注記(指摘 8)**: 導入可否・install所要秒・依存数・pip check・最小実行の可否・最小実行の中身・実行所要秒の 7 行は、いずれも 21 回目に §6-1 の検査の前に導入した環境の結果で、§6-1 は 22 回目に後から行った(順番の違反)。
 - **宣伝詐欺の兆候(指摘 10)**: 根拠は WebSearch の結果の要約だけで、個々の投稿を取っていない。根拠の種類は `実測` ではなく `推定` とする。
+
+## 区分8 — 23 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-030 `dbt` の残り、E1b と E4 だけを扱う(起動文§1)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run23_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run23_prompt.md@9b52c42f5ab4`)
+- 21回目に導入済みの隔離venv・取得済みリポジトリ(`.../scratchpad/cat8/venvs/8-030/`。取り直していない)
+- `docs-repo/website/sidebars.js`(公式文書の目次全体、mainブランチのdocs-repo)
+- `docs-repo/website/docs/docs/` と `docs-repo/website/docs/reference/` 配下の全.md/.mdx(839頁のfront matter titleと最初の見出し)
+- `dbt-core`(mainブランチ、v2.0)の `crates/` 配下: `dbt-metricflow`(Cargo.toml・docs/metric-semantics.md)・`adbc-record-replay`(Cargo.toml・src/lib.rs)・`dbt-adapter/src/time_machine/`(mod.rs・event_replay.rs)・`dbt-adapter/src/engine/record_replay.rs`・`dbt-clap-core/src/time_machine.rs`・`dbt-clap-core/src/lib.rs`
+- `dbt-1latest`(1.latestブランチ、v1)の `core/dbt/materializations/incremental/microbatch.py`・`core/dbt/task/run.py`
+- `website/docs/docs/build/ratio-metrics.md`・`website/docs/docs/build/about-metricflow.md`(公式文書、公式文書Nディレクトリ内)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run22.md`(22回目検収。この回が引き継ぐ指摘1・2・6・7・11の扱い)
+- `docs/DATA/probes/20260923_tools_8_run21.log`(21回目の見積もりの手、E1b・E4の当たりの行の数の出典。この回は打ち直さない)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `dbt` / §1-1 文書の目次全体: `docs-repo/website/sidebars.js` は2,201行(実測)。E1b・E4に関わりうる語(test/compar/audit/reconcil/replay/backfill/microbatch/incremental/event-time/snapshot/seed/diff)で印字すると75件。新たに読む価値があるとみなした項目: `docs/dbt/vs-compare-changes`・`reference/node-selection/state-comparison-caveats`・`reference/resource-configs/compare-unrendered-code`(いずれも「比較」機能の候補として調べたが、dbtの`state:modified`系の比較はdbtプロジェクトのマニフェスト状態=dbt自身の成果物どうしの差分検出で、当方の計算(約定・損益・指標等)と同じ種類の出力の比較ではないため、E1b・E4いずれの候補にもならないと判断し、これ以上深追いしていない)。`about-metricflow`・`build-metrics-intro`・`metricflow-commands`・`ratio-metrics`・`cumulative-metrics`・`derived-metrics`・`conversion-metrics`・`incremental-microbatch`・`incremental-models`の各項目をE1b/E4の候補として選び、本文を読んだ(下の知見#2以降) | 実測 | docs/DATA/probes/20260923_tools_8_run23.log:2-4 docs/DATA/probes/20260923_tools_8_run23.log:5-75 |
+| 2 | `dbt` / §1-2 全839頁のtitle一覧: `website/docs/docs`493 + `website/docs/reference`346 = 839(起動文と同じ`find`コマンドで数え直し、21回目と一致)。front matter titleと最初の見出しを印字するPythonの手を`cat8_step.py`経由で打ち、839行を得た(TOTAL=839、標準エラーに出力)。metric/semantic/python-model/materializ等の語で選んだ頁を読んだ(知見#3以降)。replay/backfill/event-time/snapshot/clone/freshness/retry等の語で選んだ頁のうち、`reference/commands/clone.md`(dbt clone、マニフェスト状態からのクローンで時刻の再生ではない)・`reference/commands/retry.md`(失敗したノードの再試行、再生ではない)・`docs/deploy/source-freshness.md`(鮮度チェック、再生ではない)は本文まで読んだが、E4の述語(記録した市場データを時刻順に再生して再実行する)に当たらないと判断した | 実測 | docs/DATA/probes/20260923_tools_8_run23.log:88-929 |
+| 3 | `dbt` / E1b候補(MetricFlow): mainブランチ`crates/dbt-metricflow`(1.latestには対応する独立クレートは無い。dbt-core内の同一リポジトリのRustクレート、§1-3の指示どおりdbt本体として読んだ)。Cargo.toml逐語「MetricFlow semantic query compiler. Translates metric queries into executable SQL」。公式文書`about-metricflow.md`逐語「MetricFlow handles SQL query construction and defines the specification for dbt semantic models and metrics」。ratio-metrics.mdのパラメータ表: ユーザーが指定するのは`numerator`・`denominator`(メトリクス名の文字列、または`name`/`filter`/`alias`のみを持つ辞書)で、比率を計算するSQL式自体はユーザーが書かない。`crates/dbt-metricflow/docs/metric-semantics.md`のCumulative Metricの例は、ユーザーの入力(`--metrics trailing_2_day_revenue --group-by metric_time:day`という問い合わせ)に対し、コンパイラ(MetricFlowのRust実装)がCTE・生成されたスパイン・ローリングウィンドウの結合条件を含むSQLを自動生成することを示す(逐語「Cumulative metrics are more complex because the compiler needs a source CTE, a generated spine, and a rolling-window join condition」)。当方の指標計算(損益・指標等)と同じ種類の出力(revenue・ratio・cumulative集計などの指標)を、当方とは別の実装(MetricFlowのコンパイラ)で出す計算という点では、設計票§3のE1b述語の文言に表面上は当たる | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:1057-1089 docs/DATA/probes/20260923_tools_8_run23.log:1090-1130 docs/DATA/probes/20260923_tools_8_run23.log:1131-1157 docs/DATA/probes/20260923_tools_8_run23.log:1158-1202 docs/DATA/probes/20260923_tools_8_run23.log:1568-1589 |
+| 4 | `dbt` / E1b判定(未判別のまま残す理由): 知見#3のMetricFlow候補は、この回の起動文§1が明記する除外規定「利用者がモデル・指標の定義として書く SQL や設定は、道具で動かす利用者のコードで、dbt の計算ではない」に照らすと、ratio/cumulative/derivedの各メトリクスの種類(type)と対象(numerator・denominator・input_metric等)はいずれもユーザーがYAMLで書く指標の定義であり、この除外規定の文言(指標の定義として書く設定、の部分)に文字どおり当たるように読める。一方で、比率や累積といった計算の具体的なSQLロジック(結合条件・ウィンドウ関数の組み立て)自体はユーザーが書かず、MetricFlowのコンパイラが自動生成する点は、22回目に除外されたモデル機能(SQL全文をユーザーが書く)とは性質が異なる。この線引き(指標の定義の指定と、指標の定義のためのSQL計算ロジックの自動生成の、どちらを除外規定が指すか)は起動文にもCAT8_DESIGN.mdにも明記が無く、調査班が独自に決めると22回目と同種の当て直しの手戻りを招く恐れがあるため、`印`とはせず`未判別`のまま残し、末尾の問い#1として提出する | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:1057-1202 docs/DATA/probes/20260923_tools_8_run23.log:1590-1595 |
+| 5 | `dbt` / E4候補1(Time Machine / record-replay、mainブランチ): `crates/`最上位一覧(1027行)に`adbc-record-replay`という名前のクレートを確認。Cargo.toml逐語「Record and replay implementations of adbc Connection/Statement traits for testing」。`crates/dbt-adapter/src/time_machine/mod.rs`冒頭のモジュール文書逐語「Time Machine: Cross-Version Record/Replay System」「This module provides infrastructure for recording and replaying adapter-level behavior, enabling backward compatibility testing across Fusion versions」。記録されるのは`Adapter`(Jinjaの`adapter.xxx()`呼び出し)と`MetadataAdapter`(スキーマ検出・鮮度・relation一覧)のイベントで、当方の市場データではなくdbt自身がDBに発行するSQL呼び出しの記録である。さらに`crates/dbt-clap-core/src/lib.rs`のCLIフラグ定義(`time_machine_mode`・`time_machine_path`・`fs_record`・`fs_replay`・`dbt_replay`)は全て`hide = true`(`--help`に表示されない内部フラグ)で、`dbt_replay`のコメントは逐語「Path for dbt replay functionality (Using _DBT_REPLAY env var for **Shadow Scenarios**)」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:1203-1242 docs/DATA/probes/20260923_tools_8_run23.log:1243-1304 docs/DATA/probes/20260923_tools_8_run23.log:1305-1335 docs/DATA/probes/20260923_tools_8_run23.log:1422-1514 docs/DATA/probes/20260923_tools_8_run23.log:1515-1567 |
+| 6 | `dbt` / E4判定(候補1を`印`にしない理由): 知見#5のTime Machine/record-replay一式は、起動文§2.1逐語「候補が自分自身の版・ランタイムを試験する仕組み(候補の開発のための試験・CI・`#[test]`・`assert!` など)は `印` に数えない」(オーナー決定L-516)に当たる。根拠: (a) モジュール文書自身が目的を「backward compatibility testing across Fusion versions」(dbtエンジン自身のバージョン間互換性テスト)と明記、(b) `adbc-record-replay`のCargo.toml自身が「for testing」と明記、(c) CLIフラグが全て`hide=true`の内部フラグで、`dbt_replay`は「Shadow Scenarios」(新旧エンジンの影実行比較、これもdbt自身の開発用途)向けと明記。記録される対象も市場データではなくdbtアダプタのDB呼び出しイベントである。よって`未判別`には残すが、`印`とはしない(除外規定に明確に当たるため、22回目のE1b/E4のような当て直しの余地は無いと判断し、問いには出さない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:1203-1335 docs/DATA/probes/20260923_tools_8_run23.log:1422-1567 docs/DATA/probes/20260923_tools_8_run23.log:1596-1598 |
+| 7 | `dbt` / E4候補2(microbatchの実行順、再検討): 1.latestブランチ`core/dbt/task/run.py`の`should_run_in_parallel()`は、`concurrent_batches`設定が無指定(既定)の場合、モデルのSQLが自分自身の出力(`{{ this }}`)を参照する(`has_this`)ときに限り`run_in_parallel = False`(逐語コメント「If the model self references `this` then we assume the model batches _can't_ be run in parallel」)。`microbatch.py`の`build_batches()`はstartからendまで時系列昇順にバッチを構築する。`run.py`の`MicrobatchModelRunner`のオーケストレーションは、最初と最後のバッチを`force_sequential_run=True`で強制的に逐次実行し、中間バッチは逐語コメント「in parallel if possible」で提出する。22回目検収(指摘1)が指摘した公式文書の逐語(independent queries・concurrent_batchesの記述、21・22回目の生ログが出典)と、このソースコードの挙動(中間バッチは既定でも並列提出を試みる)は整合しており、22回目が用いた時刻順に再生してという言い換えを裏付ける新しい一次資料はこの回では見つからなかった。`has_this`時の逐次実行は書き込み競合を避けるための実装上の制約であり、E4の述語が想定する再生機構(過去のデータ列を順に流し込んで戦略・計算を追体験させる仕組み)とは性質が異なると判断した | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:1336-1356 docs/DATA/probes/20260923_tools_8_run23.log:1357-1373 docs/DATA/probes/20260923_tools_8_run23.log:1374-1421 |
+| 8 | `dbt` / v1系アダプタは読んでいない: この回に読んだソースはdbt-core本体の2つの枝(main・1.latest、生ログで枝名を再確認した箇所)だけ。`dbt-adapters`・`dbt-duckdb`(21回目にpipで導入した`exec_venv`の中、または別のGitHubリポジトリにある別配布物)は、起動文§1-3の指示どおりこの回は読んでいない | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:930-935 |
+| 9 | `dbt` / 案Bの記録・E1b: 読んだ範囲 = `sidebars.js`全2,201行の目次(§1-1)・839頁のtitleと最初の見出し全件(§1-2)・mainブランチ`crates/`の最上位一覧(84クレート、§1-3)とそのうち`dbt-metricflow`のCargo.toml・docs/metric-semantics.md(573行のうち関連部分)・公式文書`ratio-metrics.md`(45行分)・`about-metricflow.md`(20行分)。当たりの行の数(見積もり、21回目の手を再利用): 突き合わせ・reconcil / 別実装・reference implementation・参照実装・cross-check / compar・比較・diff・差分の正規表現でmain 4,279件+1.latest 1,056件+docs 2,043件+dbt-utils 149件+audit-helper 351件=合計7,878件(500行の上限を大幅に超える。全件検索`cat8_search.py`はこの回は打たない、起動文§1。見積もりの手そのものは21回目の生ログ211-218行目)。限界: 題(タイトル)と目次で頁を選んで読む方式のため、題にcompare・reconcil等の語が出ない機能記述(例えば本文の途中だけに出る記述)は読み落としうる | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:211-218 docs/DATA/probes/20260923_tools_8_run23.log:2-4 docs/DATA/probes/20260923_tools_8_run23.log:88-929 docs/DATA/probes/20260923_tools_8_run23.log:942-1027 docs/DATA/probes/20260923_tools_8_run23.log:1057-1202 docs/DATA/probes/20260923_tools_8_run23.log:1568-1589 |
+| 10 | `dbt` / 案Bの記録・E4: 読んだ範囲 = `sidebars.js`全2,201行の目次(§1-1)・839頁のtitleと最初の見出し全件(§1-2)・mainブランチ`crates/`の最上位一覧(84クレート)とファイル名検索(replay/reconcil/compar/diff/golden/checkpoint/record/backfill/chronolog/sequenc等の語、非テストディレクトリのみ、§1-3)・そのうち`adbc-record-replay`(Cargo.toml・src/lib.rs冒頭)・`dbt-adapter/src/time_machine/`(mod.rs・event_replay.rs冒頭)・`dbt-adapter/src/engine/record_replay.rs`(import文)・`dbt-clap-core/src/time_machine.rs`全文・`dbt-clap-core/src/lib.rs`の該当フラグ定義部分・1.latestブランチ`core/dbt/materializations/incremental/microbatch.py`全236行のうち`build_batches`・`core/dbt/task/run.py`の`should_run_in_parallel`とMicrobatchModelRunnerのオーケストレーション部分。当たりの行の数(見積もり、21回目の手を再利用): リプレイ・再生・replay / record・記録・capture / playback・再実行・rerunの正規表現でmain 8,060件+1.latest 573件+docs 770件+dbt-utils 46件+audit-helper 23件=合計9,472件(500行の上限を大幅に超える。全件検索はこの回は打たない。見積もりの手そのものは21回目の生ログ235-242行目)。限界: ファイル名・クレート名・題で候補を絞ってから中身を読む方式のため、名前に「replay」等の語を含まないファイルの中に埋め込まれた再生機能の記述は読み落としうる(ファイル名検索でヒットしなかった残り数千ファイルの本文は読んでいない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:235-242 docs/DATA/probes/20260923_tools_8_run23.log:1028-1051 docs/DATA/probes/20260923_tools_8_run23.log:1052-1056 docs/DATA/probes/20260923_tools_8_run23.log:1203-1421 |
+| 11 | `dbt` / 状態の変化なし: E1b・E4とも`未判別`のまま残ったため、設計票§2の「深掘り」の条件(E1a〜E6の未判別が0件)を満たさない。状態は22回目と同じ`浅い`のまま据え置く | 一次資料 | docs/DATA/probes/20260923_tools_8_run23.log:2-4 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — この回(23回目)でE1b・E4だけを扱った。印を探し尽くしたが見つからず(知見#3〜#8)、両方とも`未判別`のまま残す(案Bの記録は知見#9・#10)。E1aは値`印`・段`3`で台帳の値のまま(22回目の節)。状態は`浅い`のまま据え置く — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | MetricFlow候補(知見#3)あり。起動文§1の除外規定「利用者がモデル・指標の定義として書く SQL や設定は、道具で動かす利用者のコードで、dbt の計算ではない」の当たり方が未確定のため印にせず未判別のまま(知見#4、問い#1) | docs/DATA/probes/20260923_tools_8_run23.log:1057-1202 docs/DATA/probes/20260923_tools_8_run23.log:1590-1595 |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | Time Machine/record-replay(知見#5)は起動文§2.1逐語「候補が自分自身の版・ランタイムを試験する仕組み(候補の開発のための試験・CI・`#[test]`・`assert!` など)は `印` に数えない」に当たるため印にしない(知見#6)。microbatch再検討(知見#7)も22回目検収の読みを覆す証拠は無し | docs/DATA/probes/20260923_tools_8_run23.log:1203-1421 docs/DATA/probes/20260923_tools_8_run23.log:1596-1598 |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(22回目の節) |  |
+
+### ツール1件ごとの表
+
+`dbt`の全列は21・22回目の`### 4.0 機械可読の表`(20回目のNinjaTrader・21回目のdbt自身と同じ扱い、20260923_tools_survey_cat8_run22_prompt起動時の扱いを継続)を参照。この回はE1b・E4だけを扱ったため、新しい文章表は起こさず、下の`### 4.0 機械可読の表`(版の1行だけ)と`### 要素と段`・`### 知見`に集約する。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `dbt` | 版 | mainブランチ = dbt v2.0(README逐語「main branch now contains all the source code of dbt v2.0」、21回目確認済み。この回`git rev-parse --abbrev-ref HEAD`で枝名`main`を再確認)。1.latestブランチ = `git rev-parse --abbrev-ref HEAD`で枝名`1.latest`を再確認(pip installで実際に入る安定版は1.12.5、21回目実測) | 実測 | docs/DATA/probes/20260923_tools_8_run23.log:930-935 |
+
+### 代替経路
+
+この回は21回目に取得済みのローカルの隔離venv・リポジトリ(`.../scratchpad/cat8/venvs/8-030/`)の中を読んだだけで、新しい外部通信は行っていない。プロキシの到達不可(403等)には遭遇しなかった。到達不可が起きた場合の第2経路(オーナーPC等)は21回目の節のとおりで、この回は変更が無い。
+
+### 判断に迷った点と問い
+
+1. [値・段の問い] E1b(知見#3・#4): MetricFlowのratio/cumulative/derivedメトリクスは、コンパイラ(MetricFlowのRust実装)がSQLの結合・ウィンドウ関数を自動生成する点でdbtのモデル機能(SQL全文をユーザーが書く)とは異なるが、メトリクスの「種類(type)」と「対象(numerator/denominator等)」自体はユーザーがYAMLで書く指標の定義である。起動文§1の除外規定「利用者がモデル・指標の定義として書くSQLや設定は…dbtの計算ではない」が、(a)指標の定義(種類・対象の指定)そのものを指すのか、(b)指標の計算ロジック(SQL文字列)をユーザーが書くかどうかを指すのかで、この候補の判定が変わる。(a)なら除外され`なし`寄り、(b)なら「MetricFlowが自動生成する」ので除外されず`印`寄りになる。前回(22回目)は「モデル」を除外する理由としてこの2つを区別せずに扱っており、この回はより除外規定に近いが計算ロジック自体は自動生成されるMetricFlowという中間的な事例に当たった。決めずに問いとして出す
+2. [それ以外の問い] E4(知見#5・#6): Time Machine/record-replay一式は「backward compatibility testing across Fusion versions」という自己試験の目的が公式文書・Cargo.tomlに明記されており、CLIフラグも全て`hide=true`であることから、起動文§2.1の除外規定に当たると判断して`印`にしなかった。これは22回目のmicrobatchのような「述語の当て方」の対立ではなく、除外規定の適用の問題なので、当て直しの要否には影響しないと考えているが、この判断(自己試験の除外規定の範囲に「CLIから呼べるが目的が自己試験と明記された機能」を含めてよいか)自体の確認をお願いしたい
+3. [それ以外の問い] E1b・E4とも「未判別のまま残す」という結論になったが、これは案B(L-519)の想定どおり(印を探し尽くしても見つからない要素は未判別のまま)の運用か、それとも読み方(除外規定の適用)が誤っていて実際には印を付けるべきかの確認をお願いしたい。とくに問い1のMetricFlowは、設計票§3のE1b述語の文言だけを見れば表面上は当たるように読めるため、除外規定の拡大解釈によって区分8の族を狭めていないか(CLAUDE.md §0.2 A-10・A-18)を検収で見てほしい
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+
+
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run23.log`**(誤検出は閉じずに残す。K1・K2(19612・19909・30448・34975・35047・36881行目)とK13の29件(AI Trading Lab〜Vibe-Trading)は19〜22回目までの検収で誤検出として受け取られ済み。K13のdbtの4件(38390行目)は22回目検収で受け取られ済みの型と同じ(21回目・22回目の§4.0機械可読の表が同じ道具名`dbt`を持ち、この回で変更していない項目の根拠文字列が過去の回と一致するため`check_hollow`が束ねて数えたもの)。誤検出だと判断しても自分で閉じない。**
+
+```
+K1 太字                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+K2 括弧                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             33 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 43 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 43 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 23`**
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 11 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run23.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run23.log の最初の手 2026-09-26T11:18:10Z / 最後の手 2026-09-26T11:32:31Z / 手の数 28
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`**
+
+```
+0
+```
