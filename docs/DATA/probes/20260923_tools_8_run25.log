@@ -1,0 +1,391 @@
+=== 25 回目 指定: 8-033 Prefect の残り(本体だけの当たりの数え直し・E2の印を探し尽くす・§4.0の未確認3件を試す)。起動文 docs/DATA/delegations/20260923_tools_survey_cat8_run25_prompt.md@8ebc364c6d81
+--- 2026-09-26T12:59:18Z method=rsync target=8-033_本体だけ rc=127 time_s=0.002 note=src/integrationsと.gitを除いた本体だけの写しをcoreに作る(1a)
+$ rsync -a --exclude src/integrations/ --exclude .git/ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/
+bash: line 1: rsync: command not found
+--- 2026-09-26T12:59:32Z method=tar target=8-033_本体だけ rc=2 time_s=0.004 note=rsyncがこの環境に無いためtarで代替。src/integrationsと.gitを除いた本体だけの写しをcoreに作る(1a、rsyncの代わり)
+$ tar --exclude=src/integrations --exclude=.git -cf - -C /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect . '|' tar -xf - -C /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core
+tar: You may not specify more than one '-Acdtrux', '--delete' or  '--test-label' option
+Try 'tar --help' or 'tar --usage' for more information.
+--- 2026-09-26T12:59:39Z method=tar target=8-033_本体だけ rc=0 time_s=0.235 note=rsyncがこの環境に無いためtarで代替。src/integrationsと.gitを除いた本体だけの写しをcoreに作る(1a、rsyncの代わり)
+$ tar --exclude=src/integrations --exclude=.git -cf - -C '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect' . | tar -xf - -C '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core'
+
+--- 2026-09-26T12:59:44Z method=count target=8-033_integrations除外数 rc=1 time_s=0.004 note=除外したsrc/integrationsのファイル数を数える(1b)
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations -type f '|' wc -l
+find: paths must precede expression: `|'
+--- 2026-09-26T12:59:52Z method=count target=8-033_integrations除外数 rc=0 time_s=0.007 note=除外したsrc/integrationsのファイル数を数える(1b)
+$ find '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations' -type f | wc -l
+577
+--- 2026-09-26T13:00:04Z method=mklist target=8-033_本体だけ rc=0 time_s=0.090 note=src/integrations除外後のcoreから一覧を作る(1c)
+$ python3 scripts/cat8_mklist.py --root '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core' --candidate 8-033 --out '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt' --absent 'docs/v3/api-ref/rest-api/server/schema.json=1MB超のためcat8_repo_fetchで取得せず(24回目のNから引き継ぎ、本体側)' --absent 'uv.lock=1MB超のためcat8_repo_fetchで取得せず(24回目のNから引き継ぎ、本体側)'
+無い	docs/v3/api-ref/rest-api/server/schema.json	1MB超のためcat8_repo_fetchで取得せず(24回目のNから引き継ぎ、本体側)
+無い	uv.lock	1MB超のためcat8_repo_fetchで取得せず(24回目のNから引き継ぎ、本体側)
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt in_root=4829 added=0 absent=2 excluded=0 listed=4829 sha=30cbc46d59075d10 candidate=8-033
+--- 2026-09-26T13:00:25Z method=estimate target=8-033_E1a_本体 rc=0 time_s=0.136 note=本体だけ一覧(4829件)でE1aの見積もり(1c、500行の規則)
+$ xargs -0 grep -I -c -i -E '突き合わせ|reconcil|cross-check|比較|compar|diff|差分|一致|mismatch' < '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt' 2>/dev/null | awk -F: 'BEGIN{f=0} {s+=$NF; if($NF+0>0) f++} END{print "files_with_hits=" f " total_lines=" s}'
+files_with_hits=499 total_lines=1664
+--- 2026-09-26T13:00:25Z method=estimate target=8-033_E1b_本体 rc=0 time_s=0.115 note=本体だけ一覧(4829件)でE1bの見積もり(1c、500行の規則)
+$ xargs -0 grep -I -c -i -E '突き合わせ|reconcil|別実装|reference implementation|参照実装|cross-check|compar|比較|diff|差分' < '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt' 2>/dev/null | awk -F: 'BEGIN{f=0} {s+=$NF; if($NF+0>0) f++} END{print "files_with_hits=" f " total_lines=" s}'
+files_with_hits=479 total_lines=1490
+--- 2026-09-26T13:00:25Z method=estimate target=8-033_E4_本体 rc=0 time_s=0.111 note=本体だけ一覧(4829件)でE4の見積もり(1c、500行の規則)
+$ xargs -0 grep -I -c -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun' < '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt' 2>/dev/null | awk -F: 'BEGIN{f=0} {s+=$NF; if($NF+0>0) f++} END{print "files_with_hits=" f " total_lines=" s}'
+files_with_hits=522 total_lines=3327
+--- 2026-09-26T13:00:46Z method=estimate target=8-033_E2_本体 rc=0 time_s=0.171 note=本体だけ一覧(4829件)でE2の見積もり(1・500行の規則)
+$ xargs -0 grep -I -c -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid' < '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-033_core_list.txt' 2>/dev/null | awk -F: 'BEGIN{f=0} {s+=$NF; if($NF+0>0) f++} END{print "files_with_hits=" f " total_lines=" s}'
+files_with_hits=2273 total_lines=33551
+--- 2026-09-26T13:01:00Z method=grep target=8-033_E2_quality語 rc=0 time_s=0.015 note=本体のdocs/v3(api-ref除く)でqualityの出現を探す(2)
+$ grep -rniI 'quality' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3' | grep -v api-ref
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/run-dbt-with-prefect.mdx:302:- **Composability**: Easily extend this flow with data quality checks, Slack alerts, or downstream dependencies
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/concepts/assets.mdx:84:Additionally, assets support dynamic metadata through the `add_asset_metadata()` function, allowing runtime information like row counts, processing times, and data quality metrics to be attached to materialization events.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/concepts/artifacts.mdx:21:- **Data quality checks**: Publish data quality checks from in-progress tasks to ensure that data quality is maintained throughout a pipeline. Artifacts make for great performance graphs. For example, you can visualize a long-running machine learning model training run. You can also track artifact versions, making it easier to identify changes in your data.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/release-notes/oss/version-3-6.mdx:25:* Raise quality bar for automated AGENTS.md update workflow by [@devin-ai-integration](https://github.com/devin-ai-integration)[bot] in [#21761](https://github.com/PrefectHQ/prefect/pull/21761)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/release-notes/oss/version-3-4.mdx:732:* [prefect-aws] order env vars for task def equality by [@zzstoatzz](https://github.com/zzstoatzz) in [#18309](https://github.com/PrefectHQ/prefect/pull/18309)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/release-notes/oss/version-3-4.mdx:893:* fix `AttributeError` during equality check after args/kwargs deletion by [@zzstoatzz](https://github.com/zzstoatzz) in [#18110](https://github.com/PrefectHQ/prefect/pull/18110)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/release-notes/oss/version-3-2.mdx:58:* Add debug logging of ECS task definition differences when equality comparison fails by [@kevingrismore](https://github.com/kevingrismore) in [#17544](https://github.com/PrefectHQ/prefect/pull/17544)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/assets.mdx:108:Beyond static properties, you can add dynamic metadata during task execution. This is useful for tracking runtime information like row counts, processing times, or data quality metrics.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/assets.mdx:134:        "data_quality_score": 0.95,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:54:def quality_test():
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:68:        quality_test()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:83:Note that the `on_rollback` hook is executed when the `quality_test` task fails, not the `write_file`
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:109:- the transaction associated with the `quality_test` task. This transaction fails before it can be staged,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:198:would commit `write_file` before `quality_test` runs. If `quality_test` fails, `del_file` would not
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:200:its rollback hook deletes the file when `quality_test` fails.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:419:def quality_test(filename):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/transactions.mdx:434:        quality_test(filename)
+--- 2026-09-26T13:01:08Z method=grep target=8-033_E2_その他語 rc=0 time_s=0.024 note=本体のdocs/v3(api-ref・release-notes除く)でduplicat等の出現を探す(2)
+$ grep -rniI -E 'duplicat|anomal|outlier|schema valid|out.of.order|monoton|clock skew' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3' | grep -v api-ref | grep -v release-notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:3:description: Build a resilient AI data analyst using Prefect and `pydantic-ai` to analyze datasets, detect anomalies, and generate insights.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:26:3. Uses Python tools to calculate statistics and detect anomalies
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:83:def detect_anomalies(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:86:    """Detect anomalies using standard deviation method.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:103:    anomalies = df[abs(df[column] - mean) > (threshold * std)]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:110:        for idx, row in anomalies.head(10).iterrows()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:200:        tools=[calculate_statistics, detect_anomalies, get_column_info],
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:203:            "the available tools. Focus on finding meaningful patterns, anomalies, "
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:233:    """Generate a sample sales dataset with some anomalies.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:239:        + [100, 150, 200, 1000, 2000],  # Last 2 are anomalies
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:276:        "Analyze this sales dataset. Identify patterns, anomalies, and provide recommendations.",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:343:3. **Tool Observability** – Each time the AI calls a tool (`get_column_info`, `calculate_statistics`, `detect_anomalies`),
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/ai-data-analyst-with-pydantic-ai.mdx:347:   completed tasks are skipped and only failed operations are re-executed. This prevents duplicate API calls and
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/examples/index.mdx:41:            Build a resilient AI data analyst using Prefect and `pydantic-ai` to analyze datasets, detect anomalies, and generate insights.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/generate-custom-sdk.mdx:95:- `idempotency_key`: Unique key to prevent duplicate runs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/assets.mdx:265:Use _string keys_ when referencing assets that are materialized by other Prefect workflows. This avoids duplicate metadata definitions and lets the materializing workflow be the source of truth:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/debouncing-events.mdx:5:keywords: ["debounce", "event", "within", "deduplication", "rate limiting"]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/debouncing-events.mdx:114:Using both parameters together prevents duplicate runs while ensuring your flow has access to all events from the burst.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/self-hosted.mdx:263:Do not run multiple background service processes without configuring `PREFECT_SERVER_DOCKET_URL` to use Redis. With the default `memory://` backend each process schedules its own work independently, which causes duplicate scheduled runs, duplicate automation actions, and other correctness problems.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/advanced/form-building.mdx:75:- this might get duplicative, especially if you have similarly constrained parameters for different workflows
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/how-to-guides/migrate/upgrade-to-prefect-3.mdx:51:Because of differences in Pydantic datetime handling that affect the scheduler's idempotency logic, there is a small risk of the scheduler duplicating runs in its first loop.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/how-to-guides/migrate/airflow.mdx:610:- **Ensure idempotency**: Prevent duplicate processing by parameterizing flows and validating execution logic.
+--- 2026-09-26T13:01:23Z method=grep target=8-033_E2_頁題一覧 rc=0 time_s=0.010 note=api-ref以外のdocs/v3全頁の題を一覧する(2、目次読み)
+$ find '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3' -not -path '*/api-ref/*' -name '*.mdx' | xargs grep -h '^title:' | sort
+title: "3.0"
+title: 3.1
+title: 3.2
+title: 3.3
+title: 3.4
+title: 3.5
+title: 3.6
+title: 3.7
+title: 3.8
+title: AI assistants with Prefect MCP
+title: AI log summaries
+title: AI-Powered Data Analyst
+title: API-sourced ETL
+title: Advanced
+title: Artifacts
+title: Assets
+title: Automations
+title: Blocks
+title: Caching
+title: Concepts
+title: Configure UI forms for validating workflow inputs
+title: Custom notifications
+title: Customizing Base Job Templates
+title: Database Cleanup with Human or AI Approval
+title: Define event triggers
+title: Deployments
+title: Events
+title: Flows
+title: Global concurrency limits
+title: Hello, world!
+title: How to Migrate from Airflow
+title: How to access deployment and flow run parameters
+title: How to access runtime information
+title: How to add logging to a workflow
+title: How to apply global concurrency and rate limits
+title: How to audit Cloud activity
+title: How to automatically rerun your workflow when it fails
+title: How to build deployments via CI/CD
+title: How to cache workflow step outputs
+title: How to cancel running workflows
+title: How to chain deployments with events
+title: How to configure network access for restricted environments
+title: How to configure single sign-on
+title: How to configure worker healthchecks
+title: How to connect to Prefect Cloud
+title: How to create a webhook
+title: How to create automations
+title: How to create custom blocks
+title: How to create deployment triggers
+title: How to create deployments
+title: How to create schedules
+title: How to customize Prefect's logging configuration
+title: How to customize a workflow's metadata
+title: How to customize asset metadata
+title: How to customize caching behavior
+title: How to daemonize worker processes
+title: How to debounce events
+title: How to define deployments with YAML
+title: How to deploy a web application powered by background tasks
+title: How to deploy flows with Python
+title: How to detect and respond to zombie flows
+title: How to develop a custom worker
+title: How to emit and use custom events
+title: How to generate a custom SDK for your deployments
+title: How to limit concurrent task runs with tags
+title: How to maintain your Prefect database
+title: How to manage API keys
+title: How to manage Access Control Lists (ACLs)
+title: How to manage Prefect resources using Infrastructure as Code
+title: How to manage account roles
+title: How to manage service accounts
+title: How to manage settings
+title: How to manage teams
+title: How to manage user accounts
+title: How to manage work pools
+title: How to manage workspaces
+title: How to manually retry a flow run
+title: How to override job variables
+title: How to pass event payloads to flows
+title: How to pass inputs to a workflow
+title: How to persist and retrieve workflow results
+title: How to produce workflow artifacts
+title: How to respond to state changes
+title: How to retrieve code from storage
+title: How to run Prefect on Windows
+title: How to run a local Prefect server
+title: How to run background tasks
+title: How to run flows in Docker containers
+title: How to run flows in a long-lived Docker container
+title: How to run flows in local processes
+title: How to run flows on Coiled
+title: How to run flows on Kubernetes
+title: How to run flows on Modal
+title: How to run flows on Prefect Managed infrastructure
+title: How to run flows on serverless compute
+title: How to run the Prefect Server via Docker Compose
+title: How to run the Prefect server in Docker
+title: How to run work concurrently
+title: How to scale self-hosted Prefect
+title: How to secure a self-hosted Prefect server
+title: How to secure access by IP address
+title: How to secure access over PrivateLink
+title: How to self-host the Prefect Server with Helm
+title: How to share configuration between workflows
+title: How to store secrets
+title: How to submit flows directly to dynamic infrastructure
+title: How to test workflows
+title: How to transfer resources between Prefect environments
+title: How to troubleshoot Prefect Cloud
+title: How to turn a shell command into a workflow
+title: How to upgrade from agents to workers
+title: How to upgrade to Prefect 3.0
+title: How to use and configure the API client
+title: How to use assets to track workflow outputs
+title: How to use the Prefect MCP server
+title: How to version deployments
+title: How to visualize workflow structure
+title: How to write a Prefect plugin
+title: How to write and run a workflow
+title: How to write interactive workflows
+title: How to write transactional workflows
+title: How-to Guides
+title: Install Prefect 
+title: Introduction
+title: Manage Deployment schedules
+title: Measure reliability with Service Level Agreements
+title: Overview
+title: Per-worker task concurrency
+title: Prefect Cloud Release Notes
+title: Prefect recipes
+title: Prefect scope of support
+title: Prefect server
+title: Quickstart
+title: Quickstart
+title: Rate limits and data retention
+title: Release Notes
+title: Resume Flow Run on PR Merge
+title: Runtime context
+title: Schedule flow runs
+title: Settings and profiles
+title: Simple web scraper
+title: Social Analytics Dashboard
+title: States
+title: Tag-based concurrency limits
+title: Task runners
+title: Tasks
+title: Telemetry
+title: Trigger ad-hoc deployment runs
+title: Using cloud workload identity with Prefect Managed work pools
+title: Variables
+title: Versioning and compatibility
+title: Webhooks
+title: What's new in Prefect 3.0
+title: Work pools
+title: Workers
+title: dbt Model Orchestration
+title: prefect-aws
+title: prefect-azure
+title: prefect-bitbucket
+title: prefect-dask
+title: prefect-databricks
+title: prefect-dbt
+title: prefect-docker
+title: prefect-email
+title: prefect-gcp
+title: prefect-github
+title: prefect-gitlab
+title: prefect-kubernetes
+title: prefect-ray
+title: prefect-redis
+title: prefect-shell
+title: prefect-slack
+title: prefect-snowflake
+title: prefect-sqlalchemy
+--- 2026-09-26T13:01:30Z method=read target=8-033_E2_SLA頁 rc=0 time_s=0.004 note=SLA頁の冒頭を読む(2、時刻・品質に関わるか確認)
+$ sed -n '1,40p' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/concepts/slas.mdx'
+| ---
+title: Measure reliability with Service Level Agreements
+sidebarTitle: SLAs
+description: Define the performance expectations for your flows and to enable automated alerts when those expectations are not met.
+keywords: ["SLA", "service level agreement", "reliability", "alerts", "monitoring", "performance"]
+| ---
+
+<Warning> <b>Experimental:</b> This feature is experimental and may change in the future.</Warning>
+
+## Prerequisites
+- Prefect Client Version 3.1.12 or later
+- Prefect Cloud account (SLAs are only available in Prefect Cloud)
+- (If using Terraform) [Prefect Terraform Provider](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs) version 2.22.0 or later
+
+## Service Level Agreements
+
+<span class="badge cloud"></span>
+
+Service Level Agreements (SLAs) help you set and monitor performance standards for your data stack. By establishing specific thresholds for flow runs on your Deployments, you can automatically detect when your system isn't meeting expectations.
+When you set up an SLA, you define specific performance criteria - such as a maximum runtime of 10 minutes for a flow. If a flow run exceeds this threshold, the system generates an alert event. You can then use these events to trigger automated responses, whether that's sending notifications to your team or initiating other corrective actions through automations.
+
+## Defining SLAs
+
+To define an SLA you can add it to the deployment through a `prefect.yaml` file, a `.deploy` method, or the CLI:
+<AccordionGroup>
+
+<Accordion title="Defining SLAs in your prefect.yaml file">
+```yaml prefect.yaml SLA
+deployments:
+  my-deployment:
+    sla:
+        - name: "time-to-completion"
+          duration: 10
+          severity: "high"
+        - name: "lateness"
+          within: 600
+          severity: "high"
+```
+</Accordion>
+--- 2026-09-26T13:01:43Z method=公式 target=Prefect_登録頁 rc=0 time_s=16.278 note=app.prefect.cloudの登録/ログイン頁をJS描画して登録に何を渡すかを見る(3)
+$ node scripts/cat8_render.js https://app.prefect.cloud/auth/login 4000
+HTTP 200 https://app.prefect.cloud/auth/sign-in
+Sign in
+GitHub
+Google
+Microsoft
+Or
+Email
+Continue
+Remember me
+Don't have an account? Sign up
+Sign in with SSO
+On October 3rd 19:00 UTC, Prefect Cloud will undergo routine scheduled maintenance for our database instances. During this time, the Prefect Cloud APIs will be inaccessible for a brief period, which is typically less than ten minutes, but may last for up to an hour. While work may run late during this maintenance window, no work or data will be lost.
+Remind me later
+Don't remind me again
+| --- frame https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Fapp.prefect.cloud%2Fauth%2Flogin&title=Prefect%20Cloud&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://m.stripe.network/inner.html#url=https%3A%2F%2Fapp.prefect.cloud%2Fauth%2Flogin&title=Prefect%20Cloud&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+INCOMPLETE 合計 0 件
+--- 2026-09-26T13:02:04Z method=公式 target=Prefect_登録頁_signup rc=0 time_s=14.233 note=app.prefect.cloudのサインアップ頁をJS描画して登録に何を渡すかを見る(3)
+$ node scripts/cat8_render.js https://app.prefect.cloud/auth/sign-up 4000
+HTTP 200 https://app.prefect.cloud/auth/sign-up
+Sign up
+GitHub
+Google
+Microsoft
+Or
+Email
+Continue
+Remember me
+By creating an account, you agree to our Terms of Service and Privacy Policy
+Already have an account? Sign in.
+On October 3rd 19:00 UTC, Prefect Cloud will undergo routine scheduled maintenance for our database instances. During this time, the Prefect Cloud APIs will be inaccessible for a brief period, which is typically less than ten minutes, but may last for up to an hour. While work may run late during this maintenance window, no work or data will be lost.
+Remind me later
+Don't remind me again
+| --- frame https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Fapp.prefect.cloud%2Fauth%2Fsign-up&title=Prefect%20Cloud&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://m.stripe.network/inner.html#url=https%3A%2F%2Fapp.prefect.cloud%2Fauth%2Fsign-up&title=Prefect%20Cloud&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+INCOMPLETE 合計 0 件
+--- 2026-09-26T13:02:31Z method=curl target=Prefect_規約リンク rc=0 time_s=0.440 note=公式サイトのフッターから利用規約・プライバシーポリシーのリンクを探す(3)
+$ curl -s -m 30 https://www.prefect.io/ | grep -oiE 'href="[^"]*(terms|privacy|legal)[^"]*"' | sort -u
+href="/legal"
+--- 2026-09-26T13:02:35Z method=curl target=Prefect_legal頁リンク rc=0 time_s=0.217 note=/legal頁の中の利用規約・プライバシーポリシーのリンクを探す(3)
+$ curl -sL -m 30 https://www.prefect.io/legal | sed 's/></>\n</g' | grep -iE 'href="[^"]*"' | grep -iE 'terms|privacy|policy' | sort -u
+<a class="group" href="/legal/privacy-policy">
+<a class="group" href="/legal/terms">
+--- 2026-09-26T13:02:39Z method=curl target=Prefect_利用規約 rc=0 time_s=0.412 note=利用規約頁の冒頭を平文で読む(3、宣伝詐欺の兆候)
+$ curl -sL -m 30 https://www.prefect.io/legal/terms | python3 -c "import sys,re,html; t=sys.stdin.read(); t=re.sub('<[^>]+>',' ',t); t=html.unescape(t); print(re.sub(r'\\s+',' ',t)[:3000])"
+ Terms and Conditions - Prefect (self.__next_s=self.__next_s||[]).push(["https://cmp.osano.com/16CVGvUGMuXuz33ME/908ae3fc-0206-4cd2-9d54-c4932c848252/osano.js",{"id":"osano-cmp"}]) Skip to content Prefect Products Resources Docs Customers Pricing Log in Book a demo Start free {"@context":"https://schema.org","@type":"WebPage","name":"Terms and Conditions","description":"Terms and Conditions for Prefect Services","datePublished":"2026-04-17","dateModified":"2026-04-17","publisher":{"@type":"Organization","name":"Prefect","logo":{"@type":"ImageObject","url":"https://www.prefect.io/logo.png"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://www.prefect.io/legal/terms"}} Terms and Conditions Effective Date: April 17, 2026 Last Updated: April 17, 2026 Terms and Conditions for Prefect Services Terms and Conditions Effective Date: April 17, 2026 These Prefect Terms and Conditions (the "Agreement") are made between Prefect Technologies, Inc. ("Prefect") and the client ("Client") identified below. The Agreement consists of these Terms and Conditions, each order form executed or accepted electronically by Prefect and Client that references these Terms and Conditions (each, an "Order Form") and each exhibit and other document incorporated herein. In the event of any direct conflict between these Terms and Conditions and an Order Form, the terms of the Order Form shall govern. Each Order Form constitutes a separate and independent Agreement applicable solely to the Software Product(s) identified therein, unless expressly stated otherwise in such Order Form. 1. DEFINITIONS As used in this Agreement, the definitions below shall apply. Definitions for other defined terms are set forth elsewhere in this Agreement. 1.1 "Affiliate" means with respect to a party, any person or entity that controls, is controlled by, or is under common control with such party, where "control" means ownership of fifty percent (50%) or more of the outstanding voting securities. 1.2 "Client Data" means all data, information, files or other materials and content that Client makes available to Prefect in connection with Client's use of the Software Services. 1.3 "Documentation" means the publicly available documentation relating to the Software Services, as updated by Prefect from time to time. 1.4 "Intellectual Property Rights" means all current and future worldwide intellectual property rights, including without limitation, all patents, copyrights, trademarks, service marks, trade names, domain name rights, know-how and other trade secret rights, and all other intellectual property rights and similar forms of protection, and all applications and registrations for any of the foregoing. 1.5 "Professional Services" means consulting services provided to Client by Prefect pursuant to this Agreement (if any), as described in an applicable Order Form. 1.6 "Services" means the access to the Software Services and Professional Services (if any) provided by Prefect in connection with this Ag
+--- 2026-09-26T13:03:03Z method=x target=Prefect_X投稿 rc=0 time_s=3.164 note=X上のPrefect使用報告3件を本文取得(3、宣伝詐欺の兆候)
+$ python3 scripts/x_fetch.py https://x.com/PythonHub/status/1973980188963647953 https://x.com/DataCamp/status/1779888113034174906 https://x.com/harjitrathore/status/2076709462572695580 --no-walk
+{"id": "1973980188963647953", "http": 200, "fetched_at": "2026-09-26T13:03:03.801726+00:00", "url": "https://x.com/PythonHub/status/1973980188963647953", "author": "PythonHub", "created_at": "Fri Oct 03 05:15:26 +0000 2025", "text": "Cloud-Native Pipelines for Scientific Data Processing with Prefect and Dask\n\nThis article explains how to build scalable, cloud-native scientific data processing pipelines using Prefect for workflow orchestration and Dask for parallel computation. It covers cloud-optimized formats (like Zarr), integration with tools like xarray and echopype, and demonstrates end-to-end ETL pipelines that load, process, and store multidimensional data directly in the cloud.\n\nhttps://oceanstream.io/cloud-native-data-processing-pipelines-with-prefect-and-dask/", "likes": 12, "retweets": 2, "replies": 0, "views": 2041, "quote": null, "replying_to_status": null}
+{"id": "1779888113034174906", "http": 200, "fetched_at": "2026-09-26T13:03:05.148959+00:00", "url": "https://x.com/DataCamp/status/1779888113034174906", "author": "DataCamp", "created_at": "Mon Apr 15 15:02:49 +0000 2024", "text": "ML workflow orchestration with Prefect. 👇\n\n@1abidaliawan outlines:\n\n‣ Key features, benefits, and components.\n‣ How to create tasks and flow, deployments, and flow runs.\n‣ Deploy our workflow on Prefect Cloud and run it using cloud infrastructure.\n\n🔗  https://ow.ly/HuUw50Rg2BO", "likes": 10, "retweets": 2, "replies": 0, "views": 2390, "quote": null, "replying_to_status": null}
+{"id": "2076709462572695580", "http": 200, "fetched_at": "2026-09-26T13:03:06.418981+00:00", "url": "https://x.com/harjitrathore/status/2076709462572695580", "author": "harjitrathore", "created_at": "Mon Jul 13 16:44:53 +0000 2026", "text": "Prefect acquires Dagster. \nIt's main rival to become the default infrastructure layer for AI agents, not just data pipelines.\n\nThe real asset in this deal isn't Dagster, it's FastMCP, Prefect's tool for connecting AI agents to external systems, which Anthropic adopted as the official Model Context Protocol SDK after Prefect shipped it within a weekend of MCP's announcement. \nThat's 92 million downloads in a single month and 26,000 GitHub stars, making Prefect the plumbing layer for most production MCP servers right now, a position no other orchestration company holds. \n\nAdding Dagster's declarative model gives Prefect all three pieces of automation! \nWhat work should produce, how it runs, and how AI agents are governed while doing it.\n\nPrefect has been profitable for a year, which means this consolidation isn't happening because either company needed a lifeline. \nIt's a deliberate land grab in a category everyone assumed would stay fragmented post-Airflow.\n\n#Perfect #dagster #DataInfrastructure\n\nhttps://www.businesswire.com/news/home/20260713065285/en/Prefect-Acquires-Dagster-Uniting-the-Two-Leading-Modern-Orchestrators", "likes": 1, "retweets": 0, "replies": 1, "views": 139, "quote": null, "replying_to_status": null}
+--- 2026-09-26T13:03:18Z method=grep target=Prefect_時刻_schedules頁 rc=0 time_s=0.007 note=create-schedules.mdxのタイムゾーン記述を読む(3)
+$ grep -niI -E 'timezone|UTC|milliseconds?|epoch|DST|daylight' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3/how-to-guides/deployments/create-schedules.mdx'
+46:| `schedules` | A list of schedule objects defining when to execute runs of this deployment. Used to define multiple schedules or additional scheduling options such as `timezone`.                                                                                   |
+47:| `schedule`  | A schedule object defining when to execute runs of this deployment. Used to define additional scheduling options such as `timezone`.                                                                                                                  |
+62:When `my_flow` is served with this interval schedule, it will run every 10 minutes beginning at midnight on January, 1, 2026 in the `America/Chicago` timezone:
+76:    timezone="America/Chicago"
+93:      timezone="America/Chicago"
+129:Create a schedule with a specific timezone:
+131:prefect deployment schedule create my-flow/my-deployment --cron "0 9 * * *" --timezone "America/New_York"
+150:      timezone: "America/Chicago"
+154:      timezone: "America/New_York"
+158:      timezone: "Europe/London"
+--- 2026-09-26T13:03:25Z method=grep target=Prefect_時刻_UTC内部表現 rc=1 time_s=0.034 note=docs/v3(api-ref除く)でUTC保存の記述を探す(3)
+$ grep -rniI -E 'stored .*UTC|UTC internally|always .*UTC|converted to UTC' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/docs/v3' 2>/dev/null | grep -v api-ref
+
+--- 2026-09-26T13:03:37Z method=read target=Prefect_時刻_型実装 rc=0 time_s=0.004 note=prefect/types/_datetime.pyのUTC・タイムゾーンの扱いを読む(3、実測に近い一次資料)
+$ grep -niI -E 'utc|timezone' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/core/src/prefect/types/_datetime.py' | head -30
+8:from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
+27:        """`datetime.datetime` with a Pydantic schema that coerces naive to UTC.
+34:        the naive→UTC check.
+86:            # Assume UTC if no timezone is provided
+87:            return parsed_dt.replace(tzinfo=ZoneInfo("UTC"))
+94:def get_timezones() -> tuple[str, ...]:
+95:    return tuple(available_timezones())
+101:            # Assume UTC if no timezone is provided
+102:            return v.replace(tzinfo=ZoneInfo("UTC"))
+109:def from_timestamp(ts: float, tz: str | Any = "UTC") -> datetime.datetime:
+126:        """Return *ts* with a valid ZoneInfo; fall back to UTC if needed."""
+128:            local_tz = datetime.datetime.now().astimezone().tzinfo
+129:            return ts.replace(tzinfo=local_tz).astimezone(ZoneInfo("UTC"))
+140:        return ts.astimezone(ZoneInfo("UTC"))
+151:    # Ensure consistency for pendulum path by using UTC
+152:    pendulum_dt = DateTime.instance(dt.astimezone(ZoneInfo("UTC")))
+154:        DateTime.instance(other.astimezone(ZoneInfo("UTC"))) if other else None
+198:    tz: str | Any = "UTC",
+231:            dt = dt.replace(tzinfo=ZoneInfo(dt.tzname() or "UTC"))
+294:    return datetime.datetime.min.replace(tzinfo=ZoneInfo("UTC"))
+319:                    utc_dt = dt.astimezone(datetime.timezone.utc)
+320:                    dt = utc_dt.replace(tzinfo=ZoneInfo("UTC"))
+326:        return DateTime.instance(dt).in_tz(pendulum.tz.local_timezone())
