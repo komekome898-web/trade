@@ -1,0 +1,287 @@
+--- 2026-09-26T23:14:16Z method=setup target=開始 rc=0 time_s=0.044 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-26T23:14:16Z
+alldirs.txt
+aux_exec.py
+build_round36_tables.py
+check
+check_extract
+doc_titles.py
+doc_titles.txt
+draft
+e2_datetime_check.py
+e3a_matches.txt
+e3a_table.md
+gen_40_table.py
+gen_e3a_table.py
+gen_findings.py
+gen_full_table.py
+list.txt
+list_repo.txt
+min_exec.py
+mklist_cmd.sh
+mklist_cmd2.sh
+mklist_excludes.py
+net_check.py
+numpy_about.html
+numpy_assert_allclose.html
+numpy_contribute.html
+numpy_docstable.html
+numpy_install.html
+numpy_org.html
+numpy_pypi.json
+numpy_userguide.html
+run
+sb35
+sb36
+sb37
+src
+verify_findings_quotes.py
+verify_quotes.py
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T23:14:27Z method=読み直し target=NumPy rc=0 time_s=0.005 note=35回目に読んだgenfromtxt.rstの欠損値処理の逐語を案Bの読んだ範囲として読み直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ grep -n -B2 -A5 'missing' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/user/basics.io.genfromtxt.rst | head -80
+12-loop converts each string to the appropriate data type.  This mechanism is
+13-slower than a single loop, but gives more flexibility.  In particular,
+14::func:`~numpy.genfromtxt` is able to take missing data into account, when
+15-other faster and simpler functions like :func:`~numpy.loadtxt` cannot.
+16-
+17-.. note::
+18-
+19-   When giving examples, we will use the following conventions::
+--
+295-
+296-In the same way, if we don't give enough names to match the length of the
+297:dtype, the missing names will be defined with this default template::
+298-
+299-   >>> data = StringIO("1 2 3\n 4 5 6")
+300-   >>> np.genfromtxt(data, dtype=(np.int_, np.float64, np.int_), names="a")
+301-   array([(1, 2., 3), (4, 5., 6)],
+302-         dtype=[('a', '<i8'), ('f0', '<f8'), ('f1', '<i8')])
+--
+396-
+397-
+398:Converters can also be used to provide a default for missing entries.  In
+399-the following example, the converter ``convert`` transforms a stripped
+400-string into the corresponding float or into -999 if the string is empty.
+401-We need to explicitly strip the string from white spaces as it is not done
+402-by default::
+403-
+--
+412-
+413-
+414:Using missing and filling values
+415---------------------------------
+416-
+417:Some entries may be missing in the dataset we are trying to import.  In a
+418-previous example, we used a converter to transform an empty string into a
+419-float.  However, user-defined converters may rapidly become cumbersome to
+420-manage.
+421-
+422-The :func:`~numpy.genfromtxt` function provides two other complementary
+423:mechanisms: the ``missing_values`` argument is used to recognize
+424:missing data and a second argument, ``filling_values``, is used to
+425:process these missing data.
+426-
+427:``missing_values``
+428-------------------
+429-
+430:By default, any empty string is marked as missing.  We can also consider
+431:more complex strings, such as ``"N/A"`` or ``"???"`` to represent missing
+432:or invalid data.  The ``missing_values`` argument accepts three kinds
+433-of values:
+434-
+435-a string or a comma-separated string
+436:   This string will be used as the marker for missing data for all the
+437-   columns
+438-a sequence of strings
+439-   In that case, each item is associated to a column, in order.
+440-a dictionary
+441-   Values of the dictionary are strings or sequence of strings.  The
+--
+448-------------------
+449-
+450:We know how to recognize missing data, but we still need to provide a value
+451:for these missing entries.  By default, this value is determined from the
+452-expected dtype according to this table:
+453-
+454-=============  ==============
+455-Expected type  Default
+456-=============  ==============
+--
+462-=============  ==============
+463-
+464:We can get a finer control on the conversion of missing values with the
+465-``filling_values`` optional argument.  Like
+466:``missing_values``, this argument accepts different kind of values:
+467-
+468-a single value
+469-   This will be the default for all columns
+470-a sequence of
+[出力は 3143 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T23:14:36Z method=読み直し target=NumPy rc=0 time_s=0.005 note=36回目に読んだ時刻の型3文書へのE2語当てを案Bの読んだ範囲として読み直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/routines.datetime.rst /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/c-api/datetimes.rst
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:19:AD range, `datetime64` allows also for dates BC; years BC follow the `Astronomical
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:34:.. [#] The assumption of 86400 seconds per calendar day is not valid for UTC,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:141:POSIX timestamps with the given unit.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:158:example :func:`arange` can be used to generate ranges of dates.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:168:    >>> np.arange('2005-02', '2005-03', dtype='datetime64[D]')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:302:The length of the span is the range of a 64-bit integer times the length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:410:the week are valid, NumPy includes a set of "busday" (business day)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:413:The default for busday functions is that the only valid days are Monday
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:415:a "weekmask" containing 7 Boolean flags to indicate valid days; custom
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:416:weekmasks are possible that specify other sets of valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:419:specific dates that are not valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:438:date to a valid business day, then applies the offset. The
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:509:To test a `datetime64` value to see if it is a valid day, use :func:`is_busday`.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:523:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:529:To find how many valid days there are in a specified range of datetime64
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:544:how many of them are valid dates, you can do this:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:552:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:562:specify the "busday" default of Monday through Friday being valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:569:    # list or other sequence; 0 == invalid day, 1 == valid day
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:571:    # string '0' == invalid day, '1' == valid day
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:590:- It is impossible to parse valid UTC timestamps occurring during a positive
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:596:    23:59:60.450 UTC" is a valid timestamp which is not parseable by
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:606:      ValueError: Seconds out of range in datetime string "2016-12-31 23:59:60.450"
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:649:      seconds of a clock in sync with the Earth's rotation. The exact value in SI
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/c-api/datetimes.rst:121:    specified by the unit metadata. The date is assumed to be valid.
+--- 2026-09-26T23:14:44Z method=頁選定 target=NumPy rc=0 time_s=0.007 note=文書の全349頁の道と題にE2の語の組(7組)を機械的に当てて頁を選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/doc_titles.txt; grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/doc_titles.txt
+349 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/doc_titles.txt
+158:doc/source/reference/routines.sort.rst	Sorting, searching, and counting
+--- 2026-09-26T23:14:50Z method=頁本文 target=NumPy rc=0 time_s=0.006 note=選んだ頁routines.sort.rstの本文を全部読む [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/routines.sort.rst; cat -n /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/routines.sort.rst
+41 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/routines.sort.rst
+     1	Sorting, searching, and counting
+     2	================================
+     3	
+     4	.. currentmodule:: numpy
+     5	
+     6	Sorting
+     7	-------
+     8	.. autosummary::
+     9	   :toctree: generated/
+    10	
+    11	   sort
+    12	   lexsort
+    13	   argsort
+    14	   ndarray.sort
+    15	   sort_complex
+    16	   partition
+    17	   argpartition
+    18	   top_k
+    19	
+    20	Searching
+    21	---------
+    22	.. autosummary::
+    23	   :toctree: generated/
+    24	
+    25	   argmax
+    26	   nanargmax
+    27	   argmin
+    28	   nanargmin
+    29	   argwhere
+    30	   nonzero
+    31	   flatnonzero
+    32	   where
+    33	   searchsorted
+    34	   extract
+    35	
+    36	Counting
+    37	--------
+    38	.. autosummary::
+    39	   :toctree: generated/
+    40	
+    41	   count_nonzero
+--- 2026-09-26T23:14:59Z method=ディレクトリ選定 target=NumPy rc=0 time_s=0.008 note=ソースの全198ディレクトリにE2の語の組を機械的に当ててディレクトリを選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/alldirs.txt; grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/alldirs.txt
+198 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/alldirs.txt
+88:numpy/_core/src/npysort
+89:numpy/_core/src/npysort/x86-simd-sort
+--- 2026-09-26T23:15:06Z method=ディレクトリ内読み target=NumPy rc=0 time_s=0.008 note=選んだ2ディレクトリの中のファイル名一覧 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ ls -la /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/src/npysort; echo ---; ls -la /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/src/npysort/x86-simd-sort 2>&1
+total 236
+drwxr-xr-x 3 root root  4096 Sep 26 21:21 .
+drwxr-xr-x 9 root root  4096 Sep 26 21:21 ..
+-rw-r--r-- 1 root root 16639 Sep 26 21:21 binsearch.cpp
+-rw-r--r-- 1 root root  3641 Sep 26 21:21 heapsort.cpp
+-rw-r--r-- 1 root root  2168 Sep 26 21:21 heapsort.hpp
+-rw-r--r-- 1 root root  1147 Sep 26 21:21 highway_qsort.dispatch.cpp
+-rw-r--r-- 1 root root   525 Sep 26 21:21 highway_qsort.hpp
+-rw-r--r-- 1 root root  1572 Sep 26 21:21 highway_qsort_16bit.dispatch.cpp
+-rw-r--r-- 1 root root  1270 Sep 26 21:21 npysort_common.h
+-rw-r--r-- 1 root root  7671 Sep 26 21:21 npysort_heapsort.hpp
+-rw-r--r-- 1 root root 14656 Sep 26 21:21 npysort_methods.cpp
+-rw-r--r-- 1 root root 18174 Sep 26 21:21 quicksort.hpp
+-rw-r--r-- 1 root root  7005 Sep 26 21:21 quicksort_generic.cpp
+-rw-r--r-- 1 root root  2753 Sep 26 21:21 quicksort_generic.hpp
+-rw-r--r-- 1 root root  5902 Sep 26 21:21 radixsort.hpp
+-rw-r--r-- 1 root root 14996 Sep 26 21:21 selection.hpp
+-rw-r--r-- 1 root root  8770 Sep 26 21:21 selection_methods.cpp
+-rw-r--r-- 1 root root 45793 Sep 26 21:21 timsort.hpp
+-rw-r--r-- 1 root root 24048 Sep 26 21:21 timsort_generic.cpp
+drwxr-xr-x 2 root root  4096 Sep 26 21:21 x86-simd-sort
+-rw-r--r-- 1 root root  1098 Sep 26 21:21 x86_simd_argsort.dispatch.cpp
+-rw-r--r-- 1 root root   847 Sep 26 21:21 x86_simd_qsort.dispatch.cpp
+-rw-r--r-- 1 root root  1104 Sep 26 21:21 x86_simd_qsort.hpp
+-rw-r--r-- 1 root root  1776 Sep 26 21:21 x86_simd_qsort_16bit.dispatch.cpp
+| ---
+total 8
+drwxr-xr-x 2 root root 4096 Sep 26 21:21 .
+drwxr-xr-x 3 root root 4096 Sep 26 21:21 ..
+--- 2026-09-26T23:15:25Z method=ディレクトリ内語当て target=NumPy rc=0 time_s=0.008 note=選んだディレクトリnpysort内の全ファイルにE2の語を当てて機能説明の逐語が無いか確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/src/npysort/*.cpp /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/src/npysort/*.hpp /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/src/npysort/*.h | grep -v -i sort | head -60
+
+--- 2026-09-26T23:15:43Z method=見積もり target=NumPy rc=0 time_s=0.296 note=E2の当たりの行の数の見積もり(cat8_search.pyに渡すのと同じ正規表現、list.txtの全2342件にgrep -I -c -i -E) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ tr '\0' '\n' < /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/list.txt | xargs -d '\n' grep -I -c -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' 2>/dev/null | awk -F: '{s+=$NF; if($NF>0) f++} END{print "files_with_hits="f, "total_lines="s}'
+files_with_hits=923 total_lines=13346
+--- 2026-09-26T23:15:57Z method=最後の確認 target=scratchpad外 rc=0 time_s=0.192 note=開始時刻以降にtmp・rootの下に作られたファイルの確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ find /tmp -maxdepth 1 -newermt '2026-09-26T23:14:16Z'; echo ---; find /root -xdev -newermt '2026-09-26T23:14:16Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/claude-code.log
+/tmp/claude-0
+/tmp/claude-code-1656662159.diag.log
+| ---
+--- 2026-09-26T23:17:45Z method=候補再掲 target=NumPy rc=0 time_s=0.006 note=36回目の候補isnat・is_busdayの逐語をソースから読み直す(決め直さない、読むだけ) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ sed -n '1848,1862p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/code_generators/ufunc_docstrings.py; echo ===; sed -n '1448,1462p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/numpy/_core/multiarray.py
+    """)
+
+add_newdoc('numpy._core.umath', 'isnat',
+    """
+    Test element-wise for NaT (not a time) and return result as a boolean array.
+
+    Parameters
+    ----------
+    x : array_like
+        Input array with datetime or timedelta data type.
+    $PARAMS
+
+    Returns
+    -------
+    y : ndarray or bool
+===
+        busdaycal=None,
+        out=None,
+    )
+
+    Calculates which of the given dates are valid days, and which are not.
+
+    Parameters
+    ----------
+    dates : array_like of datetime64[D]
+        The array of dates to process.
+    weekmask : str or array_like of bool, optional
+        A seven-element array indicating which of Monday through Sunday are
+        valid days. May be specified as a length-seven list or array, like
+        [1,1,1,1,1,0,0]; a length-seven string, like '1111100'; or a string
+        like "Mon Tue Wed Thu Fri", made up of 3-character abbreviations for
+--- 2026-09-26T23:17:58Z method=最後の確認 target=scratchpad外 rc=0 time_s=0.183 note=開始時刻以降にtmp・rootの下に作られたファイルの確認(最終) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb37]
+$ find /tmp -maxdepth 1 -newermt '2026-09-26T23:14:16Z'; echo ---; find /root -xdev -newermt '2026-09-26T23:14:16Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/claude-code.log
+/tmp/claude-0
+/tmp/claude-code-1656662159.diag.log
+| ---
