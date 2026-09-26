@@ -85,3 +85,124 @@
 
 **リードの答え(17:05 UTC)**: (d)1 `tests/workflows/backtest_env_logic.test.mjs` の変更 = そのまま(台本の署名を変えた帰結。戻さない)。(d)2 item_0 の凍結の正の定義 A から「当方の現状」の 2 句を消したこと = L-474 の (2)「全項目の「当方の現状」の adapter と組を消す」の範囲として認める。凍結の解除はこの記録で行う(監査役(定義)が通した文のうち、撤回した 2 句だけ。L-470 が根拠)。(d)3 `git stash` の 1 回 = 記録した。段階の状態はリードが `git add -A` で拾う。(d)4 = 認める(通過の条件と同じ土台)。(c)1 の「記録」のファイルは変えない(過去の周の記録、A-5b)。
 
+
+## 作業者 A(コードと試験)の返り値(逐語、18:08 UTC)
+
+## 作業者 A の返り値(委任文 `20260926_backtest_env_item4_close.md@c6eaee9f16a4`)
+
+合意した「完了の形」の逐語(§2-1): 「**`src/bot/backtest/` の 3 本は新エンジンの呼び口への委譲だけ(旧の算術は 1 行も無い)。`src/bot/bt/compat/` に `_old_arithmetic`・`run_backtest_as_old`・`evaluate_on_splits_as_old`・`route_of`・legacy の規則が無い**」/ §2-4「**組み直した格子の全升が一致**」「**全試験を完走…して失敗 0(収集エラー 0)**」。
+
+補足(事実): リードが 17:12 UTC 前後に私の途中の編集をチェックポイントとして commit した(61ffd04「checkpoint of A's in-flight edits」)。私自身は commit / push していない。**未 commit で残っているのは `tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py` の 1 本だけ**((a) の最後の行)。
+
+### (a) 変えた・消したファイル
+
+**書き直し(src)**
+- `/home/user/trade/src/bot/backtest/engine.py`・`metrics.py`・`walk_forward.py` — import 行と `__all__` だけ(`bot.bt.compat.*` への委譲。関数・クラスの定義は 0。試験 `test_bot_backtest_holds_no_arithmetic` が検める)
+- `/home/user/trade/src/bot/bt/compat/barmodel.py` — `BarRules`・`LEGACY`・`RULES` の 2 通り・`rules_of` の分岐・`LEGACY_PERIODS_PER_YEAR`・欄 9 つ(`tp_before_time_exit`/`level_arithmetic`/`sharpe_periods`/`negative_carry`/`signal_at_open`/`time_exit_at_open`/`maker_mask_at_signal`/`maker_same_side_keeps`/`refuse_non_positive`)を消し、spec の規則を直に書いた(水準は 10 進で比べる・始値の出来事が範囲より先・時間切れは始値・R-E4/E5・R-M7・R-S1 は符号条件なし・R-V2/V4 の拒否は `BarOptions.check` に統合)。`SPEC = "spec"`、`RULES = ("spec",)` の **1 通りだけ**。`run_bars(events, decide, options, rules, *, start=0)` の `rules` は "spec" だけ受ける((d)-1)
+- `/home/user/trade/src/bot/bt/compat/engine.py` — `_old_arithmetic`・`run_backtest_as_old`・`evaluate_on_splits_as_old`・`route_of`・`_PendingLimit`・`_core_takes_*`・`_on_core` を消し、`run_backtest` は SPEC で `run_bars` を呼び `Metrics(**res.metrics)`(M-5 の年率化 = 365·86400/bar_seconds)を返す
+- `/home/user/trade/src/bot/bt/compat/metrics.py` — `LEGACY_PERIODS_PER_YEAR` → `PERIODS_PER_YEAR_60S`(既定 bar_seconds=60 の M-5 の値)。算術は変えていない
+- `/home/user/trade/src/bot/bt/compat/walk_forward.py` — `"binary"` の算術を消し、`DECIMAL` の 1 通り。`split_data` も 10 進(D-1)
+- `/home/user/trade/src/bot/bt/compat/__init__.py`・`/home/user/trade/src/bot/bt/__init__.py` — legacy の宣言・文言を消した
+- `/home/user/trade/src/bot/bt/reference/SPEC.md` — §4 末尾・§5(撤回の注記に置換)・§6・§8-3・§9・§10・§0 の表・§1 から旧エンジン/golden/ext の記述を消した(`grep` の当たり 0)
+
+**消した**
+- `tests/bt/compat/`(7 ファイル全部: golden 3 + json + 試験 3)
+- `tests/bt/item_4/reference/ext_bar_modes.py`・`test_i4ref_extmodes_properties.py`・`test_i4ref_extmodes_scenes.py`・`ext_backtesting_compare.py`・`ext_results/backtesting_py_0.6.6.json`・**`test_i4ref_ext_recorded.py`**(指示に無いが `ext_backtesting_compare` と `ext_results` を import する同根のファイル。消さないと収集エラー)
+- `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/`(5)・`replaced_version_reverted/`(3)
+- 旧の試験 5 本を丸ごと: `tests/test_maker_execution.py`・`test_max_hold.py`・`test_wick_stop.py`・`test_engine_maker_exit.py`・`test_tp_sl.py`(内訳は下の表)
+
+**書き直し・編集(tests)**
+- `/home/user/trade/tests/bt/item_4/i4_option_grid.py`(新規 = 旧 `compat_golden_scenes.py` の場面生成器の移設。golden の語を消し `GRID_SEED` に改名。中身の乱数・格子は同じ。`test_i4_barmodel_on_core.py`・`test_i4_spec_vs_reference_grid.py`・critic の小数の試験が使う)
+- `/home/user/trade/tests/bt/item_4/test_i4_mouth_signature.py`(新規、28 件: 7 つの名前が compat のものであること / `bot.backtest` に定義が無いこと / `run_backtest` の引数 19 個と既定値と keyword-only / `CostModel` の欄 4 つと R-C1・R-A2 / `BacktestResult`・`Metrics`・`Splits` の欄と型 / 既定 = 明示 / 拒否 16 通りが全部 ValueError / 核が取れない足の拒否 / M-5 の年率化 / D-1 の分け方 70/20/10・30/10/10)
+- `/home/user/trade/tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py` — 変更なし(既に spec の規則だけ・旧側の値なし。回した = (b))
+- `/home/user/trade/tests/bt/critic/item_4/test_i4r1_compat_decimal_prices.py` — 書き直し: 小数の値(0.1 刻み、0.3/0.7/1.1 %)の 1008 升を **compat の口(`run_backtest`+`CostModel`+`Strategy`)と独立の参照 `bar_sim.py`** で比べる(場面集の許容 1e-9。golden・旧に依存しない)+ 空でない検査
+- `/home/user/trade/tests/bt/item_4/test_i4_barmodel_on_core.py`(`"legacy"` のパラメータを消し、生成器を差し替え)・`test_i4_spec_vs_reference_grid.py`(生成器)・`test_i4_r2_signal_at_open_grid.py`(`run_old`・`test_legacy_keeps_the_old_engine_bit_for_bit`・docstring (3) を消した)・`test_i4_r3_maker_two_values_grid.py`・`test_i4_r3_time_exit_at_open_grid.py`(docstring の legacy の 1 文)・`i4w_drive.py`(`models`/legacy の分岐)・`conftest.py`(golden のパス)・`reference/ref_mutants.py`(旧の模型の mutant 6 件を消し 8+26=34 件)
+- `/home/user/trade/tests/test_backtest.py`・`/home/user/trade/tests/test_short_margin.py` — (c) だけ残した(下の表)
+- **`/home/user/trade/tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py`(批評家の持ち物。未 commit)** — 全試験を回すと `from new_impl import TARGET` が **item_0 の adapter の `new_impl`** に束縛されて収集エラーになった(全項目の adapter が同名。critic だけ・item_0+critic だけの収集では起きず、全体の順で起きる)。指示 8「収集エラーは直す」により、item_4 の adapter をパスで読む形に変え(`importlib.util.spec_from_file_location`)、`current_impl` と `"legacy"` に依存する `test_the_legacy_rule_set_keeps_the_old_engines_result`(6 件、B が current_impl を消した後は import で落ちる)を消した。残り 30 件は通る。**批評家の持ち物なので、これで良いかは (d)-3。**
+
+**旧の試験 7 本の関数ごとの分け方**
+
+| ファイル / 関数 | 分 | 理由(覆う規則) |
+|---|---|---|
+| test_backtest: test_costs_reduce_pnl_on_flat_market / test_zero_cost_flat_market_is_breakeven | (c) | 一般の性質(費用で損・費用 0 で損益 0)。残す |
+| test_backtest: test_execution_delayed_to_next_bar_open | (b) | R-T1 |
+| test_backtest: test_strategy_never_sees_future_bars | (c) | 先読み禁止。残す |
+| test_backtest: test_split_is_chronological_and_disjoint | (c) | 分割の時系列性。60/20/20 は D-1(floor(100·0.6)、floor(100·0.8))から導かれる値と注記 |
+| test_backtest: test_metrics_full_set | (c) | 期待値は M-1〜M-12 の定義から手で導いた値(2/4・25/10・12.5・−5・2.5・15/4)。注記を足して残す |
+| test_backtest: test_ema_is_causal / test_rsi_bounds_and_warmup / test_donchian_excludes_current_bar | (c) | 指標の因果性。残す |
+| test_maker_execution: buy_fills_only_when_traded_through / no_same_bar_fill | (b) | R-M1 |
+| test_maker_execution: timeout_cancels_and_counts_missed_fill | (b) | R-M2 |
+| test_maker_execution: sell_fill_and_fee_only_cost | (b) | R-M1・R-A2 |
+| test_maker_execution: taker_path_unchanged_by_maker_addition | (b) | R-T1 |
+| test_max_hold: long_force_closed… / short…symmetrically / time_exit_still_applies… | (b) | R-H1 |
+| test_max_hold: no_effect_when_none | (b) | R-V2(None = 使わない) |
+| test_max_hold: stop_loss_fires_first_when_hit_earlier | (b) | R-P3・R-O1 |
+| test_max_hold: force_close_overrides_pending_signal | (b) | R-H2 |
+| test_max_hold: invalid_max_hold_bars_rejected(0) | (b) | R-V2(署名の試験の拒否 16 通りにも含む) |
+| test_wick_stop: long/short level…・window_size…・window_never_reaches…・level_is_frozen… | (b) | R-W1 |
+| test_wick_stop: a_wick_through…not_an_exit / close_exactly_at_the_level | (b) | R-W2 |
+| test_wick_stop: entry_bars_own_close_can_arm | (b) | R-W2/W3(SPEC.md U3) |
+| test_wick_stop: wick_stop_exit_pays_taker_costs | (b) | R-W3・R-C1 |
+| test_wick_stop: overrides_a_pending_signal / signal_exit_still_works / time_exit_still_applies_in_wick_mode | (b) | R-W3 / R-T1・T3 / R-H1 |
+| test_wick_stop: wick_mode_actually_changes_the_outcome | (b) | R-W1〜W3(格子の `test_the_grid_reaches_every_exit_reason` が wick_stop の到達を検める) |
+| test_wick_stop: invalid_options_are_rejected(5 通り) | (c) | 口の拒否 = ValueError。署名の試験 `test_every_option_refusal_is_a_value_error` に移設(R-W4・R-V2 の 2 通りは (b) でもある) |
+| test_wick_stop / test_engine_maker_exit: defaults_are_bit_identical_to_passing_nothing | (c) | 「既定 = 明示」の一般の性質。署名の試験 `test_defaults_equal_the_same_values_passed_explicitly` に移設(「以前とビット一致」の旧の枠は捨てた) |
+| test_engine_maker_exit: long/short maker_tp fills…・touching_not_a_fill・signal_exit_still_works_as_taker_fallback | (b) | R-X1(・R-T1) |
+| test_engine_maker_exit: maker_tp_pays_no_spread… | (b) | R-C1・R-A2 |
+| test_engine_maker_exit: never_fills_on_the_entry_bar | (b) | R-X2 |
+| test_engine_maker_exit: stop_loss_wins_when_both… | (b) | R-O1 |
+| test_engine_maker_exit: maker_tp_matches_take_profit_pct… | (b) | R-P4・R-X1 |
+| test_engine_maker_exit: entry_mask_blocks…・read_at_decision_bar・masked_entry_does_not_block_exiting | (b) | R-E2・R-E3 |
+| test_engine_maker_exit: entry_sides_long_only…(2 件) | (b) | R-E1・R-T4 |
+| test_engine_maker_exit: invalid_options_are_rejected(6 通り) | (c) | 署名の試験に移設(R-X3 の 2 通りは (b) でもある) |
+| test_short_margin: short_profits_when_price_falls / close_signal_flattens… / close_signal_when_flat | (b) | R-T3・R-T4・R-A3 |
+| test_short_margin: sell_without_short_permission_is_noop | (b) | R-T4 |
+| test_short_margin: swap_carry_reduces_pnl | (b) | R-S1 |
+| test_short_margin: portfolio_short_round_trip / portfolio_short_loss… / paper_margin_short_round_trip / paper_margin_leverage_cap / risk_checker_product_rules / products_registry | (c) | エンジン外(建玉・PAPER・リスク・商品)。残す |
+| test_tp_sl: 5 件全部 | (b) | R-P1・R-P3(gap は min(始値, 水準))・R-P4・R-O1 |
+
+(a) 旧の数を固定した試験 = 該当 0(旧エンジンの出力を写した数はどのファイルにも無かった。手計算の数はすべて (b) の規則の場面か (c))。
+
+### (b) 打ったコマンドと末尾の行(全部 `PYTHONPATH=src`、basetemp は私有)
+
+- 格子: `python -m pytest ... tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py -x` → `21 passed in 15.98s`(12 種 × 60 升 + 接頭辞 + 出口の到達 + 拒否: 全升一致)
+- 署名・旧 2 本・critic item_4(直す前): `... tests/bt/item_4/test_i4_mouth_signature.py tests/test_backtest.py tests/test_short_margin.py tests/bt/critic/item_4` → `7 failed, 119 passed`(7 = 署名の空データの私の補助関数の誤り 1 + 批評家の `test_the_legacy_rule_set_keeps_the_old_engines_result` 6 = `No module named 'current_impl'`)
+- 署名(直した後): `... tests/bt/item_4/test_i4_mouth_signature.py` → `28 passed in 0.58s`
+- 批評家の pending_signal(直した後): → `30 passed in 0.54s`
+- tests/bt/item_4 全部: `... tests/bt/item_4` → `1379 passed, 2 skipped in 1145.47s (0:19:05)`(ログ `scratchpad/item4_close.log`。critic item_4 の小数の試験は上の 119 passed に含まれる = 8 チャンク + 1)
+- 12 本の import(`sys.path.insert(0,'scripts'); importlib.import_module(m)`): research_anchor / research_anchor_v2 / research_basis / research_fx / research_legacy_elements / research_mainbot_exits / research_signals / research_tournament / research_user_strategies / run_backtest / validate_composite / qa.pipeline_known_answer_taker → **12 本とも `import ok`**
+- `python scripts/run_backtest.py backtest_data/binance_XRPUSDT_4h.csv`(4380 本の実データ、`--help` は無く引数は位置の CSV 1 つ)→ 末尾:
+  ```
+  === wick_reversal ===
+    [training] pnl=+663 trades=191 win=38% PF=1.08 sharpe=6.75 maxDD=25.0% expectancy=+3.5/trade fees=1723
+    [validation] pnl=-1147 trades=68 win=32% PF=0.66 sharpe=-24.00 maxDD=27.7% expectancy=-16.9/trade fees=611
+    [out_of_sample] pnl=-1214 trades=62 win=24% PF=0.46 sharpe=-30.52 maxDD=22.7% expectancy=-19.6/trade fees=562
+  === range_fade ===  (3 分割とも trades=0)
+  Reminder: only OOS results count. Suspect overfitting when training >> OOS.
+  ```
+  (動作確認のみ。相場の結論には使わない)
+- 収集: `... --collect-only tests` → `20608 tests collected in 5.02s`(収集エラー 0。直す前は `ERROR collecting tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py … cannot import name 'TARGET' from 'new_impl' (…/battery/item_0/adapters/new_impl.py)`)
+- **全試験**: `python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/pt_close_A tests` → **`20598 passed, 10 skipped, 4 warnings in 2466.25s (0:41:06)`**(失敗 0・収集エラー 0。ログ `/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/full_close_A.log`)
+- 検査(`{git ls-files; 未追跡} -- src tests scripts | grep -oE '旧エンジン|完全上位互換|golden|旧の試験|旧と同じ|旧の写し|current_impl|当方の現状|legacy' | cut -d: -f1 | uniq -c`、合計 125、うち私の持ち物 **0**)。`tests/bt/battery/`(B、数えただけ)以外の当たりの一覧そのまま:
+  - 別の意味の legacy: `scripts/data_quality.py`(1、schema の旧挙動)/ `scripts/research_fx_fundamentals.py`(4、CFTC の `cot_jpy_legacy.csv`)/ `scripts/research_legacy_elements.py`(6、ファイル名と docs/legacy)/ `scripts/research_matilda_modern.py`(1)・`research_matilda_taro.py`(2)・`research_vr_barrier.py`(2)・`research_wall_front.py`(1)(いずれも `docs/legacy/` の原典)/ `scripts/run_scalp_paper.py`(3、`--exit taker` の "legacy hold")/ `src/bot/exchange/resilience.py`(1、docs/legacy)/ `src/bot/research/liq_response.py`(6、変数名)/ `tests/test_intent_map_rule.py`(1、docs/legacy)/ `tests/test_scalp_logic.py`(2、legacy taker exit)
+  - 台本(B): `scripts/workflows/backtest_env.js`(3: 「当方の現状」の撤回の注記)/ `tests/workflows/backtest_env_logic.test.mjs`(1: 同)
+  - 批評家: `tests/bt/critic/item_4/test_i4r2_time_exit_at_the_open.py`(1: docstring「The legacy rule set is not tested here …」。**触っていない**)
+  - 検査時点で私の持ち物にあった `src/bot/bt/compat/engine.py`(L-408 の引用「旧と同じ…」)と `test_i4_r3_*` 2 本の docstring は消して 0 にした(引用は L-408 の番号だけ残した)
+
+### (c) 満たせなかった条件と理由
+- なし(§2-1 のコードと試験の部分・§2-3・§2-4 の私の担当は全部通った)。ただし `ref_mutants.py`(34 件)は**回していない**(第 1 段の実測 40/40 落ちのうち消した 6 件を除く。時間の都合。SPEC.md §6 にそう書いた)。
+
+### (d) リードに聞くこと
+1. `run_bars(..., rules, ...)` の `rules` と `split_rows(..., arithmetic)` の `arithmetic` は、B の `new_impl.py` が位置引数で `"spec"`・`"decimal"` を渡し続ける(B のファイルを触れないため)ので、**受ける値を 1 つだけにして引数は残した**(`RULES = ("spec",)`、`ARITHMETICS = ("decimal",)`)。1 通りしか無い引数を落とすなら、B の adapter・`i4w_drive.py`・`test_i4_*` の呼び出しと一緒に 1 回で変える。落とすか。
+2. `tests/bt/item_4/reference/test_i4ref_ext_recorded.py`(指示の一覧に無い)を消した。良いか。
+3. 批評家の持ち物 `test_i4r1_pending_signal_before_intrabar_exit.py` を「収集エラーは直す」により最小限で変えた(上記)。批評家の周で戻す・別の直し方にするか。
+4. `test_i4r2_time_exit_at_the_open.py:17` の docstring の "legacy" の 1 文(批評家の持ち物、触っていない)を検査の 0 に含めるか。
+
+### (e) 提出前の吟味
+- 場当たりの直し: 収集エラーの直しは同名 adapter の根(全項目 `adapters/new_impl.py`)に対しパスで読む形。署名の試験の失敗 1 件は試験の補助関数(空の ndarray の添字)で、口を変えていない。
+- 同じ根の全箇所: legacy の欄 9 つ → barmodel の分岐を全部消した(`grep -c legacy` = 0)。`"binary"` は walk_forward・i4w_drive・spec_vs_ref から全部消した(`grep '"binary"'` の当たり 0)。`compat_golden`/`tests/bt/compat`/`ext_bar_modes`/`BarRules`/`LEGACY` の参照は src/tests/scripts に 0(battery を除く)。
+- **旧の数との一致を根拠に書いていない**: 正しさの根拠は独立の参照 `bar_sim.py` との一致(0.5 刻みの格子 21 件 + 小数の 1008 升 + spec_vs_ref 1008 升 + 場面集)だけ。(c) で残した期待値は規則の文(D-1・M-*・R-A3)から導いた値で、注記を足した。
+- 核 `src/bot/bt/core/` は触っていない(`git diff HEAD~2 HEAD --stat -- src/bot/bt/core` = 空、CORE_VERSION 据え置き)。B の持ち物(場面集・要件・委任文・台本)は触っていない。
+
+**リードの答え(18:12 UTC)**: (d)1 `rules`・`arithmetic` の引数(受ける値 1 つ)= 今は残す(落とすのは B の adapter と一緒に 1 回で行う持ち越し。1 通りしか無いことは `RULES = ("spec",)` で固定されている)。(d)2 `test_i4ref_ext_recorded.py` の削除 = 認める(同根)。(d)3 批評家の持ち物の最小限の変更 = 批評家の周で批評家が検める。(d)4 批評家の docstring の "legacy" の 1 文 = 批評家に消させる(検査の 0 に含める)。(c) `ref_mutants.py` 34 件は批評家の周で回す。
+
