@@ -297,10 +297,34 @@ def test_mutant_breaks_exactly_the_scenes_it_names():
 
 
 def test_new_impl_is_the_mouth_only():
+    """The 資料係 fills this adapter's body every round (委任文 §3), so 'the body is empty' is not the invariant.
+    The invariant is the mouth's contract (docstring): the body calls only the new implementation's public
+    packages, never reads the scenes' expected answers, and exposes TARGET.run. Rewritten by the lead under
+    owner decision L-460 (2026-09-26); the previous form asserted NotExpressible and had to fail once a body existed."""
+    import ast
+    src = (HERE / "adapters" / "new_impl.py").read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    allowed_roots = {"bot.bt.data", "bot.bt.vector", "bot.bt.core", "i1_protocol"}
+    stdlib = {"sys", "time", "pathlib", "typing", "decimal", "fractions", "json", "math", "collections",
+              "dataclasses", "functools", "itertools", "os", "io", "__future__"}
+    for node in ast.walk(tree):
+        mods = []
+        if isinstance(node, ast.Import):
+            mods = [a.name for a in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            mods = [node.module or ""]
+        for m in mods:
+            top = m.split(".")[0]
+            assert top in stdlib or any(m == r or m.startswith(r + ".") for r in allowed_roots), \
+                f"new_impl.py imports {m!r}: the mouth may call only the new implementation's public packages"
+    # the body must not consult the scenes or their expected answers (the module docstring, which states this
+    # very rule, is excluded from the search)
+    doc = ast.get_docstring(tree) or ""
+    body_src = src.replace(doc, "")
+    for bad in ("i1_scenes", "expected(", '["expect"]', "['expect']", "i1_judge"):
+        assert bad not in body_src, f"new_impl.py refers to {bad!r}: the body must not read the scenes' answers"
     N = _load(HERE / "adapters" / "new_impl.py", "i1_new_impl_under_test")
-    from i1_protocol import NotExpressible
-    with pytest.raises(NotExpressible):
-        N.TARGET.run(S.SCENES[0]["input"])
+    assert callable(getattr(N.TARGET, "run", None)), "the mouth must expose TARGET.run"
 
 
 # ---------------------------------------------------------------- runner and review table

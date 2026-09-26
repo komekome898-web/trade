@@ -335,6 +335,9 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
         { label: `監査役(表):${item.id}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
             let batAudit = (pre && pre.table_audit && attempt === 1) ? pre.table_audit : await tableAudit(t)
       let batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
+      // prebuilt[id].table_audit_resolved (owner decision L-460, 2026-09-26): the lead resolved the recorded table-audit
+      // [止める] outside the run (the text names the decision and the fix); the audit record itself is kept as is
+      if (pre && pre.table_audit_resolved && attempt === 1) { log(`項目 ${item.id}: 表の監査の [止める] はリードが解決済み(${pre.table_audit_resolved})`); batStops = [] }
       if (batStops.length) {
         const t2 = await agent(`${HEAD2}
 あなたは項目 ${item.id} の資料係(第 ${attempt} 周の作り直し。1 回だけ)です。最初の表 ${Object.values(t.tables).join(' / ')} に監査役が次の指摘を出した(逐語): ${JSON.stringify(batAudit ? batAudit.findings : batStops).slice(0, 8000)}。[止める] と [直す] を全部直してから、前の資料係と同じ手順(委任文 ${DOC} §3「比較の表」、場面集の規則 3〜5、対象ごとの実行の出力は ${d}/materials/runs/<対象の名>.tsv と runs_2/、2 通りの表の md5sum、資料係自身の数え直し)で 6 枚の表を作り直す。adapter は新実装の公開の口だけを呼び、runner が渡す root と paths をそのまま渡す(自分で絶対化・結合しない)。「結果なし」の注記には実際に試したことと出たエラーの文言を書く(定型文にしない)。直した点と根拠を notes に書く。実データから出た数値は入れない。
