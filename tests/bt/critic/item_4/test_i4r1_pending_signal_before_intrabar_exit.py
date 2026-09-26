@@ -8,9 +8,8 @@ The open of bar j comes before the rest of bar j's range. When the strategy's si
 position at bar j's open, the position no longer exists during bar j's range, so no stop / take-profit of
 bar j can fill; a take-profit booked at its level instead of the open uses the bar's later high (low) to
 give a better exit than the open (optimistic), a stop booked at its level gives a worse one.
-(The old engine's own docstring states "a signal at bar i executes at bar i+1's OPEN"; the old engine drops
-the pending signal instead. The compatibility rule set keeps the old result; the native "spec" rule set and
-the reference of the stated rules must follow R-T1.)
+(The bar model of the new engine -- its one rule set "spec" -- and the independent reference of the stated
+rules must both follow R-T1; 2026-09-26 close, L-470: no other rule set is kept.)
 
 Grid (the rule's input space, not any engine's branches):
   exit kind {stop_loss, take_profit, maker_tp} x direction {long, short} x closing signal {opposite, CLOSE}
@@ -86,10 +85,9 @@ def _ref_options(cfg: dict, bar_seconds: int = 60) -> dict:
     return o
 
 
-def _fills(inp, model):
-    i = dict(inp)
-    i["model"] = model
-    return [(f["bar"], f["side"], f["price"]) for f in NEW.run(i)["fills"]]
+def _fills(inp):
+    """The scene set's one answer (the stated rules); no rule-set selector is passed (L-470, the close)."""
+    return [(f["bar"], f["side"], f["price"]) for f in NEW.run(dict(inp))["fills"]]
 
 
 @pytest.mark.parametrize("closer", CLOSERS)
@@ -98,7 +96,7 @@ def _fills(inp, model):
 def test_spec_model_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
     bars, cfg, entry, opposite, open4, _ = _case(exit_kind, direction)
     sig = [(1, entry), (3, opposite if closer == "opposite" else "CLOSE")]
-    got = _fills(S.bars_input(bars, sig, cfg, want=("fills",)), "spec")
+    got = _fills(S.bars_input(bars, sig, cfg, want=("fills",)))
     side = "LONG" if direction == "long" else "SHORT"
     assert got == [(2, f"OPEN_{side}", 100.0), (4, f"CLOSE_{side}", open4)], (
         f"R-T1: the signal of bar 3 closes at bar 4's open {open4}; got {got}")
@@ -108,7 +106,7 @@ def test_spec_model_closes_at_the_open_when_a_signal_is_pending(exit_kind, direc
 @pytest.mark.parametrize("exit_kind", EXITS)
 def test_control_without_the_signal_exits_at_the_level(exit_kind, direction):
     bars, cfg, entry, _, _, level = _case(exit_kind, direction)
-    got = _fills(S.bars_input(bars, [(1, entry)], cfg, want=("fills",)), "spec")
+    got = _fills(S.bars_input(bars, [(1, entry)], cfg, want=("fills",)))
     side = "LONG" if direction == "long" else "SHORT"
     assert got == [(2, f"OPEN_{side}", 100.0), (4, f"CLOSE_{side}", level)], got
 
@@ -117,8 +115,7 @@ def test_control_without_the_signal_exits_at_the_level(exit_kind, direction):
 @pytest.mark.parametrize("direction", DIRS)
 @pytest.mark.parametrize("exit_kind", EXITS)
 def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
-    """The independent reference of the stated rules (bot.bt.reference.bar_sim.run_bars; bar_rules.py was removed in
-    the finishing stage) must give R-T1's answer too, not the old engine's documented behaviour."""
+    """The independent reference of the stated rules (bot.bt.reference.bar_sim.run_bars) must give R-T1's answer too."""
     from bot.bt.reference.bar_sim import run_bars
     bars, cfg, entry, opposite, open4, _ = _case(exit_kind, direction)
     sig = {1: entry, 3: opposite if closer == "opposite" else "CLOSE"}

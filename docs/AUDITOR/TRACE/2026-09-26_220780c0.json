@@ -15447,12 +15447,12 @@
   {
    "move": 565,
    "tools": {
-    "Bash": 8,
+    "Bash": 10,
     "Write": 1,
-    "Agent": 3,
+    "Agent": 4,
     "mcp__Claude_Code_Remote__send_later": 2
    },
-   "n_tools": 14,
+   "n_tools": 17,
    "read_goal": false,
    "first_write_at": 2,
    "table_shown": false,

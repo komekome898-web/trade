@@ -14,7 +14,6 @@ range stop.
 Built by hand (no engine output used): bars with open 100 each; BUY at bar 0 -> filled at bar 1's open 100
 (R-T1); stop 2 % -> 98; max_hold_bars = 2 -> the time exit is due at bar 3's open 100. Bar 3's low 97 reaches the
 stop only after the open. Expected (spec): CLOSE at bar 3, price 100, reason time_exit, PnL 0.
-The legacy rule set is not tested here (the old engine looks at the stop first; the compatibility mouth keeps it).
 """
 from __future__ import annotations
 

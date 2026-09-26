@@ -206,3 +206,49 @@
 
 **リードの答え(18:12 UTC)**: (d)1 `rules`・`arithmetic` の引数(受ける値 1 つ)= 今は残す(落とすのは B の adapter と一緒に 1 回で行う持ち越し。1 通りしか無いことは `RULES = ("spec",)` で固定されている)。(d)2 `test_i4ref_ext_recorded.py` の削除 = 認める(同根)。(d)3 批評家の持ち物の最小限の変更 = 批評家の周で批評家が検める。(d)4 批評家の docstring の "legacy" の 1 文 = 批評家に消させる(検査の 0 に含める)。(c) `ref_mutants.py` 34 件は批評家の周で回す。
 
+
+## 批評家(1 回)の出力(逐語、18:17 UTC。全文 round_3/CRITIC_close.md)
+
+# 批評家の返り値(項目 4 を閉じる、委任文 `20260926_backtest_env_item4_close.md@c6eaee9f16a4`)
+
+記録: `/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/CRITIC_close.md`(同じ内容)。git の操作はしていない。触ったのは `tests/bt/critic/item_4/`(2 本の整備 + 1 本の追加)とこの記録だけ。
+
+合意した射程(逐語): 「**批評家 1 回 [止める] 0(射程 = 正しさ・安全・統合 + 「旧が残っていないか」)**」
+
+## §0.1 の表(右が全部埋まったので擦り合わせずに着手)
+
+| やろうとすること | 委任文の該当語(逐語) |
+|---|---|
+| A・B の主張をファイルとコマンドで確かめる | 「**批評家 1 回 [止める] 0(射程 = 正しさ・安全・統合 + 「旧が残っていないか」)**」§2-5 |
+| (b) の「覆う規則」が場面で検められているか | 「**(b) 場面集 item_4 の規則 R-* が覆う挙動…= 消す(覆う規則の番号を返り値に書く)**」§2-1 |
+| 9 語の数え(記録を除く) | 「**検査 = 生きている設計・コード・試験(記録…を除く)で `旧エンジン\|…\|legacy` の出現がこの文書の撤回の注記以外に 0**」§2-1 |
+| 格子・署名・critic・battery item_4・旧 2 本・mutant 34 件を回す | 「**組み直した格子の全升が一致…批評家の試験…が通る**」§2-4 / リードの答え「**批評家の周で回す**」 |
+| 12 本の import と `run_backtest.py` を自分で打つ | 「**1 本ずつ `python -c "import ..."` の出力を返す**」「**小さな実データ…で 1 回実行して末尾の行を返す**」§2-3 |
+| 自分の docstring の "legacy" を消す / A の最小限の変更を判断する | リードの答え (d)3「**批評家の周で批評家が検める**」(d)4「**批評家に消させる**」 |
+
+## 指摘
+
+- **i4-c-01 [直す]** 旧が残っていないか / target 核(リードの報告): 委任文 §2-1 の除外リストに**名が無い**記録に 9 語が残る — `REPORT_2026-09-26.md` 14・`item_0/PASS.md` 2・`item_0/battery/AUDIT.md` 13・`tests/bt/battery/item_0/ROOTCAUSE_r{8,12,13,15,16}-1.md` 7/2/9/2/3・`item_4/ROOTCAUSE_r2-1.md` 38・`r3-1.md` 10・`attempts/105.log` 2。リードは 17:05 に「変えない(A-5b)」と決めた。打って確かめた: 生きている試験でこれらを**読む**のは `test_battery_item0.py:1501`(撤回 2 句の置換後に照合)と `test_battery_item4_diffscope.py:236-244`(ROOTCAUSE の差分の節が手で編集されていないことを検める = 記録を書き換えると落ちる)の 2 本だけで、旧の語を根拠にした判定は無い。よって [止める] ではないが、**報告に「除外に加えた記録 11 本(名と件数)」を書く**こと。書かずに「0」と報告すれば A-10。
+- **i4-c-02 [直す]** 正しさ / target A / `src/bot/bt/reference/SPEC.md` 120・183 行: 「40 件中 40 件」は第 1 段の数で、今の 34 件は A が回していない。私の実測(私有の複製で): `python3 tests/bt/item_4/reference/ref_mutants.py` → **`killed 34/34`**。SPEC §6・§8 をこの数に直す。
+- **i4-c-03 [直す]** 統合 / target B / `item_4/REQUIREMENTS.md:40` I4-7「既存の試験を落とさない・**消さない**・飛ばさないか」が、同じファイルの §1「(2) 旧の試験…を消す」と矛盾したまま残っている。L-474 で (a)(b) を消したことと、残した (c) と `tests/bt/` を落とさない旨の注記 1 行。
+- **i4-c-04 [注記]** target B(持ち越し): `adapters/new_impl.py` の `inp.get("model","spec") != "spec"` の受け口(撤回した 2 出力の選択子)。`rules`・`arithmetic` の引数を落とす周に一緒に。
+- **i4-c-05 [注記]** 安全: 呼び口は `sealed.py`・事前登録を通らない(`grep sealed|prereg` in compat = 0)が、書き換え前と同じで迂回の経路は増えていない。`tests/test_audit_gates_wired.py` → `12 passed`。`run_backtest.py` は書き込み無し。
+- **i4-c-06 [注記]** (b) の検査は減っていない: 表の規則は全部 `DEFINITIONS.md` 38〜103 行にあり場面が引く(R-T1 12・R-P3 12・R-M2 7・R-S1 5・R-W1 4 …)。個別に読んだ: wick の凍結は参照が水準を約定時に 1 回だけ置き(`bar_sim.py:307`)格子が追随を落とす / gap の始値 = R-P3 / `entry_sides`=`allow_short=False` の**同値**だけは場面に無い(両規則は別々に固まる)/ `defaults_are_bit_identical` は署名の試験 122 行に移設済み。(a)=0 は A と一致。
+- **i4-c-07 [注記]** 自分の持ち物: A のパス読みの形は**それでよい**(根 = 全項目の adapter が同名。改名は B の持ち物)。docstring の旧エンジンの 3 文と `model` 引数を落とし、`test_i4r2…:17` の 1 文を消した。足した `test_i4r3_no_old_axis_remains.py`(4 件: 生きている項目 4 の木に 9 語が無い / 対照 = 植えた語を拾う / `RULES==("spec",)`・`ARITHMETICS==("decimal",)` と他の名の拒否 / `bot.backtest` 3 本は AST で import と `__all__` のみ)。この 1 本自身が検査の語として 11 出現を持つ(数えに別立て)。
+
+## 確かめたこと・回した試験(末尾の行)
+
+- `src/bot/backtest/` 3 本 = docstring・import・`__all__` のみ(11/9/9 行)。compat に `_old_arithmetic` 等 0。`barmodel.py:98-105` `RULES=(SPEC,)`。`walk_forward.py:28-29` `ARITHMETICS=(DECIMAL,)`。`bar_sim.py` の options に旧側の鍵無し。核 `git diff 09b4733 HEAD --stat -- src/bot/bt/core` = 空。A の全試験ログ 306 行目 `20598 passed, 10 skipped, 4 warnings in 2466.25s`。
+- 12 本の import: **12 本とも `import ok`**(自分で打った)。`scripts/run_backtest.py backtest_data/binance_XRPUSDT_4h.csv` → exit 0、23.3 秒、末尾 `range_fade` 3 分割 trades=0 と `Reminder: only OOS results count…`(動作確認のみ)。
+- `critic item_4 + 格子 + 署名 + test_backtest + test_short_margin` → `141 passed in 37.63s` / `tests/bt/battery/item_4` → `169 passed in 3.29s` / `tests/bt/critic/item_4`(整備後)→ `82 passed in 21.69s` / `--collect-only tests` → `20612 tests collected`(20608 + 4)/ mutant → `killed 34/34`。
+
+## 集計
+
+**[止める] 0 件、[直す] 3 件**、[注記] 4 件。
+
+旧の語の数え(ファイルごと、全文は記録 §4): `src tests scripts` 合計 129(別の意味の legacy 30・撤回の注記 11・SCAN の語 4・私の検査の試験 11・除外に名が無い記録 73)、docs の範囲 58。**A・B・批評家の持ち物のコード(`src/bot/backtest`・`compat`・`reference`・`tests/bt/item_4`・`tests/bt/critic/item_4`)は検査の試験を除き 0。**
+
+時間が来て読めなかった範囲: なし(18:07〜18:16 UTC)。回していないもの: `tests/bt/item_4` の全部(A の 19 分)、場面集 item_0〜3(B の 651 は item_0〜4 合計、私は item_4 の 169 だけ)。
+
+**リードの処置(18:20 UTC)**: [止める] 0。[直す] 3 件は機械的なのでリードが当てる: i4-c-01 = 報告に「除外に加えた記録 11 本(名と件数)」を書く。i4-c-02 = SPEC.md の mutant の数を 34/34(批評家の実測 `killed 34/34`)に直す。i4-c-03 = item_4/REQUIREMENTS.md の I4-7 に注記 1 行(旧の試験 (a)(b) は L-474 で消し、(c) と tests/bt/ は落とさない)。[注記] 4 件は報告に写す(持ち越し: `model` の受け口・`rules`/`arithmetic` の引数を落とす周、`entry_sides` = `allow_short=False` の同値の場面)。
+
