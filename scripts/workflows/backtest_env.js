@@ -272,7 +272,9 @@ async function runItem(item) {
     if (item.id === 4 && attempt === 1) await agent(`${HEAD2}
 あなたは項目 4「${item.title}」の参照実装の役です(作業者ではない)。読んでよいのは委任文 §2 の項目 4 の行と固定した要件 ${req.path} だけ。**src/bot/bt/core/ とその試験を開かない**(開いたと分かる成果物 = 核の内部の名前や構造の写しは批評家が [止める] にする)。要件の文だけから、遅い参照実装を src/bot/bt/reference/ に、性質の試験と正解つきの場面を tests/bt/item_4/reference/ に書く。外部の道具は委任文 §4 の規則で scratchpad の venv に入れ、同じ合成の場面で同じ数が出るかを比べる。${SCRUTINY_BUILD}`,
       { label: `参照実装:${item.id}`, phase: '作る', model: IMPL_MODEL, effort: 'high' })
-    const wP = agent(`${attempt === 1 && item.id === 0 ? HEAD : HEAD2}
+    // prebuilt[id].worker / .table / .table_audit (2026-09-26): a relaunch continues from recorded results instead of the
+    // replay cache (the cache key follows call order, which parallel items do not keep = measured on resumes 1-3)
+    const wP = (pre && pre.worker && attempt === 1) ? Promise.resolve(pre.worker) : agent(`${attempt === 1 && item.id === 0 ? HEAD : HEAD2}
 あなたは項目 ${item.id}「${item.title}」の作業者です(第 ${attempt} 周)。固定した要件: ${req.path}(変えない)。場面集: ${bat.definitions}(読めるが変えない。場面だけを特別扱いする直しは [止める])。持ち物は委任文 §2 の項目 ${item.id} の行のファイルだけ。${item.extra || ''}${(args.lead_notes || {})[item.id] || ''}
 ${attempt === 1 ? '最初の周です。要件の全行と比較の観点を満たす実装と試験を書く。' :
 `前の周の批評・監査役・盲検の結果(未解消の指摘をすべて直す対象に入れる):
@@ -288,7 +290,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
     if (repairOut && repairOut.escalate) return { item, status: 'escalate', reason: repairOut.escalate, attempts: attempt, req, bat, history }
     if (!w) return { item, status: 'error', stage: 'worker', attempt, history }
 
-    let t = await agent(`${HEAD2}
+    let t = (pre && pre.table && attempt === 1) ? pre.table : await agent(`${HEAD2}
 あなたは項目 ${item.id} の資料係(第 ${attempt} 周。作業者とは別の者)です。委任文 §3「比較の表」に従う。**文章を書かない。表はスクリプトの出力だけ。**
 1. 新実装の adapter を ${bat.battery_dir} に書く(新実装の公開された口だけを呼ぶ。新実装の本体は変えない)。
 2. ${bat.runner} で、新実装・当方の現状・調査結果の側(入れられた道具すべて)・試金石(${bat.mutant})を、それぞれ 2 回走らせる。
@@ -331,7 +333,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
       // item 1's adapter absolutised paths twice; the lead's bound = 1 retry, then escalate as before = I-013)
       const tableAudit = (tt) => agent(`検査対象: 項目 ${item.id}「${item.title}」の最初の結果の表 ${Object.values(tt.tables).join(' / ')} と、表を作った資料係の記録(${JSON.stringify({ commands: tt.commands, adapters_changed: tt.adapters_changed, notes: tt.notes }).slice(0, 4000)})。場面集 ${bat.definitions} は作業者の前に監査を通っている(${batHist.length} 回)。委任文 ${DOC} §3「盲検の作り直し」「場面集の規則」「比較の表」と照らし、表が場面集の全場面に全員(当方の現状・調査結果の側の動かせた道具と再現・新実装)を通しているか、新実装の adapter が公開の口だけを公平に呼んでいるか、表に出所を示す語が残っていないか、断定と範囲を検査する。表が 6 枚そろっていなければ [止める]。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役(表):${item.id}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
-            let batAudit = await tableAudit(t)
+            let batAudit = (pre && pre.table_audit && attempt === 1) ? pre.table_audit : await tableAudit(t)
       let batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
       if (batStops.length) {
         const t2 = await agent(`${HEAD2}
@@ -478,7 +480,13 @@ if (results[0] && results[0].openBattery && results[0].openBattery.length) {
 async function finish(out) { out.battery_followup = batteryFollow ? await batteryFollow : null; return out }
 
 // stage 2: items 1..3 in parallel (L-447: データと時刻 / 執行の模型 / 検証・再現・出力)
-const mid = ITEMS.filter(it => it.id >= 1 && it.id <= 3 && (!only || only.includes(it.id)))
+// items 1..3 already passed in an earlier launch are carried as passed (args.passed_items + args.prebuilt[id].req/bat),
+// 2026-09-26: the replay cache keys follow call order, which parallel items do not keep, so a relaunch carries results by args
+for (const it of ITEMS.filter(it => it.id >= 1 && it.id <= 3 && passed.includes(it.id))) {
+  const pr = (args.prebuilt || {})[it.id] || {}
+  results[it.id] = { item: it, status: 'pass', carried: true, history: [], req: { path: pr.req }, bat: pr.bat || null, carriedImpl: pr.carried_impl || [] }
+}
+const mid = ITEMS.filter(it => it.id >= 1 && it.id <= 3 && !passed.includes(it.id) && (!only || only.includes(it.id)))
 const midRes = await parallel(mid.map(it => () => runItem(it)))
 midRes.forEach((r, i) => { results[mid[i].id] = r || { item: mid[i], status: 'error' } })
 const blocked = Object.values(results).filter(r => r.status !== 'pass')
@@ -486,7 +494,7 @@ if (blocked.length) return finish({ stopped_at: 'parallel', results: Object.valu
 
 // stage 3: item 4 統合と答え合わせ (L-447: 参照実装 + 統合 + 旧エンジンとの互換; 圧倒の判定)
 // audit 66-3: the stops items 1..3 carried over (L-451 / I-013) reach item 4's worker and critic in this launch
-const carried = mid.map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(x => x.findings.length)  // 67-9: all levels
+const carried = ITEMS.filter(it => it.id >= 1 && it.id <= 3).map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(x => x.findings.length)  // 67-9: all levels
 if (carried.length) {
   log(`持ち越しの指摘 ${carried.reduce((n, x) => n + x.findings.length, 0)} 件を項目 4 に渡す`)
   byId[4] = { ...byId[4], extra: `${byId[4].extra || ''}\n持ち越しの指摘(項目 1〜3 の批評家の [止める]・[直す]・[示唆]。L-451・I-013: 通過を止めずに持ち越したもの。この項目の作業者が直し、批評家が直りを確かめる。逐語): ${JSON.stringify(carried).slice(0, 12000)}` }
