@@ -37231,7 +37231,7 @@ K12 検査の出力の貼付           1 件
 | 13 | `NinjaTrader` / §4.0 宣伝詐欺の兆候: 見当たらない。`risk_disclosures.htm`逐語「NT is an affiliated company to NinjaTrader Brokerage」に続き、NFA登録の紹介ブローカー(NFA #0339976)であることが確認できる。「必ず儲かる」等の定型句・Telegramのみでの勧誘・秘密鍵要求は見当たらない(ただしpricing頁に宣伝文句はあり、格付けの出所はこの回に特定していない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:500 |
 | 14 | `NinjaTrader` / §4.0 当方データ投入: `importing.htm`の逐語「Historical data can be imported from a text file with a ".txt" extension」「yyyyMMdd HHmmss fffffff;price;volume」。当方のcsv.gz(tardis形式)は直接投入できないが、セミコロン区切りのテキスト形式(サブ秒粒度のtickフォーマット)に変換すれば投入経路がある。実際の変換・投入はWindows環境が無いため試みていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:515 docs/DATA/probes/20260923_tools_8_run20.log:518 |
 | 15 | `NinjaTrader` / §4.0 規模の見積: `minimum_system_requirements.htm`(最小2GB RAM・推奨8GB RAM)・`performance_tips.htm`・`performance_tips2.htm`を読んだが、456日分のtickデータを扱う具体的な所要時間・記憶域の数値は記載が無かった(元資料は17回目に取得済み)。実行して実測するにはWindows環境が必要で、この環境では試みていない(Wine経由の道は未実施) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
-| 16 | `NinjaTrader` / §4.0 最小実行の可否: デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない(「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
+| 16 | `NinjaTrader` / §4.0 最小実行の可否: デスクトップの実行ファイル(Windows専用)で、この環境(Linux)で起動する手は打っていない。Wineを入れて動かす道はこの回も試していない(「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
 
 ### 候補の一覧
 
@@ -37652,7 +37652,7 @@ K12 検査の出力の貼付           1 件
 | `NinjaTrader` | install所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
 | `NinjaTrader` | 依存数 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
 | `NinjaTrader` | pip check | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
-| `NinjaTrader` | 最小実行の可否 | 試していない(デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない。「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
+| `NinjaTrader` | 最小実行の可否 | 試していない(デスクトップの実行ファイル(Windows専用)で、この環境(Linux)で起動する手は打っていない。Wineを入れて動かす道はこの回も試していない。「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
 | `NinjaTrader` | 最小実行の中身 | 登録が要る(渡すもの: 無料のシミュレーション口座はメールアドレスまたはGoogle/Appleアカウント。ライブ口座の資金化には氏名・住所・電話番号も別途必要)。実行はオーナーの判断待ち | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:223-311 docs/DATA/probes/20260923_tools_8_run20.log:512 |
 | `NinjaTrader` | 実行所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
 | `NinjaTrader` | wheel展開 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
@@ -37677,7 +37677,7 @@ K12 検査の出力の貼付           1 件
 
 ### §4.0 で未確認のまま残した項目
 
-- **最小実行の可否**: デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない(理由は「時間」ではない。19回目の検収§7の5と同じ「動かせないとは書かない、試していないと書く」扱い)
+- **最小実行の可否**: デスクトップの実行ファイル(Windows専用)で、この環境(Linux)で起動する手は打っていない。Wineを入れて動かす道はこの回も試していない(理由は「時間」ではない。19回目の検収§7の5と同じ「動かせないとは書かない、試していないと書く」扱い)
 - **規模の見積**: `minimum_system_requirements.htm`(最小2GB RAM・推奨8GB RAM)・`performance_tips.htm`・`performance_tips2.htm`を読んだが、456日分のtickデータの所要時間・記憶域を示す具体的な数値の記載が無かった。実行して実測するにはWindows環境が必要で、この環境では試みていない
 - **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(未確認とは別だが、値が確定していない点は同じ性質のため、ここに残す)
 
@@ -37776,3 +37776,16 @@ K12 検査の出力の貼付           1 件
 ```
 0
 ```
+
+### リードの追記(検収、監査 100 回目の指摘 4)
+
+設計票 §4.2 が印の要素ごとに残すと決めた軸のうち、8-038 の E1a・E2 に欠けていた行を、調査班が取った本文(生ログの手の出力と同じファイル)からリードが足す。
+
+| 道具 | 要素 | 軸 | 原文(逐語) | 出所 |
+|---|---|---|---|---|
+| `NinjaTrader` | E1a | 突き合わせの単位 | 建玉(戦略の建玉と口座の建玉)。「On multi-instrument strategies it will perform this check for all instruments used by the strategy.」 | 一次資料 `syncing_account_positions.htm`(docs/DATA/probes/20260923_tools_8_run20.log:137-165) |
+| `NinjaTrader` | E1a | 許容誤差を指定できるか | この頁に許容誤差を指定する記述は無い(選べるのは起動時の振る舞いの組み合わせ)。他の頁は未確認 | 一次資料 同上 |
+| `NinjaTrader` | E1a | いつ突き合わせるか | 「these options will only help you sync your Account Position to your Strategy Position once on startup」(起動時の 1 回だけ) | 一次資料 同上 |
+| `NinjaTrader` | E2 | 検出する異常の種類 | 外れ値(直前の有効な約定値からの乖離)。「A bad tick is detected if the tick price is less than the last valid traded price - (last traded Price * (1 - bad tick offset as %))」 | 一次資料 `real_time_tick_filter.htm`(docs/DATA/probes/20260923_tools_8_run20.log:190-195) |
+| `NinjaTrader` | E2 | 直すか報告だけか | 直す(捨てる)。「the tick is thrown away and not distributed to any NinjaTrader object that requires market data」 | 一次資料 同上 |
+| `NinjaTrader` | E2 | (ア) 基準を指定できるか | 指定できる。「if it is outside of a user defined percentage value」 | 一次資料 同上 |
