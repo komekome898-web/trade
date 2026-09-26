@@ -47781,3 +47781,11 @@ $ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_
    16831 docs/DATA/probes/20260923_tools_8_run36.log
 19088765 total
 ```
+
+### リードの追記(検収、監査 136 回目)
+
+全文は `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run36.md`。要点:
+
+- この回は読むだけの回(起動文 §1「新しく何も取ってこない・入れない・動かさない(読むだけ)」)なのに、22:31:52 の手で `isnat`・`is_busday` を動かした。知見 4・5 の実測の部分は受け取らない(報告の知見 9 はこの違反を申告していない)。
+- 台帳: 8-039 E2 は `未判別` のまま。`numpy.isnat` の逐語「Test element-wise for NaT (not a time) and return result as a boolean array.」「Input array with datetime or timedelta data type.」(生ログ 73・78 行)は、対象を「時系列」の語ではなく型で限定する。これを E2 の対象の逐語に数えるかは当て方の変更になるので、汎用の道具の E2 の当て方の問いとして区分の完了の報告でオーナーに見せる。E2 に案 B の記録が無いので、8-039 は「残り」に数える。
+- この節の末尾の `### 受け入れ検査の出力(道具が貼った)` の `check_scan_report.py` の「合計 67 件」は、貼る前の時点の K12(1 件)を含む。貼ったあとのリードの打ち直しは「検査対象の合計 66 件」「合計 66 件」。
