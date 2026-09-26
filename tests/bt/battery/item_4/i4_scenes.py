@@ -1245,6 +1245,29 @@ add(id="i4-16-same-side-two-models", viewpoint="I4-16", kind="能力",
             "spec": full_expect(SSL, [trade(4, +1, 100.0, 0.0)], _CSSL, 60, _WFM, missed=0)},
     judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 
+_MKO = [True, True, False, True, True]
+MKO = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 100.8, 100, 100.5), (100.5, 101, 99.5, 100),
+               (100, 100.5, 99.8, 100)])
+_CMKO = cfg(execution="maker", maker_timeout_bars=5, allow_short=True, entry_mask=_MKO)
+add(id="i4-16-mask-false-opposite-keeps-limit", viewpoint="I4-16", kind="値",
+    what="maker の執行で、待っている建ての指値に、マスクが False の反対向きの合図が来ても、指値を置き換えず古い指値を残し、取り逃しに"
+         "数えないか(R-E4 が R-M3 より先。R-M3 の置き換えは有効な合図のときだけ)",
+    how="MKO の足、maker、寿命 5、ショート可、マスク " + str(_MKO) + "、費用 0。BUY@1 → 指値 100(足 1 の終値)。足 2 の安値 100 は触れただけ。"
+        "SELL@2 はマスク[2] = False → 何もしない(R-E4。置き換えない)。足 3 の安値 99.5 < 100 で 100 で買い建て(3 - 1 = 2 <= 5)。取り逃し 0。",
+    input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CMKO, want=_WFM),
+    expect=full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CMKO, 60, _WFM, missed=0),
+    judge=J(*_WFM))
+add(id="i4-16-mask-false-opposite-two-models", viewpoint="I4-16", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(マスクが False の反対向きの合図でも待っている指値を置き換えて取り逃しに数え、置き換えた指値は"
+         "通過しても建てない既存の計算 L-8)と仕様の出力(R-E4)の両方を出せるか",
+    how="i4-16-mask-false-opposite-keeps-limit と同じ入力。互換の答え = SELL@2 で買いの指値 100 を売りの指値 100.5(足 2 の終値)に置き換えて"
+        "取り逃し 1、足 3 の高値 101 > 100.5 で通過するがマスク[2] = False なので建てずに消す(L-8)→ 約定 0・取り逃し 1。"
+        "仕様の答え = 足 3 で 100 の買い建て・取り逃し 0。",
+    input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CMKO, want=_WFM, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(MKO, [], _CMKO, 60, _WFM, missed=1),
+            "spec": full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CMKO, 60, _WFM, missed=0)},
+    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
+
 # --------------------------------------------------------------------------- I4-17 metrics
 _P17 = [120.0, -40.0, -5.0, 0.0, -30.0, 80.0, -10.0]
 _E17 = [6000.0, 6120.0, 6080.0, 6075.0, 6075.0, 6045.0, 6125.0, 6115.0]

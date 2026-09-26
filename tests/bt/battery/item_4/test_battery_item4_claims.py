@@ -409,32 +409,41 @@ def test_runnability_records_an_attempt_for_every_reproduction():
 
 # =========================================================================== I  the maker path of the entry (round r3-1, i4-r2-08)
 # The derivation of the maker entries of a scene from the rule text only (R-M1 strict trade-through at the limit, R-M2
-# timeout, R-M3 an opposite signal replaces and counts, R-M6 a same-side signal keeps the old limit, R-E2 / R-E4 a
-# mask-False signal places no limit).  Flags turn R-E4 / R-M6 into the existing computation L-6 / L-7 (the mutants).
+# timeout, R-M3 an opposite VALID signal replaces and counts, R-M6 a same-side signal keeps the old limit, R-E2 / R-E4 a
+# mask-False signal does nothing -- also on a resting limit of the other side (the lead's answer, round r3-1)).
+# Flags turn R-E4 / R-M6 into the existing computation L-6 + L-8 / L-7 (the mutants).
 # Scope (named): scenes run with the maker execution, no exit option (no stop / take-profit / time / wick / maker
-# take-profit) and only BUY signals with shorting off -- the entry path alone.  Not in it: closing limits (R-M4) and
-# the exits (family A covers them), SELL / CLOSE signals.
+# take-profit), BUY / SELL signals only, and answers whose fills are opens only -- the entry path alone (the
+# derivation stops at the first open).  Not in it: closing limits (R-M4) and the exits (family A covers them), CLOSE.
 def _maker_entries(inp, r_e4=True, r_m6=True):
     bars, cfg = inp["bars"], inp["config"]
     sig = {s["bar"]: s["signal"] for s in inp["signals"]}
     mask, timeout = cfg["entry_mask"], cfg["maker_timeout_bars"]
-    pending, pos, missed, fills = None, 0, 0, []
+    ok_mask = lambda k: mask is None or bool(mask[k])  # noqa: E731
+    pending, missed, fills = None, 0, []  # pending = (price, placed bar, side)
     for j, b in enumerate(bars):
         if pending is not None and j > pending[1]:
-            if b["low"] < pending[0]:                       # R-M1: strictly traded through
-                if pos == 0 and (mask is None or mask[pending[1]]):   # R-E2: the decision bar's mask (L-6: no open)
-                    fills.append((j, pending[0]))
-                    pos = 1
+            through = b["low"] < pending[0] if pending[2] == "BUY" else b["high"] > pending[0]
+            if through:                                     # R-M1: strictly traded through
+                if ok_mask(pending[1]):                     # R-E2: the decision bar's mask (L-6 / L-8: no open)
+                    fills.append((j, pending[0], "OPEN_LONG" if pending[2] == "BUY" else "OPEN_SHORT"))
+                    return fills, missed
                 pending = None
-            elif j - pending[1] >= timeout:
+            elif j - pending[1] >= timeout:                 # R-M2
                 missed += 1
                 pending = None
-        if sig.get(j) == "BUY" and pos == 0 and j < len(bars) - 1:
-            if r_e4 and mask is not None and not mask[j]:
-                continue
-            if r_m6 and pending is not None:
-                continue
-            pending = (b["close"], j)
+        side = sig.get(j)
+        if side not in ("BUY", "SELL") or j >= len(bars) - 1:
+            continue
+        if side == "SELL" and not cfg["allow_short"]:
+            continue
+        if r_e4 and not ok_mask(j):                         # R-E4: a mask-False signal does nothing
+            continue
+        if pending is not None and pending[2] == side and r_m6:   # R-M6
+            continue
+        if pending is not None and pending[2] != side:      # R-M3 (L-8 when the signal's mask is False)
+            missed += 1
+        pending = (b["close"], j, side)
     return fills, missed
 
 
@@ -445,10 +454,12 @@ def _entry_path_scenes():
         if inp.get("op") != "bars":
             continue
         c = inp["config"]
-        if c["execution"] != "maker" or c["allow_short"] or c["stop_loss_pct"] or c["take_profit_pct"] \
+        if c["execution"] != "maker" or c["stop_loss_pct"] or c["take_profit_pct"] \
                 or c["max_hold_bars"] is not None or c["stop_mode"] != "fixed" or c["exit_execution"] != "signal":
             continue
-        if not inp["signals"] or any(x["signal"] != "BUY" for x in inp["signals"]):
+        if not inp["signals"] or any(x["signal"] not in ("BUY", "SELL") for x in inp["signals"]):
+            continue
+        if any(len([f for f in e.get("fills", []) if not f["side"].startswith("OPEN")]) for _, e in _answers(s)):
             continue
         out.append(s)
     return out
@@ -462,13 +473,14 @@ def _answers(s):
 
 
 def _as_derived(e):
-    return [(f["bar"], f["price"]) for f in e["fills"] if f["side"] == "OPEN_LONG"], e.get("missed_fills")
+    return [(f["bar"], f["price"], f["side"]) for f in e["fills"]][:1], e.get("missed_fills")
 
 
 def test_maker_entry_scenes_follow_the_rule_text():
     sc = _entry_path_scenes()
     ids = {s["id"] for s in sc}
-    assert {"i4-14-maker-mask-false", "i4-16-maker-mask-false-not-missed", "i4-16-same-side-keeps-limit"} <= ids, ids
+    assert {"i4-14-maker-mask-false", "i4-16-maker-mask-false-not-missed", "i4-16-same-side-keeps-limit",
+            "i4-16-mask-false-opposite-keeps-limit"} - ids == set(), ids
     for s in sc:
         for name, e in _answers(s):
             got = _maker_entries(s["input"]) if name == "spec" else _maker_entries(s["input"], r_e4=False, r_m6=False)

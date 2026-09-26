@@ -44,6 +44,8 @@ i4-16-maker-mask-false-not-missed	I4-16	値	正解と一致		8ec96dca0288	正解
 i4-16-maker-mask-false-two-models	I4-16	能力	正解と一致		b8e4263daaf3	正解と一致		b8e4263daaf3	2 回の実行で同じ	0.015	0.015
 i4-16-same-side-keeps-limit	I4-16	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.012	0.008
 i4-16-same-side-two-models	I4-16	能力	正解と一致		8913a6818ee9	正解と一致		8913a6818ee9	2 回の実行で同じ	0.024	0.016
+i4-16-mask-false-opposite-keeps-limit	I4-16	値	正解と一致		0d83570dc27b	正解と一致		0d83570dc27b	2 回の実行で同じ	0.009	0.004
+i4-16-mask-false-opposite-two-models	I4-16	能力	正解と一致		917006d5300a	正解と一致		917006d5300a	2 回の実行で同じ	0.016	0.007
 i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
 i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
 i4-17-sharpe-bar-seconds	I4-17	値	正解と一致		e4411f8c2424	正解と一致		e4411f8c2424	2 回の実行で同じ	0.007	0.003

@@ -379,9 +379,9 @@ def _bounds(cands: list, spec: dict, seals: SealRegistry) -> None:
 
 
 def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
-    """Evidence of real market data for rows read through the data layer with the declaration `spec`: the first
-    market file (sorted paths) whose rows -- read through the data layer with the same declaration, kept in the
-    rows' time span -- contain one of the rows (time and every value)."""
+    """Evidence of real market data for rows read through the data layer with the declaration `spec`: the market
+    file whose rows -- read through the data layer with the same declaration, kept in the rows' time span --
+    contain the most of the rows (time and every value; at least one)."""
     rows = [_row_key(r) for r in records]
     base = {"by": "unmatched", "market_path": None, "rows_matched": 0, "rows_read": len(rows), "sealed_skipped": []}
     if not rows:
@@ -391,7 +391,6 @@ def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
     cands = _market_candidates(spec)
     seals = SealRegistry(REPO)
     _bounds(cands, spec, seals)
-    want = set(rows)
     for real, rel, gz, key in cands:
         b = _BOUNDS_CACHE.get(key)
         if b is None:
@@ -411,9 +410,9 @@ def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
             if b == "sealed":
                 base["sealed_skipped"].append(rel)
             continue
-        n = len(want & got)
-        if n:
-            return {**base, "by": "rows", "market_path": rel, "rows_matched": sum(1 for r in rows if r in got)}
+        n = sum(1 for r in rows if r in got)
+        if n > base["rows_matched"]:  # the market file with the most rows equal (ties: the first in path order)
+            base = {**base, "by": "rows", "market_path": rel, "rows_matched": n}
     return base
 
 
@@ -639,6 +638,9 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
         _need(kind in _PRICE_EVENT, f"instruments[{i}]: a {kind!r} dataset cannot drive an instrument")
         w = list(it["with"])
         _need(all(x in by_name and x != it["price"] for x in w), f"instruments[{i}].with names an unknown dataset or the price one")
+        for x in w:
+            _need(_PRICE_EVENT.get(by_name[x]["kind"]) is not _PRICE_EVENT[kind],
+                  f"instruments[{i}]: {x!r} has the same event type as the price dataset (its prices could not be told apart)")
         prod = _product(it["product"], f"instruments[{i}]")
         _rules(it["rules"], f"instruments[{i}]")
         ins.append({"name": it["name"], "price": it["price"], "with": w, "price_kind": kind,

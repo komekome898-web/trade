@@ -42,7 +42,9 @@ DEVIATIONS = {"i4-12-touch-decimal", "i4-13-tp-on-exit-bar", "i4-13-two-models",
               "i4-13-stop-on-time-bar", "i4-13-stop-on-time-bar-maker", "i4-13-stop-on-time-bar-two-models",
               # L-6 / L-7 (round r3-1, i4-r2-08): the maker path of a mask-False signal and of a same-side signal
               "i4-16-maker-mask-false-not-missed", "i4-16-maker-mask-false-two-models", "i4-16-same-side-keeps-limit",
-              "i4-16-same-side-two-models"}
+              "i4-16-same-side-two-models",
+              # L-8 (round r3-1, the lead's answer (2)): a mask-False opposite signal on a resting entry limit
+              "i4-16-mask-false-opposite-keeps-limit", "i4-16-mask-false-opposite-two-models"}
 
 
 def _load(path, name):
