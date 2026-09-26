@@ -1,0 +1,402 @@
+=== 区分8 29回目 開始 対象: 8-032 Apache Kafka の残り(E1b・E2・E4・E6の『印』を探し尽くす、§4.0の未確認の一部を試す、E1a・E5はこのまま)。新しく取ってこない・入れない。申し送り: 起動文 docs/DATA/delegations/20260923_tools_survey_cat8_run29_prompt.md@cd0c7b5b9f33
+--- 2026-09-26T16:00:20Z method=環境 target=キャッシュ確認 rc=0 time_s=0.037 note=最初の手。scratchpadの状態と導入前のキャッシュの状態を確認(起動文§1)
+$ ls '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032'; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+8-032_list.lst
+check
+mklist.sh
+run
+src
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T16:00:26Z method=確認 target=28回目見積もり確認 rc=0 time_s=0.005 note=28回目の見積もり(E1b/E2/E4/E6)がその行に出ていることを確認(起動文§1の1、引く前の確認)
+$ sed -n '375,395p' docs/DATA/probes/20260923_tools_8_run28.log | grep -E 'estimate target=(E1b|E2|E4|E6)見積もり|files=7509'
+| --- 2026-09-26T15:10:48Z method=estimate target=E1b見積もり rc=0 time_s=4.175 note=8-032 E1bの当たりの量の見積もり(500行の上限判定用)
+files=7509 files_with_hit=1175 total_lines=5285
+| --- 2026-09-26T15:10:58Z method=estimate target=E2見積もり rc=0 time_s=11.794 note=8-032 E2の当たりの量の見積もり(500行の上限判定用)
+files=7509 files_with_hit=3588 total_lines=57158
+files=7509 files_with_hit=113 total_lines=246
+files=7509 files_with_hit=88 total_lines=287
+| --- 2026-09-26T15:11:26Z method=estimate target=E4見積もり rc=0 time_s=4.015 note=8-032 E4の当たりの量の見積もり(500行の上限判定用)
+files=7509 files_with_hit=2822 total_lines=69920
+files=7509 files_with_hit=1829 total_lines=18765
+| --- 2026-09-26T15:11:36Z method=estimate target=E6見積もり rc=0 time_s=4.336 note=8-032 E6の当たりの量の見積もり(500行の上限判定用)
+files=7509 files_with_hit=4462 total_lines=211597
+--- 2026-09-26T16:02:54Z method=印探索 target=developer-guide未読頁一覧 rc=0 time_s=0.026 note=28回目に本文を読んでいないdeveloper-guide配下の個別頁を確認(起動文§1、testing.md/interactive-queries.md/app-reset-tool.mdは28回目に読了済み)
+$ ls '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide' && echo --- && for f in config-streams.md datatypes.md dsl-api.md dsl-topology-naming.md kafka-streams-group-sh.md manage-topics.md memory-mgmt.md processor-api.md running-app.md scala-migration.md security.md streams-rebalance-protocol.md topology-description-plugin.md write-streams-app.md; do wc -l "/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/$f"; done
+_index.md
+app-reset-tool.md
+config-streams.md
+datatypes.md
+dsl-api.md
+dsl-topology-naming.md
+interactive-queries.md
+kafka-streams-group-sh.md
+manage-topics.md
+memory-mgmt.md
+processor-api.md
+running-app.md
+scala-migration.md
+security.md
+streams-rebalance-protocol.md
+testing.md
+topology-description-plugin.md
+write-streams-app.md
+| ---
+2158 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/config-streams.md
+317 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/datatypes.md
+5950 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/dsl-api.md
+269 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/dsl-topology-naming.md
+210 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/kafka-streams-group-sh.md
+77 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/manage-topics.md
+236 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/memory-mgmt.md
+431 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/processor-api.md
+228 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/running-app.md
+104 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/scala-migration.md
+222 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/security.md
+270 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/streams-rebalance-protocol.md
+207 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/topology-description-plugin.md
+218 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/write-streams-app.md
+--- 2026-09-26T16:03:03Z method=印探索 target=E1bE2E4語彙走査 rc=0 time_s=0.037 note=developer-guide未読14頁でE1b/E2/E4述語語彙(市場データ/約定/板/足/参照データ・品質検出・再生)を探索(印には全件検索は要らない、起動文§2.3)
+$ cd '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide' && for f in config-streams.md datatypes.md dsl-api.md dsl-topology-naming.md kafka-streams-group-sh.md manage-topics.md memory-mgmt.md processor-api.md running-app.md scala-migration.md security.md streams-rebalance-protocol.md topology-description-plugin.md write-streams-app.md; do echo "=== $f ==="; grep -n -i -E 'market data|market-data|trade|tick|order.?book|candle|ohlc|vwap|profit|p&l|pnl|checksum|verify|validat|reconcil|duplicat|missing|out.of.order|clock skew|timestamp|schema|aggregat|reduce\(' "$f" | head -25; done
+=== config-streams.md ===
+65:    * default.timestamp.extractor
+269:Increasing the replication factor to 3 ensures that the internal Kafka Streams topic can tolerate up to 2 broker failures. The tradeoff from moving to the default values to the recommended ones is that some performance and more storage space (3x with the replication factor of 3) are sacrificed for more resiliency.
+522:default.timestamp.extractor
+530:Timestamp extractor class that implements the `TimestampExtractor` interface. See Timestamp Extractor
+534:`FailOnInvalidTimestamp`
+615:Controls whether DSL operators materialize headers-aware state stores. Case-insensitive. Accepted values: `default` (uses existing timestamped or plain store variants per operator) and `headers` (selects headers-aware stores that can persist record headers alongside values and timestamps; local state can be larger than under `default`).
+685:This config controls whether joins and merges may produce out-of-order results. The config value is the maximum amount of time in milliseconds a stream task will stay idle when it is fully caught up on some (but not all) input partitions to wait for producers to send additional records and avoid potential out-of-order record processing across multiple input streams. The default (zero) does not wait for producers to send more records, but it does wait to fetch data that is already present on the brokers. This default means that for records that are already present on the brokers, Streams will process them in timestamp order. Set to -1 to disable idling entirely and process any locally available data, even though doing so may produce out-of-order processing. 
+1268:>             dlqProducer.send(new ProducerRecord<>(dlqTopic, record.timestamp(), record.key(), record.value(), record.headers())).get();
+1314:### default.timestamp.extractor
+1316:> A timestamp extractor pulls a timestamp from an instance of [ConsumerRecord](/{version}/javadoc/org/apache/kafka/clients/consumer/ConsumerRecord.html). Timestamps are used to control the progress of streams.
+1318:> The default extractor is [FailOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/FailOnInvalidTimestamp.html). This extractor retrieves built-in timestamps that are automatically embedded into Kafka messages by the Kafka producer client since [Kafka version 0.10](https://cwiki.apache.org/confluence/x/eaSnAw). Depending on the setting of Kafka's server-side `log.message.timestamp.type` broker and `message.timestamp.type` topic parameters, this extractor provides you with:
+1320:>   * **event-time** processing semantics if `log.message.timestamp.type` is set to `CreateTime` aka "producer time" (which is the default). This represents the time when a Kafka producer sent the original message. If you use Kafka's official producer client, the timestamp represents milliseconds since the epoch.
+1321:>   * **ingestion-time** processing semantics if `log.message.timestamp.type` is set to `LogAppendTime` aka "broker time". This represents the time when the Kafka broker received the original message, in milliseconds since the epoch.
+1325:> The `FailOnInvalidTimestamp` extractor throws an exception if a record contains an invalid (i.e. negative) built-in timestamp, because Kafka Streams would not process this record but silently drop it. Invalid built-in timestamps can occur for various reasons: if for example, you consume a topic that is written to by pre-0.10 Kafka producer clients or by third-party producer clients that don't support the new Kafka 0.10 message format yet; another situation where this may happen is after upgrading your Kafka cluster from `0.9` to `0.10`, where all the data that was generated with `0.9` does not include the `0.10` message timestamps.
+1327:> If you have data with invalid timestamps and want to process it, then there are two alternative extractors available. Both work on built-in timestamps, but handle invalid timestamps differently.
+1329:>   * [LogAndSkipOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/LogAndSkipOnInvalidTimestamp.html): This extractor logs a warn message and returns the invalid timestamp to Kafka Streams, which will not process but silently drop the record. This log-and-skip strategy allows Kafka Streams to make progress instead of failing if there are records with an invalid built-in timestamp in your input data.
+1330:>   * [UsePartitionTimeOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/UsePartitionTimeOnInvalidTimestamp.html). This extractor returns the record's built-in timestamp if it is valid (i.e. not negative). If the record does not have a valid built-in timestamps, the extractor returns the previously extracted valid timestamp from a record of the same topic partition as the current record as a timestamp estimation. In case that no timestamp can be estimated, it throws an exception.
+1334:> Another built-in extractor is [WallclockTimestampExtractor](/{version}/javadoc/org/apache/kafka/streams/processor/WallclockTimestampExtractor.html). This extractor does not actually "extract" a timestamp from the consumed record but rather returns the current time in milliseconds from the system clock (think: `System.currentTimeMillis()`), which effectively means Streams will operate on the basis of the so-called **processing-time** of events.
+1336:> You can also provide your own timestamp extractors, for instance to retrieve timestamps embedded in the payload of messages. If you cannot extract a valid timestamp, you can either throw an exception, return a negative timestamp, or estimate a timestamp. Returning a negative timestamp will result in data loss - the corresponding record will not be processed but silently dropped. If you want to estimate a new timestamp, you can use the value provided via `previousTimestamp` (i.e., a Kafka Streams timestamp estimation). Here is an example of a custom `TimestampExtractor` implementation:
+1340:>     import org.apache.kafka.streams.processor.TimestampExtractor;
+1342:>     // Extracts the embedded timestamp of a record (giving you "event-time" semantics).
+1343:>     public class MyEventTimeExtractor implements TimestampExtractor {
+1346:>       public long extract(final ConsumerRecord<Object, Object> record, final long previousTimestamp) {
+1348:>         // the embedded timestamp (milliseconds since midnight, January 1, 1970 UTC).
+1349:>         long timestamp = -1;
+=== datatypes.md ===
+=== dsl-api.md ===
+31:      * Aggregating
+49:  * Using timestamp-based semantics for table processors
+64:  * Declarative, functional programming style with stateless transformations (e.g. `map` and `filter`) as well as stateful transformations such as aggregations (e.g. `count` and `reduce`), joins (e.g. `leftJoin`), and windowing (e.g. session windows).
+274:Some others may generate a KTable object, for example an aggregation of a KStream also yields a KTable. This allows Kafka Streams to continuously update the computed value upon arrivals of [out-of-order records](../../core-concepts#streams_concepts_aggregations) after it has already been produced to the downstream transformation operators.
+546:Grouping is a prerequisite for aggregating a stream or a table and ensures that data is properly partitioned ("keyed") for subsequent operations.
+552:**Grouping vs. Windowing:** A related operation is windowing, which lets you control how to "sub-group" the grouped records _of the same key_ into so-called _windows_ for stateful operations such as windowed aggregations or windowed joins.
+591:Grouping is a prerequisite for aggregating a stream or a table and ensures that data is properly partitioned ("keyed") for subsequent operations.
+597:**Grouping vs. Windowing:** A related operation is windowing, which lets you control how to "sub-group" the grouped records _of the same key_ into so-called _windows_ for stateful operations such as windowed aggregations or windowed joins.
+641:Cogrouping allows to aggregate multiple input streams in a single operation. The different (already grouped) input streams must have the same key type and may have different values types. [KGroupedStream#cogroup()](/{version}/javadoc/org/apache/kafka/streams/kstream/KGroupedStream.html#cogroup) creates a new cogrouped stream with a single input stream, while [CogroupedKStream#cogroup()](/{version}/javadoc/org/apache/kafka/streams/kstream/CogroupedKStream.html#cogroup) adds a grouped stream to an existing cogrouped stream. A `CogroupedKStream` may be [windowed](/{version}/javadoc/org/apache/kafka/streams/kstream/CogroupedKStream.html#windowedBy) before it is [aggregated](/{version}/javadoc/org/apache/kafka/streams/kstream/CogroupedKStream.html#aggregate). 
+653:    CogroupedKStream<byte[], String> cogroupedStream = groupedStream.cogroup(aggregator1).cogroup(groupedStream2, aggregator2);
+655:    KTable<byte[], String> table = cogroupedStream.aggregate(initializer);
+657:    KTable<byte[], String> table2 = cogroupedStream.windowedBy(TimeWindows.ofSizeWithNoGrace(Duration.ofMillis(500))).aggregate(initializer);
+918:Stateful transformations depend on state for processing inputs and producing outputs and require a [state store](../../architecture#streams_architecture_state) associated with the stream processor. For example, in aggregating operations, a windowing state store is used to collect the latest aggregation results per window. In join operations, a windowing state store is used to collect all of the records received so far within the defined window boundary.
+922:  * non-windowed aggregations and non-windowed KTables use [TimestampedKeyValueStore](/{version}/javadoc/org/apache/kafka/streams/state/TimestampedKeyValueStore.html)s or [VersionedKeyValueStore](/{version}/javadoc/org/apache/kafka/streams/state/VersionedKeyValueStore.html)s, depending on whether the parameter `materialized` is versioned
+923:  * time-windowed aggregations and KStream-KStream joins use [TimestampedWindowStore](/{version}/javadoc/org/apache/kafka/streams/state/TimestampedWindowStore.html)s
+924:  * session windowed aggregations use [SessionStore](/{version}/javadoc/org/apache/kafka/streams/state/SessionStore.html)s (there is no timestamped session store as of now)
+928:**Headers-aware state stores ([KIP-1285](https://cwiki.apache.org/confluence/x/4ow8G)):** Set [`dsl.store.format=HEADERS`](../config-streams#dsl-store-format) to make supported DSL operators use headers-aware state stores. These stores can keep record headers together with the value and timestamp.
+932:  * aggregations, KTable-KTable joins, materialized `KTable.mapValues`, `KStream.toTable()`, and `StreamsBuilder.table()` write empty headers to their materialized stores
+942:  * Aggregating
+944:  * Windowing (as part of aggregations and joins)
+979:### Aggregating
+981:After records are grouped by key via `groupByKey` or `groupBy` - and thus represented as either a `KGroupedStream` or a `KGroupedTable`, they can be aggregated via an operation such as `reduce`. Aggregations are key-based operations, which means that they always operate over records (notably record values) of the same key. You can perform aggregations on windowed or non-windowed data.  
+998:**Aggregate**
+1009:**Rolling aggregation.** Aggregates the values of (non-windowed) records by the grouped key or cogrouped. Aggregating is a generalization of `reduce` and allows, for example, the aggregate value to have a different type than the input values. ([KGroupedStream details](/{version}/javadoc/org/apache/kafka/streams/kstream/KGroupedStream.html), [KGroupedTable details](/{version}/javadoc/org/apache/kafka/streams/kstream/KGroupedTable.html) [KGroupedTable details](/{version}/javadoc/org/apache/kafka/streams/kstream/CogroupedKStream.html))
+1011:When aggregating a _grouped stream_ , you must provide an initializer (e.g., `aggValue = 0`) and an "adder" aggregator (e.g., `aggValue + curValue`). When aggregating a _grouped table_ , you must additionally provide a "subtractor" aggregator (think: `aggValue - oldValue`).
+=== dsl-topology-naming.md ===
+37:This distinction of stateful vs. stateless names has important implications when updating your topology. While the internal naming makes creating a topology with the DSL much more straightforward, there are a couple of trade-offs. The first trade-off is what we could consider a readability issue. The other more severe trade-off is the shifting of names due to the relationship between the DSL operator and the generated `Processors`, `State Stores` changelog topics and repartition topics. 
+41:By saying there is a readability trade-off, we are referring to viewing a description of the topology. When you render the string description of your topology via the `Topology#describe()` method, you can see what the processor is, but you don't have any context for its business purpose. For example, consider the following simple topology:   
+112:    	 --> KSTREAM-AGGREGATE-0000000002
+113:    	Processor: KSTREAM-AGGREGATE-0000000002 (stores: [KSTREAM-AGGREGATE-STATE-STORE-0000000001])
+118:    	 <-- KSTREAM-AGGREGATE-0000000002
+122:You can see from the topology description above that the state store is named `KSTREAM-AGGREGATE-STATE-STORE-0000000002`. Here's what happens when you add a filter to keep some of the records out of the aggregation: 
+140:    	   --> KSTREAM-AGGREGATE-0000000003
+142:    	 Processor: KSTREAM-AGGREGATE-0000000003 (stores: [KSTREAM-AGGREGATE-STATE-STORE-0000000002])
+147:    	   <-- KSTREAM-AGGREGATE-0000000003
+151:Notice that since you've added an operation _before_ the `count` operation, the state store (and the changelog topic) names have changed. This name change means you can't do a rolling re-deployment of your updated topology. Also, you must use the [Streams Reset Tool](/43/documentation/streams/developer-guide/app-reset-tool) to re-calculate the aggregations, because the changelog topic has changed on start-up and the new changelog topic contains no data. Fortunately, there's an easy solution to remedy this situation. Give the state store a user-defined name instead of relying on the generated one, so you don't have to worry about topology changes shifting the name of the state store. You've had the ability to name repartition topics with the `Joined`, `StreamJoined`, and`Grouped` classes, and name state store and changelog topics with `Materialized`. But it's worth reiterating the importance of naming these DSL topology operations again. Here's how your DSL code looks now giving a specific name to your state store: 
+169:    	  --> KSTREAM-AGGREGATE-0000000002
+171:    	Processor: KSTREAM-AGGREGATE-0000000002 (stores: [Purchase_count_store])
+176:    	  <-- KSTREAM-AGGREGATE-0000000002
+205:Aggregation repartition topics
+241:State Stores (for aggregations and KTable-KTable joins)
+=== kafka-streams-group-sh.md ===
+39:  * **List Streams groups** across a cluster and display or filter by group state (Empty, Not Ready, Assigning, Reconciling, Stable, Dead).
+103:          --> KSTREAM-AGGREGATE-0000000002
+119:    # Preview resetting all input topics to a specific timestamp
+199:  * Preview offset reset changes with `--dry-run` to verify topic scope and impact before `--execute`.
+=== manage-topics.md ===
+65:  * For all internal topics, `message.timestamp.type` is set to `CreateTime`.
+=== memory-mgmt.md ===
+41:  * Aggregation `KTable`: instances of `KTable` that are created as a result of [aggregations](../dsl-api#streams-developer-guide-dsl-aggregating).
+54:  * An [aggregation](../dsl-api#streams-developer-guide-dsl-aggregating) computes the sum of record values, grouped by key, for the input and returns a `KTable<String, Integer>`.
+56:>     * **Without caching** : a sequence of output records is emitted for key `A` that represent changes in the resulting aggregation table. The parentheses (`()`) denote changes, the left number is the new aggregate value and the right number is the old aggregate value: `<A, (1, null)>, <A, (21, 1)>, <A, (321, 21)>`.
+57:>     * **With caching** : a single output record is emitted for key `A` that would likely be compacted in the cache, leading to a single output record of `<A, (321, null)>`. This record is written to the aggregation's internal state store and forwarded to any downstream operations.
+153:This is a trade-off: a smaller write buffer bounds how stale the persisted offset can get, but increases the number of SST files and the compaction load.  So tune only the specific low-traffic stores that need it, and size the buffer to the store's write rate. Note that flushing is **volume-based, not time-based**.  A store that receives only a trickle of writes may still not flush until it is closed, so the most reliable protection is a **clean shutdown**. Register a shutdown hook that calls `KafkaStreams#close`, and ensure it is allowed to complete — on Kubernetes, set the close timeout comfortably below the pod termination grace period (default 30s) so the process is not `SIGKILL`ed mid-close.  Note that the record cache (`statestore.cache.max.bytes`) in front of the store coalesces repeated updates to the same key in place before they are written to RocksDB. So for an update-heavy, small-keyspace workload even fewer bytes reach the memtable per commit, making it fill more slowly.
+222:  * Deserialized objects buffering: after `consumer.poll()` returns records, they will be deserialized to extract timestamp and buffered in the streams space. Currently this is only indirectly controlled by `buffered.records.per.partition`.
+=== processor-api.md ===
+54:Both the `Processor#process()` and the `ProcessorContext#forward()` methods handle records in the form of the `Record<K, V>` data class. This class gives you access to the main components of a Kafka record: the key, value, timestamp and headers. When forwarding records, you can use the constructor to create a new `Record` from scratch, or you can use the convenience builder methods to replace one of the `Record`'s properties and copy over the rest. For example, `inputRecord.withValue(newValue)` would copy the key, timestamp, and headers from `inputRecord` while setting the output record's value to `newValue`. Note that this does not mutate `inputRecord`, but instead creates a shallow copy. Beware that this is only a shallow copy, so if you plan to mutate the key, value, or headers elsewhere in the program, you will want to create a deep copy of those fields yourself.
+56:In addition to handling incoming records via `Processor#process()`, you have the option to schedule periodic invocation (called "punctuation") in your processor's `init()` method by calling `ProcessorContext#schedule()` and passing it a `Punctuator`. The `PunctuationType` determines what notion of time is used for the punctuation scheduling: either [stream-time](../../core-concepts/#time) or wall-clock-time (by default, stream-time is configured to represent event-time via `TimestampExtractor`). When stream-time is used, `punctuate()` is triggered purely by data because stream-time is determined (and advanced forward) by the timestamps derived from the input data. When there is no new input data arriving, stream-time is not advanced and thus `punctuate()` is not called.
+58:For example, if you schedule a `Punctuator` function every 10 seconds based on `PunctuationType.STREAM_TIME` and if you process a stream of 60 records with consecutive timestamps from 1 (first record) to 60 seconds (last record), then `punctuate()` would be called 6 times. This happens regardless of the time required to actually process those records. `punctuate()` would be called 6 times regardless of whether processing these 60 records takes a second, a minute, or an hour.
+64:Stream-time is only advanced when Streams processes records. If there are no records to process, or if Streams is waiting for new records due to the [Task Idling](/{version}/streams/developer-guide/config-streams/#maxtaskidlems) configuration, then the stream time wi
+[出力は 30343 文字。先頭 20000 文字だけを残した]
+--- 2026-09-26T16:03:14Z method=印探索 target=E1bE2E4語彙走査_続き rc=0 time_s=0.016 note=developer-guide未読14頁の後半(running-app以降)でE1b/E2/E4述語語彙を探索(前の手が20000字で切れたための続き)
+$ cd '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide' && for f in running-app.md scala-migration.md security.md streams-rebalance-protocol.md topology-description-plugin.md write-streams-app.md; do echo "=== $f ==="; grep -n -i -E 'market data|market-data|trade|tick|order.?book|candle|ohlc|vwap|profit|p&l|pnl|checksum|verify|validat|reconcil|duplicat|missing|out.of.order|clock skew|timestamp|schema|aggregat|reduce\(' "$f"; done
+=== running-app.md ===
+=== scala-migration.md ===
+=== security.md ===
+=== streams-rebalance-protocol.md ===
+42:* **Sticky Task Assignor**: A basic task assignment strategy that minimizes task movement during rebalances is included. It is registered under the name `sticky` and is the default assignor.
+64:* **High Availability Assignor**: The sticky assignor is the only built-in assignor and it does not support rack aware assignment, but a custom assignor registered via `group.streams.assignors` can implement it.
+205:## Topology Configuration and Validation
+211:### Topology Validation and NOT_READY State
+220:If any source topics or internal topics are missing, the group enters a state `NOT_READY`. In `NOT_READY`, all heartbeats will be handled as usual (so they typically should not fail), but in the heartbeat response, the status will indicate which kind of problem exists. All members will get an empty assignment when the group is in `NOT_READY` state.
+243:kafka.server:type=group-coordinator-metrics,name=streams-group-count,state={empty|not_ready|assigning|reconciling|stable|dead}
+=== topology-description-plugin.md ===
+46:  3. **Store.** The broker validates that the sender is a known member of the group and invokes the plugin's `setTopology(groupId, topologyEpoch, description)` method. On success, the broker records the stored topology epoch and stops soliciting. Multiple members may push concurrently for the same epoch; the pushed data is identical, and the plugin must handle this idempotently.
+127:      --> KSTREAM-AGGREGATE-0000000002
+129:    Processor: KSTREAM-AGGREGATE-0000000002 (stores: [counts-store])
+133:      <-- KSTREAM-AGGREGATE-0000000002
+157:This is expected, not a sign of corruption: the plugin's storage is external to the broker, so removing or downgrading the component that manages its lifecycle naturally leaves it self-managed from then on. If you plan to remove the plugin permanently or downgrade for good, clean up the plugin's backing storage yourself (however your plugin implementation exposes that — a table truncate, a key prefix delete, and so on) rather than relying on the broker to do it after the fact. A brief downgrade that gets rolled forward again does not need any cleanup: once the plugin is reconfigured and the broker upgraded back, normal pushes and cleanup cycles resume and reconcile the group's state with the plugin as usual.
+177:  * Verify that `group.streams.topology.description.plugin.class` is set on all brokers hosting the group coordinator. Without it, the feature is disabled.
+178:  * Verify that the application does not set `topology.description.push.enabled=false`.
+=== write-streams-app.md ===
+37:    A high-level API that provides the most common data transformation operations such as `map`, `filter`, `join`, and `aggregations` out of the box. The DSL is the recommended starting point for developers new to Kafka Streams, and should cover many use cases and stream processing needs. If you're writing a Scala application then you can use the [Kafka Streams DSL for Scala](../dsl-api#scala-dsl) library which removes much of the Java/Scala interoperability boilerplate as opposed to working directly with the Java DSL.
+--- 2026-09-26T16:03:21Z method=印探索 target=検出報告語彙走査 rc=0 time_s=0.036 note=developer-guide未読14頁でE2/E6の検出・報告・dry-run語彙を探索
+$ cd '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide' && for f in config-streams.md datatypes.md dsl-api.md dsl-topology-naming.md kafka-streams-group-sh.md manage-topics.md memory-mgmt.md processor-api.md running-app.md scala-migration.md security.md streams-rebalance-protocol.md topology-description-plugin.md write-streams-app.md; do echo "=== $f ==="; grep -n -i -E 'detect|report|inconsisten|corrupt|invalid|exception thrown|fail\(s\|ed\)? if|dry-run|dry run|preview' "$f" | head -15; done
+=== config-streams.md ===
+534:`FailOnInvalidTimestamp`
+713:metric.reporters
+721:A list of classes to use as metrics reporters.
+1244:> The deserialization exception handler allows you to manage record exceptions that fail to deserialize. This can be caused by corrupt data, incorrect serialization logic, or unhandled record types. The implemented exception handler needs to return a `FAIL` or `CONTINUE` depending on the record and the exception thrown. Returning `FAIL` will signal that Streams should shut down and `CONTINUE` will signal that Streams should ignore the issue and continue processing. The following library built-in exception handlers are available:
+1251:> You can also provide your own customized exception handler besides the library provided ones to meet your needs. For example, you can choose to forward corrupt records into a quarantine topic (think: a "dead letter queue") for further processing. To do this, use the Producer API to write a corrupted record directly to the quarantine topic. To be more concrete, you can create a separate `KafkaProducer` object outside the Streams client, and pass in this object as well as the dead letter queue topic name into the `Properties` map, which then can be retrieved from the `configure` function call. The drawback of this approach is that "manual" writes are side effects that are invisible to the Kafka Streams runtime library, so they do not benefit from the end-to-end processing guarantees of the Streams API:
+1284:> An exception handler can return `FAIL`, `CONTINUE`, or `RETRY` depending on the record and the exception thrown. Returning `FAIL` will signal that Streams should shut down. `CONTINUE` will signal that Streams should ignore the issue and continue processing. For `RetriableException` the handler may return `RETRY` to tell the runtime to retry sending the failed record (**Note:** If `RETRY` is returned for a non-`RetriableException` it will be treated as `FAIL`.) If you want to provide an exception handler that always ignores records that are too large, you could implement something like the following:
+1318:> The default extractor is [FailOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/FailOnInvalidTimestamp.html). This extractor retrieves built-in timestamps that are automatically embedded into Kafka messages by the Kafka producer client since [Kafka version 0.10](https://cwiki.apache.org/confluence/x/eaSnAw). Depending on the setting of Kafka's server-side `log.message.timestamp.type` broker and `message.timestamp.type` topic parameters, this extractor provides you with:
+1325:> The `FailOnInvalidTimestamp` extractor throws an exception if a record contains an invalid (i.e. negative) built-in timestamp, because Kafka Streams would not process this record but silently drop it. Invalid built-in timestamps can occur for various reasons: if for example, you consume a topic that is written to by pre-0.10 Kafka producer clients or by third-party producer clients that don't support the new Kafka 0.10 message format yet; another situation where this may happen is after upgrading your Kafka cluster from `0.9` to `0.10`, where all the data that was generated with `0.9` does not include the `0.10` message timestamps.
+1327:> If you have data with invalid timestamps and want to process it, then there are two alternative extractors available. Both work on built-in timestamps, but handle invalid timestamps differently.
+1329:>   * [LogAndSkipOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/LogAndSkipOnInvalidTimestamp.html): This extractor logs a warn message and returns the invalid timestamp to Kafka Streams, which will not process but silently drop the record. This log-and-skip strategy allows Kafka Streams to make progress instead of failing if there are records with an invalid built-in timestamp in your input data.
+1330:>   * [UsePartitionTimeOnInvalidTimestamp](/{version}/javadoc/org/apache/kafka/streams/processor/UsePartitionTimeOnInvalidTimestamp.html). This extractor returns the record's built-in timestamp if it is valid (i.e. not negative). If the record does not have a valid built-in timestamps, the extractor returns the previously extracted valid timestamp from a record of the same topic partition as the current record as a timestamp estimation. In case that no timestamp can be estimated, it throws an exception.
+1355:>           // Invalid timestamp!  Attempt to estimate a new timestamp,
+1483:> The default value of `0` causes Streams to delay processing a task when it detects that it has no locally buffered data for a partition, but there is data available on the brokers. Specifically, when there is an empty partition in the local buffer, but Streams has a non-zero lag for that partition. However, as soon as Streams catches up to the broker, it will continue processing, even if there is no data in one of the partitions. That is, it will not wait for new data to be _produced_. This default is designed to sacrifice some throughput in exchange for intuitively correct join semantics. 
+1515:> The processing exception handler allows you to manage exceptions triggered during the processing of a record. The implemented exception handler needs to return a `FAIL` or `CONTINUE` depending on the record and the exception thrown. Returning `FAIL` will signal that Streams should shut down and `CONTINUE` will signal that Streams should ignore the issue and continue processing.
+1526:> You can also provide your own customized exception handler besides the library provided ones to meet your needs. For example, you can choose to forward corrupt records into a quarantine topic (think: a "dead letter queue") for further processing. To do this, use the Producer API to write a corrupted record directly to the quarantine topic. To be more concrete, you can create a separate `KafkaProducer` object outside the Streams client, and pass in this object as well as the dead letter queue topic name into the `Properties` map, which then can be retrieved from the `configure` function call. The drawback of this approach is that "manual" writes are side effects that are invisible to the Kafka Streams runtime library, so they do not benefit from the end-to-end processing guarantees of the Streams API:
+=== datatypes.md ===
+83:If some of your incoming records are corrupted or ill-formatted, they will cause the deserializer class to report an error. Since 1.0.x we have introduced an `DeserializationExceptionHandler` interface which allows you to customize how to handle such records. The customized implementation of the interface can be specified via the `StreamsConfig`. For more details, please feel free to read the [Configuring a Streams Application](../config-streams#default-deserialization-exception-handler) section. 
+=== dsl-api.md ===
+1050:  * When subsequent non-`null` values are received for a key (e.g., UPDATE), then (1) the subtractor is called with the old value as stored in the table and (2) the adder is called with the new value of the input record that was just received. The subtractor is guaranteed to be called before the adder if the extracted grouping key of the old and new value is the same. The detection of this case depends on the correct implementation of the equals() method of the extracted key type. Otherwise, the order of execution for the subtractor and adder is not defined.
+1263:  * When subsequent non-`null` values are received for a key (e.g., UPDATE), then (1) the subtractor is called with the old value as stored in the table and (2) the adder is called with the new value of the input record that was just received. The subtractor is guaranteed to be called before the adder if the extracted grouping key of the old and new value is the same. The detection of this case depends on the correct implementation of the equals() method of the extracted key type. Otherwise, the order of execution for the subtractor and adder is not defined.
+4637:Detected sessions after having received three input records: two records for the green record key at t=0 and t=6, and one record for the blue record key at t=2. In this diagram the time numbers represent minutes; e.g. t=5 means "at the five-minute mark". In reality, the unit of time in Kafka Streams is milliseconds, which means the time numbers would need to be multiplied with 60 * 1,000 to convert from minutes to milliseconds (e.g. t=5 would become t=300,000).
+4643:Detected sessions after having received six input records. Note the two out-of-order data records at t=4 (green) and t=5 (blue), which lead to a merge of sessions and an extension of a session, respectively.
+4775:  * **Real-World Context:** In a production monitoring system, categorizing logs by severity ensures ERROR logs are sent to a critical incident management system, WARN logs are analyzed for potential risks, and INFO logs are stored for basic reporting purposes.
+5552:By automating the detection of popular pages, the system eliminates the need for manual monitoring and ensures timely actions to capitalize on the content's performance.
+=== dsl-topology-naming.md ===
+46:    stream.filter((k,v) -> !v.equals("invalid_txn"))
+66:From this report, you can see what the different operators are, but what is the broader context here? For example, consider `KSTREAM-FILTER-0000000001`, we can see that it's a filter operation, which means that records are dropped that don't match the given predicate. But what is the meaning of the predicate? Additionally, you can see the topic names of the source and sink nodes, but what if the topics aren't named in a meaningful way? Then you're left to guess the business purpose behind these topics. 
+75:    stream.filter((k,v) -> !v.equals("invalid_txn"), Named.as("filter_out_invalid_txns"))
+83:    	  --> filter_out_invalid_txns
+84:    	Processor: filter_out_invalid_txns (stores: [])
+89:    	  <-- filter_out_invalid_txns
+=== kafka-streams-group-sh.md ===
+35:**Use with care:** Mutating operations (offset resets/deletes, group deletion) affect how applications will reprocess data when restarted. Always preview offset resets with \--dry-run before executing and ensure application instances are stopped/inactive and the group is empty before executing the command.
+45:  * **Reset input‑topic offsets** for a Streams group to control reprocessing boundaries using precise specifiers (earliest, latest, to‑offset, to‑datetime, by‑duration, shift‑by, from‑file). Requires `--dry-run` or `--execute` and inactive instances.
+114:## Reset input-topic offsets (preview, then apply) {#reset-offsets}
+116:Ensure all application instances are stopped/inactive. Always preview changes with `--dry-run` before using `--execute`.
+119:    # Preview resetting all input topics to a specific timestamp
+123:      --dry-run
+178:    * Requires `--dry-run` or `--execute`.
+192:  * `--dry-run`, `--execute`: Preview vs apply for offset reset operations.
+199:  * Preview offset reset changes with `--dry-run` to verify topic scope and impact before `--execute`.
+=== manage-topics.md ===
+=== memory-mgmt.md ===
+137:The practical implication is that the on-disk changelog offset is only as fresh as the last organic flush or clean close. For a high-throughput store the memtable fills frequently, so this is not a concern. For a **low-traffic store** whose memtable may take a long time to fill, the persisted offset can lag the store's actual position for an extended period. If the application then exits uncleanly (for example `SIGKILL`, an OOM-kill, or a `KafkaStreams#close` that does not complete within the process/pod shutdown grace period), only the last-flushed offset survives. Should the changelog topic's log-start offset have advanced past that stale offset (via retention or compaction) in the meantime, the restore consumer seeks out of range on the next restart, and the task is re-initialized from the changelog (logged as `OffsetOutOfRangeException` / `TaskCorruptedException`). This recovers automatically with no data loss, but causes a full re-restore of the task.
+=== processor-api.md ===
+297:KTables always store timestamps by default. A timestamped state store improves stream processing semantics and enables handling out-of-order data in source KTables, detecting out-of-order joins and aggregations, and getting the timestamp of the latest update in an Interactive Query.
+=== running-app.md ===
+=== scala-migration.md ===
+=== security.md ===
+=== streams-rebalance-protocol.md ===
+56:* **Static Membership**: Streams applications can configure [`group.instance.id`](../config-streams#group-instance-id) when using `group.protocol=streams`. This requires clients and brokers running Kafka 4.4 or newer: brokers on older versions reject `group.instance.id` on the streams group heartbeat with `INVALID_REQUEST`, which is a fatal error that shuts down the Kafka Streams client. Before downgrading brokers below 4.4, or if brokers have already been downgraded, remove `group.instance.id` from all Streams applications using `group.protocol=streams` and restart them. Also note that for topologies without persistent state stores, Kafka Streams generates a new process ID on each restart, causing the broker to recompute the group assignment and effectively negating the benefits of static membership across restarts.
+116:* [`group.streams.session.timeout.ms`](/{version}/configuration/broker-configs#brokerconfigs_group.streams.session.timeout.ms): The default timeout for all streams group (if not specifically overwritten for a specific streams group) to detect client failures when using the streams group protocol.
+137:* [`streams.session.timeout.ms`](/{version}/configuration/group-configs#groupconfigs_streams.session.timeout.ms): The timeout to detect client failures when using the streams group protocol.
+201:The group coordinator manages a streams group similarly to a consumer group, continuously updating the group member metadata via heartbeat responses and running assignment logic when changes are detected. A new group type called `streams` is introduced to the group coordinator, with new record key and value types for group metadata, topology metadata, and group member metadata. These records are persisted in the `__consumer_offsets` topic.
+213:During the handling of the streams group heartbeat, the group coordinator may detect that source/sink or internal topics required by the topology do not exist or differ in their configuration from what is required for the topology to execute successfully. This triggers a "topology configuration" process, in which the group coordinator performs the following steps:
+=== topology-description-plugin.md ===
+57:  * [`group.streams.topology.description.plugin.class`](/{version}/configuration/broker-configs#brokerconfigs_group.streams.topology.description.plugin.class): The fully qualified class name of a `StreamsGroupTopologyDescriptionPlugin` implementation. When not set (the default), the feature is disabled: the broker never solicits topology descriptions, and describe requests report status `NOT_STORED`.
+88:  * **Key data by group and epoch.** `getTopology(groupId, topologyEpoch)` should return the description only if it matches the requested topology epoch, and complete with `null` when the plugin no longer has the data (for example, after a backend wipe) — the broker then reports status `NOT_STORED`. If the future completes exceptionally, the broker reports a read error (status `ERROR`) for the group. Note that the broker only solicits a new push when it has not recorded a successful push for the current topology epoch; a plugin that loses already-stored data is not automatically re-populated until the topology epoch advances, so implementations should use durable storage.
+157:This is expected, not a sign of corruption: the plugin's storage is external to the broker, so removing or downgrading the component that manages its lifecycle naturally leaves it self-managed from then on. If you plan to remove the plugin permanently or downgrade for good, clean up the plugin's backing storage yourself (however your plugin implementation exposes that — a table truncate, a key prefix delete, and so on) rather than relying on the broker to do it after the fact. A brief downgrade that gets rolled forward again does not need any cleanup: once the plugin is reconfigured and the broker upgraded back, normal pushes and cleanup cycles resume and reconcile the group's state with the plugin as usual.
+175:**`--topology` reports "No topology description is stored" (status `NOT_STORED`).**
+=== write-streams-app.md ===
+--- 2026-09-26T16:03:27Z method=印探索 target=E6_topology_validation rc=0 time_s=0.004 note=streams-rebalance-protocol.mdのTopology Validation and NOT_READY State節を全文確認(E6候補)
+$ sed -n '205,235p' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/streams-rebalance-protocol.md'
+## Topology Configuration and Validation
+
+To assign tasks among streams clients, the group coordinator uses topology metadata that is initialized when a member joins the group and persisted in the consumer offsets topic.
+
+Whenever a member joins the streams group, the first heartbeat request contains metadata of the topology. The metadata describes the topology as a set of subtopologies, each identified by a unique string identifier and containing metadata relevant for creation of internal topics and assignment.
+
+### Topology Validation and NOT_READY State
+
+During the handling of the streams group heartbeat, the group coordinator may detect that source/sink or internal topics required by the topology do not exist or differ in their configuration from what is required for the topology to execute successfully. This triggers a "topology configuration" process, in which the group coordinator performs the following steps:
+
+* Check that all configured source topics exist.
+* Check that "copartition groups" are satisfied - that is, all source topics that are supposed to be copartitioned are indeed copartitioned.
+* Derive the required number of partitions for all internal topics from the source topic configuration.
+* Check that all internal topics exist with the right configuration.
+
+If any source topics or internal topics are missing, the group enters a state `NOT_READY`. In `NOT_READY`, all heartbeats will be handled as usual (so they typically should not fail), but in the heartbeat response, the status will indicate which kind of problem exists. All members will get an empty assignment when the group is in `NOT_READY` state.
+
+## Centralized Assignment Configuration
+
+Core assignment options are configured centrally on the broker, without relying on each client's configuration. This allows tuning a streams group without redeploying the streams application. The core assignment option introduced on the broker-side is `num.standby.replicas`. This can be configured both globally on the broker and dynamically for specific streams groups through the `IncrementalAlterConfigs` and `DescribeConfigs` RPCs.
+
+The last used assignment configuration is stored in the group metadata on the broker. This way, if an assignment configuration is dynamically changed, reassignment can be triggered immediately.
+
+# Monitoring and Metrics
+
+The existing group metrics are extended to differentiate between streams groups and consumer groups and account for streams group states. For complete details, see the [streams groups metrics](/{version}/operations/monitoring#group-coordinator-monitoring) documentation.
+
+## Group Count by Protocol
+
+Number of groups based on type of protocol, where the list of protocols is extended by the `protocol=streams` variation:
+```
+--- 2026-09-26T16:04:36Z method=実行 target=broker起動 rc=0 time_s=8.007 note=§4.0当方データ投入の試験のため、28回目に構築済みのKRaft単一ノードブローカーを起動(新規取得なし)
+$ nohup env JAVA_HOME=$JAVA_HOME '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/check/kafka_2.13-4.3.1/bin/kafka-server-start.sh' '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/run/server.properties' > '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/run/logs/server_run29.out' 2>&1 & echo started_pid=$!; sleep 8; tail -20 '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/run/logs/server_run29.out'
+started_pid=28826
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-37 with epoch 2 in 92ms where 92ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-39 with epoch 2 in 86ms where 86ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-6 with epoch 2 in 90ms where 90ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-8 with epoch 2 in 87ms where 87ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-14 with epoch 2 in 86ms where 86ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,744] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-27 with epoch 2 in 90ms where 90ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,745] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-5 with epoch 2 in 88ms where 88ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,745] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-0 with epoch 2 in 90ms where 1ms was spent in the scheduler. Loaded 3 records which total to 598 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,745] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-47 with epoch 2 in 88ms where 88ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,745] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-32 with epoch 2 in 87ms where 87ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (org.apache.kafka.coordinator.common.runtime.CoordinatorRuntime)
+[2026-09-26 16:04:41,746] INFO [GroupCoordinator id=1] Finished loading of metadata from __consumer_offsets-11 with epoch 2 in 88ms where 88ms was spent in the scheduler. Loaded 0 records which total to 0 bytes. (or
+[出力は 5555 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T16:04:49Z method=実行 target=トピック作成 rc=0 time_s=2.852 note=§4.0当方データ投入用トピックcat8_synthetic_tradesを作成
+$ '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/check/kafka_2.13-4.3.1/bin/kafka-topics.sh' --bootstrap-server localhost:9092 --create --topic cat8_synthetic_trades --partitions 1 --replication-factor 1
+WARNING: Due to limitations in metric names, topics with a period ('.') or underscore ('_') could collide. To avoid issues it is best to use either, but not both.
+Created topic cat8_synthetic_trades.
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=JKS -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=41875 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+--- 2026-09-26T16:04:57Z method=実行 target=csv投入 rc=0 time_s=2.486 note=§4.0当方データ投入。tardis形式(時刻・価格・量・売買の向き)の合成CSVを公式コンソールプロデューサでトピックに投入
+$ '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/check/kafka_2.13-4.3.1/bin/kafka-console-producer.sh' --bootstrap-server localhost:9092 --topic cat8_synthetic_trades < '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/synthetic_trades.csv'; echo rc=$?
+rc=0
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=JKS -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=41875 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+--- 2026-09-26T16:05:05Z method=実行 target=csv読出 rc=0 time_s=6.154 note=§4.0当方データ投入。投入したtardis形式CSVを公式コンソールコンシューマで読み出せることを確認
+$ timeout 15 '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/check/kafka_2.13-4.3.1/bin/kafka-console-consumer.sh' --bootstrap-server localhost:9092 --topic cat8_synthetic_trades --from-beginning --max-messages 4 --timeout-ms 10000; echo rc=$?
+timestamp,price,amount,side
+1758844800000000,6500000,0.01,buy
+1758844801000000,6500100,0.02,sell
+1758844802000000,6499900,0.015,buy
+rc=0
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts -Djavax.net.ssl.trustStoreType=JKS -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=41875 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+The consumer rebalance protocol (KIP-848) is production-ready! Set group.protocol=consumer to try it out. See https://kafka.apache.org/documentation/#consumer_rebalance_protocol
+Processed a total of 4 messages
+--- 2026-09-26T16:05:16Z method=実行 target=broker停止 rc=0 time_s=5.033 note=§4.0当方データ投入の試験が終わったのでブローカーを停止し、常駐プロセスが残っていないことを確認
+$ '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/check/kafka_2.13-4.3.1/bin/kafka-server-stop.sh'; sleep 5; ps aux | grep -i kafka | grep -v grep; echo pgrep_rc=$?
+pgrep_rc=1
+--- 2026-09-26T16:05:53Z method=websearch target=宣伝詐欺_X検索1 rc=NA time_s=NA note=§4.0宣伝詐欺の兆候。X(x.com)での'Apache Kafka'名指しの詐欺・宣伝を検索
+$ site:x.com "Apache Kafka" scam OR "must join" OR telegram giveaway wallet
+query: site:x.com "Apache Kafka" scam OR "must join" OR telegram giveaway wallet
+結果: 上位10件はいずれも他プロジェクト(XRPL・Trust Wallet・Casper・Cardano等)の一般的な詐欺注意喚起投稿で、「Apache Kafka」自体を名指しした詐欺・宣伝は0件。
+--- 2026-09-26T16:06:00Z method=websearch target=宣伝詐欺_検索2 rc=NA time_s=NA note=§4.0宣伝詐欺の兆候。偽トークン・エアドロップ詐欺を検索
+$ "Apache Kafka" fake token airdrop scam crypto
+query: "Apache Kafka" fake token airdrop scam crypto
+結果: 上位9件は一般的な暗号資産エアドロップ詐欺の解説記事(CoinGecko・Ledger・Trezor等)で、いずれも「Apache Kafka」に言及していない。「Apache Kafka」に紐づく偽トークン・エアドロップ詐欺の一次資料は見つからなかった。
+--- 2026-09-26T16:06:00Z method=websearch target=宣伝詐欺_X検索3 rc=NA time_s=NA note=§4.0宣伝詐欺の兆候。「必ず儲かる」系の文言との組み合わせを検索
+$ site:x.com "Apache Kafka" "guaranteed profit" OR "100x" OR presale
+query: site:x.com "Apache Kafka" "guaranteed profit" OR "100x" OR presale
+結果: 上位9件のうち「Apache Kafka」を名指しした投稿はWikipedia記事1件のみで、宣伝・プレセール文言と結び付く投稿は無い。他はコンサートのプレセールや無関係の暗号資産プロジェクトの投稿。
+--- 2026-09-26T16:06:11Z method=公式 target=初回公開日_ASF_incubator rc=0 time_s=0.598 note=§4.0初回公開日。Kafkaプロジェクト自体の発祥年を確認するためASF incubatorの卒業履歴ページを取得
+$ curl -sS --max-time 20 'https://incubator.apache.org/projects/kafka.html'
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an
+  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, either express or implied.  See the License for the
+  specific language governing permissions and limitations
+  under the License. 
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" href="../style/bootstrap-1-3-0-min.css" type="text/css" />
+  <link rel="stylesheet" href="../style/style.css" type="text/css" />
+  <script src="https://www.apachecon.com/event-images/snippet.js"></script>
+        <title>Kafka Incubation Status - Apache Incubator</title>
+  
+ </head>
+ <body>
+ <div class="container">
+  <div class="row"><div class="span6"><a href="https://www.apache.org/"><img src="http://www.apache.org/img/asf_logo.png" alt="The Apache Software Foundation" border="0" style="margin-top: 2px" height="88"/></a></div>
+<div class="span7"><a href="/"><img src="https://incubator.apache.org/images/incubator_feather_egg_logo_sm.png" alt="The Apache Software Foundation Incubator" border="0" style="margin-top: 2px" height="88"/></a></div>
+<div class="span2"><a href="https://www.apache.org/foundation/contributing.html"><img src="https://www.apache.org/images/SupportApache-small.png" height="100" width="100"/></a></div>
+</div>
+  <div class="row"><div class="span16"><hr noshade="noshade" size="1"/></div></div>
+  <div class="row">
+   <div class="span4">
+    <form action="http://www.google.com/search" method="get">
+     <input value="incubator.apache.org" name="sitesearch" type="hidden"/>
+     <input size="20" name="q" id="query" type="text" value="search..."
+      onclick="if(this.value == 'search...') {this.value = ''}"/>
+     <input name="Search" value="Go" type="submit"/>
+    </form>
+          <div class="menuheader">General</div>
+    <menu compact="compact">
+          <li><a href="../index.html">Welcome</a></li> 
+          <li><a href="../cookbook/">Incubator Cookbook</a></li> 
+          <li><a href="../policy/incubation.html">Incubation Policy</a></li> 
+          <li><a href="../guides/roles_and_responsibilities.html">Roles and Responsibilities</a></li> 
+          <li><a href="../faq.html">General FAQ</a></li> 
+          <li><a href="http://wiki.apache.org/incubator">Incubator Wiki</a
+[出力は 19841 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T16:06:19Z method=公式 target=初回公開日_抽出 rc=0 time_s=0.288 note=§4.0初回公開日。ASF incubatorページの発祥・卒業年月日の逐語を抽出
+$ curl -sS --max-time 20 'https://incubator.apache.org/projects/kafka.html' | grep -i -E 'entered|graduat|incubation.$|20(10|11|12)'
+          <li><a href="../guides/graduation.html">Graduation</a></li> 
+<p><span class="graduated">The Kafka project graduated on 2012-10-23</span></p>
+        <li>2011-07-04 Project enters incubation.</li>
+        <li>2012-05-07 New committer Joel Koshy</li>
+        <li>2012-05-07 New committer Prashanth Menon</li>
+        <li>2012-05-07 New committer Joe Stein</li>
+              <td>2011-08-01</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-08-03</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-07-04</td>
+              <td>2011-08-03</td>
+              <td>2011-07-28</td>
+              <td>2011-07-28</td>
+              <td>2011-07-28</td>
+              <td>2011-07-07</td>
+              <td>2011-07-04</td>
+              <td>2011-07-07</td>
+            <li>If graduating to an existing PMC, has the PMC voted to accept it?</li>
+            <li>If graduating to a new PMC, has the board voted to accept it?</li>
