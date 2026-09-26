@@ -30,5 +30,6 @@ SURVEY: dict[str, dict] = {
     "opp_luczinsritter": {"module": "opponents/luczinsritter_adapter.py", "venv": "item_3/c16", "cand": 16},
     "opp_vnpy": {"module": "opponents/vnpy_adapter.py", "venv": "item_0/vnpy", "cand": 20},
     "opp_basana": {"module": "opponents/basana_adapter.py", "venv": "item_0/basana", "cand": 1},
+    "opp_bt": {"module": "opponents/bt_adapter.py", "venv": "item_2/bt", "cand": 5},
 }
 TARGETS.update(SURVEY)
