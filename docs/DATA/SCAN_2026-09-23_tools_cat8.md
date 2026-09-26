@@ -40827,3 +40827,673 @@ K12 検査の出力の貼付           1 件
   - 大きさ(指摘 5。この回の生ログに `wc -c` の手が無い): `wc -c` → 生ログ 38,774 バイト、報告 17,937,318 バイト(リードが打った)。
 - **案 B の「読んだ範囲」(指摘 3)**: E1a・E1b・E4 の「読んだ範囲」は 24 回目の節の知見 #8(39696 行)と #11(39699 行)。当たりの行の数は、この回の本体だけの数(E1a 1,664・E1b 1,490・E4 3,327。知見 #2)に直す。E2 の読んだ範囲はこの回の 40649 行、数は 33,551(知見 #3)。
 - **時刻の扱い(指摘 2)**: §4.0 の項目「時刻の扱い」は、実装を読んだ一次資料の値で埋まっている。「ミリ秒単位の具体的挙動」は §4.0 の項目の外の細目で、「この回では行っていない」は起動文が認めない理由。§4.0 の項目の値には効かないので、細目の未確認として残す(項目の数には入れない)。
+
+## 区分8 — 26 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-031 `Debezium` の1行だけを扱う(起動文§1)。E1a〜E6を全部`未判別`から判別し、§4.0の表を全項目書く(§2.5)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run26_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run26_prompt.md@378392fed1ce`)
+- `https://debezium.io/`(公式サイト。取得日2026-09-26、生ログ2-5行目)
+- `https://github.com/debezium/debezium`(公式ソースリポジトリ。`git ls-remote`のHEAD `ebff9284d7e8870b7f950dcfb632e772785fdf75`、既定の枝`main`。生ログ12-15行目)
+- `https://debezium.io/documentation/`・`https://debezium.io/documentation/reference/3.7/`(公式文書サイト。リポジトリ本体の`documentation/`フォルダから生成されたものと判断し、確認のみに使用。生ログ37-51行目)
+- `https://repo1.maven.org/maven2/io/debezium/`配下(Maven Centralの公式配布。`debezium-embedded`・`debezium-connector-postgres`・`debezium-parent`の pom・jar。取得日2026-09-26、生ログ814-1026行目)
+- `https://search.maven.org/solrsearch/select`(公開日・版数の確認。取得日2026-09-26、生ログ1000-1005行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性。取得日2026-09-26、生ログ990-999行目)
+- `https://img.shields.io/github/{contributors,stars}/debezium/debezium.json`(GitHub統計の代替経路。取得日2026-09-26、生ログ1027-1029行目)
+- `git ls-remote`での別リポジトリの存在確認(`debezium-connector-db2`等13件。取得日2026-09-26、生ログ55-69行目)
+- 24〜25回目のPrefectの回の形(`docs/DATA/SCAN_2026-09-23_tools_cat8.md`の該当節)を、小節・表の形の見本にした(§0の指示どおり、中身は写していない)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- `venvs/8-031/src/debezium`(`cat8_repo_fetch.sh`で取得した公式リポジトリの写し。生ログ20-32行目)、`venvs/8-031/run/mvnproj`(この回に新規作成した最小実行用Mavenプロジェクト)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Debezium` / 候補の実体: 公式サイト`debezium.io`のトップページHTML内のリンク`href="https://github.com/debezium/debezium"`から公式ソースリポジトリを特定(`href="https://github.com/debezium/debezium.github.io"`は別途、文書・ブログのサイトのソース)。既定の枝`main`のHEAD(`git ls-remote`)= `ebff9284d7e8870b7f950dcfb632e772785fdf75`。`api.github.com`・`github.com`のHTML/APIはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)だが、`git clone`/`git ls-remote`(git smart-http)は到達できた | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:2-5 docs/DATA/probes/20260923_tools_8_run26.log:6-11 docs/DATA/probes/20260923_tools_8_run26.log:12-15 docs/DATA/probes/20260923_tools_8_run26.log:16-19 |
+| 2 | `Debezium` / N確定・リポジトリ取得: `cat8_repo_fetch.sh`で`debezium/debezium`を1MB超blobを除いて取得。files_in_tree(N)=4,591、blobs_not_downloaded(>1MB)=1件(`documentation/modules/ROOT/assets/images/debezium-platform-pipeline-logs.png`)、checked_out_files=4,590。ダウンロードbytes=14,137,652(約13.5MB)、チェックアウトbytes=38,161,940(約36.4MB)。委任文§1の200MB目安以内 | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:20-32 |
+| 3 | `Debezium` / N確定・除外した別リポジトリ: `git ls-remote`で存在を確認した同じdebezium組織の別の公式リポジトリのうち、`debezium-connector-db2`・`debezium-connector-vitess`・`debezium-connector-spanner`・`debezium-connector-cassandra`・`debezium-connector-informix`・`debezium-connector-ibmi`は、`debezium`パッケージ本体には同梱されず利用者が別途取得・追加するKafka Connectプラグイン(別配布物)なのでNに入れない(起動文§1の規則どおり)。`debezium-operator`(Kubernetes operator)・`debezium-ui`(管理UI)・`debezium-platform`/`debezium-platform-conductor`/`debezium-platform-stage`(別製品Debezium Platform)・`debezium-examples`(サンプル集)は候補`Debezium`(CDCエンジン本体)と別の製品・用途なのでNに入れない。`debezium.github.io`は`debezium.io`サイト(ブログ・トップページ)のソースで、リファレンス文書(`documentation/reference/*`)はリポジトリ本体の`documentation/`フォルダから生成されている(知見4)ためNに入れない | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:55-69 |
+| 4 | `Debezium` / N確定・文書サイトはリポジトリと同一と判断: `debezium.io`にはXML形式のsitemap.xmlが無い(404相当のページが返る)。文書サイトの版は`/documentation/reference/stable/`(3.6系)と`/documentation/reference/3.7/`(devビルド)に分かれ、`stable`版のarchitecture.htmlは`Debezium 3.6`と明記される一方、リポジトリ本体(main、3.7.0-SNAPSHOT)の`documentation/modules/ROOT/pages/architecture.adoc`と`/documentation/reference/3.7/architecture.html`を突き合わせると、architecture.adocの逐語「Route records to a topic whose name is different from the table's name」と、features.adocの逐語「polling or dual writes」・「ingests changes from a different database」がいずれも`/documentation/reference/3.7/`の公開頁に一致することを確認した。よって文書サイトの`3.7`版はリポジトリ本体の`documentation/`フォルダのAsciiDocから生成されたものと判断し、Nはリポジトリ側だけを使う(`stable`=3.6は既定の枝より古い過去のリリースなのでNに含めない) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:33-36 docs/DATA/probes/20260923_tools_8_run26.log:37-40 docs/DATA/probes/20260923_tools_8_run26.log:41-43 docs/DATA/probes/20260923_tools_8_run26.log:44-46 docs/DATA/probes/20260923_tools_8_run26.log:47-51 |
+| 5 | `Debezium` / N: 検索の一覧の作り方: N全体4,590件(1MB超で取れなかった画像1件は`無い`として記録)から、NUL(バイナリ)を含む70件(png画像35件・wasm14件・証明書/keystore21件)を除外理由付きで除いた4,520件を検索の一覧にした(候補の機能の記述を含まないことをファイル種別から確認したうえでの除外) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:128-201 |
+| 6 | `Debezium` / §6-1の結論(危険の所見なし): 配布元一致(pomのgroupId `io.debezium`・トップpomのscm `github.com/debezium/debezium`・developersのorganization `Red Hat`が公式サイトのGitHubリンクと一致)。初回公開2016-03-17(`debezium-embedded` 0.1.0)・最新安定版`3.6.3.Final`は2026-09-18公開(8日前まで活発)。保守者はpom明記2名(rhauch・gunnarmorling、いずれもRed Hat)、実際の貢献者数はshields.io実測366・stars約13k。`debezium-embedded-3.6.3.Final.jar`・`debezium-connector-postgres-3.6.3.Final.jar`を展開した中身は`.class`ファイルと`META-INF/services`(Java SPI宣言)のみで、難読化・同梱バイナリ・外部URL取得は見当たらない。ビルド時プラグイン(`exec-maven-plugin`等)は候補自身のソースをビルドするときにのみ働き、公開済みjarを依存として取り込むだけ(Mavenの依存解決)では実行されない。既知の脆弱性はOSV.dev実測で`debezium-embedded`0件・`debezium-connector-postgres`0件、`debezium-core`は1件(CVE-2023-1419、`debezium-connector-mysql`のスクリプト注入、2.3.0.Alpha1で修正済みのため3.6.3.Finalには影響しない)。依存はpom直接依存(`debezium-connector-common`・`slf4j-api`・Kafka Connect系4つ)明記、`mvn dependency:tree`で70行(直接+推移的)。以上、導入を止める所見は無い | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:814-904 docs/DATA/probes/20260923_tools_8_run26.log:905-913 docs/DATA/probes/20260923_tools_8_run26.log:914-989 docs/DATA/probes/20260923_tools_8_run26.log:990-999 docs/DATA/probes/20260923_tools_8_run26.log:1000-1005 docs/DATA/probes/20260923_tools_8_run26.log:1009-1029 docs/DATA/probes/20260923_tools_8_run26.log:1030-1050 |
+| 7 | `Debezium` / E1a・E1b・E5・E6 未判別(500行超・案Bの記録): 見積もり(`cat8_step`経由、N全体4,520ファイル)でE1a=2,121行(509ファイル)・E1b=1,946行(498ファイル)・E5=18,200行(1,287ファイル)・E6=62,088行(2,255ファイル)となり、いずれも500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 文書の目次(`documentation/modules/ROOT/nav.adoc`全88行を読了)。本文を読んだ頁: `configuration/signalling.adoc`(ad hoc/incremental snapshot)・`configuration/notification.adoc`・`configuration/eos.adoc`(Exactly-once delivery)・`operations/monitoring.adoc`・`integrations/testcontainers.adoc`・`integrations/openlineage.adoc`・`post-processors/reselect-columns.adoc`・`transformations/neo4j-cud-converter.adoc`(reconcileの語の当たりを確認)・`connectors/mongodb.adoc`(offset reconciliationの語の当たりを確認)・`operations/openshift.adoc`・`operations/kubernetes.adoc`(checksumの語の当たりを確認)。的を絞った文書内語検索で「reconcil」(全2件)・「checksum」(全2件)を読み、いずれも述語に当たらないことを確認した(知見に記載の逐語のとおり)。ソースは最上位ディレクトリの一覧(`debezium-embedded`等41件)を確認し、`development/engine.adoc`(Debezium Engineのoffset.storage設定)を読んだ。限界: 題と目次で頁を選ぶ方式のため、`connectors/*.adoc`の個別コネクタの設定項目一覧(数千行規模)の本文や、題に出ない機能記述は読み落としうる | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:202-225 docs/DATA/probes/20260923_tools_8_run26.log:1373-1383 |
+| 8 | `Debezium` / E2 印(段3): 知見の要素と段の表を参照。監視メトリクス(JMXの`NumberOfErroneousEvents`等)は、Debezium自身のコネクタが取り込んだ変更イベント(時系列データ)についての型・スキーマ違反を自動で検出・カウントして報告するが、その対象は外から持ち込める一般のデータ形式ではなくDebezium自身が接続したソースDBの変更イベントに限られる(段3) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:251-345 |
+| 9 | `Debezium` / E3a なし(全件検索): 要素と段の表を参照 | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:423-488 |
+| 10 | `Debezium` / E3b なし(全件検索): 要素と段の表を参照 | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:595-813 |
+| 11 | `Debezium` / E4 印(段3・実測): 最小実行(知見14)でPASS/FAILの両方を確認済み。要素と段の表を参照 | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:226-250 docs/DATA/probes/20260923_tools_8_run26.log:1271-1310 |
+| 12 | `Debezium` / E5 未判別(案Bの記録): 要素と段の表を参照(知見7と同じ見積もり)。eos.adoc逐語「Exactly-once delivery ensures that every change is delivered and appears in the change stream no more than once」は配送保証の話で、E5の述語(同じ入力から同じ出力を確かめる/固定する)には当たらない | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:220-222 docs/DATA/probes/20260923_tools_8_run26.log:1384-1389 |
+| 13 | `Debezium` / E6 未判別(案Bの記録): 要素と段の表を参照(知見7と同じ見積もり)。testcontainers.adoc逐語「you can insert some test data and assert the corresponding change events in Kafka」は、利用者が自分でassertする形で、Debezium自身が正しさを判定する機能ではない | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:223-225 docs/DATA/probes/20260923_tools_8_run26.log:1368-1372 |
+| 14 | `Debezium` / 最小実行(§2.5の種別・中核): 種別は委任文§5-4の「データ系」に最も近いと調査班が判断した(一次資料の根拠: `debezium.io`のmeta description逐語「Debezium is an open source distributed platform for change data capture」)。中核はこの回の起動文§2.5の指示(合成の小さい標本に候補の検証・品質の機能を1つ当て、通る場合と落ちる場合の両方の出力を出す)どおり、E4(記録した変更のコミット順再生)に、PASS(id=1〜3がlsn昇順に再生される)とFAIL(記録位置消失時の起動失敗)の両方の合成データを当てた。環境: `pgdata`はPostgreSQL16をこの回の隔離venv(`.../venvs/8-031/run/`)にinitdb・pg_ctl startして構築(§6-1のあとに実施)、`wal_level=logical`のみ変更(テレメトリ等の外部送信はpostgres本体には無い)。Debezium Embedded Engine(3.6.3.Final)はMaven(`mvn package`)でビルドし、外部への通信は127.0.0.1のPostgreSQLのみ(実測、他の外部ホストへの通信は試みていない)。実行後`pg_ctl stop`でPostgreSQLを止め、`ps aux`で常駐プロセスが残っていないことを確認した(defunctな1エントリのみ=既に終了しreapを待つゾンビで実害なし) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:2-5 docs/DATA/probes/20260923_tools_8_run26.log:1051-1360 |
+| 15 | `Debezium` / 到達できなかった経路: `github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない)。`git clone`/`git ls-remote`(git smart-httpプロトコル)は同じホストでも到達できた。星・保守者数はGitHubの情報を再配布する`img.shields.io`の代替経路で取得した。Maven Centralは週DL数の公式APIを公開していない(`search.maven.org`のsolrsearch APIはGAV検索のみ) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:16-19 docs/DATA/probes/20260923_tools_8_run26.log:1027-1029 docs/DATA/probes/20260923_tools_8_run26.log:1000-1002 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — この回(26回目)でE1a〜E6を全部判別した。E2(印・段3)=NumberOfErroneousEvents等の監視メトリクスによるスキーマ・型違反の検出報告(ref-connector-monitoring-streaming-metrics.adoc)、E4(印・段3)=記録した変更(WAL/binlogのcommit LSN順)を時刻順に再生してダウンストリームの計算を再実行する機構(sqlserver.adoc他、実測でid=1〜3がlsn昇順に再生されることを確認、かつ記録位置が失われた場合の失敗も実測)。E1a・E1b・E5・E6は印を探し尽くしたが見つからず、見積もりが500行を超えるため未判別のまま残す(案Bの記録は知見に記載)。E3a・E3bは全件検索でなし。状態は`浅い`(E1a・E1b・E5・E6が未判別のため深掘りにできない) — 状態: 浅い
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 浅い
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり2,121行(509ファイル)が500行を超えるため未判別(案Bの記録は知見7) | docs/DATA/probes/20260923_tools_8_run26.log:202-204 |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり1,946行(498ファイル)が500行を超えるため未判別(案Bの記録は知見7) | docs/DATA/probes/20260923_tools_8_run26.log:205-207 |
+| `Debezium` | E2 | 印 | 3 | 一次資料 | ref-connector-monitoring-streaming-metrics.adoc逐語「Records the number of change events that the connector identifies as erroneous during streaming...Events might fail processing if they are malformed, are incompatible with the schema, or if they encounter failures during transformation」(`NumberOfErroneousEvents`)。同頁「The number of milliseconds since the connector has read and processed the most recent event」(`MilliSecondsBehindSource`系、時刻のずれの報告)。MySQL/MariaDB固有の`NumberOfSkippedEvents`(malformed/unparseable eventのスキップ数)・`NumberOfNotWellFormedTransactions`(順序/プロトコル違反)も同種。対象はDebezium自身のコネクタが取り込んだ変更イベントに限られる(段3) | docs/DATA/probes/20260923_tools_8_run26.log:251-297 docs/DATA/probes/20260923_tools_8_run26.log:298-345 |
+| `Debezium` | E3a | なし | - | 一次資料 | 全件検索(complete、一覧4520件/読んだ4520件、当たり16ファイル/46行)。全46件がソフトウェアのメモリ/接続/認証情報漏洩(leak)の意味、binlogリーダーのlook-aheadバッファ(トランザクション境界検出の内部実装)、OracleLogMinerの辞書point-in-timeコピーのいずれかで、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能はいずれにも無かった(下表「当たりの判定」) | docs/DATA/probes/20260923_tools_8_run26.log:423-488 |
+| `Debezium` | E3b | なし | - | 一次資料 | 全件検索(complete、一覧4520件/読んだ4520件、当たり47ファイル/168行)。当たりの大半はSQLの`PURGE`文(Oracle DDLパーサのテスト文法ファイル)、binlogのlook-aheadバッファ、ソースDB自身がWAL/oplog/binlogを保持期間後に`purge`する話(DB側の保守機能で、当方が防ぐ側の機能ではない)、LogMinerの辞書point-in-timeコピーで、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)は無かった(下表「当たりの判定」) | docs/DATA/probes/20260923_tools_8_run26.log:595-813 |
+| `Debezium` | E4 | 印 | 3 | 一次資料 | sqlserver.adoc逐語「The connector sorts the changes that it reads in ascending order, based on the values of their commit LSN and change LSN. This sorting order ensures that the changes are replayed by {prodname} in the same order in which they occurred in the database」。cockroachdb・db2・oracle・postgresql・spanner・vitess各connectors.adocにも「in the same order in which they occurred/were generated」の同型逐語。実測(Debezium Embedded Engine 3.6.3.Final+隔離PostgreSQL16、合成テーブル): 初期スナップショットid=1(lsn=22407384)取得後、稼働中にid=2(lsn=22407480)→id=3(lsn=22407680)をINSERTすると、lsn昇順(発生順)のまま再生されコールバックで受け取れることを確認(PASS)。レプリケーションスロットを削除後、前回のoffsetファイル(記録済みの位置)のままEngineを再起動すると`io.debezium.DebeziumException`逐語「but this is no longer available on the server. Reconfigure the connector to use a snapshot mode when needed.」で起動失敗することを確認(FAIL、postgresql.adocの逐語どおりの挙動)。対象(再生する記録データ)はDebezium自身のコネクタが読むソースDBのWAL/変更ログに限られ外から持ち込めない(段3)。再生を受ける側(コールバック関数)は当方が書いた一般のJavaコード(外から持ち込める)。(ア)(イ)の逐語は見つからず段5にはしない | docs/DATA/probes/20260923_tools_8_run26.log:226-241 docs/DATA/probes/20260923_tools_8_run26.log:242-250 docs/DATA/probes/20260923_tools_8_run26.log:1271-1288 docs/DATA/probes/20260923_tools_8_run26.log:1289-1310 |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり18,200行(1,287ファイル)が500行を超えるため未判別(案Bの記録は知見7)。eos.adoc(Exactly-once delivery)逐語「Exactly-once delivery ensures that every change is delivered and appears in the change stream no more than once」は配送保証(重複/欠落の防止)の話で、同じ入力から同じ出力が出ることを確かめる/固定する機能ではない | docs/DATA/probes/20260923_tools_8_run26.log:220-222 docs/DATA/probes/20260923_tools_8_run26.log:1384-1389 |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり62,088行(2,255ファイル)が500行を超えるため未判別(案Bの記録は知見7)。integrations/testcontainers.adoc逐語「you can insert some test data and assert the corresponding change events in Kafka」はKafka/DBコンテナを起動するインフラを提供するのみで、検証のためのassert文は利用者が全部書く(22回目検収のE1bの読み=計算の中身を利用者が全部書くものは道具の計算に数えない、と同じ型と判断)。post-processors/reselect-columns.adocの欠損データ検出→再取得はE2(データ品質)の型として整理した | docs/DATA/probes/20260923_tools_8_run26.log:223-225 docs/DATA/probes/20260923_tools_8_run26.log:1368-1372 |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Prefect` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(25回目の節) |  |
+
+### 当たりの判定
+
+`Debezium` E3a の当たりの判定(甲、ファイルの表。一覧4520件/読んだ4520件、当たり16ファイル/46行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/CHANGELOG.md | 14 | L120「* Ingres connector — connection leak, snapshot/streaming metadata , and event timestamps i」; L136「* Vitess connector: gRPC channels leaked on repeated connect, and close() throws NPE when 」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connect-plugins/src/test/java/io/debezium/transforms/Neo4jCudConverterTest.java | 1 | L985「@DisplayName("Truncate on a mapped table is dropped, not leaked as a raw envelope")」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/BinlogConnectorConfig.java | 2 | L466「.withDescription("The size of a look-ahead buffer used by the binlog reader to decide whet」; L467「+ "transaction in progress is going to be committed or rolled back. Use 0 to disable look-」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/EventBuffer.java | 1 | L23「* This class represents a look-ahead buffer that allows Debezium to accumulate binlog even」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-common/src/main/java/io/debezium/util/Loggings.java | 4 | L24「* trace logging to prevent unintended leaking of sensitive data.」; L38「* trace logging to prevent unintended leaking of sensitive data.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-common/src/test/java/io/debezium/time/TemporalsTest.java | 1 | L56「// same whole seconds as 5000, so the cap leaked before comparing against > 0.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/main/java/io/debezium/connector/oracle/logminer/buffered/BufferedLogMinerStreamingChangeEventSource.java | 3 | L478「// to avoid any potential memory-leak with the cache.」; L733「// to avoid any potential memory-leak with the cache.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/logminer/LogMinerQueryBuilderTest.java | 1 | L173「// A dictionary built from a file is a point-in-time copy, so objects created or changed a」 — LogMinerがOracleのデータ辞書をファイルから構築する際の一時点のコピーについての記述で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-postgres/src/main/java/io/debezium/connector/postgresql/PostgresConnectorTask.java | 1 | L420「// phase is started. It can lead to a leaked connection.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-postgres/src/test/java/io/debezium/connector/postgresql/RecordsStreamProducerIT.java | 9 | L4368「public void shouldNotLeakOriginInfoBetweenTransactions() throws Exception {」; L4369「// This test verifies that origin information does not leak from one transaction to anothe」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-embedded/src/main/java/io/debezium/embedded/async/AsyncEmbeddedEngine.java | 3 | L241「// may result in leaked connections and/or other unwanted side effects.」; L248「throw new IllegalStateException("Cannot stop engine while tasks are starting, this may lea」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-embedded/src/test/java/io/debezium/embedded/async/AsyncEmbeddedEngineTest.java | 1 | L503「.isEqualTo("Cannot stop engine while tasks are starting, this may lead to leaked resource.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-util/src/main/java/io/debezium/util/BoundedConcurrentHashMap.java | 2 | L242「// HashEntry is internal class, never leaks out of CHM, hence slight optimization」; L574「// HashEntry is internal class, never leaks out of CHM, hence slight optimization」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/oracle.adoc | 1 | L4727「The file is a point-in-time copy, so LogMiner cannot name an object that is created or alt」 — LogMinerがOracleのデータ辞書をファイルから構築する際の一時点のコピーについての記述で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/all-connectors/ref-connector-monitoring-streaming-metrics.adoc | 1 | L167「|The number of transactions that have not fit into the look-ahead buffer. For optimal perf」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/all-connectors/ref-mariadb-mysql-adv-connector-cfg-props.adoc | 1 | L17「The size of a look-ahead buffer used by the binlog reader.」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+
+`Debezium` E3b の当たりの判定(甲、ファイルの表。一覧4520件/読んだ4520件、当たり47ファイル/168行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/CHANGELOG.md | 4 | L494「* MySqlConnector stream-only start (no snapshot) permanently fails on restart against a se」; L5911「* Random test failure - ZZZGtidSetIT#shouldProcessPurgedGtidSet [DBZ-4294](https://issues.」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/BinlogConnectorConfig.java | 2 | L466「.withDescription("The size of a look-ahead buffer used by the binlog reader to decide whet」; L467「+ "transaction in progress is going to be committed or rolled back. Use 0 to disable look-」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/BinlogSourceTask.java | 2 | L42「// binlog files have been purged. If so, then output warnings.」; L48「LOGGER.warn("It is possible the server has purged some binlogs. "」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/BinlogStreamingChangeEventSource.java | 12 | L275「// also take into account purged GTID logs」; L276「GtidSet purgedServerGtidSet = connection.purgedGtidSet();」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/EventBuffer.java | 1 | L23「* This class represents a look-ahead buffer that allows Debezium to accumulate binlog even」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/main/java/io/debezium/connector/binlog/jdbc/BinlogConnectorConnection.java | 12 | L514「LOGGER.info("The server's GTID set '{}' contains the connector's stored GTID set '{}'; che」; L519「final GtidSet purgedGtidSet = purgedGtidSet();」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-binlog/src/test/java/io/debezium/connector/binlog/zzz/ZZZBinlogGtidSetIT.java | 22 | L45「@SkipWhenDatabaseIs(value = SkipWhenDatabaseIs.Type.MARIADB, reason = "MariaDB does not su」; L84「public void shouldProcessPurgedGtidSet() throws SQLException, InterruptedException {」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-mariadb/src/main/java/io/debezium/connector/mariadb/jdbc/MariaDbConnection.java | 4 | L67「public GtidSet purgedGtidSet() {」; L68「// The MariaDB community mentioned we could get the purged GTID values from the GTID_LIST_」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-mysql/src/main/java/io/debezium/connector/mysql/jdbc/MySqlConnection.java | 5 | L150「public GtidSet purgedGtidSet() {」; L152「return queryAndMap("SELECT @@global.gtid_purged", rs -> {」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-mysql/src/test/java/io/debezium/connector/mysql/MySqlNeverSnapshotModeIT.java | 10 | L42「* purged, so that any previous test state does not influence the outcome of the current te」; L58「purgeDatabaseLogs();」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/main/java/io/debezium/connector/oracle/logminer/AbstractLogMinerStreamingChangeEventSource.java | 7 | L1556「+ "table was dropped and purged, or when the data dictionary predates a schema change.",」; L1604「// Object was dropped but has not been purged.」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/main/java/io/debezium/connector/oracle/logminer/buffered/LogMinerTransactionCache.java | 1 | L174「* and transaction details purged from the cache; however, a record of the transaction」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/OracleConnectorIT.java | 1 | L2027「TestHelper.purgeRecycleBin(connection);」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/OracleDdlParserTest.java | 1 | L137「ddl = "drop table " + TABLE_NAME + " cascade constrains purge;";」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/logminer/LogMinerQueryBuilderTest.java | 1 | L173「// A dictionary built from a file is a point-in-time copy, so objects created or changed a」 — LogMinerがOracleのデータ辞書をファイルから構築する際の一時点のコピーについての記述で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/logminer/buffered/HybridMiningStrategyIT.java | 9 | L874「// This test case does not use PURGE so that the table gets pushed into the Oracle RECYCLE」; L893「// This test case uses PURGE.」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-oracle/src/test/java/io/debezium/connector/oracle/util/TestHelper.java | 2 | L536「public static void purgeRecycleBin(OracleConnection connection) {」; L538「connection.execute("PURGE RECYCLEBIN");」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-postgres/src/test/java/io/debezium/connector/postgresql/PostgresConnectorIT.java | 1 | L2266「void shouldProcessPurgedLogsWhenDownAndSnapshotNeeded() throws InterruptedException {」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-connector-sqlserver/src/test/java/io/debezium/connector/sqlserver/SqlServerConnectorIT.java | 9 | L2269「public void shouldDetectPurgedHistory() throws Exception {」; L3220「void shouldProcessPurgedLogsWhenDownAndSnapshotNeeded() throws SQLException, InterruptedEx」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mariadb/generated/MariaDBLexer.g4 | 1 | L180「PURGE                         : 'PURGE';」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mariadb/generated/MariaDBParser.g4 | 3 | L139「| purgeBinaryLogs」; L1302「purgeBinaryLogs」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mysql/generated/MySqlLexer.g4 | 1 | L2012「PURGE_SYMBOL」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mysql/generated/MySqlParser.g4 | 2 | L1537「: PURGE_SYMBOL purgeOptions」; L1548「purgeOptions」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mysql/legacy/MySqlLexer.g4 | 1 | L182「PURGE                         : 'PURGE';」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/mysql/legacy/MySqlParser.g4 | 3 | L136「| purgeBinaryLogs」; L1244「purgeBinaryLogs」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/oracle/generated/PlSqlLexer.g4 | 1 | L1517「PURGE                          : 'PURGE';」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/main/antlr4/io/debezium/ddl/parser/oracle/generated/PlSqlParser.g4 | 13 | L179「| purge_statement」; L476「| PURGE (ALL | BEFORE (SCN expression | TIMESTAMP expression))」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/mysql/examples/legacy/ddl_alter.sql.errors | 1 | L5「[行の長さ 940 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/mysql/examples/legacy/dml_insert.sql.errors | 1 | L4「[行の長さ 938 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/mysql/examples/legacy/dml_select.sql.errors | 7 | L2「[行の長さ 947 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」; L4「[行の長さ 942 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/mysql/examples/legacy/dml_with.sql.errors | 1 | L1「[行の長さ 938 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/mysql/examples/legacy/grant.sql.errors | 3 | L4「[行の長さ 945 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」; L9「[行の長さ 941 字。当たった 1 か所の前後 200 字] …LAIN_SYMBOL, FLUSH_SYMBOL, GET_SYMBOL, GRANT_SYMBOL, HAND」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/drop_table.sql | 1 | L2「DROP TABLE employee PURGE;」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/function06.sql | 1 | L1「call dbms_scheduler.auto_purge (  )」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/legacy/ddl_drop.sql | 1 | L3「DROP TABLE TEST.STUDENT PURGE;」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/more/bindvar05.sql | 1 | L12「and object_id not in ( select purge_object from recyclebin )」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/more/purge_statement.sql | 4 | L1「PURGE TABLE test;」; L2「PURGE TABLE RB$$33750$TABLE$0;」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-ddl-parser/src/test/resources/oracle/examples/truncate_table.sql | 1 | L5「TRUNCATE TABLE test PURGE;」 — Oracle/MySQL/MariaDBのDDLパーサのANTLR文法・テスト用SQL例文に出る`PURGE`文(表領域の即時削除等のSQL構文キーワード)で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/cassandra.adoc | 1 | L31「This last step is important because once CDC is enabled, Cassandra itself cannot purge the」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/mongodb.adoc | 2 | L80「Of course, MongoDB oplogs are usually capped at a maximum size, so if the connector is sto」; L2461「However, if the connector remains stopped for a long enough interval, it can occur that Mo」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/oracle.adoc | 1 | L4727「The file is a point-in-time copy, so LogMiner cannot name an object that is created or alt」 — LogMinerがOracleのデータ辞書をファイルから構築する際の一時点のコピーについての記述で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/postgresql.adoc | 1 | L99「PostgreSQL normally purges write-ahead log (WAL) segments after some period of time.」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/vitess.adoc | 1 | L40「The underlying MySQL implementation in Vitess purges binary logs based on some configurabl」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/all-connectors/ref-connector-monitoring-streaming-metrics.adoc | 1 | L167「|The number of transactions that have not fit into the look-ahead buffer. For optimal perf」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/all-connectors/ref-mariadb-mysql-adv-connector-cfg-props.adoc | 1 | L17「The size of a look-ahead buffer used by the binlog reader.」 — binlogリーダー/LogMinerのトランザクション境界検出用の内部の先読みバッファの設定・実装で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/all-connectors/shared-mariadb-mysql.adoc | 6 | L11「Because {connector-name} is typically set up to purge binlogs after a specified period of 」; L2852「For more information, see xref:{context}-purges-binlog-files-used-by-debezium[{connector-n」 — ソースデータベース側がGTID/binlog/WAL/oplogを保持期間の上限で自動的に破棄(purge)したことを検出・処理する話(コネクタが必要とする過去のログが既に削除されている場合の挙動)で、未来の情報の混入を防ぐ機能ではない(向きが逆: 過去のログの欠落への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/partials/modules/tutorial/proc-restarting-kafka-connect-service.adoc | 1 | L106「(as long as it is restarted before the MySQL database purges from its `binlog` the commits」 — チュートリアルの手順で、コネクタを再起動する際にMySQLがbinlogをpurgeする前に間に合わせる、という運用上の注意書きで、未来の情報の混入を防ぐ機能ではない |
+
+### ツール1件ごとの表
+
+`Debezium`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(20回目のNinjaTrader・21回目のdbt・24回目のPrefectと同じ扱いで、文章表は新設せず候補の一覧の8-031の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Debezium` | 版 | 3.6.3.Final(実測、最新の安定版。Maven Centralの最新公開は3.7.0.CR1でプレリリース) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:814-904 |
+| `Debezium` | 最終更新日 | `debezium-embedded` 3.6.3.Finalは2026-09-18公開(Last-Modifiedヘッダ実測)。GitHub main HEAD=`ebff9284`(2026-09-26取得) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1009-1026 docs/DATA/probes/20260923_tools_8_run26.log:12-15 |
+| `Debezium` | ライセンス | Apache License, Version 2.0(LICENSE.txt冒頭。商用利用・再配布ともApache-2.0の条件下で許容) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1324-1334 |
+| `Debezium` | 言語と動作環境 | Java(pom.xmlの`debezium.java.source`=21・`debezium.java.connector.target`=17。当方の環境Java 21.0.10で実際にビルド・実行できた) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1335-1343 docs/DATA/probes/20260923_tools_8_run26.log:1051-1064 |
+| `Debezium` | 対応取引所 | 該当なし(汎用のデータベース変更データキャプチャ(CDC)ツールで取引所接続は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:2-5 |
+| `Debezium` | 星 | 約13k(shields.io実測。github.com/api.github.comがこのセッションのプロキシで403のため代替経路) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1027-1029 |
+| `Debezium` | コミット数 | 未確認(試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず) | 未確認 | docs/DATA/probes/20260923_tools_8_run26.log:16-19 docs/DATA/probes/20260923_tools_8_run26.log:1027-1029 |
+| `Debezium` | 保守者数 | 366(shields.io contributorsバッジ実測)。pom.xmlのdevelopersに明記されているのは2名(rhauch・gunnarmorling) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1027-1029 |
+| `Debezium` | 週DL数 | 未確認(試した手段: Maven Centralは週DL数の公式APIを公開していない。`search.maven.org`のsolrsearch APIはGAV検索のみでdependents数・DL数を返さない) | 未確認 | docs/DATA/probes/20260923_tools_8_run26.log:1000-1002 |
+| `Debezium` | 初回公開日 | 2016-03-17(`debezium-embedded` 0.1.0、search.maven.orgのtimestamp実測) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1003-1005 |
+| `Debezium` | 既知の脆弱性 | OSV.dev実測。`debezium-embedded`0件・`debezium-connector-postgres`0件。`debezium-core`は1件(CVE-2023-1419/GHSA-hvw5-3mgw-7rcf、`debezium-connector-mysql`のスクリプト注入、深刻度MODERATE、2.3.0.Alpha1で修正済み。現行3.6.3.Finalは修正版より新しいため未修正の既知脆弱性は無い) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:990-999 |
+| `Debezium` | 料金体系 | 無料(Apache-2.0のOSS。本体のCDCエンジン・Embedded Engine・各コネクタはすべて無料)。Red Hatの商用サポート版(Red Hat build of Debezium)の価格はこの回では確認していない(§4.0で未確認のまま残した項目を参照) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1324-1334 |
+| `Debezium` | 無料枠の上限 | 該当なし(OSSで機能制限や無料枠の上限は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1324-1334 |
+| `Debezium` | 課金開始条件 | 該当なし(OSSで課金は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1324-1334 |
+| `Debezium` | 隠れた依存 | PostgreSQLコネクタの最小実行には`wal_level=logical`対応のPostgreSQLが要る(実測)。Kafkaは必須ではなく、Debezium Embedded Engineでオフセットをローカルファイルに保存しKafka無しで単体動作できることを実測で確認した | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1051-1360 |
+| `Debezium` | 登録の要否 | 不要(OSS。Maven Centralから登録なしにpom/jarを取得し、ビルド・実行できることを実測で確認した) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:905-913 docs/DATA/probes/20260923_tools_8_run26.log:1171-1173 |
+| `Debezium` | 到達経路 | debezium.io・Maven Central(repo1.maven.org)・search.maven.org・api.osv.dev・img.shields.ioは到達。github.com・api.github.comのHTML/APIは403(git clone/git ls-remoteのsmart-http経路は到達) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:16-19 docs/DATA/probes/20260923_tools_8_run26.log:12-15 |
+| `Debezium` | 導入可否 | 可(実測、`mvn package`で依存解決・ビルドが成功) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1171-1173 |
+| `Debezium` | install所要秒 | 26.46(実測、`mvn package`のtime_s=26.460) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1171-1173 |
+| `Debezium` | 依存数 | 70(実測、`mvn dependency:tree`の行数。直接依存3件+推移的依存を含む) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1321-1323 |
+| `Debezium` | pip check | 該当なし(Java/Mavenのためpipは無い)。`mvn dependency:tree`はエラー・競合なく解決した(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1177-1248 |
+| `Debezium` | 最小実行の可否 | 可(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1310 |
+| `Debezium` | 最小実行の中身 | Debezium Embedded Engine(3.6.3.Final)+隔離したPostgreSQL16(wal_level=logical)で、合成テーブルにid=1(初期スナップショット、lsn=22407384)→稼働中にid=2(lsn=22407480)・id=3(lsn=22407680)をINSERT→lsn昇順(発生順)で再生されることを確認(PASS)。レプリケーションスロット削除後、同じoffsetファイルでEngineを再起動すると`DebeziumException`「this is no longer available on the server」で起動失敗することを確認(FAIL)。E4の中核 | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1310 |
+| `Debezium` | 実行所要秒 | PASS側12.54(time_s=12.540)・FAIL側15.05(time_s=15.049) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1270 docs/DATA/probes/20260923_tools_8_run26.log:1289-1310 |
+| `Debezium` | wheel展開 | 該当なし(Java)。jar展開(`debezium-embedded`・`debezium-connector-postgres`)は`.class`ファイルと`META-INF/services`(Java SPI宣言)のみで、同梱バイナリ・難読化・スクリプトは見当たらない | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:914-989 docs/DATA/probes/20260923_tools_8_run26.log:1344-1360 |
+| `Debezium` | setup.py導入時実行 | 該当なし(Java/Mavenにsetup.py相当は無い)。`debezium-parent`のビルドプラグイン(`exec-maven-plugin`等)は候補自身のソースをビルドするときにのみ働き、依存として取り込むだけ(依存解決)では実行されない(§6-1) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:911-913 |
+| `Debezium` | 同梱バイナリ | 無し(jar展開で`.class`・`META-INF/services`のみ確認、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:914-989 docs/DATA/probes/20260923_tools_8_run26.log:1344-1360 |
+| `Debezium` | 外部送信 | 見当たらない(実測。最小実行は127.0.0.1のPostgreSQLのみに接続し、他の外部ホストへの通信は試みていない。`integrations/tracing.adoc`のOpenTelemetry連携はオプトインの機能で既定では無効) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1310 |
+| `Debezium` | 自動発注機能 | 無し(汎用CDCツールで、読んだ範囲に取引所APIとの統合・発注・署名・資金移動の機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:2-5 |
+| `Debezium` | 宣伝詐欺の兆候 | 見当たらない(読んだ範囲(公式サイト・文書・ライセンス)では)。X等で宣伝詐欺の兆候を専用に探す検索はこの回では実施していない | 推定 | docs/DATA/probes/20260923_tools_8_run26.log:2-5 |
+| `Debezium` | 当方データ投入 | 未確認(試した手段: 合成データ(id/price/note)は投入し再生を確認したが(E4)、当方のcsv.gz(tardis形式)は投入していない。Debeziumはデータベースの変更ログを読む道具で、当方の履歴ファイルを直接取り込む経路ではない) | 未確認 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1270 |
+| `Debezium` | 時刻の扱い | 実測。変更イベントは`ts_ms`・`ts_us`・`ts_ns`(処理時刻)を持ち、再生の順序保証はLSN(ログの位置。論理的なコミット順序)によるもので、絶対時刻そのものでは順序を決めていない | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1271-1288 |
+| `Debezium` | 再現性 | E5参照(未判別。案Bの記録は知見7・12) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:220-222 |
+| `Debezium` | 規模の見積 | 未確認(試した手段: 456日分のティックデータ相当の規模でDebeziumを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3件の変更イベントのみの実測) | 未確認 | docs/DATA/probes/20260923_tools_8_run26.log:1249-1270 |
+| `Debezium` | 4軸1_道具 | 印。WAL/binlogのcommit LSN順ソートによる決定的な再生順序保証と、オフセットを外部ファイルで管理し任意の記録位置から再開・再生できる仕組みは、当方のバックテスト系ツール(CLAUDE.md §2)に無い道具立て | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:226-250 docs/DATA/probes/20260923_tools_8_run26.log:1249-1310 |
+| `Debezium` | 4軸2_情報 | 印。監視メトリクス(`NumberOfErroneousEvents`・`MilliSecondsBehindSource`等)によるデータ品質・処理遅延の可視化は、当方の監視系(CLAUDE.md §2)に無い情報源 | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:251-345 |
+| `Debezium` | 4軸3_視点 | 印。「生きているデータベースの変更ログ(WAL/binlog)を時刻順に再生してダウンストリームの処理を再実行する」という視点は、当方のバックテストの「記録済みのティック/足ファイルを順に読む」設計とは異なる、常時稼働のDB変更ログを起点にする視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:226-250 |
+| `Debezium` | 4軸4_向上 | サーベイの外(組み込みの作業が要る、18回目検収§6の3・19回目のMetaTraderの処置3と同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `Debezium` | 配布元の一致 | 一致(pomのgroupId `io.debezium`・トップpomのscm `github.com/debezium/debezium`・developersのorganization `Red Hat`が、公式サイト`debezium.io`のGitHubリンクおよびRed Hat社の言及と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1030-1050 |
+| `Debezium` | 難読化 | 見当たらない(jar展開の中身は平文の`.class`のみ。pomにも難読化の記述は無い) | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:914-989 docs/DATA/probes/20260923_tools_8_run26.log:1344-1360 |
+| `Debezium` | 外部URL取得 | 見当たらない(`debezium-parent`のビルドプラグインは候補自身のビルド時のみ働き、依存解決だけでは実行されない。§6-1) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:911-913 docs/DATA/probes/20260923_tools_8_run26.log:1030-1050 |
+| `Debezium` | 依存の一覧 | 実測(`mvn dependency:tree`の70行全部、生ログに記載)。pom直接依存(debezium-embedded)= `debezium-connector-common`・`slf4j-api`・`org.apache.kafka:connect-api`/`connect-runtime`/`connect-json`/`connect-file` | 実測 | docs/DATA/probes/20260923_tools_8_run26.log:1177-1248 docs/DATA/probes/20260923_tools_8_run26.log:905-907 |
+| `Debezium` | 保守者名の一貫性 | 一貫(pom.xmlのdevelopersのorganizationが`Red Hat`、GitHub組織`debezium`・公式サイト`debezium.io`のRed Hat社の言及と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:1030-1050 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)のため到達できなかった(存在しないとは書かない)
+- **週DL数**: Maven Centralは週DL数の公式APIを公開していない(未確認・試した手段: search.maven.orgのsolrsearch APIはGAV検索のみでdependents数・DL数を返さない)
+- **宣伝詐欺の兆候**: 公式サイト・文書・ライセンスの範囲には見当たらないが、X(旧Twitter)の投稿等で宣伝・詐欺の兆候を専用に探す検索はこの回では実施していない
+- **当方データ投入**: 合成データ(id/price/note)の投入・再生(E4)は実測したが、当方のcsv.gz(tardis形式)は投入していない
+- **規模の見積**: 456日分のティックデータに相当する規模でDebeziumを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3件の変更イベントのみの実測に留まる
+- **料金体系(Red Hat商用サポート版)**: OSS本体は無料だが、Red Hatの商用サポート版(Red Hat build of Debezium)の価格はこの回では確認していない
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19回目のMetaTraderの処置3と同じ理由)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない。生ログ16-19行目)。これはGitHubというホスト自体の到達不能ではなく、このセッションのプロキシがこのリポジトリへのAPI/Web直接アクセスを許可していないという意味であり、`git clone`・`git ls-remote`(git smart-httpプロトコル)は同じホスト名の下でも到達できた(生ログ12-15行目、55-69行目)。星・保守者数はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ1027-1029行目)。Maven Centralは週DL数・依存元(dependents)の公式APIを公開していないため、`search.maven.org`のsolrsearch API(GAV検索)で公開日・公開版数だけを確認した(生ログ1000-1005行目)。正確な値(総コミット数・週DL数・宣伝詐欺の兆候の網羅的な確認)が必要なら、第2経路(オーナーPC、`add_repo`でのGitHub連携が使える環境、または単純にブラウザでgithub.com/debezium/debeziumを開く)で確認できる可能性があるが、この回はそこまで試みていない。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] E2の印は`ref-connector-monitoring-streaming-metrics.adoc`の`NumberOfErroneousEvents`(malformed/incompatible with the schema/failures during transformationを検出)を根拠にした。24回目検収§4の処置5(Prefectの型検証は「列挙のデータへの検査」を言う逐語が無いため印にしない、という当て方)と比べると、Debeziumの`NumberOfErroneousEvents`は「change events(時系列のデータベース変更)」という、述語の列挙(時系列・約定・板・足・参照データ)に近い対象を明示している点で異なると判断したが、この違いの当て方が正しいかはリードの判断を仰ぐ
+2. [それ以外の問い] E4の印は、記録した変更(WAL/binlogのcommit LSN順)を時刻順に再生してダウンストリームの計算を再実行する機構を根拠にし、実測(PASS: lsn昇順の再生、FAIL: 記録位置消失時の起動失敗)でも確認した。ただし「記録した市場データ」に相当するのは、Debeziumの場合は「データベースの変更ログ」であり、当方が想定する「取引の記録データ(約定・板等)」とは種類が異なる。この対応関係(データベースの行の変更 ≒ 記録データ)を認めてよいかはリードの判断を仰ぐ
+3. [それ以外の問い] E1a・E1b・E5・E6は、文書の目次(nav.adoc全88行)と、目次から見て関わりうる頁(signalling・notification・eos・monitoring・testcontainers・openlineage・reselect-columns等)を読んだ範囲では印が見つからず、見積もりが500行を超えるため`cat8_search.py`を打たずに未判別のまま残した(案B)。Debeziumはモノレポで4,520件という区分8のなかでも大きい部類のソースを持つため、目次に出ない機能記述(例えば個別コネクタの`connectors/*.adoc`の設定項目一覧、数千行規模)を読み落としている可能性があるが、そこまで読み進めると1回の実行の範囲を超えるため、この回はここで区切った。次の回でどこまで読み進めるべきかはリードの判断を仰ぐ
+4. [それ以外の問い] 別配布物として除外した`debezium-connector-db2`等6件(db2/vitess/spanner/cassandra/informix/ibmi)は、`debezium/debezium`本体には無い機能(それぞれのDB固有のCDC)を持つ可能性があるが、起動文§1の規則(「別の配布物は候補の機能に数えず、Nにも入れない」)に従い、この回ではE1a〜E6の判定に使っていない。これらを別候補として台帳に追加すべきかはリードの判断を仰ぐ
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+
+### 受け入れ検査の出力
+
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run26.log`(誤検出は閉じずに残す)。
+
+**この回に新しく出た誤検出(閉じない)**:
+- K1・K2(41254・41275行目): この回に足した`当たりの判定`の表(E3a・E3bのファイルの表)が、空行を挟まず数十行連続する1つの`塊`として数えられ、そこに含まれる一次資料のコード片・逐語引用(丸括弧・大括弧・引用符を含む)の偶奇が塊全体では合わないために生じる誤検出で、19612・30448・40088行目等(21〜25回目で誤検出と判定済み)と同型(大きな表の塊)。個々の行・文を見れば括弧はいずれも閉じている。
+- `cat8_ledger.py check-elements`が指摘した「`/tmp`の直下(scratchpadの外)のファイルを使う手」6件: (1) 生ログ56行目は`debezium_org_other_repos`の手の中で`git ls-remote`の出力を一時的に`/tmp/o.txt`に落として`cat`で読んだだけの使い捨てで、内容はコマンド出力そのまま(取得した本文の保存先ではない)。(2) 生ログ1111・1124・1142・1148・1153行目は、PostgreSQLを動かすために`postgres`ユーザーへ`su`する直前に`/tmp/claude-0`等(scratchpadの祖先ディレクトリ)へ`chmod`する手で、このハーネスがBash呼び出しごとに権限を700へ戻す(実測、`pg_initdb_done`の手の前後で確認済み)ため、同じ呼び出しの中で入れ直す必要があった。`/tmp`直下に何かを保存したりデータを置いたりする手ではなく、scratchpadへ到達するための権限の通り道を開ける手。閉じずに残し、この理由を添えてリードに渡す。
+
+```
+K1 太字                  3 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+K2 括弧                  13 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             33 件(すべて21〜25回目までの既存指摘。この回の新規追加は0件)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 49 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 49 件
+```
+(この節をこの回の節に足したあとで打ち直すとK12が0件になり合計は49件になる。上の`K1〜K11・K13`のブロックは、この節を書き足す直前に打った出力で、その時点ではK12が1件(節が無い)のため合計50件だった。両方を残すのは、貼り付けの真正性を「打ち直した回」ごとに追える形にするため)
+
+`python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 26` →
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 15 行 / 辿る一覧から出た名前 0 行
+生ログ 20260923_tools_8_run26.log:56: `/tmp` の直下(scratchpad の外)のファイルを使う手(理由は上のK1・K2の直後の注記を参照)
+生ログ 20260923_tools_8_run26.log:1111: `/tmp` の直下(scratchpad の外)のファイルを使う手(同上)
+生ログ 20260923_tools_8_run26.log:1124: `/tmp` の直下(scratchpad の外)のファイルを使う手(同上)
+生ログ 20260923_tools_8_run26.log:1142: `/tmp` の直下(scratchpad の外)のファイルを使う手(同上)
+生ログ 20260923_tools_8_run26.log:1148: `/tmp` の直下(scratchpad の外)のファイルを使う手(同上)
+生ログ 20260923_tools_8_run26.log:1153: `/tmp` の直下(scratchpad の外)のファイルを使う手(同上)
+---- 合計 6 件
+```
+
+`python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run26.log` →
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run26.log の最初の手 2026-09-26T13:33:55Z / 最後の手 2026-09-26T14:06:43Z / 手の数 72
+---- 合計 0 件
+```
+
+`git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` → `0`(HEAD=25回目までがコミットされた版。この回は追記のみで、既存行の削除は無い)
