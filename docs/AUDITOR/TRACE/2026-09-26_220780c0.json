@@ -14952,11 +14952,13 @@
   {
    "move": 547,
    "tools": {
-    "Bash": 2,
+    "Bash": 3,
     "SendMessage": 2,
-    "Read": 1
+    "Read": 2,
+    "ReadNotifications": 1,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 5,
+   "n_tools": 9,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
