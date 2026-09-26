@@ -44,7 +44,10 @@ DEVIATIONS = {"i4-12-touch-decimal", "i4-13-tp-on-exit-bar", "i4-13-two-models",
               "i4-16-maker-mask-false-not-missed", "i4-16-maker-mask-false-two-models", "i4-16-same-side-keeps-limit",
               "i4-16-same-side-two-models",
               # L-8 (round r3-1, the lead's answer (2)): a mask-False opposite signal on a resting entry limit
-              "i4-16-mask-false-opposite-keeps-limit", "i4-16-mask-false-opposite-two-models"}
+              "i4-16-mask-false-opposite-keeps-limit", "i4-16-mask-false-opposite-two-models",
+              # L-7 / L-8 (round r3-1, stage 2): R-M7 (a closing limit kept) and R-E5 (a sides-blocked opposite signal)
+              "i4-16-exit-same-side-keeps-limit", "i4-16-exit-same-side-two-models", "i4-14-sides-opposite-keeps-limit",
+              "i4-14-sides-opposite-two-models"}
 
 
 def _load(path, name):

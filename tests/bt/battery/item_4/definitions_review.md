@@ -32,3 +32,19 @@
 - 当方の現状が「不一致」になる場面は 22(r2-1 の 13 + i4-r2-02 の 3 + i4-r2-08 の 4 + リードの答え (2) の 2 = R-E4 の補いと L-8)。試験 test_stated_rules_and_existing_engine_agree_except_the_listed_deviations がこの 22 以外の一致を毎回確かめる。
 - 足した・直した 10 場面(リードの答え (2) の 2 場面を含む)は、動かせた道具・再現の全部(一覧は `run_battery.py --list-targets`)に通した(場面集の規則 4)。PineForge(70)は比べていない(理由は opponents/CONSIDERED.md の 70 の行と survey_results/opp_pineforge.tsv の理由。最初に取れた版 0d76a099 は検査していない版で、リードの指示で消した。検査した版 5e62602c を取り直したが、構築・実行へ進む操作をこの環境の許可の判定が止めた)。
 - 根本原因・主張の表・提出前の吟味は ROOTCAUSE_r3-1.md。
+
+### 第 r3-1 回の第 2 段(リードの指示: 参照実装の役が字義どおりに読んだ点 U1〜U8 を規則の文にする。参照を bar_sim に切り替える)
+
+- 規則の文に R-W5(U1: 窓の足が足りなければ有る分で)・R-M7(U2: 決済の指値と同じ向きの合図は置き直さない)・R-W6(U3: 建てた足の終値も構造的な
+  逆指値の判定に入れる)・R-E5(U4: 向き・空売り不可で止められた合図は待っている建ての指値を残す)・R-V1(U5: 始値・終値を囲まない足を拒む)・
+  R-V2(U6: 使わない = null、0 以下の率・本数は拒む)・R-V3(U7: 負の費用を受ける)・R-V4(U8: 寿命 0 を拒む)を足した。入力の形にも「使わない物は null」を書いた。
+- 場面 11 を足した(値 9・2 出力 2): i4-11-wick-short-history・i4-11-wick-entry-bar-close・i4-16-exit-same-side-keeps-limit(+ two-models)・
+  i4-14-blocked-opposite-keeps-limit・i4-14-sides-opposite-keeps-limit(+ two-models)・i4-8-refuse-bad-bar・i4-10-zero-rate-refused・i4-8-negative-fee・
+  i4-16-zero-timeout-refused。拒む物(U5・U6・U8)は、対照の値の答えと拒む変形の組で置いた。
+- 参照実装の粒度の場面(I4-1 の 2 つと i4-3-ref-signal-first)の参照は、独立の参照 `src/bot/bt/reference/bar_sim.py` の `run_bars` にした
+  (`adapters/new_impl.py:_run_reference`。undecided = wick_short_history: use_available・same_side_exit_signal: keep)。参照は指標の式を持たない
+  (SPEC.md §4)ので、I4-1 の参照の側は約定・損益・資産・取り逃しを判定し、指標は本体の側と I4-17 で判定する。3 場面とも新実装は「正解と一致」。
+- 当方の現状が「不一致」になる場面は 26(第 1 段の 22 + R-M7 の 2 + R-E5 の向きの 2)。拒む物 3 場面は、当方の現状が対照では一致し、変形を
+  拒まない(試験 test_stated_rules… は対照だけを見る。走行の表では「不一致」)。
+- 第 2 段の時点で新実装が「不一致」の場面は 4: i4-14-sides-opposite-keeps-limit・i4-14-sides-opposite-two-models(R-E5)・i4-10-zero-rate-refused(R-V2)・
+  i4-16-zero-timeout-refused(R-V4)。委任文 §1 の条件 2 のとおり、新実装の側で直す物。

@@ -46,6 +46,17 @@ i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 2(正解 4)	154b5
 i4-16-same-side-two-models	I4-16	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-16-mask-false-opposite-keeps-limit	I4-16	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.0	0.0
 i4-16-mask-false-opposite-two-models	I4-16	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-11-wick-short-history	I4-11	値	正解と一致		8d5368524dff	正解と一致		8d5368524dff	2 回の実行で同じ	0.004	0.0
+i4-11-wick-entry-bar-close	I4-11	値	正解と一致		6cec38b16ade	正解と一致		6cec38b16ade	2 回の実行で同じ	0.0	0.0
+i4-16-exit-same-side-keeps-limit	I4-16	値	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
+i4-16-exit-same-side-two-models	I4-16	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-14-blocked-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.0	0.0
+i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.0	0.0
+i4-14-sides-opposite-two-models	I4-14	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.004
+i4-8-refuse-bad-bar	I4-8	値	不一致	変形を拒まずに通した	3235318d8ae2	不一致	変形を拒まずに通した	3235318d8ae2	2 回の実行で同じ	0.0	0.0
+i4-10-zero-rate-refused	I4-10	値	不一致	変形を拒まずに通した	d2f62e093129	不一致	変形を拒まずに通した	d2f62e093129	2 回の実行で同じ	0.0	0.0
+i4-8-negative-fee	I4-8	値	不一致	pnls[0] = 55.18999999999992(正解 55.210799999999914)	28895fe9d42d	不一致	pnls[0] = 55.18999999999992(正解 55.210799999999914)	28895fe9d42d	2 回の実行で同じ	0.0	0.0
+i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cde35d97067a	不一致	変形を拒まずに通した	cde35d97067a	2 回の実行で同じ	0.0	0.0
 i4-17-metrics	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-metrics-edge	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0

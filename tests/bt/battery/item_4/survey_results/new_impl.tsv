@@ -1,6 +1,6 @@
 scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
-i4-1-ref-taker	I4-1	値	正解と一致		6a6e3c7a9a6a	正解と一致		6a6e3c7a9a6a	2 回の実行で同じ	0.009	0.017
-i4-1-ref-maker	I4-1	値	正解と一致		75bb969fa163	正解と一致		75bb969fa163	2 回の実行で同じ	0.006	0.015
+i4-1-ref-taker	I4-1	値	正解と一致		d19de71b4032	正解と一致		d19de71b4032	2 回の実行で同じ	0.012	0.023
+i4-1-ref-maker	I4-1	値	正解と一致		efa5aae06a5d	正解と一致		efa5aae06a5d	2 回の実行で同じ	0.007	0.015
 i4-2-grid-all	I4-2	値	正解と一致	48 の場合すべて	6622f0eafbbb	正解と一致	48 の場合すべて	6622f0eafbbb	2 回の実行で同じ	0.332	0.454
 i4-2-grid	I4-2	値	正解と一致	30 の場合すべて	4ed69d3acdae	正解と一致	30 の場合すべて	4ed69d3acdae	2 回の実行で同じ	0.22	0.219
 i4-2-grid-stop	I4-2	値	正解と一致	16 の場合すべて	7443b7faea00	正解と一致	16 の場合すべて	7443b7faea00	2 回の実行で同じ	0.083	0.084
@@ -46,6 +46,17 @@ i4-16-same-side-keeps-limit	I4-16	値	正解と一致		660672fac9a7	正解と一
 i4-16-same-side-two-models	I4-16	能力	正解と一致		8913a6818ee9	正解と一致		8913a6818ee9	2 回の実行で同じ	0.03	0.032
 i4-16-mask-false-opposite-keeps-limit	I4-16	値	正解と一致		0d83570dc27b	正解と一致		0d83570dc27b	2 回の実行で同じ	0.013	0.005
 i4-16-mask-false-opposite-two-models	I4-16	能力	正解と一致		917006d5300a	正解と一致		917006d5300a	2 回の実行で同じ	0.017	0.008
+i4-11-wick-short-history	I4-11	値	正解と一致		8d5368524dff	正解と一致		8d5368524dff	2 回の実行で同じ	0.003	0.007
+i4-11-wick-entry-bar-close	I4-11	値	正解と一致		6cec38b16ade	正解と一致		6cec38b16ade	2 回の実行で同じ	0.003	0.003
+i4-16-exit-same-side-keeps-limit	I4-16	値	正解と一致		5b4a39afd91e	正解と一致		5b4a39afd91e	2 回の実行で同じ	0.004	0.008
+i4-16-exit-same-side-two-models	I4-16	能力	正解と一致		5c323a66b7b3	正解と一致		5c323a66b7b3	2 回の実行で同じ	0.01	0.022
+i4-14-blocked-opposite-keeps-limit	I4-14	値	正解と一致		0d83570dc27b	正解と一致		0d83570dc27b	2 回の実行で同じ	0.003	0.007
+i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	2 回の実行で同じ	0.002	0.002
+i4-14-sides-opposite-two-models	I4-14	能力	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	2 回の実行で同じ	0.01	0.014
+i4-8-refuse-bad-bar	I4-8	値	正解と一致	変形を拒んだ: BarModelError: bar 3 cannot be a bar event: bar invariant violated: open=100.5 high=101.5 low=100.0 close=101.8	872bd53dc000	正解と一致	変形を拒んだ: BarModelError: bar 3 cannot be a bar event: bar invariant violated: open=100.5 high=101.5 low=100.0 close=101.8	872bd53dc000	2 回の実行で同じ	0.003	0.003
+i4-10-zero-rate-refused	I4-10	値	不一致	変形を拒まずに通した	d2f62e093129	不一致	変形を拒まずに通した	d2f62e093129	2 回の実行で同じ	0.01	0.022
+i4-8-negative-fee	I4-8	値	正解と一致		443ff7d10080	正解と一致		443ff7d10080	2 回の実行で同じ	0.003	0.007
+i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cde35d97067a	不一致	変形を拒まずに通した	cde35d97067a	2 回の実行で同じ	0.005	0.009
 i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
 i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.002
 i4-17-sharpe-bar-seconds	I4-17	値	正解と一致		e4411f8c2424	正解と一致		e4411f8c2424	2 回の実行で同じ	0.003	0.009
@@ -73,4 +84,4 @@ i4-16-tp-before-exit-limit	I4-16	値	正解と一致		d8dae8650092	正解と一�
 i4-16-maker-tp-before-exit-limit	I4-16	値	正解と一致		9d34710873c6	正解と一致		9d34710873c6	2 回の実行で同じ	0.003	0.008
 i4-3-core-delivery	I4-3	値	正解と一致		ec6683e67929	正解と一致		ec6683e67929	2 回の実行で同じ	0.001	0.001
 i4-3-core-delivery-gap	I4-3	値	正解と一致		d84dbf0c545f	正解と一致		d84dbf0c545f	2 回の実行で同じ	0.001	0.001
-i4-3-ref-signal-first	I4-3	値	正解と一致		ee4d578d2465	正解と一致		ee4d578d2465	2 回の実行で同じ	0.003	0.008
+i4-3-ref-signal-first	I4-3	値	正解と一致		ee4d578d2465	正解と一致		ee4d578d2465	2 回の実行で同じ	0.004	0.012

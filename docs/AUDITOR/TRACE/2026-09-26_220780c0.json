@@ -14804,11 +14804,14 @@
   {
    "move": 542,
    "tools": {
-    "Bash": 1,
-    "SendMessage": 1
+    "Bash": 2,
+    "SendMessage": 1,
+    "ReadNotifications": 1,
+    "Read": 1,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 2,
-   "read_goal": false,
+   "n_tools": 6,
+   "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,

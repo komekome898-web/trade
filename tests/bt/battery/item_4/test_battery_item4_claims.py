@@ -419,13 +419,18 @@ def _maker_entries(inp, r_e4=True, r_m6=True):
     bars, cfg = inp["bars"], inp["config"]
     sig = {s["bar"]: s["signal"] for s in inp["signals"]}
     mask, timeout = cfg["entry_mask"], cfg["maker_timeout_bars"]
-    ok_mask = lambda k: mask is None or bool(mask[k])  # noqa: E731
+    sides = cfg["entry_sides"]
+
+    def ok_mask(k, side=None):  # R-E2 / R-E1: the decision bar's mask and the entry sides (R-E5 reads both alike)
+        if side is not None and ((sides == "long" and side == "SELL") or (sides == "short" and side == "BUY")):
+            return False
+        return mask is None or bool(mask[k])
     pending, missed, fills = None, 0, []  # pending = (price, placed bar, side)
     for j, b in enumerate(bars):
         if pending is not None and j > pending[1]:
             through = b["low"] < pending[0] if pending[2] == "BUY" else b["high"] > pending[0]
             if through:                                     # R-M1: strictly traded through
-                if ok_mask(pending[1]):                     # R-E2: the decision bar's mask (L-6 / L-8: no open)
+                if ok_mask(pending[1], pending[2]):         # R-E2 / R-E1 (L-6 / L-8: no open)
                     fills.append((j, pending[0], "OPEN_LONG" if pending[2] == "BUY" else "OPEN_SHORT"))
                     return fills, missed
                 pending = None
@@ -437,7 +442,7 @@ def _maker_entries(inp, r_e4=True, r_m6=True):
             continue
         if side == "SELL" and not cfg["allow_short"]:
             continue
-        if r_e4 and not ok_mask(j):                         # R-E4: a mask-False signal does nothing
+        if r_e4 and not ok_mask(j, side):                   # R-E4 / R-E5: a blocked signal does nothing
             continue
         if pending is not None and pending[2] == side and r_m6:   # R-M6
             continue
@@ -531,3 +536,46 @@ def test_the_unread_grid_catches_the_old_substring_matcher():
     passed = [f.format(x=i) for f in _UNREAD_FORMS for i in _INSIDE
               if gen.verified_absence("12 の指標を出す口は" + f.format(x=i) + "(x.py 3 行)が無い")]
     assert passed, "the grid does not tell the old matcher from the new one"
+
+
+def test_the_kept_closing_limit_is_pinned_by_a_scene():
+    """R-M7 (round r3-1, stage 2): re-placing the closing limit on a same-side signal (the legacy L-7) in the spec
+    contradicts a scene; keeping it in the legacy contradicts one too."""
+    orig = S._closing_limit
+    try:
+        S._closing_limit = lambda inp, ob, d, j, model="spec": orig(inp, ob, d, j, "legacy")
+        wrong, _ = S.order_findings(S.SCENES)
+        assert any(sid == "i4-16-exit-same-side-keeps-limit" for sid, _ in wrong), wrong
+        S._closing_limit = lambda inp, ob, d, j, model="spec": orig(inp, ob, d, j, "spec")
+        wrong, _ = S.order_findings(S.SCENES)
+        assert any(sid == "i4-16-exit-same-side-two-models" for sid, _ in wrong), wrong
+    finally:
+        S._closing_limit = orig
+
+
+def _all_bar_inputs(s):
+    """Every bars input of a scene that must be ACCEPTED (the input, the controls; not the variant = what is refused)."""
+    out = []
+    if s.get("input", {}).get("op") == "bars":
+        out.append(s["input"])
+    for mc in s.get("more_controls", []):
+        if mc["input"].get("op") == "bars":
+            out.append(mc["input"])
+    for c in s.get("cases", []):
+        if c.get("op") == "bars":
+            out.append(c)
+    return out
+
+
+def test_every_accepted_scene_bar_holds_its_open_and_close():
+    """R-V1 on the scene set's own inputs: a scene whose answer is a value never feeds a bar whose range does not hold
+    its open and close (round r3-1: one scene had such a bar before this test)."""
+    bad = []
+    for s in S.SCENES:
+        for inp in _all_bar_inputs(s):
+            for k, b in enumerate(inp["bars"]):
+                if b["high"] < max(b["open"], b["close"]) or b["low"] > min(b["open"], b["close"]):
+                    bad.append((s["id"], k))
+    assert bad == []
+    v = S.by_id("i4-8-refuse-bad-bar")["variant"]["bars"][3]
+    assert v["high"] < max(v["open"], v["close"])

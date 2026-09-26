@@ -140,6 +140,26 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
   **自己申告(§4 から外れたこと)**: 最初の版 0d76a099 を、導入前の検査をせずに CMake で構築した(FetchContent の取得を含む)。その版は実行していない。
 - **(4)** 記録は両方の置き場所に置いた。
 
+### 6-5. 第 2 段(リードの指示 12:39 UTC ごろ: U1〜U8 を規則の文に、参照を bar_sim に)
+
+- **根本原因**: 規則の文は、既存の文書と計算にある分岐だけを書き写し、入力の空間のうち「文が決めていない所」を列べていなかった(§2 の
+  i4-r2-08 と同じ根)。独立の参照を文だけから書いた役が、その空きを U1〜U8 として見つけた。
+- **規則の文**(`gen_definitions.py`): R-M7・R-W5・R-W6・R-E5・R-V1〜R-V4 を足し、入力の形に「使わない物は null」を書いた。
+- **場面**: 11 を足した(definitions_review.md の第 2 段の節)。場面集の機械も文に合わせた: `i4_scenes._closing_limit` は仕様では待っている決済の
+  指値を寿命まで残す(R-M7)、互換では最後の合図で置き直す(L-7)。`_maker_entries` は向き・空売りの止めを R-E5 として扱う。
+- **主張の表に足した行**: (族 A)R-M7 = 導く関数 `_closing_limit`、落ちる試験 `test_every_close_is_the_winner_of_its_bar`、mutant
+  `test_the_kept_closing_limit_is_pinned_by_a_scene`(仕様を置き直しに・互換を残すに変えると場面と食い違う)。(族 I)R-E5 = `_maker_entries`、
+  `test_maker_entry_scenes_follow_the_rule_text`・`test_each_maker_entry_rule_is_pinned_by_a_scene`。(新しい族 V)場面の足そのものが R-V1 を
+  満たすこと = `test_every_accepted_scene_bar_holds_its_open_and_close`(対照・格子の全部の足。拒む変形だけを除く)。**この試験は、私が最初に
+  書いた場面 XS の足 4(高値 101 < 終値 101.5)を見つけた**(新実装が「bar invariant violated」で拒んだので気づき、足を直し、同じ誤りが
+  場面集の他に無いことをこの試験で確かめた)。
+- **参照の切り替え**: `adapters/new_impl.py:_run_reference` を `bar_sim.run_bars` にした(入口は SPEC.md §7、options の鍵は場面の config と同じ名、
+  capital・order_amount は initial_equity・order_notional から)。参照は指標を持たないので、I4-1 の 2 場面の参照の側の判定から指標を外した
+  (`i4_scenes.W_E_REF`。本体の側は指標も判定する)。**これは場面の判定の変更で、リードの指示の語に無い**(リードに聞くこと 5)。
+- **規則 4**: 第 2 段の 11 場面と、参照の判定を変えた 3 場面を全 42 対象に通した(`<M>/run_new_scenes3.sh`、12:45:47〜12:47:04 UTC、全部 rc=0)。
+- **新実装が「不一致」の 4 場面**(新実装の側で直す物): i4-14-sides-opposite-keeps-limit・同 -two-models(R-E5: 向き long で止められた SELL で
+  買いの指値を置き換えている = 約定 0)、i4-10-zero-rate-refused(R-V2: 率 0 を拒まない)、i4-16-zero-timeout-refused(R-V4: 寿命 0 を拒まない)。
+
 ## リードに聞くこと
 
 1. 出来事 `stop@time` を消して範囲の逆指値 1 つにまとめたこと、と、2 出力の場面 i4-13-stop-on-time-bar-two-models を足したことは、起こし文と
@@ -149,6 +169,11 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
 3. PineForge: `5e62602c` を取り直して(`git fetch --depth 1 origin 5e62602cb1ebaff9ec16d7dfbbfaaaff08603764`)項目 0・2 の検査の記録をそのまま当てて
    構築・実行してよいか、それとも「比べていない」のまま進めるか。検査を通していない版の clone と構築物(`<venvs>/item_2/src/c70`)を消すかどうか。
 4. 「直す前に落ちる」記録の置き場所: 起こし文は `battery/materials/r3-1/`、仕上げの委任文 §3 は `round_3/materials/<役>/`。両方に写しました。
+   (1〜4 はリードが答えた = §6-4。)
+5. 参照 bar_sim は指標の式を持たないので、I4-1 の 2 場面の参照の側の判定から指標を外しました(本体の側は指標も判定)。これでよいか。
+   別の案は、参照の役に指標の式 M-1〜M-12 を足してもらうこと。
+6. PineForge は検査した版 5e62602c を取り直しましたが、構築・実行へ進む操作をこの環境の許可の判定が止めました。進めるには、オーナーが
+   この種の操作の許可の規則を足す必要があります(許可の判定の文: 「the user can add a Bash permission rule to their settings」)。
 
 ## 7. 末尾の節の読み方(節の外の散文)
 
@@ -160,23 +185,18 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
 
 ## `git diff --name-only HEAD` の節(`diff_scope.py` が作った。手で変えない)
 
-<!-- diff_scope:begin sha256=7a1173bb096bf4ed46c376589139854633b1169fcc9a220e856e6c798db097b8 -->
+<!-- diff_scope:begin sha256=6899d07378af2c4b6c94157e6e89904a63711e4842d6008a543e7123c4326b02 -->
 ```text
-HEAD: 658582da3168deb8005001cd900a7c8a34cdcf4b
+HEAD: ce962d58465da1b1850f59885eceda0f1653e3c1
 
 $ git diff --name-only HEAD
 docs/AUDITOR/TRACE/2026-09-26_220780c0.json
-src/bot/bt/compat/barmodel.py
-src/bot/bt/pipeline.py
-src/bot/bt/reference/bar_rules.py
 tests/bt/battery/item_4/DEFINITIONS.md
+tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
 tests/bt/battery/item_4/definitions_review.md
-tests/bt/battery/item_4/gen_considered.py
 tests/bt/battery/item_4/gen_definitions.py
 tests/bt/battery/item_4/i4_scenes.py
 tests/bt/battery/item_4/opponents/CONSIDERED.md
-tests/bt/battery/item_4/opponents/RUNNABILITY.tsv
-tests/bt/battery/item_4/opponents/pineforge_adapter.py
 tests/bt/battery/item_4/survey_results/current_impl.tsv
 tests/bt/battery/item_4/survey_results/mutant.tsv
 tests/bt/battery/item_4/survey_results/new_impl.tsv
@@ -221,29 +241,15 @@ tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
 tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
 tests/bt/battery/item_4/test_battery_item4.py
 tests/bt/battery/item_4/test_battery_item4_claims.py
-tests/bt/battery/item_4/test_battery_item4_diffscope.py
-tests/bt/item_4/reference/ext_backtesting_compare.py
-tests/bt/item_4/reference/ext_bar_modes.py
-tests/bt/item_4/reference/ref_mutants.py
-tests/bt/item_4/reference/test_i4ref_extmodes_properties.py
-tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py
-tests/bt/item_4/test_i4_barmodel_on_core.py
-tests/bt/item_4/test_i4_r2_origin_from_data_grid.py
-tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
 
 $ git status --porcelain --untracked-files=all
  M docs/AUDITOR/TRACE/2026-09-26_220780c0.json
- M src/bot/bt/compat/barmodel.py
- M src/bot/bt/pipeline.py
- M src/bot/bt/reference/bar_rules.py
  M tests/bt/battery/item_4/DEFINITIONS.md
+ M tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
  M tests/bt/battery/item_4/definitions_review.md
- M tests/bt/battery/item_4/gen_considered.py
  M tests/bt/battery/item_4/gen_definitions.py
  M tests/bt/battery/item_4/i4_scenes.py
  M tests/bt/battery/item_4/opponents/CONSIDERED.md
- M tests/bt/battery/item_4/opponents/RUNNABILITY.tsv
- M tests/bt/battery/item_4/opponents/pineforge_adapter.py
  M tests/bt/battery/item_4/survey_results/current_impl.tsv
  M tests/bt/battery/item_4/survey_results/mutant.tsv
  M tests/bt/battery/item_4/survey_results/new_impl.tsv
@@ -288,83 +294,21 @@ $ git status --porcelain --untracked-files=all
  M tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
  M tests/bt/battery/item_4/test_battery_item4.py
  M tests/bt/battery/item_4/test_battery_item4_claims.py
- M tests/bt/battery/item_4/test_battery_item4_diffscope.py
- M tests/bt/item_4/reference/ext_backtesting_compare.py
-R  src/bot/bt/reference/bar_sim.py -> tests/bt/item_4/reference/ext_bar_modes.py
- M tests/bt/item_4/reference/ref_mutants.py
-RM tests/bt/item_4/reference/test_i4ref_bar_properties.py -> tests/bt/item_4/reference/test_i4ref_extmodes_properties.py
-RM tests/bt/item_4/reference/test_i4ref_bar_scenes.py -> tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py
- M tests/bt/item_4/test_i4_barmodel_on_core.py
- M tests/bt/item_4/test_i4_r2_origin_from_data_grid.py
- M tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/baseline_at_start.json
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/before_fix_pytest.txt
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/merge.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/df_after.txt
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/i2drv70.c
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/rebuild_70.log
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/rebuild_70.sh
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes.log
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes.sh
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/scenes_i4-13-stop-on-time-bar_at_HEAD.txt
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/scenekeeper/before_fix_pytest.txt
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/worker/after_barmodel_before_pipeline_run.txt
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/worker/before_barmodel.txt
-?? src/bot/bt/reference/bar_sim.py
-?? tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
-?? tests/bt/item_4/i4w_decl.py
-?? tests/bt/item_4/reference/i4ref_bar_kit.py
-?? tests/bt/item_4/reference/test_i4ref_rules_properties.py
-?? tests/bt/item_4/reference/test_i4ref_rules_scenes.py
-?? tests/bt/item_4/test_i4_r3_maker_two_values_grid.py
-?? tests/bt/item_4/test_i4_r3_origin_by_rows_grid.py
-?? tests/bt/item_4/test_i4_r3_prereg_file_grid.py
-?? tests/bt/item_4/test_i4_r3_time_exit_at_open_grid.py
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes3.log
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes3.sh
 
 台本の checkBattery(項目 4、node で台本の文から切り出して走らせた。tests_passed は真として渡す)の指摘:
-{"id": "bself-touch", "level": "止める", "repeat_of": null, "text": "場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): src/bot/bt/compat/barmodel.py, src/bot/bt/pipeline.py, src/bot/bt/reference/bar_rules.py, tests/bt/item_4/reference/ext_backtesting_compare.py, tests/bt/item_4/reference/ext_bar_modes.py, tests/bt/item_4/reference/ref_mutants.py, tests/bt/item_4/reference/test_i4ref_extmodes_properties.py, tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py, tests/bt/item_4/test_i4_barmodel_on_core.py, tests/bt/item_4/test_i4_r2_origin_from_data_grid.py, tests/bt/item_4/test_i4_r2_signal_at_open_grid.py"}
+(無し)
 
 検査が止める行(場面集の外):
-src/bot/bt/compat/barmodel.py
-src/bot/bt/pipeline.py
-src/bot/bt/reference/bar_rules.py
-tests/bt/item_4/reference/ext_backtesting_compare.py
-tests/bt/item_4/reference/ext_bar_modes.py
-tests/bt/item_4/reference/ref_mutants.py
-tests/bt/item_4/reference/test_i4ref_extmodes_properties.py
-tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py
-tests/bt/item_4/test_i4_barmodel_on_core.py
-tests/bt/item_4/test_i4_r2_origin_from_data_grid.py
-tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
+(無し)
 
 記録の上書き(HEAD にある materials の記録が変わっている = 追記だけの規則の破れ):
 (無し)
 
 未追跡で場面集の外(git diff に出ないので検査に見えない):
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/baseline_at_start.json
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/before_fix_pytest.txt
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/merge.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/df_after.txt
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/i2drv70.c
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/rebuild_70.log
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/pineforge/rebuild_70.sh
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes.log
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes.sh
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/scenes_i4-13-stop-on-time-bar_at_HEAD.txt
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/scenekeeper/before_fix_pytest.txt
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/worker/after_barmodel_before_pipeline_run.txt
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/worker/before_barmodel.txt
-src/bot/bt/reference/bar_sim.py
-tests/bt/item_4/i4w_decl.py
-tests/bt/item_4/reference/i4ref_bar_kit.py
-tests/bt/item_4/reference/test_i4ref_rules_properties.py
-tests/bt/item_4/reference/test_i4ref_rules_scenes.py
-tests/bt/item_4/test_i4_r3_maker_two_values_grid.py
-tests/bt/item_4/test_i4_r3_origin_by_rows_grid.py
-tests/bt/item_4/test_i4_r3_prereg_file_grid.py
-tests/bt/item_4/test_i4_r3_time_exit_at_open_grid.py
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes3.log
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes3.sh
 
 引用符つきの path(git の引用の形。場面集の中でも検査は外と読む):
 (無し)
@@ -373,84 +317,60 @@ tests/bt/item_4/test_i4_r3_time_exit_at_open_grid.py
 (取った時刻 2026-09-26T12:30:03Z、そのときの HEAD 658582da3168deb8005001cd900a7c8a34cdcf4b。場面係の最初の書き込みとして取った写し)
 
 差分の行ごとの帰属(基準と今の写しの sha256・HEAD から機械で分けた。書き手は git に記録が無いので出さない):
-着手時は HEAD と同じで、作業中に変わった	docs/AUDITOR/TRACE/2026-09-26_220780c0.json
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/compat/barmodel.py
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/pipeline.py
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/reference/bar_rules.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/DEFINITIONS.md
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/definitions_review.md
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/gen_considered.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/gen_definitions.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/i4_scenes.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/opponents/CONSIDERED.md
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/opponents/RUNNABILITY.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/opponents/pineforge_adapter.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/current_impl.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/mutant.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/new_impl.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_backtesting.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_backtrader.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_basana.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_bt.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_fast_trade.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_finmarketpy.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_freqtrade.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_hftbacktest.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_luczinsritter.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pineforge.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pm_backtester.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pyalgotrade.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pybotters.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pybroker.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pysystemtrade.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_pytrendfollow.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_qflib.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_qlib.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_qstrader.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_qtradex.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_quanttrader.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_11_octobot.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_15_backtestingcore.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_52_lean.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_56_zvt.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_57_wondertrader.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_60_hikyuu.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_61_barter.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_67_lumibot.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_69_gobacktest.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_7_superalgos.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_80_hummingbot.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_8_opentrader.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_repro_94_mote.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_rqalpha.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_vectorbt.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_vnpy.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/test_battery_item4.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/test_battery_item4_claims.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/battery/item_4/test_battery_item4_diffscope.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ext_backtesting_compare.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ext_bar_modes.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ref_mutants.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/test_i4ref_extmodes_properties.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_barmodel_on_core.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_r2_origin_from_data_grid.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
+判定できない(HEAD が作業中に変わった)	docs/AUDITOR/TRACE/2026-09-26_220780c0.json
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/DEFINITIONS.md
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/definitions_review.md
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/gen_definitions.py
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/i4_scenes.py
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/opponents/CONSIDERED.md
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/current_impl.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/mutant.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/new_impl.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_backtesting.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_backtrader.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_basana.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_bt.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_fast_trade.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_finmarketpy.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_freqtrade.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_hftbacktest.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_luczinsritter.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pineforge.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pm_backtester.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pyalgotrade.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pybotters.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pybroker.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pysystemtrade.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_pytrendfollow.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_qflib.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_qlib.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_qstrader.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_qtradex.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_quanttrader.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_11_octobot.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_15_backtestingcore.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_52_lean.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_56_zvt.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_57_wondertrader.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_60_hikyuu.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_61_barter.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_67_lumibot.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_69_gobacktest.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_7_superalgos.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_80_hummingbot.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_8_opentrader.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_repro_94_mote.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_rqalpha.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_vectorbt.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_vnpy.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/test_battery_item4.py
+判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/test_battery_item4_claims.py
 
 検査が止める行の帰属:
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/compat/barmodel.py
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/pipeline.py
-着手時は HEAD と同じで、作業中に変わった	src/bot/bt/reference/bar_rules.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ext_backtesting_compare.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ext_bar_modes.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/ref_mutants.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/test_i4ref_extmodes_properties.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/reference/test_i4ref_extmodes_scenes.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_barmodel_on_core.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_r2_origin_from_data_grid.py
-着手時は HEAD と同じで、作業中に変わった	tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
+(無し)
 ```
 <!-- diff_scope:end -->
 

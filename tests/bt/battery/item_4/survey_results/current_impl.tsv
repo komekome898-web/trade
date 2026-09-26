@@ -46,6 +46,17 @@ i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 3(正解 4)	16c62
 i4-16-same-side-two-models	I4-16	能力	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	2 回の実行で同じ	0.011	0.011
 i4-16-mask-false-opposite-keeps-limit	I4-16	値	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	2 回の実行で同じ	0.007	0.003
 i4-16-mask-false-opposite-two-models	I4-16	能力	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	2 回の実行で同じ	0.008	0.003
+i4-11-wick-short-history	I4-11	値	正解と一致		8d5368524dff	正解と一致		8d5368524dff	2 回の実行で同じ	0.011	0.003
+i4-11-wick-entry-bar-close	I4-11	値	正解と一致		6cec38b16ade	正解と一致		6cec38b16ade	2 回の実行で同じ	0.01	0.006
+i4-16-exit-same-side-keeps-limit	I4-16	値	不一致	fills[1].bar = 5(正解 6)	03778ac91905	不一致	fills[1].bar = 5(正解 6)	03778ac91905	2 回の実行で同じ	0.002	0.002
+i4-16-exit-same-side-two-models	I4-16	能力	不一致	spec: fills[1].bar = 5(正解 6)	9e92f0e7e083	不一致	spec: fills[1].bar = 5(正解 6)	9e92f0e7e083	2 回の実行で同じ	0.011	0.003
+i4-14-blocked-opposite-keeps-limit	I4-14	値	正解と一致		0d83570dc27b	正解と一致		0d83570dc27b	2 回の実行で同じ	0.011	0.006
+i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	2 回の実行で同じ	0.001	0.001
+i4-14-sides-opposite-two-models	I4-14	能力	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	2 回の実行で同じ	0.003	0.007
+i4-8-refuse-bad-bar	I4-8	値	不一致	変形を拒まずに通した	3235318d8ae2	不一致	変形を拒まずに通した	3235318d8ae2	2 回の実行で同じ	0.015	0.003
+i4-10-zero-rate-refused	I4-10	値	不一致	変形を拒まずに通した	d2f62e093129	不一致	変形を拒まずに通した	d2f62e093129	2 回の実行で同じ	0.021	0.013
+i4-8-negative-fee	I4-8	値	正解と一致		443ff7d10080	正解と一致		443ff7d10080	2 回の実行で同じ	0.002	0.001
+i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cde35d97067a	不一致	変形を拒まずに通した	cde35d97067a	2 回の実行で同じ	0.003	0.007
 i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
 i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
 i4-17-sharpe-bar-seconds	I4-17	値	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	2 回の実行で同じ	0.001	0.001
