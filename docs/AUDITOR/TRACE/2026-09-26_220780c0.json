@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 559,
+ "n_moves": 561,
  "moves": [
   {
    "move": 1,
@@ -15310,23 +15310,78 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 560,
+   "tools": {
+    "Read": 5,
+    "Bash": 7,
+    "Write": 1,
+    "Edit": 5
+   },
+   "n_tools": 18,
+   "read_goal": true,
+   "first_write_at": 4,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 2,
+   "unlock_in_test": 1
+  },
+  {
+   "move": 561,
+   "tools": {
+    "Bash": 1
+   },
+   "n_tools": 1,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": true,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
-   "num": 67,
-   "den": 71,
-   "value": 0.9437
+   "num": 68,
+   "den": 72,
+   "value": 0.9444
   },
   "P2_table_shown_before_first_write": {
    "num": 6,
-   "den": 71,
-   "value": 0.0845
+   "den": 72,
+   "value": 0.0833
   },
   "P3_claim_with_output": {
-   "num": 216,
-   "den": 528,
-   "value": 0.4091
+   "num": 217,
+   "den": 529,
+   "value": 0.4102
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -15336,12 +15391,12 @@
   "P5_tools_per_move": {
    "median": 6,
    "max": 153,
-   "n": 543
+   "n": 545
   },
   "P6_findings_applied": {
-   "num": 53,
+   "num": 54,
    "den": 187,
-   "value": 0.2834,
+   "value": 0.2888,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
@@ -15350,13 +15405,13 @@
    "value": null
   },
   "R4_unlock_created": {
-   "num": 4,
+   "num": 6,
    "den": null,
    "value": null,
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 7,
+   "num": 8,
    "den": null,
    "value": null
   },
