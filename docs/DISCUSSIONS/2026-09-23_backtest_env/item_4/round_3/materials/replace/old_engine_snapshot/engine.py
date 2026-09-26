@@ -1,64 +1,98 @@
-"""The compatibility mouth of the old `bot.backtest.engine` (item 4, old item
-14; L-408 案2: 「旧と同じ名前・同じ引数の呼び口(`run_backtest`・`CostModel`
-...)を新エンジンの上に新しく書き」).
+"""Backtest engine.
 
-`run_backtest` takes the old arguments with the old defaults and runs the
-new engine's bar model (`barmodel.run_bars` on the core) with the rule set
-"legacy", so the result is the old engine's, bit for bit (proved by
-tests/bt/compat/: the old tests' scenes and the golden files made with the
-old engine before it is replaced).
+Anti-look-ahead design:
+- The strategy at bar i sees candles[0..i] only (an expanding slice).
+- Taker execution: a signal at bar i executes at bar i+1's OPEN with
+  spread + slippage + taker fee applied.
+- Maker execution: a signal at bar i places a limit at bar i's CLOSE; it fills
+  only when a LATER bar trades strictly through the limit (low < limit for BUY,
+  high > limit for SELL), paying the maker fee only. Unfilled orders cancel
+  after `maker_timeout_bars` and are counted as missed fills. Touching the
+  level is not enough — a conservative fill model.
 
-The strategy is the old interface (`bot.strategy.base.Strategy`): at bar i
-it gets `candles.iloc[: i + 1]` -- i + 1 is the number of bars the core has
-delivered to the strategy socket, so the slice never reaches a bar the core
-has not delivered. The bars are handed to the core on a synthetic clock
-(bar i starts at BASE_NS + i * 60 s): the old engine's rules are by bar
-index, not by time; `bar_seconds` is used for the carry only, as before.
+Position model: one net position at a time. BUY closes a short or opens a
+long; SELL closes a long or opens a short (shorts only when allow_short, for
+margin products such as FX_BTC_JPY). Margin carry cost accrues per bar via
+`swap_daily_pct` and is charged against the open trade's PnL.
 
-This mouth refuses a row that the core cannot take as a bar (a NaN, a price
-<= 0, high below max(open, close), low above min(open, close)) with a
-ValueError instead of computing a number from it: the core's contract.
+Time exit: `max_hold_bars` caps how long a position may stay open. A position
+filled at bar b is force-closed at the OPEN of bar b + max_hold_bars — i.e.
+after exactly max_hold_bars bars of holding — with taker costs, whatever the
+strategy says. The forced close overrides any pending signal on that bar. An
+intrabar stop/take-profit on an EARLIER bar naturally fires first; on the same
+bar the stop is checked first (conservative).
 
-`run_backtest_as_old` is the layer in front of this mouth (L-407
-「完全上位互換」, finishing condition 3: 「旧が計算していた不正な足…は、互換の口の
-手前に「旧と同じ数を出す層」を置いて旧と同じ結果を返す(核の契約は変えない)」).
-It has the old signature and is what `bot.backtest.engine.run_backtest` is.
-Before anything runs it decides the route, without calling the strategy:
+Trade log: every CLOSE_* entry carries a "reason" in
+{"signal", "stop_loss", "take_profit", "time_exit", "maker_tp", "wick_stop"} so
+callers can break down how trades actually ended (exit-structure audits).
+Additive field only — existing consumers keying off "bar"/"side"/"price"/"pnl"
+are unaffected.
 
-  core    every row is a bar the core takes (bar_events succeeds);
-          `costs` is a CostModel whose buy_price / sell_price / fee /
-          maker_fee are CostModel's own (the core's cost socket is a
-          percentage model and cannot honour a subclass's method), whose
-          four percentages are finite and whose taker prices stay > 0;
-          order_notional_jpy is finite and > 0 (the core refuses any
-          other order size); stop_loss_pct / take_profit_pct /
-          maker_tp_pct are None or finite  ->  this mouth, on the core.
-  old     anything else  ->  `_old_arithmetic`, the old engine's loop
-          (src/bot/backtest/engine.py before the replacement, copied line
-          for line; snapshot and sha256 under docs/DISCUSSIONS/
-          2026-09-23_backtest_env/item_4/round_3/materials/replace/
-          old_engine_snapshot/). The core never sees such a run.
+Additive options (all default to the historical behaviour; existing callers get
+bit-identical results):
 
-tests/bt/compat/test_replace_layer_grid.py runs the layer against the
-snapshot over (malformed-row shape x option cell) and over fresh seeded
-valid cells, and proves that a valid run never takes the old route.
+``exit_execution="maker_tp"`` + ``maker_tp_pct``
+    Rests a maker take-profit limit at ``maker_tp_pct`` away from the entry
+    price for the life of the position, while the strategy's own signal exit
+    and the protective ``stop_loss_pct`` stay as taker fallbacks. The limit
+    fills under the SAME conservative traded-through rule the maker entry
+    path uses: the bar must trade strictly THROUGH the level
+    (``high > level`` for a long TP, ``low < level`` for a short TP); merely
+    touching it is not a fill. The fill is booked at the level itself with
+    ``maker_fee`` and no spread/slippage, and is only ever checked on bars
+    STRICTLY AFTER the entry bar, so there is no look-ahead.
+
+    1m-bar approximation (optimistic, stated for the record): on a 1-minute
+    bar we only know that the level traded through somewhere inside the
+    minute, not that our specific resting order was reached in the queue, nor
+    whether the stop level was touched EARLIER in the same minute. When the
+    stop and the maker TP are both inside one bar's range the STOP is taken
+    first (conservative), but within a single bar the true sequencing is
+    unknown. Real fills also depend on queue position; this model grants the
+    fill on any strict through-trade. Treat maker-TP results as an upper
+    bound, not a promise.
+
+``stop_mode="wick_invalidation"`` + ``stop_window_bars``
+    Replaces the fixed-percentage protective stop with a STRUCTURAL one: the
+    invalidation level is the extreme of the trailing ``stop_window_bars``
+    COMPLETED bars' wicks as of the fill — ``min(low)`` over bars
+    ``[b - N, b - 1]`` for a long, ``max(high)`` over the same bars for a
+    short, where ``b`` is the fill bar. Bar ``b`` itself is excluded (its own
+    range is not yet known when the position fills at its open), so under the
+    taker path the window ends exactly on the SIGNAL bar — the bar whose wick
+    the legacy bot froze.
+
+    The level is FROZEN at entry and never trails. It is breached only by a
+    CLOSE beyond it (``close < level`` long, ``close > level`` short); a wick
+    poking through is explicitly not an exit, which is the whole point of the
+    construction. A breach detected at bar ``i``'s close is executed at bar
+    ``i + 1``'s OPEN with taker costs — the same next-bar-open causality the
+    signal path uses — and is logged with ``reason="wick_stop"``. It overrides
+    any pending signal for that bar and is checked BEFORE the intrabar
+    stop/take-profit block, because it rests on strictly older information
+    (the previous bar's close) than that bar's high/low.
+
+    Requires ``stop_loss_pct=None``: the two protective stops are alternatives,
+    never a stack.
+
+``entry_mask`` / ``entry_sides``
+    Restrict which decisions may OPEN a position; closes are never blocked.
+    ``entry_mask`` is a per-bar boolean aligned to ``candles`` and is
+    evaluated at the DECISION bar (the bar whose information produced the
+    signal), not at the fill bar. ``entry_sides`` is one of
+    ``"both"`` / ``"long"`` / ``"short"``. Both are entry-side filters only:
+    an open position still exits by signal, stop, take-profit, maker TP and
+    time exit exactly as before.
 """
 from __future__ import annotations
 
-import math
-import numbers
 from dataclasses import dataclass, field
 
 import numpy as np
 import pandas as pd
 
+from bot.backtest.metrics import Metrics, compute_metrics
 from bot.strategy.base import SignalType, Strategy
-
-from .barmodel import LEGACY, BarCosts, BarModelError, BarOptions, bar_events, run_bars
-from .metrics import Metrics, compute_metrics
-
-BASE_NS = 946_684_800 * 1_000_000_000  # 2000-01-01T00:00:00Z, the synthetic clock's origin
-SPACING_NS = 60 * 1_000_000_000
 
 
 @dataclass
@@ -90,216 +124,6 @@ class BacktestResult:
     missed_fills: int = 0
 
 
-def _mask(entry_mask, n: int):
-    if entry_mask is None:
-        return None
-    mask = np.asarray(entry_mask, dtype=bool)
-    if mask.shape != (n,):
-        raise BarModelError(f"entry_mask length {mask.shape} != number of candles {n}")
-    return tuple(bool(x) for x in mask)
-
-
-def _rows(candles: pd.DataFrame) -> list[dict]:
-    cols = {k: candles[k].to_numpy() for k in ("open", "high", "low", "close")}
-    vol = candles["volume"].to_numpy() if "volume" in candles.columns else None
-    out = []
-    for i in range(len(candles)):
-        r = {k: float(cols[k][i]) for k in cols}
-        r["volume"] = float(vol[i]) if vol is not None else 0.0
-        out.append(r)
-    return out
-
-
-def run_backtest(
-    strategy: Strategy,
-    candles: pd.DataFrame,
-    *,
-    initial_equity_jpy: float = 6000.0,
-    order_notional_jpy: float = 3000.0,
-    costs: CostModel | None = None,
-    execution: str = "taker",
-    maker_timeout_bars: int = 5,
-    allow_short: bool = False,
-    swap_daily_pct: float = 0.0,
-    bar_seconds: float = 60.0,
-    stop_loss_pct: float | None = None,
-    take_profit_pct: float | None = None,
-    max_hold_bars: int | None = None,
-    exit_execution: str = "signal",
-    maker_tp_pct: float | None = None,
-    entry_mask=None,
-    entry_sides: str = "both",
-    stop_mode: str = "fixed",
-    stop_window_bars: int | None = None,
-) -> BacktestResult:
-    return _on_core(strategy, candles, None, initial_equity_jpy=initial_equity_jpy,
-                    order_notional_jpy=order_notional_jpy, costs=costs, execution=execution,
-                    maker_timeout_bars=maker_timeout_bars, allow_short=allow_short, swap_daily_pct=swap_daily_pct,
-                    bar_seconds=bar_seconds, stop_loss_pct=stop_loss_pct, take_profit_pct=take_profit_pct,
-                    max_hold_bars=max_hold_bars, exit_execution=exit_execution, maker_tp_pct=maker_tp_pct,
-                    entry_mask=entry_mask, entry_sides=entry_sides, stop_mode=stop_mode,
-                    stop_window_bars=stop_window_bars)
-
-
-def _events(candles: pd.DataFrame) -> list:
-    n = len(candles)
-    return bar_events(_rows(candles), [BASE_NS + i * SPACING_NS for i in range(n)], SPACING_NS)
-
-
-def _on_core(strategy: Strategy, candles: pd.DataFrame, events, *, initial_equity_jpy, order_notional_jpy, costs,
-             execution, maker_timeout_bars, allow_short, swap_daily_pct, bar_seconds, stop_loss_pct,
-             take_profit_pct, max_hold_bars, exit_execution, maker_tp_pct, entry_mask, entry_sides, stop_mode,
-             stop_window_bars) -> BacktestResult:
-    costs = costs or CostModel()
-    n = len(candles)
-    opts = BarOptions(
-        initial_equity=initial_equity_jpy, order_notional=order_notional_jpy,
-        costs=BarCosts(costs.taker_fee_pct, costs.maker_fee_pct, costs.slippage_pct, costs.spread_pct),
-        execution=execution, maker_timeout_bars=maker_timeout_bars, allow_short=allow_short,
-        swap_daily_pct=swap_daily_pct, bar_seconds=bar_seconds, stop_loss_pct=stop_loss_pct,
-        take_profit_pct=take_profit_pct, max_hold_bars=max_hold_bars, exit_execution=exit_execution,
-        maker_tp_pct=maker_tp_pct, entry_mask=None, entry_sides=entry_sides, stop_mode=stop_mode,
-        stop_window_bars=stop_window_bars)
-    opts.check(n)  # the old engine's option checks come before the mask's
-    opts = BarOptions(**{**opts.__dict__, "entry_mask": _mask(entry_mask, n)})
-    if events is None:
-        events = _events(candles)
-
-    def decide(k: int):
-        sig = strategy.on_candles(candles.iloc[:k])
-        t = sig.type
-        if t is SignalType.BUY:
-            return "BUY"
-        if t is SignalType.SELL:
-            return "SELL"
-        if t is SignalType.CLOSE:
-            return "CLOSE"
-        return None
-
-    res = run_bars(events, decide, opts, LEGACY, start=strategy.min_history)
-    equity_curve = pd.Series(res.equity, index=candles.index, dtype=float) if n else \
-        pd.Series(res.equity, index=candles.index, dtype=float)
-    metrics = compute_metrics(res.trade_pnls, equity_curve, res.fees_total)
-    return BacktestResult(metrics, equity_curve, list(res.trade_pnls), list(res.trade_log), res.missed_fills)
-
-# --------------------------------------------------------------------------- the layer in front of the mouth
-_COST_METHODS = ("buy_price", "sell_price", "fee", "maker_fee")
-_COST_FIELDS = ("taker_fee_pct", "maker_fee_pct", "slippage_pct", "spread_pct")
-
-
-def _real(v) -> bool:
-    return type(v) is not bool and isinstance(v, numbers.Real) and math.isfinite(float(v))
-
-
-def _core_takes_costs(costs) -> bool:
-    """The core's cost socket is a percentage model and its venue refuses a
-    fill price <= 0: it can carry `costs` only when `costs` is a CostModel
-    whose price and fee methods are CostModel's own, whose four percentages
-    are finite numbers, and whose taker prices stay > 0 for every price > 0
-    (1 - (spread/2 + slippage)/100 > 0 and 1 + (spread/2 + slippage)/100 > 0)."""
-    if costs is None:
-        return True
-    if not isinstance(costs, CostModel):
-        return False
-    if any(getattr(type(costs), m) is not getattr(CostModel, m) for m in _COST_METHODS):
-        return False
-    if not all(_real(getattr(costs, f, None)) for f in _COST_FIELDS):
-        return False
-    half = (float(costs.spread_pct) / 2 + float(costs.slippage_pct)) / 100
-    return 1 - half > 0 and 1 + half > 0
-
-
-def _core_takes_options(order_notional_jpy, stop_loss_pct, take_profit_pct, maker_tp_pct) -> bool:
-    """The core's order socket refuses a size that is not finite and > 0 (the
-    old engine opened a position of notional / price whatever its sign), and
-    a level from a NaN percentage compares differently: those runs are the
-    old arithmetic's."""
-    if not _real(order_notional_jpy) or not float(order_notional_jpy) > 0:
-        return False
-    return all(v is None or _real(v) for v in (stop_loss_pct, take_profit_pct, maker_tp_pct))
-
-
-def route_of(candles: pd.DataFrame, costs=None, *, order_notional_jpy=3000.0, stop_loss_pct=None,
-             take_profit_pct=None, maker_tp_pct=None):
-    """("core", events) when the core can run this input as the old engine
-    would, else ("old", None). Never calls a strategy; never raises."""
-    try:
-        if not _core_takes_costs(costs) or not _core_takes_options(order_notional_jpy, stop_loss_pct,
-                                                                     take_profit_pct, maker_tp_pct):
-            return "old", None
-        return "core", _events(candles)
-    except Exception:  # a row the core refuses, a missing column, a non-number: the old engine's own handling
-        return "old", None
-
-
-def run_backtest_as_old(
-    strategy: Strategy,
-    candles: pd.DataFrame,
-    *,
-    initial_equity_jpy: float = 6000.0,
-    order_notional_jpy: float = 3000.0,
-    costs: CostModel | None = None,
-    execution: str = "taker",
-    maker_timeout_bars: int = 5,
-    allow_short: bool = False,
-    swap_daily_pct: float = 0.0,
-    bar_seconds: float = 60.0,
-    stop_loss_pct: float | None = None,
-    take_profit_pct: float | None = None,
-    max_hold_bars: int | None = None,
-    exit_execution: str = "signal",
-    maker_tp_pct: float | None = None,
-    entry_mask=None,
-    entry_sides: str = "both",
-    stop_mode: str = "fixed",
-    stop_window_bars: int | None = None,
-) -> BacktestResult:
-    """The old `run_backtest`, whole: the core when it can take the input,
-    the old arithmetic when it cannot (module docstring)."""
-    kw = dict(initial_equity_jpy=initial_equity_jpy, order_notional_jpy=order_notional_jpy, costs=costs,
-              execution=execution, maker_timeout_bars=maker_timeout_bars, allow_short=allow_short,
-              swap_daily_pct=swap_daily_pct, bar_seconds=bar_seconds, stop_loss_pct=stop_loss_pct,
-              take_profit_pct=take_profit_pct, max_hold_bars=max_hold_bars, exit_execution=exit_execution,
-              maker_tp_pct=maker_tp_pct, entry_mask=entry_mask, entry_sides=entry_sides, stop_mode=stop_mode,
-              stop_window_bars=stop_window_bars)
-    route, events = route_of(candles, costs, order_notional_jpy=order_notional_jpy, stop_loss_pct=stop_loss_pct,
-                             take_profit_pct=take_profit_pct, maker_tp_pct=maker_tp_pct)
-    if route == "core":
-        return _on_core(strategy, candles, events, **kw)
-    return _old_arithmetic(strategy, candles, **kw)
-
-
-
-
-def evaluate_on_splits_as_old(strategy_cls: type[Strategy], params: dict,
-                              candles: pd.DataFrame, *,
-                              initial_equity_jpy: float = 6000.0,
-                              order_notional_jpy: float = 3000.0,
-                              costs: CostModel | None = None) -> dict[str, BacktestResult]:
-    """Run the SAME parameter set on each split. Parameters may be chosen on
-    training/validation only; out_of_sample is the final untouched verdict.
-
-    The old `bot.backtest.walk_forward.evaluate_on_splits`, through the layer
-    (`run_backtest_as_old`), so a split with a row the core refuses gives the
-    old numbers, as the old function did."""
-    from .walk_forward import split_data  # walk_forward imports this module
-    splits = split_data(candles)
-    out: dict[str, BacktestResult] = {}
-    for name, data in (("training", splits.training), ("validation", splits.validation),
-                       ("out_of_sample", splits.out_of_sample)):
-        out[name] = run_backtest_as_old(strategy_cls(params), data, initial_equity_jpy=initial_equity_jpy,
-                                        order_notional_jpy=order_notional_jpy, costs=costs)
-    return out
-
-# --------------------------------------------------------------------------- the old arithmetic (copied line for line)
-# Everything below is src/bot/backtest/engine.py before the replacement
-# (sha256 3c2fc35d...), from `class _PendingLimit` to the end of
-# `run_backtest` (renamed `_old_arithmetic`), unchanged. It runs only for
-# the inputs the core does not take (route_of). CostModel, BacktestResult and
-# compute_metrics are this package's, which are the old ones bit for bit
-# (tests/bt/compat/test_compat_golden.py).
-
-
 @dataclass
 class _PendingLimit:
     side: SignalType
@@ -307,9 +131,7 @@ class _PendingLimit:
     placed_bar: int
 
 
-
-
-def _old_arithmetic(
+def run_backtest(
     strategy: Strategy,
     candles: pd.DataFrame,
     *,

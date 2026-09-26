@@ -859,17 +859,38 @@ def _pipeline_files():
 
 SCHEDULE = [{"t_ns": T0, "side": "buy", "qty": 1.0}, {"t_ns": T0 + 300 * S, "side": "sell", "qty": 1.0},
             {"t_ns": T0 + 3600 * S, "side": "buy", "qty": 1.0}, {"t_ns": T0 + 3900 * S, "side": "sell", "qty": 1.0}]
-INSTRUMENTS = [{"name": "bf", "price": "bf_trades", "with": ["bf_board"]}, {"name": "binance", "price": "binance", "with": []},
-               {"name": "fx_tick", "price": "fx_ticks", "with": []}, {"name": "jpx", "price": "jpx_1m", "with": []},
-               {"name": "fx_1m", "price": "fx_1m", "with": []}]
-FILL_RULE = {"price": "first_observed_at_or_after", "trade": "px", "quote": {"buy": "ask", "sell": "bid"}, "bar": "open",
-             "latency_ns": 0}
+# The integrated run's declaration (finishing delegation i4-r2-06: the item-2 execution models in the run's sockets).
+# Stated values for 動作確認 (not measured): both sides of the fill range, four zero delays, zero costs with their source,
+# a JPY cash account.  The words of the form are those of bot.bt.pipeline.plan_pipeline (read, not imported).
+PIPE_FILL = {"optimistic": {"tier": 3}, "pessimistic": {"tier": 1}}
+PIPE_LATENCY = {ch: {"kind": "constant", "ns": 0} for ch in ("feed", "order", "cancel", "notice")}
+PIPE_COSTS = {"maker_rate": 0.0, "taker_rate": 0.0, "spread": 0.0,
+              "source": "動作確認: 費用 0 を宣言した(測った費用ではない)"}
+PIPE_ACCOUNT = {"currency": "JPY", "cash": 1e12, "leverage": 1.0, "mark": "last_trade", "liquidation": None,
+                "margin_check": "open_orders"}
+_RULES_BOOK = {"off_tick": "reject", "below_min_qty": "reject", "off_step": "reject", "market_remainder": "cancel",
+               "market_ref": "last_trade"}
+_RULES_BAR = {**_RULES_BOOK, "market_ref": "next_bar_open"}
+PIPE_SIDES = ("optimistic", "pessimistic")
+PREREG_FILE = {"path": "prereg/i4_battery_prereg.md", "text": "# i4 battery: a stand-in pre-registration file\n"}
+
+
+def _product(symbol):
+    return {"symbol": symbol, "venue": "test", "tick": 1e-9, "min_qty": 1e-8, "qty_step": 1e-8, "quote_ccy": "JPY",
+            "margin": True}
+
+
+INSTRUMENTS = [{"name": n, "price": pr, "with": w, "product": _product(n), "rules": _RULES_BAR if bar else _RULES_BOOK}
+               for n, pr, w, bar in (("bf", "bf_trades", ["bf_board"], False), ("binance", "binance", [], False),
+                                     ("fx_tick", "fx_ticks", [], False), ("jpx", "jpx_1m", [], True),
+                                     ("fx_1m", "fx_1m", [], True))]
 TABS = ["概要", "前提", "損益", "取引", "約定の質", "費用", "分布", "検証", "再現性", "データ品質"]
 BANNER = "動作確認の実行。相場の結論には使わない"
 
 
-def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=None, only=None, origin=None):
-    """`only`: keep only these instruments (and the datasets they name); `origin`: declare every dataset so."""
+def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=False, only=None):
+    """`only`: keep only these instruments (and the datasets they name); `prereg`: put the pre-registration FILE under
+    the root and name it (a 研究 run takes the file, never a hash: finishing delegation i4-r2-05)."""
     files, ds = _pipeline_files()
     ins = INSTRUMENTS
     if only is not None:
@@ -878,11 +899,17 @@ def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=None, 
         ds = [d for d in ds if d["name"] in keep]
         paths = {pth for d in ds for pth in d["paths"]}
         files = [f for f in files if f["path"] in paths]
-    if origin is not None:
-        ds = [{**d, "origin": origin} for d in ds]
+    if prereg:
+        files = files + [dict(PREREG_FILE)]
     return {"op": "pipeline", "files": files, "datasets": ds, "instruments": ins,
-            "strategy": strategy or {"kind": "schedule", "orders": SCHEDULE}, "fill": FILL_RULE, "costs": dict(ZERO),
-            "purpose": purpose, "prereg_sha256": prereg, "want": list(want)}
+            "strategy": strategy or {"kind": "schedule", "orders": SCHEDULE}, "fill": PIPE_FILL, "latency": PIPE_LATENCY,
+            "costs": PIPE_COSTS, "account": PIPE_ACCOUNT, "purpose": purpose,
+            "prereg": PREREG_FILE["path"] if prereg else None, "want": list(want)}
+
+
+def both_sides(per_instrument):
+    """The answer of every side of the fill range, keyed "<side>:<instrument>" (the adapter reports both sides)."""
+    return {f"{side}:{n}": v for side in PIPE_SIDES for n, v in per_instrument.items()}
 
 
 def _first_at_or_after(events, t):
@@ -926,7 +953,7 @@ add(id="i4-5-fills", viewpoint="I4-5", kind="値",
         "bid 157.120 / ask 157.204 / bid 157.180、JPX 足 38000 / 38025 / 38300 / 38325(09:00 JST = 00:00 UTC)、FX 足 157.000 / "
         "157.005 / 157.060 / 157.065。損益 = 売り - 買い の和。読んだ事象の数はファイルの行数。",
     input=pipeline_input(("fills", "pnl", "events_read")),
-    expect={"fills": _PF, "pnl": _PP, "events_read": _EV},
+    expect={"fills": both_sides(_PF), "pnl": both_sides(_PP), "events_read": _EV},
     judge={"pfills": True, "pnl": True, "events_read": True})
 _SHA = {f["path"]: hashlib.sha256(f["text"].encode("utf-8")).hexdigest() for f in _pipeline_files()[0]}
 add(id="i4-5-outputs", viewpoint="I4-5", kind="能力",
@@ -944,7 +971,7 @@ add(id="i4-6-label", viewpoint="I4-6", kind="値",
          "約定は手順どおりか",
     how="i4-5-fills と同じ約定(F-1)。目的と注記の文は委任文 §4。",
     input=pipeline_input(("fills", "export", "dashboard")),
-    expect={"fills": _PF, "export": {"purpose": "動作確認", "num_trades": {i["name"]: 2 for i in INSTRUMENTS}},
+    expect={"fills": both_sides(_PF), "export": {"purpose": "動作確認", "num_trades": {i["name"]: 2 for i in INSTRUMENTS}},
             "dashboard": {"tabs": TABS, "banner": BANNER}},
     judge={"pfills": True, "export": True, "dashboard": True})
 PRICE_RULE = {"kind": "price_rule", "buy_below": 15000600.0, "sell_above": 15002500.0, "qty": 1.0}
@@ -968,24 +995,25 @@ def price_rule_expect(events, rule):
 _PR_FILLS = {"bf": price_rule_expect([(t, float(px)) for t, px, _, _ in _BF], PRICE_RULE)}
 add(id="i4-6-signal-refused", viewpoint="I4-6", kind="能力",
     what="実データと宣言したファイルに、値で条件づけた戦略(値が閾値を下回ったら買う)を目的「動作確認」で通そうとしたら拒むか"
-         "(対照 1: 同じファイルに固定の手順なら通り、約定は手順どおり。対照 2: 同じ値で条件づけた戦略を、合成と宣言したデータに通せば"
-         "通り、約定は F-2 どおり = 対象は値で条件づけた戦略を走らせられ、拒むのは実データのときだけ)",
+         "(対照 1: 同じファイルに固定の手順なら通り、約定は手順どおり。対照 2: 同じ値で条件づけた戦略を、同じファイルに目的「研究」"
+         "(事前登録のファイルつき)で通せば通り、約定は F-2 どおり = 対象は値で条件づけた戦略を走らせられ、拒むのは実データの動作確認のとき"
+         "だけ。第 r3-1 回の第 3 段: ファイルのデータを合成と宣言する口は無くなった = 合成は種つきの生成器からだけ)",
     how="委任文 §4「実データを通すときの戦略は、時刻だけで決まる機械的な手順か種つきの乱数に限る。信号・条件付け・最適化を入れない」。"
         "対照 1 の正解は i4-5-fills の約定。対照 2 の正解は F-2 を bf の約定の行に当てた手の計算: 15000000 < 15000600 で買い 1(T0 + 0.2 秒)、"
         "15003000 > 15002500 で売り 1(T0 + 3600.75 秒)。",
-    input=pipeline_input(("fills",)), expect={"fills": _PF}, judge={"pfills": True},
-    more_controls=[{"input": pipeline_input(("fills",), strategy=PRICE_RULE, only=("bf",), origin="synthetic"),
-                    "expect": {"fills": _PR_FILLS}, "judge": {"pfills": True}}],
+    input=pipeline_input(("fills",)), expect={"fills": both_sides(_PF)}, judge={"pfills": True},
+    more_controls=[{"input": pipeline_input(("fills",), strategy=PRICE_RULE, only=("bf",), purpose="研究", prereg=True),
+                    "expect": {"fills": both_sides(_PR_FILLS)}, "judge": {"pfills": True}}],
     variant=pipeline_input(("fills",), strategy=PRICE_RULE))
-PREREG_SHA = hashlib.sha256("i4 battery: a stand-in pre-registration text".encode("utf-8")).hexdigest()
 add(id="i4-6-research-refused", viewpoint="I4-6", kind="能力",
-    what="目的「研究」を事前登録のハッシュ無しで実行しようとしたら拒むか(対照 1: 目的「動作確認」なら通る。対照 2: 目的「研究」を事前登録の"
-         "ハッシュつきで実行すれば通り、約定は手順どおり = 対象は「研究」の実行を作れ、拒むのはハッシュが無いときだけ)",
-    how="委任文 §4「目的 `研究` の実行は事前登録のハッシュが無いと作れない」。対照 1・2 の正解は i4-5-fills の約定(戦略は同じ固定の手順)。",
-    input=pipeline_input(("fills",)), expect={"fills": _PF}, judge={"pfills": True},
-    more_controls=[{"input": pipeline_input(("fills",), purpose="研究", prereg=PREREG_SHA), "expect": {"fills": _PF},
+    what="目的「研究」を事前登録のファイル無しで実行しようとしたら拒むか(対照 1: 目的「動作確認」なら通る。対照 2: 目的「研究」を事前登録の"
+         "ファイルつきで実行すれば通り、約定は手順どおり = 対象は「研究」の実行を作れ、拒むのは事前登録が無いときだけ)",
+    how="委任文 §4「目的 `研究` の実行は事前登録のハッシュが無いと作れない」+ 仕上げの委任文 i4-r2-05(事前登録はファイルとして受け取り、その"
+        "sha256 を実行記録に残す)。対照 1・2 の正解は i4-5-fills の約定(戦略は同じ固定の手順)。",
+    input=pipeline_input(("fills",)), expect={"fills": both_sides(_PF)}, judge={"pfills": True},
+    more_controls=[{"input": pipeline_input(("fills",), purpose="研究", prereg=True), "expect": {"fills": both_sides(_PF)},
                     "judge": {"pfills": True}}],
-    variant=pipeline_input(("fills",), purpose="研究", prereg=None))
+    variant=pipeline_input(("fills",), purpose="研究", prereg=False))
 
 
 # --------------------------------------------------------------------------- I4-8 next-bar-open taker execution

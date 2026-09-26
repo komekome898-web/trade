@@ -58,16 +58,30 @@ def run_engine_bars(inp: dict, rules: str) -> dict:
     return _obs(res, inp.get("want") or WANT_BARS)
 
 
+REF_UNDECIDED = {"wick_short_history": "use_available", "same_side_exit_signal": "keep"}  # the lead's values
+REF_KEYS = ("fills", "pnls", "equity", "missed_fills")  # the independent reference has no metrics (its SPEC.md §8-4)
+
+
+def reference_options(config: dict, bar_seconds) -> dict:
+    """The battery's config -> the independent reference's options (src/bot/bt/reference/SPEC.md §7)."""
+    o = {k: v for k, v in config.items() if k not in ("initial_equity", "order_notional")}
+    o.update(capital=config["initial_equity"], order_amount=config["order_notional"], bar_seconds=int(bar_seconds),
+             undecided=REF_UNDECIDED)
+    return o
+
+
 def run_reference_bars(inp: dict) -> dict:
-    """The same bars input through the reference of the stated rules (bot.bt.reference.bar_rules)."""
-    from bot.bt.reference.bar_rules import run_rules
+    """The same bars input through the INDEPENDENT reference of the stated rules (bot.bt.reference.bar_sim, written
+    without reading the core or the new engine). Only the keys the reference has (REF_KEYS)."""
+    from bot.bt.reference.bar_sim import run_bars as ref_run_bars
+    bars = [(b["open"], b["high"], b["low"], b["close"]) for b in inp["bars"]]
     try:
-        out = run_rules(inp["bars"], inp["bar_seconds"], {int(s["bar"]): s["signal"] for s in inp["signals"]},
-                        inp["config"])
-    except ValueError as exc:
+        out = ref_run_bars(bars, {int(s["bar"]): s["signal"] for s in inp["signals"]},
+                           reference_options(inp["config"], inp["bar_seconds"])).to_floats()
+    except Exception as exc:  # the reference's refusal (RefusedConfig and its bar check)
         raise Refused(str(exc)) from None
     want = inp.get("want") or WANT_BARS
-    return {k: out[k] for k in want}
+    return {k: out[k] for k in want if k in REF_KEYS}
 
 
 def run(inp: dict, reference=run_reference_bars) -> dict:
@@ -143,9 +157,13 @@ def run_pipeline_scene(inp: dict) -> dict:
     from bot.monitoring.backtest_view import run_view
     runs_dir = inp.get("runs_dir") or tempfile.mkdtemp(prefix="i4_runs_")
     try:
+        # the declaration of the integrated run (finishing stage i4-r2-03 / 05 / 06): datasets (files or seeded
+        # generators), instruments with product / rules, the fill range (both sides), latency distributions,
+        # costs (CostSchedule), account, purpose, the pre-registration FILE under root. A key the scene does not
+        # carry is not supplied here (the pipeline refuses what is missing; nothing is defaulted by the driver)
+        kw = {k: inp[k] for k in ("fill", "latency", "costs", "account", "prereg", "prereg_sha256") if k in inp}
         plan = plan_pipeline(root=inp["root"], datasets=inp["datasets"], instruments=inp["instruments"],
-                             strategy=inp["strategy"], fill=inp["fill"], costs=inp["costs"], purpose=inp["purpose"],
-                             prereg_sha256=inp.get("prereg_sha256"))
+                             strategy=inp["strategy"], purpose=inp.get("purpose"), **kw)
         res = run_pipeline(plan, runs_dir=runs_dir)
     except PipelineError as exc:
         raise Refused(str(exc)) from None

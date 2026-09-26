@@ -15,9 +15,9 @@ i4-3-e2e-maker	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(�
 i4-4-plain	I4-4	値	不一致	pnls[0] = 178.21782178217822(正解 180.0)	6bb448b3e377	不一致	pnls[0] = 178.21782178217822(正解 180.0)	6bb448b3e377	2 回の実行で同じ	0.0	0.0
 i4-4-fee	I4-4	値	不一致	pnls[0] = 172.09782178217822(正解 173.82)	537aee83dc5d	不一致	pnls[0] = 172.09782178217822(正解 173.82)	537aee83dc5d	2 回の実行で同じ	0.0	0.0
 i4-5-fills	I4-5	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.001
-i4-5-outputs	I4-5	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.001
+i4-5-outputs	I4-5	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.021	0.001
 i4-6-label	I4-6	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.001
-i4-6-signal-refused	I4-6	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.001
+i4-6-signal-refused	I4-6	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.009
 i4-6-research-refused	I4-6	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.001
 i4-8-next-open	I4-8	値	不一致	fills[0].size = 29.702970297029704(正解 29.98800479808077)	ec7042c39108	不一致	fills[0].size = 29.702970297029704(正解 29.98800479808077)	ec7042c39108	2 回の実行で同じ	0.0	0.0
 i4-8-short-close	I4-8	値	不一致	fills[0].size = 29.12621359223301(正解 25.01000400160064)	9afc530be0d8	不一致	fills[0].size = 29.12621359223301(正解 25.01000400160064)	9afc530be0d8	2 回の実行で同じ	0.0	0.0

@@ -15,8 +15,8 @@ i4-3-e2e-maker	I4-3	値	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): e
 i4-4-plain	I4-4	値	正解と一致		14293724f86c	正解と一致		14293724f86c	2 回の実行で同じ	0.0	0.0
 i4-4-fee	I4-4	値	正解と一致		bedd34db477e	正解と一致		bedd34db477e	2 回の実行で同じ	0.0	0.0
 i4-5-fills	I4-5	値	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.001
-i4-5-outputs	I4-5	能力	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.001
-i4-6-label	I4-6	値	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.001
+i4-5-outputs	I4-5	能力	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.009	0.001
+i4-6-label	I4-6	値	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.017
 i4-6-signal-refused	I4-6	能力	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.001
 i4-6-research-refused	I4-6	能力	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): 再現は System の遅延の売買の規則だけ	-	結果なし	0.001	0.001
 i4-8-next-open	I4-8	値	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): slippage_pct: 再現していない: 滑りの部品(SP)は読んでいない(約定値は _getRealBuyPrice / _getRealSellPrice を通る: 835・979 行) / spread_pct: 再現していない: 滑りの部品(SP)は読んでいない	-	結果なし	adapter: Hikyuu System(5a1dedbd)(再現): slippage_pct: 再現していない: 滑りの部品(SP)は読んでいない(約定値は _getRealBuyPrice / _getRealSellPrice を通る: 835・979 行) / spread_pct: 再現していない: 滑りの部品(SP)は読んでいない	-	結果なし	0.0	0.0

@@ -18,7 +18,7 @@ or branches. The grid is the rule's input space:
   = 2 x 4 x 5 x 3 x 4 x 2 x 2 = 1920 cells, all run.
 
 Checked on every cell: (1) the native model ("spec") gives the oracle's fills and PnL; (2) the reference of the
-stated rules (bot.bt.reference.bar_rules) gives the same; (3) the compatibility model ("legacy") gives the OLD
+stated rules (the independent reference bot.bt.reference.bar_sim) gives the same; (3) the compatibility model ("legacy") gives the OLD
 engine's output bit for bit (src/bot/backtest/engine.run_backtest on the same input: trade log, PnLs, equity,
 metrics, missed fills).
 
@@ -157,9 +157,11 @@ def run_new(bars, sig, cfg, rules):
 
 
 def run_rule_reference(bars, sig, cfg):
-    from bot.bt.reference.bar_rules import run_rules
-    return run_rules([{"open": b[0], "high": b[1], "low": b[2], "close": b[3]} for b in bars], 60, sig,
-                     {k: v for k, v in cfg.items() if k != "bar_seconds"})
+    """The independent reference (bot.bt.reference.bar_sim; bar_rules.py was removed in the finishing stage)."""
+    from bot.bt.reference.bar_sim import run_bars as ref_run_bars
+    import i4w_drive as drive
+    c = {k: v for k, v in cfg.items() if k != "bar_seconds"}
+    return ref_run_bars(list(bars), sig, drive.reference_options(c, 60)).to_floats()
 
 
 def run_old(bars, sig, cfg):

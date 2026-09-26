@@ -129,8 +129,9 @@ def _parse_pipeline_fills(files, sched):
 def test_pipeline_expected_fills_match_the_files():
     sc = S.by_id("i4-5-fills")
     got = _parse_pipeline_fills(sc["input"]["files"], S.SCHEDULE)
-    for inst, fl in sc["expect"]["fills"].items():
-        assert [(f["t_ns"], f["px"]) for f in fl] == [(t, pytest.approx(p)) for t, p in got[inst]], inst
+    for key, fl in sc["expect"]["fills"].items():  # "<side>:<instrument>" (both sides of the fill range)
+        inst = key.split(":", 1)[1]
+        assert [(f["t_ns"], f["px"]) for f in fl] == [(t, pytest.approx(p)) for t, p in got[inst]], key
 
 
 def test_pipeline_sha256_are_the_files_own():

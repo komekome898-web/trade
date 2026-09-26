@@ -14,11 +14,11 @@ i4-3-e2e-taker	I4-3	値	正解と一致		4496ba78cd69	正解と一致		4496ba78c
 i4-3-e2e-maker	I4-3	値	正解と一致		7bb43a338748	正解と一致		7bb43a338748	2 回の実行で同じ	0.005	0.005
 i4-4-plain	I4-4	値	正解と一致		14293724f86c	正解と一致		14293724f86c	2 回の実行で同じ	0.004	0.003
 i4-4-fee	I4-4	値	正解と一致		bedd34db477e	正解と一致		bedd34db477e	2 回の実行で同じ	0.003	0.003
-i4-5-fills	I4-5	値	正解と一致		bb18d929c420	正解と一致		bb18d929c420	2 回の実行で同じ	0.446	0.354
-i4-5-outputs	I4-5	能力	正解と一致		c25ece658f8d	正解と一致		c25ece658f8d	2 回の実行で同じ	0.306	0.463
-i4-6-label	I4-6	値	正解と一致		da5491afc7fa	正解と一致		da5491afc7fa	2 回の実行で同じ	0.448	0.505
-i4-6-signal-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	913176d3b5c7	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	913176d3b5c7	2 回の実行で同じ	0.951	0.854
-i4-6-research-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	9969f80cb8c3	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	9969f80cb8c3	2 回の実行で同じ	0.873	0.548
+i4-5-fills	I4-5	値	不一致	fills[optimistic:bf]: 25 件(正解 4 件)	b794e59e5479	不一致	fills[optimistic:bf]: 25 件(正解 4 件)	b794e59e5479	2 回の実行で同じ	90.721	83.65
+i4-5-outputs	I4-5	能力	不一致	export.num_trades[bf] = 10(正解 2)	c3795e83ded4	不一致	export.num_trades[bf] = 10(正解 2)	c3795e83ded4	2 回の実行で同じ	0.767	0.763
+i4-6-label	I4-6	値	不一致	fills[optimistic:bf]: 25 件(正解 4 件)	81874f5e7309	不一致	fills[optimistic:bf]: 25 件(正解 4 件)	81874f5e7309	2 回の実行で同じ	0.744	0.82
+i4-6-signal-refused	I4-6	能力	不一致	対照: fills[optimistic:bf]: 25 件(正解 4 件)	6914ab5465dc	不一致	対照: fills[optimistic:bf]: 25 件(正解 4 件)	6914ab5465dc	2 回の実行で同じ	0.737	0.83
+i4-6-research-refused	I4-6	能力	不一致	対照: fills[optimistic:bf]: 25 件(正解 4 件)	6914ab5465dc	不一致	対照: fills[optimistic:bf]: 25 件(正解 4 件)	6914ab5465dc	2 回の実行で同じ	0.766	0.807
 i4-8-next-open	I4-8	値	正解と一致		412a637a0fda	正解と一致		412a637a0fda	2 回の実行で同じ	0.013	0.006
 i4-8-short-close	I4-8	値	正解と一致		43f4aed71c15	正解と一致		43f4aed71c15	2 回の実行で同じ	0.008	0.005
 i4-8-no-short	I4-8	値	正解と一致		489543c6ed48	正解と一致		489543c6ed48	2 回の実行で同じ	0.009	0.004

@@ -1,6 +1,6 @@
 """Adversarial grid (委任文 §3「提出前の吟味」(6)): the new engine's bar model
 under the stated rules ("spec") against the slow reference of the same rule
-text (bot.bt.reference.bar_rules: exact rationals, one plain loop, no engine
+text (bot.bt.reference.bar_sim, the independent reference -- bar_rules.py was removed in the finishing stage; exact rationals, no engine
 import), on every cell of the option grid.
 
 The grid is the options' own space, not the engine's branches:
@@ -29,7 +29,9 @@ import i4w_drive as drive
 import i4_judge as J
 import compat_golden_scenes as G
 
-SPEC = {"fills": ["bar", "side", "price", "size"], "pnls": True, "equity": True, "metrics": True, "missed_fills": True}
+SPEC = {"fills": ["bar", "side", "price", "size"], "pnls": True, "equity": True, "missed_fills": True}
+# metrics are not compared here: the independent reference has none (its SPEC.md §8-4); the engine's metrics are
+# held by the scene set's I4-17 scenes
 T0 = 1767571200 * 10**9
 
 

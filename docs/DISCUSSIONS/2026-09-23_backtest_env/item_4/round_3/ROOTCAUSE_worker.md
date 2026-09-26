@@ -55,3 +55,10 @@
 3. **滑りの欄を消した**: 項目 2 の費用の宣言(`CostSchedule`)に滑りが無い(価格への影響は tier 6 の影響関数)。統合の口の旧の `slippage_pct` は受けない。
 4. 提出前の吟味 (4) で「厳しい批評家なら止める」と列べたもの: 統合の口が項目 2 の tier 6(影響関数)と資金調達の費用を宣言できない = 部品を狭めて繋いでいる → 両方を宣言できるようにした(`fill.<side>.impact`・`costs.funding`)。宣言できないまま残るもの(書く): L3 の列の模型(1 注文ごとの供給)・故障の注入(FaultPlan は空)・FX の換算表(銘柄の値の通貨 = 口座の通貨に限る)・スワップ・手数料表。
 5. 順序の違反: 統合の口の格子 3 本は直したあとに書いた(materials/worker/README.md に開示)。
+
+## 7. 第 2 段(条件 2)
+
+- `tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py` を独立の参照の新しい口 `bar_sim.run_bars(bars, signals, options)`(SPEC.md §7、undecided = リードの値)に合わせて書き直した。格子は規則の入力の空間を種つきの乱数で引く(12 種 × 60 場合 = 720 場合 + 先頭の部分の全部)。足の模型の選択肢を全部引く: 執行・寿命・空売り・費用 5 通り(負の手数料 R-V3 を含む)・持ち越し(正・負)・逆指値(無し・率・構造的 N=1〜3)・利確・maker の利確・保有の上限・マスク・向き・足の秒。
+- **結果(事実)**: 720 場合すべてで、約定(足・向き・値・数量)・往復の損益・足ごとの資産・取り逃しが一致(差 0 件。コマンド: `PYTHONPATH=src:tests/bt/item_4 python3 -c` で `_case` を 12×60 回して diff を数えた)。第 1 段で直した spec の欄を 1 つずつ旧に戻すと、差が出る場合の数は time_exit_at_open 24・maker_mask_at_signal 82・maker_same_side_keeps 56・signal_at_open 100(格子が第 2 周の欠陥を捕まえる = 空でない)。
+- `src/bot/bt/reference/bar_rules.py` を消した。作業者の試験の参照は全部 `bar_sim` にした(`i4w_drive.run_reference_bars`・`test_i4_r2_signal_at_open_grid.run_rule_reference`)。参照には指標が無いので、`test_i4_spec_vs_reference_grid.py` の比べから指標を外した(指標は場面集の I4-17 が持つ)。
+- **残る参照**: 批評家の試験 `tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100` が `bar_rules` を import する(批評家の持ち物なので変えていない)。この 1 件は `ModuleNotFoundError` で落ちる。

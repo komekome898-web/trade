@@ -268,7 +268,9 @@ def describe_input(inp):
     if op == "pipeline":
         files = "; ".join(f"{f['path']}({f['text'].count(chr(10))} 行)" for f in inp["files"])
         return (f"op pipeline、ファイル = {files}、銘柄 = {[i['name'] for i in inp['instruments']]}、戦略 = {json.dumps(inp['strategy'], ensure_ascii=False)}、"
-                f"目的 = {inp['purpose']}、事前登録のハッシュ = {inp['prereg_sha256']}、返す鍵 = {inp['want']}")
+                f"目的 = {inp['purpose']}、事前登録のファイル = {inp['prereg']}、約定の幅 = {json.dumps(inp['fill'], ensure_ascii=False)}、"
+                f"遅延 = {json.dumps(inp['latency'], ensure_ascii=False)}、費用 = {json.dumps(inp['costs'], ensure_ascii=False)}、"
+                f"口座 = {json.dumps(inp['account'], ensure_ascii=False)}、返す鍵 = {inp['want']}")
     return json.dumps(inp, ensure_ascii=False)
 
 

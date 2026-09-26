@@ -232,16 +232,19 @@ def _pipeline(inp: dict) -> dict:
     runs_dir = tempfile.mkdtemp(prefix="i4_new_runs_")
     try:
         plan = _engine(plan_pipeline, root=inp["root"], datasets=inp["datasets"], instruments=inp["instruments"],
-                       strategy=inp["strategy"], fill=inp["fill"], costs=inp["costs"], purpose=inp.get("purpose"),
-                       prereg_sha256=inp.get("prereg_sha256"))
+                       strategy=inp["strategy"], fill=inp["fill"], latency=inp["latency"], costs=inp["costs"],
+                       account=inp["account"], purpose=inp.get("purpose"), prereg=inp.get("prereg"))
         res = _engine(run_pipeline, plan, runs_dir=runs_dir)
         want = set(inp.get("want") or [])
         obs = {}
+        # both sides of the fill range, keyed "<side>:<instrument>" (the scene's answer holds both sides)
         if "fills" in want:
-            obs["fills"] = {n: [{"t_ns": f["t_ns"], "side": f["side"], "px": f["px"], "qty": f["qty"]} for f in r.fills]
-                            for n, r in res.instruments.items()}
+            obs["fills"] = {f"{side}:{n}": [{"t_ns": f["t_ns"], "side": f["side"], "px": f["px"], "qty": f["qty"]}
+                                            for f in r.fills]
+                            for side, by in res.range.items() for n, r in by.items()}
         if "pnl" in want:
-            obs["pnl"] = {n: sum(t["pnl"] for t in r.trades) for n, r in res.instruments.items()}
+            obs["pnl"] = {f"{side}:{n}": sum(t["pnl"] for t in r.trades) for side, by in res.range.items()
+                          for n, r in by.items()}
         if "events_read" in want:
             obs["events_read"] = dict(res.events_read)
         if "run_record" in want:
