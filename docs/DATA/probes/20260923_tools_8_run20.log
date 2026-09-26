@@ -1,0 +1,518 @@
+=== 区分8 20回目 開始 対象: 8-038 NinjaTrader(E1a・E2・E3a、§4.0の未確認15項目) 申し送り: 起動文 docs/DATA/delegations/20260923_tools_survey_cat8_run20_prompt.md@b11a105664ae
+--- 2026-09-26T04:39:13Z method=公式 target=nt_sitemap_index rc=0 time_s=0.408 note=8-038 N確定: ninjatrader.com sitemap-index.xmlを取得
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap_index.xml -w 'http_code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/sitemap-index.xml
+http_code=200 size=186
+--- 2026-09-26T04:39:20Z method=公式 target=nt_sitemap0 rc=0 time_s=0.281 note=8-038 N確定: sitemap-0.xml(サイト全URL)を取得
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap0.xml -w 'http_code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/sitemap-0.xml
+http_code=200 size=128099
+--- 2026-09-26T04:39:21Z method=公式 target=nt_help_index rc=0 time_s=0.247 note=8-038 N確定: NT8ヘルプガイド index.html(HelpMan生成のwebhelp)を取得
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_help_index.html -w 'http_code=%{http_code} size=%{size_download}\n' https://static.ninjatrader.com/support/helpGuides/nt8/index.html
+http_code=200 size=2922
+--- 2026-09-26T04:39:21Z method=公式 target=nt_help_hmcontent rc=0 time_s=0.274 note=8-038 N確定: NT8ヘルプガイドの目次(hmcontent.htm、全頁一覧のtoc)を取得
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_hmcontent.htm -w 'http_code=%{http_code} size=%{size_download}\n' https://static.ninjatrader.com/support/helpGuides/nt8/hmcontent.htm
+http_code=200 size=122493
+--- 2026-09-26T04:39:33Z method=集計 target=nt_help_pages_extract rc=0 time_s=0.008 note=8-038 N確定: hmcontent.htmのtocからhref=*.htmを全部抽出(NT8ヘルプガイド全頁の一覧)
+$ bash -c 'grep -oE '"'"'href="[a-zA-Z0-9_/.-]+\.htm"'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_hmcontent.htm'"'"' | sed '"'"'s/href="//;s/"$//'"'"' | sort -u | tee '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/help_pages_list.txt'"'"' | wc -l'
+371
+--- 2026-09-26T04:39:33Z method=集計 target=nt_blog_urls_extract rc=0 time_s=0.011 note=8-038 N確定: sitemap-0.xmlからninjatrader.com/futures/blogs/配下(公式ブログ、eu/地域版を除く)のURLを全部抽出
+$ bash -c 'grep -o '"'"'<loc>[^<]*</loc>'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap0.xml'"'"' | sed '"'"'s/<[^>]*>//g'"'"' | grep '"'"'^https://ninjatrader.com/futures/blogs/'"'"' | tee '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/blog_urls.txt'"'"' | wc -l'
+510
+--- 2026-09-26T04:39:33Z method=集計 target=nt_blog_scope_excluded rc=0 time_s=0.014 note=8-038 N確定: sitemap内のblog類似URLのうちNに入れないものの内訳(eu地域版・futures/blogs以外のblog_接頭辞1件)
+$ bash -c 'echo '"'"'eu地域版(/eu/配下、futures/blogsの各国語訳。公式ブログ本体の重複翻訳のためNに入れない、件数:'"'"' $(grep -c '"'"'^https://ninjatrader.com/eu/.*blogs'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap0.xml'"'"' 2>/dev/null || grep -o '"'"'<loc>[^<]*</loc>'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap0.xml'"'"' | sed '"'"'s/<[^>]*>//g'"'"' | grep -c '"'"'/eu/.*blogs'"'"'); echo '"'"'---'"'"'; echo '"'"'blog_avoiding-financial-scams (URLはblog_接頭辞だが実体はFAQページ、titleタグがFAQs。ブログ記事ではないためNに入れない)'"'"''
+eu地域版(/eu/配下、futures/blogsの各国語訳。公式ブログ本体の重複翻訳のためNに入れない、件数: 0 40
+| ---
+blog_avoiding-financial-scams (URLはblog_接頭辞だが実体はFAQページ、titleタグがFAQs。ブログ記事ではないためNに入れない)
+--- 2026-09-26T04:39:48Z method=集計 target=nt_blog_scope_excluded_fix rc=0 time_s=0.023 note=8-038 N確定: 上の手が echo の入れ子で崩れたので打ち直し。sitemap内のblog類似URLでNに入れないものの件数と理由
+$ bash -c 'python3 -c "
+import re
+urls = [l.strip() for l in open('"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/nt_sitemap0.xml'"'"').read().split('"'"'<loc>'"'"')[1:]]
+urls = [u.split('"'"'</loc>'"'"')[0] for u in urls]
+eu_blogs = [u for u in urls if u.startswith('"'"'https://ninjatrader.com/eu/'"'"') and '"'"'blog'"'"' in u]
+print('"'"'eu地域版のblogs(futures/blogsの各国語・別カルチャー訳、公式ブログ本体の翻訳版につきNに入れない):'"'"', len(eu_blogs))
+print(eu_blogs[:5])
+main_blogs = [u for u in urls if u.startswith('"'"'https://ninjatrader.com/futures/blogs/'"'"')]
+print('"'"'Nに入れる futures/blogs (英語・米国向け本体):'"'"', len(main_blogs))
+"'
+eu地域版のblogs(futures/blogsの各国語・別カルチャー訳、公式ブログ本体の翻訳版につきNに入れない): 40
+['https://ninjatrader.com/eu/de-de/futures/blogs/', 'https://ninjatrader.com/eu/de-de/futures/blogs/automating-your-trading-strategy-with-alerts/', 'https://ninjatrader.com/eu/de-de/futures/blogs/charting-setup-and-customisation-in-the-ninjatrader-desktop/', 'https://ninjatrader.com/eu/de-de/futures/blogs/exchange-listed-futures-europe-guide/', 'https://ninjatrader.com/eu/de-de/futures/blogs/futures-vs-turbos/']
+Nに入れる futures/blogs (英語・米国向け本体): 510
+--- 2026-09-26T04:39:57Z method=公式 target=nt_blog_scam_faq_check rc=0 time_s=0.420 note=8-038 N確定: blog_avoiding-financial-scams URLの実体を確認(titleタグ)。ブログ記事かFAQ頁かを判定
+$ bash -c 'curl -sSL --cacert /root/.ccr/ca-bundle.crt --max-time 30 https://ninjatrader.com/blog_avoiding-financial-scams/ -o '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/blog_scam_faq.html'"'"' -w '"'"'code=%{http_code} size=%{size_download}\n'"'"'; grep -o '"'"'<title>[^<]*</title>'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/blog_scam_faq.html'"'"''
+code=200 size=65856
+<title>FAQs</title>
+--- 2026-09-26T04:39:57Z method=公式 target=nt_forum_ecosystem_exist rc=0 time_s=2.097 note=8-038 N: フォーラム・売り物一覧(Ecosystem)の存在確認(製品文書・ヘルプ・ブログでないためNに入れない。入れなかったものの名前を記録)
+$ bash -c 'for u in https://forum.ninjatrader.com/ https://ninjatraderecosystem.com/ https://ecosystem.ninjatrader.com/; do echo -n "$u -> "; curl -sS --cacert /root/.ccr/ca-bundle.crt -o /dev/null -w '"'"'%{http_code}\n'"'"' --max-time 20 "$u"; done'
+https://forum.ninjatrader.com/ -> 301
+https://ninjatraderecosystem.com/ -> 200
+https://ecosystem.ninjatrader.com/ -> 200
+--- 2026-09-26T04:40:05Z method=公式 target=nt_bulk_fetch rc=0 time_s=9.888 note=8-038 N確定: NT8ヘルプガイド371頁+公式ブログ510頁=計881頁を一括取得(scratchpadのfetch_bulk.py、cat8_step経由)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/fetch_bulk.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/help_fetch_list.txt /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/help_pages 8
+fetch_bulk: total=371 ok=371 fail=0
+--- 2026-09-26T04:40:20Z method=公式 target=nt_bulk_fetch_blog rc=0 time_s=14.946 note=8-038 N確定: 公式ブログ510頁を一括取得(fetch_bulk.py、cat8_step経由、並列8)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/fetch_bulk.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/blog_fetch_list.txt /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/blog_pages 8
+fetch_bulk: total=510 ok=510 fail=0
+--- 2026-09-26T04:41:00Z method=甲乙準備 target=mklist_8038 rc=0 time_s=0.040 note=8-038 N確定: NT8ヘルプガイド371頁+公式ブログ510頁=計881頁を1つの一覧にする(scripts/cat8_mklist.py、corpus直下に集約)
+$ python3 scripts/cat8_mklist.py --root /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/corpus --candidate 8-038 --out /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist.bin
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist.bin in_root=881 added=0 absent=0 excluded=0 listed=881 sha=1d58e30ad63960f9 candidate=8-038
+--- 2026-09-26T04:41:41Z method=甲乙準備 target=extract_text rc=0 time_s=0.007 note=8-038 N確定: 取得した881頁(生HTML)からタグを除いた本文テキストを抽出(scriptタグ・styleタグを除去し可視テキストのみ残す。以降の検索はこのテキストに対して行う)
+$ bash -c 'find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages'"'"' -type f | wc -l'
+881
+--- 2026-09-26T04:41:41Z method=甲乙準備 target=mklist_8038_text rc=0 time_s=0.042 note=8-038 N確定: 抽出テキスト881件(ヘルプガイド371+公式ブログ510)を1つの一覧にする(scripts/cat8_mklist.py。検索はこの一覧に対して行う。生HTMLはcorpus/に保持)
+$ python3 scripts/cat8_mklist.py --root /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text --candidate 8-038 --out /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist_text.bin
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist_text.bin in_root=881 added=0 absent=0 excluded=0 listed=881 sha=f8694f47fe0b12fc candidate=8-038
+--- 2026-09-26T04:44:30Z method=見積り target=E3a_estimate rc=0 time_s=0.031 note=8-038 E3a: 全件検索前の当たり見積り(cat8_search.pyと同じ語の組。500行の上限判定)
+$ bash -c 'grep -I -c -i -E '"'"'look-ahead|look.ahead|ルックアヘッド|survivorship|生存者|leak|リーク|未来|point-in-time|as-of|時点'"'"' $(cat '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text_filelist_paths.txt'"'"' 2>/dev/null || find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text'"'"' -type f) 2>/dev/null | awk -F: '"'"'{s+=$2} END{print "合計="s}'"'"''
+合計=8
+--- 2026-09-26T04:44:43Z method=全件検索 target=E3a_search rc=0 time_s=0.563 note=8-038 E3a: N全881頁を語(ルックアヘッド・look-ahead/survivorship・生存者/leak・リーク・未来/point-in-time・as-of・時点)で検索(見積り8行、500行以下のためcat8_search.pyを実行)
+$ python3 scripts/cat8_search.py --list /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist_text.bin --candidate 8-038 --pattern 'look-ahead|look.ahead|ルックアヘッド|survivorship|生存者|leak|リーク|未来|point-in-time|as-of|時点' -i
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/8_0_8_0.htm.txt:60: In some scenarios a memory leak was occurring after a reload/close of an existing chart
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/accounts_tab.htm.txt:69: Look Ahead Maintenance Margin
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/blogs.html.txt:1041: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/futures-trading-outlook-trending-micro-bitcoin-takes-a-pause.html.txt:149: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/2023-year-in-review-of-futures-markets-and-a-look-ahead-to-2024.html.txt:1: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/2023-year-in-review-of-futures-markets-and-a-look-ahead-to-2024.html.txt:72: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/2023-year-in-review-of-futures-markets-and-a-look-ahead-to-2024.html.txt:73: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/how-to-use-the-ninjatrader-market-analyzer-your-personal-real-time-quote-board.html.txt:124: 2023 Year in Review of Futures Markets and A Look Ahead to 2024
+== ファイルごとの当たった行の数
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/8_0_8_0.htm.txt
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/accounts_tab.htm.txt
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/blogs.html.txt
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/futures-trading-outlook-trending-micro-bitcoin-takes-a-pause.html.txt
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/2023-year-in-review-of-futures-markets-and-a-look-ahead-to-2024.html.txt
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/how-to-use-the-ninjatrader-market-analyzer-your-personal-real-time-quote-board.html.txt
+cat8_search: complete files=881 read=881 files_with_hits=6 hits=8 list=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/filelist_text.bin sha=f8694f47fe0b12fc candidate=8-038
+--- 2026-09-26T04:45:40Z method=印探索 target=E1a_gaikan rc=0 time_s=0.035 note=8-038 E1a: 候補ファイルの絞り込み(reconcil・mismatch・compar語をファイル単位でgrep -rlIし、絞ったファイルを次の手で読む)
+$ bash -c 'cd '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text'"'"' && echo '"'"'=reconcil='"'"'; grep -rlI '"'"'reconcil'"'"' .; echo '"'"'=mismatch='"'"'; grep -rlI '"'"'mismatch'"'"' .; echo '"'"'=out of order='"'"'; grep -rlI '"'"'out of order'"'"' .'
+=reconcil=
+./help_pages/syncing_account_positions.htm.txt
+./blog_pages/meet-the-ninjatrader-team-joe-sabatello-senior-director-of-engineering.html.txt
+=mismatch=
+./help_pages/8_0_22_2.htm.txt
+=out of order=
+./help_pages/8_1_3.htm.txt
+./help_pages/8_0_2_0.htm.txt
+--- 2026-09-26T04:45:41Z method=印探索 target=E1a_syncing_account rc=0 time_s=0.004 note=8-038 E1a 印: syncing_account_positions.htm の Account Position(参照値=ブローカーの実際の口座建玉) と Strategy Position(NinjaTraderの実装が計算した建玉)を突き合わせ、不一致なら差を埋める発注をする逐語
+$ sed -n '1,10p;90,118p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/syncing_account_positions.htm.txt
+﻿
+Operations > Automated Trading > Running NinjaScript Strategies > Syncing Account Positions
+Syncing Account Positions
+<<
+Click to Display Table of Contents
+>>
+Navigation:
+Operations
+>
+Automated Trading
+reaches or crosses a flat state. Once a flat state is achieved the
+Strategy Position
+will be assumed to be in sync with the
+Account Position
+and all future orders will be placed live.
+Critical
+: Should your
+Account Position
+not
+be flat at the point in time the
+Strategy Position
+reaches a flat state your
+Account Position
+and
+Strategy Position
+will
+NOT
+be in sync.
+Wait until flat, synchronize account
+This combination should be used when you want to begin trading your strategy off a flat state with minimal user interaction to sync your
+Account Position
+prior to start.
+When your strategy starts it will check for any active orders previously generated by the strategy on your account and cancel those first. Should the strategy be unable to cancel and receive confirmation on the cancellation of these orders within 40 seconds the strategy will not start and an alert will be issued. After the strategy is successful in cancelling any orders that required action it will check your current
+Account Position
+and compare it to a flat state. On multi-instrument strategies it will perform this check for all instruments used by the strategy.
+•
+If the
+Account Position
+is flat already, no reconciliatory order will be submitted. The strategy will then wait for the
+--- 2026-09-26T04:45:59Z method=印探索 target=E1a_syncing_quote rc=0 time_s=0.004 note=8-038 E1a 印(段3根拠): Account Position(参照値)とStrategy Position(実装の計算結果)を自動で比較し、不一致ならreconciliatory orderで差を埋める逐語(166-195行目)
+$ sed -n 166,195p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/syncing_account_positions.htm.txt
+After the strategy is successful in cancelling and submitting any orders that required action it will check your current
+Account Position
+and compare it to your
+Strategy Position
+. On multi-instrument strategies it will perform this check for all instruments used by the strategy.
+•
+If the
+Account Position
+matches your
+Strategy Position
+, no reconciliatory order will be submitted. The strategy will then begin managing your
+Strategy Position
+immediately.
+•
+If the
+Account Position
+does
+not
+match your
+Strategy Position
+, NinjaTrader will submit a market order(s) to reconcile the
+Account Position
+to match your
+Strategy Position
+. The strategy will then begin managing your
+Strategy Position
+immediately.
+Note
+: The reconciliatory market order is submitted outside of the strategy so your strategy will not be able to manage it from methods like OnOrderUpdate(), OnExecution(), etc.
+*
+--- 2026-09-26T04:46:11Z method=印探索 target=E2_gaikan rc=0 time_s=0.044 note=8-038 E2: 候補ファイルの絞り込み(repair・corrupt・invalid・bad tick・spike等をファイル単位でgrep -rilI)
+$ bash -c 'cd '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text'"'"' && echo '"'"'=bad tick='"'"'; grep -rilI '"'"'bad tick'"'"' .; echo '"'"'=spike='"'"'; grep -rilI '"'"'spike'"'"' . | head -10; echo '"'"'=repair='"'"'; grep -rilI '"'"'repair'"'"' . | grep -v '"'"'8_0_\|8_1_'"'"''
+=bad tick=
+./help_pages/options_marketdata.htm.txt
+./help_pages/real_time_tick_filter.htm.txt
+./help_pages/8_0_2_0.htm.txt
+./help_pages/how_bars_are_built.htm.txt
+=spike=
+./help_pages/real_time_tick_filter.htm.txt
+./help_pages/8_0_23_2.htm.txt
+./help_pages/performance_tips.htm.txt
+./blog_pages/obv-indicator-forecast-market-moves-and-spot-reversals.html.txt
+./blog_pages/arena-cup-winner-jeff.html.txt
+./blog_pages/futures-trading-outlook-potential-dow-futures-volatility-after-trading-hours.html.txt
+./blog_pages/why-live-traders-should-still-use-a-trading-simulator.html.txt
+./blog_pages/the-science-behind-nina-insights-why-they-matter.html.txt
+./blog_pages/best-futures-trading-indicators.html.txt
+./blog_pages/mean-reversion-in-futures-trading.html.txt
+=repair=
+./help_pages/tos.htm.txt
+./help_pages/database_operations.htm.txt
+--- 2026-09-26T04:46:11Z method=印探索 target=E2_realtime_tick_filter rc=0 time_s=0.004 note=8-038 E2 印(段3根拠): real_time_tick_filter.htm。最終価格から一定%以上外れたティックを外れ値として自動検出し配信から除外する機能の逐語(17-22行目)
+$ sed -n 17,22p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/real_time_tick_filter.htm.txt
+What is tick filtering?
+Tick filtering is a function where each incoming tick is evaluated in relation to the last known price and if it is outside of a user defined percentage value, the tick is thrown away and not distributed to any NinjaTrader object that requires market data such as advanced charts or strategies. This prevents data spikes from showing on your charts and can also prevent unwanted actions taken by automated strategies due to a data spike.
+How does it work?
+A bad tick is detected if the tick price is less than the last valid traded price - (last traded Price * (1 - bad tick offset as %))
+A bad tick detected if the tick price is greater than the last valid traded price + (last traded Price * (1 + bad tick offset as %))
+If a bad tick is detected but the prior two ticks were also bad ticks, then the tick being processed is now a valid last traded price and is NOT filtered out
+--- 2026-09-26T04:47:47Z method=公式 target=nt_privacy_platform rc=0 time_s=0.426 note=8-038 §4.0 外部送信: プラットフォーム向けプライバシーポリシー頁を取得
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/privacy_platform.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/privacy-policy-platform/
+code=200 size=70382
+--- 2026-09-26T04:48:29Z method=公式 target=nt_pricing_page rc=0 time_s=0.383 note=8-038 §4.0 料金体系・課金開始条件・無料枠上限・ライセンス: N外だが一次資料としてninjatrader.com/pricing/を取得
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/pricing.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/pricing/
+code=200 size=98590
+--- 2026-09-26T04:48:29Z method=公式 target=nt_pricing_pricing-faqs_page rc=0 time_s=0.283 note=8-038 §4.0 料金体系・課金開始条件・無料枠上限・ライセンス: N外だが一次資料としてninjatrader.com/pricing/pricing-faqs/を取得
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/pricing_pricing-faqs.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/pricing/pricing-faqs/
+code=200 size=79803
+--- 2026-09-26T04:48:29Z method=公式 target=nt_pricing_account-fees_page rc=0 time_s=0.224 note=8-038 §4.0 料金体系・課金開始条件・無料枠上限・ライセンス: N外だが一次資料としてninjatrader.com/pricing/account-fees/を取得
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/pricing_account-fees.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/pricing/account-fees/
+code=200 size=66829
+--- 2026-09-26T04:48:30Z method=公式 target=nt_ninjatrader-licensing-faqs_page rc=0 time_s=0.213 note=8-038 §4.0 料金体系・課金開始条件・無料枠上限・ライセンス: N外だが一次資料としてninjatrader.com/ninjatrader-licensing-faqs/を取得
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/ninjatrader-licensing-faqs.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/ninjatrader-licensing-faqs/
+code=200 size=63381
+--- 2026-09-26T04:49:31Z method=公式 target=nt_nvd_check rc=0 time_s=0.424 note=8-038 §4.0 既知の脆弱性: NVD公開APIでNinjaTraderの既知の脆弱性を確認(登録不要)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt --max-time 30 'https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=NinjaTrader'
+{"resultsPerPage":0,"startIndex":0,"totalResults":0,"format":"NVD_CVE","version":"2.0","timestamp":"2026-09-26T04:49:31.405","vulnerabilities":[]}
+--- 2026-09-26T04:49:37Z method=公式 target=nt_wayback_earliest rc=0 time_s=0.025 note=8-038 §4.0 初回公開日: Wayback Machine CDX APIでninjatrader.comの最古のアーカイブを確認(登録不要の公開API、8.0.1.0の日付との突合)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt --max-time 30 'http://web.archive.org/cdx/search/cdx?url=ninjatrader.com&output=json&limit=3&filter=statuscode:200'
+Blocked by egress policy
+--- 2026-09-26T04:49:45Z method=公式 target=nt_download_page rc=0 time_s=0.365 note=8-038 §4.0 登録の要否・最小実行: ダウンロード頁を取得(N外だが一次資料として)
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/download_page.html -w 'code=%{http_code} size=%{size_download}\n' https://ninjatrader.com/platform-download/
+code=404 size=60958
+--- 2026-09-26T04:50:26Z method=公式 target=nt_register_page rc=0 time_s=0.440 note=8-038 §4.0 登録の要否: account.ninjatrader.com/registerの登録フォーム頁を取得(登録はしない。要求される入力項目だけを見る)
+$ curl -sSL --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/register_page.html -w 'code=%{http_code} size=%{size_download}\n' 'https://account.ninjatrader.com/register?locale=en'
+code=200 size=5628
+--- 2026-09-26T04:50:42Z method=公式 target=nt_register_render rc=0 time_s=19.150 note=8-038 §4.0 登録の要否: register頁をJS描画し、登録フォームが求める入力項目を確認(登録はしない。表示された項目名を見るだけ)
+$ node scripts/cat8_render.js 'https://account.ninjatrader.com/register?locale=en' 5000
+HTTP 200 https://account.ninjatrader.com/register
+English
+Deutsch
+Espanol
+Francais
+Italiano
+Portugues
+Russkiy
+Simplified Chinese
+Traditional Chinese
+​
+Trusted by millions.
+Try for free.
+
+Try the #1 rated futures trading platform for free today.
+Access pro-grade tools with your risk-free simulation trial. No deposit needed.
+
+Email
+​
+Sign Up
+
+Or
+
+Sign up with Google
+Sign up with Apple
+
+Have an account? Log in here
+
+Trade on-the-go with our mobile apps
+
+For further assistance, please visit the NinjaTrader Help Center.
+
+This webpage is provided by NinjaTrader, LLC, the owner and developer of proprietary technology for the NinjaTrader trading platform.
+
+NinjaTrader Group, LLC & Affiliates | NinjaTrader, LLC Privacy Policy
+
+Copyright © 2026 NinjaTrader All rights reserved. | Service Status
+| --- frame https://a24396460556.cdn.optimizely.com/client_storage/a24396460556.html
+
+| --- frame about:blank
+
+| --- frame https://ninjatrader-eap.ada.support/embed/x-storage/3b37232/index.html
+
+| --- frame https://ninjatrader-eap.ada.support/embed/button/3b37232/index.html
+
+| --- frame https://14588468.fls.doubleclick.net/activityi;src=14588468;type=risec0;cat=riunicou;rcb=5;ord=2100795914151;npa=0;auiddc=801662543.1790398247;gdid=dYWJhMj;uaa=x86;uab=64;uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0;uamb=0;uam=;uap=Linux;uapv=6.18.44;uaw=0;pscdl=noapi;frm=0;_tu=KFA;gtm=45fe69n1v9184820419z89103746715za20gzb9103746715zd9103746715xeaxf1;gcs=G111;gcd=13r3r3X3r5l1;dma=0;dc_fmt=2;tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385422~120420416~120469145~120469153;epver=2;dc_random=1790398247_CskZ71_8wkS_4cRMuJmpNdTxQ5lVVR8i8A;_dc_test=1;~oref=https%3A%2F%2Faccount.ninjatrader.com%2Fregister?
+
+| --- frame about:blank
+
+| --- frame https://accounts.google.com/gsi/button?type=standard&theme=outline&size=large&text=signup_with&shape=rectangular&logo_alignment=center&is_fedcm_supported=true&client_id=1096933247914-blr0kei4s6u01540lu67us447mrpa162.apps.googleusercontent.com&iframe_id=gsi_247737_580353&cas=Bejo4dCWGs8VxjF8XLgtzX3lwuVZZFcgcdQS7fBU9W4
+Sign up with GoogleSign up with Google. Opens in new tabgis.provider.button.bootstrap('CjcKK085UUM3SWZ1M0VENFNBRGxyZkhiZ21TNVlPcnVHcUh6SXAtLUxVaU5kSXcSBHdhcm4aAmVuGqoCCkkxMDk2OTMzMjQ3OTE0LWJscjBrZWk0czZ1MDE1NDBsdTY3dXM0NDdtcnBhMTYyLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tEh9odHRwczovL2FjY291bnQubmluamF0cmFkZXIuY29tGgtOaW5qYVRyYWRlciJlaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tLzRzQlU4akllbHQwWi1ta1VVX0daVVhfTEl2R0RsYVE3aWtYVEs2d0d3RHZjblFFWExZVUYweDMtY1Z2eWpXUjl6THMqM2h0dHBzOi8vd3d3LnRyYWRvdmF0ZS5jb20vZGlzY2xvc3VyZXMvI2Rpc2Nsb3N1cmUtMzoTU1JFQG5pbmphdHJhZGVyLmNvbSIRZ3NpXzI0NzczN181ODAzNTMyDggBEAEYASgDMAI4AVAB');
+| --- frame about:blank
+
+| --- frame https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&title=NinjaTrader&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://insight.adsrvr.org/track/cei?advertiser_id=l0iqr99&cookie_sync=1&upv=3.0.0&upid=s250q8h&ref=https%3A%2F%2Faccount.ninjatrader.com%2Fregister
+
+
+
+    
+
+
+    
+        
+            (function(global) { 
+                var ttdcm = new TTDCM(); 
+                ttdcm.init( [] );
+            })(this);
+        
+    
+
+
+| --- frame https://m.stripe.network/inner.html#url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&title=NinjaTrader&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://pixel.rubiconproject.com/tap.php?v=8981&nid=2307&put=04e84e8c-7f0e-49e6-bf65-11ef4f84de83&gdpr=0&gdpr_consent=&expires=30&next=https%3A%2F%2Fmatch.adsrvr.org%2Ftrack%2Fcmf%2Frubicon
+
+| --- frame https://pixel.tapad.com/idsync/ex/receive?partner_id=1830&partner_device_id=04e84e8c-7f0e-49e6-bf65-11ef4f84de83&partner_url=https%3A%2F%2Fmatch.adsrvr.org%2Ftrack%2Fcmf%2Fgeneric%3Fttd_pid%3Dtapad
+
+| --- frame https://su.addthis.com/red/usync?pid=11124&puid=04e84e8c-7f0e-49e6-bf65-11ef4f84de83&url=https%3a%2f%2fmatch.adsrvr.org%2ftrack%2fcmf%2fgeneric%3fttd_pid%3daddthis
+upstream dial failed
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=7&frm=0&apvc=1&ae=g&auid=801662543.1790398247&dt=NinjaTrader&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=1217532047.1790398247&navt=n&npa=0&ep.ads_data_redaction=0&gdid=dYWJhMj&gtm=45He69n1v9103746715za200zd9103746715xeaxf1&gcs=G111&gcd=13r3r3r3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385422~120469145~120469153&tft=1790398246667&tfd=2785&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://ad.doubleclick.net/ccm/s/collect?auid=801662543.1790398247&gtm=45He69n1v9103746715za200zd9103746715xeaxf1&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://script.crazyegg.com/pages/scripts/0053/7449.js net::ERR_ABORTED
+INCOMPLETE request-failed https://8ab0a26cb0027939bcf5-49c99c3c0c9c98b3365b710757036e1b.ssl.cf5.rackcdn.com/11842.js net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/18401056620/?random=1790398247029&cv=11&fst=1790398247029&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be69n1v9261845871z89103746715za20gzb9103746715zd9103746715xecxf1&gcd=13r3r3r3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=7&frm=0&tiba=NinjaTrader&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=801662543.1790398247&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dgtag.config&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=7&frm=0&apvc=0&auid=801662543.1790398247&dt=NinjaTrader&tid=AW-18401056620&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=1217532047.1790398247&navt=n&npa=0&gtm=45be69n1v9261845871z89103746715za20gzb9103746715zd910
+[出力は 17682 文字。先頭 6000 文字だけを残した]
+--- 2026-09-26T04:51:18Z method=公式 target=nt_register_render2 rc=0 time_s=17.701 note=8-038 §4.0 登録の要否: 上の手がkeep不足でINCOMPLETE合計行が切れたため、keepを広げて打ち直し(text-changed-after-waitの有無を確認するため)
+$ node scripts/cat8_render.js 'https://account.ninjatrader.com/register?locale=en' 5000
+HTTP 200 https://account.ninjatrader.com/register
+English
+Deutsch
+Espanol
+Francais
+Italiano
+Portugues
+Russkiy
+Simplified Chinese
+Traditional Chinese
+​
+Trusted by millions.
+Try for free.
+
+Try the #1 rated futures trading platform for free today.
+Access pro-grade tools with your risk-free simulation trial. No deposit needed.
+
+Email
+​
+Sign Up
+
+Or
+
+Sign up with Google
+Sign up with Apple
+
+Have an account? Log in here
+
+Trade on-the-go with our mobile apps
+
+For further assistance, please visit the NinjaTrader Help Center.
+
+This webpage is provided by NinjaTrader, LLC, the owner and developer of proprietary technology for the NinjaTrader trading platform.
+
+NinjaTrader Group, LLC & Affiliates | NinjaTrader, LLC Privacy Policy
+
+Copyright © 2026 NinjaTrader All rights reserved. | Service Status
+| --- frame https://a24396460556.cdn.optimizely.com/client_storage/a24396460556.html
+
+| --- frame about:blank
+
+| --- frame https://ninjatrader-eap.ada.support/embed/x-storage/3b37232/index.html
+
+| --- frame https://ninjatrader-eap.ada.support/embed/button/3b37232/index.html
+
+| --- frame about:blank
+
+| --- frame https://14588468.fls.doubleclick.net/activityi;src=14588468;type=risec0;cat=riunicou;rcb=15;ord=779611756582;npa=0;auiddc=1127649516.1790398282;gdid=dYWJhMj;uaa=x86;uab=64;uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0;uamb=0;uam=;uap=Linux;uapv=6.18.44;uaw=0;pscdl=noapi;frm=0;_tu=KFA;gtm=45fe69n1h1v9184820419z89103746715za20gzb9103746715zd9103746715xeaxf1;gcs=G111;gcd=13r3r3X3r5l1;dma=0;dc_fmt=2;tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970;epver=2;dc_random=1790398282_Ivm1PMTWIcR1L_LTyhR-R6EiJ7Qsv9v9Kw;_dc_test=1;~oref=https%3A%2F%2Faccount.ninjatrader.com%2Fregister?
+
+| --- frame https://accounts.google.com/gsi/button?type=standard&theme=outline&size=large&text=signup_with&shape=rectangular&logo_alignment=center&is_fedcm_supported=true&client_id=1096933247914-blr0kei4s6u01540lu67us447mrpa162.apps.googleusercontent.com&iframe_id=gsi_282764_513195&cas=vMSwx%2BV2ZvZMk0fm2Xbj73fZZgxzI3L4bA82gZC%2FjO8
+Sign up with GoogleSign up with Google. Opens in new tabgis.provider.button.bootstrap('CjcKKy15V01HMHZTNENVZVlibmJuelpsN0QzejVyR283eE5xU3BFRzNFdUFVODQSBHdhcm4aAmVuGqoCCkkxMDk2OTMzMjQ3OTE0LWJscjBrZWk0czZ1MDE1NDBsdTY3dXM0NDdtcnBhMTYyLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tEh9odHRwczovL2FjY291bnQubmluamF0cmFkZXIuY29tGgtOaW5qYVRyYWRlciJlaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tLzRzQlU4akllbHQwWi1ta1VVX0daVVhfTEl2R0RsYVE3aWtYVEs2d0d3RHZjblFFWExZVUYweDMtY1Z2eWpXUjl6THMqM2h0dHBzOi8vd3d3LnRyYWRvdmF0ZS5jb20vZGlzY2xvc3VyZXMvI2Rpc2Nsb3N1cmUtMzoTU1JFQG5pbmphdHJhZGVyLmNvbSIRZ3NpXzI4Mjc2NF81MTMxOTUyDggBEAEYASgDMAI4AVAB');
+| --- frame about:blank
+
+| --- frame https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&title=NinjaTrader&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://insight.adsrvr.org/track/cei?advertiser_id=l0iqr99&cookie_sync=1&upv=3.0.0&upid=s250q8h&ref=https%3A%2F%2Faccount.ninjatrader.com%2Fregister
+
+
+
+    
+
+
+    
+        
+            (function(global) { 
+                var ttdcm = new TTDCM(); 
+                ttdcm.init( [] );
+            })(this);
+        
+    
+
+
+| --- frame https://m.stripe.network/inner.html#url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&title=NinjaTrader&referrer=&muid=NA&sid=NA&version=6&preview=false&__shared_params__[version]=v3
+
+| --- frame https://pixel.tapad.com/idsync/ex/receive?partner_id=1830&partner_device_id=a5d05a85-edee-4707-86f2-8630023e1fc6&partner_url=https%3A%2F%2Fmatch.adsrvr.org%2Ftrack%2Fcmf%2Fgeneric%3Fttd_pid%3Dtapad
+
+| --- frame https://idpix.media6degrees.com/orbserv/hbpix?pixId=69060&pcv=78&ptid=87&tpuv=01&tpu=a5d05a85-edee-4707-86f2-8630023e1fc6&redir=https%3A%2F%2Fmatch.adsrvr.org%2Ftrack%2Fcmf%2Fgeneric%3Fttd_pid%3Dyjn0gup
+
+| --- frame https://dsum-sec.casalemedia.com/rum?cm_dsp_id=39&external_user_id=a5d05a85-edee-4707-86f2-8630023e1fc6&expiration=1792990283&gdpr=0&gdpr_consent=
+
+INCOMPLETE request-failed https://ad.doubleclick.net/ccm/s/collect?auid=1127649516.1790398282&gtm=45He69n1h1v9103746715za200zd9103746715xeaxf1&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://script.crazyegg.com/pages/scripts/0053/7449.js net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=10&frm=0&apvc=1&ae=g&auid=1127649516.1790398282&dt=NinjaTrader&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&ep.ads_data_redaction=0&gdid=dYWJhMj&gtm=45He69n1h1v9103746715za200zd9103746715xeaxf1&gcs=G111&gcd=13r3r3r3r5l1&dma=0&tag_exp=115616985~115938466~115938469~118897920~118897930~120385423~120469145~120469153~121280970&tft=1790398281533&tfd=2615&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/18401056620/?random=1790398281816&cv=11&fst=1790398281816&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be69n1h1v9261845871z89103746715za20gzb9103746715zd9103746715xecxf1&gcd=13r3r3r3r5l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=13&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dgtag.config&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=13&frm=0&apvc=0&auid=1127649516.1790398282&dt=NinjaTrader&tid=AW-18401056620&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1h1v9261845871z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3r3r5l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385423~120469145~120469153~121280970&tft=1790398281866&tfd=2948&tids=AW-18401056620&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g net::ERR_ABORTED
+INCOMPLETE request-failed https://8ab0a26cb0027939bcf5-49c99c3c0c9c98b3365b710757036e1b.ssl.cf5.rackcdn.com/11842.js net::ERR_ABORTED
+INCOMPLETE request-failed https://alb.reddit.com/rp net::ERR_ABORTED
+INCOMPLETE request-failed https://analytics.google.com/g/collect?v=2&tid=G-YZ7Y44K3RX&gtm=45je69n1h1v9103747221z89103746715za20gzb9103746715zd9103746715xf1&_p=1790398280856&_gaz=1&gcs=G111&gcd=13r3r3X3r5l1&npa=0&dma=0&gdid=dYWJhMj&_eu=AAAAAGAC&_prs=ok&are=1&cid=2015886813.1790398282&frm=0&pscdl=noapi&rcb=18&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uam=&uamb=0&uap=Linux&uapv=6.18.44&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121280970&sid=1790398281&sct=1&seg=0&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&dt=NinjaTrader&en=view_registration&_fv=1&_nsi=1&_ss=1&_c=1&tfd=3118 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/measurement/conversion?random=1790398281967&cv=11&tid=G-YZ7Y44K3RX&fst=1790398281967&fmt=8&en=view_registration&gtm=45je69n1h1v9103747221z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&gacid=2015886813.1790398282&hn=www.googleadservices.com&frm=0&tiba=NinjaTrader&gdid=dYWJhMj&npa=0&pscdl=noapi&auid=1127649516.1790398282&capi=1&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&rcb=18 net::ERR_ABORTED
+INCOMPLETE request-failed https://alb.reddit.com/rp net::ERR_ABORTED
+INCOMPLETE request-failed https://alb.reddit.com/rp net::ERR_ABORTED
+INCOMPLETE request-failed https://alb.reddit.com/rp net::ERR_ABORTED
+INCOMPLETE request-failed https://alb.reddit.com/rp net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=19&frm=0&apvc=0&auid=1127649516.1790398282&dt=NinjaTrader&tid=AW-17744891418&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1h1v9242272939z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&tft=1790398282331&tfd=3413&tids=AW-17744891418&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/17744891418/?random=1790398282243&cv=11&fst=1790398282243&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be69n1h1v9242272939z89103746715za20gzb9103746715zd9103746715xecxf1&gcd=13r3r3X3r5l1&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=19&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dgtag.config&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://analytics.google.com/g/collect?v=2&tid=G-JMNHFTHZ0G&gtm=45je69n1h1v888353337z89103746715za20gzb9103746715zd9103746715xf1&_p=1790398280856&_gaz=1&gcs=G111&gcd=13r3r3X3r5l1&npa=0&dma=0&gdid=dYWJhMj&_eu=EAAAAGAC&are=1&cid=2015886813.1790398282&frm=0&ir=1&pscdl=noapi&rcb=17&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uam=&uamb=0&uap=Linux&uapv=6.18.44&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115616985~115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&sid=1790398282&sct=1&seg=0&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&dt=NinjaTrader&en=page_view&_fv=1&_ss=1&tfd=3531 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=15&frm=0&apvc=0&auid=1127649516.1790398282&dt=NinjaTrader&tid=DC-14588468&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&gdid=dYWJhMj&gtm=45fe69n1h1v9184820419z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&tft=1790398282662&tfd=3744&tids=DC-14588468&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://googleads.g.doubleclick.net/pagead/viewthroughconversion/17744891418/?random=20709489&cv=11&fst=1790398282318&fmt=8&bg=ffffff&guid=ON&async=1&en=conversion&gtm=45be69n1h1v9242272939z89103746715za20gzb9103746715zd9103746715xeaxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=19&label=wIPGCKrSn_YbEJqcto1C&capi=1&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&value=0&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&ec_mode=a&oidsrc=3&ecsid2=387020038.1790398282&_tu=CBA&gcl_ctr=1~0~0~0&category=acrcp_v1_512&em=tv.1&emd=tvd.1&ept=5&ct_cookie_present=false&eoid=CkcKEQjwt9jVBhD-qdv06ZS8u5MBEjIA1sGDCVl2UB5-gZ7ZNdVBYejOQnS5Yd7pSPEFy5nmNkYkisbYkVJZvJBQayj7foZzTvD_BwE&crd=CLTesQII8t-xAgit4bECCK_hsQIIobixAgixwbECCLDBsQIIscOxAgiKxbECCMLJsQII1-ixAgi0xrECCNvcsQIIh9uxAgjTxbECCOvMsQII7c6xAgjVz7ECCPTasQII4uqxAgjo7rECCJLrsQIIyeOxAgiX1LECCMnbsQIIzeaxAgiO57ECCI_nsQIIpt2xAgiw3rECCIDbsQIIzeGxAg&cerd=ChSV5L4tyOy-LfXsvi3Y7b4tnem3OA&eitems=ChEI8LfY1QYQie3nuJqZrpqtARIdAGWOW1DyRTOFVX8E7iu2UvfOR4OaI_aEP-jd_-s&fsk=ChAI8LfY1QYQivWrveX_5JYcEiwAvrsVs-dpupvZk8eau6F82DMxet3MqdFnTjWIaO_RyBMV9qIbFIWJUPSxAxoCveE&pscrd=IhMI4v6MrbmLlwMVHvHSBB1Kfg2zOiBodHRwczovL2FjY291bnQubmluamF0cmFkZXIuY29tL0JXQ2hBSThMZlkxUVlRejdPY3dlRFFxN2NvRWkwQVBoYnQ4T1ZEWXFlRHQyMW1QOXUydGVJbzZ6UWI1WTVLTEljeDlmb0xuSHJmRGRlRjhubkpLLXdpakk4egwICWIICAAQABgAIAA net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=5&frm=0&apvc=0&auid=1127649516.1790398282&dt=NinjaTrader&tid=AW-987648174&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1h1v9103867293z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121280970&tft=1790398282862&tfd=3944&tids=AW-987648174&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/987648174/?random=1790398282800&cv=11&fst=1790398282800&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be69n1h1v9103867293z89103746715za20gzb9103746715zd9103746715xecxf1&gcd=13r3r3X3r5l1&dma=0&tag_exp=115616986~115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=5&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dgtag.config&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=10&frm=0&apvc=0&ae=g&auid=1127649516.1790398282&dt=NinjaTrader&tid=AW-16569634155&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&did=dYWJhMj&gdid=dYWJhMj&_tu=CA&gtm=45be69n1h1v9242827515z89103746715za20gzb9103746715zd9103746715xeaxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121280970&tft=1790398282742&tfd=3824&tids=AW-16569634155&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/16569634155/?random=1790398282687&cv=11&fst=1790398282687&fmt=8&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be69n1h1v9242827515z89103746715za20gzb9103746715zd9103746715xecxf1&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=10&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dgtag.config&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/rmkt/collect/16569634155/?random=1790398282735&cv=11&fst=1790398282735&fmt=8&bg=ffffff&guid=ON&async=1&gtm=45be69n1h1v9242827515z89103746715za20gzb9103746715zd9103746715xeaxf1&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121280970&u_w=1280&u_h=720&url=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&rcb=10&frm=0&tiba=NinjaTrader&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1127649516.1790398282&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&_tu=CA&ept=68&gcp=5 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google.com/ccm/collect?rcb=10&frm=0&apvc=0&auid=1127649516.1790398282&dt=NinjaTrader&tid=AW-16569634155&en=page_view&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&scrsrc=www.googletagmanager.com&rnd=640798531.1790398282&navt=n&npa=0&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1h1v9242827515z89103746715za20gzb9103746715zd9103746715xecxf1&gcs=G111&gcd=13r3r3X3r5l1&dma=0&tag_exp=115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153~121280970&tft=1790398282741&tfd=3823&tids=AW-16569634155&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://analytics.google.com/g/collect?v=2&tid=G-YZ7Y44K3RX&gtm=45je69n1h1v9103747221z89103746715za20gzb9103746715zd9103746715xf1&_p=1790398280856&gcs=G111&gcd=13r3r3X3r5l1&npa=0&dma=0&gdid=dYWJhMj&_eu=AAAAAGQC&are=1&cid=2015886813.1790398282&frm=0&pscdl=noapi&rcb=18&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uam=&uamb=0&uap=Linux&uapv=6.18.44&uaw=0&ul=en-us&gaf=2&_s=2&tag_exp=115938466~115938469~118897920~118897930~120213116~120385422~120469145~120469153~121280970&sid=1790398281&sct=1&seg=1&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&dt=NinjaTrader&_tu=QA&en=page_view&_et=6&tfd=8131 net::ERR_ABORTED
+INCOMPLETE request-failed https://analytics.google.com/g/collect?v=2&tid=G-JMNHFTHZ0G&gtm=45je69n1h1v888353337z89103746715za20gzb9103746715zd9103746715xf1&_p=1790398280856&gcs=G111&gcd=13r3r3X3r5l1&npa=0&dma=0&gdid=dYWJhMj&_eu=EAACAGQC&are=1&cid=2015886813.1790398282&frm=0&ir=1&pscdl=noapi&rcb=17&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uam=&uamb=0&uap=Linux&uapv=6.18.44&uaw=0&ul=en-us&gaf=2&_s=2&tag_exp=115616985~115938466~115938468~118897920~118897930~120213116~120385423~120469145~120469153~121280970&sid=1790398282&sct=1&seg=1&dl=https%3A%2F%2Faccount.ninjatrader.com%2Fregister&dt=NinjaTrader&en=page_view&_et=956&tfd=9493 net::ERR_ABORTED
+INCOMPLETE pending https://clientstream.launchdarkly.com/eval/66cdf5b9cf61891061b4e437/eyJraW5kIjoidXNlciIsImtleSI6InVua25vd24iLCJhbm9ueW1vdXMiOmZhbHNlfQ
+INCOMPLETE 合計 28 件
+--- 2026-09-26T04:52:35Z method=印探索 target=tos_license_quote rc=0 time_s=0.003 note=8-038 §4.0 ライセンス: tos.htm(Terms of Service)のGrant of License逐語
+$ grep -n -A2 'Grant of License' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/tos.htm.txt
+47:Grant of License
+48-.
+49-Company grants User, pursuant to the terms and conditions of this Agreement, an exclusive and nontransferable license to use the Platform on a single computer at any one time.
+--- 2026-09-26T04:52:35Z method=印探索 target=tos_fees_quote rc=0 time_s=0.004 note=8-038 §4.0 料金体系・課金開始条件: tos.htmのFees/Licenses条項(Term/Automatic renewal・Lifetime Licenses)逐語
+$ sed -n 60,78p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/tos.htm.txt
+a.
+Collection and Taxes
+.
+All Fees, taxes and other charges shall be billed to User’s credit/charge card or paid by check.  In the event that User is provided with use of Platform through a 3
+rd
+party reseller (“Reseller), User shall pay the Reseller who in turn shall submit the appropriate subscription fee to Company. User shall be solely responsible for and shall pay Company or Reseller , if applicable, all sales, use, value-added, personal property or other tax, duty or levy of any kind, including interest and penalties thereon (collectively, “Taxes”), whether imposed now or hereinafter by any governmental authority.  User shall promptly pay Company in the event of any refusal by User’s credit card issuer to pay any amount to Company for any reason.  User agrees to pay interest at the rate of two percent (2.0%) per month on any outstanding balance, together with costs of collection, including attorney's fees and costs, and any applicable bank fees.  In the event User fails to pay any amount due as set forth herein, Company may, at its sole discretion, immediately suspend or terminate this Agreement and User’s access to the Platform.  Company reserves the right to report delinquent accounts to appropriate credit agencies.
+b.
+Term/Automatic renewal
+.
+The term of this agreement shall begin upon User’s commencement of the Platform and shall automatically renew on either a monthly or quarterly basis as chosen by the Client at the time of contract initiation. Fixed lease options as chosen at the time of contract initiation do not auto-renew. Termination by User or Company prior to automatic renewal of term must be supplied in written form at least 30 days prior to the expiration of the current term and must comply with the termination procedures set forth in Section 6 of this Agreement.   Should the subscription be terminated prior the current subscription period expiration date and pursuant to Section 6 of this Agreement, NO refund shall be issued to User by Company.
+c.
+Lifetime Licenses.
+If User purchases a lifetime license to use the Platform, User agrees that without limitation certain features of the software may not be available or supported in perpetuity.  User also agrees that Company shall have the right to change features associated with the Platform in Company’s sole discretion, and that Company may choose to discontinue support of Platform at any time.   User shall not be entitled to a refund of the lifetime license fee under any circumstances.  Lifetime licenses are for non-concurrent use, they are non-transferable, and can only be used by the individual that purchased the license.  Lifetime licenses cannot be sold or bartered in the future and if such actions are taken the license can be terminated at Company’s sole discretion. The lifetime license fee does not include the cost of any TT transaction fees if applicable when a static SuperDOM is requested.
+d.
+Upgrades.
+During the term of the license User shall be entitled to Platform upg
+[出力は 4581 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T04:52:35Z method=印探索 target=tos_gaibu_quote rc=0 time_s=0.003 note=8-038 §4.0 外部送信: tos.htm §10 Privacyの IP/GUID送信・監査用送信の逐語
+$ sed -n 130,146p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/tos.htm.txt
+.
+No waiver of any term, provision or condition of this Agreement, whether by conduct or otherwise, in any one or more instances, shall be deemed to be, or shall constitute, a waiver of any other term, provision or condition hereof, whether or not similar, nor shall such waiver constitute a continuing waiver of any such term, provision or condition hereof.  No waiver shall be binding unless executed in writing by the party making the waiver.
+c.
+Severability
+.
+If any provision of this Agreement is determined to be illegal or unenforceable, then such provision shall be enforced to the maximum extent possible and the other provisions shall remain fully effective and enforceable.
+d.
+Notice.
+All notices shall be in writing and shall be deemed to be delivered when sent by first-class mail or when sent by facsimile or e-mail to either parties' last known post office, facsimile or e-mail address, respectively.  User hereby consents to notice by e-mail.  All notices shall be directed to the parties at the respective addresses given above or to such other address as either party may, from time to time, provide to the other party.
+e.
+Governing Law
+.
+This Agreement is made in and shall be governed by the laws of the State of Colorado without reference to any conflicts of laws.
+f.
+Dispute Resolution
+.
+Any and all disputes relating to or arising out of this Agreement including, but not limited to, the arbitrability and the validity of this Agreement shall be resolved by binding arbitration in Denver, Colorado.
+--- 2026-09-26T04:52:49Z method=印探索 target=tos_gaibu_quote2 rc=0 time_s=0.004 note=8-038 §4.0 外部送信: tos.htm 104行目(IP/GUID送信)・121行目(監査用送信)の正しい行を打ち直し
+$ sed -n '104p;121p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/tos.htm.txt
+When reasonably practicable, Company shall attempt to respect and maintain User’s privacy.  Company shall not monitor, edit, or disclose any personal information about User or User’s account, including its contents or User’s use of the Platform, without User’s prior written consent unless Company has a good faith belief that such action is necessary to: (i) comply with any legal process or other legal requirements of any governmental authority, (ii) protect and defend the rights, interests, or property of Company, (iii) enforce this Agreement, (iv) protect the interests of users of the Platform other than User or any other person, entity, partnership, organization, association or otherwise, or (v) operate or conduct maintenance and repair of Company’s services or equipment, including the Platform as authorized by law.  User has no expectation of privacy with respect to the Internet in general.  User’s IP address and Platform generated GUID is transmitted and recorded with each User session.
+Company may gain access to customers account/trading records for auditing purposes.  Such records may be disclosed to an independent audit source.  Reasonable and industry appropriate non-disclosure agreement(s) shall pertain to third party auditing sources.  Some configurations of Platform may transmit trade execution data over the Internet to a secure database for the purpose of audit tracking.
+--- 2026-09-26T04:53:00Z method=印探索 target=install_guide_quote rc=0 time_s=0.003 note=8-038 §4.0 登録の要否・外部送信: installation_guide.htmの手順2(アカウントログイン必須)・手順5(ログイン時にサーバーへ接続しユーザー検証)逐語
+$ grep -n -A1 'Log in\|Firewall Software' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/installation_guide.htm.txt
+23:Log in
+24-to your NinjaTrader account
+--
+30:Firewall Software – NinjaTrader contacts our server on application log in for user validation. If you have a firewall, anti-spyware or other such software running on your PC, please ensure that you grant NinjaTrader permission to access the internet or you may receive a log in error.
+31-6.
+--- 2026-09-26T04:53:00Z method=印探索 target=release_notes_version_quote rc=0 time_s=0.003 note=8-038 §4.0 版・最終更新日: release_notes.htmの最新版番号と日付
+$ sed -n 14,16p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/release_notes.htm.txt
+Version
+Released
+8.1.8
+--- 2026-09-26T04:53:00Z method=印探索 target=release_notes_80_earliest_quote rc=0 time_s=0.003 note=8-038 §4.0 初回公開日: 8_0.htmの最も古いバージョン(8.0.1.0)の日付
+$ tail -2 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/8_0.htm.txt
+8.0.1.0
+November 14, 2016
+--- 2026-09-26T04:53:00Z method=印探索 target=pricing_quote rc=0 time_s=0.004 note=8-038 §4.0 料金体系・無料枠上限・課金開始条件: pricing頁の3プラン(Free/Monthly/Lifetime)要約逐語
+$ sed -n '198p;210p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/pricing.txt
+NinjaTrader offers three pricing plans. The Free plan has no monthly fee and commissions of $0.39 per side on Micro futures contracts and $1.29 per side on Standard contracts. The Monthly plan is $99/month with reduced commissions of $0.29/Micro and $0.99/Standard. The Lifetime plan is a one-time payment of $1,499 with the lowest commissions: $0.09/Micro and $0.59/Standard.
+The Lifetime plan is a one-time payment of $1,499 that unlocks the lowest available commission rates ($0.09/Micro, $0.59/Standard, per side) for the life of your account. Lifetime also includes premium feature add-ons like Order Flow+, full real-time data eligibility (once your account is funded), and waives the recurring monthly platform fee charged on the Monthly plan.
+--- 2026-09-26T04:53:00Z method=印探索 target=licensing_faq_quote rc=0 time_s=0.003 note=8-038 §4.0 無料枠上限: ninjatrader-licensing-faqs.txtのFreeプランでも主要機能が無料で使える逐語
+$ sed -n 70,71p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/ninjatrader-licensing-faqs.txt
+I use a free live license to trade my NinjaTrader Brokerage account. Are Chart Trader, ATM strategies & other premium NinjaTrader Desktop features available to me now free of charge?
+Yes, to support integrated multi-device trading, all platform features (except Order Flow +) are now available for free across all NinjaTrader account plans.  To use Chart Trader and unlock additional features, you can update to the latest release of NinjaTrader Desktop (v. 8.1). Order Flow + is included with a Lifetime account plan or can be purchased as an additional add-on for Free and Monthly account plans.
+--- 2026-09-26T04:53:16Z method=印探索 target=risk_disclosures_nfa_quote rc=0 time_s=0.004 note=8-038 §4.0 宣伝詐欺の兆候: risk_disclosures.htmのNFA登録番号(規制対象の実在ブローカーであることの逐語。詐欺の定型句の有無の判断材料)
+$ sed -n 12,13p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/risk_disclosures.htm.txt
+Futures, foreign currency and options trading contains substantial risk and is not for every investor. An investor could potentially lose all or more than the initial investment. Risk capital is money that can be lost without jeopardizing ones financial security or lifestyle. Only risk capital should be used for trading and only those with sufficient risk capital should consider trading. Past performance is not necessarily indicative of future results.
+CFTC Rules 4.41 - Hypothetical or Simulated performance results have certain limitations, unlike an actual performance record, simulated results do not represent actual trading. Also, since the trades have not been executed, the results may have under-or-over compensated for the impact, if any, of certain market factors, such as lack of liquidity. Simulated trading programs in general are also subject to the fact that they are designed with the benefit of hindsight. No representation is being made that any account will or is likely to achieve profit or losses similar to those shown.
+--- 2026-09-26T04:53:26Z method=印探索 target=risk_disclosures_nfa_quote2 rc=0 time_s=0.003 note=8-038 §4.0 宣伝詐欺の兆候: 上の手が行番号違いだったため打ち直し。risk_disclosures.htm 14行目のNFA登録番号の逐語
+$ sed -n 14p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/risk_disclosures.htm.txt
+This website is hosted and operated by NinjaTrader, LLC (“NT”), a software development company which owns and supports all proprietary technology relating to and including the NinjaTrader trading platform. NT is an affiliated company to NinjaTrader Brokerage (“NTB”), which is a NFA registered introducing broker (NFA #0339976) providing brokerage services to traders of futures and foreign exchange products. This website is intended for educational and informational purposes only and should not be viewed as a solicitation or recommendation of any product, service or trading strategy. No offer or solicitation to buy or sell securities, securities derivative or futures products of any kind, or any type of trading or investment advice, recommendation or strategy, is made, given, or in any manner endorsed by any NT affiliate and the information made available on this Web site is not an offer or solicitation of any kind. Specific questions related to a brokerage account should be sent to your broker directly. The content and opinions expressed on this website are those of the authors and do not necessarily reflect the official policy or position of NT or any of its affiliates.
+--- 2026-09-26T04:54:01Z method=印探索 target=release_notes_version_quote2 rc=0 time_s=0.003 note=8-038 §4.0 版・最終更新日: 上の手が日付行を含んでいなかったため打ち直し。release_notes.htm 16-17行目(最新版8.1.8と日付)
+$ sed -n 16,17p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/release_notes.htm.txt
+8.1.8
+July 21, 2026
+--- 2026-09-26T05:06:43Z method=印探索 target=install_guide_clean rc=0 time_s=0.005 note=8-038 §4.0 登録の要否・外部送信: installation_guide.htmの手順2・5をsed -nで整形せず素の行番号のみ付けて打ち直し(grepの接頭辞を避けるため)
+$ sed -n '23p;24p;30p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/installation_guide.htm.txt
+Log in
+to your NinjaTrader account
+Firewall Software – NinjaTrader contacts our server on application log in for user validation. If you have a firewall, anti-spyware or other such software running on your PC, please ensure that you grant NinjaTrader permission to access the internet or you may receive a log in error.
+--- 2026-09-26T05:06:43Z method=印探索 target=tos_registration_clean rc=0 time_s=0.004 note=8-038 §4.0 登録の要否: tos.htm 78行目(User Representations、氏名・住所・電話番号の逐語)
+$ sed -n 78p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/tos.htm.txt
+User represents and warrants to Company that: (a) User is over the age of eighteen (18) and has the power and authority to enter into and perform User’s obligations under this Agreement, (b) all information provided by User to Company is truthful, accurate and complete, (c) User is the authorized signatory of the credit or charge card provided to Company to pay the Fees, (d) User shall comply with all terms and conditions of this Agreement including, without limitation, the provisions set forth in section 5, (e) User, and not the Company, is solely responsible for the security and use of User’s password, (f) User has provided and shall provide accurate and complete registration information including, without limitation, User’s legal name, address and telephone number, (g) User acknowledges that all right, title, and interest to the Platform belongs to Company.  Company reserves all rights not expressly granted to User in this Agreement and that the User may not sublicense, transfer, or assign the Platform, directly or indirectly, to any person, entity, partnership, organization, association or otherwise, for any reason.
+--- 2026-09-26T05:06:43Z method=印探索 target=importing_quote rc=0 time_s=0.003 note=8-038 §4.0 当方データ投入: importing.htmの逐語(セミコロン区切りテキストへのインポート形式)
+$ sed -n 16p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/importing.htm.txt
+Historical data can be imported from a text file with a ".txt" extension within the
+--- 2026-09-26T05:06:43Z method=印探索 target=importing_format_quote rc=0 time_s=0.003 note=8-038 §4.0 当方データ投入: importing.htmのTick Format(Sub Second Granularity)の逐語
+$ sed -n 83p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/importing.htm.txt
+yyyyMMdd HHmmss fffffff;price;volume

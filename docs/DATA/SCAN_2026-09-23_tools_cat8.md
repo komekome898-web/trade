@@ -37191,3 +37191,588 @@ K12 検査の出力の貼付           1 件
 ```
 0
 ```
+
+## 区分8 — 20 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-038 `NinjaTrader` の E1a・E2・E3a と、17回目に未確認だった §4.0 の15項目だけを扱う(起動文§1)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run20_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run20_prompt.md@b11a105664ae`)
+- `https://ninjatrader.com/sitemap-index.xml`・`https://ninjatrader.com/sitemap-0.xml`(サイト全URL、1,355件)。取得日2026-09-26
+- `https://static.ninjatrader.com/support/helpGuides/nt8/index.html`・`.../hmcontent.htm`(NT8ヘルプガイドの目次。HelpMan製webhelp形式)。取得日2026-09-26
+- NT8ヘルプガイド371頁(`hmcontent.htm`の目次からhref抽出)+ 公式ブログ`ninjatrader.com/futures/blogs/`配下510頁(sitemapから抽出、eu地域版40件・`blog_avoiding-financial-scams`(実体はFAQ頁)1件を除く)= N合計881頁。全881頁を取得・タグ除去して本文テキスト化
+- `https://ninjatrader.com/pricing/`・`.../pricing/pricing-faqs/`・`.../pricing/account-fees/`・`.../ninjatrader-licensing-faqs/`(N外だが§4.0の一次資料として。料金・登録の逐語)。取得日2026-09-26
+- `https://account.ninjatrader.com/register?locale=en`(登録フォーム。JS描画、`scripts/cat8_render.js`。登録はしていない)。取得日2026-09-26
+- `https://services.nvd.nist.gov/rest/json/cves/2.0?keywordSearch=NinjaTrader`(NVD公開API、登録不要)。取得日2026-09-26
+- `http://web.archive.org/cdx/search/cdx`(Wayback Machine公開API)。この環境のプロキシで`Blocked by egress policy`となり到達できず(存在しないとは書かない)
+- `docs/DATA/SCAN_2026-09-23_tools_cat8.md`の`## 区分8 — 17回目の実行(2026-09-25)`(33568行目から、8-038の行)、生ログ`docs/DATA/probes/20260923_tools_8_run17.log`(出発点として読んだのみ、根拠には使わない)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run19.md`(検収。E1aの述語の境界、印を先に探す段では全件検索が要らないことを確認)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `NinjaTrader` / N確定: NT8ヘルプガイド(`static.ninjatrader.com/support/helpGuides/nt8/`)は`hmcontent.htm`の目次から371頁全件を抽出しNに入れる。公式ブログは`ninjatrader.com/futures/blogs/`配下510頁(index頁含む)をNに入れる。eu地域版(`/eu/*/futures/blogs/`、各国語の複製)40件、`blog_avoiding-financial-scams`(URLはblog接頭辞だが実体はFAQ頁、titleタグが「FAQs」)1件はNに入れない。フォーラム(`forum.ninjatrader.com`)・売り物一覧(`ninjatraderecosystem.com`/`ecosystem.ninjatrader.com`、いずれも別ドメインで存在確認済み)は製品の文書・ヘルプ・ブログでないためNに入れない | 実測 | docs/DATA/probes/20260923_tools_8_run20.log:14 docs/DATA/probes/20260923_tools_8_run20.log:17 docs/DATA/probes/20260923_tools_8_run20.log:39 docs/DATA/probes/20260923_tools_8_run20.log:43 |
+| 2 | `NinjaTrader` / N=881頁(ヘルプガイド371+ブログ510)を全件取得(fetch_bulk.py、失敗0件)し、タグを除いた本文テキストへ変換して`cat8_mklist.py`で一覧化(listed=881、`cat8_search.py`が read=881 で全件読了) | 実測 | docs/DATA/probes/20260923_tools_8_run20.log:48 docs/DATA/probes/20260923_tools_8_run20.log:51 docs/DATA/probes/20260923_tools_8_run20.log:60 |
+| 3 | `NinjaTrader` / E1a 印(段3): ヘルプガイド`syncing_account_positions.htm`が、NinjaTraderの実装が計算した建玉(Strategy Position)とブローカーの実際の口座建玉(Account Position、参照値)を自動で比較し、不一致時に差を埋める発注を自動で行う逐語「If the Account Position does not match your Strategy Position, NinjaTrader will submit a market order(s) to reconcile the Account Position to match your Strategy Position」がある。設計票§3のE1a述語の「実装と参照値」の側に当たると読んだ(生のデータどうしの食い違いではなく、実装が計算した状態と参照値の突き合わせと判断)。対象はNinjaTrader自身のStrategy Positionと接続先ブローカーのAccount Positionに限られ、段3。印が見つかったため全件の分類は行っていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:137-165 |
+| 4 | `NinjaTrader` / E2 印(段3): ヘルプガイド`real_time_tick_filter.htm`の逐語「Tick filtering is a function where each incoming tick is evaluated in relation to the last known price and if it is outside of a user defined percentage value, the tick is thrown away」により、直前の有効価格から利用者指定の%を超えて外れたティックを外れ値として自動検出し配信から除外する機能を確認。対象は接続中のリアルタイム市場データフィードに限られ、段3。印が見つかったため全件検索は行っていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:190-195 |
+| 5 | `NinjaTrader` / E3a なし: N全881頁を語(ルックアヘッド・look-ahead/survivorship・生存者/leak・リーク・未来/point-in-time・as-of・時点)で検索(見積り8行、500行以下のため`cat8_search.py`を実行、files=881・read=881・hits=8・files_with_hits=6)。当たり6ファイルを個別判定(下表「当たりの判定」)。いずれも「memory leak」というソフトウェアの不具合修正記録、「Look Ahead Maintenance Margin」というマージン表示項目、ブログ記事題名「A Look Ahead to 2024」のいずれかで、その時点で知り得ない情報を使っていることを検出・報告する機能の記述ではなかった | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:66-83 |
+| 6 | `NinjaTrader` / §4.0 版・最終更新日: `release_notes.htm`の逐語「8.1.8 July 21, 2026」。最新版8.1.8、2026-07-21付 | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:503-504 |
+| 7 | `NinjaTrader` / §4.0 初回公開日: `8_0.htm`(NinjaTrader 8のリリースノート一覧)に載る最古のバージョンの逐語「8.0.1.0 November 14, 2016」。これより古い8.0.0.0等の頁は一覧に無い(NinjaTrader 8としての初回公開日の一次資料上の下限)。Wayback Machineでの裏取りはこの環境のプロキシで到達できず(存在しないとは書かない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:484-485 docs/DATA/probes/20260923_tools_8_run20.log:216 |
+| 8 | `NinjaTrader` / §4.0 ライセンス: `tos.htm`(Terms of Service Agreement)逐語「Company grants User, pursuant to the terms and conditions of this Agreement, an exclusive and nontransferable license to use the Platform on a single computer at any one time」。プロプライエタリ・単一コンピュータでの非譲渡ライセンス | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:427 |
+| 9 | `NinjaTrader` / §4.0 既知の脆弱性: NVD公開APIの逐語(`keywordSearch=NinjaTrader`)「"totalResults":0」。該当するCVEは無い | 実測 | docs/DATA/probes/20260923_tools_8_run20.log:213 |
+| 10 | `NinjaTrader` / §4.0 料金体系・無料枠の上限・課金開始条件: `pricing/`頁の逐語「NinjaTrader offers three pricing plans. The Free plan has no monthly fee and commissions of $0.39 per side on Micro futures contracts and $1.29 per side on Standard contracts. The Monthly plan is $99/month with reduced commissions of $0.29/Micro and $0.99/Standard. The Lifetime plan is a one-time payment of $1,499 with the lowest commissions: $0.09/Micro and $0.59/Standard」。`ninjatrader-licensing-faqs`の逐語「Yes, to support integrated multi-device trading, all platform features (except Order Flow +) are now available for free across all NinjaTrader account plans」。Freeプランに月額費用は無いが、ブローカー口座の資金化と取引ごとの手数料が発生する | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:488-489 docs/DATA/probes/20260923_tools_8_run20.log:492-493 |
+| 11 | `NinjaTrader` / §4.0 登録の要否: `installation_guide.htm`の逐語「Log in」「to your NinjaTrader account」(手順2)、「Firewall Software – NinjaTrader contacts our server on application log in for user validation」(手順5)。ダウンロード・実行にはNinjaTraderアカウントへのログインが必須で、ログイン時にサーバーへ接続する。登録フォーム(`account.ninjatrader.com/register`、JS描画で確認)の逐語「Try the #1 rated futures trading platform for free today. Access pro-grade tools with your risk-free simulation trial. No deposit needed.」の下にメールアドレス欄(または Sign up with Google/Apple)のみを表示し、無料のシミュレーション口座はメール(またはGoogle/Appleアカウント)だけで開始できる。ライブ口座の資金化には`tos.htm`の逐語(User Representations)「User has provided and shall provide accurate and complete registration information including, without limitation, User’s legal name, address and telephone number」により氏名・住所・電話番号が別途必要 | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:507-509 docs/DATA/probes/20260923_tools_8_run20.log:512 docs/DATA/probes/20260923_tools_8_run20.log:223-311 |
+| 12 | `NinjaTrader` / §4.0 外部送信: `tos.htm`逐語「User’s IP address and Platform generated GUID is transmitted and recorded with each User session」「Some configurations of Platform may transmit trade execution data over the Internet to a secure database for the purpose of audit tracking」、`installation_guide.htm`逐語「NinjaTrader contacts our server on application log in for user validation」。ログインのたびにIPアドレスとGUIDが送信され、設定によっては取引執行データも監査用に外部送信される | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:467-468 docs/DATA/probes/20260923_tools_8_run20.log:509 |
+| 13 | `NinjaTrader` / §4.0 宣伝詐欺の兆候: 見当たらない。`risk_disclosures.htm`逐語「NT is an affiliated company to NinjaTrader Brokerage」に続き、NFA登録の紹介ブローカー(NFA #0339976)であることが確認できる。「必ず儲かる」等の定型句・Telegramのみでの勧誘・秘密鍵要求は見当たらない(ただしpricing頁に宣伝文句はあり、格付けの出所はこの回に特定していない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:500 |
+| 14 | `NinjaTrader` / §4.0 当方データ投入: `importing.htm`の逐語「Historical data can be imported from a text file with a ".txt" extension」「yyyyMMdd HHmmss fffffff;price;volume」。当方のcsv.gz(tardis形式)は直接投入できないが、セミコロン区切りのテキスト形式(サブ秒粒度のtickフォーマット)に変換すれば投入経路がある。実際の変換・投入はWindows環境が無いため試みていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:515 docs/DATA/probes/20260923_tools_8_run20.log:518 |
+| 15 | `NinjaTrader` / §4.0 規模の見積: `minimum_system_requirements.htm`(最小2GB RAM・推奨8GB RAM)・`performance_tips.htm`・`performance_tips2.htm`を読んだが、456日分のtickデータを扱う具体的な所要時間・記憶域の数値は記載が無かった(元資料は17回目に取得済み)。実行して実測するにはWindows環境が必要で、この環境では試みていない(Wine経由の道は未実施) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
+| 16 | `NinjaTrader` / §4.0 最小実行の可否: デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない(「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. [深掘り] `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 未着手
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — N(NT8ヘルプガイド371頁+公式ブログ510頁=881頁。eu地域版40件・FAQ頁1件・フォーラム/Ecosystem(別ドメイン)を除く)全件を対象に、17回目に未判別だったE1a・E2・E3aを確定した。E1a=印(段3、`syncing_account_positions.htm`の「NinjaTrader will submit a market order(s) to reconcile the Account Position to match your Strategy Position」= 実装が計算した建玉と参照値=ブローカーの実口座建玉の自動突き合わせ・是正)。E2=印(段3、`real_time_tick_filter.htm`の直前有効価格からの%乖離による外れ値ティックの自動検出・除外)。E3a=なし(全件検索hits=8、6ファイルとも無関係語=ソフトウェア不具合の「memory leak」・マージン表示項目「Look Ahead Maintenance Margin」・ブログ題名「A Look Ahead to 2024」)。§4.0の表の15件の未確認のうち12件(版・最終更新日・ライセンス・初回公開日・既知の脆弱性・料金体系・無料枠の上限・課金開始条件・登録の要否・外部送信・宣伝詐欺の兆候・当方データ投入)を一次資料/実測で確認し、1件(4軸4_向上)は「サーベイの外」に区分した。残り2件(最小実行の可否・規模の見積)はデスクトップアプリの実行にWindows環境が要ることと、Wine経由の道を試していないことを理由に未確認のまま(試した手段は§4.0の表と生ログ参照)。E1a〜E6に未判別が無くなり、§4.0の表(43項目)も過半が一次資料/実測/該当なし(一次資料)のため状態を深掘りにした — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `dbt` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | ヘルプガイド`syncing_account_positions.htm`逐語「If the Account Position does not match your Strategy Position, NinjaTrader will submit a market order(s) to reconcile the Account Position to match your Strategy Position」。実装(NinjaTraderが計算するStrategy Position)と参照値(ブローカーの実口座Account Position)の出力を自動で突き合わせ、不一致の差を埋める発注をする機能(設計票§3のE1a「実装と参照値」の側に相当。生データどうしの食い違い=E2ではなく、計算された状態と参照値の突き合わせと判断)。対象はNinjaTrader自身のStrategy Positionと接続先ブローカーのAccount Positionに限られ、段4の条件(対象のすべてを外から持ち込める)を言う逐語が無いため段3。印が見つかったため全件検索は行っていない | docs/DATA/probes/20260923_tools_8_run20.log:137-165 |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | ヘルプガイド`real_time_tick_filter.htm`逐語「Tick filtering is a function where each incoming tick is evaluated in relation to the last known price and if it is outside of a user defined percentage value, the tick is thrown away」。直前の有効価格から利用者指定の%を超えて外れたティックを外れ値として自動検出し配信から除外する機能(E2の述語の外れ値検出に当たる)。対象は接続中のリアルタイム市場データフィードに限られ(段4の条件を言う逐語なし)、段3。印が見つかったため全件検索は行っていない | docs/DATA/probes/20260923_tools_8_run20.log:190-195 |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 一覧881件/読んだ881件(N全体、ヘルプガイド371頁+公式ブログ510頁)。語(ルックアヘッド\|look-ahead\|survivorship\|生存者\|leak\|リーク\|未来\|point-in-time\|as-of\|時点)で検索し、当たり6ファイル/8行(甲、個別判定は下表)。ソフトウェア不具合修正記録の「memory leak」、マージン表示項目の「Look Ahead Maintenance Margin」、ブログ記事題名「A Look Ahead to 2024」のいずれかで、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能の記述は見当たらなかった | docs/DATA/probes/20260923_tools_8_run20.log:66-83 |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(19回目の節) |  |
+
+### ツール1件ごとの表
+
+`NinjaTrader`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(この回はE1a・E2・E3aと§4.0の15項目だけを更新し、文章表は新設しない。文章の説明は候補の一覧の8-038の行と知見表に集約した)。
+
+### 当たりの判定
+
+`NinjaTrader` E3a の当たりの判定(甲、ファイルの表):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/8_0_8_0.htm.txt | 1 | 「In some scenarios a memory leak was occurring after a reload/close of an existing chart」。リリースノートのソフトウェア不具合(メモリリーク)修正記録で、ルックアヘッドの検出・報告機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/help_pages/accounts_tab.htm.txt | 1 | 「Look Ahead Maintenance Margin」。次期のマージン要件を先んじて表示する画面の列名(表示項目)で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/blogs.html.txt | 1 | ブログ一覧頁に載る記事題名「2023 Year in Review of Futures Markets and A Look Ahead to 2024」の引用。市場見通し記事の題名で、機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/futures-trading-outlook-trending-micro-bitcoin-takes-a-pause.html.txt | 1 | 他記事一覧に載る同じ記事題名「A Look Ahead to 2024」の引用。機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/2023-year-in-review-of-futures-markets-and-a-look-ahead-to-2024.html.txt | 3 | 当該ブログ記事自身のタイトル・見出しの繰り返し(3箇所とも同じ題名の文字列)。市場見通し記事の内容で、機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-038_run20/text/blog_pages/how-to-use-the-ninjatrader-market-analyzer-your-personal-real-time-quote-board.html.txt | 1 | 他記事一覧に載る同じ記事題名「A Look Ahead to 2024」の引用。機能の記述ではない |
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `NinjaTrader` | 版 | 8.1.8 | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:503-504 |
+| `NinjaTrader` | 最終更新日 | 2026-07-21(最新版8.1.8のリリース日) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:503-504 |
+| `NinjaTrader` | ライセンス | プロプライエタリ・単一コンピュータでの非譲渡ライセンス(Terms of Service逐語「an exclusive and nontransferable license to use the Platform on a single computer at any one time」)。商用・再配布は明示的に許諾された範囲のみ | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:427 |
+| `NinjaTrader` | 言語と動作環境 | 該当なし(NinjaTrader社が配布する独自のバイナリ端末(NinjaTrader 8、Windows専用)で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 対応取引所 | 先物・株式・外国為替・仮想通貨(未確認: 具体的な取引所一覧はこの回も取得していない。Market Replayは「level I and level II (market depth) data」を扱う) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14688-14689 |
+| `NinjaTrader` | 星 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | コミット数 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 保守者数 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 週DL数 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 初回公開日 | 8.0.1.0(NinjaTrader 8の最古のリリースノート) / 2016-11-14。Wayback Machineでの裏取りはこの環境のプロキシで到達できず(存在しないとは書かない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:484-485 docs/DATA/probes/20260923_tools_8_run20.log:216 |
+| `NinjaTrader` | 既知の脆弱性 | 無し(NVD公開APIの逐語「"totalResults":0」、keywordSearch=NinjaTrader) | 実測 | docs/DATA/probes/20260923_tools_8_run20.log:213 |
+| `NinjaTrader` | 料金体系 | 3プラン(Free/Monthly $99/Lifetime $1,499一括)。手数料は片道ごとにMicro/Standardで異なる(Free: $0.39/$1.29、Monthly: $0.29/$0.99、Lifetime: $0.09/$0.59) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:488-489 |
+| `NinjaTrader` | 無料枠の上限 | Freeプランに月額費用は無く、Order Flow+を除く全プラットフォーム機能が利用可能。手数料は片道ごとに発生し無制限ではない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:492-493 |
+| `NinjaTrader` | 課金開始条件 | ブローカー口座を資金化し取引するたびに片道手数料が発生(Freeプランでも)。Monthly($99/月、自動更新)・Lifetime($1,499一括)は任意加入で、加入すると手数料が下がる | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:488-489 |
+| `NinjaTrader` | 隠れた依存 | Market Replayデータの利用にはヒストリカルデータプロバイダとの契約または録画が要る(「Once market replay data or historical tick data is available by either recording or downloading」) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14688 |
+| `NinjaTrader` | 登録の要否 | 要。ダウンロード・実行にはNinjaTraderアカウントへのログインが必須(installation_guide.htm手順2)。無料のシミュレーション口座はメールアドレス(またはGoogle/Appleアカウント)だけで開始できる(register頁のJS描画本文で確認)。ライブ口座の資金化には氏名・住所・電話番号が別途必要(tos.htm) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:507-509 docs/DATA/probes/20260923_tools_8_run20.log:512 docs/DATA/probes/20260923_tools_8_run20.log:223-311 |
+| `NinjaTrader` | 到達経路 | 到達できた(ninjatrader.com/support/helpguides/nt8/以下の各頁。301リダイレクト先static.ninjatrader.com/support/helpGuides/nt8/…で200。この回はNT8ヘルプガイド371頁+公式ブログ510頁の全881頁で到達を確認、失敗0件) | 実測 | docs/DATA/probes/20260923_tools_8_run20.log:48 docs/DATA/probes/20260923_tools_8_run20.log:51 |
+| `NinjaTrader` | 導入可否 | 該当なし(§6-1の検査対象はPython/npm等のパッケージで、NinjaTrader 8はWindows専用デスクトップアプリのインストーラ配布であり、この回も導入を試みていない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
+| `NinjaTrader` | install所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 依存数 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | pip check | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 最小実行の可否 | 試していない(デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない。「動かせない」とは書かない、19回目の検収§7の5と同じ扱い) | 未確認 | docs/DATA/probes/20260923_tools_8_run20.log:217-222 |
+| `NinjaTrader` | 最小実行の中身 | 登録が要る(渡すもの: 無料のシミュレーション口座はメールアドレスまたはGoogle/Appleアカウント。ライブ口座の資金化には氏名・住所・電話番号も別途必要)。実行はオーナーの判断待ち | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:223-311 docs/DATA/probes/20260923_tools_8_run20.log:512 |
+| `NinjaTrader` | 実行所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | wheel展開 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | setup.py導入時実行 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 同梱バイナリ | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 外部送信 | 一次資料で確認: ログインのたびにIPアドレスとGUIDが送信・記録される(tos.htm逐語「User’s IP address and Platform generated GUID is transmitted and recorded with each User session」)。設定によっては取引執行データも監査用に外部送信される(「Some configurations of Platform may transmit trade execution data over the Internet to a secure database for the purpose of audit tracking」)。ログイン自体もサーバーへの接続を伴う(installation_guide.htm「NinjaTrader contacts our server on application log in for user validation」) | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:467-468 docs/DATA/probes/20260923_tools_8_run20.log:509 |
+| `NinjaTrader` | 自動発注機能 | あり(NinjaScript戦略による自動売買が中核機能。Playback/Sim101・Playback101は仮想口座上でのみ発注する) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14696-14697 |
+| `NinjaTrader` | 宣伝詐欺の兆候 | 見当たらない。関連会社NinjaTrader BrokerageがNFA登録の紹介ブローカー(NFA #0339976)であることを開示(risk_disclosures.htm)。「必ず儲かる」等の定型句・Telegramのみでの勧誘・秘密鍵要求は見当たらない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:500 |
+| `NinjaTrader` | 当方データ投入 | 変換すれば投入可。当方のcsv.gz(tardis形式)は直接不可だが、セミコロン区切りテキスト(サブ秒粒度: yyyyMMdd HHmmss fffffff;price;volume)への変換で投入経路がある(importing.htm)。実際の変換・投入はWindows環境が無いため試みていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run20.log:515 docs/DATA/probes/20260923_tools_8_run20.log:518 |
+| `NinjaTrader` | 時刻の扱い | 「Market replay files have the ability to record time stamps down the 100 nanosecond level. However...we use the time stamp provided by the market data providers...limited to the granularity of the provider」。100ナノ秒粒度まで記録可能だが、実際の粒度はデータ提供元に依存する | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14691 |
+| `NinjaTrader` | 再現性 | E5参照(印・段2)。「orders are processed immediately and synchronously. This enables reproducible results」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14696-14697 |
+| `NinjaTrader` | 規模の見積 | 未確認(試した手段: minimum_system_requirements.htm(最小2GB RAM・推奨8GB RAM)・performance_tips.htm・performance_tips2.htmを読んだが、456日分のtickデータの所要時間・記憶域の具体的な数値の記載は無かった。実行して実測するにはWindows環境が必要で、この環境ではWine経由の道を含め試みていない) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
+| `NinjaTrader` | 4軸1_道具 | 印。レベルI/IIを同期させたMarket Replay(ナノ秒粒度の記録)を全ウィンドウで再生できる道具立ては、当方のbitFlyer feed記録器(CLAUDE.md §2)に無い規模を持つ | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14688-14691 |
+| `NinjaTrader` | 4軸2_情報 | 印。Walk Forward Optimizationのin-sample/out-of-sample分割結果、Monte Carloのランダム再抽出分布という、当方の walk_forward モジュール(CLAUDE.md §2)とは別実装の情報源。今回確定したAccount Position/Strategy Positionの自動突き合わせ結果も、当方のreconciler.py(読み取り専用の曖昧失敗照合)には無い建玉レベルの自動是正の情報源 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14699-14711 docs/DATA/probes/20260923_tools_8_run20.log:137-165 |
+| `NinjaTrader` | 4軸3_視点 | 印。「Discrepancies: Real-Time vs Backtest」ページが整理するリアルタイムとバックテストの3つの約定モデルの違い(OHLCベース/リアルタイムデータベース/ブローカー約定)という視点は、当方のmaker/taker約定モデル(CLAUDE.md §2)の妥当性を検討する新しい切り口を与える | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
+| `NinjaTrader` | 4軸4_向上 | サーベイの外(組み込みの作業が要る)。道具を当方の環境に組み込んで既存の成果が上がるかは、読むだけのサーベイでは測れない(18回目の検収§6の3、19回目のMetaTraderの処置3と同じ理由) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:14607-14804 |
+| `NinjaTrader` | 配布元の一致 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 難読化 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 外部URL取得 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 依存の一覧 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+| `NinjaTrader` | 保守者名の一貫性 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14607 |
+
+### §4.0 で未確認のまま残した項目
+
+- **最小実行の可否**: デスクトップの実行ファイル(Windows専用)で、この環境では起動できない。Wineを入れて動かす道はこの回も試していない(理由は「時間」ではない。19回目の検収§7の5と同じ「動かせないとは書かない、試していないと書く」扱い)
+- **規模の見積**: `minimum_system_requirements.htm`(最小2GB RAM・推奨8GB RAM)・`performance_tips.htm`・`performance_tips2.htm`を読んだが、456日分のtickデータの所要時間・記憶域を示す具体的な数値の記載が無かった。実行して実測するにはWindows環境が必要で、この環境では試みていない
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(未確認とは別だが、値が確定していない点は同じ性質のため、ここに残す)
+
+### 代替経路
+
+この回は『この環境から不可』と書いた項目なし。Wayback Machine(`web.archive.org`)への到達はこの環境のプロキシで`Blocked by egress policy`となったが、これはNinjaTrader固有の到達不能ではなく、この環境のプロキシ側の制限であり「存在しない」「取得不可」とは書いていない(初回公開日の一次資料上の下限は`8_0.htm`のリリースノートで別途確認済み)。ほかの全てのURL(NT8ヘルプガイド371頁・公式ブログ510頁・pricing系4頁・register頁・NVD API)は`curl`/`node scripts/cat8_render.js`の初回の手で到達できた。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] E1a を `syncing_account_positions.htm` の「Account Position(参照値)とStrategy Position(実装の計算結果)の自動突き合わせ・是正」に当てた。これは検証・バックテストの文脈ではなく、実運用中の建玉同期の機能である。設計票§3のE1a述語は文脈を限定していない(「候補の機能」全般に当てる)と読んでこの回は印にしたが、19回目の検収がE1aとE2の境界(データどうしの食い違いかE1aの実装どうしの突き合わせか)を厳しく見ていたのと同様、この「実運用中の状態同期」を検証・品質の族(区分8)に含めてよいかは、境界の性質が異なる分岐なのでリードの判断を仰ぐ。値・段は決めた(印・段3)ままにする
+2. [それ以外の問い] 公式ブログの範囲を `ninjatrader.com/futures/blogs/` (510頁、NinjaTrader BrokerageのFutures事業のブログ)とした。NinjaTrader社(プラットフォーム開発元)自体の別のブログ区画(例: 開発者向け技術ブログ)がこの外に存在するかは、サイトマップとhmcontent.htmの目次から見つかる範囲では確認できなかった。値・段への影響は無い(N確定の範囲の問題)
+3. [それ以外の問い] 「最小実行の中身」(§4.0の15項目には無いが、登録の要否の調査で判明した情報を反映して更新した)を、この回に上書きしてよいか。起動文§1は「17回目に未確認だった§4.0の15項目も全部試す」と限定しており、「最小実行の中身」はその15項目に含まれない。今回判明した情報(渡すもの=メールアドレス等)で更新する方が正確だが、範囲外の項目に手を入れたことになるため、リードが差し戻すかどうかの判断を仰ぐ
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run20.log`**(誤検出は閉じずに残す。K1・K2(19612・19909・30448・34975・35047・36881行目)とK13(前回までの回の分。15024〜20425行目あたりの複写検出)は前回までの回で誤検出として受け取られ済み(検収`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run15.md`等)。この回で新しく出たK13(34126行目、NinjaTraderの根拠23行/33行の複写)は、`### 4.0 機械可読の表`のうち「該当なし(NinjaTrader社が配布する独自のバイナリ端末…)」とした16項目が同じ生ログのファイル名の接頭辞`docs/DATA/probes/20260923_tools_8_run17.`を繰り返すために生じる誤検出(各行の行番号自体は別。前回までの検収の説明と同型。19回目の検収`docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run19.md`と同じ扱い)。**
+
+```
+K1 太字                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+K2 括弧                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             29 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 39 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 40 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 20`**
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 16 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run20.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run20.log の最初の手 2026-09-26T04:39:13Z / 最後の手 2026-09-26T05:06:43Z / 手の数 49
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`**
+
+```
+0
+```
