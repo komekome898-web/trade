@@ -43,7 +43,9 @@ Declarations (every key required unless marked optional; nothing has a default):
                     purpose 動作確認 (委任文 §4)
                Every order is a market order sent to the venue model.
   fill         {"optimistic": {FillSpec fields}, "pessimistic": {FillSpec fields}}
-               (bot.bt.fill.FillRange: both sides required). The run executes
+               (bot.bt.fill.FillRange: both sides required; tier 6's "impact" is a
+               mapping of ImpactSpec fields; the L3 stances need a per-order feed,
+               which is not declarable here). The run executes
                BOTH sides (item 2: 「楽観側と悲観側の両方を必ず回して幅で出す」) and
                records and exports both; there is no one-side entry.
   latency      {"feed", "order", "cancel", "notice"}: each a distribution
@@ -53,10 +55,12 @@ Declarations (every key required unless marked optional; nothing has a default):
                distributions from the declaration (the same seed, the same draws);
                the record carries the declaration and, per side, the draws and
                their sum per channel.
-  costs        {"maker_rate", "taker_rate", "source"[, "spread"]} (bot.bt.costs.CostSchedule:
-               rates are fractions of the notional; spread is a price distance, the
-               whole spread, half per side, for a market order with no book). A cost
-               component the run meets and did not declare stops the run.
+  costs        {"maker_rate", "taker_rate", "source"[, "spread", "funding": {"price": "event_mark"}]}
+               (bot.bt.costs.CostSchedule: rates are fractions of the notional; spread
+               is a price distance, the whole spread, half per side, for a market
+               order with no book; funding charges FUNDING events riding along). A
+               cost component the run meets and did not declare stops the run (swap
+               and fee tables are not declarable here).
   account      {"currency", "cash", "leverage", "mark": "last_trade" | "mid",
                 "liquidation": None | {"maint_ratio", "source"},
                 "margin_check": "open_orders" | "position_only"}
@@ -113,11 +117,12 @@ from typing import Any, Mapping, Optional, Sequence
 from .core import BarEvent, BookSnapshotEvent, ClockEvent, CoreEngine, Event, OrderFillEvent, OrderRequest, \
     Strategy, StrategyContext, TradeEvent
 from .costs import CostSchedule, ScheduleCostModel
+from .costs.schedule import FundingRule
 from .data import DataError, load, parse_spec
 from .data.allowlist import DEFAULT_ROOTS as _DATA_ROOTS
 from .data.allowlist import MANDATORY_DENY as _NOT_MARKET
 from .data.allowlist import SealRegistry
-from .fill import FillRange, FillSpec, SimVenue
+from .fill import FillRange, FillSpec, ImpactSpec, SimVenue
 from .latency import Constant, Empirical, LatencyModel, SeededUniform
 from .orders import FaultPlan, Product, VenueRules
 from .orders.errors import ExecutionModelError
@@ -492,9 +497,12 @@ def _check_latency(lat: Mapping) -> dict:
 
 def _fill_spec(d: Any, side: str) -> FillSpec:
     _need(isinstance(d, Mapping), f"fill.{side} must be a mapping of FillSpec fields")
-    _need("impact" not in d, f"fill.{side}: an impact function (tier 6) is not declarable here")
+    kw = dict(d)
     try:
-        return FillSpec(**dict(d))
+        if kw.get("impact") is not None:
+            _need(isinstance(kw["impact"], Mapping), f"fill.{side}.impact must be a mapping of ImpactSpec fields")
+            kw["impact"] = ImpactSpec(**dict(kw["impact"]))
+        return FillSpec(**kw)
     except TypeError as exc:
         raise PipelineError(f"fill.{side}: {exc}") from None
     except ExecutionModelError as exc:
@@ -516,6 +524,10 @@ def _cost_schedule(c: Mapping) -> CostSchedule:
     if "spread" in c:
         kw["spread"] = c["spread"]
     try:
+        if "funding" in c:
+            _need(isinstance(c["funding"], Mapping) and set(c["funding"]) == {"price"},
+                  "costs.funding must be {price} (bot.bt.costs.schedule.FundingRule)")
+            kw["funding"] = FundingRule(c["funding"]["price"])
         return CostSchedule(**kw)
     except ExecutionModelError as exc:
         raise PipelineError(f"costs: {exc}") from None
@@ -523,10 +535,11 @@ def _cost_schedule(c: Mapping) -> CostSchedule:
 
 def _check_costs(c: Mapping) -> dict:
     _need(isinstance(c, Mapping) and {"maker_rate", "taker_rate", "source"} <= set(c)
-          <= {"maker_rate", "taker_rate", "source", "spread"},
-          "costs must be {maker_rate, taker_rate, source[, spread]} (bot.bt.costs.CostSchedule; no default)")
+          <= {"maker_rate", "taker_rate", "source", "spread", "funding"},
+          "costs must be {maker_rate, taker_rate, source[, spread, funding]} (bot.bt.costs.CostSchedule; no default)")
     out = json.loads(_canon(dict(c)))
-    return {**_cost_schedule(out).declared(), "fee_table": None, **({} if "spread" in out else {"spread": None})}
+    _cost_schedule(out)
+    return {**out, "spread": out.get("spread"), "funding": out.get("funding"), "fee_table": None, "swap": None}
 
 
 def _product(d: Any, where: str) -> Product:
