@@ -51,3 +51,26 @@
 
 ### i4-r3-04 [注記] 実装(target=実装)作業者の I-2 の試験は印なしで作業木にあるが、i4-r3-01 の経路を含まない
 - `grep -rn "xfail" tests/bt/item_4/*.py` = 0 件(14:09 UTC)。`tests/bt/item_4/test_i4_pipeline.py:351` `test_i2_an_order_before_the_first_observation_fills_at_it` は印なし(作業者が (甲) = `DeferredMarginAccount` を置いて印を外した途中の状態と読む。推定)。この試験が見るのは「最初の観測で埋まる」と「1 JPY の口座で遅らせた検査が断る」の 2 つで、保留した成行の値付けの観測で清算が起きる経路(i4-r3-01)と、口座がその観測を 1 度だけ見ることは見ていない。比べの結果は変えないので [注記]。作業者が返るときに i4-r3-01 の試験が通ることを返り値に書くこと。
+
+## 4. 回した試験(全部 `PYTHONPATH=src python -m pytest --basetemp=<私有の basetemp> -p no:cacheprovider <path>`、`-q` は足していない)
+
+| 対象 | 末尾の行 | 時刻(UTC) |
+|---|---|---|
+| tests/bt/critic/item_4 + tests/bt/battery/item_4 + tests/bt/item_4 + tests/bt/compat(`-x`、bar_rules 付け替え前の私の 1 本を deselect) | `1 failed, 1286 passed, 7 skipped, 36 deselected in 150.67s`(落ちたのは `test_i4_battery_scenes.py::…[i4-5-fills]` = i4-r3-02 途中(場面係)。`-x` なのでそこで止まり、以後は回っていない) | 14:06 |
+| 同じ 4 つを `-x` 無しで | 2 回とも 600 秒 / 560 秒の上限で止められ(exit 143)、末尾の行は取れていない(他の役の pytest が同時に 14 本走っていた: `ps aux \| grep -c "[p]ytest"` = 14) | 14:06〜14:26 |
+| tests/bt/compat | `152 passed in 460.14s` | 14:24 |
+| tests/bt/critic/item_4(付け替え後、私の r3 の試験を含む) | `3 failed, 80 passed in 40.37s`(落ちた 3 件は全部 i4-r3-01 の私の試験) | 14:11 |
+| tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py(付け替えた 12 件を含む) | `36 passed in 0.77s` | 14:08 |
+| tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py + test_i4_pipeline.py(格子 720 場合と統合の口。`-x` の実行で届かなかった分) | `38 passed in 140.94s` | 14:28 |
+
+**bar_rules の付け替え**: 済み(§1)。12 件とも `bar_sim.run_bars` で通る。
+
+**[止める] 1 件(i4-r3-01。作業者の I-2 の途中の部品なので、作業者が返る前は「途中(作業者)」の印つき)、[直す] 0 件、[注記] 2 件(i4-r3-03・04)、途中 1 件(i4-r3-02 = 場面係)。**
+
+## 5. 時間が来て読めなかった範囲(全部書く)
+
+- `src/bot/bt/compat/barmodel.py`(754 行)・`engine.py`(576 行)の本文は読んでいない。第 2 周の指摘 02・08 の閉じは、作業者の ROOTCAUSE_worker.md の記述と、私の第 2 周の試験と作業者の格子(720 場合)が通ることで確かめた(実装の行を目で追ってはいない)。
+- `src/bot/bt/reference/SPEC.md`(228 行)と `bar_sim.py` の 249 行目以降(`run_bars` の本体)は読んでいない。独立の参照の正しさは格子の一致(38 passed)にだけ依っている。
+- 場面集 `DEFINITIONS.md`・`CONSIDERED.md`・`gen_considered.py` の第 3 周の差分(I-1〜I-5 の規則の文、U1〜U8 の追記、場面 11 + 5 + 2)は読んでいない(場面係が今も書いている)。
+- `tests/bt/item_4/` のうち上の 2 本と `-x` の実行が届いた分以外(`test_i4_r3_*` の格子 4 本・`test_i4_real_data_smoke.py` など)は、この周では末尾の行を取れていない。
+- 置き換えの作業者の差分(`src/bot/backtest/{engine,metrics,walk_forward}.py`、`git diff --stat` = 3 files changed, 429 insertions(+), 51 deletions(-))は読んでいない。`tests/bt/compat` は 152 passed。旧エンジンとの比べの試験が `tests/bt/item_4` にある分は未確認。
