@@ -58,7 +58,92 @@
 
 ### 参照実装の役(第 1 段)の返り値(逐語、12:38 UTC)
 
-(取り出せず)
+参照実装の役(仕上げの第 1 段)の報告です。12:38 UTC 時点で、期限 13:37 UTC の前に終えました。
+
+**結論**: `src/bot/bt/reference/bar_sim.py` を、場面集の規則の文と、仕上げの委任文 §1 の i4-r2-02・i4-r2-08 の決め(作業中に届いたマスク False の補いを含む)だけから、空のファイルで書き直しました。対象の規則は R-T・R-C・R-A・R-M・R-P・R-X・R-W・R-H・R-E・R-S・R-O の全部です。試験は 1056 件すべて通り、mutant は 40 件すべて落ちました。場面集の I4-1 の 2 場面(i4-1-ref-taker・i4-1-ref-maker)も、場面集の正解と一致しています。
+
+注意が 1 つあります。**私の作業途中のファイルが、リードのコミット c79b2e6 に入っています**(`bar_sim.py`・試験・mutant・materials など)。現時点で未コミットの私の変更は `SPEC.md` だけです。
+
+## (a) 変えたファイル
+- `src/bot/bt/reference/bar_sim.py`: 新しく書きました。入口は `run_bars(bars, signals, options)` の 1 つで、値は全部正確な分数です。float の入力は、書かれた 10 進の値として読みます。
+- `src/bot/bt/reference/SPEC.md`: §1 の入口の行、§3(規則ごとの表)、§4(文が決めていない点)、§5 の冒頭の注記、§6〜§10 を書き直しました。§10 にこの周の対応表と、「この版は場面集の規則の文だけから書いた。核・新エンジン・bar_rules は開いていない」を書きました。
+- `src/bot/bt/reference/__init__.py`: 説明の文の 1 行を直しました。
+- 旧の足の模型(第 1 周に書かれた、選べる型を多く持つもの)の扱い:
+  - 中身は読まずに `git mv` で `tests/bt/item_4/reference/ext_bar_modes.py` に移し、先頭に「規則の参照ではない」という注記を足しました。
+  - 理由: 外部の道具 backtesting.py との記録の突き合わせの試験が、この模型を使っているためです(既存の試験を消さない規則)。
+  - 旧の場面と性質の試験は `test_i4ref_extmodes_scenes.py`・`test_i4ref_extmodes_properties.py` に名前を変え、import の行だけを付け替えました。`ext_backtesting_compare.py` も import の 1 行だけ変えました。
+- 新しい試験:
+  - `tests/bt/item_4/reference/i4ref_bar_kit.py`(共通の道具と、場面集の足の組)
+  - `test_i4ref_rules_scenes.py`(52 件。規則ごとの正解つきの場面で、注釈に手計算の式)
+  - `test_i4ref_rules_properties.py`(289 件。96 升 × 種 3 の格子と、規則の文の式だけで見る性質 Q1〜Q11)
+- `tests/bt/item_4/reference/ref_mutants.py`: この版に向けた mutant を 26 件足しました。一時フォルダは各回の私有の場所にしました。
+- `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/reference/before_rewrite.md`: 直す前に落ちる記録です(旧の版では、新しい試験が集めの段で落ちる)。
+- `event_sim.py` は触っていません。
+
+## (b) 試験のコマンドと末尾の行
+- `PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/finish_ref_basetemp tests/bt/item_4/reference/`
+  - 末尾の行: `1056 passed in 7.46s`
+- `python3 tests/bt/item_4/reference/ref_mutants.py`
+  - 末尾の行: `killed 40/40`
+  - 内訳: 事象の参照 8 件、移した旧の模型 6 件、この版 26 件。
+  - 最初の回で生き残ったのは 2 件でした。
+    - 保有を始めた足(建てた足)を窓に入れる mutant: 場面 1 つと性質 Q11(出口を飛ばさない)を足して潰しました。
+    - R-T2 の分岐を消す mutant: 最後の足の合図は処理の繰り返しが終わるので約定せず、分岐を消しても結果が変わりません。この分岐をコードから外し、mutant も外しました。
+
+## (c) 満たせなかった規則と理由
+- 規則の文 R-T〜R-O の中で満たせなかったものはありません。
+- 持っていないもの: 指標 M-1〜M-12、分け方 D-1・D-2、互換の計算 L-1〜L-5。起動文の規則の一覧に無いため作っていません。
+- 規則の文の参照(この版)は、外部の道具と突き合わせていません。外部の道具との記録は、移した旧の模型との比較のままです。
+- 入口の形を変えたので、作業者の `tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py` は第 2 段で §7 の口に合わせる必要があり、それまでは落ちるはずです。このファイルは中身を開いておらず、実行もしていません。`grep -rl` でファイル名だけを確かめました。
+
+## (d) リードに聞くこと
+1. 文が決めていない 2 点の値を決めてください。第 2 段の突き合わせでも、この値を渡します。今は必須の引数 `options["undecided"]` にしてあります。
+   - U1 `wick_short_history`(値: `refuse` / `use_available` / `no_stop`): 構造的な逆指値の窓で、約定の足の前に足が N 本無いとき。
+   - U2 `same_side_exit_signal`(値: `keep` / `replace`): **決済の**指値が待っている間に、同じ向きの合図が来たとき。i4-r2-08 が決めたのは建ての指値だけです。
+2. 字義どおりに読んだ点(SPEC §4)を正とするか、規則の文に足すか:
+   - U3: 保有を始めた足自身の終値も、構造的な逆指値の判定に入れる。
+   - U4: 向きや空売り不可で止められた反対向きの合図のときは、待っている建ての指値を残す(マスク False はリードの決めのとおり)。
+   - U5: 高値・安値が始値・終値を囲まない足は拒む。
+   - U6: 「使わない」は `None` で表し、0 以下の率は拒む。
+   - U7: 費用が負の値でも受ける。
+   - U8: 寿命 0 は拒む。
+3. `ext_bar_modes.py`(旧の模型)を残すか。それとも、外部の道具との突き合わせをこの版で取り直すか。取り直すには、隔離した venv でもう一度動かす必要があります。
+4. 指標と分け方も参照に持たせるか。
+5. 場面集が「使わない」を 0 と null のどちらで表すかが DEFINITIONS.md に書かれていません。第 2 段で作業者が写し間違えないよう、場面係に書いてもらうか。
+
+## (e) 提出前の吟味の結果(SPEC.md §9 に表で記録)
+- **独立**: 核・新エンジン・`pipeline.py`・`bar_rules.py`・作業者の試験・battery の Python・批評家の試験は開いていません。旧の `bar_sim.py` の中身も読んでいません。
+  - 名前は全部この役で付けました。
+  - `options` の鍵の名は、DEFINITIONS.md の場面の config の名をそのまま使いました。
+  - 読んでよい 4 つの外で読んだのは、この役の持ち物(SPEC.md・`num.py`・`ref_mutants.py`・ext の比べの周り)だけです。
+- **i4-r2-02**: 時間切れの足では、始値の時間切れが先です。場面は taker と maker の 2 つ、mutant もあります。
+- **i4-r2-08 と、リードから届いたその補い**: マスクが False の合図は何もしません(指値を置かない・取り逃しに数えない・反対向きでも古い指値を残す)。同じ向きの合図では建ての指値を置き直しません。場面 2 つと mutant 2 つで確かめています。
+- **正解の出所**: 期待値は全部、実行の前に手で計算して書きました。場面集の I4-1 の 2 場面は、場面集の正解と相対 1e-9 の幅で一致しました。
+- **mutant**: 生き残りは 0 件です。
+- 既存の試験は消していません。§4 の禁止(相場についての主張・モデル名・依存の追加・実データ)はどれにも当たりません。git commit / push はしていません。
+
+## (f) 入口の形(SPEC.md §7 と同じ)
+`run_bars(bars, signals, options) -> BarRun`。3 つとも位置引数で、既定値はありません。欠けや誤りは `RefusedConfig` で拒みます。
+
+- `bars`: `(始値, 高値, 安値, 終値)` の組か、`{"open", "high", "low", "close"}` の dict の列。値は int・str・Fraction・float です。
+- `signals`: `{足の番号: "BUY" | "SELL" | "CLOSE"}`、または足と同じ長さの列(`None` か `"HOLD"` は何もしない)。
+- `options`: 次の鍵が全部要ります(欠けても余っても拒む)。
+  - `capital`・`order_amount`・`bar_seconds`
+  - `costs`(`taker_fee_pct`・`maker_fee_pct`・`slippage_pct`・`spread_pct`。単位は %)
+  - `execution`(`taker` / `maker`)・`maker_timeout_bars`(`None` か 1 以上)・`allow_short`・`swap_daily_pct`
+  - `stop_loss_pct`・`take_profit_pct`・`max_hold_bars`(使わないときは `None`)
+  - `exit_execution`(`signal` / `maker_tp`)・`maker_tp_pct`
+  - `entry_mask`(`None` か bool の列)・`entry_sides`(`both` / `long` / `short`)
+  - `stop_mode`(`fixed` / `wick_invalidation`)・`stop_window_bars`
+  - `undecided`(`wick_short_history`・`same_side_exit_signal`)
+- 返り値 `BarRun`:
+  - `fills`: 約定の列。各約定は `bar`・`side`(OPEN_LONG / OPEN_SHORT / CLOSE_LONG / CLOSE_SHORT)・`price`・`size`・`fee`・`liquidity`・`reason`。
+  - `pnls`: 往復ごとの損益(R-A3)。
+  - `equity`: 各足の終値の時点の資産(R-A4)。
+  - `missed_fills`: 取り逃しの数(int、R-M5)。
+  - ほかに `trades`・`open_trade` を持ちます。
+  - `to_dict()` は分数を文字列にします。`to_floats()` は float の新エンジンと、場面集の判定の決まり(相対 1e-9)で比べるためのものです。
+- 違いが出たら、参照ではなく新エンジンの欠陥として扱います。
 
 **リードの答え(12:42 UTC)**: U1 `wick_short_history` = **use_available**(窓の足が N 本無ければ有る分で判定。規則の文に足す。refuse だとデータの頭 N 本に建てる全実行が拒まれ、no_stop は黙って逆指値を無くす)。U2 `same_side_exit_signal` = **keep**(建ての R-M6 と同じ側)。U3〜U8 = 字義どおりの読みを正とし、場面係が規則の文に足す(U3 建てた足の終値も構造的な逆指値の判定に入れる / U4 向き・空売り不可で止められた反対向きの合図では待っている建ての指値を残す / U5 高値・安値が始値・終値を囲まない足は拒む / U6 「使わない」は null、0 以下の率は拒む / U7 負の費用も受ける / U8 寿命 0 は拒む)。新エンジンが違えば新エンジンを直す(条件 2)。Q3 = ext_bar_modes.py は残す(外部の道具との取り直しはしない)。Q4 = 指標と分け方は参照に持たせない(golden で見る)。Q5 = 場面係が DEFINITIONS.md に「使わない = null」と書く。
 
@@ -101,7 +186,111 @@
 
 ### 作業者(第 1 段)の返り値(逐語、13:33 UTC)
 
-(取り出せず)
+## 項目 4 仕上げ 第 1 段(作業者)の返り値
+
+委任文の完了の形(仕上げの委任文 §1 条件 1、逐語): 「**第 2 周の批評家の [止める] 9 件全部を閉じ(下の 6 件は直し、残る 3 件は次のとおり)、批評家の試験 `tests/bt/critic/item_4/` と場面集 `tests/bt/battery/item_4/` が全部通る**」。この段で受け持ったのは実装の側の i4-r2-02・03・05・06 と i4-r2-08 の spec の側。
+
+実装の側の 5 件は、狙った試験が全部通るところまで来た。ただし場面集の統合の場面 5 つは落ちたままで、直せるのは場面係だけ(下の (c)-1)。核(`src/bot/bt/core/`)は変えていないので、CORE_VERSION は core-19 のまま。
+
+### 直した中身(事実)
+- **i4-r2-02**(`barmodel.py`・`bar_rules.py`):
+  - spec では時間切れを始値の段で取る(R-O1 の ②)。その足では範囲の逆指値・利確は起きず、待っている合図や指値は捨てる。
+  - `BarRules` に欄 `time_exit_at_open` を足した。legacy は旧の順のまま。
+- **i4-r2-08**(spec の側):
+  - `maker_mask_at_signal`: 止められた建ての合図は指値を置かない・取り逃しに数えない(R-E4)。マスクだけでなく、場面係が並行して足した R-E5 に合わせて向きの制限(R-E1)も同じにした。
+  - `maker_same_side_keeps`: 同じ向きの合図は古い指値を残す(R-M6・R-M7)。取り消しの理由は "kept_older"。
+  - `refuse_non_positive`: 場面係の R-V2・R-V4 に合わせ、0 以下の率・本数・寿命を断る。
+  - どれも spec だけで、legacy は旧のまま。`bar_rules.py` も同じに直した。
+- **i4-r2-05**(`pipeline.py`):
+  - `prereg_sha256` を渡すと PipelineError で断る。
+  - 事前登録は root の下のファイルだけを受け、sha256 をこちらで計算して記録する。空のファイルも断る。
+- **i4-r2-03**(`pipeline.py`):
+  - 出所は行で決める。データ層の read で読んだ行(時刻と全部の値)を、市場データのフォルダのファイルを同じ宣言でデータ層に通して読んだ行と照らす。一致した行が最も多いファイルを証拠として記録する(market_path、一致した行数 / 読んだ行数)。
+  - 候補のファイルは、1 行目の列名と、最初と最後のデータ行の時刻で絞る。封印のあるファイルはデータ層の read でだけ照らす。
+  - 合成は種つきの生成器 `{"name","generator":{"name":"random_walk","seed","params"}}` からだけ作れる。生成器の名前・版・種を実行記録の `generators` に残す。
+  - ファイルのデータセットを "synthetic" と宣言すると断る。`market_evidence`(置き場所とバイトの一致で見ていた旧の判定)は消した。
+- **i4-r2-06**(`pipeline.py`):
+  - 自前の FirstObservedFill・_Latency・_Fee・NullAccount を消し、銘柄ごとに SimVenue・LatencyModel・ScheduleCostModel・MarginAccount を差した。
+  - 宣言の形:
+    - `fill` = 楽観と悲観の 2 つ(tier 6 の影響関数も宣言できる)
+    - `latency` = 4 つの遅延をそれぞれ分布で(種つき)
+    - `costs` = 率・出所・スプレッド、資金調達の規則は任意
+    - `account` = 通貨・元本・レバレッジ・評価の規則・清算の規則・証拠金の見方
+    - 銘柄には `product` と `rules`
+  - 実行は楽観と悲観の両側を回す。実行記録の `components` に、差した模型の型・引いた遅延(回数と和)・両側の口座の最終状態が出る。`metrics["range"]` と、約定・往復・注文の各行の `range` の欄で両側が分かる。
+
+### (a) 変えたファイル
+**コード**
+- `src/bot/bt/compat/barmodel.py`
+- `src/bot/bt/reference/bar_rules.py`
+- `src/bot/bt/pipeline.py`
+
+**試験(新しく作ったもの)**
+- `tests/bt/item_4/i4w_decl.py`
+- `tests/bt/item_4/test_i4_r3_time_exit_at_open_grid.py`(96 升)
+- `tests/bt/item_4/test_i4_r3_maker_two_values_grid.py`(24 升)
+- `tests/bt/item_4/test_i4_r3_origin_by_rows_grid.py`(64 升)
+- `tests/bt/item_4/test_i4_r3_prereg_file_grid.py`(12 升)
+
+**試験(書き換えたもの)**
+- `tests/bt/item_4/test_i4_pipeline.py`(全面)
+- `tests/bt/item_4/test_i4_r2_origin_from_data_grid.py`
+- `tests/bt/item_4/test_i4_real_data_smoke.py`
+- `tests/bt/item_4/test_i4_r2_signal_at_open_grid.py`(R-H3 の新しい読み)
+- `tests/bt/item_4/test_i4_barmodel_on_core.py`(取り消しの理由に kept_older)
+
+**記録**
+- `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md`
+- 同じ場所の `materials/worker/`(`before_barmodel.txt`・`after_barmodel_before_pipeline_run.txt`・`README.md`)
+
+途中の変更の一部は、リードのコミット c62f2e8 などに既に入っている。
+
+### (b) 試験のコマンドと末尾の行(basetemp はどれも私有、`-p no:cacheprovider -o tmp_path_retention_policy=none` 付き)
+
+| 回したもの | 結果 | 時点 |
+|---|---|---|
+| `tests/bt/item_0 tests/bt/critic/item_0` | **6709 passed, 4 skipped, 3 warnings in 507.58s** | 核は変えていない |
+| 足の模型の格子・批評家の時間切れ・`tests/bt/compat` | **201 passed in 139.42s** | R-E5・R-V を足す前 |
+| `test_i4_real_data_smoke.py` と `test_i4_pipeline.py` | **15 passed in 422.59s** | tier 6・資金調達・比べる窓の幅を足す前 |
+| 最後の範囲の実行(下) | 392 件通過、5 件失敗 | 最後のコード |
+
+- **最後の範囲の実行の中身**: `test_i4_pipeline.py`・`test_i4_r3_prereg_file_grid.py`・`test_i4_r3_time_exit_at_open_grid.py`・`test_i4_r3_maker_two_values_grid.py`・`test_i4_r2_signal_at_open_grid.py`・`test_i4_barmodel_on_core.py`・`test_i4_battery_scenes.py`・`tests/bt/compat`・`tests/bt/critic/item_4`。
+- **末尾の行について**: 私が `-q` を重ねたので、件数の行が出なかった。数えたのは進み具合の行(392 件通過・5 件失敗)で、失敗は全部 `test_i4_battery_scenes.py` の i4-5-fills・i4-5-outputs・i4-6-label・i4-6-signal-refused・i4-6-research-refused。
+- **批評家の試験**: 時間切れ 2 件・出所 6 件・事前登録 3 件は、上の範囲の中で通った。`test_i4r2_considered_unread_is_not_confirmed` は場面係の持ち物。
+- **出所の格子 2 本と実データの動作確認**: 最後のコードでの実行はまだ走っている。記録は `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/pytest_item4_finish_worker_origin.log`。その中の 1 件の F は、直す前の書き方での TOPIX の every_row_edited の升(値を変えた足が不正な足になって、データ層が断っていた)。書き方を直したあと、その升を含む 4 升を回し直して失敗の行は 0。
+
+### (c) 満たせなかった条件と理由
+1. **場面集の統合の場面 5 つが落ちる**(i4-5・i4-6)。場面の宣言が旧の形のまま(fill の first_observed・costs の pct・銘柄に product / rules が無い・`prereg_sha256`)で、正解も旧の「最初に観測した値」で計算されている。直せるのは場面係だけ(規則 2「場面集を変えない」)。場面係にしてもらうこと:
+   - 宣言を新しい形に書き直す
+   - 研究の場面は事前登録のファイルを置いて `prereg=` で渡す
+   - 合成は生成器で作る
+   - 正解を項目 2 の模型の規則(板を歩く / 直前の約定 ± スプレッド / 次の足の始値)で出し直す
+   - adapter `_pipeline` と私の `i4w_drive.run_pipeline_scene` を新しい引数にする(後者は私の持ち物。次の段で直す)
+
+   場面集 `tests/bt/battery/item_4` 全体の実行は、時間内に終わりの行を確かめられなかった。
+2. `test_i4_engine_vs_independent_bar_sim.py` は外して回した。参照実装の役が `bar_sim.py` を書き直していて import が落ちる(第 2 段で広げる物)。
+3. 提出前の吟味 (6)(規則を直す前に格子を先に書く)を、統合の口の格子 3 本で守れなかった(直したあとに書いた)。統合の口の直す前の記録は、批評家の試験 9 件の失敗だけ。`materials/worker/README.md` に書いた。
+
+### (d) リードに聞くこと
+1. **行が一致しないファイルを「実データ(出所が分からないもの)」として扱う決め**は原文に無い。理由: 合成を生成器だけに限った以上、一致しないファイルを合成にすると、全行を書き換えたファイルで §4 の規則を迂回できる。この形でよいか。
+2. **指標の書き出しの見出しの数(既存の欄)を悲観側にした決め**(両側は `metrics["range"]` にある)も原文に無い。この形でよいか。
+3. 統合の口で宣言できないまま残るものがある。ここまで要るか:
+   - L3 の 1 注文ごとの供給
+   - 故障の注入
+   - FX の換算表(いまは銘柄の値の通貨 = 口座の通貨に限る)
+   - スワップ・手数料表
+   - 旧の滑り(slippage_pct)の欄(項目 2 の CostSchedule に無いので受けない)
+
+### (e) 提出前の吟味の結果
+- **厳しい批評家が止めそうだと挙げて、潰したもの**:
+  - 統合の口が tier 6(影響関数)と資金調達を宣言できない = 部品を狭めて繋いでいる → 宣言できるようにし、試験を足した
+  - 同じ種類の事象を乗せたデータセットの断りを、書き換えのときに落としていた → 戻した
+  - バーの範囲の端で 1 行を数え落としていた → 比べる窓を 1 日広げた
+- **試験側の誤りとして直したもの**:
+  - TOPIX のファイルは行末が CRLF で、書き換えがそのあとに付いていた
+  - TOPIX の出来高を書き換えると、ミニ TOPIX の実在の行と一致した(値が同じで出来高だけ違う)。規則ではこれも実データの証拠なので、書き換えを値の列に替えた
+- **場当たりの直しはしていない**: 規則の側を変えて通した升は無い。落ちた升の直しは、上に挙げた試験の書き方の誤りと、場面係が同時に足した規則(R-E5・R-V2・R-V4)への合わせだけ。
+- **残る目立つ点**: 実データの計画は行を照らすので遅い(実データの動作確認 1 本で約 7 分)。
 
 **リードの答え(13:36 UTC)**: (1) 行が一致しないファイルを「出所の分からない実データ」として扱う(合成は生成器からだけ)= 認める(最も厳しい側)。(2) 指標の書き出しの見出しの数を悲観側にし、両側は range に持つ = 認める。(3) L3 の 1 注文ごとの供給・故障の注入・FX の換算表・スワップと手数料表・旧の滑りの欄は、この仕上げでは要らない = 「測っていない範囲」に載せる。
 **時間の判断(リード)**: 残り 80 分。第 2 段(作業者 = 格子の広げ + 4 場面の直し + bar_rules の削除 + i4w_drive の新しい宣言 / 場面係 = 統合の場面 5 つを新しい宣言の形に)を 13:36 UTC に並列で起こした(期限 14:05)。批評家は 14:05 に起こす。**第 3 段(旧エンジンの置き換え + 全試験)は批評家と同時に起こす**(委任文 §3 の「批評家の [止める] 0 のあと」から外れる。時間の上限のため。批評家に正しさ・安全の [止める] が出れば置き換えを戻す。この逸脱は報告に書く)。
@@ -189,28 +378,279 @@
 
 ### 場面係(第 3 段の続き = 統合の口の規則 I-1〜I-5)の返り値(逐語、14:05 UTC)
 
-(取り出せず)
+項目 4 場面係、第 3 段の続き(統合の口の規則 I-1〜I-5)の報告です(委任文 docs/DATA/delegations/20260926_backtest_env_finish.md@ec283fb43be1 §1 条件 1)。5 場面の正解を規則から手で出し直しました。新実装は 5 場面とも「結果なし」で、作業者が直している途中の核がエラーを出して止まるため、正解との突き合わせはまだできていません。
+
+(a) 変えたファイル(git diff --name-only HEAD、HEAD = 920a34b 14:00:30 UTC のリードのコミット、docs/AUDITOR/TRACE/ を除く)
+- 場面係の物: tests/bt/battery/item_4/ROOTCAUSE_r3-1.md、tests/bt/battery/item_4/survey_results/ の 42 本
+- 同じ差分に出るが私は書いていない物(作業者の持ち物): src/bot/bt/pipeline.py、tests/bt/item_4/test_i4_pipeline.py
+- この段でほかに変えた場面係のファイル(i4_scenes.py、gen_definitions.py、DEFINITIONS.md 1026 行、test_battery_item4.py、opponents/CONSIDERED.md)は 920a34b にもう入っています。
+- 未追跡の記録: docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes5.sh とそのログ
+
+(b) 試験
+- 私有の basetemp で PYTHONPATH=src python -m pytest tests/bt/battery/item_4 tests/bt/critic/item_4 … の末尾の行: `12 failed, 230 passed, 7 skipped in 13.83s`(14:02 UTC)
+- 場面集の側は全部通ります。落ちた 12 件はどれも批評家の test_i4r1_pending_signal_before_intrabar_exit.py で、原因は ModuleNotFoundError: bot.bt.reference.bar_rules(第 2 段で作業者が bar_rules.py を消した)。場面集の規則 8 により、批評家の試験は変えていません。
+- check_bt_considered.py → OK 誤り 0 件
+
+やったこと
+- DEFINITIONS.md の「統合の場面」に I-1〜I-5 を足しました。F-1 は「I-1・I-2・I-4 と悲観の側の I-3 をまとめた形」と書き直し、目的「研究」を断る条件は「事前登録のファイル無し」に直しました。
+- 正解は手で出し直しました(出力は写していません)。鍵は <側>:<銘柄> です。
+  - 悲観の側と、板の無い銘柄の楽観の側は F-1 です。T0 の注文は最初の観測で埋まり、足の銘柄は 300 秒に始まる足の始値で埋まります。
+  - bf の楽観の側は I-3 で板を歩きます(walk_board)。買い 1 は売りの気配 15000010〜15000030 を 0.2 ずつ、売り 1 は買いの気配 15000000〜14999955 を 0.1 ずつ。
+  - bf の損益は楽観 −85、悲観 2000 です。
+  - i4-6-signal-refused の対照 2 の楽観の側も、同じ注文を I-3 で板に歩かせて出しました。
+- 試験 test_pipeline_book_walk_matches_the_board_file を足しました。場面が書く板のファイルを読み直し、板を歩いた答えを別に導いて正解と照らします。
+- 規則 4: 5 場面を全 42 対象に通しました(13:55:05〜14:02:03 UTC、全部 rc=0)。
+
+(c) 満たせなかった条件と理由
+1. 新実装と mutant は 5 場面とも「結果なし」です。
+   - エラー: `VenueProtocolError: on_order: fill model gave no Ack/Reject/StateUnknown for order 'leg2'`(src/bot/bt/core/engine.py:1282)
+   - 走らせたのは作業者が直している途中の src/ です。作業者の欠陥として返します。直ったら 5 場面を通し直す必要があります(1 回 7〜12 分)。
+2. 批評家の試験 12 件は、bar_rules.py の削除で落ちたままです。
+
+(d) リードに聞くこと
+1. 場面の入力を 1 つ変えました(指示の語に無い変更)。01:05 の売りの後に板の写しが無く、I-3 の「以後の最初の板の写し」が無い注文ができていたので、板の写しを 01:05:02 に 1 つ足しました(3 つ → 4 つ)。読んだ事象の数と sha256 の正解はファイルから機械で作り直しています。これでよいですか。
+2. 悲観の側の「直前の約定」を「注文の時刻以後の最初の約定」(I-1)と読みました。スプレッド 0 なので F-1 と同じ値になります。これでよいですか。
+
+(e) 提出前の吟味
+- 正解は規則の文だけから導き、出力は写していません。板の歩き方は、場面のファイルを読み直す別の試験で確かめました。
+- リードの答え 3 つ(対照 2 の置き換え、指標を参照の判定から外す、PineForge は比べていないのまま)は ROOTCAUSE に記録しました(全文は ROOTCAUSE_r3-1.md §6-6・§6-7)。
+- ROOTCAUSE 末尾の差分の節を作り直しました。基準の head は 658582d なので、行ごとの帰属は「判定できない」になります。
+- 見ていない範囲: 板の深さが足りない注文(walk_board の assert で止まる)、板と約定が同じ時刻にあるときの順(01:05:02)、スプレッドが 0 でない悲観の側。
 
 **リードの答え(14:07 UTC)**: (d)1 板の写しを 01:05:02 に 1 つ足した(3 → 4) = 認める(I-3 が「以後の最初の板の写し」を要求する以上、入力に写しが要る。sha256 の正解はファイルから機械で作り直した、とのこと)。(d)2 悲観の側の「直前の約定」を I-1(注文の時刻以後の最初の約定)と読む = 認める(I-1 の文のとおり。スプレッド 0 で F-1 と同値)。(c)1 `VenueProtocolError: on_order: fill model gave no Ack/Reject/StateUnknown for order 'leg2'` は作業者の物として作業者に渡す。直ったら場面係が 5 場面を通し直す(1 回 7〜12 分、時間が無ければ持ち越しとして記録)。(c)2 批評家の試験 12 件(bar_rules の import)は批評家(14:03 起動)が付け替える。
 
 
 ### 作業者(第 2 段の続き = I-2 甲・VenueProtocolError・battery の失敗の読み)の返り値(逐語、14:16 UTC)
 
-(取り出せず)
+## 作業者 第 2 段の続き(I-2 = 甲、場面係の VenueProtocolError、battery の失敗の読み)の返り値(14:16 UTC)
+
+委任文 §1 の i4-r2-06 の直し方の決め(逐語): 「**pipeline.py の約定・遅延・費用・口座を項目 2 の差し込み口(venue・LatencyModel・ScheduleCostModel・MarginAccount)に置き換え…**」+ リードの答え (甲)「**統合の口で account を包み、値の無い成行の証拠金の検査を最初の観測のあとに遅らせる(項目 2 の MarginAccount は変えない)**」。
+
+結論:
+- I-2(甲)は入れて、試験が通った。`test_i4_pipeline.py` の残り 1 件(遅延の試験)も直したあとに通った。
+- 実データの動作確認は `2 passed` で通った。
+- 場面係の VenueProtocolError は直した。
+- ただし場面 i4-5-fills は、まだ楽観の bf で約定の数が合わない(下の (c)-1)。
+
+### 直した中身(事実)
+**1. I-2(甲): `pipeline.py` の `DeferredMarginAccount`**
+- 項目 2 の MarginAccount を包む。MarginAccount 自身は変えていない。
+- 到着の時点で値が無く、account が断った成行(no_price_for_margin_check / no_mark_for_equity)は、その場では断らず保留に記録する。
+- ArrivalGate がその注文に値を付ける時点で、先に account に最初の観測を見せてから(`observe`)、証拠金の検査をやり直す(`recheck`)。そこで断られたら Canceled(`refused_by_account: <理由>`)にする。
+- 同じ事象が core からもう一度 account に届いたときは、先に返した答えを返す。事象が MarginAccount に届くのは 1 回だけ。
+- 試験 `test_i2_an_order_before_the_first_observation_fills_at_it` の xfail(strict) を外した。中身は次の 2 つで、どちらも通る。
+  - 最初の約定より前の成行が、最初の約定で埋まる
+  - 元本 1 円では、遅らせた検査が断る
+
+**2. 場面係の `VenueProtocolError: on_order: fill model gave no Ack…`**
+- 推定のとおりだった。到着前の成行に、ゲートが何も返していなかった(私の第 2 段の途中の版)。
+- 今は到着の時点で Ack を返し、値を付けて venue に渡すときに venue の Ack を捨てる。
+- 確かめ: 場面係の `run_battery.py --target new_impl --scenes i4-5-fills` を 1 場面分だけ通すと、エラーは出ず結果が出る(下の (b))。
+
+**3. 約定の時刻**
+- 約定の `t_ns` を「値を付けた観測の時刻」にした(足は足の始まり、I-4)。
+- それまでは venue の時刻(足の終わり)で、場面の pessimistic:jpx が `t_ns` だけ 60 秒ずれていた。
+
+**4. `i4w_drive.run_pipeline_scene`**
+- 出力を `"<側>:<銘柄>"` の鍵(両側)にした。場面係の adapter と同じ形。
+
+**5. 遅延の試験 `test_order_latency_moves_the_fill_and_a_seeded_distribution_repeats`**
+- 旧の読み(遅延 0.25 秒で約定の時刻が必ず 0.25 秒動く)は I-1 と合わない。0.25 秒の遅延では、到着以後の最初の気配が同じ行になる。
+- I-1 の文どおりに書き直した: 約定の時刻 ≥ 送った時刻 + 遅延。遅延 60 秒なら、遅延 0 の約定より後になる。
+
+### (a) 変えたファイル
+- `src/bot/bt/pipeline.py`(DeferredMarginAccount、ArrivalGate の Ack と観測の時刻)
+- `tests/bt/item_4/test_i4_pipeline.py`(I-2 の試験、遅延の試験)
+- `tests/bt/item_4/i4w_drive.py`
+
+### (b) 試験のコマンドと末尾の行(私有の basetemp、`-p no:cacheprovider -o tmp_path_retention_policy=none`、`-q` は重ねない)
+
+| 何を | 末尾の行 | 注 |
+|---|---|---|
+| `test_i4_pipeline.py` 全体 | `1 failed, 16 passed in 194.38s (0:03:14)` | 失敗 1 件は遅延の試験で、直す前の版で回した分 |
+| 直したあとの遅延の試験(`test_i4_pipeline.py -k latency`) | `1 passed, 16 deselected in 134.32s (0:02:14)` | 全 17 件を直したあとの版で通しで回し直してはいない |
+| `test_i4_real_data_smoke.py` | `2 passed in 412.22s (0:06:52)` | 回したのはゲート・DeferredMarginAccount・観測の時刻を入れた版 |
+| 場面係の sh の 1 場面分(`run_battery.py --target new_impl --scenes i4-5-fills`) | `i4-5-fills I4-5 値 不一致 fills[optimistic:bf]: 26 件(正解 30 件)` | 出力は `…/scratchpad/bt/finish_worker3_scene/new_impl2.tsv` |
+
+1 場面分の経過: 14:09 の版では最初の不一致が `fills[pessimistic:jpx][0]` の t_ns だった。観測の時刻を直した版では、最初の不一致は `optimistic:bf` の件数に移った。
+
+### (c) 満たせなかった条件と理由
+1. **場面 i4-5-fills の `optimistic:bf` が 26 件(正解 30 件)で合わない。**
+   - 楽観の側(tier 3)は板を歩く。原因の推定は 2 つで、どちらかを場面の正解(板のファイルから出したもの)と照らしていない = 未確認。
+     - 板を歩いて約定が段ごとに分かれる数え方の違い
+     - 成行の残りを取り消す(market_remainder = cancel)ことで、約定しない分がある
+   - 期限のため、ここで止めた。他の 4 つの統合の場面も、この版では回していない。
+2. 範囲の全体は回していない(リードの指示)。
+
+### battery の失敗 4 件と setup の error 10 件の読み(1 行ずつ)
+- `test_legacy_answers_of_two_model_scenes_are_the_existing_engine`・`test_mutant_plants_one_defect_and_breaks_its_scenes`・`test_stated_rules_and_existing_engine_agree_except_the_listed_deviations` と、`test_battery_item4_claims.py` の setup の error 10 件(`test_invariants_hold_on_the_existing_engine_and_the_hand_answers`・`test_invariants_catch_each_perturbation[i4-2-grid-*]`)
+  - 全部同じ原因: `ImportError: cannot import name 'evaluate_on_splits_as_old' from 'bot.bt.compat.engine'`。
+  - 旧 `src/bot/backtest/walk_forward.py:18` がその名を import していた。それを書いた置き換えの作業者(第 3 段)が、その時点ではまだ compat の側に関数を足していなかった(推定。いまは `src/bot/bt/compat/engine.py:274` にある)。
+  - **置き換えの物で、私の物ではない。** 今の木で `test_battery_item4_claims.py` と `test_battery_item4.py` を回し直すと `148 passed in 5.11s`。
+- `test_pipeline_expected_fills_match_the_files`
+  - `KeyError: 'optimistic:bf'`。場面係が場面の正解を両側の形に書き直している途中だった(**場面係の物**)。
+  - 今の木では通る(上の 148 件に入っている)。
+
+### (d) リードに聞くこと
+1. i4-5-fills の `optimistic:bf` の件数の違い(26 対 30)を、次の周で私が板のファイルと照らして直すか。それとも場面係に正解の数え方(板を歩く約定の数え方と、成行の残りの扱い)を確かめてもらうか。
+
+### (e) 提出前の吟味
+- (甲) は項目 2 の MarginAccount を変えていない。検査を遅らせるのは、DEFERRABLE の 2 つの理由(値が無い)の成行だけ。それ以外の断りは到着の時点のまま効く。
+- 遅らせた検査が断る側も、試験で確かめた(元本 1 円)。
+- 事象を account に 2 回渡さない作り(`observe` の答えを取っておく)。清算の注文が二重に出ないため。
+- 遅延の試験の直しは、I-1 の文に合わせたもの。閾値をずらして通したものではない(遅延 60 秒で、約定が遅延 0 より後になることを確かめている)。
 
 **リードの答え(14:19 UTC)**: (d)1 = 作業者が板のファイルと照らす(場面係の正解は I-3 の文から板のファイルを読み直す別の試験 `test_pipeline_book_walk_matches_the_board_file` で確かめてある = 正解の側は 2 経路で一致している)。違いの原因が「段ごとの数え方」なら実装を場面係の数え方(規則の文)に合わせる。「成行の残りの取り消し」なら、規則の文(DEFINITIONS.md の I-3)に残りの扱いが書いてあるかを読み、書いてあれば実装を合わせ、書いてなければ直さずに「規則の文に無い(持ち越し)」と返す。期限 14:40 UTC。それまでに直らなければ持ち越しとして報告に載せる。
 
 
 ### 作業者(i4-5-fills の 26 対 30)の返り値(逐語、14:25 UTC)
 
-(取り出せず)
+## 作業者(i4-r2-06 の続き: i4-5-fills の optimistic:bf 26 件 対 30 件)の返り値(14:25 UTC)
+
+規則の文(`tests/bt/battery/item_4/DEFINITIONS.md` 153-155 行、逐語): 「**I-3 板がある銘柄の成行: 楽観(tier 3)= 注文の時刻以後の最初の板の写しを、数量の分だけ段を進んで埋まる(買いは売りの気配の良い方から、売りは買いの気配の良い方から。各段の値と量で部分約定、時刻は板の写しの時刻)**」
+
+結論: 違いの原因は、リードが挙げた 2 つ(段ごとの数え方・成行の残りの取り消し)の**どちらでもなかった**。実装が I-3 の文と違っていたので、文に合わせて直した。統合の場面 5 つは全部「正解と一致」になった。
+
+### 原因(事実。観測の jsonl を読んだ)
+- ArrivalGate は、約定で値を決める銘柄(bf)では、楽観の側でも「到着以後の最初の**約定**」で注文を venue に渡していた。
+- そのため venue は、その時点で最後に見た板を歩いた(到着より前の板)。板をまだ一度も見ていなければ、直前の約定の値で 1 件にまとめて埋めた。
+- 観測の例:
+  - 最初の買い(00:00:00 の注文)は、00:00:00.2 の約定で 15000000 × 1.0 の 1 件になった。正解は 00:00:10 の板を 0.2 ずつ 5 段。
+  - 00:05:00 の売りは、00:00:10 の古い板を歩いた。正解は 00:05:01 の板。
+- I-3 の文は「注文の時刻以後の**最初の板の写し**」で、これと違う。
+
+### 直し(`src/bot/bt/pipeline.py` の `_run_instrument` と ArrivalGate の docstring)
+- 約定で値を決める銘柄に板が乗っていて、その側が板を歩く(tier が BOOKLESS_TIERS の外)なら、ゲートが待つ観測を**板の写し**(BookSnapshotEvent)にした。
+- 悲観の側(tier 1、板を見せない)と板の無い銘柄は、これまでどおり約定で待つ(I-3 の悲観・I-5)。
+- 段ごとの数え方と成行の残りの扱いは変えていない。
+
+### (a) 変えたファイル
+- `src/bot/bt/pipeline.py`
+
+### (b) 試験のコマンドと末尾の行(私有の basetemp、`-p no:cacheprovider -o tmp_path_retention_policy=none`、`-q` は重ねない)
+- `PYTHONPATH=src python -m pytest tests/bt/item_4/test_i4_pipeline.py --basetemp=<scratchpad>/bt/finish_worker5_pipe …` → **`17 passed in 162.60s (0:02:42)`**(直したあとの版。前回の遅延の試験の直しも含む)
+- 場面係の走らせ方の 1 場面分: `PYTHONPATH=src python3 tests/bt/battery/item_4/run_battery.py --target new_impl --out <scratchpad>/bt/finish_worker3_scene/new_impl3.tsv --scenes i4-5-fills` → 出力の行 **`i4-5-fills  I4-5  値  正解と一致  8d57d621e29e  正解と一致  8d57d621e29e`**(2 回とも一致、digest も同じ)
+- 同じ走らせ方で残る統合の 4 場面(`new_impl4.tsv`)も、4 場面とも 2 回とも「正解と一致」:
+  - `i4-5-outputs` 能力
+  - `i4-6-label` 値
+  - `i4-6-signal-refused` 能力(変形を拒んだ: price_rule は時刻だけの戦略でない)
+  - `i4-6-research-refused` 能力(変形を拒んだ: 事前登録のファイルが無い)
+- 実データの動作確認(`test_i4_real_data_smoke.py`)は、この直しのあとには回していない。前回の `2 passed in 412.22s` は、この直しの前の版。
+
+### (c) 満たせなかった条件と理由
+- 実データの動作確認をこの版で回し直していない(時間)。この直しは、板が乗った約定の銘柄(実データでは bf)の楽観の側の約定の値と時刻を変える。動作確認の試験が検める構造(4 注文とも両側で FILLED、数量の全部)が保たれるかは未確認。
+
+### (d) リードに聞くこと
+- なし。
+
+### (e) 提出前の吟味
+- **直した根拠**: I-3 の文の「注文の時刻以後の最初の板の写し」「時刻は板の写しの時刻」。場面係の別経路の試験 `test_pipeline_book_walk_matches_the_board_file`(板のファイルを読み直して正解を出す)と同じ読みである。
+- **同じ根の全箇所**: 板で値を決める側の待つ観測を決めているのは `_run_instrument` の 1 か所だけ。気配で値を決める銘柄(FX のティック)は、もともと写しそのものが観測なので変わらない。足の銘柄も変わらない(I-4)。
+- **場当たりでないこと**: 場面の値に合わせて数を変えた所は無い。待つ観測の型を規則の文に合わせただけで、場面 5 つと `test_i4_pipeline.py` 17 件が通った。
 
 **リードの読み(14:27 UTC)**: 原因はリードが挙げた 2 つのどちらでもなく、ゲートが楽観の側でも約定で待っていた(I-3 の文「最初の板の写し」と違う)。直しは規則の文に合わせたもので、統合の場面 5 つが全部「正解と一致」(2 回とも同じ digest)、test_i4_pipeline.py 17 passed。実データの動作確認はこの版で未実施 → 作業者に回させる(期限 14:42)。
 
 
 ### 置き換えの作業者(第 3 段 = 条件 3)の返り値(逐語、14:28 UTC)
 
-(取り出せず)
+## 作業者(第 3 段 = 条件 3「旧エンジンの置き換え」)の返り値
+
+**結論**: 置き換えはできたが、全試験で私の置き換えが原因の失敗が 2 件出た。指示どおり `src/bot/backtest/` の 3 本を旧(写しと同じバイト)に戻した。条件 3 は未達。原因は場面集 item_0 の出所の検めで、場面係かリードが決める事柄。
+
+**置き換えで落ちた 2 件**: `tests/bt/battery/item_0/test_battery_item0.py::test_current_impl_runs_every_scene_twice_identically`、`::test_current_impl_passes_the_provenance_check`。
+- 原因: `tests/bt/battery/item_0/run_battery.py:291` の `TARGET_DISTS["current_impl"] = {"py": ["bot.backtest", "bot.strategy"]}`。
+- 置き換えたあとに実際に走るコードは `bot.bt.compat` と `bot.bt.core` にあり、この一覧に入っていない。そのため 9 場面が「出所の検めで採点しない…対象の配布物に無い」と判定されて error になった。
+
+リードの途中の commit について: e45109a には置き換えた版が入り、63e64c0 と 8f441c9 には戻した版が入っている。HEAD 8f441c9 の `src/bot/backtest/` は fa82126 と差分 0 である。
+
+### (a) 変えたファイル
+- `src/bot/bt/compat/engine.py`(旧と同じ数を出す層)
+  - 足したもの: `run_backtest_as_old`・`evaluate_on_splits_as_old`・`route_of`・`_old_arithmetic`。`_old_arithmetic` は旧 `run_backtest` の複写で、変えたのは名前だけ。
+  - 互換の口 `run_backtest` は中身を `_on_core` に分けただけで、振る舞いは変えていない。不正な足を拒むことも含めて、核の契約は変えていない。
+  - 核を通すのは次の 4 つがすべて満たされるときだけ。どれか 1 つでも外れたら旧の算術に回す。
+    - 足がすべて核に通る。
+    - `costs` が CostModel そのもので、4 つの率が有限であり、taker の価格が正になる。
+    - `order_notional_jpy` が有限で 0 より大きい。
+    - stop・tp・maker_tp の率が None か有限。
+  - 道筋は戦略を呼ぶ前に決まる。
+- `src/bot/backtest/engine.py`・`metrics.py`・`walk_forward.py`: 委譲の形に一度置き換え、そのあと旧に戻した。置き換えた版は `materials/replace/replaced_version_reverted/` に残してある。
+- `tests/bt/compat/test_replace_layer_grid.py`(新規、107 件): 層を旧の写しと格子で突き合わせる試験。
+  - 不正な足の形 27 × 位置 4 × 選択肢(1008 セルと 28 セル)
+  - 変な選択肢の値
+  - CostModel の子クラス 4 種
+  - `evaluate_on_splits`
+  - 戦略を呼ぶ回数
+  - 正しい足が必ず核の道を通ること
+  - critic の小数価格のセルを写しと比べること
+  - 旧の算術がテキストとして写しと同一であること
+  - 格子に入れていないものの一覧はファイル冒頭に書いた。
+- `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/`:
+  - `old_engine_snapshot/`: 旧の写しと SHA256SUMS。golden が記録する sha256 と一致する。
+  - 直す前の記録: `before_old8_and_compat_at_HEAD_fa82126.log`
+  - 置き換えたあとの各記録、戻したあとの記録
+  - 変異の検証 `layer_grid_mutants.*`
+  - 速度 `speed_5000_bars_old_vs_replaced.txt`
+
+### (b) 試験のコマンドと末尾の行
+共通の形: `PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<私有>`
+
+- **直す前**(fa82126 の複写で、旧の試験 8 本 + `tests/bt/compat/`): `148 passed in 135.21s`
+- **置き換えたあと**(同じ範囲): `243 passed, 4 skipped in 475.67s`
+  - 飛ばした 4 件は「生きている旧エンジン」との比較。これは写しとの比較で置き換えた。
+  - 試験 8 本は変えていない。
+- **置き換えたあと、旧を import する 12 本**: 1 本ずつ import して全部成功した。`after_replace_12_importers_import.txt`
+- **置き換えたあとの全試験**(`--continue-on-collection-errors` つき): 11% 付近で打ち切った。
+  - `2 failed, 2316 passed, 15 skipped, 3 warnings, 1 error in 1067.24s`
+  - 失敗の 2 件は上の item_0 の出所の検め。
+  - error の 1 件は `tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py` の収集エラーで、`new_impl` という名前の取り違えによる。fa82126 でも同じエラーが出るのを確かめた。
+- **置き換えたあと、item_0 の場面集と critic の item_0**: `2 failed, 584 passed, 2 skipped`(同じ 2 件)
+- **置き換えたあと、場面集 item_1〜4**: 80 / 16 / 69 / 172 passed。失敗は 0。
+- **戻したあと**(旧の 8 本 + compat + item_0 の current_impl の 2 件): `257 passed in 545.82s`
+- **戻したあとの critic item_4**: `3 failed, 80 passed`
+  - 3 件は `test_i4r3_deferred_account_sees_each_event_once.py` で、第 3 周の批評家の新しい試験。核と口座の話で、旧エンジンとは関係しない。
+- **戻したあとの全試験**: 実行中。14:27 UTC の時点で `[  4%]`、失敗 0。
+  - ログは `/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/pytest_item4_finish_replace_full_reverted.log`
+  - 収集した試験は 21,002 件ある。今の混み具合では終わるまで約 2.5〜3 時間かかる見込み(推定)。「約 25 分」には収まらない。
+
+### (c) 満たせなかった条件と理由
+- **条件 3「全試験が全部通る」**: 置き換えた状態では、上の 2 件が落ちる。直す場所は `tests/bt/battery/item_0/` で、場面係の持ち物なので私は触れない。
+- **全試験の完走**: 21,002 件あり、時間内に終わらない。どちらの状態の実行も途中まで。
+
+### (d) リードに聞くこと
+1. item_0 の `current_impl`(現状)は、置き換えたあと何を指すことにするか。
+   - 案 A: `TARGET_DISTS["current_impl"]` に `"bot.bt"` を足す。この場合、現状 = 新エンジンの legacy になり、item_0 の表の列の意味が変わる。
+   - 案 B: `current_impl` の adapter が旧の写しを読むようにする。旧エンジンの記録として残す形。
+   - どちらかに決まれば、`replaced_version_reverted/*.py` を `src/bot/backtest/` に写すだけで置き換えを再適用できる。
+2. 層が核の通らない入力を「旧の算術の複写」で計算していることは、L-407 の「例外は作らない」を満たすと読んでよいか。
+   - 核の契約を変えずに旧と同じ数を返すには、この方法しか見つからなかった。
+   - 複写は写しとテキストで一致し、正しい足では一度も使われないことを試験で確かめている。
+3. 範囲を広げたことの確認。指示にあったのは不正な足だけだが、次の入力でも互換の口は旧と違う結果(拒否か別の数)を返していた。
+   - CostModel の子クラス(旧は上書きした `buy_price`・`fee` を使っていた。item_0 の場面 p7 がこれを使う)
+   - `order_notional_jpy` が 0 以下か NaN
+   - stop の率が NaN
+   - taker の価格が 0 以下になる費用
+   - 同じ根なので同じ層で旧の算術に回した。これでよいか。
+4. 速度: 核の道は旧より遅い。5,000 本の足で、旧の写し 0.16 秒に対し置き換えた版 2.01 秒(混んだ状態での実測)。研究のスクリプトを大きなデータで回すと時間が延びる。
+5. 全試験の実行の仕方。critic item_4 の収集エラーは既存のもので、何もしないと全試験が収集の段で止まる。私は `--continue-on-collection-errors` を付けて回した。この付け方でよいか。
+
+### (e) 提出前の吟味
+1. **要件の読み直し**: 条件 3 の文と照らした結果。
+   - 委譲にした・旧の名前を残した・例外を作らなかった・写しを置いた・格子の試験を足した・8 本と golden が通った・12 本が import できた、の 7 点は満たした。
+   - 満たせなかったのは全試験が通ることだけで、そのため戻した。
+2. **同じ根の全箇所**: 「互換の口が旧の計算した入力を拒む」という根を、選択肢の全部について probe で探した(`materials/replace` の probe の結果。拒否の種類の違いは ValueError の文で比べた)。見つかった 5 種類は全部、層で旧の数を返す。
+   - 別の根も 1 つ見つけた。「旧エンジンをモジュールの場所で見分ける箇所」で、item_0 の TARGET_DISTS と、`_old_engine_present()` で飛ぶ試験がこれに当たる。飛ぶ試験は写しとの比較で置き換えた。item_0 は (d)1 に回した。
+3. **批評家と場面集の試験**: compat・critic item_4・場面集 item_0〜4 を回した。落ちたものの原因は上に分けて書いた。
+4. **厳しい批評家なら止めるもの**:
+   - 旧の算術が層の中に残っていること → (d)2 に書いた。
+   - 置き換えたあと `run_backtest.__name__` が `run_backtest_as_old` になること(署名は旧と同じ)。
+   - 速度 → (d)4 に書いた。
+   - 互換の口そのものは不正な足を拒んだままであること(既存の試験がそれを約束している)。
+5. **場当たりの直し**: していない。試験だけを特別扱いする直しや、閾値をずらす直しは無い。
+6. **敵対者の格子**:
+   - 形・位置・選択肢で入力を並べ、層の分岐からは作らなかった。
+   - 変異を 5 通り入れ、5 通りとも捕まえた。
+   - 別に試した「ちょうど同じ値で止まる」の変異(`<=` → `<`)は値の格子では捕まらなかった。そこで写しとテキストが同一であることを確かめる試験を足して塞いだ。
+   - 格子に入れていないもの: 数値でない列、列の欠け、DataFrame でない入力、並んでいない・重複した index、例外を出す戦略、40 本以外の本数。
 
 **リードの読みと答え(14:31 UTC)**: 条件 3 は**未達**(置き換えると場面集 item_0 の出所の検め 2 件が落ちる → 指示どおり旧に戻した。HEAD の src/bot/backtest/ は fa82126 と差分 0)。(d)1 = item_0 の「現状」が置き換え後に何を指すか(案 A: 新エンジンの legacy = 表の列の意味が変わる / 案 B: 旧の写し)は**枠組みの変更(A-13)なのでオーナーに聞く**(上限の回の報告に載せる)。(d)2 = 委任文 §1 条件 3 の「旧と同じ数を出す層」の設計のとおりだが、「旧の算術の複写が層の中に残る」ことはオーナーに開示する。(d)3 = 同じ根なので認める(開示する)。(d)4 = 速度 0.16 秒 → 2.01 秒(5,000 本)はオーナーに開示。(d)5 = 収集エラーは批評家の試験(bar_rules の import)で批評家が付け替え中。`--continue-on-collection-errors` は今回はよい。全試験(21,002 件)は時間内に終わらない = 「測っていない範囲」として報告する(戻した版の全試験は背景で続行、ログの場所は上)。
 
@@ -295,3 +735,41 @@
 - 置き換えの作業者の差分(`src/bot/backtest/{engine,metrics,walk_forward}.py`、`git diff --stat` = 3 files changed, 429 insertions(+), 51 deletions(-))は読んでいない。`tests/bt/compat` は 152 passed。旧エンジンとの比べの試験が `tests/bt/item_4` にある分は未確認。
 
 **リードの処置(14:33 UTC)**: i4-r3-01 = 作業者は 14:16 に返っており、この形のままなので **[止める] 1 件**として戻す(委任文 §4「戻しを 1 回だけ」)。直し方は批評家の案のうち「id でなく値の等しさ + 時刻で照らす」ではなく、事象の同一性に依らない形(observe を消し、recheck の前に口座の時刻と mark の更新だけを別の口で行う、または核が渡す写しを口座に 1 度だけ渡して答えをそのまま核に返す)を作業者が選ぶ。批評家の試験 3 件が通ること。i4-r3-02 = 作業者の 14:25 の直しで統合の場面 5 つが「正解と一致」になった(閉じた。批評家の再検で確かめる)。i4-r3-03・04 = 報告に反映する。
+
+
+### リードの実測(14:36 UTC、コンテナの再起動のあと。作業木 = 作業者の i4-r3-01 の直しの差分をコミットした ac44f7c)
+
+```
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider --basetemp=<私有> tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py
+6 passed in 0.20s
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<私有> tests/bt/critic/item_4
+83 passed in 29.12s
+$ ... tests/bt/item_4/test_i4_pipeline.py
+18 passed in 127.98s (0:02:07)
+$ ... tests/bt/item_4/test_i4_battery_scenes.py -k "i4-5 or i4-6"
+7 passed, 88 deselected in 101.98s (0:01:41)
+```
+
+**記録の欠落について(監査役(通過)1 回目の [止める] 1)**: 役の返り値は、リードの抜き出しの機械(返り値の text の欄を探す)が SubagentHandback の欄に入った返り値を拾えず「(取り出せず)」と書いていた(6 か所)。14:45 UTC に、リードの会話に残る 4 つ(場面係 14:05・作業者 14:16・作業者 14:25・置き換え 14:28)は逐語を写し直し、第 1 段の 2 つ(参照実装の役 12:38・作業者 13:33)は出力ファイルから取り出せたものを写した(取り出せなければその旨を書いた)。抜き出しの機械の欠陥はリードのもの。
+
+### 監査役(通過)1 回目の出力(逐語、14:38 UTC。コンテナの再起動で 14:32 の検査は失われ、14:34 に起こし直した分)
+
+検査の結果(下書きの `{COND1}` `{COND1_EVID}` `{COND4}` `{COND4_EVID}` `{SMOKE}` `{CRITIC_CARRY}` 6 穴は未記入の状態での検査。埋めた後の再検査が要る)。
+
+1. [止める] docs/AUDITOR/VERDICTS/2026-09-26_backtest_env_finish.md:190,197,204,211 — 「場面係(第3段の続き)」「作業者(第2段の続き)」「作業者(i4-5-fills)」「置き換えの作業者(第3段=条件3)」の**4 つの役の返り値が全部「(取り出せず)」**で、逐語が一切残っていない。委任文 §5「監査役の出力・批評家の出力・各役の返り値は逐語で…写す」、CLAUDE.md O-4「監査役の出力をそのままここに出力すればいいだけ…後でまとめて出すから書き換えるんやろ」に反する。COND1(批評家の[止める]閉じ)・COND2(720場合一致)・COND3(置き換え・243 passed・107件・5/5捕捉等)の根拠は、逐語の代わりに**リードの要約(「リードの読み」「リードの読みと答え」)だけ**に依っている。O-3(機構・データの挙動の主張にはコマンドと出力を同じ返答に出す)も満たしていない。COND1_EVID・COND4_EVID を埋める際、この欠落自体を書かない限り根拠不明のまま通ることになる。
+
+2. [止める] REPORT_finish_2026-09-26.md:22(i4-r2-06 の行「統合の場面5つは全部『正解と一致』(2回とも同じ digest)、test_i4_pipeline.py 17 passed」)— VERDICTS.md:297「i4-r3-02 = 作業者の14:25の直しで統合の場面5つが『正解と一致』になった(**閉じた。批評家の再検で確かめる**)」と対照すると、批評家の再検はまだ条件文で明記された未完了事項。かつ CRITIC.md §4 の実測表(38 passed 140.94s 等)は `test_i4_engine_vs_independent_bar_sim.py`+`test_i4_pipeline.py` のみで `test_i4_battery_scenes.py`(i4-5-fills含む)は含まれていない。批評家自身の指摘(CRITIC.md:265)は「途中(場面係)…場面係が返ったあとに残れば[止める]」であり、その後の批評家の再確認記録が無い。下書きはこれを留保なしの既成事実として書いている。P2/P6(なぜ・確認の分解を欠いたまま断定)。
+
+3. [止める] REPORT_finish_2026-09-26.md §4(35〜42行、測っていない範囲・持ち越し)— i4-r3-01(証拠金二重観測の欠陥)は批評家により第3周で[止める]として作業者に戻し中(VERDICTS:297「作業者は…この形のままなので[止める]1件として戻す」)。この監査の起こし文が明かした「コンテナの再起動で作業者も失われ、直しの途中の差分が作業木にある」という事実——すなわち i4-r3-01 の修正が未完了・未検証のまま作業木に残っているという状態——が、下書きの§4のどの行にも書かれていない。委任文§4「2回目の批評で[止める]が残れば止めて報告する」の判定ができる状態に無いことも含め、{COND1}を埋める前提としてこの経緯の開示が要る。落ちれば「測っていない範囲・持ち越し」の記述義務(§5の記録規則)違反。
+
+4. [直す] REPORT_finish_2026-09-26.md:14(条件3の根拠欄)「**全試験で2件落ちた**」という表現 — 同じ報告の§4:37「置き換えた版は11%で打ち切り(`2 failed, 2316 passed, 15 skipped, 1 error`)」と突き合わせると、「全試験」は(i)完走して2件だけ落ちた、という読みと(ii)打ち切られた部分実行で2件落ちた、という読みの両方に取れる。同じ語を2つの意味で使い回している(P2「一度出した用語の意味を変えて使い回す」O-7型)。
+
+5. [直す] REPORT_finish_2026-09-26.md:40(`{CRITIC_CARRY}`)— 埋める内容の指定が下書きに無い。CRITIC.md §5「時間が来て読めなかった範囲」は5点(barmodel.py/engine.py本体・SPEC.md/bar_sim.py本体・場面集差分・item_4の一部試験・置き換えの差分)あるが、この5点全部が§4に反映される保証が本文のどこにも書かれていない。
+
+6. [聞く] REPORT_finish_2026-09-26.md:31-33(§3 案A/案B)— 両案とも帰結は書かれており yes/no を迫る形ではない点は確認したが、両案が実装・検証済みの選択肢か、それとも設計上の提示に留まるか(工数・実行可能性)が書かれていない。オーナーが判断する材料として十分かは判断が要る(P9/A-13は枠組みの変更として正しく上申している点は良いが、判断材料の粒度は問う余地がある)。
+
+[止める] 3 件。
+
+備考: 期限(14:50 UTC)に間に合わせるため、KNOWN_ANSWERS.md との突き合わせ、CRITIC.md §5 で読んでいないと明記された `barmodel.py`/`engine.py`/`SPEC.md`/`bar_sim.py` 本体・置き換え差分・場面集差分の中身までは検査していない(批評家自身が同じ理由で読んでいないものを、この監査でも読み切れていない)。上記1〜3は、6穴を埋める作業そのものより先に解消しないと、埋めた値の根拠が崩れる級のものとして優先度を上げてある。
+
+**リードの処置(14:41 UTC)**: 1 = 役の返り値の逐語を写し直した(上)。2 = 批評家の再検はコンテナの再起動で失われた。代わりにリードが `test_i4_battery_scenes.py -k "i4-5 or i4-6"` を回して 7 passed(i4-5-fills を含む)を実測し、報告に「批評家の再検ではなくリードの実測」と書く。3 = 報告 §4 に i4-r3-01 の経緯(作業者の直しの差分が作業木に残り、リードが批評家の試験 6 件 + critic item_4 83 件を実測して通ることを確かめた。2 回目の批評は行えていない)を書く。4 = 「全試験で 2 件落ちた」を「全試験の実行(11% で打ち切り)で 2 件落ちた」に直す。5 = 批評家の読めなかった範囲 5 点を §4 に書く。6 = 案 A・B の実行可能性(案 A = run_battery.py の一覧に 1 語を足す + 置き換えた版を写す(用意済み)/ 案 B = adapter の書き換え(未着手))を §3 に書く。
