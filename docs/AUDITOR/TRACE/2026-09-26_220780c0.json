@@ -14517,14 +14517,14 @@
   {
    "move": 532,
    "tools": {
-    "Read": 4,
+    "Read": 6,
     "mcp__Claude_Code_Remote__send_later": 5,
-    "Bash": 17,
-    "ReadNotifications": 2,
-    "Workflow": 2,
+    "Bash": 19,
+    "ReadNotifications": 3,
+    "Workflow": 3,
     "TaskStop": 4
    },
-   "n_tools": 34,
+   "n_tools": 40,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
