@@ -114,4 +114,125 @@
 
 - なし(リードの答えの内容は変えていない)。
 
-(以下は直したあとに書く)
+
+## 6. 直した根拠(指摘 1 件ごと。ファイル:行、コマンドと出力)
+
+`<B>` = `tests/bt/battery/item_4`。走らせ直しの出力・比較の出力・直す前に落ちた試験の出力の写しは
+`docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/`(before_fix_pytest_battery_and_critic.txt = 直す前 40 failed, 39 passed /
+after_fix_pytest_battery_and_critic.txt / rerun_all_targets.log / rerun_classes_by_target.tsv / compare_before_after.tsv / check_bt_considered.out /
+fingerprint_tracked_files_after.txt / run_all_r2-1.sh)。
+
+### i4-r1-02(同じ足の中の順)
+- 規則: `<B>/gen_definitions.py` の「足の模型の仕様」に **R-O1**(同じ足の中の順)・**R-M5**(取り逃しの数え方)、「互換の計算」に **L-5** を足した
+  (生成した DEFINITIONS.md の 87〜100 行・127〜129 行)。①〜⑦ の順のうち、始値の出来事が範囲の出来事より先なのは R-T1 の「始値」から導き、
+  ④ 逆指値が先は R-P3、② の中の逆指値が先は R-H3、⑤ → ⑥ → ⑦ は既存の文書に無く既存の計算の順に置いた(ここは legacy と spec が同じ。§8 の 1)。
+- 機械: `<B>/i4_scenes.py:210-217`(EXIT_EVENTS・ORDER_SPEC・ORDER_LEGACY・NEVER_TOGETHER・SAME_FILL)、`:259 exit_events`・`:290 winner`・
+  `:295 exit_fill`・`:341 order_findings`・`:377 order_pairs`。
+- 場面: spec の値の場面 i4-10-signal-first(`:1287`)・i4-10-signal-first-short・i4-10-stop-first-plain・i4-12-tp-before-maker-tp・i4-11-wick-first・
+  i4-11-wick-before-exit-limit・i4-13-stop-on-time-bar・i4-13-time-first・i4-13-time-before-exit-limit・i4-13-stop-on-time-bar-maker・
+  i4-16-stop-before-exit-limit・i4-16-tp-before-exit-limit・i4-16-maker-tp-before-exit-limit、legacy と spec の 2 出力の場面
+  i4-10-signal-first-two-models(`:1305`)・i4-13-time-first-two-models・i4-13-time-maker-tp-two-models、参照実装の場面 i4-3-ref-signal-first(`:1434`)。
+- 同じ根の全箇所: 起きうる出口の組 20 組の全部(両立しない 5 組と、どれも始値の taker で同じ約定になる 3 組 = wick/time/signal を除く)を
+  spec の順で、legacy と spec で順が違う 5 組を legacy の順で、場面が固める。既存の全場面の手の決済(round trip の全部)も同じ機械で検めた:
+  `test_every_close_is_the_winner_of_its_bar` が 0 件の食い違い。順の 2 つを入れ替えた順ごとに食い違う場面がある(`test_swapping_any_pair_of_the_order_breaks_a_scene`、
+  20 組 × spec と、違う 5 組 × legacy)。この入れ替えの試験で (time, signal)・(wick, signal) が同じ約定になることが見つかり、SAME_FILL に入れた(最初の版の
+  「22 組」は誤りで、DEFINITIONS.md の文も 20 組に直した)。
+- 批評家の試験: `tests/bt/critic/item_4/test_i4r1_scene_set_coverage.py::test_a_scene_pins_a_pending_signal_against_an_intrabar_exit` は直す前に落ち、
+  直したあと通る(materials の before / after)。
+- 実装の側: 新実装(spec)と参照実装は、この起動の作業者の直しのあと全 67 場面で正解と一致(`survey_results/new_impl.tsv`)。当方の現状(旧エンジン)は
+  L-5 の 6 場面で「不一致」(`<B>/test_battery_item4.py` の DEVIATIONS に足し、その 13 場面以外の一致を毎回確かめる)。
+
+### i4-r1-05(本題でない障害)
+- 機械: `<B>/i4_scenes.py:416 barriers`(足 0 の合図・0 でない費用・違う 2 つの率・判定から見えない費用・費用 0 の場面の損益と資産の判定)。
+- 直した場面: 判定から見えない費用を 0 にした(C_TAK の maker の率 `:494`、C_E の maker の率 `:501`、i4-9 の 2 場面 `_CM`・`_CMS` `:1009`・`:1020`、
+  i4-16-missed `_CMF` `:1183`、I4-2 の格子は `trim_costs` `:586`)。SW の足に平らな足 0 を足して合図をずらした(`:1161`、I4-15・I4-17)。
+  新しい順の場面は全部 費用 0・足 0 に合図なし・判定は約定(と取り逃し)だけ(`_WO`・`_WOM` `:1278`)。i4-12-refuse は費用を損益で見るようにした。
+- 同じ根の全箇所: 足の観点 I4-8〜I4-17 の全部に障害の無い値の場面がある(`test_every_bar_viewpoint_has_a_barrier_free_value_scene`。各観点の場面の名は
+  `python3 -c` で列べた: I4-8 i4-8-no-short / I4-9 i4-9-strict・i4-9-short-strict / I4-10 3 場面 / I4-11 4 / I4-12 1 / I4-13 4 / I4-14 1 / I4-15 2 /
+  I4-16 4 / I4-17 1)。判定から見えない費用を置いた場面は 0(`test_no_scene_sets_a_cost_its_judged_keys_cannot_see`)。
+- 検討表: 「持たないと確認した」は、観点の障害の無い値の場面のそれぞれに確かめた無さがあるときだけ(`<B>/gen_considered.py:231 judge_row`)。
+  足 0・違う率の理由は確かめた無さに数えない(`BARRIER_WORDS`)。結果: 走らせ直しで Backtrader・backtesting.py・PyBroker が I4-10・I4-12・I4-13 の障害の無い
+  場面で「正解と一致」になり、その観点の「動かせた候補」に入った(CONSIDERED.md の各観点の「動かせた候補」の行)。
+- 批評家の試験: test_a_value_scene_without_a_bar_0_signal[I4-10/12/13/15/17]・test_the_stop_priority_viewpoint_has_a_scene_with_one_fee_rate が通る。
+
+### i4-r1-06(性質の場面が taker だけ)
+- `<B>/i4_scenes.py:668 property_cases`・`:617 paths_of`・`:700 i4-2-grid-all`(全経路 24 の場合 + 先頭の部分)と経路ごとの格子 7 つ。
+  不変条件は `<B>/i4_judge.py:117 INVARIANTS`(I1〜I12)・`:140 invariants`・`:227 _skipped_exits`・`:274 _skipped_entries`・`:323 prefix_diff`。
+  I2 は「建ての数量 = 発注額 / 建値」を外して数量の保存だけにした(建値で数量を決めない道具が、経路ごとの格子で数量の決め方(R-A1、正解つきの場面の
+  観点)だけで落ちたため = 本題でない障害。R-A1 は i4-2-grid と正解つきの場面で見る)。
+- 当方の現状・新実装: 全 9 格子で正解と一致。何もしない対象・1 箇所ずつ壊した観測(値・数量・足・向き・損益・資産・何もしない・建玉を残す・先頭の部分だけ違う)は
+  全 9 格子で不一致(`test_invariants_catch_each_perturbation`)。試金石は i4-2-grid-all でも不一致(`survey_results/mutant.tsv`)。
+  Backtrader の経路ごとの格子で、同じ足で逆指値と合図の決済が両方約定する二重の決済が不変条件 I1 で見つかった(道具の振る舞い。表の不一致)。
+- 批評家の試験: test_the_property_grid_reaches_the_path[6 件] が通る。
+
+### i4-r1-07(核の粒度)
+- `<B>/i4_scenes.py:468 GRANULARITY`・`:471 granularity_of`、場面 i4-3-core-delivery(`:1419`)・i4-3-core-delivery-gap・i4-3-ref-signal-first(`:1434`)。
+  規則 C-1(DEFINITIONS.md 149 行〜)。判定は見えた物の移り変わり(`<B>/i4_judge.py:343 views`)。最初の版は呼び出しの回数も数えていたが、暦の毎分で
+  戦略を呼ぶ道具(zipline-reloaded・ziplime・qf-lib)が本題(先の足が見えない・足を飛ばさない)でない回数で落ちたので、見えた物の移り変わりに直した。
+- op "delivery" を protocol に足し、当方の現状・新実装(核の CoreEngine と Strategy)・足ごとに戦略を呼ぶ口を持つ調査結果の側の道具 14 の adapter に書いた(戦略を呼ぶ口の無い 3 つ = Luczinsritter・PineForge(構築物が消えている)・prediction-market-backtester と、口の無い軽い adapter 9 つ・再現 13 は理由を返す)。
+  走らせ直しで一致: 当方の現状・新実装・Backtrader・Basana・PyAlgoTrade・PyBroker・qf-lib・quanttrader・rqalpha・VnPy・ziplime・zipline-reloaded。
+  不一致: backtesting.py(足 0 で戦略を呼ばない)・bt(先頭に 1 行足した表を渡す)・QTradeX(最初の足を渡さない)・vectorbt(順の関数に全部の足の配列を渡す)。
+- `test_i4_3_has_a_value_scene_at_each_granularity`・`test_delivery_answers_follow_c1`。
+
+### i4-r1-08(読んでいないことを数えた)
+- `<B>/gen_considered.py:202 UNVERIFIED`・`:206 ADAPTER_WORDS`・`:214 verified_absence`・`:231 judge_row`。再現は行を引いた「無い」だけを、venv で動かした道具は
+  道具を呼んだ adapter の答え(adapter 自身の選び = 「この adapter は…」を除く)を確かめた無さに数える。「持たないと確認した」の理由には確かめた無さの部分だけを書く。
+- コマンドと出力: `awk '/^### 観点/{vp=$3} /\| 持たないと確認した \|/ && /読んでいない|読んだ範囲に無い/{print NR, vp}' <B>/opponents/CONSIDERED.md | wc -l` → 0
+  (指摘の時点では 22 行)。`python3 scripts/check_bt_considered.py <B>/opponents/CONSIDERED.md --write` → 「OK 誤り 0 件」。
+
+### i4-r1-09(変形の対照)
+- `<B>/run_battery.py:145`(more_controls を全部通ってから変形の断りを数える。対照を拒めば「対応なし」)。
+- `<B>/i4_scenes.py:966`(i4-6-signal-refused: 合成と宣言した bf の約定に price_rule、F-2 の手の計算)・`:975`(i4-6-research-refused: 事前登録の
+  ハッシュつきの研究)・`:1076`(i4-11-refuse-stack: 率の逆指値だけ)。`features`・`control_features`(`:445`・`:460`)で、変形の使う機能が全部対照で
+  使われることを検める(`test_every_variant_feature_is_used_by_a_passing_control`)。対照を 1 つ拒む偽の対象は「正解と一致」にならない
+  (`test_runner_credits_a_refusal_only_after_all_controls`、3 場面)。新実装は 3 場面とも正解と一致(対照 2 も通る)。
+
+### i4-r1-10(互換の口)
+- `<B>/adapters/new_impl.py:111 _legacy_bars`(`run_backtest`・`CostModel` と旧の Strategy の口)・`:157 _legacy_split`(`split_data`)・`:245`。
+- `test_new_impl_legacy_goes_through_the_old_mouths`(口を数えて 1 回ずつ、口を差し替えると legacy の出力が変わる)。
+
+### i4-r1-11(導入の試み)
+- `opponents/attempts/i4_r2-1_scenekeeper_install_size_measure.txt`: `pip install --dry-run --ignore-installed --report` の解決 = lumibot 320 ファイル 572.3 MiB、
+  hikyuu 104 ファイル 470.5 MiB(PySide6 の 2 本で 243 MiB)、zvt 57 ファイル 121.4 MiB。測ったときの空き 826,646,528 バイト(`df -B1 /`、08:44Z)。
+  取得の大きさで空きの 15〜73 % で、展開後はさらに大きく、並行する役の作業(第 17 周に空きが 19 MB まで落ちた実測)を止めるので導入を止めた。
+  RUNNABILITY.tsv の 56・60・67 の tried 欄(`<B>/gen_considered.py:384 MEASURED`)。`test_runnability_records_an_attempt_for_every_reproduction`。
+- 導入前の検査(PyPI と GitHub の一致など)は、導入しないので行っていない(解決と大きさの取得は PyPI の公開の情報を読むだけ)。
+
+### i4-r1-13(項目 0 の場面集)
+- 直していない(§2.9。リードの注記「項目 0 の場面集 tests/bt/battery/item_0/ には触れない」)。直し方は §2.9 に書いた。持ち越し。
+
+## 7. 提出前の吟味(委任文 §3「提出前の吟味」(1)〜(6))
+
+1. 読み直した物: 固定した要件(REQUIREMENTS.md §2 の I4-1〜I4-20)・場面集の規則 1〜9・この回の指摘 9 件。根拠は §6。
+2. 同じ根の全箇所: §6 の各項の「同じ根の全箇所」。場面の全 67・格子の全場合・検討表の全行を機械で検めた(試験の名は §4)。
+3. 試験: `PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none tests/bt/battery/item_4 tests/bt/critic/item_4` →
+   「200 passed」(直す前は 40 failed, 39 passed)。
+4. 非常に厳しい批評家なら何を [止める] にするか(列べて潰した物 / 残る物):
+   - 同じ足の順の決めのうち ⑤ → ⑥ → ⑦ は文書に無く既存の計算に合わせた: legacy と spec が同じ所だけで、新実装に有利な向きの決めではない(両方に同じ答え)。
+     文で明記した(R-O1)。**残る**: この決めが要件の文から出ないことはリードに見せる(§8 の 1)。
+   - 核の粒度の場面が「呼び出しの回数」で暦の毎分の道具を落とす偏り → 見えた物の移り変わりに直した(§6 i4-r1-07)。
+   - 経路ごとの格子が数量の決め方で道具を落とす偏り → I2 を数量の保存に直した(§6 i4-r1-06)。
+   - 費用 0 の場面で損益を判定し、決済ごとの損益を出さない道具(VnPy・zipline-reloaded)を落とす偏り → 順の場面の判定を約定だけにし、barriers に足した。
+   - 調査結果の側の adapter の弱さ: ziplime の adapter は指値・逆指値の口(LimitOrder / StopOrder)を使わず成行だけを送る(r1 からの物)。検討表ではこの部分を
+     「確かめた無さ」に数えず「再現できない」にした。**残る(持ち越し)**: adapter に指値・逆指値を書き足すこと。
+   - 批評家の試験 `tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py` は `from new_impl import TARGET` を名前で import するので、
+     `pytest tests/bt`(全体)で項目 0 の批評家の試験が先に `tests/bt/battery/item_0/adapters/new_impl.py` を `new_impl` として読み込むと、収集で
+     ImportError になり全体が止まる(`--collect-only -q tests/bt/critic` で再現。項目 4 の場面集の変更とは関わらない)。批評家の試験なので変えない(規則 8)。
+     **次の周の批評家に渡す**(直し方: `importlib.util.spec_from_file_location` で別の名前で読む)。
+   - 作業者の試験 `tests/bt/item_4/test_i4_battery_scenes.py` は新しい op "delivery" の場面を作業者の driver で走らせる。この起動の途中の走行では 2 件が
+     落ちたが、作業者が driver に op "delivery" を書き足した(`tests/bt/item_4/i4w_drive.py` 99 行)。場面係は触れていない。
+5. 場当たりでないか: 指摘の文言(I4-10 の手数料・足 0)だけを直さず、障害を名前にする機械と観点ごとの試験を置いた。順は 1 組でなく起きうる全 20 組を固めた。
+   性質の格子は経路を 1 つずつと全経路を置いた。
+6. 敵対者の格子の試験(先に書いた): `<B>/test_battery_item4_claims.py` の `test_exit_events_grid`(単独の出口の集合 8 と起きうる組 20 のうち重ならない 19、計 27 の集合 × 買い建て・売り建て =
+   54 の場合)・`test_order_matches_the_rule_text`(規則の文から書いた表との突き合わせ 20 組)・`test_invariants_catch_each_perturbation`(9 格子 × 9 種の壊し方)。
+   列に入れなかった物は同じファイルの冒頭に書いた(3 つ以上の同時の出口・始値が水準を越える足・4 以外の足の出口・0 でない費用・2 以外の建ての足 /
+   全部の恒等式を保つ壊し方)。
+
+## 8. 持ち越しとリードに見せる物
+
+1. R-O1 の ⑤ → ⑥ → ⑦(率の利確 → maker の利確 → 待つ決済の指値)は、既存の文書に無く既存の計算の順に置いた決め(オーナーの逐語にもリードの答えにも無い)。
+   legacy と spec が同じ所なので、新実装と当方の現状の比べには効かない。違う順が要るならリードが決める。
+2. i4-r1-13(項目 0 の p2-us-float-subns)は直していない(§2.9)。
+3. ziplime の adapter の指値・逆指値(§7 の 4)。
+4. 批評家の試験の import の名前のぶつかり(§7 の 4)。
+5. 前の版からの持ち越し(definitions_review.md の「持ち越し」1〜4)は変わらず。
