@@ -21,7 +21,10 @@ Keys:
   fields       logical field -> column (per kind, below)
   side_map     raw value -> "buy" | "sell" | "" (optional)
   bar          kind "bar" only, required: {"interval_s": int > 0,
-               "label": "start" | "end", "session": "24x7" (optional)}
+               "label": "start" | "end", "session": "24x7" | "24x5" (optional)}
+               (24x5 = a market closed at the weekend, FX; item 4 integration,
+               2026-09-26: the data layer has no weekly-close calendar, so for
+               24x5 only the off_grid check runs, not the gap check)
   key          "id" | "start" | "time" (optional): the key that identifies a
                row for the duplicate / conflict / generation checks
   synthetic    {"column": col, "values": [text, ...]} (optional): a column
@@ -49,6 +52,7 @@ from .timestamps import UNITS, TimeReader, check_zone
 
 FORMATS = ("csv", "jsonl")
 KINDS = ("trade", "quote", "bar", "book", "funding", "liquidation")
+SESSIONS = ("24x7", "24x5")
 ASSETS = ("crypto", "fx", "jpx")
 COMPRESSIONS = ("none", "gzip")
 KEYS = ("id", "start", "time")
@@ -268,7 +272,7 @@ def parse_spec(raw: Any) -> Spec:
         label = _choice(b["label"], ("start", "end"), "spec.bar.label")
         session = b.get("session")
         if session is not None:
-            _choice(session, ("24x7",), "spec.bar.session")
+            _choice(session, SESSIONS, "spec.bar.session")
         bar = BarSpec(iv * 1_000_000_000, label, session)
     elif "bar" in m:
         raise SpecError(f"spec.bar is for kind 'bar' only, not {kind!r}")

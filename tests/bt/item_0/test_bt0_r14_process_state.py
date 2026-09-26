@@ -283,7 +283,9 @@ def test_the_contract_states_the_rule_from_the_code():
     # colliding nested FrozenDicts compared iteratively);
     # core-18 (round 17): each container taken once per object, a key read back with a hash,
     # several colliding candidates compared on one stack
-    assert CORE_CONTRACT["version"] == "core-18"
+    # core-19 (item 4 round 1): a key's hash bounded by the objects it visits, the walk memo holds its
+    # containers, freeze's places made only when named
+    assert CORE_CONTRACT["version"] == "core-19"
     assert str(V.MAX_NESTING) in text and str(V.INT_TEXT_BITS) in text and "NUMBER_BASES" in text
     assert "registered with the numbers ABCs" not in vis["scope"] and "process_state" in vis["scope"]
     assert [k.__name__ for _, k in V.NUMBER_BASES] == ["int", "int", "float", "float", "complex", "complex"]

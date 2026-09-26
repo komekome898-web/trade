@@ -1,0 +1,17 @@
+# 作業者(項目 4 第 1 周)が核を直す前に回した第 17 周の批評家の試験の出力(2026-09-26 UTC)
+# コマンド: PYTHONPATH=src python3 -m pytest -p no:cacheprovider tests/bt/critic/item_0/test_i0r16_*.py tests/bt/critic/item_0/test_i0r17_*.py
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-freeze]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-settle]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-place_order]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-freeze]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-settle]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-place_order]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-6]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-6]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-6]
+FAILED tests/bt/critic/item_0/test_i0r17_where_text_memory.py::test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[2000]
+FAILED tests/bt/critic/item_0/test_i0r17_where_text_memory.py::test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[8000]
+14 failed, 22 passed, 2 skipped in 122.59s (0:02:02)

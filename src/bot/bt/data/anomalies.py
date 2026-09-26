@@ -15,7 +15,7 @@ row's time -- a bar's start):
   gap              (bars with session 24x7) a start on the interval grid,
                    from the first bar to the last, that no row has -- one per
                    missing start (t_ns = the missing start)
-  off_grid         (bars with session 24x7) a bar whose start is not on the
+  off_grid         (bars with session 24x7 or 24x5) a bar whose start is not on the
                    grid anchored at the first bar
   generation_gap   (two or more files, with a key) a keyed row of one file
                    whose time lies inside another file's span, while that
@@ -27,8 +27,10 @@ row's time -- a bar's start):
   synthetic        (spec.synthetic declared) a row its flag column marks as
                    synthetic
 
-A check that cannot run for a dataset (no key declared, no 24x7 session,
-one file) does not run and is not listed in its `checks`.
+A check that cannot run for a dataset (no key declared, no 24x7 session --
+a 24x5 session runs off_grid but not gap: the layer has no weekly-close
+calendar to tell a weekend from a hole --, one file) does not run and is not
+listed in its `checks`.
 
 Resolution (`resolve`): events are made only after every kind present has a
 policy the caller named:
@@ -126,18 +128,19 @@ def detect(spec, rows: list, n_files: int) -> tuple[tuple, tuple]:
         checks.append("synthetic")
         out.extend(_a("synthetic", r.time_ns, i, rows) for i, r in enumerate(rows) if r.synthetic)
 
-    if spec.kind == "bar" and spec.bar.session == "24x7" and rows:
-        checks += ["gap", "off_grid"]
+    if spec.kind == "bar" and spec.bar.session in ("24x7", "24x5") and rows:
+        checks += ["gap", "off_grid"] if spec.bar.session == "24x7" else ["off_grid"]
         iv = spec.bar.interval_ns
         starts = sorted({r.time_ns for r in rows})
         s0, s1 = starts[0], starts[-1]
         for i, r in enumerate(rows):
             if (r.time_ns - s0) % iv:
                 out.append(_a("off_grid", r.time_ns, i, rows))
-        have = set(starts)
-        for s in range(s0, s1 + 1, iv):
-            if s not in have:
-                out.append(_a("gap", s, None, rows))
+        if spec.bar.session == "24x7":
+            have = set(starts)
+            for s in range(s0, s1 + 1, iv):
+                if s not in have:
+                    out.append(_a("gap", s, None, rows))
     return tuple(out), tuple(checks)
 
 

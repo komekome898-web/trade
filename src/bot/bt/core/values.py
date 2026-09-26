@@ -981,7 +981,9 @@ def _too_deep(where: str) -> str:
 # whether a value is taken never depends on how deep the caller's stack is.
 # A container is rebuilt ONCE PER OBJECT, not once per path to it (round 17,
 # i0-r16-03): what a walk has built for a container is remembered by the
-# container's id (the walk holds the value, so no id is reused during it),
+# container's id -- the memo holds each remembered container, so its id is
+# not given to another object during the walk even if the sender drops it
+# (round 18, i0-r17-01: the root alone does not keep an inner container alive),
 # and a container met again is given the same new object. So the work of a
 # walk is decided by the objects handed over -- a value whose n tuples each
 # hold the one below twice is n rebuilds, not 2**n -- and what comes out is
@@ -1028,8 +1030,8 @@ def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable
                 if outer + len(path) >= MAX_NESTING:
                     raise fail(_DEEP, v, w)
                 path.add(key)
-                # [id, children, next index, new children, finish, memo key, height below]
-                stack.append([key, node[0], 0, [], node[1], (key, w) if tagged else key, 0])
+                # [id, children, next index, new children, finish, memo key, height below, the container]
+                stack.append([key, node[0], 0, [], node[1], (key, w) if tagged else key, 0, v])
             top = stack[-1]
             children, i = top[1], top[2]
             if i < len(children):
@@ -1051,7 +1053,9 @@ def _walk(root: Any, where: str, outer: int, open_node: Callable, leaf: Callable
             path.discard(top[0])
             built = top[4](top[3])
             height = top[6] + 1
-            memo[top[5]] = (built, height)
+            # the memo holds the sender's container itself (round 18, i0-r17-01): while it is held its id
+            # cannot be given to another object, even when the sender drops it during the walk
+            memo[top[5]] = (built, height, top[7])
             if not stack:
                 return built
             parent = stack[-1]
@@ -1072,11 +1076,67 @@ def _pairs_of(out: list) -> list:
     return [(out[i], out[i + 1]) for i in range(0, len(out), 2)]
 
 
+# how many objects the interpreter's hash may visit to hash one key or element
+# the core built (round 18, i0-r17-01): a tuple's hash is not kept, so a tuple
+# holding one tuple twice at every level is visited 2**depth times; counted
+# over the OBJECTS (each once, with its count) before the hash is asked for.
+MAX_HASH_VISITS = 1_000_000
+
+
+def _hash_visits(root: Any) -> int:
+    """The number of objects hash(root) visits (capped just above
+    MAX_HASH_VISITS): a tuple (FrozenList too) visits itself and each item's
+    visits; a FrozenDict whose hash is not made yet visits itself, and each
+    pair (a tuple) with its key's and value's visits; anything else (a
+    scalar, a frozenset -- its hash is kept by the interpreter, its elements
+    were hashed when it was made --, a FrozenDict with its hash made) 1.
+    Each object is counted once (by id; the value is held while counting)."""
+    cap = MAX_HASH_VISITS + 1
+    memo: dict = {}
+    stack: list = [(root, False)]
+    while stack:
+        x, done = stack.pop()
+        key = id(x)
+        if done:
+            t = type(x)
+            if derives(t, tuple):
+                total = 1
+                for c in tuple.__iter__(x):
+                    total += memo[id(c)][0]
+            else:  # a FrozenDict whose hash is not made
+                total = 1
+                for p in _FD_ITEMS(x):
+                    total += 1 + memo[id(p[0])][0] + memo[id(p[1])][0]
+            memo[key] = (min(total, cap), x)
+            if memo[key][0] >= cap and x is root:
+                return cap
+            continue
+        if key in memo:
+            continue
+        t = type(x)
+        if derives(t, tuple):
+            memo_pending = [c for c in tuple.__iter__(x) if id(c) not in memo]
+            stack.append((x, True))
+            stack.extend((c, False) for c in memo_pending)
+        elif t is FrozenDict and _FD_HASH(x) is _NOT_YET:
+            pairs = _FD_ITEMS(x)
+            stack.append((x, True))
+            for k, v in pairs:
+                stack.append((k, False))
+                stack.append((v, False))
+        else:
+            memo[key] = (1, x)
+    return memo[id(root)][0]
+
+
 def _hashed(x: Any, err: type, where: str, what: str) -> None:
     """A value the core built is made a key or an element only when it has
     a hash (round 16, i0-r15-02): the one it can lack is a signaling-NaN
     Decimal (Decimal's C hash refuses it), and what holds one; refused with
     the entry's own error, never the interpreter's TypeError."""
+    if _hash_visits(x) > MAX_HASH_VISITS:
+        raise err(f"{where}: hashing this {what} would visit more than {MAX_HASH_VISITS} objects (a tuple held "
+                  f"twice at every level is visited once per path to it); refused")
     try:
         hash(x)
     except TypeError:
@@ -1682,15 +1742,44 @@ def _key_text(k: Any) -> str:
     return value_text(k)  # a sender's key, named without running its code (round 14)
 
 
-def _freeze_open(value: Any, where: str) -> Any:
+class _Where:
+    """The text of a place in a value being frozen, made only when it is read
+    (an error names it): its parent's place and what is added to it (round 18,
+    i0-r17-02). Each child holds its parent and its own suffix -- the key's
+    text is made once per key -- so the places of n children at depth d cost
+    O(n + d) memory, not n texts of the whole path each."""
+
+    __slots__ = ("_parent", "_suffix")
+
+    def __init__(self, parent: Any, suffix: str) -> None:
+        self._parent = parent
+        self._suffix = suffix
+
+    def __str__(self) -> str:
+        parts = []
+        x: Any = self
+        while type(x) is _Where:
+            parts.append(x._suffix)
+            x = x._parent
+        parts.append(str(x))
+        return "".join(reversed(parts))
+
+    def __format__(self, spec: str) -> str:
+        return format(str(self), spec)
+
+    def __repr__(self) -> str:
+        return repr(str(self))
+
+
+def _freeze_open(value: Any, where: Any) -> Any:
     t = type(value)
     if not is_one_of(t, _FREEZE_TYPES):
         return None
     if t is tuple or t is FrozenList:
-        return ([(v, f"{where}[{i}]") for i, v in enumerate(tuple.__iter__(value))],
+        return ([(v, _Where(where, f"[{i}]")) for i, v in enumerate(tuple.__iter__(value))],
                 tuple if t is tuple else FrozenList)
     if t is list:
-        return [(v, f"{where}[{i}]") for i, v in enumerate(list.__iter__(value))], FrozenList
+        return [(v, _Where(where, f"[{i}]")) for i, v in enumerate(list.__iter__(value))], FrozenList
     if t is dict or t is FrozenDict:
         # read by the real type's own methods (a dict's, or the core's
         # FrozenDict's pairs), then built anew
@@ -1698,12 +1787,12 @@ def _freeze_open(value: Any, where: str) -> Any:
         children = []
         for k, v in src:
             text = _key_text(k)
-            children.append((k, f"{where} key {text}"))
-            children.append((v, f"{where}[{text}]"))
+            children.append((k, _Where(where, f" key {text}")))
+            children.append((v, _Where(where, f"[{text}]")))
         return children, lambda out: _fd_of_table(_dict_of(_pairs_of(out), ValueError, where))
     each = set.__iter__(value) if t is set else frozenset.__iter__(value)
     make = FrozenSet if (t is set or t is FrozenSet) else frozenset
-    return [(v, f"{where} element") for v in each], lambda out: _set_of(make, out, ValueError, where)
+    return [(v, _Where(where, " element")) for v in each], lambda out: _set_of(make, out, ValueError, where)
 
 
 def _freeze_fail(kind: str, value: Any, where: str) -> Exception:

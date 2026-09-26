@@ -9,10 +9,10 @@ from .events import ALL_EVENT_CLASSES, MARKET_EVENT_TYPES, NOTICE_EVENT_TYPES, S
 from .interfaces import REPORT_CLASSES, SOCKETS, FillNotice, socket_methods
 from .ordering import ORDERING_RULE
 from .time import TIME_CONTRACT
-from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
+from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_HASH_VISITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-18"
+CORE_VERSION = "core-19"
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -204,7 +204,14 @@ CORE_CONTRACT: dict = {
                          "most 5 ms each (freeze, settle, renew, thaw, ==; test_bt0_r17_shared_and_placed.py "
                          "grid S also runs them through place_order, the outbox and the account's order). Left to the interpreter: the "
                          "hash and the comparison of a TUPLE key (not kept by Python 3.11; the sender's dict "
-                         "made the same ones on the same sharing). MAX_NESTING is 100: "
+                         "made the same ones on the same sharing) -- bounded since core-19 (item 4 round 1, "
+                         "i0-r17-01): before the core asks for the hash of a key or an element it built, it counts "
+                         "over the objects how many the interpreter's hash would visit (values.MAX_HASH_VISITS "
+                         "= " + str(MAX_HASH_VISITS) + "; a sender that wrote its own FrozenDict's slots never "
+                         "hashed it) and refuses more with the entry's own error; a walk's memory of a rebuilt "
+                         "container holds that container, so its id is never given to another object during "
+                         "the walk (i0-r17-01); the places named in freeze's errors are made only when an error "
+                         "names one, so their memory is decided by the objects, not the depth (i0-r17-02). MAX_NESTING is 100: "
                          "set in round 14 from the then recursive walks (3 frames a nesting level, about 20 "
                          "for a run: within half of the default limit 1000) and kept, now bounding the "
                          "interpreter's own recursion over one value. So a registration, a subclass hook, a "
