@@ -113,6 +113,7 @@ class BarRules:
     time_exit_at_open: bool  # is the time exit taken at bar b+N's open, before that bar's range (R-O1)?
     maker_mask_at_signal: bool  # does a maker entry signal on a masked-out bar place no limit (and count no miss)?
     maker_same_side_keeps: bool  # does a maker signal the same way as the pending limit keep the old limit?
+    refuse_non_positive: bool  # are rates / bar counts <= 0 refused (None is "not used", R-V2 / R-V4)?
 
     def __post_init__(self) -> None:
         if self.level_arithmetic not in ("binary", "decimal"):
@@ -123,7 +124,8 @@ class BarRules:
             raise BarModelError(f"negative_carry must be skip or charge, got {self.negative_carry!r}")
         if type(self.tp_before_time_exit) is not bool:
             raise BarModelError("tp_before_time_exit must be a bool")
-        for name in ("signal_at_open", "time_exit_at_open", "maker_mask_at_signal", "maker_same_side_keeps"):
+        for name in ("signal_at_open", "time_exit_at_open", "maker_mask_at_signal", "maker_same_side_keeps",
+                     "refuse_non_positive"):
             if type(getattr(self, name)) is not bool:
                 raise BarModelError(f"{name} must be a bool")
 
@@ -135,10 +137,10 @@ class BarRules:
 
 LEGACY = BarRules("legacy", tp_before_time_exit=True, level_arithmetic="binary", sharpe_periods="fixed_525600",
                   negative_carry="skip", signal_at_open=False, time_exit_at_open=False, maker_mask_at_signal=False,
-                  maker_same_side_keeps=False)
+                  maker_same_side_keeps=False, refuse_non_positive=False)
 SPEC = BarRules("spec", tp_before_time_exit=False, level_arithmetic="decimal", sharpe_periods="bar_frequency",
                 negative_carry="charge", signal_at_open=True, time_exit_at_open=True, maker_mask_at_signal=True,
-                maker_same_side_keeps=True)
+                maker_same_side_keeps=True, refuse_non_positive=True)
 RULES = {"legacy": LEGACY, "spec": SPEC}
 
 
@@ -525,8 +527,9 @@ class BarVenue:
         out = [Ack(coid, f"bar-{coid}")]
         old = self.pending_limit
         if self.r.maker_mask_at_signal and order.order_type == "signal_limit" and self.position == 0.0 \
-                and self.o.entry_mask is not None and not bool(self.o.entry_mask[i]):
-            # spec (i4-r2-08, R-E2): an entry signal on a masked-out bar places no limit, counts no missed fill
+                and not self._entry_ok(i, sig):
+            # spec (i4-r2-08 / R-E4 / R-E5): an entry signal its bar's mask or the entry sides stop places no limit,
+            # replaces no pending limit and counts no missed fill
             return (*out, Canceled(coid, "entry_filtered"))
         if self.r.maker_same_side_keeps and old is not None and old.side == sig:
             # spec (i4-r2-08): the pending limit the same way stays (its price and its lifetime); no new limit
@@ -729,6 +732,13 @@ def run_bars(events: Sequence[BarEvent], decide: Callable[[int], Optional[str]],
         raise BarModelError("options must be a BarOptions (options_from_mapping builds one from a mapping)")
     n = len(events)
     options.check(n)
+    if r.refuse_non_positive:  # spec (R-V2 / R-V4): "not used" is None; 0 or less is refused, never read as "off"
+        for name in ("stop_loss_pct", "take_profit_pct", "maker_tp_pct", "max_hold_bars", "stop_window_bars"):
+            v = getattr(options, name)
+            if v is not None and v <= 0:
+                raise BarModelError(f"{name} must be > 0 or None (None = not used; R-V2), got {v!r}")
+        if options.maker_timeout_bars < 1:
+            raise BarModelError(f"maker_timeout_bars must be >= 1 (R-V4), got {options.maker_timeout_bars!r}")
     venue = BarVenue(options, r)
     strat = SignalStrategy(decide, start=start, execution=options.execution)
     if n == 0:

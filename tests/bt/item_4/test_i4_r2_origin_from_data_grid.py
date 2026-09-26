@@ -14,7 +14,9 @@ temporary root pointing at the market file, a byte copy under a temporary root i
 generator} x the market file {FX event ticks (quotes), TOPIX futures 1-minute bars} (the generator makes the same
 kind) x declared origin {real, synthetic} (the generator declares none: one column) x strategy {schedule,
 seeded_random, price_rule} x purpose {動作確認, 研究 with a pre-registration FILE}
-= (4 x 2 x 2 + 2) x 3 x 2 = 108 cells, all planned (the rule is checked at planning; nothing is executed).
+= (4 x 2 x 2 + 2) x 3 x 2 = 108 cells, all planned (the rule is checked at planning; nothing is executed). The
+rows are read through the data layer at planning, so the symbolic link out of the temporary data root is refused
+there by the data layer (PathRefused: outside the data root), whatever the declaration.
 The re-encodings (recompressed, decompressed, cut, one byte edited, every row edited) are the grid of
 test_i4_r3_origin_by_rows_grid.py. Not in the grid: market data that exists only outside this environment (the
 owner's PC: a file, so real by the rule, with evidence "unmatched").
@@ -70,13 +72,15 @@ ZERO = D.COSTS0
 
 CELLS = ([(pl, f, o, s, p) for pl, f, o, s, p in itertools.product(PLACEMENTS, MARKET, ("real", "synthetic"), STRATS,
                                                                     PURPOSES)]
-         + [("synthetic_file", "syn", o, s, p) for o, s, p in itertools.product(("real", "synthetic"), STRATS, PURPOSES)])
+         + [("generator", f, "-", s, p) for f, s, p in itertools.product(MARKET, STRATS, PURPOSES)])
 
 
 def expected(placement: str, origin: str, strat: str, purpose: str):
     """The rule text above -> "refuse" or the origin the run records."""
     if placement == "generator":
         return "synthetic"
+    if placement == "symlink_to_market":
+        return "refuse"  # the rows are read at planning; the data layer refuses a link out of the data root
     if origin == "synthetic":
         return "refuse"  # a file cannot be synthetic
     if purpose == "動作確認" and strat == "price_rule":

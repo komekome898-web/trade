@@ -261,3 +261,26 @@ def test_the_run_id_changes_with_every_declared_input_and_not_with_the_runs_dir(
     g1 = plan_pipeline(**_gen_args(root)).run_id
     g2 = plan_pipeline(**_gen_args(root, datasets=[{"name": "g", "generator": dict(GEN, seed=6)}])).run_id
     assert g1 != g2
+
+
+def test_the_range_reaches_tier_6_and_funding_is_declarable():
+    """The integrated run takes every FillSpec item 2 has (tier 6's impact function as a mapping) and a funding
+    rule; on a generated book the pessimistic side (impact) buys dearer and sells cheaper than the optimistic one."""
+    root, _, _ = _root()
+    gen = {"name": "random_walk", "seed": 1, "params": {"kind": "quote", "start_ns": T0, "step_ns": NS, "n": 600,
+                                                        "price0": 100.0, "step_pct": 0.05, "qty": 5.0,
+                                                        "spread_pct": 0.02}}
+    fill = {"optimistic": {"tier": 3},
+            "pessimistic": {"tier": 6, "impact": {"kind": "linear_temporary", "basis": "opposite_best", "k": 0.01}}}
+    costs = dict(D.COSTS0, funding={"price": "event_mark"})
+    res = run_pipeline(plan_pipeline(**_gen_args(root, datasets=[{"name": "g", "generator": gen}],
+                                                 instruments=[D.instrument("g", "g", "quote")], fill=fill, costs=costs,
+                                                 strategy={"kind": "schedule", "orders": [
+                                                     {"t_ns": T0 + 10 * NS, "side": "buy", "qty": 1.0},
+                                                     {"t_ns": T0 + 100 * NS, "side": "sell", "qty": 1.0}]})),
+                       runs_dir=tempfile.mkdtemp())
+    opt, pes = res.range["optimistic"]["g"].fills, res.range["pessimistic"]["g"].fills
+    assert [f["side"] for f in opt] == [f["side"] for f in pes] == ["buy", "sell"]
+    assert pes[0]["px"] > opt[0]["px"] and pes[1]["px"] < opt[1]["px"]
+    assert res.record["engine"]["pessimistic"]["g"]["fill_tier"] == 6
+    assert res.record["config"]["costs"]["funding"] == {"price": "event_mark"}

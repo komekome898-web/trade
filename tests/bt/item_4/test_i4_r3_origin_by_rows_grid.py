@@ -11,7 +11,8 @@ WHAT IS JUDGED REAL MARKET DATA, BY EVIDENCE (the rows): the market file itself;
 decompressed; cut to a part (the first rows, rows in the middle); one row's value edited by one byte (the other rows
 still match: rows_matched = rows_read - 1); the columns reordered (the data layer's normalised rows are the same).
 WHAT IS NOT MATCHED (evidence "unmatched", the dataset STILL real by the rule, so §4 still applies): every row edited
-(no row equal to a market row); market data that exists only outside this environment (the owner's PC); a market
+(no row equal to a market row; an edit can still equal ANOTHER market file's row -- e.g. the TOPIX volume edited
+into a mini-TOPIX row -- which is evidence by the rule); market data that exists only outside this environment (the owner's PC); a market
 file whose rows are sealed (the data layer refuses the sealed rows, recorded in sealed_skipped); a market file the
 first/last-row time bounds miss (its rows out of time order); zip files (the data layer reads none / gzip only).
 
@@ -44,12 +45,17 @@ CELLS = list(itertools.product(sorted(G.MARKET), WAYS, ("real", "synthetic"), ("
 
 
 def _edit_last_field(line: bytes) -> bytes:
-    return line + b"1"  # the last column's value gains a digit: another value
+    """The third column (a price: FX ask, TOPIX open) gains a trailing 7: another value off the price grid. (An edit
+    of the TOPIX volume can equal a real row of the mini-TOPIX file -- same prices, another volume -- which IS
+    evidence of market data by the rule; the price edit does not.)"""
+    c = line.split(b",")
+    c[2] = c[2] + (b"7" if b"." in c[2] else b".07")
+    return b",".join(c)
 
 
 def _rewrite(src: Path, dst: str, way: str) -> dict:
     raw_gz = src.read_bytes()
-    raw = gzip.decompress(raw_gz)
+    raw = gzip.decompress(raw_gz).replace(b"\r\n", b"\n")  # the TOPIX file ends its lines with CRLF
     lines = raw.rstrip(b"\n").split(b"\n")
     head, body = lines[0], lines[1:]
     if way == "as_is":

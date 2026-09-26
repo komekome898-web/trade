@@ -146,6 +146,7 @@ QUANTILE_PROBS = (0.05, 0.25, 0.5, 0.75, 0.95)
 MARKOUT_HORIZONS_S = (60, 300)
 PIPELINE_VERSION = "bt-item4-pipeline-r3"
 GENERATOR_VERSION = "random_walk-1"
+_DAY_NS = 86_400 * 1_000_000_000
 _PRICE_EVENT = {"trade": TradeEvent, "quote": BookSnapshotEvent, "book": BookSnapshotEvent, "bar": BarEvent}
 
 
@@ -406,7 +407,10 @@ def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
         if rkey not in _ROWS_CACHE:
             sp = {**spec, "compression": "gzip" if gz else "none"}
             try:
-                got = load(REPO, [{"name": "m", "paths": [rel], "spec": sp, "range_ns": [lo, hi + 1]}]).records("m")
+                # a day's margin on both sides: the data layer's range of a bar may be read on another of its
+                # times (start / end); rows outside the dataset's span cannot match it, so the margin adds no match
+                got = load(REPO, [{"name": "m", "paths": [rel], "spec": sp,
+                                   "range_ns": [lo - _DAY_NS, hi + _DAY_NS]}]).records("m")
                 _ROWS_CACHE[rkey] = frozenset(_row_key(r) for r in got)
             except DataError as exc:
                 _ROWS_CACHE[rkey] = f"{type(exc).__name__}"

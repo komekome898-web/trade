@@ -211,8 +211,8 @@ def run_rules(bars, bar_seconds, signals: dict, config: dict) -> dict:
                 continue  # nothing to do the same way as the position
             if pos is None and sig == "SELL" and not cfg["allow_short"]:
                 continue  # R-T4
-            if pos is None and mask is not None and not mask[j]:
-                continue  # R-E2 + the lead's value (i4-r2-08): no limit, no missed fill
+            if pos is None and not may_open(sig, j):
+                continue  # R-E4 / R-E5 (i4-r2-08): a stopped entry signal places no limit, counts no missed fill
             if pend_limit is not None and pend_limit[0] == sig:
                 continue  # the lead's value (i4-r2-08): the old limit stays
             if pend_limit is not None and pend_limit[0] != sig:  # R-M3

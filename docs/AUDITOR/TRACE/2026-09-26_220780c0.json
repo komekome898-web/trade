@@ -14834,10 +14834,10 @@
   {
    "move": 543,
    "tools": {
-    "Read": 1,
-    "Bash": 1
+    "Read": 2,
+    "Bash": 2
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
