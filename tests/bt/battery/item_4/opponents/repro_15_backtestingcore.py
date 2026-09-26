@@ -27,6 +27,10 @@ Rules taken (candle_sim.rs unless named):
   scene's daily rate is handed as funding_rate_8h = daily / 3.
 - Any open position is closed at the last close (704-720).  The equity curve is cash + margin + unrealized PnL at the
   close of every bar (680-690).
+Observed here: `pnls` = the tool's trade_returns (each closed trade's PnL) and `equity` = its equity curve, both
+outputs of the tool; `fills` are the simulator's internal fill prices and quantities (entry_price / position_qty at
+each booking) -- the tool's result (CandleSimResult) has no fill list, so this is an instrumentation of the rewrite,
+not an output of the tool.
 """
 from __future__ import annotations
 

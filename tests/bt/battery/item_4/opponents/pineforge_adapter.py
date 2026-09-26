@@ -111,6 +111,10 @@ class PineForgeAdapter(Base):
         args = [EXE, f"tf={tf}", f"capital={float(cfg['initial_equity'])!r}", "tick=1e-8", "fee_kind=0",
                 f"fee_value={float(c['taker_fee_pct'])!r}"] + acts + ["--"] + \
                [f"{b['t_ns'] // 10**6}:{b['open']!r}:{b['high']!r}:{b['low']!r}:{b['close']!r}:{b['volume']!r}" for b in bars]
+        import os
+        if not os.path.exists(EXE):
+            raise NotExpressible(f"{self.TOOL}: 項目 2 の driver({EXE})と道具の clone(venvs/item_2/src/c70)が scratchpad から消えていて"
+                                 "(他の役の容量の片付け。この役は消していない)、道具を呼べない。構築し直しはこの周の持ち越し")
         try:
             r = subprocess.run(args, capture_output=True, text=True, timeout=120)
         except Exception as exc:

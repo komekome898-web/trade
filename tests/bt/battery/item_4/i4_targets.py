@@ -46,6 +46,7 @@ SURVEY: dict[str, dict] = {
     "opp_pineforge": {"module": "opponents/pineforge_adapter.py", "venv": "item_2/c70", "cand": 70},
     "opp_quanttrader": {"module": "opponents/quanttrader_adapter.py", "venv": "item_4/quanttrader", "cand": 68},
     "opp_fast_trade": {"module": "opponents/fast_trade_adapter.py", "venv": "item_4/fast-trade", "cand": 10},
+    "opp_qflib": {"module": "opponents/qflib_adapter.py", "venv": "item_4/qf-lib", "cand": 62},
     "opp_zipline_reloaded": {"module": "opponents/zipline_reloaded_adapter.py", "venv": "item_4/zipline-reloaded", "cand": 18},
 }
 TARGETS.update(SURVEY)
@@ -65,5 +66,6 @@ REPRO: dict[str, dict] = {
     "opp_repro_57_wondertrader": {"module": "opponents/repro_57_wondertrader.py", "cand": 57},
     "opp_repro_94_mote": {"module": "opponents/repro_94_mote.py", "cand": 94},
     "opp_repro_80_hummingbot": {"module": "opponents/repro_80_hummingbot.py", "cand": 80},
+    "opp_repro_61_barter": {"module": "opponents/repro_61_barter.py", "cand": 61},
 }
 TARGETS.update(REPRO)

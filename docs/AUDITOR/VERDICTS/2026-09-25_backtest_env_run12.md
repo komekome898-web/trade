@@ -554,3 +554,53 @@ A の不一致 3 件は、どれも正解より 32400 秒(9 時間)遅い値に�
 - **リードの誤り 1 件**: `item_2/src` は item_2/c92(候補 92、prediction-market-backtester の編集可能な導入。`.pth` が `item_2/src/c92/src` を指す)の本体だった。項目 4 の対象表は c92 を参照している。`git clone --depth 1` で `item_2/src/c92` を入れ直し、`item_2/c92/bin/python -c "import pm_bt"` が通ることを確かめた(clone のコミット c77dff74、2026-03-07)。**前の clone のコミットが同じかは未確認**(記録 `item_2/logs/c92.log` も消したため)。残りの 19 本の venv は `bin/python --version` で全部起動することを確かめた。
 - 残っているもの: item_0(backtesting/backtrader/basana/pybotters/qstrader/vnpy)、item_1(c3/c87/finmarketpy/hftbacktest/qlib/vectorbt)、item_2(bt/c70/c92/qtradex/ziplime)、item_3(c16/freqtrade)、item_4(作成中)。合計約 12 GB。**これ以上は消せない**(全部 項目 4 の対象表が参照する)。項目 4 の途中でまた底を突けば、run を止めて対象を減らすかをオーナーに聞く(有料インフラは提案しない、A-3)。
 - git gc は打っていない。
+
+### 場面:4 の返り値(逐語。03:27〜05:27 UTC、見回り 3 で写した)
+
+```json
+{
+ "battery_dir": "/home/user/trade/tests/bt/battery/item_4",
+ "definitions": "/home/user/trade/tests/bt/battery/item_4/DEFINITIONS.md（`gen_definitions.py` で作り直した 535 行。末尾の「提出前の吟味」は definitions_review.md を写したもの。終わる条件は「1 周だけ」で、持ち越しが 4 件ある）。検討表は /home/user/trade/tests/bt/battery/item_4/opponents/CONSIDERED.md、導入と構築の試みの台帳は opponents/RUNNABILITY.tsv（59 候補）。どちらも gen_considered.py が作った。走行の表は survey_results/ にある（42 本）",
+ "runner": "/home/user/trade/tests/bt/battery/item_4/run_battery.py（`--target <対象> --out <tsv>` で各場面を 2 回走らせ、2 回の結果が同じかを repro 列に書く）。対象の一覧は i4_targets.py にある。当方の現状・新実装・mutant と、venv で走らせた調査の対象 26 本（今回加えた opp_qflib・opp_zipline_reloaded を含む）、一次資料から再現した 13 本。試験の実測: `PYTHONPATH=src python -m pytest tests/bt/battery/item_4` は 15 passed。全試験は setsid nohup で切り離して走らせた（記録 scratchpad/bt/pytest_item4_r1_scenekeeper.log）。結果は 14 failed / 19038 passed / 8 skipped（1281 秒）。落ちた 14 件は全部 tests/bt/critic/item_0/test_i0r17_*（3 ファイル）で、この役が触っていない項目 0 の批評家の試験である",
+ "scenarios": 40,
+ "mutant": "/home/user/trade/tests/bt/battery/item_4/mutant.py: 新実装の口（adapters/new_impl.py）を包み、足の入力の config.maker_timeout_bars を 1 つ増やす欠陥を 1 つだけ植える（plant）。新実装はまだ口だけなので、走行の表 survey_results/mutant.tsv は 40 場面とも「結果なし」。欠陥が場面で捕まることは test_mutant_plants_one_defect_and_breaks_its_scenes が当方の現状を土台にして確かめている。i4-16-missed と i4-3-e2e-maker が「正解と一致」から「不一致」に変わり、i4-8-next-open は一致のまま（通過）",
+ "survey_run": [
+  "current_impl（当方の現状 = 旧エンジン）: 正解と一致 26・不一致 7（L-1〜L-4 の 7 場面だけ）・結果なし 7",
+  "opp_backtrader(2): 正解と一致 11・不一致 6・結果なし 23",
+  "opp_backtesting(55): 正解と一致 5・不一致 7・結果なし 28",
+  "opp_vectorbt(73): 正解と一致 5・不一致 4・結果なし 31",
+  "opp_pyalgotrade(122): 正解と一致 4・不一致 16・結果なし 20",
+  "opp_pybroker(4): 正解と一致 3・不一致 8・結果なし 29",
+  "opp_luczinsritter(16): 正解と一致 5・結果なし 35（clone が消えていたので同じ commit 20929924 を取り直した）",
+  "opp_vnpy(20): 正解と一致 3・不一致 8・結果なし 29",
+  "opp_basana(1): 正解と一致 1・不一致 4・結果なし 35",
+  "opp_bt(5、台帳の名は Lean CLI): 正解と一致 6・結果なし 34",
+  "opp_qtradex(72): 正解と一致 2・結果なし 38",
+  "opp_ziplime(6): 正解と一致 3・不一致 3・結果なし 34",
+  "opp_zipline_reloaded(18、今回導入): 正解と一致 3・不一致 8・結果なし 29",
+  "opp_qflib(62、今回導入。宣言されていない PyJWT・oauthlib・requests-oauthlib を venv に足した): 不一致 11・結果なし 29。約定は合図の足から 2 本後の始値（走行で測った）",
+  "opp_quanttrader(68、numpy 1.23.5・pandas 1.5.3・matplotlib 3.7.5 に固定して走らせた): 不一致 8・結果なし 32",
+  "opp_rqalpha(53): 不一致 3・結果なし 37",
+  "opp_pm_backtester(92): 対応なし 25・結果なし 15（値が [0,1] の外なので道具が拒む）",
+  "口が無く、全場面が結果なしになった対象（道具の読み込みはできた）: opp_qstrader(121)・opp_qlib(21)・opp_hftbacktest(23)・opp_pysystemtrade(3、clone を取り直した)・opp_pytrendfollow(87、clone を取り直した)・opp_finmarketpy(54、plotly<6 を入れて import を直した)・opp_freqtrade(75)・opp_pybotters(12)・opp_fast_trade(10)",
+  "再現（一次資料から書き写し、場面に通した。ファイルは opponents/repro_*.py）: 67 lumibot（正解と一致 4・不一致 13）、60 Hikyuu（正解と一致 5・不一致 1）、15 BacktestingCore（正解と一致 7・不一致 8）、8 OpenTrader（正解と一致 1・不一致 3）、56 zvt（不一致 11）、69 gobacktest（不一致 9）、11 OctoBot（不一致 9）、7 Superalgos（不一致 19）、52 LEAN（正解と一致 3・不一致 14）、57 WonderTrader（正解と一致 4・不一致 12）、94 mote（不一致 9）、80 Hummingbot（不一致 8）、61 barter-rs（不一致 5）。13 本とも、2 回の実行で同じ結果になった"
+ ],
+ "survey_not_run": [
+  "OK 誤り 0 件",
+  "70 PineForge: この役の最初の走行では走った。その後、項目 2 の clone・構築物・C の driver の source が、他の役の容量の片付けで scratchpad から消えた。最後の走行では道具を呼べず、最初の走行の表も上書きされて残っていない。構築し直しは持ち越し（検討表の判断は「再現できない」）",
+  "危険な 7 件（19 Jesse・44 lo2cin4・51 QUANTAXIS・58 nautilus_trader・74 ml-quant-trading・111 HKUDS/Vibe-Trading・120 wbt）: 導入も一次資料の読みもしていない。(a) の書き写しだけで、判断は「再現できない（危険）」",
+  "85 czsc: 検証の本体が wbt（危険な候補 120）なので導入していない。czsc/traders/__init__.py 27 行に `from wbt import WeightBacktest` がある。判断は「再現できない」",
+  "40 OpenMarket・45 ForexTester・46 MT4裁量トレード練習君プレミアム・48 BacktestingMax・50 AlgoTest: 閉じた場か有料の品で、コードが公開されていない。登録も購入もしない。判断は「再現できない」",
+  "43 QuantDinger: 公開の repo（975 ファイル）に足の約定の本体が無い。判断は「再現できない」",
+  "13 DeviaVir/zenbot・123 carlos8f/zenbot（同じ commit 52872fb4）: 入力は約定の列で、足を受ける口が無い（engine.js 23-24・135-167 行）。判断は「持たないと確認した」",
+  "107 sigc: 項目 0 が構築した実行ファイルが消えている。重みと終値から終値の収益だけで、注文と約定の口が無い（backtest.rs 23-140 行）。判断は「持たないと確認した」",
+  "93 binary_market_engine（I4-5 の候補）: 合成の市場か取得の市場だけで、宣言でファイルを読む口が無い。判断は「持たないと確認した」",
+  "86 analyzingalpha: 中身は backtrader の戦略の写経の集まりで、機構は候補 2 そのもの（SCAN 5711 行）。判断は「スキップ: 明らかに弱い（上位互換）」",
+  "再現の中で、一次資料を読んでいない部分に当たる場面は「再現できない」に数えた: OctoBot の模擬の手数料の率、LEAN の持ち越し・資産・同じ足の上の注文の走査の順（未確認）、Hikyuu の空売り、WonderTrader の資産。持ち越し"
+ ]
+}
+```
+
+**リードの注記(05:32 UTC)**: 返り値の survey_not_run の「70 PineForge: …項目 2 の clone・構築物・C の driver の source が、他の役の容量の片付けで scratchpad から消えた」の「他の役」は**リード**である(上の節「03:45 UTC」の片付けで `item_2/src`・`item_2/drivers` を消した。i4_targets.py の参照だけを残す判断で、PineForge の driver は対象表に venv の行が無かったため残らなかった)。PineForge(70)の構築し直しは持ち越し(場面係の判断「再現できない」のまま。**原因はリードの片付け**であり道具の側の欠陥ではない)。同じ理由で clone を取り直した対象 3 件(16・3・87)は場面係が取り直して走った。
+段の途中なので設計に規則は足していない。次は 参照実装:4(05:27 UTC 開始)→ 作る:4 → 表:4 → 批評:4 → 審査員。
+

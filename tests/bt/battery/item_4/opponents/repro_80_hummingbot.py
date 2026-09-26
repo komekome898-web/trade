@@ -17,6 +17,9 @@ Rules taken:
   timestamp + time_limit (24, 28); the earliest of them closes (66), ties go to take profit, then stop loss (68-76).
   The result is net_pnl_quote = net_pnl_pct x amount x entry price (45-47), i.e. an exit at that row's close.
 - One `trade_cost` for every trade (run_backtesting 225, simulate 10).
+Observed here: `pnls` = the executor's net_pnl_quote at its close row (an output of the tool); `fills` are the entry
+row's close and the close row's close, the prices the simulation's PnL is built on (37, 41-47) -- the executor
+simulation has no fill list, so they are an instrumentation of the rewrite, not an output of the tool.
 """
 from __future__ import annotations
 
