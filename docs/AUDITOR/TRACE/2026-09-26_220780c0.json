@@ -14834,10 +14834,12 @@
   {
    "move": 543,
    "tools": {
-    "Read": 2,
-    "Bash": 2
+    "Read": 3,
+    "Bash": 3,
+    "ReadNotifications": 1,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 4,
+   "n_tools": 8,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

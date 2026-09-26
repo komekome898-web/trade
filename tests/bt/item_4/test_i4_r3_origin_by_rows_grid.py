@@ -45,11 +45,14 @@ CELLS = list(itertools.product(sorted(G.MARKET), WAYS, ("real", "synthetic"), ("
 
 
 def _edit_last_field(line: bytes) -> bytes:
-    """The third column (a price: FX ask, TOPIX open) gains a trailing 7: another value off the price grid. (An edit
-    of the TOPIX volume can equal a real row of the mini-TOPIX file -- same prices, another volume -- which IS
-    evidence of market data by the rule; the price edit does not.)"""
+    """Every price column gains a trailing 7 (FX bid / ask = columns 1-2; a TOPIX bar's open / high / low / close =
+    columns 2-5 when the row has 7 columns): other values off the price grid, the order of the prices kept (a bar
+    stays a valid bar). (An edit of the TOPIX volume can equal a real row of the mini-TOPIX file -- same prices,
+    another volume -- which IS evidence of market data by the rule; the price edit does not.)"""
     c = line.split(b",")
-    c[2] = c[2] + (b"7" if b"." in c[2] else b".07")
+    cols = (2, 3, 4, 5) if len(c) == 7 else (1, 2)
+    for k in cols:
+        c[k] = c[k] + (b"7" if b"." in c[k] else b".07")
     return b",".join(c)
 
 
