@@ -14484,19 +14484,21 @@
   {
    "move": 531,
    "tools": {
-    "Read": 11,
-    "Bash": 32,
-    "mcp__Claude_Code_Remote__send_later": 6,
-    "ReadNotifications": 5,
+    "Read": 12,
+    "Bash": 43,
+    "mcp__Claude_Code_Remote__send_later": 7,
+    "ReadNotifications": 6,
     "Workflow": 1,
-    "Write": 1
+    "Write": 1,
+    "TaskStop": 1,
+    "mcp__Claude_Code_Remote__delete_trigger": 1
    },
-   "n_tools": 56,
+   "n_tools": 72,
    "read_goal": true,
    "first_write_at": 42,
-   "table_shown": false,
-   "claims_without_output": 0,
-   "claims_total": 3,
+   "table_shown": true,
+   "claims_without_output": 1,
+   "claims_total": 4,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 1,
@@ -14520,14 +14522,14 @@
    "value": 0.9412
   },
   "P2_table_shown_before_first_write": {
-   "num": 5,
+   "num": 6,
    "den": 68,
-   "value": 0.0735
+   "value": 0.0882
   },
   "P3_claim_with_output": {
    "num": 197,
-   "den": 498,
-   "value": 0.3956
+   "den": 499,
+   "value": 0.3948
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -14536,7 +14538,7 @@
   },
   "P5_tools_per_move": {
    "median": 6,
-   "max": 64,
+   "max": 72,
    "n": 515
   },
   "P6_findings_applied": {
