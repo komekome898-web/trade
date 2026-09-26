@@ -197,6 +197,9 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
   **指示の語に無い変更**(リードに聞くこと 9)。
 - 値で条件づけた戦略の対照(i4-6-signal-refused の対照 2)の楽観の側も、同じ注文を I-3 で板に歩かせて出した(`_PR_FILLS2`)。
 - 試験: `test_pipeline_book_walk_matches_the_board_file` を足した(場面が書く板のファイルを読み直して、板の歩き方の正解を別に導き直す)。
+- 規則 4: 5 場面を全 42 対象に通し直した(`<M>/run_new_scenes5.sh`、13:55:05〜14:02:03 UTC、全部 rc=0)。**新実装と mutant は 5 場面とも「結果なし」**:
+  `VenueProtocolError: on_order: fill model gave no Ack/Reject/StateUnknown for order 'leg2'`(`src/bot/bt/core/engine.py:1282`。作業者が同じ時刻に
+  src/ を直している最中の版)。他の 40 対象は 5 場面とも「結果なし」。
 - リードの答え: i4-6-signal-refused の対照 2 の置き換え = 認める。I4-1 の参照の側から指標を外すこと = 認める。PineForge = 比べていないのまま。
 
 ## リードに聞くこと
@@ -229,23 +232,13 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
 
 ## `git diff --name-only HEAD` の節(`diff_scope.py` が作った。手で変えない)
 
-<!-- diff_scope:begin sha256=c5f85df79d365386bc33553016041eb1bc904c4bfcea63c34ce6e0f035b4f4ac -->
+<!-- diff_scope:begin sha256=fe67db604fabb4e1851a6715da819d29558938b475cd3b30e581f4d2d560754a -->
 ```text
-HEAD: fa82126eab3d289e2433befa65f226108334976b
+HEAD: 920a34b1ead654bdd510dbb7a42e053f19431895
 
 $ git diff --name-only HEAD
-docs/AUDITOR/TRACE/2026-09-26_220780c0.json
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-src/bot/backtest/engine.py
-src/bot/backtest/metrics.py
-src/bot/backtest/walk_forward.py
-src/bot/bt/compat/engine.py
-src/bot/bt/reference/bar_rules.py
-tests/bt/battery/item_4/DEFINITIONS.md
+src/bot/bt/pipeline.py
 tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
-tests/bt/battery/item_4/adapters/new_impl.py
-tests/bt/battery/item_4/gen_definitions.py
-tests/bt/battery/item_4/i4_scenes.py
 tests/bt/battery/item_4/survey_results/current_impl.tsv
 tests/bt/battery/item_4/survey_results/mutant.tsv
 tests/bt/battery/item_4/survey_results/new_impl.tsv
@@ -288,24 +281,11 @@ tests/bt/battery/item_4/survey_results/opp_vectorbt.tsv
 tests/bt/battery/item_4/survey_results/opp_vnpy.tsv
 tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
 tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
-tests/bt/battery/item_4/test_battery_item4.py
-tests/bt/item_4/i4w_drive.py
-tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
-tests/bt/item_4/test_i4_spec_vs_reference_grid.py
+tests/bt/item_4/test_i4_pipeline.py
 
 $ git status --porcelain --untracked-files=all
- M docs/AUDITOR/TRACE/2026-09-26_220780c0.json
- M docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
- M src/bot/backtest/engine.py
- M src/bot/backtest/metrics.py
- M src/bot/backtest/walk_forward.py
- M src/bot/bt/compat/engine.py
-D  src/bot/bt/reference/bar_rules.py
- M tests/bt/battery/item_4/DEFINITIONS.md
+ M src/bot/bt/pipeline.py
  M tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
- M tests/bt/battery/item_4/adapters/new_impl.py
- M tests/bt/battery/item_4/gen_definitions.py
- M tests/bt/battery/item_4/i4_scenes.py
  M tests/bt/battery/item_4/survey_results/current_impl.tsv
  M tests/bt/battery/item_4/survey_results/mutant.tsv
  M tests/bt/battery/item_4/survey_results/new_impl.tsv
@@ -348,55 +328,23 @@ D  src/bot/bt/reference/bar_rules.py
  M tests/bt/battery/item_4/survey_results/opp_vnpy.tsv
  M tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
  M tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
- M tests/bt/battery/item_4/test_battery_item4.py
- M tests/bt/item_4/i4w_drive.py
- M tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
- M tests/bt/item_4/test_i4_spec_vs_reference_grid.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes4.log
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes4.sh
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/stage3_probe_pipe.out
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/stage3_probe_pipe.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/before_old8_and_compat_at_HEAD_fa82126.log
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/before_old8_and_compat_at_HEAD_fa82126_first_try_without_schema_dir.log
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/compat_engine_before_layer.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/SHA256SUMS
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/__init__.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/engine.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/metrics.py
-?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/walk_forward.py
-?? tests/bt/compat/test_replace_layer_grid.py
+ M tests/bt/item_4/test_i4_pipeline.py
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes5.log
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes5.sh
 
 台本の checkBattery(項目 4、node で台本の文から切り出して走らせた。tests_passed は真として渡す)の指摘:
-{"id": "bself-touch", "level": "止める", "repeat_of": null, "text": "場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md, src/bot/backtest/engine.py, src/bot/backtest/metrics.py, src/bot/backtest/walk_forward.py, src/bot/bt/compat/engine.py, src/bot/bt/reference/bar_rules.py, tests/bt/item_4/i4w_drive.py, tests/bt/item_4/test_i4_r2_signal_at_open_grid.py, tests/bt/item_4/test_i4_spec_vs_reference_grid.py"}
+{"id": "bself-touch", "level": "止める", "repeat_of": null, "text": "場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): src/bot/bt/pipeline.py, tests/bt/item_4/test_i4_pipeline.py"}
 
 検査が止める行(場面集の外):
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-src/bot/backtest/engine.py
-src/bot/backtest/metrics.py
-src/bot/backtest/walk_forward.py
-src/bot/bt/compat/engine.py
-src/bot/bt/reference/bar_rules.py
-tests/bt/item_4/i4w_drive.py
-tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
-tests/bt/item_4/test_i4_spec_vs_reference_grid.py
+src/bot/bt/pipeline.py
+tests/bt/item_4/test_i4_pipeline.py
 
 記録の上書き(HEAD にある materials の記録が変わっている = 追記だけの規則の破れ):
 (無し)
 
 未追跡で場面集の外(git diff に出ないので検査に見えない):
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes4.log
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes4.sh
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/stage3_probe_pipe.out
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/stage3_probe_pipe.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/before_old8_and_compat_at_HEAD_fa82126.log
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/before_old8_and_compat_at_HEAD_fa82126_first_try_without_schema_dir.log
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/compat_engine_before_layer.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/SHA256SUMS
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/__init__.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/engine.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/metrics.py
-docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/materials/replace/old_engine_snapshot/walk_forward.py
-tests/bt/compat/test_replace_layer_grid.py
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes5.log
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r3-1/run_new_scenes5.sh
 
 引用符つきの path(git の引用の形。場面集の中でも検査は外と読む):
 (無し)
@@ -405,18 +353,8 @@ tests/bt/compat/test_replace_layer_grid.py
 (取った時刻 2026-09-26T12:30:03Z、そのときの HEAD 658582da3168deb8005001cd900a7c8a34cdcf4b。場面係の最初の書き込みとして取った写し)
 
 差分の行ごとの帰属(基準と今の写しの sha256・HEAD から機械で分けた。書き手は git に記録が無いので出さない):
-判定できない(HEAD が作業中に変わった)	docs/AUDITOR/TRACE/2026-09-26_220780c0.json
-判定できない(HEAD が作業中に変わった)	docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/engine.py
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/metrics.py
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/walk_forward.py
-判定できない(HEAD が作業中に変わった)	src/bot/bt/compat/engine.py
-判定できない(HEAD が作業中に変わった)	src/bot/bt/reference/bar_rules.py
-判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/DEFINITIONS.md
+判定できない(HEAD が作業中に変わった)	src/bot/bt/pipeline.py
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/ROOTCAUSE_r3-1.md
-判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/adapters/new_impl.py
-判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/gen_definitions.py
-判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/i4_scenes.py
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/current_impl.tsv
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/mutant.tsv
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/new_impl.tsv
@@ -459,21 +397,11 @@ tests/bt/compat/test_replace_layer_grid.py
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_vnpy.tsv
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_ziplime.tsv
 判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/survey_results/opp_zipline_reloaded.tsv
-判定できない(HEAD が作業中に変わった)	tests/bt/battery/item_4/test_battery_item4.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/i4w_drive.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_spec_vs_reference_grid.py
+判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_pipeline.py
 
 検査が止める行の帰属:
-判定できない(HEAD が作業中に変わった)	docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_3/ROOTCAUSE_worker.md
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/engine.py
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/metrics.py
-判定できない(HEAD が作業中に変わった)	src/bot/backtest/walk_forward.py
-判定できない(HEAD が作業中に変わった)	src/bot/bt/compat/engine.py
-判定できない(HEAD が作業中に変わった)	src/bot/bt/reference/bar_rules.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/i4w_drive.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_r2_signal_at_open_grid.py
-判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_spec_vs_reference_grid.py
+判定できない(HEAD が作業中に変わった)	src/bot/bt/pipeline.py
+判定できない(HEAD が作業中に変わった)	tests/bt/item_4/test_i4_pipeline.py
 ```
 <!-- diff_scope:end -->
 

@@ -737,8 +737,10 @@ class ArrivalGate:
     market_ref next_bar_open takes that bar). Every other request and every other event goes to the venue as it
     comes. The venue's own rules (reduce-only, sizes, sessions ...) apply unchanged."""
 
-    def __init__(self, venue: SimVenue, price_type: type, hide_book: bool) -> None:
+    def __init__(self, venue: SimVenue, price_type: type, hide_book: bool,
+                 account: Optional[DeferredMarginAccount] = None) -> None:
         self.venue = venue
+        self.account = account
         self.price_type = price_type
         self.hide_book = hide_book
         self.held: list[tuple[OrderRequest, int]] = []
@@ -747,9 +749,16 @@ class ArrivalGate:
     def open_orders(self):
         return self.venue.open_orders()
 
-    def _release(self, order: OrderRequest, t: int) -> list:
+    def _release(self, order: OrderRequest, t: int, event: Optional[Event] = None) -> list:
         """Hand a held order to the venue. The gate acknowledged it at its arrival: the venue's Ack is dropped and a
-        refusal by the venue's rules ends the order as Canceled with the venue's reason."""
+        refusal by the venue's rules ends the order as Canceled with the venue's reason. A margin check the account
+        deferred (I-2) is made now, after the account has seen the observation that prices the order."""
+        if self.account is not None and order.client_order_id in self.account.deferred:
+            if event is not None:
+                self.account.observe(event, t)
+            r = self.account.recheck(order, t)
+            if r is not None:
+                return [Canceled(order.client_order_id, f"refused_by_account: {r}")]
         out = []
         for rep in self.venue.on_order(order, t):
             if type(rep) is Ack:
@@ -770,7 +779,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if start >= a]
             self.held = [(o, a) for o, a in self.held if start < a]
             for o, _ in due:
-                out += self._release(o, start - 1)  # I-4: this bar starts after the order
+                out += self._release(o, start - 1, event)  # I-4: this bar starts after the order
             out += list(self.venue.on_market_event(event, t))
             return tuple(out)
         out = list(self.venue.on_market_event(event, t))
@@ -781,7 +790,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if t >= a]
             self.held = [(o, a) for o, a in self.held if t < a]
             for o, _ in due:
-                out += self._release(o, t)
+                out += self._release(o, t, event)
         return tuple(out)
 
     def on_order(self, order: OrderRequest, venue_time_ns: int):
@@ -799,6 +808,61 @@ class ArrivalGate:
             self.held = [(o, a) for o, a in self.held if o.client_order_id != coid]
             return (Canceled(coid, "canceled"),)
         return self.venue.on_cancel(request, venue_time_ns)
+
+
+DEFERRABLE = ("no_price_for_margin_check", "no_mark_for_equity")
+
+
+class DeferredMarginAccount:
+    """The account socket: item 2's MarginAccount, with ONE change of timing for the lead's rule I-2 (answer (甲)):
+    a market order the account cannot price at its arrival (no observation yet: DEFERRABLE refusals) is not refused
+    there; its margin check is made when the ArrivalGate prices it, right after the account has seen that first
+    observation, and a refusal then ends the order as Canceled with the account's reason. Every other check,
+    every fill, every event goes to the MarginAccount unchanged. So that the check at pricing time sees the
+    observation, the gate shows it to the account first (`observe`); the core's own delivery of the same event to
+    this socket then returns what the account answered (each event reaches the MarginAccount once)."""
+
+    def __init__(self, inner: MarginAccount) -> None:
+        self.inner = inner
+        self.deferred: set[str] = set()
+        self._seen: Optional[tuple[int, int, tuple]] = None  # (id of the event, time, the account's answer)
+
+    def check_order(self, order: OrderRequest, venue_time_ns: int):
+        r = self.inner.check_order(order, venue_time_ns)
+        if r in DEFERRABLE and order.order_type == "market":
+            self.deferred.add(order.client_order_id)
+            return None
+        return r
+
+    def observe(self, event: Event, venue_time_ns: int) -> None:
+        if self._seen is None or self._seen[0] != id(event) or self._seen[1] != venue_time_ns:
+            self._seen = (id(event), venue_time_ns, tuple(self.inner.on_market_event(event, venue_time_ns)))
+
+    def recheck(self, order: OrderRequest, venue_time_ns: int):
+        """The deferred margin check, at pricing time (None when the order was not deferred)."""
+        if order.client_order_id not in self.deferred:
+            return None
+        self.deferred.discard(order.client_order_id)
+        return self.inner.check_order(order, venue_time_ns)
+
+    def on_market_event(self, event: Event, venue_time_ns: int):
+        if self._seen is not None and self._seen[0] == id(event) and self._seen[1] == venue_time_ns:
+            out, self._seen = self._seen[2], None
+            return out
+        self._seen = None
+        return self.inner.on_market_event(event, venue_time_ns)
+
+    def apply_fill(self, fill) -> None:
+        self.inner.apply_fill(fill)
+
+    def apply_funding(self, event) -> None:
+        self.inner.apply_funding(event)
+
+    def apply_liquidation(self, event) -> None:
+        self.inner.apply_liquidation(event)
+
+    def finish(self, end_ns: int):
+        return self.inner.finish(end_ns)
 
 
 # --------------------------------------------------------------------------- the strategies
@@ -904,12 +968,14 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
     spec = getattr(frange, side)
     venue = SimVenue(product=product, rules=VenueRules(**it["rules"]), fill=spec, costs=costs,
                      faults=FaultPlan(()), l3=None)
-    gate = ArrivalGate(venue, price_type, hide_book=price_type is TradeEvent and spec.tier in BOOKLESS_TIERS)
     acc = plan.account
     liq = LiquidationRule(acc["liquidation"]["maint_ratio"], acc["liquidation"]["source"]) if acc["liquidation"] else None
-    account = MarginAccount(product=product, currency=acc["currency"], cash=acc["cash"], leverage=acc["leverage"],
-                            liquidation=liq, mark=acc["mark"], costs=costs, fx=None, reference=None,
-                            open_orders=venue.open_orders if acc["margin_check"] == "open_orders" else None)
+    account = DeferredMarginAccount(MarginAccount(
+        product=product, currency=acc["currency"], cash=acc["cash"], leverage=acc["leverage"], liquidation=liq,
+        mark=acc["mark"], costs=costs, fx=None, reference=None,
+        open_orders=venue.open_orders if acc["margin_check"] == "open_orders" else None))
+    gate = ArrivalGate(venue, price_type, hide_book=price_type is TradeEvent and spec.tier in BOOKLESS_TIERS,
+                       account=account)
     latency = _latency_model(plan.latency)
     end = max(times)
     try:

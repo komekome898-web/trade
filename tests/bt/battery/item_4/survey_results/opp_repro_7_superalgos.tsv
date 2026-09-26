@@ -14,11 +14,11 @@ i4-3-e2e-taker	I4-3	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): swap
 i4-3-e2e-maker	I4-3	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-4-plain	I4-4	値	不一致	fills[0].bar = 1(正解 2)	251d8101410d	不一致	fills[0].bar = 1(正解 2)	251d8101410d	2 回の実行で同じ	0.0	0.0
 i4-4-fee	I4-4	値	不一致	fills[0].bar = 1(正解 2)	61d99f8ad5d6	不一致	fills[0].bar = 1(正解 2)	61d99f8ad5d6	2 回の実行で同じ	0.0	0.0
-i4-5-fills	I4-5	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.001	0.002
-i4-5-outputs	I4-5	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.001	0.009
-i4-6-label	I4-6	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.001	0.001
-i4-6-signal-refused	I4-6	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.009	0.001
-i4-6-research-refused	I4-6	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.001	0.001
+i4-5-fills	I4-5	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.002	0.014
+i4-5-outputs	I4-5	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.01	0.002
+i4-6-label	I4-6	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.002	0.01
+i4-6-signal-refused	I4-6	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.014	0.002
+i4-6-research-refused	I4-6	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 再現は注文と段の模擬の規則だけ	-	結果なし	0.002	0.01
 i4-8-next-open	I4-8	値	不一致	fills: 3 件(正解 2 件): 観測 [(1, 'OPEN_LONG', 101.04039999999999), (4, 'CLOSE_LONG', 125.9496), (9, 'OPEN_LONG', 102.04079999999999)]	8059a2bbb5db	不一致	fills: 3 件(正解 2 件): 観測 [(1, 'OPEN_LONG', 101.04039999999999), (4, 'CLOSE_LONG', 125.9496), (9, 'OPEN_LONG', 102.04079999999999)]	8059a2bbb5db	2 回の実行で同じ	0.0	0.0
 i4-8-short-close	I4-8	値	不一致	fills[0].bar = 2(正解 3)	e91e2013f239	不一致	fills[0].bar = 2(正解 3)	e91e2013f239	2 回の実行で同じ	0.0	0.0
 i4-8-no-short	I4-8	値	不一致	fills[0].bar = 2(正解 3)	d1d2950667b7	不一致	fills[0].bar = 2(正解 3)	d1d2950667b7	2 回の実行で同じ	0.0	0.0

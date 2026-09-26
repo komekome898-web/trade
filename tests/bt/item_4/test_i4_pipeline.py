@@ -344,9 +344,9 @@ def test_i3_a_book_rides_along():
         assert first is not None and f["px"] == pytest.approx(first["px"]), (f, first)
 
 
-@pytest.mark.xfail(strict=True, reason="I-2 not met: the item-2 MarginAccount refuses a market order it cannot price "
-                                       "(no_price_for_margin_check) at the order's arrival, before any observation")
 def test_i2_an_order_before_the_first_observation_fills_at_it():
+    """I-2 (the lead's answer (甲)): the account's margin check of a market order it cannot price at arrival is made
+    at the first observation; the order fills there. A deferred check that refuses ends the order Canceled."""
     from bot.bt.pipeline import _generate
     root, _, _ = _root()
     tg = {"name": "random_walk", "seed": 9, "params": {"kind": "trade", "start_ns": T0, "step_ns": 10 * NS, "n": 20,
@@ -355,3 +355,12 @@ def test_i2_an_order_before_the_first_observation_fills_at_it():
                                               {"t_ns": T0 + 100 * NS, "side": "sell", "qty": 1.0}])
     got = [f["px"] for f in res.range["pessimistic"]["g"].fills]
     assert got[:1] == [_generate(tg)[1][0]["px"]]
+    assert res.record["components"]["models"]["pessimistic"]["g"]["account"].endswith("DeferredMarginAccount")
+    tiny = dict(D.ACCOUNT, cash=1.0)  # 1 JPY of equity: the deferred check refuses a 100-JPY buy at leverage 1
+    res2 = run_pipeline(plan_pipeline(**_gen_args(root, datasets=[{"name": "g", "generator": tg}], account=tiny,
+                                                  strategy={"kind": "schedule", "orders": [
+                                                      {"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},
+                                                      {"t_ns": T0 + 100 * NS, "side": "sell", "qty": 1.0}]})),
+                        runs_dir=tempfile.mkdtemp())
+    first = [o for o in res2.range["pessimistic"]["g"].orders if o["id"] == "leg0"][0]
+    assert first["filled"] == 0 and first["state"] != "FILLED", first
