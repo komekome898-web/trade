@@ -42043,3 +42043,810 @@ K12 検査の出力の貼付           0 件
 - **出典の行番号(指摘 1)**: 出典の欄の「files=4520、生ログ22-84行目」は、正しくは生ログ 102〜104 行・105〜107 行(見積もりの手の出力)。22〜84 行は `src/debezium` の最上位の一覧。
 - **最初の手の確かめ(指摘 2)**: 起動文 §1 の「最初の手で `venvs/8-031` を `ls` する」は、生ログに無い(打たれていない)。環境が引き継がれていたことは、後の手の出力(見積もりの files=4520 など)から分かる。
 - **宣伝詐欺の兆候(指摘 3)**: `実測` は、本文を取って読んだ X の投稿 2 件と公式の頁(legal・terms・tos)についてだけ。「Debezium に固有の詐欺の投稿は 0 件」は WebSearch の要約(生ログ 150〜152 行)で、その部分は `未確認`。
+
+## 区分8 — 28 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-032 `Apache Kafka` の1行だけを扱う(起動文§1)。未着手からE1a〜E6を全部判別し、§4.0の表を全項目書く(§2.5)。2度目の起動(1度目はコンテナ再起動で10手後に中断、生ログは0から書いた)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run28_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run28_prompt.md@9b8225871207`)
+- `https://kafka.apache.org/`(公式サイト。取得日2026-09-26、生ログ7-28行目)
+- `https://github.com/apache/kafka`(公式ソースリポジトリ。公式サイトHTML内のGitHubリンクの行から特定、生ログ29-31行目。`git ls-remote`のHEAD `3316389b050bcf4471f1a5df966327c701c096eb`、既定の枝`trunk`、生ログ32-35行目)
+- `https://kafka.apache.org/community/downloads/`(公式ダウンロード案内頁。取得日2026-09-26、生ログ48-53行目)
+- `https://downloads.apache.org/kafka/4.3.1/`(Apache公式配布の場所。バイナリ配布物`kafka_2.13-4.3.1.tgz`とその`.sha512`・`.asc`。取得日2026-09-26、生ログ54-102、1432-1443行目)
+- `https://repo1.maven.org/maven2/org/apache/kafka/`配下(Maven Centralの公式配布。`kafka-clients`の pom・jar。取得日2026-09-26、生ログ103-149、1544-1552、1597-1600行目)
+- `https://search.maven.org/solrsearch/select`(公開日・版数の確認。取得日2026-09-26、生ログ1553-1596行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性。取得日2026-09-26、生ログ1601-1619行目)
+- `https://img.shields.io/github/{stars,contributors}/apache/kafka.json`(GitHub統計の代替経路。取得日2026-09-26、生ログ1620-1623行目)
+- `https://kafka.apache.org/sitemap.xml`・`https://kafka.apache.org/43/implementation/log/`(文書サイトの構造確認とリポジトリ`docs/`との同一性確認。生ログ263-315行目)
+- `git ls-remote`での同じapache組織内の別リポジトリの存在確認(`kafka-site`・`camel-kafka-connector`等。生ログ40-47行目)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- 26回目のDebezium(Java/Maven、モノレポ)の回の形(`docs/DATA/SCAN_2026-09-23_tools_cat8.md`の該当節)を、小節・表の形の見本にした(§0の指示どおり、中身は写していない)
+- `venvs/8-032/src/kafka`(`cat8_repo_fetch.sh`で取得した公式リポジトリの写し。生ログ247-259行目)、`venvs/8-032/check/`(公式配布物・pom等)、`venvs/8-032/run/`(最小実行用のKRaft単一ノード)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Apache Kafka` / 候補の実体: 公式サイト`kafka.apache.org`のトップページHTML内のリンク`<a href=https://github.com/apache/kafka target=_blank rel=noopener aria-label=GitHub...>`から公式ソースリポジトリを特定。既定の枝`trunk`のHEAD(`git ls-remote`)= `3316389b050bcf4471f1a5df966327c701c096eb`。`api.github.com`・`github.com`のHTML/APIはこのセッションのプロキシで403(実測、生ログ36-39行目)だが、`git clone`/`git ls-remote`(git smart-http)は到達できた | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:7-28 docs/DATA/probes/20260923_tools_8_run28.log:29-31 docs/DATA/probes/20260923_tools_8_run28.log:32-35 |
+| 2 | `Apache Kafka` / 候補の配布物の実体: Apache公式配布の場所(`downloads.apache.org/kafka/4.3.1/`)にソース配布物`kafka-4.3.1-src.tgz`とバイナリ配布物`kafka_2.13-4.3.1.tgz`(130M、サーバー・道具一式)が並ぶ。ダウンロード頁のmeta description逐語「Binary download: kafka_2.13-4.3.1.tgz (asc, sha512)」からバイナリ配布物を実行対象の実体とした。Maven Central(`repo1.maven.org/maven2/org/apache/kafka/`)には`kafka-clients`・`kafka-streams`・`connect-*`等95件のディレクトリがあり、いずれも同じ`groupId=org.apache.kafka`でapache/kafka本体のGradleモジュール(クライアント・Streams・Connect等)からMaven Central向けに個別公開されたもの(候補の配布物に含める) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:48-53 docs/DATA/probes/20260923_tools_8_run28.log:70-102 docs/DATA/probes/20260923_tools_8_run28.log:103-149 |
+| 3 | `Apache Kafka` / N確定・リポジトリ取得: `cat8_repo_fetch.sh`で`apache/kafka`を1MB超blobを除いて取得。files_in_tree(N)=7,571、blobs_not_downloaded(>1MB)=1件(`group-coordinator/src/test/java/org/apache/kafka/coordinator/group/GroupMetadataManagerTest.java`、候補が自分自身を試験する仕組み=E1a〜E6のいずれにも数えない対象なので「無い」として記録し取得はしなかった)、checked_out_files=7,570。ダウンロードbytes=18,469,676(約17.6MB)、チェックアウトbytes=85,590,638(約81.6MB)。起動文§1の200MB目安以内 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:247-259 |
+| 4 | `Apache Kafka` / N確定・除外した別リポジトリ: 同じapache組織の別の公式リポジトリのうち`kafka-site`(既定の枝`markdown`、知見5の同一性確認によりドキュメントサイトの生成元だがドキュメント自体は`apache/kafka`本体の`docs/`と同一なので二重に数えない)、`camel-kafka-connector`(既定の枝`main`、Apache Camelプロジェクトの一部でKafkaを使う側の別製品。候補`Apache Kafka`本体には同梱されない利用者側の統合なのでNに入れない)を確認した。`kafka-connect-jdbc`・`kafka-clients`・`kafka-images`・`kafka-tiered-storage`という名のapache組織リポジトリは存在しない(`git ls-remote`が認証プロンプトで失敗=該当リポジトリなし) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:40-47 |
+| 5 | `Apache Kafka` / N確定・文書サイトはリポジトリと同一と判断: `kafka.apache.org`は現在Hugo/Docsy製の静的サイト(`docs/documentation/_index.md`が「Documentation Redirect」で、実ページは`/43/...`のURL構造)。sitemap.xmlのURL一覧(`/43/implementation/log/`等)は、リポジトリ本体`docs/implementation/log.md`等のfront matter付きMarkdownファイルと1対1で対応する(front matterの`title`・URLパスの階層が一致)。実際に`https://kafka.apache.org/43/implementation/log/`を取得し、リポジトリの`docs/implementation/log.md`にある逐語「jump to directly using the offset seemed natural」が両方に一致することを確認した(公開頁はリポジトリの`docs/`から生成されたものと判断)。よってNはリポジトリ側だけを使う。`docs/documentation/streams/*`配下の23頁は全て`docs/streams/*`への「Documentation Redirect」スタブで、実内容は`docs/streams/*`と同一(front matterのtitleが`"Documentation Redirect"`であることで判別) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:260-262 docs/DATA/probes/20260923_tools_8_run28.log:263-265 docs/DATA/probes/20260923_tools_8_run28.log:266-307 docs/DATA/probes/20260923_tools_8_run28.log:308-310 docs/DATA/probes/20260923_tools_8_run28.log:311-315 docs/DATA/probes/20260923_tools_8_run28.log:1950-1952 |
+| 6 | `Apache Kafka` / N: 検索の一覧の作り方: N全体7,571件(1MB超で取れなかったテストフィクスチャ1件は「無い」として記録)から、画像・鍵ストア(jks)等の拡張子で判断したバイナリ61件と、拡張子の無いJavaのシリアライズ済みバイナリテストフィクスチャ3件(cat8_search.py実行時に判明、`clients/src/test/resources/serializedData/`配下)を除外理由付きで除いた7,506件を検索の一覧にした(候補の機能の記述を含まないことをファイル種別から確認したうえでの除外) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:316-368 docs/DATA/probes/20260923_tools_8_run28.log:369-371 docs/DATA/probes/20260923_tools_8_run28.log:687-689 |
+| 7 | `Apache Kafka` / §6-1の結論(危険の所見なし): 配布元一致(`kafka-clients-4.3.1.pom`のgroupId `org.apache.kafka`・url `https://kafka.apache.org`、NOTICE逐語「Apache Kafka Copyright 2026 The Apache Software Foundation.」(生ログでは2行に分かれる)が公式サイト・GitHub組織`apache`と一致)。バイナリ配布物`kafka_2.13-4.3.1.tgz`のsha512はApache公式の`.sha512`ファイルと一致(実測、ファイル名部分を誤って16進とみなした1回目の誤りを直して照合)。初回公開はkafka-clientsのMaven Central公開が2014-10-21(0.8.2-beta、search.maven.org実測。Kafka自体の発祥(LinkedIn、2011年)は今回のドキュメントには明記された年が見当たらず未確認)、最新4.3.1はrepo1.maven.orgのLast-Modifiedヘッダで2026-06-17公開(Apache公式ダウンロード頁は「Released June 25, 2026」)。保守者はshields.io実測でcontributors 352・stars 34k、pom.xmlに具体的developer個人名の記載は無いが組織は一貫して「The Apache Software Foundation」。配布物展開後のbin/*.shにcurl/wget/eval等の外部取得・任意コード実行の兆候は無し(実測)。libs/配下の108個のjarのうち`jline`(端末制御)と`lz4-java`(圧縮)にプラットフォーム別のネイティブライブラリ(`.so`/`.dll`/`.dylib`)が同梱されているが、いずれも広く使われる正当な依存(実測、jar内をunzip -lで確認)。同梱jarの中身は`.class`ファイルのみで難読化は見当たらない(実測、クラス名は`org/apache/kafka/...`等の通常のパッケージ名)。既知の脆弱性はOSV.dev実測で`kafka-clients` 4.3.1版指定で0件(通算では過去版に対し7件のGHSA、いずれも4.3.1には非該当)。依存はkafka-clientsのpom直接依存4件(`zstd-jni`・`lz4-java`・`snappy-java`・`slf4j-api`)、配布物`libs/`は全108jar(生ログに全件記載)。以上、導入を止める所見は無い | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:48-53 docs/DATA/probes/20260923_tools_8_run28.log:1432-1443 docs/DATA/probes/20260923_tools_8_run28.log:1444-1467 docs/DATA/probes/20260923_tools_8_run28.log:1468-1482 docs/DATA/probes/20260923_tools_8_run28.log:1483-1489 docs/DATA/probes/20260923_tools_8_run28.log:1490-1543 docs/DATA/probes/20260923_tools_8_run28.log:1544-1552 docs/DATA/probes/20260923_tools_8_run28.log:1553-1620 docs/DATA/probes/20260923_tools_8_run28.log:1597-1600 docs/DATA/probes/20260923_tools_8_run28.log:1601-1619 docs/DATA/probes/20260923_tools_8_run28.log:1620-1623 docs/DATA/probes/20260923_tools_8_run28.log:1624-1630 docs/DATA/probes/20260923_tools_8_run28.log:1631-1741 docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 docs/DATA/probes/20260923_tools_8_run28.log:1914-1935 |
+| 8 | `Apache Kafka` / E1a 印(段3): `bin/kafka-replica-verification.sh`の実体`ReplicaVerificationTool`(廃止予定だが現行4.3.1に実在)のクラスコメント逐語「For verifying the consistency among replicas」「one of the fetchers verifies the consistency of fetched results among replicas」。実装は`if (messageInfoFromFirstReplica.checksum != batch.checksum())`で複数レプリカ(2つ以上の実装が持つ同じパーティションの複製)のチェックサムを突き合わせ、不一致なら「has unmatched checksum at offset」と自動で報告する(E1aの述語の例=差分の検査・二重実装の照合に当たる)。オプション一覧(`parser.accepts(...)`全6件)に許容誤差(tolerance)を指定する項目は無く、完全一致のみを判定する(段5の(ア)不成立)。対象(2つの出力)はKafkaクラスタ自身のブローカー間フェッチに限られ外から任意のデータを持ち込めない(段3、対象を外から持ち込めるとは言えない)。ブローカーのメッセージ受信時検証(知見9のCRC検証)もE1aに当たりうる二次的な根拠(実装=受信バイト列の再計算CRCと、参照値=記録されたCRCフィールドを照らす仕組み) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:396-441 docs/DATA/probes/20260923_tools_8_run28.log:442-447 docs/DATA/probes/20260923_tools_8_run28.log:448-455 |
+| 9 | `Apache Kafka` / E2 印(段3): design.md逐語(0.11.0.0以降)「the broker assigns each producer an ID and deduplicates messages using a sequence number that is sent by the producer along with every message」(冪等プロデューサによる重複の自動検出・排除=E2述語の「重複」)。加えてmonitoring.mdのJMXメトリクス見出し4件「Message validation failure rate due to no key specified for compacted topic」「Message validation failure rate due to invalid magic number」「Message validation failure rate due to incorrect crc checksum」「Message validation failure rate due to non-continuous offset or sequence number in batch」は、ブローカーが受信メッセージのスキーマ・型・順序・整合性の違反を自動で検出し報告する機能(E2述語の「型や範囲の違反」「順序の乱れ」に当たる)。いずれもKafka自身のワイヤフォーマット(マジックバイト・シーケンス番号・CRC)に閉じた検査で、外部形式には掛けられない(段3) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:456-458 docs/DATA/probes/20260923_tools_8_run28.log:459-464 |
+| 10 | `Apache Kafka` / E3a なし(全件検索): 一覧7,506件全部を読み、当たり113ファイル/246行。全て「leak」(ソフトウェアのメモリ/スレッド/接続/内部APIの漏洩、`api-checker`モジュールの自己API検査や`assertNoLeakedThreads`等のテストユーティリティが多数)か「point-in-time」(Kafka Streamsの状態ストアの並行読み取り用スナップショット分離、`InMemoryTransactionBuffer`等)のいずれかで、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)を指す語ではない。要素と段の表・当たりの判定の表を参照 | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:690-1051 |
+| 11 | `Apache Kafka` / E3b なし(全件検索): 一覧7,506件全部を読み、当たり88ファイル/287行。ほぼ全て「purge」(メトリクスのサンプル・保留中のコミット要求・オフセット等を保持期間や上限に応じて自動的に破棄する話。`purgeObsoleteSamples`等)と「point-in-time」(知見10と同じスナップショット分離)で、未来の情報の混入を防ぐ機能ではなく、むしろ過去のデータを消す処理(向きが逆)。要素と段の表・当たりの判定の表を参照 | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1055-1430 |
+| 12 | `Apache Kafka` / E4 印(段3・実測): docs/streams/core-concepts.md逐語「A stream is an ordered, replayable, and fault-tolerant sequence of immutable data records」(記録データの時刻順(記録順)再生可能性)。docs/streams/developer-guide/app-reset-tool.md逐語「You can reset an application and force it to reprocess its data from scratch by using the application reset tool」で、オプション`--to-datetime`・`--by-duration`・`--to-offset`・`--shift-by`により再生開始位置・粒度を利用者が指定できる。最小実行(知見15)でPASS(合成データid=1,2,3をオフセット0,1,2の順=記録順に`--from-beginning`で正しく再生)とFAIL(存在しないパーティション5からの再生で`TimeoutException`により失敗)の両方を実測で確認した。対象は`kafka-streams-application-reset`ツールが扱うトピック(利用者が自由に生成した任意形式のデータを保持でき、利用者が書いた任意のKafka Streamsトポロジがそれを処理する)なので、外から持ち込む余地が広い一方、この回はDebeziumのE4(段3)との整合を優先し保守的に段3とした(段4の可能性は§判断に迷った点で問いに出す) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:465-471 docs/DATA/probes/20260923_tools_8_run28.log:472-474 docs/DATA/probes/20260923_tools_8_run28.log:1742-1748 docs/DATA/probes/20260923_tools_8_run28.log:1749-1760 docs/DATA/probes/20260923_tools_8_run28.log:1761-1765 docs/DATA/probes/20260923_tools_8_run28.log:1766-1769 docs/DATA/probes/20260923_tools_8_run28.log:1770-1774 docs/DATA/probes/20260923_tools_8_run28.log:1775-1781 |
+| 13 | `Apache Kafka` / E5 印(段2): docs/getting-started/upgrade.md逐語「The `--random-seed` option allows reproducible benchmark runs when using random key distribution」。ソース`ProducerPerformance.java`で`--random-seed`は`SplittableRandom random = new SplittableRandom(config.randomSeed);`として実装され、確かに乱数の種を利用者が指定できる(E5述語の「乱数の種」)。ただしツール自身が2回の実行結果を自動で比較・判定する機能は無く(呼ぶと結果=ベンチマーク出力は出るが再現性の合否は人が確認する)、段2とした | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:475-477 docs/DATA/probes/20260923_tools_8_run28.log:478-481 |
+| 14 | `Apache Kafka` / E1b 未判別(500行超・案Bの記録): 見積もり(`cat8_step`経由、N全体7,509ファイル時点)でE1b=5,285行(1,175ファイル)となり500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: docs/配下の全112頁のfront matter titleを1行ずつ印字して全部読了(生ログ1793-1906行目。うち23頁は知見5のとおり`docs/streams/*`への重複リダイレクトスタブ)。本文を読んだ頁: `docs/streams/developer-guide/testing.md`(Kafka Streamsの`TopologyTestDriver`。逐語「The test-utils package provides a TopologyTestDriver that can be used pipe data through a Topology...」は利用者が自分で書いたトポロジを別のランタイム(テストドライバ)で動かすもので、Kafka自身が当方の計算と同種の出力を出す計算を持つものではないと判断)、`docs/streams/developer-guide/interactive-queries.md`(状態ストアへの問い合わせ機能。集計の中身は利用者のトポロジ定義に依存)。ソースは最上位ディレクトリ一覧(`clients`・`core`・`streams`等)を確認した。限界: 題と目次で頁を選ぶ方式のため、題に出ない機能記述(例えば個別コネクタ設定の一覧内の記述)は読み落としうる | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:375-377 docs/DATA/probes/20260923_tools_8_run28.log:1793-1906 docs/DATA/probes/20260923_tools_8_run28.log:1937-1939 |
+| 15 | `Apache Kafka` / E6 未判別(案Bの記録): 見積もり(N全体7,509ファイル時点)でE6=211,597行(4,462ファイル)となり500行を超えたため未判別のまま残す(知見14と同じ読んだ範囲)。`docs/apis/internal-api-checker.md`で見つかった`api-checker`モジュール(`CascadeValidator`等)はKafka自身の公開APIが内部型を漏らしていないかを検査する開発用の道具で、候補が自分自身の版・ランタイムを試験する仕組み(起動文§2.1、オーナー決定L-516)に当たるためE6には数えない。`bin/kafka-verifiable-consumer.sh`/`kafka-verifiable-producer.sh`の実体`VerifiableConsumer.java`のクラスコメント逐語「Command line consumer designed for system testing」もKafka自身のシステムテスト(ducktapeフレームワーク)向けの道具であり、同じ理由で数えない | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:393-395 docs/DATA/probes/20260923_tools_8_run28.log:1793-1906 docs/DATA/probes/20260923_tools_8_run28.log:1940-1942 |
+| 16 | `Apache Kafka` / 最小実行(§2.5の種別・中核): 種別は委任文§5-4の「データ系」と調査班が判断した(一次資料の根拠: docs/getting-started/introduction.md逐語「event streaming is the practice of capturing data in real-time from event sources...storing these event streams durably for later retrieval」。26回目のDebeziumも同じ「データ系」の扱い)。中核は起動文§2.5の指示どおり、E4(記録済みデータのオフセット順再生)に、PASS(id=1〜3がオフセット0,1,2=記録順に再生される)とFAIL(存在しないパーティション5からの再生でTimeoutException)の両方の合成データを当てた。環境: KRaftモード(ZooKeeperなし)の単一ノードブローカーをこの回の隔離venv(`.../venvs/8-032/run/`)に構築(§6-1のあとに実施)。`server.properties`の`log.dirs`のみ`run/data`に変更、外部への通信は最小実行を通して行っていない(実測、127.0.0.1のみで完結。テレメトリの類は既定で無効)。実行後`kafka-server-stop.sh`で停止し、`ps aux`で常駐プロセスが残っていないことを確認した | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1943-1945 docs/DATA/probes/20260923_tools_8_run28.log:1742-1789 |
+| 17 | `Apache Kafka` / 到達できなかった経路: `github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない)。`git clone`/`git ls-remote`(git smart-httpプロトコル)は同じホストでも到達できた。星・保守者数はGitHubの情報を再配布する`img.shields.io`の代替経路で取得した。Maven Centralは週DL数の公式APIを公開していない(`search.maven.org`のsolrsearch APIはGAV検索のみで、かつ4.3.1のレコードを返さなかったため`repo1.maven.org`のLast-Modifiedヘッダで代替した) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:36-39 docs/DATA/probes/20260923_tools_8_run28.log:1946-1948 docs/DATA/probes/20260923_tools_8_run28.log:1620-1623 docs/DATA/probes/20260923_tools_8_run28.log:1553-1596 docs/DATA/probes/20260923_tools_8_run28.log:1597-1600 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 浅い
+32. `Apache Kafka` (8-032) — この回(28回目)でE1a〜E6を全部判別した。E1a(印・段3)=`ReplicaVerificationTool`によるレプリカ間チェックサム不一致の自動検出、E2(印・段3)=冪等プロデューサのシーケンス番号による重複検出とブローカーのメッセージ検証失敗率メトリクス(CRC・マジックバイト・順序)、E4(印・段3・実測)=記録済みデータをオフセット順(記録順)に再生してダウンストリームの計算を再実行する機構(kafka-streams-application-reset、実測でPASS/FAILの両方を確認)、E5(印・段2)=`kafka-producer-perf-test.sh`の`--random-seed`による再現可能なベンチマーク。E1b・E6は印を探し尽くしたが見つからず、見積もりが500行を超えるため未判別のまま残す(案Bの記録は知見14・15に記載)。E3a・E3bは全件検索でなし。状態は`浅い`(E1b・E6が未判別のため深掘りにできない) — 状態: 浅い
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 浅い
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Kafka` | E1a | 印 | 3 | 一次資料 | ReplicaVerificationToolのレプリカ間チェックサム不一致の自動検出(許容誤差指定オプション無し) | docs/DATA/probes/20260923_tools_8_run28.log:396-441 docs/DATA/probes/20260923_tools_8_run28.log:442-447 docs/DATA/probes/20260923_tools_8_run28.log:448-455 |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 500行超(1,175ファイル/5,285行)のため未判別(案B)。読んだ範囲は知見14 | docs/DATA/probes/20260923_tools_8_run28.log:375-377 docs/DATA/probes/20260923_tools_8_run28.log:1793-1906 |
+| `Apache Kafka` | E2 | 印 | 3 | 一次資料 | 冪等プロデューサのシーケンス番号による重複検出とブローカーのメッセージ検証失敗率メトリクス | docs/DATA/probes/20260923_tools_8_run28.log:456-458 docs/DATA/probes/20260923_tools_8_run28.log:459-464 |
+| `Apache Kafka` | E3a | なし | - | 一次資料 | 全件検索(一覧7506件/読んだ7506件、当たり113ファイル/246行)。当たりの判定の表を参照 | docs/DATA/probes/20260923_tools_8_run28.log:690-1051 |
+| `Apache Kafka` | E3b | なし | - | 一次資料 | 全件検索(一覧7506件/読んだ7506件、当たり88ファイル/287行)。当たりの判定の表を参照 | docs/DATA/probes/20260923_tools_8_run28.log:1055-1430 |
+| `Apache Kafka` | E4 | 印 | 3 | 実測 | kafka-streams-application-resetによるオフセット順再生の再実行。最小実行でPASS/FAILを実測 | docs/DATA/probes/20260923_tools_8_run28.log:465-471 docs/DATA/probes/20260923_tools_8_run28.log:472-474 docs/DATA/probes/20260923_tools_8_run28.log:1770-1774 docs/DATA/probes/20260923_tools_8_run28.log:1775-1781 |
+| `Apache Kafka` | E5 | 印 | 2 | 一次資料 | kafka-producer-perf-test.shの--random-seedによる再現可能なベンチマーク(自動比較は無し) | docs/DATA/probes/20260923_tools_8_run28.log:475-477 docs/DATA/probes/20260923_tools_8_run28.log:478-481 |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 500行超(4,462ファイル/211,597行)のため未判別(案B)。読んだ範囲は知見15 | docs/DATA/probes/20260923_tools_8_run28.log:393-395 docs/DATA/probes/20260923_tools_8_run28.log:1793-1906 |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Prefect` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(27回目の節) |  |
+
+### 当たりの判定
+
+`Apache Kafka` E3a の当たりの判定(甲、ファイルの表。一覧7,506件/読んだ7,506件、当たり113ファイル/246行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/main/java/org/apache/kafka/apicheck/CascadeValidator.java | 10 | L40「* Checks that no public method of any effectively-{@code @Public} class leaks an internal Kafka」; L53「/** {@code @SuppressKafkaInternalApiUsage} — the escape hatch for known cascade leaks pending review. */」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/main/java/org/apache/kafka/apicheck/CheckResult.java | 1 | L23「* (returning would-be public-API leaks against Kafka's own surface) and the consumer-side」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/main/java/org/apache/kafka/apicheck/PluginDeveloperApiUsageScanner.java | 2 | L248「// file a developer needs to open — the leaked target lives in the description.」; L607「* they have no body — so their header refs would otherwise leak unflushed. This safety」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/main/java/org/apache/kafka/apicheck/PublicApiChecker.java | 3 | L44「*                      signature leaks.」; L62「* cascade-check public method signatures for internal-type leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/main/java/org/apache/kafka/apicheck/ViolationReporter.java | 1 | L135「* false under CI or when output has been redirected, so colored output doesn't leak ANSI」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/test/java/org/apache/kafka/apicheck/CascadeValidatorTest.java | 18 | L43「.method(AsmClassFactory.method("leak").returns(INTERNAL_DESC)));」; L49「assertEquals("leak", v.getMemberName());」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/test/java/org/apache/kafka/apicheck/PluginDeveloperApiUsageScannerTest.java | 3 | L79「// file a developer needs to open; the leaked target lives in the description.」; L82「"violation description must name the leaked internal class. got: " + v.getDescription());」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/api-checker/core/src/test/java/org/apache/kafka/apicheck/PublicApiCheckerTest.java | 7 | L72「// leak check, which is a separate policy.)」; L115「// Bar is @Public with a method that leaks an internal type; javadoc jar is empty.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/checkstyle/import-control-api-checker.xml | 1 | L24「test-dep leaking into a main-source file fails checkstyle here. -->」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/clients-integration-tests/src/test/java/org/apache/kafka/clients/consumer/SaslPlaintextConsumerTest.java | 2 | L84「// Important if tests leak consumers, producers or brokers」; L126「// Important if tests leak consumers, producers or brokers」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java | 5 | L62「* Failure to close the consumer after use will leak these connections.」; L566「* Note: after creating a {@code KafkaConsumer} you must always {@link #close()} it to avoid resource leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/KafkaShareConsumer.java | 4 | L410「* Note: after creating a {@code KafkaShareConsumer} you must always {@link #close()} it to avoid resource leak」; L423「* Note: after creating a {@code KafkaShareConsumer} you must always {@link #close()} it to avoid resource leak」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/internals/AsyncKafkaConsumer.java | 1 | L598「// call close methods if internal objects are already constructed; this is to prevent resource leak. see KAFKA」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/internals/ClassicKafkaConsumer.java | 1 | L283「// call close methods if internal objects are already constructed; this is to prevent resource leak. see KAFKA」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/internals/ShareConsumerImpl.java | 1 | L351「// Call close methods if internal objects are already constructed; this is to prevent resource leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java | 6 | L134「* to the cluster. Failure to close the producer after use will leak these resources.」; L301「* Note: after creating a {@code KafkaProducer} you must always {@link #close()} it to avoid resource leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/errors/SaslAuthenticationException.java | 1 | L36「* security-critical information in the message that should not be leaked to unauthenticated clients.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/memory/GarbageCollectedMemoryPool.java | 2 | L30「* An extension of SimpleMemoryPool that tracks allocated buffers and logs an error when they "leak"」; L137「if (this == o) { //this is important to find leaked buffers (by ref identity)」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/memory/SimpleMemoryPool.java | 1 | L31「* any buffer allocated must be release()ed always otherwise memory is not marked as reclaimed (and "leak"s)」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/KafkaMetric.java | 1 | L45「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal Time for test injection — pending KIP review to 」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/Metrics.java | 6 | L96「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal Time for test injection — pending KIP review to 」; L105「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal Time for test injection — pending KIP review to 」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/network/Selectable.java | 1 | L86「* to close the {@link NetworkReceive} to prevent any memory leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/requests/ApiError.java | 1 | L40「// message for UNKNOWN_SERVER_ERROR to ensure we don't leak sensitive information.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/oauthbearer/ClientCredentialsJwtRetriever.java | 1 | L109「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal Time for test injection — pending KIP review to 」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/oauthbearer/DefaultJwtValidator.java | 1 | L53「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal CloseableVerificationKeyResolver — pending KIP r」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/oauthbearer/JwtBearerJwtRetriever.java | 1 | L124「@SuppressKafkaInternalApiUsage("KIP-1265: ctor leaks internal Time for test injection — pending KIP review to 」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/oauthbearer/internals/OAuthBearerSaslServer.java | 1 | L80「*             leaked to unauthenticated clients. It may be safer to throw」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/oauthbearer/internals/secured/HttpJwtRetriever.java | 1 | L234「// NOTE: the contents of the response should not be logged so that we don't leak any」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/plain/internals/PlainSaslServer.java | 1 | L66「* should not be leaked to unauthenticated clients. It may be safer to throw {@link SaslException} in」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/security/scram/internals/ScramSaslServer.java | 1 | L91「* should not be leaked to unauthenticated clients. It may be safer to throw {@link SaslException} in」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/consumer/ConsumerRecordsTest.java | 1 | L193「// Capture the global throttle state so it can be restored, to avoid leaking into other tests.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/consumer/internals/FetchRequestManagerTest.java | 1 | L374「// Clean up: explicitly wake so the daemon thread can exit instead of leaking as a live thread.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/consumer/internals/ShareConsumeRequestManagerTest.java | 1 | L1346「// acknowledged. If the merged-away second batch's records were never cleared, tip0 leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/consumer/internals/ShareFetchCollectorTest.java | 2 | L205「public void testSecondFetchForSamePartitionMergesWithoutLeaking() {」; L230「public void testEmptyFetchFollowedByDataFetchForSamePartitionDoesNotLeak() {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/producer/KafkaProducerTest.java | 3 | L231「public void detectLeaks() throws InterruptedException {」; L232「// Assert no thread leakage of Kafka producer.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/producer/internals/ChunkedRecordAccumulatorTest.java | 1 | L406「+ "any K-1 unsurrendered chunks indicate the chunked-leak regression");」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/common/KafkaFutureTest.java | 1 | L603「public void testLeakCompletableFuture() throws Throwable {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/common/requests/ApiErrorTest.java | 1 | L55「new UnknownServerException("Don't leak sensitive information "), Errors.UNKNOWN_SERVER_ERROR, null));」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/testFixtures/java/org/apache/kafka/test/TestUtils.java | 3 | L157「* Asserts that there are no leaked threads with a specified name prefix and daemon status.」; L172「public static void assertNoLeakedThreadsWithNameAndDaemonStatus(String threadName, boolean isDaemon) throws In」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/main/java/org/apache/kafka/connect/runtime/Loggers.java | 1 | L146「// (potential leak since these don't get cleaned up).」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/main/java/org/apache/kafka/connect/runtime/distributed/WorkerGroupMember.java | 1 | L154「// this is to prevent resource leak. see KAFKA-2121」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/test/java/org/apache/kafka/connect/integration/BlockingConnectorTest.java | 1 | L140「// unblock everything so that we don't leak threads after each test run」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/test/java/org/apache/kafka/connect/integration/OffsetsApiIntegrationTest.java | 1 | L114「// Make a last-ditch effort to clean up the leaked connectors」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/test/java/org/apache/kafka/connect/integration/StandaloneWorkerIntegrationTest.java | 1 | L82「// Unblock everything so that we don't leak threads even if a test run fails」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/test/java/org/apache/kafka/connect/runtime/LoggersTest.java | 1 | L56「// This ensures any log level changes made in a test do not leak into subsequent tests.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/connect/runtime/src/test/java/org/apache/kafka/connect/runtime/SubmittedRecordsTest.java | 3 | L109「// Everything has been ack'd and consumed; make sure that it's been cleaned up to avoid memory leaks」; L167「// Everything has been ack'd and consumed; make sure that it's been cleaned up to avoid memory leaks」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/java/kafka/server/builders/ReplicaManagerBuilder.java | 1 | L109「// metrics correctly. There might be a resource leak if it is initialized and an exception occurs between」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/java/kafka/server/share/DelayedShareFetch.java | 4 | L273「// exception handling above cannot leak the partition locks.」; L1088「// removed from other watched keys then there can be a memory leak. The removal of the」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/scala/kafka/network/SocketServer.scala | 2 | L1152「// We explicitly catch all exceptions and close the socket to avoid a socket leak.」; L1155「// need to close the channel here to avoid a socket leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/scala/kafka/server/ControllerApis.scala | 1 | L456「// If this is considered to leak information about the controller version a workaround is to use SSL」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/scala/kafka/server/KafkaApis.scala | 1 | L1548「// If this is considered to leak information about the broker version a workaround is to use SSL」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/scala/kafka/server/SharedServer.scala | 1 | L95「* make debugging easier and reduce the chance of resource leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/java/kafka/server/share/SharePartitionManagerTest.java | 1 | L409「// Every session must be fully cleaned up. No leaked sessions, no phantom member/partition counts,」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/scala/integration/kafka/api/AuthorizerIntegrationTest.scala | 5 | L993「* even if the topic doesn't exist, request APIs should not leak the topic name」; L1028「* prevent leaking the topic name.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/scala/integration/kafka/api/SaslSetup.scala | 2 | L51「// Important if tests leak consumers, producers or brokers」; L101「// Important if tests leak consumers, producers or brokers」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/scala/unit/kafka/server/KafkaApisTest.scala | 1 | L4509「// Return an TOPIC_AUTHORIZATION_FAILED on unauthorized error regardless of leaking the existence of topic id」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/scala/unit/kafka/server/KafkaMetricsReporterTest.scala | 1 | L87「JTestUtils.assertNoLeakedThreadsWithNameAndDaemonStatus(this.getClass.getName, true)」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docker/native/native-image-configs/reflect-config.json | 1 | L378「"name":"io.netty.util.ResourceLeakDetector$DefaultResourceLeak",」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docker/prepare_docker_official_image_source.py | 1 | L42「# Replace the whole line so a default like `ARG kafka_url=""` does not leak into the ENV value.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/apis/internal-api-checker.md | 1 | L162「doesn't show up as a fresh leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/design/protocol.md | 1 | L113「[行の長さ 1317 字。当たった 1 か所の前後 200 字] … state (e.g., before SASL authentication on an SASL listener, do note that n」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/getting-started/upgrade.md | 3 | L69「* Includes a fix for a critical Kafka Streams native memory leak caused by RocksDB column family handles and `」; L197「* Includes a fix for the critical Kafka Streams bug ([KAFKA-19748](https://issues.apache.org/jira/browse/KAFKA」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/security/security-model.md | 1 | L101「- Use distinct keystores for the inter-broker listener and any client-facing listener so that a leaked client-」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/config-streams.md | 1 | L1700「>   5. `cache.close();` To avoid memory leaks, you must close any objects you constructed that extend org.rock」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/interactive-queries.md | 1 | L402「* **Close iterators exactly once.** The range and window queries return a `ReadOnlyRecordIterator`; close it w」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/upgrade-guide.md | 4 | L102「[行の長さ 548 字。当たった 2 か所の前後 200 字] …**Note:** Kafka Streams 4.3.0 contains a critical native memory leak in the R」; L195「**Note:** Kafka Streams 4.1.0 contains a critical memory leak bug ([KAFKA-19748](https://issues.apache.org/jir」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/group-coordinator/src/main/java/org/apache/kafka/coordinator/group/GroupMetadataManager.java | 2 | L8926「*       That heals through the re-push the transient failure's back-off solicits, but leaks」; L8981「* leaking or getting stuck.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/group-coordinator/src/main/java/org/apache/kafka/coordinator/group/streams/StreamsGroupTopologyDescriptionManager.java | 3 | L513「// an unbounded or null exception message that could leak plugin internals.」; L609「* entries can leak until the group id is reused. Delegates to」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/group-coordinator/src/test/java/org/apache/kafka/coordinator/group/GroupCoordinatorServiceTopologyDescriptionTest.java | 1 | L456「// back-off entry of its own; arming a broker-wide entry on this broker would leak」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/metadata/src/main/java/org/apache/kafka/image/TopicsDelta.java | 1 | L108「// Second, we should not add the topicDelta if the given topic ID has been deleted. So that we don't leak the」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/main/java/org/apache/kafka/timeline/SnapshottableHashTable.java | 1 | L27「* SnapshottableHashTable implements a hash table that supports creating point-in-time」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/test/java/org/apache/kafka/queue/KafkaEventQueueTest.java | 1 | L80「"Thread leak detected"」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server/src/test/java/org/apache/kafka/server/ClientMetricsManagerTest.java | 2 | L84「public static void ensureNoThreadLeak() throws InterruptedException {」; L89「"Thread leak detected"」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/storage/src/test/java/org/apache/kafka/storage/internals/log/RemoteIndexCacheTest.java | 1 | L143「TestUtils.assertNoLeakedThreadsWithNameAndDaemonStatus(REMOTE_LOG_INDEX_CACHE_CLEANER_THREAD, true);」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/IQv2HeadersStoreIntegrationTest.java | 2 | L439「// Noise key 2 must never leak into a query for key 1: a tombstone at window0 (which must not remove」; L682「// Noise key 2: a session written then tombstoned -- must not leak into key 1's query nor survive its own.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KafkaStreamsTelemetryIntegrationTest.java | 1 | L416「public void passedMetricsShouldNotLeakIntoClientMetrics(final String groupProtocol) throws Exception {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/KafkaStreams.java | 10 | L831「* you still must {@link #close()} it to avoid resource leaks.」; L846「* you still must {@link #close()} it to avoid resource leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/ActiveTaskCreator.java | 1 | L117「* the producer instance, avoiding resource leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/RecordCollectorImpl.java | 1 | L316「// KAFKA-7510 only put message key and value in TRACE level log so we don't leak data by default」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java | 1 | L80「// leaked into this class, which is to checkpoint after committing if EOS is not enabled.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/query/TimestampedWindowKeyWithHeadersQuery.java | 1 | L64「* underlying store iterator leaks and the {@code num-open-iterators} metric stays incremented.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/query/TimestampedWindowRangeWithHeadersQuery.java | 1 | L54「*     iterator leaks and the {@code num-open-iterators} metric stays incremented.</li>」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/QueryableStoreType.java | 1 | L52「@SuppressKafkaInternalApiUsage("KIP-1265: method leaks internal StateStoreProvider — pending KIP review to pro」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/QueryableStoreTypes.java | 5 | L154「@SuppressKafkaInternalApiUsage("KIP-1265: override leaks internal StateStoreProvider — pending KIP review")」; L178「@SuppressKafkaInternalApiUsage("KIP-1265: override leaks internal StateStoreProvider — pending KIP review")」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/RocksDBConfigSetter.java | 1 | L54「* called on it here to avoid leaking off-heap memory. Objects to be closed can be saved by the user or retriev」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/AbstractColumnFamilyAccessor.java | 1 | L117「// still happen, otherwise the native ColumnFamilyHandle leaks every cycle.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemorySessionTransactionBuffer.java | 1 | L149「* the snapshot read-lock, providing true point-in-time isolation. The returned iterator never」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemoryTransactionBuffer.java | 2 | L41「* giving IQ threads true point-in-time snapshot isolation. After construction the IQ iterator」; L78「* point-in-time snapshot isolation. The returned iterator never touches the live base map.」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemoryWindowTransactionBuffer.java | 1 | L140「* snapshot read-lock, providing true point-in-time isolation. The returned iterator never」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredTimestampedKeyValueStoreWithHeaders.java | 1 | L736「* leaks the underlying raw iterator and permanently inflates {@code num-open-iterators}. Callers」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/MeteredTimestampedWindowStoreWithHeaders.java | 1 | L634「* catches the exception and abandons the iterator without closing it leaks the underlying store」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/RocksDBTransactionBuffer.java | 1 | L253「// A RocksDB iterator already exposes a point-in-time consistent view of the base store」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/KafkaStreamsTest.java | 1 | L935「// be removed to avoid leaking it.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/StreamsConfigTest.java | 2 | L122「public void shouldNotLeakInternalDocMembers() {」; L137「// check for leaking, but already deprecated members」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/kstream/internals/SuppressHeadersScenarioTest.java | 2 | L219「* emitted; with a tombstone only the <em>old</em> value is serialized, which makes the leak」; L296「* <p>Pinned deliberately, so the swallow is not later "fixed" as a leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemoryKeyValueStoreTest.java | 1 | L542「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemorySessionStoreTest.java | 1 | L208「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot of」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemoryWindowStoreTest.java | 1 | L388「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot of」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/MeteredTimestampedKeyValueStoreWithHeadersTest.java | 1 | L449「// exception without closing (in violation of the class's contract) leaks the open-iterator count.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBMigratingSessionStoreWithHeadersTest.java | 1 | L559「// KIP-1035 close-path leak regression: when the migrating store enters upgrade mode it」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBMigratingWindowStoreWithHeadersCloseLeakTest.java | 2 | L43「* Close-path leak regression tests for {@link RocksDBMigratingWindowStoreWithHeaders}, paralleling」; L55「public class RocksDBMigratingWindowStoreWithHeadersCloseLeakTest {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBSessionStoreWithHeadersTest.java | 1 | L122「// The query now succeeds and returns an open store iterator, so close it to avoid a leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBStoreCloseLeakTest.java | 2 | L40「* Regression tests for two RocksDBStore close-path native-memory leaks:」; L56「public class RocksDBStoreCloseLeakTest {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBStoreTest.java | 2 | L1658「public void offsetColumnFamilyWritesShouldNotLeakIntoDataIteration() {」; L1852「// leak the deadlocked store: tearDown's synchronized close() would block forever」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBTimeOrderedSessionStoreWithHeadersTest.java | 1 | L122「// The query now succeeds and returns an open store iterator, so close it to avoid a leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBTimeOrderedWindowStoreWithHeadersTest.java | 1 | L163「// The query succeeds and returns an open store iterator, so close it to avoid a leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBTimestampedStoreTest.java | 1 | L579「// default BlockBasedTableFactory and its LRUCache leak per store open.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBTimestampedWindowStoreWithHeadersTest.java | 2 | L168「// The query succeeds and returns an open store iterator, so close it to avoid a leak.」; L195「// The query succeeds and returns an open store iterator, so close it to avoid a leak.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/RocksDBTransactionBufferTest.java | 1 | L465「public void shouldNotLeakRolledBackWriteIntoLaterCommitOfDifferentKey() throws RocksDBException {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/test-utils/src/main/java/org/apache/kafka/streams/processor/api/MockProcessorContext.java | 1 | L491「@SuppressKafkaInternalApiUsage("KIP-1265: override leaks internal RecordCollector — pending KIP review to prom」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/test-common/test-common-internal-api/src/main/java/org/apache/kafka/common/test/api/DetectThreadLeak.java | 6 | L24「public interface DetectThreadLeak {」; L26「* @return the new threads after `DetectThreadLeak` is created」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/test-common/test-common-internal-api/src/test/java/org/apache/kafka/common/test/api/DetectThreadLeakTest.java | 19 | L25「public class DetectThreadLeakTest {」; L27「private static class LeakThread implements Runnable {」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/test-common/test-common-runtime/src/main/java/org/apache/kafka/common/test/junit/ClusterTestExtensions.java | 9 | L28「import org.apache.kafka.common.test.api.DetectThreadLeak;」; L114「// stopped in @AfterAll), so they must not be treated as per-test leaks.」 — ソフトウェアのメモリ/スレッド/接続/内部型の漏洩(leak)の意味で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+`Apache Kafka` E3b の当たりの判定(甲、ファイルの表。一覧7,506件/読んだ7,506件、当たり88ファイル/287行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/clients/consumer/internals/CommitRequestManager.java | 2 | L1492「Queue<OffsetCommitRequestState> requestsToPurge = new LinkedList<>(unsentOffsetCommits);」; L1493「requestsToPurge.forEach(RetriableRequestState::maybeExpire);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/stats/Frequencies.java | 1 | L130「purgeObsoleteSamples(config, now);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/stats/Percentiles.java | 1 | L85「purgeObsoleteSamples(config, now);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/stats/Rate.java | 2 | L84「// purge old samples before we compute the window size」; L85「stat.purgeObsoleteSamples(config, now);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/stats/SampledStat.java | 5 | L47「// keep one extra placeholder for "overlapping sample" (see purgeObsoleteSamples() logic)」; L62「// keep one extra placeholder for "overlapping sample" (see purgeObsoleteSamples() logic)」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/main/java/org/apache/kafka/common/metrics/stats/SimpleRate.java | 1 | L37「stat.purgeObsoleteSamples(config, now);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/clients/consumer/internals/CommitRequestManagerTest.java | 1 | L924「// we only want to make sure to purge the outbound buffer for non-retriables, so retriable will be re-queued.」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/common/metrics/MetricsTest.java | 12 | L277「Metrics.ExpireSensorTask purger = metrics.new ExpireSensorTask();」; L278「purger.run();」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/clients/src/test/java/org/apache/kafka/common/metrics/stats/SampledStatTest.java | 2 | L43「public void testSampleIsPurgedIfDoesntOverlap() {」; L51「assertEquals(0, numSamples, "Sample should be purged if doesn't overlap the window");」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/java/kafka/server/share/DelayedShareFetch.java | 4 | L510「// but still being watched operations is larger than the purge interval. This purge interval is defined by the」; L511「// share.fetch.purgatory.purge.interval.requests and is 1000 by default, thereby ensuring that such stale oper」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/main/scala/kafka/server/ReplicaManager.scala | 5 | L187「config.producerPurgatoryPurgeIntervalRequests))」; L191「config.fetchPurgatoryPurgeIntervalRequests))」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/java/kafka/server/share/DelayedShareFetchTest.java | 3 | L91「import static kafka.server.share.SharePartitionManagerTest.DELAYED_SHARE_FETCH_PURGATORY_PURGE_INTERVAL;」; L620「DELAYED_SHARE_FETCH_PURGATORY_PURGE_INTERVAL, false, true);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/java/kafka/server/share/SharePartitionManagerTest.java | 15 | L170「static final int DELAYED_SHARE_FETCH_PURGATORY_PURGE_INTERVAL = 1000;」; L1192「DELAYED_SHARE_FETCH_PURGATORY_PURGE_INTERVAL, false, true);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/core/src/test/scala/unit/kafka/server/KafkaConfigTest.scala | 4 | L936「case ReplicationConfigs.FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG => assertPropertyInvalid(baseProperties」; L937「case ReplicationConfigs.PRODUCER_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG => assertPropertyInvalid(basePropert」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docker/native/native-image-configs/reflect-config.json | 1 | L1526「"name":"org.apache.logging.log4j.core.appender.routing.IdlePurgePolicy"」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/architecture.md | 1 | L88「[行の長さ 907 字。当たった 1 か所の前後 200 字] …ce, and hence the task accessing the store, has its own dedicated changelog t」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/config-streams.md | 2 | L998「repartition.purge.interval.ms」; L1006「The frequency in milliseconds with which to delete fully consumed records from repartition topics. Purging wil」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/developer-guide/dsl-api.md | 2 | L907「[行の長さ 570 字。当たった 1 か所の前後 200 字] …Kafka Streams will manage the topic for `repartition()`. Generated topic is t」; L4465「[行の長さ 549 字。当たった 1 か所の前後 200 字] …s received so far within the defined window boundary. In aggregating operatio」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/docs/streams/upgrade-guide.md | 2 | L108「[行の長さ 406 字。当たった 1 か所の前後 200 字] …Kafka Streams now allows to purge local state directories and checkpoint file」; L422「[行の長さ 487 字。当たった 3 か所の前後 200 字] …Kafka Streams DSL may insert so-called repartition topics for certain DSL ope」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/group-coordinator/src/main/java/org/apache/kafka/coordinator/group/modern/share/ShareGroupConfig.java | 8 | L72「public static final String SHARE_FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG = "share.fetch.purgatory.purge」; L73「public static final int SHARE_FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_DEFAULT = 1000;」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/group-coordinator/src/test/java/org/apache/kafka/coordinator/group/modern/share/ShareGroupConfigTest.java | 2 | L44「configs.put(ShareGroupConfig.SHARE_FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG, 1000);」; L54「assertEquals(1000, config.shareFetchPurgatoryPurgeIntervalRequests());」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/main/java/org/apache/kafka/common/DirectoryId.java | 1 | L134「// and the system was upgraded. In this case the original list of directories was purged」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/main/java/org/apache/kafka/server/purgatory/DelayedOperationPurgatory.java | 18 | L53「private final int purgeInterval;」; L61「public DelayedOperationPurgatory(String purgatoryName, Timer timer, int brokerId, int purgeInterval) {」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/main/java/org/apache/kafka/timeline/SnapshottableHashTable.java | 1 | L27「* SnapshottableHashTable implements a hash table that supports creating point-in-time」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server-common/src/test/java/org/apache/kafka/server/purgatory/DelayedOperationTest.java | 3 | L150「public void testRequestPurge() {」; L161「// complete the operations, it should immediately be purged from the delayed operation」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server/src/main/java/org/apache/kafka/server/config/AbstractKafkaConfig.java | 6 | L789「public int fetchPurgatoryPurgeIntervalRequests() {」; L790「return getInt(ReplicationConfigs.FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server/src/main/java/org/apache/kafka/server/config/ReplicationConfigs.java | 12 | L106「public static final String FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_CONFIG = "fetch.purgatory.purge.interval.re」; L107「public static final int FETCH_PURGATORY_PURGE_INTERVAL_REQUESTS_DEFAULT = 1000;」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server/src/main/java/org/apache/kafka/server/config/ReplicationQuotaManagerConfig.java | 1 | L20「// Purge sensors after 1 hour of inactivity」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/server/src/main/java/org/apache/kafka/server/quota/ClientQuotaManager.java | 1 | L61「// Purge sensors after 1 hour of inactivity」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/AdjustStreamThreadCountTest.java | 2 | L72「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L162「purgeLocalStreamsState(properties);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/AtLeastOnceDeliveryMessageLossIntegrationTest.java | 2 | L59「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L119「purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/ColdStartStickinessIntegrationTest.java | 2 | L67「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L125「purgeLocalStreamsState(streamsConfigurations);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/EosIntegrationTest.java | 2 | L110「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L915「purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/FineGrainedAutoResetIntegrationTest.java | 1 | L175「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/GlobalKTableEOSIntegrationTest.java | 1 | L138「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/GlobalKTableIntegrationTest.java | 1 | L140「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/GlobalStateReprocessTest.java | 1 | L142「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/GlobalThreadShutDownOrderTest.java | 1 | L162「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/IQv2EndpointToPartitionsIntegrationTest.java | 2 | L92「IntegrationTestUtils.purgeLocalStreamsState(streamsApplicationProperties);」; L94「IntegrationTestUtils.purgeLocalStreamsState(streamsSecondApplicationProperties);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/InternalTopicIntegrationTest.java | 1 | L116「IntegrationTestUtils.purgeLocalStreamsState(streamsProp);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/JoinStoreIntegrationTest.java | 1 | L102「IntegrationTestUtils.purgeLocalStreamsState(STREAMS_CONFIG);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/JoinWithIncompleteMetadataIntegrationTest.java | 1 | L92「IntegrationTestUtils.purgeLocalStreamsState(STREAMS_CONFIG);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KStreamAggregationDedupIntegrationTest.java | 1 | L125「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KStreamAggregationIntegrationTest.java | 1 | L171「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KStreamKStreamIntegrationTest.java | 1 | L112「IntegrationTestUtils.purgeLocalStreamsState(streamsConfig);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KTableKTableForeignKeyInnerJoinCustomPartitionerIntegrationTest.java | 1 | L182「IntegrationTestUtils.purgeLocalStreamsState(asList(streamsConfig, streamsConfigTwo, streamsConfigThree));」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KTableKTableForeignKeyInnerJoinMultiIntegrationTest.java | 1 | L186「IntegrationTestUtils.purgeLocalStreamsState(asList(streamsConfig, streamsConfigTwo, streamsConfigThree));」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KTableSourceTopicRestartIntegrationTest.java | 1 | L118「IntegrationTestUtils.purgeLocalStreamsState(STREAMS_CONFIG);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/KafkaStreamsTelemetryIntegrationTest.java | 2 | L164「IntegrationTestUtils.purgeLocalStreamsState(streamsApplicationProperties);」; L166「IntegrationTestUtils.purgeLocalStreamsState(streamsSecondApplicationProperties);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/LagFetchIntegrationTest.java | 2 | L126「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」; L316「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/MetricsIntegrationTest.java | 1 | L336「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/OuterJoinListValueStoreRestorationTest.java | 2 | L54「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L189「purgeLocalStreamsState(streamsConfig);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/PurgeRepartitionTopicIntegrationTest.java | 19 | L61「public class PurgeRepartitionTopicIntegrationTest {」; L70「private static final Integer PURGE_INTERVAL_MS = 10;」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/QueryableStateIntegrationTest.java | 1 | L243「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/RegexSourceIntegrationTest.java | 1 | L157「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/RestoreIntegrationTest.java | 6 | L107「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L201「IntegrationTestUtils.purgeLocalStreamsState(streamsConfigurations);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/RocksDBMetricsIntegrationTest.java | 1 | L156「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/SlidingWindowedKStreamIntegrationTest.java | 2 | L133「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」; L398「kafkaStreams.cleanUp(); // Purge store to force restoration」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/StreamTableJoinTopologyOptimizationIntegrationTest.java | 1 | L113「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/StreamsUncaughtExceptionHandlerIntegrationTest.java | 2 | L80「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L155「purgeLocalStreamsState(properties);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/SwallowUnknownTopicErrorIntegrationTest.java | 1 | L178「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/TaskMetadataIntegrationTest.java | 2 | L55「import static org.apache.kafka.streams.integration.utils.IntegrationTestUtils.purgeLocalStreamsState;」; L166「purgeLocalStreamsState(properties);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/TimeWindowedKStreamIntegrationTest.java | 2 | L139「IntegrationTestUtils.purgeLocalStreamsState(streamsConfiguration);」; L397「kafkaStreams.cleanUp(); // Purge store to force restoration」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/integration-tests/src/test/java/org/apache/kafka/streams/integration/utils/IntegrationTestUtils.java | 4 | L225「public static void purgeLocalStreamsState(final Properties streamsConfiguration) throws IOException {」; L230「// Only purge state when it's under java.io.tmpdir.  This is a safety net to prevent accidentally」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/StreamsConfig.java | 6 | L724「/** {@code repartition.purge.interval.ms} */」; L726「public static final String REPARTITION_PURGE_INTERVAL_MS_CONFIG = "repartition.purge.interval.ms";」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/kstream/KStream.java | 5 | L515「* Furthermore, the topic will be created with infinite retention time and data will be automatically purged」; L592「* Furthermore, the topic will be created with infinite retention time and data will be automatically purged」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/ReadOnlyTask.java | 1 | L198「public Map<TopicPartition, Long> purgeableOffsets() {」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/StateDirectory.java | 1 | L685「* Purges local state directories and checkpoint files during application startup.」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamTask.java | 4 | L1116「public Map<TopicPartition, Long> purgeableOffsets() {」; L1117「final Map<TopicPartition, Long> purgeableConsumedOffsets = new HashMap<>();」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/StreamThread.java | 7 | L314「private final long purgeTimeMs;」; L345「private long lastPurgeMs;」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/Task.java | 1 | L213「default Map<TopicPartition, Long> purgeableOffsets() {」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/processor/internals/TaskManager.java | 2 | L2095「void maybePurgeCommittedRecords() {」; L2108「for (final Map.Entry<TopicPartition, Long> entry : task.purgeableOffsets().entrySet()) {」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemorySessionTransactionBuffer.java | 1 | L149「* the snapshot read-lock, providing true point-in-time isolation. The returned iterator never」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemoryTransactionBuffer.java | 2 | L41「* giving IQ threads true point-in-time snapshot isolation. After construction the IQ iterator」; L78「* point-in-time snapshot isolation. The returned iterator never touches the live base map.」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/InMemoryWindowTransactionBuffer.java | 1 | L140「* snapshot read-lock, providing true point-in-time isolation. The returned iterator never」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/RocksDBGenericOptionsToDbOptionsColumnFamilyOptionsAdapter.java | 4 | L1661「public Options setExperimentalMempurgeThreshold(final double experimentalMempurgeThreshold) {」; L1662「columnFamilyOptions.setExperimentalMempurgeThreshold(experimentalMempurgeThreshold);」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/main/java/org/apache/kafka/streams/state/internals/RocksDBTransactionBuffer.java | 1 | L253「// A RocksDB iterator already exposes a point-in-time consistent view of the base store」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/processor/internals/StreamTaskTest.java | 1 | L2385「final Map<TopicPartition, Long> map = task.purgeableOffsets();」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/processor/internals/StreamThreadTest.java | 24 | L547「public void shouldNotPurgeBeforeThePurgeInterval(final boolean processingThreadsEnabled) {」; L549「final long purgeInterval = 2000L;」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/processor/internals/TaskManagerTest.java | 14 | L4269「public void shouldSendPurgeData() {」; L4282「when(task00.purgeableOffsets())」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemoryKeyValueStoreTest.java | 1 | L542「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemorySessionStoreTest.java | 1 | L208「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot of」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/src/test/java/org/apache/kafka/streams/state/internals/InMemoryWindowStoreTest.java | 1 | L388「// A READ_COMMITTED scan from a non-owner (IQ) thread must observe a point-in-time snapshot of」 — 並行アクセス下でのスナップショット分離(point-in-time snapshot isolation、Interactive Queriesが読み取り中の状態ストアの一貫性を保つ仕組み)の意味で、その時点で知り得ない情報が入らないようにする機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/streams/streams-scala/src/main/scala/org/apache/kafka/streams/scala/kstream/KStream.scala | 1 | L347「* Similar to auto-repartitioning, the topic will be created with infinite retention time and data will be auto」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/tests/docker/Dockerfile | 1 | L57「# visible to 'ducker purge'.  The ducker.creator label also lets us know what UNIX user built this」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/tests/docker/ducker-ak | 9 | L151「purge [--f|--force]」; L152「Purge Docker images created by ducker-ak.  This will free disk space.」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/tests/kafkatest/services/kafka/config_property.py | 2 | L160「val FetchPurgatoryPurgeIntervalRequestsProp = "fetch.purgatory.purge.interval.requests"」; L161「val ProducerPurgatoryPurgeIntervalRequestsProp = "producer.purgatory.purge.interval.requests"」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-032/src/kafka/tests/kafkatest/tests/streams/streams_application_upgrade_test.py | 4 | L145「self.purge_state_dir(self.processor1)」; L146「self.purge_state_dir(self.processor2)」 — メトリクスのサンプル・コミット要求・ログセグメント等を保持期間や上限を超えて自動的に破棄(purge)する話(過去のデータを消す処理)で、未来の情報の混入を防ぐ機能ではない(向きが逆:過去のデータの破棄への対処) |
+
+### ツール1件ごとの表
+
+`Apache Kafka`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(20回目のNinjaTrader・21回目のdbt・24回目のPrefect・26回目のDebeziumと同じ扱いで、文章表は新設せず候補の一覧の8-032の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Apache Kafka` | 版 | 4.3.1(実測。Apache公式ダウンロード頁のmeta description逐語「Binary download: kafka_2.13-4.3.1.tgz」、GitHub trunk HEAD=3316389bは4.3.1より先行するプレリリース状態) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:48-53 docs/DATA/probes/20260923_tools_8_run28.log:32-35 |
+| `Apache Kafka` | 最終更新日 | kafka-clients-4.3.1.jarはMaven Central実測で2026-06-17公開(Last-Modified)。Apache公式ダウンロード頁は「Released June 25, 2026」。GitHub trunk HEAD=3316389b(2026-09-26取得) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1597-1600 docs/DATA/probes/20260923_tools_8_run28.log:48-53 docs/DATA/probes/20260923_tools_8_run28.log:32-35 |
+| `Apache Kafka` | ライセンス | Apache License, Version 2.0(配布物LICENSEファイル冒頭。商用利用・再配布ともApache-2.0の条件下で許容) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 |
+| `Apache Kafka` | 言語と動作環境 | Java(build.gradleの`minClientJavaVersion=11`・`minNonClientJavaVersion=17`)とScala(ブローカーコアの一部)。当方の環境Java 21.0.10で実際にビルド不要のバイナリ配布物を展開・実行できた | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 docs/DATA/probes/20260923_tools_8_run28.log:1742-1789 |
+| `Apache Kafka` | 対応取引所 | 該当なし(汎用の分散メッセージング/イベントストリーミング基盤で取引所接続は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:48-53 |
+| `Apache Kafka` | 星 | 34k(shields.io実測。github.com/api.github.comがこのセッションのプロキシで403のため代替経路) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1620-1623 |
+| `Apache Kafka` | コミット数 | 未確認(試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず) | 未確認 | docs/DATA/probes/20260923_tools_8_run28.log:36-39 docs/DATA/probes/20260923_tools_8_run28.log:1620-1623 |
+| `Apache Kafka` | 保守者数 | 352(shields.io contributorsバッジ実測)。pom.xmlに個人developer名の記載は無いが、NOTICEファイルの組織名は一貫して「The Apache Software Foundation」 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1620-1623 docs/DATA/probes/20260923_tools_8_run28.log:1624-1630 |
+| `Apache Kafka` | 週DL数 | 未確認(試した手段: Maven Centralは週DL数の公式APIを公開していない。search.maven.orgのsolrsearch APIはGAV検索のみでdependents数・DL数を返さない) | 未確認 | docs/DATA/probes/20260923_tools_8_run28.log:1553-1596 |
+| `Apache Kafka` | 初回公開日 | kafka-clientsのMaven Central初回公開は2014-10-21(0.8.2-beta、search.maven.org実測)。Kafka自体の発祥(LinkedIn社内、2011年ごろ)を明記した一次資料はこの回では見つかっておらず未確認 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1594-1596 |
+| `Apache Kafka` | 既知の脆弱性 | OSV.dev実測。`kafka-clients` 4.3.1版指定で0件。版指定なし(全履歴)では7件のGHSA(JWT未検証・ConfigProvider権限昇格・Observable Discrepancy・バッファプール競合・SSRF・DEBUGログでの機密漏えい・認証不備)が過去版に存在するが、いずれも4.3.1には非該当 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1601-1603 docs/DATA/probes/20260923_tools_8_run28.log:1604-1619 |
+| `Apache Kafka` | 料金体系 | 無料(Apache-2.0のOSS。ブローカー本体・クライアント・Streams・Connect等すべて無料) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 |
+| `Apache Kafka` | 無料枠の上限 | 該当なし(OSSで機能制限や無料枠の上限は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 |
+| `Apache Kafka` | 課金開始条件 | 該当なし(OSSで課金は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 |
+| `Apache Kafka` | 隠れた依存 | Java 17以上がブローカー実行に要る(build.gradleのminNonClientJavaVersion=17、実測でJava 21により起動確認)。libs/にjline・lz4-javaのネイティブライブラリが同梱されるが追加取得は不要 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 docs/DATA/probes/20260923_tools_8_run28.log:1490-1543 |
+| `Apache Kafka` | 登録の要否 | 不要(OSS。Apache公式配布の場所とMaven Centralから登録なしに取得・展開・実行できることを実測で確認した) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1432-1443 docs/DATA/probes/20260923_tools_8_run28.log:1742-1789 |
+| `Apache Kafka` | 到達経路 | kafka.apache.org・downloads.apache.org・repo1.maven.org・search.maven.org・api.osv.dev・img.shields.ioは到達。github.com・api.github.comのHTML/APIは403(git clone/git ls-remoteのsmart-http経路は到達) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:36-39 docs/DATA/probes/20260923_tools_8_run28.log:32-35 |
+| `Apache Kafka` | 導入可否 | 可(実測、公式バイナリ配布物を展開しそのままKRaftモードの単一ノードブローカーとして起動できた。ビルドは不要) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1742-1748 docs/DATA/probes/20260923_tools_8_run28.log:1749-1760 |
+| `Apache Kafka` | install所要秒 | 該当なし相当(ビルド不要、バイナリ配布物の展開のみ)。展開(tar xzf)はtime_s=1.668 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1468-1482 |
+| `Apache Kafka` | 依存数 | 108(配布物libs/配下のjar数、実測)。kafka-clients単体のpom直接依存は4件 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1631-1741 docs/DATA/probes/20260923_tools_8_run28.log:1544-1552 |
+| `Apache Kafka` | pip check | 該当なし(Java/Scalaのためpipは無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1907-1913 |
+| `Apache Kafka` | 最小実行の可否 | 可(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1761-1789 |
+| `Apache Kafka` | 最小実行の中身 | KRaftモード単一ノードブローカーで、合成データ(id=1,2,3、価格を模した値)をトピックmarket_dataへProduceし、`--from-beginning`でオフセット0,1,2=記録順に再生されることを確認(PASS)。存在しないパーティション5からの再生を試み`org.apache.kafka.common.errors.TimeoutException`で失敗することを確認(FAIL)。E4の中核 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1761-1765 docs/DATA/probes/20260923_tools_8_run28.log:1766-1769 docs/DATA/probes/20260923_tools_8_run28.log:1770-1774 docs/DATA/probes/20260923_tools_8_run28.log:1775-1781 |
+| `Apache Kafka` | 実行所要秒 | PASS側13.674(time_s)・FAIL側6.629(time_s) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1770-1774 docs/DATA/probes/20260923_tools_8_run28.log:1775-1781 |
+| `Apache Kafka` | wheel展開 | 該当なし(Java)。jar展開(kafka-clients-4.3.1.jar・kafka_2.13-4.3.1.jar)は`.class`ファイルのみで、通常のパッケージ名(org/apache/kafka/…)が見え難読化は無い | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1914-1935 |
+| `Apache Kafka` | setup.py導入時実行 | 該当なし(Java/バイナリ配布物にsetup.py相当は無い)。`bin/*.sh`にcurl/wget/eval等の外部取得・任意コード実行の兆候は見当たらない | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1483-1489 |
+| `Apache Kafka` | 同梱バイナリ | あり。`jline`(端末制御)と`lz4-java`(圧縮)のプラットフォーム別ネイティブライブラリ(.so/.dll/.dylib)がjar内に同梱される(実測、いずれも広く使われる正当な依存) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1490-1543 |
+| `Apache Kafka` | 外部送信 | 見当たらない(実測。最小実行は127.0.0.1のブローカーのみで完結し、他の外部ホストへの通信は試みていない。テレメトリは既定で無効) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1742-1789 |
+| `Apache Kafka` | 自動発注機能 | 無し(汎用メッセージング基盤で、読んだ範囲に取引所APIとの統合・発注・署名・資金移動の機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:48-53 |
+| `Apache Kafka` | 宣伝詐欺の兆候 | 見当たらない(読んだ範囲(公式サイト・文書・ライセンス・NOTICE)では、Apache Software Foundationの公式プロジェクト)。X等で宣伝詐欺の兆候を専用に探す検索はこの回では実施していない | 推定 | docs/DATA/probes/20260923_tools_8_run28.log:1624-1630 |
+| `Apache Kafka` | 当方データ投入 | 未確認(試した手段: 合成データ(id/price/note)は投入し再生を確認したが(E4)、当方のcsv.gz(tardis形式)は投入していない。Kafkaは汎用のバイトストリームを扱う基盤で、投入形式そのものに制約は無いと見られるが未実測) | 未確認 | docs/DATA/probes/20260923_tools_8_run28.log:1766-1774 |
+| `Apache Kafka` | 時刻の扱い | 実測。レコードにCreateTime(ミリ秒)が付くが、再生の順序保証はパーティション内のオフセット(記録順)によるもので、絶対時刻そのものでは順序を決めていない | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1770-1774 |
+| `Apache Kafka` | 再現性 | E5参照(印・段2) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:475-477 |
+| `Apache Kafka` | 規模の見積 | 未確認(試した手段: 456日分のティックデータに相当する規模でKafkaを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3件の合成レコードのみの実測) | 未確認 | docs/DATA/probes/20260923_tools_8_run28.log:1766-1774 |
+| `Apache Kafka` | 4軸1_道具 | 印。ReplicaVerificationTool(E1a、レプリカ間チェックサム突合)・kafka-streams-application-reset(E4、オフセット指定の再処理)・冪等プロデューサの重複検出(E2)は、当方のバックテスト・執行系ツール(CLAUDE.md §2)に無い道具立て | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:442-447 docs/DATA/probes/20260923_tools_8_run28.log:465-471 docs/DATA/probes/20260923_tools_8_run28.log:456-458 |
+| `Apache Kafka` | 4軸2_情報 | 印。ブローカーのメッセージ検証失敗率メトリクス(InvalidMessageCrcRecordsPerSec等)によるデータ品質の可視化は、当方の監視系(CLAUDE.md §2)に無い情報源 | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:459-464 |
+| `Apache Kafka` | 4軸3_視点 | 印。「記録済みメッセージログをオフセット順(記録順)に再生して下流の計算を再実行する」という視点は、当方のバックテストの「記録済みのティック/足ファイルを順に読む」設計とは異なる、常時稼働のメッセージログを起点にする視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:472-474 |
+| `Apache Kafka` | 4軸4_向上 | サーベイの外(18回目検収§6の3・19回目のMetaTraderの処置3・26回目のDebeziumと同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `Apache Kafka` | 配布元の一致 | 一致(pomのgroupId `org.apache.kafka`・url `https://kafka.apache.org`、NOTICEの組織名「The Apache Software Foundation」が、公式サイト・GitHub組織`apache`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1544-1552 docs/DATA/probes/20260923_tools_8_run28.log:1624-1630 |
+| `Apache Kafka` | 難読化 | 見当たらない(jar展開の中身は平文の`.class`のみで通常のパッケージ名。ビルドスクリプトにも難読化の記述は見ていない) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1914-1935 |
+| `Apache Kafka` | 外部URL取得 | 見当たらない(bin/*.shにcurl/wget等の外部取得は無い。実測) | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1483-1489 |
+| `Apache Kafka` | 依存の一覧 | 実測(配布物libs/配下の全108jar、生ログに記載)。kafka-clientsのpom直接依存は`zstd-jni`・`lz4-java`・`snappy-java`・`slf4j-api`の4件 | 実測 | docs/DATA/probes/20260923_tools_8_run28.log:1631-1741 docs/DATA/probes/20260923_tools_8_run28.log:1544-1552 |
+| `Apache Kafka` | 保守者名の一貫性 | 一貫(NOTICEファイルの組織名が「The Apache Software Foundation」、GitHub組織`apache`・公式サイト`kafka.apache.org`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run28.log:1624-1630 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)のため到達できなかった(存在しないとは書かない)
+- **週DL数**: Maven Centralは週DL数の公式APIを公開していない(未確認・試した手段: search.maven.orgのsolrsearch APIはGAV検索のみでdependents数・DL数を返さない。さらに4.3.1のレコード自体がsearch.maven.orgの応答に出なかった)
+- **宣伝詐欺の兆候**: 公式サイト・文書・ライセンス・NOTICEの範囲には見当たらないが、X(旧Twitter)の投稿等で宣伝・詐欺の兆候を専用に探す検索はこの回では実施していない
+- **当方データ投入**: 合成データ(id/price/note)の投入・再生(E4)は実測したが、当方のcsv.gz(tardis形式)は投入していない
+- **規模の見積**: 456日分のティックデータに相当する規模でKafkaを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3件の合成レコードのみの実測に留まる
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19回目のMetaTrader・26回目のDebeziumの処置と同じ理由)
+- **Kafka自体の初回公開日**: Maven Central上のkafka-clientsの初回公開(2014-10-21)は実測できたが、Kafkaプロジェクト自体の発祥年(LinkedIn社内、通説では2011年)を明記した一次資料はこの回で読んだ範囲には見当たらなかった
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない。生ログ36-39行目)。これはGitHubというホスト自体の到達不能ではなく、このセッションのプロキシがこのリポジトリへのAPI/Web直接アクセスを許可していないという意味であり、`git clone`・`git ls-remote`(git smart-httpプロトコル)は同じホスト名の下でも到達できた(生ログ32-35行目、40-47行目)。星・保守者数はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ1620-1623行目)。Maven Centralは週DL数・依存元(dependents)の公式APIを公開しておらず、`search.maven.org`のsolrsearch API(GAV検索)は4.3.1のレコードを返さなかったため、`repo1.maven.org`のLast-Modifiedヘッダで公開日を代替確認した(生ログ1553-1596行目、1597-1600行目)。正確な値(総コミット数・週DL数・宣伝詐欺の兆候の網羅的な確認)が必要なら、第2経路(オーナーPC、`add_repo`でのGitHub連携が使える環境、または単純にブラウザでgithub.com/apache/kafkaを開く)で確認できる可能性があるが、この回はそこまで試みていない。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] E4の段は、kafka-streams-application-resetツールが扱うトピック(利用者が任意の形式で生成したデータ)と、利用者が自由に書けるKafka Streamsトポロジ(候補の枠組みの外の一般のコード)という対象の広さを踏まえると段4(対象のすべてを外から持ち込める)に当たりうると考えたが、この回は26回目のDebezium(E4、段3)との整合を優先し、保守的に段3のまま残した。段4に上げるべきかはリードの判断を仰ぐ
+2. [それ以外の問い] E1aの根拠は`ReplicaVerificationTool`(廃止予定のツール)を主に使った。廃止予定(deprecated)の機能を印の根拠にしてよいか、現行4.3.1に実在し呼び出せる以上は問題ないという理解でよいか、リードの判断を仰ぐ
+3. [それ以外の問い] E1b・E6は、文書の全112頁のfront matter titleを読み、関わりうる頁(testing.md・interactive-queries.md・internal-api-checker.md等)の本文を読んだ範囲では印が見つからず、見積もりが500行を超えるため未判別のまま残した(案B)。Kafkaは巨大なモノレポ(N=7,571)で、`docs/streams/developer-guide/`配下の個別頁(dsl-api.md・processor-api.md等、数百〜数千行規模)をすべて読み切れておらず、E1bに当たりうる「Kafka Streamsの組み込み集計演算子(count()等、利用者コード無しで動く計算)」が当方の計算(約定・損益・指標)と同種と言えるかの判断も含め、次の回でどこまで読み進めるべきかはリードの判断を仰ぐ
+4. [それ以外の問い] 別配布物として除外した`kafka-site`(文書サイトのソース)・`camel-kafka-connector`(Apache Camelの一部)は、起動文§1の規則(「別の配布物は候補の機能に数えず、Nにも入れない」)に従いこの回ではE1a〜E6の判定に使っていない。`camel-kafka-connector`はApache Kafkaプロジェクトの一部ではなくApache Camelプロジェクトの一部と判断したが、この切り分けが正しいかはリードの判断を仰ぐ
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run28.log`(誤検出は閉じずに残す)。
+
+**この回に新しく出た誤検出(閉じない)**:
+- K1・K2(42474・42591行目): この回に足した`当たりの判定`の表(E3a・E3bのファイルの表)が、空行を挟まず数十〜百行連続する1つの`塊`として数えられ、そこに含まれる一次資料の逐語引用(Javaのdocコメント`/** ... */`やMarkdownの`**Note:**`等、丸括弧・大括弧・アスタリスクを含む)の偶奇が塊全体では合わないために生じる誤検出で、19612・30448・40088・41254・41275行目(21〜27回目で誤検出と判定済み)と同型(大きな表の塊)。個々の行・文を見れば括弧・アスタリスクはいずれも一次資料の引用のなかで閉じている(例: 42474行目3行目のCascadeValidator.javaの逐語「/** {@code @SuppressKafkaInternalApiUsage} — the escape hatch for known cascade leaks pending review. */」、42591行目67行目のinteractive-queries.mdの逐語「**Close iterators exactly once.**」)。
+
+```
+K1 太字                  5 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  太字 ** の数が奇数 (7 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  太字 ** の数が奇数 (1 個)
+K2 括弧                  15 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  丸括弧 の数が合わない (272 対 265)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  丸括弧 の数が合わない (333 対 337)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             33 件(すべて21〜27回目までの既存指摘。この回の新規追加は0件)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 53 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 53 件
+```
+(この節をこの回の節に足したあとで打ち直すとK12が0件になり合計は53件になる。上の`K1〜K11・K13`のブロックは、この節を書き足す直前に打った出力で、その時点ではK12が1件(節が無い)のため合計54件だった。両方を残すのは、貼り付けの真正性を「打ち直した回」ごとに追える形にするため)
+
+`python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 28` →
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 17 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+`python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run28.log` →
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run28.log の最初の手 2026-09-26T15:06:36Z / 最後の手 2026-09-26T15:37:19Z / 手の数 77
+---- 合計 0 件
+```
+
+`git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` → `0`(HEAD=27回目までがコミットされた版。この回は追記と、K12チェック直前に足した引用の裏付け・生ログ参照の訂正だけで、既存行の削除は無い)
