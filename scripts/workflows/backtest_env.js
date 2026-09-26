@@ -13,6 +13,10 @@ export const meta = {
 
 const DOC = 'docs/DATA/delegations/20260925_backtest_env_prompt.md'
 const MARK = args.marker
+// a resume keeps MARK at the run's launch value (it sits in every prompt header; changing it re-runs every agent,
+// measured 2026-09-26). The delegation's current version is then carried in args.doc_sha for the record only.
+const DOC_SHA = args.doc_sha || null
+if (DOC_SHA) log(`委任文の今の版 ${DOC_SHA}(起動の指紋 ${MARK} は再生のため据え置き)`)
 const REC = 'docs/DISCUSSIONS/2026-09-23_backtest_env'
 const SCR = args.scratch
 const MODEL = 'sonnet'

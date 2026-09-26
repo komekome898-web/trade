@@ -154,3 +154,13 @@ def test_critic_less_items_must_be_capped_at_one_and_disclosed_as_unverified():
     assert any("68-8" in e for e in cbd.check_bound(row + "未確認\n", ok, '{"round_cap": {"1": 2, "4": 2}, "skip_critic": [1]}'))
     assert any("68-3" in e for e in cbd.check_bound(row, ok, good))
     assert any("68-2" in e for e in cbd.check_bound(row + "未確認\n", "const CAP = capOf(args.round_cap, item.id)", good))
+
+
+def test_resume_keeps_launch_marker_when_doc_sha_names_the_current_version():
+    import hashlib, json
+    doc = "| 通過の判定 = x **終わりの上限:** 項目 1〜3 は最大 1 周 | L |\n"
+    sha = hashlib.sha256(doc.encode("utf-8")).hexdigest()[:12]
+    good = json.dumps({"marker": "x.md@000000000000", "doc_sha": sha})
+    bad = json.dumps({"marker": "x.md@000000000000"})
+    assert not [e for e in cbd.check_args(good, doc, "x.md", "args.marker args.doc_sha", "") if "marker" in e]
+    assert [e for e in cbd.check_args(bad, doc, "x.md", "args.marker args.doc_sha", "") if "marker" in e]

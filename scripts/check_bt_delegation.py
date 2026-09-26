@@ -178,7 +178,12 @@ def check_args(args_text: str, delegation_text: str, delegation_name: str, scrip
         return [f"引数: JSON として読めない: {e}"]
     want = f"{delegation_name}@{hashlib.sha256(delegation_text.encode('utf-8')).hexdigest()[:12]}"
     if args.get("marker") != want:
-        errs.append(f"引数: marker が委任文の今の版と違う: {args.get('marker')!r} != {want!r}")
+        # a resume keeps the run's launch-time marker (it sits in every prompt header, so changing it re-runs every
+        # agent = measured 2026-09-26 01:09 UTC); the current version is then named in args.doc_sha
+        if args.get("doc_sha") == want.split("@")[-1]:
+            pass
+        else:
+            errs.append(f"引数: marker が委任文の今の版と違う: {args.get('marker')!r} != {want!r}(再開なら doc_sha に今の sha を書く)")
     for key in args:
         if f"args.{key}" not in script:
             errs.append(f"引数: 台本が読まない鍵 {key!r}(台本に args.{key} が無い = 台本に無い機構)")
