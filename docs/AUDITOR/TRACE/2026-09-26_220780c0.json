@@ -15067,13 +15067,13 @@
   {
    "move": 551,
    "tools": {
-    "Read": 2,
-    "Bash": 7,
+    "Read": 3,
+    "Bash": 8,
     "Agent": 1,
     "SendMessage": 1,
     "ReadNotifications": 1
    },
-   "n_tools": 12,
+   "n_tools": 14,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
