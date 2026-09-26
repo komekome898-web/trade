@@ -319,11 +319,11 @@ add(id="i4-2-grid", viewpoint="I4-2", kind="値",
 
 # --------------------------------------------------------------------------- I4-3 known-answer scenes (whole engine)
 add(id="i4-3-e2e-taker", viewpoint="I4-3", kind="値",
-    what="新エンジン全体の粒度の正解つきの場面(足の taker の経路): 約定・損益・資産の推移・12 の指標・取り逃しの数が全部正解と一致するか",
+    what="エンジン全体の粒度の正解つきの場面(足の taker の経路): 約定・損益・資産の推移・12 の指標・取り逃しの数が全部正解と一致するか",
     how="i4-1-ref-taker と同じ手の計算(E の足、R-T1・R-P1・R-P3・R-A・R-S1・M)。",
     input=bars_input(E, SIG_E, CFG_E, want=W_E), expect=full_expect(E, TR_E, CFG_E, 60, W_E), judge=J(*W_E))
 add(id="i4-3-e2e-maker", viewpoint="I4-3", kind="値",
-    what="新エンジン全体の粒度の正解つきの場面(足の maker の経路): 約定・損益・資産の推移・12 の指標・取り逃しの数が全部正解と一致するか",
+    what="エンジン全体の粒度の正解つきの場面(足の maker の経路): 約定・損益・資産の推移・12 の指標・取り逃しの数が全部正解と一致するか",
     how="i4-1-ref-maker と同じ手の計算(F の足、R-M1・R-M2・R-X1・R-P1・R-P3・R-A・M)。",
     input=bars_input(F, SIG_F, CFG_F, want=W_E), expect=full_expect(F, TR_F, CFG_F, 60, W_E, missed=1), judge=J(*W_E))
 

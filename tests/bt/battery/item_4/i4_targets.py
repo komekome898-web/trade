@@ -44,5 +44,26 @@ SURVEY: dict[str, dict] = {
     "opp_pm_backtester": {"module": "opponents/pm_backtester_adapter.py", "venv": "item_2/c92", "cand": 92},
     "opp_rqalpha": {"module": "opponents/rqalpha_adapter.py", "venv": "item_4/rqalpha", "cand": 53},
     "opp_pineforge": {"module": "opponents/pineforge_adapter.py", "venv": "item_2/c70", "cand": 70},
+    "opp_quanttrader": {"module": "opponents/quanttrader_adapter.py", "venv": "item_4/quanttrader", "cand": 68},
+    "opp_fast_trade": {"module": "opponents/fast_trade_adapter.py", "venv": "item_4/fast-trade", "cand": 10},
+    "opp_zipline_reloaded": {"module": "opponents/zipline_reloaded_adapter.py", "venv": "item_4/zipline-reloaded", "cand": 18},
 }
 TARGETS.update(SURVEY)
+
+# Reproductions (opponents/repro_*.py): candidates that could not be run, rewritten from their primary source
+# (the source and lines are in each file); they run under the runner's interpreter.
+REPRO: dict[str, dict] = {
+    "opp_repro_67_lumibot": {"module": "opponents/repro_67_lumibot.py", "cand": 67},
+    "opp_repro_60_hikyuu": {"module": "opponents/repro_60_hikyuu.py", "cand": 60},
+    "opp_repro_15_backtestingcore": {"module": "opponents/repro_15_backtestingcore.py", "cand": 15},
+    "opp_repro_8_opentrader": {"module": "opponents/repro_8_opentrader.py", "cand": 8},
+    "opp_repro_56_zvt": {"module": "opponents/repro_56_zvt.py", "cand": 56},
+    "opp_repro_69_gobacktest": {"module": "opponents/repro_69_gobacktest.py", "cand": 69},
+    "opp_repro_11_octobot": {"module": "opponents/repro_11_octobot.py", "cand": 11},
+    "opp_repro_7_superalgos": {"module": "opponents/repro_7_superalgos.py", "cand": 7},
+    "opp_repro_52_lean": {"module": "opponents/repro_52_lean.py", "cand": 52},
+    "opp_repro_57_wondertrader": {"module": "opponents/repro_57_wondertrader.py", "cand": 57},
+    "opp_repro_94_mote": {"module": "opponents/repro_94_mote.py", "cand": 94},
+    "opp_repro_80_hummingbot": {"module": "opponents/repro_80_hummingbot.py", "cand": 80},
+}
+TARGETS.update(REPRO)
