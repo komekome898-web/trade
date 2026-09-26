@@ -39657,3 +39657,645 @@ K12 検査の出力の貼付           0 件
 
 - **E1b の値**: 台帳は `印`・段 2(この節の `未判別` は受け取らない)。理由は検収 `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run23.md` §4。
 - **案 B の当たりの行の数(指摘 2)**: 知見 #9・#10 の合計は、この回が数えない配布物(`dbt-utils`・`dbt-audit-helper`)の当たりを含む。dbt の公式のリポジトリと文書だけ(main + 1.latest + docs)にすると、E1b は 4,279 + 1,056 + 2,043 = 7,378 行、E4 は 8,060 + 573 + 770 = 9,403 行(21 回目の生ログ `docs/DATA/probes/20260923_tools_8_run21.log:211-218`・`:235-242` の内訳から)。どちらも 500 行を超える。
+
+## 区分8 — 24 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-033 `Prefect` の1行だけを扱う(起動文§1)。E1a〜E6を全部`未判別`から判別し、§4.0の表を全項目書く。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run24_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run24_prompt.md@44054264f3c9`)
+- `https://www.prefect.io/`(公式サイト。取得日2026-09-26、生ログ2-108行目)
+- `https://github.com/PrefectHQ/prefect`(公式ソースリポジトリ。`git ls-remote`のHEAD `c24d832726a2347dd4df2b82b38226a7a994823d`、既定の枝`main`。生ログ109-138行目)
+- `https://pypi.org/pypi/prefect/json`(公式配布のメタデータ。取得日2026-09-26、生ログ139-160行目、3152-3158行目)
+- `https://docs.prefect.io/`・`https://docs.prefect.io/sitemap.xml`(公式文書サイト、909頁。取得日2026-09-26、生ログ161-247行目)
+- `https://docs.prefect.io/llms-full.txt`(文書サイトの公式全文ダンプ。sitemapの909件と1対1で対応することを確認した上で、リポジトリ内`docs/`ディレクトリの内容と同一と判明したため最終的なNには使わず確認用にのみ使用。生ログ192-325行目)
+- `https://www.prefect.io/pricing`(料金頁。JSON-LD構造化データ(Service・FAQPage)を一次資料として使用。取得日2026-09-26、生ログ394-808行目)
+- `https://docs.prefect.io/v3/advanced/self-hosted`ほかdocs/v3配下の個別頁(公式文書、N内のファイル)。生ログ819-3151行目に個別頁の本文
+- `https://pypistats.org/api/packages/prefect/recent`(週間ダウンロード数。取得日2026-09-26、生ログ3159-3161行目)
+- `https://img.shields.io/github/{contributors,stars,last-commit}/PrefectHQ/prefect.json`(GitHub統計の代替経路。取得日2026-09-26、生ログ3162-3172行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性。取得日2026-09-26、生ログ3363-3396行目)
+- PyPI配布物`prefect-3.8.6-py3-none-any.whl`・`prefect-3.8.6.tar.gz`(`pip download --no-deps`で取得、§6-1の検査対象。生ログ3173-3362行目、3500-3535行目)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run21.md`・`..._run22.md`・`..._run23.md`(21〜23回目検収。§6-1を最初に行う・別配布物は数えない・案Bの記録・順番の誤りを避ける、の学びを適用)
+- WebSearch `site:github.com/PrefectHQ`(PrefectHQ組織の他の公式リポジトリの発見。検索結果の要約であり一次資料ではない。生ログ385-393行目)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Prefect` / 候補の実体: 公式サイト`prefect.io`のトップページHTML内のリンク`href="https://github.com/PrefectHQ/prefect"`から公式ソースリポジトリを特定。PyPI `prefect`パッケージのメタデータ逐語「project_url Source https://github.com/PrefectHQ/prefect」「project_url Documentation https://docs.prefect.io」と一致。既定の枝`main`のHEAD(`git ls-remote`)= `c24d832726a2347dd4df2b82b38226a7a994823d`。`pip install prefect`で実際に入る安定版は`3.8.6`(2026-09-15公開) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:18-108 docs/DATA/probes/20260923_tools_8_run24.log:139-160 docs/DATA/probes/20260923_tools_8_run24.log:132-138 |
+| 2 | `Prefect` / N確定・文書はリポジトリと同一: 公式文書サイト`docs.prefect.io`のsitemap.xml(909件、実測)と、リポジトリ`main`ブランチ内`docs/`ディレクトリ(958件の.md/.mdx)を突き合わせた。`docs/v3/get-started/index.mdx`の本文と、公式サイトが表示する内容と一致することを確認(index.mdx逐語「Prefect is an open-source orchestration engine that turns your Python functions into production-grade data pipelines with minimal friction」)。よって文書サイトの頁はリポジトリの中のファイルと同じと判断し、Nはリポジトリ側だけを使う(委任文§1の規則どおり)。確認のため一時取得した`llms-full.txt`(docs.prefect.io公式の全文ダンプ)のURL一覧(909件、Source:行から抽出)とsitemapのURL一覧(909件)は、`/index`の有無だけが違う同一集合であることも確認した | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:326-380 docs/DATA/probes/20260923_tools_8_run24.log:161-325 docs/DATA/probes/20260923_tools_8_run24.log:4068-4079 |
+| 3 | `Prefect` / N確定・リポジトリ取得: `cat8_repo_fetch.sh`で`PrefectHQ/prefect`を1MB超blobを除いて取得。files_in_tree(N)=5,411、blobs_not_downloaded(>1MB)=4件(`docs/v3/api-ref/rest-api/server/schema.json`・`src/integrations/prefect-github/prefect_github/schemas/graphql_schema.json`・同`graphql_schema.py`・`uv.lock`)、checked_out_files=5,407。ダウンロードbytes=29,575,709(約28.2MB)、チェックアウトbytes=79,693,284(約76.0MB)。委任文§1の200MB目安以内 | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:310-325 |
+| 4 | `Prefect` / N確定・除外したもの: 同じPrefectHQ組織の他の公式リポジトリ(WebSearch実測): `legacy-ui`(Prefect 1旧UI)・`fastmcp`(MCPサーバ構築フレームワーク、別製品)・`terraform-provider-prefect`(Terraform Provider)・`prefect-helm`(Kubernetes Helmチャート)・`prefect-mcp-server`(Prefect APIを読み取り専用で操作するMCPサーバ、`git ls-remote`で実在確認)は、候補`prefect`と同じリポジトリでも配布物への同梱でもないためNに含めない。`src/prefect/`と並ぶ`src/integrations/*`(prefect-aws等19件)は同一リポジトリ内のサブパッケージなのでNに含める。ソース内のgit submodule`compat-tests`(`.gitmodules`で確認、URL`https://github.com/PrefectHQ/compat-tests.git`)は、候補が自分自身の版・ランタイムを試験する仕組み(候補の開発のための試験・CI、オーナー決定L-516の除外規定)に該当する名前(compat=互換性テスト)のためフェッチせずNから除外した | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:381-393 docs/DATA/probes/20260923_tools_8_run24.log:2315-2324 |
+| 5 | `Prefect` / 商用版の切り分け: `docs/v3/advanced/self-hosted.mdx`はPostgreSQL・Redis・ロードバランサを使った自己ホスト型`prefect server`のスケーリング手順を一次資料として持ち、登録不要のOSS CLI(`prefect`パッケージ)で完結する。一方、料金頁のJSON-LD(Service)は`name: "Prefect Cloud"`という別サービスとしてHobby(無料枠)/Starter/Team/Enterpriseのプランを持つ。`docs/v3/concepts/assets.mdx`冒頭に`<span class="badge cloud"></span>`があり、Assets機能(データリネージ・素材の健全性の可視化)はPrefect Cloud限定と読める。今回のE1a〜E6の判定はOSS CLI(登録不要で動かせる部分)を対象にし、商用版限定の機能(Assets等)は候補の機能から分けて書いた | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:819-880 docs/DATA/probes/20260923_tools_8_run24.log:611-777 docs/DATA/probes/20260923_tools_8_run24.log:1563-1695 |
+| 6 | `Prefect` / E2 印(段4、実測で確認): `docs/v3/how-to-guides/workflows/pass-inputs.mdx`逐語「By default, Prefect will validate the types of inputs to your workflow」「This will fail with a type validation error」「If you use `pydantic`, parameters typed with a `BaseModel` subclass will be coerced to the appropriate types and validated」。対象はflowの引数(利用者が外部から任意に定義したPython型・pydantic BaseModelサブクラス)で、`docs/v3/concepts/flows.mdx`逐語「As with any Python function, you can pass arguments to a flow」により、その道具の枠組みの外の一般的なPython関数・型が対象になる(段4)。実測: 隔離venvで合成データ(SyntheticTradeというpydantic BaseModel、price: float, qty: int)を持つflowに、有効な値(price=100.5, qty=3)を渡すとCompleted(結果301.5)、型変換できない値(price="not-a-number")を渡すと`ParameterTypeError`「Input should be a valid number, unable to parse string as a number」で自動的にFailedになることを確認した(通る場合と落ちる場合の両方) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:2765-2853 docs/DATA/probes/20260923_tools_8_run24.log:3559-3564 docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| 7 | `Prefect` / E1a・E1b・E2で検討したが当たらなかった機能: `docs/v3/concepts/artifacts.mdx`逐語「Publish data quality checks from in-progress tasks to ensure that data quality is maintained throughout a pipeline」・`docs/v3/concepts/assets.mdx`逐語「dynamic metadata through the `add_asset_metadata()` function, allowing runtime information like row counts, processing times, and data quality metrics to be attached」は、いずれも利用者が自分で計算したデータ品質の指標を表示・添付する機能で、Prefect自身が異常を検出・報告するものではない(22回目検収のE1bの読み=計算の中身を利用者がコードで全部書くものは道具の計算に数えない、と同じ型)。`docs/v3/advanced/database-maintenance.mdx`逐語「Orphan reconciliation」はPrefectサーバー自身のDBメタデータ(孤立したログ・成果物)の内部整合を取る保守機構で、当方の計算(約定・損益・指標)と同じ種類の出力を突き合わせるものではないためE1a・E1bに当たらない | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:2716-2764 docs/DATA/probes/20260923_tools_8_run24.log:1563-1695 docs/DATA/probes/20260923_tools_8_run24.log:3049-3063 |
+| 8 | `Prefect` / E1a・E1b 未判別(500行超・案Bの記録): 見積もり(`cat8_step`経由、N全体5,407ファイル)でE1a=1,890行(572ファイル)・E1b=1,710行(550ファイル)となり500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 文書の目次(sitemap 909件・docs/v3のサブディレクトリ別ファイル数=api-ref 609・how-to-guides 73・release-notes 30・advanced 29・concepts 26・examples 10・get-started 5・resources 1、実測)。本文を読んだ頁: `concepts/caching.mdx`・`advanced/caching.mdx`・`advanced/transactions.mdx`・`advanced/results.mdx`・`concepts/artifacts.mdx`・`concepts/assets.mdx`・`how-to-guides/workflows/test-workflows.mdx`・`how-to-guides/workflows/pass-inputs.mdx`・`concepts/flows.mdx`(一部)。的を絞った文書内語検索(api-refを除くdocs/v3全体)で「reconcil」を検索し全12件を読んだが、いずれもPrefectサーバー自身のDB・自動化・work-poolの内部整合の意味で、2つ以上の実装の出力を突き合わせる機能ではなかった。ソースは`src/prefect`直下の全トップレベルディレクトリ名(24件)と`src/prefect/testing`配下の全ファイルを確認。限界: 題と目次で頁を選ぶ方式のため、api-ref(609件、ソースdocstring自動生成)の個別本文や、題に出ない機能記述は読み落としうる | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1539-1546 docs/DATA/probes/20260923_tools_8_run24.log:881-1146 docs/DATA/probes/20260923_tools_8_run24.log:3049-3063 |
+| 9 | `Prefect` / E3a なし(全件検索): 見積もり92行(59ファイル、生ログ1548-1550行目)が500行以下のため、まずバイナリ309件+submodule1件を除いたテキストのみの一覧(`cat8_mklist.py`、listed=5,097)を作り、`cat8_search.py`を実行(complete、files=5,097 read=5,097)files_with_hits=59 hits=92。全92件を読み、59ファイルのうち58ファイルはソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味(`benches/bench_import.py`のモジュールleak検査など)で、残る1ファイル(`tests/_internal/schemas/test_validation.py:241`)は「20 requested + a small look-ahead window from dateutil's」というdateutilのRRULE(繰り返しスケジュール)生成器の内部キャッシュに関する記述で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能はいずれにも無かった(下表「当たりの判定」) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3904-4058 |
+| 10 | `Prefect` / E3b なし(全件検索): 見積もり3行(2ファイル、生ログ1551-1553行目)が500行以下のため、E3aと同じテキストのみ一覧(listed=5,097)で`cat8_search.py`を実行(complete、files=5,097 read=5,097)files_with_hits=2 hits=3。3件全てを読み、`test_validation.py:241`は上記と同じdateutilのRRULE先読みキャッシュの記述、`ui-v2/src/graphs/workers/layouts/nearestParentVertical.ts`の2件は「purgeNegativeLayoutPositions」というUIグラフレイアウトの負の座標を除去する関数名で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではなかった(下表「当たりの判定」) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:4059-4079 |
+| 11 | `Prefect` / E4 未判別(500行超・案Bの記録): 見積もり(生ログ1554-1556行目)3,842行(595ファイル)となり500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 上記知見8の文書目次に加え、`how-to-guides/workflows/retries.mdx`逐語「To rerun your workflow when an exception is raised, set the `retries` parameter」・`retry-flow-runs.mdx`逐語「Use `prefect flow-run retry` to re-execute a failed or cancelled flow run」を読んだが、いずれも失敗時に同じflow/taskを再実行する機能で、記録した市場データを時刻順に再生する機能ではない。的を絞った文書内語検索(api-refを除くdocs/v3全体)で「replay」を検索し全2件を読んだが、いずれもタスクのキャッシュされた古い結果が再利用される(replay)ことへの注意書きで、市場データの時刻順再生ではなかった。限界は知見8と同じ | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1554-1556 docs/DATA/probes/20260923_tools_8_run24.log:3064-3151 docs/DATA/probes/20260923_tools_8_run24.log:3045-3048 |
+| 12 | `Prefect` / E5 印(段4): `docs/v3/concepts/caching.mdx`逐語「Prefect first computes its cache key and uses this key to lookup a record in the task's result storage. If an unexpired record is found, this result is returned and the task does not run」。キャッシュキーは「the inputs provided to the task」「the code definition of the task」「the prevailing flow run ID」から計算され、同じ入力・同じコードなら同じ出力(キャッシュされた結果)が返る=固定される。対象は`@task`で修飾した任意のPython関数(知見6と同じ`concepts/flows.mdx`の「As with any Python function」の逐語が根拠)であり、その道具の外から持ち込める(段4)。`advanced/caching.mdx`はキャッシュレコードの保存先をS3等の外部ストレージに設定できることを示すが、(ア)基準の指定・(イ)回帰の検査としての固定の両方を明示する逐語はこの回では見つからなかったため段5とはしない | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1147-1287 docs/DATA/probes/20260923_tools_8_run24.log:2954-3044 docs/DATA/probes/20260923_tools_8_run24.log:3559-3564 |
+| 13 | `Prefect` / E6 印(段4): `src/prefect/testing/standard_test_suites/blocks.py`の`BlockStandardTestSuite`クラス逐語「def test_has_a_description(self, block: type[Block]) -> None: assert block.get_description()」「def test_all_fields_have_a_description」「def test_has_a_valid_code_example」。これはPrefect自身の開発のためのテスト(CI・オーナー決定L-516で除外)ではなく、利用者が自作した任意のBlockサブクラス(`block: type[Block]`という外部から持ち込む対象)の実装が、Prefectの定めるインターフェース(説明文・ドキュメントURL・コード例の形式)を満たすかを、Prefect自身が書いたassert文で自動判定する標準テストスイート。E1a(2つの実装の出力の突き合わせ)ではなく、E1b(同じ種類の出力を出す計算)でもないため、E1a〜E5のどれにも当たらないことを確認した上でE6に置いた(段4。対象は利用者の任意のBlockサブクラス) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:2854-2953 |
+| 14 | `Prefect` / 既知の脆弱性(§6-1項目6): OSV.dev実測でPyPI `prefect`に16件ヒット(8種の脆弱性それぞれGHSA/PYSECの別名で2件ずつ)。最新はCVE-2026-3515/GHSA-cw25-2p92-7f75「Prefect Git Argument Injection in GitRepository Pull Steps」(深刻度HIGH、`prefect-github`統合の`reference`フィールドのシェル引数インジェクション、`last_affected: 3.6.18`=3.6.19以降で修正)。他の7件もfixedバージョンは3.0.3〜3.6.28.dev2の範囲で、現行版3.8.6はすべての修正版より新しいバージョンのため、確認した範囲で未修正の既知の脆弱性は無い | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3363-3396 |
+| 15 | `Prefect` / §6-1の検査(危険の所見なし): PyPI配布元(project_urls Source)とGitHub(`git ls-remote`到達)が一致(知見1)。初回公開2019-03-24・最新安定版2026-09-15、週DL数1,559,344件(いずれも活発)。保守者数423(shields.io)、pyproject.tomlのauthor「Prefect Technologies, Inc.」・email「help@prefect.io」がGitHub組織PrefectHQ・ドメインprefect.ioと一貫。`pip download --no-deps`でwheel・sdistの両方を取得し中身を開いた: sdistの`hatch_build.py`(ビルドフック)全文はUIバンドル(index.html)がローカルに存在するかのファイル存在チェックのみで、外部URL取得・難読化は無い(setup.pyは同梱されていない)。wheel展開(851個の.pyファイル+UI用js/css/svg等の静的アセット)に.so/.dll/.exe/.pyd等の実行バイナリは無い。既知の脆弱性は知見14のとおり現行版で未修正のものは無い。依存はpyproject.tomlに約45件(server+client)明記、`pip list --format=freeze`で107件(推移的含む)。以上、導入を止める所見は無い | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3173-3362 docs/DATA/probes/20260923_tools_8_run24.log:3500-3535 docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 |
+| 16 | `Prefect` / 最小実行(§2.5の種別・中核): 種別は委任文§5-4の「研究・検証系」(合成データで代表的な関数1つ)に最も近いと調査班が判断した。一次資料`docs/v3/how-to-guides/workflows/test-workflows.mdx`逐語「Test Prefect flows and tasks by running them against an isolated, temporary backend」がPrefect自身の位置づけを検証寄りの機能として示す。中核はこの回の起動文§2.5の指示(合成の小さい標本に候補の検証・品質の機能を1つ当て、通る場合と落ちる場合の両方の出力を出す)どおり、E2(型検証)にPASS/FAILの両方の合成データを当てた(知見6参照)。実行はPREFECT_SERVER_ANALYTICS_ENABLED=false・DO_NOT_TRACK=1で外部送信を遮断した一時ローカルサーバー(127.0.0.1、実測でポート8876)上で行い、終了後にプロセスが残っていないことを確認した(`ps aux`実測) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 docs/DATA/probes/20260923_tools_8_run24.log:3497-3499 docs/DATA/probes/20260923_tools_8_run24.log:1288-1429 |
+| 17 | `Prefect` / 到達できなかった経路: `github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない)。`git clone`/`git ls-remote`(git smart-httpプロトコル)は同じホストでも到達できた。星・保守者数・最終コミット日はGitHubの情報を再配布する`img.shields.io`の代替経路で取得した。`app.prefect.cloud`(登録頁)はHTTP到達するがReactのSPAでHTMLに内容が無く、登録に何を渡すかはこの回で確認できなかった | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:113-131 docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 docs/DATA/probes/20260923_tools_8_run24.log:3536-3558 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — この回(24回目)でE1a〜E6を全部判別した。E2(印・段4)=型検証(pass-inputs.mdx)、E5(印・段4)=キャッシュによる決定的な再実行(caching.mdx)、E6(印・段4)=BlockStandardTestSuite(testing/standard_test_suites/blocks.py)。E1a・E1b・E4は印を探し尽くしたが見つからず、見積もりが500行を超えるため未判別のまま残す(案Bの記録は知見に記載)。E3a・E3bは全件検索でなし。状態は`浅い`(E1a・E1b・E4が未判別のため深掘りにできない) — 状態: 浅い
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり1,890行(572ファイル)が500行を超えるため未判別(案Bの記録は知見8) | docs/DATA/probes/20260923_tools_8_run24.log:1539-1541 docs/DATA/probes/20260923_tools_8_run24.log:3049-3063 docs/DATA/probes/20260923_tools_8_run24.log:881-1146 |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり1,710行(550ファイル)が500行を超えるため未判別(案Bの記録は知見8) | docs/DATA/probes/20260923_tools_8_run24.log:1542-1544 docs/DATA/probes/20260923_tools_8_run24.log:3049-3063 docs/DATA/probes/20260923_tools_8_run24.log:881-1146 |
+| `Prefect` | E2 | 印 | 4 | 一次資料 | pass-inputs.mdx逐語「By default, Prefect will validate the types of inputs to your workflow」「parameters typed with a `BaseModel` subclass will be coerced to the appropriate types and validated」。flows.mdx逐語「As with any Python function, you can pass arguments to a flow」により対象は外から持ち込める任意のPython型・pydantic BaseModel(段4)。実測: 合成データのPASS(price=100.5→Completed 301.5)とFAIL(price="not-a-number"→ParameterTypeError)の両方を確認 | docs/DATA/probes/20260923_tools_8_run24.log:2765-2853 docs/DATA/probes/20260923_tools_8_run24.log:3559-3564 docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | E3a | なし | - | 一次資料 | 全件検索(complete、一覧5097件/読んだ5097件、当たり59ファイル/92行)。59ファイル全てがソフトウェアの情報/メモリ漏洩(leak)の意味か、dateutilのRRULE先読みキャッシュの話で、その時点で知り得ない情報の使用を検出・報告する機能ではない(下表) | docs/DATA/probes/20260923_tools_8_run24.log:3904-4058 |
+| `Prefect` | E3b | なし | - | 一次資料 | 全件検索(complete、一覧5097件/読んだ5097件、当たり2ファイル/3行)。dateutilのRRULE先読みキャッシュの話と、UIグラフレイアウトの座標除去関数名"purge"で、いずれもその時点で知り得ない情報が入らないようにする機能ではない(下表) | docs/DATA/probes/20260923_tools_8_run24.log:4059-4079 |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり3,842行(595ファイル)が500行を超えるため未判別(案Bの記録は知見11)。retries.mdx逐語「To rerun your workflow when an exception is raised, set the `retries` parameter」は失敗時の再実行で、記録した市場データの時刻順再生ではない | docs/DATA/probes/20260923_tools_8_run24.log:1554-1556 docs/DATA/probes/20260923_tools_8_run24.log:3064-3151 docs/DATA/probes/20260923_tools_8_run24.log:3045-3048 |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | caching.mdx逐語「Prefect first computes its cache key and uses this key to lookup a record in the task's result storage. If an unexpired record is found, this result is returned and the task does not run」。キー=「the inputs provided to the task」「the code definition of the task」「the prevailing flow run ID」のハッシュで、同じ入力・コードなら結果が固定される。対象は`@task`で修飾した任意のPython関数(flows.mdx逐語「As with any Python function」、段4)。(ア)(イ)の両方を示す逐語は見つからず段5にはしない | docs/DATA/probes/20260923_tools_8_run24.log:1147-1287 docs/DATA/probes/20260923_tools_8_run24.log:3559-3564 docs/DATA/probes/20260923_tools_8_run24.log:2954-3044 |
+| `Prefect` | E6 | 印 | 4 | 一次資料 | src/prefect/testing/standard_test_suites/blocks.pyの`BlockStandardTestSuite`逐語「def test_has_a_description(self, block: type[Block]) -> None: assert block.get_description()」ほか。利用者が自作した任意のBlockサブクラス(`block: type[Block]`、外から持ち込む対象)がPrefectの定めるインターフェースを満たすかをPrefect自身のassert文で自動判定(段4)。候補自身の開発用CI(L-516)ではなく利用者の実装を検証する機能 | docs/DATA/probes/20260923_tools_8_run24.log:2892-2953 |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(23回目の節) |  |
+
+### 当たりの判定
+
+`Prefect` E3a の当たりの判定(甲、ファイルの表。一覧5,097件/読んだ5,097件(バイナリ309件・submodule1件を除いたテキストのみの一覧)、当たり59ファイル/92行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/benches/bench_import.py | 2 | L75「leaked = [k for k in sys.modules if k.startswith("prefect")]」; L76「assert not leaked, f"prefect modules still in sys.modules after reset: {leaked}"」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/resources/infrastructure-debugging.mdx | 1 | L120「Use these metrics to right-size your infrastructure, catch memory leaks early, and」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/advanced/database-maintenance.mdx | 1 | L513「- Check for connection leaks: connections in 'idle' state for hours」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/api-ref/python/prefect-server-utilities-messaging-memory.mdx | 1 | L197「memory leaks from orphaned subscriptions.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/how-to-guides/cloud/manage-users/secure-access-by-private-link.mdx | 1 | L76「By default, an API key can authenticate to its Prefect Cloud account from any network. **P…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/how-to-guides/workflows/test-workflows.mdx | 1 | L84「flush pending data and prevent stale events from leaking into subsequent test harness」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/release-notes/integrations/prefect-github.mdx | 1 | L37「- Prevent GitHub token leakage in git error messages [#20330](https://github.com/PrefectHQ…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/release-notes/oss/version-3-4.mdx | 3 | L27「* Refactor git credential formatting to fix leaky abstraction by [@zzstoatzz](https://gith…」; L59「* Mitigate memory leak in in-memory messaging system by [@desertaxle](https://github.com/d…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/release-notes/oss/version-3-6.mdx | 5 | L54「* Stop leaking `sys.modules` entries in `load_script_as_module` by [@zzstoatzz](https://gi…」; L352「* Fix env var leakage between concurrent deployments in worker by [@devin-ai-integration](…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/release-notes/oss/version-3-7.mdx | 1 | L51「* Fix UI version redirect leaking internal host behind reverse proxy by [@devin-ai-integra…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/docs/v3/release-notes/oss/version-3-8.mdx | 2 | L184「* Stop leaking watcher-thread timeout enforcers by [@devin-ai-integration](https://github.…」; L311「* Record lease at acquisition so a cancelled acquire can't leak a slot by [@devin-ai-integ…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/prefect_dbt/cloud/_executor.py | 1 | L404「#    garbage collected (no leaked /tmp/prefect_dbt_* directories).」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/prefect_dbt/core/_freshness.py | 1 | L203「# output does not leak into the caller's stdout. File-level」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/prefect_dbt/core/_manifest.py | 1 | L586「# (e.g. "Found N models, M macros") does not leak into the」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/prefect_dbt/core/_orchestrator.py | 1 | L1358「#   SKIP     → no tests at all (indirect selection would leak them)」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/tests/core/test_freshness.py | 1 | L654「progress output does not leak into the caller's stdout."""」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/tests/core/test_manifest.py | 2 | L1222「(e.g. "Found N models") does not leak into the caller's stdout."""」; L1326「"info-level dbt event leaked to Python logger"」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-dbt/tests/core/test_orchestrator_integration.py | 3 | L1132「"""`plan()` must not leak dbt's console progress output to stdout."""」; L1157「f"dbt info output leaked to stdout: "」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-gcp/prefect_gcp/workers/cloud_run_v2.py | 1 | L1075「worker cannot tell whether a duplicate retry would leak a」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-gcp/tests/test_cloud_run_worker_v2.py | 1 | L1364「the submission and created an execution. A blind retry would leak a second」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-kubernetes/prefect_kubernetes/diagnostics.py | 1 | L337「"workload. Check for memory leaks if usage grows "」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-redis/prefect_redis/connection.py | 1 | L75「credentials embedded in it are never leaked.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-redis/prefect_redis/messaging.py | 1 | L716「# not need durable consumer-group state. Using XREAD avoids leaking Redis」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-redis/tests/test_connection.py | 2 | L163「# The daemon-only options must not leak into the data-node connections.」; L353「def test_errors_do_not_leak_credentials(url: str) -> None:」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/integrations/prefect-shell/prefect_shell/commands.py | 1 | L633「# subprocess tree instead of leaking it when a user exits the context」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/_internal/compatibility/deprecated_paths.py | 1 | L31「avoids leaking implementation details that the new location does not」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/_internal/concurrency/calls.py | 3 | L45「# memory leak, despite the fact that we `reset` when leaving the context」; L46「# that sets this contextvar. A weakref avoids the leak and works because a)」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/_internal/concurrency/cancellation.py | 1 | L275「# We have to exit this scope to prevent leaking memory. A fix for」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/_internal/metrics.py | 1 | L27「API key to avoid leaking credentials to third-party collectors.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/_internal/urls.py | 1 | L15「or logs to avoid leaking secrets.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/concurrency/AGENTS.md | 1 | L43「[行の長さ 559 字。当たった 1 か所の前後 200 字] …ed, and it's discarded again after a successful release. …」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/concurrency/_asyncio.py | 1 | L195「# longer lose the lease id and leak the slot. The normal release path」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/concurrency/services.py | 1 | L118「# cancelled callers have to finish first or their slots leak.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/deployments/steps/core.py | 1 | L204「# run_step(), so by serializing here we prevent secrets from leaking in events.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/logging/loggers.py | 1 | L440「# we may present these logs back to the user.  We shouldn't leak filenames,」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/runner/storage.py | 1 | L540「# Hide the command used to avoid leaking the access token」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/server/AGENTS.md | 2 | L10「- **Auth token comparisons must use `hmac.compare_digest`** — never compare auth tokens wi…」; L77「[行の長さ 710 字。当たった 1 か所の前後 200 字] …hatch_build.py`). **The version-redirect `Location` heade…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/server/utilities/messaging/memory.py | 1 | L366「memory leaks from orphaned subscriptions.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/testing/AGENTS.md | 2 | L19「[行の長さ 641 字。当たった 1 か所の前後 200 字] …turn the *same* managed instance rather than spawning a s…」; L20「- **`prefect_test_harness` drains `APILogWorker` and `EventsWorker` before stopping the se…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/testing/utilities.py | 1 | L215「# drain events to prevent stale events from leaking into subsequent test harnesses」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/src/prefect/utilities/importtools.py | 1 | L101「# rather than leaking a fresh entry every call. Previously this used」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/_internal/concurrency/conftest.py | 3 | L11「def check_thread_leak():」; L31「# Give leaked threads a 5 second grace period to teardown」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/_internal/concurrency/test_cancellation.py | 1 | L155「interrupt the scope's own teardown. It must still exit, otherwise it is leaked for」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/_internal/schemas/test_validation.py | 1 | L241「# 20 requested + a small look-ahead window from dateutil's」 — dateutilのRRULE(繰り返しスケジュール)生成器が内部キャッシュのために先読みする件数の話で、計算がその時点で知り得ない情報を使っていることの検出・報告ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/cli/test_cyclopts_runner.py | 2 | L58「"""Verify that the runner does not leak state between invocations."""」; L93「# Both should produce output (not empty from leaked state)」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/cli/test_work_pool.py | 1 | L244「# Pin the local worker registry so types leaked by other tests」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/concurrency/test_acquire_concurrency_slots.py | 1 | L62「"""A lease delivered to a caller that is already gone must not leak its slots.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/concurrency/test_concurrency_slot_acquisition_with_lease_service.py | 1 | L98「"""A lease granted after the caller gave up must not leak its slots."""」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/events/client/instrumentation/test_task_run_state_change_events.py | 1 | L689「leaked into task_b's Pending event as a 'task-run' related resource."""」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/runner/test__scheduled_run_poller.py | 1 | L409「"""resolve_starter raises -> ID removed in finally (no leak)."""」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/server/orchestration/test_validate_deployment_concurrency_at_running.py | 3 | L36「class ExpectedDeploymentConcurrencyReacquisitionLeak(AssertionError):」; L360「raises=ExpectedDeploymentConcurrencyReacquisitionLeak,」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/server/utilities/test_connection_leak_warnings.py | 6 | L7「TEST_CONNECTION_LEAK=true pytest tests/server/utilities/test_connection_leak_warnings.py」; L18「not os.environ.get("TEST_CONNECTION_LEAK"),」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/server/utilities/test_messaging.py | 4 | L665「async def test_consumer_cleanup_prevents_memory_leak(broker: str):」; L666「"""Test that cleanup prevents memory leaks from orphaned subscriptions"""」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/server/utilities/test_postgres_listener.py | 2 | L423「# All extra params are parsed by asyncpg, not leaked into」; L475「# not leaked into server_settings.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/telemetry/test_metrics.py | 3 | L59「def test_env_var_override_does_not_leak_cloud_auth(self, monkeypatch):」; L61「even if connected to Cloud, to avoid leaking the API key to」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/test_transactions.py | 1 | L47「# records do not leak between tests.」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/utilities/test_importtools.py | 2 | L404「def test_load_script_as_module_does_not_leak_sys_modules_on_repeated_loads(」; L441「f"load_script_as_module leaked {len(added)} sys.modules entries for "」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/workers/test_base_worker.py | 1 | L1783「base_job_template, preventing env var leakage between concurrent runs」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/ui-v2/src/graphs/AGENTS.md | 1 | L74「- Do not call `start()` without calling `stop()` on cleanup — Pixi applications hold WebGL…」 — ソフトウェアの情報/メモリ/接続/認証情報の漏洩(leak)の意味で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能ではない |
+
+`Prefect` E3b の当たりの判定(甲、ファイルの表。一覧5,097件/読んだ5,097件(バイナリ309件・submodule1件を除いたテキストのみの一覧)、当たり2ファイル/3行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/tests/_internal/schemas/test_validation.py | 1 | L241「# 20 requested + a small look-ahead window from dateutil's」 — dateutilのRRULE生成器の先読みキャッシュの件数の話で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-033/src/prefect/ui-v2/src/graphs/workers/layouts/nearestParentVertical.ts | 2 | L36「purgeNegativeLayoutPositions();」; L511「function purgeNegativeLayoutPositions(): void {」 — UI(グラフレイアウト)の負の座標を除去する関数名の"purge"で、その時点で知り得ない情報が入らないようにする機能ではない |
+
+### ツール1件ごとの表
+
+`Prefect`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(20回目のNinjaTrader・21回目のdbtと同じ扱いで、文章表は新設せず候補の一覧の8-033の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Prefect` | 版 | 3.8.6(実測、pip installで実際に入った版。PyPI最新は3.8.7.dev7=prerelease) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3400-3451 |
+| `Prefect` | 最終更新日 | PyPI 3.8.6は2026-09-15アップロード。GitHub最終コミットは2026-09-26時点で"yesterday"(shields.io実測) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3152-3158 docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 |
+| `Prefect` | ライセンス | Apache-2.0(LICENSEファイル冒頭「Apache License」「Version 2.0」。pyproject.tomlの license = { text = "Apache-2.0" }。PyPI classifier「License :: OSI Approved :: Apache Software License」。商用再配布・改変ともApache-2.0の条件下で許容) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3565-3571 docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 docs/DATA/probes/20260923_tools_8_run24.log:146-160 |
+| `Prefect` | 言語と動作環境 | Python(pyproject.tomlの requires-python ">=3.10,<3.15")。対応OSの一次資料はこの回では未確認 | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 |
+| `Prefect` | 対応取引所 | 該当なし(汎用ワークフローオーケストレーションツールで取引所接続は無い。src/integrations配下は19件のクラウド/データ基盤向け統合でGMOコイン・bitFlyer等の国内取引所は含まれない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:326-380 |
+| `Prefect` | 星 | 約24,000(shields.io実測。github.com/api.github.comがこのセッションのプロキシで403のため代替経路) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 |
+| `Prefect` | コミット数 | 未確認(試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず) | 未確認 | docs/DATA/probes/20260923_tools_8_run24.log:113-131 docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 |
+| `Prefect` | 保守者数 | 423(shields.io contributorsバッジ実測) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3162-3172 |
+| `Prefect` | 週DL数 | 1,559,344(pypistats.org実測、last_week) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3159-3161 |
+| `Prefect` | 初回公開日 | 2019-03-24(PyPI 0.5.0。パッケージ名prefectは初回から一貫) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3152-3158 |
+| `Prefect` | 既知の脆弱性 | OSV.dev実測、16件(8種の脆弱性それぞれGHSA/PYSECの別名2件)。最新はCVE-2026-3515/GHSA-cw25-2p92-7f75(prefect-github統合のgit引数インジェクション、深刻度HIGH、3.6.25.dev7で修正)。現行3.8.6は全ての修正版より新しく、確認した範囲で未修正の既知脆弱性は無い | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3363-3396 |
+| `Prefect` | 料金体系 | OSS CLI(pip install prefect)自体は無料。商用SaaS「Prefect Cloud」: Hobby(無料)/Starter(月額$100)/Team(1ユーザーあたり月額$100)/Enterprise(要問合せ)(pricing頁のJSON-LD構造化データ実測) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:611-777 |
+| `Prefect` | 無料枠の上限 | Hobbyプラン: Users=2、Workspaces=1、Deployments=5(JSON-LD実測)。FAQ逐語「full access to Prefect's core functionality for up to five deployed workflows」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:640-777 |
+| `Prefect` | 課金開始条件 | FAQ逐語「Teams that reach five deployments won't be able to create new deployments unless they delete an existing deployment or upgrade to a paid plan」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:778-808 |
+| `Prefect` | 隠れた依存 | OSS CLI自体はデータウェアハウス等への接続アダプタは任意(実測、最小実行はDBアダプタ無しでローカルSQLite+一時APIサーバーのみで動作)。既定配布はテレメトリでPrefectのサーバーに使用状況を送信(後述外部送信、無効化可能) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3400-3496 |
+| `Prefect` | 登録の要否 | OSS CLI自体は登録不要(実測、pip installとflow実行がアカウント作成なしで成功)。商用版Prefect Cloudは登録が要るが、登録に何を渡すかはこの回では未確認(app.prefect.cloudがJS描画のSPAで内容を取得できず) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3400-3496 docs/DATA/probes/20260923_tools_8_run24.log:3536-3558 |
+| `Prefect` | 到達経路 | PyPI・pypi.org JSON API・docs.prefect.io・prefect.io/pricing・pypistats.org・api.osv.devは到達。github.com/api.github.comのHTML/APIは403(git clone smart-http経路は到達)。app.prefect.cloudは到達するがSPAで内容未確認 | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:113-131 docs/DATA/probes/20260923_tools_8_run24.log:132-138 |
+| `Prefect` | 導入可否 | 可(実測、隔離venvへ pip install prefect==3.8.6 が成功) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3400-3451 |
+| `Prefect` | install所要秒 | 33.31(実測、time_s=33.314) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3400-3451 |
+| `Prefect` | 依存数 | 107(実測、pip list --format=freeze の全行数。prefect本体を含む) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3455-3460 |
+| `Prefect` | pip check | 問題なし(実測、「No broken requirements found.」) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3452-3454 |
+| `Prefect` | 最小実行の可否 | 可(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | 最小実行の中身 | pydantic BaseModelで型付けたflowパラメータに、合成データ(price=100.5, qty=3)を渡すとCompleted(結果301.5)。型変換できない合成データ(price="not-a-number"、qty=3)を渡すとParameterTypeErrorで自動的にFailedになることを確認(E2の中核、通る場合と落ちる場合の両方) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | 実行所要秒 | 16.86(実測、time_s=16.861) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | wheel展開 | 実測。展開して拡張子の内訳を確認: .py 851・UI用のjs/css/svg等の静的アセット。.so/.dll/.exe/.pydの実行バイナリ、setup.pyはいずれも無し | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3500-3535 |
+| `Prefect` | setup.py導入時実行 | setup.pyは同梱されていない(hatchling/pyproject.tomlベースのビルド)。sdistの hatch_build.py 全文を読んだ範囲では、UIバンドル(index.html)がローカルに存在するかのファイル存在チェックのみで、外部URL取得や難読化コードは無い | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3208-3270 |
+| `Prefect` | 同梱バイナリ | 無し(wheel展開で.so/.dll/.exe/.pyd無し、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3500-3535 |
+| `Prefect` | 外部送信 | 一次資料(docs/v3/concepts/telemetry.mdx)逐語「Prefect collects anonymous usage telemetry to help improve the product」「Server telemetry is disabled automatically when PREFECT_SERVER_ANALYTICS_ENABLED=false」。実測: 最小実行はPREFECT_SERVER_ANALYTICS_ENABLED=falseとDO_NOT_TRACK=1を設定して外部送信を遮断して動かした | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3461-3471 docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | 自動発注機能 | 無し(汎用ワークフローオーケストレーションツールで、読んだ範囲に取引所APIとの統合・発注・署名・資金移動の機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:326-380 docs/DATA/probes/20260923_tools_8_run24.log:2854-2891 |
+| `Prefect` | 宣伝詐欺の兆候 | 見当たらない(一次資料(公式サイト・料金頁・PyPI)の範囲では)。X等で宣伝詐欺の兆候を専用に探す検索はこの回では実施していない | 未確認 | docs/DATA/probes/20260923_tools_8_run24.log:2-160 docs/DATA/probes/20260923_tools_8_run24.log:394-808 |
+| `Prefect` | 当方データ投入 | 実測でpydantic BaseModelに型付けた合成データ(dict形式)を投入できることを確認。当方のcsv.gz(tardis形式)はそのままでは不可で、taskの中でpandas等を使い読み込むコードを別途書く必要がある(汎用オーケストレーションツールで専用の取り込み機構は無い) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | 時刻の扱い | 一次資料: pyproject.tomlの依存に pendulum ・ whenever (タイムゾーン対応の日時ライブラリ)。スケジュール生成にdateutilのRRULEを使用(test_validation.pyで確認)。UTC/ミリ秒変換の具体的挙動はこの回で実測していない | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 docs/DATA/probes/20260923_tools_8_run24.log:1830-2294 |
+| `Prefect` | 再現性 | E5参照(印・段4。キャッシュキー(コード定義+入力+flow run IDのハッシュ)によるタスクの決定的な再実行) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1147-1287 docs/DATA/probes/20260923_tools_8_run24.log:2954-3044 |
+| `Prefect` | 規模の見積 | 未確認(試した手段: 456日分のティックデータ相当の規模でPrefectを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は1回のflow呼び出し×2回のみの実測) | 未確認 | docs/DATA/probes/20260923_tools_8_run24.log:3472-3496 |
+| `Prefect` | 4軸1_道具 | 印。宣言的なキャッシュポリシー(コード定義+入力+flow run IDのハッシュ)によるタスクの決定的な再実行や、トランザクション/ロールバックの仕組みは、当方のバックテスト系ツール(CLAUDE.md §2)に無い道具立て | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1147-1287 docs/DATA/probes/20260923_tools_8_run24.log:1430-1531 |
+| `Prefect` | 4軸2_情報 | 印。Prefect CloudのAssets機能(データリネージ・素材の健全性の可視化、商用版限定=badge cloud)は、当方の監視系(CLAUDE.md §2)に無い情報源(ただし商用版のみ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:1563-1695 |
+| `Prefect` | 4軸3_視点 | 印。「タスクの入出力をpydanticの型で宣言し、既定で自動検証する」という視点は、当方のbacktest/engine.pyの手続き的な検証(assert文の直書き)とは異なる視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:2765-2853 |
+| `Prefect` | 4軸4_向上 | サーベイの外(組み込みの作業が要る、18回目検収§6の3・19回目のMetaTraderの処置3と同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `Prefect` | 配布元の一致 | 一致(PyPI project_urls Source=github.com/PrefectHQ/prefect。pyproject.tomlのauthor「Prefect Technologies, Inc.」とGitHub組織PrefectHQ・公式サイトのブランドが一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:139-160 docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 |
+| `Prefect` | 難読化 | 見当たらない(wheel/sdistの中身・hatch_build.pyを読む限り。851個の.pyファイルは平文のPythonソース) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3500-3535 docs/DATA/probes/20260923_tools_8_run24.log:3208-3270 |
+| `Prefect` | 外部URL取得 | 見当たらない(hatch_build.pyの全文を読んだ範囲では、ローカルファイルの存在確認のみで外部URLへのアクセスは無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3208-3270 |
+| `Prefect` | 依存の一覧 | 実測(pip list --format=freeze の107行全部、生ログに記載)。pyproject.tomlの直接依存は約45件(server+client) | 実測 | docs/DATA/probes/20260923_tools_8_run24.log:3455-3460 docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 |
+| `Prefect` | 保守者名の一貫性 | 一貫(pyproject.tomlのauthor「Prefect Technologies, Inc.」、email「help@prefect.io」がGitHub組織PrefectHQ・公式ドメインprefect.ioと一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run24.log:3271-3362 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)のため到達できなかった(存在しないとは書かない)
+- **言語と動作環境の対応OS**: requires-pythonは確認したが、対応OS(Windows/macOS/Linux)を明記した一次資料はこの回で開いていない
+- **登録の要否(Prefect Cloudの登録に渡すもの)**: `app.prefect.cloud`のログイン/登録頁がReactのSPAで、HTMLに登録フォームの項目が現れなかった(`cat8_render.js`によるJS描画はこの回では実施していない)
+- **宣伝詐欺の兆候**: X(旧Twitter)の投稿等で宣伝・詐欺の兆候を専用に探す検索はこの回では実施していない。読んだ公式サイト・料金頁・PyPIの範囲には見当たらない
+- **時刻の扱いの具体的挙動**: `pendulum`・`whenever`という依存とdateutilのRRULE使用は確認したが、UTC/ミリ秒変換の具体的な挙動を実測するテストはこの回では行っていない
+- **規模の見積**: 456日分のティックデータに相当する規模でPrefectを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は1回のflow呼び出し×2回のみの実測に留まる
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19回目のMetaTraderの処置3と同じ理由)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない。生ログ113-131行目)。これはGitHubというホスト自体の到達不能ではなく、このセッションのプロキシがこのリポジトリへのAPI/Web直接アクセスを許可していないという意味であり、`git clone`・`git ls-remote`(git smart-httpプロトコル)は同じホスト名の下でも到達できた(生ログ132-138行目)。星・保守者数・最終コミット日はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ3162-3172行目)。`app.prefect.cloud`(Prefect Cloudの登録頁)はHTTPでは到達する(生ログ3536-3558行目)が、Next.js/ReactのSPAで登録フォームの項目がHTMLに現れず、`cat8_render.js`によるJS描画はこの回では試みていない。正確な値(星の厳密な数・総コミット数・Cloud登録の項目)が必要なら、第2経路(オーナーPC、`add_repo`でのGitHub連携が使える環境、または単純にブラウザでgithub.com/PrefectHQ/prefectを開く)で確認できる可能性があるが、この回はそこまで試みていない。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] 候補の実体はOSS CLI(`prefect`パッケージ、登録不要で動かせる部分)を対象にし、商用版「Prefect Cloud」限定の機能(Assets、料金頁のプラン等)は候補の機能から分けて書いた(知見5)。dbtの`dbt`/`dbt-oss`/商用版「dbt Platform」の切り分け(21回目)と同じ形だが、Prefectの場合はOSSパッケージ名が`prefect`ひとつで、dbtのような`dbt`/`dbt-oss`のパッケージレベルの分岐は無い(`pip install prefect`だけで自己ホスト用のサーバー・CLI・UIまで全部入る)。この違いを候補の一覧・§4.0にどこまで書き分けるべきかはリードの判断を仰ぐ
+2. [それ以外の問い] `src/integrations/*`(prefect-aws・prefect-dbt等19件)は同一リポジトリ内のサブパッケージでNに含めたが、これらはPyPI上は別パッケージ(例: `prefect-aws`)として配布され、`prefect`本体をpip installしただけでは入らない(利用者が別途`pip install prefect-aws`等をする必要がある)。追補§4「候補が同梱・呼び出している別のライブラリの機能は候補の機能に数える」の「同梱」に、同一リポジトリ内だが別PyPIパッケージというこの形が当たるかどうかは、21回目のdbt-utils/dbt-audit-helper(別リポジトリ・利用者が`packages.yml`で追加)とは異なる形なので、機械的に同じ結論(数えない)を当てはめてよいか迷った。この回はソースがリポジトリ内にある(利用者が追加でリポジトリを取得する必要は無い)ことを理由にNには含めたが、E1a〜E6の印の根拠としてはsrc/integrations配下を積極的には使っていない(結果に影響しない)。この読み方が正しいかはリードの判断を仰ぐ
+3. [それ以外の問い] E5の段を4とし、(ア)(イ)の逐語が無いため段5にしなかった(知見12)。`advanced/caching.mdx`の`isolation_level`(READ_COMMITTED/SERIALIZABLE)や、S3等へのキャッシュレコードの外部保存は、(イ)「結果を保存して次の実行と比べられる」に近い性質を持つとも読めるが、「次の実行と比べる」「回帰の検査として固定する」という逐語そのものは見つからなかった。段5への当て直しの余地があるかはリードの判断を仰ぐ
+4. [それ以外の問い] E6の`BlockStandardTestSuite`(知見13)は、利用者が書いた対象(Blockサブクラス)を対象にするという点でE1b的な性質(利用者の実装を検査する)も感じられたが、E1bの述語「当方と同じ種類の出力を出す計算」には当たらない(何かを計算するのではなく、クラスの説明文・コード例の形式を検査するもの)と判断してE6に置いた。この切り分けが正しいかはリードの判断を仰ぐ
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run24.log`(誤検出は閉じずに残す。K1・K2の19612・19909・30448・34975・35047・36881行目とK13の前回までの回の分は前回までの回で誤検出として受け取られ済み(検収`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run15.md`等)。この回に新しく出たK1・K2(40088行目)は、この回に足した§4.0機械可読の表・要素と段の表・当たりの判定の表が、空行を挟まず数十行連続する1つの`塊`として数えられ、そこに含まれるコードの逐語引用(例: `leaked = [k for k in sys.modules if k.startswith("prefect")]`のような角括弧・引用符を含む一次資料のコード片)の括弧・引用符が塊全体では偶奇が合わないために生じる誤検出で、19612・30448行目等と同型(大きな表の塊)。個々の行・文を見れば太字・括弧はいずれも閉じている。)
+
+```
+K1 太字                  3 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+K2 括弧                  10 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             33 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 46 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 46 件
+
+```
