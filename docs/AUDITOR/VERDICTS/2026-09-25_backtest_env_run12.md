@@ -681,3 +681,108 @@ git commit / git push はしていません。
 **リードの注記**: 参照実装が「規則違反 1 回」(pip download --no-binary が setup.py を 1 回実行した)を自己申告した。依存なしで途中で失敗し、以後は URL から直接取る形に替えた(SPEC §5)。通過の報告の「測っていない範囲」に載せる。
 06:33 UTC: 作る:4#1 が走っている(作業木に核 contract.py・values.py、データ層 anomalies.py・spec.py、reference/SPEC.md の途中の変更あり)。
 
+
+### 作る:4#1 の返り値(逐語。06:3x〜07:33 UTC、見回り 5 で写した)
+
+```json
+{
+ "changed_files": [
+  "/home/user/trade/src/bot/bt/compat/__init__.py",
+  "/home/user/trade/src/bot/bt/compat/barmodel.py",
+  "/home/user/trade/src/bot/bt/compat/engine.py",
+  "/home/user/trade/src/bot/bt/compat/metrics.py",
+  "/home/user/trade/src/bot/bt/compat/walk_forward.py",
+  "/home/user/trade/src/bot/bt/pipeline.py",
+  "/home/user/trade/src/bot/bt/reference/bar_rules.py",
+  "/home/user/trade/src/bot/bt/reference/SPEC.md(§10 を追記。参照実装の役の §6 の 1 行は参照実装の役の変更)",
+  "/home/user/trade/src/bot/bt/core/values.py(core-19: 歩きの記憶が容器を持つ・鍵の hash の訪問数の上限・freeze の場所の文字列を遅延)",
+  "/home/user/trade/src/bot/bt/core/contract.py(CORE_VERSION core-18 → core-19 と process_state の文)",
+  "/home/user/trade/src/bot/bt/data/spec.py(bar.session に 24x5 を足した)",
+  "/home/user/trade/src/bot/bt/data/anomalies.py(24x5 は off_grid だけ走る)",
+  "/home/user/trade/tests/bt/item_0/test_bt0_r14_process_state.py(版の assert を core-19 に。消した試験は無い)",
+  "/home/user/trade/tests/bt/compat/golden/compat_golden_scenes.py",
+  "/home/user/trade/tests/bt/compat/golden/compat_golden_run.py",
+  "/home/user/trade/tests/bt/compat/golden/make_golden.py",
+  "/home/user/trade/tests/bt/compat/golden/old_engine_golden.json",
+  "/home/user/trade/tests/bt/compat/test_compat_golden.py",
+  "/home/user/trade/tests/bt/compat/test_old_tests_against_compat.py",
+  "/home/user/trade/tests/bt/item_4/conftest.py",
+  "/home/user/trade/tests/bt/item_4/i4w_drive.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_battery_scenes.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_spec_vs_reference_grid.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_barmodel_on_core.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_pipeline.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_data_session.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_core_carryover.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_real_data_smoke.py",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/worker_before_fix_i0r16_r17_critic_tests.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/worker_after_fix_i0r16_r17_critic_tests.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/worker_full_suite.txt"
+ ],
+ "tests_added": 176,
+ "test_command": "setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/pytest_base_full3 > /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/pytest_item4_r1_worker_full3.log 2>&1 &(項目 4 と互換だけなら PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/item_4 tests/bt/compat)",
+ "test_tail": "全試験: 19941 passed, 10 skipped, 4 warnings in 1463.12s (0:24:23)(ログ /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/pytest_item4_r1_worker_full3.log、写しは docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/worker_full_suite.txt)。1 回目の全試験(--basetemp なし)は、並行して動いた別の pytest が /tmp/pytest-of-root/pytest-515 を消し、tmp_path を使う 1390 件が FileNotFoundError になった(実装の失敗ではない。同じ試験を私有の basetemp で回し直した結果が上の行)。項目 4 + 互換の試験(実データの試験を足す前): 852 passed in 145.73s。核の批評家の試験(第 16・17 周)+ 核の持ち越しの格子: 71 passed, 4 skipped in 3.86s(直す前は 14 failed, 22 passed, 2 skipped in 122.59s)。",
+ "structural_change": "旧の足のバックテストを、核(CoreEngine)の口に差し込む「足の会場の規則」(bot.bt.compat.barmodel: 会場と口座の口を 1 つの物で持ち、手仕舞いは口座の口の強制注文、手数料は費用の口)として作り、旧と同じ名前・同じ引数の呼び口(bot.bt.compat.engine / metrics / walk_forward)と、規則の組 legacy(旧とビット単位で同じ)・spec(場面集の規則 R-*)を選べるようにした。ファイルの宣言から銘柄ごとに核を回し、実行記録・指標の書き出し・ダッシュボードの実行の表示までを 1 回で通す統合の口 bot.bt.pipeline を新しく足した。核は values.py の 3 か所を直して契約を core-19 にし、データ層に bar.session 24x5 を足した。",
+ "unmet": [
+  "I4-20(最後の段)はこの周では行っていない。起動文の条件「旧の出力(golden)との突き合わせが全部一致し、この周の批評家の [止める] が 0 件になってから」のうち、後半はこの周の批評家が私のあとに走るので満たせない。src/bot/backtest/ の 3 本には触れていない(git status に出ない)。置き換えの予行は tests/bt/compat/test_old_tests_against_compat.py が子プロセスで bot.backtest.engine / metrics / walk_forward を互換の口に差し替えて、旧の試験 8 本を変えずに回している(103 passed。12 本の読み込みも通る)。",
+  "I4-4(外部の道具との数の突き合わせ): 新エンジンを外部の道具と直接には突き合わせていない。あるのは (a) 参照実装の役の bar_sim と backtesting.py 0.6.6 の突き合わせ(SPEC §5: 有利な窓の無い 142 場面で全部一致)、(b) 新エンジンの spec と規則の参照 bar_rules の、選択肢の格子 1008 升での全升一致(tests/bt/item_4/test_i4_spec_vs_reference_grid.py)、(c) 場面集の i4-4-plain・i4-4-fee での正解との一致、の 3 つだけで、新エンジンと外部の道具を同じ入力で直接比べた記録は無い。外部の道具は入れていない。",
+  "I4-5(実データ): Binance aggTrades の 1 日は通していない。この環境で `find backtest_data -iname \"*aggTrades*\" -type f` を打った。現物 BTCUSDT の 3 つのフォルダ(binance_BTCUSDT_aggTrades_tardis_days/・binance_BTCUSDT_aggTrades_20260723_20260906/・binance_um_BTCUSDT_aggTrades_20260723_20260906/)には README.md と MD5SUMS しか無い。オーナー PC は未確認。この環境にあって使わなかったものは 2 つ: (1) audit_fetch_P2-08b_20260906 の head5.csv(5 行だけ)、(2) binance_cm_o3c_20260913 の COIN-M の zip(データ層は zip を読まない。o3c の研究のフォルダでもある)。データ待ちとして、tests/bt/item_4/test_i4_real_data_smoke.py の test_binance_spot_aggtrades_is_data_wait で固定した。JPX の 1 分足は、日経 225 先物の 1 分足が封印されている(P2-01 の SEALED.json)ので、封印されていない TOPIX 先物の 1 分足(topixf_225labo_20260907)で代えた。bitFlyer の約定と板は、P2-08b の封印が 2026-08-23 から掛かるので、封印外の 2026-09-21 を使った。",
+  "I4-1(独立参照実装): 場面集の I4-1 の 2 場面は、参照実装の役の bar_sim では表せない(数量を発注額から出すこと・合図での手仕舞い・率の水準・持ち越しを持たない = SPEC §4)。そこで規則の参照 src/bot/bt/reference/bar_rules.py を足したが、書いたのは私(項目 4 の作業者)で、核と新エンジンのコードを読んだ者が書いている。委任文 §2 の「核を見ずに別の作業者が書く」の「別の作業者」には当たらない(SPEC §10 に書いた)。リードの答え(06:35 UTC)の 3「参照実装に作らせるのは 2 周目で要件の文を足してから」とも食い違う。",
+  "旧 14 の完全上位互換の限界 1: 核が足として受け取れない行(NaN・0 以下の値・高値 < max(始値, 終値)など)は、旧のように数を出さず ValueError で断る。意図した違いで、src/bot/bt/compat/engine.py の docstring と試験 test_a_row_the_core_cannot_take_as_a_bar_is_refused_not_computed に書いた。",
+  "旧 14 の完全上位互換の限界 2: 速さ。何もしない戦略・5000 本・損切りと利確ありの条件で、旧 0.12〜0.13 秒 / 新 2.52 秒(約 19 倍)を実測した(<scratchpad>/bt/i4_r1_worker_speed2.py、cProfile で見ると核の values.py の作り直しが大半)。旧の試験 8 本は旧 16.81 秒 / 新 71〜74 秒。速さの要件は無いので、測って書くだけにした。",
+  "spec の規則の 1 か所は、場面集の互換の計算 L-1〜L-4 に無い違い: 負の日率の持ち越しを spec は R-S1 の文どおりに掛け、旧(legacy)は掛けない(旧の swap_per_bar > 0 の条件)。場面集には負の日率の場面が無いので、表には効かない。",
+  "項目 3 の作業者からの持ち越し(VERDICTS run12 の作る:3#1 の問い 1)「項目 3 の固定の手順に項目 2 の模型(SimVenue)を差し込む配線」はしていない。統合の口 bot.bt.pipeline の約定は、自前の FirstObservedFill(場面集の F-1)だけ。",
+  "核の持ち越しのうち、PASS.md の「衝突する鍵の鎖の比べの時間は段数に対しておよそ 2 乗」は手を付けていない。",
+  "吟味(1): 固定した要件の 20 観点、場面集の規則 1〜9、持ち越しの指摘(PASS.md の i0-r16-01〜03 と、第 17 周の批評家の試験 3 本 = 直す前に 14 failed)を読み直した。直した根拠(ファイル:行): values.py:1058(記憶が容器を持つ)、values.py:1083・1141(鍵の hash の訪問数を数えて上限を超えたら断る)、values.py:1749(_Where で場所の文字列を遅延)、contract.py:15(core-19)。コマンドと出力は round_1/materials/worker_before_fix_*.txt と worker_after_fix_*.txt。",
+  "吟味(2): 同じ根の全箇所。記憶の id は freeze・settle・renew・thaw が共有する 1 つの _walk にしかないので、1 か所を直せば 4 つとも直る。hash の上限は鍵と要素を作る全部の道(_dict_of・_set_of)が通る _hashed に置いた。1 回目の数え方は、hash の作られていない FrozenDict の中を毎回降りていたので、項目 0 の試験 test_bt0_r17_shared_and_placed が 3 件落ちた(_fd_hash は下から 1 回ずつ hash を作って持つのに、数えではそれを見ていなかった)。FrozenDict を 1 回ずつ数える形に直し、その 3 件は通った。",
+  "吟味(3): 批評家の試験(tests/bt/critic/item_0 の全部。tests/bt/critic/item_4 はまだ無い)と場面集の試験(tests/bt/battery/item_4)は、全試験の中で全部通った。",
+  "吟味(4): 厳しい批評家なら [止める] にしそうなものを列べて潰した。(a) 旧の試験が通るだけで旧と同じとは言えない → 旧で作った golden(選択肢の全組 1008 升 + 端の 3 場面 + 指標 400 + 分け方 400)とビット単位で比べ、旧が残っている間は新しい種の 1008 升も生の旧と比べる。(b) 核の上に乗っていない → 約定は全部が核の fill で、手数料は費用の口が出す(test_every_fill_is_a_core_fill_with_the_cost_models_fee)。(c) 先読み → 前の k 本だけで回した結果が、全部で回した結果の前の部分と同じになる性質の試験を 2 つの規則の組で置いた。(d) 既定値に頼る → BarOptions は既定を持たず、鍵が 1 つ欠けても拒む試験がある。(e) 場面だけの特別扱い → i4w_drive.py は場面の id も正解も読まない。(f) 動作確認の規則 → 目的・出所・戦略・事前登録の 48 升の格子を置き、受ける / 拒むを規則の文から決めて比べた。",
+  "吟味(5): 場当たりの直しはしていない。閾値の MAX_HASH_VISITS = 10**6 は試験に合わせた値ではない。批評家の試験の 2**40 とも自前の格子の境 2**20 とも独立に決め、境の上下を格子で試した。",
+  "吟味(6): 直した規則ごとに、入力の空間を全部列べる敵対者の格子を置いた。bar の規則: 選択肢の全組 1008 升で spec と参照を突き合わせる。互換: 同じ 1008 升を golden と比べる。統合の拒否: 48 升。session: 3 × 3 = 9 升。核の hash: 深さ 9 × 置き場所 2 × 入口 2。列に入れなかったものは各試験のファイルの先頭に書いた。",
+  "第 1 周なので前の周の指摘は無い。"
+ ],
+ "questions_for_lead": [
+  "規則の参照 src/bot/bt/reference/bar_rules.py は、項目 4 の作業者(私)が書いたもので、委任文の「核を見ずに別の作業者が書く」には当たらない。06:35 UTC のリードの答え 3「参照実装に作らせるのは 2 周目で要件の文を足してから」とも食い違う。次のどちらにするかを決めてください。(a) 2 周目に参照実装の役に場面集の規則 R-* を渡して書き直させ、私の版と入れ替える。(b) 私の版を 2 周目まで残す(今の場面集の I4-1 の 2 場面を表せるのはこの版だけ)。",
+  "統合の口を新しいファイル src/bot/bt/pipeline.py に置いた。また、持ち物の外の 3 か所を変えた: データ層の spec.py・anomalies.py(bar.session 24x5)、核の values.py・contract.py(core-19)、項目 0 の試験の版の assert。委任文 §2 の項目 4 の行の「全体」と、起動文の「核の残りの欠陥は…この項目の作業者が直す」を根拠に読んだが、この読みで良いか。",
+  "binance_cm_o3c_20260913/aggTrades/BTCUSD_PERP/*.zip(Binance の生の zip。COIN-M)を、動作確認の実データとして読んでよいか。委任文 §1 は「研究の中間物 o3c_* は市場データとして読まない」と言うが、このフォルダは名前に o3c を含む生のダウンロードに見える。読んでよいなら、データ層に zip の読み込みを足す必要がある。",
+  "spec の負の日率の持ち越し: R-S1 の文どおり掛ける(今の実装)のか、旧と同じく掛けないのか。場面集の互換の計算 L-1〜L-4 には載っていない。",
+  "新実装の adapter の本体(資料係が書くもの)の見本として tests/bt/item_4/i4w_drive.py がある。場面集の全 40 場面で正解と一致し、変形の 4 場面を拒むことを確かめた(tests/bt/item_4/test_i4_battery_scenes.py)。資料係へ渡す手段が台本に無ければ、リードから渡してほしい。",
+  "最後の段(src/bot/backtest/ の置き換え)は、2 周目の作業者がこの周の批評家の [止める] 0 を確かめてから行う、と読んでよいか。この周の批評家の [止める] が 0 でなければ、項目 4 の上限の 2 周の中では置き換えに届かない。"
+ ],
+ "requirement_evidence": [
+  "I4-1(独立参照実装との突き合わせ): 参照実装の役が書いた src/bot/bt/reference/bar_sim.py と event_sim.py(試験 715 件)がある。私が足した src/bot/bt/reference/bar_rules.py:52 run_rules は、Fraction の素朴な 1 本の繰り返しで、核も新エンジンも import しない。突き合わせは tests/bt/item_4/test_i4_battery_scenes.py(i4-1-ref-taker・i4-1-ref-maker で engine と reference の両方が正解と一致)と tests/bt/item_4/test_i4_spec_vs_reference_grid.py(選択肢の格子 1008 升で全一致)。",
+  "I4-2(性質の試験): tests/bt/item_4/test_i4_barmodel_on_core.py:28 test_a_later_bar_changes_nothing_before_it(先読みなし: 前の k 本で回した結果 = 全部で回した結果の前の部分。legacy と spec の両方)、:52 test_every_fill_is_a_core_fill_with_the_cost_models_fee、:68 test_every_signal_order_ends_with_its_reason。場面集の i4-2-grid(30 の場合、不変条件は判定の側で検める)も正解と一致。",
+  "I4-3(正解つきの場面): 場面集の全 40 場面が、新エンジンの公開の口を通して正解と一致し、2 回の実行で同じ観測になる(tests/bt/item_4/test_i4_battery_scenes.py:39、46 passed)。変形の 4 場面は拒む(:48)。",
+  "I4-4(外部の道具・合成): 満たせなかった行(unmet)を見てほしい。新エンジン = 規則の参照(1008 升)と、参照実装の役の bar_sim = backtesting.py(142 場面、SPEC §5)の 2 つだけ。",
+  "I4-5(統合): src/bot/bt/pipeline.py:194 plan_pipeline・:480 execute_once・:581 run_pipeline。データ層 → 銘柄ごとの CoreEngine(:435)→ record.json と書き出し(:557 write_export)→ ダッシュボードの run_view までを、宣言だけで 1 回に通す(資産ごとの読み込み口は無い)。場面 i4-5-fills・i4-5-outputs で正解と一致。実データでは tests/bt/item_4/test_i4_real_data_smoke.py:112 が、bitFlyer の約定と板 top10 2026-09-21・FX イベントティック・TOPIX 先物 1 分足・USD/JPY 1 分足を通して、実行記録・書き出し・10 タブまで届くことを確かめた(数は見ない)。",
+  "I4-6(動作確認の固定の手順): src/bot/bt/pipeline.py:257(実データ + 動作確認は時刻だけの手順しか受けない)・:217(研究は事前登録のハッシュが要る)。格子は tests/bt/item_4/test_i4_pipeline.py の test_refusal_grid_matches_the_rule_text(48 升)。全タブの注記は test_one_run_reaches_record_exports_and_dashboard_and_is_kept_once。場面 i4-6-label・i4-6-signal-refused・i4-6-research-refused で正解と一致。",
+  "I4-7(全試験): 19941 passed, 10 skipped(0 failed)。前から落ちていた第 17 周の批評家の試験 14 件を、核を直して通した(values.py:1058・:1083・:1749、contract.py:15)。",
+  "I4-8(翌足の始値の taker): src/bot/bt/compat/barmodel.py:429(1) 前の足の決定をこの足の始値で)。合図の注文は足の終わりに届き、次の足で約定する(:589 SignalStrategy)。場面 i4-8-* と golden 1008 升で一致。",
+  "I4-9(指値の厳密な通過): barmodel.py:440 付近(買いは安値 < 指値、売りは高値 > 指値のときだけ、指値の値・maker で約定)。場面 i4-9-* と golden で一致。",
+  "I4-10(足内の TP/SL と STOP 優先): barmodel.py:388(0.5) 逆指値を先に)。約定の値は min(始値, 水準) / max(始値, 水準) を Python の min / max と同じ向きで取る。場面 i4-10-priority と golden で一致。",
+  "I4-11(wick_invalidation): barmodel.py:377(0.4) と :522(建てた時に水準を凍結)。場面 i4-11-* で正解と一致し、重ねた設定を拒む。golden の wick_stop 158 件もビット単位で一致。",
+  "I4-12(maker_tp): barmodel.py:388〜(水準は legacy では 2 進、spec では書かれた 10 進 = _Level :226)。場面 i4-12-maker-tp・i4-12-touch-decimal(spec)で一致し、i4-12-refuse は拒む。",
+  "I4-13(max_hold_bars): barmodel.py:415(0.7) と :396(spec は時間切れの足で利確を取らない = R-H3)。legacy は旧と同じく利確を先に取る(L-1)。場面 i4-13-time-exit・tp-on-exit-bar・two-models で一致。",
+  "I4-14(entry_mask / entry_sides): barmodel.py:315 _entry_ok(合図の足で判定し、手仕舞いは止めない)。場面 i4-14-* と golden(マスク × 向きの全組)で一致。",
+  "I4-15(swap_daily_pct): barmodel.py:371(0) 足ごとの持ち越し)。legacy は正の率だけ、spec は 0 でない率すべてを掛ける。場面 i4-15-* と golden(日率 0 / +0.5 / -0.3)で一致。",
+  "I4-16(missed_fills): barmodel.py:447(時間切れ)・:481(反対向きの置き換え)。場面 i4-16-missed と golden(取り逃しの合計 397)で一致。",
+  "I4-17(compute_metrics の全指標): src/bot/bt/compat/metrics.py:55(旧と同じ演算の順)。golden の指標 400 件がビット単位で一致。spec のシャープの年率化は barmodel.py の BarRules.periods_per_year(足の頻度)。場面 i4-17-* で一致。",
+  "I4-18(split_data): src/bot/bt/compat/walk_forward.py:45 split_bounds(binary = 旧 / decimal = D-1)・:71 split_data(旧の名前と引数)。golden の分け方 400 件で一致。場面 i4-18-*(two-models・refuse を含む)で一致。",
+  "I4-19(golden の保存と一致): tests/bt/compat/golden/old_engine_golden.json。src/bot/backtest/ を消す前に旧のエンジンで作り、旧の 3 本の sha256・git HEAD・種 20260926・入力を持つ。作った道具は make_golden.py で、旧のエンジンでなければ動かない。一致の試験は tests/bt/compat/test_compat_golden.py(42 passed、JSON の文字列として比べる = ビット単位)。旧の名前と引数が揃っていることは test_every_public_name_of_the_old_module_is_in_the_mouth_with_the_same_signature が確かめる。",
+  "I4-20(最後の段): この周では行っていない(unmet)。予行は tests/bt/compat/test_old_tests_against_compat.py(旧の試験 8 本を変えずに回して通り、12 本の読み込みも通る)。"
+ ],
+ "external_tool_checks": "外部の道具は入れていない(この周でネットワークは使っていない)。外部の道具との比較として挙げたのは、参照実装の役が既に行った backtesting.py 0.6.6 の導入と突き合わせの記録(src/bot/bt/reference/SPEC.md §5。導入前の検査の結果もそこにある)だけで、私はその道具を実行していない。"
+}
+```
+
+**要点(リードの読み)**: 全試験 19,941 passed / 0 failed(項目 0 の批評家の試験 test_i0r17_* の 14 件は作業者が核 values.py を直して通した = 核の持ち越し i0-r16/r17 の解消。契約 core-19)。互換の口(bot.bt.compat)は旧と golden でビット単位一致(1008 升 + 端 3 + 指標 400 + 分け方 400)。旧の試験 8 本は互換の口に差し替えて 103 passed。速さは旧の約 19 倍遅い(実測、要件なし)。I4-20(最後の段の置き換え)は未実施(条件の後半 = この周の批評家 [止める] 0 が作業者のあとに決まるため)。
+
+### 作る:4#1 の questions_for_lead 6 件へのリードの答え(07:40 UTC。表:4#1 は既に走っているので、答えは批評:4#1 と 2 周目に渡す。段の途中で設計に規則を足さない)
+
+1. 規則の参照 bar_rules.py(作業者が書いた = 独立ではない): **(b) この周は残し、(a) 2 周目に参照実装の役へ場面集の規則 R-* を渡して書き直させ、入れ替える。** この周の判定では bar_rules.py との一致を「独立参照実装との突き合わせ」(I4-1)に数えない(表・批評家の注記に「作業者が書いた規則の参照」と書く)。06:35 の答え 3 と食い違う点は、答え 3 を上書きする(参照実装に書かせる対象に bar_rules も含める)。
+2. 持ち物の外の 3 か所(データ層の bar.session 24x5 / 核 core-19 / 項目 0 の試験の版): **認める**(起動文「核の残りの欠陥は…この項目の作業者が直す」と項目 4 の行の「全体」)。条件 = 契約の版に変えた点が書かれていること(core-19 に書いた)。批評家が核も読む。
+3. binance_cm_o3c_20260913 の zip: **読まない**(委任文 §1「o3c_* は市場データとして読まない」の文どおり。名前で拒む規則を例外で崩さない)。zip の読み込みもこの周は足さない。Binance 現物 aggTrades は「データ待ち」のまま(オーナー PC は未確認)。
+4. 負の日率の持ち越し: **spec は R-S1 の文どおり掛ける(今の実装)。legacy は旧のまま掛けない(互換の定義)。** 場面集に負の日率の場面が無いので表には効かない。2 周目の要件の追記で場面を足すかは批評家の指摘を見て決める。
+5. i4w_drive.py を資料係へ渡す手段: 台本の資料係の起動文には作業者の返り値が入っていない(台本の実測: 表の起動文は req と bat だけ)。ただし資料係は作業木を読めるので、07:35 UTC の時点で tests/bt/battery/item_4/adapters/new_impl.py を既に書き始めている。**段の途中なのでリードからは渡さない。**
+6. 最後の段(src/bot/backtest/ の置き換え): **そのとおり**。2 周目の作業者が、この周の批評家の [止める] 0 を確かめてから行う。この周の [止める] が 0 でなければ上限 2 周の中では置き換えに届かないので、置き換えなしのまま「項目 4 は上限で未達(置き換え未実施)」として報告し、その先はオーナーが決める(I-013)。
+

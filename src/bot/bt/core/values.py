@@ -1085,48 +1085,52 @@ MAX_HASH_VISITS = 1_000_000
 
 def _hash_visits(root: Any) -> int:
     """The number of objects hash(root) visits (capped just above
-    MAX_HASH_VISITS): a tuple (FrozenList too) visits itself and each item's
-    visits; a FrozenDict whose hash is not made yet visits itself, and each
-    pair (a tuple) with its key's and value's visits; anything else (a
-    scalar, a frozenset -- its hash is kept by the interpreter, its elements
-    were hashed when it was made --, a FrozenDict with its hash made) 1.
-    Each object is counted once (by id; the value is held while counting)."""
+    MAX_HASH_VISITS), counted over the objects, each once (by id; the value
+    is held while counting). The interpreter's tuple hash is not kept, so a
+    tuple (FrozenList too) is visited once per path to it: unfold(t) = 1 +
+    the unfold of each item, anything that is not a tuple counting 1. A
+    FrozenDict whose hash is not made yet is hashed once (`_fd_hash`, deepest
+    first, its hash kept): it adds, once, the unfold of each of its pairs
+    (1 + unfold(key) + unfold(value)), where a FrozenDict inside counts 1 and
+    adds its own once. A frozenset keeps its hash; a FrozenDict with its hash
+    made counts 1."""
     cap = MAX_HASH_VISITS + 1
-    memo: dict = {}
-    stack: list = [(root, False)]
-    while stack:
-        x, done = stack.pop()
-        key = id(x)
-        if done:
-            t = type(x)
-            if derives(t, tuple):
+    unfold: dict = {}  # id -> (unfold count, the object)
+    fds: dict = {}  # id -> FrozenDict whose hash is not made, reached
+
+    def count(x: Any) -> int:
+        stack: list = [(x, False)]
+        while stack:
+            y, done = stack.pop()
+            k = id(y)
+            if done:
                 total = 1
-                for c in tuple.__iter__(x):
-                    total += memo[id(c)][0]
-            else:  # a FrozenDict whose hash is not made
-                total = 1
-                for p in _FD_ITEMS(x):
-                    total += 1 + memo[id(p[0])][0] + memo[id(p[1])][0]
-            memo[key] = (min(total, cap), x)
-            if memo[key][0] >= cap and x is root:
-                return cap
-            continue
-        if key in memo:
-            continue
-        t = type(x)
-        if derives(t, tuple):
-            memo_pending = [c for c in tuple.__iter__(x) if id(c) not in memo]
-            stack.append((x, True))
-            stack.extend((c, False) for c in memo_pending)
-        elif t is FrozenDict and _FD_HASH(x) is _NOT_YET:
-            pairs = _FD_ITEMS(x)
-            stack.append((x, True))
-            for k, v in pairs:
-                stack.append((k, False))
-                stack.append((v, False))
-        else:
-            memo[key] = (1, x)
-    return memo[id(root)][0]
+                for c in tuple.__iter__(y):
+                    total += unfold[id(c)][0]
+                unfold[k] = (min(total, cap), y)
+                continue
+            if k in unfold:
+                continue
+            if derives(type(y), tuple):
+                stack.append((y, True))
+                stack.extend((c, False) for c in tuple.__iter__(y) if id(c) not in unfold)
+            else:
+                if type(y) is FrozenDict and _FD_HASH(y) is _NOT_YET and k not in fds:
+                    fds[k] = y
+                unfold[k] = (1, y)
+        return unfold[id(x)][0]
+
+    total = count(root)
+    done: set = set()
+    while total < cap:
+        todo = [k for k in fds if k not in done]
+        if not todo:
+            break
+        for k in todo:
+            done.add(k)
+            for key, value in _FD_ITEMS(fds[k]):
+                total += 1 + count(key) + count(value)
+    return min(total, cap)
 
 
 def _hashed(x: Any, err: type, where: str, what: str) -> None:

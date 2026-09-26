@@ -1,0 +1,41 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+i4-1-ref-taker	I4-1	値	正解と一致		6a6e3c7a9a6a	正解と一致		6a6e3c7a9a6a	2 回の実行で同じ	0.01	0.015
+i4-1-ref-maker	I4-1	値	不一致	engine: fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	fcd9b9915636	不一致	engine: fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	fcd9b9915636	2 回の実行で同じ	0.007	0.012
+i4-2-grid	I4-2	値	正解と一致	30 の場合すべて	4ed69d3acdae	正解と一致	30 の場合すべて	4ed69d3acdae	2 回の実行で同じ	0.163	0.208
+i4-3-e2e-taker	I4-3	値	正解と一致		4496ba78cd69	正解と一致		4496ba78cd69	2 回の実行で同じ	0.01	0.008
+i4-3-e2e-maker	I4-3	値	不一致	fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	576b290bc66d	不一致	fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	576b290bc66d	2 回の実行で同じ	0.013	0.005
+i4-4-plain	I4-4	値	正解と一致		14293724f86c	正解と一致		14293724f86c	2 回の実行で同じ	0.003	0.004
+i4-4-fee	I4-4	値	正解と一致		bedd34db477e	正解と一致		bedd34db477e	2 回の実行で同じ	0.007	0.004
+i4-5-fills	I4-5	値	正解と一致		bb18d929c420	正解と一致		bb18d929c420	2 回の実行で同じ	0.192	0.135
+i4-5-outputs	I4-5	能力	正解と一致		234f495f9b7f	正解と一致		234f495f9b7f	2 回の実行で同じ	0.203	0.119
+i4-6-label	I4-6	値	正解と一致		116d914e8bdf	正解と一致		116d914e8bdf	2 回の実行で同じ	0.124	0.119
+i4-6-signal-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	8348ac0e2133	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	8348ac0e2133	2 回の実行で同じ	0.113	0.204
+i4-6-research-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	8348ac0e2133	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	8348ac0e2133	2 回の実行で同じ	0.13	0.125
+i4-8-next-open	I4-8	値	正解と一致		412a637a0fda	正解と一致		412a637a0fda	2 回の実行で同じ	0.009	0.005
+i4-8-short-close	I4-8	値	正解と一致		43f4aed71c15	正解と一致		43f4aed71c15	2 回の実行で同じ	0.01	0.004
+i4-8-no-short	I4-8	値	正解と一致		489543c6ed48	正解と一致		489543c6ed48	2 回の実行で同じ	0.009	0.004
+i4-9-strict	I4-9	値	正解と一致		b5baf009937c	正解と一致		b5baf009937c	2 回の実行で同じ	0.007	0.003
+i4-9-short-strict	I4-9	値	正解と一致		543ea5b0c57b	正解と一致		543ea5b0c57b	2 回の実行で同じ	0.004	0.004
+i4-10-priority	I4-10	値	正解と一致		2867256217ca	正解と一致		2867256217ca	2 回の実行で同じ	0.006	0.006
+i4-11-wick-long	I4-11	値	正解と一致		179036a8a6a3	正解と一致		179036a8a6a3	2 回の実行で同じ	0.003	0.003
+i4-11-wick-short	I4-11	値	正解と一致		49b30d5a02e4	正解と一致		49b30d5a02e4	2 回の実行で同じ	0.003	0.003
+i4-11-refuse-stack	I4-11	能力	正解と一致	変形を拒んだ: BarModelError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	0436152aeea4	正解と一致	変形を拒んだ: BarModelError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	0436152aeea4	2 回の実行で同じ	0.003	0.003
+i4-12-maker-tp	I4-12	値	正解と一致		7476b9f40f38	正解と一致		7476b9f40f38	2 回の実行で同じ	0.003	0.003
+i4-12-refuse	I4-12	能力	正解と一致	変形を拒んだ: BarModelError: exit_execution="maker_tp" requires maker_tp_pct > 0	cdacda14b23b	正解と一致	変形を拒んだ: BarModelError: exit_execution="maker_tp" requires maker_tp_pct > 0	cdacda14b23b	2 回の実行で同じ	0.003	0.003
+i4-12-touch-decimal	I4-12	値	正解と一致		0b9deae70841	正解と一致		0b9deae70841	2 回の実行で同じ	0.003	0.003
+i4-13-time-exit	I4-13	値	正解と一致		c8c8589e4a8d	正解と一致		c8c8589e4a8d	2 回の実行で同じ	0.003	0.004
+i4-13-tp-on-exit-bar	I4-13	値	正解と一致		0287aaa01f34	正解と一致		0287aaa01f34	2 回の実行で同じ	0.003	0.003
+i4-13-two-models	I4-13	能力	正解と一致		c2f49f828b60	正解と一致		c2f49f828b60	2 回の実行で同じ	0.006	0.005
+i4-14-mask-sides	I4-14	値	正解と一致		3f19057470f3	正解と一致		3f19057470f3	2 回の実行で同じ	0.005	0.004
+i4-14-sides-short	I4-14	値	正解と一致		2603029e6415	正解と一致		2603029e6415	2 回の実行で同じ	0.004	0.004
+i4-15-swap-long	I4-15	値	正解と一致		60f2f19625b3	正解と一致		60f2f19625b3	2 回の実行で同じ	0.005	0.003
+i4-15-swap-short	I4-15	値	正解と一致		42baff105544	正解と一致		42baff105544	2 回の実行で同じ	0.005	0.003
+i4-16-missed	I4-16	値	不一致	fills[0].bar = 4(正解 6)	f6d174d24402	不一致	fills[0].bar = 4(正解 6)	f6d174d24402	2 回の実行で同じ	0.004	0.004
+i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
+i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
+i4-17-sharpe-bar-seconds	I4-17	値	正解と一致		be236f326d72	正解と一致		be236f326d72	2 回の実行で同じ	0.004	0.003
+i4-17-two-models	I4-17	能力	正解と一致		94b189241f87	正解と一致		94b189241f87	2 回の実行で同じ	0.009	0.006
+i4-18-split	I4-18	値	正解と一致		ecc72b633a93	正解と一致		ecc72b633a93	2 回の実行で同じ	0.0	0.0
+i4-18-split-decimal	I4-18	値	正解と一致		101565ef1101	正解と一致		101565ef1101	2 回の実行で同じ	0.001	0.001
+i4-18-two-models	I4-18	能力	正解と一致		1a83a236a7a4	正解と一致		1a83a236a7a4	2 回の実行で同じ	0.001	0.001
+i4-18-refuse	I4-18	能力	正解と一致	変形を拒んだ: SplitError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	正解と一致	変形を拒んだ: SplitError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	2 回の実行で同じ	0.0	0.0

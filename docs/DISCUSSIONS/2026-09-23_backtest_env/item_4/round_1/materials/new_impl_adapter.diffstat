@@ -1,0 +1,2 @@
+ tests/bt/battery/item_4/adapters/new_impl.py | 123 ++++++++++++++++++++++++++-
+ 1 file changed, 119 insertions(+), 4 deletions(-)

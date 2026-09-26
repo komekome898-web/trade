@@ -1,0 +1,12 @@
+## current: current_1=表_h6os4a.md current_2=表_lkz8oc.md
+97f981c645a7e587c29e648e7a0a3b2f  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_h6os4a.md
+833c8abdc7a57ec14300c98d8391b12f  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_lkz8oc.md
+current identical=false
+## survey: survey_1=表_tdnjk1.md survey_2=表_mowzh6.md
+41aee8d7b7bdb8cb7435dcc28c46f934  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_tdnjk1.md
+748175573b7c8986992f2a4a1798f210  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_mowzh6.md
+survey identical=false
+## mutant: mutant_1=表_6xjmd6.md mutant_2=表_pq6d39.md
+155d88825a2a53f16d7c17f910c87a74  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_6xjmd6.md
+6e7dc1e78a6d07450749b35d491be971  docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_pq6d39.md
+mutant identical=false
