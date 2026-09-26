@@ -99,12 +99,6 @@ def test_the_requests_field_is_what_the_reference_strategy_asks():
     assert not field_problems(_field, reference_requests("new_impl"), equal=True)
 
 
-def test_the_current_implementations_requests_are_within_the_field():
-    import run_battery
-    assert getattr(run_battery.load_adapter("current_impl"), "records_requests", False)
-    assert not field_problems(_field, reference_requests("current_impl"), equal=False)
-
-
 def test_every_request_kind_is_asked_by_some_scene():
     """The field's kinds are all used (a kind no scene asks would be a machine path never measured)."""
     assert {k for s in scenes.SCENES for k in _field(s)} == set(REQUEST_KINDS)

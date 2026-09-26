@@ -6,7 +6,7 @@ Not collected by pytest. Run from the repository root:
 """
 import subprocess, shutil, sys, tempfile
 # run from the repository root: python3 tests/bt/item_4/reference/ref_mutants.py
-E = "src/bot/bt/reference/event_sim.py"; R = "tests/bt/item_4/reference/ext_bar_modes.py"
+E = "src/bot/bt/reference/event_sim.py"
 N = "src/bot/bt/reference/bar_sim.py"  # the rule-text bar reference
 M = [
  (E, 'return px < o.price or (limit_cross == "touch" and px == o.price)', 'return px <= o.price'),
@@ -17,12 +17,6 @@ M = [
  (E, 't_recv=t_exch + lat_n', 't_recv=t_exch'),
  (E, 'lims.sort(key=lambda o: ((-o.price if o.side == "buy" else o.price), o.arrive_no))', 'lims.sort(key=lambda o: o.arrive_no)'),
  (E, 'state["consumed"][(o.side, p)] = state["consumed"].get((o.side, p), Fraction(0)) + take', 'pass'),
- (R, 'if stop_hit:', 'if stop_hit and not tp_hit:'),
- (R, 'pos = open_trade(sig, i_sig, j, b.open, "taker")', 'pos = open_trade(sig, i_sig, j, bars[j - 1].close, "taker")'),
- (R, 'j == pos.entry_bar + max_hold_bars', 'j == pos.entry_bar + max_hold_bars + 1'),
- (R, 'pos = open_trade(sig, i_sig, j, lim, "maker")', 'pos = open_trade(sig, i_sig, j, (min(lim, b.open) if sig.side == "long" else max(lim, b.open)), "maker")'),
- (R, 'pending = {"sig": sig, "signal_bar": j, "first": j + 1, "last": last}', 'pending = {"sig": sig, "signal_bar": j, "first": j + 1, "last": last - 1}'),
- (R, 'close(pos, j, pos.tp, tp_fee, "take_profit")', 'close(pos, j, pos.tp, "taker", "take_profit")'),
  (N, 'if pos is None and ((d == 1 and l < p) or (d == -1 and h > p)):', 'if pos is None and ((d == 1 and l <= p) or (d == -1 and h >= p)):'),
  (N, 'if (d == 1 and h > p) or (d == -1 and l < p):', 'if (d == 1 and h >= p) or (d == -1 and l <= p):'),
  (N, 'elif o["max_hold_bars"] is not None and j == pos.entry_bar + o["max_hold_bars"]:', 'elif o["max_hold_bars"] is not None and j == pos.entry_bar + o["max_hold_bars"] + 1:'),

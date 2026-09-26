@@ -33,7 +33,6 @@ i4-12-refuse	I4-12	能力	不一致	対照: fills[0].bar = 0(正解 1)	436c90164
 i4-12-touch-decimal	I4-12	値	不一致	fills[0].bar = 0(正解 1)	8979810db411	不一致	fills[0].bar = 0(正解 1)	8979810db411	2 回の実行で同じ	0.0	0.0
 i4-13-time-exit	I4-13	値	不一致	fills: 4 件(正解 2 件): 観測 [(0, 'OPEN_LONG', 100.0), (2, 'CLOSE_LONG', 101.5), (3, 'OPEN_SHORT', 102.5), (5, 'CLOSE_SHORT', 104.5)]	d6d8e848eeb9	不一致	fills: 4 件(正解 2 件): 観測 [(0, 'OPEN_LONG', 100.0), (2, 'CLOSE_LONG', 101.5), (3, 'OPEN_SHORT', 102.5), (5, 'CLOSE_SHORT', 104.5)]	d6d8e848eeb9	2 回の実行で同じ	0.0	0.0
 i4-13-tp-on-exit-bar	I4-13	値	不一致	fills[0].bar = 0(正解 1)	82fdb049d224	不一致	fills[0].bar = 0(正解 1)	82fdb049d224	2 回の実行で同じ	0.0	0.0
-i4-13-two-models	I4-13	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-14-mask-sides	I4-14	値	不一致	fills[0].bar = 3(正解 4)	7fa9bf44669f	不一致	fills[0].bar = 3(正解 4)	7fa9bf44669f	2 回の実行で同じ	0.0	0.0
 i4-14-sides-short	I4-14	値	不一致	fills[0].bar = 2(正解 3)	a9e0ff23c7ec	不一致	fills[0].bar = 2(正解 3)	a9e0ff23c7ec	2 回の実行で同じ	0.0	0.0
 i4-15-swap-long	I4-15	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(Superalgos Low-Frequency-Trading(9f0fb59e) の OrdersSimulations.js・TradingStages.js・TradingPosition.js) / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(Superalgos Low-Frequency-Trading(9f0fb59e) の OrdersSimulations.js・TradingStages.js・TradingPosition.js) / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	0.0	0.0
@@ -41,18 +40,13 @@ i4-15-swap-short	I4-15	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): s
 i4-16-missed	I4-16	値	不一致	fills[0].bar = 2(正解 6)	079613038b3f	不一致	fills[0].bar = 2(正解 6)	079613038b3f	2 回の実行で同じ	0.0	0.0
 i4-14-maker-mask-false	I4-14	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.0	0.0
 i4-16-maker-mask-false-not-missed	I4-16	値	正解と一致		8ec96dca0288	正解と一致		8ec96dca0288	2 回の実行で同じ	0.0	0.0
-i4-16-maker-mask-false-two-models	I4-16	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	2 回の実行で同じ	0.0	0.0
-i4-16-same-side-two-models	I4-16	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-16-mask-false-opposite-keeps-limit	I4-16	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.0	0.0
-i4-16-mask-false-opposite-two-models	I4-16	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-11-wick-short-history	I4-11	値	不一致	fills[0].bar = 1(正解 2)	1405fadffadb	不一致	fills[0].bar = 1(正解 2)	1405fadffadb	2 回の実行で同じ	0.0	0.0
 i4-11-wick-entry-bar-close	I4-11	値	不一致	fills[0].bar = 1(正解 2)	4bdc77f2fb65	不一致	fills[0].bar = 1(正解 2)	4bdc77f2fb65	2 回の実行で同じ	0.0	0.0
 i4-16-exit-same-side-keeps-limit	I4-16	値	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
-i4-16-exit-same-side-two-models	I4-16	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-14-blocked-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.0	0.0
 i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.004	0.0
-i4-14-sides-opposite-two-models	I4-14	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-8-refuse-bad-bar	I4-8	値	不一致	対照: fills[0].bar = 1(正解 2)	f343210b940b	不一致	対照: fills[0].bar = 1(正解 2)	f343210b940b	2 回の実行で同じ	0.0	0.0
 i4-10-zero-rate-refused	I4-10	値	不一致	対照: fills[0].bar = 2(正解 3)	d93c3867579d	不一致	対照: fills[0].bar = 2(正解 3)	d93c3867579d	2 回の実行で同じ	0.0	0.0
 i4-8-negative-fee	I4-8	値	不一致	fills[0].bar = 1(正解 2)	e1ad66807b7b	不一致	fills[0].bar = 1(正解 2)	e1ad66807b7b	2 回の実行で同じ	0.0	0.0
@@ -60,23 +54,17 @@ i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cd
 i4-17-metrics	I4-17	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-metrics-edge	I4-17	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
-i4-17-two-models	I4-17	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-18-split	I4-18	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-18-split-decimal	I4-18	値	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
-i4-18-two-models	I4-18	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.004	0.0
 i4-18-refuse	I4-18	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-10-signal-first	I4-10	値	不一致	fills[0].bar = 1(正解 2)	e0fffc439bc1	不一致	fills[0].bar = 1(正解 2)	e0fffc439bc1	2 回の実行で同じ	0.0	0.0
 i4-10-signal-first-short	I4-10	値	不一致	fills[0].bar = 1(正解 2)	802ef26d15bd	不一致	fills[0].bar = 1(正解 2)	802ef26d15bd	2 回の実行で同じ	0.0	0.0
-i4-10-signal-first-two-models	I4-10	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-10-stop-first-plain	I4-10	値	不一致	fills[0].bar = 1(正解 2)	11192d2cba72	不一致	fills[0].bar = 1(正解 2)	11192d2cba72	2 回の実行で同じ	0.0	0.0
 i4-12-tp-before-maker-tp	I4-12	値	不一致	fills[0].bar = 1(正解 2)	b38546397209	不一致	fills[0].bar = 1(正解 2)	b38546397209	2 回の実行で同じ	0.0	0.0
 i4-11-wick-first	I4-11	値	不一致	fills[0].bar = 1(正解 2)	d01479ed1de2	不一致	fills[0].bar = 1(正解 2)	d01479ed1de2	2 回の実行で同じ	0.0	0.0
 i4-11-wick-before-exit-limit	I4-11	値	不一致	fills[1].bar = 3(正解 4)	1ef036f2d5c3	不一致	fills[1].bar = 3(正解 4)	1ef036f2d5c3	2 回の実行で同じ	0.0	0.0
 i4-13-stop-on-time-bar	I4-13	値	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	2 回の実行で同じ	0.0	0.0
-i4-13-stop-on-time-bar-two-models	I4-13	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-first	I4-13	値	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	2 回の実行で同じ	0.0	0.0
-i4-13-time-first-two-models	I4-13	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
-i4-13-time-maker-tp-two-models	I4-13	能力	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Superalgos(9f0fb59e)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-before-exit-limit	I4-13	値	不一致	fills[1].bar = 3(正解 4)	ac9764df62aa	不一致	fills[1].bar = 3(正解 4)	ac9764df62aa	2 回の実行で同じ	0.0	0.0
 i4-13-stop-on-time-bar-maker	I4-13	値	不一致	fills[1].bar = 3(正解 4)	ac9764df62aa	不一致	fills[1].bar = 3(正解 4)	ac9764df62aa	2 回の実行で同じ	0.0	0.0
 i4-16-stop-before-exit-limit	I4-16	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.0	0.0

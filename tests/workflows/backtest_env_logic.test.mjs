@@ -108,19 +108,20 @@ test('judges sit on the first round, on a pass candidate, or on a structural cha
 })
 
 test('pass candidate (L-451 / I-013): items 1..4 pass on a full battery match and even judges; critic stops are carried unless patchwork', () => {
+  // 2026-09-26 (L-470 / L-474): the pair against 当方の現状 is withdrawn; passCandidate takes the survey pair's verdict only
   const s = stop('a', '実装', ['src/x.py'])
   const ok = { table_recount_ok: true, table_recount: '46/46' }, bad = { table_recount_ok: false, table_recount: '45/46' }
-  assert.equal(passCandidate({ id: 1 }, true, true, [s], { new_impl_all_correct: true, new_impl_correct: '46/46' }, ok).candidate, true)
-  assert.equal(passCandidate({ id: 1 }, true, true, [{ ...s, patchwork: true }], { new_impl_all_correct: true }, ok).candidate, false)
-  assert.equal(passCandidate({ id: 1 }, true, true, [], { new_impl_all_correct: false, new_impl_correct: '41/46' }, ok).candidate, false)
-  assert.equal(passCandidate({ id: 1 }, true, false, [], { new_impl_all_correct: true }, ok).candidate, false)
-  assert.equal(passCandidate({ id: 1 }, true, true, [], null, ok).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, [s], { new_impl_all_correct: true, new_impl_correct: '46/46' }, ok).candidate, true)
+  assert.equal(passCandidate({ id: 1 }, true, [{ ...s, patchwork: true }], { new_impl_all_correct: true }, ok).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, [], { new_impl_all_correct: false, new_impl_correct: '41/46' }, ok).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, false, [], { new_impl_all_correct: true }, ok).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, [], null, ok).candidate, false)
   // 66-2: the table maker's self-report alone is not enough; the critic's recount must agree
-  assert.equal(passCandidate({ id: 1 }, true, true, [], { new_impl_all_correct: true }, bad).candidate, false)
-  assert.equal(passCandidate({ id: 1 }, true, true, [], { new_impl_all_correct: true }, null).candidate, false)
-  assert.equal(passCandidate({ id: 0 }, true, true, [s], { new_impl_all_correct: true }, ok).candidate, false)
-  assert.equal(passCandidate({ id: 0 }, true, true, [], null, null).candidate, true)
+  assert.equal(passCandidate({ id: 1 }, true, [], { new_impl_all_correct: true }, bad).candidate, false)
+  assert.equal(passCandidate({ id: 1 }, true, [], { new_impl_all_correct: true }, null).candidate, false)
+  assert.equal(passCandidate({ id: 0 }, true, [s], { new_impl_all_correct: true }, ok).candidate, false)
+  assert.equal(passCandidate({ id: 0 }, true, [], null, null).candidate, true)
   // L-454 (案 B): an item run without a critic passes on the table maker's recount alone
-  assert.equal(passCandidate({ id: 2 }, true, true, [], { new_impl_all_correct: true }, { skipped: true, findings: [] }).candidate, true)
-  assert.equal(passCandidate({ id: 2 }, true, true, [], { new_impl_all_correct: false }, { skipped: true, findings: [] }).candidate, false)
+  assert.equal(passCandidate({ id: 2 }, true, [], { new_impl_all_correct: true }, { skipped: true, findings: [] }).candidate, true)
+  assert.equal(passCandidate({ id: 2 }, true, [], { new_impl_all_correct: false }, { skipped: true, findings: [] }).candidate, false)
 })

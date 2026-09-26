@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Item 1 battery runner (データと時刻).
 
-    python3 tests/bt/battery/item_1/run_battery.py --target current_impl --out OUT.tsv
     python3 tests/bt/battery/item_1/run_battery.py --target new_impl     --out OUT.tsv
     python3 tests/bt/battery/item_1/run_battery.py --target mutant       --out OUT.tsv
     python3 tests/bt/battery/item_1/run_battery.py --target opp_<name>   --out OUT.tsv

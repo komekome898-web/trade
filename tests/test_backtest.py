@@ -1,4 +1,7 @@
-"""Backtest engine: costs, metrics, look-ahead prevention, split integrity."""
+"""General properties through the mouth `bot.backtest` (the new engine, item 4): costs reduce PnL, zero costs
+break even (R-A3 with every rate 0), look-ahead prevention, split integrity (D-1 / D-2), the metric set (M-1 ..
+M-12), indicator causality. The scene-set rules R-* themselves are held by tests/bt/battery/item_4 and
+tests/bt/item_4 (engine vs the independent reference)."""
 from __future__ import annotations
 
 import numpy as np
@@ -49,15 +52,6 @@ def test_zero_cost_flat_market_is_breakeven():
     assert res.trade_pnls[0] == pytest.approx(0.0)
 
 
-def test_execution_delayed_to_next_bar_open():
-    prices = [100, 100, 100, 100, 200, 200, 200, 300, 300, 300]
-    candles = make_candles([float(x) for x in prices])
-    res = run_backtest(BuyThenSellOnce({}), candles,
-                       costs=CostModel(taker_fee_pct=0, slippage_pct=0, spread_pct=0))
-    buy = next(t for t in res.trade_log if t["side"] == "OPEN_LONG")
-    assert buy["bar"] == 4 and buy["price"] == 200.0  # signal at bar 3 fills at bar 4 open
-
-
 class LookAheadProbe(Strategy):
     """Records the last close it can see at each decision bar."""
     def __init__(self, params=None):
@@ -83,6 +77,7 @@ def test_strategy_never_sees_future_bars():
 def test_split_is_chronological_and_disjoint():
     candles = make_candles([float(i) for i in range(100)])
     s = split_data(candles, 0.6, 0.2)
+    # D-1: floor(100 * 0.6) = 60, floor(100 * (0.6 + 0.2)) = 80 on the written decimals -> 60 / 20 / 20
     assert len(s.training) == 60 and len(s.validation) == 20 and len(s.out_of_sample) == 20
     assert s.training["close"].iloc[-1] < s.validation["close"].iloc[0]
     assert s.validation["close"].iloc[-1] < s.out_of_sample["close"].iloc[0]
@@ -90,6 +85,9 @@ def test_split_is_chronological_and_disjoint():
 
 def test_metrics_full_set():
     equity = pd.Series([100, 110, 105, 120, 115], dtype=float)
+    # the values follow from the definitions M-1 .. M-12 (bot.bt.compat.metrics): 2 wins of 4 (M-3), gross profit
+    # 25 / gross loss 10 (M-4), one loss at a time (M-7), mean win 12.5 / mean loss -5 (M-8, M-9), 12.5 / 5 (M-10),
+    # 15 / 4 (M-11); the equity falls from 110 to 105 and from 120 to 115 (M-6 > 0)
     m = compute_metrics([10.0, -5.0, 15.0, -5.0], equity)
     assert m.num_trades == 4
     assert m.win_rate_pct == 50.0

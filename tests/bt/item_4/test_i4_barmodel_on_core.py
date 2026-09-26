@@ -2,16 +2,16 @@
 gives: every fill is a core fill priced by the run's cost model; the decision
 at bar i sees bars 0..i only; each signal order ends with the reason it ended.
 
-Causality is tested as a property on the option grid (golden/compat_golden_scenes.py): a
+Causality is tested as a property on the option grid (i4_option_grid.py): a
 run on the first k bars gives exactly the first k equity values and the
 fills of those bars of the full run -- a later bar can change nothing before
-it -- for k at 5 points of every 9th cell (under "legacy" and "spec").
+it -- for k at 5 points of every 9th cell.
 """
 from __future__ import annotations
 
 import pytest
 
-import compat_golden_scenes as G
+import i4_option_grid as G
 from bot.bt.compat import BarModelError, bar_events, options_from_mapping, run_bars
 from bot.bt.core import FORCED_ID_PREFIX
 from test_i4_spec_vs_reference_grid import to_input
@@ -33,7 +33,7 @@ def _run(sc, rules, k=None, decide_log=None):
     return run_bars(ev, decide, options_from_mapping(cfg), rules)
 
 
-@pytest.mark.parametrize("rules", ["legacy", "spec"])
+@pytest.mark.parametrize("rules", ["spec"])
 def test_a_later_bar_changes_nothing_before_it(rules):
     for sc in G.scenes()[::9]:
         full = _run(sc, rules)
@@ -51,7 +51,7 @@ def test_the_decision_at_bar_i_is_asked_with_exactly_i_plus_1_bars_delivered():
     assert res.core.source_events == 40
 
 
-@pytest.mark.parametrize("rules", ["legacy", "spec"])
+@pytest.mark.parametrize("rules", ["spec"])
 def test_every_fill_is_a_core_fill_with_the_cost_models_fee(rules):
     for sc in G.scenes()[::50]:
         res = _run(sc, rules)
@@ -66,10 +66,10 @@ def test_every_fill_is_a_core_fill_with_the_cost_models_fee(rules):
 
 
 REASONS = {"executed", "no_action", "entry_filtered", "dropped_by_exit", "timeout", "replaced", "not_actionable",
-           "kept_older"}  # kept_older: spec, a maker signal the same way as the pending limit (i4-r2-08)
+           "kept_older"}  # kept_older: a maker signal the same way as the pending limit (R-M7)
 
 
-@pytest.mark.parametrize("rules", ["legacy", "spec"])
+@pytest.mark.parametrize("rules", ["spec"])
 def test_every_signal_order_ends_with_its_reason(rules):
     """A signal order is an instruction: it ends Canceled / Rejected with the reason it ended; the only one
     that may still be open is the one pending when the bars end."""

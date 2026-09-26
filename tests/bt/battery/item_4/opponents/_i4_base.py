@@ -27,7 +27,6 @@ sys.path.insert(0, str(HERE.parent))
 from i4_protocol import NotExpressible, Refused, non_default  # noqa: E402,F401
 
 NO_REFERENCE = "道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い"
-NO_MODELS = "道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)"
 
 
 def adj(c: dict) -> float:
@@ -97,8 +96,6 @@ class Base:
         if op == "bars":
             if inp.get("reference"):
                 raise NotExpressible(f"{self.TOOL}: {NO_REFERENCE}")
-            if "models" in inp:
-                raise NotExpressible(f"{self.TOOL}: {NO_MODELS}")
             self.gate(inp)
             return self.bars(inp)
         if op == "metrics":
@@ -106,8 +103,6 @@ class Base:
                 raise NotExpressible(f"{self.TOOL}: {self.METRICS}")
             return self.metrics(inp)
         if op == "split":
-            if "models" in inp:
-                raise NotExpressible(f"{self.TOOL}: {NO_MODELS}")
             if self.SPLIT:
                 raise NotExpressible(f"{self.TOOL}: {self.SPLIT}")
             return self.split(inp)

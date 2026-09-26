@@ -20,7 +20,7 @@ Rules (DEFINITIONS.md「判定の決まり」), per judged key:
 - dashboard:    obs {"tabs": [{"label", "text"}]}: every expected tab name is the START of exactly one label,
                 and the banner text is contained in the text of EVERY tab.
 - splits:       the three row-position lists equal.
-- engine/reference/legacy/spec: the sub-observation judged by the sub-judge.
+- engine/reference: the sub-observation judged by the sub-judge.
 Floats are equal when |a - b| <= 1e-9 x max(1, |a|, |b|) (the arithmetic order of a target may differ in the last bits).
 """
 from __future__ import annotations
@@ -371,7 +371,7 @@ def judge_obs(exp, obs, spec, scene=None, case=None):
     if not isinstance(obs, dict):
         return f"観測が dict でない({type(obs).__name__})"
     for key, sub in spec.items():
-        if key in ("engine", "reference", "legacy", "spec"):
+        if key in ("engine", "reference"):
             if key not in obs:
                 return f"{key} の出力が無い"
             d = judge_obs(exp[key], obs[key], sub, scene, case)

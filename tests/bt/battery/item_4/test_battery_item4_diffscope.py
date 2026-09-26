@@ -86,7 +86,7 @@ PATHS = [
     "Tests/bt/battery/item_4/x.py",
     "tests/bt/item_4/test_x.py",
     "tests/bt/critic/item_4/test_x.py",
-    "tests/bt/compat/golden/g.json",
+    "tests/bt/other/g.json",
     "src/bot/bt/core/contract.py",
     "src/bot/backtest/engine.py",
     "docs/AUDITOR/TRACE/2026-09-26_220780c0.json",

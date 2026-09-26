@@ -29,7 +29,7 @@ Not in the grids (and why):
   * a `type_plan` with more slots than the scene's own builder lays out (the builder raises; not a scene of this set);
   * event items inside a stream that is not a list (scenes.py never builds one; F's reader iterates it as given);
   * whether an adapter that says it records requests really calls `common.request` where its strategy asks -- the
-    reference strategy's checks of test_battery_r13_claims.py (new_impl, current_impl).
+    reference strategy's checks of test_battery_r13_claims.py (new_impl).
 """
 from __future__ import annotations
 
@@ -304,7 +304,7 @@ def test_a_mutant_section_without_the_list_is_caught(monkeypatch):
 # ---------------------------------------------------------------- family 9 (br13-1-2): who records requests
 def oracle_recording() -> dict:
     import run_battery as R
-    groups = {"新実装・当方の現状・試金石": ["new_impl", "current_impl", "mutant"], "相手": list(R.OPPONENTS),
+    groups = {"新実装・試金石": ["new_impl", "mutant"], "相手": list(R.OPPONENTS),
               "再現": list(R._repro_targets())}
     out = {}
     for g, bases in groups.items():

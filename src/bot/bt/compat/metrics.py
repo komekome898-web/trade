@@ -1,9 +1,9 @@
-"""The metric set of the bar model, and the compatibility mouth of the old
-`bot.backtest.metrics` (item 4, old item 14: 「`compute_metrics` の全指標」).
+"""The metric set of the bar model, and the compatibility mouth of
+`bot.backtest.metrics` (item 4: 「`compute_metrics` の全指標」).
 
-The same names and arguments as the old module (`Metrics`, `compute_metrics`),
-written anew. Definitions (M-1 .. M-12 of the item-4 battery; the old engine
-computes the same), for per-trade PnLs p (n of them) and a per-bar equity e:
+The same names and arguments as that module (`Metrics`, `compute_metrics`).
+Definitions (M-1 .. M-12 of the item-4 scene set), for per-trade PnLs p (n of
+them) and a per-bar equity e:
 
   total_pnl_jpy            sum p
   num_trades               n
@@ -12,7 +12,9 @@ computes the same), for per-trade PnLs p (n of them) and a per-bar equity e:
                            some gain, else 0
   sharpe_ratio             mean(r) / std(r, ddof=1) * sqrt(periods_per_year),
                            r = e's per-bar pct change; 0 unless len(r) > 1
-                           and std > 0
+                           and std > 0. periods_per_year = 365 * 86400 / bar
+                           seconds (M-5); the mouth's default is the value for
+                           its default bar_seconds = 60
   max_drawdown_pct         max((running max of e - e) / running max * 100)
   max_consecutive_losses   longest run of p < 0 (a 0 breaks the run)
   avg_win_jpy / avg_loss_jpy   mean of p > 0 / of p < 0 (negative), 0 if none
@@ -20,8 +22,8 @@ computes the same), for per-trade PnLs p (n of them) and a per-bar equity e:
   expectancy_per_trade_jpy sum p / n, 0 when n = 0
   total_fees_jpy           as given
 
-The arithmetic is pandas / numpy's, in the old module's order, so the values
-are the old module's bit for bit (tests/bt/compat/ and the golden files).
+The arithmetic is pandas / numpy's (tests/bt/battery/item_4: the I4-17 scenes
+hold the values against the definitions).
 """
 from __future__ import annotations
 
@@ -30,7 +32,7 @@ from dataclasses import asdict, dataclass
 import numpy as np
 import pandas as pd
 
-LEGACY_PERIODS_PER_YEAR = 365 * 24 * 60
+PERIODS_PER_YEAR_60S = 365 * 24 * 60  # M-5 for 60-second bars: 365 * 86400 / 60
 
 
 @dataclass
@@ -54,7 +56,7 @@ class Metrics:
 
 def compute_metrics(trade_pnls: list[float], equity_curve: pd.Series,
                     total_fees_jpy: float = 0.0,
-                    periods_per_year: float = LEGACY_PERIODS_PER_YEAR) -> Metrics:
+                    periods_per_year: float = PERIODS_PER_YEAR_60S) -> Metrics:
     """trade_pnls: realized PnL per closed round-trip. equity_curve: per-bar equity."""
     pnls = np.asarray(trade_pnls, dtype=float)
     n = len(pnls)

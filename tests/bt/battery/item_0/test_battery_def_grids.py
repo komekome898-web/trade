@@ -54,7 +54,7 @@ import common as C  # noqa: E402
 # (full grid, cells run, how) per definition -- written here, checked against def_grids.py
 SELECTED = {
     "0": (30958682112000, 92, "2 軸の全組(pairwise)"),
-    "A": (3120635156889600000, 73, "2 軸の全組(pairwise)"),
+    "A": (2080423437926400000, 71, "2 軸の全組(pairwise)"),  # 2026-09-26: the axis value 「当方の現状」 withdrawn (L-470 / L-474)
     "B": (497664, 59, "2 軸の全組(pairwise)"),
     "C": (10510663680, 59, "2 軸の全組(pairwise)"),
     "D": (68812800, 42, "2 軸の全組(pairwise)"),

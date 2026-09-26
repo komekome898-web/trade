@@ -330,13 +330,14 @@ def test_new_impl_is_the_mouth_only():
 # ---------------------------------------------------------------- runner and review table
 def test_runner_runs_twice_and_records_both(tmp_path):
     out = tmp_path / "cur.tsv"
-    r = subprocess.run([sys.executable, str(HERE / "run_battery.py"), "--target", "current_impl", "--out", str(out),
+    r = subprocess.run([sys.executable, str(HERE / "run_battery.py"), "--target", "new_impl", "--out", str(out),
                         "--scenes", "v5-sealed-window,v2-iso-offsets,v6-split"], capture_output=True, text=True, timeout=300)
     assert r.returncode == 0, r.stderr[-800:]
     rows = {ln.split("\t")[0]: ln.split("\t") for ln in out.read_text(encoding="utf-8").splitlines()[1:]}
+    assert set(rows) == {"v5-sealed-window", "v2-iso-offsets", "v6-split"}
     assert rows["v5-sealed-window"][3] == rows["v5-sealed-window"][6] == "正解と一致"
     assert rows["v5-sealed-window"][9] == "2 回の実行で同じ"
-    assert rows["v6-split"][3] == "結果なし" and rows["v6-split"][9] == "結果なし"
+    assert all(x[9] in ("2 回の実行で同じ", "結果なし") for x in rows.values())
     assert len(out.with_suffix(".obs.jsonl").read_text(encoding="utf-8").splitlines()) == 3
 
 

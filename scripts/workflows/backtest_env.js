@@ -91,7 +91,6 @@ ${REC}/item_${item.id}/REQUIREMENTS.md を書いて固定してください。�
 1. 委任文 §2 の項目 ${item.id} の行(逐語)。${item.extra || ''}
 2. 比較の観点(観点ごとに 1 行、測れる形)。オーナーの完了の形「すべてが調査結果以上の信頼性と再現性に優れたもの」を観点の軸にする。
 3. 調査結果の側: docs/DATA/tools_catalog.tsv の該当する要素の列に印がある行を、スクリプトで機械的に全部抜き出す(人が足し引きしない)。該当する要素の列が無い項目は、docs/DATA/SCAN_2026-09-21_tools.md への grep の語を先に書いてから打ち、当たった候補を全部取る。使ったコマンドをそのまま書く。観点ごとに段(機構)が最も高い機構を、候補番号と SCAN の行つきで書く。
-4. 当方の現状(旧 src/bot/backtest/ ほか)の該当箇所をファイル:行で書く。
 **すでに ${REC}/item_${item.id}/REQUIREMENTS.md があれば、それは固定済みの要件なので書き直さない。**委任文の今の版と食い違う箇所があるときだけ、その箇所を直し、直した行と理由をファイルの末尾に書き足す。
 ${SCRUTINY_BUILD}
 このファイル以外は書かない。`, { label: `要件:${item.id}`, phase: '要件の固定', schema: REQ_SCHEMA, model: MODEL, effort: 'high' })
@@ -106,12 +105,11 @@ const BAT_SCHEMA = { type: 'object', properties: {
 
 const TABLE_SCHEMA = { type: 'object', properties: {
   tables: { type: 'object', properties: {
-    current_1: { type: 'string' }, current_2: { type: 'string' },
     survey_1: { type: 'string' }, survey_2: { type: 'string' },
     mutant_1: { type: 'string' }, mutant_2: { type: 'string' } },
-    required: ['current_1', 'current_2', 'survey_1', 'survey_2', 'mutant_1', 'mutant_2'] },
+    required: ['survey_1', 'survey_2', 'mutant_1', 'mutant_2'] },
   commands: { type: 'string' }, adapters_changed: { type: 'array', items: { type: 'string' } }, notes: { type: 'string' },
-  identical: { type: 'object', properties: { current: { type: 'boolean' }, survey: { type: 'boolean' }, mutant: { type: 'boolean' } }, required: ['current', 'survey', 'mutant'] },
+  identical: { type: 'object', properties: { survey: { type: 'boolean' }, mutant: { type: 'boolean' } }, required: ['survey', 'mutant'] },
   // L-451 / I-013: the pass rule reads the battery result of the new implementation from the table maker's recount
   new_impl_correct: { type: 'string' }, new_impl_all_correct: { type: 'boolean' } },
   required: ['tables', 'commands', 'adapters_changed', 'notes', 'identical', 'new_impl_correct', 'new_impl_all_correct'] }
@@ -125,7 +123,7 @@ async function fixBattery(item, req) {
   return agent(`${item.id === 0 ? HEAD : HEAD2}
 あなたは項目 ${item.id}「${item.title}」の場面係です(作業者でも資料係でもない。委任文 §3「盲検の作り直し」「場面集」「調査結果の側の選び方」に従う)。固定した要件: ${req.path}。
 1. 要件の観点ごとに、実行できる場面を tests/bt/battery/item_${item.id}/ に作る。**値の場面**(合成の入力と、エンジンを見ずに手計算・閉じた式で出した正解。出し方を書く)と**能力の場面**(X ができるかを実際に呼んで試す)。場面の定義を 1 つの文書 tests/bt/battery/item_${item.id}/DEFINITIONS.md に書く(場面ごとに 入力 / 期待 / 何を測るか。道具の名前は書かない)。
-2. 場面を対象ごとに走らせる runner(tests/bt/battery/item_${item.id}/run_battery.py、引数 --target と --out、同じ場面を 2 回走らせて一致も記録)と、当方の現状(旧 src/bot/backtest/ ほか)と調査結果の側の道具の adapter を書く。新実装の adapter は資料係が毎周書くので、ここでは口だけ決める。
+2. 場面を対象ごとに走らせる runner(tests/bt/battery/item_${item.id}/run_battery.py、引数 --target と --out、同じ場面を 2 回走らせて一致も記録)と、調査結果の側の道具の adapter を書く。新実装の adapter は資料係が毎周書くので、ここでは口だけ決める。
 3. 調査結果の側: ${req.path} の候補を**全部**、委任文 §4 の安全の規則で scratchpad の venv(${SCR}/venvs/)に入れて場面に通す。入れられたもの / 入れられなかったもの(理由と試したこと)を全部返す。
 4. 委任文 §3「動かせない候補の検討と再現」に従う: 動かせなかった候補を 1 件も検討せずに外さず、全部を tests/bt/battery/item_${item.id}/opponents/CONSIDERED.md の検討表に載せる(機構 / 実装で確かめたか / 再現した・持たないと確認した・スキップ: 明らかに弱い・再現できない / 理由と根拠)。段のある観点は段(既定と実装で確かめたもの)で最も強い候補を、段の無い観点は実装で確かめられる候補を全部、最小の再現として opponents/ に書く。スキップは理由を書いたときだけ(理由なし・推測のスキップは禁止)。理由は、段のある観点は「段が低い」(段の値と調査報告の行)、段の無い観点は「上位互換」だけ(動かせた候補か再現した候補の機構が、その候補の能力を 1 つ残らず含むことを調査報告の行で 1 能力ずつ示す。段の代わりの指標を作らない)。材料は (a) SCAN の書き写し → (b) 一次資料を §4 のネットワークの規則で読むだけ(道具台帳 §3 の 11 件は (b) をしない)。根拠を注釈に 1 対 1。工夫を足さない、弱めない。再現した行は表で他と区別しない。検討表は返す前に python3 scripts/check_bt_considered.py <検討表> --write を走らせて誤り 0 件にし(場面集の規則 9。集計は道具が書く)、出力の最後の行を survey_not_run の最初に入れる。
 5. 試金石用に、新実装に不具合を 1 つだけ仕込む仕組み(tests/bt/battery/item_${item.id}/mutant.py。新実装を包んで 1 か所だけ誤らせる。何を誤らせたかを mutant に書く)を作る。新実装の本体は変えない。
@@ -170,7 +168,7 @@ ${JSON.stringify(findings).slice(0, 12000)}
 リードの答え(リードの注記にある正の定義など)の内容を変えるなら、変えた点と理由を ROOTCAUSE_${n}.md の節「リードに聞くこと」に書き、同じ文を lead_answer_changes に返す(無ければ空の配列)。書き先はこの 2 つだけ。
 ${(args.lead_notes || {})[item.id] ? `リードの注記(前の起動の戻しの設計・条件。必ず読む): ${(args.lead_notes || {})[item.id]}` : ''}${(args.prior_battery_record || {})[item.id] ? `前の起動の場面集への監査役の指摘とリードの処置: ${(args.prior_battery_record || {})[item.id]}` : ''}
 **直す前に** ${bat.battery_dir}/ROOTCAUSE_${n}.md に、指摘 1 件ごとに「なぜ起きたか(根本原因)」と「どの作りを変えるか」を書く(委任文 §3「根本的解決」)。[聞く] にはそこで答える。指摘の文言だけに合わせる直しをしない: 同じ種類の欠陥を場面集の全体(全観点・全場面・検討表の全行)で探して直す。
-そのうえで委任文 §3「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」に合わせて、場面の定義・runner・当方の現状と調査結果の側の adapter・検討表・再現・mutant を直す([直す] も直す)。**実装(src/bot/bt/ の下)と作業者の試験(tests/bt/item_${item.id}/)には触れない**(場面集の側の直しが実装に及ぶなら、それは相手の付け違い = rootcause に書いて止める。監査 60-3)。返す前に「git diff --name-only HEAD」を走らせ、その出力を rootcause のファイルの末尾に貼る(tests/bt/battery/ の外のファイルがあれば理由を書く)。場面の期待は要件の文から独立に出せる振る舞いで書き、新実装の内部の名前・形を写さない(規則 2)。
+そのうえで委任文 §3「場面集」「場面集の規則」1〜9「調査結果の側の選び方」「動かせない候補の検討と再現」に合わせて、場面の定義・runner・調査結果の側の adapter・検討表・再現・mutant を直す([直す] も直す)。**実装(src/bot/bt/ の下)と作業者の試験(tests/bt/item_${item.id}/)には触れない**(場面集の側の直しが実装に及ぶなら、それは相手の付け違い = rootcause に書いて止める。監査 60-3)。返す前に「git diff --name-only HEAD」を走らせ、その出力を rootcause のファイルの末尾に貼る(tests/bt/battery/ の外のファイルがあれば理由を書く)。場面の期待は要件の文から独立に出せる振る舞いで書き、新実装の内部の名前・形を写さない(規則 2)。
 検討表は返す前に python3 scripts/check_bt_considered.py ${bat.battery_dir}/opponents/CONSIDERED.md --write を走らせて誤り 0 件にし、出力の最後の行を check_output に入れる(規則 9)。rootcause には ROOTCAUSE の path を入れる。**機械の検査(L-448。周ごとの監査役(場面)は無い)**: 返す前に「git diff --name-only HEAD」の出力の全行を changed_files に(1 行 1 要素。場面集の外のファイルがあれば台本が止める)、場面集の試験(tests/bt/battery/item_${item.id}/ と批評家の試験 tests/bt/critic/item_${item.id}/)を回した結果の末尾の行を test_tail に、全部通ったかを tests_passed に入れる(通っていなければ台本が止める。偽の申告は次の周の批評家が読む)。
 ${SCRUTINY_FIX}
 作業者はこの場面集を読めるが変えない。`, { label: `場面の直し:${item.id}#${n}`, phase: '要件の固定', schema: BAT2_SCHEMA, model: IMPL_MODEL, effort: 'high' })
@@ -195,8 +193,8 @@ function splitStops(item, stops) {
 // (item 4: 圧倒); the critic's stops no longer gate the pass except a patchwork one (L-433 場当たり) and a recount that
 // disagrees with the table maker (66-2). Unfixed stops are carried over, recorded verbatim, and repaired in the next
 // item's rounds (item 4 is the last). Item 0 keeps the old rule (it is carried as passed by args.passed_items). Pure: node --test.
-function passCandidate(item, okC, okS, stopsImpl, table, critic) {
-  if (!(okC && okS)) return { candidate: false, why: '審査員が同等以上でない' }
+function passCandidate(item, okS, stopsImpl, table, critic) {
+  if (!okS) return { candidate: false, why: '審査員が同等以上でない' }
   if (item.id === 0) return stopsImpl.length === 0 ? { candidate: true, why: '' } : { candidate: false, why: '実装の側の [止める] が残る(項目 0 の旧の規則)' }
   const patch = stopsImpl.filter(f => f.patchwork)
   if (patch.length) return { candidate: false, why: `場当たりの直しの [止める] ${patch.length} 件` }
@@ -238,7 +236,7 @@ async function runItem(item) {
   const cbchain = { ...bchain, ...((pre && pre.battery_chain) || {}) }  // L-424: 場面集 findings are counted apart from 実装 findings; same chain as the pre-worker audits
   // audit 63-1: the blind-judge loss streak carries across launches (委任文 §3「周回の数え方と止める条件」4) under
   // prior_rounds[id].loss_streak, written by the lead from the last history entry's lossStreak snapshot
-  const lossStreak = { current: 0, survey: 0, ...((prior.loss_streak && typeof prior.loss_streak === 'object') ? prior.loss_streak : {}) }
+  const lossStreak = { survey: 0, ...((prior.loss_streak && typeof prior.loss_streak === 'object') ? prior.loss_streak : {}) }
   let attempt = pre ? pre.attempt_offset : 0
   if (pre) history.push({ attempt, seeded: true, critic: { findings: pre.last_findings }, judges: pre.judges || {}, audit: null })
   const CAP = capOf(args.round_cap, item.id)  // I-013: the end bound (委任文 通過の判定「終わりの上限」); item 0 has none (L-433); L-454: per item
@@ -297,12 +295,12 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
     let t = (pre && pre.table && firstHere) ? pre.table : await agent(`${HEAD2}
 あなたは項目 ${item.id} の資料係(第 ${attempt} 周。作業者とは別の者)です。委任文 §3「比較の表」に従う。**文章を書かない。表はスクリプトの出力だけ。**
 1. 新実装の adapter を ${bat.battery_dir} に書く(新実装の公開された口だけを呼ぶ。新実装の本体は変えない)。
-2. ${bat.runner} で、新実装・当方の現状・調査結果の側(入れられた道具すべて)・試金石(${bat.mutant})を、それぞれ 2 回走らせる。
-3. 委任文 §3「比較の表」と「場面集の規則」3〜5 に従う(観点ごとにまとめ、観点ごとの一致の数を出す / 動かせた道具は全場面に通し、動かなかった場面は試したこととエラーと実測の時間を注記 / セルは正しさと再現の 2 欄 / 最も良い結果の順 = 正解と一致 > 対応なし > 不一致 > 結果なし、同じなら再現の欄で上下)。スクリプトで次の 6 つの表を ${d}/ に作る。行は 2 つだけで記号「A」「B」で伏せる。列 = 場面(観点ごとにまとめる)、セルは 2 つの欄(正しさ = 正解と一致 / 対応なし / 不一致(値)/ 結果なし、再現 = 2 回の実行で同じ / 2 回で違う(値)/ 結果なし)。調査結果の側は場面ごとに動かせた道具のうち最も良い結果を 1 行に寄せる(どの道具かは伏せる)。
-   current_1(A = 新実装、B = 当方の現状)/ current_2(A と B を入れ替え)/ survey_1(A = 新実装、B = 調査結果の側)/ survey_2(入れ替え)/ mutant_1(A = 新実装、B = 試金石)/ mutant_2(入れ替え)。
-   ファイル名は ${d}/表_<ランダムな 6 文字>.md にし、どの表が何かは表のファイルに書かない(返り値の tables と ${d}/materials/ の対応表に書く)。${d}/ に表_*.md がこの周の 6 枚のほかにあれば、前の起動のものなので ${d}/materials/stale/ に移し、移したことを commands に書く。
+2. ${bat.runner} で、新実装・調査結果の側(入れられた道具すべて)・試金石(${bat.mutant})を、それぞれ 2 回走らせる。
+3. 委任文 §3「比較の表」と「場面集の規則」3〜5 に従う(観点ごとにまとめ、観点ごとの一致の数を出す / 動かせた道具は全場面に通し、動かなかった場面は試したこととエラーと実測の時間を注記 / セルは正しさと再現の 2 欄 / 最も良い結果の順 = 正解と一致 > 対応なし > 不一致 > 結果なし、同じなら再現の欄で上下)。スクリプトで次の 4 つの表を ${d}/ に作る。行は 2 つだけで記号「A」「B」で伏せる。列 = 場面(観点ごとにまとめる)、セルは 2 つの欄(正しさ = 正解と一致 / 対応なし / 不一致(値)/ 結果なし、再現 = 2 回の実行で同じ / 2 回で違う(値)/ 結果なし)。調査結果の側は場面ごとに動かせた道具のうち最も良い結果を 1 行に寄せる(どの道具かは伏せる)。
+   survey_1(A = 新実装、B = 調査結果の側)/ survey_2(入れ替え)/ mutant_1(A = 新実装、B = 試金石)/ mutant_2(入れ替え)。(2026-09-26、L-470・L-474: 当方の現状の組 current_1 / current_2 は撤回)
+   ファイル名は ${d}/表_<ランダムな 6 文字>.md にし、どの表が何かは表のファイルに書かない(返り値の tables と ${d}/materials/ の対応表に書く)。${d}/ に表_*.md がこの周の 4 枚のほかにあれば、前の起動のものなので ${d}/materials/stale/ に移し、移したことを commands に書く。
 4. 対象ごとの場面集の実行の出力は ${d}/materials/runs/<対象の名>.tsv(2 回目の実行は ${d}/materials/runs_2/)に置く(監査 67-6: 批評家が同じ path から数え直す)。表を作るスクリプト・実行の記録・対応表・確認に打ったコマンドの出力は、全部 ${d}/materials/ にファイルで保存する(scratchpad だけに置かない)。表の注記に道具を特定できる具体(道具の名前・時刻など)を書かず、それは materials の記録に書く(委任文 §3「比較の表」)。
-5. 各組の 2 通りの表(current_1 と current_2 など)がバイト単位で同じかを md5sum で確かめ、出力を materials に保存し、identical に返す(同じなら委任文 §0 の L-422 でその組は同等)。
+5. 各組の 2 通りの表(survey_1 と survey_2 など)がバイト単位で同じかを md5sum で確かめ、出力を materials に保存し、identical に返す(同じなら委任文 §0 の L-422 でその組は同等)。
 6. 相手の道具の結果は、場面集の指紋(委任文 §3「相手の道具の結果の再利用」のコマンド)が前の周と同じなら前の周の materials の結果を使ってよい(使ったことと指紋を materials と notes に記録)。新実装と試金石は毎周走らせる。${SCRUTINY_TABLE}
 実データから出た数値は入れない。打ったコマンドを commands に返す。**通過の判定の入力(L-451・I-013)**: 新実装の「正解と一致」の数を ${d}/materials/runs/*.tsv から make_tables.py を使わずに数え直し(recount)、new_impl_correct に「一致の数/場面の数」(例 41/46)を、全場面が一致なら new_impl_all_correct=true、1 つでも外れれば false を入れる(表の集計の行と一致させる。申告は批評家が表で確かめる)。`,
       { label: `表:${item.id}#${attempt}`, phase: '比較資料', schema: TABLE_SCHEMA, model: IMPL_MODEL, effort: 'medium' })
@@ -335,7 +333,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
     if (attempt === 1) {
       // audit of the first table; on a [止める] the table maker is re-run ONCE with the findings (run 12, 2026-09-25:
       // item 1's adapter absolutised paths twice; the lead's bound = 1 retry, then escalate as before = I-013)
-      const tableAudit = (tt) => agent(`検査対象: 項目 ${item.id}「${item.title}」の最初の結果の表 ${Object.values(tt.tables).join(' / ')} と、表を作った資料係の記録(${JSON.stringify({ commands: tt.commands, adapters_changed: tt.adapters_changed, notes: tt.notes }).slice(0, 4000)})。場面集 ${bat.definitions} は作業者の前に監査を通っている(${batHist.length} 回)。委任文 ${DOC} §3「盲検の作り直し」「場面集の規則」「比較の表」と照らし、表が場面集の全場面に全員(当方の現状・調査結果の側の動かせた道具と再現・新実装)を通しているか、新実装の adapter が公開の口だけを公平に呼んでいるか、表に出所を示す語が残っていないか、断定と範囲を検査する。表が 6 枚そろっていなければ [止める]。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+      const tableAudit = (tt) => agent(`検査対象: 項目 ${item.id}「${item.title}」の最初の結果の表 ${Object.values(tt.tables).join(' / ')} と、表を作った資料係の記録(${JSON.stringify({ commands: tt.commands, adapters_changed: tt.adapters_changed, notes: tt.notes }).slice(0, 4000)})。場面集 ${bat.definitions} は作業者の前に監査を通っている(${batHist.length} 回)。委任文 ${DOC} §3「盲検の作り直し」「場面集の規則」「比較の表」と照らし、表が場面集の全場面に全員(調査結果の側の動かせた道具と再現・新実装)を通しているか、新実装の adapter が公開の口だけを公平に呼んでいるか、表に出所を示す語が残っていないか、断定と範囲を検査する。表が 4 枚そろっていなければ [止める]。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役(表):${item.id}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
             let batAudit = (pre && pre.table_audit && attempt === 1) ? pre.table_audit : await tableAudit(t)
       let batStops = batAudit ? batAudit.findings.filter(f => f.level === '止める') : [{ level: '止める', text: '監査役が返らなかった' }]
@@ -344,7 +342,7 @@ choice は行 A なら「左」、行 B なら「右」、表に示された結�
       if (pre && pre.table_audit_resolved && attempt === 1) { log(`項目 ${item.id}: 表の監査の [止める] はリードが解決済み(${pre.table_audit_resolved})`); batStops = [] }
       if (batStops.length) {
         const t2 = await agent(`${HEAD2}
-あなたは項目 ${item.id} の資料係(第 ${attempt} 周の作り直し。1 回だけ)です。最初の表 ${Object.values(t.tables).join(' / ')} に監査役が次の指摘を出した(逐語): ${JSON.stringify(batAudit ? batAudit.findings : batStops).slice(0, 8000)}。[止める] と [直す] を全部直してから、前の資料係と同じ手順(委任文 ${DOC} §3「比較の表」、場面集の規則 3〜5、対象ごとの実行の出力は ${d}/materials/runs/<対象の名>.tsv と runs_2/、2 通りの表の md5sum、資料係自身の数え直し)で 6 枚の表を作り直す。adapter は新実装の公開の口だけを呼び、runner が渡す root と paths をそのまま渡す(自分で絶対化・結合しない)。「結果なし」の注記には実際に試したことと出たエラーの文言を書く(定型文にしない)。直した点と根拠を notes に書く。実データから出た数値は入れない。
+あなたは項目 ${item.id} の資料係(第 ${attempt} 周の作り直し。1 回だけ)です。最初の表 ${Object.values(t.tables).join(' / ')} に監査役が次の指摘を出した(逐語): ${JSON.stringify(batAudit ? batAudit.findings : batStops).slice(0, 8000)}。[止める] と [直す] を全部直してから、前の資料係と同じ手順(委任文 ${DOC} §3「比較の表」、場面集の規則 3〜5、対象ごとの実行の出力は ${d}/materials/runs/<対象の名>.tsv と runs_2/、2 通りの表の md5sum、資料係自身の数え直し)で 4 枚の表を作り直す。adapter は新実装の公開の口だけを呼び、runner が渡す root と paths をそのまま渡す(自分で絶対化・結合しない)。「結果なし」の注記には実際に試したことと出たエラーの文言を書く(定型文にしない)。直した点と根拠を notes に書く。実データから出た数値は入れない。
 ${SCRUTINY_TABLE}`,
           { label: `表:${item.id}#${attempt}r`, phase: '比較資料', schema: TABLE_SCHEMA, model: IMPL_MODEL, effort: 'medium' })
         if (!t2) return { item, status: 'error', stage: 'table_retry', attempt, history }
@@ -360,7 +358,7 @@ ${SCRUTINY_TABLE}`,
     }
 
     // L-422: a group whose two tables are byte-identical is 'equal' and passes without judges
-    const eqC = !!t.identical.current, eqS = !!t.identical.survey
+    const eqS = !!t.identical.survey
     const c = await critic
     const stops = c ? c.findings.filter(f => f.level === '止める') : [{ id: 'critic-missing', level: '止める', text: '批評家が返らなかった', evidence: '', repeat_of: null, patchwork: false, target: '実装', fix_files: ['src/bot/bt/'] }]
     // L-441 (案 2): item 0 passes on the implementation-side [止める] only; its battery-side [止める] are repaired in
@@ -370,31 +368,30 @@ ${SCRUTINY_TABLE}`,
     // structure changed (the critic's structural_change_since_prev) and on the first round; other rounds carry the last
     // judged round's verdicts (judgedAt) — a pass always rests on this round's own judges
     const { structural: structNow, judgeNow } = judgeRound(attempt, c, stopsImpl)
-    let jc = [], jsv = [], judgedAt = attempt
+    let jsv = [], judgedAt = attempt
     if (judgeNow) {
-      const js = await Promise.all([...(eqC ? [] : trio('current')), ...(eqS ? [] : trio('survey'))])
-      jc = (eqC ? [] : js.slice(0, 3)).filter(Boolean); jsv = (eqS ? [] : js.slice(eqC ? 0 : 3)).filter(Boolean)
+      jsv = (await Promise.all(eqS ? [] : trio('survey'))).filter(Boolean)
     } else {
-      const lastJ = [...history].reverse().find(h => h.judges && ((h.judges.current || []).length || (h.judges.survey || []).length))
-      if (lastJ) { jc = lastJ.judges.current; jsv = lastJ.judges.survey; judgedAt = lastJ.attempt }
+      const lastJ = [...history].reverse().find(h => h.judges && (h.judges.survey || []).length)
+      if (lastJ) { jsv = lastJ.judges.survey; judgedAt = lastJ.attempt }
       log(`項目 ${item.id} 第 ${attempt} 周: 審査員は起こさない(実装の側の止める ${stopsImpl.length} 件・構造の変化なし)。第 ${judgedAt} 周の判定を使う(L-443)`)
     }
-    const winsC = jc.filter(j => j.new_chosen).length, winsS = jsv.filter(j => j.new_chosen).length
+    const winsS = jsv.filter(j => j.new_chosen).length
     // L-431/L-432: parts pass on 'equal or better' (the opponent must not have a majority); item 13 needs 圧倒 (L-407 D 案2)
-    const lossC = jc.filter(j => j.opp_chosen).length, lossS = jsv.filter(j => j.opp_chosen).length
+    const lossS = jsv.filter(j => j.opp_chosen).length
     const overwhelm = item.id === 4  // L-447: item 4 (統合と答え合わせ) carries the 圧倒 judgement (was item 13)
-    const okC = eqC || (jc.length === 3 && (overwhelm ? winsC >= 2 : lossC < 2)), okS = eqS || (jsv.length === 3 && (overwhelm ? winsS >= 2 : lossS < 2))
+    const okS = eqS || (jsv.length === 3 && (overwhelm ? winsS >= 2 : lossS < 2))  // 2026-09-26 (L-470 / L-474): the pair against 当方の現状 is withdrawn; the survey pair alone
     let audit = null
-    const cand = passCandidate(item, okC, okS, stopsImpl, t, c)  // L-451 / I-013 / 66-2
+    const cand = passCandidate(item, okS, stopsImpl, t, c)  // L-451 / I-013 / 66-2
     if (cand.candidate) {
-      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対現状 ${eqC ? '同等(表が左右同一 = L-422)' : winsC + '/3'}・対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify([...jc, ...jsv]).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。${item.id !== 0 ? `通過の判定(L-451・I-013): 場面集で新実装が全部正解(資料係の recount ${t.new_impl_correct}、批評家の数え直し ${c ? c.table_recount : '無し'})+ 審査員の同等以上${item.id === 4 ? '(圧倒)' : ''}。批評家の [止める] ${stopsImpl.length} 件(場当たり 0 件)は通過を止めず持ち越しとして記録し、次の項目の周で直す。監査役はその一覧が逐語で残るか、場当たりの見落としが無いかを読む。` : ''}${stopsBat.length ? `場面集の側の [止める] ${stopsBat.length} 件は、オーナー決定 L-441(「案2 実装の通過と場面集の直しを分ける」)により項目 0 の通過を止めず、通過のあと場面係が項目 1〜12 と並行して直す(台本の batteryFollowUp)。場面集の側の [止める] が残っていること自体はこの監査の [止める] の根拠にしない。**ただし、場面集の側とされた [止める] の 1 件ごとに、本文・根拠・fix_files を読み、直すべき物が実装(src/bot/bt/)なら付け違い = 通過の迂回として [止める] にする**(監査 58-3)。付け違いの候補(逐語): ${JSON.stringify(stopsBat.map(f => ({ id: f.id, target: f.target, fix_files: f.fix_files, text: f.text.slice(0, 600) }))).slice(0, 6000)}。リードはオーナーへの通過の報告にその件数と逐語を「並行して直しているもの」として書く。` : ''}round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
+      audit = await agent(`検査対象: 項目 ${item.id}「${item.title}」の作業者の報告(返り値の逐語: ${JSON.stringify(w).slice(0, 15000)})と、そこから引かれたファイル。組の判定: 対調査 ${eqS ? '同等(表が左右同一 = L-422)' : winsS + '/3'}(当方の現状の組は 2026-09-26、L-470・L-474 で撤回)。審査員の出力の逐語(この周。new_chosen = 新実装を選んだ、opp_chosen = 相手を選んだ): ${JSON.stringify(jsv).slice(0, 12000)}。批評家の出力の逐語: ${JSON.stringify(c ? c.findings : []).slice(0, 8000)}。${item.id !== 0 ? `通過の判定(L-451・I-013): 場面集で新実装が全部正解(資料係の recount ${t.new_impl_correct}、批評家の数え直し ${c ? c.table_recount : '無し'})+ 審査員の同等以上${item.id === 4 ? '(圧倒)' : ''}。批評家の [止める] ${stopsImpl.length} 件(場当たり 0 件)は通過を止めず持ち越しとして記録し、次の項目の周で直す。監査役はその一覧が逐語で残るか、場当たりの見落としが無いかを読む。` : ''}${stopsBat.length ? `場面集の側の [止める] ${stopsBat.length} 件は、オーナー決定 L-441(「案2 実装の通過と場面集の直しを分ける」)により項目 0 の通過を止めず、通過のあと場面係が項目 1〜12 と並行して直す(台本の batteryFollowUp)。場面集の側の [止める] が残っていること自体はこの監査の [止める] の根拠にしない。**ただし、場面集の側とされた [止める] の 1 件ごとに、本文・根拠・fix_files を読み、直すべき物が実装(src/bot/bt/)なら付け違い = 通過の迂回として [止める] にする**(監査 58-3)。付け違いの候補(逐語): ${JSON.stringify(stopsBat.map(f => ({ id: f.id, target: f.target, fix_files: f.fix_files, text: f.text.slice(0, 600) }))).slice(0, 6000)}。リードはオーナーへの通過の報告にその件数と逐語を「並行して直しているもの」として書く。` : ''}round_${attempt}/JUDGES.md・AUDIT.md・REPORT.md は Workflow の記録からリードが周の終わりに書き出す(この監査の時点では無いことがある。無いことは [止める] の根拠にしない。第 9 周の報告の監査の指摘 1)。委任文 ${DOC} §0 の表のオーナーの原文と照らす。指摘は [止める] / [直す] / [聞く] の印つきで返す。`,
         { label: `監査役:${item.id}#${attempt}`, phase: '批評', schema: AUDIT_SCHEMA, agentType: 'owner-auditor', model: MODEL })
     }
     const auditStops = audit ? audit.findings.filter(f => f.level === '止める') : []
-    history.push({ attempt, worker: w, table: t, critic: c, audit, judges: { current: jc, survey: jsv }, judgedAt, winsC, winsS, lossC, lossS, eqC, eqS, midAudits, lossStreak: { ...lossStreak } })
+    history.push({ attempt, worker: w, table: t, critic: c, audit, judges: { survey: jsv }, judgedAt, winsS, lossS, eqS, midAudits, lossStreak: { ...lossStreak } })
     const pass = audit !== null && auditStops.length === 0
     if (!cand.candidate) log(`項目 ${item.id} 第 ${attempt} 周: 通過の候補でない = ${cand.why}`)
-    log(`項目 ${item.id} 第 ${attempt} 周: 対現状 ${eqC ? '同等(表が同一)' : `新 ${winsC}・相手 ${lossC}・同等 ${jc.length - winsC - lossC}`}・対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件(実装 ${stopsImpl.length}・場面集 ${stopsBat.length})・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
+    log(`項目 ${item.id} 第 ${attempt} 周: 対調査 ${eqS ? '同等(表が同一)' : `新 ${winsS}・相手 ${lossS}・同等 ${jsv.length - winsS - lossS}`}・批評の止める ${stops.length} 件(実装 ${stopsImpl.length}・場面集 ${stopsBat.length})・監査役の止める ${audit ? auditStops.length : '未実施'} → ${pass ? '通過' : '未達'}`)
     if (pass) return { item, status: 'pass', attempts: attempt, req, bat, history, openBattery: c ? c.findings.filter(f => f.target === '場面集' && f.level !== '示唆') : [], carriedImpl: c ? c.findings : [], bchain: cbchain }  // audit 67-9: every level is carried (止める・直す・示唆), not only the stops
 
     // counting rules (委任文 §3 根本的解決)
@@ -408,10 +405,10 @@ ${SCRUTINY_TABLE}`,
       if (ch[f.id] >= 3) repeated = f
     }
     // audit 62-1: a loss is counted only on a round whose judges actually sat; a carried-over verdict is not a new judgement
-    if (judgeNow) { lossStreak.current = okC ? 0 : lossStreak.current + 1; lossStreak.survey = okS ? 0 : lossStreak.survey + 1 }
+    if (judgeNow) { lossStreak.survey = okS ? 0 : lossStreak.survey + 1 }
     history[history.length - 1].lossStreak = { ...lossStreak }  // the snapshot the lead carries into the next launch
     if (repeated) return { item, status: 'escalate', reason: `同じ [止める] が 3 周続いた${item.id === 0 ? '(項目 0: 未達ではなくリードへの戻し = L-436)' : ''}: ${repeated.text}`, attempts: attempt, req, history }
-    if (lossStreak.current >= 3 || lossStreak.survey >= 3) return { item, status: 'escalate', reason: `盲検で 3 周続けて負けた(対現状 ${lossStreak.current}・対調査 ${lossStreak.survey})`, attempts: attempt, req, history }
+    if (lossStreak.survey >= 3) return { item, status: 'escalate', reason: `盲検で 3 周続けて負けた(対調査 ${lossStreak.survey})`, attempts: attempt, req, history }
   }
   return { item, status: 'escalate', reason: `周回の上限 ${CAP} に達した(I-013: 残りは持ち越し)`, attempts: attempt, req, history }
 }
@@ -456,7 +453,7 @@ function brief(r) {
   return { id: r.item.id, title: r.item.title, status: r.status, reason: r.reason || null, attempts: r.attempts || 0, carried_impl: r.carriedImpl || null,
     req: r.req ? r.req.path : null,
     battery: r.batteryHistory ? r.batteryHistory.map(h => ({ n: h.n, stops: h.findings.filter(f => f.level === '止める').map(f => f.text.slice(0, 300)) })) : null,
-    last: last ? { winsC: last.winsC, winsS: last.winsS,
+    last: last ? { winsS: last.winsS,
       findings: last.critic ? last.critic.findings : null,
       // audit 68-2: an item passed without a critic must say so in the final return value, by machine
       critic_skipped: last.critic ? !!last.critic.skipped : null, recount: last.critic ? (last.critic.table_recount || null) : null,
@@ -499,7 +496,7 @@ midRes.forEach((r, i) => { results[mid[i].id] = r || { item: mid[i], status: 'er
 const blocked = Object.values(results).filter(r => r.status !== 'pass')
 if (blocked.length) return finish({ stopped_at: 'parallel', results: Object.values(results).map(brief) })
 
-// stage 3: item 4 統合と答え合わせ (L-447: 参照実装 + 統合 + 旧エンジンとの互換; 圧倒の判定)
+// stage 3: item 4 統合と答え合わせ (L-447: 参照実装 + 統合 + 研究スクリプトの呼び口 (L-470 / L-474: the old-engine axis withdrawn); 圧倒の判定)
 // audit 66-3: the stops items 1..3 carried over (L-451 / I-013) reach item 4's worker and critic in this launch
 const carried = ITEMS.filter(it => it.id >= 1 && it.id <= 3).map(it => ({ item: it.id, findings: (results[it.id] || {}).carriedImpl || [] })).filter(x => x.findings.length)  // 67-9: all levels
 if (carried.length) {

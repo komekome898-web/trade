@@ -7,7 +7,7 @@ The grid is the options' own space, not the engine's branches:
 execution {taker, maker} x allow_short {no, yes} x protective exit {none, sl,
 tp, sl+tp, maker_tp, sl+maker_tp, wick} x max_hold_bars {None, 3} x
 entry_sides {both, long, short} x entry_mask {none, random} x daily carry
-{0, +0.5, -0.3} = 1008 cells (tests/bt/compat/golden/compat_golden_scenes.py `grid()`),
+{0, +0.5, -0.3} = 1008 cells (tests/bt/item_4/i4_option_grid.py `grid()`),
 each with its own seeded bars (integer ticks of 0.5, gaps of 0 / +-1 / +-4
 ticks) and a seeded signal script (HOLD / BUY / SELL / CLOSE).
 
@@ -27,7 +27,7 @@ import pytest
 
 import i4w_drive as drive
 import i4_judge as J
-import compat_golden_scenes as G
+import i4_option_grid as G
 
 SPEC = {"fills": ["bar", "side", "price", "size"], "pnls": True, "equity": True, "missed_fills": True}
 # metrics are not compared here: the independent reference has none (its SPEC.md §8-4); the engine's metrics are

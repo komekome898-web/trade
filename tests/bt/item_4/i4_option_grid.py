@@ -1,18 +1,19 @@
-"""Seeded scenes for the golden files of the old bar engine (item 4, old item 14).
+"""Seeded scenes on the option grid of the bar model (item 4): the input space
+of tests/bt/item_4's grids (engine vs the independent reference; the bar model
+on the core).
 
 Every scene is made from (seed, grid cell) by `make_scene` with the standard
-library's random only, and its inputs are also written into the golden file,
-so a test can check that the generator still makes the same inputs.
+library's random only, so a run is reproducible from the seed.
 
-The grid (every combination, 2 x 2 x 7 x 2 x 3 x 2 x 3 = 1008 cells) is built from the old engine's
+The grid (every combination, 2 x 2 x 7 x 2 x 3 x 2 x 3 = 1008 cells) is built from the bar model's
 options, not from any engine's branches: execution x allow_short x
 protective exit x max_hold_bars x entry_sides x entry_mask x swap sign.
 Not in the grid (named here, per the adversarial-test rule): take_profit_pct
-together with maker_tp (the combination the old engine allows is covered by
-"sl+tp" and "maker_tp" separately), costs as a grid axis (each cell draws
-its costs from COST_SETS by its seed), stop_window_bars and maker_timeout_bars
-as axes (drawn 1..4 by the seed), bar counts other than N_BARS (edge scenes:
-0 bars, 1 bar, min_history >= bars are in EDGE_SCENES).
+together with maker_tp (covered by "sl+tp" and "maker_tp" separately), costs
+as a grid axis (each cell draws its costs from COST_SETS by its seed),
+stop_window_bars and maker_timeout_bars as axes (drawn 1..4 by the seed), bar
+counts other than N_BARS (edge scenes: 0 bars, 1 bar, min_history >= bars are
+in EDGE_SCENES).
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ import itertools
 import random
 
 N_BARS = 40
-GOLDEN_SEED = 20260926
+GRID_SEED = 20260926
 EXECUTIONS = ("taker", "maker")
 SHORTS = (False, True)
 PROTECT = ("none", "sl", "tp", "sl+tp", "maker_tp", "sl+maker_tp", "wick")
@@ -81,7 +82,7 @@ def make_scene(seed: int, cell) -> dict:
 def scenes():
     out = []
     for k, cell in enumerate(grid()):
-        out.append(make_scene(GOLDEN_SEED + k, cell))
+        out.append(make_scene(GRID_SEED + k, cell))
     return out
 
 

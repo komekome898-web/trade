@@ -246,13 +246,13 @@ def test_stable_view_keeps_equality_of_run_ids():
 # --- the runner ----------------------------------------------------------------------------------------
 def test_runner_runs_twice_and_records_the_cells(tmp_path):
     out = tmp_path / "cur.tsv"
-    r = subprocess.run([sys.executable, str(HERE / "run_battery.py"), "--target", "current_impl", "--out", str(out),
+    r = subprocess.run([sys.executable, str(HERE / "run_battery.py"), "--target", "new_impl", "--out", str(out),
                         "--scenes", "v14-dd-pct,a6-sealed-token,v1-split-utc"], cwd=str(REPO), capture_output=True, text=True, timeout=300)
     assert r.returncode == 0, r.stderr[-800:]
     rows = {x["scene"]: x for x in csv.DictReader(open(out, encoding="utf-8"), delimiter="\t")}
+    assert set(rows) == {"v14-dd-pct", "a6-sealed-token", "v1-split-utc"}
     assert rows["v14-dd-pct"]["class_1"] == rows["v14-dd-pct"]["class_2"] == "正解と一致"
     assert rows["a6-sealed-token"]["class_1"] == "正解と一致"
-    assert rows["v1-split-utc"]["class_1"] == "結果なし"
     assert all(x["repro"] in ("2 回の実行で同じ", "結果なし") for x in rows.values())
 
 

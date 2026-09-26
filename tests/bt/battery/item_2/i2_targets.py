@@ -14,7 +14,6 @@ VENV_ROOT = os.environ.get(
     "I2_VENV_ROOT", "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs")
 
 TARGETS: dict[str, dict] = {
-    "current_impl": {"module": "adapters/current_impl.py"},
     "new_impl": {"module": "adapters/new_impl.py"},
     "mutant": {"module": "mutant.py"},
 }

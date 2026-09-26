@@ -13,7 +13,6 @@ x what is pending for bar b + N {nothing, a signal the same way as the position,
 at bar 3's open; PnL = (open - 100) x 30 x direction; no fill after it.
 Not in the grid: the structural stop on the same bar (R-O1 ① comes first; pinned by the scene set), costs other
 than zero (R-C1 is the same formula for every taker close), N other than 2.
-The legacy rule set is not tested here (it keeps the old order; tests/bt/compat holds it bit for bit).
 """
 from __future__ import annotations
 

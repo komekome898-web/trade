@@ -1,7 +1,8 @@
-"""The bar backtest model of the new engine (item 4, old item 14: 「旧
-`src/bot/backtest/` の全挙動 ... を新エンジンの選べる模型として再現する」).
+"""The bar backtest model of the new engine (item 4): the stated rules of
+tests/bt/battery/item_4/DEFINITIONS.md 「足の模型の仕様」 (R-T, R-C, R-A, R-M,
+R-P, R-X, R-W, R-H, R-E, R-S, R-O, R-V), running ON the core.
 
-The bar model runs ON the core (`bot.bt.core.CoreEngine`): the core drives
+The bar model runs on the core (`bot.bt.core.CoreEngine`): the core drives
 time, delivers the bars to the strategy (a bar is received at its close, so a
 decision at bar i can only use bars 0..i), carries the strategy's orders to
 the venue, prices every fill through the run's cost model and hands every fill
@@ -24,23 +25,17 @@ one instant: venue market data, then arriving requests, then deliveries,
 then notices, then timers):
 
   * bar i reaches the venue at its close. The venue closes the books of bar
-    i-1 (its equity), accrues the carry, and decides the ONE thing bar i does
-    to the position. The two rule sets order it differently (`signal_at_open`):
-      legacy (the old engine's order): structural wick stop (on bar i-1's
-        close, filled at bar i's open) / fixed stop, take-profit, maker
-        take-profit (on bar i's range) / time exit (at bar i's open) / the
-        pending signal (taker: at bar i's open; maker: its limit if bar i
-        trades strictly through it). Any exit drops the pending signal.
-      spec (the time order inside the bar, R-T1 / R-O1: a bar's open comes
-        before the rest of its range): AT THE OPEN -- the structural wick
-        stop, then the time exit (both decided by information older than bar
-        i; they drop the pending signal or limit, R-W3 / R-H2; the time exit
-        is taken at the open even when bar i's range later reaches the stop:
-        R-H3 orders the exits INSIDE the range, after the open -- finishing
-        delegation i4-r2-02), else the pending taker signal (R-T1);
-        THEN, only if the position lives on through the open (no signal, or
-        a signal the same way as the position), bar i's RANGE -- the fixed
-        stop, take-profit, maker take-profit, then a pending maker limit.
+    i-1 (its equity), accrues the carry (R-S1), and decides the ONE thing bar
+    i does to the position, in the time order inside the bar (R-O1: a bar's
+    open comes before the rest of its range):
+      AT THE OPEN -- the structural wick stop (R-W3), then the time exit
+        (R-H1; both decided by information older than bar i; they drop the
+        pending signal or limit, R-W3 / R-H2), else the pending taker signal
+        (R-T1);
+      THEN, only if the position lives on through the open (no signal, or a
+        signal the same way as the position), bar i's RANGE -- the fixed stop
+        (R-P3), the take-profit (R-P4), the maker take-profit (R-X1), then a
+        pending maker limit (R-M1). Never on the entry bar (R-P2 / R-X2).
     The fill is a FORCED order the account socket returns (the venue acting
     on its own; core FORCED_ID_PREFIX), so every fill is a core fill with its
     fee from the cost model.
@@ -50,28 +45,26 @@ then notices, then timers):
     the venue acknowledges it and keeps it pending (a signal order is an
     instruction: it is never filled itself; it ends as Canceled with the
     reason it ended: executed / no_action / entry_filtered / dropped_by_exit
-    / timeout / replaced).
+    / timeout / replaced / kept_older).
 
-Two rule sets are named (`RULES`); every choice is a field of `BarRules`:
+Points of the rules stated here (each with its rule):
+  * a maker entry signal whose bar's entry mask or entry sides block the entry
+    places no limit and counts no missed fill (R-E4 / R-E5); a maker signal
+    the same way as the pending limit keeps the old limit and its lifetime
+    (R-M6 / R-M7);
+  * the stop / take-profit levels are computed and compared on the written
+    decimal values of the entry price and the percentage (R-X1 「水準は書かれた
+    10 進の値どおりに比べる」);
+  * the Sharpe ratio is annualised by the bar frequency (M-5: 365 * 86400 /
+    bar seconds);
+  * the carry is charged for any non-zero daily rate (R-S1: the formula, no
+    sign condition);
+  * "not used" is None; a rate or a bar count <= 0 is refused, never read as
+    "off" (R-V2 / R-V4).
 
-  legacy   the old engine's computation, bit for bit (tests/bt/compat/ and the
-           golden files hold the proof).
-  spec     the stated rules (tests/bt/battery/item_4/DEFINITIONS.md
-           「足の模型の仕様」): a signal pending for bar i's open acts at the
-           open, before bar i's range (R-T1); the time exit is taken at the
-           open of bar b + N, before anything of that bar's range (R-O1); a
-           maker signal whose bar's entry mask is False places no limit and
-           counts no missed fill, and a maker signal the same way as the
-           pending limit leaves the old limit in place (finishing delegation
-           i4-r2-08: the lead's two values); the
-           stop / take-profit levels are computed and compared on the written
-           decimal values of the entry price and the percentage; the Sharpe
-           ratio is annualised by the bar frequency (365 * 86400 / bar
-           seconds); the carry is charged for any non-zero daily rate (the
-           old engine skipped a negative rate).
-
-`run_bars(bars, decide, options, rules)` runs one rule set; `BarOptions` has
-no defaults (every option is stated by the caller).
+There is ONE rule set, named "spec" (`SPEC`; `RULES` lists it). `run_bars(bars,
+decide, options, rules)` takes that name (a caller states the rule set it asks
+for); `BarOptions` has no defaults (every option is stated by the caller).
 """
 from __future__ import annotations
 
@@ -93,63 +86,28 @@ SIGNALS = ("BUY", "SELL", "CLOSE")
 # CLOSE signal). Its side is the signal's (BUY -> buy, SELL -> sell); its size (1.0) is nominal: the venue sizes the
 # fill (order_notional / price to open, the position to close).
 SIGNAL_ORDER_TYPES = ("signal_market", "signal_limit", "signal_limit_close")
-LEGACY_PERIODS_PER_YEAR = 365 * 24 * 60  # the old engine's fixed annualisation (1-minute bars)
+SECONDS_PER_YEAR = 365 * 86400  # M-5: periods per year = SECONDS_PER_YEAR / bar seconds
 
 
 class BarModelError(ValueError):
-    """The bar model refuses an option or an input (a ValueError, as the old
-    engine's refusals were)."""
+    """The bar model refuses an option or an input (a ValueError, as the
+    compatibility mouth's refusals are)."""
 
 
-# --------------------------------------------------------------------------- the rule sets
-@dataclass(frozen=True)
-class BarRules:
-    name: str
-    tp_before_time_exit: bool  # on the time-exit bar, may a take-profit fill before the time exit?
-    level_arithmetic: str  # "binary": float products; "decimal": the written decimal values
-    sharpe_periods: str  # "fixed_525600" | "bar_frequency"
-    negative_carry: str  # "skip" (old engine) | "charge"
-    signal_at_open: bool  # does a pending taker signal act at the bar's open, before the bar's range exits?
-    time_exit_at_open: bool  # is the time exit taken at bar b+N's open, before that bar's range (R-O1)?
-    maker_mask_at_signal: bool  # does a maker entry signal on a masked-out bar place no limit (and count no miss)?
-    maker_same_side_keeps: bool  # does a maker signal the same way as the pending limit keep the old limit?
-    refuse_non_positive: bool  # are rates / bar counts <= 0 refused (None is "not used", R-V2 / R-V4)?
-
-    def __post_init__(self) -> None:
-        if self.level_arithmetic not in ("binary", "decimal"):
-            raise BarModelError(f"level_arithmetic must be binary or decimal, got {self.level_arithmetic!r}")
-        if self.sharpe_periods not in ("fixed_525600", "bar_frequency"):
-            raise BarModelError(f"sharpe_periods must be fixed_525600 or bar_frequency, got {self.sharpe_periods!r}")
-        if self.negative_carry not in ("skip", "charge"):
-            raise BarModelError(f"negative_carry must be skip or charge, got {self.negative_carry!r}")
-        if type(self.tp_before_time_exit) is not bool:
-            raise BarModelError("tp_before_time_exit must be a bool")
-        for name in ("signal_at_open", "time_exit_at_open", "maker_mask_at_signal", "maker_same_side_keeps",
-                     "refuse_non_positive"):
-            if type(getattr(self, name)) is not bool:
-                raise BarModelError(f"{name} must be a bool")
-
-    def periods_per_year(self, bar_seconds: float) -> float:
-        if self.sharpe_periods == "fixed_525600":
-            return LEGACY_PERIODS_PER_YEAR
-        return 365 * 86400 / bar_seconds
+# --------------------------------------------------------------------------- the rule set
+SPEC = "spec"  # the stated rules of the scene set: the one rule set of this model
+RULES = (SPEC,)
 
 
-LEGACY = BarRules("legacy", tp_before_time_exit=True, level_arithmetic="binary", sharpe_periods="fixed_525600",
-                  negative_carry="skip", signal_at_open=False, time_exit_at_open=False, maker_mask_at_signal=False,
-                  maker_same_side_keeps=False, refuse_non_positive=False)
-SPEC = BarRules("spec", tp_before_time_exit=False, level_arithmetic="decimal", sharpe_periods="bar_frequency",
-                negative_carry="charge", signal_at_open=True, time_exit_at_open=True, maker_mask_at_signal=True,
-                maker_same_side_keeps=True, refuse_non_positive=True)
-RULES = {"legacy": LEGACY, "spec": SPEC}
+def rules_of(name: Any) -> str:
+    if name in RULES:
+        return name
+    raise BarModelError(f"rules must be one of {list(RULES)}, got {name!r}")
 
 
-def rules_of(name_or_rules: Any) -> BarRules:
-    if isinstance(name_or_rules, BarRules):
-        return name_or_rules
-    if type(name_or_rules) is str and name_or_rules in RULES:
-        return RULES[name_or_rules]
-    raise BarModelError(f"rules must be one of {sorted(RULES)} or a BarRules, got {name_or_rules!r}")
+def periods_per_year(bar_seconds: float) -> float:
+    """M-5: the Sharpe ratio is annualised by the bar frequency."""
+    return SECONDS_PER_YEAR / bar_seconds
 
 
 # --------------------------------------------------------------------------- options
@@ -198,7 +156,7 @@ class BarOptions:
     stop_window_bars: Optional[int]
 
     def check(self, n_bars: int) -> None:
-        """The option checks (the old engine's refusals, in its order)."""
+        """The option checks (R-V1 .. R-V4 and the option vocabulary)."""
         if self.execution not in EXECUTIONS:
             raise BarModelError(f"unknown execution model: {self.execution}")
         if self.max_hold_bars is not None and self.max_hold_bars < 1:
@@ -208,14 +166,14 @@ class BarOptions:
         if self.stop_mode == "wick_invalidation":
             if self.stop_window_bars is None or self.stop_window_bars < 1:
                 raise BarModelError('stop_mode="wick_invalidation" requires stop_window_bars >= 1')
-            if self.stop_loss_pct is not None:
+            if self.stop_loss_pct is not None:  # R-W4: the two protective stops never stack
                 raise BarModelError('stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None')
         elif self.stop_window_bars is not None:
             raise BarModelError('stop_window_bars requires stop_mode="wick_invalidation"')
         if self.exit_execution not in EXIT_EXECUTIONS:
             raise BarModelError(f"unknown exit execution model: {self.exit_execution}")
         if self.exit_execution == "maker_tp":
-            if self.maker_tp_pct is None or self.maker_tp_pct <= 0:
+            if self.maker_tp_pct is None or self.maker_tp_pct <= 0:  # R-X3
                 raise BarModelError('exit_execution="maker_tp" requires maker_tp_pct > 0')
         elif self.maker_tp_pct is not None:
             raise BarModelError('maker_tp_pct requires exit_execution="maker_tp"')
@@ -223,6 +181,13 @@ class BarOptions:
             raise BarModelError(f"unknown entry_sides: {self.entry_sides}")
         if self.entry_mask is not None and len(self.entry_mask) != n_bars:
             raise BarModelError(f"entry_mask length ({len(self.entry_mask)},) != number of candles {n_bars}")
+        # R-V2 / R-V4: "not used" is None; 0 or less is refused, never read as "off"
+        for name in ("stop_loss_pct", "take_profit_pct", "maker_tp_pct", "max_hold_bars", "stop_window_bars"):
+            v = getattr(self, name)
+            if v is not None and v <= 0:
+                raise BarModelError(f"{name} must be > 0 or None (None = not used; R-V2), got {v!r}")
+        if self.maker_timeout_bars < 1:
+            raise BarModelError(f"maker_timeout_bars must be >= 1 (R-V4), got {self.maker_timeout_bars!r}")
 
 
 def options_from_mapping(m: dict) -> BarOptions:
@@ -252,26 +217,22 @@ def _dec(x: float) -> Decimal:
 
 
 class _Level:
-    """A protective level: its float value (for fill prices) and how it is
-    compared with a bar's price (binary floats or the written decimals)."""
+    """A protective level (R-P1 / R-X1): its float value (for fill prices) and
+    its comparison with a bar's price on the written decimal values."""
     __slots__ = ("value", "_d")
 
-    def __init__(self, entry: float, pct: float, up: bool, decimal: bool) -> None:
-        if decimal:
-            with localcontext() as ctx:
-                ctx.prec = 60
-                d = _dec(entry) * ((Decimal(1) + _dec(pct) / 100) if up else (Decimal(1) - _dec(pct) / 100))
-            self._d = d
-            self.value = float(d)
-        else:
-            self._d = None
-            self.value = entry * (1 + pct / 100) if up else entry * (1 - pct / 100)
+    def __init__(self, entry: float, pct: float, up: bool) -> None:
+        with localcontext() as ctx:
+            ctx.prec = 60
+            d = _dec(entry) * ((Decimal(1) + _dec(pct) / 100) if up else (Decimal(1) - _dec(pct) / 100))
+        self._d = d
+        self.value = float(d)
 
     def lt(self, price: float) -> bool:  # level < price
-        return self.value < price if self._d is None else self._d < _dec(price)
+        return self._d < _dec(price)
 
     def gt(self, price: float) -> bool:  # level > price
-        return self.value > price if self._d is None else self._d > _dec(price)
+        return self._d > _dec(price)
 
     def le(self, price: float) -> bool:
         return not self.gt(price)
@@ -303,9 +264,8 @@ class _Pending:
 class BarVenue:
     """The bar venue's rules: FillModel + Account sockets of the core."""
 
-    def __init__(self, options: BarOptions, rules: BarRules) -> None:
+    def __init__(self, options: BarOptions) -> None:
         self.o = options
-        self.r = rules
         self.costs = options.costs
         # market history the venue has seen (never ahead of the bar it handles)
         self.opens: list[float] = []
@@ -332,15 +292,15 @@ class BarVenue:
         self._n_forced = 0
         self._finished = False
         self._booking: Optional[_Plan] = None
-        d = options.swap_daily_pct / 100 * (options.bar_seconds / 86400.0)
-        self.swap_per_bar = d
+        self.swap_per_bar = options.swap_daily_pct / 100 * (options.bar_seconds / 86400.0)  # R-S1
 
-    # ------------------------------------------------------------ helpers (the old engine's rules)
+    # ------------------------------------------------------------ helpers
     @property
     def i(self) -> int:
         return len(self.closes) - 1
 
     def _entry_ok(self, decision_bar: int, side: str) -> bool:
+        """R-E1 / R-E2: the entry sides and the mask of the DECISION bar; never consulted for a close (R-E3)."""
         if self.o.entry_sides == "long" and side == "SELL":
             return False
         if self.o.entry_sides == "short" and side == "BUY":
@@ -355,7 +315,8 @@ class BarVenue:
         return self.position > 0 or (self.position == 0 and self.o.allow_short)
 
     def _execute_plan(self, side: str, price: float, liquidity: str, decision_bar: int) -> Optional[_Plan]:
-        """What executing `side` at `price` does now (the old engine's execute())."""
+        """What executing `side` at `price` does now (R-T3 / R-T4): a BUY covers a short or opens a long; a SELL
+        closes a long or opens a short when shorts are allowed; an opposite signal only closes (no re-entry)."""
         if side == "BUY":
             if self.position < 0:
                 return _Plan("close", "buy", price, abs(self.position), liquidity, "signal")
@@ -369,6 +330,7 @@ class BarVenue:
         return None
 
     def _equity_now(self) -> float:
+        """R-A4: the equity at the close of the bar being handled."""
         i = self.i
         direction = 1.0 if self.position >= 0 else -1.0
         unrealized = (self.closes[i] - self.entry_price) * abs(self.position) * direction - self.entry_cost \
@@ -396,13 +358,14 @@ class BarVenue:
         plan: Optional[_Plan] = None
         o, c = self.o, self.costs
 
-        # 0) carry on any open position, per bar
-        if self.position != 0.0 and (self.swap_per_bar > 0 or (self.r.negative_carry == "charge" and self.swap_per_bar != 0)):
+        # 0) carry on any open position, per bar (R-S1: |size| x the previous close x the per-bar rate)
+        if self.position != 0.0 and self.swap_per_bar != 0:
             carry = abs(self.position) * self.closes[i - 1 if i > 0 else 0] * self.swap_per_bar
             self.entry_cost += carry
             self.fees_total += carry
 
-        # 0.4) structural wick stop: breach on bar i-1's close, filled at bar i's open
+        # 1) AT THE OPEN, first: the structural wick stop (R-W2 / R-W3): a breach is bar i-1's close beyond the
+        #    frozen level; the exit is bar i's open with taker costs
         if self.wick_level is not None and self.position != 0.0 and i > self.entry_bar:
             long = self.position > 0
             breached = self.closes[i - 1] < self.wick_level if long else self.closes[i - 1] > self.wick_level
@@ -411,20 +374,20 @@ class BarVenue:
                 price = c.sell_price(ref) if long else c.buy_price(ref)
                 plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "wick_stop")
 
+        # 2) AT THE OPEN, second: the time exit (R-H1 / R-O1): the position filled at bar b is closed at the open
+        #    of bar b + N, before anything of bar i's range; it drops the pending signal or limit (R-H2)
         time_due = (o.max_hold_bars is not None and self.position != 0.0 and i - self.entry_bar >= o.max_hold_bars)
-        # 0.42) spec (time_exit_at_open, R-O1 / R-H1): the time exit is an event of bar i's OPEN, so it comes before
-        # anything of bar i's range; it drops the pending signal or limit (R-H2, below: plan is not None)
-        if self.r.time_exit_at_open and plan is None and time_due:
+        if plan is None and time_due:
             ref = self.opens[i]
             long = self.position > 0
             price = c.sell_price(ref) if long else c.buy_price(ref)
             plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "time_exit")
         mtp_pct = o.maker_tp_pct if o.exit_execution == "maker_tp" else None
-        # 0.45) spec (signal_at_open): the pending taker signal acts at bar i's open, before bar i's range. Not when
-        # an exit decided by older information (the wick stop above, the time exit) takes the open: those drop it.
+
+        # 3) AT THE OPEN, third: the pending taker signal (R-T1) acts at bar i's open, before bar i's range. Not
+        #    when an exit decided by older information took the open (above): those drop it.
         signal_done = False
-        if self.r.signal_at_open and plan is None and not time_due and o.execution == "taker" \
-                and self.pending_taker is not None and i > 0:
+        if plan is None and o.execution == "taker" and self.pending_taker is not None and i > 0:
             p = self.pending_taker
             ref = self.opens[i]
             price = c.buy_price(ref) if p.side == "BUY" else c.sell_price(ref)
@@ -432,24 +395,21 @@ class BarVenue:
             reports.append(Canceled(p.coid, "executed" if plan is not None else "no_action"))
             self.pending_taker = None
             signal_done = True
-        # 0.5) fixed stop / take-profit / maker take-profit, intrabar; the stop first. After an executed signal
-        # (spec) the position was closed at the open or opened at this bar (entry bar: no range exit, R-P2).
+
+        # 4) THE RANGE: the fixed stop (R-P3), the take-profit (R-P4), the maker take-profit (R-X1), the stop first
+        #    (R-O1); never on the entry bar (R-P2 / R-X2), never after the open closed the position
         if plan is None and self.position != 0.0 and i > 0 and i > self.entry_bar \
                 and (o.stop_loss_pct or o.take_profit_pct or mtp_pct):
             long = self.position > 0
-            dec = self.r.level_arithmetic == "decimal"
-            sl = _Level(self.entry_price, o.stop_loss_pct, not long, dec) if o.stop_loss_pct else None
-            tp = _Level(self.entry_price, o.take_profit_pct, long, dec) if o.take_profit_pct else None
-            mtp = _Level(self.entry_price, mtp_pct, long, dec) if mtp_pct else None
-            if time_due and not self.r.tp_before_time_exit:
-                tp = mtp = None  # the stated rule: on the time-exit bar only the stop comes first
+            sl = _Level(self.entry_price, o.stop_loss_pct, not long) if o.stop_loss_pct else None
+            tp = _Level(self.entry_price, o.take_profit_pct, long) if o.take_profit_pct else None
+            mtp = _Level(self.entry_price, mtp_pct, long) if mtp_pct else None
             lo, hi, op = self.lows[i], self.highs[i], self.opens[i]
-            sl_hit = sl is not None and (sl.ge(lo) if long else sl.le(hi))
-            tp_hit = tp is not None and (tp.lt(hi) if long else tp.gt(lo))
-            mtp_hit = mtp is not None and (mtp.lt(hi) if long else mtp.gt(lo))
+            sl_hit = sl is not None and (sl.ge(lo) if long else sl.le(hi))  # R-P3: the range reaches the level
+            tp_hit = tp is not None and (tp.lt(hi) if long else tp.gt(lo))  # R-P4: strictly through
+            mtp_hit = mtp is not None and (mtp.lt(hi) if long else mtp.gt(lo))  # R-X1: strictly through
             if sl_hit:
-                # min(open, level) for a long, max(open, level) for a short (Python's min / max:
-                # the level is taken only when strictly beyond the open)
+                # R-P3: the reference price is min(open, level) for a long, max(open, level) for a short
                 if long:
                     price = c.sell_price(sl.value if sl.lt(op) else op)
                 else:
@@ -460,44 +420,29 @@ class BarVenue:
             elif mtp_hit:
                 plan = _Plan("close", "sell" if long else "buy", mtp.value, abs(self.position), "maker", "maker_tp")
 
-        # 0.7) time exit at bar i's open
-        if plan is None and time_due:
-            ref = self.opens[i]
-            long = self.position > 0
-            price = c.sell_price(ref) if long else c.buy_price(ref)
-            plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "time_exit")
-
         if signal_done:
-            pass  # spec: the taker signal was consumed at the open (executed or no_action); a range exit may follow
+            pass  # the taker signal was consumed at the open (executed or no_action); a range exit may follow
         elif plan is not None:
-            # an exit drops whatever signal was pending for this bar
+            # an exit drops whatever signal was pending for this bar (R-W3 / R-H2 / R-M5: not a missed fill)
             for p in (self.pending_taker, self.pending_limit):
                 if p is not None:
                     reports.append(Canceled(p.coid, "dropped_by_exit"))
             self.pending_taker = self.pending_limit = None
-        else:
-            # 1) execute prior decisions against THIS bar
-            if o.execution == "taker":
-                p = self.pending_taker
-                if p is not None and i > 0:
-                    ref = self.opens[i]
-                    price = c.buy_price(ref) if p.side == "BUY" else c.sell_price(ref)
-                    plan = self._execute_plan(p.side, price, "taker", p.decision_bar)
-                    reports.append(Canceled(p.coid, "executed" if plan is not None else "no_action"))
-                    self.pending_taker = None
-            else:
-                p = self.pending_limit
-                if p is not None and i > p.decision_bar:
-                    through = (self.lows[i] < p.limit) if p.side == "BUY" else (self.highs[i] > p.limit)
-                    if through and self._actionable(p.side):
-                        plan = self._execute_plan(p.side, p.limit, "maker", p.decision_bar)
-                        reports.append(Canceled(p.coid, "executed" if plan is not None else "entry_filtered"))
-                        self.pending_limit = None
-                    elif i - p.decision_bar >= o.maker_timeout_bars:
-                        self.missed_fills += 1
-                        self.trade_log.append({"bar": i, "side": f"CANCEL_{p.side}", "price": p.limit, "size": 0.0})
-                        reports.append(Canceled(p.coid, "timeout"))
-                        self.pending_limit = None
+        elif o.execution == "maker":
+            # 5) THE RANGE, last: a pending maker limit (R-M1: strictly through, never on the bar it was placed;
+            #    R-M2: its lifetime)
+            p = self.pending_limit
+            if p is not None and i > p.decision_bar:
+                through = (self.lows[i] < p.limit) if p.side == "BUY" else (self.highs[i] > p.limit)
+                if through and self._actionable(p.side):
+                    plan = self._execute_plan(p.side, p.limit, "maker", p.decision_bar)
+                    reports.append(Canceled(p.coid, "executed" if plan is not None else "entry_filtered"))
+                    self.pending_limit = None
+                elif i - p.decision_bar >= o.maker_timeout_bars:
+                    self.missed_fills += 1
+                    self.trade_log.append({"bar": i, "side": f"CANCEL_{p.side}", "price": p.limit, "size": 0.0})
+                    reports.append(Canceled(p.coid, "timeout"))
+                    self.pending_limit = None
         self._plan = plan
         return tuple(reports)
 
@@ -526,17 +471,15 @@ class BarVenue:
             return (Reject(coid, "not_actionable"),)
         out = [Ack(coid, f"bar-{coid}")]
         old = self.pending_limit
-        if self.r.maker_mask_at_signal and order.order_type == "signal_limit" and self.position == 0.0 \
-                and not self._entry_ok(i, sig):
-            # spec (i4-r2-08 / R-E4 / R-E5): an entry signal its bar's mask or the entry sides stop places no limit,
-            # replaces no pending limit and counts no missed fill
+        if order.order_type == "signal_limit" and self.position == 0.0 and not self._entry_ok(i, sig):
+            # R-E4 / R-E5: an entry signal its bar's mask or the entry sides stop places no limit, replaces no
+            # pending limit and counts no missed fill
             return (*out, Canceled(coid, "entry_filtered"))
-        if self.r.maker_same_side_keeps and old is not None and old.side == sig:
-            # spec (i4-r2-08): the pending limit the same way stays (its price and its lifetime); no new limit
+        if old is not None and old.side == sig:
+            # R-M7: the pending limit the same way stays (its price and its lifetime); no new limit
             return (*out, Canceled(coid, "kept_older"))
-        if old is not None:
-            if old.side != sig:
-                self.missed_fills += 1
+        if old is not None:  # R-M3: a limit the opposite way replaces the old one, which counts as missed
+            self.missed_fills += 1
             out.append(Canceled(old.coid, "replaced"))
         self.pending_limit = _Pending(coid, sig, i, self.closes[i])
         return tuple(out)
@@ -570,12 +513,13 @@ class BarVenue:
         price = fill.price
         self.fees_total += fee
         if plan.kind == "open":
-            size = fill.size
+            size = fill.size  # R-A1: order_notional / the fill price
             self.position = size if plan.side == "buy" else -size
             self.entry_price = price
             self.entry_bar = i
             self.entry_cost = fee
             if self.o.stop_mode == "wick_invalidation":
+                # R-W1: the extreme of the N COMPLETED bars before the fill bar (the fill bar itself excluded)
                 lo = max(0, i - self.o.stop_window_bars)
                 self.wick_level = (min(self.lows[lo:i]) if self.position > 0 else max(self.highs[lo:i])) \
                     if lo < i else None
@@ -586,7 +530,7 @@ class BarVenue:
         else:
             size = abs(self.position)
             direction = 1.0 if self.position > 0 else -1.0
-            pnl = (price - self.entry_price) * size * direction - fee - self.entry_cost
+            pnl = (price - self.entry_price) * size * direction - fee - self.entry_cost  # R-A3
             self.cash += pnl
             self.trade_pnls.append(pnl)
             side = f"CLOSE_{'LONG' if self.position > 0 else 'SHORT'}"
@@ -632,8 +576,8 @@ class _AccountPort:
 
 
 class BarCost:
-    """Cost-model socket: fee = size * price * pct / 100 (taker or maker pct by
-    the fill's liquidity)."""
+    """Cost-model socket (R-A2): fee = size * price * pct / 100 (taker or maker
+    pct by the fill's liquidity)."""
 
     def __init__(self, costs: BarCosts) -> None:
         self.c = costs
@@ -725,21 +669,14 @@ def bar_events(rows: Sequence[dict], start_ns: Sequence[int], bar_ns: int) -> li
 
 def run_bars(events: Sequence[BarEvent], decide: Callable[[int], Optional[str]], options: BarOptions,
              rules: Any, *, start: int = 0) -> BarRunResult:
-    """One run of the bar model over `events` (from bar_events) with the rule
-    set `rules` ("legacy" / "spec" / a BarRules)."""
+    """One run of the bar model over `events` (from bar_events) under the rule
+    set `rules` (the one rule set, "spec")."""
     r = rules_of(rules)
     if not isinstance(options, BarOptions):
         raise BarModelError("options must be a BarOptions (options_from_mapping builds one from a mapping)")
     n = len(events)
     options.check(n)
-    if r.refuse_non_positive:  # spec (R-V2 / R-V4): "not used" is None; 0 or less is refused, never read as "off"
-        for name in ("stop_loss_pct", "take_profit_pct", "maker_tp_pct", "max_hold_bars", "stop_window_bars"):
-            v = getattr(options, name)
-            if v is not None and v <= 0:
-                raise BarModelError(f"{name} must be > 0 or None (None = not used; R-V2), got {v!r}")
-        if options.maker_timeout_bars < 1:
-            raise BarModelError(f"maker_timeout_bars must be >= 1 (R-V4), got {options.maker_timeout_bars!r}")
-    venue = BarVenue(options, r)
+    venue = BarVenue(options)
     strat = SignalStrategy(decide, start=start, execution=options.execution)
     if n == 0:
         core = EngineResult(events_processed=0, source_events=0)
@@ -749,6 +686,6 @@ def run_bars(events: Sequence[BarEvent], decide: Callable[[int], Optional[str]],
                           _AccountPort(venue), time_span_ns=span).run()
     venue.finish()
     metrics = compute_metrics_values(venue.trade_pnls, venue.equity, venue.fees_total,
-                                     r.periods_per_year(options.bar_seconds))
-    return BarRunResult(r.name, venue.fills, venue.trade_log, venue.trade_pnls, venue.equity, venue.missed_fills,
+                                     periods_per_year(options.bar_seconds))
+    return BarRunResult(r, venue.fills, venue.trade_log, venue.trade_pnls, venue.equity, venue.missed_fills,
                         venue.fees_total, metrics, core)

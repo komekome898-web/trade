@@ -270,14 +270,14 @@ def unplaced(scenes) -> list[dict]:
 # do not record the strategy's requests (their clock and order-notice cells are "記録なし" in the materials role's
 # note, never "entered"). Read from run_battery.py's target tables and each adapter file's syntax tree (an opponent
 # adapter imports only in its own venv, so it is not imported here).
-RECORDING_GROUPS = ("新実装・当方の現状・試金石", "相手", "再現")
+RECORDING_GROUPS = ("新実装・試金石", "相手", "再現")
 
 
 def request_recording() -> dict:
     """{group: {"records": [(target, configured targets)], "not": [...]}} for the three groups of targets."""
     import ast
     import run_battery as R
-    bases = {RECORDING_GROUPS[0]: ["new_impl", "current_impl", "mutant"], RECORDING_GROUPS[1]: list(R.OPPONENTS),
+    bases = {RECORDING_GROUPS[0]: ["new_impl", "mutant"], RECORDING_GROUPS[1]: list(R.OPPONENTS),
              RECORDING_GROUPS[2]: list(R._repro_targets())}
     table = {**R.OPPONENTS, **R._repro_targets()}
     out = {}

@@ -45,13 +45,6 @@ def test_grading_uses_expected_not_the_adapters_word():
     assert run_battery.correctness(SceneResult("error"), exp) == "結果なし"
 
 
-def test_current_impl_runs_every_scene_twice_identically():
-    rows = run_battery.run_target("current_impl")
-    assert len(rows) == len(scenes.SCENES)
-    assert all(r["reproducibility"] == "2 回の実行で同じ" for r in rows)
-    assert all(r["status_1"] != "error" for r in rows), [r["detail_1"] for r in rows if r["status_1"] == "error"]
-
-
 def test_mutant_core_delivers_early_and_nothing_else():
     core = pytest.importorskip("bot.bt.core")
     import mutant
@@ -254,9 +247,6 @@ def test_no_adapter_reports_a_rule_or_a_predicted_order():
             if re.search(r"[\"']predicted[\"']|[\"']stated_rule[\"']|stated_rule\(", code):
                 bad.append(f"{p.name}:{i}: {line.strip()}")
     assert not bad, bad
-    rows = {r["scene_id"]: r for r in run_battery.run_target("current_impl")}
-    for sid in ("p5-same-time-twice", "p5-hand-over-order"):
-        assert "stated_rule" not in rows[sid]["output_1"] and "predicted" not in rows[sid]["output_1"]
 
 
 def test_p5_same_stream_input_is_not_in_price_order():
@@ -495,12 +485,6 @@ def test_no_recorded_result_was_refused_by_the_provenance_check():
             if "まだ届いていない入力" in r["detail_1"] and "出所の検めで採点しない" in r["detail_1"]:
                 assert r["status_1"] == "error" and r["correctness"] == "結果なし", (t, r["scene_id"])
                 assert any("まだ届いていない入力" in x["decided_from"] for x in json.loads(r["settings_1"])), (t, r["scene_id"])
-
-
-def test_current_impl_passes_the_provenance_check():
-    rows = run_battery.run_target("current_impl")
-    bad = [(r["scene_id"], r["detail_1"][:160]) for r in rows if "出所の検めで採点しない" in r["detail_1"]]
-    assert not bad, bad
 
 
 def test_one_carrier_carries_one_kind_across_all_scenes_of_a_target():
@@ -770,7 +754,7 @@ def test_p4_attempts_must_cover_the_fixed_namings_and_only_compiled_means_may_sk
 
 def test_every_target_has_its_distribution_in_the_runner():
     """The places of each target are the runner's table, not the adapter's."""
-    names = {"current_impl", "new_impl", "mutant", *run_battery.OPPONENTS}
+    names = {"new_impl", "mutant", *run_battery.OPPONENTS}
     assert names <= set(run_battery.TARGET_DISTS), sorted(names - set(run_battery.TARGET_DISTS))
     for t, spec in run_battery.TARGET_DISTS.items():
         assert spec.get("py") or spec.get("compiled"), t
@@ -1327,7 +1311,7 @@ def test_a_configured_target_runs_every_scene_with_one_set_of_chosen_values():
 
 def test_the_configured_targets_listed_are_the_adapters_configs():
     import ast
-    for base in ["current_impl", "new_impl", *run_battery.OPPONENTS, *run_battery._repro_targets()]:
+    for base in ["new_impl", *run_battery.OPPONENTS, *run_battery._repro_targets()]:
         ts = run_battery.configured_targets(base)
         assert ts and len(ts) == len(set(ts)), base
         assert all(run_battery.split_target(t)[0] == base for t in ts), base
@@ -1503,6 +1487,12 @@ def test_grid_check_refuses_every_verdict_but_the_one_covers_gives():
     assert checked == 7 * len(rows)
 
 
+# The two phrases of positive definition A that named the withdrawn target (委任文 docs/DATA/delegations/
+# 20260926_backtest_env_item4_close.md, L-470 / L-474): the record ROOTCAUSE_r8-1.md keeps them, the frozen text does not.
+WITHDRAWN_FROM_A = (("新実装・当方の現状・試金石の比較の表の行は", "新実装・試金石の比較の表の行は"),
+                    ("この正の定義は新実装・当方の現状・調査結果の側・再現・試金石のすべてに同じく当てる", "この正の定義は新実装・調査結果の側・再現・試金石のすべてに同じく当てる"))
+
+
 def test_the_six_positive_definitions_are_frozen_in_the_definitions_one_paragraph_each():
     """LEAD_DESIGN.md section 8.2 item 5: definitions 0-E sit in DEFINITIONS.md, one paragraph each. 0, A, B, D, E are
     ROOTCAUSE_r8-1.md's paragraphs character for character; C keeps every sentence but the four section 8.2 item 1
@@ -1515,6 +1505,10 @@ def test_the_six_positive_definitions_are_frozen_in_the_definitions_one_paragrap
         assert [ln for ln in text if ln == f"正の定義 {k}: " + mine], k            # one line, one paragraph
         before = [ln for ln in old if ln.startswith(head)]
         assert len(before) == 1, k
+        if k == "A":  # L-470 / L-474 (2026-09-26): the axis value 「当方の現状」 was withdrawn from A; nothing else changed
+            for old_phrase, new_phrase in WITHDRAWN_FROM_A:
+                assert before[0].count(old_phrase) == 1, old_phrase
+                before[0] = before[0].replace(old_phrase, new_phrase)
         if k != "C":
             assert mine == before[0], k
             continue

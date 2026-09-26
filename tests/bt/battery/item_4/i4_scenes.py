@@ -23,7 +23,7 @@ to the scene says which rule puts it there), and the helpers below only do the
 bookkeeping arithmetic those rules state (size = notional / price, fee =
 notional x pct, PnL, carry, equity, the metric formulas).  Every hand-placed
 exit is checked by the scene-keeper's tests against `exit_events` / `winner` /
-`exit_fill` (the stated order R-O1 / L-5 applied to the scene's own input).
+`exit_fill` (the stated order R-O1 applied to the scene's own input).
 The I4-2 exact grid's fills come from `taker_rule` (R-T1..R-T4 written as a
 function); the other I4-2 grids have no expected fills and are judged by the
 stated invariants (i4_judge.invariants) and by the prefix rule.  Only the
@@ -74,14 +74,11 @@ def cfg(**over):
     return c
 
 
-def bars_input(bars, signals, config, *, bar_seconds=60, want=("fills", "pnls"), model="spec"):
-    inp = {"op": "bars", "bars": bars, "bar_seconds": bar_seconds,
-           "signals": [{"bar": b, "signal": s} for b, s in signals], "config": config, "want": list(want)}
-    if isinstance(model, (list, tuple)):
-        inp["models"] = list(model)
-    else:
-        inp["model"] = model
-    return inp
+def bars_input(bars, signals, config, *, bar_seconds=60, want=("fills", "pnls")):
+    """A bars input.  `model: "spec"` names the one answer: the result of the stated rules R-* (i4_protocol.py)."""
+    return {"op": "bars", "bars": bars, "bar_seconds": bar_seconds,
+            "signals": [{"bar": b, "signal": s} for b, s in signals], "config": config, "want": list(want),
+            "model": "spec"}
 
 
 # --------------------------------------------------------------------------- the stated arithmetic
@@ -196,21 +193,20 @@ def J(*keys, fill_fields=("bar", "side", "price", "size")):
     return {k: (list(fill_fields) if k == "fills" else True) for k in keys}
 
 
-# --------------------------------------------------------------------------- the stated order within one bar (R-O1 / L-5)
+# --------------------------------------------------------------------------- the stated order within one bar (R-O1)
 # The exit events that can close an open position on bar j (names used by the order lists and the tests):
 #   wick      R-W3  the structural stop: bar j-1's close beyond the frozen level -> bar j's OPEN (taker)
 #   time      R-H1  j = entry bar + N -> bar j's OPEN (taker)
 #   signal    R-T1  a closing signal (opposite or CLOSE) at bar j-1, taker execution -> bar j's OPEN (taker)
 #   stop      R-P3  bar j's range reaches the % stop level -> min(open, level) (long) / max (short), taker.  The
 #                   same event on the time-exit bar j = entry bar + N (the range comes after the open, R-O1 / R-H3:
-#                   the time exit at the open closes first in the spec order; the legacy order L-5 takes the stop first)
+#                   the time exit at the open closes first)
 #   tp        R-P4  bar j's range strictly through the % take-profit level -> the level, maker rate
 #   mtp       R-X1  bar j's range strictly through the maker take-profit level -> the level, maker rate
 #   limit     R-M1  maker execution: the resting closing limit (a closing signal at p, entry bar <= p < j,
 #                   j - p <= timeout; the latest such signal) strictly traded through -> the limit, maker rate
 EXIT_EVENTS = ("wick", "time", "signal", "stop", "tp", "mtp", "limit")
 ORDER_SPEC = ["wick", "time", "signal", "stop", "tp", "mtp", "limit"]     # R-O1: the open events, then the range
-ORDER_LEGACY = ["wick", "stop", "tp", "mtp", "time", "signal", "limit"]   # L-1 + L-5
 # pairs that never happen on one bar (the options exclude each other) and the pairs whose two answers are the same
 # fill (both at the open, taker; no re-entry on the bar, R-T3): not pinned by any scene
 NEVER_TOGETHER = {frozenset(p) for p in [("signal", "limit"), ("wick", "stop")]}
@@ -243,9 +239,9 @@ def _wick_level(bars, cfg, ob, d):
     return min(dec(b["low"]) for b in win) if d > 0 else max(dec(b["high"]) for b in win)
 
 
-def _closing_limit(inp, ob, d, j, model="spec"):
+def _closing_limit(inp, ob, d, j):
     """R-M1/R-M2: the resting closing limit at bar j (its price), or None.  A later closing signal while the limit
-    rests does not re-place it in the spec (U2: the same as R-M6); the existing computation re-places it (legacy L-7)."""
+    rests does not re-place it (R-M7: the same as R-M6)."""
     cfg, bars = inp["config"], inp["bars"]
     if cfg["execution"] != "maker":
         return None
@@ -256,14 +252,14 @@ def _closing_limit(inp, ob, d, j, model="spec"):
     for p in range(ob, j):
         if sig.get(p) not in (closer, "CLOSE"):
             continue
-        if model == "legacy" or pend is None or p >= pend + T:   # spec: a resting limit is kept until it expires
+        if pend is None or p >= pend + T:   # R-M7: a resting limit is kept until it expires
             pend = p
     if pend is None or j - pend > T:
         return None
     return dec(bars[pend]["close"])
 
 
-def exit_events(inp, ob, d, ep, j, model="spec") -> set:
+def exit_events(inp, ob, d, ep, j) -> set:
     """The exit events of a position opened at bar ob (direction d, entry price ep) that can happen on bar j > ob,
     read from the scene's own input by the stated rules (not from any engine)."""
     bars, cfg = inp["bars"], inp["config"]
@@ -288,7 +284,7 @@ def exit_events(inp, ob, d, ep, j, model="spec") -> set:
     for k in ("tp", "mtp"):
         if k in lv and ((hi > lv[k]) if d > 0 else (lo < lv[k])):
             ev.add(k)
-    lim = _closing_limit(inp, ob, d, j, model)
+    lim = _closing_limit(inp, ob, d, j)
     if lim is not None and ((hi > lim) if d > 0 else (lo < lim)):
         ev.add("limit")
     return ev
@@ -299,7 +295,7 @@ def winner(events, order) -> str:
     return next(e for e in order if e in events)
 
 
-def exit_fill(event, inp, ob, d, ep, j, model="spec"):
+def exit_fill(event, inp, ob, d, ep, j):
     """(price, fee rate kind) of the exit `event` on bar j by the stated rules."""
     bars, cfg = inp["bars"], inp["config"]
     c = cfg["costs"]
@@ -312,7 +308,7 @@ def exit_fill(event, inp, ob, d, ep, j, model="spec"):
         return (sell_px(float(trig), c) if d > 0 else buy_px(float(trig), c)), "taker"
     if event in ("tp", "mtp"):
         return float(lv[event]), "maker"
-    return float(_closing_limit(inp, ob, d, j, model)), "maker"
+    return float(_closing_limit(inp, ob, d, j)), "maker"
 
 
 def round_trips(fills):
@@ -324,18 +320,16 @@ def round_trips(fills):
 
 
 def model_expectations(scene):
-    """[(input, expected dict, order)] of a bars scene: every expected answer with the rule order it follows."""
+    """[(input, expected dict, order)] of a bars scene: every expected answer with the rule order it follows (the one
+    stated order R-O1; every scene has one answer)."""
     out = []
     if scene.get("input", {}).get("op") == "bars":
         inp, exp = scene["input"], scene["expect"]
-        if "models" in inp:
-            for m in inp["models"]:
-                out.append((inp, exp[m], ORDER_LEGACY if m == "legacy" else ORDER_SPEC))
-        elif inp.get("reference"):
+        if inp.get("reference"):
             for k in ("engine", "reference"):
                 out.append((inp, exp[k], ORDER_SPEC))
         else:
-            out.append((inp, exp, ORDER_SPEC if inp.get("model", "spec") == "spec" else ORDER_LEGACY))
+            out.append((inp, exp, ORDER_SPEC))
         for mc in scene.get("more_controls", []):
             if mc["input"].get("op") == "bars":
                 out.append((mc["input"], mc["expect"], ORDER_SPEC))
@@ -347,11 +341,11 @@ def model_expectations(scene):
 
 def order_findings(scenes, order_override=None):
     """Every hand-placed round trip checked against the stated order: a list of (scene id, what is wrong), and the
-    pinned pairs {(order name, winner, loser)} (order name "spec" / "legacy")."""
+    pinned pairs {(order name, winner, loser)} (order name "spec" = the stated order R-O1)."""
     wrong, pinned = [], set()
     for s in scenes:
         for inp, exp, order in model_expectations(s):
-            name = "legacy" if order is ORDER_LEGACY else "spec"
+            name = "spec"
             if order_override is not None:
                 order = order_override.get(name, order)
             fills = exp.get("fills")
@@ -362,17 +356,17 @@ def order_findings(scenes, order_override=None):
                 d = 1 if o["side"] == "OPEN_LONG" else -1
                 end = x["bar"] if x else n
                 for j in range(o["bar"] + 1, end):
-                    ev = exit_events(inp, o["bar"], d, o["price"], j, name)
+                    ev = exit_events(inp, o["bar"], d, o["price"], j)
                     if ev:
                         wrong.append((s["id"], f"足 {j} で出口 {sorted(ev)} が起きうるのに、手の正解は建玉を閉じていない"))
                 if x is None:
                     continue
-                ev = exit_events(inp, o["bar"], d, o["price"], x["bar"], name)
+                ev = exit_events(inp, o["bar"], d, o["price"], x["bar"])
                 if not ev:
                     wrong.append((s["id"], f"足 {x['bar']} の決済に当たる出口が規則から出ない"))
                     continue
                 w = winner(ev, order)
-                px, _ = exit_fill(w, inp, o["bar"], d, o["price"], x["bar"], name)
+                px, _ = exit_fill(w, inp, o["bar"], d, o["price"], x["bar"])
                 if abs(px - x["price"]) > 1e-9 * max(1.0, abs(px)):
                     wrong.append((s["id"], f"足 {x['bar']} の決済の値 {x['price']} が、出口 {sorted(ev)} の {name} の順で勝つ "
                                            f"{w} の値 {px} と違う"))
@@ -413,7 +407,7 @@ def _judged_keys(scene):
     j = scene["judge"]
     keys = set()
     for k, v in j.items():
-        if k in ("engine", "reference", "legacy", "spec"):
+        if k in ("engine", "reference"):
             keys |= set(v)
         else:
             keys.add(k)
@@ -1176,8 +1170,8 @@ _CKD = cfg(exit_execution="maker_tp", maker_tp_pct=1.5)
 add(id="i4-12-touch-decimal", viewpoint="I4-12", kind="値",
     what="利確の水準を書かれた 10 進の値どおりに比べるか: 建値 100・率 1.5% の水準 101.5 に高値 101.5 がちょうど触れた足では約定しないか",
     how="KD の足、費用 0。BUY@0 → 足 1 の始値 100。水準 = 100 x (1 + 1.5/100) = 101.5(10 進で割り切れる)。足 2 の高値 101.5 は触れただけ"
-        "(R-X1)、足 3 の高値 101.6 > 101.5 で 101.5 で約定。2 進の浮動小数で 100 x 1.015 = 101.49999999999999 と置くと、足 2 の高値が"
-        "水準を上回ったことになり 1 本早く約定する(互換の計算 L-4)。",
+        "(R-X1)、足 3 の高値 101.6 > 101.5 で 101.5 で約定。2 進の浮動小数で 100 x 1.015 = 101.49999999999999 と置く計算では、足 2 の高値が"
+        "水準を上回ったことになり 1 本早く約定する(この場面はその誤りを分ける)。",
     input=bars_input(KD, [(0, "BUY")], _CKD, want=_WF),
     expect=full_expect(KD, [trade(1, +1, 100.0, 0.0, 3, 101.5, 0.0)], _CKD, 60, _WF), judge=J(*_WF))
 
@@ -1196,7 +1190,6 @@ HT = mk_bars([(100, 100.5, 99.5, 100), (100, 101, 99.5, 100.5), (100.5, 101.8, 1
               (102.5, 103, 102, 102.5)])
 _CHT = cfg(costs={**ZERO, "taker_fee_pct": 0.1, "maker_fee_pct": 0.1}, max_hold_bars=2, take_profit_pct=2.0)
 _HT_SPEC = [trade(1, +1, 100.0, 0.1, 3, 101.0, 0.1)]    # R-H1: closed at bar 3's OPEN 101, taker
-_HT_LEGACY = [trade(1, +1, 100.0, 0.1, 3, 102.0, 0.1)]   # L-1: the take-profit of bar 3 is taken before the time exit
 add(id="i4-13-tp-on-exit-bar", viewpoint="I4-13", kind="値",
     what="時間切れの足(足 b + N)に利確の水準も通るとき、仕様どおり足 b + N の始値で閉じるか(始値の時間切れは範囲の利確より先)",
     how="HT の足、N = 2、利確 2%(水準 102)。BUY@0 → 足 1 の始値 100。足 3 の始値 101 で時間切れ(R-H1)。始値の出来事は範囲の出来事より"
@@ -1204,12 +1197,6 @@ add(id="i4-13-tp-on-exit-bar", viewpoint="I4-13", kind="値",
         "損益 = 30 - 30 x 101 x 0.001 - 3 = 23.97。",
     input=bars_input(HT, [(0, "BUY")], _CHT, want=_WFP),
     expect=full_expect(HT, _HT_SPEC, _CHT, 60, _WFP), judge=J(*_WFP))
-add(id="i4-13-two-models", viewpoint="I4-13", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(同じ足で利確を時間切れより先に取る既存の計算 L-1)と仕様の出力(R-H1)の両方を出せるか",
-    how="互換の答え = 足 3 で利確の水準 102・maker 0.1%(損益 60 - 3.06 - 3 = 53.94)、仕様の答え = i4-13-tp-on-exit-bar。",
-    input=bars_input(HT, [(0, "BUY")], _CHT, want=_WFP, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(HT, _HT_LEGACY, _CHT, 60, _WFP), "spec": full_expect(HT, _HT_SPEC, _CHT, 60, _WFP)},
-    judge={"legacy": J(*_WFP), "spec": J(*_WFP)})
 
 # --------------------------------------------------------------------------- I4-14 entry mask / entry sides
 _MASK = [True, True, False, True, False, False, True, True, True, True]
@@ -1290,14 +1277,6 @@ add(id="i4-16-maker-mask-false-not-missed", viewpoint="I4-16", kind="値",
     input=bars_input(MKB, [(1, "BUY")], _CMKM, want=_WFM),
     expect=full_expect(MKB, [], _CMKM, 60, _WFM, missed=0),
     judge=J(*_WFM))
-add(id="i4-16-maker-mask-false-two-models", viewpoint="I4-16", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(マスクが False の合図にも指値を置き、寿命で取り消して取り逃しに数える既存の計算 L-6)と"
-         "仕様の出力(R-E4)の両方を出せるか",
-    how="i4-16-maker-mask-false-not-missed と同じ入力。互換の答え = 約定 0・取り逃し 1(指値 100 を足 1 に置き、足 4 で 4 - 1 = 3 >= 3 で取消。"
-        "L-6)。仕様の答え = 約定 0・取り逃し 0。",
-    input=bars_input(MKB, [(1, "BUY")], _CMKM, want=_WFM, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(MKB, [], _CMKM, 60, _WFM, missed=1), "spec": full_expect(MKB, [], _CMKM, 60, _WFM, missed=0)},
-    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 SSL = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 101.5, 100, 101), (101, 101.5, 100.5, 101),
                (101, 101.5, 99.5, 100), (100, 100.5, 99.8, 100)])
 _CSSL = cfg(execution="maker", maker_timeout_bars=5)
@@ -1310,15 +1289,6 @@ add(id="i4-16-same-side-keeps-limit", viewpoint="I4-16", kind="値",
     input=bars_input(SSL, [(1, "BUY"), (2, "BUY")], _CSSL, want=_WFM),
     expect=full_expect(SSL, [trade(4, +1, 100.0, 0.0)], _CSSL, 60, _WFM, missed=0),
     judge=J(*_WFM))
-add(id="i4-16-same-side-two-models", viewpoint="I4-16", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(同じ向きの合図で指値を新しい足の終値に置き直す既存の計算 L-7)と仕様の出力(R-M6)の両方を"
-         "出せるか",
-    how="i4-16-same-side-keeps-limit と同じ入力。互換の答え = BUY@2 で指値を 101(足 2 の終値)に置き直し、足 3 の安値 100.5 < 101 で 101 で"
-        "建つ(取り逃しに数えない。L-7)。仕様の答え = 足 4 で 100。",
-    input=bars_input(SSL, [(1, "BUY"), (2, "BUY")], _CSSL, want=_WFM, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(SSL, [trade(3, +1, 101.0, 0.0)], _CSSL, 60, _WFM, missed=0),
-            "spec": full_expect(SSL, [trade(4, +1, 100.0, 0.0)], _CSSL, 60, _WFM, missed=0)},
-    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 
 _MKO = [True, True, False, True, True]
 MKO = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 100.8, 100, 100.5), (100.5, 101, 99.5, 100),
@@ -1332,16 +1302,6 @@ add(id="i4-16-mask-false-opposite-keeps-limit", viewpoint="I4-16", kind="値",
     input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CMKO, want=_WFM),
     expect=full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CMKO, 60, _WFM, missed=0),
     judge=J(*_WFM))
-add(id="i4-16-mask-false-opposite-two-models", viewpoint="I4-16", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(マスクが False の反対向きの合図でも待っている指値を置き換えて取り逃しに数え、置き換えた指値は"
-         "通過しても建てない既存の計算 L-8)と仕様の出力(R-E4)の両方を出せるか",
-    how="i4-16-mask-false-opposite-keeps-limit と同じ入力。互換の答え = SELL@2 で買いの指値 100 を売りの指値 100.5(足 2 の終値)に置き換えて"
-        "取り逃し 1、足 3 の高値 101 > 100.5 で通過するがマスク[2] = False なので建てずに消す(L-8)→ 約定 0・取り逃し 1。"
-        "仕様の答え = 足 3 で 100 の買い建て・取り逃し 0。",
-    input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CMKO, want=_WFM, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(MKO, [], _CMKO, 60, _WFM, missed=1),
-            "spec": full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CMKO, 60, _WFM, missed=0)},
-    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 
 # --------------------------------------------------------------------------- the reference's literal readings U1-U8
 # (finishing delegation, stage 2: the points the rule text left open that the independent reference read literally; the
@@ -1374,15 +1334,6 @@ add(id="i4-16-exit-same-side-keeps-limit", viewpoint="I4-16", kind="値",
         "足 6 の高値 101.5 > 101 で 101 で決済(maker、6 - 3 = 3 <= 5)。取り逃し 0。",
     input=bars_input(XS, [(1, "BUY"), (3, "SELL"), (4, "SELL")], _CXS, want=_WFM),
     expect=full_expect(XS, [trade(2, +1, 100.0, 0.0, 6, 101.0, 0.0)], _CXS, 60, _WFM, missed=0), judge=J(*_WFM))
-add(id="i4-16-exit-same-side-two-models", viewpoint="I4-16", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(同じ向きの合図で決済の指値を新しい足の終値に置き直す既存の計算 L-7)と仕様の出力(R-M7)の"
-         "両方を出せるか",
-    how="i4-16-exit-same-side-keeps-limit と同じ入力。互換の答え = SELL@4 で決済の指値を 100.8(足 4 の終値)に置き直し、足 5 の高値 100.9 > 100.8"
-        "で 100.8 で決済(L-7)。仕様の答え = 足 6 で 101。",
-    input=bars_input(XS, [(1, "BUY"), (3, "SELL"), (4, "SELL")], _CXS, want=_WFM, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(XS, [trade(2, +1, 100.0, 0.0, 5, 100.8, 0.0)], _CXS, 60, _WFM, missed=0),
-            "spec": full_expect(XS, [trade(2, +1, 100.0, 0.0, 6, 101.0, 0.0)], _CXS, 60, _WFM, missed=0)},
-    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 _CBN = cfg(execution="maker", maker_timeout_bars=5, allow_short=False)
 add(id="i4-14-blocked-opposite-keeps-limit", viewpoint="I4-14", kind="値",
     what="maker の執行で、待っている建ての指値に、空売り不可で建てを止められた反対向きの合図が来ても、古い指値を残すか(R-E5)",
@@ -1397,15 +1348,6 @@ add(id="i4-14-sides-opposite-keeps-limit", viewpoint="I4-14", kind="値",
         "置かず、古い指値を残す(R-E5)。足 3 の安値 99.5 < 100 で 100 で買い建て。取り逃し 0。",
     input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CBL, want=_WFM),
     expect=full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CBL, 60, _WFM, missed=0), judge=J(*_WFM))
-add(id="i4-14-sides-opposite-two-models", viewpoint="I4-14", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(向きで止められる反対向きの合図でも指値を置き換えて取り逃しに数え、置き換えた指値は通過しても"
-         "建てない既存の計算 L-8)と仕様の出力(R-E5)の両方を出せるか",
-    how="i4-14-sides-opposite-keeps-limit と同じ入力。互換の答え = SELL@2 で売りの指値 100.5 に置き換えて取り逃し 1、足 3 の高値 101 > 100.5 で"
-        "通過するが向き long で建てずに消す → 約定 0・取り逃し 1。仕様の答え = 足 3 で 100 の買い建て・取り逃し 0。",
-    input=bars_input(MKO, [(1, "BUY"), (2, "SELL")], _CBL, want=_WFM, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(MKO, [], _CBL, 60, _WFM, missed=1),
-            "spec": full_expect(MKO, [trade(3, +1, 100.0, 0.0)], _CBL, 60, _WFM, missed=0)},
-    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 BADB = mk_bars([(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 101, 99.5, 100.5), (100.5, 102, 100, 101.8),
                 (101.8, 102, 101.5, 101.8)])
 BADV = [dict(b) for b in BADB]
@@ -1467,13 +1409,6 @@ add(id="i4-17-sharpe-bar-seconds", viewpoint="I4-17", kind="値",
         "1 年の本数 = 365 x 86400 / 3600 = 8760。",
     input=bars_input(SW, [(1, "BUY"), (4, "SELL")], cfg(), bar_seconds=3600, want=_W17),
     expect=full_expect(SW, _TR17, cfg(), 3600, _W17), judge=J(*_W17))
-add(id="i4-17-two-models", viewpoint="I4-17", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(足の頻度を見ず 1 年 = 525600 本で年率化する既存の計算 L-2)と仕様の出力(M-5)の両方を出せるか",
-    how="互換の答え = シャープの年率化だけ sqrt(525600)、ほかは同じ。仕様の答え = i4-17-sharpe-bar-seconds。",
-    input=bars_input(SW, [(1, "BUY"), (4, "SELL")], cfg(), bar_seconds=3600, want=_W17, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(SW, _TR17, cfg(), 3600, _W17, periods=525600.0),
-            "spec": full_expect(SW, _TR17, cfg(), 3600, _W17)},
-    judge={"legacy": J(*_W17), "spec": J(*_W17)})
 
 
 # --------------------------------------------------------------------------- I4-18 split_data
@@ -1497,16 +1432,6 @@ add(id="i4-18-split-decimal", viewpoint="I4-18", kind="値",
     how="100 行、学習 0.7・検証 0.2 → floor(100 x 0.7) = 70、floor(100 x 0.9) = 90 → 学習 0〜69、検証 70〜89、検証外 90〜99(D-1)。",
     input={"op": "split", "bars": D100, "train_frac": 0.7, "val_frac": 0.2},
     expect={"splits": split_rows(100, 0.7, 0.2)}, judge={"splits": True})
-add(id="i4-18-two-models", viewpoint="I4-18", kind="能力",
-    what="同じ分け方の記述から、互換の出力(2 進の浮動小数で割合を足してから掛けて切り捨てる既存の計算 L-3: 境が 89)と仕様の出力(D-1)の"
-         "両方を出せるか",
-    how="互換の答え = 学習 0〜69、検証 70〜88、検証外 89〜99(2 進の 0.7 + 0.2 = 0.8999999999999999、x 100 = 89.99999999999999、"
-        "切り捨て 89)。仕様の答え = i4-18-split-decimal。",
-    input={"op": "split", "bars": D100, "train_frac": 0.7, "val_frac": 0.2, "models": ["legacy", "spec"]},
-    expect={"legacy": {"splits": {"training": list(range(70)), "validation": list(range(70, 89)),
-                                  "out_of_sample": list(range(89, 100))}},
-            "spec": {"splits": split_rows(100, 0.7, 0.2)}},
-    judge={"legacy": {"splits": True}, "spec": {"splits": True}})
 add(id="i4-18-refuse", viewpoint="I4-18", kind="能力",
     what="割合の和が 1 以上の分け方を拒むか(対照: 0.5・0.3 なら通る)",
     how="D-2「割合は (0,1) にあり、和は 1 未満」。対照 10 行 0.5・0.3 → 学習 0〜4、検証 5〜7、検証外 8〜9。",
@@ -1515,7 +1440,7 @@ add(id="i4-18-refuse", viewpoint="I4-18", kind="能力",
     variant={"op": "split", "bars": D10, "train_frac": 0.6, "val_frac": 0.4})
 
 
-# --------------------------------------------------------------------------- the order within one bar (R-O1 / L-5)
+# --------------------------------------------------------------------------- the order within one bar (R-O1)
 # One long position opened at bar 2's open 100 (taker: BUY@1; maker: BUY@1 places a limit at bar 1's close 100 and
 # bar 2's low 99.5 < 100 fills it), size 3000 / 100 = 30, no cost.  Bar 3 reaches no level.  Bar 4 is where two or
 # more exit events can happen (i4-r1-02): its open 101 lies strictly between the stop level 98 (2 %) and the
@@ -1553,13 +1478,6 @@ add(id="i4-10-signal-first-short", viewpoint="I4-10", kind="値",
         "R-O1 → 足 4 の始値 99 で買い戻す(同じ足で買い建て直さない、R-T3)。損益 = (100 - 99) x 30 = 30。",
     input=bars_input(_OS, [(1, "SELL"), (3, "BUY")], _C_O1S, want=_WO),
     expect=full_expect(_OS, [trade(2, -1, 100.0, 0.0, 4, 99.0, 0.0)], _C_O1S, 60, _WO), judge=J(*_WO))
-add(id="i4-10-signal-first-two-models", viewpoint="I4-10", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(待つ合図より範囲の逆指値を先に取り、合図を捨てる既存の計算 L-5)と仕様の出力(R-O1)の両方を出せるか",
-    how="i4-10-signal-first と同じ足と設定で、決済の合図を CLOSE@3 にした。互換の答え = 足 4 の逆指値 min(101, 98) = 98(L-5: 範囲の逆指値が先、"
-        "合図は捨てる)。仕様の答え = 足 4 の始値 101(R-O1)。",
-    input=bars_input(OA, [(1, "BUY"), (3, "CLOSE")], _C_O1, want=_WO, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(OA, _long(4, 98.0), _C_O1, 60, _WO), "spec": full_expect(OA, _long(4, 101.0), _C_O1, 60, _WO)},
-    judge={"legacy": J(*_WO), "spec": J(*_WO)})
 _C_O2 = cfg(stop_loss_pct=2.0, take_profit_pct=3.0)
 add(id="i4-10-stop-first-plain", viewpoint="I4-10", kind="値",
     what="費用 0・手数料の率 1 つ・足 0 に合図なしで、1 本の足が逆指値と利確の両方に届くとき逆指値が先か(観点の本題だけを求める最小の場面)",
@@ -1602,14 +1520,6 @@ add(id="i4-13-stop-on-time-bar", viewpoint="I4-13", kind="値",
     input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O5, want=_WO),
     expect=full_expect(OA, _long(4, 101.0), _C_O5, 60, _WO), judge=J(*_WO))
 _C_O5B = cfg(max_hold_bars=2, stop_loss_pct=2.0)
-add(id="i4-13-stop-on-time-bar-two-models", viewpoint="I4-13", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(時間切れの足でも範囲の逆指値を時間切れより先に取る既存の計算 L-5)と仕様の出力(R-O1: 始値の"
-         "時間切れが先)の両方を出せるか",
-    how="OA の足、N = 2、逆指値 2%(98)、費用 0、BUY@1。足 4 は時間切れの足で、安値 97 <= 98。互換の答え = 足 4 の逆指値 min(101, 98) = 98"
-        "(L-5)。仕様の答え = 足 4 の始値 101(R-O1・R-H3)。",
-    input=bars_input(OA, [(1, "BUY")], _C_O5B, want=_WO, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(OA, _long(4, 98.0), _C_O5B, 60, _WO), "spec": full_expect(OA, _long(4, 101.0), _C_O5B, 60, _WO)},
-    judge={"legacy": J(*_WO), "spec": J(*_WO)})
 _C_O6 = cfg(max_hold_bars=2, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
 add(id="i4-13-time-first", viewpoint="I4-13", kind="値",
     what="時間切れの足で逆指値に届かないとき、時間切れが足の始値で閉じ、待つ合図・利確・maker の利確は起きないか(R-H1〜R-H3・R-O1)",
@@ -1617,20 +1527,7 @@ add(id="i4-13-time-first", viewpoint="I4-13", kind="値",
         "通過するが、R-O1 で時間切れが先 → 足 4 の始値 101(taker)。損益 = 30。",
     input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O6, want=_WO),
     expect=full_expect(OU, _long(4, 101.0), _C_O6, 60, _WO), judge=J(*_WO))
-add(id="i4-13-time-first-two-models", viewpoint="I4-13", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(同じ足で利確を時間切れ・待つ合図より先に取る既存の計算 L-1・L-5)と仕様の出力(R-O1)の両方を出せるか",
-    how="i4-13-time-first と同じ入力。互換の答え = 足 4 の利確 103(L-1: 範囲の利確が時間切れより先。率の利確が maker の利確より先)。"
-        "仕様の答え = 足 4 の始値 101。",
-    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O6, want=_WO, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(OU, _long(4, 103.0), _C_O6, 60, _WO), "spec": full_expect(OU, _long(4, 101.0), _C_O6, 60, _WO)},
-    judge={"legacy": J(*_WO), "spec": J(*_WO)})
 _C_M3 = cfg(max_hold_bars=2, exit_execution="maker_tp", maker_tp_pct=2.5)
-add(id="i4-13-time-maker-tp-two-models", viewpoint="I4-13", kind="能力",
-    what="1 つの戦略の記述から、互換の出力(同じ足で maker の利確を時間切れ・待つ合図より先に取る既存の計算 L-1・L-5)と仕様の出力(R-O1)の両方を出せるか",
-    how="OU の足、N = 2、maker の利確 2.5%(102.5)、費用 0、BUY@1・SELL@3。互換の答え = 足 4 の maker の利確 102.5。仕様の答え = 足 4 の始値 101。",
-    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_M3, want=_WO, model=["legacy", "spec"]),
-    expect={"legacy": full_expect(OU, _long(4, 102.5), _C_M3, 60, _WO), "spec": full_expect(OU, _long(4, 101.0), _C_M3, 60, _WO)},
-    judge={"legacy": J(*_WO), "spec": J(*_WO)})
 _C_O10 = cfg(execution="maker", maker_timeout_bars=3, max_hold_bars=2)
 add(id="i4-13-time-before-exit-limit", viewpoint="I4-13", kind="値",
     what="maker の執行で、時間切れが、同じ足で厳密に通過される待つ決済の指値より先か。捨てた指値を取り逃しに数えないか(R-M5)",
@@ -1707,10 +1604,9 @@ add(id="i4-3-ref-signal-first", viewpoint="I4-3", kind="値",
 NOT_SCENES = {
     "I4-7": "全試験(`PYTHONPATH=src python -m pytest`)が通るかは、当方のリポジトリの試験の集まりについての事実で、場面の入力を対象に"
             "渡して結果を正解と突き合わせる形にならない(調査結果の側の道具には当方の試験の集まりが無い)。批評家が全試験の末尾の行で見る。",
-    "I4-19": "旧の出力(golden)の保存と一致は、委任文 §3「項目 4 の場面」で「この場面とは別に、旧 14 の確認として見る」と定められている"
-             "(場面の正解は手計算で、golden を正解にしない)。批評家が tests/bt/compat/ の試験で見る。",
-    "I4-20": "最後の段の置き換えと復元は、リポジトリのファイル(src/bot/backtest/ の 3 本)を置き換えて試験を回し、落ちたら戻すという手順で、"
-             "場面の入力と出力の形にならない。批評家が git の差分・試験の出力・報告で見る。",
+    "I4-19": "撤回(L-470・L-474、docs/DATA/delegations/20260926_backtest_env_item4_close.md): 以前ここに置いていた観点は旧の出力との一致を"
+             "基準にしたもので、要件から外した。場面は置かない。",
+    "I4-20": "撤回(L-470・L-474、同上): 以前ここに置いていた観点は旧との突き合わせを条件にした置き換えの手順で、要件から外した。場面は置かない。",
 }
 VIEWPOINTS = {
     "I4-1": "独立参照実装との突き合わせ", "I4-2": "性質の試験(不変条件)", "I4-3": "正解つきの場面",
@@ -1720,7 +1616,7 @@ VIEWPOINTS = {
     "I4-12": "maker_tp(指値イグジット)", "I4-13": "max_hold_bars(強制タイムイグジット)", "I4-14": "entry_mask / entry_sides",
     "I4-15": "swap_daily_pct(スワップ/資金調達費用)", "I4-16": "missed_fills(未約定カウント)",
     "I4-17": "compute_metrics の全指標一致", "I4-18": "split_data(暦ではない行数割合の 3 分割)",
-    "I4-19": "旧の出力(golden)の保存と一致", "I4-20": "最後の段の安全な置き換えと復元",
+    "I4-19": "(撤回 L-470・L-474)", "I4-20": "(撤回 L-470・L-474)",
 }
 
 

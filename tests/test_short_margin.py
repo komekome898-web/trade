@@ -1,68 +1,11 @@
-"""Short-selling and margin-carry behavior in the engine, portfolio and paper executor."""
+"""Short-selling behaviour of the portfolio, the paper executor, the risk checker and the product registry
+(the bar engine's short / carry rules R-T3 / R-T4 / R-S1 are held by tests/bt/battery/item_4 and tests/bt/item_4)."""
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
 import pytest
 
-from bot.backtest.engine import CostModel, run_backtest
 from bot.portfolio.portfolio import Portfolio
 from bot.products import load_products
-from bot.strategy.base import Signal, SignalType, Strategy
-
-NO_COST = CostModel(taker_fee_pct=0, maker_fee_pct=0, slippage_pct=0, spread_pct=0)
-
-
-def make_candles(prices):
-    p = np.asarray(prices, dtype=float)
-    return pd.DataFrame({"open": p, "high": p * 1.001, "low": p * 0.999,
-                         "close": p, "volume": np.ones_like(p)})
-
-
-class Scripted(Strategy):
-    def __init__(self, params=None):
-        super().__init__(params)
-        self.script = params["script"]
-
-    @property
-    def min_history(self):
-        return 1
-
-    def on_candles(self, candles):
-        sig = self.script.get(len(candles) - 1)
-        return Signal(sig, "scripted") if sig else Signal(SignalType.HOLD, "")
-
-
-def test_short_profits_when_price_falls():
-    prices = [100.0] * 3 + [100.0, 100.0, 90.0, 90.0, 90.0]
-    strat = Scripted({"script": {2: SignalType.SELL, 5: SignalType.BUY}})
-    res = run_backtest(strat, make_candles(prices), costs=NO_COST,
-                       allow_short=True, order_notional_jpy=3000)
-    assert len(res.trade_pnls) == 1
-    # short 30 units @100, cover @90 -> +300
-    assert res.trade_pnls[0] == pytest.approx(3000 / 100 * 10, rel=1e-3)
-    opens = [t for t in res.trade_log if t["side"] == "OPEN_SHORT"]
-    assert len(opens) == 1
-
-
-def test_sell_without_short_permission_is_noop():
-    prices = [100.0] * 8
-    strat = Scripted({"script": {2: SignalType.SELL}})
-    res = run_backtest(strat, make_candles(prices), costs=NO_COST, allow_short=False)
-    assert res.trade_pnls == []
-    assert all(not t["side"].startswith("OPEN") for t in res.trade_log)
-
-
-def test_swap_carry_reduces_pnl():
-    prices = [100.0] * 20
-    strat = Scripted({"script": {2: SignalType.BUY, 15: SignalType.SELL}})
-    res = run_backtest(strat, make_candles(prices), costs=NO_COST,
-                       allow_short=True, swap_daily_pct=0.04,
-                       bar_seconds=86400 / 4, order_notional_jpy=3000)
-    # held ~12 bars of 6h each = ~3 days of 0.04%/day on 3000 = ~3.6 JPY
-    assert res.trade_pnls[0] < 0
-    assert res.trade_pnls[0] == pytest.approx(-3000 * 0.0004 * 3, rel=0.35)
-
 
 def test_portfolio_short_round_trip():
     p = Portfolio(100000.0, clock=lambda: 1000.0)
@@ -81,21 +24,6 @@ def test_portfolio_short_loss_counts_consecutive():
     p.on_fill(symbol="X", side="BUY", size=1.0, price=110.0)  # short loses on rise
     assert p.realized_pnl_jpy == pytest.approx(-10.0)
     assert p.consecutive_losses == 1
-
-
-def test_close_signal_flattens_long_and_short():
-    prices = [100.0] * 10
-    strat = Scripted({"script": {2: SignalType.SELL, 5: SignalType.CLOSE}})
-    res = run_backtest(strat, make_candles(prices), costs=NO_COST, allow_short=True)
-    assert len(res.trade_pnls) == 1  # short opened then flattened by CLOSE
-    assert [t["side"] for t in res.trade_log] == ["OPEN_SHORT", "CLOSE_SHORT"]
-
-
-def test_close_signal_when_flat_is_noop():
-    prices = [100.0] * 8
-    strat = Scripted({"script": {2: SignalType.CLOSE}})
-    res = run_backtest(strat, make_candles(prices), costs=NO_COST, allow_short=True)
-    assert res.trade_log == [] and res.trade_pnls == []
 
 
 def test_paper_margin_short_round_trip():

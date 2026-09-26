@@ -159,38 +159,9 @@ C3-1〜C3-16 のどの観点にも道具台帳 §2.1 のような段の尺度は
 
 C3-17(日本語・CDN 不使用)・C3-18(配線の試験)・C3-19(動作確認実行の全タブ警告)は、当方のダッシュボード実装の**構造上の制約**(委任文 §4 の禁止・安全規則、artifact-design 由来の内部規約)であり、外部の道具の機構を比較する性質の観点ではない。SCAN の対象(区分1: バックテスト・シミュレーション道具の機構調査)にこれらの語を探しても意味が無いため、grep は打っていない(打たない理由を明記することで A-9 の「説明なく外す」を避ける)。この 3 観点は「調査結果の側」の欄を持たず、当方の実装が要件を満たすかどうかだけを直接判定する(場面集の規則 2「振る舞いを試し、作りの形を試さない」の範囲内)。
 
-## 4. 当方の現状(該当箇所)
+## 4. (撤回、2026-09-26、L-470・L-474)
 
-現行の唯一の実装は旧エンジン `src/bot/backtest/{engine,metrics,walk_forward}.py`。`src/bot/bt/` は項目 0(核)だけ着手済みで、`src/bot/bt/validation/`・`src/bot/bt/repro/`・`src/bot/bt/report/` は**未着手**(`find src/bot/bt -maxdepth 1` の実行結果に `core/` しか無い)。`src/bot/monitoring/backtest_view.py` も存在しない。
-
-| 委任文の要素 | 当方の現状 | ファイル:行 |
-|---|---|---|
-| 暦日 Train/Val/OOS | 暦日ではなく**行数の割合**(`train_frac=0.6, val_frac=0.2`)で機械的に 3 分割するだけ。シャッフル無し・OOS は末尾固定という順序の規律はあるが、暦日境界の指定はできない | `src/bot/backtest/walk_forward.py:20-32`(`split_data`、docstring「Chronological split」) |
-| walk-forward(複数回切り直し) | 1 回の 3 分割のみを行う `evaluate_on_splits` があるだけで、複数回のウィンドウを移動させる反復評価は無い | `src/bot/backtest/walk_forward.py:36-53`(`evaluate_on_splits`) |
-| purge・embargo・CPCV | 無い(`walk_forward.py` 全体に purge/embargo/CPCV の実装・語が 0 件) | `src/bot/backtest/walk_forward.py`(該当なし) |
-| ブロック・ブートストラップ | `src/bot/backtest/` 直下には無い。概念自体は `.claude/skills/research-protocol/SKILL.md:485,504` に規則として存在するが(「95% CI(ブロック・ブートストラップ)」)、これは**研究の個別スクリプト(`scripts/measure_katsuo_*.py` 等)が都度実装する規約であって、再利用可能なバックテストエンジンのモジュールではない** | `.claude/skills/research-protocol/SKILL.md:485`, `:504`(規則のみ。実装は無い) |
-| MDE の計算 | 同上。`.claude/skills/research-protocol/SKILL.md:342-345` に規則としてあり、`scripts/preflight_prereg.py` など個別スクリプトが使うが、`src/bot/backtest/` にモジュールとしての MDE 計算関数は無い | `.claude/skills/research-protocol/SKILL.md:342-345`。`src/bot/backtest/`(該当なし) |
-| deflated Sharpe・PBO | **無い**。`grep -rln "deflated\|\\bPBO\\b\|CPCV" --include=*.py --include=*.md .`(pycache 除く)の当たりは、この項目の委任文・監査記録自体を除けば 0 件。`docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md:155` に監査役の問い「`pyproject.toml` に scipy・statsmodels が無く pandas・numpy のみの現状で deflated Sharpe・PBO・CPCV・ブロック・ブートストラップの実装可能性を確認した上での制約か」が記録されている(未回答。作業者への制約と同じ依存禁止が委任文 §4 にもある) | `docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md:155`。`pyproject.toml`(scipy・statsmodels は無い) |
-| 周回数の台帳(ITER) | `.claude/skills/research-protocol/SKILL.md:60` に規則として存在(「ループ回数は台帳(`ITER.md`)に累積し…」)。`src/bot/backtest/` にはこの仕組みへの参照・呼び出しは無い | `.claude/skills/research-protocol/SKILL.md:60` |
-| 封印区間の 4 門 | `load_sealed` は実装済み(`src/bot/research/sealed.py:358`)。`src/bot/bt/` からの呼び出しは無い(項目 0 の核が未着手時点でこの項目に触れていないため) | `src/bot/research/sealed.py:358`(`def load_sealed`) |
-| 実行記録(git SHA・差分ハッシュ・設定・データ sha256・種・版) | **無い**。`src/bot/backtest/` 配下に `sha256`・`git_sha`・`run_id` の文字列は 0 件(`grep -rn "sha256\|content.hash\|run_id\|git_sha" src/bot/backtest/ src/bot/research/ scripts/judge_gates.py` の当たり 0) | `src/bot/backtest/`(該当なし。実行のたびに何も記録に残らない) |
-| 実行 ID = 内容のハッシュ | 無い(同上) | 同上 |
-| 同一入力の再現性の自動確認 | 無い。1 度の実行で完結し、2 回走らせて一致を確かめる仕組みは無い(`engine.py` に乱数は使われていない=決定的ではあるが、それを**自動で確かめる**機構が別に無い) | `src/bot/backtest/engine.py`(該当なし) |
-| 事前登録ハッシュの組み込み | 無い(実行記録の仕組み自体が無いため) | `src/bot/backtest/`(該当なし) |
-| 分布で出す(1 件ごとの bp・分位・負の割合) | `Metrics` はすべてスカラー(`total_pnl_jpy`・`win_rate_pct`・`profit_factor`・`sharpe_ratio`・`max_drawdown_pct` など 12 個)で、1 件ごとの分布・分位は出力されない | `src/bot/backtest/metrics.py:10-23`(`class Metrics` のフィールド一覧) |
-| 露出あたり(bp/時) | 無い(`Metrics` に露出時間・bp/時のフィールドは無い) | `src/bot/backtest/metrics.py`(該当なし) |
-| 約定率・取り逃し | 無い(`compute_metrics` の入力は `trade_pnls` と `equity_curve` のみで、発注件数に対する約定件数の比率は計算されない) | `src/bot/backtest/metrics.py:29-31`(関数シグネチャ) |
-| 逆選択 markout | 無い | `src/bot/backtest/metrics.py`(該当なし) |
-| 費用の内訳 | `total_fees_jpy` の合計 1 個のみで、maker/taker/スプレッド別の内訳は出力されない(`CostModel` 側に個別フィールドはあるが `metrics.py` の出力には合算しか出ない) | `src/bot/backtest/metrics.py:23`(`total_fees_jpy: float`)、`src/bot/backtest/engine.py:98-103`(`CostModel` の内訳フィールド) |
-| 決済理由(exit reason) | **トレードごとの記録には在る**(`close_position` が `reason` を `"signal"`/`"wick_stop"`/`"stop_loss"`/`"take_profit"`/`"maker_tp"`/`"time_exit"` のいずれかで付ける)が、`compute_metrics` はこの `reason` を受け取らず、決済理由ごとの集計・指標には反映されない(記録はあるが集計されていない = A-11 への牽制。存在だけで「持つ」と判定していない) | `src/bot/backtest/engine.py:228`(`def close_position`)、`:239`(`"reason": reason` を trade log に格納)、`:259,264,290,319,323,327,338`(各 `reason=` の呼び出し箇所)。`src/bot/backtest/metrics.py:29`(`compute_metrics` のシグネチャに `reason` の入力は無い) |
-| ドローダウン | 在る(`max_drawdown_pct`)が、単一のスカラー(最大値)のみで、ドローダウンの時系列・分布は出力されない | `src/bot/backtest/metrics.py:17`(`max_drawdown_pct: float`)、`:49-50`(計算箇所) |
-| 実行目的(動作確認/研究)の記載 | 無い(実行記録の仕組み自体が無く、`動作確認`/`研究`のラベルを持つフィールドも無い) | `src/bot/backtest/`(該当なし) |
-| 「バックテスト」タブ | 無い。現行のダッシュボードのタブは「Botコンソール」「マーケット」の 2 つのみ | `scripts/dashboard.py:197-200`(`<nav class="tabs">` 内の `<button id="tab-console">`・`<button id="tab-market">`) |
-| 実行の一覧→項目別タブ | 無い(実行という単位そのものが記録されていないため一覧化のしようがない) | `scripts/dashboard.py`(該当なし) |
-| API のルーティング | `/api/status`・`/api/market`・`/`(index)の 3 つのみ。`/api/backtest` 相当のルートは無い | `scripts/dashboard.py:1353-1370`(`class Handler` の `do_GET`) |
-| 日本語・CDN 不使用 | 既存の 2 タブは日本語で書かれており、CDN の外部読み込みは無い(`grep -c "cdn\." scripts/dashboard.py` の当たり 0)。新設するバックテストタブもこの慣行に従う制約であり、比較対象ではなく当方自身の規約 | `scripts/dashboard.py`(既存タブ全体が日本語。外部 CDN 読み込み 0 件) |
-| 配線の試験 | 既存タブの配線試験は `tests/test_dashboard.py` にある(委任文 §1「材料」に列挙)。バックテストタブの配線試験は当然まだ無い | `tests/test_dashboard.py`(既存タブの範囲のみ) |
-| 動作確認実行の警告表示 | 無い(実行目的のラベル自体が無いため、警告表示の判定材料も無い) | `scripts/dashboard.py`(該当なし) |
+この節に置いていた「当方の現状」(旧 `src/bot/backtest/` の該当箇所の表)は、L-470・L-474 により撤回した(`docs/DATA/delegations/20260926_backtest_env_item4_close.md` §2 の条件 2「項目 0〜3 の要件・定義から「当方の現状」の行を消す」)。撤回前の本文は git の履歴(コミット 09b4733 の版)にある。通過の条件は変えない: 場面集の全部正解 + 調査結果の側との比較(L-432 の三択で相手を選んだ審査員が 3 体中 2 体以上でなければ通過)。
 
 ## 5. 提出前の吟味(委任文 §3「提出前の吟味」。最初に作る役の文)
 
@@ -202,5 +173,5 @@ C3-17(日本語・CDN 不使用)・C3-18(配線の試験)・C3-19(動作確認�
 4. **候補 3(PySystemtrade)・98(limitOrderBook)の「決定的」の実測は、範囲が指値の注文模擬・遅延模型に限られる**のに、これを C3-9(実行全体の再現性の自動確認)の根拠として書くと、範囲を広げすぎではないか。→ **潰した対応**: それぞれの実測が「指値の注文模擬」「遅延の模型」という限定された範囲であることを本文に明記し、「実行記録全体のハッシュ化とは別物」と注記した(A-10「族・スコープを説明なく縮める」の逆パターン=範囲を広げすぎることへの牽制)。
 5. **C3-15(動作確認/研究のラベル)に freqtrade・Jesse・OpenTrader の dry-run/paper モードを挙げたが、これは当方の要求(指標書き出しレコードへの目的フィールドの構造的強制)とは形が違う。**「違う概念を無理に候補に見せかけている」と疑われないか。→ **潰した対応**: 「いずれも『実行モードの切替』であって、当方の要求そのものとは形が違う」と明記し、場面係が能力の場面として採用するかどうかの判断に委ねる書き方にした(比較の観点自体を緩めたり厳しくしたりしていない)。
 6. **C3-17〜C3-19 に grep を打たなかった理由が、単なる手抜きに見えないか。**→ **潰した対応**: これらが「外部道具の機構比較」ではなく当方の実装制約(委任文 §4・artifact-design 由来)であることを§3.5 に独立の節として明記し、「打たない理由」を書くことで A-9(説明なく外す)を避けた。観点表(§2)からは外していない。
-7. **§4「当方の現状」で、決済理由(exit reason)が「トレードごとの記録にはある」ことを見落として「無い」と書きかけていないか。**→ **潰した対応**: `engine.py` の `close_position` の `reason` 引数と呼び出し箇所を file:line で確認し、「記録はあるが `compute_metrics` に集計されない」という正確な区別を書いた(A-11「目視・ぱっと見で判定する」への牽制。存在の有無だけでなく、実際に使われる経路まで確認した)。
+7. (撤回、2026-09-26、L-470・L-474: §4 の撤回に伴い、§4 を対象にしたこの項も外した。撤回前の文は git の履歴)
 8. **`grep -rln "deflated\|PBO\|CPCV" --include=*.py --include=*.md .` が大量のファイルを返したが、その多くはこの委任自体の文書(委任文・監査記録)であり実装ではない可能性がある。**「実装が見つかった」と誤読されないか。→ **潰した対応**: 実際に個別確認し、ヒットは `docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_prompt.md` と委任文・設計文書だけで、`src/`・`scripts/` の実装コードには無いことを明記した。監査役の未回答の問い(scipy/statsmodels 無しでの実装可能性)もそのまま引用し、隠さず記録した。

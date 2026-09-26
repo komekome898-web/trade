@@ -33,7 +33,6 @@ i4-12-refuse	I4-12	能力	結果なし	adapter: Backtrader 1.9.78.123: maker と
 i4-12-touch-decimal	I4-12	値	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	2 回の実行で同じ	0.003	0.003
 i4-13-time-exit	I4-13	値	正解と一致		c8c8589e4a8d	正解と一致		c8c8589e4a8d	2 回の実行で同じ	0.007	0.004
 i4-13-tp-on-exit-bar	I4-13	値	不一致	fills[1].price = 102.0(正解 101.0)	3bf496947812	不一致	fills[1].price = 102.0(正解 101.0)	3bf496947812	2 回の実行で同じ	0.007	0.007
-i4-13-two-models	I4-13	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-14-mask-sides	I4-14	値	正解と一致		3f19057470f3	正解と一致		3f19057470f3	2 回の実行で同じ	0.011	0.013
 i4-14-sides-short	I4-14	値	正解と一致		2603029e6415	正解と一致		2603029e6415	2 回の実行で同じ	0.013	0.009
 i4-15-swap-long	I4-15	値	結果なし	adapter: Backtrader 1.9.78.123: swap_daily_pct: 持ち越しの口は CommInfoBase の interest だけで、暦日の差で数える(comminfo.py 92 行「days * price * abs(size) * (interest / 365)」、274 行 _get_credit_interest)。足ごとに前の足の終値で掛ける口は無い	-	結果なし	adapter: Backtrader 1.9.78.123: swap_daily_pct: 持ち越しの口は CommInfoBase の interest だけで、暦日の差で数える(comminfo.py 92 行「days * price * abs(size) * (interest / 365)」、274 行 _get_credit_interest)。足ごとに前の足の終値で掛ける口は無い	-	結果なし	0.0	0.0
@@ -41,18 +40,13 @@ i4-15-swap-short	I4-15	値	結果なし	adapter: Backtrader 1.9.78.123: swap_dai
 i4-16-missed	I4-16	値	不一致	fills[0].bar = 2(正解 6)	079613038b3f	不一致	fills[0].bar = 2(正解 6)	079613038b3f	2 回の実行で同じ	0.011	0.006
 i4-14-maker-mask-false	I4-14	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.016	0.008
 i4-16-maker-mask-false-not-missed	I4-16	値	正解と一致		8ec96dca0288	正解と一致		8ec96dca0288	2 回の実行で同じ	0.015	0.003
-i4-16-maker-mask-false-two-models	I4-16	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	2 回の実行で同じ	0.015	0.007
-i4-16-same-side-two-models	I4-16	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-16-mask-false-opposite-keeps-limit	I4-16	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.004	0.004
-i4-16-mask-false-opposite-two-models	I4-16	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-11-wick-short-history	I4-11	値	正解と一致		8d5368524dff	正解と一致		8d5368524dff	2 回の実行で同じ	0.008	0.008
 i4-11-wick-entry-bar-close	I4-11	値	正解と一致		6cec38b16ade	正解と一致		6cec38b16ade	2 回の実行で同じ	0.003	0.007
 i4-16-exit-same-side-keeps-limit	I4-16	値	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	不一致	fills[1].bar = 4(正解 6)	6fd9c5048018	2 回の実行で同じ	0.007	0.006
-i4-16-exit-same-side-two-models	I4-16	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-14-blocked-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.007	0.003
 i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	不一致	fills: 2 件(正解 1 件): 観測 [(2, 'OPEN_LONG', 100.0), (3, 'CLOSE_LONG', 100.5)]	2db8492cc104	2 回の実行で同じ	0.007	0.004
-i4-14-sides-opposite-two-models	I4-14	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-8-refuse-bad-bar	I4-8	値	不一致	変形を拒まずに通した	3235318d8ae2	不一致	変形を拒まずに通した	3235318d8ae2	2 回の実行で同じ	0.009	0.012
 i4-10-zero-rate-refused	I4-10	値	不一致	変形を拒まずに通した	d2f62e093129	不一致	変形を拒まずに通した	d2f62e093129	2 回の実行で同じ	0.017	0.014
 i4-8-negative-fee	I4-8	値	正解と一致		443ff7d10080	正解と一致		443ff7d10080	2 回の実行で同じ	0.007	0.003
@@ -60,23 +54,17 @@ i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cd
 i4-17-metrics	I4-17	値	結果なし	adapter: Backtrader 1.9.78.123: 指標は Cerebro の実行に付ける analyzer(analyzers/sharpe.py・drawdown.py・tradeanalyzer.py)で、外から与えた決済ごとの損益と資産の列を受ける関数の口を探したが無い	-	結果なし	adapter: Backtrader 1.9.78.123: 指標は Cerebro の実行に付ける analyzer(analyzers/sharpe.py・drawdown.py・tradeanalyzer.py)で、外から与えた決済ごとの損益と資産の列を受ける関数の口を探したが無い	-	結果なし	0.0	0.0
 i4-17-metrics-edge	I4-17	値	結果なし	adapter: Backtrader 1.9.78.123: 指標は Cerebro の実行に付ける analyzer(analyzers/sharpe.py・drawdown.py・tradeanalyzer.py)で、外から与えた決済ごとの損益と資産の列を受ける関数の口を探したが無い	-	結果なし	adapter: Backtrader 1.9.78.123: 指標は Cerebro の実行に付ける analyzer(analyzers/sharpe.py・drawdown.py・tradeanalyzer.py)で、外から与えた決済ごとの損益と資産の列を受ける関数の口を探したが無い	-	結果なし	0.0	0.0
 i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: Backtrader 1.9.78.123: 12 の指標: analyzer は総損益・回数・勝ち負けの数と平均・連敗・最大下落・シャープを出すが(analyzers/tradeanalyzer.py 88-136 行、drawdown.py 58 行、sharpe.py 143-199 行)、勝率・PF・RR・期待値・手数料の合計を出す口は無い(adapter は道具が出していない値を計算しない)	-	結果なし	adapter: Backtrader 1.9.78.123: 12 の指標: analyzer は総損益・回数・勝ち負けの数と平均・連敗・最大下落・シャープを出すが(analyzers/tradeanalyzer.py 88-136 行、drawdown.py 58 行、sharpe.py 143-199 行)、勝率・PF・RR・期待値・手数料の合計を出す口は無い(adapter は道具が出していない値を計算しない)	-	結果なし	0.0	0.0
-i4-17-two-models	I4-17	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-18-split	I4-18	値	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	0.0	0.0
 i4-18-split-decimal	I4-18	値	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	0.0	0.0
-i4-18-two-models	I4-18	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-18-refuse	I4-18	能力	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	adapter: Backtrader 1.9.78.123: 行の割合で学習・検証・検証外に分ける口を探したが無い(grep split・walk 0 件、backtrader/ の全体)	-	結果なし	0.0	0.0
 i4-10-signal-first	I4-10	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.007	0.003
 i4-10-signal-first-short	I4-10	値	正解と一致		d1e05b6ce656	正解と一致		d1e05b6ce656	2 回の実行で同じ	0.007	0.006
-i4-10-signal-first-two-models	I4-10	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-10-stop-first-plain	I4-10	値	正解と一致		6c3f6f2231b4	正解と一致		6c3f6f2231b4	2 回の実行で同じ	0.003	0.007
 i4-12-tp-before-maker-tp	I4-12	値	正解と一致		4c6c5f66a3e1	正解と一致		4c6c5f66a3e1	2 回の実行で同じ	0.007	0.003
 i4-11-wick-first	I4-11	値	正解と一致		99305c1b61e4	正解と一致		99305c1b61e4	2 回の実行で同じ	0.009	0.006
 i4-11-wick-before-exit-limit	I4-11	値	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 99.5), (4, 'CLOSE_LONG', 99.5)]	965775514100	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 99.5), (4, 'CLOSE_LONG', 99.5)]	965775514100	2 回の実行で同じ	0.008	0.006
 i4-13-stop-on-time-bar	I4-13	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.016	0.007
-i4-13-stop-on-time-bar-two-models	I4-13	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-first	I4-13	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.007	0.006
-i4-13-time-first-two-models	I4-13	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
-i4-13-time-maker-tp-two-models	I4-13	能力	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: Backtrader 1.9.78.123: 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-before-exit-limit	I4-13	値	正解と一致		bac3e0c80dee	正解と一致		bac3e0c80dee	2 回の実行で同じ	0.007	0.005
 i4-13-stop-on-time-bar-maker	I4-13	値	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 98.0), (4, 'CLOSE_LONG', 101.0)]	47184fc6f889	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 98.0), (4, 'CLOSE_LONG', 101.0)]	47184fc6f889	2 回の実行で同じ	0.015	0.007
 i4-16-stop-before-exit-limit	I4-16	値	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 98.0), (4, 'CLOSE_LONG', 101.0)]	47184fc6f889	不一致	fills: 3 件(正解 2 件): 観測 [(2, 'OPEN_LONG', 100.0), (4, 'CLOSE_LONG', 98.0), (4, 'CLOSE_LONG', 101.0)]	47184fc6f889	2 回の実行で同じ	0.007	0.009

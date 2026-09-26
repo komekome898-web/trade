@@ -7,7 +7,7 @@ and opponents/RUNNABILITY.tsv (what was tried for every candidate).
 
 Candidates = what REQUIREMENTS.md §3 extracted, nothing added or removed: none for I4-1..I4-4 (§3.1), the four named
 in §3.2 for I4-5 (121, 21, 93, hftbacktest = catalogue 23) and I4-6 (75, 19, 8, 12), the 55 rows with 足 = ○ for
-I4-8..I4-18 (§3.3), and none for I4-7 / I4-19 / I4-20 (§3.4).  For each viewpoint:
+I4-8..I4-18 (§3.3), none for I4-7 (§3.4) and none for I4-19 / I4-20 (withdrawn, L-470 / L-474).  For each viewpoint:
 - a candidate that runs in an isolated venv is 「動かせた」 when at least one of the viewpoint's scenes ended in
   something other than 「結果なし」 in survey_results/<target>.tsv (counted here, never typed); otherwise it gets a row
   「持たないと確認した」 whose reason is what its adapter found when the scenes were run;
@@ -46,8 +46,8 @@ ZERO = {
     "I4-3": "`grep -inE 'reference implementation|golden (test|file|output)|known.?answer|known.?good' SCAN_clean.md`(REQUIREMENTS.md §3.1、I4-1 と同じ語、当たり 0 件)",
     "I4-4": "`grep -inE 'verified against|等価性|drop-in replacement|API.?compatib' SCAN_clean.md` / `grep -inE 'cross.?check|クロスチェック|benchmark against|答え合わせ' SCAN_clean.md` / `grep -inE 'regression test|test vector|テストベクタ' SCAN_clean.md`(REQUIREMENTS.md §3.1、当たり 0 / 0 / 0 件)",
     "I4-7": "`REQUIREMENTS.md §3.4(内部制約の観点。SCAN に語を探していない。場面にもしていない: DEFINITIONS.md「場面にできない観点」)`",
-    "I4-19": "`REQUIREMENTS.md §3.4(内部制約の観点。SCAN に語を探していない。場面にもしていない: DEFINITIONS.md「場面にできない観点」)`",
-    "I4-20": "`REQUIREMENTS.md §3.4(内部制約の観点。SCAN に語を探していない。場面にもしていない: DEFINITIONS.md「場面にできない観点」)`",
+    "I4-19": "`撤回(L-470・L-474、docs/DATA/delegations/20260926_backtest_env_item4_close.md)。観点を要件から外したので候補も場面も無い`",
+    "I4-20": "`撤回(L-470・L-474、同上)。観点を要件から外したので候補も場面も無い`",
 }
 
 NAMES = {1: "Basana", 2: "Backtrader", 3: "PySystemtrade", 4: "PyBroker", 5: "Lean CLI", 6: "Ziplime", 7: "Superalgos",
@@ -272,7 +272,7 @@ def main():
     out = ["# 項目 4「統合と答え合わせ」— 動かせなかった候補の検討表", "",
            "場面係が書く(委任文 §3「動かせない候補の検討と再現」・場面集の規則 6・9)。この表は `tests/bt/battery/item_4/gen_considered.py` が作る。", "",
            "- 候補 = REQUIREMENTS.md §3 が機械で抜き出したものだけ(人が足し引きしない): I4-1〜I4-4 は 0 件(§3.1)、I4-5 は 121・21・93・hftbacktest、"
-           "I4-6 は 75・19・8・12(§3.2)、I4-8〜I4-18 は台帳の 足 = ○ の 55 件(§3.3)、I4-7・I4-19・I4-20 は SCAN の対象外(§3.4)。"
+           "I4-6 は 75・19・8・12(§3.2)、I4-8〜I4-18 は台帳の 足 = ○ の 55 件(§3.3)、I4-7 は SCAN の対象外(§3.4)、I4-19・I4-20 は撤回(L-470・L-474)。"
            "**§3.2 が「候補 1 `hftbacktest`」と書く 1 は SCAN の節の中の通し番号で、台帳の番号は 23**(台帳の 1 は Basana)。ここでは 23 として扱う。"
            "**台帳の 11 の名の列は `python3` だが、SCAN 8452 行はこれを OctoBot と書く**(項目 0 も OctoBot として扱った)。",
            "- 「動かせた候補」= 隔離した venv で動き、その観点の場面で「結果なし」以外(正解と一致・不一致・対応なし)を 1 つ以上返した候補"

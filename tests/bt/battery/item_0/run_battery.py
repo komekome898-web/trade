@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Run the item-0 scene set against one target, twice, and write a TSV.
 
-    PYTHONPATH=src python3 run_battery.py --target current_impl --out OUT.tsv
     PYTHONPATH=src python3 run_battery.py --target new_impl     --out OUT.tsv
     PYTHONPATH=src python3 run_battery.py --target mutant       --out OUT.tsv
     <venv>/bin/python run_battery.py --target opp_<name>        --out OUT.tsv
@@ -104,8 +103,6 @@ def split_target(target: str) -> tuple[str, str]:
 
 
 def _module_path(base: str) -> Path | None:
-    if base == "current_impl":
-        return HERE / "adapters" / "current_impl.py"
     if base in ("new_impl", "mutant"):
         return HERE / "adapters" / "new_impl.py"
     table = {**OPPONENTS, **_repro_targets()}
@@ -132,9 +129,6 @@ def configured_targets(base: str) -> list[str]:
 
 def load_adapter(target: str) -> Adapter:
     base, label = split_target(target)
-    if base == "current_impl":
-        from adapters.current_impl import CurrentImplAdapter
-        return CurrentImplAdapter(label)
     if base in ("new_impl", "mutant"):
         if label:
             raise SystemExit(f"{base} has one configured target (no label): {target!r}")
@@ -149,7 +143,7 @@ def load_adapter(target: str) -> Adapter:
         mod_name, cls = table[base]
         mod = importlib.import_module(f"opponents.{mod_name}")
         return getattr(mod, cls)(label)
-    raise SystemExit(f"unknown target {target!r}; known: current_impl, new_impl, mutant, {', '.join(sorted(table))}")
+    raise SystemExit(f"unknown target {target!r}; known: new_impl, mutant, {', '.join(sorted(table))}")
 
 
 def _matches(output, expected) -> bool:
@@ -288,7 +282,6 @@ REPO = HERE.parents[3]
 # the adapters. A reproduction (opponents/repro_*.py) is its own file.
 TARGET_DISTS: dict[str, dict] = {
     "new_impl": {"py": ["bot.bt"]}, "mutant": {"py": ["bot.bt"]},
-    "current_impl": {"py": ["bot.backtest", "bot.strategy"]},
     "opp_basana": {"py": ["basana"]}, "opp_ziplime": {"py": ["ziplime"]}, "opp_zipline_reloaded": {"py": ["zipline"]},
     "opp_lib_pybroker": {"py": ["pybroker"]}, "opp_qf_lib": {"py": ["qf_lib"]}, "opp_backtrader": {"py": ["backtrader"]},
     "opp_hftbacktest": {"py": ["hftbacktest"]}, "opp_rqalpha": {"py": ["rqalpha"]}, "opp_fast_trade": {"py": ["fast_trade"]},
@@ -967,7 +960,7 @@ def main() -> None:
     ap.add_argument("--list-targets", action="store_true")
     a = ap.parse_args()
     if a.list_targets:
-        print("\n".join(t for base in ["current_impl", "new_impl", "mutant", *OPPONENTS, *_repro_targets()]
+        print("\n".join(t for base in ["new_impl", "mutant", *OPPONENTS, *_repro_targets()]
                         for t in configured_targets(base)))
         return
     if not a.target or not a.out:

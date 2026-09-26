@@ -663,3 +663,10 @@ ac89678b7a62c690	test_battery_r17_refusal.py:197	コード	場面 id を照合�
 856ea1c6109fe126	test_battery_r17_refusal.py:312	コード	場面 id を照合元から場面を引く鍵・格子の場面の一覧として使う試験のコード(第 r17-1 回)
 2a3edc820fd1ef51	test_battery_r17_refusal.py:420	コード	場面 id を照合元から場面を引く鍵・格子の場面の一覧として使う試験のコード(第 r17-1 回)
 164c55df6c2dc1ee	ROOTCAUSE_f2.md:1	規則・読み	根本原因・主張の表・読みと判断・結果の記録(第 f2 回)
+# 2026-09-26 (L-470 / L-474): the judgments of the lines edited to drop the withdrawn 「当方の現状」, carried over to their new text (workerB carry_judgments.py)
+60e9bd626f9f562b	DEFINITIONS.md:40	生成物	gen_definitions.py が scenes.py と grid_c.py から作る
+45d9d934f55912bc	def_axes/jA.tsv:127	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+b1f4576fdd38e972	def_axes/jA.tsv:131	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+790df44ad1738861	def_axes/jA.tsv:141	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+e1b2d485f781d377	def_axes/jA.tsv:166	規則・読み	場面集のコードの振る舞い(関数名と版は docstring の置き場所)
+3024aa95bab17242	gen_definitions.py:20	規則・読み	凍結した正の定義の段落(FROZEN_DEFINITIONS の文字列)

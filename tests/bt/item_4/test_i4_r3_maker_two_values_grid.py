@@ -11,7 +11,6 @@ can pass through it: a buy and a sell limit at 100 both need a strict pass), the
 `expected()` walks the rule text above bar by bar (it never calls the engine).
 Not in the grid: signals that close a position (R-E3: the mask never stops an exit), the long / short entry filter
 (R-E1: the lead's text names the mask only -- a question to the lead), limits at other prices.
-The legacy rule set is not tested here (it keeps the old computation; tests/bt/compat).
 """
 from __future__ import annotations
 

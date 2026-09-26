@@ -1,12 +1,11 @@
 """Item 4 battery, round r2-1: the tests of the claims table (ROOTCAUSE_r2-1.md §4), the scene-keeper's tests (規則 7).
 
 Families (the claim, the test that fails if a hand-written claim is left, the mutant of the machine):
-  A  the order within one bar (R-O1 / L-5)      i4-r1-02
+  A  the order within one bar (R-O1)            i4-r1-02
   B  what a scene asks for besides its viewpoint i4-r1-05
   C  the property grids and their invariants     i4-r1-06
   D  the granularity of I4-3                     i4-r1-07
   E  the controls of a variant                   i4-r1-09
-  F  the compatibility mouth of new_impl         i4-r1-10
   G  the review table's judgement                i4-r1-05 / i4-r1-08
   H  the install attempts                        i4-r1-11
 
@@ -17,8 +16,8 @@ The adversarial grids (委任文 §3「提出前の吟味」(6)): the rule's inp
     nothing on bar 3.  Not in the grid (named): three or more events at once (the pairs fix the order; the winner
     of a larger set is the first of it in the order), a bar that OPENS beyond a level (a gap), exits on other bars
     than 4, costs other than 0, entry bars other than 2.
-  - test_order_matches_the_rule_text: every pair's winner under ORDER_SPEC / ORDER_LEGACY against a table written
-    from the text of R-O1 / L-5 (PROSE_SPEC / PROSE_LEGACY below), not from the lists.
+  - test_order_matches_the_rule_text: every pair's winner under ORDER_SPEC against a table written from the text of
+    R-O1 (PROSE_SPEC below), not from the list.
   - test_invariants_catch_each_perturbation: every grid scene x every perturbation kind (value, size, bar, side,
     PnL, equity, nothing traded, look-ahead in a prefix, a kept position past its exit).  Not in the grid: a
     perturbation that keeps every identity (e.g. two fills swapped within the same bar and price).
@@ -61,9 +60,6 @@ def test_every_order_pair_is_pinned():
     _, pinned = S.order_findings(S.SCENES)
     missing = [p for p in S.order_pairs() if ("spec",) + S.first_of(p, S.ORDER_SPEC) not in pinned]
     assert missing == []
-    differ = [p for p in S.order_pairs() if S.first_of(p, S.ORDER_SPEC) != S.first_of(p, S.ORDER_LEGACY)]
-    assert differ, "L-1 / L-5 name pairs whose order differs"
-    assert [p for p in differ if ("legacy",) + S.first_of(p, S.ORDER_LEGACY) not in pinned] == []
 
 
 def _swapped(order, pair):
@@ -78,12 +74,9 @@ def _swapped(order, pair):
 def test_swapping_any_pair_of_the_order_breaks_a_scene(pair):
     wrong, _ = S.order_findings(S.SCENES, order_override={"spec": _swapped(S.ORDER_SPEC, pair)})
     assert wrong, f"swapping {pair} in the spec order contradicts no scene"
-    if S.first_of(pair, S.ORDER_SPEC) != S.first_of(pair, S.ORDER_LEGACY):
-        wrong, _ = S.order_findings(S.SCENES, order_override={"legacy": _swapped(S.ORDER_LEGACY, pair)})
-        assert wrong, f"swapping {pair} in the legacy order contradicts no scene"
 
 
-# the winner of each pair, read from the rule text (DEFINITIONS.md R-O1 and L-5), not from the lists
+# the winner of each pair, read from the rule text (DEFINITIONS.md R-O1), not from the list
 PROSE_SPEC = {
     # R-O1: the open events ① wick, ② time, ③ signal come before the range events ④ stop (also on the time-exit bar:
     # R-H3's "only the stop first" is the order inside the range, after the open), ⑤ tp, ⑥ mtp, ⑦ limit
@@ -94,17 +87,12 @@ PROSE_SPEC = {
     ("stop", "tp"): "stop", ("stop", "mtp"): "stop", ("stop", "limit"): "stop", ("tp", "mtp"): "tp",
     ("tp", "limit"): "tp", ("mtp", "limit"): "mtp",
 }
-PROSE_LEGACY = dict(PROSE_SPEC)
-PROSE_LEGACY.update({  # L-5: ① wick → ④ stop (also on the time-exit bar) → ⑤ tp → ⑥ mtp → ② time → ③ signal → ⑦ limit
-    ("signal", "stop"): "stop", ("signal", "tp"): "tp", ("signal", "mtp"): "mtp", ("time", "tp"): "tp",
-    ("time", "mtp"): "mtp", ("time", "stop"): "stop"})
 
 
 @pytest.mark.parametrize("pair", S.order_pairs())
 def test_order_matches_the_rule_text(pair):
     key = pair if pair in PROSE_SPEC else pair[::-1]
     assert S.winner(set(pair), S.ORDER_SPEC) == PROSE_SPEC[key]
-    assert S.winner(set(pair), S.ORDER_LEGACY) == PROSE_LEGACY[key]
 
 
 def _mirror(rows):
@@ -215,22 +203,24 @@ def test_property_grids_reach_every_path():
                 assert pre["bars"] == full["bars"][:e["upto"]] and len(pre["bars"]) == e["upto"] < len(full["bars"])
 
 
-def _current():
-    return _load(HERE / "adapters" / "current_impl.py", "i4_claims_current").TARGET
+def _new():
+    """The measured target (adapters/new_impl.py): the observations the perturbation grid below is built on.  The
+    answers never come from it (they are the stated rules R-* as hand arithmetic)."""
+    return _load(HERE / "adapters" / "new_impl.py", "i4_claims_new_impl").TARGET
 
 
 @pytest.fixture(scope="module")
 def grid_obs():
-    cur = _current()
-    return {g["id"]: [cur.run(c) for c in g["cases"]] for g in GRIDS}
+    new = _new()
+    return {g["id"]: [new.run(c) for c in g["cases"]] for g in GRIDS}
 
 
-def test_invariants_hold_on_the_existing_engine_and_the_hand_answers(grid_obs):
+def test_invariants_hold_on_the_hand_answers_and_the_measured_target(grid_obs):
     for g in GRIDS:
-        assert J.compare(g["expect"], grid_obs[g["id"]], g)[0] == "正解と一致", g["id"]
         for c, e in zip(g["cases"], g["expect"]):
             if "fills" in e:
                 assert J.invariants(c, e) == []
+        assert J.compare(g["expect"], grid_obs[g["id"]], g)[0] == "正解と一致", g["id"]
 
 
 def _perturbations(obs_list, g):
@@ -344,29 +334,6 @@ def test_runner_credits_a_refusal_only_after_all_controls(sid):
         assert R.classify(orig, lacking, base)[0] != "正解と一致"
 
 
-# =========================================================================== F  the compatibility mouth
-def test_new_impl_legacy_goes_through_the_old_mouths(monkeypatch):
-    new = _load(HERE / "adapters" / "new_impl.py", "i4_claims_new_impl")
-    seen = {"run_backtest": 0, "split_data": 0}
-    for name in seen:
-        real = getattr(new, name)
-
-        def wrap(*a, _real=real, _name=name, **k):
-            seen[_name] += 1
-            return _real(*a, **k)
-        monkeypatch.setattr(new, name, wrap)
-    s = S.by_id("i4-13-two-models")
-    assert J.compare(s["expect"], new.TARGET.run(s["input"]), s)[0] == "正解と一致"
-    s = S.by_id("i4-18-two-models")
-    assert J.compare(s["expect"], new.TARGET.run(s["input"]), s)[0] == "正解と一致"
-    assert seen == {"run_backtest": 1, "split_data": 1}
-    # the mutant: an old mouth that answers differently changes the legacy output (the adapter reads it)
-    monkeypatch.setattr(new, "run_backtest", lambda *a, **k: (_ for _ in ()).throw(ValueError("mouth replaced")))
-    from i4_protocol import Refused
-    with pytest.raises(Refused):
-        new.TARGET.run(S.by_id("i4-13-two-models")["input"])
-
-
 # =========================================================================== G  the review table
 def _gen():
     return _load(HERE / "gen_considered.py", "i4_claims_gen_considered")
@@ -411,7 +378,7 @@ def test_runnability_records_an_attempt_for_every_reproduction():
 # The derivation of the maker entries of a scene from the rule text only (R-M1 strict trade-through at the limit, R-M2
 # timeout, R-M3 an opposite VALID signal replaces and counts, R-M6 a same-side signal keeps the old limit, R-E2 / R-E4 a
 # mask-False signal does nothing -- also on a resting limit of the other side (the lead's answer, round r3-1)).
-# Flags turn R-E4 / R-M6 into the existing computation L-6 + L-8 / L-7 (the mutants).
+# Flags drop R-E4 / R-M6 (the mutants of the derivation: a rule left out must contradict a scene).
 # Scope (named): scenes run with the maker execution, no exit option (no stop / take-profit / time / wick / maker
 # take-profit), BUY / SELL signals only, and answers whose fills are opens only -- the entry path alone (the
 # derivation stops at the first open).  Not in it: closing limits (R-M4) and the exits (family A covers them), CLOSE.
@@ -430,7 +397,7 @@ def _maker_entries(inp, r_e4=True, r_m6=True):
         if pending is not None and j > pending[1]:
             through = b["low"] < pending[0] if pending[2] == "BUY" else b["high"] > pending[0]
             if through:                                     # R-M1: strictly traded through
-                if ok_mask(pending[1], pending[2]):         # R-E2 / R-E1 (L-6 / L-8: no open)
+                if ok_mask(pending[1], pending[2]):         # R-E2 / R-E1 (with R-E4 dropped: no open)
                     fills.append((j, pending[0], "OPEN_LONG" if pending[2] == "BUY" else "OPEN_SHORT"))
                     return fills, missed
                 pending = None
@@ -446,7 +413,7 @@ def _maker_entries(inp, r_e4=True, r_m6=True):
             continue
         if pending is not None and pending[2] == side and r_m6:   # R-M6
             continue
-        if pending is not None and pending[2] != side:      # R-M3 (L-8 when the signal's mask is False)
+        if pending is not None and pending[2] != side:      # R-M3 (with R-E4 dropped: also a mask-False signal)
             missed += 1
         pending = (b["close"], j, side)
     return fills, missed
@@ -471,10 +438,7 @@ def _entry_path_scenes():
 
 
 def _answers(s):
-    inp, exp = s["input"], s["expect"]
-    if "models" in inp:
-        return [("legacy", exp["legacy"]), ("spec", exp["spec"])]
-    return [("spec", exp)]
+    return [("spec", s["expect"])]
 
 
 def _as_derived(e):
@@ -488,7 +452,7 @@ def test_maker_entry_scenes_follow_the_rule_text():
             "i4-16-mask-false-opposite-keeps-limit"} - ids == set(), ids
     for s in sc:
         for name, e in _answers(s):
-            got = _maker_entries(s["input"]) if name == "spec" else _maker_entries(s["input"], r_e4=False, r_m6=False)
+            got = _maker_entries(s["input"])
             fills, missed = _as_derived(e)
             assert got[0] == fills, (s["id"], name, got, fills)
             if missed is not None:
@@ -538,19 +502,32 @@ def test_the_unread_grid_catches_the_old_substring_matcher():
     assert passed, "the grid does not tell the old matcher from the new one"
 
 
+def _replacing_closing_limit(inp, ob, d, j):
+    """The mutant of R-M7: a later same-side closing signal re-places the resting closing limit at its bar's close."""
+    cfg, bars = inp["config"], inp["bars"]
+    if cfg["execution"] != "maker":
+        return None
+    sig = {s["bar"]: s["signal"] for s in inp["signals"]}
+    closer = "SELL" if d > 0 else "BUY"
+    pend = None
+    for p in range(ob, j):
+        if sig.get(p) in (closer, "CLOSE"):
+            pend = p
+    if pend is None or j - pend > cfg["maker_timeout_bars"]:
+        return None
+    return S.dec(bars[pend]["close"])
+
+
 def test_the_kept_closing_limit_is_pinned_by_a_scene():
-    """R-M7 (round r3-1, stage 2): re-placing the closing limit on a same-side signal (the legacy L-7) in the spec
-    contradicts a scene; keeping it in the legacy contradicts one too."""
+    """R-M7 (round r3-1, stage 2): re-placing the closing limit on a same-side signal contradicts a scene."""
     orig = S._closing_limit
     try:
-        S._closing_limit = lambda inp, ob, d, j, model="spec": orig(inp, ob, d, j, "legacy")
+        S._closing_limit = _replacing_closing_limit
         wrong, _ = S.order_findings(S.SCENES)
         assert any(sid == "i4-16-exit-same-side-keeps-limit" for sid, _ in wrong), wrong
-        S._closing_limit = lambda inp, ob, d, j, model="spec": orig(inp, ob, d, j, "spec")
-        wrong, _ = S.order_findings(S.SCENES)
-        assert any(sid == "i4-16-exit-same-side-two-models" for sid, _ in wrong), wrong
     finally:
         S._closing_limit = orig
+    assert S.order_findings(S.SCENES)[0] == []
 
 
 def _all_bar_inputs(s):

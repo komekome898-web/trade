@@ -20,9 +20,7 @@ op "bars"      -- a bar backtest.  Keys:
                 exit_execution ("signal"|"maker_tp"), maker_tp_pct, entry_mask (null|[bool]),
                 entry_sides ("both"|"long"|"short"), stop_mode ("fixed"|"wick_invalidation"),
                 stop_window_bars
-    model       "spec"  -- the result of the stated bar-model rules (DEFINITIONS.md「足の模型の仕様」)
-    models      ["legacy", "spec"] instead of `model`: return BOTH results of ONE strategy run
-                description, {"legacy": obs, "spec": obs}
+    model       "spec"  -- the one answer: the result of the stated bar-model rules (DEFINITIONS.md「足の模型の仕様」)
     reference   true -> return {"engine": obs, "reference": obs}: the same input through the
                 target's main engine AND through an independent reference implementation
     want        subset of ["fills", "pnls", "equity", "metrics", "missed_fills"]

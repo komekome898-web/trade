@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Item 2 battery runner (執行の模型).
 
-    python3 tests/bt/battery/item_2/run_battery.py --target current_impl --out OUT.tsv
     python3 tests/bt/battery/item_2/run_battery.py --target new_impl     --out OUT.tsv
     python3 tests/bt/battery/item_2/run_battery.py --target mutant       --out OUT.tsv
     python3 tests/bt/battery/item_2/run_battery.py --target opp_<name>   --out OUT.tsv

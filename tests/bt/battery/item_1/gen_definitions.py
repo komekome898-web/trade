@@ -85,7 +85,6 @@ runner は同じ場面を別のプロセスで 2 回走らせ、両方を記録�
 ## 5. 対象(表の行になるもの)
 
 - 新実装 = `adapters/new_impl.py`(**口だけ**。本体は資料係が毎周、新実装の公開の API だけを呼んで書く)。
-- 当方の現状 = `adapters/current_impl.py`(旧 `src/bot/backtest/` と、`src/bot/research/sealed.py`・`src/bot/monitoring/market_view.py` の公開の関数)。
 - 調査結果の側 = 要件のファイル §3 が名を挙げた候補のうち、隔離した venv で動いたものと、動かせない候補の再現(`opponents/`。一覧は `i1_targets.py`、
   導入の記録は `opponents/RUNNABILITY.tsv`、動かせない候補の検討は `opponents/CONSIDERED.md`)。場面ごとに、動いた対象のうち最も良い結果を 1 行に寄せる。
 - 試金石 = `mutant.py`(新実装を包み、1 か所だけ誤らせる。何を誤らせたかは `mutant.py` の MUTANT)。

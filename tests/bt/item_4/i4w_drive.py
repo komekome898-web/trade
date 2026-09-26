@@ -87,8 +87,6 @@ def run_reference_bars(inp: dict) -> dict:
 def run(inp: dict, reference=run_reference_bars) -> dict:
     op = inp.get("op")
     if op == "bars":
-        if "models" in inp:
-            return {m: run_engine_bars(inp, m) for m in inp["models"]}
         if inp.get("reference"):
             if reference is None:
                 raise NotImplementedError("no reference driver given")
@@ -105,8 +103,6 @@ def run(inp: dict, reference=run_reference_bars) -> dict:
                 return {"splits": split_rows(n, inp["train_frac"], inp["val_frac"], arith)}
             except SplitError as exc:
                 raise Refused(str(exc)) from None
-        if "models" in inp:
-            return {m: one({"legacy": "binary", "spec": "decimal"}[m]) for m in inp["models"]}
         return one("decimal")
     if op == "pipeline":
         return run_pipeline_scene(inp)

@@ -17,10 +17,8 @@ or branches. The grid is the rule's input space:
   x time exit due on bar 4 {no, yes (max_hold_bars = 2)} x costs {zero, non-zero}
   = 2 x 4 x 5 x 3 x 4 x 2 x 2 = 1920 cells, all run.
 
-Checked on every cell: (1) the native model ("spec") gives the oracle's fills and PnL; (2) the reference of the
-stated rules (the independent reference bot.bt.reference.bar_sim) gives the same; (3) the compatibility model ("legacy") gives the OLD
-engine's output bit for bit (src/bot/backtest/engine.run_backtest on the same input: trade log, PnLs, equity,
-metrics, missed fills).
+Checked on every cell: (1) the engine's bar model ("spec") gives the oracle's fills and PnL; (2) the reference of
+the stated rules (the independent reference bot.bt.reference.bar_sim) gives the same.
 
 Not in the grid (named): the maker execution (a signal places a limit at the signal bar's close; the limit and the
 stop / take-profit are both inside bar j's range and the rule text does not order them -- asked to the lead,
@@ -31,10 +29,8 @@ fixed entry path (entry at bar 2's open 100); bar counts other than 6.
 from __future__ import annotations
 
 import itertools
-import json
 import math
 
-import pandas as pd
 import pytest
 
 from bot.bt.compat import bar_events, options_from_mapping, run_bars
@@ -164,30 +160,6 @@ def run_rule_reference(bars, sig, cfg):
     return ref_run_bars(list(bars), sig, drive.reference_options(c, 60)).to_floats()
 
 
-def run_old(bars, sig, cfg):
-    from bot.backtest.engine import CostModel, run_backtest
-    from bot.strategy.base import Signal, SignalType, Strategy
-
-    class Script(Strategy):
-        def __init__(self):
-            super().__init__({})
-
-        @property
-        def min_history(self):
-            return 0
-
-        def on_candles(self, candles):
-            v = sig.get(len(candles) - 1)
-            return Signal(SignalType[v]) if v else Signal(SignalType.HOLD)
-
-    df = pd.DataFrame({"open": [b[0] for b in bars], "high": [b[1] for b in bars], "low": [b[2] for b in bars],
-                       "close": [b[3] for b in bars], "volume": [1.0] * len(bars)},
-                      index=pd.date_range("2026-01-05", periods=len(bars), freq="min", tz="UTC"))
-    kw = {k: v for k, v in cfg.items() if k not in ("costs", "initial_equity", "order_notional")}
-    return run_backtest(Script(), df, initial_equity_jpy=cfg["initial_equity"], order_notional_jpy=cfg["order_notional"],
-                        costs=CostModel(**cfg["costs"]), **kw)
-
-
 def _close(a: float, b: float) -> bool:
     return math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)
 
@@ -221,24 +193,6 @@ def test_spec_and_rule_reference_follow_the_open_then_range_order(start):
         if not (ok and rok):
             bad.append((cell, "spec" if not ok else "", got, "reference" if not rok else "", rgot, want["fills"]))
     assert not bad, f"{len(bad)} cells differ from the rule text; first: {bad[:3]}"
-
-
-@pytest.mark.parametrize("start", range(0, len(CELLS), CHUNK))
-def test_legacy_keeps_the_old_engine_bit_for_bit(start):
-    bad = []
-    for cell in CELLS[start:start + CHUNK]:
-        d, p, ex, op, re_, td, k = cell
-        bars = bars_of(d, op, re_)
-        cfg = config(d, ex, td, k)
-        sig = signals(d, p)
-        new = run_new(bars, sig, cfg, "legacy")
-        old = run_old(bars, sig, cfg)
-        o = ([dict(e) for e in old.trade_log], [float(x) for x in old.trade_pnls],
-             [float(x) for x in old.equity_curve.tolist()], dict(old.metrics.as_dict()), int(old.missed_fills))
-        n = (new.trade_log, list(new.trade_pnls), list(new.equity), dict(new.metrics), int(new.missed_fills))
-        if json.dumps(o) != json.dumps(n):  # np.float64 is a float: json writes each float's repr (its exact bits)
-            bad.append(cell)
-    assert not bad, f"{len(bad)} cells: legacy differs from the old engine; first: {bad[:3]}"
 
 
 def test_the_grid_is_not_vacuous():
