@@ -1,0 +1,46 @@
+import sys, importlib.util
+sys.path.insert(0, "tests/bt/compat")
+spec = importlib.util.spec_from_file_location("T", "tests/bt/compat/test_replace_layer_grid.py")
+T = importlib.util.module_from_spec(spec); sys.modules["T"] = T; spec.loader.exec_module(T)
+C = T.C
+orig = {k: getattr(C, k) for k in ("_core_takes_costs", "_core_takes_options", "route_of", "_old_arithmetic")}
+def restore():
+    for k, v in orig.items(): setattr(C, k, v)
+def expect_fail(name, fn):
+    try:
+        fn()
+    except AssertionError:
+        print("caught  ", name); return
+    except Exception as e:
+        print("caught(exc)", name, type(e).__name__); return
+    print("MISSED  ", name)
+# M1: cost subclasses sent to the core
+C._core_takes_costs = lambda costs: True
+expect_fail("M1 subclass->core", lambda: T.test_a_cost_model_subclass_with_its_own_method_gives_the_old_numbers("fee"))
+restore()
+# M2: malformed rows sent to the core (route by costs/options only)
+def r2(candles, costs=None, **kw):
+    return "core", C._events.__wrapped__(candles) if hasattr(C._events, "__wrapped__") else ("core", None)
+C.route_of = lambda candles, costs=None, **kw: ("core", None)
+expect_fail("M2 malformed->core", lambda: T.test_malformed_rows_at_every_position_give_the_old_numbers("high_below_low"))
+restore()
+# M3: order size check dropped
+C._core_takes_options = lambda *a: True
+expect_fail("M3 notional->core", lambda: T.test_odd_option_values_give_the_old_numbers("order_notional_jpy"))
+restore()
+# M4: old arithmetic with a one-character change (stop checked with < instead of <=)
+import inspect, textwrap
+src = inspect.getsource(orig["_old_arithmetic"]).replace("trigger = min(opens[i], sl_level) if long", "trigger = max(opens[i], sl_level) if long")
+assert "max(opens[i], sl_level) if long" in src
+ns = dict(vars(C)); exec(src, ns); C._old_arithmetic = ns["_old_arithmetic"]
+expect_fail("M4 old arithmetic mutated", lambda: T.test_malformed_rows_at_every_position_give_the_old_numbers("close_nan"))
+restore()
+# M5: valid runs sent to the old route (no_old_route guard)
+class MP:
+    def setattr(self, obj, name, val): setattr(obj, name, val)
+C.route_of = lambda candles, costs=None, **kw: ("old", None)
+mp = MP(); T.no_old_route.__wrapped__(mp) if hasattr(T.no_old_route, "__wrapped__") else None
+def refuse(*a, **k): raise AssertionError("old route")
+C._old_arithmetic = refuse
+expect_fail("M5 valid->old", lambda: T.test_fresh_valid_cells_run_on_the_core_and_match_the_old_engine(0, None))
+restore()

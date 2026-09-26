@@ -204,9 +204,13 @@ def test_seeded_random_is_reproducible_and_the_seed_matters():
 def test_order_latency_moves_the_fill_and_a_seeded_distribution_repeats():
     root, _, ds = _root()
     base = run_pipeline(plan_pipeline(**_args(root, ds)), runs_dir=tempfile.mkdtemp())
-    lat = dict(D.LATENCY0, order={"kind": "constant", "ns": 250_000_000})
+    lat = dict(D.LATENCY0, order={"kind": "constant", "ns": 60 * NS})
     slow = run_pipeline(plan_pipeline(**_args(root, ds, latency=lat)), runs_dir=tempfile.mkdtemp())
-    assert slow.instruments["fx_tick"].fills[0]["t_ns"] - base.instruments["fx_tick"].fills[0]["t_ns"] >= 250_000_000
+    sent = S.SCHEDULE[0]["t_ns"]
+    # I-1: the fill is the first observation at or after the ARRIVAL (sent + the order latency)
+    assert base.instruments["fx_tick"].fills[0]["t_ns"] >= sent
+    assert slow.instruments["fx_tick"].fills[0]["t_ns"] >= sent + 60 * NS
+    assert slow.instruments["fx_tick"].fills[0]["t_ns"] > base.instruments["fx_tick"].fills[0]["t_ns"]
     uni = dict(D.LATENCY0, order={"kind": "seeded_uniform", "low_ns": 0, "high_ns": 10**9, "seed": 4})
     a = run_pipeline(plan_pipeline(**_args(root, ds, latency=uni)), runs_dir=tempfile.mkdtemp())
     b = run_pipeline(plan_pipeline(**_args(root, ds, latency=uni)), runs_dir=tempfile.mkdtemp())

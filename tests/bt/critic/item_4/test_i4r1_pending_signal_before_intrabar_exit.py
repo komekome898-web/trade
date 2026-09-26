@@ -64,6 +64,15 @@ def _case(exit_kind: str, direction: str):
     return S.mk_bars(rows), S.cfg(**over), entry_sig, opposite, open4, level
 
 
+def _ref_options(cfg: dict, bar_seconds: int = 60) -> dict:
+    """The battery config -> the independent reference's options (src/bot/bt/reference/SPEC.md §7). The two
+    undecided points take the lead's values (VERDICTS 2026-09-26, U1 = use_available, U2 = keep)."""
+    o = {k: v for k, v in cfg.items() if k not in ("initial_equity", "order_notional")}
+    o.update(capital=cfg["initial_equity"], order_amount=cfg["order_notional"], bar_seconds=bar_seconds,
+             undecided={"wick_short_history": "use_available", "same_side_exit_signal": "keep"})
+    return o
+
+
 def _fills(inp, model):
     i = dict(inp)
     i["model"] = model
@@ -95,12 +104,12 @@ def test_control_without_the_signal_exits_at_the_level(exit_kind, direction):
 @pytest.mark.parametrize("direction", DIRS)
 @pytest.mark.parametrize("exit_kind", EXITS)
 def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
-    """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
-    rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
-    from bot.bt.reference.bar_rules import run_rules
+    """The independent reference of the stated rules (bot.bt.reference.bar_sim.run_bars; bar_rules.py was removed in
+    the finishing stage) must give R-T1's answer too, not the old engine's documented behaviour."""
+    from bot.bt.reference.bar_sim import run_bars
     bars, cfg, entry, opposite, open4, _ = _case(exit_kind, direction)
     sig = {1: entry, 3: opposite if closer == "opposite" else "CLOSE"}
-    got = [(f["bar"], f["side"], f["price"]) for f in run_rules(bars, 60, sig, cfg)["fills"]]
+    got = [(f["bar"], f["side"], f["price"]) for f in run_bars(bars, sig, _ref_options(cfg)).to_floats()["fills"]]
     side = "LONG" if direction == "long" else "SHORT"
     assert got == [(2, f"OPEN_{side}", 100.0), (4, f"CLOSE_{side}", open4)], got
 

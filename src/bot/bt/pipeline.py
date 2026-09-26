@@ -745,6 +745,7 @@ class ArrivalGate:
         self.hide_book = hide_book
         self.held: list[tuple[OrderRequest, int]] = []
         self.last_obs_t: Optional[int] = None
+        self.obs_time: dict[str, int] = {}  # order id -> the time of the observation that priced it (a bar: its start)
 
     def open_orders(self):
         return self.venue.open_orders()
@@ -779,6 +780,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if start >= a]
             self.held = [(o, a) for o, a in self.held if start < a]
             for o, _ in due:
+                self.obs_time[o.client_order_id] = start
                 out += self._release(o, start - 1, event)  # I-4: this bar starts after the order
             out += list(self.venue.on_market_event(event, t))
             return tuple(out)
@@ -790,6 +792,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if t >= a]
             self.held = [(o, a) for o, a in self.held if t < a]
             for o, _ in due:
+                self.obs_time[o.client_order_id] = t
                 out += self._release(o, t, event)
         return tuple(out)
 
@@ -798,6 +801,7 @@ class ArrivalGate:
         if order.order_type != "market":
             return self.venue.on_order(order, t)
         if self.price_type is not BarEvent and self.last_obs_t is not None and self.last_obs_t >= t:
+            self.obs_time[order.client_order_id] = self.last_obs_t
             return self.venue.on_order(order, t)  # an observation at the arrival instant is "at or after" (I-1)
         self.held.append((order, t))
         return (Ack(order.client_order_id, f"gate-{order.client_order_id}"),)  # acknowledged now, priced later
@@ -986,7 +990,8 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
         raise PipelineError(f"instrument {it['name']!r} ({side}): {type(exc).__name__}: {exc}") from None
     snap = account.finish(end)
     sides = {o.client_order_id: o.request.side for o in res.orders.values()}
-    fills = [{"order_id": f.client_order_id, "t_ns": f.venue_time_ns, "venue_t_ns": f.venue_time_ns,
+    fills = [{"order_id": f.client_order_id, "t_ns": gate.obs_time.get(f.client_order_id, f.venue_time_ns),
+              "venue_t_ns": f.venue_time_ns,
               "side": f.side or sides[f.client_order_id], "px": f.price, "qty": f.size, "fee": f.fee,
               "liquidity": f.liquidity, "instrument": it["name"], "range": side} for f in res.fills]
     orders = [{"id": o.client_order_id, "t_ns": o.sent_time_ns, "side": o.request.side, "type": o.request.order_type,

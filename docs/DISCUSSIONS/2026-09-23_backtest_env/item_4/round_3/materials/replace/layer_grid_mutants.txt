@@ -1,0 +1,5 @@
+caught   M1 subclass->core
+caught   M2 malformed->core
+caught   M3 notional->core
+caught   M4 old arithmetic mutated
+caught   M5 valid->old
