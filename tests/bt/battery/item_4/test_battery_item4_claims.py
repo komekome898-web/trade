@@ -327,7 +327,7 @@ class _Fake:
 
 @pytest.mark.parametrize("sid", [s["id"] for s in S.SCENES if s.get("more_controls")])
 def test_runner_credits_a_refusal_only_after_all_controls(sid):
-    import run_battery as R
+    R = _load(HERE / "run_battery.py", "i4_claims_run_battery")  # by path: other items also have a run_battery module
     s = copy.deepcopy(S.by_id(sid))
     for mc in s["more_controls"]:
         for f in mc["input"].get("files", []):

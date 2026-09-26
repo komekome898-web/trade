@@ -1,0 +1,10 @@
+diff --git a/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt b/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt
+index 1f4c80a..8d7db91 100644
+--- a/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt
++++ b/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt
+@@ -1,4 +1,4 @@
+ ........................................................................ [ 36%]
+ ........................................................................ [ 72%]
+ ........................................................                 [100%]
+-200 passed in 18.88s
++200 passed in 19.50s

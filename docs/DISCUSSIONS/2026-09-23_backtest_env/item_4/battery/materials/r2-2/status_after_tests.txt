@@ -1,0 +1,5 @@
+ M docs/AUDITOR/TRACE/2026-09-26_220780c0.json
+ M docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt
+ M tests/bt/battery/item_4/ROOTCAUSE_r2-1.md
+ M tests/bt/battery/item_4/test_battery_item4_claims.py
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/full_suite.txt

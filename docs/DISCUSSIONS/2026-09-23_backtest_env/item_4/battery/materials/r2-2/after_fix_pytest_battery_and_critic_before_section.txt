@@ -1,0 +1,20 @@
+........................................................................ [ 33%]
+........................................................................ [ 66%]
+....F..................................................................  [100%]
+=================================== FAILURES ===================================
+________________ test_rootcause_diff_sections_are_machine_made _________________
+
+    def test_rootcause_diff_sections_are_machine_made():
+        files = sorted(p for p in HERE.glob("ROOTCAUSE*.md") if p.name not in BEFORE_THE_TOOL)
+        assert files, "no ROOTCAUSE file to read"
+        for p in files:
+            text = p.read_text(encoding="utf-8")
+            sections = D.find_sections(text)
+>           assert sections, f"{p.name}: no machine-made diff section (python3 {HERE.relative_to(REPO)}/diff_scope.py --markdown)"
+E           AssertionError: ROOTCAUSE_r2-2.md: no machine-made diff section (python3 tests/bt/battery/item_4/diff_scope.py --markdown)
+E           assert []
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:223: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_rootcause_diff_sections_are_machine_made
+1 failed, 214 passed in 19.78s

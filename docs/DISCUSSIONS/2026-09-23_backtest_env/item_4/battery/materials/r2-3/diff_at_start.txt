@@ -1,0 +1,3 @@
+docs/AUDITOR/TRACE/2026-09-26_220780c0.json
+tests/bt/battery/item_4/ROOTCAUSE_r2-1.md
+tests/bt/battery/item_4/test_battery_item4_claims.py

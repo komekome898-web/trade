@@ -1022,3 +1022,287 @@ git commit / git push はしていません。
 **批評家 i4-r1-12(互換の口が不正な足を断る、L-407「完全上位互換」の語との関係)へのリードの答え**: 核の契約を変えて不正な足を受け取らせない(信頼性の向き)。「完全上位互換」の例外として通過の報告に逐語で載せ、オーナーが決める。
 
 **第 2 周の作業者の ROOTCAUSE.md §6 の問い(maker の指値と逆指値の順 / 参照実装の役の起こし直し / i4-r1-12)は、返り値の questions_for_lead に出たら答える。段の途中で規則は足さない。**
+
+### 項目 4 第 2 周の出力(逐語。08:3x〜10:2x UTC)と run 14 の終了(10:23 UTC)
+
+#### 作る:4#2
+
+```json
+{
+ "changed_files": [
+  "/home/user/trade/src/bot/bt/compat/barmodel.py",
+  "/home/user/trade/src/bot/bt/reference/bar_rules.py",
+  "/home/user/trade/src/bot/bt/reference/SPEC.md",
+  "/home/user/trade/src/bot/bt/pipeline.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_r2_signal_at_open_grid.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_r2_origin_from_data_grid.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py",
+  "/home/user/trade/tests/bt/item_4/test_i4_real_data_smoke.py",
+  "/home/user/trade/tests/bt/item_4/i4w_drive.py",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/ROOTCAUSE.md",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/before_fix_signal_at_open_grid.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/before_fix_critic_tests.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/before_fix_origin_grid.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/after_fix_targeted_tests.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/final_battery_and_critic_tests.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/full_suite.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/speed_old_vs_new_compat.py",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/speed_old_vs_new_compat.txt",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/origin_check_time.py",
+  "/home/user/trade/docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/origin_check_time.txt"
+ ],
+ "tests_added": 154,
+ "test_command": "setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none > <scratchpad>/bt/pytest_item4_r2_worker.log 2>&1 &(ERROR の出た 95 ファイルは --basetemp=<scratchpad>/bt/pytest_base_i4r2w_rerun を付けて回し直した)。項目 4 の試験: PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/compat tests/bt/item_4。最後の 1 回の場面集: PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/bt/pytest_base_i4r2w_bat tests/bt/battery/item_4 tests/bt/critic/item_4 tests/bt/item_4/test_i4_battery_scenes.py",
+ "test_tail": "全試験(09:00:49 UTC 開始): 「10 failed, 18786 passed, 10 skipped, 3 warnings, 1390 errors in 1564.55s (0:26:04)」。本文の E 行を数えた内訳: FileNotFoundError 1391 件(ERROR 1390 件と FAILED の item_3 の 1 件。同じ時刻に別の agent の pytest(pid 1586/1588、tests/bt/item_4 tests/bt/compat)が /tmp/pytest-of-root を回して tmp_path の根を消した)。ImportError 'TARGET' from current_impl 6 件(批評家の legacy の試験。場面係が adapters/current_impl.py を書き換えている途中)。NotImplementedError: delivery 2 件(場面係が足した op \"delivery\"。作業者の駆動 i4w_drive.py に足して直した)。AssertionError 1 件(場面集の試験。場面係の直しの途中)。ERROR・FAILED の出た 95 ファイル全部を私有の basetemp で回し直した末尾: 「2583 passed, 1 warning in 402.34s (0:06:42)」。項目 4 と互換: 「1017 passed, 2 skipped, 1 deselected in 220.12s」(実データの動作確認 1 件は別に「2 passed in 146.43s」)。核と項目 0 の批評家の試験: 「6709 passed, 4 skipped, 3 warnings in 495.61s」。作業の最後の 1 回(場面集 + 批評家の試験 + 場面集の全場面の駆動): 「273 passed in 23.88s」。記録の写しは round_2/materials/full_suite.txt と final_battery_and_critic_tests.txt。",
+ "structural_change": "足の模型の 1 本の足の処理を「始値で起きること(構造的な逆指値・時間切れ・待っていた taker の合図)→ 範囲で起きること(逆指値・利確・maker の利確・maker の指値)」の時の順に分け、BarRules に欄 signal_at_open を足した(spec = True、legacy = False で旧とバイト単位で同じまま)。作業者が写した規則の参照 bar_rules.py も同じ順に直した。統合の口 plan_pipeline は、データの出所を呼び手の origin の一語ではなく、データの置き場所(この環境の市場データのフォルダ)と中身(大きさと sha256)から決め、synthetic と偽った市場データを断り、決めた出所と根拠を実行記録に残す。新エンジンを独立の参照 bar_sim と全格子で突き合わせる試験を初めて置いた。",
+ "unmet": [
+  "I4-1(独立参照実装との突き合わせ): 場面集の I4-1 の場面(i4-1-ref-taker・i4-1-ref-maker・i4-3-ref-signal-first)が参照として呼ぶ src/bot/bt/reference/bar_rules.py は、核と新エンジンを読んだ項目 4 の作業者が書いたもので、独立ではない(ファイルの頭と SPEC.md §10 に書き直した)。場面集の口がこれを参照として呼ぶので、表の I4-1 の一致は独立の突き合わせに数えない(リードの 07:40 の答え 1 と同じ)。独立の参照 bar_sim(参照実装の役が書いたもの)との突き合わせは、両者が同じ規則を持つ範囲(一方向の合図・率の逆指値と利確・保有の上限・マスクと向き・手数料)の 1920 升だけ。数量の決め方・合図による手仕舞い・持ち越し・構造的な逆指値・スプレッドと滑りは、独立の参照が無いので独立には確かめていない。これを埋めるには参照実装の役を場面集の規則 R-* を入力にして起こし直す必要がある(作業者は別の agent を起こせない。リードの 07:40 の答え 1 は「2 周目に起こし直す」だったが、この周では起こされていない = src/bot/bt/reference/bar_sim.py の最後の変更は 05:24 UTC)。事象の参照 event_sim と核の事象駆動の突き合わせは作っていない。",
+  "I4-2(性質の試験): 作業者の側の性質の試験は (1) 先読みなし(tests/bt/item_4/test_i4_barmodel_on_core.py: 前の k 本で回した結果 = 全部で回した結果の前の部分)、(2) 足の中の順の格子 1920 升(規則の文から書いた判定との一致と、legacy と旧エンジンのバイト一致)、(3) 独立の参照との 1920 升、(4) 参照実装の役の性質の試験(tests/bt/item_4/reference/test_i4ref_bar_properties.py、選ぶ型の全組 192 × 種 3)。第 1 周の場面集の性質の場面(i4-2-grid)は taker だけの 30 の場合で、逆指値・指値・持ち越しを含まない(DEFINITIONS.md の文)。場面集の側の広げは場面係の直し(i4-r1-06)で、作業者は変えていない。数量保存・損益の恒等式を、逆指値・maker・持ち越し・時間切れ・構造的な逆指値の経路でも不変条件だけで検める作業者の試験は置いていない(この周の格子は値の一致で見ている)。",
+  "I4-4(外部の道具との数の突き合わせ): 新エンジンと外部の道具を同じ合成の入力で直接には比べていない。あるのは参照実装の役の bar_sim と backtesting.py 0.6.6 の突き合わせ(SPEC.md §5)と、この周に足した新エンジン = bar_sim の 1920 升だけ(つなげると間接の比べ)。リードの 08:45 UTC の答え「段の途中なので第 2 周に足さない。未実施なら測っていない範囲に載せる」に従い、足していない。",
+  "I4-5(実データ): Binance aggTrades の 1 日は通していない(データ待ち)。この環境で `find backtest_data -iname \"*aggTrades*\" -type f` を第 1 周の作業者が打ち、現物 BTCUSDT の 3 つのフォルダには README.md と MD5SUMS しか無かった(test_binance_spot_aggtrades_is_data_wait が固定)。binance_cm_o3c_20260913 の zip はリードの答え 3 で読まない。オーナー PC は未確認。",
+  "I4-20(最後の段 = src/bot/backtest/ の 3 本の置き換え): 行っていない。起動文と要件 §1(b) の条件「この周の批評家の [止める] が 0 件」は、この周の批評家が作業者のあとに起きるので満たせず、前の周の批評家の [止める] は 8 件だった。項目 4 はこの周が上限(2 周)なので、リードの 07:40 の答え 6 どおり「項目 4 は上限で未達(置き換え未実施)」になる。src/bot/backtest/ には触れていない(git status に出ない)。置き換えの予行は tests/bt/compat/test_old_tests_against_compat.py(旧の試験 8 本を変えずに互換の口で回して通る。全試験の中で通った)。",
+  "旧 14 の完全上位互換の限界 1(i4-r1-12): 核が足として受け取れない行(NaN・0 以下の値・高値 < max(始値, 終値)など)は、旧のように数を出さず ValueError で断る(src/bot/bt/compat/engine.py:18-21、tests/bt/compat/test_compat_golden.py の test_a_row_the_core_cannot_take_as_a_bar_is_refused_not_computed)。リードの答え(08:45 UTC): 核の契約は変えない、「完全上位互換」の例外として通過の報告に逐語で載せ、オーナーが決める。旧を import する 12 本がこの環境の実データでこの形の行に当たるかは測っていない。",
+  "旧 14 の完全上位互換の限界 2(速さ): 同じ合成の入力(1,000 本、損切り 1%・利確 2%、ショート可)で旧 0.020〜0.022 秒 / 新の互換の口 0.352〜0.373 秒(損益の列はビット単位で同じ)。打ったコマンドと出力: `PYTHONPATH=src python3 <scratchpad>/bt/i4_r2_worker_speed.py` → 「old seconds per run (3 runs): 0.022 0.021 0.020 | trades: 186」「new_compat seconds per run (3 runs): 0.373 0.352 0.358 | trades: 186」「same trade_pnls bits: True」(写しは round_2/materials/speed_old_vs_new_compat.txt と .py)。速さの要件は無いので測って書くだけ。",
+  "spec の足の模型と独立の参照 bar_sim の規則の違い 3 つを、突き合わせの結果として試験で固定した(どちらが正かは決めていない): D1 = 時間切れの足で範囲の逆指値を先に見る(場面集の規則 R-H3)/ 時間切れを始値で先に取る(参照実装の役の B4)、D2 = 指値の待ち中の同じ向きの合図で指値を置き直す(新エンジン = 旧と同じ)/ 無視する(参照実装の役の [決め])、D3 = マスク・向きで止まる合図でも指値を置き、埋まらずに時間切れなら取り逃しに数える(新エンジン = 旧と同じ)/ 合図を無視する(参照実装の役)。",
+  "実データの出所の決め方の限界: 市場データを 1 バイトでも変えたもの・圧縮し直したもの・一部を切り出したものは、中身が違う別のファイルとして合成と宣言できる。この環境の外(オーナー PC)の市場データは知らない。どちらも src/bot/bt/pipeline.py の説明文と試験のファイルに書いた。",
+  "提出前の吟味(1): 固定した要件の 20 観点、場面集の規則 1〜9、前の周の指摘(批評家 i4-r1-01〜14、監査役の [止める] 3・[直す] 3)、リードの 07:40・08:45 UTC の答えを読み直した。指摘ごとの直した根拠: i4-r1-01 → src/bot/bt/compat/barmodel.py:107(欄 signal_at_open)・:128-130(legacy False / spec True)・:403-414(始値の合図の段)、src/bot/bt/reference/bar_rules.py:142-186(始値 → 範囲の 2 段)。直す前: round_2/materials/before_fix_signal_at_open_grid.txt(6 塊が落ちる)・before_fix_critic_tests.txt(27 failed)。直したあと: after_fix_targeted_tests.txt(215 passed)。i4-r1-03 → tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py(1920 升 + D2・D3)、bar_rules.py の頭、SPEC.md §10。i4-r1-04 → src/bot/bt/pipeline.py:97(MARKET_ROOTS)・:151(_named_not_market)・:158(market_evidence)・:337-360(出所の決め方と偽りの断り)・:634(実行記録の origin_evidence)。直す前: before_fix_origin_grid.txt(77 failed)。i4-r1-14 → tests/bt/item_4/test_i4_real_data_smoke.py:5-18(文)・:117(同じ 1 時間の 2 往復)・:147-152(全注文 FILLED・量どおり)。締めた判定で、第 1 周の手順の FX イベントティックの 2 回目の買いが OPEN のまま残っていたこと(ファイルが 12:15:01〜13:14:59 UTC だけ)が分かった。i4-r1-12 → 変えていない(リードの答え)。監査役の I4-2 の範囲・速さの O-3・I4-3 の核の粒度 → 上の unmet の行と requirement_evidence に書いた。",
+  "提出前の吟味(2): 同じ根の全箇所。足の中の順は barmodel.py と bar_rules.py の 2 か所だけにあり(`grep -rn \"dropped_by_exit\\|tp_before_time_exit\" src` と vector/ に逆指値の処理が無いことを確かめた)、両方を直した。出所の決め方は plan_pipeline の 1 か所(実行記録はその結果を書くだけ)。緩い判定は実データの動作確認の試験の 1 か所。",
+  "提出前の吟味(3): 批評家の試験 tests/bt/critic/item_4 の 4 ファイル(第 1 周の終わりに 40 failed)は、作業の最後の 1 回で場面集の試験と合わせて 273 passed。全試験の 1 回目の失敗は、全部が並行の pytest による tmp_path の消失か、場面係の書き換えの途中か、場面係の新しい op を私の駆動が持っていなかったこと(足した)で、95 ファイルの回し直しで 2583 passed。",
+  "提出前の吟味(4): 厳しい批評家が [止める] にしそうなものを列べて潰した。(a) 規則の参照 bar_rules と本体を同時に同じ形に直したので、両者の一致は独立の証拠にならない → 規則の文から書いた 1 本の足の判定(試験の中の expected_bar4)と、独立の参照 bar_sim の 2 つに当てた。(b) 出所の判定を置き場所だけにすると写しで逃げられる → 中身(大きさと sha256)でも見る。写しの場所を市場のフォルダの名前と別の名前の 2 通り、記号のリンクも格子に入れた。(c) qa_* の合成の束を市場データと誤認する → データ層の必須の拒否の型(qa_*・o3c_*・phase2_runs・phase2_sealed)を市場データから除き、試験を置いた。(d) 判定の締めで落ちたのを時刻をずらして通した場当たり → ずらした理由(ファイルの時刻の範囲)を試験の文に書き、全注文が約定することを試験で見る形に締めたまま。(e) 1 回の出所の判定の重さ → 8,996 ファイルを並べて 0.036〜0.039 秒(round_2/materials/origin_check_time.txt)。",
+  "提出前の吟味(5): 場当たりの直しはしていない。場面の id・正解を読む分岐は無い(`grep -rn \"i4-[0-9]\" src/bot/bt/ --include=*.py` の当たり 0 件は第 1 周の批評家が確かめ、この周の差分にも場面の id は無い)。閾値・既定値は動かしていない。",
+  "提出前の吟味(6): 直した規則ごとに全格子の敵対者の試験を先に書き、直す前に落ちることを materials に残してから直した: 足の中の順 = test_i4_r2_signal_at_open_grid.py(1920 升。列に入れなかったもの = maker の執行・構造的な逆指値・建玉なしの合図・足 0〜3 の別の道・足の数 6 以外を、ファイルの頭に書いた)、出所 = test_i4_r2_origin_from_data_grid.py(108 升 + qa_* 1 件。列に入れなかったもの = 1 バイト違い・圧縮し直し・一部の切り出し・この環境の外のデータ・場面集の合成のファイル)、独立の参照 = test_i4_engine_vs_independent_bar_sim.py(1920 升。列に入れなかったもの = スプレッドと滑り・持ち越し・構造的な逆指値・合図による手仕舞い・両方向の合図・maker のマスクと向き・maker の近い合図・資産の列・指標)。"
+ ],
+ "questions_for_lead": [
+  "I4-1 の独立性: リードの 07:40 UTC の答え 1 は「2 周目に参照実装の役へ場面集の規則 R-* を渡して書き直させ、入れ替える」だったが、この周では参照実装の役は起こされていない(src/bot/bt/reference/bar_sim.py の最後の変更は 05:24 UTC、bar_rules.py は作業者の版のまま)。作業者の agent は別の agent を起こす道具を持たない。項目 4 はこの周が上限なので、I4-1 の場面の参照が独立でないことを「測っていない範囲」として通過の報告に載せるのか、参照実装の役を起こし直すのかを決めてほしい。",
+  "spec と独立の参照 bar_sim の規則の違い D1〜D3(unmet の行)のうち、D1(時間切れの足で範囲の逆指値を先に見る = 場面集の規則 R-H3)は、R-T1 と R-O1 の「始値は範囲より先」の順とも食い違う(時間切れは始値で起き、範囲の逆指値はそのあと)。場面集の規則の文の持ち主(場面係)に確かめるか、このまま載せるか。",
+  "事象の参照 event_sim と、核の事象駆動(項目 2 の約定の模型)の突き合わせは作っていない。型の対応を決める判断が要る(参照実装の役の SPEC.md §8 の問い 4 と同じ)。作らずに「測っていない範囲」に載せてよいか。",
+  "全試験の 1 回目で、同じ時刻に別の agent の pytest(tests/bt/item_4 tests/bt/compat)が /tmp/pytest-of-root の根を回し、1390 件が FileNotFoundError になった(第 1 周の作業者の全試験でも同じ 1390 件)。台本で全ての役の pytest に私有の --basetemp を付けさせるか(作業者の側では、落ちた 95 ファイルを私有の basetemp で回し直して 2583 passed を確かめた)。"
+ ],
+ "requirement_evidence": [
+  "I4-1(独立参照実装との突き合わせ): 独立の参照は参照実装の役の src/bot/bt/reference/bar_sim.py と event_sim.py。この周に新エンジンの足の模型(spec)と bar_sim の突き合わせを初めて置いた: tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py:201(1920 升、違いは D1 だけが許された形で出る)・:210(格子が全ての道に届くことと D1 の出現)・:228(D2)・:239(D3)。bar_sim の選ぶ型は場面集の規則の文に当たる値に固定(同ファイルの頭)。場面集の I4-1 の場面の参照 bar_rules.py は作業者が書いたもので独立ではない(src/bot/bt/reference/bar_rules.py:1-20、SPEC.md §10)。未達の部分は unmet。",
+  "I4-2(性質の試験): tests/bt/item_4/test_i4_barmodel_on_core.py(先読みなし・全ての約定が核の約定・合図の注文の終わり方)、tests/bt/item_4/test_i4_r2_signal_at_open_grid.py:202・:226(足の中の順の 1920 升、legacy は旧とバイト一致)、tests/bt/item_4/reference/test_i4ref_bar_properties.py(参照実装の役、192 型 × 種 3)。場面集の性質の場面 i4-2-grid は第 1 周の時点で taker だけの 30 の場合(DEFINITIONS.md の文)で、範囲の広げは場面係の直し。",
+  "I4-3(正解つきの場面): 場面集の全場面を新エンジンの公開の口で回して正解と一致・2 回で同じ(tests/bt/item_4/test_i4_battery_scenes.py、作業の最後の回で 73 passed を含む 273 passed)。場面係がこの周に足した核の粒度の場面 i4-3-core-delivery・i4-3-core-delivery-gap(op \"delivery\")に、作業者の駆動 tests/bt/item_4/i4w_drive.py の run_delivery を足して答えた(核の visible_events を読む)。核の粒度の値の場面の元は項目 0 の場面集 tests/bt/battery/item_0/ にもある。",
+  "I4-4(外部道具との数値突き合わせ・合成): 新エンジンと外部の道具の直接の比べは無い(unmet)。間接: 参照実装の役の bar_sim = backtesting.py 0.6.6(有利な窓の無い 142 場面で一致、SPEC.md §5)と、この周の新エンジン = bar_sim(1920 升)。",
+  "I4-5(統合): src/bot/bt/pipeline.py:270 plan_pipeline・:569 execute_once・:670 run_pipeline。実データの動作確認 tests/bt/item_4/test_i4_real_data_smoke.py(bitFlyer の約定と板 top10・FX イベントティック・TOPIX 先物 1 分足・USD/JPY 1 分足を 1 回の実行で通し、実行記録・書き出し・ダッシュボードの 10 タブまで。全注文が FILLED、全データの出所が置き場所から real と決まる。2 passed)。Binance aggTrades はデータ待ち(unmet)。",
+  "I4-6(動作確認の固定の手順): src/bot/bt/pipeline.py:337-360(データの出所を置き場所と中身から決め、synthetic と偽った市場データを断る。そのあとで、実データ + 動作確認は時刻だけの手順しか受けない)・:294(研究は事前登録のハッシュが要る)・:634(実行記録に origin_evidence)。格子: tests/bt/item_4/test_i4_r2_origin_from_data_grid.py:142(108 升)・:168(qa_* は市場データではない)、tests/bt/item_4/test_i4_pipeline.py の 48 升。批評家の試験 tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py の 3 件が通る(直す前は 3 件とも DID NOT RAISE)。",
+  "I4-7(全試験): 全試験 1 回目「10 failed, 18786 passed, 10 skipped, 1390 errors」の失敗は全部、並行の pytest の tmp_path の消失・場面係の書き換えの途中・場面係の新しい op のどれか(round_2/materials/full_suite.txt に本文の E 行の数え)。落ちた・ERROR の出た 95 ファイル全部を私有の basetemp で回し直して「2583 passed」。",
+  "I4-8(翌足始値での taker 執行): src/bot/bt/compat/barmodel.py:403-414(spec は待っていた合図を足の始値で先に約定し、その足の範囲の逆指値・利確はそのあと)・:459(legacy は旧の順)。tests/bt/item_4/test_i4_r2_signal_at_open_grid.py の 1920 升、批評家の試験 test_i4r1_pending_signal_before_intrabar_exit.py の 36 件が通る。",
+  "I4-9(指値の厳密な通過): barmodel.py:459 以下の maker の段(安値 < 指値 / 高値 > 指値のときだけ指値の値)。独立の参照 bar_sim(limit_cross=\"strict\")と 1920 升で一致(maker の 2 種の寿命を含む)。",
+  "I4-10(足内の TP/SL と STOP 優先): barmodel.py:415(範囲の出口は逆指値が先、値は min(始値, 水準) / max)。bar_sim(stop_trigger=\"touch\"、stop_fill=\"worse_of_level_and_open\")と 1920 升で一致。足の中の順の格子の「両方」の升。",
+  "I4-11(wick_invalidation): barmodel.py:392(前の足の終値で判定し始値で出る。spec では待っていた合図を捨てる)。golden と場面集 i4-11-* は変わらず一致(tests/bt/compat、場面集の最後の回)。",
+  "I4-12(maker_tp): barmodel.py:415 以下(厳密な通過、maker の率。spec は書かれた 10 進で比べる = _Level :241)。bar_sim(tp_fee=\"maker\")と一致。足の中の順の格子の mtp の升。",
+  "I4-13(max_hold_bars): barmodel.py:443(時間切れは始値)。spec は時間切れの足で逆指値だけを先に見る(R-H3)、時間切れの足では待っていた合図を始値で約定しない(:406 の not time_due)。bar_sim との違いは D1 として固定。",
+  "I4-14(entry_mask / entry_sides): barmodel.py:330 _entry_ok(合図の足で判定)。bar_sim(mask_applies_to=\"signal_bar\")と taker の全組で一致。maker の違いは D3 として固定。",
+  "I4-15(swap_daily_pct): barmodel.py:386(足ごと、legacy は正の率だけ、spec は 0 でない率すべて)。golden(日率 0 / +0.5 / -0.3)と場面集で一致。",
+  "I4-16(missed_fills): barmodel.py:477(時間切れ)・:511(反対向きの置き換え)。bar_sim と maker の升で一致(同じ向きの置き直しは D2)。",
+  "I4-17(compute_metrics の全指標): src/bot/bt/compat/metrics.py:98 compute_metrics_values。golden の指標 400 件がビット単位で一致(tests/bt/compat、1017 passed の中)。",
+  "I4-18(split_data): src/bot/bt/compat/walk_forward.py:45 split_bounds・:71 split_data。golden の分け方 400 件と場面集で一致。",
+  "I4-19(golden の保存と一致): tests/bt/compat/golden/old_engine_golden.json と tests/bt/compat/test_compat_golden.py(この周の変更後も通る)。legacy の欄 signal_at_open=False で旧の順のまま(test_i4_r2_signal_at_open_grid.py:226 が同じ 1920 升で旧エンジンとバイト一致を見る)。",
+  "I4-20(最後の段): 行っていない(unmet)。src/bot/backtest/ は変えていない。"
+ ],
+ "external_tool_checks": "外部の道具は入れていない。この周はネットワークを使っていない。外部の道具との比べとして挙げたのは、参照実装の役が既に行った backtesting.py 0.6.6 の導入と突き合わせの記録(src/bot/bt/reference/SPEC.md §5、導入前の検査の結果もそこにある)だけで、私はその道具を実行していない。"
+}
+```
+
+#### 場面の直し:4#r2-1
+
+```json
+{
+ "battery_dir": "/home/user/trade/tests/bt/battery/item_4",
+ "definitions": "/home/user/trade/tests/bt/battery/item_4/DEFINITIONS.md（gen_definitions.py が i4_scenes.py から作り直した 808 行。足の模型の仕様に R-O1(同じ足の中の順)・R-M5(取り逃しの数え方)、互換の計算に L-5、統合の場面に F-2、核の粒度の場面 C-1、性質の場面(不変条件 I1〜I12 と先頭の部分の規則)を足した。場面は 67）",
+ "runner": "/home/user/trade/tests/bt/battery/item_4/run_battery.py（変形のある場面は more_controls の対照を全部通ってから断りを数える。対照を拒めば「対応なし」）。全対象 42 の走らせ直しの台本と記録: docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/run_all_r2-1.sh・rerun_all_targets.log・rerun_classes_by_target.tsv・compare_before_after.tsv",
+ "scenarios": 67,
+ "mutant": "/home/user/trade/tests/bt/battery/item_4/mutant.py（変えていない。maker の寿命を 1 本長く読む欠陥を 1 つ植える。走らせ直しでは 67 場面のうち 4 場面(i4-1-ref-maker・i4-2-grid-all・i4-3-e2e-maker・i4-16-missed)が不一致、ほかは新実装と同じ。survey_results/mutant.tsv）",
+ "survey_run": [
+  "opp_backtrader",
+  "opp_backtesting",
+  "opp_vectorbt",
+  "opp_pyalgotrade",
+  "opp_pybroker",
+  "opp_luczinsritter",
+  "opp_vnpy",
+  "opp_basana",
+  "opp_bt",
+  "opp_qtradex",
+  "opp_ziplime",
+  "opp_qstrader",
+  "opp_finmarketpy",
+  "opp_pysystemtrade",
+  "opp_qlib",
+  "opp_hftbacktest",
+  "opp_pytrendfollow",
+  "opp_pybotters",
+  "opp_freqtrade",
+  "opp_pm_backtester",
+  "opp_rqalpha",
+  "opp_pineforge",
+  "opp_quanttrader",
+  "opp_fast_trade",
+  "opp_qflib",
+  "opp_zipline_reloaded",
+  "opp_repro_67_lumibot",
+  "opp_repro_60_hikyuu",
+  "opp_repro_15_backtestingcore",
+  "opp_repro_8_opentrader",
+  "opp_repro_56_zvt",
+  "opp_repro_69_gobacktest",
+  "opp_repro_11_octobot",
+  "opp_repro_7_superalgos",
+  "opp_repro_52_lean",
+  "opp_repro_57_wondertrader",
+  "opp_repro_94_mote",
+  "opp_repro_80_hummingbot",
+  "opp_repro_61_barter"
+ ],
+ "survey_not_run": [
+  "67 lumibot: 導入を試みた(pip install --dry-run --report で 320 ファイル・取得 572.3 MiB、空き 826,646,528 バイトの実測で導入を止めた。一次資料から再現 = opp_repro_67_lumibot)",
+  "60 Hikyuu: 同じく 104 ファイル・470.5 MiB(PySide6 で 243 MiB)で導入を止めた。再現 = opp_repro_60_hikyuu",
+  "56 zvt: 同じく 57 ファイル・121.4 MiB で導入を止めた。再現 = opp_repro_56_zvt",
+  "70 PineForge: 対象としては走らせたが、項目 2 の構築物と C の driver が消えていて道具を呼べない(全場面 結果なし。構築し直しは持ち越し)",
+  "道具台帳 §3 の危険 11 件のうち足の候補 7 件(19・44・51・58・74・111・120): 導入も実行もしない",
+  "閉じた場・有料の 5 件(40・45・46・48・50)と 43 QuantDinger・85 czsc(wbt 依存)・13/123 zenbot・93・107 sigc・86: 検討表 CONSIDERED.md の行(再現できない / 持たないと確認した / スキップ)"
+ ],
+ "rootcause": "/home/user/trade/tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+ "check_output": "OK 誤り 0 件",
+ "lead_answer_changes": [],
+ "changed_files": [
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt",
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+  "tests/bt/battery/item_4/test_battery_item4_claims.py"
+ ],
+ "tests_passed": true,
+ "test_tail": "200 passed in 19.50s"
+}
+```
+
+#### 場面の直し:4#r2-2
+
+```json
+{
+ "battery_dir": "/home/user/trade/tests/bt/battery/item_4",
+ "definitions": "/home/user/trade/tests/bt/battery/item_4/DEFINITIONS.md",
+ "runner": "/home/user/trade/tests/bt/battery/item_4/run_battery.py",
+ "scenarios": 67,
+ "mutant": "/home/user/trade/tests/bt/battery/item_4/mutant.py",
+ "survey_run": [
+  "この回は場面・adapter・runner を変えていないので走らせ直していない(結果は前の回の tests/bt/battery/item_4/survey_results/*.tsv のまま)。対象: current_impl new_impl mutant opp_backtrader opp_backtesting opp_vectorbt opp_pyalgotrade opp_pybroker opp_luczinsritter opp_vnpy opp_basana opp_bt opp_qtradex opp_ziplime opp_qstrader opp_finmarketpy opp_pysystemtrade opp_qlib opp_hftbacktest opp_pytrendfollow opp_pybotters opp_freqtrade opp_pm_backtester opp_rqalpha opp_pineforge opp_quanttrader opp_fast_trade opp_qflib opp_zipline_reloaded opp_repro_67_lumibot opp_repro_60_hikyuu opp_repro_15_backtestingcore opp_repro_8_opentrader opp_repro_56_zvt opp_repro_69_gobacktest opp_repro_11_octobot opp_repro_7_superalgos opp_repro_52_lean opp_repro_57_wondertrader opp_repro_94_mote opp_repro_80_hummingbot opp_repro_61_barter"
+ ],
+ "survey_not_run": [
+  "OK 誤り 0 件",
+  "検討表 /home/user/trade/tests/bt/battery/item_4/opponents/CONSIDERED.md は変えていない(check_bt_considered.py --write の後も git status に出ない)"
+ ],
+ "rootcause": "/home/user/trade/tests/bt/battery/item_4/ROOTCAUSE_r2-2.md",
+ "check_output": "OK 誤り 0 件",
+ "lead_answer_changes": [],
+ "changed_files": [
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json",
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+  "tests/bt/battery/item_4/test_battery_item4_claims.py"
+ ],
+ "tests_passed": true,
+ "test_tail": "215 passed in 20.62s"
+}
+```
+
+#### 場面の直し:4#r2-3
+
+```json
+{
+ "battery_dir": "/home/user/trade/tests/bt/battery/item_4",
+ "definitions": "/home/user/trade/tests/bt/battery/item_4/DEFINITIONS.md",
+ "runner": "/home/user/trade/tests/bt/battery/item_4/run_battery.py",
+ "scenarios": 67,
+ "mutant": "/home/user/trade/tests/bt/battery/item_4/mutant.py(場面集の mutant。この回は変えていない)。この回の直しの機械への mutant は /home/user/trade/tests/bt/battery/item_4/test_battery_item4_diffscope.py の test_attribution_grid_catches_mutants(diff_scope.py:attribute の本体を 4 通りに書き換えて exec する: sha256 を比べない・HEAD の変化を見ない・基準に無い行を「すでにあった」にする・全部「変わっていない」にする。4 通りとも格子が不一致を出す)",
+ "survey_run": [
+  "1 Basana",
+  "2 Backtrader",
+  "3 PySystemtrade",
+  "4 PyBroker",
+  "5 Lean CLI",
+  "6 Ziplime",
+  "10 fast-trade",
+  "12 pybotters",
+  "16 Luczinsritter/event_driven_backtesting_engine",
+  "18 zipline-reloaded",
+  "20 VnPy",
+  "21 Qlib",
+  "23 hftbacktest",
+  "53 Rqalpha",
+  "54 finmarketpy",
+  "55 backtesting.py",
+  "62 qf-lib",
+  "68 quanttrader",
+  "72 QTradeX",
+  "73 vectorbt",
+  "75 Freqtrade",
+  "87 PyTrendFollow",
+  "92 prediction-market-backtester",
+  "121 mhallsmoore/qstrader",
+  "122 gbeced/pyalgotrade"
+ ],
+ "survey_not_run": [
+  "7 Superalgos (再現した)",
+  "8 OpenTrader (再現した)",
+  "11 OctoBot (再現した)",
+  "13 DeviaVir/zenbot (走らなかった)",
+  "15 Mendl-Labs/BacktestingCore (再現した)",
+  "19 Jesse (走らなかった: 危険の 11 件)",
+  "40 OpenMarket (走らなかった)",
+  "43 QuantDinger (走らなかった)",
+  "44 lo2cin4 (走らなかった: 危険の 11 件)",
+  "45 ForexTester (走らなかった)",
+  "46 MT4裁量トレード練習君プレミアム (走らなかった)",
+  "48 BacktestingMax (走らなかった)",
+  "50 AlgoTest (走らなかった)",
+  "51 QUANTAXIS (走らなかった: 危険の 11 件)",
+  "52 QuantConnect (再現した)",
+  "56 zvt (再現した)",
+  "57 WonderTrader (再現した)",
+  "58 nautilus_trader (走らなかった: 危険の 11 件)",
+  "60 Hikyuu (再現した)",
+  "61 barter-rs (再現した)",
+  "67 lumibot (再現した)",
+  "69 gobacktest (再現した)",
+  "70 PineForge (最後の走行で走らなかった)",
+  "74 ml-quant-trading (走らなかった: 危険の 11 件)",
+  "80 Hummingbot (再現した)",
+  "85 czsc (走らなかった)",
+  "86 analyzingalpha (走らなかった)",
+  "93 punyamodi/binary_market_engine (走らなかった)",
+  "94 mote/backtest (再現した)",
+  "107 sigc (走らなかった)",
+  "111 HKUDS/Vibe-Trading (走らなかった: 危険の 11 件)",
+  "120 wbt (走らなかった: 危険の 11 件)",
+  "123 carlos8f/zenbot (走らなかった)"
+ ],
+ "rootcause": "/home/user/trade/tests/bt/battery/item_4/ROOTCAUSE_r2-3.md — 指摘 br2-2-touch(br2-1-touch の繰り返し)の根本原因: 外の行 docs/AUDITOR/TRACE/2026-09-26_220780c0.json は、リードの Stop フック(trace_snapshot.sh → scripts/trace_metrics.py)がリードの会話の記録から書き直すファイルで、場面係が書いた物ではない。場面係が作業を始める前にすでに HEAD と違っていた(最初の書き込みとして取った基準 docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/baseline_at_start.json。作業中に中身は変わっていない = sha256 2da60da1… のまま)。台本の checkBattery は共有の作業木の git diff --name-only HEAD を場面係の差分として読むので、正直に申告する限り、場面係の直しではこの族は閉じない。TRACE を HEAD に戻す・assume-unchanged で隠す・申告から削る、はどれも検査を通すための書き換えなので、していない。したがってこの返り値でも -touch は止まり(3 回目)、§3「周回の数え方と止める条件」4 のとおりリードに戻る。場面係の側の欠陥(前の回の「場面係は書いていない」は手書きの散文だけだった)は直した: diff_scope.py に snapshot/attribute/parse_status_z/load_baseline/baseline_refs と --baseline/--baseline-out を足し、差分の行ごとに「着手時にすでに HEAD と違い、作業中に変わったか」を機械で分けて、sha256 で守った節に入れた(主張の表 F1・F4、格子の試験、mutant 4 通り)。リードが決めること(ROOTCAUSE §5-2): (a) 検査で docs/AUDITOR/TRACE/ を外に数えない / (b) 場面係の基準を使い、「作業中に変わっていない」行は外に数えない(批評家が裏を取る) / (c) 起動の直前にチェックポイントのコミットを入れる(これだけでは閉じない)。前の回の §5-2〜§5-4(記録の規則と検査の食い違い、未追跡のファイルが検査に見えないこと、引用符つきの path)は残っている。",
+ "check_output": "OK 誤り 0 件",
+ "lead_answer_changes": [],
+ "changed_files": [
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json",
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+  "tests/bt/battery/item_4/test_battery_item4_claims.py"
+ ],
+ "tests_passed": true,
+ "test_tail": "224 passed in 21.16s(PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none tests/bt/battery/item_4 tests/bt/critic/item_4 -rs。記録 docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/after_section_pytest.txt)"
+}
+```
+
+#### run 14 の終了(台本の返り値、逐語)
+
+- stopped_at: item_4
+- 項目 4: status = escalate、reason = 「場面集の直しの監査で同じ未達の理由が 3 回続いた(L-407・L-424): 場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): docs/AUDITOR/TRACE/2026-09-26_220780c0.json」、attempts = 2
+- 台本の brief: 「項目 4 第 1 周: 対現状 新 3・相手 0・同等 0・対調査 新 3・相手 0・同等 0・批評の止める 8 件(実装 8・場面集 0)・監査役の止める 3 → 未達」(**brief の「実装 8・場面集 0」は批評家の付けた相手(実装 3・場面集 5)と食い違う。brief の数え方の欠陥。記録**)
+- agent 31 本、失敗 0、8 時間 1 分。
+
+**リードの読み(10:30 UTC)**: 止まった理由は**場面集の未達ではない**。場面係が返す changed_files(`git diff --name-only HEAD` の全行)に、この会話のフック(trace_snapshot.sh)が書く痕跡ファイル `docs/AUDITOR/TRACE/2026-09-26_220780c0.json` が入り、台本の機械の検査 checkBattery(L-448)がそれを「場面集の外のファイルへの変更」= [止める] と数えた。場面係は自分の直しでは無いものを消せないので 3 回同じ理由になり、鎖 3 で escalate した。第 2 周の場面集の直し 3 回はどれも試験が通っている(200 → 215 → 224 passed、67 場面)。作る:4#2 も完了している(項目 4 + 互換 1017 passed、核と項目 0 の批評家 6709 passed、全試験の 1 回目は別の agent の pytest と /tmp/pytest-of-root を取り合って 1390 件 FileNotFoundError → 落ちた 95 ファイルを私有の basetemp で回し直して 2583 passed)。**第 2 周の残り(表:4#2 → 監査役(表) → 批評:4#2 → 審査員 → 監査役(通過))は走っていない。**
+
+**処置(リード)**: (1) 台本の機械の検査で、フックが書く痕跡 `docs/AUDITOR/TRACE/` を「場面集の外」に数えない(リードの道具の欠陥の直し。設計の規則は足さない)。(2) 全ての役の pytest に私有の `--basetemp` を付けさせる文を台本の共通の頭に足す(作業者の問い 4。運用の指示で、判定の規則ではない)。(3) 15 回目を新しい run として、項目 4 の第 2 周の残りから起動する(要件・場面集・参照実装・作る:4#2・場面の直し r2-1〜3 の結果を引数で運ぶ。第 2 周の中なので周の上限 2 は超えない)。起動は予約した知らせの回(案 A)。
+
+**作る:4#2 の questions_for_lead 4 件へのリードの答え**
+1. 参照実装の役の起こし直し: 07:40 の答え 1 は台本に段が無く、この run では実現できなかった(リードの答えの誤り = 実現手段を確かめずに答えた。記録)。15 回目でも段を足さない(案 B = 最小)。I4-1 の独立でない部分は「測っていない範囲」に逐語で載せ、参照実装の役を起こし直すかは**オーナーの判断が要る項目**として報告に載せる。
+2. D1(R-H3 と R-T1/R-O1 の順の食い違い): このまま載せ、批評:4#2 が読む(場面係の第 2 周の直しで規則の文が変わっていれば批評家が突き合わせる)。
+3. event_sim と核の事象駆動の突き合わせ: 作らず「測っていない範囲」に載せる。
+4. 私有の --basetemp: 台本の共通の頭に足す(上の処置 (2))。
+

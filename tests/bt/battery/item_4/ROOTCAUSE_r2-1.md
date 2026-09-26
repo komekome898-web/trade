@@ -207,6 +207,10 @@ fingerprint_tracked_files_after.txt / run_all_r2-1.sh)。
 2. 同じ根の全箇所: §6 の各項の「同じ根の全箇所」。場面の全 67・格子の全場合・検討表の全行を機械で検めた(試験の名は §4)。
 3. 試験: `PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none tests/bt/battery/item_4 tests/bt/critic/item_4` →
    「200 passed」(直す前は 40 failed, 39 passed)。
+   `tests/bt` の全体(上の批評家の試験の 1 本を --ignore)も 1 回回した: この項目の場面集の試験のうち `test_runner_credits_a_refusal_only_after_all_controls`
+   の 3 件が、ほかの項目にも `run_battery` という名の module があるため名前で import すると別の物を読んで落ちた → path で読む形に直し
+   (`_load(HERE / "run_battery.py", ...)`)、項目 0 の場面集と一緒に回して通ることを確かめた。ほかに 1876 件が `FileNotFoundError: /tmp/pytest-of-root/pytest-487`
+   で止まった(並行する実行が pytest の一時の場所を消した。場面集の変更とは関わらない。記録 `<S>/i4_r2-1_scenekeeper/pytest_bt_all_r2-1_scenekeeper.log`)。
 4. 非常に厳しい批評家なら何を [止める] にするか(列べて潰した物 / 残る物):
    - 同じ足の順の決めのうち ⑤ → ⑥ → ⑦ は文書に無く既存の計算に合わせた: legacy と spec が同じ所だけで、新実装に有利な向きの決めではない(両方に同じ答え)。
      文で明記した(R-O1)。**残る**: この決めが要件の文から出ないことはリードに見せる(§8 の 1)。
@@ -236,3 +240,18 @@ fingerprint_tracked_files_after.txt / run_all_r2-1.sh)。
 3. ziplime の adapter の指値・逆指値(§7 の 4)。
 4. 批評家の試験の import の名前のぶつかり(§7 の 4)。
 5. 前の版からの持ち越し(definitions_review.md の「持ち越し」1〜4)は変わらず。
+
+## 9. `git diff --name-only HEAD`(返す前、2026-09-26。この起動の途中でリードのチェックポイントのコミット d703870・e96c378 が入ったので、差分はその後の分)
+
+```
+docs/AUDITOR/TRACE/2026-09-26_220780c0.json
+docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt
+tests/bt/battery/item_4/ROOTCAUSE_r2-1.md
+tests/bt/battery/item_4/test_battery_item4_claims.py
+```
+
+- `tests/bt/battery/` の外の 2 行: `docs/AUDITOR/TRACE/2026-09-26_220780c0.json` はハーネスの記録(① TRACE。場面係は書いていない)。
+  `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/` は起動文の記録の規則「場面係は「直す前に落ちた試験の出力」「走らせ直しの出力」
+  「比較の出力」の写しを docs/DISCUSSIONS/2026-09-23_backtest_env/item_<N>/battery/materials/<回>/ に置く」による写し(最後の試験の出力)。
+- 実装(`src/bot/bt/`)・作業者の試験(`tests/bt/item_4/`)・項目 0 の場面集(`tests/bt/battery/item_0/`)には触れていない(チェックポイントの前の差分に
+  出ていた `src/bot/bt/`・`tests/bt/item_4/`・`docs/.../item_4/round_2/` は並行する作業者の物)。
