@@ -39,6 +39,11 @@ i4-14-sides-short	I4-14	値	不一致	fills[0].bar = 2(正解 3)	a9e0ff23c7ec	�
 i4-15-swap-long	I4-15	値	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): swap_daily_pct: 再現していない: 先物の資金調達の型は項目 0 の再現(資金調達の型)で読んだが、日率を足ごとに掛ける口は読んだ範囲に無い / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): swap_daily_pct: 再現していない: 先物の資金調達の型は項目 0 の再現(資金調達の型)で読んだが、日率を足ごとに掛ける口は読んだ範囲に無い / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-15-swap-short	I4-15	値	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): swap_daily_pct: 再現していない: 先物の資金調達の型は項目 0 の再現(資金調達の型)で読んだが、日率を足ごとに掛ける口は読んだ範囲に無い / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): swap_daily_pct: 再現していない: 先物の資金調達の型は項目 0 の再現(資金調達の型)で読んだが、日率を足ごとに掛ける口は読んだ範囲に無い / 足ごとの資産の系列は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-16-missed	I4-16	値	不一致	fills[0].bar = 2(正解 6)	079613038b3f	不一致	fills[0].bar = 2(正解 6)	079613038b3f	2 回の実行で同じ	0.0	0.0
+i4-14-maker-mask-false	I4-14	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.0	0.0
+i4-16-maker-mask-false-not-missed	I4-16	値	正解と一致		8ec96dca0288	正解と一致		8ec96dca0288	2 回の実行で同じ	0.0	0.0
+i4-16-maker-mask-false-two-models	I4-16	能力	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	不一致	fills[0].bar = 2(正解 4)	154b525ebd0f	2 回の実行で同じ	0.0	0.0
+i4-16-same-side-two-models	I4-16	能力	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-17-metrics	I4-17	値	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-metrics-edge	I4-17	値	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
 i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 足ごとの資産の系列は読んだ範囲に無い / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
@@ -55,6 +60,7 @@ i4-12-tp-before-maker-tp	I4-12	値	不一致	fills[0].bar = 1(正解 2)	b3854639
 i4-11-wick-first	I4-11	値	不一致	fills[0].bar = 1(正解 2)	d01479ed1de2	不一致	fills[0].bar = 1(正解 2)	d01479ed1de2	2 回の実行で同じ	0.0	0.0
 i4-11-wick-before-exit-limit	I4-11	値	不一致	fills[1].bar = 3(正解 4)	1ef036f2d5c3	不一致	fills[1].bar = 3(正解 4)	1ef036f2d5c3	2 回の実行で同じ	0.0	0.0
 i4-13-stop-on-time-bar	I4-13	値	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	2 回の実行で同じ	0.0	0.0
+i4-13-stop-on-time-bar-two-models	I4-13	能力	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-first	I4-13	値	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	不一致	fills[0].bar = 1(正解 2)	bc923bc88c5f	2 回の実行で同じ	0.0	0.0
 i4-13-time-first-two-models	I4-13	能力	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
 i4-13-time-maker-tp-two-models	I4-13	能力	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: OctoBot-Trading(1ad2f4d6)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0

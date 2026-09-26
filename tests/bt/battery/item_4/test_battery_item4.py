@@ -37,7 +37,12 @@ DEVIATIONS = {"i4-12-touch-decimal", "i4-13-tp-on-exit-bar", "i4-13-two-models",
               "i4-17-two-models", "i4-18-split-decimal", "i4-18-two-models",
               # L-5 (round r2-1, i4-r1-02): the pending signal after the range exits and the time exit
               "i4-10-signal-first", "i4-10-signal-first-short", "i4-10-signal-first-two-models", "i4-13-time-first",
-              "i4-13-time-first-two-models", "i4-13-time-maker-tp-two-models"}
+              "i4-13-time-first-two-models", "i4-13-time-maker-tp-two-models",
+              # L-5 (round r3-1, i4-r2-02): the range stop on the time-exit bar before the time exit at the open
+              "i4-13-stop-on-time-bar", "i4-13-stop-on-time-bar-maker", "i4-13-stop-on-time-bar-two-models",
+              # L-6 / L-7 (round r3-1, i4-r2-08): the maker path of a mask-False signal and of a same-side signal
+              "i4-16-maker-mask-false-not-missed", "i4-16-maker-mask-false-two-models", "i4-16-same-side-keeps-limit",
+              "i4-16-same-side-two-models"}
 
 
 def _load(path, name):

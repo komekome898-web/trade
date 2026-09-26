@@ -83,7 +83,7 @@ SENSITIVITY_VARIANTS = {"limit_cross": "strict", "stop_trigger": "strict",
 
 
 def run_reference(sc: dict, **override):
-    from bot.bt.reference.bar_sim import Signal, make_bar, run_bars
+    from ext_bar_modes import Signal, make_bar, run_bars
     bars = [make_bar(i * 3_600_000_000_000, *b) for i, b in enumerate(sc["bars"])]
     sigs = [None if s is None else Signal(**s) for s in sc["signals"]]
     rate = str(sc["commission"])

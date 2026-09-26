@@ -9,6 +9,7 @@ modes (required keyword arguments, no defaults).
 
 Public entry points:
   - event_sim.Event / event_sim.simulate   (tick / book / funding events)
-  - bar_sim.Bar / bar_sim.Signal / bar_sim.run_bars   (bar backtest)
+  - bar_sim.run_bars(bars, signals, options)   (bar backtest, written only
+    from the scene book's bar rule text R-T..R-O; SPEC.md section 3)
 """
 from bot.bt.reference.num import q, q_str  # noqa: F401

@@ -31,11 +31,13 @@ then notices, then timers):
         take-profit (on bar i's range) / time exit (at bar i's open) / the
         pending signal (taker: at bar i's open; maker: its limit if bar i
         trades strictly through it). Any exit drops the pending signal.
-      spec (the time order inside the bar, R-T1: a bar's open comes before
-        the rest of its range): AT THE OPEN -- the structural wick stop and
-        the time exit (both decided by information older than bar i; they
-        drop the pending signal, R-W3 / R-H2; on the time-exit bar the stop
-        is looked at first, R-H3), else the pending taker signal (R-T1);
+      spec (the time order inside the bar, R-T1 / R-O1: a bar's open comes
+        before the rest of its range): AT THE OPEN -- the structural wick
+        stop, then the time exit (both decided by information older than bar
+        i; they drop the pending signal or limit, R-W3 / R-H2; the time exit
+        is taken at the open even when bar i's range later reaches the stop:
+        R-H3 orders the exits INSIDE the range, after the open -- finishing
+        delegation i4-r2-02), else the pending taker signal (R-T1);
         THEN, only if the position lives on through the open (no signal, or
         a signal the same way as the position), bar i's RANGE -- the fixed
         stop, take-profit, maker take-profit, then a pending maker limit.
@@ -56,9 +58,12 @@ Two rule sets are named (`RULES`); every choice is a field of `BarRules`:
            golden files hold the proof).
   spec     the stated rules (tests/bt/battery/item_4/DEFINITIONS.md
            「足の模型の仕様」): a signal pending for bar i's open acts at the
-           open, before bar i's range (R-T1); on the time-exit bar only the
-           stop is looked at before the time exit (a take-profit there is not
-           taken); the
+           open, before bar i's range (R-T1); the time exit is taken at the
+           open of bar b + N, before anything of that bar's range (R-O1); a
+           maker signal whose bar's entry mask is False places no limit and
+           counts no missed fill, and a maker signal the same way as the
+           pending limit leaves the old limit in place (finishing delegation
+           i4-r2-08: the lead's two values); the
            stop / take-profit levels are computed and compared on the written
            decimal values of the entry price and the percentage; the Sharpe
            ratio is annualised by the bar frequency (365 * 86400 / bar
@@ -105,6 +110,9 @@ class BarRules:
     sharpe_periods: str  # "fixed_525600" | "bar_frequency"
     negative_carry: str  # "skip" (old engine) | "charge"
     signal_at_open: bool  # does a pending taker signal act at the bar's open, before the bar's range exits?
+    time_exit_at_open: bool  # is the time exit taken at bar b+N's open, before that bar's range (R-O1)?
+    maker_mask_at_signal: bool  # does a maker entry signal on a masked-out bar place no limit (and count no miss)?
+    maker_same_side_keeps: bool  # does a maker signal the same way as the pending limit keep the old limit?
 
     def __post_init__(self) -> None:
         if self.level_arithmetic not in ("binary", "decimal"):
@@ -115,8 +123,9 @@ class BarRules:
             raise BarModelError(f"negative_carry must be skip or charge, got {self.negative_carry!r}")
         if type(self.tp_before_time_exit) is not bool:
             raise BarModelError("tp_before_time_exit must be a bool")
-        if type(self.signal_at_open) is not bool:
-            raise BarModelError("signal_at_open must be a bool")
+        for name in ("signal_at_open", "time_exit_at_open", "maker_mask_at_signal", "maker_same_side_keeps"):
+            if type(getattr(self, name)) is not bool:
+                raise BarModelError(f"{name} must be a bool")
 
     def periods_per_year(self, bar_seconds: float) -> float:
         if self.sharpe_periods == "fixed_525600":
@@ -125,9 +134,11 @@ class BarRules:
 
 
 LEGACY = BarRules("legacy", tp_before_time_exit=True, level_arithmetic="binary", sharpe_periods="fixed_525600",
-                  negative_carry="skip", signal_at_open=False)
+                  negative_carry="skip", signal_at_open=False, time_exit_at_open=False, maker_mask_at_signal=False,
+                  maker_same_side_keeps=False)
 SPEC = BarRules("spec", tp_before_time_exit=False, level_arithmetic="decimal", sharpe_periods="bar_frequency",
-                negative_carry="charge", signal_at_open=True)
+                negative_carry="charge", signal_at_open=True, time_exit_at_open=True, maker_mask_at_signal=True,
+                maker_same_side_keeps=True)
 RULES = {"legacy": LEGACY, "spec": SPEC}
 
 
@@ -399,6 +410,13 @@ class BarVenue:
                 plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "wick_stop")
 
         time_due = (o.max_hold_bars is not None and self.position != 0.0 and i - self.entry_bar >= o.max_hold_bars)
+        # 0.42) spec (time_exit_at_open, R-O1 / R-H1): the time exit is an event of bar i's OPEN, so it comes before
+        # anything of bar i's range; it drops the pending signal or limit (R-H2, below: plan is not None)
+        if self.r.time_exit_at_open and plan is None and time_due:
+            ref = self.opens[i]
+            long = self.position > 0
+            price = c.sell_price(ref) if long else c.buy_price(ref)
+            plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "time_exit")
         mtp_pct = o.maker_tp_pct if o.exit_execution == "maker_tp" else None
         # 0.45) spec (signal_at_open): the pending taker signal acts at bar i's open, before bar i's range. Not when
         # an exit decided by older information (the wick stop above, the time exit) takes the open: those drop it.
@@ -506,6 +524,13 @@ class BarVenue:
             return (Reject(coid, "not_actionable"),)
         out = [Ack(coid, f"bar-{coid}")]
         old = self.pending_limit
+        if self.r.maker_mask_at_signal and order.order_type == "signal_limit" and self.position == 0.0 \
+                and self.o.entry_mask is not None and not bool(self.o.entry_mask[i]):
+            # spec (i4-r2-08, R-E2): an entry signal on a masked-out bar places no limit, counts no missed fill
+            return (*out, Canceled(coid, "entry_filtered"))
+        if self.r.maker_same_side_keeps and old is not None and old.side == sig:
+            # spec (i4-r2-08): the pending limit the same way stays (its price and its lifetime); no new limit
+            return (*out, Canceled(coid, "kept_older"))
         if old is not None:
             if old.side != sig:
                 self.missed_fills += 1

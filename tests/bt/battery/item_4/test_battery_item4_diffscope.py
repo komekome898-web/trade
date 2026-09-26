@@ -96,10 +96,17 @@ PATHS = [
 ITEMS = [0, 1, 2, 3, 4]
 
 
+# 仕上げの委任文 docs/DATA/delegations/20260926_backtest_env_finish.md §3「機械の検査の除外(i4-r2-09、L-448 の補い)」:
+# 「場面係の差分の検査(`git diff --name-only HEAD` の全行)で、`docs/AUDITOR/TRACE/` の下のファイルはリードのフックが書く痕跡であり、
+#   場面集の外の変更に数えない。」
+NOT_COUNTED_BY_TEXT = ("docs/AUDITOR/TRACE/",)
+
+
 def _inside_by_text(path, item):
-    """The answer from the text of the L-448 row only (the battery of that item; item 4 also item 0's)."""
+    """The answer from the text of the L-448 row (the battery of that item; item 4 also item 0's) and of the finishing
+    delegation's exclusion (§3: files under docs/AUDITOR/TRACE/ are the lead's hook traces, not counted as outside)."""
     allowed = [f"tests/bt/battery/item_{item}/"] + (["tests/bt/battery/item_0/"] if item == 4 else [])
-    return any(path.startswith(a) for a in allowed)
+    return any(path.startswith(a) for a in allowed) or any(path.startswith(x) for x in NOT_COUNTED_BY_TEXT)
 
 
 def _cases():

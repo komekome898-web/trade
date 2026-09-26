@@ -1,0 +1,43 @@
+2026-09-26T12:17:17Z
+658582da3168deb8005001cd900a7c8a34cdcf4b
+PYTHONPATH=src timeout 900 python -m pytest tests/bt/battery/item_4 tests/bt/critic/item_4 --basetemp=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/finish_scene_basetemp -p no:cacheprovider -o tmp_path_retention_policy=none
+E       AssertionError: {'bar': 3, 'side': 'CLOSE_LONG', 'price': 98.0, 'size': 30.0, ...}
+E       assert (3, 98.0) == (3, 100.0)
+E         
+E         At index 1 diff: 98.0 != 100.0
+E         Use -v to get more diff
+
+tests/bt/critic/item_4/test_i4r2_time_exit_at_the_open.py:48: AssertionError
+_________ test_the_time_exit_bar_closes_at_its_open[close_pending_too] _________
+
+signals = {0: 'BUY', 2: 'CLOSE'}
+
+    @pytest.mark.parametrize("signals", [{0: "BUY"}, {0: "BUY", 2: "CLOSE"}], ids=["time_exit_only", "close_pending_too"])
+    def test_the_time_exit_bar_closes_at_its_open(signals):
+        res = _run(signals)
+        closes = [f for f in res.fills if f["side"].startswith("CLOSE_")]
+        assert len(closes) == 1
+        c = closes[0]
+>       assert (c["bar"], c["price"]) == (3, 100.0), c
+E       AssertionError: {'bar': 3, 'side': 'CLOSE_LONG', 'price': 98.0, 'size': 30.0, ...}
+E       assert (3, 98.0) == (3, 100.0)
+E         
+E         At index 1 diff: 98.0 != 100.0
+E         Use -v to get more diff
+
+tests/bt/critic/item_4/test_i4r2_time_exit_at_the_open.py:48: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_check_matches_delegation_text_on_grid
+FAILED tests/bt/critic/item_4/test_i4r2_considered_unread_is_not_confirmed.py::test_no_confirmed_absence_rests_on_an_unread_part
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[fx_ticks-regzip]
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[fx_ticks-decompressed]
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[fx_ticks-first_rows]
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[jpx_1m-regzip]
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[jpx_1m-decompressed]
+FAILED tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py::test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule[jpx_1m-first_rows]
+FAILED tests/bt/critic/item_4/test_i4r2_research_needs_a_real_preregistration.py::test_a_made_up_hash_does_not_open_a_research_run_on_real_data[0000000000000000000000000000000000000000000000000000000000000000]
+FAILED tests/bt/critic/item_4/test_i4r2_research_needs_a_real_preregistration.py::test_a_made_up_hash_does_not_open_a_research_run_on_real_data[cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd]
+FAILED tests/bt/critic/item_4/test_i4r2_research_needs_a_real_preregistration.py::test_a_made_up_hash_does_not_open_a_research_run_on_real_data[2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881]
+FAILED tests/bt/critic/item_4/test_i4r2_time_exit_at_the_open.py::test_the_time_exit_bar_closes_at_its_open[time_exit_only]
+FAILED tests/bt/critic/item_4/test_i4r2_time_exit_at_the_open.py::test_the_time_exit_bar_closes_at_its_open[close_pending_too]
+13 failed, 224 passed in 24.04s

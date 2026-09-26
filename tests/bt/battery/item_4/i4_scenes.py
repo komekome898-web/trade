@@ -201,19 +201,19 @@ def J(*keys, fill_fields=("bar", "side", "price", "size")):
 #   wick      R-W3  the structural stop: bar j-1's close beyond the frozen level -> bar j's OPEN (taker)
 #   time      R-H1  j = entry bar + N -> bar j's OPEN (taker)
 #   signal    R-T1  a closing signal (opposite or CLOSE) at bar j-1, taker execution -> bar j's OPEN (taker)
-#   stop      R-P3  bar j's range reaches the % stop level -> min(open, level) (long) / max (short), taker
-#   stop@time       the same stop on the time-exit bar (R-H3 puts it before the time exit)
+#   stop      R-P3  bar j's range reaches the % stop level -> min(open, level) (long) / max (short), taker.  The
+#                   same event on the time-exit bar j = entry bar + N (the range comes after the open, R-O1 / R-H3:
+#                   the time exit at the open closes first in the spec order; the legacy order L-5 takes the stop first)
 #   tp        R-P4  bar j's range strictly through the % take-profit level -> the level, maker rate
 #   mtp       R-X1  bar j's range strictly through the maker take-profit level -> the level, maker rate
 #   limit     R-M1  maker execution: the resting closing limit (a closing signal at p, entry bar <= p < j,
 #                   j - p <= timeout; the latest such signal) strictly traded through -> the limit, maker rate
-EXIT_EVENTS = ("wick", "stop@time", "time", "signal", "stop", "tp", "mtp", "limit")
-ORDER_SPEC = ["wick", "stop@time", "time", "signal", "stop", "tp", "mtp", "limit"]     # R-O1
-ORDER_LEGACY = ["wick", "stop", "stop@time", "tp", "mtp", "time", "signal", "limit"]   # L-1 + L-5
-# pairs that never happen on one bar (the options exclude each other, or the names do) and the pairs whose two
-# answers are the same fill (both at the open, taker; no re-entry on the bar, R-T3): not pinned by any scene
-NEVER_TOGETHER = {frozenset(p) for p in [("signal", "limit"), ("wick", "stop"), ("wick", "stop@time"),
-                                          ("stop", "stop@time"), ("stop", "time")]}
+EXIT_EVENTS = ("wick", "time", "signal", "stop", "tp", "mtp", "limit")
+ORDER_SPEC = ["wick", "time", "signal", "stop", "tp", "mtp", "limit"]     # R-O1: the open events, then the range
+ORDER_LEGACY = ["wick", "stop", "tp", "mtp", "time", "signal", "limit"]   # L-1 + L-5
+# pairs that never happen on one bar (the options exclude each other) and the pairs whose two answers are the same
+# fill (both at the open, taker; no re-entry on the bar, R-T3): not pinned by any scene
+NEVER_TOGETHER = {frozenset(p) for p in [("signal", "limit"), ("wick", "stop")]}
 SAME_FILL = {frozenset(("wick", "time")), frozenset(("wick", "signal")), frozenset(("time", "signal"))}  # all three: the open, taker
 
 
@@ -277,7 +277,7 @@ def exit_events(inp, ob, d, ep, j) -> set:
         ev.add("signal")
     lv = _levels(cfg, ep, d)
     if "stop" in lv and ((lo <= lv["stop"]) if d > 0 else (hi >= lv["stop"])):
-        ev.add("stop@time" if time_bar else "stop")
+        ev.add("stop")
     for k in ("tp", "mtp"):
         if k in lv and ((hi > lv[k]) if d > 0 else (lo < lv[k])):
             ev.add(k)
@@ -300,7 +300,7 @@ def exit_fill(event, inp, ob, d, ep, j):
     if event in ("wick", "time", "signal"):
         return (sell_px(o, c) if d > 0 else buy_px(o, c)), "taker"
     lv = _levels(cfg, ep, d)
-    if event in ("stop", "stop@time"):
+    if event == "stop":
         trig = min(dec(o), lv["stop"]) if d > 0 else max(dec(o), lv["stop"])
         return (sell_px(float(trig), c) if d > 0 else buy_px(float(trig), c)), "taker"
     if event in ("tp", "mtp"):
@@ -1123,9 +1123,9 @@ _CHT = cfg(costs={**ZERO, "taker_fee_pct": 0.1, "maker_fee_pct": 0.1}, max_hold_
 _HT_SPEC = [trade(1, +1, 100.0, 0.1, 3, 101.0, 0.1)]    # R-H1: closed at bar 3's OPEN 101, taker
 _HT_LEGACY = [trade(1, +1, 100.0, 0.1, 3, 102.0, 0.1)]   # L-1: the take-profit of bar 3 is taken before the time exit
 add(id="i4-13-tp-on-exit-bar", viewpoint="I4-13", kind="値",
-    what="時間切れの足(足 b + N)に利確の水準も通るとき、仕様どおり足 b + N の始値で閉じるか(同じ足で先に見るのは逆指値だけ)",
-    how="HT の足、N = 2、利確 2%(水準 102)。BUY@0 → 足 1 の始値 100。足 3 の始値 101 で時間切れ(R-H1)。仕様が同じ足で先に置くのは"
-        "逆指値だけ(R-H3)なので、足 3 の高値 103 > 102 の利確は取らない。手数料は maker・taker とも 0.1%。"
+    what="時間切れの足(足 b + N)に利確の水準も通るとき、仕様どおり足 b + N の始値で閉じるか(始値の時間切れは範囲の利確より先)",
+    how="HT の足、N = 2、利確 2%(水準 102)。BUY@0 → 足 1 の始値 100。足 3 の始値 101 で時間切れ(R-H1)。始値の出来事は範囲の出来事より"
+        "先(R-O1)で、利確は時間切れより先に取らない(R-H3)ので、足 3 の高値 103 > 102 の利確は取らない。手数料は maker・taker とも 0.1%。"
         "損益 = 30 - 30 x 101 x 0.001 - 3 = 23.97。",
     input=bars_input(HT, [(0, "BUY")], _CHT, want=_WFP),
     expect=full_expect(HT, _HT_SPEC, _CHT, 60, _WFP), judge=J(*_WFP))
@@ -1190,6 +1190,60 @@ add(id="i4-16-missed", viewpoint="I4-16", kind="値",
     input=bars_input(MF, [(1, "BUY"), (4, "BUY"), (5, "SELL"), (7, "CLOSE")], _CMF, want=_WFM),
     expect=full_expect(MF, [trade(6, -1, 100.0, 0.0, 8, 99.5, 0.0)], _CMF, 60, _WFM, missed=2),
     judge=J(*_WFM))
+
+# --------------------------------------------------------------------------- the maker path of the mask and of a same-side
+# signal (i4-r2-08: R-E4 and R-M6; the values are the lead's decision in the finishing delegation §1 i4-r2-08)
+_MKM = [True, False, True, True, True, True]
+MKA = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 100.5, 99.5, 100), (100, 100.5, 99.8, 100),
+               (100, 100.5, 99.5, 99.8), (99.8, 100.2, 99.6, 100)])
+MKB = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 100.8, 100, 100.5), (100.5, 101, 100.2, 100.8),
+               (100.8, 101.2, 100.4, 101), (101, 101.5, 100.6, 101.2)])
+_CMKM = cfg(execution="maker", maker_timeout_bars=3, entry_mask=_MKM)
+add(id="i4-14-maker-mask-false", viewpoint="I4-14", kind="値",
+    what="maker の執行で、合図の足のマスクが False の建ての合図は指値を置かず(後の足が厳密に通過しても建たない)、マスクが True の合図の"
+         "指値は置かれて約定するか(R-E2・R-E4)",
+    how="MKA の足、maker、寿命 3、マスク " + str(_MKM) + "、費用 0。BUY@1 はマスク[1] = False → 指値を置かない(足 2 の安値 99.5 < 100 でも"
+        "建たない。R-E4)。BUY@3 はマスク[3] = True → 指値 100(足 3 の終値)、足 4 の安値 99.5 < 100 で 100 で建つ(R-M1)。取り逃し 0(R-E4・R-M5)。",
+    input=bars_input(MKA, [(1, "BUY"), (3, "BUY")], _CMKM, want=_WFM),
+    expect=full_expect(MKA, [trade(4, +1, 100.0, 0.0)], _CMKM, 60, _WFM, missed=0),
+    judge=J(*_WFM))
+add(id="i4-16-maker-mask-false-not-missed", viewpoint="I4-16", kind="値",
+    what="maker の執行で、マスクが False の合図は指値を置かないので、後の足が指値の値を厳密に通過しない並びでも取り逃しに数えないか"
+         "(取り逃しの数が値の道筋で変わらない。R-E4・R-M5)",
+    how="MKB の足、maker、寿命 3、マスク " + str(_MKM) + "、費用 0。BUY@1 はマスク[1] = False → 指値を置かない。足 2〜5 の安値は 100 を"
+        "厳密に下回らない(足 2 は 100 に触れただけ)。約定 0、取り逃し 0(置いていない指値は R-M2 の寿命の取消にならない)。",
+    input=bars_input(MKB, [(1, "BUY")], _CMKM, want=_WFM),
+    expect=full_expect(MKB, [], _CMKM, 60, _WFM, missed=0),
+    judge=J(*_WFM))
+add(id="i4-16-maker-mask-false-two-models", viewpoint="I4-16", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(マスクが False の合図にも指値を置き、寿命で取り消して取り逃しに数える既存の計算 L-6)と"
+         "仕様の出力(R-E4)の両方を出せるか",
+    how="i4-16-maker-mask-false-not-missed と同じ入力。互換の答え = 約定 0・取り逃し 1(指値 100 を足 1 に置き、足 4 で 4 - 1 = 3 >= 3 で取消。"
+        "L-6)。仕様の答え = 約定 0・取り逃し 0。",
+    input=bars_input(MKB, [(1, "BUY")], _CMKM, want=_WFM, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(MKB, [], _CMKM, 60, _WFM, missed=1), "spec": full_expect(MKB, [], _CMKM, 60, _WFM, missed=0)},
+    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
+SSL = mk_bars([(100, 100.5, 99.8, 100), (100, 100.5, 99.8, 100), (100, 101.5, 100, 101), (101, 101.5, 100.5, 101),
+               (101, 101.5, 99.5, 100), (100, 100.5, 99.8, 100)])
+_CSSL = cfg(execution="maker", maker_timeout_bars=5)
+add(id="i4-16-same-side-keeps-limit", viewpoint="I4-16", kind="値",
+    what="maker の執行で、建ての指値が待っている間に同じ向きの合図が来ても、指値を置き直さず古い指値(値と置いた足)を残し、"
+         "取り逃しに数えないか(R-M6・R-M5)",
+    how="SSL の足、maker、寿命 5、費用 0。BUY@1 → 指値 100(足 1 の終値)。足 2 の安値 100 は触れただけ。BUY@2 は同じ向き → 置き直さない"
+        "(指値は 100 のまま、置いた足は 1)。足 3 の安値 100.5 は 100 を通過しない。足 4 の安値 99.5 < 100 で 100 で建つ(4 - 1 = 3 <= 5)。"
+        "取り逃し 0。",
+    input=bars_input(SSL, [(1, "BUY"), (2, "BUY")], _CSSL, want=_WFM),
+    expect=full_expect(SSL, [trade(4, +1, 100.0, 0.0)], _CSSL, 60, _WFM, missed=0),
+    judge=J(*_WFM))
+add(id="i4-16-same-side-two-models", viewpoint="I4-16", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(同じ向きの合図で指値を新しい足の終値に置き直す既存の計算 L-7)と仕様の出力(R-M6)の両方を"
+         "出せるか",
+    how="i4-16-same-side-keeps-limit と同じ入力。互換の答え = BUY@2 で指値を 101(足 2 の終値)に置き直し、足 3 の安値 100.5 < 101 で 101 で"
+        "建つ(取り逃しに数えない。L-7)。仕様の答え = 足 4 で 100。",
+    input=bars_input(SSL, [(1, "BUY"), (2, "BUY")], _CSSL, want=_WFM, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(SSL, [trade(3, +1, 101.0, 0.0)], _CSSL, 60, _WFM, missed=0),
+            "spec": full_expect(SSL, [trade(4, +1, 100.0, 0.0)], _CSSL, 60, _WFM, missed=0)},
+    judge={"legacy": J(*_WFM), "spec": J(*_WFM)})
 
 # --------------------------------------------------------------------------- I4-17 metrics
 _P17 = [120.0, -40.0, -5.0, 0.0, -30.0, 80.0, -10.0]
@@ -1343,11 +1397,22 @@ add(id="i4-11-wick-before-exit-limit", viewpoint="I4-11", kind="値",
     expect=full_expect(_OW, _long(4, 99.5), _C_O11, 60, _WOM, missed=0), judge=J(*_WOM))
 _C_O5 = cfg(max_hold_bars=2, stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
 add(id="i4-13-stop-on-time-bar", viewpoint="I4-13", kind="値",
-    what="時間切れの足(足 b + N)で、範囲の逆指値が時間切れより先で、待つ合図・利確・maker の利確は起きないか(R-H3・R-O1)",
+    what="時間切れの足(足 b + N)の範囲が逆指値に届いても、時間切れが足の始値で先に閉じ、範囲の逆指値・待つ合図・利確・maker の利確は"
+         "起きないか(R-O1: 始値の出来事は範囲の出来事より先。R-H3 の「先に見るのは逆指値だけ」は始値より後の範囲の中の順)",
     how="OA の足、N = 2、逆指値 2%・利確 3%・maker の利確 2.5%、費用 0。BUY@1 → 足 2 の始値 100、時間切れの足は 4。足 4 は SELL@3 の合図も待ち、"
-        "逆指値・利確・maker の利確の全部に届く。R-H3 で逆指値が先 → min(101, 98) = 98。損益 = -60。",
+        "範囲は逆指値・利確・maker の利確の全部に届く。始値 101 は逆指値の水準 98 より上なので、逆指値は始値より前に起きない。R-O1 で始値の"
+        "時間切れが先 → 足 4 の始値 101(taker)。損益 = (101 - 100) x 30 = 30。",
     input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O5, want=_WO),
-    expect=full_expect(OA, _long(4, 98.0), _C_O5, 60, _WO), judge=J(*_WO))
+    expect=full_expect(OA, _long(4, 101.0), _C_O5, 60, _WO), judge=J(*_WO))
+_C_O5B = cfg(max_hold_bars=2, stop_loss_pct=2.0)
+add(id="i4-13-stop-on-time-bar-two-models", viewpoint="I4-13", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(時間切れの足でも範囲の逆指値を時間切れより先に取る既存の計算 L-5)と仕様の出力(R-O1: 始値の"
+         "時間切れが先)の両方を出せるか",
+    how="OA の足、N = 2、逆指値 2%(98)、費用 0、BUY@1。足 4 は時間切れの足で、安値 97 <= 98。互換の答え = 足 4 の逆指値 min(101, 98) = 98"
+        "(L-5)。仕様の答え = 足 4 の始値 101(R-O1・R-H3)。",
+    input=bars_input(OA, [(1, "BUY")], _C_O5B, want=_WO, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(OA, _long(4, 98.0), _C_O5B, 60, _WO), "spec": full_expect(OA, _long(4, 101.0), _C_O5B, 60, _WO)},
+    judge={"legacy": J(*_WO), "spec": J(*_WO)})
 _C_O6 = cfg(max_hold_bars=2, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
 add(id="i4-13-time-first", viewpoint="I4-13", kind="値",
     what="時間切れの足で逆指値に届かないとき、時間切れが足の始値で閉じ、待つ合図・利確・maker の利確は起きないか(R-H1〜R-H3・R-O1)",
@@ -1378,11 +1443,12 @@ add(id="i4-13-time-before-exit-limit", viewpoint="I4-13", kind="値",
     expect=full_expect(OU, _long(4, 101.0), _C_O10, 60, _WOM, missed=0), judge=J(*_WOM))
 _C_O12 = cfg(execution="maker", maker_timeout_bars=3, max_hold_bars=2, stop_loss_pct=2.0)
 add(id="i4-13-stop-on-time-bar-maker", viewpoint="I4-13", kind="値",
-    what="maker の執行の時間切れの足で、範囲の逆指値が時間切れと待つ決済の指値より先か",
+    what="maker の執行の時間切れの足で、始値の時間切れが、範囲の逆指値と待つ決済の指値より先か(R-O1・R-H3)。捨てた指値を取り逃しに"
+         "数えないか(R-M5)",
     how="OA の足、maker、寿命 3、N = 2、逆指値 2%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 は時間切れの足で、安値 97 <= 98・"
-        "高値 104 > 101。R-H3 で逆指値が先 → min(101, 98) = 98(taker)。取り逃し 0(R-M5)。",
+        "高値 104 > 101。R-O1 で始値の時間切れが先 → 足 4 の始値 101(taker)。指値は捨て、取り逃し 0(R-M5)。",
     input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O12, want=_WOM),
-    expect=full_expect(OA, _long(4, 98.0), _C_O12, 60, _WOM, missed=0), judge=J(*_WOM))
+    expect=full_expect(OA, _long(4, 101.0), _C_O12, 60, _WOM, missed=0), judge=J(*_WOM))
 _C_O7 = cfg(execution="maker", maker_timeout_bars=3, stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp",
             maker_tp_pct=2.5)
 add(id="i4-16-stop-before-exit-limit", viewpoint="I4-16", kind="値",

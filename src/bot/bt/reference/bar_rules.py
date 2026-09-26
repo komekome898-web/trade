@@ -29,14 +29,17 @@ question to the lead, round_2/ROOTCAUSE.md section 7-1).
 The order inside one bar j is the time order (R-T1: a bar's open comes
 before the rest of its range): AT THE OPEN, the exits decided by older
 information -- the structural stop on bar j-1's close (R-W3) and the time
-exit (R-H1; on that bar only the stop is looked at first, R-H3) -- drop the
-pending signal (R-W3 / R-H2); else the pending taker signal acts at the open
-(R-T1). THEN, if the position lives on through the open, bar j's RANGE: the
+exit (R-H1: at the open of bar b + N, before that bar's range -- R-O1, the
+finishing delegation's reading of R-H3, i4-r2-02) -- drop the pending signal
+(R-W3 / R-H2); else the pending taker signal acts at the open (R-T1). THEN, if the position lives on through the open, bar j's RANGE: the
 stop (R-P3), the take-profit (R-P4), the maker take-profit (R-X1), then a
 pending maker limit (R-M1). Where the rule text is silent: an exit in bar j's
 range drops a maker limit pending for bar j (both are inside the range; the
 text does not order them -- a question to the lead); a take-profit
-percentage of 0 or None means no take-profit.
+percentage of 0 or None means no take-profit. Maker signals (the lead's two
+values, finishing delegation i4-r2-08): an entry signal whose bar's mask is
+False places no limit and counts no missed fill; a signal the same way as the
+pending limit leaves the old limit (price and lifetime) in place.
 """
 from __future__ import annotations
 
@@ -147,13 +150,8 @@ def run_rules(bars, bar_seconds, signals: dict, config: dict) -> dict:
                 close_(j, _taker(O[j], pos is not None and pos["s"] < 0, c), taker_rate)
                 exited = True
         time_due = pos is not None and N is not None and j - pos["b"] >= N
-        if not exited and time_due:  # R-H1 at the open; R-H3: the stop of this bar is looked at first
-            s = pos["s"]
-            sl = pos["E"] * (1 - s * F(cfg["stop_loss_pct"]) / 100) if cfg["stop_loss_pct"] else None
-            if sl is not None and (L[j] <= sl if s > 0 else H[j] >= sl):
-                close_(j, _taker(min(O[j], sl) if s > 0 else max(O[j], sl), s < 0, c), taker_rate)
-            else:
-                close_(j, _taker(O[j], s < 0, c), taker_rate)
+        if not exited and time_due:  # R-H1 at the open (R-O1: before anything of bar j's range)
+            close_(j, _taker(O[j], pos["s"] < 0, c), taker_rate)
             exited = True
         if exited:  # R-H2 / R-W3: the exit at the open drops the pending signal
             pend_taker = pend_limit = None
@@ -213,6 +211,10 @@ def run_rules(bars, bar_seconds, signals: dict, config: dict) -> dict:
                 continue  # nothing to do the same way as the position
             if pos is None and sig == "SELL" and not cfg["allow_short"]:
                 continue  # R-T4
+            if pos is None and mask is not None and not mask[j]:
+                continue  # R-E2 + the lead's value (i4-r2-08): no limit, no missed fill
+            if pend_limit is not None and pend_limit[0] == sig:
+                continue  # the lead's value (i4-r2-08): the old limit stays
             if pend_limit is not None and pend_limit[0] != sig:  # R-M3
                 missed += 1
             pend_limit = (sig, C[j], j)  # R-M1: at the signal bar's close

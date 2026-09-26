@@ -1,27 +1,23 @@
-"""Adversarial grid (委任文 §3「提出前の吟味」(6), round 2, i4-r1-04): whether a dataset is market data is decided
-from the data, not from the caller's word.
+"""Adversarial grid (委任文 §3「提出前の吟味」(6); round 2 i4-r1-04, rewritten in the finishing stage for i4-r2-03):
+whether a dataset is market data is decided from the data, not from the caller's word.
 
-The rule (委任文 §4): 「実データを通すときの戦略は、時刻だけで決まる機械的な手順か種つきの乱数に限る」. Read as
-a rule of the integrated run (bot.bt.pipeline): a dataset IS real market data when its file lies in this
-environment's market-data folders (the repository's backtest_data / data / paper_logs/tape, the data layer's
-allowed roots) or has the same bytes (size and sha256) as a file there; the caller's `origin` cannot make such a
-file synthetic -- a "synthetic" declaration on it is refused as a false declaration, whatever the strategy and the
-purpose. A declaration "real" is kept (it only restricts). `expected` below is written from that rule text.
+The rule (finishing delegation §1 i4-r2-03, verbatim): 「出所は宣言でもファイルの中身の同一性でもなく、行の中身で
+決める」「合成は種つきの生成器からだけ作れる口にし、その種と生成器の版を実行記録に残す」 + 委任文 §4 「実データを通す
+ときの戦略は、時刻だけで決まる機械的な手順か種つきの乱数に限る」. Read as a rule of bot.bt.pipeline: a FILE dataset is
+real market data (a file cannot be declared synthetic: refused); its evidence is its rows compared with the rows of
+this environment's market files through the data layer; a GENERATED dataset (seeded generator) is synthetic.
+`expected` below is written from that rule text.
 
-Grid (the rule's input space): placement of the file {in the market folder itself (root = the repository), a
-symbolic link under a temporary root pointing at the market file, a byte copy under a temporary root in a
-market-folder name (backtest_data/...), a byte copy under a temporary root in another allowed folder name
-(data/...), a synthetic file under a temporary root} x the market file {FX event ticks (quotes), TOPIX futures
-1-minute bars} (the synthetic file is one) x declared origin {real, synthetic} x strategy {schedule,
-seeded_random, price_rule} x purpose {動作確認, 研究 with a pre-registration hash}
-= (4 x 2 + 1) x 2 x 3 x 2 = 108 cells, all planned (the rule is checked at planning; nothing is executed. A
-symbolic link out of the data root is refused later by the data layer when the run reads it; the origin is
-decided before that, by the link's target).
-
-Not in the grid (named; the qa_* case is its own test below): a market file edited by even one byte, recompressed
-or cut to a part (another file by content -- a limit of the rule,
-written in bot.bt.pipeline); market data that exists only outside this environment (the owner's PC); the
-synthetic battery files of the item-4 scene set (they declare themselves "real", which the rule keeps).
+Grid (the rule's input space): source {the market file itself (root = the repository), a symbolic link under a
+temporary root pointing at the market file, a byte copy under a temporary root in a market-folder name
+(backtest_data/...), a byte copy under a temporary root in another allowed folder name (data/...), a seeded
+generator} x the market file {FX event ticks (quotes), TOPIX futures 1-minute bars} (the generator makes the same
+kind) x declared origin {real, synthetic} (the generator declares none: one column) x strategy {schedule,
+seeded_random, price_rule} x purpose {動作確認, 研究 with a pre-registration FILE}
+= (4 x 2 x 2 + 2) x 3 x 2 = 108 cells, all planned (the rule is checked at planning; nothing is executed).
+The re-encodings (recompressed, decompressed, cut, one byte edited, every row edited) are the grid of
+test_i4_r3_origin_by_rows_grid.py. Not in the grid: market data that exists only outside this environment (the
+owner's PC: a file, so real by the rule, with evidence "unmatched").
 Skipped only when a market file is not in this environment.
 """
 from __future__ import annotations
@@ -36,6 +32,8 @@ from pathlib import Path
 import pytest
 
 from bot.bt.pipeline import PipelineError, plan_pipeline
+
+import i4w_decl as D
 
 REPO = Path(__file__).resolve().parents[3]
 NS = 1_000_000_000
@@ -56,16 +54,19 @@ SYN_SPEC = {**GZ, "kind": "bar", "symbol": "SYN", "asset": "crypto",
             "fields": {"open": "open", "high": "high", "low": "low", "close": "close", "volume": "volume"},
             "bar": {"interval_s": 60, "label": "start"}, "key": "start"}
 PLACEMENTS = ("in_market_folder", "symlink_to_market", "copy_backtest_data", "copy_data")
+GEN = {"fx_ticks": {"kind": "quote", "start_ns": 1767571200 * NS, "step_ns": 1 * NS, "n": 600, "price0": 150.0,
+                    "step_pct": 0.01, "qty": 1.0, "spread_pct": 0.002},
+       "jpx_1m": {"kind": "bar", "start_ns": 1767571200 * NS, "step_ns": 60 * NS, "n": 60, "price0": 3000.0,
+                  "step_pct": 0.1, "qty": 1.0}}
 T0 = 1767571200 * NS
 STRATS = {"schedule": {"kind": "schedule", "orders": [{"t_ns": T0, "side": "buy", "qty": 1.0},
                                                       {"t_ns": T0 + 300 * NS, "side": "sell", "qty": 1.0}]},
           "seeded_random": {"kind": "seeded_random", "seed": 7, "times": [T0, T0 + 300 * NS], "qty": 1.0},
           "price_rule": {"kind": "price_rule", "buy_below": 1e12, "sell_above": 0.0, "qty": 1.0}}
 PURPOSES = ("動作確認", "研究")
-HASH = "cd" * 32
-FILL = {"price": "first_observed_at_or_after", "trade": "px", "quote": {"buy": "ask", "sell": "bid"}, "bar": "open",
-        "latency_ns": 0}
-ZERO = {"taker_fee_pct": 0.0, "maker_fee_pct": 0.0, "slippage_pct": 0.0, "spread_pct": 0.0}
+PREREG = "prereg/PREREG.md"
+FILL = D.FILL
+ZERO = D.COSTS0
 
 CELLS = ([(pl, f, o, s, p) for pl, f, o, s, p in itertools.product(PLACEMENTS, MARKET, ("real", "synthetic"), STRATS,
                                                                     PURPOSES)]
@@ -74,21 +75,13 @@ CELLS = ([(pl, f, o, s, p) for pl, f, o, s, p in itertools.product(PLACEMENTS, M
 
 def expected(placement: str, origin: str, strat: str, purpose: str):
     """The rule text above -> "refuse" or the origin the run records."""
-    market = placement != "synthetic_file"
-    if market and origin == "synthetic":
-        return "refuse"  # a false declaration
-    real = market or origin == "real"
-    if real and purpose == "動作確認" and strat == "price_rule":
+    if placement == "generator":
+        return "synthetic"
+    if origin == "synthetic":
+        return "refuse"  # a file cannot be synthetic
+    if purpose == "動作確認" and strat == "price_rule":
         return "refuse"  # 委任文 §4
-    return "real" if real else "synthetic"
-
-
-def _synthetic_bytes() -> bytes:
-    rows = ["timestamp,open,high,low,close,volume"]
-    for i in range(20):
-        p = 100 + (i % 5)
-        rows.append(f"2026-01-05T00:{i:02d}:00Z,{p},{p + 1},{p - 1},{p + 0.5},1")
-    return gzip.compress(("\n".join(rows) + "\n").encode(), mtime=0)
+    return "real"
 
 
 @pytest.fixture(scope="module")
@@ -111,18 +104,20 @@ def roots():
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             shutil.copyfile(REPO / rel, dst)
         out[pl] = r
-    r = os.path.join(tmp, "synthetic_file")
-    os.makedirs(os.path.join(r, "backtest_data"), exist_ok=True)
-    with open(os.path.join(r, "backtest_data", "syn_bars.csv.gz"), "wb") as fh:
-        fh.write(_synthetic_bytes())
-    out["synthetic_file"] = r
+    r = os.path.join(tmp, "generator")
+    os.makedirs(r)
+    out["generator"] = r
+    for root in set(out.values()) - {str(REPO)}:
+        os.makedirs(os.path.join(root, "prereg"), exist_ok=True)
+        with open(os.path.join(root, PREREG), "w", encoding="utf-8") as fh:
+            fh.write("test pre-registration (the file's sha256 goes into the record)\n")
     yield out
     shutil.rmtree(tmp, ignore_errors=True)
 
 
 def _dataset(placement: str, f: str, origin: str) -> dict:
-    if placement == "synthetic_file":
-        return {"name": f, "paths": ["backtest_data/syn_bars.csv.gz"], "spec": SYN_SPEC, "origin": origin}
+    if placement == "generator":
+        return {"name": f, "generator": {"name": "random_walk", "seed": 11, "params": GEN[f]}}
     rel, spec = MARKET[f]
     if placement == "in_market_folder":
         path = rel
@@ -142,10 +137,15 @@ def test_the_grid_is_the_full_space():
 def test_origin_is_decided_from_the_data(cell, roots):
     placement, f, origin, strat, purpose = cell
     want = expected(placement, origin, strat, purpose)
+    root = roots[placement]
+    prereg = None
+    if purpose == "研究":
+        prereg = PREREG if root != str(REPO) else os.path.relpath(__file__, REPO)  # a file of the repository
+    kind = "bar" if f == "jpx_1m" else "quote"
     try:
-        plan = plan_pipeline(root=roots[placement], datasets=[_dataset(placement, f, origin)],
-                             instruments=[{"name": f, "price": f, "with": []}], strategy=STRATS[strat], fill=FILL,
-                             costs=ZERO, purpose=purpose, prereg_sha256=HASH if purpose == "研究" else None)
+        plan = plan_pipeline(root=root, datasets=[_dataset(placement, f, origin)],
+                             instruments=[D.instrument(f, f, kind)], strategy=STRATS[strat], purpose=purpose,
+                             prereg=prereg, **D.kw())
     except PipelineError as exc:
         assert want == "refuse", (cell, str(exc))
         return
@@ -153,35 +153,27 @@ def test_origin_is_decided_from_the_data(cell, roots):
     d = plan.datasets[0]
     assert d["origin"] == want, (cell, d["origin"])
     ev = d["origin_evidence"]
-    if placement in ("in_market_folder", "symlink_to_market"):
-        assert ev["by"] == "position" and ev["market_path"] == MARKET[f][0], ev
-    elif placement.startswith("copy_"):
-        assert ev["by"] == "bytes" and ev["market_path"] == MARKET[f][0], ev
+    if placement == "generator":
+        assert ev == {"by": "generator", "generator": "random_walk", "version": ev["version"], "seed": 11}, ev
     else:
-        assert ev["by"] is None and ev["market_path"] is None, ev
+        assert ev["by"] == "rows" and ev["rows_matched"] == ev["rows_read"] > 0, ev
+        assert ev["market_path"] is not None and not ev["market_path"].startswith(".."), ev
     assert plan.identity["datasets"][0]["origin"] == want
 
 
 QA_FILE = "backtest_data/qa_known_answer_20260905/daily_qa_alpha.csv.gz"
 
 
-def test_a_file_the_data_layer_names_as_not_market_data_is_not_market_data():
-    """The data layer's mandatory refusals name qa_* (synthetic known-answer packets) as not market data: such a
-    file in the market folder, or a byte copy of it elsewhere, is not found as market data (the data layer still
-    refuses to READ the qa_* path itself; a copy under another name is read as the caller declares it)."""
-    import hashlib
-
-    from bot.bt.pipeline import market_evidence
+def test_a_file_the_data_layer_names_as_not_market_data_is_not_evidence():
+    """The data layer's mandatory refusals name qa_* (synthetic known-answer packets) as not market data: a copy of
+    such a file is still a FILE (real by the rule), but its rows are never matched against the qa_* file itself
+    (the qa_* folder is not a candidate), so its evidence is not "rows" from a qa_* path."""
+    from bot.bt.pipeline import _market_candidates
     src = REPO / QA_FILE
     if not src.is_file():
         pytest.skip(f"{QA_FILE} is not in this environment")
-    sha = hashlib.sha256(src.read_bytes()).hexdigest()
-    assert market_evidence(os.path.realpath(src), sha) == {"by": None, "market_path": None}
-    tmp = tempfile.mkdtemp(prefix="i4w_origin_qa_")
-    try:
-        dst = os.path.join(tmp, "backtest_data", "renamed.csv.gz")
-        os.makedirs(os.path.dirname(dst))
-        shutil.copyfile(src, dst)
-        assert market_evidence(os.path.realpath(dst), sha) == {"by": None, "market_path": None}
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+    spec = {**GZ, "kind": "bar", "symbol": "QA", "asset": "crypto",
+            "time": {"columns": ["timestamp"], "unit": "iso", "tz": "UTC"},
+            "fields": {"open": "open", "high": "high", "low": "low", "close": "close", "volume": "volume"},
+            "bar": {"interval_s": 60, "label": "start"}, "key": "start"}
+    assert not any("qa_" in rel for _, rel, _, _ in _market_candidates(spec))

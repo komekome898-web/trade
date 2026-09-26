@@ -2,8 +2,9 @@
 
 The stated rules (tests/bt/battery/item_4/DEFINITIONS.md 「足の模型の仕様」): R-T1 the signal of bar i fills at
 bar i+1's OPEN; R-P3 / R-P4 / R-X1 the stop / take-profit / maker take-profit fill on bar j's RANGE; R-H1 the time
-exit fills at bar b+N's open, R-H2 dropping the signal pending for that bar, R-H3 on that bar only the stop is
-looked at first. The open of a bar comes before the rest of its range, so a signal pending for bar j's open acts
+exit fills at bar b+N's open, R-H2 dropping the signal pending for that bar; R-O1 puts the open's events before
+the range's, so on bar b+N nothing of the range comes first (R-H3 is the order inside the range after the open:
+finishing delegation i4-r2-02, which replaced the round-2 reading "the stop is looked at first"). The open of a bar comes before the rest of its range, so a signal pending for bar j's open acts
 before bar j's range: when it closes the position at the open, no stop / take-profit of bar j can fill.
 
 The oracle `expected_bar4` below is written from that rule text for ONE bar (bar 4), not from the engine's code
@@ -124,11 +125,9 @@ def expected_bar4(direction: str, pending: str, exits: str, time_due: bool, k: i
         return tp is not None and (h > tp if s > 0 else lo < tp)
 
     close = None  # (price, fee pct)
-    if time_due:  # R-H1..H3: at bar 4's open; the stop is looked at first; the pending signal is dropped
-        if stop_reached():
-            close = (taker(min(o, stop) if s > 0 else max(o, stop), s < 0), c["taker_fee_pct"])
-        else:
-            close = (taker(o, s < 0), c["taker_fee_pct"])
+    if time_due:  # R-H1 / R-H2 / R-O1: at bar 4's OPEN, before anything of bar 4's range (R-H3 orders the range,
+        # after the open -- finishing delegation i4-r2-02); the pending signal is dropped
+        close = (taker(o, s < 0), c["taker_fee_pct"])
     else:
         if pending in ("opposite", "CLOSE"):  # R-T1 / R-T3: closes at bar 4's OPEN, before bar 4's range
             close = (taker(o, s < 0), c["taker_fee_pct"])

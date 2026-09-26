@@ -65,7 +65,8 @@ def test_every_fill_is_a_core_fill_with_the_cost_models_fee(rules):
             assert n.fee == n.size * n.price * pct / 100
 
 
-REASONS = {"executed", "no_action", "entry_filtered", "dropped_by_exit", "timeout", "replaced", "not_actionable"}
+REASONS = {"executed", "no_action", "entry_filtered", "dropped_by_exit", "timeout", "replaced", "not_actionable",
+           "kept_older"}  # kept_older: spec, a maker signal the same way as the pending limit (i4-r2-08)
 
 
 @pytest.mark.parametrize("rules", ["legacy", "spec"])

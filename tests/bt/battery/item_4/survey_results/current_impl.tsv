@@ -39,6 +39,11 @@ i4-14-sides-short	I4-14	値	正解と一致		2603029e6415	正解と一致		26030
 i4-15-swap-long	I4-15	値	正解と一致		b3e7a8949ce7	正解と一致		b3e7a8949ce7	2 回の実行で同じ	0.006	0.002
 i4-15-swap-short	I4-15	値	正解と一致		6b3aa8357190	正解と一致		6b3aa8357190	2 回の実行で同じ	0.001	0.001
 i4-16-missed	I4-16	値	正解と一致		45ca25bb9d70	正解と一致		45ca25bb9d70	2 回の実行で同じ	0.006	0.001
+i4-14-maker-mask-false	I4-14	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.013	0.003
+i4-16-maker-mask-false-not-missed	I4-16	値	不一致	missed_fills = 1(正解 0)	5932797ccfdf	不一致	missed_fills = 1(正解 0)	5932797ccfdf	2 回の実行で同じ	0.009	0.01
+i4-16-maker-mask-false-two-models	I4-16	能力	不一致	spec: missed_fills = 1(正解 0)	7e0533bb46a2	不一致	spec: missed_fills = 1(正解 0)	7e0533bb46a2	2 回の実行で同じ	0.003	0.015
+i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 3(正解 4)	16c62b510b13	不一致	fills[0].bar = 3(正解 4)	16c62b510b13	2 回の実行で同じ	0.011	0.002
+i4-16-same-side-two-models	I4-16	能力	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	2 回の実行で同じ	0.011	0.011
 i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
 i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
 i4-17-sharpe-bar-seconds	I4-17	値	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	2 回の実行で同じ	0.001	0.001
@@ -54,12 +59,13 @@ i4-10-stop-first-plain	I4-10	値	正解と一致		6c3f6f2231b4	正解と一致		
 i4-12-tp-before-maker-tp	I4-12	値	正解と一致		4c6c5f66a3e1	正解と一致		4c6c5f66a3e1	2 回の実行で同じ	0.005	0.001
 i4-11-wick-first	I4-11	値	正解と一致		99305c1b61e4	正解と一致		99305c1b61e4	2 回の実行で同じ	0.001	0.001
 i4-11-wick-before-exit-limit	I4-11	値	正解と一致		f2d9275e52cd	正解と一致		f2d9275e52cd	2 回の実行で同じ	0.001	0.001
-i4-13-stop-on-time-bar	I4-13	値	正解と一致		6c3f6f2231b4	正解と一致		6c3f6f2231b4	2 回の実行で同じ	0.005	0.002
+i4-13-stop-on-time-bar	I4-13	値	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	2 回の実行で同じ	0.002	0.002
+i4-13-stop-on-time-bar-two-models	I4-13	能力	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	2 回の実行で同じ	0.011	0.019
 i4-13-time-first	I4-13	値	不一致	fills[1].price = 103.0(正解 101.0)	abb428dd2999	不一致	fills[1].price = 103.0(正解 101.0)	abb428dd2999	2 回の実行で同じ	0.001	0.001
 i4-13-time-first-two-models	I4-13	能力	不一致	spec: fills[1].price = 103.0(正解 101.0)	3cf7bd56feaa	不一致	spec: fills[1].price = 103.0(正解 101.0)	3cf7bd56feaa	2 回の実行で同じ	0.007	0.002
 i4-13-time-maker-tp-two-models	I4-13	能力	不一致	spec: fills[1].price = 102.49999999999999(正解 101.0)	273d37aa6da1	不一致	spec: fills[1].price = 102.49999999999999(正解 101.0)	273d37aa6da1	2 回の実行で同じ	0.003	0.003
 i4-13-time-before-exit-limit	I4-13	値	正解と一致		bac3e0c80dee	正解と一致		bac3e0c80dee	2 回の実行で同じ	0.006	0.001
-i4-13-stop-on-time-bar-maker	I4-13	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.001	0.001
+i4-13-stop-on-time-bar-maker	I4-13	値	不一致	fills[1].price = 98.0(正解 101.0)	cd7e27731fa6	不一致	fills[1].price = 98.0(正解 101.0)	cd7e27731fa6	2 回の実行で同じ	0.002	0.002
 i4-16-stop-before-exit-limit	I4-16	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.001	0.001
 i4-16-tp-before-exit-limit	I4-16	値	正解と一致		d8dae8650092	正解と一致		d8dae8650092	2 回の実行で同じ	0.006	0.001
 i4-16-maker-tp-before-exit-limit	I4-16	値	正解と一致		eb81aa9c95c6	正解と一致		eb81aa9c95c6	2 回の実行で同じ	0.001	0.001

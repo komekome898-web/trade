@@ -46,8 +46,18 @@ class PineForgeAdapter(Base):
     METRICS = "12 の指標を出す口を探したが無い(report は取引の一覧)"
     SPLIT = "行の割合で分ける口を探したが無い"
     PIPELINE = "入力は足(pf_bar_t)の列だけで、約定・気配・板・ファイルの宣言・目的つきの書き出し・ダッシュボードの口が無い"
-    DELIVERY = ("戦略に届く足を記録するには Pine の戦略を C の driver から呼ぶ必要があるが、この役の走行では項目 2 の構築物と C の driver が"
-                "消えていて道具を呼べない(opponents/RUNNABILITY.tsv の 70 の行。構築し直しは持ち越し)")
+    NOT_BUILT = ("比べていない(理由: 項目 2 の driver と道具の clone が他の役の容量の片付けで scratchpad から消えた(この役は消していない)。第 r3-1 回に構築し直しを試みた(2026-09-26 12:12 UTC、記録 venvs/item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log): git clone --depth 1 が返した版は 5e62602c ではなく 0d76a099(2026-09-26 の版)で、CMake の構築は通ったが、この版は導入前の検査(道具サーベイ §6)を通していない。driver(venvs/item_2/drivers/i2drv70.c は書き直した)の翻訳と実行に進む前に、この環境の許可の判定が[Code from External] として次の操作を止めたので、道具を呼んでいない。容量では止めていない(df -m / の空き: 開始 2,046 MB・構築後 1,935 MB))")
+    DELIVERY = "戦略に届く足を記録するには Pine の戦略を C の driver から呼ぶ必要がある。" + NOT_BUILT
+
+    def run(self, inp):
+        """Every answer while the driver is missing says that the tool itself was not called (rule 4: what was tried)."""
+        import os
+        try:
+            return super().run(inp)
+        except NotExpressible as exc:
+            if os.path.exists(EXE) or self.NOT_BUILT in str(exc):
+                raise
+            raise NotExpressible(f"{self.TOOL}: {self.NOT_BUILT} / {exc}") from exc  # first: long reasons are cut
 
     def extra_gate(self, inp):
         out = []
@@ -115,8 +125,7 @@ class PineForgeAdapter(Base):
                [f"{b['t_ns'] // 10**6}:{b['open']!r}:{b['high']!r}:{b['low']!r}:{b['close']!r}:{b['volume']!r}" for b in bars]
         import os
         if not os.path.exists(EXE):
-            raise NotExpressible(f"{self.TOOL}: 項目 2 の driver({EXE})と道具の clone(venvs/item_2/src/c70)が scratchpad から消えていて"
-                                 "(他の役の容量の片付け。この役は消していない)、道具を呼べない。構築し直しはこの周の持ち越し")
+            raise NotExpressible(f"{self.TOOL}: driver({EXE})が無い。{self.NOT_BUILT}")
         try:
             r = subprocess.run(args, capture_output=True, text=True, timeout=120)
         except Exception as exc:

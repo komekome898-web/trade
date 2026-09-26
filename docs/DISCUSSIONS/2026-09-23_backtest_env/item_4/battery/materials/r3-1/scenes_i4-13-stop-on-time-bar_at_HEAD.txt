@@ -1,0 +1,15 @@
+1345:add(id="i4-13-stop-on-time-bar", viewpoint="I4-13", kind="値",
+1346-    what="時間切れの足(足 b + N)で、範囲の逆指値が時間切れより先で、待つ合図・利確・maker の利確は起きないか(R-H3・R-O1)",
+1347-    how="OA の足、N = 2、逆指値 2%・利確 3%・maker の利確 2.5%、費用 0。BUY@1 → 足 2 の始値 100、時間切れの足は 4。足 4 は SELL@3 の合図も待ち、"
+1348-        "逆指値・利確・maker の利確の全部に届く。R-H3 で逆指値が先 → min(101, 98) = 98。損益 = -60。",
+1349-    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O5, want=_WO),
+1350-    expect=full_expect(OA, _long(4, 98.0), _C_O5, 60, _WO), judge=J(*_WO))
+1351-_C_O6 = cfg(max_hold_bars=2, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+--
+1380:add(id="i4-13-stop-on-time-bar-maker", viewpoint="I4-13", kind="値",
+1381-    what="maker の執行の時間切れの足で、範囲の逆指値が時間切れと待つ決済の指値より先か",
+1382-    how="OA の足、maker、寿命 3、N = 2、逆指値 2%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 は時間切れの足で、安値 97 <= 98・"
+1383-        "高値 104 > 101。R-H3 で逆指値が先 → min(101, 98) = 98(taker)。取り逃し 0(R-M5)。",
+1384-    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O12, want=_WOM),
+1385-    expect=full_expect(OA, _long(4, 98.0), _C_O12, 60, _WOM, missed=0), judge=J(*_WOM))
+1386-_C_O7 = cfg(execution="maker", maker_timeout_bars=3, stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp",

@@ -1,301 +1,419 @@
-"""Slow reference bar backtest (one position at a time).
+"""Bar-backtest reference written only from the item-4 scene book's rule text.
 
-Written from the item-4 requirement text only (see SPEC.md section 3). Rules
-fixed by the text:
-  * a signal decided on bar i is executed at the OPEN of bar i+1 with taker
-    cost (no look-ahead; requirement I4-8);
-  * a limit fills only when its price condition is met and always at its own
-    price, never at a better one (I4-9);
-  * when a bar's range reaches both the stop and the take-profit, the stop
-    is taken (stop priority, I4-10);
-  * with max_hold_bars = N the position is closed by taker at the OPEN of bar
-    entry_bar + N, where entry_bar is the bar the entry filled in (I4-13);
-  * entry_sides filters by direction at the signal bar (I4-14).
-Every rule the text leaves open is a required keyword argument of `run_bars`
-with no default (see SPEC.md section 3.2).
+Source of every rule: the section "bar model specification" of
+tests/bt/battery/item_4/DEFINITIONS.md (rules R-T, R-C, R-A, R-M, R-P, R-X,
+R-W, R-H, R-E, R-S, R-O), plus two decisions fixed by the lead for the finish
+round (delegation 20260926_backtest_env_finish.md section 1, i4-r2-02 and
+i4-r2-08):
+  * on the max-hold bar the time exit at the open comes before any range
+    event (R-O1 open events first; R-H3 "only the stop is looked at first"
+    is read as an order inside the range, after the open);
+  * a signal whose entry is blocked by the mask places no limit and counts
+    no miss; a signal in the same direction as a waiting entry limit does
+    not re-place it (the old limit stays).
+The core, the new engine and the worker's rule copy were not opened.
+
+Every number is an exact fractions.Fraction. A float input is read as the
+decimal it prints as (repr), because R-X1 compares levels "as the written
+decimal value". Points the rule text does not decide are required keys of
+options["undecided"] (no defaults); see SPEC.md section 4.
+
+Entry point: run_bars(bars, signals, options) -> BarRun.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from fractions import Fraction
+from numbers import Rational
 from typing import Optional
 
-from bot.bt.reference.num import choice, ns, q, q_str
+SIGNALS = ("BUY", "SELL", "CLOSE")
+OPTION_KEYS = (
+    "capital", "order_amount", "bar_seconds", "costs", "execution",
+    "maker_timeout_bars", "allow_short", "swap_daily_pct", "stop_loss_pct",
+    "take_profit_pct", "max_hold_bars", "exit_execution", "maker_tp_pct",
+    "entry_mask", "entry_sides", "stop_mode", "stop_window_bars", "undecided",
+)
+COST_KEYS = ("taker_fee_pct", "maker_fee_pct", "slippage_pct", "spread_pct")
+UNDECIDED = {
+    # R-W1 takes bars b-N..b-1; the text does not say what happens when b < N.
+    "wick_short_history": ("refuse", "use_available", "no_stop"),
+    # R-M/i4-r2-08 decide the same-direction case only for a waiting ENTRY
+    # limit; for a waiting EXIT limit (closing order) the text is silent.
+    "same_side_exit_signal": ("keep", "replace"),
+}
+HUNDRED = Fraction(100)
+DAY_SECONDS = Fraction(86400)
 
-SIDE_SIGN = {"long": 1, "short": -1}
+
+class RefusedConfig(ValueError):
+    """The options break a rule that says 'refuse' (R-X3, R-W4) or are malformed."""
+
+
+def dec(x, name: str) -> Fraction:
+    """Exact value of x as written: float -> its repr decimal, str -> parsed."""
+    if isinstance(x, bool):
+        raise TypeError(f"{name}: bool is not a number")
+    if isinstance(x, Fraction):
+        return x
+    if isinstance(x, int):
+        return Fraction(x)
+    if isinstance(x, float):
+        if x != x or x in (float("inf"), float("-inf")):
+            raise ValueError(f"{name}: non-finite {x!r}")
+        return Fraction(repr(x))
+    if isinstance(x, str):
+        return Fraction(x.strip())
+    if isinstance(x, Rational):
+        return Fraction(x.numerator, x.denominator)
+    raise TypeError(f"{name}: unsupported type {type(x).__name__}")
 
 
 @dataclass(frozen=True)
-class Bar:
-    t_open: int
-    open: Fraction
-    high: Fraction
-    low: Fraction
-    close: Fraction
-
-
-def make_bar(t_open: int, open, high, low, close) -> Bar:
-    o, h, l, c = q(open, "open"), q(high, "high"), q(low, "low"), q(close, "close")
-    if not (0 < l <= min(o, c) and h >= max(o, c)):
-        raise ValueError("bar must satisfy 0 < low <= min(open,close), high >= max(open,close)")
-    return Bar(ns(t_open, "t_open"), o, h, l, c)
-
-
-@dataclass(frozen=True)
-class Signal:
-    """Entry request decided at the close of its bar.
-
-    side: "long" | "short".
-    limit: None = market entry at the next open; a price = limit entry that
-           may fill on bars i+1 .. i+limit_valid_bars.
-    sl_dist / tp_dist: None = off; else a positive price distance from the
-           entry fill price (stop = entry -/+ sl_dist, tp = entry +/- tp_dist).
-    """
-    side: str
-    limit: Optional[object] = None
-    sl_dist: Optional[object] = None
-    tp_dist: Optional[object] = None
+class Fill:
+    bar: int
+    side: str          # OPEN_LONG / OPEN_SHORT / CLOSE_LONG / CLOSE_SHORT
+    price: Fraction
+    size: Fraction
+    fee: Fraction
+    liquidity: str     # "taker" or "maker"
+    reason: str        # what caused it (for reading; not part of the rules)
 
 
 @dataclass
 class Trade:
-    side: str
-    signal_bar: int
+    direction: int     # +1 long, -1 short
     entry_bar: int
     entry_price: Fraction
+    size: Fraction
     entry_fee: Fraction
-    entry_liquidity: str
-    qty: Fraction
-    sl: Optional[Fraction]
-    tp: Optional[Fraction]
+    carry: Fraction = Fraction(0)
     exit_bar: Optional[int] = None
     exit_price: Optional[Fraction] = None
     exit_fee: Optional[Fraction] = None
-    exit_liquidity: Optional[str] = None
-    reason: Optional[str] = None
-
-    @property
-    def pnl(self) -> Fraction:
-        s = SIDE_SIGN[self.side]
-        return s * (self.exit_price - self.entry_price) * self.qty - self.entry_fee - self.exit_fee
-
-    def to_dict(self) -> dict:
-        d = {"side": self.side, "signal_bar": self.signal_bar, "entry_bar": self.entry_bar,
-             "entry_price": q_str(self.entry_price), "entry_fee": q_str(self.entry_fee),
-             "entry_liquidity": self.entry_liquidity, "qty": q_str(self.qty),
-             "sl": None if self.sl is None else q_str(self.sl),
-             "tp": None if self.tp is None else q_str(self.tp)}
-        if self.exit_bar is not None:
-            d.update(exit_bar=self.exit_bar, exit_price=q_str(self.exit_price),
-                     exit_fee=q_str(self.exit_fee), exit_liquidity=self.exit_liquidity,
-                     reason=self.reason, pnl=q_str(self.pnl))
-        return d
+    exit_reason: Optional[str] = None
+    pnl: Optional[Fraction] = None
+    stop_level: Optional[Fraction] = None
+    tp_level: Optional[Fraction] = None
+    mtp_level: Optional[Fraction] = None
+    wick_level: Optional[Fraction] = None
 
 
 @dataclass
-class BarResult:
+class BarRun:
+    fills: list = field(default_factory=list)
+    pnls: list = field(default_factory=list)
+    equity: list = field(default_factory=list)
+    missed_fills: int = 0
     trades: list = field(default_factory=list)
     open_trade: Optional[Trade] = None
-    missed_fills: int = 0
-    ignored_signals: list = field(default_factory=list)  # (bar, reason)
-    equity: list = field(default_factory=list)  # per bar close
-    initial_cash: Fraction = Fraction(0)
 
     def to_dict(self) -> dict:
-        return {"trades": [t.to_dict() for t in self.trades],
-                "open_trade": None if self.open_trade is None else self.open_trade.to_dict(),
-                "missed_fills": self.missed_fills,
-                "ignored_signals": [list(x) for x in self.ignored_signals],
-                "equity": [q_str(x) for x in self.equity]}
+        """Fractions as canonical strings, for exact comparison."""
+        return {
+            "fills": [{"bar": f.bar, "side": f.side, "price": str(f.price), "size": str(f.size),
+                       "fee": str(f.fee), "liquidity": f.liquidity, "reason": f.reason}
+                      for f in self.fills],
+            "pnls": [str(p) for p in self.pnls],
+            "equity": [str(e) for e in self.equity],
+            "missed_fills": self.missed_fills,
+        }
+
+    def to_floats(self) -> dict:
+        """Same content as floats (for a tolerance comparison with a float engine)."""
+        return {
+            "fills": [{"bar": f.bar, "side": f.side, "price": float(f.price), "size": float(f.size)}
+                      for f in self.fills],
+            "pnls": [float(p) for p in self.pnls],
+            "equity": [float(e) for e in self.equity],
+            "missed_fills": self.missed_fills,
+        }
 
 
-def run_bars(
-    bars,
-    signals,
-    *,
-    qty,
-    initial_cash,
-    taker_rate,
-    maker_rate,
-    limit_cross: str,
-    stop_trigger: str,
-    stop_fill: str,
-    tp_fee: str,
-    exits_from_entry_bar: bool,
-    limit_valid_bars: int,
-    mask,
-    mask_applies_to: str,
-    entry_sides: str,
-    max_hold_bars,
-    close_at_end: bool,
-) -> BarResult:
-    """Run a bar backtest. `signals[i]` is None or a Signal decided at bar i.
-
-    limit_cross:  "strict" (buy limit needs low < L; TP of a long needs
-                  high > tp) | "touch" (<= / >=).  Used for limit entries and
-                  for the take-profit, which is a resting limit.
-    stop_trigger: "touch" (long stop hit when low <= sl) | "strict" (low < sl).
-    stop_fill:    "level" (exit at the stop price) |
-                  "worse_of_level_and_open" (on a bar after the entry bar that
-                  opens beyond the stop, exit at the open).
-    tp_fee:       "maker" | "taker" - fee rate applied to the take-profit.
-    exits_from_entry_bar: True = stop/TP are checked on the bar the entry
-                  filled in too; False = from the next bar.
-    limit_valid_bars: >= 1, bars a limit entry stays live (i+1..i+k).
-    mask:         None or a list of bool, one per bar; False blocks new entries.
-    mask_applies_to: "signal_bar" | "fill_bar".
-    entry_sides:  "both" | "long" | "short".
-    max_hold_bars: None or int >= 1.
-    close_at_end: True = close an open position at the last close (taker).
-    """
-    bars = list(bars)
-    for b in bars:
-        if not isinstance(b, Bar):
-            raise TypeError("bars must be Bar (use make_bar)")
-    for a, b in zip(bars, bars[1:]):
-        if not a.t_open < b.t_open:
-            raise ValueError("bar times must be strictly increasing")
-    n = len(bars)
-    signals = list(signals)
-    if len(signals) != n:
-        raise ValueError("signals must have one entry per bar")
-    qty = q(qty, "qty")
-    if qty <= 0:
-        raise ValueError("qty must be > 0")
-    initial_cash = q(initial_cash, "initial_cash")
-    taker_rate, maker_rate = q(taker_rate, "taker_rate"), q(maker_rate, "maker_rate")
-    choice(limit_cross, ("strict", "touch"), "limit_cross")
-    choice(stop_trigger, ("strict", "touch"), "stop_trigger")
-    choice(stop_fill, ("level", "worse_of_level_and_open"), "stop_fill")
-    choice(tp_fee, ("maker", "taker"), "tp_fee")
-    if not isinstance(exits_from_entry_bar, bool) or not isinstance(close_at_end, bool):
-        raise TypeError("exits_from_entry_bar and close_at_end must be bool")
-    if isinstance(limit_valid_bars, bool) or not isinstance(limit_valid_bars, int) or limit_valid_bars < 1:
-        raise ValueError("limit_valid_bars must be int >= 1")
-    choice(mask_applies_to, ("signal_bar", "fill_bar"), "mask_applies_to")
-    choice(entry_sides, ("both", "long", "short"), "entry_sides")
-    if mask is not None:
-        mask = list(mask)
-        if len(mask) != n or not all(isinstance(m, bool) for m in mask):
-            raise ValueError("mask must be a list of bool, one per bar")
-    if max_hold_bars is not None and (isinstance(max_hold_bars, bool) or not isinstance(max_hold_bars, int)
-                                      or max_hold_bars < 1):
-        raise ValueError("max_hold_bars must be None or int >= 1")
-
-    def allowed(i: int) -> bool:
-        return mask is None or mask[i]
-
-    def fee(price: Fraction, liq: str) -> Fraction:
-        return price * qty * (maker_rate if liq == "maker" else taker_rate)
-
-    res = BarResult(initial_cash=initial_cash)
-    closed_pnl = Fraction(0)
-    pos: Optional[Trade] = None
-    pending = None  # dict(sig, signal_bar, first, last)
-
-    def open_trade(sig: Signal, i_sig: int, j: int, price: Fraction, liq: str) -> Trade:
-        s = SIDE_SIGN[sig.side]
-        sl = None if sig.sl_dist is None else price - s * q(sig.sl_dist, "sl_dist")
-        tp = None if sig.tp_dist is None else price + s * q(sig.tp_dist, "tp_dist")
-        return Trade(sig.side, i_sig, j, price, fee(price, liq), liq, qty, sl, tp)
-
-    def close(tr: Trade, j: int, price: Fraction, liq: str, reason: str) -> None:
-        nonlocal closed_pnl
-        tr.exit_bar, tr.exit_price, tr.exit_liquidity, tr.reason = j, price, liq, reason
-        tr.exit_fee = fee(price, liq)
-        closed_pnl += tr.pnl
-        res.trades.append(tr)
-
-    for j, b in enumerate(bars):
-        # 1. pending entry
-        if pending is not None and pos is None:
-            sig, i_sig = pending["sig"], pending["signal_bar"]
-            if j >= pending["first"]:
-                can = mask_applies_to != "fill_bar" or allowed(j)
-                if sig.limit is None:
-                    if can:
-                        pos = open_trade(sig, i_sig, j, b.open, "taker")
-                    else:
-                        res.ignored_signals.append((i_sig, "mask_at_fill_bar"))
-                    pending = None
-                else:
-                    lim = q(sig.limit, "limit")
-                    if sig.side == "long":
-                        hit = b.low < lim or (limit_cross == "touch" and b.low == lim)
-                    else:
-                        hit = b.high > lim or (limit_cross == "touch" and b.high == lim)
-                    if can and hit:
-                        pos = open_trade(sig, i_sig, j, lim, "maker")
-                        pending = None
-                    elif j >= pending["last"]:
-                        res.missed_fills += 1
-                        pending = None
-        # 2. exits
-        if pos is not None:
-            s = SIDE_SIGN[pos.side]
-            if max_hold_bars is not None and j == pos.entry_bar + max_hold_bars:
-                close(pos, j, b.open, "taker", "max_hold")
-                pos = None
-            elif j > pos.entry_bar or exits_from_entry_bar:
-                stop_hit = tp_hit = False
-                if pos.sl is not None:
-                    if s == 1:
-                        stop_hit = b.low < pos.sl or (stop_trigger == "touch" and b.low == pos.sl)
-                    else:
-                        stop_hit = b.high > pos.sl or (stop_trigger == "touch" and b.high == pos.sl)
-                if pos.tp is not None:
-                    if s == 1:
-                        tp_hit = b.high > pos.tp or (limit_cross == "touch" and b.high == pos.tp)
-                    else:
-                        tp_hit = b.low < pos.tp or (limit_cross == "touch" and b.low == pos.tp)
-                if stop_hit:
-                    px = pos.sl
-                    if stop_fill == "worse_of_level_and_open" and j > pos.entry_bar:
-                        px = min(pos.sl, b.open) if s == 1 else max(pos.sl, b.open)
-                    close(pos, j, px, "taker", "stop")
-                    pos = None
-                elif tp_hit:
-                    close(pos, j, pos.tp, tp_fee, "take_profit")
-                    pos = None
-        # 3. signal decided at this bar's close
-        sig = signals[j]
-        if sig is not None:
-            if not isinstance(sig, Signal):
-                raise TypeError("signals must be None or Signal")
-            choice(sig.side, ("long", "short"), "signal.side")
-            for k in ("sl_dist", "tp_dist"):
-                v = getattr(sig, k)
-                if v is not None and q(v, k) <= 0:
-                    raise ValueError(f"{k} must be > 0")
-            if sig.limit is not None and q(sig.limit, "limit") <= 0:
-                raise ValueError("limit must be > 0")
-            if entry_sides != "both" and sig.side != entry_sides:
-                res.ignored_signals.append((j, "side_filtered"))
-            elif mask_applies_to == "signal_bar" and not allowed(j):
-                res.ignored_signals.append((j, "mask_at_signal_bar"))
-            elif pos is not None:
-                res.ignored_signals.append((j, "in_position"))
-            elif pending is not None:
-                res.ignored_signals.append((j, "entry_pending"))
-            elif j == n - 1:
-                res.ignored_signals.append((j, "no_next_bar"))
-            else:
-                last = j + 1 if sig.limit is None else j + limit_valid_bars
-                pending = {"sig": sig, "signal_bar": j, "first": j + 1, "last": last}
-        # 4. equity at this bar's close (entry fee of an open trade already paid)
-        eq = initial_cash + closed_pnl
-        if pos is not None:
-            eq += SIDE_SIGN[pos.side] * (b.close - pos.entry_price) * qty - pos.entry_fee
-        res.equity.append(eq)
-
-    if pending is not None:
-        # the limit window runs past the last bar: not counted as missed
-        # (its last bar was never seen), recorded instead
-        res.ignored_signals.append((pending["signal_bar"], "window_cut_by_end"))
-    if pos is not None:
-        if close_at_end and n:
-            close(pos, n - 1, bars[-1].close, "taker", "end")
-            res.equity[-1] = initial_cash + closed_pnl
+def _bars(bars) -> list:
+    out = []
+    for i, b in enumerate(bars):
+        if isinstance(b, dict):
+            o, h, l, c = (b[k] for k in ("open", "high", "low", "close"))
         else:
-            res.open_trade = pos
-    return res
+            o, h, l, c = b
+        o, h, l, c = (dec(v, f"bar {i} {k}") for v, k in zip((o, h, l, c), "ohlc"))
+        if not (l <= min(o, c) and max(o, c) <= h):
+            raise RefusedConfig(f"bar {i}: not low <= open,close <= high")
+        out.append((o, h, l, c))
+    return out
+
+
+def _signals(signals, n: int) -> list:
+    out = [None] * n
+    items = signals.items() if isinstance(signals, dict) else enumerate(signals)
+    if not isinstance(signals, dict) and len(signals) != n:
+        raise RefusedConfig("signals: a sequence must have one entry per bar")
+    for i, s in items:
+        if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < n:
+            raise RefusedConfig(f"signals: bad bar index {i!r}")
+        if s is None or s == "HOLD":
+            continue
+        if s not in SIGNALS:
+            raise RefusedConfig(f"signals: bar {i}: {s!r} not in {SIGNALS}")
+        out[i] = s
+    return out
+
+
+def _opt_pct(v, name):
+    if v is None:
+        return None
+    x = dec(v, name)
+    if x <= 0:
+        raise RefusedConfig(f"{name}: must be None (off) or > 0, got {v!r}")
+    return x
+
+
+def _opt_int(v, name):
+    if v is None:
+        return None
+    if isinstance(v, bool) or not isinstance(v, int) or v < 1:
+        raise RefusedConfig(f"{name}: must be None (off) or an int >= 1, got {v!r}")
+    return v
+
+
+def _options(options: dict, n: int) -> dict:
+    missing = [k for k in OPTION_KEYS if k not in options]
+    extra = [k for k in options if k not in OPTION_KEYS]
+    if missing or extra:
+        raise RefusedConfig(f"options: missing {missing}, unknown {extra}")
+    o = {}
+    o["capital"] = dec(options["capital"], "capital")
+    o["order_amount"] = dec(options["order_amount"], "order_amount")
+    if o["order_amount"] <= 0:
+        raise RefusedConfig("order_amount must be > 0")
+    bs = options["bar_seconds"]
+    if isinstance(bs, bool) or not isinstance(bs, int) or bs <= 0:
+        raise RefusedConfig("bar_seconds must be an int > 0")
+    o["bar_seconds"] = bs
+    costs = options["costs"]
+    if set(costs) != set(COST_KEYS):
+        raise RefusedConfig(f"costs: need exactly {COST_KEYS}")
+    o.update({k: dec(costs[k], k) for k in COST_KEYS})
+    if options["execution"] not in ("taker", "maker"):
+        raise RefusedConfig("execution: taker or maker")
+    o["execution"] = options["execution"]
+    o["maker_timeout_bars"] = _opt_int(options["maker_timeout_bars"], "maker_timeout_bars")
+    if o["execution"] == "maker" and o["maker_timeout_bars"] is None:
+        raise RefusedConfig("maker execution needs maker_timeout_bars >= 1 (R-M2)")
+    if not isinstance(options["allow_short"], bool):
+        raise RefusedConfig("allow_short: bool")
+    o["allow_short"] = options["allow_short"]
+    o["swap_daily_pct"] = dec(options["swap_daily_pct"], "swap_daily_pct")
+    o["stop_loss_pct"] = _opt_pct(options["stop_loss_pct"], "stop_loss_pct")
+    o["take_profit_pct"] = _opt_pct(options["take_profit_pct"], "take_profit_pct")
+    o["max_hold_bars"] = _opt_int(options["max_hold_bars"], "max_hold_bars")
+    if options["exit_execution"] not in ("signal", "maker_tp"):
+        raise RefusedConfig("exit_execution: signal or maker_tp")
+    o["exit_execution"] = options["exit_execution"]
+    if o["exit_execution"] == "maker_tp":
+        v = options["maker_tp_pct"]
+        if v is None or dec(v, "maker_tp_pct") <= 0:
+            raise RefusedConfig("R-X3: maker_tp needs maker_tp_pct > 0")
+        o["maker_tp_pct"] = dec(v, "maker_tp_pct")
+    else:
+        o["maker_tp_pct"] = None
+    mask = options["entry_mask"]
+    if mask is not None:
+        if len(mask) != n or not all(isinstance(m, bool) for m in mask):
+            raise RefusedConfig("entry_mask: None or one bool per bar")
+        mask = list(mask)
+    o["entry_mask"] = mask
+    if options["entry_sides"] not in ("both", "long", "short"):
+        raise RefusedConfig("entry_sides: both, long or short")
+    o["entry_sides"] = options["entry_sides"]
+    if options["stop_mode"] not in ("fixed", "wick_invalidation"):
+        raise RefusedConfig("stop_mode: fixed or wick_invalidation")
+    o["stop_mode"] = options["stop_mode"]
+    o["stop_window_bars"] = _opt_int(options["stop_window_bars"], "stop_window_bars")
+    if o["stop_mode"] == "wick_invalidation":
+        if o["stop_loss_pct"] is not None:
+            raise RefusedConfig("R-W4: wick_invalidation and a percent stop do not stack")
+        if o["stop_window_bars"] is None:
+            raise RefusedConfig("wick_invalidation needs stop_window_bars >= 1 (R-W1)")
+    und = options["undecided"]
+    if set(und) != set(UNDECIDED):
+        raise RefusedConfig(f"undecided: need exactly {tuple(UNDECIDED)}")
+    for k, allowed in UNDECIDED.items():
+        if und[k] not in allowed:
+            raise RefusedConfig(f"undecided.{k}: one of {allowed}")
+    o["undecided"] = dict(und)
+    return o
+
+
+def run_bars(bars, signals, options: dict) -> BarRun:
+    """Run the bar model of the scene book's rule text. See SPEC.md section 3."""
+    B = _bars(bars)
+    n = len(B)
+    S = _signals(signals, n)
+    o = _options(options, n)
+    run = BarRun()
+    taker_rate, maker_rate = o["taker_fee_pct"], o["maker_fee_pct"]
+    adj = (o["spread_pct"] / 2 + o["slippage_pct"]) / HUNDRED       # R-C1
+    carry_rate = o["swap_daily_pct"] / HUNDRED * Fraction(o["bar_seconds"]) / DAY_SECONDS  # R-S1
+    maker = o["execution"] == "maker"
+    T = o["maker_timeout_bars"]
+
+    pos: Optional[Trade] = None
+    pending_sig = None          # taker: (signal, signal_bar) executed at next open (R-T1)
+    wick_exit_next = False      # R-W3: close crossed the level, exit at next open
+    entry_lim = None            # maker entry limit: dict(dir, price, placed)
+    exit_lim = None             # maker exit limit: dict(price, placed)
+    closed_pnl = Fraction(0)
+
+    def taker_px(base, buy):
+        return base * (1 + adj) if buy else base * (1 - adj)
+
+    def fee(size, price, rate):
+        return size * price * rate / HUNDRED                         # R-A2
+
+    def entry_allowed(direction, sig_bar):
+        if direction == -1 and not o["allow_short"]:                 # R-T4
+            return False
+        if o["entry_sides"] == "long" and direction == -1:           # R-E1
+            return False
+        if o["entry_sides"] == "short" and direction == 1:
+            return False
+        if o["entry_mask"] is not None and not o["entry_mask"][sig_bar]:  # R-E2
+            return False
+        return True
+
+    def open_pos(j, direction, price, liquidity, reason):
+        nonlocal pos
+        size = o["order_amount"] / price                             # R-A1
+        f = fee(size, price, taker_rate if liquidity == "taker" else maker_rate)
+        t = Trade(direction, j, price, size, f)
+        if o["stop_loss_pct"] is not None:                           # R-P1
+            t.stop_level = price * (1 - direction * o["stop_loss_pct"] / HUNDRED)
+        if o["take_profit_pct"] is not None:
+            t.tp_level = price * (1 + direction * o["take_profit_pct"] / HUNDRED)
+        if o["maker_tp_pct"] is not None:                            # R-X1
+            t.mtp_level = price * (1 + direction * o["maker_tp_pct"] / HUNDRED)
+        if o["stop_mode"] == "wick_invalidation":                    # R-W1
+            N = o["stop_window_bars"]
+            lo = j - N
+            if lo < 0:
+                mode = o["undecided"]["wick_short_history"]
+                if mode == "refuse":
+                    raise RefusedConfig(f"R-W1: entry at bar {j} has fewer than {N} completed bars before it")
+                lo = 0 if mode == "use_available" else None
+            if lo is not None and lo < j:
+                window = B[lo:j]
+                t.wick_level = (min(b[2] for b in window) if direction == 1
+                                else max(b[1] for b in window))
+        pos = t
+        run.fills.append(Fill(j, "OPEN_LONG" if direction == 1 else "OPEN_SHORT",
+                              price, size, f, liquidity, reason))
+
+    def close_pos(j, price, liquidity, reason):
+        nonlocal pos, closed_pnl, exit_lim
+        t = pos
+        f = fee(t.size, price, taker_rate if liquidity == "taker" else maker_rate)
+        t.exit_bar, t.exit_price, t.exit_fee, t.exit_reason = j, price, f, reason
+        t.pnl = (price - t.entry_price) * t.size * t.direction - f - t.entry_fee - t.carry  # R-A3
+        closed_pnl += t.pnl
+        run.fills.append(Fill(j, "CLOSE_LONG" if t.direction == 1 else "CLOSE_SHORT",
+                              price, t.size, f, liquidity, reason))
+        run.pnls.append(t.pnl)
+        run.trades.append(t)
+        pos = None
+        exit_lim = None     # a waiting exit limit is dropped, not counted (R-M5)
+
+    def closes(sig, t):
+        return sig == "CLOSE" or (sig == "SELL" and t.direction == 1) or (sig == "BUY" and t.direction == -1)
+
+    for j in range(n):
+        o_, h, l, c = B[j]
+        # ---- carry for bar j (R-S1): entry bar < j <= exit bar
+        if pos is not None and j > pos.entry_bar:
+            pos.carry += abs(pos.size) * B[j - 1][3] * carry_rate
+        # ---- open events (R-O1 1-3), all at the open of bar j, taker
+        if pos is not None:
+            buy = pos.direction == -1
+            if wick_exit_next:                                           # (1) R-W3
+                close_pos(j, taker_px(o_, buy), "taker", "wick_invalidation")
+                pending_sig = None
+            elif o["max_hold_bars"] is not None and j == pos.entry_bar + o["max_hold_bars"]:
+                close_pos(j, taker_px(o_, buy), "taker", "max_hold")     # (2) R-H1/R-H2
+                pending_sig = None
+            elif pending_sig is not None and closes(pending_sig[0], pos):  # (3) R-T1/R-T3
+                close_pos(j, taker_px(o_, buy), "taker", "signal")
+                pending_sig = None
+        wick_exit_next = False
+        # ---- taker entry from the signal of bar j-1 (R-T1, R-T3)
+        if pending_sig is not None:
+            sig, sb = pending_sig
+            pending_sig = None
+            if pos is None and sig in ("BUY", "SELL"):
+                d = 1 if sig == "BUY" else -1
+                if entry_allowed(d, sb):
+                    open_pos(j, d, taker_px(o_, d == 1), "taker", "signal")
+        # ---- range events of an open position (R-O1 4-7); never on its entry bar
+        if pos is not None and j > pos.entry_bar:
+            d = pos.direction
+            hit = None
+            if pos.stop_level is not None and ((d == 1 and l <= pos.stop_level) or
+                                               (d == -1 and h >= pos.stop_level)):   # (4) R-P3
+                base = min(o_, pos.stop_level) if d == 1 else max(o_, pos.stop_level)
+                hit = (taker_px(base, d == -1), "taker", "stop_loss")
+            elif pos.tp_level is not None and ((d == 1 and h > pos.tp_level) or
+                                               (d == -1 and l < pos.tp_level)):      # (5) R-P4
+                hit = (pos.tp_level, "maker", "take_profit")
+            elif pos.mtp_level is not None and ((d == 1 and h > pos.mtp_level) or
+                                                (d == -1 and l < pos.mtp_level)):    # (6) R-X1
+                hit = (pos.mtp_level, "maker", "maker_tp")
+            elif exit_lim is not None and j > exit_lim["placed"]:                    # (7) R-M1
+                p = exit_lim["price"]
+                if (d == 1 and h > p) or (d == -1 and l < p):
+                    hit = (p, "maker", "exit_limit")
+            if hit is not None:
+                close_pos(j, *hit)
+        # ---- waiting exit limit that lived its life (R-M2)
+        if exit_lim is not None and j == exit_lim["placed"] + T:
+            exit_lim = None
+            run.missed_fills += 1
+        # ---- maker entry limit (R-M1, R-M2)
+        if entry_lim is not None and j > entry_lim["placed"]:
+            d, p = entry_lim["dir"], entry_lim["price"]
+            if pos is None and ((d == 1 and l < p) or (d == -1 and h > p)):
+                entry_lim = None
+                open_pos(j, d, p, "maker", "entry_limit")
+            elif j == entry_lim["placed"] + T:
+                entry_lim = None
+                run.missed_fills += 1
+        # ---- close of bar j: structural stop check (R-W2, R-W3)
+        if pos is not None and pos.wick_level is not None:
+            wl = pos.wick_level
+            if (pos.direction == 1 and c < wl) or (pos.direction == -1 and c > wl):
+                wick_exit_next = True
+        # ---- signal of bar j
+        sig = S[j]
+        if sig is not None and not maker:
+            pending_sig = (sig, j)    # R-T2: after the last bar there is no next open; it never fills
+        elif sig is not None and maker:
+            if pos is not None:
+                if closes(sig, pos):                                     # R-M4 / R-T3
+                    if exit_lim is None or o["undecided"]["same_side_exit_signal"] == "replace":
+                        exit_lim = {"price": c, "placed": j}
+            elif sig in ("BUY", "SELL"):
+                d = 1 if sig == "BUY" else -1
+                if entry_allowed(d, j):                                  # blocked: no limit, no miss
+                    if entry_lim is None:
+                        entry_lim = {"dir": d, "price": c, "placed": j}
+                    elif entry_lim["dir"] != d:                          # R-M3
+                        run.missed_fills += 1
+                        entry_lim = {"dir": d, "price": c, "placed": j}
+                    # same direction: keep the old limit (i4-r2-08)
+        # ---- equity at the close of bar j (R-A4)
+        eq = o["capital"] + closed_pnl
+        if pos is not None:
+            eq += (c - pos.entry_price) * pos.size * pos.direction - pos.entry_fee - pos.carry
+        run.equity.append(eq)
+
+    run.open_trade = pos
+    return run

@@ -9,7 +9,7 @@ from fractions import Fraction as F
 
 import pytest
 
-from bot.bt.reference.bar_sim import Signal, make_bar, run_bars
+from ext_bar_modes import Signal, make_bar, run_bars
 
 H = 3_600_000_000_000
 

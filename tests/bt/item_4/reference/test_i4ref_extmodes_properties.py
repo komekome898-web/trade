@@ -24,7 +24,7 @@ from fractions import Fraction as F
 
 import pytest
 
-from bot.bt.reference.bar_sim import Signal, make_bar, run_bars
+from ext_bar_modes import Signal, make_bar, run_bars
 
 MODE_GRID = list(itertools.product(("strict", "touch"), ("strict", "touch"),
                                    ("level", "worse_of_level_and_open"), (True, False),

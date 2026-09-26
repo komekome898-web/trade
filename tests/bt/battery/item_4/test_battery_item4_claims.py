@@ -85,10 +85,10 @@ def test_swapping_any_pair_of_the_order_breaks_a_scene(pair):
 
 # the winner of each pair, read from the rule text (DEFINITIONS.md R-O1 and L-5), not from the lists
 PROSE_SPEC = {
-    # R-O1: ① wick, ② on the time-exit bar: stop, else time, ③ signal, ④ stop, ⑤ tp, ⑥ mtp, ⑦ limit
-    ("wick", "stop@time"): None, ("wick", "signal"): "wick", ("wick", "tp"): "wick", ("wick", "mtp"): "wick",
-    ("wick", "limit"): "wick", ("stop@time", "time"): "stop@time", ("stop@time", "signal"): "stop@time",
-    ("stop@time", "tp"): "stop@time", ("stop@time", "mtp"): "stop@time", ("stop@time", "limit"): "stop@time",
+    # R-O1: the open events ① wick, ② time, ③ signal come before the range events ④ stop (also on the time-exit bar:
+    # R-H3's "only the stop first" is the order inside the range, after the open), ⑤ tp, ⑥ mtp, ⑦ limit
+    ("wick", "signal"): "wick", ("wick", "tp"): "wick", ("wick", "mtp"): "wick",
+    ("wick", "limit"): "wick", ("time", "stop"): "time",
     ("time", "signal"): "time", ("time", "tp"): "time", ("time", "mtp"): "time", ("time", "limit"): "time",
     ("signal", "stop"): "signal", ("signal", "tp"): "signal", ("signal", "mtp"): "signal",
     ("stop", "tp"): "stop", ("stop", "mtp"): "stop", ("stop", "limit"): "stop", ("tp", "mtp"): "tp",
@@ -97,7 +97,7 @@ PROSE_SPEC = {
 PROSE_LEGACY = dict(PROSE_SPEC)
 PROSE_LEGACY.update({  # L-5: ① wick → ④ stop (also on the time-exit bar) → ⑤ tp → ⑥ mtp → ② time → ③ signal → ⑦ limit
     ("signal", "stop"): "stop", ("signal", "tp"): "tp", ("signal", "mtp"): "mtp", ("time", "tp"): "tp",
-    ("time", "mtp"): "mtp"})
+    ("time", "mtp"): "mtp", ("time", "stop"): "stop"})
 
 
 @pytest.mark.parametrize("pair", S.order_pairs())
@@ -119,7 +119,7 @@ def _grid_input(events, d):
     rows = [(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 101.5, 99.5, 101),
             (101, 102, 99.2, 99.3) if wick else (101, 102, 100, 101)]
     o4 = 99.5 if wick else 101
-    lo4 = 97 if ("stop" in ev or "stop@time" in ev) else min(o4, 100.5)
+    lo4 = 97 if "stop" in ev else min(o4, 100.5)
     hi4 = 104 if ev & {"tp", "mtp", "limit"} else 100.8
     if wick and not maker:
         hi4 = max(hi4, o4)
@@ -129,9 +129,9 @@ def _grid_input(events, d):
     over = {"allow_short": d < 0}
     if maker:
         over.update(execution="maker", maker_timeout_bars=3)
-    if "stop" in ev or "stop@time" in ev:
+    if "stop" in ev:
         over["stop_loss_pct"] = 2.0
-    if "time" in ev or "stop@time" in ev:
+    if "time" in ev:
         over["max_hold_bars"] = 2
     if "tp" in ev:
         over["take_profit_pct"] = 3.0
@@ -145,9 +145,9 @@ def _grid_input(events, d):
 
 
 def _grid_sets():
-    out = [{e} for e in S.EXIT_EVENTS if e != "stop@time"] + [{"stop@time", "time"}]
+    out = [{e} for e in S.EXIT_EVENTS]
     for a, b in S.order_pairs():
-        e = {a, b} | ({"time"} if "stop@time" in (a, b) else set())
+        e = {a, b}
         if e not in out:
             out.append(e)
     return out
@@ -375,7 +375,7 @@ def _gen():
 def test_considered_rows_rest_on_verified_absence():
     text = (HERE / "opponents" / "CONSIDERED.md").read_text(encoding="utf-8")
     gen = _gen()
-    bad = [ln[:120] for ln in text.splitlines() if "| 持たないと確認した |" in ln and any(w in ln for w in gen.UNVERIFIED)]
+    bad = [ln[:120] for ln in text.splitlines() if "| 持たないと確認した |" in ln and gen.UNVERIFIED.search(ln)]  # the same matcher as the judge (i4-r2-04)
     assert bad == []
 
 
@@ -405,3 +405,117 @@ def test_runnability_records_an_attempt_for_every_reproduction():
     for cand in ("56", "60", "67"):
         r = next(x for x in rows if x["cand"] == cand)
         assert "attempts/i4_r2-1_scenekeeper_dryrun_" in r["tried"] and "MiB" in r["tried"], cand
+
+
+# =========================================================================== I  the maker path of the entry (round r3-1, i4-r2-08)
+# The derivation of the maker entries of a scene from the rule text only (R-M1 strict trade-through at the limit, R-M2
+# timeout, R-M3 an opposite signal replaces and counts, R-M6 a same-side signal keeps the old limit, R-E2 / R-E4 a
+# mask-False signal places no limit).  Flags turn R-E4 / R-M6 into the existing computation L-6 / L-7 (the mutants).
+# Scope (named): scenes run with the maker execution, no exit option (no stop / take-profit / time / wick / maker
+# take-profit) and only BUY signals with shorting off -- the entry path alone.  Not in it: closing limits (R-M4) and
+# the exits (family A covers them), SELL / CLOSE signals.
+def _maker_entries(inp, r_e4=True, r_m6=True):
+    bars, cfg = inp["bars"], inp["config"]
+    sig = {s["bar"]: s["signal"] for s in inp["signals"]}
+    mask, timeout = cfg["entry_mask"], cfg["maker_timeout_bars"]
+    pending, pos, missed, fills = None, 0, 0, []
+    for j, b in enumerate(bars):
+        if pending is not None and j > pending[1]:
+            if b["low"] < pending[0]:                       # R-M1: strictly traded through
+                if pos == 0 and (mask is None or mask[pending[1]]):   # R-E2: the decision bar's mask (L-6: no open)
+                    fills.append((j, pending[0]))
+                    pos = 1
+                pending = None
+            elif j - pending[1] >= timeout:
+                missed += 1
+                pending = None
+        if sig.get(j) == "BUY" and pos == 0 and j < len(bars) - 1:
+            if r_e4 and mask is not None and not mask[j]:
+                continue
+            if r_m6 and pending is not None:
+                continue
+            pending = (b["close"], j)
+    return fills, missed
+
+
+def _entry_path_scenes():
+    out = []
+    for s in S.SCENES:
+        inp = s.get("input") or {}
+        if inp.get("op") != "bars":
+            continue
+        c = inp["config"]
+        if c["execution"] != "maker" or c["allow_short"] or c["stop_loss_pct"] or c["take_profit_pct"] \
+                or c["max_hold_bars"] is not None or c["stop_mode"] != "fixed" or c["exit_execution"] != "signal":
+            continue
+        if not inp["signals"] or any(x["signal"] != "BUY" for x in inp["signals"]):
+            continue
+        out.append(s)
+    return out
+
+
+def _answers(s):
+    inp, exp = s["input"], s["expect"]
+    if "models" in inp:
+        return [("legacy", exp["legacy"]), ("spec", exp["spec"])]
+    return [("spec", exp)]
+
+
+def _as_derived(e):
+    return [(f["bar"], f["price"]) for f in e["fills"] if f["side"] == "OPEN_LONG"], e.get("missed_fills")
+
+
+def test_maker_entry_scenes_follow_the_rule_text():
+    sc = _entry_path_scenes()
+    ids = {s["id"] for s in sc}
+    assert {"i4-14-maker-mask-false", "i4-16-maker-mask-false-not-missed", "i4-16-same-side-keeps-limit"} <= ids, ids
+    for s in sc:
+        for name, e in _answers(s):
+            got = _maker_entries(s["input"]) if name == "spec" else _maker_entries(s["input"], r_e4=False, r_m6=False)
+            fills, missed = _as_derived(e)
+            assert got[0] == fills, (s["id"], name, got, fills)
+            if missed is not None:
+                assert got[1] == missed, (s["id"], name, got, missed)
+
+
+@pytest.mark.parametrize("flags", [{"r_e4": False}, {"r_m6": False}], ids=["no R-E4", "no R-M6"])
+def test_each_maker_entry_rule_is_pinned_by_a_scene(flags):
+    wrong = []
+    for s in _entry_path_scenes():
+        for name, e in _answers(s):
+            if name != "spec":
+                continue
+            got = _maker_entries(s["input"], **flags)
+            fills, missed = _as_derived(e)
+            if got[0] != fills or (missed is not None and got[1] != missed):
+                wrong.append(s["id"])
+    assert wrong, f"dropping {flags} contradicts no scene"
+
+
+# =========================================================================== G2  the review table's unread parts (round r3-1, i4-r2-04)
+# Grid: every statement of not having read / not having checked x what may sit inside it (nothing, a parenthesised file
+# list, a commit, a long list).  Not in the grid (named): statements split across two parts (" / " separates the
+# parts; each part is judged on its own), and words that negate without these phrases (read by the critic).
+_UNREAD_FORMS = ["読んだ範囲{x}に無い", "読んでいない{x}", "{x}確かめていない", "{x}未確認", "再現していない{x}"]
+_INSIDE = ["", "(backtesting_broker.py・order.py)", "(sim_account.py(8509990e) 514-540 行)", "(" + "a.py・" * 30 + "b.py)"]
+
+
+@pytest.mark.parametrize("form", _UNREAD_FORMS)
+@pytest.mark.parametrize("inside", _INSIDE, ids=["plain", "files", "commit-lines", "long"])
+def test_unread_parts_never_count_as_a_shown_absence(form, inside):
+    gen = _load(HERE / "gen_considered.py", "i4_test_gen_considered_g2")
+    part = "12 の指標を出す口は" + form.format(x=inside) + "(x.py 3 行)が無い"
+    assert gen.verified_absence(part) is False, part
+    assert gen.verified_absence(part, need_line=False) is False, part
+    shown = "12 の指標を出す口が無い(x.py 3 行)"
+    assert gen.verified_absence(shown) is True
+
+
+def test_the_unread_grid_catches_the_old_substring_matcher():
+    """Mutant of the machine: the round r2 matcher (the three words as plain substrings) passes a parenthesised form."""
+    import re as _re
+    gen = _load(HERE / "gen_considered.py", "i4_test_gen_considered_g2m")
+    gen.UNVERIFIED = _re.compile("読んでいない|読んだ範囲に無い|再現していない")
+    passed = [f.format(x=i) for f in _UNREAD_FORMS for i in _INSIDE
+              if gen.verified_absence("12 の指標を出す口は" + f.format(x=i) + "(x.py 3 行)が無い")]
+    assert passed, "the grid does not tell the old matcher from the new one"

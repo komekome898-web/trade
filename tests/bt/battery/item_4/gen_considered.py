@@ -21,6 +21,7 @@ The aggregate block is written by scripts/check_bt_considered.py --write, not he
 from __future__ import annotations
 
 import csv
+import re
 import sys
 from pathlib import Path
 
@@ -199,7 +200,9 @@ def reasons(rows):
     return s if len(s) <= 900 else s[:900] + "…"
 
 
-UNVERIFIED = ("読んでいない", "読んだ範囲に無い", "再現していない")
+# a statement of not having read / not having checked, matched with anything in between (「読んだ範囲(a.py・b.py)に無い」
+# is the same statement as 「読んだ範囲に無い」; i4-r2-04: a substring match missed the parenthesised form)
+UNVERIFIED = re.compile(r"読んだ範囲.*?に無い|読んでいない|確かめていない|未確認|再現していない")
 # the answer of an adapter / reproduction that is not about the tool at all (the scene set's own barriers, i4-r1-05)
 BARRIER_WORDS = ("足 0 の合図", "maker と taker で違う手数料")
 # a part that is the adapter's own choice, not the tool's absence (the tool may have the mouth)
@@ -216,7 +219,7 @@ def verified_absence(part: str, need_line: bool = True) -> bool:
     set's own barriers (規則 6).  A tool run in its venv shows it by the call itself (the runner's command and its
     output = the adapter's answer after calling the tool): need_line=False.  A reproduction shows it by a line of the
     primary source: need_line=True (a code line or a URL)."""
-    if any(w in part for w in UNVERIFIED + BARRIER_WORDS + ADAPTER_WORDS):
+    if UNVERIFIED.search(part) or any(w in part for w in BARRIER_WORDS + ADAPTER_WORDS):
         return False
     if not ("無い" in part or "無く" in part or "だけ" in part):
         return False
@@ -307,8 +310,11 @@ def main():
                 table.append((n, name, MECH.get(n, ""), f"実装を呼んだ(項目 2 の構築物 <venvs>/item_2/drivers/i2drv70。対象 {t})", "再現できない",
                               "(a) SCAN の書き写しは機構の説明まで(C API の成行・指値・逆指値の型の名)。(b) 一次資料の複製(<venvs>/item_2/src/c70、"
                               "commit 5e62602c)と構築物・C の driver の source は、この役の最初の走行のあと他の役の容量の片付けで消えた"
-                              "(この役は消していない)。最後の走行では道具を呼べず(survey_results/opp_pineforge.tsv の理由)、構築し直しと"
-                              "driver の書き直しはこの周では行っていない(持ち越し)"))
+                              "(この役は消していない)。第 r3-1 回に構築し直しを試みた(2026-09-26 12:12 UTC、<venvs>/item_2/logs/"
+                              "i4_r3-1_scenekeeper_rebuild_70.log): clone が返した版は 0d76a099(2026-09-26 の版)で 5e62602c ではなく、CMake の構築は"
+                              "通ったが導入前の検査(道具サーベイ §6)を通していない版。driver の翻訳と実行に進む前に、この環境の許可の判定が"
+                              "[Code from External] として次の操作を止めた。容量では止めていない(df -m / の空き 2,046 MB → 構築後 1,935 MB)。"
+                              "**比べていない**(理由: 検査を通した版の道具を呼べていない。survey_results/opp_pineforge.tsv の理由)"))
                 continue
             if spec.get("venv"):
                 if got:
@@ -376,7 +382,7 @@ RUN_NOTES = {
     87: "git の 439232ae(項目 1 の venv item_1/c87。clone を取り直した: 同じ記録)", 12: "PyPI の pybotters(項目 0 の venv item_0/pybotters)",
     75: "PyPI の freqtrade(項目 3 の venv item_3/freqtrade)", 92: "git clone(項目 2 の venv item_2/c92)",
     53: "PyPI の rqalpha(この役の venv item_4/rqalpha、記録 i4_r1_scenekeeper_install_rqalpha.log)",
-    70: "項目 2 が CMake で構築し C の driver で走らせた(item_2/src/c70・drivers/i2drv70)。この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消え、最後の走行では呼べない(構築し直しは持ち越し)",
+    70: "項目 2 が CMake で構築し C の driver で走らせた(item_2/src/c70・drivers/i2drv70)。この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消えた。第 r3-1 回に構築し直しを試みた(記録 item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log): clone の版は 0d76a099 で 5e62602c ではなく、CMake の構築は通ったが導入前の検査を通していない版。driver の翻訳と実行の前に、この環境の許可の判定が [Code from External] として次の操作を止めた。容量では止めていない(空き 2,046 MB → 1,935 MB)。比べていない(検査を通した版の道具を呼べていない)",
     68: "PyPI の quanttrader 0.5.5(この役の venv item_4/quanttrader。np.str / DataFrame.append のため numpy 1.23.5・pandas 1.5.3・matplotlib 3.7.5 をこの venv に固定: 記録 i4_r1_scenekeeper_install_quanttrader.log)",
     10: "PyPI の fast-trade 2.1.0(この役の venv item_4/fast-trade)", 62: "PyPI の qf-lib 4.0.7(この役の venv item_4/qf-lib。宣言されていない PyJWT・oauthlib・requests-oauthlib を足した: 記録 i4_r1_scenekeeper_install_qf-lib.log)",
     18: "PyPI の zipline-reloaded 3.1.1(この役の venv item_4/zipline-reloaded、記録 i4_r1_scenekeeper_install_zipline-reloaded.log)",
