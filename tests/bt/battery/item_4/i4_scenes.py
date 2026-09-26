@@ -7,21 +7,28 @@ Every scene is a dict:
     what       -- 何を測るか
     how        -- 正解の出し方 (how the expected answer was fixed, without looking at any engine)
     input      -- what the adapter receives (plus "root" for file scenes, added by the runner)
-    cases      -- (instead of input) a list of inputs, each run separately (I4-2 grid)
-    expect     -- the expected answer (never given to the adapter)
+    cases      -- (instead of input) a list of inputs, each run separately (I4-2 grids)
+    expect     -- the expected answer (never given to the adapter); for a grid, one entry per case:
+                  an expected answer, {"invariants_only": True} (judged by the stated invariants alone), or
+                  {"prefix_of": k, "upto": n} (the case is case k cut to its first n bars; judged against case k)
     judge      -- which observation keys are judged, and how (i4_judge.py)
     variant    -- (optional) a second input the target must REFUSE
+    more_controls -- (optional, with variant) further inputs with their expected answers that must pass before the
+                  refusal of the variant counts: together with `input` they use every feature the variant uses
 
 All inputs are synthetic.  The expected answers are written by hand from the
 stated bar-model rules (DEFINITIONS.md「足の模型の仕様」R-*): for each scene the
 bar and the reference price of every fill are chosen by hand (the comment next
 to the scene says which rule puts it there), and the helpers below only do the
 bookkeeping arithmetic those rules state (size = notional / price, fee =
-notional x pct, PnL, carry, equity, the metric formulas).  The one exception
-is the I4-2 grid, whose fills come from `taker_rule` -- the stated taker rules
-R-T1..R-T4 written as a function (no stops, no maker, no carry), because the
-grid's inputs are random.  Only the standard library is used, so this module
-also loads under every survey tool's interpreter.
+notional x pct, PnL, carry, equity, the metric formulas).  Every hand-placed
+exit is checked by the scene-keeper's tests against `exit_events` / `winner` /
+`exit_fill` (the stated order R-O1 / L-5 applied to the scene's own input).
+The I4-2 exact grid's fills come from `taker_rule` (R-T1..R-T4 written as a
+function); the other I4-2 grids have no expected fills and are judged by the
+stated invariants (i4_judge.invariants) and by the prefix rule.  Only the
+standard library is used, so this module also loads under every survey tool's
+interpreter.
 """
 from __future__ import annotations
 
@@ -189,6 +196,287 @@ def J(*keys, fill_fields=("bar", "side", "price", "size")):
     return {k: (list(fill_fields) if k == "fills" else True) for k in keys}
 
 
+# --------------------------------------------------------------------------- the stated order within one bar (R-O1 / L-5)
+# The exit events that can close an open position on bar j (names used by the order lists and the tests):
+#   wick      R-W3  the structural stop: bar j-1's close beyond the frozen level -> bar j's OPEN (taker)
+#   time      R-H1  j = entry bar + N -> bar j's OPEN (taker)
+#   signal    R-T1  a closing signal (opposite or CLOSE) at bar j-1, taker execution -> bar j's OPEN (taker)
+#   stop      R-P3  bar j's range reaches the % stop level -> min(open, level) (long) / max (short), taker
+#   stop@time       the same stop on the time-exit bar (R-H3 puts it before the time exit)
+#   tp        R-P4  bar j's range strictly through the % take-profit level -> the level, maker rate
+#   mtp       R-X1  bar j's range strictly through the maker take-profit level -> the level, maker rate
+#   limit     R-M1  maker execution: the resting closing limit (a closing signal at p, entry bar <= p < j,
+#                   j - p <= timeout; the latest such signal) strictly traded through -> the limit, maker rate
+EXIT_EVENTS = ("wick", "stop@time", "time", "signal", "stop", "tp", "mtp", "limit")
+ORDER_SPEC = ["wick", "stop@time", "time", "signal", "stop", "tp", "mtp", "limit"]     # R-O1
+ORDER_LEGACY = ["wick", "stop", "stop@time", "tp", "mtp", "time", "signal", "limit"]   # L-1 + L-5
+# pairs that never happen on one bar (the options exclude each other, or the names do) and the pairs whose two
+# answers are the same fill (both at the open, taker; no re-entry on the bar, R-T3): not pinned by any scene
+NEVER_TOGETHER = {frozenset(p) for p in [("signal", "limit"), ("wick", "stop"), ("wick", "stop@time"),
+                                          ("stop", "stop@time"), ("stop", "time")]}
+SAME_FILL = {frozenset(("wick", "time")), frozenset(("wick", "signal")), frozenset(("time", "signal"))}  # all three: the open, taker
+
+
+def dec(x) -> Fraction:
+    """The written decimal value of a number (R-X1: levels are compared as written)."""
+    return Fraction(repr(float(x))) if not isinstance(x, int) or isinstance(x, bool) else Fraction(x)
+
+
+def _levels(cfg, ep, d):
+    E = dec(ep)
+    out = {}
+    if cfg["stop_loss_pct"]:
+        out["stop"] = E * (1 - d * dec(cfg["stop_loss_pct"]) / 100)
+    if cfg["take_profit_pct"]:
+        out["tp"] = E * (1 + d * dec(cfg["take_profit_pct"]) / 100)
+    if cfg["exit_execution"] == "maker_tp" and cfg["maker_tp_pct"]:
+        out["mtp"] = E * (1 + d * dec(cfg["maker_tp_pct"]) / 100)
+    return out
+
+
+def _wick_level(bars, cfg, ob, d):
+    if cfg["stop_mode"] != "wick_invalidation":
+        return None
+    win = bars[max(0, ob - cfg["stop_window_bars"]):ob]
+    if not win:
+        return None
+    return min(dec(b["low"]) for b in win) if d > 0 else max(dec(b["high"]) for b in win)
+
+
+def _closing_limit(inp, ob, d, j):
+    """R-M1/R-M2: the resting closing limit at bar j (its price), or None."""
+    cfg, bars = inp["config"], inp["bars"]
+    if cfg["execution"] != "maker":
+        return None
+    sig = {s["bar"]: s["signal"] for s in inp["signals"]}
+    closer = "SELL" if d > 0 else "BUY"
+    ps = [p for p in range(ob, j) if sig.get(p) in (closer, "CLOSE")]
+    if not ps or j - ps[-1] > cfg["maker_timeout_bars"]:
+        return None
+    return dec(bars[ps[-1]]["close"])
+
+
+def exit_events(inp, ob, d, ep, j) -> set:
+    """The exit events of a position opened at bar ob (direction d, entry price ep) that can happen on bar j > ob,
+    read from the scene's own input by the stated rules (not from any engine)."""
+    bars, cfg = inp["bars"], inp["config"]
+    sig = {s["bar"]: s["signal"] for s in inp["signals"]}
+    b = bars[j]
+    lo, hi = dec(b["low"]), dec(b["high"])
+    ev = set()
+    N = cfg["max_hold_bars"]
+    time_bar = N is not None and j - ob == N
+    if time_bar:
+        ev.add("time")
+    wl = _wick_level(bars, cfg, ob, d)
+    if wl is not None and j - 1 >= ob:
+        c = dec(bars[j - 1]["close"])
+        if (c < wl) if d > 0 else (c > wl):
+            ev.add("wick")
+    if cfg["execution"] == "taker" and j - 1 >= ob and sig.get(j - 1) in ("SELL" if d > 0 else "BUY", "CLOSE"):
+        ev.add("signal")
+    lv = _levels(cfg, ep, d)
+    if "stop" in lv and ((lo <= lv["stop"]) if d > 0 else (hi >= lv["stop"])):
+        ev.add("stop@time" if time_bar else "stop")
+    for k in ("tp", "mtp"):
+        if k in lv and ((hi > lv[k]) if d > 0 else (lo < lv[k])):
+            ev.add(k)
+    lim = _closing_limit(inp, ob, d, j)
+    if lim is not None and ((hi > lim) if d > 0 else (lo < lim)):
+        ev.add("limit")
+    return ev
+
+
+def winner(events, order) -> str:
+    """The first of `events` in `order` (the one that closes the position)."""
+    return next(e for e in order if e in events)
+
+
+def exit_fill(event, inp, ob, d, ep, j):
+    """(price, fee rate kind) of the exit `event` on bar j by the stated rules."""
+    bars, cfg = inp["bars"], inp["config"]
+    c = cfg["costs"]
+    o = bars[j]["open"]
+    if event in ("wick", "time", "signal"):
+        return (sell_px(o, c) if d > 0 else buy_px(o, c)), "taker"
+    lv = _levels(cfg, ep, d)
+    if event in ("stop", "stop@time"):
+        trig = min(dec(o), lv["stop"]) if d > 0 else max(dec(o), lv["stop"])
+        return (sell_px(float(trig), c) if d > 0 else buy_px(float(trig), c)), "taker"
+    if event in ("tp", "mtp"):
+        return float(lv[event]), "maker"
+    return float(_closing_limit(inp, ob, d, j)), "maker"
+
+
+def round_trips(fills):
+    """[(open fill, close fill or None)] of a fills list (alternating open / close)."""
+    out = []
+    for k in range(0, len(fills), 2):
+        out.append((fills[k], fills[k + 1] if k + 1 < len(fills) else None))
+    return out
+
+
+def model_expectations(scene):
+    """[(input, expected dict, order)] of a bars scene: every expected answer with the rule order it follows."""
+    out = []
+    if scene.get("input", {}).get("op") == "bars":
+        inp, exp = scene["input"], scene["expect"]
+        if "models" in inp:
+            for m in inp["models"]:
+                out.append((inp, exp[m], ORDER_LEGACY if m == "legacy" else ORDER_SPEC))
+        elif inp.get("reference"):
+            for k in ("engine", "reference"):
+                out.append((inp, exp[k], ORDER_SPEC))
+        else:
+            out.append((inp, exp, ORDER_SPEC if inp.get("model", "spec") == "spec" else ORDER_LEGACY))
+        for mc in scene.get("more_controls", []):
+            if mc["input"].get("op") == "bars":
+                out.append((mc["input"], mc["expect"], ORDER_SPEC))
+    for inp, exp in zip(scene.get("cases", []), scene.get("expect", []) if "cases" in scene else []):
+        if "fills" in exp:
+            out.append((inp, exp, ORDER_SPEC))
+    return out
+
+
+def order_findings(scenes, order_override=None):
+    """Every hand-placed round trip checked against the stated order: a list of (scene id, what is wrong), and the
+    pinned pairs {(order name, winner, loser)} (order name "spec" / "legacy")."""
+    wrong, pinned = [], set()
+    for s in scenes:
+        for inp, exp, order in model_expectations(s):
+            name = "legacy" if order is ORDER_LEGACY else "spec"
+            if order_override is not None:
+                order = order_override.get(name, order)
+            fills = exp.get("fills")
+            if fills is None:
+                continue
+            n = len(inp["bars"])
+            for o, x in round_trips(fills):
+                d = 1 if o["side"] == "OPEN_LONG" else -1
+                end = x["bar"] if x else n
+                for j in range(o["bar"] + 1, end):
+                    ev = exit_events(inp, o["bar"], d, o["price"], j)
+                    if ev:
+                        wrong.append((s["id"], f"足 {j} で出口 {sorted(ev)} が起きうるのに、手の正解は建玉を閉じていない"))
+                if x is None:
+                    continue
+                ev = exit_events(inp, o["bar"], d, o["price"], x["bar"])
+                if not ev:
+                    wrong.append((s["id"], f"足 {x['bar']} の決済に当たる出口が規則から出ない"))
+                    continue
+                w = winner(ev, order)
+                px, _ = exit_fill(w, inp, o["bar"], d, o["price"], x["bar"])
+                if abs(px - x["price"]) > 1e-9 * max(1.0, abs(px)):
+                    wrong.append((s["id"], f"足 {x['bar']} の決済の値 {x['price']} が、出口 {sorted(ev)} の {name} の順で勝つ "
+                                           f"{w} の値 {px} と違う"))
+                for e in ev - {w}:
+                    pinned.add((name, w, e))
+    return wrong, pinned
+
+
+def order_pairs():
+    """The pairs of exit events the scene set must pin (they can happen together and give different fills)."""
+    out = []
+    for i, a in enumerate(EXIT_EVENTS):
+        for b in EXIT_EVENTS[i + 1:]:
+            if frozenset((a, b)) not in NEVER_TOGETHER | SAME_FILL:
+                out.append((a, b))
+    return out
+
+
+def first_of(pair, order):
+    a, b = pair
+    return (a, b) if order.index(a) < order.index(b) else (b, a)
+
+
+# --------------------------------------------------------------------------- what a scene asks for besides its viewpoint
+def fee_kinds(cfg) -> set:
+    """The fee kinds a bars run can charge (R-A2): taker (market entries / exits, stops, time and wick exits),
+    maker (limit entries / exits, take-profits, maker take-profits)."""
+    k = set()
+    if cfg["execution"] == "taker" or cfg["stop_loss_pct"] or cfg["max_hold_bars"] is not None \
+            or cfg["stop_mode"] == "wick_invalidation":
+        k.add("taker")
+    if cfg["execution"] == "maker" or cfg["take_profit_pct"] or cfg["exit_execution"] == "maker_tp":
+        k.add("maker")
+    return k
+
+
+def _judged_keys(scene):
+    j = scene["judge"]
+    keys = set()
+    for k, v in j.items():
+        if k in ("engine", "reference", "legacy", "spec"):
+            keys |= set(v)
+        else:
+            keys.add(k)
+    return keys
+
+
+def barriers(scene) -> list:
+    """What a bars scene asks for that is not its viewpoint and that a bar tool may lack (i4-r1-05):
+    a signal at bar 0, a non-zero cost, two different fee rates charged, a cost the judged keys cannot see."""
+    inps = scene["cases"] if "cases" in scene else [scene["input"]]
+    out = []
+    keys = _judged_keys(scene)
+    money_seen = bool(keys & {"pnls", "equity", "metrics", "invariants"})
+    for inp in inps:
+        if inp.get("op") != "bars":
+            continue
+        c, cfg = inp["config"]["costs"], inp["config"]
+        kinds = fee_kinds(cfg)
+        if any(s["bar"] == 0 for s in inp["signals"]):
+            out.append("足 0 の合図")
+        if any(c[k] for k in c):
+            out.append("0 でない費用")
+        if kinds == {"taker", "maker"} and c["taker_fee_pct"] != c["maker_fee_pct"]:
+            out.append("違う 2 つの手数料の率")
+        for kind in ("taker", "maker"):
+            if c[f"{kind}_fee_pct"] and (kind not in kinds or not money_seen):
+                out.append(f"判定から見えない {kind} の手数料")
+        if (c["spread_pct"] or c["slippage_pct"]) and "taker" not in kinds:
+            out.append("判定から見えないスプレッド・滑り")
+        if not any(c.values()) and not cfg["swap_daily_pct"] and keys & {"pnls", "equity"} and "metrics" not in keys:
+            out.append("費用 0・持ち越し 0 の場面で損益・資産も判定する(約定から決まる)")
+    return sorted(set(out))
+
+
+# --------------------------------------------------------------------------- the features a variant needs a control for
+def features(inp) -> set:
+    """What an input uses (i4-r1-09): the bar model's non-default options, the pipeline's strategy kind, purpose and
+    data origins, the split."""
+    op = inp.get("op")
+    if op == "bars":
+        base = cfg()
+        return {k for k, v in inp["config"].items() if k not in ("initial_equity", "order_notional", "costs",
+                                                                  "maker_timeout_bars") and v != base[k]}
+    if op == "pipeline":
+        f = {"strategy:" + inp["strategy"]["kind"], "purpose:" + inp["purpose"]}
+        f |= {"origin:" + d["origin"] for d in inp["datasets"]}
+        return f
+    return {op}
+
+
+def control_features(scene) -> set:
+    f = set(features(scene["input"]))
+    for mc in scene.get("more_controls", []):
+        f |= features(mc["input"])
+    return f
+
+
+# --------------------------------------------------------------------------- granularity (I4-3)
+GRANULARITY = {"core": "核(戦略に届く足と時刻)", "reference": "参照実装", "whole": "新エンジン全体"}
+
+
+def granularity_of(scene) -> str:
+    inp = scene.get("input") or {}
+    if inp.get("op") == "delivery":
+        return "core"
+    if inp.get("reference"):
+        return "reference"
+    return "whole"
+
+
 SCENES: list[dict] = []
 
 
@@ -203,14 +491,14 @@ def add(**s):
 B = mk_bars([(100, 101, 99, 100), (100, 102, 99, 101), (100, 104, 99, 103), (120, 122, 118, 121),
              (125, 127, 123, 126), (106, 108, 104, 105), (105, 106, 102, 103), (103, 104, 100, 101),
              (101, 103, 100, 102), (102, 103, 101, 102)])
-C_TAK = {"taker_fee_pct": 0.1, "maker_fee_pct": 0.05, "slippage_pct": 0.02, "spread_pct": 0.04}
+C_TAK = {"taker_fee_pct": 0.1, "maker_fee_pct": 0.0, "slippage_pct": 0.02, "spread_pct": 0.04}  # taker only: no maker fee (i4-r1-05)
 
 # E: the end-to-end taker path (I4-1 / I4-3)
 E = mk_bars([(1000, 1005, 995, 1000), (1000, 1010, 998, 1008), (1010, 1020, 1005, 1015), (1015, 1025, 1010, 1020),
              (1020, 1030, 1015, 1025), (1025, 1028, 1018, 1020), (1018, 1022, 1012, 1015), (1015, 1018, 1008, 1010),
              (1010, 1015, 1005, 1012), (1012, 1030, 1008, 1025), (1025, 1045, 1020, 1040), (1040, 1042, 1030, 1035),
              (1035, 1040, 1030, 1032), (1030, 1036, 1026, 1034), (1034, 1038, 1028, 1036), (1036, 1040, 1031, 1038)])
-C_E = {"taker_fee_pct": 0.12, "maker_fee_pct": 0.02, "slippage_pct": 0.03, "spread_pct": 0.06}
+C_E = {"taker_fee_pct": 0.12, "maker_fee_pct": 0.0, "slippage_pct": 0.03, "spread_pct": 0.06}  # taker path: no maker fee (i4-r1-05)
 CFG_E = cfg(costs=C_E, allow_short=True, stop_loss_pct=3.0, swap_daily_pct=0.72)
 SIG_E = [(1, "BUY"), (5, "SELL"), (7, "SELL"), (12, "BUY")]
 _sl_short_E = sell_px(1010, C_E) * 1.03  # R-P1: short stop level = entry x (1 + 3/100)
@@ -283,38 +571,158 @@ def taker_rule(case):
     return trades
 
 
+def _random_bars(rng, m):
+    px, rows = 1000.0, []
+    for _ in range(m):
+        o = round(px + rng.uniform(-8, 8), 1)
+        c = round(o + rng.uniform(-10, 10), 1)
+        h = round(max(o, c) + rng.uniform(0, 6), 1)
+        lo = round(min(o, c) - rng.uniform(0, 6), 1)
+        rows.append((o, h, lo, c))
+        px = c
+    return rows
+
+
+def trim_costs(conf):
+    """A fee rate of a kind the run cannot charge is set to 0 (no cost the judged keys cannot see, i4-r1-05)."""
+    kinds = fee_kinds(conf)
+    for kind in ("taker", "maker"):
+        if kind not in kinds:
+            conf["costs"][f"{kind}_fee_pct"] = 0.0
+    if "taker" not in kinds:
+        conf["costs"]["spread_pct"] = conf["costs"]["slippage_pct"] = 0.0
+    return conf
+
+
 def grid_cases(seed=20260926, n=30):
-    """Random bars, random scripts and random costs; drawn without looking at any target's code paths."""
+    """Random bars, random scripts and random costs (taker only, the exact grid); drawn without looking at any
+    target's code paths."""
     rng = random.Random(seed)
     cases = []
     for _ in range(n):
         m = rng.randint(8, 20)
-        px, rows = 1000.0, []
-        for _ in range(m):
-            o = round(px + rng.uniform(-8, 8), 1)
-            c = round(o + rng.uniform(-10, 10), 1)
-            h = round(max(o, c) + rng.uniform(0, 6), 1)
-            lo = round(min(o, c) - rng.uniform(0, 6), 1)
-            rows.append((o, h, lo, c))
-            px = c
+        rows = _random_bars(rng, m)
         costs = {k: rng.choice([0.0, 0.01, 0.05, 0.1, 0.15]) for k in ZERO}
         sigs = [(i, rng.choice(["BUY", "SELL", "CLOSE"])) for i in range(m) if rng.random() < 0.45]
-        conf = cfg(costs=costs, allow_short=rng.random() < 0.5, initial_equity=float(rng.choice([6000, 100000])),
-                   order_notional=float(rng.choice([3000, 1234.5])))
+        conf = trim_costs(cfg(costs=costs, allow_short=rng.random() < 0.5, initial_equity=float(rng.choice([6000, 100000])),
+                              order_notional=float(rng.choice([3000, 1234.5]))))
         cases.append(bars_input(mk_bars(rows), sigs, conf, want=("fills", "pnls", "equity")))
     return cases
 
 
+# The bar-model options a property grid draws; each grid names the ones it switches on (PATHS), the rest stay plain.
+PATHS = ("maker", "stop", "tp", "mtp", "swap", "hold", "wick", "mask", "sides", "short", "costs", "hour")
+
+
+def paths_of(conf, bar_seconds=60) -> set:
+    """The paths a case's config goes through (read from the config, for the coverage tests)."""
+    out = set()
+    if conf["execution"] == "maker":
+        out.add("maker")
+    for k, name in (("stop_loss_pct", "stop"), ("take_profit_pct", "tp"), ("swap_daily_pct", "swap"),
+                    ("max_hold_bars", "hold"), ("entry_mask", "mask")):
+        if conf[k]:
+            out.add(name)
+    if conf["exit_execution"] == "maker_tp":
+        out.add("mtp")
+    if conf["stop_mode"] == "wick_invalidation":
+        out.add("wick")
+    if conf["entry_sides"] != "both":
+        out.add("sides")
+    if conf["allow_short"]:
+        out.add("short")
+    if any(conf["costs"].values()):
+        out.add("costs")
+    if bar_seconds != 60:
+        out.add("hour")
+    return out
+
+
+def _draw_config(rng, m, on):
+    over = {}
+    if "maker" in on:
+        over.update(execution="maker", maker_timeout_bars=rng.randint(1, 4))
+    if "wick" in on:
+        over.update(stop_mode="wick_invalidation", stop_window_bars=rng.randint(1, 4))
+    elif "stop" in on:
+        over["stop_loss_pct"] = rng.choice([0.3, 0.5, 0.8, 1.2])
+    if "tp" in on:
+        over["take_profit_pct"] = rng.choice([0.4, 0.6, 1.0, 1.5])
+    if "mtp" in on:
+        over.update(exit_execution="maker_tp", maker_tp_pct=rng.choice([0.3, 0.5, 0.9, 1.3]))
+    if "swap" in on:
+        over["swap_daily_pct"] = rng.choice([0.04, 0.24, 1.2])
+    if "hold" in on:
+        over["max_hold_bars"] = rng.randint(1, 5)
+    if "mask" in on:
+        over["entry_mask"] = [rng.random() < 0.7 for _ in range(m)]
+    if "sides" in on:
+        over["entry_sides"] = rng.choice(["long", "short"])
+    if "short" in on or ("sides" in on and over.get("entry_sides") == "short"):
+        over["allow_short"] = True
+    if "costs" in on:
+        over["costs"] = {k: rng.choice([0.0, 0.01, 0.05, 0.1]) for k in ZERO}
+    return trim_costs(cfg(**over))
+
+
+def property_cases(seed, n, fixed=(), drawn=PATHS, p_on=0.5, first_signal=0):
+    """n random cases (bars, script, config) with the paths `fixed` always on and each of `drawn` on with p_on,
+    each followed by its prefix case (the same case cut to its first k bars, k drawn): the prefix rule of
+    i4_judge (no fill, PnL or equity before bar k may depend on bars from k on).  Returns (cases, expects)."""
+    rng = random.Random(seed)
+    cases, expects = [], []
+    for _ in range(n):
+        m = rng.randint(10, 22)
+        rows = _random_bars(rng, m)
+        on = set(fixed) | {p for p in drawn if rng.random() < p_on}
+        conf = _draw_config(rng, m, on)
+        bs = 3600 if "hour" in on else 60
+        sigs = [(i, rng.choice(["BUY", "SELL", "CLOSE"])) for i in range(first_signal, m) if rng.random() < 0.45]
+        full = bars_input(mk_bars(rows, bar_seconds=bs), sigs, conf, bar_seconds=bs, want=("fills", "pnls", "equity"))
+        k = rng.randint(max(4, m // 2), m - 1)
+        pconf = dict(conf)
+        pconf["costs"] = dict(conf["costs"])
+        if conf["entry_mask"] is not None:
+            pconf["entry_mask"] = list(conf["entry_mask"][:k])
+        pre = bars_input(mk_bars(rows[:k], bar_seconds=bs), [(b, x) for b, x in sigs if b < k], pconf, bar_seconds=bs,
+                         want=("fills", "pnls", "equity"))
+        expects += [{"invariants_only": True}, {"prefix_of": len(cases), "upto": k}]
+        cases += [full, pre]
+    return cases, expects
+
+
+_INV = ("不変条件(i4_judge.invariants の I1〜I12: 建てと決済が交互で向きが揃う・数量の保存(建ての数量は正、決済は同じ数量)・約定は原因の合図より後で"
+        "決済は建てより後・建ての原因の合図がある・向きとマスクと空売りの許可を守る・損益の恒等式 R-A3(建ての率は執行で決まり、決済の率は "
+        "taker か maker のどちらか)・資産の恒等式 R-A4・損益の数 = 決済の数・保有の上限を超えない・起きた出口(逆指値・利確・maker の利確・構造的な"
+        "逆指値・taker の決済の合図)を飛ばさない・taker の建ての合図を飛ばさない・maker の建ての指値を飛ばさない)と、先頭の部分の規則(同じ場合を最初の k 本で切った実行は、"
+        "足 k より前の約定・損益・資産が元の実行と同じ = 先読みしない)")
+_GA_CASES, _GA_EXP = property_cases(20260927, 24)
+add(id="i4-2-grid-all", viewpoint="I4-2", kind="値",
+    what="種 20260927 で引いた 24 の場合(足の模型の全ての選択肢 = maker・逆指値・利確・maker の利確・持ち越し・保有の上限・構造的な逆指値・"
+         "マスク・向き・空売り・費用・1 時間足を、場合ごとに乱数でオンにする。実装の場合分けから作らない)とその先頭の部分の全部で、" + _INV
+         + "が 1 つも崩れないか",
+    how="正解は置かない(手で正解を出せない経路を、正解なしで式だけで判定する。i4-r1-06)。不変条件は観測した約定・損益・資産と、場合の入力"
+        "(足・合図・設定)だけから式で検める(規則の場合分けを写さない)。",
+    cases=_GA_CASES, expect=_GA_EXP, judge={"invariants": True})
 _GRID = grid_cases()
 add(id="i4-2-grid", viewpoint="I4-2", kind="値",
     what="種 20260926 で引いた 30 の場合(足・合図の並び・費用・ショートの可否・元本・発注額を乱数で引く。実装の場合分けから作らない)の"
-         "全部で、約定が規則どおりで、不変条件(建てと決済が交互・決済の数量 = 建ての数量・損益の恒等式・資産の恒等式・約定は合図の足より後)"
-         "が 1 つも崩れないか",
-    how="約定の足と値は規則 R-T1〜R-T4 を関数にした taker_rule で決め(停止・maker・持ち越しを含まない場合だけ)、帳簿は R-A の式。"
+         "全部で、約定が規則どおりで、" + _INV.split("と、先頭の部分")[0] + "が 1 つも崩れないか",
+    how="約定の足と値は規則 R-T1〜R-T4 を関数にした taker_rule で決め(停止・maker・持ち越しを含まない taker だけの場合)、帳簿は R-A の式。"
         "不変条件は観測した約定から判定の側で式で検める(i4_judge.invariants)。",
     cases=_GRID,
     expect=[full_expect(c["bars"], taker_rule(c), c["config"], 60, ("fills", "pnls", "equity")) for c in _GRID],
     judge=J("fills", "pnls", "equity") | {"invariants": True})
+# one grid per path, with that path always on and nothing else (no cost, no signal on bar 0): a tool that has the
+# path but not the other options is judged on it (i4-r1-05 / i4-r1-06)
+for _k, (_path, _title) in enumerate([("stop", "逆指値"), ("tp", "利確"), ("maker", "maker の建てと決済"), ("mtp", "maker の利確"),
+                                       ("swap", "持ち越し"), ("hold", "保有の上限"), ("wick", "構造的な逆指値")]):
+    _c, _e = property_cases(20260928 + _k, 8, fixed=(_path,), drawn=(), first_signal=1)
+    add(id=f"i4-2-grid-{_path}", viewpoint="I4-2", kind="値",
+        what=f"種 {20260928 + _k} で引いた 8 の場合(足・合図を乱数で引き、{_title}だけをオンにする。費用 0、足 0 に合図なし)とその先頭の部分の"
+             "全部で、" + _INV + "が 1 つも崩れないか",
+        how="正解は置かない。i4-2-grid-all と同じ不変条件と先頭の部分の規則で判定する。",
+        cases=_c, expect=_e, judge={"invariants": True})
 
 
 # --------------------------------------------------------------------------- I4-3 known-answer scenes (whole engine)
@@ -449,9 +857,19 @@ TABS = ["概要", "前提", "損益", "取引", "約定の質", "費用", "分�
 BANNER = "動作確認の実行。相場の結論には使わない"
 
 
-def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=None):
+def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=None, only=None, origin=None):
+    """`only`: keep only these instruments (and the datasets they name); `origin`: declare every dataset so."""
     files, ds = _pipeline_files()
-    return {"op": "pipeline", "files": files, "datasets": ds, "instruments": INSTRUMENTS,
+    ins = INSTRUMENTS
+    if only is not None:
+        ins = [i for i in INSTRUMENTS if i["name"] in only]
+        keep = {n for i in ins for n in [i["price"], *i["with"]]}
+        ds = [d for d in ds if d["name"] in keep]
+        paths = {pth for d in ds for pth in d["paths"]}
+        files = [f for f in files if f["path"] in paths]
+    if origin is not None:
+        ds = [{**d, "origin": origin} for d in ds]
+    return {"op": "pipeline", "files": files, "datasets": ds, "instruments": ins,
             "strategy": strategy or {"kind": "schedule", "orders": SCHEDULE}, "fill": FILL_RULE, "costs": dict(ZERO),
             "purpose": purpose, "prereg_sha256": prereg, "want": list(want)}
 
@@ -518,18 +936,44 @@ add(id="i4-6-label", viewpoint="I4-6", kind="値",
     expect={"fills": _PF, "export": {"purpose": "動作確認", "num_trades": {i["name"]: 2 for i in INSTRUMENTS}},
             "dashboard": {"tabs": TABS, "banner": BANNER}},
     judge={"pfills": True, "export": True, "dashboard": True})
+PRICE_RULE = {"kind": "price_rule", "buy_below": 15000600.0, "sell_above": 15002500.0, "qty": 1.0}
+
+
+def price_rule_expect(events, rule):
+    """F-2: at each price event of the instrument (a trade: its price), flat and price < buy_below -> buy qty; long and
+    price > sell_above -> sell the position; the order fills by F-1 at the first observation at or after its time,
+    which (no latency) is that same event; the next order waits for the fill."""
+    pos, out = 0.0, []
+    for t, px in events:
+        if pos == 0 and px < rule["buy_below"]:
+            out.append({"t_ns": t, "side": "buy", "px": px, "qty": rule["qty"]})
+            pos = rule["qty"]
+        elif pos > 0 and px > rule["sell_above"]:
+            out.append({"t_ns": t, "side": "sell", "px": px, "qty": pos})
+            pos = 0.0
+    return out
+
+
+_PR_FILLS = {"bf": price_rule_expect([(t, float(px)) for t, px, _, _ in _BF], PRICE_RULE)}
 add(id="i4-6-signal-refused", viewpoint="I4-6", kind="能力",
     what="実データと宣言したファイルに、値で条件づけた戦略(値が閾値を下回ったら買う)を目的「動作確認」で通そうとしたら拒むか"
-         "(対照: 同じファイルに固定の手順なら通り、約定は手順どおり)",
+         "(対照 1: 同じファイルに固定の手順なら通り、約定は手順どおり。対照 2: 同じ値で条件づけた戦略を、合成と宣言したデータに通せば"
+         "通り、約定は F-2 どおり = 対象は値で条件づけた戦略を走らせられ、拒むのは実データのときだけ)",
     how="委任文 §4「実データを通すときの戦略は、時刻だけで決まる機械的な手順か種つきの乱数に限る。信号・条件付け・最適化を入れない」。"
-        "対照の正解は i4-5-fills の約定。",
+        "対照 1 の正解は i4-5-fills の約定。対照 2 の正解は F-2 を bf の約定の行に当てた手の計算: 15000000 < 15000600 で買い 1(T0 + 0.2 秒)、"
+        "15003000 > 15002500 で売り 1(T0 + 3600.75 秒)。",
     input=pipeline_input(("fills",)), expect={"fills": _PF}, judge={"pfills": True},
-    variant=pipeline_input(("fills",), strategy={"kind": "price_rule", "buy_below": 15000600.0, "sell_above": 15002500.0,
-                                                 "qty": 1.0}))
+    more_controls=[{"input": pipeline_input(("fills",), strategy=PRICE_RULE, only=("bf",), origin="synthetic"),
+                    "expect": {"fills": _PR_FILLS}, "judge": {"pfills": True}}],
+    variant=pipeline_input(("fills",), strategy=PRICE_RULE))
+PREREG_SHA = hashlib.sha256("i4 battery: a stand-in pre-registration text".encode("utf-8")).hexdigest()
 add(id="i4-6-research-refused", viewpoint="I4-6", kind="能力",
-    what="目的「研究」を事前登録のハッシュ無しで実行しようとしたら拒むか(対照: 目的「動作確認」なら通る)",
-    how="委任文 §4「目的 `研究` の実行は事前登録のハッシュが無いと作れない」。対照の正解は i4-5-fills の約定。",
+    what="目的「研究」を事前登録のハッシュ無しで実行しようとしたら拒むか(対照 1: 目的「動作確認」なら通る。対照 2: 目的「研究」を事前登録の"
+         "ハッシュつきで実行すれば通り、約定は手順どおり = 対象は「研究」の実行を作れ、拒むのはハッシュが無いときだけ)",
+    how="委任文 §4「目的 `研究` の実行は事前登録のハッシュが無いと作れない」。対照 1・2 の正解は i4-5-fills の約定(戦略は同じ固定の手順)。",
     input=pipeline_input(("fills",)), expect={"fills": _PF}, judge={"pfills": True},
+    more_controls=[{"input": pipeline_input(("fills",), purpose="研究", prereg=PREREG_SHA), "expect": {"fills": _PF},
+                    "judge": {"pfills": True}}],
     variant=pipeline_input(("fills",), purpose="研究", prereg=None))
 
 
@@ -562,24 +1006,24 @@ add(id="i4-8-no-short", viewpoint="I4-8", kind="値",
 # --------------------------------------------------------------------------- I4-9 strict traded-through limits
 M = mk_bars([(100, 101, 99, 100), (100, 102, 99.5, 100), (100.5, 103, 100, 102), (102, 102.5, 99.5, 101),
              (101, 104, 101, 103), (103, 105, 102, 104), (104, 105, 103, 104)])
-_CM = cfg(costs={**ZERO, "taker_fee_pct": 0.1, "maker_fee_pct": 0.05}, execution="maker", maker_timeout_bars=3)
+_CM = cfg(execution="maker", maker_timeout_bars=3)  # the judged keys (fills, missed) cannot see a fee: none (i4-r1-05)
 _W4 = ("fills", "pnls", "equity", "missed_fills")
 add(id="i4-9-strict", viewpoint="I4-9", kind="値",
     what="maker の指値(合図の足の終値に置く)が、値に触れただけでは約定せず、後の足が厳密に通過したときだけ指値の値で maker 手数料で約定するか",
     how="M の足。BUY@1 → 指値 100(足 1 の終値)。足 2 の安値 100 は触れただけ、足 3 の安値 99.5 < 100 で 100 で約定(R-M1)。SELL@4 → "
-        "指値 103、足 5 の高値 105 > 103 で 103 で約定。手数料は maker 0.05%(R-A2)。取り逃し 0。",
+        "指値 103、足 5 の高値 105 > 103 で 103 で約定。取り逃し 0。費用 0(判定する鍵は約定と取り逃しで、手数料は見えない)。",
     input=bars_input(M, [(1, "BUY"), (4, "SELL")], _CM, want=_WFM),
-    expect=full_expect(M, [trade(3, +1, 100.0, 0.05, 5, 103.0, 0.05)], _CM, 60, _WFM, missed=0),
+    expect=full_expect(M, [trade(3, +1, 100.0, 0.0, 5, 103.0, 0.0)], _CM, 60, _WFM, missed=0),
     judge=J(*_WFM))
 SB = mk_bars([(100, 101, 99, 100), (100, 100.5, 99, 100), (99.5, 100, 99, 99.8), (99.8, 100.5, 99, 100),
               (100, 100.5, 98, 99), (99.5, 100, 99, 99.5), (99.5, 100, 98.5, 99), (99, 100, 98, 99)])
-_CMS = cfg(costs={**ZERO, "maker_fee_pct": 0.05}, execution="maker", maker_timeout_bars=3, allow_short=True)
+_CMS = cfg(execution="maker", maker_timeout_bars=3, allow_short=True)
 add(id="i4-9-short-strict", viewpoint="I4-9", kind="値",
     what="売りの指値は高値が指値を厳密に上回ったときだけ、買い戻しの指値は安値が厳密に下回ったときだけ約定するか",
     how="SB の足。SELL@1 → 指値 100、足 2 の高値 100 は触れただけ、足 3 の高値 100.5 > 100 で売り建て 100。BUY@4 → 指値 99、"
         "足 5 の安値 99 は触れただけ、足 6 の安値 98.5 < 99 で 99 で買い戻し(R-M1)。",
     input=bars_input(SB, [(1, "SELL"), (4, "BUY")], _CMS, want=_WFM),
-    expect=full_expect(SB, [trade(3, -1, 100.0, 0.05, 6, 99.0, 0.05)], _CMS, 60, _WFM, missed=0),
+    expect=full_expect(SB, [trade(3, -1, 100.0, 0.0, 6, 99.0, 0.0)], _CMS, 60, _WFM, missed=0),
     judge=J(*_WFM))
 
 # --------------------------------------------------------------------------- I4-10 intrabar TP/SL, stop first
@@ -621,11 +1065,16 @@ add(id="i4-11-wick-short", viewpoint="I4-11", kind="値",
     input=bars_input(WS, [(2, "SELL")], _CWS, want=_WF),
     expect=full_expect(WS, [trade(3, -1, 100.0, 0.0, 6, 105.0, 0.0)], _CWS, 60, _WF),
     judge=J(*_WF))
+_CWP = cfg(stop_loss_pct=2.0)
 add(id="i4-11-refuse-stack", viewpoint="I4-11", kind="能力",
-    what="構造的な逆指値と率の逆指値を重ねる設定を拒むか(対照: 構造的な逆指値だけなら通り、答えは i4-11-wick-long)",
-    how="R-W4「2 つの逆指値は代わりであって重ねない」。",
+    what="構造的な逆指値と率の逆指値を重ねる設定を拒むか(対照 1: 構造的な逆指値だけなら通り、答えは i4-11-wick-long。対照 2: 率の逆指値だけなら"
+         "通る = 対象は両方を別々には持ち、拒むのは重ねたときだけ)",
+    how="R-W4「2 つの逆指値は代わりであって重ねない」。対照 2 の正解: WL の足、逆指値 2%(98)。BUY@2 → 足 3 の始値 100、足 4 の安値 95 <= 98 → "
+        "min(100, 98) = 98(R-P3)。",
     input=bars_input(WL, [(2, "BUY")], _CW, want=_WF),
     expect=full_expect(WL, [trade(3, +1, 100.0, 0.0, 6, 95.0, 0.0)], _CW, 60, _WF), judge=J(*_WF),
+    more_controls=[{"input": bars_input(WL, [(2, "BUY")], _CWP, want=_WF),
+                    "expect": full_expect(WL, [trade(3, +1, 100.0, 0.0, 4, 98.0, 0.0)], _CWP, 60, _WF), "judge": J(*_WF)}],
     variant=bars_input(WL, [(2, "BUY")], cfg(stop_mode="wick_invalidation", stop_window_bars=3, stop_loss_pct=2.0), want=_WF))
 
 # --------------------------------------------------------------------------- I4-12 maker take-profit exit
@@ -642,9 +1091,9 @@ add(id="i4-12-maker-tp", viewpoint="I4-12", kind="値",
 add(id="i4-12-refuse", viewpoint="I4-12", kind="能力",
     what="maker の利確を選んで率を与えない(0)設定を拒むか(対照: 率 2% なら通り、答えは i4-12-maker-tp)",
     how="R-X3「maker_tp は maker_tp_pct > 0 を要する」。",
-    input=bars_input(K, [(0, "BUY")], _CK, want=_WF),
-    expect=full_expect(K, [trade(1, +1, 100.0, 0.1, 3, 102.0, 0.02)], _CK, 60, _WF), judge=J(*_WF),
-    variant=bars_input(K, [(0, "BUY")], cfg(costs=_CK["costs"], exit_execution="maker_tp", maker_tp_pct=0.0), want=_WF))
+    input=bars_input(K, [(0, "BUY")], _CK, want=_WFP),
+    expect=full_expect(K, [trade(1, +1, 100.0, 0.1, 3, 102.0, 0.02)], _CK, 60, _WFP), judge=J(*_WFP),
+    variant=bars_input(K, [(0, "BUY")], cfg(costs=_CK["costs"], exit_execution="maker_tp", maker_tp_pct=0.0), want=_WFP))
 
 KD = mk_bars([(100, 100.5, 99.5, 100), (100, 101, 99.5, 100.5), (100.5, 101.5, 100, 101), (101, 101.6, 100.5, 101.2),
               (101.2, 101.5, 101, 101.2)])
@@ -707,29 +1156,31 @@ add(id="i4-14-sides-short", viewpoint="I4-14", kind="値",
     judge=J(*_WF))
 
 # --------------------------------------------------------------------------- I4-15 swap / carry
-SW = mk_bars([(100, 100.5, 99.5, 100), (100, 101.5, 99.5, 101), (101, 102.5, 100.5, 102), (102, 103.5, 101.5, 103),
-              (104, 104.5, 103.5, 104), (104, 104.5, 103.5, 104)], bar_seconds=3600)
+# (bar 0 is a flat bar so that no signal falls on bar 0: a common bar tool never calls its strategy on the first bar,
+#  and the first bar is not what I4-15 / I4-17 measure -- i4-r1-05)
+SW = mk_bars([(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 101.5, 99.5, 101), (101, 102.5, 100.5, 102),
+              (102, 103.5, 101.5, 103), (104, 104.5, 103.5, 104), (104, 104.5, 103.5, 104)], bar_seconds=3600)
 _CSW = cfg(swap_daily_pct=0.24)
 add(id="i4-15-swap-long", viewpoint="I4-15", kind="値",
     what="建玉の間、足ごとに |数量| x 前の足の終値 x 日率 x (足の秒 / 86400) の持ち越しが建玉の損益と資産に掛かるか",
-    how="SW の足(1 時間足)、日率 0.24% → 1 本 0.0001。BUY@0 → 足 1 の始値 100(数量 30)、SELL@3 → 足 4 の始値 104。持ち越しは足 2・3・4 に"
+    how="SW の足(1 時間足)、日率 0.24% → 1 本 0.0001。BUY@1 → 足 2 の始値 100(数量 30)、SELL@4 → 足 5 の始値 104。持ち越しは足 3・4・5 に"
         "30 x (101 + 102 + 103) x 0.0001 = 0.918(R-S1)。損益 = 120 - 0.918 = 119.082。",
-    input=bars_input(SW, [(0, "BUY"), (3, "SELL")], _CSW, bar_seconds=3600, want=_W3),
-    expect=full_expect(SW, [trade(1, +1, 100.0, 0.0, 4, 104.0, 0.0)], _CSW, 3600, _W3),
+    input=bars_input(SW, [(1, "BUY"), (4, "SELL")], _CSW, bar_seconds=3600, want=_W3),
+    expect=full_expect(SW, [trade(2, +1, 100.0, 0.0, 5, 104.0, 0.0)], _CSW, 3600, _W3),
     judge=J(*_W3))
 _CSWS = cfg(swap_daily_pct=0.24, allow_short=True)
 add(id="i4-15-swap-short", viewpoint="I4-15", kind="値",
     what="売り建てにも同じ持ち越しが掛かる(数量の絶対値で費用として引く)か",
-    how="SW の足。SELL@0 → 足 1 の始値 100 の売り、BUY@3 → 足 4 の始値 104。持ち越し 0.918(R-S1)。損益 = -120 - 0.918 = -120.918。",
-    input=bars_input(SW, [(0, "SELL"), (3, "BUY")], _CSWS, bar_seconds=3600, want=_W3),
-    expect=full_expect(SW, [trade(1, -1, 100.0, 0.0, 4, 104.0, 0.0)], _CSWS, 3600, _W3),
+    how="SW の足。SELL@1 → 足 2 の始値 100 の売り、BUY@4 → 足 5 の始値 104。持ち越し 0.918(R-S1)。損益 = -120 - 0.918 = -120.918。",
+    input=bars_input(SW, [(1, "SELL"), (4, "BUY")], _CSWS, bar_seconds=3600, want=_W3),
+    expect=full_expect(SW, [trade(2, -1, 100.0, 0.0, 5, 104.0, 0.0)], _CSWS, 3600, _W3),
     judge=J(*_W3))
 
 # --------------------------------------------------------------------------- I4-16 missed fills
 MF = mk_bars([(100, 101, 99, 100), (100, 101.5, 100, 101), (101, 102, 101, 101.5), (101.5, 102, 101.2, 101.8),
               (101.8, 102, 98.8, 99), (99.5, 100.2, 99.2, 100), (100, 100.8, 99.8, 100.5), (100.5, 100.8, 99.4, 99.5),
               (99.5, 99.8, 99.2, 99.6), (99.6, 100, 99.4, 99.8)])
-_CMF = cfg(costs={**ZERO, "maker_fee_pct": 0.02}, execution="maker", maker_timeout_bars=2, allow_short=True)
+_CMF = cfg(execution="maker", maker_timeout_bars=2, allow_short=True)
 add(id="i4-16-missed", viewpoint="I4-16", kind="値",
     what="約定しなかった指値を、時間切れの取消と反対向きの合図による置き換えの 2 つの条件で数えるか",
     how="MF の足、寿命 2 本。BUY@1 → 指値 101。足 2 の安値 101 は触れただけ、足 3 は届かず、足 3 で 3 - 1 = 2 >= 2 → 取消 1 件目(R-M2)。"
@@ -737,7 +1188,7 @@ add(id="i4-16-missed", viewpoint="I4-16", kind="値",
         " 2 件目(R-M3)、売りの指値 100。足 6 の高値 100.8 > 100 で売り建て 100。CLOSE@7 → 買い戻しの指値 99.5、足 8 の安値 99.2 < 99.5 で"
         " 99.5(R-M1・R-M4)。",
     input=bars_input(MF, [(1, "BUY"), (4, "BUY"), (5, "SELL"), (7, "CLOSE")], _CMF, want=_WFM),
-    expect=full_expect(MF, [trade(6, -1, 100.0, 0.02, 8, 99.5, 0.02)], _CMF, 60, _WFM, missed=2),
+    expect=full_expect(MF, [trade(6, -1, 100.0, 0.0, 8, 99.5, 0.0)], _CMF, 60, _WFM, missed=2),
     judge=J(*_WFM))
 
 # --------------------------------------------------------------------------- I4-17 metrics
@@ -758,17 +1209,17 @@ add(id="i4-17-metrics-edge", viewpoint="I4-17", kind="値",
            "periods_per_year": 525600.0},
     expect={"metrics": metrics_of([50.0, 30.0], [6000.0, 6000.0, 6000.0], 0.0, 525600.0)}, judge={"metrics": True})
 _W17 = ("fills", "pnls", "equity", "metrics")
-_TR17 = [trade(1, +1, 100.0, 0.0, 4, 104.0, 0.0)]
+_TR17 = [trade(2, +1, 100.0, 0.0, 5, 104.0, 0.0)]
 add(id="i4-17-sharpe-bar-seconds", viewpoint="I4-17", kind="値",
     what="1 時間足のバックテストのシャープが、足の頻度で年率化される(1 年 = 8760 本)か",
-    how="SW の足(1 時間足)、費用 0・持ち越し 0。BUY@0 → 足 1 の 100、SELL@3 → 足 4 の 104。資産の推移は R-A の式、シャープは M-5 で "
+    how="SW の足(1 時間足)、費用 0・持ち越し 0。BUY@1 → 足 2 の 100、SELL@4 → 足 5 の 104。資産の推移は R-A の式、シャープは M-5 で "
         "1 年の本数 = 365 x 86400 / 3600 = 8760。",
-    input=bars_input(SW, [(0, "BUY"), (3, "SELL")], cfg(), bar_seconds=3600, want=_W17),
+    input=bars_input(SW, [(1, "BUY"), (4, "SELL")], cfg(), bar_seconds=3600, want=_W17),
     expect=full_expect(SW, _TR17, cfg(), 3600, _W17), judge=J(*_W17))
 add(id="i4-17-two-models", viewpoint="I4-17", kind="能力",
     what="1 つの戦略の記述から、互換の出力(足の頻度を見ず 1 年 = 525600 本で年率化する既存の計算 L-2)と仕様の出力(M-5)の両方を出せるか",
     how="互換の答え = シャープの年率化だけ sqrt(525600)、ほかは同じ。仕様の答え = i4-17-sharpe-bar-seconds。",
-    input=bars_input(SW, [(0, "BUY"), (3, "SELL")], cfg(), bar_seconds=3600, want=_W17, model=["legacy", "spec"]),
+    input=bars_input(SW, [(1, "BUY"), (4, "SELL")], cfg(), bar_seconds=3600, want=_W17, model=["legacy", "spec"]),
     expect={"legacy": full_expect(SW, _TR17, cfg(), 3600, _W17, periods=525600.0),
             "spec": full_expect(SW, _TR17, cfg(), 3600, _W17)},
     judge={"legacy": J(*_W17), "spec": J(*_W17)})
@@ -811,6 +1262,182 @@ add(id="i4-18-refuse", viewpoint="I4-18", kind="能力",
     input={"op": "split", "bars": D10, "train_frac": 0.5, "val_frac": 0.3},
     expect={"splits": split_rows(10, 0.5, 0.3)}, judge={"splits": True},
     variant={"op": "split", "bars": D10, "train_frac": 0.6, "val_frac": 0.4})
+
+
+# --------------------------------------------------------------------------- the order within one bar (R-O1 / L-5)
+# One long position opened at bar 2's open 100 (taker: BUY@1; maker: BUY@1 places a limit at bar 1's close 100 and
+# bar 2's low 99.5 < 100 fills it), size 3000 / 100 = 30, no cost.  Bar 3 reaches no level.  Bar 4 is where two or
+# more exit events can happen (i4-r1-02): its open 101 lies strictly between the stop level 98 (2 %) and the
+# take-profit levels 102.5 (maker take-profit 2.5 %) and 103 (take-profit 3 %).  Every hand-placed close below is
+# checked against exit_events / winner / exit_fill by the scene-keeper's tests.
+_RO = [(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 101.5, 99.5, 101), (101, 102, 100, 101)]
+X_ALL = (101, 104, 97, 98)       # bar 4 reaches the stop (low 97 <= 98) and trades through 102.5 and 103 (high 104)
+X_UP = (101, 104, 100.5, 103.5)  # bar 4 trades through 102.5 and 103, not the stop
+OA = mk_bars(_RO + [X_ALL, (98, 98.5, 97.5, 98)])
+OU = mk_bars(_RO + [X_UP, (103.5, 104, 103, 103.5)])
+_WO = ("fills",)                    # no cost, no carry: the PnL follows from the fills (a tool without per-trade
+_WOM = ("fills", "missed_fills")     # PnLs is not stopped by a key the viewpoint does not need, i4-r1-05)
+
+
+def _long(xb, xp):
+    return [trade(2, +1, 100.0, 0.0, xb, xp, 0.0)]
+
+
+_C_O1 = cfg(stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-10-signal-first", viewpoint="I4-10", kind="値",
+    what="足 j の始値に待つ決済の合図(R-T1)があり、同じ足 j の範囲が逆指値・利確・maker の利確の水準に届くとき、合図が足 j の始値で"
+         "建玉を閉じ、その足の逆指値・利確は起きないか(始値は足の範囲より先: R-O1)",
+    how="OA の足、逆指値 2%(98)・利確 3%(103)・maker の利確 2.5%(102.5)、費用 0。BUY@1 → 足 2 の始値 100。SELL@3 は足 4 の始値に待つ"
+        "決済の合図。足 4 は始値 101・高値 104・安値 97 で、逆指値・利確・maker の利確の全部に届く。R-O1 で始値の合図が先 → 足 4 の始値 101 で"
+        "決済(taker)。損益 = (101 - 100) x 30 = 30。",
+    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O1, want=_WO),
+    expect=full_expect(OA, _long(4, 101.0), _C_O1, 60, _WO), judge=J(*_WO))
+_OS = mk_bars([(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 100.5, 98.5, 99), (99, 100, 98, 99),
+               (99, 103, 96, 102), (102, 102.5, 101.5, 102)])
+_C_O1S = cfg(stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5, allow_short=True)
+add(id="i4-10-signal-first-short", viewpoint="I4-10", kind="値",
+    what="売り建てでも、足 j の始値に待つ買い戻しの合図が、同じ足の範囲の逆指値・利確・maker の利確より先に足 j の始値で閉じるか",
+    how="_OS の足、ショート可、逆指値 2%(102)・利確 3%(97)・maker の利確 2.5%(97.5)。SELL@1 → 足 2 の始値 100 の売り建て。足 3 は高値 100・"
+        "安値 98 でどの水準にも届かない。BUY@3 は足 4 の始値に待つ買い戻し。足 4 は始値 99・高値 103(>= 102)・安値 96(< 97、< 97.5)。"
+        "R-O1 → 足 4 の始値 99 で買い戻す(同じ足で買い建て直さない、R-T3)。損益 = (100 - 99) x 30 = 30。",
+    input=bars_input(_OS, [(1, "SELL"), (3, "BUY")], _C_O1S, want=_WO),
+    expect=full_expect(_OS, [trade(2, -1, 100.0, 0.0, 4, 99.0, 0.0)], _C_O1S, 60, _WO), judge=J(*_WO))
+add(id="i4-10-signal-first-two-models", viewpoint="I4-10", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(待つ合図より範囲の逆指値を先に取り、合図を捨てる既存の計算 L-5)と仕様の出力(R-O1)の両方を出せるか",
+    how="i4-10-signal-first と同じ足と設定で、決済の合図を CLOSE@3 にした。互換の答え = 足 4 の逆指値 min(101, 98) = 98(L-5: 範囲の逆指値が先、"
+        "合図は捨てる)。仕様の答え = 足 4 の始値 101(R-O1)。",
+    input=bars_input(OA, [(1, "BUY"), (3, "CLOSE")], _C_O1, want=_WO, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(OA, _long(4, 98.0), _C_O1, 60, _WO), "spec": full_expect(OA, _long(4, 101.0), _C_O1, 60, _WO)},
+    judge={"legacy": J(*_WO), "spec": J(*_WO)})
+_C_O2 = cfg(stop_loss_pct=2.0, take_profit_pct=3.0)
+add(id="i4-10-stop-first-plain", viewpoint="I4-10", kind="値",
+    what="費用 0・手数料の率 1 つ・足 0 に合図なしで、1 本の足が逆指値と利確の両方に届くとき逆指値が先か(観点の本題だけを求める最小の場面)",
+    how="OA の足、逆指値 2%(98)・利確 3%(103)、費用 0。BUY@1 → 足 2 の始値 100。足 4 は安値 97 <= 98 かつ高値 104 > 103 → 逆指値が先"
+        "(R-P3)、値 = min(始値 101, 98) = 98。損益 = -2 x 30 = -60。",
+    input=bars_input(OA, [(1, "BUY")], _C_O2, want=_WO),
+    expect=full_expect(OA, _long(4, 98.0), _C_O2, 60, _WO), judge=J(*_WO))
+_C_O3 = cfg(take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-12-tp-before-maker-tp", viewpoint="I4-12", kind="値",
+    what="率の利確と maker の利確の両方を置き、1 本の足が両方の水準を厳密に通過するとき、率の利確が先か(R-O1 の範囲の中の順)",
+    how="OU の足、利確 3%(103)・maker の利確 2.5%(102.5)、費用 0。BUY@1 → 足 2 の始値 100。足 4 の高値 104 は 103 も 102.5 も厳密に通過"
+        "(安値 100.5 は逆指値なし)→ R-O1 で利確が先、水準 103 で約定。損益 = 3 x 30 = 90。",
+    input=bars_input(OU, [(1, "BUY")], _C_O3, want=_WO),
+    expect=full_expect(OU, _long(4, 103.0), _C_O3, 60, _WO), judge=J(*_WO))
+_OW = mk_bars([(100, 100.5, 99.5, 100), (100, 100.5, 99.5, 100), (100, 101.5, 99.5, 101), (101, 102, 99.2, 99.3),
+               (99.5, 104, 99, 103), (103, 103.5, 102.5, 103)])
+_C_O4 = cfg(stop_mode="wick_invalidation", stop_window_bars=2, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-11-wick-first", viewpoint="I4-11", kind="値",
+    what="構造的な逆指値の出口(前の足の終値が水準を割った次の足の始値)が、同じ足の待つ合図・利確・maker の利確より先か",
+    how="_OW の足、窓 N = 2、利確 3%(103)・maker の利確 2.5%(102.5)、費用 0。BUY@1 → 足 2 の始値 100。水準 = min(足 0・1 の安値 99.5, 99.5) = 99.5"
+        "(R-W1)。足 3 の終値 99.3 < 99.5 → 足 4 の始値で出る(R-W3)。足 4 には SELL@3 の合図も待ち、高値 104 は 103・102.5 を通過する。R-O1 で"
+        "構造的な逆指値が先 → 足 4 の始値 99.5(taker)。損益 = -0.5 x 30 = -15。",
+    input=bars_input(_OW, [(1, "BUY"), (3, "SELL")], _C_O4, want=_WO),
+    expect=full_expect(_OW, _long(4, 99.5), _C_O4, 60, _WO), judge=J(*_WO))
+_C_O11 = cfg(execution="maker", maker_timeout_bars=3, stop_mode="wick_invalidation", stop_window_bars=2)
+add(id="i4-11-wick-before-exit-limit", viewpoint="I4-11", kind="値",
+    what="maker の執行で、構造的な逆指値の出口が、同じ足で厳密に通過される待つ決済の指値より先か。捨てた指値を取り逃しに数えないか(R-M5)",
+    how="_OW の足、maker、寿命 3、窓 N = 2、費用 0。BUY@1 → 指値 100(足 1 の終値)、足 2 の安値 99.5 < 100 で 100 で建つ(R-M1)。水準 99.5(R-W1)。"
+        "SELL@3 → 決済の指値 99.3(足 3 の終値)を置く。足 4 は構造的な逆指値の出口(足 3 の終値 99.3 < 99.5)と、指値 99.3 の厳密な通過(高値 104)の"
+        "両方 → R-O1 で構造的な逆指値が先、足 4 の始値 99.5(taker)。指値は捨て、取り逃しは 0(R-M5)。",
+    input=bars_input(_OW, [(1, "BUY"), (3, "SELL")], _C_O11, want=_WOM),
+    expect=full_expect(_OW, _long(4, 99.5), _C_O11, 60, _WOM, missed=0), judge=J(*_WOM))
+_C_O5 = cfg(max_hold_bars=2, stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-13-stop-on-time-bar", viewpoint="I4-13", kind="値",
+    what="時間切れの足(足 b + N)で、範囲の逆指値が時間切れより先で、待つ合図・利確・maker の利確は起きないか(R-H3・R-O1)",
+    how="OA の足、N = 2、逆指値 2%・利確 3%・maker の利確 2.5%、費用 0。BUY@1 → 足 2 の始値 100、時間切れの足は 4。足 4 は SELL@3 の合図も待ち、"
+        "逆指値・利確・maker の利確の全部に届く。R-H3 で逆指値が先 → min(101, 98) = 98。損益 = -60。",
+    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O5, want=_WO),
+    expect=full_expect(OA, _long(4, 98.0), _C_O5, 60, _WO), judge=J(*_WO))
+_C_O6 = cfg(max_hold_bars=2, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-13-time-first", viewpoint="I4-13", kind="値",
+    what="時間切れの足で逆指値に届かないとき、時間切れが足の始値で閉じ、待つ合図・利確・maker の利確は起きないか(R-H1〜R-H3・R-O1)",
+    how="OU の足、N = 2、利確 3%・maker の利確 2.5%、費用 0。BUY@1 → 足 2 の始値 100。足 4 に SELL@3 の合図が待ち、高値 104 は 103・102.5 を"
+        "通過するが、R-O1 で時間切れが先 → 足 4 の始値 101(taker)。損益 = 30。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O6, want=_WO),
+    expect=full_expect(OU, _long(4, 101.0), _C_O6, 60, _WO), judge=J(*_WO))
+add(id="i4-13-time-first-two-models", viewpoint="I4-13", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(同じ足で利確を時間切れ・待つ合図より先に取る既存の計算 L-1・L-5)と仕様の出力(R-O1)の両方を出せるか",
+    how="i4-13-time-first と同じ入力。互換の答え = 足 4 の利確 103(L-1: 範囲の利確が時間切れより先。率の利確が maker の利確より先)。"
+        "仕様の答え = 足 4 の始値 101。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O6, want=_WO, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(OU, _long(4, 103.0), _C_O6, 60, _WO), "spec": full_expect(OU, _long(4, 101.0), _C_O6, 60, _WO)},
+    judge={"legacy": J(*_WO), "spec": J(*_WO)})
+_C_M3 = cfg(max_hold_bars=2, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-13-time-maker-tp-two-models", viewpoint="I4-13", kind="能力",
+    what="1 つの戦略の記述から、互換の出力(同じ足で maker の利確を時間切れ・待つ合図より先に取る既存の計算 L-1・L-5)と仕様の出力(R-O1)の両方を出せるか",
+    how="OU の足、N = 2、maker の利確 2.5%(102.5)、費用 0、BUY@1・SELL@3。互換の答え = 足 4 の maker の利確 102.5。仕様の答え = 足 4 の始値 101。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_M3, want=_WO, model=["legacy", "spec"]),
+    expect={"legacy": full_expect(OU, _long(4, 102.5), _C_M3, 60, _WO), "spec": full_expect(OU, _long(4, 101.0), _C_M3, 60, _WO)},
+    judge={"legacy": J(*_WO), "spec": J(*_WO)})
+_C_O10 = cfg(execution="maker", maker_timeout_bars=3, max_hold_bars=2)
+add(id="i4-13-time-before-exit-limit", viewpoint="I4-13", kind="値",
+    what="maker の執行で、時間切れが、同じ足で厳密に通過される待つ決済の指値より先か。捨てた指値を取り逃しに数えないか(R-M5)",
+    how="OU の足、maker、寿命 3、N = 2、費用 0。BUY@1 → 指値 100、足 2 で 100 で建つ(R-M1)。SELL@3 → 決済の指値 101(足 3 の終値)。足 4 は"
+        "時間切れの足で、高値 104 > 101 で指値も通過される。R-O1 で時間切れが先 → 足 4 の始値 101(taker)。取り逃し 0(R-M5)。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O10, want=_WOM),
+    expect=full_expect(OU, _long(4, 101.0), _C_O10, 60, _WOM, missed=0), judge=J(*_WOM))
+_C_O12 = cfg(execution="maker", maker_timeout_bars=3, max_hold_bars=2, stop_loss_pct=2.0)
+add(id="i4-13-stop-on-time-bar-maker", viewpoint="I4-13", kind="値",
+    what="maker の執行の時間切れの足で、範囲の逆指値が時間切れと待つ決済の指値より先か",
+    how="OA の足、maker、寿命 3、N = 2、逆指値 2%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 は時間切れの足で、安値 97 <= 98・"
+        "高値 104 > 101。R-H3 で逆指値が先 → min(101, 98) = 98(taker)。取り逃し 0(R-M5)。",
+    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O12, want=_WOM),
+    expect=full_expect(OA, _long(4, 98.0), _C_O12, 60, _WOM, missed=0), judge=J(*_WOM))
+_C_O7 = cfg(execution="maker", maker_timeout_bars=3, stop_loss_pct=2.0, take_profit_pct=3.0, exit_execution="maker_tp",
+            maker_tp_pct=2.5)
+add(id="i4-16-stop-before-exit-limit", viewpoint="I4-16", kind="値",
+    what="maker の執行で、待つ決済の指値と逆指値・利確・maker の利確が同じ足に届くとき、逆指値が先で、捨てた指値は取り逃しに数えないか(R-O1・R-M5)",
+    how="OA の足、maker、寿命 3、逆指値 2%・利確 3%・maker の利確 2.5%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 は指値の通過"
+        "(高値 104 > 101)・逆指値(安値 97)・利確・maker の利確の全部 → 逆指値が先、min(101, 98) = 98。取り逃し 0(R-M5)。",
+    input=bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O7, want=_WOM),
+    expect=full_expect(OA, _long(4, 98.0), _C_O7, 60, _WOM, missed=0), judge=J(*_WOM))
+_C_O8 = cfg(execution="maker", maker_timeout_bars=3, take_profit_pct=3.0, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-16-tp-before-exit-limit", viewpoint="I4-16", kind="値",
+    what="maker の執行で、待つ決済の指値・利確・maker の利確が同じ足で通過されるとき、利確が先で、捨てた指値は取り逃しに数えないか",
+    how="OU の足、maker、寿命 3、利確 3%・maker の利確 2.5%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 の高値 104 は 101・102.5・103 を"
+        "全部通過 → R-O1 で利確が先、水準 103(maker)。取り逃し 0(R-M5)。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O8, want=_WOM),
+    expect=full_expect(OU, _long(4, 103.0), _C_O8, 60, _WOM, missed=0), judge=J(*_WOM))
+_C_O9 = cfg(execution="maker", maker_timeout_bars=3, exit_execution="maker_tp", maker_tp_pct=2.5)
+add(id="i4-16-maker-tp-before-exit-limit", viewpoint="I4-16", kind="値",
+    what="maker の執行で、待つ決済の指値と maker の利確が同じ足で通過されるとき、maker の利確が先で、捨てた指値は取り逃しに数えないか",
+    how="OU の足、maker、寿命 3、maker の利確 2.5%、費用 0。足 2 で 100 で建ち、SELL@3 → 決済の指値 101。足 4 の高値 104 は 101 も 102.5 も通過"
+        " → R-O1 で maker の利確が先、水準 102.5。取り逃し 0(R-M5)。",
+    input=bars_input(OU, [(1, "BUY"), (3, "SELL")], _C_O9, want=_WOM),
+    expect=full_expect(OU, _long(4, 102.5), _C_O9, 60, _WOM, missed=0), judge=J(*_WOM))
+
+
+# --------------------------------------------------------------------------- I4-3 at the core and reference granularity
+def _delivery_expect(bars):
+    """C-1: what the strategy is handed grows by one bar per delivered bar and is always exactly the bars delivered
+    so far: its i-th view (i4_judge.views) has seen i + 1 bars, the last of which is bar i."""
+    return {"calls": [{"seen": i + 1, "last_t_ns": b["t_ns"], "last_close": b["close"]} for i, b in enumerate(bars)]}
+
+
+DV = mk_bars([(100, 101, 99, 100.5), (100.5, 102, 100, 101.5), (101.5, 101.8, 99.5, 99.8), (99.8, 100.4, 98.9, 100.1),
+              (100.1, 100.9, 99.9, 100.7)])
+add(id="i4-3-core-delivery", viewpoint="I4-3", kind="値",
+    what="核の粒度の正解つきの場面: 足を 1 本ずつ届けたとき、戦略に見える物が足ごとに 1 本ずつ増え、どの時点でもそれまでに届いた足だけ(数・"
+         "最後の足の開始の時刻・終値)か(先の足が見えない・どの足も飛ばされない)",
+    how="C-1(戦略は受け取れた時刻 <= 今の事象しか見ない = 委任文 §2 項目 0 の行)。DV の 5 本(60 秒足)で、見えた物の i 番目は 足 0〜i の i + 1 本で、"
+        "最後の足は足 i(開始 T0 + 60 i 秒、終値は足 i の終値)。",
+    input={"op": "delivery", "bars": DV, "bar_seconds": 60, "want": ["calls"]},
+    expect=_delivery_expect(DV), judge={"calls": True})
+DG = [b for i, b in enumerate(mk_bars([(100, 101, 99, 100.5), (100.5, 102, 100, 101.5), (0, 0, 0, 0), (101.5, 101.8, 99.5, 99.8),
+                                       (99.8, 100.4, 98.9, 100.1)])) if i != 2]
+add(id="i4-3-core-delivery-gap", viewpoint="I4-3", kind="値",
+    what="核の粒度: 足の時刻に抜け(1 本分の空き)があるとき、抜けた足を作らず、届いた足だけを届いた順に渡すか",
+    how="C-1。60 秒足で開始 T0・T0 + 60 秒・T0 + 180 秒・T0 + 240 秒の 4 本(T0 + 120 秒の足は無い)。見えた物は 4 通りで、i 番目は i + 1 本を見て、"
+        "最後の足の開始は入力の足 i の開始(空いた時刻に足を作らない)。",
+    input={"op": "delivery", "bars": DG, "bar_seconds": 60, "want": ["calls"]},
+    expect=_delivery_expect(DG), judge={"calls": True})
+add(id="i4-3-ref-signal-first", viewpoint="I4-3", kind="値",
+    what="参照実装の粒度の正解つきの場面: i4-10-signal-first の入力(始値の合図と範囲の逆指値・利確が同じ足)を本体と参照実装の両方で回し、"
+         "両方が正解と一致するか",
+    how="i4-10-signal-first と同じ手の計算(R-O1)。本体と参照実装の両方にこの同じ正解を当てる。",
+    input={**bars_input(OA, [(1, "BUY"), (3, "SELL")], _C_O1, want=_WO), "reference": True},
+    expect={"engine": full_expect(OA, _long(4, 101.0), _C_O1, 60, _WO), "reference": full_expect(OA, _long(4, 101.0), _C_O1, 60, _WO)},
+    judge={"engine": J(*_WO), "reference": J(*_WO)})
 
 
 # --------------------------------------------------------------------------- viewpoints that are not scenes

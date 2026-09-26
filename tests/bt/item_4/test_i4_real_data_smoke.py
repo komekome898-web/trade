@@ -3,11 +3,20 @@
 1 日、JPX と FX の 1 分足)を新エンジンに通し、実行記録・指標の書き出し・ダッシュボードまで」).
 
 Purpose 動作確認, the fixed time-only procedure only (委任文 §4): per
-instrument, buy 1 unit at hh:00 and sell at hh:05 for two hours. The test
-asserts the run's STRUCTURE only -- it reaches the run record, the exports
-and the dashboard's 10 tabs, every tab carries the 動作確認 banner, every
-export carries the purpose, every scheduled order is answered -- and never a
-number the data produced (委任文 §4: 実データから出た数値は ... 入れない).
+instrument, two round trips in one hour hh of DAYS: buy 1 unit at hh:20,
+sell at hh:25, buy at hh:50, sell at hh:55 (`schedule()`). Every time lies
+inside every file's time span: the FX event-tick file covers 12:15:01 to
+13:14:59 UTC of 2026-08-07 only (its first and last `ts_utc`, read with
+`zcat ... | sed -n 2p` / `tail -1`); until round 2 the second round trip
+was an hour later, outside that span, and its buy stayed OPEN -- the check
+then accepted OPEN, which hid it (critic i4-r1-14). The test asserts the run's
+STRUCTURE only -- it reaches the run record, the exports and the dashboard's
+10 tabs, every tab carries the 動作確認 banner, every export carries the
+purpose, every dataset is recorded as real (decided from the data: the files
+lie in this environment's market-data folders), every scheduled order ends
+FILLED with its whole quantity (an order left OPEN / ACKED / unanswered
+fails the test) -- and never a number the data produced (委任文 §4:
+実データから出た数値は ... 入れない).
 
 Binance aggTrades: the spot BTCUSDT day files this item names are not in
 this environment -- tried `find backtest_data -iname "*aggTrades*" -type f`:
@@ -105,9 +114,9 @@ DAYS = {"bf": (2026, 9, 21, 0, 0), "fx_tick": (2026, 8, 7, 12, 0), "jpx": (2026,
 def schedule():
     orders = []
     for name, (y, mo, d, h, _) in DAYS.items():
-        for k in range(2):
-            orders += [{"t_ns": t(y, mo, d, h + k, 20), "side": "buy", "qty": 1.0, "instrument": name},
-                       {"t_ns": t(y, mo, d, h + k, 25), "side": "sell", "qty": 1.0, "instrument": name}]
+        for m in (20, 50):
+            orders += [{"t_ns": t(y, mo, d, h, m), "side": "buy", "qty": 1.0, "instrument": name},
+                       {"t_ns": t(y, mo, d, h, m + 5), "side": "sell", "qty": 1.0, "instrument": name}]
     return {"kind": "schedule", "orders": orders}
 
 
@@ -133,9 +142,13 @@ def test_real_data_reaches_record_exports_and_dashboard_under_the_smoke_purpose(
     view = run_view(runs, res.run_id)
     assert [x["label"] for x in view["tabs"]] == list(TABS)
     assert all(WARNING in x["text"] for x in view["tabs"])
+    assert {d["origin"] for d in res.record["data"]} == {"real"}
+    assert {d["origin_evidence"]["by"] for d in res.record["data"]} == {"position"}
     for name, r in res.instruments.items():
         assert len(r.orders) == 4, name
-        assert all(o["state"] in ("FILLED", "OPEN", "ACKED") or "FILL" in o["state"] for o in r.orders), name
+        for o in r.orders:
+            assert o["state"] == "FILLED" and o["filled"] == o["qty"], (name, o["id"], o["state"])
+        assert len(r.fills) == 4, name
         assert all(v > 0 for v in r.events_read.values()), name
 
 

@@ -25,13 +25,23 @@ then notices, then timers):
 
   * bar i reaches the venue at its close. The venue closes the books of bar
     i-1 (its equity), accrues the carry, and decides the ONE thing bar i does
-    to the position, in this order: structural wick stop (on bar i-1's close,
-    filled at bar i's open) / fixed stop, take-profit, maker take-profit (on
-    bar i's range) / time exit (at bar i's open) / the pending signal (taker:
-    at bar i's open; maker: its limit if bar i trades strictly through it).
-    An exit drops the pending signal. The fill is a FORCED order the account
-    socket returns (the venue acting on its own; core FORCED_ID_PREFIX), so
-    every fill is a core fill with its fee from the cost model.
+    to the position. The two rule sets order it differently (`signal_at_open`):
+      legacy (the old engine's order): structural wick stop (on bar i-1's
+        close, filled at bar i's open) / fixed stop, take-profit, maker
+        take-profit (on bar i's range) / time exit (at bar i's open) / the
+        pending signal (taker: at bar i's open; maker: its limit if bar i
+        trades strictly through it). Any exit drops the pending signal.
+      spec (the time order inside the bar, R-T1: a bar's open comes before
+        the rest of its range): AT THE OPEN -- the structural wick stop and
+        the time exit (both decided by information older than bar i; they
+        drop the pending signal, R-W3 / R-H2; on the time-exit bar the stop
+        is looked at first, R-H3), else the pending taker signal (R-T1);
+        THEN, only if the position lives on through the open (no signal, or
+        a signal the same way as the position), bar i's RANGE -- the fixed
+        stop, take-profit, maker take-profit, then a pending maker limit.
+    The fill is a FORCED order the account socket returns (the venue acting
+    on its own; core FORCED_ID_PREFIX), so every fill is a core fill with its
+    fee from the cost model.
   * the strategy receives bar i, then the notices of bar i's fill, then its
     own timer set for the same instant: it decides in the timer, knowing its
     position after bar i. A signal order reaches the venue at bar i's close;
@@ -45,8 +55,10 @@ Two rule sets are named (`RULES`); every choice is a field of `BarRules`:
   legacy   the old engine's computation, bit for bit (tests/bt/compat/ and the
            golden files hold the proof).
   spec     the stated rules (tests/bt/battery/item_4/DEFINITIONS.md
-           「足の模型の仕様」): on the time-exit bar only the stop is looked at
-           before the time exit (a take-profit there is not taken); the
+           「足の模型の仕様」): a signal pending for bar i's open acts at the
+           open, before bar i's range (R-T1); on the time-exit bar only the
+           stop is looked at before the time exit (a take-profit there is not
+           taken); the
            stop / take-profit levels are computed and compared on the written
            decimal values of the entry price and the percentage; the Sharpe
            ratio is annualised by the bar frequency (365 * 86400 / bar
@@ -92,6 +104,7 @@ class BarRules:
     level_arithmetic: str  # "binary": float products; "decimal": the written decimal values
     sharpe_periods: str  # "fixed_525600" | "bar_frequency"
     negative_carry: str  # "skip" (old engine) | "charge"
+    signal_at_open: bool  # does a pending taker signal act at the bar's open, before the bar's range exits?
 
     def __post_init__(self) -> None:
         if self.level_arithmetic not in ("binary", "decimal"):
@@ -102,6 +115,8 @@ class BarRules:
             raise BarModelError(f"negative_carry must be skip or charge, got {self.negative_carry!r}")
         if type(self.tp_before_time_exit) is not bool:
             raise BarModelError("tp_before_time_exit must be a bool")
+        if type(self.signal_at_open) is not bool:
+            raise BarModelError("signal_at_open must be a bool")
 
     def periods_per_year(self, bar_seconds: float) -> float:
         if self.sharpe_periods == "fixed_525600":
@@ -110,9 +125,9 @@ class BarRules:
 
 
 LEGACY = BarRules("legacy", tp_before_time_exit=True, level_arithmetic="binary", sharpe_periods="fixed_525600",
-                  negative_carry="skip")
+                  negative_carry="skip", signal_at_open=False)
 SPEC = BarRules("spec", tp_before_time_exit=False, level_arithmetic="decimal", sharpe_periods="bar_frequency",
-                negative_carry="charge")
+                negative_carry="charge", signal_at_open=True)
 RULES = {"legacy": LEGACY, "spec": SPEC}
 
 
@@ -385,7 +400,20 @@ class BarVenue:
 
         time_due = (o.max_hold_bars is not None and self.position != 0.0 and i - self.entry_bar >= o.max_hold_bars)
         mtp_pct = o.maker_tp_pct if o.exit_execution == "maker_tp" else None
-        # 0.5) fixed stop / take-profit / maker take-profit, intrabar; the stop first
+        # 0.45) spec (signal_at_open): the pending taker signal acts at bar i's open, before bar i's range. Not when
+        # an exit decided by older information (the wick stop above, the time exit) takes the open: those drop it.
+        signal_done = False
+        if self.r.signal_at_open and plan is None and not time_due and o.execution == "taker" \
+                and self.pending_taker is not None and i > 0:
+            p = self.pending_taker
+            ref = self.opens[i]
+            price = c.buy_price(ref) if p.side == "BUY" else c.sell_price(ref)
+            plan = self._execute_plan(p.side, price, "taker", p.decision_bar)
+            reports.append(Canceled(p.coid, "executed" if plan is not None else "no_action"))
+            self.pending_taker = None
+            signal_done = True
+        # 0.5) fixed stop / take-profit / maker take-profit, intrabar; the stop first. After an executed signal
+        # (spec) the position was closed at the open or opened at this bar (entry bar: no range exit, R-P2).
         if plan is None and self.position != 0.0 and i > 0 and i > self.entry_bar \
                 and (o.stop_loss_pct or o.take_profit_pct or mtp_pct):
             long = self.position > 0
@@ -419,7 +447,9 @@ class BarVenue:
             price = c.sell_price(ref) if long else c.buy_price(ref)
             plan = _Plan("close", "sell" if long else "buy", price, abs(self.position), "taker", "time_exit")
 
-        if plan is not None:
+        if signal_done:
+            pass  # spec: the taker signal was consumed at the open (executed or no_action); a range exit may follow
+        elif plan is not None:
             # an exit drops whatever signal was pending for this bar
             for p in (self.pending_taker, self.pending_limit):
                 if p is not None:

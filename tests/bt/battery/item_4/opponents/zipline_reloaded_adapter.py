@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import sys
 import tempfile
 import warnings
@@ -69,6 +70,58 @@ class ZiplineReloaded(Base):
         if "metrics" in w:
             out.append(self.METRICS)
         return out
+
+    def delivery(self, inp):
+        """What zipline hands handle_data: `data` (BarData), whose history(asset, "close", k, "1m") gives the bars up
+        to the current minute.  The bundle is written as in bars (a scene bar's row is labelled with its end minute,
+        mapped back to the bar's start here)."""
+        from _i4_base import ns_of
+        bars = inp["bars"]
+        n = len(bars)
+        if int(inp["bar_seconds"]) != 60:
+            raise NotExpressible(f"{TOOL}: 1 分以外の足を渡す口を探したが無い(bundle は minute と daily だけ)")
+        t0 = pd.Timestamp(bars[0]["t_ns"], unit="ns")
+        work = tempfile.mkdtemp(prefix="i4_r2-1_scenekeeper_zl_", dir=os.environ.get("I4_TMP"))
+        os.environ["ZIPLINE_ROOT"] = os.path.join(work, "root")
+        os.makedirs(os.path.join(work, "csv", "minute"))
+        idx = pd.DatetimeIndex([pd.Timestamp(b["t_ns"], unit="ns") + pd.Timedelta(seconds=60) for b in bars], name="date")
+        pd.DataFrame({"open": [b["open"] for b in bars], "high": [b["high"] for b in bars],
+                      "low": [b["low"] for b in bars], "close": [b["close"] for b in bars],
+                      "volume": [1e9] * n, "dividend": 0.0, "split": 1.0}, index=idx).to_csv(
+            os.path.join(work, "csv", "minute", "X.csv"))
+        from zipline import run_algorithm
+        from zipline.api import sid
+        from zipline.data.bundles import ingest, register
+        from zipline.data.bundles.csvdir import csvdir_equities
+        from zipline.utils.calendar_utils import get_calendar
+        day = t0.normalize()
+        end_day = (idx[-1] - pd.Timedelta(seconds=1)).normalize()
+        register("scene", csvdir_equities(["minute"], os.path.join(work, "csv")), calendar_name="24/7",
+                 start_session=day, end_session=end_day, minutes_per_day=1440)
+        ingest("scene", show_progress=False)
+        calls = []
+
+        def initialize(ctx):
+            ctx.a = sid(0)
+
+        from zipline.api import get_datetime
+
+        def handle_data(ctx, data):
+            # the window may not reach before the session's first minute (HistoryWindowStartsBeforeData): size it
+            # by the minutes elapsed on the tool's clock
+            m = int((get_datetime().tz_localize(None) - day) / pd.Timedelta(minutes=1))  # the first minute row is day + 1 min
+            h = data.history(ctx.a, "close", max(1, m), "1m").dropna()
+            if len(h):
+                calls.append({"seen": len(h), "last_t_ns": ns_of(pd.Timestamp(h.index[-1])) - 60 * 10**9,
+                              "last_close": float(h.iloc[-1])})
+            else:
+                calls.append({"seen": 0, "last_t_ns": None, "last_close": None})
+        try:
+            run_algorithm(start=day, end=end_day, initialize=initialize, handle_data=handle_data, capital_base=6000.0,
+                          data_frequency="minute", bundle="scene", trading_calendar=get_calendar("24/7"))
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+        return {"calls": calls[:50]}  # (the tool calls every calendar minute; the first 50 calls are enough to judge)
 
     def bars(self, inp):
         cfg = inp["config"]

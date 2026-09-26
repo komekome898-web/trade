@@ -54,6 +54,8 @@ class RuleBroker(Base):
     LIMIT_TYPES = True   # the tool has resting limit orders
     STOP_TYPES = True    # the tool has resting stop orders
     SKIP_SIGNAL_BARS: tuple = ()  # e.g. ("first", "last"): bars where the tool does not call the strategy
+    DELIVERY = ("再現は約定の規則だけで、道具の事象の流れ(戦略を呼ぶ時と戦略に渡す物)は書き写していない。"
+                "場面の戦略はこの共通の足の輪(_repro_bars.py)で回り、道具の物ではない")
 
     # ---- hooks with neutral defaults (a repro file overrides what its tool does) ----
     def limit_px(self, o, b):  # pragma: no cover - set per repro

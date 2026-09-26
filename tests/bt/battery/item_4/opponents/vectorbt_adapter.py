@@ -72,6 +72,32 @@ class VectorbtAdapter(Base):
             out.append(self.METRICS)
         return out
 
+    def delivery(self, inp):
+        """What vectorbt hands the order function of Portfolio.from_order_func at each bar: the OrderContext, whose
+        `close` is the whole close array (every bar, not only those up to c.i) and `i` the current row.  The record
+        is the array the context holds (its length, its last row) -- a row position is mapped to its bar's time."""
+        from numba import njit
+        from vectorbt.portfolio.enums import NoOrder
+        bars = inp["bars"]
+        n = len(bars)
+        close = pd.DataFrame({"X": [float(b["close"]) for b in bars]})  # 2-d: the context's close is rows x columns
+        rec = np.full((n, 2), np.nan)
+
+        @njit
+        def order_func_nb(c, rec):
+            m = c.close.shape[0]
+            rec[c.i, 0] = m
+            rec[c.i, 1] = c.close[m - 1, c.col]
+            return NoOrder
+
+        vbt.Portfolio.from_order_func(close, order_func_nb, rec, init_cash=6000.0)
+        calls = []
+        for i in range(n):
+            if rec[i, 0] == rec[i, 0]:
+                m = int(rec[i, 0])
+                calls.append({"seen": m, "last_t_ns": int(bars[m - 1]["t_ns"]), "last_close": float(rec[i, 1])})
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         df = bars_frame(inp, pd)

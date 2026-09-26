@@ -101,6 +101,16 @@ class ZiplimeAdapter(Base):
             out.append("足の幅: 1 分・1 時間の emission だけを回す")
         return out
 
+    def delivery(self, inp):
+        """What ziplime hands handle_data: `data` (BarData), whose async history(assets, bar_count, frequency, fields)
+        gives the bars up to the simulation's now.  Runs the same simulation as bars with no signal and records instead
+        of trading."""
+        from _i4_base import _plain_config
+        calls = []
+        self.bars({"op": "bars", "bars": inp["bars"], "bar_seconds": inp["bar_seconds"], "signals": [],
+                   "config": _plain_config(), "want": [], "_delivery_calls": calls})
+        return {"calls": calls[:50]}  # (the tool's clock steps through the whole day; 50 calls are enough to judge)
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]
@@ -187,6 +197,19 @@ class ZiplimeAdapter(Base):
                 return o
 
             async def hd(ctx, data_):
+                rec_calls = inp.get("_delivery_calls")
+                if rec_calls is not None:  # op "delivery": record what the tool hands (data_.history up to now)
+                    now = ctx.get_datetime().astimezone(D.timezone.utc)
+                    m = int((now - first) / step) + 1
+                    h = await data_.history([ctx.a], bar_count=max(1, m), frequency=step, fields=["close"])
+                    rows = [r for r in h.iter_rows(named=True) if r.get("close") is not None]
+                    if rows:
+                        lt = rows[-1]["date"]
+                        rec_calls.append({"seen": len(rows), "last_t_ns": int(lt.timestamp()) * 10**9,
+                                          "last_close": float(rows[-1]["close"])})
+                    else:
+                        rec_calls.append({"seen": 0, "last_t_ns": None, "last_close": None})
+                    return
                 k = t2k.get(ctx.get_datetime().astimezone(D.timezone.utc))
                 if k is None:
                     return

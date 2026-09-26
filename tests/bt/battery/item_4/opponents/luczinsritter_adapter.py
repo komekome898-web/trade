@@ -49,6 +49,8 @@ class LuczinsritterAdapter(Base):
     METRICS = "12 の指標を出す口を探したが無い(tradeanalysis.py は trade_performance の表から別の指標を計算する)"
     SPLIT = "行の割合で分ける口を探したが無い"
     PIPELINE = "入力は get_data の OHLCV の表 1 本(yfinance の取得)で、宣言でファイルを読む口・約定/気配/板・実行記録・書き出し・ダッシュボードが無い"
+    DELIVERY = ("道具の EventBased は足ごとに戦略を呼ぶ口を持たない: 足の輪は使い手が self.data の行を for 文で回して "
+                "enter_long / enter_short / close_position を呼ぶ形(この adapter の bars の for 文)で、道具が戦略に足を渡す口を探したが無い")
 
     def extra_gate(self, inp):
         out = []

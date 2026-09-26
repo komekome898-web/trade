@@ -26,6 +26,13 @@ op "bars"      -- a bar backtest.  Keys:
     reference   true -> return {"engine": obs, "reference": obs}: the same input through the
                 target's main engine AND through an independent reference implementation
     want        subset of ["fills", "pnls", "equity", "metrics", "missed_fills"]
+op "delivery"  -- bars, bar_seconds, want ["calls"]: the core granularity (I4-3).  The bars are handed
+                  to the target's event loop one by one (bar i starts at t_ns and is complete at
+                  t_ns + bar_seconds); the strategy does nothing but record, at each call, what the
+                  target handed it -> {"calls": [{"seen": number of bars it can see, "last_t_ns":
+                  the start time of the last bar it can see (UTC ns), "last_close": its close}]}.
+                  Read what the TARGET handed the strategy (its data object / history), never the
+                  adapter's own copy of the input.
 op "metrics"   -- trade_pnls, equity, total_fees, periods_per_year -> {"metrics": {...}}
 op "split"     -- bars, train_frac, val_frac -> {"splits": {"training": [row positions],
                   "validation": [...], "out_of_sample": [...]}}
@@ -41,13 +48,17 @@ Observation forms (op "bars")
     metrics      {"total_pnl_jpy", "num_trades", "win_rate_pct", "profit_factor", "sharpe_ratio",
                   "max_drawdown_pct", "max_consecutive_losses", "avg_win_jpy", "avg_loss_jpy",
                   "risk_reward_ratio", "expectancy_per_trade_jpy", "total_fees_jpy"}
-    missed_fills int      resting orders that ended unfilled (DEFINITIONS.md「足の模型の仕様」)
+    missed_fills int      resting orders counted as missed by R-M2 (timeout) and R-M3 (replaced by an
+                          opposite signal) only; a limit dropped because the position closed (R-M5) or
+                          still resting at the end is not counted (DEFINITIONS.md「足の模型の仕様」)
 
 Rules for every adapter (the scene-keeper's fixed mouth; 委任文 §3):
 - Translate the scene's declarative input into the target's own PUBLIC options and API.
   The strategy (`signals`) is user code in every target and may be written on top of the
   target's strategy API.  Never compute a value the target did not produce, never read the
   expected answer (i4_scenes.expected / scene["expect"]), never special-case a scene id.
+- A scene with a variant may carry ``more_controls``: further inputs handed exactly like ``input``
+  (their expected answers stay with the runner).
 - ``Refused``: the TARGET refused (raised, or returned an explicit error) -- 「対応なし」.
 - ``NotExpressible``: the ADAPTER found no public way to hand this input (or one of its
   options) to the target -- 「結果なし」 with the reason (what was looked for, where).

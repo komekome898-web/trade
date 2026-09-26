@@ -1,0 +1,2 @@
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/item_4/test_i4_r2_signal_at_open_grid.py tests/bt/item_4/test_i4_r2_origin_from_data_grid.py tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py tests/bt/item_4/test_i4_spec_vs_reference_grid.py tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py tests/bt/critic/item_4/test_i4r1_compat_decimal_prices.py   (直したあと)
+215 passed in 91.89s (0:01:31)

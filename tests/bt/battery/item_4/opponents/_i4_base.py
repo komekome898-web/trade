@@ -79,6 +79,7 @@ class Base:
     PIPELINE = "?"
     METRICS = None   # a reason string when op "metrics" is not expressible
     SPLIT = None     # a reason string when op "split" is not expressible
+    DELIVERY = "戦略に届く足を 1 本ずつ記録する口(足ごとに呼ばれる戦略)をこの道具に探したが無い"
 
     def gate(self, inp):
         cfg = inp["config"]
@@ -112,7 +113,18 @@ class Base:
             return self.split(inp)
         if op == "pipeline":
             raise NotExpressible(f"{self.TOOL}: {self.PIPELINE}")
+        if op == "delivery":
+            # a tool whose bar path is not expressible at all says why (its gate names the tool's own mouths)
+            plain = {"op": "bars", "bars": inp["bars"], "bar_seconds": inp["bar_seconds"], "signals": [],
+                     "config": _plain_config(), "want": []}
+            self.gate(plain)
+            return self.delivery(inp)
         raise NotExpressible(f"{self.TOOL}: op {op!r} に当たる口が無い")
+
+    def delivery(self, inp):
+        """op "delivery" (the core granularity): the calls of a strategy that records what the TOOL hands it at each
+        call.  An adapter of a tool with a per-bar strategy callback overrides this; DELIVERY is the reason otherwise."""
+        raise NotExpressible(f"{self.TOOL}: {self.DELIVERY}")
 
     def bars(self, inp):  # pragma: no cover - overridden
         raise NotExpressible(f"{self.TOOL}: 足の口が無い")
@@ -122,6 +134,28 @@ class Base:
 
     def split(self, inp):  # pragma: no cover
         raise NotExpressible(f"{self.TOOL}: 分け方の口が無い")
+
+
+def _plain_config() -> dict:
+    return {"initial_equity": 6000.0, "order_notional": 3000.0,
+            "costs": {"taker_fee_pct": 0.0, "maker_fee_pct": 0.0, "slippage_pct": 0.0, "spread_pct": 0.0},
+            "execution": "taker", "maker_timeout_bars": 5, "allow_short": False, "swap_daily_pct": 0.0,
+            "stop_loss_pct": None, "take_profit_pct": None, "max_hold_bars": None, "exit_execution": "signal",
+            "maker_tp_pct": None, "entry_mask": None, "entry_sides": "both", "stop_mode": "fixed",
+            "stop_window_bars": None}
+
+
+def ns_of(dt) -> int:
+    """UTC ns of a naive-UTC datetime / pandas Timestamp handed back by a tool (to_dt's inverse)."""
+    import datetime as _D
+    if hasattr(dt, "value") and not isinstance(dt, _D.datetime):
+        return int(dt.value)
+    if hasattr(dt, "to_pydatetime"):
+        dt = dt.to_pydatetime()
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(_D.timezone.utc).replace(tzinfo=None)
+    d = dt - _D.datetime(1970, 1, 1)
+    return (d.days * 86400 + d.seconds) * 1_000_000_000 + d.microseconds * 1000
 
 
 def want(inp, obs_full: dict) -> dict:

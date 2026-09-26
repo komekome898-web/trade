@@ -29,6 +29,8 @@ class PmBacktesterAdapter(Base):
     PIPELINE = "入力は予測市場の市場ごとの snapshot で、足・約定・気配・板のファイルを宣言で読む口・目的つきの書き出し・ダッシュボードが無い"
     METRICS = "外から与えた決済ごとの損益と資産の列から 12 の指標を出す口を探したが無い"
     SPLIT = "行の割合で分ける口を探したが無い"
+    DELIVERY = ("道具の模擬は予測市場の snapshot(値は確率 [0, 1])を渡す形で、足(始値・高値・安値・終値)を 1 本ずつ戦略に渡す口を探したが無い"
+                "(この adapter の bars が作る SIM.MarketSnapshot の欄は ts・market_id・outcome_id・mid_price・spread・recent_volume だけ)")
 
     def gate(self, inp):
         return None

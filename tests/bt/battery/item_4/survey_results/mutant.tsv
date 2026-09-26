@@ -1,41 +1,68 @@
 scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
-i4-1-ref-taker	I4-1	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-1-ref-maker	I4-1	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-2-grid	I4-2	値	結果なし	場合 0: adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	場合 0: adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-3-e2e-taker	I4-3	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-3-e2e-maker	I4-3	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-4-plain	I4-4	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-4-fee	I4-4	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.004
-i4-5-fills	I4-5	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.005	0.001
-i4-5-outputs	I4-5	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.001	0.001
-i4-6-label	I4-6	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.001	0.001
-i4-6-signal-refused	I4-6	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.001	0.001
-i4-6-research-refused	I4-6	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.001	0.001
-i4-8-next-open	I4-8	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-8-short-close	I4-8	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-8-no-short	I4-8	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-9-strict	I4-9	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-9-short-strict	I4-9	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-10-priority	I4-10	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.004
-i4-11-wick-long	I4-11	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.004	0.0
-i4-11-wick-short	I4-11	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-11-refuse-stack	I4-11	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-12-maker-tp	I4-12	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-12-refuse	I4-12	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-12-touch-decimal	I4-12	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-13-time-exit	I4-13	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-13-tp-on-exit-bar	I4-13	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-13-two-models	I4-13	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-14-mask-sides	I4-14	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-14-sides-short	I4-14	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-15-swap-long	I4-15	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-15-swap-short	I4-15	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-16-missed	I4-16	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-17-metrics	I4-17	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-17-metrics-edge	I4-17	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-17-two-models	I4-17	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-18-split	I4-18	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
-i4-18-split-decimal	I4-18	値	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.001	0.001
-i4-18-two-models	I4-18	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.006	0.0
-i4-18-refuse	I4-18	能力	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	adapter: 新実装の adapter の本体は資料係が毎周書く(場面係は口だけを決めた)。本体がまだ書かれていない	-	結果なし	0.0	0.0
+i4-1-ref-taker	I4-1	値	正解と一致		6a6e3c7a9a6a	正解と一致		6a6e3c7a9a6a	2 回の実行で同じ	0.018	0.018
+i4-1-ref-maker	I4-1	値	不一致	engine: fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	fcd9b9915636	不一致	engine: fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	fcd9b9915636	2 回の実行で同じ	0.015	0.015
+i4-2-grid-all	I4-2	値	不一致	場合 36: 不変条件: I4: 往復 0 の建て(足 10)の前 2 本に BUY の合図が無い	9b0b1be1297f	不一致	場合 36: 不変条件: I4: 往復 0 の建て(足 10)の前 2 本に BUY の合図が無い	9b0b1be1297f	2 回の実行で同じ	0.388	0.465
+i4-2-grid	I4-2	値	正解と一致	30 の場合すべて	4ed69d3acdae	正解と一致	30 の場合すべて	4ed69d3acdae	2 回の実行で同じ	0.159	0.169
+i4-2-grid-stop	I4-2	値	正解と一致	16 の場合すべて	7443b7faea00	正解と一致	16 の場合すべて	7443b7faea00	2 回の実行で同じ	0.085	0.09
+i4-2-grid-tp	I4-2	値	正解と一致	16 の場合すべて	d503cb47e1b1	正解と一致	16 の場合すべて	d503cb47e1b1	2 回の実行で同じ	0.088	0.174
+i4-2-grid-maker	I4-2	値	正解と一致	16 の場合すべて	a48a795b538f	正解と一致	16 の場合すべて	a48a795b538f	2 回の実行で同じ	0.118	0.122
+i4-2-grid-mtp	I4-2	値	正解と一致	16 の場合すべて	af03b589bef4	正解と一致	16 の場合すべて	af03b589bef4	2 回の実行で同じ	0.105	0.085
+i4-2-grid-swap	I4-2	値	正解と一致	16 の場合すべて	d0784ab66524	正解と一致	16 の場合すべて	d0784ab66524	2 回の実行で同じ	0.07	0.073
+i4-2-grid-hold	I4-2	値	正解と一致	16 の場合すべて	04a14bf10913	正解と一致	16 の場合すべて	04a14bf10913	2 回の実行で同じ	0.092	0.082
+i4-2-grid-wick	I4-2	値	正解と一致	16 の場合すべて	6f98a9d0b8e2	正解と一致	16 の場合すべて	6f98a9d0b8e2	2 回の実行で同じ	0.072	0.066
+i4-3-e2e-taker	I4-3	値	正解と一致		4496ba78cd69	正解と一致		4496ba78cd69	2 回の実行で同じ	0.006	0.006
+i4-3-e2e-maker	I4-3	値	不一致	fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	576b290bc66d	不一致	fills: 5 件(正解 4 件): 観測 [(3, 'OPEN_LONG', 100.0), (5, 'CLOSE_LONG', 102.0), (8, 'OPEN_SHORT', 102.0), (10, 'CLOSE_SHORT', 104.081616), (15, 'OPEN_LONG', 104.0)]	576b290bc66d	2 回の実行で同じ	0.006	0.005
+i4-4-plain	I4-4	値	正解と一致		14293724f86c	正解と一致		14293724f86c	2 回の実行で同じ	0.004	0.004
+i4-4-fee	I4-4	値	正解と一致		bedd34db477e	正解と一致		bedd34db477e	2 回の実行で同じ	0.004	0.003
+i4-5-fills	I4-5	値	正解と一致		bb18d929c420	正解と一致		bb18d929c420	2 回の実行で同じ	0.479	0.502
+i4-5-outputs	I4-5	能力	正解と一致		c25ece658f8d	正解と一致		c25ece658f8d	2 回の実行で同じ	0.446	0.363
+i4-6-label	I4-6	値	正解と一致		da5491afc7fa	正解と一致		da5491afc7fa	2 回の実行で同じ	0.488	0.464
+i4-6-signal-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	913176d3b5c7	正解と一致	変形を拒んだ: PipelineError: a 動作確認 run on real data takes a time-only strategy ('schedule', 'seeded_random') (委任文 §4: no signal, no conditioning, no optimisation); got 'price_rule'	913176d3b5c7	2 回の実行で同じ	0.75	0.858
+i4-6-research-refused	I4-6	能力	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	9969f80cb8c3	正解と一致	変形を拒んだ: PipelineError: a 研究 run needs its pre-registration (prereg or prereg_sha256): its sha256 goes into the record	9969f80cb8c3	2 回の実行で同じ	0.903	0.91
+i4-8-next-open	I4-8	値	正解と一致		412a637a0fda	正解と一致		412a637a0fda	2 回の実行で同じ	0.004	0.004
+i4-8-short-close	I4-8	値	正解と一致		43f4aed71c15	正解と一致		43f4aed71c15	2 回の実行で同じ	0.004	0.004
+i4-8-no-short	I4-8	値	正解と一致		489543c6ed48	正解と一致		489543c6ed48	2 回の実行で同じ	0.004	0.004
+i4-9-strict	I4-9	値	正解と一致		b5baf009937c	正解と一致		b5baf009937c	2 回の実行で同じ	0.003	0.003
+i4-9-short-strict	I4-9	値	正解と一致		543ea5b0c57b	正解と一致		543ea5b0c57b	2 回の実行で同じ	0.003	0.003
+i4-10-priority	I4-10	値	正解と一致		2867256217ca	正解と一致		2867256217ca	2 回の実行で同じ	0.005	0.005
+i4-11-wick-long	I4-11	値	正解と一致		179036a8a6a3	正解と一致		179036a8a6a3	2 回の実行で同じ	0.003	0.003
+i4-11-wick-short	I4-11	値	正解と一致		49b30d5a02e4	正解と一致		49b30d5a02e4	2 回の実行で同じ	0.003	0.003
+i4-11-refuse-stack	I4-11	能力	正解と一致	変形を拒んだ: BarModelError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	490a1b683f68	正解と一致	変形を拒んだ: BarModelError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	490a1b683f68	2 回の実行で同じ	0.006	0.006
+i4-12-maker-tp	I4-12	値	正解と一致		7476b9f40f38	正解と一致		7476b9f40f38	2 回の実行で同じ	0.002	0.003
+i4-12-refuse	I4-12	能力	正解と一致	変形を拒んだ: BarModelError: exit_execution="maker_tp" requires maker_tp_pct > 0	57074ea13129	正解と一致	変形を拒んだ: BarModelError: exit_execution="maker_tp" requires maker_tp_pct > 0	57074ea13129	2 回の実行で同じ	0.003	0.003
+i4-12-touch-decimal	I4-12	値	正解と一致		0b9deae70841	正解と一致		0b9deae70841	2 回の実行で同じ	0.002	0.003
+i4-13-time-exit	I4-13	値	正解と一致		c8c8589e4a8d	正解と一致		c8c8589e4a8d	2 回の実行で同じ	0.003	0.003
+i4-13-tp-on-exit-bar	I4-13	値	正解と一致		0287aaa01f34	正解と一致		0287aaa01f34	2 回の実行で同じ	0.002	0.002
+i4-13-two-models	I4-13	能力	正解と一致		c2f49f828b60	正解と一致		c2f49f828b60	2 回の実行で同じ	0.007	0.007
+i4-14-mask-sides	I4-14	値	正解と一致		3f19057470f3	正解と一致		3f19057470f3	2 回の実行で同じ	0.004	0.004
+i4-14-sides-short	I4-14	値	正解と一致		2603029e6415	正解と一致		2603029e6415	2 回の実行で同じ	0.004	0.004
+i4-15-swap-long	I4-15	値	正解と一致		b3e7a8949ce7	正解と一致		b3e7a8949ce7	2 回の実行で同じ	0.003	0.003
+i4-15-swap-short	I4-15	値	正解と一致		6b3aa8357190	正解と一致		6b3aa8357190	2 回の実行で同じ	0.004	0.003
+i4-16-missed	I4-16	値	不一致	fills[0].bar = 4(正解 6)	f6d174d24402	不一致	fills[0].bar = 4(正解 6)	f6d174d24402	2 回の実行で同じ	0.005	0.004
+i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
+i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
+i4-17-sharpe-bar-seconds	I4-17	値	正解と一致		e4411f8c2424	正解と一致		e4411f8c2424	2 回の実行で同じ	0.007	0.003
+i4-17-two-models	I4-17	能力	正解と一致		16c1bd3f05b5	正解と一致		16c1bd3f05b5	2 回の実行で同じ	0.016	0.008
+i4-18-split	I4-18	値	正解と一致		ecc72b633a93	正解と一致		ecc72b633a93	2 回の実行で同じ	0.0	0.0
+i4-18-split-decimal	I4-18	値	正解と一致		101565ef1101	正解と一致		101565ef1101	2 回の実行で同じ	0.001	0.001
+i4-18-two-models	I4-18	能力	正解と一致		1a83a236a7a4	正解と一致		1a83a236a7a4	2 回の実行で同じ	0.006	0.002
+i4-18-refuse	I4-18	能力	正解と一致	変形を拒んだ: SplitError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	正解と一致	変形を拒んだ: SplitError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	2 回の実行で同じ	0.0	0.0
+i4-10-signal-first	I4-10	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.003	0.003
+i4-10-signal-first-short	I4-10	値	正解と一致		d1e05b6ce656	正解と一致		d1e05b6ce656	2 回の実行で同じ	0.007	0.003
+i4-10-signal-first-two-models	I4-10	能力	正解と一致		2bf505c31b61	正解と一致		2bf505c31b61	2 回の実行で同じ	0.024	0.007
+i4-10-stop-first-plain	I4-10	値	正解と一致		6c3f6f2231b4	正解と一致		6c3f6f2231b4	2 回の実行で同じ	0.011	0.003
+i4-12-tp-before-maker-tp	I4-12	値	正解と一致		4c6c5f66a3e1	正解と一致		4c6c5f66a3e1	2 回の実行で同じ	0.003	0.003
+i4-11-wick-first	I4-11	値	正解と一致		99305c1b61e4	正解と一致		99305c1b61e4	2 回の実行で同じ	0.011	0.003
+i4-11-wick-before-exit-limit	I4-11	値	正解と一致		f2d9275e52cd	正解と一致		f2d9275e52cd	2 回の実行で同じ	0.012	0.003
+i4-13-stop-on-time-bar	I4-13	値	正解と一致		6c3f6f2231b4	正解と一致		6c3f6f2231b4	2 回の実行で同じ	0.011	0.003
+i4-13-time-first	I4-13	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.011	0.003
+i4-13-time-first-two-models	I4-13	能力	正解と一致		aedf9f9abf80	正解と一致		aedf9f9abf80	2 回の実行で同じ	0.012	0.008
+i4-13-time-maker-tp-two-models	I4-13	能力	正解と一致		d842ec5d4efd	正解と一致		d842ec5d4efd	2 回の実行で同じ	0.007	0.007
+i4-13-time-before-exit-limit	I4-13	値	正解と一致		bac3e0c80dee	正解と一致		bac3e0c80dee	2 回の実行で同じ	0.003	0.003
+i4-13-stop-on-time-bar-maker	I4-13	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.003	0.003
+i4-16-stop-before-exit-limit	I4-16	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.003	0.003
+i4-16-tp-before-exit-limit	I4-16	値	正解と一致		d8dae8650092	正解と一致		d8dae8650092	2 回の実行で同じ	0.003	0.003
+i4-16-maker-tp-before-exit-limit	I4-16	値	正解と一致		9d34710873c6	正解と一致		9d34710873c6	2 回の実行で同じ	0.003	0.003
+i4-3-core-delivery	I4-3	値	正解と一致		ec6683e67929	正解と一致		ec6683e67929	2 回の実行で同じ	0.001	0.001
+i4-3-core-delivery-gap	I4-3	値	正解と一致		d84dbf0c545f	正解と一致		d84dbf0c545f	2 回の実行で同じ	0.001	0.001
+i4-3-ref-signal-first	I4-3	値	正解と一致		ee4d578d2465	正解と一致		ee4d578d2465	2 回の実行で同じ	0.003	0.007

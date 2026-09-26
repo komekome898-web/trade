@@ -34,7 +34,10 @@ import i4_judge as J  # noqa: E402
 import i4_scenes as S  # noqa: E402
 
 DEVIATIONS = {"i4-12-touch-decimal", "i4-13-tp-on-exit-bar", "i4-13-two-models", "i4-17-sharpe-bar-seconds",
-              "i4-17-two-models", "i4-18-split-decimal", "i4-18-two-models"}
+              "i4-17-two-models", "i4-18-split-decimal", "i4-18-two-models",
+              # L-5 (round r2-1, i4-r1-02): the pending signal after the range exits and the time exit
+              "i4-10-signal-first", "i4-10-signal-first-short", "i4-10-signal-first-two-models", "i4-13-time-first",
+              "i4-13-time-first-two-models", "i4-13-time-maker-tp-two-models"}
 
 
 def _load(path, name):
@@ -182,7 +185,7 @@ def test_stated_rules_and_existing_engine_agree_except_the_listed_deviations():
 
 def test_legacy_answers_of_two_model_scenes_are_the_existing_engine():
     cur = _current()
-    for sid in ("i4-13-two-models", "i4-17-two-models", "i4-18-two-models"):
+    for sid in [s["id"] for s in S.SCENES if "models" in (s.get("input") or {})]:
         s = S.by_id(sid)
         obs = cur.run(s["input"])
         assert J.judge_obs(s["expect"]["legacy"], obs["legacy"], s["judge"]["legacy"]) is None, sid

@@ -70,6 +70,8 @@ class CurrentImpl:
             if "models" in inp:
                 return {m: self._bars(inp) for m in inp["models"]}
             return self._bars(inp)
+        if op == "delivery":
+            return self._delivery(inp)
         if op == "metrics":
             m = _call(compute_metrics, list(inp["trade_pnls"]), pd.Series(inp["equity"], dtype=float),
                       inp["total_fees"], periods_per_year=inp["periods_per_year"])
@@ -82,6 +84,28 @@ class CurrentImpl:
             raise NotExpressible("当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。"
                                  "宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い")
         raise NotExpressible(f"op {op!r} に当たる口が無い")
+
+    @staticmethod
+    def _delivery(inp):
+        """The current environment's event loop is run_backtest's bar loop: the strategy's on_candles gets the slice
+        of the candles it may see; record that slice (its length, its last row's time and close)."""
+        calls = []
+
+        class Recorder(Strategy):
+            def __init__(self):
+                super().__init__({})
+
+            @property
+            def min_history(self) -> int:
+                return 0
+
+            def on_candles(self, candles: pd.DataFrame) -> Signal:
+                calls.append({"seen": len(candles), "last_t_ns": int(candles.index[-1].value),
+                              "last_close": float(candles["close"].iloc[-1])})
+                return Signal(SignalType.HOLD)
+
+        _call(run_backtest, Recorder(), _frame(inp["bars"]), bar_seconds=float(inp["bar_seconds"]))
+        return {"calls": calls}
 
     @staticmethod
     def _split(inp):

@@ -138,6 +138,33 @@ class RqalphaAdapter(Base):
                 out.append(why)
         return out
 
+    def delivery(self, inp):
+        """What rqalpha hands handle_bar: bar_dict (the current bar) and the history API (history_bars, which returns
+        the bars up to the current one).  Scene bar k is trading day k (as in bars); the day is mapped back to the
+        scene bar's start time."""
+        from rqalpha import api as R
+        from _i4_base import ns_of  # noqa: F401
+        bars = inp["bars"]
+        _ST.clear()
+        _ST.update(bars=bars, trades=[])
+        calls = []
+
+        def hb(context, bar_dict):
+            h = R.history_bars(OID, len(bars), "1d", ["datetime", "close"])
+            k = (pd.Timestamp(str(int(h["datetime"][-1]))[:8]) - pd.Timestamp(DAY0)).days
+            calls.append({"seen": int(len(h)), "last_t_ns": int(bars[k]["t_ns"]), "last_close": float(h["close"][-1])})
+
+        mods = {"sys_analyser": {"enabled": False}, "sys_progress": {"enabled": False},
+                "sys_simulation": {"price_limit": False, "volume_limit": False, "inactive_limit": False,
+                                   "matching_type": "next_bar"},
+                "sk": {"enabled": True, "lib": "i4_rqalpha_adapter"}}
+        conf = {"base": {"start_date": DAY0.strftime("%Y-%m-%d"),
+                         "end_date": (DAY0 + D.timedelta(days=len(bars) - 1)).strftime("%Y-%m-%d"),
+                         "frequency": "1d", "accounts": {"stock": 6000.0}},
+                "extra": {"log_level": "error"}, "mod": mods}
+        run_func(init=lambda ctx: None, handle_bar=hb, config=conf)
+        return {"calls": calls}
+
     def bars(self, inp):
         from rqalpha import api as R
         cfg, c = inp["config"], inp["config"]["costs"]

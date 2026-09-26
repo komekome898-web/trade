@@ -56,3 +56,12 @@
 3. R-H3(時間切れの足で逆指値だけを先に見る)は、R-T1 の「始値 → 範囲」の順と食い違う(時間切れは始値で起き、範囲はそのあと)。規則の文の持ち主(場面係)に確かめるか。
 4. i4-r1-12(互換の口が不正な足を断る)を「完全上位互換」の外の意図した違いとして認めるか。
 5. 最後の段(I4-20): 要件 §1(b) は「この周の批評家の [止める] が 0 件」を条件にするが、この周の批評家は作業者のあとに起き、項目 4 はこの周が上限(2 周)なので、最後の段を行う周が無い。どうするか。
+
+## 8. 直したあと(作業者の記録。コマンドと出力は materials/)
+
+- i4-r1-01: `src/bot/bt/compat/barmodel.py` の `BarRules.signal_at_open`(legacy = False / spec = True)と、足の処理の「0.45) 始値の合図」の段。`src/bot/bt/reference/bar_rules.py` も「AT THE OPEN → bar j's RANGE」の 2 段に書き直した。直す前: `materials/before_fix_signal_at_open_grid.txt`(spec と規則の参照が 6 塊で落ちる)・`materials/before_fix_critic_tests.txt`(27 failed)。直したあと: `materials/after_fix_targeted_tests.txt`(215 passed)。legacy は同じ 1920 升で旧エンジンとバイト単位で一致のまま。
+- 場面係が同時に足した規則の文 R-O1(`tests/bt/battery/item_4/i4_scenes.py` の `ORDER_SPEC = ["wick", "stop@time", "time", "signal", "stop", "tp", "mtp", "limit"]`)は、この直しの順と同じ。§7 の問い 2(maker の指値と範囲の出口の順)は、R-O1 が「limit」を最後に置いたので、実装(範囲の出口が先)と一致する。
+- i4-r1-03: `tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py`(1920 升で新エンジン = 独立の参照 `bar_sim`、違い D1〜D3 を結果として固定)。`bar_rules.py` の頭と `SPEC.md` §10 を「作業者が写したもの(独立ではない)」に書き直した。I4-1 の場面の参照を独立にすることは、作業者にはできない(§7 の問い 1)。
+- i4-r1-04: `src/bot/bt/pipeline.py` の `market_evidence`・`_named_not_market` と `plan_pipeline` の出所の決め方。`tests/bt/item_4/test_i4_r2_origin_from_data_grid.py`(108 升 + qa_* の 1 件)。直す前: `materials/before_fix_origin_grid.txt`(77 failed)。批評家の試験 `test_i4r1_origin_is_not_a_self_label.py` は 3 件とも通る。1 回の判定にかかる時間は 0.036〜0.039 秒(この環境の 3 つの市場データのフォルダの 8,996 ファイルを並べる。`materials/origin_check_time.txt`)。
+- i4-r1-14: `tests/bt/item_4/test_i4_real_data_smoke.py`。判定を「全注文が FILLED で量どおり」に締めたら、FX のイベントティックの 2 回目の買い(13:20 UTC)が OPEN のまま残ることが分かった(ファイルが 12:15:01〜13:14:59 UTC しか持たない)。第 1 周の緩い判定はこれを隠していた。手順を同じ 1 時間の中の 2 往復(hh:20・hh:25・hh:50・hh:55)に替え、全注文が FILLED になった(2 passed)。
+- 速さ(監査役の O-3): `materials/speed_old_vs_new_compat.txt` にコマンドと出力(旧 0.020〜0.022 秒 / 新の互換の口 0.352〜0.373 秒、同じ入力 1,000 本、損益の列はビット単位で同じ)。

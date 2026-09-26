@@ -1,0 +1,4 @@
+$ PYTHONPATH=src python3 <scratchpad>/bt/i4_r2_worker_speed.py
+old seconds per run (3 runs): 0.022 0.021 0.020 | trades: 186
+new_compat seconds per run (3 runs): 0.373 0.352 0.358 | trades: 186
+same trade_pnls bits: True

@@ -1,0 +1,42 @@
+current_impl	結果なし=8	不一致=13	正解と一致=46
+mutant	不一致=4	正解と一致=63
+new_impl	正解と一致=67
+opp_backtesting	結果なし=34	不一致=14	正解と一致=19
+opp_backtrader	結果なし=29	不一致=16	正解と一致=22
+opp_basana	結果なし=48	不一致=14	正解と一致=5
+opp_bt	結果なし=59	不一致=2	正解と一致=6
+opp_fast_trade	結果なし=67
+opp_finmarketpy	結果なし=67
+opp_freqtrade	結果なし=67
+opp_hftbacktest	結果なし=67
+opp_luczinsritter	結果なし=62	正解と一致=5
+opp_pineforge	結果なし=67
+opp_pm_backtester	対応なし=46	結果なし=21
+opp_pyalgotrade	結果なし=26	不一致=21	正解と一致=20
+opp_pybotters	結果なし=67
+opp_pybroker	対応なし=1	結果なし=41	不一致=17	正解と一致=8
+opp_pysystemtrade	結果なし=67
+opp_pytrendfollow	結果なし=67
+opp_qflib	結果なし=54	不一致=11	正解と一致=2
+opp_qlib	結果なし=67
+opp_qstrader	結果なし=67
+opp_qtradex	結果なし=63	不一致=2	正解と一致=2
+opp_quanttrader	結果なし=41	不一致=24	正解と一致=2
+opp_repro_11_octobot	結果なし=42	不一致=23	正解と一致=2
+opp_repro_15_backtestingcore	結果なし=46	不一致=13	正解と一致=8
+opp_repro_52_lean	結果なし=37	不一致=25	正解と一致=5
+opp_repro_56_zvt	結果なし=56	不一致=11
+opp_repro_57_wondertrader	結果なし=38	不一致=19	正解と一致=10
+opp_repro_60_hikyuu	結果なし=60	不一致=2	正解と一致=5
+opp_repro_61_barter	結果なし=62	不一致=5
+opp_repro_67_lumibot	結果なし=37	不一致=19	正解と一致=11
+opp_repro_69_gobacktest	結果なし=58	不一致=9
+opp_repro_7_superalgos	結果なし=35	不一致=30	正解と一致=2
+opp_repro_80_hummingbot	結果なし=53	不一致=14
+opp_repro_8_opentrader	結果なし=55	不一致=11	正解と一致=1
+opp_repro_94_mote	結果なし=42	不一致=20	正解と一致=5
+opp_rqalpha	結果なし=62	不一致=3	正解と一致=2
+opp_vectorbt	結果なし=49	不一致=8	正解と一致=10
+opp_vnpy	結果なし=41	不一致=15	正解と一致=11
+opp_ziplime	結果なし=59	不一致=3	正解と一致=5
+opp_zipline_reloaded	結果なし=41	不一致=21	正解と一致=5

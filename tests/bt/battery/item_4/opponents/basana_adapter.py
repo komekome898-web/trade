@@ -67,6 +67,29 @@ class BasanaAdapter(Base):
                 out.append(why)
         return out
 
+    def delivery(self, inp):
+        """What Basana hands a bar-event handler: the one bar event just dispatched (no history object), so the bars
+        the strategy has seen are the events handed so far."""
+        from _i4_base import ns_of
+        dur = D.timedelta(seconds=int(inp["bar_seconds"]))
+        pair = bs.Pair("BASE", "JPY")
+        disp = bs.backtesting_dispatcher()
+        ex = bex.Exchange(disp, {"JPY": Decimal("6000")}, liquidity_strategy_factory=bliq.InfiniteLiquidity,
+                          fee_strategy=bfees.NoFee(), default_pair_info=bs.PairInfo(base_precision=8, quote_precision=8))
+        evs = []
+        for b in inp["bars"]:
+            begin = EPOCH + D.timedelta(microseconds=b["t_ns"] // 1000)
+            evs.append(BarEvent(begin + dur, bs.Bar(begin, pair, *(Decimal(str(b[x])) for x in
+                                                                   ("open", "high", "low", "close", "volume")), dur)))
+        ex.add_bar_source(bs.FifoQueueEventSource(events=evs))
+        calls = []
+
+        async def on_bar(be):
+            calls.append({"seen": len(calls) + 1, "last_t_ns": ns_of(be.bar.datetime), "last_close": float(be.bar.close)})
+        ex.subscribe_to_bar_events(pair, on_bar)
+        asyncio.run(disp.run())
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]

@@ -1,0 +1,5 @@
+$ PYTHONPATH=src python3 <scratchpad>/bt/i4_r2_worker_plan_time.py
+market_evidence seconds: 0.039 {'by': None, 'market_path': None}
+market_evidence seconds: 0.036 {'by': None, 'market_path': None}
+market_evidence seconds: 0.037 {'by': None, 'market_path': None}
+files listed: 8996

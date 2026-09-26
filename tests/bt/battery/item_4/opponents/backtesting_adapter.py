@@ -63,6 +63,24 @@ class BacktestingAdapter(Base):
                        "_indicator_warmup_nbars、1339 行 range(start, len(data)))")
         return out
 
+    def delivery(self, inp):
+        """What backtesting.py hands Strategy.next: self.data (the bars so far)."""
+        from _i4_base import ns_of
+        df = bars_frame(inp, pd).rename(columns=str.capitalize)
+        calls = []
+
+        class S(Strategy):
+            def init(self):
+                pass
+
+            def next(self):
+                calls.append({"seen": len(self.data), "last_t_ns": ns_of(self.data.index[-1]),
+                              "last_close": float(self.data.Close[-1])})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            Backtest(df, S, cash=6000.0).run()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         a = adj(c)

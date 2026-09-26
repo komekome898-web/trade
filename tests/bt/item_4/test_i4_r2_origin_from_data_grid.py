@@ -9,13 +9,17 @@ file synthetic -- a "synthetic" declaration on it is refused as a false declarat
 purpose. A declaration "real" is kept (it only restricts). `expected` below is written from that rule text.
 
 Grid (the rule's input space): placement of the file {in the market folder itself (root = the repository), a
-byte copy under a temporary root in a market-folder name (backtest_data/...), a byte copy under a temporary root
-in another allowed folder name (data/...), a synthetic file under a temporary root} x the market file {FX event
-ticks (quotes), TOPIX futures 1-minute bars} (the synthetic file is one) x declared origin {real, synthetic} x
-strategy {schedule, seeded_random, price_rule} x purpose {動作確認, 研究 with a pre-registration hash}
-= (3 x 2 + 1) x 2 x 3 x 2 = 84 cells, all planned (the rule is checked at planning; nothing is executed).
+symbolic link under a temporary root pointing at the market file, a byte copy under a temporary root in a
+market-folder name (backtest_data/...), a byte copy under a temporary root in another allowed folder name
+(data/...), a synthetic file under a temporary root} x the market file {FX event ticks (quotes), TOPIX futures
+1-minute bars} (the synthetic file is one) x declared origin {real, synthetic} x strategy {schedule,
+seeded_random, price_rule} x purpose {動作確認, 研究 with a pre-registration hash}
+= (4 x 2 + 1) x 2 x 3 x 2 = 108 cells, all planned (the rule is checked at planning; nothing is executed. A
+symbolic link out of the data root is refused later by the data layer when the run reads it; the origin is
+decided before that, by the link's target).
 
-Not in the grid (named): a market file edited by even one byte (another file by content -- a limit of the rule,
+Not in the grid (named; the qa_* case is its own test below): a market file edited by even one byte, recompressed
+or cut to a part (another file by content -- a limit of the rule,
 written in bot.bt.pipeline); market data that exists only outside this environment (the owner's PC); the
 synthetic battery files of the item-4 scene set (they declare themselves "real", which the rule keeps).
 Skipped only when a market file is not in this environment.
@@ -51,7 +55,7 @@ SYN_SPEC = {**GZ, "kind": "bar", "symbol": "SYN", "asset": "crypto",
             "time": {"columns": ["timestamp"], "unit": "iso", "tz": "UTC"},
             "fields": {"open": "open", "high": "high", "low": "low", "close": "close", "volume": "volume"},
             "bar": {"interval_s": 60, "label": "start"}, "key": "start"}
-PLACEMENTS = ("in_market_folder", "copy_backtest_data", "copy_data")
+PLACEMENTS = ("in_market_folder", "symlink_to_market", "copy_backtest_data", "copy_data")
 T0 = 1767571200 * NS
 STRATS = {"schedule": {"kind": "schedule", "orders": [{"t_ns": T0, "side": "buy", "qty": 1.0},
                                                       {"t_ns": T0 + 300 * NS, "side": "sell", "qty": 1.0}]},
@@ -94,6 +98,12 @@ def roots():
             pytest.skip(f"{rel} is not in this environment")
     tmp = tempfile.mkdtemp(prefix="i4w_origin_")
     out = {"in_market_folder": str(REPO)}
+    r = os.path.join(tmp, "symlink_to_market")
+    for name, (rel, _) in MARKET.items():
+        dst = os.path.join(r, "backtest_data", "linked", f"{name}_link.csv.gz")
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        os.symlink(REPO / rel, dst)
+    out["symlink_to_market"] = r
     for pl, folder in (("copy_backtest_data", "backtest_data"), ("copy_data", "data")):
         r = os.path.join(tmp, pl)
         for name, (rel, _) in MARKET.items():
@@ -116,13 +126,15 @@ def _dataset(placement: str, f: str, origin: str) -> dict:
     rel, spec = MARKET[f]
     if placement == "in_market_folder":
         path = rel
+    elif placement == "symlink_to_market":
+        path = f"backtest_data/linked/{f}_link.csv.gz"
     else:
         path = f"{'backtest_data' if placement == 'copy_backtest_data' else 'data'}/copied/{f}_renamed.csv.gz"
     return {"name": f, "paths": [path], "spec": spec, "origin": origin}
 
 
 def test_the_grid_is_the_full_space():
-    assert len(CELLS) == 84
+    assert len(CELLS) == 108
     assert {expected(*c[:1], *c[2:]) for c in CELLS} == {"refuse", "real", "synthetic"}
 
 
@@ -141,10 +153,35 @@ def test_origin_is_decided_from_the_data(cell, roots):
     d = plan.datasets[0]
     assert d["origin"] == want, (cell, d["origin"])
     ev = d["origin_evidence"]
-    if placement == "in_market_folder":
+    if placement in ("in_market_folder", "symlink_to_market"):
         assert ev["by"] == "position" and ev["market_path"] == MARKET[f][0], ev
     elif placement.startswith("copy_"):
         assert ev["by"] == "bytes" and ev["market_path"] == MARKET[f][0], ev
     else:
         assert ev["by"] is None and ev["market_path"] is None, ev
     assert plan.identity["datasets"][0]["origin"] == want
+
+
+QA_FILE = "backtest_data/qa_known_answer_20260905/daily_qa_alpha.csv.gz"
+
+
+def test_a_file_the_data_layer_names_as_not_market_data_is_not_market_data():
+    """The data layer's mandatory refusals name qa_* (synthetic known-answer packets) as not market data: such a
+    file in the market folder, or a byte copy of it elsewhere, is not found as market data (the data layer still
+    refuses to READ the qa_* path itself; a copy under another name is read as the caller declares it)."""
+    import hashlib
+
+    from bot.bt.pipeline import market_evidence
+    src = REPO / QA_FILE
+    if not src.is_file():
+        pytest.skip(f"{QA_FILE} is not in this environment")
+    sha = hashlib.sha256(src.read_bytes()).hexdigest()
+    assert market_evidence(os.path.realpath(src), sha) == {"by": None, "market_path": None}
+    tmp = tempfile.mkdtemp(prefix="i4w_origin_qa_")
+    try:
+        dst = os.path.join(tmp, "backtest_data", "renamed.csv.gz")
+        os.makedirs(os.path.dirname(dst))
+        shutil.copyfile(src, dst)
+        assert market_evidence(os.path.realpath(dst), sha) == {"by": None, "market_path": None}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)

@@ -96,7 +96,41 @@ def run(inp: dict, reference=run_reference_bars) -> dict:
         return one("decimal")
     if op == "pipeline":
         return run_pipeline_scene(inp)
+    if op == "delivery":
+        return run_delivery(inp)
     raise NotImplementedError(op)
+
+
+def run_delivery(inp: dict) -> dict:
+    """op "delivery" (the core granularity): the bars through the core's event loop one by one; at each bar the
+    strategy records what the CORE hands it (its delivered history, read with ctx.visible_events), not a copy of
+    the input."""
+    from bot.bt.core import CoreEngine, NullAccount, NullFillModel, Strategy, ZeroLatency
+    from bot.bt.core.events import BarEvent, EventType
+
+    class _NoCost:
+        def cost(self, fill) -> float:  # no order is ever placed: never called
+            raise AssertionError("no fill is expected in a delivery scene")
+
+    calls: list = []
+
+    class Recorder(Strategy):
+        def on_event(self, event, ctx) -> None:
+            if type(event) is not BarEvent:
+                return
+            seen = ctx.visible_events(EventType.BAR)
+            last = seen[-1]
+            calls.append({"seen": len(seen), "last_t_ns": int(last.start_time_ns), "last_close": float(last.close)})
+
+    bar_ns = int(round(float(inp["bar_seconds"]) * NS))
+    try:
+        events = bar_events(inp["bars"], [b["t_ns"] for b in inp["bars"]], bar_ns)
+    except BarModelError as exc:
+        raise Refused(str(exc)) from None
+    span = (events[0].exchange_time_ns, events[-1].received_time_ns)
+    CoreEngine(Recorder(), {"bars": list(events)}, NullFillModel(), ZeroLatency(), _NoCost(), NullAccount(),
+               time_span_ns=span).run()
+    return {"calls": calls}
 
 
 def run_pipeline_scene(inp: dict) -> dict:

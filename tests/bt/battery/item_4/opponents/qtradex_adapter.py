@@ -63,6 +63,47 @@ class QTradeXAdapter(Base):
                 out.append(why)
         return out
 
+    def delivery(self, inp):
+        """What QTradeX hands BaseBot.strategy: `state` (the one candle of this step: its unix time and prices), so
+        the bars the strategy has seen are the steps handed so far."""
+        bars = inp["bars"]
+        unix = np.array([b["t_ns"] // 10**9 for b in bars], dtype=float)
+        calls = []
+
+        class Bot(qx.BaseBot):
+            def __init__(self):
+                self.tune = {}
+
+            def autorange(self):
+                return 0
+
+            def reset(self):
+                return None
+
+            def indicators(self, data):
+                return {}
+
+            def fitness(self, states, raw_states, asset, currency):
+                return ["roi"], {}
+
+            def plot(self, *a, **k):
+                return None
+
+            def strategy(self, state, indicators):
+                calls.append({"seen": len(calls) + 1, "last_t_ns": int(state["unix"]) * 10**9,
+                              "last_close": float(state["close"])})
+                return Hold()
+        with contextlib.redirect_stdout(io.StringIO()):
+            data = Data("synthetic", "BASE", "JPY", int(unix[0]), end=int(unix[-1]), candle_size=int(inp["bar_seconds"]),
+                        placeholder=True)
+            data.raw_candles = {"unix": unix, "open": np.array([b["open"] for b in bars]),
+                                "high": np.array([b["high"] for b in bars]), "low": np.array([b["low"] for b in bars]),
+                                "close": np.array([b["close"] for b in bars]), "volume": np.array([b["volume"] for b in bars])}
+            data.begin, data.end = int(unix[0]), int(unix[-1])
+            qx_backtest(Bot(), data, wallet=PaperWallet({"BASE": 0, "JPY": 6000.0}, fee=0.0), plot=False, show=False,
+                        return_states=True, range_periods=False)
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]

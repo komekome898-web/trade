@@ -1,15 +1,23 @@
-"""Slow reference of the STATED bar-model rules (item 4, old item 11).
+"""The item-4 WORKER'S transcription of the STATED bar-model rules -- NOT the
+independent reference (item 4, old item 11).
 
-Written from the rule text of the item-4 battery (tests/bt/battery/item_4/
-DEFINITIONS.md 「足の模型の仕様」 R-T1 .. R-S1 and 「指標の式」 M-1 .. M-12)
-only: one plain loop over the bars, exact rational arithmetic
-(fractions.Fraction of the written decimal value of every input), no import
-of the engine (bot.bt.core, bot.bt.compat). Who wrote it: the item-4 worker
-(not the reference role, which wrote bar_sim.py / event_sim.py from the
-requirement text alone and left these rules out as undetermined -- SPEC.md
-section 4). It is written from the battery's rule text, not from the
-engine's code; that the reference role should re-derive it is a question to
-the lead.
+What it is: one plain loop over the bars in exact rational arithmetic
+(fractions.Fraction of the written decimal value of every input), written
+from the rule text of the item-4 battery (tests/bt/battery/item_4/
+DEFINITIONS.md 「足の模型の仕様」 R-T1 .. R-S1 and 「指標の式」 M-1 .. M-12). It
+does not import the engine (bot.bt.core, bot.bt.compat).
+
+What it is NOT: the delegation's 「核を見ずに別の作業者が書く」 reference. It was
+written by the item-4 worker, who has read the core and the new engine (round
+1) -- so an agreement between it and the engine is not an independent check
+(critic i4-r1-03: in round 1 it shared the engine's defect i4-r1-01). The
+independent reference is bar_sim.py / event_sim.py (the reference role,
+SPEC.md sections 0-3); the engine is compared with bar_sim.py in
+tests/bt/item_4/test_i4_engine_vs_independent_bar_sim.py. The rules bar_sim
+does not have (sizing by notional, closing by a signal, percentage levels,
+the carry, the structural stop, spread and slippage) exist only here until
+the reference role is run again with the stated rules as its input (a
+question to the lead, round_2/ROOTCAUSE.md section 7-1).
 
     run_rules(bars, bar_seconds, signals, config) -> dict
       bars      [{"open", "high", "low", "close"}, ...]
@@ -18,12 +26,17 @@ the lead.
       -> {"fills": [{bar, side, price, size}], "pnls", "equity", "metrics",
           "missed_fills"}  (floats converted from the exact values at the end)
 
-Where the rule text is silent the reference takes the documented behaviour
-the rules were written from (DEFINITIONS.md: the rules fix the old engine's
-docstring), and says so at the line: an exit on a bar drops the signal
-pending for that bar (stated for the time exit R-H2 and the wick exit R-W3;
-taken for the stop and take-profits too); a take-profit percentage of 0 or
-None means no take-profit.
+The order inside one bar j is the time order (R-T1: a bar's open comes
+before the rest of its range): AT THE OPEN, the exits decided by older
+information -- the structural stop on bar j-1's close (R-W3) and the time
+exit (R-H1; on that bar only the stop is looked at first, R-H3) -- drop the
+pending signal (R-W3 / R-H2); else the pending taker signal acts at the open
+(R-T1). THEN, if the position lives on through the open, bar j's RANGE: the
+stop (R-P3), the take-profit (R-P4), the maker take-profit (R-X1), then a
+pending maker limit (R-M1). Where the rule text is silent: an exit in bar j's
+range drops a maker limit pending for bar j (both are inside the range; the
+text does not order them -- a question to the lead); a take-profit
+percentage of 0 or None means no take-profit.
 """
 from __future__ import annotations
 
@@ -126,15 +139,31 @@ def run_rules(bars, bar_seconds, signals: dict, config: dict) -> dict:
             carry = pos["q"] * C[j - 1] * carry_rate
             pos["carry"] += carry
             fees_total += carry
+        # --- AT THE OPEN of bar j
         # R-W3: a close beyond the frozen level -> the next bar's open, taker
         if pos is not None and pos["wick"] is not None and j > pos["b"]:
             breach = C[j - 1] < pos["wick"] if pos["s"] > 0 else C[j - 1] > pos["wick"]
             if breach:
                 close_(j, _taker(O[j], pos is not None and pos["s"] < 0, c), taker_rate)
                 exited = True
-        if pos is not None and j > pos["b"]:  # R-P2 / R-X2: never on the entry bar
+        time_due = pos is not None and N is not None and j - pos["b"] >= N
+        if not exited and time_due:  # R-H1 at the open; R-H3: the stop of this bar is looked at first
             s = pos["s"]
-            time_due = N is not None and j - pos["b"] >= N
+            sl = pos["E"] * (1 - s * F(cfg["stop_loss_pct"]) / 100) if cfg["stop_loss_pct"] else None
+            if sl is not None and (L[j] <= sl if s > 0 else H[j] >= sl):
+                close_(j, _taker(min(O[j], sl) if s > 0 else max(O[j], sl), s < 0, c), taker_rate)
+            else:
+                close_(j, _taker(O[j], s < 0, c), taker_rate)
+            exited = True
+        if exited:  # R-H2 / R-W3: the exit at the open drops the pending signal
+            pend_taker = pend_limit = None
+        if cfg["execution"] == "taker" and pend_taker is not None:  # R-T1: the signal acts at the open
+            side, db = pend_taker
+            act(j, side, lambda buy, o=O[j]: _taker(o, buy, c), taker_rate, db)
+            pend_taker = None
+        # --- bar j's RANGE, for a position that lives on through the open (R-P2 / R-X2: never on the entry bar)
+        if pos is not None and j > pos["b"]:
+            s = pos["s"]
             sl = tp = mtp = None
             if cfg["stop_loss_pct"]:
                 sl = pos["E"] * (1 - s * F(cfg["stop_loss_pct"]) / 100)  # R-P1
@@ -146,21 +175,14 @@ def run_rules(bars, bar_seconds, signals: dict, config: dict) -> dict:
                 base = min(O[j], sl) if s > 0 else max(O[j], sl)
                 close_(j, _taker(base, s < 0, c), taker_rate)
                 exited = True
-            elif not time_due and tp is not None and (H[j] > tp if s > 0 else L[j] < tp):  # R-P4, R-H3
+            elif tp is not None and (H[j] > tp if s > 0 else L[j] < tp):  # R-P4
                 close_(j, tp, maker_rate)
                 exited = True
-            elif not time_due and mtp is not None and (H[j] > mtp if s > 0 else L[j] < mtp):  # R-X1, R-H3
+            elif mtp is not None and (H[j] > mtp if s > 0 else L[j] < mtp):  # R-X1
                 close_(j, mtp, maker_rate)
                 exited = True
-            elif time_due:  # R-H1
-                close_(j, _taker(O[j], s < 0, c), taker_rate)
-                exited = True
-        if exited:  # R-H2 / R-W3 (and, by the documented behaviour, the stop / take-profits)
-            pend_taker = pend_limit = None
-        if cfg["execution"] == "taker" and pend_taker is not None:  # R-T1
-            side, db = pend_taker
-            act(j, side, lambda buy, o=O[j]: _taker(o, buy, c), taker_rate, db)
-            pend_taker = None
+        if exited:  # an exit in the range drops a maker limit pending for this bar (the text is silent: see above)
+            pend_limit = None
         if cfg["execution"] == "maker" and pend_limit is not None and j > pend_limit[2]:  # R-M1 .. R-M2
             side, lim, p = pend_limit
             through = L[j] < lim if side == "BUY" else H[j] > lim

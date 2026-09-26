@@ -11,7 +11,9 @@ Every scene is run TWICE, each pass in a fresh process under the target's own
 interpreter (a survey tool runs under its isolated venv, see i4_targets.py).
 A file scene (op "pipeline") has its files written into a fresh directory (the
 scene's ``root``) for every run, removed afterwards.  A grid scene (``cases``)
-runs each case input separately.
+runs each case input separately.  A scene with a variant is 「正解と一致」 only when its
+control and every further control (``more_controls``) match their answers and the target
+refuses the variant.
 
 OUT.tsv: one row per scene -- viewpoint, kind, both passes' correctness class,
 detail and observation digest, and the reproducibility cell.  OUT.obs.jsonl
@@ -138,6 +140,18 @@ def classify(scene, target, base):
     cls, detail = J.compare(exp, val, scene)
     if "variant" not in scene or cls != "正解と一致":
         return cls, ("対照: " + detail if "variant" in scene and detail else detail), obs_rec
+    # every further control (it uses a feature of the variant the first control does not) must pass before the
+    # refusal of the variant counts: a target that lacks the feature cannot score by refusing (i4-r1-09)
+    for k, mc in enumerate(scene.get("more_controls", []), start=2):
+        mkind, mval = run_one(target, mc["input"], base)
+        obs_rec[f"control_{k}"] = mval if mkind == "ok" else None
+        if mkind == "refused":
+            return "対応なし", f"対照 {k} を拒んだ: " + mval[:300], obs_rec
+        if mkind == "none":
+            return "結果なし", f"対照 {k}: " + mval, obs_rec
+        mcls, mdetail = J.compare(mc["expect"], mval, mc)
+        if mcls != "正解と一致":
+            return mcls, f"対照 {k}: " + mdetail, obs_rec
     vkind, vval = run_one(target, scene["variant"], base)
     obs_rec["variant"] = vval if vkind == "ok" else None
     if vkind == "refused":

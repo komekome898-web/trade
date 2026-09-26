@@ -10,12 +10,20 @@ the mouth, not the body).  The contract the body must keep:
                    the strategy and every config key translated into the engine's
                    own options.  `model: "spec"` -> the engine's own (native) bar
                    model; `models: ["legacy", "spec"]` -> BOTH the compatibility
-                   mouth (the same names and arguments as the old run_backtest)
+                   mouth -- "legacy" is ALWAYS taken from the old names with the old
+                   arguments (bot.bt.compat.run_backtest / CostModel with the old
+                   Strategy interface; split_data for op "split"), never from the
+                   engine's rule set directly (委任文 §3 「互換の口(旧と同じ名前・同じ
+                   引数)と本来の模型の両方を持つもの全体」, i4-r1-10) --
                    and the native model, from the one scene input, returned as
                    {"legacy": obs, "spec": obs}.  `reference: true` -> the same
                    input through the engine AND through the independent reference
                    implementation (src/bot/bt/reference/), returned as
                    {"engine": obs, "reference": obs}.
+- op "delivery" -- the core granularity: the bars as the core's bar events, a strategy on
+                   the core's Strategy interface that records, at each call, what the
+                   core's context lets it see (visible bar events: count, last start
+                   time, last close).
 - op "metrics"  -- the engine's metric function(s) on the given PnLs / equity.
 - op "split"    -- the engine's row-fraction split (native; `models` as above).
 - op "pipeline" -- the scene's files under `root` handed BY PATH with each
@@ -50,8 +58,8 @@ from i4_protocol import NotExpressible, Refused  # noqa: E402
 
 # The new implementation's public API only (src/bot/bt/compat/__init__.__all__, src/bot/bt/pipeline.py,
 # src/bot/bt/reference/, src/bot/bt/report/exports.py, src/bot/monitoring/backtest_view.py).
-from bot.bt.compat import (bar_events, compute_metrics_values, options_from_mapping, run_bars,  # noqa: E402
-                           split_rows)
+from bot.bt.compat import (CostModel, bar_events, compute_metrics_values, options_from_mapping, run_backtest,  # noqa: E402
+                           run_bars, split_data, split_rows)
 
 NS = 1_000_000_000
 WANT_BARS = ("fills", "pnls", "equity", "metrics", "missed_fills")
@@ -98,6 +106,88 @@ def _run_engine(inp: dict, rules: str) -> dict:
         events = bar_events(inp["bars"], [b["t_ns"] for b in inp["bars"]], bar_ns)
         return run_bars(events, decide, opts, rules, start=0)
     return _bars_obs(_engine(go), inp.get("want") or WANT_BARS)
+
+
+def _legacy_bars(inp: dict) -> dict:
+    """The compatibility mouth: the old name run_backtest with the old arguments and the old Strategy interface
+    (i4-r1-10), exactly as a caller of the old engine would call it."""
+    import pandas as pd
+    from bot.strategy.base import Signal, SignalType, Strategy
+
+    by_bar = {int(s["bar"]): s["signal"] for s in inp.get("signals", [])}
+
+    class Script(Strategy):
+        def __init__(self):
+            super().__init__({})
+
+        @property
+        def min_history(self) -> int:
+            return 0
+
+        def on_candles(self, candles):
+            s = by_bar.get(len(candles) - 1)
+            return Signal(SignalType[s]) if s else Signal(SignalType.HOLD)
+
+    c = inp["config"]
+    frame = pd.DataFrame({k: [b[k] for b in inp["bars"]] for k in ("open", "high", "low", "close", "volume")},
+                         index=pd.to_datetime([b["t_ns"] for b in inp["bars"]], unit="ns", utc=True))
+    costs = CostModel(**{k: c["costs"][k] for k in ("taker_fee_pct", "maker_fee_pct", "slippage_pct", "spread_pct")})
+    res = _engine(run_backtest, Script(), frame, initial_equity_jpy=c["initial_equity"], order_notional_jpy=c["order_notional"],
+                  costs=costs, execution=c["execution"], maker_timeout_bars=c["maker_timeout_bars"],
+                  allow_short=c["allow_short"], swap_daily_pct=c["swap_daily_pct"], bar_seconds=float(inp["bar_seconds"]),
+                  stop_loss_pct=c["stop_loss_pct"], take_profit_pct=c["take_profit_pct"], max_hold_bars=c["max_hold_bars"],
+                  exit_execution=c["exit_execution"], maker_tp_pct=c["maker_tp_pct"], entry_mask=c["entry_mask"],
+                  entry_sides=c["entry_sides"], stop_mode=c["stop_mode"], stop_window_bars=c["stop_window_bars"])
+    want = set(inp.get("want") or WANT_BARS)
+    out = {}
+    if "fills" in want:
+        out["fills"] = [{"bar": int(e["bar"]), "side": e["side"], "price": float(e["price"]), "size": float(e["size"])}
+                        for e in res.trade_log if e["side"].startswith(("OPEN_", "CLOSE_"))]
+    if "pnls" in want:
+        out["pnls"] = [float(x) for x in res.trade_pnls]
+    if "equity" in want:
+        out["equity"] = [float(x) for x in res.equity_curve.tolist()]
+    if "metrics" in want:
+        out["metrics"] = res.metrics.as_dict()
+    if "missed_fills" in want:
+        out["missed_fills"] = int(res.missed_fills)
+    return out
+
+
+def _legacy_split(inp: dict) -> dict:
+    """The compatibility mouth split_data (old name, old arguments) on the scene's rows."""
+    import pandas as pd
+    frame = pd.DataFrame({k: [b[k] for b in inp["bars"]] for k in ("open", "high", "low", "close", "volume")},
+                         index=pd.to_datetime([b["t_ns"] for b in inp["bars"]], unit="ns", utc=True))
+    sp = _engine(split_data, frame, train_frac=inp["train_frac"], val_frac=inp["val_frac"])
+    pos = {t: i for i, t in enumerate(frame.index)}
+    return {"splits": {k: [pos[t] for t in getattr(sp, k).index] for k in ("training", "validation", "out_of_sample")}}
+
+
+def _delivery(inp: dict) -> dict:
+    """The core granularity: the core's own event loop and strategy context."""
+    from bot.bt.core import BarEvent, CoreEngine, EventType, Strategy, ZeroLatency
+    from bot.bt.core.testing import FixedRateCost, ImmediateFillModel, RecordingAccount
+    bar_ns = int(round(float(inp["bar_seconds"]) * NS))
+    rows = inp["bars"]
+    events = [BarEvent(received_time_ns=b["t_ns"] + bar_ns, start_time_ns=b["t_ns"], open=b["open"], high=b["high"],
+                       low=b["low"], close=b["close"], volume=b.get("volume", 0.0)) for b in rows]
+    calls = []
+
+    class Recorder(Strategy):
+        def on_event(self, event, ctx):
+            if type(event) is not BarEvent:
+                return
+            seen = ctx.visible_events(EventType.BAR)
+            last = seen[len(seen) - 1]
+            calls.append({"seen": len(seen), "last_t_ns": int(last.start_time_ns), "last_close": float(last.close)})
+
+    def go():
+        span = (events[0].exchange_time_ns, events[-1].received_time_ns)
+        CoreEngine(Recorder(), {"bars": events}, ImmediateFillModel(), ZeroLatency(), FixedRateCost(0.0),
+                   RecordingAccount(), time_span_ns=span).run()
+    _engine(go)
+    return {"calls": calls}
 
 
 def _run_reference(inp: dict) -> dict:
@@ -152,7 +242,9 @@ class NewImpl:
         op = inp.get("op")
         if op == "bars":
             if "models" in inp:
-                return {m: _run_engine(inp, m) for m in inp["models"]}
+                return {m: (_legacy_bars(inp) if m == "legacy" else _run_engine(inp, m)) for m in inp["models"]}
+            if inp.get("model") == "legacy":
+                return _legacy_bars(inp)
             if inp.get("reference"):
                 return {"engine": _run_engine(inp, inp.get("model", "spec")), "reference": _run_reference(inp)}
             return _run_engine(inp, inp.get("model", "spec"))
@@ -161,8 +253,10 @@ class NewImpl:
                                        inp["periods_per_year"])}
         if op == "split":
             if "models" in inp:
-                return {m: _split(inp, m) for m in inp["models"]}
+                return {m: (_legacy_split(inp) if m == "legacy" else _split(inp, m)) for m in inp["models"]}
             return _split(inp, "spec")
+        if op == "delivery":
+            return _delivery(inp)
         if op == "pipeline":
             return _pipeline(inp)
         raise NotExpressible(f"op {op!r} に当たる口を新実装の公開された口に探したが無い")

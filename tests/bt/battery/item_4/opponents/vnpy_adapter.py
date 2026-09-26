@@ -69,6 +69,32 @@ class VnpyAdapter(Base):
             out.append(self.METRICS)
         return out
 
+    def delivery(self, inp):
+        """What VnPy hands CtaTemplate.on_bar: the one bar just replayed (no history object), so the bars the
+        strategy has seen are the bars handed so far."""
+        from _i4_base import ns_of
+        data = [BarData(symbol="X", exchange=Exchange.LOCAL, datetime=EPOCH + D.timedelta(microseconds=b["t_ns"] // 1000),
+                        interval=Interval.MINUTE, volume=float(b["volume"]), open_price=float(b["open"]),
+                        high_price=float(b["high"]), low_price=float(b["low"]), close_price=float(b["close"]),
+                        gateway_name="BACKTESTING") for b in inp["bars"]]
+        calls = []
+
+        class S(CtaTemplate):
+            def on_init(self):
+                return None
+
+            def on_bar(self, bar):
+                calls.append({"seen": len(calls) + 1, "last_t_ns": ns_of(bar.datetime), "last_close": float(bar.close_price)})
+        eng = BacktestingEngine()
+        eng.output = lambda msg: None
+        eng.set_parameters(vt_symbol="X.LOCAL", interval=Interval.MINUTE, start=data[0].datetime,
+                           end=data[-1].datetime + D.timedelta(days=1), rate=0.0, slippage=0.0, size=1, pricetick=1e-8,
+                           capital=6000.0, mode=BacktestingMode.BAR)
+        eng.add_strategy(S, {})
+        eng.history_data = list(data)
+        eng.run_backtesting()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]

@@ -57,6 +57,22 @@ class BtAdapter(Base):
                 out.append(why)
         return out
 
+    def delivery(self, inp):
+        """What bt hands an Algo: target.universe (the price table up to target.now).  bt takes one price per row, so
+        the table is the closes."""
+        from _i4_base import ns_of
+        idx = pd.DatetimeIndex([to_dt(b["t_ns"]) for b in inp["bars"]])
+        calls = []
+
+        class Rec(bt.Algo):
+            def __call__(self, target):
+                u = target.universe["X"]
+                calls.append({"seen": len(u), "last_t_ns": ns_of(u.index[-1]), "last_close": float(u.iloc[-1])})
+                return True
+        data = pd.DataFrame({"X": [float(b["close"]) for b in inp["bars"]]}, index=idx)
+        bt.run(bt.Backtest(bt.Strategy("s", [Rec()]), data, initial_capital=6000.0, progress_bar=False))
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]

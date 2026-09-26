@@ -199,6 +199,57 @@ def reasons(rows):
     return s if len(s) <= 900 else s[:900] + "…"
 
 
+UNVERIFIED = ("読んでいない", "読んだ範囲に無い", "再現していない")
+# the answer of an adapter / reproduction that is not about the tool at all (the scene set's own barriers, i4-r1-05)
+BARRIER_WORDS = ("足 0 の合図", "maker と taker で違う手数料")
+# a part that is the adapter's own choice, not the tool's absence (the tool may have the mouth)
+ADAPTER_WORDS = ("この adapter", "写していない", "書いていない")
+
+
+def split_reason(detail: str) -> list:
+    """The parts of one scene's reason (an adapter / reproduction joins them with ' / ')."""
+    return [x.strip() for x in clean(detail).split(" / ") if x.strip()]
+
+
+def verified_absence(part: str, need_line: bool = True) -> bool:
+    """A part that says a mouth is missing and shows it, with no word of not having read it and not one of the scene
+    set's own barriers (規則 6).  A tool run in its venv shows it by the call itself (the runner's command and its
+    output = the adapter's answer after calling the tool): need_line=False.  A reproduction shows it by a line of the
+    primary source: need_line=True (a code line or a URL)."""
+    if any(w in part for w in UNVERIFIED + BARRIER_WORDS + ADAPTER_WORDS):
+        return False
+    if not ("無い" in part or "無く" in part or "だけ" in part):
+        return False
+    return (not need_line) or ("行" in part or "http" in part or ".py" in part or ".rs" in part or ".js" in part
+                               or ".ts" in part or ".cs" in part or ".cpp" in part or ".go" in part)
+
+
+def barrier_free(scene_id: str) -> bool:
+    return not S.barriers(S.by_id(scene_id))
+
+
+def judge_row(rows, need_line: bool = True):
+    """(judgement, parts) of a candidate whose every scene of the viewpoint ended in 「結果なし」:
+    「持たないと確認した」 only when every barrier-free value scene of the viewpoint (every scene when it has none)
+    failed with at least one verified absence -- parts = those verified absences (the reason shows only them);
+    otherwise 「再現できない」 -- parts = the reasons of the scenes without one (what was not read, i4-r1-08)."""
+    val = [r for r in rows if r["kind"] == "値" and barrier_free(r["scene"])] or rows
+    unverified, verified = [], []
+    for r in val:
+        parts = split_reason(r["detail_1"])
+        ok = [x for x in parts if verified_absence(x, need_line)]
+        if ok:
+            verified += [x for x in ok if x not in verified]
+        else:
+            unverified += [x for x in parts if x not in unverified]
+    return ("持たないと確認した", verified) if not unverified else ("再現できない", unverified)
+
+
+def joined(parts, limit=900):
+    s = " / ".join(parts)
+    return s if len(s) <= limit else s[:limit] + "…"
+
+
 def target_of(n):
     for t, spec in T.TARGETS.items():
         if spec.get("cand") == n:
@@ -264,9 +315,15 @@ def main():
                     runnable.append(f"{n} {name}")
                     continue
                 impl = f"実装を呼んだ(対象 {t}、<venvs>/{spec['venv']})"
-                why = (f"場面が測る能力の口が無い: `python3 tests/bt/battery/item_4/run_battery.py --target {t} --out …` の出力 "
-                       f"survey_results/{t}.tsv の {v} の行が全部「結果なし」。adapter の理由(道具を実際に呼んだ結果): {reasons(rows)}")
-                table.append((n, name, MECH.get(n, ""), impl, "持たないと確認した", why))
+                j, unv = judge_row(rows, need_line=False)
+                if j == "持たないと確認した":
+                    why = (f"場面が測る能力の口が無い: `python3 tests/bt/battery/item_4/run_battery.py --target {t} --out …` の出力 "
+                           f"survey_results/{t}.tsv の {v} の行が全部「結果なし」。本題でない物の無い値の場面のそれぞれに、行を引いた「無い」がある"
+                           f"(道具を実際に呼んだ adapter の理由のうち、その部分): {joined(unv)}")
+                else:
+                    why = (f"(a) SCAN の書き写し(SCAN {CATLINE.get(n, '?')} 行)は機構の説明まで。(b) 道具を実際に呼んだ adapter の理由に、"
+                           f"行を引いた「無い」の無い場面がある(確かめていない部分: {' / '.join(unv)[:500]})。出力 survey_results/{t}.tsv")
+                table.append((n, name, MECH.get(n, ""), impl, j, why))
                 continue
             mod = spec["module"]
             impl = f"実装のコードで確かめた(一次資料を読むだけで書き写した {mod}。出典の URL と行は同じファイルの冒頭)"
@@ -282,17 +339,16 @@ def main():
                               f"(backtesting-report.ts 24-75 行、{OTR})。紙の売買(Paper Trading, SCAN 3823 行)は実行の型の切替で、札を強制しない"))
                 continue
 
-            def only_unread(r):
-                parts = [x for x in clean(r["detail_1"]).split(" / ") if x.strip()]
-                return bool(parts) and all("再現していない" in x for x in parts)
-
-            if rows and any(only_unread(r) for r in rows) and not any(r for r in rows if not only_unread(r)):
+            j, unv = judge_row(rows)
+            if j == "再現できない":
                 table.append((n, name, MECH.get(n, ""), impl, "再現できない",
-                              f"(a) SCAN の書き写し(SCAN {CATLINE.get(n, '?')} 行)は機構の説明までで、この観点の規則を書き写せる行が無い。(b) 一次資料のうち読んだ範囲では、この観点の場面に要る部分が足りない"
-                              f"(読んでいない部分の名は理由の中): {rs}(出力 survey_results/{t}.tsv、{mod})"))
+                              f"(a) SCAN の書き写し(SCAN {CATLINE.get(n, '?')} 行)は機構の説明までで、この観点の規則を書き写せる行が無い。(b) 一次資料のうち"
+                              f"読んだ範囲では、この観点の場面に要る部分を確かめていない(確かめていない部分: {' / '.join(unv)[:500]})。"
+                              f"理由の全部: {rs}(出力 survey_results/{t}.tsv、{mod})"))
             else:
                 table.append((n, name, MECH.get(n, ""), impl, "持たないと確認した",
-                              f"一次資料の行で確かめた: 書き写し {mod} を場面に通した出力 survey_results/{t}.tsv の {v} の行が全部「結果なし」。理由: {rs}"))
+                              f"一次資料の行で確かめた: 書き写し {mod} を場面に通した出力 survey_results/{t}.tsv の {v} の行が全部「結果なし」。"
+                              f"本題でない物の無い値の場面のそれぞれに、行を引いた「無い」がある(その部分): {joined(unv)}"))
         out += [f"動かせた候補: {len(runnable)} 件" + (f"({', '.join(runnable)})" if runnable else ""), ""]
         if table:
             out += ["| 候補 | 機構 | 実装 | 判断 | 理由 |", "|---|---|---|---|---|"]
@@ -325,10 +381,15 @@ RUN_NOTES = {
     10: "PyPI の fast-trade 2.1.0(この役の venv item_4/fast-trade)", 62: "PyPI の qf-lib 4.0.7(この役の venv item_4/qf-lib。宣言されていない PyJWT・oauthlib・requests-oauthlib を足した: 記録 i4_r1_scenekeeper_install_qf-lib.log)",
     18: "PyPI の zipline-reloaded 3.1.1(この役の venv item_4/zipline-reloaded、記録 i4_r1_scenekeeper_install_zipline-reloaded.log)",
 }
+MEASURED = ("導入を試みた(第 r2-1 回): 隔離した venv で `pip install --dry-run --ignore-installed --report` が {n} 件のファイルに解決"
+            "(opponents/attempts/i4_r2-1_scenekeeper_dryrun_{pkg}.log)、解決した全ファイルの大きさを PyPI の公開の情報から足すと {mib} MiB"
+            "(opponents/attempts/i4_r2-1_scenekeeper_install_size_measure.txt、i4_r2-1_scenekeeper_sizes.py)。そのときの空き容量は 826,646,528 バイト"
+            "(df -B1 /、2026-09-26T08:44Z。この環境の容量が 19 MB まで落ちた実測が第 17 周にある)で、展開後は取得の大きさより大きいので、"
+            "並行する役の作業を止めないように導入を止めた(容量の実測で止めた)。一次資料から再現した")
 NOT_INSTALLED = {
-    67: "pip install --dry-run: 320 件の依存(項目 2 の記録)。一次資料から再現した", 60: "pip install --dry-run: 104 件の依存(PySide6 ほか、opponents/attempts/i4_r1_scenekeeper_dryrun_resolution.log)。一次資料から再現した",
+    67: MEASURED.format(pkg="lumibot", n=320, mib="572.3"), 60: MEASURED.format(pkg="hikyuu", n=104, mib="470.5"),
     15: "Rust の作業空間で crate の取得に資格情報が要る(項目 3 の記録)。一次資料から再現した", 8: "導入前の検査(調査の委任文 §6-1)で止めた(項目 3 の記録)。一次資料から再現した",
-    56: "pip install --dry-run: 57 件の依存。足は道具自身のデータベースから読む(get_kdata)。一次資料から再現した",
+    56: MEASURED.format(pkg="zvt", n=57, mib="121.4") + "。足は道具自身のデータベースから読む(get_kdata)",
     69: "項目 0 の Go の driver(item_0/c69)が消えている。一次資料から再現した", 11: "検証に触手(tentacles)が要り、既定の触手は PyPI の外の zip(項目 0 の記録)。一次資料から再現した",
     7: "Node.js の場(データの採掘と UI を含む)。導入していない。一次資料から再現した", 52: "C# / .NET(項目 0 の記録)。一次資料から再現した",
     57: "C++ の構築(項目 0 の記録)。一次資料から再現した", 94: "Python 2 の文法(この環境に Python 2 は無い)。一次資料から再現した",

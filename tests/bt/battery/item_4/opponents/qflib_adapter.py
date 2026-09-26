@@ -77,6 +77,69 @@ class QfLib(Base):
             out.append(self.METRICS)
         return out
 
+    def delivery(self, inp):
+        """What qf-lib lets a strategy read at each CalculateAndPlaceOrders event: the session's data provider's closes
+        from the first bar up to the timer's now (the backtest's data provider cuts at now)."""
+        from _i4_base import ns_of
+        from qf_lib.backtesting.events.time_event.periodic_event.calculate_and_place_orders_event import \
+            CalculateAndPlaceOrdersPeriodicEvent
+        from qf_lib.backtesting.monitoring.backtest_monitor import BacktestMonitorSettings
+        from qf_lib.backtesting.strategies.abstract_strategy import AbstractStrategy
+        from qf_lib.backtesting.trading_session.backtest_trading_session_builder import BacktestTradingSessionBuilder
+        from qf_lib.common.enums.frequency import Frequency
+        from qf_lib.common.enums.price_field import PriceField
+        from qf_lib.common.enums.security_type import SecurityType
+        from qf_lib.common.tickers.tickers import BloombergTicker
+        from qf_lib.containers.qf_data_array import QFDataArray
+        from qf_lib.data_providers.preset_data_provider import PresetDataProvider
+        from qf_lib.documents_utils.document_exporting.pdf_exporter import PDFExporter
+        from qf_lib.documents_utils.excel.excel_exporter import ExcelExporter
+        from qf_lib.tests.unit_tests.config.test_settings import get_test_settings
+
+        bars = inp["bars"]
+        n = len(bars)
+        T = BloombergTicker("X US Equity", SecurityType.STOCK, 1)
+        dates = pd.DatetimeIndex([pd.Timestamp(b["t_ns"], unit="ns") for b in bars])
+        if dates[0].normalize() != dates[-1].normalize():
+            raise NotExpressible(f"{TOOL}: 場面の足が日をまたぐ(この adapter は 1 日の分足の会期だけを作る)")
+        fields = PriceField.ohlcv()
+        arr = np.zeros((n, 1, len(fields)))
+        for i, b in enumerate(bars):
+            arr[i, 0, :] = [b["open"], b["high"], b["low"], b["close"], 1e12]
+        data = QFDataArray.create(dates, [T], fields, data=arr)
+        dp = PresetDataProvider(data, dates[0], dates[-1] + pd.Timedelta(minutes=1), Frequency.MIN_1)
+        settings = get_test_settings()
+        b_ = BacktestTradingSessionBuilder(settings, PDFExporter(settings), ExcelExporter(settings))
+        b_.set_frequency(Frequency.MIN_1)
+        b_.set_market_open_and_close_time({"hour": 0, "minute": 0}, {"hour": 23, "minute": 59})
+        b_.set_initial_cash(6000)
+        b_.set_data_provider(dp)
+        b_.set_monitor_settings(BacktestMonitorSettings.no_stats())
+        ts = b_.build(dates[0], dates[-1])
+        calls = []
+
+        class Rec(AbstractStrategy):
+            def calculate_and_place_orders(self):
+                now = ts.data_provider.timer.now()
+                # lists of tickers and fields keep the answer a 3-d array (a single ticker and field squeezes to a float
+                # when one row is left)
+                got = ts.data_provider.get_price([T], [PriceField.Open, PriceField.Close], dates[0], now, Frequency.MIN_1)
+                if hasattr(got, "dates"):  # QFDataArray (dates x tickers x fields)
+                    vals = [(pd.Timestamp(d), float(got.loc[d, T, PriceField.Close])) for d in got.dates.values]
+                else:  # get_price squeezes the dates away only when the range is one date (start == end): dates[0]
+                    vals = [(pd.Timestamp(dates[0]), float(got.loc[T, PriceField.Close]))]
+                vals = [(d, v) for d, v in vals if v == v]
+                if vals:
+                    calls.append({"seen": len(vals), "last_t_ns": ns_of(vals[-1][0]), "last_close": vals[-1][1]})
+
+        CalculateAndPlaceOrdersPeriodicEvent.set_frequency(Frequency.MIN_1)
+        s1, s2 = dates[0] + pd.Timedelta(minutes=1), dates[-1] + pd.Timedelta(minutes=1)
+        CalculateAndPlaceOrdersPeriodicEvent.set_start_and_end_time(
+            {"hour": s1.hour, "minute": s1.minute}, {"hour": s2.hour, "minute": s2.minute})
+        Rec(ts).subscribe(CalculateAndPlaceOrdersPeriodicEvent)
+        ts.start_trading()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg = inp["config"]
         bars = inp["bars"]

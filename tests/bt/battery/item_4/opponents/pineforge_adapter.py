@@ -46,6 +46,8 @@ class PineForgeAdapter(Base):
     METRICS = "12 の指標を出す口を探したが無い(report は取引の一覧)"
     SPLIT = "行の割合で分ける口を探したが無い"
     PIPELINE = "入力は足(pf_bar_t)の列だけで、約定・気配・板・ファイルの宣言・目的つきの書き出し・ダッシュボードの口が無い"
+    DELIVERY = ("戦略に届く足を記録するには Pine の戦略を C の driver から呼ぶ必要があるが、この役の走行では項目 2 の構築物と C の driver が"
+                "消えていて道具を呼べない(opponents/RUNNABILITY.tsv の 70 の行。構築し直しは持ち越し)")
 
     def extra_gate(self, inp):
         out = []

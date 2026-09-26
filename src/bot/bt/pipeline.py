@@ -48,6 +48,19 @@ Declarations (every key required; nothing has a default):
                dataset of origin "real" and the purpose 動作確認, only the
                time-only strategies (schedule, seeded_random) are accepted.
 
+Origin is decided from the data, not from the word (critic i4-r1-04): a
+dataset IS real market data when a file of it lies in this environment's
+market-data folders (MARKET_ROOTS under the repository: the data layer's
+allowed roots) or has the same bytes (size and sha256) as a file there. The
+declared `origin` can only add "real": a dataset declared "synthetic" whose
+file is market data is refused (a false declaration), whatever the strategy
+and the purpose. The plan and the run record carry the decided origin and
+its evidence (`origin_evidence`: by "position" / "bytes" / None, the market
+file matched, the declared word). Limits (not decided here): a market file
+edited by even one byte -- or recompressed, decompressed, re-encoded, cut to
+a part -- is another file by content; market data that exists only outside
+this environment (the owner's PC) is not known.
+
 The run id is the sha256 of the identity (declarations, data sha256, code
 state, version, purpose, prereg hash); no clock enters it. The run directory
 holds record.json, repro.json and the exports metrics / trades / fills /
@@ -57,6 +70,7 @@ the form bot.monitoring.backtest_view reads (its 10 tabs; under the purpose
 """
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 import inspect
 import json
@@ -70,6 +84,8 @@ from typing import Any, Mapping, Optional, Sequence
 from .core import (Ack, BarEvent, BookSnapshotEvent, ClockEvent, CoreEngine, Event, Fill, NullAccount, OrderFillEvent,
                    OrderRequest, Reject, Strategy, StrategyContext, TradeEvent)
 from .data import DataError, load
+from .data.allowlist import DEFAULT_ROOTS as _DATA_ROOTS
+from .data.allowlist import MANDATORY_DENY as _NOT_MARKET
 from .report import exports as X
 from .report import metrics as M
 from .report.trades import round_trips
@@ -77,13 +93,15 @@ from .repro.code_state import REPO, code_state, version
 
 DEFAULT_RUNS_DIR = os.path.join(REPO, "backtest_runs")
 ORIGINS = ("real", "synthetic")
+# this environment's market-data folders: the data layer's allowed roots under the repository (not the caller's root)
+MARKET_ROOTS = tuple(os.path.join(REPO, r) for r in _DATA_ROOTS)
 TIME_ONLY = ("schedule", "seeded_random")
 STRATEGY_KINDS = TIME_ONLY + ("price_rule",)
 FILL_RULE = {"price": "first_observed_at_or_after", "trade": "px", "quote": {"buy": "ask", "sell": "bid"}, "bar": "open"}
 COST_KEYS = ("taker_fee_pct", "maker_fee_pct", "slippage_pct", "spread_pct")
 QUANTILE_PROBS = (0.05, 0.25, 0.5, 0.75, 0.95)
 MARKOUT_HORIZONS_S = (60, 300)
-PIPELINE_VERSION = "bt-item4-pipeline-r1"
+PIPELINE_VERSION = "bt-item4-pipeline-r2"
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _PRICE_EVENT = {"trade": TradeEvent, "quote": BookSnapshotEvent, "book": BookSnapshotEvent, "bar": BarEvent}
 
@@ -111,6 +129,64 @@ def _sha(b: bytes) -> str:
 def _num(v: Any, what: str) -> float:
     _need(type(v) in (int, float) and v == v and v not in (float("inf"), float("-inf")), f"{what} must be a finite number")
     return float(v)
+
+
+# --------------------------------------------------------------------------- origin from the data
+_MARKET_HASHES: dict = {}  # (real path, size, mtime_ns) -> sha256 of a market file (a file changed is hashed again)
+
+
+def _file_sha(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _under(real: str, folder: str) -> bool:
+    folder = os.path.realpath(folder)
+    return real == folder or real.startswith(folder + os.sep)
+
+
+def _named_not_market(real: str) -> bool:
+    """A path the data layer names as not market data (its mandatory refusals: qa_* synthetic packets, o3c_*
+    research intermediates, phase2_runs, phase2_sealed -- bot.bt.data.allowlist.MANDATORY_DENY)."""
+    rel = os.path.relpath(real, os.path.realpath(REPO))
+    return any(fnmatch.fnmatchcase(c.lower(), pat.lower()) for c in rel.split(os.sep) for pat, _ in _NOT_MARKET)
+
+
+def market_evidence(real: str, sha256: str, market_roots: Sequence[str] = MARKET_ROOTS) -> dict:
+    """Is the file at `real` (its real path) market data of this environment? By position (it lies in a
+    market-data folder) or by bytes (a file there has the same size and sha256). A file the data layer names as
+    not market data (qa_*, o3c_*, phase2_runs, phase2_sealed) is neither. Every file of the folders is listed each
+    time (no stale listing); only files of the same size are hashed (cached by path, size, mtime)."""
+    for root in market_roots:
+        if _under(real, root) and not _named_not_market(real):
+            return {"by": "position", "market_path": os.path.relpath(real, os.path.realpath(REPO))}
+    size = os.path.getsize(real)
+    for root in market_roots:
+        root_real = os.path.realpath(root)
+        if not os.path.isdir(root_real):
+            continue
+        for dirpath, dirnames, filenames in os.walk(root_real):
+            dirnames.sort()
+            for name in sorted(filenames):
+                cand = os.path.join(dirpath, name)
+                try:
+                    st = os.stat(cand)
+                except OSError:
+                    continue
+                if st.st_size != size or not os.path.isfile(cand) or _named_not_market(os.path.realpath(cand)):
+                    continue
+                key = (cand, st.st_size, st.st_mtime_ns)
+                if key not in _MARKET_HASHES:
+                    try:
+                        _MARKET_HASHES[key] = _file_sha(cand)
+                    except OSError:
+                        continue
+                if _MARKET_HASHES[key] == sha256:
+                    return {"by": "bytes", "market_path": os.path.relpath(cand, os.path.realpath(REPO))}
+    return {"by": None, "market_path": None}
 
 
 # --------------------------------------------------------------------------- declarations
@@ -252,10 +328,6 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
     st = _check_strategy(strategy)
     for lg in st.get("legs", []):
         _need(lg.get("instrument") in (None, *inames), f"an order names the unknown instrument {lg.get('instrument')!r}")
-    real = any(d["origin"] == "real" for d in ds)
-    _need(not (real and p == X.SMOKE and st["kind"] not in TIME_ONLY),
-          f"a 動作確認 run on real data takes a time-only strategy {TIME_ONLY} (委任文 §4: no signal, no conditioning, "
-          f"no optimisation); got {st['kind']!r}")
     lat = _check_fill(fill)
     cs = _check_costs(costs)
     for it in ins:
@@ -263,12 +335,29 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
               f"instrument {it['name']!r} is priced from quotes, which carry their spread: spread_pct must be 0")
     hashes = {}
     for d in ds:
+        found = []
         for pth in d["paths"]:
+            full = os.path.join(root, pth)
             try:
-                with open(os.path.join(root, pth), "rb") as fh:
+                with open(full, "rb") as fh:
                     hashes[pth] = _sha(fh.read())
             except OSError as exc:
                 raise PipelineError(f"data {pth!r} cannot be read: {exc}") from None
+            ev = market_evidence(os.path.realpath(full), hashes[pth])
+            if ev["by"] is not None:
+                found.append(ev)
+        declared = d["origin"]
+        if found and declared == "synthetic":
+            raise PipelineError(f"dataset {d['name']!r} is declared synthetic but its file is market data of this "
+                                f"environment ({found[0]['market_path']}, by {found[0]['by']}): the origin is decided "
+                                f"from the data, not the word")
+        d["origin"] = "real" if found or declared == "real" else "synthetic"
+        d["origin_evidence"] = {"declared": declared, "by": found[0]["by"] if found else None,
+                                "market_path": found[0]["market_path"] if found else None}
+    real = any(d["origin"] == "real" for d in ds)
+    _need(not (real and p == X.SMOKE and st["kind"] not in TIME_ONLY),
+          f"a 動作確認 run on real data takes a time-only strategy {TIME_ONLY} (委任文 §4: no signal, no conditioning, "
+          f"no optimisation); got {st['kind']!r}")
     code = code_state(repo)
     src = inspect.getsource(inspect.getmodule(plan_pipeline))
     identity = {
@@ -541,8 +630,8 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
         "config": {"instrument": ", ".join(i["name"] for i in plan.instruments), "instruments": plan.instruments,
                    "strategy": ident["strategy"], "fill": ident["fill"], "latency_ns": plan.latency_ns,
                    "costs": plan.costs},
-        "data": [{"path": pth, "dataset": d["name"], "spec": d["spec"], "origin": d["origin"]}
-                 for d in plan.datasets for pth in d["paths"]],
+        "data": [{"path": pth, "dataset": d["name"], "spec": d["spec"], "origin": d["origin"],
+                  "origin_evidence": d["origin_evidence"]} for d in plan.datasets for pth in d["paths"]],
         "data_sha256": ident["data_sha256"], "seed": plan.strategy.get("seed") if isinstance(plan.strategy, dict) else None,
         "setup": ident["setup"], "version": ident["version"], "purpose": plan.purpose,
         "prereg_sha256": ident["prereg_sha256"], "prereg": plan.prereg,

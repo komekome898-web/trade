@@ -75,6 +75,26 @@ class PyAlgoTradeAdapter(Base):
             return [self.METRICS]
         return []
 
+    def delivery(self, inp):
+        """What PyAlgoTrade hands onBars: the bar feed's data series of the instrument (every bar dispatched so far)."""
+        from _i4_base import ns_of
+        feed = _Feed(bar.Frequency.MINUTE)
+        feed.addBarsFromSequence(INST, [bar.BasicBar(to_dt(b["t_ns"]), b["open"], b["high"], b["low"], b["close"],
+                                                     b["volume"], b["close"], bar.Frequency.MINUTE) for b in inp["bars"]])
+        brk = _Broker(6000.0, feed)
+        calls = []
+
+        class S(strategy.BacktestingStrategy):
+            def __init__(self):
+                super().__init__(feed, brk)
+
+            def onBars(self, bars_):
+                ds = self.getFeed()[INST]
+                last = ds[-1]
+                calls.append({"seen": len(ds), "last_t_ns": ns_of(last.getDateTime()), "last_close": float(last.getClose())})
+        S().run()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         a = adj(c)

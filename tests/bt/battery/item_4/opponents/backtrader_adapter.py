@@ -67,6 +67,23 @@ class BacktraderAdapter(Base):
                        "手数料の合計を出す口は無い(adapter は道具が出していない値を計算しない)")
         return out
 
+    def delivery(self, inp):
+        """What Backtrader hands Strategy.next: the data feed's lines up to the current bar (len, datetime[0], close[0])."""
+        from _i4_base import ns_of
+        df = bars_frame(inp, pd)
+        df["openinterest"] = 0.0
+        calls = []
+
+        class S(bt.Strategy):
+            def next(self):
+                calls.append({"seen": len(self.data), "last_t_ns": ns_of(self.data.datetime.datetime(0)),
+                              "last_close": float(self.data.close[0])})
+        cer = bt.Cerebro(stdstats=False)
+        cer.adddata(bt.feeds.PandasData(dataname=df))
+        cer.addstrategy(S)
+        cer.run()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         a = adj(c)

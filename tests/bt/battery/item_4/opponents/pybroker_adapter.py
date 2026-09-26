@@ -70,6 +70,27 @@ class PyBrokerAdapter(Base):
                        "注文の表、pending_orders は待っている注文だけ)")
         return out
 
+    def delivery(self, inp):
+        """What PyBroker hands the execution function: the ExecContext's arrays (ctx.date, ctx.close) up to the bar."""
+        from _i4_base import ns_of
+        bars = inp["bars"]
+        dates = [pd.Timestamp(to_dt(b["t_ns"])) for b in bars]
+        df = pd.DataFrame({"date": dates, "symbol": "X", "open": [b["open"] for b in bars],
+                           "high": [b["high"] for b in bars], "low": [b["low"] for b in bars],
+                           "close": [b["close"] for b in bars], "volume": [b["volume"] for b in bars]})
+        calls = []
+
+        def fn(ctx):
+            calls.append({"seen": len(ctx.close), "last_t_ns": ns_of(pd.Timestamp(ctx.date[-1])),
+                          "last_close": float(ctx.close[-1])})
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            pybroker.disable_logging()
+            strat = Strategy(df, dates[0], dates[-1], StrategyConfig(initial_cash=6000.0))
+            strat.add_execution(fn, ["X"])
+            strat.backtest(calc_bootstrap=False, warmup=None)
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg, c = inp["config"], inp["config"]["costs"]
         bars = inp["bars"]

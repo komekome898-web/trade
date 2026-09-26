@@ -64,6 +64,32 @@ class QuantTrader(Base):
             out.append(self.METRICS)
         return out
 
+    def delivery(self, inp):
+        """What quanttrader hands StrategyBase.on_tick: the tick of this bar and the data board (history up to the
+        tick's timestamp)."""
+        from _i4_base import ns_of
+        bars = inp["bars"]
+        n = len(bars)
+        idx = pd.DatetimeIndex([to_dt(b["t_ns"]) for b in bars])
+        df = pd.DataFrame({"Open": [b["open"] for b in bars], "High": [b["high"] for b in bars],
+                           "Low": [b["low"] for b in bars], "Close": [b["close"] for b in bars],
+                           "Volume": [1.0] * n}, index=idx)
+        calls = []
+
+        class Rec(StrategyBase):
+            def on_tick(self, tick):
+                # the tick of a bar backtest carries no price (price 0.0); the strategy reads prices from the data
+                # board it is given (StrategyBase._data_board, get_hist_price: rows up to the timestamp inclusive)
+                h = self._data_board.get_hist_price("X", tick.timestamp)
+                calls.append({"seen": len(h), "last_t_ns": ns_of(pd.Timestamp(h.index[-1])),
+                              "last_close": float(h["Close"].iloc[-1])})
+        eng = BacktestEngine(idx[0].normalize(), idx[-1].normalize() + pd.Timedelta(days=1))
+        eng.set_capital(6000.0)
+        eng.set_strategy(Rec())
+        eng.add_data("X", df)
+        eng.run()
+        return {"calls": calls}
+
     def bars(self, inp):
         cfg = inp["config"]
         bars = inp["bars"]
