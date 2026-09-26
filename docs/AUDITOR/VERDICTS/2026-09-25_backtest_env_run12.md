@@ -786,3 +786,239 @@ git commit / git push はしていません。
 5. i4w_drive.py を資料係へ渡す手段: 台本の資料係の起動文には作業者の返り値が入っていない(台本の実測: 表の起動文は req と bat だけ)。ただし資料係は作業木を読めるので、07:35 UTC の時点で tests/bt/battery/item_4/adapters/new_impl.py を既に書き始めている。**段の途中なのでリードからは渡さない。**
 6. 最後の段(src/bot/backtest/ の置き換え): **そのとおり**。2 周目の作業者が、この周の批評家の [止める] 0 を確かめてから行う。この周の [止める] が 0 でなければ上限 2 周の中では置き換えに届かないので、置き換えなしのまま「項目 4 は上限で未達(置き換え未実施)」として報告し、その先はオーナーが決める(I-013)。
 
+
+### 項目 4 第 1 周の出力(逐語。07:33〜08:3x UTC、見回り 6 で写した)
+
+#### 表:4#1
+
+```json
+{
+ "tables": {
+  "current_1": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_h6os4a.md",
+  "current_2": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_lkz8oc.md",
+  "survey_1": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_tdnjk1.md",
+  "survey_2": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_mowzh6.md",
+  "mutant_1": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_6xjmd6.md",
+  "mutant_2": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/表_pq6d39.md"
+ },
+ "commands": "(リポジトリの直下から。記録の全文は docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/commands.txt)\n1. 新実装の adapter の本体を書いた: tests/bt/battery/item_4/adapters/new_impl.py。呼んだのは新実装の公開された口だけ(bot.bt.compat の bar_events・options_from_mapping・run_bars・compute_metrics_values・split_rows、bot.bt.reference.bar_rules.run_rules、bot.bt.pipeline の plan_pipeline・run_pipeline、bot.bt.report.exports.read_export、bot.monitoring.backtest_view.run_view)。拒否 = エンジンの ValueError の子(BarModelError / SplitError / PipelineError / DataError)→ Refused。当方の現状の adapter と同じ規則。差分は materials/new_impl_adapter.diff\n2. python3 tests/bt/battery/item_4/run_battery.py --target new_impl --out <runs>/new_impl.tsv(本体の試し走り。40/40 が一致。この出力は消し、下の 3 で走らせ直した)\n3. setsid nohup bash materials/run_all.sh > materials/run_all.log(42 対象 × 2 回 = 84 回。4 本並列。runs/<対象>.tsv と runs_2/<対象>.tsv。84 回すべて rc=0。開始 2026-09-26T07:32:19Z、ALL_DONE 07:35:40Z。最長は opp_ziplime の 95 秒)\n4. python3 materials/compare_runs.py > compare_runs.out → {'in_run_diff': 0, 'run12_diff': 0, 'vs_survey_diff': 80, 'rows': 1680}。80 件はすべて new_impl と mutant(場面係の survey_results では口が空で「結果なし」だった)\n5. python3 materials/recount.py > recount.out(make_tables.py を使わず runs/*.tsv から数え直し)→ new_impl 40/40、current_impl 26/40、mutant 37/40、調査結果の側 39 対象を寄せたもの 15/40\n6. python3 materials/make_tables.py > make_tables.out(6 枚の表・mapping.tsv・survey_breakdown.tsv・table_counts.tsv)\n7. python3 materials/recount_from_tables.py > recount_from_tables.out → all counts match the cells: True\n8. python3 materials/check_names.py > check_names.out → 6 枚とも道具の名・時刻・16 進の語 0 件(照らした語は 143 個)\n9. md5sum で各組の 2 枚を比べた → materials/md5sum_pairs.txt(3 組とも違う)\n10. git ls-files -z tests/bt/battery/item_4 | xargs -0 sha256sum | sha256sum → d7d14efe94d656d775f423eef56f746efb666b13c8f5dc32b966009d144a8c63(fingerprint.txt。リードのコミット 5e0c26d のあとも同じ = fingerprint_after.txt)\n11. PYTHONPATH=src python -m pytest tests/bt/battery/item_4 > materials/pytest_battery_item4_r1_shiryo.out → 15 passed in 1.17s\nstale への移動: なし(round_1/ にはこの周の 6 枚より前の 表_*.md が無かった。make_tables.py は stale/ を作っていない)",
+ "adapters_changed": [
+  "tests/bt/battery/item_4/adapters/new_impl.py"
+ ],
+ "notes": "提出前の吟味(資料係(表)):\n- 観点ごとの一致の数は 3 通りで数えて全部同じだった。(a) make_tables.py を使わない runs/*.tsv からの数え直し(recount.out)、(b) 表のセルからの数え直し(recount_from_tables.out: all counts match the cells: True)、(c) 表の集計の行と table_counts.tsv。新実装は 17 観点すべてで一致(40/40)。当方の現状は 26/40、調査結果の側は 15/40、試金石は 37/40(I4-1 が 1/2、I4-3 が 1/2、I4-16 が 0/1)。試金石で崩れたのは i4-1-ref-maker・i4-3-e2e-maker・i4-16-missed で、mutant.py の docstring に挙げた場面と同じ。\n- 全対象を全場面に通したか: 通した。42 対象 × 40 場面 = 1680 行(compare_runs.out の rows)。各対象を 2 回走らせた(runs/ と runs_2/)。1 回目と 2 回目で食い違った行は 0、1 回の走行の中の 2 回で食い違った行も 0。「結果なし」のセルには、表の注記に試したこと・出たものの種類・実測の時間(1 場面の最長の秒数と上限 300 秒)を書いた。場面ごとにどの道具が何を返したかと詳しい中身は materials/survey_breakdown.tsv と runs/*.tsv の detail 列にある。場面の無い観点 I4-7・I4-19・I4-20(i4_scenes.NOT_SCENES)は列を作らず、そのことを表の頭に 1 文で書いた。\n- 注記に道具を特定できる語が無いか: check_names.py で確かめて 0 件(対象の鍵・adapter の名・venv の名・RUNNABILITY.tsv の道具の名の語・時刻・日付・16 進の語)。調査結果の側の行は「道具 26 件と、一次資料どおりに最小限で書き直した機構 13 件」を寄せた行だとだけ書いた。どれが選ばれたかは materials/survey_breakdown.tsv にだけ書いた。\n- md5: 3 組とも 2 通りの表はバイト単位で違う(identical はすべて false)。どの組も同等による通過(L-422)には当たらない。\n- materials への保存: 表を作るスクリプト(make_tables.py)、実行の台本と記録(run_all.sh・run_all.log・logs/)、runs/・runs_2/ の TSV と obs.jsonl、対応表(mapping.tsv)、寄せの内訳(survey_breakdown.tsv)、集計(table_counts.tsv)、確認のスクリプトと出力(compare_runs・recount・recount_from_tables・check_names・md5sum_pairs)、指紋、adapter の差分、pytest の出力、commands.txt。途中でリードのコミット 5e0c26d がこれらの大半を取り込んだ。そのあとで足したもの(commands.txt・fingerprint_after.txt・pytest_battery_item4_r1_shiryo.out)は、まだコミットされていない。\n- 相手の道具の結果の再利用(L-435): 使っていない。第 1 周で前の周が無いため、42 対象を全部走らせた。場面集の指紋 d7d14efe94d6…(全 64 桁は fingerprint.txt)。新実装の adapter の本体を書いたあとの値なので、次の周で比べるならこの値を使う。\n- 照合: 当方の現状と調査結果の側 39 対象の結果は、場面係の tests/bt/battery/item_4/survey_results/ と全場面で class と digest が同じだった。\n- 実データから出た数値は表に入れていない(場面はすべて合成)。\n- 新実装の adapter は、テストで使う tests/bt/item_4/i4w_drive.py と同じ公開の口を呼んでいる。場面の正解・場面の id は読んでいない。\n- この起動では項目 0 の批評家の試験(tests/bt/critic/item_0/test_i0r17_*)には触れていない。全試験は走らせていない(この役で変えたのは tests/bt/battery/item_4/adapters/new_impl.py だけで、その場面集の試験は 15 passed)。",
+ "identical": {
+  "current": false,
+  "survey": false,
+  "mutant": false
+ },
+ "new_impl_correct": "40/40",
+ "new_impl_all_correct": true
+}
+```
+
+#### 監査役(表):4
+
+- [聞く] docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/commands.txt(項目3・4、および「提出前の吟味」の「全対象を全場面に通したか: 通した」)は、42対象×40場面=1680行を「84回すべてrc=0」で走らせたと書き、完全な網羅を主張している。しかし tests/bt/battery/item_4/opponents/RUNNABILITY.tsv 42行目 と CONSIDERED.md(70 PineForgeの行、例: 104行)には、PineForge(cand 70)は「この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消え、最後の走行では呼べない(構築し直しは持ち越し)」と明記されており、実測でも materials/runs/opp_pineforge.tsv の40場面すべてが「結果なし」(cut -f4 | uniq -c で確認)。この劣化は道具自体の限界ではなく環境事故によるもので、`調査結果の側`(39対象の寄せ)の天井を実際より低く見せ、新実装が勝ちやすくなる向き(委任文§3が意図する「新実装が勝ちにくい向き」と逆方向)に働きうる。round_1の表・commands.txtのnotesにはこの既知の劣化への言及が無い。委任文§3「動かせなかった候補の検討と再現」は、再現もできなかった候補がある場合、通過の判定で「その候補とは比べていない」と候補名を付けて報告することを求めている — この報告義務は本ラウンドの表・notesではなく後段(項目13の圧倒判定)で果たされる想定か、確認する必要があるか(P1/P13 系: 断定「通した」に対する範囲の但し書きの要否)。
+
+- [直す] docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/commands.txt の「materialsへの保存」節に、commands.txt自身・fingerprint_after.txt・pytest_battery_item4_r1_shiryo.out は「まだコミットされていない」と明記されている。この周の成果物(6枚の表とその根拠)が指紋台帳・監査の対象として固定されるのはコミット後であるため、監査時点でこれらの記録がリードのコミット 5e0c26d に含まれていない状態(=作業ツリーにのみ存在)である点を、次の周に持ち越す前に解消したか確認が要る。
+
+
+#### 批評:4#1
+
+- [止める] 本来の模型(spec)が、足 j-1 の合図による足 j の始値での決済を捨て、足 j の範囲(始値より後の高値・安値)の逆指値・利確・maker 利確で決済する。R-T1(足 i の合図は足 i+1 の始値で約定)に反し、利確の場合は始値より良い値を黙って返す(楽観側)。旧の docstring 自身も『a signal at bar i executes at bar i+1's OPEN』と書く。互換(legacy)は旧どおりでよいが、spec は R-T1 の答えを出すこと。
+  - {"id": "i4-r1-01", "evidence": "src/bot/bt/compat/barmodel.py:388-427(足の範囲の逆指値・利確を先に見て 'an exit drops whatever signal was pending'、docstring 30-32 行)。批評家の試験 tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py: `PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py` → 24 failed, 12 passed(spec 12 件と規則の参照実装 12 件が落ち、対照 6・互換 6 は通る)。例: 買い 100、足 3 で SELL、足 4 の始値 101・高値 110・利確 3% → spec の約定 [(2,100.0),(4,103.0)]・損益 90、R-T1 の答えは足 4 の始値 101・損益 30。", "repeat_of": null, "patchwork": false, "target": "実装", "fix_files": ["src/bot/bt/compat/barmodel.py", "src/bot/bt/reference/bar_rules.py"]}
+
+- [止める] I4-1 の場面が使う参照実装 bar_rules.py は、核と新エンジンを読んだ項目 4 の作業者が書いたと成果物に書かれている。要件の『核を見ずに別の作業者が書く』に当たらず、表の I4-1 の 2/2 は独立の突き合わせではない。実害として、i4-r1-01 の欠陥を bar_rules も同じ形で持ち、本体と参照が一致してしまう。参照実装の役の成果物(bar_sim.py・event_sim.py・num.py・SPEC.md・tests/bt/item_4/reference/)には核の import も内部の名前・構造の写しも見当たらない(核の class/def 253 名のうち当たりは Event・Fill・Strategy・_levels だけで、欄の名・引数の順・数量の条件・例外の型が違う)。
+  - {"id": "i4-r1-03", "evidence": "src/bot/bt/reference/bar_rules.py:7-12『Who wrote it: the item-4 worker (not the reference role ...)』、src/bot/bt/reference/SPEC.md:164『書いた作業者は核と新エンジンのコードを読んでいる』、tests/bt/battery/item_4/adapters/new_impl.py:103-108(reference: true を run_rules で答える)。test_i4r1_pending_signal_before_intrabar_exit.py の reference の 12 件が spec と同じ形で落ちる。`grep -ohE \"^(class|def) [A-Za-z_]+\" src/bot/bt/core/*.py` の 253 名を参照実装の側で grep、event_sim.py:57-68 と core/events.py:210-226 を比べた。", "repeat_of": null, "patchwork": false, "target": "実装", "fix_files": ["src/bot/bt/reference/bar_rules.py", "src/bot/bt/reference/SPEC.md"]}
+
+- [止める] 委任文 §4 の実データの規則(実データには時刻だけの手順か種つきの乱数だけ)が、呼び手の書く origin の一語に依っている。この環境の市場データのファイルを origin: synthetic と書けば、値で条件づけた戦略 price_rule が目的『動作確認』で走る。要件 I4-6 を構造で満たしていない。データ層は qa_* 等を合成・中間物として知っているので出所はデータ層の側で決められる。場面 i4-6-signal-refused にもこの偽の一語の変形が無い。
+  - {"id": "i4-r1-04", "evidence": "src/bot/bt/pipeline.py:228(origin は呼び手の記載)・:255(real = any(d['origin'] == 'real' ...))、src/bot/bt/data/allowlist.py:55-56。批評家の試験 tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py の 3 件(fx_1m・jpx_1m・fx_ticks)が 'Failed: DID NOT RAISE ValueError'。scratchpad/bt/i4_r1_critic_probe5.py の出力『ACCEPTED: price_rule on a real file labelled synthetic ... fills: True』。", "repeat_of": null, "patchwork": false, "target": "実装", "fix_files": ["src/bot/bt/pipeline.py", "tests/bt/battery/item_4/i4_scenes.py"]}
+
+- [止める] 場面集の規則の文(DEFINITIONS.md「足の模型の仕様」)が、足 j の始値に待つ合図(R-T1)と足 j の範囲の逆指値・利確(R-P3・R-P4・R-X1)の順を決めておらず、それを固める場面が無い。R-H2・R-W3 は時間切れと構造的な逆指値だけ。委任文 §3『項目 4 の場面』が求める『旧エンジンが自分の仕様から外れる場面』にまさに当たる(旧の docstring は始値の約定、旧の計算は合図を捨てる)。規則の文を足し、legacy と spec の 2 出力の場面と spec の値の場面を置くこと。
+  - {"id": "i4-r1-02", "evidence": "DEFINITIONS.md の R-T1・R-P3・R-P4・R-X1・R-H2・R-W3 の文。src/bot/bt/reference/bar_rules.py:22-26 が『taken for the stop and take-profits too』と規則の欠けを認める。src/bot/backtest/engine.py:5-6。批評家の試験 tests/bt/critic/item_4/test_i4r1_scene_set_coverage.py::test_a_scene_pins_a_pending_signal_against_an_intrabar_exit が落ちる(全場面の期待の約定・合図・水準から機械で探して 0 件)。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/i4_scenes.py", "tests/bt/battery/item_4/gen_definitions.py", "tests/bt/battery/item_4/DEFINITIONS.md"]}
+
+- [止める] 観点の本題でない条件で強い足の道具が『結果なし』になる偏り。I4-10・I4-12・I4-13・I4-15・I4-17 の値の場面は全部が足 0 に合図を置き(backtesting.py は足 0 で戦略を呼ばない)、I4-10 の唯一の値の場面は maker と taker の手数料を分ける(Backtrader・backtesting.py・vectorbt・VnPy・PyBroker・zipline-reloaded はこの理由だけで i4-10-priority が結果なし)。I4-10 は逆指値の先の観点で手数料は観点でない。検討表はこれらを観点の能力の『持たないと確認した』と書くが、理由は別の能力(手数料の数・足 0)の欠けで、場面集の規則 6 に反する。
+  - {"id": "i4-r1-05", "evidence": "批評家の試験 tests/bt/critic/item_4/test_i4r1_scene_set_coverage.py の test_a_value_scene_without_a_bar_0_signal[I4-10/I4-12/I4-13/I4-15/I4-17] と test_the_stop_priority_viewpoint_has_a_scene_with_one_fee_rate が落ちる。docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/survey_breakdown.tsv と runs/opp_backtrader.tsv・opp_backtesting.tsv・opp_vectorbt.tsv の i4-10-priority の detail(理由は手数料の数・足 0 だけ)。tests/bt/battery/item_4/opponents/CONSIDERED.md:179,180,182,191,194,207,219(I4-10)、295,309(I4-12)、347,361(I4-13)、452,468(I4-15)。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/i4_scenes.py", "tests/bt/battery/item_4/opponents/CONSIDERED.md", "tests/bt/battery/item_4/gen_considered.py", "tests/bt/battery/item_4/gen_definitions.py", "tests/bt/battery/item_4/DEFINITIONS.md"]}
+
+- [止める] I4-2 の性質の場面が taker だけの 30 の場合で、逆指値・利確・maker・持ち越し・時間切れ・構造的な逆指値を 1 つも含まない。不変条件も taker の手数料だけで式を立て、約定・損益・資産を正解と完全に突き合わせたうえで検めるので、正解が満たす式から自動で従い新しく何も捕まえない。要件 I4-2(敵対的な入力の格子で数量保存・損益の恒等式…)の、恒等式が壊れやすい経路が格子の外。性質の場面は正解なしで不変条件だけで判定できるので、手で正解を出せない経路こそ性質で見ること。
+  - {"id": "i4-r1-06", "evidence": "tests/bt/battery/item_4/i4_scenes.py:257-318(taker_rule・grid_cases)、tests/bt/battery/item_4/i4_judge.py:114-155。批評家の試験 tests/bt/critic/item_4/test_i4r1_scene_set_coverage.py::test_the_property_grid_reaches_the_path[stop_loss_pct|take_profit_pct|maker|swap|max_hold_bars|wick] の 6 件が落ちる。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/i4_scenes.py", "tests/bt/battery/item_4/i4_judge.py", "tests/bt/battery/item_4/gen_definitions.py", "tests/bt/battery/item_4/DEFINITIONS.md"]}
+
+- [止める] 要件 I4-3 は正解つきの値の場面を『核・参照実装・新エンジン全体のそれぞれの粒度に』持つかを問うが、場面集は新エンジン全体(i4-3-*)と参照実装(i4-1-*)だけで、核の粒度の値の場面が無く、外した理由も DEFINITIONS.md に無い(場面にできない観点は I4-7・I4-19・I4-20 だけ)。説明なく観点を縮めている。
+  - {"id": "i4-r1-07", "evidence": "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/REQUIREMENTS.md §2 I4-3 の行。`grep -n 'id=\"i4-' tests/bt/battery/item_4/i4_scenes.py`(I4-3 は i4-3-e2e-taker・i4-3-e2e-maker の 2 場面)。DEFINITIONS.md「場面にできない観点(批評家が見る)」の節。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/i4_scenes.py", "tests/bt/battery/item_4/gen_definitions.py", "tests/bt/battery/item_4/DEFINITIONS.md"]}
+
+- [止める] 検討表が『読んでいない』『読んだ範囲に無い』を『持たないと確認した』に数えている(場面集の規則 6:口が無いことを行を引いて示したときだけ)。例: QuantConnect の I4-17 の理由は『統計の出力(Statistics)は読んでいない』。DEFINITIONS.md 末尾の吟味は『読んでいない部分に依る場面は検討表では「再現できない」に数えた』と書き、表と食い違う。読むか、『再現できない』に直すこと。
+  - {"id": "i4-r1-08", "evidence": "`awk '/^### 観点/{vp=$3} /\\| 持たないと確認した \\|/ && /読んでいない|読んだ範囲に無い/{print NR, vp}' tests/bt/battery/item_4/opponents/CONSIDERED.md` の出力: 151(I4-9)・446・449・470・472・483(I4-15)・529(I4-16)・563・566・582・586・587・589・600(I4-17)・624・627・643・647・648・650・651・653(I4-18)。DEFINITIONS.md「調査結果の側で先に探した [止める] の芽」の再現の項。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/opponents/CONSIDERED.md", "tests/bt/battery/item_4/gen_considered.py"]}
+
+- [直す] 変形の能力の場面が、断りの理由を見ずに『正解と一致』にする。i4-6-signal-refused は price_rule を一切走らせられない対象も断れば満点になり(合成と宣言したデータで price_rule が通る対照が無い)、i4-6-research-refused は『研究』を一切作れない対象と見分けない(事前登録つきの研究が通る対照が無い)。新実装は両方の対照を満たすので今の表の値は変わらない(規則 1 の穴として直す)。
+  - {"id": "i4-r1-09", "evidence": "tests/bt/battery/item_4/run_battery.py:141-146(変形が refused なら理由を問わず正解と一致)。tests/bt/battery/item_4/i4_scenes.py の i4-6-signal-refused・i4-6-research-refused の定義。scratchpad/bt/i4_r1_critic_probe5.py(新実装は合成の宣言なら price_rule を通す)。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/i4_scenes.py", "tests/bt/battery/item_4/run_battery.py"]}
+
+- [直す] 新実装の adapter が互換の出力(legacy)を旧の名前・旧の引数の口 run_backtest ではなく run_bars(rules='legacy') から取る。委任文 §3『項目 4 の場面』は旧 14 の部分の新実装を『互換の口(旧と同じ名前・同じ引数)と本来の模型の両方を持つもの全体』として通すと定める。自分で確かめた影響は 0(足の入力 56 件で run_backtest と adapter の legacy の違い 0 件)。
+  - {"id": "i4-r1-10", "evidence": "tests/bt/battery/item_4/adapters/new_impl.py:86-99(bot.bt.compat.run_bars を直接呼ぶ)。current_impl の adapter の run_backtest を bot.bt.compat.engine.run_backtest に差し替えて全場面の足の入力を走らせた一回きりの確かめ: 出力『compared 56 differ 0』。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/adapters/new_impl.py"]}
+
+- [直す] lumibot(67)・Hikyuu(60)・zvt(56)は導入を試さず、依存の数(320・104・57)を理由に再現へ置き換えた。調査結果の側の選び方は『§4 の安全の規則で venv に入れて動かせるものを全部』通すで、依存の数は §4 の検査項目に無い。再現の忠実さは抜き取りで確かめ、弱められていなかった(lumibot order.py 776-808 の子の注文の順、LEAN FillModel.cs 347-400・697-760 の逆指値・指値の約定)。導入の試み(容量で止めるならその実測)を記録に足すこと。
+  - {"id": "i4-r1-11", "evidence": "tests/bt/battery/item_4/opponents/RUNNABILITY.tsv の 56・60・67 行(tried 欄『pip install --dry-run: N 件の依存』)。一次資料(読むだけ)scratchpad/bt/i4_r1_critic_lumibot_order.py 770-810 行、scratchpad/bt/i4_r1_critic_lean_FillModel.cs 347-400・697-760 行と tests/bt/battery/item_4/opponents/repro_67_lumibot.py・repro_52_lean.py の limit_px・stop_px を突き合わせて一致。", "repeat_of": null, "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_4/opponents/RUNNABILITY.tsv", "tests/bt/battery/item_4/opponents/CONSIDERED.md"]}
+
+- [直す] 互換の口が、旧エンジンが計算していた入力(高値 < 安値の行、NaN の行)を断る(意図した違いと書かれている)。要件の I4-8〜I4-18 の列挙には無く信頼性の向きだが、L-407『完全上位互換』の語と食い違いうる。旧を import する 12 本が実データでこの行に当たるかは測っていない。作業者の報告の『リードに聞くこと』に載せること。
+  - {"id": "i4-r1-12", "evidence": "src/bot/bt/compat/engine.py:18-21『One difference from the old engine, on purpose』、tests/bt/compat/test_compat_golden.py の test_a_row_the_core_cannot_take_as_a_bar_is_refused_not_computed。", "repeat_of": null, "patchwork": false, "target": "実装", "fix_files": ["src/bot/bt/compat/engine.py"]}
+
+- [直す] 項目 0 の場面集: 第 16 周の [示唆] i0-r16-05 が未処置。p2-us-float-held の導き方が『「持つ値にナノ秒より細かい端数がある」float はマイクロ秒では作れない』と範囲を書かずに言うが、これは 2^50〜2^51 の範囲でだけ正しい。小さい時刻では作れる。核は正しく断るので実装の欠陥ではないが、P0-2 の単位の場面に us の float-subns の形が欠けている(s・ms にはある)。i0-r16-04 の直し(NO_INT の断りと入口なしの見分け)は読んで向きが正しいことを確かめた。
+  - {"id": "i4-r1-13", "evidence": "tests/bt/battery/item_0/scenes.py:376-386。`PYTHONPATH=src python3 -c \"from bot.bt.core import to_nanos; to_nanos(1.0000001,'us')\"` → TimestampUnitError『1.0000001 us (it holds 1.0000001000000000583867176828789524734020233154296875) has sub-nanosecond digits』。docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/PASS.md の持ち越しの節。tests/bt/battery/item_0/scenes.py:306-392・run_battery.py:705-771 を読んだ。`PYTHONPATH=src python -m pytest tests/bt/battery/item_0` → 320 passed。", "repeat_of": "i0-r16-05", "patchwork": false, "target": "場面集", "fix_files": ["tests/bt/battery/item_0/scenes.py"]}
+
+- [直す] 実データの動作確認の試験の文と手順が違い(文は hh:00 に買い hh:05 に売る、手順は hh:20・hh:25)、注文の状態が OPEN・ACKED でも『答えた』に数える(約定しないまま残った注文を見分けない)。
+  - {"id": "i4-r1-14", "evidence": "tests/bt/item_4/test_i4_real_data_smoke.py:6(docstring)、:109-110(schedule の 20・25 分)、:138(state in ('FILLED','OPEN','ACKED'))。", "repeat_of": null, "patchwork": false, "target": "実装", "fix_files": ["tests/bt/item_4/test_i4_real_data_smoke.py"]}
+
+- structural_change_since_prev: true
+- record_path: "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/CRITIC.md"
+- table_recount_ok: true
+- table_recount: "40/40(docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/runs/new_impl.tsv を awk で数え直し: 行 40、1 回目 正解と一致 40、2 回目 40、両方一致かつ「2 回の実行で同じ」40。run_battery.py で new_impl を自分で走らせ直しても class は 40 場面とも同じ = 申告 new_impl_correct=40/40 と一致)"
+
+#### 盲検:4#1:mutant0
+
+```json
+{
+ "choice": "右",
+ "reasons": "表の数を観点ごとに数え直した。正しさでは、A は 17 観点のうち 3 観点で負けている。I4-1 は 1/2(i4-1-ref-maker が不一致。約定が 5 件で、正解は 4 件。15 本目の足に余分な OPEN_LONG がある)、I4-3 は 1/2(i4-3-e2e-maker が同じ理由で不一致)、I4-16 は 0/1(i4-16-missed が不一致。fills[0].bar が 4 で、正解は 6)。残る 14 観点(I4-2, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18)は A も B も全部の場面で正解と一致した。B は 17 観点すべてで全部の場面が正解と一致し、どの観点でも A を下回らない。合計は A が 37/40、B が 40/40 で、観点ごとの数を足した値と合っている(2+1+2+2+2+3+3+2+1+3+3+3+2+2+1+4+4=40。A はそこから 3 引いて 37)。再現では、A も B も 17 観点すべてが「2 回の実行で同じ」で、40/40 の同点。A の 3 件の不一致も 2 回とも同じ値が出ているので、実行ごとに揺れているのではない。決まった誤りである。場面の数の多い観点に引きずられないよう、観点単位で比べた。A が勝つ観点は 0、B が勝つ観点は 3(I4-1、I4-3、I4-16)、同点が 14。3 観点はどれも maker の約定か、未約定の数え方(missed fills)にかかわる。B が優れると言える差は、再現ではなく正しさの側にある。",
+ "missing_in_choice": "B は、表にある場面では 1 件も落としていない。足りないのは場面の方である。I4-7(全試験の通過)、I4-19(golden の保存と一致)、I4-20(最後の段の置き換えと復元)は場面が置かれておらず、この表では比べられない。また I4-2、I4-10、I4-16 は場面が 1 つしかないので、B の一致の裏付けは薄い。I4-16 で A が落ちた未約定の数え方は、B でも場面 1 つでしか確かめていない。I4-2 は、逆指値・指値・持ち越しを含む場合を対象にしていない(場面の定義にそう書かれている)。"
+}
+```
+
+#### 盲検:4#1:mutant1
+
+```json
+{
+ "choice": "左",
+ "reasons": "表を自分で数え直した。場面のある観点は 17 個、場面は 40 個(2+1+2+2+2+3+3+2+1+3+3+3+2+2+1+4+4=40)。\n【正しさ】行 A は 17 観点すべてで全場面が「正解と一致」(40/40)。行 B は 14 観点で A と同じだが、3 観点で劣る: I4-1(1/2、i4-1-ref-maker で fills が 5 件、正解は 4 件)、I4-3(1/2、i4-3-e2e-maker で同じく fills が 5 件、正解は 4 件、15 本目の OPEN_LONG が余分)、I4-16(0/1、i4-16-missed で fills[0].bar=4、正解は 6)。B の合計は 37/40。観点単位で見ると、A が勝つのが 3 観点、同じが 14 観点、B が勝つのは 0 観点。3 つの不一致は 1 つの観点に固まっておらず、3 つの別々の観点に出ている。I4-1 と I4-3 はどちらも maker 執行の場面で、I4-16 は未約定の数え方。maker 約定の扱いに系統的な誤りがあるように見える(推定)。\n【再現】A、B とも 17 観点すべてで「2 回の実行で同じ」(40/40)。差は無い。B の不一致も 2 回とも同じ値なので、決定論的な誤りである。\n【結論】再現では同等、正しさでは A が 3 観点で優れ、劣る観点は 1 つも無い。よって行 A(左)。",
+ "missing_in_choice": "この表で、行 A に正解と一致しない場面、2 回の実行で違った場面、結果が無い場面は 1 つも無い。足りないのは表の範囲の外にある。I4-7、I4-19、I4-20 は場面が無く(列が無い)、A も B も試されていない。また I4-2、I4-10、I4-16 は場面が 1 つずつしか無く、それぞれの観点で確かめた範囲が狭い。"
+}
+```
+
+#### 盲検:4#1:mutant2
+
+```json
+{
+ "choice": "右",
+ "reasons": "表の数を観点ごとに自分で数え直した。表には 17 観点(I4-1〜I4-6、I4-8〜I4-18)、40 場面がある。\n\n【正しさ】\n- 行 B は全観点で正解と一致し、計 40/40。\n- 行 A は計 37/40。不一致は 3 観点に 1 場面ずつある。\n  - I4-1(1/2): i4-1-ref-maker で約定が 5 件になった。正解は 4 件で、足 15 に余分な OPEN_LONG がある。定義上の正解は missed_fills=1。\n  - I4-3(1/2): i4-3-e2e-maker で同じ余分な約定がある。\n  - I4-16(0/1): i4-16-missed で fills[0].bar=4 になった。正解は 6。\n- 3 つとも maker の指値の寿命(取消・取り逃し)の経路に当たる。観点単位で数えると、B が上なのは 3 観点、同じなのは 14 観点、A が上なのは 0 観点。\n- 差は場面数の多い観点に偏っていない。場面が 1〜2 本の小さい観点(I4-1、I4-3、I4-16)に出ていて、どれも一方向に B が上。\n- 能力の場面(拒否・two-models・outputs など)は、両者とも全部一致した。\n\n【再現】\n- 両者とも全観点で 2 回の実行が同じで、計 40/40 対 40/40。差は無い。\n- A の不一致も 2 回とも同じ値で出ているので、偶然ではなく決まった挙動の誤りと読める。\n\n【結論】\n- 再現は同等。正しさは B が 3 観点で上回り、A が上回る観点は無い。\n- よって行 B(右)がより正しく、再現は同等。\n\n【数え直しの照合】\n- 正しさ: A=1+1+1+2+2+3+3+2+1+3+3+3+2+2+0+4+4=37、B=40。\n- 再現: 両者 40。\n- 表の計欄と一致した。",
+ "missing_in_choice": "行 B は表の 40 場面では欠けが無い。表に場面が無い観点が 3 つあり(I4-7、I4-19、I4-20)、そこは両者とも測られていない。行 B の正しさはそこでは不明のまま。また、正解を定めた場面は第 1 周の 1 セットしかない。maker の寿命の境界(maker_timeout_bars の差し替え、足の寿命ちょうどで触れる場合など)を変えた追加の場面が無いので、B の一致がその境界の外でも保たれるかは、この表からは分からない。"
+}
+```
+
+#### 盲検:4#1:current0
+
+```json
+{
+ "choice": "右",
+ "reasons": "表の各セルを数え直した。場面は 40(内訳は I4-1:2、I4-2:1、I4-3:2、I4-4:2、I4-5:2、I4-6:3、I4-8:3、I4-9:2、I4-10:1、I4-11:3、I4-12:3、I4-13:3、I4-14:2、I4-15:2、I4-16:1、I4-17:4、I4-18:4)。数え直した値は、表の集計欄と一致した。\n\n【正しさ】行 B は 17 観点のすべてで満点、合計 40/40。行 A は 26/40 で、10 観点では B と同じ満点だった。A が B に劣るのは次の 7 観点で、A が B を上回る観点は 1 つも無い。\n- I4-1: A 0/2(2 場面とも結果なし)\n- I4-5: A 0/2(2 場面とも結果なし)\n- I4-6: A 0/3(3 場面とも結果なし)\n- I4-12: A 2/3。touch-decimal で fills[1].bar が 2 だった(正解は 3)\n- I4-13: A 1/3。tp-on-exit-bar と two-models で fills[1].price が 102.0 だった(正解は 101.0)\n- I4-17: A 2/4。sharpe-bar-seconds と two-models で sharpe が 1296.79 だった(正解は 167.41)\n- I4-18: A 2/4。split-decimal と two-models で validation の分割が正解と違った\n\nA の結果なしは 7 場面で、どれも注記では「公開の口にこの場面を渡す手段が見つからなかった」とされている。つまり能力が無い扱いになる。I4-5 の outputs と I4-6 の 2 つの refused は能力の場面で、A はこれらの能力も示せなかった。\n\n【再現】B は 40/40。A は 33/40 で、欠けている 7 は上の結果なし 7 場面そのもの。両方とも「2 回で違う」は 0 件だった。結果が出た場面に限れば、両方とも 2 回の実行が完全に一致している。A の不一致 7 場面も 2 回とも同じ誤りを再現している(誤りが決定的に出るということで、正しさを補うものではない)。\n\n【観点ごとに比べた結論】7 観点で B が上、10 観点で同等、A が上の観点は 0。場面の多い観点(I4-17・I4-18 の各 4 場面)を除いて場面 1 個あたりの重みを均しても、I4-1・I4-5・I4-6・I4-12・I4-13 の 5 観点で B が上のまま残る。よって B が明確に優れる。",
+ "missing_in_choice": "表の中では、行 B に欠けている場面は無い(40/40、全部再現)。I4-7・I4-19・I4-20 の 3 観点は場面が無く列も無いので、B の振る舞いはこの 3 観点では測られていない。また、「2 回で違う」が起こり得る非決定的な場面が表には含まれていない。そのため、再現の強さは決定的な場面でしか確かめられていない。"
+}
+```
+
+#### 盲検:4#1:current1
+
+```json
+{
+ "choice": "左",
+ "reasons": "表を観点ごとに自分で数え直した(場面のある 17 観点、計 40 場面)。\n正しさ(正解と一致の数): 行 A は 17 観点すべてで全場面が一致し、計 40/40。行 B は 26/40。B が A に負けるのは 7 観点で、内訳は次のとおり。\n- I4-1 は 0/2(2 場面とも結果なし)\n- I4-5 は 0/2(結果なし 2)\n- I4-6 は 0/3(結果なし 3)\n- I4-12 は 2/3(i4-12-touch-decimal が不一致: fills[1].bar=2、正解 3)\n- I4-13 は 1/3(i4-13-tp-on-exit-bar と i4-13-two-models が不一致: price 102.0、正解 101.0)\n- I4-17 は 2/4(i4-17-sharpe-bar-seconds と i4-17-two-models が不一致: sharpe 1296.79、正解 167.41)\n- I4-18 は 2/4(i4-18-split-decimal と i4-18-two-models が不一致: validation の範囲)\n\n残りの 10 観点(I4-2, 3, 4, 8, 9, 10, 11, 14, 15, 16)は両者とも全場面一致で同点。B の内訳は、結果なしが 7 場面(I4-1 が 2、I4-5 が 2、I4-6 が 3)、不一致が 7 場面(1+2+2+2)。40-7-7=26 で表の計と合う。\n能力の場面でも差が出ている。B は i4-5-outputs、i4-6-signal-refused、i4-6-research-refused で結果なし、i4-13-two-models、i4-17-two-models、i4-18-two-models で不一致。A はどれも正解と一致。\n再現(2 回の実行で同じ): A は 40/40。B は 33/40 で、落ちている 7 場面はすべて結果なし(I4-1、I4-5、I4-6)。B が結果を出した 33 場面は 2 回とも同じ値で、不一致の 7 場面も 2 回とも同じ誤った値を出している。\n観点の単位で見ても、A が B より劣る観点は 1 つも無く、A が勝つ観点は 7 つある。特定の観点の場面数に引きずられた差ではない。したがって、正しさでも再現でも行 A が優れる。",
+ "missing_in_choice": "行 A には、表の中で正解と一致しなかった場面も、2 回の実行で値が違った場面も無い。ただし次の 3 点は表から確かめられない。\n- 場面の無い観点 I4-7、I4-19、I4-20 は列が無く、A についても測られていない。\n- 各観点の場面は 1〜4 個しかない。\n- 再現は 2 回の実行の一致だけを見ている。"
+}
+```
+
+#### 盲検:4#1:current2
+
+```json
+{
+ "choice": "右",
+ "reasons": "表を観点ごとに数え直した(場面のある観点は 17、場面は計 40)。\n【正しさ】行 B が上なのは 7 観点: I4-1(A 0/2・B 2/2)、I4-5(A 0/2・B 2/2)、I4-6(A 0/3・B 3/3)、I4-12(A 2/3・B 3/3)、I4-13(A 1/3・B 3/3)、I4-17(A 2/4・B 4/4)、I4-18(A 2/4・B 4/4)。残りの 10 観点(I4-2・3・4・8・9・10・11・14・15・16)は両方とも全場面で正解と一致して同点。行 A が上の観点は 0。計は A 26/40、B 40/40(A の各観点を足すと 0+1+2+2+0+0+3+2+1+3+2+1+2+2+1+2+2=26 で、表の計と一致する)。行 A が落とした場面の内訳は 2 種類ある。(1) 能力が無いもの。I4-1・I4-5・I4-6 の 7 場面は、公開の口に場面を渡す手段が無く「結果なし」だった。この中には能力の場面 i4-5-outputs・i4-6-signal-refused・i4-6-research-refused も入っている。(2) 値が違うもの。I4-12 i4-12-touch-decimal は fills[1].bar=2(正解 3)、I4-13 の 2 場面は price 102.0(正解 101.0)、I4-17 の 2 場面は sharpe_ratio 1296.79(正解 167.41)、I4-18 の 2 場面は validation の分け方が正解と違った。どちらの種類でも行 B は全部正解と一致しているので、場面の多い観点に引きずられたわけではない。観点を 1 票ずつで数えても 7 対 0 で B が上になる。\n【再現】行 B が上なのは 3 観点(I4-1・I4-5・I4-6。A はどれも結果なし)。残りの 14 観点は同点。計は A 33/40、B 40/40。行 A には「2 回で違う」の場面が 1 つも無い。A の不足は、どれも走らせる口が無いことによる結果なしである。走った場面だけで見れば、A と B の再現性は同等だった(A の不一致の値も 2 回とも同じ)。\nまとめると、正しさでは 7 観点で B が上、再現では 3 観点で B が上。A が上の観点はどちらにも無い。よって行 B(右)を選ぶ。",
+ "missing_in_choice": "行 B は、表に列のある 40 場面をすべて正解と一致・2 回の実行で同じ、で通している。表の中に B の足りない場面は無い。足りないのは表の外にあるもの。I4-7(全試験通過)・I4-19(旧の出力 golden の保存と一致)・I4-20(最後の段の安全な置き換えと復元)の 3 観点は場面が無く、この表では B の振る舞いを確かめていない。I4-1 について、参照実装が本体の写しでない(独立している)ことは場面では見えない。これは場面の定義が限界として書いていることである。I4-2 と I4-10 と I4-16 は場面が 1 つずつしか無いので、この 3 観点の一致は 1 場面だけの裏付けになる。"
+}
+```
+
+#### 盲検:4#1:survey0
+
+```json
+{
+ "choice": "右",
+ "reasons": "表の各セルから私が数え直した値を下に書きます。「正解と一致」の数は、A が 15/40(I4-1 0/2、I4-2 1/1、I4-3 0/2、I4-4 2/2、I4-5 0/2、I4-6 0/3、I4-8 3/3、I4-9 2/2、I4-10 0/1、I4-11 2/3、I4-12 0/3、I4-13 2/3、I4-14 2/2、I4-15 0/2、I4-16 1/1、I4-17 0/4、I4-18 0/4)、B が 40/40 です。「2 回の実行で同じ」の数は、A が 25/40(I4-1 0/2、I4-2 1/1、I4-3 2/2、I4-4 2/2、I4-5 0/2、I4-6 0/3、I4-8 3/3、I4-9 2/2、I4-10 1/1、I4-11 3/3、I4-12 3/3、I4-13 2/3、I4-14 2/2、I4-15 2/2、I4-16 1/1、I4-17 1/4、I4-18 0/4)、B が 40/40 です。どちらも表の集計欄と合っていました。\n\n正しさを観点ごとに比べます。B が上なのは 11 観点(I4-1、3、5、6、10、11、12、13、15、17、18)です。残り 6 観点(I4-2、4、8、9、14、16)は両方とも全場面が一致で、同等です。A が上の観点は 0 です。A の足りない所の中身は次のとおりです。\n- 結果なし(渡す口が無い): I4-1、I4-5、I4-6、I4-18 の全場面と、i4-13-two-models、i4-17 の 3 場面\n- 対応なし(拒んだ・例外): I4-3、I4-10、I4-12、I4-15 と、i4-11-refuse-stack、i4-17-sharpe-bar-seconds\n\n能力の場面(拒むべき組み合わせを拒むか、二つの模型を持つか)は、B が全部一致、A は 1 つも一致していません。\n\n再現を観点ごとに比べます。B が上なのは 6 観点(I4-1、5、6、13、17、18)で、残りは同等です。A の足りない所はすべて「結果なし」で、「2 回で違う」は A にも B にも 1 件もありません。つまり再現の差は、A が走らなかったことから来ています。\n\nしたがって、正しさでも再現でも B が全観点で A 以上であり、明確に優れます。場面数の多い観点に引きずられないよう観点単位で数えても同じ結論です。\n\n一点注意があります。行 A は 39 対象の中から、場面ごとに最も良い結果を寄せた行です。それでも B に届いていないので、結論は変わりません。",
+ "missing_in_choice": "選んだ B について、表では確かめられていない所を挙げます。\n- I4-7(全試験通過)、I4-19(旧の出力 golden の保存と一致)、I4-20(最後の段の安全な置き換えと復元)は場面が無く、表に列がありません。\n- I4-1 は、参照実装が本体から独立しているか(コードを共有していないか)が場面では見えません。\n- I4-5・I4-6 の正解は、どの実装とも突き合わせられていません(定義の持ち越し 4)。\n- I4-2 の性質の試験は、taker だけの 30 の場合です。逆指値・指値・持ち越しを含む場合は入っていません。\n- 植えた欠陥を捕まえる試験(mutant)は、新しい実装に対しては 40 場面とも結果なしです。"
+}
+```
+
+#### 盲検:4#1:survey1
+
+```json
+{
+ "choice": "左",
+ "reasons": "表の観点別の数を自分で数え直し、表の「計」と合うことを確かめました。\n\n【正しさ(正解と一致)】\n- 行 A は 17 観点すべてで満点で、計 40/40 です。\n- 行 B の内訳は次のとおりで、計 15/40 です。\n  - I4-1 0/2、I4-2 1/1、I4-3 0/2、I4-4 2/2、I4-5 0/2、I4-6 0/3\n  - I4-8 3/3、I4-9 2/2、I4-10 0/1、I4-11 2/3、I4-12 0/3、I4-13 2/3\n  - I4-14 2/2、I4-15 0/2、I4-16 1/1、I4-17 0/4、I4-18 0/4\n  - 一致の合計は 1+2+3+2+2+2+2+1 = 15 で、表の計と同じです。\n- 観点単位で比べると、A が上回る観点が 11(I4-1、3、5、6、10、11、12、13、15、17、18)、同じ観点が 6(I4-2、4、8、9、14、16)、B が上回る観点は 0 です。\n- 場面の多い観点(I4-17、I4-18 は各 4 場面)を除いても、A が上回る観点は 9、同じ観点は 6 で、A 優位は変わりません。\n- B が下回る理由は 3 種類です。\n  - 結果なし(公開の口に場面を渡す手段が無い): I4-1、5、6、18 の全場面、I4-13 と I4-17 の一部\n  - 対応なし(拒否または例外): I4-3、10、12、15 の全場面、I4-11 と I4-17 の一部\n  - 不一致の値は、どちらの行にも 1 件もありません。\n\n【再現(2 回の実行で同じ)】\n- 行 A は 40/40 です。\n- 行 B の内訳は次のとおりで、計 25/40 です。\n  - I4-1 0/2、I4-2 1/1、I4-3 2/2、I4-4 2/2、I4-5 0/2、I4-6 0/3\n  - I4-8 3/3、I4-9 2/2、I4-10 1/1、I4-11 3/3、I4-12 3/3、I4-13 2/3\n  - I4-14 2/2、I4-15 2/2、I4-16 1/1、I4-17 1/4、I4-18 0/4\n  - 合計は 25 で、表の計と同じです。\n- B が「同じ」を取れなかった 15 場面は、すべて「結果なし」です。「2 回で違う」はどちらの行にも出ていません。\n- したがって、走った場面の再現性は両者同等です。差は、B が走れない場面の数から来ています。\n\n【結論】\n- どの観点でも A が B 以上で、11 観点では A が厳密に上です。これは、B が 39 対象の最良の結果を寄せた行であることを踏まえても言えます。\n\n【判定の射程】\n- 場面の規則は、A と思われる既存エンジンの文書を固定したものです。このため、B 側の「結果なし」の多くは入力の口の不一致によるもので、計算の誤りとは言えません。\n- ただし問いは「表に示された結果」なので、判定はこれで変わりません。",
+ "missing_in_choice": "表の範囲では、行 A に足りない場面はありません(40 場面すべてが正解と一致し、2 回の実行でも同じ)。\n\nただし次の 3 点は、この表では見えていません。\n- 場面の無い観点(I4-7、I4-19、I4-20)は両方の行とも測っていないので、判定の外です。\n- 不一致や「2 回で違う」を出させる敵対的な場面が表に無く、それらを見分ける力は測られていません。\n- 実データでの確認がありません(場面はすべて合成です)。"
+}
+```
+
+#### 盲検:4#1:survey2
+
+```json
+{
+ "choice": "右",
+ "reasons": "表のセルから数え直した結果、正しさも再現も行 B(右)が上回る。行 A が勝つ観点は、どちらの尺度にも 1 つも無い。\n\n正しさ(「正解と一致」の数。表の各観点の節のセルを自分で数え直した):\n- 行 A: I4-1 0/2、I4-2 1/1、I4-3 0/2(2 場面とも対応なし)、I4-4 2/2、I4-5 0/2(結果なし)、I4-6 0/3(結果なし)、I4-8 3/3、I4-9 2/2、I4-10 0/1(対応なし)、I4-11 2/3(refuse-stack が対応なし)、I4-12 0/3(対応なし)、I4-13 2/3(two-models が結果なし)、I4-14 2/2、I4-15 0/2(対応なし)、I4-16 1/1、I4-17 0/4(3 場面が結果なし、1 場面が対応なし)、I4-18 0/4(結果なし)。合計 15/40 で、表の集計と一致する。\n- 行 B: 全 17 観点で満点。合計 40/40 で、表と一致する。\n- 観点ごとに比べると、B が上なのは 11 観点(I4-1、3、5、6、10、11、12、13、15、17、18)。同じなのは 6 観点(I4-2、4、8、9、14、16)。A が上の観点は 0。\n- 場面の多い I4-17・I4-18(各 4 場面)を除いても、B が上の観点は 9 残る。場面数に引きずられた結論ではない。\n\n再現(「2 回の実行で同じ」の数):\n- 行 A: I4-1 0/2、I4-2 1、I4-3 2、I4-4 2、I4-5 0/2、I4-6 0/3、I4-8 3、I4-9 2、I4-10 1、I4-11 3、I4-12 3、I4-13 2/3、I4-14 2、I4-15 2、I4-16 1、I4-17 1/4(sharpe-bar-seconds のみ)、I4-18 0/4。合計 25/40 で、表と一致する。\n- 行 B: 40/40 で、表と一致する。\n- 観点ごとに比べると、B が上なのは 6 観点(I4-1、5、6、13、17、18)。同じなのは 11 観点。A が上の観点は 0。\n- A の欠けた 15 場面は、すべて「結果なし」によるもの。「2 回で違う」はどちらの行にも無い。つまり、2 回の結果が食い違った場面はどちらにも無い。差は、結果が出ない場面が A にあることから来ている。\n\n補足: 表の注記によると、行 A は 39 対象の場面ごとの最良値を寄せ集めた行である。それでも B に並ぶ観点が最大で、上回る観点は無い。B は正解との一致・能力の有無・2 回の一致の 3 点すべてで優れる。",
+ "missing_in_choice": "表の範囲では、行 B に足りない場面は無い(40 場面すべてで正解と一致し、2 回の実行でも同じ)。ただし場面の無い観点が 3 つあり、そこは表からは何も言えない。どちらの行にも足りない部分として挙げる。\n- I4-7(全試験の通過)\n- I4-19(旧の出力 golden の保存と一致)\n- I4-20(最後の段の安全な置き換えと復元)\n\nこの 3 観点は場面の定義で「批評家が見る」とされており、比較の表には現れない。"
+}
+```
+
+#### 監査役:4#1
+
+- [止める] REQUIREMENTS.md:24 と委任文(20260925_backtest_env_prompt.md:20,90)は「参照実装(旧11)は核 src/bot/bt/core/ を読まない別の agent が書く」を委任文の指示として明記し、要件のファイルでも独立見出しで重複明記している(REQUIREMENTS.md:240 の自己点検「見落とされないか」まで書きながら)。しかし成果物 src/bot/bt/reference/bar_rules.py:7 は「Who wrote it: the item-4 worker」と自ら記す — 核と新エンジンを読んだ項目4の作業者本人が書いている。報告の requirement_evidence は I4-1 を「参照実装の役が…tests/bt/item_4/test_i4_battery_scenes.py(i4-1-ref-taker・i4-1-ref-maker で engine と reference の両方が正解と一致)」として 2/2 の根拠に使い、審査員の圧倒判定にもこの一致が使われている。この独立性の欠落は批評家 i4-r1-03(止める)も同じ点を指摘し、実害として barmodel.py の i4-r1-01 の欠陥を bar_rules.py も同じ形で持つ(reference の 12 件が spec と同じ形で落ちる)ことを示す。この I4-1 の「一致」を「独立参照実装との突き合わせ」として通過の判定(圧倒)に数えてよいか(P3、KA-06 型の測定と登録の不一致)。
+  - {"level_check": true}
+
+- [止める] src/bot/bt/reference/bar_rules.py 由来の spec 規則(src/bot/bt/compat/barmodel.py:30-32「the pending signal ... An exit drops the pending signal」)は、tests/bt/battery/item_4/DEFINITIONS.md:34「R-T1: 足 i の合図は、足 i+1 の始値で taker で約定する(先読みしない)」に例外を書かないまま、足の範囲内の逆指値・利確が先に成立すると合図を黙って捨てる(始値より有利な値を返しうる)。これを独立に確認した(barmodel.py の docstring 自体が認めている)。批評家 i4-r1-01(止める)がこの点を指摘し、24 failed(spec 12・reference 12)と実測している。報告の unmet・限界の節には「旧14の完全上位互換の限界」として ValueError 拒否と速度の 2 件しか挙がっておらず、この R-T1 との不一致は挙げられていない(同ラウンドの批評家が見つけたため作業者の落ち度とは限らないが)。この不一致を残したまま I4-8〜I4-18 の『場面と一致』を根拠に『圧倒』を認定してよいか(P6: なぜ・射程の整合、P9)。
+  - {"level_check": true}
+
+- [止める] 批評家 i4-r1-04(止める)が指摘する src/bot/bt/pipeline.py:228 の origin ラベルは呼び手の自己申告であり、この環境の実データファイルに origin: synthetic と書けば I4-6 が守るはずの『実データには時刻だけの手順か種つき乱数だけ』のゲートを回避して値条件つき戦略 price_rule が『動作確認』目的で走ることを、批評家が scratchpad/bt/i4_r1_critic_probe5.py の実行で確認している(ACCEPTED: price_rule on a real file labelled synthetic ... fills: True)。この構造は CLAUDE.md の研究規律(事前登録なしの値条件戦略を実データで走らせない)そのものを自己申告一語で回避できる形であり、I4-6 の場面集にもこの偽ラベルの変形が無い(i4-r1-04 evidence)。この安全機構の欠落を、通過(圧倒)を止めない『持ち越し』として次周に送ってよいか、それとも本項目の通過条件として今回のうちに塞ぐべきか(P9)。
+  - {"level_check": true}
+
+- [聞く] 作業者の返り値末尾の『通過の判定(L-451・I-013)』は、批評家の [止める] 8 件(i4-r1-01〜08、うち i4-r1-01 は R-T1 との不一致・i4-r1-04 は安全機構の自己申告回避という、単なる場面網羅性ではなく正しさ・安全性に関わる欠陥)を『場当たり 0 件』として全て次周への持ち越しに回し、通過(圧倒)を止めていない。CLAUDE.md §8「『止める』はリードが単独で退けられない: 直すか、両論を添えてオーナーへ上申する」との関係で、I-013 の周回上限による持ち越しの仕組みは、正しさ・安全性に関わる止めるをコピー・カバレッジ不足の止めると同列に扱ってよい設計か。項目4の周回上限(2周)にまだ達していない(今回は1周目)のに、この時点で『圧倒』を認定する必要があるか。
+  - {"level_check": true}
+
+- [直す] tests/bt/battery/item_4/DEFINITIONS.md:516 は I4-2 の性質の試験について自ら『逆指値・指値・持ち越しを含む場合は入れていない』と明記するが、作業者の requirement_evidence の I4-2 行(JSON)はこの限定を書かず『(30 の場合、不変条件は判定の側で検める)』とだけ記し、unmet 一覧にもこの範囲限定は挙がっていない。批評家 i4-r1-06(止める)がこの網羅性不足を指摘している。上位の報告だけを読む者が taker 以外の経路(逆指値・利確・maker・持ち越し・時間切れ・構造的ストップ)も性質試験で守られていると誤読しないか(P3・P5)。
+  - {"level_check": true}
+
+- [直す] 『旧 14 の完全上位互換の限界 2: 速さ』の実測値(旧 0.12〜0.13 秒 / 新 2.52 秒、約19倍)は <scratchpad>/bt/i4_r1_worker_speed2.py への参照のみで、他の実測項目(test_command/test_tail 等)と異なりコマンドと出力そのものが同じ返答内に示されていない。CLAUDE.md O-3(実行したコマンドと出力を同じ返答に出す)に照らして、この数値は一次資料・実測として検証可能な形で提示されているか(P2)。
+  - {"level_check": true}
+
+- [聞く] external_tool_checks は『外部の道具は入れていない(この周でネットワークは使っていない)』と明記し、I4-4(REQUIREMENTS.md:37 の観点)を今回は行わなかったと述べる。この不実施は、外部道具の選定・導入を試みて阻まれた結果(サンドボックス制約・時間不足など)か、それとも試す前から『しない』と決めたか。REQUIREMENTS.md §4 の現状表(I4-4 行)は『項目4として…外部道具と突き合わせた実績は無い』と書くのみで、今周に試みた記録が見当たらない(P7)。
+  - {"level_check": true}
+
+- [聞く] changed_files に含まれる src/bot/bt/core/values.py・contract.py(CORE_VERSION core-18→core-19)・data/spec.py・anomalies.py は、委任文 §2 の項目4行の持ち物(src/bot/bt/reference/・compat/・最後の段の src/bot/backtest/)の外にある。作業者は questions_for_lead #2 でこの読み(『全体』『核の残りの欠陥は…この項目の作業者が直す』を根拠にした)が正しいかを聞いているが、tests/bt/item_0/test_bt0_r14_process_state.py の assert を core-19 に更新したことで、CORE_VERSION 変更前の契約(core-18)で通過判定済みだったはずの項目0の審査(3/3・3/3 等)を再確認する必要があるか、という点には触れていない。項目0の既存の通過判定は core-19 化後も無条件に有効とみなしてよいか(P9)。
+  - {"level_check": true}
+
+- [直す] REQUIREMENTS.md §2 の I4-3(正解つきの場面)は『核・参照実装・新エンジン全体のそれぞれの粒度に持つか』を観点として明記するが、実際の場面集(tests/bt/battery/item_4/i4_scenes.py)には新エンジン全体(i4-3-e2e-taker/maker)と参照実装(i4-1-*)の場面しかなく、核の粒度の値の場面は無い。この縮小について DEFINITIONS.md の『場面にできない観点』一覧にも記載が無いと批評家 i4-r1-07(止める)が指摘する。作業者の報告(requirement_evidence の I4-3 行)もこの粒度の欠落には触れていない。族・観点の縮小には理由の明記を求める CLAUDE.md A-10 に照らし、この省略の理由を本文のどこかに書く必要があるか(P3)。
+  - {"level_check": true}
+
+- [聞く] 批評家 i4-r1-08 は tests/bt/battery/item_4/opponents/CONSIDERED.md の複数箇所(I4-9・I4-15・I4-16・I4-17・I4-18)で、『持たないと確認した』の理由が実際には『読んでいない』『読んだ範囲に無い』であり、場面集の規則6(口が無いことを行を引いて示したときだけ持たないと数える)に反すると指摘する。これは P1 が禁じる『試さずに無いと言う』の型を、データではなくコード読解の場面で再現したものに見えるが、DEFINITIONS.md 自身が末尾で『読んでいない部分に依る場面は「再現できない」に数えた』と書いており、CONSIDERED.md の表と矛盾する。この矛盾は『持たないと確認した』の集計(ひいては審査員が数え直した A 列の点数)にどの程度影響するか、確認済みか。
+
+- [聞く] 6 名の審査員はいずれも new_chosen=true・opp_chosen=false で一致し、行 A(調査結果側・39 対象の場面ごと最良値の寄せ集め)の不一致・結果なしの内訳を各自数え直しているが、6 者全員が『結果なし』を機械的に『0 点』として数えている。i4-r1-08 の指摘(読んでいないことを理由にした『持たない』判定の混入)が事実なら、行 A の得点自体が過小評価されている可能性があり、審査員の『圧倒』という結論の頑健性に影響しないか(P1 派生)。
+
+- [聞く] questions_for_lead #4 は『新実装の adapter の本体(資料係が書くもの)の見本として tests/bt/item_4/i4w_drive.py がある』『資料係へ渡す手段が台本に無ければリードから渡してほしい』と述べる。この i4w_drive.py は項目4の作業者(核・新エンジンを読んでいる者)が書いたものであり、これを『次周の参照実装役(核を読まない別 agent)』または『資料係』に見本として渡すと、REQUIREMENTS.md:24 が防ごうとした『核の実装を見ながら書いた参照実装が核のバグを模倣する』構造をこの経路からも持ち込まないか。渡す前に、この見本が独立性を損なわない形(核の内部構造を含まない)であることを確認する手順があるか。
+
+
+### 第 1 周の読みとリードの答え(08:45 UTC。第 2 周 = 場面の直し:4#r2-1 と 作る:4#2 は 08:3x UTC から走っている。上限 2 周なので第 2 周が最後)
+
+**通過の判定**: 第 1 周は**通過ではない**(批評家 [止める] 8 = 実装 3 / 場面集 5。審査員は 9/9 が新実装を選び、表は 40/40 だが、通過は批評家 [止める] 0 が条件)。台本は第 2 周に進んだ。
+
+**監査役(通過):4#1 の [止める] 3 件への答え(O-5: 単独で退けない → 直す)**
+1. I4-1 の一致を独立の突き合わせに数えるか: **数えない**(07:40 の答え 1 と同じ)。第 2 周の作業者は独立の参照 `bar_sim` との突き合わせの試験を足す(ROOTCAUSE.md §2)。bar_rules.py は「作業者が写したもの(独立ではない)」と書き直す。
+2. R-T1 との不一致(i4-r1-01)を残したまま圧倒を認定するか: **認定しない**。第 2 周で直す(作業者の ROOTCAUSE.md §1 = 足の中の時の順で 2 段に分ける)。
+3. 実データの規則が自己申告の一語で回避できる(i4-r1-04): **持ち越しにしない。通過条件**。第 2 周で塞ぐ(ROOTCAUSE.md §3 = 出所をデータの側で決める)。
+
+**[聞く] 6 件への答え**
+- 周回上限の持ち越しの設計: 正しさ・安全性に関わる [止める] は網羅の [止める] と同列に扱わない。**上限に達しても正しさ・安全性の [止める] が残れば通過にせず「未達」として報告し、先はオーナーが決める**(I-013)。この時点で圧倒は認定していない。
+- I4-4(新エンジンと外部の道具の直接の突き合わせ)を行わなかった理由: 記録に無い(**未確認**)。段の途中なので第 2 周に足さない。第 2 周の終わりに未実施なら「測っていない範囲」に載せる。
+- core-19 化後の項目 0 の通過判定: **無条件に有効とはみなさない**。第 2 周の批評家は核も読む(起動文)。項目 0 の場面集 46/46 と批評家の試験は全試験(19,941 passed)で通っている。審査員の再起動はしない(核の口は変えていないと作業者が書いた = **未確認**、第 2 周の批評家が読む)。
+- CONSIDERED.md の「持たないと確認した」の混入が行 A の得点に与える影響: **未確認**。第 2 周の場面係が i4-r1-08 で直し、第 2 周の表で分かる。
+- 審査員の頑健性: 判定は第 2 周の審査員でやり直す(第 1 周は通過ではない)。
+- i4w_drive.py を資料係・参照実装の役に渡す手順: **渡さない**(07:40 の答え 5)。
+
+**[直す] 3 件への答え**: I4-2 の範囲の限定と速さの実測のコマンド・出力は第 2 周の作業者の報告に入れる(第 2 周の批評家が読む)。I4-3 の核の粒度の欠落の理由は場面係が i4-r1-07 で直す。
+
+**監査役(表):4 への答え**: [聞く] PineForge(70)= 通過の報告で「PineForge(70)とは比べていない(原因はリードの片付け)」と候補名つきで書く。[直す] materials の未コミット = 7739920 でコミット済み。
+
+**批評家 i4-r1-12(互換の口が不正な足を断る、L-407「完全上位互換」の語との関係)へのリードの答え**: 核の契約を変えて不正な足を受け取らせない(信頼性の向き)。「完全上位互換」の例外として通過の報告に逐語で載せ、オーナーが決める。
+
+**第 2 周の作業者の ROOTCAUSE.md §6 の問い(maker の指値と逆指値の順 / 参照実装の役の起こし直し / i4-r1-12)は、返り値の questions_for_lead に出たら答える。段の途中で規則は足さない。**
