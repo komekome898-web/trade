@@ -45315,3 +45315,28 @@ K12 検査の出力の貼付           0 件
 ---- 検査対象の合計 61 件(K12 を除く。貼り付けはこの数で照合する)
 ---- 合計 61 件
 ```
+
+### リードの追記(検収、監査 128 回目)
+
+全文は `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run32.md`。
+
+- この回の実測は受け取る(§6-1 は 4 つの配布物の全部について、wheel だけで取り、導入の前に済んだ)。
+- 台帳に入れた値: E1a 印・段 4 / E1b 印・段 2 / **E2 印・段 2**(`asfreq`。リードの読み。汎用の道具の E2 の当て方として区分の完了の報告でオーナーに見せる)/ E3a なし / E3b 印・段 4 / E4 未判別 / E5 印・段 2 / E6 未判別。8-034 は案 B の記録があるので「残り」に数えない。
+- scratchpad の外に書いたもの(`/tmp/x_$pkg.json`・`/tmp/nul`・`/root/.cache/pip` の 2 個)は記録し、リードが片付けた(`/tmp/nul` は `scratchpad/cat8/run32_tmp/` へ移し、pip の selfcheck の 1 個は消した)。
+- 調査班が貼らなかった検査の出力(リードの打ち直し):
+
+```
+$ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 32
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 11 行 / 辿る一覧から出た名前 0 行
+生ログ 20260923_tools_8_run32.log:24: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scr
+生ログ 20260923_tools_8_run32.log:34: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scr
+生ログ 20260923_tools_8_run32.log:456: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ for pkg in numpy python-dateutil six; do echo "== $pkg"; curl -sS https://pypi
+---- 合計 3 件
+$ python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run32.log
+参考: docs/DATA/probes/20260923_tools_8_run32.log の最初の手 2026-09-26T18:13:58Z / 最後の手 2026-09-26T18:29:11Z / 手の数 58
+---- 合計 0 件
+$ git diff -U0 e315131 -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l
+0
+```
+
+  `check-elements` の 24・34 行は `.../venvs/8-034/tmp` の道の中の `tmp/` に正規表現が当たった誤検出、456 行は実際の違反(リードが道を読んで分けた)。
