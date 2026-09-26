@@ -1,0 +1,5 @@
+# 相手の道具の結果の再利用(委任文 §3、L-435)
+# 場面集の指紋のコマンド: git ls-files -z tests/bt/battery/item_4 | xargs -0 sha256sum | sha256sum
+# 前の周(第 1 周)の指紋: d7d14efe94d656d775f423eef56f746efb666b13c8f5dc32b966009d144a8c63(fingerprint_prev_round_1.txt)
+# この周(第 2 周)の指紋: baccb379a5918290af8f0622ba203632fd5f9a1dbbc6f069eaf6159a2054aa4a(fingerprint.txt = 走らせる前、fingerprint_after.txt = 表を作ったあと。同じ)
+# 指紋が違うので、前の周の結果は使っていない。全 42 対象(新実装・当方の現状・試金石・調査結果の側 39 対象)を 2 回ずつ走らせた。

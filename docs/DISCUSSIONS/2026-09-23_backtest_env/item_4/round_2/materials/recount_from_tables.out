@@ -1,0 +1,13 @@
+current_1 表_yjugdm.md A new_impl 正解と一致 67 同じ 67 場面 17 観点
+current_1 表_yjugdm.md B current_impl 正解と一致 46 同じ 59 場面 17 観点
+current_2 表_yn2e45.md A current_impl 正解と一致 46 同じ 59 場面 17 観点
+current_2 表_yn2e45.md B new_impl 正解と一致 67 同じ 67 場面 17 観点
+survey_1 表_qae1na.md A new_impl 正解と一致 67 同じ 67 場面 17 観点
+survey_1 表_qae1na.md B survey_best 正解と一致 34 同じ 48 場面 17 観点
+survey_2 表_qtzoq4.md A survey_best 正解と一致 34 同じ 48 場面 17 観点
+survey_2 表_qtzoq4.md B new_impl 正解と一致 67 同じ 67 場面 17 観点
+mutant_1 表_nwxkne.md A new_impl 正解と一致 67 同じ 67 場面 17 観点
+mutant_1 表_nwxkne.md B mutant 正解と一致 63 同じ 67 場面 17 観点
+mutant_2 表_e1pira.md A mutant 正解と一致 63 同じ 67 場面 17 観点
+mutant_2 表_e1pira.md B new_impl 正解と一致 67 同じ 67 場面 17 観点
+all counts match the cells: True
