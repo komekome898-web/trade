@@ -27,10 +27,31 @@ ap.add_argument("--note", required=True)
 ap.add_argument("--manual")
 ap.add_argument("--keep", type=int, default=3000)
 ap.add_argument("--deadline", help="UTC の ISO 時刻。これを過ぎていたら手を打たずに終了コード 3 で止まる(予算の区切り)")
+ap.add_argument("--sandbox", help="一時・キャッシュの置き場所の根(scratchpad の下)。一度付ければ同じ生ログの以後の手に自動で掛かる")
 ap.add_argument("cmd", nargs=argparse.REMAINDER)
 a = ap.parse_args()
 if a.cmd[:1] == ["--"]:
     a.cmd = a.cmd[1:]
+
+# 置き場所の環境変数を道具が付ける(2026-09-26、33 回目の検収 監査 130 回目の指摘 1: 起動文で「毎回付ける」と
+# 書いても 33 回目は pip の手の 1 本にも付かなかった。規則ではなく道具で付ける)。
+# --sandbox を省いた手は、同じ生ログの最後の「[sandbox <道>]」を引き継ぐ。
+SANDBOX_TAG = " [sandbox %s]"
+if not a.sandbox and pathlib.Path(a.log).exists():
+    for ln in open(a.log, errors="replace"):
+        if ln.startswith("--- ") and " [sandbox " in ln:
+            a.sandbox = ln.rsplit(" [sandbox ", 1)[1].split("]", 1)[0]
+env = None
+if a.sandbox:
+    import os
+    sb = pathlib.Path(a.sandbox)
+    for sub in ("tmp", "pipcache", "m2", "gradle", "cache"):
+        (sb / sub).mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ,
+               TMPDIR=str(sb / "tmp"), PIP_CACHE_DIR=str(sb / "pipcache"), XDG_CACHE_HOME=str(sb / "cache"),
+               GRADLE_USER_HOME=str(sb / "gradle"), MAVEN_OPTS="-Dmaven.repo.local=%s" % (sb / "m2"),
+               # JVM は TMPDIR を見ない。-XX:-UsePerfData で /tmp/hsperfdata_<利用者> を作らせない(33 回目に作られた)
+               JAVA_TOOL_OPTIONS="-XX:-UsePerfData -Djava.io.tmpdir=%s" % (sb / "tmp"))
 
 
 def to_cmdline(cmd):
@@ -48,7 +69,7 @@ def one_line(s):
 
 _now = datetime.datetime.now(datetime.timezone.utc)
 now = _now.strftime("%Y-%m-%dT%H:%M:%SZ")
-dl_tag = " [期限 %s]" % a.deadline if a.deadline else ""
+dl_tag = (" [期限 %s]" % a.deadline if a.deadline else "") + (SANDBOX_TAG % a.sandbox if a.sandbox else "")
 if a.deadline:
     dl = datetime.datetime.strptime(a.deadline, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
     if _now > dl:
@@ -68,7 +89,7 @@ else:
         sys.exit("コマンドが無い(-- のあとに書く)")
     cmdline = to_cmdline(cmd)
     t0 = time.monotonic()
-    p = subprocess.run(["bash", "-c", cmdline], capture_output=True, text=True, errors="replace")
+    p = subprocess.run(["bash", "-c", cmdline], capture_output=True, text=True, errors="replace", env=env)
     dt = time.monotonic() - t0
     rc, out = p.returncode, (p.stdout + p.stderr)
     head = "--- %s method=%s target=%s rc=%d time_s=%.3f note=%s" % (
