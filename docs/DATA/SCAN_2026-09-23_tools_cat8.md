@@ -43945,3 +43945,79 @@ K12 検査の出力の貼付           1 件
 `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` → `0`(HEAD=29回目までがコミットされた版。この回は追記だけで、既存行の削除は無い)
 
 **この節を書き足したあとに打ち直した `check_scan_report.py` の結果**: K12(検査の出力の貼付)が `0 件` になり、`---- 検査対象の合計 53 件` `---- 合計 53 件`(K1・K2・K13 は上のブロックと同じ、この回の新規行には1件も当たっていない)。
+
+### リードの追記(検収、監査 124 回目)
+
+- **§7 の検査 2〜4(リードが打ち直した)**: `check-elements --round 30` → `---- 合計 0 件` / `check "" run30.log` → `---- 合計 0 件` / `git diff -U0 5e41dc8~1 5e41dc8 -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep -c '^-[^-]'` → `0`。scratchpad の外: `/root/.m2` 無し、`/root/.cache/pip` 728M のまま。
+- **ソースの選び方の出力(監査 124 回目の指摘 1。生ログには行の数しか出ていなかった)**: 調査班が scratchpad に書いた選んだディレクトリの一覧を、リードが `wc -l` と `cat` で出した(道の頭の `.../venvs/8-032/src/kafka/` は省く)。`wc -l run30_E2_dirs.txt run30_E4_dirs.txt` → E2 58 行・E4 6 行。報告の「E2 7 ルート・E4 1 ルート」は、この 58・6 のディレクトリを親でまとめたもので、全部がその子孫。
+
+```
+# E2(58)
+generator/src/test/java/org/apache/kafka/message/checker
+generator/src/main/java/org/apache/kafka/message/checker
+storage/src/test/java/org/apache/kafka/storage/internals/checkpoint
+storage/src/main/java/org/apache/kafka/storage/internals/checkpoint
+tests/kafkatest/sanity_checks
+api-checker
+api-checker/maven-plugin
+api-checker/maven-plugin/src
+api-checker/maven-plugin/src/test
+api-checker/maven-plugin/src/test/java
+api-checker/maven-plugin/src/test/java/org
+api-checker/maven-plugin/src/test/java/org/apache
+api-checker/maven-plugin/src/test/java/org/apache/kafka
+api-checker/maven-plugin/src/test/java/org/apache/kafka/maven
+api-checker/maven-plugin/src/main
+api-checker/maven-plugin/src/main/java
+api-checker/maven-plugin/src/main/java/org
+api-checker/maven-plugin/src/main/java/org/apache
+api-checker/maven-plugin/src/main/java/org/apache/kafka
+api-checker/maven-plugin/src/main/java/org/apache/kafka/maven
+api-checker/maven-plugin/src/main/resources
+api-checker/maven-plugin/src/main/resources/META-INF
+api-checker/maven-plugin/src/main/resources/META-INF/maven
+api-checker/gradle-plugins
+api-checker/gradle-plugins/src
+api-checker/gradle-plugins/src/test
+api-checker/gradle-plugins/src/test/java
+api-checker/gradle-plugins/src/test/java/org
+api-checker/gradle-plugins/src/test/java/org/apache
+api-checker/gradle-plugins/src/test/java/org/apache/kafka
+api-checker/gradle-plugins/src/test/java/org/apache/kafka/gradle
+api-checker/gradle-plugins/src/main
+api-checker/gradle-plugins/src/main/java
+api-checker/gradle-plugins/src/main/java/org
+api-checker/gradle-plugins/src/main/java/org/apache
+api-checker/gradle-plugins/src/main/java/org/apache/kafka
+api-checker/gradle-plugins/src/main/java/org/apache/kafka/gradle
+api-checker/core
+api-checker/core/src
+api-checker/core/src/test
+api-checker/core/src/test/java
+api-checker/core/src/test/java/org
+api-checker/core/src/test/java/org/apache
+api-checker/core/src/test/java/org/apache/kafka
+api-checker/core/src/test/java/org/apache/kafka/apicheck
+api-checker/core/src/main
+api-checker/core/src/main/java
+api-checker/core/src/main/java/org
+api-checker/core/src/main/java/org/apache
+api-checker/core/src/main/java/org/apache/kafka
+api-checker/core/src/main/java/org/apache/kafka/apicheck
+api-checker/core/src/testFixtures
+api-checker/core/src/testFixtures/java
+api-checker/core/src/testFixtures/java/org
+api-checker/core/src/testFixtures/java/org/apache
+api-checker/core/src/testFixtures/java/org/apache/kafka
+api-checker/core/src/testFixtures/java/org/apache/kafka/apicheck
+checkstyle
+# E4(6)
+storage/src/test/java/org/apache/kafka/tiered
+storage/src/test/java/org/apache/kafka/tiered/storage
+storage/src/test/java/org/apache/kafka/tiered/storage/actions
+storage/src/test/java/org/apache/kafka/tiered/storage/specs
+storage/src/test/java/org/apache/kafka/tiered/storage/integration
+storage/src/test/java/org/apache/kafka/tiered/storage/utils
+```
+
+- **ファイルの数(指摘 2)**: リードが数えた。選んだディレクトリのそれぞれの直下のファイルを足した数(`while read d; do find "$d" -maxdepth 1 -type f | wc -l; done < run30_<要素>_dirs.txt` の和): E2 = 93 件、E4 = 65 件。報告の 93・65 と一致。
