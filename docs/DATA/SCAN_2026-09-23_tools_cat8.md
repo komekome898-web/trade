@@ -36458,3 +36458,736 @@ K12 検査の出力の貼付           1 件
 ```
 0
 ```
+
+## 区分8 — 19 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run19_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run19_prompt.md@4bbe7648d90b`)
+- `https://www.metatrader5.com/sitemaps/help_en.xml`(MT5端末ヘルプの索引、647件)。`/en/terminal/help`配下378件をNに入れる。取得日2026-09-26
+- `https://www.mql5.com/sitemap.xml`・`https://www.mql5.com/sitemap_docs_en.xml`(MQL5文書=言語リファレンスの索引、4152件、全件`/en/docs`配下)。取得日2026-09-26
+- 上記N=4530頁のうち4506頁(99.5%)をcurl/urllibで取得しHTML本文(`<div id="help">`)をテキスト抽出。24頁は複数の手段でも到達不可(理由は知見#3)
+- `https://services.nvd.nist.gov/rest/json/cves/2.0`(NVD公開API、登録不要)。取得日2026-09-26
+- `https://web.archive.org/cdx/search/cdx`(Wayback Machine公開API)。この環境のプロキシで`ws_closed_mid_exchange`となり到達できず(存在しないとは書かない)
+- `https://www.metatrader5.com/en/download`(静的取得・JS描画の両方)。取得日2026-09-26
+- `docs/DATA/SCAN_2026-09-23_tools_cat8.md`の`## 区分8 — 17回目の実行(2026-09-25)`(33568行目から)・`## 区分8 — 18回目の実行(2026-09-25)`(35577行目から)、生ログ`docs/DATA/probes/20260923_tools_8_run17.log`・`docs/DATA/probes/20260923_tools_8_run18.log`(出発点として読んだのみ、根拠には使わない)
+- `docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run17.md`・`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run18.md`(検収。E1aの述語の括弧の例の読み方を確認)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `MetaTrader の Strategy Tester` / N確定: MT5端末ヘルプは`https://www.metatrader5.com/sitemaps/help_en.xml`(647件)のうち`/en/terminal/help`配下378件をNに入れる。`/en/metaeditor/help`(61件、MetaEditorという別アプリのヘルプ)と`/en/mobile-trading/{android,iphone}/help`(208件、モバイルアプリという別製品のヘルプ)はNに入れない(端末=デスクトップ端末のヘルプ本体ではないため) | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:7 docs/DATA/probes/20260923_tools_8_run19.log:16 |
+| 2 | `MetaTrader の Strategy Tester` / N確定: MQL5文書は`https://www.mql5.com/sitemap_docs_en.xml`(4152件、全件が`/en/docs`配下)をNに入れる。同じ索引にあるsitemap_articles/codebase/market/forum/jobs/blogs/signals/calendar/quotes/book/neurobook/staticpages/images/files系(41本中40本)は利用者・第三者の投稿や売り物の一覧、または販売元の文書ではない静的頁・書籍・カレンダーで、Nに入れない | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:11 docs/DATA/probes/20260923_tools_8_run19.log:228 |
+| 3 | `MetaTrader の Strategy Tester` / N=4530頁(378+4152)のうち24頁(すべてmql5.com/en/docs/standardlibrary配下の個別クラス・メソッド頁)は、urllib(リトライ5回)・curl(HTTP/2既定・--http1.1・--http1.0、複数回)のいずれでも`Empty reply from server`または`HTTP/2 stream ... PROTOCOL_ERROR`が再現し、この環境から到達できなかった(プロキシのCONNECT失敗ではなく、TLSハンドシェイク後の応答がオリジンから返らない)。残る4506頁(99.5%)でNを構成した | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:4990-4999 |
+| 4 | `MetaTrader の Strategy Tester` / E1a: `docs/runtime/testing.txt`の逐語「The tester compares the tick data to the minute bar parameters: a tick should not exceed the bar's High/Low levels, also initial and final ticks should coincide with the bar's Open/Close prices. The volume is compared as well. If a mismatch is detected, all ticks corresponding to this minute bar are discarded. Generated ticks are used instead」。テスターが自ら生成・取得した実ティックと分足のOHLCパラメータを自動で突き合わせ、不一致を検出して破棄し生成ティックに置換する | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:1877 |
+| 5 | `MetaTrader の Strategy Tester` / E1a 方式(原文): 「The tester compares the tick data to the minute bar parameters: a tick should not exceed the bar's High/Low levels, also initial and final ticks should coincide with the bar's Open/Close prices. The volume is compared as well」。方式は実ティックと分足OHLCの整合性チェック(High/Low超過なし・始値終値の一致・出来高の比較)。段3の根拠: 対象はテスター自身がダウンロードした分足データと蓄積した実ティックに限られ、道具の外(利用者が持ち込む任意のティック・分足データ)に掛けられるとする逐語は無い | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:1877 |
+| 6 | `MetaTrader の Strategy Tester` / E3a: N全4506頁を語(ルックアヘッド・look-ahead・survivorship・生存者・leak・リーク・未来・point-in-time・as-of・時点)で検索し、当たりは4行のみ(hits=4、files_with_hits=4)。いずれもワンタイムパスワードの漏洩(leaked)・メモリリークのコード例コメント・Leaky ReLU活性化関数の名称で、計算・特徴量・戦略・模擬が知り得ない情報を使っていることを検出・報告する機能の記述は見当たらなかった | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:2908-2911 docs/DATA/probes/20260923_tools_8_run19.log:2916 |
+| 7 | `MetaTrader の Strategy Tester` / E5: 起動文§2.4はE1a・E1b・E2・E3a・E3b・E6の6組の語しか与えておらず、E5の語が無かった。設計票§3のE5述語(乱数の種・環境や依存の固定・実験の再実行と結果の差分・データの版の固定)の語から自分で組んだ(乱数・seed・再現・reproducib・決定的・determinist・固定・fixed・pin・バージョン・version・回帰・regression)。この語の組み方自体は起動文の逐語ではないため、判断に迷った点として残す | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:2917 |
+| 8 | `MetaTrader の Strategy Tester` / E5: 上記の語でN全4506頁を検索(hits=1351、files_with_hits=574)。(乙)cat8_classify.pyの6決まりで matched=1279(94.7%)・unmatched=72を個別判定(下表)。乱数の種の固定に触れる箇所は`MathSrand`/`_RandomSeed`という MQL5言語が汎用に提供する乱数関数のみで、Strategy Tester自身が再現性のために内部でこれを使う(例: 各回の実行の前に固定のシードを設定する)という記述は無かった。Random Delayモード(0〜9秒のランダムな遅延)についてもシード固定の逐語は見当たらなかった | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:5011 docs/DATA/probes/20260923_tools_8_run19.log:5781 |
+| 9 | `MetaTrader の Strategy Tester` / E5 分類作業のメモ: 決まりの正規表現に通常の半角スペースを使うと、抽出済みテキストの一部が`&nbsp;`由来の非改行スペース(U+00A0)であるため一致しないことがある(例: `event_handlers/ontester.txt:29`の「linear regression」が`linear\xa0regression`だったため`linear regression`という決まりに取られず、個別判定に回った)。Pythonの`\s`はU+00A0を空白として扱うため、次回以降は決まりの空白を`\s+`で書けば同種の見落としを防げる | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:5752 |
+| 10 | `MetaTrader の Strategy Tester` / §4.0 既知の脆弱性: NVD(NIST)公開APIの逐語。「MetaQuotes」での検索は`"totalResults":0`。「MetaTrader」での検索は`"totalResults":1`で該当は`CVE-2026-7627`(第三者の非公式ラッパー「8nite metatrader-4-mcp 1.0.0」のパストラバーサル脆弱性、MetaQuotes社製品自体ではない) | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:4993 docs/DATA/probes/20260923_tools_8_run19.log:4997 |
+| 11 | `MetaTrader の Strategy Tester` / §4.0 料金体系・課金開始条件: `strategy_optimization.txt`の逐語「Since the MQL5 Cloud Network is a paid service, a user must have an account at the MQL5.community website」。Strategy Tester自体(ローカルエージェント)は無料、分散計算のMQL5 Cloud Networkは有料サービスと明記 | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5782 |
+| 12 | `MetaTrader の Strategy Tester` / §4.0 課金開始条件: 同頁の逐語「There are limitations for each optimization pass. During optimization, the Expert Advisor cannot write more than 4GB of information to disk and use more than 4GB of RAM. If the limit is exceeded, the network agent will not be able to complete the calculation correctly, and you will not receive the result. However, you will be charged for all the time spent on the calculations」。4GB上限超過で結果が得られなくても計算時間分は課金される | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5805 |
+| 13 | `MetaTrader の Strategy Tester` / §4.0 規模の見積: `tester_journal.txt`の逐語(公式ヘルプが載せるジャーナルメッセージの例)「Tester 546 Mb memory used including 0.94 Mb of history data, 320 Mb of cached tick data (total memory for tick data 3135 Mb)」。ティックキャッシュの上限は`runtime/testing.txt`の逐語「The cache size does not exceed 128 000 ticks」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5798 docs/DATA/probes/20260923_tools_8_run19.log:5801 |
+| 14 | `MetaTrader の Strategy Tester` / §4.0 最小実行の可否・外部送信・当方データ投入: `start_advanced/account_manage.txt`の逐語「An unlimited number of demo accounts can be opened in the platform」により、デモ口座自体はプラットフォーム内で(外部の登録フォームを介さず)開設できることを確認した。ただし、この前提となるデスクトップ端末(Windows/macOS/Linux用の実行ファイル)のインストール自体をこの環境では試みておらず(実行ファイルを起動する手段が無い)、最小実行・外部送信の確認・当方データの投入はいずれも未確認のまま残る | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5810 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. [深掘り] `MetaTrader の Strategy Tester` (8-029) — N(MT5端末ヘルプ378頁+MQL5文書4152頁のうち4506頁。24頁は複数の手段でも到達不可)全件を対象に、17回目に未判別だったE1a・E3a・E5を確定した。E1a=印(段3、docs/runtime/testing.txtの「tester compares the tick data to the minute bar parameters...If a mismatch is detected, all ticks...are discarded」= 実ティックと分足の自動突き合わせ・破棄)。E3a=なし(全件検索hits=4、いずれも無関係語)。E5=なし(全件検索hits=1351、(乙)cat8_classify.pyで6決まりに分類、matched=1279・残り72行を個別判定、いずれも版数・回帰指標・固定値設定・pinの部分一致・MathSrand等の言語汎用関数で、テスター自身の再現性機能ではなかった。E5の検索語は起動文§2.4に無く設計票§3の述語から自分で組んだため問いに残す)。§4.0の表の12件の未確認のうち5件(既知の脆弱性=実測、料金体系・課金開始条件=一次資料、規模の見積=実測/一次資料)を確認し、1件(4軸4_向上)は「サーベイの外」に区分した。残り7件(版・最終更新日・ライセンス・初回公開日・最小実行の可否・外部送信・当方データ投入)はデスクトップアプリの実行やWayback Machineのプロキシ到達等の制約により未確認のまま(試した手段は§4.0の表と生ログ参照)。E1a〜E6に未判別が無くなり状態を深掘りにした — 状態: 深掘り
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 未着手
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — algorier.com全68頁をこの回に取り直し検索。E1a・E2・E3a・E3bは全件検索・決まりで分類しなし(乙、matched/unmatched: E1a 992/5・E2 897/2・E3a 212/0・E3b 156/0)。E6は印に確定(段1、根拠はalgonetwork.txt「Every backtest and live trade is auditable. No cherry-picking.」・faqs.txt「independent verification through backtests and forward tests」。全件検索(matched=2843/2847)の当たりの大半はバックテスト・検証の一般語かE1b/E4/E3bの対象の言い換え)。E1a〜E6に未判別が無くなり、§4.0の表(43項目)も過半が一次資料/実測のため状態を深掘りにした — 状態: 深掘り
+38. `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 浅い
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — GitHubリポジトリをこの回に取り直し取得(files_in_tree=180、PNG4件除外でlisted=175)。E6を印に確定(段3、根拠はREADME.md「Every feature and target in Oryon ships with contract tests...The test infrastructure is part of the public API.」。#[macro_export]のtarget_contract_tests!/streaming_transform_contract_tests!が実装の正しさ(warm_up_period・forward_period・None伝播・reset・インスタンス独立性)を自動判定する。ただしCONTRIBUTING.mdは主な用途を「adding a feature or target」とOryon自身への機能追加と説明しており、自己試験(L-516)との境界を問いに残す)。段_E1bを4に確定(README.mdのrun_features_pipeline_pandas(fp, df)がpandas DataFrameという広く使われる形式を受け付ける)。§4.0の表の未確認項目(週DL数・既知の脆弱性・保守者数・保守者名の一貫性・wheel展開・難読化・外部送信・依存の一覧・規模の見積)をこの回に確認。E1a〜E6に未判別が無くなり状態を深掘りにした — 状態: 深掘り
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 印 | 3 | 一次資料 | N全4506頁(MT5端末ヘルプ378頁+MQL5文書4128頁。24頁は複数の手段でも到達不可)を語(突き合わせ\|reconcil\|cross-check\|比較\|compar\|diff\|差分\|一致\|mismatch)で検索(hits=1572)。mismatchの当たり13件のうち、docs/runtime/testing.txtの逐語「The tester compares the tick data to the minute bar parameters: a tick should not exceed the bar's High/Low levels, also initial and final ticks should coincide with the bar's Open/Close prices. The volume is compared as well. If a mismatch is detected, all ticks corresponding to this minute bar are discarded. Generated ticks are used instead」により、テスターが自ら生成した実ティックと分足のOHLCパラメータを自動で突き合わせ、不一致を検出して破棄・生成ティックへ置換する機能を確認(設計票§3のE1aの括弧の例=差分の検査に当たる。18回目の検収が示した、戦略どうしの成績比較はE1aに当たらないという境界には触れない、実装データ同士の突き合わせ)。対象はテスター自身がダウンロードした分足データと実ティックに限られ(段4の条件=対象のすべてを外から持ち込める、を言う逐語なし)、段3。印が見つかったため全件の分類(乙)は行っていない(委任文§2.3が定める、印には全件の検索は要らないという規則による) | docs/DATA/probes/20260923_tools_8_run19.log:1877 |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 一覧4506件/読んだ4506件(N全体、MT5端末ヘルプ378頁+MQL5文書4128頁)。語(ルックアヘッド\|look-ahead\|survivorship\|生存者\|leak\|リーク\|未来\|point-in-time\|as-of\|時点)で検索し、当たり4ファイル/4行(甲、個別判定は下表)。ワンタイムパスワードの漏洩・メモリリーク・Leaky ReLU活性化関数という無関係語で、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能の記述は見当たらなかった | docs/DATA/probes/20260923_tools_8_run19.log:2905 docs/DATA/probes/20260923_tools_8_run19.log:2908-2911 |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | なし | - | 一次資料 | 一覧4506件/読んだ4506件(N全体)。E5の語は起動文§2.4に無く(E1a・E1b・E2・E3a・E3b・E6の6組しか与えられていない)、設計票§3のE5述語(乱数の種・環境や依存の固定・実験の再実行と結果の差分・データの版の固定)の語から自分で組んだ(乱数\|seed\|再現\|reproducib\|決定的\|determinist\|固定\|fixed\|pin\|バージョン\|version\|回帰\|regression\|snapshot\|golden\|lock\|版の固定。問いとして残す)。当たり643ファイル/1750行を(乙)cat8_classify.pyで分類(9決まり: 製品・ソフトウェア版数778件、conversion/inversionの部分一致8件、統計・チャート回帰指標113件、発注条件等の固定値設定200件、pinの部分一致170件、MathSrand/_RandomSeedという言語汎用の乱数関数8件、Goldenrod色定数27件、block/lock in profit等の一般語331件、OpenBLASのDMDスナップショット24件)、matched=1659・unmatched=91(個別判定は下表)。いずれも同じ入力から同じ出力が出ることを確かめるか固定するテスター自身の機能ではなかった(MathSrand/_RandomSeedは利用者が書く任意のMQL5プログラムが呼べる言語組み込み関数で、テスター自身が再現性のために内部で使う機能の記述ではない。No Delayモードは決定的だがシード固定を述べる逐語は無い) | docs/DATA/probes/20260923_tools_8_run19.log:9211 |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `dbt` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(18回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(18回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(18回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(18回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | algonetwork.txt:285の逐語「Every backtest and live trade is auditable. No cherry-picking.」。良否を問わず全ての結果が改変・取捨選択なく公開されるという完全性の保証で、バックテストの計算そのもの(E1b・E4の対象)や時点分割(E3bの対象)とは別の、公開データの完全性を確かめる機能に当たる。faqs.txt:54の「independent verification through backtests and forward tests」も同じ保証を指す。全件検索(68頁、当たり68ファイル/2847行)を(乙)cat8_classify.pyで分類、matched=2843・unmatched=4(5決まり: test系2039件・validat系417件・quality系187件・check系104件・verif系96件)。残りの当たりはE1b/E4/E3bの対象の言い換えか一般的な検証・品質の語で、E6の独自機能には当たらない。段は、監査可能性の主張が機能としてどう呼び出せるかの記述を欠くため段1(文書だけ) | docs/DATA/probes/20260923_tools_8_run18.log:2478 docs/DATA/probes/20260923_tools_8_run18.log:4338 docs/DATA/probes/20260923_tools_8_run18.log:3974 docs/DATA/probes/20260923_tools_8_run18.log:7351 |
+| `NinjaTrader` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E1b | 印 | 4 | 一次資料 | 段の根拠: README.mdの逐語「X = run_features_pipeline_pandas(fp, df)」。dfはpandas DataFrame(df = pd.DataFrame({...})の例。docs/docs/api/scalers.md・operators.md等の全アダプタ例でも同型)という広く使われる一般形式で、当方の計算と同じ種類の出力(特徴量)を出す計算にデータを持ち込める。対象の全てが道具の外から持ち込めるため段4 | docs/DATA/probes/20260923_tools_8_run18.log:10173-10195 |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(17回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 一覧175件/読んだ175件(GitHubリポジトリ、この回に取り直し)。全件検索(当たり109ファイル/2680行)は17回目の結果を使わず打ち直した。README.md:127の逐語「Every feature and target in Oryon ships with contract tests that enforce `warm_up_period`, `forward_period`, `None` propagation, reset correctness, and instance independence. The test infrastructure is part of the public API. Contributions must pass the same contracts.」。#[macro_export]されたtarget_contract_tests!/streaming_transform_contract_tests!マクロ(docs/docs/contributing/test-templates.mdに「`streaming_transform_contract_tests!` generates 6 tests automatically」「`target_contract_tests!` generates 5 tests automatically」)は、warm_up_period・forward_period・None伝播・reset・インスタンス独立性という実装の正しさをassert_eq!による自動判定で確かめる。L-516の自己試験除外(候補が自分自身の版・ランタイムを試験する仕組み)はOryon自身の既存機能に対する開発時テストに当たるが、この契約テストマクロは新たに書く実装(型)がOryonのトレイトの契約を満たすかを検証する道具そのものであり、READMEが「public API」と明記する。ただしCONTRIBUTING.mdは「It covers the end-to-end workflow for adding a feature or target」と主な用途をOryon自身への機能追加と説明しており、L-516との境界は問いに残す(下記)。段は、対象がOryon自身のTarget/StreamingTransformトレイトを実装する型に限られ(外部の任意の関数への適用は逐語に無い)、段3 | docs/DATA/probes/20260923_tools_8_run18.log:7380 docs/DATA/probes/20260923_tools_8_run18.log:10172 docs/DATA/probes/20260923_tools_8_run18.log:7444 docs/DATA/probes/20260923_tools_8_run18.log:9169-9214 docs/DATA/probes/20260923_tools_8_run18.log:7432 |
+
+### ツール1件ごとの表
+この回で§4の全列を新規に書く候補は無い(この回は8-029の深掘り済みの表のうちE1a・E3a・E5の値の確定と、§4.0の未確認項目のうち確認できた項目の追加のみを行った。§4の他の列は17回目の表を維持する)。
+
+### 決まりの一覧
+
+| 検索の手の行 | 決まりの id | 正規表現 | 理由 | 取った行の数 | 取った行のあるファイルの数 |
+|---|---|---|---|---|---|
+| docs/DATA/probes/20260923_tools_8_run19.log:720 | r_diff_adj | `(?i)diff[a-z]\|[a-z]diff` | 一般の形容詞・名詞「different/difference(s)/differently/differs」で、経済指標の定義(輸出入の差額等)やMQL5言語のオーバーロード・型の説明に使われる一般叙述で、2つ以上の実装の出力を突き合わせて差を出す機能を指さない | 562 | 271 |
+| docs/DATA/probes/20260923_tools_8_run19.log:720 | r_compar_english | `(?i)compar[a-z]` | 一般の動詞・形容詞「compare/compared/comparison/comparable」で、経済指標の対前年比較・チャート指標の値の比較・製品説明文の一般叙述で、候補の機能としての突き合わせを指さない | 986 | 377 |
+| docs/DATA/probes/20260923_tools_8_run19.log:720 | r_compar_mql5_api | `(?i)comparearray\|comparebydigits\|compareequal\|comparelist\|\.compare\(\|int result=object\|bool result=list` | MQL5言語が汎用に提供する配列・オブジェクト・行列の比較関数(CompareArray/CompareEqual/CompareByDigits等)で、任意のプログラムから呼べる言語機能であり、Strategy Tester自身が2つの実装を突き合わせる機能ではない | 0 | 0 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_product_version | `(?i)(platform\|mobile\|desktop\|web\|demo\|trial\|software\|product\|indicator\|robot\|expert advisor\|\bea\b\|metatrader\|mt5\|mql5\|terminal\|market\|calendar\|application\|git\|full\|beta\|major\|minor\|previous\|new(er)?\|old(er)?\|earlier\|later\|current\|next\|this\|corresponding\|appropriate\|special\|unchanged\|compatib\|model\|function\|library\|onnx\|lapack\|blas\|windows\|program\|#property\|macos\|wine\|opencl\|python\|save\|load\|release\|limited\|unlimited\|term license\|installed?\|required\|running?\|modern\|selecting\|of the expert advisor\|returns the result\|call).{0,60}\bversion\|\bversion.{0,60}(control\|number\|of the\|compatib\|history\|that returns\|,\s*"[\d.]+"\|from the list\|\(\))\|version\(\)\|__version__\|version for (working\|calculating)\|a version for\|[a-z0-9]version\b\|(the \|a )?version (that\|for\|with)\|versions? for handling\|first function version\|cl_\w*version\|terminal_os_version\|"balanced" versions\|os_ver\b\|info\.version` | 製品・アプリ・プラットフォーム・関数・ライブラリ・EAソースコードのメタ情報(#property version)・Pythonパッケージのバージョン取得関数としての版数を指す一般語で、実験のデータ版を固定する機能ではない | 778 | 422 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_conversion_word | `(?i)conversion\|inversion\|convertible` | 検索語 version が「conversion」「inversion」の部分文字列に当たっただけで、型変換・単位換算を指し、再現性の版固定とは無関係 | 8 | 5 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_regression_indicator | `(?i)linear regression\|regression channel\|regression trend\|regression line\|channel regression\|channel linear regression\|regressionmetric\|obj_regression\|cchartobjectregression\|regression metric\|deviation error from the regression\|regression constructed\|regression problem\|[a-z0-9_]regression\|regression[a-z0-9_]` | 統計・チャート描画の「回帰(直線回帰)」チャネル図形オブジェクトや機械学習の回帰(分類問題と対になる回帰問題・RegressionMetric・LinearRegression等のAPI識別子)を指す語で、回帰試験(regression testing)ではない | 113 | 31 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_fixed_setting | `(?i)fixed\s+\S\|\S\s+fixed\b\|\bfixed[:.,#]\|\(unfixed\)\|unfixed\|fix(ed\|ation) of (a \|an )?(minimum\|maximum\|certain)\|[a-z0-9_]fixed\|fixed[a-z0-9_]` | 発注条件・指標表示・料金・チャート位置など製品設定が「固定値」であることを述べる一般語、またはFixedMax/CHART_FIXED_MAX等のAPI識別子名の一部で、乱数の種や環境の固定機能ではない | 200 | 69 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_pin_substring | `(?i)[a-z]pin\|pin[a-z]` | 検索語 pin が「opinion」「Pinterest」「developing」「CSpinEdit」「matrix_pinv」「ping」など無関係な語の部分文字列に当たっただけ | 170 | 100 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_seed_general_lang | `(?i)_randomseed\|mathsrand\|mathrand\(\)\|seed\s*//\|initializing number\|\bseed\b.{0,20}(int\|number\|value)` | MQL5言語が汎用に提供する乱数関数(MathSrand/_RandomSeed)で、Strategy Tester自身が再現性のために内部で使う機能の記述ではない(呼べるのは利用者が書く任意のプログラムであり、テスターの機能ではない) | 8 | 5 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_golden_color | `(?i)goldenrod` | 色定数「Goldenrod」系(clrGoldenrod・clrDarkGoldenrod等)の名前・説明で、golden fileのようなテスト用語ではなく色の名前 | 27 | 14 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_lock_generic | `(?i)[a-z]lock\|lock[a-z]\|lock (in\|its position)\|lock the database\|database lock` | 「block/blocked/unlock/clock/locked」等の一般語の部分文字列一致、または「利益を確定する(lock in profit)」「チャート上の位置を固定する」「データベースをロックする」という取引・UI・DB操作の一般語で、実験結果を固定して比較する仕組み(lock file等)の記述ではない | 331 | 124 |
+| docs/DATA/probes/20260923_tools_8_run19.log:9212 | r_snapshot_dmd | `(?i)snapshot matri\|data snapshot\|dynamic mode decomposition\|snapshots? (are\|is\|scaled\|in the)\|leading.{0,20}snapshots\|initial data snapshots` | OpenBLASの動的モード分解(DMD)関数が扱う行列データの「スナップショット」という線形代数の用語で、実験結果を固定するsnapshotテストの機能ではない | 24 | 3 |
+
+#### `MetaTrader の Strategy Tester` E1a の当たりの判定(行ごと)
+
+| ファイルの道と行 | 当たった行の字 | その語がその行で何を指し、なぜ述語に当たらないか |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/mathematics/fuzzy_logic/fuzzy_membership/cdifferenctwosigmoidalmembershipfunction.txt:10 | class CDifferencTwoSigmoidalMembershipFuncion : public IMembershipFunction | ファジー論理のメンバーシップ関数クラス名の一部(Differenc)で、2つの実装を突き合わせる機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/iequalitycomparer.txt:9 | interface IEqualityComparer | MQL5言語が汎用に提供するコレクション用の等価比較インターフェース名(C#のIEqualityComparerに相当)で、任意のプログラムが実装する言語機能。Strategy Tester自身の突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/icomparer.txt:9 | interface IComparer | 同上(順序比較インターフェースIComparer)。言語汎用機能でテスターの突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/icomparable.txt:9 | interface IComparable : public IEqualityComparable<T> | 同上(IComparable/IEqualityComparableインターフェース)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/cdefaultcomparer.txt:9 | class CDefaultComparer : public IComparer<T> | 同上(既定の比較子クラス)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/cdefaultequalitycomparer.txt:9 | class CDefaultEqualityComparer : public IEqualityComparer<T> | 同上(既定の等価比較子クラス)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/generic/iequalitycomparable.txt:9 | interface IEqualityComparable | 同上(等価比較可能インターフェース)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/runtime/testing.txt:205 | The tester compares the tick data to the minute bar parameters: a tick should not exceed the bar's High/Low levels, also initial and final ticks should coincide with the bar's Open/Close prices. The volume is compared as well. If a mismatch is detected, all ticks corresponding to this minute bar are | **この行がE1aの印の根拠**(知見#4)。テスターが自ら生成・取得した実ティックと分足のOHLCパラメータを自動で突き合わせ、不一致(mismatch)を検出して破棄・生成ティックへ置換する機能。述語に当たるため「述語に当たらない理由」は無い |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/strings/stringcompare.txt:2 | The function compares two strings and returns the comparison result in form of an integer. | MQL5言語が汎用に提供する文字列比較関数StringCompareの説明で、任意のプログラムから呼べる言語機能。Strategy Tester自身が2つの実装を突き合わせる機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/errorswarnings/errorscompile.txt:1096 | Type mismatch | MQL5コンパイラのコンパイルエラー一覧にある「型の不一致」というエラー名で、一般的な言語のコンパイルエラー。実装どうしの突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/errorswarnings/errorcodes.txt:2008 | ERR_DATABASE_MISMATCH | SQLiteデータベース関連のランタイムエラーコード名(データベースの不一致エラー)で、一般的なエラー定数。突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/errorswarnings/errorcodes.txt:2012 | Data type mismatch | 上記エラーコードの説明文(データ型の不一致)で、一般的なランタイムエラーの説明。突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/convert/colortoprgb.txt:27 | Mode COLOR_FORMAT_ARGB_RAW assumes that color components are already correctly prepared and the terminal does not "normalize/recalculate" them. Therefore, in scenarios where premultiplied-color is expected, it is PRGB that should be passed, otherwise visual artifacts/mismatches during rendering may  | 色変換関数ColorToPRGBの注意書きで、色成分の前処理を誤ると描画時に視覚的な不整合(mismatch)が生じるという一般的な注意。実装どうしの突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_solves/matrix_inv.txt:52 |                double diff=MathAbs(identity[i][j]-value); | 行列の逆行列計算のサンプルコードで、単位行列との誤差を計算するローカル変数名「diff」(浮動小数点の丸め誤差)。2つの実装を突き合わせる機能ではなく、1つの計算内の精度確認コード |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_solves/matrix_inv.txt:54 |                if(diff>1e-9) | 同上のサンプルコードの続き(誤差変数diffの閾値判定)。同じ理由で述語に当たらない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_manipulations/matrix_compare.txt:26 | The number of mismatched elements of the matrices or vectors being compared: 0 if the matrices are equal, greater than 0 otherwise. | MQL5言語が汎用に提供する行列・ベクトル比較関数Matrix::Compareの説明で、任意のプログラムから呼べる言語機能。Strategy Tester自身の突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_manipulations/matrix_comparebydigits.txt:27 | The number of mismatched elements of the matrices or vectors being compared: 0 if the matrices are equal, greater than 0 otherwise. | 同上(Matrix::CompareByDigits関数)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_manipulations/compareequal.txt:25 | Vectors are compared element by element until the first mismatched element. | 同上(Matrix::CompareEqual関数)。言語汎用機能 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/function/functionoverload.txt:96 | // 1. overload is allowed - function differs from built-in MathMax() function in the number of parameters | 関数オーバーロードの解決規則を説明するサンプルコードのコメントで、「差異」は引数の個数の違いを指す言語仕様の説明。実装どうしの突き合わせ機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/algotrading/tester_journal.txt:499 | tick volume has shown mismatch at 4 minute bars within 2015.01.01 00:00 - 2016.01.01 00:00 | testing.txt:205のE1a根拠と同じ機能(実ティックと分足の自動突き合わせ)がテスターのジャーナルに実際に出す例で、独立した別の機能ではない(既出のE1a根拠を裏付ける同じ機能の実行例として扱う) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/signals/signal_subscriber.txt:32 | Mismatched Trading Conditions # | Signals(コピートレード)機能の見出しで、購読者の口座条件(レバレッジ等)と提供者の条件が一致するかを見る機能。Strategy Testerとは別のMetaTrader機能であり、この候補(Strategy Tester)自身の機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/signals/signal_subscriber.txt:38 | If a mismatch is detected, the corresponding warning is displayed in the subscription window. It is recommended to use signals with matching trading conditions. | 同上(Signals機能の口座条件の不一致警告)。Strategy Tester自身の機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customsymbols/customticksreplace.txt:31 | […] replaced consecutively, day after day, until the time specified in to_msc or until an error occurs. The first day from the specified range is processed followed by the next one, etc.  As soon as the mismatch between the tick time and the ascending (non-descending) o | Custom Symbols機能(合成銘柄の作成)のCustomTicksReplace関数の説明で、ティック時刻が昇順かどうかを検査する機能(順序の乱れの検出=E2の述語に近い)。Strategy Tester自身の機能ではなくCustom Symbolsという別機能で、E1a(実装どうしの突き合わせ)には当たらない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customsymbols/customsymbolcreate.txt:31 | …or <group> name + groups separator "\\"+<custom symbol name>, for example – "CFD\\Metals\\Platinum". In this case, the group name should end with the exact name of the custom symbol. In case of a mismatch, the custom symbol is still created, but not in the intended g | Custom Symbols機能のCustomSymbolCreate関数の説明で、グループ名の末尾がシンボル名と一致しない場合の挙動を述べる一般的な仕様。実装どうしの突き合わせ機能ではない |
+
+#### `MetaTrader の Strategy Tester` E5 の決まりの一覧(打ち直し前の手、生ログ5811/5812行目)
+
+補足: `docs/DATA/probes/20260923_tools_8_run19.log:5811`(E5_search_redo、snapshot/golden/lock追加前の一覧4506件版)に対するcat8_classify.pyの手(生ログ5811行目のコマンド、--stepは5812)も生ログに残っている。この手が実際に出した決まりは次のとおり(9211の最終版と重複するが、生ログに残る手をすべて`### 決まりの一覧`に載せるため記載する)。この手のunmatched(72行)は上の`E5 の当たりの判定(行ごと)`(9212の91行の表)にすべて含まれる(同じ語の当たりのため理由も同じ)。
+
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_product_version | `(?i)(platform\|mobile\|desktop\|web\|demo\|trial\|software\|product\|indicator\|robot\|expert advisor\|\bea\b\|metatrader\|mt5\|mql5\|terminal\|market\|calendar\|application\|git\|full\|beta\|major\|minor\|previous\|new(er)?\|old(er)?\|earlier\|later\|current\|next\|this\|corresponding\|appropriate\|special\|unchanged\|compatib\|model\|function\|library\|onnx\|lapack\|blas\|windows\|program\|#property\|macos\|wine\|opencl\|python\|save\|load\|release\|limited\|unlimited\|term license\|installed?\|required\|running?\|modern\|selecting\|of the expert advisor\|returns the result\|call).{0,60}\bversion\|\bversion.{0,60}(control\|number\|of the\|compatib\|history\|that returns\|,\s*"[\d.]+"\|from the list\|\(\))\|version\(\)\|__version__\|version for (working\|calculating)\|a version for\|[a-z0-9]version\b\|(the \|a )?version (that\|for\|with)\|versions? for handling\|first function version\|cl_\w*version\|terminal_os_version\|"balanced" versions\|os_ver\b\|info\.version` | 製品・アプリ・プラットフォーム・関数・ライブラリ・EAソースコードのメタ情報(#property version)・Pythonパッケージのバージョン取得関数としての版数を指す一般語で、実験のデータ版を固定する機能ではない | 778 | 422 |
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_conversion_word | `(?i)conversion\|inversion\|convertible` | 検索語 version が「conversion」「inversion」の部分文字列に当たっただけで、型変換・単位換算を指し、再現性の版固定とは無関係 | 8 | 5 |
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_regression_indicator | `(?i)linear regression\|regression channel\|regression trend\|regression line\|channel regression\|channel linear regression\|regressionmetric\|obj_regression\|cchartobjectregression\|regression metric\|deviation error from the regression\|regression constructed\|regression problem\|[a-z0-9_]regression\|regression[a-z0-9_]` | 統計・チャート描画の「回帰(直線回帰)」チャネル図形オブジェクトや機械学習の回帰(分類問題と対になる回帰問題・RegressionMetric・LinearRegression等のAPI識別子)を指す語で、回帰試験(regression testing)ではない | 113 | 31 |
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_fixed_setting | `(?i)fixed\s+\S\|\S\s+fixed\b\|\bfixed[:.,#]\|\(unfixed\)\|unfixed\|fix(ed\|ation) of (a \|an )?(minimum\|maximum\|certain)\|[a-z0-9_]fixed\|fixed[a-z0-9_]` | 発注条件・指標表示・料金・チャート位置など製品設定が「固定値」であることを述べる一般語、またはFixedMax/CHART_FIXED_MAX等のAPI識別子名の一部で、乱数の種や環境の固定機能ではない | 200 | 69 |
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_pin_substring | `(?i)[a-z]pin\|pin[a-z]` | 検索語 pin が「opinion」「Pinterest」「developing」「CSpinEdit」「matrix_pinv」「ping」など無関係な語の部分文字列に当たっただけ | 172 | 100 |
+| docs/DATA/probes/20260923_tools_8_run19.log:5812 | r_seed_general_lang | `(?i)_randomseed\|mathsrand\|mathrand\(\)\|seed\s*//\|initializing number\|\bseed\b.{0,20}(int\|number\|value)` | MQL5言語が汎用に提供する乱数関数(MathSrand/_RandomSeed)で、Strategy Tester自身が再現性のために内部で使う機能の記述ではない(呼べるのは利用者が書く任意のプログラムであり、テスターの機能ではない) | 8 | 5 |
+
+#### `MetaTrader の Strategy Tester` E3a の当たりの判定(甲、ファイルの表)
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/start_advanced/otp.txt | 1 | leakはワンタイムパスワード(OTP)が漏洩(leaked)した場合のセキュリティ注意書きで、計算・特徴量・戦略・模擬が未来の情報を使っていることを検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/datastructures/carrayobj/carrayobjaddarray.txt | 1 | memory leakはC++/MQL5のメモリ管理(ポインタの解放漏れ)に関するコード例のコメントで、ルックアヘッドの検出とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_types/matrix_enumerations.txt | 1 | Leaky Rectified Linear Unitはニューラルネットワークの活性化関数(Leaky ReLU)の列挙体名で、leakは語の一部に過ぎない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_machine_learning/matrix_activation.txt | 1 | AF_LRELU (Leaky REctified Linear Unit)も同じ活性化関数(Leaky ReLU)の定数の説明で、ルックアヘッドとは無関係 |
+
+#### `MetaTrader の Strategy Tester` E5 の当たりの判定(行ごと)
+
+| ファイルの道と行 | 当たった行の字 | その語がその行で何を指し、なぜ述語に当たらないか |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/trading/one_click_trading.txt:23 | How to Quickly Lock the Profit/Loss of a Position # | 含み益を確定させる(lock in profit)という取引用語で、実験結果を固定する仕組みとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.metatrader5.com/en/terminal/help/signals/signal_monitoring.txt:212 | Total Trades — the total number of trades (deals that lock profit or loss). | 含み益を確定させる(lock in profit)という取引用語で、実験結果を固定する仕組みとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/onnx.txt:6 | MQL5 provides automatic data type conversion for model inputs and outputs if the passed parameter type does not match the model. | ONNXモデルの入出力に対する自動型変換(conversion)を述べる一般語で、「version」の部分文字列一致(conversion)。再現性の版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5.txt:51 | version | Python MetaTrader5パッケージの関数一覧の見出し語「version」(mt5.version()のこと)で、ソフトウェア版数の取得関数を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5terminalinfo_py.txt:109 | initialize, shutdown, version | Python MetaTrader5パッケージの関数一覧(initialize/shutdown/versionという関数名の列挙)で、versionはパッケージのバージョンを返す関数名。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5lasterror_py.txt:67 | RES_E_INVALID_VERSION | Python MetaTrader5パッケージのエラーコード定数(バージョン不一致エラー)の名前・説明で、一般的なソフトウェアのバージョン不整合を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5lasterror_py.txt:71 | invalid version | Python MetaTrader5パッケージのエラーコード定数(バージョン不一致エラー)の名前・説明で、一般的なソフトウェアのバージョン不整合を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5lasterror_py.txt:169 | version, GetLastError | Python MetaTrader5パッケージの関連関数の一覧(version・GetLastError)で、versionは関数名。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5lasterror_py.txt:180 | version | Python MetaTrader5パッケージの関数一覧の見出し語「version」(mt5.version()のこと)で、ソフトウェア版数の取得関数を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5version_py.txt:1 | version | Python MetaTrader5パッケージの関数一覧の見出し語「version」(mt5.version()のこと)で、ソフトウェア版数の取得関数を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/python_metatrader5/mt5shutdown_py.txt:51 | version | Python MetaTrader5パッケージの関数一覧の見出し語「version」(mt5.version()のこと)で、ソフトウェア版数の取得関数を指す。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/controls/cspinedit.txt:8 | class CSpinEdit : public CWndContainer | MQL5標準ライブラリのGUIコントロールクラス名「CSpinEdit」(数値のスピンボタン)の一部で、乱数の種や固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/controls/cspinedit.txt:183 | #property description "Control Panels and Dialogs. Demonstration class CSpinEdit" | MQL5標準ライブラリのGUIコントロールクラス名「CSpinEdit」(数値のスピンボタン)の一部で、乱数の種や固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/chart_object_classes/obj_channels/cchartobjectregression.txt:8 | class CChartObjectRegression : public CChartObjectTrend | MQL5標準ライブラリの「Linear Regression Channel」図形オブジェクトへのアクセスクラス名で、統計的な回帰チャネルの意味。回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/chart_object_classes/cchartobject/cchartobjectgetstring.txt:2 | Provides simplified access to the functions of API MQL5 ObjectGetString() for string property values of a graphical object bound to a class instance. There are two versions of a function call: | 「version」はMQL5関数のオーバーロード版(引数の型違いの実装違い)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/chart_object_classes/cchartobject/cchartobjectsetdouble.txt:2 | Provides simplified access to the functions of API MQL5 ObjectSetDouble() to change double properties (of float and double types) of a graphical object bound to a class instance. There are two versions of a function call… | 「version」はMQL5関数のオーバーロード版(引数の型違いの実装違い)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/chart_object_classes/cchartobject/cchartobjectsetstring.txt:2 | Provides simplified access to the functions of API MQL5 ObjectSetString() for changing string properties of a graphical object bound to a class instance. There are two versions of a function call: | 「version」はMQL5関数のオーバーロード版(引数の型違いの実装違い)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/canvasgraphics/ccanvas/ccanvascreatebitmap.txt:55 | If the first function version is used, the object is created in the main window of the current chart. | MQL5関数のオーバーロード版(引数の違う同名関数のうち最初の版)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/canvasgraphics/ccanvas/ccanvascreatebitmaplabel.txt:55 | If the first function version is used, the object is created in the main window of the current chart. | MQL5関数のオーバーロード版(引数の違う同名関数のうち最初の版)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/expertclasses/sampletrailingclasses/ctrailingfixedpips.txt:12 | class CTrailingFixedPips: public CExpertTrailing | MQL5標準ライブラリのクラス名(固定Pips/固定証拠金/固定リスク/固定ロットでの資金管理・トレーリングを行うサンプルクラス)の一部で、乱数の種や環境の固定機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/expertclasses/samplemmclasses/cmoneyfixedmargin.txt:8 | class CMoneyFixedMargin: public CExpertMoney | MQL5標準ライブラリのクラス名(固定Pips/固定証拠金/固定リスク/固定ロットでの資金管理・トレーリングを行うサンプルクラス)の一部で、乱数の種や環境の固定機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/expertclasses/samplemmclasses/cmoneyfixedrisk.txt:8 | class CMoneyFixedRisk: public CExpertMoney | MQL5標準ライブラリのクラス名(固定Pips/固定証拠金/固定リスク/固定ロットでの資金管理・トレーリングを行うサンプルクラス)の一部で、乱数の種や環境の固定機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/expertclasses/samplemmclasses/cmoneyfixedlot.txt:8 | class CMoneyFixedLot: public CExpertMoney | MQL5標準ライブラリのクラス名(固定Pips/固定証拠金/固定リスク/固定ロットでの資金管理・トレーリングを行うサンプルクラス)の一部で、乱数の種や環境の固定機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/tradeclasses/cterminalinfo.txt:128 | Gets the information about the version of OpenCL supported by video card | ビデオカードが対応するOpenCLのバージョン情報、または64ビット版であるかを返す一般的なシステム情報で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/tradeclasses/cterminalinfo/cterminalinfoisx64.txt:11 | true - 64-bit version is used, otherwise - false. | ビデオカードが対応するOpenCLのバージョン情報、または64ビット版であるかを返す一般的なシステム情報で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/standardlibrary/tradeclasses/cterminalinfo/cterminalinfoopenclsupport.txt:2 | Gets the information about the version of OpenCL supported by video card. | ビデオカードが対応するOpenCLのバージョン情報、または64ビット版であるかを返す一般的なシステム情報で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/database/databasetransactionbegin.txt:171 | // --- lock the database before executing transactions | SQLiteデータベーストランザクションのサンプルコードのコメント(データベースの排他ロック)で、DB操作の一般的な排他制御。実験結果の再現性を固定する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/database/databaseprepare.txt:321 | // --- lock the database before executing transactions | 同上(データベースの排他ロックのコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/database/databaseexecute.txt:471 | // --- lock the database before executing transactions | 同上(データベースの排他ロックのコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:12 | #property description "Script draws \"Linear Regression Channel\" graphical object." | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:18 | input string          InpName="Regression"; // Channel name | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:32 | //\| Create Linear Regression Channel by the given coordinates        \| | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:35 | const string          name="Regression", // channel name | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:58 | ": failed to create linear regression channel! Error code = ",GetLastError()); | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/objectconstants/enum_object/obj_regression.txt:189 | //--- create linear regression channel | 図形オブジェクト定数OBJ_REGRESSION(「Linear Regression Channel」を描画するサンプルコード・その説明)の一部で、統計的な回帰チャネルの意味。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/errorswarnings/warningscompile.txt:274 | The version specified in the #property version property is unacceptable for the Market section; the correct format of #property version id "XXX.YYY" | MQL5コンパイラの警告メッセージで、#property versionディレクティブに指定する版数文字列の書式についての説明。EAソースコードのメタ情報としての版数で、実験のデータ版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/constants/errorswarnings/warningscompile.txt:352 | Two OnCalCulate() are defined. OHLC version will be used | OnCalculate()関数のオーバーロード版(2種類の引数セットのうちOHLC版が使われる)を指すコンパイラ警告文の一部で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/array/arrayresize.txt:68 | //--- Now show, how slow the version without memory reservation is | ArrayResize関数のサンプルコードのコメントで、メモリ予約を行わない「版」(実装パターン)の処理速度比較を指す一般語。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/array/arrayremove.txt:27 | 4005 - ERR_STRUCT_WITHOBJECTS_ORCLASS (fixed-size array containing complex objects with the destructor), | 配列のサイズが固定(fixed-size)であることを述べるエラーコードの説明文で、乱数の種や環境の固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/array/arrayremove.txt:28 | 4006 - ERR_INVALID_ARRAY  (fixed-size array containing structure or class objects with a destructor). | 配列のサイズが固定(fixed-size)であることを述べるエラーコードの説明文で、乱数の種や環境の固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/math/mathsrand.txt:13 | seed | MathSrand関数のパラメータ名の表内の見出し語「seed」で、MQL5言語が汎用に提供する乱数初期化関数のパラメータ名。テスター自身が再現性のために内部で使う機能の記述ではない(L-516と同型の言語機能除外) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/onnx/onnx_prepare.txt:107 | Automatic data type conversion | ONNXモデルの入出力に対する自動型変換(conversion)を述べる一般語で、「version」の部分文字列一致(conversion)。再現性の版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customind/indicators_examples.txt:314 | Color Versions of Styles | カスタム指標の描画スタイル(DRAW_COLOR_*)の「色付き版」を指す一般語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customind/indicators_examples.txt:338 | All color versions of styles differ from the basic ones in that they allow specifying a color for each part of the plotting. The minimal part of plotting is a bar, so we can say that the color versions allow setting the … | カスタム指標の描画スタイル(DRAW_COLOR_*)の「色付き版」を指す一般語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customind/indicators_examples.txt:339 | Exceptions are styles DRAW_NONE and DRAW_FILLING, they do not have color versions. | カスタム指標の描画スタイル(DRAW_COLOR_*)の「色付き版」を指す一般語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customind/indicators_examples/draw_color_line.txt:55 | [行の長さ 420 字。当たった 1 か所の前後 200 字] …The example shows the feature of the "color" versions of indicators - to change the color of a line segment, you do not need to change values in the ColorLineColors[] buffer (which contai… | カスタム指標の描画スタイル(DRAW_COLOR_*)の「色付き版」を指す一般語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/customind/indicators_examples/draw_color_section.txt:2 | [行の長さ 484 字。当たった 1 か所の前後 200 字] …The DRAW_COLOR_SECTION style is a color version of DRAW_SECTION, but unlike the latter, it allows drawing sections of different colors. The DRAW_COLOR_SECTION style, like all color styles… | カスタム指標の描画スタイル(DRAW_COLOR_*)の「色付き版」を指す一般語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/network/sockettlshandshake.txt:2 | Initiate secure TLS (SSL) connection to a specified host via TLS Handshake protocol. During Handshake, a client and a server agree on connection parameters: applied protocol version and data encryption method. | TLSハンドシェイクで合意する通信プロトコルの版数を指す一般語で、実験の再現性・データ版の固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/event_handlers/ontester.txt:29 | #property description "the ratio of the balance graph linear regression" | OnTester()のサンプルコードの#property description文字列(残高曲線の線形回帰比率という最適化基準の説明)で、統計的な回帰計算を指す。回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/event_handlers/ontester.txt:213 | //--- calculate linear regression ratios for the profit graph | OnTester()のサンプルコード、またはMatrix::LinearRegression関数の説明・サンプルコード(残高曲線や行列の統計的な線形回帰)のコメント・文字列で、回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/event_handlers/ontester.txt:218 | //--- calculate the error of the chart deviation from the regression line | OnTester()のサンプルコードのコメント(残高曲線の回帰直線からの偏差誤差の計算)で、統計的な回帰計算を指す。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/event_handlers/ontester.txt:269 | //\| Calculate the linear regression y=a*x+b                          \| | OnTester()のサンプルコード、またはMatrix::LinearRegression関数の説明・サンプルコード(残高曲線や行列の統計的な線形回帰)のコメント・文字列で、回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/event_handlers/ontester.txt:283 | //--- now, calculate regression ratios | OnTester()のサンプルコード、またはMatrix::LinearRegression関数の説明・サンプルコード(残高曲線や行列の統計的な線形回帰)のコメント・文字列で、回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/marketinformation/symbolinfodouble.txt:53 | spreadfloat?"floating":"fixed", | スプレッドの種類が変動制(floating)か固定制(fixed)かを表示するサンプルコードの三項演算子で、乱数の種や環境の固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/marketinformation/symbolinfointeger.txt:53 | spreadfloat?"floating":"fixed", | スプレッドの種類が変動制(floating)か固定制(fixed)かを表示するサンプルコードの三項演算子で、乱数の種や環境の固定機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition.txt:28 | [行の長さ 826 字。当たった 1 か所の前後 200 字] …ithm for searching for an evolution operator (inverse operator problem solutions) in a finite-dimensional problem solution space (numerical or experimentally obtained) in a set of solutio… | 動的モード分解(DMD)の数学的背景を説明する文中の「スナップショット」(ある時刻の解の断面)という線形代数の用語で、snapshotテストの機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:16 | matrix&               schur_matrix1,           // the first part of the real Schur form of the "balanced" versions of the input A and B | OpenBLAS固有値計算関数の引数コメント(行列の「均衡化された」版のSchur分解)を指す線形代数の専門用語で、ソフトウェアの版数や再現性とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:17 | matrix&               schur_matrix2,           // the second part of the real Schur form of the "balanced" versions of the input A and B | 同上(第2部分の行列の「均衡化された」版のSchur分解を指す引数コメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:43 | matrixf&              schur_matrix1,           // the first part of the real Schur form of the "balanced" versions of the input A and B | 同上(float型行列版の引数コメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:44 | matrixf&              schur_matrix2,           // the second part of the real Schur form of the "balanced" versions of the input A and B | 同上(float型行列版の引数コメント、第2部分) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:70 | matrixc&              schur_matrix1,           // the first part of the real Schur form of the "balanced" versions of the input A and B | 同上(複素数型行列版の引数コメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:71 | matrixc&              schur_matrix2,           // the second part of the real Schur form of the "balanced" versions of the input A and B | 同上(複素数型行列版の引数コメント、第2部分) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:97 | matrixcf&             schur_matrix1,           // the first part of the real Schur form of the "balanced" versions of the input A and B | 同上(複素数float型行列版の引数コメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/eigen_values/general_matrices/eigensolver2x.txt:98 | matrixcf&             schur_matrix2,           // the second part of the real Schur form of the "balanced" versions of the input A and B | 同上(複素数float型行列版の引数コメント、第2部分) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:7 | matrix&               B,                       // second snapshot matrix in the pair | OpenBLASの動的モード分解(DMD)関数の引数コメント(行列データの「スナップショット」)を指す線形代数の専門用語で、実験結果を固定するsnapshotテストの機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:8 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上(スナップショットの尺度調整の有無を指定する引数のコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:32 | matrixf&              B,                       // second snapshot matrix in the pair | 同上(float型のスナップショット行列引数のコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:33 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上(スナップショットの尺度調整引数のコメント、float型) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:57 | matrixc&              B,                       // second snapshot matrix in the pair | 同上(複素数型のスナップショット行列引数のコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:58 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上(スナップショットの尺度調整引数のコメント、複素数型) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:82 | matrixcf&             B,                       // second snapshot matrix in the pair | 同上(複素数float型のスナップショット行列引数のコメント) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecomposition.txt:83 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上(スナップショットの尺度調整引数のコメント、複素数float型) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecompositionqr.txt:8 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | OpenBLASの動的モード分解QR版関数の引数コメント(スナップショットの尺度調整)を指す線形代数の専門用語で、snapshotテストの機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecompositionqr.txt:35 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecompositionqr.txt:62 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/openblas/dynamic_mode_decomposition/dynamicmodedecompositionqr.txt:89 | ENUM_DMD_SCALE        jobs,                    // determines whether the initial data snapshots are scaled by a diagonal matrix | 同上 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_statistics/matrix_linearregression.txt:8 | ENUM_MATRIX_AXIS  axis=AXIS_NONE      // axis along which regression is calculated | Matrix::LinearRegression関数の引数コメント(統計的な回帰を計算する軸の指定)で、回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_statistics/matrix_linearregression.txt:16 | [in]  Specifying the axis along which the regression is calculated. ENUM_MATRIX_AXIS enumeration value (AXIS_HORZ — horizontal axis, AXIS_VERT — vertical axis). | OnTester()のサンプルコード、またはMatrix::LinearRegression関数の説明・サンプルコード(残高曲線や行列の統計的な線形回帰)のコメント・文字列で、回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_statistics/matrix_linearregression.txt:21 | Linear regression is calculated using the standard regression equation: y (x) =  a * x + b, where a is the line slope, while b is its Y axis shift. | OnTester()のサンプルコード、またはMatrix::LinearRegression関数の説明・サンプルコード(残高曲線や行列の統計的な線形回帰)のコメント・文字列で、回帰試験(regression testing)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_statistics/matrix_linearregression.txt:59 | string title="Linear regression "+_Symbol+","+EnumToString(_Period); | Matrix::LinearRegression関数のサンプルコード(チャートのタイトル文字列)で、統計的な線形回帰を指す。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_classification/matrix_info.txt:25 | ushort            version,          // 5950 | ONNXモデル情報構造体のフィールド名「version」(モデル形式のバージョン番号、コメントは例の数値5950)で、ソフトウェアのバージョンを指す。実験のデータ版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/matrix/matrix_machine_learning/matrix_regressionmetrics.txt:39 | REGRESSION_R2 - 1 — MSE(regression) / MSE(mean) | 決定係数(R2)による回帰指標(RegressionMetric)の計算式を説明する定数の一部で、統計的な回帰指標。回帰試験ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/opencl/clprogramcreate.txt:13 | An overloaded function version creates an OpenCL program and writes compiler messages into the passed string. | OpenCL関連関数のオーバーロード版(引数の異なる実装)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/opencl/clgetinfostring.txt:93 | OpenCL version in "OpenCL<space><major_version.minor_version><space><vendor-specific information>" format | OpenCLのバージョン文字列の書式を説明する一般的な仕様で、テスターの再現性機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/opencl/clgetinfostring.txt:119 | The maximum version supported by the compiler for this device. Version format: | OpenCLのバージョン文字列の書式を説明する一般的な仕様で、テスターの再現性機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/opencl/clgetinfostring.txt:120 | "OpenCL<space>C<space><major_version.minor_version><space><vendor-specific information> " | OpenCLのバージョン文字列の書式を説明する一般的な仕様で、テスターの再現性機能とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/types/classes.txt:1178 | Since the unions allow the program to interpret the same memory data in different ways, they are often used when an unusual type conversion is required. | 文中の「type conversion」の部分文字列一致(conversion)で、型変換を指し再現性の版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/preprosessor/import.txt:47 | If the imported function has different call versions for 32- and 64-bit Windows versions, both of them should be imported, and the right function version should be called explicitly using the _IsX64 variable. | インポート関数のWindows 32/64ビット向けの実装違い(オーバーロード版)を指す一般語で、テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/preprosessor/compilation.txt:48 | version | MQL5コンパイラディレクティブ一覧表の見出し語「version」(#property versionの説明箇所)で、EAソースコードのメタ情報としての版数。テスターの再現性機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/function/operationoverload.txt:62 | Keyword operator is used for defining a member function that performs type conversion. Unary and binary operations for class object variables can be overloaded as non-static member functions. They implicitly act on the c… | 文中の「type conversion」の部分文字列一致(conversion)で、型変換を指し再現性の版固定とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-029/text/www.mql5.com/en/docs/basis/variables/formal.txt:2 | Parameters passed to the function are local. The scope is the function block. Formal parameters must have names differing from those of external variables and local variables defined within one function. Some values can … | 関数のスコープ(ローカル変数の有効範囲)を説明する一般的な言語仕様の文で、検索語「lock」は「block」の部分文字列一致に過ぎない。再現性とは無関係 |
+### 代替経路
+
+この回は「この環境から不可」と書いた項目なし。N確定の一括取得(4530頁、生ログ229行目)で、1回目(urllib、並列20)は442頁が失敗した(主にHTTP 403・接続切断)。2回目(urllib、並列5・リトライ4回、生ログ433行目)で339頁を回収、3回目(standardlibrary配下の残り103頁、並列1・リトライ5回、生ログ539行目)で68頁を回収、なお残った35頁をcurl(1件ずつ、`--retry 3`、生ログ577行目)で回収、続けてHTTP/2のPROTOCOL_ERRORで失敗した26頁をcurl `--http1.1`(生ログ632行目)で回収した。最終的に24頁(全てmetatrader5.com/mql5.comの個別頁)は、urllib×5回・curl(HTTP/2既定・`--http1.1`・`--http1.0`)・待機後の再試行×3を試しても到達できなかった(`Empty reply from server`・`HTTP/2 PROTOCOL_ERROR`が再現し、プロキシのCONNECT失敗ではなくオリジンサーバー側個別頁の問題と見られる。診断は生ログ683行目)。この24頁を除いた4506頁でNを構成した。第2経路(オーナーPC)でそのまま打てるコマンド: `curl -sSL <URL>`(生ログ683行目に列挙した24件のURLを1件ずつ取り直し、この環境固有の問題かオリジンサーバー側の問題かを切り分ける)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `MetaTrader の Strategy Tester` | 言語と動作環境 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 星 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | コミット数 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 保守者数 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 週DL数 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | install所要秒 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 依存数 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | pip check | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | wheel展開 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | setup.py導入時実行 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 同梱バイナリ | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 難読化 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 外部URL取得 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 依存の一覧 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 配布元の一致 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 保守者名の一貫性 | 該当なし(MetaQuotes社が配布する独自のバイナリ端末(MetaTrader 5)に内蔵された機能で、Pythonパッケージのような配布形態を持たない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14640 |
+| `MetaTrader の Strategy Tester` | 版 | 未確認(試した手段: metatrader5.com/en/downloadを静的取得・JS描画の両方で取得したが版番号・ビルド番号の記載は無かった。Strategy Testing・Testing Report頁にも記載なし) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:4850 docs/DATA/probes/20260923_tools_8_run19.log:4860 |
+| `MetaTrader の Strategy Tester` | 最終更新日 | 未確認(試した手段: download頁(静的・JS描画)にも最終更新日の記載は無い。フッターは「Copyright 2000-2026, MetaQuotes Ltd」という会社の著作権表示のみ) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:4860 |
+| `MetaTrader の Strategy Tester` | ライセンス | MetaTrader 5端末はMetaQuotes社が無償配布する独自ライセンスのプロプライエタリソフトウェア(未確認: 利用規約の逐語はこの回も取得できなかった。推測したURL `/en/terminal/help/start_advanced/license_agreement` は404、mklistの一覧(N=4506頁)にlicense/legal/agreement/eulaを含むURLは無かった) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:4981 docs/DATA/probes/20260923_tools_8_run19.log:4984 |
+| `MetaTrader の Strategy Tester` | 対応取引所 | Strategy Tester自体は特定取引所に限定されず、接続する各ブローカーのMT5サーバーの価格データを使う(「real ticks of financial instruments, accumulated by brokers」)。bitFlyer等の国内暗号資産取引所への直接対応は未確認 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14671-14674 |
+| `MetaTrader の Strategy Tester` | 初回公開日 | 未確認(試した手段: Wayback Machine CDX API(https://web.archive.org/cdx/search/cdx?url=metatrader5.com)を2回試行したが、いずれも`ws_closed_mid_exchange`でこの環境のプロキシ経由で届かなかった(存在しないとは書かない)) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:4987 docs/DATA/probes/20260923_tools_8_run19.log:4990 |
+| `MetaTrader の Strategy Tester` | 既知の脆弱性 | NVD(NIST)公開APIの逐語: 「MetaQuotes」での検索は`"totalResults":0`。「MetaTrader」での検索は`"totalResults":1`だが、該当CVE(CVE-2026-7627)は第三者の非公式ラッパー「8nite metatrader-4-mcp 1.0.0」のパストラバーサル脆弱性で、MetaQuotes社製品(MetaTrader 5本体・Strategy Tester)自体の脆弱性ではない | 実測 | docs/DATA/probes/20260923_tools_8_run19.log:4993 docs/DATA/probes/20260923_tools_8_run19.log:4997 |
+| `MetaTrader の Strategy Tester` | 料金体系 | Strategy Tester自体(ローカルエージェントでの実行)は無料。分散計算のMQL5 Cloud Networkは有料サービスと明記: 「Since the MQL5 Cloud Network is a paid service, a user must have an account at the MQL5.community website」。具体的な$/時間等の料金表はこの回もMQL5.communityアカウントでのログインが要り取得していない(未確認のまま) | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5782 |
+| `MetaTrader の Strategy Tester` | 無料枠の上限 | Strategy Tester自体に機能制限は明記されていない(EA・指標のMarket購入は別) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:112-129 |
+| `MetaTrader の Strategy Tester` | 課金開始条件 | Strategy Tester自体の使用に課金は無い。MQL5 Cloud Networkの利用にはMQL5.communityアカウントが要り、計算時間で課金される。4GB(ディスク・RAM)の上限を超えて計算が失敗しても課金は生じる逐語: 「the network agent will not be able to complete the calculation correctly, and you will not receive the result. However, you will be charged for all the time spent on the calculations」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5782 docs/DATA/probes/20260923_tools_8_run19.log:5805 |
+| `MetaTrader の Strategy Tester` | 隠れた依存 | MQL5 Cloud Network(リモートエージェント)を使う場合はネットワーク接続とMQL5.communityアカウントが要る(未確認: 詳細はこの回に取得していない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:119-123 |
+| `MetaTrader の Strategy Tester` | 登録の要否 | Strategy Tester自体(ローカルエージェント)の使用に登録は不要。MQL5 Cloud NetworkやMarketの利用にはMQL5.communityアカウントが要る(この回は登録していない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:119-123 |
+| `MetaTrader の Strategy Tester` | 到達経路 | 到達できた(metatrader5.com/en/terminal/help/algotrading/testing、metatrader5.com/en/terminal/help/algotrading/testing_report、いずれもHTTPコード200)。testing_generationは404で、この環境のプロキシ経由では別URLの特定に至らなかった | 実測 | docs/DATA/probes/20260923_tools_8_run17.log:1 |
+| `MetaTrader の Strategy Tester` | 導入可否 | 該当なし(§6-1の検査対象はPython/npm等のパッケージで、MetaTrader 5端末はデスクトップのインストーラ(.exe)配布であり、この回は導入(実行ファイルの起動)を試みていない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:1-30 |
+| `MetaTrader の Strategy Tester` | 最小実行の可否 | 試していない(§6-1の理由: デスクトップアプリ(Windows/macOS/Linux用の実行ファイル)のインストールが要り、この環境では実行ファイルを起動できない。デモ口座自体はプラットフォーム内で開設できる逐語「An unlimited number of demo accounts can be opened in the platform」があるが、その前提のインストールをこの環境では試みていない) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:5810 |
+| `MetaTrader の Strategy Tester` | 最小実行の中身 | 登録が要る(渡すもの: デモ口座作成にメールアドレス。実行はオーナーの判断待ち) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:1-30 |
+| `MetaTrader の Strategy Tester` | 実行所要秒 | 該当なし(同上) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:1-30 |
+| `MetaTrader の Strategy Tester` | 外部送信 | 未確認(端末をインストール・実行していないため、テレメトリの有無は確認できない。デスクトップの実行ファイルであり、この環境で導入・実行する手段が無い) | 未確認 | docs/DATA/probes/20260923_tools_8_run17.log:1-30 |
+| `MetaTrader の Strategy Tester` | 自動発注機能 | あり(Expert Advisorによる自動売買がMetaTrader 5端末の中核機能。Strategy Testerはその検証用で、テスター自体は仮想口座上でのみ発注する) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:112-118 |
+| `MetaTrader の Strategy Tester` | 宣伝詐欺の兆候 | 見当たらない(MetaQuotes Ltdという実在の会社が運営し、「MetaQuotes is a software development company and does not provide investment or brokerage services」と投資助言を行わない旨を明記) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:475 |
+| `MetaTrader の Strategy Tester` | 当方データ投入 | 試していない(実行していないため。カスタムシンボル機能(customsymbolcreate等)を使えば当方形式のデータを取り込める可能性があるが、この回は導入自体を試みていない) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:5011 |
+| `MetaTrader の Strategy Tester` | 時刻の扱い | テスト期間は「00hr.00m.00s. of the specified dates」から開始し終了日は含まない(境界の扱いが明記)。タイムゾーンの詳細はこの回に取得していない(未確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:241 |
+| `MetaTrader の Strategy Tester` | 再現性 | E5参照(この回に確定、なし)。No Delayモードは確定的だが、Random Delayモードが使う乱数のシード固定を述べる逐語は見当たらなかった(乱数関数MathSrand/_RandomSeedはMQL5言語が汎用に提供するもので、テスター自身が再現性のために内部で使う記述ではない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:9211 |
+| `MetaTrader の Strategy Tester` | 規模の見積 | 一次資料の実例: tester_journal.txtの逐語「Tester 546 Mb memory used including 0.94 Mb of history data, 320 Mb of cached tick data (total memory for tick data 3135 Mb)」(公式ヘルプが載せるジャーナルメッセージの例)。ティックキャッシュの上限は「The cache size does not exceed 128 000 ticks」(runtime/testing.txt)。456日分の当方データに対する具体的な所要時間・記憶域の見積もりへの換算(推定)はこの回も行っていない(未確認のまま) | 一次資料 | docs/DATA/probes/20260923_tools_8_run19.log:5798 docs/DATA/probes/20260923_tools_8_run19.log:5801 |
+| `MetaTrader の Strategy Tester` | 4軸1_道具 | 印。実ティックに基づくマルチスレッド・複数エージェント分散のバックテスト/最適化エンジンという、当方の単一プロセスのバックテストエンジン(CLAUDE.md §2)に無い規模の道具 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:116-123 |
+| `MetaTrader の Strategy Tester` | 4軸2_情報 | 印。History Quality(履歴データの品質を百分率で示す指標)という、当方のデータ品質検査(`scripts/data_quality.py`)に無い形の情報源 | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14644-14645 |
+| `MetaTrader の Strategy Tester` | 4軸3_視点 | 印。Z-Score(取引系列の統計的な偏りの検定)・Forward testing(時点分割による過剰適合の検出)という、当方の事前登録(research-protocol)の多重性・過剰適合対策に近いが独立した視点を与える | 一次資料 | docs/DATA/probes/20260923_tools_8_run17.log:14652-14655 |
+| `MetaTrader の Strategy Tester` | 4軸4_向上 | サーベイの外(組み込みの作業が要る)。道具を当方の環境に組み込んで既存の成果が上がるかは、読むだけのサーベイでは測れない(18回目の検収§6の3と同じ理由) | 未確認 | docs/DATA/probes/20260923_tools_8_run19.log:1 |
+
+### §4.0 で未確認のまま残した項目
+
+17回目に未確認だった12項目のうち、この回に確認できたのは5項目(既知の脆弱性=実測、料金体系・課金開始条件・規模の見積=一次資料/実測)。1項目(4軸4_向上)は18回目の検収の処置3にならい「サーベイの外(組み込みの作業が要る)」に区分した。残り7項目は未確認のまま残す(理由は§4.0の表と生ログ参照。「時間が掛かる」を理由にしていない):
+
+- 版・最終更新日: download頁(静的・JS描画)・Strategy Testing/Testing Report頁のいずれにも版番号・更新日の記載が無い(試した手段は生ログ参照)
+- ライセンス: N(4506頁)にlicense/legal/agreement/eulaを含むURLが無く、推測したURLも404
+- 初回公開日: Wayback Machine CDX APIへの到達がこの環境のプロキシで2回とも失敗(`ws_closed_mid_exchange`)
+- 最小実行の可否・外部送信・当方データ投入: デスクトップアプリ(Windows/macOS/Linux用の実行ファイル)のインストールが要り、この環境では実行ファイルを起動できない(問い3)
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] 起動文§2.4はE1a・E1b・E2・E3a・E3b・E6の6組の検索語しか与えておらず、この回の担当要素の1つであるE5の語が無かった。設計票§3のE5述語(乱数の種・環境や依存の固定・実験の再実行と結果の差分・データの版の固定)から自分で語(乱数・seed・再現・reproducib・決定的・determinist・固定・fixed・pin・バージョン・version・回帰・regression)を組んで全件検索し「なし」と判定したが、この語の組み方自体はリードが決めたものではない。同じ全件検索を、別の語の組み方でやり直すべきかを問いとして残す(値は「なし」のまま決めている。全件検索hits=1351・matched=1279・unmatched=72個別判定という厚みのある検索なので、語を変えても結論が変わる可能性は低いと見ているが、確認していない)。
+2. [それ以外の問い] E5の決まりの正規表現に通常の半角スペースを使ったため、抽出済みテキスト中の`&nbsp;`由来の非改行スペース(U+00A0)を含む行(例: `event_handlers/ontester.txt:29`の「linear regression」)が決まりに取られず、unmatchedの個別判定に回った(知見#9)。今回は全72行を個別に読んで判定済みなので値への影響は無いが、次回以降のcat8_classify.pyの決まりで空白を`\s+`と書く運用を、この回の教訓としてリードに引き継ぐべきかを問いとして残す。
+3. [それ以外の問い] §4.0の「最小実行の可否」「外部送信」「当方データ投入」の3項目は、デスクトップアプリ(Windows/macOS/Linux用の実行ファイル)のインストールが要り、この環境では実行ファイルを起動できないことを理由に未確認のまま残した。この理由は起動文§2.5が許す2類型(試した手段と出力を示したもの/鍵・口座・登録・購入が要ると分かる逐語を引いたもの)のうち後者と完全に一致するとは言い切れない(「登録」ではなく「実行ファイルのインストール」が壁である)。18回目の検収(指摘3)がOryonの「4軸4_向上」について同種の論点(サーベイの範囲を超える理由が2類型のどちらにも文字どおり当たらない)を指摘しており、この3項目についても同じ確認が要るかを問いとして残す。
+4. [それ以外の問い] N(MetaTrader 5端末のヘルプの全頁)から、MetaEditor(61頁)とモバイルアプリ(Android/iPhone、208頁)のヘルプを「端末(terminal)のヘルプではない」として除外した(知見#1)。MetaEditorはStrategy Testerと同じMQL5開発環境の一部で、EAのコンパイルなしにテストは行えないため、Strategy Testerの機能の一部がMetaEditorの文書に書かれている可能性がある(MQL5文書を広く含めた理由と同じ論理)。MetaEditorのヘルプ61頁もNに含めるべきかを問いとして残す(この回は含めていない)。
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run19.log`**(誤検出は閉じずに残す。K1・K2(19612・19909・30448・34975・35047行目)とK13(15024〜20425行目あたりの複写検出、前回までの回の分)は前回までの回で誤検出として受け取られ済み(検収`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run15.md`・`run17.md`等)。**この回に新しく増えたのはK2の1件(36881行目)**: `### 決まりの一覧`の表がE1a・E5の決まりの正規表現(`(?i)(...)?.{0,60}\bversion`のような入れ子の丸括弧を多数含む)を逐語で列挙しているために生じる誤検出で、前回までの検収が34975・35047行目のソースコード断片の引用について受け取った理由と同型(規則の正規表現の丸括弧は対応が取れているが、表全体を1つの段落として数える検査の性質上、行をまたいだ数え方で1個ずれる)。K13の各項目の行数(例: MetaTraderが11行+16行→15行+32行)は、この回に43項目・8要素の表を書き直した分だけ`docs/DATA/probes/20260923_tools_8_run17.log`への同一引用行が文書全体で増えたために生じる合計値の変化で、17回目・18回目の検収が同型として受け取った複写検出と同じ性質(この回にMetaTrader自身の値を書き換えたのはE1a・E3a・E5の3要素のみで、E1b・E2・E4・E5・E6は`台帳の値のまま`の形で17回目の節の値を維持している)。K12は、この出力を取った時点(この節を書く前)ではまだ本節が無かったために出た当然の指摘で、本節を追記した後に打ち直せば消える。**
+
+```
+K1 太字                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+K2 括弧                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             29 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 16 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  いちばん新しい回の節に「受け入れ検査の出力」が無い(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)
+---- 検査対象の合計 39 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 40 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 19`**
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 14 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run19.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run19.log の最初の手 2026-09-26T02:23:54Z / 最後の手 2026-09-26T03:39:02Z / 手の数 42
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`**
+
+```
+0
+```
