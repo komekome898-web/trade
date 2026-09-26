@@ -37789,3 +37789,755 @@ K12 検査の出力の貼付           1 件
 | `NinjaTrader` | E2 | 検出する異常の種類 | 外れ値(直前の有効な約定値からの乖離)。「A bad tick is detected if the tick price is less than the last valid traded price - (last traded Price * (1 - bad tick offset as %))」 | 一次資料 `real_time_tick_filter.htm`(docs/DATA/probes/20260923_tools_8_run20.log:190-195) |
 | `NinjaTrader` | E2 | 直すか報告だけか | 直す(捨てる)。「the tick is thrown away and not distributed to any NinjaTrader object that requires market data」 | 一次資料 同上 |
 | `NinjaTrader` | E2 | (ア) 基準を指定できるか | 指定できる。「if it is outside of a user defined percentage value」 | 一次資料 同上 |
+
+## 区分8 — 21 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2)。8-030 `dbt` の1行だけを扱う(起動文§1)。E1a〜E6を全部`未判別`から判別し、§4.0の表を全項目書く。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run21_prompt.md`(起動文、印 `20260923_tools_survey_cat8_run21_prompt.md@87cc1becbcce`)
+- `https://www.getdbt.com/`(公式サイト。取得日2026-09-26、生ログ2-4行目)
+- `https://github.com/dbt-labs/dbt-core`・`https://github.com/dbt-labs/dbt`(公式ソースリポジトリ。`git ls-remote`でHEADが同一コミット`56cf8733485e2c97ef1e49682620045fc5726bf8`と確認した同一リポジトリ。生ログ46-51行目)。`main`ブランチ(既定の枝、dbt v2.0ベータ、Rust実装)と`1.latest`ブランチ(v1系Python安定版)の両方を取得(生ログ11-27行目、61-63行目)
+- `https://pypi.org/pypi/dbt-core/json`・`https://pypi.org/pypi/dbt/json`・`https://pypi.org/pypi/dbt-oss/json`(公式配布のメタデータ。取得日2026-09-26、生ログ28-39行目)
+- `https://www.getdbt.com/dbt-product-license-agreement`(dbt Product Licensing Agreement本文。取得日2026-09-26、生ログ43-45行目)
+- `https://www.getdbt.com/pricing`・`https://www.getdbt.com/product/self-hosting-dbt-vs-dbt-platform`(料金・自己ホスト対比頁。取得日2026-09-26、生ログ55-60行目)
+- `https://docs.getdbt.com/sitemap.xml`(文書サイトの全URL、1,579件。取得日2026-09-26、生ログ64-66行目)
+- `https://docs.getdbt.com/docs/build/data-tests`・`.../docs/build/unit-tests`・`.../docs/build/sources`・`.../docs/build/snapshots`・`.../docs/mesh/govern/model-contracts`・`.../reference/commands/build`・`.../reference/node-selection/methods`(公式文書の個別頁。取得日2026-09-26、生ログ67-87行目)
+- `https://github.com/dbt-labs/docs.getdbt.com`(docs.getdbt.comのMarkdownソース。文書サイトの頁がこのリポジトリのファイルと同じなので、Nはこちらを使う。sparse-checkoutで`website/docs`・`website/blog`・`website/snippets`・`website/src/pages`・`contributing`・`styles`・トップレベルファイルだけを取得(1,638ファイル、17MB)。`website/static`(画像・動画、570MB)は対象外。生ログ88-155行目)
+- `https://github.com/dbt-labs/dbt-utils`・`https://github.com/dbt-labs/dbt-audit-helper`(公式文書`docs/build/packages.md`が導入方法を案内する同開発元(dbt Labs)の別リポジトリ。生ログ156-182行目)
+- `https://img.shields.io/github/*`(github.com/api.github.comがこのセッションのプロキシで403(`GitHub access to this repository is not enabled for this session`)のため、星・保守者数・最終コミット日の代替取得に使用。生ログ1022-1042行目)
+- `https://pypistats.org/api/packages/dbt-core/recent`(週DL数。生ログ1031-1033行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性、PyPI dbt-core。生ログ1043-1046行目)
+- 最小実行: 隔離venv(`.../scratchpad/cat8/venvs/8-030/exec_venv`)に`dbt-core==1.12.5`+`dbt-duckdb`を導入し、合成データ(3行、order_id重複1件)で`dbt seed`→`dbt test`を実行(生ログ1047-1099行目)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run20.md`(検収。18回目の読みの継承・段の付け方を確認)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `dbt` / 候補の実体: 公式サイト`getdbt.com`のリンクからGitHub公式リポジトリ`github.com/dbt-labs/dbt-core`(`git ls-remote`のHEADが`github.com/dbt-labs/dbt`と同一コミット`56cf8733485e2c97ef1e49682620045fc5726bf8`)を特定。README逐語「dbt v1 development has moved to the」「The `main` branch now contains all the Apache 2.0 source code of dbt v2.0 — a ground-up rewrite of dbt in Rust」。既定の枝`main`はdbt v2.0(Rust、ベータ、PyPI版番号は`2.0.0rc8`まででprerelease扱い)で、`1.latest`ブランチがv1系Python実装(PyPI `dbt-core`パッケージとして配布され、`pip install dbt-core`で実際に入る安定版は`1.12.5`)。両方の枝を候補の実体の一部としてNに含めた | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:46-54 docs/DATA/probes/20260923_tools_8_run21.log:1166-1169 |
+| 2 | `dbt` / 配布の分岐: PyPI `dbt-core`パッケージの説明文逐語「installs the default distribution with the full feature set」「installs the subset distribution, with only Apache 2 open source code」「the `dbt-core` PyPI namespace will be deprecated」。`dbt`(既定、`pip install dbt`)は`dbt Product Licensing Agreement`(プロプライエタリ、逆コンパイル禁止・ライセンス検証回避禁止・テレメトリ送信の妨害禁止)下で配布され、`dbt-oss`(`pip install dbt-oss`)はApache 2.0のみのサブセット | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:28-39 |
+| 3 | `dbt` / 商用版との切り分け: `getdbt.com/product/self-hosting-dbt-vs-dbt-platform`頁の逐語「Many nimble data teams start with self-hosting dbt」「Self-hosted dbt Core works great」。自己ホストの無料CLI(dbt Core/dbt/dbt-oss)と、登録の要る有料SaaS「dbt Platform」(旧dbt Cloud)を区別する一次資料の記述がある。今回のE1a〜E6の判定はCLI側(登録不要で動かせる部分)だけを対象にし、dbt Platformだけの機能(後述)は候補の機能から分けて書いた | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1181-1184 |
+| 4 | `dbt` / N確定: 公式ソースリポジトリの`main`ブランチ(既定の枝、4,285ファイル)と`1.latest`ブランチ(1,101ファイル)、文書サイトの代わりとなる`docs.getdbt.com`のMarkdownソース(`website/docs`・`website/blog`・`website/snippets`・`website/src/pages`・`contributing`・`styles`・トップレベルファイル、1,638ファイル)、公式文書が案内する同開発元パッケージ`dbt-utils`(235ファイル)・`dbt-audit-helper`(113ファイル)の5つをNとした(合計7,372ファイル)。`website/static`(画像・動画、570MB)は文書でないため対象外、`hub.getdbt.com`(dbt-labs以外を含む全パッケージの一覧)は「売り物の一覧」に当たるため対象外、`forum.getdbt.com`はフォーラムのため対象外とした | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:141-182 |
+| 5 | `dbt` / 大きさの上限超過と取り直し: `dbt-labs/docs.getdbt.com`をフルcloneすると`website/static`の画像・動画中心に約1.1GBとなり委任文§6-6・この回の200MB目安を超えたため削除し、`git clone --filter=blob:none --sparse`+`git sparse-checkout set`でテキスト内容のディレクトリだけを取り直した(23MB)。除いたファイル(`website/static`ほか)はNから抜けている | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:141-155 |
+| 6 | `dbt` / E1a 印(段4): 公式文書が案内する`dbt-labs/dbt-audit-helper`のREADME逐語「Generates a row-by-row comparison of two queries, as well as summary stats of added, removed, identical and modified records」(`compare_and_classify_query_results`マクロ)。比較対象は`api.Relation.create(database=..., schema=..., identifier=...)`で「any other db/schema/table you'd like to use for comparison testing」と指定でき、プロジェクト外の任意のテーブルを持ち込める。逐語「a test that will fail if any column values do not match」により自動判定(dbtのtest機構)に組み込める。加えてdbt本体の公式文書`docs/build/unit-tests`の逐語「actual differs from expected」(モデルの実際の出力と固定したfixtureの期待値を自動で突き合わせ差分を表示)もE1aに当たる(段3、プロジェクト内のモデルに限定)。高い方の段(4)を採用 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1246-1262 docs/DATA/probes/20260923_tools_8_run21.log:1194-1196 |
+| 7 | `dbt` / E1b 未判別(500行超): E1b見積もり(生ログ211-218行目)が5つの一覧の合計で7,878行(内訳: main 4,279・1.latest 1,056・docs 2,043・dbt-utils 149・audit-helper 351)となり500行を超えたため`cat8_search.py`を打たず未判別のままにした。E1b述語(同じ種類の出力を出す別実装)に当たりうる汎用のSQL実行基盤としての性質はあるが、当方の約定・損益・指標計算に相当する組み込みの計算はこの回で確認できていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:211-218 |
+| 8 | `dbt` / E2 印(段4、実測でも確認): 公式文書`docs/build/data-tests`逐語「dbt ships with four generic data tests built in」、`docs/build/sources`逐語「dbt can optionally capture the」freshness、ソース(`sources.md`)逐語「warn_after: {count: 12, period: hour}」(時刻のずれ=鮮度のしきい値を利用者が指定できる)。`store_failures`は失敗行を保存するだけでデータを直さない(「first save the results of a test query」)。対象は`sources`(「loaded into your warehouse by your Extract and Load」=外部ロード済みの任意テーブル)にも及ぶため段4。実測: 隔離venvで合成データ(order_id=2を重複させた3行)に`unique`・`not_null`のテストを掛け、`not_null`2件がPASS、`unique`1件がFAILする出力を得た(`Got 1 result, configured to fail if != 0`) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1190-1216 docs/DATA/probes/20260923_tools_8_run21.log:1058-1099 |
+| 9 | `dbt` / E3a なし(全件検索): 500行以下(見積もり149行、生ログ219-226行目)のため`cat8_search.py`を実行。5つの一覧(除外後: main 4,255・1.latest 1,091・docs 1,634・dbt-utils 235・audit-helper 113、合計7,328件)の全件を読み、当たり111ファイル/149行を全て判定(下表「当たりの判定」)。全てソフトウェアの情報・メモリ漏洩(credential・token・memory等の`leak`)、正規表現の先読みアサーション(`look-ahead assertion`)の構文名、「ある時点の」という一般的な形容(`point-in-time`)、`as-of`という言い回し、のいずれかで、計算・特徴量・戦略・模擬がその時点で知り得ない情報を使っていることを検出・報告する機能の記述は無かった | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:573-582 docs/DATA/probes/20260923_tools_8_run21.log:636-905 |
+| 10 | `dbt` / E3b なし(全件検索): 500行以下(見積もり53行、生ログ227-234行目)のため`cat8_search.py`を実行。5つの一覧(除外後、合計7,328件)の全件を読み、当たり43ファイル/53行を全て判定(下表「当たりの判定」)。`purge`はファイル・DB区画・メタデータの削除の意味(Iceberg/Vertexの`PURGE_REQUESTED`等)、`point-in-time`はスナップショット・状態の一般的な形容、`look-ahead`は正規表現の構文名で、その時点で知り得ない情報が入らないようにする機能(purged交差検証・embargo等)の記述は無かった | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:906-1021 docs/DATA/probes/20260923_tools_8_run21.log:1012-1021 |
+| 11 | `dbt` / E4 未判別(500行超): E4見積もり(生ログ235-242行目)が5つの一覧の合計で9,472行(内訳: main 8,060・1.latest 573・docs 770・dbt-utils 46・audit-helper 23)となり500行を超えたため`cat8_search.py`を打たず未判別のままにした。「record」「capture」がソフトウェア一般語として極めて多く出現するのが主因(未判別の理由であって、なしの根拠ではない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:235-242 |
+| 12 | `dbt` / E5 印(段3): 公式文書`docs/build/packages`逐語「"pins" each package by creating or updating the `package-lock.yml` file」「If subsequent `dbt deps` runs contain no changes to `dependencies.yml` or `packages.yml`, dbt installs from `package-lock.yml`」「if you use a branch name, the `package-lock.yml` file pins to the head commit...subsequent commits or versions will **not** be installed」。dbtパッケージ(依存)のバージョン・コミットを固定し、次回の`dbt deps`で再利用する機構。固定できる対象はdbtパッケージという特定の対象のみ(E5述語の対象=実験のコード・データ・設定全部を任意に固定する汎用機構ではない)ため段3 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1217-1224 |
+| 13 | `dbt` / E6 印(段3): v2(Fusion engine)の`about-static-analysis`頁逐語「producing and validating a logical plan for every rendered query in the project」「if the analysis succeeds, the code will run in production without compilation errors」。E1a〜E5のどの述語にも当たらない(実装の正しさをコンパイル時の静的解析で検証する)ため、当たらないことを確認した上でE6に置いた。対象は「every query from one end of your DAG to the other」=プロジェクト内のモデルのSQLに限られるため段3 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1241-1245 |
+| 14 | `dbt` / 既知の脆弱性: OSV.dev API(`ecosystem=PyPI`, `name=dbt-core`)の実測でCVE等6件がヒット。うち`GHSA-j4g3-3q8x-jxqp`(dbt-coreがPATの平文シークレットを`package-lock.yml`に書き込む、v1.7.3で修正済み)の内容を確認した | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1043-1046 |
+| 15 | `dbt` / 外部送信: dbt Product Licensing Agreement逐語(v2の`dbt`)「The Products may collect and send to Provider information about User and User's use of the Products」「(c) the Products from sending telemetry data to Provider」(Userはテレメトリ送信を妨げてはならない)。v1(`dbt-core`)は`pip list`実測で`snowplow-tracker`パッケージ(Snowplowはアナリティクスのテレメトリ基盤)を同梱していることを確認。環境変数`DBT_SEND_ANONYMOUS_USAGE_STATS=False`を設定して最小実行を行った | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1173-1180 docs/DATA/probes/20260923_tools_8_run21.log:1100-1165 |
+| 16 | `dbt` / 到達できなかった経路: `github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない)。`git clone`(git smart-httpプロトコル)は同じ`github.com`ホストでも到達でき、リポジトリのソース取得はできた。星・保守者数・最終コミット日は`img.shields.io`の代替経路(概算値)で取得した | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:5-10 docs/DATA/probes/20260923_tools_8_run21.log:1022-1042 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. [深掘り] `dbt` (8-030) — N(公式ソースリポジトリ`main`ブランチ4,285ファイル+`1.latest`ブランチ1,101ファイル+docs.getdbt.comソース1,638ファイル+`dbt-utils`235ファイル+`dbt-audit-helper`113ファイル=7,372ファイル)を対象に、E1a〜E6を判別した。E1a=印(段4、audit_helperの`compare_and_classify_query_results`等・dbt本体のunit test)。E1b=未判別(500行超、見積もり7,878行)。E2=印(段4、data test+source freshness。実測でPASS/FAILの両方を確認)。E3a=なし(全件検索、当たり111ファイル/149行を個別判定、いずれも無関係)。E3b=なし(全件検索、当たり43ファイル/53行を個別判定、いずれも無関係)。E4=未判別(500行超、見積もり9,472行)。E5=印(段3、`package-lock.yml`による依存の固定)。E6=印(段3、v2 Fusion engineの静的解析)。§4.0の表(43項目)を全項目書いた。E1b・E4が未判別のため(§3の規則により)状態は深掘りにできず、20回目のOpenClaw・MetaTraderと同じ扱いで「浅い」とした — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 未着手
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 未着手
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 未着手
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 未着手
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `dbt` | E1a | 印 | 4 | 一次資料 | `dbt-audit-helper`README逐語「Generates a row-by-row comparison of two queries, as well as summary stats of added, removed, identical and modified records」。比較対象は`api.Relation.create(database=..., schema=..., identifier=...)`で「any other db/schema/table you'd like to use for comparison testing」と指定でき対象を外から持ち込める。逐語「a test that will fail if any column values do not match」により自動判定に組み込める。dbt本体の`docs/build/unit-tests`も「actual differs from expected」という自動差分表示を持つ(段3、プロジェクト内のモデルに限定)。段4(audit_helperは対象を外から持ち込める) | docs/DATA/probes/20260923_tools_8_run21.log:1246-1262 docs/DATA/probes/20260923_tools_8_run21.log:1194-1196 |
+| `dbt` | E1b | 未判別 | 未判別 | 一次資料 | 見積もり(生ログ211-218行目)が5一覧合計7,878行(main 4,279・1.latest 1,056・docs 2,043・dbt-utils 149・audit-helper 351)で500行超のため`cat8_search.py`を打たず未判別 | docs/DATA/probes/20260923_tools_8_run21.log:211-218 |
+| `dbt` | E2 | 印 | 4 | 実測 | 公式文書`docs/build/data-tests`逐語「dbt ships with four generic data tests built in」。`docs/build/sources`逐語「dbt can optionally capture the」freshness、ソース逐語「warn_after: {count: 12, period: hour}」(時刻のずれ)を利用者が指定できる。対象は`sources`(外部ロード済みの任意テーブル)にも及ぶため段4。実測: 合成データでunique 1件FAIL・not_null 2件PASSを確認(「Got 1 result, configured to fail if != 0」) | docs/DATA/probes/20260923_tools_8_run21.log:1190-1216 docs/DATA/probes/20260923_tools_8_run21.log:1058-1099 |
+| `dbt` | E3a | なし | - | 一次資料 | 一覧7328件/読んだ7328件(5つの一覧の合計、除外後)。当たり111ファイル/149行(下表「当たりの判定」で個別判定)。ソフトウェアの情報/メモリ漏洩(leak)・正規表現の先読みアサーション名(look-ahead)・「ある時点の」の一般的形容(point-in-time)・言い回し(as-of)のいずれかで、その時点で知り得ない情報の使用を検出・報告する機能の記述は無かった | docs/DATA/probes/20260923_tools_8_run21.log:573-578 docs/DATA/probes/20260923_tools_8_run21.log:579-582 docs/DATA/probes/20260923_tools_8_run21.log:636-832 docs/DATA/probes/20260923_tools_8_run21.log:833-864 docs/DATA/probes/20260923_tools_8_run21.log:865-905 |
+| `dbt` | E3b | なし | - | 一次資料 | 一覧7328件/読んだ7328件(5つの一覧の合計、除外後)。当たり43ファイル/53行(下表「当たりの判定」で個別判定)。ファイル・DB区画の削除(purge)・スナップショットの一般的形容(point-in-time)・正規表現の構文名(look-ahead)のいずれかで、その時点で知り得ない情報が入らないようにする機能の記述は無かった | docs/DATA/probes/20260923_tools_8_run21.log:1012-1017 docs/DATA/probes/20260923_tools_8_run21.log:1018-1021 docs/DATA/probes/20260923_tools_8_run21.log:906-971 docs/DATA/probes/20260923_tools_8_run21.log:972-977 docs/DATA/probes/20260923_tools_8_run21.log:978-1011 |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 見積もり(生ログ235-242行目)が5一覧合計9,472行(main 8,060・1.latest 573・docs 770・dbt-utils 46・audit-helper 23)で500行超のため`cat8_search.py`を打たず未判別 | docs/DATA/probes/20260923_tools_8_run21.log:235-242 |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 公式文書`docs/build/packages`逐語「"pins" each package by creating or updating the `package-lock.yml` file」。逐語「subsequent commits or versions will **not** be installed」。固定できる対象がdbtパッケージ(依存)という特定の対象に限られ、E5述語の対象全部(コード・データ・設定)を任意に固定する汎用機構ではないため段3 | docs/DATA/probes/20260923_tools_8_run21.log:1217-1224 |
+| `dbt` | E6 | 印 | 3 | 一次資料 | v2(Fusion engine)公式文書`about-static-analysis`逐語「producing and validating a logical plan for every rendered query in the project」。逐語「if the analysis succeeds, the code will run in production without compilation errors」。E1a〜E5のどの述語にも当たらないことを確認した上で置いた。対象は「every query from one end of your DAG to the other」=プロジェクト内のモデルに限られるため段3 | docs/DATA/probes/20260923_tools_8_run21.log:1241-1245 |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Kafka` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Prefect` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(20回目の節) |  |
+
+### 当たりの判定
+
+`dbt` E3a の当たりの判定(甲、ファイルの表。一覧7328件/読んだ7328件、当たり111ファイル/149行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/auth/secure_file.py | 1 | L17「session_cache and JWKS persistence to avoid leaking tokens via」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/config/renderer.py | 1 | L204「ion of secrets via macros/filters that might leak partial/modified values in logs」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/docs/build/html/_static/jquery-3.6.0.js | 2 | L6290「// Prevent memory leaks」; L6330「// Remove element nodes and prevent memory leaks」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/parser/v2.py | 1 | L52「`--no-write-json` doesn't leak a manifest.json into the user's target dir.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/plugins/manager.py | 1 | L30「iter_modules` must clear this cache to avoid leaking」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/task/list.py | 1 | L163「ModelNode.__post_serialize__ so it doesn't leak into」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/conftest.py | 1 | L23「d are ignored. Installing per test therefore leaks a span processor onto the」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/functional/hints/test_hints.py | 1 | L27「# per test so runs don't touch (or leak the cooldown through) the real ~/.dbt.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/unit/cli/test_flags.py | 1 | L212「# PluginManager may leak DBT_ENGINE_MANAGE_STATE=true into os.environ」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/unit/deps/test_private_package.py | 1 | L1240「# leaked from earlier tests in the same process.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/unit/plugins/test_manager.py | 3 | L21「hree pieces of process-global state that can leak between」; L490「test's globally-set Flags object doesn't leak into later tests that read」; L517「# Don't leak the test's GLOBAL_FLAGS into subsequent test」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/tests/unit/test_artifact_upload.py | 2 | L228「def test_signed_request_is_not_leaked(self):」; L244「est_azure_authentication_error_detail_is_not_leaked(self):」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/.agents/dbt-docs-server.md | 1 | L190「e` under denied consent, so no call site can leak through \|」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/.changes/2.0.0-alpha.5.md | 1 | L31「- Stop /api/v1/health from leaking the absolute index_dir path; replace with」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/CHANGELOG-dbt.md | 9 | L87「- [dbt-core] BigQuery unit tests no longer leak partition pseudocolumns into expected result」; L392「`--` comment marker on every line instead of leaking DuckDB's candidate-bindings/`LINE n: ...」; L514「ectly suppressed under plain `dbt lint`, but leaked through under `--fix` with positions point」; L530「- [dbt-core] BigQuery unit tests no longer leak pseudocolumns ([#15357](https://github.com/d))」; L646「del-level test's column_name kwarg no longer leaks into the test node's own column_name, which」 他4件同様 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/CHANGELOG.md | 1 | L459「- Stop /api/v1/health from leaking the absolute index_dir path; replace with」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter-sql/src/ident.rs | 1 | L238「hanumeric` rejects them and no interior byte leaks」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/src/adapter/adapter_impl.rs | 1 | L8172「/// break this case would leak secrets that upstream does not.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/src/adapter/mod.rs | 2 | L4570「// Pre-condition: In Replay mode leaked calls are safe because this」; L4580「ne; attempted on non-mock engine which risks leaking queries"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/src/metadata/duckdb/mod.rs | 2 | L312「/// leak in from other attached catalogs, including m」; L685「ema.tables` would otherwise union in cannot leak.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/src/query_ctx.rs | 1 | L131「the cloned model's `unique_id` as well. That leaked the synthetic id」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-agate/src/data_type.rs | 1 | L299「Box::leak(Box::new(AcceptingDataType))」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-auth/src/snowflake/mod.rs | 1 | L1759「// ignores cfg.Password for AuthTypePat, so leaking it would only add」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-clap-core/src/lib.rs | 1 | L4004「// Ensure no ambient env var leaks in.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-cloud-config/src/resolve.rs | 2 | L48「// does not leak its credentials into unlinked projects.」; L414「// config must not leak platform config into an unlinked project.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-common/src/constants.rs | 1 | L188「// Cleanup before assertions so we don't leak on failure」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-deps/src/git_client/generic.rs | 1 | L150「// Sanitize stderr to avoid leaking credentials from git error messages」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/API-CONTRACTS.md | 3 | L100「ver bubble the error to the client and never leak escaped JSON strings to the response. \|…」; L2766「string would leak an implementation detail and break the FE Zo」; L7140「silently, so no call site can leak through by forgetting to check.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/angular-ts-BrjP3tb8.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-frappe-CZL1YF0i.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-latte-DH-8KZSZ.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-macchiato-B7yYVSCf.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-mocha-Ct7hS0mc.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/coffee-Ch7k5sss.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/dracula-BzJJZx-M.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/dracula-soft-BXkSAIEj.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/haxe-CfZj7gIn.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/imba-DGztddWO.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/javascript-wDzz0qaB.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/jsx-g9-lgVsj.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/parquet-Ynntln8s.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/stata-DI20mbqo.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/tsx-COt5Ahok.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/typescript-BPQ3VLAy.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/vue-vine-BoDAl6tE.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 述語に当たる検出・防止の機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/src/lib/vortexSink.test.ts | 1 | L47「// leak through a code path that forgot to check.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/src/lib/vortexSink.ts | 1 | L72「* to branch, and nothing can leak through a path that forgot to check.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/src/pages/Search.tsx | 1 | L125「// URL/filter state can't leak it into search while the flag is off.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/src/test/renderWithProviders.tsx | 1 | L14「fresh QueryClient per render so cache never leaks between tests. Retries」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-index-core/src/backend.rs | 1 | L519「// The index vocabulary must not leak in.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-index-core/src/info_schema/tests.rs | 1 | L517「// Nothing leaks into a table it does not belong to.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-init/assets/moms_flower_shop/seeds/raw_customers.csv | 1 | L27「26,Lilias,Leak,lleakp@blog.com,Female,73」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-ctx/tests/compile_base.rs | 1 | L171「"`dbt_namespaces` flatten leaked the field name as a top-level key"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-ctx/tests/data/jinja_ctx_slt/resolve_base_basics.slt | 1 | L36「# leak through. Each value is a real `DbtNamespace`」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-ctx/tests/resolve_base.rs | 1 | L131「"`dbt_namespaces` flatten leaked the field name as a top-level key"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-utils/src/environment_builder.rs | 1 | L220「// not let one adapter's unprefixed macros leak into another's lookups.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-utils/src/functions/contract_error.rs | 1 | L142「Ok(Box::leak(Box::new(table)))」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja-utils/src/invocation_graph.rs | 2 | L17「once per invocation so scratch state cannot leak from one project into the」; L78「"scratch state must not leak across invocations"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/CHANGELOG.md | 2 | L293「- Fixed a memory leak involving macros. Previously using macros w」; L294「leaking memory due to an undetected cycle. #359」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/COMPATIBILITY.md | 1 | L18「runtime environments. Jinja2 leaks out a lot of the underlying Python engine」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja-py/src/typeconv.rs | 1 | L289「let val = AutoEscape::Custom(Box::leak(value.to_string().into_boxed_str()));」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/src/compiler/parser.rs | 1 | L2266「let boxed = Box::leak(owned.into_boxed_str());」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/src/dispatch_object.rs | 1 | L442「/// adapter's unprefixed macros leak into another's lookups.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/src/value/mod.rs | 1 | L122「cles are not created to avoid causing memory leaks.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/src/value/string_interning.rs | 1 | L31「// not checking for depth can cause a memory leak.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/src/vm/macro_object.rs | 1 | L139「// macro cannot leak out.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-jinja/minijinja/tests/test_macros.rs | 1 | L128「fn test_no_leak() {」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-loader/tests/macros/duckdb.rs | 1 | L157「// anything that could leak in from the query body.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-loader/tests/macros/multi_adapter.rs | 1 | L107「leak across chains just because `lake_compute` is」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-main/src/dbt_lib.rs | 1 | L2972「// 1. No state leaks between different schemas processed by the」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-main/src/retry.rs | 2 | L349「"check.my_project.pii.not_leaked".to_string(),」; L364「"pii.not_leaked".to_string(),」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-main/src/vars.rs | 1 | L569「ean up before asserting so a failure doesn't leak the var」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-metricflow/src/lib.rs | 1 | L4243「// introduces fanout and leaks one metric's filters into the other.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-metricflow/tests/metricflow_compat.rs | 3 | L2817「// Verify no internal placeholders leaked into the generated SQL.」; L4219「// No internal placeholders should leak.」; L4295「"placeholder leak in saved query Snowflake SQL"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-parser/src/resolve/resolve_sources.rs | 1 | L786「/// the per-key `or_else` chain would leak the source-level value of the」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-parser/src/resolve/resolve_tests/persist_generic_data_tests.rs | 1 | L2424「ce table name containing `/` would otherwise leak path」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-parser/src/utils.rs | 1 | L200「/// carries no source filename to leak, so use it as-is.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-platform/src/auth.rs | 1 | L304「// real home can leak a credential into the chain. All of that is」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-profile/tests/resolve_test.rs | 3 | L808「// Bookkeeping keys must not leak into connection config.」; L811「"`name` leaked into credentials for {}",」; L816「"`default` leaked into credentials for {}",」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sa-python/tests/integration/test_commands.py | 1 | L54「def test_selection_does_not_leak_between_invocations(built_project, invoke, u)」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/materialization_resolver.rs | 1 | L732「fn cache_does_not_leak_across_dialects() {」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/common.rs | 1 | L2259「ormalized_snapshot_dashed_inner_tag_does_not_leak_into_opening_strip() {」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/dbt_catalogs_v2.rs | 1 | L738「// so they don't leak the Jinja plane's casing into user-facing ou」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/profiles.rs | 2 | L180「// naming a credential leaks it to stdout and to any log that captures i」; L2755「/// here leaks for every adapter in a multi-adapter target」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/project/config_tree.rs | 1 | L585「/// and letting it leak across adapters is what would otherwise forc」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/properties/model_properties.rs | 2 | L184「/// meaningless — and potentially confusing/leaky — to a consumer that」; L535「s project's own scheduling rule and must not leak to a downstream consumer"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/sources.rs | 1 | L98「"resource_type leaked into sources.json shape: {json}"」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-skills/src/install.rs | 3 | L608「// link — or worse, its target — would leak files into the install.」; L613「let skill = make_source(root, "leaky", "body");」; L619「let installed = root.join(".agents/skills/leaky");」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sql/dbt-lexer-snowflake/src/generated/snowflake/snowflakelexer.rs | 1 | L1690「KqgEAAIxAjkAKnAEAAI5AkEAKoAEAAJBAkkAKkgEAAJJAlEAKrAEA",」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-state/src/hash.rs | 1 | L813「odes, so an upstream node's macros can never leak in.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-tasks-sa/src/materialize.rs | 1 | L990「// and overwriting the node's identity leaks the synthetic id into everything keyed on i」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-tasks-sa/src/renderable/renderable/aggregated_test.rs | 1 | L85「ication via the LSP due to show_progress and leaks」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-tracing/src/layers/data_layer.rs | 2 | L555「extracting event attributes if any. To avoid leakage, we extract internal metadata」; L952「// for this event, so they can't leak into the next event emitted on this thread.」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-tracing/src/tests/force_close_tests.rs | 1 | L246「fn force_close_does_not_leak_late_work_into_reloaded_consumers() {」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-tracked-stmt/src/lib.rs | 3 | L76「// Leak the Box to get a 'static pointer and associa」; L78「let ptr = Box::leak::<'static>(stmt);」; L79「// SAFETY: the `ptr` is now leaked, we track its provenance in `ErasedFatPtr`」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-utils/docs/decisions/adr-0002-cross-database-utils.md | 1 | L12「installed in 1/3 of weekly active projects (as-of early 2022). The functionality with this pac」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2021-11-26-welcome-to-the-dbt-developer-blog.md | 1 | L37「canonical declarations of truth, and more as point-in-time snapshots of the writer’s thinking.」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2022-07-12-change-data-capture.md | 2 | L50「contains your business logic to “grab” every point-in-time version」; L193「 downstream of `fct_income` to "grab" every point-in-time version of `fct_income` – let's call this in」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2023-10-31-to-defer-or-to-clone.md | 1 | L59「\| Yes, since clone is a point-in-time operation」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2024-05-17-synapse-best-practices.md | 1 | L50「ers, and Synapse is will be deprecated at an as-of-yet undeclared End-of-Life.」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2024-10-05-snowflake-feature-store.md | 2 | L37「- **Point-in-time correctness** &mdash; Snowflake retrieves po」; L210「ud or segmentation model, they will retrieve point-in-time correct features for a customer at a specifi」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2025-05-28-dbt-fusion-engine-path-to-ga.md | 1 | L126「Here's a point-in-time snapshot of how we expect to tackle the know」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/dbt-apis/schema-discovery-environment-applied-snapshots.mdx | 1 | L13「[Snapshots](/docs/build/snapshots) represent point-in-time copies of your data, allowing you to track h」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/dbt-versions/2023-release-notes.md | 1 | L25「- Memory leak &mdash; Fixed a memory leak in the JDBC API」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/dbt-versions/dbt-platform-release-notes-gen.md | 1 | L1420「Fixes an OpenAI connection pool leak that could lead to out-of-memory」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/dbt-versions/release-notes/99-dbt-cloud-changelog-2019-2020.md | 1 | L330「- \[Security\] Fix intra-account API key leakage」 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/global-configs/print-output.md | 1 | L13「ility is supported but will be removed in an as-of-yet-undetermined future release.」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/node-selection/state-selection.md | 1 | L17「, dbt does store "state" &mdash; a detailed, point-in-time view of project resources (also referred to)」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/resource-configs/clickhouse-configs.md | 1 | L173「mutable model over time. This in turn allows point-in-time」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/telemetry-observability.md | 1 | L102「- **Log records** &mdash; Point-in-time events within a span.」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/package-lock.json | 6 | L17142「recated": "This module is not supported, and leaks memory. Do not use it. Check out lru-cache」; L18310「"node_modules/jest-leak-detector": {」; L18312「"resolved": "https://registry.npmjs.org/jest-leak-detector/-/jest-leak-detector-29.7.0.tgz",」; L18323「"node_modules/jest-leak-detector/node_modules/ansi-styles": {」; L18335「"node_modules/jest-leak-detector/node_modules/pretty-format": {」 他1件同様 — ソフトウェアの情報/メモリ漏洩(credential・token・memory・state等)の意味で、その時点で知り得ない情報の使用を検出・報告する機能ではない |
+
+`dbt` E3b の当たりの判定(甲、ファイルの表。一覧7328件/読んだ7328件、当たり43ファイル/53行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-1latest/core/dbt/task/docs/index.html | 1 | L2「IMARY\|PRINT\|PRIVILEGES\|PROC(?:EDURE)?\|PUBLIC\|PURGE\|QUICK\|RAISERROR\|READS?\|REAL\|RECONFIGURE\|REFE」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/src/engine/duckdb_attach.rs | 1 | L227「("purge_requested", "PURGE_REQUESTED"),」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/tests/duckdb_attach_fixtures/iceberg_rest_full_options/catalogs.yml | 2 | L5「# PURGE_REQUESTED, READ_ONLY (user override of the r)」; L26「purge_requested: false」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-adapter/tests/duckdb_attach_fixtures/iceberg_rest_full_options/output.snap | 1 | L5「EDENTIALS', SUPPORT_NESTED_NAMESPACES false, PURGE_REQUESTED false, READ_ONLY true, ENCODE_ENTI」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/angular-ts-BrjP3tb8.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-frappe-CZL1YF0i.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-latte-DH-8KZSZ.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-macchiato-B7yYVSCf.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/catppuccin-mocha-Ct7hS0mc.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/cobol-nBiQ_Alo.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/coffee-Ch7k5sss.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/dracula-BzJJZx-M.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/dracula-soft-BXkSAIEj.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/haxe-CfZj7gIn.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/imba-DGztddWO.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/javascript-wDzz0qaB.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/jsx-g9-lgVsj.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/nginx-BpAMiNFr.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/stata-DI20mbqo.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/tsx-COt5Ahok.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/typescript-BPQ3VLAy.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-docs-server/web/dist/assets/vue-vine-BoDAl6tE.js | 1 | L1「圧縮された1行のエディタ表示用JSバンドル(構文ハイライト定義・対応言語のキーワード一覧等)」 — 正規表現の先読みアサーション(look-ahead assertion)を指す構文ハイライト定義の名前で、トレードのルックアヘッドではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-schemas/src/schemas/dbt_catalogs_v2.rs | 2 | L248「FieldSpec::boolean("purge_requested"),」; L2814「purge_requested: true」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sql-keywords/src/generated/databricks.rs | 1 | L254「"PURGE",」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sql/dbt-lexer-databricks/src/generated/databricks/DatabricksLexer.interp | 3 | L252「'PURGE'」; L687「PURGE」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sql/dbt-lexer-databricks/src/generated/databricks/DatabricksLexer.tokens | 2 | L250「PURGE=250」; L682「'PURGE'=250」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-sql/dbt-lexer-databricks/src/generated/databricks/databrickslexer.rs | 4 | L261「pub const PURGE:i32=250;」; L489「"PRINCIPALS", "PROPERTIES", "PRUNE", "PURGE", "QUALIFY", "QUARTER",」; L578「ome("'PROPERTIES'"), Some("'PRUNE'"), Some("'PURGE'"),」; L668「", Some("PROPERTIES"), Some("PRUNE"), Some("PURGE"), Some("QUALIFY"),」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/crates/dbt-test-utils/src/task/goldie.rs | 1 | L357「// Purge noise and blank lines」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-utils/docs/decisions/adr-0002-cross-database-utils.md | 1 | L12「installed in 1/3 of weekly active projects (as-of early 2022). The functionality with this pac」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2021-11-26-welcome-to-the-dbt-developer-blog.md | 1 | L37「canonical declarations of truth, and more as point-in-time snapshots of the writer’s thinking.」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2022-07-12-change-data-capture.md | 2 | L50「contains your business logic to “grab” every point-in-time version」; L193「 downstream of `fct_income` to "grab" every point-in-time version of `fct_income` – let's call this in」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2023-10-31-to-defer-or-to-clone.md | 1 | L59「\| Yes, since clone is a point-in-time operation」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2024-05-17-synapse-best-practices.md | 1 | L50「ers, and Synapse is will be deprecated at an as-of-yet undeclared End-of-Life.」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2024-10-05-snowflake-feature-store.md | 2 | L37「- **Point-in-time correctness** &mdash; Snowflake retrieves po」; L210「ud or segmentation model, they will retrieve point-in-time correct features for a customer at a specifi」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2025-05-28-dbt-fusion-engine-path-to-ga.md | 1 | L126「Here's a point-in-time snapshot of how we expect to tackle the know」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/iceberg/adapters/duckdb-iceberg-support.md | 1 | L236「\| `purge_requested` \| Optional \| Purge underlying fil」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/dbt-apis/schema-discovery-environment-applied-snapshots.mdx | 1 | L13「[Snapshots](/docs/build/snapshots) represent point-in-time copies of your data, allowing you to track h」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/global-configs/print-output.md | 1 | L13「ility is supported but will be removed in an as-of-yet-undetermined future release.」 — 「(いつ)時点で」という一般的な言い回し(ASOF JOINへの言及やas-of-yetを含む)で、ルックアヘッド防止の機能そのものの記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/node-selection/state-selection.md | 1 | L17「, dbt does store "state" &mdash; a detailed, point-in-time view of project resources (also referred to)」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/resource-configs/clickhouse-configs.md | 1 | L173「mutable model over time. This in turn allows point-in-time」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/resource-configs/vertica-configs.md | 1 | L440「SELECT PURGE_PARTITION('online_sales.update_call_center_d)」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/reference/telemetry-observability.md | 1 | L102「- **Log records** &mdash; Point-in-time events within a span.」 — 「ある時点の」という一般的な形容(スナップショット・状態の説明)で、ルックアヘッドの検出・防止の機能を指していない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/snippets/_generate-metadata.md | 1 | L26「months, all metadata for that environment is purged. To prevent this, schedule jobs to run at l」 — ファイル・メタデータ・DB区画の削除(パージ)の意味で、学習・検証データからの将来情報の除去(purged CV)ではない |
+
+### ツール1件ごとの表
+
+`dbt`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(20回目のNinjaTraderと同じ扱いで、文章表は新設せず候補の一覧の8-030の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `dbt` | 版 | 1.12.5(pip install dbt-coreで実際に入る安定版。既定の枝mainのdbt v2.0はベータで2.0.0rc8までprerelease) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1272-1285 |
+| `dbt` | 最終更新日 | 1.12.5: 2026-09-15。mainブランチ最終コミット: 2026-09-26(shields.io last-commit=today) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1272-1285 docs/DATA/probes/20260923_tools_8_run21.log:1037-1039 |
+| `dbt` | ライセンス | dbt-core(1.latest, PyPI dbt-core)・main branchのソース・dbt-utils・dbt-audit-helperはApache-2.0(LICENSEファイル逐語「Apache License」「Version 2.0」+PyPI license_expression=Apache-2.0)。配布物「dbt」(pip install dbt、v2既定)は別のdbt Product Licensing Agreement下(逆コンパイル・ライセンス検証回避・テレメトリ送信妨害を禁止)。「dbt-oss」はApache 2.0のみのサブセット | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1272-1285 docs/DATA/probes/20260923_tools_8_run21.log:1173-1180 docs/DATA/probes/20260923_tools_8_run21.log:32-39 |
+| `dbt` | 言語と動作環境 | 1.latest(dbt-core): Python(PyPI requires_python>=3.10)。mainブランチ(v2.0): Rust実装、単一自己完結バイナリ配布(README「distributed as a single self-contained binary, with no Python runtime or dependency management required」)。対応OS: macOS(x86-64/ARM)・Linux(x86-64/ARM)・Windows(x86-64のみ、ARMは未対応) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1272-1285 docs/DATA/probes/20260923_tools_8_run21.log:1289-1294 |
+| `dbt` | 対応取引所 | 該当なし(汎用データウェアハウスのSQL変換・テストツールで、取引所接続は無い。対応データプラットフォームの一覧はdocs/supported-data-platformsにあるが、この回では開いていない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1166-1169 |
+| `dbt` | 星 | 約14,000(github.com/api.github.comがこのセッションのプロキシで403のため、shields.ioのバッジで概算取得。正確な値は未確認) | 推定 | docs/DATA/probes/20260923_tools_8_run21.log:1028-1030 |
+| `dbt` | コミット数 | 未確認(試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1022-1030 |
+| `dbt` | 保守者数 | 379(shields.io contributorsバッジ) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1040-1042 |
+| `dbt` | 週DL数 | dbt-core: 週間5,244,558件(pypistats.org実測、last_week)。「dbt」(v2既定)・dbt-oss・dbt-utils・audit-helperの週DL数はこの回で未実施 | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1031-1033 |
+| `dbt` | 初回公開日 | 元祖「dbt」パッケージ: 2016-03-23(PyPI dbt 0.0.1、生ログ32-35行目のJSON中に含まれる)。「dbt-core」という別パッケージとしては2019-02-14(0.13.0a1、この回はdbtcore_pypi_fieldsの派生調査として確認) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:32-35 |
+| `dbt` | 既知の脆弱性 | OSV.dev実測、PyPI dbt-coreに6件(GHSA-j4g3-3q8x-jxqp・GHSA-p3f3-5ccg-83xq・GHSA-p72q-h37j-3hq7・GHSA-pmrx-695r-4349・PYSEC-2024-66・PYSEC-2026-1292)。うちGHSA-j4g3-3q8x-jxqpはPATの平文シークレットが`package-lock.yml`に書き込まれる問題(v1.7.3で修正済み) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1263-1271 docs/DATA/probes/20260923_tools_8_run21.log:1043-1046 |
+| `dbt` | 料金体系 | CLI(dbt Core/dbt/dbt-oss)自体は無料。商用版「dbt Platform」(旧dbt Cloud): Developer(無料)/Starter($100/user/月)/Enterprise・Enterprise+(要問合せ) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1185-1189 |
+| `dbt` | 無料枠の上限 | dbt Platform Developerプラン: 「One Developer seat」「3,000 successful models built per month」「1 project」 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1185-1189 |
+| `dbt` | 課金開始条件 | Starter以上への切替が必要になる利用規模(5 developer seats・15,000 models/月等)。Developer枠の上限(3,000 models/月)を超えた場合の具体的な挙動(強制アップグレード/エラー)の逐語はこの回で確認していない | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1185-1189 |
+| `dbt` | 隠れた依存 | dbt Core自体はデータウェアハウスへの接続用アダプタパッケージが必須(実測、最小実行でdbt-duckdbを追加導入)。既定配布「dbt」はテレメトリでdbt Labsのサーバーへ接続する(後述外部送信) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | 登録の要否 | CLI(dbt Core/dbt/dbt-oss)自体は登録不要(実測、アカウント作成なしで`pip install`・`dbt seed`・`dbt test`が成功)。商用版dbt Platformは登録が要る(Developerは無料枠あり、登録に渡すものはこの回で未確認) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1099 |
+| `dbt` | 到達経路 | PyPI(dbt-core/dbt/dbt-oss、到達)・GitHub(`git clone`は到達、`github.com`と`api.github.com`のHTML/APIはこのセッションのプロキシで403「GitHub access to this repository is not enabled for this session」)・docs.getdbt.com(HTML頁は到達するがNext.jsで1頁800KB超のため、代わりにMarkdownソースの公式リポジトリを使用) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1022-1030 docs/DATA/probes/20260923_tools_8_run21.log:2-4 |
+| `dbt` | 導入可否 | 可(実測、隔離venvへ`pip install dbt-core==1.12.5 dbt-duckdb`が成功) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | install所要秒 | 26.83(実測、time_s=26.831) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | 依存数 | 61(実測、`pip list --format=freeze`の全行数。dbt-core+dbt-duckdb直接指定2件+推移的59件) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1100-1165 |
+| `dbt` | pip check | 問題なし(実測、「No broken requirements found.」) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1055-1057 |
+| `dbt` | 最小実行の可否 | 可(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1058-1099 |
+| `dbt` | 最小実行の中身 | 合成CSV(order_id列に重複1件を含む3行)を`dbt seed`でDuckDBローカルファイルへ投入し、`not_null`(order_id・amount)と`unique`(order_id)のgeneric data testを`dbt test`で実行。`not_null`2件がPASS、`unique`1件が重複によりFAILする出力(「Got 1 result, configured to fail if != 0」)を得た | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1058-1099 |
+| `dbt` | 実行所要秒 | `dbt test`のtime_s=2.919(実測)。dbt内部計測は「Finished running 3 data tests in 0 hours 0 minutes and 0.20 seconds」 | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1075-1099 |
+| `dbt` | wheel展開 | 未確認(試した手段: 通常の`pip install`のみ。委任文§6-1の`pip download --no-deps`による手動展開はこの回では実施していない) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | setup.py導入時実行 | 未確認(同上。§6-1の危険検査(pyproject.toml/setup.pyの導入時実行の確認)はこの回では実施していない。`pip install`は正常終了し明らかな外部URL取得のエラーは出なかった) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | 同梱バイナリ | v2の「dbt」は単一の自己完結バイナリとして配布(README「distributed as a single self-contained binary」)。今回インストールしたPyPIの`dbt-core`(v1)はPythonパッケージで、実行ファイルは同梱していない | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1289-1294 |
+| `dbt` | 外部送信 | 一次資料: dbt Product License(v2の「dbt」)逐語「The Products may collect and send to Provider information about User」「the Products from sending telemetry data to Provider」(Userは送信を妨げてはならない)。実測: `pip list`でv1(dbt-core)が`snowplow-tracker`(テレメトリSDK)を同梱することを確認し、`DBT_SEND_ANONYMOUS_USAGE_STATS=False`を設定して最小実行した | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1173-1180 docs/DATA/probes/20260923_tools_8_run21.log:1100-1165 |
+| `dbt` | 自動発注機能 | 無し(データウェアハウスのSQL変換・テストツールで発注機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1166-1169 |
+| `dbt` | 宣伝詐欺の兆候 | 見当たらない(一次資料(公式サイト・料金頁・ライセンス頁)の範囲では)。ただしXの投稿等で宣伝詐欺の兆候を専用に探す検索はこの回では実施していない | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1185-1189 |
+| `dbt` | 当方データ投入 | 可能性あり(実測でCSVのseed投入は成功)。当方のcsv.gz(tardis形式)はそのままでは不可で、CSVへの変換と`dbt seed`または`source`としての取り込みが要る。この回はCSV変換までは試みていない | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1058-1074 |
+| `dbt` | 時刻の扱い | 未確認(試した手段: 最小実行では時刻列を使っていない。`docs/build/incremental-models`等のタイムゾーン・粒度の扱いはこの回で読んでいない) | 未確認 | 試した手段: 最小実行では時刻列を使っていない。docs/build/incremental-models等はこの回で読んでいない |
+| `dbt` | 再現性 | E5参照(印・段3。`package-lock.yml`による依存の固定) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1217-1224 |
+| `dbt` | 規模の見積 | 未確認(試した手段: 456日分のtickデータをdbtに投入した場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3行のみでの実測に留まる) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1058-1099 |
+| `dbt` | 4軸1_道具 | 印。単一バイナリ配布(v2)・数百のデータウェアハウスアダプタ・宣言的なYAMLでのテスト定義という当方のバックテスト系ツール(CLAUDE.md §2)に無い道具立て | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1166-1169 |
+| `dbt` | 4軸2_情報 | 印。dbt Semantic Layer・dbt Catalog(いずれも商用版dbt Platformの機能、有料)による来歴・メトリクスという、当方の監視系(CLAUDE.md §2)に無い情報源 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1185-1189 |
+| `dbt` | 4軸3_視点 | 印。「データの正しさをSQLの選択クエリとして宣言的に表明し自動テストする」という視点は、当方のbacktest/engine.pyの手続き的な検証(assert文の直書き)とは異なる視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1190-1216 |
+| `dbt` | 4軸4_向上 | サーベイの外(組み込みの作業が要る、18回目検収§6の3と同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `dbt` | 配布元の一致 | 一致(PyPI `dbt-core`のproject_urls Homepage=getdbt.com。GitHubリポジトリのクローン内容(README等)とPyPIの説明文が一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run21.log:1272-1285 |
+| `dbt` | 難読化 | 見当たらない(`pip install`したソース・READMEを確認する限り。§6-1の全項目(pip download→setup.py/pyproject.toml等)による深い検査はこの回では未実施) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | 外部URL取得 | 未確認(§6-1の`pip download --no-deps`によるsetup.py/pyproject.tomlの検査はこの回では実施していない。通常の`pip install`では外部URL取得の明らかなエラーは出なかった) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1050-1054 |
+| `dbt` | 依存の一覧 | 実測(`pip list --format=freeze`の61件全部、生ログに記載) | 実測 | docs/DATA/probes/20260923_tools_8_run21.log:1100-1165 |
+| `dbt` | 保守者名の一貫性 | 未確認(試した手段: contributors数(379)はshields.ioで実測したが、個々の保守者名の一貫性(法人名dbt Labs表記の変遷等)はこの回で確認していない) | 未確認 | docs/DATA/probes/20260923_tools_8_run21.log:1040-1042 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)のため到達できなかった(存在しないとは書かない)
+- **課金開始条件**(Developer枠の上限超過時の挙動): pricing頁にプラン別の上限は書かれているが、上限超過時に何が起きるか(強制アップグレード・エラー・単なる警告)の逐語はこの回で見つけていない
+- **登録の要否**(dbt Platformの登録に渡すもの): 無料のDeveloperプランへの登録フォームはこの回で開いていない(CLI側の登録不要は実測で確認済み)
+- **wheel展開・setup.py導入時実行・外部URL取得**: 委任文§6-1の危険検査(`pip download --no-deps`で中身を開いて`setup.py`/`pyproject.toml`の導入時実行・難読化・外部URL取得の有無を見る)はこの回では実施していない。通常の`pip install`は正常終了し明らかな外部URL取得のエラーは出なかった
+- **難読化**: 上記と同じ理由で、§6-1の全項目による深い検査は未実施。読んだ範囲(README・LICENSE・pip installの出力)には難読化らしきものは見当たらない
+- **宣伝詐欺の兆候**: X(旧Twitter)の投稿等で宣伝・詐欺の兆候を専用に探す検索はこの回では実施していない。読んだ公式サイト・料金頁・ライセンス頁の範囲には見当たらない
+- **時刻の扱い**: 最小実行では時刻列を使っておらず、`docs/build/incremental-models`等のタイムゾーン・粒度に関する公式文書もこの回では読んでいない
+- **規模の見積**: 456日分のtickデータに相当する規模でdbtを動かした場合の所要時間・記憶域を示す一次資料はこの回で見つかっていない。最小実行は3行の合成データでの実測に留まる
+- **保守者名の一貫性**: contributors数(379)は実測したが、個々の保守者名の一貫性(法人名dbt Labs表記の変遷等)はこの回で確認していない
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19回目のMetaTraderの処置3と同じ理由)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない。生ログ5-10行目・1022-1027行目)。これはGitHubというホスト自体の到達不能ではなく、このセッションのプロキシがこのリポジトリへのAPI/Web直接アクセスを許可していないという意味であり、`git clone`(git smart-httpプロトコル)・`raw.githubusercontent.com`は同じホスト名の下でも到達できた(生ログ11-27行目・1034-1036行目)。星・保守者数・最終コミット日はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ1028-1042行目)。正確な値(星の厳密な数・総コミット数)が必要なら、第2経路(オーナーPC、`add_repo`でのGitHub連携が使える環境、または単純にブラウザでgithub.com/dbt-labs/dbtを開く)で確認できる可能性があるが、この回はそこまで試みていない。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] 候補の実体として、既定の枝`main`(dbt v2.0、Rust、ベータ)と`1.latest`ブランチ(v1系Python、現在`pip install dbt-core`で実際に入る安定版)の両方をNに含めた。委任文§1は「候補の公式のソースのリポジトリ(上で含めたもの)の既定の枝の全ファイル」と書いており文字どおりには`main`だけを指すが、`main`はベータで、実際に稼働している安定版は`1.latest`側にある。両方を対象にする判断はこの回のリードが下したもので、狭める方向(A-10)に当たらないよう広く取ったが、「既定の枝だけを見る」べきだったかはリードの判断を仰ぐ。値・段は決めたまま(両方の枝を検索対象に含めた状態)にする
+2. [それ以外の問い] `dbt`(v2既定配布、プロプライエタリなdbt Product License下・テレメトリ送信)と`dbt-oss`(Apache 2.0サブセット)の機能差分は、この回では文書上の記述(license頁・pypi説明文)の確認に留まり、実際にどの機能が`dbt-oss`から欠けているかの一覧はこの回で作っていない。候補の一覧・§4.0の記述にどこまで反映すべきかは書き方の問題なので、リードの判断を仰ぐ
+3. [それ以外の問い] `dbt-labs/dbt-utils`・`dbt-labs/dbt-audit-helper`を「公式文書が製品の一部として案内しているもの」としてNに含め、E1a・E2の印の根拠にも使った。これらは`packages.yml`経由で利用者が別途`dbt deps`しないと使えないパッケージで、`dbt`本体には同梱されていない。追補§4「候補が同梱・呼び出している別のライブラリの機能は候補の機能に数える」はどちらかというと「候補が内部で呼ぶ依存」を指しており、`dbt-utils`/`audit-helper`のような「利用者が別途インストールする公式パッケージ」がこれに当たるかは、起動文§1の「公式の文書が製品の一部として案内しているもの」の側で読んだ(監査5回目の指摘2の枠組みには当たらないと判断した)。この読み方が正しいかはリードの判断を仰ぐ
+4. [それ以外の問い] E1a・E2で見つかった機能(audit_helperの行ごとの突き合わせ、dbt testの自動判定)は、いずれも当方が定義したモデル・sourceに対して動くもので、当方のbitFlyerの生データ(csv.gz)をそのまま入力にはできない(CSVへの変換・sourceとしての取り込みが要る)。この「変換すれば使える」という状態を、当方の用途との相性としてどこまで肯定的に書くか(§4.0の当方データ投入欄)は書き方の問題として残した
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+**1. `python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run21.log`**(誤検出は閉じずに残す。K1・K2(19612・19909・30448・34975・35047・36881行目)とK13(前回までの回の分)は前回までの回で誤検出として受け取られ済み(検収`docs/AUDITOR/VERDICTS/2026-09-25_tools_scan_cat8_run15.md`等)。この回で新しく出たK13(38390行目、dbtの根拠7行の複写)は、`### 4.0 機械可読の表`のうち§6-1の危険検査未実施を理由に`docs/DATA/probes/20260923_tools_8_run21.log:1050-1054`を根拠に引いた項目(wheel展開・setup.py導入時実行・難読化・外部URL取得・導入可否・install所要秒の6件)が同じログ範囲を指すために生じる誤検出(19回目までの検収でNinjaTrader・MetaTrader等について同型の説明で受け取られている)。**
+
+```
+K1 太字                  2 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+K2 括弧                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             30 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  いちばん新しい回の節に「受け入れ検査の出力」が無い(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)
+---- 検査対象の合計 40 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 41 件
+```
+
+**2. `python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 21`**
+
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 16 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+**3. `python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run21.log`**
+
+```
+参考: docs/DATA/probes/20260923_tools_8_run21.log の最初の手 2026-09-26T05:48:36Z / 最後の手 2026-09-26T06:30:27Z / 手の数 94
+---- 合計 0 件
+```
+
+**4. `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`**
+
+```
+0
+```
