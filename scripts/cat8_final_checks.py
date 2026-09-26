@@ -26,7 +26,17 @@ cmds = [
     "git diff -U0 HEAD -- %s | grep '^-[^-]' | wc -l" % a.report,
     "wc -c %s %s" % (a.report, log),
 ]
-out = ["", "### 受け入れ検査の出力(道具が貼った)", "",
+HEAD = "### 受け入れ検査の出力(道具が貼った)"
+# 打ち直し(報告を直したあとにもう一度打つ)のとき、この回の節に前に貼った小節を消してから貼る
+# (2026-09-26 監査 135 回目の指摘 2: 追記だけだと古い出力が残って 2 段になる)。消すのは、
+# この回の節の見出しより後ろにある、この道具の見出しから末尾まで(まだコミットしていない部分)だけ。
+text = pathlib.Path(a.report).read_text()
+sec = text.rfind("\n## 区分8 — %d 回目の実行" % n)
+old = text.find("\n" + HEAD, sec if sec >= 0 else len(text))
+if sec >= 0 and old >= 0:
+    pathlib.Path(a.report).write_text(text[:old].rstrip("\n") + "\n")
+    print("[cat8_final_checks] 前に貼った小節を消して貼り直す")
+out = ["", HEAD, "",
        "`scripts/cat8_final_checks.py --round %d` が打った。コマンドと出力の全文。" % n, ""]
 for c in cmds:
     p = subprocess.run(["bash", "-c", c], capture_output=True, text=True, errors="replace")
