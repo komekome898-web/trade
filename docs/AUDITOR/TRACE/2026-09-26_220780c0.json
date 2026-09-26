@@ -14893,10 +14893,12 @@
    "move": 545,
    "tools": {
     "SendMessage": 2,
-    "Read": 1,
-    "Bash": 1
+    "Read": 2,
+    "Bash": 2,
+    "ReadNotifications": 1,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 4,
+   "n_tools": 8,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,

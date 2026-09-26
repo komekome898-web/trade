@@ -114,8 +114,8 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 
-from .core import BarEvent, BookSnapshotEvent, ClockEvent, CoreEngine, Event, OrderFillEvent, OrderRequest, \
-    Strategy, StrategyContext, TradeEvent
+from .core import Ack, BarEvent, BookSnapshotEvent, Canceled, ClockEvent, CoreEngine, Event, OrderFillEvent, \
+    OrderRequest, Reject, Strategy, StrategyContext, TradeEvent
 from .costs import CostSchedule, ScheduleCostModel
 from .costs.schedule import FundingRule
 from .data import DataError, load, parse_spec
@@ -747,6 +747,19 @@ class ArrivalGate:
     def open_orders(self):
         return self.venue.open_orders()
 
+    def _release(self, order: OrderRequest, t: int) -> list:
+        """Hand a held order to the venue. The gate acknowledged it at its arrival: the venue's Ack is dropped and a
+        refusal by the venue's rules ends the order as Canceled with the venue's reason."""
+        out = []
+        for rep in self.venue.on_order(order, t):
+            if type(rep) is Ack:
+                continue
+            if type(rep) is Reject:
+                out.append(Canceled(rep.client_order_id, f"rejected_by_venue: {rep.reason}"))
+                continue
+            out.append(rep)
+        return out
+
     def on_market_event(self, event: Event, venue_time_ns: int):
         t = int(venue_time_ns)
         if self.hide_book and type(event) is BookSnapshotEvent:
@@ -757,7 +770,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if start >= a]
             self.held = [(o, a) for o, a in self.held if start < a]
             for o, _ in due:
-                out += list(self.venue.on_order(o, start - 1))  # I-4: this bar starts after the order
+                out += self._release(o, start - 1)  # I-4: this bar starts after the order
             out += list(self.venue.on_market_event(event, t))
             return tuple(out)
         out = list(self.venue.on_market_event(event, t))
@@ -768,7 +781,7 @@ class ArrivalGate:
             due = [(o, a) for o, a in self.held if t >= a]
             self.held = [(o, a) for o, a in self.held if t < a]
             for o, _ in due:
-                out += list(self.venue.on_order(o, t))
+                out += self._release(o, t)
         return tuple(out)
 
     def on_order(self, order: OrderRequest, venue_time_ns: int):
@@ -778,10 +791,9 @@ class ArrivalGate:
         if self.price_type is not BarEvent and self.last_obs_t is not None and self.last_obs_t >= t:
             return self.venue.on_order(order, t)  # an observation at the arrival instant is "at or after" (I-1)
         self.held.append((order, t))
-        return ()
+        return (Ack(order.client_order_id, f"gate-{order.client_order_id}"),)  # acknowledged now, priced later
 
     def on_cancel(self, request, venue_time_ns: int):
-        from .core import Canceled
         coid = request.client_order_id
         if any(o.client_order_id == coid for o, _ in self.held):
             self.held = [(o, a) for o, a in self.held if o.client_order_id != coid]

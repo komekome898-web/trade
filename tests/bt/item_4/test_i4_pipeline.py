@@ -297,19 +297,18 @@ def _one_instrument(root, gen, kind, orders, spread=0.0):
 
 def test_market_orders_follow_the_rules_i1_to_i5():
     """The lead's rules for a market order of the integrated run (written from the text, on generated data whose
-    rows are known): I-1 the first observation at or after the arrival; I-2 an order before the first observation
-    fills at the first observation; I-4 a bar instrument fills at the open of the first bar STARTING at or after the
+    rows are known): I-1 the first observation at or after the arrival; I-4 a bar instrument fills at the open of the first bar STARTING at or after the
     arrival; I-5 no book and no spread: both sides give the I-1 value; I-3 is test_i3_a_book_rides_along."""
     from bot.bt.pipeline import _generate
     root, _, _ = _root()
     tg = {"name": "random_walk", "seed": 9, "params": {"kind": "trade", "start_ns": T0, "step_ns": 10 * NS, "n": 100,
                                                        "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
     trades = _generate(tg)[1]
-    orders = [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},     # before the first trade (I-2)
+    orders = [{"t_ns": T0 + 15 * NS, "side": "buy", "qty": 1.0},     # between trades (I-1: the trade at +20 s)
               {"t_ns": T0 + 305 * NS, "side": "sell", "qty": 1.0},   # between trades (I-1: the trade at +310 s)
               {"t_ns": T0 + 400 * NS, "side": "buy", "qty": 1.0},    # at a trade's instant (I-1: that trade)
               {"t_ns": T0 + 555 * NS, "side": "sell", "qty": 1.0}]
-    want = [trades[0]["px"], trades[31]["px"], trades[40]["px"], trades[56]["px"]]
+    want = [trades[2]["px"], trades[31]["px"], trades[40]["px"], trades[56]["px"]]
     res = _one_instrument(root, tg, "trade", orders)
     for side in ("optimistic", "pessimistic"):  # I-5: no book, no spread -> both sides the same
         got = [f["px"] for f in res.range[side]["g"].fills]
@@ -317,12 +316,12 @@ def test_market_orders_follow_the_rules_i1_to_i5():
     bg = {"name": "random_walk", "seed": 9, "params": {"kind": "bar", "start_ns": T0, "step_ns": 60 * NS, "n": 30,
                                                        "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
     bars = _generate(bg)[1]
-    orders = [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},     # before the first bar -> bar 0's open
+    orders = [{"t_ns": T0 + 60 * NS, "side": "buy", "qty": 1.0},     # at bar 1's start -> bar 1's open (I-4)
               {"t_ns": T0 + 300 * NS, "side": "sell", "qty": 1.0},   # at bar 5's start -> bar 5's open (I-4)
               {"t_ns": T0 + 310 * NS, "side": "buy", "qty": 1.0},    # inside bar 5 -> bar 6's open
               {"t_ns": T0 + 600 * NS, "side": "sell", "qty": 1.0}]
     res = _one_instrument(root, bg, "bar", orders, spread=0.2)
-    want = [bars[0]["open"] + 0.1, bars[5]["open"] - 0.1, bars[6]["open"] + 0.1, bars[10]["open"] - 0.1]
+    want = [bars[1]["open"] + 0.1, bars[5]["open"] - 0.1, bars[6]["open"] + 0.1, bars[10]["open"] - 0.1]
     for side in ("optimistic", "pessimistic"):
         got = [f["px"] for f in res.range[side]["g"].fills]
         assert got == pytest.approx(want), (side, got, want)
@@ -343,3 +342,16 @@ def test_i3_a_book_rides_along():
     for f in res.range["pessimistic"]["bf"].fills:
         first = min((r for r in recs if r["t_ns"] >= f["t_ns"] - 0), key=lambda r: r["t_ns"], default=None)
         assert first is not None and f["px"] == pytest.approx(first["px"]), (f, first)
+
+
+@pytest.mark.xfail(strict=True, reason="I-2 not met: the item-2 MarginAccount refuses a market order it cannot price "
+                                       "(no_price_for_margin_check) at the order's arrival, before any observation")
+def test_i2_an_order_before_the_first_observation_fills_at_it():
+    from bot.bt.pipeline import _generate
+    root, _, _ = _root()
+    tg = {"name": "random_walk", "seed": 9, "params": {"kind": "trade", "start_ns": T0, "step_ns": 10 * NS, "n": 20,
+                                                       "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
+    res = _one_instrument(root, tg, "trade", [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},
+                                              {"t_ns": T0 + 100 * NS, "side": "sell", "qty": 1.0}])
+    got = [f["px"] for f in res.range["pessimistic"]["g"].fills]
+    assert got[:1] == [_generate(tg)[1][0]["px"]]

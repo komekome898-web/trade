@@ -50,6 +50,7 @@ import inspect
 import json
 import random
 import sys
+import types
 import warnings
 from pathlib import Path
 
@@ -65,10 +66,17 @@ sys.path.insert(0, str(HERE / "golden"))
 import compat_golden_scenes as S  # noqa: E402
 from compat_golden_run import Script, run  # noqa: E402
 
-import bot.backtest.engine as NEW_E  # noqa: E402
-import bot.backtest.metrics as NEW_M  # noqa: E402
-import bot.backtest.walk_forward as NEW_W  # noqa: E402
 import bot.bt.compat.engine as C  # noqa: E402
+from bot.bt.compat import metrics as NEW_M  # noqa: E402
+from bot.bt.compat import walk_forward as _CW  # noqa: E402
+
+# The layer under the old names (what src/bot/backtest/ delegates to once it
+# is replaced). The tests below hold the layer to the snapshot whether or not
+# src/bot/backtest/ has been replaced yet.
+NEW_E = types.SimpleNamespace(run_backtest=C.run_backtest_as_old, CostModel=C.CostModel,
+                              BacktestResult=C.BacktestResult)
+NEW_W = types.SimpleNamespace(evaluate_on_splits=C.evaluate_on_splits_as_old, split_data=_CW.split_data,
+                              Splits=_CW.Splits, CostModel=C.CostModel)
 
 GOLDEN = json.loads((HERE / "golden" / "old_engine_golden.json").read_text(encoding="utf-8"))
 
@@ -134,14 +142,29 @@ def test_the_snapshot_is_the_old_engine_the_golden_file_was_made_from():
         assert hashlib.sha256((SNAP / name).read_bytes()).hexdigest() == sha == sums[name], name
 
 
-def test_the_old_modules_now_delegate_to_the_compat_package():
-    assert NEW_E.run_backtest is C.run_backtest_as_old
-    assert NEW_E.CostModel is C.CostModel and NEW_E.BacktestResult is C.BacktestResult
-    assert NEW_W.evaluate_on_splits is C.evaluate_on_splits_as_old
-    for mod in (NEW_E, NEW_M, NEW_W):
-        src = Path(mod.__file__).read_text(encoding="utf-8")
-        assert "for i in range(len(candles))" not in src and "def " not in src, mod.__name__
+def _replaced() -> bool:
+    import bot.backtest.engine as E
+    return E.run_backtest is C.run_backtest_as_old
 
+
+def test_src_bot_backtest_is_the_old_engine_or_the_delegation_nothing_else():
+    """Before the replacement the three files are the snapshot byte for byte;
+    after it they hold no code of their own and bind the layer's names."""
+    import bot.backtest.engine as E
+    import bot.backtest.metrics as M
+    import bot.backtest.walk_forward as W
+    files = {n: (REPO / "src/bot/backtest" / n).read_bytes() for n in ("engine.py", "metrics.py", "walk_forward.py")}
+    if not _replaced():
+        for n, b in files.items():
+            assert b == (SNAP / n).read_bytes(), n
+        return
+    assert E.run_backtest is C.run_backtest_as_old
+    assert E.CostModel is C.CostModel and E.BacktestResult is C.BacktestResult
+    assert M.compute_metrics is NEW_M.compute_metrics and M.Metrics is NEW_M.Metrics
+    assert W.evaluate_on_splits is C.evaluate_on_splits_as_old and W.split_data is _CW.split_data
+    for n, b in files.items():
+        src = b.decode("utf-8")
+        assert "for i in range(len(candles))" not in src and "\ndef " not in src, n
 
 
 def test_the_old_arithmetic_in_the_layer_is_the_snapshot_text_line_for_line():
