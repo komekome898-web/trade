@@ -45340,3 +45340,615 @@ $ git diff -U0 e315131 -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]
 ```
 
   `check-elements` の 24・34 行は `.../venvs/8-034/tmp` の道の中の `tmp/` に正規表現が当たった誤検出、456 行は実際の違反(リードが道を読んで分けた)。
+
+## 区分8 — 33 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2、追補§4)。8-035 `Apache Spark` の1行だけを扱う(起動文§1)。未着手からE1a〜E6を全部判別し、§4.0の表を全項目書く(§2.5)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run33_prompt.md`(起動文、指紋 `20260923_tools_survey_cat8_run33_prompt.md@9ebaf51f4559`)
+- `https://spark.apache.org/`(公式サイト。取得日2026-09-26、生ログ8-33行目)
+- `https://spark.apache.org/documentation.html`・`https://spark.apache.org/downloads.html`(公式サイト。取得日2026-09-26、生ログ51-120行目)
+- `https://github.com/apache/spark`(公式ソースリポジトリ。公式サイトHTML内のGitHubリンクの行(131行目)から特定、生ログ34-50行目。`git ls-remote --symref`のHEAD `f5498a9dab976099d83f5230f7600b52960b63ce`、既定の枝`master`、生ログ98-101行目)
+- `https://pypi.org/pypi/{pyspark,pyspark-client,pyspark-connect}/json`(PyPIのパッケージ情報。取得日2026-09-26、生ログ107-117、158-181行目)
+- `https://archive.apache.org/dist/spark/spark-4.2.0/`(公式配布の頁。ファイル一覧・Content-Length・sha512。取得日2026-09-26、生ログ121-205行目)
+- `https://pypistats.org/api/packages/pyspark/recent`(週DL数の公式API。取得日2026-09-26、生ログ2776-2780行目)
+- `https://img.shields.io/github/{stars,contributors,commit-activity}/apache/spark.json`(GitHub統計の代替経路。取得日2026-09-26、生ログ968-974行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性。取得日2026-09-26、生ログ951-967行目)
+- `venvs/8-035/check/pyspark_client-4.2.0.tar.gz`等4配布物(archive.apache.orgからcurlで取得しsha512照合。生ログ192-229行目)、`venvs/8-035/check_extract/`(展開)、`venvs/8-035/check/*.whl`(依存12件、pip download --only-binaryで取得。生ログ688-742行目)、`venvs/8-035/check_extract_deps/`(依存の展開)
+- `venvs/8-035/src/spark`(`cat8_repo_fetch.sh`で取得した公式リポジトリの写し。生ログ985-1008行目)、`venvs/8-035/run/`(依存12件を導入した隔離venv)
+- `https://x.com/ApacheSpark/status/2077777470980338121`・`https://x.com/EcZachly/status/1899187809694687481`(fxtwitter API経由で本文を逐語取得。取得日2026-09-26、生ログ2772-2775行目)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- 31回目のPandas(公式リポジトリ+文書、N確定・§6-1・案Bの型)と28回目のApache Kafka(JVMの道具、バイナリ配布物のサイズ確認・E4の当て方)の回の形(`docs/DATA/SCAN_2026-09-23_tools_cat8.md`の該当節)を、小節・表の形の見本にした(§0の指示どおり、中身は写していない)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Apache Spark` / 候補の実体: 公式サイト`spark.apache.org`のトップページHTML内のリンク`<a class="dropdown-item" href="https://github.com/apache/spark">spark</a>`(131行目)から公式ソースリポジトリを特定。既定の枝`master`のHEAD(`git ls-remote --symref`)= `f5498a9dab976099d83f5230f7600b52960b63ce`。`github.com`・`api.github.com`はこのセッションのプロキシで403(実測、逐語「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」生ログ102-106行目)だが、`git clone`/`git ls-remote`(git smart-http)は到達できた。同じapache組織内に`spark-connect-go`・`spark-connect-rust`・`spark-connect-swift`・`spark-docker`・`spark-kubernetes-operator`・`spark-website`が公式サイトのHTML内にリンクされている(生ログ34-50行目、132-137行目)が、これらは別言語の接続クライアント・Docker定義・Webサイトのソースであり`apache/spark`本体には同梱されない別リポジトリなので、名前とURLだけ記録しNには入れない | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:34-50 docs/DATA/probes/20260923_tools_8_run33.log:98-101 docs/DATA/probes/20260923_tools_8_run33.log:102-106 |
+| 2 | `Apache Spark` / 候補の配布物の実体: `spark.apache.org/downloads.html`逐語「hosted in Maven Central」「is now available in pypi. To install just run」(`pip install pyspark`)。archive.apache.orgの`spark-4.2.0/`配下に8種の配布物: `spark-4.2.0.tgz`(源、50,578,388バイト)・`spark-4.2.0-bin-hadoop3.tgz`(555,409,690)・`spark-4.2.0-bin-hadoop3-connect.tgz`(555,414,637)・`spark-4.2.0-bin-without-hadoop.tgz`(471,301,088)・`SparkR_4.2.0.tar.gz`(367,158)・`pyspark-4.2.0.tar.gz`(450,129,423、PyPIの`pyspark`と同一)・`pyspark_client-4.2.0.tar.gz`(1,675,557、PyPIの`pyspark-client`と同一)・`pyspark_connect-4.2.0.tar.gz`(10,057、PyPIの`pyspark-connect`と同一)。商用版は探した範囲(`docs/index.md`冒頭・`downloads.html`)には見当たらないが、公式Xアカウントの投稿(知見17)がDatabricks社のブログを公式発表の参照先として引用しており、Databricks社(Sparkの原著者らが設立した別会社)がSparkを元にした商用マネージドサービスを提供していることが分かる(Databricks社自体はapache/spark組織のリポジトリではないため、候補の機能には数えず、登録・購入もしない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:174-181 docs/DATA/probes/20260923_tools_8_run33.log:121-157 docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 docs/DATA/probes/20260923_tools_8_run33.log:2880-2889 |
+| 3 | `Apache Spark` / 配布物の大きさ確認(起動文§2.5、200MBの目安): 8配布物のうち`spark-4.2.0-bin-hadoop3.tgz`・`spark-4.2.0-bin-hadoop3-connect.tgz`・`spark-4.2.0-bin-without-hadoop.tgz`(いずれも約450〜555MB)と`pyspark-4.2.0.tar.gz`(約429MB)は200MBの目安を超え取らなかった(§6-1と最小実行はできないので、これらを使う機能は`未確認`とする)。`SparkR_4.2.0.tar.gz`(0.35MB)・`pyspark_client-4.2.0.tar.gz`(1.6MB)・`pyspark_connect-4.2.0.tar.gz`(10KB)・`spark-4.2.0.tgz`(48.2MB)は200MB未満だったので、起動文§2.5の規則(200MB未満のものが1つでもあればそれで§6-1と最小実行をする)に従いこの4つを使う。`pyspark-connect`はPyPI/archive両方でも逐語「Requires-Dist: pyspark==4.2.0」(生ログ402-491行目)のとおりフルの`pyspark`(429MB)に依存するため、単独では200MB以内に収まらず選ばなかった。`pyspark-client`は`Requires-Dist`に`pyspark`を持たず(pandas・pyarrow・grpcio等のみ)、単独で200MB以内に収まる唯一のPythonクライアント配布物(起動文§2.5が例示する接続クライアントだけの版に該当)なのでこれを選んだ | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:148-157 docs/DATA/probes/20260923_tools_8_run33.log:158-181 docs/DATA/probes/20260923_tools_8_run33.log:230-375 docs/DATA/probes/20260923_tools_8_run33.log:402-491 |
+| 4 | `Apache Spark` / 選んだ配布物が候補の機能の全部を含まないことの記録: `pyspark_client`は「Python Spark Connect client for Apache Spark」(PKG-INFO逐語)で、実際のSQL実行エンジン・JVM・ローカルSparkSession(py4jゲートウェイでJVMを起動する仕組み)は含まない(`pyspark/find_spark_home.py`が`SPARK_HOME`配下の`jars/`ディレクトリを前提にする=生ログ2573-2597行目で実際に`Could not find valid SPARK_HOME`のエラーで確認)。含まない機能: DataFrameの実際の分散実行(`dropDuplicates`・`groupBy`・ASOF JOIN・watermark等はいずれもJVM上のクエリエンジンが計算する)。含む機能: `pyspark.testing`のPure Python比較ユーティリティ(`assertDataFrameEqual`・`assertSchemaEqual`。pandas DataFrame・StructTypeを入力にでき、JVM不要で実行できることを実測、知見14) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:166-181 docs/DATA/probes/20260923_tools_8_run33.log:402-491 docs/DATA/probes/20260923_tools_8_run33.log:2573-2597 docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 |
+| 5 | `Apache Spark` / N確定・リポジトリ取得: `cat8_repo_fetch.sh`で`apache/spark`を1MB超blobを除いて取得。files_in_tree(N)=27,473、blobs_not_downloaded(>1MB)=5件(`docs/img/graphx_figures.pptx`・`docs/img/structured-streaming.pptx`=文書サイトの図版pptx、`python/docs/source/getting_started/quickstart_ps.ipynb`=文書頁、`python/pyspark/sql/functions/builtin.py`=E1a〜E6の検索に要るPythonソース、`sql/core/src/test/resources/structured-streaming/partition-tests/rowsAndPartIds`=候補自身の単体試験の参照データ)。うち`builtin.py`と`quickstart_ps.ipynb`は`raw.githubusercontent.com`(このセッションのプロキシで到達可、生ログ1002-1008行目)から取り直し元の相対パスへ配置して一覧に足した(`--add`)。残り3件(pptx2件・rowsAndPartIds)はテキストを含まない図版・自己試験データなので`--absent`で記録した。checked_out_files=27,468。ダウンロードbytes=52,481,779(約50.0MB)、チェックアウトbytes=184,728,790(約176.2MB)。起動文§2.5(リポジトリ取得は別枠、既定の300MB/500MB制限)の範囲内 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:985-1001 docs/DATA/probes/20260923_tools_8_run33.log:1002-1008 |
+| 6 | `Apache Spark` / N確定・除外した別リポジトリ: 知見1のとおり`spark-connect-go`・`spark-connect-rust`・`spark-connect-swift`(別言語のSpark Connectクライアント。apache/spark本体に同梱されず、利用者が別に導入する)、`spark-docker`(Docker定義。downloads.html逐語「these images contain non-ASF software」)、`spark-kubernetes-operator`(Kubernetes operator)、`spark-website`(公式サイトspark.apache.orgのソース。文書サイトの生成元だが、内容の同一性は知見7で確認)をNに入れない別配布物として記録した | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:34-50 docs/DATA/probes/20260923_tools_8_run33.log:174-181 docs/DATA/probes/20260923_tools_8_run33.log:2880-2889 |
+| 7 | `Apache Spark` / N確定・文書サイトはリポジトリ側を使うと判断: 公式文書サイト(`spark.apache.org/docs/latest/`・`/documentation.html`)は`spark-website`リポジトリで公開されているが、実際のガイド本文(programming-guide等)は`apache/spark`本体の`docs/`ディレクトリ(Jekyll生成物)と、Python APIリファレンスは`python/docs/source/`(Sphinx生成物)に由来する(`docs/index.md`のfront matter・`python/docs/source/reference/*.rst`の`autosummary`ディレクティブで確認、知見8参照)。よってNは`apache/spark`本体(`docs/`・`python/docs/source/`を含む)側だけを使う。`docs/structured-streaming-programming-guide.md`・`docs/structured-streaming-kafka-integration.md`など複数のトップレベル文書ファイルは、Spark 4.0.0以降の再編で逐語「the Structured Streaming Programming Guide has been broken apart into smaller, more readable pages. You can find these pages here」のとおり`docs/streaming/`配下への転送スタブになっており、実内容は転送先にある(実測、生ログ1814-1817・2890-2913行目) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:1814-1817 docs/DATA/probes/20260923_tools_8_run33.log:2890-2913 |
+| 8 | `Apache Spark` / N: 検索の一覧の作り方: N全体27,468件(1MB超で取れなかった5件のうち2件は元のパスへ配置して`--add`、3件は`--absent`で記録)から、NUL検出(実測)で判明したバイナリ3,028件を除外理由付きで除いた24,454件を検索の一覧にした。内訳: `sql/core/src/test/resources/`配下2,040件・`sql/connect`配下の各モジュールの`src/test/resources/`配下763件・`mllib/src/test/resources/`等62件(いずれも候補自身の単体試験の参照データ=L-516対象外)、`docs/img/`配下の図版73件、`examples/src/main/resources/`のサンプルデータ5件、`python/lib/py4j-0.10.9.9-src.zip`(同梱ライブラリのソースzip)等。うち12件(`mllib/.../images/partitioned/cls=kittens/date=2018-01/...jpg`等、Hive形式のパーティション名でパスに`=`を含む)は`cat8_mklist.py --exclude <path>=<reason>`の構文がパス中の最初の`=`で区切ってしまい理由に誤って結合される実測上の不具合が起きた(生ログ1156-1160行目)ため、除外せずに一覧へ残した(全て候補自身の単体試験の参照データ、L-516対象外。この回はE1a〜E2・E3b〜E5に印が見つかりE3a・E6は500行超で`cat8_search.py`自体を打っていないため、この12件が実際にNUL検出で「読めなかった」と記録される場面はこの回では発生していない)。`cat8_mklist.py`の完了行: `in_root=27468 added=2 absent=3 excluded=3016 listed=24454`(生ログ1216-1223行目) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:1009-1155 docs/DATA/probes/20260923_tools_8_run33.log:1156-1223 |
+| 9 | `Apache Spark` / §6-1の結論(危険の所見なし、導入・実行の前にすべて完了): 導入・実行で使う配布物13件(`pyspark_client==4.2.0`と依存12件: pandas 3.0.6・pyarrow 25.0.1・grpcio 1.84.0・grpcio-status 1.84.0・googleapis-common-protos 1.75.4・zstandard 0.25.0・numpy 2.4.6・PyYAML 6.0.3・protobuf 7.36.2・python-dateutil 2.9.0.post0・typing_extensions 4.16.0・six 1.17.0)の全部について中身を開く手を最初の導入(生ログ2534行目)より前に完了した(生ログ2529-2533行目「method=結論」)。配布元一致(pyspark_clientのPyPI project_urls=`github.com/apache/spark/tree/master/python`、author_email「dev@spark.apache.org」が公式サイト・GitHub組織`apache`と一致。依存12件のMETADATAのHomepage/Project-URLも全てnumpy.org・pandas.pydata.org・arrow.apache.org・grpc.io等の公式ドメインと一致)。pyspark_clientのsetup.py/pyproject.tomlに`urlopen`・`subprocess`・`os.system`・`eval`・`exec`(自身のversion.pyを読む以外)・`curl`・`wget`の外部取得・任意コード実行の兆候は無い(実測、生ログ376-401行目)。同梱バイナリ: pyspark_client自体は`.so`0個(pure Python、378ファイル中344が`.py`)。依存側は`.so`が numpy20・pandas45・grpcio1・protobuf1・zstandard2・pyyaml1・pyarrow24の計94個あり、`ldd`で確認した外部ネイティブライブラリはnumpy同梱のopenblas・pyarrow自身のarrowライブラリ群と標準の`libstdc++`/`libgcc_s`のみで、不審な第三者ネイティブライブラリの同梱は無い(実測、生ログ817-950行目)。既知の脆弱性はOSV.dev実測で`pyspark`・`pyspark-client`・`pyspark-connect`・依存12件の全15件が版指定で0件(生ログ951-966行目)。以上、導入を止める所見は無い | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:230-491 docs/DATA/probes/20260923_tools_8_run33.log:376-401 docs/DATA/probes/20260923_tools_8_run33.log:688-966 docs/DATA/probes/20260923_tools_8_run33.log:2529-2533 |
+| 10 | `Apache Spark` / E1a 印(段4・実測): `pyspark/testing/utils.py`の`assertDataFrameEqual`のdocstring逐語「A util function to assert equality between `actual` and `expected` (DataFrames or lists of Rows)」、続けて「Supports Spark, Spark Connect, pandas, and pandas-on-Spark DataFrames」。パラメータ`rtol`の逐語「The relative tolerance, used in asserting approximate equality for float values in actual and expected」(許容誤差指定可=段5の(ア))。最小実行(知見14)で、pandas DataFrame同士のPASS(差異なし)・FAIL(`PySparkAssertionError`、エラークラス`DIFFERENT_PANDAS_DATAFRAME`で差分を自動報告)・`rtol=atol=1e-3`で微小差が許容されて通過することを実測した(JVM不要で実行できた=知見4)。対象(2つの出力)はpandas DataFrameでもよく、道具自身の枠組みに限らない(段4)。結果を保存して次回と自動比較する機能(段5の(イ))を言う逐語は、公開API(`pyspark.testing.rst`の`autosummary`は`assertDataFrameEqual`・`assertSchemaEqual`のみ)には無い。`GoldenFileTestMixin`(golden CSVファイルの保存・比較機能を持つ、段5の(イ)に近い)は存在するが、使用箇所が全て`pyspark/*/tests/`配下(候補自身の単体試験、L-516対象外)で公開APIの`pyspark.testing.rst`にも載っていないため対象に数えない。よって段4 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:525-542 docs/DATA/probes/20260923_tools_8_run33.log:543-643 docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 docs/DATA/probes/20260923_tools_8_run33.log:2643-2724 |
+| 11 | `Apache Spark` / E1b 印(段2・一次資料): `pyspark/sql/dataframe.py`の`DataFrame.groupBy`のdocstring逐語「Groups the :class:`DataFrame` by the specified columns so that aggregation can be performed on them」、`DataFrame.corr`のdocstring逐語「Calculates the correlation of two columns of a :class:`DataFrame` as a double value」(当方の損益集計・指標計算(pandasのgroupby/corrと同じ種類の出力)を出す別実装=E1bの述語)。呼ぶと計算結果を出すだけで、その値を当方の値と自動で比較・判定する機能はpyspark自身には無い(人が読んで比較するか、E1a=`assertDataFrameEqual`を別途組み合わせる必要がある)ため、29回目Apache Kafkaの窓集計・31回目Pandasのgroupby/corrと同じ当て方で段2とした。DataFrame操作の実行にはJVM(SparkSession)が要るため、この回は実測できず一次資料 | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2841-2879 |
+| 12 | `Apache Spark` / E2 印(段4・一次資料): `DataFrame.dropDuplicates`のdocstring逐語「Return a new :class:`DataFrame` with duplicate rows removed」(E2述語の「重複」の検出・除去)。`dropDuplicatesWithinWatermark`のdocstring逐語「This only works with streaming」(重複+時刻のずれの組合せ)。`sql/api/.../streaming/progress.scala`の`StreamingQueryProgress.numRowsDroppedByWatermark`のscaladoc逐語「Number of input rows dropped because their event time was older than the watermark」(E2述語の「時刻のずれ」「順序の乱れ」の自動検出・報告)。文書`apis-on-dataframes-and-datasets.md`逐語「which lets the engine automatically track the current event time in the data and attempt to clean up old state accordingly」(この後、閾値より遅いデータは自動で削除される、と続く)。閾値(例「10 minutes」)を利用者が`withWatermark(col, threshold)`で指定でき(段5の(ア)に近いが、閾値は「削除の基準」であり比較の許容誤差ではない点に注意)、対象は任意の外部データソース(ファイル・Kafka等)から得たDataFrame(段4)。結果を保存して次回と自動比較する機能(段5の(イ))は無い。DataFrame操作の実行にはJVMが要るため、この回は実測できず一次資料 | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1836-1917 docs/DATA/probes/20260923_tools_8_run33.log:1918-1977 docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 |
+| 13 | `Apache Spark` / E3a 未判別(500行超・案Bの記録): 見積もり(`cat8_step`経由、N全体24,454ファイル)でE3a=539行(252ファイル)となり500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 文書全347頁(`docs/`配下.md 249件+`python/docs/source/`配下.rst/.ipynb 98件)の道と題を1行ずつ印字して全部読了(生ログ2094-2445行目)。文書347頁の道+題にE3aの語(ルックアヘッド・look-ahead・survivorship・生存者・leak・リーク・未来・point-in-time・as-of・時点)を`grep -i -E`で当てると0頁が選ばれた(生ログ2446-2448行目)。ソースは`find`で得た全3565ディレクトリに同じ語を当てると0件が選ばれた(生ログ2449-2452行目)。個別に`ml-tuning.md`(CrossValidator/TrainValidationSplitの時系列専用の分割は無い)・`declarative-pipelines-programming-guide.md`(データ品質の「expectations」機能を探したが該当する逐語は無く、`pyspark/pipelines/`配下に`def expect`を名乗る関数も無い、生ログ2085-2090行目)を確認したが、その時点で知り得ない情報の使用を検出・報告する機能を言う逐語は見つからなかった。限界: 題と目次で頁を選ぶ方式のため、題に出ない機能記述(個別APIの引数の中の記述等)は読み落としうる | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2091-2093 docs/DATA/probes/20260923_tools_8_run33.log:2094-2445 docs/DATA/probes/20260923_tools_8_run33.log:2446-2452 docs/DATA/probes/20260923_tools_8_run33.log:2085-2090 |
+| 14 | `Apache Spark` / E3b 印(段4・一次資料): SQL構文`ASOF JOIN`(`docs/sql-ref-syntax-qry-select-asof-join.md`)の逐語「combines each row from the left relation with at most one row from the right relation. The match is the closest row on the right that satisfies a required MATCH_CONDITION comparison」。例に取引データ`trades`(取引時刻・銘柄・数量)と気配データ`quotes`(気配時刻・銘柄・気配値)を`MATCH_CONDITION (t.trade_time >= q.quote_time)`で結合するSQLがあり、コメント逐語「Attach the most recent (last-preceding) quote to each trade」「The GOOG trade has no matching quote and is dropped by INNER ASOF JOIN」(未来の気配を混入させない時点整合結合=E3bの述語の例)。既定で`spark.sql.join.asofJoin.enabled=false`(無効)。比較演算子(`>=`・`>`・`<=`・`<`)は選べるが、`merge_asof`の`tolerance`のような明示的な数値許容幅の指定は文書に見当たらない(段5の(ア)不成立)。加えて`DataFrame.randomSplit(weights, seed=None)`は、オーナー承認の問い(L-508・L-509、1回だけの固定の学習・評価の分け方をE3bに数える)にそのまま当たる。両機能とも対象は任意の外部テーブル・DataFrame(段4)。結合・分割の実行にはJVMが要るため、この回は実測できず一次資料 | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1630-1710 docs/DATA/probes/20260923_tools_8_run33.log:1711-1813 docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 |
+| 15 | `Apache Spark` / E4 印(段3・一次資料): `docs/streaming/structured-streaming-kafka-integration.md`逐語「Subscribe to 1 topic defaults to the earliest and latest offsets」、コード例`.option("startingOffsets", """{"topic1":{"0":23,"1":-2},...}""")`・`.option("endingOffsets", ...)`で、記録済みのKafkaトピックの特定の範囲をoffset順(Kafkaパーティション内では到着順と一致)に読み直し、以降の任意のDataFrame計算(戦略・特徴量計算)に流せる(設計票§3のE4述語=記録したデータを時刻順に再生して再実行する機能、に相当すると読める)。ただし時刻順に再生することを明言する逐語(28回目Apache Kafkaの知見にあった`replayable`に相当する語)はこの回では見つからず、再生の主体(offset管理・保持)はKafka側にあり、Sparkはそれを読む側である。28回目Kafkaと同じ保守的な当て方で段3とした(段4に上げられるか、Kafkaと同じ扱いで良いかは§判断に迷った点で問いに出す)。`configuration.md`・`monitoring.md`にある「replay」の用例は、いずれもSpark自身の実行イベントログ(History Server向け)の再生であり、記録した市場データの再生ではないため、この根拠には使っていない | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2017-2024 docs/DATA/probes/20260923_tools_8_run33.log:1985-2016 |
+| 16 | `Apache Spark` / E5 印(段2・一次資料): `docs/mllib-clustering.md`逐語「*seed*: a random seed (default: hash value of the class name)」(MLlib K-meansのシード)。`DataFrame.randomSplit(weights, seed=None)`のseedパラメータ(乱数の種、E5述語の例に一致)。呼ぶと結果(モデル・分割結果)を出すだけで、2回の実行結果が一致しているかを自動で比較・判定する機能はpyspark自身には無い(28回目Kafkaの`--random-seed`・31回目Pandasの`random_state`と同じ当て方)ため段2。モデル学習・分割の実行にはJVMが要るため、この回は実測できず一次資料 | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1978-1984 docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 |
+| 17 | `Apache Spark` / 最小実行(§2.5の種別・中核): 種別は委任文§5-4の「研究・検証系」と調査班が判断した(一次資料の根拠: 実際に実行した中核機能がE1aの検証ユーティリティであること、`python/docs/source/getting_started/testing_pyspark.ipynb`逐語「This guide is a reference for writing robust tests for PySpark code」)。§6-1がすべて完了したあと、`.../venvs/8-035/run/`に隔離venvを作り(`python3 -m venv`)、`check/`のwheel12件だけから導入(`pip install --no-index --find-links`、install所要秒=13.522、`pip list`が§6-1の結論と一致、`pip check`「No broken requirements found」を確認)。中核は起動文§2.5の指示どおり、pyspark_client同梱の`pyspark.testing.assertDataFrameEqual`・`assertSchemaEqual`に合成データ(想定損益集計 `{"symbol":["BTCJPY","ETHJPY"],"pnl":[...]}` のpandas DataFrame、StructType)を当て、PASS(一致)とFAIL(`DIFFERENT_PANDAS_DATAFRAME`・`DIFFERENT_SCHEMA`のエラークラスで自動報告)の両方、およびrtol/atolによる許容誤差吸収の実行(0.846秒)を確認した。SPARK_HOMEはダミーのディレクトリを指すよう設定した(`find_spark_home.py`逐語「If the environment has SPARK_HOME set trust it」。設定しないと`Could not find valid SPARK_HOME`で停止する、知見4)。この最小実行はpyspark_client自体のDataFrameエンジン(JVM)を使わない、pandas入力への比較機能に限られる(E1b・E2・E3b・E4・E5の実際のDataFrame操作は実行できていない=一次資料に留まる、知見11-16)。常駐プロセスは残っていない(`ps aux`でjavaプロセス0件を確認、生ログ2627-2630行目)。外部への通信は試みていない(`socket.connect`を監視し試行回数0を実測、生ログ2631-2637行目) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2534-2572 docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 docs/DATA/probes/20260923_tools_8_run33.log:2627-2637 docs/DATA/probes/20260923_tools_8_run33.log:2914-2974 docs/DATA/probes/20260923_tools_8_run33.log:2975-2991 |
+| 18 | `Apache Spark` / 到達できなかった経路・確認できた経路: `github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」(pandas回・Kafka回とは文言が異なる。実測、生ログ102-106行目)となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない)。`git clone`/`git ls-remote`(git smart-httpプロトコル)は到達できた(生ログ98-101、985行目)。`raw.githubusercontent.com`は到達できた(1MB超blobの取り直しに使用、生ログ1002-1008行目)。星・保守者数・コミット活動はGitHubの情報を再配布する`img.shields.io`の代替経路で取得した(星44k・保守者331・コミット活動4.7k/year、生ログ968-974行目)。総コミット数のバッジは提供されていないため未確認。この環境のJavaは`openjdk version "21.0.10"`(生ログ182-191行目)で、公式文書`docs/index.md`逐語「Spark runs on Java 17/21/25」の対応範囲内(生ログ2781-2785行目)だが、実際のSpark実行エンジンを使う配布物(200MB超)を取れなかったため、Javaでの実行そのものはこの回で確認できていない | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:102-106 docs/DATA/probes/20260923_tools_8_run33.log:968-974 docs/DATA/probes/20260923_tools_8_run33.log:1002-1008 docs/DATA/probes/20260923_tools_8_run33.log:182-191 docs/DATA/probes/20260923_tools_8_run33.log:2781-2785 |
+| 19 | `Apache Spark` / §4.0「宣伝詐欺の兆候」: `WebSearch`を語を変えて3回(`site:x.com apache spark scam giveaway crypto wallet`・`site:x.com "apache spark" airdrop token fake`・`site:x.com apache spark トレード 使ってみた`)打ち、`x_fetch.py`で公式アカウント(`@ApacheSpark`)のSpark 4.2リリース告知投稿と利用者(`@EcZachly`)のSpark習熟レベル解説投稿の本文2件を逐語取得して読んだ(生ログ2772-2775行目)。Apache Spark自体を騙る宣伝・詐欺は見当たらなかったが、無関係の暗号資産トークンがSparkを名乗る例(Flare NetworkのSpark、ティッカーFLR、XRP保有者向けエアドロップ)が実在する(名前の混同に注意、31回目のPandasにおけるKanpai Pandasトークンと同型) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 浅い
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 浅い
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 浅い
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 浅い
+35. `Apache Spark` (8-035) — この回(33回目)でE1a〜E6を判別した。E1a(印・段4)=`pyspark.testing.assertDataFrameEqual`(rtol/atol指定可、pandas DataFrameでも実行可、実測でPASS/FAIL/tolerance吸収を確認)、E1b(印・段2)=`groupBy`/`corr`(自動比較機能は無し、JVM必須のため一次資料)、E2(印・段4)=`dropDuplicates`/`dropDuplicatesWithinWatermark`/`numRowsDroppedByWatermark`(重複・時刻のずれの検出/報告、JVM必須のため一次資料)、E3b(印・段4)=`ASOF JOIN`(SQL構文、trades/quotesの時点整合結合の例あり)と`DataFrame.randomSplit(seed=)`(オーナー承認の型)、E4(印・段3)=Kafka連携の`startingOffsets`/`endingOffsets`によるoffset順の記録データ読み直し、E5(印・段2)=MLlibの`seed`・`randomSplit`の`seed`。E3a・E6は印を探し尽くしたが見積もりが500行を超えるため未判別のまま残す(E3a=539行/252ファイル、E6=321,422行/9,875ファイル、案Bの記録は知見に記載)。状態は`浅い`(E3a・E6が未判別のため深掘りにできない) — 状態: 浅い
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Kafka` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Prefect` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Apache Spark` | E1a | 印 | 4 | 一次資料 | `pyspark.testing.utils.assertDataFrameEqual`のdocstring逐語「A util function to assert equality between `actual` and `expected` (DataFrames or lists of Rows)」「Supports Spark, Spark Connect, pandas, and pandas-on-Spark DataFrames」。パラメータ`rtol`の逐語「The relative tolerance, used in asserting approximate equality for float values in actual and expected」(許容誤差指定可=段5の(ア))。最小実行(知見14)でpandas DataFrame同士のPASS/FAIL/tolerance吸収を実測。対象(2つの出力)はpandas DataFrameでもよく道具の外から持ち込める(段4)。結果を保存し次回と自動比較する機能(段5の(イ))を言う逐語は無い(`GoldenFileTestMixin`はpyspark.testing.rstのautosummaryに載らず、使用箇所は全て`pyspark/*/tests/`=候補自身の単体試験、L-516対象外)ため段4 | docs/DATA/probes/20260923_tools_8_run33.log:543-643 docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 |
+| `Apache Spark` | E1b | 印 | 2 | 一次資料 | `DataFrame.groupBy`のdocstring逐語「Groups the :class:`DataFrame` by the specified columns so that aggregation can be performed on them」、`DataFrame.corr`のdocstring逐語「Calculates the correlation of two columns of a :class:`DataFrame` as a double value」(当方の損益集計・指標計算と同じ種類の出力を出す別実装)。呼ぶと計算結果を出すだけで自動比較・判定機能は無い(pandasのgroupby/corrや29回目Kafkaの窓集計と同じ当て方)ため段2。JVM実行が要るためこの回は実測できず一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2841-2879 |
+| `Apache Spark` | E2 | 印 | 4 | 一次資料 | `DataFrame.dropDuplicates`のdocstring逐語「Return a new :class:`DataFrame` with duplicate rows removed」(重複の検出・除去)。`dropDuplicatesWithinWatermark`逐語「This only works with streaming」(重複+時刻のずれの組合せ)。`StreamingQueryProgress.numRowsDroppedByWatermark`のscaladoc逐語「Number of input rows dropped because their event time was older than the watermark」(時刻のずれ・順序の乱れの検出結果を自動で報告)。文書逐語「which lets the engine automatically track the current event time in the data and attempt to clean up old state accordingly」。閾値(削除の基準であり比較の許容誤差ではない点に注意)を利用者が指定でき、対象は任意の外部データソース(段4)。JVM実行が要るためこの回は実測できず一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 docs/DATA/probes/20260923_tools_8_run33.log:1836-1917 docs/DATA/probes/20260923_tools_8_run33.log:1969-1977 |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり(539行/252ファイル)が500行を超えるため未判別(案Bの記録)。文書347頁の道+題にE3aの語(ルックアヘッド・look-ahead・survivorship・生存者・leak・リーク・未来・point-in-time・as-of・時点)を当てて0頁が選ばれ、ソースの全3565ディレクトリに同じ語を当てて0件が選ばれた(生ログ2093-2098・2452-2461行目)。ml-tuning.md(CrossValidator)・declarative-pipelines-programming-guide.md(データ品質の期待値機能)を個別に確認したが該当する逐語は無かった | docs/DATA/probes/20260923_tools_8_run33.log:2087-2098 docs/DATA/probes/20260923_tools_8_run33.log:2448-2461 |
+| `Apache Spark` | E3b | 印 | 4 | 一次資料 | SQL構文`ASOF JOIN`の文書逐語「combines each row from the left relation with at most one row from the right relation. The match is the closest row on the right that satisfies a required」。例に`trades`(取引時刻・銘柄・数量)と`quotes`(気配時刻・銘柄・気配値)を`MATCH_CONDITION (t.trade_time >= q.quote_time)`で結合し「Attach the most recent (last-preceding) quote to each trade」(時点の揃った結合)。加えて`DataFrame.randomSplit(weights, seed=None)`はオーナー承認の問い(L-508・L-509、1回だけの固定の学習・評価の分け方をE3bに数える)にそのまま当たる。対象は任意の外部テーブル・DataFrame(段4)。tolerance相当の明示指定は無い(段5の(ア)不成立)。JVM実行が要るためこの回は実測できず一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1630-1710 docs/DATA/probes/20260923_tools_8_run33.log:1711-1813 docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 |
+| `Apache Spark` | E4 | 印 | 3 | 一次資料 | Kafka連携文書(`docs/streaming/structured-streaming-kafka-integration.md`)逐語「Subscribe to 1 topic defaults to the earliest and latest offsets」、`.option("startingOffsets", ...)`・`.option("endingOffsets", ...)`で記録済みデータの特定の範囲をoffset順(=到着順)に読み直し、以降の任意のDataFrame計算に流せる。ただし時刻順に再生することを明言する逐語はこの回では見つからず、再生の主体(offset管理・保持)はKafka側にありSparkはそれを読む側である。28回目Apache Kafkaと同じ保守的な当て方で段3とした(段4の可能性は判断に迷った点で問いに出す) | docs/DATA/probes/20260923_tools_8_run33.log:2077-2084 |
+| `Apache Spark` | E5 | 印 | 2 | 一次資料 | `mllib-clustering.md`逐語「*seed*: a random seed (default: hash value of the class name)」、`DataFrame.randomSplit(weights, seed=None)`のseedパラメータ(乱数の種)。呼ぶと結果を出すだけで2回の実行結果が一致しているかを自動で比較・判定する機能はpyspark自身には無い(28回目Kafkaの`--random-seed`・31回目Pandasの`random_state`と同じ当て方)ため段2。JVM実行が要るためこの回は実測できず一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1978-1984 docs/DATA/probes/20260923_tools_8_run33.log:2725-2771 |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 印を探し尽くしたが見つからず、見積もり(321,422行/9,875ファイル)が500行を超えるため未判別(案Bの記録)。文書347頁の道+題にE6の語を当てて4頁(pyspark.testing.rst=E1aで判定済・development/testing.rst=候補自身の単体試験でL-516対象外・pyspark.pandas/testing.rst=E1aと同種のassert_frame_equal系・testing_pyspark.ipynb=ユーザーのテスト作成ガイドでE1aの用法説明のみ)が選ばれ全部読んだが新規のE6印は無かった。ソースの全3565ディレクトリに語を当てると2,222件が選ばれたが、大半が`checkpointing`(checkの語幹一致)や候補自身の`*-test-image`/`*integration-tests`等の自己試験用ディレクトリで、全件読むには500行の枠を超える | docs/DATA/probes/20260923_tools_8_run33.log:2461-2530 |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(32回目の節) |  |
+
+### 当たりの判定
+
+この回はE3a・E6のいずれも見積もりの段階で500行を超えたため`cat8_search.py`(甲/乙とも)を1件も打っていない(E1a〜E2・E3b〜E5は`印`が見つかったため全件検索が不要だった、起動文§2.3)。よって当たりの行を判定するファイルの表は無い。
+
+### ツール1件ごとの表
+
+`Apache Spark`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(20回目のNinjaTrader・28回目のApache Kafka・31回目のPandasと同じ扱いで、文章表は新設せず候補の一覧の8-035の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Apache Spark` | 版 | 4.2.0(実測。`pip list`相当は導入していないため、PyPI最新版とarchive.apache.orgの一覧から確認) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:107-117 docs/DATA/probes/20260923_tools_8_run33.log:121-147 |
+| `Apache Spark` | 最終更新日 | 4.2.0リリースは公式Xアカウント投稿の日時「Thu Jul 16 15:28:46 +0000 2026」(実測)。archive.apache.orgの`spark-4.2.0.tgz`のLast-Modifiedヘッダは2026-07-11T16:36:34Z(実測)。GitHub `master`ブランチHEAD=f5498a9d(2026-09-26取得、継続的に更新される開発ブランチであり4.2.0リリース日そのものではない) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 docs/DATA/probes/20260923_tools_8_run33.log:968-974 docs/DATA/probes/20260923_tools_8_run33.log:98-101 |
+| `Apache Spark` | ライセンス | Apache License 2.0(PyPI info・archive.apache.orgのLICENSE表記、商用利用・再配布とも許容) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:107-117 |
+| `Apache Spark` | 言語と動作環境 | `docs/index.md`逐語「Spark runs on Java 17/21/25, Scala 2.13, Python 3.11+, and R 4.0+ (Deprecated)」。pyspark_clientの`Requires-Python`は`>=3.10`(PKG-INFO実測)。この環境のJavaは`openjdk version "21.0.10"`(実測)で対応範囲内だが、実際にJVM上でSparkを起動する実行はこの回では確認していない(配布物が200MB超のため、知見3) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2781-2785 docs/DATA/probes/20260923_tools_8_run33.log:182-191 docs/DATA/probes/20260923_tools_8_run33.log:230-260 |
+| `Apache Spark` | 対応取引所 | 該当なし(汎用の分散データ処理エンジンで取引所接続は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:8-33 |
+| `Apache Spark` | 星 | 44k(shields.io実測。github.com/api.github.comがこのセッションのプロキシで403のため代替経路) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:968-974 |
+| `Apache Spark` | コミット数 | 未確認(総数。試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず。参考値として年間コミット活動4.7k/year(shields.io実測)と、公式Xの4.2リリース告知の逐語「1,900+ commits from 260+ contributors」(4.1→4.2の期間の値、総数ではない)はある) | 未確認 | docs/DATA/probes/20260923_tools_8_run33.log:102-106 docs/DATA/probes/20260923_tools_8_run33.log:968-974 docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+| `Apache Spark` | 保守者数 | 331(shields.io contributorsバッジ実測)。公式Xの逐語では直近リリースで「260+ contributors」。author_email逐語「dev@spark.apache.org」で組織名は一貫 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:968-974 docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+| `Apache Spark` | 週DL数 | 11,204,077(pypistats.org公式API実測、`pyspark`パッケージの直近1週間。`pyspark-client`単体の週DL数は同APIで別途確認していない=未確認) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2776-2780 |
+| `Apache Spark` | 初回公開日 | `pyspark`(フル版)のPyPI初回公開は2017-07-12(実測)。この回で実際に使った`pyspark-client`配布物の初回公開は2025-05-23(実測、Spark Connectクライアントとして新設された時期) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:975-980 docs/DATA/probes/20260923_tools_8_run33.log:2776-2780 |
+| `Apache Spark` | 既知の脆弱性 | OSV.dev実測。`pyspark`・`pyspark-client`・`pyspark-connect`・依存12件(pandas・pyarrow・grpcio・grpcio-status・googleapis-common-protos・zstandard・numpy・PyYAML・protobuf・python-dateutil・typing_extensions・six)の版指定、全15件で0件 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:951-966 |
+| `Apache Spark` | 料金体系 | 無料(Apache-2.0のOSS本体は全機能無料)。Databricks社等がSparkを元にした商用マネージドサービスを別途提供している(知見2、apache/spark組織のリポジトリではないため候補の機能に数えず登録・購入もしない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+| `Apache Spark` | 無料枠の上限 | 該当なし(OSS本体に機能制限や無料枠の上限は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:107-117 |
+| `Apache Spark` | 課金開始条件 | 該当なし(OSS本体は課金なし。Databricks等の商用サービスは別配布物のため対象外、知見2) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+| `Apache Spark` | 隠れた依存 | pyspark_clientの直接依存8件(pandas>=2.2.0・pyarrow>=18.0.0・grpcio>=1.76.0・grpcio-status>=1.76.0・googleapis-common-protos>=1.71.0・zstandard>=0.25.0・numpy>=1.21・pyyaml>=3.11、PKG-INFO実測)。フルの`pyspark`(実際のDataFrameエンジン)を使うにはJVM(Java 17/21/25)が別途必須(隠れた依存というより明示された前提。`docs/index.md`逐語) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:230-260 docs/DATA/probes/20260923_tools_8_run33.log:2781-2785 |
+| `Apache Spark` | 登録の要否 | 不要(OSS。archive.apache.org・PyPIから登録なしに取得できることを実測で確認した) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:192-205 |
+| `Apache Spark` | 到達経路 | archive.apache.org・pypi.org・files.pythonhosted.org・pypistats.org・api.osv.dev・img.shields.io・spark.apache.org・raw.githubusercontent.comは到達。github.com・api.github.comのHTML/APIは403(git clone/git ls-remoteのsmart-http経路は到達) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:102-106 docs/DATA/probes/20260923_tools_8_run33.log:98-101 docs/DATA/probes/20260923_tools_8_run33.log:1002-1008 |
+| `Apache Spark` | 導入可否 | 部分的に可(実測、隔離venvへ`pyspark_client`本体はPYTHONPATH配置・依存12件は`pip install`で導入)。実際のSpark実行エンジン(フルpyspark・バイナリ配布)は200MB超のため未確認(知見3) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2534-2572 |
+| `Apache Spark` | install所要秒 | 13.522(依存12件のpip install全体の時間、生ログのtime_s=13.522)。pyspark_client自体はpipでインストールしていない(PYTHONPATH配置、ビルド不要) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2534-2550 |
+| `Apache Spark` | 依存数 | pyspark_clientの直接依存8件(PKG-INFO実測)。実際に導入したのは推移的依存を含め12件(pandas・pyarrow・grpcio・grpcio-status・googleapis-common-protos・zstandard・numpy・PyYAML・protobuf・python-dateutil・typing_extensions・six) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:644-687 docs/DATA/probes/20260923_tools_8_run33.log:2534-2550 |
+| `Apache Spark` | pip check | 問題なし(`No broken requirements found`、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2551-2572 |
+| `Apache Spark` | 最小実行の可否 | 部分的に可(実測)。`pyspark.testing.assertDataFrameEqual`/`assertSchemaEqual`はpandas/StructType入力でJVM無しに実行できた。実際のDataFrameエンジン(dropDuplicates・ASOF JOIN・watermark・MLlib等、E1b・E2・E3b・E4・E5の機能)はJVM必須で配布物が200MB超のため未確認 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 |
+| `Apache Spark` | 最小実行の中身 | 合成データ(想定損益集計のpandas DataFrame、StructType)で`assertDataFrameEqual`・`assertSchemaEqual`のPASS/FAIL/tolerance吸収を実行、いずれも文書どおりの挙動を確認(知見17参照) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 |
+| `Apache Spark` | 実行所要秒 | 0.846(中核の一括実行、生ログのtime_s=0.846)。当方データ投入・規模見積用実行0.780秒・外部送信確認0.549秒は別記 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2598-2626 docs/DATA/probes/20260923_tools_8_run33.log:2638-2642 docs/DATA/probes/20260923_tools_8_run33.log:2631-2637 |
+| `Apache Spark` | wheel展開 | pyspark_client自体はwheelなし(sdist、tar.gzから展開。`.py`344・`.so`0、pure Python)。依存12件のwheel展開は`.so`合計94個(numpy20・pandas45・grpcio1・protobuf1・zstandard2・pyyaml1・pyarrow24) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:230-260 docs/DATA/probes/20260923_tools_8_run33.log:747-950 |
+| `Apache Spark` | setup.py導入時実行 | pyspark_client・pyspark_connectのsetup.pyに外部取得・任意コード実行の兆候なし(`urlopen`・`subprocess`・`os.system`・`eval`・`curl`・`wget`は0件、`exec`は自身の`version.py`を読むだけ、実測)。実際にsetup.pyを実行してはいない(PYTHONPATH配置のみ、依存はwheelで導入したためビルドは発生していない) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:376-401 |
+| `Apache Spark` | 同梱バイナリ | pyspark_client自体は無し(0個の`.so`、pure Python)。依存側は`.so`94個あり、`ldd`で確認した外部ネイティブライブラリはnumpy同梱のopenblas・pyarrow自身のarrowライブラリ群と標準の`libstdc++`/`libgcc_s`のみ(実測)。フルpyspark配布物には`python/lib/py4j-0.10.9.9-src.zip`(py4jゲートウェイのソースzip)が同梱されるが、pyspark_clientのファイル一覧には含まれない | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:817-950 docs/DATA/probes/20260923_tools_8_run33.log:1129-1155 |
+| `Apache Spark` | 外部送信 | 見当たらない(実測。`socket.connect`を監視し、`assertDataFrameEqual`のimport+実行を通して接続試行0回を確認)。ただしSpark Connectクライアントは本来サーバーへのgRPC接続を行うのが前提機能であり、この回の最小実行(pandas入力のみ)では接続を試みる経路に到達していない | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2631-2637 |
+| `Apache Spark` | 自動発注機能 | 無し(汎用の分散データ処理エンジンで、読んだ範囲に取引所APIとの統合・発注・署名・資金移動の機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:8-33 |
+| `Apache Spark` | 宣伝詐欺の兆候 | 見当たらない(実測。WebSearchを語を変えて3回、公式・利用者投稿2件の本文をfxtwitter経由で逐語取得して読んだ。知見19)。無関係の暗号資産トークン「Spark(Flare Network、XFLR)」が名前を共有している点に注意 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2772-2775 |
+| `Apache Spark` | 当方データ投入 | 実測。tardis形式(`timestamp,symbol,side,price,amount`)を模した合成のcsv.gz(1000行)を`pd.read_csv(compression="gzip")`で読み込めた(0.0237秒)。pyspark自体のDataFrameリーダー(JVM必須)では未確認 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2638-2642 |
+| `Apache Spark` | 時刻の扱い | 実測。マイクロ秒精度のtimestampを`pd.to_datetime(unit="us", utc=True)`でdatetime64[us, UTC]に変換できた(pandas経由)。Spark自身の時刻の扱い(イベント時刻・watermark)はE2参照(一次資料) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2638-2642 |
+| `Apache Spark` | 再現性 | E5参照(印・段2、MLlibの`seed`・`DataFrame.randomSplit`の`seed`) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1978-1984 |
+| `Apache Spark` | 規模の見積 | 実測だがpandas経由に限定(pyspark自体の分散エンジンではない)。合成の200,000行のpandas DataFrame同士の`assertDataFrameEqual`が0.2427秒、プロセスのピークRSS 138,440KB(約135MB)。実際のSpark分散実行での456日分のティック件数に対する見積もりはこの回では確認しておらず、pandas経由の値からの外挿は行っていない(候補の中核機能=分散処理そのものを測れていないため) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:2638-2642 |
+| `Apache Spark` | 4軸1_道具 | 印。`ASOF JOIN`(SQL構文での時点整合結合)・Structured Streamingの`withWatermark`/`numRowsDroppedByWatermark`(イベント時刻ベースの遅延データ自動検出)・`pyspark.testing.assertDataFrameEqual`(rtol/atol指定付きDataFrame突合せ、pandas入力可)は、当方のバックテスト・検証系の道具立て(CLAUDE.md §2、`scripts/qa/`の参照実装等)に無い道具立て | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1630-1917 docs/DATA/probes/20260923_tools_8_run33.log:525-643 |
+| `Apache Spark` | 4軸2_情報 | なし。Apache Sparkは汎用の分散データ処理エンジンで、当方に無い新規の情報源(市場データ・ニュース・清算等)を提供する機能そのものは無い(読んだ範囲に見当たらない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:8-33 |
+| `Apache Spark` | 4軸3_視点 | 印。分散SQL/DataFrameエンジンによる大規模データの並列処理という視点、およびイベント時刻とwatermarkによる「遅延データをどこまで待って処理するか」を明示的に扱う視点は、当方のバックテストの足単位の逐次処理(`src/bot/backtest/engine.py`)や清算連鎖の模擬(`scripts/o3c_*`)とは異なる視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:1836-1917 |
+| `Apache Spark` | 4軸4_向上 | サーベイの外(18回目検収§6の3・19回目のMetaTrader・26回目のDebezium・28回目のApache Kafka・31回目のPandasと同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `Apache Spark` | 配布元の一致 | 一致(pyspark_clientのPyPI project_urls=`github.com/apache/spark/tree/master/python`、author_email「dev@spark.apache.org」が公式サイト`spark.apache.org`・GitHub組織`apache`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:230-260 |
+| `Apache Spark` | 難読化 | 見当たらない(pyspark_clientの展開結果は平文の`.py`のみ、実測)。フルpyspark配布物(200MB超)の`.so`・JAR類はこの回では未確認 | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:230-375 |
+| `Apache Spark` | 外部URL取得 | 見当たらない(pyspark_client・pyspark_connectのsetup.py・pyproject.tomlに外部URL取得の兆候は無い。実測) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:376-401 |
+| `Apache Spark` | 依存の一覧 | 実測(PKG-INFOのRequires-Dist全件・pip downloadで解決した12件、生ログに記載) | 実測 | docs/DATA/probes/20260923_tools_8_run33.log:230-260 docs/DATA/probes/20260923_tools_8_run33.log:644-687 |
+| `Apache Spark` | 保守者名の一貫性 | 一貫(PyPI author_email「dev@spark.apache.org」、GitHub組織`apache`、公式サイト`spark.apache.org`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run33.log:230-260 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数(総数)**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(GitHub access to this repository is not enabled for this session)のため到達できなかった(存在しないとは書かない)。年間コミット活動4.7k/year(shields.io実測)、直近リリースの「1,900+ commits」(公式X投稿)は参考値
+- **`pyspark-client`単体の週DL数**: pypistats.orgのAPIで確認したのは`pyspark`(フル版)の値のみで、`pyspark-client`単体は別途確認していない
+- **フルpyspark・バイナリ配布物での導入・最小実行**: 全て200MB以上(429MB〜555MB)のため、起動文§2.5「数百MB以上なら取らない」の目安に従い取得しなかった。測った大きさは知見3・生ログ148-157行目に記載
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19回目のMetaTrader・26回目のDebezium・28回目のApache Kafka・31回目のPandasの処置と同じ理由)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403「GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write access, call add_repo again with access:\"push\" to attach the repository with credentials.」となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(生ログ102-106行目。31回目Pandas・28回目Kafkaのときのメッセージ「This GitHub API path is not available」「GitHub access to this repository is not enabled for this session」とは字句が異なるが、いずれもこのセッションのプロキシがGitHubのAPI/Web直接アクセスを許可していないという同種の制限であり、GitHubというホスト自体の到達不能ではない)。`git clone`・`git ls-remote`(git smart-httpプロトコル)・`raw.githubusercontent.com`は同じホスト名の下でも到達できた(生ログ98-101、985、1002-1008行目)。星・保守者数・コミット活動はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ968-974行目)が、総コミット数のバッジは提供されておらず未確認のまま残る。フルpyspark・バイナリ配布物(200MB超)での導入・最小実行が必要なら、第2経路(オーナーPC、より大きいディスク・帯域が使える環境)で`pip install pyspark==4.2.0`または`spark-4.2.0-bin-hadoop3.tgz`を展開して`bin/pyspark`を起動するコマンドをそのまま使える可能性があるが、この回はそこまで試みていない。
+
+### 判断に迷った点と問い
+
+1. [値・段の問い] E4(Kafka連携の`startingOffsets`/`endingOffsets`によるoffset順の記録データ読み直し)を、28回目Apache Kafkaの`kafka-streams-application-reset`(段3)と同じ当て方で保守的に段3とした。しかしKafka自身のツールが対象を「Kafkaクラスタ自身のトポロジ」に限るのに対し、Sparkの場合は再生したデータに対する下流の計算が任意のDataFrame処理(道具の外の一般的な計算)であり、対象(記録データ+それを使う計算)を道具の外から持ち込める度合いがKafkaより広いように見える。段4に上げるべきか、それとも「記録データの保持・再生そのもの」を担うのはKafka側でありSparkはそれを読むだけという理由で段3に留めるべきか、リードの判断を仰ぐ
+2. [値・段の問い] E2の「対象」について、`withWatermark`の閾値(例「10 minutes」)を段5の(ア)「基準を指定できるか」に数えるべきか迷った。この閾値は「いつまで遅延データを待つか」という削除の基準であり、`assert_frame_equal`のrtol/atolのような比較の許容誤差とは性質が異なる。この回は(ア)を満たすとは判定せず段4に留めたが、この当て方が正しいか確認したい
+3. [値・段の問い] E3bの`ASOF JOIN`は比較演算子(`>=`等)を選べるが、`merge_asof`の`tolerance`のような明示的な数値の許容幅の指定は文書に見当たらなかった。`ON`/`USING`句で追加の時間幅条件(例: `t.trade_time - q.quote_time <= INTERVAL 5 SECONDS`)を組み合わせれば実質的に許容幅を作れるが、これを段5の(ア)の充足とみなすべきか、それとも構文自体に無いので不成立とみなすべきか、リードの判断を仰ぐ
+4. [それ以外の問い] `pyspark-connect`(PyPI、フルpysparkに`Requires-Dist: pyspark==4.2.0`で依存)は起動文§1の規則(「別の配布物は候補の機能に数えず、Nにも入れない」)には当たらない(pyspark-connectはapache/spark組織自身の公式配布物であり第三者ではない)ため候補の配布物の一覧には含めたが、200MB以内に収まらないため§6-1・最小実行の対象からは外した。この切り分けが正しいか確認したい
+5. [それ以外の問い] `spark-connect-go`・`spark-connect-rust`・`spark-connect-swift`はapache組織の公式リポジトリだが、apache/spark本体に同梱されず利用者が別に導入する言語バインディングである。31回目Pandasの`pandas-stubs`(pandas-dev組織の別リポジトリ、同梱されない)と同じ扱いでNに入れなかったが、これらはpandas-stubsと異なり「Spark Connectプロトコルの別言語クライアント」という候補の中核機能(Spark Connect)そのものの実装でもある。この切り分け(Nに入れない)が正しいか確認したい
+6. [それ以外の問い] E3a・E6は文書347頁・ソース全3565ディレクトリの名前による機械選定では0件・2,222件(いずれも大半が候補自身の試験用ディレクトリ)で、印を追加で見つけられなかった。次の回(区分8の他候補、あるいはApache Sparkの再訪)で、この規模のリポジトリに対しどこまで読み進めるべきか、リードの判断を仰ぐ
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run33.log`(誤検出は閉じずに残す)。
+
+**この回に新しく出た指摘(自分では閉じない。理由を書いてリードに渡す)**:
+- **K5(44059行目、Pandasの`個`に別の値。この回の追加分`0`・`94`)**: 誤検出と判断する。原因はこの回自身の文章にある: 知見9(45372行目付近)の「pyspark_client自体は`.so`0個(pure Python...)」「依存側は`.so`が...の計94個あり」という`Apache Spark`の文章の同じ行に、小文字の`pandas`(依存パッケージ名としての`pandas 3.0.6`)が含まれているため、K5の道具名マッチが大文字小文字を区別せず(`t.lower() in ln.lower()`)、`Apache Spark`の値`0`・`94`を`Pandas`の`個`の値としても誤って拾ってしまった。`0`はpyspark_client自身の`.so`の数、`94`は依存12件合計の`.so`の数で、いずれもPandasの値ではない
+- **K5(44533行目、Pandasの`同梱バイナリ`に別の値`['45','65']`)**: 32回目からの既存指摘(32回目の検収で誤検出と判定済み。この回で数を変えていない)
+- **K5(44731行目、Pandasの`秒`に別の値。この回の追加分`0.846`)**: 誤検出と判断する。原因は知見17(45387行目付近)の「pyspark_client同梱の...に合成データ...のpandas DataFrame...を当て...の実行(0.846秒)を確認した」という`Apache Spark`の文章に、比較対象として書いた小文字の`pandas DataFrame`が含まれるため、K5が`0.846`(Sparkの最小実行の所要秒)を`Pandas`の`秒`の値としても誤って拾った。`0.846`はApache Sparkの値で、Pandasの実測値ではない
+- **K5(19538行目、Pandasの`規模の見積`に別の値。この回の追加分`0.2427`)**: 誤検出と判断する。原因は§4.0の表`Apache Spark`/`規模の見積`の行(45803行目付近)の「合成の200,000行のpandas DataFrame同士の`assertDataFrameEqual`が0.2427秒」という文章に、小文字の`pandas DataFrame`が含まれるため、K5が`0.2427`(Apache Sparkの規模見積の実測値)を`Pandas`の`規模の見積`の値としても誤って拾った。`0.2427`はApache Sparkの値(pandas経由の測定であることは文章に明記)で、Pandasの実測値ではない
+- **K1・K2(19612・30448・40088・42474・42591・19909・34975・35047・36881・41254・41275・44051・44452・45119行目)**: すべて31回目以前の既存指摘(この回で内容を変えていない行)
+- **K13(34件)**: すべて11〜32回目までの既存指摘と同型(この回で新しく増えた行は無い)
+
+```
+K1 太字                  5 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  太字 ** の数が奇数 (7 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  太字 ** の数が奇数 (1 個)
+K2 括弧                  18 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  丸括弧 の数が合わない (272 対 265)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  丸括弧 の数が合わない (333 対 337)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44051  丸括弧 の数が合わない (146 対 144)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44452  丸括弧 の数が合わない (155 対 154)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45119  丸括弧 の数が合わない (45 対 44)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            4 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  Pandas の 個 に別の値: ['0', '129', '421', '45', '94']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44533  Pandas の 同梱バイナリ に別の値: ['45', '65']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44731  Pandas の 秒 に別の値: ['0.036', '0.154', '0.846', '1']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19538  Pandas の 規模の見積 に別の値: ['0.036', '0.057', '0.154', '0.2427', '0.257', '4.95']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             34 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44507  Pandas の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run31.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 61 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 61 件
+```
+
+`python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 33`:
+```
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 19 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+`python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run33.log`:
+```
+参考: docs/DATA/probes/20260923_tools_8_run33.log の最初の手 2026-09-26T19:09:05Z / 最後の手 2026-09-26T20:03:37Z / 手の数 97
+---- 合計 0 件
+```
+
+`git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l`:
+```
+0
+```
