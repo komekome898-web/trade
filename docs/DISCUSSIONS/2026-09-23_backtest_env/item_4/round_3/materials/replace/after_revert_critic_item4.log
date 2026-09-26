@@ -1,0 +1,65 @@
+........................................................................ [ 86%]
+.....FFF...                                                              [100%]
+=================================== FAILURES ===================================
+_ test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[trade] _
+
+kind = 'trade'
+
+    @pytest.mark.parametrize("kind", ["trade", "bar", "book"])
+    def test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once(kind):
+        inner = _Inner()
+        acc = DeferredMarginAccount(inner)
+        ev = _event(kind)
+        acc.observe(ev, T)                                   # the gate prices a held order on this observation
+        delivered = copy_carrier(ev)                         # what the core hands the account socket (engine.py:1222)
+        assert delivered is not ev and delivered == ev
+        answer = list(acc.on_market_event(delivered, T))
+>       assert inner.calls == 1, f"the MarginAccount saw the {kind} observation {inner.calls} times (stated: once)"
+E       AssertionError: the MarginAccount saw the trade observation 2 times (stated: once)
+E       assert 2 == 1
+E        +  where 2 = <test_i4r3_deferred_account_sees_each_event_once._Inner object at 0x7f02665e0890>.calls
+
+tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py:64: AssertionError
+_ test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[bar] _
+
+kind = 'bar'
+
+    @pytest.mark.parametrize("kind", ["trade", "bar", "book"])
+    def test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once(kind):
+        inner = _Inner()
+        acc = DeferredMarginAccount(inner)
+        ev = _event(kind)
+        acc.observe(ev, T)                                   # the gate prices a held order on this observation
+        delivered = copy_carrier(ev)                         # what the core hands the account socket (engine.py:1222)
+        assert delivered is not ev and delivered == ev
+        answer = list(acc.on_market_event(delivered, T))
+>       assert inner.calls == 1, f"the MarginAccount saw the {kind} observation {inner.calls} times (stated: once)"
+E       AssertionError: the MarginAccount saw the bar observation 2 times (stated: once)
+E       assert 2 == 1
+E        +  where 2 = <test_i4r3_deferred_account_sees_each_event_once._Inner object at 0x7f02665e0fd0>.calls
+
+tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py:64: AssertionError
+_ test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[book] _
+
+kind = 'book'
+
+    @pytest.mark.parametrize("kind", ["trade", "bar", "book"])
+    def test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once(kind):
+        inner = _Inner()
+        acc = DeferredMarginAccount(inner)
+        ev = _event(kind)
+        acc.observe(ev, T)                                   # the gate prices a held order on this observation
+        delivered = copy_carrier(ev)                         # what the core hands the account socket (engine.py:1222)
+        assert delivered is not ev and delivered == ev
+        answer = list(acc.on_market_event(delivered, T))
+>       assert inner.calls == 1, f"the MarginAccount saw the {kind} observation {inner.calls} times (stated: once)"
+E       AssertionError: the MarginAccount saw the book observation 2 times (stated: once)
+E       assert 2 == 1
+E        +  where 2 = <test_i4r3_deferred_account_sees_each_event_once._Inner object at 0x7f02665ed6d0>.calls
+
+tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py:64: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py::test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[trade]
+FAILED tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py::test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[bar]
+FAILED tests/bt/critic/item_4/test_i4r3_deferred_account_sees_each_event_once.py::test_the_core_delivers_a_copy_and_the_account_must_still_see_the_event_once[book]
+3 failed, 80 passed in 26.18s
