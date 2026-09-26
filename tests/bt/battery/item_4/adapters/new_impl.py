@@ -190,12 +190,35 @@ def _delivery(inp: dict) -> dict:
     return {"calls": calls}
 
 
+# The lead's values for the two points the rule text left open (SPEC.md §4 U1 / U2; finishing delegation, stage 2).
+REF_UNDECIDED = {"wick_short_history": "use_available", "same_side_exit_signal": "keep"}
+REF_KEYS = ("costs", "execution", "maker_timeout_bars", "allow_short", "swap_daily_pct", "stop_loss_pct", "take_profit_pct",
+            "max_hold_bars", "exit_execution", "maker_tp_pct", "entry_mask", "entry_sides", "stop_mode", "stop_window_bars")
+
+
 def _run_reference(inp: dict) -> dict:
-    """The same input through the independent reference of the stated rules (src/bot/bt/reference/bar_rules.py)."""
-    from bot.bt.reference.bar_rules import run_rules
-    out = _engine(run_rules, inp["bars"], inp["bar_seconds"], {int(s["bar"]): s["signal"] for s in inp["signals"]},
-                  inp["config"])
-    return {k: out[k] for k in (inp.get("want") or WANT_BARS)}
+    """The same input through the independent reference of the stated rules (src/bot/bt/reference/bar_sim.py,
+    entry point run_bars(bars, signals, options) = SPEC.md §7; written from DEFINITIONS.md only, not from the engine)."""
+    from bot.bt.reference.bar_sim import run_bars as ref_run_bars
+    cfg = inp["config"]
+    options = {k: cfg[k] for k in REF_KEYS}
+    options.update(capital=cfg["initial_equity"], order_amount=cfg["order_notional"],
+                   bar_seconds=int(inp["bar_seconds"]), undecided=dict(REF_UNDECIDED))
+    bars = [(b["open"], b["high"], b["low"], b["close"]) for b in inp["bars"]]
+    signals = {int(s["bar"]): s["signal"] for s in inp["signals"]}
+    run = _engine(ref_run_bars, bars, signals, options)
+    f = run.to_floats()
+    want = inp.get("want") or WANT_BARS
+    out = {}
+    if "fills" in want:
+        out["fills"] = [{"bar": int(x["bar"]), "side": x["side"], "price": float(x["price"]), "size": float(x["size"])}
+                        for x in f["fills"]]
+    for k in ("pnls", "equity"):
+        if k in want:
+            out[k] = [float(x) for x in f[k]]
+    if "missed_fills" in want:
+        out["missed_fills"] = int(f["missed_fills"])
+    return out  # no "metrics": the reference holds no metric formulas (SPEC.md §4); the scene judges it on the engine side
 
 
 def _split(inp: dict, model: str) -> dict:

@@ -310,11 +310,7 @@ def main():
                 table.append((n, name, MECH.get(n, ""), f"実装を呼んだ(項目 2 の構築物 <venvs>/item_2/drivers/i2drv70。対象 {t})", "再現できない",
                               "(a) SCAN の書き写しは機構の説明まで(C API の成行・指値・逆指値の型の名)。(b) 一次資料の複製(<venvs>/item_2/src/c70、"
                               "commit 5e62602c)と構築物・C の driver の source は、この役の最初の走行のあと他の役の容量の片付けで消えた"
-                              "(この役は消していない)。第 r3-1 回に構築し直しを試みた(2026-09-26 12:12 UTC、<venvs>/item_2/logs/"
-                              "i4_r3-1_scenekeeper_rebuild_70.log): clone が返した版は 0d76a099(2026-09-26 の版)で 5e62602c ではなく、CMake の構築は"
-                              "通ったが導入前の検査(道具サーベイ §6)を通していない版。driver の翻訳と実行に進む前に、この環境の許可の判定が"
-                              "[Code from External] として次の操作を止めた。容量では止めていない(df -m / の空き 2,046 MB → 構築後 1,935 MB)。"
-                              "**比べていない**(理由: 検査を通した版の道具を呼べていない。survey_results/opp_pineforge.tsv の理由)"))
+                              '(この役は消していない)。第 r3-1 回に構築し直しを試みた: 最初の clone は 5e62602c ではない版 0d76a099 を返し、場面係は導入前の検査をせずに CMake で構築した(§4 から外れた。その clone と構築物はリードの指示で消した。<venvs>/item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log・i4_r3-1_scenekeeper_refetch_70.log)。検査した版 5e62602c を git fetch で取り直した(構築していない)が、前の検査の記録を当てて構築・実行へ進む操作を、この環境の許可の判定が [Code from External] として止めた。容量では止めていない(df -m / の空き 2,046 MB → 1,943 MB)。**比べていない**(理由: 道具を 1 度も呼べていない。survey_results/opp_pineforge.tsv の理由)'))
                 continue
             if spec.get("venv"):
                 if got:
@@ -382,7 +378,7 @@ RUN_NOTES = {
     87: "git の 439232ae(項目 1 の venv item_1/c87。clone を取り直した: 同じ記録)", 12: "PyPI の pybotters(項目 0 の venv item_0/pybotters)",
     75: "PyPI の freqtrade(項目 3 の venv item_3/freqtrade)", 92: "git clone(項目 2 の venv item_2/c92)",
     53: "PyPI の rqalpha(この役の venv item_4/rqalpha、記録 i4_r1_scenekeeper_install_rqalpha.log)",
-    70: "項目 2 が CMake で構築し C の driver で走らせた(item_2/src/c70・drivers/i2drv70)。この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消えた。第 r3-1 回に構築し直しを試みた(記録 item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log): clone の版は 0d76a099 で 5e62602c ではなく、CMake の構築は通ったが導入前の検査を通していない版。driver の翻訳と実行の前に、この環境の許可の判定が [Code from External] として次の操作を止めた。容量では止めていない(空き 2,046 MB → 1,935 MB)。比べていない(検査を通した版の道具を呼べていない)",
+    70: '項目 2 が CMake で構築し C の driver で走らせた(item_2/src/c70・drivers/i2drv70)。この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消えた。第 r3-1 回: 最初の clone は版 0d76a099(5e62602c ではない)で、導入前の検査をせずに CMake で構築した(§4 から外れた。リードの指示で消した。記録 item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log)。検査した版 5e62602c を git fetch で取り直した(記録 item_2/logs/i4_r3-1_scenekeeper_refetch_70.log、構築していない)が、構築・実行へ進む操作をこの環境の許可の判定が [Code from External] として止めた。容量では止めていない(空き 2,046 MB → 1,943 MB)。比べていない(道具を呼べていない)',
     68: "PyPI の quanttrader 0.5.5(この役の venv item_4/quanttrader。np.str / DataFrame.append のため numpy 1.23.5・pandas 1.5.3・matplotlib 3.7.5 をこの venv に固定: 記録 i4_r1_scenekeeper_install_quanttrader.log)",
     10: "PyPI の fast-trade 2.1.0(この役の venv item_4/fast-trade)", 62: "PyPI の qf-lib 4.0.7(この役の venv item_4/qf-lib。宣言されていない PyJWT・oauthlib・requests-oauthlib を足した: 記録 i4_r1_scenekeeper_install_qf-lib.log)",
     18: "PyPI の zipline-reloaded 3.1.1(この役の venv item_4/zipline-reloaded、記録 i4_r1_scenekeeper_install_zipline-reloaded.log)",

@@ -29,6 +29,6 @@
 
 - **同じ足の中の順(i4-r2-02)**: R-O1 の ② から「範囲の逆指値」を外し、R-H3 を「始値の出来事(時間切れ・待っていた決済の合図)は範囲の逆指値より先。『先に見るのは逆指値だけ』は始値より後の範囲の中での順」に直した(仕上げの委任文 §1 i4-r2-02 の決め)。時間切れの足の逆指値を別の出来事(旧 `stop@time`)に分けていたのをやめ、範囲の逆指値 1 つにした。起きうる組は 16 組(`i4_scenes.order_pairs`)。i4-13-stop-on-time-bar・i4-13-stop-on-time-bar-maker の正解は始値の時間切れ 101。2 出力の場面 i4-13-stop-on-time-bar-two-models を足した(互換 98 = L-5、仕様 101)。
 - **maker の建ての経路(i4-r2-08)**: R-E4(マスク False の合図は指値を置かない・取り逃しに数えない)と R-M6(同じ向きの合図は指値を置き直さない)を足し(値は仕上げの委任文 §1 i4-r2-08 の決め)、互換の計算 L-6・L-7 を足した。場面 i4-14-maker-mask-false・i4-16-maker-mask-false-not-missed・i4-16-maker-mask-false-two-models・i4-16-same-side-keeps-limit・i4-16-same-side-two-models を足した。互換の答え(L-6・L-7)は当方の現状を実際に呼んで一致を確かめた(試験 test_legacy_answers_of_two_model_scenes_are_the_existing_engine)。
-- 当方の現状が「不一致」になる場面は 20(r2-1 の 13 + i4-r2-02 の 3 + i4-r2-08 の 4)。試験 test_stated_rules_and_existing_engine_agree_except_the_listed_deviations がこの 20 以外の一致を毎回確かめる。
-- 足した・直した 8 場面は、動かせた道具・再現の全部(一覧は `run_battery.py --list-targets`)に通した(場面集の規則 4)。PineForge(70)は比べていない(理由は opponents/CONSIDERED.md の 70 の行と survey_results/opp_pineforge.tsv の理由。構築し直しを試みたが、導入前の検査を通していない版しか取れず、driver の翻訳と実行に進む前にこの環境の許可の判定が止めた)。
+- 当方の現状が「不一致」になる場面は 22(r2-1 の 13 + i4-r2-02 の 3 + i4-r2-08 の 4 + リードの答え (2) の 2 = R-E4 の補いと L-8)。試験 test_stated_rules_and_existing_engine_agree_except_the_listed_deviations がこの 22 以外の一致を毎回確かめる。
+- 足した・直した 10 場面(リードの答え (2) の 2 場面を含む)は、動かせた道具・再現の全部(一覧は `run_battery.py --list-targets`)に通した(場面集の規則 4)。PineForge(70)は比べていない(理由は opponents/CONSIDERED.md の 70 の行と survey_results/opp_pineforge.tsv の理由。最初に取れた版 0d76a099 は検査していない版で、リードの指示で消した。検査した版 5e62602c を取り直したが、構築・実行へ進む操作をこの環境の許可の判定が止めた)。
 - 根本原因・主張の表・提出前の吟味は ROOTCAUSE_r3-1.md。

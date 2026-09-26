@@ -46,7 +46,7 @@ class PineForgeAdapter(Base):
     METRICS = "12 の指標を出す口を探したが無い(report は取引の一覧)"
     SPLIT = "行の割合で分ける口を探したが無い"
     PIPELINE = "入力は足(pf_bar_t)の列だけで、約定・気配・板・ファイルの宣言・目的つきの書き出し・ダッシュボードの口が無い"
-    NOT_BUILT = ("比べていない(理由: 項目 2 の driver と道具の clone が他の役の容量の片付けで scratchpad から消えた(この役は消していない)。第 r3-1 回に構築し直しを試みた(2026-09-26 12:12 UTC、記録 venvs/item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log): git clone --depth 1 が返した版は 5e62602c ではなく 0d76a099(2026-09-26 の版)で、CMake の構築は通ったが、この版は導入前の検査(道具サーベイ §6)を通していない。driver(venvs/item_2/drivers/i2drv70.c は書き直した)の翻訳と実行に進む前に、この環境の許可の判定が[Code from External] として次の操作を止めたので、道具を呼んでいない。容量では止めていない(df -m / の空き: 開始 2,046 MB・構築後 1,935 MB))")
+    NOT_BUILT = ('比べていない(理由: 項目 2 の driver と道具の clone が他の役の容量の片付けで scratchpad から消えた(この役は消していない)。第 r3-1 回に構築し直しを試みた: 最初の git clone --depth 1 は 5e62602c ではない版 0d76a099 を返し、場面係はそれを導入前の検査をせずにCMake で構築した(親の委任文 §4 から外れた。その版の clone と構築物はリードの指示で消した、記録 venvs/item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log・i4_r3-1_scenekeeper_refetch_70.log)。次に検査した版 5e62602c を git fetch --depth 1 で取り直した(構築していない)が、前の検査の記録を当てて構築・実行へ進む操作を、この環境の許可の判定が [Code from External] として止めた。道具は 1 度も呼んでいない。容量では止めていない(df -m / の空き: 開始 2,046 MB・取り直し後 1,943 MB))')
     DELIVERY = "戦略に届く足を記録するには Pine の戦略を C の driver から呼ぶ必要がある。" + NOT_BUILT
 
     def run(self, inp):

@@ -123,6 +123,23 @@ HEAD 658582d と同じ)を、あとから同じ形に書き写したもの(`entr
 - 検討表の 70 の行・RUNNABILITY.tsv の 70 の行・survey_results/opp_pineforge.tsv の全 73 行の理由に「比べていない(理由)」を書いた。
 - 残した物: 検査を通していない版の clone と構築物が `<venvs>/item_2/src/c70` にある(消していない)。driver の source は `<venvs>/item_2/drivers/i2drv70.c`。
 
+### 6-4. リードの答えのあと(12:35 UTC〜)
+
+- **(1)** `stop@time` をまとめたこと・2 出力の場面を足したことはリードが認めた。
+- **(2)** 待っている建ての指値に、マスク False の反対向きの合図が来たとき = 古い指値を残す(リードの決め)。規則の文 R-E4 に補いを足し
+  (`gen_definitions.py` の R-E4 の 3 行目)、互換の計算 **L-8**(旧エンジンは置き換えて取り逃しに 1 を足し、置き換えた指値が通過しても建てない)を
+  足した。場面 i4-16-mask-false-opposite-keeps-limit(値)・i4-16-mask-false-opposite-two-models(2 出力)を足した。L-8 の互換の答えは旧エンジンを
+  呼んで確かめた(`test_legacy_answers_of_two_model_scenes_are_the_existing_engine` が通る)。建ての経路の導出 `_maker_entries` を売りの建てと
+  R-M3・R-E4 の重なりに広げた(`test_maker_entry_scenes_follow_the_rule_text` の対象 7 場面)。2 場面を全 42 対象に通した(`<M>/run_new_scenes2.sh`、
+  12:37:54〜12:38:14 UTC、全部 rc=0)。
+- **(3)** PineForge: 検査していない版 0d76a099 の clone と構築物を消し、検査した版 5e62602c を `git fetch --depth 1 origin
+  5e62602cb1ebaff9ec16d7dfbbfaaaff08603764` で取り直した(12:36:06 UTC、HEAD = 5e62602cb1ebaff9ec16d7dfbbfaaaff08603764、`df -m /` の空き 1,881 → 1,943 MB、
+  記録 `<M>/pineforge/refetch_70.log`)。次の手(前の検査の記録 = 項目 0 の導入記録を読み、構築・実行へ進む)を、この環境の許可の判定が
+  `[Code from External]` としてもう一度止めた。許可の判定は「同じ結果を別の手で追わない」と言うので、ここで止めた。**PineForge は比べていない**
+  (理由は検討表・RUNNABILITY・survey_results の全 75 行)。取り直した 5e62602c の clone(構築していない)は `<venvs>/item_2/src/c70` に残っている。
+  **自己申告(§4 から外れたこと)**: 最初の版 0d76a099 を、導入前の検査をせずに CMake で構築した(FetchContent の取得を含む)。その版は実行していない。
+- **(4)** 記録は両方の置き場所に置いた。
+
 ## リードに聞くこと
 
 1. 出来事 `stop@time` を消して範囲の逆指値 1 つにまとめたこと、と、2 出力の場面 i4-13-stop-on-time-bar-two-models を足したことは、起こし文と

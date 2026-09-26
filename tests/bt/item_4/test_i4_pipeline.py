@@ -1,15 +1,14 @@
-"""The integrated run (bot.bt.pipeline): declared files of every asset -> the
-core per instrument -> run record, exports, the dashboard's run view, in one
-call executed twice.
+"""The integrated run (bot.bt.pipeline): declared data of every asset -> the core per instrument with the item-2
+execution models in its sockets (SimVenue, LatencyModel, ScheduleCostModel, MarginAccount; finishing stage
+i4-r2-06) -> run record, exports, the dashboard's run view, in one call executed twice, both sides of the fill range.
 
-The refusal grid is the declaration's own space: purpose {動作確認, 研究,
-None, "other"} x origin {real, synthetic} x strategy {schedule,
-seeded_random, price_rule} x pre-registration {none, hash} = 48 cells; the
-expected accept / refuse of each cell is written from the rule text
-(委任文 §4) in `expected_accept`, not from the code. Not in the grid:
-several origins mixed in one run (any "real" dataset makes the run real --
-test_one_real_dataset_makes_the_run_real), a pre-registration FILE (the
-hash form is gridded; the file form is test_prereg_file_gives_its_sha256).
+The refusal grid is the declaration's own space: purpose {動作確認, 研究, None, "other"} x source {file (real market
+data by the rule), seeded generator (synthetic)} x strategy {schedule, seeded_random, price_rule} x pre-registration
+{none, file} = 48 cells; the expected accept / refuse of each cell is written from the rule text (委任文 §4 +
+finishing delegation i4-r2-03 / i4-r2-05) in `expected_accept`, not from the code. The pre-registration as a bare
+hash, the re-encodings of market files and the time-exit / maker grids are their own files (test_i4_r3_*).
+Not in the grid: several sources mixed in one run (any file dataset makes the run real --
+test_one_file_dataset_makes_the_run_real).
 """
 from __future__ import annotations
 
@@ -22,12 +21,18 @@ import tempfile
 import pytest
 
 import i4_scenes as S
+import i4w_decl as D
 from bot.bt.pipeline import PipelineError, plan_pipeline, run_pipeline
 from bot.bt.report.exports import read_export
 from bot.monitoring.backtest_view import TABS, WARNING, run_view
 
 T0 = S.T0
 NS = S.NS
+KIND = {"bf_trades": "trade", "binance": "trade", "fx_ticks": "quote", "jpx_1m": "bar", "fx_1m": "bar"}
+INSTRUMENTS = [D.instrument(i["name"], i["price"], KIND[i["price"]], i["with"]) for i in S.INSTRUMENTS]
+PREREG = "prereg.md"
+GEN = {"name": "random_walk", "seed": 5, "params": {"kind": "trade", "start_ns": T0 - 60 * NS, "step_ns": 10 * NS,
+                                                    "n": 800, "price0": 100.0, "step_pct": 0.1, "qty": 1.0}}
 
 
 def _root():
@@ -38,13 +43,21 @@ def _root():
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "wb") as fh:
             fh.write(S.file_bytes(f))
+    with open(os.path.join(root, PREREG), "wb") as fh:
+        fh.write(b"# prereg\n")
     return root, files, ds
 
 
 def _args(root, ds, **over):
-    a = dict(root=root, datasets=copy.deepcopy(ds), instruments=copy.deepcopy(S.INSTRUMENTS),
-             strategy={"kind": "schedule", "orders": copy.deepcopy(S.SCHEDULE)}, fill=dict(S.FILL_RULE),
-             costs=dict(S.ZERO), purpose="動作確認")
+    a = dict(root=root, datasets=copy.deepcopy(ds), instruments=copy.deepcopy(INSTRUMENTS),
+             strategy={"kind": "schedule", "orders": copy.deepcopy(S.SCHEDULE)}, purpose="動作確認", **D.kw())
+    a.update(over)
+    return a
+
+
+def _gen_args(root, **over):
+    a = dict(root=root, datasets=[{"name": "g", "generator": GEN}], instruments=[D.instrument("g", "g", "trade")],
+             strategy={"kind": "schedule", "orders": copy.deepcopy(S.SCHEDULE)}, purpose="動作確認", **D.kw())
     a.update(over)
     return a
 
@@ -52,58 +65,61 @@ def _args(root, ds, **over):
 STRATS = {"schedule": {"kind": "schedule", "orders": S.SCHEDULE},
           "seeded_random": {"kind": "seeded_random", "seed": 7, "times": [T0, T0 + 300 * NS], "qty": 1.0},
           "price_rule": {"kind": "price_rule", "buy_below": 1e9, "sell_above": 1.0, "qty": 1.0}}
-HASH = "ab" * 32
 
 
-def expected_accept(purpose, origin, strat, prereg) -> bool:
-    """委任文 §4, read as rules: a purpose is required and is 動作確認 or 研究; 研究 needs the pre-registration's
-    hash; on real data a 動作確認 run takes only time-only procedures or seeded random."""
+def expected_accept(purpose, source, strat, prereg) -> bool:
+    """委任文 §4 + i4-r2-03 / 05, read as rules: a purpose is required and is 動作確認 or 研究; 研究 needs the
+    pre-registration FILE; a file dataset is real, and on real data a 動作確認 run takes only time-only procedures
+    or seeded random."""
     if purpose not in ("動作確認", "研究"):
         return False
     if purpose == "研究" and prereg is None:
         return False
-    if origin == "real" and purpose == "動作確認" and strat == "price_rule":
+    if source == "file" and purpose == "動作確認" and strat == "price_rule":
         return False
     return True
 
 
-GRID = list(itertools.product(("動作確認", "研究", None, "other"), ("real", "synthetic"), tuple(STRATS), (None, HASH)))
+GRID = list(itertools.product(["動作確認", "研究", None, "other"], ["file", "generator"], list(STRATS), [None, PREREG]))
 
 
 def test_refusal_grid_matches_the_rule_text():
-    assert len(GRID) == 48
     root, _, ds = _root()
-    for purpose, origin, strat, prereg in GRID:
-        d2 = [dict(d, origin=origin) for d in ds]
+    assert len(GRID) == 48
+    for purpose, source, strat, prereg in GRID:
+        a = _args(root, ds) if source == "file" else _gen_args(root)
+        a.update(purpose=purpose, strategy=STRATS[strat], prereg=prereg)
         try:
-            plan_pipeline(**_args(root, d2, purpose=purpose, strategy=STRATS[strat], prereg_sha256=prereg))
+            plan_pipeline(**a)
             got = True
         except PipelineError:
             got = False
-        assert got == expected_accept(purpose, origin, strat, prereg), (purpose, origin, strat, prereg)
+        assert got == expected_accept(purpose, source, strat, prereg), (purpose, source, strat, prereg)
 
 
-def test_one_real_dataset_makes_the_run_real():
+def test_one_file_dataset_makes_the_run_real():
     root, _, ds = _root()
-    d2 = [dict(d, origin="synthetic") for d in ds]
-    d2[3]["origin"] = "real"
+    jpx = [d for d in ds if d["name"] == "jpx_1m"]
+    a = _args(root, jpx + [{"name": "g", "generator": GEN}], strategy=STRATS["price_rule"],
+              instruments=[D.instrument("g", "g", "trade"), D.instrument("jpx", "jpx_1m", "bar")])
     with pytest.raises(PipelineError, match="time-only"):
-        plan_pipeline(**_args(root, d2, strategy=STRATS["price_rule"]))
+        plan_pipeline(**a)
 
 
-def test_origin_has_no_default():
+def test_origin_has_no_default_and_a_file_cannot_be_synthetic():
     root, _, ds = _root()
     d2 = copy.deepcopy(ds)
     d2[0].pop("origin")
     with pytest.raises(PipelineError, match="origin"):
         plan_pipeline(**_args(root, d2))
+    d3 = [dict(d, origin="synthetic") for d in ds]
+    with pytest.raises(PipelineError, match="generator"):
+        plan_pipeline(**_args(root, d3))
 
 
 def test_prereg_file_gives_its_sha256():
     root, _, ds = _root()
-    with open(os.path.join(root, "prereg.md"), "wb") as fh:
-        fh.write(b"# prereg\n")
-    plan = plan_pipeline(**_args(root, ds, purpose="研究", prereg="prereg.md"))
+    plan = plan_pipeline(**_args(root, ds, purpose="研究", prereg=PREREG))
     assert plan.identity["prereg_sha256"] == hashlib.sha256(b"# prereg\n").hexdigest()
 
 
@@ -119,7 +135,10 @@ def test_one_run_reaches_record_exports_and_dashboard_and_is_kept_once():
     assert set(res.exports) == {"metrics.json", "trades.json", "fills.json", "orders.json", "data_quality.json"}
     assert set(res.exports.values()) == {"動作確認"}
     m = read_export(os.path.join(res.run_dir, "metrics.json"))
-    assert {k: v["num_trades"] for k, v in m["data"]["by_instrument"].items()} == {i["name"]: 2 for i in S.INSTRUMENTS}
+    # the counts follow the item-2 venue model (book walk / last trade / next bar open), consistent with the fills
+    assert {k: v["num_trades"] for k, v in m["data"]["by_instrument"].items()} == \
+        {n: len(r.trades) for n, r in res.instruments.items()}
+    assert all(len(r.fills) >= 1 for r in res.instruments.values())
     view = run_view(runs, res.run_id)
     assert [t["label"] for t in view["tabs"]] == list(TABS)
     assert all(WARNING in t["text"] for t in view["tabs"])
@@ -127,14 +146,44 @@ def test_one_run_reaches_record_exports_and_dashboard_and_is_kept_once():
                                for d, f in zip(ds, files)}
 
 
-def test_a_research_run_on_synthetic_data_has_no_smoke_banner():
+def test_the_sockets_are_the_item_2_models_and_both_sides_are_recorded():
+    """i4-r2-06: the core's four sockets hold SimVenue / LatencyModel / ScheduleCostModel / MarginAccount (the core
+    records each socket's class), both sides of the fill range run and reach the record and the exports, the latency
+    distributions and their draws and the accounts' final state are recorded; the pipeline's own models are gone."""
+    import bot.bt.pipeline as P
+    for gone in ("FirstObservedFill", "_Latency", "_Fee", "NullAccount", "market_evidence"):
+        assert not hasattr(P, gone), gone
     root, _, ds = _root()
+    res = run_pipeline(plan_pipeline(**_args(root, ds)), runs_dir=tempfile.mkdtemp())
+    models = res.record["components"]["models"]
+    assert set(models) == {"optimistic", "pessimistic"}
+    for side in models:
+        for name, m in models[side].items():
+            assert m["fill_model"].endswith("SimVenue") and m["latency_model"].endswith("LatencyModel"), (side, name, m)
+            assert m["cost_model"].endswith("ScheduleCostModel") and m["account"].endswith("MarginAccount"), m
+    assert res.record["components"]["fill_range"] == D.FILL
+    drawn = res.record["components"]["latency"]["drawn"]
+    assert all(drawn[s][n]["draws"]["order"] == 4 for s in drawn for n in drawn[s])
+    acc = res.record["components"]["account"]["pessimistic"]["bf"]
+    signed = sum(f["qty"] if f["side"] == "buy" else -f["qty"] for f in res.range["pessimistic"]["bf"].fills)
+    assert acc["currency"] == "JPY" and acc["position"] == pytest.approx(signed) and acc["leverage"] == 1.0
+    m = read_export(os.path.join(res.run_dir, "metrics.json"))["data"]
+    assert set(m["range"]) == {"optimistic", "pessimistic"}
+    fills = read_export(os.path.join(res.run_dir, "fills.json"))["data"]
+    assert {f["range"] for f in fills} == {"optimistic", "pessimistic"}
+    assert set(res.range) == {"optimistic", "pessimistic"}
+
+
+def test_a_research_run_on_generated_data_has_no_smoke_banner_and_records_the_generator():
+    root, _, _ = _root()
     runs = tempfile.mkdtemp(prefix="i4w_runs_")
-    d2 = [dict(d, origin="synthetic") for d in ds]
-    res = run_pipeline(plan_pipeline(**_args(root, d2, purpose="研究", prereg_sha256=HASH,
-                                             strategy=STRATS["price_rule"])), runs_dir=runs)
+    res = run_pipeline(plan_pipeline(**_gen_args(root, purpose="研究", prereg=PREREG, strategy=STRATS["price_rule"])),
+                       runs_dir=runs)
     view = run_view(runs, res.run_id)
     assert view["warning"] is None and not any(WARNING in t["text"] for t in view["tabs"])
+    g = res.record["generators"]["g"]
+    assert g["name"] == "random_walk" and g["seed"] == 5 and g["version"]
+    assert res.record["data"][0]["origin"] == "synthetic"
 
 
 def test_seeded_random_is_reproducible_and_the_seed_matters():
@@ -151,48 +200,48 @@ def test_seeded_random_is_reproducible_and_the_seed_matters():
     assert len(set(sides.values())) > 1
 
 
-def test_latency_moves_the_fill_to_a_later_observation():
+def test_order_latency_moves_the_fill_and_a_seeded_distribution_repeats():
     root, _, ds = _root()
     base = run_pipeline(plan_pipeline(**_args(root, ds)), runs_dir=tempfile.mkdtemp())
-    slow = run_pipeline(plan_pipeline(**_args(root, ds, fill=dict(S.FILL_RULE, latency_ns=250_000_000))),
-                        runs_dir=tempfile.mkdtemp())
-    # bf's first trade after 00:00 is at +0.2 s: with 0.25 s of order latency it is missed, the next is at +120 s
-    assert base.instruments["bf"].fills[0]["t_ns"] == T0 + 200_000_000
-    assert slow.instruments["bf"].fills[0]["t_ns"] == T0 + 120 * NS
+    lat = dict(D.LATENCY0, order={"kind": "constant", "ns": 250_000_000})
+    slow = run_pipeline(plan_pipeline(**_args(root, ds, latency=lat)), runs_dir=tempfile.mkdtemp())
+    assert slow.instruments["fx_tick"].fills[0]["t_ns"] - base.instruments["fx_tick"].fills[0]["t_ns"] >= 250_000_000
+    uni = dict(D.LATENCY0, order={"kind": "seeded_uniform", "low_ns": 0, "high_ns": 10**9, "seed": 4})
+    a = run_pipeline(plan_pipeline(**_args(root, ds, latency=uni)), runs_dir=tempfile.mkdtemp())
+    b = run_pipeline(plan_pipeline(**_args(root, ds, latency=uni)), runs_dir=tempfile.mkdtemp())
+    assert a.record["components"]["latency"] == b.record["components"]["latency"]
+    assert a.record["components"]["latency"]["drawn"]["pessimistic"]["bf"]["total_ns"]["order"] > 0
 
 
-def test_costs_need_a_source_and_a_quote_carries_its_spread():
+def test_costs_need_a_source_and_the_rate_is_charged():
     root, _, ds = _root()
     with pytest.raises(PipelineError, match="source"):
-        plan_pipeline(**_args(root, ds, costs=dict(S.ZERO, taker_fee_pct=0.1)))
-    with pytest.raises(PipelineError, match="spread"):
-        plan_pipeline(**_args(root, ds, costs=dict(S.ZERO, spread_pct=0.1, source="test")))
-    ins = [i for i in S.INSTRUMENTS if i["name"] != "fx_tick"]
-    d2 = [d for d in ds if d["name"] != "fx_ticks"]
-    res = run_pipeline(plan_pipeline(**_args(root, d2, instruments=ins,
-                                             costs=dict(S.ZERO, taker_fee_pct=0.1, slippage_pct=0.01, source="test"))),
-                       runs_dir=tempfile.mkdtemp())
+        plan_pipeline(**_args(root, ds, costs={"maker_rate": 0.0, "taker_rate": 0.001, "spread": 0.0, "source": " "}))
+    with pytest.raises(PipelineError):
+        plan_pipeline(**_args(root, ds, costs={"taker_fee_pct": 0.1, "maker_fee_pct": 0.0, "slippage_pct": 0.0,
+                                               "spread_pct": 0.0}))  # the round-2 form is not the declaration
+    res = run_pipeline(plan_pipeline(**_args(root, ds, costs={"maker_rate": 0.0, "taker_rate": 0.001, "spread": 0.2,
+                                                              "source": "test"})), runs_dir=tempfile.mkdtemp())
     f = res.instruments["binance"].fills[0]
-    assert f["side"] == "buy" and f["px"] == 96000.1 * (1 + 0.01 / 100)
-    assert f["fee"] == abs(f["px"] * f["qty"]) * 0.1 / 100
+    assert f["liquidity"] == "taker"
+    assert f["fee"] == pytest.approx(abs(f["px"] * f["qty"]) * 0.001)
 
 
 def test_a_riding_dataset_of_the_price_type_is_refused():
     root, _, ds = _root()
-    ins = [{"name": "bf", "price": "bf_trades", "with": ["binance"]}]
+    ins = [D.instrument("bf", "bf_trades", "trade", ["binance"])]
     with pytest.raises(PipelineError, match="same event type"):
         plan_pipeline(**_args(root, ds, instruments=ins))
 
 
-def test_the_fill_rule_is_one_and_stated():
+def test_the_fill_range_needs_both_sides_and_the_old_form_is_refused():
     root, _, ds = _root()
-    for k, v in (("bar", "close"), ("price", "last"), ("quote", {"buy": "bid", "sell": "ask"})):
+    for bad in ({"optimistic": {"tier": 3}}, {"pessimistic": {"tier": 1}},
+                {"optimistic": {"tier": 9}, "pessimistic": {"tier": 1}},
+                {"price": "first_observed_at_or_after", "trade": "px", "quote": {"buy": "ask", "sell": "bid"},
+                 "bar": "open", "latency_ns": 0}):
         with pytest.raises(PipelineError):
-            plan_pipeline(**_args(root, ds, fill=dict(S.FILL_RULE, **{k: v})))
-    bad = dict(S.FILL_RULE)
-    bad.pop("latency_ns")
-    with pytest.raises(PipelineError):
-        plan_pipeline(**_args(root, ds, fill=bad))
+            plan_pipeline(**_args(root, ds, fill=bad))
 
 
 def test_the_run_id_changes_with_every_declared_input_and_not_with_the_runs_dir():
@@ -200,11 +249,15 @@ def test_the_run_id_changes_with_every_declared_input_and_not_with_the_runs_dir(
     base = plan_pipeline(**_args(root, ds)).run_id
     assert plan_pipeline(**_args(root, ds)).run_id == base
     changed = [
-        _args(root, ds, fill=dict(S.FILL_RULE, latency_ns=1)),
-        _args(root, ds, costs=dict(S.ZERO, maker_fee_pct=0.01, source="x")),
+        _args(root, ds, fill={"optimistic": {"tier": 4}, "pessimistic": {"tier": 1}}),
+        _args(root, ds, latency=dict(D.LATENCY0, notice={"kind": "constant", "ns": 1})),
+        _args(root, ds, costs=dict(D.COSTS0, maker_rate=0.0001, source="x")),
+        _args(root, ds, account=dict(D.ACCOUNT, cash=1e11)),
         _args(root, ds, strategy={"kind": "schedule", "orders": S.SCHEDULE[:2]}),
-        _args(root, [dict(d, origin="synthetic") for d in ds]),
-        _args(root, ds, instruments=S.INSTRUMENTS[:4]),
+        _args(root, ds, instruments=INSTRUMENTS[:4]),
     ]
     ids = {plan_pipeline(**a).run_id for a in changed}
     assert base not in ids and len(ids) == len(changed)
+    g1 = plan_pipeline(**_gen_args(root)).run_id
+    g2 = plan_pipeline(**_gen_args(root, datasets=[{"name": "g", "generator": dict(GEN, seed=6)}])).run_id
+    assert g1 != g2

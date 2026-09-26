@@ -506,6 +506,9 @@ TR_E = [trade(2, +1, buy_px(1010, C_E), 0.12, 6, sell_px(1018, C_E), 0.12),     
         trade(8, -1, sell_px(1010, C_E), 0.12, 10, buy_px(max(1025, _sl_short_E), C_E), 0.12),  # R-P1/R-P3: high 1045 >= level, trigger max(open, level)
         trade(13, +1, buy_px(1030, C_E), 0.12)]                                          # open at the end
 W_E = ("fills", "pnls", "equity", "metrics", "missed_fills")
+# the reference (bar_sim) holds the bar model R-* only, not the metric formulas M-1..M-12 (its SPEC.md §4): its side of
+# the I4-1 scenes judges the bar model; the metrics are judged on the engine side here and in I4-17
+W_E_REF = ("fills", "pnls", "equity", "missed_fills")
 
 # F: the end-to-end maker path (I4-1 / I4-3); also the touchstone's target (a resting order's life)
 F = mk_bars([(100, 101, 99, 100), (100, 101, 99.5, 100), (100.5, 101, 100, 100.8), (100.8, 101.2, 99.8, 100.5),
@@ -524,12 +527,13 @@ TR_F = [trade(3, +1, 100.0, 0.01, 5, 102.0, 0.01),               # R-M1: limit 1
 # --------------------------------------------------------------------------- I4-1 independent reference
 add(id="i4-1-ref-taker", viewpoint="I4-1", kind="値",
     what="同じ入力(足の taker の経路: 手数料・スプレッド・滑り・ショート・逆指値・資金の持ち越し・終わりに建玉が残る)を、"
-         "本体と、本体とは別に書かれた参照実装の両方で回し、両方が正解と一致するか",
+         "本体と、本体とは別に書かれた参照実装の両方で回し、両方が正解と一致するか(参照実装の側は足の模型の規則 R-* の結果 = 約定・損益・"
+         "資産・取り逃しを判定する。参照実装は指標の式 M-1〜M-12 を持たない = src/bot/bt/reference/SPEC.md §4。指標は本体の側と I4-17 で判定する)",
     how="E の足で、約定の足と基準の値を規則 R-T1・R-P1・R-P3 で手で置き(場面の注記)、サイズ・手数料・持ち越し・損益・"
         "資産の推移・指標を R-A1〜R-A4・R-S1・M-1〜M-12 の式で計算した。本体と参照実装の両方にこの同じ正解を当てる。",
     input={**bars_input(E, SIG_E, CFG_E, want=W_E), "reference": True},
-    expect={"engine": full_expect(E, TR_E, CFG_E, 60, W_E), "reference": full_expect(E, TR_E, CFG_E, 60, W_E)},
-    judge={"engine": J(*W_E), "reference": J(*W_E)})
+    expect={"engine": full_expect(E, TR_E, CFG_E, 60, W_E), "reference": full_expect(E, TR_E, CFG_E, 60, W_E_REF)},
+    judge={"engine": J(*W_E), "reference": J(*W_E_REF)})
 add(id="i4-1-ref-maker", viewpoint="I4-1", kind="値",
     what="同じ入力(足の maker の経路: 指値の厳密な通過・maker の利確・逆指値・時間切れの取消)を、本体と参照実装の両方で回し、"
          "両方が正解と一致するか",
@@ -537,8 +541,8 @@ add(id="i4-1-ref-maker", viewpoint="I4-1", kind="値",
         "取り消された指値は 1 件(R-M2)。",
     input={**bars_input(F, SIG_F, CFG_F, want=W_E), "reference": True},
     expect={"engine": full_expect(F, TR_F, CFG_F, 60, W_E, missed=1),
-            "reference": full_expect(F, TR_F, CFG_F, 60, W_E, missed=1)},
-    judge={"engine": J(*W_E), "reference": J(*W_E)})
+            "reference": full_expect(F, TR_F, CFG_F, 60, W_E_REF, missed=1)},
+    judge={"engine": J(*W_E), "reference": J(*W_E_REF)})
 
 
 # --------------------------------------------------------------------------- I4-2 property grid

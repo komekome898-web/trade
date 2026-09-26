@@ -12,9 +12,11 @@ was an hour later, outside that span, and its buy stayed OPEN -- the check
 then accepted OPEN, which hid it (critic i4-r1-14). The test asserts the run's
 STRUCTURE only -- it reaches the run record, the exports and the dashboard's
 10 tabs, every tab carries the 動作確認 banner, every export carries the
-purpose, every dataset is recorded as real (decided from the data: the files
-lie in this environment's market-data folders), every scheduled order ends
-FILLED with its whole quantity (an order left OPEN / ACKED / unanswered
+purpose, every dataset is recorded as real with the evidence of its rows (finishing
+stage i4-r2-03: the rows equal a market file's rows through the data layer),
+both sides of the fill range ran through the item-2 venue, latency, cost and
+account models (i4-r2-06), every scheduled order ends FILLED with its whole
+quantity on both sides (an order left OPEN / ACKED / unanswered
 fails the test) -- and never a number the data produced (委任文 §4:
 実データから出た数値は ... 入れない).
 
@@ -55,6 +57,7 @@ from pathlib import Path
 
 import pytest
 
+import i4w_decl as D
 from bot.bt.pipeline import plan_pipeline, run_pipeline
 from bot.bt.report.exports import read_export
 from bot.monitoring.backtest_view import TABS, WARNING, run_view
@@ -104,10 +107,11 @@ def datasets():
     ]
 
 
-INSTRUMENTS = [{"name": "bf", "price": "bf_trades", "with": ["bf_board"]},
-               {"name": "fx_tick", "price": "fx_ticks", "with": []},
-               {"name": "jpx", "price": "jpx_1m", "with": []},
-               {"name": "fx_1m", "price": "fx_1m", "with": []}]
+INSTRUMENTS = [D.instrument("bf", "bf_trades", "trade", ["bf_board"]),
+               D.instrument("fx_tick", "fx_ticks", "quote"),
+               D.instrument("jpx", "jpx_1m", "bar"),
+               D.instrument("fx_1m", "fx_1m", "bar")]
+QTY = {"bf": 0.01, "fx_tick": 1.0, "jpx": 1.0, "fx_1m": 1.0}  # bf: a size the displayed top-10 book holds
 DAYS = {"bf": (2026, 9, 21, 0, 0), "fx_tick": (2026, 8, 7, 12, 0), "jpx": (2026, 8, 21, 1, 0), "fx_1m": (2026, 8, 21, 1, 0)}
 
 
@@ -115,8 +119,8 @@ def schedule():
     orders = []
     for name, (y, mo, d, h, _) in DAYS.items():
         for m in (20, 50):
-            orders += [{"t_ns": t(y, mo, d, h, m), "side": "buy", "qty": 1.0, "instrument": name},
-                       {"t_ns": t(y, mo, d, h, m + 5), "side": "sell", "qty": 1.0, "instrument": name}]
+            orders += [{"t_ns": t(y, mo, d, h, m), "side": "buy", "qty": QTY[name], "instrument": name},
+                       {"t_ns": t(y, mo, d, h, m + 5), "side": "sell", "qty": QTY[name], "instrument": name}]
     return {"kind": "schedule", "orders": orders}
 
 
@@ -127,11 +131,8 @@ def _missing():
 @pytest.mark.skipif(bool(_missing()), reason="real data files are not in this environment")
 def test_real_data_reaches_record_exports_and_dashboard_under_the_smoke_purpose():
     runs = tempfile.mkdtemp(prefix="i4w_real_runs_")
-    zero = {"taker_fee_pct": 0.0, "maker_fee_pct": 0.0, "slippage_pct": 0.0, "spread_pct": 0.0}
-    fill = {"price": "first_observed_at_or_after", "trade": "px", "quote": {"buy": "ask", "sell": "bid"}, "bar": "open",
-            "latency_ns": 0}
-    plan = plan_pipeline(root=str(REPO), datasets=datasets(), instruments=INSTRUMENTS, strategy=schedule(), fill=fill,
-                         costs=zero, purpose="動作確認")
+    plan = plan_pipeline(root=str(REPO), datasets=datasets(), instruments=INSTRUMENTS, strategy=schedule(),
+                         purpose="動作確認", **D.kw())
     res = run_pipeline(plan, runs_dir=runs)
     assert res.repro["identical"] is True
     assert set(res.record["data_sha256"]) == set(FILES.values())
@@ -143,13 +144,17 @@ def test_real_data_reaches_record_exports_and_dashboard_under_the_smoke_purpose(
     assert [x["label"] for x in view["tabs"]] == list(TABS)
     assert all(WARNING in x["text"] for x in view["tabs"])
     assert {d["origin"] for d in res.record["data"]} == {"real"}
-    assert {d["origin_evidence"]["by"] for d in res.record["data"]} == {"position"}
-    for name, r in res.instruments.items():
-        assert len(r.orders) == 4, name
-        for o in r.orders:
-            assert o["state"] == "FILLED" and o["filled"] == o["qty"], (name, o["id"], o["state"])
-        assert len(r.fills) == 4, name
-        assert all(v > 0 for v in r.events_read.values()), name
+    assert {d["origin_evidence"]["by"] for d in res.record["data"]} == {"rows"}  # the rows match the market files
+    assert set(res.record["components"]["models"]) == {"optimistic", "pessimistic"}  # both sides ran (i4-r2-06)
+    for side, per in res.range.items():
+        for name, r in per.items():
+            assert len(r.orders) == 4, (side, name)
+            for o in r.orders:
+                assert o["state"] == "FILLED" and o["filled"] == pytest.approx(o["qty"]), (side, name, o["id"], o["state"])
+            assert all(v > 0 for v in r.events_read.values()), (side, name)
+    for name in res.instruments:
+        acc = res.record["components"]["account"]["pessimistic"][name]
+        assert acc["position"] == pytest.approx(0.0, abs=1e-9) and acc["currency"] == "JPY", name  # margin recorded
 
 
 SPOT_AGG_DIRS = ("binance_BTCUSDT_aggTrades_tardis_days", "binance_BTCUSDT_aggTrades_20260723_20260906",
