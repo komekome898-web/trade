@@ -787,7 +787,9 @@ _BN = [(T0 + 123_000_000, "96000.1"), (T0 + 299 * S + 999_000_000, "96010"), (T0
        (T0 + 3600 * S, "96100"), (T0 + 3900 * S + 500_000_000, "96050")]
 _FX = [(T0 + 500_000_000, "157.100", "157.103"), (T0 + 300 * S + 250_000_000, "157.120", "157.124"),
        (T0 + 3600 * S, "157.200", "157.204"), (T0 + 3901 * S, "157.180", "157.185")]
-_BOARD_T = [T0 + 10 * S, T0 + 301 * S, T0 + 3601 * S]
+_BOARD_T = [T0 + 10 * S, T0 + 301 * S, T0 + 3601 * S, T0 + 3902 * S]  # one snapshot after every order (I-3)
+_BOARD_BIDS = [(15000000 - 5 * i, 0.1) for i in range(10)]   # every snapshot: 10 bid levels of 0.1 ...
+_BOARD_ASKS = [(15000010 + 5 * i, 0.2) for i in range(10)]   # ... and 10 ask levels of 0.2
 
 
 def _pipeline_files():
@@ -805,7 +807,8 @@ def _pipeline_files():
     rows = []
     for t in _BOARD_T:
         rows.append([iso(t, digits=0, sep=" ", suffix="+00:00")]
-                    + [15000000 - 5 * i for i in range(10)] + [0.1] * 10 + [15000010 + 5 * i for i in range(10)] + [0.2] * 10)
+                    + [px for px, _ in _BOARD_BIDS] + [q for _, q in _BOARD_BIDS] + [px for px, _ in _BOARD_ASKS]
+                    + [q for _, q in _BOARD_ASKS])
     files.append({"path": p, "text": csv_text(head, rows)})
     f = {"levels": 10}
     for side in ("bid", "ask"):
@@ -907,11 +910,6 @@ def pipeline_input(want, *, strategy=None, purpose="動作確認", prereg=False,
             "prereg": PREREG_FILE["path"] if prereg else None, "want": list(want)}
 
 
-def both_sides(per_instrument):
-    """The answer of every side of the fill range, keyed "<side>:<instrument>" (the adapter reports both sides)."""
-    return {f"{side}:{n}": v for side in PIPE_SIDES for n, v in per_instrument.items()}
-
-
 def _first_at_or_after(events, t):
     return next(e for e in events if e[0] >= t)
 
@@ -943,6 +941,39 @@ def pipeline_expect():
 
 
 _PF, _PP = pipeline_expect()
+
+
+def walk_board(t_order, side, qty):
+    """I-3 optimistic (tier 3): a market order walks the first book snapshot at or after its time, level by level
+    (a buy the asks from the best up, a sell the bids from the best down), each partial fill at its level's price."""
+    t = next(b for b in _BOARD_T if b >= t_order)
+    out, left = [], qty
+    for px, q in (_BOARD_ASKS if side == "buy" else _BOARD_BIDS):
+        if left <= 1e-12:
+            break
+        take = min(q, left)
+        out.append({"t_ns": t, "side": side, "px": float(px), "qty": take})
+        left -= take
+    assert left <= 1e-12, "the synthetic book is deep enough for every order"
+    return out
+
+
+def _pnl(fl):
+    return sum((f["px"] if f["side"] == "sell" else -f["px"]) * f["qty"] for f in fl)
+
+
+def pipe_sides(pess, opt_override):
+    """The answer of both sides of the fill range, keyed "<side>:<instrument>": the pessimistic side (tier 1) is I-1 /
+    I-3 (the first observation at or after the order, spread 0) for every instrument; the optimistic side (tier 3) is
+    the same except where a book rides with the instrument (I-3: walk the book) -- `opt_override`."""
+    out = {f"pessimistic:{n}": v for n, v in pess.items()}
+    out.update({f"optimistic:{n}": opt_override.get(n, v) for n, v in pess.items()})
+    return out
+
+
+_OPT_BF = [f for o in SCHEDULE for f in walk_board(o["t_ns"], o["side"], o["qty"])]
+_PF2 = pipe_sides(_PF, {"bf": _OPT_BF})
+_PP2 = {k: _pnl(v) for k, v in _PF2.items()}
 _EV = {"bf_trades": len(_BF), "bf_board": len(_BOARD_T), "binance": len(_BN), "fx_ticks": len(_FX), "jpx_1m": 71, "fx_1m": 71}
 add(id="i4-5-fills", viewpoint="I4-5", kind="値",
     what="暗号資産の約定と板(bitFlyer の形)・Binance の aggTrades の形・FX のイベントティック・JPX の 1 分足・FX の 1 分足の合成の"
@@ -951,9 +982,12 @@ add(id="i4-5-fills", viewpoint="I4-5", kind="値",
     how="ファイルは書く前に行(時刻と値)を決め、その行から書いた。約定は F-1(注文の時刻以後に最初に観測した値)で手で引いた: "
         "bf 15000000 / 15001000 / 15003000 / 15004000、binance 96000.1 / 96020.5 / 96100 / 96050、FX ティック ask 157.103 / "
         "bid 157.120 / ask 157.204 / bid 157.180、JPX 足 38000 / 38025 / 38300 / 38325(09:00 JST = 00:00 UTC)、FX 足 157.000 / "
-        "157.005 / 157.060 / 157.065。損益 = 売り - 買い の和。読んだ事象の数はファイルの行数。",
+        "157.005 / 157.060 / 157.065。これは悲観の側(I-1〜I-4)と、板の無い銘柄の楽観の側(I-5)。bf の楽観の側は I-3 で板を歩く: "
+        "買い 1 = 00:00:10 の板の売り 15000010・015・020・025・030 を 0.2 ずつ、売り 1 = 00:05:01 の板の買い 15000000 から 14999955 まで 0.1 ずつ"
+        "(01:00・01:05 の注文も 01:00:01・01:05:02 の板で同じ)。損益 = 売り - 買い の和(bf の楽観 = 2 x (14999977.5 - 15000020) = -85)。"
+        "読んだ事象の数はファイルの行数。",
     input=pipeline_input(("fills", "pnl", "events_read")),
-    expect={"fills": both_sides(_PF), "pnl": both_sides(_PP), "events_read": _EV},
+    expect={"fills": _PF2, "pnl": _PP2, "events_read": _EV},
     judge={"pfills": True, "pnl": True, "events_read": True})
 _SHA = {f["path"]: hashlib.sha256(f["text"].encode("utf-8")).hexdigest() for f in _pipeline_files()[0]}
 add(id="i4-5-outputs", viewpoint="I4-5", kind="能力",
@@ -971,7 +1005,7 @@ add(id="i4-6-label", viewpoint="I4-6", kind="値",
          "約定は手順どおりか",
     how="i4-5-fills と同じ約定(F-1)。目的と注記の文は委任文 §4。",
     input=pipeline_input(("fills", "export", "dashboard")),
-    expect={"fills": both_sides(_PF), "export": {"purpose": "動作確認", "num_trades": {i["name"]: 2 for i in INSTRUMENTS}},
+    expect={"fills": _PF2, "export": {"purpose": "動作確認", "num_trades": {i["name"]: 2 for i in INSTRUMENTS}},
             "dashboard": {"tabs": TABS, "banner": BANNER}},
     judge={"pfills": True, "export": True, "dashboard": True})
 PRICE_RULE = {"kind": "price_rule", "buy_below": 15000600.0, "sell_above": 15002500.0, "qty": 1.0}
@@ -993,6 +1027,8 @@ def price_rule_expect(events, rule):
 
 
 _PR_FILLS = {"bf": price_rule_expect([(t, float(px)) for t, px, _, _ in _BF], PRICE_RULE)}
+# I-3 optimistic: the same orders (placed at the trades that trigger them) walk the first book snapshot at or after
+_PR_FILLS2 = pipe_sides(_PR_FILLS, {"bf": [f for o in _PR_FILLS["bf"] for f in walk_board(o["t_ns"], o["side"], o["qty"])]})
 add(id="i4-6-signal-refused", viewpoint="I4-6", kind="能力",
     what="実データと宣言したファイルに、値で条件づけた戦略(値が閾値を下回ったら買う)を目的「動作確認」で通そうとしたら拒むか"
          "(対照 1: 同じファイルに固定の手順なら通り、約定は手順どおり。対照 2: 同じ値で条件づけた戦略を、同じファイルに目的「研究」"
@@ -1001,17 +1037,17 @@ add(id="i4-6-signal-refused", viewpoint="I4-6", kind="能力",
     how="委任文 §4「実データを通すときの戦略は、時刻だけで決まる機械的な手順か種つきの乱数に限る。信号・条件付け・最適化を入れない」。"
         "対照 1 の正解は i4-5-fills の約定。対照 2 の正解は F-2 を bf の約定の行に当てた手の計算: 15000000 < 15000600 で買い 1(T0 + 0.2 秒)、"
         "15003000 > 15002500 で売り 1(T0 + 3600.75 秒)。",
-    input=pipeline_input(("fills",)), expect={"fills": both_sides(_PF)}, judge={"pfills": True},
+    input=pipeline_input(("fills",)), expect={"fills": _PF2}, judge={"pfills": True},
     more_controls=[{"input": pipeline_input(("fills",), strategy=PRICE_RULE, only=("bf",), purpose="研究", prereg=True),
-                    "expect": {"fills": both_sides(_PR_FILLS)}, "judge": {"pfills": True}}],
+                    "expect": {"fills": _PR_FILLS2}, "judge": {"pfills": True}}],
     variant=pipeline_input(("fills",), strategy=PRICE_RULE))
 add(id="i4-6-research-refused", viewpoint="I4-6", kind="能力",
     what="目的「研究」を事前登録のファイル無しで実行しようとしたら拒むか(対照 1: 目的「動作確認」なら通る。対照 2: 目的「研究」を事前登録の"
          "ファイルつきで実行すれば通り、約定は手順どおり = 対象は「研究」の実行を作れ、拒むのは事前登録が無いときだけ)",
     how="委任文 §4「目的 `研究` の実行は事前登録のハッシュが無いと作れない」+ 仕上げの委任文 i4-r2-05(事前登録はファイルとして受け取り、その"
         "sha256 を実行記録に残す)。対照 1・2 の正解は i4-5-fills の約定(戦略は同じ固定の手順)。",
-    input=pipeline_input(("fills",)), expect={"fills": both_sides(_PF)}, judge={"pfills": True},
-    more_controls=[{"input": pipeline_input(("fills",), purpose="研究", prereg=True), "expect": {"fills": both_sides(_PF)},
+    input=pipeline_input(("fills",)), expect={"fills": _PF2}, judge={"pfills": True},
+    more_controls=[{"input": pipeline_input(("fills",), purpose="研究", prereg=True), "expect": {"fills": _PF2},
                     "judge": {"pfills": True}}],
     variant=pipeline_input(("fills",), purpose="研究", prereg=False))
 

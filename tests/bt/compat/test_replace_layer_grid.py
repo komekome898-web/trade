@@ -295,6 +295,30 @@ def test_fresh_valid_cells_run_on_the_core_and_match_the_old_engine(start, no_ol
         assert _out(NEW_E, sc) == _out(OLD_E, sc), cells[k]
 
 
+
+def _critic_decimal_module():
+    """The critic's decimal-price cells (tests/bt/critic/item_4/
+    test_i4r1_compat_decimal_prices.py) compare the mouth with the LIVE old
+    engine and skip once it is replaced; their scenes are read from that file
+    (not copied) and compared here with the snapshot instead."""
+    path = REPO / "tests/bt/critic/item_4/test_i4r1_compat_decimal_prices.py"
+    spec = importlib.util.spec_from_file_location("_critic_i4r1_decimal", path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_CRITIC_DEC = _critic_decimal_module()
+
+
+@pytest.mark.parametrize("start", range(0, len(_CRITIC_DEC.CELLS), _CRITIC_DEC.CHUNK))
+def test_the_critic_decimal_price_cells_match_the_old_engine_snapshot(start, no_old_route):
+    cells = _CRITIC_DEC.CELLS
+    for k in range(start, min(start + _CRITIC_DEC.CHUNK, len(cells))):
+        sc = _CRITIC_DEC._scene(k, cells[k])
+        assert _out(NEW_E, sc) == _out(OLD_E, sc), cells[k]
+
 @pytest.mark.parametrize("start", range(0, len(GOLDEN["bars"]), 128))
 def test_the_golden_scenes_through_the_replaced_module_on_the_core(start, no_old_route):
     for rec in GOLDEN["bars"][start:start + 128]:

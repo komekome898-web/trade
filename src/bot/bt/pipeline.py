@@ -713,6 +713,82 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
                         json.loads(_canon(dict(costs))), acc, p, prereg)
 
 
+# --------------------------------------------------------------------------- the market-order rule of the run
+BOOKLESS_TIERS = (1, 2)  # the fill tiers that price a market order from the last trade, not the displayed book
+
+
+class ArrivalGate:
+    """The fill-model socket of one instrument and one side: item 2's SimVenue behind the integrated run's rule for
+    MARKET orders (the lead's rules I-1 .. I-5, finishing stage):
+
+      I-1  a market order is priced at the FIRST observation of the instrument's price dataset at or after its
+           arrival (a trade's price, a quote's book, a bar's open) -- not the last one before it;
+      I-2  an order that arrives before the first observation fills at the first observation;
+      I-3  an instrument priced from trades with a book riding along: the optimistic side's tier walks the book;
+           a side whose tier is in BOOKLESS_TIERS (tier 1: price crosses) prices from the trade +- half the spread
+           (the venue is not shown the book on that side);
+      I-4  a bar instrument: the open of the first bar that STARTS at or after the order's arrival (+- half the
+           spread);
+      I-5  an instrument with neither book nor spread: both sides give the I-1 value.
+
+    How: the gate holds a market order until that first observation, then hands it to the SimVenue right after
+    the venue has applied the observation (trades: the venue's market_ref last_trade = that trade; quotes / books:
+    the book of that observation; bars: the venue is told the order arrived just before the bar's start, so its
+    market_ref next_bar_open takes that bar). Every other request and every other event goes to the venue as it
+    comes. The venue's own rules (reduce-only, sizes, sessions ...) apply unchanged."""
+
+    def __init__(self, venue: SimVenue, price_type: type, hide_book: bool) -> None:
+        self.venue = venue
+        self.price_type = price_type
+        self.hide_book = hide_book
+        self.held: list[tuple[OrderRequest, int]] = []
+        self.last_obs_t: Optional[int] = None
+
+    def open_orders(self):
+        return self.venue.open_orders()
+
+    def on_market_event(self, event: Event, venue_time_ns: int):
+        t = int(venue_time_ns)
+        if self.hide_book and type(event) is BookSnapshotEvent:
+            return ()
+        if type(event) is BarEvent and self.price_type is BarEvent:
+            out: list = []
+            start = event.start_time_ns if event.start_time_ns is not None else t
+            due = [(o, a) for o, a in self.held if start >= a]
+            self.held = [(o, a) for o, a in self.held if start < a]
+            for o, _ in due:
+                out += list(self.venue.on_order(o, start - 1))  # I-4: this bar starts after the order
+            out += list(self.venue.on_market_event(event, t))
+            return tuple(out)
+        out = list(self.venue.on_market_event(event, t))
+        if type(event) is self.price_type:
+            if type(event) is BookSnapshotEvent and (not event.bids or not event.asks):
+                return tuple(out)
+            self.last_obs_t = t
+            due = [(o, a) for o, a in self.held if t >= a]
+            self.held = [(o, a) for o, a in self.held if t < a]
+            for o, _ in due:
+                out += list(self.venue.on_order(o, t))
+        return tuple(out)
+
+    def on_order(self, order: OrderRequest, venue_time_ns: int):
+        t = int(venue_time_ns)
+        if order.order_type != "market":
+            return self.venue.on_order(order, t)
+        if self.price_type is not BarEvent and self.last_obs_t is not None and self.last_obs_t >= t:
+            return self.venue.on_order(order, t)  # an observation at the arrival instant is "at or after" (I-1)
+        self.held.append((order, t))
+        return ()
+
+    def on_cancel(self, request, venue_time_ns: int):
+        from .core import Canceled
+        coid = request.client_order_id
+        if any(o.client_order_id == coid for o, _ in self.held):
+            self.held = [(o, a) for o, a in self.held if o.client_order_id != coid]
+            return (Canceled(coid, "canceled"),)
+        return self.venue.on_cancel(request, venue_time_ns)
+
+
 # --------------------------------------------------------------------------- the strategies
 class ScheduleStrategy(Strategy):
     """Time-only: one timer per leg, a market order when it fires."""
@@ -813,8 +889,10 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
     product = Product(**{k: it["product"][k] for k in PRODUCT_KEYS})
     costs = _cost_schedule(plan.costs)
     frange = _check_fill(plan.fill)
-    venue = SimVenue(product=product, rules=VenueRules(**it["rules"]), fill=getattr(frange, side), costs=costs,
+    spec = getattr(frange, side)
+    venue = SimVenue(product=product, rules=VenueRules(**it["rules"]), fill=spec, costs=costs,
                      faults=FaultPlan(()), l3=None)
+    gate = ArrivalGate(venue, price_type, hide_book=price_type is TradeEvent and spec.tier in BOOKLESS_TIERS)
     acc = plan.account
     liq = LiquidationRule(acc["liquidation"]["maint_ratio"], acc["liquidation"]["source"]) if acc["liquidation"] else None
     account = MarginAccount(product=product, currency=acc["currency"], cash=acc["cash"], leverage=acc["leverage"],
@@ -823,7 +901,7 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
     latency = _latency_model(plan.latency)
     end = max(times)
     try:
-        res = CoreEngine(strat, streams, venue, latency,
+        res = CoreEngine(strat, streams, gate, latency,
                          ScheduleCostModel(costs, product=product, account_currency=acc["currency"], fx=None), account,
                          time_span_ns=(first, end)).run()
     except ExecutionModelError as exc:
@@ -851,6 +929,7 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
                              "delivery_digest": res.delivery_digest, "first_time_ns": res.first_time_ns,
                              "last_time_ns": res.last_time_ns, "models": dict(res.models),
                              "defaults_used": list(res.defaults_used), "fill_tier": venue.tier,
+                             "fill_venue": type(venue).__qualname__, "book_shown_to_venue": not gate.hide_book,
                              "venue_used": dict(venue.used)},
                             {"draws": dict(latency.draws), "total_ns": dict(latency.total_ns)}, account_state)
 

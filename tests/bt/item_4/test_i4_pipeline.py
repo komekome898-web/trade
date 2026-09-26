@@ -159,7 +159,8 @@ def test_the_sockets_are_the_item_2_models_and_both_sides_are_recorded():
     assert set(models) == {"optimistic", "pessimistic"}
     for side in models:
         for name, m in models[side].items():
-            assert m["fill_model"].endswith("SimVenue") and m["latency_model"].endswith("LatencyModel"), (side, name, m)
+            assert m["fill_model"].endswith("ArrivalGate") and m["latency_model"].endswith("LatencyModel"), (side, name, m)
+            assert res.record["engine"][side][name]["fill_venue"] == "SimVenue"
             assert m["cost_model"].endswith("ScheduleCostModel") and m["account"].endswith("MarginAccount"), m
     assert res.record["components"]["fill_range"] == D.FILL
     drawn = res.record["components"]["latency"]["drawn"]
@@ -284,3 +285,61 @@ def test_the_range_reaches_tier_6_and_funding_is_declarable():
     assert pes[0]["px"] > opt[0]["px"] and pes[1]["px"] < opt[1]["px"]
     assert res.record["engine"]["pessimistic"]["g"]["fill_tier"] == 6
     assert res.record["config"]["costs"]["funding"] == {"price": "event_mark"}
+
+
+def _one_instrument(root, gen, kind, orders, spread=0.0):
+    costs = dict(D.COSTS0, spread=spread)
+    return run_pipeline(plan_pipeline(**_gen_args(root, datasets=[{"name": "g", "generator": gen}],
+                                                  instruments=[D.instrument("g", "g", kind)], costs=costs,
+                                                  strategy={"kind": "schedule", "orders": orders})),
+                        runs_dir=tempfile.mkdtemp())
+
+
+def test_market_orders_follow_the_rules_i1_to_i5():
+    """The lead's rules for a market order of the integrated run (written from the text, on generated data whose
+    rows are known): I-1 the first observation at or after the arrival; I-2 an order before the first observation
+    fills at the first observation; I-4 a bar instrument fills at the open of the first bar STARTING at or after the
+    arrival; I-5 no book and no spread: both sides give the I-1 value; I-3 is test_i3_a_book_rides_along."""
+    from bot.bt.pipeline import _generate
+    root, _, _ = _root()
+    tg = {"name": "random_walk", "seed": 9, "params": {"kind": "trade", "start_ns": T0, "step_ns": 10 * NS, "n": 100,
+                                                       "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
+    trades = _generate(tg)[1]
+    orders = [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},     # before the first trade (I-2)
+              {"t_ns": T0 + 305 * NS, "side": "sell", "qty": 1.0},   # between trades (I-1: the trade at +310 s)
+              {"t_ns": T0 + 400 * NS, "side": "buy", "qty": 1.0},    # at a trade's instant (I-1: that trade)
+              {"t_ns": T0 + 555 * NS, "side": "sell", "qty": 1.0}]
+    want = [trades[0]["px"], trades[31]["px"], trades[40]["px"], trades[56]["px"]]
+    res = _one_instrument(root, tg, "trade", orders)
+    for side in ("optimistic", "pessimistic"):  # I-5: no book, no spread -> both sides the same
+        got = [f["px"] for f in res.range[side]["g"].fills]
+        assert got == pytest.approx(want), (side, got, want)
+    bg = {"name": "random_walk", "seed": 9, "params": {"kind": "bar", "start_ns": T0, "step_ns": 60 * NS, "n": 30,
+                                                       "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
+    bars = _generate(bg)[1]
+    orders = [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},     # before the first bar -> bar 0's open
+              {"t_ns": T0 + 300 * NS, "side": "sell", "qty": 1.0},   # at bar 5's start -> bar 5's open (I-4)
+              {"t_ns": T0 + 310 * NS, "side": "buy", "qty": 1.0},    # inside bar 5 -> bar 6's open
+              {"t_ns": T0 + 600 * NS, "side": "sell", "qty": 1.0}]
+    res = _one_instrument(root, bg, "bar", orders, spread=0.2)
+    want = [bars[0]["open"] + 0.1, bars[5]["open"] - 0.1, bars[6]["open"] + 0.1, bars[10]["open"] - 0.1]
+    for side in ("optimistic", "pessimistic"):
+        got = [f["px"] for f in res.range[side]["g"].fills]
+        assert got == pytest.approx(want), (side, got, want)
+
+
+def test_i3_a_book_rides_along():
+    """I-3: an instrument priced from trades with a book riding along (the scene files' bf): the optimistic side
+    (tier 3) walks the displayed book; the pessimistic side (tier 1) prices from the first trade at or after the
+    arrival (+- half the declared spread, 0 here) and is not shown the book."""
+    from bot.bt.data import load
+    root, _, ds = _root()
+    res = run_pipeline(plan_pipeline(**_args(root, ds)), runs_dir=tempfile.mkdtemp())
+    eng = res.record["engine"]
+    assert eng["optimistic"]["bf"]["book_shown_to_venue"] is True
+    assert eng["pessimistic"]["bf"]["book_shown_to_venue"] is False
+    bf = [d for d in ds if d["name"] == "bf_trades"][0]
+    recs = load(root, [{"name": "t", "paths": bf["paths"], "spec": bf["spec"]}]).records("t")
+    for f in res.range["pessimistic"]["bf"].fills:
+        first = min((r for r in recs if r["t_ns"] >= f["t_ns"] - 0), key=lambda r: r["t_ns"], default=None)
+        assert first is not None and f["px"] == pytest.approx(first["px"]), (f, first)

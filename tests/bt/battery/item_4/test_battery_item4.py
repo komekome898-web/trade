@@ -130,8 +130,37 @@ def test_pipeline_expected_fills_match_the_files():
     sc = S.by_id("i4-5-fills")
     got = _parse_pipeline_fills(sc["input"]["files"], S.SCHEDULE)
     for key, fl in sc["expect"]["fills"].items():  # "<side>:<instrument>" (both sides of the fill range)
+        if key == "optimistic:bf":   # I-3: the book walk, checked against the board file below
+            continue
         inst = key.split(":", 1)[1]
         assert [(f["t_ns"], f["px"]) for f in fl] == [(t, pytest.approx(p)) for t, p in got[inst]], key
+
+
+def test_pipeline_book_walk_matches_the_board_file():
+    """I-3 optimistic: the hand-placed book walk of bf, re-derived from the board file the scene writes (not from the
+    lists the answer was built from)."""
+    import csv as _csv
+    import io
+    from datetime import datetime
+    sc = S.by_id("i4-5-fills")
+    f = next(x for x in sc["input"]["files"] if "board" in x["path"])
+    snaps = []
+    for r in _csv.DictReader(io.StringIO(f["text"])):
+        t = int(datetime.fromisoformat(r["ts"]).timestamp()) * 10**9
+        bids = [(float(r[f"bid_px_{i}"]), float(r[f"bid_sz_{i}"])) for i in range(1, 11)]
+        asks = [(float(r[f"ask_px_{i}"]), float(r[f"ask_sz_{i}"])) for i in range(1, 11)]
+        snaps.append((t, bids, asks))
+    want = []
+    for o in S.SCHEDULE:
+        t, bids, asks = next(x for x in snaps if x[0] >= o["t_ns"])
+        left = o["qty"]
+        for px, q in sorted(asks) if o["side"] == "buy" else sorted(bids, reverse=True):
+            if left <= 1e-12:
+                break
+            want.append((t, o["side"], px, min(q, left)))
+            left -= min(q, left)
+    got = [(x["t_ns"], x["side"], x["px"], x["qty"]) for x in sc["expect"]["fills"]["optimistic:bf"]]
+    assert [(a, b, c, pytest.approx(d)) for a, b, c, d in want] == got
 
 
 def test_pipeline_sha256_are_the_files_own():
