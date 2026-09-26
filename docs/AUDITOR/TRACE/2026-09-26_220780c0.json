@@ -14548,13 +14548,13 @@
   {
    "move": 533,
    "tools": {
-    "Read": 21,
-    "Bash": 82,
-    "mcp__Claude_Code_Remote__send_later": 10,
-    "ReadNotifications": 10,
-    "Workflow": 1
+    "Read": 25,
+    "Bash": 90,
+    "mcp__Claude_Code_Remote__send_later": 11,
+    "ReadNotifications": 11,
+    "Workflow": 2
    },
-   "n_tools": 124,
+   "n_tools": 139,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
@@ -14599,7 +14599,7 @@
   },
   "P5_tools_per_move": {
    "median": 6,
-   "max": 124,
+   "max": 139,
    "n": 517
   },
   "P6_findings_applied": {

@@ -1,0 +1,67 @@
+{"scene": "i4-1-ref-taker", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-1-ref-maker", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-2-grid-all", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-stop", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-tp", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-maker", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-mtp", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-swap", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-hold", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-2-grid-wick", "pass1": {"control": []}, "pass2": {"control": []}}
+{"scene": "i4-3-e2e-taker", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-3-e2e-maker", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-4-plain", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-4-fee", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-5-fills", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-5-outputs", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-6-label", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-6-signal-refused", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-6-research-refused", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-8-next-open", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-8-short-close", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-8-no-short", "pass1": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 120.0, "size": 29.12621359}, {"bar": 6, "side": "CLOSE_LONG", "price": 105.0, "size": 29.12621359}]}}, "pass2": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 120.0, "size": 29.12621359}, {"bar": 6, "side": "CLOSE_LONG", "price": 105.0, "size": 29.12621359}]}}}
+{"scene": "i4-9-strict", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 5, "side": "CLOSE_LONG", "price": 103.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 5, "side": "CLOSE_LONG", "price": 103.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-9-short-strict", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-10-priority", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-11-wick-long", "pass1": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 6, "side": "CLOSE_LONG", "price": 95.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 6, "side": "CLOSE_LONG", "price": 95.0, "size": 30.0}]}}}
+{"scene": "i4-11-wick-short", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-11-refuse-stack", "pass1": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 6, "side": "CLOSE_LONG", "price": 95.0, "size": 30.0}]}, "control_2": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 98.0, "size": 30.0}]}, "variant": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 98.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 6, "side": "CLOSE_LONG", "price": 95.0, "size": 30.0}]}, "control_2": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 98.0, "size": 30.0}]}, "variant": {"fills": [{"bar": 3, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 98.0, "size": 30.0}]}}}
+{"scene": "i4-12-maker-tp", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-12-refuse", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-12-touch-decimal", "pass1": {"control": {"fills": [{"bar": 1, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 2, "side": "CLOSE_LONG", "price": 101.5, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 1, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 2, "side": "CLOSE_LONG", "price": 101.5, "size": 30.0}]}}}
+{"scene": "i4-13-time-exit", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-13-tp-on-exit-bar", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-13-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-14-mask-sides", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-14-sides-short", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-15-swap-long", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-15-swap-short", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-16-missed", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-17-metrics", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-17-metrics-edge", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-17-sharpe-bar-seconds", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-17-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-18-split", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-18-split-decimal", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-18-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-18-refuse", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-10-signal-first", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-10-signal-first-short", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-10-signal-first-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-10-stop-first-plain", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-12-tp-before-maker-tp", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-11-wick-first", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-11-wick-before-exit-limit", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 99.5, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 99.5, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-13-stop-on-time-bar", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-13-time-first", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}]}}}
+{"scene": "i4-13-time-first-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-13-time-maker-tp-two-models", "pass1": {"control": null}, "pass2": {"control": null}}
+{"scene": "i4-13-time-before-exit-limit", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 101.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}, {"bar": 4, "side": "CLOSE_LONG", "price": 101.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-13-stop-on-time-bar-maker", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-16-stop-before-exit-limit", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-16-tp-before-exit-limit", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-16-maker-tp-before-exit-limit", "pass1": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}, "pass2": {"control": {"fills": [{"bar": 2, "side": "OPEN_LONG", "price": 100.0, "size": 30.0}], "missed_fills": 0}}}
+{"scene": "i4-3-core-delivery", "pass1": {"control": {"calls": [{"seen": 1, "last_t_ns": 1767571200000000000, "last_close": 100.5}, {"seen": 2, "last_t_ns": 1767571260000000000, "last_close": 101.5}, {"seen": 3, "last_t_ns": 1767571320000000000, "last_close": 99.8}, {"seen": 4, "last_t_ns": 1767571380000000000, "last_close": 100.1}, {"seen": 5, "last_t_ns": 1767571440000000000, "last_close": 100.7}]}}, "pass2": {"control": {"calls": [{"seen": 1, "last_t_ns": 1767571200000000000, "last_close": 100.5}, {"seen": 2, "last_t_ns": 1767571260000000000, "last_close": 101.5}, {"seen": 3, "last_t_ns": 1767571320000000000, "last_close": 99.8}, {"seen": 4, "last_t_ns": 1767571380000000000, "last_close": 100.1}, {"seen": 5, "last_t_ns": 1767571440000000000, "last_close": 100.7}]}}}
+{"scene": "i4-3-core-delivery-gap", "pass1": {"control": {"calls": [{"seen": 1, "last_t_ns": 1767571200000000000, "last_close": 100.5}, {"seen": 2, "last_t_ns": 1767571260000000000, "last_close": 101.5}, {"seen": 3, "last_t_ns": 1767571380000000000, "last_close": 99.8}, {"seen": 4, "last_t_ns": 1767571440000000000, "last_close": 100.1}]}}, "pass2": {"control": {"calls": [{"seen": 1, "last_t_ns": 1767571200000000000, "last_close": 100.5}, {"seen": 2, "last_t_ns": 1767571260000000000, "last_close": 101.5}, {"seen": 3, "last_t_ns": 1767571380000000000, "last_close": 99.8}, {"seen": 4, "last_t_ns": 1767571440000000000, "last_close": 100.1}]}}}
+{"scene": "i4-3-ref-signal-first", "pass1": {"control": null}, "pass2": {"control": null}}

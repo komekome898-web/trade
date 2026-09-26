@@ -1,0 +1,167 @@
+current_impl runs start 2026-09-26T10:38:26Z
+mutant runs start 2026-09-26T10:38:26Z
+opp_backtrader runs start 2026-09-26T10:38:26Z
+new_impl runs start 2026-09-26T10:38:26Z
+current_impl runs end 2026-09-26T10:38:28Z rc=0 secs=2
+current_impl runs_2 start 2026-09-26T10:38:28Z
+opp_backtrader runs end 2026-09-26T10:38:29Z rc=0 secs=3
+opp_backtrader runs_2 start 2026-09-26T10:38:29Z
+current_impl runs_2 end 2026-09-26T10:38:30Z rc=0 secs=2
+opp_backtesting runs start 2026-09-26T10:38:30Z
+opp_backtrader runs_2 end 2026-09-26T10:38:32Z rc=0 secs=3
+opp_vectorbt runs start 2026-09-26T10:38:32Z
+mutant runs end 2026-09-26T10:38:35Z rc=0 secs=9
+mutant runs_2 start 2026-09-26T10:38:35Z
+opp_backtesting runs end 2026-09-26T10:38:35Z rc=0 secs=5
+opp_backtesting runs_2 start 2026-09-26T10:38:35Z
+new_impl runs end 2026-09-26T10:38:36Z rc=0 secs=10
+new_impl runs_2 start 2026-09-26T10:38:36Z
+opp_backtesting runs_2 end 2026-09-26T10:38:40Z rc=0 secs=5
+opp_pyalgotrade runs start 2026-09-26T10:38:40Z
+opp_pyalgotrade runs end 2026-09-26T10:38:41Z rc=0 secs=1
+opp_pyalgotrade runs_2 start 2026-09-26T10:38:41Z
+opp_pyalgotrade runs_2 end 2026-09-26T10:38:42Z rc=0 secs=1
+opp_pybroker runs start 2026-09-26T10:38:42Z
+mutant runs_2 end 2026-09-26T10:38:44Z rc=0 secs=9
+opp_luczinsritter runs start 2026-09-26T10:38:44Z
+new_impl runs_2 end 2026-09-26T10:38:44Z rc=0 secs=8
+opp_vnpy runs start 2026-09-26T10:38:44Z
+opp_vnpy runs end 2026-09-26T10:38:46Z rc=0 secs=2
+opp_vnpy runs_2 start 2026-09-26T10:38:46Z
+opp_vnpy runs_2 end 2026-09-26T10:38:47Z rc=0 secs=1
+opp_basana runs start 2026-09-26T10:38:47Z
+opp_basana runs end 2026-09-26T10:38:47Z rc=0 secs=0
+opp_basana runs_2 start 2026-09-26T10:38:47Z
+opp_luczinsritter runs end 2026-09-26T10:38:48Z rc=0 secs=4
+opp_luczinsritter runs_2 start 2026-09-26T10:38:48Z
+opp_pybroker runs end 2026-09-26T10:38:48Z rc=0 secs=6
+opp_pybroker runs_2 start 2026-09-26T10:38:48Z
+opp_basana runs_2 end 2026-09-26T10:38:48Z rc=0 secs=1
+opp_bt runs start 2026-09-26T10:38:48Z
+opp_luczinsritter runs_2 end 2026-09-26T10:38:52Z rc=0 secs=4
+opp_qtradex runs start 2026-09-26T10:38:52Z
+opp_bt runs end 2026-09-26T10:38:53Z rc=0 secs=5
+opp_bt runs_2 start 2026-09-26T10:38:53Z
+opp_pybroker runs_2 end 2026-09-26T10:38:54Z rc=0 secs=6
+opp_ziplime runs start 2026-09-26T10:38:54Z
+opp_qtradex runs end 2026-09-26T10:38:57Z rc=0 secs=5
+opp_qtradex runs_2 start 2026-09-26T10:38:57Z
+opp_bt runs_2 end 2026-09-26T10:38:58Z rc=0 secs=5
+opp_qstrader runs start 2026-09-26T10:38:58Z
+opp_qstrader runs end 2026-09-26T10:38:58Z rc=0 secs=0
+opp_qstrader runs_2 start 2026-09-26T10:38:58Z
+opp_qstrader runs_2 end 2026-09-26T10:38:59Z rc=0 secs=1
+opp_finmarketpy runs start 2026-09-26T10:38:59Z
+opp_qtradex runs_2 end 2026-09-26T10:39:01Z rc=0 secs=4
+opp_pysystemtrade runs start 2026-09-26T10:39:01Z
+opp_pysystemtrade runs end 2026-09-26T10:39:02Z rc=0 secs=1
+opp_pysystemtrade runs_2 start 2026-09-26T10:39:02Z
+opp_pysystemtrade runs_2 end 2026-09-26T10:39:02Z rc=0 secs=0
+opp_qlib runs start 2026-09-26T10:39:02Z
+opp_finmarketpy runs end 2026-09-26T10:39:05Z rc=0 secs=6
+opp_finmarketpy runs_2 start 2026-09-26T10:39:05Z
+opp_qlib runs end 2026-09-26T10:39:05Z rc=0 secs=3
+opp_qlib runs_2 start 2026-09-26T10:39:05Z
+opp_vectorbt runs end 2026-09-26T10:39:06Z rc=0 secs=34
+opp_vectorbt runs_2 start 2026-09-26T10:39:06Z
+opp_qlib runs_2 end 2026-09-26T10:39:08Z rc=0 secs=3
+opp_hftbacktest runs start 2026-09-26T10:39:08Z
+opp_hftbacktest runs end 2026-09-26T10:39:09Z rc=0 secs=1
+opp_hftbacktest runs_2 start 2026-09-26T10:39:09Z
+opp_hftbacktest runs_2 end 2026-09-26T10:39:10Z rc=0 secs=1
+opp_pytrendfollow runs start 2026-09-26T10:39:10Z
+opp_pytrendfollow runs end 2026-09-26T10:39:10Z rc=0 secs=0
+opp_pytrendfollow runs_2 start 2026-09-26T10:39:10Z
+opp_pytrendfollow runs_2 end 2026-09-26T10:39:11Z rc=0 secs=1
+opp_pybotters runs start 2026-09-26T10:39:11Z
+opp_pybotters runs end 2026-09-26T10:39:11Z rc=0 secs=0
+opp_pybotters runs_2 start 2026-09-26T10:39:11Z
+opp_finmarketpy runs_2 end 2026-09-26T10:39:11Z rc=0 secs=6
+opp_freqtrade runs start 2026-09-26T10:39:11Z
+opp_freqtrade runs end 2026-09-26T10:39:12Z rc=0 secs=1
+opp_freqtrade runs_2 start 2026-09-26T10:39:12Z
+opp_freqtrade runs_2 end 2026-09-26T10:39:12Z rc=0 secs=0
+opp_pm_backtester runs start 2026-09-26T10:39:12Z
+opp_pybotters runs_2 end 2026-09-26T10:39:12Z rc=0 secs=1
+opp_rqalpha runs start 2026-09-26T10:39:12Z
+opp_pm_backtester runs end 2026-09-26T10:39:13Z rc=0 secs=1
+opp_pm_backtester runs_2 start 2026-09-26T10:39:13Z
+opp_rqalpha runs end 2026-09-26T10:39:13Z rc=0 secs=1
+opp_rqalpha runs_2 start 2026-09-26T10:39:13Z
+opp_pm_backtester runs_2 end 2026-09-26T10:39:13Z rc=0 secs=0
+opp_pineforge runs start 2026-09-26T10:39:13Z
+opp_pineforge runs end 2026-09-26T10:39:14Z rc=0 secs=1
+opp_pineforge runs_2 start 2026-09-26T10:39:14Z
+opp_pineforge runs_2 end 2026-09-26T10:39:14Z rc=0 secs=0
+opp_quanttrader runs start 2026-09-26T10:39:14Z
+opp_rqalpha runs_2 end 2026-09-26T10:39:14Z rc=0 secs=1
+opp_fast_trade runs start 2026-09-26T10:39:14Z
+opp_fast_trade runs end 2026-09-26T10:39:15Z rc=0 secs=1
+opp_fast_trade runs_2 start 2026-09-26T10:39:15Z
+opp_fast_trade runs_2 end 2026-09-26T10:39:16Z rc=0 secs=1
+opp_qflib runs start 2026-09-26T10:39:16Z
+opp_quanttrader runs end 2026-09-26T10:39:16Z rc=0 secs=2
+opp_quanttrader runs_2 start 2026-09-26T10:39:16Z
+opp_quanttrader runs_2 end 2026-09-26T10:39:19Z rc=0 secs=3
+opp_zipline_reloaded runs start 2026-09-26T10:39:19Z
+opp_qflib runs end 2026-09-26T10:39:31Z rc=0 secs=15
+opp_qflib runs_2 start 2026-09-26T10:39:31Z
+opp_vectorbt runs_2 end 2026-09-26T10:39:36Z rc=0 secs=30
+opp_repro_67_lumibot runs start 2026-09-26T10:39:36Z
+opp_repro_67_lumibot runs end 2026-09-26T10:39:36Z rc=0 secs=0
+opp_repro_67_lumibot runs_2 start 2026-09-26T10:39:36Z
+opp_repro_67_lumibot runs_2 end 2026-09-26T10:39:36Z rc=0 secs=0
+opp_repro_60_hikyuu runs start 2026-09-26T10:39:36Z
+opp_repro_60_hikyuu runs end 2026-09-26T10:39:36Z rc=0 secs=0
+opp_repro_60_hikyuu runs_2 start 2026-09-26T10:39:36Z
+opp_repro_60_hikyuu runs_2 end 2026-09-26T10:39:37Z rc=0 secs=1
+opp_repro_15_backtestingcore runs start 2026-09-26T10:39:37Z
+opp_repro_15_backtestingcore runs end 2026-09-26T10:39:37Z rc=0 secs=0
+opp_repro_15_backtestingcore runs_2 start 2026-09-26T10:39:37Z
+opp_zipline_reloaded runs end 2026-09-26T10:39:37Z rc=0 secs=18
+opp_zipline_reloaded runs_2 start 2026-09-26T10:39:37Z
+opp_repro_15_backtestingcore runs_2 end 2026-09-26T10:39:37Z rc=0 secs=0
+opp_repro_8_opentrader runs start 2026-09-26T10:39:37Z
+opp_repro_8_opentrader runs end 2026-09-26T10:39:38Z rc=0 secs=1
+opp_repro_8_opentrader runs_2 start 2026-09-26T10:39:38Z
+opp_repro_8_opentrader runs_2 end 2026-09-26T10:39:38Z rc=0 secs=0
+opp_repro_56_zvt runs start 2026-09-26T10:39:38Z
+opp_repro_56_zvt runs end 2026-09-26T10:39:38Z rc=0 secs=0
+opp_repro_56_zvt runs_2 start 2026-09-26T10:39:38Z
+opp_repro_56_zvt runs_2 end 2026-09-26T10:39:39Z rc=0 secs=1
+opp_repro_69_gobacktest runs start 2026-09-26T10:39:39Z
+opp_repro_69_gobacktest runs end 2026-09-26T10:39:39Z rc=0 secs=0
+opp_repro_69_gobacktest runs_2 start 2026-09-26T10:39:39Z
+opp_repro_69_gobacktest runs_2 end 2026-09-26T10:39:39Z rc=0 secs=0
+opp_repro_11_octobot runs start 2026-09-26T10:39:39Z
+opp_repro_11_octobot runs end 2026-09-26T10:39:39Z rc=0 secs=0
+opp_repro_11_octobot runs_2 start 2026-09-26T10:39:39Z
+opp_repro_11_octobot runs_2 end 2026-09-26T10:39:40Z rc=0 secs=1
+opp_repro_7_superalgos runs start 2026-09-26T10:39:40Z
+opp_repro_7_superalgos runs end 2026-09-26T10:39:40Z rc=0 secs=0
+opp_repro_7_superalgos runs_2 start 2026-09-26T10:39:40Z
+opp_repro_7_superalgos runs_2 end 2026-09-26T10:39:40Z rc=0 secs=0
+opp_repro_52_lean runs start 2026-09-26T10:39:40Z
+opp_repro_52_lean runs end 2026-09-26T10:39:41Z rc=0 secs=1
+opp_repro_52_lean runs_2 start 2026-09-26T10:39:41Z
+opp_repro_52_lean runs_2 end 2026-09-26T10:39:41Z rc=0 secs=0
+opp_repro_57_wondertrader runs start 2026-09-26T10:39:41Z
+opp_repro_57_wondertrader runs end 2026-09-26T10:39:41Z rc=0 secs=0
+opp_repro_57_wondertrader runs_2 start 2026-09-26T10:39:41Z
+opp_repro_57_wondertrader runs_2 end 2026-09-26T10:39:41Z rc=0 secs=0
+opp_repro_94_mote runs start 2026-09-26T10:39:41Z
+opp_repro_94_mote runs end 2026-09-26T10:39:42Z rc=0 secs=1
+opp_repro_94_mote runs_2 start 2026-09-26T10:39:42Z
+opp_repro_94_mote runs_2 end 2026-09-26T10:39:42Z rc=0 secs=0
+opp_repro_80_hummingbot runs start 2026-09-26T10:39:42Z
+opp_repro_80_hummingbot runs end 2026-09-26T10:39:42Z rc=0 secs=0
+opp_repro_80_hummingbot runs_2 start 2026-09-26T10:39:42Z
+opp_repro_80_hummingbot runs_2 end 2026-09-26T10:39:42Z rc=0 secs=0
+opp_repro_61_barter runs start 2026-09-26T10:39:42Z
+opp_repro_61_barter runs end 2026-09-26T10:39:43Z rc=0 secs=1
+opp_repro_61_barter runs_2 start 2026-09-26T10:39:43Z
+opp_repro_61_barter runs_2 end 2026-09-26T10:39:43Z rc=0 secs=0
+opp_qflib runs_2 end 2026-09-26T10:39:47Z rc=0 secs=16
+opp_zipline_reloaded runs_2 end 2026-09-26T10:39:56Z rc=0 secs=19
+opp_ziplime runs end 2026-09-26T10:40:45Z rc=0 secs=111
+opp_ziplime runs_2 start 2026-09-26T10:40:45Z
