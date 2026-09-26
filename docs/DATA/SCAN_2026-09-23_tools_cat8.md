@@ -44697,3 +44697,621 @@ K12 検査の出力の貼付           1 件
 - 台帳に入れた値: E1a 印・段 4 / E1b 印・段 2 / E3b 印・段 4 / E5 印・段 2(どれも根拠の種類は `一次資料`、docstring を印字した手 = 生ログ 1770〜1811・1812〜1824・1851〜1894・1895〜1901 行)。E2 `未判別`(対象が時系列・約定・板・足・参照データであることを言う逐語が無い)/ E3a `未判別`(ファイルの表の理由が同じ文で、当たった行に漏れの意味でないものがある)/ E4・E6 `未判別`(案 B の記録が足りない)。§4.0 の宣伝詐欺の兆候は `未確認`。
 - scratchpad の外に書いたもの: `/tmp` 直下の 36 個は `scratchpad/cat8/run31_tmp/` に移した。`/usr/lib/python3/dist-packages` の下に新しくできた `.pyc` 111 個は消した。
 - 8-034 は「残り」に数える。32 回目 = 8-034 の残りだけ。
+
+## 区分8 — 32 回目の実行(2026-09-26)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2、追補§4)。8-034 `Pandas` の残りだけを扱う(起動文§1)。§6-1のやり直し(4配布物)・最小実行のやり直し・E2の対象の逐語・E3aのなしのやり直し・E4/E6の案Bの記録の強化・§4.0の宣伝詐欺の兆候の本文取得を行う(§2.5・§1)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run32_prompt.md`(起動文、指紋 `20260923_tools_survey_cat8_run32_prompt.md@5d1ede7b3274`)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run31.md`(31回目の検収、この回の出発点)
+- `docs/DATA/probes/20260923_tools_8_run31.log`(31回目の生ログ。読むだけ、この回の根拠には使わない)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+- `https://pypi.org/pypi/{numpy,python-dateutil,six}/json`(依存3件のPyPI情報。取得日2026-09-26)
+- `https://pypistats.org/api/packages/{numpy,python-dateutil,six}/recent`(依存3件の週DL数。取得日2026-09-26)
+- `https://api.osv.dev/v1/query`(pandas・numpy・python-dateutil・sixの既知の脆弱性。取得日2026-09-26)
+- `.../venvs/8-034/check32/*.whl`(§6-1で`pip download --no-deps --only-binary :all:`により取得した4配布物のwheel)、`.../venvs/8-034/check32_extract/`(展開先)
+- `.../venvs/8-034/run32/`(この回の新しい隔離venv・最小実行スクリプト・合成データ)
+- `.../venvs/8-034/src/pandas`(31回目に取得した公式リポジトリの写し、取り直さない)
+- `https://x.com/svpino/status/1897277165542269439`・`https://x.com/KanpaiPandas/status/1664630242596495361`(fxtwitter API経由で本文を逐語取得。取得日2026-09-26)
+- `.claude/skills/x-research`(X調査の手順)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `Pandas` / N・候補の実体は31回目と同じ(取り直さない)。この回の最初の手で`.../venvs/8-034/tmp`を作り(`mkdir -p`、`export`だけでは作られない)、`ls .../venvs/8-034`(check/list.txt/run/srcが存在)・`ls -ld /root/.m2 /root/.gradle`(`/root/.m2`無し・`/root/.gradle`は2026-03-31のまま)・`du -sh /root/.cache/pip`(728M、変化なし)・`ls /tmp`の`pip-*`/`pandas*`(0件)を確認した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:2-12 |
+| 2 | `Pandas` / この回に解決される依存の版を、ambient環境のsite-packagesを使わない新規の隔離venvでdry-run+reportにより確認した: numpy 2.4.6・python-dateutil 2.9.0.post0・six 1.17.0(31回目と同じ版)。最初のdry-runはambient環境の`python-dateutil`/`six`を既に満たされていると誤答したため、隔離venvで取り直した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:23-32 docs/DATA/probes/20260923_tools_8_run32.log:33-47 |
+| 3 | `Pandas` / §6-1のやり直し(導入・実行で使う4配布物全部、最初の導入・実行の前に完了): pandas==3.0.6・numpy==2.4.6・python-dateutil==2.9.0.post0・six==1.17.0を`pip download --no-deps --only-binary :all:`でwheelのみ取得(ソースから作らない)、全部展開してファイル一覧・`.so`のldd(標準システムライブラリとnumpy自身が同梱するopenblas/gfortran/quadmathのみ)・METADATA(配布元一致)・pyファイル全体の不審コード(urlopen/subprocess/os.system/eval/exec/curl/wget、top-level `__init__.py`には無し)・URLホスト一覧・OSV.devの既知の脆弱性(4件とも0件)・PyPI project_urls・週DL数(numpy 186M・python-dateutil 208M・six 205M)を確認した。導入を止める所見は無い。結論の行(`method=結論`)は導入(`pip install`)より前 | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:48-497 docs/DATA/probes/20260923_tools_8_run32.log:498-500 |
+| 4 | `Pandas` / 導入・最小実行のやり直し: `.../venvs/8-034/run32/`に新しい隔離venvを作り(31回目の`run/`は使わない)、`pip install --no-index --find-links check32 pandas==3.0.6`で§6-1済みのwheel4件だけから導入した(網から取らない、install所要秒=6.58)。`pip list`が§6-1の結論の一覧(pandas/numpy/python-dateutil/six)と一致することを確認し、`pip check`は導入直後・最小実行後の両方で問題なし | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:501-526 docs/DATA/probes/20260923_tools_8_run32.log:566-568 |
+| 5 | `Pandas` / 最小実行(実行所要秒=0.384): 合成データでE1a(`assert_frame_equal`のPASS/FAIL/tolerance)・E1b(`groupby`/`corr`)・E2(`duplicated`/`is_monotonic_increasing`/`merge indicator`)・E3b(`merge_asof backward`)・E5(`sample random_state`)の中核を実行し、いずれも文書どおりの挙動(31回目と同じ)を実測した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| 6 | `Pandas` / E2の新しい逐語: `Series.asfreq`/`DataFrame.asfreq`のdocstring逐語「Convert time series to specified frequency」(対象=時系列を言う逐語)と、同じ関数の逐語「The values corresponding to any timesteps in the new index which were not present in the original index will be null」(欠けの報告を言う逐語)を見つけた。合成の約定風時系列(1秒間隔、1点欠落)に`asfreq(\"1s\")`を当てると、欠けた時点が自動でNaNとして報告されることを実測した。E2述語の対象(時系列・約定・板・足・参照データ)と検出(欠け)の両方が同じ機能の中にあるため`印`にできると考えるが、この回は起動文§1の指示(対象の逐語と検出の逐語が同じ機能について要る)への当て方をリードに確認するため、値はいったん`未判別`のまま報告する(判断に迷った点1) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:624-653 docs/DATA/probes/20260923_tools_8_run32.log:654-677 |
+| 7 | `Pandas` / E3aの`なし`をやり直した: 同じ一覧(2,234件)・同じ語(ルックアヘッド・look-ahead/survivorship・生存者/leak・リーク・未来/point-in-time・as-of・時点)で`cat8_search.py`を打ち直し、当たり44ファイル/66行を全部読んだ。31回目で同じ文を約40ファイルに当てていた問題を直し、ファイルごとに当たった語がそこで何を指すかを個別に書いた(`### 当たりの判定`を参照)。「leak」の64件はメモリ・ファイル記述子・警告・例外の伝播等の「漏れ」の意味(候補自身の開発記録・単体テストのコメントを含む)で、ルックアヘッド検出を指す逐語は無かった。「point-in-time」の2件は別配布物`fredapi`の説明で候補の機能ではない | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:1548-1665 |
+| 8 | `Pandas` / E4の案Bの記録を強化した: `doc/source`配下の全217件(rst216・ipynb1)の道と題を機械的に全部印字して読了、E4の語の組を道+題にgrep -i -Eで当てて選んだ頁は0件。`find pandas -type d`の全ディレクトリにE4の語をgrep -i -Eで当てて選んだディレクトリも0件。見積もり(同じ一覧・同じ語)はE4=950行(167ファイル)で500行超のため`cat8_search.py`は打たず、印を探し尽くした範囲(0件の機械選定)と当たりの行の数(950行)を記録して未判別のまま残す | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:686-914 docs/DATA/probes/20260923_tools_8_run32.log:919-1214 docs/DATA/probes/20260923_tools_8_run32.log:1361-1376 |
+| 9 | `Pandas` / E6の案Bの記録を強化した: 文書はE4と同じ217件を読了、E6の語の組で選ばれた2頁(`getting_started/intro_tutorials/includes/air_quality_no2.rst`・`reference/testing.rst`)を全部本文を読んだ。`reference/testing.rst`は`testing.assert_frame_equal`等(E1aで判定済み)・エラークラス一覧・`pandas.test`(候補が自分自身の版・ランタイムを試験する仕組み、L-516対象外)・`show_versions`(バグ報告用の環境情報表示)のみで新規のE6印は無い。`air_quality_no2.rst`は「Air quality data」(NO2大気汚染データのチュートリアル説明)という語の一致でデータ品質・検証とは無関係。ソースはE4と同じ全ディレクトリにE6の語を当てて選んだが、一致したのは`pandas/tests/`・`pandas/_testing`・`web/tests`等の候補自身の試験用ディレクトリのみでL-516対象。見積もりはE6=101,494行(1,603ファイル)で500行超のため未判別のまま残す | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:915-918 docs/DATA/probes/20260923_tools_8_run32.log:1215-1392 docs/DATA/probes/20260923_tools_8_run32.log:1393-1504 |
+| 10 | `Pandas` / 当方データ投入・時刻の扱い・規模の見積・外部送信を§6-1済みの新しい隔離venvでやり直した: tardis形式の合成csv.gzの読み込みとUTC変換、合成100万行でのDataFrame構築0.154秒・1分足resample集計0.036秒・ピークRSS 113.6MB、importのみでの`socket.connect`監視(接続試行0回)を確認した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:569-613 docs/DATA/probes/20260923_tools_8_run32.log:614-623 |
+| 11 | `Pandas` / §4.0「宣伝詐欺の兆候」: WebSearchを語を変えて3回(`site:x.com pandas python scam giveaway`/`site:x.com "pandas" airdrop wallet crypto fake`/`site:x.com pandas pydata 使ってみた トレード`)打ち、fxtwitter APIで実際の投稿本文2件(svpino=pandasの性能比較の使用報告(第三者製品`FireDucks`の宣伝を含む)、KanpaiPandas=暗号資産トークンのairdrop勧誘)を逐語取得して読んだ。pandasライブラリ自体を騙る宣伝・詐欺は見当たらなかったが、「Pandas」を名乗る無関係な暗号資産・NFTプロジェクト(Kanpai Pandas等)が実在し、airdrop勧誘等の宣伝投稿がある(名前の混同に注意) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:1505-1520 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 浅い
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 浅い
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 浅い
+34. `Pandas` (8-034) — この回(32回目)でE1a〜E5を維持・E2は未判別のまま(逐語はあるがリードの判断待ち)、E3aは全件検索でなし、E4・E6は案Bの記録(印を探し尽くしたが見つからず、読んだ範囲と当たりの行の数を記録)のまま未判別。§6-1をwheelのみ(--only-binary :all:)でやり直し、最小実行もやり直した — 状態: 浅い
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 未着手
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 未着手
+40. `SciPy` (8-040) — (台帳の値のまま) — 状態: 未着手
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Kafka` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Prefect` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Pandas` | E1a | 印 | 4 | 実測 | `assert_frame_equal`のdocstring逐語「This function is intended to compare two DataFrames and output any differences」(1674-1745行)。パラメータ逐語「relative tolerance (``rtol``) and absolute tolerance (``atol``)」で許容誤差を指定できる(段5の(ア))。この回の隔離venv(check32のwheelだけから導入、§6-1済み)での最小実行(527-565行)で、一致する2つのDataFrameはPASS、値が異なる2つのDataFrameはAssertionErrorで差分を自動報告(FAIL)、`rtol=1000,atol=1000`指定でその差分が許容されて通過することを実測した。対象(2つの出力)は引数逐語「First DataFrame to compare.」「Second DataFrame to compare.」のとおり一般のDataFrameで、道具自身の枠組みに限らない(段4)。結果を保存して次回と自動比較する機能(段5の(イ))は無い | docs/DATA/probes/20260923_tools_8_run32.log:1674-1745 docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | E1b | 印 | 2 | 実測 | `groupby`のdocstring逐語「A groupby operation involves some combination of splitting the object, applying a function, and combining the results」(1854-1886行)、`corr`のdocstring逐語「Compute pairwise correlation of columns, excluding NA/null values」(同範囲)。利用者が選ぶのは列(`corr`)・グループ化キー(`groupby`)で、集計・相関の計算の中身はpandasが持つ(23回目dbtのMetricFlow・14回目Great ExpectationsのColumnMeanと同じ当て方)。最小実行(527-565行)で`groupby("sym")["pnl"].sum()`と`corr()`が自動で計算することを実測したが、その値を当方の値と自動で比較・判定する機能はpandas自身に無いため段2 | docs/DATA/probes/20260923_tools_8_run32.log:1854-1886 docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | E2 | 未判別 | 未判別 | 実測 | `Series.asfreq`/`DataFrame.asfreq`のdocstring逐語「Convert time series to specified frequency」(624-653行、対象=時系列であることの逐語)と同じ関数の逐語「The values corresponding to any timesteps in the new index which were not present in the original index will be null (``NaN``)」(同範囲、欠けの報告の逐語)を見つけたが、この2つの逐語は同じ機能(asfreq)の中にあるものの、この回はリードの判断を仰ぐため一旦`未判別`のまま報告する(判断に迷った点1参照)。実測(654-677行)で、1秒間隔の合成の約定風時系列から1点(00:00:02)を欠落させた入力に`asfreq("1s")`を当てると、欠けた時点が自動でNaNとして報告されることを確認した | docs/DATA/probes/20260923_tools_8_run32.log:624-653 docs/DATA/probes/20260923_tools_8_run32.log:654-677 |
+| `Pandas` | E3a | なし | - | 実測 | 一覧2234件/読んだ2234件、当たり44ファイル/66行(全件を`cat8_search.py`で判定)。ファイルの表を参照。「leak」の当たり64件は全部メモリ・ファイル記述子・警告・例外の伝播等の「漏れ」の意味(候補自身の開発記録・単体テストのコメント、L-516対象を含む)で、ルックアヘッド検出を指す逐語ではない。「point-in-time」の当たり2件は別配布物`fredapi`の説明(候補の機能に数えない) | docs/DATA/probes/20260923_tools_8_run32.log:1548-1665 |
+| `Pandas` | E3b | 印 | 4 | 実測 | `merge_asof`のdocstring逐語「This is similar to a left-join except that we match on nearest key rather than equal keys」「A "backward" search selects the last row in the right DataFrame whose 'on' key is less than or equal to the left's key」(1746-1801行)、既定`direction: str = "backward"`。`tolerance`引数で許容範囲を指定できる(段5の(ア))。最小実行(527-565行)で、09:07の約定が09:10(未来)ではなく09:05(既知)の価格101を使うことを実測した。対象(結合する2つのデータの流れ)は引数逐語「First pandas object to merge.」「Second pandas object to merge.」(left/rightは`DataFrame or named Series`)のとおり一般のDataFrameで道具の外から持ち込める(段4)。結果を保存して次回と比較する機能(段5の(イ))は無い | docs/DATA/probes/20260923_tools_8_run32.log:1746-1801 docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 案Bの記録: 文書は`doc/source`配下の全217件(rst216+ipynb1)の道と題を機械的に全部印字して読了(692-911行)、E4の語の組(リプレイ・再生・replay/record・記録・capture/playback・再実行・rerun)を道+題にgrep -i -Eで当てて選んだ頁は0件(912-914行、rc=1=一致なし)。ソースは`find pandas -type d`の全ディレクトリ(919-1211行)にE4の語をgrep -i -Eで当てて選んだディレクトリも0件(1212-1214行、rc=1)。見積もり(1361-1376行)はN全体2,234ファイルでE4=950行(167ファイル)、500行超のため`cat8_search.py`は打たず未判別のまま残す。限界: 題・path・ディレクトリ名に語が出ない機能の記述(個別APIの引数中の記述等)は読み落としうる | docs/DATA/probes/20260923_tools_8_run32.log:692-911 docs/DATA/probes/20260923_tools_8_run32.log:912-914 docs/DATA/probes/20260923_tools_8_run32.log:919-1211 docs/DATA/probes/20260923_tools_8_run32.log:1212-1214 docs/DATA/probes/20260923_tools_8_run32.log:1361-1376 |
+| `Pandas` | E5 | 印 | 2 | 実測 | `sample`のdocstring逐語「You can use `random_state` for reproducibility」(1802-1853行)。最小実行(527-565行)で`random_state=42`を指定した2回の`sample(n=5,random_state=42)`が`.equals()`でTrue(完全一致)になることを実測した。呼ぶと結果を出すだけで、2回の結果が一致するかを自動判定する機能は無いため段2 | docs/DATA/probes/20260923_tools_8_run32.log:1802-1853 docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 案Bの記録: 文書はE4と同じ217件を読了(692-911行)、E6の語の組(検証・verif・validat/品質・quality/test・assert・check)を道+題にgrep -i -Eで当てて選ばれた2頁(`getting_started/intro_tutorials/includes/air_quality_no2.rst`・`reference/testing.rst`、915-918行)を全部本文を読んだ(1393-1480行、1481-1504行)。`reference/testing.rst`は`testing.assert_frame_equal`等(E1aで判定済み)とエラークラスの一覧、`pandas.test`(候補が自分自身の版・ランタイムを試験する仕組み=L-516)、`show_versions`(バグ報告用の環境情報表示で検証機能ではない)のみで新規のE6印は無い。`air_quality_no2.rst`は「Air quality data」という語の一致(NO2大気汚染データのチュートリアル説明)でデータ品質・検証とは無関係。ソースはE4と同じ全ディレクトリにE6の語を当てて選んだが、一致したのは`pandas/tests/`・`pandas/_testing`・`web/tests`等の候補自身の試験・testing用ディレクトリのみ(1215-1360行)でL-516対象、E1aで扱うassert系以外に新規のE6印は無い。見積もり(1377-1392行)はE6=101,494行(1,603ファイル)で500行超のため未判別のまま残す | docs/DATA/probes/20260923_tools_8_run32.log:692-911 docs/DATA/probes/20260923_tools_8_run32.log:915-918 docs/DATA/probes/20260923_tools_8_run32.log:1393-1480 docs/DATA/probes/20260923_tools_8_run32.log:1481-1504 docs/DATA/probes/20260923_tools_8_run32.log:1215-1360 docs/DATA/probes/20260923_tools_8_run32.log:1377-1392 |
+| `Apache Spark` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `NumPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `SciPy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(31回目の節) |  |
+
+### 当たりの判定
+
+`Pandas` E3a の当たりの判定(甲、ファイルの表。一覧2234件/読んだ2234件、当たり44ファイル/66行):
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/community/ecosystem.md | 2 | L241「database that contains point-in-time data (i.e. historic data」; L244「point-in-time data from ALFRED. fredapi makes use of pandas and returns」 — 別配布物`fredapi`(github.com/mortada/fredapi、pandasを使う側の第三者パッケージ)がFRED/ALFREDの改定履歴データ(point-in-time data)を扱うという説明で、pandas自身の機能ではない(起動文§1「別の配布物は数えない」の対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/.github/workflows/unit-tests.yml | 1 | L418「ASAN_OPTIONS: detect_leaks=0」 — AddressSanitizer(メモリリーク検出ツール)の設定オプションの無効化。候補自身の開発・CI設定(L-516対象)で、ルックアヘッド検出とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.17.0.rst | 1 | L1254「Bug causes memory leak in time-series line and area plot」 — プロット機能のメモリリークバグの修正記録(過去版の変更履歴)。「time-series」は不具合の起きた描画対象を指すだけで、ルックアヘッド検出機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.23.4.rst | 1 | L36「memory leak when calling .rolling(...).quantile(q)」 — `rolling.quantile`のメモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.24.0.rst | 1 | L2018「memory leaks... in the C engine when parsing NaN values」 — `read_csv`のCエンジンのメモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.25.0.rst | 2 | L1315「Fixed memory leak in DataFrame.to_json」; L1350「Bug in Rolling.min and Rolling.max that caused a memory leak」 — いずれも過去版のメモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.1.0.rst | 1 | L1299「Bug in read_csv was causing a file descriptor leak on an empty file」 — `read_csv`のファイル記述子リークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.2.0.rst | 1 | L791「read_sas no longer leaks resources on failure」 — `read_sas`のリソースリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.3.4.rst | 1 | L40「Fixed memory leaks in Series.rolling.quantile and Series.rolling.median」 — メモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.4.0.rst | 1 | L1058「Bug in DataFrame.to_json fix memory leak」 — メモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.5.2.rst | 1 | L31「Fixed memory leak in Styler.to_excel」 — メモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.0.0.rst | 3 | L1207「Fixed a reference leak in read_hdf」; L1208「Fixed a memory leak in DataFrame.to_json and Series.to_json...」; L1379「Fixed memory leak which stemmed from the initialization of the internal JSON module」 — 3件とも過去版のメモリ・参照リークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.2.1.rst | 1 | L22「Fixed memory leak in read_csv」 — メモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.3.3.rst | 1 | L68「Fix memory leak in DataFrame.to_json with datetime columns」 — メモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.0.6.rst | 1 | L44「Fixed memory leak in read_csv with engine="c"... invalid UTF-8」 — 現行版3.0.6自身の変更履歴に載るメモリリークバグ修正記録 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst | 7 | L946「...both leaked a RuntimeWarning」(整数オーバーフロー時の警告の伝播漏れの修正); L1036「...no longer leaks a bare numpy RuntimeWarning」(read_stataの警告伝播漏れの修正); L1092・L1093・L1094・L1095・L1101(5件、read_csv/to_jsonのメモリリーク修正記録) — 7件ともバグ修正履歴で、ルックアヘッド検出機能の記述ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/src/parser/tokenizer.cpp | 2 | L114「message is likewise free, where the old code leaked it.」; L1906「Assigning realloc's result straight to word_ends would leak the old」 — Cパーサーのメモリ管理(realloc)に関する実装コメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/tslib.pyx | 1 | L523「cast_from_unit's guard, leaking OverflowError」 — 例外(OverflowError)が握りつぶされず伝播する(漏れる)という意味の実装コメントで、データのルックアヘッドとは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/conftest.py | 3 | L1943〜1945「make sure sqlite history file handle is not leaked」等 — pytestのconftestにあるsqlite履歴ファイルハンドルのリーク回避コメント(候補自身のテスト設定、L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/arrays/datetimelike.py | 1 | L318「do not cache or you'll create a memory leak」 — キャッシュ実装のメモリリーク回避コメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/common.py | 1 | L993「Do not leak the handles that were opened before the failure」 — ファイルハンドルのリーク回避の実装コメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/formats/format.py | 1 | L1080「open instead of codecs.open prevents a file leak」 — ファイルリーク回避の実装コメント |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/arrays/sparse/test_reductions.py | 1 | L590「boxed already and so would not reach the leak」 — 候補自身の単体テストコード内のコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/config/test_localization.py | 2 | L83「def test_can_set_locale_no_leak」; L84「Test that can_set_locale does not leak」 — ロケール設定のリーク検査、候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/copy_view/test_replace.py | 1 | L398「the copy triggered by view must not have leaked the original values」 — コピーオンライトの値リーク検査、候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/extension/test_arrow.py | 1 | L1508「a 2-D EA operand leaked "Mask must be 1D array"」 — エラーメッセージの伝播に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/frame/test_reductions.py | 1 | L3053「than leak the -1 cython sentinel as a column label」 — 内部センチネル値の漏れ防止に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/indexes/multi/test_indexing.py | 1 | L1301「would both leak the NaN row in...」 — MultiIndexの内部実装の挙動(NaN行が漏れて出る不具合)に関する候補自身のテストコメント(L-516対象)。データの「行」が漏れる意味だが、その時点で知り得ない情報の使用(ルックアヘッド)ではなく実装バグの回避 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_pandas.py | 1 | L1673「a dt64tz index must not leak a stale UTC flag onto naive」 — 内部フラグの伝播漏れに関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py | 5 | L487「def test_decode_broken_json_leak」; L1251・L1253・L1361・L1373(JSONエンコーダのメモリリーク検査コメント) — 5件とも候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_file_buffer_url.py | 1 | L439「def test_file_descriptor_leak」 — ファイル記述子リークの候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_read_errors.py | 1 | L58「previously leaked a cryptic error from pyarrow option」 — エラーメッセージの伝播漏れに関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_c_parser_only.py | 3 | L1235・L1680・L1691(Cパーサーのメモリ管理・デコード失敗時の伝播漏れに関するコメント) — 3件とも候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_parallel_read.py | 1 | L1511「must not leak StopIteration out of」 — 例外伝播に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_errors.py | 1 | L218「leak the opaque "too many inputs" ValueError」 — エラー伝播に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_select.py | 1 | L105「is silently dropped and extra rows leak through」 — HDF5クエリのフィルタ処理で余分な「行」が漏れて出てくることを防ぐ、候補自身のテストコメント(L-516対象)。クエリフィルタの実装バグの回避であって、その時点で知り得ない情報の使用(ルックアヘッド)の検出ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_clipboard.py | 1 | L187「with the process-wide locale it leaked put back」 — クリップボードテストのロケール設定リーク、候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_compression.py | 2 | L398・L422(ファイルオブジェクトのリーク回避に関するコメント) — 候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/plotting/frame/test_frame.py | 1 | L2149「def test_memory_leak」 — プロット機能のメモリリークテスト、候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/scalar/timedelta/test_arithmetic.py | 1 | L1672「the cast used to leak "cannot convert float NaN to integer"」 — エラーメッセージ伝播に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_logical_ops.py | 2 | L527・L528(bool/int64・Sparseの型変換実装詳細の漏れに関するコメント) — 候補自身のテスト(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_ufunc.py | 1 | L527「ones np.asarray flattens to object leaked the scalar itself」 — ufunc実装詳細の漏れに関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/tseries/offsets/test_common.py | 1 | L427「cython signature error leaking out of the offset's _add_datetime」 — Cython内部エラー伝播に関する候補自身のテストコメント(L-516対象) |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/about/governance.md | 1 | L181「leak into their work with the Project.」 — ガバナンス文書の利益相反(conflict of interest)の節。雇用主の専有情報がプロジェクトの作業に漏れ込むという意味で、データ・ルックアヘッドとは無関係 |
+
+### ツール1件ごとの表
+
+`Pandas`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`と`### 要素と段`・`### 知見`を参照(21回目のdbt・24回目のPrefect・26回目のDebezium・28回目のApache Kafka・31回目のPandasと同じ扱いで、文章表は新設せず候補の一覧の8-034の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+この回に変えた行だけを書く(ほかの行は31回目の節の値のまま。起動文§2.5)。
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `Pandas` | 版 | 3.0.6(実測。この回の隔離venvで`pandas.__version__`を確認、§6-1済みのwheelから導入) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:513-523 |
+| `Pandas` | 導入可否 | 可(実測。§6-1で開いたwheel4件(pandas/numpy/python-dateutil/six)だけから`pip install --no-index --find-links check32`で導入、依存解決の網からの取得なし) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:504-512 |
+| `Pandas` | install所要秒 | 6.58(生ログのtime_s=6.580。§6-1済みのwheelだけからの導入) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:504-512 |
+| `Pandas` | pip check | 問題なし(`No broken requirements found`、導入直後と最小実行後の2回とも実測) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:524-526 docs/DATA/probes/20260923_tools_8_run32.log:566-568 |
+| `Pandas` | 最小実行の可否 | 可(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | 最小実行の中身 | 合成データでE1a(`assert_frame_equal`のPASS/FAIL/tolerance)・E1b(`groupby`/`corr`)・E2(`duplicated`/`is_monotonic_increasing`/`merge indicator`)・E3b(`merge_asof backward`)・E5(`sample random_state`)の中核を実行、全部文書どおりの挙動を確認(§6-1済みのwheelから導入した隔離venvで実行) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | 実行所要秒 | 0.384(中核の一括実行、生ログのtime_s=0.384) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | wheel展開 | 4配布物(pandas/numpy/python-dateutil/six)を全部展開。`.py`1,927・`.pyi`305・`.so`65(numpy20+pandas45)等。難読化は見当たらない(全部平文) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:74-144 docs/DATA/probes/20260923_tools_8_run32.log:145-239 |
+| `Pandas` | setup.py導入時実行 | 該当なし(4配布物ともwheelにsetup.pyは無い。pyファイル全体でurlopen/requests/subprocess/os.system/eval/exec/curl/wgetを検査したが、top-levelの`__init__.py`には該当なし。sixの`urlopen`はpy2/py3互換の名前解決表の一部、`exec`は`exec_`ヘルパー関数の定義内で、いずれもimport時に実行される導入時実行コードではない) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:364-371 docs/DATA/probes/20260923_tools_8_run32.log:372-382 |
+| `Pandas` | 同梱バイナリ | あり(wheel内`.so`65個、numpy20+pandas45)。numpyの`libscipy_openblas64_`・`libgfortran`・`libquadmath`はnumpy自身が同梱する数値計算ランタイム(manylinuxホイールの標準的な作り)で、ldd参照は標準システムライブラリ(libc/libm/libpthread/libgcc_s/libstdc++/libz/ld-linux)のみ。第三者の不審なネイティブライブラリの同梱は見当たらない | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:145-221 docs/DATA/probes/20260923_tools_8_run32.log:222-239 |
+| `Pandas` | 外部送信 | 見当たらない(実測。pyファイル全体でtelemetry/analytics/phone home等の語がpandas/__init__.py・pandas/_config配下に無いことをgrepで確認したうえ、`socket.socket.connect`を差し替えてimportを実行し、接続試行回数0を確認した) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:614-623 |
+| `Pandas` | 登録の要否 | 不要(実測。PyPI・§6-1で取ったwheelから登録なしにpip installで導入・実行できた) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:504-512 |
+| `Pandas` | 隠れた依存 | コア依存は`numpy`(>=1.26.0 python<3.14 / >=2.3.3 python>=3.14)・`python-dateutil`>=2.8.2・`tzdata`(windows/emscripten条件付き)のみ(METADATA実測)。実際にpip installで入ったのはnumpy 2.4.6・python-dateutil 2.9.0.post0・six 1.17.0(python-dateutilの依存)で、4配布物とも§6-1(配布元一致・脆弱性0件・難読化なし等)を済ませたwheelから導入した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:240-363 docs/DATA/probes/20260923_tools_8_run32.log:513-523 |
+| `Pandas` | 依存数 | コア依存3件(numpy・python-dateutil・tzdata条件付き)。実際に追加で入ったのはnumpy・python-dateutil・sixの3パッケージ(4配布物ともwheelから、網からの取得なし) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:240-363 docs/DATA/probes/20260923_tools_8_run32.log:513-523 |
+| `Pandas` | 依存の一覧 | METADATA実測(4配布物とも)。pandasのRequires-Distは`numpy`・`python-dateutil`・`tzdata`(コア)+約60件のextras。numpyは追加のRequires-Distなし(METADATA確認)。python-dateutilは`six>=1.5`。sixはRequires-Distなし | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:240-363 |
+| `Pandas` | 配布元の一致 | 4配布物すべて一致。pandas: PyPI project_urls`github.com/pandas-dev/pandas`・`pandas.pydata.org`。numpy: `github.com/numpy/numpy`・`numpy.org`。python-dateutil: `github.com/dateutil/dateutil`(author_email `gustavo@niemeyer.net`)。six: `github.com/benjaminp/six`(author_email `benjamin@python.org`) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:240-363 docs/DATA/probes/20260923_tools_8_run32.log:455-484 |
+| `Pandas` | 難読化 | 見当たらない(4配布物とも。wheel展開の中身は平文の`.py`のみ、`.pyc`は含まれない) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:74-144 docs/DATA/probes/20260923_tools_8_run32.log:364-371 |
+| `Pandas` | 外部URL取得 | 見当たらない(4配布物の全`.py`ファイル中のURLホスト名を集計。github.com・pandas.pydata.org・numpy.org・docs.python.org等の公式・文書参照ホストのみで、不審なホストは無し) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:383-444 |
+| `Pandas` | 既知の脆弱性 | OSV.dev実測。pandas 3.0.6・numpy 2.4.6・python-dateutil 2.9.0.post0・six 1.17.0の4件すべて版指定で0件 | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:445-454 |
+| `Pandas` | 保守者名の一貫性 | 4配布物とも一貫。pandas: 「The Pandas Development Team」。numpy: project_urlsがgithub.com/numpy/numpy・numpy.orgで一致。python-dateutil: author_email `gustavo@niemeyer.net`とgithub.com/dateutil/dateutilが一致。six: author_email `benjamin@python.org`とgithub.com/benjaminp/sixが一致 | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:240-363 docs/DATA/probes/20260923_tools_8_run32.log:455-484 |
+| `Pandas` | 当方データ投入 | 実測。tardis形式(`timestamp,symbol,side,price,amount`)を模した合成csv.gz(2,000行)を`pd.read_csv(compression="gzip")`で読み込み、マイクロ秒timestampを`pd.to_datetime(unit="us",utc=True)`でUTC datetime64[us,UTC]に変換できることを確認した | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:569-595 |
+| `Pandas` | 時刻の扱い | 実測。マイクロ秒精度のtz-aware datetime64[us,UTC]への変換ができ、UTCのタイムゾーン情報を保持する | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:569-595 |
+| `Pandas` | 再現性 | E5参照(印・段2、`sample(random_state=)`。この回の隔離venvで再実測) | 実測 | docs/DATA/probes/20260923_tools_8_run32.log:1802-1853 docs/DATA/probes/20260923_tools_8_run32.log:527-565 |
+| `Pandas` | 規模の見積 | 推定(小さい実行の実測から外挿)。合成100万行でDataFrame構築0.154秒・1分足resample集計(mean/std/count)0.036秒・プロセスのピークRSS 113.6MB(実測)。456日分の実際の行数はこの回でも確認しておらず、線形外挿の仮定に留まる | 推定 | docs/DATA/probes/20260923_tools_8_run32.log:596-613 |
+| `Pandas` | 宣伝詐欺の兆候 | 見当たらない(pandasライブラリ自体について。WebSearchを語を変えて3回、fxtwitter APIで実際の投稿本文2件(pandas性能比較の使用報告svpino、暗号資産airdrop勧誘KanpaiPandas)を逐語取得して読んだ。KanpaiPandas等「Pandas」を名乗る暗号資産トークン・NFTプロジェクトはpandasライブラリと無関係な別プロジェクトで、それらのairdrop勧誘投稿をpandasライブラリの宣伝と混同しない) | 未確認 | docs/DATA/probes/20260923_tools_8_run32.log:1505-1520 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数(総数)**: 31回目と同じ理由(shields.ioに総コミット数のバッジが無く、github.com・api.github.comがこのセッションのプロキシで403)。この回は再試行していない
+- **配布元の一致・週DL数・保守者数等、Pandas自身の一部の項目**: この回は依存3件(numpy/python-dateutil/six)の再測定を中心にしたため、Pandas自身の星・週DL数・初回公開日・保守者数は31回目の値のまま(変えていない、§4.0の表には書かない)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403のまま(31回目と同じ)。到達できたのはpypi.org・files.pythonhosted.org・pypistats.org・api.osv.dev・pandas.pydata.orgと、x.com/api.fxtwitter.com(fxtwitter API経由)。第2経路(オーナーPC)でのコミット数・宣伝詐欺の兆候のより広い確認は、この回も試みていない。
+
+### 判断に迷った点と問い
+
+1. [値・段の問い] E2について、`asfreq`のdocstringに「Convert time series to specified frequency」(対象=時系列を言う逐語)と「The values corresponding to any timesteps in the new index which were not present in the original index will be null」(欠けの報告を言う逐語)の両方を、同じ関数(`asfreq`)の中に見つけた。起動文§1の指示は「対象の逐語と、検出する機能の逐語が、同じ機能について要る」で、この2つは同じ`asfreq`という1つの関数のdocstring内にある。これを満たすとして`印`(段は、対象が外部の一般のDataFrameでよく(段4相当)、`method`引数で欠けの埋め方は指定できるが「検出の閾値・許容誤差」ではないため段5の(ア)は無いと考えられ、結果の保存・比較(イ)も無いため段4)にしてよいか、それとも「対象を言う逐語」が関数全体の説明文であり「時系列であるデータそのものの欠け」を直接名指ししていないという理由で、なお`未判別`のまま残すべきか、リードの判断を仰ぐ。実測(生ログ654-677行)では、実際に1点欠落した合成の時系列にasfreqを当てると欠けた時点がNaNとして自動報告されることを確認しており、機能としては述語の「欠け」の検出に当たる挙動を示している
+2. [それ以外の問い] E3aの`なし`をやり直し、44ファイル/66行の全部を個別に読んで理由を書いた(`### 当たりの判定`)。このうち`pandas/tests/io/pytables/test_select.py:105`(「extra rows leak through」)は31回目の検収で名指しされた行で、この回は「HDF5クエリのフィルタ処理で余分な行が漏れて出てくることを防ぐテストで、その時点で知り得ない情報の使用(ルックアヘッド)ではなく実装バグの回避」と当てた。この当て方(「行が漏れる」=データの意図しない混入と、ルックアヘッド=未来の情報の使用、を区別する当て方)が正しいか確認したい
+3. [それ以外の問い] E4・E6は、文書は全217件の道+題への機械的なgrep選定、ソースは全ディレクトリへの機械的なgrep選定という、この回で強化した方法でも新しい印が見つからなかった(E4は0件、E6はL-516対象の自己試験ディレクトリのみ)。500行の見積もり自体は31回目から変わっていない(E4=950行・E6=101,494行)。この状態を、設計票§2の案B(「印を探し尽くしても見つからない要素は未判別のまま残す」)の条件を満たしたものとしてリードが検収で扱ってよいか(調査班は「案Bの記録が揃った」とは書くが「案Bの条件を満たす」の最終判定はリードが行うと理解している)
+
+### この回に見つけた、自分では直せない違反(閉じずに書く)
+
+`cat8_ledger.py check-elements`が、この回の生ログに`/tmp`直下(scratchpadの外)のファイルを使った手が3件あることを検出した(下の出力)。中身は次のとおりで、リードの判断を仰ぐ。
+
+- **生ログ456行(実際の違反)**: 依存3件(numpy・python-dateutil・six)のPyPI情報を確認する手で、`curl -sS https://pypi.org/pypi/$pkg/json -o /tmp/x_$pkg.json`と、scratchpadではなく`/tmp`直下に一時JSONファイルを書いた(起動文§2.6違反。TMPDIR環境変数をこの`curl`の`-o`引数に反映させ忘れた)。同じ手の末尾で`rm -f /tmp/x_$pkg.json`を実行しており、この回の最後の確かめ(生ログ1888-1895行)で`/tmp`直下に該当ファイルが残っていないことを確認したが、生ログには違反の手そのものが残っている
+- **生ログ24行・34行(誤検出と考える)**: この回の最初の手で作った`TMPDIR`のディレクトリ名がそのまま`.../venvs/8-034/tmp`(起動文§2.5が指定した道)で、この道の中のファイル(例: `.../8-034/tmp/report.json`)が、`/tmp/(?!claude-0/)`という検査の正規表現に「`/tmp/`のあとが`claude-0/`でない」箇所(`tmp/report.json`の`tmp/`)として一致してしまったもの。実際のファイルは`scratchpad`の中(`/tmp/claude-0/...`)にあり、scratchpadの外には書いていない。誤検出と考えるが、自分では閉じない
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 受け入れ検査の出力
+
+`python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log ... docs/DATA/probes/20260923_tools_8_run32.log`(誤検出は閉じずに残す)。
+
+**この回に新しく出た指摘(自分では閉じない。理由を書いてリードに渡す)**:
+- **K1・K2(44051・44452・45119行目)**: 21〜31回目で誤検出と判定済みの大きな表の塊と同型(一次資料の逐語引用中の丸括弧・アスタリスクの偶奇が塊全体で合わないだけで、行ごとには閉じている)。44051・44452行目は31回目の節自身の行(この回で内容を変えていない)。45119行目はこの回の`### 当たりの判定`表(E3a、44行)の塊で、内訳を1行ずつ数えたところ45121行(`web/pandas/community/ecosystem.md`の行)だけが丸括弧1個分ずれており、原因は生ログの逐語引用「L241「database that contains point-in-time data (i.e. historic data」」が、pandasのソース側で1つの丸括弧の中身(`(i.e. historic data revisions)`)が2行にまたがっているうちの1行目だけを引用しているため(`grep`の1行単位の出力をそのまま逐語で引いた結果)。表の行としては閉じている
+- **K5(44059行目、Pandasの`個`に別の値`['129','421','45']`)**: 31回目からの既存指摘(31回目の検収で誤検出と判定済み)。1,129個(pandas/tests配下の.pyファイル数)・1,421個(wheel内.pyファイル数)・45個(wheel内.soファイル数)は桁区切りのカンマがK5の数値抽出で分断されたもので、対象が異なる別々の数
+- **K5(44533行目、Pandasの`同梱バイナリ`に別の値`['45','65']`)**: 誤検出と判断する。31回目の`同梱バイナリ`の値(44507行台、pandasのwheel単体の`.so`45個)と、この回の`同梱バイナリ`の値(44行台、§6-1をやり直した4配布物合計の`.so`65個=numpy20+pandas45)は、数える範囲(pandas単体か4配布物合計か)が違う別々の数で、同じ量の食い違いではない
+- **K5(44731行目、Pandasの`秒`に別の値`['0.036','0.154','1']`)**: 誤検出と判断する。この回の知見#10「合成100万行でのDataFrame構築0.154秒・1分足resample集計0.036秒」から、K5の数値抽出が「1分足」の「1」を秒の値として誤って拾ったもの(「1分足」は時間の長さの単位の名前で、実測の秒数ではない)
+- **K5(19538行目、Pandasの`規模の見積`に別の値`['0.036','0.057','0.154','0.257','4.95']`)**: 誤検出と判断する。`0.057`・`0.257`は31回目(旧環境・旧venv)の実測、`0.036`・`0.154`はこの回(§6-1をやり直した新しい隔離venv)の再実測で、同じ合成100万行のベンチマークでも実行のたびに壁時計時間が変わるのは正常(同じ量の食い違いではない)。`4.95`は31回目の検収で既に説明済みの誤帰属(15回目`OpenBB Terminal`の`pandas_ta`という語への部分一致)
+- **K13(34件、すべて11〜31回目までの既存指摘と同型)**: この回で新しく増えた行は無い(44507行目のPandasの根拠複写7行は31回目の節自身の行で、31回目の検収§4処置3等と同じ型)
+
+```
+K1 太字                  5 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  太字 ** の数が奇数 (7 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  太字 ** の数が奇数 (1 個)
+K2 括弧                  18 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  丸括弧 の数が合わない (272 対 265)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  丸括弧 の数が合わない (333 対 337)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44051  丸括弧 の数が合わない (146 対 144)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44452  丸括弧 の数が合わない (155 対 154)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45119  丸括弧 の数が合わない (45 対 44)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            4 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  Pandas の 個 に別の値: ['129', '421', '45']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44533  Pandas の 同梱バイナリ に別の値: ['45', '65']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44731  Pandas の 秒 に別の値: ['0.036', '0.154', '1']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19538  Pandas の 規模の見積 に別の値: ['0.036', '0.057', '0.154', '0.257', '4.95']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             34 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44507  Pandas の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run31.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 61 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 61 件
+```
