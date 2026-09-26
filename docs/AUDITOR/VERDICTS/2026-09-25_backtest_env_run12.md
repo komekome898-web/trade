@@ -1306,3 +1306,9 @@ git commit / git push はしていません。
 3. event_sim と核の事象駆動の突き合わせ: 作らず「測っていない範囲」に載せる。
 4. 私有の --basetemp: 台本の共通の頭に足す(上の処置 (2))。
 
+
+### 15 回目の準備(10:50 UTC、リード)
+
+- 台本 `scripts/workflows/backtest_env.js` の直し 3 点(設計の規則は足していない): (1) 機械の検査 checkBattery が `docs/AUDITOR/TRACE/` を「場面集の外」に数えない(run 14 の誤検出の直し)。(2) 引数で運んだ結果を「この起動の最初の周」に当てる(`firstHere`。これまでは第 1 周だけだった)+ `prebuilt[id].battery_repaired`(記録した場面集の直しを走らせ直さず機械の検査だけ通す)。(3) 共通の頭に「pytest は私有の --basetemp で回す」(作る:4#2 の問い 4)。`node --check` OK、`node --test tests/workflows/backtest_env_logic.test.mjs` 12 passed / 0 failed、検査器 `scripts/check_bt_delegation.py` OK 誤り 0 件。
+- 引数 `bt_args_run15.json`(写し: `docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/run15_args.json`): passed_items [0,1,2,3]、prebuilt[1].carried_impl = 監査役(通過):1#1 の [聞く] 3 件、prebuilt[4] = req / bat(67 場面)/ attempt_offset 1 / last_findings = 批評:4#1 の 14 件 / judges の注記 / worker = 作る:4#2 の返り値 / battery_repaired = 場面の直し:4#r2-3 の返り値、prior_rounds["4"].rounds = 1(上限 2 のまま。この周が最後)。委任文の指紋は 388d55cdeb32 のまま。
+- 起動は予約した知らせの回(案 A)。第 2 周の残り = 表:4#2 → 批評:4#2 → 審査員 → 監査役(通過)。

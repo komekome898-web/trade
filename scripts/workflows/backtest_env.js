@@ -27,7 +27,7 @@ const IMPL_MODEL = OPUS
 
 const HEAD = `委任文 ${DOC}(指紋 ${MARK})を最初に全部読み、その指示にだけ従うこと。起動文と委任文が食い違えば委任文が優先する。` +
   `オーナーの目に触れる文(記録のファイルを含む)は日本語で書く。コードとコメントは英語。モデル名を書かない。git commit / git push をしない。` +
-  `一時ファイルとログは ${SCR} の下に、名前に項目番号・周・役を入れて置く。`
+  `一時ファイルとログは ${SCR} の下に、名前に項目番号・周・役を入れて置く。pytest は必ず私有の一時フォルダで回す(\`--basetemp=${SCR}/<項目番号_周_役>_basetemp\` と \`-p no:cacheprovider -o tmp_path_retention_policy=none\`。同じ時刻に別の役の pytest が /tmp/pytest-of-root を消して 1390 件が FileNotFoundError になった実測、run 14 の第 1・2 周)。`
 const HEAD2 = args.marker_new ? HEAD.split(MARK).join(args.marker_new) : HEAD
 // L-433: every role scrutinizes before returning (delegation §3「提出前の吟味」)
 const SCRUTINY_FIX = `\n**返す前の吟味(委任文 §3「提出前の吟味」、L-433。直す役の文)**: 固定した要件・場面集の規則・これまでの指摘を読み直し、指摘 1 件ごとに直した根拠(ファイル:行、コマンドと出力)を書く。指摘された 1 か所だけでなく同じ根の全箇所を直す。批評家の試験と場面集の試験を回して落ちるものを残さない。「非常に厳しい批評家なら何を [止める] にするか」を自分で列べて返す前に潰す。場当たりの直しをしない。止められる前提で作業しない。(6) 直した規則ごとに、その規則の入力の空間を全格子で列べる敵対者の試験(批評家の probe の形。実装の場合分けから入力を作らない)を先に書き、規則を直したあと通す。列に入れなかったものを試験のファイルに書く(リードの設計 docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_7/LEAD_DESIGN.md §3.3)。`
@@ -154,7 +154,9 @@ function checkBattery(fixed, n, prev, item) {
   const same = kind => { const f = (prev || []).find(x => String(x.id).endsWith(kind)); return f ? f.id : null }
   // audit 65-4: only this item's battery (item 4's 場面係 may also repair item 0's battery, L-448)
   const allowed = item ? [`tests/bt/battery/item_${item.id}/`, ...(item.id === 4 ? ['tests/bt/battery/item_0/'] : [])] : ['tests/bt/battery/']
-  const outside = (fixed.changed_files || []).map(x => String(x).replace(/^\.\//, '')).filter(x => !allowed.some(a => x.startsWith(a)))
+  // run 14 (2026-09-26 10:23 UTC): the lead's hook writes docs/AUDITOR/TRACE/<date>_<session>.json into the same work tree;
+  // it showed up in the 場面係's `git diff --name-only HEAD` three times and escalated item 4 on a false stop. Not the battery's change.
+  const outside = (fixed.changed_files || []).map(x => String(x).replace(/^\.\//, '')).filter(x => !x.startsWith('docs/AUDITOR/TRACE/')).filter(x => !allowed.some(a => x.startsWith(a)))
   if (outside.length) out.push({ id: `b${n}-touch`, level: '止める', repeat_of: same('-touch'), text: `場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): ${outside.join(', ')}` })
   if (fixed.tests_passed !== true) out.push({ id: `b${n}-tests`, level: '止める', repeat_of: same('-tests'), text: `場面集の試験が通っていない(L-448 の機械の検査): ${String(fixed.test_tail || '').slice(0, 300)}` })
   return { findings: out }
@@ -242,6 +244,7 @@ async function runItem(item) {
   const CAP = capOf(args.round_cap, item.id)  // I-013: the end bound (委任文 通過の判定「終わりの上限」); item 0 has none (L-433); L-454: per item
   while (item.id === 0 || counted < CAP) {
     attempt++
+    const firstHere = attempt === ((pre && pre.attempt_offset) || 0) + 1  // run 15: prebuilt results apply to the first attempt of this launch, whatever its number
     const d = dir(item, attempt)
     const prev = history[history.length - 1]
     // L-434: the 場面係 repairs battery-side findings while the worker repairs implementation-side ones;
@@ -252,7 +255,8 @@ async function runItem(item) {
       if (!batFix.length) return null
       let fixList = batFix
       for (let k = 1; ; k++) {
-        const fixed = await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`)
+        // prebuilt[id].battery_repaired (run 15): the recorded last repair of this round is re-checked by the machine instead of re-run
+        const fixed = (k === 1 && firstHere && pre && pre.battery_repaired) ? pre.battery_repaired : await repairBattery(item, req, bat, fixList, `r${attempt}-${k}`)
         if (!fixed) return { error: 'battery_repair_in_round' }
         bat = { ...bat, ...fixed }
         const fs = checkBattery(fixed, `r${attempt}-${k}`, midAudits.length ? midAudits[midAudits.length - 1].findings : [], item).findings  // L-448
@@ -274,7 +278,7 @@ async function runItem(item) {
       { label: `参照実装:${item.id}`, phase: '作る', model: IMPL_MODEL, effort: 'high' })
     // prebuilt[id].worker / .table / .table_audit (2026-09-26): a relaunch continues from recorded results instead of the
     // replay cache (the cache key follows call order, which parallel items do not keep = measured on resumes 1-3)
-    const wP = (pre && pre.worker && attempt === 1) ? Promise.resolve(pre.worker) : agent(`${attempt === 1 && item.id === 0 ? HEAD : HEAD2}
+    const wP = (pre && pre.worker && firstHere) ? Promise.resolve(pre.worker) : agent(`${attempt === 1 && item.id === 0 ? HEAD : HEAD2}
 あなたは項目 ${item.id}「${item.title}」の作業者です(第 ${attempt} 周)。固定した要件: ${req.path}(変えない)。場面集: ${bat.definitions}(読めるが変えない。場面だけを特別扱いする直しは [止める])。持ち物は委任文 §2 の項目 ${item.id} の行のファイルだけ。${item.extra || ''}${(args.lead_notes || {})[item.id] || ''}
 ${attempt === 1 ? '最初の周です。要件の全行と比較の観点を満たす実装と試験を書く。' :
 `前の周の批評・監査役・盲検の結果(未解消の指摘をすべて直す対象に入れる):
@@ -290,7 +294,7 @@ ${batFix.length ? '場面係が同時に場面集(tests/bt/battery/item_' + item
     if (repairOut && repairOut.escalate) return { item, status: 'escalate', reason: repairOut.escalate, attempts: attempt, req, bat, history }
     if (!w) return { item, status: 'error', stage: 'worker', attempt, history }
 
-    let t = (pre && pre.table && attempt === 1) ? pre.table : await agent(`${HEAD2}
+    let t = (pre && pre.table && firstHere) ? pre.table : await agent(`${HEAD2}
 あなたは項目 ${item.id} の資料係(第 ${attempt} 周。作業者とは別の者)です。委任文 §3「比較の表」に従う。**文章を書かない。表はスクリプトの出力だけ。**
 1. 新実装の adapter を ${bat.battery_dir} に書く(新実装の公開された口だけを呼ぶ。新実装の本体は変えない)。
 2. ${bat.runner} で、新実装・当方の現状・調査結果の側(入れられた道具すべて)・試金石(${bat.mutant})を、それぞれ 2 回走らせる。
