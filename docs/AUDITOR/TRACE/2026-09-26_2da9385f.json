@@ -4224,12 +4224,12 @@
   {
    "move": 150,
    "tools": {
-    "Bash": 5,
-    "Read": 1,
+    "Bash": 7,
+    "Read": 2,
     "Grep": 1,
     "Agent": 1
    },
-   "n_tools": 8,
+   "n_tools": 11,
    "read_goal": true,
    "first_write_at": null,
    "table_shown": false,
