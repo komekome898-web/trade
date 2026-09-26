@@ -1,0 +1,806 @@
+=== 区分8 22回目 開始 対象: 8-030 dbt(浅い。§6-1の導入前の検査を後から行う/E1bとE4の印を探す/除いたファイル数を書く/§4.0の未確認の残りを試す) 申し送り: 起動文 docs/DATA/delegations/20260923_tools_survey_cat8_run22_prompt.md@f1c0df536ed6
+--- 2026-09-26T07:09:24Z method=run target=pip_download_dbtcore rc=0 time_s=1.148 note=8-030 §6-1導入前の検査: pip download --no-depsでdbt-core==1.12.5の配布物を取得
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/exec_venv/bin/pip download --no-deps --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check dbt-core==1.12.5
+Collecting dbt-core==1.12.5
+  Using cached dbt_core-1.12.5-py3-none-any.whl.metadata (5.3 kB)
+Using cached dbt_core-1.12.5-py3-none-any.whl (1.1 MB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/dbt_core-1.12.5-py3-none-any.whl
+Successfully downloaded dbt-core
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+--- 2026-09-26T07:09:29Z method=run target=pip_download_dbtduckdb rc=0 time_s=0.805 note=8-030 §6-1導入前の検査: pip download --no-depsでdbt-duckdb==1.11.0(21回目の実測で入った版)の配布物を取得
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/exec_venv/bin/pip download --no-deps --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check dbt-duckdb==1.11.0
+Collecting dbt-duckdb==1.11.0
+  Using cached dbt_duckdb-1.11.0-py3-none-any.whl.metadata (43 kB)
+Using cached dbt_duckdb-1.11.0-py3-none-any.whl (91 kB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/dbt_duckdb-1.11.0-py3-none-any.whl
+Successfully downloaded dbt-duckdb
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+--- 2026-09-26T07:09:40Z method=run target=unzip_wheels rc=0 time_s=0.079 note=8-030 §6-1: 取得した2つのwheelの中身をunzipで展開(setup.py/pyproject.tomlの有無・バイナリ同梱を見るため)
+$ bash -c 'cd '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check'"'"' && mkdir -p extracted/dbtcore extracted/dbtduckdb && unzip -o dbt_core-1.12.5-py3-none-any.whl -d extracted/dbtcore >/dev/null && unzip -o dbt_duckdb-1.11.0-py3-none-any.whl -d extracted/dbtduckdb >/dev/null && echo DONE && find extracted -maxdepth 2 -type d'
+DONE
+extracted
+extracted/dbtduckdb
+extracted/dbtduckdb/dbt
+extracted/dbtduckdb/dbt_duckdb-1.11.0.dist-info
+extracted/dbtcore
+extracted/dbtcore/dbt
+extracted/dbtcore/dbt_core-1.12.5.dist-info
+--- 2026-09-26T07:09:48Z method=run target=find_setuppy rc=0 time_s=0.008 note=8-030 §6-1: wheel内にsetup.py/pyproject.tomlがあるか(wheelはビルド済み配布物なのでpip install時にこれらは実行されないはずだが、同梱の有無を見る)
+$ bash -c 'find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' -iname '"'"'setup.py'"'"' -o -iname '"'"'pyproject.toml'"'"' -o -iname '"'"'setup.cfg'"'"'; echo rc=$?'
+rc=0
+--- 2026-09-26T07:09:55Z method=run target=find_binaries rc=0 time_s=0.014 note=8-030 §6-1: 同梱バイナリの検査(拡張子.so/.pyd/.dll/.exe/実行属性ファイル)
+$ bash -c 'find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' -type f \( -iname '"'"'*.so'"'"' -o -iname '"'"'*.pyd'"'"' -o -iname '"'"'*.dll'"'"' -o -iname '"'"'*.exe'"'"' \) ; find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' -type f -perm -u+x -not -iname '"'"'*.py'"'"' -not -iname '"'"'*.dist-info*'"'"'; echo ---file-types---; find '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' -type f | sed -E '"'"'s/.*\.//'"'"' | sort | uniq -c | sort -rn'
+| ---file-types---
+    258 py
+     30 sql
+      6 json
+      5 gitkeep
+      4 yml
+      2 txt
+      2 md
+      2 dist-info/licenses/LICENSE
+      2 dist-info/WHEEL
+      2 dist-info/RECORD
+      2 dist-info/METADATA
+      1 typed
+      1 html
+      1 gitignore
+      1 dist-info/licenses/AUTHORS
+--- 2026-09-26T07:10:01Z method=run target=find_obfuscation rc=0 time_s=0.023 note=8-030 §6-1: 難読化の兆候(exec/eval/marshal.loads/base64デコード直後の実行)をgrepで検査
+$ bash -c 'grep -rnIE '"'"'exec\(|eval\(|marshal\.loads|__import__\('"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' --include='"'"'*.py'"'"' | grep -v -iE '"'"'test|jinja|template|exec_sql|adapter.execute|self\.execute|execute\('"'"' | head -60; echo ---count---; grep -rlIE '"'"'exec\(|eval\(|marshal\.loads'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' --include='"'"'*.py'"'"' | wc -l'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/parser/models.py:87:    def _safe_eval(self, node):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/parser/models.py:89:            return ast.literal_eval(node)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/parser/models.py:101:            rendered = self._safe_eval(arg)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/parser/models.py:106:            rendered = self._safe_eval(keyword.value)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/docs/source/_ext/dbt_click.py:62:        mod = __import__(module_name, globals(), locals(), [attr_name])
+| ---count---
+1
+--- 2026-09-26T07:10:09Z method=run target=find_urls rc=0 time_s=0.010 note=8-030 §6-1: 同梱コード中のURLリテラルを列挙し、公式ドメイン(getdbt.com/dbtlabs.com)以外への送信先が無いか確認
+$ bash -c 'grep -rohIE '"'"'https?://[a-zA-Z0-9._/-]+'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' --include='"'"'*.py'"'"' | sed -E '"'"'s#(https?://[^/]+).*#\1#'"'"' | sort | uniq -c | sort -rn | head -40'
+     44 https://github.com
+     38 https://docs.getdbt.com
+      4 https://www.sphinx-doc.org
+      3 https://bugs.python.org
+      2 https://www.googleapis.com
+      2 https://stackoverflow.com
+      2 https://schemas.getdbt.com
+      2 https://pypi.org
+      2 https://duckdb.org
+      2 https://docs.python.org
+      2 https://docs.pytest.org
+      2 https://docs.aws.amazon.com
+      2 http://localhost
+      1 https://wiki.python.org
+      1 https://sqlparse.readthedocs.io
+      1 https://hub.getdbt.com
+      1 https://docs.openstack.org
+      1 https://community.getdbt.com
+      1 https://click.palletsprojects.com
+      1 http://json-schema.org
+--- 2026-09-26T07:10:14Z method=run target=find_googleapis rc=0 time_s=0.009 note=8-030 §6-1: googleapis.comへの参照の文脈を確認(何のための通信か)
+$ bash -c 'grep -rnI '"'"'googleapis.com'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted'"'"' --include='"'"'*.py'"'"''
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtduckdb/dbt/adapters/duckdb/plugins/gsheet.py:17:    "https://www.googleapis.com/auth/spreadsheets.readonly",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtduckdb/dbt/adapters/duckdb/plugins/gsheet.py:18:    "https://www.googleapis.com/auth/drive.readonly",
+--- 2026-09-26T07:10:21Z method=run target=metadata_check rc=0 time_s=0.012 note=8-030 §6-1: 両wheelのMETADATA(Author/Home-page/Project-URL)を確認し、配布元の一致を再確認
+$ bash -c 'grep -E '"'"'^(Name|Version|Author|Maintainer|Home-page|Project-URL|License)'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt_core-1.12.5.dist-info/METADATA'"'"'; echo ---; grep -E '"'"'^(Name|Version|Author|Maintainer|Home-page|Project-URL|License)'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtduckdb/dbt_duckdb-1.11.0.dist-info/METADATA'"'"''
+Name: dbt-core
+Version: 1.12.5
+Project-URL: Homepage, https://github.com/dbt-labs/dbt-core
+Project-URL: Repository, https://github.com/dbt-labs/dbt-core.git
+Project-URL: Issues, https://github.com/dbt-labs/dbt-core/issues
+Project-URL: Changelog, https://github.com/dbt-labs/dbt-core/blob/main/CHANGELOG.md
+Author-email: dbt Labs <info@dbtlabs.com>
+Maintainer-email: dbt Labs <info@dbtlabs.com>
+License-Expression: Apache-2.0
+License-File: LICENSE
+| ---
+Name: dbt-duckdb
+Version: 1.11.0
+Home-page: https://github.com/duckdb/dbt-duckdb
+Author: Josh Wills
+Author-email: joshwills+dbt@gmail.com
+License: Apache-2
+License-File: LICENSE
+License-File: AUTHORS
+--- 2026-09-26T07:10:32Z method=公式 target=pypi_dbtduckdb rc=0 time_s=0.109 note=8-030 §6-1: dbt-duckdb PyPIメタデータ(初回公開日・保守者)を確認
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt https://pypi.org/pypi/dbt-duckdb/json
+{"info":{"author":"Josh Wills","author_email":"joshwills+dbt@gmail.com","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: Apache Software License","Operating System :: MacOS :: MacOS X","Operating System :: Microsoft :: Windows","Operating System :: POSIX :: Linux","Programming Language :: Python :: 3.10","Programming Language :: Python :: 3.11","Programming Language :: Python :: 3.12","Programming Language :: Python :: 3.13"],"description":"## dbt-duckdb\n\n[DuckDB](http://duckdb.org) is an embedded database, similar to SQLite, but designed for OLAP-style analytics.\nIt is crazy fast and allows you to read and write data stored in CSV, JSON, and Parquet files directly, without requiring you to load\nthem into the database first.\n\n[dbt](http://getdbt.com) is the best way to manage a collection of data transformations written in SQL or Python for analytics\nand data science. `dbt-duckdb` is the project that ties DuckDB and dbt together, allowing you to create a [Modern Data Stack In\nA Box](https://duckdb.org/2022/10/12/modern-data-stack-in-a-box.html) or a simple and powerful data lakehouse with Python.\n\n### Installation\n\nThis project is hosted on PyPI, so you should be able to install it and the necessary dependencies via:\n\n`pip3 install dbt-duckdb`\n\nThe latest supported version targets `dbt-core` versions >= 1.8.x and `duckdb` version >= 1.0.0, but we work hard to ensure that newer\nversions of DuckDB will continue to work with the adapter as they are released.\n\n### Configuring Your Profile\n\nA super-minimal dbt-duckdb profile only needs *one* setting:\n\n````\ndefault:\n  outputs:\n    dev:\n      type: duckdb\n  target: dev\n````\n\nThis will run your dbt-duckdb pipeline against an in-memory DuckDB database that will not be persisted after your run completes. This may\nnot seem very useful at first, but it turns out to be a powerful tool for a) testing out data pipelines, either locally or in CI jobs and\nb) running data pipelines that operate purely on external CSV, Parquet, or JSON files. More details on how to work with external data files\nin dbt-duckdb are provided in the docs on [reading and writing external files](#reading-and-writing-external-files).\n\nTo have your dbt pipeline persist relations in a DuckDB file, set the `path` field in your profile to the path\nof the DuckDB file that you would like to read and write on your local filesystem. (For in-memory pipelines, the `path`\nis automatically set to the special value `:memory:`). By default, the `path` is relative to your `profiles.yml` file location.\nIf the database doesn't exist at the specified `path`, DuckDB will automatically create it.\n\n`dbt-duckdb` also supports common profile fields like `schema` and `threads`, but the `database` property is special: its value is automatically set\nto the basename of the file in the `path` argument with the suffix removed. For example, if the `path` is `/tmp/a/dbf
+[出力は 121293 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T07:10:45Z method=公式 target=shields_dbtduckdb rc=0 time_s=1.177 note=8-030 §6-1: dbt-duckdb(duckdb/dbt-duckdb)の星・保守者数(shields.io代替経路)
+$ bash -c 'curl -sS --cacert /root/.ccr/ca-bundle.crt https://img.shields.io/github/stars/duckdb/dbt-duckdb.json; echo; curl -sS --cacert /root/.ccr/ca-bundle.crt https://img.shields.io/github/contributors/duckdb/dbt-duckdb.json'
+{"label":"stars","message":"1.4k","color":"blue","link":["https://github.com/duckdb/dbt-duckdb","https://github.com/duckdb/dbt-duckdb/stargazers"],"name":"stars","value":"1.4k"}
+{"label":"contributors","message":"60","color":"brightgreen","link":[],"name":"contributors","value":"60"}
+--- 2026-09-26T07:10:46Z method=公式 target=pypistats_dbtduckdb rc=0 time_s=0.248 note=8-030 §6-1: dbt-duckdb週DL数(pypistats.org)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt https://pypistats.org/api/packages/dbt-duckdb/recent
+<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+--- 2026-09-26T07:10:53Z method=公式 target=osv_dbtduckdb rc=0 time_s=0.286 note=8-030 §6-1: dbt-duckdb既知の脆弱性(OSV.dev)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -X POST -H 'Content-Type: application/json' -d '{"package":{"name":"dbt-duckdb","ecosystem":"PyPI"}}' https://api.osv.dev/v1/query
+{}
+--- 2026-09-26T07:11:14Z method=run target=osv_range_check rc=0 time_s=0.030 note=8-030 §6-1: OSV.devの6件の脆弱性の影響範囲(fixedバージョン)を導入版1.12.5と突き合わせ
+$ python3 - /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/osv_dbtcore.json
+GHSA-j4g3-3q8x-jxqp fixed_at= ['1.7.3'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+GHSA-p3f3-5ccg-83xq fixed_at= ['1.6.14', '1.7.14'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+GHSA-p72q-h37j-3hq7 fixed_at= ['1.6.13', '1.7.13'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+GHSA-pmrx-695r-4349 fixed_at= ['1.6.15', '1.7.15', '1.8.1'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+PYSEC-2024-66 fixed_at= ['1.7.14', '1.6.14'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+PYSEC-2026-1292 fixed_at= ['1.6.15', '1.7.15', '1.8.1'] -> 1.12.5には影響しない(全fixedが1.8.1以下)
+--- 2026-09-26T07:15:02Z method=run target=e1b_search_toc rc=0 time_s=0.008 note=8-030 E1b 印を探す: docs/build配下の目次(モデル関連ファイル)を一覧
+$ bash -c 'ls '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build'"'"' | grep -iE '"'"'model|sql|seed|source'"'"''
+enhance-your-models.md
+incremental-models-overview.md
+incremental-models.md
+models.md
+ossie-semantic-models.md
+python-models.md
+seeds.md
+semantic-models.md
+sources.md
+sql-models.md
+--- 2026-09-26T07:15:07Z method=run target=e1b_models_quote rc=0 time_s=0.004 note=8-030 E1b 印: models.md冒頭(dbtモデル=SQL/Pythonの計算機能)を引く
+$ sed -n 1,20p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/models.md
+| ---
+title: "About dbt models"
+description: "Understand the role of dbt models transforming your data into analytics-ready datasets."
+id: "models"
+pagination_next: "docs/build/sql-models"
+pagination_prev: null
+availability: all_users
+| ---
+
+Self-hosted and cloud-hosted dbt are composed of different moving parts working harmoniously. All of them are important to what dbt does — transforming data—the 'T' in ELT. When you execute `dbt run`, you are running a model that will transform your data without that data ever leaving your warehouse.
+
+Models are where your developers spend most of their time within a dbt environment. Models are primarily written as a `select` statement and saved as a `.sql` file. While the definition is straightforward, the complexity of the execution will vary from environment to environment.  Models will be written and rewritten as needs evolve and your organization finds new ways to maximize efficiency.
+
+SQL is the language most dbt users will utilize, but it is not the only one for building models. Starting in version 1.3, <Constant name="core" /> and <Constant name="dbt" /> support Python models. Python models are useful for training or deploying data science models, complex transformations, or where a specific Python package meets a need &mdash; such as using the `dateutil` library to parse dates.
+
+### Models and modern workflows
+
+The top level of a dbt workflow is the project. A project is a directory of a `.yml` file (the project configuration) and either `.sql` or `.py` files (the models). The project file tells dbt the project context, and the models let dbt know how to build a specific data set. For more details on projects, refer to [About dbt projects](/docs/build/projects).
+
+Your organization may need only a few models, but more likely you’ll need a complex structure of nested models to transform the required data. A model is a single file containing a final `select` statement, and a project can have multiple models, and models can even reference each other. Add to that, numerous projects and the level of effort required for transforming complex data sets can improve drastically compared to older methods.
+--- 2026-09-26T07:15:12Z method=run target=e1b_seed_quote rc=0 time_s=0.004 note=8-030 E1b 入力(原文): seeds.mdでCSV等の外部データ投入を確認
+$ sed -n 1,15p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/seeds.md
+| ---
+title: "Add Seeds to your DAG"
+sidebar_label: "Seeds"
+description: "Provide seed data files for your dbt models."
+id: "seeds"
+availability: all_users
+| ---
+## Related reference docs
+* [Seed configurations](/reference/seed-configs)
+* [Seed properties](/reference/seed-properties)
+* [`seed` command](/reference/commands/seed)
+
+## Overview
+Seeds are CSV files in your dbt project (typically in your `seeds` directory), that dbt can load into your <Term id="data-warehouse" /> using the `dbt seed` command.
+--- 2026-09-26T07:15:17Z method=run target=e4_toc rc=0 time_s=0.007 note=8-030 E4 印を探す: docs/build配下の時系列・再処理関連ファイルの目次
+$ bash -c 'ls '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build'"'"' | grep -iE '"'"'incremental|batch|replay|hist'"'"''
+incremental-microbatch.md
+incremental-models-overview.md
+incremental-models.md
+incremental-strategy.md
+parallel-batch-execution.md
+--- 2026-09-26T07:15:21Z method=run target=e4_backfill_quote rc=0 time_s=0.004 note=8-030 E4 印: incremental-microbatch.md の Backfills節(時刻範囲を指定して過去データを再実行)を引く
+$ sed -n 279,290p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/incremental-microbatch.md
+## Backfills
+
+Whether to fix erroneous source data or retroactively apply a change in business logic, you may need to reprocess a large amount of historical data.
+
+Backfilling a microbatch model is as simple as selecting it to run or build, and specifying a "start" and "end" for `event_time`. Note that `--event-time-start` and `--event-time-end` are mutually necessary, meaning that if you specify one, you must specify the other. 
+
+As always, dbt will process the batches between the start and end as independent queries.
+
+```bash
+dbt run --event-time-start "2024-09-01" --event-time-end "2024-09-04"
+```
+--- 2026-09-26T07:15:28Z method=run target=e4_granularity_quote rc=0 time_s=0.004 note=8-030 E4 記録する軸(再生の粒度): batch_sizeの表(hour/day/month/year)を引く
+$ sed -n 199,204p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/incremental-microbatch.md
+|----------|---------------|---------|------|---------|
+| [`event_time`](/reference/resource-configs/event-time)  | The column indicating "at what time did the row occur." Required for your microbatch model and any direct parents that should be filtered.   | N/A     |  Column  |  Required |
+| [`begin`](/reference/resource-configs/begin)      |  The "beginning of time" for the microbatch model. This is the starting point for any initial or full-refresh builds. For example, a daily-grain microbatch model run on `2024-10-01` with `begin = '2023-10-01` will process 366 batches (it's a leap year!) plus the batch for "today."        | N/A     | Date   | Required |
+| [`batch_size`](/reference/resource-configs/batch-size) |  The granularity of your batches. Supported values are `hour`, `day`, `month`, and `year`    | N/A     | String  | Required |
+| [`lookback`](/reference/resource-configs/lookback)   | Process X batches prior to the latest bookmark to capture late-arriving records.    | `1`     | Integer | Optional |
+| [`concurrent_batches`](/reference/resource-properties/concurrent_batches) | Overrides dbt's auto detect for running batches concurrently (at the same time). Read more about [configuring concurrent batches](/docs/build/parallel-batch-execution#configure-concurrent_batches). Setting to <br />* `true` runs batches concurrently (in parallel). <br />* `false` runs batches sequentially (one after the other).  | `None` | Boolean | Optional |
+--- 2026-09-26T07:15:28Z method=run target=e4_utc_quote rc=0 time_s=0.004 note=8-030 E4 記録する軸(時計の扱い): TimezonesがUTC固定であることを引く
+$ sed -n 299,308p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/build/incremental-microbatch.md
+## Timezones
+
+For now, dbt assumes that all values supplied are in UTC:
+
+- `event_time`
+- `begin`
+- `--event-time-start`
+- `--event-time-end`
+
+While we may consider adding support for custom time zones in the future, we also believe that defining these values in UTC makes everyone's lives easier.
+--- 2026-09-26T07:15:28Z method=run target=e4_source_confirm rc=0 time_s=0.004 note=8-030 E4 ソース確認: dbt-coreのPythonパッケージにmicrobatch実装が実在する
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt -iname '*microbatch*' -o -iname '*batch_results*'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/materializations/incremental/microbatch.py
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/sdist_check/extracted/dbtcore/dbt/artifacts/schemas/batch_results.py
+--- 2026-09-26T07:15:59Z method=run target=excluded_files_count rc=0 time_s=0.038 note=8-030 §1-4: 21回目のsparse-checkoutで除いたファイル数。git ls-tree(blob:noneでもtreeは全取得済み)でリポジトリ全体のファイル数を数え、取り込んだ範囲(website/docs,blog,snippets,src/pages,contributing,styles,トップレベル)との差分を出す
+$ bash -c 'cd '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-repo'"'"' && total=$(git ls-tree -r --name-only HEAD | wc -l); included=$(git ls-tree -r --name-only HEAD | grep -cE '"'"'^(website/(docs|blog|snippets|src/pages)/|contributing/|styles/|[^/]+$)'"'"'); excluded=$((total-included)); echo total=$total included_by_pattern=$included excluded=$excluded; echo ---exclude_breakdown---; git ls-tree -r --name-only HEAD | grep -vE '"'"'^(website/(docs|blog|snippets|src/pages)/|contributing/|styles/|[^/]+$)'"'"' | awk -F/ '"'"'{print $1"/"$2}'"'"' | sort | uniq -c | sort -rn | head -20'
+total=3902 included_by_pattern=1621 excluded=2281
+| ---exclude_breakdown---
+   1937 website/static
+    198 website/src
+     38 .agents/skills
+     23 .github/workflows
+     15 website/scripts
+     15 website/plugins
+      6 website/cypress
+      5 .github/ISSUE_TEMPLATE
+      4 website/functions
+      3 .github/scripts
+      2 website/api
+      1 website/webpack.config.js
+      1 website/vercel.json
+      1 website/sidebars.js
+      1 website/page-banners.yml
+      1 website/package.json
+      1 website/package-lock.json
+      1 website/mgb-sfpl.json
+      1 website/jest.setup.js
+      1 website/docusaurus.config.js
+--- 2026-09-26T07:16:47Z method=公式 target=pricing_refetch rc=0 time_s=0.476 note=8-030 §4.0 課金開始条件: pricing頁を再取得し無料枠超過時の挙動の逐語を探す
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-030_run22/pricing2.html -w 'http_code=%{http_code} size=%{size_download}\n' https://www.getdbt.com/pricing
+http_code=200 size=1330641
+--- 2026-09-26T07:17:23Z method=公式 target=pricing_render rc=0 time_s=21.299 note=8-030 §4.0 課金開始条件: pricing頁をJS描画し、折りたたみFAQ(Developer枠超過時の挙動)の本文を探す
+$ node scripts/cat8_render.js https://www.getdbt.com/pricing 6000
+HTTP 200 https://www.getdbt.com/pricing
+___
+[Virtual session] From analytics engineer to context engineer – Global sessions October 14 & 15
+Everything announced at dbt Summit. Read the recap blog.
+Big news! 🎉 Fivetran and dbt Labs have merged to deliver the data infrastructure for agents you trust
+Cost-optimized transformations on open, multi-engine compute with dbt and Apache Iceberg™ [Live virtual event] Join us on October 7th
+[Virtual session] From analytics engineer to context engineer – Global sessions October 14 & 15
+Everything announced at dbt Summit. Read the recap blog.
+Product
+Solutions
+Customers
+Resources
+Community
+Pricing
+Get started
+Book a demo
+dbt pricing
+
+Get started with dbt today and get one step closer to reliable data that you and your team can trust.
+
+Developer
+
+For individual developers getting started with dbt, without managing infrastructure.
+
+Free
+One Developer seat
+3,000 successful models built per month
+1 project
+Get started
+Features
+Browser-based IDE
+Multi-factor authentication (MFA)
+Job scheduling and monitoring
+CI checks on Github and GitLab
+Upgrade to the latest dbt release automatically
+Starter
+
+For teams collaborating on their first dbt project.
+
+$100 per user/month
+Five developer seats
+15,000 successful models built per month
+5,000 queried metrics per month
+1 project
+Start a trial
+Features
+All features in Developer, plus:
+Lineage with dbt Catalog
+Define & query metrics with dbt Semantic Layer
+dbt Semantic Layer basic
+API access
+Enterprise
+
+For organizations scaling data collaboration and governance.
+
+Custom pricing
+Custom Developer seat count
+100,000 successful models built per month
+20,000 queried metrics per month
+30 projects
+Contact sales
+Features
+All features in Starter, plus:
+Column-level lineage in dbt Catalog
+Governed metrics with caching
+Multi-project architecture (dbt Mesh)
+SSO, Role-Based Access Control, and SCIM provisioning
+Priority suport with SLAs
+Enterprise+
+
+For complex deployments requiring advanced security and control.
+
+Custom Pricing
+Custom Developer seat count
+100,000 successful models built per month
+20,000 queried metrics per month
+Unlimited projects
+Contact sales
+Features
+All features in Enterprise, plus:
+PrivateLink
+IP Restrictions
+Run dbt in your own environment (Hybrid Projects)
+Add-ons: pay only for what you use
+
+No seats, no minimums. Buy separately and run against self-hosted dbt, or add to a dbt platform plan. View rates and billing details.
+
+dbt State
+
+dbt State simplifies orchestration and saves you on compute. With every run, it builds only what changed and skips the rest by reusing, cloning or auto-deferring.
+
+You are billed for each daily unique reuse of a model, test, or snapshot per day (Daily Active Target Tables, or DATT).
+
+30 day free trial
+
+Pay-as-you-go: $0.094 / DATT
+
+Custom pricing available for upfront commits: contact sales
+
+Get started
+Learn more
+dbt Wizard
+
+dbt Wizard is an agent built for analytics engineering, grounded natively in your project. It knows which tools to call, and validates every change before it ships.
+
+Access the best frontier models, choose the right model for each task, and pay only for tokens you use.
+
+Each AI model has its own unique per-token pricing
+
+Free trial and free monthly usage available, details below
+
+Prefer to manage yourself? Bring your own key (BYOK) and pay your AI provider directly
+
+Get started
+Learn more
+Compare plan features
+Developer
+One developer seat
+Get started
+Starter
+$100/mo/seat
+Start a trial
+Enterprise
+Custom pricing
+Contact sales
+Enterprise+
+Custom pricing
+Contact sales
+Manage users and usage
+	Developer	Starter	Enterprise	Enterprise+
+Developer seats 
+	
+1
+	
+5
+	
+Custom
+	
+Custom
+
+Projects 
+	
+1
+	
+1
+	
+30
+	
+Custom
+
+Successful models built per month 
+	
+3,000
+	
+15,000
+	
+100,000
+	
+100,000
+
+Queried metrics per month 
+		
+5,000
+	
+20,000
+	
+20,000
+
+dbt Wizard 
+	
+Free $100 Wizard credit for 30-day free trial, followed by pay-as-you-go
+	
+Free $100 Wizard credit for 30-day free trial, followed by pay-as-you-go
+	
+$100/mo in Wizard credits per account, additional usage billed as consumption add-on
+	
+$200/mo in Wizard credits per account, additional usage billed as consumption add-on
+
+dbt State 
+	
+30 day free trial available, followed by pay-as-you-go
+	
+30 day free trial, followed by pay-as-you-go
+	
+30 day free trial, additional usage billed as consumption add-on
+	
+30 day free trial, additional usage billed as consumption add-on
+Build data transformations
+	Developer	Starter	Enterprise	Enterprise+
+dbt command line interface (CLI) 
+	
+	
+	
+	
+
+VSCode extension 
+	
+	
+	
+	
+
+Browser-based studio IDE 
+	
+	
+	
+	
+
+SQL Comprehension 
+	
+	
+	
+	
+Deploy and orchestrate workflows
+	Developer	Starter	Enterprise	Enterprise+
+Git version control 
+	
+	
+	
+	
+
+Testing 
+	
+	
+	
+	
+
+Job scheduling 
+	
+	
+	
+	
+
+Source freshness reporting 
+	
+	
+	
+	
+
+Monitor jobs & alerts 
+	
+	
+	
+	
+
+Advanced CI 
+			
+	
+Discover and understand data
+	Developer	Starter	Enterprise	Enterprise+
+dbt Catalog 
+		
+	
+	
+
+Column-level lineage 
+			
+	
+
+Model performance and query history 
+			
+	
+
+Multi-project lineage 
+			
+	
+Define and govern metrics
+	Developer	Starter	Enterprise	Enterprise+
+dbt Semantic Layer 
+		
+	
+	
+
+Cache common queries 
+			
+	
+Organize and scale projects
+	Developer	Starter	Enterprise	Enterprise+
+Multi-project mesh architecture 
+			
+	
+
+Cross-platform Mesh using Iceberg catalogs 
+			
+	
+
+Hybrid projects 
+				
+Manage, secure, and extend dbt
+	Developer	Starter	Enterprise	Enterprise+
+Multi-factor authentication 
+	
+	
+	
+	
+
+dbt MCP Server 
+	
+	
+	
+	
+
+API access 
+		
+	
+	
+
+Audit logging 
+			
+	
+
+SSO, RBAC, and SCIM 
+			
+	
+
+PrivateLink and IP Restrictions 
+				
+
+Upgrade to the latest release track 
+	
+Access to the “Latest” release track
+	
+Access to the "Latest" and "Compatible" release tracks
+	
+Access to all release tracks
+	
+Access to all release tracks, including rollbacks
+Get support
+	Developer	Starter	Enterprise	Enterprise+
+Documentation, online learning and community 
+	
+	
+	
+	
+
+Support Level	
+24x5
+	
+24x5
+	
+Priority support
+	
+Priority support
+
+Enhanced SLA			
+	
+
+Implementation assistance			
+	
+
+Dedicated account management			
+	
+
+Option for dbt Labs security review			
+	
+dbt FAQs
+
+Frequently asked questions about how to get up and running using dbt.
+
+What kind of support do you offer?
+What does the free trial include?
+Will I have access to the dbt Community Slack?
+I’m new to dbt, how should I get started?
+Do I need to be comfortable working on the command line to use dbt?
+Billing and security FAQs
+
+Frequently asked questions about dbt plans, pricing and billing.
+
+How does billing work?
+Can I pay by invoice?
+Can I upgrade or downgrade my plan?
+What if I want to cancel my account?
+Does dbt store my data?
+How is data processed by the dbt IDE?
+Are there other account parameter limits aside from those mentioned above?
+Footer
+Product
+dbt
+What is dbt?
+dbt platform vs self-hosting
+Case studies
+Integrations
+Pricing
+For Developers
+Documentation
+Getting Started Guide
+Supported Data Platforms
+Developer Blog
+VS Code extension
+Company
+About Us
+Diversity, Equity & Inclusion
+CareersWe're Hiring!
+Press
+Resources
+Resource Hub
+dbt Learn
+Certification
+Blog
+Community
+Join the Community
+Become a Contributor
+Open Source dbt Packages
+Community Forum
+Support
+Contact Support
+Professional Services
+Find a Partner
+System Status
+Read the Roundup
+
+The internet's most useful articles on analytics engineering and its adjacent ecosystem.
+
+Read Now
+Change Region
+🇺🇸
+Global
+Connect with Us
+GitHub
+LinkedIn
+YouTube
+Instagram
+X
+Bluesky
+RSS
+© 2026 dbt Labs, LLC. All Rights Reserved.
+Privacy Policy
+Modern Slavery Statement
+Report a Problem
+Security
+Terms of Use
+AI development principles
+Personalize My Choices
+Fivetran's Use of Cookies
+By clicking "Accept All Cookies", you consent to the storage of cookies on your device for improved site navigation, analyzing site usage, and supporting our marketing efforts. Refer to our Privacy Notice section on "Cookies and similar tracking technology" for more details.
+Accept All Cookies
+Personalize My Choices
+| --- frame https://a5579855295676416.cdn.optimizely.com/client_storage/a5579855295676416.html
+
+| --- frame about:blank
+
+| --- frame about:srcdoc
+
+
+| --- frame https://www.getdbt.com/cheq-ppc-invalid-users
+
+    
+      _linkedin_partner_id = '3399610'
+      window._linkedin_data_partner_ids =
+        window._linkedin_data_partner_ids || []
+      window._linkedin_data_partner_ids.push(_linkedin_partner_id)
+    
+    
+      ;(function (l) {
+        if (!l) {
+          window.lintrk = function (a, b) {
+            window.lintrk.q.push([a, b])
+          }
+          window.lintrk.q = []
+        }
+        var s = document.getElementsByTagName('script')[0]
+        var b = document.createElement('script')
+        b.type = 'text/javascript'
+        b.async = true
+        b.src = 'https://snap.licdn.com/li.lms-analytics/insight.min.js'
+        s.parentNode.insertBefore(b, s)
+      })(window.lintrk)
+    
+    
+      <img
+        height="1"
+        width="1"
+        style="display: none"
+        alt=""
+        src="https://px.ads.linkedin.com/collect/?pid=3399610&fmt=gif"
+      />
+    
+  
+
+
+INCOMPLETE request-failed https://pagead2.googlesyndication.com/ccm/collect?rcb=0&frm=0&apvc=1&ae=g&en=page_view&dl=https%3A%2F%2Fwww.getdbt.com%2Fpricing&scrsrc=www.googletagmanager.com&rnd=906390033.1790407048&navt=n&npa=1&ep.ads_data_redaction=0&gdid=dYWJhMj&gtm=45He69n1v847344878za200zd847344878xeaxf1&gcs=G100&gcd=13p3p3p3p5l1&dma_cps=-&dma=0&tag_exp=115938466~115938468~118897920~118897930~120385423~120469145~120469153&tft=1790407048496&tfd=3275&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://pagead2.googlesyndication.com/ccm/collect?rcb=17&frm=0&apvc=0&tid=AW-328058248&en=page_view&dl=https%3A%2F%2Fwww.getdbt.com%2Fpricing&scrsrc=www.googletagmanager.com&rnd=906390033.1790407048&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1v871890451z8847344878za20gzb847344878zd847344878xecxf1&gcs=G100&gcd=13p3p3p3p5l1&dma_cps=-&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&tft=1790407048498&tfd=3277&tids=AW-328058248&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.google-analytics.com/g/collect?v=2&tid=G-8201NH9C1D&gtm=45je69n1v9116012060z8847344878za20gzb847344878zd847344878xf1&_p=1790407047804&gcs=G100&gcd=13p3p3p3p5l1&npa=1&dma_cps=-&dma=0&gdid=dYWJhMj&_eu=EAAAAGAC&are=1&cid=1407322421.1790407049&frm=0&ir=1&pscdl=denied&rcb=11&sr=1280x720&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uam=&uamb=0&uap=Linux&uapv=6.18.44&uaw=0&ul=en-us&gaf=2&_s=1&tag_exp=115938466~115938468~118897920~118897930~119793973~120213116~120385423~120469145~120469153&sid=1790407048&sct=1&seg=0&dl=https%3A%2F%2Fwww.getdbt.com%2Fpricing&dt=dbt%20Pricing%20%E2%80%94%20start%20free%2C%20scale%20with%20your%20team%20%7C%20dbt%20Labs&en=page_view&_fv=1&_nsi=1&_ss=1&tfd=3484 net::ERR_ABORTED
+INCOMPLETE request-failed https://www.googleadservices.com/pagead/conversion/328058248/?label=e5mUCNfS1c8ZEIiLt5wB&guid=ON&script=0 csp
+INCOMPLETE request-failed https://pagead2.googlesyndication.com/pagead/conversion/328058248/?random=1790407049600&cv=11&fst=1790407049600&fmt=8&bg=ffffff&guid=ON&async=1&en=conversion&gtm=45be69n1v871890451za20gzb847344878zd847344878xecxf1&gcs=G100&gcd=13p3p3p3p5l1&dma_cps=-&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&u_w=1280&u_h=720&url=https%3A%2F%2Fwww.getdbt.com%2Fpricing&rcb=17&label=e5mUCNfS1c8ZEIiLt5wB&gtm_ee=1&frm=0&tiba=dbt%20Pricing%20%E2%80%94%20start%20free%2C%20scale%20with%20your%20team%20%7C%20dbt%20Labs&did=dYWJhMj&gdid=dYWJhMj&hn=www.googleadservices.com&npa=1&pscdl=denied&uaa=x86&uab=64&uafvl=Chromium%3B141.0.7390.37%7CNot%253FA_Brand%3B8.0.0.0&uamb=0&uam=&uap=Linux&uapv=6.18.44&uaw=0&data=event%3Dconversion&category=acrcp_v1_512&ept=6 net::ERR_ABORTED
+INCOMPLETE request-failed https://pagead2.googlesyndication.com/ccm/collect?rcb=17&frm=0&apvc=0&tid=AW-328058248&en=page_view&dl=https%3A%2F%2Fwww.getdbt.com%2Fpricing&scrsrc=www.googletagmanager.com&rnd=906390033.1790407048&navt=n&npa=1&did=dYWJhMj&gdid=dYWJhMj&gtm=45be69n1v871890451za20gzb847344878zd847344878xecxf1&gcs=G100&gcd=13p3p3p3p5l1&dma_cps=-&dma=0&tag_exp=115616986~115938466~115938468~118897920~118897930~120213116~120385422~120469145~120469153&tft=1790407049619&tfd=4398&tids=AW-328058248&fmt=8 net::ERR_ABORTED
+INCOMPLETE request-failed https://connect.facebook.net//log/error?p=pixel&sl=2&v=2.9.408&e=%5BMeta%20pixel%5D%20Bot%20traffic%20detected%20and%20blocked%20-%20pixel_id%3A%202610856615958700&ue=0&rs=stable&rqm=FGET csp
+INCOMPLETE request-failed https://px.ads.linkedin.com/wa/?medium=fetch&fmt=g net::ERR_ABORTED
+INCOMPLETE pending https://www.getdbt.com/resources/webinars/cost-optimized-transformations-with-dbt-and-apache-iceberg-on-open-multi-engine-compute?_rsc=-0evN7MR_PIxD15R
+INCOMPLETE 合計 9 件
+--- 2026-09-26T07:18:09Z method=websearch target=search_billing_faq rc=NA time_s=NA note=8-030 §4.0 課金開始条件: WebSearchで無料枠超過時の挙動を探す一次資料の候補ページを発見(要約は一次資料ではないので後でcurlで裏取り)
+$ dbt Labs Developer plan 3,000 models per month what happens exceed limit
+候補URL: https://docs.getdbt.com/docs/platform/billing/plans-and-billing
+候補URL: https://docs.getdbt.com/docs/platform/billing-faqs
+WebSearchの要約(一次資料ではない。下のcurlで裏取りする): 3,000モデルを超えると以後の実行はキャンセルされ、モデルがリフレッシュされるか有料プランへアップグレードするまで実行できない、との説明
+--- 2026-09-26T07:18:14Z method=公式 target=billing_faq_fetch rc=0 time_s=0.507 note=8-030 §4.0 課金開始条件: 公式Billing FAQs頁を取得(一次資料の裏取り)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-030_run22/billing_faqs.html -w 'http_code=%{http_code} size=%{size_download}\n' https://docs.getdbt.com/docs/platform/billing-faqs
+http_code=200 size=46655
+--- 2026-09-26T07:18:30Z method=run target=billing_quote rc=0 time_s=0.004 note=8-030 §4.0 課金開始条件: N内(docs.getdbt.comソース)のplans-and-billing.mdからDeveloper枠超過時の挙動を逐語で引く
+$ grep -n exceed /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/docs/docs/platform/billing/plans-and-billing.md
+13:Developer plans are free and include one Developer license and 3,000 models each month. Models are refreshed at the beginning of each calendar month. If you exceed 3,000 models, any subsequent runs will be canceled until models are refreshed or until you upgrade to a paid plan. The rest of the <Constant name="dbt" /> platform is still accessible, and no work will be lost.
+21:Usage is calculated and charged in arrears for the previous month. If you exceed 15,000 models in any month, you will be billed for additional usage on your next invoice. Additional usage is billed at the rates on our [pricing page](https://www.getdbt.com/pricing). 
+38:dbt Labs may institute use limits if reasonable use is exceeded. Additional features, upgrades, or updates may be subject to separate charges. Any changes to your current plan pricing will be communicated in advance according to our Terms of Use.
+--- 2026-09-26T07:18:36Z method=公式 target=signup_fetch rc=0 time_s=0.421 note=8-030 §4.0 登録の要否(渡すもの): dbt Platform登録頁を取得(登録はしない)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-030_run22/signup.html -w 'http_code=%{http_code} size=%{size_download}\n' -L https://www.getdbt.com/signup
+http_code=200 size=811843
+--- 2026-09-26T07:18:47Z method=run target=signup_fields rc=0 time_s=0.007 note=8-030 §4.0 登録の要否(渡すもの): 登録フォームの入力欄を列挙(登録はしない)
+$ grep -oE 'name="[a-z_]+"' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/8-030_run22/signup.html
+name="viewport"
+name="viewport"
+name="description"
+name="robots"
+name="googlebot"
+name="email"
+name="first_name"
+name="last_name"
+name="company_name"
+name="password"
+name="confirm_password"
+name="hear_about_us"
+name="geolocation_law"
+name="tos_acceptance"
+name="is_company_signup"
+name="is_user_signup"
+name="sign_up_source_detail"
+name="snowplow_domain_userid"
+--- 2026-09-26T07:19:00Z method=run target=maintainer_name_history rc=0 time_s=0.009 note=8-030 §4.0 保守者名の一貫性: dbt Labsの旧社名Fishtown Analyticsへの言及と、LICENSE末尾のCopyright表記を確認
+$ bash -c 'grep -n '"'"'Fishtown'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/docs-text/website/blog/2023-08-01-announcing-materialized-views.md'"'"' | head -2; echo ---; grep -n '"'"'Copyright'"'"' '"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbt-core/LICENSE'"'"''
+22:The year was 2020. I was a kitten-only household, and dbt Labs was still Fishtown Analytics. A enterprise customer I was working with, Jetblue, asked me for help running their dbt models every 2 minutes to meet a 5 minute SLA.
+| ---
+66:   2. Grant of Copyright License. Subject to the terms and conditions of
+189:   Copyright 2026 dbt Labs, Inc.
+--- 2026-09-26T07:19:15Z method=websearch target=scam_search rc=NA time_s=NA note=8-030 §4.0 宣伝詐欺の兆候: X(site:x.com)でdbt Labs関連の詐欺・Telegram限定配布・儲かる断定の兆候を検索
+$ site:x.com dbt Labs scam OR telegram OR guaranteed profit
+結果9件は無関係(Telegram一般の詐欺注意喚起の投稿ばかりで、dbt Labsに言及するものは0件)。dbt LabsやgetdbtとTelegram限定配布・必ず儲かる文言・提携リンクを結びつける投稿は見つからなかった。
+--- 2026-09-26T07:19:32Z method=websearch target=usage_search rc=NA time_s=NA note=8-030 §4.0 宣伝詐欺の兆候(使用報告の確認): Xでの実利用者の投稿・レビューを検索
+$ site:x.com dbt getdbt.com review OR using dbt
+公式アカウント@getdbtの投稿(顧客事例、印=宣伝)、G2/AWS marketplaceのレビュー(印=使用報告): 「使いやすい」「データ変換プロセスを簡素化する」等の肯定的評価と、「CLI依存で柔軟性に欠ける部分がある」「取り込み・リアルタイム処理は不得手」等の否定的評価が混在。詐欺・必ず儲かる・Telegram限定配布・ウォレット秘密鍵要求・アフィリエイトリンクの兆候は無し。
+--- 2026-09-26T07:19:43Z method=公式 target=pypistats_dbtduckdb_retry rc=0 time_s=0.507 note=8-030 §6-1: dbt-duckdb週DL数(pypistats.org再試行)
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt https://pypistats.org/api/packages/dbt-duckdb/recent
+{"data":{"last_day":70076,"last_month":1769596,"last_week":419171},"package":"dbt-duckdb","type":"recent_downloads"}
+--- 2026-09-26T07:26:29Z method=run target=dbtduckdb_first_release rc=0 time_s=0.024 note=8-030 §6-1: dbt-duckdb PyPI releasesから初回公開日と版数を算出
+$ python3 -c '
+import json
+d=json.load(open('"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-030/dbtduckdb_pypi.json'"'"'))
+rel=d['"'"'releases'"'"']
+first=min((v[0]['"'"'upload_time'"'"'] for k,v in rel.items() if v), default='"'"'?'"'"')
+print('"'"'first_release_min_upload_time='"'"', first)
+print('"'"'total_versions='"'"', len(rel))
+print('"'"'latest_version='"'"', d['"'"'info'"'"']['"'"'version'"'"'])
+'
+first_release_min_upload_time= 2020-11-06T21:36:22
+total_versions= 49
+latest_version= 1.11.0
