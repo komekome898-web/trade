@@ -43395,3 +43395,12 @@ K12 検査の出力の貼付           1 件
 ```
 
 `git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l` → `0`(HEAD=28回目までがコミットされた版。この回は追記と、K12チェック直前に足した引用の裏付け・生ログ参照の訂正だけで、既存行の削除は無い)
+
+### リードの追記(検収、監査 122 回目)
+
+- **値**: 台帳は E1b `印`・段 2(この節の `未判別` は受け取らない)。E6 は `印`・段 3。理由は検収 `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run29.md` §4。E1b の根拠はリードが読んだ(コマンドと出力): `cd .../venvs/8-032/src/kafka && sed -n '1142p;1183p' docs/streams/developer-guide/dsl-api.md` → 「**Rolling aggregation.** Counts the number of records by the grouped key.」「**Windowed aggregation.** Counts the number of records, per window, by the grouped key.」。
+- **§7 の検査 2〜4(リードが打ち直した)**: `check-elements --round 29` → `---- 合計 0 件` / `check "" run29.log` → `---- 合計 0 件` / `git diff -U0 3ee31cf~1 3ee31cf -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep -c '^-[^-]'` → `0`。scratchpad の外: `/root/.m2` 無し、`/root/.cache/pip` 728M のまま。
+- **「探し尽くした」は受け取らない(監査 122 回目の指摘 2)**: 探す手(生ログ 61 行)は `| head -25` でファイルごとの当たりを打ち切り、出力も 20,000 字で切れている(150 行)。`dsl-api.md` は当たり 163 件のうち約 25 件しか出ていない(監査役の数え直し)。E2・E4 の案 B の「読んだ範囲」は、打ち切りのない読み直しが要る。
+- **宣伝詐欺の兆候(指摘 1)**: 根拠は WebSearch の要約だけ(生ログ 307〜318 行、`method=websearch`)。根拠の種類は `未確認`(試した手段 = 検索 3 本、要約しか読んでいない)。
+- **コミット数(指摘 5)**: 理由は「github.com・api.github.com がこのセッションのプロキシで 403、shields.io に総コミット数のバッジが無い」だけにする(「この回は試していない」は理由にしない)。
+- **初回公開日(指摘 9)**: 2011-07-04 は Apache のインキュベーションに入った日。一般に公開された日は `未確認`。
