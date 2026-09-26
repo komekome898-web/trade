@@ -1,0 +1,487 @@
+--- 2026-09-26T20:31:46Z method=setup target=開始 rc=0 time_s=0.056 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-26T20:31:46Z
+alldirs.txt
+build_list.py
+check
+check1_output.txt
+check_extract
+check_extract_deps
+check_pypi.sh
+data_and_scale.py
+doc_titles.py
+doc_titles.txt
+draft
+dummy_spark_home
+extract_deps.sh
+extract_deps2.sh
+final_check1.txt
+find_binaries.py
+first_last.py
+gen_candidates.txt
+gen_elements.txt
+gen_tables.py
+list.txt
+minimal_exec.py
+mklist_out.txt
+net_check.py
+osv_check.py
+pyspark-client_pypi.json
+pyspark-connect_pypi.json
+pyspark_client_pypi.json
+pyspark_pypi.json
+resolve_report.json
+resolve_venv
+run
+run33_tmp_cleanup
+sb34
+spark_archive_420.html
+spark_documentation.html
+spark_downloads.html
+spark_top.headers
+spark_top.html
+src
+tmp
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T20:31:59Z method=印 target=E4 rc=0 time_s=0.005 note=33回目に読んだstructured-streaming-kafka-integration.mdを読み直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -B1 -A4 'startingOffsets\|earliest\|order\|chronolog' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/structured-streaming-kafka-integration.md | head -100
+186-
+187:# Subscribe to 1 topic defaults to the earliest and latest offsets
+188-df = spark \
+189-  .read \
+190-  .format("kafka") \
+191-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2") \
+--
+201-  .option("subscribe", "topic1,topic2") \
+202:  .option("startingOffsets", """{"topic1":{"0":23,"1":-2},"topic2":{"0":-2}}""") \
+203-  .option("endingOffsets", """{"topic1":{"0":50,"1":-1},"topic2":{"0":-1}}""") \
+204-  .load()
+205-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+206-
+207:# Subscribe to a pattern, at the earliest and latest offsets
+208-df = spark \
+209-  .read \
+210-  .format("kafka") \
+211-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2") \
+212-  .option("subscribePattern", "topic.*") \
+213:  .option("startingOffsets", "earliest") \
+214-  .option("endingOffsets", "latest") \
+215-  .load()
+216-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+217-{% endhighlight %}
+--
+222-
+223:// Subscribe to 1 topic defaults to the earliest and latest offsets
+224-val df = spark
+225-  .read
+226-  .format("kafka")
+227-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
+--
+238-  .option("subscribe", "topic1,topic2")
+239:  .option("startingOffsets", """{"topic1":{"0":23,"1":-2},"topic2":{"0":-2}}""")
+240-  .option("endingOffsets", """{"topic1":{"0":50,"1":-1},"topic2":{"0":-1}}""")
+241-  .load()
+242-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+243-  .as[(String, String)]
+244-
+245:// Subscribe to a pattern, at the earliest and latest offsets
+246-val df = spark
+247-  .read
+248-  .format("kafka")
+249-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
+250-  .option("subscribePattern", "topic.*")
+251:  .option("startingOffsets", "earliest")
+252-  .option("endingOffsets", "latest")
+253-  .load()
+254-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+255-  .as[(String, String)]
+--
+262-
+263:// Subscribe to 1 topic defaults to the earliest and latest offsets
+264-Dataset<Row> df = spark
+265-  .read()
+266-  .format("kafka")
+267-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
+--
+277-  .option("subscribe", "topic1,topic2")
+278:  .option("startingOffsets", "{\"topic1\":{\"0\":23,\"1\":-2},\"topic2\":{\"0\":-2}}")
+279-  .option("endingOffsets", "{\"topic1\":{\"0\":50,\"1\":-1},\"topic2\":{\"0\":-1}}")
+280-  .load();
+281-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)");
+282-
+283:// Subscribe to a pattern, at the earliest and latest offsets
+284-Dataset<Row> df = spark
+285-  .read()
+286-  .format("kafka")
+287-  .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
+288-  .option("subscribePattern", "topic.*")
+289:  .option("startingOffsets", "earliest")
+290-  .option("endingOffsets", "latest")
+291-  .load();
+292-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)");
+293-
+--
+375-  <td>timestamp string e.g. "1000"</td>
+376:  <td>none (next preference is <code>startingOffsetsByTimestamp</code>)</td>
+377-  <td>streaming and batch</td>
+378-  <td>The start point of timestamp when a query is started, a string specifying a starting timestamp for
+379-  all partitions in topics being subscribed. Please refer the details on timestamp offset options below. If Kafka doesn't return the matched offset,
+380:  the behavior will follow to the value of the option <code>startingOffsetsByTimestampStrategy</code><p/>
+381-  <p/>
+382:  Note1: <code>startingTimestamp</code> takes precedence over <code>startingOffsetsByTimestamp</code> and <code>startingOffsets</code>.<p/>
+383-  Note2: For streaming queries, this only applies when a new query is started, and that resuming will
+384-  always pick up from where the query left off. Newly discovered partitions during a query will start at
+385:  earliest.</td>
+386-</tr>
+387-<tr>
+388:  <td>startingOffsetsByTimestamp</td>
+389-  <td>json string
+390-  """ {"topicA":{"0": 1000, "1": 1000}, "topicB": {"0": 2000, "1": 2000}} """
+391-  </td>
+392:  <td>none (next preference is <code>startingOffsets</code>)</td>
+393-  <td>streaming and batch</td>
+394-  <td>The start point of timestamp when a query is started, a json string specifying a starting timestamp for
+395-  each TopicPartition. Please refer the details on timestamp offset options below. If Kafka doesn't return the matched offset,
+396:  the behavior will follow to the value of the option <code>startingOffsetsByTimestampStrategy</code><p/>
+397-  <p/>
+398:  Note1: <code>startingOffsetsByTimestamp</code> takes precedence over <code>startingOffsets</code>.<p/>
+--- 2026-09-26T20:32:10Z method=印 target=E4 rc=123 time_s=0.840 note=一覧全体でchronolog系の語のファイル名一覧のみ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ tr '\0' '\n' < /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/list.txt | xargs -d '\n' grep -lI -i -E 'chronolog|time.order|time-order|in order of (event )?time|order of arrival|arrival order|時系列順|時刻順' 2>/dev/null
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/common/utils-java/src/main/java/org/apache/spark/util/UUIDv7Generator.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/connector/kafka-0-10/src/main/scala/org/apache/spark/streaming/kafka010/DirectKafkaInputDStream.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/core/src/main/scala/org/apache/spark/rdd/RDD.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/sql-migration-guide.md
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/web-ui.md
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/api/src/main/scala/org/apache/spark/sql/catalyst/util/DateTimeFormatterHelper.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/catalyst/src/main/java/org/apache/spark/sql/connector/catalog/Changelog.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/core/src/main/scala/org/apache/spark/status/api/v1/sql/SqlResource.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/core/src/test/scala/org/apache/spark/sql/connector/KeyGroupedPartitioningSuite.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessorSuite.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/test/scala/org/apache/spark/sql/pipelines/graph/AutoCdcOutOfOrderConvergenceSuite.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/streaming/src/main/scala/org/apache/spark/streaming/dstream/DStreamCheckpointData.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/streaming/src/main/scala/org/apache/spark/streaming/dstream/FileInputDStream.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/streaming/src/main/scala/org/apache/spark/streaming/scheduler/JobGenerator.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/streaming/src/main/scala/org/apache/spark/streaming/ui/StreamingJobProgressListener.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/streaming/src/test/scala/org/apache/spark/streaming/util/WriteAheadLogSuite.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/udf/worker/proto/src/main/protobuf/org/apache/spark/udf/worker/udf_message.proto
+--- 2026-09-26T20:32:21Z method=印 target=E4 rc=1 time_s=0.004 note=DirectKafkaInputDStream.scalaのchronolog/order該当行 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -B2 -A2 'chronolog|time.order|time-order|in order of (event )?time|order of arrival|arrival order' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/connector/kafka-0-10/src/main/scala/org/apache/spark/streaming/kafka010/DirectKafkaInputDStream.scala
+
+--- 2026-09-26T20:32:28Z method=印 target=E4 rc=0 time_s=0.004 note=DirectKafkaInputDStream.scalaのchronolog系語の該当行 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -E -B2 -A2 'chronolog|time.order|time-order|arrival.order|order of arrival' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/connector/kafka-0-10/src/main/scala/org/apache/spark/streaming/kafka010/DirectKafkaInputDStream.scala
+327-
+328-    override def restore(): Unit = {
+329:      batchForTime.toSeq.sortBy(_._1)(Time.ordering).foreach { case (t, b) =>
+330-         logInfo(log"Restoring KafkaRDD for time ${MDC(TIME, t)} " +
+331-           log"${MDC(TOPIC_PARTITION_OFFSET_RANGE, b.mkString("[", ", ", "]"))}")
+--- 2026-09-26T20:32:35Z method=印 target=E4 rc=0 time_s=0.004 note=Scd2BatchProcessor.scalaのchronolog系語の該当行 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -E -B3 -A3 'chronolog|time.order|time-order|arrival.order|order of arrival' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala
+58-   * WindowSpec that sorts CDC event rows in ascending order per key, by event origination
+59-   * sequence time (i.e, record start at).
+60-   */
+61:  private[autocdc] val orderChronologicallyPerKeyWindow: WindowSpec = {
+62-    val recordStartAtCol = Scd2BatchProcessor.recordStartAtOf(
+63-      F.col(AutoCdcReservedNames.cdcMetadataColName)
+64-    )
+--
+433-
+434-  /**
+435-   * For every closed non-tombstone row in the input dataframe whose immediate window-order
+436:   * successor (in the same per-key partition, per [[orderChronologicallyPerKeyWindow]])
+437-   * has `recordStartAt` strictly less than its `endAt` (in other words the row is being
+438-   * bisected by its neighbor), replace that row by a "head" + "tail" pair:
+439-   *   - head: copies the parent row exactly, except [[endAtColName]] is set to null.
+--
+455-   *      this row's [[endAtColName]]: the closing event already coincides with or follows
+456-   *      the run boundary, so there is nothing to bisect.
+457-   *
+458:   * Bisection detection is implemented via `LEAD(1)` over [[orderChronologicallyPerKeyWindow]]:
+459-   * because the window orders by effective recordStartAt ascending, examining only the
+460-   * immediate successor is sufficient to decide whether any other row in the partition has
+461-   * a recordStartAt within `[recordStartAt, endAt)`.
+--
+490-    // Track the next (in sorted order) row's recordStartAt in a temporary column.
+491-    val rowsToDecomposeWithWindowCols = rowsToDecomposePerKey.withColumn(
+492-      Scd2BatchProcessor.nextRecordStartAtColName,
+493:      F.lead(recordStartAtField, 1).over(orderChronologicallyPerKeyWindow)
+494-    )
+495-
+496-    val isClosedUpsertRow = RowClassifier.isClosedUpsert(
+--
+632-  }
+633-
+634-  /**
+635:   * Drops rows that are redundant within the per-key chronological window output by
+636-   * [[decomposeOutOfOrderRows]]. The redundancy criterion is a single rule:
+637-   *
+638-   *   A row is redundant whenever it sorts before some other row with the same effective
+639:   *   recordStartAt under [[orderChronologicallyPerKeyWindow]]; equivalently, only the
+640-   *   trailing row in any such tie survives.
+641-   *
+642:   * The window's tiebreakers (see [[orderChronologicallyPerKeyWindow]]) put the more
+643-   * informative row last in every meaningful collision: a decomposition tail drops in
+644-   * favor of the coincident real event that already encodes the same closure, and an
+645-   * upsert drops in favor of a same-sequence tombstone (delete wins over upsert at the
+--
+670-
+671-    val withNextEffectiveRecordStartAt = decomposedRowsPerKey.withColumn(
+672-      Scd2BatchProcessor.nextEffectiveRecordStartAtColName,
+673:      F.lead(effectiveRecordStartAt, 1).over(orderChronologicallyPerKeyWindow)
+674-    )
+675-    val nextEffectiveRecordStartAt =
+676-      withNextEffectiveRecordStartAt.col(Scd2BatchProcessor.nextEffectiveRecordStartAtColName)
+--
+687-  }
+688-
+689-  /**
+690:   * Recompute every row's [[startAtColName]] and [[e
+[出力は 7962 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T20:32:55Z method=印 target=E4 rc=0 time_s=0.005 note=declarative-pipelines-programming-guide.mdのAUTO_CDC記述箇所を探す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i 'auto cdc\|apply_changes\|sequence_by\|slowly changing' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md | head -40
+520:## Change Data Capture (CDC) with Auto CDC
+524:**Auto CDC** does this automatically. Given a source of change events and a rule for identifying and ordering them, SDP maintains a target streaming table that always reflects the latest state for each key.
+528:Auto CDC needs two things to make sense of a change feed:
+531:- The **sequencing expression** says what order the events for a key happened in. Its value for an event is that event's **sequence value**, and Auto CDC treats the highest sequence value it has seen for a key as the most recent state. Change feeds normally carry something suitable already: a monotonically increasing version or commit number, or a commit timestamp.
+533:Sequencing matters because a change feed does not have to arrive in order. It is what lets Auto CDC apply events by their intended order rather than the order they happen to land in.
+535:### What Auto CDC Does
+537:Given a stream of change events, Auto CDC keeps the target table in sync with the source:
+543:This section covers **Slowly Changing Dimensions (SCD) Type 1**, where the target keeps only the current version of each row, with no history of prior values. SCD Type 2 is also supported; [SPARK-58570](https://issues.apache.org/jira/browse/SPARK-58570) tracks documenting it.
+556:Auto CDC keyed on `id` and sequenced by `version` produces this target table. It drops the `op` column, and omits the internal metadata column Auto CDC appends (see [Considerations](#auto-cdc-considerations)):
+568:- The **target's format must support row-level operations.** Auto CDC maintains the target with MERGE, so the table must be backed by a connector implementing the DSv2 `SupportsRowLevelOperations` interface. A target that does not fails at startup with `AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE`. Spark's built-in file formats, including Parquet, do **not** qualify; see [Choosing a Target Format](#choosing-a-target-format).
+569:- The **target must have exactly one input flow.** An Auto CDC flow cannot share a target with other flows; a target fed by more than one flow, one of which is Auto CDC, fails with `AUTOCDC_MULTIPLE_FLOWS_TO_TARGET`. This rules out the fan-in pattern shown in "Using Multiple Flows to Write to a Single Target" above.
+582:### Defining an Auto CDC Flow in Python
+595:# The target that Auto CDC keeps in sync. It must be a streaming table, in a
+600:# The Auto CDC flow that applies the change events to the target.
+605:    sequence_by="version",
+619:| `sequence_by` | Yes | An expression used to order change events for each key. The highest value wins. A SQL expression string or a `Column`. |
+629:`keys`, `column_list`, and `except_column_list` must be given as unqualified column identifiers: `"id"` or `col("id")`, but not `"cdc_events.id"` or `col("cdc_events.id")`. (`sequence_by` is not restricted this way; it may be any expression over the source columns.)
+631:### Defining an Auto CDC Flow in SQL
+633:SQL provides two forms. The first attaches an Auto CDC flow to an
+[出力は 6896 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T20:33:18Z method=印 target=E4 rc=0 time_s=0.004 note=declarative-pipelines-programming-guide.md_520-620行の全文 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ sed -n '520,620p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md
+## Change Data Capture (CDC) with Auto CDC
+
+Many source systems emit a stream of *change events* rather than a snapshot of the current data: each record describes an insert, update, or delete to a row, identified by a key. Applying these events correctly to a target table by hand is tricky. Matching events to existing rows, applying them in the right order, and handling out-of-order and duplicate events without corrupting the table is the hard part.
+
+**Auto CDC** does this automatically. Given a source of change events and a rule for identifying and ordering them, SDP maintains a target streaming table that always reflects the latest state for each key.
+
+### Keys and Sequencing
+
+Auto CDC needs two things to make sense of a change feed:
+
+- The **keys** are the columns that identify a row across events. Events sharing a key describe the same logical row over time. In a customer feed, that is usually the customer id.
+- The **sequencing expression** says what order the events for a key happened in. Its value for an event is that event's **sequence value**, and Auto CDC treats the highest sequence value it has seen for a key as the most recent state. Change feeds normally carry something suitable already: a monotonically increasing version or commit number, or a commit timestamp.
+
+Sequencing matters because a change feed does not have to arrive in order. It is what lets Auto CDC apply events by their intended order rather than the order they happen to land in.
+
+### What Auto CDC Does
+
+Given a stream of change events, Auto CDC keeps the target table in sync with the source:
+
+- **Inserts and updates** - For each key, the event with the highest sequence value wins. If no row exists for the key, it's inserted; if one exists, it's overwritten with the latest values.
+- **Deletes** - Events that match a supplied delete condition remove the corresponding row from the target.
+- **Out-of-order and duplicate events** - Events don't have to arrive in order, and the source does not need to be de-duplicated. An event whose sequence value is older than the state already applied for its key is discarded, and a re-delivered event converges to the same result.
+
+This section covers **Slowly Changing Dimensions (SCD) Type 1**, where the target keeps only the current version of each row, with no history of prior values. SCD Type 2 is also supported; [SPARK-58570](https://issues.apache.org/jira/browse/SPARK-58570) tracks documenting it.
+
+For example, take these change events. They are **not** in `version` order - the last event for `id 1` is a stale re-delivery of version 1, arriving after version 2:
+
+| id | name   | version | op     |
+|----|--------|---------|--------|
+| 1  | alice  | 1       | UPSERT |
+| 2  | bob    | 1       | UPSERT |
+| 1  | alicia | 2       | UPSERT |
+| 2  | bob    | 2       | DELETE |
+| 3  | carol  | 1       | UPSERT |
+| 1  | alice  | 1       | UPSERT |
+
+Auto CDC keyed on `id` and sequenced by `version` produces this target table. It drops the `op` column, and omits the internal metadata column Auto CDC appends (see [Considerations](#auto-cdc-considerations)):
+
+| id | name   | version |
+|----|--------|---------|
+| 1  | alicia | 2       |
+| 3  | carol  | 1       |
+
+By key: `id 1` was inserted as `alice`, then updated to `alicia` at version 2, and the stale version 1 event arriving last is discarded because a higher sequence value has already been applied; `id 2` was inserted and then deleted at version 2, so it is gone; `id 3` was inserted and never changed.
+
+### Requirements
+
+- The **target must be a streaming table**, not a materialized view or an external table. Define it with `create_streaming_table` (Python) or `CREATE STREAMING TABLE` (SQL), or declare it together with the flow using the combined SQL form below. Definition order within the source file does not matter, since the graph is resolved after everything is registered.
+- The **target's format must support row-level operations.** Auto CDC maintains the target with MERGE, so the table must be backed by a connector implementing the DSv2 `SupportsRowLevelOperations` interface. A target that does not fails at startup with `AUTOCDC_TARGET_DOES_NOT_SUPPORT_MERGE`. Spark's built-in file formats, including Parquet, do **not** qualify; see [Choosing a Target Format](#choosing-a-target-format).
+- The **target must have exactly one input flow.** An Auto CDC flow cannot share a target with other flows; a target fed by more than one flow, one of which is Auto CDC, fails with `AUTOCDC_MULTIPLE_FLOWS_TO_TARGET`. This rules out the fan-in pattern shown in "Using Multiple Flows to Write to a Single Target" above.
+- The **source must be a streaming source** (read with `spark.readStream` in Python or `STREAM(...)` in SQL). CDC is an incremental operation over newly arriving change events.
+- The **catalog's metadata must survive between runs**, since each incremental run re-resolves the tables an earlier run created. This is a property of the connector, not of setting `spark.sql.catalog.*`. Spark's default session catalog keeps metadata only for the life of the session, so a second `spark-pipelines run` against it fails with `LOCATION_ALREADY_EXISTS`; use a catalog whose metastore persists.
+- The flow must specify **keys** (one or more columns that identify a row) and a **sequencing expression** (used to order events per key).
+
+The sequencing expression may be any SQL expression over the source columns, not just a bare column reference; sequencing by a struct such as `(commit_ts, seq_no)`, or by a cast, is fine. It must satisfy three constraints:
+
+- **Its type must be orderable.** A non-orderable type fails with `AUTOCDC_MICROBATCH_VALIDATION.NON_ORDERABLE_SEQUENCE`.
+- **It must never be null.** A microbatch containing a null sequence value fails with `AUTOCDC_MICROBATCH_VALIDATION.NULL_SEQUENCE` rather than guessing an order.
+- **Its result type must stay the same across runs.** The expression may change between incremental runs, but not its type, 
+[出力は 8083 文字。先頭 6000 文字だけを残した]
+--- 2026-09-26T20:35:23Z method=案B target=E4 rc=1 time_s=0.004 note=文書347頁の道+題にE4の語の組を当てて選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/doc_titles.txt
+
+--- 2026-09-26T20:35:34Z method=案B target=E4 rc=1 time_s=0.005 note=find全ディレクトリ3565件にE4の語を当てて選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/alldirs.txt
+
+--- 2026-09-26T20:36:23Z method=見積もり target=E4 rc=0 time_s=0.592 note=cat8_search.pyに渡すのと同じ正規表現で当たり行数を見積もる_500行判定の前 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ tr '\0' '\n' < /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/list.txt | xargs -d '\n' grep -I -c -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun' 2>/dev/null | awk -F: '{s+=$2; if($2>0)f++} END{print "files_with_hits="f" total_lines="s}'
+files_with_hits=1661 total_lines=14613
+--- 2026-09-26T20:36:53Z method=印 target=E4 rc=0 time_s=0.007 note=docs_streaming配下とdeclarative-pipelinesでreplay_playback_rerun語を探す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -rn -i -E 'replay|playback|re-?run' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming-programming-guide.md 2>&1
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/ss-migration-guide.md:70:- Spark 3.0 fixes the correctness issue on Stream-stream outer join, which changes the schema of state. (See [SPARK-26154](https://issues.apache.org/jira/browse/SPARK-26154) for more details). If you start your query from checkpoint constructed from Spark 2.x which uses stream-stream outer join, Spark 3.0 fails the query. To recalculate outputs, discard the checkpoint and replay previous inputs.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/apis-on-dataframes-and-datasets.md:46:Some sources are not fault-tolerant because they do not guarantee that data can be replayed using
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/structured-streaming-state-data-source.md:151:  <td>If specified, force to read the snapshot at this batch ID, then changelogs will be replayed until 'batchId' or its default. Note that snapshot batch ID starts with 0 and equals to snapshot version ID minus 1. This option must be used together with 'snapshotPartitionId'.</td>
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/real-time-mode.md:939:| `spark.sql.streaming.realTimeMode.dangerouslyAllowCheckpointV1.enabled` | `false` | Whether to allow a Real-time query to use state-store checkpoint format version 1. This is unsafe for stateful queries: format v1 can reuse state-file names when a failed batch is rerun, so the rerun can load stale state and lose updates. Prefer format v2 and a fresh checkpoint location. See [State store defaults](#state-store-defaults). |
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/real-time-mode.md:953:| `spark.sql.streaming.stateStore.checkpointFormatVersion` | `2` | Format v2 gives each batch its own state store checkpoint ids, which is what lets a failed batch be rerun correctly from committed offsets. Real-time Mode requires v2 (see below). |
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/streaming/getting-started.md:509:to track the read position in the stream. The engine uses checkpointing and write-ahead logs to record the offset range of the data being processed in each trigger. The streaming sinks are designed to be idempotent for handling reprocessing. Together, using replayable sources and idempotent sinks, Structured Streaming can ensure **end-to-end exactly-once semantics** under any failure.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md:696:It reads the change feed from a directory of JSON files, so appending a batch and re-running shows the incremental behavior. The target uses the `lakehouse` catalog from [Choosing a Target Format](#choosing-a-target-format); substitute a row-level-operation-capable catalog.
+--- 2026-09-26T20:37:45Z method=印 target=E4 rc=0 time_s=0.033 note=chronolog系語のヒット一覧の残りの内容を確認_無関係の内部処理か判定 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ 
+for f in common/utils-java/src/main/java/org/apache/spark/util/UUIDv7Generator.java core/src/main/scala/org/apache/spark/rdd/RDD.scala docs/sql-migration-guide.md docs/web-ui.md sql/api/src/main/scala/org/apache/spark/sql/catalyst/util/DateTimeFormatterHelper.scala sql/catalyst/src/main/java/org/apache/spark/sql/connector/catalog/Changelog.java sql/core/src/main/scala/org/apache/spark/status/api/v1/sql/SqlResource.scala streaming/src/main/scala/org/apache/spark/streaming/dstream/FileInputDStream.scala streaming/src/main/scala/org/apache/spark/streaming/scheduler/JobGenerator.scala streaming/src/main/scala/org/apache/spark/streaming/ui/StreamingJobProgressListener.scala udf/worker/proto/src/main/protobuf/org/apache/spark/udf/worker/udf_message.proto; do
+  echo "=== $f ==="
+  grep -n -i -E 'chronolog|time.order|time-order|arrival.order|order of arrival' "/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/$f"
+done
+=== common/utils-java/src/main/java/org/apache/spark/util/UUIDv7Generator.java ===
+26: * UUIDv7 is a time-ordered UUID that embeds a Unix timestamp in milliseconds.
+=== core/src/main/scala/org/apache/spark/rdd/RDD.scala ===
+2205:          // the arrival order of these shuffle blocks are totally random. Even if the parent map
+=== docs/sql-migration-guide.md ===
+497:  - In Spark 3.0, Proleptic Gregorian calendar is used in parsing, formatting, and converting dates and timestamps as well as in extracting sub-components like years, days and so on. Spark 3.0 uses Java 8 API classes from the `java.time` packages that are based on [ISO chronology](https://docs.oracle.com/javase/8/docs/api/java/time/chrono/IsoChronology.html). In Spark version 2.4 and below, those operations are performed using the hybrid calendar ([Julian + Gregorian](https://docs.oracle.com/javase/7/docs/api/java/util/GregorianCalendar.html). The changes impact on the results for dates before October 15, 1582 (Gregorian) and affect on the following Spark 3.0 API:
+=== docs/web-ui.md ===
+67:* Event timeline: Displays in chronological order the events related to the executors (added, removed) and the jobs
+102:* Event timeline: Displays in chronological order the events related to the executors (added, removed) and the stages of the job
+=== sql/api/src/main/scala/org/apache/spark/sql/catalyst/util/DateTimeFormatterHelper.scala ===
+21:import java.time.chrono.IsoChronology
+217:      .withChronology(IsoChronology.INSTANCE)
+=== sql/catalyst/src/main/java/org/apache/spark/sql/connector/catalog/Changelog.java ===
+61: *       event-time order across batches. Multiple distinct commits with equal
+=== sql/core/src/main/scala/org/apache/spark/status/api/v1/sql/SqlResource.scala ===
+174:          // Sort subs by id ascending so they appear in chronological order
+=== streaming/src/main/scala/org/apache/spark/streaming/dstream/FileInputDStream.scala ===
+343:      hadoopFiles.toSeq.sortBy(_._1)(Time.ordering).foreach {
+=== streaming/src/main/scala/org/apache/spark/streaming/scheduler/JobGenerator.scala ===
+228:    val pendingTimes = ssc.initialCheckpoint.pendingTimes.sorted(Time.ordering)
+234:      .distinct.sorted(Time.ordering)
+=== streaming/src/main/scala/org/apache/spark/streaming/ui/StreamingJobProgressListener.scala ===
+249:    completedBatchUIData.sortBy(_.batchTime)(Time.ordering).lastOption
+258:      runningBatchUIData.values.toSeq ++ completedBatchUIData).sortBy(_.batchTime)(Time.ordering)
+=== udf/worker/proto/src/main/protobuf/org/apache/spark/udf/worker/udf_message.proto ===
+310:// arrival order to form the final payload.
+572:    // [[PayloadChunk.data]] bytes in arrival order) and reject the
+--- 2026-09-26T20:37:53Z method=印 target=E4 rc=0 time_s=0.005 note=Changelog.javaの全文冒頭_CDCコネクタインタフェースの説明 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ sed -n '1,90p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/catalyst/src/main/java/org/apache/spark/sql/connector/catalog/Changelog.java
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.spark.sql.connector.catalog;
+
+import org.apache.spark.annotation.Evolving;
+import org.apache.spark.sql.connector.expressions.NamedReference;
+import org.apache.spark.sql.connector.read.ScanBuilder;
+import org.apache.spark.sql.util.CaseInsensitiveStringMap;
+
+/**
+ * The central connector interface for Change Data Capture (CDC).
+ * <p>
+ * Connectors implement this minimal interface to expose change data. Spark handles
+ * post-processing (carry-over removal, update detection, net change computation) based on
+ * the properties declared by the connector.
+ * <p>
+ * The columns returned by {@link #columns()} must include the following metadata columns:
+ * <ul>
+ *   <li>{@code _change_type} (STRING) — the kind of change: {@code insert}, {@code delete},
+ *       {@code update_preimage}, or {@code update_postimage}</li>
+ *   <li>{@code _commit_version} — the commit version containing this change. Must be
+ *       either {@code LongType} or {@code StringType}; all other types are rejected.
+ *       The column's natural ordering (numeric for {@code LongType}, lexicographic for
+ *       {@code StringType}) must match commit order, because the netChanges
+ *       post-processing path sorts rows of a given row identity by this column to
+ *       determine the first and last events.</li>
+ *   <li>{@code _commit_timestamp} (TIMESTAMP) -- the timestamp of the commit. All rows
+ *       belonging to a single {@code _commit_version} must share the same
+ *       {@code _commit_timestamp}. For streaming reads with post-processing enabled,
+ *       two additional requirements apply:
+ *       <ol>
+ *         <li>All rows of a single commit must appear in the same micro-batch (i.e.
+ *             micro-batch boundaries align with commit boundaries).</li>
+ *         <li>Each micro-batch's rows must have {@code _commit_timestamp} strictly
+ *             greater than the maximum {@code _commit_timestamp} of any prior
+ *             micro-batch.</li>
+ *       </ol>
+ *       Streaming post-processing uses {@code _commit_timestamp} as event time with a
+ *       zero-delay watermark, so once a micro-batch observes max event time T the
+ *       global watermark advances to T. Both Spark's late-event filter and its
+ *       state-eviction predicate then use {@code eventTime <= T} -- so any later row
+ *       at {@code _commit_timestamp <= T} (whether from the same commit split across
+ *       batches, a different commit emitted later, or simply an out-of-order commit)
+ *       is silently dropped as late. Requirement 1 keeps a single commit's rows
+ *       together; requirement 2 keeps distinct commits in strictly increasing
+ *       event-time order across batches. Multiple distinct commits with equal
+ *       {@code _commit_timestamp} are allowed within a single micro-batch -- only
+ *       <em>across</em> batches does timestamp progression need to be strictly
+ *       increasing. Atomic-commit CDC connectors (e.g. Delta versions, Iceberg
+ *       snapshots) that derive {@code _commit_timestamp} from wall-clock time at
+ *       commit time naturally satisfy both requirements.
+ *       {@code _commit_timestamp} must be non-{@code NULL} on every row of a streaming
+ *       read engaging post-processing; both the row-level Aggregate path and the
+ *       netChanges {@code transformWithState} path raise
+ *       {@code CHANGELOG_CONTRACT_VIOLATION.NULL_COMMIT_TIMESTAMP} on a violation</li>
+ * </ul>
+ * <p>
+ * Streaming reads support carry-over removal, update detection, and net change
+ * computation. Two streaming-specific behaviors to be aware of:
+ * <ul>
+ *   <li><b>Output is buffered until the watermark advances past the commit.</b>
+ *       When a micro-batch ingests a commit, that commit's output rows are
+ *       buffered in state and not emitted in the same batch. They are emitted
+ *       by a later micro-batch -- whichever one advances the watermark past
+ *       the commit's {@code _commit_timestamp}. The last commit's output is
+ *       emitted when the source terminates.</li>
+ *   <li><b>netChanges only merges changes that are buffered together.</b>
+ *       When each row identity appears in at most one commit within any
+ *      
+[出力は 5374 文字。先頭 5000 文字だけを残した]
+--- 2026-09-26T20:38:14Z method=印 target=E4 rc=0 time_s=0.005 note=Auto_CDC関連文書に市場_取引_priceの語があるか確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ grep -n -i -E 'market|trading|trade|price|quote|tick' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/catalyst/src/main/java/org/apache/spark/sql/connector/catalog/Changelog.java /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md:375:            col("o_totalprice").alias("totalprice"),
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/docs/declarative-pipelines-programming-guide.md:416:                col("totalprice"),
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala:46:   * Backtick-quoted key column names. Use when the name flows through an expression parser
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala:49:  private lazy val keysQuoted: Seq[String] = changeArgs.keys.map(_.quoted)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala:53:   * (e.g., DataFrame `.join(other, usingColumns)`), where backticks are NOT stripped.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala:79:      .partitionBy(keysQuoted.map(F.col): _*)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProcessor.scala:240:        // Spark drops backticks in the schema, quote all identifiers for safety before executing
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/src/spark/sql/pipelines/src/main/scala/org/apache/spark/sql/pipelines/autocdc/Scd2BatchProc
+[出力は 8681 文字。先頭 2000 文字だけを残した]
+--- 2026-09-26T20:38:28Z method=最後 target=片付け確認 rc=0 time_s=0.206 note=scratchpadの外に新しいファイルが無いかを確かめる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ find /tmp -maxdepth 1 -newermt '2026-09-26T20:31:46Z'; echo ---root---; find /root -xdev -newermt '2026-09-26T20:31:46Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/claude-code.log
+/tmp/claude-0
+/tmp/claude-code-1656662159.diag.log
+| ---root---
+--- 2026-09-26T20:49:13Z method=最後 target=大きさ確認 rc=0 time_s=0.004 note=生ログと報告の大きさをwc_cで確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-035/sb34]
+$ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run34.log
+18871941 docs/DATA/SCAN_2026-09-23_tools_cat8.md
+   43550 docs/DATA/probes/20260923_tools_8_run34.log
+18915491 total
