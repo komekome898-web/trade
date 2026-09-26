@@ -546,3 +546,11 @@ A の不一致 3 件は、どれも正解より 32400 秒(9 時間)遅い値に�
 
 03:27 UTC: 場面:4 が走っている(参照実装:4・作る:4 はまだ)。見張りの出力なし。ディスクの空き 2,167 MB。
 
+
+### 03:45 UTC: ディスクの空き 3 MB(見張りが DISK で終了、終了コード 6)→ 片付け(リード)
+
+- 原因: 道具の venv(`…/scratchpad/bt/venvs/`、13.9 GB)。場面:4 が item_4 の venv(pyalgotrade・pybroker・rqalpha、1.6 GB)を入れている途中で底を突いた。
+- 消したもの: 項目 4 の対象表 `i4_targets.py` が参照しない venv と派生物(item_0 の c101/c102/c104/c105/c33/c61/c69/c70/c87/c91/c99/_uvpython/_dl、item_1 の _dl、item_2 の c103/c32/c90/c91/c95/c98/c99/drivers/logs/read/src、item_3 の _dl/logs/mlflow)= 1,957 MB。さらに `/tmp/pip-unpack-*`(292 MB、09-23 の残り)と pip のキャッシュ(350 MB)。空き 3 MB → 4,003 MB。
+- **リードの誤り 1 件**: `item_2/src` は item_2/c92(候補 92、prediction-market-backtester の編集可能な導入。`.pth` が `item_2/src/c92/src` を指す)の本体だった。項目 4 の対象表は c92 を参照している。`git clone --depth 1` で `item_2/src/c92` を入れ直し、`item_2/c92/bin/python -c "import pm_bt"` が通ることを確かめた(clone のコミット c77dff74、2026-03-07)。**前の clone のコミットが同じかは未確認**(記録 `item_2/logs/c92.log` も消したため)。残りの 19 本の venv は `bin/python --version` で全部起動することを確かめた。
+- 残っているもの: item_0(backtesting/backtrader/basana/pybotters/qstrader/vnpy)、item_1(c3/c87/finmarketpy/hftbacktest/qlib/vectorbt)、item_2(bt/c70/c92/qtradex/ziplime)、item_3(c16/freqtrade)、item_4(作成中)。合計約 12 GB。**これ以上は消せない**(全部 項目 4 の対象表が参照する)。項目 4 の途中でまた底を突けば、run を止めて対象を減らすかをオーナーに聞く(有料インフラは提案しない、A-3)。
+- git gc は打っていない。

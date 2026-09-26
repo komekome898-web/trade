@@ -33,5 +33,16 @@ SURVEY: dict[str, dict] = {
     "opp_bt": {"module": "opponents/bt_adapter.py", "venv": "item_2/bt", "cand": 5},
     "opp_qtradex": {"module": "opponents/qtradex_adapter.py", "venv": "item_2/qtradex", "cand": 72},
     "opp_ziplime": {"module": "opponents/ziplime_adapter.py", "venv": "item_2/ziplime", "cand": 6},
+    "opp_qstrader": {"module": "opponents/qstrader_adapter.py", "venv": "item_0/qstrader", "cand": 121},
+    "opp_finmarketpy": {"module": "opponents/finmarketpy_adapter.py", "venv": "item_1/finmarketpy", "cand": 54},
+    "opp_pysystemtrade": {"module": "opponents/pysystemtrade_adapter.py", "venv": "item_1/c3", "cand": 3},
+    "opp_qlib": {"module": "opponents/qlib_adapter.py", "venv": "item_1/qlib", "cand": 21},
+    "opp_hftbacktest": {"module": "opponents/hftbacktest_adapter.py", "venv": "item_1/hftbacktest", "cand": 23},
+    "opp_pytrendfollow": {"module": "opponents/pytrendfollow_adapter.py", "venv": "item_1/c87", "cand": 87},
+    "opp_pybotters": {"module": "opponents/pybotters_adapter.py", "venv": "item_0/pybotters", "cand": 12},
+    "opp_freqtrade": {"module": "opponents/freqtrade_adapter.py", "venv": "item_3/freqtrade", "cand": 75},
+    "opp_pm_backtester": {"module": "opponents/pm_backtester_adapter.py", "venv": "item_2/c92", "cand": 92},
+    "opp_rqalpha": {"module": "opponents/rqalpha_adapter.py", "venv": "item_4/rqalpha", "cand": 53},
+    "opp_pineforge": {"module": "opponents/pineforge_adapter.py", "venv": "item_2/c70", "cand": 70},
 }
 TARGETS.update(SURVEY)
