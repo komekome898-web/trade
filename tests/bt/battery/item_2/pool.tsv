@@ -1,0 +1,276 @@
+viewpoint	cand	name	rule	scan_lines	note
+C2-1	6	Ziplime	REQUIREMENTS §3.2 の grep の当たり(名前「Ziplime」)	2399	
+C2-1	15	Mendl-Labs/BacktestingCore	REQUIREMENTS §3.2 の grep の当たり(名前「Mendl-Labs/BacktestingCore」)	1819・1823	
+C2-1	20	VnPy	REQUIREMENTS §3.2 の grep の当たり(名前「VnPy」)	6992・9137	
+C2-1	33	SarthakDalmia1/backtesting_execution_simulator	REQUIREMENTS §3.2 の grep の当たり(名前「SarthakDalmia1/backtesting_execution_simulator」)	4104	
+C2-1	45	ForexTester	REQUIREMENTS §3.2 の grep の当たり(名前「ForexTester」)	10060	
+C2-1	50	AlgoTest	REQUIREMENTS §3.2 の grep の当たり(名前「AlgoTest」)	10186	
+C2-1	58	nautilus_trader	REQUIREMENTS §3.2 の grep の当たり(名前「nautilus_trader」)	247	
+C2-1	63	trade-frame	REQUIREMENTS §3.2 の grep の当たり(名前「trade-frame」)	5777	
+C2-1	94	mote/backtest	REQUIREMENTS §3.2 の grep の当たり(名前「mote/backtest」)	4874・10065・10066	
+C2-1	98	mihircoding/limitOrderBook	REQUIREMENTS §3.2 の grep の当たり(名前「mihircoding/limitOrderBook」)	5115・5127・5282・5284・5288	
+C2-2	6	Ziplime	REQUIREMENTS §3.2 の grep の当たり(名前「Ziplime」)	2399	
+C2-2	15	Mendl-Labs/BacktestingCore	REQUIREMENTS §3.2 の grep の当たり(名前「Mendl-Labs/BacktestingCore」)	1819・1823	
+C2-2	20	VnPy	REQUIREMENTS §3.2 の grep の当たり(名前「VnPy」)	6992・9137	
+C2-2	33	SarthakDalmia1/backtesting_execution_simulator	REQUIREMENTS §3.2 の grep の当たり(名前「SarthakDalmia1/backtesting_execution_simulator」)	4104	
+C2-2	45	ForexTester	REQUIREMENTS §3.2 の grep の当たり(名前「ForexTester」)	10060	
+C2-2	50	AlgoTest	REQUIREMENTS §3.2 の grep の当たり(名前「AlgoTest」)	10186	
+C2-2	58	nautilus_trader	REQUIREMENTS §3.2 の grep の当たり(名前「nautilus_trader」)	247	
+C2-2	63	trade-frame	REQUIREMENTS §3.2 の grep の当たり(名前「trade-frame」)	5777	
+C2-2	94	mote/backtest	REQUIREMENTS §3.2 の grep の当たり(名前「mote/backtest」)	4874・10065・10066	
+C2-2	98	mihircoding/limitOrderBook	REQUIREMENTS §3.2 の grep の当たり(名前「mihircoding/limitOrderBook」)	5115・5127・5282・5284・5288	
+C2-3	98	mihircoding/limitOrderBook	REQUIREMENTS §3.2 の grep の当たり(名前「mihircoding/limitOrderBook」)	5115・5127・5282・5284・5288	
+C2-5	1	Basana	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6836	
+C2-5	2	Backtrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6839	
+C2-5	3	PySystemtrade	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9401	
+C2-5	4	PyBroker	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6845	
+C2-5	5	Lean CLI	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6849	台帳 5 行の名前の欄は Lean CLI、最後の記載の行(SCAN 6849)は「5. `bt` — 印は `区分1-足`」
+C2-5	6	Ziplime	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9650	
+C2-5	7	Superalgos	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6855	
+C2-5	8	OpenTrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9402	
+C2-5	10	fast-trade	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6864	
+C2-5	13	DeviaVir/zenbot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6874	
+C2-5	15	Mendl-Labs/BacktestingCore	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6879	
+C2-5	16	Luczinsritter/event_driven_backtesting_engine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6882	
+C2-5	18	zipline-reloaded	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9857	
+C2-5	19	Jesse	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9403	
+C2-5	20	VnPy	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6896	
+C2-5	21	Qlib	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6899	
+C2-5	23	hftbacktest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6906	
+C2-5	32	FlashAlpha-lab/flashalpha-fill-simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4615	
+C2-5	33	SarthakDalmia1/backtesting_execution_simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4616	
+C2-5	35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4618	
+C2-5	36	shubhamcodez/Market-Impact-Model	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4619	
+C2-5	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10426	
+C2-5	38	microsoft/MarS	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4621	
+C2-5	45	ForexTester	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10082	
+C2-5	50	AlgoTest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10088	
+C2-5	51	QUANTAXIS	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9404	
+C2-5	53	Rqalpha	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7850	
+C2-5	54	finmarketpy	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7851	
+C2-5	57	WonderTrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7852	
+C2-5	60	Hikyuu	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7853	
+C2-5	61	barter-rs	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6926	
+C2-5	63	trade-frame	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6119	
+C2-5	65	aat	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10429	
+C2-5	67	lumibot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7854	
+C2-5	70	PineForge	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7855	
+C2-5	72	QTradeX	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7856	
+C2-5	87	PyTrendFollow	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7857	
+C2-5	90	Oddpool/PredictionMarketBench	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10432	
+C2-5	91	braedonsaunders/homerun	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7858	
+C2-5	92	prediction-market-backtester	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7859	
+C2-5	94	mote/backtest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10093	
+C2-5	95	sacha9214/polymarket-fill-model	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10435	
+C2-5	96	sashankzade/limit-order-book-matching-engine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10438	
+C2-5	97	kahan15/Limit-Order-Book-Simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10441	
+C2-5	98	mihircoding/limitOrderBook	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5236	
+C2-5	99	NickGardi/orderbooksim	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10444	
+C2-5	100	xavierchuan/OrderMatchingEngine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10447	
+C2-5	101	akurkar07/OrderBook	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10450	
+C2-5	102	3yit/Limit-Order-Book-Simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10453	
+C2-5	103	IsaacCheng9/order-book-simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10456	
+C2-5	104	jxm35/LimitOrderBook-MatchingEngine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10459	
+C2-5	105	DaniyalMlk/slippage	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5243	
+C2-5	106	almgren-chriss	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5913	
+C2-5	107	sigc	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6917	
+C2-5	109	arXiv:2509.05107	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10462	
+C2-5	111	HKUDS/Vibe-Trading	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10102	
+C2-5	116	braverock/blotter	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5916	
+C2-5	119	peernagy/lob_bench	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9405	
+C2-5	123	carlos8f/zenbot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7298	
+C2-6	1	Basana	台帳の列 取り消しの扱い(列 13) が空でない	6836	
+C2-6	2	Backtrader	台帳の列 取り消しの扱い(列 13) が空でない	6839	
+C2-6	3	PySystemtrade	台帳の列 取り消しの扱い(列 13) が空でない	9401	
+C2-6	4	PyBroker	台帳の列 取り消しの扱い(列 13) が空でない	6845	
+C2-6	6	Ziplime	台帳の列 取り消しの扱い(列 13) が空でない	9650	
+C2-6	7	Superalgos	台帳の列 取り消しの扱い(列 13) が空でない	6855	
+C2-6	8	OpenTrader	台帳の列 取り消しの扱い(列 13) が空でない	9402	
+C2-6	13	DeviaVir/zenbot	台帳の列 取り消しの扱い(列 13) が空でない	6874	
+C2-6	15	Mendl-Labs/BacktestingCore	台帳の列 取り消しの扱い(列 13) が空でない	6879	
+C2-6	18	zipline-reloaded	台帳の列 取り消しの扱い(列 13) が空でない	9857	
+C2-6	19	Jesse	台帳の列 取り消しの扱い(列 13) が空でない	9403	
+C2-6	20	VnPy	台帳の列 取り消しの扱い(列 13) が空でない	6896	
+C2-6	21	Qlib	台帳の列 取り消しの扱い(列 13) が空でない	6899	
+C2-6	23	hftbacktest	台帳の列 取り消しの扱い(列 13) が空でない	6906	
+C2-6	32	FlashAlpha-lab/flashalpha-fill-simulator	台帳の列 取り消しの扱い(列 13) が空でない	4615	
+C2-6	33	SarthakDalmia1/backtesting_execution_simulator	台帳の列 取り消しの扱い(列 13) が空でない	4616	
+C2-6	35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	台帳の列 取り消しの扱い(列 13) が空でない	4618	
+C2-6	36	shubhamcodez/Market-Impact-Model	台帳の列 取り消しの扱い(列 13) が空でない	4619	
+C2-6	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	台帳の列 取り消しの扱い(列 13) が空でない	10426	
+C2-6	38	microsoft/MarS	台帳の列 取り消しの扱い(列 13) が空でない	4621	
+C2-6	45	ForexTester	台帳の列 取り消しの扱い(列 13) が空でない	10082	
+C2-6	50	AlgoTest	台帳の列 取り消しの扱い(列 13) が空でない	10088	
+C2-6	51	QUANTAXIS	台帳の列 取り消しの扱い(列 13) が空でない	9404	
+C2-6	53	Rqalpha	台帳の列 取り消しの扱い(列 13) が空でない	7850	
+C2-6	54	finmarketpy	台帳の列 取り消しの扱い(列 13) が空でない	7851	
+C2-6	57	WonderTrader	台帳の列 取り消しの扱い(列 13) が空でない	7852	
+C2-6	60	Hikyuu	台帳の列 取り消しの扱い(列 13) が空でない	7853	
+C2-6	63	trade-frame	台帳の列 取り消しの扱い(列 13) が空でない	6119	
+C2-6	65	aat	台帳の列 取り消しの扱い(列 13) が空でない	10429	
+C2-6	67	lumibot	台帳の列 取り消しの扱い(列 13) が空でない	7854	
+C2-6	70	PineForge	台帳の列 取り消しの扱い(列 13) が空でない	7855	
+C2-6	72	QTradeX	台帳の列 取り消しの扱い(列 13) が空でない	7856	
+C2-6	87	PyTrendFollow	台帳の列 取り消しの扱い(列 13) が空でない	7857	
+C2-6	90	Oddpool/PredictionMarketBench	台帳の列 取り消しの扱い(列 13) が空でない	10432	
+C2-6	91	braedonsaunders/homerun	台帳の列 取り消しの扱い(列 13) が空でない	7858	
+C2-6	92	prediction-market-backtester	台帳の列 取り消しの扱い(列 13) が空でない	7859	
+C2-6	94	mote/backtest	台帳の列 取り消しの扱い(列 13) が空でない	10093	
+C2-6	95	sacha9214/polymarket-fill-model	台帳の列 取り消しの扱い(列 13) が空でない	10435	
+C2-6	96	sashankzade/limit-order-book-matching-engine	台帳の列 取り消しの扱い(列 13) が空でない	10438	
+C2-6	97	kahan15/Limit-Order-Book-Simulator	台帳の列 取り消しの扱い(列 13) が空でない	10441	
+C2-6	98	mihircoding/limitOrderBook	台帳の列 取り消しの扱い(列 13) が空でない	5236	
+C2-6	99	NickGardi/orderbooksim	台帳の列 取り消しの扱い(列 13) が空でない	10444	
+C2-6	101	akurkar07/OrderBook	台帳の列 取り消しの扱い(列 13) が空でない	10450	
+C2-6	102	3yit/Limit-Order-Book-Simulator	台帳の列 取り消しの扱い(列 13) が空でない	10453	
+C2-6	103	IsaacCheng9/order-book-simulator	台帳の列 取り消しの扱い(列 13) が空でない	10456	
+C2-6	104	jxm35/LimitOrderBook-MatchingEngine	台帳の列 取り消しの扱い(列 13) が空でない	10459	
+C2-6	105	DaniyalMlk/slippage	台帳の列 取り消しの扱い(列 13) が空でない	5243	
+C2-6	106	almgren-chriss	台帳の列 取り消しの扱い(列 13) が空でない	5913	
+C2-6	111	HKUDS/Vibe-Trading	台帳の列 取り消しの扱い(列 13) が空でない	10102	
+C2-6	116	braverock/blotter	台帳の列 取り消しの扱い(列 13) が空でない	5916	
+C2-6	119	peernagy/lob_bench	台帳の列 取り消しの扱い(列 13) が空でない	9405	
+C2-6	123	carlos8f/zenbot	台帳の列 取り消しの扱い(列 13) が空でない	7298	
+C2-7	1	Basana	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6836	
+C2-7	2	Backtrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6839	
+C2-7	3	PySystemtrade	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9401	
+C2-7	4	PyBroker	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6845	
+C2-7	5	Lean CLI	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6849	台帳 5 行の名前の欄は Lean CLI、最後の記載の行(SCAN 6849)は「5. `bt` — 印は `区分1-足`」
+C2-7	6	Ziplime	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9650	
+C2-7	7	Superalgos	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6855	
+C2-7	8	OpenTrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9402	
+C2-7	10	fast-trade	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6864	
+C2-7	13	DeviaVir/zenbot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6874	
+C2-7	15	Mendl-Labs/BacktestingCore	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6879	
+C2-7	16	Luczinsritter/event_driven_backtesting_engine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6882	
+C2-7	18	zipline-reloaded	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9857	
+C2-7	19	Jesse	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9403	
+C2-7	20	VnPy	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6896	
+C2-7	21	Qlib	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6899	
+C2-7	23	hftbacktest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6906	
+C2-7	32	FlashAlpha-lab/flashalpha-fill-simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4615	
+C2-7	33	SarthakDalmia1/backtesting_execution_simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4616	
+C2-7	35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4618	
+C2-7	36	shubhamcodez/Market-Impact-Model	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4619	
+C2-7	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10426	
+C2-7	38	microsoft/MarS	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	4621	
+C2-7	45	ForexTester	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10082	
+C2-7	50	AlgoTest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10088	
+C2-7	51	QUANTAXIS	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9404	
+C2-7	53	Rqalpha	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7850	
+C2-7	54	finmarketpy	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7851	
+C2-7	57	WonderTrader	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7852	
+C2-7	60	Hikyuu	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7853	
+C2-7	61	barter-rs	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6926	
+C2-7	63	trade-frame	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6119	
+C2-7	65	aat	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10429	
+C2-7	67	lumibot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7854	
+C2-7	70	PineForge	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7855	
+C2-7	72	QTradeX	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7856	
+C2-7	87	PyTrendFollow	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7857	
+C2-7	90	Oddpool/PredictionMarketBench	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10432	
+C2-7	91	braedonsaunders/homerun	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7858	
+C2-7	92	prediction-market-backtester	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7859	
+C2-7	94	mote/backtest	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10093	
+C2-7	95	sacha9214/polymarket-fill-model	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10435	
+C2-7	96	sashankzade/limit-order-book-matching-engine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10438	
+C2-7	97	kahan15/Limit-Order-Book-Simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10441	
+C2-7	98	mihircoding/limitOrderBook	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5236	
+C2-7	99	NickGardi/orderbooksim	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10444	
+C2-7	100	xavierchuan/OrderMatchingEngine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10447	
+C2-7	101	akurkar07/OrderBook	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10450	
+C2-7	102	3yit/Limit-Order-Book-Simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10453	
+C2-7	103	IsaacCheng9/order-book-simulator	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10456	
+C2-7	104	jxm35/LimitOrderBook-MatchingEngine	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10459	
+C2-7	105	DaniyalMlk/slippage	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5243	
+C2-7	106	almgren-chriss	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5913	
+C2-7	107	sigc	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	6917	
+C2-7	109	arXiv:2509.05107	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10462	
+C2-7	111	HKUDS/Vibe-Trading	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	10102	
+C2-7	116	braverock/blotter	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	5916	
+C2-7	119	peernagy/lob_bench	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	9405	
+C2-7	123	carlos8f/zenbot	台帳の列 市場影響と約定の模型(列 9) か 段(機構)(列 10) が空でない	7298	
+C2-9	1	Basana	台帳の列 遅延(列 12) が空でない	6836	
+C2-9	2	Backtrader	台帳の列 遅延(列 12) が空でない	6839	
+C2-9	3	PySystemtrade	台帳の列 遅延(列 12) が空でない	9401	
+C2-9	4	PyBroker	台帳の列 遅延(列 12) が空でない	6845	
+C2-9	6	Ziplime	台帳の列 遅延(列 12) が空でない	9650	
+C2-9	7	Superalgos	台帳の列 遅延(列 12) が空でない	6855	
+C2-9	8	OpenTrader	台帳の列 遅延(列 12) が空でない	9402	
+C2-9	13	DeviaVir/zenbot	台帳の列 遅延(列 12) が空でない	6874	
+C2-9	15	Mendl-Labs/BacktestingCore	台帳の列 遅延(列 12) が空でない	6879	
+C2-9	18	zipline-reloaded	台帳の列 遅延(列 12) が空でない	9857	
+C2-9	19	Jesse	台帳の列 遅延(列 12) が空でない	9403	
+C2-9	20	VnPy	台帳の列 遅延(列 12) が空でない	6896	
+C2-9	21	Qlib	台帳の列 遅延(列 12) が空でない	6899	
+C2-9	23	hftbacktest	台帳の列 遅延(列 12) が空でない	6906	
+C2-9	32	FlashAlpha-lab/flashalpha-fill-simulator	台帳の列 遅延(列 12) が空でない	4615	
+C2-9	33	SarthakDalmia1/backtesting_execution_simulator	台帳の列 遅延(列 12) が空でない	4616	
+C2-9	35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	台帳の列 遅延(列 12) が空でない	4618	
+C2-9	36	shubhamcodez/Market-Impact-Model	台帳の列 遅延(列 12) が空でない	4619	
+C2-9	37	ThePredictiveDev/Automated-Financial-Market-Trading-System	台帳の列 遅延(列 12) が空でない	10426	
+C2-9	38	microsoft/MarS	台帳の列 遅延(列 12) が空でない	4621	
+C2-9	45	ForexTester	台帳の列 遅延(列 12) が空でない	10082	
+C2-9	50	AlgoTest	台帳の列 遅延(列 12) が空でない	10088	
+C2-9	51	QUANTAXIS	台帳の列 遅延(列 12) が空でない	9404	
+C2-9	53	Rqalpha	台帳の列 遅延(列 12) が空でない	7850	
+C2-9	54	finmarketpy	台帳の列 遅延(列 12) が空でない	7851	
+C2-9	57	WonderTrader	台帳の列 遅延(列 12) が空でない	7852	
+C2-9	60	Hikyuu	台帳の列 遅延(列 12) が空でない	7853	
+C2-9	63	trade-frame	台帳の列 遅延(列 12) が空でない	6119	
+C2-9	65	aat	台帳の列 遅延(列 12) が空でない	10429	
+C2-9	67	lumibot	台帳の列 遅延(列 12) が空でない	7854	
+C2-9	70	PineForge	台帳の列 遅延(列 12) が空でない	7855	
+C2-9	72	QTradeX	台帳の列 遅延(列 12) が空でない	7856	
+C2-9	87	PyTrendFollow	台帳の列 遅延(列 12) が空でない	7857	
+C2-9	90	Oddpool/PredictionMarketBench	台帳の列 遅延(列 12) が空でない	10432	
+C2-9	91	braedonsaunders/homerun	台帳の列 遅延(列 12) が空でない	7858	
+C2-9	92	prediction-market-backtester	台帳の列 遅延(列 12) が空でない	7859	
+C2-9	94	mote/backtest	台帳の列 遅延(列 12) が空でない	10093	
+C2-9	95	sacha9214/polymarket-fill-model	台帳の列 遅延(列 12) が空でない	10435	
+C2-9	96	sashankzade/limit-order-book-matching-engine	台帳の列 遅延(列 12) が空でない	10438	
+C2-9	97	kahan15/Limit-Order-Book-Simulator	台帳の列 遅延(列 12) が空でない	10441	
+C2-9	98	mihircoding/limitOrderBook	台帳の列 遅延(列 12) が空でない	5236	
+C2-9	99	NickGardi/orderbooksim	台帳の列 遅延(列 12) が空でない	10444	
+C2-9	101	akurkar07/OrderBook	台帳の列 遅延(列 12) が空でない	10450	
+C2-9	102	3yit/Limit-Order-Book-Simulator	台帳の列 遅延(列 12) が空でない	10453	
+C2-9	103	IsaacCheng9/order-book-simulator	台帳の列 遅延(列 12) が空でない	10456	
+C2-9	104	jxm35/LimitOrderBook-MatchingEngine	台帳の列 遅延(列 12) が空でない	10459	
+C2-9	105	DaniyalMlk/slippage	台帳の列 遅延(列 12) が空でない	5243	
+C2-9	106	almgren-chriss	台帳の列 遅延(列 12) が空でない	5913	
+C2-9	111	HKUDS/Vibe-Trading	台帳の列 遅延(列 12) が空でない	10102	
+C2-9	116	braverock/blotter	台帳の列 遅延(列 12) が空でない	5916	
+C2-9	119	peernagy/lob_bench	台帳の列 遅延(列 12) が空でない	9405	
+C2-9	123	carlos8f/zenbot	台帳の列 遅延(列 12) が空でない	7298	
+C2-10	1	Basana	REQUIREMENTS §3.2 の grep の当たり(名前「Basana」)	1656・1657・1666・1679	
+C2-10	2	Backtrader	REQUIREMENTS §3.2 の grep の当たり(名前「Backtrader」)	1709・1828	
+C2-10	3	PySystemtrade	REQUIREMENTS §3.2 の grep の当たり(名前「PySystemtrade」)	3232・3606・3373	
+C2-10	5	Lean CLI	REQUIREMENTS §3.2 の grep の当たり(名前「bt」)	1795・1846	台帳 5 行の名前の欄は Lean CLI、最後の記載の行(SCAN 6849)は「5. `bt` — 印は `区分1-足`」
+C2-10	6	Ziplime	REQUIREMENTS §3.2 の grep の当たり(名前「Ziplime」)	1819〜1823・2399・2483	
+C2-10	7	Superalgos	REQUIREMENTS §3.2 の grep の当たり(名前「Superalgos」)	6986	
+C2-10	10	fast-trade	REQUIREMENTS §3.2 の grep の当たり(名前「fast-trade」)	2157・6866	
+C2-10	11	python3	REQUIREMENTS §3.2 の grep の当たり(名前「OctoBot」)	4135	台帳 11 行の名前の欄は python3、最後の記載の行(SCAN 8452)と項目 0 の導入の記録は OctoBot
+C2-10	12	pybotters	REQUIREMENTS §3.2 の grep の当たり(名前「pybotters」)	2768・2770	
+C2-10	13	DeviaVir/zenbot	REQUIREMENTS §3.2 の grep の当たり(名前「DeviaVir/zenbot」)	6989	
+C2-10	15	Mendl-Labs/BacktestingCore	REQUIREMENTS §3.2 の grep の当たり(名前「Mendl-Labs/BacktestingCore」)	1374・1382	
+C2-10	19	Jesse	REQUIREMENTS §3.2 の grep の当たり(名前「Jesse」)	1226・7147	
+C2-10	20	VnPy	REQUIREMENTS §3.2 の grep の当たり(名前「VnPy」)	1269・6897	
+C2-10	34	SLMolenaar/QuantCore	REQUIREMENTS §3.2 の grep の当たり(名前「QuantCore」)	4427	
+C2-10	40	OpenMarket	REQUIREMENTS §3.2 の grep の当たり(名前「OpenMarket」)	4111・5694・5771	
+C2-10	41	prediction-market-backtesting	REQUIREMENTS §3.2 の grep の当たり(名前「prediction-market-backtesting」)	4112	
+C2-10	61	barter-rs	REQUIREMENTS §3.2 の grep の当たり(名前「barter-rs」)	6566	
+C2-10	63	trade-frame	REQUIREMENTS §3.2 の grep の当たり(名前「trade-frame」)	6458	
+C2-10	90	Oddpool/PredictionMarketBench	REQUIREMENTS §3.2 の grep の当たり(名前「PredictionMarketBench」)	10408・10434	
+C2-10	94	mote/backtest	REQUIREMENTS §3.2 の grep の当たり(名前「mote/backtest」)	10066	
+C2-10	107	sigc	REQUIREMENTS §3.2 の grep の当たり(名前「sigc」)	6652	
+C2-10	123	carlos8f/zenbot	REQUIREMENTS §3.2 の grep の当たり(名前「carlos8f/zenbot」)	6651	
+C2-11	2	Backtrader	REQUIREMENTS §3.2 の grep の当たり(名前「Backtrader」)	9132	
+C2-11	3	PySystemtrade	REQUIREMENTS §3.2 の grep の当たり(名前「PySystemtrade」)	3232・3234・3567・3606	
+C2-11	6	Ziplime	REQUIREMENTS §3.2 の grep の当たり(名前「Ziplime」)	2458〜2462・2484	
+C2-11	11	python3	REQUIREMENTS §3.2 の grep の当たり(名前「OctoBot」)	2813	台帳 11 行の名前の欄は python3、最後の記載の行(SCAN 8452)と項目 0 の導入の記録は OctoBot
+C2-11	12	pybotters	REQUIREMENTS §3.2 の grep の当たり(名前「pybotters」)	2772	
+C2-11	19	Jesse	REQUIREMENTS §3.2 の grep の当たり(名前「Jesse」)	1226・1374	
+C2-11	40	OpenMarket	REQUIREMENTS §3.2 の grep の当たり(名前「OpenMarket」)	5694	
+C2-11	51	QUANTAXIS	REQUIREMENTS §3.2 の grep の当たり(名前「QUANTAXIS」)	7825・7968・8303・8669・9498	
+C2-11	61	barter-rs	REQUIREMENTS §3.2 の grep の当たり(名前「barter-rs」)	6284・6302・6568	
+C2-11	73	vectorbt	REQUIREMENTS §3.2 の grep の当たり(名前「vectorbt」)	281・5881	

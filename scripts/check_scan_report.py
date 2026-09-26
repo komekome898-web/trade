@@ -1,0 +1,524 @@
+#!/usr/bin/env python3
+"""調査報告の保存前検査。監査で実際に出た指摘の型を、1 件につき 1 つの検査にしたもの。
+
+使い方: python3 scripts/check_scan_report.py <報告.md> <生ログ.log> [<生ログ.log> ...]
+終了コード: 0 = 全検査が 0 件 / 1 = どれかが当たった(当たった行を全部出す)
+
+各検査の見出しに、それを生んだ監査の回を書いてある。検査は足すだけで、外さない。
+"""
+import re, sys, pathlib, unicodedata, collections
+
+Z2H = str.maketrans("（）［］｛｝", "()[]{}")
+
+ITEMS = ["版", "最終更新日", "ライセンス", "言語と動作環境", "対応取引所", "星", "コミット数",
+         "保守者数", "週DL数", "初回公開日", "既知の脆弱性", "料金体系", "無料枠の上限",
+         "課金開始条件", "隠れた依存", "登録の要否", "到達経路", "導入可否", "install所要秒",
+         "依存数", "pip check", "最小実行の可否", "最小実行の中身", "実行所要秒", "wheel展開",
+         "setup.py導入時実行", "同梱バイナリ", "外部送信", "自動発注機能", "宣伝詐欺の兆候",
+         "当方データ投入", "時刻の扱い", "再現性", "規模の見積",
+         "配布元の一致", "難読化", "外部URL取得", "依存の一覧", "保守者名の一貫性",
+         "4軸1_道具", "4軸2_情報", "4軸3_視点", "4軸4_向上"]
+MARKS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+
+# 生ログの「実行の見出し」の形。委任文 §7 は 1 つの形を定めているが、実際の 27 本は 5 通りに
+# 分かれていた(2026-09-23 リードの実測。§7 の形を検査するものが無かったため)。
+# K11 が「その行が実行の出力に属するか」を見られるのは、この形に当たる見出しを持つ生ログだけ。
+HEAD_RE = re.compile(
+    r"^(?:--- .*method=|\s*\d+ tool=|\[\d+\] .*cmd:|=== CMD:|--- \[\d+\])")
+
+
+def bold_spans(line):
+    pos = [m.start() for m in re.finditer(r"\*\*", line)]
+    return pos
+
+def paragraphs(lines):
+    """空行で区切った塊に畳む。折り返した文で括弧・太字が行をまたぐため(検査の誤検出 9 件の原因)。"""
+    out, buf, start = [], [], 1
+    for i, ln in enumerate(lines, 1):
+        if ln.strip():
+            if not buf: start = i
+            buf.append(ln)
+        elif buf:
+            out.append((start, " ".join(buf))); buf = []
+    if buf: out.append((start, " ".join(buf)))
+    return out
+
+def check_bold(lines):
+    """太字(2 回目の監査 13・14 回目)。奇数個 / 入れ子の 2 つの形。"""
+    out = []
+    for i, ln in paragraphs(lines):
+        p = bold_spans(ln)
+        if len(p) % 2:
+            out.append((i, "太字 ** の数が奇数 (%d 個)" % len(p))); continue
+        for a, b in zip(p[0::2], p[1::2]):
+            body = ln[a+2:b]
+            if body != body.strip():
+                out.append((i, "太字の内側が空白で始まる/終わる: %r" % body[:40]))
+            elif not re.search(r"[0-9A-Za-z぀-ヿ一-鿿]", body):
+                out.append((i, "太字の中身が記号だけ: %r" % body[:40]))
+    return out
+
+def check_brackets(lines):
+    """括弧の対応(15 回目)。全角を半角に直してから数える(混在は誤検出の元)。"""
+    out = []
+    for i, ln in paragraphs(lines):
+        s = ln.translate(Z2H)
+        for o, c, name in [("(", ")", "丸括弧"), ("[", "]", "大括弧"), ("「", "」", "鉤括弧")]:
+            if s.count(o) != s.count(c):
+                out.append((i, "%s の数が合わない (%d 対 %d)" % (name, s.count(o), s.count(c))))
+    return out
+
+def check_sections(text, section_head=None):
+    """委任文 §11 が要求する節の存在(8 回目 = 2 回目の節に知見・出典が丸ごと無かった)。
+
+    区分の節ごとに、その節の中だけを見る。前の版では固定の見出し文字列で分割しようとして
+    一度も一致せず、文書全体を見て常に通っていた(= 落ちない検査)。区分の見出しを正規表現で
+    拾う形に直した。
+    """
+    need = ["検索計画", "出典", "知見", "候補の一覧", "ツール1件ごとの表", "予算"]
+    lines = text.splitlines()
+    heads = [i for i, ln in enumerate(lines) if re.match(r"^## 区分\s*\d", ln)]
+    out = []
+    for k, start in enumerate(heads):
+        end = heads[k + 1] if k + 1 < len(heads) else len(lines)
+        body = "\n".join(lines[start:end])
+        title = lines[start][:40]
+        for n in need:
+            if not re.search(r"^#{3,4} *" + re.escape(n), body, re.M):
+                out.append((start + 1, "節『%s…』に必須の小節が無い: %s" % (title, n)))
+    return out
+
+def num_in_log(num, log):
+    """生ログの数値と丸めを許して突き合わせる(60.286559606 → 60.29 は一致とみなす)。
+    生ログは先頭の 0 を省く書き方(.835891471)をするので、取り出しの正規表現もそれに合わせる。"""
+    if num in log:
+        return True
+    try:
+        v = float(num)
+    except ValueError:
+        return False
+    d = len(num.split(".")[1]) if "." in num else 0
+    for m in re.finditer(r"\d*\.\d+|\d+", log):
+        try:
+            if round(float(m.group()), d) == v:
+                return True
+        except ValueError:
+            pass
+    return False
+
+def check_numbers_in_log(lines, log):
+    """本文の数値が生ログに在るか(10・11・12 回目 = 所要時間・依存数の食い違い)。"""
+    out = []
+    pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
+    for i, ln in enumerate(lines, 1):
+        if not re.search(r"install|導入|依存", ln) or "ハーネス" in ln:
+            continue
+        for num, unit in pat.findall(ln):
+            if not num_in_log(num, log):
+                out.append((i, "生ログに無い数値: %s %s" % (num, unit)))
+    return out
+
+def tool_names(lines):
+    """道具名は表の 1 列目と候補の一覧から取る(直書きしない)。
+    監査の指摘 5: 区分 1 の固有名詞を直書きしていたため、他の区分では値の食い違いの検査が当たらなかった。"""
+    names = {c[0] for _, c in read_table(lines)} | set(marked_names(lines))
+    return sorted(n for n in names if len(n) >= 3)
+
+def check_conflicting_values(lines):
+    """同じ道具・同じ単位に別の値(12 回目 = Qlib 185/130、11 回目 = Jesse 60/19.49)。"""
+    tools = tool_names(lines)
+    seen = collections.defaultdict(set)
+    pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
+    # §4.0 の表の行は、単位ではなく**項目**で束ねる。単位で束ねると
+    # 「install所要秒 2 秒」と「規模の見積の中の 1.3 秒」が食い違い扱いになった
+    # (2026-09-22 区分 1 の 4 回目、調査班が自分で閉じずに残した 2 件目)。
+    rowitem = {i: c[1] for i, c in read_table(lines)}
+    for i, ln in enumerate(lines, 1):
+        hit = [t for t in tools if t.lower() in ln.lower()]
+        if len(hit) > 2:
+            continue
+        for t in hit:
+            for num, unit in pat.findall(ln):
+                seen[(t, rowitem.get(i, unit))].add((num, i))
+    out = []
+    for (t, key), vals in sorted(seen.items()):
+        nums = {v[0] for v in vals}
+        if len(nums) > 1 and len({v[1] for v in vals}) > 1:
+            out.append((min(v[1] for v in vals), "%s の %s に別の値: %s" % (t, key, sorted(nums))))
+    return out
+
+def check_contradiction(lines):
+    """同じセルの中で「印」と「値」が食い違っていないか(監査 2〜4 回目の型)。
+
+    元は文章を語で走査していたが、`料金体系` の値に「PyPI にも wheel にも料金の記述は無い」と
+    書いてあるだけで当たる誤検出が出た(2026-09-22 区分 1 の 7 回目、調査班が閉じずに残した指摘)。
+    **表の行の中だけを見る**形に変えた。
+    """
+    # 見るのは、この検査が生まれた原因の 2 項目だけ。全項目に広げたら本物の報告で
+    # 誤検出が 30 件出た(「実測」の値が下位の作業の未実施に触れているだけ、「不可」という
+    # 測定結果そのもの、など)。2026-09-22 区分 1 の 7 回目でリードが実測。
+    WATCH = ("wheel展開", "setup.py導入時実行")
+    done = re.compile(r"展開した|実施した|確認した|実施済み|走査した")
+    notdone = re.compile(r"未実施|未確認")
+    out = []
+    for i, c in read_table(lines):
+        if c[1] not in WATCH:
+            continue
+        v = c[2]
+        if c[3] == "未確認" and done.search(v) and not notdone.search(v):
+            out.append((i, "%s / %s: 印は「未確認」だが値は実施したと書いている: %r" % (c[0], c[1], v[:50])))
+        if c[3] == "実測" and notdone.search(v) and not done.search(v):
+            out.append((i, "%s / %s: 印は「実測」だが値は未実施・未確認と書いている: %r" % (c[0], c[1], v[:50])))
+    return out
+
+
+def norm_name(x):
+    """道具名の表記ゆれを 1 箇所で吸収する。エスケープした縦棒、バッククォート、前後の空白。
+    委任文の監査 4 回目の指摘 1・3・6: 表記の違いで同じ道具が別物になっていた。"""
+    return x.replace("\\|", "|").strip().strip("`").strip()
+
+
+def marked_names(lines):
+    """候補の一覧で [深掘り] と印を付けた道具名。改行を越えない(指摘 2 の閉じ忘れ対策)。"""
+    body = "\n".join(lines)
+    return [norm_name(m.group(1)) for m in
+            re.finditer(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]\s*`([^`\n]+)`", body, re.M)]
+
+
+def read_table(lines):
+    """委任文 §4.0 の「道具 | 項目 | 値 | 印 | 根拠」の行を集める。"""
+    rows = []
+    for i, ln in enumerate(lines, 1):
+        raw = ln.strip().replace("\\|", "\x00")   # `\|` は名前の一部なので退避(指摘 1)
+        c = [x.strip().replace("\x00", "|") for x in raw.strip("|").split("|")] if raw.startswith("|") else []
+        if len(c) == 5 and c[1] in ITEMS:
+            c[0] = norm_name(c[0])
+            rows.append((i, c))
+    return rows
+
+def read_findings_table(lines):
+    """「知見」表の「# | 知見 | 印 | 根拠」の行を集める。
+
+    2026-09-22 の区分 1 の全体受け取り監査の [止める] 2。`read_table` は 5 列で 2 列目が語彙の行しか
+    拾わないので、**報告で最も分量の多い知見表(4 列)が全 28 回を通じて一度も拾われていなかった**
+    (実測: 印が実測/一次資料の知見表の行 321 本のうち、拾われていたのは 0 本)。
+    そのため K8(印と根拠)と K11(実測の根拠)が、証拠の本体に一度も届いていなかった。
+
+    返す形は `read_table` に合わせる(道具名の欄は知見表に無いので「知見 <番号>」で埋める)。
+    値の欄は知見表に無いので空にする — 値を見る検査(K4・K9)はこの表には当てられない。
+
+    表を見分けるのは**見出しの行**で行う(3 列目の見出しが「印」の表だけを読む)。
+    印そのもので見分けていたときは、**印が語彙に無い行は表の行として見えなくなり、
+    K8 が「印の誤用」を捕まえられなかった**(2026-09-23 リードが壊した入力で測って見つけた)。
+    """
+    rows, inside = [], False
+    for i, ln in enumerate(lines, 1):
+        raw = ln.strip().replace("\\|", "\x00")
+        if not raw.startswith("|"):
+            inside = False
+            continue
+        c = [x.strip().replace("\x00", "|") for x in raw.strip("|").split("|")]
+        if len(c) == 4 and c[2] == "印":        # 知見表の見出し
+            inside = True
+            continue
+        if not inside or len(c) != 4:
+            continue
+        if set(c[0]) <= set("-: "):             # 見出しの下の区切り行
+            continue
+        if not re.fullmatch(r"\d+", c[0]):
+            continue
+        rows.append((i, ["知見 " + c[0], norm_name(c[1])[:40], "", c[2], c[3]]))
+    return rows
+
+
+def all_marked_rows(lines):
+    """印と根拠を持つ行を、§4.0 の表と知見表の両方から集める(監査 [止める] 2)。"""
+    return read_table(lines) + read_findings_table(lines)
+
+
+def check_table_complete(lines):
+    """深掘りした道具が語彙のすべての項目の行を持つか(監査 1 回目 = 危険検査の 3 項目が全候補で欠落)。"""
+    rows = read_table(lines)
+    if not rows:
+        return [(0, "§4.0 の機械可読の表が 1 行も無い(2026-09-22 版の委任文では必須)")]
+    # 名前は必ずバッククォートで囲ませる。区切り記号を足していく直し方は 3 回続けて
+    # 偽陽性を生んだ(括弧・全角括弧・パイプが名前の一部になりうる)ので、曖昧さの元を断った。
+    body = "\n".join(lines)
+    marked = marked_names(lines)
+    bad = [(i + 1, "候補の一覧の [深掘り] の道具名がバッククォートで囲まれていない: " + ln.strip()[:60])
+           for i, ln in enumerate(lines, 1)
+           if re.match(r"^\s*(?:\d+\.|[-*])\s*\[深掘り\]", ln) and not re.search(r"\[深掘り\]\s*`[^`]+`", ln)]
+    have = {}
+    for i, c in rows:
+        have.setdefault(c[0], set()).add(c[1])
+    out = list(bad)
+    for m in marked:
+        if m not in have:
+            out.append((0, "候補の一覧で [深掘り] と印を付けた道具が表に 1 行も無い: " + m))
+    for tool, got in sorted(have.items()):
+        miss = [x for x in ITEMS if x not in got]
+        if miss:
+            out.append((rows[0][0], "%s: 表に無い項目 %d 件 (%s%s)"
+                        % (tool, len(miss), "、".join(miss[:4]), " ほか" if len(miss) > 4 else "")))
+    return out
+
+def check_table_marks(lines):
+    """印が 5 語のどれかで、根拠が空でないか(監査 1・10 回目 = 印の誤用)。
+
+    2026-09-22 の全体受け取り監査 [止める] 2 により、知見表も対象に入れた。
+    """
+    out = []
+    for i, c in all_marked_rows(lines):
+        if c[3] not in MARKS:
+            out.append((i, "印が語彙にない: %r (%s / %s)" % (c[3], c[0], c[1])))
+        if not c[4]:
+            out.append((i, "根拠が空: %s / %s" % (c[0], c[1])))
+    return out
+
+def check_prose_vs_table(lines):
+    """文章の数値が表にあるか(監査 10〜12 回目 = 表に無い数字を文章で作る)。"""
+    rows = read_table(lines)
+    if not rows:
+        return []
+    vals = " ".join(c[2] for _, c in rows)
+    tbl_lines = {i for i, _ in rows}
+    out = []
+    pat = re.compile(r"(\d+(?:\.\d+)?)\s*(秒|個|パッケージ)")
+    for i, ln in enumerate(lines, 1):
+        if i in tbl_lines:
+            continue
+        for num, unit in pat.findall(ln):
+            if num not in vals:
+                out.append((i, "表に無い数値を文章で書いている: %s %s" % (num, unit)))
+    return out
+
+def check_heading_counts(lines):
+    """見出しやラベルの「(N 件)」と直後の列挙の数の不一致(監査 1・3・5・6・7 回目、非数値の型)。"""
+    out = []
+    for i, ln in enumerate(lines):
+        if not (ln.startswith("#") or ln.strip().startswith("**")):
+            continue
+        m = re.search(r"[(（](\d+)\s*件[)）]", ln)
+        if not m:
+            continue
+        want, n, j = int(m.group(1)), 0, i + 1
+        while j < len(lines) and lines[j].strip():
+            if re.match(r"^\s*(?:\d+\.|[-*])\s", lines[j]):
+                n += 1
+            j += 1
+        if n and n != want:
+            out.append((i + 1, "見出しは %d 件と書いているが、直後の列挙は %d 件" % (want, n)))
+    return out
+
+
+def check_measured_evidence(lines, logs):
+    """実測の根拠が実在し、背景起動でないか(監査の止める 1 = 出力を読まずに実測と書いた型)。
+
+    2026-09-22 の全体受け取り監査 [止める] 2 により、知見表も対象に入れた。
+    それまでこの検査は §4.0 の表(深掘りした一部の道具)しか見ておらず、
+    **実測の主張の本体である知見表に一度も届いていなかった。**
+    """
+    out = []
+    prev_ev = ""                       # 「同上」は直前の行の根拠を指す
+    for i, c in all_marked_rows(lines):
+        if c[4].strip() in ("同上", "同上。"):
+            c = list(c); c[4] = prev_ev
+        elif c[4].strip():
+            prev_ev = c[4]
+        if c[3] != "実測":
+            continue
+        # 根拠の欄のどこに在ってもよい(符号で囲む・`・` で複数並べる・文を添える、いずれも許す)。
+        # 行頭からしか読んでいなかったので、`…log:1383` の形が全部「形でない」に当たっていた
+        # (2026-09-22 の全体受け取り監査の直しで知見表を入れたときに、リードが実測で見つけた)。
+        # 根拠の欄は生ログを 2 本以上挙げることがある(`A.log:279 と B.log:458`)。
+        # 名前と行番号の対を順に読み、`・:1619` のような続きは**直前に出た名前**に付ける。
+        # まとめて 1 本目の名前に付けていたときは、2 本目の行番号が 1 本目の行数を超えて
+        # 3 件の偽陽性になった(2026-09-23 リードの実測)。
+        pairs, cur = [], None
+        for mm in re.finditer(r"([\w./-]+\.log):(\d+)|[:：](\d+)", c[4]):
+            if mm.group(1):
+                cur = mm.group(1).split("/")[-1]
+                pairs.append((cur, int(mm.group(2))))
+            elif cur:
+                pairs.append((cur, int(mm.group(3))))
+        if not pairs:
+            # 行番号のかわりに「<生ログ> の <名前> の節」を指す書き方も許す。名前は編集で動かないので
+            # 行番号より強い証拠になる。ただし**その名前が実際にその生ログに在ること**は確かめる
+            # (2026-09-23 リードが `--all` で当てて見つけ、検査を合わせた)。
+            # 「同じ生ログの `<名前>` の節」= 同じ節で先に名指しした生ログを指す書き方。
+            # 生ログ名が書かれていないので、**渡された生ログのどれかにその名前が在るか**で確かめる。
+            if "同じ生ログ" in c[4] and not re.search(r"[\w./-]+\.log", c[4]):
+                tags = re.findall(r"`([\w.\-]+)`", c[4])
+                tags = [t for t in tags if not t.endswith((".py", ".rs", ".cpp", ".js", ".h", ".md"))]
+                if not tags:
+                    out.append((i, "「同じ生ログ」と書いているが、指す名前が無い: %r" % c[4][:70]))
+                elif not any(any(t in x for b in logs.values() for x in b) for t in tags):
+                    out.append((i, "根拠が指す名前が、渡されたどの生ログにも無い: %s" % "/".join(tags)))
+                continue
+            lg = re.search(r"([\w./-]+\.log)", c[4])
+            if lg and re.search(r"の(?:各)?節|の行", c[4]):
+                ln_ = lg.group(1).split("/")[-1]
+                tags = re.findall(r"`([\w.\-]+)`", c[4][lg.end():])
+                if ln_ not in logs:
+                    out.append((i, "根拠が指す生ログが渡されていない: " + ln_))
+                elif not tags:
+                    out.append((i, "「の節」と書いているが、指す名前が符号で囲まれていない: %r" % c[4][:70]))
+                elif not any(any(t in x for x in logs[ln_]) for t in tags):
+                    out.append((i, "根拠が指す名前が生ログに無い: %s の %s" % (ln_, "/".join(tags))))
+                continue
+            out.append((i, "実測なのに根拠が <生ログ>:<行番号> か <生ログ> の <名前> の節 の形でない: "
+                           "%s / %s = %r" % (c[0], c[1], c[4])))
+            continue
+        missing = sorted({n for n, _ in pairs if n not in logs})
+        for n in missing:
+            out.append((i, "根拠が指す生ログが渡されていない: " + n))
+        for name, no in sorted(set(p for p in pairs if p[0] in logs)):
+            body = logs[name]
+            if no < 1 or no > len(body):
+                out.append((i, "根拠の行が生ログに存在しない: %s:%d (全 %d 行)" % (name, no, len(body)))); continue
+            # 指してよいのは「実行の見出し行」だけでなく「その実行の出力の行」でもよい。
+            # 委任文 §4.1 の実測の定義は「自分で打ち、**その出力を自分で読んだ**」なので、
+            # 読んだ出力の行を指すほうがむしろ証拠として強い。見出し行だけを認めていたときは
+            # 77 件が偽陽性になった(2026-09-23 リードの実測)。
+            #
+            # ただし生ログの形は回ごとに 5 通りに分かれている(§7 が定めた形が守られず、
+            # それを検査するものが無かった = 2026-09-23 にリードが実測して見つけた)。
+            # よって「その行が実行の出力に属するか」は、**見出しの形が分かる生ログについてだけ**見る。
+            # 形が分からない生ログでは、生ログと行の実在までを見て、そこで止める(分かった範囲を
+            # 超えて当てない = 射程を越えない)。
+            head = None
+            for j in range(no - 1, -1, -1):
+                if HEAD_RE.match(body[j]):
+                    head = body[j]
+                    break
+            if head is not None and "started pid=" in head:
+                out.append((i, "根拠が背景起動の行に属している(出力を読んでいない疑い): %s:%d %r"
+                            % (name, no, head[:70])))
+    return out
+
+
+def check_checker_output_pasted(text, computed):
+    """報告に受け入れ検査の出力の節があり、貼られた合計がいま計算した合計と一致するか。
+
+    節の有無だけを見ていたときは、検査を 1 度も打たずに「すべて 0 件」と書いた偽の出力でも通った
+    (委任文の監査 3 回目の指摘 2)。貼り付けの真正性を、こちらで数え直した値との一致で見る。
+    """
+    heads = [m.start() for m in re.finditer(r"^#{2,4} *受け入れ検査の出力", text, re.M)]
+    if not heads:
+        return [(0, "報告に「受け入れ検査の出力」の節が無い(検査の出力全文を貼ること)")]
+    # 貼り付けは**いちばん新しい回の節の中**に無ければならない。最後の貼り付けを探すだけだと、
+    # 貼るのを忘れた回が前の回の貼り付けで通ってしまう(2026-09-22 区分 1 の 24 回目、
+    # 調査班が自分で閉じずに残した指摘。リードが見出しごと落として実測で再現)。
+    runs = [m.start() for m in re.finditer(r"^#{2,3} *区分\d+ *[—\-–] *\d+ *回目の実行", text, re.M)]
+    if runs and heads[-1] < runs[-1]:
+        return [(0, "いちばん新しい回の節に「受け入れ検査の出力」が無い"
+                    "(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)")]
+    # **最後の節の中だけ**を見る。文書全体から拾うと、古い節の貼り付けが新しい節の身代わりになる
+    # (2026-09-22 区分 1 の 6 回目、調査班が自分で閉じずに残した指摘)。
+    tail = text[heads[-1]:]
+    eol = tail.find("\n") + 1          # 見出し行そのものを飛ばしてから次の見出しを探す
+    nxt = re.search(r"^#{1,4} ", tail[eol:], re.M)
+    block = tail[:eol + nxt.start()] if nxt else tail
+    m = re.findall(r"----\s*検査対象の合計\s*(\d+)\s*件", block)
+    if not m:
+        return [(0, "貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)")]
+    pasted = int(m[-1])
+    if pasted != computed:
+        return [(0, "貼られた出力の合計 %d 件が、いま数え直した %d 件と合わない(打ち直して貼ること)"
+                 % (pasted, computed))]
+    return []
+
+def check_hollow(lines):
+    """深掘りと書いた道具の中身が実質空でないか(委任文の監査 4 回目の指摘 4)。
+
+    全項目を「未確認」+ 定型文の根拠で埋めた報告が K1〜K12 を 0 件で通り抜けた。
+    オーナー逐語 L-379「エラー出た瞬間弾くんやろ…全部無理で始めて諦めるような委任文にしないと
+    意味ない」が防ごうとした「浅く終わらせて逃げる」が、機械では見えないまま通っていた。
+    """
+    rows = read_table(lines)
+    if not rows:
+        return []
+    marked, by = set(marked_names(lines)), {}
+    for i, c in rows:
+        by.setdefault(c[0], []).append((i, c))
+    out = []
+    for tool, rs in sorted(by.items()):
+        unk = [c for _, c in rs if c[3] == "未確認"]
+        if tool in marked and len(unk) * 2 > len(rs):
+            out.append((rs[0][0], "%s は [深掘り] と印を付けているが、表の %d/%d 行が「未確認」"
+                        "(深掘りでないなら候補の一覧で「浅い」と書く)" % (tool, len(unk), len(rs))))
+        srcs = [c[4] for _, c in rs if c[4]]
+        for u in set(srcs):
+            if srcs.count(u) > 5:
+                out.append((rs[0][0], "%s の根拠が %d 行で同じ文言の複写: %r"
+                            % (tool, srcs.count(u), u[:40])))
+    return out
+
+
+def scope(lines):
+    """検査の対象にする行だけを残し、他は空行にする(行番号を保つため消さずに空にする)。
+
+    外すもの 2 つ。どちらも 2026-09-22 の区分 1 の 3 回目で調査班が見つけて、自分で閉じずに
+    リードに渡してきたもの(委任文 §12 の「誤検出は自分で閉じない」が働いた最初の例)。
+      (a) 「受け入れ検査の出力」の節。検査の出力を貼ると、その中の数値が K9 に当たり、
+          貼るたびに合計が増えて「貼った合計 = 数え直した合計」になる状態が存在しなくなる。
+      (b) §4.0 の表を持たない区分の節。表が要るようになる前に書かれた節なので、
+          表を前提にした検査(K4・K5・K9・K13)を当てても直しようがない。
+    """
+    heads = [i for i, ln in enumerate(lines) if re.match(r"^## 区分\s*\d", ln)] or [0]
+    keep = [False] * len(lines)
+    for k, st in enumerate(heads):
+        en = heads[k + 1] if k + 1 < len(heads) else len(lines)
+        # 「表がある」は §4.0 の表の行(2 列目が語彙の項目)が在ることで判定する。
+        # 列の数だけで見ると、他の 5 列の表(X の投稿など)を持つ節まで対象に入る。
+        if read_table(lines[st:en]):
+            for j in range(st, en):
+                keep[j] = True
+    drop = False
+    for i, ln in enumerate(lines):
+        if re.match(r"^#{2,4} *受け入れ検査の出力", ln):
+            drop = True
+        elif re.match(r"^#{1,4} ", ln):
+            drop = False
+        if drop:
+            keep[i] = False
+    return [ln if keep[i] else "" for i, ln in enumerate(lines)]
+
+
+def main():
+    if len(sys.argv) < 3:
+        print(__doc__); return 2
+    rep = pathlib.Path(sys.argv[1]); text = rep.read_text(); raw_lines = text.splitlines()
+    lines = raw_lines if "--all" in sys.argv else scope(raw_lines)
+    # `--all` は旗であって生ログではない。無条件に開こうとして落ちていた
+    # (2026-09-22 の区分 1 の全体受け取り監査の [直す] 4。調査班が見つけ、自分で閉じずに渡してきた)。
+    logs = {pathlib.Path(q).name: pathlib.Path(q).read_text(errors="replace").splitlines()
+            for q in sys.argv[2:] if not q.startswith("--")}
+    log = "\n".join("\n".join(v) for v in logs.values())
+    checks = [("K1 太字", check_bold(lines)), ("K2 括弧", check_brackets(lines)),
+              ("K3 必須の節", check_sections(text)),
+              ("K4 生ログに無い数値", check_numbers_in_log(lines, log)),
+              ("K5 同じ道具に別の値", check_conflicting_values(lines)),
+              ("K6 未実施と実測の同居", check_contradiction(lines)),
+              ("K7 表の項目の欠落", check_table_complete(lines)),
+              ("K8 表の印と根拠", check_table_marks(lines)),
+              ("K9 表に無い数値", check_prose_vs_table(lines)),
+              ("K10 見出しの件数", check_heading_counts(lines)),
+              ("K11 実測の根拠", check_measured_evidence(lines, logs)),
+              ("K13 中身が実質空", check_hollow(lines)),
+              ]
+    checks.append(("K12 検査の出力の貼付",
+                   check_checker_output_pasted(text, sum(len(h) for _, h in checks))))
+    bad = 0
+    for name, hits in checks:
+        print("%-22s %d 件" % (name, len(hits)))
+        for i, msg in hits:
+            print("    %s:%d  %s" % (rep, i, msg))
+        bad += len(hits)
+    print("---- 検査対象の合計 %d 件(K12 を除く。貼り付けはこの数で照合する)"
+          % sum(len(h) for n, h in checks if not n.startswith("K12")))
+    print("---- 合計 %d 件" % bad)
+    return 1 if bad else 0
+
+if __name__ == "__main__":
+    sys.exit(main())

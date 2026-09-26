@@ -1,0 +1,71 @@
+##### from item0_r5-1_scenekeeper_install_11.log
+=== 2026-09-23T15:40:50Z inspect octobot
+Using cached octobot-2.1.1-py3-none-any.whl (10.7 MB)
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/octobot/octobot-2.1.1-py3-none-any.whl
+Successfully downloaded octobot
+total 10480
+drwxr-xr-x  2 root root     4096 Sep 23 15:40 .
+drwxr-xr-x 17 root root     4096 Sep 23 15:40 ..
+-rw-r--r--  1 root root 10721541 Sep 23 15:40 octobot-2.1.1-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/octobot/octobot-2.1.1-py3-none-any.whl
+Name: octobot
+Version: 2.1.1
+Home-page: https://github.com/Drakkar-Software/OctoBot
+Author: Drakkar-Software
+Author-email: contact@drakkar.software
+Requires-Dist: Flask-WTF==1.2.2
+Requires-Dist: OctoBot-Tulipy>=0.4.11b13
+Requires-Dist: WTForms==3.2.1
+Requires-Dist: aioboto3==15.5.0
+Requires-Dist: aiodns==3.1.1
+Requires-Dist: aiofiles==25.1.0
+Requires-Dist: aiohttp==3.13.3
+Requires-Dist: aiohttp>=3.9.5
+Requires-Dist: aiosqlite==0.17.0
+Requires-Dist: asyncpraw==7.8.1
+Requires-Dist: cachetools
+Requires-Dist: cachetools<7,>=6
+Requires-Dist: cachetools==6.2.6
+Requires-Dist: ccxt
+Requires-Dist: ccxt==4.5.44
+Requires-Dist: certifi==2026.1.4
+Requires-Dist: clickhouse-connect==0.10.0
+Requires-Dist: coingecko-openapi-client==1.4.0
+Requires-Dist: colorlog==6.10.1
+Requires-Dist: cryptography
+Requires-Dist: cython==0.29.32
+Requires-Dist: dbos==2.15.0
+Requires-Dist: fastapi[standard]==0.135.1
+Requires-Dist: flask-caching==2.3.1
+Requires-Dist: flask-compress==1.23
+Requires-Dist: flask-cors==6.0.2
+Requires-Dist: flask-login==0.6.3
+Requires-Dist: flask-socketio==5.6.0
+Requires-Dist: flask==3.1.2
+Requires-Dist: gevent-websocket==0.10.1
+Requires-Dist: gevent==25.9.1
+Requires-Dist: gmqtt==0.7.0
+Requires-Dist: jinja2==3.1.6
+Requires-Dist: jinja2>=3.0.3
+Requires-Dist: jsonschema==4.26.0
+=== 2026-09-23T15:40:53Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/octobot
+pip rc=1 elapsed=60s
+3
+=== 2026-09-23T15:41:58Z done
+=== 2026-09-23T16:47:56Z retry (disk guard 700MB) : pip install --no-cache-dir octobot==2.1.1
+free before: 2540 MB
+pip rc=1 elapsed=2s min_free=2512MB
+ERROR: Ignored the following versions that require a different python version: 2.1.0 Requires-Python >=3.12; 2.1.1 Requires-Python >=3.12; 3.0.0b1 Requires-Python ==3.13.*; 3.0.0b2 Requires-Python ==3.13.*
+ERROR: Could not find a version that satisfies the requirement octobot==2.1.1 (from versions: 0.2.4b1, 0.2.4b2, 0.3.1, 0.3.2b0, 0.3.3, 0.3.4, 0.3.5, 0.3.6, 0.3.7, 0.3.8, 0.3.9, 0.4.0a2, 0.4.0a3, 0.4.0a4, 0.4.0a5, 0.4.0a6, 0.4.0a7, 0.4.0a8, 0.4.0a9, 0.4.0a11, 0.4.0a12, 0.4.0a13, 0.4.0a14, 0.4.0a15, 0.4.0a16, 0.4.0a17, 0.4.0a18, 0.4.0a19, 0.4.0a20, 0.4.0a21, 0.4.0a22, 0.4.0a23, 0.4.0a24, 0.4.0a25, 0.4.0a26, 0.4.0b1, 0.4.0b2, 0.4.0b3, 0.4.0b4, 0.4.0b5, 0.4.0b6, 0.4.0b7, 0.4.0b8, 0.4.0b9, 0.4.0b10, 0.4.0b11, 0.4.0b12, 0.4.0b13, 0.4.0b14, 0.4.0b15, 0.4.0b16, 0.4.0b17, 0.4.1, 0.4.2, 0.4.3, 0.4.4, 0.4.5, 0.4.6, 0.4.7, 0.4.8, 0.4.9, 0.4.10, 0.4.11, 0.4.12, 0.4.13, 0.4.14, 0.4.15, 0.4.16, 0.4.17, 0.4.19, 0.4.20, 0.4.21, 0.4.22, 0.4.23, 0.4.24, 0.4.25, 0.4.26, 0.4.27, 0.4.28, 0.4.29, 0.4.30, 0.4.31, 0.4.32, 0.4.33, 0.4.34, 0.4.35, 0.4.36, 0.4.37, 0.4.38, 0.4.39, 0.4.40, 0.4.41, 0.4.42, 0.4.43, 0.4.44, 0.4.45, 0.4.46, 0.4.47, 0.4.48, 0.4.49, 0.4.50, 0.4.51, 0.4.52, 0.4.53, 0.4.54, 1.0.0, 1.0.1, 1.0.2, 1.0.3, 1.0.4, 1.0.5, 1.0.6, 1.0.7, 1.0.8, 1.0.9, 1.0.10, 2.0.0, 2.0.1, 2.0.2, 2.0.3, 2.0.4, 2.0.5, 2.0.6, 2.0.7, 2.0.8, 2.0.9, 2.0.10, 2.0.11, 2.0.12, 2.0.13, 2.0.14, 2.0.15, 2.0.16)
+ERROR: No matching distribution found for octobot==2.1.1
+free after: 2512 MB
+=== 2026-09-23T16:48:08Z retry (disk guard 700MB) : pip install --no-cache-dir octobot==2.1.1
+free before: 2540 MB
+pip rc=0 elapsed=112s min_free=1597MB
+Successfully installed Flask-WTF-1.2.2 OctoBot-Tulipy-0.4.11b13 WTForms-3.2.1 agent-detector-2.0.0 aioboto3-15.5.0 aiobotocore-2.25.1 aiodns-3.1.1 aiofiles-25.1.0 aiohappyeyeballs-2.7.1 aiohttp-3.13.3 aioitertools-0.13.0 aiosignal-1.4.0 aiosqlite-0.17.0 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 asyncpraw-7.8.1 asyncprawcore-2.4.0 attrs-26.1.0 backports.zstd-1.7.0 bcrypt-5.0.0 bidict-0.24.1 bitarray-3.11.0 blinker-1.9.0 boto3-1.40.61 botocore-1.40.61 brotli-1.2.0 cachelib-0.17.0 cachetools-6.2.6 ccxt-4.5.44 certifi-2026.1.4 cffi-2.1.1 charset_normalizer-3.5.1 ckzg-2.1.8 click-8.5.0 clickhouse-connect-0.10.0 coincurve-21.0.0 coingecko-openapi-client-1.4.0 colorlog-6.10.1 cryptography-50.0.1 cython-0.29.32 cytoolz-1.1.0 dbos-2.15.0 deprecation-2.1.0 detect-installer-0.2.1 distro-1.9.0 dnspython-2.8.0 email-validator-2.3.0 eth-abi-6.0.0 eth-account-0.14.0 eth-hash-0.8.0 eth-keyfile-0.10.0 eth-keys-0.8.0 eth-rlp-3.0.0 eth-typing-6.0.0 eth-utils-6.0.0 fastapi-0.135.1 fastapi-cli-0.0.32 fastapi-cloud-cli-0.26.0 fastar-0.12.0 flask-3.1.2 flask-caching-2.3.1 flask-compress-1.23 flask-cors-6.0.2 flask-login-0.6.3 flask-socketio-5.6.0 frozenlist-1.8.0 fsspec-2026.9.0 gevent-25.9.1 gevent-websocket-0.10.1 gmqtt-0.7.0 greenlet-3.5.6 h11-0.16.0 h2-4.4.1 hexbytes-2.0.0 hpack-4.2.0 httpcore-1.0.9 httptools-0.8.0 httpx-0.28.1 httpx-sse-0.4.3 hyperframe-6.1.0 idna-3.20 itsdangerous-2.2.0 jinja2-3.1.6 jiter-0.17.0 jmespath-1.1.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 lz4-4.4.5 markdown-it-py-4.2.0 markupsafe-3.0.3 mcp-1.26.0 mdurl-0.1.2 mmh3-5.3.0 mock-5.2.0 multidict-6.9.1 numpy-2.4.2 octobot-2.1.1 openai-2.20.0 packaging-26.0 parsimonious-0.10.0 passlib-1.7.4 pgpy-0.6.0 postgrest-2.27.2 propcache-0.5.4 protobuf-6.33.5 psutil-7.2.2 psycopg-3.3.6 psycopg-binary-3.3.6 py_ecc-8.0.0 pyaes-1.6.1 pyarrow-23.0.0 pyasn1-0.6.4 pycares-5.0.1 pycparser-3.0 pycryptodome-3.23.0 pydantic-2.12.5 pydantic-core-2.41.5 pydantic-extra-types-2.11.1 pydantic-settings-2.15.0 pygments-2.21.0 pyiceberg-0.10.0 pyjwt-2.14.0 pyngrok-7.5.0 pyparsing-3.3.3 pyroaring-1.1.0 python-dateutil-2.9.0.post0 python-dotenv-1.2.1 python-engineio-4.14.0 python-multipart-0.0.32 python-socketio-5.17.0 python-telegram-bot-22.6 pytz-2026.3.post1 pyunormalize-17.0.0 pyyaml-6.0.3 realtime-2.27.2 referencing-0.37.0 regex-2026.9.10 requests-2.32.5 rich-14.3.4 rich-toolkit-0.20.5 rignore-0.8.1 rlp-5.0.0 rpds-py-2026.6.3 rsa-4.9.1 s3transfer-0.14.0 sentry-sdk-2.51.0 setuptools-79.0.1 shellingham-1.5.4 simple-websocket-1.1.0 simplifiedpytrends-1.1.2 six-1.17.0 sniffio-1.3.1 sortedcontainers-2.4.0 sqlalchemy-2.0.54 sse-starlette-3.4.11 standard-imghdr-3.13.0 starfish-protocol-2.3.0 starfish-sdk-1.1.1 starfish-server-1.1.0 starlette-1.7.0 storage3-2.27.2 strenum-0.4.15 strictyaml-1.7.3 supabase-2.27.2 supabase-functions-2.27.2 supabase_auth-2.27.2 telethon-1.42.0 tenacity-9.1.4 tinydb-4.8.2 toolz-1.1.0 tqdm-4.70.1 typer-0.27.2 typer-slim-0.24.0 types-requests-2.33.0.20260906 typing-inspection-0.4.4 typing_extensions-4.16.0 update_checker-1.0.0 urllib3-2.8.0 uvicorn-0.53.0 uvloop-0.22.1 vaderSentiment-3.3.2 watchfiles-1.3.0 web3-7.14.1 websockets-15.0.1 werkzeug-3.1.5 wrapt-1.17.3 wsproto-1.3.2 yarl-1.25.1 zope.event-6.2 zope.interface-8.6 zstandard-0.25.0
+free after: 1789 MB
+=== 2026-09-23T16:50:25Z run attempt (probe: scratchpad/bt/item0_scenekeeper/ob/probe.py, socket guard on)
+tentacles setup config: TentaclesSetupConfiguration installed tentacles: 0
+ERR ModuleNotFoundError No module named 'tentacles'
+net attempts [] elapsed 4.0
+=== 2026-09-23T16:51:06Z stopped: OctoBot's backtest runs trading modes, evaluators and the backtesting data importer as "tentacles"; the wheel ships none (0 installed). The default tentacles come as a zip from https://tentacles.octobot.online/officials/packages/full/base/<version>/any_platform.zip (octobot_tentacles_manager/constants.py line 25), which is not a PyPI distribution, so it cannot pass the pre-install check (PyPI/GitHub match) and code fetched outside PyPI is not run (delegation §3 (b): read only).

@@ -9,7 +9,8 @@
 2026-09-19、L-202 で関門を縮めた(経緯は `docs/AUDITOR/ACTION_LOG.md` 063。削除の 1 手が済む前は「残したフック 6 本だけ」と pre-push の試験が食い違っていた = 実物が縮んでいないことを示す)。残したのは
   - 指紋の照合 `_verify_manifest.sh`(Write / Edit / Agent と、git 側の `githooks/pre-push`)
   - ③(a) 保護パスへの書き込み拒否 `deny_protected_paths.sh`
-  - ③(b) 選択待ちの全面停止 `owner_options_gate.sh`
+  - (③(b) 選択待ちの全面停止 `owner_options_gate.sh` と委任の関門 `delegation_audit_gate.sh` は
+    2026-09-26 にオーナーの指示 L-468「対策3.のフックはもう捨てましょう」/ L-469「両方消せ」で消した。試験も消した)
   - TRACE の記録 `trace_snapshot.sh`(監査役の定義 §0.5 の入力。止めない)
   - `settings.json` の健全性(スキーマ外の鍵が無い / 参照するフックが実在する)
   - 台帳 `HOOK_MANIFEST.sha256` の健全性(載っているファイルが実在する = I-012 の型)
@@ -116,22 +117,17 @@ show("解除ファイルがあれば通る(穴であることを測る)",
 os.remove(os.path.join(hk, ".claude", "state", "owner_unlock_intent"))
 
 # ---------------------------------------------------------------------------
-print("\n== ③(b) 選択待ちの全面停止 / ゴール未読の書き込み ==")
-hk2 = tempfile.mkdtemp()
-os.makedirs(os.path.join(hk2, ".claude", "state"), exist_ok=True)
-show("ゴール未読で書き始めようとすると止まる",
-     hook("owner_options_gate.sh", _pre("Write", ROOT + "/src/x.py"), hk2), 2)
-show("記録(ACTION_LOG)は例外で通る",
-     hook("owner_options_gate.sh", _pre("Edit", ROOT + "/docs/AUDITOR/ACTION_LOG.md"), hk2), 0)
-hook("owner_options_gate.sh", _pre("Read", ROOT + "/docs/PROJECT_GOAL.md"), hk2)
-show("ゴールを開いた後は通る",
-     hook("owner_options_gate.sh", _pre("Write", ROOT + "/src/x.py"), hk2), 0)
-open(os.path.join(hk2, ".claude", "state", "awaiting_owner_choice"), "w").write("試験")
-show("選択待ちなら Bash も止まる(案 A = 全面停止)",
-     hook("owner_options_gate.sh", _pre("Bash", cmd="ls"), hk2), 2)
-hook("owner_options_gate.sh", {"hook_event_name": "UserPromptSubmit"}, hk2)
-show("オーナーの発言で待ちが解ける",
-     hook("owner_options_gate.sh", _pre("Bash", cmd="ls"), hk2), 0)
+print("\n== Bash 経由の書き込み(2026-09-21、L-375「機械直せよ」。ACTION_LOG 076 の穴) ==")
+show("③(a): Bash のヒアドキュメントでフックに書くと止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="cat > .claude/hooks/x.sh <<'EOF'\nx\nEOF"), hk), 2)
+show("③(a): python でゴールを書き換えると止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="python3 - <<'EOF'\nopen('docs/PROJECT_GOAL.md','w').write('x')\nEOF"), hk), 2)
+show("③(a): settings.json への sed -i は止まる",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="sed -i 's/a/b/' .claude/settings.json"), hk), 2)
+show("③(a): フックを cat で読むだけなら通る",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="cat .claude/hooks/x.sh; git add .claude/settings.json"), hk), 0)
+show("③(a): 普通の文書への Bash 書き込みは通る",
+     hook("deny_protected_paths.sh", _pre("Bash", cmd="printf x >> docs/OWNER_LOG.md"), hk), 0)
 
 # ---------------------------------------------------------------------------
 print("\n== settings.json の健全性 ==")
@@ -193,9 +189,9 @@ _refs = _referenced_hooks(SETTINGS)
 show(f"参照するフック {len(_refs)} 件が全部実在する(通る側)", _all_exist(_refs), True)
 show("消したフックを参照していれば落ちる(止まる側 = I-012 の型)",
      _all_exist(_refs + ["deleted_hook.sh"]), False)
-show("残したフック 6 本 + jev_notice.sh(L-218、表示だけ)だけを参照している",
+show("残したフック 6 本(2026-09-26、L-468/L-469 で owner_options_gate と delegation_audit_gate を消したあと)だけを参照している",
      sorted(set(_refs)),
-     sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "jev_notice.sh", "owner_options_gate.sh",
+     sorted(["_verify_manifest.sh", "deny_protected_paths.sh", "jev_notice.sh",
              "owner_turn_digest.sh", "session_start_digest.sh", "trace_snapshot.sh"]))
 
 # ---------------------------------------------------------------------------
@@ -208,8 +204,7 @@ show("台帳に載ったファイルの指紋が全部一致する",
 show("フックのディレクトリにあるファイルが全部台帳に載っている",
      sorted(os.listdir(HOOKS)), sorted(f.split("/")[-1] for _h, f in _rows if f.startswith(".claude/hooks/")))
 
-for _t in (hk, hk2):
-    shutil.rmtree(_t, ignore_errors=True)
+shutil.rmtree(hk, ignore_errors=True)
 
 print(f"\n食い違い: {FAIL} 件")
 raise SystemExit(1 if FAIL else 0)

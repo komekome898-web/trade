@@ -1,0 +1,394 @@
+# 区分1 9 回目の生ログ (2026-09-22 UTC)
+[1] 2026-09-22T09:42:20Z cmd: df -h / | tail -1 ; python3 -V ; node -v
+/dev/vda        252G   26G   12G  69% /
+Python 3.11.15
+v22.22.2
+rc=0 time_s=0
+[2] 2026-09-22T09:42:31Z cmd: git clone --depth 1 https://github.com/Mendl-Labs/BacktestingCore.git $S/bc
+Cloning into '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/bc'...
+
+rc=0 time_s=1
+[3] 2026-09-22T09:42:32Z cmd: git clone --depth 1 https://github.com/Luczinsritter/event_driven_backtesting_engine.git $S/ed
+Cloning into '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/ed'...
+
+rc=0 time_s=1
+[4] 2026-09-22T09:42:45Z cmd: find $S/bc $S/ed -type f -not -path '*/.git/*' | sed 's|.*/r9/||' | awk -F/ '{print $1}' | sort | uniq -c ; 拡張子ごとの件数
+bc ext:     175 rs
+bc ext:      18 toml
+bc ext:       9 py
+bc ext:       1 yaml
+bc ext:       1 md
+bc ext:       1 lock
+bc ext:       1 gitignore
+bc ext:       1 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/bc/LICENSE
+bc files_total=207
+ed file: requirements.txt
+ed file: tradeanalysis.py
+ed file: images/execution.png
+ed file: images/visualisation.png
+ed file: ema_arima.py
+ed file: README.md
+ed file: backtest_engine.py
+ed file: exemple.ipynb
+ed file: main_test.py
+ed file: utils.py
+ed files_total=10
+rc=0 time_s=0
+[5] 2026-09-22T09:42:45Z cmd: which cargo rustc rustup; cargo --version
+/root/.cargo/bin/cargo
+/root/.cargo/bin/rustc
+/root/.cargo/bin/rustup
+which_rc=0
+cargo 1.94.1 (29ea6fb6a 2026-03-24)
+cargo_rc=0
+ls: cannot access '/usr/local/cargo/bin': No such file or directory
+/root/.cargo/bin:
+cargo
+cargo-clippy
+cargo-fmt
+rc=0 time_s=2
+[6] 2026-09-22T09:43:00Z cmd: 安全検査 — build.rs / 難読化 / 外部URL取得 / バイナリ同梱 を両リポジトリで探す
+bc build.rs: 0 件
+bc git依存(Cargo.toml の git=): 16 件
+bc バイナリ(file で ELF/archive): 11
+bc 外部URL取得(reqwest/curl/wget/download): 5 ファイル
+ed 外部URL取得/ダウンロード: 
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/ed/backtest_engine.py:15:        raw_df = yf.download(ticker, start = start_date, end = end_date, interval = interval, auto_adjust = True)
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/ed/utils.py:8:import yfinance as yf
+ed requirements.txt 全文:
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.9.2
+yfinance==0.2.43
+quantstats==0.0.62
+scikit-learn==1.5.2
+statsmodels==0.14.4
+ed setup.py: 0 件
+ed 行数:   566 total
+rc=0 time_s=1
+[7] 2026-09-22T09:43:13Z cmd: BacktestingCore の git 依存と同梱バイナリの中身
+backtest/Cargo.toml:55:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+backtest/Cargo.toml:60:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+riskmanager/Cargo.toml:16:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+metrics/Cargo.toml:16:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+metrics/Cargo.toml:28:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+walkforward/Cargo.toml:18:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+genetic/Cargo.toml:26:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+genetic/Cargo.toml:40:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+orderbook/Cargo.toml:26:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+orderbook/Cargo.toml:34:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+portfoliomanager/Cargo.toml:19:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+strategy/Cargo.toml:55:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+dataloader/Cargo.toml:13:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+dataloader/Cargo.toml:38:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+data_prep/Cargo.toml:24:databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+data_prep/Cargo.toml:32:ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+backtest/tests/python_ffi_test.rs: Python script, Unicode text, UTF-8 text executable
+strategy/src/strategies/python_strategy.rs: Python script, Unicode text, UTF-8 text executable
+strategy/src/strategy_source_validator.rs: Python script, Unicode text, UTF-8 text executable
+strategy/python_api/__init__.py: Python script, Unicode text, UTF-8 text executable
+strategy/python_api/examples/rsi_macd_confluence.py: Python script, ASCII text executable
+strategy/python_api/examples/grid_trader.py: Python script, ASCII text executable
+strategy/python_api/examples/mean_reversion.py: Python script, Unicode text, UTF-8 text executable
+strategy/python_api/examples/momentum_crossover.py: Python script, ASCII text executable
+strategy/python_api/indicators.py: Python script, ASCII text executable
+strategy/python_api/strategy.py: Python script, Unicode text, UTF-8 text executable
+strategy/python_api/types.py: Python script, Unicode text, UTF-8 text executable
+bc ワークスペースの根 Cargo.toml:
+[workspace]
+resolver = "2"
+members = [
+    "backtest",
+    "orderbook",
+    "dataloader",
+    "walkforward",
+    "data_prep",
+    "metrics",
+    "derivatives",
+    "greeks",
+    "signal",
+    "smartrouter",
+    "portfoliomanager",
+    "quant-diagnostics",
+    "riskmanager",
+    "genetic",
+    "strategy",
+    "config",
+]
+rc=0 time_s=2
+[8] 2026-09-22T09:43:50Z cmd: git clone --depth 1 --filter=blob:none https://github.com/pst-group/pysystemtrade.git $S/pst
+ting files:  93% (1451/1560)
+Updating files:  94% (1467/1560)
+Updating files:  95% (1482/1560)
+Updating files:  96% (1498/1560)
+Updating files:  97% (1514/1560)
+Updating files:  98% (1529/1560)
+Updating files:  99% (1545/1560)
+Updating files: 100% (1560/1560)
+Updating files: 100% (1560/1560), done.
+
+rc=0 time_s=47
+875M	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst
+pst 直下: CHANGELOG.md CONTRIBUTING.md LICENSE MANIFEST.in README.md dashboard data docs examples private pyproject.toml requirements.txt setup.py sysbrokers syscontrol syscore sysdata sysexecution sysinit syslogdiag syslogging sysobjects sysproduction sysquant systems tests tox.ini 
+[9] 2026-09-22T09:45:28Z cmd: $S/v9ed/bin/pip install -r $S/ed/requirements.txt の結果(背景実行の出力を読んだ)
++ echo 'INSTALL_RC=0 TIME_S=33'
+INSTALL_RC=0 TIME_S=33
++ echo PIPCHECK_RC=0
+PIPCHECK_RC=0
+pip list 件数=42
+No broken requirements found.
+pip_check_rc=0
+rc=0 time_s=1
+[10] 2026-09-22T09:45:29Z cmd: $S/v9ed/bin/python $S/ed_min.py $S/ed (合成データの最小実行)
+出力の先頭 200 文字: Traceback (most recent call last):   File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9ed/lib/python3.11/site-packages/quantstats/reports.py", line 33, in <modu
+出力の末尾(要点):
+    from utils import *
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/ed/utils.py", line 9, in <module>
+    import quantstats as qs
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9ed/lib/python3.11/site-packages/quantstats/__init__.py", line 26, in <module>
+    from . import stats, utils, plots, reports
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9ed/lib/python3.11/site-packages/quantstats/reports.py", line 35, in <module>
+    from IPython.core.display import display as iDisplay, HTML as iHTML
+ModuleNotFoundError: No module named 'IPython'
+出力の行数=19
+rc=1 time_s=2
+[11] 2026-09-22T09:45:42Z cmd: $S/v9ed/bin/pip install ipython (requirements.txt の不足分を補う。手段を替えて続行)
+rc=0 time_s=5
+Name: ipython
+Version: 9.17.1
+[12] 2026-09-22T09:45:48Z cmd: $S/v9ed/bin/python $S/ed_min.py $S/ed (再実行)
+出力の先頭 200 文字: Date : 2026-01-04 00:00:00 | ORDER = Short : 100 shares at 99.08430185751428€ Date : 2026-01-03 00:00:00 | Account Current Balance : 19908.43018575143 Date : 2026-01-03 00:00:00 | Total Wealth : 299
+出力の末尾 6 行:
+Date : 2026-07-19 00:00:00 | Close Position : 1 shares at 81.11066314428018€
+Perfomance : 3.52 % | PnL : 2.81€ | Capital : -129.81€
+BUY_TRADES=3 SELL_TRADES=3 CLOSE_TRADES=6
+FINAL_BALANCE=-129.8087
+TRADE_ROWS=6
+LIMIT_ORDER_API=[]
+出力の行数=34
+rc=0 time_s=2
+[13] 2026-09-22T09:46:14Z cmd: cargo check -p metrics(--offline と通常の 2 回。背景実行の出力を読んだ)
++ echo 'OFFLINE_RC=101 TIME_S=1'
+OFFLINE_RC=101 TIME_S=1
+
+Caused by:
+  process didn't exit successfully: `git fetch --no-tags --force --update-head-ok 'https://github.com/Nwagbara-Group-LLC/LoggingEngine' '+c34abcf1d7f3fed6ecdf7c1f01346d3d8a91be69:refs/commit/c34abcf1d7f3fed6ecdf7c1f01346d3d8a91be69'` (exit status: 128)
+++ date -u +%s
++ echo 'ONLINE_RC=101 TIME_S=13'
+ONLINE_RC=101 TIME_S=13
+rc=101 (2 回とも)
+rc=0 time_s=0
+[14] 2026-09-22T09:46:14Z cmd: 依存の 2 リポジトリが公開されているかを確かめる(curl -o /dev/null -w %{http_code} と git ls-remote)
+https://github.com/Nwagbara-Group-LLC/LoggingEngine code=403 body_head={"message":"GitHub access to this repository is not enabled for this session. Use add_repo
+https://github.com/Nwagbara-Group-LLC/databaseschema code=403 body_head={"message":"GitHub access to this repository is not enabled for this session. Use add_repo
+https://api.github.com/repos/Nwagbara-Group-LLC/LoggingEngine code=403 body_head={"message":"GitHub access to this repository is not enabled for this session. Use add_repo
+https://ungh.cc/repos/Nwagbara-Group-LLC/LoggingEngine code=404 body_head={   "error": true,   "status": 404,   "message": "GitHub API error: 404 Not Found" }
+git ls-remote rc=128 out=fatal: could not read Username for 'https://github.com': terminal prompts disabled 
+rc=0 time_s=2
+[15] 2026-09-22T09:47:40Z(この時刻だけは道具の呼び出し直後に手で記入した。以降の [16] 以降と前後する) cmd: WebFetch https://github.com/Nwagbara-Group-LLC/LoggingEngine / mcp github search_repositories 'org:Nwagbara-Group-LLC'
+WebFetch の返答(逐語): The server returned HTTP 404 Not Found.
+GitHub の検索 API の返答(逐語): failed to search repositories with query 'org:Nwagbara-Group-LLC': Validation Failed Search.q (invalid): The listed users and repositories cannot be searched either because the resources do not exist or you do not have permission to view them.
+まとめ: BacktestingCore の構築に必要な git 依存 2 件(LoggingEngine / databaseschema)は、独立した 4 経路(ungh.cc=404 / WebFetch=404 / git ls-remote=128 / GitHub 検索 API=Validation Failed)のいずれからも公開されたものとして見えない。
+rc=0 time_s=0
+[16] 2026-09-22T09:46:49Z cmd: pysystemtrade の導入(背景実行 $S/v9pst/bin/pip install -r requirements.txt)の途中経過
+++ date -u +%s
++ t0=1790070394
++ /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9pst/bin/pip install --disable-pip-version-check -q -r /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/requirements.txt
+rc=(未完) time_s=1
+[17] 2026-09-22T09:48:08Z cmd: $S/v9pst/bin/pip install -r $S/pst/requirements.txt の結果(背景実行の出力を読んだ)+ pip check
++ echo INSTALL_RC=0 TIME_S=37
+INSTALL_RC=0 TIME_S=37
++ echo PIPCHECK_RC=0
+PIPCHECK_RC=0
+pip list 件数=43
+No broken requirements found.
+pip_check_rc=0
+rc=0 time_s=0
+[18] 2026-09-22T09:48:08Z cmd: cd $S/pst && $S/v9pst/bin/python $S/pst_min.py $S/pst (同梱の標本データで simplesystem を 1 回回す)
+出力の先頭 200 文字: Configuring sim logging Private configuration '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/private/private_config.yaml' is missing or misconfigured; no proble
+出力の末尾 8 行:
+2026-09-22 09:48:18 DEBUG base_system {'stage': 'accounts', 'instrument_code': 'US10'} Calculating pandl for instrument for US10
+2026-09-22 09:48:18 DEBUG base_system {'stage': 'rawdata', 'instrument_code': 'US10'} Calculating daily prices for US10
+SHARPE=None
+ANN_MEAN=16.57
+N_INSTRUMENTS=4
+INSTRUMENTS_HEAD=['CORN', 'SOFR', 'SP500', 'US10']
+POS_ROWS=13422 POS_LAST=-7.5049
+ELAPSED_S=11.14
+rc=0 time_s=11
+[19] 2026-09-22T09:48:35Z cmd: $S/v9pst/bin/python $S/pst_min2.py $S/pst (同梱の注文模擬 daily_with_order_simulation を 1 回回し、約定と注文の表を出す)
+出力の先頭 200 文字: Configuring sim logging Private configuration '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/private/private_config.yaml' is missing or misconfigured; no proble
+出力の末尾 10 行:
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/sysdata/sim/sim_data.py", line 122, in _get_daily_prices_for_directional_instrument
+    instrprice = self.get_raw_price(instrument_code)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/sysdata/sim/sim_data.py", line 187, in get_raw_price
+    return self.get_raw_price_from_start_date(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/sysdata/sim/futures_sim_data.py", line 79, in get_raw_price_from_start_date
+    raise Exception("Instrument code %s has no data!" % instrument_code)
+Exception: Instrument code SP500_micro has no data!
+rc=1 time_s=32
+[20] 2026-09-22T09:49:25Z cmd: $S/v9pst/bin/python $S/pst_min3.py $S/pst (csv の標本データと 1 銘柄に絞って注文模擬を回す)
+出力の先頭 200 文字: Configuring sim logging Private configuration '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/private/private_config.yaml' is missing or misconfigured; no proble
+出力の末尾 10 行:
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/systems/portfolio.py", line 258, in get_notional_position_without_idm
+    instrument_weight_this_code = instr_weights[instrument_code]
+                                  ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9pst/lib/python3.11/site-packages/pandas/core/frame.py", line 3893, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/v9pst/lib/python3.11/site-packages/pandas/core/indexes/base.py", line 3797, in get_loc
+    raise KeyError(key) from err
+KeyError: 'SP500'
+rc=1 time_s=10
+[21] 2026-09-22T09:49:46Z cmd: $S/v9pst/bin/python $S/pst_min3.py $S/pst (手段を替えて再試行: 組入れ比率を通さない subsystem 単位で注文模擬を回す)
+出力の先頭 200 文字: Configuring sim logging Private configuration '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/private/private_config.yaml' is missing or misconfigured; no proble
+出力の末尾 10 行:
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/systems/accounts/order_simulator/pandl_order_simulator.py:228: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  next_price = prices[idx + 1]
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r9/pst/systems/accounts/order_simulator/pandl_order_simulator.py:229: FutureWarning: Series.__getitem__ treating keys as positions is deprecated. In a future version, integer keys will always be treated as labels (consistent with DataFrame behavior). To access a value by position, use `ser.iloc[pos]`
+  current_price = prices[idx]
+ORDER_SIM_CLASS=OrderSimulator
+FILL_COUNT=2618 ORDER_COUNT=2618
+ORDER_COLS=['quantity', 'limit_price']
+FILL_COLS=['qty', 'price']
+FILL_HEAD=            qty  price / 1982-09-29   -1  678.9 / 1982-09-30   -1  678.3
+ELAPSED_S=7.99
+rc=0 time_s=8
+STATS_KEYS=['ann_mean', 'ann_std', 'avg_drawdown', 'avg_gain', 'avg_loss', 'avg_return_to_drawdown', 'calmar', 'gaintolossratio', 'hitrate', 'max', 'mean', 'median', 'min', 'p_value', 'profitfactor', 'sharpe', 'skew', 'sortino', 'std', 't_stat', 'time_in_drawdown']
+SHARPE=None MEAN=6.357
+[22] 2026-09-22T09:50:25Z cmd: 3 リポジトリの活動(ungh.cc)と PyPI の有無
+pst-group/pysystemtrade code=200
+pst-group/pysystemtrade stars=3522 forks=1074 watchers=185 createdAt=2015-11-27T10:49:08Z pushedAt=2026-09-21T10:55:15Z archived=None description=Systematic Trading in python
+pst-group/pysystemtrade contributors code=200
+pst-group/pysystemtrade contributors_n=30 head=['robcarver17', 'bug-or-feature', 'tgibson11', 'james-ward', 'VMatthijs']
+Mendl-Labs/BacktestingCore code=200
+Mendl-Labs/BacktestingCore stars=0 forks=0 watchers=0 createdAt=2026-08-08T18:02:59Z pushedAt=2026-09-20T20:00:09Z archived=None description=Open-source backtesting engine core: event-driven simulation, walk-forward analy
+Mendl-Labs/BacktestingCore contributors code=200
+Mendl-Labs/BacktestingCore contributors_n=1 head=['ItsJustIkenna']
+Luczinsritter/event_driven_backtesting_engine code=200
+Luczinsritter/event_driven_backtesting_engine stars=0 forks=0 watchers=0 createdAt=2025-09-29T20:07:40Z pushedAt=2025-09-29T20:47:12Z archived=None description=Modular Python framework for event‑driven backtesting at tick or bar level, desi
+Luczinsritter/event_driven_backtesting_engine contributors code=200
+Luczinsritter/event_driven_backtesting_engine contributors_n=1 head=['Luczinsritter']
+pypi/pysystemtrade code=404
+pypi/backtestingcore code=404
+pypi/event-driven-backtesting-engine code=404
+rc=0 time_s=5
+[23] 2026-09-22T09:50:46Z cmd: 3 件のライセンス・版・導入時実行・外部送信・自動発注の有無を配布物から読む
+--- pysystemtrade ---
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+9:name = "pysystemtrade"
+10:version = "1.8.2"
+20:requires-python = ">=3.10"
+pst setup.py の導入時実行(subprocess/os.system/urlopen/cmdclass): 0 件
+pst 依存数(requirements.txt): 15 件
+pst 対応取引所(sysbrokers の直下): IB __init__.py __pycache__ broker_capital_data.py broker_contract_commission_data.py broker_contract_position_data.py broker_execution_stack.py broker_factory.py broker_futures_contract_data.py broker_futures_contract_price_data.py broker_fx_handling.py broker_fx_prices_data.py broker_instrument_data.py broker_static_data.py broker_trade.py 
+pst 自動発注の実体(sysexecution の発注系ファイル数): 42 本
+pst 遠隔測定(telemetry/analytics/sentry/posthog の一致): 0 ファイル
+pst 最初のコミット日: 2026-09-21T11:55:15+01:00 (浅い clone のため最新のみ)
+--- BacktestingCore ---
+# Functional Source License, Version 1.1, ALv2 Future License
+
+## Abbreviation
+2:name = "metrics"
+3:version = "0.1.0"
+4:edition = "2021"
+bc 同梱の README 行数: 225
+bc 難読化(base64 の長い塊/eval): 2 ファイル
+--- event_driven ---
+README.md __pycache__ backtest_engine.py ema_arima.py exemple.ipynb images main_test.py requirements.txt tradeanalysis.py utils.py 
+ed LICENSE ファイル: 0 件
+4:[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+90:## License
+ed 遠隔測定/外部送信の一致: 0 ファイル
+ed 自動発注の一致(ccxt/api/key/order 送信): 0 ファイル
+rc=0 time_s=0
+[24] 2026-09-22T09:50:58Z cmd: ライセンスの逐語(ed の README / bc の LICENSE)と bc の eval/base64 の中身
+ed README 88-95 行:
+- Add risk management logic (stop‑loss, take‑profit)
+
+## License
+
+Personal project — free to use and modify for educational or demonstration purposes.
+
+bc LICENSE の Change Date / Limitation:
+28:and redistribute the Software for any Permitted Purpose identified below.
+30:### Permitted Purpose
+32:A Permitted Purpose is any purpose other than a Competing Use. A Competing Use
+43:Permitted Purposes specifically include using the Software:
+56:To the extent your use for a Permitted Purpose would necessarily infringe our
+bc の eval/base64 の一致(ファイル名と行):
+genetic/src/landscape.rs:318:        on_eval();
+genetic/src/landscape.rs:334:        on_eval();
+genetic/src/landscape.rs:611:            on_eval();
+genetic/src/landscape.rs:686:        on_eval();
+genetic/src/landscape.rs:799:                on_eval();
+genetic/src/landscape.rs:804:                on_eval();
+ed README 冒頭 12 行:
+# Event‑Driven Backtesting Engine :  Tick or Bar level Simulation & Trade Analytics
+
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Quant-Finance](https://img.shields.io/badge/Domain-Quantitative%20Finance-orange.svg)]()
+
+## Overview
+
+Modular Python framework for **event‑driven backtesting** at tick or bar level, designed to replicate realistic trading execution.
+The engine focuses on **capital tracking, trade‑level analytics, and disciplined execution logic**, ensuring signals are generated at *t* and executed at *t+1* to eliminate look‑ahead bias.  
+
+Validated with simple EMA and ARIMA strategies — not for performance optimisation, but to **demonstrate robustness of the framework**:  
+rc=0 time_s=0
+[25] 2026-09-22T09:51:22Z cmd: コミット数(ed と bc は unshallow して git rev-list --count、pst は api.github.com の Link ヘッダ)
+ed commits=5 first=2025-09-29T22:07:40+02:00 last=2025-09-29T22:47:11+02:00
+bc commits=18 first=2026-08-08T14:02:41-04:00 last=2026-08-25T12:34:56-04:00
+HTTP/1.1 200 Connection Established
+HTTP/1.1 403 Forbidden
+rc=0 time_s=4
+[26] 2026-09-22T09:51:35Z cmd: cd $S/pst && git fetch --unshallow --filter=blob:none (履歴だけ取ってコミット数を数える)
+pst commits=4847 first=2015-11-27T10:49:08+00:00 last=2026-09-21T11:55:15+01:00
+rc=0 time_s=2
+[27] 2026-09-22T09:52:22Z cmd: 規模の測定(clone とデータの大きさ・依存の数・隔離 venv の大きさ)
+pst clone 全体: 880 MB / うち data: 737 MB / .git: 111 MB
+bc clone 全体: 6 MB / ed clone 全体: 2 MB
+ed requirements.txt の直接依存: 7 件
+pst csv の標本データの銘柄数(data/futures/multiple_prices_csv): 252 件
+隔離 venv: v9ed=632 MB / v9pst=730 MB
+pst の時刻の扱い(csv の先頭行): DATETIME,CARRY,CARRY_CONTRACT,PRICE,PRICE_CONTRACT,FORWARD,FORWARD_CONTRACT 1982-09-14 23:00:00,,19830300,123.7,19821200,,19830300 
+rc=0 time_s=0
+[28] 2026-09-22T09:54:40Z cmd: 同梱バイナリ・難読化・外部URL取得・依存の一覧・宣伝の語を 3 件について数える
+pst 同梱バイナリ(file が ELF/PE/archive と答えるもの): 0 件
+pst 難読化(base64 の長い塊 / exec( / eval( を .py で): 1 ファイル
+pst 外部URL取得(urlopen|requests.get|wget|curl を .py で): 0 ファイル
+pst requirements.txt の全文: pandas==2.1.3 matplotlib>=3.0.0 pyyaml==6.0.1 numpy>=1.24.0 scipy>=1.0.0 pymongo==3.11.3 ib_async>=2,<3 psutil==7.2.1 pytest>6.2 Flask>=2.0.1 Werkzeug>=2.0.1 statsmodels==0.14.0 PyPDF2>=2.5.0 pyarrow>=14.0.1 scikit-learn>1.3.0 
+pst README の宣伝の語(guaranteed|profitable|get rich|100%): 1 件
+pst setup.py の url 欄: 90:    url="https://qoppac.blogspot.com/p/pysystemtrade.html",
+ed 同梱バイナリ: 0 件(画像 2 件は PNG)
+ed 難読化(base64/exec/eval): 0 ファイル
+ed README の宣伝の語: 0 件
+bc 同梱バイナリ: 0 件
+bc README の宣伝の語: 0 件
+bc metrics の依存(Cargo.toml の [dependencies] 以下の件数): 14 件
+bc 外部URL取得(.rs の http): 5 ファイル
+rc=0 time_s=6
+[29] 2026-09-22T09:54:55Z cmd: pst の 1 ファイルの中身と README の 1 件の語を実際に読む(件数だけで危険と書かない)
+sysobjects/production/backtest_storage.py:53:                eval(cmd)
+77:Absolutely no warranty is implied with this product. Use at your own risk. No guarantee is provided that it will be profitable, or that it won't lose all your money very quickly, or delete every file on your computer (by the way: it's not *supposed* to do that. Just in case you thought it was). All financial trading offers the possibility of loss. Leveraged trading, such as futures trading, may result in you losing all your money, and still owing more. Backtested results are no guarantee of future performance. The owners of the project can take no responsibility for any losses caused by live trading using pysystemtrade. Use at your own risk. The owners of the project are not currently registered or authorised by any financial regulator. 
+backtest/src/html_export.rs:208:    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+backtest/src/html_export.rs:247:            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" opacity="0.1"><path d="M0,50 Q250,10 500,50 T1000,50 V100 H0 Z"/></svg>') no-repeat;
+backtest/src/html_export.rs:438:            <p>💡 Interactive visualizations powered by <a href="https://plotly.com/">Plotly.js</a></p>
+dataloader/src/massive_provider.rs:13://! | `MASSIVE_API_BASE_URL` | Base URL override (for testing / staging) | `https://api.polygon.io` |
+dataloader/src/massive_provider.rs:217:            .unwrap_or_else(|_| "https://api.polygon.io".into());
+rc=0 time_s=0
+[30] 2026-09-22T10:03:37Z cmd: 片付け(隔離 venv と clone を消す。すべて pip と git で再生成できる)
+消す前の空き: 9.2G
+消したあとの空き: 12G
+残っている背景の処理: 2 件
+rc=0 time_s=1
+[31] 2026-09-22T10:03:51Z cmd: ps -eo pid,etime,cmd | grep -E 'cargo|pip install|bc_check|ed_install|pst_install' | grep -v grep(残っている常駐の確認。[30] の pgrep は自分自身を数えていたので数え直した)
+一致 0 件(出力なし)
+rc=0 time_s=0

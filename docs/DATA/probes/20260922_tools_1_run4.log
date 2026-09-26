@@ -1,0 +1,102 @@
+# 区分1 4回目 生ログ 開始 2026-09-22T06:58:25Z
+1 tool=Bash cmd=scripts/tools_inventory.py rc=0 t=2026-09-22T06:58:25Z
+2 tool=curl url=https://pypi.org/pypi/basana/json code=200 t=2026-09-22T06:58:44Z time_s=0.082925
+    head200=ver=1.11|up=2026-07-22T17:47:41|first=2023-03-04T02:00:04|lic=None|lic_expr=Apache-2.0|py=<4,>=3.10|author=Gabriel Becedillas|maintainer=None|reqs=5|vulns=0|urls={'Documentation': 'https://basana.readthedocs.io/en/latest/', 'Homepage': 'https://github.com/gbeced/basana', 'Repository': 'https://github.com/gbeced/basana'}
+3 tool=curl url=https://pypi.org/pypi/backtrader/json code=200 t=2026-09-22T06:58:44Z time_s=0.075107
+    head200=ver=1.9.78.123|up=2023-04-19T14:13:18|first=2019-05-30T12:06:19|lic=GPLv3+|lic_expr=None|py=|author=Daniel Rodriguez|maintainer=|reqs=1|vulns=0|urls={'Download': 'https://github.com/mementum/backtrader/tarball/1.9.78.123', 'Homepage': 'https://github.com/mementum/backtrader'}
+4 tool=curl url=https://pypi.org/pypi/lib-pybroker/json code=200 t=2026-09-22T06:58:45Z time_s=0.191839
+    head200=ver=2.0.1|up=2026-08-28T03:38:23|first=2023-01-17T19:00:54|lic=Apache License 2.0 with Commons Clause|lic_expr=None|py=>=3.11|author=Edward West|maintainer=None|reqs=19|vulns=0|urls={'Homepage': 'http://www.pybroker.com'}
+5 tool=curl url=https://pypi.org/pypi/bt/json code=200 t=2026-09-22T06:58:45Z time_s=0.077680
+    head200=ver=1.2.3|up=2026-09-12T00:45:25|first=2014-06-26T14:09:20|lic=MIT|lic_expr=None|py=>=3.9|author=None|maintainer=None|reqs=53|vulns=0|urls={'Documentation': 'https://pmorissette.github.io/bt/', 'Homepage': 'https://github.com/pmorissette/bt', 'Repository': 'https://github.com/pmorissette/bt'}
+6 tool=curl url=https://pypistats.org/api/packages/basana/recent code=429 t=2026-09-22T06:58:54Z
+    head200=<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>429
+7 tool=curl url=https://pypistats.org/api/packages/backtrader/recent code=200 t=2026-09-22T06:58:59Z
+    head200={"data":{"last_day":4982,"last_month":190065,"last_week":41186},"package":"backtrader","type":"recent_downloads"}200
+8 tool=curl url=https://pypistats.org/api/packages/lib-pybroker/recent code=429 t=2026-09-22T06:59:01Z
+    head200=<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>429
+9 tool=curl url=https://pypistats.org/api/packages/bt/recent code=429 t=2026-09-22T06:59:03Z
+    head200=<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>429
+10 tool=curl url=https://pypistats.org/api/packages/zipline-reloaded/recent code=200 t=2026-09-22T06:59:06Z
+    head200={"data":{"last_day":530,"last_month":11992,"last_week":2839},"package":"zipline-reloaded","type":"recent_downloads"}200
+11 tool=curl url=https://pypistats.org/api/packages/vnpy/recent code=429 t=2026-09-22T06:59:08Z
+    head200=<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>429
+12 tool=curl url=https://pypistats.org/api/packages/pyqlib/recent code=429 t=2026-09-22T06:59:10Z
+    head200=<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>429
+13 tool=curl url=https://pypistats.org/api/packages/jesse/recent code=200 t=2026-09-22T06:59:12Z
+    head200={"data":{"last_day":223,"last_month":4768,"last_week":777},"package":"jesse","type":"recent_downloads"}200
+14 tool=Bash cmd="pip install basana (隔離venv)" rc=0 t=2026-09-22T07:01:06Z time_s=7
+    head200=install_time_s=7 rc=0 pkgs=21 pip_check=No broken requirements found. 
+15 tool=Bash cmd="pip install backtrader (隔離venv)" rc=0 t=2026-09-22T07:01:06Z time_s=2
+    head200=install_time_s=2 rc=0 pkgs=3 pip_check=No broken requirements found. 
+16 tool=Bash cmd="pip install lib-pybroker (隔離venv)" rc=0 t=2026-09-22T07:01:06Z time_s=37
+    head200=install_time_s=37 rc=0 pkgs=52 pip_check=No broken requirements found. 
+17 tool=Bash cmd="pip install bt (隔離venv)" rc=0 t=2026-09-22T07:01:06Z time_s=37
+    head200=install_time_s=37 rc=0 pkgs=45 pip_check=No broken requirements found. 
+18 tool=Bash cmd="backtrader 合成日足120本 成行買い+指値売り" rc=0 t=2026-09-22T07:01:07Z time_s=1.3
+    head200=BT_VERSION=1.9.78.123 TXN_COUNT=2 TXNS=[('Buy', 10, 98.4758, '2020-01-06'), ('Sell', -10, 101.6812, '2020-01-11')] FINAL_VALUE=100031.0532 PNL=31.0532
+19 tool=Bash cmd="basana 合成日足120本 成行買い+指値売り(手数料0.05%)" rc=0 t=2026-09-22T07:01:07Z time_s=1.5
+    head200=BASANA_BARS=120 ORDERS=2 FILLS=[('market_buy', '10', '98.48', False), ('limit_sell', '10.0000', '101.68', False)] USD=100030.99 SYN=0.0000
+20 tool=Bash cmd="pybroker 合成日足120本 成行買い+指値売り" rc=0 t=2026-09-22T07:01:08Z time_s=3.0
+    head200=PYBROKER_VERSION=2.0.1 BARS=120 ORDERS=2 TRADES=1 END_MV=100032.1000 PNL=[{'type': 'buy', 'symbol': 'SYN', 'date': Timestamp('2020-01-06 00:00:00'), 'created': Timestamp('2020-01-05 00:00:00'), 'order_type': 'market', 'intent': 'buy_to_open', 'shares': 10, 'limit_price': nan, 'market_price': 98.57, 'fill_price': 98.57, 'fees': 0.0}, {'type': 'sell', 'symbol': 'SYN', 'date': Timestamp('2020-01-11 0
+21 tool=Bash cmd="bt 合成日足120本 月次リバランス(指値のAPIが無い)" rc=0 t=2026-09-22T07:01:10Z time_s=1.0
+    head200=BT_LIB_BARS=120 TRADES=1 FINAL_VALUE=95658.4622 PNL=-4341.5378 TOTAL_RET=-0.043415 LIMIT_ORDER_API=none (weight-based Rebalance only; bt.algos has no limit/market order type)
+22 tool=curl url=https://raw.githubusercontent.com/edtechre/pybroker/master/LICENSE code=200 t=2026-09-22T07:01:36Z
+    head200=“Commons Clause” License Condition v1.0  The Software is provided to you by the Licensor under the License, as defined below, subject to the following condition.  Without limiting other conditions in the License, the grant of rights under the License will not include, and the License does not grant to you, the right to Sell the Software.  For purposes of the foregoing, “Sell” means practic
+23 tool=curl url=https://raw.githubusercontent.com/gbeced/basana/develop/LICENSE.txt code=404 t=2026-09-22T07:01:36Z
+    head200=404: Not Found 404 
+24 tool=mcp__github__search_repositories query="repo:gbeced/basana repo:mementum/backtrader repo:edtechre/pybroker repo:pmorissette/bt repo:stefan-jansen/zipline-reloaded repo:jesse-ai/jesse repo:vnpy/vnpy repo:microsoft/qlib repo:QuantConnect/lean" rc=0 t=2026-09-22T07:01:36Z
+    head200=total_count=8 basana stars=867 forks=113 pushed=2026-08-09 lic=NOASSERTION | backtrader stars=23301 forks=5289 pushed=2024-08-19 lic=GPL-3.0 | pybroker stars=3544 forks=452 pushed=2026-09-21 lic=NOASSERTION | bt stars=2989 forks=501 pushed=2026-09-20 lic=MIT | jesse stars=8566 | vnpy stars=45495 | qlib stars=48743 | Lean stars=21718 | zipline-reloaded は返らず(9件中8件)
+25 tool=Bash cmd="pip download --no-deps → 配布物の中身の列挙(4件)" rc=0 t=2026-09-22T07:01:36Z
+    head200=PKG=basana file=basana-1.11-py3-none-any.whl files=117 binaries=0 bin_ex=['none'] setup_py=0 hosts=['api.binance.com', 'binance-docs.github.io', 'developers.binance.com', 'docs.ccxt.com', 'docs.python.org', 'github.com', 'plotly.com', 'www.apache.org', 'www.binance.com', 'www.bitstamp.net']
+    head200=PKG=backtrader file=backtrader-1.9.78.123-py2.py3-none-any.whl files=178 binaries=0 bin_ex=['none'] setup_py=0 hosts=["127.0.0.1:8080'", 'alanhull.com', 'cssanalytics.wordpress.com', 'en.wikipedia.org', 'finance.yahoo.com', 'fxcodebase.com', 'github.com', 'help.cqg.com', "myproxy.com'", 'pandas-market-calendars.readthedocs.io', 'query1.finance.yahoo.com', 'stackoverflow.com']
+    head200=PKG=lib-pybroker file=lib_pybroker-2.0.1.tar.gz files=59 binaries=0 bin_ex=['none'] setup_py=0 hosts=['akshare.akfamily.xyz', 'alpaca.markets', 'blogs.sas.com', 'en.wikipedia.org', 'finance.yahoo.com', 'github.com', 'joblib.readthedocs.io', 'stackoverflow.com', 'www.pybroker.com']
+    head200=PKG=bt file=bt-1.2.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl files=12 binaries=1 bin_ex=['bt/core.cpython-311-x86_64-linux-gnu.so'] setup_py=0 hosts=['en.wikipedia.org']
+26 tool=Bash cmd="pypistats recent 再試行ループ" rc=0 t=2026-09-22T07:01:36Z
+    head200=basana try=1 code=429
+    head200=basana code=200 {"data":{"last_day":3,"last_month":406,"last_week":47},"package":"basana","type":"recent_downloads"}
+    head200=lib-pybroker try=1 code=429
+    head200=lib-pybroker try=2 code=429
+    head200=lib-pybroker try=3 code=429
+    head200=lib-pybroker try=4 code=429
+27 tool=curl url=https://raw.githubusercontent.com/gbeced/basana/develop/LICENSE code=200 t=2026-09-22T07:01:47Z
+    head200=Basana  Copyright 2022 Gabriel Martin Becedillas Ruiz  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License
+28 tool=curl url=https://raw.githubusercontent.com/gbeced/basana/master/LICENSE code=200 t=2026-09-22T07:01:47Z
+    head200=Basana  Copyright 2022 Gabriel Martin Becedillas Ruiz  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License
+29 tool=Bash cmd="導入後の site-packages で exchange/broker/store/live/gateway のディレクトリを find" rc=0 t=2026-09-22T07:02:25Z
+    head200=basana: 該当0 だが basana/external に binance bitstamp ccxt yahoo | backtrader: backtrader/stores backtrader/brokers (ibstore.py oandastore.py vcstore.py vchartfile.py) | pybroker: 依存の alpaca/broker と alpaca/data/live | bt: 該当0
+30 tool=Bash cmd="bt の algos で limit/order/market を含む名前" rc=0 t=2026-09-22T07:02:25Z
+    head200=['LimitDeltas', 'LimitWeights'](どちらも比重の制限で、指値注文ではない)
+31 tool=Bash cmd="pypistats recent 再試行ループ 最終" rc=0 t=2026-09-22T07:03:10Z
+    head200=basana try=1 code=429
+    head200=basana code=200 {"data":{"last_day":3,"last_month":406,"last_week":47},"package":"basana","type":"recent_downloads"}
+    head200=lib-pybroker try=1 code=429
+    head200=lib-pybroker try=2 code=429
+    head200=lib-pybroker try=3 code=429
+    head200=lib-pybroker try=4 code=429
+    head200=bt code=200 {"data":{"last_day":646,"last_month":23631,"last_week":5758},"package":"bt","type":"recent_downloads"}
+    head200=vnpy code=200 {"data":{"last_day":351,"last_month":11503,"last_week":2289},"package":"vnpy","type":"recent_downloads"}
+    head200=pyqlib code=200 {"data":{"last_day":1083,"last_month":35609,"last_week":8035},"package":"pyqlib","type":"recent_downloads"}
+32 tool=Bash cmd="pybroker 直下のファイル一覧 (ls site-packages/pybroker)" rc=0 t=2026-09-22T07:06:05Z
+    head200=__init__.py __pycache__ cache.py common.py config.py context.py data.py eval.py ext indicator.py interval.py log.py model.py optimize.py parallel.py portfolio.py py.typed scope.py slippage.py strategy.py vect.py
+33 tool=Bash cmd="basana.backtesting.exchange.Exchange の API と __init__ の既定引数を inspect で読む" rc=0 t=2026-09-22T07:06:05Z
+    head200=methods=['add_bar_source','cancel_order','create_limit_order','create_loan','create_market_order','create_order','create_stop_limit_order','create_stop_order','get_balance','get_balances','get_bid_ask','get_loan','get_loans','get_open_orders','get_order_info','get_orders','get_pair_info','repay_loan','set_pair_info','set_symbol_precision','subscribe_to_bar_events','subscribe_to_order_events'] init_defaults: liquidity_strategy_factory=VolumeShareImpact fee_strategy=NoFee bid_ask_spread=Decimal('0.5') lending_strategy=NoLoans immediate_order_processing=False
+34 tool=Bash cmd="basana/external の一覧" rc=0 t=2026-09-22T07:06:05Z
+    head200=__init__.py __pycache__ binance bitstamp ccxt common yahoo
+35 tool=Bash cmd="pip download --no-deps basana → 配布物の中身の列挙" rc=0 t=2026-09-22T07:09:40Z
+    head200=PKG=basana file=basana-1.11-py3-none-any.whl files=117 binaries=0 bin_ex=['none'] setup_py=0 hosts=['api.binance.com', 'binance-docs.github.io', 'developers.binance.com', 'docs.ccxt.com', 'docs.python.org', 'github.com', 'plotly.com', 'www.apache.org', 'www.binance.com', 'www.bitstamp.net']
+36 tool=Bash cmd="pip download --no-deps backtrader → 配布物の中身の列挙" rc=0 t=2026-09-22T07:09:40Z
+    head200=PKG=backtrader file=backtrader-1.9.78.123-py2.py3-none-any.whl files=178 binaries=0 bin_ex=['none'] setup_py=0 hosts=["127.0.0.1:8080'", 'alanhull.com', 'cssanalytics.wordpress.com', 'en.wikipedia.org', 'finance.yahoo.com', 'fxcodebase.com', 'github.com', 'help.cqg.com', "myproxy.com'", 'pandas-market-calendars.readthedocs.io', 'query1.finance.yahoo.com', 'stackoverflow.com']
+37 tool=Bash cmd="pip download --no-deps lib-pybroker → 配布物の中身の列挙" rc=0 t=2026-09-22T07:09:40Z
+    head200=PKG=lib-pybroker file=lib_pybroker-2.0.1.tar.gz files=59 binaries=0 bin_ex=['none'] setup_py=0 hosts=['akshare.akfamily.xyz', 'alpaca.markets', 'blogs.sas.com', 'en.wikipedia.org', 'finance.yahoo.com', 'github.com', 'joblib.readthedocs.io', 'stackoverflow.com', 'www.pybroker.com']
+38 tool=Bash cmd="pip download --no-deps bt → 配布物の中身の列挙" rc=0 t=2026-09-22T07:09:40Z
+    head200=PKG=bt file=bt-1.2.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl files=12 binaries=1 bin_ex=['bt/core.cpython-311-x86_64-linux-gnu.so'] setup_py=0 hosts=['en.wikipedia.org']
+39 tool=curl url=https://pypistats.org/api/packages/basana/recent code=200 t=2026-09-22T07:09:40Z
+    head200=basana code=200 {"data":{"last_day":3,"last_month":406,"last_week":47},"package":"basana","type":"recent_downloads"}
+40 tool=curl url=https://pypistats.org/api/packages/bt/recent code=200 t=2026-09-22T07:09:40Z
+    head200=bt code=200 {"data":{"last_day":646,"last_month":23631,"last_week":5758},"package":"bt","type":"recent_downloads"}
+41 tool=curl url=https://pypistats.org/api/packages/vnpy/recent code=200 t=2026-09-22T07:09:40Z
+    head200=vnpy code=200 {"data":{"last_day":351,"last_month":11503,"last_week":2289},"package":"vnpy","type":"recent_downloads"}
+42 tool=curl url=https://pypistats.org/api/packages/pyqlib/recent code=200 t=2026-09-22T07:09:40Z
+    head200=pyqlib code=200 {"data":{"last_day":1083,"last_month":35609,"last_week":8035},"package":"pyqlib","type":"recent_downloads"}
+43 tool=curl url=https://pypistats.org/api/packages/lib-pybroker/recent code=429 t=2026-09-22T07:09:40Z
+    head200=25秒間隔で4回とも429: lib-pybroker try=1 code=429 lib-pybroker try=2 code=429 lib-pybroker try=3 code=429 lib-pybroker try=4 code=429 

@@ -33,6 +33,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
   「進行中の合意」欄。**新しいファイルを作らない。** 状態板の要点はオーナーの発言のたびに
   `owner_turn_digest.sh` が再注入するので、「作業中に読む」が既存の機械で満たされる。
 - **読んだ証拠**: 成果物と報告に、合意した「完了の形」を**逐語で引用する。**
+- **終わる条件(I-013、2026-09-25)**: 案・委任文の通過の判定・完了の形には、**終わる条件と、その上限(周か時間)**を書く。「誰か(批評家・監査役)が見つけなくなるまで」の形の条件は終わりが定義されていないので置かない。上限に達したら通過の判定に届いていなくても止めて、残りを持ち越しとして逐語で記録し報告する。オーナー逐語(L-451)「**案1みたいなこと前に承認しましたよね？なぜあいもかわらず無限の無意味な作業を続けてるんですか？**」
 - **委任先にも同じ表を書かせる**(`.claude/skills/delegated-study`)。でないと擦り合わせた内容が
   委任の段で作り直される。
 
@@ -124,7 +125,7 @@ bitFlyer Crypto CFD(API商品コードは `FX_BTC_JPY` のまま)の自動売買
 - **`git pull` 後は必ず `pip install -e ".[dev]"`**。依存追加を取り込まないとコンポーネントが起動直後に落ちる → 詳細 `docs/OPERATIONS.md` §4.5(Windows は `deploy\restart_all.bat` が pull→install→停止→起動を失敗時中断つきで実行)
 - Windows 運用(3プロセス並走・ウォッチドッグ・タスクスケジューラ2件)→ `docs/OPERATIONS.md` §5。ON1 実弾ジョブ(平日15:35/8:35の2タスク・二重ゲート・STATE_UNKNOWN 復帰手順)→ `docs/OPERATIONS_JPX.md` §5.1
 - **新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する。**押し出しの関門の本体は git 自身の `githooks/pre-push`(指紋の照合だけ。2026-09-19 まで行動監査も呼んでいた)にあり、`.git/` はリポジトリに入らないため、実行するまで効かない。
-- **フック(2026-09-19、L-202 で 16 本 → 6 本に減らす。範囲はリードの決定、一覧と理由は `docs/AUDITOR/ACTION_LOG.md` 063)**: 残すのは `_verify_manifest.sh`(指紋の照合。Write / Edit / Agent と pre-push)/ `deny_protected_paths.sh`(オーナーの逐語・ゴール・フック・`settings.json`・監査役定義への書き込み拒否 = ③(a))/ `owner_options_gate.sh`(選択待ちの全面停止 + ゴール未読の最初の書き込みを止める = ③(b))/ `session_start_digest.sh`・`owner_turn_digest.sh`(状態板の要点の再注入)/ `trace_snapshot.sh`(監査役の定義 §0.5 の入力)。**2026-09-19 に 7 本目 `jev_notice.sh` を追加**(L-218「表示だけの形でStopに足せ」。Jev の検査の要約を表示するだけで何も止めない)。**削除の 1 手は 2026-09-19 に実施済み**(L-205「打て」、コミット ffe2692。自動モードの分類器に 2 回拒否されたあと、オーナーが許可モードを切り替えて通した)。**実物が何本かは `ls .claude/hooks | wc -l` で確かめる**(実施直後の実測: 6)。
+- **フック(2026-09-19、L-202 で 16 本 → 6 本に減らす。範囲はリードの決定、一覧と理由は `docs/AUDITOR/ACTION_LOG.md` 063)**: 残すのは `_verify_manifest.sh`(指紋の照合。Write / Edit / Agent と pre-push)/ `deny_protected_paths.sh`(オーナーの逐語・ゴール・フック・`settings.json`・監査役定義への書き込み拒否 = ③(a))/ `owner_options_gate.sh`(選択待ちの全面停止 + ゴール未読の最初の書き込みを止める = ③(b))/ `session_start_digest.sh`・`owner_turn_digest.sh`(状態板の要点の再注入)/ `trace_snapshot.sh`(監査役の定義 §0.5 の入力)。**2026-09-19 に 7 本目 `jev_notice.sh` を追加**(L-218「表示だけの形でStopに足せ」。Jev の検査の要約を表示するだけで何も止めない)。**2026-09-21 に 8 本目 `delegation_audit_gate.sh` を追加**(L-375「機械直せよ」。委任 = Agent / SendMessage を、委任文 `docs/DATA/delegations/*.md` の指紋 `<name>.md@<sha256 先頭 12 桁>` が `VERDICTS/` の記録に無ければ止める。監査役・読むだけの補助は通す)。**同日、Bash 経由の書き込みも ③(a)(b) と指紋の照合の対象にした**(それまで Write/Edit だけで、Bash のヒアドキュメントで書けば 1 本も発火しなかった = ACTION_LOG 076)。**削除の 1 手は 2026-09-19 に実施済み**(L-205「打て」、コミット ffe2692。自動モードの分類器に 2 回拒否されたあと、オーナーが許可モードを切り替えて通した)。**実物が何本かは `ls .claude/hooks | wc -l` で確かめる**(実施直後の実測: 6)。**2026-09-26 に `delegation_audit_gate.sh` と `owner_options_gate.sh` の 2 本を消した**(L-468「対策3.のフックはもう捨てましょう。薄々感じてましたが意味ないわ」/ L-469「両方消せ」。ACTION_LOG 078)。
   - **フック・`settings.json`・`githooks/`・監査役の定義はオーナーの指示があったときだけ変える(§0.2 A-16)。**変えたら同じコミットで `sh scripts/regen_hook_manifest.sh`(指紋の台帳 `docs/AUDITOR/HOOK_MANIFEST.sha256` の再生成)。
   - **台帳に載ったファイルを消す・書き換えるときは、削除・台帳の再生成・コミット・押し出しを 1 回の Bash 呼び出しにまとめて最後に打つ(L-202、I-012)。**削除を先にすると `_verify_manifest.sh` が「消失」を検出して、その会話の道具が全部止まる(出所: オーナーの報告 L-202「これは今回の実測から分かったこと」。リードは測っていない)。
   - **`settings.json` にはスキーマの鍵しか置かない**(I-010、2026-09-16: スキーマ外の上位キー 1 つで `hooks` が丸ごと無視され、3 日間フックが 1 本も走っていなかった)。注記は `ACTION_LOG` に書く。

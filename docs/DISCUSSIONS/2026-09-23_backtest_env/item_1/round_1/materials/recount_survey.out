@@ -1,0 +1,9 @@
+survey targets 14
+V1 best_correct 0 best_same 1 scenes 9 all target x scene classes {'結果なし': 125, '不一致': 1}
+V2 best_correct 0 best_same 0 scenes 3 all target x scene classes {'結果なし': 42}
+V3 best_correct 0 best_same 5 scenes 5 all target x scene classes {'結果なし': 62, '不一致': 5, '対応なし': 3}
+V4 best_correct 0 best_same 0 scenes 2 all target x scene classes {'結果なし': 28}
+V5 best_correct 0 best_same 0 scenes 7 all target x scene classes {'結果なし': 98}
+V6 best_correct 1 best_same 1 scenes 5 all target x scene classes {'結果なし': 69, '正解と一致': 1}
+V7 best_correct 3 best_same 3 scenes 4 all target x scene classes {'結果なし': 53, '正解と一致': 3}
+total correct 4 same 10 of 35

@@ -1,0 +1,524 @@
+=== 区分1 24 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定(23 回目の検収 §9): (1) 22 回目の貼り付けの食い違いの訂正 / (2) 区分1-市場影響と約定の模型 の印を持つ 23 件すべてに段を書く。3 番と 8 番に印を付け、19 番は読んで決める / (3) 決まらなかった 7 件(4・5・6・15・18・19・21)を原典で埋める。11 番の 5 要素は未確認のまま / (4) 印を付けるたびに「検証の実行経路が呼んでいるか」を当てる / (5) 22-52 と 13-123 に互いへの参照 / (6) 数え直しを 3 段で
+=== 新しい検索計画は打っていない。深掘り(構築・導入・最小実行)も打っていない。候補も増やしていない。
+=== 原典は ungh.cc の defaultBranch と files で在処を確かめてから取る(当てずっぽうの取得をしない)。
+--- 2026-09-22T16:54:39Z method=run target=ls_probes note=生ログの本数の実測 rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+23
+--- 2026-09-22T16:54:52Z method=GET url=https://ungh.cc/repos/robcarver17/pysystemtrade label=c3_ungh code=200 bytes=296 rc=0 time_s=1.219280 note=defaultBranch
+{"repo":{"id":46975254,"name":"pysystemtrade","repo":"pst-group/pysystemtrade","description":"Systematic Trading in python","createdAt":"2015-11-27T10:49:08Z","updatedAt":"2026-09-22T16:06:08Z","pushe
+--- 2026-09-22T16:54:53Z method=GET url=https://ungh.cc/repos/gbeced/basana label=c1_ungh code=200 bytes=350 rc=0 time_s=0.814956 note=defaultBranch
+{"repo":{"id":609367611,"name":"basana","repo":"gbeced/basana","description":"A Python async and event driven framework for algorithmic trading, with a focus on crypto currencies.","createdAt":"2023-0
+--- 2026-09-22T16:54:54Z method=GET url=https://ungh.cc/repos/pmorissette/bt label=c5_ungh code=200 bytes=281 rc=0 time_s=0.543129 note=defaultBranch
+{"repo":{"id":21006723,"name":"bt","repo":"pmorissette/bt","description":"bt - flexible backtesting for Python","createdAt":"2014-06-19T16:06:28Z","updatedAt":"2026-09-20T20:43:33Z","pushedAt":"2026-0
+--- 2026-09-22T16:54:54Z method=GET url=https://ungh.cc/repos/Ziplime/ziplime label=c6_ungh code=404 bytes=84 rc=0 time_s=0.486323 note=defaultBranch
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T16:54:55Z method=GET url=https://ungh.cc/repos/jesse-ai/jesse label=c19_ungh code=200 bytes=299 rc=0 time_s=0.654304 note=defaultBranch
+{"repo":{"id":156847937,"name":"jesse","repo":"jesse-ai/jesse","description":"An advanced crypto trading bot written in Python","createdAt":"2018-11-09T10:38:44Z","updatedAt":"2026-09-22T16:01:10Z","p
+--- 2026-09-22T16:54:55Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame label=c63_ungh code=200 bytes=574 rc=0 time_s=0.561610 note=defaultBranch
+{"repo":{"id":64071932,"name":"trade-frame","repo":"rburkholder/trade-frame","description":"C++ 17 based library (with sample applications) for testing equities, futures, currencies, etfs & options ba
+--- 2026-09-22T16:55:14Z method=GET url=https://ungh.cc/repos/Limex-com/ziplime label=c6_ungh2 code=200 bytes=407 rc=0 time_s=0.961748 note=defaultBranch
+{"repo":{"id":953945997,"name":"ziplime","repo":"Limex-com/ziplime","description":"Backtesting & live trading engine built for AI agents. Zipline rebuilt on Polars with a native MCP server for Claude,
+--- 2026-09-22T16:55:16Z method=GET url=https://ungh.cc/repos/pst-group/pysystemtrade/files/develop label=c3_files code=200 bytes=203561 rc=0 time_s=1.417942 note=files
+{"meta":{"sha":"8958c49c38b1e4a8c07f0e4375d5e9cb68a087f7"},"files":[{"path":".coveragerc","mode":"100644","sha":"d33d9ccc019b715526b715f586ed90bced2915f9","size":440},{"path":".github/workflows/action
+--- 2026-09-22T16:55:16Z method=GET url=https://ungh.cc/repos/gbeced/basana/files/develop label=c1_files code=200 bytes=28640 rc=0 time_s=0.656869 note=files
+{"meta":{"sha":"8e722becd8255db70cce1f139e0f4cebfe604b48"},"files":[{"path":".github/copilot-instructions.md","mode":"100644","sha":"51d29e23229cb7f61527b8edbbd24f3c1a218da5","size":287},{"path":".git
+--- 2026-09-22T16:55:17Z method=GET url=https://ungh.cc/repos/pmorissette/bt/files/master label=c5_files code=200 bytes=19435 rc=0 time_s=0.633109 note=files
+{"meta":{"sha":"b6ce09619c9b1f0a526cbe8ef79c0d47421911a7"},"files":[{"path":".copier-answers.yaml","mode":"100644","sha":"db8935b4bb8dd4a0042d29ff70ea27166731b1d6","size":375},{"path":".gitattributes"
+--- 2026-09-22T16:55:26Z method=GET url=https://raw.githubusercontent.com/pst-group/pysystemtrade/develop/systems/accounts/order_simulator/fills_and_orders.py label=c3_fills code=200 bytes=3133 rc=0 time_s=0.245562 note=候補3の約定の作り方
+from collections import namedtuple
+import datetime
+from typing import Union
+
+
+from sysobjects.fills import Fill, ListOfFills, empty_fill
+from systems.accounts.order_simulator.simple_orders import (
+  
+--- 2026-09-22T16:55:27Z method=GET url=https://raw.githubusercontent.com/pst-group/pysystemtrade/develop/systems/accounts/order_simulator/simple_orders.py label=c3_simple code=200 bytes=2741 rc=0 time_s=0.486403 note=候補3の指値の作り方
+from collections import namedtuple
+from typing import List
+import datetime
+from dataclasses import dataclass
+
+from syscore.pandas.pdutils import make_df_from_list_of_named_tuple
+
+
+@dataclass()
+class S
+--- 2026-09-22T16:55:27Z method=GET url=https://raw.githubusercontent.com/pst-group/pysystemtrade/develop/systems/accounts/order_simulator/hourly_limit_orders.py label=c3_hourly code=200 bytes=2560 rc=0 time_s=0.194009 note=候補3の指値の跨ぎ判定
+import datetime
+from typing import Tuple, Callable
+
+import numpy as np
+
+
+from sysobjects.fills import Fill
+from systems.accounts.order_simulator.fills_and_orders import (
+    fill_list_of_simple_order
+--- 2026-09-22T16:55:27Z method=GET url=https://raw.githubusercontent.com/gbeced/basana/develop/basana/backtesting/liquidity.py label=c1_liq code=200 bytes=6617 rc=0 time_s=0.211061 note=候補1の流動性の模型
+# Basana
+#
+# Copyright 2022 Gabriel Martin Becedillas Ruiz
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You 
+--- 2026-09-22T16:55:28Z method=GET url=https://raw.githubusercontent.com/pmorissette/bt/master/bt/backtest.py label=c5_bt code=200 bytes=30728 rc=0 time_s=0.221618 note=候補5の走らせ方
+"""
+Contains backtesting logic and objects.
+"""
+
+from copy import deepcopy
+
+import ffn
+import numpy as np
+import pandas as pd
+import pyprind
+from matplotlib import pyplot as plt
+from tqdm import tqdm
+
+--- 2026-09-22T16:55:41Z method=GET url=https://raw.githubusercontent.com/pst-group/pysystemtrade/develop/systems/accounts/pandl_calculators/pandl_using_fills.py label=c3_pandl code=200 bytes=5771 rc=0 time_s=0.480725 note=候補3の滑りの当て方
+import numpy as np
+import pandas as pd
+
+from syscore.constants import arg_not_supplied
+from systems.accounts.pandl_calculators.pandl_calculation import (
+    pandlCalculation,
+    apply_weighting,
+)
+
+
+--- 2026-09-22T16:55:58Z method=GET url=https://raw.githubusercontent.com/pst-group/pysystemtrade/develop/sysobjects/fills.py label=c3_fillsobj code=200 bytes=3457 rc=0 time_s=0.440271 note=候補3の滑りの旗の使われ方
+from typing import Union
+import datetime
+from dataclasses import dataclass
+
+import pandas as pd
+import numpy as np
+
+from sysexecution.orders.named_order_objects import missing_order, named_object
+
+fro
+--- 2026-09-22T16:55:59Z method=GET url=https://ungh.cc/repos/Limex-com/ziplime/files/master label=c6_files code=200 bytes=60464 rc=0 time_s=0.881385 note=候補6の在処
+{"meta":{"sha":"9b923f2c51f8820a96c5eb4d993acf818149d6df"},"files":[{"path":".aiignore","mode":"100644","sha":"707196a6970b2df5ff406df8abafaa2290607fae","size":16},{"path":".flake8","mode":"100644","s
+--- 2026-09-22T16:56:00Z method=GET url=https://ungh.cc/repos/Mendl-Labs/BacktestingCore/files/master label=c15_files code=200 bytes=24667 rc=0 time_s=0.602829 note=候補15の在処
+{"meta":{"sha":"f8d81ee0b4b65f6fbbf205d011ad2e815054fbc7"},"files":[{"path":".cargo/config.toml","mode":"100644","sha":"ae119a2bc4f0e8fcab98252b61f55d00af9de4d7","size":598},{"path":".gitignore","mode
+--- 2026-09-22T16:56:01Z method=GET url=https://ungh.cc/repos/jesse-ai/jesse/files/master label=c19_files2 code=200 bytes=155089 rc=0 time_s=0.967047 note=候補19の在処
+{"meta":{"sha":"019c7092812dc2cc6bcb8a2f1300b7ac800f83fc"},"files":[{"path":".agents/skills","mode":"120000","sha":"454b8427cd757f30dc7fdb9a325d19c399770417","size":17},{"path":".claude/skills/README.
+--- 2026-09-22T16:56:01Z method=GET url=https://ungh.cc/repos/microsoft/qlib/files/main label=c21_files code=200 bytes=78692 rc=0 time_s=0.689071 note=候補21の在処
+{"meta":{"sha":"be725493eb1a6bbb42bf11b37aa7669f59610ff1"},"files":[{"path":".commitlintrc.js","mode":"100644","sha":"0a4c1ac2ec0487695fb3aca863a01cde80ca9425","size":928},{"path":".deepsource.toml","
+--- 2026-09-22T16:56:14Z method=GET url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/engine.rs label=c15_engine code=200 bytes=92753 rc=0 time_s=0.416061 note=候補15の駆動の形
+//! Clean and simplified backtesting engine
+//! Combines basic and enhanced functionality in a unified interface
+
+use std::time::Instant;
+use anyhow::Result;
+use serde::{Serialize, Deserialize};
+
+use 
+--- 2026-09-22T16:56:14Z method=GET url=https://raw.githubusercontent.com/microsoft/qlib/main/qlib/backtest/executor.py label=c21_exec code=200 bytes=26612 rc=0 time_s=0.400015 note=候補21の進め方
+from __future__ import annotations
+
+import copy
+from abc import abstractmethod
+from collections import defaultdict
+from types import GeneratorType
+from typing import Any, Dict, Generator, List, Tuple,
+--- 2026-09-22T16:56:15Z method=GET url=https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/services/order_service.py label=c19_orderservice code=200 bytes=9998 rc=0 time_s=0.207297 note=候補19の約定の実装
+from typing import List
+import jesse.helpers as jh
+import jesse.services.logger as logger
+from jesse.config import config
+from jesse.services.notifier import notify
+from jesse.enums import order_statu
+--- 2026-09-22T16:56:15Z method=GET url=https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/models/FuturesExchange.py label=c19_futures code=200 bytes=7306 rc=0 time_s=0.258348 note=候補19の取引所の側
+import numpy as np
+import jesse_rust as jr
+
+import jesse.helpers as jh
+import jesse.services.logger as logger
+from jesse.enums import sides
+from jesse.exceptions import InsufficientMargin
+from jesse.m
+--- 2026-09-22T16:56:15Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/finance/slippage/slippage_model.py label=c6_slip code=200 bytes=6363 rc=0 time_s=0.206429 note=候補6の滑りの模型
+import uuid
+
+import datetime
+import math
+from abc import abstractmethod
+from typing import Literal
+
+import structlog
+from pandas import isnull
+
+from ziplime.assets.entities.asset import Asset
+from zip
+--- 2026-09-22T16:56:36Z method=GET url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/backtest/src/simulation.rs label=c15_sim code=200 bytes=97658 rc=0 time_s=0.450284 note=候補15の模擬の輪
+//! Primary SimulationLoop for built-in Rust strategies.
+//!
+//! Used by: `BacktestEngine::run()` for non-Python strategies.
+//! NOT used for Python strategies — see `python_simulation.rs`.
+
+use str
+--- 2026-09-22T16:56:37Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/trading/trading_algorithm_executor.py label=c6_exec code=200 bytes=4387 rc=0 time_s=0.444368 note=候補6の駆動の形
+from typing import AsyncIterator
+
+import pandas as pd
+import structlog
+from logging import Logger
+
+from ziplime.trading.trading_algorithm import TradingAlgorithm
+from ziplime.trading.trading_algorithm
+--- 2026-09-22T16:56:37Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/gens/domain/simulation_clock.py label=c6_clock code=200 bytes=4634 rc=0 time_s=0.252653 note=候補6の時計
+import datetime
+
+import polars as pl
+from exchange_calendars import ExchangeCalendar
+
+from ziplime.trading.enums.simulation_event import SimulationEvent
+from ziplime.gens.domain.trading_clock import T
+--- 2026-09-22T16:56:37Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/finance/slippage/volume_share_slippage.py label=c6_vss code=200 bytes=3434 rc=0 time_s=0.241593 note=候補6の滑りの模型の中身
+import datetime
+import math
+from pandas import isnull
+
+from ziplime.errors import LiquidityExceeded
+from ziplime.exchanges.exchange import Exchange
+from ziplime.finance.slippage.slippage_model import 
+--- 2026-09-22T16:57:07Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/trading/trading_algorithm.py label=c6_algo code=200 bytes=91731 rc=0 time_s=0.537956 note=候補6の事象の受け手
+import datetime
+import importlib.util
+import sys
+import traceback
+import uuid
+from collections import namedtuple, OrderedDict
+from contextlib import AsyncExitStack
+from copy import copy
+import warning
+--- 2026-09-22T16:57:07Z method=GET url=https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/exchanges/simulation_exchange.py label=c6_simex code=200 bytes=9484 rc=0 time_s=0.447997 note=候補6の検証の取引所が滑りを呼ぶか
+import datetime
+from functools import lru_cache
+from typing import Literal
+
+import aiocache
+import polars as pl
+import uuid
+
+from aiocache import Cache
+from exchange_calendars import ExchangeCalendar
+
+--- 2026-09-22T16:57:31Z method=GET url=https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py label=c19_bt code=200 bytes=90101 rc=0 time_s=0.416756 note=候補19の約定の起こし方
+import os
+import time
+import re
+from typing import Dict, List, Tuple, Optional
+import numpy as np
+import jesse.helpers as jh
+import jesse.services.metrics as stats
+from jesse import exceptions
+from je
+--- 2026-09-22T16:58:02Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/vect.py label=c4_vect code=200 bytes=65228 rc=0 time_s=0.389747 note=候補4のvect.pyの中身
+"""Contains vectorized utility functions."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICENSE for details).
+"""
+--- 2026-09-22T16:58:03Z method=GET url=https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/gens/tradesimulation.py label=c18_gens code=200 bytes=11282 rc=0 time_s=0.410744 note=候補18の駆動の形
+#
+# Copyright 2015 Quantopian, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of th
+--- 2026-09-22T16:58:13Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/strategy.py label=c4_strategy code=200 bytes=150482 rc=0 time_s=0.212420 note=候補4の検証の輪
+"""Contains implementation for backtesting trading strategies."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICE
+--- 2026-09-22T16:58:31Z method=GET url=https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator label=ungh_FlashAlphalab_flashalphafillsimulator code=200 bytes=399 rc=0 time_s=0.850947 note=defaultBranch
+{"repo":{"id":1230768999,"name":"flashalpha-fill-simulator","repo":"FlashAlpha-lab/flashalpha-fill-simulator","description":"Realistic limit-order fill simulator for options credit/debit spreads. Engi
+--- 2026-09-22T16:59:01Z method=GET url=https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator label=ungh_SarthakDalmia1_backtesting_execution_simulator code=000 bytes=0 rc=35 time_s=30.342225 note=defaultBranch
+
+--- 2026-09-22T16:59:02Z method=GET url=https://ungh.cc/repos/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator- label=ungh_thirupathikannanai_OptimalExecutionAndMarketImpactSimulator code=200 bytes=337 rc=0 time_s=0.893446 note=defaultBranch
+{"repo":{"id":1342919967,"name":"Optimal-Execution-And-Market-Impact-Simulator-","repo":"thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-","description":"Hi","createdAt":"2026-08-22T
+--- 2026-09-22T16:59:13Z method=GET url=https://ungh.cc/repos/shubhamcodez/Market-Impact-Model label=ungh_shubhamcodez_MarketImpactModel code=000 bytes=0 rc=35 time_s=11.332302 note=defaultBranch
+
+--- 2026-09-22T16:59:14Z method=GET url=https://ungh.cc/repos/microsoft/MarS label=ungh_microsoft_MarS code=200 bytes=327 rc=0 time_s=0.887332 note=defaultBranch
+{"repo":{"id":879626601,"name":"MarS","repo":"microsoft/MarS","description":"MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model","createdAt":"2024-10-28T09:05:46Z","upda
+--- 2026-09-22T16:59:23Z method=GET url=https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator label=ungh_SarthakDalmia1_backtesting_execution_simulator code=200 bytes=302 rc=0 time_s=0.553232 note=打ち直し
+{"repo":{"id":1280956645,"name":"backtesting_execution_simulator","repo":"SarthakDalmia1/backtesting_execution_simulator","description":null,"createdAt":"2026-06-26T05:09:12Z","updatedAt":"2026-09-22T
+--- 2026-09-22T16:59:24Z method=GET url=https://ungh.cc/repos/shubhamcodez/Market-Impact-Model label=ungh_shubhamcodez_MarketImpactModel code=200 bytes=415 rc=0 time_s=1.002824 note=打ち直し
+{"repo":{"id":776544214,"name":"Market-Impact-Model","repo":"shubhamcodez/Market-Impact-Model","description":"The model focuses on predicting the impact of trading activities on stock prices using ord
+--- 2026-09-22T16:59:25Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame/files/master label=ungh_rburkholder_tradeframe_files code=200 bytes=243155 rc=0 time_s=0.995915 note=候補63の在処
+{"meta":{"sha":"363ccda6faf8264c9c07ea50779de27ecc06b5b0"},"files":[{"path":".gitignore","mode":"100644","sha":"d5a4d32a70202c3193e6ada97fa37edeacfe69fc","size":1637},{"path":".vscode/launch.json","mo
+--- 2026-09-22T16:59:34Z method=GET url=https://ungh.cc/repos/FlashAlpha-lab/flashalpha-fill-simulator/files/master label=c32_files code=200 bytes=4035 rc=0 time_s=0.566026 note=候補32の在処
+{"meta":{"sha":"f51de9f917793cd8b6733ffcc6ab65fe910f1d48"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"c7f2d521ec800c79d20f7238a9bb90fa6375ac42","size":868},{"path":".gitignore"
+--- 2026-09-22T16:59:35Z method=GET url=https://ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator/files/main label=c33_files code=200 bytes=6547 rc=0 time_s=0.524349 note=候補33の在処
+{"meta":{"sha":"a0a5fcd2d0c033c5853dcef5187a717bc341bc10"},"files":[{"path":".gitignore","mode":"100644","sha":"cda45700ead1ba755be58581eec0eeba703fe747","size":261},{"path":"CMakeLists.txt","mode":"1
+--- 2026-09-22T16:59:36Z method=GET url=https://ungh.cc/repos/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-/files/main label=c35_files code=200 bytes=1588 rc=0 time_s=0.623348 note=候補35の在処
+{"meta":{"sha":"794fa647f8c8168a6f30338ea0987d26124d6101"},"files":[{"path":".gitignore","mode":"100644","sha":"ef66affa492879a5adcffbdbfafd16b3384504e6","size":272},{"path":"README.md","mode":"100644
+--- 2026-09-22T16:59:36Z method=GET url=https://ungh.cc/repos/shubhamcodez/Market-Impact-Model/files/main label=c36_files code=200 bytes=13088 rc=0 time_s=0.512734 note=候補36の在処
+{"meta":{"sha":"58c1ac25824833785c4852725cc14ff0bf4deb4b"},"files":[{"path":".gitignore","mode":"100644","sha":"bd1b45ff3045565bd5f0abc3b343c1684e65c5ec","size":16},{"path":"Data/arrivalPriceDf.csv","
+--- 2026-09-22T16:59:37Z method=GET url=https://ungh.cc/repos/microsoft/MarS/files/main label=c38_files code=200 bytes=9728 rc=0 time_s=0.548128 note=候補38の在処
+{"meta":{"sha":"c539d232b132ca410f527b5482a39759309cc88e"},"files":[{"path":".devcontainer/Dockerfile","mode":"100644","sha":"c64bcddda5602ba920e28d79925033bec1dfa5dd","size":1404},{"path":".devcontai
+--- 2026-09-22T16:59:45Z method=GET url=https://raw.githubusercontent.com/FlashAlpha-lab/flashalpha-fill-simulator/master/src/fillsim/entry.py label=c32_core code=200 bytes=10996 rc=0 time_s=0.354877 note=候補32の約定の作り方
+"""Entry-side fill simulation.
+
+Two layers, both public:
+
+- ``simulate_fill(bar_ts, chain, candidates, config)`` — **the per-bar primitive**.
+  Pure function. Stateless. Caller drives the loop. Use 
+--- 2026-09-22T16:59:45Z method=GET url=https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/execution/slippage_model.cpp label=c33_slip code=200 bytes=3099 rc=0 time_s=0.226947 note=候補33の滑りの模型
+#include "slippage_model.hpp"
+
+namespace backtest {
+
+Price SlippageModel::get_execution_price(
+    Price base_price,
+    Quantity order_qty,
+    Quantity available_qty,
+    Side side,
+    double volat
+--- 2026-09-22T16:59:45Z method=GET url=https://raw.githubusercontent.com/thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-/main/main.py label=c35_main code=200 bytes=5850 rc=0 time_s=0.232563 note=候補35の中身
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from src.models import (
+    MarketParameters,
+    ExecutionParameters,
+    SimulationParameters,
+)
+
+from src.strategies import (
+    
+--- 2026-09-22T17:00:16Z method=GET url=https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/execution/execution_simulator.cpp label=c33_execsim code=200 bytes=7277 rc=0 time_s=0.450226 note=候補33の実行経路が滑りの模型を呼ぶか
+#include "execution_simulator.hpp"
+
+namespace backtest {
+
+ExecutionSimulator::ExecutionSimulator(const BacktestConfig& config)
+    : config_(config)
+    , clock_(config.start_time)
+    , slippage_mode
+--- 2026-09-22T17:00:25Z method=GET url=https://raw.githubusercontent.com/shubhamcodez/Market-Impact-Model/main/impactModel.py label=c36_impact code=200 bytes=2594 rc=0 time_s=0.763691 note=候補36の模型の中身
+import pandas as pd
+import numpy as np
+from scipy.optimize import curve_fit
+
+totalDailyValue = pd.read_csv("Input/totalDailyValueDf.csv")
+imbalance = pd.read_csv("Input/imbalanceDf.csv")
+vwap330
+--- 2026-09-22T17:00:32Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.cpp label=c63_simexec code=200 bytes=25050 rc=0 time_s=0.233131 note=候補63の約定の作り方
+/************************************************************************
+ * Copyright(c) 2009, One Unified. All rights reserved.                 *
+ * email: info@oneunified.net                     
+--- 2026-09-22T17:00:52Z method=GET url=https://raw.githubusercontent.com/microsoft/MarS/main/market_simulation/examples/market_impact.py label=c38_impact code=200 bytes=19028 rc=0 time_s=0.485438 note=候補38の市場影響の測り方
+from __future__ import annotations
+
+import logging
+from multiprocessing import Pool
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple
+
+import matplotlib.pyplot as plt
+import pandas
+--- 2026-09-22T17:01:23Z method=GET url=https://raw.githubusercontent.com/gbeced/basana/develop/basana/backtesting/order_mgr.py label=c1_ordermgr code=200 bytes=16479 rc=0 time_s=0.562841 note=候補1の実行経路が流動性の模型を呼ぶか
+# Basana
+#
+# Copyright 2022 Gabriel Martin Becedillas Ruiz
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You 
+--- 2026-09-22T17:01:24Z method=GET url=https://raw.githubusercontent.com/microsoft/qlib/main/qlib/backtest/exchange.py label=c21_exch code=200 bytes=44235 rc=0 time_s=0.459936 note=候補21の実行経路がimpact_costを使うか
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT License.
+from __future__ import annotations
+
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Dict, List, Opti
+--- 2026-09-22T17:02:07Z method=grep target=evidence_run24 note=段の判定と「実行経路が呼んでいるか」の検査の材料 rc=0
+== c3 PySystemtrade 段2 ==
+$ grep -n "limit_price > market_price" -A3 c3_fills
+71:        if limit_price > market_price:
+72-            return Fill(
+73-                fill_datetime,
+74-                simple_order.quantity,
+75-                limit_price,
+76-                price_requires_slippage_adjustment=False,
+77-            )
+$ grep -n "market_price=data_for_idx.next_price" c3_hourly
+49:        return empty_list_of_orders_with_no_fills(
+56:        limit_price=data_for_idx.current_price,
+61:        market_price=data_for_idx.next_price,
+$ grep -c 'volume\|order_size\|queue' c3_fills (量と列の当たり)
+0
+$ github code search: price_requires_slippage_adjustment repo:pst-group/pysystemtrade -> 4 files; pandl_cash_costs.py に include_slippage = fill.price_requires_slippage_adjustment
+== c1 Basana 実行経路が流動性の模型を呼ぶ ==
+89:        liquidity_strategy.on_bar(bar_event.bar)
+275:        fill = order.try_fill(bar, liquidity_strategy)
+303:            liquidity_strategy.take_liquidity(abs(balance_updates[bar.pair.base_symbol]))
+$ grep -n "class .*LiquidityStrategy\|def take_liquidity\|volume" c1_liq
+24:class LiquidityStrategy(metaclass=abc.ABCMeta):
+25:    """Base class for liquidity strategies.
+32:        * This is a base class and should not be used directly.
+49:    def take_liquidity(self, amount: Decimal) -> Decimal:
+53:        :returns: The percentage of the price impact.
+68:class InfiniteLiquidity(LiquidityStrategy):
+69:    """This class models infinite liquidity with no price impact."""
+78:    def take_liquidity(self, amount: Decimal) -> Decimal:
+96:class VolumeShareImpact(LiquidityStrategy):
+101:    :param volume_limit_pct: Maximum percentage of volume that can be used from each bar.
+102:    :param price_impact: Maximum price impact (percentage).
+134:    def take_liquidity(self, amount: Decimal) -> Decimal:
+== c6 Ziplime ==
+2030:        self.blotter.execute_cancel_policy(SimulationEvent.SESSION_END)
+2181:            #         self.blotter.execute_cancel_policy(SimulationEvent.SESSION_END)
+2191:            #         self.blotter.execute_daily_cancel_policy(SimulationEvent.SESSION_END)
+2206:                    if action == SimulationEvent.BAR:
+2215:                    elif action == SimulationEvent.SESSION_START:
+2221:                    elif action == SimulationEvent.SESSION_END:
+88:            yield session, SimulationEvent.SESSION_START
+95:                yield minute, SimulationEvent.BAR
+150:            slippage = self.get_slippage_model(asset=asset)
+152:            async for order, txn in slippage.simulate(exchange=self,
+16:       price * (1 + price_impact * (volume_share ** 2))
+39:            volume_limit=DEFAULT_EQUITY_VOLUME_SLIPPAGE_BAR_LIMIT,
+40:            price_impact=0.1,
+== c15 BacktestingCore 駆動 ==
+0
+130:    fn get_reference_price(market_data: &[MarketData]) -> Option<f64> {
+166:        market_data: &[MarketData],
+185:        market_data: &[MarketData],
+420:        market_data: &[MarketData],
+428:        let mut sim_loop = SimulationLoop::new();
+== c18 zipline-reloaded 駆動 ==
+223:            for dt, action in self.clock:
+224:                if action == BAR:
+227:                elif action == SESSION_START:
+== c19 Jesse 約定 ==
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_bt:1592:        if low <= order_price <= high:
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_bt:1667:                if candle_service.candle_includes_price(current_temp_candle, order.price):
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_bt:1731:    liquidation_reached = candle_service.candle_includes_price(candle, p.liquidation_price)
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_bt:2111:                        if candle_service.candle_includes_price(current_temp_candle, order.price):
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_orderservice:69:                order.filled_qty = order.qty
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c19_orderservice:71:            order.filled_qty = order.qty
+$ grep -c -i slippage c19_bt
+0
+== c21 Qlib ベクトル化と影響 ==
+594:        for order in self._get_order_iterator(trade_decision):
+604:            trade_val, trade_cost, trade_price = self.trade_exchange.deal_order(
+892:            adj_cost_ratio = self.impact_cost * (trade_val / total_trade_val) ** 2
+== c4 PyBroker ベクトル化 ==
+858:        for i, date in enumerate(test_dates):
+1046:            portfolio.incr_bars(date, price_scope)
+"""Contains vectorized utility functions."""
+== c5 bt ベクトル化 ==
+412:        for dt in self.dates[1:]:
+418:            self.strategy.update(dt)
+421:                self.strategy.run()
+423:                self.strategy.update(dt)
+== c32 flashalpha ==
+119:        if combo_bid >= cand.limit_credit + cfg.fill_epsilon:
+== c33 ==
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c33_slip:57:        slippage_bps += volume_impact_factor_ * std::sqrt(participation) * 10000.0;
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c33_slip:75:Price SquareRootImpactModel::calculate_slippage(
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c33_execsim:8:    , slippage_model_(std::make_unique<ZeroSlippageModel>())
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r24/c33_execsim:193:        execution_price = slippage_model_->get_execution_price(
+== c35 ==
+72:        temporary_impact=0.01,
+73:        permanent_impact=0.0001,
+74:        impact_exponent=1.0,
+== c36 ==
+65:def temp_impact(x,eta,beta):
+66:    temporary_impact = eta * sigma * np.sign(x) * np.power(np.abs(x) , beta)
+70:popt, pcov = curve_fit(temp_impact, x, y)
+== c38 MarS ==
+149:            target_volume=task.twap_agent_target_volume,
+151:            max_passive_volume_ratio=0.9,
+== c63 trade-frame ==
+32:: m_dtQueueDelay( milliseconds( 250 ) )
+162:        quanApplied = std::min<Trade::tradesize_t>( nOrderQuanRemaining, quote.AskSize() );
+166:        quanApplied = std::min<Trade::tradesize_t>( nOrderQuanRemaining, quote.BidSize() );
+269:          Trade::tradesize_t quanApplied = std::min<Trade::tradesize_t>( nOrderQuanRemaining, quote.BidSize() );
+353:          Trade::tradesize_t quanApplied = std::min<Trade::tradesize_t>( nOrderQuanRemaining, quote.AskSize() );
+--- 2026-09-22T17:03:20Z method=GET url=https://raw.githubusercontent.com/edtechre/pybroker/master/src/pybroker/slippage.py label=c4_slip code=200 bytes=16822 rc=0 time_s=0.479393 note=候補4の滑りの模型の中身
+"""Implements slippage models."""
+
+"""Copyright (C) 2023 Edward West. All rights reserved.
+
+This code is licensed under Apache 2.0 with Commons Clause license
+(see LICENSE for details).
+"""
+
+import ma
+--- 2026-09-22T17:03:20Z method=GET url=https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/main/vnpy_ctastrategy/backtesting.py label=c20_bt code=200 bytes=40213 rc=0 time_s=0.414105 note=候補20の未約定の保持
+from collections import defaultdict
+from datetime import (
+    date as Date,
+    datetime,
+    timedelta
+)
+from typing import cast, Any
+from collections.abc import Callable
+from functools import lru_c
+--- 2026-09-22T17:03:46Z method=GET url=https://raw.githubusercontent.com/Superalgos/Superalgos/master/Projects/Algorithmic-Trading/TS/Bot-Modules/Trading-Bot/Low-Frequency-Trading/OrdersSimulations.js label=c7_sim code=200 bytes=28619 rc=0 time_s=0.456204 note=候補7の部分約定の割合の出し方
+exports.newAlgorithmicTradingBotModulesOrdersSimulations = function (processIndex) {
+    /*
+    When we are backtesting or paper trading, we need to simulate what would have happened at the exchange.
+
+--- 2026-09-22T17:04:09Z method=github_code_search query='price_requires_slippage_adjustment repo:pst-group/pysystemtrade' rc=0 note=候補3の滑りの旗を読む側が在るかの検査(新しい検査)
+total_count=4 / paths: sysobjects/fills.py, systems/accounts/order_simulator/fills_and_orders.py, systems/accounts/pandl_calculators/pandl_cash_costs.py, systems/accounts/order_simulator/pandl_order_simulator.py
+pandl_cash_costs.py の逐語: 'include_slippage = fill.price_requires_slippage_adjustment' -> 読む側が在る = 呼んでいた
+--- 2026-09-22T17:04:09Z method=note target=http_status note=この回の 404 と TLS 切断の内訳 rc=0
+404: 1 件 = https://ungh.cc/repos/Ziplime/ziplime(所有者名が誤り。正しくは Limex-com/ziplime。打ち直して code=200)
+TLS 切断(code=000, rc=35): 2 件 = ungh.cc/repos/SarthakDalmia1/backtesting_execution_simulator と ungh.cc/repos/shubhamcodez/Market-Impact-Model。いずれも打ち直して code=200。404 の欄には入れていない
+既定枝の付け替え: robcarver17/pysystemtrade -> pst-group/pysystemtrade(defaultBranch=develop)。ungh.cc の repo の応答で確かめた
+--- 2026-09-22T17:09:15Z method=run target=recheck note=貼り付け後に打ち直した最終の実行。貼った塊との突き合わせ rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-22T17:09:54Z method=run target=recheck_final note=119 行の書き方を直したあとの最終の実行。出力は同じ rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md
+364	0	docs/DATA/SCAN_2026-09-21_tools.md
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+23

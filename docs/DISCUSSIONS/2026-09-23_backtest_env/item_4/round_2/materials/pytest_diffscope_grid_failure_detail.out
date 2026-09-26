@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python
+rootdir: /home/user/trade
+configfile: pyproject.toml
+collecting ... collected 1 item
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_check_matches_delegation_text_on_grid FAILED [100%]
+
+=================================== FAILURES ===================================
+__________________ test_check_matches_delegation_text_on_grid __________________
+
+    @needs_node
+    def test_check_matches_delegation_text_on_grid():
+>       assert _disagreements() == []
+E       AssertionError: assert [(['docs/AUDI...v.js'}]), ...] == []
+E         
+E         Left contains 10 more items, first extra item: (['docs/AUDITOR/TRACE/2026-09-26_220780c0.json'], 0, ['docs/AUDITOR/TRACE/2026-09-26_220780c0.json'], [])
+E         
+E         Full diff:
+E         - []
+E         + [
+E         +     (...
+E         
+E         ...Full output truncated (389 lines hidden), use '-vv' to show
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:135: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_check_matches_delegation_text_on_grid
+============================== 1 failed in 0.09s ===============================

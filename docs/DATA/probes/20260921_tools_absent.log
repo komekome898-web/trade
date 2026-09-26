@@ -1,0 +1,246 @@
+# 「無いもの」の裏取り(2026-09-21、リード。機械生成: 下の各コマンドをそのまま実行した出力。件数は wc -l、名前は全部)
+# HEAD=a22ad63 2026-09-21T15:27:05Z
+
+## A 板の待ち行列(指値の先行注文)
+$ git ls-files src scripts | xargs grep -liE 'queue|priority|待ち行列|先行注文' | wc -l
+33
+$ git ls-files src scripts | xargs grep -liE 'queue|priority|待ち行列|先行注文'
+scripts/dashboard.py
+scripts/jev_check.py
+scripts/jev_ideas.py
+scripts/qa/make_known_answer_maker.py
+scripts/qa/make_known_answer_maker3.py
+scripts/qa/maker_fill_ref.py
+scripts/qa/maker_fill_ref_packet.py
+scripts/qa/maker_fill_ref_packet_r2.py
+scripts/qa/score_claims.py
+scripts/record_liquidations.py
+scripts/replay_scalp_storm.py
+scripts/research_board_calibration.py
+scripts/research_calm_range.py
+scripts/research_exit_surface.py
+scripts/research_fast_cycle.py
+scripts/research_fx_sessions.py
+scripts/research_m4_finecheck.py
+scripts/research_maker_reaudit.py
+scripts/research_matilda_modern.py
+scripts/research_matilda_surface.py
+scripts/research_matilda_taro.py
+scripts/research_range_reversed.py
+scripts/research_scalp_exits.py
+scripts/research_scalp_opt.py
+scripts/research_spread_mm.py
+scripts/research_tournament.py
+scripts/research_two_sided_flow.py
+scripts/research_vr_barrier.py
+scripts/research_wall_front.py
+scripts/x_fetch.py
+src/bot/backtest/engine.py
+src/bot/order_management/manager.py
+src/bot/research/xborder_p2.py
+
+## B 別実装の再現ゲート(o3c)
+$ git ls-files src scripts | xargs grep -liE 'reproduc|再現ゲート|trade-for-trade' | wc -l
+58
+$ git ls-files src scripts | xargs grep -liE 'reproduc|再現ゲート|trade-for-trade'
+scripts/check_k1_binance.py
+scripts/judge_board_round.py
+scripts/judge_gates.py
+scripts/measure_katsuo_body_wick.py
+scripts/measure_katsuo_delay_decomp.py
+scripts/measure_katsuo_effect.py
+scripts/measure_katsuo_exit_ablation.py
+scripts/measure_katsuo_robustness.py
+scripts/measure_katsuo_round5.py
+scripts/measure_katsuo_xvenue.py
+scripts/normalize_bitflyer_executions.py
+scripts/phase2/p2_01_run.py
+scripts/phase2/p2_01b_history.py
+scripts/phase2/p2_04_run.py
+scripts/phase2/p2_08_run.py
+scripts/qa/make_known_answer.py
+scripts/qa/make_known_answer_maker.py
+scripts/qa/make_known_answer_maker3.py
+scripts/qa/make_known_answer_steer.py
+scripts/qa/pipeline_known_answer_daily.py
+scripts/render_k1_body_wick.py
+scripts/render_k1_deepdive.py
+scripts/render_k1_exit_ablation.py
+scripts/render_k1_h2.py
+scripts/render_k1_h3_decomp.py
+scripts/render_k1_robustness.py
+scripts/render_k1_round5.py
+scripts/render_k1_xvenue.py
+scripts/research_avalanche.py
+scripts/research_board_calibration.py
+scripts/research_calm_range.py
+scripts/research_exit_surface.py
+scripts/research_fast_cycle.py
+scripts/research_fx_carry.py
+scripts/research_fx_event_ticks.py
+scripts/research_fx_s4_judgment.py
+scripts/research_fx_tokyofix.py
+scripts/research_leader_surface.py
+scripts/research_legacy_elements.py
+scripts/research_m4_finecheck.py
+scripts/research_macro_calendar.py
+scripts/research_maker_reaudit.py
+scripts/research_matilda_modern.py
+scripts/research_matilda_surface.py
+scripts/research_matilda_taro.py
+scripts/research_overnight_on1.py
+scripts/research_scalp_exits.py
+scripts/research_signal_fade.py
+scripts/research_spread_mm.py
+scripts/research_tournament.py
+scripts/research_two_sided_flow.py
+scripts/research_vr_barrier.py
+scripts/research_wall_front.py
+scripts/run_backtest.py
+scripts/validate_composite.py
+src/bot/jpx/etf_auction_executor.py
+src/bot/research/overnight.py
+src/bot/strategy/composite.py
+
+## C ルックアヘッドの自動検出
+$ git ls-files src scripts | xargs grep -liE 'lookahead|look-ahead|ルックアヘッド|未来' | wc -l
+48
+$ git ls-files src scripts | xargs grep -liE 'lookahead|look-ahead|ルックアヘッド|未来'
+scripts/jev_report_intake.py
+scripts/judge_board_round.py
+scripts/o3c_signal_materials.py
+scripts/phase2/p2_04_run.py
+scripts/phase2/p2_08_run.py
+scripts/replay_scalp_storm.py
+scripts/research_avalanche.py
+scripts/research_board_calibration.py
+scripts/research_burst_atlas.py
+scripts/research_calm_range.py
+scripts/research_exit_surface.py
+scripts/research_fast_cycle.py
+scripts/research_fx_carry.py
+scripts/research_fx_event_ticks.py
+scripts/research_fx_events.py
+scripts/research_fx_fundamentals.py
+scripts/research_fx_s4_judgment.py
+scripts/research_fx_sessions.py
+scripts/research_fx_tokyofix.py
+scripts/research_latency_grade.py
+scripts/research_leader_surface.py
+scripts/research_legacy_elements.py
+scripts/research_m4_finecheck.py
+scripts/research_macro_calendar.py
+scripts/research_mainbot_exits.py
+scripts/research_matilda_modern.py
+scripts/research_matilda_surface.py
+scripts/research_matilda_taro.py
+scripts/research_overnight_on1.py
+scripts/research_overnight_onr.py
+scripts/research_prediction_atlas.py
+scripts/research_range_reversed.py
+scripts/research_regime_composite.py
+scripts/research_scalp_exits.py
+scripts/research_seasonality.py
+scripts/research_signal_fade.py
+scripts/research_storm_bracket.py
+scripts/research_tournament.py
+scripts/research_trend_lt1.py
+scripts/research_two_sided_flow.py
+scripts/research_vr_barrier.py
+scripts/research_wall_front.py
+src/bot/backtest/engine.py
+src/bot/indicators/core.py
+src/bot/market_data/feed.py
+src/bot/research/liq_response.py
+src/bot/research/xborder_p2_state.py
+src/bot/strategy/breakout.py
+
+## D 実験の追跡の道具
+$ git ls-files src scripts | xargs grep -liE 'mlflow|wandb|experiment_track|多重性の台帳|ITER.md' | wc -l
+5
+$ git ls-files src scripts | xargs grep -liE 'mlflow|wandb|experiment_track|多重性の台帳|ITER.md'
+scripts/phase2/p2_01_final.py
+scripts/phase2/p2_01b_history.py
+scripts/phase2/p2_02_final.py
+scripts/phase2/p2_03_final.py
+scripts/phase2/p2_03_iter2.py
+
+## E bitFlyer 以外の国内の暗号資産の執行
+$ git ls-files src scripts | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif' | wc -l
+15
+$ git ls-files src scripts | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'
+scripts/constants_inventory.py
+scripts/dashboard.py
+scripts/fetch_bitbank_daily.py
+scripts/fetch_external.py
+scripts/judge_board_round.py
+scripts/record_venues.py
+scripts/research_fx_carry.py
+scripts/research_fx_event_ticks.py
+scripts/research_fx_events.py
+scripts/research_fx_fundamentals.py
+scripts/research_fx_s4_judgment.py
+scripts/research_fx_sessions.py
+scripts/research_fx_tokyofix.py
+scripts/research_signals.py
+src/bot/monitoring/aggregate.py
+
+## A-2 engine.py の一致行の中身(待ち行列を『模擬していない』と自分で書いている)
+$ grep -n -iE 'queue|priority' src/bot/backtest/engine.py
+47:    minute, not that our specific resting order was reached in the queue, nor
+51:    unknown. Real fills also depend on queue position; this model grants the
+## A-3 o3c の模擬に待ち行列の語があるか
+$ git ls-files scripts | grep '^scripts/o3c_' | xargs grep -liE 'queue|priority|待ち行列|先行注文' ; echo rc=$?
+rc=123
+## A-4 maker_fill_ref の待ち行列
+$ grep -n -iE 'queue|priority|ahead' scripts/qa/maker_fill_ref.py | head -5
+6:    resting order joins the back of the displayed queue at insertion; it
+8:    insertion exceed queue-ahead + own size, or partially per FIFO;
+11:    inserted at the back of the displayed queue AT THAT MOMENT
+12:    (queue-ahead = displayed size at insertion, minus own size, since the
+37:    "own_size AND that cumulative volume strictly EXCEEDS queue-ahead + "
+
+## B-2 o3c の再現ゲート(名前で)
+$ git ls-files scripts | grep -iE 'o3c.*(valid|reprod|gate)|validate'
+scripts/validate_composite.py
+## B-3 B の一致のうち o3c
+$ git ls-files src scripts | xargs grep -liE 'reproduc|再現ゲート|trade-for-trade' | grep -c o3c
+0
+
+## C-2 lookahead の中身の型(assert に埋め込み)
+$ git ls-files scripts | xargs grep -lE 'assert.*(lookahead|look_ahead|future)'
+scripts/research_avalanche.py
+scripts/research_latency_grade.py
+scripts/research_signal_fade.py
+scripts/verify_liq_instrument.py
+
+## E-2 src の一致(執行の有無)
+$ git ls-files src | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'
+src/bot/monitoring/aggregate.py
+
+## E-3 scripts の一致 14 本の中身(どの語に当たったか。監査 6 回目の指摘 1 を受けて追加。2026-09-21T15:34:56Z)
+$ for f in $(git ls-files scripts | xargs grep -liE 'gmo|bitbank|coincheck|okcoin|zaif'); do printf '%s: ' "$f"; grep -oiE 'gmo[ _-]?(coin|click|fx|_fx)?[a-z_]*|bitbank|coincheck|okcoin|zaif' "$f" | tr 'A-Z' 'a-z' | sort | uniq -c | tr '\n' ' '; echo; done
+scripts/constants_inventory.py:       2 gmo        1 gmo-fx       2 gmo_fx_usdjpy 
+scripts/dashboard.py:       2 bitbank       2 gmo 
+scripts/fetch_bitbank_daily.py:       8 bitbank 
+scripts/fetch_external.py:       8 bitbank 
+scripts/judge_board_round.py:       5 gmo       3 gmo        1 gmo btc_jpy       1 gmo decision       1 gmo maker       1 gmo too       6 gmo-cal       1 gmo-maker       1 gmo_       1 gmo_btc_jpy_       3 gmo_day_bar       2 gmo_day_count 
+scripts/record_venues.py:      35 bitbank       7 gmo       5 gmo        1 gmo coin       2 gmo get       1 gmo iso       1 gmo rate       2 gmo request       1 gmo spot       2 gmo status       1 gmo trades       1 gmo-ticker       1 gmo-trades       2 gmo_reqs_per_sec       4 gmo_ticker       3 gmo_ticker_interval       2 gmo_tid       3 gmo_trade_i       3 gmo_trade_symbols       4 gmo_trades       3 gmo_trades_interval 
+scripts/research_fx_carry.py:      12 gmo       2 gmo actual       1 gmo calendar       1 gmo coin       1 gmo did       1 gmo mid       1 gmo offers       1 gmo retry       1 gmo swap       2 gmo-calibrated       1 gmo_mid_bps_day       2 gmo_pid       2 gmo_start       8 gmo_swap_csv       2 gmo_swap_usdjpy       2 gmo_swaps       2 gmo_url 
+scripts/research_fx_event_ticks.py:       6 gmo       2 gmo        2 gmo floor       2 gmo retail       1 gmo sees       2 gmo-floor       1 gmo_bps       4 gmo_floor_roundtrip_bps       1 gmo_t 
+scripts/research_fx_events.py:       1 gmo spread 
+scripts/research_fx_fundamentals.py:       1 gmo  
+scripts/research_fx_s4_judgment.py:       1 gmo       1 gmo retail       1 gmo_floor_roundtrip_bps 
+scripts/research_fx_sessions.py:       1 gmo api 
+scripts/research_fx_tokyofix.py:       1 gmo       1 gmo fills       1 gmo per 
+scripts/research_signals.py:       2 bitbank 
+## E-4 research_fx_* と constants_inventory の gmo は FX(usdjpy・swap・floor)の文脈か
+$ grep -liE 'usdjpy|usd/jpy|dukascopy' $(git ls-files scripts | grep -E 'research_fx_|constants_inventory')
+scripts/constants_inventory.py
+scripts/research_fx_carry.py
+scripts/research_fx_event_ticks.py
+scripts/research_fx_events.py
+scripts/research_fx_fundamentals.py
+scripts/research_fx_s4_judgment.py
+scripts/research_fx_sessions.py
+scripts/research_fx_tokyofix.py

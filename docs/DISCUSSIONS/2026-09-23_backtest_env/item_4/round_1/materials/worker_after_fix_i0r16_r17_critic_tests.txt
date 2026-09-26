@@ -1,0 +1,5 @@
+# 作業者(項目 4 第 1 周)が核を直した後(core-19)に回した第 16・17 周の批評家の試験の出力(2026-09-26 UTC)
+# コマンド: PYTHONPATH=src python3 -m pytest -p no:cacheprovider --basetemp=<scratchpad>/bt/pytest_base_crit tests/bt/critic/item_0/test_i0r16_*.py tests/bt/critic/item_0/test_i0r17_*.py tests/bt/item_4/test_i4_core_carryover.py
+......................ss................................................ [ 96%]
+ss.                                                                      [100%]
+71 passed, 4 skipped in 3.86s

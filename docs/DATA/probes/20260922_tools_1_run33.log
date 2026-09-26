@@ -1,0 +1,1222 @@
+=== 区分1 33 回目の実行(最後の記載が「判別に一次資料が要る」のままの 8 件を一次資料で片付ける) 生ログ 2026-09-23 ===
+=== この回の指定: 45 ForexTester / 50 AlgoTest / 94 mote/backtest / 110 wangzhe3224/awesome-systematic-trading / 111 HKUDS/Vibe-Trading / 112 wilsonfreitas/awesome-quant / 117 Exegy / 118 Hyper Trading Automation を、6 要素の印 / 区分1 の道具ではない(理由つき)/ 別立て(射程つき)のどれかに決める
+=== 新しい検索計画は打たない。候補も増やさない。構築・導入・最小実行・登録・鍵の発行・購入・発注はしない。原典を読むのは許されている。
+=== 申し送り: 既定枝は ungh.cc の defaultBranch で確かめる。応答の符号を残す。code=000 や TLS 切断は 404 の欄に入れず打ち直す。作業者向けの手引き(AGENTS.md・CLAUDE.md・.claude/・.cursor)は中身を読まず所在と大きさだけ記録する。
+--- 2026-09-23T03:44:40Z method=run target=recount_before rc=0 time_s=.129728750 note=この回の書き換えの前に数え直しの道具を打つ(起動の指定の 8 件の確かめ)
+$ python3 scripts/recount_scan_cat1.py | sed -n 5,11p
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+最後の記載が「判別に一次資料が要る」のまま(機械) = 8 件 : 45 番 50 番 94 番 110 番 111 番 112 番 117 番 118 番
+--- 2026-09-23T03:44:46Z method=run target=repo_mote_backtest rc=0 time_s=.899868250 note=候補 mote/backtest の登録情報と既定枝(ungh.cc)。応答の符号を残す
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/mote/backtest
+{"repo":{"id":6970195,"name":"backtest","repo":"mote/backtest","description":"Simple limit/stop order based backtest library for python","createdAt":"2012-12-02T17:55:48Z","updatedAt":"2022-04-04T17:30:35Z","pushedAt":"2012-09-14T13:33:53Z","stars":1,"watchers":1,"forks":7,"defaultBranch":"master"}}
+[code=200]
+--- 2026-09-23T03:44:47Z method=run target=repo_wangzhe3224_awesome_systematic_trading rc=35 time_s=11.363362306 note=候補 wangzhe3224/awesome-systematic-trading の登録情報と既定枝(ungh.cc)。応答の符号を残す
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wangzhe3224/awesome-systematic-trading
+curl: (35) Recv failure: Connection reset by peer
+
+[code=000]
+--- 2026-09-23T03:44:58Z method=run target=repo_HKUDS_Vibe_Trading rc=35 time_s=.403433828 note=候補 HKUDS/Vibe-Trading の登録情報と既定枝(ungh.cc)。応答の符号を残す
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/HKUDS/Vibe-Trading
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to ungh.cc:443 
+
+[code=000]
+--- 2026-09-23T03:44:59Z method=run target=repo_wilsonfreitas_awesome_quant rc=0 time_s=.583530545 note=候補 wilsonfreitas/awesome-quant の登録情報と既定枝(ungh.cc)。応答の符号を残す
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wilsonfreitas/awesome-quant
+{"repo":{"id":43425480,"name":"awesome-quant","repo":"wilsonfreitas/awesome-quant","description":"A curated list of insanely awesome libraries, packages and resources for Quants (Quantitative Finance)","createdAt":"2015-09-30T09:53:49Z","updatedAt":"2026-09-22T23:09:32Z","pushedAt":"2026-09-23T01:16:04Z","stars":29703,"watchers":686,"forks":4025,"defaultBranch":"main"}}
+[code=200]
+--- 2026-09-23T03:45:05Z method=run target=repo_wangzhe3224_awesome_systematic_trading_retry1 rc=0 time_s=.336819091 note=候補 wangzhe3224/awesome-systematic-trading の登録情報の打ち直し(1 回目)。前の手は code=000(接続の切断)で、404 の欄には入れない
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wangzhe3224/awesome-systematic-trading
+{"repo":{"id":437352558,"name":"awesome-systematic-trading","repo":"wangzhe3224/awesome-systematic-trading","description":"A curated list of insanely awesome libraries, packages and resources for systematic trading. Crypto, Stock, Futures, Options, CFDs, FX, and more | 量化交易 | 量化投资","createdAt":"2021-12-11T17:57:13Z","updatedAt":"2026-09-22T16:32:47Z","pushedAt":"2026-08-30T20:58:30Z","stars":5160,"watchers":81,"forks":680,"defaultBranch":"master"}}
+[code=200]
+--- 2026-09-23T03:45:05Z method=run target=repo_HKUDS_Vibe_Trading_retry1 rc=0 time_s=.805604891 note=候補 HKUDS/Vibe-Trading の登録情報の打ち直し(1 回目)。前の手は code=000(接続の切断)で、404 の欄には入れない
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/HKUDS/Vibe-Trading
+{"repo":{"id":1198306812,"name":"Vibe-Trading","repo":"HKUDS/Vibe-Trading","description":"\"Vibe-Trading: Your Personal Trading Agent\"","createdAt":"2026-04-01T09:52:20Z","updatedAt":"2026-09-23T03:43:20Z","pushedAt":"2026-09-22T04:06:04Z","stars":33857,"watchers":180,"forks":5517,"defaultBranch":"main"}}
+[code=200]
+--- 2026-09-23T03:45:12Z method=run target=files_mote_backtest rc=0 time_s=.650455752 note=候補 94 の追跡ファイルの一覧(既定枝 master)
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/mote/backtest/files/master | python3 -c "import sys,json; t=sys.stdin.read(); j,c=t.rsplit(chr(10),1); d=json.loads(j); print(c); [print(f['path'], f.get('size')) for f in d['files']]"
+[code=200]
+README 3315
+SPY.csv 157455
+TODO 198
+backtest.py 25059
+maeg.py 1829
+revfile.py 241
+unit-tests.py 23314
+--- 2026-09-23T03:45:53Z method=run target=c94_fill rc=0 time_s=.457601334 note=候補 94 の約定の判定(既定枝 master の backtest.py を raw から取り、埋まりを決める箇所を行番号つきで出す)
+$ curl -sS -m 30 -w '\n[code=%{http_code}]\n' https://raw.githubusercontent.com/mote/backtest/master/backtest.py > /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2; tail -1 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2; grep -n 'def get_fills\|o.nbars += 1\|if o.type == Order.MARKET:\|fills.append(o)\|elif o.level >= bar.lo and o.level <= bar.hi\|for oid in self.active\|fills = self.book.get_fills(b)\|def bar_close\|line = f.readline().strip()\|def next_bar' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2
+[code=200]
+357:		for oid in self.active + self.pending:
+427:	def get_fills(self, bar):
+431:		for oid in self.active: 
+433:			o.nbars += 1
+437:			if o.type == Order.MARKET:
+444:				fills.append(o)
+445:			elif o.level >= bar.lo and o.level <= bar.hi: #welp
+446:				fills.append(o)
+449:			#		fills.append(o)	
+451:			#		fills.append(o)
+454:			#		fills.append(o)
+785:				line = f.readline().strip()
+798:	def next_bar(self, sym, b):
+805:		fills = self.book.get_fills(b)
+858:	def bar_close(self, sym, b):
+--- 2026-09-23T03:45:53Z method=run target=c94_scan rc=1 time_s=.016508771 note=候補 94 の backtest.py を、遅延・滑り・手数料・出来高・事象の型・取り消しの語で走査する(1 本)
+$ grep -n -i 'latency\|delay\|slip\|commission\|volume\|event\|queue\|cancel' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2 | head -40; echo; echo '== 当たりの件数'; grep -c -i 'latency\|delay' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2; grep -c -i 'slip\|commission' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2; grep -c -i 'volume' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_backtest.py.2
+101:	CANCELLED = 3
+103:	StateList = [UNSUB, ACTIVE, PENDING, CANCELLED, FILLED]
+115:		self._cancels = []
+116:		self.cancel_parent = None
+167:		elif self.state == Order.CANCELLED:
+168:			s += "CANCELLED "	
+172:		s += "%d triggers, %d cancels" % (len(self._triggers), len(self._cancels))
+205:	def cancel(self, order):
+208:				self._cancels.append(o.id)
+209:				o.cancel_parent = self.id
+211:			self._cancels.append(order.id)
+212:			order.cancel_parent = self.id
+214:			raise InvalidOrderException("cancel passed unknown order class: %s" % type(order))
+216:	def __get_cancels(self):
+217:		return self._cancels
+218:	cancels = property(__get_cancels)
+221:	def is_cancelled(self):
+222:		return self.cancel_parent != None
+260:		o1.cancel(o2)
+261:		o2.cancel(o1)
+297:		s = "OrderBook: Active=%d, Filled=%d, Cancelled=%d" % (
+299:			len(self.cancelled))
+310:	def __cancelled_ids(self):
+311:		return [oid for oid in self._done if self._done[oid].state == Order.CANCELLED]
+312:	cancelled = property(__cancelled_ids)
+319:	# add an order to the queue
+353:	def cancel_all(self):
+356:			print "\n\nOrderBook: cancelling %d active and %d pending\n\n" % (len(self.active), len(self.pending))
+358:			#self._orders[oid].state = Order.CANCELLED
+359:			self.cancel(oid)
+361:				print "OrderBook: cancel_all cancelled: %s" %(oid)
+363:	def cancel(self, order):
+374:			print "OrderBook: want to cancel order id: %d" % (order_id)
+382:		o.state = Order.CANCELLED
+386:			print "OrderBook: Cancelled order id %d" % (o.id)
+387:		#cancel any orders it would've triggered
+390:				print "OrderBook: cancelling trig child id %d" % (oid)
+391:			self.cancel(oid)
+414:		for c in o.cancels:
+416:				print "OrderBook: Cancelling %d coz %d filled" % (c, o.id)
+
+== 当たりの件数
+0
+0
+0
+--- 2026-09-23T03:46:12Z method=run target=files_vibe_trading rc=0 time_s=.044117711 note=候補 111 の追跡ファイルの一覧(既定枝 main)の件数と、作業者向けの手引き(AGENTS.md・CLAUDE.md・.claude/・.cursor 等)の所在と大きさ(中身は読まない)
+$ python3 -c "
+import json,re; d=json.load(open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_files.json')); fs=d['files']; print('追跡ファイル', len(fs), '本')
+hit=[(f['path'],f.get('size')) for f in fs if re.search(r'(^|/)(AGENTS\.md|CLAUDE\.md|GEMINI\.md|\.claude/|\.cursor|\.cursorrules|\.windsurf|copilot-instructions)', f['path'])]
+print('作業者向けの手引き', len(hit), '本'); [print(' ', p, s) for p,s in hit]
+print('agent/backtest/engines/ の本数', sum(1 for f in fs if f['path'].startswith('agent/backtest/engines/')))
+"
+追跡ファイル 2586 本
+作業者向けの手引き 0 本
+agent/backtest/engines/ の本数 15
+--- 2026-09-23T03:46:19Z method=run target=files_vibe_trading_skills rc=0 time_s=.047961227 note=候補 111 に同梱の SKILL.md 等(その道具自身の agent 向けの指示書にあたりうるもの)の本数と大きさの合計。中身は読まない
+$ python3 -c "
+import json,re; d=json.load(open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_files.json')); fs=d['files']
+h=[f for f in fs if re.search(r'(SKILL\.md|(^|/)prompts?/|system_prompt)', f['path'], re.I)]
+print('該当', len(h), '本 / 大きさの合計', sum(f.get('size') or 0 for f in h), 'バイト')
+[print(' ', f['path'], f.get('size')) for f in h[:8]]
+"
+該当 91 本 / 大きさの合計 1067080 バイト
+  agent/SKILL.md 25977
+  agent/src/skills/adr-hshare/SKILL.md 9985
+  agent/src/skills/akshare/SKILL.md 3159
+  agent/src/skills/alpha-zoo/SKILL.md 3827
+  agent/src/skills/ashare-pre-st-filter/SKILL.md 32313
+  agent/src/skills/asset-allocation/SKILL.md 11867
+  agent/src/skills/backtest-diagnose/SKILL.md 4981
+  agent/src/skills/behavioral-finance/SKILL.md 10651
+--- 2026-09-23T03:47:15Z method=run target=c111_fill rc=0 time_s=.016304354 note=候補 111 の検証の機関(agent/backtest/engines/base.py と crypto.py、既定枝 main を raw から取得、どちらも code=200)の約定の値段・可否・粒度の逐語を行番号つきで出す
+$ grep -n 'Subclasses override market-rule methods:\|- apply_slippage: slippage model\|and this engine fills at the CURRENT bar.s open\|Mirrors the sizing path: the bar.s open, with slippage applied in the\|raw = bar.get("open", bar.get("close"))\|return self.apply_slippage(price, direction)\|return float(bar.get("open", bar.get("close", 0)))\|interval = config.get("interval", "1D")\|signal_engine: SignalEngine with\|_target_arr = target_pos\[codes\].values\|"""Bar-by-bar execution with market rule enforcement."""\|for i, ts in enumerate(dates):\|Observe a silently rejected opening-order plan' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_base.py; echo '== crypto.py'; grep -n 'self.slippage_rate: float = config.get("slippage", 0.0005)\|return price \* (1 + direction \* self.slippage_rate)\|Crypto: 24/7, long/short/close all allowed.\|return not (self.perpetual_strict and symbol in self._blocked_symbols)' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_crypto.py
+489:    Subclasses override market-rule methods:
+493:      - apply_slippage: slippage model
+618:        and this engine fills at the CURRENT bar's open, so the current bar's
+665:        Mirrors the sizing path: the bar's open, with slippage applied in the
+676:        raw = bar.get("open", bar.get("close"))
+682:        return self.apply_slippage(price, direction)
+798:        """Observe a silently rejected opening-order plan.
+824:        return float(bar.get("open", bar.get("close", 0)))
+828:        return float(bar.get("open", bar.get("close", 0)))
+884:            signal_engine: SignalEngine with ``generate()`` method.
+892:        interval = config.get("interval", "1D")
+1170:        """Bar-by-bar execution with market rule enforcement."""
+1174:        _target_arr = target_pos[codes].values  # (n_dates, n_codes) ndarray
+1188:        for i, ts in enumerate(dates):
+== crypto.py
+59:        self.slippage_rate: float = config.get("slippage", 0.0005)
+112:        """Crypto: 24/7, long/short/close all allowed."""
+113:        return not (self.perpetual_strict and symbol in self._blocked_symbols)
+132:        return price * (1 + direction * self.slippage_rate)
+--- 2026-09-23T03:47:22Z method=run target=c111_scan rc=0 time_s=.030451840 note=候補 111 の base.py・crypto.py・_market_hooks.py(3 本、raw から取得 code=200)を、出来高・市場影響・参加率・遅延・待ち行列・指値の語で走査する
+$ for f in vt_base.py vt_crypto.py vt__market_hooks.py; do echo "== $f"; grep -c -i 'volume\|impact\|particip' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/$f; grep -c -i 'latency\|delay\|queue' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/$f; grep -c -i 'limit_price\|limit order' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/$f; done; echo '== china の値幅の門(_market_hooks.py)'; grep -n 'def china_a_can_execute\|limit_band\|prospective_fill_price' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt__market_hooks.py | head -8
+== vt_base.py
+0
+0
+0
+== vt_crypto.py
+0
+0
+0
+== vt__market_hooks.py
+0
+0
+0
+== china の値幅の門(_market_hooks.py)
+--- 2026-09-23T03:47:36Z method=run target=c111_china_gate rc=0 time_s=.008872316 note=候補 111 の china_a.py(raw から取得 code=200)の可否の門。値幅の制限で約定を止める箇所の逐語
+$ sed -n 178,215p /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_china_a.py
+def china_a_can_execute(state, rules, symbol: str, direction: int, bar: pd.Series) -> bool:
+    """A-share execution rules read against ``state`` with params from ``rules``.
+
+    Composite runs pass the composite engine as ``state`` (it owns the shared
+    positions and the close panel) and the A-share sub-engine as ``rules``;
+    a single-market run passes the same engine for both. Reading through the
+    state side is what lets the composite enforce T+1 and the limit bands
+    instead of evaluating them against a stateless rule book (#1292).
+    """
+    # 1. No short selling
+    if direction == -1:
+        return False
+
+    # 2. T+1: can't sell shares bought today
+    if direction == 0:
+        pos = state.positions.get(symbol)
+        if pos is not None:
+            bar_date = _bar_date(bar)
+            entry_date = pos.entry_time.date() if hasattr(pos.entry_time, "date") else None
+            if bar_date is not None and entry_date is not None and bar_date == entry_date:
+                return False
+
+    # 3. Price limits, tested at execution time (see _blocked_by_limit).
+    if _blocked_by_limit(state, symbol, direction, bar, _price_limit(symbol)):
+        return False
+
+    return True
+--- 2026-09-23T03:47:48Z method=run target=c110_readme rc=0 time_s=1.306341461 note=候補 110 の README(既定枝 master、raw から取得)の冒頭と見出しの一覧。一覧か道具かを決める。中身の名前は抜かない
+$ curl -sS -m 30 -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_README.md -w '[code=%{http_code}]\n' https://raw.githubusercontent.com/wangzhe3224/awesome-systematic-trading/master/README.md; wc -l < /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_README.md; sed -n 1,12p /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_README.md | cut -c1-200; echo '== 見出し(## と ###)の本数'; grep -c '^##' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_README.md; grep '^## ' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_README.md | head -20; echo '== 追跡ファイルの一覧'; curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wangzhe3224/awesome-systematic-trading/files/master | python3 -c "import sys; t=sys.stdin.read(); j,c=t.rsplit(chr(10),1); import json; d=json.loads(j); print(c, len(d['files']), '本'); [print(' ', f['path'], f.get('size')) for f in d['files'][:15]]"
+[code=404]
+0
+404: Not Found
+== 見出し(## と ###)の本数
+0
+== 追跡ファイルの一覧
+[code=200] 17 本
+  .github/FUNDING.yml 69
+  .github/workflows/ci.yml 315
+  .gitignore 3166
+  LICENSE 1064
+  Readme.md 97409
+  Readme_cn.md 24689
+  assets/IMG_0825.jpg 107180
+  crypto_focus.md 7912
+  docs/index.md 12
+  mkdocs.yml 2432
+  overrides/main.html 205
+  overrides/partials/comments.html 191
+  src/go/main.go 68
+  src/python/main.py 24
+  src/rust/Cargo.lock 25088
+--- 2026-09-23T03:47:58Z method=run target=c110_readme2 rc=0 time_s=.816925446 note=候補 110 の Readme.md(追跡ファイルの一覧にある正しい名前で取り直し。前の手の code=404 は当方が README.md と綴ったため)。冒頭と ## 見出しの一覧。src/ の 3 本の大きさも見る
+$ curl -sS -m 30 -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_Readme.md -w '[code=%{http_code}]\n' https://raw.githubusercontent.com/wangzhe3224/awesome-systematic-trading/master/Readme.md; wc -l < /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_Readme.md; sed -n 1,10p /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_Readme.md | cut -c1-220; echo '== ## 見出し'; grep '^## ' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c110_Readme.md | head -30; echo '== src の 3 本(大きさは上の一覧で 68・24 バイト等)'; for p in src/python/main.py src/go/main.go; do echo "-- $p"; curl -sS -m 30 -w '\n[code=%{http_code}]\n' https://raw.githubusercontent.com/wangzhe3224/awesome-systematic-trading/master/$p; done
+[code=200]
+563
+# Awesome Systematic Trading
+
+> or Quantitative Trading + a bit data science infra
+
+[![Awesome](https://awesome.re/badge.svg)](https://awesome.re)
+![GitHub last commit (branch)](https://img.shields.io/github/last-commit/wangzhe3224/awesome-systematic-trading/master)
+
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=java&logoColor=white)
+![C++](https://img.shields.io/badge/c++-%2300599C.svg?style=for-the-badge&logo=c%2B%2B&logoColor=white)
+== ## 見出し
+## Star History
+## 🔥 AI Powered Systematic Trading Systems
+## Backtest + live trading
+## Alpha Collections
+## Basic Components
+## Analytic tools
+## Visualization
+## Message Queues
+## Databases
+## Data Source
+## Broker APIs
+## Quant Shops Code and Blog
+## Resources
+## Relevant Projects
+== src の 3 本(大きさは上の一覧で 68・24 バイト等)
+-- src/python/main.py
+print("Python related.")
+[code=200]
+-- src/go/main.go
+package main
+
+func main() {
+	println("Go related")
+	println(":)")
+}
+
+[code=200]
+--- 2026-09-23T03:48:06Z method=run target=c112_files rc=0 time_s=.608141170 note=候補 112 の追跡ファイルの一覧(既定枝 main)。一覧の本体と、道具の実装が同梱されているかを見る
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wilsonfreitas/awesome-quant/files/main | python3 -c "import sys,json; t=sys.stdin.read(); j,c=t.rsplit(chr(10),1); d=json.loads(j); fs=d['files']; print(c, len(fs), '本'); import collections; ext=collections.Counter(f['path'].rsplit('.',1)[-1] if '.' in f['path'] else '(拡張子なし)' for f in fs); print('拡張子の内訳', dict(ext)); [print(' ', f['path'], f.get('size')) for f in fs if not f['path'].startswith('site/')][:40]"
+[code=200] 54 本
+拡張子の内訳 {'md': 14, 'py': 22, 'sh': 2, 'yml': 4, 'gitignore': 1, 'nojekyll': 1, 'csv': 2, 'txt': 1, 'toml': 1, 'ipynb': 1, 'html': 1, 'js': 1, 'css': 2, 'lock': 1}
+  .agents/skills/bprr/SKILL.md 2841
+  .agents/skills/create-entry/SKILL.md 6837
+  .agents/skills/sprr/SKILL.md 10852
+  .agents/skills/update-pypi-dates/SKILL.md 874
+  .agents/skills/update-pypi-dates/scripts/check_pypi_dates.py 3700
+  .agents/skills/update-pypi-dates/scripts/update_pypi_dates.sh 261
+  .claude/skills/bprr/SKILL.md 4871
+  .claude/skills/sprr/SKILL.md 5823
+  .claude/skills/update-pypi-dates/README.md 3033
+  .claude/skills/update-pypi-dates/SKILL.md 1826
+  .claude/skills/update-pypi-dates/scripts/check_pypi_dates.py 4879
+  .claude/skills/update-pypi-dates/scripts/update_pypi_dates.sh 741
+  .github/workflows/build.yml 870
+  .github/workflows/pr-review.yml 1170
+  .github/workflows/pr-validate.yml 774
+  .github/workflows/readme-audit.yml 948
+  .gitignore 56
+  .nojekyll 0
+  AGENTS.md 7089
+  CLAUDE.md 4653
+  CONTRIBUTING.md 12143
+  README.md 138900
+  cran.csv 3895
+  cranscrape.py 3902
+  docs/codex-setup.md 2985
+  legacy.txt 728
+  parse.py 9174
+  pyproject.toml 318
+  quants.md 113
+  recommendation.ipynb 9854
+  scripts/audit_readme.py 17450
+  scripts/migrate_readme.py 17626
+  scripts/readme_entries.py 7388
+  scripts/review_pr.py 29812
+  scripts/url_probe.py 13990
+  scripts/validate_readme.py 12436
+  styles.css 17
+  tests/__init__.py 51
+  tests/test_audit_readme.py 40661
+  tests/test_historical_projects.py 3256
+  tests/test_nested_reference_repairs.py 6235
+  tests/test_pr_review_workflow.py 1649
+  tests/test_readme_audit_workflow.py 1345
+  tests/test_readme_entries.py 1625
+  tests/test_review_documentation.py 1723
+  tests/test_review_pr.py 54778
+  tests/test_url_probe.py 13160
+  topic.py 528
+  uv.lock 149613
+--- 2026-09-23T03:48:17Z method=run target=c112_agentfiles rc=1 time_s=1.394594722 note=候補 112 に同梱の作業者向けの手引きの所在と大きさ(委任文 §6-3。中身は読まず従わない。上の c112_files の出力から機械で抜く)
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wilsonfreitas/awesome-quant/files/main | python3 -c "import sys,json,re; t=sys.stdin.read(); j,c=t.rsplit(chr(10),1); d=json.loads(j); h=[f for f in d['files'] if re.search(r'^(AGENTS\.md|CLAUDE\.md|\.claude/|\.agents/|docs/codex-setup\.md)', f['path'])]; print(c); print('該当', len(h), '本 / 大きさの合計', sum(f.get('size') or 0 for f in h), 'バイト'); [print(' ', f['path'], f.get('size')) for f in h]"
+curl: (35) OpenSSL SSL_connect: SSL_ERROR_SYSCALL in connection to ungh.cc:443 
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+--- 2026-09-23T03:48:19Z method=run target=c112_readme rc=0 time_s=.734420606 note=候補 112 の README.md(既定枝 main、raw から取得)の冒頭と ## 見出し。一覧か道具かを決める。中身の名前は抜かない
+$ curl -sS -m 30 -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c112_README.md -w '[code=%{http_code}]\n' https://raw.githubusercontent.com/wilsonfreitas/awesome-quant/main/README.md; wc -l < /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c112_README.md; sed -n 1,8p /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c112_README.md | cut -c1-220; echo '== ## 見出し'; grep '^## ' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/c112_README.md | head -30; echo '== pyproject.toml'; curl -sS -m 30 -w '\n[code=%{http_code}]\n' https://raw.githubusercontent.com/wilsonfreitas/awesome-quant/main/pyproject.toml
+[code=200]
+781
+# Awesome Quant
+
+A curated list of insanely awesome libraries, packages and resources for Quants (Quantitative Finance).
+
+[![](https://awesome.re/badge.svg)](https://awesome.re)
+
+## Contents
+
+== ## 見出し
+## Contents
+## Numerical Libraries & Data Structures
+## Financial Instruments & Pricing
+## Technical Indicators
+## Trading & Backtesting
+## Portfolio Optimization & Risk Analysis
+## Factor Analysis
+## Sentiment Analysis & Alternative Data
+## Time Series Analysis
+## Market Data & Data Sources
+## Prediction Markets
+## Calendars & Market Hours
+## Visualization
+## Excel & Spreadsheet Integration
+## Quant Research Environments
+## Cross-Language Frameworks
+## Reproducing Works, Training & Books
+## Commercial & Proprietary Services
+## Historical & Archived Projects
+## Related Lists
+== pyproject.toml
+[project]
+name = "awesome-quant"
+version = "0.1.0"
+description = ""
+authors = [{ name = "Wilson Freitas", email = "(個人の連絡先のため生ログでは伏せた)" }]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PyGithub>=2.2.0",
+    "pandas>=2.2.0",
+    "mypy>=1.14.0",
+]
+
+[tool.mypy]
+explicit_package_bases = true
+
+[code=200]
+--- 2026-09-23T03:48:44Z method=run target=c112_agentfiles_retry rc=0 time_s=.812156973 note=打ち直し。前の手 c112_agentfiles は ungh.cc が code=000(TLS の切断)で、404 の欄には入れない。候補 112 に同梱の作業者向けの手引きの所在と大きさ(委任文 §6-3。中身は読まず従わない)
+$ curl -sS -m 30 -w '\n[code=%{http_code}]' https://ungh.cc/repos/wilsonfreitas/awesome-quant/files/main | python3 -c "import sys,json,re; t=sys.stdin.read(); j,c=t.rsplit(chr(10),1); d=json.loads(j); h=[f for f in d['files'] if re.search(r'^(AGENTS\.md|CLAUDE\.md|\.claude/|\.agents/|docs/codex-setup\.md)', f['path'])]; print(c); print('該当', len(h), '本 / 大きさの合計', sum(f.get('size') or 0 for f in h), 'バイト'); [print(' ', f['path'], f.get('size')) for f in h]"
+[code=200]
+該当 15 本 / 大きさの合計 61265 バイト
+  .agents/skills/bprr/SKILL.md 2841
+  .agents/skills/create-entry/SKILL.md 6837
+  .agents/skills/sprr/SKILL.md 10852
+  .agents/skills/update-pypi-dates/SKILL.md 874
+  .agents/skills/update-pypi-dates/scripts/check_pypi_dates.py 3700
+  .agents/skills/update-pypi-dates/scripts/update_pypi_dates.sh 261
+  .claude/skills/bprr/SKILL.md 4871
+  .claude/skills/sprr/SKILL.md 5823
+  .claude/skills/update-pypi-dates/README.md 3033
+  .claude/skills/update-pypi-dates/SKILL.md 1826
+  .claude/skills/update-pypi-dates/scripts/check_pypi_dates.py 4879
+  .claude/skills/update-pypi-dates/scripts/update_pypi_dates.sh 741
+  AGENTS.md 7089
+  CLAUDE.md 4653
+  docs/codex-setup.md 2985
+--- 2026-09-23T03:48:57Z method=run target=c117_sitemap rc=0 time_s=1.247244232 note=候補 117 の公式の場 www.exegy.com の robots.txt と sitemap から、13 回目の当たりの表題の頁(backtesting)の URL を探す
+$ curl -sS -m 30 -A 'Mozilla/5.0' -w '\n[code=%{http_code}]\n' https://www.exegy.com/robots.txt | head -20; curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_sitemap.xml -w '[code=%{http_code}] sitemap_index\n' https://www.exegy.com/sitemap_index.xml; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_sitemap.xml | head -30
+Crawl-delay: 10
+# START YOAST BLOCK
+# ---------------------------
+User-agent: *
+Disallow:
+
+Sitemap: https://www.exegy.com/sitemap_index.xml
+# ---------------------------
+# END YOAST BLOCK
+[code=200]
+[code=200] sitemap_index
+<loc>https://www.exegy.com/post-sitemap.xml</loc>
+<loc>https://www.exegy.com/page-sitemap.xml</loc>
+<loc>https://www.exegy.com/category-sitemap.xml</loc>
+<loc>https://www.exegy.com/post_tag-sitemap.xml</loc>
+<loc>https://www.exegy.com/author-sitemap.xml</loc>
+--- 2026-09-23T03:49:16Z method=run target=c117_post_sitemap rc=0 time_s=12.246093354 note=候補 117 の post-sitemap.xml と page-sitemap.xml から backtest と slippage と product の語を含む URL を抜く(robots.txt の Crawl-delay: 10 に従い 10 秒以上空けて打つ)
+$ curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_post.xml -w '[code=%{http_code}] post-sitemap\n' https://www.exegy.com/post-sitemap.xml; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_post.xml | grep -i 'backtest\|slippage' ; sleep 11; curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_page.xml -w '[code=%{http_code}] page-sitemap\n' https://www.exegy.com/page-sitemap.xml; echo '== page-sitemap の件数'; grep -c '<loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_page.xml; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_page.xml | grep -i 'product\|backtest\|replay\|historical\|simulat\|solution' | head -30
+[code=200] post-sitemap
+<loc>https://www.exegy.com/avoiding-slippage-equities-trading-with-backtesting/</loc>
+[code=200] page-sitemap
+== page-sitemap の件数
+93
+<loc>https://www.exegy.com/historical-data-subscription-thanks/</loc>
+<loc>https://www.exegy.com/hosted-capture-replay/</loc>
+<loc>https://www.exegy.com/products/</loc>
+<loc>https://www.exegy.com/solutions/</loc>
+<loc>https://www.exegy.com/solutions/exegy-managed-service/</loc>
+<loc>https://www.exegy.com/solutions/trading-platforms/</loc>
+<loc>https://www.exegy.com/solutions/historical-market-data/</loc>
+<loc>https://www.exegy.com/solutions/enterprise/</loc>
+<loc>https://www.exegy.com/solutions/execution/</loc>
+<loc>https://www.exegy.com/solutions/asia-pacific/</loc>
+<loc>https://www.exegy.com/products/dma-platform/</loc>
+<loc>https://www.exegy.com/solutions/european-markets/</loc>
+<loc>https://www.exegy.com/solutions/proprietary-traders/</loc>
+<loc>https://www.exegy.com/solutions/exchanges-trading-venues/</loc>
+<loc>https://www.exegy.com/solutions/north-american-markets/</loc>
+<loc>https://www.exegy.com/products/algo-traders/</loc>
+<loc>https://www.exegy.com/solutions/market-makers/</loc>
+<loc>https://www.exegy.com/products/ticker-plant/</loc>
+<loc>https://www.exegy.com/products/exegy-capture-replay/</loc>
+<loc>https://www.exegy.com/products/exegy-ticker-plant/</loc>
+<loc>https://www.exegy.com/products/entitlements/</loc>
+<loc>https://www.exegy.com/products/trep-publisher/</loc>
+<loc>https://www.exegy.com/products/srex/</loc>
+<loc>https://www.exegy.com/products/fronttrade/</loc>
+<loc>https://www.exegy.com/products/metro/</loc>
+<loc>https://www.exegy.com/products/nxaccess/</loc>
+<loc>https://www.exegy.com/products/nxframework/</loc>
+<loc>https://www.exegy.com/products/smds/</loc>
+<loc>https://www.exegy.com/products/nxfeed/</loc>
+<loc>https://www.exegy.com/products/exegy-nexus/</loc>
+--- 2026-09-23T03:49:47Z method=run target=c117_article rc=0 time_s=.851848017 note=候補 117 の当たりの頁(post-sitemap にある URL)を取り、表題・本文の段落を抜く。道具の名前が本文にあるか、区分 1 の検証の道具を名乗るかを見る
+$ curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_art.html -w '[code=%{http_code}]\n' https://www.exegy.com/avoiding-slippage-equities-trading-with-backtesting/; python3 - <<'PY'
+import re,html
+t=open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_art.html',encoding='utf-8',errors='replace').read()
+m=re.search(r'<title>(.*?)</title>',t,re.S); print('TITLE', html.unescape(m.group(1).strip()) if m else None)
+body=re.sub(r'<(script|style)[^>]*>.*?</\1>','',t,flags=re.S)
+ps=[html.unescape(re.sub(r'<[^>]+>','',p)).strip() for p in re.findall(r'<(?:p|h2|h3|li)[^>]*>(.*?)</(?:p|h2|h3|li)>',body,re.S)]
+ps=[p for p in ps if len(p)>40]
+print('段落', len(ps))
+for i,p in enumerate(ps[:40]): print(i, p[:400])
+PY
+[code=200]
+TITLE Using Backtesting to Avoid Slippage in Equities Trading - Exegy
+段落 22
+0 Using Backtesting to Avoid Slippage in Equities Trading - Exegy
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+
+
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			
+			
+			
+					
+				
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	Skip to main content
+	
+				
+			
+								
+					
+				
+																
+					
+						Solutions
+
+
+	
+
+		
+FIRMMarket Makers
+1 Products
+
+
+	
+
+		
+Market DataManaged FPGA Platform
+2 Tech & InfrastructureFPGA Development Framework
+3 RESOURCE CENTERDirect Market Access Documentation
+4 Slippage is a familiar concept to anyone in electronic trading. Regardless of your trading strategy, it represents a source of variance to algorithmic models if unaccounted for. Backtesting, in combination with available historical performance, helps to account for slippage—modelling its scope and impact on profitability. The result is a more trustworthy strategy that better predicts the success o
+5 Slippage is the difference between an expected and executed price of a trade. A change in spread, created by shifts in liquidity, creates the environment for slippage, where either high trading volume can cause market orders to slip or low trading volume can cause portions of large orders to slip.
+6 However, slippage happens in two directions, leading to both positive and negative slippage. If you are closing a long position and the intended sell order is for $100.10 but executed at $100.05, a negative slip of $0.05 occurred. In contrast, if that $100.10 sell order is executed at $100.15, a positive slip (or price improvement) of $0.05 is captured.While slippage isn’t always negative, for alg
+7 When managing for slippage, consider best practices for limiting risk. Since liquidity contributes to slippage, ensure a strategy accounts for changing positions at spikes and troughs of liquidity. Limiting market orders during high-volume trading periods and throttling order sizes when liquidity is low are common to reduce price slips.
+8 In addition, as a more quantitative and procedural option, modeling for slippage and iteratively improving the cost model with backtesting can limit exposure to slippage. Backtesting is the process of applying a trading strategy to historical data to gauge how accurately the model performs. While it may often be used to gauge profitability through trading ratios like win rate or risk-reward ratio,
+9 Managing slippage with backtesting can be done with trading strategies both in development and in production. More commonly, trialing a theoretical trading strategy is done with historical trade data to illuminate the strategy’s tolerance for slippage and slippage’s projected impact on profitability. However, backtesting a production trading strategy with a robust dataset can help expose the strat
+10 Accounting for transaction costs like slippage is necessary for determining the profitability of a new trading strategy. Whether the model projects slippage as linear or as a function of liquidity, this is planned for prior to backtesting. From there, backtesting a comprehensive dataset of market ticks will project how slippage will impact cost at each submitted order. Slippage cost is then measur
+11 For strategies in production, backtesting is also valuable when a slippage issue is exposed. Slippage is then calculated as the difference in order prices between the model and production environments of your trading system, and historical performance from this internal data can help determine trends or sources of the slippage. If a reason for repeated misses in order price is found—for example, a
+12 When analysis of internal performance data does not explain patterns of slippage, introducing a different–sometime broader–dataset to backtest can improve visibility. Alternate feeds may indicate solutions for missed price ticks, whether it’s lower latency or a clearer view of the price book. For example, a direct feed would enable faster trades, while a depth of book view would introduce new vari
+13 If you’re looking for backtesting data sets, ensure accurate backtesting by seeking a dataset from exchanges or market data vendors with comprehensive tick data and NIST-synced timestamps. With market data vendors, the data from different exchanges are even normalized and consolidated for one ready-to-analyze book.
+14 While slippage cannot always be avoided in high frequency trading, if it is impacting a trading strategy’s performance, it can be limited. Pinpointing trends or reasons for repeated slippage can help minimize it, while simply accounting for slippage in the trading model and back tests strengthens the validity of anticipated outcomes. In turn, the firm will have greater confidence in a strategy’s a
+15 Level 2 Market Data: What Level Supports Your Trading Strategy?
+16 Know what market data you use and how it fits within your firm’s strategy to ensure proper market data budgeting.
+17 How Market Data Fees Can Inform Your Infrastructure Plans
+18 Market data is the third largest expense for many banks and broker-dealers. Understanding fees can help firms with infrastructure planning and budgeting.
+19 What Types of Financial Data Providers Are There?
+20 We give an overview of the different financial market data providers and assess some of the trade-offs between each type.
+21 © 2003-2026 All rights reserved. Exegy, Inc. | Legal | Patents | Privacy Policy
+--- 2026-09-23T03:50:10Z method=run target=c117_capture_replay rc=0 time_s=2.050286818 note=候補 117 の公式の場の製品頁 products/exegy-capture-replay(page-sitemap にある URL)。区分 1 の検証の道具か、データの記録と再生の道具かを見る(Crawl-delay に従い 10 秒以上空けた)
+$ curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_cr.html -w '[code=%{http_code}]\n' https://www.exegy.com/products/exegy-capture-replay/; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ext.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/exegy_cr.html 30 | sed -n '1,2p;/Capture\|capture\|replay\|Replay\|backtest\|historical\|Historical\|tick/p' | head -30
+[code=200]
+TITLE Exegy Capture Replay - Exegy
+TITLE Exegy Capture Replay - Exegy
+段落 33
+0 Exegy Capture Replay - Exegy Skip to main content Solutions FIRMMarket Makers
+8 Collecting raw market data is a straightforward task. Doing it reliably and delivering it in all the forms you need across your organization is the challenging part. Exegy Capture Replay (XCR) meets those challenges with an easy-to-use, fully managed appliance that provides historical market data to your specifications.
+10 Your business requires complete market data history with high-precision timestamps for a wide variety of uses—from loading tick databases to testing new execution algorithms to proving best execution. Rapidly evolving licensing rules from exchanges and other feed sources compel you to capture the real-time market data that drives your trading infra
+11 Exegy Capture Replay is a high-capacity, high-precision packet capture solution with a robust ticker plant function embedded in it, enabling it to deliver recorded data in a variety of formats. Applications using raw data receive packet capture (PCAP) files with nanosecond-precision timestamping. Applications requiring normalized market data can ac
+12 Thanks to its high capacity recording and lossless delivery of market data to applications, the XCR is an ideal solution for reliably and efficiently loading tick databases. By insulating database loading from unpredictable changes in market data rates, the XCR minimizes the computer resources required and avoids costly holes in your database.
+13 Exegy’s Hosted XCR provides value for a range of firms who consume large volumes of historical market data but want to conserve data center space and minimize hardware management. In addition to including hosting space and power for the appliances, Exegy Hosted XCR solutions include connectivity to the direct market data feeds of your choice.
+15 Use XCR’s nanosecond-precision timestamps to document order-routing decisions for compliance with Reg NMS best execution requirements. Set replay rates to conduct capacity stress testing for Reg SCI and MiFID II compliance.
+17 XCR can efficiently load market data directly into leading vendor applications such as KDB, OneTick, or TickSmith or into internal tick databases.
+19 Compare our historical data solutions.
+--- 2026-09-23T03:50:22Z method=run target=c118_sitemap rc=0 time_s=.858753709 note=候補 118 の場 hyper-quant.tech の robots.txt と sitemap。13 回目の当たりの表題の記事(Realistic Backtesting)の URL と、道具の頁を探す
+$ curl -sS -m 30 -A 'Mozilla/5.0' -w '\n[code=%{http_code}]\n' https://hyper-quant.tech/robots.txt | head -20; curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml -w '[code=%{http_code}] sitemap.xml\n' https://hyper-quant.tech/sitemap.xml; echo '== loc の件数'; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml | wc -l; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml | grep -i 'backtest\|slippage\|pricing\|price\|docs\|feature\|product\|terms\|download\|api' | head -30
+Redirecting...
+
+[code=307]
+[code=307] sitemap.xml
+== loc の件数
+0
+--- 2026-09-23T03:50:29Z method=run target=c118_sitemap_follow rc=0 time_s=2.074178570 note=打ち直し。前の手は code=307(転送)で、転送先を辿らずに打っていた。-L で転送先を辿り、行き先の URL も記録する
+$ curl -sS -m 30 -L -A 'Mozilla/5.0' -w '\n[code=%{http_code}] url_effective=%{url_effective}\n' https://hyper-quant.tech/robots.txt | tail -15; curl -sS -m 30 -L -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml -w '[code=%{http_code}] url_effective=%{url_effective}\n' https://hyper-quant.tech/sitemap.xml; echo '== loc の件数'; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml | wc -l; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_sitemap.xml | grep -i 'backtest\|slippage\|pricing\|price\|docs\|feature\|product\|terms\|download\|api' | head -30
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+
+User-Agent: *
+Allow: /
+Disallow: /api/
+Disallow: /_next/
+Disallow: /private/
+
+Host: https://hyper-quant.tech
+Sitemap: https://hyper-quant.tech/sitemap.xml
+
+[code=200] url_effective=https://www.hyper-quant.tech/robots.txt
+[code=200] url_effective=https://www.hyper-quant.tech/sitemap.xml
+== loc の件数
+41
+<loc>https://www.hyper-quant.tech/pricing</loc>
+<loc>https://www.hyper-quant.tech/docs</loc>
+<loc>https://www.hyper-quant.tech/docs/api</loc>
+<loc>https://www.hyper-quant.tech/terms</loc>
+<loc>https://www.hyper-quant.tech/research/realistic-backtesting-methodology</loc>
+--- 2026-09-23T03:50:37Z method=run target=c118_article rc=0 time_s=1.452940596 note=候補 118 の当たりの記事(sitemap にある research/realistic-backtesting-methodology)。記事が道具の機能を述べているか、約定・滑りの模型の中身を書いているかを見る
+$ curl -sS -m 30 -L -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_art.html -w '[code=%{http_code}] url_effective=%{url_effective}\n' https://www.hyper-quant.tech/research/realistic-backtesting-methodology; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ext.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_art.html 60
+[code=200] url_effective=https://www.hyper-quant.tech/research/realistic-backtesting-methodology
+TITLE Realistic Backtesting: Transaction Costs, Slippage, and Walk-Forward Optimization · Hyper Trading Automation
+段落 71
+0 Realistic Backtesting: Transaction Costs, Slippage, and Walk-Forward Optimization · Hyper Trading AutomationSkip to main content (press enter to focus)Capital at risk -- demo environment only.
+1 This public experience streams signed, sandboxed market data for illustrative purposes. No live trading or performance guarantees.
+2 🇺🇸EnglishRequest gated accessToggle navigationHome
+3 Research PaperpublishedRealistic Backtesting: Transaction Costs, Slippage, and Walk-Forward Optimization
+4 Comprehensive framework for realistic backtesting including transaction costs, dynamic slippage modeling, and walk-forward optimization to prevent overfitting.
+5 AuthorResearch TeamPublishedOctober 20, 2024ShareBacktestingTransaction CostsMethodologyWalk-ForwardRealistic Backtesting: Transaction Costs, Slippage, and Walk-Forward Optimization
+6 Most backtest failures in live trading stem from unrealistic assumptions about costs, slippage, and optimization methodology. This paper details our comprehensive backtesting framework designed to minimize the gap between simulated and live performance.
+7 Common reasons strategies fail live:
+8 We model complete exchange fee structures:
+9 python@dataclass class FeeModel: maker_fee: float = 0.001 # 0.1% for limit orders taker_fee: float = 0.002 # 0.2% for market orders funding_rate: float = 0.01 # 0.01% per 8h for perpetuals withdrawal_fee: float = 0.0005 # Network fees Round-Trip Cost Calculation
+10 pythondef calculate_round_trip_cost( entry_type: str, # 'maker' or 'taker' exit_type: str, # 'maker' or 'taker' position_size: float, funding_periods: int, fee_model: FeeModel ) -> float: """ Calculate total round-trip transaction costs. """ entry_fee = ( fee_model.maker_fee if entry_type == 'maker' else fee_model.taker_fee ) exit_fee = ( fee_model
+11 Conservative: 0.5% round trip (taker + taker + 2% annual funding)
+12 Moderate: 0.3% round trip (maker + taker + 1% annual funding)
+13 Optimistic: 0.15% round trip (maker + maker, minimal funding)
+14 We default to conservative assumptions.
+15 Slippage is the difference between expected and actual execution price.
+16 Many backtests use fixed slippage (e.g., 0.1%). This is incorrect—slippage depends on:
+17 Order size relative to book depth
+18 pythondef estimate_slippage( order_size: float, side: str, orderbook: OrderBook, volatility: float ) -> float: """ Estimate slippage based on order size and market conditions. """ # Base slippage from spread spread = orderbook.best_ask - orderbook.best_bid spread_slippage = spread / 2 # Impact slippage from order size if side == 'buy': available_li
+19 For larger orders, we use the square root market impact model:
+20 Impact = σ × √(Q / V) × π Where:
+21 π = permanent impact coefficient (~0.1 for crypto)
+22 Walk-forward testing prevents overfitting by simulating how the strategy would be developed and deployed in real time.
+23 Timeline: [----Train 1----][Test 1][----Train 2----][Test 2]... 1. Train on historical data (e.g., 6 months) 2. Optimize parameters on training set 3. Test on unseen future data (e.g., 1 month) 4. Slide window forward 5. Repeat Implementation
+24 pythondef walk_forward_test( strategy: Strategy, data: pd.DataFrame, train_months: int = 6, test_months: int = 1, overlap: bool = False ) -> List[TestResult]: """ Perform walk-forward backtesting. """ results = [] # Calculate window sizes total_days = len(data) train_days = train_months * 30 test_days = test_months * 30 current_start = 0 while curr
+25 A healthy strategy should show consistent performance:
+26 pythondef walk_forward_efficiency(results: List[TestResult]) -> float: """ Calculate walk-forward efficiency ratio. WFE = Average Test Sharpe / Average Train Sharpe Good: WFE > 0.5 Acceptable: WFE 0.3-0.5 Poor: WFE < 0.3 (likely overfit) """ train_sharpes = [r.train_sharpe for r in results] test_sharpes = [r.test_sharpe for r in results] return np.
+27 Many data sources retroactively update historical data:
+28 Using restated data creates look-ahead bias.
+29 We maintain point-in-time databases:
+30 Data stored as it appeared at each moment
+31 Survivorship-bias-free (includes delisted assets)
+32 To understand performance distribution, we run Monte Carlo simulations:
+33 pythondef monte_carlo_simulation( strategy: Strategy, data: pd.DataFrame, num_simulations: int = 1000, shuffle_method: str = 'bootstrap' ) -> MonteCarloResults: """ Run Monte Carlo simulation to estimate performance distribution. """ results = [] for _ in range(num_simulations): if shuffle_method == 'bootstrap': # Resample with replacement sampled_
+34 Complete pipeline for strategy evaluation:
+35 pythondef evaluate_strategy(strategy: Strategy) -> EvaluationReport: """ Complete strategy evaluation pipeline. """ # 1. Load point-in-time data data = load_pit_data(strategy.asset, strategy.timeframe) # 2. Walk-forward optimization wf_results = walk_forward_test(strategy, data) # 3. Calculate metrics with realistic costs for result in wf_results: 
+36 Realistic backtesting requires:
+37 Comprehensive cost modeling: All fees, funding, and spreads
+38 Dynamic slippage: Based on order size and market conditions
+39 Walk-forward testing: Prevents overfitting
+40 Point-in-time data: No look-ahead bias
+41 Monte Carlo simulation: Understand performance distribution
+42 Strategies that pass our framework have a much higher probability of live trading success.
+43 For more on our methodology, see our audit framework.
+44 Get access to full methodology and performance data.
+45 Infrastructure-Based ML Deployment: The Model Factory Approach
+46 Automated generation of 486 model configurations from base architectures. Learn how our Model Factory eliminates manual model variant coding through systematic architecture expansion.
+47 Kelly Criterion Position Sizing in Volatile Crypto Markets
+48 Mathematical approach to position sizing using fractional Kelly with volatility and confidence scaling. Demonstrates superior risk-adjusted returns in backtests.
+49 VPIN and Order Flow Imbalance Detection in Crypto Exchanges
+50 Volume-Synchronized Probability of Informed Trading (VPIN) for detecting toxic flow and whale activity. Includes microprice calculations and flash crash detection.
+51 Explore More ResearchReady to trade smarter?
+52 Join 1500+ traders already on the waitlist. Limited early access spots available.
+53 Hyper TradingDemo only · No guarantees
+54 Coming SoonHyper Trading Automation, Yunusabad District, Tashkent 100093, UzbekistanPlatform
+55 Independent security review in progressIndustry-standard encryption in transit and at restOWASP best-practices followed; audits plannedGlossary of Algorithmic Trading Terms
+56 Our platform utilizes HFT algorithms to execute thousands of orders per second, leveraging sub-millisecond latency to capture micro-inefficiencies in cryptocurrency markets.
+57 We deploy proprietary ML models trained on 5+ years of tick data. Our deep learning networks analyze order book density, volume delta, and sentiment analysis to predict price movements with 94% accuracy.
+58 Automated arbitrage strategies across Binance, Coinbase, and Kraken. Our bots exploit price differences between exchanges instantly, guaranteeing risk-free alpha generation.
+59 Provide liquidity to decentralized exchanges (DEXs) like Raydium and Uniswap while earning yield. Our market making algorithms minimize impermanent loss through dynamic hedging.
+--- 2026-09-23T03:50:50Z method=run target=c118_pricing_docs rc=0 time_s=7.591769183 note=候補 118 の pricing と docs と docs/api(sitemap にある URL)。道具が登録なしで手に取れるか、検証の機関を公開しているか、料金と登録に渡すものを見る
+$ for p in pricing docs docs/api; do curl -sS -m 30 -L -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_$(echo $p | tr / _).html -w "== $p [code=%{http_code}] url_effective=%{url_effective}\n" https://www.hyper-quant.tech/$p; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ext.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/hq_$(echo $p | tr / _).html 45 | grep -v '^[0-9]* \(Our platform utilizes\|We deploy proprietary\|Automated arbitrage\|Provide liquidity\|Independent security\|Coming Soon\)' | cut -c1-300 | head -28; sleep 2; done
+== pricing [code=200] url_effective=https://www.hyper-quant.tech/pricing
+TITLE HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto Trading
+段落 40
+0 HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto TradingSkip to main content (press enter to focus)Capital at risk -- demo environment only.
+1 This public experience streams signed, sandboxed market data for illustrative purposes. No live trading or performance guarantees.
+2 🇺🇸EnglishRequest gated accessToggle navigationPricingOnly Pay When You Profit. No Management Fees. Ever.
+3 Unlike 95% of platforms, we don't charge fees regardless of performance. Our profit-share model means we only succeed when you do. Zero management fees, zero monthly charges.*
+4 Fees only trigger after net performance (after trading costs) clears the preferred return hurdles. No management fee, no monthly retainers.
+5 If an account realised $10,000 in net profit over a quarter, the illustrative 20% share would be $2,000. This is not a guarantee of future performance.
+6 Clear pricing structure with real-time data and signed records. We're working towards third-party verification and operational compliance. Everything remains in demo/analysis mode.
+7 Aligned IncentivesWhy Profit Sharing Works Better
+8 The fairest pricing model in crypto trading. We succeed only when you succeed.
+9 Traditional management fees eat into your capital regardless of performance. Our model ensures that we are only compensated when we generate real, verified value for you.
+10 This creates a powerful partnership where our goals are perfectly synchronized with yours. No hidden fees, no monthly retainers, no costs during drawdowns.
+11 Zero management fees during any periodFees only after verified net profitIndependent third-party audit requiredEstimatorInteractive Fee Calculator
+12 See how much you could save compared to traditional fund management fees.
+13 * Hypothetical calculation based on $100,000 account size. Results may vary.
+14 Why We're Superior to Traditional Funds
+15 See the dramatic advantages of our modern, transparent approach to fee structures.*
+16 0%2% annually0–1% monthlyPerformance FeeProfit-share (pending verification)20% of profits10–30% of profitsTransparencyReal-time, signed dataQuarterly reportsVaries widelyThird-party VerificationPlanned (post-launch)Annual financial auditRareFee Charged in Loss YearsNoYes (management fee)Depen
+17 See exactly how our profit-share model works in both profitable and challenging market conditions.*
+18 Profitable Quarter (Hypothetical)
+19 No fees charged in loss periods. We only earn when you earn.
+20 * All pricing information, fee examples, and comparisons are illustrative and subject to change. Final terms require legal review and investor qualification. Hypothetical examples do not constitute guarantees or projections of actual performance. Cryptocurrency trading involves substantial risk o
+21 Join 1500+ traders already on the waitlist. Limited early access spots available.
+22 Hyper TradingDemo only · No guarantees
+29 Institutional-grade risk controls including max drawdown protection, Sharpe Ratio optimization, and volatility-adjusted position sizing (Kelly Criterion).
+30 Ethereum (ETH) Algorithmic Strategies
+31 Solana (SOL) High-Speed Execution
+== docs [code=200] url_effective=https://www.hyper-quant.tech/docs
+TITLE HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto Trading
+段落 38
+0 HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto TradingSkip to main content (press enter to focus)Capital at risk -- demo environment only.
+1 This public experience streams signed, sandboxed market data for illustrative purposes. No live trading or performance guarantees.
+2 🇺🇸EnglishRequest gated accessToggle navigation>_docs/api/referenceDocumentationComprehensive Platform Guides
+3 Learn about our multi-model trading platform, strategy development, and risk management systems.
+4 API & Live Trading Not Yet Available
+5 Hyper Trading Automation is currently in the research and development phase. The API, WebSocket feeds, and live trading capabilities will be available when the platform launches. In the meantime, explore our architecture documentation to understand how the system will work.
+6 Join WaitlistExplore ArchitectureAvailable NowDocumentation & Guides
+7 Explore our platform concepts, architecture, and planned capabilities. These guides help you understand what's coming and prepare for launch.
+8 High-level introduction to Hyper Trading Automation, its vision, and key benefits.
+9 What is Hyper Trading Automation?
+10 Step-by-step guide to prepare for platform launch and understand the onboarding process.
+11 Learn how to create, test, and deploy automated trading strategies.
+12 Essential safety features and risk controls to protect your capital.
+13 Deep dive into the platform's design, security, and performance characteristics.
+14 Track, analyze, and optimize your trading strategies with detailed metrics.
+15 Coming With Platform LaunchAPI & Developer Tools
+16 These resources will be available when the platform launches for live trading. Join the waitlist to be notified.
+17 We're actively building these features to enhance your trading experience.
+18 Our team is here to help you understand our platform and prepare for launch.
+19 Join 1500+ traders already on the waitlist. Limited early access spots available.
+20 Hyper TradingDemo only · No guarantees
+27 Institutional-grade risk controls including max drawdown protection, Sharpe Ratio optimization, and volatility-adjusted position sizing (Kelly Criterion).
+28 Ethereum (ETH) Algorithmic Strategies
+29 Solana (SOL) High-Speed Execution
+30 XRP, ADA, DOT, and 50+ other altcoins
+31 *Automated trading involves significant risk of loss, including possible loss of principal.
+== docs/api [code=200] url_effective=https://www.hyper-quant.tech/docs/api
+TITLE HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto Trading
+段落 37
+0 HyperTrader | 866 AI Models & Strategies for Institutional-Grade Crypto TradingSkip to main content (press enter to focus)Capital at risk -- demo environment only.
+1 This public experience streams signed, sandboxed market data for illustrative purposes. No live trading or performance guarantees.
+2 🇺🇸EnglishRequest gated accessToggle navigation<>{}()[]//&&API>>←Back to DocsRESTful API v1.0API Reference
+3 Build powerful trading automations with Hyper Trading's comprehensive REST API. Full documentation for programmatic access to strategies, bots, and analytics.
+4 Secure API keys with customizable permissions and IP whitelisting.
+5 Average response time under 50ms for real-time trading operations.
+6 Generous rate limits with 1000 requests/minute for Pro users.
+7 Real-time notifications for trades, signals, and system events.
+8 curl -X GET https://api.hyper-quant.tech/v1/status2Authenticate with API Key
+9 curl -X GET https://api.hyper-quant.tech/v1/strategies \ -H "Authorization: Bearer YOUR_API_KEY" \ -H "Content-Type: application/json"3Deploy a Strategy
+10 curl -X POST https://api.hyper-quant.tech/v1/strategies/momentum-alpha/deploy \ -H "Authorization: Bearer YOUR_API_KEY" \ -H "Content-Type: application/json" \ -d '{ "pair": "BTC/USDT", "exchange": "binance", "risk_level": "medium", "position_size": 0.1 }'Authentication
+11 All authenticated requests require a valid API key in the Authorization header. API keys can be created in your dashboard with granular permissions:
+12 Read-only: View strategies, bots, and performance data
+13 Trade: Start/stop bots and deploy strategies
+14 Admin: Full API access including webhooks and settings
+15 POST/v1/strategies/{id}/deployDeploy a strategy with custom parametersGET/v1/botsList all active trading botsPOST/v1/bots/{id}/startStart a trading botPOST/v1/bots/{id}/stopStop a trading botGET/v1/performanceGet performance metrics and statisticsGET/v1/tradesList trade history with filteringRate
+16 Use our official SDKs for faster integration. Available for Python, JavaScript/TypeScript, and Go.
+17 📝 Full API Documentation Coming Soon: Complete endpoint documentation with request/response schemas, error codes, and interactive API explorer.Contact us to request early API access.
+18 Join 1500+ traders already on the waitlist. Limited early access spots available.
+19 Hyper TradingDemo only · No guarantees
+26 Institutional-grade risk controls including max drawdown protection, Sharpe Ratio optimization, and volatility-adjusted position sizing (Kelly Criterion).
+27 Ethereum (ETH) Algorithmic Strategies
+28 Solana (SOL) High-Speed Execution
+29 XRP, ADA, DOT, and 50+ other altcoins
+30 *Automated trading involves significant risk of loss, including possible loss of principal.
+31 *No statements on this site should be interpreted as guarantees of returns or assurances of future performance.
+--- 2026-09-23T03:51:11Z method=run target=c50_sitemap rc=0 time_s=1.670088761 note=候補 50 の文書の場 docs.algotest.in の sitemap。足かティックか・約定の値段の作り方・滑りを書いた頁を探す
+$ curl -sS -m 30 -L -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/at_sitemap.xml -w '[code=%{http_code}] url_effective=%{url_effective}\n' https://docs.algotest.in/sitemap.xml; echo '== loc の件数'; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/at_sitemap.xml | wc -l; grep -o '<loc>[^<]*</loc>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/at_sitemap.xml | grep -i 'backtest\|slippage\|tick\|minute\|data\|execution\|fill\|faq\|simulat\|limit\|order' | head -50
+[code=200] url_effective=https://docs.algotest.in/sitemap.xml
+== loc の件数
+340
+<loc>https://docs.algotest.in/broker/angelonelimited/</loc>
+<loc>https://docs.algotest.in/category/troubleshooting--faq/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/advanced-features/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/analysis-adjustment/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/getting-started/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/introduction/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/setup/</loc>
+<loc>https://docs.algotest.in/clicktrade/simulator/simulation/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/additional-information/loss-limiter/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/additional-information/oi-data/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/live-execution-trade-management/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/live-execution-trade-management/live-trading/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/live-execution-trade-management/managing-positions/</loc>
+<loc>https://docs.algotest.in/clicktrade/strategy-builder/live-execution-trade-management/types-of-orders/</loc>
+<loc>https://docs.algotest.in/crypto-trading/backtest/</loc>
+<loc>https://docs.algotest.in/execution-settings/</loc>
+<loc>https://docs.algotest.in/execution-settings/auto-squareoff/</loc>
+<loc>https://docs.algotest.in/execution-settings/days-feature/</loc>
+<loc>https://docs.algotest.in/execution-settings/delay-entry/</loc>
+<loc>https://docs.algotest.in/execution-settings/entry-and-exit-order-type/</loc>
+<loc>https://docs.algotest.in/execution-settings/nrml-mis/</loc>
+<loc>https://docs.algotest.in/execution-settings/quantity-multiplier/</loc>
+<loc>https://docs.algotest.in/execution-settings/strategy-execution-time/</loc>
+<loc>https://docs.algotest.in/execution-settings/tgt-sl-ref-price/</loc>
+<loc>https://docs.algotest.in/execution-settings/trade-monitoring/</loc>
+<loc>https://docs.algotest.in/getting-started/pricing-breakdown/backtest-pricing/</loc>
+<loc>https://docs.algotest.in/getting-started/pricing-breakdown/execution-plans-algotest/</loc>
+<loc>https://docs.algotest.in/platform-updates/Market%20orders%20banned/</loc>
+<loc>https://docs.algotest.in/product-blogs/backtest-portfolio/</loc>
+<loc>https://docs.algotest.in/product-blogs/backtest-sl-mismatch/</loc>
+<loc>https://docs.algotest.in/product-blogs/difference-backtest-forward-live/</loc>
+<loc>https://docs.algotest.in/product-blogs/sl-order-executed/</loc>
+<loc>https://docs.algotest.in/Signals-AI/Creating-Signals/Choosing-Chart-Data/</loc>
+<loc>https://docs.algotest.in/Signals-AI/Creating-Signals/Signal-Limits/</loc>
+<loc>https://docs.algotest.in/Signals-AI/Going-Live/Execution-Settings/</loc>
+<loc>https://docs.algotest.in/Signals-AI/Troubleshooting/FAQ/</loc>
+<loc>https://docs.algotest.in/Signals-AI/Validating-Your-Strategy/Backtesting/</loc>
+<loc>https://docs.algotest.in/signals/signal-backtest-csv/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/algo-trade/multi-broker-execution/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/Backtest-Analysis-and-Pricing/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/Backtest-Analysis-and-Pricing/backtest-comparison/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/Backtest-Analysis-and-Pricing/backtesting-results/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/Backtest-Analysis-and-Pricing/in-out-sample/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/Backtest-Analysis-and-Pricing/monte-carlo-drawdown/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/backtest-filters/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/backtest-filters/budget-day-filter/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/backtest-filters/dte-filter/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/how-to-backtest/</loc>
+<loc>https://docs.algotest.in/Time-Based-Algo-Trading/how-to-backtest/backtest-920-Straddle/</loc>
+--- 2026-09-23T03:51:20Z method=run target=c50_granularity rc=0 time_s=9.890721280 note=候補 50 の文書 3 頁(product-blogs/backtest-sl-mismatch・product-blogs/difference-backtest-forward-live・crypto-trading/backtest)。足かティックか、約定の値段の作り方、滑りの扱いの逐語を抜く
+$ for p in product-blogs/backtest-sl-mismatch product-blogs/difference-backtest-forward-live crypto-trading/backtest; do f=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/at_$(echo $p | tr / _).html; curl -sS -m 30 -L -A 'Mozilla/5.0' -o $f -w "==== $p [code=%{http_code}]\n" https://docs.algotest.in/$p/; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ext.py $f 60 | grep -i 'minute\|tick\|second\|candle\|OHLC\|slippage\|executed at\|price\|data\|TITLE' | cut -c1-420 | head -22; sleep 2; done
+==== product-blogs/backtest-sl-mismatch [code=200]
+TITLE None
+4 Important BlogsCandle Close Implementation on AlgoTest
+5 How does AlgoTest define a candle?
+10 SL Order Excuted without hitting Price?
+22 In the world of backtests, we represent a constant flow of market data that your broker API receives as :candles . A candle has the wonderful property of compressing all market activity over any period into 5 distinct data points -- :Open, High, Low, Close, and Volume (OHLCV). With the benefit of this compression, however, comes a cost. The cost is
+23 This data loss can seem magnified during particularly volatile period, as it can introduce large discontinuities between the price of two candles. A cursory look at :Generic Broker chart shows an intra-day gap down discontinuity we found:
+24 On 22 Feb'22 14:41, the close price of the candle was Rs 198.20, the open price of the next candle was Rs 196. If your Stop Loss was set between these prices, our platform assumes your SL got hit at the open price of the next candle. Here, the gap in the two candles isn't much, only ~2 rupees. BUT, it can be much larger during periods of volatility
+29 #freaktrade #37100PE a story in charts. y-axis represents the ltp, x-axis the time. These are all the trades in that one second. Someone shouted "FIRE" in a crowded theater with a narrow exit. Instead of an orderly evacuation, we had a stampede. pic.twitter.com/VJ65ghaGgo--- Raghav (@rogue_hft) September 3, 2021
+==== product-blogs/difference-backtest-forward-live [code=200]
+TITLE None
+4 Important BlogsCandle Close Implementation on AlgoTest
+5 How does AlgoTest define a candle?
+10 SL Order Excuted without hitting Price?
+14 Backtesting a strategy helps in quantifying a strategy's historical risk and return expectation. Armed with this data, traders get the confidence to deploy large sums of capital into their strategies. But sometimes, your daily backtested data might differ from your Live trading and forward testing results. Below we have tried to explain some of the
+15 <Iframe videoId={"aNE6toOojhs"} /> Slippages -- Instrument depth, liquidity & broker congestion​
+16 Backtesting a strategy assumes you get the best price as defined by the parameters of the strategy. It does not take into consideration the market depth and liquidity of the instrument, slippages & broker congestion. Here is how these factors can affect your backtest vs Live/forward testing results:
+17 Whether there is a counterparty available who is willing to trade the quantity you want to buy/sell at that price. This issue can be more easily seen with ITM options.
+18 Whether the bid/ask spread is small enough so that you are able to get the same price close LTP which the backtest engine uses.
+19 Sometimes, sudden moves in the market, especially during expiry, lead to a spike in option prices due to the gamma effect. The rise is so swift that the time taken for the system to process that the SL price has been breached to actual fulfillment of the SL order is enough to result in a big difference between the SL price and the exit price.
+20 Due to congestion of order flow at the broker's end, especially during the morning, the entry into your instrument might be delayed by 1 or 2 sec. This delay can lead to different entry prices or/and potentially different strikes from what the backtesting engine uses for your strategy compared your algo trade and forward test. In forward testing, w
+21 As a result of the above, your trades entry prices and/or strikes and thus the SL, profits target and TSL might be different from our backtest results.
+22 Solution: Add slippages to reduce differences caused by such factors.
+24 SL-L order triggered but market never reached SL price​
+25 AlgoTest offers the use of SL-L order for your SL orders. The SL-L orders are placed in your broker's order book. At the time of entry in the strategy and are quite helpful in reducing slippages that might occur due to sudden moves in the market. A SL-L order has a trigger price and a limit price defined by the user at the time of activating their 
+27 CE SL-L order: Trigger price Rs 118, Limit price Rs 124
+28 PE SL-L order: Trigger price Rs 118, Limit price Rs 124
+29 Now, if the LTP of the CE reaches Rs 118.05 our trigger price will be breached and a limit order a to buy the CE will be placed at Rs 124 and we shall be stopped out of the CE leg.
+30 If the the price of the call makes a high of Rs 119 and reverses from there, then according to the backtest we are still in the trade whereas in live deployment we have been stopped out. This can lead to mismatch in backtest results vs live trade and forward test.
+33 As mentioned earlier, our backtest uses 1-min OHLC data to give results. When using 1-min OHLC data, the only time you can be sure about the overall profit or loss of a strategy is either at the open or close of the candle. AlgoTest uses the close of a 1-min candle to calculate the overall profit and loss for a strategy.
+35 Your strategy might have reached its defined Overall Target profit or SL in LIVE trading but the 1-min Candle close might not have reflected this.
+36 One of the features that AlgoTest has under its legwise SL settings is SL complete. Under this condition, if the SL of any of the legs in a strategy is hit, the whole strategy is exited. Since we use 1-min OHLC data, we can determine the exit price of the SL leg, as defined in the strategy, but we cannot determine the price of the other legs at the
+==== crypto-trading/backtest [code=200]
+TITLE None
+--- 2026-09-23T03:51:39Z method=run target=c50_ordertype rc=0 time_s=6.796824795 note=候補 50 の文書 2 頁(execution-settings/entry-and-exit-order-type・crypto-trading/backtest)。検証の側で指値が埋まらずに残るか、成行の値段の作り方、暗号資産の検証の粒度の逐語を抜く
+$ for p in execution-settings/entry-and-exit-order-type crypto-trading/backtest; do f=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/at_$(echo $p | tr / _).html; curl -sS -m 30 -L -A 'Mozilla/5.0' -o $f -w "==== $p [code=%{http_code}]\n" https://docs.algotest.in/$p/; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ext.py $f 80 | grep -v 'Important Blogs\|How does AlgoTest define\|SL Order Excuted' | sed -n '2,40p' | cut -c1-380; sleep 2; done
+==== execution-settings/entry-and-exit-order-type [code=200]
+段落 69
+0 Skip to main contentBuild, BackTest and Automate Indicator based Algos without coding 🎉 Try Now AlgoTestSignup NowAlgoTest Documentation
+1 920 Algo – Time-Based Algo Trading
+2 Execution SettingsQuantity Multiplier
+3 NRML and MIS orders in Options Trading
+4 Target(Tgt)/StopLoss(SL) Ref Price
+5 Free Charts - Straddle | Strangle
+6 Virtual Execution Environment (VEE)
+7 Financial Education | Futures and Options
+8 This feature on AlgoTest allows you to execute your entry orders via Market or Limit Order.
+9 It is a type of order that allows the order to be executed at the best available price in the market at that time. Market orders lead to high slippage as compared to limit orders. In this feature, no order is sent to your broker in advance. The system fires a market order as soon as your entry condition is met.
+10 You can select market order by selecting from the drop-down on Entry Order Type as shown in the image below.
+11 The order will not be placed on the broker's end. It will be on the AlgoTest end. As soon as the entry condition is met, Algo will send the order to the broker to execute it.
+12 A limit order is a type of order that allows the order to be executed within a specified limit price only. They can help you to reduce slippage. In this feature, a Limit/SL-L order, with the defined trigger & limit price, will be sent to your broker and shall be placed in the order book of your broker either in advance or at the time of the conditi
+13 You can select Limit Order from the drop-down on Entry Order Type as shown in the image below.
+14 A SL-L order needs to define its trigger and the limit price. Trigger price is the price at which your buy or sell order becomes active for execution. Once the price of the option hits the trigger price set by you, a limit order, with the price set by you, becomes active for execution on the exchange servers. You can enter the Trigger/Limit buffer 
+15 Let us understand this with a simple example
+16 Nifty ATM Price at 09:20 is 100
+17 Entry on Momentum Up = 10 Points
+18 In this case, a SL-L order will be placed in your broker's order book as follows: Trigger price = 110 - 2 = ₹ 108 & Limit Price = 110 + 3 = Rs 113. This means that as soon as the LTP breaches trigger a price of Rs 108 a Limit order of Rs 113 becomes active for execution on the exchange servers.
+19 Entry Limit/SL-L orders (How they work)​
+20 Positions can be entered using Limit/SL-L orders. The order settings will be as follows:
+21 Time-Based Entry: A Limit order based on the LTP along with the limit buffer is sent at the time of entry. The Limit Buffer is added in case of a Buy order while the Limit Buffer is subtracted in case of a Sell order.
+22 Simple Momentum: Based on your condition a Limit or a SL-L order is sent in advance to your broker
+23 Simple Momentum up (instrument) + BUY = SL-L order is placed in advance based on the Trigger and Limit buffer
+24 Simple Momentum down (instrument) + SELL = SL-L order is placed in advance based on Trigger and Limit buffer
+25 Simple Momentum up (instrument) + SELL = Limit order is placed in advance without any buffer
+26 Simple Momentum Down (instrument) + BUY = Limit order is placed in advance without any buffer
+27 infoAll Simple Momentum strategies based on underlying points are entered via Limit order with a limit buffer as soon as the entry condition is met.
+28 Re-Entry on Tgt/SL: All Re-entry orders are either placed in advance or a Limit order is sent at the time of the condition being met.
+29 Re-Cost: Limit/SL-L order sent in advance to your broker.
+30 Re-ASAP: A limit order with a limit buffer is sent as soon as the previous leg exits.
+31 Re-Momentum on Instrument: Limit/SL-L order sent in advance to your broker based on the set momentum as soon as the previous leg exits.
+32 infoStrategies that are based on the underlying are entered via a Limit order as soon as the Re-entry condition is met.
+33 Range Breakout: All Range Breakout strategies that are based on the instrument have a Limit/SL-L order sent to your broker as soon as the range time ends. For strategies that are based on the underlying a Limit order is sent as soon as the break condition is met.
+34 Make sure that your limit and trigger buffer does not lead to a NEGATIVE limit or Trigger price. In such a case the limit order will be rejected and we will enter the position via Market order.
+35 You can enter 0 to 20 seconds to convert to the market after time. This timer is used for converting to the market order when your Limit order skips or your Limit order is partially filled. It operates as follows:
+36 Price at 09:20 is 100, Momentum Up = 10 Points
+37 Trigger buffer = 0 pts, Trigger Price = Rs 110
+==== crypto-trading/backtest [code=200]
+段落 8
+0 Skip to main contentBuild, BackTest and Automate Indicator based Algos without coding 🎉 Try Now AlgoTestSignup NowAlgoTest Documentation
+1 920 Algo – Time-Based Algo Trading
+2 Free Charts - Straddle | Strangle
+3 Virtual Execution Environment (VEE)
+4 Financial Education | Futures and Options
+5 You can backtest your crypto trading strategies on AlgoTest. Backtesting helps you analyze how your strategy would have performed in the past, allowing you to refine your approach before going live.
+6 To learn how to create and run backtests on AlgoTest, refer to our main Backtesting Guide.
+7 Head over to AlgoTest to begin backtesting your crypto algo-trading strategies!
+--- 2026-09-23T03:52:07Z method=run target=c45_routes rc=0 time_s=11.895064735 note=候補 45 を 13 回目と別の経路で試す: (1) www 付きの場 (2) 部分領域 help. と docs. と blog. と app. (3) archive.org の CDX API でドメイン全体の控えの一覧(13 回目は /buy の available API と wayback 直だけ)
+$ for u in https://www.forextester.com/ https://help.forextester.com/ https://docs.forextester.com/ https://blog.forextester.com/ https://app.forextester.com/; do curl -sS -m 25 -L -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ft.html -w "$u [code=%{http_code}] url_effective=%{url_effective}\n" $u; head -c 300 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ft.html | tr '\n' ' ' | cut -c1-200; echo; sleep 2; done
+https://www.forextester.com/ [code=403] url_effective=https://www.forextester.com/
+<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam
+
+https://help.forextester.com/ [code=403] url_effective=https://forextester.com/en/support/
+<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam
+
+curl: (56) CONNECT tunnel failed, response 502
+https://docs.forextester.com/ [code=000] url_effective=https://docs.forextester.com/
+<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam
+
+curl: (56) CONNECT tunnel failed, response 502
+https://blog.forextester.com/ [code=000] url_effective=https://blog.forextester.com/
+<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta nam
+
+https://app.forextester.com/ [code=200] url_effective=https://app.forextester.com/
+<!doctype html> <html lang="en">     <head>         <meta charset="utf-8" />         <title>Forex Tester Online</title>         <base href="/" />          <meta name="viewport" content="width=device-w
+--- 2026-09-23T03:52:29Z method=run target=c45_retry000 rc=0 time_s=21.526654715 note=打ち直し。前の手で docs.forextester.com と blog.forextester.com が code=000(プロキシの CONNECT 502)で、404 の欄には入れない。名前の解決の有無も見る
+$ for h in docs.forextester.com blog.forextester.com; do getent hosts $h || echo "$h 名前の解決 rc=$?"; for k in 1 2; do rm -f /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ft2.html; curl -sS -m 25 -L -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/ft2.html -w "https://$h/ try$k [code=%{http_code}]\n" https://$h/; sleep 5; done; done
+docs.forextester.com 名前の解決 rc=2
+curl: (56) CONNECT tunnel failed, response 502
+https://docs.forextester.com/ try1 [code=000]
+curl: (56) CONNECT tunnel failed, response 502
+https://docs.forextester.com/ try2 [code=000]
+blog.forextester.com 名前の解決 rc=2
+curl: (56) CONNECT tunnel failed, response 502
+https://blog.forextester.com/ try1 [code=000]
+curl: (56) CONNECT tunnel failed, response 502
+https://blog.forextester.com/ try2 [code=000]
+--- 2026-09-23T03:53:52Z method=run target=c45_fto_shell rc=0 time_s=.512860289 note=候補 45 の新しい経路: Forex Tester Online の場 app.forextester.com(13 回目の 5 経路に無い)。殻の HTML の表題と、読み込む文言の束の名前
+$ curl -sS -m 30 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto.html -w '[code=%{http_code}]\n' https://app.forextester.com/; grep -o '<title>[^<]*</title>' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto.html; grep -o 'href="./loc-en[^"]*"\|src="./main[^"]*"' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto.html
+[code=200]
+<title>Forex Tester Online</title>
+src="./main.BGe2WXSU.js"
+href="./loc-en.DxtuxXmL.js"
+--- 2026-09-23T03:53:53Z method=run target=c45_fto_loc rc=0 time_s=.589430434 note=候補 45 の Forex Tester Online の英語の文言の束 loc-en.DxtuxXmL.js(アプリ自身が画面に出す文言)。検証の粒度・未約定の注文・約定の扱い・料金の層の逐語を鍵ごとに抜く。この道具は登録しないと動かせないので、これは文書上の主張(未実行)である
+$ curl -sS -m 60 -A 'Mozilla/5.0' -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto_loc.js -w '[code=%{http_code}]\n' https://app.forextester.com/loc-en.DxtuxXmL.js; python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto_kv.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto_loc.js
+[code=200]
+鍵と値の対 6873 件 / 大きさ 353267 バイト
+oneMinData => oneMinData:{title:"1-minute data",description:"Data on price changes per minute, including: Open, High, Low, Close prices, and Volume (trading activity)."
+tickData => tickData:{title:"Tick Data",description:"Detailed data on every price change of a financial symbol. Each «tick» is the smallest price movement recorded on the exchange."
+floatingSpread => floatingSpread:{title:"Floating Spread",description:"Set real trading conditions to match live market floating spreads in our backtesting software for accurate results"
+floatingSpread => floatingSpread:"Floating spread from tick data"
+everyBar => everyBar:"Every Bar"
+everyTick => everyTick:"Every Tick"
+tickForward => tickForward:"Tick Forward"
+"cannot-place-pending-order" => "cannot-place-pending-order":"Cannot place pending order {{posInfo}}. {{reason}}"
+stopWaitingAtProtectionLimitText => stopWaitingAtProtectionLimitText:"{{ symbol }} moved past the exchange protection band, so the stop order now rests as a limit order at {{ price }} and fills only when the price comes back to it."
+protection-band" => protection-band":"It filled as a limit order at the exchange protection band, {{formattedPrice}} — the market had moved past the level, and CME does not fill a stop further from it than the band."
+commissionPer1lot => commissionPer1lot:"Commission per 1 lot, USD"
+starterPlan => starterPlan:"Starter Plan"
+proPlan => proPlan:"Pro Plan"
+trial => trial:"5-Day Free Trial Subscription"
+freeRegistrationCTA => freeRegistrationCTA:"Free Registration"
+barsTypeCrypto => barsTypeCrypto:"Crypto"
+historicalBars => historicalBars:{title:"Historical Bars",badge:"Up to 2.5 million"
+---- 語の件数(値の中)
+queue 0
+order book 0
+Order Book 0
+latency 0
+Latency 0
+market impact 1
+Market Impact 1
+partial fill 0
+Partial Fill 0
+--- 2026-09-23T03:53:59Z method=run target=c45_fto_impact rc=0 time_s=.331705824 note=候補 45 の文言の束で market impact に当たった 1 件の中身(約定の模型か、ニュースの説明文か)
+$ python3 -c "
+import re; t=open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto_loc.js',encoding='utf-8',errors='replace').read()
+for m in re.finditer(r'([A-Za-z_$][\w$-]*):\"((?:[^\"\\\\]|\\\\.)*[Mm]arket [Ii]mpact(?:[^\"\\\\]|\\\\.)*)\"', t): print(m.group(1), '=>', m.group(2)[:300])
+"
+replayCloseNoPositions => Last time on {{date_part}} at {{time_part}} you closed a {{direction}} position on {{symbol}} with a total size of {{lot}}, but there are no open positions now. Opening a position in the opposite direction ({{opposite_direction}}) would have a similar market impact as closing the original {{directio
+trumpCovid => Trump's Coronavirus Market Impact
+--- 2026-09-23T03:55:17Z method=run target=stage37_copy rc=0 time_s=.046086938 note=30 回目の段の表(報告書 9124 行の見出しの表)の 37 行から、候補と段(機構)と段(既定)の 3 列を機械で写す。この回の段の表の前半になる
+$ python3 -c "
+lines=open('docs/DATA/SCAN_2026-09-21_tools.md').read().splitlines(); i=9123
+print('見出し', lines[i][:60])
+rows=[]
+for ln in lines[i+2:]:
+    if not ln.startswith('|'): break
+    rows.append([x.strip() for x in ln.strip().strip('|').split('|')][:3])
+print('行', len(rows)); [print(' | '.join(r)) for r in rows]
+"
+見出し | 候補 | 段(機構) | 段(既定) | 遅延 | 取り消しの扱い(先行注文) |
+行 37
+51 `QUANTAXIS` | 0 | 0
+92 `prediction-market-backtester` | 6 | 0
+8 `OpenTrader` | 1 | 1
+32 `FlashAlpha-lab/flashalpha-fill-simulator` | 1 | 1
+7 `Superalgos` | 1 | 1
+72 `QTradeX` | 1 | 1
+2 `Backtrader` | 4 | 1
+4 `PyBroker` | 4・6 | 1
+21 `Qlib` | 4・6 | 1
+3 `PySystemtrade` | 2 | 2
+19 `Jesse` | 2 | 2
+20 `VnPy` | 2 | 2
+60 `Hikyuu` | 2 | 2
+67 `lumibot` | 2 | 2
+70 `PineForge` | 2・3 | 2・3
+13 `DeviaVir/zenbot` | 3・4 | 3・4
+123 `carlos8f/zenbot` | 3・4 | 3・4
+63 `trade-frame` | 3・4 | 3・4
+18 `zipline-reloaded` | 4・6 | 4
+6 `Ziplime` | 4・6 | 4
+53 `Rqalpha` | 3・4 | 4
+23 `hftbacktest` | 3・5 | 3・5
+98 `mihircoding/limitOrderBook` | 5 | 5
+38 `microsoft/MarS` | 5 | 5(推定)
+33 `SarthakDalmia1/backtesting_execution_simulator` | 5・6 | 5
+57 `WonderTrader` | 3・4・5 | 3・4・5
+1 `Basana` | 4・6 | 4・6
+15 `Mendl-Labs/BacktestingCore` | 6 | 6(推定)
+35 `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` | 6 | 6
+36 `shubhamcodez/Market-Impact-Model` | 6 | 6
+105 `DaniyalMlk/slippage` | 6 | 6
+106 `almgren-chriss` | 6 | 6
+116 `braverock/blotter` の `acOptTxns` | 6 | 6
+119 `peernagy/lob_bench` | 6 | 6
+91 `braedonsaunders/homerun` | 3・4・5・6 | 3・4・5
+54 `finmarketpy` | 該当なし | 該当なし
+87 `PyTrendFollow` | 該当なし | 該当なし
+--- 2026-09-23T03:55:17Z method=run target=ls_probes rc=0 time_s=.009060470 note=生ログの本数(この回の run33.log を作ったあとに打った値)
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+32
+--- 2026-09-23T03:57:05Z method=run target=c94_readme rc=0 time_s=.539752539 note=候補 94 の README(既定枝 master、raw から取得)のうち、足と約定を書いた行を行番号つきで出す。個人の連絡先の行は出さない
+$ curl -sS -m 30 -o /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_README.2 -w '[code=%{http_code}]\n' https://raw.githubusercontent.com/mote/backtest/master/README; grep -n 'bar_close\|subclass the BackTest\|Limit and Stop orders are filled\|stop level. Market orders are filled immediately\|specified when the order was placed\|place limit/stop orders\|replay historical data' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/mote_README.2
+[code=200]
+9:This is a module used to replay historical data and place limit/stop orders.
+23:To use, subclass the BackTest object, and write your strategy logic in
+24:bar_close which is called for each bar of your data.
+31:Once you have told bt about your data, and set up your bar_close, call 
+40:Limit and Stop orders are filled which the bars range contains the limit or
+41:stop level. Market orders are filled immediately, at whatever level you 
+42:specified when the order was placed. If you want to use market orders, in
+43:bar_close create the order with the close of the current bar (b.cl), and it 
+--- 2026-09-23T03:57:06Z method=run target=c111_loaders rc=0 time_s=.044909926 note=候補 111 の agent/backtest/loaders/ の本数と、名前に取引所・データ源の語を含むもの(追跡ファイルの一覧から機械で数える。中身は読んでいない)
+$ python3 -c "
+import json; d=json.load(open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vt_files.json')); fs=[f['path'] for f in d['files'] if f['path'].startswith('agent/backtest/loaders/') and f['path'].endswith('.py')]
+print('loaders の .py', len(fs), '本'); print(' '.join(p.rsplit('/',1)[1] for p in fs))
+"
+loaders の .py 42 本
+__init__.py _fundamental_schema.py _http.py _symbol_utils.py akshare_loader.py alphavantage_loader.py baostock_loader.py base.py binance_loader.py ccxt_loader.py cn_adjust.py eastmoney_client.py eastmoney_loader.py finnhub_loader.py fmp_loader.py fundamentals_loader.py futu.py gildata_loader.py india_broker_loader.py local_loader.py longbridge.py mootdx_loader.py mt5_loader.py nobitex.py okx.py pykrx_loader.py qveris_loader.py registry.py rsshub_events.py sec_edgar_client.py sec_frames.py sina_loader.py stooq_loader.py tencent_loader.py tickerall_loader.py tiingo_loader.py tushare.py tushare_fundamentals.py wallex.py yahoo_client.py yahoo_loader.py yfinance_loader.py
+--- 2026-09-23T03:59:24Z method=run target=c45_fto_external rc=0 time_s=.009717148 note=候補 45 の殻の HTML が読み込む外部の口(広告と計測)。導入も実行もしていない。取った HTML の中の src と href の外部の宛先を抜く
+$ grep -o 'src="https://[^/"]*[^"]*"' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/fto.html | sed 's/?.*//' | cut -c1-80 | sort -u
+src="https://ad.doubleclick.net/ddm/activity/src=12616979;type=invmedia;cat=fxte
+src="https://www.facebook.com/tr
+src="https://www.googletagmanager.com/ns.html
+--- 2026-09-23T03:59:37Z method=run target=recount_after rc=0 time_s=.127436791 note=この回の節を足したあとに数え直しの道具を打つ(この回の完了の形 = 最後の記載が「判別に一次資料が要る」のまま(機械) が 0 件)
+$ python3 scripts/recount_scan_cat1.py
+入力 = docs/DATA/SCAN_2026-09-21_tools.md
+候補の一覧の記載 = 654 件
+印に触れた候補 = 85 件
+
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+最後の記載が「判別に一次資料が要る」のまま(機械) = 0 件 : なし
+
+== 6 要素ごとの 総数 と 残り
+区分1-足 : 総数 55 件 : 残り 0 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 45 46 48 50 51 52 53 54 55 56 57 58 60 61 62 67 68 69 70 72 73 74 75 80 85 86 87 92 94 107 111 120 121 122 123
+区分1-ティック : 総数 19 件 : 残り 0 件 : 13 20 23 31 41 45 52 53 57 58 59 61 63 68 90 91 95 119 123
+区分1-板の待ち行列 : 総数 19 件 : 残り 0 件 : 23 33 37 38 57 65 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 : 総数 19 件 : 残り 0 件 : 1 6 13 18 23 37 41 52 53 57 58 61 62 63 65 68 69 91 123
+区分1-ベクトル化 : 総数 4 件 : 残り 0 件 : 54 73 74 87
+区分1-市場影響と約定の模型 : 総数 41 件 : 残り 0 件 : 1 2 3 4 6 7 8 13 15 18 19 20 21 23 32 33 35 36 38 45 50 51 53 54 57 60 63 67 70 72 87 91 92 94 98 105 106 111 116 119 123
+6 要素のどれかに印がある候補 = 84 件
+そのうち到達の記載が無い候補 = 0 件 : なし
+
+== 機関で数えた値
+番号で数えた値 = 84 件
+22 番と 52 番を束ねた値 = 84 件
+13 番と 123 番を束ねた値 = 83 件
+
+== 段の表と印の集合の突き合わせ
+段の表の行 = 41 件
+区分1-市場影響と約定の模型 の印 = 41 件
+段の表にあって印が無い = 0 件 : なし
+印があって段の表に無い = 0 件 : なし
+--- 2026-09-23T03:59:47Z method=run target=recount_after rc=0 time_s=.127799011 note=出力を節に貼ったあとに数え直しの道具を打ち直す。節に貼った出力と同じであることを確かめる
+$ python3 scripts/recount_scan_cat1.py > /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/recount2.txt; diff /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/recount.txt /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/recount2.txt && echo '貼った出力と同じ(差 0 行)'; sed -n 5,11p /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/recount2.txt
+貼った出力と同じ(差 0 行)
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+最後の記載が「判別に一次資料が要る」のまま(機械) = 0 件 : なし
+--- 2026-09-23T04:00:33Z method=run target=verbatim_recheck rc=0 time_s=.050916054 note=この回の節に引いた 18 文字以上の逐語(URL と命令を除く)を、この回の生ログと grep -F 相当で 1 本ずつ突き合わせる(申し送り: 逐語は原典どおり)
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vq.py
+突き合わせた逐語 109 本 / 生ログに無い 34 本
+  無い:  の削除行は 0 である(生ログの 
+  無い:  を作ったあとに打った値。生ログの 
+  無い:  が出た手は、どれも 404 の欄に入れずに打ち直した**: 
+  無い:  の 3 手(110 と 111 の登録情報は接続の切断と TLS の切断、112 の追跡ファイルの一覧は TLS の切断)は、打ち直してどれも 
+  無い:  が引けないので、名前が無いのか経路が落ちたのかは分けられない**(生ログの 
+  無い:  は 1 件で、当方の綴りの誤りである**: 110 の README を 
+  無い:  と綴ったが、追跡ファイルの一覧の名前は 
+  無い: tools_inventory.py
+  無い:  のままである。**届いたのはウェブ版だけで、導入型(デスクトップ版)の原典と料金の頁には届いていない** | 実測 | 
+  無い:  の当たり 2 件は建玉の説明文とニュースの表題である | 実測 | 同じ生ログの 
+  無い:  の当たりは自分の注文の取り消しと OCO(
+  無い: )だけである | 実測 | 同じ生ログの 
+  無い: )は無いが、その道具自身の agent 向けの 
+  無い:  などが 91 本ある**(中身は読んでいない) | 実測 | 同じ生ログの 
+  無い:  など。**中身は読んでいない** | 実測 | 同じ生ログの 
+  無い:  — **一次資料に到達した。**この回の新しい経路は Forex Tester Online の場 
+  無い: 。13 回目の 5 経路と、この回の 
+  無い:  は付けない。文言の束を走査して待ち行列と板と事象の型の語の当たりが無く、検証は手で足とティックを進める再生である(逐語 
+  無い:  — **一次資料に到達し、足かティックかが文書で決まった。**逐語は 
+  無い:  — **一次資料に到達した。**既定枝 
+  無い:  を raw から取った(どちらも 
+  無い:  で次の足へ残る。成行は README の逐語 
+  無い:  文は Python 2 の書き方である。**
+  無い:  は付けない。信号は目標の建玉の表(逐語 
+  無い:  — **一次資料に到達した。**当たりの頁は 
+  無い: If you’re looking for backtesting data sets, ensure accurate backtesting by seeking a dataset from exchanges or market data vendors with comprehensive tick data and NIST-synced timestamps.
+  無い: (履歴の市場データの記録と配布)と 
+  無い: ) — **一次資料に到達した。**当たりの記事は 
+  無い: 。**同じ場に宣伝・詐欺の兆候の逐語がある**(この回の知見 18)。**
+  無い:  | 1 | 1 | **該当なし(文書上の主張)。**逐語 
+  無い:  | 2 | 2 | 未確認(走査 1 本。当たり 0 件) | **該当なし。**当たりは自分の注文の取り消しと OCO の 
+  無い:  で読めない(未確認)**。登録が要る | 殻の HTML が広告と計測の外部の口(
+  無い:  | 取った 2 本(README・
+  無い:  の類は無い。**その道具自身の agent 向けの 
+--- 2026-09-23T04:00:46Z method=run target=verbatim_recheck2 rc=0 time_s=.067461519 note=打ち直し。前の手は正規表現が短い引用の閉じの符号から読み始めて対がずれていた。符号の対を先に取り、18 文字以上のものだけを生ログと突き合わせる
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/vq.py
+突き合わせた逐語 83 本 / 生ログに無い 1 本
+  無い: 20260922_tools_1_run33.log
+--- 2026-09-23T04:00:56Z method=run target=checker_all rc=0 time_s=.931402122 note=--all を付けて打ち、32 回目の 48 件からの増減と、この回の節(報告書 9999 行以降)に当たった行があるかを見る
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all > /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/all2.txt; grep -E '^K|^----' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/all2.txt; echo '== この回の節(9999 行以降)に当たった行'; grep -oE 'SCAN_2026-09-21_tools.md:[0-9]+' /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/all2.txt | awk -F: '$2>9998' | wc -l
+K1 太字                  14 件
+K2 括弧                  17 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件
+== この回の節(9999 行以降)に当たった行
+0
+--- 2026-09-23T04:00:57Z method=run target=diff_report rc=0 time_s=.084377661 note=書き換えの範囲を自分で確かめる。報告書の git diff の削除行と追加行の数(起動の指定: 追記だけ)
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md; echo '== 削除行(先頭が - の行。見出しの --- を除く)'; git diff docs/DATA/SCAN_2026-09-21_tools.md | grep -c '^-[^-]' ; git diff docs/DATA/SCAN_2026-09-21_tools.md | grep '^-[^-]' | head -5
+311	0	docs/DATA/SCAN_2026-09-21_tools.md
+== 削除行(先頭が - の行。見出しの --- を除く)
+0
+--- 2026-09-23T04:01:05Z method=run target=checker_final rc=0 time_s=2.069248561 note=受け入れ検査の最終の打ち直し(生ログ 32 本すべてを渡す)。節に貼った出力と同じであることを確かめる
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log > /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/chk3.txt; echo rc=$?; cat /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/chk3.txt; python3 -c "
+t=open('docs/DATA/SCAN_2026-09-21_tools.md').read(); b=open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r33/chk3.txt').read().rstrip(chr(10))
+print('節に貼った出力と同じ' if b in t[t.rfind('### 受け入れ検査の出力'):] else '節に貼った出力と違う')
+"
+rc=0
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+節に貼った出力と同じ

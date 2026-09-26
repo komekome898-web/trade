@@ -1,0 +1,10 @@
+{
+ "findings": [
+  {
+   "id": "br2-2-touch",
+   "level": "止める",
+   "repeat_of": "br2-1-touch",
+   "text": "場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): docs/AUDITOR/TRACE/2026-09-26_220780c0.json, docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt"
+  }
+ ]
+}

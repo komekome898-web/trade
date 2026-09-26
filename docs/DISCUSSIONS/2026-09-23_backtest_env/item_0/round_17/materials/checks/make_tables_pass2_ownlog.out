@@ -1,0 +1,7 @@
+survey targets merged: opp_3yit_lob, opp_aat, opp_akurkar07_orderbook, opp_backtesting, opp_backtrader@preload=false, opp_backtrader@preload=true, opp_barter, opp_basana, opp_daniyalmlk_slippage, opp_fast_trade, opp_finmarketpy, opp_freqtrade, opp_gobacktest, opp_hftbacktest, opp_homerun, opp_isaaccheng_obsim, opp_jxm35_lob, opp_lib_pybroker, opp_luczinsritter, opp_mihircoding_lob, opp_nickgardi_orderbooksim, opp_pineforge@tf=1D, opp_pineforge@tf=1S, opp_predictivedev_tradesim, opp_pyalgotrade, opp_pybotters, opp_pysystemtrade, opp_pytrendfollow, opp_qf_lib, opp_qstrader, opp_quantcore, opp_quanttrader, opp_rqalpha, opp_sarthak_execsim@md_latency=0, opp_sarthak_execsim@md_latency=default, opp_sigc, opp_thirupathikannan_execsim, opp_vnpy, opp_ziplime@label=close, opp_ziplime@label=start, opp_zipline_reloaded, repro_lean52@daily, repro_lean52@hour, repro_lean52@minute, repro_lean52@second, repro_lean52@tick, repro_lean52@tick+daily:bar, repro_lean52@tick+daily:trade, repro_lean52@tick+hour:bar, repro_lean52@tick+hour:trade, repro_lean52@tick+minute:bar, repro_lean52@tick+minute:trade, repro_lean52@tick+second:bar, repro_lean52@tick+second:trade
+current_1	表_444et4.md
+current_2	表_1smsdd.md
+survey_1	表_zit6m1.md
+survey_2	表_vonn2j.md
+mutant_1	表_o6vnup.md
+mutant_2	表_xqulyr.md

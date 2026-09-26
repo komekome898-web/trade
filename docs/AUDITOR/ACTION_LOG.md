@@ -9411,3 +9411,40 @@ L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座�
 - **再発防止**: `.gitignore` に `backtest_data/o3c_reaction_20260918_full/gap*/table.csv` を理由つきで追加(未追跡の催促に出なくなる)。
 - **再実行の結果**: `pytest tests/test_o3c_signal_explore2.py …explore5.py tests/test_o3c_reaction_r2.py` → `100 passed in 80.73s`(skip 0)。全スイートの skip は 4 件に戻る見込み(全スイートは再実行していない)。
 
+
+## 074 — 監査の処置を「直した」と記録したのに本体が書き込まれていなかった(89117c4、2026-09-21)
+
+- **何が起きたか**: `SIGNAL_VALUE_DESIGN_2026-09-21.md` の監査 3 回目の処置を、1 回の Bash で「本体の編集(python の文字列置換)→ `VERDICTS` の追記 → commit → push」と続けて打った。置換の目印が 1 つ一致せず python が `AssertionError` で止まったが、後続の追記とコミットは止まらず、**処置を「直した」と記録したコミット 89117c4 に本体の変更が 1 行も無い**状態で押し出された。次のコミット 92f7d52 で書き込んだ。監査役の 4 回目の指摘 1 で判明(リードは commit の直後の `grep -c` で気づいていたが、記録の側は直していなかった)。
+- **原因**: 失敗で止める `set -e` を付けていなかった / コミット前に `git diff --stat` で本体が変わったことを見ていなかった。
+- **再発防止(リードの手順。フック・settings は変えない)**: 処置のコミットは `set -e` 付きの 1 回の Bash で、本体の編集 → `git diff --stat` に本体のファイルが出ることの確認(出なければ止める)→ 記録の追記 → commit → push の順。この節を書いた 4 回目の処置から適用。
+
+## 075 — 委任前の監査を省いた(2026-09-21、L-367)
+
+- **何をしたか(誤り)**: `20260921_o3c_signal_value_prompt.md` を監査役に渡さずに送った。以後の 4 回の指示(反証者 9 の直し / 段 2 / 再開 / 利確版)は SendMessage の本文で委任し、ファイルにも監査にも掛けなかった(利確版だけファイル、未監査)。前の単位は設計 + 委任文を監査役に渡す手順だった。
+
+- **結果**: 委任文の指定漏れ(利確後の入り直し・費用 × 遅れ・中央値の母集団)が結果に出た。
+
+- **再発防止(リードの手順)**: KA-101 のとおり。委任文の対応表(設計 → 委任文)を委任文の冒頭に置き、監査役の記録が `VERDICTS/` にあるまで Agent / SendMessage を呼ばない。
+
+## 076 — フックが Bash 経由の書き込みを見ていない(事実の記録、2026-09-21、L-371)
+
+- **実測**: `settings.json` の PreToolUse は `_verify_manifest.sh` = `Write|Edit|Agent`、`deny_protected_paths.sh` = `Write|Edit|NotebookEdit`、`owner_options_gate.sh` = 全ツール(ただしゴール未読の検査は「新しい作業単位の最初の Write」に掛かる)。今日のリードは文書・コードを全部 Bash のヒアドキュメント / python で書いたため、Write が 0 回 = ③(b) のゴール未読の門・指紋の照合・保護パスの拒否のどれも書き込みに対して発火していない(Agent には指紋の照合が掛かった)。
+
+- **意味**: 「止まるはずの操作をして止まるかを実測するまで効いていると書かない」(CLAUDE.md §5.0)のとおりで、Bash 経由の書き込みは機械の外にある。フック・settings はオーナーの指示があるときだけ変える(A-16)ので、ここでは事実だけ記録する。
+
+## 077 — 機械の修正(オーナー指示 L-375「機械直せよ」、2026-09-21)
+
+- **変えたもの**: `deny_protected_paths.sh`(Bash の書き込みの語 + 保護パスで拒否)/ `owner_options_gate.sh`(Bash の書き込みの語 + 記録以外の書き先で、ゴール未読なら拒否)/ `settings.json`(指紋の照合の matcher に Bash・SendMessage、③(a) に Bash、新規 `Agent|SendMessage` → `delegation_audit_gate.sh`)/ 新規 `delegation_audit_gate.sh` / `verify_gates.py`(+22 件)/ 台帳の再生成。
+
+- **実測**: `python3 scripts/verify_gates.py` 食い違い 0 件(通る側・止まる側の両方。ログ = scratchpad の verify_gates.log)。`tests/test_audit_gates_wired.py` 通過。
+
+- **限界**: 部品を直接叩いた検査で、ハーネスが呼ぶかは別。次の手で「止まるはずの操作」(監査の記録が無い Agent / ゴール未読の Bash 書き込み)を実際に打って止まるかを見るまで「効いている」と書かない。Bash の検査は語の一致なので、経路を変数に隠した書き込みは拾えない(限界として記録)。
+- **訂正(同日)**: 上の 1 手は python の `import json` 漏れで `settings.json` の配線と `verify_gates.py` の試験を書かずに後続(台帳の再生成・検査・コミット 5417c13・押し出し)が走った(`set -e` を付けていたのに止まらなかった。理由は未確認)。「+22 件、食い違い 0」は古い試験での結果で、この記録は実物と違っていた(89117c4 と同じ型)。次のコミットで配線と試験を入れ直した。**実測**: 入れ直す 1 手が、ゴール未読のまま Bash で `settings.json` を書こうとして ③(b) にハーネス経由で止められた(止まるはずの操作が止まった最初の実例)。Read で開いてから打ち直した。
+- **実測(ハーネス経由、2026-09-21、L-375 の直後)**: (1) ゴール未読のまま Bash で設定ファイル(hooks の settings)を書く → ③(b) が止めた(上の訂正のとおり)。(2) 委任文の引用が無い `Agent`(general-purpose)→ `delegation_audit_gate.sh` が止めた。(3) 設定ファイルを `cp` する Bash → ③(a) が止めた。3 種とも「止まるはずの操作」が実際に止まった。これで初めて「効いている」と書ける(§5.0 の条件)。(4) 副作用: この記録を書く Bash 自体が、文中に設定ファイルのパスの語と `>>` を含んだため ③(a) に止められた(語の一致による誤検知 = 保守側。記録ではパスの語を避けた)。限界は変わらない: 解除ファイル 3 つ(intent / hooks / delegation)はリードが作れる、VERDICTS の記録もリードが書く、Bash の検査は語の一致。
+
+## 078 — フック 2 本の削除(オーナー指示 L-468・L-469、2026-09-26)
+
+- **消したもの**: `.claude/hooks/delegation_audit_gate.sh`(委任文の指紋の照合)、`.claude/hooks/owner_options_gate.sh`(ゴール未読の書き込みと選択待ちの全面停止)。`settings.json` の参照 3 か所(PreToolUse 2・UserPromptSubmit 1)を除いた。台帳 `HOOK_MANIFEST.sha256` を再生成した。
+- **理由(オーナー逐語)**: 「**対策3.のフックはもう捨てましょう。薄々感じてましたが意味ないわ。**」(L-468)「**両方消せ**」(L-469)。リードの側の事実: ゴールを開かせる関門を、2 行ずつずらして読む儀式にしていた(L-466 の根本原因)。
+- **解除ファイル**: `owner_unlock_hooks` をリードが作って通し、同じ呼び出しで消した(R4 = 1 回)。
+- **残るフック**: `_verify_manifest.sh` / `deny_protected_paths.sh` / `session_start_digest.sh` / `owner_turn_digest.sh` / `trace_snapshot.sh` / `jev_notice.sh` の 6 本。`.claude/state/goal_seen_this_turn` は消した関門だけが使っていた(残しても害は無い)。

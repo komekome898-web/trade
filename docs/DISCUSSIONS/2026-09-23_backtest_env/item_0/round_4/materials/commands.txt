@@ -1,0 +1,26 @@
+# 項目 0 第 4 周 資料係が打ったコマンド(リポジトリ直下から。時刻は各ログに記録)
+sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md; wc -l ...   # -> a25b24aa10c9…(158 行)。起動文の指紋 362bf666dfac とは違う。git log では 385172e(L-429 の 1 行を足した版)が最新で、a25b24aa10c9 も 362bf666dfac も docs/AUDITOR/VERDICTS/ に記録がある。今の版を全部読んで従った
+git status --short tests/bt src/bot/bt   # 作業木に未コミットの変更なし(第 4 周の核は ccfed73 に入っている)
+PYTHONPATH=src python3 -B tests/bt/battery/item_0/run_battery.py --target new_impl --out <scratchpad>/bt/item0_r4_materials_probe_new_impl.tsv   # adapter を変える前の下見: 32 場面すべて正解と一致 -> logs/probe_new_impl_before_adapter_edit.tsv
+grep -o 'core\.[A-Za-z_]*' tests/bt/battery/item_0/adapters/new_impl.py | sort | uniq -c   # adapter は core.<name> だけを使う(import bot.bt.core なし)
+grep -n "Merging input streams" src/bot/bt/core/ordering.py   # P0-5 で引く規則は今も 43-55 行
+grep -n "class DeliveredEvents" -A30 src/bot/bt/core/window.py   # 第 4 周の核は履歴の読み出しを DeliveredEvents で返す(添字と区間に位置の規則)
+PYTHONPATH=src python3 -c "... DeliveredEvents((1,2,3,4)) の [4:5] [3:5] [4:] [4::] [-1:5] [len] ..."   # [4:5] [3:5] [-1:5] [len] は FuturePositionError、[4:] と [4::] は空のタプル
+# adapters/new_impl.py を変えた(差分 -> logs/new_impl_adapter.diff): p4-future-read-attempt の試しに、位置での名指し 4 つを足した
+#   ctx.visible_events(BAR)[4] / ctx.visible_events()[4:5] / ctx.visible_events()[3:5] / ctx.visible_events()[4:]
+#   理由: 場面の定義「対象が戦略に渡す公開の読み出しの手段ごとに、当てはまる名指し方を全部試し」。第 4 周の核は区間に位置の規則を持たせたので、区間の形も当てはまる名指し方に入れた。
+#   [4:](最新の次の位置から先)は例外を出さず空を返したので、この場面の新実装の結果は 不一致 になった(変える前は 正解と一致)。[4:] を名指しに数えるかは資料係の判断で、迷っている(返り値の notes に書いた)
+PYTHONPATH=src python3 -B tests/bt/battery/item_0/run_battery.py --target new_impl --out <scratchpad>/bt/item0_r4_materials_probe2_new_impl.tsv   # -> logs/probe_new_impl_after_adapter_edit.tsv(31 一致、1 不一致 = p4-future-read-attempt)
+bash docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_4/materials/finmarketpy_attempt.sh   # -> logs/finmarketpy_attempt.log(場面係が検査して取ってあった同じ wheel を隔離した venv に入れ直した。空き 8869 MB から始めて 68 秒で成功、最小の空き 6992 MB)
+(cd tests/bt/battery/item_0 && PYTHONPATH=src python3 -B mutant.py --check)   # -> logs/mutant_check.log(changed scenes: ['p4-received-time'] / OK)
+setsid nohup sh docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_4/materials/run_all.sh > <scratchpad>/bt/item0_r4_materials_run_all_1.out 2>&1 &   # -> runs/*.tsv, logs/run_all.log, logs/*.stderr, logs/run_all_stdout.out(各対象を run_battery.py が 1 場面につき 2 回、別々の adapter で走らせる。22 対象すべて rc=0、2 回で違う 0)
+(cd materials && python3 -B compare_survey_results.py)   # -> logs/compare_survey_results.out(この周の走行と場面係の survey_results/*.tsv の差 0 セル)
+python3 - (finmarketpy のこの周の走行と survey_results/stale/opp_finmarketpy_2026-09-23.tsv の突き合わせ)   # -> logs/finmarketpy_vs_stale.out(共通の場面で差 0 セル。場面の違いは p7-cost-per-unit / p7-cost-zero の 1 つ)
+ls docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_4/表_*.md   # -> logs/stale_check.out(前の起動の表は無し。stale に移したものは 0 件)
+PYTHONPATH=src timeout 500 python -m pytest -p no:cacheprovider tests/bt/battery/item_0   # -> logs/pytest_battery_item0.log(18 passed)
+(cd materials && python3 -B make_tables.py)   # -> logs/make_tables.out, mapping.tsv, survey_best.tsv, survey_failures.tsv, 6 枚の 表_*.md(動かせなかった道具が無いので --survey-note は付けない)
+md5sum <各組の 2 枚>   # -> md5sum_pairs.txt(3 組とも differ)
+grep -liE '<道具名・opp_・repro_・対象名・日付・時刻>' 表_*.md   # -> logs/grep_tool_names.out(該当 0 件、rc=1)
+mv finmarketpy.log materials/logs/finmarketpy_import_side_file.log   # 走行中に finmarketpy の読み込みがリポジトリ直下に作った空のファイル(0 バイト)を移した
+git status / sha256sum / ls / df -m /   # -> logs/final_state.txt
+# 注記に書かなかった具体: 場面 p6-place-then-cancel の結果なし 1 件 = opp_ziplime(survey_failures.tsv)。p4-future-read-attempt で調査結果の側の行に寄せたのは opp_basana(survey_best.tsv)。

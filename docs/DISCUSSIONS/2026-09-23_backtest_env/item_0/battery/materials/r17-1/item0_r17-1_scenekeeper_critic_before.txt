@@ -1,0 +1,8 @@
+tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py:59: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py::test_a_refusal_is_told_from_no_conversion[p2-s-text-subns]
+FAILED tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py::test_a_refusal_is_told_from_no_conversion[p2-s-float-subns]
+FAILED tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py::test_a_refusal_is_told_from_no_conversion[p2-ms-text-subns]
+FAILED tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py::test_a_refusal_is_told_from_no_conversion[p2-ms-float-subns]
+FAILED tests/bt/critic/item_0/test_i0r16_no_int_scene_tells_refusal_from_no_entry.py::test_a_refusal_is_told_from_no_conversion[p2-us-text-subns]
+5 failed, 1 passed in 0.20s

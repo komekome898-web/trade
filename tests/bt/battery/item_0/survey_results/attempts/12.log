@@ -1,0 +1,23 @@
+##### from pybotters_install.log
+=== 2026-09-23T15:34:30Z inspect pybotters
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 522.0/522.0 kB 23.8 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/pybotters/pybotters-1.11.2-py3-none-any.whl
+Successfully downloaded pybotters
+total 520
+drwxr-xr-x 2 root root   4096 Sep 23 15:34 .
+drwxr-xr-x 7 root root   4096 Sep 23 15:34 ..
+-rw-r--r-- 1 root root 521973 Sep 23 15:34 pybotters-1.11.2-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/pybotters/pybotters-1.11.2-py3-none-any.whl
+Name: pybotters
+Version: 1.11.2
+Project-URL: Documentation, https://pybotters.readthedocs.io/ja/stable/
+Project-URL: Repository, https://github.com/pybotters/pybotters
+Author-email: MtkN1 <51289448+MtkN1@users.noreply.github.com>
+Requires-Dist: aiohttp>=3.7
+=== 2026-09-23T15:34:33Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/pybotters
+pip rc=0 elapsed=7s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+15
+=== 2026-09-23T15:34:46Z done

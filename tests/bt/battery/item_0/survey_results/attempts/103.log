@@ -1,0 +1,58 @@
+##### from item0_r5-1_scenekeeper_install_103.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/IsaacCheng9/order-book-simulator.git c103
+/dev/vda          258020 32037      5902  85% /
+rc=0
+a72e625898acff62e605f14d7f8ca4e2114b0596 2026-09-19T15:21:17+01:00 dependabot[bot]
+4.2M	.
+=== start 2026-09-24T03:00:50Z limit=600s : python3.13 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103/bin/pip install --no-cache-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c103
+df before: /dev/vda          258020 32343      5596  86% /
+=== end 2026-09-24T03:00:56Z rc=1 elapsed=6s min_free=5461MB 
+Processing /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c103
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+INFO: pip is looking at multiple versions of order-book-simulator to determine which version is compatible with other requirements. This could take a while.
+
+[notice] A new release of pip is available: 25.3 -> 26.2.1
+[notice] To update, run: /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103/bin/python3.13 -m pip install --upgrade pip
+ERROR: Package 'order-book-simulator' requires a different Python: 3.13.12 not in '>=3.14'
+df after: /dev/vda          258020 32480      5459  86% /
+=== 2026-09-24T03:54:39Z second try: a Python 3.14 interpreter into the scratchpad (uv python install), then the package into a venv made with it
+=== start 2026-09-24T03:54:39Z limit=400s : /root/.local/bin/uv python install 3.14 && rm -rf /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 && /root/.local/bin/uv venv --python 3.14 /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 && VIRTUAL_ENV=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 /root/.local/bin/uv pip install --python /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103/bin/python /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c103
+df before: /dev/vda          258020 35585      2354  94% /
+=== end 2026-09-24T03:54:45Z rc=0 elapsed=6s min_free=1595MB 
+ + sqlalchemy==2.0.54
+ + starlette==1.7.0
+ + streamlit==1.64.0
+ + toml==0.10.2
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + urllib3==2.8.0
+ + uvicorn==0.53.0
+ + uvloop==0.22.1
+ + watchdog==6.0.0
+ + websockets==16.1.1
+ + yarl==1.25.1
+df after: /dev/vda          258020 36344      1595  96% /
+=== 2026-09-24T03:55:37Z the interpreter uv 0.8.17 knew was 3.14.0rc2; importing the package's pydantic models failed on it (AssertionError in pydantic _typing_extra eval_type_backport). The link uv put at /root/.local/bin/python3.14 was removed. Third try: a newer uv in a scratch venv, then the 3.14 release
+=== start 2026-09-24T03:55:37Z limit=400s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvnew && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvnew/bin/pip -q install uv && UV_PYTHON_INSTALL_DIR=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvpython UV_CACHE_DIR=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvcache /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvnew/bin/uv python install --no-bin 3.14 && rm -rf /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 && UV_PYTHON_INSTALL_DIR=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvpython UV_CACHE_DIR=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvcache /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvnew/bin/uv venv --python 3.14 /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103 && UV_CACHE_DIR=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvcache /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_uvnew/bin/uv pip install --python /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103/bin/python /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c103 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c103/bin/python -c 'import sys; print(sys.version)'
+df before: /dev/vda          258020 36347      1592  96% /
+=== end 2026-09-24T03:55:47Z rc=0 elapsed=10s min_free=845MB 
+ + starlette==1.7.0
+ + streamlit==1.64.0
+ + toml==0.10.2
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + urllib3==2.8.0
+ + uvicorn==0.53.0
+ + uvloop==0.22.1
+ + watchdog==6.0.0
+ + websockets==16.1.1
+ + yarl==1.25.1
+3.14.7 (main, Sep  1 2026, 14:18:09) [Clang 22.1.3 ]
+df after: /dev/vda          258020 37188       751  99% /
+=== 2026-09-24T03:56:01Z after the install: the uv cache, the rc interpreter and the helper venv were removed to free disk (/dev/vda          258020 35425      2514  94% /); the package imports on 3.14.7
+=== 2026-09-24T03:56:42Z run: the matching book order_book_simulator.matching.order_book.OrderBook called directly (no Kafka / database / network): opponents/isaaccheng_obsim_adapter.py through run_battery.py -> survey_results/opp_isaaccheng_obsim.tsv (32 scenes). /dev/vda          258020 35425      2514  94% /

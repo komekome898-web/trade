@@ -1,0 +1,21 @@
+# 候補 73 vectorbt — 導入の記録(項目 1 の場面係、2026-09-25)
+## 導入前の検査(道具サーベイの委任文 §6-1)
+- PyPI JSON(https://pypi.org/pypi/vectorbt/json、2026-09-25 取得): 版 1.1.0、作者 Oleg Polakow <olegpolakow@vectorbt.pro>、Homepage https://github.com/polakowo/vectorbt、初回 2020-12-06、最新 2026-07-05、版 63、requires_python <3.15,>=3.11、vulnerabilities []。
+- GitHub との一致: https://raw.githubusercontent.com/polakowo/vectorbt/master/pyproject.toml の 6 行 `name = "vectorbt"`(PyPI の Homepage が指す登録と同じ名前)。
+- 週のダウンロード数: pypistats recent = last_week 75788(https://pypistats.org/api/packages/vectorbt/recent)。
+- 中身: `pip download --no-deps vectorbt==1.1.0` → vectorbt-1.1.0-py3-none-any.whl(455,305 バイト、純 Python の wheel = 導入時に実行する setup.py が無い)。展開して .so 0 本。
+  `grep -rlnE "exec\(|eval\(|base64\.b64decode|marshal\.loads|__import__\("` の当たりは indicators/factory.py:2979,3293・signals/factory.py:596,637,695(工場が組み立てた関数の定義を exec する設計)・utils/template.py:108(式の評価)・utils/tags.py:49。難読化・外部 URL からの取得は無い。
+- 依存: numpy>=2.4.6, pandas>=3.0.3, scipy, matplotlib, plotly>=4.12.0, ipywidgets, anywidget, numba>=0.66, dill, tqdm, dateparser, imageio, scikit-learn, schedule, requests, pytz, mypy_extensions。
+## 導入(隔離した venv、2026-09-25T16:40:10Z〜16:40:31Z)
+- `python3 -m venv <scratchpad>/bt/venvs/item_1/vectorbt`。容量(ディスクの空き 571MB)のため、項目 0 の venv lib-pybroker(numba 0.67・numpy 2.4.6・pandas 3.0.6)と fast-trade-r17(scipy・matplotlib・scikit-learn)の site-packages を .pth で読ませ(どちらも scratchpad の隔離した venv)、足りない依存だけを入れた。
+- `vectorbt/bin/pip install --no-cache-dir vectorbt-1.1.0-py3-none-any.whl` → exit=0。Successfully installed anywidget-0.11.0 asttokens-3.0.2 comm-0.2.3 dateparser-1.4.3 dill-0.4.1 … ipywidgets-8.1.9 … vectorbt-1.1.0 …
+- 最初の import が `Bad property path: scattermapbox` で止まった(plotly 7.1.0 が scattermapbox を外した)。項目 0 の venv finmarketpy の plotly 5.24.1 と tenacity 9.1.4 を symlink で並べたフォルダを先に読む .pth(aa_plotly5.pth)を置き、import が通った(`vbt.Portfolio.from_signals` の最小の実行で total_return 0.3333333333333334)。
+## 外部送信
+- 道具は導入時・実行時に外部へ送らない(データの取得の型は呼ばれたときだけ通信する。場面では呼ばない)。場面に渡したのは合成の足だけ。
+
+## 入れ直し(2026-09-25 17:1xZ)
+土台にしていた項目 0 の venv(lib-pybroker・fast-trade-r17・finmarketpy)のうち fast-trade-r17 と finmarketpy が消えていた(この場面係は消していない)。.pth と plotly 5 の symlink を外し、vectorbt の宣言済みの依存と plotly==5.24.1 を venv の中に入れ直した。
+exit=0
+== 2026-09-25T17:15:55Z 2026-09-25 17:10Z 頃に土台の venv(item_0/fast-trade-r17・item_0/finmarketpy)が消えていたので、.pth を外して依存を自前で入れ直す
+Successfully installed certifi-2026.7.22 charset_normalizer-3.5.1 cloudpickle-3.1.2 contourpy-1.3.3 cycler-0.12.1 fonttools-4.66.0 idna-3.20 joblib-1.6.0 kiwisolver-1.5.1 llvmlite-0.49.0 matplotlib-3.11.2 narwhals-2.26.0 numba-0.67.0 numpy-2.4.6 packaging-26.3 pandas-3.0.6 pillow-12.3.0 plotly-5.24.1 pygments-2.21.0 pyparsing-3.3.3 python-dateutil-2.9.0.post0 pytz-2026.4 requests-2.34.2 scikit-learn-1.9.1 scipy-1.17.1 six-1.17.0 tenacity-9.1.4 threadpoolctl-3.7.0 tqdm-4.70.1 typing-extensions-4.16.0 urllib3-2.8.0
+exit=0

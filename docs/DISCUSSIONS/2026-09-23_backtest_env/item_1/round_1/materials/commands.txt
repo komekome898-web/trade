@@ -1,0 +1,17 @@
+# commands run by the table-maker (item 1, round 1, rebuild after the table audit), in order
+# (cwd /home/user/trade unless noted; M = docs/DISCUSSIONS/2026-09-23_backtest_env/item_1/round_1/materials)
+# edited tests/bt/battery/item_1/adapters/new_impl.py _load: root and paths handed to bot.bt.data.load unchanged
+mv $M/runs $M/runs_2 (and previous derived files, table copies, stdout logs) -> $M/logs/previous_build_abs_root/
+sh $M/run_all.sh <17 targets> > $M/run_log.tsv            # relative --out -> moved to $M/logs/relative_out_all_targets/
+sh $M/run_all.sh <17 targets> > $M/run_log.tsv            # absolute --out (tables source)
+python3 $M/compare_runs.py > $M/compare_runs.out
+python3 $M/compare_relroot.py > $M/compare_relroot.out
+python3 $M/make_tables.py > $M/make_tables.out           # notes now carry the redacted verbatim error text
+python3 $M/check_names.py > $M/check_names.out
+python3 $M/recount.py > $M/recount.out
+python3 $M/recount_from_tables.py > $M/recount_from_tables.out
+python3 $M/recount_survey.py > $M/recount_survey.out
+md5sum / cmp of each pair > $M/md5sum_pairs.txt
+git diff ae9eb44 -- tests/bt/battery/item_1/adapters/new_impl.py > $M/new_impl_adapter.diff
+git ls-files -z tests/bt/battery/item_1 | xargs -0 sha256sum | sha256sum > $M/fingerprint.txt   # 8317191d1c18...
+PYTHONPATH=src python -m pytest tests/bt/battery/item_1 tests/bt/item_1 | tail -4 > $M/pytest_item1_r1_shiryo.out

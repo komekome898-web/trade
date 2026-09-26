@@ -476,9 +476,9 @@ def test_calibrate_dry_run_sends_nothing_and_still_lists_the_delegations(tmp_pat
                    "--dry-run"]) == 0
     assert fake_client.calls == []
     printed = capsys.readouterr().out
-    assert "抜けた委任: 2 件" in printed
+    assert f"抜けた委任: {len(models)} 件" in printed  # one delegation per model in model_to_tier
     summary = _read_jsonl(next(out.glob("calibrate_*.jsonl")))[-1]
-    assert summary["n_unevaluated"] == 2
+    assert summary["n_unevaluated"] == len(models)
     assert summary["n_match"] == summary["n_mismatch"] == 0
     assert summary["dry_run"] is True
 

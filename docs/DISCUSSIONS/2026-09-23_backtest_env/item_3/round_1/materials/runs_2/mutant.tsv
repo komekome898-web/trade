@@ -1,0 +1,54 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+v1-split-utc	C3-1	値	正解と一致		68f8816b9ac62f65	正解と一致		68f8816b9ac62f65	2 回の実行で同じ	0.282	0.305
+v1-split-jst	C3-1	値	正解と一致		40edae70989134c8	正解と一致		40edae70989134c8	2 回の実行で同じ	0.001	0.002
+v1-wf-rolling	C3-1	値	正解と一致		f3c64505a4635c26	正解と一致		f3c64505a4635c26	2 回の実行で同じ	0.005	0.005
+v1-wf-equal	C3-1	値	正解と一致		1d2a858ebc2a3e8e	正解と一致		1d2a858ebc2a3e8e	2 回の実行で同じ	0.005	0.005
+a1-wf-fit-eval	C3-1	能力	正解と一致		27f40bf731dab555	正解と一致		27f40bf731dab555	2 回の実行で同じ	0.005	0.005
+v2-purge-embargo	C3-2	値	不一致	学習の行 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]、正解 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 23, 24, 25, 26, 27, 28, 29]	1ad10c582db31f32	不一致	学習の行 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29]、正解 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 22, 23, 24, 25, 26, 27, 28, 29]	1ad10c582db31f32	2 回の実行で同じ	0.001	0.001
+v2-cpcv-split	C3-2	値	不一致	評価の群 [1, 3] の学習の行 [0, 1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24, 25, 26, 27, 28, 29]、正解 [0, 1, 2, 23, 24, 25, 26, 27, 28, 29]	8ddade6951240ea0	不一致	評価の群 [1, 3] の学習の行 [0, 1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24, 25, 26, 27, 28, 29]、正解 [0, 1, 2, 23, 24, 25, 26, 27, 28, 29]	8ddade6951240ea0	2 回の実行で同じ	0.001	0.001
+a2-cpcv-paths	C3-2	能力	正解と一致		3d4b065fad27786c	正解と一致		3d4b065fad27786c	2 回の実行で同じ	0.001	0.001
+v3-block-bootstrap	C3-3	値	正解と一致		c123eff4c5b1f78e	正解と一致		c123eff4c5b1f78e	2 回の実行で同じ	0.047	0.047
+v4-mde-two-sided	C3-4	値	正解と一致		ca39ac9e85a665e4	正解と一致		ca39ac9e85a665e4	2 回の実行で同じ	0.001	0.001
+v4-mde-one-sided	C3-4	値	正解と一致		7cce40b6a6c2d5dd	正解と一致		7cce40b6a6c2d5dd	2 回の実行で同じ	0.001	0.001
+v4-verdict	C3-4	値	正解と一致		42dfce7a27f75621	正解と一致		42dfce7a27f75621	2 回の実行で同じ	0.001	0.001
+a4-no-mde-no-negative	C3-4	能力	正解と一致	変形は正解の値を返した	8440aff4f40c7311	正解と一致	変形は正解の値を返した	8440aff4f40c7311	2 回の実行で同じ	0.001	0.001
+v5-dsr	C3-5	値	正解と一致		aeb817931feed568	正解と一致		aeb817931feed568	2 回の実行で同じ	0.001	0.001
+v5-dsr-returns	C3-5	値	正解と一致		bf42e6dd0cbc7df3	正解と一致		bf42e6dd0cbc7df3	2 回の実行で同じ	0.001	0.001
+v5-pbo	C3-5	値	正解と一致		f33c69d635ed211d	正解と一致		f33c69d635ed211d	2 回の実行で同じ	0.001	0.001
+v6-iter-count	C3-6	値	正解と一致		2063b5dd15a69a11	正解と一致		2063b5dd15a69a11	2 回の実行で同じ	0.01	0.01
+v6-iter-dsr	C3-6	値	正解と一致		435848224bb1ec1a	正解と一致		435848224bb1ec1a	2 回の実行で同じ	0.005	0.004
+a6-sealed-env	C3-6	能力	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': PHASE2_FINAL_EVAL=None does not equal unit 'u1'	f25632baaac647bc	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': PHASE2_FINAL_EVAL=None does not equal unit 'u1'	f25632baaac647bc	2 回の実行で同じ	0.011	0.011
+a6-sealed-approval	C3-6	能力	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': missing owner approval file backtest_data/phase2_sealed/u1/UNSEAL_APPROVED	f25632baaac647bc	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': missing owner approval file backtest_data/phase2_sealed/u1/UNSEAL_APPROVED	f25632baaac647bc	2 回の実行で同じ	0.007	0.006
+a6-sealed-token	C3-6	能力	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': wrong confirmation token	f25632baaac647bc	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': wrong confirmation token	f25632baaac647bc	2 回の実行で同じ	0.006	0.008
+a6-sealed-audit	C3-6	能力	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': 監査の記録が無い: 最後の判定が [判定: 止める]。「判定: 通す」でなければ進めない。(docs/AUDITOR/ACTION_LOG.md に 「監査対象: u1/封印の開封」の節と行頭の「判定: 通す」が要る)	f25632baaac647bc	正解と一致	変形を拒んだ: SealedRefused: refusing to unseal 'u1': 監査の記録が無い: 最後の判定が [判定: 止める]。「判定: 通す」でなければ進めない。(docs/AUDITOR/ACTION_LOG.md に 「監査対象: u1/封印の開封」の節と行頭の「判定: 通す」が要る)	f25632baaac647bc	2 回の実行で同じ	0.006	0.007
+a6-sealed-bypass	C3-6	能力	正解と一致	変形を拒んだ: SealedRefused: SealedRangeError: 'data/d.csv' is sealed (unit u1) from 1767830400000000000 ns; give range_ns with an end at or before it (the sealed window is read only through load_sealed's gates)	ce6a419d14f36393	正解と一致	変形を拒んだ: SealedRefused: SealedRangeError: 'data/d.csv' is sealed (unit u1) from 1767830400000000000 ns; give range_ns with an end at or before it (the sealed window is read only through load_sealed's gates)	ce6a419d14f36393	2 回の実行で同じ	0.004	0.004
+v7-data-sha256	C3-7	値	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.052	0.063
+v7-seed	C3-7	値	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.052	0.057
+v7-config	C3-7	値	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.046	0.056
+v7-git-sha	C3-7	値	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.054	0.058
+a7-diff-hash	C3-7	能力	正解と一致		7d595c99804e4ba3	正解と一致		7d595c99804e4ba3	2 回の実行で同じ	0.103	0.11
+a7-version	C3-7	能力	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.056	0.051
+v8-run-id	C3-8	値	正解と一致		d3b8958429b1601d	正解と一致		d3b8958429b1601d	2 回の実行で同じ	1.369	1.371
+v9-seeded-repro	C3-9	値	正解と一致		24af495cfe25c32b	正解と一致		24af495cfe25c32b	2 回の実行で同じ	0.058	0.052
+a9-auto-repro	C3-9	能力	正解と一致		0a5f4c4fe9d94dc9	正解と一致		0a5f4c4fe9d94dc9	2 回の実行で同じ	0.102	0.099
+v10-prereg-sha	C3-10	値	正解と一致		7fa2bc55d171936d	正解と一致		7fa2bc55d171936d	2 回の実行で同じ	0.05	0.052
+a10-research-needs-prereg	C3-10	能力	正解と一致	変形を拒んだ: ReproError: a 研究 run needs its pre-registration (prereg=...): its sha256 goes into the record	faa84047f4d9a79d	正解と一致	変形を拒んだ: ReproError: a 研究 run needs its pre-registration (prereg=...): its sha256 goes into the record	faa84047f4d9a79d	2 回の実行で同じ	0.053	0.053
+v11-distribution	C3-11	値	正解と一致		ca2a639b3a287170	正解と一致		ca2a639b3a287170	2 回の実行で同じ	0.002	0.002
+v12-bp-per-hour	C3-12	値	正解と一致		e9ea3466006c6508	正解と一致		e9ea3466006c6508	2 回の実行で同じ	0.001	0.001
+v13-fill-rate	C3-13	値	正解と一致		a8a1bf5eaa9b8a6e	正解と一致		a8a1bf5eaa9b8a6e	2 回の実行で同じ	0.001	0.001
+v13-markout-buy	C3-13	値	正解と一致		b59c4164d60b7e38	正解と一致		b59c4164d60b7e38	2 回の実行で同じ	0.001	0.001
+v13-markout-sell	C3-13	値	正解と一致		42f68aa75abe9e6c	正解と一致		42f68aa75abe9e6c	2 回の実行で同じ	0.001	0.001
+v14-cost-breakdown	C3-14	値	正解と一致		dbf17cb69059e625	正解と一致		dbf17cb69059e625	2 回の実行で同じ	0.001	0.001
+v14-exit-reasons	C3-14	値	正解と一致		9a071b6550b66823	正解と一致		9a071b6550b66823	2 回の実行で同じ	0.001	0.001
+v14-dd-pct	C3-14	値	正解と一致		502f07e67cd61383	正解と一致		502f07e67cd61383	2 回の実行で同じ	0.001	0.001
+v14-dd-abs	C3-14	値	正解と一致		502f07e67cd61383	正解と一致		502f07e67cd61383	2 回の実行で同じ	0.001	0.001
+v15-purpose-on-exports	C3-15	値	正解と一致		d982eff3451e816a	正解と一致		d982eff3451e816a	2 回の実行で同じ	0.051	0.056
+a15-purpose-required	C3-15	能力	正解と一致	変形を拒んだ: ReproError: purpose is required: 動作確認 or 研究 (a run without a purpose cannot be made)	9fcef47d367323ce	正解と一致	変形を拒んだ: ReproError: purpose is required: 動作確認 or 研究 (a run without a purpose cannot be made)	9fcef47d367323ce	2 回の実行で同じ	0.052	0.058
+v16-run-tabs	C3-16	値	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.67	0.7
+a16-list-to-run	C3-16	能力	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.638	0.624
+v17-no-external	C3-17	値	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.632	0.628
+a17-japanese	C3-17	能力	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.617	0.624
+v18-wired-values	C3-18	値	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.624	0.633
+a18-wiring-test-api	C3-18	能力	正解と一致		d30c5aaf0593149f	正解と一致		d30c5aaf0593149f	2 回の実行で同じ	3.98	4.003
+a18-wiring-test-tab	C3-18	能力	正解と一致		d30c5aaf0593149f	正解と一致		d30c5aaf0593149f	2 回の実行で同じ	3.817	3.885
+v19-warning-all-tabs	C3-19	値	正解と一致		2008d2829ea7850d	正解と一致		2008d2829ea7850d	2 回の実行で同じ	0.617	0.626

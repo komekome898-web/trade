@@ -1,0 +1,390 @@
+##### from item0_r5-1_scenekeeper_install_61.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/barter-rs/barter-rs.git c61
+/dev/vda          258020 32037      5902  85% /
+rc=0
+9770b27a83f844472b93b593b08063affc974b0d 2026-08-20T21:43:46+01:00 dependabot[bot]
+18M	.
+=== start 2026-09-24T03:03:56Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61 && cargo build -p barter --target-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target61
+df before: /dev/vda          258020 34258      3681  91% /
+=== end 2026-09-24T03:04:51Z rc=143 elapsed=55s min_free=625MB KILLED: free space fell to 625 MB
+   Compiling is-terminal v0.4.17
+   Compiling thread_local v1.1.10
+   Compiling nu-ansi-term v0.50.3
+   Compiling unicode-width v0.1.14
+   Compiling matchers v0.2.0
+   Compiling encode_unicode v1.0.0
+   Compiling vecmap-rs v0.2.5
+   Compiling tracing-subscriber v0.3.23
+   Compiling barter-data v0.13.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter-data)
+   Compiling prettytable-rs v0.10.0
+   Compiling barter-execution v0.9.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter-execution)
+   Compiling barter v0.14.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter)
+df after: /dev/vda          258020 37318       621  99% /
+note: the first build (debug profile) filled the disk: killed at 55 s with 625 MB free; its 2.9 GB target was deleted. Retry without debug info and incremental cache.
+=== start 2026-09-24T03:05:38Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61 && cargo build -p barter --target-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target61 && du -sh /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target61
+df before: /dev/vda          258020 34444      3495  91% /
+=== end 2026-09-24T03:06:13Z rc=0 elapsed=35s min_free=2897MB 
+   Compiling nu-ansi-term v0.50.3
+   Compiling unicode-width v0.1.14
+   Compiling encode_unicode v1.0.0
+   Compiling vecmap-rs v0.2.5
+   Compiling matchers v0.2.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling prettytable-rs v0.10.0
+   Compiling barter-data v0.13.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter-data)
+   Compiling barter-execution v0.9.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter-execution)
+   Compiling barter v0.14.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter)
+    Finished `dev` profile [unoptimized] target(s) in 35.21s
+876M	/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_cargo_target61
+df after: /dev/vda          258020 34905      3034  93% /
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61/Cargo.toml
+[package]
+name = "battery61"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+barter = { path = "../barter" }
+barter-data = { workspace = true }
+barter-execution = { workspace = true }
+barter-instrument = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+rust_decimal = { workspace = true }
+smol_str = { workspace = true }
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61/src/main.rs
+//! Battery driver for survey candidate 61 (barter). Synthetic input only.
+//! stdin: one JSON object {"events": [...], "cfg": {...}} or {"parse": "<MarketStreamEvent JSON line>"}.
+//! stdout: one JSON object per observation.
+use barter::{
+    backtest::{BacktestArgsConstant, BacktestArgsDynamic, backtest, market_data::MarketDataInMemory},
+    engine::{
+        Engine, Processor,
+        state::{
+            EngineState, builder::EngineStateBuilder, global::DefaultGlobalData,
+            instrument::{data::InstrumentDataState, filter::InstrumentFilter},
+            order::in_flight_recorder::InFlightRequestRecorder, trading::TradingState,
+        },
+    },
+    risk::DefaultRiskManager,
+    statistic::time::Daily,
+    strategy::{
+        algo::AlgoStrategy, close_positions::ClosePositionsStrategy,
+        on_disconnect::OnDisconnectStrategy, on_trading_disabled::OnTradingDisabled,
+    },
+    system::config::{ExecutionConfig, InstrumentConfig},
+};
+use barter_data::{
+    event::{DataKind, MarketEvent},
+    streams::consumer::MarketStreamEvent,
+    subscription::{
+        book::{OrderBookEvent, OrderBookL1},
+        candle::Candle,
+        liquidation::Liquidation,
+        trade::PublicTrade,
+    },
+    books::{Level, OrderBook},
+};
+use barter_execution::{
+    AccountEvent, AccountEventKind,
+    order::{
+        OrderKey, OrderKind, TimeInForce,
+        id::{ClientOrderId, StrategyId},
+        request::{OrderRequestCancel, OrderRequestOpen, RequestOpen},
+    },
+};
+use barter_instrument::{
+    Side, asset::AssetIndex, exchange::{ExchangeId, ExchangeIndex}, index::IndexedInstruments,
+    instrument::InstrumentIndex,
+};
+use chrono::{DateTime, TimeZone, Utc};
+use rust_decimal::{Decimal, prelude::FromPrimitive};
+use serde_json::{Value, json};
+use smol_str::SmolStr;
+use std::{cell::Cell, io::Read, sync::Arc};
+
+fn ns(t: &DateTime<Utc>) -> i64 {
+    t.timestamp_nanos_opt().unwrap()
+}
+
+fn dt(v: &Value) -> DateTime<Utc> {
+    Utc.timestamp_nanos(v.as_i64().unwrap())
+}
+
+fn dec(v: &Value) -> Decimal {
+    Decimal::from_f64(v.as_f64().unwrap()).unwrap()
+}
+
+#[derive(Debug, Clone, Default)]
+struct Rec {
+    n: u64,
+    last: Option<Value>,
+    notices: Vec<Value>,
+    price: Option<Decimal>,
+}
+
+fn label(e: &MarketEvent<InstrumentIndex, DataKind>) -> Value {
+    let (kind, fields) = match &e.kind {
+        DataKind::Trade(t) => ("trade", json!({"price": t.price, "qty": t.amount, "side": format!("{:?}", t.side).to_lowercase()})),
+        DataKind::OrderBookL1(l) => ("book_l1", json!({"bid": l.best_bid.as_ref().map(|x| (x.price.to_string(), x.amount.to_string())),
+                                                        "ask": l.best_ask.as_ref().map(|x| (x.price.to_string(), x.amount.to_string()))})),
+        DataKind::OrderBook(OrderBookEvent::Snapshot(b)) => ("book_snapshot", book_fields(b)),
+        DataKind::OrderBook(OrderBookEvent::Update(b)) => ("book_delta", book_fields(b)),
+        DataKind::Candle(c) => ("bar", json!({"open": c.open, "high": c.high, "low": c.low, "close": c.close, "volume": c.volume,
+                                               "close_time": ns(&c.close_time)})),
+        DataKind::Liquidation(l) => ("liquidation", json!({"price": l.price, "qty": l.quantity, "side": format!("{:?}", l.side).to_lowercase(),
+                                                          "time": ns(&l.time)})),
+    };
+    json!({"kind": kind, "variant": e.kind.kind_name(), "ts": ns(&e.time_exchange), "recv": ns(&e.time_received), "fields": fields})
+}
+
+fn book_fields(b: &OrderBook) -> Value {
+    let lv = |ls: &[Level]| ls.iter().map(|l| vec![l.price.to_string(), l.amount.to_string()]).collect::<Vec<_>>();
+    json!({"bids": lv(b.bids().levels()), "asks": lv(b.asks().levels())})
+}
+
+impl Processor<&MarketEvent<InstrumentIndex, DataKind>> for Rec {
+    type Audit = ();
+    fn process(&mut self, e: &MarketEvent<InstrumentIndex, DataKind>) {
+        self.n += 1;
+        if let DataKind::Trade(t) = &e.kind {
+            self.price = Decimal::from_f64(t.price);
+        }
+        if let DataKind::Candle(c) = &e.kind {
+            self.price = Decimal::from_f64(c.close);
+        }
+        self.last = Some(label(e));
+    }
+}
+
+impl Processor<&AccountEvent> for Rec {
+    type Audit = ();
+    fn process(&mut self, e: &AccountEvent) {
+        let v = match &e.kind {
+            AccountEventKind::Trade(t) => json!({"notice": "trade", "qty": t.quantity.to_string(), "price": t.price.to_string(),
+                                                 "fees": t.fees.fees.to_string(), "time": ns(&t.time_exchange)}),
+            AccountEventKind::OrderSnapshot(s) => json!({"notice": "order_snapshot", "state": format!("{:?}", s.0.state)}),
+            AccountEventKind::OrderCancelled(c) => json!({"notice": "order_cancelled", "state": format!("{:?}", c.state)}),
+            AccountEventKind::BalanceSnapshot(_) => json!({"notice": "balance_snapshot"}),
+            AccountEventKind::Snapshot(_) => json!({"notice": "snapshot"}),
+        };
+        self.notices.push(v);
+    }
+}
+
+impl InFlightRequestRecorder for Rec {
+    fn record_in_flight_cancel(&mut self, _: &OrderRequestCancel) {}
+    fn record_in_flight_open(&mut self, _: &OrderRequestOpen) {}
+}
+
+impl InstrumentDataState for Rec {
+    type MarketEventKind = DataKind;
+    fn price(&self) -> Option<Decimal> {
+        self.price
+    }
+}
+
+type State = EngineState<DefaultGlobalData, Rec>;
+
+#[derive(Debug, Clone)]
+struct Strat {
+    id: StrategyId,
+    calls: Cell<u64>,
+    seen_market: Cell<u64>,
+    seen_notices: Cell<usize>,
+    buy_at: u64,
+    read_at: u64,
+    qty: Decimal,
+    price: Decimal,
+    limit: bool,
+}
+
+impl AlgoStrategy for Strat {
+    type State = State;
+    fn generate_algo_orders(&self, state: &State) -> (impl IntoIterator<Item = OrderRequestCancel>, impl IntoIterator<Item = OrderRequestOpen>) {
+        let inst = state.instruments.instrument_index(&InstrumentIndex(0));
+        let d = &inst.data;
+        for n in &d.notices[self.seen_notices.get()..] {
+            println!("{}", json!({"at_call": self.calls.get(), "seen": n}));
+        }
+        self.seen_notices.set(d.notices.len());
+        let mut opens = Vec::new();
+        if d.n > self.seen_market.get() {
+            self.seen_market.set(d.n);
+            self.calls.set(self.calls.get() + 1);
+            let k = self.calls.get();
+            println!("{}", json!({"call": k, "event": d.last}));
+            if k == self.read_at {
+                let p = inst.position.current.as_ref().map(|p| p.quantity_abs.to_string());
+                let open_orders = inst.orders.0.len();
+                println!("{}", json!({"read_at": k, "position_qty": p, "orders": open_orders}));
+            }
+            if k == self.buy_at {
+                opens.push(OrderRequestOpen {
+                    key: OrderKey { exchange: ExchangeIndex(0), instrument: InstrumentIndex(0), strategy: self.id.clone(),
+                                    cid: ClientOrderId::new("battery") },
+                    state: RequestOpen { side: Side::Buy, price: self.price, quantity: self.qty,
+                                         kind: if self.limit { OrderKind::Limit } else { OrderKind::Market },
+                                         time_in_force: if self.limit { TimeInForce::GoodUntilCancelled { post_only: false } }
+                                                        else { TimeInForce::ImmediateOrCancel } },
+                });
+                println!("{}", json!({"submit_at": k}));
+            }
+        }
+        (std::iter::empty(), opens)
+    }
+}
+
+impl ClosePositionsStrategy for Strat {
+    type State = State;
+    fn close_positions_requests<'a>(&'a self, _: &'a State, _: &'a InstrumentFilter) -> (
+        impl IntoIterator<Item = OrderRequestCancel<ExchangeIndex, InstrumentIndex>> + 'a,
+        impl IntoIterator<Item = OrderRequestOpen<ExchangeIndex, InstrumentIndex>> + 'a,
+    )
+    where ExchangeIndex: 'a, AssetIndex: 'a, InstrumentIndex: 'a {
+        (std::iter::empty(), std::iter::empty())
+    }
+}
+
+impl<Clock, ExecutionTxs, Risk> OnDisconnectStrategy<Clock, State, ExecutionTxs, Risk> for Strat {
+    type OnDisconnect = ();
+    fn on_disconnect(_: &mut Engine<Clock, State, ExecutionTxs, Self, Risk>, _: ExchangeId) {}
+}
+
+impl<Clock, ExecutionTxs, Risk> OnTradingDisabled<Clock, State, ExecutionTxs, Risk> for Strat {
+    type OnTradingDisabled = ();
+    fn on_trading_disabled(_: &mut Engine<Clock, State, ExecutionTxs, Self, Risk>) {}
+}
+
+fn event(e: &Value) -> MarketStreamEvent<InstrumentIndex, DataKind> {
+    let ts = dt(&e["ts_ns"]);
+    let recv = if e["recv_ns"].is_null() { ts } else { dt(&e["recv_ns"]) };
+    let side = |s: &Value| if s.as_str() == Some("sell") { Side::Sell } else { Side::Buy };
+    let levels = |v: &Value| v.as_array().unwrap().iter().map(|l| Level::new(dec(&l[0]), dec(&l[1]))).collect::<Vec<_>>();
+    let kind = match e["kind"].as_str().unwrap() {
+        "trade" => DataKind::Trade(PublicTrade { id: "x".into(), price: e["price"].as_f64().unwrap(), amount: e["qty"].as_f64().unwrap(), side: side(&e["side"]) }),
+        "bar" => DataKind::Candle(Candle { close_time: ts, open: e["open"].as_f64().unwrap(), high: e["high"].as_f64().unwrap(),
+                                           low: e["low"].as_f64().unwrap(), close: e["close"].as_f64().unwrap(),
+                                           volume: e["volume"].as_f64().unwrap_or(1.0), trade_count: 1 }),
+        "liquidation" => DataKind::Liquidation(Liquidation { side: side(&e["side"]), price: e["price"].as_f64().unwrap(),
+                                                             quantity: e["qty"].as_f64().unwrap(), time: ts }),
+        "book_snapshot" => DataKind::OrderBook(OrderBookEvent::Snapshot(OrderBook::new(0, Some(ts), levels(&e["bids"]), levels(&e["asks"])))),
+        "book_delta" => {
+            let one = vec![Level::new(dec(&e["price"]), dec(&e["qty"]))];
+            let (b, a) = if e["side"].as_str() == Some("bid") { (one, vec![]) } else { (vec![], one) };
+            DataKind::OrderBook(OrderBookEvent::Update(OrderBook::new(1, Some(ts), b, a)))
+        }
+        "book_l1" => DataKind::OrderBookL1(OrderBookL1 { last_update_time: ts, best_bid: None, best_ask: None }),
+        k => panic!("no such kind {k}"),
+    };
+    MarketStreamEvent::Item(MarketEvent { time_exchange: ts, time_received: recv, exchange: ExchangeId::BinanceSpot,
+                                          instrument: InstrumentIndex(0), kind })
+}
+
+#[tokio::main]
+async fn main() {
+    if std::env::var("BATTERY_LOG").is_ok() {
+        barter::logging::init_logging();
+    }
+    let mut s = String::new();
+    std::io::stdin().read_to_string(&mut s).unwrap();
+    let input: Value = serde_json::from_str(&s).unwrap();
+    if let Some(line) = input["parse"].as_str() {
+        // the tool's own reading of a market event record (serde, chrono)
+        match serde_json::from_str::<MarketStreamEvent<InstrumentIndex, DataKind>>(line) {
+            Ok(MarketStreamEvent::Item(e)) => println!("{}", json!({"parsed_ns": ns(&e.time_exchange)})),
+            Ok(_) => println!("{}", json!({"parsed": "other"})),
+            Err(err) => println!("{}", json!({"parse_error": err.to_string()})),
+        }
+        return;
+    }
+    let cfg = &input["cfg"];
+    let instruments: Vec<InstrumentConfig> = serde_json::from_value(json!([{
+        "exchange": "binance_spot", "name_exchange": "BTCUSDT", "underlying": {"base": "btc", "quote": "usdt"},
+        "quote": "underlying_quote", "kind": "spot"}])).unwrap();
+    let usdt = cfg["usdt"].as_f64().unwrap_or(1_000_000.0);
+    let executions: Vec<ExecutionConfig> = serde_json::from_value(json!([{
+        "mocked_exchange": "binance_spot", "latency_ms": cfg["latency_ms"].as_u64().unwrap_or(0),
+        "fees_percent": cfg["fees_percent"].as_f64().unwrap_or(0.0),
+        "initial_state": {"exchange": "binance_spot",
+            "balances": [{"asset": "usdt", "balance": {"total": usdt, "free": usdt}, "time_exchange": "2020-01-01T00:00:00Z"},
+                         {"asset": "btc", "balance": {"total": 0, "free": 0}, "time_exchange": "2020-01-01T00:00:00Z"}],
+            "instruments": [{"instrument": "BTCUSDT", "orders": []}]}}])).unwrap();
+    let instruments = IndexedInstruments::new(instruments);
+    let events: Vec<_> = input["events"].as_array().unwrap().iter().map(event).collect();
+    let market_data = MarketDataInMemory::new(Arc::new(events));
+    use barter::backtest::market_data::BacktestMarketData;
+    let t0 = market_data.time_first_event().await.unwrap();
+    let engine_state = EngineStateBuilder::new(&instruments, DefaultGlobalData::default(), |_| Rec::default())
+        .time_engine_start(t0)
+        .trading_state(TradingState::Enabled)
+        .build();
+    let args_constant = Arc::new(BacktestArgsConstant { instruments, executions, market_data, summary_interval: Daily, engine_state });
+    let strat = Strat {
+        id: StrategyId::new("battery"), calls: Cell::new(0), seen_market: Cell::new(0), seen_notices: Cell::new(0),
+        buy_at: cfg["buy_at"].as_u64().unwrap_or(0), read_at: cfg["read_at"].as_u64().unwrap_or(0),
+        qty: Decimal::from_f64(cfg["qty"].as_f64().unwrap_or(1.0)).unwrap(),
+        price: Decimal::from_f64(cfg["price"].as_f64().unwrap_or(100.0)).unwrap(),
+        limit: cfg["limit"].as_bool().unwrap_or(false),
+    };
+    let args_dynamic = BacktestArgsDynamic { id: SmolStr::new("battery"), risk_free_return: Decimal::ZERO, strategy: strat,
+                                             risk: DefaultRiskManager::<State>::default() };
+    match backtest(args_constant, args_dynamic).await {
+        Ok(_) => println!("{}", json!({"done": true})),
+        Err(e) => println!("{}", json!({"error": e.to_string()})),
+    }
+}
+--- build: the program is a member added to the tool's own workspace (Cargo.toml members += "battery61"), cargo build --offline -p battery61 with CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0; binary copied to c61/bin/c61_driver
+
+=== round r8-1 (scene keeper, 2026-09-24): driver rebuilt so the engine's start time is a chosen value (positive definition A)
+--- change in battery61/src/main.rs (diff against the copy taken before the edit):
+261,262c261,265
+<     use barter::backtest::market_data::BacktestMarketData;
+<     let t0 = market_data.time_first_event().await.unwrap();
+---
+>     #[allow(unused_imports)] use barter::backtest::market_data::BacktestMarketData;
+>     // round r8-1 (scene set): the engine's start time is the configured target's chosen value, the same in every
+>     // scene (cfg["engine_start"], RFC 3339); until round r8-1 it was the first event's time (fitted to the input)
+>     let t0: DateTime<Utc> = DateTime::parse_from_rfc3339(cfg["engine_start"].as_str().unwrap_or("2023-11-01T00:00:00Z"))
+>         .unwrap().with_timezone(&Utc);
+--- build: cd _dl/c61 && CARGO_HOME=_cargo CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo build --offline -p battery61; binary copied to c61/bin/c61_driver
+14:36:41
+   Compiling barter v0.14.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/barter)
+   Compiling battery61 v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61)
+    Finished `dev` profile [unoptimized] target(s) in 43.79s
+14:37:24
+
+=== round r16-1 (scene keeper, 2026-09-25): driver rebuilt with a mode that calls the tool's own epoch deserializers (P0-2 unit scenes)
+--- change in battery61/src/main.rs and battery61/Cargo.toml (diff against the copies taken before the edit):
+2c2,3
+< //! stdin: one JSON object {"events": [...], "cfg": {...}} or {"parse": "<MarketStreamEvent JSON line>"}.
+---
+> //! stdin: one JSON object {"events": [...], "cfg": {...}} or {"parse": "<MarketStreamEvent JSON line>"}
+> //! or {"de": "<a barter_integration::serde::de epoch deserializer>", "value": <JSON value>} (round r16-1).
+236a238,254
+>     if let Some(which) = input["de"].as_str() {
+>         // round r16-1 (scene set): the tool's own epoch deserializers (barter_integration::serde::de), handed the value as given
+>         use barter_integration::serde::de as bde;
+>         let v = &input["value"];
+>         let r: Result<DateTime<Utc>, serde_json::Error> = match which {
+>             "de_u64_epoch_ms_as_datetime_utc" => bde::de_u64_epoch_ms_as_datetime_utc(v),
+>             "de_str_u64_epoch_ms_as_datetime_utc" => bde::de_str_u64_epoch_ms_as_datetime_utc(v),
+>             "de_str_f64_epoch_ms_as_datetime_utc" => bde::de_str_f64_epoch_ms_as_datetime_utc(v),
+>             "de_str_f64_epoch_s_as_datetime_utc" => bde::de_str_f64_epoch_s_as_datetime_utc(v),
+>             _ => { println!("{}", json!({"de_error": format!("unknown deserializer {which}")})); return; }
+>         };
+>         match r {
+>             Ok(t) => println!("{}", json!({"de_ns": ns(&t)})),
+>             Err(err) => println!("{}", json!({"de_error": err.to_string()})),
+>         }
+>         return;
+>     }
+9a10
+> barter-integration = { workspace = true }
+--- build: cd _dl/c61 && CARGO_HOME=_cargo CARGO_TARGET_DIR=_cargo_target61 CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0 cargo build --offline -p battery61 (09:06:57-09:07:01Z, rc=0); binary copied to c61/bin/c61_driver
+   Compiling battery61 v0.1.0 (/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c61/battery61)
+    Finished `dev` profile [unoptimized] target(s) in 3.66s
+--- probes: {"de":"de_u64_epoch_ms_as_datetime_utc","value":1704067200123} -> {"de_ns":1704067200123000000}; value 1704067200123.015625 -> de_error invalid type: floating point, expected u64; de_str_f64_epoch_s_as_datetime_utc "1704067200.123456789" -> 1704067200123456717

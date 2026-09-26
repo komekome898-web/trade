@@ -1,0 +1,558 @@
+=== 区分1 29 回目の実行(全体受け取り監査の指摘を潰す回) 生ログ 2026-09-23 ===
+=== この回の指定(起動の指定 1〜5): (1) 14 回目の知見 7 の根拠を、数える命令を打って生ログの行を指す形に直す / (2) 候補 14 Bot18 の射程を要約に戻し、別立ての他の 3 件(22・11 の 5 要素・49)も同じ目で見直す / (3)「型2 — 呼ぶが既定では無効」の 7 件と「段(機構)と段(既定)が違う 9 件」の関係を書く / (4) 段の表に「遅延」と「取り消しの扱い」の欄を足し、印がある 36 件を埋められる範囲で埋める(段は増やさない) / (5) 数え直しを 3 段で出す(一次資料に未到達 / 到達済みだが印が無い / 個別の要素が未決)
+=== 新しい検索計画は打たない。候補も増やさない。構築・導入・最小実行・登録・鍵の発行・購入・発注はしない。原典を読むのは許されている。
+=== 申し送り: 既定枝は ungh.cc の defaultBranch で確かめてから取る。code=000 や TLS 切断は 404 の欄に入れず打ち直す。逐語は内側の型や記号まで原典どおり。折れている行を 1 行に繋がない。実測の根拠は <生ログ>:<行番号> / <生ログ> の <名前> の節 / 同じ生ログの <名前> の節 / 同上 のどれか。
+--- 2026-09-23T02:05:43Z method=run target=ls_probes rc=0 time_s=0.00 note=生ログの本数(この回の run29.log を作ったあとに打った値)
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+28
+--- 2026-09-23T02:05:50Z method=run target=run14_marks_count rc=0 time_s=0.02 note=14 回目の節の「候補の一覧」(「6 要素ごとの残り」の直前まで)に現れる 6 要素の仕分けの印を、要素ごとに数える。知見 7 の「板の待ち行列」と「市場影響と約定の模型」が 0 件という主張の根拠
+$ for w in 区分1-足 区分1-ティック 区分1-板の待ち行列 区分1-イベント駆動 区分1-ベクトル化 区分1-市場影響と約定の模型; do n=$(awk "/^## 区分1 — 14 回目の実行/{f=1} f&&/^### 候補の一覧/{g=1} g&&/^\*\*6 要素ごとの残り/{exit} g" docs/DATA/SCAN_2026-09-21_tools.md | grep -o "$w" | wc -l); echo "$w = $n"; done
+区分1-足 = 17
+区分1-ティック = 5
+区分1-板の待ち行列 = 6
+区分1-イベント駆動 = 9
+区分1-ベクトル化 = 4
+区分1-市場影響と約定の模型 = 6
+--- 2026-09-23T02:06:13Z method=run target=run14_marks_pending rc=0 time_s=0.04 note=14 回目の節の「候補の一覧」の候補の行を 1 件ずつに畳み、「状態がまだ確定していない」もの(行に「確定」「到達済み」「深掘り済み」が無いもの)だけに絞って 6 要素の印を数える。知見 7 の「0 件」は、この「残り」の数え方に対する主張である
+$ awk "/^## 区分1 — 14 回目の実行/{f=1} f&&/^### 候補の一覧/{g=1} g&&/^\*\*6 要素ごとの残り/{exit} g" docs/DATA/SCAN_2026-09-21_tools.md | awk "/^[0-9]+\. /{if(b!=\"\")print b; b=\$0; next} {if(b!=\"\")b=b\" \"\$0} END{if(b!=\"\")print b}" | grep -v "確定\|到達済み\|深掘り済み" > /tmp/r14pend.txt; echo "畳んだ候補の行 = $(awk "/^## 区分1 — 14 回目の実行/{f=1} f&&/^### 候補の一覧/{g=1} g&&/^\*\*6 要素ごとの残り/{exit} g" docs/DATA/SCAN_2026-09-21_tools.md | awk "/^[0-9]+\. /{n++} END{print n}")"; echo "うち状態が未確定 = $(wc -l < /tmp/r14pend.txt)"; for w in 区分1-足 区分1-ティック 区分1-板の待ち行列 区分1-イベント駆動 区分1-ベクトル化 区分1-市場影響と約定の模型; do echo "$w = $(grep -c -- "$w" /tmp/r14pend.txt) 件 : $(grep -- "$w" /tmp/r14pend.txt | sed "s/^\([0-9]*\)\..*/\1/" | tr "\n" " ")"; done
+畳んだ候補の行 = 93
+うち状態が未確定 = 52
+区分1-足 = 12 件 : 51 52 53 54 57 60 67 70 72 87 91 92 
+区分1-ティック = 2 件 : 46 90 
+区分1-板の待ち行列 = 0 件 : 
+区分1-イベント駆動 = 6 件 : 52 61 62 65 68 69 
+区分1-ベクトル化 = 2 件 : 73 74 
+区分1-市場影響と約定の模型 = 0 件 : 
+--- 2026-09-23T02:06:32Z method=run target=run14_marks_all rc=0 time_s=0.04 note=同じ 14 回目の「候補の一覧」を、絞り込みなし(状態の確定・未確定を問わない)で数える。上の run14_marks_pending との差が、「残り」という数え方で落ちている候補である
+$ awk "/^## 区分1 — 14 回目の実行/{f=1} f&&/^### 候補の一覧/{g=1} g&&/^\*\*6 要素ごとの残り/{exit} g" docs/DATA/SCAN_2026-09-21_tools.md | awk "/^[0-9]+\. /{if(b!=\"\")print b; b=\$0; next} {if(b!=\"\")b=b\" \"\$0} END{if(b!=\"\")print b}" > /tmp/r14all.txt; for w in 区分1-足 区分1-ティック 区分1-板の待ち行列 区分1-イベント駆動 区分1-ベクトル化 区分1-市場影響と約定の模型; do echo "$w = $(grep -c -- "$w" /tmp/r14all.txt) 件 : $(grep -- "$w" /tmp/r14all.txt | sed "s/^\([0-9]*\)\..*/\1/" | tr "\n" " ")"; done
+区分1-足 = 16 件 : 43 44 51 52 53 54 55 57 60 67 70 72 75 87 91 92 
+区分1-ティック = 4 件 : 31 46 58 90 
+区分1-板の待ち行列 = 5 件 : 31 32 33 37 38 
+区分1-イベント駆動 = 8 件 : 37 52 58 61 62 65 68 69 
+区分1-ベクトル化 = 3 件 : 44 73 74 
+区分1-市場影響と約定の模型 = 5 件 : 32 33 35 36 38 
+--- 2026-09-23T02:10:02Z method=run target=type2_vs_stage_diff rc=0 time_s=0.05 note=28 回目の要約の「型 2 — 呼ぶが、既定では無効」の行から候補番号を、27 回目の「段(機構)と段(既定)が同じでない候補は 9 件である」の表から候補番号を、それぞれ文書から機械で抜き、共通・型2のみ・段のみに分ける(起動の指定 3)
+$ python3 - <<EOF
+import re
+L=open("docs/DATA/SCAN_2026-09-21_tools.md").read().split("\n")
+row=[l for l in L if l.startswith("| **型 2 — 呼ぶが、既定では無効**")][0]
+cell=row.split("|")[4]
+t2=[int(x) for x in re.findall(r"(?:^|・)\s*(\d+) \`", cell)]
+i=[k for k,l in enumerate(L) if l.startswith("**段(機構)と段(既定)が同じでない候補は")][0]
+j=[k for k,l in enumerate(L[i:], i) if l.startswith("| 候補 | 機構 | 既定 | 下がる理由 |")][0]
+st=[]
+for l in L[j+2:]:
+    if not l.startswith("| "): break
+    st.append(int(re.match(r"\| (\d+) \`", l).group(1)))
+print("型2 =", len(t2), sorted(t2))
+print("段が違う =", len(st), sorted(st))
+print("共通 =", len(set(t2)&set(st)), sorted(set(t2)&set(st)))
+print("型2 のみ =", len(set(t2)-set(st)), sorted(set(t2)-set(st)))
+print("段のみ =", len(set(st)-set(t2)), sorted(set(st)-set(t2)))
+EOF
+型2 = 1 [57]
+段が違う = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+共通 = 0 []
+型2 のみ = 1 [57]
+段のみ = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+--- 2026-09-23T02:10:16Z method=run target=type2_vs_stage_diff2 rc=0 time_s=0.06 note=打ち直し。1 回目は行の中の逃がした縦棒(\\|)をそのまま列の区切りとして数えたため、型 2 の欄が途中で切れて 1 件しか取れなかった。逃がした縦棒を退避してから列に割る(起動の指定 3)
+$ python3 - <<EOF
+import re
+L=open("docs/DATA/SCAN_2026-09-21_tools.md").read().split("\n")
+row=[l for l in L if l.startswith("| **型 2 — 呼ぶが、既定では無効**")][0]
+cell=row.replace("\\\\|","\x00").split("|")[4]
+t2=[int(x) for x in re.findall(r"(?:^|・)\s*(\d+) \`", cell)]
+i=[k for k,l in enumerate(L) if l.startswith("**段(機構)と段(既定)が同じでない候補は")][0]
+j=[k for k,l in enumerate(L[i:], i) if l.startswith("| 候補 | 機構 | 既定 | 下がる理由 |")][0]
+st=[]
+for l in L[j+2:]:
+    if not l.startswith("| "): break
+    st.append(int(re.match(r"\| (\d+) \`", l).group(1)))
+print("型2 =", len(t2), sorted(t2))
+print("段が違う =", len(st), sorted(st))
+print("共通 =", len(set(t2)&set(st)), sorted(set(t2)&set(st)))
+print("型2 のみ =", len(set(t2)-set(st)), sorted(set(t2)-set(st)))
+print("段のみ =", len(set(st)-set(t2)), sorted(set(st)-set(t2)))
+EOF
+型2 = 0 []
+段が違う = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+共通 = 0 []
+型2 のみ = 0 []
+段のみ = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+--- 2026-09-23T02:10:28Z method=run target=type2_vs_stage_diff3 rc=0 time_s=0.05 note=2 度目の打ち直し。殻の逃がしが二重になって型 2 の欄が空になったので、数える手を scratchpad の t2set.py に置いてから打つ(起動の指定 3)
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/t2set.py
+型2 = 0 []
+段が違う = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+共通 = 0 []
+型2 のみ = 0 []
+段のみ = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+--- 2026-09-23T02:10:40Z method=run target=type2_vs_stage_diff4 rc=0 time_s=0.07 note=3 度目の打ち直し。欄の位置を 4 番目と数えていたが、行頭の縦棒で空の欄が 1 つ増えるため 3 番目が正しい。型 2 の 7 件と、段(機構)と段(既定)が違う 9 件の関係を出す(起動の指定 3)
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/t2set.py
+型2 = 7 [2, 4, 21, 33, 57, 91, 92]
+段が違う = 9 [2, 4, 6, 18, 21, 33, 53, 91, 92]
+共通 = 6 [2, 4, 21, 33, 91, 92]
+型2 のみ = 1 [57]
+段のみ = 3 [6, 18, 53]
+--- 2026-09-23T02:11:55Z method=run target=mark_recount rc=0 time_s=0.05 note=6 要素の印を、候補の一覧の各候補の最後の記載から機械で拾い直す(起動の指定 5 の数え直し)。あわせて、27 回目の段の表の 37 行と「区分1-市場影響と約定の模型」の印の集合を突き合わせる
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/markcount.py
+印の付いた候補の行 = 107
+区分1-足 = 48 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 46 48 51 52 53 54 55 56 57 58 60 61 62 67 69 70 72 73 74 75 80 85 86 87 92 107 120 123
+区分1-ティック = 16 件 : 13 20 23 31 41 52 53 57 58 59 61 63 67 90 91 123
+区分1-板の待ち行列 = 23 件 : 23 31 32 33 37 38 57 60 65 67 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 = 19 件 : 1 13 23 37 41 52 53 57 58 60 61 62 63 65 67 68 69 91 123
+区分1-ベクトル化 = 5 件 : 44 54 73 74 87
+区分1-市場影響と約定の模型 = 32 件 : 1 2 4 6 7 13 15 18 20 21 23 32 33 35 36 38 53 54 57 60 63 67 70 72 87 91 92 98 105 106 116 123
+6 要素のどれかに印がある候補 = 77 件
+段の表の行 = 37 件
+段の表にあって市場影響の印が無い = [3, 8, 19, 51, 119]
+市場影響の印があって段の表に無い = []
+--- 2026-09-23T02:12:27Z method=run target=stage_table_vs_dist rc=0 time_s=0.05 note=27 回目の「段の表」の行と、その下の「段(既定)の分布」の候補を機械で突き合わせる(起動の指定 4 で段の表に欄を足すにあたり、対象が何件かを確かめるため)
+$ python3 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/stagecmp.py
+段の表の行 = 37 件 : 51 92 8 32 7 72 2 4 21 3 19 20 60 67 70 13 123 63 18 6 53 23 98 38 33 57 1 15 35 36 105 106 116 119 91 54 87
+分布 段=0 件数=2 候補=51 92
+分布 段=1 件数=7 候補=8 32 7 2 4 21 72
+分布 段=2 件数=5 候補=3 19 20 60 67
+分布 段=3 件数=1 候補=70
+分布 段=4 件数=6 候補=13 123 63 18 53 6
+分布 段=5 件数=5 候補=98 38 33 23 57
+分布 段=6 件数=8 候補=1 15 35 36 105 106 116 119
+分布 段=未確認 件数=0 候補=
+分布 段=**該当なし(尺度の外)** 件数=2 候補=54 87
+分布の件数の合計 = 36
+段の表にあって分布に無い = [91]
+分布にあって段の表に無い = []
+--- 2026-09-23T02:14:38Z method=run target=deep_delay_cancel rc=0 time_s=32.94 note=段 5 の候補(23・33・38・57・91・98)の「先行注文の取り消しの扱い」と、遅延の当たりがあった候補(15・23・91・92・98)の遅延の既定を、原典から取る。あわせて sweep で code=000 だった 6 番と 67 番を打ち直す(起動の指定 4)
+$ /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/deep.sh
+
+== 6 Limex-com/ziplime 既定枝の打ち直し(1 回目 code=000)
+{"repo":{"id":953945997,"name":"ziplime","repo":"Limex-com/ziplime","description":"Backtesting & live trading engine built for AI agents. Zipline rebuilt on Polars with a native MCP server for Claude, Cursor & Codex. Stocks, ETFs, futures.","createdAt":"2025-03-24T10:28:37Z","updatedAt":"2026-09-22T12:02:06Z","pushedAt":"2026-09-17T09:58:00Z","stars":565,"watchers":9,"forks":57,"defaultBranch":"ma
+
+== 67 Lumiwealth/lumibot 既定枝の打ち直し(1 回目 files 一覧が code=000)
+curl: (28) Connection timed out after 30001 milliseconds
+
+[code=000]
+
+-- 23 hftbacktest 列の模型
+   https://raw.githubusercontent.com/nkaz001/hftbacktest/master/hftbacktest/src/backtest/models/queue.rs
+25:pub trait QueueModel<MD>
+34:    fn trade(&self, order: &mut Order, qty: f64, depth: &MD);
+37:    fn depth(&self, order: &mut Order, prev_qty: f64, new_qty: f64, depth: &MD);
+44:pub struct RiskAdverseQueueModel<MD>(PhantomData<MD>);
+68:        let front_q_qty = if order.side == Side::Buy {
+73:        order.q = Box::new(front_q_qty);
+76:    fn trade(&self, order: &mut Order, qty: f64, _depth: &MD) {
+77:        let front_q_qty = order.q.as_any_mut().downcast_mut::<f64>().unwrap();
+
+-- 23 hftbacktest 遅延の模型の既定
+   https://raw.githubusercontent.com/nkaz001/hftbacktest/master/hftbacktest/src/backtest/models/latency.rs
+28:pub struct ConstantLatency {
+29:    entry_latency: i64,
+36:    /// `entry_latency` and `response_latency` should match the time unit of the data's timestamps.
+39:    pub fn new(entry_latency: i64, response_latency: i64) -> Self {
+41:            entry_latency,
+49:        self.entry_latency
+
+-- 91 homerun 列と取り消し
+   https://raw.githubusercontent.com/braedonsaunders/homerun/main/backend/services/backtest/matching_engine.py
+7:* a latency model (``LatencyModel``), and
+11:and cancel/replace transitions that mirror the live ``execute_live_order``
+22:                                  (cancel | reprice)
+24:                                  cancelled
+27:  the venue at T + submit_latency.
+31:* ``filled`` / ``cancelled`` / ``rejected`` — terminal.
+34:inputs (including latency-model seed) it produces identical fills.
+46:from services.backtest.latency_model import LatencyModel
+
+-- 38 MarS 取り消しの注文
+   https://raw.githubusercontent.com/microsoft/MarS/main/mlib/core/orderbook.py
+29:    def match_call_auction_orders(self, time: Timestamp, type: str) -> tuple[list[Transaction], Transaction | None]:
+33:        cancel_transactions = self._del_canceled_call_auction_orders()
+37:        return cancel_transactions, match_transaction
+227:        if order.is_cancel_buy:
+231:            trans = self.bids[index].update_with_cancel_order(order)
+236:        if order.is_cancel_sell:
+240:            trans = self.asks[index].update_with_cancel_order(order)
+314:    def _del_canceled_call_auction_orders(self) -> list[Transaction]:
+
+-- 33 backtesting_execution_simulator 板と列
+   https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/orderbook/orderbook.cpp
+
+-- 98 limitOrderBook 遅延
+   https://raw.githubusercontent.com/mihircoding/limitOrderBook/main/src/latency.py
+3:Verify with:  pytest tests/test_latency.py
+6:processes every order the instant it is created, so nothing in the project
+7:touched the actual subject of low-latency trading. That is a big omission,
+14:instant do not reach the book at the same instant, and the one who arrives
+15:second is not merely late - they are trading against someone who already knows
+20:    send(sent_at, participant, action)   ->   runs at sent_at + latency(participant)
+25:the port they came in on. Ordering them by submission order instead would hand
+26:the tie to whoever decided first, which is exactly the advantage latency is
+
+-- 98 limitOrderBook 取り消しと列
+   https://raw.githubusercontent.com/mihircoding/limitOrderBook/main/src/book.py
+
+-- 15 BacktestingCore 遅延の既定
+   https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/config/src/variable_latency.rs
+1://! Variable latency simulation with jitter, spikes, and realistic network modeling
+4://! - Network jitter (random variation around base latency)
+5://! - Latency spikes (occasional high-latency events)
+15:    pub base_latency_ms: u64,
+17:    pub jitter_fraction: f64,
+19:    pub min_latency_ms: u64,
+21:    pub max_latency_ms: u64,
+22:    /// Probability of a latency spike (0.0-1.0)
+
+-- 57 WonderTrader 遅延
+   https://raw.githubusercontent.com/wondertrader/wondertrader/master/src/WtBtCore/MatchEngine.h
+57:	MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)
+94:		double		_queue;
+135:	double			_cancelrate;
+--- 2026-09-23T02:15:11Z method=run target=deep_retry rc=0 time_s=13.42 note=打ち直しと在処の確かめ。67 番は 2 度 code=000 だったので 3 度目、6 番の既定枝、33 番と 98 番は 1 度目に当てずっぽうの道を打って空だったので追跡ファイルの一覧から拾い直す、119 番は走査対象が 0 件だったので一覧を見る
+$ /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/deep2.sh
+== 67 Lumiwealth/lumibot 既定枝の 2 度目の打ち直し
+curl: (35) Recv failure: Connection reset by peer
+
+[code=000]
+
+
+== 6 Limex-com/ziplime 既定枝(1 行に絞る)
+"defaultBranch":"master"
+
+== 33 の板の実装の在処(追跡ファイルの一覧から cpp を拾う)
+{"path":"cpp/analytics/markout.cpp"
+{"path":"cpp/analytics/markout.hpp"
+{"path":"cpp/benchmarks/benchmark_main.cpp"
+{"path":"cpp/core/memory_pool.cpp"
+{"path":"cpp/core/memory_pool.hpp"
+{"path":"cpp/core/timestamp.cpp"
+{"path":"cpp/core/timestamp.hpp"
+{"path":"cpp/core/types.cpp"
+{"path":"cpp/core/types.hpp"
+{"path":"cpp/core/utils.cpp"
+{"path":"cpp/core/utils.hpp"
+{"path":"cpp/data/market_data_feed.cpp"
+{"path":"cpp/data/market_data_feed.hpp"
+{"path":"cpp/data/tick_reader.cpp"
+{"path":"cpp/data/tick_reader.hpp"
+{"path":"cpp/events/event.cpp"
+{"path":"cpp/events/event.hpp"
+{"path":"cpp/events/event_queue.cpp"
+{"path":"cpp/events/event_queue.hpp"
+{"path":"cpp/execution/execution_simulator.cpp"
+
+== 98 の追跡ファイルの一覧
+{"path":"benchmark.py"
+{"path":"docs/build_data.py"
+{"path":"latency_study.py"
+{"path":"run_simulation.py"
+{"path":"src/__init__.py"
+{"path":"src/latency.py"
+{"path":"src/order.py"
+{"path":"src/orderbook.py"
+{"path":"src/simulator.py"
+{"path":"tests/test_best_price.py"
+{"path":"tests/test_latency.py"
+{"path":"tests/test_lazy_cancel.py"
+{"path":"tests/test_orderbook.py"
+{"path":"tests/test_simulator.py"
+{"path":"tests/test_stp.py"
+{"path":"tests/test_stylized_facts.py"
+
+== 119 peernagy/lob_bench の追跡ファイルの一覧(走査対象 0 だったため)
+{"meta":{"sha":"276baf3039bf7630b555891b9d04ad49a92b3356"}
+"files":[{"path":".gitignore"
+"mode":"100644"
+"sha":"72c85d6434145d71c12ad0f6cd1fcf63fa1eb4a0"
+"size":521}
+{"path":"README.md"
+"mode":"100644"
+"sha":"c752a692f456d8abb3473806338ce1a77c2a4d30"
+"size":5474}
+{"path":"__init__.py"
+"mode":"100644"
+"sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+"size":0}
+{"path":"__pycache__/data_loading.cpython-310.pyc"
+"mode":"100644"
+"sha":"bf40d564f8e2967b2e2eca6413f43e9dd00e5b75"
+"size":11964}
+{"path":"__pycache__/impact.cpython-310.pyc"
+"mode":"100644"
+"sha":"72aef8e8455e7d9de4a0df545ab70e3a52fd2ab4"
+"size":17783}
+{"path":"__pycache__/partitioning.cpython-310.pyc"
+"mode":"100644"
+"sha":"bca340495933f5995bbb0716ecf08c4dfa7a736a"
+"size":9961}
+{"path":"adversarial_measurement.ipynb"
+"mode":"100644"
+"sha":"5f6daad802f16a55262d93d3ad4a0568b2443c92"
+"size":1632613}
+{"path":"benchmark.ipynb"
+--- 2026-09-23T02:15:32Z method=run target=deep_delay_cancel2 rc=0 time_s=1.64 note=在処を確かめたうえでの取り直し(33・98・119・6・67)。67 番は ungh が 2 度 code=000 なので raw の道に替える(委任文 §5-1 の「手段を替えて続ける」)
+$ /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/deep3.sh
+
+-- 33 執行の模擬
+   https://raw.githubusercontent.com/SarthakDalmia1/backtesting_execution_simulator/main/cpp/execution/execution_simulator.cpp
+25:    // Apply latency
+26:    Timestamp submit_time = clock_.now() + config_.latency.order_submit_latency_ns;
+30:    event_queue_.push(event);
+35:bool ExecutionSimulator::cancel_order(OrderId order_id) {
+36:    CancelRequest req(order_id);
+37:    Timestamp cancel_time = clock_.now() + config_.latency.order_cancel_latency_ns;
+39:    OrderCancelEvent event(cancel_time, req);
+40:    event_queue_.push(event);
+
+-- 98 板(取り消しと列)
+   https://raw.githubusercontent.com/mihircoding/limitOrderBook/main/src/orderbook.py
+7:    self.bids : dict[float, deque[Order]]   # price -> FIFO queue of resting orders
+8:    self.asks : dict[float, deque[Order]]
+9:    self._by_id : dict[int, Order]          # O(1) cancel lookup
+12:A deque per price level gives time priority for free: append to the back, fill
+25:eager version has to walk a structure, and the lazy one lets whatever passes
+36:Cancelled orders in the queues. cancel() flags the order and leaves it where
+38:of a queue. Splicing one out of the middle of a deque is O(orders at that
+39:level), which benchmark.py caught as an 88x gap between the median cancel and
+
+-- 98 遅延の入口
+   https://raw.githubusercontent.com/mihircoding/limitOrderBook/main/src/latency.py
+20:    send(sent_at, participant, action)   ->   runs at sent_at + latency(participant)
+44:class LatencyModel:
+65:    def __post_init__(self):
+68:        self._rng = np.random.default_rng(self.seed)
+70:    def sample(self) -> float:
+78:class Message:
+88:    participant: str = field(compare=False, default="")
+89:    action: object = field(compare=False, default=None)
+
+-- 119 lob_bench の README
+   https://raw.githubusercontent.com/peernagy/lob_bench/main/README.md
+21:*   Ready‑made score functions, distance metrics, and impact‑response analysis.
+42:| iv. | **Time to cancel** | Order submission → first cancel/modify |
+46:| xi./xii. | **Cancel‑order depths** | Distance of cancellations from mid‑price |
+47:| xiii./xiv. | **Cancel‑order levels** | Level index (1…*n*) of cancellations |
+82:from lob_bench import data_loading, scoring, impact
+114:impact_curves, impact_score = impact.impact_compare(loader)
+124:4. **Call `impact_compare`** – analyse six event‑type response curves.
+
+-- 6 ziplime の追跡ファイル(滑り)
+   https://ungh.cc/repos/Limex-com/ziplime/files/master
+
+-- 67 Lumiwealth/lumibot 3 度目。ungh が 2 度 000 なので raw から直接
+903:    def _cancel_open_orders_for_asset(
+909:        cancel_sides: set | None = None,
+925:        # Track which orders have been canceled to avoid duplicate processing
+926:        canceled_identifiers = set()
+928:        def _cancel_inline(order: Order):
+929:            if order.identifier in canceled_identifiers:
+933:            # Don't try to cancel orders that are already filled or canceled
+935:                canceled_identifiers.add(order.identifier)
+--- 2026-09-23T02:15:44Z method=run target=delay_cancel_sweep rc=0 time_s=1481.00 note=段の表の 37 件について、既定枝を ungh.cc の defaultBranch で確かめ、追跡ファイルの一覧から執行・照合・注文・滑り・遅延・列に当たる名前を最大 8 本選び、raw から取って「遅延」と「取り消し」の語を数える(起動の指定 4)。当たり 0 件は「無い」ではなく「この走査の範囲で当たらなかった」である
+$ python3 scratchpad/sweep.py  (この回かぎりの走査の道具。リポジトリには置かない)
+## 1 gbeced/basana branch=develop files=241 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 2 mementum/backtrader branch=master files=378 走査対象=8
+   遅延: 0 件
+   取消: 9 件
+     C backtrader/order.py:251: Canceled, Expired, Margin, Rejected = range(9)
+     C backtrader/order.py:253: Cancelled = Canceled  # alias
+## 3 pst-group/pysystemtrade branch=develop files=1560 走査対象=8
+   遅延: 1 件
+     L sysobjects/fills.py:96: # No delaying done here so we assume positions are already delayed
+   取消: 2 件
+     C sysbrokers/broker_execution_stack.py:32: def cancel_order_given_control_object(
+     C sysbrokers/broker_execution_stack.py:37: def cancel_order_on_stack(self, broker_order: brokerOrder):
+## 4 edtechre/pybroker branch=master files=279 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 6 Limex-com/ziplime | defaultBranch 取得失敗 code=000
+## 7 Superalgos/Superalgos branch=master files=6779 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 8 bludnic/OpenTrader branch=dev files=683 走査対象=8
+   遅延: 0 件
+   取消: 6 件
+     C packages/db/src/entities/order.entity.ts:17: placedAt: OrderStatus extends "Placed" | "Filled" | "Canceled" ? NonNullable<O["placedAt"]> : null;
+     C packages/db/src/entities/order.entity.ts:23: export type LimitOrderCanceled<T extends OrderModel> = OrderEntityBuilder<"Limit", "Canceled", T>;
+## 13 DeviaVir/zenbot branch=unstable files=308 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 15 Mendl-Labs/BacktestingCore branch=master files=207 走査対象=8
+   遅延: 2 件
+     L config/src/variable_latency.rs:1: //! Variable latency simulation with jitter, spikes, and realistic network modeling
+     L config/src/variable_latency.rs:3: //! Provides realistic latency simulation for backtesting that accounts for:
+   取消: 6 件
+     C smartrouter/src/order.rs:144: /// Order cancelled
+     C smartrouter/src/order.rs:145: Cancelled,
+## 18 stefan-jansen/zipline-reloaded branch=main files=423 走査対象=8
+   遅延: 0 件
+   取消: 4 件
+     C src/zipline/finance/order.py:29: "CANCELLED",
+     C src/zipline/finance/order.py:250: def cancel(self):
+## 19 jesse-ai/jesse branch=master files=1244 走査対象=8
+   遅延: 0 件
+   取消: 6 件
+     C jesse/models/Order.py:34: canceled_at = BigIntegerField(null=True)
+     C jesse/models/Order.py:57: def is_canceled(self) -> bool:
+## 20 vnpy/vnpy_ctastrategy branch=main files=35 走査対象=2
+   遅延: 0 件
+   取消: 4 件
+     C vnpy_ctastrategy/engine.py:20: CancelRequest,
+     C vnpy_ctastrategy/engine.py:64: Status.CANCELLED: StopOrderStatus.CANCELLED,
+## 21 microsoft/qlib branch=main files=626 走査対象=8
+   遅延: 1 件
+     L qlib/workflow/recorder.py:348: # - This may cause delay when uploading results
+   取消: 0 件
+## 23 nkaz001/hftbacktest branch=master files=232 走査対象=8
+   遅延: 0 件
+   取消: 8 件
+     C connector/src/bybit/ordermanager.rs:161: pub fn cancel_order(
+     C connector/src/bybit/ordermanager.rs:196: pub fn update_cancel_fail(&mut self, order_link_id: &str) -> Result<OrderExt, BybitError> {
+## 32 FlashAlpha-lab/flashalpha-fill-simulator branch=master files=35 走査対象=8
+   遅延: 0 件
+   取消: 3 件
+     C src/fillsim/entry.py:61: Usually candidates that have not yet filled, not yet been cancelled.
+     C src/fillsim/entry.py:67: caller cancels the rest.
+## 33 SarthakDalmia1/backtesting_execution_simulator branch=main files=57 走査対象=8
+   遅延: 0 件
+   取消: 4 件
+     C cpp/orderbook/order.cpp:39: void Order::cancel() {
+     C cpp/orderbook/order.cpp:41: status = OrderStatus::Cancelled;
+## 35 thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator- branch=main files=15 走査対象=2
+   遅延: 0 件
+   取消: 0 件
+## 36 shubhamcodez/Market-Impact-Model branch=main files=101 走査対象=3
+   遅延: 0 件
+   取消: 0 件
+## 38 microsoft/MarS branch=main files=83 走査対象=8
+   遅延: 0 件
+   取消: 6 件
+     C mlib/core/orderbook.py:33: cancel_transactions = self._del_canceled_call_auction_orders()
+     C mlib/core/orderbook.py:37: return cancel_transactions, match_transaction
+## 51 yutiansut/QUANTAXIS branch=master files=573 走査対象=8
+   遅延: 0 件
+   取消: 2 件
+     C QUANTAXIS/QAMarket/QAOrder.py:143: CANCEL = 400
+     C QUANTAXIS/QAMarket/QAOrder.py:144: CANCEL_PART = 402 # cancel_part是部分撤单(及 下单后成交了一部分 剩余的被撤单 这是一个最终状态)
+## 53 ricequant/rqalpha branch=master files=302 走査対象=8
+   遅延: 0 件
+   取消: 10 件
+     C rqalpha/model/order.py:338: ORDER_STATUS.PENDING_CANCEL
+     C rqalpha/model/order.py:347: def set_pending_cancel(self):
+## 54 cuemacro/finmarketpy branch=master files=111 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 57 wondertrader/wondertrader branch=master files=1391 走査対象=8
+   遅延: 0 件
+   取消: 8 件
+     C src/WtBtCore/ExecMocker.h:31: virtual void handle_order(uint32_t localid, const char* stdCode, bool isBuy, double leftover, double price, bool isCance
+     C src/WtBtCore/ExecMocker.h:64: virtual bool cancel(uint32_t localid) override;
+## 60 fasiondog/hikyuu branch=master files=1965 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 63 rburkholder/trade-frame branch=master files=2022 走査対象=8
+   遅延: 0 件
+   取消: 2 件
+     C SP500/StateMachine_Order.cpp:50: struct evtCancel {};  // action to cancel
+     C SP500/StateMachine_Order.cpp:53: struct evtCancelled {}; // exchange cancellation
+## 67 Lumiwealth/lumibot branch=dev | files 一覧 取得失敗 code=000
+## 70 pineforge-4pass/pineforge-engine branch=main files=1277 走査対象=8
+   遅延: 0 件
+   取消: 8 件
+     C src/native_order.cpp:578: struct PreparedCancelStorageTag {};
+     C src/native_order.cpp:586: CancelledEvent make_cancelled(uint64_t ordinal, const LiveRequest& live, CancelReason reason,
+## 72 squidKid-deluxe/QTradeX-Algo-Trading-SDK branch=master files=94 走査対象=8
+   遅延: 0 件
+   取消: 4 件
+     C qtradex/private/execution.py:18: cancel_order(self, order_id, self.symbol):
+     C qtradex/private/execution.py:19: Cancels a single open order.
+## 87 chrism2671/PyTrendFollow branch=master files=52 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 91 braedonsaunders/homerun branch=main files=1129 走査対象=8
+   遅延: 8 件
+     L tools/crypto_latency_harness.py:1: """Sub-second end-to-end crypto trading latency harness.
+     L tools/crypto_latency_harness.py:25: _maybe_log_execution_latency_sla_breach() Execution latency SLA
+   取消: 4 件
+     C tools/crypto_latency_harness.py:559: except asyncio.CancelledError:
+     C tools/crypto_latency_harness.py:687: except asyncio.CancelledError:
+## 92 Quentin-Piot/prediction-market-backtester branch=master files=99 走査対象=8
+   遅延: 2 件
+     L src/pm_bt/execution/simulator.py:21: latency_bars: int = Field(default=0, ge=0)
+     L src/pm_bt/execution/simulator.py:34: latency_bars=config.latency_bars,
+   取消: 0 件
+## 98 mihircoding/limitOrderBook branch=main files=25 走査対象=8
+   遅延: 6 件
+     L latency_study.py:3: Usage:  python latency_study.py
+     L latency_study.py:6: latency, with the note that its absence means nothing here touches the actual
+   取消: 13 件
+     C latency_study.py:48: """A two-sided quoter that cancels and re-posts when fair value moves.
+     C latency_study.py:72: """Cancel both quotes and post new ones around `fair`.
+## 105 DaniyalMlk/slippage branch=main files=47 走査対象=8
+   遅延: 6 件
+     L src/slippage/cli.py:39: from .shortfall import DelayBasis
+     L src/slippage/cli.py:86: "--delay-basis", choices=[b.value for b in DelayBasis], default=DelayBasis.ORDER.value
+   取消: 2 件
+     C src/slippage/series.py:65: affects a result because every weight in a one-bar average cancels.
+     C src/slippage/series.py:187: uniform bars the weights cancel and this is the plain mean.
+## 106 bernardopaulsen/almgren-chriss branch=main files=20 走査対象=1
+   遅延: 0 件
+   取消: 0 件
+## 116 braverock/blotter branch=master files=187 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+## 119 peernagy/lob_bench branch=main files=26 走査対象=0
+   遅延: 0 件
+   取消: 0 件
+## 123 carlos8f/zenbot branch=unstable files=308 走査対象=8
+   遅延: 0 件
+   取消: 0 件
+--- 2026-09-23T02:22:58Z method=run target=check_scan_report rc=0 time_s=1.46 note=受け入れ検査(生ログを run2 から run29 まで全部渡した)。報告に貼るのはこの出力である
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-23T02:23:05Z method=run target=check_scan_report_all rc=0 time_s=0.84 note=--all(検査が除外している 15 節にも当てる)。0 件にする指定ではない。内訳の動きを見るために打つ
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all 2>&1 | grep -E "^K|合計"
+K1 太字                  14 件
+K2 括弧                  15 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力の合計 0 件が、いま数え直した 45 件と合わない(打ち直して貼ること)
+---- 検査対象の合計 45 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 46 件
+--- 2026-09-23T02:23:05Z method=run target=git_diff_deleted rc=0 time_s=0.05 note=この回の書き換えの範囲。削除行を全部出す
+$ git diff -U0 -- docs/DATA/SCAN_2026-09-21_tools.md | grep "^-" | grep -v "^---" | cut -c1-120; echo "削除行の本数 = $(git diff -U0 -- docs/DATA/SCAN_2026-09-21_tools.md | grep -c "^-" )"
+-| 7 | 6 要素のうち「**板の待ち行列**」と「**市場影響・約定の模型**」に当たる残りの候�
+-| 別立て | 何が残っているか | 理由 |
+-|---|---|---|
+-| 14 番 `Bot18` | 6 要素の印が無い | **公開されていない。**到達できない理由が確定してい�
+-| 22 番 `Lean CLI` | 6 要素の印が無い | **取得していない Docker 画像の中に在る。**52 番 `QuantC
+-| 11 番 `OctoBot` の 5 要素 | 印はあるが個別の要素が未決 | **模擬を回す必要があり、この�
+-| 49 番 `GFT Backtest Software` | `判別に一次資料が要る` のまま | **登録の内側にあり、当方は�
+削除行の本数 = 8
+--- 2026-09-23T02:23:16Z method=run target=git_diff_deleted_count rc=0 time_s=0.03 note=打ち直し。1 つ前の数え方は差分の見出し行(--- a/…)も「-」で始まるので 1 件多く数えていた。見出しを外した削除行の本数
+$ git diff -U0 -- docs/DATA/SCAN_2026-09-21_tools.md | grep "^-" | grep -v "^---" | wc -l
+7

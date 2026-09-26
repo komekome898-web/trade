@@ -1,0 +1,76 @@
+# 2026-09-25T13:24:30Z state after the runs
+# git status --short (whole repo)
+ M docs/AUDITOR/TRACE/2026-09-25_220780c0.json
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/configs.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/mapping.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/md5sum_pairs.txt
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/not_entered.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/pass2_tables/
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/pass2_tables_ownlog/
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/run_fast_trade_again.sh
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_3yit_lob.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_aat.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_akurkar07_orderbook.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_backtesting.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_backtrader@preload=false.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_backtrader@preload=true.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_barter.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_daniyalmlk_slippage.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_fast_trade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_finmarketpy.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_freqtrade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_gobacktest.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_hftbacktest.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_homerun.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_isaaccheng_obsim.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_jxm35_lob.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_lib_pybroker.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_luczinsritter.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_mihircoding_lob.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_nickgardi_orderbooksim.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pineforge@tf=1D.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pineforge@tf=1S.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_predictivedev_tradesim.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pyalgotrade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pybotters.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pysystemtrade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_pytrendfollow.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_qf_lib.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_qstrader.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_quantcore.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_quanttrader.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_rqalpha.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_sarthak_execsim@md_latency=0.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_sarthak_execsim@md_latency=default.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_sigc.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_thirupathikannan_execsim.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_vnpy.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_ziplime@label=close.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/opp_zipline_reloaded.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@daily.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@hour.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@minute.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@second.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+daily:bar.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+daily:trade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+hour:bar.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+hour:trade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+minute:bar.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+minute:trade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+second:bar.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick+second:trade.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs/repro_lean52@tick.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/runs_2/
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/survey_best.tsv
+?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/materials/survey_failures.tsv
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_18at50.md"
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_bnbe56.md"
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_ffj46l.md"
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_ggo5yo.md"
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_rn2mcx.md"
+?? "docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_17/\350\241\250_s3vyj2.md"
+# scene-set fingerprint again
+966d5d867b925d8dfcebceea7d17b093abdb9fa9d018b6598682acc7c0c0c581  -
+# git diff --stat HEAD -- src/bot/bt tests/bt
+# df
+/dev/vda        252G   37G  646M  99% /

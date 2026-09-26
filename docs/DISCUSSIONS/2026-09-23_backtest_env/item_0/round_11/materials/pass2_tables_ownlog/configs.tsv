@@ -1,0 +1,97 @@
+target	choose	scene_id	types_1
+current_impl	{}	(all)	-
+mutant	{}	p1-merge-by-time	{"A": "trade", "B": "book_snapshot", "C": "book_delta"}
+mutant	{}	p1-typed-events	["trade", "book_snapshot"]
+mutant	{}	p5-same-time-twice	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+mutant	{}	p5-hand-over-order	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+mutant	{}	(all)	-
+new_impl	{}	p1-merge-by-time	{"A": "trade", "B": "book_snapshot", "C": "book_delta"}
+new_impl	{}	p1-typed-events	["trade", "book_snapshot"]
+new_impl	{}	p5-same-time-twice	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+new_impl	{}	p5-hand-over-order	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+new_impl	{}	(all)	-
+opp_3yit_lob	{}	(all)	-
+opp_aat	{"exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ", "trading_type": "backtest"}	p1-merge-by-time	{"A": "trade", "B": "book_delta", "C": "trade"}
+opp_aat	{"exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ", "trading_type": "backtest"}	p1-typed-events	["trade", "book_delta"]
+opp_aat	{"exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ", "trading_type": "backtest"}	p5-same-time-twice	{"A": "trade", "B": "book_delta"}
+opp_aat	{"exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ", "trading_type": "backtest"}	p5-hand-over-order	{"A": "trade", "B": "book_delta"}
+opp_aat	{"exchange": "利用者の Exchange(aat の口)を入力 1 つに 1 つ", "trading_type": "backtest"}	(all)	-
+opp_akurkar07_orderbook	{}	(all)	-
+opp_backtesting	{"exclusive_orders": false, "trade_on_close": false}	(all)	-
+opp_backtrader@preload=false	{"preload": false}	(all)	-
+opp_backtrader@preload=true	{"preload": true}	(all)	-
+opp_barter	{"balances": "usdt 1,000,000(場面が口座を名指さないとき)", "engine_start": "2023-11-01T00:00:00Z", "execution": "ExecutionConfig::Mock", "fees_percent": "0(場面が費用を名指さないとき)", "instrument": "binance_spot BTCUSDT spot", "latency_ms": "0(場面が遅れを名指さないとき)", "risk": "DefaultRiskManager", "summary_interval": "Daily", "trading_state": "Enabled"}	p1-merge-by-time	{"A": "trade", "B": "book_snapshot", "C": "book_delta"}
+opp_barter	{"balances": "usdt 1,000,000(場面が口座を名指さないとき)", "engine_start": "2023-11-01T00:00:00Z", "execution": "ExecutionConfig::Mock", "fees_percent": "0(場面が費用を名指さないとき)", "instrument": "binance_spot BTCUSDT spot", "latency_ms": "0(場面が遅れを名指さないとき)", "risk": "DefaultRiskManager", "summary_interval": "Daily", "trading_state": "Enabled"}	p1-typed-events	["trade", "book_snapshot"]
+opp_barter	{"balances": "usdt 1,000,000(場面が口座を名指さないとき)", "engine_start": "2023-11-01T00:00:00Z", "execution": "ExecutionConfig::Mock", "fees_percent": "0(場面が費用を名指さないとき)", "instrument": "binance_spot BTCUSDT spot", "latency_ms": "0(場面が遅れを名指さないとき)", "risk": "DefaultRiskManager", "summary_interval": "Daily", "trading_state": "Enabled"}	p5-same-time-twice	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+opp_barter	{"balances": "usdt 1,000,000(場面が口座を名指さないとき)", "engine_start": "2023-11-01T00:00:00Z", "execution": "ExecutionConfig::Mock", "fees_percent": "0(場面が費用を名指さないとき)", "instrument": "binance_spot BTCUSDT spot", "latency_ms": "0(場面が遅れを名指さないとき)", "risk": "DefaultRiskManager", "summary_interval": "Daily", "trading_state": "Enabled"}	p5-hand-over-order	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+opp_barter	{"balances": "usdt 1,000,000(場面が口座を名指さないとき)", "engine_start": "2023-11-01T00:00:00Z", "execution": "ExecutionConfig::Mock", "fees_percent": "0(場面が費用を名指さないとき)", "instrument": "binance_spot BTCUSDT spot", "latency_ms": "0(場面が遅れを名指さないとき)", "risk": "DefaultRiskManager", "summary_interval": "Daily", "trading_state": "Enabled"}	(all)	-
+opp_basana	{"priority": {"bar": 60, "book_delta": 40, "book_snapshot": 45, "funding": 30, "liquidation": 20, "trade": 50}}	p1-merge-by-time	{"A": "trade", "B": "book_snapshot", "C": "book_delta"}
+opp_basana	{"priority": {"bar": 60, "book_delta": 40, "book_snapshot": 45, "funding": 30, "liquidation": 20, "trade": 50}}	p1-typed-events	["trade", "book_snapshot"]
+opp_basana	{"priority": {"bar": 60, "book_delta": 40, "book_snapshot": 45, "funding": 30, "liquidation": 20, "trade": 50}}	p5-same-time-twice	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+opp_basana	{"priority": {"bar": 60, "book_delta": 40, "book_snapshot": 45, "funding": 30, "liquidation": 20, "trade": 50}}	p5-hand-over-order	{"A": "trade", "B": "book_snapshot", "C": "book_delta", "D": "bar"}
+opp_basana	{"priority": {"bar": 60, "book_delta": 40, "book_snapshot": 45, "funding": 30, "liquidation": 20, "trade": 50}}	(all)	-
+opp_daniyalmlk_slippage	{}	(all)	-
+opp_fast_trade	{}	(all)	-
+opp_finmarketpy	{}	(all)	-
+opp_freqtrade	{"exchange": "binance(markets は場面の銘柄 1 つ)", "max_open_trades": 1, "order_types": "limit", "timeframe": "1d", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_gobacktest	{"exchange": "NewExchange()", "portfolio": "NewPortfolio()"}	(all)	-
+opp_hftbacktest	{"asset": "linear_asset(1.0)", "data": "文書の準備 correct_event_order を通した配列", "exchange": "no_partial_fill_exchange", "fee": "trading_value_fee_model(0, 0)(場面が費用を名指さないとき)", "last_trades_capacity": 1000, "lot_size": 0.001, "order_latency": "constant_order_latency(0, 0)(場面が遅れを名指さないとき)", "queue_model": "risk_adverse_queue_model", "tick_size": 0.5}	(all)	-
+opp_homerun	{}	(all)	-
+opp_isaaccheng_obsim	{}	(all)	-
+opp_jxm35_lob	{}	(all)	-
+opp_lib_pybroker	{"warmup": null, "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_luczinsritter	{"days": 30, "end_date": "2023-11-20", "interval": "1d"}	(all)	-
+opp_mihircoding_lob	{}	(all)	-
+opp_nickgardi_orderbooksim	{}	(all)	-
+opp_pineforge@tf=1D	{"tf": "1D"}	(all)	-
+opp_pineforge@tf=1S	{"tf": "1S"}	(all)	-
+opp_predictivedev_tradesim	{"latency_ms": "既定(場面が遅れを名指さないとき)", "market_maker": "MarketMaker(銘柄)"}	(all)	-
+opp_pyalgotrade	{"frequency": "DAY"}	(all)	-
+opp_pybotters	{"store": "bitFlyerDataStore"}	(all)	-
+opp_pysystemtrade	{}	(all)	-
+opp_pytrendfollow	{}	(all)	-
+opp_qf_lib	{"frequency": "DAILY", "market_open_close": "00:01 / 23:00", "trigger_time": "00:00", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_qstrader	{"cash_buffer_percentage": 0.01, "long_only": true, "rebalance": "daily", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_quantcore	{"position_sizer": "FixedShares(1)", "risk_limits": "既定", "slippage_pct": 0.0}	(all)	-
+opp_quanttrader	{"window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_rqalpha	{"account": "stock", "calendar": "毎日(2023-10-01〜2024-02-29)", "frequency": "1d", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_sarthak_execsim@md_latency=0	{"market_data_latency": 0}	(all)	-
+opp_sarthak_execsim@md_latency=default	{"market_data_latency": "default"}	(all)	-
+opp_sigc	{}	(all)	-
+opp_vnpy	{"interval": "DAILY", "pricetick": 0.01, "size": 1, "window": ["2023-11-01", "2023-12-31"]}	p1-merge-by-time	{"A": "book_snapshot", "B": "bar", "C": "book_snapshot"}
+opp_vnpy	{"interval": "DAILY", "pricetick": 0.01, "size": 1, "window": ["2023-11-01", "2023-12-31"]}	p1-typed-events	["book_snapshot", "bar"]
+opp_vnpy	{"interval": "DAILY", "pricetick": 0.01, "size": 1, "window": ["2023-11-01", "2023-12-31"]}	p5-same-time-twice	{"A": "book_snapshot", "B": "bar"}
+opp_vnpy	{"interval": "DAILY", "pricetick": 0.01, "size": 1, "window": ["2023-11-01", "2023-12-31"]}	p5-hand-over-order	{"A": "book_snapshot", "B": "bar"}
+opp_vnpy	{"interval": "DAILY", "pricetick": 0.01, "size": 1, "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_ziplime@label=close	{"calendar": "24/7", "date_column": "ns", "emission_rate": "1 日", "label": "close", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_ziplime@label=start	{"calendar": "24/7", "date_column": "ns", "emission_rate": "1 日", "label": "start", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+opp_zipline_reloaded	{"calendar": "24/7", "data_frequency": "daily", "slippage": "既定(場面が約定か費用の模型を名指すときは NoSlippage か場面の模型)", "window": ["2023-11-01", "2023-12-31"]}	(all)	-
+repro_lean52@daily	{"AddCryptoFuture": ["Daily"], "one_type": "bar"}	p1-merge-by-time	{"A": "bar", "B": "funding", "C": "bar"}
+repro_lean52@daily	{"AddCryptoFuture": ["Daily"], "one_type": "bar"}	p1-typed-events	["bar", "funding"]
+repro_lean52@daily	{"AddCryptoFuture": ["Daily"], "one_type": "bar"}	p5-same-time-twice	{"A": "bar", "B": "funding"}
+repro_lean52@daily	{"AddCryptoFuture": ["Daily"], "one_type": "bar"}	p5-hand-over-order	{"A": "bar", "B": "funding"}
+repro_lean52@daily	{"AddCryptoFuture": ["Daily"], "one_type": "bar"}	(all)	-
+repro_lean52@hour	{"AddCryptoFuture": ["Hour"], "one_type": "bar"}	p1-merge-by-time	{"A": "bar", "B": "funding", "C": "bar"}
+repro_lean52@hour	{"AddCryptoFuture": ["Hour"], "one_type": "bar"}	p1-typed-events	["bar", "funding"]
+repro_lean52@hour	{"AddCryptoFuture": ["Hour"], "one_type": "bar"}	p5-same-time-twice	{"A": "bar", "B": "funding"}
+repro_lean52@hour	{"AddCryptoFuture": ["Hour"], "one_type": "bar"}	p5-hand-over-order	{"A": "bar", "B": "funding"}
+repro_lean52@hour	{"AddCryptoFuture": ["Hour"], "one_type": "bar"}	(all)	-
+repro_lean52@minute	{"AddCryptoFuture": ["Minute"], "one_type": "bar"}	p1-merge-by-time	{"A": "bar", "B": "funding", "C": "bar"}
+repro_lean52@minute	{"AddCryptoFuture": ["Minute"], "one_type": "bar"}	p1-typed-events	["bar", "funding"]
+repro_lean52@minute	{"AddCryptoFuture": ["Minute"], "one_type": "bar"}	p5-same-time-twice	{"A": "bar", "B": "funding"}
+repro_lean52@minute	{"AddCryptoFuture": ["Minute"], "one_type": "bar"}	p5-hand-over-order	{"A": "bar", "B": "funding"}
+repro_lean52@minute	{"AddCryptoFuture": ["Minute"], "one_type": "bar"}	(all)	-
+repro_lean52@second	{"AddCryptoFuture": ["Second"], "one_type": "bar"}	p1-merge-by-time	{"A": "bar", "B": "funding", "C": "bar"}
+repro_lean52@second	{"AddCryptoFuture": ["Second"], "one_type": "bar"}	p1-typed-events	["bar", "funding"]
+repro_lean52@second	{"AddCryptoFuture": ["Second"], "one_type": "bar"}	p5-same-time-twice	{"A": "bar", "B": "funding"}
+repro_lean52@second	{"AddCryptoFuture": ["Second"], "one_type": "bar"}	p5-hand-over-order	{"A": "bar", "B": "funding"}
+repro_lean52@second	{"AddCryptoFuture": ["Second"], "one_type": "bar"}	(all)	-
+repro_lean52@tick	{"AddCryptoFuture": ["Tick"], "one_type": "trade"}	(all)	-
+repro_lean52@tick+daily:bar	{"AddCryptoFuture": ["Tick", "Daily"], "one_type": "bar"}	(all)	-
+repro_lean52@tick+daily:trade	{"AddCryptoFuture": ["Tick", "Daily"], "one_type": "trade"}	(all)	-
+repro_lean52@tick+hour:bar	{"AddCryptoFuture": ["Tick", "Hour"], "one_type": "bar"}	(all)	-
+repro_lean52@tick+hour:trade	{"AddCryptoFuture": ["Tick", "Hour"], "one_type": "trade"}	(all)	-
+repro_lean52@tick+minute:bar	{"AddCryptoFuture": ["Tick", "Minute"], "one_type": "bar"}	(all)	-
+repro_lean52@tick+minute:trade	{"AddCryptoFuture": ["Tick", "Minute"], "one_type": "trade"}	(all)	-
+repro_lean52@tick+second:bar	{"AddCryptoFuture": ["Tick", "Second"], "one_type": "bar"}	(all)	-
+repro_lean52@tick+second:trade	{"AddCryptoFuture": ["Tick", "Second"], "one_type": "trade"}	(all)	-

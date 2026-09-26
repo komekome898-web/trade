@@ -1,0 +1,17 @@
+c1877625d14393a543a6c33782a9247e  action_counts.csv
+eb78b8516465afed864f88c14fb5f21f  cascades.csv.gz
+47654749db37e962006d770c1b9d9aa3  prints_policy.csv.gz
+1565baf33dcd8fc2dd6e50858b43be39  q0_selfcheck.csv
+313b03c69174bb6c11e0984042a12748  q_tp_by_cost.csv
+8678846018b88f18aa9628d12f0a3ba2  q_tp_by_day.csv
+aeb4e01edb2cbb257d8ca06a0155b6bb  q_tp_by_delay.csv
+b1822b9db54b4bc2d0ba071d58b1e8af  q_tp_by_first_action.csv
+b09c3be262c5bc24d5cbccbceb8b0adc  q_tp_by_side.csv
+49364f3464aed908f7f722408b1ea447  q_tp_by_size.csv
+3a957f138b9313942926fee733b81b38  q_tp_exits.csv
+8183df5ebc7701301d383b892af85426  q_tp_exposure.csv
+5d8d11336c775ad19fb621bc3618ad90  q_tp_main.csv
+9fdcb77ec7fd677a6c883552103f390e  q_tp_pair_diff.csv
+4f3a9b4866e1dbea0fe267ed6a76afc2  q_tp_seconds.csv
+4477459366a65dc483ff0a733b62f41a  summary.json
+b70f73ad66dd36275505f814a702e1f9  tables.md

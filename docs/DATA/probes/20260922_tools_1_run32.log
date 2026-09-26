@@ -1,0 +1,294 @@
+# 区分 1 の 32 回目の生ログ(委任文 docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154 §7 の形)
+# 形: --- <UTC> method=<手段> target=<対象> rc=<終了コード> time_s=<所要> note=<何をしたか> / $ <命令> / 出力
+--- 2026-09-23T03:06:06Z method=run target=sha_delegation rc=0 time_s=.006215277 note=委任文の指紋の照合(ce0012c95154)
+$ sha256sum docs/DATA/delegations/20260922_tools_survey_prompt.md
+ce0012c95154be0868b0b6a56887ea452b551cfbb5c76bc15d74cc98dbf3a7d8  docs/DATA/delegations/20260922_tools_survey_prompt.md
+--- 2026-09-23T03:06:06Z method=run target=recount_before rc=0 time_s=.102655100 note=書き換える前の数え直し(候補18を足す前)
+$ python3 scripts/recount_scan_cat1.py docs/DATA/SCAN_2026-09-21_tools.md
+入力 = docs/DATA/SCAN_2026-09-21_tools.md
+候補の一覧の記載 = 645 件
+印に触れた候補 = 81 件
+
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+
+== 6 要素ごとの 総数 と 残り
+区分1-足 : 総数 51 件 : 残り 0 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 46 48 51 52 53 54 55 56 57 58 60 61 62 67 68 69 70 72 73 74 75 80 85 86 87 92 107 120 121 122 123
+区分1-ティック : 総数 18 件 : 残り 0 件 : 13 20 23 31 41 52 53 57 58 59 61 63 68 90 91 95 119 123
+区分1-板の待ち行列 : 総数 19 件 : 残り 0 件 : 23 33 37 38 57 65 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 : 総数 18 件 : 残り 0 件 : 1 6 13 23 37 41 52 53 57 58 61 62 63 65 68 69 91 123
+区分1-ベクトル化 : 総数 4 件 : 残り 0 件 : 54 73 74 87
+区分1-市場影響と約定の模型 : 総数 37 件 : 残り 0 件 : 1 2 3 4 6 7 8 13 15 18 19 20 21 23 32 33 35 36 38 51 53 54 57 60 63 67 70 72 87 91 92 98 105 106 116 119 123
+6 要素のどれかに印がある候補 = 80 件
+そのうち到達の記載が無い候補 = 0 件 : なし
+
+== 機関で数えた値
+番号で数えた値 = 80 件
+22 番と 52 番を束ねた値 = 80 件
+13 番と 123 番を束ねた値 = 79 件
+
+== 段の表と印の集合の突き合わせ
+段の表の行 = 37 件
+区分1-市場影響と約定の模型 の印 = 37 件
+段の表にあって印が無い = 0 件 : なし
+印があって段の表に無い = 0 件 : なし
+--- 2026-09-23T03:06:07Z method=run target=c18_table rc=0 time_s=.007810018 note=24回目の表の候補18の行の逐語(起動の指定1の根拠)
+$ sed -n '7275,7282p' docs/DATA/SCAN_2026-09-21_tools.md
+| 候補 | 決まらなかった要素 | この回の決着 | 根拠 |
+|---|---|---|---|
+| 4 `PyBroker` | `区分1-ベクトル化` | **付けない** | この回の知見 10。検証の輪は `for i, date in enumerate(test_dates):` で、`vect.py` は指標の部品 |
+| 5 `bt` | `区分1-ベクトル化` | **付けない** | この回の知見 12。`for dt in self.dates[1:]:` |
+| 6 `Ziplime` | `区分1-イベント駆動` | **付ける** | この回の知見 4。`yield minute, SimulationEvent.BAR` と `if action == SimulationEvent.BAR:` |
+| 15 `Mendl-Labs/BacktestingCore` | `区分1-イベント駆動` | **付けない** | この回の知見 6。`engine.rs` の `VecDeque` `EventQueue` `dispatch(` の当たりは 0 件 |
+| 18 `zipline-reloaded` | `区分1-イベント駆動` | **付ける** | この回の知見 7。`for dt, action in self.clock:` と 5 つの事象の型への振り分け |
+| 19 `Jesse` | `区分1-市場影響と約定の模型` | **付ける(段 2)** | この回の知見 8 |
+--- 2026-09-23T03:06:07Z method=run target=c18_list rc=0 time_s=.006407310 note=候補18の一覧の記載(23回目の節。既存の印を動かさないため)
+$ sed -n '6889,6892p' docs/DATA/SCAN_2026-09-21_tools.md
+18. `zipline-reloaded` — 印は `区分1-足` と `区分1-市場影響と約定の模型`。
+    足の根拠は 3 回目の節 `#### 17. zipline-reloaded(深掘り)`(報告書 1361〜1364 行)の逐語「**日足の bundle を登録して取り込み**」「**成行買いと指値売りの往復で損益が出た**」。模型の根拠はこの回の知見 3。
+    **`区分1-イベント駆動` はこの回に決めていない**(駆動の形を読んでいない。リードへの問い 2)。
+19. `Jesse` — 印は `区分1-足`、および `区分2 へ` と `区分6 へ`。
+--- 2026-09-23T03:06:07Z method=run target=c18_evidence rc=0 time_s=.006439448 note=24回目の知見7の逐語(候補18の駆動の形)
+$ sed -n '7180p' docs/DATA/SCAN_2026-09-21_tools.md
+| 7 | **候補 18 `zipline-reloaded` は、型を持つ事象の列で駆動され、その事象を振り分けている。**逐語は `for dt, action in self.clock:` と `if action == BAR:` と `elif action == SESSION_START:` で、型は `BAR` `SESSION_START` `SESSION_END` `MINUTE_END` `BEFORE_TRADING_START_BAR` の 5 つである | 実測 | `.../src/zipline/gens/tradesimulation.py` 取得日 2026-09-22 / `20260922_tools_1_run24.log` の `evidence_run24` の `c18` の節 |
+--- 2026-09-23T03:06:19Z method=run target=checker_all_before rc=0 time_s=.956232105 note=書き換える前の --all の合計(基準値)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all | tail -20
+    docs/DATA/SCAN_2026-09-21_tools.md:484  表に無い数値を文章で書いている: 130 パッケージ
+    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 1.07 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.62 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:643  表に無い数値を文章で書いている: 10.23 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:673  表に無い数値を文章で書いている: 31.87 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:701  表に無い数値を文章で書いている: 7.37 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 130 個
+    docs/DATA/SCAN_2026-09-21_tools.md:749  表に無い数値を文章で書いている: 58.35 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:774  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:776  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:806  表に無い数値を文章で書いている: 60.29 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:894  表に無い数値を文章で書いている: 408 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:941  表に無い数値を文章で書いている: 650 秒
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力の合計 0 件が、いま数え直した 47 件と合わない(打ち直して貼ること)
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件
+--- 2026-09-23T03:06:26Z method=run target=checker_all_head_before rc=0 time_s=.898629489 note=書き換える前の --all の検査ごとの件数
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all | grep -E '^K|^----'
+K1 太字                  14 件
+K2 括弧                  17 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件
+--- 2026-09-23T03:09:02Z method=run target=recount_after rc=0 time_s=.103390762 note=候補18を足したあとの数え直し(起動の指定2。6要素すべてで差が0)
+$ python3 scripts/recount_scan_cat1.py
+入力 = docs/DATA/SCAN_2026-09-21_tools.md
+候補の一覧の記載 = 646 件
+印に触れた候補 = 81 件
+
+== 3 段の数え直し
+一次資料に未到達 = 0 件 : なし
+到達済みだが印が無い = 2 件 : 14 番 22 番
+個別の要素が未決 = 1 件 : 11 番
+上の 3 段に入らない別立て = 1 件 : 49 番
+
+== 6 要素ごとの 総数 と 残り
+区分1-足 : 総数 51 件 : 残り 0 件 : 1 2 3 4 5 6 7 8 10 11 13 15 16 18 19 20 21 40 43 44 46 48 51 52 53 54 55 56 57 58 60 61 62 67 68 69 70 72 73 74 75 80 85 86 87 92 107 120 121 122 123
+区分1-ティック : 総数 18 件 : 残り 0 件 : 13 20 23 31 41 52 53 57 58 59 61 63 68 90 91 95 119 123
+区分1-板の待ち行列 : 総数 19 件 : 残り 0 件 : 23 33 37 38 57 65 90 91 95 96 97 98 99 100 101 102 103 104 109
+区分1-イベント駆動 : 総数 19 件 : 残り 0 件 : 1 6 13 18 23 37 41 52 53 57 58 61 62 63 65 68 69 91 123
+区分1-ベクトル化 : 総数 4 件 : 残り 0 件 : 54 73 74 87
+区分1-市場影響と約定の模型 : 総数 37 件 : 残り 0 件 : 1 2 3 4 6 7 8 13 15 18 19 20 21 23 32 33 35 36 38 51 53 54 57 60 63 67 70 72 87 91 92 98 105 106 116 119 123
+6 要素のどれかに印がある候補 = 80 件
+そのうち到達の記載が無い候補 = 0 件 : なし
+
+== 機関で数えた値
+番号で数えた値 = 80 件
+22 番と 52 番を束ねた値 = 80 件
+13 番と 123 番を束ねた値 = 79 件
+
+== 段の表と印の集合の突き合わせ
+段の表の行 = 37 件
+区分1-市場影響と約定の模型 の印 = 37 件
+段の表にあって印が無い = 0 件 : なし
+印があって段の表に無い = 0 件 : なし
+--- 2026-09-23T03:09:30Z method=run target=ls_probes rc=0 time_s=.005719772 note=生ログの本数を数える(申し送り)
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+31
+--- 2026-09-23T03:09:30Z method=run target=diff_report rc=0 time_s=.058509715 note=報告書の差分の足し引き(削除行が0であること)
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md; git diff docs/DATA/SCAN_2026-09-21_tools.md | grep -c '^-[^-]' || true
+174	0	docs/DATA/SCAN_2026-09-21_tools.md
+0
+--- 2026-09-23T03:09:49Z method=run target=checker_final rc=1 time_s=1.798863529 note=受け入れ検査(既定。貼り付けの元)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
+--- 2026-09-23T03:10:13Z method=run target=checker_final2 rc=0 time_s=1.780489733 note=受け入れ検査を打ち直す(貼り付けを差し替えるための最終の実行)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-23T03:10:56Z method=run target=checker_all_head rc=0 time_s=.878314265 note=この回の節を足したあとの --all の検査ごとの件数(実数 48)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all | grep -E '^K|^----'
+K1 太字                  14 件
+K2 括弧                  17 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件
+--- 2026-09-23T03:10:57Z method=run target=checker_all rc=1 time_s=.974613169 note=この回の節を足したあとの --all の全文(当たった行の在処)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all
+K1 太字                  14 件
+    docs/DATA/SCAN_2026-09-21_tools.md:6806  太字 ** の数が奇数 (71 個)
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: ' Decimal(2) * self._price_impact_pct` と '
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: ': `order_mgr.py` の `liquidity_strategy.o'
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: ' で、`Ziplime/ziplime` は HTTP 404 である | 実測'
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: '模型の逐語は `price * (1 + price_impact * (vol'
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: ' 2` である | 実測 | `.../qlib/backtest/execut'
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: 'で、損益と建玉の計算ではない | 実測 | `.../src/pybroker/'
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  太字の内側が空白で始まる/終わる: '逐語は `"""Volume-based participation cap a'
+    docs/DATA/SCAN_2026-09-21_tools.md:7207  太字 ** の数が奇数 (43 個)
+    docs/DATA/SCAN_2026-09-21_tools.md:7246  太字 ** の数が奇数 (43 個)
+    docs/DATA/SCAN_2026-09-21_tools.md:7489  太字の内側が空白で始まる/終わる: '影響の式 `adj_cost_ratio = self.impact_cost '
+    docs/DATA/SCAN_2026-09-21_tools.md:7489  太字の内側が空白で始まる/終わる: ' | 実測 | `.../qlib/backtest/exchange.py` '
+    docs/DATA/SCAN_2026-09-21_tools.md:7489  太字の内側が空白で始まる/終わる: ' 2))` は差し替えたときだけ効く'
+    docs/DATA/SCAN_2026-09-21_tools.md:7537  太字 ** の数が奇数 (179 個)
+K2 括弧                  17 件
+    docs/DATA/SCAN_2026-09-21_tools.md:8  大括弧 の数が合わない (1 対 0)
+    docs/DATA/SCAN_2026-09-21_tools.md:6560  丸括弧 の数が合わない (52 対 51)
+    docs/DATA/SCAN_2026-09-21_tools.md:6806  丸括弧 の数が合わない (41 対 36)
+    docs/DATA/SCAN_2026-09-21_tools.md:7172  丸括弧 の数が合わない (52 対 47)
+    docs/DATA/SCAN_2026-09-21_tools.md:7207  丸括弧 の数が合わない (70 対 69)
+    docs/DATA/SCAN_2026-09-21_tools.md:7246  丸括弧 の数が合わない (31 対 26)
+    docs/DATA/SCAN_2026-09-21_tools.md:7275  丸括弧 の数が合わない (4 対 3)
+    docs/DATA/SCAN_2026-09-21_tools.md:7814  丸括弧 の数が合わない (78 対 70)
+    docs/DATA/SCAN_2026-09-21_tools.md:7867  丸括弧 の数が合わない (40 対 37)
+    docs/DATA/SCAN_2026-09-21_tools.md:8113  丸括弧 の数が合わない (52 対 50)
+    docs/DATA/SCAN_2026-09-21_tools.md:8147  丸括弧 の数が合わない (21 対 19)
+    docs/DATA/SCAN_2026-09-21_tools.md:8186  丸括弧 の数が合わない (18 対 16)
+    docs/DATA/SCAN_2026-09-21_tools.md:8300  丸括弧 の数が合わない (9 対 7)
+    docs/DATA/SCAN_2026-09-21_tools.md:8665  丸括弧 の数が合わない (2 対 0)
+    docs/DATA/SCAN_2026-09-21_tools.md:9124  丸括弧 の数が合わない (77 対 75)
+    docs/DATA/SCAN_2026-09-21_tools.md:9379  丸括弧 の数が合わない (16 対 14)
+    docs/DATA/SCAN_2026-09-21_tools.md:9379  鉤括弧 の数が合わない (18 対 19)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:746  mlflow の 個 に別の値: ['130', '185', '2']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:373  表に無い数値を文章で書いている: 650 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:484  表に無い数値を文章で書いている: 130 パッケージ
+    docs/DATA/SCAN_2026-09-21_tools.md:582  表に無い数値を文章で書いている: 1.07 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:612  表に無い数値を文章で書いている: 1.62 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:643  表に無い数値を文章で書いている: 10.23 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:673  表に無い数値を文章で書いている: 31.87 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:701  表に無い数値を文章で書いている: 7.37 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:746  表に無い数値を文章で書いている: 130 個
+    docs/DATA/SCAN_2026-09-21_tools.md:749  表に無い数値を文章で書いている: 58.35 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:774  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:776  表に無い数値を文章で書いている: 19.49 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:806  表に無い数値を文章で書いている: 60.29 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:894  表に無い数値を文章で書いている: 408 秒
+    docs/DATA/SCAN_2026-09-21_tools.md:941  表に無い数値を文章で書いている: 650 秒
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-21_tools.md:0  貼られた出力の合計 0 件が、いま数え直した 47 件と合わない(打ち直して貼ること)
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件
+--- 2026-09-23T03:11:12Z method=run target=diff_report_final rc=0 time_s=.055481014 note=最終の差分。報告書の削除行が0で、他のファイルを触っていないこと
+$ git diff --numstat -- docs/DATA/SCAN_2026-09-21_tools.md scripts/ src/ config/ tests/; git status --porcelain
+203	0	docs/DATA/SCAN_2026-09-21_tools.md
+ M docs/AUDITOR/TRACE/2026-09-23_220780c0.json
+ M docs/DATA/SCAN_2026-09-21_tools.md
+?? docs/DATA/probes/20260922_tools_1_run32.log
+--- 2026-09-23T03:11:12Z method=run target=ls_probes_final rc=0 time_s=.004849795 note=最終の生ログの本数
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+31
+--- 2026-09-23T03:11:52Z method=run target=checker_final3 rc=0 time_s=1.770048808 note=知見4の言い回しを直したあとの最終の受け入れ検査(貼り付けと同じ出力)
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-23T03:11:53Z method=run target=checker_all_head3 rc=0 time_s=.868912204 note=同じく --all の最終の件数
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log --all | grep -E '^K|^----'
+K1 太字                  14 件
+K2 括弧                  17 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            1 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              15 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           1 件
+---- 検査対象の合計 47 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 48 件

@@ -1,0 +1,61 @@
+##### from aat_install.log
+=== 2026-09-23T15:36:11Z inspect aat
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/aat/aat-0.0.3.tar.gz
+Successfully downloaded aat
+total 628
+drwxr-xr-x  2 root root   4096 Sep 23 15:36 .
+drwxr-xr-x 12 root root   4096 Sep 23 15:36 ..
+-rw-r--r--  1 root root 633432 Sep 23 15:36 aat-0.0.3.tar.gz
+--- sdist /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/aat/aat-0.0.3.tar.gz
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/aat/x/aat-0.0.3/setup.py
+13:import subprocess
+71:        exec(f.read(), {}, version_ns)
+93:            out = subprocess.check_output([self.cmake_cmd, '--version'])
+141:        subprocess.check_call([self.cmake_cmd, os.path.abspath(ext.sourcedir)] + cmake_args, cwd=self.build_temp, env=env, stderr=subprocess.STDOUT)
+142:        subprocess.check_call([self.cmake_cmd, '--build', '.'] + build_args, cwd=self.build_temp, env=env, stderr=subprocess.STDOUT)
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/aat/x/aat-0.0.3/setup.cfg
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/aat/x/aat-0.0.3/pyproject.toml
+=== 2026-09-23T15:36:17Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/aat
+pip rc=1 elapsed=267s
+  ERROR: Failed building wheel for aat
+ERROR: Could not build wheels for aat, which is required to install pyproject.toml-based projects
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+4
+=== 2026-09-23T15:40:50Z done
+=== 2026-09-23T16:17:35Z retry (disk guard 700MB) : pip install --no-cache-dir numpy pybind11 setuptools wheel cmake
+free before: 1174 MB
+pip rc=0 elapsed=19s min_free=1023MB
+Successfully installed cmake-4.4.3 numpy-2.4.6 packaging-26.3 pybind11-3.1.0 wheel-0.48.0
+free after: 984 MB
+=== 2026-09-23T16:17:58Z retry (disk guard 700MB) : pip install --no-cache-dir --no-build-isolation aat
+free before: 984 MB
+KILLED: free space fell to 699 MB at 2026-09-23T16:20:10Z
+pip rc=143 elapsed=132s min_free=699MB
+free after: 888 MB
+##### from item0_r5-1_scenekeeper_install_65.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/AsyncAlgoTrading/aat.git c65
+/dev/vda          258020 32037      5902  85% /
+rc=0
+c4a07d4102a811c779957033aa26a598c1795cdb 2026-07-26T21:34:03-05:00 Tim Paine
+5.9M	.
+=== start 2026-09-24T03:01:45Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c65 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c65/bin/pip install --no-cache-dir /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c65 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c65/bin/python -c 'import aat; print(aat.__file__)'
+df before: /dev/vda          258020 33748      4191  89% /
+=== end 2026-09-24T03:02:40Z rc=0 elapsed=55s min_free=3581MB 
+Building wheels for collected packages: aat
+  Building wheel for aat (pyproject.toml): started
+  Building wheel for aat (pyproject.toml): finished with status 'done'
+  Created wheel for aat: filename=aat-0.1.0-cp311-cp311-linux_x86_64.whl size=8065237 sha256=144913e1299a0995f1ec78b68cf89aab11f3c8b67851577c9b8e22da71021b82
+  Stored in directory: /tmp/pip-ephem-wheel-cache-6r7xrfis/wheels/1d/55/c2/6a0f0a86ee8f109362ba04308816d0208c3d2357992deeef09
+Successfully built aat
+Installing collected packages: pytz, tzlocal, typing-extensions, traitlets, tornado, six, pyparsing, pybind11, pillow, perspective-python, packaging, numpy, kiwisolver, frozendict, fonttools, cycler, temporal-cache, python-dateutil, contourpy, aiostream, pandas, matplotlib, aat
+Successfully installed aat-0.1.0 aiostream-0.8.1 contourpy-1.3.3 cycler-0.12.1 fonttools-4.66.0 frozendict-2.4.7 kiwisolver-1.5.1 matplotlib-3.11.2 numpy-2.4.6 packaging-26.3 pandas-3.0.6 perspective-python-5.5.1 pillow-12.3.0 pybind11-3.1.0 pyparsing-3.3.3 python-dateutil-2.9.0.post0 pytz-2026.3.post1 six-1.17.0 temporal-cache-0.1.6 tornado-6.5.10 traitlets-5.16.1 typing-extensions-4.16.0 tzlocal-5.4.4
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+None
+df after: /dev/vda          258020 34203      3736  91% /
+=== 2026-09-24T03:04:25Z the wheel built from the clone holds only aat/binding*.so (pip show -f aat), so 'import aat' is an empty namespace package. Use the clone's python package in place (a .pth to the clone, as 'pip install -e' would) with the built binding copied next to it (as 'build_ext --inplace' would)
+import ok /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c65/aat/__init__.py

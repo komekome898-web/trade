@@ -1,0 +1,2 @@
+$ git ls-files -z tests/bt/battery/item_3 | xargs -0 sha256sum | sha256sum
+1e0c4681c5cab3a7809304f1ad247cc5700906c23ea1003ab99c87d2131887f6  -

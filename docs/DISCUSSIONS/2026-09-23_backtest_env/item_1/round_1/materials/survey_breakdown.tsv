@@ -1,0 +1,491 @@
+scene	target	cand	class_1	repro	picked	max_secs	detail_1
+v1-bitflyer-rest	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-bitflyer-rest	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-bitflyer-rest	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v1-bitflyer-rest	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-bitflyer-rest	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-bitflyer-rest	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-bitflyer-rest	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-bitflyer-rest	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-bitflyer-rest	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-bitflyer-rest	opp_slippage	105	結果なし	結果なし		0.001	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-bitflyer-rest	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-bitflyer-rest	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-bitflyer-rest	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-bitflyer-rest	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-bitflyer-us-gz	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-bitflyer-us-gz	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-bitflyer-us-gz	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame に見出しの無いファイル・区切り文字・圧縮の引数が無い
+v1-bitflyer-us-gz	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-bitflyer-us-gz	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-bitflyer-us-gz	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-bitflyer-us-gz	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-bitflyer-us-gz	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-bitflyer-us-gz	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-bitflyer-us-gz	opp_slippage	105	結果なし	結果なし		0.001	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-bitflyer-us-gz	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-bitflyer-us-gz	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-bitflyer-us-gz	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-bitflyer-us-gz	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-binance-aggtrades	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-binance-aggtrades	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-binance-aggtrades	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame に見出しの無いファイル・区切り文字・圧縮の引数が無い
+v1-binance-aggtrades	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-binance-aggtrades	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-binance-aggtrades	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-binance-aggtrades	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-binance-aggtrades	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-binance-aggtrades	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-binance-aggtrades	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-binance-aggtrades	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-binance-aggtrades	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-binance-aggtrades	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-binance-aggtrades	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-fx-ticks	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-fx-ticks	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-fx-ticks	opp_finmarketpy	54	不一致	2 回の実行で同じ	選んだ	0.005	events.fx[0].t_ns: 1767965400000000000(正解 1767965400123000000)
+v1-fx-ticks	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-fx-ticks	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-fx-ticks	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-fx-ticks	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-fx-ticks	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-fx-ticks	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-fx-ticks	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-fx-ticks	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-fx-ticks	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-fx-ticks	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-fx-ticks	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-jpx-1m	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-jpx-1m	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-jpx-1m	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は時刻を最初の 1 列から読む(2 列を合わせる引数が無い)
+v1-jpx-1m	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-jpx-1m	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-jpx-1m	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-jpx-1m	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-jpx-1m	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-jpx-1m	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-jpx-1m	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-jpx-1m	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-jpx-1m	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-jpx-1m	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-jpx-1m	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-bitflyer-board-top10	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-bitflyer-board-top10	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-bitflyer-board-top10	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame に見出しの無いファイル・区切り文字・圧縮の引数が無い
+v1-bitflyer-board-top10	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-bitflyer-board-top10	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-bitflyer-board-top10	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-bitflyer-board-top10	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-bitflyer-board-top10	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-bitflyer-board-top10	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-bitflyer-board-top10	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-bitflyer-board-top10	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-bitflyer-board-top10	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-bitflyer-board-top10	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-bitflyer-board-top10	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-funding-and-liquidations	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-funding-and-liquidations	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-funding-and-liquidations	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v1-funding-and-liquidations	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-funding-and-liquidations	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-funding-and-liquidations	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-funding-and-liquidations	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-funding-and-liquidations	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-funding-and-liquidations	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-funding-and-liquidations	opp_slippage	105	結果なし	結果なし		0.001	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-funding-and-liquidations	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-funding-and-liquidations	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-funding-and-liquidations	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-funding-and-liquidations	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-all-assets-one-call	opp_vectorbt	73	結果なし	結果なし	選んだ	0.002	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-all-assets-one-call	opp_qlib	21	結果なし	結果なし		0.002	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-all-assets-one-call	opp_finmarketpy	54	結果なし	結果なし		0.002	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v1-all-assets-one-call	opp_pytrendfollow	87	結果なし	結果なし		0.001	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-all-assets-one-call	opp_hftbacktest	23	結果なし	結果なし		0.001	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-all-assets-one-call	opp_pybotters	12	結果なし	結果なし		0.003	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-all-assets-one-call	opp_backtesting	55	結果なし	結果なし		0.002	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-all-assets-one-call	opp_qstrader	121	結果なし	結果なし		0.002	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-all-assets-one-call	opp_vnpy	20	結果なし	結果なし		0.002	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-all-assets-one-call	opp_slippage	105	結果なし	結果なし		0.002	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-all-assets-one-call	opp_barter	61	結果なし	結果なし		0.002	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-all-assets-one-call	opp_pysystemtrade	3	結果なし	結果なし		0.002	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-all-assets-one-call	opp_repro_23	23	結果なし	結果なし		0.002	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-all-assets-one-call	opp_repro_105	105	結果なし	結果なし		0.002	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-generic-shape	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v1-generic-shape	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v1-generic-shape	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame に見出しの無いファイル・区切り文字・圧縮の引数が無い
+v1-generic-shape	opp_pytrendfollow	87	結果なし	結果なし		0.001	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v1-generic-shape	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v1-generic-shape	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v1-generic-shape	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v1-generic-shape	opp_qstrader	121	結果なし	結果なし		0.001	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v1-generic-shape	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v1-generic-shape	opp_slippage	105	結果なし	結果なし		0.001	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v1-generic-shape	opp_barter	61	結果なし	結果なし		0.001	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v1-generic-shape	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v1-generic-shape	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v1-generic-shape	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-same-instant-4-units	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v2-same-instant-4-units	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v2-same-instant-4-units	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v2-same-instant-4-units	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v2-same-instant-4-units	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v2-same-instant-4-units	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v2-same-instant-4-units	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v2-same-instant-4-units	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v2-same-instant-4-units	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v2-same-instant-4-units	opp_slippage	105	結果なし	結果なし		0.001	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v2-same-instant-4-units	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v2-same-instant-4-units	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v2-same-instant-4-units	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-same-instant-4-units	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-iso-offsets	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v2-iso-offsets	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v2-iso-offsets	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v2-iso-offsets	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v2-iso-offsets	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v2-iso-offsets	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v2-iso-offsets	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v2-iso-offsets	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v2-iso-offsets	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v2-iso-offsets	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v2-iso-offsets	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v2-iso-offsets	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v2-iso-offsets	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-iso-offsets	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-naive-local-tz	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v2-naive-local-tz	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v2-naive-local-tz	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v2-naive-local-tz	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v2-naive-local-tz	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v2-naive-local-tz	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v2-naive-local-tz	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v2-naive-local-tz	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v2-naive-local-tz	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v2-naive-local-tz	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v2-naive-local-tz	opp_barter	61	結果なし	結果なし		0.001	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v2-naive-local-tz	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v2-naive-local-tz	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v2-naive-local-tz	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v3-clean-control	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v3-clean-control	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v3-clean-control	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v3-clean-control	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v3-clean-control	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v3-clean-control	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v3-clean-control	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v3-clean-control	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v3-clean-control	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v3-clean-control	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v3-clean-control	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v3-clean-control	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v3-clean-control	opp_repro_23	23	不一致	2 回の実行で同じ	選んだ	0.001	events.clean[0].id: 欄が無い
+v3-clean-control	opp_repro_105	105	結果なし	結果なし		0.0	adapter: slippage の系列の型は足(BarSeries)だけで、約定の行の型が無い
+v3-duplicate-and-conflict	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v3-duplicate-and-conflict	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v3-duplicate-and-conflict	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v3-duplicate-and-conflict	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v3-duplicate-and-conflict	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v3-duplicate-and-conflict	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v3-duplicate-and-conflict	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v3-duplicate-and-conflict	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v3-duplicate-and-conflict	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v3-duplicate-and-conflict	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v3-duplicate-and-conflict	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v3-duplicate-and-conflict	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v3-duplicate-and-conflict	opp_repro_23	23	不一致	2 回の実行で同じ	選んだ	0.001	anomalies が返らない(異常を報せる口が無いか、黙って結合した)
+v3-duplicate-and-conflict	opp_repro_105	105	結果なし	結果なし		0.0	adapter: slippage の系列の型は足(BarSeries)だけで、約定の行の型が無い
+v3-backward	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v3-backward	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v3-backward	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v3-backward	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v3-backward	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v3-backward	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v3-backward	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v3-backward	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v3-backward	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v3-backward	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v3-backward	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v3-backward	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v3-backward	opp_repro_23	23	対応なし	2 回の実行で同じ	選んだ	0.001	exchange events are out of order.
+v3-backward	opp_repro_105	105	結果なし	結果なし		0.0	adapter: slippage の系列の型は足(BarSeries)だけで、約定の行の型が無い
+v3-gap-bars	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v3-gap-bars	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v3-gap-bars	opp_finmarketpy	54	不一致	2 回の実行で同じ	選んだ	0.003	anomalies.gap: [](正解 [('gap', 1767571380000000000), ('gap', 1767571440000000000), ('gap', 1767571620000000000)])
+v3-gap-bars	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v3-gap-bars	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v3-gap-bars	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v3-gap-bars	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v3-gap-bars	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v3-gap-bars	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v3-gap-bars	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v3-gap-bars	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v3-gap-bars	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v3-gap-bars	opp_repro_23	23	不一致	2 回の実行で同じ		0.001	anomalies が返らない(異常を報せる口が無いか、黙って結合した)
+v3-gap-bars	opp_repro_105	105	不一致	2 回の実行で同じ		0.001	anomalies が返らない(異常を報せる口が無いか、黙って結合した)
+v3-generations	opp_vectorbt	73	結果なし	結果なし		0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v3-generations	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v3-generations	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: findatapy の read_csv_data_frame は 1 ファイルずつ(複数の世代を 1 つのデータとして読む口が無い)
+v3-generations	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v3-generations	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v3-generations	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v3-generations	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v3-generations	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v3-generations	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v3-generations	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v3-generations	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v3-generations	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v3-generations	opp_repro_23	23	対応なし	2 回の実行で同じ	選んだ	0.001	exchange events are out of order.
+v3-generations	opp_repro_105	105	対応なし	2 回の実行で同じ		0.001	duplicate bar timestamp 1767571440000000000
+v4-sha256-values	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v4-sha256-values	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v4-sha256-values	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: finmarketpy / findatapy に読んだファイルの sha256 を記録する口が無い
+v4-sha256-values	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v4-sha256-values	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v4-sha256-values	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v4-sha256-values	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v4-sha256-values	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v4-sha256-values	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v4-sha256-values	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v4-sha256-values	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v4-sha256-values	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v4-sha256-values	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v4-sha256-values	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v4-sha256-distinguishes	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v4-sha256-distinguishes	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v4-sha256-distinguishes	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: finmarketpy / findatapy に読んだファイルの sha256 を記録する口が無い
+v4-sha256-distinguishes	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v4-sha256-distinguishes	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v4-sha256-distinguishes	opp_pybotters	12	結果なし	結果なし		0.001	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v4-sha256-distinguishes	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v4-sha256-distinguishes	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v4-sha256-distinguishes	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v4-sha256-distinguishes	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v4-sha256-distinguishes	opp_barter	61	結果なし	結果なし		0.001	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v4-sha256-distinguishes	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v4-sha256-distinguishes	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v4-sha256-distinguishes	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-qa	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-reject-qa	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-reject-qa	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-reject-qa	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-reject-qa	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-reject-qa	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-reject-qa	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-reject-qa	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-reject-qa	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-reject-qa	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-reject-qa	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-reject-qa	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-reject-qa	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-qa	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-o3c	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-reject-o3c	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-reject-o3c	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-reject-o3c	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-reject-o3c	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-reject-o3c	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-reject-o3c	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-reject-o3c	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-reject-o3c	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-reject-o3c	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-reject-o3c	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-reject-o3c	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-reject-o3c	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-o3c	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-phase2-runs	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-reject-phase2-runs	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-reject-phase2-runs	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-reject-phase2-runs	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-reject-phase2-runs	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-reject-phase2-runs	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-reject-phase2-runs	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-reject-phase2-runs	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-reject-phase2-runs	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-reject-phase2-runs	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-reject-phase2-runs	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-reject-phase2-runs	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-reject-phase2-runs	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-phase2-runs	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-dotdot	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-reject-dotdot	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-reject-dotdot	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-reject-dotdot	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-reject-dotdot	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-reject-dotdot	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-reject-dotdot	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-reject-dotdot	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-reject-dotdot	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-reject-dotdot	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-reject-dotdot	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-reject-dotdot	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-reject-dotdot	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-dotdot	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-symlink	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-reject-symlink	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-reject-symlink	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-reject-symlink	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-reject-symlink	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-reject-symlink	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-reject-symlink	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-reject-symlink	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-reject-symlink	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-reject-symlink	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-reject-symlink	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-reject-symlink	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-reject-symlink	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-reject-symlink	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-seal-boundary	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-seal-boundary	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-seal-boundary	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-seal-boundary	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-seal-boundary	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-seal-boundary	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-seal-boundary	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-seal-boundary	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-seal-boundary	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-seal-boundary	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-seal-boundary	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-seal-boundary	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-seal-boundary	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-seal-boundary	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-sealed-window	opp_vectorbt	73	結果なし	結果なし	選んだ	0.001	adapter: vectorbt に市場データのファイルを読む口が無い(grep -rn 'read_csv/class CSVData' vectorbt/ は 0 件。data の型は Yahoo・Binance・CCXT・Alpaca からの取得と合成だけ)
+v5-sealed-window	opp_qlib	21	結果なし	結果なし		0.001	adapter: Qlib の配布物に CSV の市場データを読む口が無い(CSV から Qlib の形に直す scripts/dump_bin.py はリポジトリの側にあり配布物に入っていない。配布物の read_csv の当たりは銘柄の一覧・暦・注文の表・予測の表だけ)
+v5-sealed-window	opp_finmarketpy	54	結果なし	結果なし		0.001	adapter: read_csv_data_frame は全列を float32 にするので、文字列の列(売買の向き)を持つ約定の形を読めない
+v5-sealed-window	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow に任意の CSV の市場データを読む口が無い(データは自前の取得器から自前の保管へ。grep で read_csv・csv.reader の当たりは 0 件)
+v5-sealed-window	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest のファイルの読み口は取引所・業者ごとに形が固定の変換器(tardis.convert は Tardis の trades / incremental_book_L2 の CSV)で、列の対応・時刻の単位・時間帯の引数が無い。検査(data/validation.py の correct_event_order・validate_event_order)は変換後の自前の事象の配列にだけ掛かる
+v5-sealed-window	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters にファイルを読む口が無い(取引所への HTTP / WebSocket の通信と、受けた通知を貯める DataStore だけ。read_csv・csv.reader の当たりは 0 件)。時刻の文字列は変換せずそのまま持つ(SCAN 2788 行)
+v5-sealed-window	opp_backtesting	55	結果なし	結果なし		0.001	adapter: backtesting.py に市場データのファイルを読む口が無い(Backtest はメモリ上の OHLC の DataFrame を取る。read_csv の当たりは同梱の例のデータを読む test/__init__.py だけ)
+v5-sealed-window	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の読み口 CSVDailyBarDataSource は <銘柄>.csv の日足で列が固定(Date, Open, High, Low, Close, Adj Close, Volume)。列の対応・日中の時刻・単位・時間帯の引数が無い
+v5-sealed-window	opp_vnpy	20	結果なし	結果なし		0.001	adapter: VnPy(本体と vnpy_ctastrategy)にファイルを読む口が無い(read_csv・csv.reader の当たりは 0 件。CSV の取り込みは別の部品 vnpy_datamanager で、調査報告に無く導入していない)
+v5-sealed-window	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage の読み口(io.load_bars・load_orders)は列が固定(足は symbol,timestamp,open,high,low,close,volume。io.py:44)で、場面のファイルの列(symbol の列が無い・名前が違う)を渡す引数が無い。約定を読む口は無い
+v5-sealed-window	opp_barter	61	結果なし	結果なし		0.0	adapter: barter にファイルの市場データを読む口が無い(エンジンは型つきの MarketEvent の列を受ける。barter-data の正規化は取引所の WebSocket の通知に掛かる。grep で csv::Reader・ReaderBuilder の当たりは 0 件)
+v5-sealed-window	opp_pysystemtrade	3	結果なし	結果なし		0.001	adapter: PySystemtrade の CSV の読み口(csvFuturesContractPriceData)は <銘柄>_<限月>.csv の先物の足を 1 列の日付の索引で読む。約定・気配の行、時刻の単位・時間帯、date と time の 2 列の口が無い。重複は結合のときに黙って落とす(futures_per_contract_prices.py:381)ので、異常を報せる口も無い
+v5-sealed-window	opp_repro_23	23	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v5-sealed-window	opp_repro_105	105	結果なし	結果なし		0.001	adapter: 再現したのは V3 の検査の機構だけ(読み取りは再現の側の手段で、道具の読み口ではない)
+v6-split	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に分割・併合・コード変更の調整と、日付ごとの銘柄集合の口が無い(grep -rni 'split/delist/universe' の当たりはデータの分け方と列の名前だけ)
+v6-split	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib は分割・併合の事象から値段を調整しない(調整はデータが持つ $factor の特徴量を掛けるだけ)。コード変更の口も無い
+v6-split	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy / findatapy に分割・併合の事象から値段を調整する口と、日付ごとの銘柄集合の口が無い
+v6-split	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow は先物の連続足を扱い、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-split	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(ティックと板の模擬器)
+v6-split	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-split	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(1 銘柄の OHLC だけを取る)
+v6-split	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の調整はファイルの Adj Close の比を掛けるだけで分割・併合の事象から計算しない。DynamicUniverse は銘柄ごとの入る日だけを持ち、上場廃止(除く日)を渡す口が無い(dynamic.py の docstring 9-10 行「does not currently support removal of assets」)。コード変更の口も無い
+v6-split	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-split	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(執行費用の分析の道具)
+v6-split	opp_barter	61	結果なし	結果なし		0.0	adapter: barter に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(暗号資産の道具)
+v6-split	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade は先物の道具で、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-split	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v6-split	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v6-reverse-split	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に分割・併合・コード変更の調整と、日付ごとの銘柄集合の口が無い(grep -rni 'split/delist/universe' の当たりはデータの分け方と列の名前だけ)
+v6-reverse-split	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib は分割・併合の事象から値段を調整しない(調整はデータが持つ $factor の特徴量を掛けるだけ)。コード変更の口も無い
+v6-reverse-split	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy / findatapy に分割・併合の事象から値段を調整する口と、日付ごとの銘柄集合の口が無い
+v6-reverse-split	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow は先物の連続足を扱い、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-reverse-split	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(ティックと板の模擬器)
+v6-reverse-split	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-reverse-split	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(1 銘柄の OHLC だけを取る)
+v6-reverse-split	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の調整はファイルの Adj Close の比を掛けるだけで分割・併合の事象から計算しない。DynamicUniverse は銘柄ごとの入る日だけを持ち、上場廃止(除く日)を渡す口が無い(dynamic.py の docstring 9-10 行「does not currently support removal of assets」)。コード変更の口も無い
+v6-reverse-split	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-reverse-split	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(執行費用の分析の道具)
+v6-reverse-split	opp_barter	61	結果なし	結果なし		0.0	adapter: barter に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(暗号資産の道具)
+v6-reverse-split	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade は先物の道具で、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-reverse-split	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v6-reverse-split	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v6-point-in-time	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に分割・併合・コード変更の調整と、日付ごとの銘柄集合の口が無い(grep -rni 'split/delist/universe' の当たりはデータの分け方と列の名前だけ)
+v6-point-in-time	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib は分割・併合の事象から値段を調整しない(調整はデータが持つ $factor の特徴量を掛けるだけ)。コード変更の口も無い
+v6-point-in-time	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy / findatapy に分割・併合の事象から値段を調整する口と、日付ごとの銘柄集合の口が無い
+v6-point-in-time	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow は先物の連続足を扱い、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-point-in-time	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(ティックと板の模擬器)
+v6-point-in-time	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-point-in-time	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(1 銘柄の OHLC だけを取る)
+v6-point-in-time	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の調整はファイルの Adj Close の比を掛けるだけで分割・併合の事象から計算しない。DynamicUniverse は銘柄ごとの入る日だけを持ち、上場廃止(除く日)を渡す口が無い(dynamic.py の docstring 9-10 行「does not currently support removal of assets」)。コード変更の口も無い
+v6-point-in-time	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-point-in-time	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(執行費用の分析の道具)
+v6-point-in-time	opp_barter	61	結果なし	結果なし		0.0	adapter: barter に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(暗号資産の道具)
+v6-point-in-time	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade は先物の道具で、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-point-in-time	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v6-point-in-time	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v6-code-change	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に分割・併合・コード変更の調整と、日付ごとの銘柄集合の口が無い(grep -rni 'split/delist/universe' の当たりはデータの分け方と列の名前だけ)
+v6-code-change	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib は分割・併合の事象から値段を調整しない(調整はデータが持つ $factor の特徴量を掛けるだけ)。コード変更の口も無い
+v6-code-change	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy / findatapy に分割・併合の事象から値段を調整する口と、日付ごとの銘柄集合の口が無い
+v6-code-change	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow は先物の連続足を扱い、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-code-change	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(ティックと板の模擬器)
+v6-code-change	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-code-change	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(1 銘柄の OHLC だけを取る)
+v6-code-change	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の調整はファイルの Adj Close の比を掛けるだけで分割・併合の事象から計算しない。DynamicUniverse は銘柄ごとの入る日だけを持ち、上場廃止(除く日)を渡す口が無い(dynamic.py の docstring 9-10 行「does not currently support removal of assets」)。コード変更の口も無い
+v6-code-change	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-code-change	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(執行費用の分析の道具)
+v6-code-change	opp_barter	61	結果なし	結果なし		0.0	adapter: barter に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(暗号資産の道具)
+v6-code-change	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade は先物の道具で、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-code-change	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v6-code-change	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v6-universe-survivorship	opp_vectorbt	73	結果なし	結果なし		0.0	adapter: vectorbt に分割・併合・コード変更の調整と、日付ごとの銘柄集合の口が無い(grep -rni 'split/delist/universe' の当たりはデータの分け方と列の名前だけ)
+v6-universe-survivorship	opp_qlib	21	正解と一致	2 回の実行で同じ	選んだ	0.566	
+v6-universe-survivorship	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy / findatapy に分割・併合の事象から値段を調整する口と、日付ごとの銘柄集合の口が無い
+v6-universe-survivorship	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow は先物の連続足を扱い、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-universe-survivorship	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(ティックと板の模擬器)
+v6-universe-survivorship	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-universe-survivorship	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(1 銘柄の OHLC だけを取る)
+v6-universe-survivorship	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の調整はファイルの Adj Close の比を掛けるだけで分割・併合の事象から計算しない。DynamicUniverse は銘柄ごとの入る日だけを持ち、上場廃止(除く日)を渡す口が無い(dynamic.py の docstring 9-10 行「does not currently support removal of assets」)。コード変更の口も無い
+v6-universe-survivorship	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-universe-survivorship	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(執行費用の分析の道具)
+v6-universe-survivorship	opp_barter	61	結果なし	結果なし		0.0	adapter: barter に分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い(暗号資産の道具)
+v6-universe-survivorship	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade は先物の道具で、個別株の分割・併合・コード変更の調整と日付ごとの銘柄集合の口が無い
+v6-universe-survivorship	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v6-universe-survivorship	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v7-bars-from-trades	opp_vectorbt	73	結果なし	結果なし	選んだ	0.0	adapter: vectorbt に約定から足を作る口が無い(足は呼び手が pandas で作って渡す。vbt 自身の集計の経路が無く、事象駆動の集計の経路も無い)
+v7-bars-from-trades	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib に同じ足を事象駆動と近道の 2 つの経路で回して突き合わせる口が無い(検証は qlib.backtest の 1 経路)
+v7-bars-from-trades	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy の検証はベクトル化の 1 経路(信号の表と値の表の演算)だけで、突き合わせる事象駆動の経路が無い
+v7-bars-from-trades	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow の損益の計算(accountCurve)はベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-bars-from-trades	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest の模擬はティックごとの事象駆動の 1 経路だけで、近道(ベクトル化)の経路も約定から足を作る口も無い
+v7-bars-from-trades	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に模擬の経路が無い(通信の道具)
+v7-bars-from-trades	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py の模擬は Strategy.next を足ごとに呼ぶ 1 経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-bars-from-trades	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の模擬は日程で駆動する 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-bars-from-trades	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy の足づくり(BarGenerator.update_tick)と CTA の検証は 1 本ずつの事象駆動の経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-bars-from-trades	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に同じ足を 2 つの経路で回して突き合わせる口が無い
+v7-bars-from-trades	opp_barter	61	結果なし	結果なし		0.0	adapter: barter の模擬は事象駆動の 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-bars-from-trades	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の模擬は pandas のベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-bars-from-trades	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v7-bars-from-trades	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v7-rule-integer	opp_vectorbt	73	正解と一致	2 回の実行で同じ	選んだ	5.171	
+v7-rule-integer	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib に同じ足を事象駆動と近道の 2 つの経路で回して突き合わせる口が無い(検証は qlib.backtest の 1 経路)
+v7-rule-integer	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy の検証はベクトル化の 1 経路(信号の表と値の表の演算)だけで、突き合わせる事象駆動の経路が無い
+v7-rule-integer	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow の損益の計算(accountCurve)はベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-rule-integer	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest の模擬はティックごとの事象駆動の 1 経路だけで、近道(ベクトル化)の経路も約定から足を作る口も無い
+v7-rule-integer	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に模擬の経路が無い(通信の道具)
+v7-rule-integer	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py の模擬は Strategy.next を足ごとに呼ぶ 1 経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-rule-integer	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の模擬は日程で駆動する 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-rule-integer	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy の足づくり(BarGenerator.update_tick)と CTA の検証は 1 本ずつの事象駆動の経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-rule-integer	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に同じ足を 2 つの経路で回して突き合わせる口が無い
+v7-rule-integer	opp_barter	61	結果なし	結果なし		0.0	adapter: barter の模擬は事象駆動の 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-rule-integer	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の模擬は pandas のベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-rule-integer	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v7-rule-integer	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v7-rule-fractional	opp_vectorbt	73	正解と一致	2 回の実行で同じ	選んだ	0.01	
+v7-rule-fractional	opp_qlib	21	結果なし	結果なし		0.0	adapter: Qlib に同じ足を事象駆動と近道の 2 つの経路で回して突き合わせる口が無い(検証は qlib.backtest の 1 経路)
+v7-rule-fractional	opp_finmarketpy	54	結果なし	結果なし		0.0	adapter: finmarketpy の検証はベクトル化の 1 経路(信号の表と値の表の演算)だけで、突き合わせる事象駆動の経路が無い
+v7-rule-fractional	opp_pytrendfollow	87	結果なし	結果なし		0.0	adapter: PyTrendFollow の損益の計算(accountCurve)はベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-rule-fractional	opp_hftbacktest	23	結果なし	結果なし		0.0	adapter: hftbacktest の模擬はティックごとの事象駆動の 1 経路だけで、近道(ベクトル化)の経路も約定から足を作る口も無い
+v7-rule-fractional	opp_pybotters	12	結果なし	結果なし		0.0	adapter: pybotters に模擬の経路が無い(通信の道具)
+v7-rule-fractional	opp_backtesting	55	結果なし	結果なし		0.0	adapter: backtesting.py の模擬は Strategy.next を足ごとに呼ぶ 1 経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-rule-fractional	opp_qstrader	121	結果なし	結果なし		0.0	adapter: QSTrader の模擬は日程で駆動する 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-rule-fractional	opp_vnpy	20	結果なし	結果なし		0.0	adapter: VnPy の足づくり(BarGenerator.update_tick)と CTA の検証は 1 本ずつの事象駆動の経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-rule-fractional	opp_slippage	105	結果なし	結果なし		0.0	adapter: slippage に同じ足を 2 つの経路で回して突き合わせる口が無い
+v7-rule-fractional	opp_barter	61	結果なし	結果なし		0.0	adapter: barter の模擬は事象駆動の 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-rule-fractional	opp_pysystemtrade	3	結果なし	結果なし		0.0	adapter: PySystemtrade の模擬は pandas のベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-rule-fractional	opp_repro_23	23	結果なし	結果なし		0.0	adapter: 再現したのは V3 の事象の順の検査だけ
+v7-rule-fractional	opp_repro_105	105	結果なし	結果なし		0.0	adapter: 再現したのは V3 の足の重複の検査だけ
+v7-speed	opp_vectorbt	73	正解と一致	2 回の実行で同じ	選んだ	0.683	
+v7-speed	opp_qlib	21	結果なし	結果なし		0.06	adapter: Qlib に同じ足を事象駆動と近道の 2 つの経路で回して突き合わせる口が無い(検証は qlib.backtest の 1 経路)
+v7-speed	opp_finmarketpy	54	結果なし	結果なし		0.086	adapter: finmarketpy の検証はベクトル化の 1 経路(信号の表と値の表の演算)だけで、突き合わせる事象駆動の経路が無い
+v7-speed	opp_pytrendfollow	87	結果なし	結果なし		0.08	adapter: PyTrendFollow の損益の計算(accountCurve)はベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-speed	opp_hftbacktest	23	結果なし	結果なし		0.057	adapter: hftbacktest の模擬はティックごとの事象駆動の 1 経路だけで、近道(ベクトル化)の経路も約定から足を作る口も無い
+v7-speed	opp_pybotters	12	結果なし	結果なし		0.057	adapter: pybotters に模擬の経路が無い(通信の道具)
+v7-speed	opp_backtesting	55	結果なし	結果なし		0.056	adapter: backtesting.py の模擬は Strategy.next を足ごとに呼ぶ 1 経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-speed	opp_qstrader	121	結果なし	結果なし		0.051	adapter: QSTrader の模擬は日程で駆動する 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-speed	opp_vnpy	20	結果なし	結果なし		0.057	adapter: VnPy の足づくり(BarGenerator.update_tick)と CTA の検証は 1 本ずつの事象駆動の経路だけで、突き合わせる近道(ベクトル化)の経路が無い
+v7-speed	opp_slippage	105	結果なし	結果なし		0.081	adapter: slippage に同じ足を 2 つの経路で回して突き合わせる口が無い
+v7-speed	opp_barter	61	結果なし	結果なし		0.058	adapter: barter の模擬は事象駆動の 1 経路だけで、近道(ベクトル化)の経路が無い
+v7-speed	opp_pysystemtrade	3	結果なし	結果なし		0.054	adapter: PySystemtrade の模擬は pandas のベクトル化の 1 経路だけで、突き合わせる事象駆動の経路が無い
+v7-speed	opp_repro_23	23	結果なし	結果なし		0.061	adapter: 再現したのは V3 の事象の順の検査だけ
+v7-speed	opp_repro_105	105	結果なし	結果なし		0.054	adapter: 再現したのは V3 の足の重複の検査だけ

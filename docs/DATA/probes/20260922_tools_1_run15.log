@@ -1,0 +1,97 @@
+# 区分1 15回目 生ログ (2026-09-22)
+# 委任文: docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154
+[%s] start UTC %Y-%m-%dT%H:%M:%SZ
+UTC 2026-09-22T13:29:21Z start
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting
+curl: (35) Recv failure: Connection reset by peer
+
+code=000 time=11.338281
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/sacha9214/polymarket-fill-model
+{"repo":{"id":1374834501,"name":"polymarket-fill-model","repo":"sacha9214/polymarket-fill-model","description":"Queue-aware fill model for Polymarket maker orders: crosses the order book with the trade tape to answer whether a resting order would really have been filled","createdAt":"2026-09-17T17:49:32Z","updatedAt":"2026-09-17T18:16:05Z","pushedAt":"2026-09-17T18:16:01Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.962646
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/mote/backtest
+{"repo":{"id":6970195,"name":"backtest","repo":"mote/backtest","description":"Simple limit/stop order based backtest library for python","createdAt":"2012-12-02T17:55:48Z","updatedAt":"2022-04-04T17:30:35Z","pushedAt":"2012-09-14T13:33:53Z","stars":1,"watchers":1,"forks":7,"defaultBranch":"master"}}
+code=200 time=0.891397
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/DaniyalMlk/slippage
+{"repo":{"id":1378966244,"name":"slippage","repo":"DaniyalMlk/slippage","description":"An optimal execution and transaction cost analysis engine: implementation shortfall decomposition, market impact calibration, and Almgren-Chriss trajectories.","createdAt":"2026-09-21T02:04:33Z","updatedAt":"2026-09-21T02:56:39Z","pushedAt":"2026-09-21T02:56:35Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.631614
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/mihircoding/limitOrderBook
+{"repo":{"id":1333272152,"name":"limitOrderBook","repo":"mihircoding/limitOrderBook","description":"Price-time priority matching engine and a zero-intelligence order flow simulator. Spread, price impact and mean reversion emerge from the rules alone.","createdAt":"2026-08-13T15:36:18Z","updatedAt":"2026-09-17T20:22:07Z","pushedAt":"2026-09-17T20:21:40Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.656286
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/3yit/Limit-Order-Book-Simulator
+{"repo":{"id":1075003360,"name":"Limit-Order-Book-Simulator","repo":"3yit/Limit-Order-Book-Simulator","description":"C++20 limit order book simulator modeling real-time market microstructure. Features multi-threaded matching engine, microsecond latency, and Python bindings for quantitative finance research and trading strategy analysis.","createdAt":"2025-10-12T21:55:22Z","updatedAt":"2026-09-01T18:48:59Z","pushedAt":"2025-10-27T01:02:40Z","stars":7,"watchers":0,"forks":2,"defaultBranch":"main"}}
+code=200 time=0.656370
+
+UTC 2026-09-22T13:30:39Z ungh batch done
+=== RETRY (前回 code=000) CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting
+{"repo":{"id":1156777542,"name":"prediction-market-backtesting","repo":"evan-kolberg/prediction-market-backtesting","description":"An extension for Nautilus Trader","createdAt":"2026-02-13T03:21:19Z","updatedAt":"2026-09-21T23:16:54Z","pushedAt":"2026-05-16T21:24:47Z","stars":1202,"watchers":9,"forks":199,"defaultBranch":"v4.1-alpha"}}
+code=200 time=0.615107
+
+=== 検索計画 6 本(WebSearch 道具。出力は本文の節に記載)
+Q-A1(板の待ち行列/狭い/英) "queue position" limit order fill simulation backtest github python
+Q-A2(板の待ち行列/中間/日) 板 待ち行列 指値 約定確率 シミュレーション バックテスト ライブラリ
+Q-A3(板の待ち行列/広い/英) limit order book simulator price-time priority matching engine open source library
+Q-B1(市場影響と約定の模型/狭い/英) Almgren-Chriss market impact model python implementation open source execution
+Q-B2(市場影響と約定の模型/中間/日) 市場インパクト 執行コスト モデル Python ライブラリ スリッページ 推定
+Q-B3(市場影響と約定の模型/広い/英) slippage model execution cost simulation backtesting framework transaction cost analysis library
+=== X の経路(x-research §3 の発見の段。WebSearch 道具)
+Q-X1 site:x.com queue position fill model backtest order book
+Q-X2 site:x.com 市場インパクト モデル 約定 シミュレーション ツール
+=== MCP の GitHub 検索(第 3 の経路)
+G-1 query="queue position fill model limit order backtest in:name,description,readme stars:>3" sort=stars perPage=10 -> total_count=177
+G-2 query="market impact model execution simulator slippage in:name,description stars:>3" sort=stars perPage=10 -> total_count=0
+G-3 query="\"market impact\" backtest fill model simulation language:Python stars:>5" sort=stars perPage=10 -> total_count=0
+UTC 2026-09-22T13:30:57Z plan logged
+=== CMD: python3 scripts/x_fetch.py https://x.com/QFinancePapers/status/1965093007297769721 https://x.com/RustTrending/status/1829630731464949780
+{"id": "1965093007297769721", "http": 200, "fetched_at": "2026-09-22T13:31:00.594331+00:00", "url": "https://x.com/QFinancePapers/status/1965093007297769721", "author": "QFinancePapers", "created_at": "Mon Sep 08 16:40:57 +0000 2025", "text": "Painting the market: generative diffusion models for financial limit order book simulation and forecasting. https://arxiv.org/abs/2509.05107", "likes": 2, "retweets": 1, "replies": 0, "views": 384, "quote": null, "replying_to_status": null}
+{"id": "1829630731464949780", "http": 200, "fetched_at": "2026-09-22T13:31:02.097341+00:00", "url": "https://x.com/RustTrending/status/1829630731464949780", "author": "RustTrending", "created_at": "Fri Aug 30 21:22:13 +0000 2024", "text": "nkaz001 / hftbacktest: A high-frequency trading and market-making backtesting tool in Python and Rust, which accounts for limit orders, queue positions, and latencies, utilizing full tick data for trades and order books, with rea ... ★1705 https://github.com/nkaz001/hftbacktest", "likes": 22, "retweets": 3, "replies": 0, "views": 2252, "quote": null, "replying_to_status": null}
+rc=0
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/sashankzade/limit-order-book-matching-engine
+{"repo":{"id":1368737243,"name":"limit-order-book-matching-engine","repo":"sashankzade/limit-order-book-matching-engine","description":"A high-performance limit order book and matching engine implementing price-time priority for simulated exchange order matching.","createdAt":"2026-09-13T18:31:45Z","updatedAt":"2026-09-13T18:49:00Z","pushedAt":"2026-09-13T18:48:56Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.987671
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/kahan15/Limit-Order-Book-Simulator
+{"repo":{"id":1367593032,"name":"Limit-Order-Book-Simulator","repo":"kahan15/Limit-Order-Book-Simulator","description":"Browser-based limit order book simulator with a price-time priority matching engine, synthetic order flow, and live L2 depth streamed from Kraken's public WebSocket with local paper trading and PnL tracking.","createdAt":"2026-09-12T18:42:44Z","updatedAt":"2026-09-12T18:47:05Z","pushedAt":"2026-09-12T18:47:02Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.861011
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/NickGardi/orderbooksim
+{"repo":{"id":1343214090,"name":"orderbooksim","repo":"NickGardi/orderbooksim","description":"Price-time priority limit order book matching engine with live Streamlit UI","createdAt":"2026-08-22T22:35:19Z","updatedAt":"2026-08-22T22:50:32Z","pushedAt":"2026-08-22T22:49:49Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.567651
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/xavierchuan/OrderMatchingEngine
+{"repo":{"id":1060155752,"name":"OrderMatchingEngine","repo":"xavierchuan/OrderMatchingEngine","description":"A high-performance C++ order matching engine simulating exchange-style limit/market order execution, cancellations, and stress testing.","createdAt":"2025-09-19T13:18:27Z","updatedAt":"2026-09-20T10:03:13Z","pushedAt":"2025-09-19T13:35:39Z","stars":14,"watchers":0,"forks":5,"defaultBranch":"main"}}
+code=200 time=0.612230
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/akurkar07/OrderBook
+{"repo":{"id":1373520016,"name":"OrderBook","repo":"akurkar07/OrderBook","description":"C++ limit order book engine with price-time priority matching, deterministic tests, and benchmark harness","createdAt":"2026-09-16T18:58:23Z","updatedAt":"2026-09-17T10:26:42Z","pushedAt":"2026-09-17T10:26:37Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}
+code=200 time=0.670261
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/IsaacCheng9/order-book-simulator
+curl: (35) Recv failure: Connection reset by peer
+
+code=000 time=11.118570
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://ungh.cc/repos/jxm35/LimitOrderBook-MatchingEngine
+{"repo":{"id":695482252,"name":"LimitOrderBook-MatchingEngine","repo":"jxm35/LimitOrderBook-MatchingEngine","description":"Limit Orderbook & Matching Engine   + market simulation & visualsation.","createdAt":"2023-09-23T10:18:48Z","updatedAt":"2026-09-11T08:13:33Z","pushedAt":"2025-10-11T11:43:13Z","stars":32,"watchers":1,"forks":6,"defaultBranch":"main"}}
+code=200 time=0.942909
+
+=== CMD: curl -sS -w code=%{http_code} time=%{time_total} https://pypi.org/pypi/almgren-chriss/json
+{"info":{"author":"Bernardo Paulsen","author_email":"paulsen.bernardo@gmail.com","bugtrack_url":null,"classifiers":["License :: Other/Proprietary License","Programming Language :: Python :: 3","Programming Language :: Python :: 3.10","Programming Language :: Python :: 3.11"],"description":"almgren-chriss\n==============\n\nThis package provides functions for implementing the Almgren-Chriss model for optimal execution of portfolio transactions.\n\nWhat is the Almgren-Chriss Model?\n---------------------------------\n\nThe Almgren-Chriss model is a mathematical model used in financial markets to determine the optimal way to execute large\norders. The model takes into account various factors such as the risk tolerance of the trader, the volatility of the\nmarket, and the impact of the trade on the market price. The goal of the model is to minimize the expected cost of the\ntrade while takin
+UTC 2026-09-22T13:31:28Z batch2 done
+=== RETRY (前回 code=000) CMD: curl -sS -w code=%{http_code} https://ungh.cc/repos/IsaacCheng9/order-book-simulator
+{"repo":{"id":923292206,"name":"order-book-simulator","repo":"IsaacCheng9/order-book-simulator","description":"An equity order matching engine simulating US stock exchange mechanics with an interactive dashboard. Features price-time priority matching, trade execution, and real-time market data processing.","createdAt":"2025-01-28T00:48:46Z","updatedAt":"2026-09-19T14:21:22Z","pushedAt":"2026-09-19T14:21:20Z","stars":9,"watchers":1,"forks":4,"defaultBranch":"main"}}
+code=200 time=0.600926
+=== CMD: curl -sS https://pypi.org/pypi/almgren-chriss/json | python3 -c 抜き出し(version/license/requires_python/urls/upload_time)
+  File "<string>", line 1
+    import json,sys; d=json.load(sys.stdin); i=d['info']; print(json.dumps({'version':i['version'],'license':i['license'],'requires_python':i['requires_python'],'requires_dist':i['requires_dist'],'home_page':i['home_page'],'project_urls':i['project_urls'],'classifiers_license':[c for c in i['classifiers'] if 'License' in c],'n_releases':len(d['releases']),'upload_time':d['urls'][0]['upload_time'] if d['urls'] else None})
+                                                               ^
+SyntaxError: '(' was never closed
+UTC 2026-09-22T13:31:37Z batch3 done
+=== CMD: curl -sS https://pypi.org/pypi/almgren-chriss/json | python3 scratchpad/pypi.py
+{"version": "1.1.0", "license": "GNU General Public License", "requires_python": ">=3.10,<4.0", "requires_dist": ["numpy (>=1.0,<2.0)"], "home_page": "", "project_urls": {"Documentation": "https://bernardopaulsen.github.io/almgren-chriss/", "GitHub": "https://github.com/bernardopaulsen/almngren-chriss"}, "classifiers_license": ["License :: Other/Proprietary License"], "n_releases": 3, "upload_time": "2023-05-30T19:19:43"}
+UTC 2026-09-22T13:31:46Z batch3 done

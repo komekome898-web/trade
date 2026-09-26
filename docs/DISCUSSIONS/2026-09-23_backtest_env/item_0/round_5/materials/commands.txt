@@ -1,0 +1,29 @@
+# 項目 0 第 5 周 資料係が打ったコマンド(リポジトリ直下から。時刻は各ログに記録)
+sha256sum docs/DATA/delegations/20260923_backtest_env_prompt.md; wc -l ...   # -> c9e8800bf176…(158 行)。起動文の指紋 362bf666dfac とは違う
+for c in $(git log --format=%h -20 -- <委任文>); do git show $c:<委任文> | sha256sum; done   # 362bf666dfac はコミット ebbaf34 の版。今の版 c9e8800bf176 は 9b42123
+git show ebbaf34:<委任文> > <scratchpad>/bt/item0_r5_librarian_prompt_362bf666dfac.md   # 起動文が名指した指紋の版を全部読んだ(159 行)
+git diff --word-diff ebbaf34 HEAD -- <委任文>   # 差は通過の判定(部品は同等以上・項目 13 は圧倒、L-431・L-432)と L-429 の注記・三択の答え。§3「比較の表」「場面集の規則」3〜5 と資料係の手順には差が無い
+git status --short tests/bt src/bot/bt   # 核に第 5 周の作業者の未コミットの変更あり(api.py・contract.py・engine.py・events.py・window.py・__init__.py、新しい values.py)
+git diff --stat src/bot/bt/core; git diff src/bot/bt/core/__init__.py src/bot/bt/core/api.py   # 公開の名前: POSITION_RULE・PLAIN_DATA_RULE・FrozenDict/List/Set を足した。adapter が使う名前は全部残っている
+sed -n 448,532p src/bot/bt/core/api.py   # visible_events の口(添字と区間は DeliveredEvents、端の役は window.py の POSITION_RULE)
+# adapters/new_impl.py を変えた(差分 -> logs/new_impl_adapter.diff): p4-future-read-attempt の位置での名指しに 4 つを足した
+#   ctx.visible_events()[4::2] / [4:4] / [4::-1] / [:4:-1]
+#   理由: 場面の定義「対象が戦略に渡す公開の読み出しの手段ごとに、当てはまる名指し方を全部試し」。第 5 周の核は区間の端を役(前向きの始点・終点、後ろ向きの始点・終点)ごとに検めるので、最新の次の位置(4)を各役の端に置く形を足した。
+#   [:4:-1](後ろ向きの区間の止まる端に 4 を置く)を「名指し」に数えるかは資料係の判断(返り値の notes に書いた)。本体(src/bot/bt/)は変えていない。
+ls docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_5/表_*.md   # -> logs/stale_check.out(前の起動の表は無し)
+(cd tests/bt/battery/item_0 && PYTHONPATH=/home/user/trade/src python3 -B mutant.py --check)   # -> logs/mutant_check.log(changed scenes: ['p4-received-time'] / OK)
+timeout 590 sh docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/round_5/materials/run_all.sh   # -> runs/*.tsv(39 対象), logs/run_all.log, logs/*.stderr, logs/run_all_stdout.out。各対象を run_battery.py が 1 場面につき 2 回、別々の adapter で走らせる。39 対象すべて rc=0。2 回で違う = 調査の道具 1 件の 1 場面だけ
+(cd materials && python3 -B compare_survey_results.py)   # -> logs/compare_survey_results.out(この周の走行と場面係の survey_results/*.tsv の差 0 セル)
+(cd materials && python3 -B make_tables.py)   # 1 回目: 6 枚を作った。候補ごとの欠け(動かせなかった 16 件)の注記が無かったので、make_tables.py に --runnability を足した
+mv round_5/表_*.md materials/stale/   # 1 回目の 6 枚(表_99bidl・表_dumop8・表_latqcf・表_m3icwg・表_rot1up・表_z268rc)を移した。前の起動のものではなく、この起動で作り直す前のもの
+(cd materials && python3 -B make_tables.py --runnability tests/bt/battery/item_0/opponents/RUNNABILITY.tsv)   # 2 回目: 結果なしの場面の注記に実測の時間(その道具を全場面に通した秒数)が無かったので、make_tables.py に run_all.log から所要の秒数を読む部分を足した
+mv round_5/表_*.md materials/stale/   # 2 回目の 6 枚(表_4i2vrw・表_5epvkk・表_eet1c3・表_ll2epg・表_t61lre・表_u7pks7)を移した。同じく、この起動で作り直す前のもの
+(cd materials && python3 -B make_tables.py --runnability tests/bt/battery/item_0/opponents/RUNNABILITY.tsv)   # 3 回目(これが今の 6 枚) -> logs/make_tables.out, mapping.tsv, survey_best.tsv, survey_failures.tsv
+python3 (mapping.tsv の各組を md5sum)   # -> md5sum_pairs.txt(current: differ / survey: identical / mutant: differ)
+grep -liE -f logs/grep_tool_names.pat round_5/表_*.md   # -> logs/grep_tool_names.out(道具名・対象名・日付・時刻の 112 語で該当 0 件、rc=1)
+PYTHONPATH=src timeout 500 python -m pytest -p no:cacheprovider tests/bt/battery/item_0   # -> logs/pytest_battery_item0.log(28 passed)
+mv finmarketpy.log materials/logs/finmarketpy_import_side_file.log   # 走行中に道具の読み込みがリポジトリ直下に作った空のファイル(0 バイト)を移した
+git status / sha256sum / ls / df -m /   # -> logs/final_state.txt
+# 注記に書かなかった具体: 場面 p6-place-then-cancel の結果なし 1 件 = opp_ziplime(survey_failures.tsv、所要 9 秒は run_all.log の 04:53:28Z〜04:53:37Z)。
+# 調査結果の側の行に寄せた道具は場面ごとに survey_best.tsv。2 回で違う 1 件 = opp_predictivedev_tradesim の p7-latency-model-swap(寄せた行には入っていない)。
+# 候補ごとの欠け 16 件の名と理由は tests/bt/battery/item_0/opponents/RUNNABILITY.tsv(result = 走らなかった)。

@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	不一致	avg_px.o1: 期待 10001.0 / 出力 10001.29	e2212512d0730c4b	不一致	avg_px.o1: 期待 10001.0 / 出力 10001.29	e2212512d0730c4b	2 回の実行で同じ	0.001	0.001
+c2-1-limit	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-1-postonly	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-1-ioc	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に IOC が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に IOC が無い	-	結果なし	0.0	0.0
+c2-1-fok	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に FOK が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に FOK が無い	-	結果なし	0.0	0.0
+c2-1-stop	C2-1	値	不一致	avg_px.o1: 期待 10013.0 / 出力 10013.69	b1023f6822231043	不一致	avg_px.o1: 期待 10013.0 / 出力 10013.69	b1023f6822231043	2 回の実行で同じ	0.0	0.0
+c2-1-reduceonly	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に reduce_only が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に reduce_only が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	0.0	0.0
+c2-2-amend-price	C2-2	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に amend が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-amend-qty	C2-2	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に amend が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-partial	C2-2	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	0.0	0.0
+c2-3-tick	C2-3	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-3-minqty	C2-3	値	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.01; avg_px.o2: 期待 10001 / 出力 10001.29	6728ebc9e1b23658	不一致	status.o1: 期待 rejected / 出力 filled; filled.o1: 期待 0.0 / 出力 0.01; avg_px.o2: 期待 10001 / 出力 10001.29	6728ebc9e1b23658	2 回の実行で同じ	0.0	0.0
+c2-3-round	C2-3	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-3-stp	C2-3	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-3-jpx-session	C2-3	値	不一致	avg_px.o1: 期待 1510.0 / 出力 1500.19; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767666540000000000	568d27c7c6c9c398	不一致	avg_px.o1: 期待 1510.0 / 出力 1500.19; first_fill_t.o1: 期待 ge 1767670200000000000 / 出力 1767666540000000000	568d27c7c6c9c398	2 回の実行で同じ	0.0	0.0
+c2-3-jpx-limit	C2-3	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-3-fx-weekend	C2-3	値	不一致	avg_px.o1: 期待 150.103 / 出力 150.02; first_fill_t.o1: 期待 ge 1768168800000000000 / 出力 1767995940000000000	4e7e4982a4d6f7f6	不一致	avg_px.o1: 期待 150.103 / 出力 150.02; first_fill_t.o1: 期待 ge 1768168800000000000 / 出力 1767995940000000000	4e7e4982a4d6f7f6	2 回の実行で同じ	0.0	0.0
+c2-4-reject	C2-4	値	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: QuantCore 1.0.0: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に kill が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier3	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier5	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-queue-value	C2-5	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-5-tier6	C2-5	能力	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	0.0	0.0
+c2-6-none	C2-6	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-6-l3	C2-6	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-6-prob	C2-6	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-6-prob-power2	C2-6	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-7-walk	C2-7	値	結果なし	adapter: QuantCore 1.0.0: tick にする約定が無い(板の写真は TickData に形が無い)	-	結果なし	adapter: QuantCore 1.0.0: tick にする約定が無い(板の写真は TickData に形が無い)	-	結果なし	0.0	0.0
+c2-7-walk-exhaust	C2-7	値	結果なし	adapter: QuantCore 1.0.0: tick にする約定が無い(板の写真は TickData に形が無い)	-	結果なし	adapter: QuantCore 1.0.0: tick にする約定が無い(板の写真は TickData に形が無い)	-	結果なし	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	adapter: QuantCore 1.0.0: 約定の模型を選ぶ口が無い	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	結果なし	adapter: QuantCore 1.0.0: 遅延(feed)を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 遅延(feed)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に cancel が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: QuantCore 1.0.0: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 遅延(order)の分布 empirical を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	不一致	fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	不一致	fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	2 回の実行で同じ	0.0	0.0
+c2-10-maker	C2-10	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-10-spread	C2-10	値	結果なし	adapter: QuantCore 1.0.0: 費用 spread を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 費用 spread を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-funding	C2-10	値	結果なし	adapter: QuantCore 1.0.0: 事象 funding を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 事象 funding を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: QuantCore 1.0.0: 事象 rollover を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 事象 rollover を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: QuantCore 1.0.0: 費用 fee_table を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 費用 fee_table を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	2 回の実行で同じ	0.0	0.0
+c2-10-source	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0006450000000005; avg_px.o1: 期待 10001 / 出力 10001.29	2c0a1b1da25f8499	2 回の実行で同じ	0.0	0.0
+c2-11-pnl	C2-11	値	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'account'); account.position: 期待 0.6 / 出力に無い(KeyError: 'account'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'account')	30aad4ce453170d9	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'account'); account.position: 期待 0.6 / 出力に無い(KeyError: 'account'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'account')	30aad4ce453170d9	2 回の実行で同じ	0.0	0.0
+c2-11-margin	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 口座の leverage を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-liquidation	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 口座の leverage を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 口座の leverage を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'account')	d20a7f3f976f28d0	不一致	account.exposure_ns: 期待 3999000000 / 出力に無い(KeyError: 'account')	d20a7f3f976f28d0	2 回の実行で同じ	0.0	0.0
+c2-11-legs	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-11-split	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 事象 corporate を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 事象 corporate を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: QuantCore 1.0.0: 事象 fx_rate を渡す口が無い	-	結果なし	adapter: QuantCore 1.0.0: 事象 fx_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0
+c2-12-jpx-wait	C2-12	能力	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	adapter: QuantCore 1.0.0: 公開の口に limit が無い	-	結果なし	0.0	0.0

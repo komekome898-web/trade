@@ -1,0 +1,85 @@
+mutant start 2026-09-26T09:26:29Z
+new_impl start 2026-09-26T09:26:29Z
+current_impl start 2026-09-26T09:26:29Z
+opp_backtrader start 2026-09-26T09:26:29Z
+current_impl end 2026-09-26T09:26:32Z rc=0 secs=3
+opp_backtesting start 2026-09-26T09:26:32Z
+opp_backtrader end 2026-09-26T09:26:33Z rc=0 secs=4
+opp_vectorbt start 2026-09-26T09:26:33Z
+opp_backtesting end 2026-09-26T09:26:38Z rc=0 secs=6
+opp_pyalgotrade start 2026-09-26T09:26:38Z
+opp_pyalgotrade end 2026-09-26T09:26:39Z rc=0 secs=1
+opp_pybroker start 2026-09-26T09:26:39Z
+mutant end 2026-09-26T09:26:40Z rc=0 secs=11
+opp_luczinsritter start 2026-09-26T09:26:40Z
+new_impl end 2026-09-26T09:26:40Z rc=0 secs=11
+opp_vnpy start 2026-09-26T09:26:40Z
+opp_vnpy end 2026-09-26T09:26:42Z rc=0 secs=2
+opp_basana start 2026-09-26T09:26:42Z
+opp_basana end 2026-09-26T09:26:43Z rc=0 secs=1
+opp_bt start 2026-09-26T09:26:43Z
+opp_luczinsritter end 2026-09-26T09:26:45Z rc=0 secs=5
+opp_qtradex start 2026-09-26T09:26:45Z
+opp_pybroker end 2026-09-26T09:26:46Z rc=0 secs=7
+opp_ziplime start 2026-09-26T09:26:46Z
+opp_bt end 2026-09-26T09:26:49Z rc=0 secs=6
+opp_qstrader start 2026-09-26T09:26:49Z
+opp_qstrader end 2026-09-26T09:26:49Z rc=0 secs=0
+opp_finmarketpy start 2026-09-26T09:26:49Z
+opp_qtradex end 2026-09-26T09:26:51Z rc=0 secs=6
+opp_pysystemtrade start 2026-09-26T09:26:51Z
+opp_pysystemtrade end 2026-09-26T09:26:51Z rc=0 secs=0
+opp_qlib start 2026-09-26T09:26:51Z
+opp_qlib end 2026-09-26T09:26:54Z rc=0 secs=3
+opp_hftbacktest start 2026-09-26T09:26:54Z
+opp_hftbacktest end 2026-09-26T09:26:55Z rc=0 secs=1
+opp_pytrendfollow start 2026-09-26T09:26:55Z
+opp_pytrendfollow end 2026-09-26T09:26:56Z rc=0 secs=1
+opp_pybotters start 2026-09-26T09:26:56Z
+opp_pybotters end 2026-09-26T09:26:56Z rc=0 secs=0
+opp_freqtrade start 2026-09-26T09:26:56Z
+opp_finmarketpy end 2026-09-26T09:26:57Z rc=0 secs=8
+opp_pm_backtester start 2026-09-26T09:26:57Z
+opp_freqtrade end 2026-09-26T09:26:57Z rc=0 secs=1
+opp_rqalpha start 2026-09-26T09:26:57Z
+opp_pm_backtester end 2026-09-26T09:26:57Z rc=0 secs=0
+opp_pineforge start 2026-09-26T09:26:57Z
+opp_pineforge end 2026-09-26T09:26:58Z rc=0 secs=1
+opp_quanttrader start 2026-09-26T09:26:58Z
+opp_rqalpha end 2026-09-26T09:26:58Z rc=0 secs=1
+opp_fast_trade start 2026-09-26T09:26:58Z
+opp_fast_trade end 2026-09-26T09:26:59Z rc=0 secs=1
+opp_qflib start 2026-09-26T09:26:59Z
+opp_quanttrader end 2026-09-26T09:27:00Z rc=0 secs=2
+opp_zipline_reloaded start 2026-09-26T09:27:00Z
+opp_vectorbt end 2026-09-26T09:27:07Z rc=0 secs=34
+opp_repro_67_lumibot start 2026-09-26T09:27:07Z
+opp_repro_67_lumibot end 2026-09-26T09:27:08Z rc=0 secs=1
+opp_repro_60_hikyuu start 2026-09-26T09:27:08Z
+opp_repro_60_hikyuu end 2026-09-26T09:27:08Z rc=0 secs=0
+opp_repro_15_backtestingcore start 2026-09-26T09:27:08Z
+opp_repro_15_backtestingcore end 2026-09-26T09:27:08Z rc=0 secs=0
+opp_repro_8_opentrader start 2026-09-26T09:27:08Z
+opp_repro_8_opentrader end 2026-09-26T09:27:09Z rc=0 secs=1
+opp_repro_56_zvt start 2026-09-26T09:27:09Z
+opp_repro_56_zvt end 2026-09-26T09:27:09Z rc=0 secs=0
+opp_repro_69_gobacktest start 2026-09-26T09:27:09Z
+opp_repro_69_gobacktest end 2026-09-26T09:27:09Z rc=0 secs=0
+opp_repro_11_octobot start 2026-09-26T09:27:09Z
+opp_repro_11_octobot end 2026-09-26T09:27:09Z rc=0 secs=0
+opp_repro_7_superalgos start 2026-09-26T09:27:09Z
+opp_repro_7_superalgos end 2026-09-26T09:27:10Z rc=0 secs=1
+opp_repro_52_lean start 2026-09-26T09:27:10Z
+opp_repro_52_lean end 2026-09-26T09:27:10Z rc=0 secs=0
+opp_repro_57_wondertrader start 2026-09-26T09:27:10Z
+opp_repro_57_wondertrader end 2026-09-26T09:27:10Z rc=0 secs=0
+opp_repro_94_mote start 2026-09-26T09:27:10Z
+opp_repro_94_mote end 2026-09-26T09:27:10Z rc=0 secs=0
+opp_repro_80_hummingbot start 2026-09-26T09:27:10Z
+opp_repro_80_hummingbot end 2026-09-26T09:27:11Z rc=0 secs=1
+opp_repro_61_barter start 2026-09-26T09:27:11Z
+opp_repro_61_barter end 2026-09-26T09:27:11Z rc=0 secs=0
+opp_qflib end 2026-09-26T09:27:14Z rc=0 secs=15
+opp_zipline_reloaded end 2026-09-26T09:27:17Z rc=0 secs=17
+opp_ziplime end 2026-09-26T09:28:42Z rc=0 secs=116
+ALL_DONE 2026-09-26T09:28:42Z

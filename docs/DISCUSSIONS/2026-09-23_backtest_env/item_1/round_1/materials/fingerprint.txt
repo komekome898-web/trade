@@ -1,0 +1,4 @@
+## battery fingerprint (委任文 §3 の式), working tree after this rebuild's adapter change
+8317191d1c18d8dcdfc7d3e2040abd17ce3326008cec1e4ec0e212a40118f503  -
+## git status of the battery (empty = working tree equals HEAD; HEAD db30838 already carries the adapter change of this rebuild, committed by the lead's checkpoint at 01:42:45Z)
+## previous build (ae9eb44, adapter with abspath/join): 283aff43c842... before its body, fd528e42f066... with its body (logs/previous_build_abs_root/fingerprint.txt)

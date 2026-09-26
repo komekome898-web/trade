@@ -1,0 +1,21 @@
+# 項目 4 第 2 周 資料係(表)が打ったコマンド(リポジトリの直下から)
+# 1. 新実装の adapter(tests/bt/battery/item_4/adapters/new_impl.py)は変えていない。この周の場面係の直し(e96c378)のままで、新実装の全 67 場面が動いた(runs/new_impl.tsv)。
+cp round_1/materials/{make_tables.py,compare_runs.py,recount.py,recount_from_tables.py,check_names.py,run_all.sh} round_2/materials/   # round_1 -> round_2 の path と見出しの周だけ sed で置換、run_all.sh に TMPDIR(scratchpad/bt/i4_r2_shiryo_tmp)を追加
+git ls-files -z tests/bt/battery/item_4 | xargs -0 sha256sum | sha256sum > fingerprint.txt       # baccb379…(第 1 周 d7d14efe… と違う -> 再利用しない、reuse.txt)
+git status --short tests/bt/battery/item_4 src/bot/bt > git_status_before.txt                    # 空
+setsid nohup bash materials/run_all.sh > materials/run_all.log                                    # 42 対象 x 2 回 = 84 回すべて rc=0。開始 2026-09-26T10:38:26Z、終わり 2026-09-26T10:42:48Z(ALL_DONE)
+#   runs/<対象>.tsv(1 回目)と runs_2/<対象>.tsv(2 回目)。run_battery.py 自身が各場面を別々のプロセスで 2 回走らせ repro 列を書く。対象ごとの標準出力は logs/<対象>_runs*.log
+python3 materials/compare_runs.py > compare_runs.out        # 1 回の走行の中の食い違い 0、runs と runs_2 の食い違い 0(2814 行)。場面係の survey_results との digest の違い 4(新実装と試金石の i4-5-outputs・i4-6-label。class は同じ)
+python3 materials/recount.py      > recount.out             # make_tables.py を使わない数え直し: new_impl 67/67
+python3 materials/make_tables.py  > make_tables.out         # 6 枚の表・mapping.tsv・survey_breakdown.tsv・table_counts.tsv。stale に移したもの: なし(round_2 に前の表_*.md は無かった)
+python3 materials/recount_from_tables.py > recount_from_tables.out   # 表のセルから数え直し、表の集計の行と一致(True)
+python3 materials/check_names.py  > check_names.out         # 6 枚に道具の名・時刻・16 進の語が 0 件
+md5sum <各組の 2 枚> > md5sum_pairs.txt                      # 3 組とも 2 枚は違う
+awk -F'\t' 'NR>1{n++; if($4=="正解と一致")c1++; if($7=="正解と一致")c2++; if($4=="正解と一致"&&$7=="正解と一致"&&$10=="2 回の実行で同じ")b++} END{print n,c1,c2,b}' runs/new_impl.tsv > recount_awk_new_impl.out
+# 試金石(場面集の mutant = mutant.py)は run_all.sh の中で 2 回(runs/mutant.tsv, runs_2/mutant.tsv)
+# この回の直しの機械への mutant(diff_scope.py:attribute の 4 通り)を 2 回:
+PYTHONPATH=src python -m pytest "tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_grid_catches_mutants" -v --basetemp=<scratchpad/bt>/i4_r2_shiryo_diffscope_mutant_run{1,2}_basetemp -p no:cacheprovider -o tmp_path_retention_policy=none > diffscope_mutant_run{1,2}.txt   # 2 回とも 4 passed
+PYTHONPATH=src python -m pytest tests/bt/battery/item_4 --basetemp=<scratchpad/bt>/i4_r2_shiryo_battery_basetemp -p no:cacheprovider -o tmp_path_retention_policy=none > pytest_battery_item4_r2_shiryo.out   # 1 failed, 159 passed
+PYTHONPATH=src python -m pytest "...::test_check_matches_delegation_text_on_grid" -vv ... > pytest_diffscope_grid_failure_detail.out   # 落ちた 1 件の詳細: 最初の食い違いは docs/AUDITOR/TRACE/2026-09-26_220780c0.json(リードの記録のファイル)
+git ls-files -z tests/bt/battery/item_4 | xargs -0 sha256sum | sha256sum > fingerprint_after.txt  # baccb379…(走らせる前と同じ)
+git status --short tests/bt/battery/item_4 src/bot/bt > git_status_after.txt                     # 空

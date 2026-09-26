@@ -1,0 +1,23 @@
+# git ls-files -z tests/bt/battery/item_0 | xargs -0 sha256sum | sha256sum  (run before the runs at 2026-09-25T12:53:28Z)
+966d5d867b925d8dfcebceea7d17b093abdb9fa9d018b6598682acc7c0c0c581  -
+# round 16 (round_16/materials/logs/scene_set_fingerprint.txt):
+384606206fdf17b8955cd22eaf9dd3beee48fa8a334a595cd66cac6163949df7  -
+# -> differs from round 16: every target is run again this round (L-435); nothing is reused
+# git status --short tests/bt/battery/item_0 (empty = committed state):
+# HEAD 3c60edd
+# git diff --stat e1d42fe HEAD -- tests/bt/battery/item_0 (e1d42fe = round 16's HEAD)
+ .../item_0/survey_results/repro_lean52@minute.tsv  |  10 +-
+ .../item_0/survey_results/repro_lean52@second.tsv  |  10 +-
+ .../survey_results/repro_lean52@tick+daily:bar.tsv |  10 +-
+ .../repro_lean52@tick+daily:trade.tsv              |  10 +-
+ .../survey_results/repro_lean52@tick+hour:bar.tsv  |  10 +-
+ .../repro_lean52@tick+hour:trade.tsv               |  10 +-
+ .../repro_lean52@tick+minute:bar.tsv               |  10 +-
+ .../repro_lean52@tick+minute:trade.tsv             |  10 +-
+ .../repro_lean52@tick+second:bar.tsv               |  10 +-
+ .../repro_lean52@tick+second:trade.tsv             |  10 +-
+ .../item_0/survey_results/repro_lean52@tick.tsv    |  10 +-
+ tests/bt/battery/item_0/term_judgments.tsv         |  44 ++
+ tests/bt/battery/item_0/test_battery_r16_units.py  |  23 +-
+ .../bt/battery/item_0/test_battery_r17_refusal.py  | 571 +++++++++++++++++++++
+ 66 files changed, 1357 insertions(+), 406 deletions(-)

@@ -1,0 +1,187 @@
+sssssss.....................FFFFFFFFFFFF................................ [ 93%]
+.....                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-long-opposite] _
+
+exit_kind = 'stop_loss', direction = 'long', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-long-CLOSE] _
+
+exit_kind = 'stop_loss', direction = 'long', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-short-opposite] _
+
+exit_kind = 'stop_loss', direction = 'short', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-short-CLOSE] _
+
+exit_kind = 'stop_loss', direction = 'short', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-long-opposite] _
+
+exit_kind = 'take_profit', direction = 'long', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-long-CLOSE] _
+
+exit_kind = 'take_profit', direction = 'long', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-short-opposite] _
+
+exit_kind = 'take_profit', direction = 'short', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-short-CLOSE] _
+
+exit_kind = 'take_profit', direction = 'short', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-long-opposite] _
+
+exit_kind = 'maker_tp', direction = 'long', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-long-CLOSE] _
+
+exit_kind = 'maker_tp', direction = 'long', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-short-opposite] _
+
+exit_kind = 'maker_tp', direction = 'short', closer = 'opposite'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+_ test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-short-CLOSE] _
+
+exit_kind = 'maker_tp', direction = 'short', closer = 'CLOSE'
+
+    @pytest.mark.parametrize("closer", CLOSERS)
+    @pytest.mark.parametrize("direction", DIRS)
+    @pytest.mark.parametrize("exit_kind", EXITS)
+    def test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending(exit_kind, direction, closer):
+        """The slow reference the battery's I4-1 scenes use (bot.bt.reference.bar_rules) is written from the same
+        rule text; it must give R-T1's answer too, not the old engine's documented behaviour."""
+>       from bot.bt.reference.bar_rules import run_rules
+E       ModuleNotFoundError: No module named 'bot.bt.reference.bar_rules'
+
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py:100: ModuleNotFoundError
+=========================== short test summary info ============================
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-long-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-long-CLOSE]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-short-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[stop_loss-short-CLOSE]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-long-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-long-CLOSE]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-short-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[take_profit-short-CLOSE]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-long-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-long-CLOSE]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-short-opposite]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_rule_reference_closes_at_the_open_when_a_signal_is_pending[maker_tp-short-CLOSE]
+SKIPPED [7] tests/bt/critic/item_4/test_i4r1_compat_decimal_prices.py:58: the old engine has been replaced
+12 failed, 58 passed, 7 skipped in 5.29s
+exit=1

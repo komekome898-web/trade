@@ -1,0 +1,27 @@
+項目 1 第 1 周 作業者: 格子の試験で「直す前に落ちた」記録(実装の側の欠け。試験の側の誤りは含めない)
+出力は pytest の表示からの写し(PYTHONPATH=src python3 -m pytest -p no:cacheprovider ...)。
+
+1) 宣言の null を「無い」と読んでいた(spec.py)
+コマンド: PYTHONPATH=src timeout 600 python3 -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none tests/bt/item_1/test_i1_spec_and_parse.py -q
+出力(抜粋):
+FAILED tests/bt/item_1/test_i1_spec_and_parse.py::test_declaration[trade-key=None]
+FAILED tests/bt/item_1/test_i1_spec_and_parse.py::test_declaration[bar-key=None]
+直し: spec.py `_unknown` が値 null の鍵を拒む(省略可能な鍵は省く)。全ての入れ子の地図(time・bar・synthetic)が同じ関数を通る。
+
+2) どの会社にも当たらない銘柄コードの分割を受け付けていた(jpx.py)
+コマンド: PYTHONPATH=src timeout 600 python3 -m pytest -p no:cacheprovider tests/bt/item_1/test_i1_jpx_oracle.py -q -x
+出力(抜粋):
+>       with pytest.raises(CorporateActionError):
+E       Failed: DID NOT RAISE CorporateActionError
+FAILED tests/bt/item_1/test_i1_jpx_oracle.py::test_inconsistent_inputs_are_refused[bars2-actions2-listings2-2026-01-09]
+直し: 会社は上場の記録か足からだけ生まれ、企業行動は既知の会社のコードを名指すだけ(jpx.py `_Registry` の firsts)。
+
+3) 封印の列が宣言の時刻の列と違うファイルを一律に拒んでいた(allowlist.py / loader.py)
+実物のファイルの形の確かめ(値は出さない。scratchpad の i1_r1_worker_realshapes.py):
+n225f_1m 拒否: SealedRangeError 'backtest_data/n225f_225labo_20260828/bars_1min.csv.gz' is sealed (unit P2-01) on time column 'date'; the dataset declares time columns ['date', 'time'] -- decl
+根本原因: 封印は封印の列(date)の値で決まるが、読む側の範囲は宣言の時刻(date+time の日本時間)で切っていた。
+列が違うときに一律に拒むと 1 分足は読めず、列が同じでも日付の列の値(日本時間の朝 8:45 は UTC で前日)で
+封印に入る行を範囲だけでは止められない。
+直し: 封印されたファイルは、範囲の終わり <= 封印の境に加え、残す行ごとに封印の列の値を封印と同じ読み方
+(allowlist.py `seal_time_ns`)で読み、境以後なら拒む。格子 tests/bt/item_1/test_i1_seal_grid.py の
+「封印の列が 9 時間後」の升目 16 個が、範囲だけでは通り封印の列で拒まれる升目。

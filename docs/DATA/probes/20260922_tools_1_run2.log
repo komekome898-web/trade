@@ -1,0 +1,375 @@
+# docs/DATA/probes/20260922_tools_1_run2.log
+# 区分1(バックテスト・シミュレーション)2回目の実行 — 到達・導入・実行の生ログ。すべて UTC。1手ずつ、方法・URL(または検索語)・HTTP/終了コード・所要時間・出力先頭200文字(WebFetch/WebSearchは結果の文字数・要約の先頭200文字も)。先頭200文字は文字単位で切る。
+curl GET https://pypi.org/pypi/backtesting/json code=200 bytes=37267 time_ms=97 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/backtesting/json][200][37267B] head200='{"info":{"author":"Zach Lûster","author_email":null,"bugtrack_url":null,"classifiers":["Framework :: Jupyter","Intended Audience :: Financial and Insurance Industry","Intended Audience :: Science/Rese'
+curl GET https://pypi.org/pypi/zipline-reloaded/json code=200 bytes=295602 time_ms=74 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/zipline-reloaded/json][200][295602B] head200='{"info":{"author":"Quantopian Inc","author_email":"pm@ml4trading.io","bugtrack_url":null,"classifiers":["Development Status :: 4 - Beta","Intended Audience :: Science/Research","Natural Language :: En'
+curl GET https://pypi.org/pypi/QSTrader/json code=200 bytes=36575 time_ms=88 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/QSTrader/json][200][36575B] head200='{"info":{"author":null,"author_email":"Michael Halls-Moore <support@quantstart.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Li'
+curl GET https://pypi.org/pypi/lean/json code=200 bytes=565667 time_ms=97 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/lean/json][200][565667B] head200='{"info":{"author":"QuantConnect","author_email":"support@quantconnect.com","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Intended '
+curl GET https://pypi.org/pypi/pyalgotrade/json code=200 bytes=7174 time_ms=85 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/pyalgotrade/json][200][7174B] head200='{"info":{"author":"Gabriel Martin Becedillas Ruiz","author_email":"pyalgotrade@gmail.com","bugtrack_url":null,"classifiers":["Operating System :: OS Independent","Programming Language :: Python :: 2",'
+curl GET https://pypi.org/pypi/pyqlib/json code=200 bytes=288030 time_ms=82 2026-09-22T01:28:58Z
+[curl][GET][https://pypi.org/pypi/pyqlib/json][200][288030B] head200='{"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":["Development Status :: 3 - Alpha","License :: OSI Approved :: MIT License","Operating System :: MacOS","Operating System :'
+curl GET https://pypi.org/pypi/vnpy/json code=200 bytes=60482 time_ms=90 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/vnpy/json][200][60482B] head200='{"info":{"author":null,"author_email":"Xiaoyou Chen <xiaoyou.chen@mail.vnpy.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Licen'
+curl GET https://pypi.org/pypi/jesse/json code=200 bytes=584333 time_ms=96 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/jesse/json][200][584333B] head200='{"info":{"author":"Saleh Mir","author_email":"saleh@jesse.trade","bugtrack_url":null,"classifiers":["License :: OSI Approved :: MIT License","Operating System :: OS Independent","Programming Language '
+curl GET https://pypi.org/pypi/bot18/json code=404 bytes=24 time_ms=154 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/bot18/json][404][24B] head200='{"message": "Not Found"}'
+curl GET https://pypi.org/pypi/backtestingcore/json code=404 bytes=24 time_ms=150 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/backtestingcore/json][404][24B] head200='{"message": "Not Found"}'
+curl GET https://pypi.org/pypi/event-driven-backtesting-engine/json code=404 bytes=24 time_ms=176 2026-09-22T01:28:59Z
+[curl][GET][https://pypi.org/pypi/event-driven-backtesting-engine/json][404][24B] head200='{"message": "Not Found"}'
+
+## WebFetch (GitHub ページ、スター・フォーク・コミット数・ライセンス・取引所記載の確認)
+[WebFetch][https://github.com/kernc/backtesting.py] chars=~600 head200='# Backtesting.py Repository Metrics  **Star Count:** 9,000 stars  **Fork Count:** 1,500 forks  **Total Commit Count:** 461 commits (shown in history)  **Last Commit Date:** Not explicitly displaye'
+[WebFetch][https://github.com/stefan-jansen/zipline-reloaded] chars=~800 head200='# Zipline-Reloaded Repository Analysis  **Repository Metrics:** - **Stars:** 1.9k - **Forks:** 330 - **Total Commits:** 6,694 - **Last Commit Date:** Not explicitly shown in provided content - **P'
+[WebFetch][https://github.com/mhallsmoore/qstrader] chars=~700 head200='# QSTrader GitHub Repository Summary  **Star Count:** 3.5k stars  **Fork Count:** 930 forks  **Total Commit Count:** 431 commits  **Last Commit Date:** Not explicitly shown in provided content  **'
+[WebFetch][https://github.com/QuantConnect/lean-cli] chars=~1000 head200='# Lean CLI GitHub Repository Analysis  ## Repository Metrics - **Star Count:** 326 - **Fork Count:** 168 - **Total Commits:** 1,687 commits (shown in commit history) - **Last Commit Date:** Not exp'
+[WebFetch][https://github.com/gbeced/pyalgotrade] chars=~500 head200='# PyAlgoTrade Repository Analysis  **Star Count:** 4.7k stars  **Fork Count:** 1.4k forks  **Total Commit Count:** 1,158 commits  **Last Commit Date:** Not explicitly shown in the provided content'
+[WebFetch][https://github.com/microsoft/qlib] chars=~900 head200='# Qlib Project Summary  **Star Count:** 48.7k stars  **Fork Count:** 7.7k forks  **Total Commit Count:** 2,068 commits  **Last Commit Date:** Not explicitly shown on main branch view  **Primary L'
+[WebFetch][https://github.com/vnpy/vnpy] chars=~900 head200='# VeighNa Project Analysis  **Star Count:** 45.5k stars  **Fork Count:** 12.5k forks  **Total Commits:** 6,904 commits (shown in repository history)  **Last Commit Date:** Not explicitly displaye'
+[WebFetch][https://github.com/jesse-ai/jesse] chars=~700 head200='# Jesse Crypto Trading Bot - Key Information  **Repository Metrics:** - Star count: 8.6k - Fork count: 1.2k - Total commits: 3,491 (shown as "3,491 Commits") - Last commit date: Not explicitly sho'
+[WebFetch][https://github.com/Mendl-Labs/BacktestingCore] chars=~900 head200='# BacktestingCore Repository Analysis  **Repository Status:** Active and exists  **Description:** BacktestingCore is an open-source backtesting engine providing event-driven simulation, walk-forwa'
+[WebFetch][https://github.com/Luczinsritter/event_driven_backtesting_engine] chars=~800 head200='# Repository Analysis: event_driven_backtesting_engine  **Repository Status:** Exists ✓  **Description:** A Python framework for simulating trading strategies using an event-driven architecture'
+[WebSearch]["carlos8f zenbot github cryptocurrency trading bot stars license"] results=9 head200='GitHub - carlos8f/bot18 / GitHub - DaStar81/zenbot / GitHub - mariotsi/zenbot / GitHub - Fjuxx/zenbot / GitHub - christian452/zenbot / GitHub - x-/zenbot / GitHub - basst314/zenbot / GitHub - glenux'
+[WebSearch]["carlos8f bot18 high frequency trading bot npm"] results=10 head200='bot18 - npm / GitHub - carlos8f/bot18 / Releases carlos8f/bot18 / bot18/package.json at with-gui / bot18/motd.txt at with-gui / bot18/bot18.sh at with-gui / bot18/bot18.config-sample.js at with-gui'
+[WebFetch][https://github.com/carlos8f/zenbot] chars=~700 head200='# Zenbot Repository Analysis  **Star Count:** 8.3k  **Fork Count:** 2.0k  **Total Commit Count:** 3,885 commits  **Last Commit Date:** Not specified in visible content  **Primary Language:** JavaSc'
+[WebFetch][https://github.com/carlos8f/bot18] chars=~800 head200='# Bot18 Repository Summary  **Description:** Bot18 is a high-frequency cryptocurrency trading bot created by the Zenbot founder. It monitors live trade streams from Bitfinex and Coinbase Pro, sup'
+[WebSearch]["zenbot bot18 carlos8f archived deprecated abandoned"] results=9 head200='bot18/package.json at with-gui / GitHub - carlos8f/bot18 / bot18/LICENSE.txt at with-gui / Releases carlos8f/bot18 / bot18/.gitignore at with-gui / bot18/motd.txt at with-gui / Introducing Bot18 ·'
+pip download --no-deps -d backtesting backtesting rc=0 time_s=.628544995 2026-09-22T01:30:31Z
+[pip download backtesting] head200='Collecting backtesting   Downloading backtesting-0.6.6-py3-none-any.whl.metadata (8.1 kB) Downloading backtesting-0.6.6-py3-none-any.whl (190 kB)    ━━━━━━━━━━━━━━━━━'
+pip download --no-deps -d zipline-reloaded zipline-reloaded rc=0 time_s=1.206323928 2026-09-22T01:30:32Z
+[pip download zipline-reloaded] head200='Collecting zipline-reloaded   Downloading zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB) Downloading zipline_reloaded-3.1.1-cp'
+pip download --no-deps -d QSTrader QSTrader rc=0 time_s=.866618369 2026-09-22T01:30:33Z
+[pip download QSTrader] head200='Collecting QSTrader   Downloading qstrader-0.3.0-py3-none-any.whl.metadata (9.9 kB) Downloading qstrader-0.3.0-py3-none-any.whl (74 kB)    ━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d lean lean rc=0 time_s=.703259960 2026-09-22T01:30:34Z
+[pip download lean] head200='Collecting lean   Downloading lean-1.0.229-py3-none-any.whl.metadata (120 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12'
+pip download --no-deps -d pyalgotrade pyalgotrade rc=0 time_s=2.368771752 2026-09-22T01:30:36Z
+[pip download pyalgotrade] head200='Collecting pyalgotrade   Downloading PyAlgoTrade-0.20.tar.gz (84 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 84.6/'
+pip download --no-deps -d pyqlib pyqlib rc=0 time_s=.820582639 2026-09-22T01:30:37Z
+[pip download pyqlib] head200='Collecting pyqlib   Downloading pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (45 kB)      ━━━━━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d vnpy vnpy rc=0 time_s=.670871735 2026-09-22T01:30:38Z
+[pip download vnpy] head200='Collecting vnpy   Downloading vnpy-4.4.0-py3-none-any.whl.metadata (22 kB) Downloading vnpy-4.4.0-py3-none-any.whl (201 kB)    ━━━━━━━━━━━━━━━━━━━━━━━━�'
+pip download --no-deps -d jesse jesse rc=0 time_s=1.291158417 2026-09-22T01:30:39Z
+[pip download jesse] head200='Collecting jesse   Downloading jesse-3.2.1-py3-none-any.whl.metadata (15 kB) Downloading jesse-3.2.1-py3-none-any.whl (34.9 MB)    ━━━━━━━━━━━━━━━━━━━━━━━'
+pip install backtesting rc=0 time_s=1.071648893 2026-09-22T01:31:14Z
+[pip install backtesting] head200='Collecting backtesting   Using cached backtesting-0.6.6-py3-none-any.whl.metadata (8.1 kB) Requirement already satisfied: numpy>=1.17.0 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af695'
+pip check (after backtesting install) rc=0 2026-09-22T01:31:28Z
+[pip check] head200='No broken requirements found. '
+python3 probe_backtesting.py rc=0 time_s=.835891471 2026-09-22T01:31:28Z
+[python3 probe_backtesting.py] head200='Backtest.run:   0%|          | 0/199 [00:00<?, ?bar/s]                                                      RESULT: # Trades: 1 Return [%]: -0.11950547997583272    EntryPrice  ExitPrice  Size      '
+pip install qstrader rc=0 time_s=1.618806294 2026-09-22T01:31:36Z
+[pip install qstrader] head200='Collecting qstrader   Using cached qstrader-0.3.0-py3-none-any.whl.metadata (9.9 kB) Collecting click>=8.1 (from qstrader)   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB) Requirement alre'
+curl GET api.github.com/repos/mhallsmoore/qstrader/git/trees code=403 2026-09-22T01:31:55Z
+curl GET raw.githubusercontent.com/.../buy_and_hold.py code=200 time_ms=404 2026-09-22T01:32:05Z
+pip install pytz rc=0 time_s=1.105902285 2026-09-22T01:32:19Z
+[pip install pytz] head200='Collecting pytz   Downloading pytz-2026.3.post1-py2.py3-none-any.whl.metadata (22 kB) Downloading pytz-2026.3.post1-py2.py3-none-any.whl (508 kB)    ━━━━━━━━━━━━━━━━━'
+python3 probe_qstrader.py rc=0 time_s=.449320607 2026-09-22T01:32:38Z
+[python3 probe_qstrader.py] head200='Loading CSV files into DataFrames... Loading CSV file for symbol 'EQ:SYN'... Adjusting pricing in CSV files... Adjusting CSV file for symbol 'EQ:SYN'... Initialising simulated broker "Backtest Simulat'
+pip install pyalgotrade rc=0 time_s=10.233442194 2026-09-22T01:33:00Z
+[pip install pyalgotrade] head200='Collecting pyalgotrade   Using cached PyAlgoTrade-0.20.tar.gz (84 kB)   Installing build dependencies: started   Installing build dependencies: finished with status 'done'   Getting requirements to bu'
+pip install lean rc=0 time_s=7.373919287 2026-09-22T01:33:08Z
+[pip install lean] head200='Collecting lean   Using cached lean-1.0.229-py3-none-any.whl.metadata (120 kB) Requirement already satisfied: click>=8.0.4 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratc'
+python3 probe_pyalgotrade.py rc=1 time_s=.218333464 2026-09-22T01:33:30Z
+[python3 probe_pyalgotrade.py] head200='Traceback (most recent call last):   File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_pyalgotrade.py", line 26, in <module>     feed.addBarsFromCSV("SYN", "pa'
+python3 probe_pyalgotrade.py(v2, Date Time列) rc=1 time_s=.193004667 2026-09-22T01:33:37Z
+[python3 probe_pyalgotrade.py v2] head200='Traceback (most recent call last):   File "/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_pyalgotrade.py", line 26, in <module>     feed.addBarsFromCSV("SYN", "pa'
+python3 probe_pyalgotrade.py(v3、datetime形式修正) rc=0 time_s=.198001138 2026-09-22T01:33:43Z
+[python3 probe_pyalgotrade.py v3] head200='RESULT: final_portfolio_value= 1004.4582675977585 RESULT: shares= 0 RESULT: cash= 1004.4582675977585 '
+pip install zipline-reloaded rc=0 time_s=31.871691347 2026-09-22T01:34:23Z
+[pip install zipline-reloaded] head200='Collecting zipline-reloaded   Using cached zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB) Requirement already satisfied: numpy'
+pip check(zipline-reloaded導入後) 2026-09-22T01:34:35Z
+[pip check] head200='No broken requirements found. '
+pip install vnpy rc=0 time_s=19.493752905 2026-09-22T01:35:03Z
+[pip install vnpy] head200='Collecting vnpy   Using cached vnpy-4.4.0-py3-none-any.whl.metadata (22 kB) Collecting deap>=1.4.2 (from vnpy)   Downloading deap-1.4.4-py3-none-any.whl.metadata (13 kB) Collecting loguru>=0.7.3 (from'
+[python3 -c vnpy構成確認] vnpyコアパッケージのサブモジュールは alpha/chart/event/trader のみ(gateway実装・backtestingエンジンは別パッケージ)
+curl GET https://pypi.org/pypi/vnpy_bitflyer/json code=404
+curl GET https://pypi.org/pypi/vnpy_gmocoin/json code=404
+curl GET https://pypi.org/pypi/vnpy_bitbank/json code=404
+curl GET https://pypi.org/pypi/vnpy_binance/json code=200
+pip install pyqlib rc=0 time_s=58.353269397 2026-09-22T01:36:28Z
+[pip install pyqlib] head200='Collecting pyqlib   Using cached pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (45 kB) Requirement already satisfied: pyyaml in /tmp/claude-0/-home-user-trade/220780'
+pip check(pyqlib導入後) 2026-09-22T01:36:38Z
+[pip check] head200='No broken requirements found. '
+pip install jesse rc=0 time_s=60.286559606 2026-09-22T01:37:44Z
+[pip install jesse] head200='Collecting jesse   Using cached jesse-3.2.1-py3-none-any.whl.metadata (15 kB) Collecting arrow~=1.2.1 (from jesse)   Downloading arrow-1.2.3-py3-none-any.whl.metadata (6.9 kB) Requirement already sati'
+python3 -m venv venv_tools1_hft2(hftbacktest再実行・NautilusTrader導入用の隔離venv、依存衝突回避) rc=0 time_s=3.364988280 2026-09-22T01:38:14Z
+pip install hftbacktest numpy numba polars (venv2) rc=0 time_s=26.419252088 2026-09-22T01:38:40Z
+[pip install venv2 hftbacktest] head200='Collecting hftbacktest   Using cached hftbacktest-2.4.4-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (15 kB) Collecting numpy   Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2'
+python3 probe_hftbacktest_v4.py(FILLED達成試行) rc=1 time_s=1.971348458 2026-09-22T01:39:53Z
+[python3 probe_hftbacktest_v4.py] head200='/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/probe_hftbacktest_v4.py:7: DeprecationWarning: constant_latency() is deprecated; use constant_order_latency().   .constan'
+curl GET raw.githubusercontent.com/polakowo/vectorbt/master/LICENSE.md code=200 time_ms=426 2026-09-22T01:42:20Z
+curl GET https://vectorbt.pro/ code=200 bytes=314437 time_ms=586 2026-09-22T01:42:31Z
+pip install vectorbt(隔離venv) rc=0 time_s=34.721888880 2026-09-22T01:43:18Z
+[pip install vectorbt] head200='Collecting vectorbt   Downloading vectorbt-1.1.0-py3-none-any.whl.metadata (16 kB) Collecting numpy>=2.4.6 (from vectorbt)   Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x'
+pip install 'plotly<5'(vectorbt import失敗の回避試行) rc=0 time_s=6.058406355 2026-09-22T01:43:55Z
+[pip install plotly<5] head200='Collecting plotly<5   Downloading plotly-4.14.3-py2.py3-none-any.whl.metadata (7.6 kB) Collecting retrying>=1.3.3 (from plotly<5)   Using cached retrying-1.4.2-py3-none-any.whl.metadata (5.5 kB) Requi'
+pip install 'plotly==5.24.1' 'numpy<2' rc=0 time_s=12.033971996 2026-09-22T01:44:19Z
+[pip install plotly==5.24.1 numpy<2] head200='Collecting plotly==5.24.1   Downloading plotly-5.24.1-py3-none-any.whl.metadata (7.3 kB) Collecting numpy<2   Using cached numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metad'
+curl GET https://raw.githubusercontent.com/polakowo/vectorbt/master/LICENSE.md code=200 bytes=12321
+[curl LICENSE.md] head200='"Commons Clause" License Condition v1.0  The Software is provided to you by the Licensor under the License...Software: vectorbt  License: Apache 2.0 with Commons Clause  Licensor: Oleg Polakow'
+curl GET https://vectorbt.pro/ code=200 bytes=314437
+python3 -c import vectorbt(隔離venv venv_vbt、plotly7.1.0のまま) → ImportError(traceback: vectorbt/_settings.py reset_theme → plotly scattermapboxがpropertyとして存在しない) rc=1
+pip install 'plotly<5'(回避試行1) → plotly4.14.3導入、import時に numpy.bool8 属性なしで別のImportError(numpy2.x非互換) rc=1
+pip install 'plotly==5.24.1' 'numpy<2'(回避試行2) → import成功 rc=0 OK VERSION 1.1.0
+grep -rl -i "limit_order\|LimitOrder\|order_type.*Limit" (vectorbtパッケージ全体、隔離venv) → 一致0件(指値注文の概念そのものがソースに存在しない)
+pip install freqtrade(隔離venv) rc=0 time_s=41.391887122 2026-09-22T01:45:54Z
+[pip install freqtrade] head200='Collecting freqtrade   Downloading freqtrade-2026.8-py3-none-any.whl.metadata (17 kB) Collecting ccxt>=4.5.4 (from freqtrade)   Downloading ccxt-4.5.82-py3-none-any.whl.metadata (164 kB)      ━━�'
+freqtrade list-exchanges -a rc=0 time_s=2.298016902 2026-09-22T01:46:03Z
+[freqtrade list-exchanges -a] head200='2026-09-22 01:46:01,009 - freqtrade - INFO - freqtrade 2026.8 2026-09-22 01:46:01,393 - numexpr.utils - INFO - NumExpr defaulting to 4 threads.                                                         '
+freqtrade list-exchanges(非-a、全件) / ccxt bitflyer .has 属性を実測 2026-09-22T01:46:35Z
+freqtrade list-exchanges -a(隔離venv venv_freqtrade、ccxt 4.5.82 同梱) → 105取引所中、bitFlyer行: 「missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV」/ bitbank行: 「missing opt: fetchTickers, fetchOrders, watchOHLCV」(必須欠落なし)
+freqtrade list-exchanges(非-a、freqtradeが「使える」とする79取引所) → bitbankは含まれる(grep一致)、bitFlyerは含まれない(grep不一致)
+python3 -c ccxt.bitflyer().has 実測: fetchOHLCV=None(無)、fetchOrder='emulated'(ccxt側のエミュレーション)、fetchTickers=None、watchOHLCV=None、createOrder=True、cancelOrder=True
+python3 -c 'gmocoin' in ccxt.exchanges → False(ccxtの取引所一覧にGMOコインという名のIDが無い)。'coincheck' in ccxt.exchanges → True(coincheckは存在、ただしfetchOrder/fetchOHLCV欠落でfreqtradeの-a一覧でも「missing」表示)
+python3 -c ...(OrderDict.keys()探索、6分48秒経過もCPU時間1秒でハング、kill -9で強制終了) rc=killed time_s=408 2026-09-22T01:47:02Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/pyproject.toml code=404 2026-09-22T01:47:38Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/nautilus_trader/__init__.py code=404 2026-09-22T01:47:39Z
+curl GET https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/README.md code=200 2026-09-22T01:47:39Z
+[curl NautilusTrader README.md(raw, developブランチ)] code=200 → 「cargo-deny enforces a license allow list compatible with LGPL-3.0-only」「The source code for NautilusTrader is available on GitHub under the GNU Lesser General Public License v3.0」— PyPI JSONの license_expression=LGPL-3.0-or-later と食い違う(README/cargo-denyはonly)
+curl GET raw.../nautilus_trader/develop/RELEASES.md code=200 2026-09-22T01:48:25Z
+[WebFetch][https://github.com/nautechsystems/nautilus_trader/tree/develop/crates/adapters] chars=~400 head200='# Subdirectories in /crates/adapters  1. architect_ax 2. betfair 3. binance 4. bitmex 5. blockchain 6. bybit 7. coinbase 8. databento 9. deribit 10. derive 11. dydx 12. hyperliquid 13. interactive_'
+curl GET raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/RELEASES.md code=200 bytes=567723、bitflyer/bitbank/gmo 0件一致(grep rc=1)
+[WebSearch]["nautilus_trader adapters list binance bybit okx coinbase kraken interactive brokers polymarket site:github.com nautechsystems"] results=10 head200='GitHub - pash7ka/nautilus-ctrader-adapter / nautilus_trader/RELEASES.md at master / nautilus_trader/README.md at master / GitHub - nautechsystems/nautilus_trader / Releases nautechsystems/nautilus'
+[WebSearch]["nautilus_trader" bitflyer OR bitbank OR "GMO coin""] results=9 head200='nautilus-trader GitHub Topics / 仮想通貨取引所おすすめ19社比較ランキング / GitHub - pybotters/pybotters An advanced API client for python bot traderes / [□_□] bitcoin BOT for 「BitFlyer,GMO,Liquid」'
+python3.12 -m venv venv_nautilus(NautilusTrader要件Python3.12-3.15) rc=0 time_s=3.013615664 2026-09-22T01:48:51Z
+pip install nautilus-trader rc=0 time_s=21.987052554 2026-09-22T01:49:13Z
+[pip install nautilus-trader] head200='Collecting nautilus-trader   Downloading nautilus_trader-1.231.0-cp312-cp312-manylinux_2_35_x86_64.whl.metadata (39 kB) Collecting click<9.0.0,>=8.4.1 (from nautilus-trader)   Using cached click-8.5.0'
+curl GET raw.../examples/backtest/fx_ema_cross_audusd_bars_from_ticks.py code=200 2026-09-22T01:49:27Z
+curl GET raw.../docs/tutorials/ema_cross.py code=200 2026-09-22T01:49:38Z
+python3.12 -m venv venv_nautilus + pip install nautilus-trader(1.231.0、14依存のみ) 成功
+python3 probe_nautilus.py(v1) rc=1: ImportError AccountType(nautilus_trader.modelから import不可、developブランチのexample.pyの記法が現行リリースと不一致)
+python3 probe_nautilus.py(v2、import修正後) rc=0: LIMIT買い→約定→MARKET売りで手仕舞いの1往復が成立。口座残高 BTC 10.0→10.01→10.0(手数料分USDT減)。fills report 2件(O-...-1, O-...-2)。BINANCEのOrderMatchingEngineで実際に約定処理された(実測)
+[WebSearch]["site:x.com バックテスト エンジン 自作 やめた OR 乗り換えた python"] results=9(X投稿0件、日本語ブログのみ)
+[WebSearch]["site:x.com "backtesting.py" OR "zipline" OR "nautilus trader" crypto strategy review"] results=8(新規発見: PySystemtrade/Backtrader/vectorbt/PyBroker/bt を挙げるPyQuant Newsの投稿、Ziplime(新AIライブラリ)言及の投稿)
+[WebSearch]["awesome python backtesting trading bots list github crypto 2026"] results=9(新規発見候補: Backtrader/Superalgos/OpenTrader/CryptoSignal/fast-trade/OctoBot/best-of-algorithmic-trading一覧)
+[WebFetch][https://github.com/kernc/backtesting.py/network/dependents] chars=~300 head200='Dependents for backtesting.py: We haven't found any dependents for this repository yet. 0 Repositories, 0 Packages(GitHubの依存関係グラフは不完全な場合がある旨の注記あり)'
+
+# 完了時点 2026-09-22T01:57:53Z。常駐プロセス無し(実測、ps aux確認)。隔離venv一覧: venv_tools1(既存流用)/ venv_tools1_hft2(hftbacktest FILLED再現用)/ venv_vbt(vectorbt) / venv_freqtrade / venv_nautilus(Python3.12)。いずれもscratchpad内、リポジトリ環境には導入していない。
+
+## LV リードの検収の再確認(2026-09-22。委任文 §5-5 の書き漏れの補完と、本文の主張の突き合わせ)
+
+### LV-1 ハーネスの記録から抽出した WebFetch / WebSearch の全 37 手(調査班の記録に無かった 9 手を含む)
+$ python3 <ハーネスの記録から tool_use(WebFetch|WebSearch)と対応する tool_result を抽出> → WebFetch 27 / WebSearch 10 / 計 37 手、x_fetch の Bash 0 回
+WebFetch 27 / WebSearch 10 / 計 37 手; x_fetch の Bash 0 回
+W-1 2026-09-22T01:29:17Z WebFetch https://github.com/kernc/backtesting.py -> 結果 609 文字
+W-2 2026-09-22T01:29:18Z WebFetch https://github.com/stefan-jansen/zipline-reloaded -> 結果 1072 文字
+W-3 2026-09-22T01:29:19Z WebFetch https://github.com/mhallsmoore/qstrader -> 結果 884 文字
+W-4 2026-09-22T01:29:20Z WebFetch https://github.com/QuantConnect/lean-cli -> 結果 1345 文字
+W-5 2026-09-22T01:29:21Z WebFetch https://github.com/gbeced/pyalgotrade -> 結果 661 文字
+W-6 2026-09-22T01:29:29Z WebFetch https://github.com/microsoft/qlib -> 結果 1105 文字
+W-7 2026-09-22T01:29:31Z WebFetch https://github.com/vnpy/vnpy -> 結果 1026 文字
+W-8 2026-09-22T01:29:32Z WebFetch https://github.com/jesse-ai/jesse -> 結果 875 文字
+W-9 2026-09-22T01:29:33Z WebFetch https://github.com/Mendl-Labs/BacktestingCore -> 結果 1312 文字
+W-10 2026-09-22T01:29:34Z WebFetch https://github.com/Luczinsritter/event_driven_backtesting_engine -> 結果 1175 文字
+W-11 2026-09-22T01:29:53Z WebSearch carlos8f zenbot github cryptocurrency trading bot stars license -> 結果 2500 文字
+W-12 2026-09-22T01:29:54Z WebSearch carlos8f bot18 high frequency trading bot npm -> 結果 2315 文字
+W-13 2026-09-22T01:30:01Z WebFetch https://github.com/carlos8f/zenbot -> 結果 844 文字
+W-14 2026-09-22T01:30:02Z WebFetch https://github.com/carlos8f/bot18 -> 結果 1158 文字
+W-15 2026-09-22T01:30:03Z WebSearch zenbot bot18 carlos8f archived deprecated abandoned -> 結果 2089 文字
+W-16 2026-09-22T01:31:50Z WebFetch https://raw.githubusercontent.com/mhallsmoore/qstrader/master/examples/buy_and_hold_backtest.py -> 結果 215 文字
+W-17 2026-09-22T01:31:57Z WebFetch https://github.com/mhallsmoore/qstrader/tree/master/examples -> 結果 338 文字
+W-18 2026-09-22T01:38:48Z WebFetch https://raw.githubusercontent.com/nkaz001/hftbacktest/master/py-hftbacktest/example/tutorial.py -> 結果 215 文字
+W-19 2026-09-22T01:38:50Z WebSearch hftbacktest generate_market_depth_events OR generate_data example tutorial numpy npz format site:github.com nkaz001 -> 結果 2604 文字
+W-20 2026-09-22T01:38:59Z WebFetch https://hftbacktest.readthedocs.io/en/latest/tutorials/Working%20with%20Market%20Depth%20and%20Trades.html -> 結果 1313 文字
+W-21 2026-09-22T01:47:21Z WebFetch https://github.com/nkaz001/hftbacktest/tree/master/rust/src/live/connector -> 結果 215 文字
+W-22 2026-09-22T01:47:22Z WebFetch https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/LICENSE -> 結果 1681 文字
+W-23 2026-09-22T01:47:48Z WebFetch https://github.com/nautechsystems/nautilus_trader/tree/develop/nautilus_trader/adapters -> 結果 215 文字
+W-24 2026-09-22T01:47:49Z WebFetch https://github.com/nkaz001/hftbacktest/tree/master/hftbacktest-rs/src/live -> 結果 215 文字
+W-25 2026-09-22T01:47:51Z WebFetch https://github.com/nautechsystems/nautilus_trader -> 結果 554 文字
+W-26 2026-09-22T01:47:52Z WebSearch nkaz001 hftbacktest github rust connector directory binancefutures bybit live -> 結果 2675 文字
+W-27 2026-09-22T01:48:00Z WebFetch https://github.com/nkaz001/hftbacktest/tree/master/hftbacktest/src/connector -> 結果 215 文字
+W-28 2026-09-22T01:48:01Z WebFetch https://github.com/nautechsystems/nautilus_trader/tree/develop/nautilus_trader -> 結果 215 文字
+W-29 2026-09-22T01:48:06Z WebSearch nautilus_trader adapters list binance bybit okx coinbase kraken interactive brokers polymarket site:github.com nautechsystems -> 結果 2698 文字
+W-30 2026-09-22T01:48:06Z WebSearch "nautilus_trader" bitflyer OR bitbank OR "GMO coin" -> 結果 2507 文字
+W-31 2026-09-22T01:48:29Z WebFetch https://github.com/nautechsystems/nautilus_trader/tree/develop/crates/adapters -> 結果 468 文字
+W-32 2026-09-22T01:49:16Z WebFetch https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/examples/backtest/example_01.py -> 結果 215 文字
+W-33 2026-09-22T01:49:18Z WebFetch https://github.com/nautechsystems/nautilus_trader/tree/develop/examples/backtest -> 結果 621 文字
+W-34 2026-09-22T01:50:33Z WebSearch site:x.com バックテスト エンジン 自作 やめた OR 乗り換えた python -> 結果 2054 文字
+W-35 2026-09-22T01:50:34Z WebSearch site:x.com "backtesting.py" OR "zipline" OR "nautilus trader" crypto strategy review -> 結果 3724 文字
+W-36 2026-09-22T01:51:03Z WebSearch awesome python backtesting trading bots list github crypto 2026 -> 結果 2991 文字
+W-37 2026-09-22T01:51:29Z WebFetch https://github.com/kernc/backtesting.py/network/dependents -> 結果 427 文字
+
+**この生ログに記録が無かった 9 手**(いずれも hftbacktest / QSTrader の追加調査): W-16 raw.githubusercontent QSTrader の例、W-17 github QSTrader の examples、W-18 raw hftbacktest の tutorial、W-19 検索(hftbacktest の合成データの作り方)、W-20 readthedocs の tutorial、W-21・W-24・W-27 github hftbacktest の connector ディレクトリ(いずれも 404)、W-26 検索(connector ディレクトリ)。委任文 §5-5「1 手ずつ残す」に反する(1 回目は 24 手すべて、2 回目は 37 手中 9 手)。
+
+### LV-2 hftbacktest の FILLED をリードが打ち直して再現(本文の「完全達成」の裏づけ)
+$ timeout 120 $SP/venv_tools1_hft2/bin/python3 $SP/probe_hftbacktest_v5.py  → rc=0
+[step9] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step10] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step11] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step12] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step13] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step14] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step15] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step16] order.status(raw int)=1 exec_qty=0.0 leaves_qty=1.0
+[step17] order.status(raw int)=3 exec_qty=1.0 leaves_qty=0.0
+[step17] submitted sell close pos=1.0
+RESULT: position= 0.0 balance= 0.0 fee= 0.0 num_trades= 2
+DONE
+→ 指値買いが step17 で status=3(FILLED)・exec_qty=1.0・leaves_qty=0.0、成行手仕舞いで num_trades=2。本文の主張と一致(リードの実測)。
+
+### LV-3 Zenbot の「2022-02-15 にアーカイブ」の出所(調査班の取得結果には日付が無かった)
+$ WebFetch https://github.com/carlos8f/zenbot(リード、2026-09-22)→ 逐語「This repository was archived by the owner on Feb 15, 2022. It is now read-only.」/ README の警告「WARNING: project is no longer actively maintained, make sure to update any dependencies if you plan on using this in your project.」
+→ 日付は正しい。ただし調査班の W-13 の取得結果には「archived」しかなく、日付の出所が記録に無かった(リードが取り直して確定)。
+
+### LV-4 新候補の根拠にした X の投稿 6 件を x_fetch で取得(調査班は x_fetch を 0 回しか打っていない)
+$ python3 scripts/x_fetch.py <W-35 の検索結果に出た 6 URL>
+{"id": "1581442366757425152", "http": 200, "fetched_at": "2026-09-22T02:02:49.440441+00:00", "url": "https://x.com/pyquantnews/status/1581442366757425152", "author": "pyquantnews", "created_at": "Sun Oct 16 00:30:16 +0000 2022", "text": "Hands-On Financial Trading with Python: A practical guide to using Zipline and other Python libraries for backtesting trading strategies\n\nBuild and backtest your algorithmic trading strategies to gain a true advantage in the market.\n\nhttps://amzn.to/3yKdLte", "likes": 49, "retweets": 13, "replies": 2, "views": null, "quote": null, "replying_to_status": "1581442100687949825"}
+{"id": "1646488960602914816", "http": 200, "fetched_at": "2026-09-22T02:02:50.785451+00:00", "url": "https://x.com/pyquantnews/status/1646488960602914816", "author": "pyquantnews", "created_at": "Thu Apr 13 12:22:13 +0000 2023", "text": "The BEST algo trading simulator:\n\nZipline.\n\nQuantopian had $100,000,000 in algorithmic strategies using Zipline.\n\n300,000 people used Zipline on their platform.\n\nSo I spent 100 hours studying the code so I could use it too.\n\nThe step-by-step guide to getting started in 5 minutes:", "likes": 387, "retweets": 59, "replies": 5, "views": 82493, "quote": null, "replying_to_status": null}
+{"id": "1727013195359846443", "http": 200, "fetched_at": "2026-09-22T02:02:52.330337+00:00", "url": "https://x.com/pyquantnews/status/1727013195359846443", "author": "pyquantnews", "created_at": "Tue Nov 21 17:16:46 +0000 2023", "text": "The top 7 backtesting frameworks:\n\n• Zipline-Reloaded\n• http://Backtesting.py\n• PySystemtrade\n• Backtrader\n• vectorbt\n• PyBroker\n• bt\n\nSpeed, robustness, and flexibility.", "likes": 27, "retweets": 6, "replies": 1, "views": 4010, "quote": null, "replying_to_status": "1727012986290573341"}
+{"id": "2031345407020679324", "http": 200, "fetched_at": "2026-09-22T02:02:53.819093+00:00", "url": "https://x.com/quantscience_/status/2031345407020679324", "author": "quantscience_", "created_at": "Tue Mar 10 12:24:20 +0000 2026", "text": "🚨BREAKING: New Python Library for Algorithmic Trading with AI\n\nIt's called Ziplime (*not* Zipline). \n\nThis is what you need to know:", "likes": 522, "retweets": 56, "replies": 9, "views": 50138, "quote": null, "replying_to_status": null}
+{"id": "1912220129854652430", "http": 200, "fetched_at": "2026-09-22T02:02:55.296604+00:00", "url": "https://x.com/GitHubGPT/status/1912220129854652430", "author": "GitHubGPT", "created_at": "Tue Apr 15 19:03:00 +0000 2025", "text": "📛 nautilus_trader\n🧠 NautilusTrader is an open-source platform for algorithmic trading, allowing strategy automation across assets via Python.\n🛠️  @NautilusTrader \n💻 Python\n⭐ 5309\n🍴 780\n🔗 https://github.com/nautechsystems/nautilus_trader", "likes": 7, "retweets": 0, "replies": 1, "views": 248, "quote": null, "replying_to_status": null}
+{"id": "1874442954775114212", "http": 200, "fetched_at": "2026-09-22T02:02:56.731994+00:00", "url": "https://x.com/QuantInsti/status/1874442954775114212", "author": "QuantInsti", "created_at": "Wed Jan 01 13:10:00 +0000 2025", "text": "🚀 Week 4: Backtest Trading Strategies\nDay 2: Python-Based Backtesting – Part 1\nPython has become one of the most sought-after tools for backtesting trading strategies. This post covers basic concepts and intermediate techniques for Python-based backtesting to help you build a strong foundation.\n\n🌱 Basics: Setting Up Python for Backtesting\n👉Pythons Basic Handbook\nPython Basics With Illustrations from the Financial Markets | Free to Download \n👉 Link: https://www.quantinsti.com/python-basics-handbook\n\n👉 Basic Operations on Stock Data Using Python\nMaster the basics of working with stock data for backtesting and strategy building.\n👉 Link: https://blog.quantinsti.com/basic-operations-stock-data-using-python/\n\n📖 Hands-on Financial Trading with Python by Jiri Pik and Sourav Ghosh\nLearn the fundamentals of trading with Python, including environment setup and strategy building.\n👉 Link: https://www.amazon.com/-/es/Hands-Financial-Trading-Python-backtesting/dp/1838982884\n\n👉 Setting Up Python on Your System\nStart by setting up Python for trading and backtesting.\n👉 Link: https://blog.quantinsti.com/set-up-python-system/\n\n👉 How to Get Historical Market Data Through Python Stock API\nLearn to fetch historical data using Python, which is essential for backtesting.\n👉 Link: https://blog.quantinsti.com/historical-market-data-python-api/\n\n📈 Intermediate: Developing and Testing Strategies\n📖 Python for Algorithmic Trading Cookbook by Jason Strimpel\nA hands-on guide for creating, testing, and optimizing trading strategies using Python.\n👉 Link: https://www.amazon.com/-/es/Jason-Strimpel/dp/1835084702\n\n👉 Turtle Trading in Python\nLearn to implement the classic turtle trading strategy in Python.\n👉 Link: https://blog.quantinsti.com/turtle-trading-in-python/\n\n👉 Backtesting: How to Backtest, Strategy, Analysis, and More\nA comprehensive guide to performing backtesting using Python.\n👉 Link: https://blog.quantinsti.com/backtesting/\n\n📺 Python Trading Strategies | Create Trading Strategies and Backtest\nA detailed video tutorial on creating and backtesting trading strategies with Python.\n👉 Watch here: https://www.youtube.com/watch?v=qLIgx0S8D0w\n\n🎓 Recommended Courses\n🎓 Getting Started with Algorithmic Trading\nThis beginner-friendly course covers Python setup and basic backtesting techniques.\n👉 Link: https://quantra.quantinsti.com/course/getting-started-with-algorithmic-trading\n\n🎓 Python for Trading\nLearn to create, test, and analyze trading strategies with Python.\n👉 Link: https://quantra.quantinsti.com/course/python-for-trading\n\n🎓 Backtesting Trading Strategies\nMaster the nuances of backtesting strategies effectively using Python.\n👉 Link: https://quantra.quantinsti.com/course/backtesting-trading-strategies\n\n✨ Key Takeaways (Part 1)\nBegin with the basics by setting up Python and fetching market data.\n\nUse Python for testing beginner-friendly strategies like Turtle Trading.\n\nExplore intermediate-level strategy creation and backtesting techniques.\n\n💬 What’s your favorite beginner strategy to backtest with Python? Let us know below! ⬇️\n\n🔖 #PythonBacktesting #AlgorithmicTrading #Day2 #Week4 #12WeeksOfTrading #TurtleTrading #StockDataAnalysis", "likes": 1, "retweets": 0, "replies": 0, "views": 318, "quote": null, "replying_to_status": null}
+{"id": "1581442100687949825", "http": 200, "fetched_at": "2026-09-22T02:02:58.145888+00:00", "url": "https://x.com/pyquantnews/status/1581442100687949825", "author": "pyquantnews", "created_at": "Sun Oct 16 00:29:13 +0000 2022", "text": "Machine Learning for Algorithmic Trading\n\nLeverage ML to design and back-test automated trading strategies for real-world markets using pandas, TA-Lib, scikit-learn, LightGBM, SpaCy, Gensim, TensorFlow 2, Zipline, backtrader, Alphalens, and pyfolio.\n\nhttps://amzn.to/3cmF1X6", "likes": 39, "retweets": 6, "replies": 2, "views": null, "quote": null, "replying_to_status": "1581441871469244417"}
+{"id": "1727012986290573341", "http": 200, "fetched_at": "2026-09-22T02:02:59.491421+00:00", "url": "https://x.com/pyquantnews/status/1727012986290573341", "author": "pyquantnews", "created_at": "Tue Nov 21 17:15:56 +0000 2023", "text": "http://Backtesting.py\n\nKey strength:\n\nDistinguished by its clean syntax and simplicity, making it easy to learn and use, while still offering essential backtesting features and performance metrics.", "likes": 11, "retweets": 1, "replies": 1, "views": 2295, "quote": null, "replying_to_status": "1727012690818658489"}
+{"id": "1581441871469244417", "http": 200, "fetched_at": "2026-09-22T02:03:01.038156+00:00", "url": "https://x.com/pyquantnews/status/1581441871469244417", "author": "pyquantnews", "created_at": "Sun Oct 16 00:28:18 +0000 2022", "text": "Python for Algorithmic Trading: From Idea to Cloud Deployment\n\nYou'll learn several ways to apply Python to different aspects of algorithmic trading, such as backtesting trading strategies and interacting with online trading platforms.\n\nhttps://amzn.to/3ot2pVP", "likes": 30, "retweets": 6, "replies": 2, "views": null, "quote": null, "replying_to_status": "1581441595555344384"}
+{"id": "1727012690818658489", "http": 200, "fetched_at": "2026-09-22T02:03:02.341371+00:00", "url": "https://x.com/pyquantnews/status/1727012690818658489", "author": "pyquantnews", "created_at": "Tue Nov 21 17:14:46 +0000 2023", "text": "bt\n\nKey strength:\n\nStrength lies in its focus on providing a simple, lightweight, and intuitive API for strategy development and backtesting, allowing users to quickly prototype and test ideas.", "likes": 9, "retweets": 2, "replies": 1, "views": 2522, "quote": null, "replying_to_status": "1727012125141299625"}
+{"id": "1581441595555344384", "http": 200, "fetched_at": "2026-09-22T02:03:03.716455+00:00", "url": "https://x.com/pyquantnews/status/1581441595555344384", "author": "pyquantnews", "created_at": "Sun Oct 16 00:27:12 +0000 2022", "text": "Learn Algorithmic Trading: Build and deploy algorithmic trading systems and strategies using Python\n\nUnderstand the fundamentals of algorithmic trading to apply algorithms to real market data and analyze the results of real-world trading strategies.\n\nhttps://amzn.to/3IIQAUH", "likes": 25, "retweets": 6, "replies": 1, "views": null, "quote": null, "replying_to_status": "1581441361772888064"}
+{"id": "1727012125141299625", "http": 200, "fetched_at": "2026-09-22T02:03:05.086130+00:00", "url": "https://x.com/pyquantnews/status/1727012125141299625", "author": "pyquantnews", "created_at": "Tue Nov 21 17:12:31 +0000 2023", "text": "Backtrader\n\nKey strength:\n\nNotable for its comprehensive feature set, including support for live trading and visualizations, as well as a large and active community that contributes to its development.", "likes": 12, "retweets": 2, "replies": 1, "views": 3116, "quote": null, "replying_to_status": "1727011804721684730"}
+{"id": "1581441361772888064", "http": 200, "fetched_at": "2026-09-22T02:03:06.780921+00:00", "url": "https://x.com/pyquantnews/status/1581441361772888064", "author": "pyquantnews", "created_at": "Sun Oct 16 00:26:17 +0000 2022", "text": "Algorithmic Trading with Interactive Brokers (Python and C++)\n\nThis book walks through the process of developing applications based on IB's Trader Workstation. Learn how to implement full-scale trading systems.\n\nhttps://amzn.to/3ILI3QO", "likes": 30, "retweets": 4, "replies": 1, "views": null, "quote": null, "replying_to_status": "1581441089172447232"}
+{"id": "1727011804721684730", "http": 200, "fetched_at": "2026-09-22T02:03:08.490862+00:00", "url": "https://x.com/pyquantnews/status/1727011804721684730", "author": "pyquantnews", "created_at": "Tue Nov 21 17:11:15 +0000 2023", "text": "PySystemtrade:\n\nKey strength:\n\nKnown for its robustness and modularity, allowing users to customize and extend the library for various trading strategies and risk management approaches for futures.", "likes": 13, "retweets": 2, "replies": 1, "views": 3668, "quote": null, "replying_to_status": "1727011383969976353"}
+{"id": "1581441089172447232", "http": 200, "fetched_at": "2026-09-22T02:03:10.024414+00:00", "url": "https://x.com/pyquantnews/status/1581441089172447232", "author": "pyquantnews", "created_at": "Sun Oct 16 00:25:12 +0000 2022", "text": "Algorithmic Trading with Python: Quantitative Methods and Strategy Development\n\n(Start here.)\n\nAlgorithmic Trading with Python discusses modern quant trading methods in Python with a heavy focus on pandas, numpy, and scikit-learn.\n\nhttps://amzn.to/3clB598", "likes": 97, "retweets": 10, "replies": 2, "views": null, "quote": null, "replying_to_status": "1581440842845556738"}
+{"id": "1727011383969976353", "http": 200, "fetched_at": "2026-09-22T02:03:11.540142+00:00", "url": "https://x.com/pyquantnews/status/1727011383969976353", "author": "pyquantnews", "created_at": "Tue Nov 21 17:09:34 +0000 2023", "text": "PyBroker\n\nKey strength:\n\nEmphasizes simplicity and user-friendliness for beginners, while still providing essential backtesting features and support for multiple brokers.", "likes": 16, "retweets": 2, "replies": 1, "views": 4093, "quote": null, "replying_to_status": null}
+{"id": "1581440842845556738", "http": 200, "fetched_at": "2026-09-22T02:03:13.258740+00:00", "url": "https://x.com/pyquantnews/status/1581440842845556738", "author": "pyquantnews", "created_at": "Sun Oct 16 00:24:13 +0000 2022", "text": "Blogs are ok.\n\nBut nothing beats a good book.\n\nThe 7 must-have books everyone using Python for algorithmic trading needs to know:", "likes": 962, "retweets": 196, "replies": 25, "views": null, "quote": null, "replying_to_status": null}
+→ 候補 19〜22(Backtrader / PySystemtrade / PyBroker / bt)と 23(Ziplime)の出所は、pyquantnews 2023-11-21 の連投(「The top 7 backtesting frameworks: Zipline-Reloaded / Backtesting.py / PySystemtrade / Backtrader / vectorbt / PyBroker / bt」ほか各 1 件の紹介)と quantscience_ 2026-03-10(Ziplime)。いずれも紹介の投稿で、使用報告ではない。
+
+### LV-5 本文が「実測」と書いた主張の、実際のコマンドと出力(監査 1 回目の指摘 3〜7。調査班はコマンドを打っていたが生ログに書かなかった。ハーネスの記録から機械抽出)
+
+### LV-5a QSTrader のモジュール一覧(本文「実測 import qstrader; os.listdir」の出所)
+[手 #40] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" "$VENV/bin/python3" -c " import qstrader import os print(qstrader.__file__) print(os.listdir(os.path.dirname(qstrader.__file__))) "
+  -> /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages/qstrader/__init__.py ['alpha_model', 'risk_model', 'asset', '__init__.py', 'statistics', 'settings.py', 'trading', 'exchange', 'broker', 'signals', 'data', '__pycache__', 'system', 'portcon', 'simulation', 'utils', 'execution']
+
+### LV-5b wheel の展開と .so の検査(本文「wheel を展開して確認(実測)」の出所)
+[手 #35] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log cd "$SP/dl" mkdir -p extract for f in */*.whl; do base=$(basename "$f") d="extract/${base%.whl}" mkdir -p "$d" unzip -oq "$f" -d "$d" done echo "=== .so /
+  -> === .so / binary files per package === --- extract/backtesting-0.6.6-py3-none-any/ --- --- extract/jesse-3.2.1-py3-none-any/ --- extract/jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/Apex/omni_files/libzklink_sdk.so extract/jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/Apex/omni_files/zklink_sdk.dll extract/jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/Lighter/signer_libs/lighter-signer-windows-amd64.dll extract/jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/Lighter/signer_libs/lighter-signer-linux-amd64.so extract/jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/Lighter/signer_libs/lighter-signer-linux-arm64.so --- extract/lean-1.0.229-py3-none-any/ --- --- extract/pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64/ --- extract/pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64/qlib/data/_libs/expanding.cpython-311-x86_64-linux-gnu.so extract/pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64/qlib/data/_libs/rolling.cpython-311-x86_64-linux-gnu.so --- extract/qstrader-0.3.0-py3-none-any/ --- --- extract/vnpy-4.4.0-py3-none-any/ --- --- extra
+
+### LV-5c Jesse の drivers の一覧(本文「実測 import_candles_mode/drivers」の出所)
+[手 #36] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cd "$SP/dl/extract" echo "=== jesse import_candles drivers (exchange list) ===" ls "jesse-3.2.1-py3-none-any/jesse/modes/import_candles_mode/drivers/" 2>/dev/null echo "=== jesse live trading exchange list (if present)
+  -> === jesse import_candles drivers (exchange list) === Apex Binance Bitfinex Bybit Coinbase Gate Hyperliquid Kraken KuCoin Lighter __init__.py interface.py === jesse live trading exchange list (if present) === jesse-3.2.1-py3-none-any/jesse-3.2.1.dist-info/RECORD jesse-3.2.1-py3-none-any/tests/test_trading_mode_contracts.py jesse-3.2.1-py3-none-any/jesse/static/_nuxt/Bri6UV-V.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/BhKQO4Px.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/DY43dlCC.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/DVG0V4jx.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/Czk_mF82.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/Bo9Dl7tn.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/html.worker-NdFMIQdB.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/HlOV9je9.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/json.worker-Ax0gao5O.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/D3hlyOfw2.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/BWDSh1SW.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/BnjxR4X6.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/BMrGqELX.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/eDEyLi0S.js jesse-3.2.1-py3-none-any/jesse/static/_nuxt/css.worker-B1A7g9RU.js 
+
+### LV-5d Backtesting.py の最小実行の出力全文(本文の PnL 等の出所)
+[手 #38] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log "$VENV/bin/pip" check 2>&1 | tee -a /tmp/pipcheck_bt.txt echo "pip check (after backtesting install) rc=$? $(date -u +%Y-%m-%dT%H:%
+  -> No broken requirements found. Backtest.run: 0%| | 0/199 [00:00<?, ?bar/s] RESULT: # Trades: 1 Return [%]: -0.11950547997583272 EntryPrice ExitPrice Size PnL 0 98.804914 97.80647 10 -11.950548
+
+### LV-5e NautilusTrader の最小実行の出力全文(本文の口座残高の出所)
+[手 #135] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad V="$SP/venv_nautilus" cat > "$SP/probe_nautilus.py" << 'PYEOF' from decimal import Decimal import pandas as pd import numpy as np from nautilus_trader.backtest.engine import BacktestEngine from nautilus_trader.config i
+  -> started pid=29476
+[手 #141] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad sed -i 's/from nautilus_trader.model import AccountType, BarType, Bar, BarSpecification/from nautilus_trader.model import BarType, Bar, BarSpecification\nfrom nautilus_trader.model.enums import AccountType, OmsType/' "
+  -> 5:from nautilus_trader.backtest.engine import BacktestEngine 6:from nautilus_trader.config import BacktestEngineConfig 7:from nautilus_trader.model import BarType, Bar, BarSpecification 8:from nautilus_trader.model.enums import AccountType, OmsType 9:from nautilus_trader.model import Currency, Money, TraderId, Venue 10:from nautilus_trader.model.enums import AggregationSource, BarAggregation, PriceType, OrderSide, TimeInForce 11:from nautilus_trader.model.objects import Price, Quantity 12:from nautilus_trader.test_kit.providers import TestInstrumentProvider 13:from nautilus_trader.trading.strategy import Strategy, StrategyConfig
+[手 #142] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad V="$SP/venv_nautilus" cd "$SP" timeout 90 "$V/bin/python3" "$SP/probe_nautilus.py" > /tmp/nt_out2.txt 2>&1 & echo "started pid=$!"
+  -> started pid=29829
+
+### LV-5f freqtrade list-exchanges の実際の表(bitFlyer / bitbank の行)
+[手 #99] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log t0=$(date +%s.%N) out=$("$SP/venv_freqtrade/bin/freqtrade" list-exchanges -a 2>&1) rc=$? t1=$(date +%s.%N) ts=$(echo "($t1-$t0)"|bc) echo "$out" | grep -i
+  -> │ bitbank │ bitbank │ spot │ missing opt: fetchTickers, fetchOrders, watchOHLCV │ │ bitFlyer │ bitflyer │ spot │ missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV │ ---rc=0--- 114
+[手 #100] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad "$SP/venv_freqtrade/bin/freqtrade" list-exchanges -a 2>&1 | head -15 echo "..." "$SP/venv_freqtrade/bin/freqtrade" list-exchanges -a 2>&1 | grep -c "│" echo "---list-exchanges without -a (officially supported only)---"
+  -> 2026-09-22 01:46:10,499 - freqtrade - INFO - freqtrade 2026.8 2026-09-22 01:46:10,899 - numexpr.utils - INFO - NumExpr defaulting to 4 threads. All exchanges supported by the ccxt library (105 exchanges): ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃ Exchange Name ┃ Class Name ┃ Markets ┃ Reason ┃ ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩ │ Alpaca │ alpaca │ spot │ missing opt: fetchL2OrderBook │ │ Apex │ apex │ DEX: spot │ │ │ Aster │ aster │ DEX: spot │ │ │ Backpack │ backpack │ spot │ missing: fetchOrder │ │ Bequant │ bequant │ spot │ │ │ BigONE │ bigone │ spot │ missing opt: watchOHLCV │ │ Binance (Supported) │ binance │ spot, cross futures, isolated futures │ │ │ Binance COIN-M │ binancecoinm │ spot │ Unsupported futures exchange │ │ Binance US (Supported) │ binanceus │ spot │ │ ... 107 ---list-exchanges without -a (officially supported only)--- │ bitbank │ bitbank │
+[手 #101] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log echo "--- gmo ---" "$SP/venv_freqtrade/bin/freqtrade" list-exchanges -a 2>&1 | grep -i "gmo\|coincheck\|liquid" echo "--- non -a 全件(何件か) ---" "$SP/venv_fr
+  -> --- gmo --- │ Coincheck │ coincheck │ spot │ missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, fetchOrders, watchOHLCV │ │ Hyperliquid (Supported) │ hyperliquid │ DEX: spot, isolated futures, cross futures │ missing opt: fetchTicker │ --- non -a 全件(何件か) --- 79 2026-09-22 01:46:33,156 - freqtrade - INFO - freqtrade 2026.8 2026-09-22 01:46:33,518 - numexpr.utils - INFO - NumExpr defaulting to 4 threads. Exchanges available for Freqtrade (79 exchanges): ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃ Exchange Name ┃ Class Name ┃ Markets ┃ Reason ┃ --- ccxt自体でbitflyerのfetchOrder/fetchOHLCV有無を確認 --- has: {'cancelOrder': True, 'createOrder': True, 'fetchOHLCV': None, 'fetchOrder': 'emulated', 'fetchTickers': None, 'watchOHLCV': None} id list has gmocoin? False coincheck? True
+
+### LV-5g ccxt の has 属性の実測
+[手 #101] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log echo "--- gmo ---" "$SP/venv_freqtrade/bin/freqtrade" list-exchanges -a 2>&1 | grep -i "gmo\|coincheck\|liquid" echo "--- non -a 全件(何件か) ---" "$SP/venv_fr
+  -> --- gmo --- │ Coincheck │ coincheck │ spot │ missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, fetchOrders, watchOHLCV │ │ Hyperliquid (Supported) │ hyperliquid │ DEX: spot, isolated futures, cross futures │ missing opt: fetchTicker │ --- non -a 全件(何件か) --- 79 2026-09-22 01:46:33,156 - freqtrade - INFO - freqtrade 2026.8 2026-09-22 01:46:33,518 - numexpr.utils - INFO - NumExpr defaulting to 4 threads. Exchanges available for Freqtrade (79 exchanges): ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ ┃ Exchange Name ┃ Class Name ┃ Markets ┃ Reason ┃ --- ccxt自体でbitflyerのfetchOrder/fetchOHLCV有無を確認 --- has: {'cancelOrder': True, 'createOrder': True, 'fetchOHLCV': None, 'fetchOrder': 'emulated', 'fetchTickers': None, 'watchOHLCV': None} id list has gmocoin? False coincheck? True
+[手 #102] $ LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log cat >> "$LOG" << 'EOF' freqtrade list-exchanges -a(隔離venv venv_freqtrade、ccxt 4.5.82 同梱) → 105取引所中、bitFlyer行: 「missing: fetchOrder, fetchOHLCV; missing opt: fetchTickers, watchOHLCV」/ bitbank行: 「missing opt: fetchTickers, fetchOrders, w
+  -> done
+[手 #149] $ SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/section2.md" << 'MDEOF' ### 検索計画(1回目の6本)の扱い 委任文§2の指示どおり、2回目は検索計画6本を打ち直していない。1回目の「残りの候補名」12件(ccxt除く)と「次回優先すべき項目」1〜10を深掘りした。新規発見は§3-2の経路(WebSearch一般 / X / GitHub関連プロジェクト一覧・awesome系・依存関係逆引き)で追加的に行った(下記「新規発見」参照)
+  -> 39 /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/section2.md
+
+### LV-5h 導入(pip install)と wheel の展開の順序(監査の問い 11)
+  手 #34 download: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #35 extract: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #37 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #39 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #47 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #51 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #57 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #59 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #62 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #64 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad VENV="$SP/venv_tools1" LOG=/home/user/trade/docs
+  手 #65 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #84 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #89 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #90 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #93 install: LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log cat >> "$LOG" << 'EOF' curl GET https://raw.githubusercontent.com/
+  手 #98 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #124 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad LOG=/home/user/trade/docs/DATA/probes/20260922_t
+  手 #146 install: LOG=/home/user/trade/docs/DATA/probes/20260922_tools_1_run2.log cat >> "$LOG" << 'EOF' python3.12 -m venv venv_nautilus + pip inst
+  手 #151 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/section3.md" << 'MDEOF' ### 1回目「次回優先す
+  手 #153 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool5.md" << 'MDEOF' ### ツール1件ごとの表(2回
+  手 #154 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool7.md" << 'MDEOF' #### 7. QSTrader
+  手 #155 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool9.md" << 'MDEOF' #### 9. PyAlgoTr
+  手 #156 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool_rest1.md" << 'MDEOF' #### 6. zip
+  手 #157 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool_rest2.md" << 'MDEOF' #### 10. Ze
+  手 #158 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/tool_rest3.md" << 'MDEOF' #### 12. Vn
+  手 #160 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/addendum.md" << 'MDEOF' ### 1回目の候補1〜4
+  手 #161 install: SP=/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad cat > "$SP/final.md" << 'MDEOF' ### STRATEGY_IDE
+
+### LV-6 hftbacktest の FILLED について(監査 1 回目の指摘 1)
+調査班の記録を機械で調べた結果: v4 は rc=1 で失敗(生ログ 102 行)。v5 はバックグラウンドで起動したところまで(「started pid=28116」)で、**その出力を読んだ記録が無い**($ cat tasks/bl50vqd2z.output → 「Bash completed with no output」の 1 回だけ)。つまり調査班は FILLED の結果を一度も見ずに本文を書いた。
+結果そのものはリードが打ち直して再現した(LV-2)ので主張は真だが、**出所は調査班の実測ではなくリードの再現である。**本文をそう書き直した。
+
+### LV-7 NautilusTrader の最小実行をリードが打ち直した(監査 2 回目の指摘 1。調査班は背景で起動しただけで出力を読んでいない)
+$ timeout 180 $SP/venv_nautilus/bin/python3 $SP/probe_nautilus.py  → rc=0(2026-09-22T02:21Z)
+  Balances starting: 100_000.00000000 USDT / 10.00000000 BTC
+  Balances ending:    99_998.35248510 USDT / 10.00000000 BTC
+  OrderFilled 2 件(O-20231114-221320-001-000-1 = LIMIT 買い、O-20231114-224020-001-000-2 = MARKET 売り)
+  RESULT fills: [2 rows x 36 columns]
+  → 指値買いが約定 → 成行売りで手仕舞い、の 1 往復。建玉は 0.01 BTC を建てて閉じた(net_position=0.010000 → PositionClosed)。BTC の残高は 10.0 で始まり 10.0 で終わり、費用は USDT 側で 1.64751490 減った。
+  調査班が書き込み先にしていた /tmp/nt_out2.txt も残っており(01:50 の実行)、同じ 2 件の OrderFilled と同じ残高を含む。**ただし調査班はこのファイルを読んでいない**(記録に cat 等が無い)。
+
+### LV-8 展開済み wheel の一覧と中身(監査 2 回目の指摘 2。「wheel展開は本回未実施」は誤り)
+$ ls -d $SP/dl/extract/*/ → backtesting-0.6.6 / jesse-3.2.1 / lean-1.0.229 / pyqlib-0.9.7 / qstrader-0.3.0 / vnpy-4.4.0 / zipline_reloaded-3.1.1 の 7 件(全部展開済み)
+$ for d in */; do find "$d" -name '*.so' | wc -l; find "$d" -name 'setup.py' | wc -l; done  (展開済み 7 件すべて。監査 3 回目の指摘 4 を受けて対象を明記し、maxdepth を外して数え直した)
+  パッケージ          .so   setup.py
+  backtesting           0      0
+  jesse                 3      0
+  lean                  0      0
+  pyqlib                2      0
+  qstrader              0      0
+  vnpy                  0      0
+  zipline_reloaded     16      0
+  → **7 件すべてで `setup.py` は 0 件**(wheel なので導入時に Python コードは実行されない)。`.so` は zipline_reloaded 16・jesse 3・pyqlib 2 で、中身の静的監査は未実施。
+  (前版の「全 5 件とも 0」は対象を書いておらず、jesse と backtesting を数えていなかった。jesse の `.so` 3 件もこの数え直しで出た)
+
+### LV-9 W-5(PyAlgoTrade の GitHub)の取得結果の全文(監査 9 回目の指摘 2。生ログの head200 が先頭で切れていたため、アーカイブ日付と Basana の逐語が本当に調査班の取得に含まれていたかを確かめた)
+[W-5] https://github.com/gbeced/pyalgotrade
+# PyAlgoTrade Repository Analysis
+
+**Star Count:** 4.7k stars
+
+**Fork Count:** 1.4k forks
+
+**Total Commit Count:** 1,158 commits
+
+**Last Commit Date:** Not explicitly shown in the provided content
+
+**Primary Language:** Python
+
+**License:** LICENSE file present (specific license type not detailed in excerpt)
+
+**Archive/Maintenance Status:** Yes, archived and unmaintained. The repository displays: "This repository was archived by the owner on Nov 13, 2023. It is now read-only."
+
+**Additional Note:** The project includes a deprecation notice stating: "This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana."
+→ **含まれていた。**「This repository was archived by the owner on Nov 13, 2023. It is now read-only.」「This project is deprecated and is no longer mantained. You may be interested in taking a look at Basana.」はどちらも W-5 の結果にある。本文の帰属(W-5)は正しい。Zenbot(LV-3)とは違い、リードの取り直しは要らなかった。
+## LV-10 pip install の出力の全文(監査 10 回目の指摘 1・11 回目の指摘 1。生ログの head200 が先頭で切れていたので、ハーネスの記録から取り出した。**11 回目の指摘を受けて、最終行の要約だけだったものを全文に差し替えた**: アンインストールの行・pip の依存解決の警告もここに含まれる)
+
+=== backtesting — ハーネスの記録にある出力の全文(205 文字)
+Installing collected packages: backtesting Successfully installed backtesting-0.6.6 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip
+
+=== qstrader — ハーネスの記録にある出力の全文(1633 文字)
+Requirement already satisfied: packaging>=20.0 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages (from matplotlib>=3.8->qstrader) (26.3) Requirement already satisfied: pillow>=9 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages (from matplotlib>=3.8->qstrader) (12.3.0) Requirement already satisfied: pyparsing>=3 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages (from matplotlib>=3.8->qstrader) (3.3.3) Requirement already satisfied: python-dateutil>=2.7 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages (from matplotlib>=3.8->qstrader) (2.9.0.post0) Requirement already satisfied: six>=1.5 in /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/venv_tools1/lib/python3.11/site-packages (from python-dateutil>=2.7->matplotlib>=3.8->qstrader) (1.17.0) Using cached qstrader-0.3.0-py3-none-any.whl (74 kB) Downloading click-8.5.0-py3-none-any.whl (125 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.3/125.3 kB 41.9 MB/s eta 0:00:00 Downloading seaborn-0.13.2-py3-none-any.whl (294 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 294.9/294.9 kB 89.5 MB/s eta 0:00:00 Installing collected packages: click, seaborn, qstrader Successfully installed click-8.5.0 qstrader-0.3.0 seaborn-0.13.2 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip
+
+=== zipline-reloaded — ハーネスの記録にある出力の全文(2222 文字)
+Downloading httpx-0.28.1-py3-none-any.whl (73 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.5/73.5 kB 22.3 MB/s eta 0:00:00 Downloading h11-0.16.0-py3-none-any.whl (37 kB) Downloading hpack-4.2.0-py3-none-any.whl (34 kB) Downloading hyperframe-6.1.0-py3-none-any.whl (13 kB) Building wheels for collected packages: peewee Building wheel for peewee (pyproject.toml): started Building wheel for peewee (pyproject.toml): finished with status 'done' Created wheel for peewee: filename=peewee-3.17.3-cp311-cp311-linux_x86_64.whl size=776282 sha256=fe722da1d76e11ffb96da4e7f568f38de7b0f1beaa102cd2fc90734f3a8bb399 Stored in directory: /root/.cache/pip/wheels/3e/3d/30/a54ad8c2307aa653f234a6f651ab12fbc5cfbb3f383145ab6a Successfully built peewee Installing collected packages: sortedcontainers, py-cpuinfo, peewee, multipledispatch, wrapt, tzdata, toolz, threadpoolctl, pyluach, patsy, numexpr, networkx, ndindex, msgpack, Mako, lru-dict, korean_lunar_calendar, iso4217, iso3166, intervaltree, interface-meta, hyperframe, hpack, h5py, h11, greenlet, bottleneck, bcolz-zipline, anyio, sqlalchemy, pandas, httpcore, h2, httpx, formulaic, exchange-calendars, empyrical-reloaded, alembic, statsmodels, blosc2, tables, zipline-reloaded Attempting uninstall: pandas Found existing installation: pandas 3.0.6 Uninstalling pandas-3.0.6: Successfully uninstalled pandas-3.0.6 Successfully installed Mako-1.4.1 alembic-1.20.0 anyio-4.15.1 bcolz-zipline-1.13.0 blosc2-4.13.1 bottleneck-1.6.0 empyrical-reloaded-0.5.12 exchange-calendars-4.13.2 formulaic-1.2.2 greenlet-3.5.6 h11-0.16.0 h2-4.4.1 h5py-3.16.0 hpack-4.2.0 httpcore-1.0.9 httpx-0.28.1 hyperframe-6.1.0 interface-meta-2.0.1 intervaltree-3.2.1 iso3166-3.0.0 iso4217-1.16.20260101 korean_lunar_calendar-0.4.0 lru-dict-1.4.1 msgpack-1.2.2 multipledispatch-1.0.0 ndindex-1.10.1 networkx-3.6.1 numexpr-2.14.2 pandas-2.3.3 patsy-1.0.3 peewee-3.17.3 py-cpuinfo-9.0.0 pyluach-2.3.0 sortedcontainers-2.4.0 sqlalchemy-2.0.54 statsmodels-0.15.0 tables-3.11.1 threadpoolctl-3.7.0 toolz-1.1.0 tzdata-2026.4 wrapt-2.4.1 zipline-reloaded-3.1.1 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip
+
+=== vnpy — ハーネスの記録にある出力の全文(1671 文字)
+Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB) Downloading moocore-0.3.2-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (879 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 879.5/879.5 kB 89.1 MB/s eta 0:00:00 Downloading attrs-26.1.0-py3-none-any.whl (67 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.5/67.5 kB 23.6 MB/s eta 0:00:00 Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB) Downloading platformdirs-4.11.12-py3-none-any.whl (24 kB) Downloading referencing-0.37.0-py3-none-any.whl (26 kB) Downloading rpds_py-2026.6.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (371 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 371.3/371.3 kB 69.2 MB/s eta 0:00:00 Installing collected packages: tzlocal, traitlets, ta-lib, shiboken6, rpds-py, qtpy, qrcode, pyzmq, plotly, platformdirs, loguru, fastjsonschema, colorama, attrs, referencing, qdarkstyle, PySide6-Essentials, pyqtgraph, moocore, jupyter-core, PySide6-Addons, jsonschema-specifications, deap, pyside6, jsonschema, nbformat, vnpy Successfully installed PySide6-Addons-6.8.2.1 PySide6-Essentials-6.8.2.1 attrs-26.1.0 colorama-0.4.6 deap-1.4.4 fastjsonschema-2.22.2 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 jupyter-core-5.9.1 loguru-0.7.3 moocore-0.3.2 nbformat-5.11.1 platformdirs-4.11.12 plotly-7.1.0 pyqtgraph-0.14.0 pyside6-6.8.2.1 pyzmq-27.2.0 qdarkstyle-3.2.3 qrcode-8.2 qtpy-2.4.3 referencing-0.37.0 rpds-py-2026.6.3 shiboken6-6.8.2.1 ta-lib-0.8.1 traitlets-5.16.1 tzlocal-5.4.4 vnpy-4.4.0 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip
+
+=== pyqlib — ハーネスの記録にある出力の全文(5079 文字)
+Downloading rfc3987_syntax-1.1.0-py3-none-any.whl (8.0 kB) Downloading webcolors-25.10.0-py3-none-any.whl (14 kB) Downloading fqdn-1.5.1-py3-none-any.whl (9.1 kB) Downloading isoduration-20.11.0-py3-none-any.whl (11 kB) Downloading uri_template-1.3.0-py3-none-any.whl (11 kB) Downloading arrow-1.4.0-py3-none-any.whl (68 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 68.8/68.8 kB 18.7 MB/s eta 0:00:00 Downloading lark-1.3.1-py3-none-any.whl (113 kB) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 113.2/113.2 kB 26.7 MB/s eta 0:00:00 Building wheels for collected packages: gym Building wheel for gym (pyproject.toml): started Building wheel for gym (pyproject.toml): finished with status 'done' Created wheel for gym: filename=gym-0.26.2-py3-none-any.whl size=827729 sha256=5e7a855d7e22d5826594e79ffa90f80b0dcb59aff3061b47b28ad935a143fa92 Stored in directory: /root/.cache/pip/wheels/1c/77/9e/9af5470201a0b0543937933ee99ba884cd237d2faefe8f4d37 Successfully built gym Installing collected packages: pure-eval, ptyprocess, huey, gym_notices, zipp, widgetsnbextension, werkzeug, websocket-client, webencodings, webcolors, wcwidth, uvicorn, uri-template, terminado, termcolor, sqlparse, sparsediffpy, soupsieve, smmap, send2trash, ruamel.yaml, rfc3986-validator, rfc3339-validator, redis, python-json-logger, python-dotenv, pyasn1, pyarrow, psutil, protobuf, propcache, prometheus-client, pexpect, parso, pandocfilters, overrides, opentelemetry-api, nest-asyncio2, multidict, mistune, matplotlib-inline, lark, jupyterlab_widgets, jupyterlab-pygments, jsonpointer, itsdangerous, ipython-pygments-lexers, highspy, gym, gunicorn, graphql-core, frozenlist, fqdn, filelock, executing, dnspython, dill, defusedxml, debugpy, comm, cachetools, blinker, babel, async-lru, asttokens, annotated-doc, aiohappyeyeballs, yarl, tinycss2, starlette, stack_data, scs, scikit-learn, rfc3987-syntax, qdldl, python-redis-lock, pymongo, pyasn1-modules, prompt-toolkit, prettytable, osqp, opentelemetry-semantic-conventions, opentelemetry-proto, lightgbm, jupyter-server-terminals, jupyter-client, jupyter-builder, jedi, importlib_metadata, graphql-relay, gitdb, Flask, fire, clarabel, bleach, beautifulsoup4, arrow, argon2-cffi-bindings, aiosignal, skops, pydantic-settings, opentelemetry-sdk, isoduration, ipython, graphene, google-auth, gitpython, Flask-CORS, fastapi, cvxpy, argon2-cffi, aiohttp, ipywidgets, ipykernel, databricks-sdk, nbclient, mlflow-tracing, mlflow-skinny, jupyter-events, jupyter-console, nbconvert, mlflow, jupyter-server, notebook-shim, jupyterlab-server, jupyter-lsp, jupyterlab, notebook, jupyter, pyqlib Successfully installed Flask-3.1.3 Flask-CORS-6.0.5 aiohappyeyeballs-2.7.1 aiohttp-3.14.3 aiosignal-1.4.0 annotated-doc-0.0.5 argon2-cffi-25.1.0 argon2-cffi-bindings-26.1.0 arrow-1.4.0 asttokens-3.0.2 async-lru-2.3.0 babel-2.18.0 beautifulsoup4-4.15.0 bleach-6.4.0 blinker-1.9.0 cachetools-7.2.0 clarabel-0.11.1 comm-0.2.3 cvxpy-1.9.3 databricks-sdk-0.140.0 debugpy-1.8.22 defusedxml-0.7.1 dill-0.4.1 dnspython-2.8.0 executing-2.2.1 fastapi-0.141.1 filelock-4.0.1 fire-0.7.1 fqdn-1.5.1 frozenlist-1.8.0 gitdb-4.0.12 gitpython-3.1.62 google-auth-2.58.0 graphene-3.4.3 graphql-core-3.2.12 graphql-relay-3.2.0 gunicorn-26.2.0 gym-0.26.2 gym_notices-0.1.0 highspy-1.15.1 huey-3.4.0 importlib_metadata-9.0.1 ipykernel-7.3.0 ipython-9.17.1 ipython-pygments-lexers-1.1.1 ipywidgets-8.1.9 isoduration-20.11.0 itsdangerous-2.2.0 jedi-0.20.0 jsonpointer-3.1.1 jupyter-1.1.1 jupyter-builder-1.2.3 jupyter-client-8.10.0 jupyter-console-6.6.3 jupyter-events-0.12.1 jupyter-lsp-2.3.1 jupyter-server-2.21.1 jupyter-server-terminals-0.5.4 jupyterlab-4.6.4 jupyterlab-pygments-0.3.0 jupyterlab-server-2.28.1 jupyterlab_widgets-3.0.17 lark-1.3.1 lightgbm-4.7.0 matplotlib-inline-0.2.2 mistune-3.3.4 mlflow-3.16.1 mlflow-skinny-3.16.1 mlflow-tracing-3.16.1 multidict-6.9.1 nbclient-0.11.0 nbconvert-7.17.1 nest-asyncio2-1.7.2 notebook-7.6.3 notebook-shim-0.2.4 opentelemetry-api-1.44.0 opentelemetry-proto-1.44.0 opentelemetry-sdk-1.44.0 opentelemetry-semantic-conventions-0.65b0 osqp-1.1.3 overrides-7.7.0 pandocfilters-1.5.1 parso-0.8.7 pexpect-4.9.0 prettytable-3.18.0 prometheus-client-0.26.0 prompt-toolkit-3.0.53 propcache-0.5.4 protobuf-6.33.6 psutil-7.2.2 ptyprocess-0.7.0 pure-eval-0.2.4 pyarrow-25.0.1 pyasn1-0.6.4 pyasn1-modules-0.4.2 pydantic-settings-2.15.0 pymongo-4.18.1 pyqlib-0.9.7 python-dotenv-1.2.3 python-json-logger-4.2.0 python-redis-lock-4.0.1 qdldl-0.1.9.post1 redis-8.1.0 rfc3339-validator-0.1.4 rfc3986-validator-0.1.1 rfc3987-syntax-1.1.0 ruamel.yaml-0.19.1 scikit-learn-1.9.1 scs-3.3.1 send2trash-2.1.0 skops-0.15.0 smmap-5.0.3 soupsieve-2.9.2 sparsediffpy-0.6.1 sqlparse-0.6.0 stack_data-0.6.3 starlette-1.6.0 termcolor-3.3.0 terminado-0.18.1 tinycss2-1.5.1 uri-template-1.3.0 uvicorn-0.53.0 wcwidth-0.8.4 webcolors-25.10.0 webencodings-0.6.1 websocket-client-1.9.2 werkzeug-3.1.8 widgetsnbextension-4.0.16 yarl-1.25.1 zipp-4.1.0 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip
+
+=== jesse — ハーネスの記録にある出力の全文(2316 文字)
+Found existing installation: matplotlib 3.11.2 Uninstalling matplotlib-3.11.2: Successfully uninstalled matplotlib-3.11.2 Attempting uninstall: fastapi Found existing installation: fastapi 0.141.1 Uninstalling fastapi-0.141.1: Successfully uninstalled fastapi-0.141.1 ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts. hftbacktest 2.4.4 requires numpy<2.3,>=2.0, but you have numpy 1.26.4 which is incompatible. flask 3.1.3 requires click>=8.1.3, but you have click 8.0.4 which is incompatible. qstrader 0.3.0 requires click>=8.1, but you have click 8.0.4 which is incompatible. qstrader 0.3.0 requires numpy>=2.0.0, but you have numpy 1.26.4 which is incompatible. vnpy 4.4.0 requires numpy>=2.2.3, but you have numpy 1.26.4 which is incompatible. mlflow 3.16.1 requires cryptography<51,>=43.0.0, but you have cryptography 42.0.8 which is incompatible. sparsediffpy 0.6.1 requires numpy>=2.0.0, but you have numpy 1.26.4 which is incompatible. cvxpy 1.9.3 requires numpy>=2.0.0, but you have numpy 1.26.4 which is incompatible. Successfully installed PyJWT-2.11.0 aiofiles-0.7.0 aioredis-1.3.1 arrow-1.2.3 async-timeout-5.0.1 bitarray-3.11.0 ckzg-2.1.8 click-8.0.4 colorlog-6.12.0 cryptography-42.0.8 cytoolz-1.1.0 deprecated-1.3.1 ecdsa-0.19.2 eth-abi-6.0.0 eth-account-0.13.7 eth-hash-0.8.0 eth-keyfile-0.8.1 eth-keys-0.8.0 eth-rlp-3.0.0 eth-typing-6.0.0 eth-utils-6.0.0 fastapi-0.128.8 fnc-0.5.3 hexbytes-2.0.0 hiredis-3.4.1 httpx-sse-0.4.3 iniconfig-2.3.0 jesse-3.2.1 jesse-rust-1.2.0 joblib-1.5.3 matplotlib-3.10.9 mcp-1.28.1 msgpack-1.1.2 numpy-1.26.4 optuna-4.2.1 pandas-2.2.3 parsimonious-0.10.0 peewee-3.14.10 pluggy-1.6.0 psycopg2-binary-2.9.13 py-1.11.0 pycryptodome-3.23.0 pydash-6.0.2 pytest-6.2.5 python-multipart-0.0.32 ray-2.58.0 redis-4.1.4 regex-2026.9.10 requests-2.32.5 rlp-5.0.0 scikit-learn-1.8.0 scipy-1.15.3 simplejson-3.16.0 sse-starlette-3.4.11 starkbank-ecdsa-1.1.1 starlette-0.52.1 statsmodels-0.14.6 tabulate-0.8.10 timeloop-1.0.2 toml-0.10.2 uvicorn-0.40.0 websocket-client-1.8.0 websockets-17.1 wsaccel-0.6.7 [notice] A new release of pip is available: 24.0 -> 26.2.1 [notice] To update, run: python3 -m pip install --upgrade pip

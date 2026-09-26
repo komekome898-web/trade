@@ -1,0 +1,3 @@
+runs current_impl v5-sealed-window abs: 正解と一致 | rel: 結果なし | SealedDataError: backtest_data/bf_exec_sealtest_20260105/trades.csv is not one of unit 'SYNTH-UNIT''s sealed files (['backtest_data/bf_exec_sealtest_20260105/trades.csv']) |   File "/home/user/trade/s
+runs_2 current_impl v5-sealed-window abs: 正解と一致 | rel: 結果なし | SealedDataError: backtest_data/bf_exec_sealtest_20260105/trades.csv is not one of unit 'SYNTH-UNIT''s sealed files (['backtest_data/bf_exec_sealtest_20260105/trades.csv']) |   File "/home/user/trade/s
+{'rows': 1190, 'differ': 2}

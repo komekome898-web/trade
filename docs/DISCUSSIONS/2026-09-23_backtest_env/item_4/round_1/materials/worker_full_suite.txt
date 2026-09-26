@@ -1,0 +1,4 @@
+# 作業者(項目 4 第 1 周)の全試験(2026-09-26 UTC)
+# コマンド: setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/bt/pytest_base_full3
+# 1 回目(--basetemp なし)は並行の pytest が /tmp/pytest-of-root/pytest-515 を消し 1390 件が FileNotFoundError(tmp_path)になった。私有の basetemp で回し直した結果:
+19941 passed, 10 skipped, 4 warnings in 1463.12s (0:24:23)

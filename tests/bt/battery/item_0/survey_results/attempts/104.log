@@ -1,0 +1,213 @@
+##### from item0_r5-1_scenekeeper_install_104.log
+=== 2026-09-24T02:53:19Z git clone --depth 1 https://github.com/jxm35/LimitOrderBook-MatchingEngine.git c104
+/dev/vda          258020 31156      6783  83% /
+Cloning into 'c104'...
+rc=0
+b5984aacb1f9a1816855df4942752711866dbfbf 2025-10-11T12:43:06+01:00 James
+928K	.
+./.idea/.name
+./.idea/codeStyles/codeStyleConfig.xml
+./.idea/vcs.xml
+./.idea/modules.xml
+./.idea/.gitignore
+./.idea/editor.xml
+./.idea/networking.iml
+./.idea/misc.xml
+./src/order_server/main.cpp
+./src/CMakeLists.txt
+./src/exchange/SymbolManager.cpp
+./src/exchange/Exchange.cpp
+./src/exchange/Exchange.h
+./src/exchange/main.cpp
+./src/exchange/SymbolManager.h
+./src/order_client/main.cpp
+./src/client/main.cpp
+./src/simulation_python/main.py
+./src/simulation_python/requirements.txt
+./src/simulation_python/gui/__init__.py
+./src/simulation_python/gui/main_window.py
+./src/simulation_python/market_simulator.py
+./.clang-format
+./README.md
+./stubs/orderbook/_orderbook.pyi
+./CMakeLists.txt
+./.gitignore
+./setup.py
+./tests/CMakeLists.txt
+./tests/OrderBookTests.cpp
+./tests/MatchingEngineTests.cpp
+./tests/OrderBookEntryTests.cpp
+./orderbook/_orderbook.pyi
+./orderbook/_orderentry_client.pyi
+./orderbook/__init__.py
+./orderbook/_mdfeed_receiver.pyi
+./pyproject.toml
+./lib/CMakeLists.txt
+./lib/OrderEntry/src/server/OrderEntryServer.cpp
+./lib/OrderEntry/src/client/OrderEntryClient.cpp
+./lib/OrderEntry/python/CMakeLists.txt
+./lib/OrderEntry/python/bindings.cpp
+./lib/OrderEntry/CMakeLists.txt
+./lib/OrderEntry/include/server/OrderEntryServer.h
+./lib/OrderEntry/include/messages/OrderMessages.h
+./lib/OrderEntry/include/client/OrderEntryClient.h
+./lib/OrderEntry/include/utils/OrderBuffer.h
+./lib/OrderEntry/include/utils/ServerConfig.h
+./lib/MDFeed/src/publisher/MulticastPublisherThread.cpp
+./lib/MDFeed/src/publisher/MulticastPublisher.cpp
+./lib/MDFeed/src/publisher/MarketDataPublisher.cpp
+./lib/MDFeed/src/receiver/MulticastReceiver.cpp
+./lib/MDFeed/python/CMakeLists.txt
+./lib/MDFeed/python/bindings.cpp
+./lib/MDFeed/CMakeLists.txt
+./lib/MDFeed/include/publisher/MulticastPublisher.h
+./lib/MDFeed/include/publisher/MarketDataPublisher.h
+./lib/MDFeed/include/publisher/MDAdapter.h
+./lib/MDFeed/include/publisher/MulticastPublisherThread.h
+./lib/MDFeed/include/receiver/MulticastReceiver.h
+--- build files:
+cmake_minimum_required(VERSION 3.24)
+
+if (EXISTS "/opt/homebrew/opt/llvm/bin/clang++")
+    message(STATUS "Using Homebrew LLVM Clang")
+    set(CMAKE_C_COMPILER /opt/homebrew/opt/llvm/bin/clang CACHE STRING "" FORCE)
+    set(CMAKE_CXX_COMPILER /opt/homebrew/opt/llvm/bin/clang++ CACHE STRING "" FORCE)
+else ()
+    message(STATUS "Using system default compiler")
+endif ()
+
+project(LimitOrderBook)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+endif ()
+
+# Boost setup
+set(BOOST_ROOT /opt/homebrew/Cellar/boost/1.82.0_1)
+set(BOOST_INCLUDE_DIR /opt/homebrew/Cellar/boost/1.82.0_1/include)
+set(BOOST_LIBRARY_DIR /opt/homebrew/Cellar/boost/1.82.0_1/lib)
+find_package(Boost 1.82.0 COMPONENTS REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+if (NOT Boost_FOUND)
+    message(FATAL_ERROR "Could not find boost!")
+endif ()
+
+# spdlog setup
+set(SPDLOG_ROOT /opt/homebrew/Cellar/spdlog/1.12.0)
+find_package(spdlog REQUIRED)
+include_directories(/opt/homebrew/Cellar/spdlog/1.12.0/include)
+
+add_subdirectory(lib)
+add_subdirectory(src)
+add_subdirectory(tests)
+add_subdirectory(benchmarks)
+
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
+if (BUILD_PYTHON_BINDINGS)
+    find_package(pybind11 QUIET)
+    if (pybind11_FOUND)
+        message(STATUS "Building Python bindings")
+        add_subdirectory(lib/OrderBook/python)
+        add_subdirectory(lib/MDFeed/python)
+        add_subdirectory(lib/OrderEntry/python)
+    else ()
+        message(WARNING "pybind11 not found, skipping Python bindings")
+    endif ()
+endif ()
+import pybind11
+from setuptools import Extension
+from setuptools import setup
+
+setup(
+    name="orderbook",
+    version="0.1.0",
+    packages=["orderbook"],
+    package_dir={"orderbook": "orderbook"},
+    include_package_data=True,
+    zip_safe=False,
+)
+[build-system]
+requires = ["setuptools>=61.0", "pybind11"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orderbook"
+version = "0.1.0"
+
+[tool.setuptools.packages.find]
+where = ["."]
+--- network/process calls in sources:
+./tests/CMakeLists.txt:6:        URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+./lib/OrderEntry/src/server/OrderEntryServer.cpp:23:    server_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+./lib/OrderEntry/src/client/OrderEntryClient.cpp:23:    socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+./lib/MDFeed/src/publisher/MulticastPublisher.cpp:26:        socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+./lib/MDFeed/src/receiver/MulticastReceiver.cpp:26:        socket_fd_ = socket(AF_INET, SOCK_DGRAM, 0);
+./benchmarks/CMakeLists.txt:5:        GIT_REPOSITORY https://github.com/google/benchmark.git
+--- binaries:
+./src/simulation_python/main.py: Python script, ASCII text executable
+./src/simulation_python/gui/main_window.py: Python script, ASCII text executable
+./src/simulation_python/market_simulator.py: Python script, ASCII text executable
+./stubs/orderbook/_orderbook.pyi: Python script, ASCII text executable
+./setup.py: Python script, ASCII text executable
+./orderbook/_orderbook.pyi: Python script, ASCII text executable
+./orderbook/_orderentry_client.pyi: Python script, ASCII text executable, with very long lines (360)
+./orderbook/__init__.py: Python script, ASCII text executable
+./orderbook/_mdfeed_receiver.pyi: Python script, ASCII text executable, with very long lines (470)
+=== start 2026-09-24T02:55:22Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c104 && cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c104 && g++ -std=c++23 -O2 -include cstdint -I lib/OrderBook/include -I /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104 lib/OrderBook/src/entries/OrderBookEntry.cpp lib/OrderBook/src/orders/Order.cpp lib/OrderBook/src/orders/OrderCore.cpp lib/OrderBook/src/securities/Security.cpp /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv104.cpp -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c104/bin/c104_driver && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c104/bin/c104_driver; echo '--- the matching core without a substitute for spdlog:'; g++ -std=c++23 -O2 -include cstdint -c -I lib/OrderBook/include -I /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104 lib/OrderBook/src/core/OrderBook.cpp -o /dev/null
+df before: /dev/vda          258020 31220      6719  83% /
+=== end 2026-09-24T02:55:29Z rc=1 elapsed=7s min_free=6691MB 
+当方を置いた後の合計=90  本数(GetOrderCount)=3
+  queuePosition=0 orderId=1 qty=50 px=10000 user=ahead_A
+  queuePosition=1 orderId=2 qty=30 px=10000 user=ahead_B
+  queuePosition=2 orderId=3 qty=10 px=10000 user=mine
+RemoveOrder(id=1) ok=1  残り合計=40
+  queuePosition=0 orderId=2 qty=30 user=ahead_B
+  queuePosition=1 orderId=3 qty=10 user=mine
+--- the matching core without a substitute for spdlog:
+lib/OrderBook/src/core/OrderBook.cpp:1:10: fatal error: spdlog/spdlog.h: No such file or directory
+    1 | #include "spdlog/spdlog.h"
+      |          ^~~~~~~~~~~~~~~~~
+compilation terminated.
+df after: /dev/vda          258020 31248      6691  83% /
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv104.cpp
+#include "entries/OrderBookEntry.h"
+#include <cstdio>
+int main(){
+  auto lim = std::make_shared<Limit>(10000); // 価格 100.00 (pence)
+  // 先行の 2 本 (50 枚, 30 枚) -> 当方の 10 枚
+  auto e1 = std::make_shared<OrderBookEntry>(lim, Order(OrderCore(1,"ahead_A",1), 10000, 50, true));
+  lim->AddOrder(e1);
+  printf("当方を置く前の先行注文量(GetOrderQuantity)=%u\n", lim->GetOrderQuantity());
+  auto e2 = std::make_shared<OrderBookEntry>(lim, Order(OrderCore(2,"ahead_B",1), 10000, 30, true));
+  lim->AddOrder(e2);
+  printf("当方を置く前の先行注文量(GetOrderQuantity)=%u\n", lim->GetOrderQuantity());
+  auto e3 = std::make_shared<OrderBookEntry>(lim, Order(OrderCore(3,"mine",1), 10000, 10, true));
+  lim->AddOrder(e3);
+  printf("当方を置いた後の合計=%u  本数(GetOrderCount)=%u\n", lim->GetOrderQuantity(), lim->GetOrderCount());
+  for (const auto& r : lim->GetOrderRecords())
+    printf("  queuePosition=%u orderId=%ld qty=%u px=%ld user=%s\n", r.queuePosition, r.orderId, r.quantity, r.price, r.username.c_str());
+  // 先行 A を取り消す -> 当方の待ち行列の順位が上がるか
+  auto rm = lim->RemoveOrder(1, 50);
+  printf("RemoveOrder(id=1) ok=%d  残り合計=%u\n", (int)rm.has_value(), lim->GetOrderQuantity());
+  for (const auto& r : lim->GetOrderRecords())
+    printf("  queuePosition=%u orderId=%ld qty=%u user=%s\n", r.queuePosition, r.orderId, r.quantity, r.username.c_str());
+  return 0;
+}
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104/boost:
+--- optional.hpp
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104/spdlog:
+--- fmt
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104/spdlog/fmt/fmt.h (shim header used by the driver build)
+#pragma once
+#include <format>
+#include <string>
+namespace fmt { template<class...A> std::string format(std::format_string<A...> f, A&&...a){ return std::format(f, std::forward<A>(a)...);} }
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/shim104/boost/optional.hpp (shim header used by the driver build)
+#pragma once
+#include <optional>
+namespace boost { template<class T> using optional = std::optional<T>; }

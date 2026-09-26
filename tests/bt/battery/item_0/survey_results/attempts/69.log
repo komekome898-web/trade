@@ -1,0 +1,295 @@
+##### from item0_r5-1_scenekeeper_install_69.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/dirkolbrich/gobacktest.git c69
+/dev/vda          258020 32037      5902  85% /
+rc=0
+719cff68de8ad45c45be4c68df6e6f31e5e64305 2023-10-11T14:34:18+02:00 Dirk Olbrich
+2.8M	.
+=== start 2026-09-24T03:01:29Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c69 && go mod tidy && go build ./... && go vet ./... ; go test ./... 2>&1 | tail -5
+df before: /dev/vda          258020 33607      4332  89% /
+=== end 2026-09-24T03:01:45Z rc=0 elapsed=16s min_free=4037MB 
+go: finding module for package gonum.org/v1/gonum/stat
+go: downloading gonum.org/v1/gonum v0.17.0
+go: found gonum.org/v1/gonum/stat in gonum.org/v1/gonum v0.17.0
+?   	github.com/dirkolbrich/gobacktest/examples/buy-and-hold	[no test files]
+?   	github.com/dirkolbrich/gobacktest/examples/ma-cross	[no test files]
+?   	github.com/dirkolbrich/gobacktest/examples/ma-cross-best-fit	[no test files]
+?   	github.com/dirkolbrich/gobacktest/strategy	[no test files]
+ok  	github.com/dirkolbrich/gobacktest/ta	0.002s
+df after: /dev/vda          258020 33748      4191  89% /
+=== start 2026-09-24T03:21:29Z limit=300s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv69 && go mod tidy && go build -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c69/bin/c69_driver . 2>&1 || (python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c69 && go build -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c69/bin/c69_driver .)
+df before: /dev/vda          258020 35462      2477  94% /
+=== end 2026-09-24T03:21:30Z rc=0 elapsed=1s min_free=2477MB 
+df after: /dev/vda          258020 35466      2473  94% /
+=== 2026-09-24T03:21:41Z attempt: an ExecutionHandler outside the package that sets the fill price (the scene's fill model)
+# drv69
+./main.go:11:5: f.SetPrice undefined (type *gobacktest.Fill has no field or method SetPrice)
+rc=0
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv69/main.go
+// Driver for candidate 69 gobacktest (github.com/dirkolbrich/gobacktest), public API only:
+// Backtest.SetData/SetStrategy/SetPortfolio/SetExchange/Run, Data.SetStream, Bar/Tick data events,
+// a StrategyHandler whose OnData records what it receives and returns Signals, Size, CommissionHandler,
+// ExecutionHandler, PortfolioHandler. Input: one JSON object on stdin; output: JSON lines.
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"time"
+
+	gbt "github.com/dirkolbrich/gobacktest"
+	gdata "github.com/dirkolbrich/gobacktest/data"
+)
+
+type Ev struct {
+	Kind  string  `json:"kind"`
+	Ts    int64   `json:"ts_ns"`
+	Price float64 `json:"price"`
+	Open  float64 `json:"open"`
+	High  float64 `json:"high"`
+	Low   float64 `json:"low"`
+	Close float64 `json:"close"`
+	Vol   float64 `json:"volume"`
+	Qty   float64 `json:"qty"`
+	Bid   float64 `json:"bid"`
+	Ask   float64 `json:"ask"`
+}
+
+type In struct {
+	Mode   string `json:"mode"`
+	Dir    string `json:"dir"`
+	Events []Ev   `json:"events"`
+	Probe  int64  `json:"probe"`
+	Plug   string `json:"plug"`
+	Qty    int64  `json:"qty"`
+	BuyAt  int    `json:"buy_at"`
+	ReadAt int    `json:"read_at"`
+}
+
+func out(v map[string]interface{}) { b, _ := json.Marshal(v); fmt.Println(string(b)) }
+
+func dataEvent(e Ev) gbt.DataEvent {
+	if e.Kind == "tick" {
+		t := &gbt.Tick{Bid: e.Bid, Ask: e.Ask}
+		t.SetTime(time.Unix(0, e.Ts).UTC())
+		t.SetSymbol("X")
+		return t
+	}
+	b := &gbt.Bar{Open: e.Open, High: e.High, Low: e.Low, Close: e.Close, AdjClose: e.Close, Volume: int64(e.Vol)}
+	b.SetTime(time.Unix(0, e.Ts).UTC())
+	b.SetSymbol("X")
+	return b
+}
+
+// Rec is the strategy: it records every data event and, at call BuyAt, emits a buy signal.
+type Rec struct {
+	*gbt.Strategy
+	n      int
+	in     In
+	pf     *gbt.Portfolio
+	onCall func(n int, ev gbt.DataEvent, r *Rec)
+}
+
+func (r *Rec) OnData(ev gbt.DataEvent) ([]gbt.SignalEvent, error) {
+	r.n++
+	typ := fmt.Sprintf("%T", ev)
+	row := map[string]interface{}{"ev": typ, "ts": ev.Time().UnixNano(), "price": ev.Price(), "n": r.n}
+	if b, ok := ev.(*gbt.Bar); ok {
+		row["open"], row["high"], row["low"], row["close"], row["volume"] = b.Open, b.High, b.Low, b.Close, b.Volume
+	}
+	out(row)
+	if r.onCall != nil {
+		r.onCall(r.n, ev, r)
+	}
+	if r.in.BuyAt > 0 && r.n == r.in.BuyAt {
+		s := &gbt.Signal{}
+		s.SetTime(ev.Time())
+		s.SetSymbol("X")
+		s.SetDirection(gbt.BOT)
+		return []gbt.SignalEvent{s}, nil
+	}
+	return nil, nil
+}
+
+// the scene's plugs (a fill model at 12345.0 cannot be written outside the package: Fill has no
+// public price setter -- fill.go has SetDirection and SetQty only; see the install record)
+type PerFill struct{}
+
+func (PerFill) Calculate(qty, price float64) (float64, error) { return 0.5, nil }
+
+type PerUnit struct{}
+
+func (PerUnit) Calculate(qty, price float64) (float64, error) { return 0.375 * qty, nil }
+
+// RecPortfolio wraps the tool's Portfolio (the PortfolioHandler plug point, Backtest.SetPortfolio): it
+// prints every fill handed to the account (fills are not readable otherwise: Portfolio.transactions has no accessor).
+type RecPortfolio struct {
+	*gbt.Portfolio
+	account bool
+}
+
+func (p *RecPortfolio) OnFill(f gbt.FillEvent, d gbt.DataHandler) (*gbt.Fill, error) {
+	x := f.(*gbt.Fill)
+	out(map[string]interface{}{"fill_ts": x.Time().UnixNano(), "fill_price": x.Price(), "fill_qty": x.Qty(), "commission": x.Commission(), "cost": x.Cost(), "account": p.account})
+	return p.Portfolio.OnFill(f, d)
+}
+
+func main() {
+	var in In
+	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
+		out(map[string]interface{}{"error": err.Error()})
+		os.Exit(2)
+	}
+	if in.Mode == "csv" { // the tool's own CSV loader (data/data-csv.go)
+		d := &gdata.BarEventFromCSVFile{FileDir: in.Dir}
+		err := d.Load([]string{"X"})
+		msg := ""
+		if err != nil {
+			msg = err.Error()
+		}
+		times := []int64{}
+		for _, e := range d.Stream() {
+			times = append(times, e.Time().UnixNano())
+		}
+		out(map[string]interface{}{"csv_error": msg, "times": times})
+		return
+	}
+	stream := make([]gbt.DataEvent, 0, len(in.Events))
+	for _, e := range in.Events {
+		stream = append(stream, dataEvent(e))
+	}
+	data := &gbt.Data{}
+	data.SetStream(stream)
+
+	test := gbt.New()
+	test.SetSymbols([]string{"X"})
+	test.SetData(data)
+	pf := gbt.NewPortfolio()
+	qty := in.Qty
+	if qty == 0 {
+		qty = 1
+	}
+	pf.SetSizeManager(&gbt.Size{DefaultSize: qty, DefaultValue: math.MaxFloat64})
+	test.SetPortfolio(&RecPortfolio{Portfolio: pf, account: in.Plug == "account"})
+	ex := gbt.NewExchange()
+	ex.Symbol = "X"
+	switch in.Plug {
+	case "cost05":
+		ex.Commission = PerFill{}
+	case "cost0375unit":
+		ex.Commission = PerUnit{}
+	}
+	test.SetExchange(ex)
+	rec := &Rec{Strategy: gbt.NewStrategy("scene"), in: in, pf: pf}
+	rec.Strategy.SetChildren(gbt.NewAsset("X"))
+	rec.onCall = func(n int, ev gbt.DataEvent, r *Rec) {
+		d, _ := r.Data()
+		if in.Probe != 0 && ev.Time().UnixNano() == in.Probe {
+			hist := d.History()
+			mx := -1.0
+			for _, h := range hist {
+				if h.Price() > mx {
+					mx = h.Price()
+				}
+			}
+			out(map[string]interface{}{"visible_count": len(hist), "max_visible_close": mx})
+			if st := d.Stream(); len(st) > 0 {
+				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "value": st[0].Price()})
+			} else {
+				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "error": "empty"})
+			}
+			out(map[string]interface{}{"read": "Data().List(\"X\")", "form": "other", "value": len(d.List("X"))})
+		}
+		if in.ReadAt > 0 && n == in.ReadAt {
+			pos, ok := pf.IsInvested("X")
+			out(map[string]interface{}{"read_at": n, "invested": ok, "position": fmt.Sprintf("%+v", pos)})
+		}
+	}
+	test.SetStrategy(rec)
+	if err := test.Run(); err != nil {
+		out(map[string]interface{}{"error": err.Error()})
+	}
+}
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv69/go.mod
+module drv69
+
+go 1.24.7
+
+require github.com/dirkolbrich/gobacktest v0.0.0
+
+require gonum.org/v1/gonum v0.17.0 // indirect
+
+replace github.com/dirkolbrich/gobacktest => /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c69
+=== 2026-09-24T07:00:58Z round r6-1 (scene keeper): driver rebuilt with the scene's fixed position namings (tryNamings) and the History() closes for p4-visible-at-step. go build -o c69_driver . (GOMODCACHE = the recorded module cache, GOPROXY=off) rc=0; df after: /dev/vda          258020 35877      2062  95% /
+--- diff against the previous source
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/r6/item0_r6-1_scenekeeper_drv69_main.go.before	2026-09-24 07:00:47.441556471 +0000
++++ /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv69/main.go	2026-09-24 07:00:47.461307390 +0000
+@@ -108,6 +108,46 @@
+ 	return p.Portfolio.OnFill(f, d)
+ }
+ 
++func prices(s []gbt.DataEvent) []float64 {
++	v := []float64{}
++	for _, e := range s {
++		v = append(v, e.Price())
++	}
++	return v
++}
++
++// tryNamings applies the Go-expressible namings of the scene's list (scenes.py POSITION_NAMINGS) to a slice
++// the strategy holds, each in its own recover; a Go slice has no step, so the three step namings cannot be
++// written by a strategy and are reported as not expressible.
++func tryNamings(name string, s []gbt.DataEvent, n int) {
++	for _, nm := range []string{"[n]", "[n:]", "[n:n+1]", "[n-1:n+1]", "[n:n]"} {
++		func() {
++			defer func() {
++				if r := recover(); r != nil {
++					out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "error": fmt.Sprint(r)})
++				}
++			}()
++			var v interface{}
++			switch nm {
++			case "[n]":
++				v = s[n].Price()
++			case "[n:]":
++				v = prices(s[n:])
++			case "[n:n+1]":
++				v = prices(s[n : n+1])
++			case "[n-1:n+1]":
++				v = prices(s[n-1 : n+1])
++			case "[n:n]":
++				v = prices(s[n:n])
++			}
++			out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "value": v})
++		}()
++	}
++	for _, nm := range []string{"[n::2]", "[n::-1]", "[:n:-1]"} {
++		out(map[string]interface{}{"read": name, "form": "position", "shape": "position", "naming": nm, "expressible": false})
++	}
++}
++
+ func main() {
+ 	var in In
+ 	if err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {
+@@ -166,12 +206,14 @@
+ 					mx = h.Price()
+ 				}
+ 			}
+-			out(map[string]interface{}{"visible_count": len(hist), "max_visible_close": mx})
+-			if st := d.Stream(); len(st) > 0 {
+-				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "value": st[0].Price()})
+-			} else {
+-				out(map[string]interface{}{"read": "Data().Stream()[0]", "form": "position", "error": "empty"})
++			closes := []float64{}
++			for _, h := range hist {
++				closes = append(closes, h.Price())
+ 			}
++			out(map[string]interface{}{"visible_count": len(hist), "max_visible_close": mx, "visible_closes": closes})
++			// the scene's fixed position namings (round r6-1), on each slice the strategy can read
++			tryNamings("go:Data().History()[位置]", hist, len(hist))
++			tryNamings("go:Data().Stream()[位置]", d.Stream(), 0)
+ 			out(map[string]interface{}{"read": "Data().List(\"X\")", "form": "other", "value": len(d.List("X"))})
+ 		}
+ 		if in.ReadAt > 0 && n == in.ReadAt {

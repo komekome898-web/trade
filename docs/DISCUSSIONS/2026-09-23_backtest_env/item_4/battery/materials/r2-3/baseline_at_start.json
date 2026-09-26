@@ -1,0 +1,78 @@
+{
+ "entries": {
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json": {
+   "sha256": "2da60da1a388dbd09ee9e8e4407648a76ba34ec00f6e5f238728d9492a483cd4",
+   "status": " M"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_before_section.txt": {
+   "sha256": "4eee90d4fe2068c4dbd3bd9a8e425ecda37a1bc09ea36f48def41fad40a6d484",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_final.txt": {
+   "sha256": "3cf49d38702424e1538905cabb216aeb5c8abba90e8bd578f17bc2bd5436bf09",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest.txt": {
+   "sha256": "47e6f2057eb8f7479708ab58d2f0b2f53f5dce9d992659f8e1715d594b30a714",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest_diffscope.txt": {
+   "sha256": "fd5155a5b0385dbdcb1764e99a8e4f0d715805e6687a0bf8cc1da25ebabe18f4",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_before.json": {
+   "sha256": "894215662037241538df4ed9ef4bee0afca18b33d49941dbf08ffa9768ad811d",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_bt_considered.out": {
+   "sha256": "4ae07e59de276d394a12481a0590899a8ec83a5701cb9c6fcfa2e83f19a7c4f4",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/diff_before.txt": {
+   "sha256": "e1f17974eb8d78a82cd75dfc1f4a86880b2b6888c28a0e327eda34079ef2835c",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_after_fix_rerun_that_overwrote.txt": {
+   "sha256": "4f8afd1b88bda64e04a27f83f85b63e8364a0ba5a1d7184e3b89d9141ff2ad97",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_overwrite.diff": {
+   "sha256": "14f7920d9cb8bf7dc8bb1384f1b2931409b4b3123ca07a97a17385d3f7129c2f",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_after_tests.txt": {
+   "sha256": "b01fa5582d84afa54da0577e09a1f9198e687f92b0aa50088d3594baa721bd67",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_before_tests.txt": {
+   "sha256": "b01fa5582d84afa54da0577e09a1f9198e687f92b0aa50088d3594baa721bd67",
+   "status": "??"
+  },
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/full_suite.txt": {
+   "sha256": "469cf118c432bbfef938f3c6e93d4c85240bdf6f5c544be37aeb30b8bfb98487",
+   "status": "??"
+  },
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-1.md": {
+   "sha256": "9d3679261e3bbd6c302e232809063e948b051a8fcf56baeed51bfe32ba151c7e",
+   "status": " M"
+  },
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-2.md": {
+   "sha256": "f55adb23bc28dc6035aeaf208bcbf658bb947029285c1c08365bcd03e8b914da",
+   "status": "??"
+  },
+  "tests/bt/battery/item_4/diff_scope.py": {
+   "sha256": "83bc31c2c8664c65836a8e5c348f25856a6e7030aeedaf4055b811a0bd89ee37",
+   "status": "??"
+  },
+  "tests/bt/battery/item_4/test_battery_item4_claims.py": {
+   "sha256": "d9765e0d596d33314b5820319ec05cf6d6e1b9df6c27465dc1fa0f2d12ff1421",
+   "status": " M"
+  },
+  "tests/bt/battery/item_4/test_battery_item4_diffscope.py": {
+   "sha256": "fa1ed0a2ffcf63b8fe88d74e580e5dbf66e2e09a347b4bc272a9b3da4729cfae",
+   "status": "??"
+  }
+ },
+ "head": "d70387060c01482d5d18439bc3cf22afe45c10d5",
+ "taken_at_utc": "2026-09-26T10:17:00Z"
+}

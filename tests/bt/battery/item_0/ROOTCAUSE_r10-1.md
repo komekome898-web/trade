@@ -1,0 +1,5 @@
+# 採らなかった案 — 第 r10-1 回の直しの前の定義(正の定義 G、第 3 版、場面係、2026-09-24)
+
+**この文書は採らなかった案の記録である。**リードの設計 LEAD_DESIGN.md §8.2 の 1 は「要件の文を切片に切る「名指し」の判定・登録簿・持ち主・上位の決定の切片は作らない(定義 G は採らない。書きかけの ROOTCAUSE_r10-1.md は「採らなかった案」と見出しを付けて残し、DEFINITIONS には入れない)」とした。ここに書いた正の定義 G・登録簿・「名指し」の機械は場面集の規則ではなく、どの試験・生成器・判断の元にもしない。第 r11-1 回の直しの根本原因と直しは ROOTCAUSE_r11-1.md にある。
+
+**本文は git の版 `0d60e9b` にある**(`git show 0d60e9b:tests/bt/battery/item_0/ROOTCAUSE_r10-1.md`、242 行。第 2 版は `git show 24329ca:tests/bt/battery/item_0/ROOTCAUSE_r10-1.md`)。第 r11-1 回の直しで、本文をこの版を固定した参照に置き換えた: 本文は場面の中身(場面の欄の値・場面の集まりの数と id)を自然文で持つ行を含み、今の照合元(`scenes.py` と `survey_results/`)と照らせず、照合元が変わると偽になりうるため、正の定義 B(DEFINITIONS.md の「正の定義 0〜E」)により作業木には置かない(第 r8-1 回が ROOTCAUSE_r4-1.md〜ROOTCAUSE_r7-1.md を置き換えた形と同じ)。本文の場面の中身は、版 `0d60e9b` の照合元(`git show 0d60e9b:tests/bt/battery/item_0/scenes.py`)への参照として読む。この案への監査役(定義)の指摘 dr10-1-1-1〜dr10-1-3-4 の逐語は `docs/DISCUSSIONS/2026-09-23_backtest_env/item_0/battery/AUDIT.md` と `docs/AUDITOR/VERDICTS/2026-09-23_backtest_env_run8_item0.md` の「第 10 周」にある。

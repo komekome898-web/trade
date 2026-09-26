@@ -1,0 +1,9 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/trade
+configfile: pyproject.toml
+collected 16 items / 15 deselected / 1 selected
+
+tests/bt/battery/item_2/test_battery_item2.py .                          [100%]
+
+======================= 1 passed, 15 deselected in 0.21s =======================

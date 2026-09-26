@@ -1,0 +1,225 @@
+# 区分1 3回目 生ログ 開始 2026-09-22T03:54:36Z
+1 tool=Bash cmd=scripts/tools_inventory.py rc=0 t=2026-09-22T03:54:36Z
+2 tool=curl url=https://pypi.org/pypi/basana/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.11|up=2026-07-22T17:47:41|lic=|lic_expr=Apache-2.0|py=<4,>=3.10|home=https://github.com/gbeced/basana|author=Gabriel Becedillas|reqs=5|summary=A Python async and event driven framework for algorithmic trading, with a focus on crypto currencies.
+3 tool=curl url=https://pypi.org/pypi/backtrader/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.9.78.123|up=2023-04-19T14:13:18|lic=GPLv3+|lic_expr=None|py=|home=https://github.com/mementum/backtrader|author=Daniel Rodriguez|reqs=1|summary=BackTesting Engine
+4 tool=curl url=https://pypi.org/pypi/pysystemtrade/json code=404 t=2026-09-22T03:54:49Z time_s=0.15
+    head200=(no body)
+5 tool=curl url=https://pypi.org/pypi/pybroker/json code=404 t=2026-09-22T03:54:49Z time_s=0.15
+    head200=(no body)
+6 tool=curl url=https://pypi.org/pypi/lib-pybroker/json code=200 t=2026-09-22T03:54:49Z time_s=0.09
+    head200=ver=2.0.1|up=2026-08-28T03:38:23|lic=Apache License 2.0 with Commons Clause|lic_expr=None|py=>=3.11|home=http://www.pybroker.com|author=Edward West|reqs=19|summary=Algorithmic trading with machine learning
+7 tool=curl url=https://pypi.org/pypi/bt/json code=200 t=2026-09-22T03:54:49Z time_s=0.09
+    head200=ver=1.2.3|up=2026-09-12T00:45:25|lic=MIT|lic_expr=None|py=>=3.9|home=https://github.com/pmorissette/bt|author=None|reqs=53|summary=A flexible backtesting framework for Python
+8 tool=curl url=https://pypi.org/pypi/ziplime/json code=200 t=2026-09-22T03:54:49Z time_s=0.08
+    head200=ver=1.19.16|up=2026-06-18T09:21:46|lic=|lic_expr=None|py=<4.0,>=3.12|home=|author=Ziplime|reqs=30|summary=
+9 tool=curl url=https://pypi.org/pypi/superalgos/json code=404 t=2026-09-22T03:54:50Z time_s=0.15
+    head200=(no body)
+10 tool=curl url=https://pypi.org/pypi/opentrader/json code=404 t=2026-09-22T03:54:50Z time_s=0.14
+    head200=(no body)
+11 tool=curl url=https://pypi.org/pypi/crypto-signal/json code=404 t=2026-09-22T03:54:50Z time_s=0.14
+    head200=(no body)
+12 tool=curl url=https://pypi.org/pypi/fast-trade/json code=200 t=2026-09-22T03:54:50Z time_s=0.19
+    head200=ver=2.1.0|up=2026-08-20T04:59:18|lic=GNU AGPLv3|lic_expr=None|py=>=3.10|home=https://github.com/jrmeier/fast-trade|author=None|reqs=16|summary=Low code backtesting library utilizing pandas and technical analysis indicators
+13 tool=curl url=https://pypi.org/pypi/OctoBot/json code=200 t=2026-09-22T03:54:50Z time_s=0.07
+    head200=Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.11/json/__init__.py", line 293, in load
+    return loads(fp.read(),
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/json/decoder.py", line 337, in deco
+14 tool=curl url=https://pypi.org/pypi/pybotters/json code=200 t=2026-09-22T03:54:50Z time_s=0.07
+    head200=ver=1.11.2|up=2026-04-17T07:19:41|lic=|lic_expr=MIT|py=>=3.10|home=|author=None|reqs=1|summary=An advanced API client for python crypto bot traders
+15 tool=curl url=https://pypi.org/pypi/OctoBot/json code=200 bytes=407012 t=2026-09-22T03:55:08Z
+OctoBot ver=2.1.1 up=2026-03-29T15:25:05 lic='GPL-3.0' lic_expr=None py=>=3.12 home=https://github.com/Drakkar-Software/OctoBot author=Drakkar-Software reqs=77
+summary= Cryptocurrencies alert / trading bot
+16 tool=curl url=https://raw.githubusercontent.com/robcarver17/pysystemtrade/master/LICENSE code=200 bytes=35140 t=2026-09-22T03:55:09Z time_s=0.39
+    head200=                    GNU GENERAL PUBLIC LICENSE                        Version 3, 29 June 2007   Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>  Everyone is permitted to copy and d
+17 tool=curl url=https://raw.githubusercontent.com/Superalgos/Superalgos/develop/LICENSE code=200 bytes=11357 t=2026-09-22T03:55:09Z time_s=0.39
+    head200=                                 Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCT
+18 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:09Z time_s=0.19
+    head200=404: Not Found
+19 tool=curl url=https://raw.githubusercontent.com/CryptoSignal/Crypto-Signal/master/LICENSE code=200 bytes=1070 t=2026-09-22T03:55:10Z time_s=0.2
+    head200=MIT License  Copyright (c) 2017 Abenezer Mamo  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to dea
+20 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:10Z time_s=0.18
+    head200=404: Not Found
+21 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/LICENSE code=404 bytes=14 t=2026-09-22T03:55:10Z time_s=0.18
+    head200=404: Not Found
+22 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/master/LICENSE code=200 bytes=10174 t=2026-09-22T03:55:21Z time_s=0.39
+    head200=                                  Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUC
+23 tool=curl url=https://raw.githubusercontent.com/bludnic/opentrader/main/README.md code=404 bytes=14 t=2026-09-22T03:55:21Z time_s=0.24
+    head200=404: Not Found
+24 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/master/LICENSE code=200 bytes=3751 t=2026-09-22T03:55:21Z time_s=0.5
+    head200=# Functional Source License, Version 1.1, ALv2 Future License  ## Abbreviation  FSL-1.1-ALv2  ## Notice  Copyright 2026 Nwagbara Group, LLC  ## Terms and Conditions  ### Licensor ("We")  The party off
+25 tool=curl url=https://raw.githubusercontent.com/Mendl-Labs/BacktestingCore/main/LICENSE.md code=404 bytes=14 t=2026-09-22T03:55:22Z time_s=0.17
+    head200=404: Not Found
+26 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/master/LICENSE code=404 bytes=14 t=2026-09-22T03:55:22Z time_s=0.19
+    head200=404: Not Found
+27 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/README.md code=200 bytes=3749 t=2026-09-22T03:55:22Z time_s=0.21
+    head200=# Event‑Driven Backtesting Engine :  Tick or Bar level Simulation & Trade Analytics  [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/) [![License](https://i
+28 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/Cargo.toml code=200 bytes=1120 t=2026-09-22T03:55:22Z time_s=0.18
+    head200=[package] name = "connector" version = "0.1.0" edition = "2024"  [features] default = ["binancefutures", "binancespot", "bybit"] binancefutures = [] binancespot = [] bybit = []  [dependencies] hftback
+29 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/Cargo.toml code=200 bytes=699 t=2026-09-22T03:55:22Z time_s=0.2
+    head200=[workspace] resolver = "2" members = [   "hftbacktest",   "hftbacktest-derive",   "py-hftbacktest",   "collector" , "connector"]  [profile.dev] opt-level = 0 debug = true debug-assertions = false over
+30 tool=curl url=https://raw.githubusercontent.com/nkaz001/hftbacktest/master/connector/src/main.rs code=200 bytes=15295 t=2026-09-22T03:55:36Z time_s=0.43
+    head200=use std::{     collections::{HashMap, hash_map::Entry},     fs::read_to_string,     panic,     process::exit,     sync::{Arc, Mutex},     thread,     time::Duration, };  use clap::Parser; use hftbackt
+31 tool=curl url=https://raw.githubusercontent.com/Luczinsritter/event_driven_backtesting_engine/main/LICENSE.md code=404 bytes=14 t=2026-09-22T03:55:36Z time_s=0.38
+    head200=404: Not Found
+--- connector/src/main.rs の mod 宣言 ---
+35:    binancefutures::BinanceFutures,
+36:    binancespot::BinanceSpot,
+37:    bybit::Bybit,
+41:#[cfg(feature = "binancefutures")]
+42:pub mod binancefutures;
+43:#[cfg(feature = "binancespot")]
+44:pub mod binancespot;
+45:#[cfg(feature = "bybit")]
+46:pub mod bybit;
+48:mod connector;
+50:mod utils;
+70:            Ok(()) => {
+76:                        } => match order.req {
+77:                            Status::New => {
+81:                            Status::Canceled => {
+85:                            status => {
+93:                        } => {
+109:            Err(_error) => {
+129:            _ = shutdown_signal.notified() => {
+132:            Some(msg) = rx.recv() => {
+139:                    } => {
+166:                            Entry::Occupied(mut entry) => {
+179:                            Entry::Vacant(entry) => {
+186:                    PublishEvent::LiveEvent(ev) => {
+192:                    PublishEvent::BatchStart(id) => {
+195:                    PublishEvent::BatchEnd(id) => {
+219:        LiveEvent::Feed { symbol, event } => {
+223:                        Some(d) => d,
+224:                        None => return vec![],
+238:                        Some(d) => d,
+--- Luczinsritter README のライセンス行 ---
+4:[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+90:## License
+32 tool=curl url=https://pypi.org/pypi/pyqlib/json code=200 bytes=288030 t=2026-09-22T06:21:19Z time_s=0.42
+    head200={"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":["Development Status :: 3 - Alpha","License :: OSI Approved :: MIT License","Operating System :: MacOS","Operating System :
+33 tool=curl url=https://raw.githubusercontent.com/microsoft/qlib/main/qlib/config.py code=200 bytes=19654 t=2026-09-22T06:21:20Z time_s=0.62
+    head200=# Copyright (c) Microsoft Corporation. # Licensed under the MIT License. """ About the configs =================  The config will be based on _default_config. Two modes are supported - client - server
+34 tool=curl url=https://raw.githubusercontent.com/microsoft/qlib/main/scripts/dump_bin.py code=200 bytes=21847 t=2026-09-22T06:21:20Z time_s=0.40
+    head200=# Copyright (c) Microsoft Corporation. # Licensed under the MIT License.  import abc import shutil import traceback from pathlib import Path from typing import Iterable, List, Union from functools imp
+35 tool=curl url=https://pypi.org/pypi/mlflow/json code=200 bytes=340834 t=2026-09-22T06:21:30Z time_s=0.22
+    head200={"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","Intended Audience :: Developers","Intended Audience :: End Users/Desktop","
+36 tool=curl url=https://raw.githubusercontent.com/mlflow/mlflow/master/mlflow/telemetry/constant.py code=200 bytes=2075 t=2026-09-22T06:21:30Z time_s=0.67
+    head200=from mlflow.ml_package_versions import GENAI_FLAVOR_TO_MODULE_NAME, NON_GENAI_FLAVOR_TO_MODULE_NAME  # NB: Kinesis PutRecords API has a limit of 500 records per request BATCH_SIZE = 500 BATCH_TIME_INT
+37 tool=curl url=https://raw.githubusercontent.com/mlflow/mlflow/master/mlflow/telemetry/utils.py code=200 bytes=7993 t=2026-09-22T06:21:40Z time_s=2.22
+    head200=import logging import os import re from pathlib import Path from typing import Any  import requests from packaging.version import Version  from mlflow.environment_variables import (     _MLFLOW_TELEME
+38 tool=curl url=https://raw.githubusercontent.com/jesse-ai/jesse/master/README.md code=200 bytes=12899 t=2026-09-22T06:21:47Z time_s=0.21
+    head200=<div align="center"> <br> <p align="center"> <img src="assets/jesse-logo.png" alt="Jesse" height="72" /> </p>  <p align="center"> Algo-trading was 😵‍💫, we made it 🤩 </p> </div>  # Jesse [![
+39 tool=curl url=https://pypi.org/pypi/vnpy_ctastrategy/json code=200 bytes=39339 t=2026-09-22T06:21:47Z time_s=0.09
+    head200={"info":{"author":null,"author_email":"Xiaoyou Chen <xiaoyou.chen@mail.vnpy.com>","bugtrack_url":null,"classifiers":["Development Status :: 5 - Production/Stable","License :: OSI Approved :: MIT Licen
+40 tool=curl url=https://raw.githubusercontent.com/QuantConnect/lean-cli/master/README.md code=200 bytes=117049 t=2026-09-22T06:21:57Z time_s=0.28
+    head200=![Lean CLI](http://cdn.quantconnect.com.s3.us-east-1.amazonaws.com/i/github/lean-cli-splash.png)  # QuantConnect Lean CLI  [![Build Status](https://github.com/QuantConnect/lean-cli/workflows/Build/bad
+41 tool=curl url=https://raw.githubusercontent.com/DeviaVir/zenbot/unstable/package.json code=200 bytes=3451 t=2026-09-22T06:21:57Z time_s=0.42
+    head200={   "name": "zenbot4",   "version": "4.1.0",   "description": "Cryptocurrency trading bot",   "bugs": "https://github.com/deviavir/zenbot/issues",   "license": "MIT",   "repository": {     "type": "gi
+42 tool=curl url=https://raw.githubusercontent.com/carlos8f/bot18/master/package.json code=200 bytes=3191 t=2026-09-22T06:21:58Z time_s=0.24
+    head200={   "name": "bot18",   "version": "0.4.35",   "description": "A high-frequency cryptocurrency trading bot by Zenbot creator @carlos8f",   "bin": {     "bot18": "./bot18.sh"   },   "repository": {     
+43 tool=Bash cmd="zipline ingest -b syn" rc=0 t=2026-09-22T06:22:31Z time_s=1.99
+    head200=    raise AssertionError( AssertionError: Got 120 rows for daily bars table with first day=2020-01-02, last day=2020-06-17, expected 116 rows. Missing sessions: [] Extra sessions: [Timestamp('2020-01-
+44 tool=Bash cmd="zipline ingest -b syn (NYSE sessions)" rc=0 t=2026-09-22T06:22:45Z time_s=2.04
+    head200=Loading custom pricing data:  /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/r3/v_zip/lib/python3.11/site-packages/zipline/assets/asset_writer.py:321: FutureWarning: Da
+45 tool=Bash cmd="zipline run_algorithm 成行買い+指値売り 合成118本" rc=0 t=2026-09-22T06:22:59Z time_s=2.30
+    head200=TXN_COUNT=2 TXN amount=10 price=98.8594 dt=2020-01-08 TXN amount=-10 price=97.8211 dt=2020-01-13 FINAL_PORTFOLIO_VALUE=99989.5966 PNL=-10.4034 
+46 tool=Bash cmd="jesse.research.backtest 合成300本 成行買い+指値利確" rc=0 t=2026-09-22T06:23:26Z time_s=2.72
+    head200=TOTAL_TRADES=1 NET_PROFIT=1.8185 FINISHING_BALANCE=10001.8185 
+47 tool=curl url=https://jesse.trade/pricing code=403 bytes=5485 t=2026-09-22T06:23:57Z time_s=5.47
+    head200=<!DOCTYPE html> <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en-US"> <![endif]--> <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en-US"> <![endif]--> <!--[if IE 8]>    <html class="no-
+48 tool=curl url=https://docs.jesse.trade/docs/livetrade.html code=200 bytes=68105 t=2026-09-22T06:23:59Z time_s=2.00
+    head200=<!DOCTYPE html> <html lang="en-US" dir="ltr">   <head>     <meta charset="utf-8">     <meta name="viewport" content="width=device-width,initial-scale=1">     <title>Live Trading | Jesse</title>     <m
+49 tool=curl url=https://docs.jesse.trade/docs/livetrade.html code=200 bytes=68105 t=2026-09-22T06:24:07Z time_s=0.57
+    head200=<!DOCTYPE html> <html lang="en-US" dir="ltr">   <head>     <meta charset="utf-8">     <meta name="viewport" content="width=device-width,initial-scale=1">     <title>Live Trading | Jesse</title>     <m
+50 tool=Bash cmd="which docker; docker --version" rc=1 t=2026-09-22T06:24:19Z
+    head200=/usr/bin/docker Docker version 29.3.1, build c2be9cc 
+51 tool=Bash cmd="docker info" rc=0 t=2026-09-22T06:24:29Z
+    head200=Client: Docker Engine - Community  Version:    29.3.1  Context:    default 
+52 tool=Bash cmd="docker info --format Server/Images" rc=1 t=2026-09-22T06:24:38Z
+    head200=Server= Images=0 failed to connect to the docker API at unix:///var/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /var/run/docker.sock: connect: no such file or
+53 tool=Bash cmd="vnpy_ctastrategy BacktestingEngine 合成300本 指値買い+指値売り" rc=0 t=2026-09-22T06:25:05Z time_s=0.72
+    head200=2026-09-22 06:25:05.011751	收益回撤比：	0.00 2026-09-22 06:25:05.011765	RGR Ratio：	nan 2026-09-22 06:25:05.012119	策略统计指标计算完成 TRADE_COUNT=2 TRADE dir=多 price=99.7330 vol=1
+54 tool=Bash cmd="pip install lean; lean --version" rc=0 t=2026-09-22T06:25:17Z
+    head200=lean 1.0.229 
+55 tool=Bash cmd="lean init --language python" rc=0 t=2026-09-22T06:25:17Z time_s=0.80
+    head200=QuantConnect API You can request these credentials on https://www.quantconnect.com/account Both will be saved in /root/.lean/credentials User id: Aborted! 
+56 tool=Bash cmd="qlib scripts/dump_bin.py dump_all 合成120本" rc=0 t=2026-09-22T06:26:30Z time_s=0.73
+    head200=                         --include_fields | --limit_nums  For detailed information on this command, run:   dump_bin.py dump_all --help 
+57 tool=Bash cmd="qlib dump_bin.py dump_all (symbol=ファイル名)" rc=0 t=2026-09-22T06:26:39Z time_s=0.69
+    head200=files=0  For detailed information on this command, run:   dump_bin.py dump_all --help 
+58 tool=Bash cmd="qlib dump_bin.py dump_all --data_path qcsv --qlib_dir qbin" rc=0 t=2026-09-22T06:26:55Z time_s=0.94
+    head200=files=8 2026-09-22 06:26:55.805 | INFO     | __main__:_dump_features:347 - end of features dump.  
+59 tool=Bash cmd="qlib.init + D.features 読み戻し" rc=0 t=2026-09-22T06:26:58Z time_s=2.15
+    head200=ROWS=120                           $close   $volume instrument datetime                        SYN        2021-01-04  99.712402  100000.0            2021-01-05  99.046204  100000.0 
+60 tool=Bash cmd="pip install zip (隔離venv) → 所要と依存数" rc=0 t=2026-09-22T06:27:08Z time_s=54
+    head200=install_time_s=54 pkgs=67 pip_check=No broken requirements found.
+61 tool=Bash cmd="pip install jesse (隔離venv) → 所要と依存数" rc=0 t=2026-09-22T06:27:09Z time_s=84
+    head200=install_time_s=84 pkgs=114 pip_check=No broken requirements found.
+62 tool=Bash cmd="pip install qlib (隔離venv) → 所要と依存数" rc=0 t=2026-09-22T06:27:12Z time_s=111
+    head200=install_time_s=111 pkgs=192 pip_check=No broken requirements found.
+63 tool=Bash cmd="pip install vnpy (隔離venv) → 所要と依存数" rc=0 t=2026-09-22T06:27:13Z time_s=48
+    head200=install_time_s=48 pkgs=45 pip_check=No broken requirements found.
+64 tool=Bash cmd="pip install lean (隔離venv) → 所要と依存数" rc=0 t=2026-09-22T06:27:14Z time_s=21
+    head200=install_time_s=21 pkgs=39 pip_check=No broken requirements found.
+65 tool=curl url=https://pypi.org/pypi/zipline-reloaded/json + pypistats/recent code=200 t=2026-09-22T06:27:55Z
+    head200=ver=3.1.1 first=2021-03-29T06:55:28 last=2025-07-19T13:52:06 maint=Stefan Jansen author=Quantopian Inc home=None vuln=0 deps=54 || <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+66 tool=curl url=https://pypi.org/pypi/jesse/json + pypistats/recent code=200 t=2026-09-22T06:27:56Z
+    head200=ver=3.2.1 first=2020-04-06T13:41:23 last=2026-09-21T16:01:52 maint=Saleh Mir author=Saleh Mir home=https://jesse.trade vuln=0 deps=39 || {"data":{"last_day":223,"last_month":4768,"last_week":777},"package":"jesse","type":"recent_downloads"}
+67 tool=curl url=https://pypi.org/pypi/vnpy/json + pypistats/recent code=200 t=2026-09-22T06:27:56Z
+    head200=ver=4.4.0 first=2017-03-07T15:08:55 last=2026-05-14T12:16:57 maint=None author=None home=https://www.vnpy.com vuln=0 deps=26 || <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+68 tool=curl url=https://pypi.org/pypi/pyqlib/json + pypistats/recent code=200 t=2026-09-22T06:27:56Z
+    head200=ver=0.9.7 first=2020-09-28T18:46:58 last=2025-08-15T09:51:40 maint=None author=None home=None vuln=0 deps=43 || <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+69 tool=curl url=https://pypi.org/pypi/lean/json + pypistats/recent code=200 t=2026-09-22T06:27:57Z
+    head200=ver=1.0.229 first=2021-01-12T23:11:29 last=2026-08-28T15:48:19 maint=QuantConnect author=QuantConnect home=https://lean.io/cli vuln=0 deps=12 || <a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+70 tool=python-urllib url=https://pypistats.org/api/packages/zipline-reloaded/recent code=ERR t=2026-09-22T06:28:26Z
+    head200=HTTP Error 429: Too Many Requests
+71 tool=python-urllib url=https://pypistats.org/api/packages/vnpy/recent code=ERR t=2026-09-22T06:28:43Z
+    head200=HTTP Error 429: Too Many Requests
+72 tool=python-urllib url=https://pypistats.org/api/packages/pyqlib/recent code=ERR t=2026-09-22T06:28:59Z
+    head200=HTTP Error 429: Too Many Requests
+73 tool=python-urllib url=https://pypistats.org/api/packages/lean/recent code=200 t=2026-09-22T06:29:15Z
+    head200={"data":{"last_day":446,"last_month":16929,"last_week":2901},"package":"lean","type":"recent_downloads"} 
+74 tool=Bash cmd="pip download --no-deps zipline-reloaded; アーカイブの中身を列挙" rc=0 t=2026-09-22T06:29:27Z
+    head200=file=zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl files=328 setup_py=0 binaries=16 ex=['zipline/_protocol.cpython-311-x86_64-linux-gnu.so', 'zipline/assets/_assets.cpython-311-x86_64-linux-gnu.so']
+75 tool=Bash cmd="pip download --no-deps jesse; アーカイブの中身を列挙" rc=0 t=2026-09-22T06:29:28Z
+    head200=file=jesse-3.2.1-py3-none-any.whl files=1218 setup_py=0 binaries=9 ex=['jesse/modes/import_candles_mode/drivers/Apex/omni_files/libzklink_sdk-arm.dylib', 'jesse/modes/import_candles_mo
+76 tool=Bash cmd="pip download --no-deps vnpy; アーカイブの中身を列挙" rc=0 t=2026-09-22T06:29:29Z
+    head200=file=vnpy-4.4.0-py3-none-any.whl files=81 setup_py=0 binaries=0 ex=['none']
+77 tool=Bash cmd="pip download --no-deps pyqlib; アーカイブの中身を列挙" rc=0 t=2026-09-22T06:29:30Z
+    head200=file=pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl files=285 setup_py=0 binaries=2 ex=['qlib/data/_libs/expanding.cpython-311-x86_64-linux-gnu.so', 'qlib/data/_libs/rolling.cpython-311-x86_64-linux-gnu
+78 tool=Bash cmd="pip download --no-deps lean; アーカイブの中身を列挙" rc=0 t=2026-09-22T06:29:30Z
+    head200=file=lean-1.0.229-py3-none-any.whl files=165 setup_py=0 binaries=0 ex=['none']
+79 tool=curl url=https://pypi.org/pypi/zipline-reloaded/json (license/py/urls) code=200 rc=0 t=2026-09-22T06:30:23Z time_s=0.07
+    head200=lic=None lic_expr='Apache-2.0' py='>=3.10' urls=[('documentation', 'https://zipline.ml4trading.io'), ('homepage', 'https://ml4trading.io'), ('repository', 'https://github.com/stefan-jansen/zipline-rel
+80 tool=curl url=https://pypi.org/pypi/jesse/json (license/py/urls) code=200 rc=0 t=2026-09-22T06:30:23Z time_s=0.08
+    head200=lic=None lic_expr=None py='>=3.10' urls=[('Documentation', 'https://docs.jesse.trade'), ('Homepage', 'https://jesse.trade'), ('Say Thanks!', 'https://jesse.trade/discord'), ('Source', 'https://github.
+81 tool=curl url=https://pypi.org/pypi/vnpy/json (license/py/urls) code=200 rc=0 t=2026-09-22T06:30:23Z time_s=0.07
+    head200=lic='MIT' lic_expr=None py='>=3.10' urls=[('Changes', 'https://github.com/vnpy/vnpy/blob/master/CHANGELOG.md'), ('Documentation', 'https://www.vnpy.com/docs'), ('Forum', 'https://www.vnpy.com/forum'),
+82 tool=curl url=https://pypi.org/pypi/pyqlib/json (license/py/urls) code=200 rc=0 t=2026-09-22T06:30:23Z time_s=0.10
+    head200=lic=None lic_expr=None py='>=3.8.0' urls=[]
+83 tool=curl url=https://pypi.org/pypi/lean/json (license/py/urls) code=200 rc=0 t=2026-09-22T06:30:23Z time_s=0.08
+    head200=lic=None lic_expr=None py='>=3.9' urls=[('Documentation', 'https://www.lean.io/docs/v2/lean-cli/key-concepts/getting-started'), ('Homepage', 'https://lean.io/cli'), ('Source', 'https://github.com/Quan
+84 tool=curl url=https://raw.githubusercontent.com/jesse-ai/jesse/master/LICENSE code=200 bytes=1068 t=2026-09-22T06:30:31Z time_s=0.36
+    head200=MIT License  Copyright (c) 2020 Jesse.Trade  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal 
+85 tool=curl url=https://raw.githubusercontent.com/microsoft/qlib/main/LICENSE code=200 bytes=1141 t=2026-09-22T06:30:31Z time_s=0.40
+    head200=    MIT License      Copyright (c) Microsoft Corporation.      Permission is hereby granted, free of charge, to any person obtaining a copy     of this software and associated documentation files (the
+86 tool=curl url=https://raw.githubusercontent.com/QuantConnect/lean-cli/master/LICENSE code=200 bytes=10736 t=2026-09-22T06:30:31Z time_s=0.19
+    head200=Apache License                            Version 2.0, January 2004                         http://www.apache.org/licenses/     TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION     1. Defi
+87 tool=Bash cmd="find zipline 配下の exchange/broker/gateway/driver/connector/live ディレクトリ" rc=0 t=2026-09-22T06:31:01Z
+    head200=exch= || top=__init__.py __main__.py __pycache__ _protocol.c _protocol.cpython-311-x86_64-linux-gnu.so _protocol.
+88 tool=Bash cmd="find jesse 配下の exchange/broker/gateway/driver/connector/live ディレクトリ" rc=0 t=2026-09-22T06:31:01Z
+    head200=exch=strategies/TestPositionExchangeTypeProperty1 strategies/TestFuturesExchangeAvailableMargin strategie || top=__init__.py __pycache__ candle_pipelines cli.py config.py constants.py controllers enums exceptions 
+89 tool=Bash cmd="find vnpy 配下の exchange/broker/gateway/driver/connector/live ディレクトリ" rc=0 t=2026-09-22T06:31:02Z
+    head200=exch= || top=__init__.py __pycache__ alpha chart event py.typed rpc trader 
+90 tool=Bash cmd="find qlib 配下の exchange/broker/gateway/driver/connector/live ディレクトリ" rc=0 t=2026-09-22T06:31:02Z
+    head200=exch= || top=__init__.py __pycache__ backtest cli config.py constant.py contrib data log.py model rl strategy tes
+91 tool=Bash cmd="find lean 配下の exchange/broker/gateway/driver/connector/live ディレクトリ" rc=0 t=2026-09-22T06:31:02Z
+    head200=exch=commands/live  || top=__init__.py __pycache__ click.py commands components constants.py container.py main.py models module

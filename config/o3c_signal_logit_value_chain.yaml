@@ -1,0 +1,35 @@
+_由来: scripts/o3c_signal_value.py stage1。前半全件(11866 件、連鎖の中)で `fit_beta_front_half(label_col="value_continuation_60")`
+  = ニュートン法(L2 1e-3、sklearn 不使用)。入力は前半の経験分布の中央順位(`apply_frozen_rank`、欠測 0.5)。**前段の清算のラベルの係数(config/o3c_signal_logit_{first,chain}.yaml)は触っていない。**母集団は
+  bundle_id のあるプリントだけ(反証者9 致命-2)、5 分割は日でブロック(S-1)。
+母集団: bundle_id のあるプリントだけ(束の外は入れない)
+分割: 日でブロックした 5 分割
+判断の対象: value_continuation_60
+場面: 連鎖の中
+件数: 11866
+材料:
+- cand_F5
+- cand_1
+- cand_F3
+- cand_14
+- cand_A6
+- cand_C4
+- cand_15
+- cand_11
+- cand_C3
+- cand_8
+- cand_2
+ecdf_ファイル: backtest_data/o3c_signal_value_20260921/logit_ecdf_value_chain.npz
+ecdf_md5: fd0c1e987f64dfd7b71a107c1c465519
+係数:
+  切片: 0.06661842777135482
+  cand_F5: 0.1864711327384302
+  cand_1: -0.25109593168323174
+  cand_F3: 0.20594024313589326
+  cand_14: 1.6985107350675452
+  cand_A6: -0.5431347170742178
+  cand_C4: -0.37203335577852037
+  cand_15: 0.006148979585802579
+  cand_11: -0.15344447238337028
+  cand_C3: 0.4480579451063004
+  cand_8: -0.2988693386610207
+  cand_2: -0.19244902864759966

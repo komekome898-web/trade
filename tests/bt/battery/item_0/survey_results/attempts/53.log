@@ -1,0 +1,20 @@
+##### from rqalpha_install.log
+=== 2026-09-23T15:34:30Z inspect rqalpha
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/rqalpha/rqalpha-6.4.0.tar.gz
+Successfully downloaded rqalpha
+total 4728
+drwxr-xr-x 2 root root    4096 Sep 23 15:34 .
+drwxr-xr-x 7 root root    4096 Sep 23 15:34 ..
+-rw-r--r-- 1 root root 4832484 Sep 23 15:34 rqalpha-6.4.0.tar.gz
+--- sdist /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/rqalpha/rqalpha-6.4.0.tar.gz
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/rqalpha/x/rqalpha-6.4.0/setup.py
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/rqalpha/x/rqalpha-6.4.0/setup.cfg
+  file /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/rqalpha/x/rqalpha-6.4.0/pyproject.toml
+=== 2026-09-23T15:34:38Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/rqalpha
+pip rc=0 elapsed=64s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+46
+=== 2026-09-23T15:35:48Z done

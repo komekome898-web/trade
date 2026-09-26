@@ -1,0 +1,261 @@
+##### from zipline-reloaded_install.log
+Collecting zipline-reloaded
+  Downloading zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (11 kB)
+Collecting numpy>=1.23.5 (from zipline-reloaded)
+  Downloading numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Collecting pandas<3.0,>=1.3.0 (from zipline-reloaded)
+  Downloading pandas-2.3.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 91.2/91.2 kB 117.1 MB/s eta 0:00:00
+Collecting alembic>=0.7.7 (from zipline-reloaded)
+  Downloading alembic-1.20.0-py3-none-any.whl.metadata (7.3 kB)
+Collecting bcolz-zipline>=1.2.6 (from zipline-reloaded)
+  Downloading bcolz_zipline-1.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (12 kB)
+Collecting bottleneck>=1.0.0 (from zipline-reloaded)
+  Downloading bottleneck-1.6.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (8.2 kB)
+Collecting click>=4.0.0 (from zipline-reloaded)
+  Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting empyrical-reloaded>=0.5.7 (from zipline-reloaded)
+  Downloading empyrical_reloaded-0.5.12-py3-none-any.whl.metadata (21 kB)
+Collecting h5py>=2.7.1 (from zipline-reloaded)
+  Downloading h5py-3.16.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (3.0 kB)
+Collecting intervaltree>=2.1.0 (from zipline-reloaded)
+  Downloading intervaltree-3.2.1-py2.py3-none-any.whl.metadata (12 kB)
+Collecting iso3166>=2.1.1 (from zipline-reloaded)
+  Downloading iso3166-3.0.0-py3-none-any.whl.metadata (3.5 kB)
+Collecting iso4217>=1.6.20180829 (from zipline-reloaded)
+  Downloading iso4217-1.16.20260101-py2.py3-none-any.whl.metadata (2.7 kB)
+Collecting lru-dict>=1.1.4 (from zipline-reloaded)
+  Downloading lru_dict-1.4.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (4.8 kB)
+Collecting multipledispatch>=0.6.0 (from zipline-reloaded)
+  Downloading multipledispatch-1.0.0-py3-none-any.whl.metadata (3.8 kB)
+Collecting networkx>=2.0 (from zipline-reloaded)
+  Downloading networkx-3.6.1-py3-none-any.whl.metadata (6.8 kB)
+Collecting numexpr>=2.6.1 (from zipline-reloaded)
+  Downloading numexpr-2.14.2-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.0 kB)
+Collecting patsy>=0.4.0 (from zipline-reloaded)
+  Downloading patsy-1.0.3-py2.py3-none-any.whl.metadata (3.7 kB)
+Collecting python-dateutil>=2.4.2 (from zipline-reloaded)
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting pytz>=2018.5 (from zipline-reloaded)
+  Downloading pytz-2026.3.post1-py2.py3-none-any.whl.metadata (22 kB)
+Collecting requests>=2.9.1 (from zipline-reloaded)
+  Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting scipy>=0.17.1 (from zipline-reloaded)
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.1/62.1 kB 250.5 MB/s eta 0:00:00
+Collecting six>=1.10.0 (from zipline-reloaded)
+  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting sqlalchemy>=2 (from zipline-reloaded)
+  Downloading sqlalchemy-2.0.54-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+Collecting statsmodels>=0.6.1 (from zipline-reloaded)
+  Downloading statsmodels-0.15.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (9.6 kB)
+Collecting tables>=3.4.3 (from zipline-reloaded)
+  Downloading tables-3.11.1-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.1 kB)
+Collecting toolz>=0.8.2 (from zipline-reloaded)
+  Downloading toolz-1.1.0-py3-none-any.whl.metadata (5.1 kB)
+Collecting exchange-calendars>=4.2.4 (from zipline-reloaded)
+  Downloading exchange_calendars-4.13.2-py3-none-any.whl.metadata (26 kB)
+Collecting Mako (from alembic>=0.7.7->zipline-reloaded)
+  Downloading mako-1.4.3-py3-none-any.whl.metadata (2.9 kB)
+Collecting typing-extensions>=4.12 (from alembic>=0.7.7->zipline-reloaded)
+  Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting packaging (from bcolz-zipline>=1.2.6->zipline-reloaded)
+  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting peewee<3.17.4 (from empyrical-reloaded>=0.5.7->zipline-reloaded)
+  Downloading peewee-3.17.3.tar.gz (3.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.0/3.0 MB 53.9 MB/s eta 0:00:00
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting pyluach>=2.3.0 (from exchange-calendars>=4.2.4->zipline-reloaded)
+  Downloading pyluach-2.3.0-py3-none-any.whl.metadata (4.3 kB)
+Collecting tzdata>=2025.2 (from exchange-calendars>=4.2.4->zipline-reloaded)
+  Downloading tzdata-2026.4-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting korean_lunar_calendar>=0.3.1 (from exchange-calendars>=4.2.4->zipline-reloaded)
+  Downloading korean_lunar_calendar-0.4.0-py3-none-any.whl.metadata (6.6 kB)
+Collecting sortedcontainers (from intervaltree>=2.1.0->zipline-reloaded)
+  Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl.metadata (10 kB)
+Collecting charset_normalizer<4,>=2 (from requests>=2.9.1->zipline-reloaded)
+  Downloading charset_normalizer-3.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (45 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.9/45.9 kB 222.0 MB/s eta 0:00:00
+Collecting idna<4,>=2.5 (from requests>=2.9.1->zipline-reloaded)
+  Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests>=2.9.1->zipline-reloaded)
+  Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2023.5.7 (from requests>=2.9.1->zipline-reloaded)
+  Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+Collecting greenlet>=1 (from sqlalchemy>=2->zipline-reloaded)
+  Downloading greenlet-3.5.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+Collecting formulaic>=1.1.0 (from statsmodels>=0.6.1->zipline-reloaded)
+  Downloading formulaic-1.2.2-py3-none-any.whl.metadata (7.0 kB)
+Collecting py-cpuinfo (from tables>=3.4.3->zipline-reloaded)
+  Downloading py_cpuinfo-9.0.0-py3-none-any.whl.metadata (794 bytes)
+Collecting blosc2>=2.3.0 (from tables>=3.4.3->zipline-reloaded)
+  Downloading blosc2-4.13.1-cp311-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (8.0 kB)
+Collecting ndindex (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading ndindex-1.10.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (3.6 kB)
+Collecting msgpack (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading msgpack-1.2.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.3 kB)
+Collecting pydantic (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 110.2/110.2 kB 307.1 MB/s eta 0:00:00
+Collecting httpx[http2] (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting rich (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+Collecting threadpoolctl (from blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading threadpoolctl-3.7.0-py3-none-any.whl.metadata (24 kB)
+Collecting interface-meta>=1.2.0 (from formulaic>=1.1.0->statsmodels>=0.6.1->zipline-reloaded)
+  Downloading interface_meta-2.0.1-py3-none-any.whl.metadata (6.4 kB)
+Collecting narwhals>=1.17 (from formulaic>=1.1.0->statsmodels>=0.6.1->zipline-reloaded)
+  Downloading narwhals-2.26.0-py3-none-any.whl.metadata (15 kB)
+Collecting wrapt>=1.0 (from formulaic>=1.1.0->statsmodels>=0.6.1->zipline-reloaded)
+  Downloading wrapt-2.4.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (7.4 kB)
+Collecting MarkupSafe>=2.0 (from Mako->alembic>=0.7.7->zipline-reloaded)
+  Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting anyio (from httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+Collecting httpcore==1.* (from httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting h2<5,>=3 (from httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading h2-4.4.1-py3-none-any.whl.metadata (3.8 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting annotated-types>=0.6.0 (from pydantic->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+Collecting pydantic-core==2.46.5 (from pydantic->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+Collecting typing-inspection>=0.4.2 (from pydantic->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+Collecting markdown-it-py>=2.2.0 (from rich->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting pygments<3.0.0,>=2.13.0 (from rich->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting hyperframe<7,>=6.1 (from h2<5,>=3->httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading hyperframe-6.1.0-py3-none-any.whl.metadata (4.3 kB)
+Collecting hpack<5,>=4.2 (from h2<5,>=3->httpx[http2]->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading hpack-4.2.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich->blosc2>=2.3.0->tables>=3.4.3->zipline-reloaded)
+  Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+Downloading zipline_reloaded-3.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (12.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.2/12.2 MB 24.2 MB/s eta 0:00:00
+Downloading alembic-1.20.0-py3-none-any.whl (268 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 268.7/268.7 kB 317.1 MB/s eta 0:00:00
+Downloading bcolz_zipline-1.13.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (5.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.6/5.6 MB 28.7 MB/s eta 0:00:00
+Downloading bottleneck-1.6.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (375 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 375.9/375.9 kB 244.3 MB/s eta 0:00:00
+Downloading click-8.5.0-py3-none-any.whl (125 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.3/125.3 kB 165.9 MB/s eta 0:00:00
+Downloading empyrical_reloaded-0.5.12-py3-none-any.whl (33 kB)
+Downloading exchange_calendars-4.13.2-py3-none-any.whl (213 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 213.3/213.3 kB 272.8 MB/s eta 0:00:00
+Downloading h5py-3.16.0-cp311-cp311-manylinux_2_28_x86_64.whl (5.0 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.0/5.0 MB 90.2 MB/s eta 0:00:00
+Downloading intervaltree-3.2.1-py2.py3-none-any.whl (25 kB)
+Downloading iso3166-3.0.0-py3-none-any.whl (8.9 kB)
+Downloading iso4217-1.16.20260101-py2.py3-none-any.whl (11 kB)
+Downloading lru_dict-1.4.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (30 kB)
+Downloading multipledispatch-1.0.0-py3-none-any.whl (12 kB)
+Downloading networkx-3.6.1-py3-none-any.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 126.8 MB/s eta 0:00:00
+Downloading numexpr-2.14.2-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (443 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 443.5/443.5 kB 280.1 MB/s eta 0:00:00
+Downloading numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 96.7 MB/s eta 0:00:00
+Downloading pandas-2.3.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 94.3 MB/s eta 0:00:00
+Downloading patsy-1.0.3-py2.py3-none-any.whl (233 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 233.3/233.3 kB 327.2 MB/s eta 0:00:00
+Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 310.1 MB/s eta 0:00:00
+Downloading pytz-2026.3.post1-py2.py3-none-any.whl (508 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 508.3/508.3 kB 320.5 MB/s eta 0:00:00
+Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.1/73.1 kB 292.1 MB/s eta 0:00:00
+Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 105.0 MB/s eta 0:00:00
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading sqlalchemy-2.0.54-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.4/3.4 MB 111.9 MB/s eta 0:00:00
+Downloading statsmodels-0.15.0-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (12.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.1/12.1 MB 103.9 MB/s eta 0:00:00
+Downloading tables-3.11.1-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (7.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 7.2/7.2 MB 110.7 MB/s eta 0:00:00
+Downloading toolz-1.1.0-py3-none-any.whl (58 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 58.1/58.1 kB 113.5 MB/s eta 0:00:00
+Downloading blosc2-4.13.1-cp311-abi3-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (6.6 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.6/6.6 MB 118.2 MB/s eta 0:00:00
+Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 137.0/137.0 kB 183.1 MB/s eta 0:00:00
+Downloading charset_normalizer-3.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (262 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 262.3/262.3 kB 327.3 MB/s eta 0:00:00
+Downloading formulaic-1.2.2-py3-none-any.whl (118 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 118.9/118.9 kB 263.8 MB/s eta 0:00:00
+Downloading greenlet-3.5.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (624 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 624.4/624.4 kB 226.5 MB/s eta 0:00:00
+Downloading idna-3.20-py3-none-any.whl (69 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.6/69.6 kB 203.0 MB/s eta 0:00:00
+Downloading korean_lunar_calendar-0.4.0-py3-none-any.whl (11 kB)
+Downloading packaging-26.3-py3-none-any.whl (129 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 kB 238.1 MB/s eta 0:00:00
+Downloading pyluach-2.3.0-py3-none-any.whl (25 kB)
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 103.9 MB/s eta 0:00:00
+Downloading tzdata-2026.4-py2.py3-none-any.whl (347 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 347.5/347.5 kB 267.8 MB/s eta 0:00:00
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 234.5 MB/s eta 0:00:00
+Downloading mako-1.4.3-py3-none-any.whl (80 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.2/80.2 kB 159.9 MB/s eta 0:00:00
+Downloading py_cpuinfo-9.0.0-py3-none-any.whl (22 kB)
+Downloading sortedcontainers-2.4.0-py2.py3-none-any.whl (29 kB)
+Downloading interface_meta-2.0.1-py3-none-any.whl (15 kB)
+Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Downloading narwhals-2.26.0-py3-none-any.whl (474 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 474.0/474.0 kB 338.0 MB/s eta 0:00:00
+Downloading wrapt-2.4.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (226 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 226.2/226.2 kB 283.0 MB/s eta 0:00:00
+Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 78.8/78.8 kB 271.7 MB/s eta 0:00:00
+Downloading msgpack-1.2.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (422 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 422.9/422.9 kB 241.4 MB/s eta 0:00:00
+Downloading ndindex-1.10.1-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (516 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 516.7/516.7 kB 176.5 MB/s eta 0:00:00
+Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 472.6/472.6 kB 242.6 MB/s eta 0:00:00
+Downloading pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 155.2 MB/s eta 0:00:00
+Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 310.7/310.7 kB 235.8 MB/s eta 0:00:00
+Downloading threadpoolctl-3.7.0-py3-none-any.whl (26 kB)
+Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Downloading h2-4.4.1-py3-none-any.whl (62 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.6/62.6 kB 177.2 MB/s eta 0:00:00
+Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 91.7/91.7 kB 262.0 MB/s eta 0:00:00
+Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 75.9 MB/s eta 0:00:00
+Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 132.1/132.1 kB 203.8 MB/s eta 0:00:00
+Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.5/73.5 kB 189.1 MB/s eta 0:00:00
+Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Downloading hpack-4.2.0-py3-none-any.whl (34 kB)
+Downloading hyperframe-6.1.0-py3-none-any.whl (13 kB)
+Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Building wheels for collected packages: peewee
+  Building wheel for peewee (pyproject.toml): started
+  Building wheel for peewee (pyproject.toml): finished with status 'done'
+  Created wheel for peewee: filename=peewee-3.17.3-cp311-cp311-linux_x86_64.whl size=776281 sha256=7b63cb61b087c5eaad4d3792769dc1d33b084f525b32601e0fe46785a9979891
+  Stored in directory: /tmp/pip-ephem-wheel-cache-0q2lpcfa/wheels/3e/3d/30/a54ad8c2307aa653f234a6f651ab12fbc5cfbb3f383145ab6a
+Successfully built peewee
+Installing collected packages: sortedcontainers, pytz, py-cpuinfo, peewee, multipledispatch, wrapt, urllib3, tzdata, typing-extensions, toolz, threadpoolctl, six, pyluach, pygments, packaging, numpy, networkx, ndindex, narwhals, msgpack, mdurl, MarkupSafe, lru-dict, korean_lunar_calendar, iso4217, iso3166, intervaltree, interface-meta, idna, hyperframe, hpack, h11, greenlet, click, charset_normalizer, certifi, annotated-types, typing-inspection, sqlalchemy, scipy, requests, python-dateutil, pydantic-core, patsy, numexpr, markdown-it-py, Mako, httpcore, h5py, h2, bottleneck, bcolz-zipline, anyio, rich, pydantic, pandas, httpx, alembic, formulaic, exchange-calendars, empyrical-reloaded, statsmodels, blosc2, tables, zipline-reloaded
+Successfully installed Mako-1.4.3 MarkupSafe-3.0.3 alembic-1.20.0 annotated-types-0.8.0 anyio-4.15.1 bcolz-zipline-1.13.0 blosc2-4.13.1 bottleneck-1.6.0 certifi-2026.7.22 charset_normalizer-3.5.1 click-8.5.0 empyrical-reloaded-0.5.12 exchange-calendars-4.13.2 formulaic-1.2.2 greenlet-3.5.6 h11-0.16.0 h2-4.4.1 h5py-3.16.0 hpack-4.2.0 httpcore-1.0.9 httpx-0.28.1 hyperframe-6.1.0 idna-3.20 interface-meta-2.0.1 intervaltree-3.2.1 iso3166-3.0.0 iso4217-1.16.20260101 korean_lunar_calendar-0.4.0 lru-dict-1.4.1 markdown-it-py-4.2.0 mdurl-0.1.2 msgpack-1.2.2 multipledispatch-1.0.0 narwhals-2.26.0 ndindex-1.10.1 networkx-3.6.1 numexpr-2.14.2 numpy-2.4.6 packaging-26.3 pandas-2.3.3 patsy-1.0.3 peewee-3.17.3 py-cpuinfo-9.0.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pyluach-2.3.0 python-dateutil-2.9.0.post0 pytz-2026.3.post1 requests-2.34.2 rich-15.0.0 scipy-1.17.1 six-1.17.0 sortedcontainers-2.4.0 sqlalchemy-2.0.54 statsmodels-0.15.0 tables-3.11.1 threadpoolctl-3.7.0 toolz-1.1.0 typing-extensions-4.16.0 typing-inspection-0.4.4 tzdata-2026.4 urllib3-2.8.0 wrapt-2.4.1 zipline-reloaded-3.1.1
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip

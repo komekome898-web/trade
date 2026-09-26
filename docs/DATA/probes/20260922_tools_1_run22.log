@@ -1,0 +1,727 @@
+=== 区分1 22 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定: 6 要素の数え直し(総数 / 残り)/ 候補 123 の粒度 / 候補 124 の印の明記 / 候補 107 の登録の一次資料 / 候補 61 の約定の作り方 / 候補 61 の DataKind の逐語の直し / 候補 68 の根拠の並びの直し
+=== 新しい検索計画は打っていない。深掘り(構築・導入・最小実行)も打っていない。候補も増やしていない。
+--- 2026-09-22T16:07:47Z method=run target=ls_probes note=生ログの本数の実測 rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+21
+$ ls docs/DATA/probes/20260922_tools_1_run*.log
+docs/DATA/probes/20260922_tools_1_run10.log
+docs/DATA/probes/20260922_tools_1_run11.log
+docs/DATA/probes/20260922_tools_1_run12.log
+docs/DATA/probes/20260922_tools_1_run13.log
+docs/DATA/probes/20260922_tools_1_run14.log
+docs/DATA/probes/20260922_tools_1_run15.log
+docs/DATA/probes/20260922_tools_1_run16.log
+docs/DATA/probes/20260922_tools_1_run17.log
+docs/DATA/probes/20260922_tools_1_run18.log
+docs/DATA/probes/20260922_tools_1_run19.log
+docs/DATA/probes/20260922_tools_1_run2.log
+docs/DATA/probes/20260922_tools_1_run20.log
+docs/DATA/probes/20260922_tools_1_run21.log
+docs/DATA/probes/20260922_tools_1_run22.log
+docs/DATA/probes/20260922_tools_1_run3.log
+docs/DATA/probes/20260922_tools_1_run4.log
+docs/DATA/probes/20260922_tools_1_run5.log
+docs/DATA/probes/20260922_tools_1_run6.log
+docs/DATA/probes/20260922_tools_1_run7.log
+docs/DATA/probes/20260922_tools_1_run8.log
+docs/DATA/probes/20260922_tools_1_run9.log
+--- 2026-09-22T16:07:55Z method=GET url=https://ungh.cc/repos/carlos8f/zenbot/files/master label=c123_files code=200 bytes=35072 rc=0 time_s=1.155522
+{"meta":{"sha":"23ae02e73065a41f4c9292c626b9735f5addf792"},"files":[{"path":".dockerignore","mode":"100644","sha":"15de3902b123a8d988f019357b4c0060efffe5c1","size":18},{"path":".editorconfig","mode":"
+--- 2026-09-22T16:07:56Z method=GET url=https://ungh.cc/repos/Skelf-Research/sigc/files/main label=c107_files code=000 bytes= rc=35 time_s=1.376659
+
+--- 2026-09-22T16:08:04Z method=GET url=https://ungh.cc/repos/Skelf-Research/sigc/files/main label=c107_files code=200 bytes=663944 rc=0 time_s=1.547512
+{"meta":{"sha":"aa5f616fc0faffafc072e71f39a26604aaae1474"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"5e2bfd54802cc9a68e794b3ba0e5b56cff53d0c3","size":2162},{"path":".github/wo
+--- 2026-09-22T16:08:06Z method=GET url=https://ungh.cc/repos/skelf-research/sigc/files/main label=c107_files_lower code=200 bytes=663944 rc=0 time_s=1.841550
+{"meta":{"sha":"aa5f616fc0faffafc072e71f39a26604aaae1474"},"files":[{"path":".github/workflows/ci.yml","mode":"100644","sha":"5e2bfd54802cc9a68e794b3ba0e5b56cff53d0c3","size":2162},{"path":".github/wo
+--- 2026-09-22T16:08:19Z method=GET url=https://raw.githubusercontent.com/carlos8f/zenbot/master/lib/engine.js label=c123_engine_js code=200 bytes=38604 rc=0 time_s=0.518828
+let tb = require('timebucket')
+  , moment = require('moment')
+  , z = require('zero-fill')
+  , n = require('numbro')
+  // eslint-disable-next-line no-unused-vars
+  , colors = require('colors')
+  , abb
+--- 2026-09-22T16:08:19Z method=GET url=https://raw.githubusercontent.com/carlos8f/zenbot/master/commands/sim.js label=c123_sim_js code=200 bytes=13187 rc=0 time_s=0.441993
+var tb = require('timebucket')
+  , minimist = require('minimist')
+  , n = require('numbro')
+  , fs = require('fs')
+  , path = require('path')
+  , moment = require('moment')
+  , colors = require('color
+--- 2026-09-22T16:08:53Z method=GET url=https://raw.githubusercontent.com/carlos8f/zenbot/master/conf-sample.js label=c123_conf code=200 bytes=9263 rc=0 time_s=0.531684
+var c = module.exports = {}
+
+// mongo configuration
+c.mongo = {}
+c.mongo.db = 'zenbot4'
+
+// Must provide EITHER c.mongo.connectionString OR c.mongo.host,port,username,password
+// c.mongo.connectionStr
+--- 2026-09-22T16:09:04Z method=GET url=https://raw.githubusercontent.com/carlos8f/zenbot/master/extensions/exchanges/sim/exchange.js label=c123_sim_exchange code=200 bytes=8866 rc=0 time_s=0.416906
+let path = require('path')
+  , n = require('numbro')
+  , _ = require('lodash')
+
+module.exports = function sim (conf, s) {
+
+  let latency = 100 // In milliseconds, enough to be realistic without being 
+--- 2026-09-22T16:09:23Z method=grep target=c123_queue note=zenbot の模擬の取引所と機関に板の待ち行列の語があるか rc=see
+$ grep -c -i queue extensions/exchanges/sim/exchange.js lib/engine.js commands/sim.js
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/fetch/c123_sim_exchange:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/fetch/c123_engine_js:7
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/fetch/c123_sim_js:0
+rc=0
+$ grep -n -i queue lib/engine.js
+23:  eventBus.on('trade', queueTrade)
+894:  var tradeProcessingQueue = async.queue(function({trade, is_preroll}, callback){
+898:  function queueTrade(trade, is_preroll){
+899:    tradeProcessingQueue.push({trade, is_preroll})
+951:      queueTrade(trade, is_preroll)
+971:      if(tradeProcessingQueue.length()){
+972:        tradeProcessingQueue.drain = () => {
+--- 2026-09-22T16:09:31Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs/files/main label=c61_files code=200 bytes=36425 rc=0 time_s=0.565660
+{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workf
+--- 2026-09-22T16:09:36Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/account.rs label=c61_mock_account code=200 bytes=4676 rc=0 time_s=0.223823
+use crate::{
+    UnindexedAccountSnapshot,
+    balance::AssetBalance,
+    order::{
+        Order,
+        id::ClientOrderId,
+        state::{ActiveOrderState, Cancelled, InactiveOrderState, Open, Orde
+--- 2026-09-22T16:09:37Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-execution/src/exchange/mock/mod.rs label=c61_mock_mod code=200 bytes=16956 rc=0 time_s=0.424136
+use crate::{
+    AccountEventKind, InstrumentAccountSnapshot, UnindexedAccountEvent, UnindexedAccountSnapshot,
+    balance::AssetBalance,
+    client::mock::MockExecutionConfig,
+    error::{ApiError, U
+--- 2026-09-22T16:10:06Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/README.md label=c107_readme code=200 bytes=8121 rc=0 time_s=0.461415
+# sigc — The Quant's Compiler
+
+**The Quant's Compiler: From Alpha Idea to Production in Minutes**
+
+[![Crates.io](https://img.shields.io/crates/v/sigc.svg)](https://crates.io/crates/sigc)
+[![Document
+--- 2026-09-22T16:10:07Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/backtest.rs label=c107_backtest code=200 bytes=10865 rc=0 time_s=0.805524
+//! Backtesting engine for portfolio strategies
+
+use polars::prelude::*;
+use sig_types::{BacktestMetrics, BacktestPlan, BacktestReport, Result, SigcError};
+
+/// Backtester for evaluating portfolio str
+--- 2026-09-22T16:10:26Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/costs.rs label=c107_costs code=200 bytes=10688 rc=0 time_s=0.439617
+//! Transaction cost models for realistic backtesting
+//!
+//! Includes slippage, market impact, commissions, and borrowing costs.
+
+
+/// Transaction cost model
+#[derive(Debug, Clone)]
+pub struct CostMo
+--- 2026-09-22T16:10:39Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/Cargo.toml label=c107_cargo code=200 bytes=1835 rc=0 time_s=0.479875
+[workspace]
+members = [
+    "crates/sig_types",
+    "crates/sig_cache",
+    "crates/sig_compiler",
+    "crates/sig_runtime",
+    "crates/sigc",
+    "crates/sig_lsp",
+    "crates/pysigc",
+]
+resolver = 
+--- 2026-09-22T16:11:50Z method=grep target=c123_onTrade note=zenbot lib/engine.js が受け取る事象は約定 1 件(trade) rc=0
+--- 2026-09-22T16:11:50Z method=grep target=c123_initBuffer note=zenbot lib/engine.js が trade から足(period)を組み立てる rc=0
+  function initBuffer (trade) {
+    let d = tb(trade.time).resize(so.period_length)
+    let de = tb(trade.time).resize(so.period_length).add(1)
+    s.period = {
+      period_id: d.toString(),
+      size: so.period_length,
+      time: d.toMilliseconds(),
+      open: trade.price,
+      high: trade.price,
+      low: trade.price,
+      close: trade.price,
+      volume: 0,
+      close_time: de.toMilliseconds() - 1
+    }
+  }
+--- 2026-09-22T16:11:50Z method=grep target=c123_updatePeriod note=zenbot lib/engine.js の足の更新(高値・安値・終値・出来高) rc=0
+
+  function updatePeriod(trade) {
+    s.period.high = Math.max(trade.price, s.period.high)
+    s.period.low = Math.min(trade.price, s.period.low)
+    s.period.close = trade.price
+    s.period.volume += trade.size
+    s.period.latest_trade_time = trade.time
+    s.strategy.calculate(s)
+    s.vol_since_last_blink += trade.size
+--- 2026-09-22T16:11:50Z method=grep target=c123_onPeriod note=zenbot 戦略が呼ばれるのは足の切り替わり(onPeriod) rc=0
+    if (trade.time > s.period.close_time) {
+      var period_id = tb(trade.time).resize(so.period_length).toString()
+      s.strategy.onPeriod.call(s.ctx, s, function () {
+        writeReport()
+        s.acted_on_stop = false
+        if (!s.in_preroll && !so.manual) {
+          executeStop(true)
+          if (s.signal) {
+--- 2026-09-22T16:11:50Z method=grep target=c123_sim_desc note=zenbot commands/sim.js の説明と約定の選択肢 rc=0
+    .command('sim [selector]')
+    .allowUnknownOption()
+    .description('run a simulation on backfilled data')
+    .option('--conf <path>', 'path to optional conf overrides file')
+    .option('--strategy <name>', 'strategy to use', String, conf.strategy)
+    .option('--order_type <type>', 'order type to use (maker/taker)', /^(maker|taker)$/i, conf.order_type)
+    .option('--avg_slippage_pct <pct>', 'avg. amount of slippage to apply to trades', Number, conf.avg_slippage_pct)
+    .option('--max_slippage_pct <pct>', 'avoid selling at a slippage pct above this float', conf.max_slippage_pct)
+--- 2026-09-22T16:11:50Z method=grep target=c123_sim_source note=zenbot の sim が読むのは約定の記録(trades collection) rc=0
+      var tradesCollection = collectionService(conf).getTrades()
+      var query_start = so.start ? tb(so.start).resize(so.period_length).subtract(so.min_periods + 2).toMilliseconds() : null
+
+      function exitSim () {
+        console.log()
+        if (!s.period) {
+          console.error('no trades found! try running `zenbot backfill ' + so.selector.normalized + '` first')
+          process.exit(1)
+--- 2026-09-22T16:11:50Z method=grep target=c123_processTrade note=zenbot 模擬の取引所: 指値は現値が跨いだら埋まる rc=0
+    processTrade: function(trade) {
+      var orders_changed = false
+
+      _.each(openOrders, function(order) {
+        if (order.tradetype === 'buy') {
+          if (trade.time - order.time < so.order_adjust_time) {
+            // Not time yet
+          }
+          else if (trade.price <= Number(order.price)) {
+            processBuy(order, trade)
+            orders_changed = true
+          }
+        }
+        else if (order.tradetype === 'sell') {
+          if (trade.time - order.time < so.order_adjust_time) {
+            // Not time yet
+          }
+          else if (trade.price >= order.price) {
+            processSell(order, trade)
+            orders_changed = true
+          }
+        }
+      })
+
+--- 2026-09-22T16:11:50Z method=grep target=c123_processBuy note=zenbot 模擬の取引所: 埋まる量は約定の量で頭打ち、maker には平均の滑りを掛ける rc=0
+
+  function processBuy (buy_order, trade) {
+    let fee = 0
+    let size = Math.min(buy_order.remaining_size, trade.size)
+    let price = buy_order.price
+
+    }
+    if (so.order_type === 'maker') {
+      price = n(price).add(n(price).multiply(so.avg_slippage_pct / 100)).format('0.00000000')
+      if (exchange.makerFee) {
+        balance.asset = n(balance.asset).subtract(fee).format('0.00000000')
+--- 2026-09-22T16:11:50Z method=grep target=c123_conf_slippage note=zenbot conf-sample.js の平均の滑りの既定値 rc=0
+// avg. amount of slippage to apply to sim trades
+c.avg_slippage_pct = 0.045
+--- 2026-09-22T16:12:06Z method=grep target=c61_account_fields note=barter-rs 模擬の口座が持つもの(残高・未約定・取消済み・約定の記録) rc=0
+#[derive(Debug, Constructor)]
+pub struct AccountState {
+    balances: FnvHashMap<AssetNameExchange, AssetBalance<AssetNameExchange>>,
+    orders_open: FnvHashMap<ClientOrderId, Order<ExchangeId, InstrumentNameExchange, Open>>,
+    orders_cancelled:
+        FnvHashMap<ClientOrderId, Order<ExchangeId, InstrumentNameExchange, Cancelled>>,
+    trades: Vec<Trade<QuoteAsset, InstrumentNameExchange>>,
+}
+--- 2026-09-22T16:12:06Z method=grep target=c61_mock_fields note=barter-rs 模擬の取引所の設定(遅延と手数料率) rc=0
+#[derive(Debug)]
+pub struct MockExchange {
+    pub exchange: ExchangeId,
+    pub latency_ms: u64,
+    pub fees_percent: Decimal,
+    pub request_rx: mpsc::UnboundedReceiver<MockExchangeRequest>,
+    pub event_tx: broadcast::Sender<UnindexedAccountEvent>,
+    pub instruments: FnvHashMap<InstrumentNameExchange, Instrument<ExchangeId, AssetNameExchange>>,
+    pub account: AccountState,
+    pub order_sequence: u64,
+--- 2026-09-22T16:12:06Z method=grep target=c61_open_order_fill note=barter-rs 模擬の取引所が作る約定(価格と数量は要求のまま) rc=0
+            balance: balance_snapshot,
+            trade: Trade {
+                id: trade_id,
+                order_id: order_id.clone(),
+                instrument: request.key.instrument,
+                strategy: request.key.strategy,
+                time_exchange: self.time_exchange(),
+                side: request.state.side,
+                price: request.state.price,
+                quantity: request.state.quantity,
+                fees,
+            },
+        };
+--- 2026-09-22T16:12:06Z method=grep target=c61_filled_quantity note=barter-rs 模擬の取引所は要求の数量を全量即時に埋める rc=0
+            key: request.key.clone(),
+            side: request.state.side,
+            price: request.state.price,
+            quantity: request.state.quantity,
+            kind: request.state.kind,
+            time_in_force: request.state.time_in_force,
+            state: Ok(Open {
+                id: order_id.clone(),
+                time_exchange: self.time_exchange(),
+                filled_quantity: request.state.quantity,
+            }),
+--- 2026-09-22T16:12:06Z method=grep target=c61_order_kind note=barter-rs 模擬の取引所が受ける注文の種別は成行だけ rc=0
+    pub fn validate_order_kind_supported(
+        &self,
+        order_kind: OrderKind,
+    ) -> Result<(), UnindexedOrderError> {
+        if order_kind == OrderKind::Market {
+            Ok(())
+        } else {
+            Err(UnindexedOrderError::Rejected(ApiError::OrderRejected(
+                format!("MockExchange does not supported OrderKind: {order_kind}"),
+            )))
+        }
+    }
+--- 2026-09-22T16:12:06Z method=grep target=c61_cancel note=barter-rs 模擬の取引所の取消は未実装 rc=0
+    pub fn cancel_order(
+        &mut self,
+        _: OrderRequestCancel<ExchangeId, InstrumentNameExchange>,
+    ) -> Order<ExchangeId, InstrumentNameExchange, Result<Cancelled, UnindexedOrderError>> {
+        unimplemented!()
+    }
+
+--- 2026-09-22T16:12:06Z method=grep target=c61_queue2 note=barter-rs 模擬の取引所(mod.rs と account.rs)に待ち行列の語があるか rc=1
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/fetch/c61_mock_mod:0
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/fetch/c61_mock_account:0
+--- 2026-09-22T16:12:06Z method=grep target=c61_datakind_exact note=barter-rs barter-data/src/event.rs 124 行の DataKind の逐語(21 回目の直しの照合用) rc=0
+--- 2026-09-22T16:12:06Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/event.rs label=c61_event_rs code=200 bytes=7335 rc=0 time_s=0.387493
+use crate::{
+    error::DataError,
+    streams::consumer::MarketStreamResult,
+    subscription::{
+        book::{OrderBookEvent, OrderBookL1},
+        candle::Candle,
+        liquidation::Liquidation,
+124:pub enum DataKind {
+125-    Trade(PublicTrade),
+126-    OrderBookL1(OrderBookL1),
+127-    OrderBook(OrderBookEvent),
+128-    Candle(Candle),
+129-    Liquidation(Liquidation),
+130-}
+131-
+--- 2026-09-22T16:12:15Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/candle.rs label=c61_candle_rs code=200 bytes=965 rc=0 time_s=0.202093
+use super::SubscriptionKind;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+
+/// Barter [`Subscription`](super::Subscription) [`SubscriptionKind`] that yields [`Candle`]
+/// [`Marke
+--- 2026-09-22T16:12:15Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/barter-data/src/subscription/trade.rs label=c61_trade_rs code=200 bytes=959 rc=0 time_s=0.390374
+use super::SubscriptionKind;
+use barter_instrument::Side;
+use barter_macro::{DeSubKind, SerSubKind};
+use serde::{Deserialize, Serialize};
+
+/// Barter [`Subscription`](super::Subscription) [`Subscripti
+--- 2026-09-22T16:12:15Z method=grep target=c61_candle_struct note=barter-data/src/subscription/candle.rs の Candle の逐語 rc=0
+10:pub struct Candles;
+11-
+12-impl SubscriptionKind for Candles {
+13-    type Event = Candle;
+14-
+15-    fn as_str(&self) -> &'static str {
+16-        "candles"
+17-    }
+18-}
+19-
+20-impl std::fmt::Display for Candles {
+--
+28:pub struct Candle {
+29-    pub close_time: DateTime<Utc>,
+30-    pub open: f64,
+31-    pub high: f64,
+32-    pub low: f64,
+33-    pub close: f64,
+34-    pub volume: f64,
+35-    pub trade_count: u64,
+36-}
+--- 2026-09-22T16:12:15Z method=grep target=c61_publictrade_struct note=barter-data/src/subscription/trade.rs の PublicTrade の逐語 rc=0
+11:pub struct PublicTrades;
+12-
+13-impl SubscriptionKind for PublicTrades {
+14-    type Event = PublicTrade;
+15-
+16-    fn as_str(&self) -> &'static str {
+17-        "public_trades"
+18-    }
+--
+29:pub struct PublicTrade {
+30-    pub id: String,
+31-    pub price: f64,
+32-    pub amount: f64,
+33-    pub side: Side,
+34-}
+--- 2026-09-22T16:12:24Z method=grep target=c107_readme_head note=sigc README の表題と許諾の記章 rc=0
+# sigc — The Quant's Compiler
+
+**The Quant's Compiler: From Alpha Idea to Production in Minutes**
+
+[![Crates.io](https://img.shields.io/crates/v/sigc.svg)](https://crates.io/crates/sigc)
+[![Documentation](https://img.shields.io/badge/docs-skelfresearch.com-blue)](https://docs.skelfresearch.com/sigc)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
+[![Downloads](https://img.shields.io/crates/d/sigc.svg)](https://crates.io/crates/sigc)
+
+*A type-safe DSL and high-performance runtime for quantitative trading strategies.*
+
+*Write signals like sentences. Backtest in milliseconds. Deploy with confidence.*
+
+--- 2026-09-22T16:12:24Z method=grep target=c107_cargo_license note=sigc Cargo.toml の許諾と版と登録の場所 rc=0
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/skelf-Research/sigc"
+homepage = "https://docs.skelfresearch.com/sigc"
+--- 2026-09-22T16:12:24Z method=grep target=c107_backtest_lag note=sigc crates/sig_runtime/src/backtest.rs の足の実行遅れと時間方向の繰り返し rc=0
+            .collect();
+
+        // One-bar execution lag: the position decided at the close of bar
+        // t can only earn the return from bar t+1, so portfolio return at
+        // bar t is `weights[t-1] . returns[t]`. Using same-bar weights *and*
+        // returns would be the textbook look-ahead bias.
+        for t in 0..n_rows {
+            let mut current_weights = Vec::with_capacity(weight_cols.len());
+--- 2026-09-22T16:12:24Z method=grep target=c107_backtest_cost note=sigc backtest.rs の回転率と費用の差し引き rc=0
+                // Trading cost on the t-1 -> t rebalance.
+                let turnover: f64 = current_weights
+                    .iter()
+                    .zip(prev.iter())
+                    .map(|(curr, prev)| (curr - prev).abs())
+                    .sum();
+                total_turnover += turnover;
+                period_return -= turnover * self.cost_bps / 10000.0;
+                port_returns[t] = period_return;
+            } else {
+                // Bar 0: no prior position to earn anything.
+                port_returns[t] = 0.0;
+            }
+
+            prev_weights = Some(current_weights);
+        }
+
+        // Annualize turnover (assuming daily data)
+        let annualized_turnover = if n_rows > 1 {
+            total_turnover / n_rows as f64 * 252.0
+        } else {
+            0.0
+        };
+
+        Ok((Series::new("port_returns".into(), port_returns), annualized_turnover))
+--- 2026-09-22T16:12:24Z method=grep target=c107_backtest_fields note=sigc backtest.rs の Backtester の欄(費用と滑りの係数) rc=0
+/// Backtester for evaluating portfolio strategies
+pub struct Backtester {
+    /// Transaction cost in basis points
+    pub cost_bps: f64,
+    /// Slippage model coefficient
+    pub slippage_coef: f64,
+}
+
+impl Backtester {
+    pub fn new() -> Self {
+        Backtester {
+            cost_bps: 5.0,
+            slippage_coef: 0.1,
+        }
+    }
+--- 2026-09-22T16:12:24Z method=grep target=c107_costs_impact note=sigc crates/sig_runtime/src/costs.rs の市場影響の模型 rc=0
+//! Transaction cost models for realistic backtesting
+//!
+//! Includes slippage, market impact, commissions, and borrowing costs.
+
+
+/// Transaction cost model
+#[derive(Debug, Clone)]
+pub struct CostModel {
+    /// Fixed commission per trade (bps)
+    pub commission_bps: f64,
+    /// Slippage estimate (bps)
+    pub slippage_bps: f64,
+    /// Market impact model
+    pub impact_model: ImpactModel,
+    /// Short borrowing cost (annual rate)
+    pub borrow_cost_annual: f64,
+    /// Minimum trade size (notional)
+    pub min_trade_size: f64,
+}
+
+/// Market impact models
+#[derive(Debug, Clone)]
+pub enum ImpactModel {
+    /// No market impact
+    None,
+    /// Linear impact: cost = coefficient * participation_rate
+    Linear { coefficient: f64 },
+    /// Square root impact: cost = coefficient * sqrt(participation_rate)
+    SquareRoot { coefficient: f64 },
+    /// Almgren-Chriss temporary impact
+    AlmgrenChriss { eta: f64, gamma: f64 },
+}
+
+impl Default for CostModel {
+    fn default() -> Self {
+        CostModel {
+            commission_bps: 1.0,      // 1 bp commission
+            slippage_bps: 2.0,        // 2 bp slippage
+            impact_model: ImpactModel::SquareRoot { coefficient: 0.1 },
+            borrow_cost_annual: 0.005, // 50 bp annual borrow
+            min_trade_size: 0.0,
+        }
+    }
+}
+
+--- 2026-09-22T16:12:51Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/engine.rs label=c107_engine code=200 bytes=18781 rc=0 time_s=0.695465
+//! Execution engine for IR graphs
+
+use polars::prelude::*;
+use sig_types::{Ir, IrNode, Operator, OperatorError, Result, SigcError};
+use std::collections::HashMap;
+use crate::kernels;
+
+/// Helper to c
+--- 2026-09-22T16:12:56Z method=GET url=https://raw.githubusercontent.com/Skelf-Research/sigc/main/crates/sig_runtime/src/lib.rs label=c107_lib code=200 bytes=13042 rc=0 time_s=0.454856
+//! Runtime execution engine for sigc
+//!
+//! Executes IR and manages data ingestion.
+
+pub mod alerts;
+pub mod attribution;
+pub mod audit;
+pub mod backtest;
+pub mod benchmark;
+pub mod config;
+pub mod 
+--- 2026-09-22T16:15:41Z method=run target=recount note=6 要素の数え直し(総数 / 残り)。候補ごとの状態は報告書の候補の一覧の最後の記載から機械で読む rc=0
+$ python3 scratchpad/recount.py  (この回かぎりの数え直しの道具。リポジトリには置かない)
+== 区分 1 の 6 要素の数え直し(総数 / 残り)。残り = 一次資料に到達していない候補 ==
+-- 区分1-足
+   候補  40  到達済み    出所 5725 行  1. `OpenMarket`(40 番) — 状態: **浅い(場を特定し、機能一覧の逐語を取った)。**印は `区分1-足`。    未確認: 料金の構造・登録の要否・鍵・検証の粒度がチャートの足より細かいか・規約。
+   候補  43  到達済み    出所 4626 行  43. `QuantDinger` — **状態が変わった。名前が `OpenByteInc/QuantDinger` に確定し、登録情報に到達した。**仕分けは `区分1-足`(推定。説明の "backtest" が足
+   候補  44  到達済み    出所 5904 行  1. `lo2cin4/lo2cin4bt`(44 番) — 状態: **浅い(足の契約の原典から粒度を確定)。**印は `区分1-足`、および `区分4 へ`(`区分1-ベクトル化` は 20 回目に外した = 19 
+   候補  46  到達済み    出所 5727 行  2. `MT4裁量トレード練習君プレミアム`(46 番) — 状態: **浅い(販売の場に到達し、価格と粒度の逐語を取った)。**印は `区分1-足`。    未確認: MT4 本体が要ること以外の動作条件・返金の規約・
+   候補  48  到達済み    出所 5729 行  3. `BacktestingMax`(48 番) — 状態: **浅い(公式の料金の場から料金と機能一覧の逐語を取った)。**印は `区分1-足`。    未確認: 規約の全文・データの出所・再配布の可否・公開の利用者
+   候補  51  未着手     出所 4634 行  51. `QUANTAXIS` — 一覧の原文の説明は「支持任务调度 分布式部署的 股票/期货/期权/港股/虚拟货币 数据/回测/模拟/交易/可视化/多账户 纯本地量化解决方案」。仕分けは `区分1-足`(推定)と `区
+   候補  52  到達済み    出所 6109 行  2. `QuantConnect`(52 番、`QuantConnect/Lean`) — 状態: **浅い(README と約定の模型の原典から粒度を確定)。**印は `区分1-イベント駆動` と `区分1-足` と 
+   候補  53  未着手     出所 4636 行  53. `Rqalpha` — 説明は「A extendable, replaceable Python algorithmic backtest && trading framework supporting mult
+   候補  54  未着手     出所 4637 行  54. `finmarketpy` — 説明は「Python library for backtesting trading strategies & analyzing financial markets」。仕分けは 
+   候補  55  到達済み    出所 6342 行  - **55 番 `backtesting.py`** — 現行の番号の側(13 回目の節と 14 回目の節)に**到達済み**と 2 回目の節への参照を書いた。到達の記録は `#### 5. Backtesting.p
+   候補  56  到達済み    出所 5733 行  5. `zvt`(56 番) — 状態: **浅い(README の一次資料から粒度を確定)。**印は `区分1-足`。    未確認: 導入・最小実行・当方のデータの投入・国内取引所の有無。
+   候補  57  未着手     出所 4640 行  57. `WonderTrader` — 説明は「量化研发交易一站式框架」。仕分けは `区分1-足`(推定)と `区分2 へ`。**ティックに対応するかは説明では決まらない。**未着手。
+   候補  58  到達済み    出所 6343 行  - **58 番 `nautilus_trader`** — 同じく**到達済み**と 1 回目の節(`#### 2. NautilusTrader`、244 行)への参照を書いた。20 回目に README から 4 
+   候補  60  未着手     出所 4643 行  60. `Hikyuu` — 説明は「C++/Python quantitative research framework built around reusable strategy components, with 
+   候補  61  到達済み    出所 6375 行  - **61 番 `barter-rs`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 1〜4。*
+   候補  62  到達済み    出所 6117 行  5. `qf-lib`(62 番) — 状態: **浅い(README からイベント駆動と粒度を確定)。**印は `区分1-イベント駆動` と `区分1-足`、および `区分3 へ` と `区分5 へ` と `区分8 へ
+   候補  67  未着手     出所 4650 行  67. `lumibot` — 説明は「A very simple yet useful backtesting and sample based live trading framework (a bit slow t
+   候補  68  到達済み    出所 6380 行  - **68 番 `quanttrader`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 6〜8
+   候補  69  到達済み    出所 6124 行  9. `gobacktest`(69 番) — 状態: **浅い(README からイベント駆動と足を確定)。**印は `区分1-イベント駆動` と `区分1-足`。    **取り込みの逐語の所有者が登録の所有者と食い
+   候補  70  未着手     出所 4653 行  70. `PineForge` — 説明は「Transpiles PineScript v6 strategies to C++ and runs deterministic offline backtests on u
+   候補  72  未着手     出所 4655 行  72. `QTradeX` — 説明は「A powerful and flexible Python framework for designing, backtesting, optimizing, and deplo
+   候補  73  到達済み    出所 5907 行  2. `vectorbt`(73 番) — 状態: **浅い(原典の逐語でベクトル化と有償との境目を確定)。**印は `区分1-ベクトル化` と `区分1-足`。    **無料の版に指値・並列化・建玉の最適化が無いこと
+   候補  74  到達済み    出所 5910 行  3. `ml-quant-trading`(74 番) — 状態: **浅い(検証の実装の原典からベクトル化と粒度を確定)。**印は `区分1-ベクトル化` と `区分1-足`、および `区分4 へ`。    **滑りも
+   候補  75  到達済み    出所 6344 行  - **75 番 `Freqtrade`** — 同じく**到達済み**と 2 回目の節(`#### 4. freqtrade`、297 行 と `#### 4. freqtrade(追加)`、910 行)への参照を書い
+   候補  80  到達済み    出所 5742 行  11. `Hummingbot`(80 番) — 状態: **浅い(検証の実装の原典から粒度を確定)。**印は `区分1-足` と `区分2 へ`。     未確認: 導入・最小実行・国内取引所の接続の有無・`paper
+   候補  85  到達済み    出所 5744 行  12. `czsc`(85 番) — 状態: **浅い(README と `czsc/traders/__init__.py` の原典から粒度と本体の所在を確定)。**印は `区分1-足` と `区分4 へ`。     
+   候補  86  到達済み    出所 5746 行  13. `analyzingalpha`(86 番) — 状態: **浅い(追跡ファイルの一覧から粒度を確定)。**印は `区分1-足`。     **道具ではなく記事に付いた写経の集まりである。**未確認: 許諾が無い
+   候補  87  未着手     出所 4671 行  87. `PyTrendFollow` — 説明は「PyTrendFollow - systematic futures trading using trend following」。一覧に `dormant since
+   候補  91  未着手     出所 4679 行  91. `braedonsaunders/homerun` — 説明は「Open-source prediction market trading platform for Polymarket & Kalshi. Wr
+   候補  92  未着手     出所 4680 行  92. `Quentin-Piot/prediction-market-backtester` — 説明は「Quant-style backtesting engine for prediction markets (P
+   候補 107  到達済み    出所 0 行  22 回目の節で一次資料から決定
+   候補 120  到達済み    出所 5918 行  6. `wbt`(120 番、`zengbin93/wbt`) — 状態: **浅い(一次資料に到達し、README と許諾と配布物の逐語を取った)。新しい候補。**印は `区分1-足`。    **板・待ち行列・約定の
+   候補 121  到達済み    出所 6325 行  121. `mhallsmoore/qstrader` — **復元(旧 7 番)。**1 回目・2 回目の節の `#### 7. QSTrader`(596 行)に到達の記録がある。    状態: **導入と最小実行ま
+   候補 122  到達済み    出所 6329 行  122. `gbeced/pyalgotrade` — **復元(旧 9 番)。**2 回目の節の `#### 9. PyAlgoTrade`(626 行)に到達の記録がある。    状態: **導入と最小実行まで済み*
+   候補 123  到達済み    出所 0 行  22 回目の節で一次資料から決定
+   >> 総数 35 件 / 残り 11 件  残りの番号: 51・53・54・57・60・67・70・72・87・91・92
+-- 区分1-ティック
+   候補  31  到達済み    出所 4614 行  31. `Ros522/backtestlob` — 状態は 13 回目で確定(一次資料まで到達、導入しない)。仕分けは `区分1-ティック`(原文の `step_by_tick` が約定の向きを見る)。**板と待ち行列
+   候補  41  到達済み    出所 6106 行  1. `evan-kolberg/prediction-market-backtesting`(41 番) — 状態: **浅い(一次資料に到達し、機能と既定枝と許諾ファイルの在処を取った)。**印は `区分1-イベント
+   候補  52  到達済み    出所 6109 行  2. `QuantConnect`(52 番、`QuantConnect/Lean`) — 状態: **浅い(README と約定の模型の原典から粒度を確定)。**印は `区分1-イベント駆動` と `区分1-足` と 
+   候補  58  到達済み    出所 6343 行  - **58 番 `nautilus_trader`** — 同じく**到達済み**と 1 回目の節(`#### 2. NautilusTrader`、244 行)への参照を書いた。20 回目に README から 4 
+   候補  59  到達済み    出所 6126 行  10. `PandoraTrader`(59 番) — 状態: **浅い(README の 1 行で粒度を確定)。**印は `区分1-ティック`、および `区分2 へ`。    **根に許諾ファイルが無い**(知見 13
+   候補  61  到達済み    出所 6375 行  - **61 番 `barter-rs`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 1〜4。*
+   候補  63  到達済み    出所 6119 行  6. `trade-frame`(63 番) — 状態: **18 回目に確定済み。この回は逐語を取り直して同じであることを確かめただけ**(知見 18)。印は 18 回目のまま `区分1-ティック` と `区分1-イベ
+   候補  68  到達済み    出所 6380 行  - **68 番 `quanttrader`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 6〜8
+   候補  90  到達済み    出所 6128 行  11. `Oddpool/PredictionMarketBench`(90 番) — 状態: **浅い(README から粒度と待ち行列を確定)。**印は `区分1-ティック` と `区分1-板の待ち行列`、および `
+   候補  95  到達済み    出所 5748 行  14. `sacha9214/polymarket-fill-model`(95 番) — 状態: **16 回目に最小実行まで通した(この回に変わっていない)。**印に `区分1-ティック` を戻す。     `判別に
+   候補 119  到達済み    出所 5750 行  15. `peernagy/lob_bench`(119 番、`LOB-Bench`) — 状態: **浅い(一次資料に到達し、README と追跡ファイルの逐語を取った)。新しい候補。**     印は `区分1-ティ
+   候補 123  到達済み    出所 0 行  22 回目の節で一次資料から決定
+   >> 総数 12 件 / 残り 0 件  残りの番号: なし
+-- 区分1-板の待ち行列
+   候補  33  到達済み    出所 4616 行  33. `SarthakDalmia1/backtesting_execution_simulator` — 状態は 13 回目で確定(浅い。料金・導入・最小実行・外部送信・週DL数は未確認)。仕分けは `区分1-板の待
+   候補  37  到達済み    出所 4620 行  37. `ThePredictiveDev/Automated-Financial-Market-Trading-System` — 状態は 13 回目で確定(浅い。導入・最小実行・原文の確認・料金・外部送信は未確認)。
+   候補  38  到達済み    出所 4621 行  38. `microsoft/MarS` — 状態は 13 回目で確定(この環境では動かせない)。仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型`。
+   候補  65  到達済み    出所 6120 行  7. `aat`(65 番、`AsyncAlgoTrading/aat`) — 状態: **浅い(README と板の実装の原典から確定)。**印は `区分1-イベント駆動` と `区分1-板の待ち行列`、および `区分
+   候補  90  到達済み    出所 6128 行  11. `Oddpool/PredictionMarketBench`(90 番) — 状態: **浅い(README から粒度と待ち行列を確定)。**印は `区分1-ティック` と `区分1-板の待ち行列`、および `
+   候補  95  到達済み    出所 5748 行  14. `sacha9214/polymarket-fill-model`(95 番) — 状態: **16 回目に最小実行まで通した(この回に変わっていない)。**印に `区分1-ティック` を戻す。     `判別に
+   候補  96  到達済み    出所 5234 行  2. 96 番 `sashankzade/limit-order-book-matching-engine` — 状態: **別物だった(104 番の複製)。**仕分けは `区分1-板の待ち行列` のまま。浅い(未確認:
+   候補  97  到達済み    出所 5235 行  3. 97 番 `kahan15/Limit-Order-Book-Simulator` — 状態: **浅い。**TypeScript と React の web の応用で、Python から呼ぶ経路が配布物に無い。未
+   候補  98  到達済み    出所 5236 行  4. [深掘り] `mihircoding/limitOrderBook`(98 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型` のまま。
+   候補  99  到達済み    出所 5237 行  5. [深掘り] `NickGardi/orderbooksim`(99 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `区分5 へ` のまま。
+   候補 100  到達済み    出所 5238 行  6. 100 番 `xavierchuan/OrderMatchingEngine` — 状態: **危険なので止めた。**理由: 配布物に構築済みのバイナリを 2 本同梱している(知見 8)。委任文 §6-1 の「バイ
+   候補 101  到達済み    出所 5586 行  1. [深掘り] `akurkar07/OrderBook`(101 番) — 状態: **構築して動かした。**構築 8.73 秒。付属の試験 5 本が `ctest` で全部通った。    待ち行列は内部に持つが**
+   候補 102  到達済み    出所 5588 行  2. [深掘り] `3yit/Limit-Order-Book-Simulator`(102 番) — 状態: **構築して動かした。C++ と Python の両方。ただし Python の束縛は、配布物のままでは束縛
+   候補 103  到達済み    出所 5591 行  3. [深掘り] `IsaacCheng9/order-book-simulator`(103 番) — 状態: **この環境からは到達できない。**docker の 3 経路を全部試して塞がった。    第 2 経路(
+   候補 104  到達済み    出所 5593 行  4. [深掘り] `jxm35/LimitOrderBook-MatchingEngine`(104 番) — 状態: **配布物そのままでは構築できない(欠けているヘッダ 2 本を代用、`<cstdint>` の取り込
+   候補 109  到達済み    出所 5596 行  5. `arXiv:2509.05107`(109 番) — 状態: **浅い。一次資料に到達した**(`code=200`、要旨と分野の逐語を取った)。    未確認: **実装の公開の有無**(論文の頁に実装への l
+   >> 総数 16 件 / 残り 0 件  残りの番号: なし
+-- 区分1-イベント駆動
+   候補  37  到達済み    出所 4620 行  37. `ThePredictiveDev/Automated-Financial-Market-Trading-System` — 状態は 13 回目で確定(浅い。導入・最小実行・原文の確認・料金・外部送信は未確認)。
+   候補  41  到達済み    出所 6106 行  1. `evan-kolberg/prediction-market-backtesting`(41 番) — 状態: **浅い(一次資料に到達し、機能と既定枝と許諾ファイルの在処を取った)。**印は `区分1-イベント
+   候補  52  到達済み    出所 6109 行  2. `QuantConnect`(52 番、`QuantConnect/Lean`) — 状態: **浅い(README と約定の模型の原典から粒度を確定)。**印は `区分1-イベント駆動` と `区分1-足` と 
+   候補  58  到達済み    出所 6343 行  - **58 番 `nautilus_trader`** — 同じく**到達済み**と 1 回目の節(`#### 2. NautilusTrader`、244 行)への参照を書いた。20 回目に README から 4 
+   候補  61  到達済み    出所 6375 行  - **61 番 `barter-rs`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 1〜4。*
+   候補  62  到達済み    出所 6117 行  5. `qf-lib`(62 番) — 状態: **浅い(README からイベント駆動と粒度を確定)。**印は `区分1-イベント駆動` と `区分1-足`、および `区分3 へ` と `区分5 へ` と `区分8 へ
+   候補  63  到達済み    出所 6119 行  6. `trade-frame`(63 番) — 状態: **18 回目に確定済み。この回は逐語を取り直して同じであることを確かめただけ**(知見 18)。印は 18 回目のまま `区分1-ティック` と `区分1-イベ
+   候補  65  到達済み    出所 6120 行  7. `aat`(65 番、`AsyncAlgoTrading/aat`) — 状態: **浅い(README と板の実装の原典から確定)。**印は `区分1-イベント駆動` と `区分1-板の待ち行列`、および `区分
+   候補  68  到達済み    出所 6380 行  - **68 番 `quanttrader`** — **決まった。**印に `区分1-足` と `区分1-ティック` を足す(既存の `区分1-イベント駆動` と `区分2 へ` はそのまま)。   根拠は知見 6〜8
+   候補  69  到達済み    出所 6124 行  9. `gobacktest`(69 番) — 状態: **浅い(README からイベント駆動と足を確定)。**印は `区分1-イベント駆動` と `区分1-足`。    **取り込みの逐語の所有者が登録の所有者と食い
+   >> 総数 10 件 / 残り 0 件  残りの番号: なし
+-- 区分1-ベクトル化
+   候補  73  到達済み    出所 5907 行  2. `vectorbt`(73 番) — 状態: **浅い(原典の逐語でベクトル化と有償との境目を確定)。**印は `区分1-ベクトル化` と `区分1-足`。    **無料の版に指値・並列化・建玉の最適化が無いこと
+   候補  74  到達済み    出所 5910 行  3. `ml-quant-trading`(74 番) — 状態: **浅い(検証の実装の原典からベクトル化と粒度を確定)。**印は `区分1-ベクトル化` と `区分1-足`、および `区分4 へ`。    **滑りも
+   >> 総数 2 件 / 残り 0 件  残りの番号: なし
+-- 区分1-市場影響と約定の模型
+   候補  32  到達済み    出所 4615 行  32. `FlashAlpha-lab/flashalpha-fill-simulator` — 状態は 13 回目で確定(浅い。料金・導入・最小実行・外部送信は未確認)。仕分けは `区分1-市場影響と約定の模型`。**
+   候補  33  到達済み    出所 4616 行  33. `SarthakDalmia1/backtesting_execution_simulator` — 状態は 13 回目で確定(浅い。料金・導入・最小実行・外部送信・週DL数は未確認)。仕分けは `区分1-板の待
+   候補  35  到達済み    出所 4618 行  35. `thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-` — 状態は 13 回目で確定(浅い。中身・料金・導入・最小実行は未確認)。
+   候補  36  到達済み    出所 4619 行  36. `shubhamcodez/Market-Impact-Model` — 状態は 13 回目で確定(浅い。README・ライセンス・中身・料金は未確認)。仕分けは `区分1-市場影響と約定の模型`。
+   候補  38  到達済み    出所 4621 行  38. `microsoft/MarS` — 状態は 13 回目で確定(この環境では動かせない)。仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型`。
+   候補  63  到達済み    出所 6119 行  6. `trade-frame`(63 番) — 状態: **18 回目に確定済み。この回は逐語を取り直して同じであることを確かめただけ**(知見 18)。印は 18 回目のまま `区分1-ティック` と `区分1-イベ
+   候補  98  到達済み    出所 5236 行  4. [深掘り] `mihircoding/limitOrderBook`(98 番) — 状態: **最小実行まで通した。**仕分けは `区分1-板の待ち行列` と `区分1-市場影響と約定の模型` のまま。
+   候補 105  到達済み    出所 5243 行  11. [深掘り] `DaniyalMlk/slippage`(105 番) — 状態: **最小実行まで通した。**仕分けは `区分1-市場影響と約定の模型` のまま。
+   候補 106  到達済み    出所 5913 行  4. `almgren-chriss`(106 番、PyPI の `bernardopaulsen`) — 状態: **浅い。印は一次資料で確定した**(知見 21)。印は `区分1-市場影響と約定の模型`。    **
+   候補 116  到達済み    出所 5916 行  5. `braverock/blotter` の `acOptTxns`(116 番) — 状態: **浅い。印は一次資料で確定した**(知見 22)。印は `区分1-市場影響と約定の模型`。    **この環境に R 
+   候補 119  到達済み    出所 5750 行  15. `peernagy/lob_bench`(119 番、`LOB-Bench`) — 状態: **浅い(一次資料に到達し、README と追跡ファイルの逐語を取った)。新しい候補。**     印は `区分1-ティ
+   候補 123  到達済み    出所 0 行  22 回目の節で一次資料から決定
+   >> 総数 12 件 / 残り 0 件  残りの番号: なし
+== 6 要素のどれかに印がある候補(重複を除く) 62 件 / そのうち残り 11 件: 51・53・54・57・60・67・70・72・87・91・92
+--- 2026-09-22T16:15:42Z method=run target=recount_crosscheck note=印の一覧を機械で拾い直して当方の表と突き合わせた(差は 107・123 = この回に決めた分と、44 = 20 回目に外した分と、61 = 未確認と書かれていた分だけ) rc=0
+$ python3 scratchpad/crosscheck.py
+区分1-足
+  機械が拾って数え直しの表に無い: []
+  数え直しの表にあって機械が拾わない: [107, 123]
+区分1-ティック
+  機械が拾って数え直しの表に無い: []
+  数え直しの表にあって機械が拾わない: [123]
+区分1-板の待ち行列
+  機械が拾って数え直しの表に無い: []
+  数え直しの表にあって機械が拾わない: []
+区分1-イベント駆動
+  機械が拾って数え直しの表に無い: []
+  数え直しの表にあって機械が拾わない: []
+区分1-ベクトル化
+  機械が拾って数え直しの表に無い: [44]
+  数え直しの表にあって機械が拾わない: []
+区分1-市場影響と約定の模型
+  機械が拾って数え直しの表に無い: []
+  数え直しの表にあって機械が拾わない: [123]
+--- 2026-09-22T16:17:21Z method=run target=agent_files note=この回に取った 2 つの登録に作業者向けの手引きの同梱があるか(委任文 §6-3) rc=0
+zenbot 追跡ファイル数 290 AGENTS.md/CLAUDE.md/.cursor/copilot-instructions の一致: []
+zenbot node_modules を含むファイル数 0
+sigc 追跡ファイル数 4176 AGENTS.md/CLAUDE.md/.cursor/copilot-instructions の一致: []
+sigc node_modules を含むファイル数 3685
+--- 2026-09-22T16:17:35Z method=grep target=c107_lib_wiring note=sigc の実行時が使う検証の機関と、費用の模型の公開 rc=0
+47:pub use backtest::Backtester;
+50:pub use costs::{CostModel, ImpactModel, TradeCost, PortfolioCostCalculator, PortfolioCost};
+105:    backtester: Backtester,
+114:            backtester: Backtester::new(),
+123:            backtester: Backtester::new(),
+274:        let report = self.backtester.run(&weights, &prices, plan)?;
+--- 2026-09-22T16:17:35Z method=grep target=c107_backtest_no_costmodel note=sigc backtest.rs から CostModel を呼んでいる箇所があるか rc=1
+0
+--- 2026-09-22T16:17:35Z method=grep target=report_41_tick note=20 回目の節: 候補 41 の記載は区分1-ティックを付けているが、同じ節の集計に 41 が入っていない rc=0
+1. `evan-kolberg/prediction-market-backtesting`(41 番) — 状態: **浅い(一次資料に到達し、機能と既定枝と許諾ファイルの在処を取った)。**印は `区分1-イベント�
+`区分1-ティック` は 58・90・59・63・119 に **52** を足して 6 件。
+--- 2026-09-22T16:17:35Z method=grep target=report_mark_start note=6 要素の印が始まった回(14 回目の節の冒頭) rc=0
+1 番から 39 番、42 番、45 番、47 番、50 番の本文は 13 回目の一覧をそのまま引き継いでいる(黙って落としていない)。
+**この回で変わったのは、40 番・41 番・43 番・44 番・46 番・48 番・49 番と 51 番から 89 番に、6 要素の仕分けの印が付いたこと**と、
+**90 番から 93 番が増えたこと**である。仕分けの印の語は、起動の指定にある
+`区分1-足` / `区分1-ティック` / `区分1-板の待ち行列` / `区分1-イベント駆動` / `区分1-ベクトル化` /
+`区分1-市場影響と約定の模型` / `区分N へ` / `判別に一次資料が要る` である。
+--- 2026-09-22T16:17:54Z method=grep target=c123_onTrade2 note=zenbot lib/engine.js が受け取る事象は約定 1 件(trade)。135 行の grep は語の綴りを外して 0 行だったので打ち直した rc=0
+902:  function onTrade(trade, is_preroll, cb) {
+903-    if (s.period && trade.time < s.period.time) {
+904-      return
+905-    }
+906-    var day = (new Date(trade.time)).getDate()
+907-    if (s.last_day && s.last_day && day !== s.last_day) {
+908-      s.day_count++
+--- 2026-09-22T16:17:54Z method=grep target=c123_eventbus note=zenbot lib/engine.js の事象の受け口 rc=0
+23:  eventBus.on('trade', queueTrade)
+24:  eventBus.on('trades', onTrades)
+108:      eventBus.on('orderExecuted', function(type) {
+--- 2026-09-22T16:20:30Z method=run target=check_scan_report note=受け入れ検査(生ログを全部渡した) rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-22T16:20:30Z method=run target=git_diff note=この回の書き換えの範囲(削除行) rc=0
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md
+235	4	docs/DATA/SCAN_2026-09-21_tools.md
+$ git diff docs/DATA/SCAN_2026-09-21_tools.md | grep "^-" | grep -v "^---"
+-| 2 | **候補 61 の足の型は正規化された OHLCV である。**逐語は「Normalised Barter OHLCV [`Candle`] model.」で、`pub struct Candle { close_time, open, high, low, close, volume, trade_count }` | 一次資料 | `.../barter-data/src/subscription/candle.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:206` |
+-| 3 | **候補 61 のティックの型は約定 1 件ごとである。**逐語は「Normalised Barter [`PublicTrade`] model.」で、`pub struct PublicTrade { id, price, amount, side }` | 一次資料 | `.../barter-data/src/subscription/trade.rs` 取得日 2026-09-22 / `20260922_tools_1_run21.log:218` |
+-   **現行 13 番 `DeviaVir/zenbot` はその分岐で、登録としては別物である**(20 回目の洗い出しの結果)。**粒度は未確認なので区分 1 の 6 要素の印は付けない。**仕分けは `区分2 へ`。
+-  根拠は知見 6〜8。**公式の文書が検証の供給として足とティックの両方を挙げている。**
+--- 2026-09-22T16:21:00Z method=grep target=c107_participation note=sigc costs.rs の市場影響が参加率(注文の金額 / 平均出来高)で決まること rc=0
+133-            (ImpactModel::None, _) => 0.0,
+134-            (ImpactModel::Linear { coefficient }, Some(adv)) if adv > 0.0 => {
+135:                let participation = notional_abs / adv;
+136-                notional_abs * coefficient * participation
+137-            }
+138-            (ImpactModel::SquareRoot { coefficient }, Some(adv)) if adv > 0.0 => {
+139:                let participation = notional_abs / adv;
+140-                notional_abs * coefficient * participation.sqrt()
+141-            }
+142-            (ImpactModel::AlmgrenChriss { eta, gamma }, Some(adv)) if adv > 0.0 => {
+143:                let participation = notional_abs / adv;
+144-                notional_abs * (eta * participation + gamma * participation.sqrt())
+145-            }
+146-            _ => 0.0,
+--- 2026-09-22T16:21:16Z method=run target=check_scan_report_final note=逐語の出所の行番号を直したあとの打ち直し rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+21
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md
+235	4	docs/DATA/SCAN_2026-09-21_tools.md

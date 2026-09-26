@@ -1,0 +1,135 @@
+# 区分1 12 回目の生ログ(2026-09-22)
+# 委任文: docs/DATA/delegations/20260922_tools_survey_prompt.md@ce0012c95154
+# 狙い: OctoBot の注文の層(§5-4 の中核 = 成行と指値の 1 往復)。そのあと新しい検索計画 6 本。
+# 当方の実データ・鍵・記録は使っていない。合成のデータだけ。
+
+--- [1] 開始時刻 ---
+2026-09-22T11:00:15Z
+rc=0
+
+--- [2] OctoBot: 11 回目の隔離 venv が残っているかの確認 ---
+$ ls -la voct/bin/python
+lrwxrwxrwx 1 root root 10 Sep 22 10:37 voct/bin/python -> python3.12
+$ ./voct/bin/python -c "import octobot_trading;print(octobot_trading.__version__)"
+AttributeError: module 'octobot_trading' has no attribute '__version__'
+rc=1
+(入れ直しは不要だった。11 回目に作った voct をそのまま使う)
+
+--- [3] OctoBot: 注文の層の入口を探す(公開名の列挙)---
+$ ./voct/bin/python -c "import octobot_trading.api as api; print([n for n in dir(api) if 'exchange' in n or 'trader' in n or 'order' in n])"
+create_exchange_builder / create_order / get_open_orders / get_trader / is_trader_simulated / cancel_order_with_id ほか(全文は出力の 1 行目)
+$ ./voct/bin/python -c "from octobot_trading.exchanges.exchange_builder import ExchangeBuilder as B; print([m for m in dir(B) if not m.startswith('_')])"
+build / build_trading_modes / disable_trading_mode / is_backtesting / is_simulated / is_rest_only / is_spot_only / use_cached_markets / is_exchange_only ほか
+rc=0
+
+--- [4] OctoBot: 注文の層を組む途中で止まった 5 件(手段を替えて続けた記録)---
+(4-1) 既定の設定 json に trader の欄が無い
+  $ ./voct/bin/python oct_order.py <.data>
+  KeyError: 'trader'   (octobot/config/default_config.json は backtesting/exchanges/services/notification/profile だけ)
+  -> 設定を自分で組む形に替えた(trader / trader-simulator / crypto-currencies / exchanges / time_frame を手で置く)
+(4-2) 取り込み器が拡張(tentacles)側にあり、既定の取り込み器が 0 件
+  IndexError: list index out of range  (backtesting_util.get_default_importer)
+  -> initialize_backtesting の importers_by_data_file に自分で作った取り込み器を渡す形に替えた
+(4-3) 取り込み器は「クラス」ではなく実体を渡す必要がある
+  TypeError: unbound method type.mro() needs an argument
+  -> ExchangeDataImporter(cfg, DATA) を作って await imp.initialize() してから渡した
+(4-4) 銘柄表の控えが空で、控えから引く経路が鍵を落とす
+  KeyError: 'binance:{...}:unauthenticated'  (ccxt_clients_cache)
+  -> builder.use_cached_markets(False) に替えた(binance の公開の銘柄表を取りに行く。当方のデータ・鍵は渡していない)
+(4-5) 設定に time_frame が要り、値は文字列ではなく列挙
+  KeyError: 'time_frame' -> AttributeError: 'str' object has no attribute 'value'
+  -> cfg["time_frame"] = [octobot_commons.enums.TimeFrames.ONE_MINUTE]
+rc=0
+
+--- [5] OctoBot: 成行と指値の 1 往復(§5-4 の中核)---
+$ ./voct/bin/python -u oct_order.py ExchangeHistoryDataCollector_20260922_103000.data
+  (11 回目に作った合成の 1 分足 400 本の .data のみ。当方の実データ・鍵・記録は使っていない)
+CFG_KEYS= ['accepted_terms', 'backtesting', 'crypto-currencies', 'distribution', 'exchanges', 'profile', 'time_frame', 'trader', 'trader-simulator', 'trading']
+IMPORTER_READY= binance ['BTC/USDT'] [<ExchangeDataTables.OHLCV: 'ohlcv'>]
+BACKTESTING_OK= True
+EXCHANGE_MANAGER= binance BACKTESTING= True SIMULATED= True
+TRADER= TraderSimulator
+PF_START= {'BTC': '10', 'USDT': '100000'}
+MARKET_STATUS= filled FILLED_QTY= 1 FILL_PRICE= 100 FEE= {'is_from_exchange': False, 'cost': Decimal('0'), 'currency': 'BTC'}
+PF_AFTER_MARKET= {'BTC': '11', 'USDT': '99900'}
+LIMIT_STATUS_BEFORE= open OPEN_ORDERS= 1
+LIMIT_STATUS_NOFILL= open
+LIMIT_STATUS_AFTER= filled FILLED_QTY= 1 FILL_PRICE= 110
+PF_END= {'BTC': '10', 'USDT': '100010'}
+ELAPSED_SEC= 2.01
+TRADES= [('BTC/USDT', 'buy_market', '1', '100'), ('BTC/USDT', 'sell_limit', '1', '110')]
+RC_MARK=0
+PROC_RC=0
+(損益 = USDT 100000 -> 99900 -> 100010。建玉は BTC 10 -> 11 -> 10 に戻った。手数料は 0)
+(指値は価格の事象で埋まる: exchange_symbols_data の price_events_manager.handle_price(115, 1700024000) を
+ 打つまで open のままで、打つと filled になった。標準の待ち行列ではなく価格の到達だけで埋まる)
+rc=0
+
+--- [6] OctoBot: 後始末(常駐プロセスを残さない)---
+$ ps -eo pid,etime,args | grep "voct/bin/python" | grep -v "bin/bash" | grep -v grep
+(この回の oct_order.py は残っていない。最後の実行は os._exit(0) を入れて PROC_RC=0 で自分で終わった)
+(ただし 11 回目の oct_min.py が 2 本(PID 26640 と 27057)残っていたので kill した。
+ os._exit を入れる前の形は main が返っても python が終わらない。数え方の注記: pgrep -f は
+ その語を含む自分の包みの shell も数えるので、ps で実体だけを見た)
+$ ps -eo pid,etime,args | grep "voct/bin/python" | grep -v "bin/bash" | grep -v grep   (kill のあと)
+一致 0 件
+rc=0
+
+--- [7] 新しい検索計画 6 本(残りの候補が空になったので打った)---
+経路 (a) WebSearch 一般 / (c) GitHub・PyPI・公式。幅 3 段 x 日本語・英語。
+(7-1) 狭い・日本語: 「指値 約定 キュー位置 バックテスト Python ライブラリ」-> 9 件
+  新しい名前: Ros522/backtestlob(LOB 指値戦略の高速バックテスト)
+  既出: Backtesting.py
+(7-2) 狭い・英語: "queue position simulation limit order fill backtesting library open source" -> 9 件
+  新しい名前: FlashAlpha-lab/flashalpha-fill-simulator / SarthakDalmia1/backtesting_execution_simulator /
+             SLMolenaar/QuantCore
+  既出: hftbacktest
+(7-3) 中間・日本語: 「マーケットインパクト 執行コスト モデル バックテスト オープンソース」-> 9 件
+  新しい名前: 0 件(記事と論文のみ。道具の名前は Backtesting.py = 既出)
+(7-4) 中間・英語: "market impact model execution simulator backtesting framework github 2026" -> 9 件
+  新しい名前: thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator- /
+             shubhamcodez/Market-Impact-Model /
+             ThePredictiveDev/Automated-Financial-Market-Trading-System /
+             microsoft/MarS(生成基盤模型による市場の模擬)
+(7-5) 広い・日本語: 「トレード 検証 シミュレーター 無料 ツール 2026」-> 9 件
+  新しい名前: ForexTester(ウェブと導入型の FX 検証ソフト) / MT4裁量トレード練習君プレミアム
+(7-6) 広い・英語: "open source trading strategy simulator framework alternatives list awesome backtesting" -> 9 件
+  新しい名前: paperswithbacktest/awesome-systematic-trading(一覧そのもの)
+  既出: Backtrader / Backtesting.py / zipline / bt / vectorbt / PyAlgoTrade / NautilusTrader / QSTrader
+rc=0
+
+--- [8] 経路 (b) X(x-research の手順。site:x.com を語を変えて 3 回)---
+(8-1) 「site:x.com backtest 約定シミュレーション 自作 ツール」-> 10 件
+  新しい名前: 0 件(道具の名前としては BacktestingMax / GFT Backtest Software / AlgoTest が出たが
+  いずれも登録の要る外部の場で、投稿はすべて宣伝の印)
+(8-2) "site:x.com \"queue position\" backtest crypto market making library" -> 10 件
+  新しい名前: 0 件(すべて hftbacktest = 既出。使用報告の印の投稿 2 件)
+(8-3) "site:x.com open source backtesting engine new release 2026 traders using" -> 10 件
+  新しい名前: OpenMarket(無料の戦略検証。資金調達率と清算を含む模擬を主張) /
+             prediction-market-backtesting / shiyu-coder/Kronos / QuantDinger /
+             lo2cin4 の符号を書かない検証の枠組み
+  既出: Freqtrade / NautilusTrader
+rc=0
+
+--- [9] 新しい候補の一次資料の確認(経路 c)---
+$ curl -sS -m 25 -o <file> -w "%{http_code}" https://ungh.cc/repos/<repo>
+SLMolenaar/QuantCore code=200
+  description="C++ backtesting engine with a real order book, priority-queue event loop, and Python bindings."
+  createdAt=2025-11-05T00:12:16Z updatedAt=2026-09-12T12:41:16Z
+FlashAlpha-lab/flashalpha-fill-simulator code=200
+  description="Realistic limit-order fill simulator for options credit/debit spreads. Engine-agnostic, data-source-agnostic."
+  createdAt=2026-05-06T(以降は切れている)
+paperswithbacktest/awesome-systematic-trading code=200
+  description="A curated list of awesome libraries, packages, strategies, books, blogs, tutorials for systematic trading."
+  createdAt=2022-02-0(以降は切れている)
+microsoft/MarS code=200
+  description="MarS: a Financial Market Simulation Engine Powered by Generative Foundation Model"
+  createdAt=2024-10-28T09:05:46Z updatedAt=2026-09-21T07:17:58Z
+Ros522/backtestlob code=000(1 回目)-> 打ち直して code=000(2 回目)-> 3 回目も code=000
+  別の経路 https://github.com/Ros522/backtestlob は code=403(応答 378 bytes)
+  -> この回は一次資料に到達できていない。「不可」とは書かない(次の回に手段を替えて続ける)
+rc=0
+
+--- [10] 終了時刻 ---
+2026-09-22T11:20:49Z
+rc=0

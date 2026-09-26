@@ -1,0 +1,5 @@
+  /home/user/trade/scripts/o3c_signal_materials.py:768: DtypeWarning: Columns (3: side, 9: bundle_id, 17: mat6_time_of_day_band, 50: q7_matched_print_id) have mixed types. Specify dtype option on import or set low_memory=False.
+    cont_df = pd.read_csv(a.rows_continue, dtype={"print_id": str, "day": str})
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+9891 passed, 6 skipped, 4 warnings in 1150.47s (0:19:10)

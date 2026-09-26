@@ -1,0 +1,26 @@
+deep 2 rc 0
+FrozenDict-key 10 0.017
+FrozenDict-key 20 0.062
+FrozenDict-key 40 0.237
+FrozenDict-key 90 1.214
+FrozenDict-key/FrozenSet-element 10 0.020
+FrozenDict-key/FrozenSet-element 20 0.069
+FrozenDict-key/FrozenSet-element 40 0.264
+FrozenDict-key/FrozenSet-element 90 1.381
+FrozenDict-value 10 0.006
+FrozenDict-value 20 0.020
+FrozenDict-value 40 0.073
+FrozenDict-value 90 0.392
+deep 3 rc 0
+FrozenDict-key 10 0.037
+FrozenDict-key 20 0.130
+FrozenDict-key 40 0.554
+FrozenDict-key 90 2.780
+FrozenDict-key/FrozenSet-element 10 0.032
+FrozenDict-key/FrozenSet-element 20 0.117
+FrozenDict-key/FrozenSet-element 40 0.538
+FrozenDict-key/FrozenSet-element 90 2.348
+FrozenDict-value 10 0.009
+FrozenDict-value 20 0.032
+FrozenDict-value 40 0.122
+FrozenDict-value 90 0.633

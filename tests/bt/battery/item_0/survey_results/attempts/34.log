@@ -1,0 +1,49 @@
+##### from quantcore_install.log
+=== 2026-09-23T15:40:50Z inspect quantcore
+Using cached quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl (1.0 MB)
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/quantcore/quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded quantcore
+total 1024
+drwxr-xr-x  2 root root    4096 Sep 23 15:40 .
+drwxr-xr-x 17 root root    4096 Sep 23 15:40 ..
+-rw-r--r--  1 root root 1038795 Sep 23 15:40 quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/quantcore/quantcore-1.0.0-cp311-cp311-manylinux_2_26_x86_64.manylinux_2_28_x86_64.whl
+quantcore/_core.cpython-311-x86_64-linux-gnu.so
+Name: quantcore
+Version: 1.0.0
+Author-Email: Stefaan Molenaar <StefaanLMolenaar@gmail.com>
+Project-URL: Homepage, https://github.com/SLMolenaar/quantcore
+Project-URL: Bug Reports, https://github.com/SLMolenaar/quantcore/issues
+Project-URL: Source, https://github.com/SLMolenaar/quantcore
+Requires-Dist: numpy>=1.24.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: matplotlib>=3.7.0; extra == "viz"
+Requires-Dist: seaborn>=0.12.0; extra == "viz"
+=== 2026-09-23T15:40:51Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore
+pip rc=0 elapsed=12s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+9
+=== 2026-09-23T15:41:09Z done
+
+=== round r16-1 (scene keeper, 2026-09-25): pyarrow installed into the venv for quantcore.parquet_loader.ParquetDataLoader (P0-2 unit scenes)
+--- why: the tool's Parquet reader calls pandas.read_parquet, which needs pyarrow or fastparquet; the tool declares neither (METADATA Requires-Dist: numpy, pandas; extras dev / viz)
+--- pre-install checks (delegation §4 = tools survey §5, §6-1..§6-4, §6-6):
+    PyPI https://pypi.org/pypi/pyarrow/25.0.1/json: project_urls Repository https://github.com/apache/arrow, Homepage https://arrow.apache.org/ (Apache Arrow, the same project as the GitHub repository)
+    wheel pyarrow-25.0.1-cp311-cp311-manylinux_2_28_x86_64.whl uploaded 2026-08-10T12:37:40Z; sha256 of the download 25f8720bf6387d5dc2ebd2622112de630760419e4b66134405dd24110d15f37e = PyPI's digest
+    the wheel holds no .pth file and no entry_points.txt (a wheel runs no code at install); the same version is already in the freqtrade venv as its dependency
+--- commands: python -m pip download --no-deps --only-binary=:all: pyarrow==25.0.1 -d <dl>  (09:10:38-09:10:42Z, rc=0)
+              python -m pip install --no-deps --no-index <dl>/pyarrow-25.0.1-cp311-cp311-manylinux_2_28_x86_64.whl  (09:10:59-09:11:02Z, rc=0, 'Successfully installed pyarrow-25.0.1')
+--- measured: with quantcore imported first, pandas.DataFrame.to_parquet ends the process with SIGSEGV in pyarrow/parquet/core.py line 1112 (ParquetWriter.__init__):
+    Fatal Python error: Segmentation fault
+    
+    Current thread 0x00007f2fb3125080 (most recent call first):
+      File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore/lib/python3.11/site-packages/pyarrow/parquet/core.py", line 1112 in __init__
+      File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore/lib/python3.11/site-packages/pyarrow/parquet/core.py", line 2026 in write_table
+      File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore/lib/python3.11/site-packages/pandas/io/parquet.py", line 229 in write
+      File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore/lib/python3.11/site-packages/pandas/io/parquet.py", line 490 in to_parquet
+      File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/quantcore/lib/python3.11/site-packages/pandas/core/frame.py", line 3135 in to_parquet
+    with pyarrow.parquet imported before quantcore the same write and ParquetDataLoader.load run (s / ms / us ints -> 1704067200000000000 / 1704067200123000000 / 1704067200123456000); the adapter imports pyarrow.parquet first

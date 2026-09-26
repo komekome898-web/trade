@@ -1,0 +1,65 @@
+{
+ "head": "d70387060c01482d5d18439bc3cf22afe45c10d5",
+ "diff": [
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json",
+  "tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+  "tests/bt/battery/item_4/test_battery_item4_claims.py"
+ ],
+ "status": [
+  " M docs/AUDITOR/TRACE/2026-09-26_220780c0.json",
+  " M tests/bt/battery/item_4/ROOTCAUSE_r2-1.md",
+  " M tests/bt/battery/item_4/test_battery_item4_claims.py",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_before_section.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_final.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest_diffscope.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_before.json",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_bt_considered.out",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/diff_before.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_after_fix_rerun_that_overwrote.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_overwrite.diff",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_after_tests.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_before_tests.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/baseline_at_start.json",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/before_fix_pytest.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/check_before.json",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/diff_at_start.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/status_after_before_tests.txt",
+  "?? docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/full_suite.txt",
+  "?? tests/bt/battery/item_4/ROOTCAUSE_r2-2.md",
+  "?? tests/bt/battery/item_4/diff_scope.py",
+  "?? tests/bt/battery/item_4/test_battery_item4_diffscope.py"
+ ],
+ "findings": [
+  {
+   "id": "bself-touch",
+   "level": "止める",
+   "repeat_of": null,
+   "text": "場面係の差分に場面集の外のファイルがある(L-448 の機械の検査): docs/AUDITOR/TRACE/2026-09-26_220780c0.json"
+  }
+ ],
+ "outside": [
+  "docs/AUDITOR/TRACE/2026-09-26_220780c0.json"
+ ],
+ "overwrites": [],
+ "untracked_outside": [
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_before_section.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/after_fix_pytest_battery_and_critic_final.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/before_fix_pytest_diffscope.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_before.json",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/check_bt_considered.out",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/diff_before.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_after_fix_rerun_that_overwrote.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/r2-1_overwrite.diff",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_after_tests.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-2/status_before_tests.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/baseline_at_start.json",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/before_fix_pytest.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/check_before.json",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/diff_at_start.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-3/status_after_before_tests.txt",
+  "docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_2/materials/full_suite.txt"
+ ],
+ "quoted": []
+}

@@ -1,0 +1,117 @@
+番号	名前	到達	足	ティック	板の待ち行列	イベント駆動	ベクトル化	市場影響と約定の模型	段(機構)	段(既定)	遅延	取り消しの扱い	他の区分へ	安全側の所見	尽きていない理由	報告書の最後の記載の行	段の表の行	遅延(原文)	取り消しの扱い(原文)
+1	Basana	到達済み	○	×	×	○		○	4・6	4・6	未確認	未確認	区分2			6836	10517	未確認(走査 8 本。当たり 0 件)	未確認(走査 8 本。当たり 0 件)
+2	Backtrader	到達済み	○			×		○	4	1	未確認	該当なし	区分2			6839	10497	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `Canceled, Expired, Margin, Rejected = range(9)` は自分の注文の状態
+3	PySystemtrade	到達済み	○					○	2	2	未確認	該当なし	区分2			9401	10500	未確認。当たり 1 件 `# No delaying done here so we assume positions are already delayed` は持ち高の遅らせ方の注記	該当なし。当たり `def cancel_order_on_stack(self, brokerOrder):` は実弾の側
+4	PyBroker	到達済み	○				×	○	4・6	1	未確認	該当なし	区分2・区分4			6845	10498	未確認(走査 8 本。当たり 0 件)	該当なし。走査 8 本で取り消しの当たり 0 件
+5	Lean CLI	到達済み	○				×	×								6849			
+6	Ziplime	到達済み	○			○		○	4・6	4	未確認	未確認	区分2・区分3・区分6			9650	10510	未確認。1 回目 `code=000`、打ち直して既定枝 `master` は取れたが、追跡ファイルの一覧の走査で当たり 0 件	未確認(同じ理由)
+7	Superalgos	到達済み	○		×			○	1	1	未確認	未確認	区分2			6855	10495	未確認(走査 8 本。当たり 0 件)	未確認(走査 8 本。当たり 0 件)
+8	OpenTrader	到達済み	○					○	1	1	未確認	該当なし	区分2			9402	10493	未確認(走査 8 本。当たり 0 件)	該当なし。当たりは注文の型の `Canceled` だけ
+9	CryptoSignal	到達済み											区分3・区分7			6861			
+10	fast-trade	到達済み	○					×					区分3・区分4・区分6			6864			
+11	python3	到達済み	○										区分2・区分6		個別の要素が未決	8452			
+12	pybotters	到達済み			×								区分2・区分3			6871			
+13	DeviaVir/zenbot	到達済み	○	○	×	○		○	3・4	3・4	未確認	未確認	区分2			6874	10506	未確認(走査 8 本。当たり 0 件)	未確認(走査 8 本。当たり 0 件)
+14	Bot18	到達済み											区分2		到達済みだが印が無い	8450			
+15	Mendl-Labs/BacktestingCore	到達済み	○		×	×		○	6	6(推定)	在る	該当なし				6879	10518	在る。`//! Variable latency simulation with jitter, spikes, and realistic network modeling` と `pub base_latency_ms: u64,` と `pub jitter_fraction: f64,` と `pub min_latency_ms: u64,` と `pub max_latency_ms: u64,`。ただし 15 番は 28 回目の要約の型 1(機構はあるが検証の実行経路が呼ばない)に挙がっている(知見 9)	該当なし。当たり `Cancelled,` は振り分けの側の注文の状態
+16	Luczinsritter/event_driven_backtesting_engine	到達済み	○	×		×		×								6882			
+17	info.license	到達済み											区分5			6887			
+18	zipline-reloaded	到達済み	○			○		○	4・6	4	未確認	該当なし				9857	10509	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `def cancel(self):` は自分の注文
+19	Jesse	到達済み	○					○	2	2	未確認	該当なし	区分2・区分6	作業者向けの手引きの同梱		9403	10501	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `canceled_at = BigIntegerField(null=True)` は自分の注文
+20	VnPy	到達済み	○	○		×		○	2	2	未確認	該当なし	区分2			6896	10502	未確認(走査 2 本。当たり 0 件)	該当なし。当たり `Status.CANCELLED: StopOrderStatus.CANCELLED,` は自分の注文
+21	Qlib	到達済み	○				×	○	4・6	1	未確認	該当なし	区分4・区分5			6899	10499	未確認。当たり 1 件 `# - This may cause delay when uploading results` は結果の書き出しの話で、埋まり方ではない	該当なし。走査 8 本で取り消しの当たり 0 件
+22	Lean CLI	到達済み											区分2		到達済みだが印が無い	8451			
+23	hftbacktest	到達済み	×	○	○	○	×	○	3・5	3・5	在る	在る	区分2			6906	10512	在る。`pub struct ConstantLatency {` と `entry_latency: i64,` と `pub fn new(entry_latency: i64, response_latency: i64) -> Self {`。注文の到着と応答の両方に別の値を持つ	軸が立つ。`fn depth(&self, order: &mut Order, prev_qty: f64, new_qty: f64, depth: &MD);` で深さの変化を列の前の量に反映する。約定の口 `fn trade(...)` と別の口で受けているが、取り消しの分をどう配分するかはこの回に読んだ範囲では決まらない
+31	Ros522/backtestlob	到達済み		○	×											4614			
+32	FlashAlpha-lab/flashalpha-fill-simulator	到達済み			×			○	1	1	未確認	該当なし				4615	10494	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `Usually candidates that have not yet filled, not yet been cancelled.` は自分の注文の候補
+33	SarthakDalmia1/backtesting_execution_simulator	到達済み			○			○	5・6	5	在る	未確認				4616	10515	在る。`Timestamp submit_time = clock_.now() + config_.latency.order_submit_latency_ns;` と `Timestamp cancel_time = clock_.now() + config_.latency.order_cancel_latency_ns;`。注文と取り消しに別々の遅延を掛ける(知見 8)	未確認。自分の注文の `bool ExecutionSimulator::cancel_order(OrderId order_id) {` は読めたが、先行注文の側の扱いはこの回に読んだ範囲では決まらない
+34	SLMolenaar/QuantCore	到達済み														4617			
+35	thirupathikannan-ai/Optimal-Execution-And-Market-Impact-Simulator-	到達済み						○	6	6	未確認	未確認				4618	10519	未確認(走査 2 本。当たり 0 件)	未確認(走査 2 本。当たり 0 件)
+36	shubhamcodez/Market-Impact-Model	到達済み						○	6	6	未確認	未確認				4619	10520	未確認(走査 3 本。当たり 0 件)	未確認(走査 3 本。当たり 0 件)
+37	ThePredictiveDev/Automated-Financial-Market-Trading-System	到達済み			○	○		○	5・6	5	在る	在る	区分2			10426	10532	在る。`self.latency_ms: int = 0` と `available_at = self._current_time + pd.Timedelta(milliseconds=int(self.latency_ms))`。既定は 0(`parser.add_argument("--latency-ms", type=int, default=0)`)	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。逐語 `queue.remove(order)`
+38	microsoft/MarS	到達済み			○			○	5	5(推定)	未確認	在る				4621	10514	未確認(走査 8 本。当たり 0 件)	軸が立つ。取り消しが供給の側の注文として板に入る。逐語 `if order.is_cancel_buy:` と `trans = self.bids[index].update_with_cancel_order(order)` と `cancel_transactions = self._del_canceled_call_auction_orders()`
+39	paperswithbacktest/awesome-systematic-trading	到達済み														4622			
+40	OpenMarket	到達済み	○													5725			
+41	prediction-market-backtesting	到達済み		○		○							区分6	作業者向けの手引きの同梱		6106			
+42	shiyu-coder/Kronos	到達済み											区分4・区分6			4625			
+43	QuantDinger	到達済み	○										区分2・区分6			4626			
+44	lo2cin4	到達済み	○				×						区分4	作業者向けの手引きの同梱		5904			
+45	ForexTester	到達済み	○	○	×	×	×	○	2	2	未確認	該当なし				10082	10528	未確認(走査 1 本 = 文言の束。遅延の語の当たり 0 件)	該当なし。段(機構) が 5 に届かないので先行注文という物が立たない
+46	MT4裁量トレード練習君プレミアム	到達済み	○	×												5727			
+48	BacktestingMax	到達済み	○													5729			
+49	GFT Backtest Software	未到達													その他	5731			
+50	AlgoTest	到達済み	○	×	×	×	×	○	1	1	該当なし	該当なし				10088	10529	該当なし(文書上の主張)。逐語 `It does not take into consideration the market depth and liquidity of the instrument, slippages & broker congestion.`	該当なし。同じ理由
+51	QUANTAXIS	到達済み	○			×	×	○	0	0	未確認	該当なし	区分2・区分3・区分5	外部送信の口		9404	10491	未確認(走査 8 本。当たり 0 件)	該当なし。走査の当たり `CANCEL = 400` と `CANCEL_PART = 402` は自分の注文の状態
+52	QuantConnect	到達済み	○	○		○							区分2			7292			
+53	Rqalpha	到達済み	○	○	×	○	×	○	3・4	4	未確認	該当なし	区分2			7850	10511	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `def set_pending_cancel(self):` は自分の注文
+54	finmarketpy	到達済み	○		×	×	○	○	該当なし	該当なし	該当なし	該当なし	区分4			7851	10526	該当なし(注文の物を持たない)	該当なし(同じ理由)
+55	backtesting.py	到達済み	○													6344			
+56	zvt	到達済み	○													5733			
+57	WonderTrader	到達済み	○	○	○	○		○	3・4・5	3・4・5	未確認	在る	区分2			7852	10516	未確認。`MatchEngine.h` を走査したが遅延の語の当たり 0 件	軸が立つ。`ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);` で、差した時点に 1 回だけ平均の取消率で先行量を割り引く。既定は `MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)` の 0
+58	nautilus_trader	到達済み	○	○	×	○							区分2	作業者向けの手引きの同梱		6345			
+59	PandoraTrader	到達済み		○									区分2			6126			
+60	Hikyuu	到達済み	○	×	×	×	×	○	2	2	該当なし(別の意味)	該当なし	区分4			7853	10503	別の意味の遅延を持つ。`setParam<int>("max_delay_count", 3);` は埋まらなかった注文を次の足へ持ち越す回数の上限で、届くまでの間ではない	該当なし。走査 8 本で取り消しの当たり 0 件
+61	barter-rs	到達済み	○	○		○		×					区分2			6926			
+62	qf-lib	到達済み	○			○							区分3・区分5・区分8			6117			
+63	trade-frame	到達済み		○		○		○	3・4	3・4	在る	該当なし	区分2・区分3			6119	10508	在る。`m_dtQueueDelay`(50 から 100ms)。注文を時刻つきの遅延の列に入れ、気配の到着で取り出す(26 回目の知見 10 と 27 回目の知見 12 が在処)	該当なし。当たり `struct evtCancelled {}; // exchange cancellation` は自分の注文の状態機械
+64	QuantFabric	到達済み											区分2			5739			
+65	aat	到達済み			○	○		○	5(合成の取引所)・0(CSV の取引所)・0(IEX の取引所)	5(合成の取引所)・0(CSV の取引所)・0(IEX の取引所)。どれが既定かは未確認	未確認	在る	区分2			10429	10533	未確認(走査 5 本。`latenc`・`delay` の当たり 0 件)。合成の取引所の `self._sleep` は事象の間の待ち(逐語 `0.3` と `else 0.0`)で、注文が届くまでの間の模型ではない	軸が立つ(合成の取引所)。取り消しの時点で繰り上がる(104 の立場)。逐語 `self._orders.remove(order)`。CSV と IEX の機関は段 5 に届かないので該当なし
+66	sdoosa-algo-trade-python	到達済み											区分2			5740			
+67	lumibot	到達済み	○	×	×	×	×	○	2	2	未確認	該当なし	区分2			7854	10504	未確認。`ungh.cc` が 3 度とも `code=000` で追跡ファイルの一覧が取れず、走査の網は `raw` から取った 1 本だけ(知見 15)	該当なし。当たり `def _cancel_open_orders_for_asset(` は自分の注文
+68	quanttrader	到達済み	○	○		○							区分2			6382			
+69	gobacktest	到達済み	○			○										6124			
+70	PineForge	到達済み	○		×	×		○	2・3	2・3	未確認	該当なし	区分8			7855	10505	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `CancelledEvent make_cancelled(uint64_t ordinal, const LiveRequest& live, CancelReason reason,` は自分の注文
+71	FlashFunk	到達済み											区分2			5741			
+72	QTradeX	到達済み	○					○	1	1	未確認	該当なし	区分2			7856	10496	未確認(走査 8 本。当たり 0 件)	該当なし。当たり `cancel_order(self, order_id, self.symbol):` は実弾の側の自分の注文
+73	vectorbt	到達済み	○				○									5907			
+74	ml-quant-trading	到達済み	○				○						区分4	作業者向けの手引きの同梱		5910			
+75	Freqtrade	到達済み	○										区分2・区分4			6346			
+76	Kelp	未到達											区分2			4660			
+77	openlimits	未到達											区分2			4661			
+78	bTrader	未到達											区分2			4662			
+79	crypto-crawler-rs	未到達											区分3			4663			
+80	Hummingbot	到達済み	○										区分2			5742			
+81	cryptotrader-core	未到達											区分2			4665			
+82	Blackbird	未到達											区分2			4666			
+83	bitcoin-arbitrage	未到達											区分2・区分7			4667			
+84	ThetaGang	未到達											区分2			4668			
+85	czsc	到達済み	○										区分4			5744			
+86	analyzingalpha	到達済み	○													5746			
+87	PyTrendFollow	到達済み	○				○	○	該当なし	該当なし	該当なし	該当なし	区分2			7857	10527	該当なし(注文の物を持たない)	該当なし(同じ理由)
+88	TradeSight	未到達											区分2・区分5・区分6・区分7			4672			
+89	PRISM-INSIGHT	未到達											区分2・区分6			4673			
+90	Oddpool/PredictionMarketBench	到達済み		○	○			○	4・5	4・5	未確認	在る	区分6			10432	10534	未確認(走査 12 本。`latenc`・`delay` の当たり 0 件)	軸が立ち、95・57・98・104 のどれとも違う。既定 `maker_queue_mode: str = "trade_only"` は 95 と同じ振る舞い。もう 1 つの型では、写真の板の量が先行量を下回ったとき先行量をその量まで下げる(逐語 `queue.env_ahead = current_size`)
+91	braedonsaunders/homerun	到達済み	×	○	○	○		○	3・4・5・6	3・4・5	在る	在る	区分2・区分3・区分5・区分6			7858	10525	在る。`from services.backtest.latency_model import LatencyModel` と `the venue at T + submit_latency.`	軸が立つ。26 回目の逐語 `depth that disappeared between snapshots is volume that traded ahead of us in the FIFO queue.` のとおり、写真の間で消えた深さを「前で約定した」とみなす。取り消しで消えた分と区別していない
+92	prediction-market-backtester	到達済み	○					○	6	0	在る	該当なし	区分8			7859	10492	在る。`latency_bars: int = Field(default=0, ge=0)` と `latency_bars=config.latency_bars,`。単位は足の番号で、既定は 0	該当なし。走査 8 本で取り消しの当たり 0 件
+93	punyamodi/binary_market_engine	未到達											区分2・区分4			4681			
+94	mote/backtest	到達済み	○	×	×	×	×	○	2	2	未確認	該当なし				10093	10530	未確認(走査 1 本。当たり 0 件)	該当なし。当たりは自分の注文の取り消しと OCO の `o1.cancel(o2)` だけ
+95	sacha9214/polymarket-fill-model	到達済み		○	○			○	5	5	未確認	持たない				10435	10535	未確認(走査 2 本。当たり 0 件)	持たない(95 の立場 = 見ない)。逐語 `- Cancellations ahead of us are invisible, so we never move up the queue →`
+96	sashankzade/limit-order-book-matching-engine	到達済み			○			○	5	5	未確認	在る				10438	10536	未確認(走査 2 本。当たり 0 件。`Exchange.cpp` は 96 の側を取っていない)	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。照合の本体 2 本が上流とバイト単位で同じ
+97	kahan15/Limit-Order-Book-Simulator	到達済み			○			○	5(模擬の型)・4(生の板の paper の型)	5(既定の画面は模擬の型)	未確認	在る	区分2・区分3	指示の文章の同梱		10441	10537	未確認(走査 1 本。`latenc`・`delay` の当たり 0 件。`setTimeout` の当たり 2 件は通知の消去と再接続)	軸が立つ(模擬の型)。取り消しの時点で繰り上がる(104 の立場)。逐語 `bids: book.bids.filter((order) => order.id !== cancelled.id),`。生の板の型では paper の指値が生の約定で埋まらないので、先行注文は立たない
+98	mihircoding/limitOrderBook	到達済み			○			○	5	5	在る	在る				5236	10513	在る。`class LatencyModel:` と `def sample(self) -> float:` と `send(sent_at, participant, action) -> runs at sent_at + latency(participant)`。種を `np.random.default_rng(self.seed)` で取るので決定的に回せる	軸が立ち、95・57・104 のどれとも違う。逐語 `Cancelled orders in the queues. cancel() flags the order and leaves it where`。印を付けて列に残す(怠惰な取り消し)ので列は繰り上がらないが、その注文は埋まらない(知見 6)
+99	NickGardi/orderbooksim	到達済み			○			○	5	5	未確認	在る	区分5			10444	10538	未確認(走査 1 本。当たり 0 件)	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。逐語 `del level[i]`
+100	xavierchuan/OrderMatchingEngine	到達済み			○			×								10447			
+101	akurkar07/OrderBook	到達済み			○			○	5	5	未確認	在る	区分8			10450	10539	未確認(走査 3 本。当たり 0 件)	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。逐語 `queue_.erase(it);`
+102	3yit/Limit-Order-Book-Simulator	到達済み			○			○	5	5	該当なし(別の意味)	在る				10453	10540	別の意味の遅延を持つ。`bool simulate_latency{false};` と `std::this_thread::sleep_for(config.latency_per_event);` は事象を 1 件処理するたびの実時間の待ちで、注文が届くまでの間ではない。既定は無効	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。逐語 `level->orders.erase(locator.iterator);`。訂正は取り消して入れ直し、時刻を新しくする(逐語 `updated.timestamp = Clock::now();`)ので列の後ろへ回る
+103	IsaacCheng9/order-book-simulator	到達済み			○			○	5	5	未確認	在る	区分5			10456	10541	未確認(走査 3 本。`latenc`・`delay` の当たり 0 件。`sleep` の当たり 2 件は注文の発生の速さの調整と統計の間隔)	軸が立つ。取り消しの時点で繰り上がる(104 の立場)。逐語 `del price_level.orders[order_id]`
+104	jxm35/LimitOrderBook-MatchingEngine	到達済み			○			○	5	5	未確認	在る	区分5			10459	10542	未確認(走査 4 本。`latenc`・`delay` の当たり 0 件。`sleep` の当たり 5 件は受信と注文の発生の繰り返しの間隔)	軸が立つ(104 の立場そのもの)。取り消しの時点で繰り上がる。逐語 `prev->next = current->next;` と、17 回目の最小実行の `queuePosition=2` から `queuePosition=1` への繰り上がり
+105	DaniyalMlk/slippage	到達済み						○	6	6	該当なし(別の意味)	該当なし				5243	10521	別の意味の遅延を持つ。`from .shortfall import DelayBasis` と `"--delay-basis", choices=[b.value for b in DelayBasis], default=DelayBasis.ORDER.value` は実行差を測るときの基準の取り方で、届くまでの間ではない(知見 13)	該当なし。当たり 2 件はどちらも「重みが打ち消し合う」の意味で、注文の取り消しではない
+106	almgren-chriss	到達済み						○	6	6	未確認	未確認				5913	10522	未確認(走査 1 本。当たり 0 件)	未確認(走査 1 本。当たり 0 件)
+107	sigc	到達済み	○				×	×					区分4			6917			
+108	Databento	未到達											区分3			4888			
+109	arXiv:2509.05107	到達済み			○			×								10462			
+110	wangzhe3224/awesome-systematic-trading	到達済み														10099			
+111	HKUDS/Vibe-Trading	到達済み	○	×	×	×	×	○	0(暗号資産の機関)・1(中国株の機関)	0(暗号資産の機関)・1(中国株の機関)	未確認	該当なし	区分3・区分6	作業者向けの手引きの同梱		10102	10531	未確認(走査 3 本。当たり 0 件)	該当なし。段(機構) が 5 に届かない
+112	wilsonfreitas/awesome-quant	到達済み												作業者向けの手引きの同梱		10107			
+113	avelino/awesome-go	未到達														5247			
+114	ai-boost/awesome-harness-engineering	未到達											区分6			4894			
+115	thedaviddias/llms-txt-hub	未到達														5248			
+116	braverock/blotter	到達済み						○	6	6	未確認	未確認				5916	10523	未確認(走査 8 本。当たり 0 件)	未確認(走査 8 本。当たり 0 件)
+117	Exegy	到達済み											区分3・区分8			10110			
+118	Hyper Trading Automation	到達済み											区分6	宣伝・詐欺の兆候		10113			
+119	peernagy/lob_bench	到達済み		○				○	6	6	未確認	該当なし(別の意味)				9405	10524	未確認。追跡ファイルの名前が当方の走査の型に当たらず、走査対象が 0 本だったので、README を取り直した。遅延の当たり 0 件	別の意味の取り消しを持つ。README の尺度の逐語 `Time to cancel` と `Cancel‑order depths` と `Cancel‑order levels` は生成した板の列を評価する尺度で、自分の注文の前の列ではない(知見 12)
+120	wbt	到達済み	○											作業者向けの手引きの同梱		5918			
+121	mhallsmoore/qstrader	到達済み	○													6325			
+122	gbeced/pyalgotrade	到達済み	○													6329			
+123	carlos8f/zenbot	到達済み	○	○	×	○		○	3・4	3・4	未確認	未確認	区分2			7298	10507	未確認(走査 8 本。当たり 0 件)	未確認(走査 8 本。当たり 0 件)
+124	ccxt/ccxt												区分2・区分3			6587			

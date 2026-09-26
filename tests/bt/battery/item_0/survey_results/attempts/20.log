@@ -1,0 +1,75 @@
+##### from vnpy_install.log
+=== 2026-09-23T15:40:50Z inspect vnpy
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 201.3/201.3 kB 36.7 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/vnpy/vnpy-4.4.0-py3-none-any.whl
+Successfully downloaded vnpy
+total 208
+drwxr-xr-x  2 root root   4096 Sep 23 15:40 .
+drwxr-xr-x 17 root root   4096 Sep 23 15:40 ..
+-rw-r--r--  1 root root 201323 Sep 23 15:40 vnpy-4.4.0-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/vnpy/vnpy-4.4.0-py3-none-any.whl
+Name: vnpy
+Version: 4.4.0
+Project-URL: Homepage, https://www.vnpy.com
+Project-URL: Documentation, https://www.vnpy.com/docs
+Project-URL: Changes, https://github.com/vnpy/vnpy/blob/master/CHANGELOG.md
+Project-URL: Source, https://github.com/vnpy/vnpy/
+Project-URL: Forum, https://www.vnpy.com/forum
+Author-email: Xiaoyou Chen <xiaoyou.chen@mail.vnpy.com>
+Requires-Dist: deap>=1.4.2
+Requires-Dist: loguru>=0.7.3
+Requires-Dist: nbformat>=5.10.4
+Requires-Dist: numpy>=2.2.3
+Requires-Dist: pandas>=2.2.3
+Requires-Dist: plotly>=6.0.0
+Requires-Dist: pyqtgraph>=0.13.7
+Requires-Dist: pyside6==6.8.2.1
+Requires-Dist: pyzmq>=26.3.0
+Requires-Dist: qdarkstyle>=3.2.3
+Requires-Dist: qrcode>=7.4.2
+Requires-Dist: requests>=2.32.0
+Requires-Dist: ta-lib>=0.6.4
+Requires-Dist: tqdm>=4.67.1
+Requires-Dist: tzlocal>=5.3.1
+Requires-Dist: alphalens-reloaded>=0.4.5; extra == 'alpha'
+Requires-Dist: lightgbm>=4.6.0; extra == 'alpha'
+Requires-Dist: polars>=1.26.0; extra == 'alpha'
+Requires-Dist: pyarrow>=19.0.1; extra == 'alpha'
+Requires-Dist: scikit-learn>=1.6.1; extra == 'alpha'
+Requires-Dist: scipy>=1.15.2; extra == 'alpha'
+Requires-Dist: torch>=2.6.0; extra == 'alpha'
+Requires-Dist: babel>=2.17.0; extra == 'dev'
+Requires-Dist: hatchling>=1.27.0; extra == 'dev'
+Requires-Dist: pandas-stubs>=2.2.3.250308; extra == 'dev'
+Requires-Dist: scipy-stubs>=1.16.3.0; extra == 'dev'
+=== 2026-09-23T15:40:51Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/vnpy
+pip rc=1 elapsed=16s
+ERROR: Could not install packages due to an OSError: [Errno 28] No space left on device
+
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+4
+=== 2026-09-23T15:41:13Z done
+=== 2026-09-23T16:52:20Z retry (disk guard 700MB) : pip install --no-cache-dir vnpy==4.4.0 vnpy_ctastrategy==1.4.1
+free before: 1491 MB
+KILLED: free space fell to 619 MB at 2026-09-23T16:52:53Z
+pip rc=143 elapsed=28s min_free=619MB
+free after: 1198 MB
+=== 2026-09-23T16:53:02Z retry (disk guard 700MB) : pip install --no-cache-dir --no-deps vnpy==4.4.0 vnpy_ctastrategy==1.4.1
+free before: 1198 MB
+pip rc=0 elapsed=2s min_free=1170MB
+Successfully installed vnpy-4.4.0 vnpy_ctastrategy-1.4.1
+free after: 1167 MB
+=== 2026-09-23T16:53:09Z retry (disk guard 700MB) : pip install --no-cache-dir numpy pandas loguru tzlocal deap plotly ta-lib>=0.6.4 tqdm
+free before: 1167 MB
+pip rc=0 elapsed=22s min_free=877MB
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+Successfully installed cffi-2.1.1 deap-1.4.4 loguru-0.7.3 moocore-0.3.2 narwhals-2.26.0 numpy-2.4.6 packaging-26.3 pandas-3.0.6 platformdirs-4.11.12 plotly-7.1.0 pycparser-3.0 python-dateutil-2.9.0.post0 six-1.17.0 ta-lib-0.8.1 tqdm-4.70.1 tzlocal-5.4.4
+free after: 909 MB
+=== 2026-09-23T16:53:43Z retry (disk guard 700MB) : pip install --no-cache-dir requests pyzmq qrcode nbformat
+free before: 909 MB
+pip rc=0 elapsed=8s min_free=896MB
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+Successfully installed attrs-26.1.0 certifi-2026.7.22 charset_normalizer-3.5.1 fastjsonschema-2.22.2 idna-3.20 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 jupyter-core-5.9.1 nbformat-5.11.1 pyzmq-27.2.0 qrcode-8.2 referencing-0.37.0 requests-2.34.2 rpds-py-2026.6.3 traitlets-5.16.1 typing-extensions-4.16.0 urllib3-2.8.0
+free after: 895 MB

@@ -1,0 +1,181 @@
+##### from item0_r5-1_scenekeeper_install_33.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/SarthakDalmia1/backtesting_execution_simulator.git c33
+/dev/vda          258020 32037      5902  85% /
+rc=0
+a0a5fcd2d0c033c5853dcef5187a717bc341bc10 2026-07-18T22:37:00+05:30 root
+524K	.
+=== start 2026-09-24T03:00:50Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/pip install --no-cache-dir pybind11 && cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c33 && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_BENCHMARKS=OFF -DBUILD_TESTS=OFF -DBUILD_PYTHON_BINDINGS=ON -Dpybind11_DIR=$(/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/python -m pybind11 --cmakedir) -DPython3_EXECUTABLE=/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/python >/dev/null && cmake --build build -j4 && cp build/pybacktest*.so /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/lib/python3.11/site-packages/ && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/python -c 'import pybacktest; print(pybacktest.__file__)'
+df before: /dev/vda          258020 32343      5596  86% /
+=== end 2026-09-24T03:01:29Z rc=0 elapsed=39s min_free=4358MB 
+[ 63%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/position/pnl_tracker.cpp.o
+[ 68%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/analytics/markout.cpp.o
+[ 72%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/strategy/strategy_base.cpp.o
+[ 77%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/strategy/strategies.cpp.o
+[ 81%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/data/market_data_feed.cpp.o
+[ 86%] Building CXX object CMakeFiles/backtesting_engine.dir/cpp/data/tick_reader.cpp.o
+[ 90%] Linking CXX static library libbacktesting_engine.a
+[ 90%] Built target backtesting_engine
+[ 95%] Building CXX object CMakeFiles/pybacktest.dir/python/bindings/bindings.cpp.o
+[100%] Linking CXX shared module pybacktest.cpython-311-x86_64-linux-gnu.so
+[100%] Built target pybacktest
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/lib/python3.11/site-packages/pybacktest.cpython-311-x86_64-linux-gnu.so
+df after: /dev/vda          258020 33607      4332  89% /
+=== start 2026-09-24T03:08:53Z limit=300s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c33 && g++ -std=c++20 -O2 -I cpp /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv33.cpp build/libbacktesting_engine.a -lpthread -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/c33_driver && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/c33_driver md 1700092800000000000:100:1 1700179200000000000:101:1 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/c33_driver orders market 1 100000 fill12345 1700006400000000000:100:100 1700092800000000000:100:100 1700179200000000000:100:100
+df before: /dev/vda          258020 37208       731  99% /
+=== end 2026-09-24T03:08:55Z rc=0 elapsed=2s min_free=731MB 
+MD 1700092800000000500 100.000000
+MD 1700179200000000500 101.000000
+CALL 1 1700006400000000500
+EVENT Trade 1700006400000001500
+NOTICE accepted 1700006400000001500
+FILL 1700006400000002000 12345.000000 1.000000 0.000000
+CALL 2 1700092800000000500
+CALL 3 1700179200000000500
+FILLED_AT_3 1.000000
+CASH 100000.000000
+df after: /dev/vda          258020 37208       731  99% /
+=== 2026-09-24T03:52:08Z driver source (the program the adapter runs; built here, synthetic input only)
+--- /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv33.cpp
+// Driver for candidate 33 (SarthakDalmia1/backtesting_execution_simulator), public C++ API only:
+// ExecutionSimulator(BacktestConfig), set_event_callback, set_slippage_model, set_cost_model,
+// add_tick, submit_order, cancel_order, run, matching_engine(), event_queue(), get_last_tick.
+// Usage: drv33 <mode> [args]; output: one "key value..." line per observation.
+#include "execution/execution_simulator.hpp"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+using namespace backtest;
+
+static Tick tick_at(Timestamp ts, double px, double qty) {
+  Tick t; t.timestamp = ts; t.symbol = Symbol("X");
+  t.bid_price = Price::from_double(px); t.ask_price = Price::from_double(px); t.last_price = Price::from_double(px);
+  t.bid_size = Quantity::from_double(qty); t.ask_size = Quantity::from_double(qty); t.last_size = Quantity::from_double(qty);
+  t.volume = (uint64_t)qty; return t;
+}
+static OrderRequest req(Side s, OrderType ty, double px, double qty) {
+  OrderRequest r; r.symbol = Symbol("X"); r.side = s; r.type = ty; r.price = Price::from_double(px);
+  r.quantity = Quantity::from_double(qty); r.tif = TimeInForce::GTC; return r;
+}
+static const char* tname(EventType t) {
+  switch (t) { case EventType::MarketData: return "MarketData"; case EventType::OrderSubmit: return "OrderSubmit";
+    case EventType::OrderCancel: return "OrderCancel"; case EventType::OrderFill: return "OrderFill";
+    case EventType::OrderReject: return "OrderReject"; case EventType::Trade: return "Trade"; default: return "Other"; }
+}
+// "ts:price:qty" arguments
+struct In { Timestamp ts; double px; double qty; };
+static std::vector<In> ins(int argc, char** argv, int from) {
+  std::vector<In> v; for (int i = from; i < argc; ++i) { In x; sscanf(argv[i], "%lld:%lf:%lf", (long long*)&x.ts, &x.px, &x.qty); v.push_back(x); } return v;
+}
+
+struct FixedPrice : SlippageModel {  // the scene's fill model: fill at 12345.0 whatever the market
+  Price calculate_slippage(Price base, Quantity, Quantity, Side, double, double) const override {
+    return Price::from_double(12345.0) - base; }
+};
+struct PerFill : TransactionCostModel {  // 0.5 per fill
+  double calculate_cost(double, Quantity, bool, const Symbol&) const override { return 0.5; } };
+struct PerUnit : TransactionCostModel {  // 0.375 per unit of quantity
+  double calculate_cost(double, Quantity q, bool, const Symbol&) const override { return 0.375 * q.to_double(); } };
+
+int main(int argc, char** argv) {
+  if (argc < 2) return 2;
+  std::string mode = argv[1];
+  BacktestConfig cfg;  // tool defaults unless the mode says otherwise
+  if (mode == "md" || mode == "md0") {  // hand ticks, print every MarketData event the callback receives
+    if (mode == "md0") cfg.latency.market_data_latency_ns = 0;
+    auto v = ins(argc, argv, 2);
+    cfg.start_time = v.empty() ? 0 : v[0].ts;
+    ExecutionSimulator sim(cfg);
+    sim.set_event_callback([&](const Event& e) {
+      if (get_event_type(e) == EventType::MarketData) {
+        const auto& m = std::get<MarketDataEvent>(e);
+        printf("MD %lld %.6f\n", (long long)m.timestamp, m.tick.last_price.to_double()); } });
+    for (auto& x : v) sim.add_tick(tick_at(x.ts, x.px, x.qty));
+    sim.run(); return 0;
+  }
+  if (mode == "future") {  // at the MarketData event whose tick time is argv[2], try the reads a strategy has
+    Timestamp probe = atoll(argv[2]); cfg.latency.market_data_latency_ns = 0;
+    auto v = ins(argc, argv, 3); cfg.start_time = v[0].ts;
+    ExecutionSimulator sim(cfg); bool done = false;
+    sim.set_event_callback([&](const Event& e) {
+      if (done || get_event_type(e) != EventType::MarketData) return;
+      const auto& m = std::get<MarketDataEvent>(e); if (m.timestamp != probe) return; done = true;
+      const Event* nx = sim.event_queue().peek();
+      if (nx && get_event_type(*nx) == EventType::MarketData)
+        printf("PEEK %lld %.6f\n", (long long)get_event_timestamp(*nx), std::get<MarketDataEvent>(*nx).tick.last_price.to_double());
+      else printf("PEEK none\n");
+      const Tick* lt = sim.get_last_tick(Symbol("X"));
+      if (lt) printf("LAST %lld %.6f\n", (long long)lt->timestamp, lt->last_price.to_double()); else printf("LAST none\n"); });
+    for (auto& x : v) sim.add_tick(tick_at(x.ts, x.px, x.qty));
+    sim.run(); return 0;
+  }
+  // order scenes: argv[2] = order kind (limit90 / market), argv[3] = qty, argv[4] = capital, argv[5] = plug, then ticks
+  if (mode == "orders") {
+    std::string kind = argv[2]; double qty = atof(argv[3]); cfg.initial_capital = atof(argv[4]); std::string plug = argv[5];
+    auto v = ins(argc, argv, 6); cfg.start_time = v[0].ts;
+    if (plug == "latency7ms") { cfg.latency.order_submit_latency_ns = 7000000; cfg.latency.market_data_latency_ns = 0;
+                                cfg.latency.order_cancel_latency_ns = 0; cfg.latency.fill_report_latency_ns = 0; }
+    ExecutionSimulator sim(cfg);
+    if (plug == "fill12345") sim.set_slippage_model(std::make_unique<FixedPrice>());
+    if (plug == "cost05") sim.set_cost_model(std::make_unique<PerFill>());
+    if (plug == "cost0375unit") sim.set_cost_model(std::make_unique<PerUnit>());
+    // liquidity: one resting sell at the first trade's price and size (the tool's demo puts a resting order first)
+    sim.matching_engine().submit_order(req(Side::Sell, OrderType::Limit, v[0].px, v[0].qty));
+    int n = 0; OrderId mine = 0;
+    sim.set_event_callback([&](const Event& e) {
+      EventType t = get_event_type(e);
+      if (t == EventType::MarketData) {
+        ++n; printf("CALL %d %lld\n", n, (long long)get_event_timestamp(e));
+        if (n == 1) {
+          if (kind == "limit90") sim.submit_order(req(Side::Buy, OrderType::Limit, 90.0, qty));
+          else sim.submit_order(req(Side::Buy, OrderType::Market, 0.0, qty));
+        }
+        if (n == 3 && mine) { Order* o = sim.matching_engine().find_order(mine);
+          printf("FILLED_AT_3 %.6f\n", o ? o->filled_quantity.to_double() : -1.0); }
+      } else if (t == EventType::OrderFill) {
+        const auto& f = std::get<OrderFillEvent>(e);
+        if (f.fill.side == Side::Buy) { mine = f.fill.order_id;
+          printf("FILL %lld %.6f %.6f %.6f\n", (long long)f.timestamp, f.fill.fill_price.to_double(), f.fill.fill_quantity.to_double(), f.transaction_cost); }
+      } else if (t == EventType::OrderSubmit) { printf("NOTICE accepted %lld\n", (long long)get_event_timestamp(e));
+      } else if (t == EventType::OrderReject) { printf("NOTICE rejected %lld\n", (long long)get_event_timestamp(e));
+      } else { printf("EVENT %s %lld\n", tname(t), (long long)get_event_timestamp(e)); }
+    });
+    for (auto& x : v) sim.add_tick(tick_at(x.ts, x.px, x.qty));
+    sim.run();
+    printf("CASH %.6f\n", sim.position_manager().cash());
+    return 0;
+  }
+  return 2;
+}
+=== 2026-09-24T15:16:13Z round r8-1 (scene keeper, fix): driver rebuilt -- start_time from env START_NS (the configured target's chosen value), the resting sell put in the strategy's first call from the tick it received (was: both from the first input tick before the run)
+$ g++ -std=c++20 -O2 -I cpp /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/drivers/drv33.cpp build/libbacktesting_engine.a -lpthread -o /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c33/bin/c33_driver  (in /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c33)
+--- diff (before -> after)
+42a43,46
+> // round r8-1: the start time is the configured target's chosen value (env START_NS, the same in every scene),
+> // never the first tick's time (a setting fitted to input not yet delivered)
+> static Timestamp start_ns() { const char* s = getenv("START_NS"); return s ? (Timestamp)atoll(s) : 0; }
+> 
+50c54
+<     cfg.start_time = v.empty() ? 0 : v[0].ts;
+---
+>     cfg.start_time = start_ns();
+61c65
+<     auto v = ins(argc, argv, 3); cfg.start_time = v[0].ts;
+---
+>     auto v = ins(argc, argv, 3); cfg.start_time = start_ns();
+78c82
+<     auto v = ins(argc, argv, 6); cfg.start_time = v[0].ts;
+---
+>     auto v = ins(argc, argv, 6); cfg.start_time = start_ns();
+85,86c89,91
+<     // liquidity: one resting sell at the first trade's price and size (the tool's demo puts a resting order first)
+<     sim.matching_engine().submit_order(req(Side::Sell, OrderType::Limit, v[0].px, v[0].qty));
+---
+>     // liquidity (round r8-1): one resting sell at the price and size of the first tick the strategy received, put
+>     // in the strategy's first call (the tool's demo puts a resting order first; until round r8-1 it was put before
+>     // the run from the first input tick, a setting fitted to input not yet delivered)
+92a98,99
+>           const auto& m = std::get<MarketDataEvent>(e);
+>           sim.matching_engine().submit_order(req(Side::Sell, OrderType::Limit, m.tick.last_price.to_double(), m.tick.last_size.to_double()));
+--- sha256 of the new driver: 04a961a52acf8ba1

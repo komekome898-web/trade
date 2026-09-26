@@ -1,0 +1,2 @@
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/bt/pytest_base_i4r2w_bat tests/bt/battery/item_4 tests/bt/critic/item_4 tests/bt/item_4/test_i4_battery_scenes.py   (作業の最後の 1 回。09:4x UTC)
+273 passed in 23.88s

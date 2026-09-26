@@ -1,0 +1,13 @@
+# 2026-09-24T02:12:53Z md5sum per pair (mapping: materials/mapping.tsv)
+$ md5sum 表_6cwql5.md 表_mswiwz.md   # current_1 current_2
+e41c9c6cdc7340b5161eca343c3af3d8  表_6cwql5.md
+91de4b83a6dfcfab058a520e0e4bd3f4  表_mswiwz.md
+current: differ
+$ md5sum 表_hdj4yo.md 表_cq7zqd.md   # survey_1 survey_2
+3ae49ea5744c2378771f0c518cbbdef2  表_hdj4yo.md
+541176e58698375ad1ea8b09c176fa92  表_cq7zqd.md
+survey: differ
+$ md5sum 表_f264xx.md 表_skfhbu.md   # mutant_1 mutant_2
+66bc753d5da890fcd2d3b7ce12d29c81  表_f264xx.md
+46ff9d0162bbf64ff0fb16231eeeda46  表_skfhbu.md
+mutant: differ

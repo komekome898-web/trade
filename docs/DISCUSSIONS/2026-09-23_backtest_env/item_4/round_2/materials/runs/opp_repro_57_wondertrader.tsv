@@ -1,0 +1,68 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+i4-1-ref-taker	I4-1	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	0.0	0.0
+i4-1-ref-maker	I4-1	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	0.0	0.0
+i4-2-grid-all	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-stop	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-tp	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-maker	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-mtp	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-swap	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-hold	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-2-grid-wick	I4-2	値	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	場合 0: adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-3-e2e-taker	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-3-e2e-maker	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-4-plain	I4-4	値	不一致	pnls[0] = 178.21782178217822(正解 180.0)	6bb448b3e377	不一致	pnls[0] = 178.21782178217822(正解 180.0)	6bb448b3e377	2 回の実行で同じ	0.0	0.0
+i4-4-fee	I4-4	値	不一致	pnls[0] = 172.09782178217822(正解 173.82)	537aee83dc5d	不一致	pnls[0] = 172.09782178217822(正解 173.82)	537aee83dc5d	2 回の実行で同じ	0.0	0.0
+i4-5-fills	I4-5	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.003	0.003
+i4-5-outputs	I4-5	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.002	0.003
+i4-6-label	I4-6	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.004
+i4-6-signal-refused	I4-6	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.005
+i4-6-research-refused	I4-6	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は CTA の模擬の約定の規則だけ	-	結果なし	0.001	0.003
+i4-8-next-open	I4-8	値	不一致	fills[0].size = 29.702970297029704(正解 29.98800479808077)	ec7042c39108	不一致	fills[0].size = 29.702970297029704(正解 29.98800479808077)	ec7042c39108	2 回の実行で同じ	0.0	0.001
+i4-8-short-close	I4-8	値	不一致	fills[0].size = 29.12621359223301(正解 25.01000400160064)	9afc530be0d8	不一致	fills[0].size = 29.12621359223301(正解 25.01000400160064)	9afc530be0d8	2 回の実行で同じ	0.0	0.0
+i4-8-no-short	I4-8	値	不一致	fills[0].size = 29.12621359223301(正解 25.0)	116b8241b646	不一致	fills[0].size = 29.12621359223301(正解 25.0)	116b8241b646	2 回の実行で同じ	0.0	0.0
+i4-9-strict	I4-9	値	不一致	fills[0].bar = 2(正解 3)	0b6951c983aa	不一致	fills[0].bar = 2(正解 3)	0b6951c983aa	2 回の実行で同じ	0.0	0.0
+i4-9-short-strict	I4-9	値	不一致	fills[0].bar = 2(正解 3)	0221daa8e248	不一致	fills[0].bar = 2(正解 3)	0221daa8e248	2 回の実行で同じ	0.0	0.0
+i4-10-priority	I4-10	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	0.0	0.0
+i4-11-wick-long	I4-11	値	正解と一致		179036a8a6a3	正解と一致		179036a8a6a3	2 回の実行で同じ	0.0	0.0
+i4-11-wick-short	I4-11	値	正解と一致		49b30d5a02e4	正解と一致		49b30d5a02e4	2 回の実行で同じ	0.0	0.0
+i4-11-refuse-stack	I4-11	能力	不一致	変形を拒まずに通した	59803a65c54b	不一致	変形を拒まずに通した	59803a65c54b	2 回の実行で同じ	0.0	0.0
+i4-12-maker-tp	I4-12	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	0.0	0.0
+i4-12-refuse	I4-12	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 手数料の率は 1 つだけで、maker と taker に別の率を置く口が無い	-	結果なし	0.0	0.0
+i4-12-touch-decimal	I4-12	値	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	2 回の実行で同じ	0.0	0.0
+i4-13-time-exit	I4-13	値	正解と一致		c8c8589e4a8d	正解と一致		c8c8589e4a8d	2 回の実行で同じ	0.0	0.0
+i4-13-tp-on-exit-bar	I4-13	値	正解と一致		0287aaa01f34	正解と一致		0287aaa01f34	2 回の実行で同じ	0.0	0.0
+i4-13-two-models	I4-13	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-14-mask-sides	I4-14	値	不一致	fills[0].size = 24.793388429752067(正解 24.0)	d9e85396a7c6	不一致	fills[0].size = 24.793388429752067(正解 24.0)	d9e85396a7c6	2 回の実行で同じ	0.0	0.0
+i4-14-sides-short	I4-14	値	不一致	fills[0].size = 29.12621359223301(正解 25.0)	6d6add4f23de	不一致	fills[0].size = 29.12621359223301(正解 25.0)	6d6add4f23de	2 回の実行で同じ	0.0	0.0
+i4-15-swap-long	I4-15	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-15-swap-short	I4-15	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): swap_daily_pct: 持ち越しの口は読んだ範囲に無い(WtBtCore/CtaMocker.cpp(08b230dd) の費用は手数料と滑りだけ) / 再現していない: 足ごとの資産(動的損益の記録)は読んでいない	-	結果なし	0.0	0.0
+i4-16-missed	I4-16	値	不一致	fills[0].bar = 2(正解 6)	079613038b3f	不一致	fills[0].bar = 2(正解 6)	079613038b3f	2 回の実行で同じ	0.0	0.0
+i4-17-metrics	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-17-metrics-edge	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-17-sharpe-bar-seconds	I4-17	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現していない: 足ごとの資産(動的損益の記録)は読んでいない / 12 の指標を出す口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-17-two-models	I4-17	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-18-split	I4-18	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-18-split-decimal	I4-18	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-18-two-models	I4-18	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.001
+i4-18-refuse	I4-18	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 行の割合で分ける口は読んだ範囲に無い	-	結果なし	0.0	0.0
+i4-10-signal-first	I4-10	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.0	0.0
+i4-10-signal-first-short	I4-10	値	正解と一致		d1e05b6ce656	正解と一致		d1e05b6ce656	2 回の実行で同じ	0.0	0.0
+i4-10-signal-first-two-models	I4-10	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-10-stop-first-plain	I4-10	値	不一致	fills[1].price = 103.0(正解 98.0)	abb428dd2999	不一致	fills[1].price = 103.0(正解 98.0)	abb428dd2999	2 回の実行で同じ	0.0	0.0
+i4-12-tp-before-maker-tp	I4-12	値	不一致	fills[1].price = 102.49999999999999(正解 103.0)	6df3d213408a	不一致	fills[1].price = 102.49999999999999(正解 103.0)	6df3d213408a	2 回の実行で同じ	0.0	0.0
+i4-11-wick-first	I4-11	値	正解と一致		99305c1b61e4	正解と一致		99305c1b61e4	2 回の実行で同じ	0.0	0.0
+i4-11-wick-before-exit-limit	I4-11	値	正解と一致		f2d9275e52cd	正解と一致		f2d9275e52cd	2 回の実行で同じ	0.0	0.0
+i4-13-stop-on-time-bar	I4-13	値	不一致	fills[1].price = 101.0(正解 98.0)	801eb7fb2554	不一致	fills[1].price = 101.0(正解 98.0)	801eb7fb2554	2 回の実行で同じ	0.0	0.0
+i4-13-time-first	I4-13	値	正解と一致		82eb986084c7	正解と一致		82eb986084c7	2 回の実行で同じ	0.0	0.0
+i4-13-time-first-two-models	I4-13	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-13-time-maker-tp-two-models	I4-13	能力	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具に、1 つの戦略の記述から互換の計算(L-1〜L-3)と仕様の計算の 2 つの出力を選ぶ口を探したが無い(模型は 1 つ)	-	結果なし	0.0	0.0
+i4-13-time-before-exit-limit	I4-13	値	正解と一致		bac3e0c80dee	正解と一致		bac3e0c80dee	2 回の実行で同じ	0.0	0.0
+i4-13-stop-on-time-bar-maker	I4-13	値	不一致	fills[1].price = 101.0(正解 98.0)	6fd9c5048018	不一致	fills[1].price = 101.0(正解 98.0)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
+i4-16-stop-before-exit-limit	I4-16	値	不一致	fills[1].price = 101.0(正解 98.0)	6fd9c5048018	不一致	fills[1].price = 101.0(正解 98.0)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
+i4-16-tp-before-exit-limit	I4-16	値	不一致	fills[1].price = 101.0(正解 103.0)	6fd9c5048018	不一致	fills[1].price = 101.0(正解 103.0)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
+i4-16-maker-tp-before-exit-limit	I4-16	値	不一致	fills[1].price = 101.0(正解 102.5)	6fd9c5048018	不一致	fills[1].price = 101.0(正解 102.5)	6fd9c5048018	2 回の実行で同じ	0.0	0.0
+i4-3-core-delivery	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は約定の規則だけで、道具の事象の流れ(戦略を呼ぶ時と戦略に渡す物)は書き写していない。場面の戦略はこの共通の足の輪(_repro_bars.py)で回り、道具の物ではない	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は約定の規則だけで、道具の事象の流れ(戦略を呼ぶ時と戦略に渡す物)は書き写していない。場面の戦略はこの共通の足の輪(_repro_bars.py)で回り、道具の物ではない	-	結果なし	0.0	0.0
+i4-3-core-delivery-gap	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は約定の規則だけで、道具の事象の流れ(戦略を呼ぶ時と戦略に渡す物)は書き写していない。場面の戦略はこの共通の足の輪(_repro_bars.py)で回り、道具の物ではない	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 再現は約定の規則だけで、道具の事象の流れ(戦略を呼ぶ時と戦略に渡す物)は書き写していない。場面の戦略はこの共通の足の輪(_repro_bars.py)で回り、道具の物ではない	-	結果なし	0.0	0.0
+i4-3-ref-signal-first	I4-3	値	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	adapter: WonderTrader CtaMocker(08b230dd)(再現): 道具の中に、同じ入力を本体とは別に計算する独立の参照実装の口を探したが無い	-	結果なし	0.0	0.0

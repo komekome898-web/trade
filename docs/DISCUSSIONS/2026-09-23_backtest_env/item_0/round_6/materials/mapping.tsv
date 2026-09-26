@@ -1,0 +1,7 @@
+table_id	file	A	B
+current_1	表_1kgskl.md	new_impl	current_impl
+current_2	表_7zdd6g.md	current_impl	new_impl
+survey_1	表_oh7l5v.md	new_impl	survey_best
+survey_2	表_1s1zhl.md	survey_best	new_impl
+mutant_1	表_8ulrlx.md	new_impl	mutant
+mutant_2	表_l7u8d2.md	mutant	new_impl

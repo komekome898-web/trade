@@ -1,0 +1,245 @@
+=== 区分1 25 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定(24 回目の検収 §8): (1) 段の表を 2 列にする(段(機構)/ 段(既定))。複数の段に当たるものは全部書く / (2) 段 4 の定義を締め、当たる候補を当て直す(7 番は段 1、20 番は段 2) / (3) 登録の付け替え 2 件を候補の一覧に併記 / (4) K12 を直したことを節に書く / (5) 数え直しを 3 段で出し、機関で数えた値も併記
+=== 新しい検索計画は打っていない。深掘り(構築・導入・最小実行)も打っていない。候補も増やしていない。
+=== この回に取った GET は、登録の付け替え 2 件と既定枝の確認だけである。既定枝は ungh.cc の defaultBranch で確かめてから書く。
+--- 2026-09-22T17:16:28Z method=GET url=https://ungh.cc/repos/robcarver17/pysystemtrade label=c3_old_ungh code=200 bytes=296 rc=0 time_s=0.973389 note=付け替え元の登録名で引いたときの応答
+{"repo":{"id":46975254,"name":"pysystemtrade","repo":"pst-group/pysystemtrade","description":"Systematic Trading in python","createdAt":"2015-11-27T10:49:08Z","updatedAt":"2026-09-22T16:06:08Z","pushe
+--- 2026-09-22T17:16:30Z method=GET url=https://ungh.cc/repos/pst-group/pysystemtrade label=c3_new_ungh code=200 bytes=296 rc=0 time_s=0.664127 note=付け替え先の defaultBranch
+{"repo":{"id":46975254,"name":"pysystemtrade","repo":"pst-group/pysystemtrade","description":"Systematic Trading in python","createdAt":"2015-11-27T10:49:08Z","updatedAt":"2026-09-22T16:06:08Z","pushe
+--- 2026-09-22T17:16:32Z method=GET url=https://ungh.cc/repos/Ziplime/ziplime label=c6_old_ungh code=404 bytes=84 rc=0 time_s=0.469620 note=誤った所有者名で引いたときの応答
+{
+  "error": true,
+  "status": 404,
+  "message": "GitHub API error: 404 Not Found"
+}
+--- 2026-09-22T17:16:44Z method=GET url=https://ungh.cc/repos/Limex-com/ziplime label=c6_new_ungh code=curl:
+000 bytes=(35)
+0 rc=35 time_s=Recv
+11.065437 note=正しい登録の defaultBranch
+
+--- 2026-09-22T17:16:53Z method=note label=c6_new_ungh_retry note=直前の行は TLS の切断(code=000 rc=35)で、curl のメッセージが行に混ざっている。404 の欄には入れず打ち直す rc=0
+--- 2026-09-22T17:16:54Z method=GET url=https://ungh.cc/repos/Limex-com/ziplime label=c6_new_ungh2 code=200 bytes=407 rc=0 time_s=0.911518 note=打ち直し
+{"repo":{"id":953945997,"name":"ziplime","repo":"Limex-com/ziplime","description":"Backtesting & live trading engine built for AI agents. Zipline rebuilt on Polars with a native MCP server for Claude,
+--- 2026-09-22T17:17:01Z method=run target=defaultBranch note=既定枝の欄だけを取り出す(先頭 200 文字では届かないため) rc=0
+$ for r in pst-group/pysystemtrade Limex-com/ziplime; do echo -n "$r "; curl -sS "https://ungh.cc/repos/$r" | grep -o "\"defaultBranch\":\"[^\"]*\""; done
+pst-group/pysystemtrade "defaultBranch":"develop"
+Limex-com/ziplime "defaultBranch":"master"
+--- 2026-09-22T17:17:12Z method=run target=k12_fix note=K12 の直しの逐語を当方で確かめる rc=0
+$ grep -n "いちばん新しい回の節\|runs = \[m.start()\|heads\[-1\] < runs\[-1\]" scripts/check_scan_report.py
+297:    # 貼り付けは**いちばん新しい回の節の中**に無ければならない。最後の貼り付けを探すだけだと、
+300:    runs = [m.start() for m in re.finditer(r"^#{2,3} *区分\d+ *[—\-–] *\d+ *回目の実行", text, re.M)]
+301:    if runs and heads[-1] < runs[-1]:
+302:        return [(0, "いちばん新しい回の節に「受け入れ検査の出力」が無い"
+--- 2026-09-22T17:18:25Z method=run target=defaults note=段(既定)の欄を埋めるため、24 回目に既に取った原典から既定値の行だけを取り直す(新しい候補は増やしていない) rc=0
+$ curl -sS https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/exchanges/simulation_exchange.py | grep -n "slippage" | head -20
+25:from ziplime.finance.slippage.slippage_model import SlippageModel
+38:                 equity_slippage: SlippageModel,
+39:                 future_slippage: SlippageModel,
+54:        self.slippage_models = {
+55:            Equity: equity_slippage,
+56:            FuturesContract: future_slippage,
+74:    def get_slippage_model(self, asset: ExchangeAsset) -> SlippageModel:
+75:        return self.slippage_models[type(asset.asset)]
+118:        slippage model, and commission model.
+150:            slippage = self.get_slippage_model(asset=asset)
+152:            async for order, txn in slippage.simulate(exchange=self,
+$ (GitHub の code search) equity_slippage repo:Limex-com/ziplime  ->  total_count=0
+$ (GitHub の code search) VolumeShareSlippage repo:Limex-com/ziplime  ->  total_count=0
+$ curl -sS https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/algorithm.py | grep -n "slippage" | head -20
+466:    slippage_models={slippage_models},
+475:            slippage_models=repr(self.blotter.slippage_models),
+1478:    def set_slippage(self, us_equities=None, us_futures=None):
+1479:        """Set the slippage models for the simulation.
+1484:            The slippage model to use for trading US equities.
+1486:            The slippage model to use for trading US futures.
+1495:        :class:`zipline.finance.slippage.SlippageModel`
+1507:            self.blotter.slippage_models[Equity] = us_equities
+1516:            self.blotter.slippage_models[Future] = us_futures
+$ curl -sS https://raw.githubusercontent.com/microsoft/qlib/main/qlib/backtest/exchange.py | grep -n "impact_cost\|volume_threshold" | head -20
+47:        volume_threshold: Union[tuple, dict, None] = None,
+51:        impact_cost: float = 0.0,
+78:        :param volume_threshold: Union[
+99:                                Different volume limits will be aggregated with min(). If volume_threshold is only
+102:                                3) e.g. "volume_threshold": {
+114:        :param impact_cost:     market impact cost rate (a.k.a. slippage). A recommended value is 0.1.
+176:        self.buy_vol_limit, self.sell_vol_limit, vol_lt_fields = self._get_vol_limit(volume_threshold)
+190:        self.impact_cost = impact_cost
+193:        self.volume_threshold = volume_threshold
+295:    def _get_vol_limit(volume_threshold: Union[tuple, dict, None]) -> Tuple[Optional[list], Optional[list], set]:
+302:        volume_threshold :
+315:            the format of volume_threshold is not supported.
+317:        if volume_threshold is None:
+323:        if isinstance(volume_threshold, tuple):
+324:            volume_threshold = {"all": volume_threshold}
+326:        assert isinstance(volume_threshold, dict)
+327:        for key, vol_limit in volume_threshold.items():
+890:            adj_cost_ratio = self.impact_cost
+892:            adj_cost_ratio = self.impact_cost * (trade_val / total_trade_val) ** 2
+$ curl -sS https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/blotter/simulation_blotter.py | grep -n "slippage\|DEFAULT_EQUITY" | head -20
+23:from zipline.finance.slippage import (
+44:        equity_slippage=None,
+45:        future_slippage=None,
+63:        self.slippage_models = {
+64:            Equity: equity_slippage or FixedBasisPointsSlippage(),
+65:            Future: future_slippage
+82:    slippage_models={slippage_models},
+90:            slippage_models=self.slippage_models,
+358:        slippage model, and commission model.
+391:                slippage = self.slippage_models[type(asset)]
+393:                for order, txn in slippage.simulate(bar_data, asset, asset_orders):
+$ curl -sS https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/slippage.py | grep -n "class FixedBasisPointsSlippage" -A 40 | grep -n "def __init__\|basis_points\|volume_limit\|DEFAULT" | head -20
+9:611-        historical_price * (1 + (basis_points * 0.0001))
+13:615-        historical_price * (1 - (basis_points * 0.0001))
+17:619-        historical_volume * volume_limit
+21:623-    basis_points : float, optional
+24:626-    volume_limit : float, optional
+36:638-        basis_points=(0, None),
+40:642-        volume_limit=(0, None),
+$ curl -sS https://raw.githubusercontent.com/stefan-jansen/zipline-reloaded/main/src/zipline/finance/slippage.py | sed -n "600,660p"
+        return volume * self.volume_limit
+
+
+class FixedBasisPointsSlippage(SlippageModel):
+    """
+    Model slippage as a fixed percentage difference from historical minutely
+    close price, limiting the size of fills to a fixed percentage of historical
+    minutely volume.
+
+    Orders to buy are filled at::
+
+        historical_price * (1 + (basis_points * 0.0001))
+
+    Orders to sell are filled at::
+
+        historical_price * (1 - (basis_points * 0.0001))
+
+    Fill sizes are capped at::
+
+        historical_volume * volume_limit
+
+    Parameters
+    ----------
+    basis_points : float, optional
+        Number of basis points of slippage to apply for each fill. Default
+        is 5 basis points.
+    volume_limit : float, optional
+        Fraction of trading volume that can be filled each minute. Default is
+        10% of trading volume.
+
+    Notes
+    -----
+    - A basis point is one one-hundredth of a percent.
+    - This class, default-constructed, is zipline's default slippage model for
+      equities.
+    """
+
+    @expect_bounded(
+        basis_points=(0, None),
+        __funcname="FixedBasisPointsSlippage",
+    )
+    @expect_strictly_bounded(
+        volume_limit=(0, None),
+        __funcname="FixedBasisPointsSlippage",
+    )
+    def __init__(self, basis_points=5.0, volume_limit=0.1):
+        super(FixedBasisPointsSlippage, self).__init__()
+        self.basis_points = basis_points
+        self.percentage = self.basis_points / 10000.0
+        self.volume_limit = volume_limit
+
+    def __repr__(self):
+        return """
+{class_name}(
+    basis_points={basis_points},
+    volume_limit={volume_limit},
+)
+""".strip().format(
+            class_name=self.__class__.__name__,
+            basis_points=self.basis_points,
+            volume_limit=self.volume_limit,
+$ curl -sS https://raw.githubusercontent.com/gbeced/basana/develop/basana/backtesting/exchange.py | grep -n "liquidity" | head -20
+24:from basana.backtesting import account_balances, config, errors, fees, lending, loan_mgr, liquidity, \
+36:LiquidityStrategyFactory = Callable[[], liquidity.LiquidityStrategy]
+89:    :param liquidity_strategy_factory: A callable that returns a new liquidity strategy.
+102:            liquidity_strategy_factory: LiquidityStrategyFactory = liquidity.VolumeShareImpact,
+126:                fee_strategy=fee_strategy, liquidity_strategy_factory=liquidity_strategy_factory,
+186:        according to the rules defined by the liquidity strategy.
+187:        If the order is not filled on the next bar, due to lack of liquidity or funds, the order will be canceled.
+$ curl -sS https://raw.githubusercontent.com/gbeced/basana/develop/basana/backtesting/liquidity.py | grep -n "class \|volume_limit_pct\|price_impact" | head -20
+24:class LiquidityStrategy(metaclass=abc.ABCMeta):
+25:    """Base class for liquidity strategies.
+32:        * This is a base class and should not be used directly.
+58:    def calculate_price_impact(self, amount: Decimal) -> Decimal:
+63:    def calculate_amount(self, price_impact: Decimal) -> Decimal:
+64:        """Returns the amount of liquidity that can be taken with an impact <= price_impact."""
+68:class InfiniteLiquidity(LiquidityStrategy):
+69:    """This class models infinite liquidity with no price impact."""
+84:    def calculate_price_impact(self, amount: Decimal) -> Decimal:
+90:    def calculate_amount(self, price_impact: Decimal) -> Decimal:
+91:        assert price_impact >= Decimal(0), f"Invalid price_impact {price_impact}"
+96:class VolumeShareImpact(LiquidityStrategy):
+101:    :param volume_limit_pct: Maximum percentage of volume that can be used from each bar.
+102:    :param price_impact: Maximum price impact (percentage).
+105:    def __init__(self, volume_limit_pct: Decimal = Decimal("25"), price_impact: Decimal = Decimal("10")):
+106:        assert volume_limit_pct >= Decimal(0), f"Invalid volume_limit_pct {volume_limit_pct}"
+107:        assert price_impact >= Decimal(0), f"Invalid price_impact {price_impact}"
+109:        self._volume_limit_pct = volume_limit_pct / Decimal(100)
+110:        self._price_impact_pct = price_impact / Decimal(100)
+115:        self._total_liquidity = bar.volume * self._volume_limit_pct
+--- 2026-09-22T17:24:18Z method=run target=k12_probe note=K12 の直しを壊した入力で確かめる(写しは scratchpad。報告書そのものは触っていない) rc=0
+$ python3 scripts/check_scan_report.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/k12_a.md docs/DATA/probes/20260922_tools_1_run*.log | grep K12
+K12 検査の出力の貼付           1 件
+    /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/k12_a.md:0  いちばん新しい回の節に「受け入れ検査の出力」が無い(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
+$ python3 scripts/check_scan_report.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/k12_b.md docs/DATA/probes/20260922_tools_1_run*.log | grep K12
+K12 検査の出力の貼付           1 件
+    /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/k12_b.md:0  貼られた出力に「---- 検査対象の合計 N 件」の行が無い(全文をそのまま貼ること)
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 1 件
+$ python3 scripts/check_scan_report.py /tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/k12_c.md docs/DATA/probes/20260922_tools_1_run*.log | grep K12
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+--- 2026-09-22T17:24:30Z method=run target=nonascii note=この回の節の逐語に字形違いが無いかを確かめる rc=0
+$ sed -n "7433,\$p" docs/DATA/SCAN_2026-09-21_tools.md | grep -n -P "[\x{2010}-\x{2015}\x{2212}\x{FF0D}]" | head
+grep: character code point value in \x{} or \o{} is too large
+rc=0  (一致が無ければ grep は 1 を返す。— U+2014 は節の見出しの区切りで、逐語ではない)
+--- 2026-09-22T17:24:30Z method=run target=ls_probes note=生ログの本数の実測(この回の生ログを作ったあと) rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+24
+--- 2026-09-22T17:24:38Z method=run target=nonascii2 note=直前の grep -P は使えなかったので python で数え直す rc=0
+$ python3 -c "..." (25 回目の節の行から、ハイフン様の字形違いを列挙する)
+対象の行数 = 303
+ハイフン様の字形違いの出現数 = {'0x2011': 1, '0x2013': 2}
+U+2014(見出しの区切り)の出現数 = 3
+--- 2026-09-22T17:24:51Z method=run target=nonascii3 note=当たった字形違いの出所を特定する rc=0
+$ python3 -c "..." (原典 scripts/check_scan_report.py の 300 行の記号を符号位置で出す)
+原典 300 行: runs = [m.start() for m in re.finditer(r"^#{2,3} *区分\d+ *[—\-–] *\d+ *回目の実行", text, re.M)]
+記号の符号位置: [('区', '0x533a'), ('分', '0x5206'), ('—', '0x2014'), ('–', '0x2013'), ('回', '0x56de'), ('目', '0x76ee'), ('の', '0x306e'), ('実', '0x5b9f'), ('行', '0x884c')]
+7452 0x2011 **字形について**: この回に逐語で引いた原典に、非分割ハイフン(`‑` U+2011)などの字形違いは**見当たらなかった**(すべて半角の ASCII)。
+7492 0x2013 | 6 | **K12 の直しが効いていることを、当方でも壊した入力で確かめた。**直しの逐語は `runs = [m.start() for m in re.
+7598 0x2013 直しの逐語は `runs = [m.start() for m in re.finditer(r"^#{2,3} *区分\d+ *[—\-–] *\d+ *回目
+--- 2026-09-22T17:25:18Z method=run target=recheck_final note=貼り付け後に打ち直した最終の実行と、書き換えの範囲の確認 rc=0
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-21_tools.md docs/DATA/probes/20260922_tools_1_run*.log
+K1 太字                  0 件
+K2 括弧                  0 件
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            0 件
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             0 件
+K12 検査の出力の貼付           0 件
+---- 検査対象の合計 0 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 0 件
+$ git diff --numstat docs/DATA/SCAN_2026-09-21_tools.md
+309	0	docs/DATA/SCAN_2026-09-21_tools.md
+$ git diff -U0 docs/DATA/SCAN_2026-09-21_tools.md | grep -c "^-[^-]"
+0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+24

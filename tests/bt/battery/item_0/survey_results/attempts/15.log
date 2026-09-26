@@ -1,0 +1,28 @@
+##### from item0_r5-1_scenekeeper_install_15.log
+=== start 2026-09-24T03:50:31Z candidate 15 Mendl-Labs/BacktestingCore: blobless clone (read only) at /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/b_reads/Mendl-Labs_BacktestingCore, HEAD f8d81ee0b4b65f6fbbf205d011ad2e815054fbc7
+/dev/vda          258020 35584      2355  94% /
+--- git dependencies named in the workspace (strategy/Cargo.toml 55, orderbook/Cargo.toml 26 and 34, genetic/Cargo.toml 26), and .cargo/config.toml:
+ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+databaseschema = { git = "https://github.com/Nwagbara-Group-LLC/databaseschema", tag = "v0.1.1", optional = true }
+ultra-logger = { git = "https://github.com/Nwagbara-Group-LLC/LoggingEngine", tag = "v0.1.0" }
+# Several crates here (backtest, dataloader, data_prep, genetic, metrics,
+# orderbook, and everything depending on ultra-logger) depend on sibling
+# repos (databaseschema, LoggingEngine) as git dependencies pinned to tags
+# instead of local `path =` deps. Cargo's own bundled libgit2 doesn't
+# reliably pick up the same credential helpers the `git` CLI already has
+# configured (Windows Credential Manager locally, a PAT-based `insteadOf`
+# rewrite in CI) -- shelling out to the real `git` binary for fetches
+# avoids re-solving credentials a second, different way.
+[net]
+--- git ls-remote https://github.com/Nwagbara-Group-LLC/LoggingEngine (can the dependency be fetched?)
+fatal: could not read Username for 'https://github.com': terminal prompts disabled
+rc=0
+--- git ls-remote https://github.com/Nwagbara-Group-LLC/databaseschema (can the dependency be fetched?)
+eeb532944825f48140abb162974ac98a0a5b8f66	HEAD
+f3a9e38896a8c51884e18730bcfcc17f3e4da4d3	refs/heads/chore/oss-core-split
+2de888e35264b4120fdf3989a091149e7bd0a447	refs/heads/feat/mechanism-similarity-search
+eeb532944825f48140abb162974ac98a0a5b8f66	refs/heads/main
+c2e31b3801f6a1d0100ed67b051bd8d6a8a23021	refs/pull/1/head
+rc=0
+=== end 2026-09-24T03:50:31Z
+/dev/vda          258020 35584      2355  94% /

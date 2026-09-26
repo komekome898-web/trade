@@ -1,0 +1,414 @@
+=== 区分1 26 回目の実行 生ログ 2026-09-22 ===
+=== この回の指定(25 回目の検収 §8): (1) 最優先 = 一次資料に未到達の 11 件(51・53・54・57・60・67・70・72・87・91・92)に当たり、6 要素の印と 段(機構)/段(既定) を決める / (2) 23 番 hftbacktest と 6 番 Ziplime の段(既定)を埋める(読まずに未確認にしない) / (3) 19 番 Jesse の段 3 の判定(分割の結果が機関に事象として入るか) / (4) 33 番の段(既定)を 5 に直す(24 回目の検収のリードの誤りの訂正)
+=== 新しい検索計画は打たない。候補も増やさない。構築・導入・最小実行はしない。既定値・実装を読むための原典の取得は許されている(25 回目の検収 §5(3))。
+=== 既定枝は ungh.cc の defaultBranch で確かめてから取る。code=000 や TLS 切断は 404 の欄に入れず打ち直す。
+--- 2026-09-22T17:29:02Z method=GET url=https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md label=awesome_list code=200 bytes=90734 rc=0 time_s=0.444053 note=39番の一覧の原文。11件の登録名(owner/repo)の出所
+<div align="center">
+  <img src="static/images/awesome-systematic-trading.jpeg" height=200 alt=""/>
+  <h1>Awesome Systematic Trading</h1>
+</div>
+<div align=center><img src="https://awesome.re/badge.sv
+--- 2026-09-22T17:29:15Z method=run target=defaultBranch_11 note=11件の登録の既定枝と登録名を ungh.cc で確かめる(当てずっぽうの取得をしないため) rc=0
+$ for r in ...; do curl -sS "https://ungh.cc/repos/$r" | python3 -c "..."; done
+QUANTAXIS/QUANTAXIS => repo=yutiansut/QUANTAXIS defaultBranch=master stars=11224 createdAt=2016-03-29T12:11:19Z pushedAt=2026-09-18T04:59:48Z
+ricequant/rqalpha => repo=ricequant/rqalpha defaultBranch=master stars=6789 createdAt=2016-07-20T10:38:57Z pushedAt=2026-09-22T09:28:40Z
+cuemacro/finmarketpy => repo=cuemacro/finmarketpy defaultBranch=master stars=3810 createdAt=2015-02-19T23:32:03Z pushedAt=2026-04-16T09:29:35Z
+wondertrader/wondertrader => repo=wondertrader/wondertrader defaultBranch=master stars=6352 createdAt=2020-03-30T05:43:52Z pushedAt=2026-09-01T02:34:42Z
+fasiondog/hikyuu => repo=fasiondog/hikyuu defaultBranch=master stars=3524 createdAt=2012-07-18T23:21:42Z pushedAt=2026-09-22T15:20:52Z
+Lumiwealth/lumibot => repo=Lumiwealth/lumibot defaultBranch=dev stars=2079 createdAt=2020-09-10T10:00:16Z pushedAt=2026-09-21T06:09:41Z
+pineforge-4pass/pineforge-engine => repo=pineforge-4pass/pineforge-engine defaultBranch=main stars=187 createdAt=2026-05-05T04:38:45Z pushedAt=2026-09-22T15:24:03Z
+squidKid-deluxe/QTradeX-Algo-Trading-SDK => repo=squidKid-deluxe/QTradeX-Algo-Trading-SDK defaultBranch=master stars=85 createdAt=2025-03-27T20:14:55Z pushedAt=2026-07-30T17:43:33Z
+chrism2671/PyTrendFollow => repo=chrism2671/PyTrendFollow defaultBranch=master stars=471 createdAt=2018-02-24T15:10:27Z pushedAt=2018-04-25T09:12:02Z
+braedonsaunders/homerun => repo=braedonsaunders/homerun defaultBranch=main stars=183 createdAt=2026-02-03T22:04:45Z pushedAt=2026-08-21T08:33:10Z
+Quentin-Piot/prediction-market-backtester => repo=Quentin-Piot/prediction-market-backtester defaultBranch=master stars=6 createdAt=2026-02-11T16:25:18Z pushedAt=2026-03-07T11:43:49Z
+--- 2026-09-22T17:30:34Z method=note label=tls_cut1 note=ungh.cc の files 端点で TLS 切断(code=000 rc=35)が 1 件。404 の欄に入れず打ち直して 200 を得た(yutiansut/QUANTAXIS) rc=35
+--- 2026-09-22T17:30:34Z method=run target=files_11 note=各登録のファイル一覧を ungh.cc の files 端点で取り、約定・照合・滑りの実装の所在を機械的に絞る rc=0
+--- 2026-09-22T17:31:44Z method=run target=c53_rqalpha note=候補53 rqalpha の照合・滑り・既定値の原典 rc=0
+$ curl -sS https://raw.githubusercontent.com/ricequant/rqalpha/master/rqalpha/mod/rqalpha_mod_sys_simulation/matcher/bar_matcher.py | grep -n "volume_limit\|volume_percent\|fill = min"
+91:        if self._volume_limit:
+94:                volume_limit = round(volume * self._volume_percent) - self._turnover[order.order_book_id]
+95:                volume_limit = round_order_quantity(instrument, volume_limit)
+96:                if volume_limit <= 0:
+103:                fill = min(order.unfilled_quantity, volume_limit)
+115:                u" larger than {volume_percent_limit} percent of current bar volume, fill {filled_volume} actually"
+120:                volume_percent_limit=self._volume_percent * 100.0
+$ curl -sS .../rqalpha/mod/rqalpha_mod_sys_simulation/__init__.py | grep -n "volume_limit\|volume_percent\|slippage\|matching_type\|inactive_limit"
+27:    "matching_type": None,
+29:    "price_limit": True,
+31:    "liquidity_limit": False,
+35:    "volume_limit": True,
+37:    "volume_percent": 0.25,
+41:    "slippage_model": "PriceRatioSlippage",
+43:    "slippage": 0,
+45:    "inactive_limit": True,
+74:        ('-sp', '--slippage', cli_prefix + "slippage"),
+82:        ('--slippage-model', cli_prefix + "slippage_model"),
+90:        ('-mt', '--matching-type', cli_prefix + "matching_type"),
+99:        ('--inactive-limit', cli_prefix + "inactive_limit"),
+$ curl -sS .../rqalpha/config.yml | grep -n frequency
+26:  frequency: 1d
+$ curl -sS .../simulation_event_source.py | grep -n "yield Event(EVENT.TICK\|yield Event(EVENT.BAR"
+103:                yield Event(EVENT.BAR, calendar_dt=dt_bar, trading_dt=dt_bar)
+194:                        yield Event(EVENT.TICK, calendar_dt=calendar_dt, trading_dt=trading_dt, tick=tick)
+$ curl -sS .../matcher/tick_matcher.py | grep -n "_a_volume\[order_book_id\]\[0\]\|class CounterPartyOfferMatcher\|queue"
+193:class CounterPartyOfferMatcher(DefaultTickMatcher):
+235:            amount = self._a_volume[order_book_id][0]
+--- 2026-09-22T17:32:55Z method=run target=c51_quantaxis note=候補51 QUANTAXIS の backtest 経路の約定。登録は yutiansut/QUANTAXIS(QUANTAXIS/QUANTAXIS で引くと応答の repo が変わる付け替え型) rc=0
+$ curl -sS https://raw.githubusercontent.com/yutiansut/QUANTAXIS/master/QUANTAXIS/QAStrategy/qactabase.py | grep -n "running_mode == .backtest\|order.trade(\|receive_simpledeal(\|data.data.apply\|def on_tick\|def on_bar\|send_wx\|yutiansut.com"
+218:        data.data.apply(self.x1, axis=1)
+251:                    order.trade('closebySys', order.price,
+401:        elif self.running_mode == 'backtest':
+608:    def on_bar(self, bar):
+611:    def on_tick(self, tick):
+744:                                requests.post('http://www.yutiansut.com/signal?user_id={}&template={}&strategy_id={}&realaccount={}&code={}&order_direction={}&order_offset={}&price={}&volume={}&order_time={}'.format(
+753:        elif self.running_mode == 'backtest':
+760:                order.trade(order.order_id, order.price,
+764:                self.acc.receive_simpledeal(
+794:        elif self.running_mode == 'backtest':
+807:        elif self.running_mode == 'backtest':
+814:        elif self.running_mode == 'backtest':
+$ curl -sS .../QUANTAXIS/QAMarket/QAOrder.py | grep -n "def trade" -A3
+    def trade(self, trade_id, trade_price, trade_amount, trade_time):
+        """trade 状态
+
+        Arguments:
+            amount {[type]} -- [description]
+        """
+        if self.status in [ORDER_STATUS.SUCCESS_PART, ORDER_STATUS.QUEUED]:
+            trade_amount = int(trade_amount)
+$ grep -rn "slippage|滑点|impact" (qactabase.py と QAOrder.py) -- 一致 0 件
+0
+$ grep -n "data.data.apply" qactabase.py   (backtest の駆動は DataFrame の行ごとの apply = 足の走査)
+218:        data.data.apply(self.x1, axis=1)
+262:        data.data.apply(x1, axis=1)
+$ grep -n "send_wx" qactabase.py   (外部送信の既定は False)
+29:                 start='2020-01-01', end='2020-05-21', init_cash=1000000, send_wx=False,
+76:        self.send_wx = send_wx
+740:                    if self.send_wx:
+--- 2026-09-22T17:33:55Z method=run target=c54_finmarketpy note=候補54 finmarketpy の検証の機関。注文の物を持たず、信号の行列と収益の行列を掛ける形 rc=0
+$ grep -n "calculate_signal_returns_with_tc_matrix\|signal_df.shift(br.signal_delay)\|tc = br.spot_tc_bp" backtestengine.py
+170:        signal_df = signal_df.shift(br.signal_delay)
+193:        tc = br.spot_tc_bp
+304:        portfolio = calculations.calculate_signal_returns_with_tc_matrix(
+356:            calculations.calculate_signal_returns_with_tc_matrix(
+2534:        tc = br.spot_tc_bp
+2557:        signal_pnl = self._calculations.calculate_signal_returns_with_tc_matrix(
+2793:        vol_returns_df = calculations.calculate_signal_returns_with_tc_matrix(
+$ grep -n "spot_tc_bp\|signal_delay = 0" backtestrequest.py
+94:        self.__signal_delay = 0
+446:            self.__spot_tc_bp = float(spot_tc_bp) / (2.0 * 100.0 * 100.0)
+$ grep -cE "limit|queue|order_book|slippage" backtestengine.py  (注文・待ち行列・板・滑りの語)
+0
+$ grep -cE "order_book|queue" backtestengine.py
+0
+--- 2026-09-22T17:35:03Z method=run target=c57_wondertrader note=候補57 WonderTrader の照合。MatchEngine が自分の注文の列の位置を持つ rc=0
+$ curl -sS .../src/WtBtCore/MatchEngine.cpp | sed -n "86,115p"
+			if (decimal::le(price, ordInfo._limit))
+			{
+				//如果价格相等,需要先看排队位置,如果价格不等说明已经全部被大单吃掉了
+				if (!ordInfo._positive && decimal::eq(price, ordInfo._limit))
+				{
+					double& quepos = ordInfo._queue;
+
+					//如果成交量小于排队位置,则不能成交
+					if (volume <= quepos)
+					{
+						quepos -= volume;
+						continue;
+					}
+					else if (quepos != 0)
+					{
+						//如果成交量大于排队位置,则可以成交
+						volume -= quepos;
+						quepos = 0;
+					}
+				}
+				else if (!ordInfo._positive)
+				{
+					volume = ordInfo._left;
+				}
+
+				double qty = min(volume, ordInfo._left);
+				if (decimal::eq(qty, 0.0))
+					qty = 1;
+
+				_sink->handle_trade(localid, ordInfo._code, ordInfo._buy, qty, ordInfo._price, price, ordInfo._time);
+$ curl -sS .../src/WtBtCore/MatchEngine.cpp | sed -n "246,255p"  (列の初期値を気配の提示量から取る)
+	if (decimal::ge(price, lastTick->askprice(0)))
+		ordInfo._positive = true;
+	else if (decimal::eq(price, lastTick->bidprice(0)))
+		ordInfo._queue = lastTick->bidqty(0);
+	if (decimal::eq(price, lastTick->price()))
+		ordInfo._queue = (uint32_t)round((lastTick->askqty(0)*lastTick->askprice(0) + lastTick->bidqty(0)*lastTick->bidprice(0)) / (lastTick->askprice(0) + lastTick->bidprice(0)));
+
+	//排队位置按照平均撤单率,撤销掉部分
+	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+	ordInfo._time = curTime;
+$ grep -n "_cancelrate" MatchEngine.h MatchEngine.cpp  (既定は 0)
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/run26/c57_match.h:57:	MatchEngine() : _tick_cache(NULL),_cancelrate(0), _sink(NULL)
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/run26/c57_match.h:135:	double			_cancelrate;
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/run26/c57_match.cpp:20:	_cancelrate = cfg->getDouble("cancelrate");
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/run26/c57_match.cpp:254:	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/run26/c57_match.cpp:288:	ordInfo._queue -= (uint32_t)round(ordInfo._queue*_cancelrate);
+$ grep -n "MatchEngine|_matcher" ExecMocker.h
+17:#include "MatchEngine.h"
+126:	MatchEngine	_matcher;
+$ grep -n "maxQty = min|splitVolume" HftMocker.cpp
+761:	double maxQty = min(orderQty, ordInfo->_left);
+762:	auto vols = splitVolume((uint32_t)maxQty);
+1148:			double maxQty = min(dInfo._volume, left);
+$ grep -n "_slippage != 0|_ratio_slippage" CtaMocker.cpp  (足の経路は定率/定額の滑りだけ)
+67:	, _ratio_slippage(isRatioSlp)
+1635:		if (_slippage != 0)
+1672:		if (_slippage != 0)
+--- 2026-09-22T17:35:52Z method=run target=c60_hikyuu note=候補60 Hikyuu の約定。高値=安値の足では約定させず次の足に持ち越す rc=0
+$ curl -sS .../hikyuu_cpp/hikyuu/trade_sys/system/System.cpp | grep -n "can_trade_when_high_eq_low|max_delay_count|_getRealBuyPrice"
+98:    setParam<int>("max_delay_count", 3);
+111:    setParam<bool>("can_trade_when_high_eq_low", false);
+151:    if ("max_delay_count" == name) {
+152:        HKU_ASSERT(getParam<int>("max_delay_count") >= 0);
+694:        if (getParam<bool>("can_trade_when_high_eq_low")) {
+753:    price_t realPrice = _getRealBuyPrice(today.datetime, planPrice);
+779:    if (today.highPrice == today.lowPrice && !getParam<bool>("can_trade_when_high_eq_low")) {
+826:    price_t realPrice = _getRealBuyPrice(today.datetime, planPrice);
+844:        if (m_buyRequest.count > getParam<int>("max_delay_count")) {
+920:        if (getParam<bool>("can_trade_when_high_eq_low")) {
+995:    if (today.highPrice == today.lowPrice && !getParam<bool>("can_trade_when_high_eq_low")) {
+1059:        if (m_sellRequest.count > getParam<int>("max_delay_count")) {
+$ grep -n "planPrice = src_today" System.cpp  (足の値で建てる)
+729:    price_t planPrice = src_today.closePrice;
+797:    price_t planPrice = src_today.openPrice;  // 取当前时刻的开盘价
+954:    price_t planPrice = src_today.closePrice;
+1012:    price_t planPrice = src_today.openPrice;  // 取当前时刻的开盘价
+$ 滑りの模型の一覧(ungh.cc の files から機械的に抜いた)
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/FixedPercentSlippage.cpp
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/FixedValueSlippage.cpp
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/LogNormalSlippage.cpp
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/NormalSlippage.cpp
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/TruncNormalSlippage.cpp
+hikyuu_cpp/hikyuu/trade_sys/slippage/imp/UniformSlippage.cpp
+--- 2026-09-22T17:36:25Z method=run target=c67_lumibot note=候補67 lumibot の指値の埋まり方。未約定は次の足へ残る rc=0
+$ curl -sS https://raw.githubusercontent.com/Lumiwealth/lumibot/dev/lumibot/backtesting/backtesting_broker.py | sed -n "4804,4842p"
+    def limit_order(self, limit_price, side, open_, high, low):
+        """Limit order logic."""
+        open_val = self._coerce_price(open_)
+        if side == "sell" and (limit_val <= 0 or limit_val <= open_val):
+            return open_val
+
+        # Gap Down case: Limit wasn't triggered by previous candle but current candle opens lower, fill it now
+        if side == "buy" and limit_val >= open_val:
+            return open_val
+
+        # Current candle triggered limit normally
+        if low_val <= limit_val <= high_val:
+            return limit_val
+
+        # Limit has not been met
+        return None
+$ grep -n "def process_pending_orders" -A 5 backtesting_broker.py
+    def process_pending_orders(self, strategy):
+        """Used to evaluate and execute open orders in backtesting.
+
+        This method will evaluate the open orders at the beginning of every new bar to
+        determine if any of the open orders should have been filled. This method will
+        execute order events as needed, mostly fill events.
+$ grep -n "_get_strategy_slippage_amount|buy_trading_slippages" backtesting_broker.py  (滑りは定額の足し算)
+3981:    def _get_strategy_slippage_amount(self, strategy, order: Order) -> float:
+3987:            slippages = getattr(strategy, "buy_trading_slippages", [])
+3989:            slippages = getattr(strategy, "sell_trading_slippages", [])
+4557:            slippage_amount = self._get_strategy_slippage_amount(strategy, order)
+4648:            slippage_amount = self._get_strategy_slippage_amount(strategy, order)
+--- 2026-09-22T17:37:08Z method=run target=c70_pineforge note=候補70 PineForge。足の内側に価格の道筋を引き、交差した時刻 t を持つ当たりとして順番を付ける rc=0
+$ curl -sS .../src/native_matching.hpp | grep -n "price_at|t_for_price|struct GeometricHit|first_region_entry"
+34:inline double price_at(double from, double to, double t) noexcept {
+40:inline std::optional<double> t_for_price(double from, double to, double price) noexcept {
+229:inline std::optional<GeometricHit> first_region_entry(
+246:        return GeometricHit{t_start, current, false};
+256:    return GeometricHit{*t_cross, level, true};
+364:        return GeometricHit{t_start, current, false};
+372:    return GeometricHit{t_hit, best, true};
+$ curl -sS .../docs/pages/fill-model.md | grep -n "Execution schedule|owns matching|slippage"
+30:| Execution schedule | Candidate identity, event coordinate, dependency and explicit priority | Ordering does not grant admission, create quantity or activate a leg. |
+111:The native request core owns matching; the source adapter owns source policy,
+112:admission, slippage, and scheduling. Short-seed readback is now a
+$ grep -ci "volume" docs/pages/fill-model.md  (出来高で埋まる量を決める記述の有無)
+0
+--- 2026-09-22T17:37:39Z method=run target=c72_qtradex note=候補72 QTradeX の約定。越え判定に足の極値ではなく「始値終値の幅と極値の中点」を使い、越えなければその足では建てない rc=0
+$ curl -sS .../qtradex/core/backtest.py | sed -n "68,95p"
+    low, high = sorted([price["open"], price["close"]])
+    low = (low + price["low"])/2
+    high = (high + price["high"])/2
+    # low, high = sorted([price["low"], price["high"]])
+    elif operation.price is not None:
+        if wallet[asset] and isinstance(operation, Sell):
+            if high > operation.price:
+                execution = operation.price
+            else:
+                operation = None
+        elif wallet[currency] and isinstance(operation, Buy):
+            if low < operation.price:
+                execution = operation.price
+            else:
+                operation = None
+$ sed -n "31,40p" backtest.py
+    execution = price["close"]
+
+    # Determine execution price based on operation type and market conditions
+    execution, operation = determine_execution_price(
+        operation, wallet, price, execution, asset, currency
+    )
+
+    # Ensure execution price is within market bounds
+    execution = min(max(execution, price["low"]), price["high"])
+
+--- 2026-09-22T17:38:12Z method=run target=c87_pytrendfollow note=候補87 PyTrendFollow。注文の物を持たず、建玉の差分と値動きの掛け算。滑りはその日の値動きの 0.5 倍 rc=0
+$ curl -sS .../trading/accountcurve.py | sed -n "104,122p"
+    def position_returns(self):
+        """The returns from holding the portfolio we had yesterday"""
+        # We shift back 2, as self.positions is the frontier - tomorrow's ideal position.
+        return (self.positions.shift(2).multiply((self.panama_prices()).diff(), axis=0).fillna(0) * self.point_values()) * self.rates()
+
+    def transaction_returns(self):
+        """Estimated returns from transactions including slippage. Uses the average settlement price of the last two days"""
+        # self.positions.diff().shift(1) = today's trades
+        slippage_multiplier = .5
+        return (self.positions.diff().shift(1).multiply((self.panama_prices()).diff()*slippage_multiplier, axis=0).fillna(0) * self.point_values()) * self.rates()
+
+    def commissions(self):
+        commissions = pd.Series({v.name: v.commission for v in self.portfolio})
+        return (self.positions.diff().shift(1).multiply(commissions)).fillna(0).abs()*-1
+
+    def spreads(self):
+        spreads = pd.Series({v.name: v.spread for v in self.portfolio})
+        return (self.positions.diff().shift(1).multiply(spreads * self.point_values() * self.rates())).fillna(0).abs()*-1
+
+--- 2026-09-22T17:40:58Z method=run target=c23_hftbacktest_default note=候補23 の段(既定)。列の模型は BacktestAsset::new() に既定がある rc=0
+$ curl -sS https://raw.githubusercontent.com/nkaz001/hftbacktest/master/py-hftbacktest/src/lib.rs | grep -n "pub enum QueueModel" -A 8 / "pub fn new" -A 10
+pub enum QueueModel {
+    RiskAdverseQueueModel {},
+    PowerProbQueueModel { n: f64 },
+    LogProbQueueModel {},
+    LogProbQueueModel2 {},
+    PowerProbQueueModel2 { n: f64 },
+    PowerProbQueueModel3 { n: f64 },
+    L3FIFOQueueModel {},
+}
+    pub fn new() -> Self {
+        Self {
+            data: Vec::new(),
+            latency_model: LatencyModel::ConstantLatency {
+                entry_latency: 0,
+                resp_latency: 0,
+            },
+            asset_type: AssetType::LinearAsset { contract_size: 1.0 },
+            queue_model: QueueModel::LogProbQueueModel2 {},
+            tick_size: 0.0,
+--- 2026-09-22T17:40:58Z method=run target=c6_ziplime_default note=候補6 の段(既定)。25 回目は code search が 0 件だったが、入口の run_simulation.py に既定を入れる行がある rc=0
+$ curl -sS https://raw.githubusercontent.com/Limex-com/ziplime/master/ziplime/core/run_simulation.py | grep -n "equity_slippage is None" -A 2
+    if equity_slippage is None:
+        equity_slippage = FixedBasisPointsSlippage()
+    if future_slippage is None:
+        future_slippage = VolatilityVolumeShare(
+            volume_limit=DEFAULT_FUTURE_VOLUME_SLIPPAGE_BAR_LIMIT,
+        )
+    if exchange is None:
+$ curl -sS .../ziplime/finance/slippage/fixed_basis_points_slippage.py | grep -n "def __init__|historical_volume"
+27:        historical_volume * volume_limit
+45:    def __init__(self, basis_points=5.0, volume_limit=0.1):
+--- 2026-09-22T17:42:06Z method=run target=c19_jesse_split note=候補19 Jesse の段3の判定。分割してできた足が機関に事象として入るかを読む rc=0
+$ curl -sS https://raw.githubusercontent.com/jesse-ai/jesse/master/jesse/modes/backtest_mode.py | sed -n "1667,1670p"
+                if candle_service.candle_includes_price(current_temp_candle, order.price):
+                    storable_temp_candle, current_temp_candle = candle_service.split_candle(current_temp_candle, order.price)
+                    _update_all_routes_a_partial_candle(exchange, symbol, storable_temp_candle)
+
+$ sed -n "2181,2198p" backtest_mode.py  (分割してできた足の行き先)
+def _update_all_routes_a_partial_candle(
+        exchange: str,
+        symbol: str,
+        storable_temp_candle: np.ndarray,
+) -> None:
+    """
+    This function get called when an order is getting executed you need to update the other timeframe how their last
+    candles looks like
+    """
+    candle_service.add_candle(
+        storable_temp_candle,
+        exchange,
+        symbol,
+        "1m",
+        with_execution=False,
+        with_generation=False,
+    )
+
+--- 2026-09-22T17:42:06Z method=run target=c91_homerun note=候補91 homerun。列の位置を持ち、影響の関数は既定で無効 rc=0
+$ grep -n "queue_ahead_shares" matching_engine.py
+102:    # ``queue_ahead_shares`` value is computed by
+103:    # ``services.optimization.queue_ahead.compute_queue_ahead_shares``
+109:    queue_ahead_shares: Optional[float] = None
+619:        #    in price-time priority; once ``queue_ahead_shares`` hits
+630:                    or ord_.queue_ahead_shares is None
+631:                    or ord_.queue_ahead_shares <= 0.0
+674:                ord_.queue_ahead_shares = max(
+676:                    float(ord_.queue_ahead_shares) - external_consumed,
+838:                compute_queue_ahead_shares,
+840:            order.queue_ahead_shares = compute_queue_ahead_shares(
+847:            order.queue_ahead_shares = 0.0
+878:        features["queue_ahead_shares"] = order.queue_ahead_shares
+$ sed -n "353,357p" matching_engine.py  (影響の既定)
+    strength_bps: float = 0.0
+    cap_bps: float = 200.0  # never penalise a single fill more than 200 bps
+    capacity_threshold: float = 0.5
+    capacity_exponent: float = 1.5
+
+$ grep -n "iter_snapshots|async for snapshot" engine.py / grep -ci "candle|ohlc" engine.py
+256:        async for snapshot in book_source.iter_snapshots():
+0
+--- 2026-09-22T17:42:06Z method=run target=c92_pmbt note=候補92。参加率に比例する影響の関数を持つが既定で無効 rc=0
+$ sed -n "16,22p" src/pm_bt/execution/simulator.py
+class ExecutionConfig(DomainModel):
+    fee_bps: float = Field(default=0.0, ge=0.0)
+    slippage_bps: float = Field(default=0.0, ge=0.0)
+    slippage_volume_k: float | None = Field(default=None, ge=0.0)
+    default_spread: float = Field(default=0.02, ge=0.0, le=1.0)
+    latency_bars: int = Field(default=0, ge=0)
+    max_position_size: float = Field(default=100.0, gt=0.0)
+$ sed -n "262,268p" simulator.py
+        if self.config.slippage_volume_k is not None:
+            if recent_volume is None or recent_volume <= 0.0:
+                return 0.0
+            return self.config.slippage_volume_k * (qty / recent_volume)
+        if self.config.slippage_bps <= 0.0:
+            return 0.0
+        return reference_price * (self.config.slippage_bps / 10_000.0)
+--- 2026-09-22T17:42:11Z method=run target=ls_probes note=この回の生ログを作ったあとの本数 rc=0
+$ ls docs/DATA/probes/20260922_tools_1_run*.log | wc -l
+25
+--- 2026-09-22T17:47:37Z method=run target=quotes_2 note=報告で逐語に引く行を、原典から 1 行ずつ取り直す(引いた逐語が全部この生ログに在るようにする) rc=0
+$ grep -n "maker_queue_ahead_fraction\|depth that disappeared between snapshots\|textbook Almgren-Chriss" matching_engine.py
+326:        (textbook Almgren-Chriss; impact grows concavely with size).
+829:        their ``maker_queue_ahead_fraction`` (default 0.65, recognising
+$ grep -n "Canonical L2 book value types\|1.2M snapshots" book_replay.py
+1:"""Canonical L2 book value types + an in-memory replay for tests.
+55:    sub-second backtest loads ~1.2M snapshots; eagerly building a ``PriceLevel``
+$ grep -n "It is not a queue" docs/pages/fill-model.md
+140:This is one coalescing checkpoint over the aggregate book. It is not a queue
+$ grep -n "QARank" qactabase.py
+191:            QARank是我们内部用于评价策略ELO的库 此处并不影响正常使用
+193:            from QARank import QA_Rank
+$ grep -n "half_spread = spread / 2.0" simulator.py
+239:        half_spread = spread / 2.0
+$ grep -n "Gap Up case" backtesting_broker.py
+4829:        # Gap Up case: Limit wasn't triggered by previous candle but current candle opens higher, fill it now
+4858:        # Gap Up case: Stop wasn't triggered by previous candle but current candle opens higher, fill it now
+$ grep -n "商业用途" qactabase の代わりに rqalpha の mod __init__ (許諾の分かれ目)
+6:#     * 非商业用途（非商业用途指个人出于非商业目的使用本软件，或者高校、研究所等非营利机构出于教育、科研等目的使用本软件）：
+10:#     * 商业用途（商业用途指个人出于任何商业目的使用本软件，或者法人或其他组织出于任何目的使用本软件）：
+$ sed -n "140,141p" docs/pages/fill-model.md  (原典では 2 行に折れている)
+This is one coalescing checkpoint over the aggregate book. It is not a queue
+that retroactively settles every individual fill. A later qualifying add
+$ grep -n "void MatchEngine::match_orders" MatchEngine.cpp  (照合がティックを受け取る)
+44:void MatchEngine::match_orders(WTSTickData* curTick, OrderIDs& to_erase)
+$ grep -n "queue_ahead_shares > 1e-9" matching_engine.py  (列が残っているうちは埋めない側)
+1053:        if order.queue_ahead_shares is not None and order.queue_ahead_shares > 1e-9:
+--- 2026-09-22T17:37:00Z method=note label=tls_cut2 note=ungh.cc/repos/nkaz001/hftbacktest/files/master で TLS 切断(code=000 rc=35 Recv failure: Connection reset by peer)が 1 件。404 の欄に入れず打ち直して code=200 bytes=28998 を得た rc=35
+--- 2026-09-22T17:48:41Z method=note label=http404 note=この回の HTTP 404 は 0 件である(grep -c 'code=404' でこの生ログを数えた) rc=0

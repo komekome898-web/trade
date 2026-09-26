@@ -1,0 +1,4 @@
+$ PYTHONPATH=src python -m pytest -p no:cacheprovider tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py   (直す前)
+FAILED tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py::test_a_market_data_file_labelled_synthetic_does_not_admit_a_price_rule[jpx_1m]
+FAILED tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py::test_a_market_data_file_labelled_synthetic_does_not_admit_a_price_rule[fx_ticks]
+27 failed, 12 passed in 136.97s (0:02:16)

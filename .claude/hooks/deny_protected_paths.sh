@@ -1,5 +1,5 @@
 #!/bin/sh
-# ③(a) 構造的に不可能にする — PreToolUse(Write / Edit / NotebookEdit)
+# ③(a) 構造的に不可能にする — PreToolUse(Write / Edit / NotebookEdit / Bash)
 #
 # オーナー承認 2026-09-14、L-169「**A-16 ①③④⑤ のフック配線(4 件) →yes**」。
 #
@@ -21,10 +21,22 @@ set -u
 INPUT="$(cat 2>/dev/null || true)"
 
 FP="$(printf '%s' "$INPUT" | python3 -c '
-import json,sys
+import json,sys,re
 try: d=json.load(sys.stdin)
 except Exception: sys.exit(0)
-print((d.get("tool_input") or {}).get("file_path","") or "")
+ti=d.get("tool_input") or {}
+if d.get("tool_name")=="Bash":
+    # **Bash 経由の書き込み(2026-09-21、L-375「機械直せよ」)。**同日、リードは文書もコードも全部
+    # Bash のヒアドキュメントで書き、この関門は一度も発火しなかった(ACTION_LOG 076)。
+    # 保護パスの語と書き込みの語が同じコマンドにあれば、その保護パスを file_path として返す。
+    cmd=ti.get("command") or ""
+    write=re.compile(r"(^|[^0-9<>&])>{1,2}(?!&)|\btee\b|\bsed\s+-i|\bcp\s|\bmv\s|\brm\s|\btruncate\b|\bln\s|\bpatch\b|\bchmod\b|\bpython[0-9.]*\b|\bperl\b|write_text\(|open\([^)]*[\"\x27][wa]")
+    if write.search(cmd):
+        for pat in ("PROJECT_GOAL.md","OWNER_MODEL_SOURCE.md","OWNER_INTENT",".claude/hooks/",".claude/settings.json",".claude/agents/","githooks/"):
+            if pat in cmd:
+                print("bash:"+pat); sys.exit(0)
+    print(""); sys.exit(0)
+print(ti.get("file_path","") or "")
 ' 2>/dev/null)"
 [ -n "$FP" ] || exit 0
 
@@ -49,7 +61,7 @@ EOF
 }
 
 case "$REL" in
-  */docs/PROJECT_GOAL.md|docs/PROJECT_GOAL.md|*/OWNER_MODEL_SOURCE.md|OWNER_MODEL_SOURCE.md|*OWNER_INTENT*)
+  */docs/PROJECT_GOAL.md|docs/PROJECT_GOAL.md|*/OWNER_MODEL_SOURCE.md|OWNER_MODEL_SOURCE.md|*OWNER_INTENT*|bash:PROJECT_GOAL.md|bash:OWNER_MODEL_SOURCE.md|bash:OWNER_INTENT)
     if [ -f "$ROOT/.claude/state/owner_unlock_intent" ]; then
       # **無言で通さない。**通したこと自体を記録に出す(35 本目の監査)。
       echo "[関門] 解除ファイル owner_unlock_intent があるので通した: $REL" >&2
@@ -57,7 +69,7 @@ case "$REL" in
     fi
     deny "**オーナーの逐語とゴールは、リードが書き換えるものではない。**2026-09-14 の実測では、この会話の 1,054 回の道具呼び出しのうち \`PROJECT_GOAL.md\` を開いたのは 0 回で、\`OWNER_INTENT\` は 0 回読んで 1 回書き換えていた。" \
       ".claude/state/owner_unlock_intent" ;;
-  */.claude/hooks/*|.claude/hooks/*|*/.claude/settings.json|.claude/settings.json|*/.claude/agents/*|.claude/agents/*)
+  */.claude/hooks/*|.claude/hooks/*|*/.claude/settings.json|.claude/settings.json|*/.claude/agents/*|.claude/agents/*|bash:.claude/*|bash:githooks/)
     if [ -f "$ROOT/.claude/state/owner_unlock_hooks" ]; then
       echo "[関門] 解除ファイル owner_unlock_hooks があるので通した: $REL" >&2
       exit 0

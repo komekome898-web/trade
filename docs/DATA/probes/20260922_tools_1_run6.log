@@ -1,0 +1,98 @@
+# 区分1 6回目の生ログ 2026-09-22 (UTC)
+--- [1] 2026-09-22T08:28:09Z python の版の確認: for v in 3.10 3.11 3.12 3.13; do /usr/bin/python$v -V; done rc=0
+  Python 3.10.20
+  Python 3.11.15
+  Python 3.12.3
+  Python 3.13.12
+  python3 -V = Python 3.11.15 rc=0
+--- [2] 2026-09-22T08:28:20Z ziplime 導入前検査(1) 隔離 venv 作成: /usr/bin/python3.12 -m venv v6z rc=0 venv_time_s=3
+--- [3] 2026-09-22T08:28:40Z ziplime 導入前検査(2) 配布物の取得: v6z/bin/pip download --no-deps -d dl_zip ziplime rc=0 -> ziplime-1.19.16-py3-none-any.whl 537049 bytes
+--- [4] 2026-09-22T08:29:10Z ziplime 導入前検査(3) wheel 展開の走査(python3 zipfile) rc=0
+  FILES=413 PY_FILES=404 setup_py=[] binaries=0 top=[ziplime, ziplime-1.19.16.dist-info]
+  METADATA: Name: ziplime / Version: 1.19.16 / Summary:(空) / License-File: LICENSE / Author: Ziplime / Requires-Python: >=3.12,<4.0 / Requires-Dist count=30
+  METADATA に License: 行なし、Project-URL 行なし、Home-page 行なし、Classifier: License 行なし
+  dist-info/LICENSE の実体は wheel に**無い**(License-File: LICENSE と書いてあるが該当パスが 0 件)
+  DEPS=aiocache aiofiles aiosqlite alembic asyncclick empyrical-reloaded exchange-calendars greenlet h5py iso3166 iso4217 joblib lime-trader-sdk limexhub networkx numexpr orjson pandas pandas-stubs polars pyarrow pydantic pygments python-dateutil scipy setuptools sqlalchemy structlog tabulate yfinance
+  HOSTS(.py 内の http(s) の host)=docs.scipy.org en.wikipedia.org finra.complinet.com github.com stockcharts.com wiki.timetotrade.eu www.apache.org www.fidelity.com
+  OBFUSCATION(eval/exec+base64 等の一致)=0 件
+--- [5] 2026-09-22T08:29:40Z PySystemtrade 疎な clone: git clone --quiet --depth 1 --filter=blob:none --sparse https://github.com/robcarver17/pysystemtrade pst rc=0 clone_time_s=4
+--- [6] 2026-09-22T08:29:50Z PySystemtrade: git sparse-checkout set systems sysquant sysobjects syscore sysdata rc=0
+  du -sh . = 3.6M / du -sh .git = 904K(5 回目の全部 clone は 878M。data/ を外した)
+  ls = CHANGELOG.md CONTRIBUTING.md LICENSE MANIFEST.in README.md pyproject.toml requirements.txt setup.py syscore sysdata sysobjects sysquant systems tox.ini
+  find . -name "*.py" -not -path "./.git/*" | wc -l = 328
+  git log -1 = 8958c49c38b1e4a8c07f0e4375d5e9cb68a087f7 2026-09-21T11:55:15+01:00
+--- [7] 2026-09-22T08:30:05Z PySystemtrade の一次資料(clone した作業木の中身) rc=0
+  LICENSE head = "GNU GENERAL PUBLIC LICENSE / Version 3, 29 June 2007"
+  pyproject.toml: name=pysystemtrade version=1.8.2 authors=[Robert Carver] maintainers=[Andy Geach] license={file = "LICENSE"} requires-python=">=3.10" keywords=["systematic trading","interactive brokers"] dependencies 15 件
+  dependencies = pandas==2.1.3 matplotlib>=3.0.0 PyYAML==6.0.1 numpy>=1.24.0 scipy>=1.0.0 pymongo==3.11.3 ib_async>=2,<3 psutil==7.2.1 Flask>=2.0.1 Werkzeug>=2.0.1 statsmodels==0.14.0 PyPDF2>=2.5.0 scikit-learn>1.3.0 pytz==2023.3 pyarrow>=16,<20
+  setup.py: name="pysystemtrade" version="1.8.2" author="Robert Carver" license="GNU GPL v3"、16 行に Python 3.10.0 以下を拒む判定
+--- [8] 2026-09-22T08:30:30Z ziplime 隔離導入: v6z/bin/pip install -q ziplime rc=0 install_time_s=54 pkgs=74 pip_check=No broken requirements found.
+  v6z/bin/python -c "import ziplime, sys" -> import_ok、ziplime.__version__ は未定義(n/a)、sys.version=3.12.3 (main, Mar  3 2026, 12:15:18) [GCC 13.3.0]
+--- [9] 2026-09-22T08:31:00Z ziplime CLI: v6z/bin/python -m ziplime --help rc=0
+  Commands: bundles / clean / ingest / run
+--- [10] 2026-09-22T08:31:10Z ziplime ingest --help rc=0(取れた選択肢を逐語)
+  --historical-market-data-provider [limex-hub|lime-trader-sdk]  [default: limex-hub]
+  --fundamental-data-provider [limex-hub]  [default: limex-hub]
+  --frequency [1s|1m|3m|5m|15m|30m|1h|4h|6h|8h|12h|1d|1w|1M]
+  --bundle-storage-path TEXT  [default: /root/.ziplime/data]
+--- [11] 2026-09-22T08:31:20Z ziplime bundles rc=0(プロセスは例外で終了)
+  FileNotFoundError: [Errno 2] No such file or directory: /root/.ziplime/data/bundle_registry
+--- [12] 2026-09-22T08:31:30Z ziplime run --help rc=0(取れた選択肢を逐語)
+  --exchange-type [simulation|lime-trader-sdk]  [default: simulation]
+  --live-market-data-provider [lime-trader-sdk]
+  --exchange-name TEXT  [default: LIME] / --no-benchmark / --capital-base FLOAT / --emission-rate / --trading-calendar TRADING-CALENDAR(既定 XNYS)
+--- [13] 2026-09-22T08:31:45Z ziplime ingest を鍵なしで実行: v6z/bin/python -m ziplime ingest -b testbundle --start-date 2026-01-02 --end-date 2026-01-10 --frequency 1d -s AAPL --skip-fundamental-data --no-show-progress rc=1 t=3
+  ValueError: Missing LIMEX_API_KEY environment variable.(bundle_utils.py:24、__main__.py:152 の get_fundamental_data_provider。--skip-fundamental-data を付けても先に生成される)
+  鍵は発行していない(委任文 §6-4)。
+--- [14] 2026-09-22T08:32:00Z ziplime の注文の型・滑り・手数料の実装の走査 rc=0
+  finance/execution.py: class MarketOrder(59) / class LimitOrder(96) / class StopOrder(131) / class StopLimitOrder(167)
+  finance/slippage/: equity_slippage_model.py fixed_basis_points_slippage.py fixed_slippage.py future_slippage_model.py market_impact_base.py no_slippage.py slippage_model.py volatility_volume_share.py volume_share_slippage.py
+  finance/commission/: commission_model.py equity_commission_model.py future_commission_model.py no_commission.py per_contract.py per_dolar.py per_future_trade.py per_share.py per_trade.py
+  data/services/: bundle_registry.py bundle_service.py bundle_storage.py csv_data_source.py data_bundle_source.py data_source.py file_system_bundle_registry.py file_system_parquet_bundle_storage.py lime_trader_sdk_data_source.py limex_hub_data_source.py
+--- [15] 2026-09-22T08:32:30Z ziplime 最小実行の試行(1〜6 回目の失敗を全部記録) rc=0
+  試行1 TypeError: object AssetService can be used in await expression(get_asset_service は同期。文書と実装のずれ)
+  試行2 sqlalchemy.exc.IntegrityError: NOT NULL constraint failed: equities.auto_close_date(dataclass Asset は auto_close_date: datetime.date | None だが DB は NOT NULL)
+  試行3 sqlalchemy.exc.IntegrityError: NOT NULL constraint failed: exchange_assets.auto_close_date(同型)
+  試行4 polars.exceptions.SchemaError: invalid series dtype: expected String, got duration[us] for series with name literal(utils/data_utils.py:60 の pl.col("date").dt.offset_by(frequency)。CSVDataSource の frequency に datetime.timedelta を渡すと必ず落ちる。polars 1.44.2)
+  試行5 ValueError: When ingesting custom bundle you must supply either a symbol or a sid column.(csv に symbol 列が要る)
+  試行6 AttributeError: NoneType object has no attribute sid(utils/run_algo.py:221 が benchmark_asset=None のまま validate_benchmark を呼ぶ。sources/benchmark_source.py:118 は benchmark_asset.sid を無条件に読む)
+  試行7 NameError: name symbol is not defined(算法ファイルは素の module として読まれ、zipline の名前空間の注入が無い。API は context のメソッドで、いずれも async)
+--- [16] 2026-09-22T08:33:50Z ziplime 最小実行 成功 rc=0 SIM_TIME_S=2.115829
+  合成の日足 40 本(乱数の種 7、symbol=SYN、XNGS/XNYS 暦)を CSVDataSource で読み、run_simulation で 2026-01-05〜2026-02-20 を回した
+  算法: i==2 で LimitOrder(limit_price=1000000.0) で +10、i==5 で MarketOrder() で -10(指値と成行の 1 往復)
+  DS_ROWS 46 START 2026-01-02 00:00:00-05:00 END 2026-02-26 00:00:00-05:00
+  ORDER_SUBMIT asset_mic=XNGS asset_symbol=SYN quantity=10 style=LimitOrder(limit_price=1000000.0)
+  ORDER_SUBMIT asset_mic=XNGS asset_symbol=SYN quantity=-10 style=MarketOrder()
+  Simulated 33 trading days / first open: 2026-01-05 09:30:00-05:00 / last close: 2026-02-20 16:00:00-05:00 / Errors: 0
+  PERF_TYPE DataFrame PERF_ROWS 33 PERF_COLS 36 個(period_open period_close transactions ending_exposure long_value starting_exposure longs_count positions net_leverage returns starting_cash shorts_count ending_value long_exposure orders ending_cash portfolio_value starting_value short_exposure short_value pnl gross_leverage capital_used benchmark_period_return benchmark_volatility max_drawdown algo_volatility period_label treasury_period_return algorithm_period_return max_leverage alpha beta sharpe trading_days excess_return sortino)
+  TX_COUNT 2
+  TX {'amount': 10, 'price': 100.07761380000001, 'commission': None, 'dt': 2026-01-06 16:00:00-05:00}
+  TX {'amount': -10, 'price': 98.5251128, 'commission': None, 'dt': 2026-01-09 16:00:00-05:00}
+  ORDER_COUNT 2
+  ORD {'amount': 10, 'limit': 1000000.0, 'stop': None, 'filled': 10, 'commission': 0.01, 'status': OrderStatus.FILLED}
+  ORD {'amount': -10, 'limit': None, 'stop': None, 'filled': -10, 'commission': 0.01, 'status': OrderStatus.FILLED}
+  PNL_SUM -15.545009999987087 ENDING_VALUE 99984.45499000001
+--- [17] 2026-09-22T08:34:30Z ziplime 再現性: 同じ台本を 2 回打って同じ値 rc=0
+  1 回目 PNL_SUM -15.545009999987087 ENDING_VALUE 99984.45499000001
+  2 回目 PNL_SUM -15.545009999987087 ENDING_VALUE 99984.45499000001
+  道具側に乱数の種の指定は見ていない。種は当方の合成データ側に置いたもの。
+--- [18] 2026-09-22T08:34:50Z ziplime PyPI の一次資料: curl https://pypi.org/pypi/ziplime/json code=200
+  version 1.19.16 | license None | license_expression None | author Ziplime | maintainer None | requires_python <4.0,>=3.12 | project_urls None | home_page None | summary None
+  classifiers ['Programming Language :: Python :: 3', 'Programming Language :: Python :: 3.12', 'Programming Language :: Python :: 3.13', 'Programming Language :: Python :: 3.14']
+  vulnerabilities 0 | releases 23 | first 0.1.11 2024-12-06T15:21:25 | last 1.19.16 2026-06-18T09:21:46
+--- [19] 2026-09-22T08:35:10Z ziplime のリポジトリ探索 rc=0
+  curl https://raw.githubusercontent.com/Ziplime/ziplime/main/LICENSE code=404 / master code=404 / .../main/pyproject.toml code=404
+  curl https://ungh.cc/repos/Ziplime/ziplime -> {"error":true,"status":404}
+  WebSearch(ziplime pypi package github repository zipline fork Lime Trading)-> github.com/Limex-com/ziplime を発見
+  curl https://raw.githubusercontent.com/Limex-com/ziplime/main/LICENSE code=404 / master code=200 -> "GNU GENERAL PUBLIC LICENSE / Version 3, 29 June 2007"
+  curl https://ungh.cc/repos/Limex-com/ziplime code=200 -> stars 564 forks 57 watchers 9 defaultBranch master createdAt 2025-03-24T10:28:37Z pushedAt 2026-09-17T09:58:00Z
+--- [20] 2026-09-22T08:35:30Z ziplime 週DL数: curl https://pypistats.org/api/packages/ziplime/recent code=429 -> WebFetch https://pypistats.org/packages/ziplime rc=0
+  last_day=26 last_week=86 last_month=268
+--- [21] 2026-09-22T08:35:50Z ziplime GitHub の頁: WebFetch https://github.com/Limex-com/ziplime rc=0
+  Commits 6,420 / License GPL-3.0 / contributors の数は頁に表示されず
+  README の見出しの逐語: "AI generates strategies natively" / "Polars replaces pandas & NumPy" / "Live trading built in" / "Any data, any frequency"
+  README の料金に関する記述: "Data source: Yahoo Finance (free, no API key)" / "Set your OpenRouter API key (free at https://openrouter.ai)" / データ源は Yahoo Finance=無料、CSV=無料、Lime Trader SDK=証券口座が要る、LimexHub=購読制 / "Everything stays on your machine. Your strategies are yours."
+  注記: README の説明文には特定の LLM 製品名が並ぶが、委任文 §10「モデル名を書かない」に従い写さない。
+--- [22] 2026-09-22T08:36:10Z ziplime 規模の外挿(行数に線形と置いた算術。python3 で計算) rc=0
+  2.115829 * 456 / 33 = 29.24 秒(33 営業日の日足 -> 456 日分の日足)
+  ティック単位・分足単位は試していない。

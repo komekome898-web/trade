@@ -1,0 +1,45 @@
+##### from item0_r5-1_scenekeeper_install_87.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/chrism2671/PyTrendFollow.git c87
+/dev/vda          258020 32037      5902  85% /
+rc=0
+439232aed4d67ccf339e782b7c8b96f2dd961d43 2018-04-25T10:11:32+01:00 Chris Muktar
+4.4M	.
+=== start 2026-09-24T03:00:50Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c87 && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/c87/bin/pip install --no-cache-dir -r /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c87/requirements.txt
+df before: /dev/vda          258020 32343      5596  86% /
+=== end 2026-09-24T03:01:40Z rc=0 elapsed=50s min_free=4040MB 
+  Created wheel for multiprocessing_on_dill: filename=multiprocessing_on_dill-3.5.0a4-py3-none-any.whl size=64081 sha256=7f93bd9ee9587282b60d41a970d996c4f9a808581eb8a048636954626cc0c618
+  Stored in directory: /tmp/pip-ephem-wheel-cache-dl311_iu/wheels/55/31/39/4c3d29d345c11e257f46f60d682bed191732f4d16584c34071
+  Building wheel for bravado (pyproject.toml): started
+  Building wheel for bravado (pyproject.toml): finished with status 'done'
+  Created wheel for bravado: filename=bravado-12.0.1-py2.py3-none-any.whl size=37589 sha256=01ba8c52d2da1875714e68cb72487295ebebcdae359fd91161fd3978d50a6ba2
+  Stored in directory: /tmp/pip-ephem-wheel-cache-dl311_iu/wheels/e6/74/38/1a17da432acf052e1f089ef2ef964c98d2d5ea928e23ad615a
+Successfully built IbPy2 multiprocessing_on_dill bravado
+Installing collected packages: pytz, pyprind, py-cpuinfo, monotonic, IbPy2, wrapt, webcolors, urllib3, uri-template, tzdata, typing_extensions, threadpoolctl, six, simplejson, schedule, rpds-py, rfc3986-validator, pyyaml, pyparsing, pygments, pluggy, pillow, packaging, numpy, ndindex, narwhals, msgpack, more-itertools, mdurl, lark, kiwisolver, jsonref, jsonpointer, interface-meta, iniconfig, inflection, importlib-resources, idna, hyperframe, hpack, h11, fqdn, fonttools, dnspython, dill, cython, cycler, charset_normalizer, certifi, attrs, annotated-types, typing-inspection, scipy, rfc3987-syntax, rfc3339-validator, requests, referencing, python-dateutil, pytest, pymongo, pydantic-core, patsy, numexpr, multiprocessing_on_dill, markdown-it-py, httpcore, h2, contourpy, anyio, rich, pydantic, pandas, matplotlib, jsonschema-specifications, httpx, arrow, seaborn, quandl, jsonschema, isoduration, formulaic, swagger-spec-validator, statsmodels, blosc2, tables, bravado-core, arch, bravado
+Successfully installed IbPy2-0.8.0 annotated-types-0.8.0 anyio-4.15.1 arch-8.0.0 arrow-1.4.0 attrs-26.1.0 blosc2-4.13.1 bravado-12.0.1 bravado-core-6.4.1 certifi-2026.7.22 charset_normalizer-3.5.1 contourpy-1.3.3 cycler-0.12.1 cython-3.3.0 dill-0.4.1 dnspython-2.8.0 fonttools-4.66.0 formulaic-1.2.2 fqdn-1.5.1 h11-0.16.0 h2-4.4.1 hpack-4.2.0 httpcore-1.0.9 httpx-0.28.1 hyperframe-6.1.0 idna-3.20 importlib-resources-7.1.0 inflection-0.5.1 iniconfig-2.3.0 interface-meta-2.0.1 isoduration-20.11.0 jsonpointer-3.1.1 jsonref-1.1.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 kiwisolver-1.5.1 lark-1.3.1 markdown-it-py-4.2.0 matplotlib-3.11.2 mdurl-0.1.2 monotonic-1.6 more-itertools-11.1.0 msgpack-1.2.2 multiprocessing_on_dill-3.5.0a4 narwhals-2.26.0 ndindex-1.10.1 numexpr-2.14.2 numpy-2.4.6 packaging-26.3 pandas-3.0.6 patsy-1.0.3 pillow-12.3.0 pluggy-1.6.0 py-cpuinfo-9.0.0 pydantic-2.13.5 pydantic-core-2.46.5 pygments-2.21.0 pymongo-4.18.1 pyparsing-3.3.3 pyprind-2.11.3 pytest-9.1.1 python-dateutil-2.9.0.post0 pytz-2026.3.post1 pyyaml-6.0.3 quandl-3.7.0 referencing-0.37.0 requests-2.34.2 rfc3339-validator-0.1.4 rfc3986-validator-0.1.1 rfc3987-syntax-1.1.0 rich-15.0.0 rpds-py-2026.6.3 schedule-1.2.2 scipy-1.17.1 seaborn-0.13.2 simplejson-4.1.2 six-1.17.0 statsmodels-0.15.0 swagger-spec-validator-3.0.4 tables-3.11.1 threadpoolctl-3.7.0 typing-inspection-0.4.4 typing_extensions-4.16.0 tzdata-2026.4 uri-template-1.3.0 urllib3-2.8.0 webcolors-25.10.0 wrapt-2.4.1
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 33777      4162  90% /
+=== 2026-09-24T03:05:47Z minimal run: the repository's own tests (pytest, as pytest.sh does), and an import of the account curve
+INTERNALERROR>   File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c87/tests/test_portfolio.py", line 1, in <module>
+INTERNALERROR>     import trading.portfolio as portfolio
+INTERNALERROR>   File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c87/trading/portfolio.py", line 10, in <module>
+INTERNALERROR>     sys.exit()
+INTERNALERROR> SystemExit
+mainloop: caught unexpected SystemExit!
+
+no tests ran in 0.52s
+rc=0
+  File "<string>", line 1, in <module>
+  File "/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c87/trading/accountcurve.py", line 5, in <module>
+    import config.settings
+ModuleNotFoundError: No module named 'config.settings'
+=== 2026-09-24T03:06:03Z README steps 1-2 without keys: cp config/settings.py.template config/settings.py; cp config/strategy.py.template config/strategy.py; then the repository's tests
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_portfolio.py::test_curve - Exception: No price data for cur...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 warnings in 1.72s
+rc=0
+=== 2026-09-24T03:56:42Z run: the backtest core trading.accountcurve.accountCurve takes positions= and panama_prices= directly (accountcurve.py 18-45), so it was run on synthetic series without any download: opponents/pytrendfollow_adapter.py through run_battery.py -> survey_results/opp_pytrendfollow.tsv (32 scenes). /dev/vda          258020 35425      2514  94% /

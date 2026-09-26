@@ -1,0 +1,45 @@
+##### from finmarketpy_install.log
+=== 2026-09-23T15:36:11Z inspect finmarketpy
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 28.7 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/finmarketpy/finmarketpy-0.11.19-py3-none-any.whl
+Successfully downloaded finmarketpy
+total 1736
+drwxr-xr-x  2 root root    4096 Sep 23 15:36 .
+drwxr-xr-x 12 root root    4096 Sep 23 15:36 ..
+-rw-r--r--  1 root root 1768401 Sep 23 15:36 finmarketpy-0.11.19-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/finmarketpy/finmarketpy-0.11.19-py3-none-any.whl
+Name: finmarketpy
+Version: 0.11.19
+Home-page: https://github.com/cuemacro/finmarketpy
+Author: Saeed Amen
+Author-email: Saeed Amen <saeed@cuemacro.com>
+Project-URL: repository, https://github.com/cuemacro/finmarketpy
+Requires-Dist: blosc
+Requires-Dist: chartpy
+Requires-Dist: findatapy
+Requires-Dist: matplotlib
+Requires-Dist: numba
+Requires-Dist: numpy <2
+Requires-Dist: pandas >=1.5.3
+Requires-Dist: scikit-learn
+Requires-Dist: seasonal
+=== 2026-09-23T15:36:13Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/finmarketpy
+pip rc=0 elapsed=96s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+140
+=== 2026-09-23T15:37:55Z done
+=== 2026-09-23T16:13:41Z pin plotly==5.24.1, pandas<3 (chartpy が plotly.figure_factory._ohlc を import して plotly 7 で止まったため)
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+rc=0
+=== 2026-09-23T16:42:05Z removed venv finmarketpy to free disk for the remaining installs (battery TSV already written: item0_battery_opp_finmarketpy_scenekeeper.tsv; reinstall = the commands above in this log)
+##### from item0_r5-1_scenekeeper_install_54.log
+=== 2026-09-24T02:47:31Z 54 finmarketpy: the venv the materials person made in round 4 (round_4/materials/logs/finmarketpy_attempt.log) is still present
+/dev/vda          258020 30920      7019  82% /
+Name: finmarketpy
+Version: 0.11.19
+Summary: finmarketpy is a Python based library for backtesting trading strategies
+ERROR: Pipe to stdout was broken

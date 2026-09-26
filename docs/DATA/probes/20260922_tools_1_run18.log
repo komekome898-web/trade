@@ -1,0 +1,816 @@
+=== 区分1 18 回目の実行 生ログ 2026-09-22 ===
+--- 2026-09-22T14:55:23Z method=GET url=https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md label=awesome39 code=200 bytes=90734
+<div align="center">
+  <img src="static/images/awesome-systematic-trading.jpeg" height=200 alt=""/>
+  <h1>Awesome Systematic Trading</h1>
+</div>
+<div align=center><img src="https://awesome.re/badge.sv
+--- 2026-09-22T14:55:39Z method=GET url=https://ungh.cc/repos/zvtvz/zvt code=200 bytes=268
+{"repo":{"id":179451497,"name":"zvt","repo":"zvtvz/zvt","description":"modular quant framework.","createdAt":"2019-04-04T08:06:57Z","updatedAt":"2026-09-21T09:33:46Z","pushedAt":"2026-07-01T09:42:05Z","stars":4311,"watchers":140,"forks":1014,"defaultBranch":"master"}}
+--- 2026-09-22T14:55:39Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader code=200 bytes=434
+{"repo":{"id":163933412,"name":"PandoraTrader","repo":"pegasusTrader/PandoraTrader","description":"高频量化交易平台 C++ Trade Platform for quant developer 【浮生着甚苦奔忙，量化之路阻且长。 行行代码凝心血，十年辛苦不寻常】","createdAt":"2019-01-03T06:39:56Z","updatedAt":"2026-09-21T02:17:45Z","pushedAt":"2025-10-18T08:29:29Z","stars":1472,"watchers":48,"for
+--- 2026-09-22T14:55:40Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame code=200 bytes=574
+{"repo":{"id":64071932,"name":"trade-frame","repo":"rburkholder/trade-frame","description":"C++ 17 based library (with sample applications) for testing equities, futures, currencies, etfs & options based automated trading ideas using DTN IQFeed real time data feed and Interactive Brokers (IB TWS API) for trade execution. libtorch/lstm/cuda demo. Support for Alpaca & Phemex. Notifications via Teleg
+--- 2026-09-22T14:55:41Z method=GET url=https://ungh.cc/repos/QuantFabric/QuantFabric code=200 bytes=281
+{"repo":{"id":573810207,"name":"QuantFabric","repo":"QuantFabric/QuantFabric","description":"QuantFabric主项目","createdAt":"2022-12-03T14:02:20Z","updatedAt":"2026-09-20T11:47:28Z","pushedAt":"2026-08-07T05:57:59Z","stars":264,"watchers":4,"forks":85,"defaultBranch":"master"}}
+--- 2026-09-22T14:55:42Z method=GET url=https://ungh.cc/repos/sreenivasdoosa/sdoosa-algo-trade-python code=200 bytes=320
+{"repo":{"id":289350007,"name":"sdoosa-algo-trade-python","repo":"sreenivasdoosa/sdoosa-algo-trade-python","description":"Algo trade project in python","createdAt":"2020-08-21T19:32:58Z","updatedAt":"2026-09-06T06:49:37Z","pushedAt":"2023-09-19T23:43:45Z","stars":651,"watchers":65,"forks":329,"defaultBranch":"master"}}
+--- 2026-09-22T14:55:42Z method=GET url=https://ungh.cc/repos/HFQR/FlashFunk code=200 bytes=283
+{"repo":{"id":296625545,"name":"FlashFunk","repo":"HFQR/FlashFunk","description":"High Performance Runtime in Rust","createdAt":"2020-09-18T13:14:37Z","updatedAt":"2026-08-27T00:56:38Z","pushedAt":"2025-03-16T03:23:14Z","stars":143,"watchers":10,"forks":42,"defaultBranch":"master"}}
+--- 2026-09-22T14:55:43Z method=GET url=https://ungh.cc/repos/hummingbot/hummingbot code=200 bytes=352
+{"repo":{"id":179163124,"name":"hummingbot","repo":"hummingbot/hummingbot","description":"Open source software that helps you create and deploy high-frequency crypto trading bots","createdAt":"2019-04-02T21:41:52Z","updatedAt":"2026-09-22T14:36:20Z","pushedAt":"2026-09-22T09:07:24Z","stars":20147,"watchers":203,"forks":4951,"defaultBranch":"master"}}
+--- 2026-09-22T14:55:44Z method=GET url=https://ungh.cc/repos/waditu/czsc code=000 bytes=0
+
+--- 2026-09-22T14:55:55Z method=GET url=https://ungh.cc/repos/leosmigel/analyzingalpha code=200 bytes=269
+{"repo":{"id":205188401,"name":"analyzingalpha","repo":"leosmigel/analyzingalpha","description":null,"createdAt":"2019-08-29T14:58:58Z","updatedAt":"2026-08-15T14:15:28Z","pushedAt":"2023-08-08T20:00:14Z","stars":525,"watchers":27,"forks":204,"defaultBranch":"master"}}
+--- 2026-09-22T14:56:09Z method=GET url=https://ungh.cc/repos/waditu/czsc code=200 bytes=327 retry=2nd
+{"repo":{"id":191319306,"name":"czsc","repo":"waditu/czsc","description":"缠中说禅技术分析工具；缠论；股票；期货；Quant；量化交易","createdAt":"2019-06-11T07:38:57Z","updatedAt":"2026-09-22T13:55:09Z","pushedAt":"2026-09-18T20:21:43Z","stars":6255,"watchers":160,"forks":1749,"defaultBranch":"master"}}
+--- 2026-09-22T14:56:16Z method=GET url=https://raw.githubusercontent.com/zvtvz/zvt/master/README.md code=200 bytes=38589
+[![github](https://img.shields.io/github/stars/zvtvz/zvt.svg)](https://github.com/zvtvz/zvt)
+[![image](https://img.shields.io/pypi/v/zvt.svg)](https://pypi.org/project/zvt/)
+[![image](https://img.shie
+--- 2026-09-22T14:56:17Z method=GET url=https://raw.githubusercontent.com/pegasusTrader/PandoraTrader/master/README.md code=200 bytes=49365
+﻿# PandoraTrader
+浮生着甚苦奔忙，量化之路阻且长。
+行行代码凝心血，十年辛苦不寻常。
+## A Trade Platform
+
+
+### 起名由来：
+据百度百科介绍，Pandora 是希腊
+--- 2026-09-22T14:56:17Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/README.md code=200 bytes=11935
+# trade-frame
+
+## Introduction
+
+This is a:
+* library of functions to sink market data, organize time series, build indicators, author algorithms, and issue orders to a broker for high-capacity, low-la
+--- 2026-09-22T14:56:18Z method=GET url=https://raw.githubusercontent.com/QuantFabric/QuantFabric/master/README.md code=200 bytes=17711
+## QuantFabric开发学习参考资料
+- **[《量化IT工程师实战》课程](https://lhitjs.360dhf.cn/video)**
+- **[《量化IT》专栏](https://blog.csdn.net/a642960662/category_11641151.html)**
+--- 2026-09-22T14:56:18Z method=GET url=https://raw.githubusercontent.com/sreenivasdoosa/sdoosa-algo-trade-python/master/README.md code=200 bytes=405
+# sdoosa-algo-trade-python
+
+This project is mainly for newbies into algo trading who are interested in learning to code their own trading algo using python interpreter.
+
+This is in the context of Indi
+--- 2026-09-22T14:56:18Z method=GET url=https://raw.githubusercontent.com/HFQR/FlashFunk/master/README.md code=404 bytes=14
+404: Not Found
+--- 2026-09-22T14:56:18Z method=GET url=https://raw.githubusercontent.com/hummingbot/hummingbot/master/README.md code=200 bytes=16992
+![Hummingbot](https://github.com/user-attachments/assets/3213d7f8-414b-4df8-8c1b-a0cd142a82d8)
+
+----
+[![License](https://img.shields.io/badge/License-Apache%202.0-informational.svg)](https://github.co
+--- 2026-09-22T14:56:19Z method=GET url=https://raw.githubusercontent.com/waditu/czsc/master/README.md code=200 bytes=16700
+# czsc - 缠中说禅技术分析工具
+
+[![Downloads](https://static.pepy.tech/personalized-badge/czsc?period=total&units=international_system&left_color=red&right_color=orange&left_text=Downloads/To
+--- 2026-09-22T14:56:19Z method=GET url=https://raw.githubusercontent.com/leosmigel/analyzingalpha/master/README.md code=200 bytes=129
+version https://git-lfs.github.com/spec/v1
+oid sha256:6dcc0e6f7f8f60dc24db05afd6d81f08bd6b197d19a6a2e855091e3567194392
+size 1077
+
+--- 2026-09-22T14:56:27Z method=GET url=https://ungh.cc/repos/zvtvz/zvt/files/master code=200 bytes=72485
+{"meta":{"sha":"8509990e6608750d0c08fa748682cc997d2813cc"},"files":[{"path":".coveragerc","mode":"100644","sha":"561a370b39ddea36912c4d99e96030cfb59cff76","size":113},{"path":".github/workflows/build.
+--- 2026-09-22T14:56:28Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader/files/master code=200 bytes=30756
+{"meta":{"sha":"517f1aa41e57806797a88dff39eb568126da131d"},"files":[{"path":".gitignore","mode":"100644","sha":"a3b5954a54efe8be0f60f12f1477b6074043932c","size":263},{"path":"CMakeLists.txt","mode":"1
+--- 2026-09-22T14:56:29Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame/files/master code=200 bytes=243155
+{"meta":{"sha":"363ccda6faf8264c9c07ea50779de27ecc06b5b0"},"files":[{"path":".gitignore","mode":"100644","sha":"d5a4d32a70202c3193e6ada97fa37edeacfe69fc","size":1637},{"path":".vscode/launch.json","mo
+--- 2026-09-22T14:56:30Z method=GET url=https://ungh.cc/repos/QuantFabric/QuantFabric/files/master code=200 bytes=7594
+{"meta":{"sha":"9f5f50c71aca45f80a0e370a739202d6cfb11019"},"files":[{"path":".github/workflows/mdbook.yml","mode":"100644","sha":"109cc83360af60e8674a65343a5690770cbdc8fc","size":1654},{"path":".gitig
+--- 2026-09-22T14:56:30Z method=GET url=https://ungh.cc/repos/sreenivasdoosa/sdoosa-algo-trade-python/files/master code=000 bytes=0
+
+--- 2026-09-22T14:57:00Z method=GET url=https://ungh.cc/repos/HFQR/FlashFunk/files/master code=200 bytes=3133
+{"meta":{"sha":"46b03a2ea2f552d4d95100486459fd943dce2131"},"files":[{"path":".github/workflows/rust.yml","mode":"100755","sha":"6c0e7bd3bdf0b09dfb9362e8782ee3af72a310d8","size":1679},{"path":".gitigno
+--- 2026-09-22T14:57:01Z method=GET url=https://ungh.cc/repos/hummingbot/hummingbot/files/master code=200 bytes=282832
+{"meta":{"sha":"9af100d6822da7d2d0291a906c730ef172284ee2"},"files":[{"path":".coveragerc","mode":"100644","sha":"003565b10ac8c11bda5580ab439c2a7320704736","size":1916},{"path":".dockerignore","mode":"
+--- 2026-09-22T14:57:03Z method=GET url=https://ungh.cc/repos/waditu/czsc/files/master code=200 bytes=85865
+{"meta":{"sha":"701e480a545004f945bb1721e510ae610ad90c4c"},"files":[{"path":".cargo/config.toml","mode":"100644","sha":"44fe421cdcc451ad47faecdc58969edcbcc03dbe","size":27},{"path":".claude/settings.j
+--- 2026-09-22T14:57:03Z method=GET url=https://ungh.cc/repos/leosmigel/analyzingalpha/files/master code=200 bytes=117302
+{"meta":{"sha":"9e68d547a4c1027e2b5eea200e5a8a8d4236a267"},"files":[{"path":".gitattributes","mode":"100644","sha":"97dde709a776f45b702cf9f9ef1ff7a864368374","size":255},{"path":".gitignore","mode":"1
+--- 2026-09-22T14:57:14Z method=GET url=https://ungh.cc/repos/sreenivasdoosa/sdoosa-algo-trade-python/files/master code=200 bytes=5618 retry=2nd
+{"meta":{"sha":"fd119b12b7f5176d4d5274120edaad2c59b2b5b8"},"files":[{"path":".gitignore","mode":"100644","sha":"ed8ebf583f771da9150c35db3955987b7d757904","size":11},{"path":"README.md","mode":"100644"
+--- 2026-09-22T14:57:22Z method=grep target=READMEs pattern=6elements
+===== FlashFunk
+===== PandoraTrader
+34:  - Tick级别回测
+51:Pandora策略平台，通过回测交易接口，SimTrade API和SimMdAPI,可以连接到回测平台（PandoraSimulator）。
+66:                  策略平台(内嵌风控)                                        回测模拟系统
+70:        |     Pandora Basic Strategy     |                       |    PandoraSimulator   |
+89:该平台对交易策略进行抽象，提供统一的中间层接口给策略，策略需要的信息都通过平台提供的中间层进行访问，不关注交易接口的细节，从而实现策略开发和交易接口开发的分离。同一个策略通过调整交易接口组件，改变交易柜台，甚至是进行回测模拟。可以有效验证策略逻辑的正确性。
+138:		├─PandoraSimulator-------------------------------------------回测验证程序
+139:		│      PandoraSimulator.vcxproj
+140:		│      PandoraSimulator.vcxproj.user
+141:		│      PandoraSimulator.vcxproj.filters
+142:		│      PandoraSimulator.cpp----------------------------------回测平台主程序，负责实例化回测系统，包括策略，模拟交易模块和模拟撮合等
+143:		│      HisMarketDataIndex.xml--------------------------------回测历史数据文件表
+144:		│      PandoraSimulatorConfig.xml----------------------------回测使用配置文件
+161:		   └─lib-----------------------------------------------------回测模拟器和策略的库文件
+202:2. 通过 PandoraTrader.sln 打开项目组，其中包含了交易平台 PandoraTrader， 策略库工程PandoraStrategy 和回测平台 PandoraSimulator，详细如目录结构所示。
+===== QuantFabric
+120:- 基础工具模块，提供交易系统不同组件共用的工具模块，如配置加载模块、HPPackClient客户端、HPPackServer服务端、SQLiteManager数据库操作、Singleton单例、Logger日志、RingBuffer、LockFreeQueue无锁队列、IPCMarketQueue行情消息队列、IPCLockFreeQueue内存队列、SnapShotHelper快照工具、时间戳函数、字符串工具函数、不同组件消息通信协议。
+124:- 第三方库，包括SPDLog日志库、HPSocket通信框架、YAML-CPP解析库、CTP柜台API、REM柜台API、YD柜台API、ConcurrentQueue并发队列、OES柜台API。
+154:  - 接收XTrader报单回报、撤单回报，管理订单状态，Ticker交易日内累计撤单计数。
+219:  spscqueue.cpython-39-x86_64-linux-gnu.so
+238:- 基于XMarketCenter、XRiskJudge、XTrader、XQuant(C++)交易组件构成的多进程中高频交易系统Tick2Order中位数在50-60us，使用AMD EPYC 7K62 CPU进行测试，主频2600MHZ。
+239:- 如果需要更低延迟，请绑定XMarketCenter、XRiskJudge、XTrader、XQuant(C++)交易组件的关键线程到CPU，并尽可能使用高频交易服务器，超频至4.8GHZ以上，Tick2Order中位数可以降低至20us以下。
+256:Perf Indicator:Tick2Order (ns)
+294:- Market插件：展示所有接收Ticker的行情数据。如下：
+303:- RiskJudge插件：风控系统提供程序化交易报备合规风控要求，包括流速限制，账户/合约锁定和恢复交易，交易指令检查(合约有效性、价格、数量)，防自成交，Ticker撤单限制、订单撤单限制、订单申报次数限制，策略层面合约持仓限制，账户层面合约持仓限制和净持仓限制；双击可修改风控限制参数。如下：
+===== analyzingalpha
+===== czsc
+46:│   ├── CZSC / FX / BI / ZS / RawBar / NewBar / BarGenerator
+56:├── czsc.mock             ← 测试用模拟数据（转发自 wbt）
+71:* HTML 可视化（plotly + lightweight-charts）：`czsc.utils.plotting.{kline,weight,lightweight}.*`
+120:from czsc import CZSC, Freq, format_standard_kline
+123:# 生成模拟 K 线数据
+124:df = generate_symbol_kines('000001', '30分钟', '20240101', '20240601')
+126:# 转换为 RawBar 对象列表
+127:bars = format_standard_kline(df, freq=Freq.F30)
+130:czsc_obj = CZSC(bars)
+138:from czsc import BarGenerator, Freq
+140:# 使用 BarGenerator 进行 K 线合成
+141:bg = BarGenerator(base_freq='1分钟', freqs=['5分钟', '30分钟', '日线'])
+142:for bar in raw_bars:
+143:    bg.update(bar)
+===== hummingbot
+55:Then create a config and run the `simple_pmm` **paper trading script** — it simulates trading against live Binance market data, so no API keys are required:
+113:* **[Controllers](./controllers)**: Reusable V2 strategies whose configs can be backtested, deployed, and tuned live while running. Example: [`pmm_mister.py`](./controllers/generic/pmm_mister.py), a full-featured market making controller.
+114:* **[Executors](./hummingbot/strategy_v2/executors)**: Self-contained building blocks that manage order lifecycles for common patterns — position, DCA, grid, arbitrage, XEMM, TWAP, and LP. Example: [`position_executor`](./hummingbot/strategy_v2/executors/position_executor), which manages a directional position with triple-barrier risk controls.
+===== sdoosa-algo-trade-python
+===== trade-frame
+13:Positions are composed of a [Watch](lib/TFTrading/Watch.h) class to record bid/ask/tick of [Instruments](lib/TFTrading/Instrument.h).
+17:A [Simulation Interface](lib/TFSimulation/SimulationInterface.hpp) is provided for testing strategies off-line.  The simulator will accept [Orders](lib/TFTrading/Order.h) of type Market and Limit assuming bid/ask data has been captured from the exchange during a live session.  A 50ms - 100ms delay queue has been implemented to better simulate round-trip and slippage effects of order submission.
+172:* [TFSimulation](lib/TFSimulation) - simulation engine
+186:* [BarChart](BarChart/README.md) - tag instruments by interest and review last 200 daily bars
+188:* [Collector](Collector/README.md) - stream real time bid/ask/tick data to disk for use in backtesting and training
+198:* [SP500](SP500/README.md) - Backtest SPY symbol with support of ticks_ratio using libtorch LSTM based model to train/predict on Collector data
+202:* StickShift2 - some rough code for some option trading ideas
+===== zvt
+34:> It's good for backtest and research, but it is not applicable for real-time market data and user interaction.
+62:https://github.com/zvtvz/zvt/blob/master/src/zvt/tasks/qmt_tick_runner.py
+448:The so-called strategy backtesting is nothing but repeating the following process：
+450:#### At a certain time, find the targets which matching conditions, buy and sell them, and see the performance.
+609:Combining the stock picker and backtesting, the whole process is as follows:
+--- 2026-09-22T14:57:34Z method=jq-paths target=FlashFunk,analyzingalpha,sdoosa,QuantFabric
+== FlashFunk
+.github/workflows/rust.yml
+.gitignore
+Cargo.toml
+core/Cargo.toml
+core/benches/channel.rs
+core/src/api.rs
+core/src/builder.rs
+core/src/lib.rs
+core/src/strategy.rs
+core/src/util/async_runtime/mod.rs
+core/src/util/async_runtime/park.rs
+core/src/util/async_runtime/runtime.rs
+core/src/util/async_runtime/waker.rs
+core/src/util/channel.rs
+core/src/util/fx_hasher.rs
+core/src/util/mod.rs
+core/src/util/no_hasher.rs
+core/src/util/spin.rs
+core/src/util/spsc.rs
+core/src/worker.rs
+examples/Cargo.toml
+examples/src/log.rs
+examples/src/websocket.rs
+log/Cargo.toml
+log/src/lib.rs
+log/src/no_op.rs
+log/src/value.rs
+readme.md
+== sdoosa-algo-trade-python
+.gitignore
+README.md
+config/brokerapp.json
+config/holidays.json
+config/server.json
+config/system.json
+src/Test.py
+src/config/Config.py
+src/core/Algo.py
+src/core/Controller.py
+src/core/Quotes.py
+src/instruments/Instruments.py
+src/loginmgmt/BaseLogin.py
+src/loginmgmt/ZerodhaLogin.py
+src/main.py
+src/models/BrokerAppDetails.py
+src/models/Direction.py
+src/models/OrderStatus.py
+src/models/OrderType.py
+src/models/ProductType.py
+src/models/Quote.py
+src/models/Segment.py
+src/models/TickData.py
+src/ordermgmt/BaseOrderManager.py
+src/ordermgmt/Order.py
+src/ordermgmt/OrderInputParams.py
+src/ordermgmt/OrderModifyParams.py
+src/ordermgmt/ZerodhaOrderManager.py
+src/restapis/BrokerLoginAPI.py
+src/restapis/HoldingsAPI.py
+src/restapis/HomeAPI.py
+src/restapis/PositionsAPI.py
+src/restapis/StartAlgoAPI.py
+src/strategies/BNFORB30Min.py
+src/strategies/BaseStrategy.py
+src/strategies/OptionSelling.py
+src/strategies/SampleStrategy.py
+src/strategies/ShortStraddleBNF.py
+src/templates/index.html
+src/templates/index_algostarted.html
+src/templates/index_loggedin.html
+src/ticker/BaseTicker.py
+src/ticker/ZerodhaTicker.py
+src/trademgmt/Trade.py
+src/trademgmt/TradeEncoder.py
+src/trademgmt/TradeExitReason.py
+src/trademgmt/TradeManager.py
+src/trademgmt/TradeState.py
+src/utils/Utils.py
+== QuantFabric
+.github/workflows/mdbook.yml
+.gitignore
+.gitmodules
+CMakeLists.txt
+LICENSE
+QuantFabric-Development.pdf
+README.md
+book.toml
+build_clear.sh
+build_release.sh
+doc/MDBOOK_GUIDE.md
+doc/README.md
+doc/SUMMARY.md
+doc/architecture/SystemArchitecture.md
+doc/deployment/DeploymentGuide.md
+doc/faq.md
+doc/glossary.md
+doc/modules/SHMServer.md
+doc/modules/SHMServer/01_Architecture.md
+doc/modules/SHMServer/README.md
+doc/modules/Utils/00_Overview.md
+doc/modules/Utils/README.md
+doc/modules/XAPI.md
+doc/modules/XMarketCenter.md
+doc/modules/XMarketCenter/01_DesignPhilosophy.md
+doc/modules/XMarketCenter/02_TechnicalImplementation.md
+doc/modules/XMarketCenter/03_PluginDevelopment.md
+doc/modules/XMarketCenter/README.md
+doc/modules/XMonitor.md
+doc/modules/XMonitor/01_GUI_Architecture.md
+doc/modules/XMonitor/README.md
+doc/modules/XQuant/00_Overview.md
+doc/modules/XQuant/README.md
+doc/modules/XRiskJudge/00_Overview.md
+doc/modules/XRiskJudge/README.md
+doc/modules/XServer.md
+doc/modules/XServer/01_Middleware Architecture.md
+doc/modules/XServer/README.md
+doc/modules/XTrader.md
+doc/modules/XTrader/01_DesignArchitecture.md
+doc/modules/XTrader/02_TechnicalImplementation.md
+doc/modules/XTrader/03_PluginDevelopment.md
+doc/modules/XTrader/README.md
+doc/modules/XWatcher/00_Overview.md
+doc/modules/XWatcher/README.md
+images/BuySellMenu.png
+images/ClosePositionMenu.png
+images/DaBanMenu.png
+images/EventLog.png
+images/FutureAnalysis.png
+images/HFTraderThread.png
+images/HuiFengBanMenu.png
+images/Market.png
+images/Monitor.png
+images/OrderManager.png
+images/PaiBanMenu.png
+images/Permission.png
+images/QuantFabric.png
+images/RiskJudge.png
+images/SaoBanMenu.png
+images/StockAnalysis.png
+images/StrikeBoarder.png
+images/StrikeBoarderThread.png
+images/compile_error.png
+images/wechat_pay.jpg
+--- 2026-09-22T14:57:45Z method=GET url=https://raw.githubusercontent.com/HFQR/FlashFunk/master/readme.md code=200 bytes=130
+<div align="center">
+  <h1>FlashFunk</h1>
+  <p>
+    <strong>high performance runtime for low-latency</strong>
+  </p>
+</div>
+
+--- 2026-09-22T14:57:46Z method=GET url=https://raw.githubusercontent.com/leosmigel/analyzingalpha/master/README.md code=200 bytes=129
+version https://git-lfs.github.com/spec/v1
+oid sha256:6dcc0e6f7f8f60dc24db05afd6d81f08bd6b197d19a6a2e855091e3567194392
+size 1077
+
+--- 2026-09-22T14:57:46Z method=GET url=https://raw.githubusercontent.com/hummingbot/hummingbot/master/hummingbot/strategy_v2/backtesting/backtesting_engine_base.py code=200 bytes=39071
+import importlib
+import inspect
+import os
+from collections import deque
+from decimal import Decimal
+from typing import Deque, Dict, List, Optional, Type, Union
+
+import numpy as np
+import pandas as pd
+import yaml
+
+from hummingbot.client import settings
+from hummingbot.core.data_type.common import Laz
+--- 2026-09-22T14:57:46Z method=GET url=https://raw.githubusercontent.com/hummingbot/hummingbot/master/hummingbot/strategy_v2/backtesting/backtesting_data_provider.py code=200 bytes=8823
+import logging
+from decimal import Decimal
+from typing import Dict, Optional
+
+import pandas as pd
+
+from hummingbot.client.config.config_helpers import get_connector_class
+from hummingbot.client.settings import AllConnectorSettings, ConnectorType
+from hummingbot.connector.connector_base import Connec
+--- 2026-09-22T14:57:54Z method=cat target=rm_FlashFunk,rm_analyzingalpha
+== FlashFunk readme.md 全文
+<div align="center">
+  <h1>FlashFunk</h1>
+  <p>
+    <strong>high performance runtime for low-latency</strong>
+  </p>
+</div>
+== analyzingalpha README.md 全文
+version https://git-lfs.github.com/spec/v1
+oid sha256:6dcc0e6f7f8f60dc24db05afd6d81f08bd6b197d19a6a2e855091e3567194392
+size 1077
+--- 2026-09-22T14:57:54Z method=grep target=hummingbot backtesting_engine_base.py
+14:from hummingbot.data_feed.candles_feed.data_types import CandlesConfig
+106:        """Add an executor's filled position to this hold."""
+108:        amount_base = executor_info.filled_amount_quote / entry_price
+109:        amount_quote = executor_info.filled_amount_quote
+172:        self.backtesting_resolution = None
+224:                              backtesting_resolution: str = "1m",
+233:        # Load historical candles
+237:                                           actions_queue=None)
+238:        self.backtesting_resolution = backtesting_resolution
+263:            interval=self.backtesting_resolution
+265:        await self.controller.market_data_provider.initialize_candles_feed(backtesting_config)
+266:        for config in self.controller.get_candles_config():
+267:            await self.controller.market_data_provider.initialize_candles_feed(config)
+297:        # it a maker order created and filled on the last row reached the ledger as a
+298:        # POSITION_HOLD whose exposure no BacktestPositionHold ever accounted for, so its fill
+343:        executor: a market maker on top of OrderExecutor sees a *filled* maker order as a
+421:                self._cumulative_volume += float(executor_info.filled_amount_quote)
+422:                if executor_info.close_type == CloseType.POSITION_HOLD and executor_info.filled_amount_quote > 0:
+424:                    # whose maker order filled) keep their position. Route them to the
+450:        Prepares market data by merging candle data with strategy features, filling missing values.
+455:        backtesting_candles = self.controller.market_data_provider.get_candles_df(
+458:            interval=self.backtesting_resolution
+462:            backtesting_candles["reference_price"] = backtesting_candles["close_bt"]
+463:            backtesting_candles["spread_multiplier"] = 1
+464:            backtesting_candles["signal"] = 0
+--- 2026-09-22T14:58:03Z method=grep target=hummingbot fill/vector/loop
+241:        executors_info = await self.simulate_execution(trade_cost=trade_cost)
+269:    async def simulate_execution(self, trade_cost: float) -> list:
+282:        for i, row in processed_features.iterrows():
+324:        This is what ``simulate_execution`` returns and what the results are summarized from, so
+610:            non_hold_mask = executors_df["close_type"] != CloseType.POSITION_HOLD
+611:            non_hold_executors = executors_df[non_hold_mask]
+613:            total_fees_quote = float(executors_df["cum_fees_quote"].sum())
+628:            executors_df["close_type_name"] = executors_df["close_type"].apply(lambda x: x.name)
+--- 2026-09-22T14:58:03Z method=grep target=zvt README backtest
+* What data is there?
+* How to record data?
+* How to query data?
+
+For more advanced usage and extended data, please refer to the data section in the detailed document.
+
+### Write strategy
+Now we could write strategy basing on TradableEntity and EntityEvent.
+The so-called strategy backtesting is nothing but repeating the following process：
+
+#### At a certain time, find the targets which matching conditions, buy and sell them, and see the performance.
+
+Two modes to write strategy:
+* solo (free style)
+
+At a certain time, calculate conditions according to the events, buy and sell
+
+* formal
+
+The calculation model of the two-dimensional index and multi-entity
+
+#### a too simple,sometimes naive person (solo)
+Well, this strategy is really too simple,sometimes naive, as we do most of the time.
+> When the report comes out, I look at the report. 
+> If the institution increases its position by more than 5%, I will buy it, and if the institution reduces its position by more than 50%, I will sell it.
+
+Show you the code:
+```
+# -*- coding: utf-8 -*-
+import pandas as pd
+
+--- 2026-09-22T14:58:15Z method=grep target=zvt,czsc,trade-frame,PandoraTrader 6elements
+== zvt IntervalLevel/kdata
+42:> The example shown here relies on data, factor, trader, please read [docs](https://zvt.readthedocs.io/en/latest/)
+45:<p align="center"><img src='https://raw.githubusercontent.com/zvtvz/zvt/master/docs/imgs/zvt-trader.png'/></p>
+102:>>> from zvt.domain import Stock, Stock1dHfqKdata
+106:>>> Stock1dHfqKdata.record_data(provider="em", entity_ids=entity_ids, sleeping_time=1)
+242:{entity_shema}{level}{adjust_type}Kdata
+250:>>> for level in IntervalLevel:
+264:>>> Stock1dKdata.record_data(code='000338', provider='em')
+265:>>> df = Stock1dKdata.query_data(code='000338', provider='em')
+283:>>> Stockus1dKdata.record_data(code='AAPL', provider='em')
+284:>>> df = Stockus1dKdata.query_data(code='AAPL', provider='em')
+305:>>> Stock1dHfqKdata.record_data(code='000338', provider='em')
+306:>>> df = Stock1dHfqKdata.query_data(code='000338', provider='em')
+== czsc 回测/backtest
+71:* HTML 可视化（plotly + lightweight-charts）：`czsc.utils.plotting.{kline,weight,lightweight}.*`
+169:### 权重回测
+172:from czsc import WeightBacktest
+173:from czsc.mock import generate_klines_with_weights
+176:dfw = generate_klines_with_weights(seed=42)
+178:# 运行权重回测
+179:wb = WeightBacktest(dfw, fee_rate=0.0002)
+180:print(wb.stats)  # 回测统计汇总
+195:### 缠论可视化与回测报告
+199:from czsc.utils.plotting.lightweight import plot_czsc, plot_czsc_trader
+204:# 回测 HTML 报告：用 wbt.generate_backtest_report 一键产出
+205:from wbt import generate_backtest_report
+== trade-frame simulation 逐語
+Positions are composed of a [Watch](lib/TFTrading/Watch.h) class to record bid/ask/tick of [Instruments](lib/TFTrading/Instrument.h).
+
+[Options](lib/TFOptions/Option.h) inherit from the Watch class to provide [Greeks](lib/TFTimeSeries/DatedDatum.h), which are computed in real time with an [Option Engine](lib/TFOptions/Engine.hpp).
+
+A [Simulation Interface](lib/TFSimulation/SimulationInterface.hpp) is provided for testing strategies off-line.  The simulator will accept [Orders](lib/TFTrading/Order.h) of type Market and Limit assuming bid/ask data has been captured from the exchange during a live session.  A 50ms - 100ms delay queue has been implemented to better simulate round-trip and slippage effects of order submission.
+
+## Example
+
+== PandoraTrader Tick级别回测 逐語
+  - 跨平台支持Linux和Windows
+  - 友好策略接口，只需关注策略逻辑
+  - 仓位挂单等信息本地维护，策略可同步获取，简化逻辑
+  - 支持自动开平模式
+  - Tick级别回测
+
+  **安全稳定**
+   - 2017年初稳定运行至今
+   - 内嵌风控，撤单次数和自成交不再成烦恼
+
+   
+== QuantFabric 回测/模拟
+(QuantFabric hits above)
+--- 2026-09-22T14:58:28Z method=GET url=https://raw.githubusercontent.com/pegasusTrader/PandoraTrader/master/PandoraSimulator/PandoraSimulator.cpp code=200 bytes=4325
+// cwPegasusSimulator.cpp : Defines the entry point for the  Pandora Simulator console application.
+//
+//For more information, please visit https://github.com/pegasusTrader/PandoraTrader
+//
+//��������
+--- 2026-09-22T14:58:28Z method=GET url=https://raw.githubusercontent.com/waditu/czsc/master/czsc/traders/weight_backtest.py code=404 bytes=14
+404: Not Found
+--- 2026-09-22T14:58:29Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulationInterface.hpp code=200 bytes=10608
+/************************************************************************
+ * Copyright(c) 2023, One Unified. All rights reserved.                 *
+ *                                                  
+--- 2026-09-22T14:58:37Z method=grep target=pt_sim.cpp,tf_sim.hpp
+== PandoraSimulator.cpp grep
+1:// cwPegasusSimulator.cpp : Defines the entry point for the  Pandora Simulator console application.
+16:#include "cwPegasusSimulator.h"
+21:#include "cwSimMdSpi.h"
+24:#include "cwSimTradeSpi.h"
+41:cwPegasusSimulator		m_PegasusSimulator;
+46:cwSimMdSpi				m_mdCollector;
+49:cwSimTradeSpi			m_TradeChannel;
+59:	m_TradeChannel.Connect(&m_PegasusSimulator);
+72:	m_mdCollector.Connect(&m_PegasusSimulator);
+75:	m_PegasusSimulator.SimulationStart();
+84:	m_cwShow.AddLog("Welcome To Pandora Simulator !!");
+116:	strFullPath.append("\\PandoraSimulatorConfig.xml");
+118:	strFullPath.append("/PandoraSimulatorConfig.xml");
+124:	m_PegasusSimulator.InitialSimulator(strFullPath.c_str());
+127:	m_PegasusSimulator.SetMdSpi((void*)dynamic_cast<cwBasicMdSpi*>(&m_mdCollector));
+129:	m_PegasusSimulator.SetMdSpi((void*)(&m_mdCollector));
+132:	m_PegasusSimulator.SetTradeSpi((void*)&m_TradeChannel);
+145:			m_PegasusSimulator.m_CurrentTradingDay,
+146:			m_PegasusSimulator.m_CurrentSimulationTime,
+147:			m_PegasusSimulator.m_cwSettlement.m_dBalance,
+== tf_sim.hpp grep
+32:namespace tf { // TradeFrame
+65:  virtual void AddQuoteHandler( pInstrument_cref pInstrument, typename S::quotehandler_t );
+66:  virtual void RemoveQuoteHandler( pInstrument_cref pInstrument, typename S::quotehandler_t );
+67:  virtual void AddTradeHandler( pInstrument_cref pInstrument, typename S::tradehandler_t );
+68:  virtual void RemoveTradeHandler( pInstrument_cref pInstrument, typename S::tradehandler_t );
+70:  virtual void AddDepthByMMHandler( pInstrument_cref pInstrument, typename S::depthbymmhandler_t );
+71:  virtual void RemoveDepthByMMHandler( pInstrument_cref pInstrument, typename S::depthbymmhandler_t );
+72:  virtual void AddDepthByOrderHandler( pInstrument_cref pInstrument, typename S::depthbyorderhandler_t );
+73:  virtual void RemoveDepthByOrderHandler( pInstrument_cref pInstrument, typename S::depthbyorderhandler_t );
+83:  struct EventHolders {
+86:    EventHolders( pSymbol_t pSymbol_ )
+88:    EventHolders( EventHolders&& rhs )
+92:  using mapOrderExecution_t = std::unordered_map<std::string,EventHolders>;
+95:  using fOrderExecution_t = std::function<void(EventHolders&)>;
+104:      EventHolders& eh( iter->second );
+119:      auto pair = m_mapOrderExecution.emplace( sName, EventHolders( pSymbol ) );
+122:      EventHolders& eh( iter->second );
+137:void SimulationInterface<P,S>::AddQuoteHandler( pInstrument_cref pInstrument, typename S::quotehandler_t handler ) {
+139:  inherited_t::AddQuoteHandler( pInstrument, handler ); // needs to come first
+144:    [this,&pInstrument]( EventHolders& eh ){
+--- 2026-09-22T14:58:55Z method=GET url=https://raw.githubusercontent.com/waditu/czsc/master/czsc/traders/__init__.py code=200 bytes=2006
+"""czsc.traders —— 交易员（trader）命名空间的统一入口模块。
+
+本模块在 Rust/Python 混合架构下扮演"门面（facade）"角色，把交易相关公共
+API 重新汇聚到一个稳定的导入路径上，方便上层业务以 ``from czsc.traders
+import XXX`` 的方式直�
+--- 2026-09-22T14:58:56Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/lib/TFSimulation/SimulateOrderExecution.hpp code=200 bytes=6043
+/************************************************************************
+ * Copyright(c) 2009, One Unified. All rights reserved.                 *
+ * email: info@oneunified.net                                           *
+ *                                                                      *
+
+--- 2026-09-22T14:59:06Z method=grep target=tf_soe.hpp
+36:namespace tf { // TradeFrame
+51:  using OnOrderFillHandler = FastDelegate2<Order::idOrder_t, const Execution&>;
+52:  void SetOnOrderFill( OnOrderFillHandler function ) {
+53:    OnOrderFill = function;
+64:  void SetOrderDelay( const time_duration &dtOrderDelay ) { m_dtQueueDelay = dtOrderDelay; };
+67:  void NewQuote( const Quote& quote );
+70:  void NewTrade( const Trade& trade );
+97:  struct QueuedCancelOrder {
+100:    QueuedCancelOrder( const ptime &dtCancellation_, unsigned long nOrderId_ )
+103:  boost::posix_time::time_duration m_dtQueueDelay; // used to simulate network / handling delays
+106:  Quote m_lastQuote;
+109:  OnOrderFillHandler OnOrderFill;
+113:  using lOrderQueue_t = std::list<pOrder_t>;
+114:  using lOrderQueue_iter_t = lOrderQueue_t::iterator;
+116:  std::list<QueuedCancelOrder> m_lCancelDelay; // separate structure for the cancellations, since not an order
+118:  lOrderQueue_t m_lOrderDelay;  // all orders put in delay queue, taken out then processed as limit or market or stop
+119:  lOrderQueue_t m_lOrderMarket;  // market orders to be processed
+129:  void ProcessOrderQueues( const Quote& quote );
+130:  void CalculateCommission( Order&, Trade::tradesize_t quan );
+131:  void ProcessCancelQueue( const Quote& quote );
+132:  void ProcessDelayQueue( const Quote& quote );
+133:  void ProcessStopOrders( const Quote& quote ); // true if order executed, not yet implemented
+134:  bool ProcessMarketOrders( const Quote& quote ); // true if order executed
+135:  bool ProcessLimitOrders( const Quote& quote ); // true if order executed
+136:  bool ProcessLimitOrders( const Trade& trade );
+--- 2026-09-22T14:59:06Z method=GET url=https://pypi.org/pypi/wbt/json code=200 bytes=145605
+{"info":{"author":null,"author_email":null,"bugtrack_url":null,"classifiers":[],"description":"# wbt Python Package\n\nPython API for the wbt Rust backtesting engine.\n\n[中文文档](README_CN.md)\n
+--- 2026-09-22T14:59:06Z method=GET url=https://pypi.org/pypi/czsc/json code=200 bytes=273914
+{"info":{"author":null,"author_email":"zengbin93 <zeng_bin8888@163.com>","bugtrack_url":null,"classifiers":["License :: OSI Approved :: Apache Software License","Programming Language :: Python :: 3.10
+--- 2026-09-22T14:59:32Z method=GET url=https://www.backtestingmax.com/pricing/ code=200 bytes=7962
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/btm_logo.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" 
+--- 2026-09-22T14:59:32Z method=GET url=https://ungh.cc/repos/peernagy/lob_bench code=200 bytes=328
+{"repo":{"id":778296246,"name":"lob_bench","repo":"peernagy/lob_bench","description":"Benchmarking library for generative models of Limit Order Book data (LOBSTER)","createdAt":"2024-03-27T13:07:36Z",
+--- 2026-09-22T14:59:33Z method=GET url=https://raw.githubusercontent.com/peernagy/lob_bench/main/README.md code=200 bytes=5474
+# LOB‑Bench
+
+*Benchmarking generative models for **Limit Order Book** data*
+
+---
+
+## Table of Contents
+1. [Why LOB‑Bench?](#why)
+2. [Library Architecture](#arch)
+3. [Installation](#installat
+--- 2026-09-22T14:59:33Z method=GET url=https://ungh.cc/repos/peernagy/lob_bench/files/main code=200 bytes=2888
+{"meta":{"sha":"276baf3039bf7630b555891b9d04ad49a92b3356"},"files":[{"path":".gitignore","mode":"100644","sha":"72c85d6434145d71c12ad0f6cd1fcf63fa1eb4a0","size":521},{"path":"README.md","mode":"100644
+--- 2026-09-22T14:59:41Z method=grep target=bmax_pricing,lob_bench
+== backtestingmax pricing text
+ <!-- No site-wide canonical here: it made every page claim to be the homepage, which
+ would collapse the per-strategy pages under /strategy/ into one. SEO.tsx emits a
+ per-page canonical for SPA routes; api/strategy.js emits its own server-side;
+ scripts/prerender.mjs writes one into each route's static HTML. -->
+ window.dataLayer = window.dataLayer || [];
+ function gtag() { dataLayer.push(arguments); }
+ gtag('js', new Date());
+ // Defer config to improve INP
+ window.addEventListener('load', function () {
+ setTimeout(function () {
+ gtag('config', 'G-3SR4ND85ZS');
+ }, 100);
+ });
+ <!-- "summary", not "summary_large_image": the default image is the square logo. SEO.tsx
+ switches to the large card on pages that pass a real share image. -->
+ <link href="https://fonts.googleapis.com/css2?family=TASA+Orbiter:wght@400..800&display=swap" rel="stylesheet"
+ media="print" onload="this.media='all'">
+ /* @import url('https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&display=swap'); */
+ /* @import url('https://fonts.googleapis.com/css2?family=Libertinus+Mono&display=swap'); */
+ {
+ "@context": "https://schema.org",
+ "@type": "Organization",
+ "name": "BacktestingMax",
+ "url": "https://www.backtestingmax.com",
+ "logo": "https://www.backtestingmax.com/btm_logo.png",
+ "description": "Free backtesting software for traders. Test trading strategies with professional-grade tools and historical data.",
+ "contactPoint": {
+ "@type": "ContactPoint",
+ "email": "support@backtestingmax.com",
+ "contactType": "customer support"
+ },
+ "sameAs": [
+ "https://discord.gg/gHVvU7WYjE"
+ ]
+ }
+ <!-- Structured Data: SoftwareApplication. Homepage only (data-home): it used to ship on
+ every URL, including the 404. -->
+ <!-- The FAQPage block that lived here was removed 2026-09-21: it shipped on every URL
+ while only /about shows those questions, and Google no longer shows FAQ results. -->
+ Pricing | BacktestingMax 
+== lob_bench meta
+{"repo":{"id":778296246,"name":"lob_bench","repo":"peernagy/lob_bench","description":"Benchmarking library for generative models of Limit Order Book data (LOBSTER)","createdAt":"2024-03-27T13:07:36Z","updatedAt":"2026-09-17T01:54:17Z","pushedAt":"2026-01-27T10:10:48Z","stars":46,"watchers":3,"forks":10,"defaultBranch":"main"}}== lob_bench files
+['.gitignore', 'README.md', '__init__.py', '__pycache__/data_loading.cpython-310.pyc', '__pycache__/impact.cpython-310.pyc', '__pycache__/partitioning.cpython-310.pyc', 'adversarial_measurement.ipynb', 'benchmark.ipynb', 'benchmark_INTC.ipynb', 'cst_model/cst.py', 'cst_model/lobster_conversion.py', 'cst_model/param_estimation.py', 'cst_model/run_model.py', 'cst_model/run_param_est.py', 'data_loading.py', 'eval.ipynb', 'eval.py', 'impact.py', 'metrics.py', 'partitioning.py', 'plotting.py', 'requirements.txt', 'run_bench.py', 'run_plotting.py', 'scoring.py', 'tutorial_notebook.ipynb']
+== lob_bench README grep
+3:*Benchmarking generative models for **Limit Order Book** data*
+10:3. [Installation](#installation)
+21:*   Ready‑made score functions, distance metrics, and impact‑response analysis.
+22:*   Works out‑of‑the‑box with LOBSTER CSVs, yet fully extensible.
+43:| v./vi. | **Ask/Bid volume (n levels)** | Volume on each side, first *n* levels (default 10) |
+45:| ix./x. | **Limit‑order levels** | Price level index (1…*n*) of new limits |
+47:| xiii./xiv. | **Cancel‑order levels** | Level index (1…*n*) of cancellations |
+52:| i. | Ask‑volume (level 1) **conditional on spread** |
+56:### II. Impact‑Response Evaluation
+72:## <a id="installation"></a> Installation
+74:pip install lob_bench
+76:Requires Python ≥ 3.9 plus `numpy`, `pandas`, `scipy`, `matplotlib`.
+82:from lob_bench import data_loading, scoring, impact
+84:# 1  Load data ─────────────────────────
+85:loader = data_loading.Simple_Loader(
+86:    cond_path     = "./data/seed_sequences",   # optional
+87:    generated_path = "./data/generated_sequences",
+88:    real_path      = "./data/real_sequences"
+90:# Each folder must contain the **same number** of LOBSTER‑format CSVs.
+113:# 4  Impact response ───────────────────
+--- 2026-09-22T15:00:06Z method=GET url=https://www.backtestingmax.com/assets/index-CI_MYIbC.js code=200 bytes=437789
+(JS バンドル。先頭 200 文字は最小化された JS のため省かず記録)
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/Dither-DCrMdWBc.js","assets/Dither-ZEnlU09e.css","assets/Pricing-C89rlNz_.js","assets/TextPage-DZTLX1Re.js","assets/StrategiesIndex-BEX
+--- 2026-09-22T15:00:25Z method=GET url=https://www.backtestingmax.com/assets/Pricing-C89rlNz_.js code=200 bytes=13516
+import{G as B,a as w,j as e,b as k,A as n,S as U,R as E}from"./index-CI_MYIbC.js";import{T as L}from"./TextPage-DZTLX1Re.js";function $(o){return B({attr:{viewBox:"0 0 496 512"},child:[{tag:"path",att
+--- 2026-09-22T15:00:25Z method=grep target=bmax_pricing.js pattern=price
+"$0"
+"$12.99"
+"$155.88"
+"$199.99"
+"$8.33"
+"$99.99"
+",children:[s.originalPrice,"
+",children:[s.showOriginalPrice&&s.originalPrice&&e.jsx("
+",children:e.jsx($,{})}),"
+",children:s.price}),e.jsxs("
+",s.perMonth,"
+",s.period]})]}),s.perMonth&&e.jsxs("
+",{className:`pricing-card card card-elevated ${s.popular?"
+",{className:`pricing-toggle-btn ${o?"
+"5 / month"
+"AI-built indicators (chart tab & editor)"
+"Access to All Pairs such as Crypto or ETFs"
+"All drawing tools & Indicators"
+"Buy Lifetime Access"
+"Challenge mode: pass or fail verdict, unlimited retries"
+"Custom Indicator Scripting (Python)"
+"Custom indicator scripting — write your own in Python"
+"Error fetching Paddle prices:"
+"Forex pairs"
+"Free"
+"Get Started For Free"
+"Historical Challenges (free scenarios)"
+"Indicators & Line Tools"
+"Jump to Session"
+"Jump to session (Asian / EU / US / custom)"
+"Last 12 months of history (earn up to 36)"
+"Lifetime access to all features"
+"Lifetime"
+"Monthly"
+"Most recent 12 months"
+"No Premium/Pro product found. Using fallback prices."
+"No price data available. Using fallback prices."
+"No prices found. Using fallback prices."
+"Priority support for life"
+"Session saving & playback"
+"Bar-by-bar playback"
+"Challenge mode: pass or fail verdict, unlimited retries"
+"Data Range"
+"Intrabar playback"
+"Log trades"
+"Market overview (right sidebar)"
+"No price data available. Using fallback prices."
+"Trade Journal"
+"Trailing drawdown, daily loss limits, minimum trading days"
+"UNLIMITED backtesting sessions"
+"Unlimited Date Range"
+"Unlimited"
+--- 2026-09-22T15:00:52Z method=GET url=https://mypage.atoz-gm.net/p/mt4r code=200 bytes=351834
+:root{--brand_primary: #FFFFFF;--brand_secondary: #545D13;--brand_heading: #000000;--brand_text: #000000;--brand_navbar_text: #545D13;--brand_navbar_fixed_text: #545D13;--brand_homepage_heading: #FFFF
+--- 2026-09-22T15:00:54Z method=GET url=https://mypage.atoz-gm.net/p/mt4 code=200 bytes=248756
+:root{--brand_primary: #FFFFFF;--brand_secondary: #545D13;--brand_heading: #000000;--brand_text: #000000;--brand_navbar_text: #545D13;--brand_navbar_fixed_text: #545D13;--brand_homepage_heading: #FFFF
+--- 2026-09-22T15:00:55Z method=GET url=https://www.goatfundedtrader.com/backtest code=404 bytes=100200
+Not Found!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"touch")}(window,document);(function(
+--- 2026-09-22T15:01:02Z method=grep target=mt4r.html,mt4.html pattern=価格/ティック/足
+===== mt4r
+ Q) デモ口座でのテストはできますか？ 
+ とてもお求めやすい価格設定にしたと自負していますが、それでも貴
+ 必須ツールであり価格も良心的。検証するための時間を買えます。
+��興味があれば楽しみにしていてください。 デモ口座を使っての練習の問題点は、リアルタイ
+��差は開いていくはずです。 商品代金の24,800円という価格は、新幹線で東京~名古屋間を往�
+�するのと同等の価格です。裁量トレード練習君プレミアムを使え
+�習出来るのが最大のメリットですね。 FXDDのデモ口座に設定しました。他社の類似製品も持っ
+、通貨や時間足は規定がありませんので、何分足でも大丈夫です。 
+、ＭＴ４をお使いでない方はインストールやデモ口座の開設、設定や過去データの取得といっ
+あるといっても過言ではありません。また、デモ口座も用意されていますので、デモ口座で使
+が、裁量トレード練習君プレミアムは無期限無料でバージョンアップします。皆様に本当に稼
+くのを実感できています。このソフトは２万円もするけどその値段に見合った対価が十分過
+す。検証するための「時間」を買えて、この価格。これは安いと言わざるを得ませんね。 https
+になっておりますが、ご不明な点があれば、無料で、無期限、回数制限なしでサポートいたし
+のメリットです。また、他社の類似製品だとティックデータを常に最新のものにしようとすると、その都
+れたロジックで、そのノウハウだけでも数万円レベルの内容だと思います。これはある意味
+ん。唯一証券会社が用意している練習環境はデモ口座では、それこそ１０年経っても勝てるト
+トレンドラインを背景に表示する / MT4で１０分足チャートを表示する / MT4が固まってしまった
+トレードの練習ができるソフトウェアです。デモ口座では相場が動いてない土日はトレードで
+定に関しましては、 有償サポート（税別2,500円） となります。LINEサポートにお問い合わせ�
+時等には証拠金額以上の損失が生じる場合やスプレッド幅拡大により意図しない取引になってしまう
+習君プレミアムは、その数稽古を、一般的なデモ口座を使ってやるよりも、数十分の１、数百
+===== mt4
+ 3.1.1.デモ口座の申請 
+ 6.2.1分足のデータを他の時間足に展開する 
+ 無料メールサポート 
+ 無期限バージョンアップ無料 
+ 通常のデモ口座では、市場が開いている時間帯しか練習
+が、裁量トレード練習君プレミアムは無期限無料でバージョンアップします。皆様に本当に稼
+不明な点があれば、練習君が起動するまで、無料で回数制限なしでサポートいたします。 原�
+--- 2026-09-22T15:01:20Z method=GET url=https://www.goatfundedtrader.com/backtesting code=404 bytes=100200
+Not Found!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"touch")}(window,document);(function(
+--- 2026-09-22T15:01:21Z method=GET url=https://backtest.goatfundedtrader.com/ code=000 bytes=0
+
+--- 2026-09-22T15:01:21Z method=GET url=https://raw.githubusercontent.com/sacha9214/polymarket-fill-model/main/README.md code=200 bytes=9371
+# polymarket-fill-model
+**Would my resting order actually have been filled?** A queue-aware fill model for
+Polymarket, built by cross-referencing the order book with the trade tape instead of
+guessing
+--- 2026-09-22T15:01:30Z method=GET url=https://backtest.goatfundedtrader.com/ code=000 bytes=0 retry=2nd
+
+--- 2026-09-22T15:01:30Z method=grep target=rm_95.md pattern=granularity
+1:# polymarket-fill-model
+3:**Would my resting order actually have been filled?** A queue-aware fill model for
+4:Polymarket, built by cross-referencing the order book with the trade tape instead of
+8:filled?* From an order book alone, you cannot answer it — when a resting order
+9:disappears, you cannot tell a **trade** from a **cancellation**. Most backtests quietly
+12:This repository contains the instrument I built to stop guessing, the order book
+23:| The tool | A fill simulator that tracks **queue position** at the best bid and consumes it with the **real trade tape**, including Polymarket's opposite-side pair mint |
+25:| The finding about my own result | +6.9 % on the naked residual, **t = −0.46, 95 % CI [−31.9 %, +19.8 %]** — the number wandered from +2.2 % to +13.5 % as data came in |
+34:"under 2.5 goals". Each outcome trades between $0 and $1 and settles at exactly $1 or
+52:The strategy comes from watching an anonymous trader — called **RN1** in my notes,
+53:$12.78M of reported PnL — across **46,692 trades and 9,334 resolved markets** over a
+54:30-day window (public data, August 2026 snapshot):
+83:that just went in). That is adverse selection, and it is why RN1, over 46,692 trades,
+96:+10.8 %. The data cannot tell them apart.
+104:## 4. Why no order book simulator will settle it
+107:only in the fill assumption:
+109:| Fill assumption | Simulated result | Verdict |
+111:| Conservative — filled only if the market crosses to me | **−6.26 $/day** | too pessimistic |
+112:| Optimistic — I move up the queue whenever it shortens | **+28.51 $/day** | too optimistic |
+117:> No simulator built on the order book alone will settle this. The information is not
+--- 2026-09-22T15:01:42Z method=GET url=https://www.goatfundedtrader.com/ code=200 bytes=312929
+Leading Prop Firm | Trade Like The Greatest!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"to
+--- 2026-09-22T15:01:43Z method=GET url=https://openmarket.xyz/ code=200 bytes=62890
+OpenMarket - Market Intelligence Platformhtml.dark{background:#0b0b0d;color-scheme:dark}html.light{background:#e7e4dd;color-scheme:light}.om-landing .loader{position:fixed;inset:0;z-index:9999;display
+--- 2026-09-22T15:01:45Z method=GET url=https://www.openmarket.com/ code=200 bytes=28464
+ OpenMarket Documentation
+			(function() {
+			var didInit = false;
+			function initMunchkin() {
+			if(didInit === false) {
+			didInit = true;
+			Munchkin.init('413-GTF-551');
+			}
+			}
+			var s = docu
+--- 2026-09-22T15:01:57Z method=grep target=gft_home,om1,om2
+== gft_home backtest 文脈
+== gft_home app ドメイン
+https://app.goatfundedtrader.com/checkout
+https://app.goatfundedtrader.com/login
+https://go.goatfundedtrader.com/api/js/latest
+https://goatfundedtrader.com/images/logo
+https://help.goatfundedtrader.com
+https://help.goatfundedtrader.com/en/
+https://www.goatfundedtrader.com/
+== openmarket.xyz title
+<title>OpenMarket - Market Intelligence Platform</title>
+== openmarket.com title
+<title>OpenMarket Documentation</title>
+--- 2026-09-22T15:02:10Z method=GET url=https://help.goatfundedtrader.com/en/?q=backtest code=200 bytes=52716
+Search results: backtest | Goat Funded Trader FAQ&#x27;s:root{--body-bg: rgb(255, 255, 255);
+--body-image: none;
+--body-bg-rgb: 255, 255, 255;
+--body-border: rgb(230, 230, 230);
+--body-primary-color: 

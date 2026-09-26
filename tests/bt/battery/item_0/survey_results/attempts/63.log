@@ -1,0 +1,22 @@
+##### from item0_r5-1_scenekeeper_install_63.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/rburkholder/trade-frame.git c63
+/dev/vda          258020 32037      5902  85% /
+rc=0
+c85e1e08f8c7e63fc1f1fcb647ab6ba6320a9bda 2026-09-22T22:29:03-06:00 Krishna Anubhav ( Kavy )
+29M	.
+=== start 2026-09-24T03:03:55Z limit=600s : cd /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c63 && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+df before: /dev/vda          258020 34258      3681  91% /
+=== end 2026-09-24T03:03:56Z rc=1 elapsed=1s min_free=3681MB 
+  version 1.92.0) with any of the following names:
+
+    BoostConfig.cmake
+    boost-config.cmake
+
+  Add the installation prefix of "Boost" to CMAKE_PREFIX_PATH or set
+  "Boost_DIR" to a directory containing one of the above files.  If "Boost"
+  provides a separate development package or SDK, be sure it has been
+  installed.
+
+
+-- Configuring incomplete, errors occurred!
+df after: /dev/vda          258020 34258      3681  91% /

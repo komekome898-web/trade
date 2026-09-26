@@ -1,0 +1,80 @@
+項目 2 第 1 周 作業者: 格子の試験が「直す前に落ちた」記録(起動文の記録の規則。scratchpad だけに置かない)
+
+コマンドはすべて: cd /home/user/trade && PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none <試験のファイル>
+出力は当時の端末の出力から、落ちた行をそのまま写した。
+
+------------------------------------------------------------------------
+1. tests/bt/item_2/test_i2_order_grid.py -x(実装の欠陥)
+
+FAILED tests/bt/item_2/test_i2_order_grid.py::test_order_grid[buy-market-GTC-False-False-1-marketable]
+E       AssertionError: assert 'rejected' == 'filled'
+1 failed, 4 passed
+
+原因: 口座の値洗い(mark = last_trade)が外部の約定だけを見ていたため、建玉があって外部の約定がまだ無い時点では評価損益が不明 = 余力が不明になり、
+成行の買いが "insufficient_margin" で断られていた(理由の文も誤り)。
+直し(src/bot/bt/portfolio/account.py): 当方の約定も取引所での約定なので最後の約定の値に入れる / 余力が不明なときの理由を "no_mark_for_equity" に分けた。
+直した後: 864 件すべて通過。
+
+------------------------------------------------------------------------
+2. tests/bt/item_2/test_i2_rules_grid.py -x -q(実装の設計の欠陥)
+
+FAILED tests/bt/item_2/test_i2_rules_grid.py::test_rules_grid[buy-0-reject-1000.5-reject-round_down]
+E       AssertionError: assert 'canceled' == 'filled'
+
+原因: 規則 off_step = round_down で取引所が数量を切り下げて受け付け、切り下げた数量が全部埋まると取引所は注文を閉じる(Canceled)。
+戦略の側(OrderClient.status)はその数量を知る手段が無く "canceled" と報告していた。
+一度は round_down を外したが、要件の行「呼値と最小数量の丸めと拒否」に数量の丸めが含まれるので戻し、
+取引所 → 戦略の約束として理由の符号 "rounded_size_filled" / "amended_size_filled"(orders/client.py の SIZE_LOWERED_AND_FILLED)を定め、
+戦略の側はこの 2 つの理由で閉じた注文を "filled" と報告する形にした。
+直した後: 900 件すべて通過。
+
+------------------------------------------------------------------------
+3. tests/bt/item_2/test_i2_stance_grid.py -x(試験の生成器の誤り。実装は正しかった)
+
+FAILED tests/bt/item_2/test_i2_stance_grid.py::test_l3_stances_grid[20]
+E           AssertionError: new implementation refused: FillSpecError: cancel_stance 'l3_advance' reads a per-order feed; l3 is None
+
+原因: 種 20 の生成器が注文ごとの板の項目を 1 つも作らず、データに L3 が無い。L3 の立場を求めて L3 が無いなら断るのが正しい。
+直し: 生成器が必ず 1 つ以上の L3 の項目を作るようにし、「L3 が無ければ断る」を別の試験(test_l3_stance_without_a_feed_is_refused)で固定した。
+
+------------------------------------------------------------------------
+4. tests/bt/item_2/test_i2_oco_amend_grid.py(試験の答えの誤り。実装は正しかった)
+
+FAILED tests/bt/item_2/test_i2_oco_amend_grid.py::test_oco_grid[limit+stop-tp_fills-partial]
+FAILED tests/bt/item_2/test_i2_oco_amend_grid.py::test_oco_grid[limit+limit-tp_fills-partial]
+FAILED tests/bt/item_2/test_i2_oco_amend_grid.py::test_oco_grid[limit+limit-other_fills-partial]
+E           assert (1.0 == 0.4 ± 4.0e-07
+3 failed, 38 passed
+
+原因: 答えの側が、一部だけ埋まった脚の残りを後の約定(T0+40ms の 10050)が埋めることを数えていなかった。
+直し: 答えを「最初の約定 = min(q, 1)、その約定で相手の脚が取消、残りは後の約定で埋まり filled」に書き直した。
+
+------------------------------------------------------------------------
+5. tests/bt/item_2/test_i2_walk_stp_grid.py(試験の答えの誤り。実装は正しかった)
+
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[cancel_maker-worse-market-buy]
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[cancel_maker-worse-market-sell]
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[None-worse-market-buy]
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[None-worse-market-sell]
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[None-worse-limit-buy]
+FAILED tests/bt/item_2/test_i2_walk_stp_grid.py::test_self_trade[None-worse-limit-sell]
+6 failed, 361 passed
+
+原因: 答えの "worse"(当方の注文が外部の最良より悪い値)の枝が仮置きのままで、数量 1.5 の注文が外部の 1.0 を取ったあと当方の注文に当たることを数えていなかった。
+直し: 外部の値位と当方の注文を良い順に辿る答えを 1 段ずつ書き、全 48 件をその答えで判定した。
+
+------------------------------------------------------------------------
+6. tests/bt/item_2/test_i2_venue_edges.py(実装の理由の文の直し)
+
+FAILED tests/bt/item_2/test_i2_venue_edges.py::test_oco_partner_arriving_after_the_other_filled_is_rejected
+E       At index 0 diff: ('Reject', 'b', 'oco_partner_done:oco') != ('Reject', 'b', 'oco_partner_already_filled')
+
+原因: 同じ事実を 2 か所で判定しており、先に当たる方の理由の文が分かりにくく、後の方は到達しない分岐だった。
+直し(src/bot/bt/fill/venue.py): 理由を "oco_partner_filled" / "oco_partner_canceled" の 1 か所にし、到達しない分岐を消した。
+
+------------------------------------------------------------------------
+7. tests/bt/item_2/test_i2_hours_grid.py -x(試験の誤り)
+
+FAILED tests/bt/item_2/test_i2_hours_grid.py::test_price_band[buy-699.0]
+E               bot.bt.core.errors.TimestampUnitError: end_time_ns 1767571260000000000 is before the first entry of the run
+原因: 試験が場面の終わりの時刻を既定の値のまま渡していた(値幅の試験の日付より前)。直し: 終わりの時刻を渡した。

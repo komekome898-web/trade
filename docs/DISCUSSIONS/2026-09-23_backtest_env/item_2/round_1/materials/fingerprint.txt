@@ -1,0 +1,2 @@
+5b55181266bba7beec8a01b77343b3f0e82982703dc15843915debf3e539ad45  -
+cmd: git ls-files -z tests/bt/battery/item_2 | xargs -0 sha256sum | sha256sum (after the table-maker wrote adapters/new_impl.py)

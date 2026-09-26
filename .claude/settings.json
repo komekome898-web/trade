@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Write|Edit|Agent",
+        "matcher": "Write|Edit|Agent|Bash|SendMessage",
         "hooks": [
           {
             "type": "command",
@@ -12,21 +12,11 @@
         ]
       },
       {
-        "matcher": "Write|Edit|NotebookEdit",
+        "matcher": "Write|Edit|NotebookEdit|Bash",
         "hooks": [
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/deny_protected_paths.sh",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_options_gate.sh",
             "timeout": 10
           }
         ]
@@ -58,15 +48,6 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_turn_digest.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_options_gate.sh",
             "timeout": 5
           }
         ]

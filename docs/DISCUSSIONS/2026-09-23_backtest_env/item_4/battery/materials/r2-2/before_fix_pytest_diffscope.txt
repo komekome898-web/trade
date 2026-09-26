@@ -1,0 +1,36 @@
+...........FF..                                                          [100%]
+=================================== FAILURES ===================================
+__________________ test_materials_records_are_never_rewritten __________________
+
+    @needs_git
+    def test_materials_records_are_never_rewritten():
+        """The live work tree: no record of this battery's scene-keeper that HEAD holds differs from HEAD.
+        Item 0's records are not read here: another scene-keeper writes them in parallel (the launch text: item 4 does
+        not touch tests/bt/battery/item_0/ in this run)."""
+        diff = D.git_lines(["diff", "--name-only", "HEAD"])
+        over = [p for p in D.materials_overwrites(diff) if p.startswith(D.MATERIALS_OF(4))]
+>       assert over == [], f"records rewritten (write a new file instead): {over}"
+E       AssertionError: records rewritten (write a new file instead): ['docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt']
+E       assert ['docs/DISCUS...d_critic.txt'] == []
+E         
+E         Left contains one more item: 'docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/battery/materials/r2-1/after_fix_pytest_battery_and_critic.txt'
+E         Use -v to get more diff
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:209: AssertionError
+________________ test_rootcause_diff_sections_are_machine_made _________________
+
+    def test_rootcause_diff_sections_are_machine_made():
+        files = sorted(p for p in HERE.glob("ROOTCAUSE*.md") if p.name not in BEFORE_THE_TOOL)
+        assert files, "no ROOTCAUSE file to read"
+        for p in files:
+            text = p.read_text(encoding="utf-8")
+            sections = D.find_sections(text)
+>           assert sections, f"{p.name}: no machine-made diff section (python3 {HERE.relative_to(REPO)}/diff_scope.py --markdown)"
+E           AssertionError: ROOTCAUSE_r2-2.md: no machine-made diff section (python3 tests/bt/battery/item_4/diff_scope.py --markdown)
+E           assert []
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:223: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_materials_records_are_never_rewritten
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_rootcause_diff_sections_are_machine_made
+2 failed, 13 passed in 0.45s

@@ -1,0 +1,40 @@
+##### from fast-trade_install.log
+=== 2026-09-23T15:34:30Z inspect fast-trade
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 122.1/122.1 kB 10.8 MB/s eta 0:00:00
+Saved ./claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/fast-trade/fast_trade-2.1.0-py3-none-any.whl
+Successfully downloaded fast-trade
+total 128
+drwxr-xr-x 2 root root   4096 Sep 23 15:34 .
+drwxr-xr-x 7 root root   4096 Sep 23 15:34 ..
+-rw-r--r-- 1 root root 122053 Sep 23 15:34 fast_trade-2.1.0-py3-none-any.whl
+--- wheel /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/fast-trade/fast_trade-2.1.0-py3-none-any.whl
+Name: fast-trade
+Version: 2.1.0
+Author-email: Jed Meier <fast_trade@jedm.dev>
+Project-URL: Homepage, https://github.com/jrmeier/fast-trade
+Project-URL: Repository, https://github.com/jrmeier/fast-trade
+Requires-Dist: pandas>=2.3.3
+Requires-Dist: matplotlib>=3.10.8
+Requires-Dist: requests>=2.32.5
+Requires-Dist: numpy>=2.2.6
+Requires-Dist: pygad>=3.5.0
+Requires-Dist: hmmlearn>=0.3.3
+Requires-Dist: plotly>=6.5.2
+Requires-Dist: pyarrow>=23.0.0
+Requires-Dist: pyyaml>=6.0.3
+Requires-Dist: rich>=14.3.2
+Requires-Dist: typer>=0.23.0
+Requires-Dist: fastmcp<3,>=2.14.5
+Requires-Dist: build; extra == "dev"
+Requires-Dist: coverage; extra == "dev"
+Requires-Dist: flake8; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Version `2.1.0` adds FXMacroData macro/FX context, a productized HMM screener (`ft screen hmm`, MCP `hmm_screen`), and full-package test coverage with documented metrics in `docs/METRICS.md`.
+=== 2026-09-23T15:34:32Z install into /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/fast-trade
+pip rc=0 elapsed=92s
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+110
+=== 2026-09-23T15:36:11Z done
+=== 2026-09-23T16:42:06Z removed venv fast-trade to free disk for the remaining installs (battery TSV already written: item0_battery_opp_fast_trade_scenekeeper.tsv; reinstall = the commands above in this log)

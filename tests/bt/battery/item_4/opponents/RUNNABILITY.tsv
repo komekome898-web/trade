@@ -1,0 +1,59 @@
+cand	name	tried	result	target	reason
+1	Basana	PyPI の basana(項目 0 の venv item_0/basana)	走った	opp_basana	-
+2	Backtrader	PyPI の backtrader(項目 0 の venv item_0/backtrader)	走った	opp_backtrader	-
+3	PySystemtrade	git の 8958c49c(項目 1 の venv item_1/c3。clone が消えていたので同じ commit を取り直し、data/ と .git を消した: venvs/item_4/i4_r1_scenekeeper_reclone_c3_c87.log)	走った	opp_pysystemtrade	場面を 1 つも取れなかった(理由は survey_results の行)
+4	PyBroker	PyPI の lib-pybroker(この役の venv item_4/pybroker、記録 i4_r1_scenekeeper_install_pybroker.log)	走った	opp_pybroker	-
+5	Lean CLI	PyPI の bt(項目 2 の venv item_2/bt。調査報告の 5 番の行の実体)	走った	opp_bt	-
+6	Ziplime	PyPI の ziplime(項目 2 の venv item_2/ziplime)	走った	opp_ziplime	-
+7	Superalgos	Node.js の場(データの採掘と UI を含む)。導入していない。一次資料から再現した	再現した	opp_repro_7_superalgos	-
+8	OpenTrader	導入前の検査(調査の委任文 §6-1)で止めた(項目 3 の記録)。一次資料から再現した	再現した	opp_repro_8_opentrader	-
+10	fast-trade	PyPI の fast-trade 2.1.0(この役の venv item_4/fast-trade)	走った	opp_fast_trade	場面を 1 つも取れなかった(理由は survey_results の行)
+11	python3(台帳の名。SCAN 8452 行は OctoBot)	検証に触手(tentacles)が要り、既定の触手は PyPI の外の zip(項目 0 の記録)。一次資料から再現した	再現した	opp_repro_11_octobot	-
+12	pybotters	PyPI の pybotters(項目 0 の venv item_0/pybotters)	走った	opp_pybotters	場面を 1 つも取れなかった(理由は survey_results の行)
+13	DeviaVir/zenbot	Node.js の bot。入力が約定の列で足を受けないので導入していない	走らなかった	-	検討表の行
+15	Mendl-Labs/BacktestingCore	Rust の作業空間で crate の取得に資格情報が要る(項目 3 の記録)。一次資料から再現した	再現した	opp_repro_15_backtestingcore	-
+16	Luczinsritter/event_driven_backtesting_engine	git clone 20929924(項目 3 の venv item_3/c16。clone が他の役の片付けで消えていたので同じ commit を同じ場所に clone し直した: venvs/item_4/i4_r1_scenekeeper_reclone_c16.log)	走った	opp_luczinsritter	-
+18	zipline-reloaded	PyPI の zipline-reloaded 3.1.1(この役の venv item_4/zipline-reloaded、記録 i4_r1_scenekeeper_install_zipline-reloaded.log)	走った	opp_zipline_reloaded	-
+19	Jesse	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+20	VnPy	PyPI の vnpy と vnpy_ctastrategy(項目 0 の venv item_0/vnpy)	走った	opp_vnpy	-
+21	Qlib	PyPI の pyqlib(項目 1 の venv item_1/qlib)	走った	opp_qlib	場面を 1 つも取れなかった(理由は survey_results の行)
+23	hftbacktest	PyPI の hftbacktest(項目 1 の venv item_1/hftbacktest)	走った	opp_hftbacktest	場面を 1 つも取れなかった(理由は survey_results の行)
+40	OpenMarket	閉じた場(登録しない)	走らなかった	-	検討表の行
+43	QuantDinger	公開の repo に足の約定の本体が無い	走らなかった	-	検討表の行
+44	lo2cin4	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+45	ForexTester	閉じた有料の場	走らなかった	-	検討表の行
+46	MT4裁量トレード練習君プレミアム	有料の MT4 の道具(購入しない)	走らなかった	-	検討表の行
+48	BacktestingMax	閉じた場(登録しない)	走らなかった	-	検討表の行
+50	AlgoTest	閉じた有料の場	走らなかった	-	検討表の行
+51	QUANTAXIS	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+52	QuantConnect	C# / .NET(項目 0 の記録)。一次資料から再現した	再現した	opp_repro_52_lean	-
+53	Rqalpha	PyPI の rqalpha(この役の venv item_4/rqalpha、記録 i4_r1_scenekeeper_install_rqalpha.log)	走った	opp_rqalpha	-
+54	finmarketpy	PyPI の finmarketpy(項目 1 の venv item_1/finmarketpy。plotly 7 で import が落ちたので plotly<6 をこの venv に足した: venvs/item_4/i4_r1_scenekeeper_install_finmarketpy_fix.log)	走った	opp_finmarketpy	場面を 1 つも取れなかった(理由は survey_results の行)
+55	backtesting.py	PyPI の backtesting(項目 0 の venv item_0/backtesting)	走った	opp_backtesting	-
+56	zvt	導入を試みた(第 r2-1 回): 隔離した venv で `pip install --dry-run --ignore-installed --report` が 57 件のファイルに解決(opponents/attempts/i4_r2-1_scenekeeper_dryrun_zvt.log)、解決した全ファイルの大きさを PyPI の公開の情報から足すと 121.4 MiB(opponents/attempts/i4_r2-1_scenekeeper_install_size_measure.txt、i4_r2-1_scenekeeper_sizes.py)。そのときの空き容量は 826,646,528 バイト(df -B1 /、2026-09-26T08:44Z。この環境の容量が 19 MB まで落ちた実測が第 17 周にある)で、展開後は取得の大きさより大きいので、並行する役の作業を止めないように導入を止めた(容量の実測で止めた)。一次資料から再現した。足は道具自身のデータベースから読む(get_kdata)	再現した	opp_repro_56_zvt	-
+57	WonderTrader	C++ の構築(項目 0 の記録)。一次資料から再現した	再現した	opp_repro_57_wondertrader	-
+58	nautilus_trader	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+60	Hikyuu	導入を試みた(第 r2-1 回): 隔離した venv で `pip install --dry-run --ignore-installed --report` が 104 件のファイルに解決(opponents/attempts/i4_r2-1_scenekeeper_dryrun_hikyuu.log)、解決した全ファイルの大きさを PyPI の公開の情報から足すと 470.5 MiB(opponents/attempts/i4_r2-1_scenekeeper_install_size_measure.txt、i4_r2-1_scenekeeper_sizes.py)。そのときの空き容量は 826,646,528 バイト(df -B1 /、2026-09-26T08:44Z。この環境の容量が 19 MB まで落ちた実測が第 17 周にある)で、展開後は取得の大きさより大きいので、並行する役の作業を止めないように導入を止めた(容量の実測で止めた)。一次資料から再現した	再現した	opp_repro_60_hikyuu	-
+61	barter-rs	項目 0 の cargo の driver(item_0/c61)が消えている。構築し直しは容量(空き 2.3 GB、項目 0 の 107 の構築だけで 2.0 GB)で試していない。一次資料から再現した	再現した	opp_repro_61_barter	-
+62	qf-lib	PyPI の qf-lib 4.0.7(この役の venv item_4/qf-lib。宣言されていない PyJWT・oauthlib・requests-oauthlib を足した: 記録 i4_r1_scenekeeper_install_qf-lib.log)	走った	opp_qflib	-
+67	lumibot	導入を試みた(第 r2-1 回): 隔離した venv で `pip install --dry-run --ignore-installed --report` が 320 件のファイルに解決(opponents/attempts/i4_r2-1_scenekeeper_dryrun_lumibot.log)、解決した全ファイルの大きさを PyPI の公開の情報から足すと 572.3 MiB(opponents/attempts/i4_r2-1_scenekeeper_install_size_measure.txt、i4_r2-1_scenekeeper_sizes.py)。そのときの空き容量は 826,646,528 バイト(df -B1 /、2026-09-26T08:44Z。この環境の容量が 19 MB まで落ちた実測が第 17 周にある)で、展開後は取得の大きさより大きいので、並行する役の作業を止めないように導入を止めた(容量の実測で止めた)。一次資料から再現した	再現した	opp_repro_67_lumibot	-
+68	quanttrader	PyPI の quanttrader 0.5.5(この役の venv item_4/quanttrader。np.str / DataFrame.append のため numpy 1.23.5・pandas 1.5.3・matplotlib 3.7.5 をこの venv に固定: 記録 i4_r1_scenekeeper_install_quanttrader.log)	走った	opp_quanttrader	-
+69	gobacktest	項目 0 の Go の driver(item_0/c69)が消えている。一次資料から再現した	再現した	opp_repro_69_gobacktest	-
+70	PineForge	項目 2 が CMake で構築し C の driver で走らせた(item_2/src/c70・drivers/i2drv70)。この役の最初の走行では走ったが、その後 clone・構築物・driver の source が他の役の片付けで消えた。第 r3-1 回: 最初の clone は版 0d76a099(5e62602c ではない)で、導入前の検査をせずに CMake で構築した(§4 から外れた。リードの指示で消した。記録 item_2/logs/i4_r3-1_scenekeeper_rebuild_70.log)。検査した版 5e62602c を git fetch で取り直した(記録 item_2/logs/i4_r3-1_scenekeeper_refetch_70.log、構築していない)が、構築・実行へ進む操作をこの環境の許可の判定が [Code from External] として止めた。容量では止めていない(空き 2,046 MB → 1,943 MB)。比べていない(道具を呼べていない)	走らなかった(最後の走行)	opp_pineforge	場面を 1 つも取れなかった(理由は survey_results の行)
+72	QTradeX	PyPI の qtradex(項目 2 の venv item_2/qtradex)	走った	opp_qtradex	-
+73	vectorbt	PyPI の vectorbt(項目 1 の venv item_1/vectorbt)	走った	opp_vectorbt	-
+74	ml-quant-trading	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+75	Freqtrade	PyPI の freqtrade(項目 3 の venv item_3/freqtrade)	走った	opp_freqtrade	場面を 1 つも取れなかった(理由は survey_results の行)
+80	Hummingbot	pip の構築が失敗(opponents/attempts/i4_r1_scenekeeper_dryrun_resolution.log)。一次資料から再現した	再現した	opp_repro_80_hummingbot	-
+85	czsc	pip install --dry-run: 38 件の依存に wbt==0.9.1(候補 120、道具台帳 §3 の 11 件)が入るので導入しない	走らなかった	-	検討表の行
+86	analyzingalpha	記事の写経の集まり(道具ではない)	走らなかった	-	検討表の行
+87	PyTrendFollow	git の 439232ae(項目 1 の venv item_1/c87。clone を取り直した: 同じ記録)	走った	opp_pytrendfollow	場面を 1 つも取れなかった(理由は survey_results の行)
+92	prediction-market-backtester	git clone(項目 2 の venv item_2/c92)	走った	opp_pm_backtester	-
+93	punyamodi/binary_market_engine	導入していない(一次資料を読んだ)	走らなかった	-	検討表の行
+94	mote/backtest	Python 2 の文法(この環境に Python 2 は無い)。一次資料から再現した	再現した	opp_repro_94_mote	-
+107	sigc	項目 0 が cargo で構築した実行ファイルが消えている。重みの言語で注文の口が無いので構築し直していない	走らなかった	-	検討表の行
+111	HKUDS/Vibe-Trading	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+120	wbt	導入も実行もしない(道具台帳 §3 の 11 件 = 委任文 §4)	走らなかった	-	危険
+121	mhallsmoore/qstrader	PyPI の qstrader(項目 0 の venv item_0/qstrader)	走った	opp_qstrader	場面を 1 つも取れなかった(理由は survey_results の行)
+122	gbeced/pyalgotrade	PyPI の PyAlgoTrade 0.20(この役の venv item_4/pyalgotrade、記録 venvs/item_4/i4_r1_scenekeeper_install_pyalgotrade.log)	走った	opp_pyalgotrade	-
+123	carlos8f/zenbot	13 と同じ engine(同じ commit)	走らなかった	-	検討表の行

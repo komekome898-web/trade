@@ -1,0 +1,18 @@
+........................................................................ [ 45%]
+................................................................F....... [ 90%]
+................                                                         [100%]
+=================================== FAILURES ===================================
+__________________ test_check_matches_delegation_text_on_grid __________________
+
+    @needs_node
+    def test_check_matches_delegation_text_on_grid():
+>       assert _disagreements() == []
+E       AssertionError: assert [(['docs/AUDI...v.js'}]), ...] == []
+E         
+E         Left contains 10 more items, first extra item: (['docs/AUDITOR/TRACE/2026-09-26_220780c0.json'], 0, ['docs/AUDITOR/TRACE/2026-09-26_220780c0.json'], [])
+E         Use -v to get more diff
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:135: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_check_matches_delegation_text_on_grid
+1 failed, 159 passed in 2.59s

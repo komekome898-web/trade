@@ -1,0 +1,18 @@
+# 項目 4 第 1 周 資料係(表)が打ったコマンド(リポジトリの直下から)
+# 1. 新実装の adapter の本体を書いた: tests/bt/battery/item_4/adapters/new_impl.py(差分 = new_impl_adapter.diff)
+python3 tests/bt/battery/item_4/run_battery.py --list-targets            # 42 対象(targets.txt)
+bash docs/DISCUSSIONS/2026-09-23_backtest_env/item_4/round_1/materials/run_all.sh   # setsid nohup で切り離し、記録 run_all.log
+#   各対象を 2 回: runs/<対象>.tsv と runs_2/<対象>.tsv(run_battery.py 自身が各場面を 2 回走らせ repro 列を書く)
+#   84 回すべて rc=0。開始 2026-09-26T07:32:19Z、終わり 2026-09-26T07:35:40Z(ALL_DONE)
+python3 materials/compare_runs.py   > compare_runs.out   # 1 回目と 2 回目の走行の食い違い 0、1 回の走行の中の 2 回の食い違い 0
+python3 materials/recount.py        > recount.out        # make_tables.py を使わない数え直し(new_impl 40/40)
+python3 materials/make_tables.py    > make_tables.out    # 6 枚の表と mapping.tsv・survey_breakdown.tsv・table_counts.tsv
+python3 materials/recount_from_tables.py > recount_from_tables.out   # 表のセルから数え直し、表の集計の行と一致
+python3 materials/check_names.py    > check_names.out    # 表に道具の名・時刻・16 進の語が 0 件
+md5sum <各組の 2 枚>                > md5sum_pairs.txt   # 3 組とも 2 枚は違う(identical=false)
+git ls-files -z tests/bt/battery/item_4 | xargs -0 sha256sum | sha256sum > fingerprint.txt / fingerprint_after.txt
+PYTHONPATH=src python -m pytest tests/bt/battery/item_4 > pytest_battery_item4_r1_shiryo.out   # 15 passed
+# 相手の道具の結果の再利用(委任文 §3、L-435): 使っていない。第 1 周で前の周が無いので、全 42 対象を走らせた。
+# 場面集の指紋: fingerprint.txt(d7d14efe94d6…、新実装の adapter の本体を書いたあとの値。この起動の途中でリードのコミット 5e0c26d が入ったあとも同じ = fingerprint_after.txt)
+# 表の中の行と対象の対応: mapping.tsv(new_impl / current_impl / survey_best / mutant)。survey_best の場面ごとの選ばれた対象: survey_breakdown.tsv の picked 列
+# 場面係の survey_results/ との照合(compare_runs.out の VS_SURVEY): 調査結果の側 39 対象と当方の現状は全場面で class と digest が同じ。違うのは new_impl と mutant の 40 場面ずつ(場面係の時点では新実装の口が空で全場面「結果なし」だった)

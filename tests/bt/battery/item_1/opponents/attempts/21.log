@@ -1,0 +1,26 @@
+# 候補 21 Qlib(pyqlib)— 導入の記録(項目 1 の場面係、2026-09-25)
+## 導入前の検査(道具サーベイの委任文 §6-1)
+- PyPI JSON(https://pypi.org/pypi/pyqlib/json、2026-09-25 取得): 版 0.9.7、初回 2020-09-28、最新 2025-08-15、版 29、vulnerabilities []。メタデータに Homepage・作者の記載が無い。
+- GitHub との一致: https://raw.githubusercontent.com/microsoft/qlib/main/pyproject.toml の 20 行 `name = "pyqlib"`(配布名が Microsoft の登録の名前と同じ)。PyPI の案件の頁の保守者欄は「4 maintainers」、/user/bxdd/ ほか。
+- 週のダウンロード数: 未確認(pypistats が 429 RATE LIMIT EXCEEDED を返した)。
+- 中身: `pip download --no-deps pyqlib==0.9.7 --only-binary=:all:` → pyqlib-0.9.7-cp311-cp311-manylinux2014_x86_64.whl(1,413,988 バイト、wheel = 導入時に実行する setup.py が無い)。.so 2 本(qlib/data/_libs/expanding・rolling、配布元の Cython の窓の計算)。
+  eval の当たり: data/data.py:397・data/cache.py:542(式の文字列を演算子の木にする設計)、contrib の模型 2 か所。難読化・外部 URL からの取得は無い。
+- 宣言された依存: pyyaml, numpy, pandas>=0.24, mlflow, filelock, redis, dill, fire, ruamel.yaml, python-redis-lock, tqdm, pymongo, loguru, lightgbm, gym, cvxpy, joblib, matplotlib, jupyter, nbconvert, pyarrow, pydantic-settings。
+## 導入(隔離した venv、2026-09-25T16:42:06Z〜16:59:48Z)
+- 容量(空き 285MB 前後)のため、宣言された依存を全部は入れず、`--no-deps` で本体を入れ、`import qlib` と `qlib.init` が要求したものだけを 1 つずつ足した(項目 0 の venv finmarketpy の site-packages を .pth で読ませた: numpy 1.26.4・pandas 2.3.3・pyyaml・redis・dill・pyarrow)。
+- 足した順: ruamel.yaml(qlib/__init__.py:10)→ pydantic-settings → python-redis-lock → mlflow-skinny 3.16.1(qlib/config.py:486 の register が qlib.workflow を import し、expm.py:5 が mlflow を import する)→ filelock。全部 exit=0。
+- mlflow のテレメトリは環境変数 MLFLOW_DISABLE_TELEMETRY=true・DO_NOT_TRACK=1 で切った(adapter が import の前に置く)。記録先は scratchpad の一時フォルダの file: URI。
+- 最小の実行: 暦 5 日・銘柄 3 件(1001 / 1004 は 1/6 上場 / 1005 は 1/7 まで)の instruments を置き、`D.list_instruments(D.instruments('all'), start_time=d, end_time=d, as_list=True)` が 1/5 ['1001','1005']・1/6 ['1001','1004','1005']・1/7 同じ・1/8 ['1001','1004'] を返した。
+## 外部送信
+- 場面に渡したのは合成の銘柄の一覧と日付だけ。mlflow の記録は scratchpad の file: URI にだけ書く。
+
+## 入れ直し(2026-09-25 17:1xZ)
+土台にしていた項目 0 の venv finmarketpy が消えていた。.pth を外し、宣言済みの依存を pip に解かせて入れ直した(numpy 1.26.4・pandas 2.3.3・mlflow-skinny 3.16.1・scipy ほか)。
+== add typing-extensions
+== add requests
+== add packaging
+== add scipy
+== add anyio
+== add importlib_metadata
+== 2026-09-25T17:18:47Z 土台が消えた分の依存を、宣言済みのものを pip に解かせて入れ直す
+exit=0

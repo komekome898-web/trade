@@ -1,0 +1,19 @@
+##### from item0_r5-1_scenekeeper_install_38.log
+=== 2026-09-24T02:59:28Z git clone --depth 1 https://github.com/microsoft/MarS.git c38
+/dev/vda          258020 32037      5902  85% /
+rc=0
+ecb738e8799aa44d4cb7fb7c5f3f3a99aca2df02 2026-09-23T23:30:28+08:00 Yang Liu
+3.6M	.
+=== 2026-09-24T03:51:16Z what installing MarS pulls in (read only; nothing installed)
+/dev/vda          258020 35584      2355  94% /
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:8:    install_requires=[
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:18:        "ray[serve]==2.44.0",
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:19:        "torch==2.6.0",
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:20:        "torchvision==0.21.0",
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:21:        "torchaudio==2.6.0",
+/tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/c38/setup.py:22:        "transformers==4.50.0",
+--- PyPI sizes of the largest ones (https://pypi.org/pypi/<name>/json, first manylinux x86_64 wheel of the latest release):
+torch 2.14.0 torch-2.14.0-cp311-cp311-manylinux_2_28_x86_64.whl 554583496
+ray 2.58.0 ray-2.58.0-cp311-cp311-manylinux2014_x86_64.whl 78338252
+transformers 5.17.0 transformers-5.17.0-py3-none-any.whl 12295140
+=== decision: not run. Installing the package pulls the machine-learning stack above (hundreds of MB to GB); the delegation forbids bulk downloads of hundreds of MB (委任文 §4) and the free disk is shown above

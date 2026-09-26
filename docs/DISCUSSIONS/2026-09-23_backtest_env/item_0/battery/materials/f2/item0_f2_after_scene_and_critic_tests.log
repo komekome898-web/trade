@@ -1,0 +1,589 @@
+.....F.................................................................. [ 12%]
+...............................F........................................ [ 24%]
+........................................................................ [ 36%]
+........................................................................ [ 48%]
+........................................................................ [ 61%]
+........................................................................ [ 73%]
+...............................................................FFFFFFFFF [ 85%]
+FFFFF................................................................... [ 97%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+_______ test_the_machine_agrees_with_the_definition_on_every_cell_run[D] _______
+
+k = 'D'
+
+    @pytest.mark.parametrize("k", ["A", "B", "C", "D"])
+    def test_the_machine_agrees_with_the_definition_on_every_cell_run(k):
+        axes, pairs, _ = G.derive(k)
+        probes = PROBES[k]
+        for ax, vals in probes.items():
+            assert ax in axes, (k, ax)
+            assert set(vals) <= {v for v, _ in axes[ax]}, (k, ax, set(vals) - {v for v, _ in axes[ax]})
+        cache = {(ax, v): _verdict(fn) for ax, vals in probes.items() for v, fn in vals.items()}
+        table = {ax: dict(vals) for ax, vals in axes.items()}
+        for ax, v in cache:  # every probed value: the machine says what the definition's table says
+>           assert cache[(ax, v)] == table[ax][v], (k, ax, v, cache[(ax, v)], table[ax][v])
+E           AssertionError: ('D', '示した結果', '意味は 1 つ(全部の出現に判断)', '落ちる', '通る')
+E           assert '落ちる' == '通る'
+E             
+E             - 通る
+E             + 落ちる
+
+tests/bt/battery/item_0/test_battery_def_grids.py:342: AssertionError
+_____________ test_every_use_of_the_scene_keepers_terms_is_judged ______________
+
+    def test_every_use_of_the_scene_keepers_terms_is_judged():
+        """Round r8-1 (positive definition D): every occurrence (term, line) of the terms ROOTCAUSE_r8-1.md's term
+        table gives a meaning of the scene keeper's own is listed by term_marks.py and has one judgment in
+        term_judgments.tsv; no judgment is 「別の意味」 (a term of the table has one meaning), and no judgment is left
+        for a line that no longer holds the term (a changed line is read again)."""
+        import term_marks as T
+        ts = T.terms()
+        assert "設定つき対象" in ts and "升目" in ts and "照合元" in ts  # the table is read (a smoke check of the reader)
+>       assert not T.problems(), T.problems()[:20]
+E       AssertionError: [('判断なし', 'runner の出力', 'line_judgments.tsv:665'), ('判断なし', '場面の中身', 'line_judgments.tsv:665')]
+E       assert not [('判断なし', 'runner の出力', 'line_judgments.tsv:665'), ('判断なし', '場面の中身', 'line_judgments.tsv:665')]
+E        +  where [('判断なし', 'runner の出力', 'line_judgments.tsv:665'), ('判断なし', '場面の中身', 'line_judgments.tsv:665')] = <function problems at 0x7f75729cc7c0>()
+E        +    where <function problems at 0x7f75729cc7c0> = <module 'term_marks' from '/home/user/trade/tests/bt/battery/item_0/term_marks.py'>.problems
+
+tests/bt/battery/item_0/test_battery_item0.py:1593: AssertionError
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-freeze] _
+
+form = 'forged-hash', entry = 'freeze'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2604.235053653, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'forged-hash', 'freeze', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'forged-hash', entry = 'freeze'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: forged-hash via freeze: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-settle] _
+
+form = 'forged-hash', entry = 'settle'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2624.304907671, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'forged-hash', 'settle', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'forged-hash', entry = 'settle'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: forged-hash via settle: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-place_order] _
+
+form = 'forged-hash', entry = 'place_order'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2644.37462833, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'forged-hash', 'place_order', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'forged-hash', entry = 'place_order'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: forged-hash via place_order: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-freeze] _
+
+form = 'pairs-slot', entry = 'freeze'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2664.451856065, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'pairs-slot', 'freeze', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'pairs-slot', entry = 'freeze'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: pairs-slot via freeze: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-settle] _
+
+form = 'pairs-slot', entry = 'settle'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2684.514580021, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'pairs-slot', 'settle', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'pairs-slot', entry = 'settle'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: pairs-slot via settle: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-place_order] _
+
+form = 'pairs-slot', entry = 'place_order'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+>           out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/lib/python3.11/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.11/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: -9 args: ['/usr/local/bin/python', '-c', '\nimport sys\n...>
+endtime = 2704.682246884, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/usr/local/bin/python', '-c', '\nimport sys\nfrom bot.bt.core import BarEvent, CoreEngine, values as V\nfrom bot.bt.core.api import OrderRequest\nfrom bot.bt.core.errors import OrderApiError\nfrom bot.bt.core.interfaces import NullCostModel\nfrom bot.bt.core.testing import ImmediateFillModel, RecordingAccount\nform, entry, depth = sys.argv[1], sys.argv[2], int(sys.argv[3])\nt = ()\nfor _ in range(depth):\n    t = (t, t)\nkey = V.FrozenDict({"v": t})\nif form == "forged-hash":\n    object.__setattr__(key, "_hash", 12345)\n    x = {key: 1}\nelse:\n    x = object.__new__(V.FrozenDict)\n    object.__setattr__(x, "_items", ((key, 1),))\n    object.__setattr__(x, "_map", None)\n    object.__setattr__(x, "_hash", None)\ntry:\n    if entry == "freeze":\n        V.freeze(x)\n    elif entry == "settle":\n        V.settle(x)\n    else:\n        T0 = 1_700_000_000_000_000_000\n        class S:\n            n = 0\n            def on_event(self, ev, ctx):\n                S.n += 1\n                if S.n == 1:\n                    try:\n                        ctx.place_order(OrderRequest(side="buy", order_type="market", size=1.0,\n                                                     client_order_id="o1", extra=(("k", x),)))\n                    except OrderApiError:\n                        print("refused", flush=True)\n        bars = [BarEvent(received_time_ns=T0 + k, open=100.0, high=100.0, low=100.0, close=100.0,\n                         volume=1.0) for k in (0, 10)]\n        CoreEngine(S(), bars, fill_model=ImmediateFillModel(100.0), account=RecordingAccount(),\n                   cost_model=NullCostModel()).run()\n    print("done", flush=True)\nexcept (ValueError, OrderApiError):\n    print("refused", flush=True)\n', 'pairs-slot', 'place_order', '40']' timed out after 20 seconds
+
+/usr/lib/python3.11/subprocess.py:1253: TimeoutExpired
+
+During handling of the above exception, another exception occurred:
+
+form = 'pairs-slot', entry = 'place_order'
+
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "place_order"])
+    @pytest.mark.parametrize("form", ["forged-hash", "pairs-slot"])
+    def test_a_key_the_sender_never_hashed_is_taken_in_bounded_time(form, entry):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        try:
+            out = subprocess.run([sys.executable, "-c", CHILD, form, entry, "40"], capture_output=True, text=True,
+                                 timeout=20, env=env)
+        except subprocess.TimeoutExpired:
+>           pytest.fail(f"{form} via {entry}: the core did not take or refuse a value of 41 tuples within 20 s "
+                        f"(its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)")
+E           Failed: pairs-slot via place_order: the core did not take or refuse a value of 41 tuples within 20 s (its copy of the key is hashed by the interpreter's tuple hash, unfolding 2**40 tuples)
+
+tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py:106: Failed
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-3] __
+
+entry = 'freeze', K = 3
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: freeze K=3: 52 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(348, [('new', 348, 1), ('new', 348, 2), ('secret', 51, 2)]), (349, [('new', 349, 1), ('new', 349, 2), ('secret', 50, 2)]), (350, [('new', 350, 1), ('new', 350, 2), ('secret', 49, 2)])]
+E       assert '52' == '0'
+E         
+E         - 0
+E         + 52
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-6] __
+
+entry = 'freeze', K = 6
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: freeze K=6: 117 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(283, [('new', 283, 1), ('new', 283, 2), ('new', 283, 3), ('new', 283, 4), ('new', 283, 5), ('secret', 116, 5)]), (284, [('new', 284, 1), ('new', 284, 2), ('new', 284, 3), ('new', 284, 4), ('new', 284, 5), ('secret', 115, 5)]), (285, [('new', 285, 1), ('new', 285, 2), ('new', 285, 3), ('new', 285, 4), ('new', 285, 5), ('secret', 114, 5)])]
+E       assert '117' == '0'
+E         
+E         - 0
+E         + 117
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-3] __
+
+entry = 'settle', K = 3
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: settle K=3: 52 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(348, [('new', 348, 1), ('new', 348, 2), ('secret', 51, 2)]), (349, [('new', 349, 1), ('new', 349, 2), ('secret', 50, 2)]), (350, [('new', 350, 1), ('new', 350, 2), ('secret', 49, 2)])]
+E       assert '52' == '0'
+E         
+E         - 0
+E         + 52
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-6] __
+
+entry = 'settle', K = 6
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: settle K=6: 117 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(283, [('new', 283, 1), ('new', 283, 2), ('new', 283, 3), ('new', 283, 4), ('new', 283, 5), ('secret', 116, 5)]), (284, [('new', 284, 1), ('new', 284, 2), ('new', 284, 3), ('new', 284, 4), ('new', 284, 5), ('secret', 115, 5)]), (285, [('new', 285, 1), ('new', 285, 2), ('new', 285, 3), ('new', 285, 4), ('new', 285, 5), ('secret', 114, 5)])]
+E       assert '117' == '0'
+E         
+E         - 0
+E         + 117
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-3] _
+
+entry = 'extra_dict', K = 3
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: extra_dict K=3: 49 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(350, [('new', 350, 1), ('new', 350, 2), ('secret', 49, 2)]), (351, [('new', 351, 1), ('new', 351, 2), ('secret', 48, 2)]), (352, [('new', 352, 1), ('new', 352, 2), ('secret', 47, 2)])]
+E       assert '49' == '0'
+E         
+E         - 0
+E         + 49
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+_ test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-6] _
+
+entry = 'extra_dict', K = 6
+
+    @pytest.mark.parametrize("K", [3, 6])
+    @pytest.mark.parametrize("entry", ["freeze", "settle", "extra_dict"])
+    def test_a_rebuilt_container_is_never_put_where_another_object_now_is(entry, K):
+        env = {**os.environ, "PYTHONPATH": SRC}
+        out = subprocess.run([sys.executable, "-c", CHILD, entry, "400", str(K)], capture_output=True, text=True,
+                             timeout=120, env=env)
+        assert out.returncode == 0, out.stderr[-2000:]
+        changed, nbad, sample = out.stdout.strip().splitlines()[-1].split(" ", 2)
+        assert changed == "True", f"{entry} K={K}: fewer than 2 changes ran during the walk (cell not measured)"
+>       assert nbad == "0", (f"{entry} K={K}: {nbad} of 400 places came out holding a value the sender's container "
+                             f"never held (the copy of a container freed during the walk, whose id a new one got): "
+                             f"{sample}")
+E       AssertionError: extra_dict K=6: 114 of 400 places came out holding a value the sender's container never held (the copy of a container freed during the walk, whose id a new one got): [(285, [('new', 285, 1), ('new', 285, 2), ('new', 285, 3), ('new', 285, 4), ('new', 285, 5), ('secret', 114, 5)]), (286, [('new', 286, 1), ('new', 286, 2), ('new', 286, 3), ('new', 286, 4), ('new', 286, 5), ('secret', 113, 5)]), (287, [('new', 287, 1), ('new', 287, 2), ('new', 287, 3), ('new', 287, 4), ('new', 287, 5), ('secret', 112, 5)])]
+E       assert '114' == '0'
+E         
+E         - 0
+E         + 114
+
+tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py:126: AssertionError
+__ test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[2000] ___
+
+width = 2000
+
+    @pytest.mark.parametrize("width", [2000, 8000])
+    def test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth(width):
+        shallow, deep = _value(1, width), _value(95, width)
+        p1, p95 = _peak(shallow), _peak(deep)
+>       assert p95 <= p1 + 5_000_000, (
+            f"{width} ints under 95 keys: freeze peaked at {p95 / 1e6:.1f} MB, under 1 key {p1 / 1e6:.1f} MB; "
+            f"the 94 extra dicts and keys are under 0.1 MB")
+E       AssertionError: 2000 ints under 95 keys: freeze peaked at 61.1 MB, under 1 key 1.0 MB; the 94 extra dicts and keys are under 0.1 MB
+E       assert 61084342 <= (962576 + 5000000)
+
+tests/bt/critic/item_0/test_i0r17_where_text_memory.py:56: AssertionError
+__ test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[8000] ___
+
+width = 8000
+
+    @pytest.mark.parametrize("width", [2000, 8000])
+    def test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth(width):
+        shallow, deep = _value(1, width), _value(95, width)
+        p1, p95 = _peak(shallow), _peak(deep)
+>       assert p95 <= p1 + 5_000_000, (
+            f"{width} ints under 95 keys: freeze peaked at {p95 / 1e6:.1f} MB, under 1 key {p1 / 1e6:.1f} MB; "
+            f"the 94 extra dicts and keys are under 0.1 MB")
+E       AssertionError: 8000 ints under 95 keys: freeze peaked at 236.0 MB, under 1 key 3.8 MB; the 94 extra dicts and keys are under 0.1 MB
+E       assert 236014918 <= (3767440 + 5000000)
+
+tests/bt/critic/item_0/test_i0r17_where_text_memory.py:56: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_0/test_battery_def_grids.py::test_the_machine_agrees_with_the_definition_on_every_cell_run[D]
+FAILED tests/bt/battery/item_0/test_battery_item0.py::test_every_use_of_the_scene_keepers_terms_is_judged
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-freeze]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-settle]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[forged-hash-place_order]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-freeze]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-settle]
+FAILED tests/bt/critic/item_0/test_i0r17_forged_frozendict_key_hash_unfolds.py::test_a_key_the_sender_never_hashed_is_taken_in_bounded_time[pairs-slot-place_order]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[freeze-6]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[settle-6]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-3]
+FAILED tests/bt/critic/item_0/test_i0r17_walk_memo_keeps_no_object.py::test_a_rebuilt_container_is_never_put_where_another_object_now_is[extra_dict-6]
+FAILED tests/bt/critic/item_0/test_i0r17_where_text_memory.py::test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[2000]
+FAILED tests/bt/critic/item_0/test_i0r17_where_text_memory.py::test_the_memory_of_freeze_is_decided_by_the_objects_not_their_depth[8000]
+16 failed, 572 passed in 524.65s (0:08:44)

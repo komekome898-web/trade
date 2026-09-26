@@ -1,0 +1,610 @@
+=== 区分1 20 回目の実行 生ログ 2026-09-22 ===
+--- 2026-09-22T15:29:40Z method=GET url=https://ungh.cc/repos/paperswithbacktest/awesome-systematic-trading/files/main label=awesome_files code=200 bytes=10131
+{"meta":{"sha":"4e23dd84c9ff746ddfcbc856316bcbcef0855b81"},"files":[{"path":".github/workflows/link-check.yml","mode":"100644","sha":"9fcba79dc03ccf83f0881cbfb3b60e36b41db2e4","size":1700},{"path":".g
+--- 2026-09-22T15:29:47Z method=GET url=https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md label=awesome_readme code=200 bytes=90733
+<div align="center">
+  <img src="static/images/awesome-systematic-trading.jpeg" height=200 alt=""/>
+  <h1>Awesome Systematic Trading</h1>
+</div>
+<div align=center><img src="https://awesome.re/badge.sv
+--- 2026-09-22T15:32:16Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame label=c63_repo code=200 bytes=574
+{"repo":{"id":64071932,"name":"trade-frame","repo":"rburkholder/trade-frame","description":"C++ 17 based library (with sample applications) for testing equities, futures, currencies, etfs & options ba
+--- 2026-09-22T15:32:17Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame/files/master label=c63_files code=200 bytes=243155
+{"meta":{"sha":"363ccda6faf8264c9c07ea50779de27ecc06b5b0"},"files":[{"path":".gitignore","mode":"100644","sha":"d5a4d32a70202c3193e6ada97fa37edeacfe69fc","size":1637},{"path":".vscode/launch.json","mo
+--- 2026-09-22T15:32:18Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/README.md label=c63_readme code=200 bytes=11933
+# trade-frame
+
+## Introduction
+
+This is a:
+* library of functions to sink market data, organize time series, build indicators, author algorithms, and issue orders to a broker for high-capacity, low-la
+--- 2026-09-22T15:32:18Z method=grep target=c63_readme_kw note=README.md の語の当たり行(行番号つき)
+13:Positions are composed of a [Watch](lib/TFTrading/Watch.h) class to record bid/ask/tick of [Instruments](lib/TFTrading/Instrument.h).
+17:A [Simulation Interface](lib/TFSimulation/SimulationInterface.hpp) is provided for testing strategies off-line.  The simulator will accept [Orders](lib/TFTrading/Order.h) of type Market and Limit assuming bid/ask data has been captured from the exchange during a live session.  A 50ms - 100ms delay q
+171:* [TFTimeSeries](lib/TFTimeSeries) - manage trades, quotes, greeks, [level II order book](lib/TFIQFeed/Level2)
+186:* [BarChart](BarChart/README.md) - tag instruments by interest and review last 200 daily bars
+188:* [Collector](Collector/README.md) - stream real time bid/ask/tick data to disk for use in backtesting and training
+198:* [SP500](SP500/README.md) - Backtest SPY symbol with support of ticks_ratio using libtorch LSTM based model to train/predict on Collector data
+202:* StickShift2 - some rough code for some option trading ideas
+--- 2026-09-22T15:32:26Z method=GET url=https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting label=c41_repo code=200 bytes=337
+{"repo":{"id":1156777542,"name":"prediction-market-backtesting","repo":"evan-kolberg/prediction-market-backtesting","description":"An extension for Nautilus Trader","createdAt":"2026-02-13T03:21:19Z",
+--- 2026-09-22T15:32:27Z method=GET url=https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting/files/v4.1-alpha label=c41_files code=200 bytes=33120
+{"meta":{"sha":"c76e77af00ef53472a9da8f66dae7fdd2d3e5928"},"files":[{"path":".env.example","mode":"100644","sha":"64f19165c159fcf17122bc53aa1597e5ff195fa7","size":34},{"path":".gitattributes","mode":"
+--- 2026-09-22T15:32:27Z method=GET url=https://raw.githubusercontent.com/evan-kolberg/prediction-market-backtesting/v4.1-alpha/README.md label=c41_readme code=200 bytes=18362
+# prediction-market-backtesting
+
+![GitHub stars](https://img.shields.io/github/stars/evan-kolberg/prediction-market-backtesting?style=social)
+![GitHub forks](https://img.shields.io/github/forks/evan-k
+--- 2026-09-22T15:32:27Z method=grep target=c41_readme_kw note=README.md の語の当たり行(行番号つき)
+1:# prediction-market-backtesting
+3:![GitHub stars](https://img.shields.io/github/stars/evan-kolberg/prediction-market-backtesting?style=social)
+4:![GitHub forks](https://img.shields.io/github/forks/evan-kolberg/prediction-market-backtesting?style=social)
+5:![GitHub watchers](https://img.shields.io/github/watchers/evan-kolberg/prediction-market-backtesting?style=social)
+14:![GitHub last commit](https://img.shields.io/github/last-commit/evan-kolberg/prediction-market-backtesting)
+15:![GitHub commit activity](https://img.shields.io/github/commit-activity/m/evan-kolberg/prediction-market-backtesting)
+16:![GitHub code size](https://img.shields.io/github/languages/code-size/evan-kolberg/prediction-market-backtesting)
+17:![GitHub top language](https://img.shields.io/github/languages/top/evan-kolberg/prediction-market-backtesting)
+18:![GitHub open issues](https://img.shields.io/github/issues/evan-kolberg/prediction-market-backtesting)
+19:![GitHub contributors](https://img.shields.io/github/contributors/evan-kolberg/prediction-market-backtesting)
+20:![GitHub pull requests](https://img.shields.io/github/issues-pr/evan-kolberg/prediction-market-backtesting)
+21:![GitHub closed issues](https://img.shields.io/github/issues-closed/evan-kolberg/prediction-market-backtesting)
+22:![GitHub closed pull requests](https://img.shields.io/github/issues-pr-closed/evan-kolberg/prediction-market-backtesting)
+41:- Book replay order book deltas with trade ticks
+45:- Better backtest runner classes via EXPERIMENT objects
+53:Looking for the old version? That was renamed to [Version 1](https://github.com/evan-kolberg/prediction-market-backtesting/tree/v1)
+55:Backtesting framework for prediction market strategies on
+59:[Opinion.trade](https://opinion.trade) are planned next; [Kalshi](https://kalshi.com) support depends on access to L2 historical book data. Current Kalshi components are research and fee-modeling plumbing, not a public runnable backtest path. Plotting inspired by [minitrade](https://github.com/dodid
+62:Fantastic single & multi-market charting. Featuring: equity (total & individual markets), profit / loss ticks, P&L periodic bars, market allocation, YES price (with green buy and red sell fills), drawdown, sharpe (with above/below shading), cash / equity, monthly returns, and cumulative brier advant
+63:![Charting preview](https://raw.githubusercontent.com/evan-kolberg/prediction-market-backtesting/main/docs/assets/charting-preview.jpeg)
+65:**If you find any bugs, unexpected behavior, or missing simulation features, PLEASE post an [issue](https://github.com/evan-kolberg/prediction-market-backtesting/issues/new) or [discussion](https://github.com/evan-kolberg/prediction-market-backtesting/discussions/new/choose).**
+67:Detailed guides have been filed away in the [docs index](https://evan-kolberg.github.io/prediction-market-backtesting/) for better organization and long-term sustainability.
+71:- [Docs Index](https://evan-kolberg.github.io/prediction-market-backtesting/)
+72:- [Start Here](https://evan-kolberg.github.io/prediction-market-backtesting/#start-here)
+73:- [Core Framework](https://evan-kolberg.github.io/prediction-market-backtesting/#core-framework)
+74:- [Advanced / Experiments](https://evan-kolberg.github.io/prediction-market-backtesting/#advanced-experiments)
+75:- [Project](https://evan-kolberg.github.io/prediction-market-backtesting/#project)
+76:- [Acknowledgements](https://evan-kolberg.github.io/prediction-market-backtesting/#acknowledgements)
+77:- [Setup](https://evan-kolberg.github.io/prediction-market-backtesting/setup/)
+78:- [Prerequisites](https://evan-kolberg.github.io/prediction-market-backtesting/setup/#prerequisites)
+79:- [Install](https://evan-kolberg.github.io/prediction-market-backtesting/setup/#install)
+80:- [First Run](https://evan-kolberg.github.io/prediction-market-backtesting/setup/#first-run)
+81:- [Timing And Cache Defaults](https://evan-kolberg.github.io/prediction-market-backtesting/setup/#timing-and-cache-defaults)
+82:- [Extension Architecture](https://evan-kolberg.github.io/prediction-market-backtesting/setup/#extension-architecture)
+83:- [Backtests And Runners](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/)
+84:- [Repo Layout](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#repo-layout)
+85:- [Archived Private Research](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#archived-private-research)
+86:- [Runner Contract](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#runner-contract)
+87:- [HTML And Report Modes](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#html-and-report-modes)
+88:- [Optimization Runners](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#optimization-runners)
+89:- [Designing Good Runner Files](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#designing-good-runner-files)
+90:- [Multi-Market Strategy Configs](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#multi-market-strategy-configs)
+91:- [Running Backtests](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#running-backtests)
+92:- [Notebook Runners](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#notebook-runners)
+93:- [Editing Runner Inputs](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#editing-runner-inputs)
+94:- [Data Vendor Notes](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#data-vendor-notes)
+95:- [Native Vendors](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#native-vendors)
+96:- [PMXT](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#pmxt)
+97:- [Telonex](https://evan-kolberg.github.io/prediction-market-backtesting/backtests/#telonex)
+98:- [Sandbox And Live Runners](https://evan-kolberg.github.io/prediction-market-backtesting/live/)
+99:- [Current Scope](https://evan-kolberg.github.io/prediction-market-backtesting/live/#current-scope)
+100:- [Directory Contract](https://evan-kolberg.github.io/prediction-market-backtesting/live/#directory-contract)
+101:- [Sandbox Runner Contract](https://evan-kolberg.github.io/prediction-market-backtesting/live/#sandbox-runner-contract)
+102:- [Shared Live Helpers](https://evan-kolberg.github.io/prediction-market-backtesting/live/#shared-live-helpers)
+103:- [BTC 5m Sandbox Plumbing](https://evan-kolberg.github.io/prediction-market-backtesting/live/#btc-5m-sandbox-plumbing)
+104:- [Example BTC Snapshot Runner](https://evan-kolberg.github.io/prediction-market-backtesting/live/#example-btc-snapshot-runner)
+105:- [Archived Strategy Boundary](https://evan-kolberg.github.io/prediction-market-backtesting/live/#archived-strategy-boundary)
+106:- [Model And Parameter Placement](https://evan-kolberg.github.io/prediction-market-backtesting/live/#model-and-parameter-placement)
+107:- [Running Sandbox](https://evan-kolberg.github.io/prediction-market-backtesting/live/#running-sandbox)
+108:- [Public Polymarket Data](https://evan-kolberg.github.io/prediction-market-backtesting/live/#public-polymarket-data)
+--- 2026-09-22T15:32:28Z method=GET url=https://ungh.cc/repos/QuantConnect/Lean label=c52_repo code=200 bytes=313
+{"repo":{"id":27251463,"name":"Lean","repo":"QuantConnect/Lean","description":"Lean Algorithmic Trading Engine by QuantConnect (Python, C#)","createdAt":"2014-11-28T04:20:19Z","updatedAt":"2026-09-22T
+--- 2026-09-22T15:32:28Z method=GET url=https://ungh.cc/repos/QuantConnect/Lean/files/master label=c52_files code=200 bytes=892540
+{"meta":{"sha":"7d534a1bb4252b57845982445f35ea9ffb9b170b"},"files":[{"path":".devcontainer/Dockerfile","mode":"100644","sha":"e425430b559a33cd033a550a6596d9342e751c75","size":307},{"path":".devcontain
+--- 2026-09-22T15:32:30Z method=GET url=https://raw.githubusercontent.com/QuantConnect/Lean/master/readme.md label=c52_readme code=200 bytes=11000
+<picture >
+  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/user-attachments/assets/f3581da5-1983-4f6c-af5a-55c79b37913a">
+  <source media="(prefers-color-scheme: light)" srcs
+--- 2026-09-22T15:32:30Z method=grep target=c52_readme_kw note=readme.md の語の当たり行(行番号つき)
+22:LEAN is an event-driven, professional-caliber algorithmic trading  platform built with a passion for elegant engineering and deep quant  concept modeling. Out-of-the-box alternative data and live-trading support.
+62:QuantConnect Lean CLI is a command-line interface tool for interacting with the Lean algorithmic trading engine, which is an open-source platform for backtesting and live trading algorithms in multiple financial markets. It allows developers to manage projects, run backtests, deploy live algorithms,
+85:Backtest a project locally using Docker
+88:lean backtest
+152:- choose **Run and Debug** from the Activity Bar, then click **Launch**, or
+--- 2026-09-22T15:32:30Z method=GET url=https://ungh.cc/repos/nautechsystems/nautilus_trader label=c58_repo code=200 bytes=367
+{"repo":{"id":138552196,"name":"nautilus_trader","repo":"nautechsystems/nautilus_trader","description":"Production-grade Rust-native trading engine with deterministic event-driven architecture","creat
+--- 2026-09-22T15:32:31Z method=GET url=https://ungh.cc/repos/nautechsystems/nautilus_trader/files/develop label=c58_files code=200 bytes=684096
+{"meta":{"sha":"84a98f7f3cc786085496976320c3cb320024217f"},"files":[{"path":".cargo/audit.toml","mode":"100644","sha":"ad858c245a090d686f7e678556bcfae353092fb3","size":1478},{"path":".cargo/config.tom
+--- 2026-09-22T15:32:32Z method=GET url=https://raw.githubusercontent.com/nautechsystems/nautilus_trader/develop/README.md label=c58_readme code=200 bytes=38071
+# <img src="https://github.com/nautechsystems/nautilus_trader/raw/develop/assets/nautilus-trader-logo.png" alt="NautilusTrader" width="500">
+
+[![rustc](https://img.shields.io/crates/msrv/nautilus-core
+--- 2026-09-22T15:32:32Z method=grep target=c58_readme_kw note=README.md の語の当たり行(行番号つき)
+34:event-driven architecture, with Python serving as the control plane for strategy logic,
+41:The same strategy and execution-algorithm code can run across backtest and live systems, reducing
+44:[Backtest and live differences](docs/concepts/live.md#backtest-and-live-differences).
+60:- **Backtesting**: Multiple venues, instruments, and strategies simultaneously using historical quote tick, trade tick, bar, order book, and custom data with nanosecond resolution.
+74:Trading strategy research is often conducted in Python using vectorized approaches, while
+75:production trading systems are implemented separately using event-driven architectures in
+80:A Rust-native core provides a deterministic event-driven runtime for both research and live
+148:The open-source project focuses on single-node backtesting and live trading for individual and small-team quantitative traders.
+547:- [backtest](https://github.com/nautechsystems/nautilus_trader/tree/develop/examples/backtest/) examples using a `BacktestEngine` directly.
+548:- [EMA crossover backtest](https://github.com/nautechsystems/nautilus_trader/blob/develop/crates/backtest/examples/engine_ema_cross.rs) example written in Rust.
+557:example backtest notebook with accompanying data.
+559:example backtest notebook with accompanying data.
+567:You can launch the backtest example container by running:
+--- 2026-09-22T15:32:41Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs label=c61_repo code=200 bytes=343
+{"repo":{"id":548473954,"name":"barter-rs","repo":"barter-rs/barter-rs","description":"Open-source Rust framework for building event-driven live-trading & backtesting systems","createdAt":"2022-10-09T
+--- 2026-09-22T15:32:41Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs/files/main label=c61_files code=200 bytes=36425
+{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workf
+--- 2026-09-22T15:32:42Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/README.md label=c61_readme code=200 bytes=12295
+# Barter
+Barter is an algorithmic trading ecosystem of Rust libraries for building high-performance live-trading, paper-trading 
+and back-testing systems.
+* **Fast**: Written in native Rust. Minimal a
+--- 2026-09-22T15:32:42Z method=grep target=c61_readme_kw note=README.md の語の当たり行(行番号つき)
+50:- Backtest utilities for efficiently running thousands of concurrent backtests.
+89:&[SubKind::PublicTrades, SubKind::OrderBooksL1],
+131:debug!(?audit, "AuditStream consumed AuditTick");
+--- 2026-09-22T15:32:42Z method=GET url=https://ungh.cc/repos/quarkfin/qf-lib label=c62_repo code=200 bytes=467
+{"repo":{"id":202696503,"name":"qf-lib","repo":"quarkfin/qf-lib","description":"Modular Python library that provides an advanced event driven backtester and a set of high quality tools for quantitativ
+--- 2026-09-22T15:32:43Z method=GET url=https://ungh.cc/repos/quarkfin/qf-lib/files/master label=c62_files code=200 bytes=123684
+{"meta":{"sha":"dfbcffc6aba129c827cfe7caab85da864e70fece"},"files":[{"path":".coverargerc","mode":"100644","sha":"e5372b9ca7fc4d0017d0fc2e9222f82ea63742e3","size":815},{"path":".gitattributes","mode":
+--- 2026-09-22T15:32:44Z method=GET url=https://raw.githubusercontent.com/quarkfin/qf-lib/master/README.md label=c62_readme code=200 bytes=4529
+# QF-Lib
+
+[![PyPI](https://img.shields.io/pypi/v/qf-lib?color=green&label=PyPI%20Latest%20Release)](https://pypi.org/project/qf-lib/)
+[![Downloads](https://static.pepy.tech/personalized-badge/qf-lib?p
+--- 2026-09-22T15:32:44Z method=grep target=c62_readme_kw note=README.md の語の当たり行(行番号つき)
+15:A large part of the project is dedicated to backtesting investment strategies.
+16:The Backtester uses an **event-driven architecture** and simulates events such as daily market opening
+21:* Tools to prevent look-ahead bias in the backtesting environment.
+--- 2026-09-22T15:32:44Z method=GET url=https://ungh.cc/repos/AsyncAlgoTrading/aat label=c65_repo code=200 bytes=314
+{"repo":{"id":187712019,"name":"aat","repo":"AsyncAlgoTrading/aat","description":"Asynchronous, event-driven algorithmic trading in Python and C++","createdAt":"2019-05-20T20:54:54Z","updatedAt":"2026
+--- 2026-09-22T15:32:45Z method=GET url=https://ungh.cc/repos/AsyncAlgoTrading/aat/files/main label=c65_files code=000 bytes=0
+
+--- 2026-09-22T15:33:15Z method=GET url=https://ungh.cc/repos/AsyncAlgoTrading/aat/files/main label=c65_files_retry code=200 bytes=37129
+{"meta":{"sha":"c4a07d4102a811c779957033aa26a598c1795cdb"},"files":[{"path":".clang-format","mode":"100644","sha":"605791b211109b0ffeaf63acf958773b5b11bf20","size":2020},{"path":".gitattributes","mode
+--- 2026-09-22T15:33:16Z method=GET url=https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/README.md label=c65_readme code=200 bytes=4184
+
+<img src="https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/docs/img/icon.png" width="200px"></img>
+
+[![Build Status](https://github.com/AsyncAlgoTrading/aat/workflows/Build%20Status/badge.
+--- 2026-09-22T15:33:17Z method=grep target=c65_readme_kw note=README.md の語の当たり行(行番号つき)
+10:`aat` is an asynchronous, event-driven framework for writing algorithmic trading strategies in python with optional acceleration in C++. It is designed to be modular and extensible, with support for a wide variety of instruments and strategies, live trading across (and between) multiple exchanges, f
+12:Like [Zipline](https://github.com/quantopian/zipline) and [Lean](https://github.com/QuantConnect/Lean), `aat` exposes a single strategy class which is utilized for both live trading and backtesting. The strategy class is simple enough to write and test algorithms quickly, but extensible enough to al
+25:- backtest engine
+37:#### Backtest engine
+38:The backtest engine provides the ability to run the same stragegy offline against historical data.
+50:`aat` also provides a complete limit-order book implementation, including flags like `fill-or-kill` and `all-or-nothing`, which is used to power the synthetic testing exchange.
+--- 2026-09-22T15:33:28Z method=GET url=https://ungh.cc/repos/letianzj/quanttrader label=c68_repo code=200 bytes=295
+{"repo":{"id":283028042,"name":"quanttrader","repo":"letianzj/quanttrader","description":"Backtest and live trading in Python","createdAt":"2020-07-27T22:08:29Z","updatedAt":"2026-09-21T16:36:39Z","pu
+--- 2026-09-22T15:33:29Z method=GET url=https://ungh.cc/repos/letianzj/quanttrader/files/master label=c68_files code=200 bytes=50774
+{"meta":{"sha":"224341d57e146aeaa143516049d2f37ff102dbf0"},"files":[{"path":".github/ISSUE_TEMPLATE.md","mode":"100644","sha":"41ca3240a8d0526c573220e5f464b496a4c16bde","size":322},{"path":".github/wo
+--- 2026-09-22T15:33:30Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/README.md label=c68_readme code=200 bytes=3101
+# quanttrader
+[![pypi](https://img.shields.io/pypi/v/nseazy.svg)](https://pypi.python.org/pypi/quanttrader)
+[![python](https://img.shields.io/pypi/pyversions/nseazy.svg)](https://pypi.python.org/pypi/
+--- 2026-09-22T15:33:30Z method=grep target=c68_readme_kw note=README.md の語の当たり行(行番号つき)
+6:Welcome to quanttrader, a pure python-based event-driven backtest and live trading package for quant traders.
+10:In most cases, a backtest strategy can be directly used for live trade by simply switching to live brokerage. A control window is provided to monitor live trading sessions for each strategy separately and the portfolio as a whole.
+12:### Backtest
+14:[Backtest code structure](https://letianzj.github.io/quanttrading-backtest.html)
+16:[Backtests examples](https://github.com/letianzj/QuantResearch/tree/master/backtest)
+67:* Limit Order
+--- 2026-09-22T15:33:30Z method=GET url=https://ungh.cc/repos/gobacktest/gobacktest label=c69_repo code=200 bytes=307
+{"repo":{"id":98384762,"name":"gobacktest","repo":"gobacktest/gobacktest","description":"event-driven backtesting framework written in golang","createdAt":"2017-07-26T05:54:17Z","updatedAt":"2026-08-0
+--- 2026-09-22T15:33:31Z method=GET url=https://ungh.cc/repos/gobacktest/gobacktest/files/main label=c69_files code=200 bytes=9247
+{"meta":{"sha":"719cff68de8ad45c45be4c68df6e6f31e5e64305"},"files":[{"path":".codeclimate.yml","mode":"100644","sha":"f00f21e2ade9dbe86f83716155a67ca843c7f7c5","size":124},{"path":".github/ISSUE_TEMPL
+--- 2026-09-22T15:33:32Z method=GET url=https://raw.githubusercontent.com/gobacktest/gobacktest/main/README.md label=c69_readme code=200 bytes=6721
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/dirkolbrich/gobacktest)
+[![Travis](https://img.shields.io/travis/dirkolbrich/gobacktest
+--- 2026-09-22T15:33:32Z method=grep target=c69_readme_kw note=README.md の語の当たり行(行番号つき)
+1:[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/dirkolbrich/gobacktest)
+2:[![Travis](https://img.shields.io/travis/dirkolbrich/gobacktest.svg?style=flat-square)](https://travis-ci.org/dirkolbrich/gobacktest)
+3:[![Coverage Status](https://img.shields.io/coveralls/dirkolbrich/gobacktest/master.svg?style=flat-square)](https://coveralls.io/github/dirkolbrich/gobacktest?branch=master)
+4:[![Go Report Card](https://goreportcard.com/badge/github.com/dirkolbrich/gobacktest?style=flat-square)](https://goreportcard.com/report/github.com/dirkolbrich/gobacktest)
+11:# gobacktest - Fundamental stock analysis backtesting
+13:An event-driven backtesting framework to test stock trading strategies based on fundamental analysis. Preferably this package will be the core of a backend service exposed via a REST API. Currently it has only core functionality.
+23:"github.com/dirkolbrich/gobacktest"
+24:"github.com/dirkolbrich/gobacktest/data"
+25:"github.com/dirkolbrich/gobacktest/strategy"
+29:// initiate a new backtester
+30:test := gobacktest.New()
+36:// create a data provider and load the data into the backtest
+45:strategy.SetChildren(gobacktest.NewAsset("TEST.DE"))
+47:// load the strategy into the backtest
+50:// run the backtest
+60:The single parts of the backtester can be set independently:
+63:// initiate new backtester
+64:test := &Backtest{}
+67:portfolio := &gobacktest.Portfolio{}
+70:sizeManager := &gobacktest.Size{DefaultSize: 100, DefaultValue: 1000}
+73:riskManager := &gobacktest.Risk{}
+79:strategy := gobacktest.NewStrategy("basic")
+85:strategy.SetChildren(gobacktest.NewAsset("TEST.DE"))
+87:// load the strategy into the backtest
+90:// create an execution provider and load it into the backtest
+91:exchange := &gobacktest.Exchange{
+98:// choose a statistic and load into it the backtest
+99:statistic := &gobacktest.Statistic{}
+109:These are the basic components of an event-driven framework.
+111:1. BackTester - general test case, bundles the following elements into a single test
+119:7. StatisticHandler - tracks all events during the backtests and calculates useful statistics like equity return, drawdown or sharp ratio etc., could be used to replay the complete backtest for later reference
+124:An overviev of the infrastructure of a complete backtesting and trading environment. Taken from the production roadmap of [QuantRocket](https://www.quantrocket.com/#product-roadmap).
+148:+ backtesting and trading engine
+156:These links to articles are a good starting point to understand the intentions and basic functions of an event-driven backtesting framework.
+158:- Initial idea via a blog post [Python For Finance: Algorithmic Trading](https://www.datacamp.com/community/tutorials/finance-python-trading#backtesting) by Karlijn Willems [@willems_karlijn](https://twitter.com/willems_karlijn).
+159:- Very good explanation of the internals of a backtesting system by Michael Halls-Moore [@mhallsmoore](https://twitter.com/mhallsmoore) in the blog post series [Event-Driven-Backtesting-with-Python](https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-I).
+161:### Other backtesting frameworks
+167:- [QSTrader](https://www.quantstart.com/qstrader) - open-source backtesting framework from [QuantStart](https://www.quantstart.com)
+168:- [bt - Flexible Backtesting for Python](http://pmorissette.github.io/bt/) - an inspiration for algorithm building blocks and a strategy/assets tree
+--- 2026-09-22T15:33:49Z method=GET url=https://raw.githubusercontent.com/barter-rs/barter-rs/main/README.md label=c61_readme_save code=200 bytes=12295
+# Barter
+Barter is an algorithmic trading ecosystem of Rust libraries for building high-performance live-trading, paper-trading 
+and back-testing systems.
+* **Fast**: Written in native Rust. Minimal a
+--- 2026-09-22T15:33:49Z method=GET url=https://raw.githubusercontent.com/quarkfin/qf-lib/master/README.md label=c62_readme_save code=200 bytes=4529
+# QF-Lib
+
+[![PyPI](https://img.shields.io/pypi/v/qf-lib?color=green&label=PyPI%20Latest%20Release)](https://pypi.org/project/qf-lib/)
+[![Downloads](https://static.pepy.tech/personalized-badge/qf-lib?p
+--- 2026-09-22T15:33:50Z method=GET url=https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/README.md label=c65_readme_save code=200 bytes=4184
+
+<img src="https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/docs/img/icon.png" width="200px"></img>
+
+[![Build Status](https://github.com/AsyncAlgoTrading/aat/workflows/Build%20Status/badge.
+--- 2026-09-22T15:33:50Z method=GET url=https://raw.githubusercontent.com/letianzj/quanttrader/master/README.md label=c68_readme_save code=200 bytes=3101
+# quanttrader
+[![pypi](https://img.shields.io/pypi/v/nseazy.svg)](https://pypi.python.org/pypi/quanttrader)
+[![python](https://img.shields.io/pypi/pyversions/nseazy.svg)](https://pypi.python.org/pypi/
+--- 2026-09-22T15:33:50Z method=GET url=https://raw.githubusercontent.com/gobacktest/gobacktest/main/README.md label=c69_readme_save code=200 bytes=6721
+[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/dirkolbrich/gobacktest)
+[![Travis](https://img.shields.io/travis/dirkolbrich/gobacktest
+--- 2026-09-22T15:33:50Z method=GET url=https://raw.githubusercontent.com/rburkholder/trade-frame/master/README.md label=c63_readme_save code=200 bytes=11933
+# trade-frame
+
+## Introduction
+
+This is a:
+* library of functions to sink market data, organize time series, build indicators, author algorithms, and issue orders to a broker for high-capacity, low-la
+--- 2026-09-22T15:33:50Z method=GET url=https://raw.githubusercontent.com/evan-kolberg/prediction-market-backtesting/v4.1-alpha/README.md label=c41_readme_save code=200 bytes=18362
+# prediction-market-backtesting
+
+![GitHub stars](https://img.shields.io/github/stars/evan-kolberg/prediction-market-backtesting?style=social)
+![GitHub forks](https://img.shields.io/github/forks/evan-k
+--- 2026-09-22T15:34:34Z method=GET url=https://ungh.cc/repos/AsyncAlgoTrading/aat/files/main label=c65_files2 code=200 bytes=37129
+{"meta":{"sha":"c4a07d4102a811c779957033aa26a598c1795cdb"},"files":[{"path":".clang-format","mode":"100644","sha":"605791b211109b0ffeaf63acf958773b5b11bf20","size":2020},{"path":".gitattributes","mode
+--- 2026-09-22T15:34:35Z method=GET url=https://ungh.cc/repos/QuantConnect/Lean/files/master label=c52_files2 code=200 bytes=892540
+{"meta":{"sha":"7d534a1bb4252b57845982445f35ea9ffb9b170b"},"files":[{"path":".devcontainer/Dockerfile","mode":"100644","sha":"e425430b559a33cd033a550a6596d9342e751c75","size":307},{"path":".devcontain
+--- 2026-09-22T15:34:43Z method=GET url=https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/aat/core/order_book/price_level.py label=c65_pricelevel code=404 bytes=14
+404: Not Found
+--- 2026-09-22T15:34:58Z method=GET url=https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/aat/core/order_book/price_level/price_level.py label=c65_pricelevel2 code=200 bytes=9600
+from collections import deque
+from typing import Any, cast, Deque, Dict, Iterator, Optional, List, Tuple, Type, Union
+
+from aat.core.data import Order
+from aat.config import OrderType, OrderFlag
+
+from
+--- 2026-09-22T15:34:59Z method=grep target=c65_pricelevel2 note=price_level.py の当たり行
+12:class _PriceLevel(object):
+23:def __new__(cls: Type, *args: Any, **kwargs: Any) -> "_PriceLevel":
+28:def __init__(self, price: float, collector: _Collector):
+38:def price(self) -> float:
+42:def volume(self) -> float:
+45:def add(self, order: Order) -> None:
+46:# append order to deque
+50:self._stop_orders.append(cast(Order, order.stop_target))
+57:self._orders.append(order)
+60:def find(self, order: Order) -> Optional[Order]:
+71:def modify(self, order: Order) -> Order:
+89:def remove(self, order: Order) -> Order:
+104:def cross(self, taker_order: Order) -> Tuple[Optional[Order], List[Order]]:
+132:self._orders_staged.append(maker_order)
+144:self._orders_filled_staged.append(0.0)
+151:# append filled in case need to revert
+152:self._orders_filled_staged.append(to_fill)
+162:# cancel maker event, don't put in queue
+166:self._orders.appendleft(maker_order)
+177:self._orders.appendleft(maker_order)
+184:# append filled in case need to revert
+185:self._orders_filled_staged.append(maker_order.volume)
+187:# don't append to deque
+197:# append filled in case need to revert
+198:self._orders_filled_staged.append(to_fill)
+216:def clear(self) -> None:
+217:"""clear queues"""
+224:def _get_stop_orders(self) -> List[Order]:
+231:def commit(self) -> None:
+235:def revert(self) -> None:
+256:def __bool__(self) -> bool:
+260:def __iter__(self) -> Iterator[Order]:
+265:def __len__(self) -> int:
+269:def __getitem__(self, index: int) -> Order:
+273:def ro(self) -> PriceLevelRO:
+276:def toDict(self) -> Dict[str, Union[int, float]]:
+--- 2026-09-22T15:34:59Z method=GET url=https://raw.githubusercontent.com/QuantConnect/Lean/master/Common/Orders/Fills/FillModel.cs label=c52_fillmodel code=200 bytes=59862
+/*
+ * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
+ * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
+ *
+ * Licensed under the Apache License, Versi
+--- 2026-09-22T15:34:59Z method=grep target=c52_fillmodel note=FillModel.cs の当たり行
+29:/// <summary>
+31:/// </summary>
+34:/// <summary>
+36:/// </summary>
+39:/// <summary>
+43:/// </summary>
+46:/// <summary>
+48:/// </summary>
+54:/// <summary>
+56:/// </summary>
+130:/// <summary>
+132:/// </summary>
+155:/// <summary>
+157:/// </summary>
+238:/// <summary>
+240:/// </summary>
+267:/// <summary>
+269:/// </summary>
+279:/// <summary>
+281:/// </summary>
+340:/// <summary>
+342:/// </summary>
+400:/// <summary>
+402:/// </summary>
+472:/// <summary>
+474:/// </summary>
+567:/// <summary>
+570:/// </summary>
+586:/// <summary>
+588:/// </summary>
+625:if (subscribedTypes.Contains(typeof(Tick)))
+637:else if (subscribedTypes.Contains(typeof(TradeBar)))
+639:var tradeBar = asset.Cache.GetData<TradeBar>();
+689:/// <summary>
+691:/// </summary>
+702:/// <summary>
+704:/// </summary>
+760:/// <summary>
+762:/// </summary>
+821:/// <summary>
+--- 2026-09-22T15:35:12Z method=GET url=https://raw.githubusercontent.com/AsyncAlgoTrading/aat/main/aat/core/order_book/price_level/price_level.py label=c65_pl_lines code=200 bytes=9600
+from collections import deque
+from typing import Any, cast, Deque, Dict, Iterator, Optional, List, Tuple, Type, Union
+
+from aat.core.data import Order
+from aat.config import OrderType, OrderFlag
+
+from
+--- 2026-09-22T15:35:13Z method=grep target=c65_price_level_lines note=aat/core/order_book/price_level/price_level.py の 44-58 行
+44:
+45:    def add(self, order: Order) -> None:
+46:        # append order to deque
+47:        if order.order_type == OrderType.STOP:
+48:            if order.stop_target in self._stop_orders:
+49:                return
+50:            self._stop_orders.append(cast(Order, order.stop_target))
+51:        else:
+52:            if order in self._orders:
+53:                # change event
+54:                self._collector.pushChange(order)
+55:            else:
+56:                if order.filled < order.volume:
+57:                    self._orders.append(order)
+58:                    self._collector.pushOpen(order)
+--- 2026-09-22T15:35:13Z method=GET url=https://raw.githubusercontent.com/QuantConnect/Lean/master/Common/Orders/Fills/FillModel.cs label=c52_fm_lines code=200 bytes=59862
+/*
+ * QUANTCONNECT.COM - Democratizing Finance, Empowering Individuals.
+ * Lean Algorithmic Trading Engine v2.0. Copyright 2014 QuantConnect Corporation.
+ *
+ * Licensed under the Apache License, Versi
+--- 2026-09-22T15:35:13Z method=grep target=c52_fillmodel_lines note=Common/Orders/Fills/FillModel.cs の粒度の語の当たり行
+623:var subscribedTypes = GetSubscribedTypes(asset);
+625:if (subscribedTypes.Contains(typeof(Tick)))
+637:else if (subscribedTypes.Contains(typeof(TradeBar)))
+639:var tradeBar = asset.Cache.GetData<TradeBar>();
+882:var subscribedTypes = GetSubscribedTypes(asset);
+885:var isTickSubscribed = subscribedTypes.Contains(typeof(Tick));
+899:if (subscribedTypes.Contains(typeof(QuoteBar)))
+901:var quoteBar = asset.Cache.GetData<QuoteBar>();
+919:if (subscribedTypes.Contains(typeof(TradeBar)))
+921:var tradeBar = asset.Cache.GetData<TradeBar>();
+941:var subscribedTypes = GetSubscribedTypes(asset);
+944:var isTickSubscribed = subscribedTypes.Contains(typeof(Tick));
+958:if (subscribedTypes.Contains(typeof(QuoteBar)))
+960:var quoteBar = asset.Cache.GetData<QuoteBar>();
+978:if (subscribedTypes.Contains(typeof(TradeBar)))
+980:var tradeBar = asset.Cache.GetData<TradeBar>();
+1008:protected virtual HashSet<Type> GetSubscribedTypes(Security asset)
+1194:var subscriptionTypes = GetSubscribedTypes(asset);
+1197:if (tick != null && subscriptionTypes.Contains(typeof(Tick)))
+1214:var quoteBar = asset.Cache.GetData<QuoteBar>();
+1215:if (quoteBar != null && subscriptionTypes.Contains(typeof(QuoteBar)))
+1225:var tradeBar = asset.Cache.GetData<TradeBar>();
+1226:if (tradeBar != null && subscriptionTypes.Contains(typeof(TradeBar)))
+--- 2026-09-22T15:35:42Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader label=c59_repo code=000 bytes=0
+
+--- 2026-09-22T15:36:13Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader label=c59_repo_retry code=200 bytes=434
+{"repo":{"id":163933412,"name":"PandoraTrader","repo":"pegasusTrader/PandoraTrader","description":"高频量化交易平台 C++ Trade Platform for quant developer 【浮生着甚苦奔忙，量化之路阻且长。 行行代码凝心血，十年辛苦不寻常】","createdAt":"2019
+--- 2026-09-22T15:36:13Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader/files/master label=c59_files code=200 bytes=30756
+{"meta":{"sha":"517f1aa41e57806797a88dff39eb568126da131d"},"files":[{"path":".gitignore","mode":"100644","sha":"a3b5954a54efe8be0f60f12f1477b6074043932c","size":263},{"path":"CMakeLists.txt","mode":"1
+--- 2026-09-22T15:36:14Z method=GET url=https://raw.githubusercontent.com/pegasusTrader/PandoraTrader/master/README.md label=c59_readme code=200 bytes=49363
+﻿# PandoraTrader
+浮生着甚苦奔忙，量化之路阻且长。
+行行代码凝心血，十年辛苦不寻常。
+## A Trade Platform
+
+
+### 起名由来：
+据百度百科介绍，Pandora 是希腊神话中赫菲斯托斯用粘土做成的第一个女人。  
+众神赠予使她拥有更诱人的魅力的礼物：火神赫菲斯托斯给她做了华丽的金长袍；爱神维纳斯赋予她妩媚与诱惑男人的力量；众神使者赫耳墨斯教会了她言语的技能。神灵
+--- 2026-09-22T15:36:15Z method=grep target=c59_readme_kw note=README.md の語の当たり行(行番号つき)
+34:- Tick级别回测
+--- 2026-09-22T15:36:15Z method=GET url=https://ungh.cc/repos/Oddpool/PredictionMarketBench label=c90_repo code=200 bytes=372
+{"repo":{"id":1129333760,"name":"PredictionMarketBench","repo":"Oddpool/PredictionMarketBench","description":"A benchmark for backtesting prediction market trading agents using real Kalshi market repl
+--- 2026-09-22T15:36:15Z method=GET url=https://ungh.cc/repos/Oddpool/PredictionMarketBench/files/main label=c90_files code=200 bytes=4312
+{"meta":{"sha":"611d66941717310858683278940df21c33c406f2"},"files":[{"path":".gitignore","mode":"100644","sha":"20c1f739270da13ead632e4e60a22cfded96bc5a","size":487},{"path":"README.md","mode":"100644
+--- 2026-09-22T15:36:16Z method=GET url=https://raw.githubusercontent.com/Oddpool/PredictionMarketBench/main/README.md label=c90_readme code=200 bytes=6651
+# PredictionMarketBench
+
+A benchmark for evaluating prediction market trading agents using real Kalshi market replay data.
+
+## Overview
+
+PredictionMarketBench replays real Kalshi episodes and evaluate
+--- 2026-09-22T15:36:16Z method=grep target=c90_readme_kw note=README.md の語の当たり行(行番号つき)
+7:PredictionMarketBench replays real Kalshi episodes and evaluates trading agent performance under realistic execution constraints. An "episode" is one Kalshi event with multiple tickers/markets.
+9:- **Input**: Recorded orderbook snapshots and trade prints from Kalshi
+87:| `get_orderbook(ticker, depth)` | Full orderbook for a ticker |
+88:| `get_positions()` | Current positions per ticker |
+91:| `get_resting_orders()` | View resting limit orders |
+100:Order(ticker="TICKER", side=Side.YES, action=Action.BUY,
+104:Order(ticker="TICKER", side=Side.YES, action=Action.BUY,
+109:Order(ticker="TICKER", side=Side.YES, action=Action.BUY,
+114:Order(ticker="TICKER", side=Side.YES, action=Action.BUY,
+121:| Episode | Event Type | Tickers | Description |
+131:Orders execute immediately against the displayed orderbook. Orders that don't cross are rejected.
+134:Orders can rest in the book and receive fills when historical trades match your price. Queue position is simulated based on displayed size and pro-rata fill allocation.
+212:orderbook.parquet  # Market data (or orderbook.csv.gz)
+--- 2026-09-22T15:37:04Z method=run target=dedup.py note=候補の一覧の重複を登録の同一性で機械的に洗った結果(鍵の出所 A=この回に取り直した39番の一覧の被リンク / D=報告の本文に書かれている所有者/登録名 / L=既存の生ログから機械抽出したURL) rc=0
+== 1. 現行の 1〜120 の中での重複(同じ登録が 2 つ以上の番号を持つ) ==
+  当たり 0 件
+== 2. 現行の番号と、1・2 回目の節の独自番号との重複 ==
+  旧  1. hftbacktest                                    ==  23 番 hftbacktest                   鍵 gh:nkaz001/hftbacktest
+  旧  2. NautilusTrader                                 ==  58 番 nautilus_trader               鍵 gh:nautechsystems/nautilus_trader
+  旧  3. vectorbt / vectorbt.pro                        ==  73 番 vectorbt                      鍵 gh:polakowo/vectorbt
+  旧  4. freqtrade                                      ==  75 番 Freqtrade                     鍵 gh:freqtrade/freqtrade
+  旧  5. backtesting                                    ==  55 番 backtesting.py                鍵 gh:kernc/backtesting.py
+  旧  6. zipline-reloaded                               ==  18 番 zipline-reloaded              鍵 gh:stefan-jansen/zipline-reloaded
+  旧  8. Lean CLI                                       ==  22 番 Lean CLI                      鍵 gh:quantconnect/lean-cli
+  旧 11. pyqlib                                         ==  21 番 Qlib                          鍵 gh:microsoft/qlib
+  旧 12. VnPy                                           ==  20 番 VnPy                          鍵 gh:vnpy/vnpy
+  旧 13. Jesse                                          ==  19 番 Jesse                         鍵 gh:jesse-ai/jesse
+  旧 14. Mendl-Labs/BacktestingCore                     ==  15 番 Mendl-Labs/BacktestingCore    鍵 gh:mendl-labs/backtestingcore
+  旧 15. Luczinsritter/event_driven_backtesting_engine  ==  16 番 Luczinsritter/event_driven_backtesting_engine  鍵 gh:luczinsritter/event_driven_backtesting_engine
+  旧 16. Bot18                                          ==  14 番 Bot18                         鍵 gh:carlos8f/bot18
+  旧 18. Basana                                         ==   1 番 Basana                        鍵 gh:gbeced/basana
+  旧 19. Backtrader                                     ==   2 番 Backtrader                    鍵 gh:mementum/backtrader
+  旧 20. PySystemtrade                                  ==   3 番 PySystemtrade                 鍵 gh:robcarver17/pysystemtrade
+  旧 21. PyBroker                                       ==   4 番 PyBroker                      鍵 gh:edtechre/pybroker
+  旧 22. bt                                             ==   5 番 bt                            鍵 gh:pmorissette/bt
+  旧 23. Ziplime                                        ==   6 番 Ziplime                       鍵 gh:ziplime/ziplime
+  旧 24. Superalgos                                     ==   7 番 Superalgos                    鍵 gh:superalgos/superalgos
+  旧 25. OpenTrader                                     ==   8 番 OpenTrader                    鍵 gh:opentrader-org/opentrader
+  旧 26. CryptoSignal                                   ==   9 番 CryptoSignal                  鍵 gh:cryptosignal/crypto-signal
+  旧 27. fast-trade                                     ==  10 番 fast-trade                    鍵 gh:jrmeier/fast-trade
+  旧 28. OctoBot                                        ==  11 番 OctoBot                       鍵 gh:drakkar-software/octobot
+  旧 29. pybotters                                      ==  12 番 pybotters                     鍵 gh:pybotters/pybotters
+  当たり 25 件
+== 3. 1・2 回目の節に在って、現行の 1〜120 に 1 つも対応が無い候補 ==
+  旧  7. QSTrader         鍵 gh:mhallsmoore/qstrader
+  旧  9. PyAlgoTrade      鍵 gh:gbeced/pyalgotrade
+  旧 10. Zenbot           鍵 gh:carlos8f/zenbot
+  旧 17. ccxt             鍵 gh:ccxt/ccxt
+  当たり 4 件
+== 4. 突き合わせの鍵が取れなかった候補(重複の有無を機械で言えない) ==
+   40 番 OpenMarket
+   45 番 ForexTester
+   46 番 MT4裁量トレード練習君プレミアム
+   48 番 BacktestingMax
+   49 番 GFT Backtest Software
+   50 番 AlgoTest
+  107 番 sigc
+  108 番 Databento
+  109 番 arXiv:2509.05107
+  117 番 Exegy
+  118 番 Hyper Trading Automation
+  当たり 11 件
+== 5. 登録名だけが同じで所有者が違う組(重複ではない。取り違え注意) ==
+  登録名 awesome-systematic-trading -> [(39, 'gh:paperswithbacktest/awesome-systematic-trading'), (110, 'gh:wangzhe3224/awesome-systematic-trading')]
+  登録名 limit-order-book-simulator -> [(97, 'gh:kahan15/limit-order-book-simulator'), (102, 'gh:3yit/limit-order-book-simulator')]
+== 6. 鍵の出所の内訳 ==
+  A=39 / D=41 / L=21
+  鍵あり 101 件 / 鍵なし 11 件 / 一覧の行(限界の行 24-30・47 を除く) 112 件
+--- 2026-09-22T15:37:04Z method=run target=extract.py note=各回の節の候補の一覧を機械抽出した件数 rc=0
+run 1: 17 件  max=17
+run 2: 25 件  max=29
+run 3: 23 件  max=23
+run 4: 23 件  max=23
+run 5: 23 件  max=23
+run 6: 24 件  max=24
+run 7: 25 件  max=25
+run 8: 26 件  max=26
+run 9: 27 件  max=27
+run 10: 28 件  max=28
+run 11: 30 件  max=30
+run 12: 47 件  max=47
+run 13: 89 件  max=89
+run 14: 93 件  max=93
+run 15: 25 件  max=118
+run 16: 17 件  max=17
+run 17: 6 件  max=6
+run 18: 15 件  max=15
+run 19: 6 件  max=6
+--- 2026-09-22T15:41:35Z method=GET url=https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting/files/v4.1-alpha label=agentfile_prediction-market-backtesting code=200 bytes=33120
+{"meta":{"sha":"c76e77af00ef53472a9da8f66dae7fdd2d3e5928"},"files":[{"path":".env.example","mode":"100644","sha":"64f19165c159fcf17122bc53aa1597e5ff195fa7","size":34},{"path":".gitattributes","mode":"
+--- 2026-09-22T15:41:36Z method=GET url=https://ungh.cc/repos/QuantConnect/Lean/files/master label=agentfile_Lean code=200 bytes=892540
+{"meta":{"sha":"7d534a1bb4252b57845982445f35ea9ffb9b170b"},"files":[{"path":".devcontainer/Dockerfile","mode":"100644","sha":"e425430b559a33cd033a550a6596d9342e751c75","size":307},{"path":".devcontain
+--- 2026-09-22T15:41:38Z method=GET url=https://ungh.cc/repos/nautechsystems/nautilus_trader/files/develop label=agentfile_nautilus_trader code=200 bytes=684096
+{"meta":{"sha":"84a98f7f3cc786085496976320c3cb320024217f"},"files":[{"path":".cargo/audit.toml","mode":"100644","sha":"ad858c245a090d686f7e678556bcfae353092fb3","size":1478},{"path":".cargo/config.tom
+--- 2026-09-22T15:41:39Z method=GET url=https://ungh.cc/repos/barter-rs/barter-rs/files/main label=agentfile_barter-rs code=200 bytes=36425
+{"meta":{"sha":"9770b27a83f844472b93b593b08063affc974b0d"},"files":[{"path":".github/dependabot.yml","mode":"100644","sha":"1684754afb232100ce9518dbc321c9b0ba339408","size":464},{"path":".github/workf
+--- 2026-09-22T15:41:40Z method=GET url=https://ungh.cc/repos/quarkfin/qf-lib/files/master label=agentfile_qf-lib code=200 bytes=123684
+{"meta":{"sha":"dfbcffc6aba129c827cfe7caab85da864e70fece"},"files":[{"path":".coverargerc","mode":"100644","sha":"e5372b9ca7fc4d0017d0fc2e9222f82ea63742e3","size":815},{"path":".gitattributes","mode":
+--- 2026-09-22T15:41:40Z method=GET url=https://ungh.cc/repos/rburkholder/trade-frame/files/master label=agentfile_trade-frame code=200 bytes=243155
+{"meta":{"sha":"363ccda6faf8264c9c07ea50779de27ecc06b5b0"},"files":[{"path":".gitignore","mode":"100644","sha":"d5a4d32a70202c3193e6ada97fa37edeacfe69fc","size":1637},{"path":".vscode/launch.json","mo
+--- 2026-09-22T15:41:41Z method=GET url=https://ungh.cc/repos/AsyncAlgoTrading/aat/files/main label=agentfile_aat code=200 bytes=37129
+{"meta":{"sha":"c4a07d4102a811c779957033aa26a598c1795cdb"},"files":[{"path":".clang-format","mode":"100644","sha":"605791b211109b0ffeaf63acf958773b5b11bf20","size":2020},{"path":".gitattributes","mode
+--- 2026-09-22T15:41:41Z method=GET url=https://ungh.cc/repos/letianzj/quanttrader/files/master label=agentfile_quanttrader code=000 bytes=0
+
+--- 2026-09-22T15:41:42Z method=GET url=https://ungh.cc/repos/letianzj/quanttrader/files/master label=agentfile_quanttrader_retry code=200 bytes=50774
+{"meta":{"sha":"224341d57e146aeaa143516049d2f37ff102dbf0"},"files":[{"path":".github/ISSUE_TEMPLATE.md","mode":"100644","sha":"41ca3240a8d0526c573220e5f464b496a4c16bde","size":322},{"path":".github/wo
+--- 2026-09-22T15:41:42Z method=GET url=https://ungh.cc/repos/gobacktest/gobacktest/files/main label=agentfile_gobacktest code=200 bytes=9247
+{"meta":{"sha":"719cff68de8ad45c45be4c68df6e6f31e5e64305"},"files":[{"path":".codeclimate.yml","mode":"100644","sha":"f00f21e2ade9dbe86f83716155a67ca843c7f7c5","size":124},{"path":".github/ISSUE_TEMPL
+--- 2026-09-22T15:41:43Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader/files/master label=agentfile_PandoraTrader code=200 bytes=30756
+{"meta":{"sha":"517f1aa41e57806797a88dff39eb568126da131d"},"files":[{"path":".gitignore","mode":"100644","sha":"a3b5954a54efe8be0f60f12f1477b6074043932c","size":263},{"path":"CMakeLists.txt","mode":"1
+--- 2026-09-22T15:41:44Z method=GET url=https://ungh.cc/repos/Oddpool/PredictionMarketBench/files/main label=agentfile_PredictionMarketBench code=200 bytes=4312
+{"meta":{"sha":"611d66941717310858683278940df21c33c406f2"},"files":[{"path":".gitignore","mode":"100644","sha":"20c1f739270da13ead632e4e60a22cfded96bc5a","size":487},{"path":"README.md","mode":"100644
+--- 2026-09-22T15:41:44Z method=GET url=https://ungh.cc/repos/paperswithbacktest/awesome-systematic-trading/files/main label=agentfile_awesome-systematic-trading code=200 bytes=10131
+{"meta":{"sha":"4e23dd84c9ff746ddfcbc856316bcbcef0855b81"},"files":[{"path":".github/workflows/link-check.yml","mode":"100644","sha":"9fcba79dc03ccf83f0881cbfb3b60e36b41db2e4","size":1700},{"path":".g
+--- 2026-09-22T15:41:45Z method=scan target=agent_instruction_files note=この回に到達した12件の追跡ファイル全体からCLAUDE.md/AGENTS.md/GEMINI.md/.cursorrules/.clinerules/.claude/を機械で探した rc=0
+evan-kolberg/prediction-market-backtesting           root=19 total=254      当たり: AGENTS.md
+QuantConnect/Lean                                    root=23 total=6317     当たり: なし
+nautechsystems/nautilus_trader                       root=41 total=4995     当たり: AGENTS.md,CLAUDE.md
+barter-rs/barter-rs                                  root=7 total=286       当たり: なし
+quarkfin/qf-lib                                      root=13 total=865      当たり: なし
+rburkholder/trade-frame                              root=7 total=2022      当たり: なし
+AsyncAlgoTrading/aat                                 root=13 total=294      当たり: なし
+letianzj/quanttrader                                 root=9 total=402       当たり: なし
+gobacktest/gobacktest                                root=47 total=87       当たり: なし
+pegasusTrader/PandoraTrader                          root=5 total=240       当たり: なし
+Oddpool/PredictionMarketBench                        root=3 total=35        当たり: なし
+paperswithbacktest/awesome-systematic-trading        root=4 total=73        当たり: なし
+--- 2026-09-22T15:41:45Z method=grep target=granularity_word_count note=候補61と候補68のREADME全文に対する粒度の語の数え上げ rc=0
+c61 {"bar": 0, "tick": 0, "candle": 0, "OHLCV": 0, "Daily": 3, "vectoriz": 0}
+c68 {"bar": 0, "tick": 0, "candle": 0, "OHLCV": 0, "Daily": 0, "vectoriz": 0}
+--- 2026-09-22T15:42:09Z method=grep target=c69_bar_event note=候補69のREADMEの足と事象と取り込みの逐語 rc=0
+1:[![Go Doc](https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square)](http://godoc.org/github.com/dirkolbrich/gobacktest)
+2:[![Travis](https://img.shields.io/travis/dirkolbrich/gobacktest.svg?style=flat-square)](https://travis-ci.org/dirkolbrich/gobacktest)
+3:[![Coverage Status](https://img.shields.io/coveralls/dirkolbrich/gobacktest/master.svg?style=flat-square)](https://coveralls.io/github/dirkolbrich/gobacktest?branch=master)
+4:[![Go Report Card](https://goreportcard.com/badge/github.com/dirkolbrich/gobacktest?style=flat-square)](https://goreportcard.com/report/github.com/dirkolbrich/gobacktest)
+23:"github.com/dirkolbrich/gobacktest"
+24:"github.com/dirkolbrich/gobacktest/data"
+25:"github.com/dirkolbrich/gobacktest/strategy"
+37:data := &data.BarEventFromCSVFile{FileDir: "../testdata/test/"}
+112:2. EventHandler - the different types of events, which travel through this system - data event, signal event, order event and fill event
+--- 2026-09-22T15:42:59Z method=GET url=https://ungh.cc/repos/evan-kolberg/prediction-market-backtesting/files/v4.1-alpha label=rootlic_prediction-market-backtesting code=200 bytes=33120
+{"meta":{"sha":"c76e77af00ef53472a9da8f66dae7fdd2d3e5928"},"files":[{"path":".env.example","mode":"100644","sha":"64f19165c159fcf17122bc53aa1597e5ff195fa7","size":34},{"path":".gitattributes","mode":"
+--- 2026-09-22T15:42:59Z method=GET url=https://ungh.cc/repos/pegasusTrader/PandoraTrader/files/master label=rootlic_PandoraTrader code=200 bytes=30756
+{"meta":{"sha":"517f1aa41e57806797a88dff39eb568126da131d"},"files":[{"path":".gitignore","mode":"100644","sha":"a3b5954a54efe8be0f60f12f1477b6074043932c","size":263},{"path":"CMakeLists.txt","mode":"1
+--- 2026-09-22T15:43:00Z method=GET url=https://ungh.cc/repos/Oddpool/PredictionMarketBench/files/main label=rootlic_PredictionMarketBench code=200 bytes=4312
+{"meta":{"sha":"611d66941717310858683278940df21c33c406f2"},"files":[{"path":".gitignore","mode":"100644","sha":"20c1f739270da13ead632e4e60a22cfded96bc5a","size":487},{"path":"README.md","mode":"100644
+--- 2026-09-22T15:43:00Z method=scan target=root_license_files note=候補41・59・90の追跡ファイルの根の全部と、そのうち許諾にあたる名前 rc=0
+evan-kolberg/prediction-market-backtesting root=.env.example,.gitattributes,.gitignore,.ruff.toml,AGENTS.md,CODEBASE_UML.md,COPYING,COPYING.LESSER,Cargo.lock,Cargo.toml,LICENSE,LICENSE-MIT,Makefile,NOTICE,README.md,main.py,mermaid.md,mkdocs.yml,pyrightconfig.json
+evan-kolberg/prediction-market-backtesting license_files=COPYING,COPYING.LESSER,LICENSE,LICENSE-MIT
+pegasusTrader/PandoraTrader root=.gitignore,CMakeLists.txt,PandoraTrader.sln,PandoraTrader_Linux.sln,README.md
+pegasusTrader/PandoraTrader license_files=なし
+Oddpool/PredictionMarketBench root=.gitignore,README.md,pyproject.toml
+Oddpool/PredictionMarketBench license_files=なし

@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /home/user/trade
+configfile: pyproject.toml
+collected 4 items
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py ....             [100%]
+
+============================== 4 passed in 0.06s ===============================
+rc=0

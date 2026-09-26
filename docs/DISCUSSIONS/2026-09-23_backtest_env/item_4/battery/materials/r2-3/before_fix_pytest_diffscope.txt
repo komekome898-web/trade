@@ -1,0 +1,15 @@
+
+tests/bt/battery/item_4/test_battery_item4_diffscope.py:368: AttributeError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_rootcause_diff_sections_are_machine_made
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_section_hash_catches_hand_edits
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_matches_rule_on_grid
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_grid_catches_mutants[absent from the baseline counts as already there]
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_grid_catches_mutants[content not compared]
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_grid_catches_mutants[every line unchanged]
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_attribution_grid_catches_mutants[head change ignored]
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_snapshot_parses_renames
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_baseline_file_has_snapshot_shape
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_live_snapshot_has_the_same_shape
+FAILED tests/bt/battery/item_4/test_battery_item4_diffscope.py::test_rootcause_baseline_predates_the_round
+11 failed, 13 passed in 0.58s

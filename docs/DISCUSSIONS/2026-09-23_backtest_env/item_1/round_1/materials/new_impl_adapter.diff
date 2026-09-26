@@ -1,0 +1,50 @@
+diff --git a/tests/bt/battery/item_1/adapters/new_impl.py b/tests/bt/battery/item_1/adapters/new_impl.py
+index c05ef99..acd8cbf 100644
+--- a/tests/bt/battery/item_1/adapters/new_impl.py
++++ b/tests/bt/battery/item_1/adapters/new_impl.py
+@@ -29,7 +29,6 @@ the mouth, not the body).  The contract the body must keep:
+ """
+ from __future__ import annotations
+ 
+-import os
+ import sys
+ import time
+ from pathlib import Path
+@@ -67,21 +66,19 @@ class NewImpl:
+ 
+     @staticmethod
+     def _load(inp: dict) -> dict:
+-        # The data layer reads a relative data path as relative to `root`, so the
+-        # root joined with a scene path is handed over in absolute form (lexical
+-        # only: no symlink is resolved, `..` is normalised the same way the data
+-        # layer itself normalises it); otherwise a relative scene root would be
+-        # prefixed twice.
+-        root = os.path.abspath(inp["root"])
++        # The runner's `root` and each scene path are handed to the data layer
++        # exactly as given (no absolutising, no joining here): resolving a
++        # relative data path against the root is the data layer's own job
++        # (bot.bt.data.allowlist.AllowList.check), so it is what the scene tests.
+         datasets = []
+         for d in inp["datasets"]:
+             # files by path; the scene's declarative spec is the data layer's own
+             # declaration form (bot.bt.data.spec.parse_spec), handed over unchanged
+-            x = {"name": d["name"], "paths": [os.path.join(root, p) for p in d["paths"]], "spec": d["spec"]}
++            x = {"name": d["name"], "paths": list(d["paths"]), "spec": d["spec"]}
+             if "range_ns" in d:
+                 x["range_ns"] = d["range_ns"]
+             datasets.append(x)
+-        res = _engine(load, root, datasets)
++        res = _engine(load, inp["root"], datasets)
+         want = set(inp.get("want") or [])
+         obs: dict = {}
+         if want & {"events", "times"}:
+@@ -89,7 +86,8 @@ class NewImpl:
+         if "anomalies" in want:
+             obs["anomalies"] = {n: _engine(res.anomalies, n) for n in res.names()}
+         if "hashes" in want:
+-            obs["hashes"] = {os.path.relpath(p, root): h for p, h in _engine(res.hashes).items()}
++            # keyed by the path as given (LoadResult.hashes), i.e. the scene path
++            obs["hashes"] = dict(_engine(res.hashes))
+         return obs
+ 
+     @staticmethod

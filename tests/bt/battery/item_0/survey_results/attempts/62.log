@@ -1,0 +1,160 @@
+##### from qf-lib_install.log
+Collecting qf-lib
+  Downloading qf_lib-4.0.7-py3-none-any.whl.metadata (7.7 kB)
+Collecting pandas<=2.2.3,>=1.4.0 (from qf-lib)
+  Downloading pandas-2.2.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (89 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 89.9/89.9 kB 197.4 MB/s eta 0:00:00
+Collecting xarray<=2024.11.0,>=0.21.0 (from qf-lib)
+  Downloading xarray-2024.11.0-py3-none-any.whl.metadata (11 kB)
+Collecting numpy<=1.26.4,>=1.19.3 (from qf-lib)
+  Downloading numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (61 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 61.0/61.0 kB 281.5 MB/s eta 0:00:00
+Collecting matplotlib<=3.6.1,>=3.4.0 (from qf-lib)
+  Downloading matplotlib-3.6.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Collecting Pillow<=10.2.0,>=9.0.0 (from qf-lib)
+  Downloading pillow-10.2.0-cp311-cp311-manylinux_2_28_x86_64.whl.metadata (9.7 kB)
+Collecting scikit-learn<=1.6.0,>=1.0.0 (from qf-lib)
+  Downloading scikit_learn-1.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (18 kB)
+Collecting seaborn>=0.11.1 (from qf-lib)
+  Downloading seaborn-0.13.2-py3-none-any.whl.metadata (5.4 kB)
+Collecting openpyxl<=3.1.5,>=3.0.7 (from qf-lib)
+  Downloading openpyxl-3.1.5-py2.py3-none-any.whl.metadata (2.5 kB)
+Collecting WeasyPrint==52.5 (from qf-lib)
+  Downloading WeasyPrint-52.5-py3-none-any.whl.metadata (3.5 kB)
+Collecting Jinja2<=3.1.4,>=3.0.0 (from qf-lib)
+  Downloading jinja2-3.1.4-py3-none-any.whl.metadata (2.6 kB)
+Requirement already satisfied: setuptools>=39.2.0 in ./qf-lib/lib/python3.11/site-packages (from WeasyPrint==52.5->qf-lib) (79.0.1)
+Collecting cffi>=0.6 (from WeasyPrint==52.5->qf-lib)
+  Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+Collecting html5lib>=0.999999999 (from WeasyPrint==52.5->qf-lib)
+  Downloading html5lib-1.1-py2.py3-none-any.whl.metadata (16 kB)
+Collecting cairocffi>=0.9.0 (from WeasyPrint==52.5->qf-lib)
+  Downloading cairocffi-1.7.1-py3-none-any.whl.metadata (3.3 kB)
+Collecting tinycss2>=1.0.0 (from WeasyPrint==52.5->qf-lib)
+  Downloading tinycss2-1.5.1-py3-none-any.whl.metadata (3.0 kB)
+Collecting cssselect2>=0.1 (from WeasyPrint==52.5->qf-lib)
+  Downloading cssselect2-0.10.1-py3-none-any.whl.metadata (2.9 kB)
+Collecting CairoSVG>=2.4.0 (from WeasyPrint==52.5->qf-lib)
+  Downloading cairosvg-2.9.1-py3-none-any.whl.metadata (2.7 kB)
+Collecting Pyphen>=0.9.1 (from WeasyPrint==52.5->qf-lib)
+  Downloading pyphen-0.18.1-py3-none-any.whl.metadata (3.4 kB)
+Collecting MarkupSafe>=2.0 (from Jinja2<=3.1.4,>=3.0.0->qf-lib)
+  Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Collecting contourpy>=1.0.1 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (5.5 kB)
+Collecting cycler>=0.10 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+Collecting fonttools>=4.22.0 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading fonttools-4.65.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (125 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.0/125.0 kB 321.0 MB/s eta 0:00:00
+Collecting kiwisolver>=1.0.1 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading kiwisolver-1.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.2 kB)
+Collecting packaging>=20.0 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pyparsing>=2.2.1 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading pyparsing-3.3.3-py3-none-any.whl.metadata (5.9 kB)
+Collecting python-dateutil>=2.7 (from matplotlib<=3.6.1,>=3.4.0->qf-lib)
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting et-xmlfile (from openpyxl<=3.1.5,>=3.0.7->qf-lib)
+  Downloading et_xmlfile-2.0.0-py3-none-any.whl.metadata (2.7 kB)
+Collecting pytz>=2020.1 (from pandas<=2.2.3,>=1.4.0->qf-lib)
+  Downloading pytz-2026.3.post1-py2.py3-none-any.whl.metadata (22 kB)
+Collecting tzdata>=2022.7 (from pandas<=2.2.3,>=1.4.0->qf-lib)
+  Downloading tzdata-2026.4-py2.py3-none-any.whl.metadata (1.4 kB)
+Collecting scipy>=1.6.0 (from scikit-learn<=1.6.0,>=1.0.0->qf-lib)
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 62.1/62.1 kB 273.0 MB/s eta 0:00:00
+Collecting joblib>=1.2.0 (from scikit-learn<=1.6.0,>=1.0.0->qf-lib)
+  Downloading joblib-1.6.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting threadpoolctl>=3.1.0 (from scikit-learn<=1.6.0,>=1.0.0->qf-lib)
+  Downloading threadpoolctl-3.7.0-py3-none-any.whl.metadata (24 kB)
+Collecting matplotlib<=3.6.1,>=3.4.0 (from qf-lib)
+  Downloading matplotlib-3.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Collecting defusedxml (from CairoSVG>=2.4.0->WeasyPrint==52.5->qf-lib)
+  Downloading defusedxml-0.7.1-py2.py3-none-any.whl.metadata (32 kB)
+Collecting pycparser (from cffi>=0.6->WeasyPrint==52.5->qf-lib)
+  Downloading pycparser-3.0-py3-none-any.whl.metadata (8.2 kB)
+Collecting webencodings (from cssselect2>=0.1->WeasyPrint==52.5->qf-lib)
+  Downloading webencodings-0.6.1-py3-none-any.whl.metadata (3.4 kB)
+Collecting six>=1.9 (from html5lib>=0.999999999->WeasyPrint==52.5->qf-lib)
+  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting cloudpickle>=3.0 (from joblib>=1.2.0->scikit-learn<=1.6.0,>=1.0.0->qf-lib)
+  Downloading cloudpickle-3.1.2-py3-none-any.whl.metadata (7.1 kB)
+Downloading qf_lib-4.0.7-py3-none-any.whl (1.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 60.5 MB/s eta 0:00:00
+Downloading WeasyPrint-52.5-py3-none-any.whl (365 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 365.3/365.3 kB 40.8 MB/s eta 0:00:00
+Downloading jinja2-3.1.4-py3-none-any.whl (133 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 133.3/133.3 kB 250.0 MB/s eta 0:00:00
+Downloading numpy-1.26.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (18.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 18.3/18.3 MB 60.6 MB/s eta 0:00:00
+Downloading openpyxl-3.1.5-py2.py3-none-any.whl (250 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 250.9/250.9 kB 234.2 MB/s eta 0:00:00
+Downloading pandas-2.2.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (13.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.1/13.1 MB 61.7 MB/s eta 0:00:00
+Downloading pillow-10.2.0-cp311-cp311-manylinux_2_28_x86_64.whl (4.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.5/4.5 MB 63.5 MB/s eta 0:00:00
+Downloading scikit_learn-1.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (13.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.5/13.5 MB 63.2 MB/s eta 0:00:00
+Downloading seaborn-0.13.2-py3-none-any.whl (294 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 294.9/294.9 kB 143.9 MB/s eta 0:00:00
+Downloading matplotlib-3.6.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (11.8 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 11.8/11.8 MB 63.9 MB/s eta 0:00:00
+Downloading xarray-2024.11.0-py3-none-any.whl (1.2 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 82.0 MB/s eta 0:00:00
+Downloading cairocffi-1.7.1-py3-none-any.whl (75 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 75.6/75.6 kB 182.2 MB/s eta 0:00:00
+Downloading cairosvg-2.9.1-py3-none-any.whl (46 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.2/46.2 kB 229.9 MB/s eta 0:00:00
+Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (217 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 217.8/217.8 kB 191.7 MB/s eta 0:00:00
+Downloading contourpy-1.3.3-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (355 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 355.2/355.2 kB 95.5 MB/s eta 0:00:00
+Downloading cssselect2-0.10.1-py3-none-any.whl (15 kB)
+Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Downloading fonttools-4.65.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.5/5.5 MB 67.4 MB/s eta 0:00:00
+Downloading html5lib-1.1-py2.py3-none-any.whl (112 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 112.2/112.2 kB 162.8 MB/s eta 0:00:00
+Downloading joblib-1.6.0-py3-none-any.whl (306 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 306.1/306.1 kB 232.3 MB/s eta 0:00:00
+Downloading kiwisolver-1.5.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.4/1.4 MB 77.4 MB/s eta 0:00:00
+Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Downloading packaging-26.3-py3-none-any.whl (129 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 130.0/130.0 kB 232.6 MB/s eta 0:00:00
+Downloading pyparsing-3.3.3-py3-none-any.whl (126 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 126.4/126.4 kB 326.6 MB/s eta 0:00:00
+Downloading pyphen-0.18.1-py3-none-any.whl (2.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 74.6 MB/s eta 0:00:00
+Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 kB 258.1 MB/s eta 0:00:00
+Downloading pytz-2026.3.post1-py2.py3-none-any.whl (508 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 508.3/508.3 kB 131.8 MB/s eta 0:00:00
+Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (35.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.3/35.3 MB 67.2 MB/s eta 0:00:00
+Downloading threadpoolctl-3.7.0-py3-none-any.whl (26 kB)
+Downloading tinycss2-1.5.1-py3-none-any.whl (28 kB)
+Downloading tzdata-2026.4-py2.py3-none-any.whl (347 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 347.5/347.5 kB 199.0 MB/s eta 0:00:00
+Downloading et_xmlfile-2.0.0-py3-none-any.whl (18 kB)
+Downloading cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading webencodings-0.6.1-py3-none-any.whl (8.7 kB)
+Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Downloading pycparser-3.0-py3-none-any.whl (48 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.2/48.2 kB 241.7 MB/s eta 0:00:00
+Installing collected packages: pytz, webencodings, tzdata, threadpoolctl, six, Pyphen, pyparsing, pycparser, Pillow, packaging, numpy, MarkupSafe, kiwisolver, fonttools, et-xmlfile, defusedxml, cycler, cloudpickle, tinycss2, scipy, python-dateutil, openpyxl, joblib, Jinja2, html5lib, contourpy, cffi, scikit-learn, pandas, matplotlib, cssselect2, cairocffi, xarray, seaborn, CairoSVG, WeasyPrint, qf-lib
+Successfully installed CairoSVG-2.9.1 Jinja2-3.1.4 MarkupSafe-3.0.3 Pillow-10.2.0 Pyphen-0.18.1 WeasyPrint-52.5 cairocffi-1.7.1 cffi-2.1.1 cloudpickle-3.1.2 contourpy-1.3.3 cssselect2-0.10.1 cycler-0.12.1 defusedxml-0.7.1 et-xmlfile-2.0.0 fonttools-4.65.0 html5lib-1.1 joblib-1.6.0 kiwisolver-1.5.1 matplotlib-3.6.0 numpy-1.26.4 openpyxl-3.1.5 packaging-26.3 pandas-2.2.3 pycparser-3.0 pyparsing-3.3.3 python-dateutil-2.9.0.post0 pytz-2026.3.post1 qf-lib-4.0.7 scikit-learn-1.6.0 scipy-1.17.1 seaborn-0.13.2 six-1.17.0 threadpoolctl-3.7.0 tinycss2-1.5.1 tzdata-2026.4 webencodings-0.6.1 xarray-2024.11.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+=== 2026-09-23T15:59:29Z add PyJWT (qf_lib.data_providers の読み込みの連鎖が import jwt で止まったため。PyPI の PyJWT)
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip
+rc=0
+=== 2026-09-23T15:59:41Z add oauthlib requests-oauthlib (qf_lib の読み込みの連鎖で ModuleNotFoundError: oauthlib)
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3 -m pip install --upgrade pip

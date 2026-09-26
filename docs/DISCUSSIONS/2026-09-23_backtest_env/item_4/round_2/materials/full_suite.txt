@@ -1,0 +1,118 @@
+$ setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none > <scratchpad>/bt/pytest_item4_r2_worker.log 2>&1 &   (09:00:49 UTC 開始)
+10 failed, 18786 passed, 10 skipped, 3 warnings, 1390 errors in 1564.55s (0:26:04)
+
+# 本文の E 行の数え(`grep "^E  " log | cut -c1-60 | sort | uniq -c`):
+   1390 E       FileNotFoundError: [Errno 2] No such file or directo   (ERROR 1390 件 = tmp_path の根が消された)
+      6 E       ImportError: cannot import name 'TARGET' from 'curre   (批評家の試験 6 件: 場面係が adapters/current_impl.py を書き換えていた途中)
+      2 E       NotImplementedError: delivery                         (場面係が足した op "delivery" の場面 2 つ: 作業者の駆動 i4w_drive.py に無かった -> 足した)
+      1 E       AssertionError: assert {'i4-10-signa...-models', ...  (場面集の試験 1 件: 場面係の直しの途中)
+# 同じ時刻に別の pytest(tests/bt/item_4 tests/bt/compat、別の agent)が /tmp/pytest-of-root を回していた(pgrep の出力、09:24 UTC): pid 1586/1588 "python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none tests/bt/item_4 tests/bt/compat -q"
+FAILED tests/bt/battery/item_4/test_battery_item4.py::test_stated_rules_and_existing_engine_agree_except_the_listed_deviations
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[stop_loss-long]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[stop_loss-short]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[take_profit-long]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[take_profit-short]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[maker_tp-long]
+FAILED tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py::test_the_legacy_rule_set_keeps_the_old_engines_result[maker_tp-short]
+FAILED tests/bt/item_3/test_i3_battery_scenes.py::test_scene[a18-wiring-test-api]
+FAILED tests/bt/item_4/test_i4_battery_scenes.py::test_scene_is_answered_right_and_the_same_twice[i4-3-core-delivery]
+FAILED tests/bt/item_4/test_i4_battery_scenes.py::test_scene_is_answered_right_and_the_same_twice[i4-3-core-delivery-gap]
+
+$ setsid nohup env PYTHONPATH=src python -m pytest -p no:cacheprovider -o tmp_path_retention_policy=none --basetemp=<scratchpad>/bt/pytest_base_i4r2w_rerun <落ちた・ERROR の出た 95 ファイル全部>
+2583 passed, 1 warning in 402.34s (0:06:42)
+
+tests/bt/battery/item_4/test_battery_item4.py
+tests/bt/critic/item_4/test_i4r1_pending_signal_before_intrabar_exit.py
+tests/bt/item_3/test_i3_battery_scenes.py
+tests/bt/item_3/test_i3_dashboard_grid.py
+tests/bt/item_3/test_i3_dashboard_wiring.py
+tests/bt/item_3/test_i3_repro_grid.py
+tests/bt/item_3/test_i3_validation_grid.py
+tests/bt/item_4/test_i4_battery_scenes.py
+tests/test_app_fx_integration.py
+tests/test_audit_gates_wired.py
+tests/test_bitmex_mirror.py
+tests/test_board.py
+tests/test_board_round.py
+tests/test_check_bt_considered.py
+tests/test_check_data_ledger.py
+tests/test_clock_burst.py
+tests/test_composite.py
+tests/test_constants.py
+tests/test_constants_inventory.py
+tests/test_dashboard.py
+tests/test_data_quality.py
+tests/test_data_quality_incremental.py
+tests/test_etf_measure.py
+tests/test_extract_tape.py
+tests/test_fetch_backfill_scripts.py
+tests/test_fetch_binance_daily.py
+tests/test_fetch_binance_vision.py
+tests/test_intake_ledger.py
+tests/test_jev_audit_eval.py
+tests/test_jev_audit_loop.py
+tests/test_jev_check.py
+tests/test_jev_client.py
+tests/test_jev_delegate.py
+tests/test_jev_design.py
+tests/test_jev_ideas.py
+tests/test_jev_ops.py
+tests/test_jev_owner_log.py
+tests/test_jev_reply.py
+tests/test_jev_report_intake.py
+tests/test_jev_scripts.py
+tests/test_jev_survey.py
+tests/test_jev_trace_export.py
+tests/test_judge_gates.py
+tests/test_liq_response.py
+tests/test_liq_response_dedup.py
+tests/test_liquidation_reader.py
+tests/test_market_view.py
+tests/test_o3c_jev_state.py
+tests/test_o3c_price_level_ext.py
+tests/test_o3c_price_level_table.py
+tests/test_o3c_reaction.py
+tests/test_o3c_reaction_judge.py
+tests/test_o3c_reaction_r2.py
+tests/test_o3c_signal_continue.py
+tests/test_o3c_signal_continue_jev.py
+tests/test_o3c_signal_explore.py
+tests/test_o3c_signal_explore2.py
+tests/test_o3c_signal_explore3.py
+tests/test_o3c_signal_explore4.py
+tests/test_o3c_signal_explore5.py
+tests/test_o3c_signal_materials.py
+tests/test_o3c_signal_stage2.py
+tests/test_o3c_signal_value.py
+tests/test_on1_forward.py
+tests/test_on1_live.py
+tests/test_onr.py
+tests/test_onr_forward.py
+tests/test_orders.py
+tests/test_paper_state.py
+tests/test_phase2_p2_01_final.py
+tests/test_phase2_p2_02_final.py
+tests/test_phase2_p2_03_final.py
+tests/test_phase2_p2_04.py
+tests/test_phase2_seal.py
+tests/test_position_ladder.py
+tests/test_preflight_prereg.py
+tests/test_probe_api_latency.py
+tests/test_qa_make_known_answer.py
+tests/test_qa_make_known_answer_maker.py
+tests/test_qa_make_known_answer_maker3.py
+tests/test_qa_make_known_answer_steer.py
+tests/test_qa_pipeline_known_answer.py
+tests/test_realtime_recorder.py
+tests/test_record_funding_basis.py
+tests/test_record_liquidations.py
+tests/test_record_liquidations_writer.py
+tests/test_record_venues.py
+tests/test_repair_gz_listing.py
+tests/test_resilience.py
+tests/test_retention_snapshot.py
+tests/test_risk.py
+tests/test_scalp_logic.py
+tests/test_sealed_load_diagnostic.py
+tests/test_short_margin.py
+tests/test_verify_snapshots.py

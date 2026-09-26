@@ -1,0 +1,67 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+c2-1-market	C2-1	値	正解と一致		dfb2da5c24c2dfe9	正解と一致		dfb2da5c24c2dfe9	2 回の実行で同じ	0.247	0.229
+c2-1-limit	C2-1	値	不一致	status.o1: 期待 filled / 出力 open; filled.o1: 期待 1.0 / 出力 0.0; avg_px.o1: 期待 9990.0 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 ge 1767571200020000000 / 出力に無い(KeyError: 'no fill for o1')	20364ea7bd638d91	不一致	status.o1: 期待 filled / 出力 open; filled.o1: 期待 1.0 / 出力 0.0; avg_px.o1: 期待 9990.0 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 ge 1767571200020000000 / 出力に無い(KeyError: 'no fill for o1')	20364ea7bd638d91	2 回の実行で同じ	0.013	0.013
+c2-1-postonly	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に post_only が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-1-ioc	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に IOC が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に IOC が無い	-	結果なし	0.0	0.0
+c2-1-fok	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に FOK が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に FOK が無い	-	結果なし	0.0	0.0
+c2-1-stop	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に stop が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に stop が無い	-	結果なし	0.0	0.0
+c2-1-reduceonly	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に reduce_only が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に reduce_only が無い	-	結果なし	0.0	0.0
+c2-1-oco	C2-1	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に oco が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に oco が無い	-	結果なし	0.0	0.0
+c2-2-cancel	C2-2	値	不一致	status.o1: 期待 canceled / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	33bfd66cc8c719e3	不一致	status.o1: 期待 canceled / 出力 filled; filled.o1: 期待 0.0 / 出力 1.0	33bfd66cc8c719e3	2 回の実行で同じ	0.012	0.012
+c2-2-amend-price	C2-2	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に amend が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-amend-qty	C2-2	能力	結果なし	adapter: PyBroker 2.0.1: 公開の口に amend が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に amend が無い	-	結果なし	0.0	0.0
+c2-2-partial	C2-2	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-3-tick	C2-3	値	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	0.001	0.001
+c2-3-minqty	C2-3	値	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	0.0	0.0
+c2-3-round	C2-3	能力	対応なし	ValueError: For each symbol, only one of buy_shares or sell_shares can be set per bar.	4b835230124ebe48	対応なし	ValueError: For each symbol, only one of buy_shares or sell_shares can be set per bar.	4b835230124ebe48	2 回の実行で同じ	0.003	0.003
+c2-3-stp	C2-3	値	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	0.0	0.0
+c2-3-jpx-session	C2-3	値	正解と一致		ff822f8ab59b5ce0	正解と一致		ff822f8ab59b5ce0	2 回の実行で同じ	0.013	0.012
+c2-3-jpx-limit	C2-3	値	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	0.001	0.001
+c2-3-fx-weekend	C2-3	値	不一致	avg_px.o1: 期待 150.103 / 出力 150.1	f99d437afd6aa44d	不一致	avg_px.o1: 期待 150.103 / 出力 150.1	f99d437afd6aa44d	2 回の実行で同じ	0.012	0.011
+c2-4-reject	C2-4	値	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-timeout	C2-4	値	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-unknown	C2-4	値	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	adapter: PyBroker 2.0.1: 拒否・時間切れ・状態不明を注入する口が無い	-	結果なし	0.0	0.0
+c2-4-kill	C2-4	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に kill が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に kill が無い	-	結果なし	0.0	0.0
+c2-5-tier0	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-tier1	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-tier2	C2-5	能力	正解と一致		82f0ada090c03260	正解と一致		82f0ada090c03260	2 回の実行で同じ	0.012	0.012
+c2-5-tier3	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-tier4	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-tier5	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-queue-value	C2-5	値	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-5-tier6	C2-5	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-6-none	C2-6	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-6-discount-at-entry	C2-6	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-6-snapshot-cap	C2-6	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-6-l3	C2-6	能力	結果なし	adapter: PyBroker 2.0.1: 事象 l3_add を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 l3_add を渡す口が無い	-	結果なし	0.0	0.0
+c2-6-prob	C2-6	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-6-prob-power2	C2-6	値	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-7-walk	C2-7	値	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	0.0	0.0
+c2-7-walk-exhaust	C2-7	値	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	adapter: PyBroker 2.0.1: 足にする約定も足も無い	-	結果なし	0.0	0.0
+c2-7-impact-sqrt	C2-7	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-7-impact-permanent	C2-7	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-8-range	C2-8	値	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-8-both-required	C2-8	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0
+c2-9-order-feed	C2-9	値	結果なし	adapter: PyBroker 2.0.1: 遅延(feed)を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 遅延(feed)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-late	C2-9	値	結果なし	adapter: PyBroker 2.0.1: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-cancel-early	C2-9	値	結果なし	adapter: PyBroker 2.0.1: 遅延(cancel)を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 遅延(cancel)を渡す口が無い	-	結果なし	0.0	0.0
+c2-9-notice	C2-9	値	結果なし	adapter: PyBroker 2.0.1: 公開の口に post_only が無い	-	結果なし	adapter: PyBroker 2.0.1: 公開の口に post_only が無い	-	結果なし	0.0	0.0
+c2-9-empirical	C2-9	能力	結果なし	adapter: PyBroker 2.0.1: 遅延(order)を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 遅延(order)を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-taker	C2-10	値	不一致	fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	不一致	fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	2 回の実行で同じ	0.012	0.012
+c2-10-maker	C2-10	値	対応なし	ValueError: fee_amount cannot be negative.	4b835230124ebe48	対応なし	ValueError: fee_amount cannot be negative.	4b835230124ebe48	2 回の実行で同じ	0.001	0.001
+c2-10-spread	C2-10	値	結果なし	adapter: PyBroker 2.0.1: 費用 spread を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 費用 spread を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-funding	C2-10	値	結果なし	adapter: PyBroker 2.0.1: 事象 funding を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 funding を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-swap	C2-10	値	結果なし	adapter: PyBroker 2.0.1: 事象 rollover を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 rollover を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-jpx-fee	C2-10	値	結果なし	adapter: PyBroker 2.0.1: 費用 fee_table を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 費用 fee_table を渡す口が無い	-	結果なし	0.0	0.0
+c2-10-no-default	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	2 回の実行で同じ	0.013	0.012
+c2-10-source	C2-10	能力	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	不一致	対照: fee.o1: 期待 5.0005 / 出力 5.0	e4748f149f00900a	2 回の実行で同じ	0.012	0.012
+c2-11-pnl	C2-11	値	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'account'); account.position: 期待 0.6 / 出力に無い(KeyError: 'account'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'account')	04feee859d92d0db	不一致	account.realized: 期待 40.0 / 出力に無い(KeyError: 'account'); account.position: 期待 0.6 / 出力に無い(KeyError: 'account'); account.unrealized: 期待 30.0 / 出力に無い(KeyError: 'account')	04feee859d92d0db	2 回の実行で同じ	0.012	0.012
+c2-11-margin	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	0.001	0.001
+c2-11-liquidation	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 口座の maint_ratio を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 口座の maint_ratio を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-exposure	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	adapter: PyBroker 2.0.1: 1 本の足で同じ向きの注文は 1 つだけ(ctx.buy_shares / sell_shares は 1 つの値)	-	結果なし	0.0	0.0
+c2-11-legs	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない	-	結果なし	adapter: PyBroker 2.0.1: 手数料の率は 1 つで、maker と taker で違う率を同じ実行の中で渡せない	-	結果なし	0.0	0.0
+c2-11-split	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 事象 corporate を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-reverse-split	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 事象 corporate を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 corporate を渡す口が無い	-	結果なし	0.0	0.0
+c2-11-jpy	C2-11	値	結果なし	adapter: PyBroker 2.0.1: 事象 fx_rate を渡す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 事象 fx_rate を渡す口が無い	-	結果なし	0.0	0.0
+c2-12-jpx-bar-value	C2-12	値	不一致	filled.o1: 期待 100.0 / 出力 0.0; avg_px.o1: 期待 1496.0 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 1767661380000000000 / 出力に無い(KeyError: 'no fill for o1')	20364ea7bd638d91	不一致	filled.o1: 期待 100.0 / 出力 0.0; avg_px.o1: 期待 1496.0 / 出力に無い(KeyError: 'no fill for o1'); first_fill_t.o1: 期待 1767661380000000000 / 出力に無い(KeyError: 'no fill for o1')	20364ea7bd638d91	2 回の実行で同じ	0.013	0.011
+c2-12-jpx-wait	C2-12	能力	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	adapter: PyBroker 2.0.1: 約定の模型は足で埋まる型(段 2)だけで、ほかの段・列・市場影響の関数・楽観と悲観の両方を回す口が無い	-	結果なし	0.0	0.0

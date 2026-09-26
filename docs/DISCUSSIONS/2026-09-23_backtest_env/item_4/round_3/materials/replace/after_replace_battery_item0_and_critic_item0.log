@@ -1,0 +1,34 @@
+..................................F.........................F........... [ 12%]
+........................................................................ [ 24%]
+........................................................................ [ 36%]
+........................................................................ [ 48%]
+........................................................................ [ 61%]
+........................................................................ [ 73%]
+.............................................................ss......... [ 85%]
+........................................................................ [ 97%]
+............                                                             [100%]
+=================================== FAILURES ===================================
+_____________ test_current_impl_runs_every_scene_twice_identically _____________
+
+    def test_current_impl_runs_every_scene_twice_identically():
+        rows = run_battery.run_target("current_impl")
+        assert len(rows) == len(scenes.SCENES)
+>       assert all(r["reproducibility"] == "2 回の実行で同じ" for r in rows)
+E       assert False
+E        +  where False = all(<generator object test_current_impl_runs_every_scene_twice_identically.<locals>.<genexpr> at 0x7f2f3a15ac20>)
+
+tests/bt/battery/item_0/test_battery_item0.py:51: AssertionError
+________________ test_current_impl_passes_the_provenance_check _________________
+
+    def test_current_impl_passes_the_provenance_check():
+        rows = run_battery.run_target("current_impl")
+        bad = [(r["scene_id"], r["detail_1"][:160]) for r in rows if "出所の検めで採点しない" in r["detail_1"]]
+>       assert not bad, bad
+E       AssertionError: [('p1-one-call-per-event', "出所の検めで採点しない: carrier pandas.DataFrame は共有の型だが、対象が戦略に届けたことを示せない(対象のコードが戦略の呼び出しに渡した passed_b...った物と示せない(呼び出した物 [\'/home/user/trade/src/bot/bt/compat/barmodel.py\', \'/home/user/trade/src/bot/bt/compat/engin'), ...]
+E       assert not [('p1-one-call-per-event', "出所の検めで採点しない: carrier pandas.DataFrame は共有の型だが、対象が戦略に届けたことを示せない(対象のコードが戦略の呼び出しに渡した passed_b...った物と示せない(呼び出した物 [\'/home/user/trade/src/bot/bt/compat/barmodel.py\', \'/home/user/trade/src/bot/bt/compat/engin'), ...]
+
+tests/bt/battery/item_0/test_battery_item0.py:503: AssertionError
+=========================== short test summary info ============================
+FAILED tests/bt/battery/item_0/test_battery_item0.py::test_current_impl_runs_every_scene_twice_identically
+FAILED tests/bt/battery/item_0/test_battery_item0.py::test_current_impl_passes_the_provenance_check
+2 failed, 584 passed, 2 skipped in 470.38s (0:07:50)

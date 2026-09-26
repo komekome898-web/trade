@@ -1,0 +1,87 @@
+scene	viewpoint	kind	class_1	detail_1	digest_1	class_2	detail_2	digest_2	repro	secs_1	secs_2
+i4-1-ref-taker	I4-1	値	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	0.0	0.0
+i4-1-ref-maker	I4-1	値	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	0.0	0.0
+i4-2-grid-all	I4-2	値	正解と一致	48 の場合すべて	dd4a49fbd478	正解と一致	48 の場合すべて	dd4a49fbd478	2 回の実行で同じ	0.108	0.184
+i4-2-grid	I4-2	値	正解と一致	30 の場合すべて	4ed69d3acdae	正解と一致	30 の場合すべて	4ed69d3acdae	2 回の実行で同じ	0.047	0.107
+i4-2-grid-stop	I4-2	値	正解と一致	16 の場合すべて	ab1467ac27ba	正解と一致	16 の場合すべて	ab1467ac27ba	2 回の実行で同じ	0.026	0.053
+i4-2-grid-tp	I4-2	値	正解と一致	16 の場合すべて	43b634adfc6c	正解と一致	16 の場合すべて	43b634adfc6c	2 回の実行で同じ	0.027	0.052
+i4-2-grid-maker	I4-2	値	正解と一致	16 の場合すべて	931b7c1d09c6	正解と一致	16 の場合すべて	931b7c1d09c6	2 回の実行で同じ	0.028	0.068
+i4-2-grid-mtp	I4-2	値	正解と一致	16 の場合すべて	3b56285c4583	正解と一致	16 の場合すべて	3b56285c4583	2 回の実行で同じ	0.028	0.054
+i4-2-grid-swap	I4-2	値	正解と一致	16 の場合すべて	d0784ab66524	正解と一致	16 の場合すべて	d0784ab66524	2 回の実行で同じ	0.024	0.049
+i4-2-grid-hold	I4-2	値	正解と一致	16 の場合すべて	04a14bf10913	正解と一致	16 の場合すべて	04a14bf10913	2 回の実行で同じ	0.051	0.038
+i4-2-grid-wick	I4-2	値	正解と一致	16 の場合すべて	6f98a9d0b8e2	正解と一致	16 の場合すべて	6f98a9d0b8e2	2 回の実行で同じ	0.05	0.023
+i4-3-e2e-taker	I4-3	値	正解と一致		4496ba78cd69	正解と一致		4496ba78cd69	2 回の実行で同じ	0.002	0.002
+i4-3-e2e-maker	I4-3	値	正解と一致		7bb43a338748	正解と一致		7bb43a338748	2 回の実行で同じ	0.006	0.002
+i4-4-plain	I4-4	値	正解と一致		14293724f86c	正解と一致		14293724f86c	2 回の実行で同じ	0.002	0.001
+i4-4-fee	I4-4	値	正解と一致		bedd34db477e	正解と一致		bedd34db477e	2 回の実行で同じ	0.001	0.002
+i4-5-fills	I4-5	値	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	0.001	0.033
+i4-5-outputs	I4-5	能力	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	0.033	0.001
+i4-6-label	I4-6	値	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	0.001	0.001
+i4-6-signal-refused	I4-6	能力	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	0.001	0.001
+i4-6-research-refused	I4-6	能力	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	adapter: 当方の現状の公開された口(src/bot/backtest/engine.run_backtest)は OHLC の DataFrame 1 本だけを取る。宣言でファイルを読む口・約定/気配/板の入力・実行記録・指標の書き出し・ダッシュボードの実行の表示を探したが無い	-	結果なし	0.001	0.001
+i4-8-next-open	I4-8	値	正解と一致		412a637a0fda	正解と一致		412a637a0fda	2 回の実行で同じ	0.006	0.002
+i4-8-short-close	I4-8	値	正解と一致		43f4aed71c15	正解と一致		43f4aed71c15	2 回の実行で同じ	0.001	0.001
+i4-8-no-short	I4-8	値	正解と一致		489543c6ed48	正解と一致		489543c6ed48	2 回の実行で同じ	0.001	0.001
+i4-9-strict	I4-9	値	正解と一致		b5baf009937c	正解と一致		b5baf009937c	2 回の実行で同じ	0.006	0.001
+i4-9-short-strict	I4-9	値	正解と一致		543ea5b0c57b	正解と一致		543ea5b0c57b	2 回の実行で同じ	0.001	0.001
+i4-10-priority	I4-10	値	正解と一致		2867256217ca	正解と一致		2867256217ca	2 回の実行で同じ	0.006	0.001
+i4-11-wick-long	I4-11	値	正解と一致		179036a8a6a3	正解と一致		179036a8a6a3	2 回の実行で同じ	0.002	0.001
+i4-11-wick-short	I4-11	値	正解と一致		49b30d5a02e4	正解と一致		49b30d5a02e4	2 回の実行で同じ	0.001	0.001
+i4-11-refuse-stack	I4-11	能力	正解と一致	変形を拒んだ: ValueError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	490a1b683f68	正解と一致	変形を拒んだ: ValueError: stop_mode="wick_invalidation" replaces stop_loss_pct; pass stop_loss_pct=None	490a1b683f68	2 回の実行で同じ	0.007	0.003
+i4-12-maker-tp	I4-12	値	正解と一致		7476b9f40f38	正解と一致		7476b9f40f38	2 回の実行で同じ	0.005	0.001
+i4-12-refuse	I4-12	能力	正解と一致	変形を拒んだ: ValueError: exit_execution="maker_tp" requires maker_tp_pct > 0	57074ea13129	正解と一致	変形を拒んだ: ValueError: exit_execution="maker_tp" requires maker_tp_pct > 0	57074ea13129	2 回の実行で同じ	0.002	0.002
+i4-12-touch-decimal	I4-12	値	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	不一致	fills[1].bar = 2(正解 3)	0ee3f45421bf	2 回の実行で同じ	0.001	0.001
+i4-13-time-exit	I4-13	値	正解と一致		c8c8589e4a8d	正解と一致		c8c8589e4a8d	2 回の実行で同じ	0.005	0.001
+i4-13-tp-on-exit-bar	I4-13	値	不一致	fills[1].price = 102.0(正解 101.0)	3bf496947812	不一致	fills[1].price = 102.0(正解 101.0)	3bf496947812	2 回の実行で同じ	0.001	0.001
+i4-13-two-models	I4-13	能力	不一致	spec: fills[1].price = 102.0(正解 101.0)	d2fce9e99016	不一致	spec: fills[1].price = 102.0(正解 101.0)	d2fce9e99016	2 回の実行で同じ	0.007	0.002
+i4-14-mask-sides	I4-14	値	正解と一致		3f19057470f3	正解と一致		3f19057470f3	2 回の実行で同じ	0.002	0.001
+i4-14-sides-short	I4-14	値	正解と一致		2603029e6415	正解と一致		2603029e6415	2 回の実行で同じ	0.002	0.001
+i4-15-swap-long	I4-15	値	正解と一致		b3e7a8949ce7	正解と一致		b3e7a8949ce7	2 回の実行で同じ	0.006	0.002
+i4-15-swap-short	I4-15	値	正解と一致		6b3aa8357190	正解と一致		6b3aa8357190	2 回の実行で同じ	0.001	0.001
+i4-16-missed	I4-16	値	正解と一致		45ca25bb9d70	正解と一致		45ca25bb9d70	2 回の実行で同じ	0.006	0.001
+i4-14-maker-mask-false	I4-14	値	正解と一致		660672fac9a7	正解と一致		660672fac9a7	2 回の実行で同じ	0.013	0.003
+i4-16-maker-mask-false-not-missed	I4-16	値	不一致	missed_fills = 1(正解 0)	5932797ccfdf	不一致	missed_fills = 1(正解 0)	5932797ccfdf	2 回の実行で同じ	0.009	0.01
+i4-16-maker-mask-false-two-models	I4-16	能力	不一致	spec: missed_fills = 1(正解 0)	7e0533bb46a2	不一致	spec: missed_fills = 1(正解 0)	7e0533bb46a2	2 回の実行で同じ	0.003	0.015
+i4-16-same-side-keeps-limit	I4-16	値	不一致	fills[0].bar = 3(正解 4)	16c62b510b13	不一致	fills[0].bar = 3(正解 4)	16c62b510b13	2 回の実行で同じ	0.011	0.002
+i4-16-same-side-two-models	I4-16	能力	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	不一致	spec: fills[0].bar = 3(正解 4)	91f4926f2f55	2 回の実行で同じ	0.011	0.011
+i4-16-mask-false-opposite-keeps-limit	I4-16	値	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	2 回の実行で同じ	0.007	0.003
+i4-16-mask-false-opposite-two-models	I4-16	能力	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	2 回の実行で同じ	0.008	0.003
+i4-11-wick-short-history	I4-11	値	正解と一致		8d5368524dff	正解と一致		8d5368524dff	2 回の実行で同じ	0.011	0.003
+i4-11-wick-entry-bar-close	I4-11	値	正解と一致		6cec38b16ade	正解と一致		6cec38b16ade	2 回の実行で同じ	0.01	0.006
+i4-16-exit-same-side-keeps-limit	I4-16	値	不一致	fills[1].bar = 5(正解 6)	03778ac91905	不一致	fills[1].bar = 5(正解 6)	03778ac91905	2 回の実行で同じ	0.002	0.002
+i4-16-exit-same-side-two-models	I4-16	能力	不一致	spec: fills[1].bar = 5(正解 6)	9e92f0e7e083	不一致	spec: fills[1].bar = 5(正解 6)	9e92f0e7e083	2 回の実行で同じ	0.011	0.003
+i4-14-blocked-opposite-keeps-limit	I4-14	値	正解と一致		0d83570dc27b	正解と一致		0d83570dc27b	2 回の実行で同じ	0.011	0.006
+i4-14-sides-opposite-keeps-limit	I4-14	値	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	不一致	fills: 0 件(正解 1 件): 観測 []	5932797ccfdf	2 回の実行で同じ	0.001	0.001
+i4-14-sides-opposite-two-models	I4-14	能力	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	不一致	spec: fills: 0 件(正解 1 件): 観測 []	7e0533bb46a2	2 回の実行で同じ	0.003	0.007
+i4-8-refuse-bad-bar	I4-8	値	不一致	変形を拒まずに通した	3235318d8ae2	不一致	変形を拒まずに通した	3235318d8ae2	2 回の実行で同じ	0.015	0.003
+i4-10-zero-rate-refused	I4-10	値	不一致	変形を拒まずに通した	d2f62e093129	不一致	変形を拒まずに通した	d2f62e093129	2 回の実行で同じ	0.021	0.013
+i4-8-negative-fee	I4-8	値	正解と一致		443ff7d10080	正解と一致		443ff7d10080	2 回の実行で同じ	0.002	0.001
+i4-16-zero-timeout-refused	I4-16	値	不一致	変形を拒まずに通した	cde35d97067a	不一致	変形を拒まずに通した	cde35d97067a	2 回の実行で同じ	0.003	0.007
+i4-17-metrics	I4-17	値	正解と一致		bf08e142aea3	正解と一致		bf08e142aea3	2 回の実行で同じ	0.001	0.001
+i4-17-metrics-edge	I4-17	値	正解と一致		73ef1451f459	正解と一致		73ef1451f459	2 回の実行で同じ	0.001	0.001
+i4-17-sharpe-bar-seconds	I4-17	値	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	不一致	metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	68572d102a38	2 回の実行で同じ	0.001	0.001
+i4-17-two-models	I4-17	能力	不一致	spec: metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	e69148b67006	不一致	spec: metrics.sharpe_ratio = 935.9054951456135(正解 120.82487987743227)	e69148b67006	2 回の実行で同じ	0.007	0.003
+i4-18-split	I4-18	値	正解と一致		ecc72b633a93	正解と一致		ecc72b633a93	2 回の実行で同じ	0.001	0.001
+i4-18-split-decimal	I4-18	値	不一致	splits.validation = [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88](正解 [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89])	1a69df12450e	不一致	splits.validation = [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88](正解 [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89])	1a69df12450e	2 回の実行で同じ	0.001	0.001
+i4-18-two-models	I4-18	能力	不一致	spec: splits.validation = [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88](正解 [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89])	04553966c7c3	不一致	spec: splits.validation = [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88](正解 [70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89])	04553966c7c3	2 回の実行で同じ	0.008	0.002
+i4-18-refuse	I4-18	能力	正解と一致	変形を拒んだ: ValueError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	正解と一致	変形を拒んだ: ValueError: fractions must be in (0,1) and sum to < 1	e7e0650c1b34	2 回の実行で同じ	0.005	0.001
+i4-10-signal-first	I4-10	値	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	2 回の実行で同じ	0.001	0.001
+i4-10-signal-first-short	I4-10	値	不一致	fills[1].price = 102.0(正解 99.0)	51e25c9b9cd7	不一致	fills[1].price = 102.0(正解 99.0)	51e25c9b9cd7	2 回の実行で同じ	0.001	0.001
+i4-10-signal-first-two-models	I4-10	能力	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	2 回の実行で同じ	0.007	0.003
+i4-10-stop-first-plain	I4-10	値	正解と一致		6c3f6f2231b4	正解と一致		6c3f6f2231b4	2 回の実行で同じ	0.001	0.001
+i4-12-tp-before-maker-tp	I4-12	値	正解と一致		4c6c5f66a3e1	正解と一致		4c6c5f66a3e1	2 回の実行で同じ	0.005	0.001
+i4-11-wick-first	I4-11	値	正解と一致		99305c1b61e4	正解と一致		99305c1b61e4	2 回の実行で同じ	0.001	0.001
+i4-11-wick-before-exit-limit	I4-11	値	正解と一致		f2d9275e52cd	正解と一致		f2d9275e52cd	2 回の実行で同じ	0.001	0.001
+i4-13-stop-on-time-bar	I4-13	値	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	不一致	fills[1].price = 98.0(正解 101.0)	aa0e97cd29cf	2 回の実行で同じ	0.002	0.002
+i4-13-stop-on-time-bar-two-models	I4-13	能力	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	不一致	spec: fills[1].price = 98.0(正解 101.0)	ee04da2246bb	2 回の実行で同じ	0.011	0.019
+i4-13-time-first	I4-13	値	不一致	fills[1].price = 103.0(正解 101.0)	abb428dd2999	不一致	fills[1].price = 103.0(正解 101.0)	abb428dd2999	2 回の実行で同じ	0.001	0.001
+i4-13-time-first-two-models	I4-13	能力	不一致	spec: fills[1].price = 103.0(正解 101.0)	3cf7bd56feaa	不一致	spec: fills[1].price = 103.0(正解 101.0)	3cf7bd56feaa	2 回の実行で同じ	0.007	0.002
+i4-13-time-maker-tp-two-models	I4-13	能力	不一致	spec: fills[1].price = 102.49999999999999(正解 101.0)	273d37aa6da1	不一致	spec: fills[1].price = 102.49999999999999(正解 101.0)	273d37aa6da1	2 回の実行で同じ	0.003	0.003
+i4-13-time-before-exit-limit	I4-13	値	正解と一致		bac3e0c80dee	正解と一致		bac3e0c80dee	2 回の実行で同じ	0.006	0.001
+i4-13-stop-on-time-bar-maker	I4-13	値	不一致	fills[1].price = 98.0(正解 101.0)	cd7e27731fa6	不一致	fills[1].price = 98.0(正解 101.0)	cd7e27731fa6	2 回の実行で同じ	0.002	0.002
+i4-16-stop-before-exit-limit	I4-16	値	正解と一致		7dc4aa9464a4	正解と一致		7dc4aa9464a4	2 回の実行で同じ	0.001	0.001
+i4-16-tp-before-exit-limit	I4-16	値	正解と一致		d8dae8650092	正解と一致		d8dae8650092	2 回の実行で同じ	0.006	0.001
+i4-16-maker-tp-before-exit-limit	I4-16	値	正解と一致		eb81aa9c95c6	正解と一致		eb81aa9c95c6	2 回の実行で同じ	0.001	0.001
+i4-3-core-delivery	I4-3	値	正解と一致		ec6683e67929	正解と一致		ec6683e67929	2 回の実行で同じ	0.005	0.001
+i4-3-core-delivery-gap	I4-3	値	正解と一致		d84dbf0c545f	正解と一致		d84dbf0c545f	2 回の実行で同じ	0.001	0.001
+i4-3-ref-signal-first	I4-3	値	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	adapter: 当方の現状に足の経路の独立の参照実装を探したが無い(scripts/qa/maker_fill_ref.py は約定とティッカーから板の待ち行列を模す別の模型で、足を入力に取らない)	-	結果なし	0.0	0.0

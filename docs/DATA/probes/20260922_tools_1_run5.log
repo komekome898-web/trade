@@ -1,0 +1,78 @@
+# 区分1 5回目の生ログ 2026-09-22 (UTC)
+--- [1] 2026-09-22T08:08:24Z WebFetch github HTML でコミット数を取得(出力は本文に転記) rc=0
+  cmd: WebFetch https://github.com/stefan-jansen/zipline-reloaded -> stars 1.9k / forks 330 / watching 43 / Commits 6,694 / License Apache-2.0 rc=0
+  cmd: WebFetch https://github.com/gbeced/basana -> Commits 590 / stars 867 / forks 113 rc=0
+  cmd: WebFetch https://github.com/mementum/backtrader -> Commits 2,404 / stars 23.3k / forks 5.3k rc=0
+  cmd: WebFetch https://github.com/edtechre/pybroker -> Commits 1,259 / stars 3.5k / forks 452 rc=0
+  cmd: WebFetch https://github.com/pmorissette/bt -> Commits 782 / stars 3.0k / forks 501 rc=0
+--- [2] 2026-09-22T08:08:24Z mcp__github__list_commits(gbeced/basana, perPage=1) -> Access denied: repository not configured for this session. Allowed repositories: komekome898-web/trade rc=0
+--- [3] 2026-09-22T08:08:24Z curl https://api.github.com/repos/stefan-jansen/zipline-reloaded rc=0
+{"message":"GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write access, call add_repo again with access:\"push\" to attach the repository with credentials.","documentation_url":"https://docs.anthropic.com/en/docs/claude-code/github-actions"} rc=0
+HTTPCODE=403 BYTES=37 rc=0
+--- [3] 2026-09-22T08:08:45Z curl https://pypistats.org/api/packages/lib-pybroker/recent rc=0
+<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a> rc=0
+HTTPCODE=429 BYTES=53 rc=0
+--- [4] 2026-09-22T08:09:16Z curl https://ungh.cc/repos/stefan-jansen/zipline-reloaded rc=0
+{"repo":{"id":342145253,"name":"zipline-reloaded","repo":"stefan-jansen/zipline-reloaded","description":"Zipline, a Pythonic Algorithmic Trading Library","createdAt":"2021-02-25T06:26:03Z","updatedAt":"2026-09-22T07:42:22Z","pushedAt":"2026-01-06T13:01:54Z","stars":1941,"watchers":43,"forks":330,"defaultBranch":"main"}} rc=0
+HTTPCODE=200 BYTES=321 rc=0
+--- [4] 2026-09-22T08:09:17Z curl https://api.pepy.tech/api/v2/projects/lib-pybroker rc=0
+{"message":"No API Key provided"} rc=0
+HTTPCODE=401 BYTES=33 rc=0
+--- [4] 2026-09-22T08:09:17Z curl https://web.archive.org/web/2026/https://jesse.trade/pricing rc=0
+curl: (35) Recv failure: Connection reset by peer rc=0
+
+HTTPCODE=000 BYTES=0 rc=0
+--- [5] 2026-09-22T08:10:01Z WebFetch https://pypistats.org/packages/lib-pybroker -> last day 176 / last week 885 / last month 4,152 rc=0
+--- [5b] 2026-09-22T08:10:01Z curl https://ungh.cc/repos/stefan-jansen/zipline-reloaded -> HTTP 200 stars=1941 watchers=43 forks=330 createdAt=2021-02-25T06:26:03Z pushedAt=2026-01-06T13:01:54Z rc=0
+--- [5c] 2026-09-22T08:10:01Z curl https://api.pepy.tech/api/v2/projects/lib-pybroker -> HTTP 401 {"message":"No API Key provided"} rc=0
+--- [5d] 2026-09-22T08:10:01Z curl https://web.archive.org/web/2026/https://jesse.trade/pricing -> curl(35) Recv failure: Connection reset by peer / HTTPCODE=000 rc=35
+--- [5e] 2026-09-22T08:10:01Z WebFetch https://jesse.trade/help/faq/... -> HTTP 403 rc=0
+--- [5f] 2026-09-22T08:10:01Z WebFetch https://docs.jesse.trade/docs/livetrade.html -> HTTP 200。逐語: 'you need to register on our website to generate your license key' / 'The package is pre-built and the access is limited to those with an active license'。金額の記載なし rc=0
+--- [6] 2026-09-22T08:10:01Z curl -A 'Mozilla/5.0 (Windows NT 10.0...' https://jesse.trade/pricing -> HTTPCODE=403 rc=0
+--- [6] 2026-09-22T08:10:01Z curl -A 'trade-research/1.0 (research...' https://jesse.trade/pricing -> HTTPCODE=403 rc=0
+--- [6b] 2026-09-22T08:10:02Z curl wayback available -> {"url": "jesse.trade/pricing", "archived_snapshots": {}} rc=0
+HTTPCODE=200 rc=0
+--- [7] 2026-09-22T08:10:19Z git clone --depth 1 https://github.com/robcarver17/pysystemtrade rc=0 time_s=26 du=878M du_MB=878
+Cloning into '/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst'... rc=0
+Updating files:  11% (185/1560) rc=0
+Updating files:  12% (188/1560) rc=0
+Updating files:  13% (203/1560) rc=0
+Updating files:  14% (219/1560) rc=0
+Updating files:  15% (234/1560) rc=0
+Updating files:  16% (250/1560) rc=0
+Updatin rc=0
+--- [8] 2026-09-22T08:10:54Z du -sm 内訳(MB ディレクトリ): 737	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/data 110	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/.git 26	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/examples 2	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/systems 2	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/sysproduction 1	/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/pst/tox.ini  rc=0
+--- [9] 2026-09-22T08:10:54Z 878 MB > 200 MB の上限。リードの条件により中止・削除。rm -rf 実行 rc=0
+--- [10] 2026-09-22T08:14Z pypi json 一括取得: curl https://pypi.org/pypi/<pkg>/json (ziplime fast-trade pybotters OctoBot mlflow) 全て HTTP 200 rc=0
+ziplime: ver=1.19.16 py=<4.0,>=3.12 lic=None lic_expr=None author='Ziplime' maint=None last=2026-06-18T09:21:46 first=2024-12-06T15:21:25(0.1.11) vulns=0 deps=30 urls=None rc=0
+fast-trade: ver=2.1.0 py=>=3.10 lic='GNU AGPLv3' lic_expr=None author=None maint=None last=2026-08-20T04:59:18 first=2020-02-17T01:31:46(0.0.1) vulns=0 deps=16 urls={'Homepage': 'https://github.com/jrmeier/fast-trade', 'Repository': 'https://github.com/jrmeier/fast-trade'} rc=0
+pybotters: ver=1.11.2 py=>=3.10 lic=None lic_expr='MIT' author=None maint=None last=2026-04-17T07:19:41 first=2021-04-12T16:10:21(0.1.0) vulns=0 deps=1 urls={'Documentation': 'https://pybotters.readthedocs.io/ja/stable/', 'Repository': 'https://github.com/pybotters/pybotters'} rc=0
+OctoBot: ver=2.1.1 py=>=3.12 lic='GPL-3.0' lic_expr=None author='Drakkar-Software' maint=None last=2026-03-29T15:25:05 first=2019-01-16T22:57:27(0.2.4b1) vulns=0 deps=77 urls={'Homepage': 'https://github.com/Drakkar-Software/OctoBot'} rc=0
+mlflow: ver=3.16.1 py=>=3.10 lic='Copyright 2018 Databricks, Inc.  All rights reserved.' lic_expr=None author=None maint=None last=2026-09-16T23:14:16 first=2018-06-04T22:03:38(0.0.1) vulns=0 deps=59 urls={'documentation': 'https://mlflow.org/docs/latest', 'homepage': 'https://mlflow.org', 'issues': 'https://github.com/mlflow/mlflow/issues', 'repository': 'https://github.com/mlflow/mlflow'} rc=0
+--- [11] 2026-09-22T08:15Z venv 隔離導入 ziplime: python3 -m venv v5z && v5z/bin/pip install -q ziplime rc=0
+ERROR: Could not find a version that satisfies the requirement ziplime (from versions: none) / ERROR: No matching distribution found for ziplime / rc=1 time_s=1
+  この環境の python は 3.11.15、ziplime の requires_python は <4.0,>=3.12。 rc=0
+--- [12] 2026-09-22T08:16Z venv 隔離導入 fast-trade: python3 -m venv v5f && v5f/bin/pip install -q fast-trade -> rc=0 install_time_s=72 pkgs=108 pip_check='No broken requirements found.'
+--- [13] 2026-09-22T08:17Z fast_trade の語の走査(導入先の *.py を grep) rc=0
+  grep -roi 'limit_order|market_order|"limit"|order_type' -> 一致 0 件(指値・注文種別の概念が無い) rc=0
+  grep -rohE 'https?://...' のホスト一覧: api.binance. / api.exchange.coinbase.com / api.fxmacrodata.com / api.hyperliquid.xyz / pandas.pydata.org / en.wikipedia.org / stockcharts.com / tradingsim.com / traders.com / www.fxcoaching.com / www.stockspotter.com / user42.tuxfamily.org / virtualizedfrog.wordpress.com / www.investopedia.com / www.khanacademy.org / www.quantopian.com / www.thebalance.com / www.tradingview.com rc=0
+  archive/update_kline.py:11 supported_exchanges = ["binanceus", "binancecom", "coinbase"] rc=0
+--- [14] 2026-09-22T08:18Z fast-trade の欠陥の実測(合成 DataFrame を直接渡す経路) rc=0
+  build_data_frame.py:311 def infer_frequency(df: pd.DataFrame) -> str:  (引数 1 個) rc=0
+  build_data_frame.py:78  if not infer_frequency(df, backtest.get("chart_period")):  (引数 2 個で呼ぶ) rc=0
+  -> TypeError: infer_frequency() takes 1 positional argument but 2 were given (2.1.0 で再現。2 回打って 2 回とも同じ) rc=0
+  datafile を指定する経路に逃げると ValueError: Exchange None not supported(archive/update_kline.py:22)= 取引所からの取得に行く rc=0
+  chart_period を外すと通る(else 側の freq を使う) rc=0
+--- [15] 2026-09-22T08:19Z fast-trade 最小実行(chart_period 無し・合成 1 分足 300 本・乱数の種 7・comission 0.05) rc=0
+  TIME_S=0.05 rc=0
+  SUMMARY= {"return_perc": -5.074, "sharpe_ratio": -2.626, "buy_and_hold_perc": -1.654, "median_trade_len": 120.0, "mean_trade_len": 271.475, "max_trade_held": 1680.0, "min_trade_len": 60.0, "total_num_winning_trades": 0.0, "total_num_losing_trades": 62.0, "avg_win_perc": 0.0, "avg_loss_perc": -0.144, "best_trade_perc": -0.0005, "min_trade_perc": -0.0043, "median_trade_perc": -0.0005, "mean_trade_perc": -0.0014, "num_trades": 62, "win_perc": 0.0, "loss_perc": 100.0, "equity_peak": 1000.0, "equity_final": 951.71, "max_drawdown": 947.83, "total_fees": 15.228, "first_tic": "2026-01-01 00:00:00", "last_tic": "2026-01-01 04:59:01", "total_tics": 301, "perc_missing": -0.33, "total_missing": 0, "test_duration": 0.047, "num_of_enter_signals": 101, "num_of_exit_signals": 151, "num_of_hold_signals": 49, "market_adjusted_return": -3.42, "position_metrics": {"avg_position_size": 9.795, "max_position_size": 10. rc=0
+  DF_ROWS= 301 / ACTIONS= {'x': 151, 'e': 101, 'h': 49} / ACCT_FIRST= 1000.0 ACCT_LAST= 951.71020791 / TRADES= 62 rc=0
+--- [16] 2026-09-22T08:20Z fast-trade 配布物の検査: pip download --no-deps -d dl5 fast-trade -> fast_trade-2.1.0-py3-none-any.whl rc=0
+  FILES=41 setup_py=0 binaries=0 rc=0
+  requires_dist = ['pandas>=2.3.3', 'matplotlib>=3.10.8', 'requests>=2.32.5', 'numpy>=2.2.6', 'pygad>=3.5.0', 'hmmlearn>=0.3.3', 'plotly>=6.5.2', 'pyarrow>=23.0.0', 'pyyaml>=6.0.3', 'rich>=14.3.2', 'typer>=0.23.0', 'fastmcp<3,>=2.14.5', 'build; extra == "dev"', 'coverage; extra == "dev"', 'flake8; extra == "dev"', 'pytest; extra == "dev"'] rc=0
+--- [17] 2026-09-22T08:21Z curl https://raw.githubusercontent.com/jrmeier/fast-trade/master/LICENSE -> 先頭 'GNU AFFERO GENERAL PUBLIC LICENSE / Version 3, 19 November 2007' rc=0
+--- [18] 2026-09-22T08:21Z curl https://ungh.cc/repos/jrmeier/fast-trade -> HTTP 200 stars=596 watchers=11 forks=63 createdAt=2019-08-06T16:22:53Z pushedAt=2026-09-22T02:40:50Z defaultBranch=master rc=0
+--- [19] 2026-09-22T08:21Z curl https://ungh.cc/repos/Ziplime/ziplime -> curl(28) Connection timed out after 20002 ms rc=28
+--- [20] 2026-09-22T08:22Z curl https://pypistats.org/api/packages/fast-trade/recent -> HTTP 429 RATE LIMIT EXCEEDED rc=0
+--- [21] 2026-09-22T08:22Z WebFetch https://github.com/jrmeier/fast-trade -> Commits 313 / License AGPL-3.0 / README 先頭 'A library built with backtest portability and performance in mind for trading strategy backtests.' rc=0
+--- [22] 2026-09-22T08:22Z WebFetch https://pypistats.org/packages/fast-trade -> last day 2 / last week 44 / last month 220 rc=0

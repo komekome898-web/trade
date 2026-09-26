@@ -1,0 +1,16 @@
+項目,値
+"後半 2,000 本の bundle_id の MD5(この実行)",905f5694f32ec4b130a1d322f3b2d03e
+"後半 2,000 本の bundle_id の MD5(前段)",905f5694f32ec4b130a1d322f3b2d03e
+前段と同一か,1
+後半の読みの回数,12 度目(L-355)
+通した方策,logistic_3択(順張り利確5bp・入り値基準)
+利確の幅(bp、入り値基準),5.000000
+主の c(bp),2.004025
+併記の c = p75(bp),3.922816
+レグの行(建玉 1 つごと),9688
+cascades.csv.gz: 足した行数,18000
+cascades.csv.gz: 追加前の既存行(展開後)のMD5,a0009b45391505bb202056792fbf00be
+cascades.csv.gz: 追加後に既存行だけを抜き出したMD5,a0009b45391505bb202056792fbf00be
+prints_policy.csv.gz: 足した行数,5227
+prints_policy.csv.gz: 追加前の既存行(展開後)のMD5,e71a567f380ec40bbea525653a97d383
+prints_policy.csv.gz: 追加後に既存行だけを抜き出したMD5,e71a567f380ec40bbea525653a97d383

@@ -1,0 +1,6 @@
+runs new_impl scenes 35 correct_pass1 35 correct_both_passes 35 by_viewpoint {'V1': 9, 'V2': 3, 'V3': 5, 'V4': 2, 'V5': 7, 'V6': 5, 'V7': 4}
+runs current_impl scenes 35 correct_pass1 2 correct_both_passes 2 by_viewpoint {'V2': 1, 'V5': 1}
+runs mutant scenes 35 correct_pass1 32 correct_both_passes 32 by_viewpoint {'V1': 7, 'V2': 2, 'V3': 5, 'V4': 2, 'V5': 7, 'V6': 5, 'V7': 4}
+runs_2 new_impl scenes 35 correct_pass1 35 correct_both_passes 35 by_viewpoint {'V1': 9, 'V2': 3, 'V3': 5, 'V4': 2, 'V5': 7, 'V6': 5, 'V7': 4}
+runs_2 current_impl scenes 35 correct_pass1 2 correct_both_passes 2 by_viewpoint {'V2': 1, 'V5': 1}
+runs_2 mutant scenes 35 correct_pass1 32 correct_both_passes 32 by_viewpoint {'V1': 7, 'V2': 2, 'V3': 5, 'V4': 2, 'V5': 7, 'V6': 5, 'V7': 4}

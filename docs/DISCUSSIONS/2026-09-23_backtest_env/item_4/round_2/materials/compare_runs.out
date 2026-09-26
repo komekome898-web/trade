@@ -1,0 +1,5 @@
+VS_SURVEY mutant i4-5-outputs 正解と一致 b8dafa2653b7 | 正解と一致 c25ece658f8d
+VS_SURVEY mutant i4-6-label 正解と一致 f677c508437b | 正解と一致 da5491afc7fa
+VS_SURVEY new_impl i4-5-outputs 正解と一致 b8dafa2653b7 | 正解と一致 c25ece658f8d
+VS_SURVEY new_impl i4-6-label 正解と一致 f677c508437b | 正解と一致 da5491afc7fa
+{'in_run_diff': 0, 'run12_diff': 0, 'vs_survey_diff': 4, 'rows': 2814}

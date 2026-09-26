@@ -1,0 +1,64 @@
+##### from item0_r5-1_scenekeeper_install_16.log
+=== 2026-09-24T02:44:23Z clone
+/dev/vda          258020 30285      7654  80% /
+Cloning into 'luczinsritter'...
+rc=0
+20929924806b5071dd92f9075c9bf97901e0011c 2025-09-29T22:47:11+02:00 Luczinsritter
+total 336
+drwxr-xr-x  4 root root   4096 Sep 24 02:44 .
+drwxr-xr-x 19 root root   4096 Sep 24 02:44 ..
+drwxr-xr-x  8 root root   4096 Sep 24 02:44 .git
+-rw-r--r--  1 root root   3749 Sep 24 02:44 README.md
+-rw-r--r--  1 root root   6680 Sep 24 02:44 backtest_engine.py
+-rw-r--r--  1 root root   6143 Sep 24 02:44 ema_arima.py
+-rw-r--r--  1 root root 284909 Sep 24 02:44 exemple.ipynb
+drwxr-xr-x  2 root root   4096 Sep 24 02:44 images
+-rw-r--r--  1 root root   1541 Sep 24 02:44 main_test.py
+-rw-r--r--  1 root root    129 Sep 24 02:44 requirements.txt
+-rw-r--r--  1 root root   7285 Sep 24 02:44 tradeanalysis.py
+-rw-r--r--  1 root root   1292 Sep 24 02:44 utils.py
+--- install-time hooks / network / binaries
+ls: cannot access 'setup.py': No such file or directory
+ls: cannot access 'pyproject.toml': No such file or directory
+ls: cannot access 'setup.cfg': No such file or directory
+./backtest_engine.py:15:        raw_df = yf.download(ticker, start = start_date, end = end_date, interval = interval, auto_adjust = True)
+numpy==1.26.4
+pandas==2.2.2
+matplotlib==3.9.2
+yfinance==0.2.43
+quantstats==0.0.62
+scikit-learn==1.5.2
+statsmodels==0.14.4
+=== start 2026-09-24T02:44:47Z limit=600s : python3.11 -m venv /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/luczinsritter && /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/luczinsritter/bin/pip install --no-cache-dir -r /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/_dl/luczinsritter/requirements.txt
+df before: /dev/vda          258020 30286      7653  80% /
+=== end 2026-09-24T02:45:15Z rc=0 elapsed=28s min_free=6970MB 
+Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Downloading soupsieve-2.10-py3-none-any.whl (38 kB)
+Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 225.5 MB/s eta 0:00:00
+Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 424.4 MB/s eta 0:00:00
+Downloading webencodings-0.6.1-py3-none-any.whl (8.7 kB)
+Installing collected packages: pytz, multitasking, webencodings, urllib3, tzdata, typing-extensions, threadpoolctl, tabulate, soupsieve, six, pyparsing, platformdirs, pillow, peewee, packaging, numpy, lxml, kiwisolver, idna, frozendict, fonttools, cycler, cloudpickle, charset_normalizer, certifi, scipy, requests, python-dateutil, patsy, joblib, html5lib, contourpy, beautifulsoup4, scikit-learn, pandas, matplotlib, yfinance, statsmodels, seaborn, quantstats
+Successfully installed beautifulsoup4-4.15.0 certifi-2026.7.22 charset_normalizer-3.5.1 cloudpickle-3.1.2 contourpy-1.3.3 cycler-0.12.1 fonttools-4.66.0 frozendict-2.4.7 html5lib-1.1 idna-3.20 joblib-1.6.0 kiwisolver-1.5.1 lxml-6.1.3 matplotlib-3.9.2 multitasking-0.0.13 numpy-1.26.4 packaging-26.3 pandas-2.2.2 patsy-1.0.3 peewee-4.5.1 pillow-12.3.0 platformdirs-4.11.12 pyparsing-3.3.3 python-dateutil-2.9.0.post0 pytz-2026.3.post1 quantstats-0.0.62 requests-2.34.2 scikit-learn-1.5.2 scipy-1.17.1 seaborn-0.13.2 six-1.17.0 soupsieve-2.10 statsmodels-0.14.4 tabulate-0.10.0 threadpoolctl-3.7.0 typing-extensions-4.16.0 tzdata-2026.4 urllib3-2.8.0 webencodings-0.6.1 yfinance-0.2.43
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 30856      7083  82% /
+note: quantstats 0.0.62 imports IPython at import time (quantstats/reports.py line 33-35); requirements.txt does not list it
+=== start 2026-09-24T02:47:16Z limit=600s : /tmp/claude-0/-home-user-trade/17c10364-8019-48da-af27-038caa7b187a/scratchpad/bt/venvs/item_0/luczinsritter/bin/pip install --no-cache-dir ipython
+df before: /dev/vda          258020 30857      7082  82% /
+=== end 2026-09-24T02:47:22Z rc=0 elapsed=6s min_free=7019MB 
+Downloading executing-2.2.1-py2.py3-none-any.whl (28 kB)
+Downloading parso-0.8.7-py2.py3-none-any.whl (107 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 107.0/107.0 kB 404.8 MB/s eta 0:00:00
+Downloading ptyprocess-0.7.0-py2.py3-none-any.whl (13 kB)
+Downloading wcwidth-0.9.1-cp310-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (768 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 768.4/768.4 kB 80.5 MB/s eta 0:00:00
+Downloading pure_eval-0.2.4-py3-none-any.whl (11 kB)
+Installing collected packages: pure-eval, ptyprocess, wcwidth, traitlets, pygments, psutil, pexpect, parso, executing, asttokens, stack_data, prompt_toolkit, matplotlib-inline, jedi, ipython-pygments-lexers, ipython
+Successfully installed asttokens-3.0.2 executing-2.2.1 ipython-9.17.1 ipython-pygments-lexers-1.1.1 jedi-0.20.0 matplotlib-inline-0.2.2 parso-0.8.7 pexpect-4.9.0 prompt_toolkit-3.0.53 psutil-7.2.2 ptyprocess-0.7.0 pure-eval-0.2.4 pygments-2.21.0 stack_data-0.6.3 traitlets-5.16.1 wcwidth-0.9.1
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python3.11 -m pip install --upgrade pip
+df after: /dev/vda          258020 30920      7019  82% /

@@ -1,0 +1,150 @@
+# 区分1 7回目の生ログ 2026-09-22 (UTC)
+--- [1] 2026-09-22T08:49:47Z ziplime README の対応LLMの取り直し(6回目に写さなかった箇所): curl raw README rc=0 code=200 size=7584
+  README:68 "# Set your OpenRouter API key (free at https://openrouter.ai)"
+  README:69 "export OPENROUTER_API_KEY=your_key_here"
+  README:23 "...every tool forces you to copy-paste between ChatGPT and your terminal..."
+  README:38 "> Ziplime is not a wrapper around an LLM."
+  README に個別の LLM 製品名の一覧表は無い。中継業者は OpenRouter 1 社のみ。
+--- [2] 2026-09-22T08:49:47Z ziplime ai_assistant の実装側で既定モデルを特定: curl raw ai_assistant/requirements.txt と ai_assistant/agent.py rc=0 code=200/200
+  requirements.txt 逐語: "# LLM API (OpenAI SDK works with OpenRouter's compatible API)" / openai>=1.30.0 / rich>=13.0.0 / numpy>=1.24.0 / quantstats>=0.0.62
+  agent.py:40 逐語: def __init__(self, api_key: str, model: str = "x-ai/grok-4.1-fast"):
+  agent.py:44 逐語: base_url="https://openrouter.ai/api/v1"
+  したがって「対応LLM」= OpenRouter 経由で OpenAI 互換 API を話すもの全部。既定の指定は 1 つ(上の逐語)。
+--- [3] 2026-09-22T08:49:30Z python の版の再確認: for v in 3.10 3.11 3.12 3.13; do /usr/bin/python$v -V; done rc=0
+  Python 3.10.20 / Python 3.11.15 / Python 3.12.3 / Python 3.13.12 / python3 -V = Python 3.11.15
+--- [4] 2026-09-22T08:49:50Z PyPI メタデータの取得: curl https://pypi.org/pypi/OctoBot/json と .../pybotters/json rc=0 code=200/200
+  OctoBot | version 2.1.1 | requires_python >=3.12 | license 'GPL-3.0' | license_expression None
+    author 'Drakkar-Software' maintainer None home_page 'https://github.com/Drakkar-Software/OctoBot'
+    project_urls {'Homepage': 'https://github.com/Drakkar-Software/OctoBot'} requires_dist n=77
+    vulnerabilities 0 / releases 137 / 最古 ('0.2.4b1','2019-01-16T22:57:27') / 最新版の upload_time ['2026-03-29T15:25:05']
+    classifiers に Programming Language :: Python :: の行は 0 件
+    urls: [('octobot-2.1.1-py3-none-any.whl', 10721541, 'bdist_wheel')]
+  pybotters | version 1.11.2 | requires_python >=3.10 | license None | license_expression 'MIT'
+    author None maintainer None home_page None
+    project_urls {'Documentation': 'https://pybotters.readthedocs.io/ja/stable/', 'Repository': 'https://github.com/pybotters/pybotters'} requires_dist n=1
+    vulnerabilities 0 / releases 49 / 最古 ('0.1.0','2021-04-12T16:10:21') / 最新版の upload_time ['2026-04-17T07:19:41','2026-04-17T07:19:42']
+    classifiers_py ['Programming Language :: Python :: 3','... :: 3.10','... :: 3.11','... :: 3.12','... :: 3.13','... :: 3.14']
+    urls: [('pybotters-1.11.2-py3-none-any.whl', 521973, 'bdist_wheel'), ('pybotters-1.11.2.tar.gz', 567701, 'sdist')]
+--- [5] 2026-09-22T08:50:01Z 隔離 venv の作成と配布物の取得 rc=0
+  /usr/bin/python3.12 -m venv v7o rc=0 venv_octo_time_s=3
+  /usr/bin/python3.11 -m venv v7p rc=0 venv_pyb_time_s=3
+  v7o/bin/pip download --no-deps -d dl_o OctoBot -> octobot-2.1.1-py3-none-any.whl 10721541 bytes
+  v7p/bin/pip download --no-deps -d dl_p pybotters -> pybotters-1.11.2-py3-none-any.whl 521973 bytes
+--- [6] 2026-09-22T08:51:20Z 導入前検査 wheel の展開の走査(python3 zipfile) rc=0
+  OctoBot: FILES=1015 PY=988 setup_py=[] binaries=0
+    top=['async_channel','octobot','octobot-2.1.1.dist-info','octobot_agents','octobot_backtesting','octobot_commons','octobot_evaluators','octobot_flow','octobot_node','octobot_services','octobot_sync','octobot_tentacles_manager','octobot_trading','trading_backend']
+    METADATA: Name: octobot / Version: 2.1.1 / Summary: Cryptocurrencies alert / trading bot / Home-page: https://github.com/Drakkar-Software/OctoBot / Author: Drakkar-Software / License: GPL-3.0 / Requires-Python: >=3.12
+    WHEEL: Generator: setuptools (80.9.0) / Root-Is-Purelib: true / Tag: py3-none-any
+    Requires-Dist n=77: Flask-WTF==1.2.2, OctoBot-Tulipy>=0.4.11b13, WTForms==3.2.1, aioboto3==15.5.0, aiodns==3.1.1, aiofiles==25.1.0, aiohttp==3.13.3, aiohttp>=3.9.5, aiosqlite==0.17.0, asyncpraw==7.8.1, cachetools, cachetools<7,>=6, cachetools==6.2.6, ccxt, ccxt==4.5.44, certifi==2026.1.4, clickhouse-connect==0.10.0, coingecko-openapi-client==1.4.0, colorlog==6.10.1, cryptography, cython==0.29.32, dbos==2.15.0, fastapi[standard]==0.135.1, flask-caching==2.3.1, flask-compress==1.23, flask-cors==6.0.2, flask-login==0.6.3, flask-socketio==5.6.0, flask==3.1.2, gevent-websocket==0.10.1, gevent==25.9.1, gmqtt==0.7.0, jinja2==3.1.6, jinja2>=3.0.3, jsonschema==4.26.0, mcp==1.26.0, mock>=4.0.1, numpy==2.4.2, openai==2.20.0, packaging==26.0, packaging>=25.0, passlib[bcrypt]==1.7.4, pgpy==0.6.0, postgrest, protobuf==6.33.5, psutil==7.2.2, pyarrow==23.0.0, pydantic, pydantic==2.12.5, pyiceberg==0.10.0, pyngrok==7.5.0, python-dotenv==1.2.1, python-multipart, python-telegram-bot==22.6, pyyaml>=6.0, requests, requests==2.32.5, sentry-sdk==2.51.0, setuptools, setuptools==79.0.1, simplifiedpytrends>=1.1.2, sortedcontainers, sortedcontainers==2.4.0, standard-imghdr==3.13.0, starfish-sdk==1.1.1, starfish-server==1.1.0, supabase==2.27.2, supabase_auth, telethon==1.42.0, tinydb, tinydb==4.8.2, urllib3, vaderSentiment==3.3.2, web3, web3==7.14.1, websockets==15.0.1, werkzeug==3.1.5
+    配布物の .py に現れる外部 host: ..., 127.0.0.1, api.github.com, beta.octobot.cloud, bingx-api.github.io, click.octobot.cloud, docs.aiohttp.org, docs.ccxt.com, docs.cloud.coinbase.com, docs.langchain.com, docs.python.org, errors.octobot.online, feedback.octobot.cloud, forms.gle, gist.github.com, github.com, goo.gl, localhost, market-making.octobot.cloud, metrics.octobot.online, nwhpvrguwcihhizrnyoe.supabase.co, octobot_sync, plop.fr, postgrest.org, pyinstaller.org, pypi.python.org, raspberrypi.stackexchange.com, raw.githubusercontent.com, stackoverflow.com, supabase.com, sync-beta.octobot.cloud, sync.octobot.cloud, tentacles.octobot.online, webhook.octobot.cloud, wmfkgvgzokyzhvxowbyg.supabase.co, www.coingecko.com, www.gnu.org, www.octobot.cloud, www.scaleway.com
+    eval/exec/base64/marshal の一致ファイル数=8: octobot/community/wallet_backend/community_wallet.py, octobot_commons/monitored_process.py, octobot_flow/encryption/decrypt.py, octobot_node/scheduler/encryption/task_inputs.py, octobot_node/scheduler/encryption/task_outputs.py, octobot_tentacles_manager/managers/python_modules_requirements_manager.py, octobot_trading/modes/channel/abstract_mode_producer.py, octobot_trading/modes/scripted_trading_mode/abstract_scripted_trading_mode.py
+  pybotters: FILES=258 PY=244 setup_py=[] binaries=0 top=['pybotters','pybotters-1.11.2.dist-info']
+    METADATA: Name: pybotters / Version: 1.11.2 / Summary: An advanced API client for python crypto bot traders / License-File: LICENCE / Requires-Python: >=3.10
+    WHEEL: Generator: hatchling 1.29.0 / Root-Is-Purelib: true / Tag: py3-none-any
+    Requires-Dist n=1: aiohttp>=3.7
+    配布物の .py に現れる外部 host: api.binance.com, api.bitbank.cc, api.coin.z.com, bf-lightning-api.readme.io, bitgetlimited.github.io, bybit-exchange.github.io, coincheck.com, developers.binance.com, docs.kucoin.com, docs.python.org, doi.org, eips.ethereum.org, en.wikipedia.org, git.io, github.com, hyperliquid.gitbook.io, keccak.noekeon.org, lara.epfl.ch, lark-parser.readthedocs.io, mersenneforum.org, mozilla.org, mpqs.free.fr, phemex-docs.github.io, ps.pndsn.com, pyinstaller-sample-hook.readthedocs.io, python.readthedocs.io, solidity.readthedocs.io, stackoverflow.com, tools.ietf.org, toolz.readthedocs.io, web.archive.org, www.bitget.com, www.bramvandersanden.com, www.cybertest.com, www.graphviz.org, www.kucoin.com, www.okx.com, www.pubnub.com, www.sciencedirect.com, www.starkware.co
+    eval/exec/base64/marshal の一致ファイル数=5(全部 pybotters/_static_dependencies/ の同梱コード): ecdsa/der.py, lark/load_grammar.py, lark/tools/standalone.py, parsimonious/utils.py, sympy/external/importtools.py
+--- [7] 2026-09-22T08:53:10Z OctoBot の遠隔測定の在処と止め方(wheel の中の逐語) rc=0
+  octobot/community/errors_upload/sentry_tracker.py:27 逐語: Will upload errors to octobot.constants.ERROR_TRACKER_DSN if its value is set
+  sentry_tracker.py:30-32 逐語: if not octobot.constants.ERROR_TRACKER_DSN: / logger.debug(f"Error tracker disabled") / return
+  octobot/constants.py:125 逐語: ERROR_TRACKER_DSN = os.getenv("ERROR_TRACKER_DSN")  -> 既定は環境変数未設定 = 無効
+  octobot_commons/constants.py:194 逐語: METRICS_URL = os.getenv("METRICS_OCTOBOT_ONLINE_URL", "https://metrics.octobot.online/")
+  octobot_commons/constants.py:188-199: CONFIG_METRICS='metrics' / METRICS_ROUTE_GEN_BOT_ID='gen-bot-id' / METRICS_ROUTE='metrics' / metrics/community / metrics/uptime / metrics/register
+  octobot_commons/constants.py:190 TIMER_BEFORE_METRICS_REGISTRATION_SECONDS = 600
+  止め方: 利用者設定の metrics を無効にする(CONFIG_METRICS)/ METRICS_OCTOBOT_ONLINE_URL を差し替える / ERROR_TRACKER_DSN を置かない。3 つとも本調査では実地に確かめていない(導入が完了していないため)
+--- [8] 2026-09-22T08:50:40Z pybotters 導入: v7p/bin/pip install pybotters rc=0 install_time_s=3
+  pip check -> No broken requirements found. rc=0
+  pip list --format=freeze(12 件): aiohappyeyeballs==2.7.1 aiosignal==1.4.0 aiohttp==3.14.3 attrs==26.1.0 frozenlist==1.8.0 idna==3.20 multidict==6.9.1 propcache==0.5.4 pybotters==1.11.2 typing_extensions==4.16.0 yarl==1.25.1(ほかに pip==24.0 と setuptools==79.0.1)
+  v7p/bin/python -c 'import pybotters;print(pybotters.__version__)' -> version 1.11.2 rc=0
+--- [9] 2026-09-22T08:52:00Z pybotters の DataStore の一覧: v7p/bin/python -c "[n for n in dir(pybotters) if n.endswith('DataStore')]" rc=0
+  DataStores n=18: BinanceCOINMDataStore BinanceSpotDataStore BinanceUSDSMDataStore BitMEXDataStore BitgetDataStore BitgetV2DataStore BybitDataStore CoincheckDataStore CoincheckPrivateDataStore DataStore GMOCoinDataStore HyperliquidDataStore KuCoinDataStore OKXDataStore PhemexDataStore bitFlyerDataStore bitbankDataStore bitbankPrivateDataStore
+--- [10] 2026-09-22T08:55:30Z pybotters の署名つき通信の対象ホスト(pybotters/auth.py と pybotters/ws.py の逐語を正規表現で抽出) rc=0
+  AUTH_HOSTS(35): api-cloud.bittrade.co.jp api-demo.bybit.com api-futures.kucoin.com api-gcp.binance.com api-testnet.bybit.com api.binance.com api.bitbank.cc api.bitflyer.com api.bitget.com api.bybit.com api.bytick.com api.coin.z.com api.hyperliquid-testnet.xyz api.hyperliquid.xyz api.kucoin.com api.mexc.com api.phemex.com api1.binance.com api2.binance.com api3.binance.com api4.binance.com aws.okx.com coincheck.com contract.mexc.com dapi.binance.com fapi.binance.com testnet-api.phemex.com testnet.binance.vision testnet.binancefuture.com testnet.bitmex.com vapi.phemex.com www.bitmex.com www.mexc.com www.okcoin.jp www.okx.com
+  WS_AUTH_HOSTS(35): api-cloud.bittrade.co.jp api.coin.z.com api.hyperliquid-testnet.xyz api.hyperliquid.xyz api.phemex.com connect.okcoin.jp contract.mexc.com dstream.binance.com dstream.binancefuture.com fstream.binance.com phemex.com stream-demo.bybit.com stream-testnet.bybit.com stream.binance.com stream.binancefuture.com stream.bitbank.cc stream.bybit.com stream.bytick.com stream.coincheck.com testnet-api.phemex.com testnet.binance.vision testnet.binanceops.com testnet.phemex.com testnetws.binanceops.com vapi.phemex.com vstream.binance.com ws-api-futures.kucoin.com ws-api-spot.kucoin.com ws-api.binance.com ws.bitget.com ws.lightstream.bitflyer.com ws.okx.com wsaws.okx.com wspap.okx.com
+  国内: api.bitflyer.com / api.bitbank.cc / api.coin.z.com(GMO コイン)/ coincheck.com / api-cloud.bittrade.co.jp / www.okcoin.jp / ws.lightstream.bitflyer.com / stream.bitbank.cc / stream.coincheck.com / connect.okcoin.jp
+--- [11] 2026-09-22T08:56:10Z pybotters 最小実行 試行1(合成データのみ・外部通信なし): v7p/bin/python pyb_min.py rc=1 time_s=0.268432
+  KeyError: 'BUY' -> Board.sorted() の戻りの鍵は 'bids' / 'asks' であって 'BUY' / 'SELL' ではない
+--- [12] 2026-09-22T08:56:40Z pybotters 最小実行 試行2(鍵を bids/asks に直した): v7p/bin/python pyb_min.py rc=1 time_s=0.284312
+  SNAP bids [] / SNAP asks [] / IndexError: list index out of range
+  原因: pybotters/models/bitflyer.py の _onmessage は lightning_board_snapshot_ を受けたとき ws が本物の ClientWebSocketResponse のときだけ product_code を self._snapshots に入れる。
+  逐語: if channel.startswith("lightning_board_snapshot_") and isinstance(ws, ClientWebSocketResponse):  / … / if product_code in self._snapshots: self.board._onmessage(product_code, message)
+  したがって ws=None で流すと板の更新は 1 件も残らず、例外も警告も出ずに黙って捨てられる。
+--- [13] 2026-09-22T08:57:30Z pybotters 最小実行 試行3(回避1 = store._snapshots.add("FX_BTC_JPY") を先に置き、channel を lightning_board_FX_BTC_JPY にした): v7p/bin/python pyb_min.py rc=0 time_s=0.277099
+  WORKAROUND1 _snapshots= {'FX_BTC_JPY'}
+  SNAP bids [(9999000, 0.5), (9998000, 1.0), (9997000, 2.0)]
+  SNAP asks [(10001000, 0.4), (10002000, 1.2), (10003000, 3.0)]
+  DELTA bids [(9998000, 1.0), (9997000, 2.0)]
+  DELTA asks [(10001000, 0.4), (10002000, 1.2), (10003000, 3.0)]
+  BEST_BID 9998000 BEST_ASK 10001000 SPREAD 3000
+  EXEC_COUNT 1 / EXEC BUY 10000500 0.3
+  ORDERS_AFTER_ORDER 1 [{'product_code': 'FX_BTC_JPY', 'child_order_id': 'JOR-1', 'child_order_acceptance_id': 'JRF-A', 'event_date': '2026-09-22T00:00:00.0000000Z', 'event_type': 'ORDER', 'child_order_type': 'LIMIT', 'side': 'BUY', 'price': 9999000, 'size': 0.3, 'expire_date': '2026-10-22T00:00:00'}]
+  ORDERS_AFTER_FILL 0
+  POSITIONS [{'product_code': 'FX_BTC_JPY', 'child_order_id': 'JOR-1', 'child_order_acceptance_id': 'JRF-A', 'event_date': '2026-09-22T00:00:01.0000000Z', 'event_type': 'EXECUTION', 'exec_id': 99, 'side': 'BUY', 'price': 9999000, 'size': 0.3, 'commission': 0.0, 'sfd': 0.0, 'outstanding_size': 0.0}]
+  TIME_S 0.000435(store の 4 つの投入の内側を perf_counter で挟んだ値)
+  注記: 差分で足した売り 10000500 は板に残っていない。Board._onmessage は mid_price(この投入で 10000500)を跨ぐ気配を削るため。逐語: for side, ope in (("bids", operator.le), ("asks", operator.gt)): / for item in board[side]: / if ope(item["price"], message["mid_price"]): break
+  注記: 鍵の要る操作(private REST / private WS)は一切打っていない。pybotters.Client(apis=…) に鍵を渡す形なので、鍵なしでは private は動かない。§6-4 により鍵の発行も登録もしない。
+--- [14] 2026-09-22T08:58:20Z pybotters の一次資料(GitHub / pypistats / LICENCE) rc=0
+  curl https://ungh.cc/repos/pybotters/pybotters code=200 -> stars 463 / forks 80 / watchers 13 / createdAt 2021-03-24T11:28:06Z / pushedAt 2026-08-31T13:34:13Z / defaultBranch main
+  curl https://ungh.cc/repos/pybotters/pybotters/contributors code=200 -> contributors n=23 / 上位: MtkN1 426, dependabot[bot] 78, kaznak 18, supermomonga 16, drillan 12, kunmosky1 7, Osaifu-Crypto 6, ko0hi 5
+  curl https://pypistats.org/api/packages/pybotters/recent code=200 -> {"data":{"last_day":215,"last_month":7020,"last_week":1842},"package":"pybotters","type":"recent_downloads"}
+  curl https://raw.githubusercontent.com/pybotters/pybotters/main/LICENCE code=200 -> 1 行目 "MIT License" / 3 行目 "Copyright (c) 2021 MtkN1"
+--- [15] 2026-09-22T08:59:00Z pybotters の README(一次資料の逐語): curl https://raw.githubusercontent.com/pybotters/pybotters/main/README.md rc=0 code=200 size=9135
+  README:33-46 "## 🚀 Features" の逐語: HTTP / WebSocket Client(Automatic authentication for private APIs / WebSocket automatic reconnection and automatic heartbeat / A client based on aiohttp)/ DataStore(WebSocket message data handler / Processing of differential data such as order book updates / High-speed data processing and querying)/ Other Experiences(Support for type hints / Asynchronous programming using asyncio / Discord community)
+  README:50-66 "## 🏦 Exchanges" の表の逐語(Name | API auth | DataStore): bitFlyer ✅ ✅ / GMO Coin ✅ ✅ / bitbank ✅ ✅ / Coincheck ✅ ✅ / OKJ ✅ Not yet / BitTrade ✅ Not yet / Bybit ✅ ✅ / Binance ✅ ✅ / OKX ✅ ✅ / Phemex ✅ ✅ / Bitget ✅ ✅ / MEXC ✅ No support / KuCoin ✅ ✅ / BitMEX ✅ ✅ / Hyperliquid ✅ ✅
+  README:110 逐語: "bitflyer": ["YOUER_BITFLYER_API_KEY", "YOUER_BITFLYER_API_SECRET"]  = 鍵は利用者が自分で用意する形。本調査では鍵を作らない
+  README に料金・購読・課金の記述は無い(MIT の無償配布のみ)。取引所側の API 手数料は取引所の規約に従う
+--- [16] 2026-09-22T09:01:00Z OctoBot 導入 試行1: v7o/bin/pip install OctoBot rc=1
+  ERROR: Could not install packages due to an OSError: [Errno 2] No such file or directory: '<scratchpad>/v7o/lib/python3.12/site-packages/google/protobuf/descriptor_pool.py'
+  原因の測定: df -h / -> /dev/vda 252G 36G 2.0G 95%(空きが 2.0G しかなかった)。v7o の途中までの大きさ du -sh v7o -> 751M
+--- [17] 2026-09-22T09:02:30Z 空き容量の回復: rm -rf v7o dl_o / v7p/bin/pip cache purge rc=0
+  du -sh ~/.cache/pip -> 1.7G / Files removed: 3503 / df -h / -> /dev/vda 252G 33G 4.6G 88%
+--- [18] 2026-09-22T09:03:10Z OctoBot 導入 試行2(手段を替えた = 別の隔離 venv + --no-cache-dir): /usr/bin/python3.12 -m venv v7o2 && v7o2/bin/pip install --no-cache-dir OctoBot rc=0 install_time_s=82
+  Successfully installed ... OctoBot-2.1.1 OctoBot-Tulipy-0.4.11b13 ccxt-4.5.44 web3-7.14.1 openai-2.20.0 mcp-1.26.0 telethon-1.42.0 python-telegram-bot-22.6 supabase-2.27.2 dbos-2.15.0 sentry-sdk-2.51.0 fastapi-0.135.1 flask-3.1.2 numpy-2.4.2 pyarrow-23.0.0 cython-0.29.32 ...(全 193 件)
+  v7o2/bin/pip check -> No broken requirements found. rc=0
+  v7o2/bin/pip list の行数 195(見出し 2 行を含む = パッケージ 193 件)
+  df -h / -> /dev/vda 252G 34G 3.8G 90%
+  ソースからの導入(pip install -e)はしていない。リポジトリの環境には入れていない(委任文 §5-2)
+--- [19] 2026-09-22T09:05:20Z OctoBot の起動口の確認: v7o2/bin/OctoBot --help rc=0 time_s=3.184004(実行の作業場は scratchpad/octo_home)
+  entry_points.txt 逐語: [console_scripts] / OctoBot = octobot.cli:main  (小文字の octobot という実行ファイルは無い。試行: ./v7o2/bin/octobot --help -> rc=127 No such file or directory)
+  usage: OctoBot [-h] [-v] [-s] [-u] [-rts] [-b] [-bf BACKTESTING_FILES [BACKTESTING_FILES ...]] [-wdr] [-ebt] [-r RISK] [-nw] [-nl] [-nt] [--encrypter] [--identifier IDENTIFIER] [-o STRATEGY_OPTIMIZER [STRATEGY_OPTIMIZER ...]] {tentacles,node,sync} ...
+  -s, --simulate: Force OctoBot to start with the trader simulator only.
+  -b, --backtesting: Start OctoBot in backesting mode using the backtesting config stored in config.json.
+  -bf, --backtesting-files: Backtesting files to use (should be provided with -b or --backtesting).
+  -wdr, --whole-data-range: On multiple files backtesting: run on the whole available data instead of the common part only (default behavior).
+  -ebt, --enable-backtesting-timeout: When enabled, the watcher is limiting backtesting time to 30min.When disabled, the backtesting run will not be interrupted during execution
+  -r RISK: Force a specific risk configuration (between 0 and 1).
+  -nw, --no_web / -nl, --no_logs / -nt, --no-telegram
+  --encrypter: Start the exchange api keys encrypter. …
+  -o, --strategy_optimizer: Start Octobot strategy optimizer. This mode will make octobot play backtesting scenarii located in abstract_strategy_test.py with different timeframes, evaluators and risk using the trading mode set in config.json. … Warning: this process may take a long time.
+  Other commands: {tentacles,node,sync}
+--- [20] 2026-09-22T09:06:00Z OctoBot の版: v7o2/bin/OctoBot --version rc=0 time_s=3.278315 -> 2.1.1
+--- [21] 2026-09-22T09:07:00Z OctoBot の拡張(tentacles)の配布元と大きさの測定 rc=0
+  octobot_tentacles_manager/constants.py:24 逐語: OCTOBOT_ONLINE = os.getenv("TENTACLES_OCTOBOT_ONLINE_URL", "https://tentacles.octobot.online")
+  curl -sS https://tentacles.octobot.online/officials/packages/full/base/1.0.9/metadata.yaml -> GET code=200 bytes=3299
+    先頭の逐語: author: DrakkarSoftware / description: 'This package contains default evaluators, strategies, utilitary modules, interfaces and trading modes.' / name: base / repository: OctoBot-Tentacles / short-name: base / tags: - officials
+  curl -sSI https://tentacles.octobot.online/officials/packages/full/base/1.0.9/any_platform.zip -> HTTP/2 200 / content-length: 2280289
+  = 2.28 MB。委任文の「数百 MB 以上の一括 download をしない」に当たらないので、大きさを測ったうえで次の手に進んだ
+--- [22] 2026-09-22T09:08:30Z OctoBot 拡張の導入: (作業場 octo_home)v7o2/bin/OctoBot tentacles --install --all rc=0 tent_time_s=6
+  末尾の逐語: *** All tentacles from 'https://tentacles.octobot.online/officials/packages/full/base/2.1.1/any_platform.zip' have been successfully processed ***
+  du -sh octo_home/tentacles -> 22M / 直下: Agent Automation Backtesting Evaluator Meta Services Trading __init__.py profiles
+--- [23] 2026-09-22T09:09:10Z OctoBot の最小実行に要る模擬データの探索: find octo_home -name '*.data' rc=0 -> 一致 0 件
+  octobot_backtesting.data の公開名: data_file_manager delete_data_file get_all_available_data_files get_backtesting_file_name get_data_type get_database_description get_date get_file_description get_file_ending is_valid_ending
+  octobot_backtesting.constants: BACKTESTING_DATA_FILE_EXT / BACKTESTING_DATA_FILE_SEPARATOR / BACKTESTING_FILE_PATH / CONFIG_BACKTESTING_DATA_FILES ほか
+  結論: 最小実行(成行と指値の 1 往復)は未到達。合成の .data を自分で組む必要があり、配布物には見本が 1 件も入っていない。
+  試したこと: (a) pip の隔離導入 2 通り(既定 / --no-cache-dir)= 2 回目で成功 / (b) OctoBot --help と --version で起動口を確認 = 成功 / (c) tentacles --install --all で拡張を導入 = 成功 / (d) find で見本の .data を探索 = 0 件 / (e) octobot_backtesting の公開 API を列挙 = 書き出し器が公開名に無い
+  未実施(次の手。この回では予算切れ): 合成の .data(sqlite 形式の DataBase)を octobot_backtesting.data.database を直に呼んで組み、OctoBot -b -bf <file> -nw -nl --simulate を打つ / または data collector を使う(= 取引所へ外部通信が要るので委任文 §6-2 の観点でリードの判断が要る)
+  この環境から不可とは書かない。未確認である。
+--- [24] 2026-09-22T09:10:00Z 常駐プロセスの確認 rc=0
+  背景で動かしたのは pip install と tentacles --install の 2 つだけで、どちらも終了コードを取って終わっている。OctoBot 本体(取引の常駐)は 1 度も起動していない。
+--- [25] 2026-09-22T09:12:00Z OctoBot の一次資料(GitHub / pypistats / LICENSE) rc=0
+  curl https://ungh.cc/repos/Drakkar-Software/OctoBot code=200 -> stars 6600 / forks 1275 / watchers 115 / createdAt 2018-02-23T23:13:05Z / pushedAt 2026-09-22T07:42:46Z / defaultBranch master
+  curl https://ungh.cc/repos/Drakkar-Software/OctoBot/contributors 1 回目 code=000(Recv failure: Connection reset by peer)、5 秒待って 2 回目 code=200 -> contributors n=20 / 上位: GuillaumeDSM 1470, Herklos 988, C4hu3t3 15, techfreaque 12, renovate-bot 12, dependabot[bot] 9
+  curl https://raw.githubusercontent.com/Drakkar-Software/OctoBot/master/LICENSE code=200 -> 1-2 行目 'GNU GENERAL PUBLIC LICENSE' / 'Version 3, 29 June 2007'
+  curl https://pypistats.org/api/packages/octobot/recent -> code=429(2 回とも)。WebFetch https://pypistats.org/packages/octobot -> last_day 36 / last_week 129 / last_month 2,157
+  WebFetch https://github.com/Drakkar-Software/OctoBot -> Commits 5,954(master)/ License GNU General Public License v3.0 or later (GPL-3.0)/ description 逐語: 'Free open source crypto trading bot to automate AI, Grid, DCA and TradingView strategies on Binance, Hyperliquid and 15+ exchanges, with a simple interface.'
+  curl -sSI https://api.github.com/repos/<owner>/<repo>/commits?per_page=1 -> code=403(2 件とも)。コミット数は API からは取れず、頁の表示を採った
+--- [26] 2026-09-22T09:13:00Z pybotters のコミット数 rc=0
+  WebFetch https://github.com/pybotters/pybotters -> Commits 595(main)/ License MIT / description 逐語: 'An advanced API client for python bot traderes'
+--- [27] 2026-09-22T09:14:30Z pybotters の再現性の確認: v7p/bin/python pyb_min.py を 2 回打って出力を diff rc=0
+  diff -q a.txt b.txt(TIME_S の行を除いた出力)-> 差分なし = IDENTICAL_EXCEPT_TIME_S
+  TIME_S は run_a.txt 0.00059 / run_b.txt 0.000417(計測の揺れだけ)
