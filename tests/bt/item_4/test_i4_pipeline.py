@@ -368,3 +368,17 @@ def test_i2_an_order_before_the_first_observation_fills_at_it():
                         runs_dir=tempfile.mkdtemp())
     first = [o for o in res2.range["pessimistic"]["g"].orders if o["id"] == "leg0"][0]
     assert first["filled"] == 0 and first["state"] != "FILLED", first
+
+
+def test_i2_on_bars_the_deferred_check_uses_the_bars_delivery():
+    """I-2 on a bar instrument: an order before the first bar fills at bar 0's open (I-4), its deferred margin check
+    made on bar 0 as the core delivers it (the account socket sees that bar once: critic i4-r3-01)."""
+    from bot.bt.pipeline import _generate
+    root, _, _ = _root()
+    bg = {"name": "random_walk", "seed": 9, "params": {"kind": "bar", "start_ns": T0, "step_ns": 60 * NS, "n": 10,
+                                                       "price0": 100.0, "step_pct": 0.2, "qty": 1.0}}
+    res = _one_instrument(root, bg, "bar", [{"t_ns": T0 - 30 * NS, "side": "buy", "qty": 1.0},
+                                            {"t_ns": T0 + 300 * NS, "side": "sell", "qty": 1.0}])
+    bars = _generate(bg)[1]
+    for side in ("optimistic", "pessimistic"):
+        assert [f["px"] for f in res.range[side]["g"].fills] == pytest.approx([bars[0]["open"], bars[5]["open"]])

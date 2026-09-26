@@ -751,14 +751,15 @@ class ArrivalGate:
     def open_orders(self):
         return self.venue.open_orders()
 
-    def _release(self, order: OrderRequest, t: int, event: Optional[Event] = None) -> list:
+    def _release(self, order: OrderRequest, t: int, event: Optional[Event] = None, obs_t: Optional[int] = None) -> list:
         """Hand a held order to the venue. The gate acknowledged it at its arrival: the venue's Ack is dropped and a
         refusal by the venue's rules ends the order as Canceled with the venue's reason. A margin check the account
         deferred (I-2) is made now, after the account has seen the observation that prices the order."""
         if self.account is not None and order.client_order_id in self.account.deferred:
+            at = t if obs_t is None else obs_t  # the time the core delivers the observation at (a bar: its close)
             if event is not None:
-                self.account.observe(event, t)
-            r = self.account.recheck(order, t)
+                self.account.observe(event, at)
+            r = self.account.recheck(order, at)
             if r is not None:
                 return [Canceled(order.client_order_id, f"refused_by_account: {r}")]
         out = []
@@ -782,7 +783,7 @@ class ArrivalGate:
             self.held = [(o, a) for o, a in self.held if start < a]
             for o, _ in due:
                 self.obs_time[o.client_order_id] = start
-                out += self._release(o, start - 1, event)  # I-4: this bar starts after the order
+                out += self._release(o, start - 1, event, t)  # I-4: this bar starts after the order
             out += list(self.venue.on_market_event(event, t))
             return tuple(out)
         out = list(self.venue.on_market_event(event, t))
@@ -823,14 +824,20 @@ class DeferredMarginAccount:
     a market order the account cannot price at its arrival (no observation yet: DEFERRABLE refusals) is not refused
     there; its margin check is made when the ArrivalGate prices it, right after the account has seen that first
     observation, and a refusal then ends the order as Canceled with the account's reason. Every other check,
-    every fill, every event goes to the MarginAccount unchanged. So that the check at pricing time sees the
-    observation, the gate shows it to the account first (`observe`); the core's own delivery of the same event to
-    this socket then returns what the account answered (each event reaches the MarginAccount once)."""
+    every fill, every event goes to the MarginAccount unchanged.
+
+    Each observation reaches the MarginAccount ONCE (critic i4-r3-01): the gate shows the observation to the account
+    first (`observe`, inside the core's call of the fill-model socket for that event); the core's own delivery of
+    the same observation to this socket comes next (src/bot/bt/core/engine.py `_venue_market`: the fill model, its
+    reports, then the account) and receives the account's answer from `observe` instead of a second call. The core
+    hands each receiver its OWN COPY of the event, so the delivery is matched by its VALUE and time (never by the
+    object's identity); a delivery that is not the observed one is a protocol error of the socket (raised, never
+    shown to the account twice or dropped)."""
 
     def __init__(self, inner: MarginAccount) -> None:
         self.inner = inner
         self.deferred: set[str] = set()
-        self._seen: Optional[tuple[int, int, tuple]] = None  # (id of the event, time, the account's answer)
+        self._pending: Optional[tuple[Event, int, tuple]] = None  # (the observed event, its time, the answer)
 
     def check_order(self, order: OrderRequest, venue_time_ns: int):
         r = self.inner.check_order(order, venue_time_ns)
@@ -840,8 +847,12 @@ class DeferredMarginAccount:
         return r
 
     def observe(self, event: Event, venue_time_ns: int) -> None:
-        if self._seen is None or self._seen[0] != id(event) or self._seen[1] != venue_time_ns:
-            self._seen = (id(event), venue_time_ns, tuple(self.inner.on_market_event(event, venue_time_ns)))
+        """Show the account the observation that prices a held order, before the core's delivery of it."""
+        if self._pending is not None:
+            if self._pending[0] == event and self._pending[1] == venue_time_ns:
+                return  # a second held order priced by the same observation: already shown
+            raise PipelineError("account socket: a second observation before the core delivered the first")
+        self._pending = (event, venue_time_ns, tuple(self.inner.on_market_event(event, venue_time_ns)))
 
     def recheck(self, order: OrderRequest, venue_time_ns: int):
         """The deferred margin check, at pricing time (None when the order was not deferred)."""
@@ -851,10 +862,13 @@ class DeferredMarginAccount:
         return self.inner.check_order(order, venue_time_ns)
 
     def on_market_event(self, event: Event, venue_time_ns: int):
-        if self._seen is not None and self._seen[0] == id(event) and self._seen[1] == venue_time_ns:
-            out, self._seen = self._seen[2], None
-            return out
-        self._seen = None
+        if self._pending is not None:
+            seen, t, answer = self._pending
+            self._pending = None
+            if type(seen) is not type(event) or seen != event or t != venue_time_ns:
+                raise PipelineError(f"account socket: the core delivered {type(event).__name__} at {venue_time_ns} "
+                                    f"after the gate showed {type(seen).__name__} at {t}")
+            return answer
         return self.inner.on_market_event(event, venue_time_ns)
 
     def apply_fill(self, fill) -> None:
