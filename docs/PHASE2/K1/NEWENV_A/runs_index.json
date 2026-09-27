@@ -1,4 +1,125 @@
 {
+ "15|s-/b-|both": {
+  "cell": "15|s-/b-|both",
+  "foot": 15,
+  "gate": "s-/b-",
+  "identical": true,
+  "max_rss_mb": 591.6,
+  "n_trades": 19873,
+  "run_id": "993402b64272e559a4210f9cedd405ca9825cc5e1d3f9e8f1d172494e10b70f3",
+  "strength": "both",
+  "wall_s": 91.1
+ },
+ "15|s-/b24|both": {
+  "cell": "15|s-/b24|both",
+  "foot": 15,
+  "gate": "s-/b24",
+  "identical": true,
+  "max_rss_mb": 627.0,
+  "n_trades": 22477,
+  "run_id": "13fa7497ba9bbdb2ecbeef9b75d7ac4855e08cbb3a4f975d3ca80ab4534cee28",
+  "strength": "both",
+  "wall_s": 91.6
+ },
+ "15|s-/b40|both": {
+  "cell": "15|s-/b40|both",
+  "foot": 15,
+  "gate": "s-/b40",
+  "identical": true,
+  "max_rss_mb": 604.4,
+  "n_trades": 20962,
+  "run_id": "f3c180a6f2449c8fb595649004a58f653465d0d66a2c43e50d562f4abfac3675",
+  "strength": "both",
+  "wall_s": 90.7
+ },
+ "15|s10/b-|both": {
+  "cell": "15|s10/b-|both",
+  "foot": 15,
+  "gate": "s10/b-",
+  "identical": true,
+  "max_rss_mb": 543.4,
+  "n_trades": 16835,
+  "run_id": "4faf277fd6b678dfda9ecf0a7dfb8ca39a949bf569146228c7edaa51ffdce844",
+  "strength": "both",
+  "wall_s": 77.2
+ },
+ "15|s10/b24|both": {
+  "cell": "15|s10/b24|both",
+  "foot": 15,
+  "gate": "s10/b24",
+  "identical": true,
+  "max_rss_mb": 586.8,
+  "n_trades": 19423,
+  "run_id": "704fe44db176a1faf967deb5be84c404bc2ccd99ff39461e317f691d3c596bc2",
+  "strength": "both",
+  "wall_s": 82.6
+ },
+ "15|s10/b40|both": {
+  "cell": "15|s10/b40|both",
+  "foot": 15,
+  "gate": "s10/b40",
+  "identical": true,
+  "max_rss_mb": 561.1,
+  "n_trades": 17912,
+  "run_id": "66d2edc88e50e644c5f068430d3fba1cdfb88df70f61cb5052476e4edc9419c3",
+  "strength": "both",
+  "wall_s": 77.0
+ },
+ "15|s19/b-|both": {
+  "cell": "15|s19/b-|both",
+  "foot": 15,
+  "gate": "s19/b-",
+  "identical": true,
+  "max_rss_mb": 465.6,
+  "n_trades": 12122,
+  "run_id": "a9b148375433b0ea3231f1ce124241c0eb01754e2ecfdfaf69fd34c1585cf6ff",
+  "strength": "both",
+  "wall_s": 65.5
+ },
+ "15|s19/b24|both": {
+  "cell": "15|s19/b24|both",
+  "foot": 15,
+  "gate": "s19/b24",
+  "identical": true,
+  "max_rss_mb": 509.3,
+  "n_trades": 14751,
+  "run_id": "0496c25877eeeffc7f9da91b1a6f32a03caeac5bd638ec468bd5806e1adefbbe",
+  "strength": "both",
+  "wall_s": 70.1
+ },
+ "15|s19/b40|both": {
+  "cell": "15|s19/b40|both",
+  "foot": 15,
+  "gate": "s19/b40",
+  "identical": true,
+  "max_rss_mb": 485.3,
+  "n_trades": 13195,
+  "run_id": "b6bb712d40172c858d998aacf7c6c8c328a6819d92a6c61aab55cb3955b82d7f",
+  "strength": "both",
+  "wall_s": 64.3
+ },
+ "15|s30/b-|both": {
+  "cell": "15|s30/b-|both",
+  "foot": 15,
+  "gate": "s30/b-",
+  "identical": true,
+  "max_rss_mb": 400.6,
+  "n_trades": 8083,
+  "run_id": "de71f917efd1b23ee5190cfb044094f564aa10f86709c0a642846e55b254e954",
+  "strength": "both",
+  "wall_s": 51.7
+ },
+ "15|s30/b40|both": {
+  "cell": "15|s30/b40|both",
+  "foot": 15,
+  "gate": "s30/b40",
+  "identical": true,
+  "max_rss_mb": 415.7,
+  "n_trades": 9152,
+  "run_id": "9ee48f6a1d166673faf289277a81c5598e706682694579dd517205a9ac0b46b7",
+  "strength": "both",
+  "wall_s": 54.3
+ },
  "15|soff/b24|both": {
   "cell": "15|soff/b24|both",
   "foot": 15,
@@ -163,6 +284,28 @@
   "run_id": "db7d998331c585ee78278e8a79f1f14a0e21635b78fe7bcf2d931f2990c8e12c",
   "strength": "both",
   "wall_s": 31.7
+ },
+ "5|soff/b24|both": {
+  "cell": "5|soff/b24|both",
+  "foot": 5,
+  "gate": "soff/b24",
+  "identical": true,
+  "max_rss_mb": 940.9,
+  "n_trades": 16496,
+  "run_id": "6cc1a1bd0d9524907edca2e7f9c8b99da490e14788d4c0667f8077b5de615905",
+  "strength": "both",
+  "wall_s": 152.4
+ },
+ "5|soff/b40|both": {
+  "cell": "5|soff/b40|both",
+  "foot": 5,
+  "gate": "soff/b40",
+  "identical": true,
+  "max_rss_mb": 781.5,
+  "n_trades": 6931,
+  "run_id": "c16b7f68dd5e85a89839722725733b51d7b74192698729dc914747877d25d124",
+  "strength": "both",
+  "wall_s": 140.4
  },
  "60|s-/b-|both": {
   "cell": "60|s-/b-|both",
