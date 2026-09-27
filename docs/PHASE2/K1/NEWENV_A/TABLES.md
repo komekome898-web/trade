@@ -10,16 +10,16 @@
 | 門 | 1 分 | 3 分 | 5 分 | 15 分 | 30 分 | 60 分 |
 |---|---|---|---|---|---|---|
 | `soff/b24` | (未測定) | -0.89 | -1.20 | **-2.63\*** | -0.74 | -3.06 |
-| `soff/b40` | (未測定) | -3.24 | -2.20 | -3.75 | -0.15 | -1.09 |
-| `s-/b-` | (未測定) | (未測定) | +0.18 | -0.69 | +0.96 | **-6.20\*** |
-| `s-/b24` | (未測定) | (未測定) | +0.09 | **-2.07\*** | +0.31 | **-3.74\*** |
-| `s-/b40` | (未測定) | (未測定) | +0.14 | **-1.57\*** | -0.06 | -3.06 |
-| `s10/b-` | (未測定) | (未測定) | -0.34 | -1.20 | +1.12 | **-6.06\*** |
-| `s10/b24` | (未測定) | (未測定) | -0.35 | **-2.60\*** | +0.42 | **-3.61\*** |
-| `s10/b40` | (未測定) | (未測定) | -0.31 | **-2.15\*** | -0.00 | -2.87 |
-| `s19/b-` | (未測定) | (未測定) | **-1.43\*** | -1.16 | +0.45 | **-5.45\*** |
-| `s19/b24`(当時の規則) | (未測定) | (未測定) | **-1.18\*** | **-2.69\*** | -0.10 | -2.76 |
-| `s19/b40` | (未測定) | (未測定) | **-1.32\*** | **-2.29\*** | -0.62 | -1.65 |
+| `soff/b40` | (未測定) | -3.24 | -2.20 | **-3.75\*** | -0.15 | -1.09 |
+| `s-/b-` | (未測定) | +0.23 | +0.18 | -0.69 | +0.96 | **-6.20\*** |
+| `s-/b24` | (未測定) | **+0.41\*** | +0.09 | **-2.07\*** | +0.31 | **-3.74\*** |
+| `s-/b40` | (未測定) | +0.31 | +0.14 | **-1.57\*** | -0.06 | **-3.06\*** |
+| `s10/b-` | (未測定) | -0.51 | -0.34 | -1.20 | +1.12 | **-6.06\*** |
+| `s10/b24` | (未測定) | -0.14 | -0.35 | **-2.60\*** | +0.42 | **-3.61\*** |
+| `s10/b40` | (未測定) | -0.34 | -0.31 | **-2.15\*** | -0.00 | -2.87 |
+| `s19/b-` | (未測定) | (未測定) | -1.43 | -1.16 | +0.45 | **-5.45\*** |
+| `s19/b24`(当時の規則) | (未測定) | (未測定) | -1.18 | **-2.69\*** | -0.10 | -2.76 |
+| `s19/b40` | (未測定) | (未測定) | **-1.32\*** | -2.29 | -0.62 | -1.65 |
 | `s30/b-` | (未測定) | (未測定) | -2.15 | -1.66 | -2.08 | **-7.29\*** |
 | `s30/b40` | (未測定) | (未測定) | -1.78 | **-2.76\*** | -2.04 | -2.37 |
 
@@ -63,7 +63,7 @@
 
 | 門 | 1 分 | 3 分 | 5 分 | 15 分 | 30 分 | 60 分 |
 |---|---|---|---|---|---|---|
-| s-/b- | (未測定) | (未測定) | 43,388 / 2 | 19,873 / 2 | 11,270 / 2 | 6,236 / 2 |
+| s-/b- | (未測定) | 59,549 / 3 | 43,388 / 2 | 19,873 / 2 | 11,270 / 2 | 6,236 / 2 |
 | s19/b24 | (未測定) | (未測定) | 20,659 / 3 | 14,751 / 2 | 10,220 / 2 | 6,726 / 2 |
 | s30/b40 | (未測定) | (未測定) | 10,519 / 4 | 9,152 / 3 | 7,118 / 2 | 5,178 / 2 |
 | soff/b40 | (未測定) | 6,498 / 5 | 6,931 / 4 | 6,862 / 3 | 5,704 / 3 | 4,465 / 2 |
@@ -79,4 +79,4 @@
 | 30 分 | 16.0% | 53.4% | 30.5% |
 | 60 分 | 10.2% | 55.8% | 34.0% |
 
-測っていない升: 180 / 234 — 1|soff/b24|strong, 1|soff/b24|weak, 1|soff/b24|both, 1|soff/b40|strong, 1|soff/b40|weak, 1|soff/b40|both, 1|s-/b-|strong, 1|s-/b-|weak, 1|s-/b-|both, 1|s-/b24|strong, 1|s-/b24|weak, 1|s-/b24|both, 1|s-/b40|strong, 1|s-/b40|weak, 1|s-/b40|both, 1|s10/b-|strong, 1|s10/b-|weak, 1|s10/b-|both, 1|s10/b24|strong, 1|s10/b24|weak, 1|s10/b24|both, 1|s10/b40|strong, 1|s10/b40|weak, 1|s10/b40|both, 1|s19/b-|strong, 1|s19/b-|weak, 1|s19/b-|both, 1|s19/b24|strong, 1|s19/b24|weak, 1|s19/b24|both, 1|s19/b40|strong, 1|s19/b40|weak, 1|s19/b40|both, 1|s30/b-|strong, 1|s30/b-|weak, 1|s30/b-|both, 1|s30/b40|strong, 1|s30/b40|weak, 1|s30/b40|both, 3|soff/b24|strong, 3|soff/b24|weak, 3|soff/b40|strong, 3|soff/b40|weak, 3|s-/b-|strong, 3|s-/b-|weak, 3|s-/b-|both, 3|s-/b24|strong, 3|s-/b24|weak, 3|s-/b24|both, 3|s-/b40|strong, 3|s-/b40|weak, 3|s-/b40|both, 3|s10/b-|strong, 3|s10/b-|weak, 3|s10/b-|both, 3|s10/b24|strong, 3|s10/b24|weak, 3|s10/b24|both, 3|s10/b40|strong, 3|s10/b40|weak, 3|s10/b40|both, 3|s19/b-|strong, 3|s19/b-|weak, 3|s19/b-|both, 3|s19/b24|strong, 3|s19/b24|weak, 3|s19/b24|both, 3|s19/b40|strong, 3|s19/b40|weak, 3|s19/b40|both, 3|s30/b-|strong, 3|s30/b-|weak, 3|s30/b-|both, 3|s30/b40|strong, 3|s30/b40|weak, 3|s30/b40|both, 5|soff/b24|strong, 5|soff/b24|weak, 5|soff/b40|strong, 5|soff/b40|weak, 5|s-/b-|strong, 5|s-/b-|weak, 5|s-/b24|strong, 5|s-/b24|weak, 5|s-/b40|strong, 5|s-/b40|weak, 5|s10/b-|strong, 5|s10/b-|weak, 5|s10/b24|strong, 5|s10/b24|weak, 5|s10/b40|strong, 5|s10/b40|weak, 5|s19/b-|strong, 5|s19/b-|weak, 5|s19/b24|strong, 5|s19/b24|weak, 5|s19/b40|strong, 5|s19/b40|weak, 5|s30/b-|strong, 5|s30/b-|weak, 5|s30/b40|strong, 5|s30/b40|weak, 15|soff/b24|strong, 15|soff/b24|weak, 15|soff/b40|strong, 15|soff/b40|weak, 15|s-/b-|strong, 15|s-/b-|weak, 15|s-/b24|strong, 15|s-/b24|weak, 15|s-/b40|strong, 15|s-/b40|weak, 15|s10/b-|strong, 15|s10/b-|weak, 15|s10/b24|strong, 15|s10/b24|weak, 15|s10/b40|strong, 15|s10/b40|weak, 15|s19/b-|strong, 15|s19/b-|weak, 15|s19/b24|strong, 15|s19/b24|weak, 15|s19/b40|strong, 15|s19/b40|weak, 15|s30/b-|strong, 15|s30/b-|weak, 15|s30/b40|strong, 15|s30/b40|weak, 30|soff/b24|strong, 30|soff/b24|weak, 30|soff/b40|strong, 30|soff/b40|weak, 30|s-/b-|strong, 30|s-/b-|weak, 30|s-/b24|strong, 30|s-/b24|weak, 30|s-/b40|strong, 30|s-/b40|weak, 30|s10/b-|strong, 30|s10/b-|weak, 30|s10/b24|strong, 30|s10/b24|weak, 30|s10/b40|strong, 30|s10/b40|weak, 30|s19/b-|strong, 30|s19/b-|weak, 30|s19/b24|strong, 30|s19/b24|weak, 30|s19/b40|strong, 30|s19/b40|weak, 30|s30/b-|strong, 30|s30/b-|weak, 30|s30/b40|strong, 30|s30/b40|weak, 60|soff/b24|strong, 60|soff/b24|weak, 60|soff/b40|strong, 60|soff/b40|weak, 60|s-/b-|strong, 60|s-/b-|weak, 60|s-/b24|strong, 60|s-/b24|weak, 60|s-/b40|strong, 60|s-/b40|weak, 60|s10/b-|strong, 60|s10/b-|weak, 60|s10/b24|strong, 60|s10/b24|weak, 60|s10/b40|strong, 60|s10/b40|weak, 60|s19/b-|strong, 60|s19/b-|weak, 60|s19/b24|strong, 60|s19/b24|weak, 60|s19/b40|strong, 60|s19/b40|weak, 60|s30/b-|strong, 60|s30/b-|weak, 60|s30/b40|strong, 60|s30/b40|weak
+測っていない升: 174 / 234 — 1|soff/b24|strong, 1|soff/b24|weak, 1|soff/b24|both, 1|soff/b40|strong, 1|soff/b40|weak, 1|soff/b40|both, 1|s-/b-|strong, 1|s-/b-|weak, 1|s-/b-|both, 1|s-/b24|strong, 1|s-/b24|weak, 1|s-/b24|both, 1|s-/b40|strong, 1|s-/b40|weak, 1|s-/b40|both, 1|s10/b-|strong, 1|s10/b-|weak, 1|s10/b-|both, 1|s10/b24|strong, 1|s10/b24|weak, 1|s10/b24|both, 1|s10/b40|strong, 1|s10/b40|weak, 1|s10/b40|both, 1|s19/b-|strong, 1|s19/b-|weak, 1|s19/b-|both, 1|s19/b24|strong, 1|s19/b24|weak, 1|s19/b24|both, 1|s19/b40|strong, 1|s19/b40|weak, 1|s19/b40|both, 1|s30/b-|strong, 1|s30/b-|weak, 1|s30/b-|both, 1|s30/b40|strong, 1|s30/b40|weak, 1|s30/b40|both, 3|soff/b24|strong, 3|soff/b24|weak, 3|soff/b40|strong, 3|soff/b40|weak, 3|s-/b-|strong, 3|s-/b-|weak, 3|s-/b24|strong, 3|s-/b24|weak, 3|s-/b40|strong, 3|s-/b40|weak, 3|s10/b-|strong, 3|s10/b-|weak, 3|s10/b24|strong, 3|s10/b24|weak, 3|s10/b40|strong, 3|s10/b40|weak, 3|s19/b-|strong, 3|s19/b-|weak, 3|s19/b-|both, 3|s19/b24|strong, 3|s19/b24|weak, 3|s19/b24|both, 3|s19/b40|strong, 3|s19/b40|weak, 3|s19/b40|both, 3|s30/b-|strong, 3|s30/b-|weak, 3|s30/b-|both, 3|s30/b40|strong, 3|s30/b40|weak, 3|s30/b40|both, 5|soff/b24|strong, 5|soff/b24|weak, 5|soff/b40|strong, 5|soff/b40|weak, 5|s-/b-|strong, 5|s-/b-|weak, 5|s-/b24|strong, 5|s-/b24|weak, 5|s-/b40|strong, 5|s-/b40|weak, 5|s10/b-|strong, 5|s10/b-|weak, 5|s10/b24|strong, 5|s10/b24|weak, 5|s10/b40|strong, 5|s10/b40|weak, 5|s19/b-|strong, 5|s19/b-|weak, 5|s19/b24|strong, 5|s19/b24|weak, 5|s19/b40|strong, 5|s19/b40|weak, 5|s30/b-|strong, 5|s30/b-|weak, 5|s30/b40|strong, 5|s30/b40|weak, 15|soff/b24|strong, 15|soff/b24|weak, 15|soff/b40|strong, 15|soff/b40|weak, 15|s-/b-|strong, 15|s-/b-|weak, 15|s-/b24|strong, 15|s-/b24|weak, 15|s-/b40|strong, 15|s-/b40|weak, 15|s10/b-|strong, 15|s10/b-|weak, 15|s10/b24|strong, 15|s10/b24|weak, 15|s10/b40|strong, 15|s10/b40|weak, 15|s19/b-|strong, 15|s19/b-|weak, 15|s19/b24|strong, 15|s19/b24|weak, 15|s19/b40|strong, 15|s19/b40|weak, 15|s30/b-|strong, 15|s30/b-|weak, 15|s30/b40|strong, 15|s30/b40|weak, 30|soff/b24|strong, 30|soff/b24|weak, 30|soff/b40|strong, 30|soff/b40|weak, 30|s-/b-|strong, 30|s-/b-|weak, 30|s-/b24|strong, 30|s-/b24|weak, 30|s-/b40|strong, 30|s-/b40|weak, 30|s10/b-|strong, 30|s10/b-|weak, 30|s10/b24|strong, 30|s10/b24|weak, 30|s10/b40|strong, 30|s10/b40|weak, 30|s19/b-|strong, 30|s19/b-|weak, 30|s19/b24|strong, 30|s19/b24|weak, 30|s19/b40|strong, 30|s19/b40|weak, 30|s30/b-|strong, 30|s30/b-|weak, 30|s30/b40|strong, 30|s30/b40|weak, 60|soff/b24|strong, 60|soff/b24|weak, 60|soff/b40|strong, 60|soff/b40|weak, 60|s-/b-|strong, 60|s-/b-|weak, 60|s-/b24|strong, 60|s-/b24|weak, 60|s-/b40|strong, 60|s-/b40|weak, 60|s10/b-|strong, 60|s10/b-|weak, 60|s10/b24|strong, 60|s10/b24|weak, 60|s10/b40|strong, 60|s10/b40|weak, 60|s19/b-|strong, 60|s19/b-|weak, 60|s19/b24|strong, 60|s19/b24|weak, 60|s19/b40|strong, 60|s19/b40|weak, 60|s30/b-|strong, 60|s30/b-|weak, 60|s30/b40|strong, 60|s30/b40|weak

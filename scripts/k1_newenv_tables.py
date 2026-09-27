@@ -27,6 +27,7 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from bot.bt.data import load  # noqa: E402
 from bot.strategy.k1_wick import gate_label, gates  # noqa: E402
@@ -73,8 +74,8 @@ def block_bootstrap(rs_by_day: dict[int, list[float]], rng: random.Random) -> tu
 
 
 def cell_stats(run_id: str, foot: int, idx: dict[int, int], rng: random.Random) -> dict | None:
-    with open(os.path.join(RUNS_DIR, run_id, "trades.json"), "r", encoding="utf-8") as fh:
-        trades = json.load(fh)["data"]
+    from k1_newenv_run import read_json
+    trades = read_json(os.path.join(RUNS_DIR, run_id), "trades.json")["data"]
     if len(trades) < 30:
         return None
     rs, holds, why, byday, byyear = [], [], {}, {}, {}

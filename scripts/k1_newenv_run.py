@@ -63,12 +63,23 @@ def plan_args(foot: int, s: str, b: str, strength: str) -> dict:
                 config=config(foot, s, b, strength), seed=0, setup=K1Setup(), purpose="研究", prereg=PREREG)
 
 
+def read_json(run_dir: str, name: str):
+    """A run's JSON file, gzipped in place or not."""
+    p = os.path.join(run_dir, name)
+    if os.path.isfile(p):
+        with open(p, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    with gzip.open(p + ".gz", "rt", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def compress_exports(run_dir: str) -> None:
-    """Disk (02:15 UTC: the machine ran out of space at 46 cells): after a cell's run, fills.json and
-    orders.json -- the two largest exports, which neither the tables nor the dashboard read -- are gzipped
-    in place (<name>.json.gz). The bytes are unchanged: repro.json's sha256 is of the uncompressed file
-    (`gunzip -c fills.json.gz | sha256sum` reproduces it)."""
-    for name in ("fills.json", "orders.json"):
+    """Disk (02:15 UTC: the machine ran out of space at 46 cells; 02:40: a 1-minute cell is 16 MB): after a
+    cell's run the four large exports are gzipped in place (<name>.json.gz). The bytes are unchanged:
+    repro.json's sha256 is of the uncompressed file (`gunzip -c fills.json.gz | sha256sum` reproduces it).
+    The tables script reads trades.json or trades.json.gz; the dashboard reads the uncompressed form only
+    (the screenshots were taken before this step; `gunzip -k` restores a run for the dashboard)."""
+    for name in ("fills.json", "orders.json", "trades.json", "metrics.json"):
         src = os.path.join(run_dir, name)
         if os.path.isfile(src):
             with open(src, "rb") as fi, gzip.open(src + ".gz", "wb", compresslevel=6) as fo:
@@ -97,8 +108,7 @@ def run_cell(args):
         run_dir, identical = res.run_dir, res.repro["identical"]
         wall = round(time.time() - t0, 1)
         rss = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
-    with open(os.path.join(run_dir, "trades.json"), "r", encoding="utf-8") as fh:
-        n = len(json.load(fh)["data"])
+    n = len(read_json(run_dir, "trades.json")["data"])
     compress_exports(run_dir)
     return {"cell": key, "foot": foot, "gate": gate_label(s, b), "strength": strength, "run_id": plan.run_id,
             "identical": identical, "n_trades": n, "wall_s": wall, "max_rss_mb": rss, "skipped": skipped}
@@ -132,8 +142,7 @@ def main() -> None:
             old = index.get(key, {})
             if old.get("run_id") == rid:
                 continue
-            with open(os.path.join(d, "trades.json"), "r", encoding="utf-8") as fh:
-                n = len(json.load(fh)["data"])
+            n = len(read_json(d, "trades.json")["data"])
             with open(os.path.join(d, "repro.json"), "r", encoding="utf-8") as fh:
                 identical = json.load(fh)["identical"]
             index[key] = {"cell": key, "foot": c["foot_min"], "gate": c["gate"]["s"] and gate_label(c["gate"]["s"], c["gate"]["b"]),

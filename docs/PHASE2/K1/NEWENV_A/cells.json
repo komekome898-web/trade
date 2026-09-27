@@ -1,8 +1,8 @@
 {
  "15|s-/b-|both": {
   "ci95_bp": [
-   -1.941,
-   0.476
+   -1.999,
+   0.651
   ],
   "exit_reasons": {
    "invalidated": 7579,
@@ -32,8 +32,8 @@
  },
  "15|s-/b24|both": {
   "ci95_bp": [
-   -3.304,
-   -0.741
+   -3.088,
+   -1.013
   ],
   "exit_reasons": {
    "invalidated": 6167,
@@ -63,8 +63,8 @@
  },
  "15|s-/b40|both": {
   "ci95_bp": [
-   -3.038,
-   -0.281
+   -2.754,
+   -0.47
   ],
   "exit_reasons": {
    "invalidated": 6939,
@@ -94,8 +94,8 @@
  },
  "15|s10/b-|both": {
   "ci95_bp": [
-   -2.592,
-   0.445
+   -2.656,
+   0.256
   ],
   "exit_reasons": {
    "invalidated": 6405,
@@ -125,8 +125,8 @@
  },
  "15|s10/b24|both": {
   "ci95_bp": [
-   -3.898,
-   -1.259
+   -3.877,
+   -1.237
   ],
   "exit_reasons": {
    "invalidated": 4987,
@@ -156,8 +156,8 @@
  },
  "15|s10/b40|both": {
   "ci95_bp": [
-   -3.579,
-   -0.885
+   -3.589,
+   -0.711
   ],
   "exit_reasons": {
    "invalidated": 5755,
@@ -187,8 +187,8 @@
  },
  "15|s19/b-|both": {
   "ci95_bp": [
-   -3.325,
-   0.559
+   -2.93,
+   0.857
   ],
   "exit_reasons": {
    "invalidated": 4698,
@@ -218,8 +218,8 @@
  },
  "15|s19/b24|both": {
   "ci95_bp": [
-   -4.568,
-   -0.652
+   -4.235,
+   -0.78
   ],
   "exit_reasons": {
    "invalidated": 3380,
@@ -249,8 +249,8 @@
  },
  "15|s19/b40|both": {
   "ci95_bp": [
-   -4.306,
-   -0.414
+   -4.179,
+   0.049
   ],
   "exit_reasons": {
    "invalidated": 4063,
@@ -276,12 +276,12 @@
   },
   "run_id": "b6bb712d40172c858d998aacf7c6c8c328a6819d92a6c61aab55cb3955b82d7f",
   "sd_bp": 113.5,
-  "star": true
+  "star": false
  },
  "15|s30/b-|both": {
   "ci95_bp": [
-   -4.57,
-   1.128
+   -4.406,
+   1.924
   ],
   "exit_reasons": {
    "invalidated": 3326,
@@ -311,8 +311,8 @@
  },
  "15|s30/b40|both": {
   "ci95_bp": [
-   -5.302,
-   -0.078
+   -5.612,
+   -0.239
   ],
   "exit_reasons": {
    "invalidated": 2744,
@@ -342,8 +342,8 @@
  },
  "15|soff/b24|both": {
   "ci95_bp": [
-   -5.01,
-   -0.491
+   -4.288,
+   -0.329
   ],
   "exit_reasons": {
    "invalidated": 2790,
@@ -373,8 +373,8 @@
  },
  "15|soff/b40|both": {
   "ci95_bp": [
-   -7.318,
-   0.037
+   -7.662,
+   -0.494
   ],
   "exit_reasons": {
    "invalidated": 2056,
@@ -400,12 +400,12 @@
   },
   "run_id": "a0350fb0a703f57b37e17544f740c273c2bc873564c951b442bcd4611c2e70fa",
   "sd_bp": 156.3,
-  "star": false
+  "star": true
  },
  "30|s-/b-|both": {
   "ci95_bp": [
-   -1.274,
-   3.119
+   -1.358,
+   3.078
   ],
   "exit_reasons": {
    "invalidated": 3860,
@@ -435,8 +435,8 @@
  },
  "30|s-/b24|both": {
   "ci95_bp": [
-   -1.819,
-   2.075
+   -1.734,
+   2.329
   ],
   "exit_reasons": {
    "invalidated": 2583,
@@ -466,8 +466,8 @@
  },
  "30|s-/b40|both": {
   "ci95_bp": [
-   -2.204,
-   2.269
+   -2.39,
+   1.861
   ],
   "exit_reasons": {
    "invalidated": 3142,
@@ -497,8 +497,8 @@
  },
  "30|s10/b-|both": {
   "ci95_bp": [
-   -1.722,
-   3.691
+   -1.218,
+   3.667
   ],
   "exit_reasons": {
    "invalidated": 3532,
@@ -528,8 +528,8 @@
  },
  "30|s10/b24|both": {
   "ci95_bp": [
-   -1.794,
-   2.475
+   -1.869,
+   2.324
   ],
   "exit_reasons": {
    "invalidated": 2257,
@@ -559,8 +559,8 @@
  },
  "30|s10/b40|both": {
   "ci95_bp": [
-   -2.317,
-   2.726
+   -2.531,
+   1.821
   ],
   "exit_reasons": {
    "invalidated": 2815,
@@ -590,8 +590,8 @@
  },
  "30|s19/b-|both": {
   "ci95_bp": [
-   -2.685,
-   3.373
+   -3.088,
+   3.291
   ],
   "exit_reasons": {
    "invalidated": 2883,
@@ -621,8 +621,8 @@
  },
  "30|s19/b24|both": {
   "ci95_bp": [
-   -2.874,
-   2.146
+   -2.604,
+   2.504
   ],
   "exit_reasons": {
    "invalidated": 1639,
@@ -652,8 +652,8 @@
  },
  "30|s19/b40|both": {
   "ci95_bp": [
-   -3.63,
-   2.17
+   -3.784,
+   2.151
   ],
   "exit_reasons": {
    "invalidated": 2170,
@@ -683,8 +683,8 @@
  },
  "30|s30/b-|both": {
   "ci95_bp": [
-   -5.611,
-   1.543
+   -6.081,
+   0.949
   ],
   "exit_reasons": {
    "invalidated": 2332,
@@ -714,8 +714,8 @@
  },
  "30|s30/b40|both": {
   "ci95_bp": [
-   -5.455,
-   1.417
+   -5.753,
+   1.883
   ],
   "exit_reasons": {
    "invalidated": 1651,
@@ -745,8 +745,8 @@
  },
  "30|soff/b24|both": {
   "ci95_bp": [
-   -3.827,
-   1.995
+   -3.326,
+   1.828
   ],
   "exit_reasons": {
    "invalidated": 1415,
@@ -776,8 +776,8 @@
  },
  "30|soff/b40|both": {
   "ci95_bp": [
-   -5.154,
-   4.207
+   -4.65,
+   4.229
   ],
   "exit_reasons": {
    "invalidated": 1259,
@@ -803,6 +803,192 @@
   },
   "run_id": "db7d998331c585ee78278e8a79f1f14a0e21635b78fe7bcf2d931f2990c8e12c",
   "sd_bp": 175.8,
+  "star": false
+ },
+ "3|s-/b-|both": {
+  "ci95_bp": [
+   -0.219,
+   0.662
+  ],
+  "exit_reasons": {
+   "invalidated": 28052,
+   "opposite_weak": 17932,
+   "reversed": 13565
+  },
+  "hold_median": 3,
+  "mean_bp": 0.231,
+  "n": 59549,
+  "per_year": {
+   "2017": {
+    "mean_bp": -0.069,
+    "n": 20930
+   },
+   "2018": {
+    "mean_bp": 0.323,
+    "n": 21353
+   },
+   "2019": {
+    "mean_bp": 0.481,
+    "n": 17266
+   }
+  },
+  "run_id": "60b45ce7c105348956bf4056b02db29b5734025174150acd030b553f91215030",
+  "sd_bp": 51.2,
+  "star": false
+ },
+ "3|s-/b24|both": {
+  "ci95_bp": [
+   0.037,
+   0.867
+  ],
+  "exit_reasons": {
+   "invalidated": 27098,
+   "opposite_weak": 20607,
+   "reversed": 14647
+  },
+  "hold_median": 2,
+  "mean_bp": 0.406,
+  "n": 62352,
+  "per_year": {
+   "2017": {
+    "mean_bp": 0.572,
+    "n": 22389
+   },
+   "2018": {
+    "mean_bp": 0.094,
+    "n": 22364
+   },
+   "2019": {
+    "mean_bp": 0.591,
+    "n": 17599
+   }
+  },
+  "run_id": "4de89fe1b42c5c00212f49bd1aa65fb0e70bb55c081c0b1f6dcdb69f013c2a5c",
+  "sd_bp": 53.0,
+  "star": true
+ },
+ "3|s-/b40|both": {
+  "ci95_bp": [
+   -0.072,
+   0.736
+  ],
+  "exit_reasons": {
+   "invalidated": 27755,
+   "opposite_weak": 18786,
+   "reversed": 13861
+  },
+  "hold_median": 3,
+  "mean_bp": 0.309,
+  "n": 60402,
+  "per_year": {
+   "2017": {
+    "mean_bp": 0.256,
+    "n": 21336
+   },
+   "2018": {
+    "mean_bp": 0.129,
+    "n": 21668
+   },
+   "2019": {
+    "mean_bp": 0.598,
+    "n": 17398
+   }
+  },
+  "run_id": "4a7048267b609fa6b9cc977db5627355fef895fd82fa0a3687a450ced1e71609",
+  "sd_bp": 52.5,
+  "star": false
+ },
+ "3|s10/b-|both": {
+  "ci95_bp": [
+   -1.206,
+   0.161
+  ],
+  "exit_reasons": {
+   "invalidated": 18006,
+   "opposite_weak": 11115,
+   "reversed": 8161
+  },
+  "hold_median": 3,
+  "mean_bp": -0.506,
+  "n": 37282,
+  "per_year": {
+   "2017": {
+    "mean_bp": -0.466,
+    "n": 15841
+   },
+   "2018": {
+    "mean_bp": -0.391,
+    "n": 13197
+   },
+   "2019": {
+    "mean_bp": -0.769,
+    "n": 8244
+   }
+  },
+  "run_id": "9e821081575218f4b2cd4892eb27114d36d5fa94c5e5b63b0dd754a1b2133fc7",
+  "sd_bp": 64.2,
+  "star": false
+ },
+ "3|s10/b24|both": {
+  "ci95_bp": [
+   -0.823,
+   0.477
+  ],
+  "exit_reasons": {
+   "invalidated": 17069,
+   "opposite_weak": 13741,
+   "reversed": 9253
+  },
+  "hold_median": 3,
+  "mean_bp": -0.141,
+  "n": 40063,
+  "per_year": {
+   "2017": {
+    "mean_bp": 0.356,
+    "n": 17305
+   },
+   "2018": {
+    "mean_bp": -0.553,
+    "n": 14195
+   },
+   "2019": {
+    "mean_bp": -0.462,
+    "n": 8563
+   }
+  },
+  "run_id": "08ea49edbaf941b91da8ba596a698367262686f61cb6d634c750bee8b0d67836",
+  "sd_bp": 66.0,
+  "star": false
+ },
+ "3|s10/b40|both": {
+  "ci95_bp": [
+   -1.039,
+   0.436
+  ],
+  "exit_reasons": {
+   "invalidated": 17688,
+   "opposite_weak": 11964,
+   "reversed": 8461
+  },
+  "hold_median": 3,
+  "mean_bp": -0.341,
+  "n": 38113,
+  "per_year": {
+   "2017": {
+    "mean_bp": -0.06,
+    "n": 16246
+   },
+   "2018": {
+    "mean_bp": -0.628,
+    "n": 13496
+   },
+   "2019": {
+    "mean_bp": -0.426,
+    "n": 8371
+   }
+  },
+  "run_id": "0a53aa0fd794e19e8804982273b2837b1cff6e8ae032492ebd11a517ffc98dfc",
+  "sd_bp": 65.9,
   "star": false
  },
  "3|soff/b24|both": {
@@ -869,8 +1055,8 @@
  },
  "5|s-/b-|both": {
   "ci95_bp": [
-   -0.414,
-   0.768
+   -0.378,
+   0.786
   ],
   "exit_reasons": {
    "invalidated": 19074,
@@ -900,8 +1086,8 @@
  },
  "5|s-/b24|both": {
   "ci95_bp": [
-   -0.488,
-   0.661
+   -0.508,
+   0.557
   ],
   "exit_reasons": {
    "invalidated": 17965,
@@ -931,8 +1117,8 @@
  },
  "5|s-/b40|both": {
   "ci95_bp": [
-   -0.28,
-   0.617
+   -0.407,
+   0.657
   ],
   "exit_reasons": {
    "invalidated": 18663,
@@ -962,8 +1148,8 @@
  },
  "5|s10/b-|both": {
   "ci95_bp": [
-   -1.085,
-   0.469
+   -0.943,
+   0.569
   ],
   "exit_reasons": {
    "invalidated": 13426,
@@ -993,8 +1179,8 @@
  },
  "5|s10/b24|both": {
   "ci95_bp": [
-   -1.186,
-   0.507
+   -1.209,
+   0.318
   ],
   "exit_reasons": {
    "invalidated": 12300,
@@ -1024,8 +1210,8 @@
  },
  "5|s10/b40|both": {
   "ci95_bp": [
-   -1.1,
-   0.469
+   -1.237,
+   0.515
   ],
   "exit_reasons": {
    "invalidated": 12999,
@@ -1055,8 +1241,8 @@
  },
  "5|s19/b-|both": {
   "ci95_bp": [
-   -2.78,
-   -0.097
+   -2.686,
+   0.081
   ],
   "exit_reasons": {
    "invalidated": 8231,
@@ -1082,12 +1268,12 @@
   },
   "run_id": "de4d128c21997caab7b2c582703ba18da6530343aece6873db95b4d81dea202e",
   "sd_bp": 95.0,
-  "star": true
+  "star": false
  },
  "5|s19/b24|both": {
   "ci95_bp": [
-   -2.593,
-   -0.082
+   -2.4,
+   0.2
   ],
   "exit_reasons": {
    "invalidated": 7235,
@@ -1113,12 +1299,12 @@
   },
   "run_id": "bac02acd9e6d33f3e6e3e94ca6a23a30869f1f7c39e00d6307bbbe824198fd65",
   "sd_bp": 92.3,
-  "star": true
+  "star": false
  },
  "5|s19/b40|both": {
   "ci95_bp": [
-   -2.484,
-   -0.213
+   -2.784,
+   -0.046
   ],
   "exit_reasons": {
    "invalidated": 7790,
@@ -1148,8 +1334,8 @@
  },
  "5|s30/b-|both": {
   "ci95_bp": [
-   -4.199,
-   1.011
+   -5.102,
+   0.457
   ],
   "exit_reasons": {
    "invalidated": 4887,
@@ -1179,8 +1365,8 @@
  },
  "5|s30/b40|both": {
   "ci95_bp": [
-   -4.534,
-   0.44
+   -3.757,
+   0.932
   ],
   "exit_reasons": {
    "invalidated": 4606,
@@ -1210,8 +1396,8 @@
  },
  "5|soff/b24|both": {
   "ci95_bp": [
-   -2.906,
-   0.066
+   -2.892,
+   0.522
   ],
   "exit_reasons": {
    "invalidated": 5698,
@@ -1241,8 +1427,8 @@
  },
  "5|soff/b40|both": {
   "ci95_bp": [
-   -5.39,
-   1.138
+   -5.814,
+   1.885
   ],
   "exit_reasons": {
    "invalidated": 3068,
@@ -1272,8 +1458,8 @@
  },
  "60|s-/b-|both": {
   "ci95_bp": [
-   -10.513,
-   -2.291
+   -9.506,
+   -2.567
   ],
   "exit_reasons": {
    "invalidated": 2037,
@@ -1303,8 +1489,8 @@
  },
  "60|s-/b24|both": {
   "ci95_bp": [
-   -7.027,
-   -0.25
+   -7.467,
+   -0.413
   ],
   "exit_reasons": {
    "invalidated": 985,
@@ -1334,8 +1520,8 @@
  },
  "60|s-/b40|both": {
   "ci95_bp": [
-   -6.105,
-   0.698
+   -6.174,
+   -0.046
   ],
   "exit_reasons": {
    "invalidated": 1360,
@@ -1361,12 +1547,12 @@
   },
   "run_id": "5c190c5335f36da6f1799b0d8003e9f605584ed45f9f6aa4d4a48270cd894f29",
   "sd_bp": 149.7,
-  "star": false
+  "star": true
  },
  "60|s10/b-|both": {
   "ci95_bp": [
-   -10.629,
-   -1.943
+   -9.657,
+   -2.58
   ],
   "exit_reasons": {
    "invalidated": 1949,
@@ -1396,8 +1582,8 @@
  },
  "60|s10/b24|both": {
   "ci95_bp": [
-   -7.024,
-   -0.222
+   -7.492,
+   -0.414
   ],
   "exit_reasons": {
    "invalidated": 897,
@@ -1427,8 +1613,8 @@
  },
  "60|s10/b40|both": {
   "ci95_bp": [
-   -5.667,
-   0.486
+   -6.573,
+   0.117
   ],
   "exit_reasons": {
    "invalidated": 1272,
@@ -1458,8 +1644,8 @@
  },
  "60|s19/b-|both": {
   "ci95_bp": [
-   -10.171,
-   -0.997
+   -9.701,
+   -0.603
   ],
   "exit_reasons": {
    "invalidated": 1712,
@@ -1489,8 +1675,8 @@
  },
  "60|s19/b24|both": {
   "ci95_bp": [
-   -6.726,
-   0.564
+   -6.286,
+   0.818
   ],
   "exit_reasons": {
    "invalidated": 689,
@@ -1520,8 +1706,8 @@
  },
  "60|s19/b40|both": {
   "ci95_bp": [
-   -5.556,
-   1.486
+   -5.065,
+   1.731
   ],
   "exit_reasons": {
    "invalidated": 1048,
@@ -1551,8 +1737,8 @@
  },
  "60|s30/b-|both": {
   "ci95_bp": [
-   -13.721,
-   -2.406
+   -12.641,
+   -1.166
   ],
   "exit_reasons": {
    "invalidated": 1477,
@@ -1582,8 +1768,8 @@
  },
  "60|s30/b40|both": {
   "ci95_bp": [
-   -6.304,
-   1.423
+   -6.778,
+   1.066
   ],
   "exit_reasons": {
    "invalidated": 838,
@@ -1613,8 +1799,8 @@
  },
  "60|soff/b24|both": {
   "ci95_bp": [
-   -7.645,
-   0.44
+   -7.187,
+   0.701
   ],
   "exit_reasons": {
    "invalidated": 623,
@@ -1644,8 +1830,8 @@
  },
  "60|soff/b40|both": {
   "ci95_bp": [
-   -6.79,
-   4.437
+   -6.776,
+   3.676
   ],
   "exit_reasons": {
    "invalidated": 687,
