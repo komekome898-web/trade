@@ -49624,3 +49624,12 @@ $ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_
   155303 docs/DATA/probes/20260923_tools_8_run39.log
 19487615 total
 ```
+
+### リードの追記(検収、監査 142 回目)
+
+全文は `docs/AUDITOR/VERDICTS/2026-09-27_tools_scan_cat8_run39.md`。要点:
+
+- 台帳: 8-040 E2 は `未判別`(案 B の記録あり)。8-040 は「残り」に数えない。
+- 訂正: 知見 2 の「scipy/本体では17件」は、生ログ 36〜56 行の出力で 21 行(`_spectral_py.py` 18・`_whittaker.py` 1・`scipy/stats/__init__.py` 2)。
+- 案 B の読んだ範囲の足し: `doc/source/dev/api-dev/nan_policy.rst`(38 回目に受け取らなかった `nan_policy` の設計の頁、181 行)は題に E2 の語が無く語の選び方で選ばれなかった。リードが検収で語を当てた(`time.?series|timestamp|datetime|market|trade|tick|order book|ohlc|candle|時系列` → 0 件)。対象を時系列などに限定する逐語は無い。限界: 題に語が無い頁は、この頁のように、語の選び方では選ばれない。
+- scratchpad の外: `/tmp` 直下の 4 つ(調査班の申告、知見 14)はリードが `scratchpad/cat8/run39_tmp/` へ移した。
