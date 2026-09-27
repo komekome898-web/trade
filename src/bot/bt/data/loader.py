@@ -456,6 +456,58 @@ class LoadResult:
         }
 
 
+def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[list[Row], FileRecord]:
+    """Read one checked file of dataset `d` (its bytes once), keep its rows in `d.range_ns`, enforce the seals."""
+    with open(cp.real, "rb") as fh:
+        raw = fh.read()
+    sha = hashlib.sha256(raw).hexdigest()
+    ent = seals.match(cp.real, len(raw), sha)
+    if ent is not None:
+        seals.check_range(ent, cp.given, d.range_ns)
+    text = _decode(raw, d.spec, cp.given)
+    rows = _rows_csv(text, d.spec, cp.given) if d.spec.format == "csv" else _rows_jsonl(text, d.spec, cp.given)
+    n_read = n_kept = 0
+    out: list[Row] = []
+    for line, row in rows:
+        n_read += 1
+        where = f"{cp.given!r} line {line}"
+        cells = _Cells(d.spec, row, where)
+        rec, ev, t, key = _build(d.spec, cells, reader, where)
+        if not _in_range(d.spec, t, d.range_ns):
+            continue
+        if ent is not None:
+            try:
+                st = seal_time_ns(cells.get(ent.time_column))
+            except ParseError:
+                raise SealedRangeError(f"{where}: the file is sealed on column {ent.time_column!r}, "
+                                       f"which the row does not have") from None
+            except SealedRangeError as exc:
+                raise SealedRangeError(f"{where}: {exc}") from None
+            if st >= ent.cutoff_ns:
+                raise SealedRangeError(
+                    f"{where}: kept by the range, but its seal time ({ent.time_column!r}) is at or after "
+                    f"the seal cutoff {ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier")
+        n_kept += 1
+        synth = False
+        if d.spec.synthetic is not None:
+            synth = _text_of(cells.get(d.spec.synthetic[0])) in d.spec.synthetic[1]
+        out.append(Row(rec, ev, fi, line, t, key, (json.dumps(rec, sort_keys=True), cells.rest()), synth))
+    return out, FileRecord(d.name, cp.given, cp.real, cp.rel_real, len(raw), sha,
+                           ent.unit if ent else None, n_read, n_kept)
+
+
+def _check_paths(root: str, parsed: list[_Dataset], allow: AllowList, seals: SealRegistry) -> list[list]:
+    """Every path of every dataset through the allow-list, then through the seal records BY PATH -- all of it
+    before any file is opened (a sealed file whose range reaches its cutoff is refused unread, k1a-c-02)."""
+    checked = [[allow.check(root, p) for p in d.paths] for d in parsed]
+    for d, cps in zip(parsed, checked):
+        for cp in cps:
+            ent = seals.match_path(cp.real)
+            if ent is not None:
+                seals.check_range(ent, cp.given, d.range_ns)
+    return checked
+
+
 def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None) -> LoadResult:
     """Read every dataset (see module docstring). Refuses (a `DataError`)
     on the first path, seal, declaration or row it cannot read exactly."""
@@ -468,44 +520,12 @@ def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None) -> 
     seals = SealRegistry(root)
     files: list[FileRecord] = []
     # every path of every dataset is checked before any row is read
-    checked = [[allow.check(root, p) for p in d.paths] for d in parsed]
+    checked = _check_paths(root, parsed, allow, seals)
     for d, cps in zip(parsed, checked):
         reader = d.spec.time.reader()
         for fi, cp in enumerate(cps):
-            with open(cp.real, "rb") as fh:
-                raw = fh.read()
-            sha = hashlib.sha256(raw).hexdigest()
-            ent = seals.match(cp.real, len(raw), sha)
-            if ent is not None:
-                seals.check_range(ent, cp.given, d.range_ns)
-            text = _decode(raw, d.spec, cp.given)
-            rows = _rows_csv(text, d.spec, cp.given) if d.spec.format == "csv" else _rows_jsonl(text, d.spec, cp.given)
-            n_read = n_kept = 0
-            for line, row in rows:
-                n_read += 1
-                where = f"{cp.given!r} line {line}"
-                cells = _Cells(d.spec, row, where)
-                rec, ev, t, key = _build(d.spec, cells, reader, where)
-                if not _in_range(d.spec, t, d.range_ns):
-                    continue
-                if ent is not None:
-                    try:
-                        st = seal_time_ns(cells.get(ent.time_column))
-                    except ParseError:
-                        raise SealedRangeError(f"{where}: the file is sealed on column {ent.time_column!r}, "
-                                               f"which the row does not have") from None
-                    except SealedRangeError as exc:
-                        raise SealedRangeError(f"{where}: {exc}") from None
-                    if st >= ent.cutoff_ns:
-                        raise SealedRangeError(
-                            f"{where}: kept by the range, but its seal time ({ent.time_column!r}) is at or after "
-                            f"the seal cutoff {ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier")
-                n_kept += 1
-                synth = False
-                if d.spec.synthetic is not None:
-                    synth = _text_of(cells.get(d.spec.synthetic[0])) in d.spec.synthetic[1]
-                d.rows.append(Row(rec, ev, fi, line, t, key, (json.dumps(rec, sort_keys=True), cells.rest()), synth))
-            files.append(FileRecord(d.name, cp.given, cp.real, cp.rel_real, len(raw), sha,
-                                    ent.unit if ent else None, n_read, n_kept))
+            rows, rec = _read_file(d, fi, cp, seals, reader)
+            d.rows.extend(rows)
+            files.append(rec)
         d.anomalies, d.checks = A.detect(d.spec, d.rows, len(d.paths))
     return LoadResult(root, parsed, files, seals, allow)

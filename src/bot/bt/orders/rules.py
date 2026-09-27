@@ -7,7 +7,8 @@ Two kinds of rule, and neither has a default:
   size grid (`off_step`), a post-only order that would take (`post_only`), a
   market order that exhausts the book (`market_remainder`), a self-match
   (`self_trade`), a size-down amend (`amend_qty_down`), a market order with
-  no book to price it (`market_ref`), an order outside trading hours
+  no book to price it (`market_ref`: the last print, the next bar's open, or
+  the close of the last bar the venue has seen), an order outside trading hours
   (`outside_session`). A policy the run did not declare is `None`
   ("not declared"); when its situation arises the venue raises
   `RuleNotDeclaredError` -- it never picks a behaviour for the run.
@@ -42,7 +43,7 @@ POLICY_VALUES: dict[str, tuple[str, ...]] = {
     "self_trade": ("cancel_taker", "cancel_maker", "cancel_both"),
     "amend_qty_down": ("keep_priority", "lose_priority"),
     "amend_price": ("lose_priority",),
-    "market_ref": ("last_trade", "next_bar_open"),
+    "market_ref": ("last_trade", "next_bar_open", "last_bar_close"),
     "outside_session": ("reject", "queue_to_next_open"),
 }
 

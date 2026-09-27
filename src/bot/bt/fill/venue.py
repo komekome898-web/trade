@@ -30,7 +30,11 @@ prices aggressive executions by the impact function instead. With no book at
 all (a trade-only run), rule `market_ref` decides: `last_trade` = the last
 print +/- half the declared spread (cost component `spread`), filling the
 whole size; `next_bar_open` = the open of the next bar that starts after the
-order arrived.
+order arrived; `last_bar_close` = the close of the last bar the venue has
+seen when the order arrives +/- half the declared spread, filling the whole
+size (a bar's close is known at the bar's end, which is when the venue sees
+it; no bar yet -> Canceled "no_price_yet"). K1's rule (D-1, 2026-09-27):
+「建値も決済値も『その足の終値』」.
 
 Resting orders fill by the selected tier (`spec.py`), as the maker, at their
 limit price. OCO: a fill of one cancels the other (Canceled "oco"); a cancel
@@ -185,6 +189,7 @@ class SimVenue:
         self.tier = fill.tier
         self.book = ExternalBook()
         self.last_trade: Optional[float] = None
+        self.last_bar_close: Optional[float] = None  # rule market_ref last_bar_close
         self.position = 0.0
         self.impact_shift = 0.0
         self.arrivals: dict[str, int] = {}
@@ -282,6 +287,7 @@ class SimVenue:
             self._on_trade(event, t, out)
         elif type(event) is BarEvent:
             self._on_bar(event, t, out)
+            self.last_bar_close = float(event.close)  # after the bar's own fills: it prices what arrives later
         self._release_held(t, out)
         return out
 
@@ -557,13 +563,14 @@ class SimVenue:
             if o.kind in ("market", "stop"):
                 o.state = "bar_open"
             return
-        if self.last_trade is None:
+        ref_px = self.last_bar_close if ref == "last_bar_close" else self.last_trade
+        if ref_px is None:
             if o.kind in ("market", "stop"):
                 self._close(o, "no_price_yet", out)
             return
         half = float(self.costs.need("spread")) / 2.0
         self.used["spread"] = self.used.get("spread", 0) + 1
-        price = self.last_trade + o.sign * half
+        price = ref_px + o.sign * half
         if limit is not None and not o.reaches(price):
             return
         self._fill(o, price, o.remaining, "taker", t, out)

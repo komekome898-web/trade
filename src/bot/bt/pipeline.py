@@ -31,7 +31,8 @@ Declarations (every key required unless marked optional; nothing has a default):
                             (bot.bt.orders.Product),
                  "rules": {policy: value} (bot.bt.orders.VenueRules, string policies:
                             off_tick, below_min_qty, off_step, post_only, market_remainder,
-                            self_trade, amend_qty_down, amend_price, market_ref, ...)}]
+                            self_trade, amend_qty_down, amend_price, market_ref, ...;
+                            market_ref "last_bar_close" only for an instrument priced by bars: rule I-6)}]
   strategy     {"kind": "schedule", "orders": [{"t_ns", "side", "qty"[, "instrument"]}]}
                  -- time only: an order without "instrument" goes to every
                     instrument, one with it to that instrument only
@@ -41,7 +42,15 @@ Declarations (every key required unless marked optional; nothing has a default):
                {"kind": "price_rule", "buy_below", "sell_above", "qty"}
                  -- conditioned on prices: refused with real data under the
                     purpose 動作確認 (委任文 §4)
-               Every order is a market order sent to the venue model.
+               {"kind": "module", "module": "bot.strategy.<name>", "factory": name, "params": {...}}
+                 -- a strategy of the repository (D-1, 2026-09-27: K1 through this
+                    door): `factory(params, price_type)` returns a bot.bt.core.Strategy
+                    (a fresh one per instrument, side and execution); its
+                    `exit_reasons` (client_order_id -> reason, filled as it runs) names
+                    the closing orders of the round trips. The module's source sha256
+                    and the params are part of the identity. Conditioned on prices:
+                    refused with real data under the purpose 動作確認, like price_rule.
+               The orders of schedule / seeded_random / price_rule are market orders sent to the venue model.
   fill         {"optimistic": {FillSpec fields}, "pessimistic": {FillSpec fields}}
                (bot.bt.fill.FillRange: both sides required; tier 6's "impact" is a
                mapping of ImpactSpec fields; the L3 stances need a per-order feed,
@@ -105,6 +114,7 @@ from __future__ import annotations
 import fnmatch
 import gzip
 import hashlib
+import importlib
 import inspect
 import json
 import os
@@ -137,14 +147,15 @@ ORIGINS = ("real",)  # a file dataset's only origin; synthetic data comes from G
 # this environment's market-data folders: the data layer's allowed roots under the repository (not the caller's root)
 MARKET_ROOTS = tuple(os.path.join(REPO, r) for r in _DATA_ROOTS)
 TIME_ONLY = ("schedule", "seeded_random")
-STRATEGY_KINDS = TIME_ONLY + ("price_rule",)
+STRATEGY_KINDS = TIME_ONLY + ("price_rule", "module")
+MODULE_PREFIX = "bot.strategy."  # a module strategy is a strategy of the repository
 SIDES = ("optimistic", "pessimistic")
 LATENCY_CHANNELS = ("feed", "order", "cancel", "notice")
 ACCOUNT_KEYS = ("currency", "cash", "leverage", "mark", "liquidation", "margin_check")
 PRODUCT_KEYS = ("symbol", "venue", "tick", "min_qty", "qty_step", "quote_ccy", "margin")
 QUANTILE_PROBS = (0.05, 0.25, 0.5, 0.75, 0.95)
 MARKOUT_HORIZONS_S = (60, 300)
-PIPELINE_VERSION = "bt-item4-pipeline-r3"
+PIPELINE_VERSION = "bt-item4-pipeline-r4"  # r4 (2026-09-27, D-1): module strategies, rule I-6
 GENERATOR_VERSION = "random_walk-1"
 _DAY_NS = 86_400 * 1_000_000_000
 _PRICE_EVENT = {"trade": TradeEvent, "quote": BookSnapshotEvent, "book": BookSnapshotEvent, "bar": BarEvent}
@@ -462,10 +473,43 @@ def _check_strategy(st: Mapping) -> dict:
             other = "sell" if side == "buy" else "buy"
             legs += [{"t_ns": times[k2], "side": side, "qty": qty}, {"t_ns": times[k2 + 1], "side": other, "qty": qty}]
         return {"kind": k, "legs": legs}
+    if k == "module":
+        _need(set(st) == {"kind", "module", "factory", "params"},
+              "strategy module must be exactly {kind, module, factory, params}")
+        _need(type(st["module"]) is str and st["module"].startswith(MODULE_PREFIX) and type(st["factory"]) is str
+              and st["factory"], f"strategy.module must name a module under {MODULE_PREFIX!r} and strategy.factory "
+                                 f"a callable of it, got {st['module']!r} / {st['factory']!r}")
+        _need(isinstance(st["params"], Mapping), "strategy.params must be a mapping (plain finite JSON)")
+        params = json.loads(_canon(dict(st["params"])))
+        try:
+            mod = importlib.import_module(st["module"])
+        except ImportError as exc:
+            raise PipelineError(f"strategy.module {st['module']!r} cannot be imported: {exc}") from None
+        _need(callable(getattr(mod, st["factory"], None)), f"strategy.factory {st['factory']!r} is not a callable of "
+                                                          f"{st['module']!r}")
+        try:
+            src = inspect.getsource(mod)
+        except (OSError, TypeError) as exc:
+            raise PipelineError(f"strategy.module {st['module']!r}: its source cannot be read: {exc}") from None
+        return {"kind": k, "module": st["module"], "factory": st["factory"], "params": params,
+                "module_source_sha256": _sha(src.encode())}
     _need(set(st) == {"kind", "buy_below", "sell_above", "qty"},
           "strategy price_rule must be exactly {kind, buy_below, sell_above, qty}")
     return {"kind": k, "buy_below": _num(st["buy_below"], "buy_below"), "sell_above": _num(st["sell_above"], "sell_above"),
             "qty": _num(st["qty"], "qty")}
+
+
+def _module_strategy(st: Mapping, price_type: type) -> Strategy:
+    """The strategy a `module` declaration names, built fresh for one instrument, one side and one execution."""
+    factory = getattr(importlib.import_module(st["module"]), st["factory"])
+    try:
+        strat = factory(json.loads(_canon(dict(st["params"]))), price_type)
+    except (ValueError, TypeError) as exc:
+        raise PipelineError(f"strategy {st['module']}.{st['factory']}: {type(exc).__name__}: {exc}") from None
+    _need(isinstance(strat, Strategy), f"strategy.factory must return a bot.bt.core.Strategy, got {type(strat).__name__}")
+    _need(isinstance(getattr(strat, "exit_reasons", None), dict),
+          "a module strategy must carry exit_reasons (a dict: closing order id -> reason) for the round trips")
+    return strat
 
 
 def _delay(d: Any, where: str):
@@ -660,6 +704,9 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
                   f"instruments[{i}]: {x!r} has the same event type as the price dataset (its prices could not be told apart)")
         prod = _product(it["product"], f"instruments[{i}]")
         _rules(it["rules"], f"instruments[{i}]")
+        _need(it["rules"].get("market_ref") != "last_bar_close" or kind == "bar",
+              f"instruments[{i}]: market_ref last_bar_close prices a market order at the close of the last bar; "
+              f"the instrument is priced by {kind!r}, not by bars (rule I-6)")
         ins.append({"name": it["name"], "price": it["price"], "with": w, "price_kind": kind,
                     "product": json.loads(_canon(dict(it["product"]))), "rules": dict(it["rules"])})
     _need(ins, "instruments must not be empty")
@@ -703,7 +750,10 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
     code = code_state(repo)
     src = inspect.getsource(inspect.getmodule(plan_pipeline))
     identity = {
-        "datasets": ds, "data_sha256": hashes, "instruments": ins, "strategy": json.loads(_canon(dict(strategy))),
+        "datasets": ds, "data_sha256": hashes, "instruments": ins,
+        # a module strategy: its declaration plus its source's sha256 (names WHICH source ran)
+        "strategy": {**json.loads(_canon(dict(strategy))),
+                     **({"module_source_sha256": st["module_source_sha256"]} if st["kind"] == "module" else {})},
         "fill": json.loads(_canon(dict(fill))), "latency": lat, "costs": cs, "account": acc, "purpose": p,
         "prereg_sha256": pre_sha, "git_sha": code["git_sha"], "diff_hash": code["diff_hash"],
         "code_scope": code["code_scope"], "version": f"{PIPELINE_VERSION}; {GENERATOR_VERSION}; {version()}",
@@ -731,6 +781,10 @@ class ArrivalGate:
       I-4  a bar instrument: the open of the first bar that STARTS at or after the order's arrival (+- half the
            spread);
       I-5  an instrument with neither book nor spread: both sides give the I-1 value.
+      I-6  (D-1, 2026-09-27) a bar instrument whose rule market_ref is "last_bar_close": the order is NOT held; it
+           goes to the venue at its arrival, which prices it at the close of the last bar it has seen (+- half the
+           spread). The core hands a bar to the venue before it delivers it to the strategy, so an order the
+           strategy sends on a bar with no latency is priced at that bar's close (K1: 「その足の終値」).
 
     How: the gate holds a market order until that first observation, then hands it to the SimVenue right after
     the venue has applied the observation (trades: the venue's market_ref last_trade = that trade; quotes / books:
@@ -801,6 +855,14 @@ class ArrivalGate:
     def on_order(self, order: OrderRequest, venue_time_ns: int):
         t = int(venue_time_ns)
         if order.order_type != "market":
+            return self.venue.on_order(order, t)
+        if self.price_type is BarEvent and self.venue.rules.market_ref == "last_bar_close":
+            # I-6: priced now by the venue (the last bar it has seen); a margin check the account deferred for want
+            # of a price is made now too (no bar yet: the account still has no price and refuses)
+            if self.account is not None and order.client_order_id in self.account.deferred:
+                r = self.account.recheck(order, t)
+                if r is not None:
+                    return (Reject(order.client_order_id, f"refused_by_account: {r}"),)
             return self.venue.on_order(order, t)
         if self.price_type is not BarEvent and self.last_obs_t is not None and self.last_obs_t >= t:
             self.obs_time[order.client_order_id] = self.last_obs_t
@@ -977,6 +1039,9 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
         first = min(first, legs[0]["t_ns"])
         strat: Strategy = ScheduleStrategy(legs)
         reasons = {f"leg{i}": "fixed_schedule" for i in range(len(legs))}
+    elif st["kind"] == "module":
+        strat = _module_strategy(st, price_type)
+        reasons = strat.exit_reasons  # type: ignore[attr-defined]  (filled as the strategy runs: same dict object)
     else:
         strat = PriceRuleStrategy(st, price_type)
         reasons = None

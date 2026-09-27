@@ -3,6 +3,8 @@
 Fixed requirements: docs/DISCUSSIONS/2026-09-23_backtest_env/item_1/REQUIREMENTS.md
 (V1-V6 here, V7 in `bot.bt.vector`). Tests: tests/bt/item_1/.
 
+  stream(root, dataset) -- the same door, one file at a time (stream.py, D-2
+                           2026-09-27: data too large to hold at once)
   load(root, datasets)  -- the one reading door (loader.py): every asset by
                            its declaration (spec.py), times to int64 UTC ns
                            (timestamps.py, through the core's to_nanos),
@@ -19,16 +21,18 @@ from .allowlist import DEFAULT_ALLOWLIST, DEFAULT_ROOTS, MANDATORY_DENY, AllowLi
 from .anomalies import KINDS as ANOMALY_KINDS
 from .anomalies import POLICIES as ANOMALY_POLICIES
 from .errors import (CorporateActionError, DataError, ParseError, PathRefused, SealedRangeError, SpecError,
-                     TimeParseError, UnresolvedAnomalyError, VectorError)
+                     StreamOrderError, TimeParseError, UnresolvedAnomalyError, VectorError)
 from .jpx import Universe, adjust_daily, universe
 from .loader import FileRecord, LoadResult, load
 from .spec import ASSETS, FORMATS, KINDS, Spec, parse_spec
+from .stream import Stream, StreamChunk, stream
 from .timestamps import TimeReader
 
 __all__ = [
     "ANOMALY_KINDS", "ANOMALY_POLICIES", "ASSETS", "AllowList", "CorporateActionError", "DEFAULT_ALLOWLIST",
     "DEFAULT_ROOTS", "DataError", "FORMATS", "FileRecord", "KINDS", "LoadResult", "MANDATORY_DENY",
-    "ParseError", "PathRefused", "SealRegistry", "SealedRangeError", "Spec", "SpecError", "TimeParseError",
+    "ParseError", "PathRefused", "SealRegistry", "SealedRangeError", "Spec", "SpecError", "Stream", "StreamChunk",
+    "StreamOrderError", "TimeParseError",
     "TimeReader", "Universe", "UnresolvedAnomalyError", "VectorError", "adjust_daily", "load", "parse_spec",
-    "universe",
+    "stream", "universe",
 ]

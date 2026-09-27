@@ -11,10 +11,16 @@ that the environment, not the old script, is what gets tested).
   K1WickStrategy                    1.4: the position machine on bot.bt.core.Strategy,
                                     one unit, entries and exits as MARKET orders sent
                                     at the close of the bar that decided them
-  BarCloseMarketFill                the fill socket that prices a market order at the
-                                    close of the last bar the venue has seen (1.4:
-                                    建値も決済値も「その足の終値」)
+  bar_close_venue()                 the fill socket: item 2's SimVenue with the venue rule
+                                    market_ref = "last_bar_close" (a market order is priced
+                                    at the close of the last bar the venue has seen; 1.4:
+                                    建値も決済値も「その足の終値」). D-1 (2026-09-27): the rule
+                                    moved from this module into the venue model;
+                                    `BarCloseMarketFill` is kept as its stage-A name
   K1Setup                           the bot.bt.repro.runner setup: config -> Parts
+  pipeline_strategy(params, type)   the factory of bot.bt.pipeline's "module" strategy
+                                    (D-1: K1 through the integrated run)
+  PIPELINE_PRODUCT / PIPELINE_RULES the product and venue rules K1 declares
 
 Gate labels follow RESULT.md 1.3: s in {"off", "-", "10", "19", "30"} (small branch:
 off = the branch is not used, "-" = no minimum length), b in {"-", "24", "40"} (big
@@ -30,8 +36,10 @@ import inspect
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 
-from bot.bt.core import (Ack, BarEvent, Canceled, Event, Fill, NullAccount, OrderRequest, Reject, Strategy,
-                         StrategyContext, VenueReport, ZeroLatency)
+from bot.bt.core import BarEvent, Event, NullAccount, OrderRequest, Strategy, StrategyContext, ZeroLatency
+from bot.bt.costs import CostSchedule
+from bot.bt.fill import FillSpec, SimVenue
+from bot.bt.orders import FaultPlan, Product, VenueRules
 from bot.bt.repro.fixed import DeclaredFeeCost, Parts
 
 SMALL = ("off", "-", "10", "19", "30")
@@ -155,32 +163,36 @@ class K1WickStrategy(Strategy):
             self._open(ctx, sig, lc)  # 建玉なし: 強弱を問わず新規
 
 
-class BarCloseMarketFill:
-    """Market orders only, filled in full as taker at the close of the last bar
-    the venue has handled (the bar that decided the order: the core hands a bar
-    to the venue before it delivers it to the strategy, and the order comes
-    back at the same instant under ZeroLatency). No bar yet -> rejected."""
+# The product and the venue rules K1 declares (the same for the runner setup and the integrated run).
+# min_qty = qty_step = 1: K1 holds one unit (RESULT.md 1.4). tick 0.5: not used by K1 (market orders only;
+# the tick is checked on limit / stop prices), stated because a Product has no default (BitMEX's XBTUSD
+# tick, not confirmed from a primary source in this unit). quote_ccy USD: XBTUSD is priced in USD.
+PIPELINE_PRODUCT = {"symbol": "XBTUSD", "venue": "bitmex", "tick": 0.5, "min_qty": 1.0, "qty_step": 1.0,
+                    "quote_ccy": "USD", "margin": True}
+PIPELINE_RULES = {"market_ref": "last_bar_close"}
+CURRENCY = PIPELINE_PRODUCT["quote_ccy"]
 
-    def __init__(self) -> None:
-        self.last_close: Optional[float] = None
-        self.fills = 0
 
-    def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[VenueReport]:
-        if type(event) is BarEvent:
-            self.last_close = float(event.close)
-        return ()
+def bar_close_venue(costs_source: str = "K1 RESULT.md 1.4「経費は引いていない」: spread 0") -> SimVenue:
+    """Item 2's SimVenue with market_ref = last_bar_close: a market order is filled in full as taker at the
+    close of the last bar the venue has seen (the core hands a bar to the venue before it delivers it to the
+    strategy, so an order sent on a bar under ZeroLatency is priced at that bar's close). No bar yet -> the
+    order is Canceled "no_price_yet". The spread is declared 0 (fees are charged by the run's cost model)."""
+    return SimVenue(product=Product(**PIPELINE_PRODUCT), rules=VenueRules(**PIPELINE_RULES), fill=FillSpec(tier=2),
+                    costs=CostSchedule(maker_rate=0.0, taker_rate=0.0, source=costs_source, spread=0.0),
+                    faults=FaultPlan(()), l3=None)
 
-    def on_order(self, order: OrderRequest, venue_time_ns: int) -> Sequence[VenueReport]:
-        if order.order_type != "market":
-            return (Reject(order.client_order_id, "unsupported_order_type"),)
-        if self.last_close is None:
-            return (Reject(order.client_order_id, "no_bar_yet"),)
-        self.fills += 1
-        return (Ack(order.client_order_id, f"v-{order.client_order_id}"),
-                Fill(order.client_order_id, self.last_close, order.size, "taker"))
 
-    def on_cancel(self, request, venue_time_ns: int) -> Sequence[VenueReport]:
-        return (Canceled(request.client_order_id),)
+BarCloseMarketFill = bar_close_venue  # stage A's name (tests/test_k1_wick*.py build the fill socket by it)
+
+
+def pipeline_strategy(params: Mapping, price_type: type) -> K1WickStrategy:
+    """bot.bt.pipeline "module" strategy factory: params {s, b, strength}; the instrument must be priced by bars."""
+    if price_type is not BarEvent:
+        raise K1Error(f"K1 reads bars; the instrument is priced by {getattr(price_type, '__name__', price_type)}")
+    if not isinstance(params, Mapping) or set(params) != {"s", "b", "strength"}:
+        raise K1Error(f"params must be exactly {{s, b, strength}}, got {params!r}")
+    return K1WickStrategy(str(params["s"]), str(params["b"]), params["strength"])
 
 
 CONFIG_KEYS = ("instrument", "foot_min", "gate", "strength", "fill", "costs")
@@ -228,9 +240,11 @@ class K1Setup:
         p = parse_config(config)
         strat = K1WickStrategy(p["s"], p["b"], p["strength"])
         self.last = strat
-        return Parts(strategy=strat, fill_model=BarCloseMarketFill(), latency_model=ZeroLatency(),
+        return Parts(strategy=strat, fill_model=bar_close_venue(config["costs"]["source"]), latency_model=ZeroLatency(),
                      cost_model=DeclaredFeeCost(p["rates"]), account=NullAccount(),
                      exit_reasons=strat.exit_reasons,  # filled by the strategy as it runs (same dict object)
-                     notes={"fill": "market order priced at the close of the bar that decided it (RESULT.md 1.4)",
+                     currency=CURRENCY,
+                     notes={"fill": "SimVenue, market_ref last_bar_close: a market order priced at the close of the "
+                                    "bar that decided it (RESULT.md 1.4)",
                             "seed": "unused: K1 draws nothing",
                             "holding_bars": "measured by bar index in the tables script (bars with no trade do not exist)"})

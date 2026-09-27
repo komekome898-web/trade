@@ -161,6 +161,9 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
     if got != plan.identity["data_sha256"]:
         raise ReproError(f"data changed between planning and execution: {got} vs {plan.identity['data_sha256']}")
     parts = plan.setup.build(plan.config, plan.seed)
+    ccy = parts.currency
+    if ccy is not None and (type(ccy) is not str or not ccy.strip()):
+        raise ReproError(f"the setup's currency must be a non-empty str or None (not stated), got {ccy!r}")
     times = [e.exchange_time_ns for s in streams.values() for e in s]
     if not times:
         raise ReproError("the data has no event")
@@ -190,7 +193,7 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
         fees[f["liquidity"]] += f["fee"]
     metrics = {
         "trades": dist,
-        "pnl_jpy": {"realized": cum, "fees": sum(fees.values())},
+        "pnl": {"currency": ccy, "realized": cum, "fees": sum(fees.values())},
         "fills": fm,
         "markout": {"reference": "直前の約定の値(仲値のデータが無い実行)", "unit": "price",
                     "values": M.markout(fills, trade_path, list(MARKOUT_HORIZONS_S), unit="price") if fills else {}},
@@ -200,7 +203,7 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
         "exit_reasons": M.exit_reasons(trades) if trades else {},
         "drawdown": {**M.drawdown(equity, eq_t), "max_dd_pct": None,
                      "pct_note": "資本が宣言されていないので率は出さない(額は累積の実現損益から)"},
-        "equity": {"t_ns": eq_t, "realized_jpy": equity},
+        "equity": {"t_ns": eq_t, "realized": equity, "currency": ccy},
     }
     # the data layer's manifest without the absolute paths (root, real): the outputs of a run must not
     # depend on where its root lies, only on what it read (the paths as given and relative to the root)
@@ -216,6 +219,7 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
                                                        "data_sha256", "seed", "setup", "version", "purpose",
                                                        "prereg_sha256")},
         "prereg": plan.prereg,
+        "currency": ccy,  # D-4: the prices' currency as the setup states it (None: not stated)
         "components": {"models": dict(res.models), "defaults_used": list(res.defaults_used), "notes": parts.notes},
         "engine": {"events_processed": res.events_processed, "source_events": res.source_events,
                    "delivery_digest": res.delivery_digest, "first_time_ns": res.first_time_ns,

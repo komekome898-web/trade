@@ -45,3 +45,9 @@ class CorporateActionError(DataError):
 
 class VectorError(DataError):
     """The vector path refused its input (unsorted times, bad rule)."""
+
+
+class StreamOrderError(DataError):
+    """The streaming read (`stream`) met a file whose rows do not all come
+    after the previous file's rows: checks across files (generations,
+    duplicates, overlaps) need every row at once, i.e. `load`."""

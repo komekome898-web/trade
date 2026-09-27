@@ -191,6 +191,9 @@ class Parts:
     account: Any
     exit_reasons: dict  # closing order id -> reason
     notes: dict = field(default_factory=dict)
+    # the currency the prices (and so the P&L and fees) are in: the product's quote currency. None = the setup
+    # does not state it; the record then says so and the dashboard shows no currency (D-4, 2026-09-27)
+    currency: Optional[str] = None
 
 
 class FixedSetup:

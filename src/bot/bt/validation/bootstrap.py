@@ -12,6 +12,15 @@ Methods (named by the caller; there is no default):
   stationary  block lengths geometric with mean `block_len`, wrapping
               (Politis & Romano 1994).
 
+Blocks given by a label (D-3 of K1 stage A, 2026-09-27):
+  day_block_bootstrap_ci   the blocks are the UTC days of the given times
+              (e.g. each trade's entry): the days are drawn with replacement
+              (as many draws as there are days), every value of a drawn day
+              enters the resample, the statistic is the mean of the pooled
+              values (days with more values weigh more). Days hold different
+              numbers of values, which a fixed `block_len` cannot express.
+  label_block_bootstrap_ci the same with any hashable label per value.
+
 The interval is the percentile interval of the resampled statistic at
 alpha/2 and 1 - alpha/2 (numpy's linear quantile). Randomness is only
 `numpy.random.default_rng(seed)`; the seed is required.
@@ -87,6 +96,64 @@ def block_bootstrap_ci(x: Sequence[float], *, block_len: int, n_resamples: int, 
     return BootstrapCI(float(lo), float(hi), float(stat(xs)), float(np.std(reps, ddof=1)), m, L, R, sd, a)
 
 
+@dataclass(frozen=True)
+class LabelBootstrapCI:
+    lo: float
+    hi: float
+    estimate: float  # the pooled mean of the original values
+    se: float  # standard deviation of the resampled statistic
+    n_values: int
+    n_blocks: int  # distinct labels (days)
+    n_resamples: int
+    seed: int
+    alpha: float
+    blocks: str  # "utc_day" or "label"
+
+
+NS_PER_DAY = 86_400 * 1_000_000_000
+
+
+def label_block_bootstrap_ci(x: Sequence[float], labels: Sequence[Any], *, n_resamples: int, seed: int,
+                             alpha: float, blocks: str = "label") -> LabelBootstrapCI:
+    """Blocks = the values sharing a label. Each resample draws len(blocks) labels with replacement and takes
+    the mean of every value of the drawn blocks (sum of the drawn blocks' sums / sum of their counts)."""
+    xs = np.asarray(as_numbers("x", x, min_len=2), dtype=float)
+    labs = list(labels)
+    if len(labs) != len(xs):
+        raise ValidationError(f"labels must have one label per value ({len(xs)}), got {len(labs)}")
+    R = as_int("n_resamples", n_resamples, lo=2)
+    sd = as_int("seed", seed)
+    a = as_prob("alpha", alpha)
+    order: dict = {}
+    for lab in labs:
+        if lab not in order:
+            order[lab] = len(order)  # blocks in first-seen order (the draw is then fixed by the seed and the data)
+    g = np.fromiter((order[lab] for lab in labs), dtype=np.int64, count=len(labs))
+    G = len(order)
+    if G < 2:
+        raise ValidationError(f"the values fall in {G} block; a block bootstrap needs at least 2")
+    sums = np.bincount(g, weights=xs, minlength=G)
+    counts = np.bincount(g, minlength=G).astype(float)
+    rng = np.random.default_rng(sd)
+    reps = np.empty(R, dtype=float)
+    for r in range(R):
+        idx = rng.integers(0, G, size=G)
+        reps[r] = sums[idx].sum() / counts[idx].sum()
+    lo, hi = np.quantile(reps, [a / 2, 1 - a / 2])
+    return LabelBootstrapCI(float(lo), float(hi), float(xs.mean()), float(np.std(reps, ddof=1)), len(xs), G, R, sd,
+                            a, blocks)
+
+
+def day_block_bootstrap_ci(x: Sequence[float], t_ns: Sequence[int], *, n_resamples: int, seed: int,
+                           alpha: float) -> LabelBootstrapCI:
+    """Blocks = UTC days of `t_ns` (int ns since the epoch, one per value; e.g. each trade's entry time)."""
+    ts = list(t_ns)
+    if any(type(t) is not int for t in ts):
+        raise ValidationError("t_ns must be int nanoseconds since the epoch (UTC)")
+    return label_block_bootstrap_ci(x, [t // NS_PER_DAY for t in ts], n_resamples=n_resamples, seed=seed,
+                                    alpha=alpha, blocks="utc_day")
+
+
 def circular_block_se_of_mean(x: Sequence[float], block_len: int) -> float:
     """The exact standard error of the mean under the circular block
     bootstrap (the Bartlett-weighted circular autocovariance sum / n)."""
@@ -99,4 +166,5 @@ def circular_block_se_of_mean(x: Sequence[float], block_len: int) -> float:
     return float(np.sqrt(var))
 
 
-__all__: Any = ["METHODS", "BootstrapCI", "block_bootstrap_ci", "circular_block_se_of_mean"]
+__all__: Any = ["METHODS", "BootstrapCI", "LabelBootstrapCI", "block_bootstrap_ci", "circular_block_se_of_mean",
+                "day_block_bootstrap_ci", "label_block_bootstrap_ci"]

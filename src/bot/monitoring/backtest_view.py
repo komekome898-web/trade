@@ -100,6 +100,27 @@ def _export(d: str, kind: str) -> Optional[Any]:
     return _load(p)["data"] if os.path.isfile(p) else None
 
 
+NO_CURRENCY = "通貨の記録なし"
+
+
+def run_currency(rec: dict) -> Optional[str]:
+    """The currency of a run's money amounts, from its record only (D-4, 2026-09-27): the runner's record states
+    it ("currency"; None = the setup did not state it); the integrated run's record names its account's currency.
+    Nothing is assumed: a record that states none gives None."""
+    if "currency" in rec:
+        c = rec.get("currency")
+    else:
+        c = (((rec.get("config") or {}).get("account")) or {}).get("currency")
+    return c if type(c) is str and c.strip() else None
+
+
+def _unit(ccy: Optional[str]) -> str:
+    """The label of an amount: (円) for JPY, (USD) for USD, (通貨の記録なし) when the record states none."""
+    if ccy is None:
+        return f"({NO_CURRENCY})"
+    return "(円)" if ccy == "JPY" else f"({ccy})"
+
+
 def run_view(runs_dir: str, run_id: str) -> dict:
     d = _run_dir(runs_dir, run_id)
     rec = _load(os.path.join(d, "record.json"))
@@ -110,11 +131,13 @@ def run_view(runs_dir: str, run_id: str) -> dict:
     validation = _export(d, "validation")
     cfg = rec.get("config") or {}
     tr = m.get("trades") or {}
+    u = _unit(run_currency(rec))
+    pnl = m.get("pnl") or m.get("pnl_jpy") or {}  # "pnl_jpy": the key of the records written before D-4
     tabs: dict[str, tuple[str, str]] = {}
 
     tabs["概要"] = _kv([("実行 ID", run_id), ("目的", rec.get("purpose")), ("商品", cfg.get("instrument")),
                        ("手順", (rec.get("setup") or {}).get("name")), ("種", rec.get("seed")),
-                       ("往復の数", tr.get("n")), ("実現損益(円)", _num((m.get("pnl_jpy") or {}).get("realized"))),
+                       ("往復の数", tr.get("n")), (f"実現損益{u}", _num(pnl.get("realized"))),
                        ("1 件ごとの bp の平均", _num(tr.get("mean_bp")))])
     data_rows = [(x.get("path"), (rec.get("data_sha256") or {}).get(x.get("path"))) for x in rec.get("data") or []]
     h1, t1 = _kv([("約定の模型", json.dumps(cfg.get("fill"), ensure_ascii=False)),
@@ -125,13 +148,13 @@ def run_view(runs_dir: str, run_id: str) -> dict:
     tabs["前提"] = (h1 + "<h3>データ</h3>" + _table(data_rows, ("ファイル", "sha256")),
                    t1 + "\nデータ: " + "; ".join(f"{p} {s}" for p, s in data_rows))
     dd = m.get("drawdown") or {}
-    tabs["損益"] = _kv([("実現損益(円)", _num((m.get("pnl_jpy") or {}).get("realized"))),
-                       ("手数料の合計(円)", _num((m.get("pnl_jpy") or {}).get("fees"))),
-                       ("最大ドローダウン(円)", _num(dd.get("max_dd_abs"))),
+    tabs["損益"] = _kv([(f"実現損益{u}", _num(pnl.get("realized"))),
+                       (f"手数料の合計{u}", _num(pnl.get("fees"))),
+                       (f"最大ドローダウン{u}", _num(dd.get("max_dd_abs"))),
                        ("最大ドローダウン(率)", _num(dd.get("max_dd_pct"))), ("率の注記", dd.get("pct_note"))])
     trows = [(t.get("id"), t.get("side"), _num(t.get("qty")), _num(t.get("entry_px")), _num(t.get("exit_px")),
               _num(t.get("pnl")), t.get("reason")) for t in trades]
-    head = ("往復", "向き", "数量", "入り", "出", "損益(円)", "決済理由")
+    head = ("往復", "向き", "数量", "入り", "出", f"損益{u}", "決済理由")
     tabs["取引"] = (_table(trows, head), f"往復 {len(trows)} 件\n" + "\n".join(" ".join(map(str, r)) for r in trows))
     fm = m.get("fills") or {}
     mo = m.get("markout") or {}
@@ -142,9 +165,9 @@ def run_view(runs_dir: str, run_id: str) -> dict:
     tabs["約定の質"] = (h2 + _table(mrows, ("時間窓(秒)", "約定ごとの markout")),
                       t2 + "\n" + "\n".join(f"markout {h} 秒: {v}" for h, v in mrows))
     c = m.get("costs") or {}
-    tabs["費用"] = _kv([("maker 手数料(円)", _num(c.get("maker_fee"))), ("taker 手数料(円)", _num(c.get("taker_fee"))),
-                       ("スプレッド(円)", _num(c.get("spread"))), ("スプレッドの注記", c.get("spread_note")),
-                       ("資金調達(円)", _num(c.get("funding"))), ("資金調達の注記", c.get("funding_note"))])
+    tabs["費用"] = _kv([(f"maker 手数料{u}", _num(c.get("maker_fee"))), (f"taker 手数料{u}", _num(c.get("taker_fee"))),
+                       (f"スプレッド{u}", _num(c.get("spread"))), ("スプレッドの注記", c.get("spread_note")),
+                       (f"資金調達{u}", _num(c.get("funding"))), ("資金調達の注記", c.get("funding_note"))])
     q = tr.get("quantiles") or {}
     bps = tr.get("per_trade_bp") or []
     h3, t3 = _kv([("件数", tr.get("n")), ("負の割合", _num(tr.get("neg_frac"))), ("分位の流儀", tr.get("quantile_method")),
