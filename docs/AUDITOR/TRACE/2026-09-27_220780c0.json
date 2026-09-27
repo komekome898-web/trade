@@ -15851,10 +15851,11 @@
   {
    "move": 580,
    "tools": {
-    "Bash": 2,
-    "mcp__Claude_Code_Remote__send_later": 1
+    "Bash": 7,
+    "mcp__Claude_Code_Remote__send_later": 1,
+    "Agent": 1
    },
-   "n_tools": 3,
+   "n_tools": 9,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": true,

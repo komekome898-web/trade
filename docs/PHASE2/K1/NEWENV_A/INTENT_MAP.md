@@ -2,7 +2,7 @@
 
 委任文 `docs/DATA/delegations/20260927_k1_on_new_env.md` §2-1「**同じ設計**: … K1 の規則(足の畳み方・シグナルの 4 分類と門 `s*/b*`・建玉 1 単位・決済・統計の bp の定義)1 項ずつ × 新しい環境での実装(○ / △代理 / ✕未実装 / ＋意図に無い実装)。△・✕ が残れば、その升は「比べられない」と印を付ける」。
 
-規則の出所: `docs/PHASE2/K1/RESULT.md` 第 1 部(1.1〜1.6 = **実際に測った規則**)。`PREREG.md` §1〜§4 は設計で、第 1 部と食い違う所は第 1 部を取った(その項に書く)。当時のスクリプト `scripts/measure_katsuo_effect.py` は規則の読み取りにだけ開いた(`gates()` / `signals()` / `simulate()` / `block_bootstrap()`、`measure_katsuo_dispersion.fold`)。**算術は写していない**: 実装は核の事象の口(`bot.bt.core.Strategy.on_event`)の上に書き直し、当時のスクリプトは import していない(`grep -n "measure_katsuo\|k1_source" src/bot/strategy/k1_wick.py scripts/k1_newenv_*.py` = 0 件)。
+規則の出所: `docs/PHASE2/K1/RESULT.md` 第 1 部(1.1〜1.6 = **実際に測った規則**)。`PREREG.md` §1〜§4 は設計で、第 1 部と食い違う所は第 1 部を取った(その項に書く)。当時のスクリプト `scripts/measure_katsuo_effect.py` は規則の読み取りにだけ開いた(`gates()` / `signals()` / `simulate()` / `block_bootstrap()`、`measure_katsuo_dispersion.fold`)。当時のスクリプトは import していない(`grep -n "measure_katsuo\|k1_source" src/bot/strategy/k1_wick.py scripts/k1_newenv_*.py` = 0 件)。**訂正(批評家 k1a-c-01、2026-09-27 07:3x UTC)**: 「算術は写していない」は事実と違う。**建玉の機械の分岐**(`k1_wick.py` 142・149・152・155 行の注釈 4 本は当時の `simulate()` 196・204・207・209 行と同じ文言で、分岐も 203〜210 行と同じ順・同じ式)と、**区間の統計**(`k1_newenv_tables.py: block_bootstrap` 63〜73 行の分位の添字と乱数の消費順 = 当時の 236〜237 行と周回順)は当時の形に合わせている。写したのはこの 2 つだけで、平均が通る経路(データ層の読み → `bars_from_bars` → 核の順序 → `BarCloseMarketFill` → 往復 → `trades.json` → 表の平均 `k1_newenv_tables.py:78`)は新しいコード。したがって**平均の一致は環境の部品を通した結果として有効**、`*` の一致は当時の統計を写した代理の一致で環境の検査にはならない。
 
 印: ○ = 意図どおり / △ = 代理(値は出るが機構が違う) / ✕ = 未実装 / ＋ = 意図に無い実装(数に効くかを書く)。
 
