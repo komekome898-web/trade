@@ -644,6 +644,19 @@ def cmd_check_elements(a):
             c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
             if len(c) >= 3 and c[0] not in ("ファイルの道", "道"):
                 hit_judged[c[0].strip("`")] = c[2]
+    # 理由の使い回し(2026-09-27、監査 158 回目の指摘 3: 44・45 回目に「同上」と同じ文の当てはめが続き、
+    # 起動文の禁止だけでは止まらなかった)。46 回目の節から見る。
+    if a.round and int(a.round) >= 46:
+        norm = lambda t: re.sub(r"[\s`、。,.()()「」]", "", t)
+        seen = {}
+        for path, why in hit_judged.items():
+            if re.fullmatch(r"(同上|上に同じ|同様|前に同じ)[。.]?", why.strip()):
+                rule_table_errs.append("`### 当たりの判定` の理由が「%s」だけ(ファイルごとに当たった行から書く): %s" % (why.strip(), path))
+                continue
+            seen.setdefault(norm(why), []).append(path)
+        for k, ps in seen.items():
+            if k and len(ps) > 1:
+                rule_table_errs.append("`### 当たりの判定` の %d ファイルに同じ理由の文: %s" % (len(ps), " ".join(ps[:3])))
     classify_errs = list(rule_table_errs)
     classified = classified_searches(a.round, line_judged, classify_errs, rule_table) if a.round and int(a.round) >= 15 else set()
     questions, in_q = [], False

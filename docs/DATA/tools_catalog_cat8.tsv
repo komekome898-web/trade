@@ -40,7 +40,7 @@
 8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			45	53334
 8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	2	2	未判別	-	-	未判別	2	3			45	53335
 8-041	Oryon	11	一覧の辿り	https://github.com/lucasinglese/oryon(8-027 Quantreo の README の後継の案内、生ログ docs/DATA/probes/20260923_tools_8_run11.log:4154)		深掘り	なし	印	印	なし	印	なし	印	印	-	3	4	-	3	-	2	3			45	53336
-8-042	purged-cross-validation	43	GitHub・PyPI・公式	https://github.com/eslazarev/purged-cross-validation		浅い	印	印	未判別	印	印	未判別	未判別	印	3	4	未判別	4	4	未判別	未判別	4			45	53337
+8-042	purged-cross-validation	43	GitHub・PyPI・公式	https://github.com/eslazarev/purged-cross-validation		浅い	印	印	未判別	印	印	未判別	未判別	印	未判別	4	未判別	4	4	未判別	未判別	4			45	53337
 8-043	purgedcv	43	GitHub・PyPI・公式	https://github.com/landtml/purgedcv		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			45	53338
 8-044	skfolio	43	GitHub・PyPI・公式	https://github.com/skfolio/skfolio		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			45	53339
 8-045	parity-deriva	43	GitHub・PyPI・公式	https://github.com/rrambaldi/parity-deriva		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			45	53340
