@@ -48341,3 +48341,708 @@ $ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_
 
 - 台帳: 8-039 E2 は `未判別` のまま。案 B の記録はこの回で揃ったが、36 回目の候補(`numpy.isnat`・`is_busday`、型で対象を限定する逐語)が未決着なので、案 B の「探し尽くしても見つからない」の場面に当たらない。**8-039 は「残り」に数える**。外れるのは、オーナーがこの候補の当て方を決めたとき(数えるなら `印`、数えないなら案 B で外れる)。
 - 訂正: 知見 11 の「全10手」は 12 手(見出し 12 本)。知見 2 の `invalid_raise` はこの回の生ログ 44〜123 行に無い(読み直したのは `missing` の語だけ)。知見 6・候補の一覧・要素と段の表の「`npysort` は…等17個」は、生ログ 206〜230 行の `ls -la` では 21 個(`.cpp` は 10 個)。
+
+## 区分8 — 38 回目の実行(2026-09-27)
+
+### 検索計画
+
+この回は新しい検索計画を打たない(委任文§2、追補§4)。8-040 `SciPy` の1行だけを扱う(起動文§1、10回目の辿る一覧の中の未着手2行(NumPy・SciPy)のうち残っていたSciPyを扱う)。`未着手`(一次資料をまだ1つも開いていない)からE1a〜E6を全部判別し、§4.0の表を全項目書く(§2.5)。
+
+### 出典
+
+- `docs/DATA/delegations/20260923_tools_survey_cat8_run38_prompt.md`(起動文、指紋 `20260923_tools_survey_cat8_run38_prompt.md@e76c16d34732`)
+- `docs/DATA/delegations/20260922_tools_survey_prompt.md`(指紋 `ce0012c95154`)・`docs/DATA/delegations/20260923_tools_survey_cat8_addendum.md`(指紋 `2c178ba75341`)・`docs/DATA/surveys/CAT8_DESIGN.md`§2〜§5・`docs/DATA/tools_catalog_cat8.tsv`(起動文§0の指示どおり全文読了、読むだけ)
+- `docs/DATA/SCAN_2026-09-23_tools_cat8.md`の35回目の節(46509〜47241行目、8-039 NumPyを初めて開いた回)と37回目の節(47793〜48343行目)を小節・表の形の見本にした(起動文§0の指示どおり、中身は写していない。値と段は台帳の現在値を機械的に写した)
+- `docs/AUDITOR/VERDICTS/2026-09-26_tools_scan_cat8_run21.md`〜`..._run37.md`の処置の節(§4。35〜37回目は全文)を読了(起動文§0)
+- `https://scipy.org/`(公式サイト。取得日2026-09-27、生ログ7-26行目)
+- `https://scipy.org/about/`(公式サイトaboutページ。取得日2026-09-27、生ログ154-156・157-161・162-180行目)
+- `https://pypi.org/pypi/scipy/json`(PyPIのパッケージ情報。取得日2026-09-27、生ログ41-43・44-85・86-153行目)
+- `https://github.com/scipy/scipy`(公式ソースリポジトリ。公式サイトHTML内のリンク`<a href=https://github.com/scipy/scipy>`から特定、生ログ27-33行目。`git ls-remote --symref`のHEAD `b8e6bfd47e1d5d60a06aa847dd45b67a53c4076b`、既定の枝`main`、生ログ34-37行目)
+- `https://docs.scipy.org/doc/scipy/`(公式文書サイト。トップページの`href`、生ログ27-33行目)・個別頁 `scipy.stats.median_abs_deviation.html`(生ログ456-459行目)・`doc/source/tutorial/stats.rst`の実在確認(生ログ460-462行目)
+- `https://pypistats.org/api/packages/scipy/recent`(週DL数の公式API。取得日2026-09-27、生ログ463-465行目)
+- `https://img.shields.io/github/{stars,contributors,commit-activity}/scipy/scipy.json`(GitHub統計の代替経路。取得日2026-09-27、生ログ466-470行目)
+- `https://api.osv.dev/v1/query`(既知の脆弱性。取得日2026-09-27、生ログ471-473行目)
+- `venvs/8-040/check/scipy-1.18.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl`・`numpy-2.5.3-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl`(pip downloadで取得。生ログ497-505・506-513行目)、`venvs/8-040/check_extract/`(展開)
+- `venvs/8-040/src/scipy`(`cat8_repo_fetch.sh`で取得した公式リポジトリの写し。生ログ181-200行目)、`venvs/8-040/run/`(隔離venv)
+- `https://x.com/Atsushi_twi/status/1490223698070372354`(fxtwitter API経由で本文を逐語取得。取得日2026-09-27、生ログ2429-2431行目)
+- `docs/DATA/surveys/CAT8_DESIGN.md`・`docs/DATA/tools_catalog_cat8.tsv`(設計票・台帳、読むだけ)
+
+### 知見
+
+| # | 知見 | 印 | 根拠 |
+|---|---|---|---|
+| 1 | `SciPy` / 候補の実体: 公式サイト`scipy.org`のトップページHTML内のリンク`<a href=https://github.com/scipy/scipy>`(生ログ27-33行目)から公式ソースリポジトリを特定。同じHTML内の`<a href=https://docs.scipy.org/doc/scipy/>`から公式文書サイトを特定。既定の枝`main`のHEAD(`git ls-remote --symref`)= `b8e6bfd47e1d5d60a06aa847dd45b67a53c4076b`(生ログ34-37行目)。`github.com`・`api.github.com`はこのセッションのプロキシで403(実測、逐語「GitHub access to this repository is not enabled for this session. Use add_repo to request access.」生ログ487-489行目。33〜35回目とも文言が違うが同種の制限)だが、`git clone`/`git ls-remote`(git smart-http)は到達できた。商用版・有料版は`about`頁を検索したが見当たらなかった(逐語なし。見つかったのは第三者の有償サポート`Tidelift`のリンクのみで、SciPy自身の製品ではない。生ログ157-161・162-180行目) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:27-33 docs/DATA/probes/20260923_tools_8_run38.log:34-37 docs/DATA/probes/20260923_tools_8_run38.log:487-489 docs/DATA/probes/20260923_tools_8_run38.log:157-161 docs/DATA/probes/20260923_tools_8_run38.log:162-180 |
+| 2 | `SciPy` / 候補の配布物の実体: PyPI JSON逐語 `project_urls`=`{'documentation': 'https://docs.scipy.org/doc/scipy/', 'download': 'https://github.com/scipy/scipy/releases', 'homepage': 'https://scipy.org/', 'source': 'https://github.com/scipy/scipy', 'tracker': 'https://github.com/scipy/scipy/issues'}`。最新版は1.18.1(2026-08-21T23:2x:xxZ公開、生ログ86-153行目)。配布物はPyPIの`scipy`パッケージのみで、複数プラットフォームwheel(最大約37.5MB)とsdist(約30.8MB)の計61ファイル、すべて200MB未満(委任文§2.5の目安を満たす)。選んだ`scipy==1.18.1`のcp312 manylinuxホイールは35,344,199バイト(約33.7MB)。実行時の依存はPyPI逐語 `requires_dist`に`'numpy<2.8,>=2.0.0'`を含む(extraでない、無条件のランタイム依存。8-039 NumPyとは別に、この依存のwheelもこの回に取り直して§6-1をやり直した=起動文§1の指示どおり) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 docs/DATA/probes/20260923_tools_8_run38.log:86-153 |
+| 3 | `SciPy` / 保守者・活動: `maintainer_email`=「SciPy Developers <scipy-dev@python.org>」(組織のメーリングリスト)。GitHub統計はshields.io代替経路で星15k・保守者415・年間コミット活動2.4k/year(実測)。週DL数はpypistats.org公式APIで69,016,287(直近1週間)を実測。既知の脆弱性はOSV.dev実測で`scipy==1.18.1`が0件(空のJSON`{}`)。ライセンスは`license`欄の逐語「Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers. All rights reserved. Redistribution and use in source and binary forms...」(BSD-3-Clause系、商用利用・再配布とも許容) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:463-465 docs/DATA/probes/20260923_tools_8_run38.log:466-470 docs/DATA/probes/20260923_tools_8_run38.log:471-473 docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| 4 | `SciPy` / §6-1の結論(危険の所見なし、導入・実行の前にすべて完了): 導入・実行で使う配布物は`scipy==1.18.1`と実行時依存`numpy==2.5.3`(PyPI `requires_dist`の制約`numpy<2.8,>=2.0.0`を満たす版)の2件で、両方の中身を開く手を最初の導入(生ログ2341行目)より前に完了した(生ログ2278-2280行目「method=結論」)。配布元一致(PyPIの`project_urls.source`=`github.com/scipy/scipy`、公式サイト・GitHub組織`scipy`と一致)。scipy wheelには候補自身のビルド用setup.pyは無く(実測、生ログ518-520行目)、外部取得・任意コード実行の兆候(`urlopen`・`urllib.request`・`requests.get`・`curl`・`wget`)はscipy側のパッケージコードに0件(実測、生ログ543-545行目)。`eval()`・`exec()`・`subprocess.`の当たり21件はすべて文脈を確認し、テスト用サンプルのビルド・開発者向けmesonビルドヘルパー・distribution infrastructureの内部コード生成(`exec(self._parse_arg_template, ns)`)・ローカル変数名の衝突(`def eval(x):`という関数定義)のいずれかで、外部からの取得や任意コード実行ではない(実測、生ログ546-554行目)。numpy wheelは`_core/tests/examples/{cython,limited_api}/setup.py`(テスト用サンプル、外部取得なし)以外にsetup.pyは無い(実測、生ログ2281-2284行目)。同梱バイナリはscipy `.so`107個・numpy `.so`20個で、`ldd`で確認した外部ネイティブライブラリは同梱のOpenBLAS・Fortranランタイム(`libgfortran`・`libquadmath`)・標準の`libstdc++`/`libc`/`libz`等のみ(実測、生ログ576-594行目)。既知の脆弱性はOSV.dev実測で両方0件。以上、導入を止める所見は無い | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2278-2280 docs/DATA/probes/20260923_tools_8_run38.log:518-520 docs/DATA/probes/20260923_tools_8_run38.log:543-545 docs/DATA/probes/20260923_tools_8_run38.log:546-554 docs/DATA/probes/20260923_tools_8_run38.log:2281-2284 docs/DATA/probes/20260923_tools_8_run38.log:576-594 |
+| 5 | `SciPy` / §6-1の補足(重要な訂正): numpy wheel(実行時依存として取り直した`numpy==2.5.3`)の外部取得の兆候を`urlopen`単独語でも検索し直したところ、`numpy/lib/_datasource.py`が当たった(生ログ2281-2284行目)。中身を確認すると(生ログ2293-2334行目)、これは`numpy.lib.npyio`の`DataSource`クラス自身の実装で、逐語「We import these here because importing them is slow and / a significant fraction of numpy's total import time.」のとおり`import`を遅延させているだけであり、`import numpy`時や`import scipy`時に自動で通信するものではない。利用者が明示的に`DataSource().open(url)`のようにURLを渡して呼んだときだけ`urllib.request.urlopen(path)`が動く、オプトインの機能(逐語「Test if path is a net location」「with urlopen(path) as openedurl:」)。導入・最小実行のいずれでもこの経路は呼んでおらず(生ログ2358-2389行目のsocket監視で接続0回)、35回目のNumPy単体の回では検索語の組み合わせが違ったため見えていなかった可能性がある(35回目は「urlopen」を含む組み合わせ`urlopen\|subprocess.\|os.system\|eval()\|exec()\|curl \|wget `で検索しており、単独の`urlopen`当たりはこの回で個別に確認して初めて見つけた。読み違いを避けるため訂正として明記する) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2281-2284 docs/DATA/probes/20260923_tools_8_run38.log:2293-2334 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 6 | `SciPy` / N確定・リポジトリ取得: `cat8_repo_fetch.sh`で`scipy/scipy`を1MB超blobを除いて取得。files_in_tree(N)=2,948、blobs_not_downloaded(>1MB)=8件(ベンチマーク用`.npz`4件・依存ロックファイル`pixi.lock`・Boost数学ライブラリとの数値比較用の候補自身の単体試験参照データ`.txt`3件)。ダウンロードbytes=21,985,714(約21.0MB)、チェックアウトbytes=67,915,918(約64.8MB)。起動文§2.5の200MBの目安の範囲内 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:181-200 |
+| 7 | `SciPy` / N: 1MB超で取れなかった8件の扱い: いずれもベンチマークデータ(利用者が呼ぶ機能ではない)・機械生成のロックファイル・候補自身の単体試験参照データ(L-516対象外)のいずれかで、機能を説明する文を持たないため、`--add`で取り直さず`--absent`で理由を付けて記録した(大きさは1,246,440〜5,907,927バイトの範囲、実測)。Nには含めるが検索の一覧には入れない | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:201-210 docs/DATA/probes/20260923_tools_8_run38.log:211-220 docs/DATA/probes/20260923_tools_8_run38.log:414-455 |
+| 8 | `SciPy` / N: gitサブモジュール8件: `.gitmodules`逐語で確認した8件(`doc/source/_static/scipy-mathjax`=scipy組織、`subprojects/array_api_compat`・`array_api_extra`=data-apis組織、`subprojects/boost_math/math`=boostorg、`subprojects/cobyqa`=cobyqa組織、`subprojects/highs`・`subprojects/unuran`・`subprojects/xsf`=scipy組織)は、`git clone --depth 1`(サブモジュール追跡なし)ではチェックアウト先が空ディレクトリのまま残り(`ls`の出力が`.`・`..`のみ、実測)、`git ls-files -s`では160000(gitlink)モードの項目として8件出る(実測)。いずれも`scipy/scipy`本体の木には同梱されておらず別リポジトリへの参照なので、35回目NumPyの`numpy/SVML`・`numpy/meson`等と同じ扱いでNに入れず、名前とURLを記録するに留めた | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:221-254 docs/DATA/probes/20260923_tools_8_run38.log:255-280 docs/DATA/probes/20260923_tools_8_run38.log:281-290 |
+| 9 | `SciPy` / N: 文書サイトはリポジトリ側を使うと判断: 公式文書サイト(`docs.scipy.org/doc/scipy/`)の個別頁(`scipy.stats.median_abs_deviation`のAPIリファレンス頁)は、GitHub上のソース行`github.com/scipy/scipy/blob/v1.18.0/scipy/stats/_stats_py.py#L3229-L3366`へのリンクを持ち(実測)、docstringが自動生成元であることを示す。利用者ガイドの個別頁に対応する`doc/source/tutorial/stats.rst`がリポジトリ内に実在することも確認した(実測)。よってNは`scipy/scipy`本体(`doc/`・`doc/source/`を含む)側だけを使う | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:456-459 docs/DATA/probes/20260923_tools_8_run38.log:460-462 |
+| 10 | `SciPy` / N: 除外した画像・候補自身の単体試験データ・チュートリアル添付データ・実行時数値テーブル358件: NUL検出(実測)で判明したバイナリ358件を除外理由付きで除いた(候補自身の単体試験参照データ220・ベンチマーク用データ120・文書のチュートリアル添付サンプルデータ14・文書の図版3・実行時に使う数値テーブル`_sobol_direction_numbers.npz`1件)。gitサブモジュール8件と合わせて計366件を除外した | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:291-332 docs/DATA/probes/20260923_tools_8_run38.log:333-344 docs/DATA/probes/20260923_tools_8_run38.log:345-397 |
+| 11 | `SciPy` / N: 検索の一覧の作り方: N全体2,948件のうち、1MB超で取れなかった8件(`--absent`)を除いた2,940件が実際に取得したファイル数で、ここから gitサブモジュール8件・NUL検出バイナリ358件の計366件を除外理由付きで除いた2,574件を検索の一覧にした。`cat8_mklist.py`の完了行: `in_root=2940 added=0 absent=8 excluded=366 listed=2574` | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:398-413 docs/DATA/probes/20260923_tools_8_run38.log:414-455 |
+| 12 | `SciPy` / E1a 印(段2・実測): `scipy.optimize.check_grad`のdocstring逐語「Check the correctness of a gradient function by comparing it against a (forward) finite-difference approximation of the gradient.」(利用者が渡した解析的勾配関数`grad`と、scipy自身が計算する前進差分近似=別の計算の結果、を突き合わせる機能=E1aの述語「差分の検査」)。Returns逐語「The square root of the sum of squares (i.e., the 2-norm) of the difference between ``grad(x0, *args)`` and the finite difference approximation of `grad` using func at the points `x0`.」(差を数値で自動的に出す)。最小実行で、正しい解析的勾配のPASS(err=4.2146848510894035e-08)と、係数を1.5→1.0に誤らせた解析的勾配のFAIL(err=1.124999970197678、正しい場合の約2700万倍)を実測した。呼ぶと差の数値を返すだけで、その値が「小さい」か「大きい」かを自動で判定(合否・警告)する機能は無い(利用者が読んで決める)ため段2。対象(2つの出力: 利用者の`grad`とscipyの`approx_fprime`)は任意のPython callableで道具自身の枠組みに限らないが、自動判定が無いため段3以上にはならない | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:623-655 docs/DATA/probes/20260923_tools_8_run38.log:656-733 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 13 | `SciPy` / E1b 印(段2・一次資料): `scipy.stats.pearsonr`のdocstring逐語「Pearson correlation coefficient and p-value for testing non-correlation.」(当方の指標計算(相関係数)と同じ種類の出力を出す別実装=E1bの述語)。呼ぶと相関係数とp値を出すだけで、その値を当方の値と自動で比較・判定する機能はpearsonr自身には無い(35回目NumPyの`corrcoef`と同じ当て方)ため段2。scipyには他にも`spearmanr`・`kendalltau`・`linregress`等、当方の指標計算と同種の出力を出す関数が多数ある(一次資料。個別docstringは煩雑になるため代表として`pearsonr`のみ逐語を引いた) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:2227-2235 |
+| 14 | `SciPy` / E2 印(段4・実測): `scipy.stats`の多数の関数が持つ`nan_policy`パラメタの逐語「nan_policy : {'propagate', 'raise', 'omit'}, optional」「Defines how to handle when input contains nan.」「'raise': throws an error」(NumPy 35回目の`genfromtxt`とは別の実装箇所での欠損検出・自動報告=E2述語の「欠け」)。実装(`scipy/_lib/_util.py`)は`nan_policy=='raise'`でNaNを検出すると自動的に`raise ValueError(msg)`を実行し、その`msg`の逐語が「The input contains nan values」である。最小実行で、`nan_policy='raise'`が欠損を含む合成データに対し自動的に`ValueError: The input contains nan values`を送出すること(FAIL側)と、`nan_policy='omit'`が欠損を無視して計算できること(PASS側)を実測した。対象は任意のnumpy配列で道具自身の枠組みに限らない(段4)。基準(何を「欠け」とみなすか)を利用者が数値で指定できる機能(段5の(ア))は無く(NaNか否かの二値判定のみ)、結果を保存して次回と自動比較する機能(イ)も無いため段4 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:910-971 docs/DATA/probes/20260923_tools_8_run38.log:972-983 docs/DATA/probes/20260923_tools_8_run38.log:984-1010 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 15 | `SciPy` / E2の`### 当たりの判定`に先立つ確認: 文書`doc/source/tutorial/stats/outliers.md`(題「Trimming and winsorization transition guide」)を全文読んだが、外れ値の識別・除去(trimming/winsorization)は`scipy.stats.quantile`で閾値を計算し利用者が手動で`clip`する手順の説明であり、外れ値を自動で検出・報告する機能ではない(逐語「This guide does not make any recommendations on these topics」)ため、この頁からは`印`にならない | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:737-749 docs/DATA/probes/20260923_tools_8_run38.log:750-909 |
+| 16 | `SciPy` / E3a なし(実測・全件検索): 印を探し尽くしたが見つからず、見積もり(cat8_search.pyに渡すのと同じ正規表現、grep -I -c -i -E)がfiles_with_hits=52・total_lines=94で500行以下だったため`cat8_search.py`を打ち全件検索した(`files=2574 read=2574 files_with_hits=52 hits=94`)。当たり52ファイル・94行の全部を個別判定した結果(`### 当たりの判定`参照)、94行すべてが「leak」(C/C++実装のメモリ/参照リーク)・SuperLU/qhullの内部コメント中の「look-ahead」(数値計算のスケジューリング用語)・信号処理の「spectral leakage」(スペクトル漏れ、窓関数の用語)のいずれかで、look-ahead/survivorship等の意味の未来のデータの混入は1件も無かった。よって`なし` | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:1107-1256 |
+| 17 | `SciPy` / E3b なし(実測・全件検索): 見積もり(grep -I -c -i -E)がfiles_with_hits=5・total_lines=5だったため`cat8_search.py`で確認の全件検索を打つと`files=2574 read=2574 files_with_hits=5 hits=5`で`complete`。5件の内訳: 貢献者名「Augspurger」の部分一致(`purge`を含む語幹一致)・リリースノートの`from __future__ import annotations`の`purge`(コード整理の意味)・SuperLUの内部コメント2件(数値計算のpivoting用語)・SVD計算(`_svdp.py`)の「Lanczos vector will be purged」(数値的安定性のための直交化ベクトルの破棄、時点を揃えた結合等の意味ではない)。よって`なし` | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:1260-1273 |
+| 18 | `SciPy` / E4 未判別(500行超・案Bの記録): 見積もり(grep -I -c -i -E、`リプレイ・再生・replay・record・記録・capture・playback・再実行・rerun`)でfiles_with_hits=185・total_lines=562となり500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 文書全432頁(`doc/source`配下の.rst/.md/.ipynb全部)の道と題を1行ずつ印字して全部読了(生ログ1284-1718行目)。文書432頁の道+題にE4の語を`grep -i -E`で当てると0件が選ばれた(生ログ1719-1721行目、rc=1)。ソースは`find`で得た全365ディレクトリに同じ語を当てると0件が選ばれた(生ログ2092-2094行目、rc=1)。限界: 題と目次で頁を選ぶ方式のため、題に出ない機能記述(個別APIの引数の中の記述等)は読み落としうる | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:1274-1276 docs/DATA/probes/20260923_tools_8_run38.log:1277-1279 docs/DATA/probes/20260923_tools_8_run38.log:1280-1283 docs/DATA/probes/20260923_tools_8_run38.log:1284-1718 docs/DATA/probes/20260923_tools_8_run38.log:1719-1721 docs/DATA/probes/20260923_tools_8_run38.log:1722-1724 docs/DATA/probes/20260923_tools_8_run38.log:1725-2091 docs/DATA/probes/20260923_tools_8_run38.log:2092-2094 |
+| 19 | `SciPy` / E5 印(段2・実測): `scipy._lib._util.check_random_state`のdocstring逐語「Turn `seed` into a `np.random.RandomState` instance.」「If `seed` is an int, a new ``RandomState`` instance is used, seeded with `seed`.」(乱数の種の指定=E5述語の例。`scipy.optimize.check_grad`の`rng`引数等、多数のscipy関数がこの仕組みを使う)。最小実行で、同じseed(12345)の2つの`rng=np.random.default_rng(12345)`が`check_grad(..., direction='random', rng=...)`で同じ結果(8.707201004654053e-08)を2回生成することと、異なるseed(999)では異なる結果(2.771633988984945e-08)になることを実測した。呼ぶと結果を出すだけで2回の実行結果が一致しているかを自動で比較・判定する機能はscipy自身には無い(35回目NumPyの`default_rng`と同じ当て方)ため段2 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2095-2097 docs/DATA/probes/20260923_tools_8_run38.log:2098-2117 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 20 | `SciPy` / E6 印(段4・実測): `scipy.integrate.quad`のdocstringの逐語「an accuracy of ``abs(i-result) <= max(epsabs, epsrel*abs(i))``」(`epsabs`/`epsrel`という利用者指定の許容誤差=段5の(ア)相当の基準指定)と、実装(`scipy/integrate/_quadpack_py.py`)は収束の基準(ier)を満たさない場合に自動的に`warnings.warn(msg, IntegrationWarning, stacklevel=2)`を実行する(基準を満たさない場合に自動で`IntegrationWarning`を送出=自動判定、E1a〜E5のどの述語にも当たらないためE6)。最小実行で、正常に収束する積分のPASS(`quad`によるガウス関数(`exp` の平方の符号反転)の積分 = 0.8862269255、abserr=1.848e-13、警告なし)と、`limit=2`で意図的に収束させにくくした振動積分のFAIL(`IntegrationWarning: The maximum number of subdivisions (2) has been achieved.`が実際に送出される)を実測した。対象(積分する関数)は任意のPython callableで道具の外から持ち込める(段4)。(ア)基準(epsabs/epsrel)は指定できるが、(イ)結果を保存して次回の実行と自動比較する機能(回帰の検査としての固定)は無いため、段5の条件(ア)(イ)の両方を満たさず段4 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2118-2149 docs/DATA/probes/20260923_tools_8_run38.log:2150-2177 docs/DATA/probes/20260923_tools_8_run38.log:2178-2226 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 21 | `SciPy` / 最小実行(§2.5の種別・中核): 種別は委任文§5-4の「研究・検証系」と調査班が判断した(一次資料の根拠: 実際に実行した中核機能が検証ユーティリティ`scipy.optimize.check_grad`・`scipy.integrate.quad`であること)。§6-1がすべて完了したあと、隔離venv(`python3.12 -m venv`)を作り直し(下記知見22参照)、`check/`のwheel2件だけから導入(`pip install --no-index --find-links`、install所要秒=8.430、`pip list`が§6-1の結論の一覧`numpy 2.5.3`・`scipy 1.18.1`と一致、`pip check`「No broken requirements found.」を確認)。中核は起動文§2.5の指示どおり、合成データに`check_grad`のPASS・FAIL、`quad`のPASS・FAIL(IntegrationWarning)を実行(所要秒: check_grad pass=0.000348・fail=0.000139)。補助として`genfromtxt`相当のtardis形式csv.gz読込・欠損検出(E2)・rng再現性(E5)・200,000要素の`pearsonr`(0.007656秒)を実行した。常駐プロセスは残っていない(スクリプトの終了で自然に終わる)。外部への通信は試みていない(`socket.connect`を監視し試行回数0を実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2338-2340 docs/DATA/probes/20260923_tools_8_run38.log:2341-2347 docs/DATA/probes/20260923_tools_8_run38.log:2348-2354 docs/DATA/probes/20260923_tools_8_run38.log:2355-2357 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| 22 | `SciPy` / 手順の訂正(隔離venvの作り直し): 最初の隔離venv作成の手を`cat8_step.py`を通さない生の`python3.12 -m venv`(Bashツール直接)で打ってしまい、直後にその不備に気づいて`rm -rf`で削除し、`cat8_step.py`経由で作り直した(生ログ2338-2340行目が実際に使った作成の手)。生ログ2335行目のmethod=導入・note=隔離venv作成(python3.12_-m_venv)の手は、削除済みの・不適切な手順で作られたvenvの存在確認(`test -x ... && echo OK`)の結果であり、以後のどの根拠にも使っていない(このことを隠さず記録する) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2338-2340 |
+| 23 | `SciPy` / 到達できなかった経路・確認できた経路: `github.com`と`api.github.com`はこの環境のプロキシで403(逐語「GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write access, call add_repo again with access:"push" to attach the repository with credentials.」実測)となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった(存在しないとは書かない。add_repoはこの調査班の権限では使わず、環境からの到達可否だけを記録する)。`git clone`/`git ls-remote`(git smart-httpプロトコル)・`raw.githubusercontent.com`は到達できた。星・保守者数・コミット活動はGitHubの情報を再配布する`img.shields.io`の代替経路で取得した(星15k・保守者415・コミット活動2.4k/year)。週DL数はpypistats.org公式APIで69,016,287(直近1週間)を実測。既知の脆弱性はOSV.dev実測でscipy・numpyとも0件 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:474-486 docs/DATA/probes/20260923_tools_8_run38.log:487-489 docs/DATA/probes/20260923_tools_8_run38.log:181-200 docs/DATA/probes/20260923_tools_8_run38.log:466-470 docs/DATA/probes/20260923_tools_8_run38.log:463-465 docs/DATA/probes/20260923_tools_8_run38.log:471-473 |
+| 24 | `SciPy` / §4.0「宣伝詐欺の兆候」: `WebSearch`を語を変えて3回(`site:x.com scipy scam giveaway crypto wallet`・`site:x.com "scipy" airdrop token fake`・`site:x.com scipy stats OR optimize 使ってみた OR 検証`)打ち、いずれもSciPy自体を騙る宣伝・詐欺は見当たらなかった(1・2回目は一般的な暗号資産詐欺の解説記事のみで、SciPyへの言及は0件)。3回目で見つかった実際の利用報告1件を`x_fetch.py`で本文を逐語取得して読んだ: `@Atsushi_twi`のscipy.optimizeの整数制約対応(linprogでの混合整数問題対応、GitHub PR #15294への言及)の投稿(印=使用報告、宣伝ではない。2022-02-06、いいね32・リツイート6・返信1) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2397-2409 docs/DATA/probes/20260923_tools_8_run38.log:2410-2422 docs/DATA/probes/20260923_tools_8_run38.log:2423-2428 docs/DATA/probes/20260923_tools_8_run38.log:2429-2431 |
+
+### 候補の一覧
+
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+6. [深掘り] `freqtrade` (8-006) — (台帳の値のまま) — 状態: 深掘り
+7. [深掘り] `backtrex` (8-007) — (台帳の値のまま) — 状態: 深掘り
+8. [深掘り] `FX Replay` (8-008) — (台帳の値のまま) — 状態: 深掘り
+9. [深掘り] `nicferrari/backtester` (8-009) — (台帳の値のまま) — 状態: 深掘り
+10. [深掘り] `arXiv:2603.20319` (8-010) — (台帳の値のまま) — 状態: 深掘り
+11. [深掘り] `arXiv:2512.12924` (8-011) — (台帳の値のまま) — 状態: 深掘り
+12. [深掘り] `VectorBT` (8-012) — (台帳の値のまま) — 状態: 深掘り
+13. [深掘り] `rusty-bot` (8-013) — (台帳の値のまま) — 状態: 深掘り
+14. [深掘り] `Fincept Terminal` (8-014) — (台帳の値のまま) — 状態: 深掘り
+15. [深掘り] `TradingView のリプレイ機能` (8-015) — (台帳の値のまま) — 状態: 深掘り
+16. [深掘り] `Exactpro の reconciliation testing` (8-016) — (台帳の値のまま) — 状態: 深掘り
+17. [深掘り] `Great Expectations` (8-017) — (台帳の値のまま) — 状態: 深掘り
+18. [深掘り] `Vibe-Trading` (8-018) — (台帳の値のまま) — 状態: 深掘り
+19. [深掘り] `AutoHedge` (8-019) — (台帳の値のまま) — 状態: 深掘り
+20. [深掘り] `OpenBB Terminal` (8-020) — (台帳の値のまま) — 状態: 深掘り
+21. [深掘り] `Qlib` (8-021) — (台帳の値のまま) — 状態: 深掘り
+22. [深掘り] `FinGPT` (8-022) — (台帳の値のまま) — 状態: 深掘り
+23. [深掘り] `Backtrader` (8-023) — (台帳の値のまま) — 状態: 深掘り
+24. [深掘り] `Lean` (8-024) — (台帳の値のまま) — 状態: 深掘り
+25. [深掘り] `FinanceToolkit` (8-025) — (台帳の値のまま) — 状態: 深掘り
+26. `OpenClaw` (8-026) — (台帳の値のまま) — 状態: 浅い
+27. [深掘り] `Quantreo library` (8-027) — (台帳の値のまま) — 状態: 深掘り
+28. `AlgoBuild` (8-028) — (台帳の値のまま) — 状態: 登録が要る
+29. `MetaTrader の Strategy Tester` (8-029) — (台帳の値のまま) — 状態: 浅い
+30. `dbt` (8-030) — (台帳の値のまま) — 状態: 浅い
+31. `Debezium` (8-031) — (台帳の値のまま) — 状態: 浅い
+32. `Apache Kafka` (8-032) — (台帳の値のまま) — 状態: 浅い
+33. `Prefect` (8-033) — (台帳の値のまま) — 状態: 浅い
+34. `Pandas` (8-034) — (台帳の値のまま) — 状態: 浅い
+35. `Apache Spark` (8-035) — (台帳の値のまま) — 状態: 浅い
+36. `AI Trading Lab` (8-036) — (台帳の値のまま) — 状態: 登録が要る
+37. [深掘り] `AlgoNetwork` (8-037) — (台帳の値のまま) — 状態: 深掘り
+38. [深掘り] `NinjaTrader` (8-038) — (台帳の値のまま) — 状態: 深掘り
+39. `NumPy` (8-039) — (台帳の値のまま) — 状態: 浅い
+40. `SciPy` (8-040) — この回(38回目)でE1a〜E6を全部判別した(未着手から)。E1a(印・段2)=`scipy.optimize.check_grad`(analytic gradientを前進差分近似と突き合わせ、実測でPASS/FAILを確認)、E1b(印・段2)=`pearsonr`等(自動比較機能は無し)、E2(印・段4)=`nan_policy='raise'`の自動NaN検出(実測でValueError送出を確認)、E5(印・段2)=`check_random_state`/`rng`引数(実測で再現性を確認)、E6(印・段4)=`scipy.integrate.quad`のepsabs/epsrel許容誤差と自動`IntegrationWarning`(実測でPASS/FAILを確認)。E3a・E3bは全件検索(cat8_search.py)で当たりを全部判定し`なし`に確定(E3a=52ファイル/94行がすべて「leak」(メモリ/参照リーク・SuperLU/qhullの内部用語・spectral leakage)で述語と無関係、E3b=5ファイル/5行がすべて貢献者名の語幹一致・数値計算用語で述語と無関係)。E4は見積もり(185ファイル/562行)が500行を超え`cat8_search.py`は打たず`未判別`のまま案Bの記録を残した(文書432頁・ソース365ディレクトリの機械選定はいずれも0件)。状態は`浅い`(E4が未判別のため深掘りにできない)。実行時依存numpyのwheelもこの回に取り直して§6-1を全部やり直し、`numpy.lib._datasource.py`のオプトインな`urlopen`(利用者が明示的にURLを渡したときだけ動く機能)を新たに確認した(35回目の検索語の組み合わせでは見えていなかった箇所。訂正として知見5に明記) — 状態: 浅い
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+
+### 要素と段
+
+| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |
+|---|---|---|---|---|---|---|
+| `qf-lib` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `qf-lib` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E1b | 印 | 5 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `PineForge` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E1a | 印 | 5 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `prediction-market-backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `akurkar07/OrderBook` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exegy` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `freqtrade` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `backtrex` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FX Replay` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `nicferrari/backtester` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E1a | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E1b | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E2 | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E3b | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E4 | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E5 | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2603.20319` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `arXiv:2512.12924` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `VectorBT` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `rusty-bot` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Fincept Terminal` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E1b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E3b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E4 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `TradingView のリプレイ機能` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Exactpro の reconciliation testing` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E2 | 印 | 5 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Great Expectations` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E3a | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Vibe-Trading` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AutoHedge` | E6 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenBB Terminal` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E3a | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Qlib` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E1a | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinGPT` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Backtrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E4 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Lean` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E1b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E3a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E5 | 印 | 5 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `FinanceToolkit` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `OpenClaw` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E1b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E5 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Quantreo library` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoBuild` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `MetaTrader の Strategy Tester` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E5 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `dbt` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E5 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Debezium` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Kafka` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E5 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Prefect` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E2 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E3b | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Pandas` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Apache Spark` | E6 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E1a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E1b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E3a | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E3b | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AI Trading Lab` | E6 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E2 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E3b | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `AlgoNetwork` | E6 | 印 | 1 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E1a | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E2 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E4 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NinjaTrader` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `NumPy` | E1a | 印 | 4 | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E1b | 印 | 2 | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E2 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(37回目の節) |  |
+| `NumPy` | E3a | なし | - | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E3b | なし | - | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E4 | 未判別 | 未判別 | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `NumPy` | E6 | 印 | 4 | 一次資料 | 台帳の値のまま(35回目の節) |  |
+| `SciPy` | E1a | 印 | 2 | 実測 | `scipy.optimize.check_grad`のdocstring逐語「Check the correctness of a gradient function by comparing it against a (forward) finite-difference approximation of the gradient.」+Returns逐語「The square root of the sum of squares (i.e., the 2-norm) of the difference between ``grad(x0, *args)`` and the finite difference approximation of `grad` using func at the points `x0`.」。実測でPASS(err=4.2146848510894035e-08)・FAIL(err=1.124999970197678)を確認。差の数値を返すだけで合否を自動判定しないため段2 | docs/DATA/probes/20260923_tools_8_run38.log:623-655 docs/DATA/probes/20260923_tools_8_run38.log:656-733 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | E1b | 印 | 2 | 一次資料 | `scipy.stats.pearsonr`のdocstring逐語「Pearson correlation coefficient and p-value for testing non-correlation.」。自動比較機能は無いため段2(35回目NumPyのcorrcoefと同じ当て方) | docs/DATA/probes/20260923_tools_8_run38.log:2227-2235 |
+| `SciPy` | E2 | 印 | 4 | 実測 | `nan_policy`の逐語「'raise': throws an error」+実装の逐語「msg = "The input contains nan values" raise ValueError(msg)」。実測でValueError自動送出(FAIL)とomitでの計算続行(PASS)を確認。対象は一般のnumpy配列(段4)。基準(ア)・結果保存比較(イ)はどちらも無いため段4 | docs/DATA/probes/20260923_tools_8_run38.log:910-971 docs/DATA/probes/20260923_tools_8_run38.log:972-983 docs/DATA/probes/20260923_tools_8_run38.log:984-1010 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | E3a | なし | - | 実測 | 一覧2574件 / 読んだ2574件、当たり52ファイル / 94行(すべてメモリ/参照リーク・SuperLU/qhull内部用語・spectral leakageで述語と無関係) | docs/DATA/probes/20260923_tools_8_run38.log:1107-1256 |
+| `SciPy` | E3b | なし | - | 実測 | 一覧2574件 / 読んだ2574件、当たり5ファイル / 5行(貢献者名の語幹一致・SuperLU/SVDの数値計算用語で述語と無関係) | docs/DATA/probes/20260923_tools_8_run38.log:1260-1273 |
+| `SciPy` | E4 | 未判別 | 未判別 | 実測 | 見積もり(files_with_hits=185, total_lines=562)が500行を超えたため`cat8_search.py`は打たず未判別。文書432頁の道+題への機械選定=0件、ソース365ディレクトリへの機械選定=0件(いずれもrc=1) | docs/DATA/probes/20260923_tools_8_run38.log:1274-1276 docs/DATA/probes/20260923_tools_8_run38.log:1277-1279 docs/DATA/probes/20260923_tools_8_run38.log:1280-1283 docs/DATA/probes/20260923_tools_8_run38.log:1284-1718 docs/DATA/probes/20260923_tools_8_run38.log:1719-1721 docs/DATA/probes/20260923_tools_8_run38.log:1722-1724 docs/DATA/probes/20260923_tools_8_run38.log:1725-2091 docs/DATA/probes/20260923_tools_8_run38.log:2092-2094 |
+| `SciPy` | E5 | 印 | 2 | 実測 | `check_random_state`の逐語「If `seed` is an int, a new ``RandomState`` instance is used, seeded with `seed`.」。実測で同じseed(12345)が同じ結果(8.707201004654053e-08)を2回、違うseed(999)が違う結果(2.771633988984945e-08)を生成することを確認。自動比較機能は無いため段2 | docs/DATA/probes/20260923_tools_8_run38.log:2095-2097 docs/DATA/probes/20260923_tools_8_run38.log:2098-2117 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | E6 | 印 | 4 | 実測 | `scipy.integrate.quad`の逐語「an accuracy of ``abs(i-result) <= max(epsabs, epsrel*abs(i))``」(`epsabs`/`epsrel`という利用者指定の許容誤差を使った基準)+実装の逐語「warnings.warn(msg, IntegrationWarning, stacklevel=2)」。実測でPASS(abserr=1.848e-13、警告なし)とFAIL(`IntegrationWarning: The maximum number of subdivisions (2) has been achieved.`)を確認。対象は任意のPython callable(段4)。(ア)基準指定は可だが(イ)結果保存比較が無いため段5には届かず段4 | docs/DATA/probes/20260923_tools_8_run38.log:2118-2149 docs/DATA/probes/20260923_tools_8_run38.log:2150-2177 docs/DATA/probes/20260923_tools_8_run38.log:2178-2226 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `Oryon` | E1a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E1b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E2 | 印 | 4 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E3a | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E3b | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E4 | なし | - | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E5 | 印 | 2 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+| `Oryon` | E6 | 印 | 3 | 一次資料 | 台帳の値のまま(34回目の節) |  |
+
+### 当たりの判定
+
+この回はE3a(見積もり52ファイル/94行、500行以下)・E3b(見積もり5ファイル/5行)のいずれも500行以下のため`cat8_search.py`を打ち全件検索した(E1a・E2・E5・E6は`印`が確定したため全件検索が不要だった、起動文§2.3・§1)。当たった行は全部を(甲)のファイルの表で個別判定した(下表)。
+
+**8-040 SciPy E3a(検索の手 `docs/DATA/probes/20260923_tools_8_run38.log:1107`。files_with_hits=52・hits=94)**
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/.github/workflows/macos.yml | 1 | CI設定のLeakSanitizer(ASAN/LSAN)によるメモリ・参照リーク検出の設定1件(例:「ASAN_OPTIONS=detect_leaks=0:symbolize=1:strict_init_order=true:allocator_may_return_null=1」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/benchmarks/benchmarks/interpolate.py | 4 | ソースコメント4件(例:「class Leaks(Benchmark):」)はC実装のメモリ/参照リークに関する記述で、look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api.rst | 3 | array API文書の「device-propagation leak detector」(デバイス伝播の技術的な意味でのleak)に関する記述3件(例:「device-propagation leak detector. It simulates running the test suite on a」)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/useful_git.rst | 1 | 開発ワークフロー文書内のgitログ例「26aa21a my-feature-branch@{2}: commit: BUG: lib: make seek_gzip_factory not leak gzip obj」というコミット例で、メモリリーク修正の意味 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/governance.rst | 1 | 統治文書の「leak into their work with the Project.」は利益相反が業務に『漏れ出す』という比喩表現で、データのlook-ahead/リークではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.13.2-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- 3096: require Cython 0.19, earlier versions have memory leaks in fused types」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.14.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- `#1555 <https://github.com/scipy/scipy/issues/1555>`__: scipy.io.netcdf leaks file descriptors (Trac #1028)」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.15.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- `#3663 <https://github.com/scipy/scipy/pull/3663>`__: BUG: fix leaking errstate, and ignore invalid= errors 」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.16.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- `#4856 <https://github.com/scipy/scipy/pull/4856>`__: BUG: fix typo causing memleak」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.17.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- `#5630 <https://github.com/scipy/scipy/issues/5630>`__: memory leak with scipy 0.16 spatial cKDEtree」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.19.1-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「The most important change is a fix for a severe memory leak in」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.7.1-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「Memory leak in lfilter have been fixed, as well as support for array object」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.0.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「- `#7823 <https://github.com/scipy/scipy/pull/7823>`__: BUG: memory leak in messagestream / qhull.pyx」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.10.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#16235 <https://github.com/scipy/scipy/issues/16235>`__: BUG: Memory leak in function \`Py_FindObjects\` du」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.12.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#19553 <https://github.com/scipy/scipy/issues/19553>`__: BUG: Test suite leaks file descriptors」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.13.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#19844 <https://github.com/scipy/scipy/pull/19844>`__: TST: fix more cases of fd leaks from np.load()」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.14.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#20257 <https://github.com/scipy/scipy/pull/20257>`__: BUG: prevent file descriptor leak in \`openblas_supp」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.2-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#22314 <https://github.com/scipy/scipy/issues/22314>`__: BUG: special: Potential memory leak in the functio」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#16234 <https://github.com/scipy/scipy/issues/16234>`__: BUG: Memory leak in _superluobject.c when ``ENUM_C」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.2-notes.rst | 3 | 変更履歴3件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#23411 <https://github.com/scipy/scipy/issues/23411>`__: BUG: signal.periodogram: memory leak」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.17.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#16232 <https://github.com/scipy/scipy/issues/16232>`__: BUG: Memory leak due to new reference passed to no」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.17.1-notes.rst | 5 | 変更履歴5件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#23215 <https://github.com/scipy/scipy/issues/23215>`__: BUG: optimize.direct: memory leak while returning 」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.18.0-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#24220 <https://github.com/scipy/scipy/pull/24220>`__: BUG: optimize.direct: fix two memory leaks」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.2.3-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#11126 <https://github.com/scipy/scipy/pull/11126>`__: BUG: interpolate/fitpack: fix memory leak in splprep」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.4.0-notes.rst | 3 | 変更履歴3件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#10987 <https://github.com/scipy/scipy/issues/10987>`__: Memory leak in shgo triangulation」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.7.1-notes.rst | 2 | 変更履歴2件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#14382 <https://github.com/scipy/scipy/issues/14382>`__: Memory leak in \`scipy.spatial.distance\` for \`cd」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.0-notes.rst | 1 | 変更履歴1件はいずれもC実装のメモリ/参照リーク(memory leak / reference leak)の修正記録で、例:「* `#16233 <https://github.com/scipy/scipy/issues/16233>`__: BUG: Memory leak in function \`sf_error\` due to n」。look-aheadの意味の「leak」ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/examples/signal_SpectralAnalysis_SpectralLeakageWindows.py | 1 | 信号処理の「spectral leakage」(窓関数によるスペクトル漏れ、信号処理の標準用語)1件(例:「axx[0].set_title("Spectral Leakage of various Windows")」)。look-aheadの意味の漏れではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/signal.rst | 5 | 信号処理の「spectral leakage」(窓関数によるスペクトル漏れ、信号処理の標準用語)5件(例:「"spectral leakage" [#Wiki_SpectralLeakage]_ is caused by confining the sine to a finite」)。look-aheadの意味の漏れではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/pixi.toml | 1 | CI設定のLeakSanitizer(ASAN/LSAN)によるメモリ・参照リーク検出の設定1件(例:「description = "Test with PyTorch and a meta default device (device-propagation leak check)」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/_lib/tests/test_array_api.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「# The test-facing namespace wrapper of the torch meta leak-check mode」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/_lib/tests/test_check_nondefault_device.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「def test_pragma_does_not_leak_to_other_statements(check_source):」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/conftest.py | 6 | 候補自身の単体試験・試験基盤(L-516対象外)6件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「The plotting tests used to select Agg at import time, which leaked into」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/linalg/src/blas/blas_calls.hpp | 2 | C++実装のソースコメント2件「* governs only the symbol name (unmangled), not the C++ scope, so nothing here leaks into 」はシンボル名/テストツリーの意味でのleakageで、look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/linalg/tests/test_blas_lapack_wrappers.py | 3 | 候補自身の単体試験・試験基盤(L-516対象外)3件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「def test_callback_failure_does_not_leak_the_callable(self, dtype):」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/linalg/tests/test_matfuncs.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「# leaked into the following slices that did not, squaring their」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/ndimage/__init__.py | 1 | パッケージの`__all__`調整コメント「# adjust __all__ and do not leak implementation details」(実装詳細を外に『漏らさない』の意味)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/ndimage/tests/test_morphology.py | 2 | 候補自身の単体試験・試験基盤(L-516対象外)2件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「assert leaked == []」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_czt.py | 2 | 信号処理の「spectral leakage」(窓関数によるスペクトル漏れ、信号処理の標準用語)2件(例:「the DFT will have spectral leakage:」)。look-aheadの意味の漏れではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/tests/test_savitzky_golay.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「# actively covers its `device` kwarg and, on the meta leak-check lane」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/tests/test_signaltools.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「to prevent leaking internal state as reported in gh-22571.」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/tests/test_windows.py | 1 | 候補自身の単体試験・試験基盤(L-516対象外)1件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「# This actively covers their `device` kwarg and, on the meta leak-check lane」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/windows/_windows.py | 1 | ソースコメント1件(例:「leakage possible.  It is close to optimal, only slightly worse than a」)はC実装のメモリ/参照リークに関する記述で、look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_util.h | 1 | SuperLU(LU分解の数値計算ライブラリ)内部のlook-ahead(計算のスケジューリング用語)・メモリリークに関する実装コメント1件(例:「int           num_lookaheads;  /* num of levels in look-ahead      */」)。look-ahead bias検出とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/sparse/linalg/_dsolve/_superlu_utils.c | 2 | SuperLU(LU分解の数値計算ライブラリ)内部のlook-ahead(計算のスケジューリング用語)・メモリリークに関する実装コメント2件(例:「borrowed reference. This avoids memory leak of obj.」)。look-ahead bias検出とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/spatial/tests/test_kdtree.py | 5 | 候補自身の単体試験・試験基盤(L-516対象外)5件で、いずれもC実装のメモリ/参照リークやtorch metaデバイスのleak-checkモードに関する記述(例:「# count memleaks while constructing and querying cKDTree」)。look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/stats/_unuran/unuran_callback.h | 1 | ソースコメント1件(例:「/* nonlocal return causes memory leaks. So, if the Python error variable has been   \」)はC実装のメモリ/参照リークに関する記述で、look-ahead/survivorship等の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/subprojects/biteopt/biteopt/biteaux.h | 1 | biteopt(最適化ソルバー)内部の信号処理フィルタ用語「leaky integrator」1件(例:「* Function calculates averaging coefficient of a "leaky integrator"」)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/subprojects/qhull_r/libqhull_r/geom2_r.c | 1 | qhull(計算幾何ライブラリ)内部のメモリリークに関する実装コメント1件(例:「qh_free the returned points to avoid a memory leak」)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/subprojects/qhull_r/libqhull_r/global_r.c | 1 | qhull(計算幾何ライブラリ)内部のメモリリークに関する実装コメント1件(例:「_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) );」)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/subprojects/qhull_r/libqhull_r/io_r.c | 1 | qhull(計算幾何ライブラリ)内部のメモリリークに関する実装コメント1件(例:「called only once from qh_new_qhull, otherwise leaks memory」)。look-aheadの意味ではない |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/subprojects/qhull_r/libqhull_r/user_r.h | 3 | qhull(計算幾何ライブラリ)内部のメモリリークに関する実装コメント3件(例:「Finding Memory Leaks Using the CRT Library」)。look-aheadの意味ではない |
+
+**8-040 SciPy E3b(検索の手 `docs/DATA/probes/20260923_tools_8_run38.log:1260`。files_with_hits=5・hits=5)**
+
+| ファイルの道 | 当たった行の数 | 述語に当たらない理由 |
+|---|---|---|
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.18.0-notes.rst | 1 | 貢献者名「* Tom Augspurger +」の部分一致(姓「Augspurger」が語幹「purge」を含む)。ルックアヘッド防止の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.0-notes.rst | 1 | リリースノートの「* `#21981 <https://github.com/scipy/scipy/pull/21981>`__: MAINT: purge ``from __future__ import annotations``」はコード整理(将来のPythonアノテーション構文への移行に伴う削除)の意味で、ルックアヘッド防止とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/sparse/linalg/_dsolve/SuperLU/SRC/mmd.c | 1 | SuperLU(疎行列LU分解)内部コメント「/*                PURGE INACTIVE QUOTIENT NABORS OF RNODE. */」は数値計算アルゴリズムの用語(非活性ノードの除去)で、ルックアヘッド防止の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/sparse/linalg/_dsolve/SuperLU/SRC/slu_util.h | 1 | SuperLU内部コメント「int           num_lookaheads;  /* num of levels in look-ahead      */」はLU分解計算のスケジューリング用語(look-ahead pivoting)で、ルックアヘッド防止の述語とは無関係 |
+| /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/sparse/linalg/_svdp.py | 1 | SVD計算(PROPACK)の実装コメント「component larger than `eta` along the Lanczos vector will be purged.」は数値的安定性のための直交化ベクトルの破棄を指し、時点を揃えた結合や空白期間の設定とは無関係 |
+
+### ツール1件ごとの表
+
+`SciPy`の全列(できること・料金の構造・到達と実行の記録・当方の用途との相性・当方に無いもの・4軸・危険)は、この回の`### 4.0 機械可読の表`・`### 要素と段`・`### 知見`を参照(35回目のNumPyと同じ扱いで、文章表は新設せず候補の一覧の8-040の行と知見表・§4.0の表に集約した)。
+
+### 4.0 機械可読の表
+
+| 道具 | 項目 | 値 | 印 | 根拠 |
+|---|---|---|---|---|
+| `SciPy` | 版 | 1.18.1(PyPI最新版、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 最終更新日 | 2026-08-21(PyPI upload_time_iso_8601、配布物62ファイルが23:23:44Z〜23:28:50Zの範囲でアップロード、実測)。GitHub `main`ブランチHEAD=b8e6bfd4(2026-09-27取得、継続的に更新される開発ブランチでありリリース日そのものではない) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:86-153 docs/DATA/probes/20260923_tools_8_run38.log:34-37 |
+| `SciPy` | ライセンス | `license`欄の逐語「Copyright (c) 2001-2002 Enthought, Inc. 2003, SciPy Developers. All rights reserved. Redistribution and use in source and binary forms, with or without modificatio...」(BSD系。`license_expression`欄は無し。商用利用・再配布とも許容と読める) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 言語と動作環境 | C+C+++Fortran+Python。PyPI逐語`requires_python`=`>=3.12`(最新1.18.1)。この環境のデフォルト`python3`は3.11.15で対応範囲外だが、別途`python3.12`(3.12.3)があり隔離venvはこれで作った | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 docs/DATA/probes/20260923_tools_8_run38.log:490-496 |
+| `SciPy` | 対応取引所 | 該当なし(汎用の科学計算ライブラリで取引所接続は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:7-26 |
+| `SciPy` | 星 | 15k(shields.io実測。github.com/api.github.comがこのセッションのプロキシで403のため代替経路) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:466-470 |
+| `SciPy` | コミット数 | 未確認(総数。試した手段: shields.ioに総コミット数のバッジが無い。github.com・api.github.comは403で到達できず。参考値として年間コミット活動2.4k/year(shields.io実測)はある) | 未確認 | docs/DATA/probes/20260923_tools_8_run38.log:466-470 docs/DATA/probes/20260923_tools_8_run38.log:474-486 |
+| `SciPy` | 保守者数 | 415(shields.io contributorsバッジ実測)。`maintainer_email`は「SciPy Developers <scipy-dev@python.org>」という組織のメーリングリスト形式で個人名は載らない | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:466-470 docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 週DL数 | 69,016,287(pypistats.org公式API実測、`scipy`パッケージの直近1週間) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:463-465 |
+| `SciPy` | 初回公開日 | 2016-04-20T05:04:28.379872Z(PyPI逐語、`scipy`のバージョン0.10.0の初回公開。PyPIのJSON APIが遡って索引を持つ最古の版であり、SciPy自体の創設(2001年)そのものではない点に注意) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 既知の脆弱性 | OSV.dev実測。`scipy==1.18.1`の版指定で0件(空のJSON`{}`) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:471-473 |
+| `SciPy` | 料金体系 | 無料(BSD系OSSで全機能無料)。`about`頁を検索したが商用版・有料版の記述は見当たらなかった(逐語なし。見つかったのは第三者の有償サポート`Tidelift`のスポンサーリンクのみで、SciPy自身の製品ではない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:157-161 docs/DATA/probes/20260923_tools_8_run38.log:162-180 |
+| `SciPy` | 無料枠の上限 | 該当なし(OSS本体に機能制限や無料枠の上限は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 課金開始条件 | 該当なし(OSS本体は課金なし) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:157-161 |
+| `SciPy` | 隠れた依存 | 0件(外部の有料サービス・鍵・別データ購読は不要)。ただし実行時の必須依存として`numpy<2.8,>=2.0.0`があり(下の「依存の一覧」参照)、これ自体は無料のOSSでこの回に取り直して§6-1を全部やり直した | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 docs/DATA/probes/20260923_tools_8_run38.log:506-513 |
+| `SciPy` | 登録の要否 | 不要(OSS。PyPI・GitHubから登録なしに取得できることを実測で確認した) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:497-505 docs/DATA/probes/20260923_tools_8_run38.log:181-200 |
+| `SciPy` | 到達経路 | scipy.org・pypi.org・files.pythonhosted.org・pypistats.org・api.osv.dev・img.shields.io・raw.githubusercontent.com・x.com(fxtwitter経由)は到達。github.com・api.github.comのHTML/APIは403(git clone/git ls-remoteのsmart-http経路は到達) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:474-486 docs/DATA/probes/20260923_tools_8_run38.log:487-489 docs/DATA/probes/20260923_tools_8_run38.log:181-200 |
+| `SciPy` | 導入可否 | 可(実測、隔離venvへ`pip install --no-index --find-links`で導入) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2341-2347 |
+| `SciPy` | install所要秒 | 8.430(生ログのtime_s=8.430) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2341-2347 |
+| `SciPy` | 依存数 | 1(実行時必須。PyPI逐語`requires_dist`に`numpy<2.8,>=2.0.0`。`pip list`は`numpy`・`scipy`・`pip`のみ) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 docs/DATA/probes/20260923_tools_8_run38.log:2348-2354 |
+| `SciPy` | pip check | 問題なし(`No broken requirements found.`、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2355-2357 |
+| `SciPy` | 最小実行の可否 | 可(実測)。`check_grad`・`quad`・`nan_policy`・`pearsonr`とも合成データで実行できた | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 最小実行の中身 | 合成データで`check_grad`のPASS(正しい解析的勾配)・FAIL(誤らせた解析的勾配)、`quad`のPASS(通常の積分)・FAIL(`limit=2`で収束させにくくした積分、`IntegrationWarning`が実際に出た)、`nan_policy='raise'`の自動ValueError・`'omit'`の計算続行、`rng`の再現性、`pearsonr`(小規模・200,000要素)を実行し、いずれも文書どおりの挙動を確認(知見12・14・19・20参照) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 実行所要秒 | check_grad: pass=0.000348・fail=0.000139。pearsonr(200,000要素)=0.007656(生ログのtime_s) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | wheel展開 | scipy wheel展開後111MB(`.so`107個: optimize15・sparse12・linalg12・stats10・special9・spatial8・_lib7・signal6・interpolate6・ndimage5・integrate5・io4・cluster3・odr1・fftpack1・fft1・_cyutility1・openblas1)。numpy wheel展開後57MB(`.so`20個) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:514-517 docs/DATA/probes/20260923_tools_8_run38.log:555-575 docs/DATA/probes/20260923_tools_8_run38.log:2285-2289 |
+| `SciPy` | setup.py導入時実行 | wheelには候補自身のビルド用setup.pyは無い(pip installはビルド不要、実測)。numpy wheelの同梱2件(`_core/tests/examples/{cython,limited_api}/setup.py`)はテスト用サンプル拡張のビルド例で、外部取得・任意コード実行の兆候は無い(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:518-520 docs/DATA/probes/20260923_tools_8_run38.log:2281-2284 |
+| `SciPy` | 同梱バイナリ | scipy `.so`107個・numpy `.so`20個。`ldd`で確認した外部ネイティブライブラリは同梱のOpenBLAS・Fortranランタイム(`libgfortran`・`libquadmath`)・標準の`libstdc++`/`libc`/`libz`等のみで、不審な第三者ネイティブライブラリの同梱は無い(実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:576-594 |
+| `SciPy` | 外部送信 | scipy自身のパッケージコードには見当たらない(実測、`socket.connect`を監視し試行0回)。numpy側に`numpy.lib._datasource.DataSource`というオプトインの`urlopen`機能があるが、利用者が明示的にURLを渡して呼ばない限り動かない(知見5参照。導入・最小実行では呼んでいない) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 docs/DATA/probes/20260923_tools_8_run38.log:2293-2334 |
+| `SciPy` | 自動発注機能 | 無し(汎用の科学計算ライブラリで、読んだ範囲に取引所APIとの統合・発注・署名・資金移動の機能は無い) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:7-26 |
+| `SciPy` | 宣伝詐欺の兆候 | 見当たらない(実測。WebSearchを語を変えて3回、実際の利用報告1件をfxtwitter経由で逐語取得して読んだ。知見24参照) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2397-2428 docs/DATA/probes/20260923_tools_8_run38.log:2429-2431 |
+| `SciPy` | 当方データ投入 | 実測(部分)。tardis形式(`timestamp_ms,symbol,side,price,amount`)を模した合成のcsv.gz(1000行)をPython標準の`csv`/`gzip`で読み込めた(scipy自体にはCSV読込関数は無く、`numpy.genfromtxt`等の別の道具立てで読むことになる。この回は標準ライブラリで読み、scipy.statsの計算に渡した) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 時刻の扱い | 未確認(部分)。ミリ秒epoch整数としての読み込みは実測したが、`numpy.datetime64`等への変換をこの回の最小実行では明示的に行っていない。scipy自体に専用の時刻型は無く、`numpy`のdatetime64をそのまま使うという一次資料の逐語はこの回では引いていない | 未確認 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 再現性 | E5参照(印・段2、`check_random_state`/`rng`のseed) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2098-2117 docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 規模の見積 | 実測。合成の200,000要素の`pearsonr`が0.007656秒 | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:2358-2389 |
+| `SciPy` | 4軸1_道具 | 印。`check_grad`の許容誤差なし差分検査・`quad`のepsabs/epsrel許容誤差付き自動収束判定は、当方のバックテスト・検証系の道具立て(CLAUDE.md §2、`scripts/qa/`の参照実装等)に無い道具立て | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:623-655 docs/DATA/probes/20260923_tools_8_run38.log:2118-2149 |
+| `SciPy` | 4軸2_情報 | なし。SciPyは汎用の科学計算ライブラリで、当方に無い新規の情報源(市場データ・ニュース・清算等)を提供する機能そのものは無い(読んだ範囲に見当たらない) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:7-26 |
+| `SciPy` | 4軸3_視点 | 印。`quad`のepsabs/epsrelによる許容誤差付き自動収束判定・警告という視点は、当方の`scripts/qa/maker_fill_ref.py`(指値約定の参照実装)や`src/bot/backtest/engine.py`とは異なる「計算の結果を出す段階で自動的に精度を検査する」視点 | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:2118-2226 |
+| `SciPy` | 4軸4_向上 | サーベイの外(18回目検収§6の3、19・26・28・31・33・35回目と同じ扱い) | 未確認 | この回はサーベイの外と判断し試行していない |
+| `SciPy` | 配布元の一致 | 一致(PyPIの`project_urls.source`=`github.com/scipy/scipy`、`maintainer_email`=「SciPy Developers <scipy-dev@python.org>」が公式サイト`scipy.org`・GitHub組織`scipy`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 難読化 | 見当たらない(wheel展開結果は平文の`.py`と標準的なコンパイル済み`.so`のみ、実測) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:514-517 |
+| `SciPy` | 外部URL取得 | scipy自身のパッケージコードには見当たらない(実測)。実行時依存numpyに`numpy.lib._datasource.DataSource`というオプトインの`urlopen`機能がある(知見5参照。導入・最小実行のいずれでも呼んでいない) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:543-545 docs/DATA/probes/20260923_tools_8_run38.log:2281-2284 docs/DATA/probes/20260923_tools_8_run38.log:2293-2334 |
+| `SciPy` | 依存の一覧 | 実測。PyPI `requires_dist`に`numpy<2.8,>=2.0.0`(実行時必須。この回に`numpy==2.5.3`を取り直して導入) | 実測 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+| `SciPy` | 保守者名の一貫性 | 一貫(PyPI `maintainer_email`=「SciPy Developers <scipy-dev@python.org>」、GitHub組織`scipy`、公式サイト`scipy.org`と一致) | 一次資料 | docs/DATA/probes/20260923_tools_8_run38.log:44-85 |
+
+### §4.0 で未確認のまま残した項目
+
+- **コミット数(総数)**: shields.ioに総コミット数のバッジが無く、github.com・api.github.comはこのセッションのプロキシで403(実測)のため到達できなかった(存在しないとは書かない)。年間コミット活動2.4k/year(shields.io実測)は参考値
+- **時刻の扱い**: ミリ秒epoch整数の読み込みは実測したが、`numpy.datetime64`等への変換をこの回の最小実行では明示的に行っておらず、専用の時刻型が無いことの一次資料の逐語も引いていない(scipy自体には時刻専用の型・関数は無いと見受けられるが、断定はしない)
+- **4軸4_向上**: 道具を当方の環境に組み込んで既存の成果が向上するかは読むだけのサーベイでは測れないため「サーベイの外」とした(18回目検収§6の3、19・26・28・31・33・35回目の処置と同じ理由)
+
+### 代替経路
+
+`github.com`と`api.github.com`はこの環境のプロキシで403(実測、逐語「GitHub access to this repository is not enabled for this session. Use add_repo to request access. If add_repo answers that read access is already available and you need GitHub API or write access, call add_repo again with access:"push" to attach the repository with credentials.」生ログ487-489行目。35回目NumPyのときの文言「This GitHub API path is not available: sessions are bound to their configured repositories.」とも異なるが、いずれもこのセッションのプロキシがGitHubのAPI/Web直接アクセスを許可していないという同種の制限であり、GitHubというホスト自体の到達不能ではない)となり、HTMLページ閲覧・API呼び出しの両方が到達できなかった。`git clone`・`git ls-remote`(git smart-httpプロトコル)・`raw.githubusercontent.com`は同じホスト名の下でも到達できた(生ログ34-37・181-200行目)。星・保守者数・コミット活動はGitHubの情報を集計・再配布する`img.shields.io`の代替経路で取得した(生ログ466-470行目)が、総コミット数のバッジは提供されておらず未確認のまま残る。SciPy本体は依存1件(numpy)・軽量(wheel約33.7MB)のため、他の回で問題になった「200MB超で導入できない」制約はこの回には無く、第2経路(オーナーPC)を必要とする場面は無かった。
+
+### 判断に迷った点と問い
+
+1. [それ以外の問い] N確定の際、`doc/source/_static/scipy-mathjax`・`subprojects/highs`・`subprojects/unuran`・`subprojects/xsf`はいずれもscipy組織自身のGitHubリポジトリだが、`scipy/scipy`本体には同梱(コピー)されておらず、別リポジトリへの参照(gitサブモジュールのgitlink)である。35回目NumPyの`numpy/SVML`・`numpy/meson`と同じ扱いでNに入れなかったが、この切り分け(scipy組織自身のリポジトリでも同梱でなければNに入れない)が正しいか確認したい(35回目の判断に迷った点1と同種の問い)。
+2. [値・段の問い] E6の`scipy.integrate.quad`の`epsabs`/`epsrel`を、段5の(ア)「基準を指定できるか」に数えるべきか迷った。数値の許容誤差そのものを利用者が指定できる点は、35回目NumPyの`assert_allclose`の`rtol`/`atol`(段4、(イ)が無いため段5に届かなかった)と同種の性質を持つ。この回は(ア)を満たすと判定したが、(イ)(結果を保存して次回と比較できるか)が無いため結局段4に留まる。この当て方が正しいか確認したい。
+3. [それ以外の問い] E2の`nan_policy='raise'`について、37回目NumPyの検収(監査136回目)で「`isnat`・`is_busday`のような対象を型で限定する機能をE2の対象の逐語に数えるか」が汎用の道具のE2の当て方の問いとして保留された。`nan_policy`は型を限定せず「NaNを含むnumpy配列全般」を対象とする点でこの問いには直接は当たらないと考えているが、区分の完了の報告でNumPyの保留と合わせて確認したい。
+4. [それ以外の問い] E4の`### 当たりの判定`にあたる500行超のためのcat8_search.pyを打っていない状態で、案Bの機械選定(文書の道+題・ソースのディレクトリ名)が0件だった。35回目NumPy(2,342ファイル)よりやや小さい2,574ファイルの規模だが、同様に機械選定が0件だった。次の回(区分8の他候補)で、この規模の候補に対しどこまで読み進めるべきか、リードの判断を仰ぐ(35回目の判断に迷った点3と同種の問い)。
+
+### 予算
+
+この回は予算で止めない(追補§5)。
+
+### 検査の結果についての申し送り
+
+`scripts/cat8_final_checks.py --round 38` を打つ前に、この回の本文に起因するK1(太字)・K2(括弧)の指摘は全部自分で見つけて直した。原因は3種類: 関数名を閉じ括弧無しで書いていた箇所(eval・execの関数名表記)、Pythonの累乗構文(アスタリスク2つ)をそのまま書いていた箇所、長い引用の途中で開き括弧や開き大括弧を含む位置を切ってしまっていた箇所。以下は直さずに残し、理由を書いてリードに渡す(自分では閉じない)。
+
+- **K1・K2(19612・19909・30448・34975・35047・36881・40088・41254・41275・42474・42591・44051・44452・45119行目)**: すべて27回目以前の既存指摘(この回で内容を変えていない行)。
+- **K5(44059・45806・46550・47084行目、NumPyの`個`・`同梱バイナリ`・`秒`・`wheel展開`に別の値)**: 誤検出と判断する。原因は語幹一致(道具名マッチが大文字小文字を区別しない)。'107'・'20'はこの回のSciPy自身の値(§4.0の表・知見4・21、正しい値)で、SciPyの知見文中に「NumPy」の語(実行時依存として言及)を含むために誤ってNumPyの値としても拾われた。'10'・'18'・'421'・'45'・'0'・'94'・'0.003929'・'0.072459'は31〜35回目のPandas/NumPy自身の値で、この回は1文字も変えていない。
+- **K5(46536・47086行目、SciPyの`個`・`同梱バイナリ`に別の値`['107', '20']`)**: 誤検出と判断する。'107'はSciPy自身の`.so`数、'20'は実行時依存numpyの`.so`数で、どちらも§4.0の表・知見4に書いたとおり正しい値(同じ知見・同じ表のセルの中に両方の数が並んでいるだけで、SciPyの値が2通りあるわけではない)。
+- **K5(44059・44731・19538行目、Pandas関連の既存3件)**: すべて31回目の検収以前に既に出ていた既存指摘。この回はPandasの文章を1文字も変えていない。
+- **K13(SciPyの根拠が6・7行で同じ文言の複写、`docs/DATA/probes/20260923_tools_8_run38.`)**: 誤検出と判断する。SciPyの知見表の各行は、この回の生ログ1本(`20260923_tools_8_run38.log`)の異なる行範囲を指しており、ファイル名の接頭辞が同じになるのは1回の生ログしか無い回では避けられない(35回目NumPyの知見でも同じ接頭辞が並ぶが、当時はNumPyの根拠がその他の複写型に紛れて個別には指摘されていなかった。33回目Apache Spark・31回目Pandas・28回目Apache Kafka等、単一の回で深掘りした候補は毎回この型になっている)。行ごとに引用する生ログの行番号自体は異なり(知見1〜24でそれぞれ違う範囲を指す)、同じ文言をコピー&ペーストしたのではない。
+- **K13(34件、既存)**: すべて11〜37回目までの既存指摘と同型(この回で新しく増えた行は無い。この回のSciPyの根拠は生ログの行番号がすべて異なり、同じ文言の複写ではない)。
+
+### 受け入れ検査の出力(道具が貼った)
+
+`scripts/cat8_final_checks.py --round 38` が打った。コマンドと出力の全文。
+
+```
+$ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260923_tools_8_run … (生ログ 1〜38 本)
+K1 太字                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  太字 ** の数が奇数 (7 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46531  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46600  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46937  太字 ** の数が奇数 (1 個)
+K2 括弧                  18 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  丸括弧 の数が合わない (272 対 265)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  丸括弧 の数が合わない (333 対 337)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44051  丸括弧 の数が合わない (146 対 144)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44452  丸括弧 の数が合わない (155 対 154)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45119  丸括弧 の数が合わない (45 対 44)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            9 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:47084  NumPy の wheel展開 に別の値: ['107', '20']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  NumPy の 個 に別の値: ['10', '107', '18', '20', '421', '45']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45806  NumPy の 同梱バイナリ に別の値: ['0', '107', '20', '94']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46550  NumPy の 秒 に別の値: ['0.003929', '0.007656', '0.072459']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  Pandas の 個 に別の値: ['10', '129', '421', '45']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44731  Pandas の 秒 に別の値: ['0.036', '0.154', '0.846', '1']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19538  Pandas の 規模の見積 に別の値: ['0.036', '0.057', '0.154', '0.2427', '0.257', '4.95']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46536  SciPy の 個 に別の値: ['107', '20']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:47086  SciPy の 同梱バイナリ に別の値: ['107', '20']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             36 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44507  Pandas の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run31.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:48855  SciPy の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run38.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:48855  SciPy の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run38.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  いちばん新しい回の節に「受け入れ検査の出力」が無い(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)
+---- 検査対象の合計 71 件(K12 を除く。貼り付けはこの数で照合する)
+---- 合計 72 件
+```
+
+```
+$ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 38
+読んだもの: 候補の一覧 41 行 / 要素と段の表 328 行(道具 41)/ 知見の表 24 行 / 辿る一覧から出た名前 0 行
+---- 合計 0 件
+```
+
+```
+$ python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run38.log
+参考: docs/DATA/probes/20260923_tools_8_run38.log の最初の手 2026-09-26T23:48:26Z / 最後の手 2026-09-27T00:12:52Z / 手の数 90
+---- 合計 0 件
+```
+
+```
+$ git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l
+0
+```
+
+```
+$ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run38.log
+19260525 docs/DATA/SCAN_2026-09-23_tools_cat8.md
+  255280 docs/DATA/probes/20260923_tools_8_run38.log
+19515805 total
+```
