@@ -15746,12 +15746,12 @@
   {
    "move": 576,
    "tools": {
-    "Bash": 9,
+    "Bash": 10,
     "Write": 1,
     "Agent": 1,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 12,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": 2,
    "table_shown": true,
