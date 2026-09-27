@@ -40,3 +40,31 @@
 8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			42	50857
 8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	2	2	未判別	-	-	未判別	2	3			42	50858
 8-041	Oryon	11	一覧の辿り	https://github.com/lucasinglese/oryon(8-027 Quantreo の README の後継の案内、生ログ docs/DATA/probes/20260923_tools_8_run11.log:4154)		深掘り	なし	印	印	なし	印	なし	印	印	-	3	4	-	3	-	2	3			42	50859
+8-042	purged-cross-validation	43	GitHub・PyPI・公式	https://github.com/eslazarev/purged-cross-validation		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51460
+8-043	purgedcv	43	GitHub・PyPI・公式	https://github.com/landtml/purgedcv		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51461
+8-044	skfolio	43	GitHub・PyPI・公式	https://github.com/skfolio/skfolio		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51462
+8-045	parity-deriva	43	GitHub・PyPI・公式	https://github.com/rrambaldi/parity-deriva		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51463
+8-046	FiniexTestingIDE	43	GitHub・PyPI・公式	https://github.com/dc-deal/FiniexTestingIDE		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51464
+8-047	Izanami	43	検索	https://www.izanami.jp/v2support/faq_category_00.html		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51465
+8-048	勝ち株テクニカル分析	43	検索	https://kabu.com/company/pressrelease/20121003_1.html		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51466
+8-049	CQG	43	検索	https://jp.cqg.com/technical-analysis/trade-systems-backtesting-tools		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51467
+8-050	FX過去チャート検証くん	43	検索	https://play.google.com/store/apps/details?id=net.jstrader.app		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51468
+8-051	Forex Tester Online	43	X	https://x.com/forextester_jp/status/1864627905403191524		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51469
+8-052	Tick Data Suite	43	検索	https://eareview.net/tick-data-suite		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51470
+8-053	TradingView Backtester Utility	43	検索	https://www.tradingview.com/script/VWqQX7xK-Backtester-Utility		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51471
+8-054	QSForex	43	GitHub・PyPI・公式	https://github.com/mhallsmoore/qsforex		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51472
+8-055	rulelint	43	GitHub・PyPI・公式	https://github.com/momoddo/rulelint		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51473
+8-056	NoEdge-Bench	43	GitHub・PyPI・公式	https://github.com/nexusfinancial-dev/noedge-bench		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51474
+8-057	VARRD	43	GitHub・PyPI・公式	https://github.com/varrdinc/varrd		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51475
+8-058	backtester-mcp	43	GitHub・PyPI・公式	https://github.com/bcosm/backtester-mcp		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51476
+8-059	TraderHarness	43	GitHub・PyPI・公式	https://github.com/HephaestLab/TraderHarness		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51477
+8-060	Algo-Trading-Skills	43	GitHub・PyPI・公式	https://github.com/HimanshuJ16/Algo-Trading-Skills		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51478
+8-061	factor-qc	43	GitHub・PyPI・公式	https://github.com/holdout-labs/factor-qc		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51479
+8-062	lookahead-free	43	GitHub・PyPI・公式	https://github.com/holdout-labs/lookahead-free		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51480
+8-063	Lacuna	43	GitHub・PyPI・公式	https://github.com/eyenoticeall/Lacuna		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51481
+8-064	AgentQuant	43	GitHub・PyPI・公式	https://github.com/OnePunchMonk/AgentQuant		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51482
+8-065	ERN-WO Options Backtester	43	GitHub・PyPI・公式	https://github.com/Javier-Garzo/ern-wo-options-backtester		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51483
+8-066	midas-core	43	GitHub・PyPI・公式	https://github.com/w2ur/midas-core		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51484
+8-067	Manifold-BT	43	GitHub・PyPI・公式	https://github.com/manifoldbt/manifoldbt		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51485
+8-068	AutoHypothesis	43	GitHub・PyPI・公式	https://github.com/arteemg/AutoHypothesis		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			43	51486
+8-069	Multi-Axis Robust Portfolio Optimization	43	一覧の辿り	https://github.com/Viraj-Nigwekar/multi-axis-robust-portfolio-optimization		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別				

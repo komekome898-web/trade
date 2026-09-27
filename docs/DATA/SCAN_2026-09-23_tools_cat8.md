@@ -52186,3 +52186,13 @@ $ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_
    78958 docs/DATA/probes/20260923_tools_8_run43.log
 19750411 total
 ```
+
+### リードの追記(検収、監査 153 回目)
+
+全文は `docs/AUDITOR/VERDICTS/2026-09-27_tools_scan_cat8_run43.md`。要点:
+
+- 知見 16 (g) の「検索計画 5・6 の結果に出た」から、`JUnit`・`CppUnit`・`Spock` を取り消す。生ログには出ていない(`grep -c` で 0)。生ログに出たのは、194 行の `Jenkins`・`TestingBot`・`C/C++test`・`SOAtest/Virtualize` だけ。
+- 知見 16 の除外の理由を、1 つずつ生ログの行に結び直す: `Jenkins` などの汎用の QA・CI の製品は 194 行、`Multi-Axis Robust Portfolio Optimization` は 408 行(一覧の説明の逐語は 321 行)。
+- `Multi-Axis Robust Portfolio Optimization` は、候補を狭めない側に揃えて、台帳の 8-069 に足した(`skfolio` を候補に入れた当て方と揃えた)。
+- 知見 2 の台帳の照合の語は 42 ではなく 43(生ログ 441 行)。`勝ち株テクニカル分析`・`FX過去チャート検証くん` は、その語に入っていなかった。リードが台帳に照らし直すと、どれも 0 件だった。
+- `TradingView Backtester Utility`(8-053)は、利用者が TradingView の上で公開するスクリプトで、8-015(TradingView の画面の再生の機能)とは別の道具と、リードが判断した。同じかどうかは、深掘りの回で確かめる。

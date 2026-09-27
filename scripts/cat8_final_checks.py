@@ -25,6 +25,12 @@ cmds = [
     'python3 scripts/cat8_ledger.py check "" %s' % log,
     "git diff -U0 HEAD -- %s | grep '^-[^-]' | wc -l" % a.report,
     "wc -c %s %s" % (a.report, log),
+    # scratchpad の外に、この回の最初の手より後にできたファイル(2026-09-27、監査 153 回目の指摘 7:
+    # 生ログに無い手で /tmp の直下に書く型が 9 回続いた。止められないので、出たものを必ず見せる。
+    # 消されたファイルは映らない。実行環境が書く記録も映るので、どれが調査班の手かはリードが読む)
+    "t=$(head -1 %s | grep -o '20[0-9T:-]*Z'); echo \"since $t\"; "
+    "find /tmp -maxdepth 1 -newermt \"$t\" -type f; echo '---- /root'; "
+    "find /root -xdev -newermt \"$t\" -not -path '/root/.claude/*' -type f" % log,
 ]
 HEAD = "### 受け入れ検査の出力(道具が貼った)"
 # 打ち直し(報告を直したあとにもう一度打つ)のとき、この回の節に前に貼った小節を消してから貼る
