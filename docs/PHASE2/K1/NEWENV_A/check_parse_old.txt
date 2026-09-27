@@ -1,0 +1,7 @@
+both rows 13 cols [1, 3, 5, 15, 30, 60]
+strong rows 13 cols [1, 3, 5, 15, 30, 60]
+weak rows 13 cols [1, 3, 5, 15, 30, 60]
+n24 rows 4 cols [1, 3, 5, 15, 30, 60]
+means read 234 of which star 80 | 2.4 cells read 24
+old_values.json sizes: means 234 stars 80 n_hold 24
+mismatches 0
