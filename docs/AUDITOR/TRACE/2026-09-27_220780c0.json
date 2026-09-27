@@ -15823,10 +15823,10 @@
   {
    "move": 579,
    "tools": {
-    "Bash": 21,
+    "Bash": 25,
     "Read": 3
    },
-   "n_tools": 24,
+   "n_tools": 28,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
