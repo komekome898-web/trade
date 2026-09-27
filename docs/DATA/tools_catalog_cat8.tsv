@@ -38,5 +38,5 @@
 8-037	AlgoNetwork	10	一覧の辿り	https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし、この記事の中の AlgoNetwork)		深掘り	なし	印	なし	なし	なし	印	印	印	-	3	-	-	-	3	2	1			38	48437
 8-038	NinjaTrader	10	一覧の辿り	https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし、この記事の中の NinjaTrader)		深掘り	印	印	印	なし	印	印	印	印	3	3	3	-	3	3	2	3			38	48438
 8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			38	48439
-8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		浅い	印	印	印	なし	なし	未判別	印	印	2	2	4	-	-	未判別	2	4			38	48440
+8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	2	2	未判別	-	-	未判別	2	3			38	48440
 8-041	Oryon	11	一覧の辿り	https://github.com/lucasinglese/oryon(8-027 Quantreo の README の後継の案内、生ログ docs/DATA/probes/20260923_tools_8_run11.log:4154)		深掘り	なし	印	印	なし	印	なし	印	印	-	3	4	-	3	-	2	3			38	48441
