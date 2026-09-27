@@ -142,6 +142,30 @@
   "strength": "both",
   "wall_s": 52.5
  },
+ "1|s-/b-|both": {
+  "cell": "1|s-/b-|both",
+  "foot": 1,
+  "gate": "s-/b-",
+  "identical": true,
+  "max_rss_mb": 4551.2,
+  "n_trades": 96559,
+  "run_id": "170367301bf896d31ff33f851518a3010ea90f4b76265a6e9087e82ab939b113",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 514.0
+ },
+ "1|s-/b24|both": {
+  "cell": "1|s-/b24|both",
+  "foot": 1,
+  "gate": "s-/b24",
+  "identical": true,
+  "max_rss_mb": 4619.9,
+  "n_trades": 98723,
+  "run_id": "dc5838bd9f8eaac3107b6e71fdb5b6e2d18e862ae7dbb63a2e51af9cb7f5520a",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 519.9
+ },
  "1|s-/b24|strong": {
   "cell": "1|s-/b24|strong",
   "foot": 1,
@@ -153,6 +177,18 @@
   "skipped": false,
   "strength": "strong",
   "wall_s": 539.7
+ },
+ "1|s-/b40|both": {
+  "cell": "1|s-/b40|both",
+  "foot": 1,
+  "gate": "s-/b40",
+  "identical": true,
+  "max_rss_mb": 4612.7,
+  "n_trades": 97044,
+  "run_id": "d8ef312ed2ab40644cc954b9a6749fceb22d191b0740f8afda5ca915d5172936",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 516.5
  },
  "1|s-/b40|strong": {
   "cell": "1|s-/b40|strong",
@@ -166,6 +202,18 @@
   "strength": "strong",
   "wall_s": 459.9
  },
+ "1|s10/b-|both": {
+  "cell": "1|s10/b-|both",
+  "foot": 1,
+  "gate": "s10/b-",
+  "identical": true,
+  "max_rss_mb": 3765.0,
+  "n_trades": 45642,
+  "run_id": "2decf777d00aec7e6b70104afc92229520086112d504cd0c51c6f091a478a662",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 422.5
+ },
  "1|s10/b-|strong": {
   "cell": "1|s10/b-|strong",
   "foot": 1,
@@ -177,6 +225,18 @@
   "skipped": false,
   "strength": "strong",
   "wall_s": 376.8
+ },
+ "1|s10/b24|both": {
+  "cell": "1|s10/b24|both",
+  "foot": 1,
+  "gate": "s10/b24",
+  "identical": true,
+  "max_rss_mb": 3805.0,
+  "n_trades": 47770,
+  "run_id": "a3179566451968d927488fc90219f50fd7d241a9669120a5296f2882718f818d",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 426.1
  },
  "1|s10/b24|strong": {
   "cell": "1|s10/b24|strong",
@@ -190,6 +250,78 @@
   "strength": "strong",
   "wall_s": 384.8
  },
+ "1|s10/b40|both": {
+  "cell": "1|s10/b40|both",
+  "foot": 1,
+  "gate": "s10/b40",
+  "identical": true,
+  "max_rss_mb": 3742.1,
+  "n_trades": 46122,
+  "run_id": "49a42b92c1463b20309e5d272ea086ee311e430a74851b8beefe14e7058c7a26",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 431.8
+ },
+ "1|s19/b-|both": {
+  "cell": "1|s19/b-|both",
+  "foot": 1,
+  "gate": "s19/b-",
+  "identical": true,
+  "max_rss_mb": 3293.6,
+  "n_trades": 18148,
+  "run_id": "fdf27a02d11e2f7893d6f1ad1361a6e84835032e5fff5e40859d1b424507a59f",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 365.2
+ },
+ "1|s19/b24|both": {
+  "cell": "1|s19/b24|both",
+  "foot": 1,
+  "gate": "s19/b24",
+  "identical": true,
+  "max_rss_mb": 3321.3,
+  "n_trades": 20446,
+  "run_id": "ed55912999d233bb9ac4585e5783ea7872bd51389489210ac8ac8377258dc46f",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 372.4
+ },
+ "1|s19/b40|both": {
+  "cell": "1|s19/b40|both",
+  "foot": 1,
+  "gate": "s19/b40",
+  "identical": true,
+  "max_rss_mb": 3300.6,
+  "n_trades": 18627,
+  "run_id": "009f6ff5e1e65e15600f1dd3a5809049aa4839a3ba262f1c90f6f0b29430761f",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 376.6
+ },
+ "1|s30/b-|both": {
+  "cell": "1|s30/b-|both",
+  "foot": 1,
+  "gate": "s30/b-",
+  "identical": true,
+  "max_rss_mb": 3110.2,
+  "n_trades": 7118,
+  "run_id": "23056220d747be453605332676dd5cd0167b0e60341a4d772327cebc616432cb",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 357.1
+ },
+ "1|soff/b24|both": {
+  "cell": "1|soff/b24|both",
+  "foot": 1,
+  "gate": "soff/b24",
+  "identical": true,
+  "max_rss_mb": 3240.1,
+  "n_trades": 14023,
+  "run_id": "085639c29dba274596e99349900014497306a3d4d728cc172f7943cb586cd6f0",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 358.5
+ },
  "1|soff/b24|strong": {
   "cell": "1|soff/b24|strong",
   "foot": 1,
@@ -201,6 +333,18 @@
   "skipped": false,
   "strength": "strong",
   "wall_s": 475.1
+ },
+ "1|soff/b40|both": {
+  "cell": "1|soff/b40|both",
+  "foot": 1,
+  "gate": "soff/b40",
+  "identical": true,
+  "max_rss_mb": 3101.3,
+  "n_trades": 4173,
+  "run_id": "a56aea55a98ef102a7a202994b24d8d8d43d486e58d48bb8cf034175b4b332be",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 341.6
  },
  "1|soff/b40|strong": {
   "cell": "1|soff/b40|strong",
