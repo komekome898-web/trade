@@ -131,3 +131,83 @@
    - (ii) **リードが、読み手の会話の記録(JSONL)を機械で検める**。次の語を `grep -c` で数える: `状態板の要点`・`共有が途絶えている`・`OWNER_STATUS`・`盲検`・`先に組`・`残り 2`。あわせて、読み手が Read・Bash で開いた道を全部抜き出し、17 頁と設計票と起動文のほかに無いかを見る。注入か禁じた読みが 1 つでもあれば、この読みは盲検として扱わず、両論を添えてオーナーに見せる。
 2. **答える**。読みを技術で閉じる手(許可の設定)は `settings.json` の変更になり、オーナーの指示が要る(§0.2 A-16)。リードにできるのは、処置 1 の (ii) の事後の検めで破りを必ず見つけることまで。この限界は区分の完了の報告に書く。
 3. **直した**。一覧のファイルを `.../scratchpad/cat8/p17/pages.txt` に写して、起動文からは「postdraft」の名を消した。題と 3 行目からも「盲検」「前の調査班」の語を消した。直したあとの起動文の指紋: `20260927_cat8_run42_blind_reread_prompt.md@432caae9d01d`。
+
+## 8. 結論を知らせない読み手による 17 頁の読み直し(起動文 `20260927_cat8_run42_blind_reread_prompt.md@432caae9d01d`)
+
+### 読み手の会話の記録の検め(§7 の処置 1 の (ii))
+
+```
+$ T=.../subagents/agent-<読み手>.jsonl
+$ for w in '状態板の要点' '共有が途絶えている' 'OWNER_STATUS' '盲検' '先に組' '残り 2'; do printf '%s\t' "$w"; grep -o "$w" $T | wc -l; done
+状態板の要点	4
+共有が途絶えている	0
+OWNER_STATUS	7
+盲検	2
+先に組	0
+残り 2	0
+```
+
+当たった 13 か所は、全部、次の 2 つのどちらかだった。
+- 読み手に渡された CLAUDE.md(会話の記録の 6 行目、`attachment`)の §0.1・§3・§5.2・§7 の文。
+- 起動文そのもの(14 行目。「`docs/OWNER_STATUS.md`…は開かない」)。
+
+状態板の要点を差し込む文(`共有が途絶えている` で始まる)や、この件の経緯(`先に組`・`残り 2`)は 0 件だった。**SessionStart・UserPromptSubmit のフックの注入は、下位の読み手には届いていなかった**(この 1 回の実測)。
+
+読み手が開いたのは次だけで、禁じたファイルは開いていない。
+- 起動文
+- `CAT8_DESIGN.md`(3 回)
+- 17 頁(1 頁ずつ、全部で 17)
+- 17 頁の `wc -l` を打つ Bash 1 回
+
+**この読みは、結論を知らない読みとして扱う。**
+
+### 読み手の返答(逐語)
+
+> 起動文 `docs/DATA/delegations/20260927_cat8_run42_blind_reread_prompt.md`(指紋 `20260927_cat8_run42_blind_reread_prompt.md@432caae9d01d`)を全文読み、書かれたとおりに実施しました。読んだのは起動文本体・述語3行(`docs/DATA/surveys/CAT8_DESIGN.md` 54行E2/57行E4/59行E6)・指定の17頁のみです。候補コードは動かさず、書き込みは行っていません(結果はこの回答としてのみ返します)。
+>
+> 対象は OpenClaw(チャット・エージェント運用基盤)自身の CI/リリース検証・DBスキーマ文書で、「市場データ」は一度も出てきません。そのためE4(市場データの時刻順リプレイ)は文字どおりには1件も当たらず、"replay"/"rerun" という語だけが部分一致します。
+>
+> ## 頁ごとの表
+>
+> | 頁 | 行数(`wc -l`) | 最後まで読んだか | 当たりうる文(逐語)・道:行・判定 |
+> |---|---|---|---|
+> | `docs/ci/release-validation.md` | 52 | はい | 無い。5つの下位頁への索引ページで、見出しアンカーの付け替え一覧のみ。機能の記述自体が無い。 |
+> | `docs/ci/release-validation/full-release-validation.md` | 210 | はい | **E2/E6一部一致**: 「`Full Release Validation` is the manual release umbrella. Every run binds an exact Validation SHA + Tooling SHA tuple and rejects an `expected_sha` mismatch before child dispatch.」(14–16行)。当たる語: 識別子どうしの「食い違い」の検出・拒否。当たらない語: 欠け・重複・順序・時刻・外れ値・型範囲・取引所間そのもの(比喩でしか対応しない)。区分: OpenClaw開発者が自分のリリースを試験する機能。<br>**E6**: 「classify product, harness/tooling/provenance, infrastructure/credential, and wrapper failures before editing... Diagnose and fix the owning defect before an explicit narrow `rerun_group` validation run; never retry a failed test automatically or widen to `all`.」(189–192行)。失敗原因の分類による正しさの切り分け。開発者向け。 |
+> | `docs/ci/release-validation/install-smoke-and-docker-e2e.md` | 111 | はい | **E2一部一致**: 「The plugin smoke verifies runtime dependency install mirroring and that the plugin loads without entry-escape diagnostics.」(16行)。依存関係の完全性・異常診断の検証。「it either packs OpenClaw..., downloads a current-run package artifact, or downloads a package artifact from `package_artifact_run_id`, then validates the tarball inventory.」(78行)。tarball中身の一覧検証=「欠け」検出寄り。開発者向け。 |
+> | `docs/ci/release-validation/live-and-e2e-shards.md` | 40 | はい | **E2弱い一部一致**: 「The shard requires passing evidence from this test; a missing key or skipped test cannot satisfy the release gate.」(32行)。「missing」の語はあるが、対象はAPIキー有無というテスト実行条件でデータ品質検出機能そのものではない。開発者向け。他に該当なし。 |
+> | `docs/ci/release-validation/package-acceptance.md` | 210 | はい | **E2一部一致**: 「`package_integrity` downloads the `package-under-test` artifact and enforces the public package tarball contract with `scripts/check-openclaw-package-tarball.mjs`.」(19行)。「Missing inventory entries, shipped local build metadata, missing service-wrapper support, and incomplete update or plugin install-record persistence fail the current contracts.」(144–146行)。「Missing」「incomplete」と明記、E2の「欠け」に直接一致。「An installed CLI that exits unsuccessfully is recorded as an **unusable published baseline**, with its skipped scenarios and captured error in the job summary」(63行)。異常値検出・報告。全てOpenClaw製品自体の受け入れ試験(開発者向け)。 |
+> | `docs/ci/release-validation/plugin-prerelease.md` | 15 | はい | **E6弱い一部一致**: 「The workflow also uploads an informational `plugin-inspector-advisory` artifact from `@openclaw/plugin-inspector`; inspector findings are triage input and do not change the blocking Plugin Prerelease gate.」(15行)。静的検査ツールだが合否に関与しない参考情報。開発者向け。 |
+> | `docs/gateway/troubleshooting/config-validation-and-probes.md` | 112 | はい | **E2でもっとも強い一致**: 「`Config write rejected:` → the write tried to drop required shape, shrink the file sharply, or persist invalid config.」(59行)。型・形状違反の検出。「`missing-meta-vs-last-good`, `gateway-mode-missing-vs-last-good`, or `size-drop-vs-last-good:*` → an OpenClaw-owned write was rejected because it lost fields or size compared with the last-known-good backup.」(62行)。直前の正常版との比較で「欠け」と「size-drop」を検出=E2の「欠け」「外れ値」寄り。「`multiple reachable gateway identities detected` → distinct gateways answered, or OpenClaw could not prove reachable targets are the same gateway.」(102行)。複数到達先の矛盾検出=E2「情報源間の食い違い」に近い比喩一致。区分: OpenClawというツール自身の設定データを、利用者(運用者)が自分のGatewayに対して使う自己防御機能。トレードデータや計算結果の品質検査ではない。 |
+> | `docs/reference/database-schemas/layout.md` | 462 | はい | **E2一部一致(複数)**: 「Full-schema read-only validation rejects a mismatched definition until a writable owner repairs it; lightweight readers that validate only the numeric schema version may read either shape.」(86–88行)。索引定義の食い違い検出。「Older releases counted characters inconsistently, undercounting Unicode and allowing unchanged metadata writes to drift.」(115–116行、ACP replay accounting節)。過去の不整合(ドリフト)の記述と`openclaw doctor --fix`による是正。「An untouched legacy admission expires automatically after more than 24 hours: it is still `requested`/`running`, has identical creation and update timestamps, no finish timestamp, no recorded driver, and only its initial `requested` step.」(283–286行)。時刻情報を使った異常検知に近い部分一致。**E4の語として最も強い一致**: 「The shared `acp_replay_sessions` and `acp_replay_events` tables retain bridge replay history.」(110–111行、見出し「ACP replay accounting」)。"replay"という語自体は出るが、対象はACP(エージェント間ブリッジ)のセッション/イベント再生であり、「記録した市場データ」でも「戦略・執行・計算の再実行」でもない。区分: OpenClaw自身の内部データに対する開発者/運用者向けの整合性維持機能で、利用者の業務データではない。 |
+> | `docs/reference/full-release-validation.md`(索引) | 61 | はい | ほぼ「無い」。7つの下位頁への索引と旧アンカーの付け替えのみ。唯一「Test failures remain failures. Full Release Validation never automatically reruns failed or timed out jobs.」(15–16行)はE6に極めて弱く関係する方針文だが、検出・報告の「機能」の記述ではない。 |
+> | `docs/reference/full-release-validation/continuation.md` | 254 | はい | **E2でもっとも強い一致(重複・欠けの語がそのまま出現)**: 「Duplicate job names within one attempt, missing attempts, or provenance drift fail closed.」(17–18行)。「Persistent duplicates, duplicates in an earlier attempt, and changed identities still fail closed; ambiguous rows never become evidence.」(22–23行)。当たる語: 重複(Duplicate)・欠け(missing)・食い違い(changed identities/provenance drift)。当たらない語: 順序の乱れ・時刻のずれ・外れ値・型範囲違反・取引所間そのもの。**E4弱い一部一致**: 「`continue --failed` reruns each failed child's jobs as soon as that child is terminal」(46行)。「再実行」はあるが対象は失敗したCIジョブの再試行で、「記録した市場データを時刻順に再生」ではない。全て開発者向けCI復旧機能。 |
+> | `docs/reference/full-release-validation/dispatch.md` | 228 | はい | **E2一部一致**: 「Preflight rejects malformed, duplicate, nonexistent, and out-of-lane paths using the selected target's actual Vitest discovery.」(113–114行)。malformed(型違反)・duplicate(重複)・nonexistent(欠け寄り)を直接検出。「Missing or ambiguous runs, incomplete pagination, unavailable or mismatched input witnesses, and exhausted discovery remain `dispatch=unknown`.」(148–150行)。「Missing」「mismatched」が直接出現。開発者向け。 |
+> | `docs/reference/full-release-validation/evidence.md` | 69 | はい | **E6一部一致**: 「Classify failures as product, harness/tooling/provenance, infrastructure/credential, or wrapper. Only a confirmed product failure changes the Code SHA.」(12–13行)。「Only an explicit operator lane waiver can keep eligible failed jobs advisory; the manifest retains their actual conclusions and waiver reason. ... never report waived jobs as passed.」(19–21行)。合格を偽らないための報告規律=E6寄り。開発者向け。 |
+> | `docs/reference/full-release-validation/extended-stable.md` | 193 | はい | **E2弱い一部一致**: 「Product evidence reuse is optional and requires GitHub to prove that the Release SHA descends from the green Code SHA.」(65–66行)。コミット系譜(順序)の検証で「順序の乱れ」検出に緩やかに対応。「Source Telegram QA uses the release checks' shared context check: an exact candidate SHA must remain an ancestor of its canonical branch, or equal its release tag.」(189–190行)。同様に系譜順序の検証。版管理順序の話でデータ記録の時刻順とは異なる。開発者向け。 |
+> | `docs/reference/full-release-validation/profiles.md` | 109 | はい | **E2一部一致**: 「Live and QA-live filters must match their owning group; ... Mismatches fail before scheduling and never widen to an unfiltered run.」(70–73行)。設定間の食い違い検出。「When `live_suite_filter` explicitly requests a gated QA live lane such as Discord, WhatsApp, or Slack, the matching `OPENCLAW_RELEASE_QA_*_LIVE_CI_ENABLED` repo variable must be enabled; otherwise input capture fails instead of silently skipping the lane.」(104–107行)。黙ってスキップさせず失敗させる=欠けを隠さず報告する設計、E2に近い。開発者向けCI設定検証。 |
+> | `docs/reference/full-release-validation/release-checks.md` | 72 | はい | **E2一部一致**: 「Missing required credentials still fail the job; the diagnostic pool continues so independent non-live checks also report their results.」(60–62行)。「Missing」が直接出現し欠けの検出・報告に一致。開発者向け。表全体(Stage一覧)はE6の粒度の粗い一致だが個別の検出・報告の文ではない。 |
+> | `docs/reference/full-release-validation/stages.md` | 201 | はい | **E2一部一致**: 「Missing required runtime dependencies fail validation even if npm would exit successfully, a prepared dependency masks the omission in a local consumer, or a repacked Docker image works.」(49–51行)。「Missing」「omission」と明記、欠けの検出。「A child whose workflow path, display title, ref, Tooling SHA, or run ID changes is a distinct provenance mismatch.」(157–159行)。食い違いの検出。「It caps the downloaded ZIP, verifies its bytes against the REST `sha256:` digest」(182–183行)。チェックサムによる破損・改変検出、型/整合性検証寄り。開発者向け。 |
+> | `docs/reference/session-management-compaction/schema.md` | 107 | はい | **E4弱い一部一致**: 「Native fork verification, replay, exports, and doctor operations continue to use full-fidelity evidence readers.」(91行)。"replay"の語はあるが対象はセッション(会話)の分岐検証・再生であり、市場データでも戦略/執行/計算の再実行でもない。注記: 「OpenClaw intentionally does not "fix up" transcripts」(107行、最終行)。トランスクリプトの自動修復をしないという明言で、E2的な「検出して直す」機能の**不在**を自ら述べている。区分: 開発者/運用者向けのセッション基盤機能で、市場データやトレード計算とは無関係。 |
+>
+> ## 判断に迷った点
+>
+> - E2・E6はOpenClaw自身のリリース成果物・設定ファイル・DB行に対する整合性検査を広く拾いましたが、これは全て「OpenClawの開発者がOpenClaw自身を試験・保護する」機能であり、「利用者が自分のデータや計算に掛ける」機能は17頁中ひとつも見当たりませんでした(迷わず判定できました)。
+> - E4は「replay」「rerun」という単語自体は複数箇所に出ますが、対象がすべてCIジョブの再実行かエージェントのセッション/ACPイベントの再生であり、「記録した市場データ」を扱う例は皆無です。ここは述語のうち「記録したものを時刻順に再生して再実行する」という形だけの一致で、「市場データ」の要件には当たらないと判断しました(迷いはありません)。
+>
+> ## この起動文のほかに読んだファイル
+>
+> 無い(述語3行と指定の17頁のみ)。会話の始めに状態板や作業の経緯を含む文(CLAUDE.md等)は渡されていましたが、それは起動文とは別に会話冒頭のシステム指示として与えられたものです。</message>
+> </invoke>
+
+### リードの判断(8-026 の E2・E4・E6)
+
+読み手は、17 頁から E2・E6 の述語の一部に当たる文を広く拾った(欠け・重複・食い違いの検出など)。拾った文は、どれも OpenClaw 自身のリリースの成果物・設定・内部の保存の行に掛ける検査だった。読み手は「利用者が自分のデータや計算に掛ける機能は 17 頁中ひとつも見当たらなかった」と書いている。
+
+- **E2**: 当たりうる文の対象は、CI の成果物・パッケージ・設定・内部の DB の行。述語の「**時系列・約定・板・足・参照データについて**」の列挙には当たらない。いちばん強い一致は `config-validation-and-probes.md` の 59・62・102 行で、運用者が使う機能だが、対象は OpenClaw 自身の設定。これも列挙に当たらない。17 頁に `印` は無い。
+- **E4**: `replay`・`rerun` の語はある。対象は CI のジョブの再実行と、エージェントのセッション・ACP のイベントの再生で、述語の「**記録した市場データを**」に当たらない。17 頁に `印` は無い。
+- **E6**: 当たりうる文は、OpenClaw の開発者が OpenClaw 自身のリリースを試験する仕組み。L-516(「**数えません**」)で `印` にしない。17 頁に `印` は無い。
+
+下書きより後に読まれた 17 頁を、結論を知らない読み手が読んでも、E2・E4・E6 に `印` は出なかった。よって、8-026 の E2・E4・E6 は `未判別`(案 B の記録あり)とし、**「残り」に数えない。残りは 1**(8-039 NumPy の E2 = オーナーの判断待ち)。
+
+- 1 つ目の調査班が結論の文を根拠より先に組み立てた違反は、記録に残し、区分の完了の報告でオーナーに見せる。
+- フックの注入が下位の読み手に届かないことは、この 1 回の実測で分かったことだけ。ほかの起動の形(新しいクラウドの会話)では測っていない。
