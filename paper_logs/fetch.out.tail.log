@@ -1,400 +1,400 @@
-FX_BTC_JPY_20260826_051623.jsonl.gz  41396425  1        1         yes      371586509        
-FX_BTC_JPY_20260826_190404.jsonl.gz  47547542  1        0         NO       438897605        
-FX_BTC_JPY_20260827_114426.jsonl.gz  686818    1        0         NO       5984732          
-FX_BTC_JPY_20260827_120105.jsonl.gz  19731466  1        0         NO       170442604        
-FX_BTC_JPY_20260828_041847.jsonl.gz  89878     1        0         NO       775646           
-FX_BTC_JPY_20260828_042323.jsonl.gz  44024661  1        1         yes      400470873        
-FX_BTC_JPY_20260828_190404.jsonl.gz  49922279  1        1         yes      583180377        
-FX_BTC_JPY_20260829_190401.jsonl.gz  50549355  1        1         yes      586510291        
-FX_BTC_JPY_20260830_190502.jsonl.gz  17216324  1        0         NO       162247838        
-FX_BTC_JPY_20260831_011109.jsonl.gz  3847641   1        0         NO       32942037         
-FX_BTC_JPY_20260831_022241.jsonl.gz  10516747  1        1         yes      95829883         
-FX_BTC_JPY_20260831_060016.jsonl.gz  15748254  1        1         yes      140716512        
-FX_BTC_JPY_20260831_111722.jsonl.gz  25032507  1        1         yes      217606706        
-FX_BTC_JPY_20260831_190402.jsonl.gz  69045999  1        1         yes      637599720        
-FX_BTC_JPY_20260901_190501.jsonl.gz  28120734  1        0         NO       262259706        
-FX_BTC_JPY_20260902_050926.jsonl.gz  43161771  1        1         yes      379711407        
-FX_BTC_JPY_20260902_190404.jsonl.gz  51738532  1        0         NO       461231232        
-FX_BTC_JPY_20260903_121610.jsonl.gz  23524695  1        1         yes      200113356        
-FX_BTC_JPY_20260903_190403.jsonl.gz  46109828  1        0         NO       410273733        
-FX_BTC_JPY_20260904_101346.jsonl.gz  7089860   1        0         NO       62887024         
-FX_BTC_JPY_20260904_123343.jsonl.gz  20914197  1        1         yes      184272973        
-FX_BTC_JPY_20260904_190403.jsonl.gz  19561947  1        0         NO       241469273        
-FX_BTC_JPY_20260905_051106.jsonl.gz  11030266  1        0         NO       141004341        
-FX_BTC_JPY_20260905_111043.jsonl.gz  246020    1        0         NO       3430410          
-FX_BTC_JPY_20260905_112545.jsonl.gz  595956    1        0         NO       10055889         
-FX_BTC_JPY_20260905_115743.jsonl.gz  3006222   1        0         NO       34567654         
-FX_BTC_JPY_20260905_132655.jsonl.gz  756283    21       21        yes      8513997          
-FX_BTC_JPY_20260905_134841.jsonl.gz  11410333  313      313       yes      127540592        
-FX_BTC_JPY_20260905_190216.jsonl.gz  28719559  801      801       yes      323159059        
-FX_BTC_JPY_20260906_082526.jsonl.gz  2117372   62       62        yes      24921685         
-FX_BTC_JPY_20260906_092804.jsonl.gz  2667454   79       79        yes      31643089         
-FX_BTC_JPY_20260906_104736.jsonl.gz  18757511  494      494       yes      202568981        
-FX_BTC_JPY_20260906_190404.jsonl.gz  23169099  527      527       yes      225866944        
-FX_BTC_JPY_20260907_035201.jsonl.gz  6560197   137      137       yes      59173042         
-FX_BTC_JPY_20260907_060958.jsonl.gz  36677676  771      771       yes      338907396        
-FX_BTC_JPY_20260907_190405.jsonl.gz  52804613  1087     1087      yes      478879321        
-FX_BTC_JPY_20260908_131338.jsonl.gz  8744304   147      147       yes      72367454         
-FX_BTC_JPY_20260908_154139.jsonl.gz  1695417   31       31        yes      14343002         
-FX_BTC_JPY_20260908_161320.jsonl.gz  8213832   169      169       yes      74045649         
-FX_BTC_JPY_20260908_190404.jsonl.gz  19225592  417      417       yes      179340119        
-FX_BTC_JPY_20260909_020134.jsonl.gz  52940790  1019     1019      yes      469405943        
-FX_BTC_JPY_20260909_190412.jsonl.gz  15657191  339      339       yes      146449948        
-FX_BTC_JPY_20260910_004353.jsonl.gz  3408515   65       65        yes      29318395         
-FX_BTC_JPY_20260910_014904.jsonl.gz  52528565  1030     1030      yes      464524569        
-FX_BTC_JPY_20260910_190405.jsonl.gz  5017919   124      124       yes      50639137         
-FX_BTC_JPY_20260911_061913.jsonl.gz  5672076   118      118       yes      50193798         
-FX_BTC_JPY_20260911_081835.jsonl.gz  28159286  491      491       yes      241450957        
-FX_BTC_JPY_20260911_163059.jsonl.gz  577314    10       10        yes      4756458          
-FX_BTC_JPY_20260911_164034.jsonl.gz  84905     2        2         yes      696431           
-FX_BTC_JPY_20260911_164207.jsonl.gz  7496708   140      140       yes      64561178         
-FX_BTC_JPY_20260911_190457.jsonl.gz  13608692  315      315       yes      132780967        
-FX_BTC_JPY_20260912_002046.jsonl.gz  35718996  1119     1119      yes      444907412        
-FX_BTC_JPY_20260912_190416.jsonl.gz  1607443   59       59        yes      21897064         
-FX_BTC_JPY_20260912_200327.jsonl.gz  4712427   163      163       yes      64195877         
-FX_BTC_JPY_20260912_224738.jsonl.gz  6357453   217      217       yes      85281137         
-FX_BTC_JPY_20260913_022559.jsonl.gz  5318195   180      180       yes      70180150         
-FX_BTC_JPY_20260913_053045.jsonl.gz  871274    34       34        yes      12537048         
-FX_BTC_JPY_20260913_060416.jsonl.gz  2772604   84       84        yes      33267474         
-FX_BTC_JPY_20260913_072814.jsonl.gz  3835247   98       98        yes      40377832         
-FX_BTC_JPY_20260913_091119.jsonl.gz  11251345  282      282       yes      117286255        
-FX_BTC_JPY_20260913_135936.jsonl.gz  11718429  302      302       yes      124238313        
-FX_BTC_JPY_20260913_190416.jsonl.gz  22525     5        5         yes      1081183          
-FX_BTC_JPY_20260913_190943.jsonl.gz  8922091   232      232       yes      96868863         
-FX_BTC_JPY_20260913_230344.jsonl.gz  9494991   178      178       yes      81801205         
-FX_BTC_JPY_20260914_020149.jsonl.gz  569697    11       11        yes      4954913          
-FX_BTC_JPY_20260914_021323.jsonl.gz  5039837   94       94        yes      43330799         
-FX_BTC_JPY_20260914_034908.jsonl.gz  10952875  233      233       yes      101204365        
-FX_BTC_JPY_20260914_074812.jsonl.gz  7643134   149      149       yes      66769180         
-FX_BTC_JPY_20260914_101808.jsonl.gz  1508613   33       33        yes      13548331         
-FX_BTC_JPY_20260914_105048.jsonl.gz  6253225   121      121       yes      54047320         
-FX_BTC_JPY_20260914_125328.jsonl.gz  11404776  192      192       yes      94926145         
-FX_BTC_JPY_20260914_160602.jsonl.gz  3615073   68       68        yes      30942616         
-FX_BTC_JPY_20260914_171620.jsonl.gz  5503340   106      106       yes      47731188         
-FX_BTC_JPY_20260914_190427.jsonl.gz  10876993  230      230       yes      99850431         
-FX_BTC_JPY_20260914_225539.jsonl.gz  5069242   107      107       yes      46059087         
-FX_BTC_JPY_20260915_004421.jsonl.gz  2528815   49       49        yes      21927704         
-FX_BTC_JPY_20260915_013419.jsonl.gz  16879222  347      347       yes      152503525        
-FX_BTC_JPY_20260915_072710.jsonl.gz  968616    21       21        yes      8682439          
-FX_BTC_JPY_20260915_075102.jsonl.gz  27235672  492      492       yes      235665573        
-FX_BTC_JPY_20260915_160752.jsonl.gz  53617     2        2         yes      445098           
-FX_BTC_JPY_20260915_160948.jsonl.gz  2947858   59       59        yes      25865454         
-FX_BTC_JPY_20260915_171047.jsonl.gz  3549455   66       66        yes      30497989         
-FX_BTC_JPY_20260915_182051.jsonl.gz  2769105   42       42        yes      23383082         
-FX_BTC_JPY_20260915_190415.jsonl.gz  7599624   148      148       yes      66725296         
-FX_BTC_JPY_20260915_213248.jsonl.gz  489318    11       11        yes      4287694          
-FX_BTC_JPY_20260915_214520.jsonl.gz  10546178  198      198       yes      90178130         
-FX_BTC_JPY_20260916_010406.jsonl.gz  3310434   63       63        yes      28407597         
-FX_BTC_JPY_20260916_021251.jsonl.gz  3449150   68       68        yes      30073610         
-FX_BTC_JPY_20260916_032046.jsonl.gz  68188     3        3         yes      570617           
-FX_BTC_JPY_20260916_032706.jsonl.gz  25506405  526      526       yes      231733101        
-FX_BTC_JPY_20260916_121620.jsonl.gz  11041301  192      192       yes      93091507         
-FX_BTC_JPY_20260916_153052.jsonl.gz  12202774  211      211       yes      103782870        
-FX_BTC_JPY_20260916_190409.jsonl.gz  2219914   45       45        yes      19971127         
-FX_BTC_JPY_20260916_195051.jsonl.gz  856760    17       17        yes      7265895          
-FX_BTC_JPY_20260916_200933.jsonl.gz  23290     2        2         yes      213115           
-FX_BTC_JPY_20260916_201104.jsonl.gz  77626     3        3         yes      734900           
-FX_BTC_JPY_20260916_201347.jsonl.gz  1135739   23       23        yes      9836163          
-FX_BTC_JPY_20260916_204036.jsonl.gz  45610     2        2         yes      401465           
-FX_BTC_JPY_20260916_204404.jsonl.gz  313258    8        8         yes      2816522          
-FX_BTC_JPY_20260916_205225.jsonl.gz  297530    8        8         yes      2822898          
-FX_BTC_JPY_20260916_210031.jsonl.gz  8459379   181      181       yes      78855585         
-FX_BTC_JPY_20260917_000655.jsonl.gz  19257     2        2         yes      158457           
-FX_BTC_JPY_20260917_000818.jsonl.gz  1278358   25       25        yes      10947029         
-FX_BTC_JPY_20260917_003300.jsonl.gz  5887028   108      108       yes      50359788         
-FX_BTC_JPY_20260917_022559.jsonl.gz  3030265   61       61        yes      26880463         
-FX_BTC_JPY_20260917_033439.jsonl.gz  21382     2        2         yes      179870           
-FX_BTC_JPY_20260917_033608.jsonl.gz  501077    12       12        yes      4575984          
-FX_BTC_JPY_20260917_035112.jsonl.gz  14217     3        3         yes      134821           
-FX_BTC_JPY_20260917_035407.jsonl.gz  8877140   188      188       yes      81444727         
-FX_BTC_JPY_20260917_070528.jsonl.gz  12908362  270      270       yes      117231684        
-FX_BTC_JPY_20260917_114300.jsonl.gz  122296    4        4         yes      1106825          
-FX_BTC_JPY_20260917_114651.jsonl.gz  722295    16       16        yes      6499675          
-FX_BTC_JPY_20260917_121024.jsonl.gz  22107     2        2         yes      185196           
-FX_BTC_JPY_20260917_121211.jsonl.gz  2322448   40       40        yes      19704676         
-FX_BTC_JPY_20260917_125300.jsonl.gz  390343    9        9         yes      3348808          
-FX_BTC_JPY_20260917_130419.jsonl.gz  8919555   150      150       yes      75064407         
-FX_BTC_JPY_20260917_153837.jsonl.gz  10147706  204      204       yes      90696937         
-FX_BTC_JPY_20260917_190756.jsonl.gz  3733      2        2         yes      82560            
-FX_BTC_JPY_20260917_190923.jsonl.gz  1972698   48       48        yes      19514968         
-FX_BTC_JPY_20260917_195839.jsonl.gz  3831403   91       91        yes      37706855         
-FX_BTC_JPY_20260917_213108.jsonl.gz  773241    21       21        yes      8096894          
-FX_BTC_JPY_20260917_215354.jsonl.gz  12406329  259      259       yes      113172072        
-FX_BTC_JPY_20260918_021704.jsonl.gz  17392199  307      307       yes      147690037        
-FX_BTC_JPY_20260918_073608.jsonl.gz  29855324  503      503       yes      253306271        
-FX_BTC_JPY_20260918_160038.jsonl.gz  577032    10       10        yes      4857490          
-FX_BTC_JPY_20260918_161253.jsonl.gz  9399510   170      170       yes      80174018         
-FX_BTC_JPY_20260918_190744.jsonl.gz  176450    9        9         yes      2612211          
-FX_BTC_JPY_20260918_191921.jsonl.gz  4057256   75       75        yes      34468522         
-FX_BTC_JPY_20260918_203625.jsonl.gz  8442986   194      194       yes      82237586         
-FX_BTC_JPY_20260918_235635.jsonl.gz  2366153   50       50        yes      21270558         
-FX_BTC_JPY_20260919_004909.jsonl.gz  2788707   52       52        yes      23730251         
-FX_BTC_JPY_20260919_014448.jsonl.gz  1050611   23       23        yes      9264283          
-FX_BTC_JPY_20260919_021027.jsonl.gz  19606     2        2         yes      159036           
-FX_BTC_JPY_20260919_021148.jsonl.gz  413687    11       11        yes      3802285          
-FX_BTC_JPY_20260919_022341.jsonl.gz  4078221   90       90        yes      38142125         
-FX_BTC_JPY_20260919_035959.jsonl.gz  2218807   49       49        yes      20646772         
-FX_BTC_JPY_20260919_045715.jsonl.gz  1934096   45       45        yes      18177136         
-FX_BTC_JPY_20260919_054624.jsonl.gz  728928    18       18        yes      6897992          
-FX_BTC_JPY_20260919_061058.jsonl.gz  52460     3        3         yes      449965           
-FX_BTC_JPY_20260919_061309.jsonl.gz  2411962   55       55        yes      22790151         
-FX_BTC_JPY_20260919_070921.jsonl.gz  33924433  711      711       yes      308083596        
-FX_BTC_JPY_20260919_190501.jsonl.gz  15855     4        4         yes      781437           
-FX_BTC_JPY_20260919_190928.jsonl.gz  41673974  880      880       yes      383868111        
-FX_BTC_JPY_20260920_095526.jsonl.gz  9116144   200      200       yes      85412531         
-FX_BTC_JPY_20260920_131655.jsonl.gz  643132    16       16        yes      6116337          
-FX_BTC_JPY_20260920_133426.jsonl.gz  16920046  326      326       yes      148244723        
-FX_BTC_JPY_20260920_190451.jsonl.gz  2342835   61       61        yes      24214403         
-FX_BTC_JPY_20260920_200716.jsonl.gz  157019    5        5         yes      1569606          
-FX_BTC_JPY_20260920_201505.jsonl.gz  22262     2        2         yes      181997           
-FX_BTC_JPY_20260920_201631.jsonl.gz  16240669  306      306       yes      141460170        
-FX_BTC_JPY_20260921_012856.jsonl.gz  288457    5        5         yes      2398675          
-FX_BTC_JPY_20260921_013319.jsonl.gz  1950859   31       31        yes      16133481         
-FX_BTC_JPY_20260921_020540.jsonl.gz  526065    11       11        yes      4390949          
-FX_BTC_JPY_20260921_021645.jsonl.gz  1153158   20       20        yes      9570002          
-FX_BTC_JPY_20260921_023650.jsonl.gz  1972709   37       37        yes      16466666         
-FX_BTC_JPY_20260921_031255.jsonl.gz  852854    17       17        yes      7318103          
-FX_BTC_JPY_20260921_032922.jsonl.gz  367361    7        7         yes      3115949          
-FX_BTC_JPY_20260921_033558.jsonl.gz  348340    8        8         yes      3061266          
-FX_BTC_JPY_20260921_034305.jsonl.gz  20954581  371      371       yes      177247795        
-FX_BTC_JPY_20260921_095429.jsonl.gz  32546703  547      547       yes      270286649        
-FX_BTC_JPY_20260921_190435.jsonl.gz  5406      2        2         yes      222032           
-FX_BTC_JPY_20260921_190713.jsonl.gz  75874826  1329     1329      yes      631846274        
-FX_BTC_JPY_20260922_171931.jsonl.gz  181800    4        4         yes      1533067          
-FX_BTC_JPY_20260922_172253.jsonl.gz  5206013   99       99        yes      44898189         
-FX_BTC_JPY_20260922_190406.jsonl.gz  77459811  1432     1432      yes      666967071        
-FX_BTC_JPY_20260923_190444.jsonl.gz  5662835   127      127       yes      53835667         
-FX_BTC_JPY_20260923_211440.jsonl.gz  6169563   133      133       yes      56929996         
-FX_BTC_JPY_20260923_233511.jsonl.gz  2755863   56       56        yes      24536264         
-FX_BTC_JPY_20260924_003441.jsonl.gz  2443881   45       45        yes      20640210         
-FX_BTC_JPY_20260924_012628.jsonl.gz  71775     3        3         yes      614914           
-FX_BTC_JPY_20260924_012847.jsonl.gz  4741098   87       87        yes      40489070         
-FX_BTC_JPY_20260924_030650.jsonl.gz  8803247   171      171       yes      76407620         
-FX_BTC_JPY_20260924_060745.jsonl.gz  17679     2        2         yes      142441           
-FX_BTC_JPY_20260924_060902.jsonl.gz  14230083  252      252       yes      120488087        
-FX_BTC_JPY_20260924_102203.jsonl.gz  1345277   27       27        yes      11516994         
-FX_BTC_JPY_20260924_105119.jsonl.gz  17506211  303      303       yes      148041438        
-FX_BTC_JPY_20260924_155535.jsonl.gz  10567145  186      186       yes      89911659         
-FX_BTC_JPY_20260924_190405.jsonl.gz  6825564   154      154       yes      65211258         
-FX_BTC_JPY_20260924_213836.jsonl.gz  10238222  219      219       yes      94664855         
-FX_BTC_JPY_20260925_011835.jsonl.gz  24932593  490      490       yes      218962008        
-FX_BTC_JPY_20260925_092953.jsonl.gz  963943    19       19        yes      8061963          
-FX_BTC_JPY_20260925_094912.jsonl.gz  9358102   168      168       yes      78825998         
-FX_BTC_JPY_20260925_123708.jsonl.gz  22427441  385      385       yes      188641290        
-FX_BTC_JPY_20260925_190405.jsonl.gz  6327536   144      144       yes      60179136         
-FX_BTC_JPY_20260925_212811.jsonl.gz  16252717  433      433       yes      177660559        
-FX_BTC_JPY_20260926_044746.jsonl.gz  10481215  271      271       yes      111484916        
-FX_BTC_JPY_20260926_091957.jsonl.gz  6700751   156      156       yes      64390581         
-FX_BTC_JPY_20260926_115542.jsonl.gz  3669906   94       94        yes      38186576         
-FX_BTC_JPY_20260926_132949.jsonl.gz  1163328   28       28        yes      11238356         
-FX_BTC_JPY_20260926_135739.jsonl.gz  1215733   35       35        yes      13491450         
-FX_BTC_JPY_20260926_143158.jsonl.gz  362438    11       11        yes      4048751          
-FX_BTC_JPY_20260926_144258.jsonl.gz  2578257   71       71        yes      28350755         
-FX_BTC_JPY_20260926_155647.jsonl.gz  553254    18       18        yes      6482162          
-FX_BTC_JPY_20260926_161400.jsonl.gz  333880    11       11        yes      4051498          
-FX_BTC_JPY_20260926_162502.jsonl.gz  2892226   83       83        yes      33124724         
-FX_BTC_JPY_20260926_174804.jsonl.gz  372209    12       12        yes      4214512          
-FX_BTC_JPY_20260926_175948.jsonl.gz  1996415   63       63        yes      24400419         
-FX_BTC_JPY_20260926_190406.jsonl.gz  3489691   108      108       yes      42243659         
-
-246 files scanned, 34 with a truncated last member, 23183977128 decompressed bytes recoverable in total
-wrote C:\Users\ryoma\trade\data\WS_GZ_LISTING.json
-data_quality: 3933/12377 data/api_health.csv 7495 0.1s
-data_quality: 6111/12377 data/archive/bitmex/data/quote/20201107.csv.gz 5471242 108.9s
-data_quality: 6112/12377 data/archive/bitmex/data/quote/20201108.csv.gz 4164170 45.6s
-data_quality: 6113/12377 data/archive/bitmex/data/quote/20201109.csv.gz 5207197 84.6s
-data_quality: 6114/12377 data/archive/bitmex/data/quote/20201110.csv.gz 4180010 46.2s
-data_quality: 6115/12377 data/archive/bitmex/data/quote/20201111.csv.gz 4404133 49.0s
-data_quality: 6116/12377 data/archive/bitmex/data/quote/20201112.csv.gz 4786210 55.2s
-data_quality: 6117/12377 data/archive/bitmex/data/quote/20201113.csv.gz 3971063 43.4s
-data_quality: 6118/12377 data/archive/bitmex/data/quote/20201114.csv.gz 3692725 40.9s
-data_quality: 6119/12377 data/archive/bitmex/data/quote/20201115.csv.gz 3417304 42.2s
-data_quality: 6120/12377 data/archive/bitmex/data/quote/20201116.csv.gz 3960821 44.8s
-data_quality: 6121/12377 data/archive/bitmex/data/quote/20201117.csv.gz 4902999 73.5s
-data_quality: budget exhausted after 6121/12377 files (642.0s); the rest resumes next run
-data_quality: skipped 6109 unchanged
-data_quality: 31 datasets, 698798747 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
-check_data_ledger: docs/DATA.md 縺ｨ螳溽黄縺ｮ逶ｸ莠貞盾辣ｧ (蝓ｺ貅匁律 2026-09-26縲・ｮｮ蠎ｦ縺ｮ縺励″縺・14 譌･)
-  蜊倅ｽ・150 莉ｶ / 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・65 莉ｶ / 謇蝨ｨ縺悟ｮ溷惠縺励↑縺・｡・17 莉ｶ / 蜿鈴伜床蟶ｳ縺ｫ辟｡縺・ヵ繧｡繧､繝ｫ 0 蛟・(0 蜊倅ｽ・ / 譛邨ら｢ｺ隱肴律縺悟商縺・｡・58 莉ｶ
-
-蜿鈴伜床蟶ｳ: data\INTAKE_latest.json(荳｡譁ｹ縺ゅｊ縲∵眠縺励＞ data/ 蛛ｴ繧剃ｽｿ縺｣縺溘∬ｪｭ霎ｼ貂医・5158 陦・
-
-[鬟帙・縺励◆陦ｨ] 繝倥ャ繝縺梧ｨ呎ｺ門ｽ｢縺ｧ縺ｪ縺・・縺ｧ魄ｮ蠎ｦ讀懈渊縺ｮ蟇ｾ雎｡螟・(7 陦ｨ)
-  14 陦檎岼: 驛ｨ蜩・| 蠖ｹ蜑ｲ | 謇蝨ｨ(11 陦・
-  30 陦檎岼: 蛻・| 諢丞袖(7 陦・
-  42 陦檎岼: 蛟､ | 諢丞袖(5 陦・
-  180 陦檎岼: 雉・肇 | 謇蝨ｨ | 迥ｶ諷・| 譛邨ら｢ｺ隱肴律 | 菴ｿ縺｣縺溷腰菴・9 陦・
-  213 陦檎岼: # | 菴輔′ | 譛滄俣 | 蜴溷屏 | 蠕ｩ譌ｧ蜿ｯ蜷ｦ | 險倬鹸譌･(15 陦・
-  269 陦檎岼: 繧ｽ繝ｼ繧ｹ | 荳企剞 | 莉慕ｵ・∩縺ｧ縺ｮ謇ｱ縺・| 迥ｶ諷・5 陦・
-  292 陦檎岼: 繝吶ル繝･繝ｼ | 迥ｶ諷九蝉ｺ句ｮ溘・荳谺｡諠・ｱ縲・| 譛滄剞 | 蟇ｾ蠢・2 陦・
-
-(i) 蜿ｰ蟶ｳ縺ｫ陦後′辟｡縺・腰菴・窶・65 莉ｶ
-  | 蜊倅ｽ・| 繝輔ぃ繧､繝ｫ謨ｰ |
-  | backtest_data/audit_fetch_P2-08_docs_20260906 | 10 |
-  | backtest_data/audit_fetch_P2-08b_20260906 | 11 |
-  | backtest_data/audit_fetch_bitflyer_history_20260906 | 94 |
-  | backtest_data/auto_bitflyer_executions_20260921 | 94 |
-  | backtest_data/auto_oi_snapshots_20260905 | 2 |
-  | backtest_data/auto_oi_snapshots_20260921 | 2 |
-  | backtest_data/auto_okx_open_interest_1h_20260905 | 2 |
-  | backtest_data/auto_okx_open_interest_1h_20260921 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260906 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260907 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260908 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260909 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260910 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260911 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260912 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260915 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260918 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260921 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260922 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260923 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260924 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260925 | 2 |
-  | backtest_data/auto_okx_open_interest_5m_20260926 | 2 |
-  | backtest_data/auto_venues_20260921 | 131 |
-  | backtest_data/binance_BTCUSDT_1m.csv | 1 |
-  | backtest_data/candles_BTC_JPY_20260820.csv | 1 |
-  | backtest_data/candles_ETH_JPY_20260820.csv | 1 |
-  | backtest_data/candles_FX_BTC_JPY_20260820.csv | 1 |
-  | backtest_data/candles_XRP_JPY_20260820.csv | 1 |
-  | backtest_data/flow_FX_BTC_JPY_20260820.csv | 1 |
-  | backtest_data/liquidations_repaired_20260912 | 15 |
-  | backtest_data/liquidations_repaired_20260917 | 11 |
-  | backtest_data/o3c_oi_distance_20260917 | 4 |
-  | backtest_data/o3c_oi_distance_split_20260918 | 4 |
-  | backtest_data/o3c_price_level_band_20260917 | 2 |
-  | backtest_data/o3c_price_level_bundle_first_20260917 | 2 |
-  | backtest_data/o3c_price_level_full_20260917 | 2 |
-  | backtest_data/o3c_price_level_full_20260917_b005 | 2 |
-  | backtest_data/o3c_price_level_full_20260917_b025 | 2 |
-  | backtest_data/o3c_price_level_full_20260917_w72 | 2 |
-  | backtest_data/o3c_price_level_full_20260917_w8 | 2 |
-  | backtest_data/o3c_price_level_rows4_20260917 | 16 |
-  | backtest_data/o3c_price_level_sample_20260917 | 2 |
-  | backtest_data/o3c_price_level_sample_20260917_limitprice | 2 |
-  | backtest_data/o3c_reaction_20260918_anchor | 2 |
-  | backtest_data/o3c_reaction_20260918_anchor_trades | 2 |
-  | backtest_data/o3c_reaction_20260918_anchor_trades_sample | 2 |
-  | backtest_data/o3c_reaction_20260918_anchor_v1_rawcols | 3 |
-  | backtest_data/o3c_reaction_20260918_full | 19 |
-  | backtest_data/o3c_reaction_20260918_judge | 10 |
-  | backtest_data/o3c_reaction_20260918_sample | 12 |
-  | backtest_data/o3c_reaction_20260918_scale12_judgmentdays | 4 |
-  | backtest_data/o3c_signal_continue_20260920 | 21 |
-  | backtest_data/o3c_signal_explore2_20260919 | 10 |
-  | backtest_data/o3c_signal_explore3_20260920 | 11 |
-  | backtest_data/o3c_signal_explore4_20260920 | 14 |
-  | backtest_data/o3c_signal_explore5_20260920 | 11 |
-  | backtest_data/o3c_signal_explore_20260919 | 7 |
-  | backtest_data/o3c_signal_materials_20260920 | 12 |
-  | backtest_data/o3c_signal_policy_20260920 | 17 |
-  | backtest_data/okx_20260905 | 5 |
-  | backtest_data/okx_btc_lsratio_1h_20260823.csv | 1 |
-  | backtest_data/okx_btc_lsratio_5m_20260823.csv | 1 |
-  | backtest_data/okx_btc_oi_1h_20260823.csv | 1 |
-  | backtest_data/okx_btc_oi_5m_20260823.csv | 1 |
-
-(ii) 謇蝨ｨ縺ｮ繝代せ縺悟ｮ溷惠縺励↑縺・｡・窶・17 莉ｶ
-  | 陦・| 雉・肇 | 繝代せ |
-  | 62 | tape(邏・ｮ壹・ticker繝ｻ譚ｿ top10 縺ｮ譌･谺｡謚ｽ蜃ｺ縲Ａpaper_logs | paper_logs/tape/{executions,ticker,board_top10}_YYYYMMDD.csv.gz |
-  | 69 | tardis 蠖｢蠑・邏・ｮ・**讓呎悽譌･ = 蜷・怦 1 譌･**) | data/tardis/bitflyer_FX_BTC_JPY_trades/ |
-  | 72 | 邯咏ｶ壹Ο繝ｼ繝ｪ繝ｳ繧ｰ(逕溘∵律谺｡譖ｴ譁ｰ) | data/flow_FX_BTC_JPY.csv |
-  | 82 | Binance BTCUSDT 迴ｾ迚ｩ 1蛻・ｶｳ(遨阪∩荳翫￡) | data/binance_BTCUSDT_1m_full.csv |
-  | 84 | Binance BTCUSDT 1遘定ｶｳ(鬮倬ｻ蠎ｦ繧ｵ繝ｳ繝励Ν) | data/binance_BTCUSDT_1s_hi1.csv |
-  | 101 | Kraken XBTUSD 1蛻・ｶｳ | data/kraken_XBTUSD_1m.csv |
-  | 102 | Deribit DVOL(繝懊Λ謖・焚) | data/deribit_dvol_1h.csv |
-  | 102 | Deribit DVOL(繝懊Λ謖・焚) | data/deribit_dvol_1m_7d.csv |
-  | 104 | 雉・≡隱ｿ驕皮紫繝ｻ蝓ｺ蟾ｮ(閾ｪ蜑咲ｵ仙粋縲∫ｲ貞ｺｦ荳肴・) | data/basis_1m.csv |
-  | 133 | Binance COIN-M aggTrades 縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ蜿ｯ蜷ｦ(`PriceS | backtest_data/binance_cm_o3c_20260913/aggTrades/BTCUSD_PERP/ |
-  | 143 | bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(can | data/candles_{BTC,ETH,XRP}_JPY.csv |
-  | 154 | FX 繝輔ぃ繝ｳ繝繝｡繝ｳ繧ｿ繝ｫ繧ｺ繝ｻ繧ｫ繝ｬ繝ｳ繝繝ｼ | data/fx/calendar.csv |
-  | 154 | FX 繝輔ぃ繝ｳ繝繝｡繝ｳ繧ｿ繝ｫ繧ｺ繝ｻ繧ｫ繝ｬ繝ｳ繝繝ｼ | data/fx/calendar_cache* |
-  | 154 | FX 繝輔ぃ繝ｳ繝繝｡繝ｳ繧ｿ繝ｫ繧ｺ繝ｻ繧ｫ繝ｬ繝ｳ繝繝ｼ | data/fx/events/ |
-  | 185 | 繧ｹ繝医・繝/繝舌・繧ｹ繝医う繝吶Φ繝域歓蜃ｺ | data/storm_events/ |
-  | 185 | 繧ｹ繝医・繝/繝舌・繧ｹ繝医う繝吶Φ繝域歓蜃ｺ | data/burst_events/ |
-  | 188 | PC 譎りｨ医・繝ｬ繧､繝・Φ繧ｷ | data/latency/ws_vm.csv |
-
-(iii) 蜿鈴伜床蟶ｳ縺ｫ辟｡縺・backtest_data/ 驟堺ｸ九・繝輔ぃ繧､繝ｫ 窶・0 蛟・/ 0 蜊倅ｽ・
-
-(iv) 譛邨ら｢ｺ隱肴律縺・14 譌･繧医ｊ蜿､縺・｡・窶・58 莉ｶ
-  | 陦・| 雉・肇 | 譛邨ら｢ｺ隱肴律 | 邨碁℃譌･謨ｰ |
-  | 59 | FX_BTC_JPY 1蛻・ｶｳ繝√Ε繝ｼ繝・lightchart) | 2026-09-11 | 15 |
-  | 60 | BTC_JPY 1蛻・ｶｳ繝√Ε繝ｼ繝・lightchart縲∫樟迚ｩ) | 2026-09-11 | 15 |
-  | 61 | 譚ｿ繝ｻticker繝ｻ邏・ｮ・1蛻・ｲ貞ｺｦ縲∫屮譟ｻ逕ｨ) | 2026-09-11 | 15 |
-  | 64 | 譚ｿ top5(鬮倬ｻ蠎ｦ) | 2026-09-11 | 15 |
-  | 65 | 邏・ｮ壹・ticker(鬮倬ｻ蠎ｦ繝・・繝・ | 2026-09-11 | 15 |
-  | 66 | WS 逕溘Ο繧ｰ(jsonl) | 2026-09-11 | 15 |
-  | 67 | **WS 逕溘Ο繧ｰ(繧ｪ繝ｼ繝翫・ PC縲∵悴蜈ｱ譛・** | 2026-09-11 | 15 |
-  | 68 | 邏・ｮ・31譌･繝ｭ繝ｳ繧ｰ繝・・繝・us縲》ardis蠖｢蠑・ | 2026-09-11 | 15 |
-  | 70 | 邏・ｮ・31譌･繧ｹ繝翫ャ繝励す繝ｧ繝・ヨ(2譛ｬ) | 2026-09-11 | 15 |
-  | 71 | 邏・ｮ・31譌･繧ｹ繝翫ャ繝励す繝ｧ繝・ヨ(2026-09-08) | 2026-09-11 | 15 |
-  | 72 | 邯咏ｶ壹Ο繝ｼ繝ｪ繝ｳ繧ｰ(逕溘∵律谺｡譖ｴ譁ｰ) | 2026-09-11 | 15 |
-  | 73 | 1蛻・ｶｳ 30譌･/邯咏ｶ夂ｵ仙粋 | 2026-09-11 | 15 |
-  | 75 | 譚ｿ縺ｮ豺ｱ縺輔・螻･豁ｴ(繝偵せ繝医Μ繧ｫ繝ｫ) | 2026-09-11 | 15 |
-  | 82 | Binance BTCUSDT 迴ｾ迚ｩ 1蛻・ｶｳ(遨阪∩荳翫￡) | 2026-09-11 | 15 |
-  | 83 | Binance BTCUSDT 1遘定ｶｳ / aggTrades | 2026-09-11 | 15 |
-  | 84 | Binance BTCUSDT 1遘定ｶｳ(鬮倬ｻ蠎ｦ繧ｵ繝ｳ繝励Ν) | 2026-09-11 | 15 |
-  | 85 | Binance XRPUSDT 1蛻・1譌･/4譎る俣雜ｳ | 2026-09-11 | 15 |
-  | 86 | Binance 雉・≡隱ｿ驕皮紫繝ｻ譚ｿ豺ｱ縺輔・貂・ｮ・縺薙・繝・・繧ｿ繧ｻ繝ｳ繧ｿ繝ｼ縺九ｉ) | 2026-09-11 | 15 |
-  | 87 | Bybit BTCUSDT 辟｡譛滄剞 1蛻・ｶｳ | 2026-09-11 | 15 |
-  | 88 | Bybit 迴ｾ迚ｩ/辟｡譛滄剞 蛻ｰ驕皮｢ｺ隱阪し繝ｳ繝励Ν(2譌･蛻・ | 2026-09-11 | 15 |
-  | 89 | Bybit REST API(雉・≡隱ｿ驕皮紫繝ｻ譚ｿ繝ｻ貂・ｮ・ | 2026-09-11 | 15 |
-  | 90 | Bybit 髱咏噪繧｢繝ｼ繧ｫ繧､繝・`public.bybit.com`縲∫ｴ・ｮ壹・縺ｿ) | 2026-09-11 | 15 |
-  | 91 | OKX 雉・≡隱ｿ驕皮紫(迴ｾ蝨ｨ蛟､繝ｻ螻･豁ｴ) | 2026-09-11 | 15 |
-  | 92 | OKX 蝓ｺ蟾ｮ(mark/index 縺ｮ螻･豁ｴ縲｜asis縺ｮ莉｣逅・ | 2026-09-11 | 15 |
-  | 93 | OKX 譚ｿ縺ｮ豺ｱ縺・迴ｾ蝨ｨ蛟､縺ｮ縺ｿ) | 2026-09-11 | 15 |
-  | 94 | OKX 蟒ｺ邇・OI)繝ｻL/S豈・繧ｹ繝翫ャ繝励す繝ｧ繝・ヨ(閾ｪ蜑崎ｨ倬鹸) | 2026-09-11 | 15 |
-  | 95 | Coinalyze(貂・ｮ励・OI縺ｮ髮・ｨ亥､縲・嵯蠢・・ | 2026-09-11 | 15 |
-  | 96 | Gate.io 蛟句挨貂・ｮ礼ｴ・ｮ・90譌･縲・嵯荳崎ｦ・ | 2026-09-11 | 15 |
-  | 99 | Binance/BitMEX/Bybit/OKX 貂・ｮ・WS 繧ｹ繝医Μ繝ｼ繝(閾ｪ蜑崎ｨ・| 2026-09-11 | 15 |
-  | 100 | BitMEX XBTUSD 1遘定ｶｳ(蜿門ｼ墓園髢蛾事蜑阪・菫晏・) | 2026-09-11 | 15 |
-  | 101 | Kraken XBTUSD 1蛻・ｶｳ | 2026-09-11 | 15 |
-  | 102 | Deribit DVOL(繝懊Λ謖・焚) | 2026-09-11 | 15 |
-  | 103 | 迴ｾ迚ｩ BTC/ETH 譌･雜ｳ(Bitstamp/Coinbase/Yahoo縲∬､・焚 | 2026-09-11 | 15 |
-  | 104 | 雉・≡隱ｿ驕皮紫繝ｻ蝓ｺ蟾ｮ(閾ｪ蜑咲ｵ仙粋縲∫ｲ貞ｺｦ荳肴・) | 2026-09-11 | 15 |
-  | 105 | Tardis.dev(隨ｬ荳芽・・譛画侭縲√Γ繧ｿ繝・・繧ｿ縺ｮ縺ｿ遒ｺ隱・ | 2026-09-11 | 15 |
-  | 106 | CryptoDataDownload(隨ｬ荳芽・・辟｡譁吶＾HLCV縺ｮ縺ｿ諠ｳ螳・ | 2026-09-11 | 15 |
-  | 107 | 繝吶ル繝･繝ｼ讓ｪ譁ｭ隱ｿ譟ｻ(繧ｵ繝ｼ繝吶う譁・嶌) | 2026-09-11 | 15 |
-  | 143 | bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(can | 2026-09-11 | 15 |
-  | 144 | bitbank BTC/XRP JPY | 2026-09-11 | 15 |
-  | 145 | GMO繝ｻbitbank 讓ｪ譁ｭ(quotes/trades) | 2026-09-11 | 15 |
-  | 151 | USD/JPY 1蛻・ｶｳ(3.5蟷ｴ) | 2026-09-11 | 15 |
-  | 152 | USD/JPY 1蛻・ｶｳ(諡｡蠑ｵ縲・017-2022) | 2026-09-11 | 15 |
-  | 153 | FX 繧､繝吶Φ繝医ユ繧｣繝・け(2005-2014 / 2015-2026) | 2026-09-11 | 15 |
-  | 154 | FX 繝輔ぃ繝ｳ繝繝｡繝ｳ繧ｿ繝ｫ繧ｺ繝ｻ繧ｫ繝ｬ繝ｳ繝繝ｼ | 2026-09-11 | 15 |
-  | 155 | FRED 邉ｻ蛻・謾ｿ遲夜≡蛻ｩ繝ｻ繧ｹ繝ｯ繝・・) | 2026-09-11 | 15 |
-  | 156 | GMO USD/JPY 繧ｹ繝ｯ繝・・ | 2026-09-11 | 15 |
-  | 162 | 譌･邨・25蜈育黄 225Labo 譌･雜ｳ | 2026-09-11 | 15 |
-  | 163 | TOPIX蜈育黄/miniTOPIX蜈育黄 225Labo | 2026-09-11 | 15 |
-  | 164 | ETF 譌･雜ｳ(1343/1321/1348 遲・ | 2026-09-11 | 15 |
-  | 165 | ETF 莉｣譖ｿ蛟呵｣懆ｪｿ譟ｻ | 2026-09-11 | 15 |
-  | 166 | REIT / ONR(繧ｪ繝ｼ繝舌・繝翫う繝医Μ繧ｿ繝ｼ繝ｳ) | 2026-09-11 | 15 |
-  | 167 | 蜆ｪ蠕・yutai)繝ｦ繝九ヰ繝ｼ繧ｹ | 2026-09-11 | 15 |
-  | 168 | 譌･譛ｬ繝輔ぃ繧ｯ繧ｿ繝ｼ | 2026-09-11 | 15 |
-  | 169 | 譌･邨・25繧､繝吶Φ繝・| 2026-09-11 | 15 |
-  | 170 | JPX 繝・Μ繝舌ユ繧｣繝匁律蝣ｱ(逕・zip) | 2026-09-11 | 15 |
-  | 171 | JPX 譌･谺｡繧ｻ繝・す繝ｧ繝ｳ | 2026-09-11 | 15 |
-  | 172 | JPX Tick 隱ｿ譟ｻ(逶｣譟ｻ) | 2026-09-11 | 15 |
-  | 173 | kabu繧ｹ繝・・繧ｷ繝ｧ繝ｳ API(螳溷哨蠎ｧ繝ｻ螳溽匱豕ｨ) | 2026-09-11 | 15 |
-
-鬟溘＞驕輔＞: 縺ゅｊ
-wrote C:\Users\ryoma\trade\data\LEDGER_CHECK.json
-[record_oi] C:\Users\ryoma\trade\data\oi_snapshots.csv += 1 row (6/6 fields): ts_utc=2026-09-26T21:15:07+00:00  okx_usdt_oi=2830370.6100000083  okx_usd_oi=5509545.8  okx_ls_ratio=1.34  dvol=34.91  deribit_oi=886240760.0  btc_usd=84079.9
-loaded 1502535 stored executions
-appended 819 new executions
-wrote 41275 candles -> C:\Users\ryoma\trade\data\candles_FX_BTC_JPY.csv
-binance_XRPUSDT_1m.csv: 80621 rows (2026-07-30 02:50:00+00:00 .. 2026-09-26 21:15:00+00:00)
-binance_BTCUSDT_1m.csv: 80621 rows (2026-07-30 02:50:00+00:00 .. 2026-09-26 21:15:00+00:00)
-binance_XRPUSDT_4h.csv: 4607 rows (2024-08-20 04:00:00+00:00 .. 2026-09-26 20:00:00+00:00)
-binance_XRPUSDT_1d.csv: 767 rows (2024-08-21 00:00:00+00:00 .. 2026-09-26 00:00:00+00:00)
-binance_BTCUSDT_4h.csv: 4607 rows (2024-08-20 04:00:00+00:00 .. 2026-09-26 20:00:00+00:00)
-binance_BTCUSDT_1d.csv: 767 rows (2024-08-21 00:00:00+00:00 .. 2026-09-26 00:00:00+00:00)
-bitbank_xrp_jpy_1m.csv: 82012 rows (2026-07-30 00:00:00+00:00 .. 2026-09-26 21:15:00+00:00)
-[fetch_okx] open-interest BTC-USDT-SWAP: [{'instId': 'BTC-USDT-SWAP', 'instType': 'SWAP', 'oi': '2830506.63000000832', 'oiCcy': '28305.0663000000832', 'oiUsd': '2379887143.99737699544768', 'ts': '1790457342734'}]
-[fetch_okx] open-interest BTC-USD-SWAP: [{'instId': 'BTC-USD-SWAP', 'instType': 'SWAP', 'oi': '5509484.20000000024', 'oiCcy': '6550.2540690278325546', 'oiUsd': '550948420.000000024', 'ts': '1790457343266'}]
-[fetch_okx] oi period=5m: 575 rows, span 2026-09-24 21:20:00+00:00 .. 2026-09-26 21:10:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_5m.csv
-[fetch_okx] oi period=1H: 720 rows, span 2026-08-27 22:00:00+00:00 .. 2026-09-26 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_1h.csv
-[fetch_okx] lsratio period=5m: 576 rows, span 2026-09-24 21:20:00+00:00 .. 2026-09-26 21:15:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_5m.csv
-[fetch_okx] lsratio period=1H: 720 rows, span 2026-08-27 22:00:00+00:00 .. 2026-09-26 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_1h.csv
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-17.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-17.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-18.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-18.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-19.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-19.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-20.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-20.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-21.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-21.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-22.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-22.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-23.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-23.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-24.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-24.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-25.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-25.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-26.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-26.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-27.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-27.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-28.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-28.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-29.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-29.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-30.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-30.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-31.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-07-31.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-01.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-01.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-02.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-02.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-03.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-03.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-04.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-04.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-05.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-05.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-06.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-06.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-07.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-07.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-08.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-08.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-09.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-09.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-10.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-10.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-11.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-11.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-12.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-12.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-13.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-13.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-14.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-14.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-15.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-15.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-16.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-16.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-17.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-17.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-18.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-18.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-19.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-19.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-20.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-20.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-21.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-21.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-22.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-22.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-23.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-23.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-24.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-24.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-25.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-25.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-26.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-26.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-27.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-27.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-28.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-28.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-29.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-29.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-30.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-30.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-31.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-08-31.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-01.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-01.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-02.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-02.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-03.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-03.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-04.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-04.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-05.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-05.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-06.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-06.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-07.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-07.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-08.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-08.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-09.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-09.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-10.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-10.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-11.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-11.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-12.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-12.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-13.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-13.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-14.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-14.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-15.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-15.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-16.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-16.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-17.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-17.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-18.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-18.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-19.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-19.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-20.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-20.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-21.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-21.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-22.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-22.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-23.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-23.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-24.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-24.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-25.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-25.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-26.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-26.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-27.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-27.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-28.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-28.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-29.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-29.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-30.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-09-30.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-01.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-01.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-02.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-02.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-03.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-03.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-04.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-04.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-05.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-05.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-06.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-06.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-07.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-07.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-08.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-08.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-09.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-09.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-10.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-10.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-11.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-11.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-12.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-12.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-13.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-13.zip.CHECKSUM
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-14.zip
+      missing: aggTrades/BTCUSD_PERP/BTCUSD_PERP-aggTrades-2024-10-14.zip.CHECKSUM
+  [ok] binance_cm_o3c_supp_20260917: 3/3 matched
+  [MISMATCH] binance_um_BTCUSDT_aggTrades_20260723_20260906: 0 mismatched, 135 missing, 1 extra-untracked
+      missing: BTCUSDT-aggTrades-2026-07-23.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-24.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-25.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-26.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-27.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-28.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-29.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-30.csv.gz
+      missing: BTCUSDT-aggTrades-2026-07-31.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-01.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-02.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-03.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-04.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-05.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-06.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-07.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-08.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-09.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-10.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-11.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-12.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-13.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-14.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-15.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-16.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-17.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-18.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-19.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-20.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-21.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-22.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-23.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-24.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-25.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-26.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-27.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-28.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-29.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-30.csv.gz
+      missing: BTCUSDT-aggTrades-2026-08-31.csv.gz
+      missing: BTCUSDT-aggTrades-2026-09-01.csv.gz
+      missing: BTCUSDT-aggTrades-2026-09-02.csv.gz
+      missing: BTCUSDT-aggTrades-2026-09-03.csv.gz
+      missing: BTCUSDT-aggTrades-2026-09-04.csv.gz
+      missing: BTCUSDT-aggTrades-2026-09-05.csv.gz
+      missing: raw/BTCUSDT-aggTrades-2026-07-23.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-23.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-24.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-24.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-25.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-25.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-26.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-26.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-27.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-27.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-28.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-28.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-29.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-29.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-30.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-30.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-07-31.zip
+      missing: raw/BTCUSDT-aggTrades-2026-07-31.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-01.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-01.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-02.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-02.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-03.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-03.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-04.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-04.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-05.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-05.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-06.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-06.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-07.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-07.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-08.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-08.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-09.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-09.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-10.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-10.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-11.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-11.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-12.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-12.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-13.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-13.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-14.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-14.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-15.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-15.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-16.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-16.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-17.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-17.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-18.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-18.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-19.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-19.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-20.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-20.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-21.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-21.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-22.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-22.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-23.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-23.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-24.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-24.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-25.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-25.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-26.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-26.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-27.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-27.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-28.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-28.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-29.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-29.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-30.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-30.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-08-31.zip
+      missing: raw/BTCUSDT-aggTrades-2026-08-31.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-09-01.zip
+      missing: raw/BTCUSDT-aggTrades-2026-09-01.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-09-02.zip
+      missing: raw/BTCUSDT-aggTrades-2026-09-02.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-09-03.zip
+      missing: raw/BTCUSDT-aggTrades-2026-09-03.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-09-04.zip
+      missing: raw/BTCUSDT-aggTrades-2026-09-04.zip.CHECKSUM
+      missing: raw/BTCUSDT-aggTrades-2026-09-05.zip
+      missing: raw/BTCUSDT-aggTrades-2026-09-05.zip.CHECKSUM
+  [ok] bitbank_btc_jpy_transactions_monthly_first_days: 109/109 matched (2 extra-untracked)
+  [ok] bitflyer_executions_backfill_20260921: 4/4 matched (1 extra-untracked)
+  [ok] bitflyer_executions_us_20260723_20260906: 49/49 matched
+  [ok] bitflyer_lightchart_BTC_JPY_1m_20260906: 27/27 matched
+  [ok] bitflyer_lightchart_FX_BTC_JPY_1m_20260906: 27/27 matched (1 extra-untracked)
+  [ok] bitmex_insurance_20260912: 3/3 matched
+  [MISMATCH] bitmex_trade_1s_XBTUSD: 2 mismatched, 0 missing, 1146 extra-untracked
+      mismatch: MANIFEST.json expected=2ae14fcc844229ea5645efde1aa2ed72 actual=d6d933e4ef41550809c49f3678755068
+      mismatch: progress.json expected=2548a8683435fabf0307f4469e417e1f actual=d53942506cfa86e75e2867960f075282
+  [ok, line-ending-only] board_round_20260904: 1/2 matched, 1 line-ending-only (3 extra-untracked)
+  [ok] burst_events_20260820: 99/99 matched
+  [ok] bybit_BTCUSDT_1m_20260910: 1/1 matched
+  [ok] bybit_reachability_check_20260906: 3/3 matched
+  [ok] coinalyze_liquidations_20260921: 4/4 matched (20 extra-untracked)
+  [ok] executions_FX_BTC_JPY_31d_20260908: 2/2 matched (1 extra-untracked)
+  [ok] fx_btc_jpy_1m_continuous_20260906: 3/3 matched
+  [ok, line-ending-only] fx_event_ticks_2005_2014: 320/323 matched, 3 line-ending-only
+  [ok, line-ending-only] fx_event_ticks_2015_2026: 477/479 matched, 2 line-ending-only
+  [ok, line-ending-only] fx_fundamentals_20260822: 4/8 matched, 4 line-ending-only
+  [MISMATCH] fx_usdjpy_1m_20170801_20221231: 1 mismatched, 0 missing, 0 extra-untracked
+      mismatch: README.md expected=05d2e8464d00a811c4cf2d8847d91848 actual=d659197a5c59a46f9fa16ae8aad98811
+  [ok] gate_liquidations_20260908: 3/3 matched
+  [ok] jp_factors_20260905: 4/4 matched (1 extra-untracked)
+  [ok] jpx_daily_report_json_20260908: 9/9 matched
+  [ok, line-ending-only] jpx_etf_daily_20260905: 30/33 matched, 3 line-ending-only
+  [ok] jpx_etf_daily_20260906_topix_alt: 9/9 matched
+  [ok] liquidations_repaired_20260912: 15/15 matched
+  [ok] liquidations_repaired_20260917: 11/11 matched
+  [ok] mini_topixf_225labo_20260907: 7/7 matched
+  [ok] n225f_225labo_20260828: 7/7 matched (2 extra-untracked)
+  [ok, line-ending-only] nk225_events_20260904: 3/4 matched, 1 line-ending-only (2 extra-untracked)
+  [ok] o3c_oi_distance_20260917: 4/4 matched
+  [ok] o3c_oi_distance_split_20260918: 4/4 matched
+  [ok] o3c_price_level_band_20260917: 2/2 matched
+  [ok] o3c_price_level_bundle_first_20260917: 2/2 matched
+  [ok] o3c_price_level_full_20260917: 2/2 matched
+  [ok] o3c_price_level_full_20260917_b005: 2/2 matched
+  [ok] o3c_price_level_full_20260917_b025: 2/2 matched
+  [ok] o3c_price_level_full_20260917_w72: 2/2 matched
+  [ok] o3c_price_level_full_20260917_w8: 2/2 matched
+  [ok] o3c_price_level_rows4_20260917: 16/16 matched
+  [ok] o3c_price_level_sample_20260917: 2/2 matched
+  [ok] o3c_price_level_sample_20260917_limitprice: 2/2 matched
+  [ok] o3c_reaction_20260918_anchor: 2/2 matched
+  [ok] o3c_reaction_20260918_anchor_trades: 2/2 matched
+  [ok] o3c_reaction_20260918_anchor_trades_sample: 2/2 matched
+  [ok] o3c_reaction_20260918_anchor_v1_rawcols: 2/2 matched (1 extra-untracked)
+  [ok] o3c_reaction_20260918_full: 19/19 matched
+  [ok] o3c_reaction_20260918_judge: 10/10 matched
+  [ok] o3c_reaction_20260918_sample: 12/12 matched
+  [ok] o3c_reaction_20260918_scale12_judgmentdays: 3/3 matched (1 extra-untracked)
+  [ok] o3c_signal_continue_20260920: 11/11 matched (10 extra-untracked)
+  [ok] o3c_signal_explore2_20260919: 10/10 matched
+  [ok] o3c_signal_explore3_20260920: 10/10 matched (1 extra-untracked)
+  [ok] o3c_signal_explore4_20260920: 13/13 matched (1 extra-untracked)
+  [ok] o3c_signal_explore5_20260920: 10/10 matched (1 extra-untracked)
+  [ok] o3c_signal_explore_20260919: 7/7 matched
+  [MISMATCH] o3c_signal_materials_20260920: 0 mismatched, 1 missing, 7 extra-untracked
+      missing: docs/DATA/probes/20260920_o3c_materials_read.md
+  [ok] o3c_signal_policy_20260920: 17/17 matched
+  [ok, line-ending-only] okx_20260905: 0/4 matched, 4 line-ending-only (1 extra-untracked)
+  [ok] phase2_runs: 242/242 matched (85 extra-untracked)
+  [ok] phase2_sealed: 11/11 matched (3 extra-untracked)
+  [ok, line-ending-only] qa_known_answer_20260905: 7/9 matched, 2 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker3_20260907: 2/3 matched, 1 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker3_v2_20260905: 2/4 matched, 2 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker3_v3_20260905: 2/3 matched, 1 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker4_20260905: 16/32 matched, 16 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker4_r2_20260905: 16/36 matched, 20 line-ending-only
+  [ok, line-ending-only] qa_known_answer_maker_20260905: 2/3 matched, 1 line-ending-only
+  [ok, line-ending-only] qa_known_answer_steer_20260905: 8/10 matched, 2 line-ending-only
+  [ok, line-ending-only] qa_pipeline_daily_20260905: 0/8 matched, 8 line-ending-only
+  [ok] qa_pipeline_daily_20260906: 12/12 matched
+  [ok, line-ending-only] qa_pipeline_taker_20260905: 3/5 matched, 2 line-ending-only
+  [ok, line-ending-only] regime_composite_20260901: 6/7 matched, 1 line-ending-only (1 extra-untracked)
+  [ok] reit_onr_20260904: 4/4 matched (2 extra-untracked)
+  [ok] storm_events_20260820: 16/16 matched
+  [ok] topixf_225labo_20260907: 7/7 matched
+  [ok, line-ending-only] venue_survey_20260827: 31/35 matched, 4 line-ending-only
+  [ok, line-ending-only] yutai_20260904: 2/3 matched, 1 line-ending-only
+ledger cross-check (data\INTAKE_latest.json): 6526 files checked, 0 mismatches
+overall: FAIL
+wrote C:\Users\ryoma\trade\data\SNAPSHOT_VERIFY.json
