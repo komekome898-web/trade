@@ -1,0 +1,374 @@
+{
+ "60|s-/b-|both": {
+  "ci95_bp": [
+   -10.105,
+   -2.716
+  ],
+  "exit_reasons": {
+   "invalidated": 2037,
+   "opposite_weak": 2335,
+   "reversed": 1864
+  },
+  "hold_median": 2,
+  "mean_bp": -6.197,
+  "n": 6236,
+  "per_year": {
+   "2017": {
+    "mean_bp": -13.322,
+    "n": 1966
+   },
+   "2018": {
+    "mean_bp": 2.263,
+    "n": 2129
+   },
+   "2019": {
+    "mean_bp": -8.065,
+    "n": 2141
+   }
+  },
+  "run_id": "9a54b5d76c352943a2d0a076be1282a9ddbb3a63d49e9abde502657e4f7d0a1b",
+  "sd_bp": 150.9,
+  "star": true
+ },
+ "60|s-/b24|both": {
+  "ci95_bp": [
+   -6.915,
+   -0.504
+  ],
+  "exit_reasons": {
+   "invalidated": 985,
+   "opposite_weak": 4070,
+   "reversed": 2580
+  },
+  "hold_median": 2,
+  "mean_bp": -3.744,
+  "n": 7635,
+  "per_year": {
+   "2017": {
+    "mean_bp": -5.416,
+    "n": 2655
+   },
+   "2018": {
+    "mean_bp": 3.161,
+    "n": 2548
+   },
+   "2019": {
+    "mean_bp": -9.153,
+    "n": 2432
+   }
+  },
+  "run_id": "7a4309c981ea5d6fa51fe85f601521b52d7169cc78b431f3b20981308f595315",
+  "sd_bp": 148.5,
+  "star": true
+ },
+ "60|s-/b40|both": {
+  "ci95_bp": [
+   -6.537,
+   -0.022
+  ],
+  "exit_reasons": {
+   "invalidated": 1360,
+   "opposite_weak": 3462,
+   "reversed": 2244
+  },
+  "hold_median": 2,
+  "mean_bp": -3.064,
+  "n": 7066,
+  "per_year": {
+   "2017": {
+    "mean_bp": -3.447,
+    "n": 2393
+   },
+   "2018": {
+    "mean_bp": 2.997,
+    "n": 2395
+   },
+   "2019": {
+    "mean_bp": -9.034,
+    "n": 2278
+   }
+  },
+  "run_id": "5c190c5335f36da6f1799b0d8003e9f605584ed45f9f6aa4d4a48270cd894f29",
+  "sd_bp": 149.7,
+  "star": true
+ },
+ "60|s10/b-|both": {
+  "ci95_bp": [
+   -10.187,
+   -2.687
+  ],
+  "exit_reasons": {
+   "invalidated": 1949,
+   "opposite_weak": 2263,
+   "reversed": 1799
+  },
+  "hold_median": 2,
+  "mean_bp": -6.057,
+  "n": 6011,
+  "per_year": {
+   "2017": {
+    "mean_bp": -13.278,
+    "n": 1959
+   },
+   "2018": {
+    "mean_bp": 3.177,
+    "n": 2019
+   },
+   "2019": {
+    "mean_bp": -8.27,
+    "n": 2033
+   }
+  },
+  "run_id": "08ef10b965ad43fd2c53603714161fb5fc8612b5bc5b94891ff0f6a237602407",
+  "sd_bp": 153.9,
+  "star": true
+ },
+ "60|s10/b24|both": {
+  "ci95_bp": [
+   -7.55,
+   -0.37
+  ],
+  "exit_reasons": {
+   "invalidated": 897,
+   "opposite_weak": 4001,
+   "reversed": 2516
+  },
+  "hold_median": 2,
+  "mean_bp": -3.606,
+  "n": 7414,
+  "per_year": {
+   "2017": {
+    "mean_bp": -5.362,
+    "n": 2648
+   },
+   "2018": {
+    "mean_bp": 3.902,
+    "n": 2441
+   },
+   "2019": {
+    "mean_bp": -9.489,
+    "n": 2325
+   }
+  },
+  "run_id": "d89670fbf46a903a7185bb39846b1a3ee897c5440a29211b2fcc7806f7b5df51",
+  "sd_bp": 150.8,
+  "star": true
+ },
+ "60|s10/b40|both": {
+  "ci95_bp": [
+   -6.129,
+   0.63
+  ],
+  "exit_reasons": {
+   "invalidated": 1272,
+   "opposite_weak": 3392,
+   "reversed": 2178
+  },
+  "hold_median": 2,
+  "mean_bp": -2.868,
+  "n": 6842,
+  "per_year": {
+   "2017": {
+    "mean_bp": -3.375,
+    "n": 2386
+   },
+   "2018": {
+    "mean_bp": 3.775,
+    "n": 2286
+   },
+   "2019": {
+    "mean_bp": -9.31,
+    "n": 2170
+   }
+  },
+  "run_id": "fe1c4e348007ef6d91deb91e28672d27b49ec143f405df054ece1e666275366b",
+  "sd_bp": 152.4,
+  "star": false
+ },
+ "60|s19/b-|both": {
+  "ci95_bp": [
+   -10.208,
+   -0.894
+  ],
+  "exit_reasons": {
+   "invalidated": 1712,
+   "opposite_weak": 2025,
+   "reversed": 1559
+  },
+  "hold_median": 2,
+  "mean_bp": -5.448,
+  "n": 5296,
+  "per_year": {
+   "2017": {
+    "mean_bp": -13.76,
+    "n": 1866
+   },
+   "2018": {
+    "mean_bp": 4.392,
+    "n": 1771
+   },
+   "2019": {
+    "mean_bp": -6.602,
+    "n": 1659
+   }
+  },
+  "run_id": "c872115e5c2aeda437f206606914dd876bd9b5443f90d3e12727e3bd4c0d6a70",
+  "sd_bp": 164.7,
+  "star": true
+ },
+ "60|s19/b24|both": {
+  "ci95_bp": [
+   -6.583,
+   0.573
+  ],
+  "exit_reasons": {
+   "invalidated": 689,
+   "opposite_weak": 3751,
+   "reversed": 2286
+  },
+  "hold_median": 2,
+  "mean_bp": -2.763,
+  "n": 6726,
+  "per_year": {
+   "2017": {
+    "mean_bp": -5.698,
+    "n": 2555
+   },
+   "2018": {
+    "mean_bp": 5.395,
+    "n": 2205
+   },
+   "2019": {
+    "mean_bp": -8.097,
+    "n": 1966
+   }
+  },
+  "run_id": "34624564bf77e9af5031cffd88b5ea0f6fdea6bc1665c9f70bb2d139b2e897fd",
+  "sd_bp": 158.2,
+  "star": false
+ },
+ "60|s19/b40|both": {
+  "ci95_bp": [
+   -4.999,
+   1.831
+  ],
+  "exit_reasons": {
+   "invalidated": 1048,
+   "opposite_weak": 3148,
+   "reversed": 1943
+  },
+  "hold_median": 2,
+  "mean_bp": -1.651,
+  "n": 6139,
+  "per_year": {
+   "2017": {
+    "mean_bp": -3.466,
+    "n": 2294
+   },
+   "2018": {
+    "mean_bp": 5.496,
+    "n": 2046
+   },
+   "2019": {
+    "mean_bp": -7.464,
+    "n": 1799
+   }
+  },
+  "run_id": "b53c1ec87b08c6ef5bbeba8aeafece9f5975794731dda70f939653ec9de79428",
+  "sd_bp": 161.2,
+  "star": false
+ },
+ "60|s30/b-|both": {
+  "ci95_bp": [
+   -12.675,
+   -1.707
+  ],
+  "exit_reasons": {
+   "invalidated": 1477,
+   "opposite_weak": 1630,
+   "reversed": 1206
+  },
+  "hold_median": 2,
+  "mean_bp": -7.285,
+  "n": 4313,
+  "per_year": {
+   "2017": {
+    "mean_bp": -14.652,
+    "n": 1641
+   },
+   "2018": {
+    "mean_bp": -0.159,
+    "n": 1431
+   },
+   "2019": {
+    "mean_bp": -5.763,
+    "n": 1241
+   }
+  },
+  "run_id": "640535830d35662d8118679d72df8d1841bdb1873bcafbc2abca21f5ffa2c744",
+  "sd_bp": 180.6,
+  "star": true
+ },
+ "60|s30/b40|both": {
+  "ci95_bp": [
+   -6.974,
+   1.789
+  ],
+  "exit_reasons": {
+   "invalidated": 838,
+   "opposite_weak": 2739,
+   "reversed": 1601
+  },
+  "hold_median": 2,
+  "mean_bp": -2.369,
+  "n": 5178,
+  "per_year": {
+   "2017": {
+    "mean_bp": -2.726,
+    "n": 2076
+   },
+   "2018": {
+    "mean_bp": 1.958,
+    "n": 1708
+   },
+   "2019": {
+    "mean_bp": -7.137,
+    "n": 1394
+   }
+  },
+  "run_id": "01cc37d8053d4dc8c2502edd844c6808985fa09bdd0c7dc348d9b14f00278d42",
+  "sd_bp": 175.5,
+  "star": false
+ },
+ "60|soff/b40|both": {
+  "ci95_bp": [
+   -6.907,
+   3.667
+  ],
+  "exit_reasons": {
+   "invalidated": 687,
+   "opposite_weak": 2425,
+   "reversed": 1353
+  },
+  "hold_median": 2,
+  "mean_bp": -1.089,
+  "n": 4465,
+  "per_year": {
+   "2017": {
+    "mean_bp": -1.643,
+    "n": 1862
+   },
+   "2018": {
+    "mean_bp": 3.061,
+    "n": 1505
+   },
+   "2019": {
+    "mean_bp": -5.839,
+    "n": 1098
+   }
+  },
+  "run_id": "09b373dadc3364ff45752d9b134c948fcb9b3f89603cc0e413effd26ba0546a2",
+  "sd_bp": 189.7,
+  "star": false
+ }
+}

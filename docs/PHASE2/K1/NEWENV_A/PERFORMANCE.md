@@ -1,0 +1,61 @@
+# K1 段階 A — 性能(規模 × 時間・最大 RSS、cProfile 上位、外挿は「推定」)
+
+委任文 §2-5「**性能**: `PERFORMANCE.md`(規模 × 時間・最大 RSS、cProfile 上位 15、外挿は「推定」の印)。旧エンジンとは比べない」。オーナー逐語(L-476)「**項目13の盲検はなしで、代わりに性能の評価を行ってください**」。
+
+機械: 4 コア、15 GB(`nproc` = 4、`free -g` = 15)。Python 3.11.15。`/usr/bin/time` は無い(ENV_DEFECTS E-6)ので、時間は `time.time()`、RSS は `resource.getrusage(...).ru_maxrss`(スクリプト内で測定、`FOLD_MANIFEST.json` / `runs_index.json` に残る)。**すべて実測。外挿には「推定」と書く。**
+
+## 1. 読み(1 秒バー)と畳み — `scripts/k1_newenv_fold.py`
+
+入力 = 1,095 日ファイル(gzip、合計 606.7 MB)、**49,054,818 行**(K1 の RESULT.md 1.1 と同じ数)。年ごとに 1 プロセス(3 並列)、日ファイルごとに `bot.bt.data.load` → `bars_from_bars`(6 つの足を同時に畳む)。
+
+| 年 | 日 | 1 秒バーの行 | 壁時計(秒) | µs / 行 | 最大 RSS(MB) |
+|---|---|---|---|---|---|
+| 2017 | 365 | 8,347,500 | 436.0 | 52.2 | 665.8 |
+| 2018 | 365 | 20,387,371 | 1,058.3 | 51.9 | 719.6 |
+| 2019 | 365 | 20,319,947 | 1,055.4 | 51.9 | 681.0 |
+| **合計** | 1,095 | **49,054,818** | **1,059.6(3 並列の壁時計)/ 2,549.7(CPU の合計)** | 52.0 | 親 1,314.4 / 子の最大 776.8 |
+
+- 1 日 1 ファイルの読み(2019-01-01、46,448 行)単体の実測: 2.98 s = **64 µs/行**、最大 RSS 127 MB(`t_load.py`、畳み無し)。年の処理では 52 µs/行(畳みを含む。ファイルが大きいほど固定費が薄まる)。
+- 時間の内訳(2019-01-01 の cProfile は取っていない。行ごとの費用の出所は `loader.py`: `_rows_csv` → `_build`(`TimeReader.read` の ISO 解析、`BarEvent` の検証)→ `Row`(`json.dumps(rec)` の identity)→ `anomalies.detect`)。
+- **推定**: 秒バー 3 年分を 1 回の `load()` で読むと、行ごとに `Row` + `BarEvent` + identity の文字列を持つので、127 MB / 46,448 行 ≈ 2.7 KB/行 × 49M 行 ≈ **130 GB**(推定。この機械の 15 GB を超える = ENV_DEFECTS E-2)。日ごとの読みで回避した。
+- 出力(畳んだ足): 1 分 1,523,877 行(20.2 MB gz)/ 3 分 520,960 / 5 分 314,169 / 15 分 105,056 / 30 分 52,544 / 60 分 26,276(0.5 MB)。
+
+## 2. 1 升の cProfile — `60|soff/b24|both`(60 分足、26,276 本、取引 6,291 本)
+
+`PYTHONPATH=src python3 scripts/k1_newenv_run.py --profile --feet 60 --strengths both` → `logs/cprofile_60m_soff_b24_both.txt`(`.prof` も同じ場所)。**cProfile の下で 58.7 s、最大 RSS 221.5 MB**(2 回の実行 + 2 回の読み。試験が並走していた)。同じ升をプロファイル無しで回すと **16.5 s / 208.7 MB**(`runs_index.json`、4 プロセス並列の中で)。
+
+累積(cumulative)の上位 15(プロファイル込みの秒):
+
+| 順 | 関数 | 呼び出し | cumtime(s) |
+|---|---|---|---|
+| 1 | `runner._twice` → `_execute` × 2 | 2 | 58.5 |
+| 2 | `core/engine.py: CoreEngine.run` | 2 | 48.2 |
+| 3 | `engine.step` / `_step` | 180,604 | 45.3 / 45.0 |
+| 4 | `engine._deliver`(戦略への配達) | 102,884 | 23.7 |
+| 5 | `engine._deliver_input` | 52,552 | 14.0 |
+| 6 | `values.copy_carrier`(経路を渡る値の複製) | 587,698 | 12.3 |
+| 7 | `values.renew` | 6,478,744 | 11.8 |
+| 8 | `engine._venue_order` / `_submit_to_venue` | 25,166 | 11.7 / 10.9 |
+| 9 | `engine._handle_reports` | 77,718 | 8.0 |
+| 10 | `values.get` | 11,066,448 | 7.8 |
+| 11 | `events.Event.__post_init__`(検証) | 205,768 | 7.3 |
+| 12 | `api.copy_view` | 100,664 | 7.1 |
+| 13 | `engine._refill` | 180,604 | 6.3 |
+| 14 | `data/loader.py: load` | 2 | 6.3 |
+| 15 | `engine._drain` / `values.rebuild_carrier` | 102,884 / 128,050 | 5.8 / 5.8 |
+
+内部時間(tottime)の上位: `values.get` 5.5 s(1,107 万回)、`values.renew` 3.9 s(648 万回)、`values._new_str` 2.1 s、`dataclasses.replace` 1.7 s、`values._plain_scalar` 1.4 s、`values._walk` 1.3 s、`engine._deliver` 1.3 s、`json.encoder._iterencode_dict` 1.1 s、`values.as_float` 1.0 s。
+
+**読み**: 核の実行 48.2 s(82%)に対し、データの読みは 6.3 s(11%)、統計・書き出しが残り。**核の中では、値の複製と検証(`values.py`: `copy_carrier` / `renew` / `get` / `_new_*`)が半分以上**を占める。足 1 本あたり(2 回の実行の合計 52,552 本の配達)約 0.92 ms(プロファイル込み)。注文は 25,166 本(2 回分)で、注文 1 本の往復(`_submit_to_venue` → `_handle_reports` → 通知の配達)がおよそ 0.8 ms。
+
+## 3. 升ごとの時間と RSS — `scripts/k1_newenv_run.py`(4 プロセス並列、`maxtasksperchild=1`)
+
+各升 = `runner.run`(読み 2 回 + 核の実行 2 回 + 出力の byte 比較)。`runs_index.json` の `wall_s` / `max_rss_mb`(升ごと、並列の中での壁時計)。表は実行の終了後に `logs/perf_cells.md` として生成し、下に写す。
+
+(この節の表は実行の終了後に埋める。埋まっていなければ、実行が上限の時刻で止まった = 報告 (c))
+
+## 4. 外挿(すべて「推定」)
+
+- **推定**: 1 升の壁時計 ≈ 読み(2 × 64 µs × 行数)+ 核(2 × 約 0.3〜0.5 ms × 足の本数 + 注文 1 本あたり約 0.4 ms)。60 分足(26K 本)で 16.5 s の実測から、1 分足(1,523,877 本)は **約 16 分/升**(推定。読み 2 × 98 s + 核 2 × 約 7 分)。族 234 升のうち 1 分足 39 升だけで **約 10.4 時間の CPU**(推定、4 並列で約 2.6 時間)。
+- **推定**: 秒バーを直接核に流す(1 秒バー 49M 本、畳みを戦略側で行う)と、配達だけで 49M × 0.3 ms ≈ **4 時間/実行**、2 回で 8 時間、加えて E-2 のメモリの壁。今の設計では現実的でない。
+- 旧エンジンとは比べない(委任文 §2-5)。

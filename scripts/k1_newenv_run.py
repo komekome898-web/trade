@@ -73,15 +73,20 @@ def run_cell(args):
     pa = plan_args(foot, s, b, strength)
     plan = plan_run(**pa)
     final = os.path.join(RUNS_DIR, plan.run_id)
-    if os.path.isfile(os.path.join(final, "repro.json")):
-        return {"cell": key, "run_id": plan.run_id, "skipped": True, "wall_s": round(time.time() - t0, 1)}
-    res = run(runs_dir=RUNS_DIR, **pa)
-    wall = time.time() - t0
-    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
-    with open(os.path.join(res.run_dir, "trades.json"), "r", encoding="utf-8") as fh:
+    skipped = os.path.isfile(os.path.join(final, "repro.json"))
+    if skipped:  # already run (the run id is the content hash): index it, do not run again
+        with open(os.path.join(final, "repro.json"), "r", encoding="utf-8") as fh:
+            identical = json.load(fh)["identical"]
+        run_dir, wall, rss = final, None, None
+    else:
+        res = run(runs_dir=RUNS_DIR, **pa)
+        run_dir, identical = res.run_dir, res.repro["identical"]
+        wall = round(time.time() - t0, 1)
+        rss = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
+    with open(os.path.join(run_dir, "trades.json"), "r", encoding="utf-8") as fh:
         n = len(json.load(fh)["data"])
-    return {"cell": key, "foot": foot, "gate": gate_label(s, b), "strength": strength, "run_id": res.run_id,
-            "identical": res.repro["identical"], "n_trades": n, "wall_s": round(wall, 1), "max_rss_mb": round(rss, 1)}
+    return {"cell": key, "foot": foot, "gate": gate_label(s, b), "strength": strength, "run_id": plan.run_id,
+            "identical": identical, "n_trades": n, "wall_s": wall, "max_rss_mb": rss, "skipped": skipped}
 
 
 def main() -> None:
@@ -119,7 +124,7 @@ def main() -> None:
     with Pool(a.workers, maxtasksperchild=1) as pool:
         for r in pool.imap_unordered(run_cell, cells):
             done += 1
-            if not r.get("skipped"):
+            if not r.get("skipped") or r["cell"] not in index:
                 index[r["cell"]] = r
             print(f"[{done}/{len(cells)} {time.time() - t0:7.0f}s] {json.dumps(r, ensure_ascii=False)}", flush=True)
             with open(INDEX, "w", encoding="utf-8") as fh:
