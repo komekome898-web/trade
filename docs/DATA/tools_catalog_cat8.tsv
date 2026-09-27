@@ -1,42 +1,42 @@
 番号	名前	初出の回	発見の経路	発見の出典	区分1の番号	状態	E1a	E1b	E2	E3a	E3b	E4	E5	E6	段_E1a	段_E1b	段_E2	段_E3a	段_E3b	段_E4	段_E5	段_E6	他の区分へ	安全側の所見	最後の記載の回	最後の記載の行
-8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	深掘り	なし	印	印	なし	印	印	印	印	-	2	3	-	3	3	3	2			37	47828
-8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	深掘り	印	印	印	印	印	印	印	なし	5	5	4	3	3	3	3	-			37	47829
-8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	深掘り	印	印	印	なし	なし	印	印	なし	5	2	3	-	-	3	4	-			37	47830
-8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	印	なし	なし	なし	印	なし	3	2	3	-	-	-	3	-			37	47831
-8-005	Exegy	0	区分1から	https://www.exegy.com/	117	登録が要る	未判別	未判別	未判別	未判別	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	4	未判別	未判別			37	47832
-8-006	freqtrade	1	検索	https://github.com/freqtrade/freqtrade		深掘り	なし	印	印	印	印	印	印	印	-	2	3	3	3	3	2	2			37	47833
-8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		深掘り	印	印	印	印	印	印	印	印	2	3	3	2	3	3	2	2			37	47834
-8-008	FX Replay	1	検索	https://fxreplay.com/		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	3	-	-	-	2	-	-			37	47835
-8-009	nicferrari/backtester	1	検索	https://github.com/nicferrari/backtester		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	2	-	-	-	3	-	-			37	47836
-8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		深掘り	印	印	印	なし	印	印	印	なし	1	1	1	-	1	1	1	-			37	47837
-8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		深掘り	なし	印	印	なし	印	印	印	印	-	3	4	-	4	3	4	2			37	47838
-8-012	VectorBT	1	X	https://github.com/polakowo/vectorbt		深掘り	なし	印	印	なし	印	印	印	なし	-	3	3	-	3	4	4	-			37	47839
-8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		深掘り	なし	印	印	なし	なし	印	なし	なし	-	2	3	-	-	2	-	-			37	47840
-8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		深掘り	印	印	印	印	印	印	印	印	3	4	2	3	4	3	3	4			37	47841
-8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			37	47842
-8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		深掘り	印	印	印	なし	なし	印	印	印	4	4	3	-	-	3	3	3			37	47843
-8-017	Great Expectations	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧)		深掘り	印	印	印	なし	なし	なし	印	印	4	4	5	-	-	-	3	3			37	47844
-8-018	Vibe-Trading	10	一覧の辿り	https://github.com/HKUDS/Vibe-Trading		深掘り	印	印	印	印	印	印	印	印	3	4	3	2	4	3	4	3			37	47845
-8-019	AutoHedge	10	一覧の辿り	https://github.com/The-Swarm-Corporation/AutoHedge		深掘り	なし	印	なし	なし	なし	なし	なし	なし	-	2	-	-	-	-	-	-			37	47846
-8-020	OpenBB Terminal	10	一覧の辿り	https://github.com/OpenBB-finance/OpenBB		深掘り	印	印	印	なし	印	印	印	印	3	3	3	-	4	3	3	3			37	47847
-8-021	Qlib	10	一覧の辿り	https://github.com/microsoft/qlib		深掘り	印	印	印	印	印	印	印	印	4	4	4	1	3	3	4	3			37	47848
-8-022	FinGPT	10	一覧の辿り	https://github.com/AI4Finance-Foundation/FinGPT		深掘り	印	印	印	なし	なし	なし	印	印	2	2	2	-	-	-	3	3			37	47849
-8-023	Backtrader	10	一覧の辿り	https://github.com/mementum/backtrader		深掘り	印	印	印	なし	なし	印	印	印	3	4	4	-	-	3	3	3			37	47850
-8-024	Lean	10	一覧の辿り	https://github.com/QuantConnect/Lean		深掘り	印	印	印	印	印	印	印	印	3	4	3	3	3	4	3	3			37	47851
-8-025	FinanceToolkit	10	一覧の辿り	https://github.com/JerBouma/FinanceToolkit		深掘り	印	印	印	印	なし	なし	印	印	3	4	4	3	-	-	5	3			37	47852
-8-026	OpenClaw	10	一覧の辿り	https://zenn.dev/toshipon/articles/62b65ff46d414b(記事に URL なし)		浅い	未判別	未判別	未判別	未判別	未判別	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	3	未判別			37	47853
-8-027	Quantreo library	10	一覧の辿り	https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし)		深掘り	なし	なし	なし	なし	印	なし	なし	印	-	-	-	-	4	-	-	3			37	47854
-8-028	AlgoBuild	10	一覧の辿り	https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし)		登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			37	47855
-8-029	MetaTrader の Strategy Tester	10	一覧の辿り	https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし)		浅い	未判別	印	印	なし	印	印	印	印	未判別	3	3	-	3	3	2	3			37	47856
-8-030	dbt	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の dbt)		浅い	印	印	印	なし	なし	未判別	印	印	3	2	4	-	-	未判別	3	3			37	47857
-8-031	Debezium	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Debezium)		浅い	未判別	未判別	未判別	なし	なし	未判別	未判別	未判別	未判別	未判別	未判別	-	-	未判別	未判別	未判別			37	47858
-8-032	Apache Kafka	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Kafka)		浅い	印	印	未判別	なし	なし	未判別	印	印	3	2	未判別	-	-	未判別	2	3			37	47859
-8-033	Prefect	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Prefect)		浅い	未判別	未判別	未判別	なし	なし	未判別	印	印	未判別	未判別	未判別	-	-	未判別	4	3			37	47860
-8-034	Pandas	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Pandas)		浅い	印	印	印	なし	印	未判別	印	未判別	4	2	2	-	4	未判別	2	未判別			37	47861
-8-035	Apache Spark	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Spark)		浅い	印	印	印	未判別	印	未判別	印	未判別	4	2	3	未判別	3	未判別	2	未判別			37	47862
-8-036	AI Trading Lab	10	一覧の辿り	https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし、この記事の中の AI Trading Lab)		登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	印	印	未判別	未判別	未判別	未判別	未判別	未判別	2	2			37	47863
-8-037	AlgoNetwork	10	一覧の辿り	https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし、この記事の中の AlgoNetwork)		深掘り	なし	印	なし	なし	なし	印	印	印	-	3	-	-	-	3	2	1			37	47864
-8-038	NinjaTrader	10	一覧の辿り	https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし、この記事の中の NinjaTrader)		深掘り	印	印	印	なし	印	印	印	印	3	3	3	-	3	3	2	3			37	47865
-8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			37	47866
-8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		未着手	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			37	47867
-8-041	Oryon	11	一覧の辿り	https://github.com/lucasinglese/oryon(8-027 Quantreo の README の後継の案内、生ログ docs/DATA/probes/20260923_tools_8_run11.log:4154)		深掘り	なし	印	印	なし	印	なし	印	印	-	3	4	-	3	-	2	3			37	47868
+8-001	qf-lib	0	区分1から	https://github.com/quarkfin/qf-lib	62	深掘り	なし	印	印	なし	印	印	印	印	-	2	3	-	3	3	3	2			38	48401
+8-002	PineForge	0	区分1から	https://github.com/pineforge-4pass/pineforge-engine	70	深掘り	印	印	印	印	印	印	印	なし	5	5	4	3	3	3	3	-			38	48402
+8-003	prediction-market-backtester	0	区分1から	https://github.com/Quentin-Piot/prediction-market-backtester	92	深掘り	印	印	印	なし	なし	印	印	なし	5	2	3	-	-	3	4	-			38	48403
+8-004	akurkar07/OrderBook	0	区分1から	https://github.com/akurkar07/OrderBook	101	危険で導入停止	印	印	印	なし	なし	なし	印	なし	3	2	3	-	-	-	3	-			38	48404
+8-005	Exegy	0	区分1から	https://www.exegy.com/	117	登録が要る	未判別	未判別	未判別	未判別	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	4	未判別	未判別			38	48405
+8-006	freqtrade	1	検索	https://github.com/freqtrade/freqtrade		深掘り	なし	印	印	印	印	印	印	印	-	2	3	3	3	3	2	2			38	48406
+8-007	backtrex	1	検索	https://backtrex.com/en/blog/ohlc-data-quality-validation-backtesting-guide		深掘り	印	印	印	印	印	印	印	印	2	3	3	2	3	3	2	2			38	48407
+8-008	FX Replay	1	検索	https://fxreplay.com/		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	3	-	-	-	2	-	-			38	48408
+8-009	nicferrari/backtester	1	検索	https://github.com/nicferrari/backtester		深掘り	なし	印	なし	なし	なし	印	なし	なし	-	2	-	-	-	3	-	-			38	48409
+8-010	arXiv:2603.20319	1	検索	https://arxiv.org/abs/2603.20319		深掘り	印	印	印	なし	印	印	印	なし	1	1	1	-	1	1	1	-			38	48410
+8-011	arXiv:2512.12924	1	検索	https://arxiv.org/abs/2512.12924		深掘り	なし	印	印	なし	印	印	印	印	-	3	4	-	4	3	4	2			38	48411
+8-012	VectorBT	1	X	https://github.com/polakowo/vectorbt		深掘り	なし	印	印	なし	印	印	印	なし	-	3	3	-	3	4	4	-			38	48412
+8-013	rusty-bot	1	X	https://x.com/WannabeBotter/status/1810558269565571211		深掘り	なし	印	印	なし	なし	印	なし	なし	-	2	3	-	-	2	-	-			38	48413
+8-014	Fincept Terminal	1	X	https://github.com/Fincept-Corporation/FinceptTerminal		深掘り	印	印	印	印	印	印	印	印	3	4	2	3	4	3	3	4			38	48414
+8-015	TradingView のリプレイ機能	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:98-100(検索計画3、URL は生ログに無い)		深掘り	なし	なし	なし	なし	印	印	なし	なし	-	-	-	-	2	2	-	-			38	48415
+8-016	Exactpro の reconciliation testing	1	検索	生ログ docs/DATA/probes/20260923_tools_8_run1.log:95-97(検索計画2、URL は生ログに無い)		深掘り	印	印	印	なし	なし	印	印	印	4	4	3	-	-	3	3	3			38	48416
+8-017	Great Expectations	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧)		深掘り	印	印	印	なし	なし	なし	印	印	4	4	5	-	-	-	3	3			38	48417
+8-018	Vibe-Trading	10	一覧の辿り	https://github.com/HKUDS/Vibe-Trading		深掘り	印	印	印	印	印	印	印	印	3	4	3	2	4	3	4	3			38	48418
+8-019	AutoHedge	10	一覧の辿り	https://github.com/The-Swarm-Corporation/AutoHedge		深掘り	なし	印	なし	なし	なし	なし	なし	なし	-	2	-	-	-	-	-	-			38	48419
+8-020	OpenBB Terminal	10	一覧の辿り	https://github.com/OpenBB-finance/OpenBB		深掘り	印	印	印	なし	印	印	印	印	3	3	3	-	4	3	3	3			38	48420
+8-021	Qlib	10	一覧の辿り	https://github.com/microsoft/qlib		深掘り	印	印	印	印	印	印	印	印	4	4	4	1	3	3	4	3			38	48421
+8-022	FinGPT	10	一覧の辿り	https://github.com/AI4Finance-Foundation/FinGPT		深掘り	印	印	印	なし	なし	なし	印	印	2	2	2	-	-	-	3	3			38	48422
+8-023	Backtrader	10	一覧の辿り	https://github.com/mementum/backtrader		深掘り	印	印	印	なし	なし	印	印	印	3	4	4	-	-	3	3	3			38	48423
+8-024	Lean	10	一覧の辿り	https://github.com/QuantConnect/Lean		深掘り	印	印	印	印	印	印	印	印	3	4	3	3	3	4	3	3			38	48424
+8-025	FinanceToolkit	10	一覧の辿り	https://github.com/JerBouma/FinanceToolkit		深掘り	印	印	印	印	なし	なし	印	印	3	4	4	3	-	-	5	3			38	48425
+8-026	OpenClaw	10	一覧の辿り	https://zenn.dev/toshipon/articles/62b65ff46d414b(記事に URL なし)		浅い	未判別	未判別	未判別	未判別	未判別	未判別	印	未判別	未判別	未判別	未判別	未判別	未判別	未判別	3	未判別			38	48426
+8-027	Quantreo library	10	一覧の辿り	https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし)		深掘り	なし	なし	なし	なし	印	なし	なし	印	-	-	-	-	4	-	-	3			38	48427
+8-028	AlgoBuild	10	一覧の辿り	https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし)		登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別	未判別			38	48428
+8-029	MetaTrader の Strategy Tester	10	一覧の辿り	https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし)		浅い	未判別	印	印	なし	印	印	印	印	未判別	3	3	-	3	3	2	3			38	48429
+8-030	dbt	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の dbt)		浅い	印	印	印	なし	なし	未判別	印	印	3	2	4	-	-	未判別	3	3			38	48430
+8-031	Debezium	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Debezium)		浅い	未判別	未判別	未判別	なし	なし	未判別	未判別	未判別	未判別	未判別	未判別	-	-	未判別	未判別	未判別			38	48431
+8-032	Apache Kafka	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Kafka)		浅い	印	印	未判別	なし	なし	未判別	印	印	3	2	未判別	-	-	未判別	2	3			38	48432
+8-033	Prefect	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Prefect)		浅い	未判別	未判別	未判別	なし	なし	未判別	印	印	未判別	未判別	未判別	-	-	未判別	4	3			38	48433
+8-034	Pandas	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Pandas)		浅い	印	印	印	なし	印	未判別	印	未判別	4	2	2	-	4	未判別	2	未判別			38	48434
+8-035	Apache Spark	10	一覧の辿り	https://dev.to/137foundry/7-free-tools-for-data-pipeline-reconciliation-and-cross-source-validation-3dbg(10 回目の辿る一覧、この記事の中の Apache Spark)		浅い	印	印	印	未判別	印	未判別	印	未判別	4	2	3	未判別	3	未判別	2	未判別			38	48435
+8-036	AI Trading Lab	10	一覧の辿り	https://www.newsletter.quantreo.com/p/look-ahead-bias-the-invisible-killer(記事に URL なし、この記事の中の AI Trading Lab)		登録が要る	未判別	未判別	未判別	未判別	未判別	未判別	印	印	未判別	未判別	未判別	未判別	未判別	未判別	2	2			38	48436
+8-037	AlgoNetwork	10	一覧の辿り	https://algorier.com/blog/look-ahead-bias-in-backtesting/(記事に URL なし、この記事の中の AlgoNetwork)		深掘り	なし	印	なし	なし	なし	印	印	印	-	3	-	-	-	3	2	1			38	48437
+8-038	NinjaTrader	10	一覧の辿り	https://fortraders.com/blog/how-to-avoid-bias-in-backtesting(記事に URL なし、この記事の中の NinjaTrader)		深掘り	印	印	印	なし	印	印	印	印	3	3	3	-	3	3	2	3			38	48438
+8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			38	48439
+8-040	SciPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の SciPy)		浅い	印	印	印	なし	なし	未判別	印	印	2	2	4	-	-	未判別	2	4			38	48440
+8-041	Oryon	11	一覧の辿り	https://github.com/lucasinglese/oryon(8-027 Quantreo の README の後継の案内、生ログ docs/DATA/probes/20260923_tools_8_run11.log:4154)		深掘り	なし	印	印	なし	印	なし	印	印	-	3	4	-	3	-	2	3			38	48441
