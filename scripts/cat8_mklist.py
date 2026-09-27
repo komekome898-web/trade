@@ -54,11 +54,17 @@ rel_set = set(rel)
 
 excl = {}
 for e in a.exclude:
-    path, sep, why = e.partition("=")
-    if not sep or not why.strip():
+    # A path may itself contain "=" (Hive-style partition directories, audit 132 item 6),
+    # so take the split whose left side is a listed path; more than one such split is refused.
+    splits = [(e[:i], e[i + 1:]) for i, ch in enumerate(e) if ch == "="]
+    if not splits or not any(why.strip() for _, why in splits):
         sys.exit("cat8_mklist: --exclude needs <path>=<reason>: " + e)
-    if path not in rel_set:
-        sys.exit("cat8_mklist: excluded path is not under the root: " + path)
+    hits = [(p, why) for p, why in splits if p in rel_set and why.strip()]
+    if len(hits) > 1:
+        sys.exit("cat8_mklist: --exclude is ambiguous (more than one listed path is a prefix before '='): " + e)
+    if not hits:
+        sys.exit("cat8_mklist: excluded path is not under the root: " + splits[0][0])
+    path, why = hits[0]
     excl[path] = why.strip()
 absent = {}
 for e in a.absent:
