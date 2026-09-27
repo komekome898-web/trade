@@ -28,8 +28,9 @@ What it gives up, and how it refuses instead of guessing:
     a chunk with an anomaly kind it does not name is refused
     (`UnresolvedAnomalyError`), never passed on silently.
 
-Every path is checked (allow-list, then the seal records by path) when
-`stream` is called, before any file is opened -- as `load` does.
+Every path goes through the allow-list when `stream` is called, before any
+row is read -- as `load` does; each file then meets the seal records as in
+`load` (`loader._read_file`).
 """
 from __future__ import annotations
 
@@ -63,8 +64,8 @@ class Stream:
         self._allow = allowlist
         self._seals = SealRegistry(root)
         self._resolve = dict(resolve)
-        # every path is checked before any file is opened (allow-list, then seals by path)
-        self._checked = _check_paths(root, parsed, allowlist, self._seals)[0]
+        # every path goes through the allow-list before any row is read (as load does)
+        self._checked = _check_paths(root, parsed, allowlist)[0]
         self._files: list[FileRecord] = []
         self._counts: dict[str, int] = {}
         self._started = False

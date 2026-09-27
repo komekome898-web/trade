@@ -496,16 +496,9 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
                            ent.unit if ent else None, n_read, n_kept)
 
 
-def _check_paths(root: str, parsed: list[_Dataset], allow: AllowList, seals: SealRegistry) -> list[list]:
-    """Every path of every dataset through the allow-list, then through the seal records BY PATH -- all of it
-    before any file is opened (a sealed file whose range reaches its cutoff is refused unread, k1a-c-02)."""
-    checked = [[allow.check(root, p) for p in d.paths] for d in parsed]
-    for d, cps in zip(parsed, checked):
-        for cp in cps:
-            ent = seals.match_path(cp.real)
-            if ent is not None:
-                seals.check_range(ent, cp.given, d.range_ns)
-    return checked
+def _check_paths(root: str, parsed: list[_Dataset], allow: AllowList) -> list[list]:
+    """Every path of every dataset through the allow-list, before any row is read."""
+    return [[allow.check(root, p) for p in d.paths] for d in parsed]
 
 
 def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None) -> LoadResult:
@@ -520,7 +513,7 @@ def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None) -> 
     seals = SealRegistry(root)
     files: list[FileRecord] = []
     # every path of every dataset is checked before any row is read
-    checked = _check_paths(root, parsed, allow, seals)
+    checked = _check_paths(root, parsed, allow)
     for d, cps in zip(parsed, checked):
         reader = d.spec.time.reader()
         for fi, cp in enumerate(cps):

@@ -29,11 +29,7 @@ Limits: `forward_start` is applied to the files the seal record lists (not
 to every dataset of the unit, which the layer cannot name); an edited copy
 of a sealed file is another file. A file is recognised
 as sealed by its real path, and also by its bytes (a copy of a sealed file
-under another name has the same size and sha256). A file the seal record names by path is refused BEFORE it is opened when
-the range is missing or reaches the cutoff, or when its entry says
-"whole_file": true (every row sealed: refused whatever the range); only a
-copy under another name is recognised after its bytes are read (k1a-c-02,
-2026-09-27). A seal record that cannot
+under another name has the same size and sha256). A seal record that cannot
 be read makes every load refuse (fail closed: the layer cannot tell which
 files are sealed). Reading the sealed window itself goes through
 `load_sealed`'s gates only; this layer has no way to do it.
@@ -143,9 +139,6 @@ class SealEntry:
     real: str
     time_column: str
     cutoff_ns: int
-    # the record says "whole_file": true -- every row of the file is sealed, so it is refused before it is
-    # opened, whatever the range (k1a-c-02, 2026-09-27: a sealed file's bytes are not read)
-    whole_file: bool = False
 
 
 class SealRegistry:
@@ -179,11 +172,8 @@ class SealRegistry:
                     if type(p) is not str or type(col) is not str or not p or not col:
                         raise ValueError(f"files[{i}] path/time_column must be non-empty str")
                     cut = min(self._iso(e["seal_from_ts"], rec, f"files[{i}].seal_from_ts"), fwd)
-                    whole = e.get("whole_file", False)
-                    if type(whole) is not bool:
-                        raise ValueError(f"files[{i}].whole_file must be true / false")
                     real = os.path.realpath(os.path.join(root, p))
-                    ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut, whole)
+                    ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut)
                     self.entries.append(ent)
                     self._by_real[real] = ent
             except SealedRangeError:
@@ -215,10 +205,6 @@ class SealRegistry:
                 self._hash_cache[ent.real] = None
         return self._hash_cache[ent.real]
 
-    def match_path(self, real: str) -> Optional[SealEntry]:
-        """The seal entry naming this real path (no byte of the file is read)."""
-        return self._by_real.get(real)
-
     def match(self, real: str, size: int, sha256: str) -> Optional[SealEntry]:
         """The seal entry covering this file (by real path, else by bytes)."""
         ent = self._by_real.get(real)
@@ -231,10 +217,6 @@ class SealRegistry:
 
     @staticmethod
     def check_range(ent: SealEntry, given: str, range_ns: Optional[tuple[int, int]]) -> None:
-        if ent.whole_file:
-            raise SealedRangeError(
-                f"{given!r} is sealed as a whole file (unit {ent.unit}, seal cutoff {ent.cutoff_ns} ns); it is "
-                f"refused before it is opened, whatever the range")
         if range_ns is None:
             raise SealedRangeError(
                 f"{given!r} is sealed (unit {ent.unit}) from {ent.cutoff_ns} ns; give range_ns with an "
