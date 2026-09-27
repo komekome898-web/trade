@@ -15642,9 +15642,9 @@
   {
    "move": 572,
    "tools": {
-    "Bash": 5
+    "Bash": 7
    },
-   "n_tools": 5,
+   "n_tools": 7,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
