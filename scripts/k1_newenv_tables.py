@@ -116,9 +116,34 @@ def table(cells: dict, strength: str, title: str) -> list[str]:
     return out + [""]
 
 
+def perf_table(index: dict) -> str:
+    """PERFORMANCE.md section 3: per foot, the cells' wall time and max RSS (runs_index.json; cells re-indexed
+    from disk have no timing and are counted separately)."""
+    rows = ["| 足 | 足の本数 | 升(時間あり / 全部) | 壁時計 秒 min / 中央値 / max | 最大 RSS MB min / 中央値 / max | 取引 min / max |",
+            "|---|---|---|---|---|---|"]
+    for foot in FEET:
+        cells = [v for v in index.values() if v["foot"] == foot]
+        timed = [v for v in cells if v.get("wall_s")]
+        if not cells:
+            rows.append(f"| {foot} 分 | | 0 / 0 | (未測定) | | |")
+            continue
+        ws = sorted(v["wall_s"] for v in timed)
+        rs = sorted(v["max_rss_mb"] for v in timed)
+        ns = sorted(v["n_trades"] for v in cells)
+        w = f"{ws[0]} / {ws[len(ws) // 2]} / {ws[-1]}" if ws else "—"
+        r = f"{rs[0]} / {rs[len(rs) // 2]} / {rs[-1]}" if rs else "—"
+        rows.append(f"| {foot} 分 | {BARS.get(foot, '?'):,} | {len(timed)} / {len(cells)} | {w} | {r} | {ns[0]:,} / {ns[-1]:,} |")
+    return "\n".join(rows)
+
+
+BARS = {1: 1523877, 3: 520960, 5: 314169, 15: 105056, 30: 52544, 60: 26276}  # FOLD_MANIFEST.json outputs.rows
+
+
 def main() -> None:
     with open(INDEX, "r", encoding="utf-8") as fh:
         index = json.load(fh)
+    with open(os.path.join(OUT_DIR, "logs", "perf_cells.md"), "w", encoding="utf-8") as fh:
+        fh.write(perf_table(index) + "\n")
     rng = random.Random(SEED)
     cells: dict[str, dict] = {}
     missing = []

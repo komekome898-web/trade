@@ -111,7 +111,38 @@ def main() -> None:
     ap.add_argument("--feet", type=int, nargs="+", default=list(FEET))
     ap.add_argument("--gates", nargs="+", default=None)
     ap.add_argument("--profile", action="store_true")
+    ap.add_argument("--reindex", action="store_true", help="rebuild runs_index.json from the run records on disk (no run)")
     a = ap.parse_args()
+    if a.reindex:
+        index = {}
+        if os.path.isfile(INDEX):
+            with open(INDEX, "r", encoding="utf-8") as fh:
+                index = json.load(fh)
+        for rid in sorted(os.listdir(RUNS_DIR)):
+            d = os.path.join(RUNS_DIR, rid)
+            if not os.path.isfile(os.path.join(d, "repro.json")):
+                continue
+            with open(os.path.join(d, "record.json"), "r", encoding="utf-8") as fh:
+                rec = json.load(fh)
+            c = rec["config"]
+            key = cell_key(c["foot_min"], c["gate"]["s"], c["gate"]["b"], c["strength"])
+            if rec["purpose"] != "研究" or rec["data_sha256"] != {f"{DATA_DIR}/xbtusd_{c['foot_min']}m_2017_2019.csv.gz":
+                                                               rec["data_sha256"][rec["data"][0]["path"]]}:
+                continue
+            old = index.get(key, {})
+            if old.get("run_id") == rid:
+                continue
+            with open(os.path.join(d, "trades.json"), "r", encoding="utf-8") as fh:
+                n = len(json.load(fh)["data"])
+            with open(os.path.join(d, "repro.json"), "r", encoding="utf-8") as fh:
+                identical = json.load(fh)["identical"]
+            index[key] = {"cell": key, "foot": c["foot_min"], "gate": c["gate"]["s"] and gate_label(c["gate"]["s"], c["gate"]["b"]),
+                          "strength": c["strength"], "run_id": rid, "identical": identical, "n_trades": n,
+                          "wall_s": old.get("wall_s"), "max_rss_mb": old.get("max_rss_mb"), "skipped": False, "reindexed": True}
+        with open(INDEX, "w", encoding="utf-8") as fh:
+            json.dump(index, fh, ensure_ascii=False, indent=1, sort_keys=True)
+        print(f"reindexed: {len(index)} cells -> {INDEX}")
+        return
     gs = [(s, b) for s, b in gates() if a.gates is None or gate_label(s, b) in a.gates]
     cells = [(f, s, b, st) for st in a.strengths for f in a.feet for s, b in gs]
     if a.profile:
