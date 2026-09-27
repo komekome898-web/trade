@@ -285,27 +285,63 @@
   "strength": "both",
   "wall_s": 31.7
  },
+ "5|s-/b-|both": {
+  "cell": "5|s-/b-|both",
+  "foot": 5,
+  "gate": "s-/b-",
+  "identical": true,
+  "max_rss_mb": 1349.9,
+  "n_trades": 43388,
+  "run_id": "2ff9fc8c1808ab879e8b244fb67950c2213ee44edacdeaefb6b1f6ab560d06b6",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 152.6
+ },
+ "5|s-/b24|both": {
+  "cell": "5|s-/b24|both",
+  "foot": 5,
+  "gate": "s-/b24",
+  "identical": true,
+  "max_rss_mb": 1434.4,
+  "n_trades": 46539,
+  "run_id": "82307a9fc48e38134cd75683637929cce786b5ae875bbfe29c8d046432bb9c67",
+  "strength": "both",
+  "wall_s": 300.6
+ },
+ "5|s10/b-|both": {
+  "cell": "5|s10/b-|both",
+  "foot": 5,
+  "gate": "s10/b-",
+  "identical": true,
+  "max_rss_mb": 1152.4,
+  "n_trades": 30242,
+  "run_id": "da9473ce14c7ffb75645837eea3043400e575622b33aede3c63c8c12713046b7",
+  "strength": "both",
+  "wall_s": 279.6
+ },
  "5|soff/b24|both": {
   "cell": "5|soff/b24|both",
   "foot": 5,
   "gate": "soff/b24",
   "identical": true,
-  "max_rss_mb": 940.9,
+  "max_rss_mb": 930.4,
   "n_trades": 16496,
-  "run_id": "6cc1a1bd0d9524907edca2e7f9c8b99da490e14788d4c0667f8077b5de615905",
+  "run_id": "ab1d39a64068951ca585def8c4489b4b3ada048c246d6f2cfea23141ee1cef8b",
+  "skipped": false,
   "strength": "both",
-  "wall_s": 152.4
+  "wall_s": 102.6
  },
  "5|soff/b40|both": {
   "cell": "5|soff/b40|both",
   "foot": 5,
   "gate": "soff/b40",
   "identical": true,
-  "max_rss_mb": 781.5,
+  "max_rss_mb": 777.3,
   "n_trades": 6931,
-  "run_id": "c16b7f68dd5e85a89839722725733b51d7b74192698729dc914747877d25d124",
+  "run_id": "bf22a8817363b2f07b633d49fd733271cb55661e4343d17e6eb957636718a24b",
+  "skipped": false,
   "strength": "both",
-  "wall_s": 140.4
+  "wall_s": 85.8
  },
  "60|s-/b-|both": {
   "cell": "60|s-/b-|both",
@@ -427,6 +463,18 @@
   "run_id": "01cc37d8053d4dc8c2502edd844c6808985fa09bdd0c7dc348d9b14f00278d42",
   "strength": "both",
   "wall_s": 19.3
+ },
+ "60|soff/b24|both": {
+  "cell": "60|soff/b24|both",
+  "foot": 60,
+  "gate": "soff/b24",
+  "identical": true,
+  "max_rss_mb": 208.9,
+  "n_trades": 6291,
+  "run_id": "f5a0f0fe96eb9068752bab283dae0e80631df7e2932fb6bffe91e4fda7caa8fd",
+  "skipped": false,
+  "strength": "both",
+  "wall_s": 16.5
  },
  "60|soff/b40|both": {
   "cell": "60|soff/b40|both",

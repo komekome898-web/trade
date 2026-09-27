@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import cProfile
+import gzip
 import json
 import os
 import pstats
@@ -62,6 +63,19 @@ def plan_args(foot: int, s: str, b: str, strength: str) -> dict:
                 config=config(foot, s, b, strength), seed=0, setup=K1Setup(), purpose="研究", prereg=PREREG)
 
 
+def compress_exports(run_dir: str) -> None:
+    """Disk (02:15 UTC: the machine ran out of space at 46 cells): after a cell's run, fills.json and
+    orders.json -- the two largest exports, which neither the tables nor the dashboard read -- are gzipped
+    in place (<name>.json.gz). The bytes are unchanged: repro.json's sha256 is of the uncompressed file
+    (`gunzip -c fills.json.gz | sha256sum` reproduces it)."""
+    for name in ("fills.json", "orders.json"):
+        src = os.path.join(run_dir, name)
+        if os.path.isfile(src):
+            with open(src, "rb") as fi, gzip.open(src + ".gz", "wb", compresslevel=6) as fo:
+                fo.write(fi.read())
+            os.remove(src)
+
+
 def cell_key(foot: int, s: str, b: str, strength: str) -> str:
     return f"{foot}|{gate_label(s, b)}|{strength}"
 
@@ -85,6 +99,7 @@ def run_cell(args):
         rss = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
     with open(os.path.join(run_dir, "trades.json"), "r", encoding="utf-8") as fh:
         n = len(json.load(fh)["data"])
+    compress_exports(run_dir)
     return {"cell": key, "foot": foot, "gate": gate_label(s, b), "strength": strength, "run_id": plan.run_id,
             "identical": identical, "n_trades": n, "wall_s": wall, "max_rss_mb": rss, "skipped": skipped}
 

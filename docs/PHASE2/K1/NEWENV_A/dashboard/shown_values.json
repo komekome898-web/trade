@@ -1,0 +1,45 @@
+{
+ "list_rows": 47,
+ "34624564bf77e9af5031cffd88b5ea0f6fdea6bc1665c9f70bb2d139b2e897fd": {
+  "tabs": [
+   "概要",
+   "前提",
+   "損益",
+   "取引",
+   "約定の質",
+   "費用",
+   "分布",
+   "検証",
+   "再現性",
+   "データ品質"
+  ],
+  "shown": {
+   "概要": "実行 ID\t34624564bf77e9af5031cffd88b5ea0f6fdea6bc1665c9f70bb2d139b2e897fd\n目的\t研究\n商品\tXBTUSD\n手順\tbot.strategy.k1_wick:K1Setup\n種\t0\n往復の数\t6726\n実現損益(円)\t-18369.4\n1 件ごとの bp の平均\t-2.76275",
+   "前提": "約定の模型\t\"signal_bar_close\"\n遅延(ns)\tnull\n費用\t{\"maker_fee_rate\": 0, \"source\": \"K1 RESULT.md 1.4「経費は引いていない」: 費用 0\", \"taker_fee_rate\": 0}\n核の部品\t{\"account\": \"bot.bt.core.interfaces.NullAccount\", \"cost_model\": \"bot.bt.repro.fixed.DeclaredFeeCost\", \"fill_model\": \"bot.strategy.k1_wick.BarCloseMarketFill\", \"latency_model\": \"bot.bt.core.interfaces.ZeroLatency\"}\n注記\t{\"fill\": \"market order priced at the close of the bar that decided it (RESULT.md 1.4)\", \"holding_bars\": \"measured by bar index in the tables script (bars with no trade do not exist)\", \"seed\": \"unused: K1 draws nothing\"}\nデータ\nファイル\tsha256\nbacktest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz\tcafe2ea91c83ccd1c2691d2a7dee124a8b7eb93930ef8498228c5f005559f5be",
+   "費用": "maker 手数料(円)\t0\ntaker 手数料(円)\t0\nスプレッド(円)\t—\nスプレッドの注記\t約定の時点の仲値がデータに無いので測れない\n資金調達(円)\t0\n資金調達の注記\t設定の costs.funding = none",
+   "再現性": "実行 ID(内容のハッシュ)\t34624564bf77e9af5031cffd88b5ea0f6fdea6bc1665c9f70bb2d139b2e897fd\ngit の SHA\t7295906dabec73e091c7349fa2799e0581e426f2\n差分のハッシュ\t53e0c26e7812db4779dfb38e105bf51087f93c2fa2507fb79064eece57312c64\n種\t0\n版\tbt-item3-r1; core core-19; python 3.11.15; numpy 2.4.6; pandas 3.0.6\n事前登録の sha256\ta36bbf51dba5822c2ff20e4045ef0332531499e05782adb8e066ec2a72207082\n自動の再現の確認\t2 回の実行で一致\n出力のファイル\tsha256\ndata_quality.json\t883d109b586e440af4380fe06326254c9e3aa9904f461193334155800a3acab1\nfills.json\td95ce22f99b9000009b7f3fc1516a66002a57b9a6ed0468eb33491dde8233bee\nmetrics.json\t57c4acb7c84fce4160e8c271e766392cf34b81b10439e099cd3efd46583d1371\norders.json\ta3a0d5310bc3b2236f66025250b926e00c03705748251b3ebdd24c6e2aed3dd8\nrecord.json\tc15276c560670225f8aceb593554d265fd17927e05496fc7537f9376220b5251\ntrades.json\t1211353edacb93b3403031ab746eca38b31de027de30cb91f0a0ac1775140024",
+   "データ品質": "ファイル\t読んだ行\t残した行\t封印の単位\tsha256\nbacktest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz\t26276\t26276\t—\tcafe2ea91c83ccd1c2691d2a7dee124a8b7eb93930ef8498228c5f005559f5be\nデータセット\t異常の件数\nd0\t0\nデータセット\t走った検査\nd0\tbackward, duplicate, conflict"
+  }
+ },
+ "0496c25877eeeffc7f9da91b1a6f32a03caeac5bd638ec468bd5806e1adefbbe": {
+  "tabs": [
+   "概要",
+   "前提",
+   "損益",
+   "取引",
+   "約定の質",
+   "費用",
+   "分布",
+   "検証",
+   "再現性",
+   "データ品質"
+  ],
+  "shown": {
+   "概要": "実行 ID\t0496c25877eeeffc7f9da91b1a6f32a03caeac5bd638ec468bd5806e1adefbbe\n目的\t研究\n商品\tXBTUSD\n手順\tbot.strategy.k1_wick:K1Setup\n種\t0\n往復の数\t14751\n実現損益(円)\t-28896.4\n1 件ごとの bp の平均\t-2.68625",
+   "前提": "約定の模型\t\"signal_bar_close\"\n遅延(ns)\tnull\n費用\t{\"maker_fee_rate\": 0, \"source\": \"K1 RESULT.md 1.4「経費は引いていない」: 費用 0\", \"taker_fee_rate\": 0}\n核の部品\t{\"account\": \"bot.bt.core.interfaces.NullAccount\", \"cost_model\": \"bot.bt.repro.fixed.DeclaredFeeCost\", \"fill_model\": \"bot.strategy.k1_wick.BarCloseMarketFill\", \"latency_model\": \"bot.bt.core.interfaces.ZeroLatency\"}\n注記\t{\"fill\": \"market order priced at the close of the bar that decided it (RESULT.md 1.4)\", \"holding_bars\": \"measured by bar index in the tables script (bars with no trade do not exist)\", \"seed\": \"unused: K1 draws nothing\"}\nデータ\nファイル\tsha256\nbacktest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz\te3f705461b49c5ebb7a2b3c82e0a9f93a929069c9998c1a347c63d08993355a9",
+   "費用": "maker 手数料(円)\t0\ntaker 手数料(円)\t0\nスプレッド(円)\t—\nスプレッドの注記\t約定の時点の仲値がデータに無いので測れない\n資金調達(円)\t0\n資金調達の注記\t設定の costs.funding = none",
+   "再現性": "実行 ID(内容のハッシュ)\t0496c25877eeeffc7f9da91b1a6f32a03caeac5bd638ec468bd5806e1adefbbe\ngit の SHA\t14580fc9203e27ab86a201909b19f0244ae251fa\n差分のハッシュ\t53e0c26e7812db4779dfb38e105bf51087f93c2fa2507fb79064eece57312c64\n種\t0\n版\tbt-item3-r1; core core-19; python 3.11.15; numpy 2.4.6; pandas 3.0.6\n事前登録の sha256\ta36bbf51dba5822c2ff20e4045ef0332531499e05782adb8e066ec2a72207082\n自動の再現の確認\t2 回の実行で一致\n出力のファイル\tsha256\ndata_quality.json\t7f9e5c1b7ad8f8eab9c13a049b5b916eae612375f6b19e3d64fbd6c29728f169\nfills.json\tf1eae75d29244575d6a661e2c52558aff287393ec828edd3ff28fbc0beef4f8f\nmetrics.json\te6f7049c48797a20259cec01dcc8460e370ecb552f411d11cdedd04a6c587e5a\norders.json\t6c129258c8e10ce4214f094109e0cfb67761b1c79d57e94e0433aba033bb7765\nrecord.json\t37313d449b42970b3b61b448e8d4f72b43b0d09202db515060f10ce13f7da0a3\ntrades.json\ta44bf98d9d902192fcc49ab90ef086cc87f43c44f55b4b96c6941aa5067c05c4",
+   "データ品質": "ファイル\t読んだ行\t残した行\t封印の単位\tsha256\nbacktest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz\t105056\t105056\t—\te3f705461b49c5ebb7a2b3c82e0a9f93a929069c9998c1a347c63d08993355a9\nデータセット\t異常の件数\nd0\t0\nデータセット\t走った検査\nd0\tbackward, duplicate, conflict"
+  }
+ }
+}
