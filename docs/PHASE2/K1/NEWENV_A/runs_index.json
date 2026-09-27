@@ -178,6 +178,18 @@
   "strength": "strong",
   "wall_s": 376.8
  },
+ "1|s10/b24|strong": {
+  "cell": "1|s10/b24|strong",
+  "foot": 1,
+  "gate": "s10/b24",
+  "identical": true,
+  "max_rss_mb": 3389.2,
+  "n_trades": 24756,
+  "run_id": "8cda71635a1e9269a7e05f89cf58b7839e7b5a3d776696fbb14138dcc3a75231",
+  "skipped": false,
+  "strength": "strong",
+  "wall_s": 384.8
+ },
  "1|soff/b24|strong": {
   "cell": "1|soff/b24|strong",
   "foot": 1,
