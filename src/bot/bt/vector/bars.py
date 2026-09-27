@@ -75,3 +75,42 @@ def bars_from_trades(t_ns: Sequence, px: Sequence, qty: Sequence, interval_s: in
     st = b[starts]
     return [{"start_ns": int(st[i]), "open": float(op[i]), "high": float(hi[i]), "low": float(lo[i]),
              "close": float(cl[i]), "volume": float(vol[i])} for i in range(starts.size)]
+
+
+def bars_from_bars(start_ns: Sequence, op: Sequence, hi: Sequence, lo: Sequence, cl: Sequence, vol: Sequence,
+                   interval_s: int) -> list[dict]:
+    """Coarser bars from finer bars (K1 stage A, 2026-09-27: the 1-second bars of
+    backtest_data/bitmex_trade_1s_XBTUSD folded to `foot` minutes).
+
+    Definition: a coarse bar covers [start, start + interval) with start =
+    floor(fine start / interval) * interval on the UTC epoch grid; open = the
+    first fine bar's open, high = max of the fine highs, low = min of the fine
+    lows, close = the last fine bar's close, volume = the fine volumes summed
+    in delivered order; an interval with no fine bar has no coarse bar (a
+    missing bar is missing, not "no movement"). The fine bars must be in
+    time order (the data layer's anomalies decide what "in order" is)."""
+    iv = interval_ns(interval_s)
+    t = _times(start_ns)
+    n = t.size
+    o = _floats(op, "open", n)
+    h = _floats(hi, "high", n)
+    lw = _floats(lo, "low", n)
+    c = _floats(cl, "close", n)
+    v = _floats(vol, "volume", n)
+    if n == 0:
+        return []
+    b = (t // iv) * iv
+    starts = np.flatnonzero(np.concatenate(([True], b[1:] != b[:-1])))
+    ends = np.concatenate((starts[1:], [n]))
+    lens = ends - starts
+    out_o = o[starts]
+    out_c = c[ends - 1]
+    out_h = np.maximum.reduceat(h, starts)
+    out_l = np.minimum.reduceat(lw, starts)
+    out_v = v[starts].copy()
+    for k in range(1, int(lens.max())):
+        m = lens > k
+        out_v[m] = out_v[m] + v[starts[m] + k]
+    st = b[starts]
+    return [{"start_ns": int(st[i]), "open": float(out_o[i]), "high": float(out_h[i]), "low": float(out_l[i]),
+             "close": float(out_c[i]), "volume": float(out_v[i])} for i in range(starts.size)]

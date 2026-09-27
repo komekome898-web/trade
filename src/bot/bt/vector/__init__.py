@@ -2,6 +2,7 @@
 tests to give the same bits as the event-driven path on the same bars.
 
   bars_from_trades(t_ns, px, qty, interval_s)   vector path      (bars.py)
+  bars_from_bars(start_ns, o, h, l, c, v, interval_s)  finer bars -> coarser bars (bars.py; K1 stage A)
   run_event_bars(trades, interval_s)            event path       (event_path.py)
   SmaLongFlat(...) / SmaCross(...).vector(close)  vector path  (rules.py)
   run_event_rule(bars, interval_s, rule)        event path       (event_path.py)
@@ -16,7 +17,7 @@ from __future__ import annotations
 import struct
 from typing import Any, Iterable
 
-from .bars import bars_from_trades, interval_ns
+from .bars import bars_from_bars, bars_from_trades, interval_ns
 from .event_path import bar_events, run_event_bars, run_event_rule
 from .rules import RULES, SmaCross, SmaLongFlat, equity_curve, rolling_mean, rule_from_mapping
 
@@ -41,5 +42,5 @@ def bitwise_equal(a: Any, b: Any) -> bool:
     return _bits(a) == _bits(b) and type(a) is type(b)
 
 
-__all__ = ["RULES", "SmaCross", "SmaLongFlat", "bar_events", "equity_curve", "rolling_mean", "bars_from_trades", "bitwise_equal",
+__all__ = ["RULES", "SmaCross", "SmaLongFlat", "bar_events", "equity_curve", "rolling_mean", "bars_from_bars", "bars_from_trades", "bitwise_equal",
            "interval_ns", "rule_from_mapping", "run_event_bars", "run_event_rule", "run_vector_rule"]

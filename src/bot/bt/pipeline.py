@@ -41,16 +41,7 @@ Declarations (every key required unless marked optional; nothing has a default):
                {"kind": "price_rule", "buy_below", "sell_above", "qty"}
                  -- conditioned on prices: refused with real data under the
                     purpose 動作確認 (委任文 §4)
-               {"kind": "module", "module": import path, "factory": name, "params": {...}}
-                 -- a strategy of the repository (research unit U1, ENV_DEFECTS D-1): the
-                    module's `factory(params, price_type)` returns a bot.bt.core.Strategy
-                    that sends any order the venue model takes (limit, market, cancel);
-                    the strategy's `exit_reasons` (client_order_id -> reason) names the
-                    closing orders for the round trips (an unnamed closing order stops
-                    the run: no invented reason). The module's source sha256 and the
-                    params are part of the identity. Conditioned on prices: refused with
-                    real data under the purpose 動作確認, like price_rule.
-               Every order of the three built-in kinds is a market order sent to the venue model.
+               Every order is a market order sent to the venue model.
   fill         {"optimistic": {FillSpec fields}, "pessimistic": {FillSpec fields}}
                (bot.bt.fill.FillRange: both sides required; tier 6's "impact" is a
                mapping of ImpactSpec fields; the L3 stances need a per-order feed,
@@ -114,7 +105,6 @@ from __future__ import annotations
 import fnmatch
 import gzip
 import hashlib
-import importlib
 import inspect
 import json
 import os
@@ -139,7 +129,6 @@ from .orders.errors import ExecutionModelError
 from .portfolio.account import LiquidationRule, MarginAccount
 from .report import exports as X
 from .report import metrics as M
-from .report.errors import ReportError
 from .report.trades import round_trips
 from .repro.code_state import REPO, code_state, version
 
@@ -148,7 +137,7 @@ ORIGINS = ("real",)  # a file dataset's only origin; synthetic data comes from G
 # this environment's market-data folders: the data layer's allowed roots under the repository (not the caller's root)
 MARKET_ROOTS = tuple(os.path.join(REPO, r) for r in _DATA_ROOTS)
 TIME_ONLY = ("schedule", "seeded_random")
-STRATEGY_KINDS = TIME_ONLY + ("price_rule", "module")
+STRATEGY_KINDS = TIME_ONLY + ("price_rule",)
 SIDES = ("optimistic", "pessimistic")
 LATENCY_CHANNELS = ("feed", "order", "cancel", "notice")
 ACCOUNT_KEYS = ("currency", "cash", "leverage", "mark", "liquidation", "margin_check")
@@ -473,41 +462,10 @@ def _check_strategy(st: Mapping) -> dict:
             other = "sell" if side == "buy" else "buy"
             legs += [{"t_ns": times[k2], "side": side, "qty": qty}, {"t_ns": times[k2 + 1], "side": other, "qty": qty}]
         return {"kind": k, "legs": legs}
-    if k == "module":
-        _need(set(st) == {"kind", "module", "factory", "params"},
-              "strategy module must be exactly {kind, module, factory, params}")
-        _need(type(st["module"]) is str and st["module"] and type(st["factory"]) is str and st["factory"],
-              "strategy.module and strategy.factory must be non-empty names")
-        _need(isinstance(st["params"], Mapping), "strategy.params must be a mapping (plain finite JSON)")
-        params = json.loads(_canon(dict(st["params"])))
-        try:
-            mod = importlib.import_module(st["module"])
-        except ImportError as exc:
-            raise PipelineError(f"strategy.module {st['module']!r} cannot be imported: {exc}") from None
-        factory = getattr(mod, st["factory"], None)
-        _need(callable(factory), f"strategy.factory {st['factory']!r} is not a callable of {st['module']!r}")
-        try:
-            src = inspect.getsource(mod)
-        except (OSError, TypeError) as exc:
-            raise PipelineError(f"strategy.module {st['module']!r}: its source cannot be read: {exc}") from None
-        return {"kind": k, "module": st["module"], "factory": st["factory"], "params": params,
-                "module_source_sha256": _sha(src.encode())}
     _need(set(st) == {"kind", "buy_below", "sell_above", "qty"},
           "strategy price_rule must be exactly {kind, buy_below, sell_above, qty}")
     return {"kind": k, "buy_below": _num(st["buy_below"], "buy_below"), "sell_above": _num(st["sell_above"], "sell_above"),
             "qty": _num(st["qty"], "qty")}
-
-
-def _module_strategy(st: Mapping, price_type: type) -> Strategy:
-    """The strategy a `module` declaration names, built for one instrument and one side (a fresh object each
-    time: nothing is shared between the two sides of the fill range or the two executions)."""
-    factory = getattr(importlib.import_module(st["module"]), st["factory"])
-    try:
-        strat = factory(json.loads(_canon(dict(st["params"]))), price_type)
-    except (ValueError, TypeError) as exc:
-        raise PipelineError(f"strategy.module {st['module']}.{st['factory']}: {type(exc).__name__}: {exc}") from None
-    _need(isinstance(strat, Strategy), f"strategy.factory must return a bot.bt.core.Strategy, got {type(strat).__name__}")
-    return strat
 
 
 def _delay(d: Any, where: str):
@@ -745,11 +703,7 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
     code = code_state(repo)
     src = inspect.getsource(inspect.getmodule(plan_pipeline))
     identity = {
-        "datasets": ds, "data_sha256": hashes, "instruments": ins,
-        # a module strategy: its declaration plus its source's sha256 (the code scope's diff hash covers a
-        # changed module too; this names WHICH source ran)
-        "strategy": {**json.loads(_canon(dict(strategy))),
-                     **({"module_source_sha256": st["module_source_sha256"]} if st["kind"] == "module" else {})},
+        "datasets": ds, "data_sha256": hashes, "instruments": ins, "strategy": json.loads(_canon(dict(strategy))),
         "fill": json.loads(_canon(dict(fill))), "latency": lat, "costs": cs, "account": acc, "purpose": p,
         "prereg_sha256": pre_sha, "git_sha": code["git_sha"], "diff_hash": code["diff_hash"],
         "code_scope": code["code_scope"], "version": f"{PIPELINE_VERSION}; {GENERATOR_VERSION}; {version()}",
@@ -1023,9 +977,6 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
         first = min(first, legs[0]["t_ns"])
         strat: Strategy = ScheduleStrategy(legs)
         reasons = {f"leg{i}": "fixed_schedule" for i in range(len(legs))}
-    elif st["kind"] == "module":
-        strat = _module_strategy(st, price_type)
-        reasons = None
     else:
         strat = PriceRuleStrategy(st, price_type)
         reasons = None
@@ -1065,17 +1016,9 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
     orders = [{"id": o.client_order_id, "t_ns": o.sent_time_ns, "side": o.request.side, "type": o.request.order_type,
                "qty": o.request.size, "state": o.state.value if hasattr(o.state, "value") else str(o.state),
                "filled": o.filled_size, "instrument": it["name"], "range": side} for o in res.orders.values()]
-    if reasons is None and st["kind"] == "module":
-        # the strategy names its closing orders; round_trips refuses a closing order it did not name
-        named = getattr(strat, "exit_reasons", None)
-        _need(isinstance(named, Mapping), f"strategy.module {st['module']!r}: the strategy has no exit_reasons mapping")
-        reasons = {str(k): str(v) for k, v in named.items()}
-    elif reasons is None:
+    if reasons is None:
         reasons = {f["order_id"]: "rule" for f in fills}
-    try:
-        trades = [dict(t, instrument=it["name"], range=side) for t in round_trips(fills, reasons)]
-    except ReportError as exc:
-        raise PipelineError(f"instrument {it['name']!r} ({side}): round trips: {exc}") from None
+    trades = [dict(t, instrument=it["name"], range=side) for t in round_trips(fills, reasons)]
     read = {k: v for k, v in res.source_events_by_stream.items() if k != "~clock"}
     account_state = {"currency": snap.currency, "position": snap.position, "avg_px": snap.avg_px,
                      "realized": snap.realized, "unrealized": snap.unrealized, "fees": snap.fees,
