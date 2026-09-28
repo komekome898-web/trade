@@ -544,3 +544,6 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-09-27T19:04:19+00:00 bybit: 接続
 2026-09-27T19:04:20+00:00 bybit: -> bybit_20260927.jsonl.gz
 2026-09-27T19:04:32+00:00 binance_cm: -> binance_cm_20260927.jsonl.gz
+2026-09-28T00:00:07+00:00 okx: -> okx_20260928.jsonl.gz
+2026-09-28T00:00:09+00:00 binance_cm: -> binance_cm_20260928.jsonl.gz
+2026-09-28T00:00:18+00:00 bybit: -> bybit_20260928.jsonl.gz
