@@ -1,8 +1,3 @@
-      missing: raw/BTCUSDT-aggTrades-2026-08-25.zip
-      missing: raw/BTCUSDT-aggTrades-2026-08-25.zip.CHECKSUM
-      missing: raw/BTCUSDT-aggTrades-2026-08-26.zip
-      missing: raw/BTCUSDT-aggTrades-2026-08-26.zip.CHECKSUM
-      missing: raw/BTCUSDT-aggTrades-2026-08-27.zip
       missing: raw/BTCUSDT-aggTrades-2026-08-27.zip.CHECKSUM
       missing: raw/BTCUSDT-aggTrades-2026-08-28.zip
       missing: raw/BTCUSDT-aggTrades-2026-08-28.zip.CHECKSUM
@@ -102,7 +97,7 @@
   [ok] topixf_225labo_20260907: 7/7 matched
   [ok, line-ending-only] venue_survey_20260827: 31/35 matched, 4 line-ending-only
   [ok, line-ending-only] yutai_20260904: 2/3 matched, 1 line-ending-only
-ledger cross-check (data\INTAKE_latest.json): 6528 files checked, 0 mismatches
+ledger cross-check (data\INTAKE_latest.json): 6530 files checked, 0 mismatches
 overall: FAIL
 wrote C:\Users\ryoma\trade\data\SNAPSHOT_VERIFY.json
 file                                 bytes     members  complete  last_ok  recoverable_bytes
@@ -389,12 +384,17 @@ FX_BTC_JPY_20260928_185927.jsonl.gz  27644     4        4         yes      74106
 FX_BTC_JPY_20260928_190410.jsonl.gz  71036     10       10        yes      2239366          
 FX_BTC_JPY_20260928_191735.jsonl.gz  22360     2        2         yes      185422           
 FX_BTC_JPY_20260928_191901.jsonl.gz  225914    6        6         yes      1882028          
-FX_BTC_JPY_20260928_192426.jsonl.gz  6098930   122      122       yes      54356974         
+FX_BTC_JPY_20260928_192426.jsonl.gz  9233003   189      189       yes      83216297         
+FX_BTC_JPY_20260928_223515.jsonl.gz  4970598   109      109       yes      46224667         
+FX_BTC_JPY_20260929_002447.jsonl.gz  14483558  270      270       yes      125574233        
+FX_BTC_JPY_20260929_045633.jsonl.gz  25967123  486      486       yes      222798471        
+FX_BTC_JPY_20260929_130842.jsonl.gz  2141380   38       38        yes      18047591         
+FX_BTC_JPY_20260929_134608.jsonl.gz  5010655   81       81        yes      41489621         
+FX_BTC_JPY_20260929_150755.jsonl.gz  13340474  234      234       yes      112885146        
+FX_BTC_JPY_20260929_190412.jsonl.gz  6430243   141      141       yes      60074500         
 
-283 files scanned, 34 with a truncated last member, 24438246730 decompressed bytes recoverable in total
+290 files scanned, 34 with a truncated last member, 25094200282 decompressed bytes recoverable in total
 wrote C:\Users\ryoma\trade\data\WS_GZ_LISTING.json
-data_quality: 3935/12460 data/api_health.csv 46534 0.5s
-data_quality: 6301/12460 data/archive/bitmex/data/quote/20210514.csv.gz 7432605 1530.6s
-data_quality: budget exhausted after 6301/12460 files (1535.8s); the rest resumes next run
-data_quality: skipped 6299 unchanged
-data_quality: 31 datasets, 935916284 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
+data_quality: 3936/12490 data/api_health.csv 65435 0.6s
+data_quality: 6330/12490 data/archive/bitmex/data/quote/20210611.csv.gz 4718287 191.2s
+data_quality: 6331/12490 data/archive/bitmex/data/quote/20210612.csv.gz 4881501 312.1s
