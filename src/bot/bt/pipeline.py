@@ -20,7 +20,10 @@ Declarations (every key required unless marked optional; nothing has a default):
 
   datasets     a file dataset: {"name", "paths", "spec", "origin": "real",
                  "resolve" (optional: the anomaly policies of bot.bt.data),
-                 "range_ns" (optional: [lo, hi) -- the rows kept, bot.bt.data.load)}
+                 "range_ns" (optional: [lo, hi) -- the rows kept, bot.bt.data.load),
+                 "source" (optional: [path, ...] relative to the repository -- market files of this
+                           environment declared as where the rows came from; they are only
+                           WHERE the evidence is looked for, never the evidence itself)}
                a generated (synthetic) dataset: {"name", "generator": {"name":
                  "random_walk", "seed": int, "params": {...}}} (GENERATORS). Synthetic
                  data is made ONLY here, from a seed; the generator's name,
@@ -86,11 +89,16 @@ Declarations (every key required unless marked optional; nothing has a default):
 
 Origin is decided from the ROWS (finishing delegation i4-r2-03): every file
 dataset is real market data. Its rows, read through the data layer, are
-compared with the rows of this environment's market-data files (MARKET_ROOTS,
-the data layer's allowed roots under the repository) read through the data
+compared with the rows of this environment's market-data files (the folders MARKET_ROOTS of
+the data layer's allowed roots under MARKET_BASE = the repository) read through the data
 layer with the SAME declaration: one row equal in time and values is the
 evidence (`origin_evidence`: by "rows", the market file, rows matched / rows
-read). A file dataset whose rows match no market file is still real (the
+read). The files compared are ONLY the files handed to the run that lie in
+those folders and the market files the declaration names as the dataset's
+"source" (round 2 of the k1 env fixes, 2026-09-27: the evidence walk no
+longer opens every file of the data folders, which read unconsumed and
+sealed data; `origin_evidence.searched` lists what was looked at). A copy
+outside the market folders with no declared source is therefore "unmatched". A file dataset whose rows match no market file is still real (the
 source is unknown: data from outside this environment, or every row edited);
 its evidence says so (by "unmatched"). Only a generator makes synthetic data.
 Limits of the evidence (never of the rule: a file is real either way): a
@@ -128,7 +136,7 @@ from .core import Ack, BarEvent, BookSnapshotEvent, Canceled, ClockEvent, CoreEn
     OrderRequest, Reject, Strategy, StrategyContext, TradeEvent
 from .costs import CostSchedule, ScheduleCostModel
 from .costs.schedule import FundingRule
-from .data import DataError, load, parse_spec
+from .data import DEFAULT_ALLOWLIST, DataError, SealedRangeError, load, parse_spec
 from .data.allowlist import DEFAULT_ROOTS as _DATA_ROOTS
 from .data.allowlist import MANDATORY_DENY as _NOT_MARKET
 from .data.allowlist import SealRegistry
@@ -144,8 +152,13 @@ from .repro.code_state import REPO, code_state, version
 
 DEFAULT_RUNS_DIR = os.path.join(REPO, "backtest_runs")
 ORIGINS = ("real",)  # a file dataset's only origin; synthetic data comes from GENERATORS
-# this environment's market-data folders: the data layer's allowed roots under the repository (not the caller's root)
-MARKET_ROOTS = tuple(os.path.join(REPO, r) for r in _DATA_ROOTS)
+# this environment: the folder whose market-data folders (the data layer's allowed roots, not the caller's root) hold
+# the files the origin evidence compares with. Only a test points it elsewhere (a synthetic environment).
+MARKET_BASE = REPO
+
+
+def _market_roots() -> tuple[str, ...]:
+    return tuple(os.path.join(MARKET_BASE, r) for r in _DATA_ROOTS)
 TIME_ONLY = ("schedule", "seeded_random")
 STRATEGY_KINDS = TIME_ONLY + ("price_rule", "module")
 MODULE_PREFIX = "bot.strategy."  # a module strategy is a strategy of the repository
@@ -155,7 +168,9 @@ ACCOUNT_KEYS = ("currency", "cash", "leverage", "mark", "liquidation", "margin_c
 PRODUCT_KEYS = ("symbol", "venue", "tick", "min_qty", "qty_step", "quote_ccy", "margin")
 QUANTILE_PROBS = (0.05, 0.25, 0.5, 0.75, 0.95)
 MARKOUT_HORIZONS_S = (60, 300)
-PIPELINE_VERSION = "bt-item4-pipeline-r4"  # r4 (2026-09-27, D-1): module strategies, rule I-6
+PIPELINE_VERSION = "bt-item4-pipeline-r5"  # r5 (2026-09-27, env fixes round 2): evidence only from the run's files and
+# declared sources; metrics "pnl" / equity "realized" carry the account currency (were pnl_jpy / realized_jpy).
+# r4 (2026-09-27, D-1): module strategies, rule I-6
 GENERATOR_VERSION = "random_walk-1"
 _DAY_NS = 86_400 * 1_000_000_000
 _PRICE_EVENT = {"trade": TradeEvent, "quote": BookSnapshotEvent, "book": BookSnapshotEvent, "bar": BarEvent}
@@ -247,7 +262,7 @@ def _under(real: str, folder: str) -> bool:
 def _named_not_market(real: str) -> bool:
     """A path the data layer names as not market data (its mandatory refusals: qa_* synthetic packets, o3c_*
     research intermediates, phase2_runs, phase2_sealed -- bot.bt.data.allowlist.MANDATORY_DENY)."""
-    rel = os.path.relpath(real, os.path.realpath(REPO))
+    rel = os.path.relpath(real, os.path.realpath(MARKET_BASE))
     return any(fnmatch.fnmatchcase(c.lower(), pat.lower()) for c in rel.split(os.sep) for pat, _ in _NOT_MARKET)
 
 
@@ -260,11 +275,9 @@ def _row_key(rec: Mapping) -> str:
     return json.dumps(rec, sort_keys=True, separators=(",", ":"))
 
 
-def _read_head_tail(path: str) -> Optional[tuple[bool, list[bytes]]]:
-    """(gzip?, [first line, second line, last non-empty line]) of a file; None when unreadable."""
+def _head_tail(raw: bytes) -> Optional[tuple[bool, list[bytes]]]:
+    """(gzip?, [first line, second line, last non-empty line]) of a file's bytes; None when unreadable."""
     try:
-        with open(path, "rb") as fh:
-            raw = fh.read()
         gz = raw[:2] == b"\x1f\x8b"
         if gz:
             raw = gzip.decompress(raw)
@@ -290,75 +303,86 @@ def _first_line(path: str) -> Optional[tuple[bool, bytes]]:
         return None
 
 
-_DATA_SUFFIXES = {"csv": (".csv", ".csv.gz", ".txt", ".txt.gz", ".tsv", ".tsv.gz", ".gz"),
-                  "jsonl": (".jsonl", ".jsonl.gz", ".json", ".json.gz", ".ndjson", ".gz")}
+def _in_market_roots(real: str) -> bool:
+    return any(_under(real, r) for r in _market_roots())
 
 
-def _market_candidates(spec: dict) -> list[tuple[str, str, bool, tuple]]:
-    """Market files (real path, relative path, gzip?, cache key) whose first line fits the declaration: a CSV with
-    a header names every column the declaration uses; a JSONL's first row has them as keys. The compression is
-    read from the file (gzip magic), not from the declaration."""
+def _market_candidates(spec: dict, paths: Sequence[str],
+                       seals: Optional[SealRegistry] = None) -> list[tuple[str, str, bool, tuple]]:
+    """The candidate market files (real path, path relative to MARKET_BASE, gzip?, cache key) among `paths` -- the files
+    handed to the run and the market files declared as their source (round 2 of the k1 env fixes: nothing else in
+    the data folders is opened): a file inside this environment's market folders (MARKET_BASE), not named as not
+    market data (qa_*, o3c_*, ...), whose first line fits the declaration (a CSV header names every column the
+    declaration uses; a JSONL's first row has them as keys). The compression is read from the file (gzip magic),
+    not from the declaration. A file a seal record names by its path is not opened here: it stays a candidate
+    (its compression then read from its name: .gz), to be compared only through the data layer, which refuses its
+    sealed rows."""
     ps = parse_spec(spec)
     cols = ps.columns_used()
     skey = _canon({k: v for k, v in spec.items() if k != "compression"})
-    suffixes = _DATA_SUFFIXES.get(ps.format, ())
-    out = []
-    for root in MARKET_ROOTS:
-        root_real = os.path.realpath(root)
-        if not os.path.isdir(root_real):
+    seals = seals if seals is not None else SealRegistry(MARKET_BASE)
+    out, seen = [], set()
+    for cand in paths:
+        real = os.path.realpath(cand)
+        if real in seen or not _in_market_roots(real) or _named_not_market(real):
             continue
-        for dirpath, dirnames, filenames in os.walk(root_real):
-            dirnames.sort()
-            for name in sorted(filenames):
-                if not name.lower().endswith(suffixes):
-                    continue
-                cand = os.path.join(dirpath, name)
-                try:
-                    st = os.stat(cand)
-                except OSError:
-                    continue
-                real = os.path.realpath(cand)
-                key = (real, st.st_size, st.st_mtime_ns, skey)
-                if key not in _HEADER_CACHE:
-                    ok, gz = False, False
-                    if os.path.isfile(real) and not _named_not_market(real):
-                        fl = _first_line(real)
-                        if fl is not None:
-                            gz, line = fl
-                            first = line.decode("utf-8", "replace").lstrip("\ufeff").strip()
-                            if ps.format == "csv" and ps.header:
-                                ok = set(cols) <= {c.strip() for c in first.split(ps.delimiter)}
-                            elif ps.format == "jsonl":
-                                try:
-                                    ok = set(cols) <= set(json.loads(first))
-                                except (ValueError, TypeError):
-                                    ok = False
-                    _HEADER_CACHE[key] = (ok, gz)
-                ok, gz = _HEADER_CACHE[key]
-                if ok:
-                    out.append((real, os.path.relpath(real, os.path.realpath(REPO)), gz, key))
+        seen.add(real)
+        try:
+            st = os.stat(real)
+        except OSError:
+            continue
+        if not os.path.isfile(real):
+            continue
+        key = (real, st.st_size, st.st_mtime_ns, skey)
+        rel = os.path.relpath(real, os.path.realpath(MARKET_BASE))
+        if seals.by_path(real) is not None:
+            out.append((real, rel, real.lower().endswith(".gz"), key))
+            continue
+        if key not in _HEADER_CACHE:
+            ok, gz = False, False
+            fl = _first_line(real)
+            if fl is not None:
+                gz, line = fl
+                first = line.decode("utf-8", "replace").lstrip("\ufeff").strip()
+                if ps.format == "csv" and ps.header:
+                    ok = set(cols) <= {c.strip() for c in first.split(ps.delimiter)}
+                elif ps.format == "jsonl":
+                    try:
+                        ok = set(cols) <= set(json.loads(first))
+                    except (ValueError, TypeError):
+                        ok = False
+                else:
+                    ok = True  # no header to compare: the data layer's read decides
+            _HEADER_CACHE[key] = (ok, gz)
+        ok, gz = _HEADER_CACHE[key]
+        if ok:
+            out.append((real, rel, gz, key))
     return out
 
 
 def _bounds(cands: list, spec: dict, seals: SealRegistry) -> None:
     """Fill _BOUNDS_CACHE for the candidates: the times of each file's first and last data rows, read through the
-    data layer (one small file of those rows). A sealed file is not read here (None: compared only through the
-    data layer's own read, which refuses sealed rows)."""
+    data layer (one small file of those rows). A sealed file (by path: not opened; by bytes: not decoded) is not
+    read here ("sealed": compared only through the data layer's own read, which refuses sealed rows)."""
     ps = parse_spec(spec)
     todo = []
     for real, rel, gz, key in cands:
         if key in _BOUNDS_CACHE:
             continue
         try:
-            with open(real, "rb") as fh:
-                raw = fh.read()
+            raw, _ = seals.read_checked(real, rel, None)  # no range: any sealed file is refused here
+        except SealedRangeError:
+            _BOUNDS_CACHE[key] = "sealed"
+            continue
         except OSError:
             _BOUNDS_CACHE[key] = None
             continue
-        if seals.match(real, len(raw), _sha(raw)) is not None:
-            _BOUNDS_CACHE[key] = "sealed"
+        ht = _head_tail(raw)
+        del raw
+        if ht is None:
+            _BOUNDS_CACHE[key] = None
             continue
-        todo.append((real, key))
+        todo.append((ht[1], key))
     if not todo:
         return
     header = ps.format == "csv" and ps.header
@@ -367,8 +391,7 @@ def _bounds(cands: list, spec: dict, seals: SealRegistry) -> None:
     with tempfile.TemporaryDirectory(prefix="bt_origin_") as tmp:
         os.makedirs(os.path.join(tmp, "data"))
         rels = []
-        for n, (real, key) in enumerate(todo):
-            _, lines = _read_head_tail(real)  # type: ignore[misc]
+        for n, (lines, key) in enumerate(todo):
             body = [lines[0], lines[1], lines[2]] if header else [lines[0], lines[2]]
             rel = os.path.join("data", f"f{n}.txt")
             with open(os.path.join(tmp, rel), "wb") as fh:
@@ -395,18 +418,20 @@ def _bounds(cands: list, spec: dict, seals: SealRegistry) -> None:
         one(list(range(len(todo))))
 
 
-def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
-    """Evidence of real market data for rows read through the data layer with the declaration `spec`: the market
+def row_evidence(records: Sequence[Mapping], spec: dict, paths: Sequence[str] = ()) -> dict:
+    """Evidence of real market data for rows read through the data layer with the declaration `spec`: among
+    `paths` (absolute: the files handed to the run and the market files declared as their source), the market
     file whose rows -- read through the data layer with the same declaration, kept in the rows' time span --
-    contain the most of the rows (time and every value; at least one)."""
+    contain the most of the rows (time and every value; at least one). No other file is opened."""
     rows = [_row_key(r) for r in records]
-    base = {"by": "unmatched", "market_path": None, "rows_matched": 0, "rows_read": len(rows), "sealed_skipped": []}
+    base = {"by": "unmatched", "market_path": None, "rows_matched": 0, "rows_read": len(rows), "sealed_skipped": [],
+            "searched": sorted({os.path.relpath(os.path.realpath(x), os.path.realpath(MARKET_BASE)) for x in paths})}
     if not rows:
         return base
     ts = [_rec_time(r) for r in records]
     lo, hi = min(ts), max(ts)
-    cands = _market_candidates(spec)
-    seals = SealRegistry(REPO)
+    seals = SealRegistry(MARKET_BASE)
+    cands = _market_candidates(spec, paths, seals)
     _bounds(cands, spec, seals)
     for real, rel, gz, key in cands:
         b = _BOUNDS_CACHE.get(key)
@@ -420,7 +445,7 @@ def row_evidence(records: Sequence[Mapping], spec: dict) -> dict:
             try:
                 # a day's margin on both sides: the data layer's range of a bar may be read on another of its
                 # times (start / end); rows outside the dataset's span cannot match it, so the margin adds no match
-                got = load(REPO, [{"name": "m", "paths": [rel], "spec": sp,
+                got = load(MARKET_BASE, [{"name": "m", "paths": [rel], "spec": sp,
                                    "range_ns": [lo - _DAY_NS, hi + _DAY_NS]}]).records("m")
                 _ROWS_CACHE[rkey] = frozenset(_row_key(r) for r in got)
             except DataError as exc:
@@ -673,8 +698,9 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
                                            "seed": g["seed"]},
                        "rows_sha256": _sha(_canon(rows).encode()), "resolve": {}, "range_ns": None})
             continue
-        _need({"name", "paths", "spec", "origin"} <= set(d) <= {"name", "paths", "spec", "origin", "resolve", "range_ns"},
-              f"datasets[{i}] must be {{name, paths, spec, origin[, resolve, range_ns]}} or {{name, generator}}")
+        _need({"name", "paths", "spec", "origin"} <= set(d) <= {"name", "paths", "spec", "origin", "resolve", "range_ns",
+                                                                "source"},
+              f"datasets[{i}] must be {{name, paths, spec, origin[, resolve, range_ns, source]}} or {{name, generator}}")
         _need(d["origin"] in ORIGINS,
               f"datasets[{i}].origin: a file dataset is real market data ({ORIGINS}); synthetic data is made only by a "
               f"seeded generator ({{name, generator}}), got {d['origin']!r}")
@@ -682,9 +708,19 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
         _need(rng is None or (isinstance(rng, (list, tuple)) and len(rng) == 2 and all(type(x) is int for x in rng)
                               and rng[0] < rng[1]), f"datasets[{i}].range_ns must be [lo, hi) ints in ns")
         spec = json.loads(_canon(d["spec"]))
+        src_decl = d.get("source", [])
+        _need(isinstance(src_decl, (list, tuple)) and all(type(x) is str and x for x in src_decl),
+              f"datasets[{i}].source must be a list of paths (market files of this environment, relative to "
+              f"{MARKET_BASE})")
+        for x in src_decl:
+            try:
+                DEFAULT_ALLOWLIST.check(MARKET_BASE, x)
+            except DataError as exc:
+                raise PipelineError(f"datasets[{i}].source {x!r}: {type(exc).__name__}: {exc}") from None
         ds.append({"name": d["name"], "paths": list(d["paths"]), "spec": spec, "kind": spec.get("kind"),
                    "origin": "real", "resolve": dict(d.get("resolve") or {}),
-                   "range_ns": list(rng) if rng is not None else None})
+                   "range_ns": list(rng) if rng is not None else None,
+                   **({"source": list(src_decl)} if "source" in d else {})})
     _need(ds, "datasets must not be empty")
     by_name = {d["name"]: d for d in ds}
     ins = []
@@ -725,21 +761,18 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
               f"account's currency (an FX table is not declarable in the integrated run)")
     hashes = {}
     file_ds = [d for d in ds if "paths" in d]
-    for d in file_ds:
-        for pth in d["paths"]:
-            try:
-                with open(os.path.join(root, pth), "rb") as fh:
-                    hashes[pth] = _sha(fh.read())
-            except OSError as exc:
-                raise PipelineError(f"data {pth!r} cannot be read: {exc}") from None
     if file_ds:
         try:
             loaded = load(root, [{"name": d["name"], "paths": d["paths"], "spec": d["spec"],
                                   **({"range_ns": d["range_ns"]} if d["range_ns"] else {})} for d in file_ds])
-        except DataError as exc:
+        except (DataError, OSError) as exc:
             raise PipelineError(f"data: {type(exc).__name__}: {exc}") from None
+        # the sha256 of exactly the bytes the data layer read (a sealed file is refused there before it is opened)
+        hashes.update(loaded.hashes())
         for d in file_ds:
-            d["origin_evidence"] = row_evidence(loaded.records(d["name"]), d["spec"])
+            cands = [f.real for f in loaded.files() if f.dataset == d["name"]]
+            cands += [os.path.join(MARKET_BASE, x) for x in d.get("source", [])]
+            d["origin_evidence"] = row_evidence(loaded.records(d["name"]), d["spec"], cands)
     for d in ds:
         if "generator" in d:
             hashes[f"generator:{d['name']}"] = d["rows_sha256"]
@@ -1161,8 +1194,8 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
         "side_note": "見出しの数は悲観側(fill.pessimistic)。両側は range",
         "range": {side: _summary(both[side]) for side in SIDES},
         "trades": dist, "by_instrument": by_inst,
-        "pnl_jpy": {"realized": cum, "fees": sum(fees.values()),
-                    "note": "銘柄ごとの通貨の額を足している(銘柄ごとの値は by_instrument)"},
+        "pnl": {"realized": cum, "fees": sum(fees.values()), "currency": plan.account["currency"],
+                "note": "全銘柄の額を足している(どの銘柄の建値通貨も口座の通貨と同じ。銘柄ごとの値は by_instrument)"},
         "fills": fm,
         "markout": {"reference": "測っていない(統合の実行は銘柄ごとに価格の単位が違う)", "unit": None, "values": {}},
         "costs": {"maker_fee": fees.get("maker", 0.0), "taker_fee": fees.get("taker", 0.0), "spread": plan.costs.get("spread"),
@@ -1170,7 +1203,7 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
                   "funding_note": "資金調達の事象を読んでいない", "source": plan.costs["source"]},
         "exit_reasons": M.exit_reasons(p_trades) if p_trades else {},
         "drawdown": {**M.drawdown(eq, eq_t), "max_dd_pct": None, "pct_note": "率は出さない(銘柄ごとの通貨の額を足しているため)"},
-        "equity": {"t_ns": eq_t, "realized_jpy": eq},
+        "equity": {"t_ns": eq_t, "realized": eq, "currency": plan.account["currency"]},
         "latency": {side: {n: r.latency for n, r in both[side].items()} for side in SIDES},
         "events_read": read,
     }

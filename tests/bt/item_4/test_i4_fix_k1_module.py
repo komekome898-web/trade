@@ -4,8 +4,9 @@ order is not held; the venue prices it at the close of the last bar it has seen)
 
 Expected fills are written from the rule text of docs/PHASE2/K1/RESULT.md 1.3-1.4 (the hand scene of
 tests/test_k1_wick.py) and from the venue rule (a fill's price = the close of the bar the venue saw at the
-fill's time). The evidence walk of the integrated run is pointed at an empty folder (MARKET_ROOTS) so that the
-test reads no market file of the repository."""
+fill's time). The origin evidence of the integrated run looks only at the files handed to the run (round 2 of the
+env fixes), here a file under a temporary root outside the repository's market folders: the test reads no market
+file of the repository (round 1 pointed MARKET_ROOTS at an empty folder; that setting no longer exists)."""
 from __future__ import annotations
 
 import os
@@ -37,9 +38,6 @@ SPEC = {"format": "csv", "header": True, "delimiter": ",", "compression": "none"
 def root(tmp_path, monkeypatch):
     (tmp_path / "backtest_data" / "k1").mkdir(parents=True)
     (tmp_path / "prereg.md").write_text("# prereg (test)\n")
-    empty = tmp_path / "no_market"
-    empty.mkdir()
-    monkeypatch.setattr(P, "MARKET_ROOTS", (str(empty),))
     return tmp_path
 
 

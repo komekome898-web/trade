@@ -12,7 +12,7 @@ import pytest
 from bot.bt.core import BarEvent, CoreEngine, NullAccount, ZeroLatency
 from bot.bt.repro.fixed import DeclaredFeeCost
 from bot.bt.report.trades import round_trips
-from bot.strategy.k1_wick import BarCloseMarketFill, K1WickStrategy, gate_label, gates
+from bot.strategy.k1_wick import K1WickStrategy, bar_close_venue, gate_label, gates
 
 NS = 10**9
 IV = 60 * NS
@@ -77,7 +77,7 @@ def core(rows, s, b, keep):
     ev = [BarEvent(received_time_ns=(i + 1) * IV, start_time_ns=i * IV, open=o, high=h, low=l, close=c, volume=1.0)
           for i, (o, h, l, c) in enumerate(rows)]
     strat = K1WickStrategy(s, b, keep)
-    res = CoreEngine(strat, {"bars": ev}, BarCloseMarketFill(), ZeroLatency(), DeclaredFeeCost({"taker": 0.0, "maker": 0.0}),
+    res = CoreEngine(strat, {"bars": ev}, bar_close_venue(), ZeroLatency(), DeclaredFeeCost({"taker": 0.0, "maker": 0.0}),
                      NullAccount(), time_span_ns=(ev[0].received_time_ns, ev[-1].received_time_ns)).run()
     tr = round_trips([{"order_id": f.client_order_id, "t_ns": f.venue_time_ns, "side": f.side, "px": f.price,
                        "qty": f.size, "fee": f.fee, "liquidity": f.liquidity} for f in res.fills], strat.exit_reasons)

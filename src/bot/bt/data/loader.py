@@ -18,7 +18,10 @@ interval [start, start + interval) lies inside).
 Every file is checked by the allow-list and the seal records
 (allowlist.py) before its bytes are used; its bytes are read ONCE, and the
 sha256 recorded is of exactly those bytes (compressed, as on disk), the same
-bytes that are then decompressed and parsed.
+bytes that are then decompressed and parsed. A file the seal records name by
+its path is refused before it is opened; a file that may be a copy of a
+sealed file (the same size) is compared by its bytes before they are decoded
+(`SealRegistry.read_checked`, the one door to a file's bytes).
 
 What a result offers:
 
@@ -458,12 +461,8 @@ class LoadResult:
 
 def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[list[Row], FileRecord]:
     """Read one checked file of dataset `d` (its bytes once), keep its rows in `d.range_ns`, enforce the seals."""
-    with open(cp.real, "rb") as fh:
-        raw = fh.read()
+    raw, ent = seals.read_checked(cp.real, cp.given, d.range_ns)  # a sealed file named by path: refused unopened
     sha = hashlib.sha256(raw).hexdigest()
-    ent = seals.match(cp.real, len(raw), sha)
-    if ent is not None:
-        seals.check_range(ent, cp.given, d.range_ns)
     text = _decode(raw, d.spec, cp.given)
     rows = _rows_csv(text, d.spec, cp.given) if d.spec.format == "csv" else _rows_jsonl(text, d.spec, cp.given)
     n_read = n_kept = 0

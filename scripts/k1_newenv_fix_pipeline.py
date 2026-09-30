@@ -16,10 +16,10 @@ taker 0 / spread 0; account USD, cash 1e9, leverage 1, mark last_trade, no liqui
 position_only (K1's rule has no capital: the account must never refuse a one-unit order; a refusal would
 show as a different number of trades); purpose 研究 with stage A's pre-registration docs/PHASE2/K1/PREREG.md.
 
-The origin evidence of the integrated run (pipeline.row_evidence) walks MARKET_ROOTS and reads every
-candidate file; here MARKET_ROOTS is set to a private folder holding one link to the 60-minute file, so that
-the walk opens no file the delegation does not allow (BitMEX 2020-2021, data after 2026-08-28) and does not
-load the 1-minute file (4.6 GB). One output folder, one run at a time (E-12): the parent alone writes the
+The origin evidence of the integrated run (pipeline.row_evidence) compares the rows only with the files handed
+to the run and the declared sources (round 2 of the env fixes, 2026-09-27): here the 60-minute file itself, so
+no other file is opened and MARKET_ROOTS is not replaced (round 1 pointed it at a private folder with one link).
+One output folder, one run at a time (E-12): the parent alone writes the
 summary; the cells run in a pool of --workers processes (at most 3).
 
 Outputs: <out-dir>/<run_id>/ (exports gzipped in place, as stage A did), and
@@ -63,15 +63,7 @@ FILL_COLS = ("order_id", "t_ns", "side", "px", "qty", "liquidity")
 TRADE_COLS = ("side", "qty", "entry_px", "exit_px", "entry_t_ns", "exit_t_ns", "reason")
 
 
-def market_root() -> str:
-    d = os.environ.get("K1FIX_MARKET_ROOT")
-    if not d:
-        raise SystemExit("K1FIX_MARKET_ROOT is not set")
-    return d
-
-
 def plan(s: str, b: str, strength: str) -> P.PipelinePlan:
-    P.MARKET_ROOTS = (market_root(),)
     return P.plan_pipeline(
         root=REPO,
         datasets=[{"name": "xbtusd_60m", "paths": [DATA], "spec": spec(FOOT), "origin": "real"}],
@@ -171,18 +163,15 @@ def main() -> None:
     os.write(fd, str(os.getpid()).encode())
     os.close(fd)
     try:
-        with tempfile.TemporaryDirectory(prefix="k1fix_market_") as mroot:
-            os.symlink(os.path.join(REPO, DATA), os.path.join(mroot, os.path.basename(DATA)))
-            os.environ["K1FIX_MARKET_ROOT"] = mroot
-            gs = [(s, b) for s, b in gates() if a.gates is None or gate_label(s, b) in a.gates]
-            cells = [(s, b, st, out_dir) for st in a.strengths for s, b in gs]
-            t0 = time.time()
-            done = []
-            with Pool(a.workers, maxtasksperchild=1) as pool:
-                for r in pool.imap_unordered(run_cell, cells):
-                    done.append(r)
-                    print(f"[{len(done)}/{len(cells)} {time.time() - t0:6.0f}s] {json.dumps(r, ensure_ascii=False)}",
-                          flush=True)
+        gs = [(s, b) for s, b in gates() if a.gates is None or gate_label(s, b) in a.gates]
+        cells = [(s, b, st, out_dir) for st in a.strengths for s, b in gs]
+        t0 = time.time()
+        done = []
+        with Pool(a.workers, maxtasksperchild=1) as pool:
+            for r in pool.imap_unordered(run_cell, cells):
+                done.append(r)
+                print(f"[{len(done)}/{len(cells)} {time.time() - t0:6.0f}s] {json.dumps(r, ensure_ascii=False)}",
+                      flush=True)
         with open(STAGE_A_INDEX, "r", encoding="utf-8") as fh:
             a_index = json.load(fh)
         with open(STAGE_A_CELLS, "r", encoding="utf-8") as fh:

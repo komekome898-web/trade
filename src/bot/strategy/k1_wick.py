@@ -15,8 +15,8 @@ that the environment, not the old script, is what gets tested).
                                     market_ref = "last_bar_close" (a market order is priced
                                     at the close of the last bar the venue has seen; 1.4:
                                     建値も決済値も「その足の終値」). D-1 (2026-09-27): the rule
-                                    moved from this module into the venue model;
-                                    `BarCloseMarketFill` is kept as its stage-A name
+                                    moved from this module into the venue model (its
+                                    stage-A name BarCloseMarketFill was removed in round 2)
   K1Setup                           the bot.bt.repro.runner setup: config -> Parts
   pipeline_strategy(params, type)   the factory of bot.bt.pipeline's "module" strategy
                                     (D-1: K1 through the integrated run)
@@ -183,7 +183,6 @@ def bar_close_venue(costs_source: str = "K1 RESULT.md 1.4「経費は引いて�
                     faults=FaultPlan(()), l3=None)
 
 
-BarCloseMarketFill = bar_close_venue  # stage A's name (tests/test_k1_wick*.py build the fill socket by it)
 
 
 def pipeline_strategy(params: Mapping, price_type: type) -> K1WickStrategy:

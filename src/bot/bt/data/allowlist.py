@@ -29,7 +29,23 @@ Limits: `forward_start` is applied to the files the seal record lists (not
 to every dataset of the unit, which the layer cannot name); an edited copy
 of a sealed file is another file. A file is recognised
 as sealed by its real path, and also by its bytes (a copy of a sealed file
-under another name has the same size and sha256). A seal record that cannot
+under another name has the same size and the same bytes).
+
+What is read before a refusal (round 2 of the k1 env fixes, 2026-09-27): the
+one door is `SealRegistry.read_checked(real, given, range_ns)`, which returns
+a file's bytes only after the seals allowed them. A file the seal record
+names by its real path is refused BEFORE it is opened (0 bytes read). A file
+under another name can be a copy only if its size (os.stat, no read) equals a
+sealed file's size; only such a file has its bytes hashed and compared before
+they are handed on, and the comparison is with the digest the seal record
+wrote (`md5`), so the sealed file itself is not opened. A seal entry without
+an `md5` is compared with the sha256 of the sealed file's bytes (the sealed
+file is then read; no ledger in backtest_data/phase2_sealed lacks it on
+2026-09-27). A copy of a sealed file edited after the seal record was
+written is not recognised by bytes (the record names the bytes it sealed).
+A copy has to be read whole to be recognised (a digest of the whole file is
+all the record holds), but its bytes are never decoded or parsed before the
+refusal. A seal record that cannot
 be read makes every load refuse (fail closed: the layer cannot tell which
 files are sealed). Reading the sealed window itself goes through
 `load_sealed`'s gates only; this layer has no way to do it.
@@ -139,6 +155,7 @@ class SealEntry:
     real: str
     time_column: str
     cutoff_ns: int
+    md5: Optional[str] = None  # the digest the seal record wrote of the sealed bytes
 
 
 class SealRegistry:
@@ -173,7 +190,10 @@ class SealRegistry:
                         raise ValueError(f"files[{i}] path/time_column must be non-empty str")
                     cut = min(self._iso(e["seal_from_ts"], rec, f"files[{i}].seal_from_ts"), fwd)
                     real = os.path.realpath(os.path.join(root, p))
-                    ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut)
+                    md5 = e.get("md5")
+                    if md5 is not None and (type(md5) is not str or not re.fullmatch(r"[0-9a-f]{32}", md5)):
+                        raise ValueError(f"files[{i}].md5 must be 32 lowercase hex digits")
+                    ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut, md5)
                     self.entries.append(ent)
                     self._by_real[real] = ent
             except SealedRangeError:
@@ -196,7 +216,8 @@ class SealRegistry:
         except TimestampUnitError as exc:
             raise SealedRangeError(f"seal record {rec}: {where}: {exc}") from None
 
-    def _sealed_hash(self, ent: SealEntry) -> Optional[str]:
+    def _sealed_sha256(self, ent: SealEntry) -> Optional[str]:
+        """The sha256 of a sealed file's bytes: only for an entry whose record has no md5 (reads the sealed file)."""
         if ent.real not in self._hash_cache:
             try:
                 with open(ent.real, "rb") as fh:
@@ -205,15 +226,42 @@ class SealRegistry:
                 self._hash_cache[ent.real] = None
         return self._hash_cache[ent.real]
 
-    def match(self, real: str, size: int, sha256: str) -> Optional[SealEntry]:
-        """The seal entry covering this file (by real path, else by bytes)."""
+    def by_path(self, real: str) -> Optional[SealEntry]:
+        """The seal entry naming this real path (no file is opened)."""
+        return self._by_real.get(real)
+
+    def read_checked(self, real: str, given: str,
+                     range_ns: Optional[tuple[int, int]]) -> tuple[bytes, Optional[SealEntry]]:
+        """The one door to a data file's bytes: (bytes, the seal entry covering the file or None).
+        A file the seal record names by path is refused before it is opened; a file of a sealed file's size is
+        compared by its bytes before they are returned (see the module docstring). `check_range` refuses a sealed
+        file read without a range that ends at or before its cutoff."""
         ent = self._by_real.get(real)
         if ent is not None:
-            return ent
-        for cand in self._by_size.get(size, ()):
-            if self._sealed_hash(cand) == sha256:
-                return cand
-        return None
+            self.check_range(ent, given, range_ns)  # before any byte is read
+        with open(real, "rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            cands = () if ent is not None else self._by_size.get(size, ())
+            raw = fh.read()
+        if cands:
+            md5 = hashlib.md5(raw).hexdigest()
+            sha = None
+            for cand in cands:
+                if cand.md5 is not None:
+                    hit = cand.md5 == md5
+                else:
+                    sha = sha or hashlib.sha256(raw).hexdigest()
+                    hit = self._sealed_sha256(cand) == sha
+                if hit and len(raw) == size:
+                    ent = cand
+                    break
+            if ent is not None:
+                try:
+                    self.check_range(ent, given, range_ns)
+                except SealedRangeError:
+                    del raw
+                    raise
+        return raw, ent
 
     @staticmethod
     def check_range(ent: SealEntry, given: str, range_ns: Optional[tuple[int, int]]) -> None:

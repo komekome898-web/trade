@@ -20,7 +20,6 @@ read_table(root, path, time_column=, range_ns=None)
 """
 from __future__ import annotations
 
-import hashlib
 import io
 from typing import Optional
 
@@ -46,12 +45,8 @@ def read_table(root: str, path: str, *, time_column: str, range_ns: Optional[tup
         raise ValidationError("time_column must be a non-empty str")
     try:
         cp = allow.check(root, path)
-        with open(cp.real, "rb") as fh:
-            raw = fh.read()
-        seals = SealRegistry(root)
-        ent = seals.match(cp.real, len(raw), hashlib.sha256(raw).hexdigest())
-        if ent is not None:
-            seals.check_range(ent, path, range_ns)
+        # a file sealed by path is refused unopened; a copy by bytes before it is parsed (SealRegistry.read_checked)
+        raw, ent = SealRegistry(root).read_checked(cp.real, path, range_ns)
     except DataError as exc:
         raise SealedRefused(f"{type(exc).__name__}: {exc}") from None
     df = pd.read_csv(io.BytesIO(raw))
