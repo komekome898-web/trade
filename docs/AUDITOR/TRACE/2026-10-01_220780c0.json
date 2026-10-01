@@ -17127,12 +17127,12 @@
   {
    "move": 628,
    "tools": {
-    "Bash": 10,
+    "Bash": 13,
     "ToolSearch": 1,
     "WebSearch": 2,
     "WebFetch": 2
    },
-   "n_tools": 15,
+   "n_tools": 18,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": true,
