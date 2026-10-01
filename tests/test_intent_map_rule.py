@@ -5,7 +5,8 @@
 **検証を進めてからでは分離できない**。だから後の 2 つは測る前に潰す。
 
 今週の教訓がここにも効く: **散文にしか無い規則は静かに消える**。
-規則が 3 箇所(規約・プロトコル・委任)に揃っていることを固定する
+規則が 2 箇所(プロトコル・委任)に揃っていることを固定する
+(CLAUDE.md は L-493(2026-10-01)で規律の本文を research-protocol にだけ置く形にしたので入口から外した。オーナー決定「案2」)
 (旧テンプレート `docs/PHASE2_TEMPLATES.md` §8 は 2026-09-12 の文書整理で
 `research-protocol` skill §0.5/§15 に統合され、独立した入口ではなくなった)。
 中身の良し悪しは測れないので、**要求が存在すること**だけを見る。
@@ -20,7 +21,6 @@ REPO = Path(__file__).resolve().parents[1]
 
 PROTOCOL = REPO / ".claude" / "skills" / "research-protocol" / "SKILL.md"
 DELEGATION = REPO / ".claude" / "skills" / "delegated-study" / "SKILL.md"
-CLAUDE_MD = REPO / "CLAUDE.md"
 WORKED_EXAMPLE = REPO / "docs" / "legacy" / "KATSUO_INTENT_MAP.md"
 
 
@@ -28,7 +28,7 @@ def _text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("path", [PROTOCOL, DELEGATION, CLAUDE_MD])
+@pytest.mark.parametrize("path", [PROTOCOL, DELEGATION])
 def test_the_requirement_is_stated_wherever_a_unit_starts(path: Path):
     """単位を始めうる 4 つの入口すべてに要求が書かれていること。
     1 箇所だけだと、別の入口から入った回で飛ばされる。"""
@@ -47,7 +47,7 @@ def test_the_protocol_orders_it_before_pre_registration():
 
 def test_the_three_causes_are_named_verbatim():
     """3 つの原因を名指ししていること。抽象化すると運用で流れる。"""
-    for path in (PROTOCOL, CLAUDE_MD):
+    for path in (PROTOCOL,):
         text = _text(path)
         assert "エッジが無い" in text, path.name
         assert "戦略意図を反映していない" in text, path.name
