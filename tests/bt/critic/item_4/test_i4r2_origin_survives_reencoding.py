@@ -11,7 +11,13 @@ These are not adversarial edits: they are what a researcher does to a day of dat
 Grid: the FX event-tick file and the TOPIX futures 1-minute bars (the files the worker's own origin grid uses)
 x the re-encoding {regzip with another header time, decompressed, first 200 data rows cut out (regzipped)}
 x declared origin {synthetic} x strategy {price_rule} x purpose {動作確認}. Expected: refused (a ValueError
-subclass) at planning (where the worker's grid checks the origin rule). Skipped only when a market file is not in this environment.
+subclass) at planning (where the worker's grid checks the origin rule).
+
+Round 2 of the k1 env fixes (2026-09-27, delegation 20260927_k1_env_fixes §4 (d)3): the market files re-encoded are
+the SYNTHETIC files of the worker's grid (test_i4_r2_origin_from_data_grid.make_env, same formats as the files read
+before: those are unconsumed data after 2026-08-28 and are no longer read). The rule under test refuses a FILE
+declared synthetic whatever its rows, so the refusal does not depend on the rows being a real market's. Nothing is
+skipped.
 """
 from __future__ import annotations
 
@@ -49,18 +55,25 @@ def _rewrite(src: Path, dst: str, way: str) -> dict:
     return {}
 
 
+@pytest.fixture(scope="module")
+def market_env():
+    env = tempfile.mkdtemp(prefix="i4r2crit_env_")
+    try:
+        yield G.make_env(env)
+    finally:
+        shutil.rmtree(env, ignore_errors=True)
+
+
 @pytest.mark.parametrize("way", WAYS)
 @pytest.mark.parametrize("name", sorted(G.MARKET))
-def test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule(name, way):
+def test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule(market_env, name, way):
     from bot.bt.pipeline import plan_pipeline
     rel, spec = G.MARKET[name]
-    if not (REPO / rel).is_file():
-        pytest.skip(f"{rel} is not in this environment")
     tmp = tempfile.mkdtemp(prefix="i4r2crit_origin_")
     try:
         os.makedirs(os.path.join(tmp, "data"), exist_ok=True)
         dst = os.path.join(tmp, "data", f"{name}_{way}.csv" + ("" if way == "decompressed" else ".gz"))
-        spec = {**spec, **_rewrite(REPO / rel, dst, way)}
+        spec = {**spec, **_rewrite(Path(market_env) / rel, dst, way)}
         if spec.get("compression") == "none":
             spec.pop("compression")
         ds = [{"name": name, "paths": [os.path.relpath(dst, tmp)], "spec": spec, "origin": "synthetic"}]

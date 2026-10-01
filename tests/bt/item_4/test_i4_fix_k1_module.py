@@ -151,3 +151,25 @@ def test_real_data_smoke_run_refuses_a_module_strategy(root):
     a.update(purpose="動作確認", prereg=None)
     with pytest.raises(P.PipelineError, match="time-only"):
         P.plan_pipeline(**a)
+
+
+def test_the_integrated_run_names_its_money_by_the_account_currency(root):
+    """Round 2 of the env fixes, (d)5 (the root cause of D-4): the integrated run's metrics named the amount
+    "pnl_jpy" and the equity "realized_jpy" whatever the account's currency. Now "pnl" / "realized" with the
+    currency of the account (USD here)."""
+    from bot.bt.report.exports import read_export
+    rel = write_bars(root, SCENE_A)
+    plan = P.plan_pipeline(**args(root, [{"name": "b", "paths": [rel], "spec": SPEC, "origin": "real"}], "b"))
+    out = root / "out"
+    out.mkdir()
+    P.execute_once(plan, str(out))
+    m = read_export(str(out / "metrics.json"))["data"]
+    assert "pnl_jpy" not in m and m["pnl"]["currency"] == "USD" and set(m["pnl"]) >= {"realized", "fees"}
+    assert "realized_jpy" not in m["equity"] and m["equity"]["currency"] == "USD" and "realized" in m["equity"]
+
+
+def test_the_stage_a_name_of_the_fill_socket_is_gone():
+    """Round 2, (d)4: BarCloseMarketFill (stage A's name, kept in round 1 as an alias of bar_close_venue) was removed;
+    tests/test_k1_wick*.py build the fill socket by bar_close_venue."""
+    import bot.strategy.k1_wick as K
+    assert not hasattr(K, "BarCloseMarketFill") and callable(K.bar_close_venue)

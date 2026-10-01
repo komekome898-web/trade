@@ -10,7 +10,14 @@ x purpose {動作確認} x strategy {price_rule} x label {synthetic}. Expected: 
 before anything runs. Not in the grid: the same bytes copied under another root (whether the engine should
 recognise market data by content is the lead's / worker's design; the test only pins that a file under
 the repository's market-data folders is not made synthetic by a word).
-Skipped only when the file is not in this environment.
+
+Round 2 of the k1 env fixes (2026-09-30, delegation 20260927_k1_env_fixes §4 (d)3): the smoke run's FX / JPX files
+are now SYNTHETIC files in the same formats (test_i4_real_data_smoke._synthetic_files; the files read before are
+unconsumed data after 2026-08-28), written into a temporary environment that is the run's root and
+pipeline.MARKET_BASE (its market-data folder). Until round 2 this test only checked that the repository's file
+existed (os.stat) and skipped otherwise; with the smoke run's paths now naming synthetic files, that check skipped
+every case (3 skips in the round-2 worker's run), so the test builds its environment itself. The refusal is pinned
+to the origin rule (`match="origin"`). Nothing is skipped.
 """
 from __future__ import annotations
 
@@ -32,14 +39,32 @@ ZERO = {"taker_fee_pct": 0.0, "maker_fee_pct": 0.0, "slippage_pct": 0.0, "spread
 PRICE_RULE = {"kind": "price_rule", "buy_below": 1e12, "sell_above": 0.0, "qty": 1.0}
 
 
+@pytest.fixture(scope="module")
+def env():
+    import gzip
+    import os
+    import shutil
+    from bot.bt import pipeline as P
+    tmp = tempfile.mkdtemp(prefix="i4r1crit_env_")
+    for rel, body in R._synthetic_files().items():
+        dst = os.path.join(tmp, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, "wb") as fh:
+            fh.write(gzip.compress(body.encode(), mtime=0))
+    mp = pytest.MonkeyPatch()
+    mp.setattr(P, "MARKET_BASE", tmp)
+    yield tmp
+    mp.undo()
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
 @pytest.mark.parametrize("name", ["fx_1m", "jpx_1m", "fx_ticks"])
-def test_a_market_data_file_labelled_synthetic_does_not_admit_a_price_rule(name):
+def test_a_market_data_file_labelled_synthetic_does_not_admit_a_price_rule(env, name):
     from bot.bt.pipeline import plan_pipeline, run_pipeline
     ds = [dict(d) for d in R.datasets() if d["name"] == name]
-    if not (R.REPO / ds[0]["paths"][0]).is_file():
-        pytest.skip(f"{ds[0]['paths'][0]} is not in this environment")
+    assert (Path(env) / ds[0]["paths"][0]).is_file()
     ds[0]["origin"] = "synthetic"
-    with pytest.raises(ValueError):
-        plan = plan_pipeline(root=str(R.REPO), datasets=ds, instruments=[{"name": name, "price": name, "with": []}],
+    with pytest.raises(ValueError, match="origin"):
+        plan = plan_pipeline(root=env, datasets=ds, instruments=[{"name": name, "price": name, "with": []}],
                              strategy=PRICE_RULE, fill=FILL, costs=ZERO, purpose="動作確認")
         run_pipeline(plan, runs_dir=tempfile.mkdtemp(prefix="i4r1crit_"))

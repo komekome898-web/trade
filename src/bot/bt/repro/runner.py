@@ -39,7 +39,8 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Sequence
 
 from ..core import CoreEngine
-from ..data import DataError, load
+from ..data import DataError, SealedRangeError, load
+from ..data.allowlist import SealRegistry
 from ..report import exports as X
 from ..report import metrics as M
 from ..report.trades import round_trips
@@ -130,11 +131,17 @@ def plan_run(*, root: str, data: Sequence[DataInput], config: Any, seed: int, se
     if p == X.RESEARCH and prereg_sha is None:
         raise ReproError("a 研究 run needs its pre-registration (prereg=...): its sha256 goes into the record")
     hashes = {}
+    try:  # the data layer's one door (round 2 of the k1 env fixes): a sealed file is refused before it is opened
+        seals = SealRegistry(root)  # (by path) or before its bytes are used (a copy by bytes)
+    except SealedRangeError as exc:
+        raise ReproError(f"seal records: {exc}") from None
     for d in ds:
         full = os.path.join(root, d.path)
         try:
-            with open(full, "rb") as fh:
-                hashes[d.path] = _sha(fh.read())
+            raw, _ = seals.read_checked(os.path.realpath(full), d.path, None)  # the run loads without a range
+            hashes[d.path] = _sha(raw)
+        except SealedRangeError as exc:
+            raise ReproError(f"data {d.path!r}: {type(exc).__name__}: {exc}") from None
         except OSError as exc:
             raise ReproError(f"data {d.path!r} cannot be read: {exc}") from None
     code = code_state(repo)

@@ -3,9 +3,17 @@
 invariants of the fill models on a real stream and reports no number; its
 counts are not results and are not written anywhere (delegation section 4).
 
-Data: the bitFlyer FX_BTC_JPY tape tracked in the repository
-(docs/DATA.md: paper_logs/tape board_top10 1-second snapshots and
-executions), 2026-09-20 01:00-01:20 UTC. The procedure is fixed by time only
+Data: bitFlyer FX_BTC_JPY board top-5 1-second snapshots and executions
+of backtest_data/auto_bitflyer_executions_20260905/, 2026-08-21 01:00-01:20
+UTC. Round 2 of the k1 env fixes (2026-09-30, delegation
+docs/DATA/delegations/20260927_k1_env_fixes.md §4 (d)3): until then the
+test read the paper_logs/tape files of 2026-09-20 (board top 10), data
+after 2026-08-28 that is not consumed. The files now read are consumed
+(docs/DATA_CONSUMPTION_LOG.md §1: the board / executions of 2026-08-20..27
+「選択に消費(重度)」, and the auto_bitflyer_executions_20260905 row, ④-1),
+their rows are before 2026-08-28, and no SEALED.json lists them
+(docs/PHASE2/K1/NEWENV_A/FIXES.md §11). The book has 5 levels, not 10;
+the invariants below use the best level and the prints only. The procedure is fixed by time only
 (delegation section 4 "動作確認用の固定の手順"): every 60 s a buy limit joins
 the displayed best bid and a sell limit joins the best ask (size 0.01), and
 both are cancelled 30 s later if still open. No signal, no condition, no
@@ -40,9 +48,10 @@ from bot.bt.latency import Constant, LatencyModel
 from bot.bt.orders import FaultPlan, KillSwitch, OrderClient, Product, VenueRules
 
 REPO = Path(__file__).resolve().parents[3]
-TAPE = REPO / "paper_logs" / "tape"
-DAY = "20260920"
-START, END = "2026-09-20T01:00", "2026-09-20T01:20"
+TAPE = REPO / "backtest_data" / "auto_bitflyer_executions_20260905"
+DAY = "20260821"
+START, END = "2026-08-21T01:00", "2026-08-21T01:20"
+LEVELS = 5
 SEC = 1_000_000_000
 
 
@@ -54,7 +63,7 @@ def _ns(ts: str) -> int:
 
 
 def _load():
-    board, prints = TAPE / f"board_top10_{DAY}.csv.gz", TAPE / f"executions_{DAY}.csv.gz"
+    board, prints = TAPE / f"board_top5_{DAY}.csv.gz", TAPE / f"executions_{DAY}.csv.gz"
     if not (board.exists() and prints.exists()):
         pytest.skip(f"the tape files are not in this checkout ({board.name}, {prints.name}); 動作確認 not run")
     books, trades = [], []
@@ -64,8 +73,8 @@ def _load():
                 continue
             if row["ts"] >= END:
                 break
-            bids = [(float(row[f"bid_px_{i}"]), float(row[f"bid_sz_{i}"])) for i in range(1, 11) if row[f"bid_px_{i}"]]
-            asks = [(float(row[f"ask_px_{i}"]), float(row[f"ask_sz_{i}"])) for i in range(1, 11) if row[f"ask_px_{i}"]]
+            bids = [(float(row[f"bid_px_{i}"]), float(row[f"bid_sz_{i}"])) for i in range(1, LEVELS + 1) if row[f"bid_px_{i}"]]
+            asks = [(float(row[f"ask_px_{i}"]), float(row[f"ask_sz_{i}"])) for i in range(1, LEVELS + 1) if row[f"ask_px_{i}"]]
             books.append(BookSnapshotEvent(received_time_ns=_ns(row["ts"]), bids=bids, asks=asks))
     with gzip.open(prints, "rt", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):

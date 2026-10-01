@@ -35,6 +35,7 @@ import gzip
 import itertools
 import os
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -249,11 +250,10 @@ def test_a_copy_without_a_declared_source_is_unmatched(env, roots):
     "unmatched"; declaring the market file as its source gives "rows"."""
     root = roots["copy_backtest_data"]
     ev = _plan_copy(root, None).datasets[0]["origin_evidence"]
-    assert ev["by"] == "unmatched" and ev["rows_matched"] == 0 and ev["searched"] == [
-        os.path.relpath(os.path.realpath(os.path.join(root, "backtest_data/copied/fx_ticks_renamed.csv.gz")),
-                        os.path.realpath(env))], ev
+    assert ev["by"] == "unmatched" and ev["rows_matched"] == 0 and ev["searched"] == [], ev  # the copy: not looked at
     ev = _plan_copy(root, [MARKET["fx_ticks"][0]]).datasets[0]["origin_evidence"]
     assert ev["by"] == "rows" and ev["market_path"] == MARKET["fx_ticks"][0] and ev["rows_matched"] == ev["rows_read"]
+    assert ev["searched"] == [MARKET["fx_ticks"][0]], ev
 
 
 def test_a_declared_source_must_be_a_market_file_of_the_environment(env, roots):
@@ -262,24 +262,33 @@ def test_a_declared_source_must_be_a_market_file_of_the_environment(env, roots):
             _plan_copy(roots["copy_backtest_data"], bad)
 
 
-def test_the_evidence_opens_nothing_else(env, roots):
+_OPENED: list = []
+_WATCH: list = []  # [the environment's real path] while a test records; an audit hook cannot be removed
+
+
+def _record_opens(event, args):
+    if event == "open" and _WATCH and args and isinstance(args[0], (str, bytes, os.PathLike)):
+        p = os.path.realpath(os.fsdecode(args[0]))
+        if p.startswith(_WATCH[0] + os.sep):
+            _OPENED.append(os.path.relpath(p, _WATCH[0]))
+
+
+sys.addaudithook(_record_opens)
+
+
+def test_the_evidence_opens_nothing_else(env, roots, monkeypatch):
     """Round 2 (d)2: planning opens, under the environment, only the declared source (the decoy -- a market file
     with the same header and rows of the same span -- and every other file stay unopened). Before round 2 the
-    evidence walk opened every file of the market folders."""
-    import sys
-    opened = []
-    env_real = os.path.realpath(env)
-
-    def hook(event, args):
-        if event == "open" and args and isinstance(args[0], (str, bytes, os.PathLike)):
-            p = os.path.realpath(os.fsdecode(args[0]))
-            if p.startswith(env_real + os.sep):
-                opened.append(os.path.relpath(p, env_real))
-
-    sys.addaudithook(hook)  # an audit hook cannot be removed: it only records while `opened` is this list
+    evidence walk opened every file of the market folders. The evidence caches are emptied first, so that what an
+    earlier test read is read again here."""
+    from bot.bt import pipeline as P
+    for cache in ("_HEADER_CACHE", "_BOUNDS_CACHE", "_ROWS_CACHE"):
+        monkeypatch.setattr(P, cache, {})
+    _OPENED.clear()
+    _WATCH[:] = [os.path.realpath(env)]
     try:
         _plan_copy(roots["copy_backtest_data"], [MARKET["fx_ticks"][0]])
-        seen = sorted(set(opened))
+        seen = sorted(set(_OPENED))
     finally:
-        opened = None  # noqa: F841 -- the hook's list is no longer read
+        _WATCH.clear()
     assert seen == [MARKET["fx_ticks"][0]], seen

@@ -21,7 +21,13 @@ name), regzip, decompressed, first_rows, middle_rows, one_byte_edit, every_row_e
 {real, synthetic} x strategy {schedule, price_rule} under 動作確認 = 2 x 8 x 2 x 2 = 64 cells, planned only.
 Expected: declared synthetic -> refused; price_rule -> refused (real data, 動作確認: 委任文 §4); schedule + real ->
 accepted, origin real, evidence "rows" with the counts above, or "unmatched" for every_row_edited.
-Skipped only when a market file is not in this environment.
+
+Round 2 of the k1 env fixes (2026-09-27, delegation 20260927_k1_env_fixes §4 (d)2 / (d)3): the market files are the
+SYNTHETIC files of test_i4_r2_origin_from_data_grid.make_env (pipeline.MARKET_BASE points at that temporary
+environment; the files the grid read before -- FX event ticks of fx_event_ticks_2015_2026 and the TOPIX futures
+1-minute bars of topixf_225labo_20260907 -- are unconsumed data after 2026-08-28 and are no longer read), and each
+re-encoded copy declares the market file it was made from as its "source" (round 2: the evidence is looked for
+only in the files handed to the run and the declared sources). Nothing is skipped.
 """
 from __future__ import annotations
 
@@ -37,8 +43,8 @@ import pytest
 import i4w_decl as D
 import test_i4_r2_origin_from_data_grid as G
 from bot.bt.pipeline import PipelineError, plan_pipeline
+from test_i4_r2_origin_from_data_grid import env  # noqa: F401 -- the synthetic environment (a module fixture)
 
-REPO = Path(__file__).resolve().parents[3]
 WAYS = ("as_is", "regzip", "decompressed", "first_rows", "middle_rows", "one_byte_edit", "every_row_edited",
         "columns_reordered")
 CELLS = list(itertools.product(sorted(G.MARKET), WAYS, ("real", "synthetic"), ("schedule", "price_rule")))
@@ -92,15 +98,12 @@ def _rewrite(src: Path, dst: str, way: str) -> dict:
 
 
 @pytest.fixture(scope="module")
-def tmp_root():
-    for rel, _ in G.MARKET.values():
-        if not (REPO / rel).is_file():
-            pytest.skip(f"{rel} is not in this environment")
+def tmp_root(env):  # noqa: F811
     tmp = tempfile.mkdtemp(prefix="i4w_rows_")
     os.makedirs(os.path.join(tmp, "data"))
     for name, (rel, _) in G.MARKET.items():
         for way in WAYS:
-            _rewrite(REPO / rel, os.path.join(tmp, "data", f"{name}_{way}" + (".csv" if way == "decompressed" else ".csv.gz")), way)
+            _rewrite(Path(env) / rel, os.path.join(tmp, "data", f"{name}_{way}" + (".csv" if way == "decompressed" else ".csv.gz")), way)
     yield tmp
     shutil.rmtree(tmp, ignore_errors=True)
 
@@ -113,7 +116,7 @@ def test_origin_by_rows(tmp_root, name, way, origin, strat):
         spec["compression"] = "none"
     path = f"data/{name}_{way}" + (".csv" if way == "decompressed" else ".csv.gz")
     kind = "bar" if name == "jpx_1m" else "quote"
-    ds = [{"name": name, "paths": [path], "spec": spec, "origin": origin,
+    ds = [{"name": name, "paths": [path], "spec": spec, "origin": origin, "source": [rel],
            **({"resolve": {"backward": "sort"}} if kind == "bar" else {})}]
     call = dict(root=tmp_root, datasets=ds, instruments=[D.instrument(name, name, kind)], strategy=G.STRATS[strat],
                 purpose="動作確認", **D.kw())

@@ -1,4 +1,4 @@
-# K1 段階 A — 環境の欠陥の直し(D-1〜D-4)
+# K1 段階 A — 環境の欠陥の直し(D-1〜D-4、第 2 回は §11)
 
 委任文 `docs/DATA/delegations/20260927_k1_env_fixes.md`。オーナー逐語(L-476)「**研究の最初の単位を回して、そこで出る欠陥を直す**」、(L-482)「**進めて**」。
 
@@ -193,6 +193,162 @@ PYTHONPATH=<scratch>/datagate:src K1FIX_DATAGATE_LOG=<scratch>/logs/after_refuse
 ## 10. やっていないこと
 
 なし。委任文 §2 の 1〜6(k1a-c-02 を外したあとの D-1〜D-4)は上限(11:55 UTC)の前、08:5x UTC に終えた。批評家の回はこの作業者の外。
+
+## 11. 第 2 回(委任文 §4、2026-09-30 23:02〜 UTC、上限 2026-10-01 02:05 UTC)
+
+委任文 §4 の終わる条件(逐語): 「(1) 5 件ごとに FIXES.md に根本原因・直し方・試験・試験の末尾。(2) `tests/bt` と `tests/test_k1_wick*.py` を、データの門(`scripts/k1_newenv_fix_datagate.py`)の下で回し、門が止めた `open` が 0 件で、失敗・エラーが 0 件。(3) 直しを外すと落ちる試験があること(変異で確かめる)。(4) 60 分足 39 升の統合の口の確かめ(`scripts/k1_newenv_fix_pipeline.py`)を `MARKET_ROOTS` の差し替え無しで回し直し、第 1 回と同じか。(5) 上限で残ったものは FIXES.md に「やっていないこと」として書く。」
+
+**経緯**: 第 2 回の最初の作業者(09:00 UTC 起動)は使用上限で返り値なしに止まり、その途中の変更はリードが試験せずにコミット `81650816` に入れた。この作業者(23:02 UTC 起動)は `git diff 5f0342d4 81650816` を読み、途中の変更を試験で確かめてから使った。途中の変更のうち直したもの: (a) 封印の写しの見分けが「今の封印のファイルの大きさ」で候補を絞ってから「台帳の md5」と比べていたため、台帳を書いたあとに中身が変わった封印のファイルの写しを見分けられなかった(直前の版は今の中身の sha256 と比べていたので、ここは後退だった)→ §11.1、(b) 起源の証拠の `searched` に実行ごとの一時フォルダの相対パス(`../../tmp/...`)が入り、同じ場面を 2 回回すと記録が違った(項目 4 の場面集の試験 2 件 `i4-5-outputs`・`i4-6-label` が `J.digest(a) == J.digest(b)` で落ちた)→ §11.2、(c) `test_the_evidence_opens_nothing_else` は証拠の読み込みの cache のせいで何も開かれず落ち、さらに監査フックの中の変数を `None` にしていた(以後その下のファイルを開くと例外)→ §11.2。途中の変更の残りは確かめてそのまま使った。
+
+### 11.1 (d)1 封印のファイルを拒む前に開いて全 bytes を読む
+
+**根本原因(ファイル:行、直す前 = `5f0342d4`)**
+- `src/bot/bt/data/loader.py:461-466`(`_read_file`)— ファイルを開いて全 bytes を読み(461)、sha256 を取り、`seals.match`(464)で台帳と照合し、そのあとで `check_range`(466)が拒む。台帳が**パスで名指ししている**ファイルでも、拒む前に全部読んでいた。照合を bytes の読み込みの後ろに置いたことが根本。
+- 同じ形が 3 か所にあった: `src/bot/bt/validation/sealed_access.py:49-54`(`read_table`)、`src/bot/bt/pipeline.py:731-732`(計画の段でデータ層を通さずに全ファイルを開いて sha256)、`src/bot/bt/pipeline.py:343-358`(`_bounds` が候補を全部読んでから `seals.match`)。さらに `src/bot/bt/repro/runner.py:136`(`plan_run` がデータ層を通さずに全ファイルを開いて sha256)も同じ形だった(委任文は `loader.py` を名指ししていたが、根本が同じなので直した。§11.7-1)。
+
+**直し方**
+- `src/bot/bt/data/allowlist.py`: bytes への口を `SealRegistry.read_checked(real, given, range_ns)` 1 つにした。
+  - 台帳がパスで名指しするファイル: 範囲が封印の境界より前で終わらなければ、**開く前に** `SealedRangeError`(読むのは 0 bytes)。範囲が境界より前なら読む(残すのは境界より前の行だけ。これまでと同じ)。
+  - それ以外のファイル: 読んだ bytes の md5 を**台帳が書いた md5**(封印した bytes の md5。`bot.research.sealed.md5_of` と同じ計算)と比べる(`copy_of`)。一致すれば写し = 封印のファイルとして `check_range` で拒む。**封印のファイル自身は開かない。**
+  - md5 が台帳のどれとも違い、大きさが「今の」封印のファイルと同じときだけ、その封印のファイルを読んで sha256 を比べる(台帳を書いたあとに中身が変わった封印のファイルの写し、と md5 の無い台帳の項目のため。封印のファイルは hash を取るだけで、行に解かない)。
+  - 写しは全部読まないと見分けられない(台帳が持つのはファイル全体の digest だけ)。ただし拒む前に解読・解析はしない。
+  - 台帳の md5: `backtest_data/phase2_sealed/*/SEALED.json` の 415 項目すべてに 32 桁の md5 がある(打ったコマンドの出力「entries 415 no md5 0 bad md5 0」)。
+- `loader.py:464`(`_read_file`)・`stream.py`(`_read_file` を通る)・`sealed_access.py:49`・`pipeline.py`(計画の段の sha256 はデータ層が読んだ bytes の `loaded.hashes()` に替え、`_bounds` は `read_checked(real, rel, None)`)・`repro/runner.py`(`plan_run` の sha256 を `read_checked(real, path, None)` 経由に。runner は範囲なしで読むので、封印のファイルは計画の段で拒む)を、この 1 つの口に通した。
+- 再現の script を打ち直した(`PYTHONPATH=src python3 scripts/k1_newenv_fix_seal_repro.py <scratch>`)。直す前(§8)の出力は「open backtest_data/x/f.csv / sha256 of bytes 49 / refused SealedRangeError」。直した後の出力(逐語):
+  ```
+  file size 49
+  sha256 of bytes 171
+  refused SealedRangeError
+  ```
+  (171 bytes は台帳そのもの。封印のファイル 49 bytes は開かれていない。)
+
+**足した試験**: `tests/bt/item_1/test_i1_fix_seal_read_before_refuse.py`(10 件、合成データだけ)— パスで名指しの封印は範囲なし・境界を越える範囲で開かれずに拒まれる(監査フックで open を数える)/ 境界より前の範囲なら読める / 別名の写しは解読されずに拒まれ、封印のファイルも開かれない / 台帳を書いたあとに変わった封印のファイルの写しも拒まれる / 同じ大きさの別物は読める / 流し読みの口・runner の計画・統合の口の計画・`read_table` も同じ口を通る。
+
+**試験の末尾の行**: 「10 passed in 0.40s」(コマンドはどれも `PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/q10_refused.log python -m pytest <ファイル> -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<scratch>/pt_q`、2026-10-01 00:15 UTC ごろ。門が止めた `open` 0 件)。
+
+### 11.2 (d)2 起源の証拠の探索がデータの置き場の全ファイルを開く
+
+**根本原因(直す前 = `5f0342d4`)**: `src/bot/bt/pipeline.py:297-340`(`_market_candidates`)が `MARKET_ROOTS`(`pipeline.py:148`、データ層の許可の根 = `backtest_data` / `data` / `paper_logs` の全体)を `os.walk`(310)し、拡張子の合う全ファイルの先頭行を読んだ(325)。`_bounds`(343-)はその候補を丸ごと読み、`row_evidence`(398)は候補をデータ層で読んだ。証拠を探す場所を「実行に渡したデータ」ではなく「データの置き場の全体」にしていたことが根本。
+
+**直し方**(途中の変更を確かめて使い、2 点を直した)
+- `row_evidence(records, spec, paths)` / `_market_candidates(spec, paths, seals)`: 見るのは `paths` = 実行に渡したファイルと、宣言の `source`(任意。この環境の市場ファイルを、行の出所としてパスで宣言する。データ層の許可の検査を通ること)だけ。そのうち市場のフォルダ(`MARKET_BASE` の下のデータ層の許可の根)にあり、データ層が市場データでないと名指す名前(`qa_*` など)でないものだけを開く。台帳がパスで名指しする封印のファイルは開かずに候補に残し、データ層の読み(封印の行を拒む)でだけ比べる。
+- `MARKET_ROOTS` の差し替えの口は無くなり、試験は `MARKET_BASE`(環境の置き場。既定はリポジトリ)を一時の合成の環境に向ける。
+- 起源の証拠に `searched`(見たファイル、`MARKET_BASE` からの相対)を足した。**この作業者の直し**: 市場のフォルダの外のファイル(実行ごとの一時の置き場)は見ないので `searched` にも入れない(入れると実行ごとに記録が変わる。上の (b))。
+- 版: `PIPELINE_VERSION = "bt-item4-pipeline-r5"`。
+
+**足した・変えた試験**: `tests/bt/item_4/test_i4_r2_origin_from_data_grid.py` — `test_a_copy_without_a_declared_source_is_unmatched`(出所を宣言しない写しは `unmatched`・`searched == []`、宣言すれば `rows`・`searched == [市場ファイル]`)/ `test_a_declared_source_must_be_a_market_file_of_the_environment` / `test_the_evidence_opens_nothing_else`(**この作業者の直し**: 証拠の cache を空にしてから、計画の段で環境の下で開かれるのが宣言した出所 1 本だけで、見出しも期間も同じ囮のファイルは開かれないことを監査フックで数える。フックの記録先はモジュールの list にし、`None` にしない)。
+
+**試験の末尾の行**: `test_i4_r2_origin_from_data_grid.py` 「113 passed in 2.99s」(コマンドはどれも `PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/q10_refused.log python -m pytest <ファイル> -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<scratch>/pt_q`、2026-10-01 00:15 UTC ごろ。門が止めた `open` 0 件)。
+
+### 11.3 (d)3 試験 5 ファイルが新鮮データを読む
+
+各ファイルが確かめていた性質(先に書く)と差し替え先:
+
+| 試験 | 確かめていた性質 | 読んでいたもの | 差し替え先 |
+|---|---|---|---|
+| `tests/bt/item_2/test_i2_real_data_check.py` | 暗号資産の**実データ**(板 + 約定)の上で、約定の模型 6 種の不変条件(指値でだけ・maker・待っている間だけ / tier 4・5 は約定の量を超えない / 注文ごとの大小関係 / 範囲の順 / 2 回同じ) | `paper_logs/tape/board_top10_20260920.csv.gz`・`executions_20260920.csv.gz`(2026-08-28 以降、未消費) | **実データのまま**、消費済みの `backtest_data/auto_bitflyer_executions_20260905/board_top5_20260821.csv.gz`・`executions_20260821.csv.gz` の 01:00〜01:20 UTC(板は 5 段。不変条件が使うのは最良の段と約定だけ) |
+| `tests/bt/item_4/test_i4_real_data_smoke.py` | 統合の口に**実データ**を通し、実行記録・書き出し・画面 10 タブまで届く(構造だけ。数は見ない)、起源は `rows`、両側が回る、予定の注文が全部約定、口座の通貨 | `paper_logs/tape/*_20260921`、`fx_event_ticks_2015_2026/NFP_20260807`、`topixf_225labo_20260907/bars_1min`、`fx_usdjpy_1m_20260822` | bitFlyer(約定 + 板)は**実データ**: 上の 2 ファイルの 00:00〜05:59 UTC の行の写し(板のファイルは 18 時台に ask 0.0 の行があり、データ層が板として拒むため切った)。FX のティック・TOPIX 先物風の 1 分足(時刻の逆転 2 行を入れて `sort` の方針も通す)・USD/JPY 風の 1 分足は**合成**(種つき、同じ形式)。5 本を一時の環境に置き、それを実行の root と `MARKET_BASE` にした |
+| `tests/bt/item_4/test_i4_r2_origin_from_data_grid.py` | 起源の規則の格子(置き場 × 市場ファイル × 宣言 × 戦略 × 目的) | `fx_event_ticks_2015_2026/NFP_20260807`、`topixf_225labo_20260907/bars_1min`(未消費) | 途中の変更で合成の環境(`make_env`)に差し替え済み。確かめて使った |
+| `tests/bt/item_4/test_i4_r3_origin_by_rows_grid.py` | 符号化し直した写し(再圧縮・展開・切り出し・1 byte の編集・全行の編集・列の入れ替え)の起源が行で決まる | 同上 | `make_env` の合成の環境。写しは作った元の市場ファイルを `source` で宣言(第 2 回の規則) |
+| `tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py`(批評家の試験) | 符号化し直した市場の行を「合成」と宣言しても、価格の規則の戦略は通らない | 同上 | `make_env` の合成のファイル(規則は「ファイルを合成と宣言したら拒む」なので、行が実の相場かに依らない) |
+
+**5 ファイルの外で直した 2 本**: `tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py`(smoke 試験の FX・JPX の宣言を「合成」と名乗らせても価格の規則は通らない)と `tests/bt/critic/item_4/test_i4r2_research_needs_a_real_preregistration.py`(でっち上げの hash では目的 `研究` の実行が作れない)。どちらも拒否がファイルを開く前に起きるので中身は読んでいなかったが、リポジトリのファイルの有無(os.stat)を見て無ければ skip する形だった。上の差し替えで共有の定数(smoke の `FILES`、格子の `MARKET`)が合成のファイル名になったため、全件 skip になった(この作業者の全体の試験で 6 件、下の (2) の `-rs` の出力)。skip は性質を落とすので、どちらも自分で一時の合成の環境を作る形にし、拒否の理由を `match="origin"` / `match="prereg"` で名指しした。
+
+**実データの 2 ファイルの確かめ**(委任の決まり「消費済み・2026-08-28 より前・どの `SEALED.json` にも無い」):
+- 消費済み: `docs/DATA_CONSUMPTION_LOG.md` §1 の「2026-08-20 〜 08-27 の板 / ticker / 約定(細粒度) | **選択に消費(重度)**」と「`backtest_data/auto_bitflyer_executions_20260905/` の ticker(2026-08-20〜09-05)・executions(同)・board_top5(2026-08-20〜08-26) | **選択に消費(④-1 経費の床、L-098)**」。
+- 行は 2026-08-21(先頭の行 `2026-08-21T00:00:00Z`、`2026-08-21T00:00:04.0319136Z`)。フォルダ名の日付 20260905 は取得日。
+- 封印の台帳: 8 つの `SEALED.json` の `files[].path` を全部出し(415 項目)、`auto_bitflyer` と `bitmex` を含む行は 0(`grep -E 'auto_bitflyer|bitmex'` の出力に見出し行だけ)。
+- データの門 `scripts/k1_newenv_fix_datagate.py` に `ALLOW_FILES`(この 2 ファイルだけ、フォルダではなくファイル単位)を足した。**委任文は「その 1 本だけ足して」だが、板と約定の 2 本を足した**(§11.7-2)。
+
+**試験の末尾の行**: 差し替えた 5 ファイルのうち 4 本(格子の 1 本は §11.2)と批評家の 2 本をまとめて「83 passed in 70.51s (0:01:10)」(コマンドはどれも `PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/q10_refused.log python -m pytest <ファイル> -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<scratch>/pt_q`、2026-10-01 00:15 UTC ごろ。門が止めた `open` 0 件)。
+
+### 11.4 (d)4 `BarCloseMarketFill` を消す
+
+**根本原因**: `src/bot/strategy/k1_wick.py:186`(`5f0342d4`)の別名 `BarCloseMarketFill = bar_close_venue`。第 1 回は `tests/test_k1_wick*.py` が持ち物の外だったので残していた(§7-1)。
+**直し方**: 別名を消し(途中の変更)、`tests/test_k1_wick.py`・`tests/test_k1_wick_critic.py` は `bar_close_venue()` で約定の口を作る(途中の変更。同じ場面・同じ期待値のまま)。
+**足した試験**: `tests/bt/item_4/test_i4_fix_k1_module.py::test_the_stage_a_name_of_the_fill_socket_is_gone`。
+
+**試験の末尾の行**: `test_i4_fix_k1_module.py`・`tests/test_k1_wick.py`・`tests/test_k1_wick_critic.py` をまとめて「133 passed in 13.31s」(コマンドはどれも `PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/q10_refused.log python -m pytest <ファイル> -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<scratch>/pt_q`、2026-10-01 00:15 UTC ごろ。門が止めた `open` 0 件)。
+
+### 11.5 (d)5 統合の口の指標の鍵 `pnl_jpy` / `realized_jpy`
+
+**根本原因**: `src/bot/bt/pipeline.py:1164`(`"pnl_jpy"`)と `:1173`(`"realized_jpy"`)(`5f0342d4`)— 口座の通貨が何でも鍵の名前が円。D-4 と同じ根本(金額の単位を記録から出さず、名前で決め打ち)。
+**直し方**(途中の変更): `metrics["pnl"] = {"realized", "fees", "currency": 口座の通貨, "note"}`、`metrics["equity"] = {"t_ns", "realized", "currency"}`。画面(`backtest_view.py:135`)は `pnl` を先に読み、無ければ直す前の記録の `pnl_jpy` を読む(第 1 回のまま)。
+**足した試験**: `tests/bt/item_4/test_i4_fix_k1_module.py::test_the_integrated_run_names_its_money_by_the_account_currency`(口座 USD の実行で `pnl_jpy`・`realized_jpy` が無く、`currency == "USD"`)。
+
+**試験の末尾の行**: §11.4 と同じ回「133 passed in 13.31s」。
+
+### 11.6 確かめ
+
+**(2) 試験の全体をデータの門の下で**(最後の回 2026-09-30 23:57〜10-01 00:14 UTC):
+
+```
+PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/r3_refused.log python -m pytest tests/bt tests/test_k1_wick.py tests/test_k1_wick_critic.py -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<scratch>/pt_r3 -rfEs
+```
+
+- 末尾の行(逐語): 「17930 passed, 6 skipped, 3 warnings in 980.09s (0:16:20)」。失敗 0・エラー 0。
+- 門が止めた `open`: 0 件(記録ファイル `r3_refused.log` が作られなかった: `ls` の出力「cannot access ... r3_refused.log: No such file or directory」)。
+- skip の 6 件(`-rs` の出力、逐語): 「SKIPPED [2] tests/bt/critic/item_0/test_i0r17_driver_error_credited_as_tool_refusal.py:43: the configured target's driver binary is not on this machine」「SKIPPED [2] tests/bt/item_0/test_bt0_carriers.py:144: bool cannot be subclassed; see the refusal test」「SKIPPED [2] tests/bt/item_4/test_i4_core_carryover.py:56: the sender's own set would hash the tuple (2**41 visits) to be made at all」。どれもデータと関係しない(第 1 回の 6 skipped と件数が同じ。第 1 回の skip の中身は確かめていない)。
+- 途中の回: (i) 途中の変更(`81650816`)のまま(23:04〜23:21)「4 failed, 17836 passed, 79 skipped, 3 warnings, 5 errors in 997.99s (0:16:37)」、門が止めた `open` 1 件(`paper_logs/tape/board_top10_20260920.csv.gz`)。失敗・エラーは `test_i4_battery_scenes.py` の `i4-5-outputs`・`i4-6-label`(上の (b))、`test_the_evidence_opens_nothing_else`(上の (c))、`test_i4_real_data_smoke.py`、`test_i2_real_data_check.py` の 5 件(門の `PermissionError`)。(ii) 直したあと・批評家の試験 2 本を直す前(23:22〜23:39 と 23:40〜23:56 の 2 回)「17924 passed, 12 skipped, 3 warnings in 1031.42s (0:17:11)」/「17924 passed, 12 skipped, 3 warnings in 966.12s (0:16:06)」、止めた `open` 0 件。増えた skip 6 件が §11.3「5 ファイルの外で直した 2 本」。
+
+**(3) 直しを外すと落ちる試験(変異)**: `src/` の写し(git の作業木にしたもの)に変異を 1 つずつ当て、該当の試験を回した(スクラッチパッドの `mutate_r2.py`、リポジトリには入れていない)。出力(逐語、失敗した試験 id の行は省く):
+
+```
+M0_control_no_change: exit 0: 131 passed in 3.67s
+M1_open_before_path_refusal: exit 1: 6 failed, 4 passed in 0.45s
+M2_no_copy_check: exit 1: 2 failed, 8 passed in 0.49s
+M3_no_changed_copy_fallback: exit 1: 1 failed, 9 passed in 0.42s
+M4_runner_hash_by_open: exit 1: 1 failed, 9 passed in 0.49s
+M5_evidence_walks_all_market_files: exit 1: 2 failed, 111 passed in 3.13s
+M6_metrics_pnl_jpy: exit 1: 1 failed, 7 passed in 1.19s
+M7_alias_back: exit 1: 1 failed, 7 passed in 1.18s
+M8_searched_names_every_path: exit 1: 3 failed, 193 passed in 7.71s
+```
+
+- M0 = 変異なしの対照。M1 = パスで名指しの封印を開いて読んでから拒む(直す前の順)/ M2 = 別名の写しを見ない / M3 = 台帳のあとに変わった封印の写しを見ない / M4 = runner が `open()` で hash を取る / M5 = 証拠の探索が市場のフォルダの全ファイルを候補にする / M6 = 指標の鍵を `pnl_jpy` に戻す / M7 = 別名 `BarCloseMarketFill` を戻す / M8 = `searched` に全パスを入れる(場面集の 2 件が 2 回の実行の digest の違いで落ちる)。
+- (d)3 の直し(試験のデータの差し替え)は変異ではなく、門が止めた `open` が 0 件であること(上の (2))で確かめた。
+
+**(4) 60 分足 39 升を統合の口で、`MARKET_ROOTS` の差し替え無しで**(23:22〜23:35 UTC):
+
+```
+PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<scratch>/logs/pipe_r2_refused.log python -c "import k1_newenv_fix_datagate, runpy, sys; sys.argv = ['scripts/k1_newenv_fix_pipeline.py', '--workers', '2', '--out-dir', 'backtest_runs/k1_env_fixes/pipeline_r2', '--summary', 'docs/PHASE2/K1/NEWENV_A/fixes_pipeline_r2.json']; runpy.run_path('scripts/k1_newenv_fix_pipeline.py', run_name='__main__')"
+```
+
+- 末尾の行(逐語): 「cells 39; both sides equal to stage A: {'same_n_trades': 39, 'same_mean_bp': 39, 'same_fill_columns': 39, 'same_trade_columns': 39}; star equal 35/39; reproduced 39/39 -> docs/PHASE2/K1/NEWENV_A/fixes_pipeline_r2.json」。第 1 回(§5)の末尾の行と、数の部分が同じ。
+- 門が止めた `open`: 0 件(`pipe_r2_refused.log` が作られなかった)。壁時計 774.3 秒(2 並列)、1 升 28.5〜54.9 秒、最大 RSS 177.3〜318.2 MB。
+- 第 1 回の升の一覧 `fixes_pipeline.json` と第 2 回の `fixes_pipeline_r2.json` を升ごとに比べた(比べない欄: `run_id`(コードの状態を含むので変わる)・`wall_s`・`max_rss_mb`・`origin_evidence`): 「cells differing (fields other than run_id/wall_s/max_rss_mb/origin_evidence): 0」。`origin_evidence` は `searched` を除いて 39 升とも第 1 回と同じ(`by: rows`、`market_path = backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz`、`rows_matched = rows_read = 26276`、`sealed_skipped: []`)。`searched` は 39 升とも `["backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz"]` だけ。
+- 一致は数が同じという事実だけで、正しさの根拠にはしない。
+- 途中の変更で作られていた `fixes_pipeline_r2.json` と `backtest_runs/k1_env_fixes/pipeline_r2/` は、どのコードで作られたか確かめられないので消して作り直した(いまのファイルはこの回の出力)。実行の記録は升ごとに gzip(`du -sh backtest_runs/k1_env_fixes/pipeline_r2` → 30M)。
+
+
+### 11.7 自分で決めたこと(原文に無い判断。理由つき)
+
+1. **runner(`repro/runner.py`)の計画の段の sha256 も同じ口に通した。** 委任文 (d)1 は `loader.py` を名指しするが、「拒む前に bytes を読む」は同じ根本原因で、統合の口の同じ箇所は途中の変更で直っていたため。runner は範囲なしで読むので、封印のファイル(パス・写し)は計画の段で `ReproError` になる(直す前も実行の段で拒まれていた。拒む段が早くなっただけ)。
+2. **実データの差し替え先として、板と約定の 2 本をデータの門に足した。** 委任の文は「その 1 本だけ」。性質(暗号資産の実データの板 + 約定の上で約定の模型の不変条件が成り立つ)には板と約定の両方が要り、1 本では確かめられないため。フォルダではなくファイル単位で足した。
+3. **smoke 試験の FX・JPX の 3 本は合成にした。** FX のイベントティックと TOPIX 先物 1 分足は消費台帳で未消費(§3 の TOPIX 先物「未消費」、FX のイベントティックは台帳に行が無い)、USD/JPY 1 分足は「USD/JPY 1分足 3.5年 選択に消費」の行がどのファイルかを確かめられなかったため(迷ったら合成)。これで「この環境の実物の FX・JPX ファイルの形式が読める」ことは smoke 試験では確かめなくなった(docstring に書いた)。
+4. **smoke 試験の bitFlyer は 00:00〜05:59 UTC の行に切った。** 板のファイルの 67,581 行目(18 時台)に ask 0.0 の行があり、データ層が板として拒む(`ParseError: ... asks[0].price must be > 0, got 0.0`)。この試験の問いではないため。
+5. **封印の写しの見分けで、md5 が台帳と違い大きさが今の封印のファイルと同じときは、封印のファイルを読んで hash を比べる。** 途中の変更は台帳の md5 とだけ比べていて、台帳を書いたあとに変わった封印のファイルの写しを見分けられなかった(直前の版より後退)。読むのは同じ大きさの時だけで、hash を取るだけ。
+6. **`searched` には市場のフォルダの中のファイルだけを入れる。** 外のファイルは見ないので、名前を入れると実行ごとに変わる一時パスが記録に入り、同じ実行が同じ記録にならないため。
+7. **批評家の試験 2 本(上の「5 ファイルの外で直した 2 本」)に `match=` を足した。** 合成の環境に替えたので、拒否が別の理由(宣言の欠け・読み込みの失敗)で起きても通ってしまわないようにするため。確かめる性質(その規則で拒まれる)は変えていない。
+8. **変異の確かめは、`src/` の写しを git の作業木にしてから当てた**(`code_state` が git を要るため。写しを git にしない対照では全部落ち、確かめにならなかった)。対照(変異なし)も同じ形で回した。
+
+### 11.8 やっていないこと
+
+委任文 §4 の終わる条件 (1)〜(4) は上限(02:05 UTC)の前に満たした。条件の外で、やっていないこと:
+
+1. リポジトリの試験の全体(`PYTHONPATH=src python -m pytest`、CLAUDE.md §3)は回していない。回したのは `tests/bt`・`tests/test_k1_wick.py`・`tests/test_k1_wick_critic.py`(上の (2))と、`bot.bt` を使う `tests/` 直下のもう 1 本 `tests/test_backtest.py`(データの門の下で「8 passed in 0.33s」、止めた `open` 0 件)だけ。
+2. 第 1 回の D-2(流し読みの畳み)と runner の 2 升の確かめは打ち直していない(第 2 回の条件に無い。流し読みの口は封印の口を `_read_file` 経由で通るようになったが、畳みの結果は確かめていない)。
+3. リードの処置にある「これまでの試験の実行が 2026-08-28 以降のファイルや BitMEX 2020〜2021 を開いていた可能性」(どの実行で何を開いたか)は調べていない(この委任の外)。
+4. 批評家の回(委任文 §4「そのあと批評家 1 回で第 1 回と合わせて見る」)はこの作業者の外。
+5. `docs/AUDITOR/VERDICTS/2026-09-27_k1_env_fixes.md` への返り値の転記はしていない(リードの役)。
+
+
+### 11.9 変えた・作ったファイル(第 2 回。途中の変更 `81650816` を含む、`5f0342d4` との比べ)
+
+- 途中の変更(`81650816`、確かめて使った): `src/bot/bt/data/allowlist.py`・`loader.py`・`src/bot/bt/pipeline.py`・`src/bot/bt/validation/sealed_access.py`・`src/bot/strategy/k1_wick.py`・`scripts/k1_newenv_fix_pipeline.py`・`tests/bt/item_4/test_i4_fix_k1_module.py`・`tests/bt/item_4/test_i4_r2_origin_from_data_grid.py`・`tests/test_k1_wick.py`・`tests/test_k1_wick_critic.py`。
+- この作業者が変えた(`81650816` との比べ): `src/bot/bt/data/allowlist.py`(`copy_of`・`read_checked`・`_by_md5`、docstring)/ `src/bot/bt/pipeline.py`(`searched`)/ `src/bot/bt/repro/runner.py`(計画の段の hash を封印の口に)/ `scripts/k1_newenv_fix_datagate.py`(`ALLOW_FILES` の 2 本)/ `tests/bt/item_2/test_i2_real_data_check.py` / `tests/bt/item_4/test_i4_real_data_smoke.py` / `tests/bt/item_4/test_i4_r2_origin_from_data_grid.py` / `tests/bt/item_4/test_i4_r3_origin_by_rows_grid.py` / `tests/bt/item_4/test_i4_fix_k1_module.py`(2 件足した)/ `tests/bt/critic/item_4/test_i4r2_origin_survives_reencoding.py` / `tests/bt/critic/item_4/test_i4r1_origin_is_not_a_self_label.py` / `tests/bt/critic/item_4/test_i4r2_research_needs_a_real_preregistration.py` / `docs/PHASE2/K1/NEWENV_A/fixes_pipeline_r2.json`(作り直し)/ この `FIXES.md` §11。
+- 作った: `tests/bt/item_1/test_i1_fix_seal_read_before_refuse.py` / `backtest_runs/k1_env_fixes/pipeline_r2/`(`.gitignore` = `*`、39 升、30M)。
+- 核(`src/bot/bt/core/`)と場面集(`tests/bt/battery/`)は変えていない(`git diff 5f0342d4 --stat -- src/bot/bt/core tests/bt/battery` の出力は空)→ `CORE_VERSION` は据え置き。git commit / push はしていない。フック・設定・git のフックの置き場は触っていない。
 
 ## 付録: 変えた・作ったファイル
 

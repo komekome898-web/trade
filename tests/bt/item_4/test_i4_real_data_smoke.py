@@ -47,6 +47,21 @@ Nikkei 225 futures 1-minute bars): the days chosen are outside every seal
 futures 1-minute bars of 2026-08-21, the NFP event ticks of 2026-08-07,
 USD/JPY 1-minute bars of 2026-08-21), found with
 `grep -l <file> backtest_data/phase2_sealed/*/SEALED.json` (no hit).
+
+Round 2 of the k1 env fixes (2026-09-30, delegation docs/DATA/delegations/20260927_k1_env_fixes.md §4 (d)3): the
+files above (the bitFlyer tape of 2026-09-21, the NFP event ticks, the TOPIX futures and USD/JPY 1-minute files) are
+data after 2026-08-28, data not consumed, or (the USD/JPY file) a file the consumption log's row "USD/JPY 1分足
+3.5年" could not be tied to; they are no longer read. Now:
+- bitFlyer (trade + book): REAL, the executions and board top-5 1-second snapshots of 2026-08-21 00:00-05:59 UTC
+  (the rows before BF_CUT; the board file holds a row with an ask of 0.0 later that day, which the data layer
+  refuses as a book) in backtest_data/auto_bitflyer_executions_20260905/ -- consumed (docs/DATA_CONSUMPTION_LOG.md §1), rows before
+  2026-08-28, in no SEALED.json (docs/PHASE2/K1/NEWENV_A/FIXES.md §11). The book has 5 levels (was 10).
+- FX event ticks, TOPIX-futures-like 1-minute bars (with two rows out of time order, so the "sort" policy still
+  runs) and USD/JPY-like 1-minute bars: SYNTHETIC files in the same formats (`_synthetic_files`, seeded).
+All five files are written into a temporary environment (the bitFlyer files as copies of those rows) that is the run's root
+and pipeline.MARKET_BASE, so the evidence of every dataset is its rows in that environment's market folder. What the
+test asserts is unchanged (the run's structure, never a number the data produced). The run no longer shows that the
+FX / JPX file formats of this repository's real files parse: only the synthetic files in their formats do.
 """
 from __future__ import annotations
 
@@ -64,6 +79,8 @@ from bot.monitoring.backtest_view import TABS, WARNING, run_view
 
 REPO = Path(__file__).resolve().parents[3]
 NS = 1_000_000_000
+BF_SRC = "backtest_data/auto_bitflyer_executions_20260905"
+BF_CUT = "2026-08-21T06:00"  # the bitFlyer rows kept: 00:00-05:59 UTC of 2026-08-21
 
 
 def t(y, mo, d, h=0, mi=0, off_h=0):
@@ -71,14 +88,46 @@ def t(y, mo, d, h=0, mi=0, off_h=0):
 
 
 FILES = {
-    "bf_trades": "paper_logs/tape/executions_20260921.csv.gz",
-    "bf_board": "paper_logs/tape/board_top10_20260921.csv.gz",
-    "fx_ticks": "backtest_data/fx_event_ticks_2015_2026/NFP_20260807.csv.gz",
-    "jpx_1m": "backtest_data/topixf_225labo_20260907/bars_1min.csv.gz",
-    "fx_1m": "backtest_data/fx_usdjpy_1m_20260822.csv.gz",
+    "bf_trades": "backtest_data/bf/executions_20260821.csv.gz",
+    "bf_board": "backtest_data/bf/board_top5_20260821.csv.gz",
+    "fx_ticks": "backtest_data/syn/fx_event_ticks_like.csv.gz",
+    "jpx_1m": "backtest_data/syn/topixf_like_bars_1min.csv.gz",
+    "fx_1m": "backtest_data/syn/usdjpy_like_1m.csv.gz",
 }
-BOOK = {"levels": 10, **{f"{s}_{k}": [f"{s}_{k}_{i}" for i in range(1, 11)] for s in ("bid", "ask") for k in ("px", "sz")}}
+LEVELS = 5
+BOOK = {"levels": LEVELS,
+        **{f"{s}_{k}": [f"{s}_{k}_{i}" for i in range(1, LEVELS + 1)] for s in ("bid", "ask") for k in ("px", "sz")}}
 OHLCV = {"open": "open", "high": "high", "low": "low", "close": "close", "volume": "volume"}
+
+
+def _synthetic_files() -> dict:
+    """Seeded synthetic files in the formats of the files read before round 2."""
+    import random
+    rnd = random.Random(20260930)
+    fx = ["ts_utc,bid,ask,bidvol,askvol"]
+    mid, t0 = 147.0, t(2026, 8, 7, 12) // 1_000_000  # ms, 12:00:00 UTC, one quote a second for an hour
+    for k in range(3600):
+        mid = round(mid + rnd.choice((-0.003, 0.0, 0.003)), 3)
+        fx.append(f"{t0 + k * 1000},{mid - 0.0025:.4f},{mid + 0.0025:.4f},{rnd.randint(1, 9)},{rnd.randint(1, 9)}")
+    jpx, px = ["date,time,open,high,low,close,volume"], 3000.0
+    rows = []
+    for k in range(390):  # 08:45-15:14 JST, the bar's start
+        h, m = divmod(8 * 60 + 45 + k, 60)
+        o, c = px, px + rnd.choice((-1.0, -0.5, 0.0, 0.5, 1.0))
+        rows.append(f"2026-08-21,{h:02d}:{m:02d},{o:.1f},{max(o, c) + 0.5:.1f},{min(o, c) - 0.5:.1f},{c:.1f},"
+                    f"{rnd.randint(10, 99)}")
+        px = c
+    rows[200], rows[201] = rows[201], rows[200]  # two rows out of time order (the data layer's "backward")
+    jpx += rows
+    fx1, px = ["timestamp,open,high,low,close,volume"], 147.0
+    for k in range(720):  # 2026-08-21 00:00-11:59 UTC
+        h, m = divmod(k, 60)
+        o, c = px, round(px + rnd.choice((-0.01, 0.0, 0.01)), 3)
+        fx1.append(f"2026-08-21T{h:02d}:{m:02d}:00Z,{o:.3f},{max(o, c) + 0.005:.3f},{min(o, c) - 0.005:.3f},{c:.3f},"
+                   f"{rnd.randint(1, 50)}")
+        px = c
+    return {FILES["fx_ticks"]: "\n".join(fx) + "\n", FILES["jpx_1m"]: "\r\n".join(jpx) + "\r\n",
+            FILES["fx_1m"]: "\n".join(fx1) + "\n"}
 
 
 def datasets():
@@ -111,8 +160,8 @@ INSTRUMENTS = [D.instrument("bf", "bf_trades", "trade", ["bf_board"]),
                D.instrument("fx_tick", "fx_ticks", "quote"),
                D.instrument("jpx", "jpx_1m", "bar"),
                D.instrument("fx_1m", "fx_1m", "bar")]
-QTY = {"bf": 0.01, "fx_tick": 1.0, "jpx": 1.0, "fx_1m": 1.0}  # bf: a size the displayed top-10 book holds
-DAYS = {"bf": (2026, 9, 21, 0, 0), "fx_tick": (2026, 8, 7, 12, 0), "jpx": (2026, 8, 21, 1, 0), "fx_1m": (2026, 8, 21, 1, 0)}
+QTY = {"bf": 0.01, "fx_tick": 1.0, "jpx": 1.0, "fx_1m": 1.0}  # bf: a size the displayed top-5 book holds
+DAYS = {"bf": (2026, 8, 21, 0, 0), "fx_tick": (2026, 8, 7, 12, 0), "jpx": (2026, 8, 21, 1, 0), "fx_1m": (2026, 8, 21, 1, 0)}
 
 
 def schedule():
@@ -125,13 +174,40 @@ def schedule():
 
 
 def _missing():
-    return [p for p in FILES.values() if not (REPO / p).is_file()]
+    return [f"{BF_SRC}/{os.path.basename(FILES[k])}" for k in ("bf_trades", "bf_board")
+            if not (REPO / BF_SRC / os.path.basename(FILES[k])).is_file()]
 
 
-@pytest.mark.skipif(bool(_missing()), reason="real data files are not in this environment")
-def test_real_data_reaches_record_exports_and_dashboard_under_the_smoke_purpose():
+@pytest.fixture
+def env():
+    """The run's root and pipeline.MARKET_BASE: the two bitFlyer files (byte copies) and the synthetic files."""
+    import gzip
+    import shutil
+    from bot.bt import pipeline as P
+    tmp = tempfile.mkdtemp(prefix="i4w_real_env_")
+    for k in ("bf_trades", "bf_board"):  # the rows before BF_CUT (the board file has a row with ask 0.0 at 18:4x UTC,
+        dst = os.path.join(tmp, FILES[k])  # which the data layer refuses as a book: not a question of this test)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with gzip.open(REPO / BF_SRC / os.path.basename(FILES[k]), "rt", encoding="utf-8", newline="") as fh:
+            lines = [ln for i, ln in enumerate(fh) if i == 0 or ln[:len(BF_CUT)] < BF_CUT]
+        with open(dst, "wb") as fh:
+            fh.write(gzip.compress("".join(lines).encode("utf-8"), mtime=0))
+    for rel, body in _synthetic_files().items():
+        dst = os.path.join(tmp, rel)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, "wb") as fh:
+            fh.write(gzip.compress(body.encode(), mtime=0))
+    mp = pytest.MonkeyPatch()
+    mp.setattr(P, "MARKET_BASE", tmp)
+    yield tmp
+    mp.undo()
+    shutil.rmtree(tmp, ignore_errors=True)
+
+
+@pytest.mark.skipif(bool(_missing()), reason="the bitFlyer files of 2026-08-21 are not in this environment")
+def test_real_data_reaches_record_exports_and_dashboard_under_the_smoke_purpose(env):
     runs = tempfile.mkdtemp(prefix="i4w_real_runs_")
-    plan = plan_pipeline(root=str(REPO), datasets=datasets(), instruments=INSTRUMENTS, strategy=schedule(),
+    plan = plan_pipeline(root=env, datasets=datasets(), instruments=INSTRUMENTS, strategy=schedule(),
                          purpose="動作確認", **D.kw())
     res = run_pipeline(plan, runs_dir=runs)
     assert res.repro["identical"] is True

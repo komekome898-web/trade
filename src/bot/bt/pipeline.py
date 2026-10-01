@@ -424,8 +424,13 @@ def row_evidence(records: Sequence[Mapping], spec: dict, paths: Sequence[str] = 
     file whose rows -- read through the data layer with the same declaration, kept in the rows' time span --
     contain the most of the rows (time and every value; at least one). No other file is opened."""
     rows = [_row_key(r) for r in records]
+    # "searched": the files of `paths` that lie in this environment's market folders (the only ones looked at), relative
+    # to MARKET_BASE; a file outside them (a run's own temporary root) is not looked at and not named, so the record
+    # does not carry a path that changes from one run to the next
+    looked = {os.path.realpath(x) for x in paths}
     base = {"by": "unmatched", "market_path": None, "rows_matched": 0, "rows_read": len(rows), "sealed_skipped": [],
-            "searched": sorted({os.path.relpath(os.path.realpath(x), os.path.realpath(MARKET_BASE)) for x in paths})}
+            "searched": sorted(os.path.relpath(r, os.path.realpath(MARKET_BASE)) for r in looked
+                               if _in_market_roots(r) and not _named_not_market(r))}
     if not rows:
         return base
     ts = [_rec_time(r) for r in records]

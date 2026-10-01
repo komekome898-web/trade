@@ -2,7 +2,8 @@
 
 Refuses, by a Python audit hook, every open() of a file under the repository's
 data roots (backtest_data, data, paper_logs) except the data the delegation
-allows: BitMEX 1-second bars 2017-2019, the stage-A folded bars, and the seal
+allows: BitMEX 1-second bars 2017-2019, the stage-A folded bars, two consumed
+bitFlyer files of 2026-08-21 (ALLOW_FILES, round 2), and the seal
 ledger (backtest_data/phase2_sealed/*, not market data; the data layer reads it
 on every load). A refused open raises PermissionError (an OSError) and is
 logged to $K1FIX_DATAGATE_LOG, so a test that needs other data fails visibly
@@ -21,6 +22,14 @@ ALLOW = tuple(os.path.join(REPO, r) + os.sep for r in (
     "backtest_data/bitmex_trade_1s_XBTUSD/2017", "backtest_data/bitmex_trade_1s_XBTUSD/2018",
     "backtest_data/bitmex_trade_1s_XBTUSD/2019", "backtest_data/k1_newenv_a_20260927",
     "backtest_data/phase2_sealed"))
+# single files allowed in round 2 of the env fixes (2026-09-30) as the real-data input of the tests that ran on
+# unconsumed data before (tests/bt/item_2/test_i2_real_data_check.py, tests/bt/item_4/test_i4_real_data_smoke.py):
+# consumed (docs/DATA_CONSUMPTION_LOG.md §1: 2026-08-20..08-27 board / executions, 選択に消費(重度), and the
+# auto_bitflyer_executions_20260905 row, ④-1 経費の床), rows of 2026-08-21 (before 2026-08-28), in no SEALED.json.
+# The reason is written in docs/PHASE2/K1/NEWENV_A/FIXES.md §11.
+ALLOW_FILES = frozenset(os.path.join(REPO, r) for r in (
+    "backtest_data/auto_bitflyer_executions_20260905/board_top5_20260821.csv.gz",
+    "backtest_data/auto_bitflyer_executions_20260905/executions_20260821.csv.gz"))
 LOG = os.environ.get("K1FIX_DATAGATE_LOG")
 _busy = [False]
 
@@ -42,7 +51,7 @@ def _hook(event, args):
         _busy[0] = False
     if not real.startswith(ROOTS):
         return
-    if real.startswith(ALLOW):
+    if real.startswith(ALLOW) or real in ALLOW_FILES:
         return
     if LOG:
         _busy[0] = True

@@ -34,18 +34,18 @@ under another name has the same size and the same bytes).
 What is read before a refusal (round 2 of the k1 env fixes, 2026-09-27): the
 one door is `SealRegistry.read_checked(real, given, range_ns)`, which returns
 a file's bytes only after the seals allowed them. A file the seal record
-names by its real path is refused BEFORE it is opened (0 bytes read). A file
-under another name can be a copy only if its size (os.stat, no read) equals a
-sealed file's size; only such a file has its bytes hashed and compared before
-they are handed on, and the comparison is with the digest the seal record
-wrote (`md5`), so the sealed file itself is not opened. A seal entry without
-an `md5` is compared with the sha256 of the sealed file's bytes (the sealed
-file is then read; no ledger in backtest_data/phase2_sealed lacks it on
-2026-09-27). A copy of a sealed file edited after the seal record was
-written is not recognised by bytes (the record names the bytes it sealed).
-A copy has to be read whole to be recognised (a digest of the whole file is
-all the record holds), but its bytes are never decoded or parsed before the
-refusal. A seal record that cannot
+names by its real path is refused BEFORE it is opened (0 bytes read) when its
+range does not end at or before the cutoff. Any other file is read (the
+layer reads it anyway) and, before its bytes are decoded or handed on, its
+md5 is compared with the digests the seal records wrote (`md5`: the bytes
+that were sealed) -- no sealed file is opened for that. Only when the file
+has the size a sealed file has NOW (os.stat, no read) and its md5 is not the
+recorded one is that sealed file read and hashed (sha256, never decoded):
+this catches a copy of a sealed file changed after its record was written,
+and a seal entry without an `md5` (none in backtest_data/phase2_sealed on
+2026-09-30: 415 entries, all with md5). A copy has to be read whole to be
+recognised (a digest of the whole file is all the record holds), but its
+bytes are never decoded or parsed before the refusal. A seal record that cannot
 be read makes every load refuse (fail closed: the layer cannot tell which
 files are sealed). Reading the sealed window itself goes through
 `load_sealed`'s gates only; this layer has no way to do it.
@@ -167,6 +167,7 @@ class SealRegistry:
         self.records_read: dict[str, str] = {}  # seal record path -> sha256
         self._by_real: dict[str, SealEntry] = {}
         self._by_size: dict[int, list[SealEntry]] = {}
+        self._by_md5: dict[str, SealEntry] = {}  # the recorded digest of the sealed bytes -> entry (first record wins)
         self._hash_cache: dict[str, Optional[str]] = {}
         base = os.path.join(os.path.realpath(root), *SEAL_DIR)
         if not os.path.isdir(base):
@@ -196,6 +197,8 @@ class SealRegistry:
                     ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut, md5)
                     self.entries.append(ent)
                     self._by_real[real] = ent
+                    if md5 is not None:
+                        self._by_md5.setdefault(md5, ent)
             except SealedRangeError:
                 raise
             except Exception as exc:  # noqa: BLE001 -- any unreadable record fails closed
@@ -217,7 +220,7 @@ class SealRegistry:
             raise SealedRangeError(f"seal record {rec}: {where}: {exc}") from None
 
     def _sealed_sha256(self, ent: SealEntry) -> Optional[str]:
-        """The sha256 of a sealed file's bytes: only for an entry whose record has no md5 (reads the sealed file)."""
+        """The sha256 of a sealed file's bytes as they are now (reads the sealed file; hashed, never decoded)."""
         if ent.real not in self._hash_cache:
             try:
                 with open(ent.real, "rb") as fh:
@@ -230,37 +233,43 @@ class SealRegistry:
         """The seal entry naming this real path (no file is opened)."""
         return self._by_real.get(real)
 
+    def copy_of(self, raw: bytes) -> Optional[SealEntry]:
+        """The seal entry whose sealed bytes these are (a copy under another name), or None. First by the md5 the
+        seal record wrote (no sealed file is opened); then, only for a sealed file of the same size now whose record
+        digest differs (changed after sealing, or no md5 recorded), by the sha256 of that file's current bytes."""
+        if not self.entries:
+            return None
+        md5 = hashlib.md5(raw).hexdigest()
+        hit = self._by_md5.get(md5)
+        if hit is not None:
+            return hit
+        sha = None
+        for cand in self._by_size.get(len(raw), ()):
+            sha = sha or hashlib.sha256(raw).hexdigest()
+            if self._sealed_sha256(cand) == sha:
+                return cand
+        return None
+
     def read_checked(self, real: str, given: str,
                      range_ns: Optional[tuple[int, int]]) -> tuple[bytes, Optional[SealEntry]]:
         """The one door to a data file's bytes: (bytes, the seal entry covering the file or None).
-        A file the seal record names by path is refused before it is opened; a file of a sealed file's size is
-        compared by its bytes before they are returned (see the module docstring). `check_range` refuses a sealed
+        A file the seal record names by path is refused before it is opened; any other file is compared by its
+        bytes (`copy_of`) before they are returned (see the module docstring). `check_range` refuses a sealed
         file read without a range that ends at or before its cutoff."""
         ent = self._by_real.get(real)
         if ent is not None:
             self.check_range(ent, given, range_ns)  # before any byte is read
+            with open(real, "rb") as fh:
+                return fh.read(), ent
         with open(real, "rb") as fh:
-            size = os.fstat(fh.fileno()).st_size
-            cands = () if ent is not None else self._by_size.get(size, ())
             raw = fh.read()
-        if cands:
-            md5 = hashlib.md5(raw).hexdigest()
-            sha = None
-            for cand in cands:
-                if cand.md5 is not None:
-                    hit = cand.md5 == md5
-                else:
-                    sha = sha or hashlib.sha256(raw).hexdigest()
-                    hit = self._sealed_sha256(cand) == sha
-                if hit and len(raw) == size:
-                    ent = cand
-                    break
-            if ent is not None:
-                try:
-                    self.check_range(ent, given, range_ns)
-                except SealedRangeError:
-                    del raw
-                    raise
+        ent = self.copy_of(raw)
+        if ent is not None:
+            try:
+                self.check_range(ent, given, range_ns)
+            except SealedRangeError:
+                del raw
+                raise
         return raw, ent
 
     @staticmethod
