@@ -17002,9 +17002,10 @@
   {
    "move": 623,
    "tools": {
-    "Bash": 2
+    "Bash": 3,
+    "mcp__Claude_Code_Remote__delete_trigger": 1
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
