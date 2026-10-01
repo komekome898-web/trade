@@ -606,3 +606,5 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-01T19:04:10+00:00 bybit: 接続
 2026-10-01T19:04:10+00:00 bybit: -> bybit_20261001.jsonl.gz
 2026-10-01T19:04:14+00:00 binance_cm: -> binance_cm_20261001.jsonl.gz
+2026-10-01T21:41:13+00:00 binance_cm: 切断 PermissionError: [Errno 13] Permission denied: 'C:\\Users\\ryoma\\trade\\data\\liquidations\\binance_cm_20261001.jsonl.gz' — 2s 後に再接続
+2026-10-01T21:41:20+00:00 binance_cm: 接続
