@@ -1709,3 +1709,194 @@ $ find /tmp -maxdepth 1 -newermt '2026-09-27T08:46:26Z' -type f; echo '---root--
 /tmp/claude-code.log
 /tmp/claude-code-742835796.diag.log
 | ---root---
+--- 2026-10-01T08:54:27Z method=読了 target=purged-cross-validation rc=0 time_s=0.290 note=E4判定用(この回の追加の読み): tests/e2e の当たった27ファイルの冒頭の説明(docstring)を全部読み、capture_output=True の subprocess が何を実行するかを確かめる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e; for f in test_e2e_api_docs test_e2e_apply_embargo test_e2e_assert_embargo_respected test_e2e_assert_groups_disjoint test_e2e_assert_no_temporal_leakage test_e2e_audit_splitter test_e2e_backtest_paths test_e2e_competitor_benchmark test_e2e_compute_overlap_fraction test_e2e_cpcv test_e2e_framework_agnostic_times test_e2e_horizons_overlap test_e2e_lcl_full_benchmark test_e2e_metrics test_e2e_optuna_cookbook test_e2e_parse_horizon test_e2e_path_metrics test_e2e_pbo test_e2e_public_types test_e2e_purge test_e2e_purged_group_kfold test_e2e_purged_kfold test_e2e_release test_e2e_sync_citation test_e2e_validate_times test_e2e_walk_forward test_install_smoke; do echo "== $f =="; sed -n '"'"'1,6p'"'"' $f.py | cut -c1-200; done'
+== test_e2e_api_docs ==
+"""User stories: API readers see working links, not raw Sphinx markup.
+
+Build the real site in a subprocess, then inspect its rendered API page.
+Run with the project's ``docs`` extra installed.
+"""
+
+== test_e2e_apply_embargo ==
+"""End-to-end tests for ``apply_embargo``.
+
+User stories:
+- A quantitative researcher applies a 2-day embargo after every test fold
+  to prevent serial-correlation leakage in their financial-strategy
+  backtest.
+== test_e2e_assert_embargo_respected ==
+"""End-to-end tests for ``assert_embargo_respected``.
+
+User stories:
+- A risk analyst wants to verify a financial-strategy split respects a
+  multi-day embargo gap that prevents serial-correlation leakage.
+- The asymmetry of the embargo (post-test only) must be visible at the
+== test_e2e_assert_groups_disjoint ==
+"""End-to-end tests for ``assert_groups_disjoint``.
+
+User stories:
+- A clinical researcher with multiple observations per patient must verify
+  that no patient appears in both training and test, to prevent
+  patient-level information leakage.
+== test_e2e_assert_no_temporal_leakage ==
+"""End-to-end tests for ``assert_no_temporal_leakage``.
+
+User stories:
+- A researcher builds a custom train/test split by hand and wants a
+  one-liner to verify it has no temporal leakage before training a model.
+- A reviewer auditing someone else's split wants to compute, with the
+== test_e2e_audit_splitter ==
+"""End-to-end tests for the public ``audit_splitter`` entry point.
+
+User stories:
+- A researcher wants to inspect how many observations each fold loses to
+  purge and embargo before committing compute to a large model search.
+- A walk-forward user wants window truncation reported separately from
+== test_e2e_backtest_paths ==
+"""End-to-end tests for CombinatorialPurgedCV.backtest_paths and the
+top-level reconstruct_paths function."""
+
+from __future__ import annotations
+
+import subprocess
+== test_e2e_competitor_benchmark ==
+"""E2E: the controlled competitor-leakage benchmark holds and is deterministic.
+
+``tools/competitor_benchmark.py`` runs the same model through several
+libraries' CV splitters on a task whose honest answer is ~0. This pins the
+two invariants that make the comparison meaningful, using only the
+dependency-free core (sklearn + purgedcv) via ``--core-only``:
+== test_e2e_compute_overlap_fraction ==
+"""End-to-end tests for ``compute_overlap_fraction``.
+
+User stories:
+- A data engineer is debugging a custom splitter and wants to monitor
+  the per-fold overlap fraction over many random splits without their
+  monitoring loop blowing up on the first leaky split.
+== test_e2e_cpcv ==
+"""End-to-end tests for CombinatorialPurgedCV."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_framework_agnostic_times ==
+"""End-to-end tests for framework-agnostic time inputs.
+
+User stories:
+- A quant whose pipeline is numpy-only builds a purged splitter without ever
+  constructing a pandas object.
+- A quant who has migrated to polars extracts two time columns and runs CPCV
+== test_e2e_horizons_overlap ==
+"""End-to-end tests for ``horizons_overlap``.
+
+User stories:
+- A researcher wants to check whether two label horizons of a time-series
+  dataset overlap, so they can decide whether one sample's label leaks into
+  another sample's training context.
+== test_e2e_lcl_full_benchmark ==
+"""E2E: the shared LCL harness and the full-population benchmark CLI.
+
+Mirrors ``examples/uk_smart_meter_lcl.ipynb`` at the library level (notebooks
+are docs here, not run under pytest). Two guarantees:
+
+1. ``examples/_lcl_harness.py`` -- the verbatim extract the offline benchmark
+== test_e2e_metrics ==
+"""End-to-end tests for the D7 statistical metrics."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_optuna_cookbook ==
+"""End-to-end test for the Optuna + DSR cookbook example.
+
+Skipped unless the optional ``optuna`` extra is installed. When it is, the
+cookbook is run as a subprocess exactly as a user would (`python
+examples/optuna_dsr_cookbook.py`) and its output is checked.
+"""
+== test_e2e_parse_horizon ==
+"""End-to-end tests for the public ``parse_horizon`` entry point.
+
+These tests treat ``purgedcv`` as an installed third-party library and
+exercise its public surface the way a data scientist would write it. Two
+flavors:
+
+== test_e2e_path_metrics ==
+"""End-to-end tests for path_metrics, cv.reconstruct_paths, and CSCV."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_pbo ==
+"""End-to-end tests for Probability of Backtest Overfitting (PBO)."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_public_types ==
+"""End-to-end tests for the public result types and callback aliases (A7)."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_purge ==
+"""End-to-end tests for ``purge``.
+
+User stories:
+- A researcher builds a custom split by hand and wants to remove training
+  rows that would leak into the test horizon, then verify the result with
+  the diagnostic.
+== test_e2e_purged_group_kfold ==
+"""End-to-end tests for PurgedGroupKFold."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_purged_kfold ==
+"""End-to-end tests for PurgedKFold."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_release ==
+"""Exercise release planning in disposable Git repos, with no remote or uploads."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_sync_citation ==
+"""End-to-end test: CITATION.cff stays in step with the package version.
+
+These tests subprocess out to ``tools/sync_citation.py`` exactly the way CI
+and the release workflow invoke it (``python tools/sync_citation.py ...``).
+They cover the two user stories the script exists for: a CI drift guard that
+fails when CITATION.cff falls behind pyproject.toml, and a release step that
+== test_e2e_validate_times ==
+"""End-to-end tests for ``validate_times``.
+
+User stories:
+- A researcher prepares prediction/evaluation time arrays for their splitter
+  and wants a single up-front check that catches the common mistakes.
+- The error message must point at the offending row, not just say
+== test_e2e_walk_forward ==
+"""End-to-end tests for WalkForwardSplit."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_install_smoke ==
+"""End-to-end smoke test: the installed package is importable from a fresh interpreter.
+
+This verifies that ``pip install -e ".[dev]"`` actually exposes the package
+on the import path, with no hidden import-time side effects, and that the
+top-level ``__version__`` attribute is present and well-formed.
+"""
