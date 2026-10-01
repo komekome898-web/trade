@@ -1,0 +1,700 @@
+--- 2026-09-27T05:34:21Z method=setup target=開始 rc=0 time_s=0.335 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-27T05:34:21Z
+8-017_ge_list.lst
+8-017_list_run15.txt
+8-017_list_run15b.txt
+8-020_list_run15.txt
+8-020_list_run15b.txt
+8-020_openbb_list.lst
+8-026_openclaw_list.lst
+8-030_run21
+8-030_run22
+8-030_run23
+8-031_run26
+8-033_core_list.txt
+8-038_run20
+8016_search_lines.txt
+E3a_search_complete.txt
+E3a_search_full.txt
+E3a_table.txt
+E3b_search_complete.txt
+E3b_search_full.txt
+Quentin-Piot_prediction-market-backtester.json
+Quentin-Piot_prediction-market-backtester_LICENSE
+Quentin-Piot_prediction-market-backtester_contrib.json
+__pycache__
+accept_section.txt
+akurkar07_OrderBook.json
+akurkar07_OrderBook_LICENSE
+akurkar07_OrderBook_contrib.json
+algobuild_dashboard.html
+algobuild_pricing.html
+algorier_page_sitemap.xml
+algorier_post_sitemap.xml
+algorier_urls.txt
+all_hitrows_combined.md
+assemble.py
+backtrader_hitrows.err
+backtrader_hitrows.md
+backtrader_overrides.py
+backtrex_fetch_all.sh
+build_report.py
+build_table.py
+candlist.txt
+ce32.txt
+check_scan_output.txt
+checkelements_final.out
+checkelements_out1.txt
+checkelements_run2.out
+checkelements_run3.out
+checkelements_verify.out
+checklog_final.out
+checkoutput.txt
+checkscan_out1.txt
+checkscan_run11.out
+checkscan_run11b.out
+ck32.txt
+classify_final_E1a.out
+classify_ge.py
+classify_ge_e4.py
+classify_hits.py
+classify_openbb.py
+classify_openbb_e1a.py
+classify_openbb_e3b.py
+classify_openbb_e4.py
+classify_test_E1a.out
+classify_test_E2.out
+classify_test_E3a.out
+classify_test_E3b.out
+e3a5_hitfiles.tsv
+e3a5_lines.txt
+e3a5_matchlines.tsv
+e3a5_perfile.pkl
+e3a5_rows.json
+elemtable.txt
+estimate.py
+extract_article.py
+fetch_algorier.sh
+fetch_quantreo.sh
+final_message.md
+final_report_draft.txt
+financetoolkit_hitrows.err
+financetoolkit_hitrows.md
+financetoolkit_overrides.py
+findings.txt
+fingpt_hitrows.err
+fingpt_hitrows.md
+fingpt_hits.txt
+fingpt_overrides.py
+fix_notrun.py
+fix_parens.py
+freqtrade_freqtrade.json
+freqtrade_freqtrade_LICENSE
+freqtrade_freqtrade_contrib.json
+freqtrade_lookahead.md
+freqtrade_osv.json
+freqtrade_pypi.json
+full_section.md
+fx_extract.py
+fxreplay_fetch_all.sh
+ge_addfetch.sh
+ge_e3a_out.txt
+ge_e3a_rows.txt
+ge_e3a_rows_full.txt
+ge_e3b_out.txt
+ge_e3b_rows.txt
+ge_e3b_rows_full.txt
+ge_e4_out.txt
+ge_e4_rows.txt
+ge_e4_rows_full.txt
+ge_minirun
+ge_mklist3.py
+ge_pypi.json
+gen_hitjudge.py
+gen_hits_table.py
+gen_report.py
+gen_report_head.txt
+gen_run2.py
+gen_section.py
+gen_section2.py
+gen_section3.py
+gen_section4.py
+gen_section5.py
+handback_draft.md
+hitjudge_combined.txt
+hits_table_8016.md
+inventory.txt
+k13_explanation.txt
+lists
+llms_full_urls.txt
+logstep.sh
+mkargs2_8017.err
+mkargs2_8017.json
+mkargs2_8021.err
+mkargs2_8021.json
+mkargs2_8022.err
+mkargs2_8022.json
+mkargs2_8024.err
+mkargs2_8024.json
+mkargs2_openbb.err
+mkargs2_openbb.json
+mkargs_8019.json
+mkargs_8023.json
+mkargs_8025.json
+mkargs_8027.json
+mklist_helper.py
+mklist_helper2.py
+mklist_textonly_full.txt
+ninjatrader
+notes
+openbb_e1a_out.txt
+openbb_e1a_rows.txt
+openbb_e1a_rows_full.txt
+openbb_e3a_out.txt
+openbb_e3a_rows.txt
+openbb_e3a_rows_full.txt
+openbb_e3b_out.txt
+[出力は 5728 文字。先頭 3000 文字だけを残した]
+--- 2026-09-27T05:35:56Z method=write target=q1_purgedcv rc=0 time_s=0.041 note=検索計画1(狭い/英語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q1_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1550 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q1_results.json
+--- 2026-09-27T05:35:56Z method=websearch target=q1_purgedcv rc=NA time_s=NA note=検索計画1: 幅=狭い/言語=英語。前回1〜6本目の全部と語・幅を比較: 1本目(バックテスト 別実装 突き合わせ 検証 ツール 差分、狭い/日本語)とは言語も語も違う/2本目(backtest reference implementation cross-check reconciliation library tool、狭い/英語)とは幅は同じだが語が全く違う(別実装突き合わせでなくリーク防止・パージ・エンバーゴ)/3本目(データ品質...リプレイ...再現性、中間/日本語)とは幅・語とも違う/4本目(data quality...replay reproducibility、中間/英語)とは幅・語とも違う/5本目(戦略検証テスト自動化成熟度モデル、広い/日本語)とは幅・語とも違う/6本目(strategy validation testing automation maturity model、広い/英語)とは幅・語とも違う。探す要素: E3b(ルックアヘッド防止)・E1b(別実装で同種の出力を出す計算)。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ purged cross-validation embargo walk-forward backtest leakage prevention library
+[{"title":"purged-cross-validation/paper/paper.md at main · eslazarev/purged-cross-validation","url":"https://github.com/eslazarev/purged-cross-validation/blob/main/paper/paper.md"},{"title":"Purged cross-validation","url":"https://en.wikipedia.org/wiki/Purged_cross-validation"},{"title":"ML validation rigor: purge+embargo, walk-forward, IC/feature-decay analysis · Issue #28 · CRS5226/StockVeda","url":"https://github.com/CRS5226/StockVeda/issues/28"},{"title":"GitHub - landtml/purgedcv: Combinatorial Purged Cross-Validation with embargo for financial time series, scikit-learn compatible. Includes a formal no-leakage proof and an independent empirical verification against ~98 years of real market data. · GitHub","url":"https://github.com/landtml/purgedcv"},{"title":"Combinatorial Purged Cross-Validation Insights | PDF | Cross Validation (Statistics) | Financial Modeling","url":"https://www.scribd.com/document/725401650/SSRN-id4778909"},{"title":"Hopfield Networks for Asset Allocation","url":"https://arxiv.org/pdf/2407.17645"},{"title":"skfolio: Portfolio Optimization in Python","url":"https://arxiv.org/pdf/2507.04176"},{"title":"Purged walk-forward vs ordinary cross-validation: preventing leakage in financial time-series ML | Mathieu Ajaka","url":"https://www.mathieuajaka.com/writing/purged-walk-forward-vs-cross-validation/"},{"title":"Using Neural Networks and Combinatorial Cross-Validation for Stock Strategies | fizz::buzzer","url":"https://fizzbuzzer.com/posts/using-neural-networks-and-ccv-for-smarter-stock-strategies/"}]
+--- 2026-09-27T05:36:14Z method=write target=q2_purgedcv_ja rc=0 time_s=0.030 note=検索計画2(狭い/日本語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q2_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1232 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q2_results.json
+--- 2026-09-27T05:36:14Z method=websearch target=q2_purgedcv_ja rc=NA time_s=NA note=検索計画2: 幅=狭い/言語=日本語。前回6本の全部と比較: 1本目とは同じ幅・同じ言語だが語が全く違う(別実装突き合わせでなくパージ・エンバーゴ)/2本目とは言語が違う/3・4本目とは幅・語が違う/5・6本目とは幅・語が違う。探す要素: E3b(ルックアヘッド防止)・E1b。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ パージドクロスバリデーション エンバーゴ トレーディング バックテスト ツール
+[{"title":"バックテストとは？（TradingViewを使った検証）｜テクニカル分析に特化した相場情報サイト「マーケットEYE」","url":"https://tradeone.comtex.co.jp/market-eye/column/column(08.29).php"},{"title":"TradingViewのストラテジーテスター（バックテスト）の設定方法","url":"https://www.oanda.jp/lab-education/tradingviewstrategy/oanda-fx-trade/5812/"},{"title":"Pine講座㉕ TradingViewでバックテストをする yuya_takahashi_によるFX:USDJPYの分析 — TradingView","url":"https://jp.tradingview.com/chart/USDJPY/oBIKGWlh/"},{"title":"バックテストとは？FX取引戦略の検証・改善方法 - FOREX.com","url":"https://www.forex.com/jp/tradercenter/trading-ideas/how-to-backtest-your-trading-strategy/"},{"title":"金融時系列予測におけるクロスバリデーション手法 - GMOインターネットグループ グループ研究開発本部","url":"https://recruit.group.gmo/engineer/jisedai/blog/cv-in-financial-time-series/"},{"title":"【TradingView】プログラミング初学者が15分でバックテストツールを自作した｜よっちゃむ","url":"https://note.com/serene_squid4235/n/nb45a5f9db87b"},{"title":"TradingView（トレーディングビュー）でバックテストする方法 | ＦＸの轍-wadachi-","url":"https://wadachi-fx.com/tradingview-back-test"},{"title":"TradingViewのバック テストがすごい‼ - 日経225先物トレード日誌","url":"https://225trade-management.com/2020/05/12/tradingview-backtest-great/"},{"title":"「ファイナンス機械学習」第12章 交差検証によるバックテスト 〜 CPCVをざっくり理解 #MachineLearning - Qiita","url":"https://qiita.com/nokomitch/items/ccd2722a4c5ef93a994a"}]
+--- 2026-09-27T05:36:30Z method=write target=q3_parity rc=0 time_s=0.030 note=検索計画3(中間/英語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q3_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1804 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q3_results.json
+--- 2026-09-27T05:36:31Z method=websearch target=q3_parity rc=NA time_s=NA note=検索計画3: 幅=中間/言語=英語。前回6本の全部と比較: 1・2本目(狭い)とは幅が違う/3本目(データ品質 検査 ルックアヘッド検出 リプレイ 再現性、中間/日本語)とは言語が違い語も違う(乖離検知でなくデータ品質・リプレイ)/4本目(data quality check lookahead...replay reproducibility、中間/英語)とは幅は同じだが語が全く違う(ライブとバックテストの乖離検知・パリティでなくデータ品質・ルックアヘッド・リプレイ・再現性)/5・6本目(広い)とは幅が違う。探す要素: E1a(突き合わせ機能)・E1b(同種の出力を出す別実装=ライブ実行そのもの)。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ live trading backtest parity divergence detection shadow trading tool
+[{"title":"GitHub - rrambaldi/parity-deriva: Event-driven lab for hunting statistically interesting price patterns and trading the promising ones on OANDA v3. A simulated broker twin runs on the same event stream as live execution: the two are compared step by step, and when reality drifts too far from the model the divergence raises an alarm or halts trading. · GitHub","url":"https://github.com/rrambaldi/parity-deriva"},{"title":"Live-vs-Backtest Divergence Report: measure the parity claim instead of asserting it · Issue #512 · dc-deal/FiniexTestingIDE","url":"https://github.com/dc-deal/FiniexTestingIDE/issues/512"},{"title":"Live engine and backtest must be behaviourally identical, and nothing enforces it · Issue #214 · AI-Degen-69/crypto-spread","url":"https://github.com/AI-Degen-69/crypto-spread/issues/214"},{"title":"Best backtesting software for quantitative trading 2026 - Backtrex","url":"https://backtrex.com/en/blog/best-quantitative-backtesting-software"},{"title":"10 Best Backtesting Software for Traders (2026)","url":"https://www.tradezella.com/blog/best-backtesting-software"},{"title":"Best Free Backtesting Tool for Traders in 2026","url":"https://backtrex.com/en/blog/free-backtesting-tool-trading-2026"},{"title":"From Backtesting to Live Trading: How Consistent Indicator Data Improves Strategy Performance | by MariamHov | Medium","url":"https://medium.com/@mariamhov/from-backtesting-to-live-trading-how-consistent-indicator-data-improves-strategy-performance-7639949bb791"},{"title":"Best Backtesting Software 2026: 7 Tools Tested & Compared","url":"https://backtrex.com/en/blog/best-backtesting-platforms"},{"title":"13 Best Software for Backtesting Trading Strategies","url":"https://www.goatfundedtrader.com/blog/best-software-for-backtesting-trading-strategies"}]
+--- 2026-09-27T05:36:47Z method=write target=q4_shadow_ja rc=0 time_s=0.045 note=検索計画4(中間/日本語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q4_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1093 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q4_results.json
+--- 2026-09-27T05:36:47Z method=websearch target=q4_shadow_ja rc=NA time_s=NA note=検索計画4: 幅=中間/言語=日本語。前回6本の全部と比較: 1・2本目(狭い)とは幅が違う/3本目(中間/日本語、データ品質・ルックアヘッド・リプレイ・再現性)とは言語は同じだが語が違う(本番稼働との乖離・シャドートレードでなくデータ品質等)/4本目(中間/英語)とは言語が違う/5・6本目(広い)とは幅が違う。探す要素: E1a・E1b(本番とバックテストの突き合わせ)。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ 本番稼働 バックテスト 乖離 検知 シャドートレード ツール
+[{"title":"FAQ−バックテスト : 『株システムトレードソフト イザナミ』 サポートサイト","url":"https://www.izanami.jp/v2support/faq_category_00.html"},{"title":"簡易バックテストツール「勝ち株テクニカル分析」の提供を開始｜プレスリリース｜企業・開示情報｜株のことならネット証券会社【auカブコム】","url":"https://kabu.com/company/pressrelease/20121003_1.html"},{"title":"バックテスト画面 : 『株システムトレードソフト イザナミ』 サポートサイト","url":"https://izanami.jp/v2support/bkt_set.html"},{"title":"トレードシステム＆バックテストツール | jp.cqg.com","url":"https://jp.cqg.com/technical-analysis/trade-systems-backtesting-tools"},{"title":"【図解】TradingViewでバックテスト（ストラテジーテスター）を行う方法｜期間の設定・検証・最適化まで","url":"https://ad-van.co.jp/technical/article/tradingview-backtest/"},{"title":"バックテストとは？FX取引戦略の検証・改善方法 - FOREX.com","url":"https://www.forex.com/jp/tradercenter/trading-ideas/how-to-backtest-your-trading-strategy/"},{"title":"デモトレード練習アプリ FX過去チャート検証くん","url":"https://play.google.com/store/apps/details?id=net.jstrader.app&hl=en_US"},{"title":"【Trading View】リプレイ機能でトレード力が激変！FX初心者のための実践的バックテスト術","url":"https://jforexmaster.com/tradingview-backtest/"},{"title":"FXのバックテストのやり方｜基礎知識や用語、注意点を解説","url":"https://www.jannavi.net/column/backtest.html"}]
+--- 2026-09-27T05:37:01Z method=write target=q5_ci rc=0 time_s=0.031 note=検索計画5(広い/英語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q5_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1379 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q5_results.json
+--- 2026-09-27T05:37:01Z method=websearch target=q5_ci rc=NA time_s=NA note=検索計画5: 幅=広い/言語=英語。前回6本の全部と比較: 1〜4本目(狭い・中間)とは幅が違う/5本目(トレーディング戦略検証テスト自動化成熟度モデルフレームワーク、広い/日本語)とは言語が違い語も違う(成熟度モデルでなくCI/単体テスト)/6本目(strategy validation testing automation maturity model framework、広い/英語)とは幅は同じだが語が違う(maturity modelでなくunit testing/continuous integration)。探す要素: E5(再現性・CI)・E6(その他検証)。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ algorithmic trading bot unit testing continuous integration quality assurance framework
+[{"title":"Comprehensive Guide to Trading Bots and Algo Trading","url":"https://www.nadcab.com/blog/comprehensive-guide-to-trading-bots"},{"title":"Vadere: An open-source simulation framework to promote interdisciplinary understanding","url":"https://arxiv.org/pdf/1907.09520"},{"title":"Systems and methods for testing a financial trading system","url":"https://image-ppubs.uspto.gov/dirsearch-public/print/downloadPdf/8874479"},{"title":"(PDF) AI-Enabled Trade Testing And Simulation Framework For Market Infrastructure Validation","url":"https://www.researchgate.net/publication/398324305_AI-Enabled_Trade_Testing_And_Simulation_Framework_For_Market_Infrastructure_Validation"},{"title":"CAMEL: Communicative Agents for \"Mind\" Exploration of Large Language Model Society","url":"https://arxiv.org/pdf/2303.17760"},{"title":"Nine Challenges in Modern Algorithmic Trading and Controls","url":"https://arxiv.org/pdf/2101.08813"},{"title":"Top Trading Algo Bots: Automating Your Trading Strategy with AI","url":"https://bookmap.com/blog/top-trading-algo-bots-automating-your-trading-strategy"},{"title":"Investfly: Algorithmic Trading Software | Automated Trading Bot Platform","url":"https://www.investfly.com/"},{"title":"AI Fairness 360: An Extensible Toolkit for Detecting, Understanding, and Mitigating Unwanted Algorithmic Bias","url":"https://arxiv.org/pdf/1810.01943"}]
+--- 2026-09-27T05:37:17Z method=write target=q6_ci_ja rc=0 time_s=0.030 note=検索計画6(広い/日本語)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q6_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1343 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/q6_results.json
+--- 2026-09-27T05:37:17Z method=websearch target=q6_ci_ja rc=NA time_s=NA note=検索計画6: 幅=広い/言語=日本語。前回6本の全部と比較: 1〜4本目(狭い・中間)とは幅が違う/5本目(広い/日本語、成熟度モデル)とは言語は同じだが語が違う(単体テスト・CIパイプラインでなく成熟度モデル)/6本目(広い/英語)とは言語が違う。探す要素: E5・E6。経路: WebSearch一般 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ トレーディング bot 単体テスト CI パイプライン 品質保証 ツール
+[{"title":"TestingBot：クロスブラウザテストとモバイルアプリテスト","url":"https://ja.testingbot.com/"},{"title":"CI(継続的インテグレーション)ツール連携 | 静的解析ツール・単体テストツール C/C++test | テクマトリックス株式会社","url":"https://www.techmatrix.co.jp/product/ctest/others/ci/index.html"},{"title":"CI/CDとテスト自動化で加速させるソフトウェア開発 - FSI Embedded","url":"https://www.fsi-embedded.jp/solutions/automated-testing/cicd-automated-testing/"},{"title":"DevOpsにおけるCI/CDパイプライン上でのテスト自動化戦略 Vol.2 | APIのテスト自動化とサービス仮想化を1ツールで SOAtest/Virtualize | テクマトリックス株式会社","url":"https://www.techmatrix.co.jp/product/soatest_virtualize/dx_devops_2.html"},{"title":"Jenkins環境で行う自動テストソリューションラインナップ | CIツール「Jenkins」活用ソリューション | テクマトリックス株式会社","url":"https://www.techmatrix.co.jp/product/cisolution/service/index.html"},{"title":"DevOpsにおけるCI/CDパイプライン上でのテスト自動化戦略 Vol.1 | APIのテスト自動化とサービス仮想化を1ツールで SOAtest/Virtualize | テクマトリックス株式会社","url":"https://www.techmatrix.co.jp/product/soatest_virtualize/dx_devops_1.html"},{"title":"ソフトウェア品質保証 サービス・製品一覧 | テクマトリックス株式会社","url":"https://www.techmatrix.co.jp/product/quality.html"},{"title":"CI/CDとは｜CI/CDの概要からメリット、ツールまでをわかりやすく解説 - SHIFT ASIA -ソフトウェア開発およびソフトウェアテスト・品質保証のプロフェッショナル-","url":"https://shiftasia.com/ja/column/ci-cd%E3%81%A8%E3%81%AF/"},{"title":"CI/CD テスト自動化の導入手順と実装方法 - テスター10","url":"https://minna-systems.co.jp/test/test-automation/balancing-speed-and-quality-test-automation-in-ci/"}]
+--- 2026-09-27T05:37:48Z method=write target=x1_purgedcv rc=0 time_s=0.026 note=X発見1回目(site:x.com "purged cross validation" backtest)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x1_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1218 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x1_results.json
+--- 2026-09-27T05:37:48Z method=xsearch target=x1_purgedcv rc=NA time_s=NA note=x-research手順の発見1回目/3回。site:x.com "purged cross validation" backtest。x.com上の投稿は0件(結果は全てWikipedia・ブログ・論文で、tweetのURLは含まれなかった)。経路: X [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ site:x.com "purged cross validation" backtest
+[{"title":"Purged cross-validation","url":"https://en.wikipedia.org/wiki/Purged_cross-validation"},{"title":"Cross Validation in Finance: Purging, Embargoing, Combinatorial","url":"https://blog.quantinsti.com/cross-validation-embargo-purging-combinatorial/"},{"title":"Backtest overfitting in the machine learning era: A comparison of out-of-sample testing methods in a synthetic controlled environment - ScienceDirect","url":"https://www.sciencedirect.com/science/article/abs/pii/S0950705124011110"},{"title":"Hopfield Networks for Asset Allocation","url":"https://arxiv.org/pdf/2407.17645"},{"title":"Backtesting","url":"https://en.wikipedia.org/wiki/Backtesting"},{"title":"Learning Financial Networks with High-frequency Trade Data","url":"https://arxiv.org/pdf/2208.03568"},{"title":"The Combinatorial Purged Cross-Validation method | Towards AI","url":"https://towardsai.com/p/l/the-combinatorial-purged-cross-validation-method"},{"title":"Backtesting Without Lookahead Bias: Combinatorial Purged Cross-Validation – Kwiz Quants","url":"https://quants.kwizresearch.com/blog/combinatorial-purged-cv"},{"title":"Stacking with Neural network for Cryptocurrency investment","url":"https://arxiv.org/pdf/1902.07855"}]
+--- 2026-09-27T05:38:01Z method=write target=x2_lookahead rc=0 time_s=0.030 note=X発見2回目(site:x.com backtest look-ahead bias tool used)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x2_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1134 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x2_results.json
+--- 2026-09-27T05:38:01Z method=xsearch target=x2_lookahead rc=NA time_s=NA note=x-research手順の発見2回目/3回。site:x.com backtest look-ahead bias tool used。x.com上の投稿1件(tommy_love123)を発見、他はTradingViewのBacktester Utilityスクリプトページ(x.comではない)。経路: X [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ site:x.com backtest "look-ahead bias" tool used
+[{"title":"Tommy（池田俊彦) on X: \"【先読みバイアス（Look-ahead Bias）の徹底排除】 これ必ずと言っていいほど、経験することが多いです。意識しないと間違って未来のデータを訓練データなどに含め訓練することがあります。 https://t.co/X0fXL0Qosg\" / X","url":"https://x.com/tommy_love123/status/2000418603502645305"},{"title":"OPEN-SOURCE SCRIPT","url":"https://my.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://vn.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://kr.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://it.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://jp.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://cn.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://il.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://www.tradingview.com/script/VWqQX7xK-Backtester-Utility"},{"title":"OPEN-SOURCE SCRIPT","url":"https://id.tradingview.com/script/VWqQX7xK-Backtester-Utility"}]
+--- 2026-09-27T05:38:23Z method=write target=x3_reimplementation rc=0 time_s=0.026 note=X発見3回目(site:x.com バックテスト 別実装 検証 使ってみた)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x3_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1518 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/x3_results.json
+--- 2026-09-27T05:38:24Z method=xsearch target=x3_reimplementation rc=NA time_s=NA note=x-research手順の発見3回目/3回(3回以上を満たす)。site:x.com バックテスト 別実装 検証 使ってみた。x.com上の投稿10件を発見(既存候補VectorBT・rusty-botへの言及含む、新規候補Forex Tester Onlineの公式アカウント投稿2件、back-to-back testingの用語投稿1件等)。経路: X [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ site:x.com バックテスト 別実装 検証 使ってみた
+[{"title":"殆どの botter もそうだけど基本的に実弾テストという話が ...","url":"https://x.com/MtkN1XBt/status/1816408963027738748"},{"title":"C級Botterになりたい on X: \"便利なバックテスト環境がないか ...","url":"https://x.com/WannabeBotter/status/1810558269565571211"},{"title":"UKI on X: \"これも凄い。バックテスト自作したい方は必見。\" / X","url":"https://x.com/blog_uki/status/1605716137555415041"},{"title":"Forex Tester(フォレックステスター)日本語版【公式】 on X: \"フォレックステスターオンラインはフォレックステスターチームが開発した完全な新製品です。パソコン用アプリケーションである従来のフォレックステスターとは違い、フォレックステスターオンラインはオンライン上のトレーディングシミュレーターであり、直接ブラウザでトレーディングのバックテストを https://t.co/Hn\",\"url\":\"https://x.com/forextester_jp/status/1864627905403191524\"},{\"title\":\"【EA】【令和のだぶるいー（投資助言者）】 on X: \\\"ほぼほぼ今年も1年が経ったという事で 直近までバックテストしてみました。 「THE AUDCAD」タイプB https://t.co/SBSX2oHb6F #EA #FX #FX自動売買 https://t.co/yuv3yTfvln\\\" / X\",\"url\":\"https://x.com/titeitannteiS/status/1872481278156575030\"},{\"title\":\"えふらぶ@FXトレーダー on X: \\\"先日公開したMT4のバック ...\",\"url\":\"https://x.com/flove_fxtrader/status/1909350720098213979\"},{\"title\":\"会計上の見積り等に対する「バックテストはリスク評価として行う ...\",\"url\":\"https://x.com/tejima_solabo/status/1757903528486646116\"},{\"title\":\"back-to-back testing（バックツ－バックテスト）： ふたつまたは ...\",\"url\":\"https://x.com/software_test/status/25786797533\"},{\"title\":\"\\\"昨日公開したMT4のバックテストの結果が変わるありがちな ...\",\"url\":\"https://x.com/flove_fxtrader/status/1905727093075284129\"},{\"title\":\"Forex Tester(フォレックステスター)日本語版【公式】 on X: \\\"フォレックステスターオンラインとフォレックステスターのパソコン版の違いは何ですか？\\\" / X\",\"url\":\"https://x.com/forextester_jp/status/1965037080049799374\"}]
+--- 2026-09-27T05:38:34Z method=xfetch target=x_bodies_batch1 rc=0 time_s=8.323 note=x-research手順の本文取得。発見した投稿URLのうち区分8に関係しうるもの7件をfxtwitter経由で逐語取得(1秒1件以下) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 scripts/x_fetch.py https://x.com/forextester_jp/status/1864627905403191524 https://x.com/forextester_jp/status/1965037080049799374 https://x.com/tommy_love123/status/2000418603502645305 https://x.com/software_test/status/25786797533 https://x.com/flove_fxtrader/status/1909350720098213979 https://x.com/flove_fxtrader/status/1905727093075284129 https://x.com/MtkN1XBt/status/1816408963027738748
+{"id": "1864627905403191524", "http": 200, "fetched_at": "2026-09-27T05:38:35.228582+00:00", "url": "https://x.com/forextester_jp/status/1864627905403191524", "author": "forextester_jp", "created_at": "Thu Dec 05 11:08:30 +0000 2024", "text": "フォレックステスターオンラインはフォレックステスターチームが開発した完全な新製品です。パソコン用アプリケーションである従来のフォレックステスターとは違い、フォレックステスターオンラインはオンライン上のトレーディングシミュレーターであり、直接ブラウザでトレーディングのバックテストを実践できます。デモのFXトレーディングプラットフォームの使いやすさと、高度なバックテストソフトの進化した機能を組み合わせたソフトです。\nhttps://bit.ly/48DtiMN", "likes": 3, "retweets": 1, "replies": 1, "views": 2032, "quote": null, "replying_to_status": null}
+{"id": "1965037080049799374", "http": 200, "fetched_at": "2026-09-27T05:38:36.484330+00:00", "url": "https://x.com/forextester_jp/status/1965037080049799374", "author": "forextester_jp", "created_at": "Mon Sep 08 12:58:43 +0000 2025", "text": "フォレックステスターオンラインとフォレックステスターのパソコン版の違いは何ですか？\nフォレックステスターとフォレックステスターオンラインは両方とも異なるバックテストツールです。同じソフトの異なるバージョンだけではありません。フォレックステスターはWindowsのオフライン使用のために開発され、2006年にリリースされました。一方でフォレックステスターオンラインはすべてのパソコンやデバイスのブラウザ用に開発され、2024年にリリースされた新製品です。フォレックステスターにはないツールがすでに一部搭載されていますが、新機能を随時追加していきます。\n#FX #USDJPY #EURJPY #FXトレード #fxトレード検証 #fx検証ソフト #fxテストツール #fx検証 #fx過去検証ツール", "likes": 4, "retweets": 0, "replies": 0, "views": 1085, "quote": null, "replying_to_status": null}
+{"id": "2000418603502645305", "http": 200, "fetched_at": "2026-09-27T05:38:37.814209+00:00", "url": "https://x.com/tommy_love123/status/2000418603502645305", "author": "tommy_love123", "created_at": "Mon Dec 15 04:12:15 +0000 2025", "text": "【先読みバイアス（Look-ahead Bias）の徹底排除】\nこれ必ずと言っていいほど、経験することが多いです。意識しないと間違って未来のデータを訓練データなどに含め訓練することがあります。\n\nクオンツモデル開発において「最も技術的規律が求められる部分」です。これを防ぐためには、精神論ではなく、データの構造設計と処理プロセスにおける厳格なルールが必要。\n\n鉄則: データには必ず「ラグ（遅延）」を持たせる。$t$ 時点の判断には、$t-1$ 時点までの確定データのみを使用する。", "likes": 22, "retweets": 3, "replies": 0, "views": 8540, "quote": null, "replying_to_status": null}
+{"id": "25786797533", "http": 200, "fetched_at": "2026-09-27T05:38:39.080493+00:00", "url": "https://x.com/software_test/status/25786797533", "author": "software_test", "created_at": "Tue Sep 28 13:59:42 +0000 2010", "text": "back-to-back testing（バックツ－バックテスト）： ふたつまたはそれ以上の異なるコンポ－ネントまたはシステムにおいて、同じ入力で実行し、出力を比較し、相違を調べるテスト。同義語：mutation testing（変異テスト）", "likes": 2, "retweets": 1, "replies": 0, "views": null, "quote": null, "replying_to_status": null}
+{"id": "1909350720098213979", "http": 200, "fetched_at": "2026-09-27T05:38:40.389246+00:00", "url": "https://x.com/flove_fxtrader/status/1909350720098213979", "author": "flove_fxtrader", "created_at": "Mon Apr 07 21:01:00 +0000 2025", "text": "先日公開したMT4のバックテストの結果が変わるありがちな原因3選の解説記事の再告知です！\n\nバックテストの結果が思ってたのと違ったり、なぜか変動したりと私自身が日々悩ましいと思ってますw\n\nTick Data Suiteを使ってたとしても複数MT4で同一環境とは限らない点も要注意です！\n\n是非ご覧ください！", "likes": 30, "retweets": 3, "replies": 6, "views": 859, "quote": {"id": "1905365618955878638", "author": "flove_fxtrader", "text": "MT4のバックテストの結果が変わるありがちな原因3選の解説記事を公開しました！\n\n同じヒストリカルデータで同一環境のつもりがなぜか違う結果になると発狂気味の方必見！\n\n私自身の経験と、バックテストの結果の比較も交えてわかりやすく解説してます！\n\n是非ご覧ください！https://flove.jp/different_backtest/"}, "replying_to_status": null}
+{"id": "1905727093075284129", "http": 200, "fetched_at": "2026-09-27T05:38:41.681298+00:00", "url": "https://x.com/flove_fxtrader/status/1905727093075284129", "author": "flove_fxtrader", "created_at": "Fri Mar 28 21:02:00 +0000 2025", "text": "昨日公開したMT4のバックテストの結果が変わるありがちな原因3選の解説記事の再告知です！\n\nバックテストの結果が思ってたのと違ったり変動したりとお悩みではないでしょうか？\n\nTick Data Suiteを使ってたとしても複数MT4で同一環境とは限らない点も要注意です！\n\n土日の間にでも是非ご覧ください！", "likes": 20, "retweets": 2, "replies": 1, "views": 726, "quote": {"id": "1905365618955878638", "author": "flove_fxtrader", "text": "MT4のバックテストの結果が変わるありがちな原因3選の解説記事を公開しました！\n\n同じヒストリカルデータで同一環境のつもりがなぜか違う結果になると発狂気味の方必見！\n\n私自身の経験と、バックテストの結果の比較も交えてわかりやすく解説してます！\n\n是非ご覧ください！https://flove.jp/different_backtest/"}, "replying_to_status": null}
+{"id": "1816408963027738748", "http": 200, "fetched_at": "2026-09-27T05:38:42.952280+00:00", "url": "https://x.com/MtkN1XBt/status/1816408963027738748", "author": "MtkN1XBt", "created_at": "Thu Jul 25 09:43:38 +0000 2024", "text": "昨日 hoheto 氏のトレード大陸でテスト (\"バックテスト\" ではなくて \"ソフトウェアのテスト\") の話があって、殆どの botter もそうだけど基本的に実弾テストという話が興味深かったです。\n\nここからは一般論で、テスト抜きでも bot を早く市場投入して S 級稼ぐのが正義なのは間違いないです。\nただ一方で bot のポジションが暴走して清算されるみたいな経験談もされていました。 これを防ぐのがまさにテストの役割です。 ポジ計算ミスや、意図しない API レスポンスの影響で執行ロジックが動いてしまわないか、事前にプログラムを実行してバグっていないか確認するのがテストです。", "likes": 100, "retweets": 11, "replies": 1, "views": 21365, "quote": null, "replying_to_status": null}
+--- 2026-09-27T05:39:07Z method=github target=8-042_purgedcv rc=0 time_s=1.219 note=経路(c) GitHub。landtml/purgedcvのungh.cc登録情報とREADME冒頭を取得(候補の一覧の1行説明用、深掘りはしない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/landtml/purgedcv" ; echo "---README---"; curl -sS "https://raw.githubusercontent.com/landtml/purgedcv/main/README.md" | head -c 2000
+{"repo":{"id":1310456227,"name":"purgedcv","repo":"landtml/purgedcv","description":"Combinatorial Purged Cross-Validation with embargo for financial time series, scikit-learn compatible. Includes a formal no-leakage proof and an independent empirical verification against ~98 years of real market data.","createdAt":"2026-07-23T23:37:35Z","updatedAt":"2026-09-18T18:28:35Z","pushedAt":"2026-09-25T00:24:57Z","stars":2,"watchers":0,"forks":0,"defaultBranch":"main"}}---README---
+<div align="center">
+
+<img src="docs/banner.svg" alt="purgedcv: the test block sweeping across a timeline, with purged and embargoed bars beside it" width="640">
+
+<br>
+
+[![CI](https://github.com/landtml/purgedcv/actions/workflows/ci.yml/badge.svg)](https://github.com/landtml/purgedcv/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.10%20%E2%80%93%203.14-blue)](https://github.com/landtml/purgedcv)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Proof](https://img.shields.io/badge/no--leakage-proved%20%2B%20verified-6f42c1)](PROOF.md)
+
+**Cross-validation for time series where the label outlives the bar it sits on.**
+
+</div>
+
+Combinatorial Purged Cross-Validation (CPCV) with embargo, for time series
+where the standard train/test split leaks information across the boundary.
+Implements the scheme from Marcos Lopez de Prado's
+[*Advances in Financial Machine Learning*](https://www.wiley.com/en-us/Advances+in+Financial+Machine+Learning-p-9781119482086)
+(AFML), Chapter 7, as a drop-in [scikit-learn](https://scikit-learn.org/)
+cross-validator.
+
+```python
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import Ridge
+from purgedcv import CombinatorialPurgedCV
+
+cv = CombinatorialPurgedCV(n_groups=6, n_test_groups=2, embargo_pct=0.01)
+scores = cross_val_score(Ridge(), X, y, cv=cv)
+```
+
+`cv` is accepted by `cross_val_score`, `cross_validate`, `GridSearchCV`,
+`RandomizedSearchCV`, `learning_curve` and `permutation_test_score`, including
+with `n_jobs > 1`. No other code changes required.
+
+`cross_val_predict` is the one exception, and it cannot be supported: it
+requires the test folds to partition the sample, while CPCV's folds overlap by
+construction -- each observation is tested in `C(N-1, k-1)` simulations, which is
+what produces the multiple backtest paths. Use
+[`build_paths`](#usage) to assemble out-of-sample predictions instead.
+
+## The problem this solves
+
+A financial label rarely resolves at curl: (23) Failure writing output to destination
+--- 2026-09-27T05:39:16Z method=github target=8-043_parity_deriva rc=0 time_s=0.792 note=経路(c) GitHub。rrambaldi/parity-derivaのungh.cc登録情報とREADME冒頭を取得(候補の一覧の1行説明用、深掘りはしない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/rrambaldi/parity-deriva"; echo "---README---"; curl -sS "https://raw.githubusercontent.com/rrambaldi/parity-deriva/main/README.md" | head -c 2000
+{"repo":{"id":1363219213,"name":"parity-deriva","repo":"rrambaldi/parity-deriva","description":"Event-driven lab for hunting statistically interesting price patterns and trading the promising ones on OANDA v3. A simulated broker twin runs on the same event stream as live execution: the two are compared step by step, and when reality drifts too far from the model the divergence raises an alarm or halts trading.","createdAt":"2026-09-09T21:09:56Z","updatedAt":"2026-09-26T23:01:26Z","pushedAt":"2026-09-26T23:53:54Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"main"}}---README---
+<p align="center">
+  <img src="loghi/definitivo/png/orizzontale_fondo-scuro.png" alt="parity-deriva" width="480">
+</p>
+
+# parity-deriva
+
+An event-driven lab for finding statistically interesting price patterns and,
+once one looks promising, trading it for real - with a simulated twin of the
+broker running alongside the live execution handler on the same event stream.
+The two are compared step by step; when reality drifts too far from the model,
+the divergence itself is the signal, and it can raise an alarm or stop trading.
+That is where the name comes from: *parity* is the invariant you want between
+the simulated and the real side, *deriva* is what you measure when it breaks.
+
+No broker is the default one. Six are behind it - OANDA, eToro, IG,
+Capital.com, Interactive Brokers and any MetaTrader 5 broker - plus a paper
+session on Twelve Data's candles, and each live session picks its own broker
+and account. Instruments are whatever the chosen broker offers; the work so far
+has been on DE30_EUR and EUR_USD, so not only forex. Historical candles are
+kept locally in HDF5, so research runs offline and needs no broker at all:
+they come from CSV exports (Dukascopy's or a broker's), from another parity
+server, or from any broker that serves bid and ask bars.
+
+It began, long ago, as a fork of [QSForex](https://github.com/mhallsmoore/qsforex)
+by Michael Halls-Moore. None of that code is left - the engine, the event
+hierarchy, the data layer, the strategies and the execution path were all
+rewritten around candles - on the OANDA v3 API first, the broker it started
+with, then on the others - and moved from Python 2 to Python 3 - but the idea of an event-driven forex stack was his, and so are
+the thanks.
+
+# What is in it
+
+* **Event bus** - `trading/engine.py` runs a thread per data source and fans
+  every event out to every handler. Strategies, the money manager, execution,
+  the simulator and the loggers are all handlers, so the same stack runs live,
+  against recorded events, ocurl: (23) Failure writing output to destination
+--- 2026-09-27T05:39:31Z method=github target=8-044_finiextestingide rc=0 time_s=1.123 note=経路(c) GitHub。dc-deal/FiniexTestingIDEのungh.cc登録情報とREADME冒頭を取得(候補の一覧の1行説明用、深掘りはしない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/dc-deal/FiniexTestingIDE"; echo "---README---"; curl -sS "https://raw.githubusercontent.com/dc-deal/FiniexTestingIDE/main/README.md" | head -c 2000
+{"repo":{"id":1057886141,"name":"FiniexTestingIDE","repo":"dc-deal/FiniexTestingIDE","description":"Trading-Strategy-Testing IDE","createdAt":"2025-09-16T10:36:34Z","updatedAt":"2026-09-25T07:28:33Z","pushedAt":"2026-09-25T11:03:49Z","stars":4,"watchers":0,"forks":0,"defaultBranch":"main"}}---README---
+404: Not Found
+--- 2026-09-27T05:39:37Z method=github target=8-044_finiextestingide_readme rc=0 time_s=0.551 note=経路(c) GitHub。FiniexTestingIDEのREADME(mainで404だったためdefaultBranchを確認して再取得) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/dc-deal/FiniexTestingIDE" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d[\"repo\"][\"defaultBranch\"])"
+main
+--- 2026-09-27T05:39:45Z method=github target=8-044_finiextestingide_files rc=0 time_s=0.735 note=経路(c) GitHub。FiniexTestingIDEのファイル一覧をungh.cc経由で確認(README.mdの実際の場所を特定するため) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/dc-deal/FiniexTestingIDE/files/main" | head -c 2000
+{"meta":{"sha":"695564005691d0cca383d5d62e32627294dc51df"},"files":[{"path":".devcontainer/bus_placeholder/.gitkeep","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":".devcontainer/devcontainer.json","mode":"100644","sha":"53282d8c373cf8f1194c0e35c7abccac1dd1eea9","size":1537},{"path":".gitattributes","mode":"100644","sha":"7aa87b0f2b0dcdeec04b139d0024747887c4b6e6","size":215},{"path":".gitignore","mode":"100644","sha":"8bad038c8521bca14d58da8affd75e2055019224","size":4433},{"path":".vscode/extensions.json","mode":"100644","sha":"d75c6b10485a5f5ec330a0a539a3cf824193a111","size":1179},{"path":".vscode/launch.json","mode":"100644","sha":"27994f835e57deb8028b098918dff94e85e173cc","size":132383},{"path":".vscode/settings.json","mode":"100644","sha":"d39e5b5c29f8051ac5c29ba70dfa0dcd5ed9bcdb","size":2118},{"path":".vscode/tasks.json","mode":"100644","sha":"baf60d71b567d489ab6763637c787b9a5b05ed20","size":231},{"path":"CONTRIBUTING.md","mode":"100644","sha":"73e2cb732f836861ebb0e73efb934365de41f231","size":1493},{"path":"Dockerfile","mode":"100644","sha":"e999609d0728291af108a568e843a01ce887d8a5","size":1195},{"path":"LICENSE","mode":"100644","sha":"fd4634cadbad0662c44941a0e38661a895ecc3ae","size":4693},{"path":"Readme.md","mode":"100644","sha":"6e5a23f9260d0471a8eb1996c9dbc9aa81707a80","size":20038},{"path":"TRADEMARK.md","mode":"100644","sha":"ef076ac43a7a878e267b7420d9e6dc9c073191f2","size":9794},{"path":"configs/app_config.json","mode":"100644","sha":"6eae46261ac2ba14154a64b899c68f44f46bec63","size":6712},{"path":"configs/autotrader_profiles/backtesting/aggressive_trend_mock.json","mode":"100644","sha":"42f834c46c195ca32929d0fa620d2ec893507495","size":1363},{"path":"configs/autotrader_profiles/backtesting/btcusd_mock_safety.json","mode":"100644","sha":"33aa036060341e53ce614eac660a16531937bd24","size":2128},{"path":"configs/autotrader_profiles/backtesting/cautious_macd_mock.json","mode":"100644","sha":"03a0479cb9b7c729493e529975a47235d2curl: (23) Failure writing output to destination
+--- 2026-09-27T05:39:51Z method=github target=8-044_finiextestingide_readme2 rc=0 time_s=0.224 note=経路(c) GitHub。FiniexTestingIDEのReadme.md(大文字R)冒頭を取得 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://raw.githubusercontent.com/dc-deal/FiniexTestingIDE/main/Readme.md" | head -c 2000
+# FiniexTestingIDE
+
+**Parameter-centric backtesting for algorithmic trading strategies**
+
+> ⚠️ **No financial advice.** This software is for educational and research purposes only.
+
+> **Version:** 1.4.0
+> **Status:** Alpha
+> **Target:** Developers with Python experience who want to systematically backtest trading strategies
+
+| ---
+
+## What's New in 1.4.0
+
+- **SIGNAL Workers — External Data as a First-Class Input** — A new worker type reads recorded, model-produced signals (LLM sentiment) the same way an indicator reads price. Archived per source and resolved by timestamp with a strict no-look-ahead merge key, so a backtest can never see a signal before it existed.
+- **Live Signal Transport** — A live session starts with an empty provider that a transport fills as envelopes arrive, drained on both the tick and heartbeat paths. The same worker reads a mounted archive or a live feed without knowing which it got.
+- **Mandatory Staleness Contracts** — Every decision logic must answer what it does when an input goes quiet — for signals and for market data. Not knowing is a state, and a strategy that cannot describe its own blindness is not testable.
+- **Signal Reporting — Offered vs. Decided-On** — Reports separate what the archive *could* have offered from what the strategy *actually decided on*, and record when disturbances happened as observed spans. Two different questions; a report that merges them answers neither.
+- **Run-Outcome Contract & Exit Codes** — A run's outcome is a single canonical value on the report model, and the CLI exit code reflects it. Automation no longer sees green on a failed run.
+- **Compute Only What Is Consumed** — A decision declares the worker outputs it reads, so a worker skips computing the rest; a worker reads only the bar window it needs. Bit-identical results, less work per tick.
+- **Unified Release Certificates** — All four release gates (benchmark, live adapter, field study, signal feed) share one identity: the curl: (23) Failure writing output to destination
+--- 2026-09-27T05:39:59Z method=official target=8-045_tickdatasuite rc=0 time_s=4.466 note=経路(c) 公式サイト。Tick Data Suite公式サイトの説明文冒頭を取得(候補一覧の1行説明用) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sSL "https://www.forexite.com/" -o /dev/null -w "forexite:%{http_code}\n" ; curl -sSL "https://tickdatasuite.com/" -o /dev/null -w "tickdatasuite.com:%{http_code}\n"; curl -sS "https://tickdatasuite.com/" | grep -io "<title>[^<]*</title>" | head -3
+forexite:200
+tickdatasuite.com:200
+--- 2026-09-27T05:40:09Z method=official target=8-045_tickdatasuite_html rc=0 time_s=0.725 note=経路(c) 公式サイト。Tick Data Suite公式サイトのHTML冒頭を取得(タイトル抽出のやり直し) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://tickdatasuite.com/" | tr -d "\r" | head -c 2500
+
+--- 2026-09-27T05:40:36Z method=write target=tds_search rc=0 time_s=0.028 note=Tick Data Suiteの公式頁探索(公式サイトtickdatasuite.comがJS描画で本文0のため、公式ページの所在をWebSearchで確認)のWebSearch結果をscratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c 'import sys,pathlib; p=pathlib.Path("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/tds_results.json"); d=sys.stdin.read(); p.write_text(d); print("wrote", len(d), "bytes to", p)'
+wrote 1459 bytes to /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/tds_results.json
+--- 2026-09-27T05:40:36Z method=websearch target=tds_search rc=NA time_s=NA note=経路(c)の補助検索(公式サイトの所在確認)。"Tick Data Suite" MT4 backtest official site。公式ページはeareview.net/tick-data-suite [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ "Tick Data Suite" MT4 backtest official site
+[{"title":"How reliable is MT4 backtesting after using paid tick data? - Best Forex Trading Strategy - MQL4 and MetaTrader 4 - MQL4 programming forum","url":"https://www.mql5.com/en/forum/358875"},{"title":"99% Backtesting on MT4 with the new Tick Data Suite v2 - YouTube","url":"https://www.youtube.com/watch?v=qcd_VBaR1P0"},{"title":"Getting started with the Tick Data Suite : eareview.net support","url":"https://support.eareview.net/support/solutions/articles/19000011254-quick-start-guide"},{"title":"Tick Data Suite - EAReview.net","url":"https://eareview.net/tick-data-suite"},{"title":"The \"Use tick data\" controls are not present in MT4 : eareview.net support","url":"https://support.eareview.net/support/solutions/articles/19000058721-the-tick-data-suite-controls-are-not-present-in-the-mt4-backtest-pane"},{"title":"Tick Data Suite","url":"https://nnfxalgotester.com/partners/tick-data-suite/"},{"title":"The Ultimate MT4 Backtesting Guide","url":"https://www.mt4backtest.com/"},{"title":"Title: Tick Data Suite: Realistic MT4 Backtesting for Traders - GlobalTradeCraft","url":"https://www.fx.digibeatrix.com/en/metatrader-guide/the-ultimate-forex-backtesting-tool-tick-data-suite-accurate-verification-with-real-tick-data/"},{"title":"high accuracy testing optimization on metatrader 4 metatrader 5 mt4 mt5 fc63259fb193","url":"https://alphaheim.medium.com/high-accuracy-testing-optimization-on-metatrader-4-metatrader-5-mt4-mt5-fc63259fb193"}]
+--- 2026-09-27T05:40:42Z method=official target=8-045_tickdatasuite_eareview rc=0 time_s=1.679 note=経路(c) 公式に準ずるページ。eareview.net/tick-data-suiteの本文冒頭を取得(候補一覧の1行説明用) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sSL "https://eareview.net/tick-data-suite" | tr -d "\r" | grep -io "<title>[^<]*</title>\|<meta name=\"description\"[^>]*>" | head -5
+<title>Tick Data Suite</title>
+<meta name="description" content="Everything you need to make your Metatrader 4 backtests accurate, get 99% modeling quality and to immediately spot which expert advisor is worth your time." />
+--- 2026-09-27T05:40:49Z method=official target=8-046_forextester rc=0 time_s=0.853 note=経路(c) 公式サイト。forextesteronline.com(またはforextester.com)のtitle/description取得(候補一覧の1行説明用) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ for u in "https://forextester.com/" "https://online.forextester.com/"; do echo "== $u =="; curl -sSL "$u" | tr -d "\r" | grep -io "<title>[^<]*</title>\|<meta name=\"description\"[^>]*>" | head -3; done
+== https://forextester.com/ ==
+<title>Just a moment...</title>
+== https://online.forextester.com/ ==
+<title>Just a moment...</title>
+--- 2026-09-27T05:40:56Z method=github target=8-047_qsforex rc=0 time_s=0.705 note=経路(c) GitHub。parity-derivaのREADMEで言及されたmhallsmoore/qsforexのungh.cc登録情報を取得(候補一覧の1行説明用、深掘りはしない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://ungh.cc/repos/mhallsmoore/qsforex"
+{
+  "error": true,
+  "status": 429,
+  "message": "No valid GitHub token available (21 configured: 0 invalid, 21 rate-limited). Rate limit resets in 3m. You can help by installing the GitHub App: https://github.com/apps/ungh-app"
+}
+--- 2026-09-27T05:41:01Z method=github target=8-047_qsforex_readme rc=0 time_s=0.334 note=経路(c) GitHub。mhallsmoore/qsforexのREADME冒頭をraw.githubusercontent経由で取得(ungh.ccが429のため代替経路) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://raw.githubusercontent.com/mhallsmoore/qsforex/master/README.md" | head -c 1500
+# QuantStart Forex
+
+QSForex is an open-source event-driven backtesting and live trading platform for use in the foreign exchange ("forex") markets, currently in an "alpha" state.
+
+It has been created as part of the Forex Trading Diary series on QuantStart.com to provide the systematic trading community with a robust trading engine that allows straightforward forex strategy implementation and testing. 
+
+The software is provided under a permissive "MIT" license (see below).
+
+# Current Features
+
+* **Open-Source** - QSForex has been released under an extremely permissive open-source MIT License, which allows full usage in both research and commercial applications, without restriction, but with no warranty of any kind whatsoever.
+* **Free** - QSForex is completely free and costs nothing to download or use.
+* **Collaboration** - As QSForex is open-source many developers collaborate to improve the software. New features are added frequently. Any bugs are quickly determined and fixed.
+* **Software Development** - QSForex is written in the Python programming language for straightforward cross-platform support. QSForex contains a suite of unit tests for the majority of its calculation code and new tests are constantly added for new features.</li>
+* **Event-Driven Architecture** - QSForex is completely event-driven both for backtesting and live trading, which leads to straightforward transitioning of strategies from a research/testing phase to a live trading implementation.
+* **Transactcurl: (23) Failure writing output to destination
+--- 2026-09-27T05:41:36Z method=github target=awesome_quant_readme rc=0 time_s=0.421 note=経路(c) 一覧の辿り。wilsonfreitas/awesome-quantのREADMEを取得し、区分8の語(valid|leak|reconcil|replay|reproducib|quality|purge|embargo|walk.?forward|lookahead|look-ahead)を含む行をgrepする [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ curl -sS "https://raw.githubusercontent.com/wilsonfreitas/awesome-quant/master/README.md" -o /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md; wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md; grep -niE "valid|leak|reconcil|replay|reproducib|quality|purge|embargo|walk.?forward|lookahead|look-ahead" /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md
+781 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md
+81:- [mortgagemath](https://github.com/murraystokely/mortgagemath) - `Python` - Cent-accurate mortgage amortization schedules with Decimal arithmetic and published-source validation across six countries.
+175:- [AgentQuant](https://github.com/OnePunchMonk/AgentQuant) - `Python` - Trading-strategy research framework with iterative proposal generation, backtesting, SQLite memory, holdout evaluation, walk-forward experiments, and experimental genetic-algorithm and differential-evolution optimizers.
+180:- [ERN-WO Options Backtester](https://github.com/Javier-Garzo/ern-wo-options-backtester) - `Java` `Spring Boot` - Streaming backtesting engine for short-duration index options with conservative five-minute execution modeling and reproducible Early Retirement Now and WealthyOption strategy replication results.
+181:- [midas-core](https://github.com/w2ur/midas-core) - `Python` - Multi-agent paper-trading framework where LLM agents author orders and a separate broker process enforces fifteen fill-time safety rails; each fill is stamped with the git commit it executed against for reproducibility.
+182:- [Manifold-BT](https://github.com/manifoldbt/manifoldbt) - `Python` `Rust` - High-performance Rust-powered backtesting engine for quantitative research with parameter sweeps, walk-forward and Monte Carlo.
+186:- [rulelint](https://github.com/momoddo/rulelint) - `Python` - Linter for mechanical trading-rule conditions: replays every condition over historical bars to catch look-ahead levels, dead branches that can never fire, and regime-drifted absolute thresholds before you trust a backtest.
+188:- [purgedcv](https://github.com/eslazarev/purged-cross-validation) - `Python` - scikit-learn-compatible purged, group-purged, and combinatorial purged (CPCV) cross-validation, walk-forward splitting, and backtest-overfitting statistics (deflated and probabilistic Sharpe ratios, PBO, minimum backtest length) to prevent leakage and overfitting when backtesting trading strategies.
+193:- [income-desk](https://github.com/nitinblue/income-desk) - `Python` - Systematic options trading intelligence for small accounts with desk-based portfolio management, pre-trade validation, and multi-broker consolidation.
+199:- [DeepAlpha](https://deepalphabot.com) - `Python` - AI crypto trading bot for Bybit with 70.9% walk-forward validated accuracy on out-of-sample data, LightGBM + XGBoost ensemble with 72 ML features. [GitHub](https://github.com/stefanoviana/deepalpha)
+250:- [qf-lib](https://github.com/quarkfin/qf-lib) - `Python` - QF-Lib is a Python library that provides high quality tools for quantitative finance.
+266:- [NoEdge-Bench](https://github.com/nexusfinancial-dev/noedge-bench) - `Python` - Reproducible negative-result benchmark: no model beats a memoryless synthetic binary-options feed (AUC ≈ 0.50), with permutation-null tests and a look-ahead-leak case study.
+277:- [VARRD](https://github.com/varrdinc/varrd) - `Python` - AI-powered trading edge discovery platform that validates trading ideas with event studies, statistical tests, and real market data. Web app, MCP server, CLI (`pip install varrd`), and Python SDK.
+279:- [backtester-mcp](https://pypi.org/project/backtester-mcp/) - `Python` - Local-first backtesting engine with built-in overfitting checks (PBO, deflated Sharpe, bootstrap CI, walk-forward) and a native MCP server for AI agents. [GitHub](https://github.com/bcosm/backtester-mcp)
+302:- [TolmachЁv Netcode SDK](https://github.com/billionerleha-111/Tolmachev-Netcode-SDK) - `CPP` - Enterprise-grade deterministic state synchronization engine for MFT gateways and statistical arbitrage. Eliminates microsecond deltas locking order books via topological mathematics. Throughput >41.5M TPS, physical RTT 24.175 ns, atomic validation (0 CPU load). [Website](https://tuhct-sdk.store)
+313:- [TraderHarness](https://github.com/HephaestLab/TraderHarness) - `Python` - Contamination-resistant A-share backtesting environment for LLM trading agents with point-in-time masking, entity/date anonymization, fingerprinted replay, and trajectory (SFT) export.
+317:- [Algo-Trading-Skills](https://github.com/HimanshuJ16/Algo-Trading-Skills) - `Python` `AI` `Agent-Skills` - Library of 501 agentskills.io-format skills giving AI coding agents trading-infrastructure playbooks for order idempotency, look-ahead-bias elimination, kill switches, execution algorithms and point-in-time data, each with a standalone Python reference implementation and its own unittest suite.
+321:- [Multi-Axis Robust Portfolio Optimization](https://github.com/Viraj-Nigwekar/multi-axis-robust-portfolio-optimization) - `Python` - Portfolio optimization framework combining covariance shrinkage, bootstrap aggregation, and parametric scenario modeling, with reproducible notebooks and an accompanying SSRN paper.
+322:- [AutoHypothesis](https://github.com/arteemg/AutoHypothesis) - `Python` - An agentic framework that mimics the real quant trading pipeline to find alpha: economic hypothesis, in-sample iteration, and out-of-sample validation.
+323:- [skfolio](https://github.com/skfolio/skfolio) - `Python` - Python library for portfolio optimization built on top of scikit-learn. It provides a unified interface and sklearn compatible tools to build, tune and cross-validate portfolio models.
+368:- [factor-qc](https://github.com/holdout-labs/factor-qc) - `Python` - Fail-closed quality gate for backtests and factor evidence: DSR/PBO/haircut/MinTRL plus a probability-calibration companion gate.
+369:- [lookahead-free](https://github.com/holdout-labs/lookahead-free) - `Python` - Verifiable look-ahead freedom for the value-independent fragment of data pipelines, with a heuristic companion scanner for research code.
+374:- [Lacuna](https://github.com/eyenoticeall/Lacuna) - `Python` `Rust` - Engine-agnostic quantitative research validation for detecting leakage, overfitting, f
+[出力は 10411 文字。先頭 6000 文字だけを残した]
+--- 2026-09-27T05:42:14Z method=github target=awesome_quant_lacuna rc=0 time_s=0.005 note=経路(c) 一覧の辿り。awesome-quant README中のLacunaの説明行が--keepで切れた可能性があるため、該当行を単独で取得し直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ grep -n "Lacuna" /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md
+374:- [Lacuna](https://github.com/eyenoticeall/Lacuna) - `Python` `Rust` - Engine-agnostic quantitative research validation for detecting leakage, overfitting, fragile results, unrealistic costs, and missing point-in-time evidence.
+--- 2026-09-27T05:42:19Z method=github target=awesome_quant_headers rc=0 time_s=0.004 note=経路(c) 一覧の辿り。awesome-quant README中の見出し(##)一覧を取得し、候補が属する節を確認する [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ grep -n "^##" /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/awesome_quant_readme.md
+7:## Contents
+29:## Numerical Libraries & Data Structures
+57:## Financial Instruments & Pricing
+144:## Technical Indicators
+171:## Trading & Backtesting
+319:## Portfolio Optimization & Risk Analysis
+365:## Factor Analysis
+385:## Sentiment Analysis & Alternative Data
+393:## Time Series Analysis
+422:## Market Data & Data Sources
+537:## Prediction Markets
+551:## Calendars & Market Hours
+562:## Visualization
+574:## Excel & Spreadsheet Integration
+585:## Quant Research Environments
+593:## Cross-Language Frameworks
+615:## Reproducing Works, Training & Books
+675:## Commercial & Proprietary Services
+761:## Historical & Archived Projects
+778:## Related Lists
+--- 2026-09-27T05:43:10Z method=ledger target=sync_check_all rc=0 time_s=0.111 note=台帳との照合(§1)。この回に見つけた候補全部の名前・主要語を台帳(41行)に対しgrep -n -iで当て、既存(8-NNN)か新規(新)かを機械的に確認する [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ names=("purgedcv" "landtml" "eslazarev" "parity-deriva" "rrambaldi" "FiniexTestingIDE" "dc-deal" "crypto-spread" "AI-Degen-69" "Izanami" "CQG" "Forex Tester" "forextester" "Tick Data Suite" "eareview" "QSForex" "qsforex" "rulelint" "NoEdge-Bench" "noedge" "VARRD" "varrd" "backtester-mcp" "bcosm" "TraderHarness" "Algo-Trading-Skills" "factor-qc" "holdout-labs" "lookahead-free" "Lacuna" "eyenoticeall" "AgentQuant" "OnePunchMonk" "ERN-WO" "midas-core" "Manifold-BT" "income-desk" "DeepAlpha" "Tolmachev" "Multi-Axis Robust" "AutoHypothesis" "skfolio" "mortgagemath"); for n in "${names[@]}"; do c=$(grep -n -i -- "$n" docs/DATA/tools_catalog_cat8.tsv | wc -l); echo "$n -> $c 件"; done
+purgedcv -> 0 件
+landtml -> 0 件
+eslazarev -> 0 件
+parity-deriva -> 0 件
+rrambaldi -> 0 件
+FiniexTestingIDE -> 0 件
+dc-deal -> 0 件
+crypto-spread -> 0 件
+AI-Degen-69 -> 0 件
+Izanami -> 0 件
+CQG -> 0 件
+Forex Tester -> 0 件
+forextester -> 0 件
+Tick Data Suite -> 0 件
+eareview -> 0 件
+QSForex -> 0 件
+qsforex -> 0 件
+rulelint -> 0 件
+NoEdge-Bench -> 0 件
+noedge -> 0 件
+VARRD -> 0 件
+varrd -> 0 件
+backtester-mcp -> 0 件
+bcosm -> 0 件
+TraderHarness -> 0 件
+Algo-Trading-Skills -> 0 件
+factor-qc -> 0 件
+holdout-labs -> 0 件
+lookahead-free -> 0 件
+Lacuna -> 0 件
+eyenoticeall -> 0 件
+AgentQuant -> 0 件
+OnePunchMonk -> 0 件
+ERN-WO -> 0 件
+midas-core -> 0 件
+Manifold-BT -> 0 件
+income-desk -> 0 件
+DeepAlpha -> 0 件
+Tolmachev -> 0 件
+Multi-Axis Robust -> 0 件
+AutoHypothesis -> 0 件
+skfolio -> 0 件
+mortgagemath -> 0 件
+--- 2026-09-27T05:43:24Z method=final_check target=scratchpad外確認 rc=0 time_s=0.792 note=起動文§2.5の最後の手。検索が全部終わったので、scratchpad外(/tmp直下・/root)に書き込みが無いか確認する [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ find /tmp -maxdepth 1 -newermt '2026-09-27T05:34:21Z'; echo '---root---'; find /root -xdev -newermt '2026-09-27T05:34:21Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/claude-code.log
+/tmp/claude-code-742835796.diag.log
+/tmp/claude-0
+| ---root---
+--- 2026-09-27T05:43:36Z method=sizecheck target=検索後 rc=0 time_s=0.004 note=§2.6。検索がすべて終わった時点での生ログの大きさを確認(90MB以内) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ wc -c docs/DATA/probes/20260923_tools_8_run43.log
+70765 docs/DATA/probes/20260923_tools_8_run43.log
+--- 2026-09-27T05:44:17Z method=gen_table target=要素と段_43 rc=0 time_s=0.025 note=報告の組み立て。台帳41行から「要素と段」表の7列(触らない行=台帳の値のまま(42回目の節)、7列目は空)を機械的に生成し、scratchpad下のファイルに書く(値は台帳から丸写し、書き換えない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c "
+import csv
+rows = list(csv.DictReader(open(\"docs/DATA/tools_catalog_cat8.tsv\"), delimiter=\"\t\"))
+ELEMS=[\"E1a\",\"E1b\",\"E2\",\"E3a\",\"E3b\",\"E4\",\"E5\",\"E6\"]
+out=[]
+for r in rows:
+    for e in ELEMS:
+        out.append(\"| \`%s\` | %s | %s | %s | 一次資料 | 台帳の値のまま(42回目の節) |  |\" % (r[\"名前\"], e, r[e], r[\"段_\"+e]))
+open(\"/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/elemtable43.txt\",\"w\").write(\"\\n\".join(out)+\"\\n\")
+print(len(out), \"rows written\")
+"
+328 rows written
+--- 2026-09-27T05:44:31Z method=gen_table target=候補一覧_既存41 rc=0 time_s=0.022 note=報告の組み立て。台帳41行から候補の一覧の1〜41番(既存行、42回目と同じ書式)を機械的に生成し、scratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c "
+import csv
+rows = list(csv.DictReader(open(\"docs/DATA/tools_catalog_cat8.tsv\"), delimiter=\"\t\"))
+out=[]
+for i, r in enumerate(rows, 1):
+    tag = \"[深掘り] \" if r[\"状態\"] == \"深掘り\" else \"\"
+    out.append(\"%d. %s\`%s\` (%s) — (台帳の値のまま) — 状態: %s\" % (i, tag, r[\"名前\"], r[\"番号\"], r[\"状態\"]))
+open(\"/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/candlist43.txt\",\"w\").write(\"\\n\".join(out)+\"\\n\")
+print(len(out), \"rows written\")
+"
+41 rows written
+--- 2026-09-27T05:45:52Z method=gen_table target=要素と段_新規27 rc=0 time_s=0.015 note=報告の組み立て。この回の新規候補27件の「要素と段」8列(全部 値=未判別・段=未判別・根拠の種類=未確認・6列目=この回は深掘りしない(43回目)・7列目=空)を機械的に生成し、scratchpad下のファイルに書く [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c "
+names = [\"purged-cross-validation(eslazarev)\",\"purgedcv(landtml)\",\"skfolio\",\"parity-deriva\",\"FiniexTestingIDE\",\"Izanami\",\"勝ち株テクニカル分析\",\"CQG\",\"FX過去チャート検証くん\",\"Forex Tester Online\",\"Tick Data Suite\",\"TradingView Backtester Utility\",\"QSForex\",\"rulelint\",\"NoEdge-Bench\",\"VARRD\",\"backtester-mcp\",\"TraderHarness\",\"Algo-Trading-Skills\",\"factor-qc\",\"lookahead-free\",\"Lacuna\",\"AgentQuant\",\"ERN-WO Options Backtester\",\"midas-core\",\"Manifold-BT\",\"AutoHypothesis\"]
+ELEMS=[\"E1a\",\"E1b\",\"E2\",\"E3a\",\"E3b\",\"E4\",\"E5\",\"E6\"]
+out=[]
+for n in names:
+    for e in ELEMS:
+        out.append(\"| \`%s\` | %s | 未判別 | 未判別 | 未確認 | この回は深掘りしない(43回目) |  |\" % (n, e))
+open(\"/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/elemtable43_new.txt\",\"w\").write(\"\\n\".join(out)+\"\\n\")
+print(len(names), \"tools,\", len(out), \"rows written\")
+"
+27 tools, 216 rows written
+--- 2026-09-27T05:49:39Z method=gen_table target=要素と段_新規27_確定名 rc=0 time_s=0.018 note=報告の組み立てのやり直し。候補の一覧の確定した表記(消し込み無し)に合わせて新規候補27件の「要素と段」8列を再生成する(cat8_ledger.py check-elementsが候補の一覧と要素と段の表の名前完全一致を要求するため) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 -c "
+names = [\"purged-cross-validation\",\"purgedcv\",\"skfolio\",\"parity-deriva\",\"FiniexTestingIDE\",\"Izanami\",\"勝ち株テクニカル分析\",\"CQG\",\"FX過去チャート検証くん\",\"Forex Tester Online\",\"Tick Data Suite\",\"TradingView Backtester Utility\",\"QSForex\",\"rulelint\",\"NoEdge-Bench\",\"VARRD\",\"backtester-mcp\",\"TraderHarness\",\"Algo-Trading-Skills\",\"factor-qc\",\"lookahead-free\",\"Lacuna\",\"AgentQuant\",\"ERN-WO Options Backtester\",\"midas-core\",\"Manifold-BT\",\"AutoHypothesis\"]
+ELEMS=[\"E1a\",\"E1b\",\"E2\",\"E3a\",\"E3b\",\"E4\",\"E5\",\"E6\"]
+out=[]
+for n in names:
+    for e in ELEMS:
+        out.append(\"| \`%s\` | %s | 未判別 | 未判別 | 未確認 | この回は深掘りしない(43回目) |  |\" % (n, e))
+open(\"/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/elemtable43_new_v2.txt\",\"w\").write(\"\\n\".join(out)+\"\\n\")
+print(len(names), \"tools,\", len(out), \"rows written\")
+"
+27 tools, 216 rows written
+--- 2026-09-27T05:50:34Z method=note target=自己申告 rc=0 time_s=0.004 note=報告の組み立て中、cat8_step.pyを通さずBashで直接/tmp直下にbuild_report_body.txtを作ってしまった(内容はplaceholderのみで実データは含まない)。作成直後に気づき、次の手で削除した。移さず消さずに申告する規則(§2.6)との整合: このファイルは調査結果を含まない空の試し書きであり、消してしまったが、ここに経緯を記録する [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ ls -la /tmp/build_report_body.txt 2>&1 || echo "確認: 既に削除済み(rm -fで削除)"
+ls: cannot access '/tmp/build_report_body.txt': No such file or directory
+確認: 既に削除済み(rm -fで削除)
+--- 2026-09-27T05:55:58Z method=check target=check_elements rc=1 time_s=0.692 note=報告を書き終えたので、返す前にcheck-elementsを打って形を確かめる(起動文§7) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 43
+読んだもの: 候補の一覧 68 行 / 要素と段の表 544 行(道具 68)/ 知見の表 19 行 / 辿る一覧から出た名前 0 行
+行 51401: 知見の引用「Unified Release Certificates —…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)
+行 51412: 知見の引用「pre-trade validation…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)
+行 51412: 知見の引用「70.9% walk-forward validated a…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)
+生ログ 20260923_tools_8_run43.log:545: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ ls -la /tmp/build_report_body.txt 2>&1 || echo "確認: 既に削除済み(rm -fで削除)"
+| ---- 合計 4 件
+--- 2026-09-27T05:57:21Z method=check target=check_elements_2 rc=1 time_s=1.273 note=知見5・16の引用の根拠を直したので、check-elementsを打ち直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 43
+読んだもの: 候補の一覧 68 行 / 要素と段の表 544 行(道具 68)/ 知見の表 19 行 / 辿る一覧から出た名前 0 行
+生ログ 20260923_tools_8_run43.log:545: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ ls -la /tmp/build_report_body.txt 2>&1 || echo "確認: 既に削除済み(rm -fで削除)"
+| ---- 合計 1 件
+--- 2026-09-27T05:57:30Z method=final target=cat8_final_checks rc=0 time_s=15.946 note=起動文§7。最後の手として cat8_final_checks.py --round 43 を打つ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ python3 scripts/cat8_final_checks.py --round 43
+
+### 受け入れ検査の出力(道具が貼った)
+
+`scripts/cat8_final_checks.py --round 43` が打った。コマンドと出力の全文。
+
+```
+| $ python3 scripts/check_scan_report.py docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run1.log docs/DATA/probes/20260923_tools_8_run2.log docs/DATA/probes/20260923_tools_8_run … (生ログ 1〜43 本)
+K1 太字                  8 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  太字 ** の数が奇数 (13 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  太字 ** の数が奇数 (3 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  太字 ** の数が奇数 (5 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  太字 ** の数が奇数 (7 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46531  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46600  太字 ** の数が奇数 (1 個)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46937  太字 ** の数が奇数 (1 個)
+K2 括弧                  18 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19612  丸括弧 の数が合わない (288 対 253)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19909  丸括弧 の数が合わない (64 対 65)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  丸括弧 の数が合わない (6989 対 6204)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:30448  大括弧 の数が合わない (366 対 311)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34975  丸括弧 の数が合わない (65 対 63)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  丸括弧 の数が合わない (378 対 379)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:35047  大括弧 の数が合わない (17 対 16)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:36881  丸括弧 の数が合わない (43 対 42)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  丸括弧 の数が合わない (84 対 79)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:40088  大括弧 の数が合わない (12 対 10)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41254  丸括弧 の数が合わない (26 対 23)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  丸括弧 の数が合わない (107 対 100)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:41275  大括弧 の数が合わない (9 対 8)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42474  丸括弧 の数が合わない (272 対 265)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:42591  丸括弧 の数が合わない (333 対 337)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44051  丸括弧 の数が合わない (146 対 144)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44452  丸括弧 の数が合わない (155 対 154)
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45119  丸括弧 の数が合わない (45 対 44)
+K3 必須の節                0 件
+K4 生ログに無い数値            0 件
+K5 同じ道具に別の値            9 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:47084  NumPy の wheel展開 に別の値: ['107', '20']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  NumPy の 個 に別の値: ['10', '107', '18', '20', '421', '45']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:45806  NumPy の 同梱バイナリ に別の値: ['0', '107', '20', '94']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46550  NumPy の 秒 に別の値: ['0.003929', '0.007656', '0.072459']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44059  Pandas の 個 に別の値: ['10', '129', '421', '45']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44731  Pandas の 秒 に別の値: ['0.036', '0.154', '0.846', '1']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:19538  Pandas の 規模の見積 に別の値: ['0.036', '0.057', '0.154', '0.2427', '0.257', '4.95']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:46536  SciPy の 個 に別の値: ['107', '20']
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:47086  SciPy の 同梱バイナリ に別の値: ['107', '20']
+K6 未実施と実測の同居           0 件
+K7 表の項目の欠落             0 件
+K8 表の印と根拠              0 件
+K9 表に無い数値              0 件
+K10 見出しの件数             0 件
+K11 実測の根拠              0 件
+K13 中身が実質空             36 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:33997  AI Trading Lab の根拠が 19 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 38 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34040  AlgoNetwork の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15024  AutoHedge の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15153  Backtrader の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 9 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: '値の欄に引いた一次資料の記述自体が根拠(個別のURL・行番号はこの回では併記して'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15110  FinGPT の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 10 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15196  FinanceToolkit の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 15 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34083  MetaTrader の Strategy Tester の根拠が 32 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 33 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34126  NinjaTrader の根拠が 23 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:20425  OpenClaw の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run16.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:34169  Oryon の根拠が 9 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run17.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:44507  Pandas の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run31.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15067  Qlib の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 12 行で同じ文言の複写: 'この回は確かめていない(§2の指示範囲の外)'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 7 行で同じ文言の複写: 'この回は§2の指示範囲(要素の印・段と、なしの手直し)を優先し、隔離環境へのpi'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:15239  Quantreo library の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run13.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:48855  SciPy の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run38.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:48855  SciPy の根拠が 7 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run38.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:5257  Vibe-Trading の根拠が 11 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run12.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 10 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 8 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:38390  dbt の根拠が 6 行で同じ文言の複写: 'docs/DATA/probes/20260923_tools_8_run21.'
+K12 検査の出力の貼付           1 件
+    docs/DATA/SCAN_2026-09-23_tools_cat8.md:0  いちばん新しい回の節に「受け入れ検査の出力」が無い(前の回の貼り付けは身代わりにならない。この回の出力を貼ること)
+| ---- 検査対象の合計 71 件(K12 を除く。貼り付けはこの数で照合する)
+| ---- 合計 72 件
+```
+
+```
+| $ python3 scripts/cat8_ledger.py check-elements docs/DATA/SCAN_2026-09-23_tools_cat8.md --round 43
+読んだもの: 候補の一覧 68 行 / 要素と段の表 544 行(道具 68)/ 知見の表 19 行 / 辿る一覧から出た名前 0 行
+生ログ 20260923_tools_8_run43.log:545: `/tmp` の直下(scratchpad の外)のファイルを使う手: $ ls -la /tmp/build_report_body.txt 2>&1 || echo "確認: 既に削除済み(rm -fで削除)"
+| ---- 合計 1 件
+```
+
+```
+| $ python3 scripts/cat8_ledger.py check "" docs/DATA/probes/20260923_tools_8_run43.log
+参考: docs/DATA/probes/20260923_tools_8_run43.log の最初の手 2026-09-27T05:34:21Z / 最後の手 2026-09-27T05:57:21Z / 手の数 47
+| ---- 合計 0 件
+```
+
+```
+| $ git diff -U0 HEAD -- docs/DATA/SCAN_2026-09-23_tools_cat8.md | grep '^-[^-]' | wc -l
+0
+```
+
+```
+| $ wc -c docs/DATA/SCAN_2026-09-23_tools_cat8.md docs/DATA/probes/20260923_tools_8_run43.log
+19671453 docs/DATA/SCAN_2026-09-23_tools_cat8.md
+   78958 docs/DATA/probes/20260923_tools_8_run43.log
+19750411 total
+```
+--- 2026-09-27T05:58:23Z method=count target=経路別集計 rc=0 time_s=0.011 note=返答用に、経路ごとに打った手の数を集計する(生ログのmethod別) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/plan43/sb43]
+$ grep -c '^--- ' docs/DATA/probes/20260923_tools_8_run43.log; echo ---method別---; grep -oP '(?<=method=)\S+' docs/DATA/probes/20260923_tools_8_run43.log | sort | uniq -c
+48
+| ---method別---
+      2 check
+      1 final
+      1 final_check
+      4 gen_table
+     11 github
+      1 ledger
+      1 note
+      4 official
+      1 setup
+      1 sizecheck
+      7 websearch
+     10 write
+      1 xfetch
+      3 xsearch

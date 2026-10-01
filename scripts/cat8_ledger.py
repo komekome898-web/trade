@@ -1,0 +1,1056 @@
+#!/usr/bin/env python3
+"""道具サーベイ区分 8 の台帳 `docs/DATA/tools_catalog_cat8.tsv` を扱う道具。打つのはリードだけ。
+
+使い方:
+  python3 scripts/cat8_ledger.py add --name <名前> --route <発見の経路> --source <URL> [--cat1 <番号>] [--round <回>]
+  python3 scripts/cat8_ledger.py sync <報告.md> --round <回> [--new <名前> ...]
+  python3 scripts/cat8_ledger.py set <8-NNN> <列>=<値> [...]
+  python3 scripts/cat8_ledger.py recount
+  python3 scripts/cat8_ledger.py check [<報告.md>] [<生ログ.log> ...]
+  python3 scripts/cat8_ledger.py check-elements <報告.md> --round <回>   (読むだけ。調査班も打つ)
+  python3 scripts/cat8_ledger.py import <報告.md> --round <回>   (その回の候補の一覧の状態と「要素と段」の表を台帳に写す。リードが検収で打つ)
+
+規則の在処は設計票 `docs/DATA/surveys/CAT8_DESIGN.md`(§2 状態の語 / §3 要素の印 / §4.1 段 / §5 台帳の列と番号 /
+§6 この道具の役目)。**数は報告の文章から数えない**(台帳から数える)。
+
+番号(設計票 §5):
+- 番号は `8-001` の形で、この道具だけが振る。調査班は報告で既存の候補を `(8-NNN)`、新しい候補を `(新)` と書く。
+- 重複を拒む: 名前の正規形(NFKC・小文字・空白と - _ . を除く。**書かれたとおりの全体**を使い、`所有者/` を
+  切らない)か、URL の正規形のどちらか一方でも既存の行と当たれば、足さずに止まる。**止まるだけで、まとめない。**
+  名前だけが当たった別の道具は、リードが両方の出典を開いて別物と確かめたうえで `sync --new <名前>` で足す。
+"""
+import argparse, csv, pathlib, re, sys, unicodedata
+
+REPO = pathlib.Path(__file__).resolve().parent.parent
+LEDGER = REPO / "docs/DATA/tools_catalog_cat8.tsv"
+
+ELEMS = ["E1a", "E1b", "E2", "E3a", "E3b", "E4", "E5", "E6"]
+STAGES = ["段_" + e for e in ELEMS]
+COLS = (["番号", "名前", "初出の回", "発見の経路", "発見の出典", "区分1の番号", "状態"] + ELEMS + STAGES
+        + ["他の区分へ", "安全側の所見", "最後の記載の回", "最後の記載の行"])
+STATES = ["未着手", "判別に一次資料が要る", "浅い", "深掘り", "危険で導入停止", "登録が要る", "区分8の要素なし"]
+REMAINING = ["未着手", "判別に一次資料が要る", "浅い"]
+ELEM_VALUES = ["印", "なし", "未判別"]
+STAGE_VALUES = ["1", "2", "3", "4", "5", "未判別", "-"]
+ROUTES = ["検索", "X", "GitHub・PyPI・公式", "一覧の辿り", "区分1から"]
+LOG_HEAD = re.compile(r"^--- \S+ method=\S+ target=\S+ rc=\S+ time_s=\S+ note=")
+
+
+def norm_name(n):
+    return re.sub(r"[\s\-_.]", "", unicodedata.normalize("NFKC", n).lower())
+
+
+def norm_url(u):
+    u = unicodedata.normalize("NFKC", u.strip()).lower()
+    u = re.sub(r"[#?].*$", "", u)
+    u = re.sub(r"^[a-z]+://", "", u)
+    u = re.sub(r"^www\.", "", u).rstrip("/")
+    m = re.match(r"^(?:github\.com|ungh\.cc/repos|raw\.githubusercontent\.com)/([^/]+)/([^/]+)", u)
+    if m:
+        return "github:%s/%s" % (m.group(1), re.sub(r"\.git$", "", m.group(2)))
+    m = re.match(r"^pypi\.org/(?:project|simple)/([^/]+)", u)
+    if m:
+        return "pypi:" + re.sub(r"[-_.]+", "-", m.group(1))
+    m = re.match(r"^(?:x\.com|twitter\.com|fxtwitter\.com|api\.fxtwitter\.com)/[^/]+/status/(\d+)", u)
+    if m:
+        return "x:" + m.group(1)
+    return u
+
+
+def load():
+    if not LEDGER.exists():
+        return []
+    with LEDGER.open(newline="") as f:
+        rows = list(csv.DictReader(f, delimiter="\t"))
+    return rows
+
+
+def save(rows):
+    with LEDGER.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=COLS, delimiter="\t", lineterminator="\n")
+        w.writeheader()
+        for r in rows:
+            w.writerow({c: r.get(c, "") for c in COLS})
+
+
+def find_dup(rows, name, url):
+    nn, nu = norm_name(name), (norm_url(url) if url else "")
+    hits = []
+    for r in rows:
+        why = []
+        if norm_name(r["名前"]) == nn:
+            why.append("名前")
+        if nu and r["発見の出典"] and norm_url(r["発見の出典"]) == nu:
+            why.append("URL")
+        if why:
+            hits.append((r["番号"], r["名前"], "・".join(why)))
+    return hits
+
+
+def new_row(rows, name, route, source, cat1="", rnd=""):
+    n = max([int(r["番号"].split("-")[1]) for r in rows] or [0]) + 1
+    r = {c: "" for c in COLS}
+    r.update({"番号": "8-%03d" % n, "名前": name, "初出の回": rnd, "発見の経路": route, "発見の出典": source,
+              "区分1の番号": cat1, "状態": "未着手"})
+    for e in ELEMS:
+        r[e] = "未判別"
+    for s in STAGES:
+        r[s] = "未判別"
+    return r
+
+
+def cmd_add(a):
+    rows = load()
+    if a.route not in ROUTES:
+        sys.exit("発見の経路は %s のどれか: %s" % (" / ".join(ROUTES), a.route))
+    hits = find_dup(rows, a.name, a.source)
+    if hits:
+        for h in hits:
+            print("重複の疑い(%s が当たった): %s %s" % (h[2], h[0], h[1]))
+        sys.exit("足さずに止まった(設計票 §5)。別物と確かめたら sync --new で足す")
+    r = new_row(rows, a.name, a.route, a.source, a.cat1 or "", a.round or "")
+    rows.append(r)
+    save(rows)
+    print("足した: %s %s" % (r["番号"], r["名前"]))
+
+
+def section(text, rnd):
+    """報告から `## 区分8 — <回> 回目` の節を切り出す(次の `## 区分` まで)。行番号(1 始まり)も返す。"""
+    lines = text.splitlines()
+    st = None
+    for i, ln in enumerate(lines):
+        if re.match(r"^## 区分8 — %s 回目" % re.escape(str(rnd)), ln):
+            st = i
+        elif st is not None and re.match(r"^## 区分", ln):
+            return st, i, lines
+    return st, len(lines), lines
+
+
+NEW_RE = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\(新\)(.*)$")
+URL_RE = re.compile(r"https?://[^\s)>|`]+")
+
+
+def cmd_sync(a):
+    rows = load()
+    text = pathlib.Path(a.report).read_text()
+    st, en, lines = section(text, a.round)
+    if st is None:
+        sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    forced = set(a.new or [])
+    stopped = 0
+    for i in range(st, en):
+        m = NEW_RE.match(lines[i])
+        if not m:
+            continue
+        name, rest = m.group(1), m.group(2)
+        um = URL_RE.search(rest)
+        url = um.group(0) if um else ""
+        if not url:
+            print("行 %d: `新` の行に URL が無い: %s" % (i + 1, name))
+            stopped += 1
+            continue
+        hits = find_dup(rows, name, url)
+        if hits and name not in forced:
+            for h in hits:
+                print("行 %d: 重複の疑い(%s が当たった): `%s` と %s %s" % (i + 1, h[2], name, h[0], h[1]))
+            stopped += 1
+            continue
+        route = "X" if norm_url(url).startswith("x:") else (
+            "GitHub・PyPI・公式" if re.match(r"^(github|pypi):", norm_url(url)) else "検索")
+        r = new_row(rows, name, route, url, "", str(a.round))
+        r["最後の記載の回"], r["最後の記載の行"] = str(a.round), str(i + 1)
+        rows.append(r)
+        print("足した: %s `%s` (行 %d、経路 %s は URL から推した。直すなら set)" % (r["番号"], name, i + 1, route))
+    save(rows)
+    if stopped:
+        sys.exit("止まった行 %d 件(足していない)" % stopped)
+
+
+def cmd_set(a):
+    rows = load()
+    tgt = [r for r in rows if r["番号"] == a.num]
+    if not tgt:
+        sys.exit("台帳に無い番号: " + a.num)
+    for kv in a.pairs:
+        k, _, v = kv.partition("=")
+        if k not in COLS or k == "番号":
+            sys.exit("台帳の列ではない: " + k)
+        tgt[0][k] = v
+    save(rows)
+    errs = check_rows([tgt[0]])
+    for e in errs:
+        print("注意: " + e)
+    print("書いた: %s" % a.num)
+
+
+def check_rows(rows):
+    errs = []
+    for r in rows:
+        n = r["番号"]
+        if r["状態"] not in STATES:
+            errs.append("%s: 状態の語が語彙に無い: %s" % (n, r["状態"]))
+        if r["発見の経路"] not in ROUTES:
+            errs.append("%s: 発見の経路が語彙に無い: %s" % (n, r["発見の経路"]))
+        for e, s in zip(ELEMS, STAGES):
+            if r[e] not in ELEM_VALUES:
+                errs.append("%s: %s の値が語彙に無い: %s" % (n, e, r[e]))
+            if r[s] not in STAGE_VALUES:
+                errs.append("%s: %s の値が語彙に無い: %s" % (n, s, r[s]))
+            if r[e] == "印" and r[s] in ("-", ""):
+                errs.append("%s: %s が印なのに段が無い" % (n, e))
+            if r[e] == "なし" and r[s] != "-":
+                errs.append("%s: %s がなしなのに段が %s" % (n, e, r[s]))
+            if r[e] == "未判別" and r[s] != "未判別":
+                errs.append("%s: %s が未判別なのに段が %s" % (n, e, r[s]))
+        if r["状態"] == "深掘り" and any(r[e] == "未判別" for e in ELEMS):
+            errs.append("%s: 深掘りなのに未判別の要素がある(設計票 §2)" % n)
+        if r["状態"] == "区分8の要素なし" and any(r[e] != "なし" for e in ELEMS):
+            errs.append("%s: 区分8の要素なしなのに なし でない要素がある(設計票 §3)" % n)
+    seen = {}
+    for r in rows:
+        k = norm_name(r["名前"])
+        if k in seen:
+            errs.append("%s と %s: 名前の正規形が同じ(%s)" % (seen[k], r["番号"], k))
+        seen[k] = r["番号"]
+    return errs
+
+
+def cmd_check(a):
+    rows = load()
+    errs = check_rows(rows)
+    nums = {r["番号"] for r in rows}
+    if a.report:
+        text = pathlib.Path(a.report).read_text()
+        lines = text.splitlines()
+        cited = set(re.findall(r"\((8-\d{3})\)", text))
+        for c in sorted(cited - nums):
+            errs.append("報告に台帳に無い番号がある: " + c)
+        appeared = set(cited)
+        for i, ln in enumerate(lines, 1):
+            m = NEW_RE.match(ln)
+            if not m:
+                continue
+            hits = find_dup(rows, m.group(1), "")
+            if not hits:
+                errs.append("報告の `新` で台帳に入っていない: 行 %d `%s`(sync を打つ)" % (i, m.group(1)))
+            appeared.update(h[0] for h in hits)
+        for n in sorted(nums - appeared):
+            errs.append("台帳の行が報告に 1 度も出ない: " + n)
+        for r in rows:
+            ln = r["最後の記載の行"]
+            if ln and not (ln.isdigit() and 1 <= int(ln) <= len(lines)):
+                errs.append("%s: 最後の記載の行 %s が報告に無い" % (r["番号"], ln))
+    for lg in a.logs:
+        ll = pathlib.Path(lg).read_text(errors="replace").splitlines()
+        for i, ln in enumerate(ll, 1):
+            if ln.startswith("---") and not LOG_HEAD.match(ln):
+                errs.append("%s:%d: 生ログの見出しの形が違う: %s" % (lg, i, ln[:80]))
+            if LOG_HEAD.match(ln) and not (i < len(ll) and ll[i].startswith("$ ")):
+                errs.append("%s:%d: 見出しの直後が `$ <コマンド>` の行でない(追補 §3)" % (lg, i))
+            if (a.require_deadline and LOG_HEAD.match(ln) and "[期限 " not in ln
+                    and not re.search(r"method=budget target=(期限|期限切れ) ", ln)):
+                errs.append("%s:%d: `--deadline` を付けずに打った手(起動文 §6)" % (lg, i))
+    for lg in a.logs:
+        # 止めた時刻と期限の差を出す(判定ではなく、検収で報告の「止めた理由」と照らすため = 監査 15 回目の指摘 4)
+        heads = [ln for ln in pathlib.Path(lg).read_text(errors="replace").splitlines() if LOG_HEAD.match(ln)]
+        dls = [m.group(1) for ln in heads for m in [re.search(r"\[期限 (\S+)\]", ln)] if m]
+        if heads and dls:
+            last = heads[-1].split()[1]
+            expired = any("target=期限切れ" in ln for ln in heads)
+            print("参考: %s の最後の手 %s / 期限 %s / 期限切れの手 %s" % (lg, last, dls[-1], "あり" if expired else "なし"))
+        elif heads:
+            print("参考: %s の最初の手 %s / 最後の手 %s / 手の数 %d" % (lg, heads[0].split()[1], heads[-1].split()[1], len(heads)))
+    for e in errs:
+        print(e)
+    print("---- 合計 %d 件" % len(errs))
+    sys.exit(1 if errs else 0)
+
+
+EVIDENCE_KINDS = ["一次資料", "実測", "推定", "仮定", "未確認"]
+
+
+def cells(ln):
+    return [c.strip() for c in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+
+
+
+
+def log_refs(text):
+    """根拠の欄から (生ログの名前, 回, 行) を全部取り出す(監査 34・35 回目)。
+    `<生ログ>:10` / `:1356,1362` / `:1186-1223`(範囲は 500 行まで)/ `:1067(N=107),1186-1223(注記)` の形を読む。"""
+    out = []
+    for m in re.finditer(r"(20260923_tools_8_run(\d+)\.log):", text):
+        fname, rn = m.group(1), m.group(2)
+        rest = text[m.end():].split("|")[0]
+        nxt = re.search(r"(?:docs/DATA/probes/)?20260923_tools_8_run\d+\.log:", rest)
+        if nxt:
+            rest = rest[:nxt.start()]  # 次の参照(ファイル名から)は別に読む(監査 37 回目: 次のファイル名の日付を行と読んでいた)
+        rest = re.sub(r"[(（][^)）]*[)）]", "", rest)
+        for part in re.split(r"[,、，;；]", rest):
+            part = part.strip()
+            mm = re.match(r"^(\d+)(?:\s*[-〜~]\s*(\d+))?", part)
+            if not mm:
+                break
+            lo = int(mm.group(1))
+            hi = int(mm.group(2)) if mm.group(2) else lo
+            out += [(fname, rn, str(x)) for x in range(lo, min(hi, lo + 500) + 1)]
+            if mm.end() < len(part):
+                break
+    return out
+
+
+REF_STRICT = re.compile(r"(?:docs/DATA/probes/)?(20260923_tools_8_run(\d+)\.log):(\d+)(?:-(\d+))?(?![\d])")
+
+
+def strict_refs(text):
+    """7 回目以降の読み方: 参照は `<生ログ>:N` か `<生ログ>:N-M` だけ(範囲は 500 行まで)。列挙は読まない。"""
+    out = []
+    for m in REF_STRICT.finditer(text):
+        lo = int(m.group(3))
+        hi = int(m.group(4)) if m.group(4) else lo
+        out += [(m.group(1), m.group(2), str(x)) for x in range(lo, min(hi, lo + 500) + 1)]
+    return out
+
+
+def refs_for(text, rnd):
+    return strict_refs(text) if rnd and int(rnd) >= 7 else log_refs(text)
+
+
+def logcol_errors(text):
+    """7 回目以降の「要素と段」の表の 7 列目(生ログの行)の形。空白で区切った `<生ログ>:N` / `<生ログ>:N-M` だけ。
+    それ以外の字があれば返す(監査 34〜39 回目: 自由な文から番号を読み当てる作りをやめ、番号だけの列を別に置いた)。"""
+    bad = []
+    for tok in text.split():
+        if not re.fullmatch(REF_STRICT.pattern, tok):
+            bad.append(tok)
+    return bad
+
+
+def finding_evidence_errors(text):
+    """7 回目以降の知見の表の根拠の欄の形。`<生ログ>:N`・`<生ログ>:N-M`・URL・日付(`2026-09-24`)・「取得日」と、
+    区切り(空白・`/`・`、`・`,`・括弧)だけ。それ以外の字があれば、その残りを返す。"""
+    t = REF_STRICT.sub(" ", text)
+    t = re.sub(r"https?://[^\s、,()（）]+", " ", t)
+    t = re.sub(r"\d{4}-\d{2}-\d{2}", " ", t)
+    t = t.replace("取得日", " ")
+    t = re.sub(r"[\s/、,，()（）:：]+", "", t)
+    return t
+
+
+def cmd_selftest(a):
+    """7 回目以降の 2 つの欄の形の試し(tests/ は区分 8 の書き込み先に無いので、この道具の中に置く)。"""
+    L = "20260923_tools_8_run7.log"
+    P = "docs/DATA/probes/" + L
+    cases = [  # (欄, 文字, 通るか, 読む行)
+        ("生ログの行", P + ":10", True, ["10"]),
+        ("生ログの行", P + ":10 " + P + ":20", True, ["10", "20"]),
+        ("生ログの行", L + ":10-12", True, ["10", "11", "12"]),
+        ("生ログの行", "", True, []),
+        ("生ログの行", P + ":10、" + P + ":20", False, None),
+        ("生ログの行", P + ":10,20", False, None),
+        ("生ログの行", P + ":10 20", False, None),
+        ("生ログの行", P + ":10(一覧)", False, None),
+        ("生ログの行", P + ":10・20", False, None),
+        ("生ログの行", "段3", False, None),
+        ("生ログの行", "`1200`", False, None),
+        ("生ログの行", "https://example.com/x,1400", False, None),
+        ("知見の根拠", P + ":10 / https://github.com/x/y 取得日 2026-09-24", True, None),
+        ("知見の根拠", P + ":10、" + P + ":20", True, None),
+        ("知見の根拠", P + ":10,20", False, None),
+        ("知見の根拠", P + ":10 段3", False, None),
+        ("知見の根拠", P + ":10(一覧)", False, None),
+        ("知見の根拠", "scripts/setup_data.sh 40-42行", False, None),
+        ("知見の根拠", "`1200` " + P + ":10", False, None),
+    ]
+    bad = 0
+    for kind, text, want_ok, want_lines in cases:
+        if kind == "生ログの行":
+            ok = not logcol_errors(text)
+        else:
+            ok = not finding_evidence_errors(text)
+        good = ok == want_ok
+        if good and want_lines is not None:
+            good = [r[2] for r in strict_refs(text)] == want_lines
+        bad += not good
+        print("%s [%s] %s -> %s" % ("OK " if good else "NG ", kind, text[:60], "通る" if ok else "止まる"))
+    print("---- 合計 %d 件" % bad)
+    sys.exit(1 if bad else 0)
+
+
+def quotes_in_log(text, refs_text, rnd):
+    """7 回目以降: 根拠に引いた「…」の逐語が、引いた生ログの手の出力に実際にあるか(監査 33 回目)。
+    見つからない引用の先頭を返す。生ログの参照が無い行・引用の無い行は見ない。"""
+    qs = [q for q in re.findall(r"「([^「」]{8,})」", text)]
+    refs = refs_for(refs_text, rnd)
+    if not qs or not refs:
+        return []
+    blocks = []
+    for fname, rn, lno in refs:
+        lp = pathlib.Path("docs/DATA/probes") / fname
+        if int(rn) != int(rnd) or not lp.exists():
+            continue
+        ll = lp.read_text().splitlines()
+        k = min(int(lno), len(ll)) - 1
+        while k >= 0 and not ll[k].startswith("--- "):
+            k -= 1
+        e = k + 1
+        while e < len(ll) and not ll[e].startswith("--- "):
+            e += 1
+        blocks.append(" ".join(" ".join(ll[max(k, 0):e]).split()))
+    if not blocks:
+        return []
+    miss = []
+    for q in qs:
+        head = " ".join(q.split())[:30]
+        if not any(head in b for b in blocks):
+            miss.append(head)
+    return miss
+
+# 8 回目以降: `なし` の 7 列目の手の `$` の行に、要素の名前(設計票 §3)の日本語か英語があるか(監査 43 回目の処置 (b))
+ELEM_TERMS = {
+    "E1a": r"突き合わせ|突合|reconcil|cross.?check",
+    "E1b": r"突き合わせ|突合|reconcil|cross.?check|別実装|reference.?impl|参照実装",
+    "E2": r"データ品質|data.?quality|欠損|重複|missing|duplicat|outlier|外れ値",
+    "E3a": r"ルックアヘッド|look.?ahead",
+    "E3b": r"ルックアヘッド|look.?ahead",
+    "E4": r"リプレイ|再生|replay",
+    "E5": r"再現|reproduc",
+    "E6": r"検証|品質|verif|validat|quality",
+}
+
+
+# 11 回目以降: `なし` の手は、述語の語を広く当てる(監査 63 回目の指摘 2)。組ごとに、どれか 1 つが
+# 7 列目のどれかの手の `$` の行にあること。語は設計票 §3 の述語の文から取った。
+ELEM_TERMS_WIDE = {
+    "E1a": [r"突き合わせ|突合|reconcil", r"cross.?check|比較|compar", r"diff|差分|一致|mismatch"],
+    "E1b": [r"突き合わせ|突合|reconcil", r"別実装|reference.?impl|参照実装|cross.?check", r"compar|比較|diff|差分"],
+    "E2": [r"欠損|missing|gap|欠け", r"重複|duplicat", r"順序|out.?of.?order|monoton|sort", r"外れ値|outlier|anomal",
+           r"時刻のずれ|clock|skew|timestamp", r"型|範囲|schema|range|valid"],
+    "E3a": [r"ルックアヘッド|look.?ahead", r"survivorship|生存者", r"leak|リーク|未来", r"point.?in.?time|as.?of|時点"],
+    "E3b": [r"ルックアヘッド|look.?ahead", r"embargo", r"purg", r"point.?in.?time|as.?of|時点"],
+    "E4": [r"リプレイ|再生|replay", r"record|記録|capture", r"playback|再実行|rerun"],
+    "E5": [r"再現|reproduc", r"seed|乱数", r"determinis|決定的", r"snapshot|golden|pin|lock|版の固定"],
+    "E6": [r"検証|verif|validat", r"品質|quality", r"test|assert|check"],
+}
+SEARCH_TOOL_RE = re.compile(r"cat8_search\.py")
+SEARCH_DONE_RE = re.compile(r"^cat8_search: complete files=(\d+) read=\1 files_with_hits=(\d+) hits=(\d+) list=(\S+) sha=(\w+) candidate=(8-\d{3})$", re.M)
+MKLIST_RE = re.compile(r"^cat8_mklist: complete out=(\S+) in_root=(\d+) added=(\d+) absent=(\d+) excluded=(\d+) listed=(\d+) sha=(\w+) candidate=(8-\d{3})$", re.M)
+TRUNC_RE = re.compile(r"^\[出力は \d+ 文字。先頭 \d+ 文字だけを残した\]$", re.M)
+
+
+
+def search_cmd_only(cmdline):
+    """`$ python3 scripts/cat8_search.py ...` だけで、引用の外にパイプ・; ・&&・リダイレクトが無いか。"""
+    import shlex
+    try:
+        lex = shlex.shlex(cmdline[2:] if cmdline.startswith("$ ") else cmdline, posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        toks = list(lex)
+    except ValueError:
+        return False
+    if toks[:2] != ["python3", "scripts/cat8_search.py"]:
+        return False
+    return not any(t and set(t) <= set("();<>|&") for t in toks)
+
+
+def step_start(fname, lno):
+    """その行を含む手の見出しの行の番号(1 始まり)。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    return k + 1 if k >= 0 else None
+
+
+CLASSIFY_RE = re.compile(r"^cat8_classify: complete step=(\S+):(\d+) hits=(\d+) matched=(\d+) unmatched=(\d+) rules=(\d+) candidate=(8-\d{3})$", re.M)
+
+
+def classified_searches(rnd, line_judged, errs, rule_table=None):
+    """15 回目以降: cat8_classify.py で決まりに当てた検索の手(見出しの行の番号)の集まり。決まりに当たらなかった行は
+    `### 当たりの判定(行ごと)` の表に理由つきで要る(無ければ errs に足し、その検索は数えない)。"""
+    fname = "20260923_tools_8_run%s.log" % rnd
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    done = set()
+    if not lp.exists():
+        return done
+    # 同じ検索の手に cat8_classify.py を打ち直したら、最後の 1 回だけを数える(決まりを見直して打ち直すことは
+    # 許す。前の回の手は数えずに名前だけ出す = 監査 80 回目の指摘 1)。
+    # 一度 unmatched に出た行は、打ち直した回で決まりに取られても行の表に理由が要る(打ち直しで行を決まりに
+    # 移して消すことを止める = 監査 81 回目の指摘 1)。行の表の行は、どれかの回の unmatched に出た行に限る。
+    # 終わりの行の無い手(--keep が足りずに切れた手・途中で落ちた手)も、コマンドの --step で手を決める。
+    # 切れた手の出力は全部が見えないので、その検索の手は (乙) として数えない(ファイルの表 (甲) を求める。
+    # 監査 83 回目の指摘 1・2: 途中で切れた unmatched の行・unmatched に届く前に切れた出力は拾えない)。
+    import shlex
+    last, ever, cut = {}, {}, set()
+    for blk in re.split(r"(?m)^(?=--- )", lp.read_text()):
+        bl = blk.split("\n")
+        cmd = bl[1] if len(bl) > 1 and bl[1].startswith("$ ") else ""
+        if "cat8_classify.py" not in cmd:
+            continue
+        try:
+            toks = shlex.split(cmd[2:])
+            st_arg = int(toks[toks.index("--step") + 1])
+            log_arg = toks[toks.index("--log") + 1]
+        except (ValueError, IndexError):
+            continue
+        if log_arg.split("/")[-1] != fname:
+            continue
+        st0 = step_start(fname, st_arg)
+        ever.setdefault(st0, set()).update(re.findall(r"^unmatched\t(\S+:\d+)\t", blk, re.M))
+        m = CLASSIFY_RE.search(blk)
+        if m and m.group(1) == fname:
+            last[st0] = (blk, m)
+        else:
+            cut.add(st0)
+    all_unmatched = set().union(*ever.values()) if ever else set()
+    stale = [k for k in line_judged if k not in all_unmatched]
+    if stale:
+        errs.append("`### 当たりの判定(行ごと)` の表に、どの cat8_classify.py の手の unmatched にも出ていない行 %d 件: %s"
+                    % (len(stale), " ".join(stale[:3])))
+    for st, (blk, m) in last.items():
+        if st in cut:
+            continue
+        miss = [u for u in sorted(ever[st]) if not line_judged.get(u)]
+        if miss:
+            errs.append("生ログ %s: cat8_classify.py の手の決まりに当たらなかった行 %d 件が `### 当たりの判定(行ごと)` の表に理由つきで無い: %s" % (fname, len(miss), " ".join(miss[:3])))
+            continue
+        # 決まりごとの行(id / 正規表現 / 理由 / 取った行 / 割合)と `  file` の行を、報告の `### 決まりの一覧` と
+        # 突き合わせる(監査 79 回目の指摘 3)。
+        got = {}
+        for ln in blk.splitlines():
+            ln = ln[2:] if ln.startswith("| ") else ln
+            c = ln.split("\t")
+            if len(c) == 5 and re.fullmatch(r"\d+", c[3]) and c[4].endswith("%") and c[0] not in ("unmatched",):
+                got[c[0]] = [c[1], c[2], int(c[3]), 0]
+            elif ln.startswith("  file\t") and len(c) == 4 and c[1] in got:
+                got[c[1]][3] += 1
+        if rule_table is not None:
+            want = {rid: v for (s_, rid), v in rule_table.items() if s_ == st}
+            bad = [rid for rid in got if want.get(rid) != [got[rid][0], got[rid][1], str(got[rid][2]), str(got[rid][3])]]
+            extra = [rid for rid in want if rid not in got]
+            if bad or extra:
+                errs.append("生ログ %s:%s: cat8_classify.py の決まりが `### 決まりの一覧` の表と合わない(無いか値が違う: %s / 出力に無い: %s)"
+                            % (fname, st, " ".join(bad[:5]) or "-", " ".join(extra[:5]) or "-"))
+                continue
+        if st:
+            done.add(st)
+    # 切れた手のある検索の手は、あとに打った同じコマンドの cat8_search.py の手が (乙) で数えられたときだけ、それで
+    # 済んだとする(同じ一覧・同じ型なので当たりの行は同じ)。そうでなければ (乙) として数えず、ファイルの表を求める
+    # (エラーにはしない。生ログから消せない手でその回が 0 件にならなくなるのを避ける = 監査 80 回目の指摘 1 と同じ型)。
+    cmds = {}
+    ll = lp.read_text().splitlines()
+    for i, ln in enumerate(ll):
+        if ln.startswith("--- ") and i + 1 < len(ll) and "cat8_search.py" in ll[i + 1]:
+            j = i + 1
+            while j + 1 < len(ll) and not ll[j + 1].startswith("--- "):
+                j += 1
+            foot = [x for x in ll[i + 1:j + 1] if x.startswith("cat8_search: complete ")]
+            # コマンドに加えて、一覧の sha・件数・当たりの数も同じであること(一覧を書き換えて打ち直した手を同じとしない)
+            # list= も含めて同じであること(道の違う一覧を同じとすると、7 列目の重複の検査(一覧の道で見る)を
+            # すり抜けて N・M が 2 倍に数えられる = 監査 84 回目の指摘 1)
+            cmds[i + 1] = (ll[i + 1], foot[-1] if foot else None)
+    for st in cut:
+        if st in done:
+            done.discard(st)
+        if st and cmds.get(st, (None, None))[1] and any(st2 > st and cmds.get(st2) == cmds.get(st) for st2 in done):
+            done.add(st)
+    return done
+
+
+def mklist_footer(fname, lno, list_path):
+    """同じ生ログの、その行より前にある cat8_mklist.py の手のうち、out= が list_path の最後のもの。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    head = "\n".join(lp.read_text().splitlines()[: int(lno)])
+    found = None
+    for m in MKLIST_RE.finditer(head):
+        if m.group(1) == list_path:
+            found = {"in_root": int(m.group(2)), "added": int(m.group(3)), "absent": int(m.group(4)),
+                     "excluded": int(m.group(5)), "listed": int(m.group(6)), "sha": m.group(7), "candidate": m.group(8)}
+    return found
+
+
+def step_block(fname, lno):
+    """その行を含む手の見出しから次の見出しの前までの行。"""
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    e = k + 1
+    while e < len(ll) and not ll[e].startswith("--- "):
+        e += 1
+    return "\n".join(ll[max(k, 0):e])
+
+
+def step_cmdline(fname, lno):
+    lp = pathlib.Path("docs/DATA/probes") / fname
+    if not lp.exists():
+        return None
+    ll = lp.read_text().splitlines()
+    k = min(int(lno), len(ll)) - 1
+    while k >= 0 and not ll[k].startswith("--- "):
+        k -= 1
+    return ll[k + 1] if 0 <= k and k + 1 < len(ll) else None
+
+def cmd_check_elements(a):
+    """報告の `### 要素と段` の表(道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠)を検査する。読むだけ。
+    受け入れ検査 check_scan_report.py はこの 6 列の表を読まない(監査 8 回目の指摘 3)ので、ここで見る。"""
+    text = pathlib.Path(a.report).read_text()
+    ledger_by_name = {r["名前"]: r for r in load()}
+    latest_round = max([int(x) for x in re.findall(r"^## 区分8 — (\d+) 回目", text, re.M)] or [0])
+    st, en, lines = section(text, a.round)
+    if st is None:
+        sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    section_text = "\n".join(lines[st:en])
+    # `### 当たりの判定` の表: | ファイルの道 | 当たった行の数 | 述語に当たらない理由 |(監査 67 回目の指摘 1。理由の中身は監査で読む)
+    hit_judged, in_hj, line_judged, in_lj = {}, False, {}, False
+    rule_table, in_rl, rule_table_errs = {}, False, []
+    for ln in lines[st:en]:
+        if re.match(r"^#{2,4} ", ln):
+            in_rl = "決まりの一覧" in ln
+            in_lj = "当たりの判定(行ごと)" in ln
+            in_hj = "当たりの判定" in ln and not in_lj
+            continue
+        if in_rl and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
+            c = [x.strip().replace("\\|", "|").strip("`") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+            mm = re.fullmatch(r"docs/DATA/probes/(\S+?):(\d+)", c[0]) if c else None
+            if c and c[0] in ("検索の手の行",):
+                continue
+            if len(c) != 6 or not mm:
+                rule_table_errs.append("`### 決まりの一覧` の行の列が 6 つでないか、1 列目が `docs/DATA/probes/<生ログ>:<行>` でない"
+                                       "(正規表現の中の `|` は `\\|` と書く = 監査 80 回目の指摘 3): %s" % ln[:120])
+                continue
+            key = (step_start(mm.group(1), mm.group(2)), c[1])
+            if key in rule_table:
+                rule_table_errs.append("`### 決まりの一覧` に同じ手・同じ id の行が 2 つ以上ある(監査 81 回目の指摘 4): %s %s" % (c[0], c[1]))
+            rule_table[key] = [c[2], c[3], c[4], c[5]]
+            continue
+        if in_lj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
+            c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+            if len(c) >= 2 and c[0] not in ("ファイルの道と行", "道と行"):
+                if c[0].strip("`") in line_judged:
+                    rule_table_errs.append("`### 当たりの判定(行ごと)` に同じ行が 2 つ以上ある(監査 81 回目の指摘 4): %s" % c[0])
+                line_judged[c[0].strip("`")] = c[-1]
+            continue
+        if in_hj and ln.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", ln):
+            # 道の中の `|` は `\|` と書く(監査 68 回目の指摘 2-3)
+            c = [x.strip().replace("\\|", "|") for x in re.split(r"(?<!\\)\|", ln.strip().strip("|"))]
+            if len(c) >= 3 and c[0] not in ("ファイルの道", "道"):
+                hit_judged[c[0].strip("`")] = c[2]
+    # 理由の使い回し(2026-09-27、監査 158 回目の指摘 3: 44・45 回目に「同上」と同じ文の当てはめが続き、
+    # 起動文の禁止だけでは止まらなかった)。46 回目の節から見る。
+    if a.round and int(a.round) >= 46:
+        norm = lambda t: re.sub(r"[\s`、。,.()()「」]", "", t)
+        seen = {}
+        for path, why in hit_judged.items():
+            if re.fullmatch(r"(同上|上に同じ|同様|前に同じ)[。.]?", why.strip()):
+                rule_table_errs.append("`### 当たりの判定` の理由が「%s」だけ(ファイルごとに当たった行から書く): %s" % (why.strip(), path))
+                continue
+            seen.setdefault(norm(why), []).append(path)
+        for k, ps in seen.items():
+            if k and len(ps) > 1:
+                rule_table_errs.append("`### 当たりの判定` の %d ファイルに同じ理由の文: %s" % (len(ps), " ".join(ps[:3])))
+    classify_errs = list(rule_table_errs)
+    classified = classified_searches(a.round, line_judged, classify_errs, rule_table) if a.round and int(a.round) >= 15 else set()
+    questions, in_q = [], False
+    for ln in lines[st:en]:
+        if re.match(r"^#{2,4} ", ln):
+            in_q = "判断に迷った" in ln or "問い" in ln
+            continue
+        if in_q and ln.strip():
+            questions.append(ln)
+    errs, names, table, in_tab, in_list = list(classify_errs), [], {}, False, False
+    in_find, in_trace, n_find, n_trace = False, False, 0, 0
+    alt_head, alt_first = None, None
+    cand_re = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\)")
+    for i in range(st, en):
+        ln = lines[i]
+        if re.match(r"^#{2,4} ", ln):
+            in_list = bool(re.match(r"^#{2,4} *候補の一覧", ln))
+            in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
+            in_find = bool(re.match(r"^#{2,4} *知見", ln))
+            in_trace = bool(re.match(r"^#{2,4} *辿る一覧から出た名前", ln))
+            if re.match(r"^#{2,4} *代替経路", ln):
+                alt_head = i + 1
+                for k in range(i + 1, en):
+                    if lines[k].strip():
+                        alt_first = None if re.match(r"^#{1,4} ", lines[k]) else lines[k].strip()
+                        break
+            continue
+        if in_trace and re.match(r"^\s*-\s*`[^`]+`", ln):
+            n_trace += 1
+        if in_trace and a.round and int(a.round) >= 10 and re.match(r"^\s*[-*]?\s*一覧\s*[:：]", ln):
+            refs = strict_refs(ln)
+            if not refs:
+                errs.append("行 %d: 辿る一覧の「一覧:」の行に `<生ログ>:N` の形の参照が無い" % (i + 1))
+            for fname, rn, lno in refs[:1]:
+                lp = pathlib.Path("docs/DATA/probes") / fname
+                if int(rn) != int(a.round) or not lp.exists() or int(lno) > len(lp.read_text().splitlines()):
+                    errs.append("行 %d: 辿る一覧の「一覧:」の行の生ログの行が無い: %s:%s" % (i + 1, fname, lno))
+        if in_find and ln.strip().startswith("|"):
+            c = cells(ln)
+            if len(c) == 4 and re.fullmatch(r"\d+", c[0]):
+                n_find += 1
+                if c[2] not in EVIDENCE_KINDS:
+                    errs.append("行 %d: 知見の表の印が委任文 §4.1 の 5 語でない: %s" % (i + 1, c[2]))
+                if not re.search(r"https?://|\.log|生ログ", c[3]):
+                    errs.append("行 %d: 知見の表の根拠に URL も生ログの参照も無い: %s" % (i + 1, c[3][:50]))
+                if a.round and int(a.round) >= 7:
+                    rest = finding_evidence_errors(c[3])
+                    if rest:
+                        errs.append("行 %d: 知見の根拠の欄に、生ログの参照・URL・日付・「取得日」以外の字がある: `%s`。説明は知見の欄に書く" % (i + 1, rest[:30]))
+                    for h in quotes_in_log(c[1], c[3], a.round):
+                        errs.append("行 %d: 知見の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, h))
+            elif len(c) >= 2 and not set("".join(c)) <= set("-: ") and c[0] not in ("#", "道具"):
+                errs.append("行 %d: 知見の表の行が `| # | 知見 | 印 | 根拠 |` の形でない: %s" % (i + 1, ln.strip()[:60]))
+        if in_list:
+            m = cand_re.match(ln)
+            if m:
+                names.append(m.group(1))
+                if not re.search(r"状態:\s*(%s)" % "|".join(map(re.escape, STATES)), ln):
+                    errs.append("行 %d: 候補の一覧の行に設計票 §2 の状態が無い: `%s`" % (i + 1, m.group(1)))
+            elif re.match(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`", ln):
+                errs.append("行 %d: 候補の一覧の行に (8-NNN) か (新) が無い: %s" % (i + 1, ln.strip()[:60]))
+        if in_tab and ln.strip().startswith("|"):
+            c = cells(ln)
+            if c[0] in ("道具", "") or set(c[0]) <= set("-: "):
+                continue
+            r7 = a.round and int(a.round) >= 7
+            if r7 and len(c) != 7:
+                errs.append("行 %d: 7 回目以降の「要素と段」の表は 7 列(`| 道具 | 要素 | 値 | 段 | 根拠の種類 | 根拠 | 生ログの行 |`): %s" % (i + 1, ln.strip()[:60]))
+                continue
+            if not r7 and len(c) != 6:
+                continue
+            tool, el, val, stg, kind, ev = c[:6]
+            logcol = c[6] if r7 else ev
+            # 触らない行: 7 回目以降は、6 列目が `台帳の値のまま(…)` だけで、値と段が台帳と同じときに限る(監査 40 回目: 部分一致で検査を飛ばしていた)
+            if r7:
+                untouched = bool(re.fullmatch(r"台帳の値のまま\s*[(（]\s*\d+\s*回目の節\s*[)）]", ev.strip()))  # 監査 41 回目の指摘 2
+                if untouched:
+                    # 台帳は今の値なので、照らせるのは最新の回の節だけ(前の回は形だけを見る)
+                    lr = ledger_by_name.get(tool.strip("`"))
+                    if int(a.round) == latest_round and (lr is None or (lr.get(el), lr.get("段_" + el)) != (val, stg)):
+                        errs.append("行 %d: %s %s は `台帳の値のまま` と書いたのに、値・段が台帳(%s/%s)と違う: %s/%s" % (
+                            i + 1, tool, el, lr.get(el) if lr else "無し", lr.get("段_" + el) if lr else "無し", val, stg))
+                        untouched = False
+                elif "台帳の値のまま" in ev:
+                    errs.append("行 %d: %s %s の 6 列目に `台帳の値のまま` の語があるが、その語だけの形でない(触らない行は 6 列目を `台帳の値のまま(<何>回目の節)` だけにする)" % (i + 1, tool, el))
+            else:
+                untouched = "台帳の値のまま" in ev
+            tool = tool.strip("`")
+            table.setdefault(tool, {})
+            if el in table[tool]:
+                errs.append("行 %d: %s の %s が 2 行ある" % (i + 1, tool, el))
+            table[tool][el] = (i + 1, val, stg)
+            if el not in ELEMS:
+                errs.append("行 %d: 要素の語が 8 列に無い: %s" % (i + 1, el))
+            if val not in ELEM_VALUES:
+                errs.append("行 %d: 値が 印/なし/未判別 でない: %s" % (i + 1, val))
+            want = {"印": [v for v in STAGE_VALUES if v != "-"], "なし": ["-"], "未判別": ["未判別"]}.get(val, [])
+            if want and stg not in want:
+                errs.append("行 %d: %s %s は値 %s なので段は %s のどれか(書かれた段: %s)" % (
+                    i + 1, tool, el, val, "/".join(want), stg))
+            if kind not in EVIDENCE_KINDS:
+                errs.append("行 %d: 根拠の種類が委任文 §4.1 の 5 語でない: %s" % (i + 1, kind))
+            if not ev:
+                errs.append("行 %d: 根拠が空: %s %s" % (i + 1, tool, el))
+            if a.round and int(a.round) >= 8 and not untouched:
+                # (a) 問いに出した行は値も段も `未判別`
+                for q in questions:
+                    if int(a.round) >= 9 and "[それ以外の問い]" in q:
+                        continue  # 9 回目の起動文: 値・段についての問いでないものは対象外
+                    if tool.strip("`") in q and re.search(r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(el), q) and (val != "未判別" or stg != "未判別"):
+                        errs.append("行 %d: %s %s は「判断に迷った点と問い」に出ているのに値・段が `未判別` でない(%s/%s)" % (i + 1, tool, el, val, stg))
+                        break
+                # (d) 段 4・5 は 6 列目に「…」の引用が要る
+                if stg in ("4", "5") and not re.search(r"「[^「」]{8,}」", ev):
+                    errs.append("行 %d: %s %s は段 %s なのに、その条件に当たる逐語「…」が 6 列目に無い" % (i + 1, tool, el, stg))
+                # (b) `なし` の 7 列目の手は、その要素の語で検索したもの
+                if val == "なし" and logcol.strip():
+                    cmds = [step_cmdline(f, n) or "" for f, _, n in strict_refs(logcol)]
+                    if not any(re.search(ELEM_TERMS.get(el, "^$"), c, re.I) for c in cmds):
+                        errs.append("行 %d: %s %s は `なし` なのに、7 列目のどの手の `$` の行にも要素の名前の語(%s)が無い" % (i + 1, tool, el, ELEM_TERMS.get(el)))
+                    if int(a.round) >= 11:
+                        # (e) 監査 63〜66 回目: `なし` の検索は cat8_search.py、その一覧は cat8_mklist.py で作ったものだけを認める。
+                        # 7 列目の手は重複を除いて数える(同じ手を 2 回書いて和を増やさない)。
+                        refs = list(dict.fromkeys(strict_refs(logcol)))
+                        searches, sum_files, sum_fwh, sum_hits, hit_paths = [], 0, 0, 0, []
+                        seen_lists, seen_shas = set(), set()
+                        n_src, m_list = 0, 0
+                        for f, _, n in refs:
+                            c = step_cmdline(f, n) or ""
+                            blk = step_block(f, n) or ""
+                            if SEARCH_TOOL_RE.search(c):
+                                searches.append(c)
+                                if not search_cmd_only(c):
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s が `python3 scripts/cat8_search.py ...` だけの形でない(前後に別の手・パイプがある)" % (i + 1, tool, el, f, n))
+                                if TRUNC_RE.search(blk):
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s の出力が生ログで切られている(--keep を大きくする)" % (i + 1, tool, el, f, n))
+                                done = SEARCH_DONE_RE.search(blk)
+                                if not done:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の出力に `cat8_search: complete` の終わりの行が無い" % (i + 1, tool, el, f, n))
+                                    continue
+                                files, fwh, hts, lst, lsha = int(done.group(1)), int(done.group(2)), int(done.group(3)), done.group(4), done.group(5)
+                                # 候補の番号と一覧の突き合わせは、重複として数えない手にも掛ける(監査 85 回目の指摘 1:
+                                # 重複を先に飛ばすと、候補違いの手を同じ中身の一覧で引いたときに検査を通り抜けた)
+                                cand = done.group(6)
+                                row_num = (ledger_by_name.get(tool.strip("`")) or {}).get("番号")
+                                if cand != row_num:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の候補 %s が、この行の候補の番号 %s と違う(ほかの候補の手を引いている)" % (i + 1, tool, el, f, n, cand, row_num))
+                                mk = mklist_footer(f, n, lst)
+                                if not mk:
+                                    errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧 %s を作った cat8_mklist.py の手が、同じ生ログのそれより前に無い" % (i + 1, tool, el, f, n, lst))
+                                else:
+                                    if mk["candidate"] != cand:
+                                        errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧を作った手の候補 %s が、検索の候補 %s と違う" % (i + 1, tool, el, f, n, mk["candidate"], cand))
+                                    if mk["sha"] != lsha:
+                                        errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の一覧が、cat8_mklist.py で作ったあとに書き換えられている(sha が違う)" % (i + 1, tool, el, f, n))
+                                    if mk["listed"] != files:
+                                        errs.append("行 %d: %s %s は `なし` なのに、引いた検索の手 %s:%s の files=%d が、一覧を作った手の listed=%d と違う" % (i + 1, tool, el, f, n, files, mk["listed"]))
+                                if int(a.round) >= 13 and (lst in seen_lists or (int(a.round) >= 15 and lsha in seen_shas)):
+                                    # 12 回目の検収: 同じ一覧を別の語で 2 回検索すると N・M が 2 倍に数えられた。13 回目以降は一覧ごとに 1 回だけ数える
+                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                    continue
+                                seen_lists.add(lst)
+                                seen_shas.add(lsha)
+                                sum_files += files; sum_fwh += fwh; sum_hits += hts
+                                if step_start(f, n) not in classified:
+                                    hit_paths += re.findall(r"^\d+\t(.+)$", blk.split("== ファイルごとの当たった行の数", 1)[-1], re.M)
+                                if mk:
+                                    n_src += mk["listed"]; m_list += mk["listed"]  # N は除外のあとの件数(これまでの回の決まり)。除外・無いものは cat8_mklist の出力に名前と理由がある
+                            elif re.search(r"\b(?:grep|egrep|rg|ag|findstr)\b|re\.search|\.find\(", c):
+                                errs.append("行 %d: %s %s は `なし` なのに、引いた手 %s:%s が cat8_search.py でない検索(`なし` の検索は cat8_search.py で打つ)" % (i + 1, tool, el, f, n))
+                        if not searches:
+                            errs.append("行 %d: %s %s は `なし` なのに、7 列目に cat8_search.py の手が無い" % (i + 1, tool, el))
+                        else:
+                            mm = re.search(r"一覧\s*([0-9,]+)\s*件\s*/\s*読んだ\s*([0-9,]+)\s*件", ev)
+                            if mm:
+                                nn_, mm_ = int(mm.group(1).replace(",", "")), int(mm.group(2).replace(",", ""))
+                                if mm_ == 0:
+                                    errs.append("行 %d: %s %s は `なし` なのに、読んだ件数が 0" % (i + 1, tool, el))
+                                if sum_files != mm_:
+                                    errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の files= の和 %d が、根拠の「読んだ %d 件」と違う" % (i + 1, tool, el, sum_files, mm_))
+                                if n_src != nn_:
+                                    errs.append("行 %d: %s %s は `なし` なのに、一覧を作った cat8_mklist.py の手の listed の和 %d が、根拠の「一覧 %d 件」と違う" % (i + 1, tool, el, n_src, nn_))
+                            hm = re.search(r"当たり\s*([0-9,]+)\s*ファイル\s*/\s*([0-9,]+)\s*行", ev)
+                            if not hm:
+                                errs.append("行 %d: %s %s は `なし` なのに、根拠に「当たり F ファイル / H 行」が無い(検索の出力の和 %d ファイル / %d 行)" % (i + 1, tool, el, sum_fwh, sum_hits))
+                            elif (int(hm.group(1).replace(",", "")), int(hm.group(2).replace(",", ""))) != (sum_fwh, sum_hits):
+                                errs.append("行 %d: %s %s は `なし` なのに、根拠の「当たり %s ファイル / %s 行」が検索の出力の和 %d ファイル / %d 行と違う" % (i + 1, tool, el, hm.group(1), hm.group(2), sum_fwh, sum_hits))
+                            missing = [hp for hp in dict.fromkeys(hit_paths) if not hit_judged.get(hp)]
+                            if missing:
+                                errs.append("行 %d: %s %s は `なし` なのに、当たった行のあるファイル %d 件が `### 当たりの判定` の表に理由つきで無い: %s" % (i + 1, tool, el, len(missing), " ".join(missing[:3])))
+                        if int(a.round) >= 12:
+                            # 11 回目の検収: 「組から 1 語」だと `leak` を探さずに「リーク」だけで組を満たせた。12 回目以降は組の語を全部
+                            lack = [alt for g in ELEM_TERMS_WIDE.get(el, []) for alt in g.split("|")
+                                    if not any(re.search(alt, c, re.I) for c in searches)]
+                        else:
+                            lack = [g for g in ELEM_TERMS_WIDE.get(el, []) if not any(re.search(g, c, re.I) for c in searches)]
+                        if lack:
+                            errs.append("行 %d: %s %s は `なし` なのに、7 列目の cat8_search.py の手の語に当たらない語の組がある: %s" % (i + 1, tool, el, " / ".join(lack)))
+            if r7 and not untouched:
+                bad = logcol_errors(logcol)
+                if bad:
+                    errs.append("行 %d: %s %s の「生ログの行」の列に、`<生ログ>:N` か `<生ログ>:N-M` でないものがある: %s" % (i + 1, tool, el, " ".join(bad[:3])))
+                if val in ("印", "なし") and not logcol.strip():
+                    errs.append("行 %d: %s %s は `%s` なのに「生ログの行」の列が空" % (i + 1, tool, el, val))
+                elif not logcol.strip() and re.search(r"「[^「」]{8,}」", ev):
+                    # 監査 41 回目の指摘 1: `未判別` の行でも、引用があれば生ログの行を書かせて照らす
+                    errs.append("行 %d: %s %s は 6 列目に「…」の引用があるのに「生ログの行」の列が空(引用は生ログと照らす)" % (i + 1, tool, el))
+                for h in quotes_in_log(ev, logcol, a.round):
+                    errs.append("行 %d: %s %s の根拠の引用「%s…」が、引いた生ログの手の出力に無い(本文を生ログに印字してから引く)" % (i + 1, tool, el, h))
+            if a.round and int(a.round) >= 5 and val == "印":
+                # 描画した頁を `印` の根拠にするときの条件 (iii)(5 回目の起動文 §2、監査 29 回目への答え 1)
+                for fname, rn, lno in refs_for(logcol, a.round):
+                    lp = pathlib.Path("docs/DATA/probes") / fname
+                    if not lp.exists():
+                        continue
+                    ll = lp.read_text().splitlines()
+                    k = int(lno) - 1
+                    if not (0 <= k < len(ll)):
+                        continue
+                    while k >= 0 and not ll[k].startswith("--- "):
+                        k -= 1
+                    if k < 0 or k + 1 >= len(ll) or "cat8_render" not in ll[k + 1]:
+                        continue
+                    e = k + 1
+                    while e < len(ll) and not ll[e].startswith("--- "):
+                        e += 1
+                    if any("text-changed-after-wait" in x for x in ll[k:e]):
+                        errs.append("行 %d: %s %s の `印` の根拠の描画の手 %s:%s に text-changed-after-wait がある(条件 (iii))" % (
+                            i + 1, tool, el, fname, lno))
+            if a.round and int(a.round) >= 5 and val == "なし" and not untouched:
+                # 5 回目の起動文 §2: `なし` には「一覧 N 件 / 読んだ M 件」と生ログの行を書き、N と M が同じ(監査 21・22 回目)
+                m = re.search(r"一覧\s*(\d+)\s*件\s*/\s*読んだ\s*(\d+)\s*件", ev)
+                if not m:
+                    errs.append("行 %d: %s %s は `なし` なのに根拠に「一覧 N 件 / 読んだ M 件」が無い" % (i + 1, tool, el))
+                elif int(m.group(1)) != int(m.group(2)):
+                    errs.append("行 %d: %s %s は一覧 %s 件 / 読んだ %s 件で数が違うので `なし` と書けない" % (
+                        i + 1, tool, el, m.group(1), m.group(2)))
+                refs = refs_for(logcol, a.round)
+                for fname, rn, lno in refs:
+                    lp = pathlib.Path("docs/DATA/probes") / fname
+                    if int(rn) != int(a.round):
+                        errs.append("行 %d: %s %s の `なし` の根拠の生ログが別の回のもの: %s" % (i + 1, tool, el, fname))
+                    elif not lp.exists():
+                        errs.append("行 %d: %s %s の `なし` の根拠の生ログが無い: %s" % (i + 1, tool, el, lp))
+                    elif not (1 <= int(lno) <= len(lp.read_text().splitlines())):
+                        errs.append("行 %d: %s %s の `なし` の根拠の行番号が生ログに無い: %s:%s" % (i + 1, tool, el, fname, lno))
+                    else:
+                        # 描画した頁は `なし` の根拠にしない(監査 27 回目: 描画の道具は本文の欠けを全部は数えられない)
+                        loglines = lp.read_text().splitlines()
+                        k = int(lno) - 1
+                        while k >= 0 and not loglines[k].startswith("--- "):
+                            k -= 1
+                        cmdline = loglines[k + 1] if 0 <= k and k + 1 < len(loglines) else ""
+                        if k < 0 or not cmdline.startswith("$ "):
+                            errs.append("行 %d: %s %s の `なし` の根拠の行 %s:%s の手の見出し(`--- ` と `$ ` の行)が見つからない" % (
+                                i + 1, tool, el, fname, lno))
+                        elif "cat8_render" in cmdline:
+                            errs.append("行 %d: %s %s の `なし` の根拠が描画した頁(cat8_render.js)の手: %s:%s。描画した頁は `なし` の根拠にしない" % (
+                                i + 1, tool, el, fname, lno))
+                if not refs:
+                    errs.append("行 %d: %s %s の `なし` の根拠に一覧を取った生ログの行(20260923_tools_8_run%s.log:<行>)が無い" % (
+                        i + 1, tool, el, a.round))
+    if a.round and int(a.round) >= 2:
+        if alt_head is None:
+            errs.append("この回の節に `### 代替経路` の小節が無い(2 回目の起動文 §2 の 1)")
+        elif not alt_first:
+            errs.append("行 %d: `### 代替経路` の本文の 1 行目が空(見出しだけでは Jev の検査も通ってしまう = 監査 14 回目の指摘 1)" % alt_head)
+    for n in names:
+        got = table.get(n, {})
+        miss = [e for e in ELEMS if e not in got]
+        if miss:
+            errs.append("候補 `%s` の「要素と段」の行が欠けている: %s" % (n, " ".join(miss)))
+    for t in table:
+        if t not in names:
+            errs.append("「要素と段」の表の道具が候補の一覧に無い(名前が 1 文字違う?): `%s`" % t)
+    if a.round and int(a.round) >= 9:
+        for q in questions:
+            if re.match(r"^\s*\d+\.", q) and "[値・段の問い]" not in q and "[それ以外の問い]" not in q:
+                errs.append("「判断に迷った点と問い」の行に `[値・段の問い]` か `[それ以外の問い]` が無い: %s" % q.strip()[:60])
+    if a.round and int(a.round) >= 8:
+        lp = pathlib.Path("docs/DATA/probes") / ("20260923_tools_8_run%s.log" % a.round)
+        if lp.exists():
+            for n, ln in enumerate(lp.read_text().splitlines(), 1):
+                if ln.startswith("$ ") and re.search(r"/tmp/(?!claude-0/)", ln):
+                    errs.append("生ログ %s:%d: `/tmp` の直下(scratchpad の外)のファイルを使う手: %s" % (lp.name, n, ln[:80]))
+    if a.round and int(a.round) >= 11:
+        # 監査 68 回目の [聞く]: 「要素と段」の表に台帳の全行が 8 要素ずつあるか
+        for r in load():
+            got = table.get(r["名前"]) or {}
+            if len(got) < len(ELEMS):
+                errs.append("「要素と段」の表に、台帳の %s %s の要素が %d 行しか無い(8 行要る)" % (r["番号"], r["名前"], len(got)))
+    if a.round and int(a.round) >= 11:
+        # 監査 67 回目の指摘 3: 7 列目に引かなかった検索の当たりも隠さない。この回の生ログの cat8_search.py の手の
+        # 当たったファイルは、全部 `### 当たりの判定` の表に理由つきで書く(印の根拠なら、その旨を理由に書く)。
+        lp = pathlib.Path("docs/DATA/probes") / ("20260923_tools_8_run%s.log" % a.round)
+        if lp.exists():
+            txt = lp.read_text()
+            pos = 1
+            for blk in re.split(r"(?m)^(?=--- )", txt):
+                start, pos = pos, pos + blk.count("\n")
+                cl = blk.split("\n", 2)
+                if len(cl) < 2 or "cat8_search.py" not in cl[1]:
+                    continue
+                if start in classified:
+                    continue
+                if not SEARCH_DONE_RE.search(blk) and re.search(r"^cat8_search: INCOMPLETE", blk, re.M) is None:
+                    continue
+                tail_part = blk.split("== ファイルごとの当たった行の数", 1)
+                if len(tail_part) < 2:
+                    continue
+                for hp in dict.fromkeys(re.findall(r"^\d+\t(.+)$", tail_part[1], re.M)):
+                    if not hit_judged.get(hp):
+                        errs.append("生ログ %s: cat8_search.py の手(%s)の当たったファイルが `### 当たりの判定` の表に理由つきで無い: %s" % (lp.name, cl[0][4:24], hp))
+    print("読んだもの: 候補の一覧 %d 行 / 要素と段の表 %d 行(道具 %d)/ 知見の表 %d 行 / 辿る一覧から出た名前 %d 行" % (
+        len(names), sum(len(v) for v in table.values()), len(table), n_find, n_trace))
+    for e in errs:
+        print(e)
+    print("---- 合計 %d 件" % len(errs))
+    sys.exit(1 if errs else 0)
+
+
+def cmd_import(a):
+    """その回の節の候補の一覧の状態と「要素と段」の表の値・段を台帳に写す。変わった所を全部出す。
+    状態は設計票 §2 の 7 語のどれかだけを拾う(2026-09-23、3 回目の検収でリードが手で写したとき、
+    「深掘り(前回から変更なし…)」のように括弧の注記まで状態の列に入れてしまった)。"""
+    rows = load()
+    byname = {r["名前"]: r for r in rows}
+    st, en, lines = section(pathlib.Path(a.report).read_text(), a.round)
+    if st is None:
+        sys.exit("報告に `## 区分8 — %s 回目` の節が無い" % a.round)
+    words = "|".join(sorted(map(re.escape, STATES), key=len, reverse=True))
+    cand = re.compile(r"^\s*(?:\d+\.|[-*])\s*(?:\[深掘り\]\s*)?`([^`\n]+)`\s*\((8-\d{3}|新)\).*?状態:\s*(%s)" % words)
+    in_tab, n = False, 0
+    for i in range(st, en):
+        ln = lines[i]
+        m = cand.match(ln)
+        if m and m.group(1) in byname:
+            r = byname[m.group(1)]
+            if r["状態"] != m.group(3):
+                print("状態: %s %s -> %s" % (r["番号"], r["状態"], m.group(3))); n += 1
+            r["状態"], r["最後の記載の回"], r["最後の記載の行"] = m.group(3), str(a.round), str(i + 1)
+        if re.match(r"^#{2,4} ", ln):
+            in_tab = bool(re.match(r"^#{2,4} *要素と段", ln))
+            continue
+        if in_tab and ln.strip().startswith("|"):
+            c = cells(ln)
+            if len(c) in (6, 7) and c[0].strip("`") in byname and c[1] in ELEMS:
+                r = byname[c[0].strip("`")]
+                if (r[c[1]], r["段_" + c[1]]) != (c[2], c[3]):
+                    print("値: %s %s %s/%s -> %s/%s" % (r["番号"], c[1], r[c[1]], r["段_" + c[1]], c[2], c[3])); n += 1
+                r[c[1]], r["段_" + c[1]] = c[2], c[3]
+    save(rows)
+    errs = check_rows(rows)
+    for e in errs:
+        print("注意: " + e)
+    print("写した(変わった所 %d)。台帳の検査 %d 件" % (n, len(errs)))
+
+
+def cmd_recount(a):
+    rows = load()
+    print("== 台帳の全行(母集合) = %d 行" % len(rows))
+    print("== 状態ごと")
+    for s in STATES:
+        ns = [r["番号"] for r in rows if r["状態"] == s]
+        print("%s = %d : %s" % (s, len(ns), " ".join(ns)))
+    rem = [r["番号"] for r in rows if r["状態"] in REMAINING]
+    print("== 残り(未着手・判別に一次資料が要る・浅い) = %d : %s" % (len(rem), " ".join(rem)))
+    print("== 要素ごと(印 / なし / 未判別)と、印の段の分布")
+    for e, s in zip(ELEMS, STAGES):
+        cnt = {v: [r["番号"] for r in rows if r[e] == v] for v in ELEM_VALUES}
+        dist = {v: sum(1 for r in rows if r[e] == "印" and r[s] == v) for v in STAGE_VALUES if v != "-"}
+        print("%s: 印 %d / なし %d / 未判別 %d | 段 %s | 印の番号: %s" % (
+            e, len(cnt["印"]), len(cnt["なし"]), len(cnt["未判別"]),
+            " ".join("%s=%d" % kv for kv in dist.items()), " ".join(cnt["印"])))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sp = ap.add_subparsers(dest="cmd", required=True)
+    p = sp.add_parser("add"); p.add_argument("--name", required=True); p.add_argument("--route", required=True)
+    p.add_argument("--source", required=True); p.add_argument("--cat1"); p.add_argument("--round")
+    p = sp.add_parser("sync"); p.add_argument("report"); p.add_argument("--round", required=True)
+    p.add_argument("--new", action="append")
+    p = sp.add_parser("set"); p.add_argument("num"); p.add_argument("pairs", nargs="+")
+    sp.add_parser("recount")
+    p = sp.add_parser("check"); p.add_argument("report", nargs="?"); p.add_argument("logs", nargs="*")
+    p.add_argument("--require-deadline", action="store_true", help="生ログの全部の手に期限が付いているかを見る")
+    p = sp.add_parser("check-elements"); p.add_argument("report"); p.add_argument("--round", required=True)
+    p = sp.add_parser("import"); p.add_argument("report"); p.add_argument("--round", required=True)
+    sp.add_parser("selftest")
+    a = ap.parse_args()
+    {"add": cmd_add, "sync": cmd_sync, "set": cmd_set, "recount": cmd_recount, "check": cmd_check,
+     "check-elements": cmd_check_elements, "import": cmd_import, "selftest": cmd_selftest}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    main()

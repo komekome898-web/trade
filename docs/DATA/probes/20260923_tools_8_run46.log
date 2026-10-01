@@ -1,0 +1,2473 @@
+--- 2026-09-27T08:46:26Z method=setup target=開始 rc=0 time_s=0.250 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-27T08:46:26Z
+CHANGELOG.md
+CITATION.cff
+LICENSE
+README.md
+check
+check2
+check_extract
+data_run.py
+docs_api.md
+docs_architecture.md
+docs_changelog.md
+docs_examples.md
+docs_index.md
+docs_installation.md
+docs_methodology.md
+docs_quickstart.md
+draft
+examples_README.md
+list_8042.txt
+list_8042_run45.txt
+minimal_run.py
+minimal_run2.py
+minimal_run3.py
+minimal_run_final.py
+pyproject.toml
+run
+run45
+sb44
+sb45
+sb46
+src
+src_purgedcv___init__.py
+src_purgedcv__base.py
+src_purgedcv__cpcv.py
+src_purgedcv__embargo.py
+src_purgedcv__intervals.py
+src_purgedcv__metrics.py
+src_purgedcv__path_metrics.py
+src_purgedcv__paths.py
+src_purgedcv__pbo.py
+src_purgedcv__purge.py
+src_purgedcv__purged_kfold.py
+src_purgedcv__time.py
+src_purgedcv__validation.py
+src_purgedcv__walk_forward.py
+src_purgedcv_diagnostics.py
+src_purgedcv_exceptions.py
+src_purgedcv_optuna_integration.py
+tools_competitor_benchmark.py
+tools_microbench.py
+tools_prose_gate.py
+tools_release.py
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-27T08:46:31Z method=公式 target=purged-cross-validation rc=0 time_s=0.558 note=GitHubのHEADとデフォルトブランチを確かめる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ git ls-remote --symref https://github.com/eslazarev/purged-cross-validation.git HEAD
+ref: refs/heads/main	HEAD
+bc30204eb99cad1f4146076516bfde443a38d2a5	HEAD
+--- 2026-09-27T08:46:35Z method=検証 target=purged-cross-validation rc=0 time_s=0.008 note=45回目の写しの検証_rev-parseとstatus [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ git -C /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src rev-parse HEAD; git -C /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src status --short
+bc30204eb99cad1f4146076516bfde443a38d2a5
+--- 2026-09-27T08:46:49Z method=一覧 target=purged-cross-validation rc=0 time_s=0.041 note=cat8_mklistで検索の一覧をこの回に作り直す(画像・PDF17件を除外、45回目と同じ除外) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ python3 scripts/cat8_mklist.py --root /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src --candidate 8-042 --out /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/list_8042_run46.txt --exclude '.github/images/selection_regret_lcl_seeds.png=候補自身の図版(バイナリ)' --exclude '.github/images/selection_regret_lcl.png=候補自身の図版(バイナリ)' --exclude '.github/images/synthetic_leakage_proof.png=候補自身の図版(バイナリ)' --exclude '.github/images/selection_regret_crypto.png=候補自身の図版(バイナリ)' --exclude '.github/images/cpcv_example.png=候補自身の図版(バイナリ)' --exclude '.github/images/walkforward_example.png=候補自身の図版(バイナリ)' --exclude '.github/images/purge_example.png=候補自身の図版(バイナリ)' --exclude '.github/images/purgedkfold_example.png=候補自身の図版(バイナリ)' --exclude '.github/images/embargo_example.png=候補自身の図版(バイナリ)' --exclude 'paper/ssrn_paper.pdf=候補自身の論文PDF(バイナリ、本文はdocs/methodology.md等に重複)' --exclude 'paper/jdssv_paper.pdf=候補自身の論文PDF(バイナリ)' --exclude 'paper/JDSSVlogo.pdf=候補自身のロゴPDF(バイナリ)' --exclude 'paper/figures/selection_regret_lcl_seeds.png=候補自身の図版(バイナリ)' --exclude 'paper/figures/selection_regret_lcl.png=候補自身の図版(バイナリ)' --exclude 'paper/arxiv_paper.pdf=候補自身の論文PDF(バイナリ)' --exclude 'paper/zenodo_paper.pdf=候補自身の論文PDF(バイナリ)' --exclude 'arxiv_paper.pdf=候補自身の論文PDF(バイナリ、docs/methodology.md等に同内容のテキストあり)'
+除外	.github/images/selection_regret_lcl_seeds.png	候補自身の図版(バイナリ)
+除外	.github/images/selection_regret_lcl.png	候補自身の図版(バイナリ)
+除外	.github/images/synthetic_leakage_proof.png	候補自身の図版(バイナリ)
+除外	.github/images/selection_regret_crypto.png	候補自身の図版(バイナリ)
+除外	.github/images/cpcv_example.png	候補自身の図版(バイナリ)
+除外	.github/images/walkforward_example.png	候補自身の図版(バイナリ)
+除外	.github/images/purge_example.png	候補自身の図版(バイナリ)
+除外	.github/images/purgedkfold_example.png	候補自身の図版(バイナリ)
+除外	.github/images/embargo_example.png	候補自身の図版(バイナリ)
+除外	paper/ssrn_paper.pdf	候補自身の論文PDF(バイナリ、本文はdocs/methodology.md等に重複)
+除外	paper/jdssv_paper.pdf	候補自身の論文PDF(バイナリ)
+除外	paper/JDSSVlogo.pdf	候補自身のロゴPDF(バイナリ)
+除外	paper/figures/selection_regret_lcl_seeds.png	候補自身の図版(バイナリ)
+除外	paper/figures/selection_regret_lcl.png	候補自身の図版(バイナリ)
+除外	paper/arxiv_paper.pdf	候補自身の論文PDF(バイナリ)
+除外	paper/zenodo_paper.pdf	候補自身の論文PDF(バイナリ)
+除外	arxiv_paper.pdf	候補自身の論文PDF(バイナリ、docs/methodology.md等に同内容のテキストあり)
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/list_8042_run46.txt in_root=175 added=0 absent=0 excluded=17 listed=158 sha=0edbd73f22fc9e57 candidate=8-042
+--- 2026-09-27T08:47:00Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E1a段: build_lcl_cache.pyのverify関連コード全文 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ cat -n /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/build_lcl_cache.py
+     1	"""Rebuild the cached 60-household LCL extract from the public dataset.
+     2	
+     3	The selection-regret experiments
+     4	(``selection_regret_lcl_seeds.py``, ``selection_regret_lcl_targetenc.py``) read a
+     5	cached half-hourly extract at ``examples/data/lcl_halfhourly.csv`` with columns
+     6	``LCLid, tstp, energy_kwh``. That file is ~68 MB and is git-ignored, so it is not
+     7	redistributed. This script rebuilds *that exact extract* from the public Low
+     8	Carbon London dataset, using the committed household manifest
+     9	``examples/lcl_household_manifest.csv`` (the 60 ``LCLid`` values), so every
+    10	reported number is reproducible from public data alone.
+    11	
+    12	Public data
+    13	-----------
+    14	Download "SmartMeter Energy Consumption Data in London Households (Low Carbon
+    15	London)" from the London Datastore:
+    16	
+    17	    https://data.london.gov.uk/dataset/smartmeter-energy-use-data-in-london-households
+    18	
+    19	You may use either layout:
+    20	  * the single combined file ``CC_LCL-FullData.csv``; or
+    21	  * the directory of block files ``Power-Networks-LCL-June2015(withAcornGps)v2_*.csv``.
+    22	
+    23	The public files carry columns ``LCLid``, ``stdorToU``, ``DateTime``, and
+    24	``KWH/hh (per half hour)`` (plus Acorn fields we ignore). The half-hourly reading
+    25	column contains occasional ``Null`` strings; those become NaN and are skipped by
+    26	the daily aggregation in ``load_daily``, so they do not affect any reported total.
+    27	
+    28	Usage
+    29	-----
+    30	    python examples/build_lcl_cache.py --source /path/to/CC_LCL-FullData.csv
+    31	    python examples/build_lcl_cache.py --source /path/to/lcl_block_dir/
+    32	    python examples/build_lcl_cache.py --source ... --verify   # check against an
+    33	                                                               # existing cache
+    34	
+    35	The output is written to ``examples/data/lcl_halfhourly.csv`` (created if needed).
+    36	``--verify`` additionally compares the rebuilt daily-per-household totals over all
+    37	dates (so both the pre-2013 prior data and the in-window feature data are checked)
+    38	against an existing cache, and exits non-zero on any mismatch.
+    39	"""
+    40	
+    41	from __future__ import annotations
+    42	
+    43	import argparse
+    44	from pathlib import Path
+    45	
+    46	import numpy as np
+    47	import pandas as pd
+    48	
+    49	REPO = Path(__file__).resolve().parent
+    50	MANIFEST = REPO / "lcl_household_manifest.csv"
+    51	OUT = REPO / "data" / "lcl_halfhourly.csv"
+    52	CHUNK = 2_000_000
+    53	
+    54	
+    55	def _detect(cols: list[str]) -> tuple[str, str, str]:
+    56	    """Return (id_col, time_col, kwh_col) for raw-public or already-renamed files."""
+    57	    low = {c.lower().strip(): c for c in cols}
+    58	    id_col = low.get("lclid")
+    59	    time_col = low.get("datetime") or low.get("tstp")
+    60	    kwh_col = next((c for c in cols if "kwh" in c.lower() or c.lower() == "energy_kwh"), None)
+    61	    if not (id_col and time_col and kwh_col):
+    62	        raise ValueError(f"could not locate LCLid/DateTime/KWH columns in {cols}")
+    63	    return id_col, time_col, kwh_col
+    64	
+    65	
+    66	def _iter_sources(source: Path):
+    67	    if source.is_dir():
+    68	        files = sorted(source.glob("*.csv"))
+    69	        if not files:
+    70	            raise FileNotFoundError(f"no CSV files under {source}")
+    71	        yield from files
+    72	    else:
+    73	        yield source
+    74	
+    75	
+    76	def build(source: Path, manifest: Path, out: Path) -> pd.DataFrame:
+    77	    ids = set(pd.read_csv(manifest)["LCLid"])
+    78	    if len(ids) != 60:
+    79	        raise ValueError(f"manifest must list 60 households, found {len(ids)}")
+    80	    parts: list[pd.DataFrame] = []
+    81	    for path in _iter_sources(source):
+    82	        for chunk in pd.read_csv(path, chunksize=CHUNK, dtype=str):
+    83	            id_col, time_col, kwh_col = _detect(list(chunk.columns))
+    84	            sub = chunk[chunk[id_col].isin(ids)]
+    85	            if sub.empty:
+    86	                continue
+    87	            parts.append(
+    88	                pd.DataFrame(
+    89	                    {
+    90	                        "LCLid": sub[id_col].to_numpy(),
+    91	                        "tstp": pd.to_datetime(sub[time_col], errors="coerce"),
+    92	                        "energy_kwh": pd.to_numeric(sub[kwh_col], errors="coerce"),
+    93	                    }
+    94	                )
+    95	            )
+    96	    if not parts:
+    97	        raise RuntimeError("no rows matched the manifest; check the --source path/schema")
+    98	    df = pd.concat(parts, ignore_index=True)
+    99	    df = df.dropna(subset=["tstp"]).sort_values(["LCLid", "tstp"]).reset_index(drop=True)
+   100	    found = df["LCLid"].nunique()
+   101	    if found != 60:
+   102	        raise RuntimeError(f"matched {found}/60 manifest households; the source is "
+   103	                           "incomplete, so the rebuilt extract would not reproduce the experiment")
+   104	    out.parent.mkdir(parents=True, exist_ok=True)
+   105	    df.to_csv(out, index=False)
+   106	    print(f"wrote {out} ({len(df):,} rows, {found} households)")
+   107	    return df
+   108	
+   109	
+   110	def _daily(df: pd.DataFrame) -> pd.DataFrame:
+   111	    d = df.copy()
+   112	    d["date"] = d["tstp"].dt.normalize()
+   113	    return (
+   114	        d.groupby(["LCLid", "date"])["energy_kwh"].sum().reset_index()
+   115	        .sort_values(["LCLid", "date"]).reset_index(drop=True)
+   116	    )
+   117	
+   118	
+   119	def verify(rebuilt: pd.DataFrame, reference: Path) -> bool:
+   120	    """Compare rebuilt daily totals against the reference over *all* dates, so both
+   121	    the pre-2013 prior data and the in-window feature data are checked."""
+   122	    ref = pd.read_csv(reference, parse_dates=["tstp"])
+   123	    a, b = _daily(rebuilt), _daily(ref)
+   124	    ok = (
+   125	        a.shape == b.shape
+   126	        and a["LCLid"].equals(b["LCLid"]) and a["date"].equals(b["date"])
+   127	        and np.allclose(a["energy_kwh"].to_numpy(), b["energy_kwh"].to_numpy(), atol=1e-9)
+   128	    )
+   129	    print("VERIFY OK: rebuilt daily totals (pre-2013 and in-window) match the reference cache exactly"
+   130	          if ok else "VERIFY FAIL: rebuilt daily totals differ from the reference cache")
+   131	    return ok
+   132	
+   133	
+   134	def main() -> None:
+   135	    ap = argparse.ArgumentParser(description=__doc__)
+   136	    ap.add_argument("--source", required=True, type=Path,
+   137	                    help="public LCL FullData CSV or directory of block CSVs")
+   138	    ap.add_argument("--manifest", type=Path, default=MANIFEST)
+   139	    ap.add_argument("--out", type=Path, default=OUT)
+   140	    ap.add_argument("--verify", action="store_true",
+   141	                    help="compare rebuilt daily totals (pre-2013 and in-window) against --out "
+   142	                         "if it already exists; exit non-zero on mismatch")
+   143	    args = ap.parse_args()
+   144	    existing = args.out if args.out.exists() else None
+   145	    df = build(args.source, args.manifest, args.out if not (args.verify and existing) else
+   146	               args.out.with_suffix(".rebuilt.csv"))
+   147	    if args.verify and existing and not verify(df, existing):
+   148	        raise SystemExit(1)
+   149	
+   150	
+   151	if __name__ == "__main__":
+   152	    main()
+--- 2026-09-27T08:47:11Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E1a段: competitor_benchmark.pyの docstring・main・引数全文 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ cat -n /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py
+     1	"""Controlled leakage benchmark: purgedcv vs competitor CV splitters.
+     2	
+     3	Cross-validation splitters are not models -- they are leakage controls. So a
+     4	fair comparison is not "whose accuracy is higher" but "how much leakage does
+     5	each splitter admit on a task whose honest answer is known". We reuse the
+     6	controlled construction from ``examples/synthetic_leakage_proof.ipynb``:
+     7	
+     8	  * the target is the mean of the next H pure-noise draws -> nothing can
+     9	    predict it, the honest R^2 is ~0 (or negative);
+    10	  * the only feature is a monotone cumulative "clock" with no real link to
+    11	    the target.
+    12	
+    13	Any clearly positive R^2 on this task is fabricated -- it is the train/test
+    14	label overlap leaking the answer. We run the *same model* through each
+    15	competitor's splitter and record:
+    16	
+    17	  * mean R^2 it reports (<= ~0 is honest; large positive is leakage);
+    18	  * mean train/test label-overlap fraction it admits, measured with the
+    19	    tool-neutral ``purgedcv.diagnostics.compute_overlap_fraction`` (an
+    20	    interval-overlap count, independent of which library produced the folds).
+    21	
+    22	Competitors that do not install/run on a modern stack, or are closed-source,
+    23	are NOT guessed at: each splitter is isolated, and a failure is recorded with
+    24	its exact reason. Deterministic; the script is tracked under ``tools/`` but
+    25	never imported by the library. Writes (git-ignored)
+    26	``examples/data/competitor_benchmark.csv`` and ``..._summary.md``.
+    27	"""
+    28	
+    29	from __future__ import annotations
+    30	
+    31	import argparse
+    32	import sys
+    33	from collections.abc import Callable
+    34	from pathlib import Path
+    35	from typing import Any
+    36	
+    37	import numpy as np
+    38	import pandas as pd
+    39	from sklearn.ensemble import RandomForestRegressor
+    40	from sklearn.metrics import r2_score
+    41	from sklearn.model_selection import KFold, TimeSeriesSplit
+    42	
+    43	EXAMPLES = Path(__file__).resolve().parent.parent / "examples"
+    44	if str(EXAMPLES.parent) not in sys.path:
+    45	    sys.path.insert(0, str(EXAMPLES.parent))
+    46	
+    47	from purgedcv import CombinatorialPurgedCV, PurgedKFold, WalkForwardSplit  # noqa: E402
+    48	from purgedcv.diagnostics import compute_overlap_fraction  # noqa: E402
+    49	
+    50	SEED = 0
+    51	N = 1500
+    52	H = 20
+    53	N_SPLITS = 5
+    54	
+    55	Folds = list[tuple[np.ndarray, np.ndarray]]
+    56	
+    57	
+    58	def make_dataset() -> tuple[np.ndarray, np.ndarray, pd.Series, pd.Series]:
+    59	    """Target depends only on noise (unpredictable); feature is a clock."""
+    60	    rng = np.random.default_rng(SEED)
+    61	    e = rng.standard_normal(N + H)
+    62	    y = np.array([e[t : t + H].mean() for t in range(N)])
+    63	    x = np.cumsum(rng.gamma(shape=2.0, scale=1.0, size=N))
+    64	    features = x.reshape(-1, 1)
+    65	    pred = pd.Series(pd.date_range("2020-01-01", periods=N, freq="D"))
+    66	    evalu = pred + pd.Timedelta(days=H)
+    67	    return features, y, pred, evalu
+    68	
+    69	
+    70	def score_folds(features: np.ndarray, y: np.ndarray, folds: Folds) -> float:
+    71	    """Mean out-of-fold R^2 of one fixed model across the given folds."""
+    72	    scores: list[float] = []
+    73	    for tr, te in folds:
+    74	        if len(tr) == 0 or len(te) == 0:
+    75	            continue
+    76	        model = RandomForestRegressor(n_estimators=120, random_state=SEED)
+    77	        model.fit(features[tr], y[tr])
+    78	        scores.append(float(r2_score(y[te], model.predict(features[te]))))
+    79	    return float(np.mean(scores)) if scores else float("nan")
+    80	
+    81	
+    82	def mean_overlap(folds: Folds, pred: pd.Series, evalu: pd.Series) -> float:
+    83	    fr = [compute_overlap_fraction(tr, te, pred, evalu) for tr, te in folds if len(tr) and len(te)]
+    84	    return float(np.mean(fr)) if fr else float("nan")
+    85	
+    86	
+    87	def _arr(pairs: Any) -> Folds:
+    88	    return [(np.asarray(tr), np.asarray(te)) for tr, te in pairs]
+    89	
+    90	
+    91	# Each builder takes (features, y, pred, evalu) and returns folds, or raises.
+    92	# Builders are isolated per splitter so one bad/absent library never hides the
+    93	# others and never produces a fabricated number.
+    94	
+    95	
+    96	def _sk_kfold_shuffle(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+    97	    return _arr(KFold(n_splits=N_SPLITS, shuffle=True, random_state=SEED).split(f))
+    98	
+    99	
+   100	def _sk_kfold_blocked(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   101	    return _arr(KFold(n_splits=N_SPLITS, shuffle=False).split(f))
+   102	
+   103	
+   104	def _sk_tss(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   105	    return _arr(TimeSeriesSplit(n_splits=N_SPLITS).split(f))
+   106	
+   107	
+   108	def _sk_tss_gap(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   109	    return _arr(TimeSeriesSplit(n_splits=N_SPLITS, gap=H).split(f))
+   110	
+   111	
+   112	def _pcv_purged(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   113	    cv = PurgedKFold(
+   114	        n_splits=N_SPLITS,
+   115	        prediction_times=p,
+   116	        evaluation_times=e,
+   117	        purge_horizon=f"{H}D",
+   118	        embargo=f"{H}D",
+   119	    )
+   120	    return _arr(cv.split(f))
+   121	
+   122	
+   123	def _pcv_walk(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   124	    cv = WalkForwardSplit(
+   125	        n_splits=N_SPLITS,
+   126	        test_size=N // (N_SPLITS + 1),
+   127	        window="expanding",
+   128	        prediction_times=p,
+   129	        evaluation_times=e,
+   130	        purge_horizon=f"{H}D",
+   131	    )
+   132	    return _arr(cv.split(f))
+   133	
+   134	
+   135	def _pcv_cpcv(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   136	    cv = CombinatorialPurgedCV(
+   137	        n_splits=6,
+   138	        n_test_groups=2,
+   139	        prediction_times=p,
+   140	        evaluation_times=e,
+   141	        purge_horizon=f"{H}D",
+   142	    )
+   143	    return _arr(cv.split(f))
+   144	
+   145	
+   146	def _tscv_gapkfold(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   147	    from tscv import GapKFold
+   148	
+   149	    return _arr(GapKFold(n_splits=N_SPLITS, gap_before=H, gap_after=H).split(f))
+   150	
+   151	
+   152	def _tcv_comb(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   153	    from timeseriescv.cross_validation import CombPurgedKFoldCV
+   154	
+   155	    cv = CombPurgedKFoldCV(n_splits=6, n_test_splits=2, embargo_td=pd.Timedelta(days=H))
+   156	    return _arr(cv.split(pd.DataFrame(f), pred_times=p, eval_times=e))
+   157	
+   158	
+   159	def _tcv_walk(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   160	    from timeseriescv.cross_validation import PurgedWalkForwardCV
+   161	
+   162	    cv = PurgedWalkForwardCV(n_splits=6, n_test_splits=1, min_train_splits=2)
+   163	    return _arr(cv.split(pd.DataFrame(f), pred_times=p, eval_times=e))
+   164	
+   165	
+   166	def _mlfinpy_cpkf(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   167	    from mlfinpy.cross_validation import CombinatorialPurgedKFold
+   168	
+   169	    info = pd.Series(e.to_numpy(), index=p.to_numpy())
+   170	    cv = CombinatorialPurgedKFold(n_splits=6, n_test_splits=2, samples_info_sets=info, embargo=0)
+   171	    return _arr(cv.split(pd.DataFrame(f, index=p.to_numpy())))
+   172	
+   173	
+   174	def _risklabai(f: np.ndarray, y: np.ndarray, p: pd.Series, e: pd.Series) -> Folds:
+   175	    from RiskLabAI.utils.cross_validation import PurgedKFold as RlPurgedKFold
+   176	
+   177	    info = pd.Series(e.to_numpy(), index=p.to_numpy())
+   178	    cv = RlPurgedKFold(n_splits=N_SPLITS, times=info, embargo=0.0)
+   179	    return _arr(cv.split(pd.DataFrame(f, index=p.to_numpy())))
+   180	
+   181	
+   182	SPLITTERS: list[tuple[str, str, Callable[..., Folds]]] = [
+   183	    ("sklearn", "KFold(shuffle=True)  [naive baseline]", _sk_kfold_shuffle),
+   184	    ("sklearn", "KFold(shuffle=False) [blocked]", _sk_kfold_blocked),
+   185	    ("sklearn", "TimeSeriesSplit", _sk_tss),
+   186	    ("sklearn", f"TimeSeriesSplit(gap={H})", _sk_tss_gap),
+   187	    ("purgedcv", "PurgedKFold", _pcv_purged),
+   188	    ("purgedcv", "WalkForwardSplit", _pcv_walk),
+   189	    ("purgedcv", "CombinatorialPurgedCV", _pcv_cpcv),
+   190	    ("tscv", f"GapKFold(gap_before={H},gap_after={H})", _tscv_gapkfold),
+   191	    ("timeseriescv", "CombPurgedKFoldCV", _tcv_comb),
+   192	    ("timeseriescv", "PurgedWalkForwardCV", _tcv_walk),
+   193	    ("mlfinpy", "CombinatorialPurgedKFold", _mlfinpy_cpkf),
+   194	    ("RiskLabAI", "PurgedKFold", _risklabai),
+   195	]
+   196	
+   197	
+   198	def main(argv: list[str] | None = None) -> int:
+   199	    ap = argparse.ArgumentParser(description=__doc__)
+   200	    ap.add_argument(
+   201	        "--out-dir",
+   202	        type=Path,
+   203	        default=Path(__file__).resolve().parent.parent / "examples" / "data",
+   204	    )
+   205	    ap.add_argument(
+   206	        "--core-only",
+   207	        action="store_true",
+   208	        help="run only sklearn + purgedcv (fast, no third-party deps; for the e2e test)",
+   209	    )
+   210	    ns = ap.parse_args(argv)
+   211	    out_dir: Path = ns.out_dir
+   212	    splitters = (
+   213	        [s for s in SPLITTERS if s[0] in ("sklearn", "purgedcv")] if ns.core_only else SPLITTERS
+   214	    )
+   215	
+   216	    features, y, pred, evalu = make_dataset()
+   217	    records: list[dict[str, Any]] = []
+   218	    for lib, label, builder in splitters:
+   219	        name = f"{lib} {label}"
+   220	        try:
+   221	            folds = builder(features, y, pred, evalu)
+   222	            r2 = score_folds(features, y, folds)
+   223	            ov = mean_overlap(folds, pred, evalu)
+   224	            records.append(
+   225	                {
+   226	                    "library": lib,
+   227	                    "splitter": label,
+   228	                    "status": "ran",
+   229	                    "mean_r2": round(r2, 4),
+   230	                    "mean_overlap": round(ov, 4),
+   231	                    "n_folds": len(folds),
+   232	                    "reason": "",
+   233	                }
+   234	            )
+   235	            print(
+   236	                f"ran      {name:48s} R2={r2:+.3f} overlap={ov:.3f} folds={len(folds)}", flush=True
+   237	            )
+   238	        except Exception as exc:
+   239	            reason = f"{type(exc).__name__}: {str(exc).splitlines()[0][:140]}"
+   240	            records.append(
+   241	                {
+   242	                    "library": lib,
+   243	                    "splitter": label,
+   244	                    "status": "NOT RUN",
+   245	                    "mean_r2": float("nan"),
+   246	                    "mean_overlap": float("nan"),
+   247	                    "n_folds": 0,
+   248	                    "reason": reason,
+   249	                }
+   250	            )
+   251	            print(f"NOT RUN  {name:48s} {reason}", flush=True)
+   252	
+   253	    df = pd.DataFrame.from_records(records)
+   254	    out_dir.mkdir(parents=True, exist_ok=True)
+   255	    df.to_csv(out_dir / "competitor_benchmark.csv", index=False)
+   256	
+   257	    lines = [
+   258	        "# Competitor benchmark -- controlled leakage task (raw results)",
+   259	        "",
+   260	        "Target = mean of next H pure-noise draws (unpredictable; honest R^2 ~ 0).",
+   261	        f"Feature = monotone clock. N={N}, H={H}, seed={SEED}, model = "
+   262	        "RandomForestRegressor(n_estimators=120). Large positive R^2 = fabricated",
+   263	        "leakage. Overlap = mean train/test label-overlap fraction admitted.",
+   264	        "",
+   265	        "| library | splitter | status | mean R^2 | mean overl
+[出力は 13109 文字。先頭 12000 文字だけを残した]
+--- 2026-09-27T08:47:27Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E1a段: competitor_benchmark.pyの残り(264行目以降、自動判定の有無) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ sed -n '256,288p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py
+
+    lines = [
+        "# Competitor benchmark -- controlled leakage task (raw results)",
+        "",
+        "Target = mean of next H pure-noise draws (unpredictable; honest R^2 ~ 0).",
+        f"Feature = monotone clock. N={N}, H={H}, seed={SEED}, model = "
+        "RandomForestRegressor(n_estimators=120). Large positive R^2 = fabricated",
+        "leakage. Overlap = mean train/test label-overlap fraction admitted.",
+        "",
+        "| library | splitter | status | mean R^2 | mean overlap | folds |",
+        "|---|---|---|---|---|---|",
+    ]
+    for r in records:
+        if r["status"] == "ran":
+            lines.append(
+                f"| {r['library']} | {r['splitter']} | ran | "
+                f"{r['mean_r2']:+.3f} | {r['mean_overlap']:.3f} | {r['n_folds']} |"
+            )
+        else:
+            lines.append(f"| {r['library']} | {r['splitter']} | NOT RUN | -- | -- | -- |")
+    notrun = [r for r in records if r["status"] != "ran"]
+    if notrun:
+        lines += ["", "Not run (exact reason, never guessed):"]
+        lines += [f"- **{r['library']} {r['splitter']}**: {r['reason']}" for r in notrun]
+    lines.append("")
+    (out_dir / "competitor_benchmark_summary.md").write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nwrote {out_dir / 'competitor_benchmark.csv'}")
+    print(f"wrote {out_dir / 'competitor_benchmark_summary.md'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+--- 2026-09-27T08:48:47Z method=見積 target=purged-cross-validation rc=0 time_s=0.906 note=E2・E4の見積もり(grep -I -c -i -E、45回目と同じ語の組、この回の一覧で数え直す) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+declare -A PAT
+PAT[E2]="欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source"
+PAT[E4]="リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun"
+mapfile -d "" files < /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/list_8042_run46.txt
+for e in E2 E4; do
+  fwh=0; total=0
+  for f in "${files[@]}"; do
+    n=$(grep -c -i -E "${PAT[$e]}" "$f" 2>/dev/null)
+    n=${n:-0}
+    if [ "$n" -gt 0 ]; then fwh=$((fwh+1)); total=$((total+n)); fi
+  done
+  echo "$e files_with_hits=$fwh total_lines=$total"
+done
+
+E2 files_with_hits=131 total_lines=1948
+E4 files_with_hits=67 total_lines=285
+--- 2026-09-27T08:48:57Z method=一覧 target=purged-cross-validation rc=0 time_s=0.033 note=E2案B(a): 45回目に読んだ頁の一覧を読み直して読んだ範囲に入れる(docs全8頁の道と題) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+for f in /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/*.md /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md; do
+  t=$(sed -n "1,5{/^# /p}" "$f" | head -1)
+  echo "$f :: $t"
+done
+
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/api.md :: # API reference
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/architecture.md :: # Architecture
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/changelog.md :: 
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/examples.md :: # Examples
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/index.md :: # purgedcv
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/installation.md :: # Installation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/methodology.md :: # Why this exists
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/quickstart.md :: # Quickstart
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md :: # purgedcv: scikit-learn-compatible purged and combinatorial cross-validation (CPCV) for time-series and financial machine learning in Python
+--- 2026-09-27T08:49:04Z method=選定 target=purged-cross-validation rc=0 time_s=0.029 note=E2案B(b): 文書9頁(docs8+README)の道と題にE2語の組をgrep -i -Eで機械的に当てる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+PAT="欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source"
+for f in /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/*.md /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md; do
+  t=$(sed -n "1,5{/^# /p}" "$f" | head -1)
+  echo "$f :: $t"
+done | grep -i -E "$PAT"
+echo "---end---"
+
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md :: # purgedcv: scikit-learn-compatible purged and combinatorial cross-validation (CPCV) for time-series and financial machine learning in Python
+| ---end---
+--- 2026-09-27T08:49:11Z method=選定 target=purged-cross-validation rc=0 time_s=0.005 note=E2案B(b)確認: README題にE2語のどれが当たったかをgrep -oで特定 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+PAT="欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source"
+echo "# purgedcv: scikit-learn-compatible purged and combinatorial cross-validation (CPCV) for time-series and financial machine learning in Python" | grep -i -o -E "$PAT"
+
+valid
+--- 2026-09-27T08:49:21Z method=選定 target=purged-cross-validation rc=1 time_s=0.009 note=E2案B(c): find src -type dの全部と、E2語で選んだディレクトリ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src -type d | sort
+echo "---E2語で選んだ分---"
+PAT="欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source"
+find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src -type d | grep -i -E "$PAT"
+
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/branches
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/hooks
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/info
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/heads
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/remotes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/remotes/origin
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects/info
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects/pack
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/heads
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/remotes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/remotes/origin
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/tags
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/ISSUE_TEMPLATE
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/images
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/workflows
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/javascripts
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper
+/tmp/claude-0/-home-user-tr
+[出力は 3761 文字。先頭 3000 文字だけを残した]
+--- 2026-09-27T08:49:34Z method=選定 target=purged-cross-validation rc=0 time_s=0.009 note=E2案B(c)再: find src -type dの全部(33件)と、E2語で選んだディレクトリ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src -type d | sort
+echo "---E2語で選んだ分---"
+PAT="欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source"
+find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src -type d | grep -i -E "$PAT" || echo "(0件)"
+
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/branches
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/hooks
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/info
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/heads
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/remotes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/logs/refs/remotes/origin
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects/info
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/objects/pack
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/heads
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/remotes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/remotes/origin
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.git/refs/tags
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/ISSUE_TEMPLATE
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/images
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.github/workflows
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/javascripts
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/figures
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/supplementary
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools
+| ---E2語で選んだ分---
+(0件)
+--- 2026-09-27T08:50:10Z method=読了 target=purged-cross-validation rc=0 time_s=0.012 note=E2案B(a)再読: 45回目に読んだ範囲(validate_times全文・README1/288行・installation.md84-98・docs/index.md17-20)を読み直す [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+echo "== _time.py validate_times全文 =="; sed -n "184,235p" $SRC/src/purgedcv/_time.py
+echo "== README.md 1行目 =="; sed -n "1p" $SRC/README.md
+echo "== README.md 288行目 =="; sed -n "288p" $SRC/README.md
+echo "== installation.md Time and group inputs =="; sed -n "84,98p" $SRC/docs/installation.md
+echo "== docs/index.md =="; sed -n "17,20p" $SRC/docs/index.md
+
+== _time.py validate_times全文 ==
+def validate_times(
+    prediction_times: TimesLike,
+    evaluation_times: TimesLike,
+    *,
+    require_monotonic: bool = True,
+) -> None:
+    """Validate that ``prediction_times`` and ``evaluation_times`` are well-formed.
+
+    Raises:
+        ValueError: on length mismatch, non-temporal dtype, NaT values,
+            ``evaluation_times < prediction_times`` at any row, or (when
+            ``require_monotonic``) non-monotonic prediction times. The
+            error message names the offending row index when applicable.
+
+    Examples:
+        >>> import pandas as pd
+        >>> from purgedcv import validate_times
+        >>> pred = pd.Series(pd.date_range("2024-01-01", periods=5, freq="D"))
+        >>> evalu = pred + pd.Timedelta(days=1)
+        >>> validate_times(pred, evalu)
+    """
+    pred = _coerce_1d(prediction_times, name="prediction_times")
+    evalu = _coerce_1d(evaluation_times, name="evaluation_times")
+    if len(pred) != len(evalu):
+        raise ValueError(
+            f"length mismatch: prediction_times has {len(pred)} rows, "
+            f"evaluation_times has {len(evalu)} rows."
+        )
+    prediction_kind = _temporal_kind(pred)
+    evaluation_kind = _temporal_kind(evalu)
+    if prediction_kind is None:
+        raise ValueError("prediction_times must have a datetime-like or timedelta-like dtype.")
+    if evaluation_kind is None:
+        raise ValueError("evaluation_times must have a datetime-like or timedelta-like dtype.")
+    if prediction_kind != evaluation_kind:
+        raise ValueError(
+            "prediction_times and evaluation_times must use the same temporal dtype family."
+        )
+    if np.isnat(pred).any():
+        raise ValueError("prediction_times contains NaT values.")
+    if np.isnat(evalu).any():
+        raise ValueError("evaluation_times contains NaT values.")
+    bad = evalu < pred
+    if bad.any():
+        first = int(bad.argmax())
+        raise ValueError(
+            f"evaluation_times falls before prediction_times at index {first}: "
+            f"{evalu[first]} < {pred[first]}."
+        )
+    if require_monotonic and not bool(np.all(pred[1:] >= pred[:-1])):
+        raise ValueError("prediction_times must be monotonic non-decreasing.")
+== README.md 1行目 ==
+# purgedcv: scikit-learn-compatible purged and combinatorial cross-validation (CPCV) for time-series and financial machine learning in Python
+== README.md 288行目 ==
+A drop-in replacement for `KFold` for time-series data. Test folds tile the whole series contiguously, so most folds sit inside the data and the training set wraps around them on both sides. Purge and embargo are applied automatically on every fold.
+== installation.md Time and group inputs ==
+## Time and group inputs
+
+`prediction_times` and `evaluation_times` accept pandas `Series` or
+`DatetimeIndex`, numpy `datetime64` or `timedelta64` arrays, Python lists of
+datetime/Timestamp/timedelta values, and polars `Series`. They are coerced to a
+1-D numpy array once at the boundary and must hold a datetime64 or timedelta64
+dtype; tz-aware pandas input is normalized to UTC.
+
+`groups` accepts the same container types but holds arbitrary 1-D labels
+(integers, strings, categories), not timestamps.
+
+polars is never imported, so it is not a runtime dependency, only an optional
+convenience for callers who already hold a polars `Series`. The accepted-input
+type aliases `TimesLike` (for times) and `ArrayLike1D` (for labels) are exported
+from `purgedcv` for annotating your own code.
+== docs/index.md ==
+The algorithms are not new. They are Marcos López de Prado's (2018), with
+the statistical metrics from Bailey and López de Prado (2012, 2014). This
+library is an open, MIT-licensed, typed implementation, checked against
+the original papers and pinned by more than 500 tests.
+--- 2026-09-27T08:50:18Z method=探索 target=purged-cross-validation rc=1 time_s=0.039 note=E2の印を探す: 未読の残りモジュール(_validation.py等)のモジュールdocstringと関数一覧 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv
+for f in _validation.py _base.py exceptions.py optuna_integration.py _paths.py _path_metrics.py _cpcv.py _purged_kfold.py _walk_forward.py __init__.py; do
+  echo "==== $f ===="
+  sed -n "1,20p" $SRC/$f
+  echo "---defs---"
+  grep -n "^def \|^class " $SRC/$f
+done
+
+==== _validation.py ====
+"""Internal: shared input-validation helpers."""
+
+from __future__ import annotations
+
+import numpy as np
+
+from ._typing import NDArrayAny
+
+
+def _validate_integer(name: str, value: object, *, minimum: int) -> int:
+    """Coerce ``value`` to an ``int`` of at least ``minimum``, or raise.
+
+    ``bool`` is rejected explicitly: ``True`` and ``False`` are ``int``
+    subclasses but are never meaningful split counts.
+
+    Raises:
+        TypeError: if ``value`` is not an integer.
+        ValueError: if ``value`` is below ``minimum``.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+| ---defs---
+10:def _validate_integer(name: str, value: object, *, minimum: int) -> int:
+28:def _validate_bars_per_year(bars_per_year: object) -> None:
+54:def _validate_positional_indices(
+==== _base.py ====
+"""Internal: abstract base class for purged-cross-validation splitters (Domain D4)."""
+
+from __future__ import annotations
+
+import copy
+from abc import ABC, abstractmethod
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+from purgedcv._embargo import _validate_embargo_modes, apply_embargo
+from purgedcv._purge import purge
+from purgedcv._time import HorizonLike, _coerce_1d, parse_horizon, validate_times
+from purgedcv._validation import _validate_positional_indices
+
+from ._typing import ArrayLike1D, NDArrayAny, TimesLike
+
+
+| ---defs---
+22:class _SplitStages:
+32:class BaseTemporalSplitter(ABC):
+==== exceptions.py ====
+"""Exception types raised by purged-cross-validation.
+
+The hierarchy is rooted at [`TemporalCVError`][purgedcv.TemporalCVError], which itself subclasses
+[`ValueError`](https://docs.python.org/3/library/exceptions.html#ValueError). Callers who want to catch any purged-cross-validation error use
+``except TemporalCVError``; callers who already broadly catch ``ValueError``
+also receive our errors without code changes.
+"""
+
+from __future__ import annotations
+
+
+class TemporalCVError(ValueError):
+    """Base class for all purged-cross-validation errors."""
+
+
+class TemporalLeakageError(TemporalCVError):
+    """Raised when a training row's label horizon overlaps the test horizon."""
+
+
+class EmbargoViolationError(TemporalCVError):
+| ---defs---
+12:class TemporalCVError(ValueError):
+16:class TemporalLeakageError(TemporalCVError):
+20:class EmbargoViolationError(TemporalCVError):
+24:class GroupLeakageError(TemporalCVError):
+==== optuna_integration.py ====
+"""Optuna integration helpers (optional extra: ``pip install purgedcv[optuna]``).
+
+[`deflated_sharpe_ratio`][purgedcv.deflated_sharpe_ratio] needs ``var_sharpe``: the variance of
+the Sharpe ratios across the trials you searched. Optuna only stores each
+trial's objective value, so users hand-roll the bookkeeping every time:
+
+    trial.set_user_attr("sharpe", sharpe_of(pnl))
+    ...
+    shs = [t.user_attrs["sharpe"] for t in study.trials if "sharpe" in t.user_attrs]
+    var_sharpe = np.var(shs, ddof=1)
+
+[`TrialSharpeRecorder`][purgedcv.optuna_integration.TrialSharpeRecorder]
+is a study callback that does exactly that.
+
+Importing this module does **not** require Optuna. The recorder is a plain
+callback that reads attributes off whatever ``(study, trial)`` pair Optuna
+passes it, so it has no import-time dependency; the ``optuna`` extra only
+installs Optuna itself for the surrounding optimisation loop.
+"""
+
+| ---defs---
+32:class _TrialLike(Protocol):
+41:class TrialSharpeRecorder:
+==== _paths.py ====
+"""Internal: backtest path reconstruction for CombinatorialPurgedCV (Domain D6).
+
+See *Advances in Financial Machine Learning* (Lopez de Prado, Wiley 2018),
+chapter 12 section 12.4, figure 12.2.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from itertools import combinations
+from math import comb
+
+import numpy as np
+
+from ._typing import NDArrayAny
+from ._validation import _validate_integer, _validate_positional_indices
+
+
+def reconstruct_paths(
+    fold_predictions: Sequence[NDArrayAny],
+| ---defs---
+19:def reconstruct_paths(
+==== _path_metrics.py ====
+"""Internal: per-path summary statistics for CPCV backtest paths (Domain D6).
+
+[`reconstruct_paths`][purgedcv.reconstruct_paths] (and
+[`CombinatorialPurgedCV.backtest_paths`][purgedcv.CombinatorialPurgedCV.backtest_paths]) return an
+``(n_paths, n_samples)`` matrix. The next step is almost always the same:
+reduce each path to a handful of summary numbers (Sharpe, Calmar, drawdown,
+total return). [`path_metrics`][purgedcv.path_metrics] does that in one call and hands back a
+tidy DataFrame so the whole path distribution can be described at once.
+
+Each row of the input is treated as a per-period **return** (or PnL) series.
+The default metric assumes additive returns; pass your own ``metric_fn`` for
+a different convention (for example log vs simple compounding).
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from functools import partial
+
+import numpy as np
+| ---defs---
+36:def default_backtest_metrics(
+112:def path_metrics(
+==== _cpcv.py ====
+"""Internal: CombinatorialPurgedCV (Domain D5.4).
+
+See *Advances in Financial Machine Learning* (Lopez de Prado, Wiley 2018),
+chapter 12 section 12.4. The N-choose-K fold enumeration is paired with
+backtest path reconstruction (domain D6) via [`backtest_paths`][purgedcv.CombinatorialPurgedCV.backtest_paths].
+"""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from itertools import combinations
+from math import comb
+
+import numpy as np
+import pandas as pd
+from sklearn.base import clone
+
+from purgedcv._base import BaseTemporalSplitter
+from purgedcv._paths import reconstruct_paths
+from purgedcv._time import HorizonLike
+| ---defs---
+26:class CombinatorialPurgedCV(BaseTemporalSplitter):
+299:class CombinatoriallySymmetricCV(CombinatorialPurgedCV):
+==== _purged_kfold.py ====
+"""Internal: PurgedKFold and PurgedGroupKFold (Domains D5.2 + D5.3).
+
+See *Advances in Financial Machine Learning* 
+[出力は 8018 文字。先頭 6000 文字だけを残した]
+--- 2026-09-27T08:50:29Z method=探索 target=purged-cross-validation rc=1 time_s=0.013 note=E2の印を探す(続き): _purged_kfold.py・_walk_forward.py・__init__.pyのモジュールdocstringと関数一覧 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv
+for f in _purged_kfold.py _walk_forward.py __init__.py; do
+  echo "==== $f ===="
+  sed -n "1,20p" $SRC/$f
+  echo "---defs---"
+  grep -n "^def \|^class " $SRC/$f
+done
+
+==== _purged_kfold.py ====
+"""Internal: PurgedKFold and PurgedGroupKFold (Domains D5.2 + D5.3).
+
+See *Advances in Financial Machine Learning* (Lopez de Prado, Wiley 2018),
+chapter 7 section 7.4, for the figure that defines the k-fold layout this
+class implements.
+"""
+
+from __future__ import annotations
+
+import numpy as np
+import pandas as pd
+
+from purgedcv._base import BaseTemporalSplitter
+from purgedcv._time import HorizonLike
+from purgedcv._validation import _validate_integer
+
+from ._typing import ArrayLike1D, NDArrayAny, TimesLike
+
+
+class PurgedKFold(BaseTemporalSplitter):
+| ---defs---
+5:class implements.
+20:class PurgedKFold(BaseTemporalSplitter):
+125:class PurgedGroupKFold(BaseTemporalSplitter):
+==== _walk_forward.py ====
+"""Internal: WalkForwardSplit splitter (Domain D5.1)."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+import numpy as np
+
+from purgedcv._base import BaseTemporalSplitter
+from purgedcv._time import HorizonLike
+from purgedcv._validation import _validate_integer
+
+from ._typing import NDArrayAny, TimesLike
+
+WindowMode = Literal["sliding", "expanding"]
+
+
+class WalkForwardSplit(BaseTemporalSplitter):
+    """Walk-forward CV with sliding or expanding training window.
+
+| ---defs---
+18:class WalkForwardSplit(BaseTemporalSplitter):
+==== __init__.py ====
+"""purged-cross-validation: scikit-learn-compatible cross-validation for time-series ML."""
+
+from purgedcv import diagnostics
+from purgedcv._base import BaseTemporalSplitter
+from purgedcv._cpcv import CombinatoriallySymmetricCV, CombinatorialPurgedCV
+from purgedcv._embargo import apply_embargo
+from purgedcv._metrics import (
+    DSRDiagnostics,
+    deflated_sharpe_ratio,
+    deflated_sharpe_ratio_full,
+    effective_n_trials,
+    min_track_record_length,
+    minimum_backtest_length,
+    probabilistic_sharpe_ratio,
+)
+from purgedcv._path_metrics import PathMetricFn, default_backtest_metrics, path_metrics
+from purgedcv._paths import reconstruct_paths
+from purgedcv._pbo import PBOResult, PerformanceMetric, probability_of_backtest_overfitting
+from purgedcv._purge import purge
+from purgedcv._purged_kfold import PurgedGroupKFold, PurgedKFold
+| ---defs---
+--- 2026-09-27T08:50:35Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E2候補: _validation.pyの_validate_bars_per_year全文(足の語を含む識別子) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ sed -n '1,80p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_validation.py
+"""Internal: shared input-validation helpers."""
+
+from __future__ import annotations
+
+import numpy as np
+
+from ._typing import NDArrayAny
+
+
+def _validate_integer(name: str, value: object, *, minimum: int) -> int:
+    """Coerce ``value`` to an ``int`` of at least ``minimum``, or raise.
+
+    ``bool`` is rejected explicitly: ``True`` and ``False`` are ``int``
+    subclasses but are never meaningful split counts.
+
+    Raises:
+        TypeError: if ``value`` is not an integer.
+        ValueError: if ``value`` is below ``minimum``.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+        raise TypeError(f"{name} must be an integer, got {type(value).__name__}.")
+    value_int = int(value)
+    if value_int < minimum:
+        raise ValueError(f"{name} must be at least {minimum}, got {value_int}.")
+    return value_int
+
+
+def _validate_bars_per_year(bars_per_year: object) -> None:
+    """Require ``bars_per_year`` to be a positive finite scalar number, or ``None``.
+
+    ``None`` passes (the caller treats it as "already per-observation").
+    Everything else must be a single real number: ``bool`` is rejected
+    (``True``/``False`` are ``int`` subclasses but never a meaningful
+    bars-per-year, matching `_validate_integer`), as are strings, arrays,
+    and other non-scalar inputs, all with one consistent message rather than a
+    leaked numpy ``TypeError`` or ambiguous-truth ``ValueError``.
+
+    Raises:
+        ValueError: if ``bars_per_year`` is not a positive finite scalar number.
+    """
+    if bars_per_year is None:
+        return
+    if isinstance(bars_per_year, bool) or not isinstance(
+        bars_per_year, (int, float, np.integer, np.floating)
+    ):
+        raise ValueError(
+            "bars_per_year must be a positive finite number, got "
+            f"{type(bars_per_year).__name__}."
+        )
+    if not np.isfinite(bars_per_year) or bars_per_year <= 0:
+        raise ValueError(f"bars_per_year must be a positive finite number, got {bars_per_year}.")
+
+
+def _validate_positional_indices(
+    name: str,
+    indices: NDArrayAny,
+    *,
+    n_samples: int,
+) -> NDArrayAny:
+    """Validate a 1-D integer positional-index array.
+
+    Negative positions are rejected even though ``pandas.iloc`` accepts
+    them, because train/test index arrays are dataset positions, not Python
+    slice syntax.
+
+    Raises:
+        TypeError: if ``indices`` is not integer-typed.
+        ValueError: if ``indices`` is not 1-D or contains out-of-bounds
+            positions.
+    """
+    arr = np.asarray(indices)
+    if arr.ndim != 1:
+        raise ValueError(f"{name} must be a 1-D positional index array.")
+    if arr.size == 0:
+        return arr.astype(np.int64, copy=False)
+    if arr.dtype == np.dtype(bool) or not np.issubdtype(arr.dtype, np.integer):
+        raise TypeError(f"{name} must contain integer positional indices.")
+    negative = arr < 0
+    if bool(np.any(negative)):
+        first = int(np.flatnonzero(negative)[0])
+--- 2026-09-27T08:50:55Z method=search target=purged-cross-validation rc=0 time_s=0.266 note=E4の全件検索(打ち直し) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ python3 scripts/cat8_search.py --list /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/list_8042_run46.txt --candidate 8-042 -i --pattern 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.zenodo.json:4: [行の長さ 630 字。当たった 1 か所の前後 200 字] …alidation, purged and group-purged k-fold, Combinatorial Purged Cross-Validation (CPCV) with backtest-path reconstruction, and the Probabilistic Sharpe Ratio, Deflated Sharpe Ratio, and Minimum Track Record Length. Every splitter follows the scikit-learn splitter protocol; the package is fully typed (passes mypy strict) and pinned by an end-to-end test suite. The algorithms are due to Marcos Lopez de Pr…
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:3: All notable changes to `purged-cross-validation` are recorded here. The
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:124:   track-record length, skew, and kurtosis). The scalar
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:138: - `purgedcv.optuna_integration.TrialSharpeRecorder`: an Optuna study
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:151:   Optuna + Deflated Sharpe pattern (record per-trial Sharpe, deflate by the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:185: - `min_track_record_length` now returns `math.inf` instead of raising when
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:186:   `observed_sharpe <= target_sharpe`: no finite track record can establish
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:223:   `min_track_record_length`) and non-integer `n_trials`, producing
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:224:   meaningless probabilities. They now raise. `min_track_record_length`
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:256: patches; this entry records the work delivered across 0.0.5 through
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md:320: - `min_track_record_length(observed_sharpe, target_sharpe, alpha, skew, kurtosis)` — minimum sample size required for PSR to exceed `1 − alpha` at the observed Sharpe; the analytical inverse of PSR.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CITATION.cff:39:   Record Length. Every splitter follows the scikit-learn splitter protocol,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CONTRIBUTING.md:118: If publication fails, rerun the failed jobs on the **original version-changing
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md:46: | `min_track_record_length` | D7 | Minimum observations to establish SR |
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md:49: | `optuna_integration.TrialSharpeRecorder` | D7 | Collect per-trial Sharpe variance + effective count for DSR |
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md:344:     min_track_record_length,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md:375: n_min = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/context7.json:25:     "Prefer the documented public API: WalkForwardSplit, PurgedKFold, PurgedGroupKFold, CombinatorialPurgedCV, reconstruct_paths, deflated_sharpe_ratio, probabilistic_sharpe_ratio, min_track_record_length, and the diagnostics module."
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/api.md:65: ::: purgedcv.min_track_record_length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/api.md:81: ::: purgedcv.optuna_integration.TrialSharpeRecorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/architecture.md:23:         metrics["Statistical metrics (D7)<br/>probabilistic_sharpe_ratio<br/>deflated_sharpe_ratio<br/>min_track_record_length"]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/architecture.md:97: │                        min_track_record_length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/examples.md:105: `min_track_record_length`. The numerical reproduction of §7.4.1 from
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/index.md:13: and the Probabilistic, Deflated, and Minimum-Track-Record Sharpe
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/methodology.md:32: ## The demand is on the record
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/methodology.md:80: | PSR / DSR / Min Track Record Length | ✓ | ✗ | ✗ | ✓ (exact to Bailey & López de Prado) |
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/README.md:69: - `set-a.tar.gz` (~7 MB) — per-patient hourly vital-sign records
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/README.md:122: - `USW00014732.csv` (~11 MB) — full daily record for La Guardia
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/README.md:161: 20 trials), and `min_track_record_length`. A bar chart shows the spread of PSR
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/README.md:379: `TrialSharpeRecorder`, `deflated_sharpe_ratio_full`, the `bars_per_year` unit
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:62:     "from purgedcv.optuna_integration import TrialSharpeRecorder\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:208:     "A seeded TPE sampler maximises the in-sample Sharpe. `TrialSharpeRecorder`\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:209:     "collects each trial's Sharpe (recorded **annualised**, the convention most\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:238:     "recorder = TrialSharpeRecorder()\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:260:     "study.optimize(objective, n_trials=N_TRIALS, callbacks=[recorder])\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:334:     "`var_sharpe` was recorded annualised, so `bars_per_year` converts it to the\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:363:     "var_ann = recorder.var_sharpe()       # annualised, as recorded\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:364:     "n_eff = effective_n_trials(recorder.sharpes())  # recorder.n_effective() is the shortcut\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:367:     "    champ_oos, n_trials=recorder.n_trials(), var_sharpe=var_ann, bars_per_year=BARS_PER_YEAR\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:374:     "print(f\"raw trials {recorder.n_trials():>4}  -> sr_star {naive.sr_star:+.3f}  DSR {naive.dsr:.4f}\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:489:     "axes[0, 0].plot(recorder.sharpes(), linewidth=0.8, color=\"#1f77b4\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:490:     "axes[0, 0].set_title(f\"Trial Sharpe over the search  (effective {n_eff} of {recorder.n_trials()} trials)\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb:503:     "    [f\"raw\\n{recorder.n_trials()} trials\", f\"effective\\n{n_eff} trials\"],\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:12:     "Early-warning models for in-hospital death are trained on longitudinal ICU vital-sign streams. The PhysioNet Computing in Cardiology Challenge 2012, \"Predicting Mortality of ICU Patients,\" is a clean public dataset for this: 4,000 de-identified ICU patients, each with a 48-hour record of vital signs and a binary in-hospital death outcome (Silva et al., 2012, PhysioNet).\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:134:     "Each patient is a text file with `Time, Parameter, Value` columns. We pivot to wide format and keep the four vital signs that are recorded most consistently (HR for heart rate, SysABP for systolic blood pressure, Temp for temperature, and GCS for the Glasgow Coma Scale), then join the in-hospital mortality label from Outcomes-a.txt.\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:163:     "outcomes = outcomes[[\"RecordID\", \"In-hospital_death\"]].rename(\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:166:     "outcomes[\"RecordID\"] = outcomes[\"RecordID\"].astype(str)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:171:     "patient_records = []  # list of (record_id, hour, HR, SysABP, Temp, GCS)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:177:     "        record_id = Path(member.name).stem\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:200:     "            row = {\"record_id\": record_id, \"hour\": hour}\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:204:     "            patient_records.append(row)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:206:     "raw = pd.DataFrame(patient_records)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:207:     "print(f\"Raw long-format rows: {raw.shape[0]:,}, unique patients: {raw['record_id'].nunique()}\")"
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:265:        "      <th>record_id</th>\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:330:        "  record_id  hour  Temp         HR  SysABP   GCS  mortality\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:345:     "raw = raw.merge(outcomes, left_on=\"record_id\", right_on=\"RecordID\", how=\"inner\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:346:     "raw = raw.drop(columns=[\"RecordID\"])\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:348:     "print(f\"After joining outcomes: {raw['record_id'].nunique()} patients\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:349:     "print(f\"Overall mortality rate: {raw.drop_duplicates('record_id')['mortality'].mean():.1%}\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:353:     "patients_meta = raw.drop_duplicates(\"record_id\")[[\"record_id\", \"mortality\"]]\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:355:     "pos = patients_meta[patients_meta[\"mortality\"] == 1][\"record_id\"].values\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:356:     "neg = patients_meta[patients_meta[\"mortality\"] == 0][\"record_id\"].values\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:365:     "df = raw[raw[\"record_id\"].isin(selected)].copy()\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:366:     "df = df.sort_values([\"record_id\", \"hour\"]).reset_index(drop=True)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:370:     "    df[col] = df.groupby(\"record_id\")[col].transform(lambda s: s.ffill().bfill())\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:373:     "print(f\"\\nSubsampled dataset: {df.shape[0]:,} rows, {df['record_id'].nunique()} patients\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:375:     "    f\"Mortality prevalence (subsampled): {df.drop_duplicates('record_id')['mortality'].mean():.1%}\"\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:478:     "    for i, pid in enumerate(sorted(df[\"record_id\"].unique()))\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:481:     "    lambda row: ICU_ADMIT + pd.Timedelta(hours=patient_offsets[row[\"record_id\"]] + row[\"hour\"]),\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:491:     "# Convert record_id to integer group label\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:492:     "patient_ids = sorted(df[\"record_id\"].unique())\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb:494:     "groups = df[\"record_id\"].map(pid_to_int).reset_index(drop=True)\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:60:     "    min_track_record_length,\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:532:     "## Minimum Track Record Length"
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:575:     "    min_trl = min_track_record_length(\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:585:     "        print(\"Track record is sufficient.\")\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:591:     "demo_trl = min_track_record_length(\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb:812:     "MinTRL is the operational part. `min_track_record_length` tells you how many days of live data you need before you can claim, at 95% confidence, that a new model really beats the baseline.\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/ohlc_trading_signal.ipynb:336: [行の長さ 61146 字。当たった 3 か所の前後 200 字] …MRL3jjvuMC3zxBNPyIMPPqj6hWD59PR0FawwP2uCEbgtW7aUyy67TI3G7d27twqmaGhcOn/+fDVtpkuXLvLoo4/KxIkTTeNx4eKLLzYFYbAD8+OPP6oxvFgvX8wEOXQuQ44lZ9lc5qs1h2Toh6tl2CdrJCMnXzVE1QfoJR2cY5wuFZXDlCETRAdOUHa0ePcpWfnvWT6dRERuNHXqVHUiZvjw4arEF33NwsPDZdasWXZ/Bid5kOmqL9aN2YmIiKjiGI9e3ejqq69WF0c7CpMnT1YXezAJBgEMR9q3by9//fWXw2UwqhcXX6bLWSb+ukNdDr4y2CKAMevvAzLlz92mZTNyCiRCl8MgE6SEcphmz/wpfzzUW9rUjhFfZiyHKXsmCNz72Xr11fw1IiKiypObm… …gAA5deqUxfX4Hr0+nBEUFCSdOnVSDeLtQblNSkqK6XLkyJFyrzsREZGv4hEUWbDO5Oj3xlLT/5Oz8iQmLEjCioIeR5OyBL09a0Qbm9QG+TvuCYLSGUgvCob4MgSLrKfDNKoeITVjQkvVWJblMURE7oPJc2i4vmjRItN1KG/B98j4cAbKaTD9rlatWnaXCQkJURNlzC9ERERUNgyCkIV/rPp1HDqXafp/ShYyQYIlLMgYBIHLWiZKpC6HsTMdBhNMcPCuM0Fy8jghBpkgKB8qraw8Y0mRFhwYIP+cSrPI2CEiosqD8bgfffSRfP7557Jr1y4ZNWqUZGRkqGkxgNIX88apaPSOiXX79+9XI3XvvPNONSL3vvvu48tGRETkC9NhyHNk5ubLot2nbTY0DQkMk… …qOIxCEJEpIIg/hajaz9dcUAW7z5l8dy8One33P+/DbJ0z+limSDRYUFOZYLo7I5+byyVRuPnSPMJf9pcZu72oiBIFZskk56D58xxsGL0pU3lmatayc7JV9gth9HiI4LlfEauMQjCTBCqZLm5uXLzzTfLqFGjnP6Z1157Td5++22ZOXOmrFmzRiIiImTQoEGSnV266VRERERUNjxtRkSEIEjghUwQnKmd9PtOqR4ZIusnJJqeH52VcTLVeLCCkbq6ESpKOCDEib4iGbmOAxs4qN9/NkP1KjEPzLjKyn1n1brf2LmuVHZTVEzUiSwhCILnfWTfxk7dJ8qQEFjBhZkgVNkmTZqkvn722WdOLY+/LW+99ZZMmDBBrrvuOnXdF198IYmJifLLL7/IrbfeWqHrS…
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:3: Tune a strategy with Optuna, record each trial's Sharpe with
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:4: ``TrialSharpeRecorder``, then deflate the champion's Sharpe by how much you
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:8: 1. Units. The objective here records an *annualised* Sharpe (what dashboards
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:13:    needlessly harsh. ``recorder.n_effective()`` gives the count to deflate by.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:26: from purgedcv.optuna_integration import TrialSharpeRecorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:57:     recorder = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:62:     study.optimize(objective, n_trials=120, callbacks=[recorder])
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:67:         n_trials=recorder.n_effective(),  # TPE trials are correlated: effective count
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:68:         var_sharpe=recorder.var_sharpe(),  # annualised (objective recorded annualised) ...
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:72:     print(f"raw trials       : {recorder.n_trials()}")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py:73:     print(f"effective trials : {recorder.n_effective()}")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/precipitation_noaa.ipynb:12:     "Statistical weather forecasting leans on long historical records of daily station observations. NOAA's GHCN-Daily (Global Historical Climatology Network) database (Menne *et al.*, 2012) holds century-scale daily records of temperature, precipitation, wind, and pressure for tens of thousands of stations worldwide.\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/selection_regret_lcl_companions.py:3: Companion to ``selection_regret_lcl_seeds.py``. That script records, per
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/selection_regret_lcl_companions.py:8: and records the quantities the headline sweep does not store:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/selection_regret_lcl_seeds.py:5: pipeline over many partitions and, for each one, records:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/uk_smart_meter_lcl.ipynb:33:     "`examples/_lcl_harness.py`; `tools/lcl_full_benchmark.py` can rerun the\n",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:198: Metrics & \code{min_track_record_length} & Minimum observations needed to establish a Sharpe ratio \\
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:258: The companion benchmark also records two non-tabulated open alternatives:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:261: failures are recorded with exact exception messages rather than imputed scores.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:478: record DOI \doi{10.5281/zenodo.20323362}; the software archive (separate DOI
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:495: label horizon, and no estimator fitting. In the recorded local run,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex:515: competitors are recorded as \code{NOT RUN} with exact exception messages. For a
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.md:183: The companion benchmark also records two non-tabulated open
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.md:186: recorded with exact exception messages rather than imputed scores.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.md:418: horizon, and no estimator fitting. In the recorded local run, generated
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.tex:179: Metrics & \code{min_track_record_length} & Minimum observations needed to establish a Sharpe ratio \\
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.tex:241: The companion benchmark also records two non-tabulated open alternatives:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.tex:244: failures are recorded with exact exception messages rather than imputed scores.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.tex:470: label horizon, and no estimator fitting. In the recorded local run,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.txt:175: min_track_record_length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.txt:235: benchmark also records two non-tabulated open alternatives: mlfinpy did not run on the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.txt:237: was unavailable. Those failures are recorded with exact exception messages rather than
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.txt:556: estimator fitting. In the recorded local run, PurgedKFold generated the five folds in
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/paper.md:29: Sharpe Ratio, and Minimum Track Record Length. Every splitter follows the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/paper.md:56: The demand for the fix is on the record. A 2022 auto-sklearn feature request
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/paper.md:98: `min_track_record_length` score the result and are numerically exact to the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:184: Metrics & \code{min_track_record_length} & Minimum observations needed to establish a Sharpe ratio \\
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:370: companion benchmark also records two non-tabulated open alternatives:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:373: failures are recorded with exact exception messages rather than imputed scores.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:463: recorded as \code{NOT RUN} with exact exception messages.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:481: prediction, engine run-to-failure simulation, rainfall records, electricity
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:484: Ratio, and Minimum Track Record Length following Bailey, Lopez de Prado, and
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex:503: label horizon, and no estimator fitting. In the recorded local run,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:198: Metrics & \code{min_track_record_length} & Minimum observations needed to establish a Sharpe ratio \\
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:258: The companion benchmark also records two non-tabulated open alternatives:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:261: failures are recorded with exact exception messages rather than imputed scores.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:466: \section*{Availability and Zenodo record}
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:476: This manuscript is intended to be deposited as a Zenodo publication record with
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:481: \doi{10.5281/zenodo.20323362} identifies this preprint record.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:493: label horizon, and no estimator fitting. In the recorded local run,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex:513: competitors are recorded as \code{NOT RUN} with exact exception messages. For a
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:163: min_track_record_length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:235: The companion benchmark also records two non-tabulated open alternatives: mlfinpy did not
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:237: was unavailable. Those failures are recorded with exact exception messages rather than imputed
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:544: Availability and Zenodo record
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:551: This manuscript is intended to be deposited as a Zenodo publication record with resource
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:555: 10.5281/zenodo.20323362 identifies this preprint record.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:566: fitting. In the recorded local run, PurgedKFold generated the five folds in 1.898 seconds best-ofthree (mean 1.911 seconds), and wrote the environment details to paper/microbench_summary.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt:578: timeseriescv are installed; unavailable competitors are recorded as NOT RUN with exact exception
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md:3: Recommended record type for this manuscript: **Publication -> Preprint**.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md:6: through DOI.org until the Zenodo record is published.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md:15: - `paper/microbench_summary.md` - recorded local microbenchmark output.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md:94: record.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md:110: README, `CITATION.cff`, and the software Zenodo record metadata if appropriate.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/__init__.py:12:     min_track_record_length,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/__init__.py:61:     "min_track_record_length",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:9: - [`min_track_record_length`][purgedcv.min_track_record_length] (MinTRL) — derived from PSR by inversion.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:231:             [`purgedcv.optuna_integration.TrialSharpeRecorder`][purgedcv.optuna_integration.TrialSharpeRecorder]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:297:         n_obs: Track record length (number of observations in ``returns``).
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:385: def min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:417:         ``observed_sharpe <= target_sharpe`` no finite track record can
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:429:         >>> from purgedcv import min_track_record_length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:430:         >>> n = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:436:         >>> # No track record proves a Sharpe you have not actually beaten:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:437:         >>> math.isinf(min_track_record_length(0.1, 0.2, 0.05, 0.0, 3.0))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:452:     # The track record is too short no matter how long it runs: if the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:466:     # Any track record with observed_sharpe > target_sharpe already clears
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py:482:         raise ValueError("inputs imply a non-finite minimum track record length.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/diagnostics.py:285:     return pd.DataFrame.from_records(rows, columns=_AUDIT_COLUMNS)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:12: [`TrialSharpeRecorder`][purgedcv.optuna_integration.TrialSharpeRecorder]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:15: Importing this module does **not** require Optuna. The recorder is a plain
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:29: __all__ = ["TrialSharpeRecorder"]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:33:     """The slice of an Optuna ``FrozenTrial`` the recorder reads."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:41: class TrialSharpeRecorder:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:46:     recorder accumulates them and reports the variance for
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:48:     attribute, the recorder falls back to that trial's objective ``value``.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:57:         >>> from purgedcv.optuna_integration import TrialSharpeRecorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:58:         >>> recorder = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:59:         >>> # Optuna calls the recorder with (study, frozen_trial) per trial;
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:62:         ...     recorder(study=None, trial=SimpleNamespace(value=s, user_attrs={"sharpe": s}))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:63:         >>> recorder.n_trials()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:65:         >>> round(recorder.var_sharpe(), 4)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:70:         recorder = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:71:         study.optimize(objective, n_trials=300, callbacks=[recorder])
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:73:             best_returns, n_trials=recorder.n_trials(), var_sharpe=recorder.var_sharpe()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:82:         """Record one trial's Sharpe ratio. Matches the Optuna callback signature.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:99:         """The recorded Sharpe ratios, in trial order, as a 1-D array."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:103:         """Number of trials with a usable (finite) Sharpe ratio recorded."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:112:         applies [`effective_n_trials`][purgedcv.effective_n_trials] to the recorded Sharpe
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:114:         Returns 0 when nothing has been recorded yet. See
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:125:         """Variance of the recorded Sharpe ratios, for ``deflated_sharpe_ratio``.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:127:         Returns ``nan`` until more than ``ddof`` trials have been recorded.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:131:         the per-period Sharpe of its ``returns`` argument, so record a
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py:133:         ``returns`` you will later deflate). Do that and the recorder feeds
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_api_docs.py:71:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_apply_embargo.py:110:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_embargo_respected.py:93:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_groups_disjoint.py:80:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_no_temporal_leakage.py:94:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_audit_splitter.py:102:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_backtest_paths.py:97:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_competitor_benchmark.py:34:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_compute_overlap_fraction.py:89:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_cpcv.py:65:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_framework_agnostic_times.py:38:         [sys.executable, "-c", snippet], capture_output=True, text=True, check=True
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_horizons_overlap.py:68:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_lcl_full_benchmark.py:160:             capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:21:     min_track_record_length,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:25: from purgedcv.optuna_integration import TrialSharpeRecorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:63: def test_user_story_min_track_record_length() -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:67:     required_n = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:76:     required_n_small_gap = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:87: def test_user_story_optuna_recorder_feeds_deflated_sharpe() -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:88:     """User Story: a researcher tunes a strategy with Optuna, records each
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:89:     trial's Sharpe through TrialSharpeRecorder, then deflates the champion's
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:90:     Sharpe by the variance and count of all trials searched. The recorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:96:     recorder = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:98:         recorder(study=None, trial=SimpleNamespace(value=float(s), user_attrs={"sharpe": float(s)}))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:100:     assert recorder.n_trials() == 120
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:101:     var_sharpe = recorder.var_sharpe()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:106:         champion_returns, n_trials=recorder.n_trials(), var_sharpe=var_sharpe
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:135: def test_user_story_min_track_record_length_unreachable() -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:136:     """User Story: a researcher checks how long a track record must run to
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:141:     unreachable = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:145:     reachable = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:183:             min_track_record_length,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:191:         n_min = min_track_record_length(0.5, 0.2, 0.05, 0.0, 3.0)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py:205:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_optuna_cookbook.py:26:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_parse_horizon.py:70:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_path_metrics.py:117:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_pbo.py:81:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_public_types.py:84:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purge.py:89:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purged_group_kfold.py:69:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purged_kfold.py:60:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_release.py:23:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_release.py:31:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_release.py:82:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_sync_citation.py:28:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_validate_times.py:75:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_walk_forward.py:88:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_install_smoke.py:31:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_quality_gate.py:36:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_quality_gate.py:50:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_quality_gate.py:64:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:14:     min_track_record_length,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:362: class TestMinTrackRecordLength:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:364:         """min_track_record_length(SR_hat, target, alpha, ...) returns n*
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:373:         n_star = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:395:         track record to be confident."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:398:         n_close = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:405:         n_far = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:415:         """If you haven't beaten the benchmark yet, no finite track record
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:422:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:432:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:443:         n = min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:455:         unreachable-track-record short circuit."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:457:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:467:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:475:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:483:     def test_alpha_at_or_above_half_needs_minimum_track_record(self) -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:485:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:495:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:507:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:515:     def test_rejects_non_finite_track_record_length(self) -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:517:             min_track_record_length(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py:545:             min_track_record_length(**kwargs)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:3: These run without Optuna installed: ``TrialSharpeRecorder`` is a plain
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:15: from purgedcv.optuna_integration import TrialSharpeRecorder
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:22: class TestTrialSharpeRecorder:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:23:     def test_records_from_user_attr(self) -> None:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:24:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:33:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:38:         rec = TrialSharpeRecorder(attr="ann_sharpe")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:43:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:53:         the recorder skips it, like None and non-finite values."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:54:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:65:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:73:         assert TrialSharpeRecorder().n_effective() == 0
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:76:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:81:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:89:         """End-to-end shape: the recorder's outputs slot straight into DSR."""
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py:93:         rec = TrialSharpeRecorder()
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_public_api.py:41:         "min_track_record_length",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_public_api.py:169:         capture_output=True,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:15: competitor's splitter and record:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:23: are NOT guessed at: each splitter is isolated, and a failure is recorded with
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:217:     records: list[dict[str, Any]] = []
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:224:             records.append(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:240:             records.append(
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:253:     df = pd.DataFrame.from_records(records)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:268:     for r in records:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py:276:     notrun = [r for r in records if r["status"] != "ran"]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/release.py:44:         ["git", *args], cwd=root, check=True, capture_output=True, text=True
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/release.py:104:         # Rerunning the original merge event after a partial publish uses the
+== ファイルごとの当たった行の数
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/.zenodo.json
+10	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CHANGELOG.md
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CITATION.cff
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/CONTRIBUTING.md
+4	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/context7.json
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/api.md
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/architecture.md
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/examples.md
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/index.md
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/docs/methodology.md
+4	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/README.md
+13	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/backtest_overfitting_audit.ipynb
+29	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/clinical_mortality_physionet.ipynb
+6	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/energy_demand_pjm.ipynb
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/ohlc_trading_signal.ipynb
+11	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/optuna_dsr_cookbook.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/precipitation_noaa.ipynb
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/selection_regret_lcl_companions.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/selection_regret_lcl_seeds.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/uk_smart_meter_lcl.ipynb
+6	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/arxiv_paper.tex
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.md
+4	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.tex
+4	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/jdssv_paper.txt
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/paper.md
+7	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/ssrn_paper.tex
+8	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.tex
+8	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_paper.txt
+5	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/paper/zenodo_upload_metadata.md
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/__init__.py
+12	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/_metrics.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/diagnostics.py
+25	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/src/purgedcv/optuna_integration.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_api_docs.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_apply_embargo.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_embargo_respected.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_groups_disjoint.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_assert_no_temporal_leakage.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_audit_splitter.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_backtest_paths.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_competitor_benchmark.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_compute_overlap_fraction.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_cpcv.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_framework_agnostic_times.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_horizons_overlap.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_lcl_full_benchmark.py
+21	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_metrics.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_optuna_cookbook.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_parse_horizon.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_path_metrics.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_pbo.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_public_types.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purge.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purged_group_kfold.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_purged_kfold.py
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_release.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_sync_citation.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_validate_times.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_e2e_walk_forward.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_install_smoke.py
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e/test_quality_gate.py
+22	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_metrics.py
+16	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_optuna_integration.py
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/test_public_api.py
+8	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/competitor_benchmark.py
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tools/release.py
+cat8_search: complete files=158 read=158 files_with_hits=67 hits=285 list=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/list_8042_run46.txt sha=0edbd73f22fc9e57 candidate=8-042
+--- 2026-09-27T08:52:00Z method=確認 target=purged-cross-validation rc=2 time_s=0.003 note=E4当たり確認: ohlc_trading_signal.ipynb336行目の当たり3箇所の直前後を特定(base64画像データの疑い) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ python3 -c "
+import re
+line = open('/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/ohlc_trading_signal.ipynb').readlines()[335]
+pat = re.compile(r'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun', re.I)
+for m in pat.finditer(line):
+    print(m.start(), repr(line[max(0,m.start()-30):m.start()+30]))
+print('line_len', len(line))
+print('is_base64_like', bool(re.match(r'^\s*"[A-Za-z0-9+/=]{200,}', line)))
+"
+bash: -c: line 8: unexpected EOF while looking for matching `''
+--- 2026-09-27T08:52:12Z method=確認 target=purged-cross-validation rc=0 time_s=0.017 note=E4当たり確認: ohlc_trading_signal.ipynb336行目の当たり語をgrep -oで特定し、行の性質(base64画像データか)を確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+F=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/examples/ohlc_trading_signal.ipynb
+sed -n "336p" "$F" | grep -o -i -E "リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun"
+echo "---行の長さ---"
+sed -n "336p" "$F" | wc -c
+echo "---この行のkey名(先頭50字)---"
+sed -n "336p" "$F" | cut -c1-60
+echo "---base64っぽい塊が含まれるか(70字以上のA-Za-z0-9+/=の連続)---"
+sed -n "336p" "$F" | grep -o -E "[A-Za-z0-9+/=]{70,}" | head -1 | cut -c1-80
+
+RERuN
+RERUN
+RERUN
+| ---行の長さ---
+61147
+| ---この行のkey名(先頭50字)---
+      "image/png": "iVBORw0KGgoAAAANSUhEUgAABEEAAAGGCAYAAACU
+| ---base64っぽい塊が含まれるか(70字以上のA-Za-z0-9+/=の連続)---
+iVBORw0KGgoAAAANSUhEUgAABEEAAAGGCAYAAACUtJ9/AAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGli
+--- 2026-09-27T08:52:51Z method=読了 target=purged-cross-validation rc=0 time_s=0.138 note=E4判定用: tests/e2e/配下26ファイルのcapture_output=True行の前後(何をsubprocessで実行しているか)を一括確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+for f in test_e2e_api_docs.py test_e2e_apply_embargo.py test_e2e_assert_embargo_respected.py test_e2e_assert_groups_disjoint.py test_e2e_assert_no_temporal_leakage.py test_e2e_audit_splitter.py test_e2e_backtest_paths.py test_e2e_competitor_benchmark.py test_e2e_compute_overlap_fraction.py test_e2e_cpcv.py test_e2e_framework_agnostic_times.py test_e2e_horizons_overlap.py test_e2e_lcl_full_benchmark.py test_e2e_metrics.py test_e2e_optuna_cookbook.py test_e2e_parse_horizon.py test_e2e_path_metrics.py test_e2e_pbo.py test_e2e_public_types.py test_e2e_purge.py test_e2e_purged_group_kfold.py test_e2e_purged_kfold.py test_e2e_release.py test_e2e_sync_citation.py test_e2e_validate_times.py test_e2e_walk_forward.py test_install_smoke.py test_quality_gate.py; do
+  n=$(grep -n "capture_output=True" $SRC/tests/e2e/$f | head -1 | cut -d: -f1)
+  echo "== $f (line $n) =="
+  sed -n "$((n-6)),$((n+1))p" $SRC/tests/e2e/$f | grep -E "def test|subprocess.run|\[sys.executable|\"-c\"|snippet|import|\.py" | head -3
+done
+
+== test_e2e_api_docs.py (line 71) ==
+    pytest.importorskip("mkdocs", reason="API rendering tests require the docs extra")
+    result = subprocess.run(
+        [sys.executable, "-m", "mkdocs", "build", "--strict", "--site-dir", str(site_dir)],
+== test_e2e_apply_embargo.py (line 110) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_assert_embargo_respected.py (line 93) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_assert_groups_disjoint.py (line 80) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_assert_no_temporal_leakage.py (line 94) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_audit_splitter.py (line 102) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_backtest_paths.py (line 97) ==
+        # Verify reconstruct_paths is also importable as the lower-level function:
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_competitor_benchmark.py (line 34) ==
+    return subprocess.run(
+        [sys.executable, str(BENCHMARK), "--core-only", "--out-dir", str(out_dir)],
+== test_e2e_compute_overlap_fraction.py (line 89) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_cpcv.py (line 65) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_framework_agnostic_times.py (line 38) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet], capture_output=True, text=True, check=True
+== test_e2e_horizons_overlap.py (line 68) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_lcl_full_benchmark.py (line 160) ==
+== test_e2e_metrics.py (line 205) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_optuna_cookbook.py (line 26) ==
+def test_optuna_dsr_cookbook_runs() -> None:
+    result = subprocess.run(
+        [sys.executable, str(COOKBOOK)],
+== test_e2e_parse_horizon.py (line 70) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_path_metrics.py (line 117) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_pbo.py (line 81) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_public_types.py (line 84) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_purge.py (line 89) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_purged_group_kfold.py (line 69) ==
+        # Verify the GroupLeakageError import is alive at runtime:
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_purged_kfold.py (line 60) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_release.py (line 23) ==
+    return subprocess.run(
+        ["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", *args],
+== test_e2e_sync_citation.py (line 28) ==
+    return subprocess.run(
+        [sys.executable, str(SCRIPT), *args],
+== test_e2e_validate_times.py (line 75) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_e2e_walk_forward.py (line 88) ==
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+== test_install_smoke.py (line 31) ==
+    result = subprocess.run(
+            "-c",
+            "import purgedcv; print(purgedcv.__version__)",
+== test_quality_gate.py (line 36) ==
+            "examples/_lcl_harness.py",
+--- 2026-09-27T08:53:02Z method=読了 target=purged-cross-validation rc=0 time_s=0.007 note=E4判定用: test_e2e_lcl_full_benchmark.py・test_quality_gate.pyのcapture_output=True周辺 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+echo "== test_e2e_lcl_full_benchmark.py 150-162 =="
+sed -n "150,162p" $SRC/tests/e2e/test_e2e_lcl_full_benchmark.py
+echo "== test_quality_gate.py 28-66 defで絞り =="
+sed -n "28,66p" $SRC/tests/e2e/test_quality_gate.py | grep -n "def test\|subprocess.run\|\[.*\.py\|capture_output"
+
+== test_e2e_lcl_full_benchmark.py 150-162 ==
+            [
+                sys.executable,
+                str(BENCHMARK),
+                "--quick",
+                "--raw-dir",
+                str(raw_dir),
+                "--out-dir",
+                str(out_dir),
+            ],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+== test_quality_gate.py 28-66 defで絞り ==
+9:        capture_output=True,
+19:def test_ruff_check_clean() -> None:
+20:    result = subprocess.run(
+23:        capture_output=True,
+33:def test_mypy_strict_clean() -> None:
+34:    result = subprocess.run(
+37:        capture_output=True,
+--- 2026-09-27T08:53:24Z method=読了 target=purged-cross-validation rc=0 time_s=0.006 note=E4判定用: tests/test_public_api.py169行目周辺とexamples/uk_smart_meter_lcl.ipynb33行目周辺 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src
+echo "== test_public_api.py 160-170 =="
+sed -n "160,170p" $SRC/tests/test_public_api.py
+echo "== uk_smart_meter_lcl.ipynb 30-36 =="
+sed -n "30,36p" $SRC/examples/uk_smart_meter_lcl.ipynb
+
+== test_public_api.py 160-170 ==
+    """A fresh interpreter can resolve every name in the public contract."""
+    names = sorted(EXPECTED_TOP_LEVEL)
+    snippet = (
+        "import purgedcv\n"
+        + "\n".join(f"assert hasattr(purgedcv, {name!r}), {name!r}" for name in names)
+        + "\nprint('OK')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", snippet],
+        capture_output=True,
+        text=True,
+== uk_smart_meter_lcl.ipynb 30-36 ==
+    "\n",
+    "If that cached CSV is absent it falls back to a synthetic LCL-structured\n",
+    "dataset and still runs. The same four-way harness is extracted verbatim into\n",
+    "`examples/_lcl_harness.py`; `tools/lcl_full_benchmark.py` can rerun the\n",
+    "expensive full-population benchmark after the raw LCL files are downloaded.\n",
+    "As far as I can find, a reproducible side-by-side of CV schemes on LCL is\n",
+    "unpublished: existing LCL papers forecast without comparing CV, and the\n",
+--- 2026-09-27T08:54:58Z method=報告下書き target=purged-cross-validation rc=0 time_s=0.028 note=台帳から候補一覧69行と要素と段の表(触らない68候補分)を機械生成しdraftに書く(45回目と同じ方式) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+python3 - << "PYEOF"
+import csv
+rows = list(csv.DictReader(open("docs/DATA/tools_catalog_cat8.tsv"), delimiter="\t"))
+assert len(rows) == 69, len(rows)
+out_cand = []
+out_elem = []
+elems = ["E1a","E1b","E2","E3a","E3b","E4","E5","E6"]
+for i, r in enumerate(rows, 1):
+    name = r["名前"]; num = r["番号"]; state = r["状態"]
+    tag = "[深掘り] " if state == "深掘り" else ""
+    if num == "8-042":
+        out_cand.append(f"{i}. {tag}`{name}` ({num}) — __PLACEHOLDER_8042__ — 状態: __PLACEHOLDER_8042_STATE__")
+    else:
+        out_cand.append(f"{i}. {tag}`{name}` ({num}) — (台帳の値のまま) — 状態: {state}")
+        for e in elems:
+            val = r[e]; dan = r["段_"+e]
+            dan_disp = dan if val == "印" else "-"
+            out_elem.append(f"| `{name}` | {e} | {val} | {dan_disp} | 一次資料 | 台帳の値のまま(45回目の節) |  |")
+open("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/draft_candlist46.txt","w").write("\n".join(out_cand)+"\n")
+open("/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/draft_elem46.txt","w").write("\n".join(out_elem)+"\n")
+print("cand_lines", len(out_cand), "elem_lines", len(out_elem))
+PYEOF
+
+cand_lines 69 elem_lines 544
+--- 2026-09-27T08:55:03Z method=読了 target=purged-cross-validation rc=0 time_s=0.005 note=draft_candlist46.txtの確認(先頭5行) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ head -5 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/draft_candlist46.txt; echo ...; sed -n '41,43p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/draft_candlist46.txt
+1. [深掘り] `qf-lib` (8-001) — (台帳の値のまま) — 状態: 深掘り
+2. [深掘り] `PineForge` (8-002) — (台帳の値のまま) — 状態: 深掘り
+3. [深掘り] `prediction-market-backtester` (8-003) — (台帳の値のまま) — 状態: 深掘り
+4. `akurkar07/OrderBook` (8-004) — (台帳の値のまま) — 状態: 危険で導入停止
+5. `Exegy` (8-005) — (台帳の値のまま) — 状態: 登録が要る
+...
+41. [深掘り] `Oryon` (8-041) — (台帳の値のまま) — 状態: 深掘り
+42. `purged-cross-validation` (8-042) — __PLACEHOLDER_8042__ — 状態: __PLACEHOLDER_8042_STATE__
+43. `purgedcv` (8-043) — (台帳の値のまま) — 状態: 未着手
+--- 2026-09-27T08:55:48Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E4判定用: test_quality_gate.py1-20行目(1件目のcapture_outputの対象を特定)・test_e2e_assert_groups_disjoint.py/test_e2e_audit_splitter.py/test_e2e_horizons_overlap.py/test_e2e_parse_horizon.pyの検査対象確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ 
+SRC=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests
+echo "== test_quality_gate.py 1-20 =="
+sed -n "1,20p" $SRC/e2e/test_quality_gate.py
+
+== test_quality_gate.py 1-20 ==
+"""End-to-end test: project lint and type-check gates pass on the whole tree.
+
+These tests subprocess out to ``black``, ``ruff``, and ``mypy`` invoked as
+``python -m <tool>``, exactly the way a CI job would (and using the same
+interpreter that runs the test suite). The test suite itself catches
+regressions in code style or type discipline. If a contributor breaks
+``black``/``ruff`` rules or introduces a mypy error and skips pre-commit,
+pytest still flags it.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+--- 2026-09-27T08:56:16Z method=確認 target=purged-cross-validation rc=0 time_s=0.698 note=起動文§2.5の最後の手: scratchpad外の新規ファイル確認(検索は全部終わった) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ find /tmp -maxdepth 1 -newermt '2026-09-27T08:46:26Z' -type f; echo '---root---'; find /root -xdev -newermt '2026-09-27T08:46:26Z' -not -path '/root/.claude/*' -type f
+/tmp/claude-code.log
+/tmp/claude-code-742835796.diag.log
+| ---root---
+--- 2026-10-01T08:54:27Z method=読了 target=purged-cross-validation rc=0 time_s=0.290 note=E4判定用(この回の追加の読み): tests/e2e の当たった27ファイルの冒頭の説明(docstring)を全部読み、capture_output=True の subprocess が何を実行するかを確かめる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/tests/e2e; for f in test_e2e_api_docs test_e2e_apply_embargo test_e2e_assert_embargo_respected test_e2e_assert_groups_disjoint test_e2e_assert_no_temporal_leakage test_e2e_audit_splitter test_e2e_backtest_paths test_e2e_competitor_benchmark test_e2e_compute_overlap_fraction test_e2e_cpcv test_e2e_framework_agnostic_times test_e2e_horizons_overlap test_e2e_lcl_full_benchmark test_e2e_metrics test_e2e_optuna_cookbook test_e2e_parse_horizon test_e2e_path_metrics test_e2e_pbo test_e2e_public_types test_e2e_purge test_e2e_purged_group_kfold test_e2e_purged_kfold test_e2e_release test_e2e_sync_citation test_e2e_validate_times test_e2e_walk_forward test_install_smoke; do echo "== $f =="; sed -n '"'"'1,6p'"'"' $f.py | cut -c1-200; done'
+== test_e2e_api_docs ==
+"""User stories: API readers see working links, not raw Sphinx markup.
+
+Build the real site in a subprocess, then inspect its rendered API page.
+Run with the project's ``docs`` extra installed.
+"""
+
+== test_e2e_apply_embargo ==
+"""End-to-end tests for ``apply_embargo``.
+
+User stories:
+- A quantitative researcher applies a 2-day embargo after every test fold
+  to prevent serial-correlation leakage in their financial-strategy
+  backtest.
+== test_e2e_assert_embargo_respected ==
+"""End-to-end tests for ``assert_embargo_respected``.
+
+User stories:
+- A risk analyst wants to verify a financial-strategy split respects a
+  multi-day embargo gap that prevents serial-correlation leakage.
+- The asymmetry of the embargo (post-test only) must be visible at the
+== test_e2e_assert_groups_disjoint ==
+"""End-to-end tests for ``assert_groups_disjoint``.
+
+User stories:
+- A clinical researcher with multiple observations per patient must verify
+  that no patient appears in both training and test, to prevent
+  patient-level information leakage.
+== test_e2e_assert_no_temporal_leakage ==
+"""End-to-end tests for ``assert_no_temporal_leakage``.
+
+User stories:
+- A researcher builds a custom train/test split by hand and wants a
+  one-liner to verify it has no temporal leakage before training a model.
+- A reviewer auditing someone else's split wants to compute, with the
+== test_e2e_audit_splitter ==
+"""End-to-end tests for the public ``audit_splitter`` entry point.
+
+User stories:
+- A researcher wants to inspect how many observations each fold loses to
+  purge and embargo before committing compute to a large model search.
+- A walk-forward user wants window truncation reported separately from
+== test_e2e_backtest_paths ==
+"""End-to-end tests for CombinatorialPurgedCV.backtest_paths and the
+top-level reconstruct_paths function."""
+
+from __future__ import annotations
+
+import subprocess
+== test_e2e_competitor_benchmark ==
+"""E2E: the controlled competitor-leakage benchmark holds and is deterministic.
+
+``tools/competitor_benchmark.py`` runs the same model through several
+libraries' CV splitters on a task whose honest answer is ~0. This pins the
+two invariants that make the comparison meaningful, using only the
+dependency-free core (sklearn + purgedcv) via ``--core-only``:
+== test_e2e_compute_overlap_fraction ==
+"""End-to-end tests for ``compute_overlap_fraction``.
+
+User stories:
+- A data engineer is debugging a custom splitter and wants to monitor
+  the per-fold overlap fraction over many random splits without their
+  monitoring loop blowing up on the first leaky split.
+== test_e2e_cpcv ==
+"""End-to-end tests for CombinatorialPurgedCV."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_framework_agnostic_times ==
+"""End-to-end tests for framework-agnostic time inputs.
+
+User stories:
+- A quant whose pipeline is numpy-only builds a purged splitter without ever
+  constructing a pandas object.
+- A quant who has migrated to polars extracts two time columns and runs CPCV
+== test_e2e_horizons_overlap ==
+"""End-to-end tests for ``horizons_overlap``.
+
+User stories:
+- A researcher wants to check whether two label horizons of a time-series
+  dataset overlap, so they can decide whether one sample's label leaks into
+  another sample's training context.
+== test_e2e_lcl_full_benchmark ==
+"""E2E: the shared LCL harness and the full-population benchmark CLI.
+
+Mirrors ``examples/uk_smart_meter_lcl.ipynb`` at the library level (notebooks
+are docs here, not run under pytest). Two guarantees:
+
+1. ``examples/_lcl_harness.py`` -- the verbatim extract the offline benchmark
+== test_e2e_metrics ==
+"""End-to-end tests for the D7 statistical metrics."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_optuna_cookbook ==
+"""End-to-end test for the Optuna + DSR cookbook example.
+
+Skipped unless the optional ``optuna`` extra is installed. When it is, the
+cookbook is run as a subprocess exactly as a user would (`python
+examples/optuna_dsr_cookbook.py`) and its output is checked.
+"""
+== test_e2e_parse_horizon ==
+"""End-to-end tests for the public ``parse_horizon`` entry point.
+
+These tests treat ``purgedcv`` as an installed third-party library and
+exercise its public surface the way a data scientist would write it. Two
+flavors:
+
+== test_e2e_path_metrics ==
+"""End-to-end tests for path_metrics, cv.reconstruct_paths, and CSCV."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_pbo ==
+"""End-to-end tests for Probability of Backtest Overfitting (PBO)."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_public_types ==
+"""End-to-end tests for the public result types and callback aliases (A7)."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_purge ==
+"""End-to-end tests for ``purge``.
+
+User stories:
+- A researcher builds a custom split by hand and wants to remove training
+  rows that would leak into the test horizon, then verify the result with
+  the diagnostic.
+== test_e2e_purged_group_kfold ==
+"""End-to-end tests for PurgedGroupKFold."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_purged_kfold ==
+"""End-to-end tests for PurgedKFold."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_release ==
+"""Exercise release planning in disposable Git repos, with no remote or uploads."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_e2e_sync_citation ==
+"""End-to-end test: CITATION.cff stays in step with the package version.
+
+These tests subprocess out to ``tools/sync_citation.py`` exactly the way CI
+and the release workflow invoke it (``python tools/sync_citation.py ...``).
+They cover the two user stories the script exists for: a CI drift guard that
+fails when CITATION.cff falls behind pyproject.toml, and a release step that
+== test_e2e_validate_times ==
+"""End-to-end tests for ``validate_times``.
+
+User stories:
+- A researcher prepares prediction/evaluation time arrays for their splitter
+  and wants a single up-front check that catches the common mistakes.
+- The error message must point at the offending row, not just say
+== test_e2e_walk_forward ==
+"""End-to-end tests for WalkForwardSplit."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+== test_install_smoke ==
+"""End-to-end smoke test: the installed package is importable from a fresh interpreter.
+
+This verifies that ``pip install -e ".[dev]"`` actually exposes the package
+on the import path, with no hidden import-time side effects, and that the
+top-level ``__version__`` attribute is present and well-formed.
+"""
+--- 2026-10-01T08:55:53Z method=読了 target=purged-cross-validation rc=0 time_s=0.004 note=E2案B(b): 選んだ頁(README.md、題の語 valid が当たった)の本文を全部読む 1/2(1-210行) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ sed -n 1,210p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md
+# purgedcv: scikit-learn-compatible purged and combinatorial cross-validation (CPCV) for time-series and financial machine learning in Python
+
+**Honest, leakage-aware cross-validation for time series and quantitative finance:** purged k-fold, embargo, walk-forward, and combinatorial purged CV (CPCV) with backtest-path reconstruction, plus deflated and probabilistic Sharpe ratios.
+
+[![CI](https://github.com/eslazarev/purged-cross-validation/actions/workflows/ci.yml/badge.svg)](https://github.com/eslazarev/purged-cross-validation/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/eslazarev/purged-cross-validation/branch/main/graph/badge.svg)](https://codecov.io/gh/eslazarev/purged-cross-validation)
+[![PyPI version](https://img.shields.io/pypi/v/purgedcv)](https://pypi.org/project/purgedcv/)
+[![Conda version](https://img.shields.io/conda/vn/conda-forge/purgedcv)](https://anaconda.org/conda-forge/purgedcv)
+[![PyPI downloads](https://static.pepy.tech/badge/purgedcv)](https://pepy.tech/project/purgedcv)
+[![PyPI wheel](https://img.shields.io/pypi/wheel/purgedcv)](https://pypi.org/project/purgedcv/#files)
+
+[![Python versions](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/eslazarev/purged-cross-validation/blob/main/LICENSE)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+[![CodeFactor](https://www.codefactor.io/repository/github/eslazarev/purged-cross-validation/badge)](https://www.codefactor.io/repository/github/eslazarev/purged-cross-validation)
+[![Mentioned in Awesome Quant](https://awesome.re/mentioned-badge.svg)](https://github.com/wilsonfreitas/awesome-quant)
+
+**[Documentation →](https://eslazarev.github.io/purged-cross-validation/)** · **[Example notebooks →](https://github.com/eslazarev/purged-cross-validation/tree/main/examples)** · purge/embargo, walk-forward, and CPCV with PSR/DSR worked end to end on real ICU-mortality, turbofan-RUL, rainfall, and electricity-demand data.
+
+*Cite this software:* see [`CITATION.cff`](https://github.com/eslazarev/purged-cross-validation/blob/main/CITATION.cff) and [`paper/paper.md`](https://github.com/eslazarev/purged-cross-validation/blob/main/paper/paper.md) (JOSS paper).
+
+| ---
+
+## API summary
+
+| Symbol | Domain | Description |
+|---|---|---|
+| `purge` | D2 | Remove overlapping-horizon training rows |
+| `apply_embargo` | D3 | Remove time-, row-, or fraction-based post-test buffers |
+| `WalkForwardSplit` | D5.1 | Sliding / expanding walk-forward CV |
+| `PurgedKFold` | D5.2 | Contiguous test folds with purge + embargo |
+| `PurgedGroupKFold` | D5.3 | Group-aware purged k-fold |
+| `CombinatorialPurgedCV` | D5.4 | C(N,K) combinatorial folds |
+| `CombinatoriallySymmetricCV` | D5.4 | CSCV: symmetric IS/OOS folds, the PBO substrate |
+| `reconstruct_paths` | D6 | Assemble CPCV folds into backtest paths |
+| `path_metrics` | D6 | Per-path Sharpe / Calmar / drawdown / return table |
+| `PathMetricFn` | D6 | Callback type for custom per-path metrics |
+| `probabilistic_sharpe_ratio` | D7 | PSR: P(true SR > benchmark) |
+| `deflated_sharpe_ratio` | D7 | DSR: PSR corrected for multiple testing |
+| `deflated_sharpe_ratio_full` | D7 | DSR plus the intermediate deflation quantities |
+| `DSRDiagnostics` | D7 | Frozen result type returned by `deflated_sharpe_ratio_full` |
+| `probability_of_backtest_overfitting` | D7 | PBO via CSCV: how often in-sample selection overfits |
+| `PBOResult` | D7 | Frozen result type returned by PBO |
+| `PerformanceMetric` | D7 | Callback type for a custom PBO selection metric |
+| `min_track_record_length` | D7 | Minimum observations to establish SR |
+| `minimum_backtest_length` | D7 | MinBTL: backtest years below which a Sharpe is selection luck |
+| `effective_n_trials` | D7 | Independent-trial count for a correlated search, for DSR |
+| `optuna_integration.TrialSharpeRecorder` | D7 | Collect per-trial Sharpe variance + effective count for DSR |
+| `audit_splitter` | D8 | Per-fold filtering, overlap, block/envelope, and group audit report |
+| `diagnostics.*` | D8 | Leakage and embargo audit functions |
+
+| ---
+
+## Contents
+
+- [The problem](#the-problem)
+- [Does it actually catch leakage?](#does-it-actually-catch-leakage)
+- [Does an honest CV deploy better?](#does-an-honest-cv-deploy-better)
+- [What about a market with no real edge?](#what-about-a-market-with-no-real-edge)
+- [Installation](#installation)
+- [Quickstart](#quickstart)
+  - [1. The core primitive: `purge`](#1-the-core-primitive-purge)
+  - [2. The post-test buffer: `apply_embargo`](#2-the-post-test-buffer-apply_embargo)
+  - [3. Walk-forward CV: `WalkForwardSplit`](#3-walk-forward-cv-walkforwardsplit)
+  - [4. Purged k-fold: `PurgedKFold`](#4-purged-k-fold-purgedkfold)
+  - [5. CPCV + path reconstruction + metrics: the full workflow](#5-cpcv--path-reconstruction--metrics-the-full-workflow)
+- [Methodology references](#methodology-references)
+- [License](#license)
+
+| ---
+
+## The problem
+
+Standard k-fold cross-validation assumes the rows are independent. Time-series data is not. When a label resolves over the next few days, it overlaps the labels sitting right next to it, so an ordinary shuffle-split leaks tomorrow's answer back into training. The rows immediately after a test window leak too, because they are serially correlated with it. Both effects quietly inflate backtested Sharpe ratios and hand you strategies that look great on a chart and bleed money once they go live. This library removes both.
+
+Why write another one? People have asked scikit-learn, auto-sklearn, and mlpack for purging and embargo support and been turned down or left waiting for years. The one mature implementation, mlfinlab, went closed-source and paid. The free alternative has been unmaintained since 2018. That gap is the reason this exists.
+
+| ---
+
+## Does it actually catch leakage?
+
+A controlled check on synthetic data whose target is built so that **no feature can predict it**. The honest out-of-sample score must never be positive. Naive shuffled k-fold runs against `PurgedKFold` side by side ([examples/synthetic_leakage_proof.ipynb](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/synthetic_leakage_proof.ipynb), deterministic, no downloads; run it in your browser: [![Open in Kaggle](https://kaggle.com/static/images/open-in-kaggle.svg)](https://www.kaggle.com/code/evgeniilazarev/when-cross-validation-lies-a-controlled-study-on)):
+
+| model | naive shuffled KFold R² | PurgedKFold R² |
+|---|--:|--:|
+| predict-the-mean (reference) | -0.01 | -0.13 |
+| k-NN | **0.83** | -1.48 |
+| RandomForest | **0.91** | -1.87 |
+
+Train/test label overlap: **100% under naive → 0% under PurgedKFold**.
+
+![Out-of-sample R² on an unpredictable target: naive shuffled KFold scores far above zero (fabricated), PurgedKFold collapses below it.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/synthetic_leakage_proof.png)
+
+Naive CV reports R² ≈ 0.83–0.91 on a target nothing can predict. That is pure leakage from the overlap. `PurgedKFold` removes the overlap and the fabricated skill collapses below a predict-the-mean baseline. The negative number is not the point; *no positive skill* is the correct answer, and only the purged split reports it. The library does not make models look better; it stops them looking better than they are.
+
+| ---
+
+## Does an honest CV deploy better?
+
+Same kind of question, opposite framing: on a partially predictable real task, does `PurgedGroupKFold` pick a model that deploys better than naive shuffled `KFold`? UK Low Carbon London smart meters, 48 households for model selection, 12 truly held-out households for deployment ([examples/selection_regret_lcl.ipynb](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/selection_regret_lcl.ipynb)):
+
+| selection method     | picked model  | deployment MAE | deployment R² |
+|----------------------|---------------|---------------:|--------------:|
+| naive shuffled KFold | RF d=None     | 2.638 kWh      | +0.759        |
+| PurgedGroupKFold     | Ridge α=0.01  | **2.464 kWh**  | **+0.783**    |
+
+The honest-selected model deploys at **6.6% lower MAE** on the 12 unseen households. Across **30 random 48/12 household partitions**, honest wins every single one: naive picks deep RandomForest in all 30, honest picks Ridge in all 30, and the honest selection deploys better in all 30:
+
+| | value |
+|---|---|
+| Honest deploys better | **30 / 30** partitions |
+| Naive selector regret, median (IQR) | 0.28 kWh (0.18 to 0.52) |
+| Honest selector regret, median (IQR) | **0** (exactly zero) |
+| Naive − honest MAE, median | 0.28 kWh (**13.3% relative**) |
+| Range | 0.11 to 1.79 kWh |
+
+Plain `sklearn.GroupKFold` gives the same selection as `PurgedGroupKFold` here: the effect is a property of group-aware validation, not of a specific package ([`examples/selection_regret_lcl_seeds.py`](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/selection_regret_lcl_seeds.py)).
+
+![Honest CV deploys better on new LCL households: naive shuffled KFold picks deep RandomForest and deploys at 2.638 kWh; PurgedGroupKFold picks Ridge and deploys at 2.464 kWh.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/selection_regret_lcl.png)
+
+The naive selector picks deep RandomForest because the household-identifier feature lets it memorise per-household baselines inside the shuffled CV. On truly unseen households that feature is useless and the model collapses. An ablation that removes the identifier flattens the gap to zero. A second variant replaces the raw identifier with a **causal target-mean encoding** of the customer's average load (the kind of feature a careful practitioner would use): the gap reproduces at median 0.2154 kWh (10.1% relative, 29/30 wins), confirming the effect is not an artifact of the contrived identifier ([`examples/selection_regret_lcl_targetenc.py`](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/selection_regret_lcl_targetenc.py)).
+
+| ---
+
+## What about a market with no real edge?
+
+On a task where no honest model has predictive power (daily BTC/USDT 2021-2023 with ordinary technical features), the question changes from "does honest CV pick a better model" to "does honest CV stop me from picking a worse one" ([examples/selection_regret_crypto.ipynb](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/selection_regret_crypto.ipynb)):
+
+|                                    | naive shuffled KFold | PurgedKFold      |
+|------------------------------------|----------------------|------------------|
+| picked model                       | RF d=None            | Ridge α=100      |
+| deployment R² (180 held-out bars)  | -1.64                | +0.011           |
+| deployment Sharpe                  | **-0.77**            | **-0.26**        |
+
+Both strategies lose money over the sideways-down deployment window; the naive pick loses three to five times more per unit of risk. Direction stable across 5 seeds. The library's value on a no-edge market is loss avoidance rather than gain.
+
+![Honest CV avoids the overfitter on crypto: cumulative log-return curves for naive-selected RandomForest, PurgedKFold-selected Ridge, and buy-and-hold over a 180-bar held-out window.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/selection_regret_crypto.png)
+
+| ---
+
+## Installation
+
+```bash
+
+pip install purgedcv
+
+# Or from conda-forge (conda or mamba)
+conda install -c conda-forge purgedcv
+mamba install -c conda-forge purgedcv
+
+# Directly from the repository
+pip install git+https://github.com/eslazarev/purged-cross-validation.git
+```
+
+Time inputs are framework-agnostic: pandas `Series`/`DatetimeIndex`, NumPy
+`datetime64`/`timedelta64` arrays, Python datetime sequences, and Polars
+`Series` are accepted. Polars remains optional; inputs are converted to a
+one-dimensional NumPy array at the API boundary.
+
+| ---
+
+## Quickstart
+
+### 1. The core primitive: `purge`
+
+`purge` removes training observations that share data with the test set. Here a model uses a 5-day sliding feature window to predict the next day, so every observation occupies a 5-day span and the spans of neighbours overlap. Any training observation whose window reaches into the test period has already seen test data and must be dropped.
+
+```python
+import numpy as np
+import pandas as pd
+from purgedcv import purge
+
+WINDOW = 5  # feature look-back in days
+
+# 16 days of data; each observation uses a 5-day window to predict the next day
+days        = pd.date_range("2024-01-01", periods=16, freq="D")
+predict_day = np.arange(WINDOW + 1, len(days) + 1)                    # 11 observations
+pred        = pd.Series([days[d - WINDOW - 1] for d in predict_day])  # first feature day
+evalu       = pd.Series([days[d - 1] for d in predict_day])           # label day
+
+train_idx = np.arange(0, 7)    # observations predicting days 6..12
+test_idx  = np.arange(7, 11)   # observations predicting days 13..16
+
+# Drop training observations whose 5-day feature window overlaps the test window
+kept_idx   = purge(train_idx, test_idx, pred, evalu)
+purged_idx = np.setdiff1d(train_idx, kept_idx)
+
+print(f"Kept:   {kept_idx.tolist()}")    # [0, 1, 2]    -> predict days 6, 7, 8
+print(f"Purged: {purged_idx.tolist()}")  # [3, 4, 5, 6] -> predict days 9, 10, 11, 12
+```
+
+Each bar below is one observation's 5-day feature window. The four red bars cross into the test window (dashed line): their features overlap the test period, so `purge` drops them. The three green bars stay fully before it; `→ day 8` only touches the boundary and is kept, because label horizons are half-open.
+
+![Purge on a 5-day sliding window: training observations whose feature window overlaps the test window are dropped, leaving a clean gap before the test block.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/purge_example.png)
+
+| ---
+
+### 2. The post-test buffer: `apply_embargo`
+
+`apply_embargo` is the second leakage guard. Where `purge` removes label overlap, embargo drops a fixed buffer of training rows right *after* the test fold; their features are still serially correlated with the test period, so they leak even when their labels do not. The buffer extends only after the test, never before it.
+
+```python
+import numpy as np
+import pandas as pd
+from purgedcv import apply_embargo
+
+# 16 daily rows; each label resolves 1 day later
+n     = 16
+pred  = pd.Series(pd.date_range("2024-01-01", periods=n, freq="D"))
+--- 2026-10-01T08:55:58Z method=読了 target=purged-cross-validation rc=0 time_s=0.005 note=E2案B(b): 選んだ頁(README.md)の本文を全部読む 2/2(211-414行) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ sed -n 211,414p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/README.md
+evalu = pred + pd.Timedelta(days=1)
+
+test_idx  = np.arange(6, 10)                                      # test block in the middle
+train_idx = np.concatenate([np.arange(0, 6), np.arange(10, 16)])  # train before and after
+
+# Drop training rows whose prediction time falls in the post-test buffer
+kept_idx      = apply_embargo(train_idx, test_idx, pred, evalu, embargo=pd.Timedelta(days=3))
+embargoed_idx = np.setdiff1d(train_idx, kept_idx)
+
+print(f"Kept:      {kept_idx.tolist()}")       # [0, 1, 2, 3, 4, 5, 14, 15]
+print(f"Embargoed: {embargoed_idx.tolist()}")  # [10, 11, 12, 13]
+```
+
+Each bar below is one row's label horizon. Every training row whose start falls inside the orange `+3d` buffer after the test is dropped; rows before the test are untouched. The 1-day label horizon leaves `purge` nothing to do here, so the split is cleaned by embargo alone.
+
+![apply_embargo on a mid-series test block: training rows whose prediction time falls inside the post-test buffer are dropped, while rows before the test are kept.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/embargo_example.png)
+
+The buffer can use exactly one of three units:
+
+| Parameter | Meaning |
+|---|---|
+| `embargo="3D"` | Drop rows inside the three-day window after each test block |
+| `embargo_observations=10` | Drop the next 10 row positions after each test block |
+| `embargo_fraction=0.01` | Drop the next `floor(n_samples * 0.01)` row positions |
+
+Observation and fractional modes are useful for bar-based datasets where
+"the next 10 bars" is more stable than a wall-clock duration. For CPCV, each
+non-adjacent test block gets its own local embargo window. Supplying more than
+one mode raises `ValueError` rather than silently choosing one.
+
+`WalkForwardSplit` accepts these options for API consistency, but its train
+rows are strictly before each test fold, so a post-test embargo is a no-op;
+use `purge_horizon` for its pre-test boundary.
+
+| ---
+
+### 3. Walk-forward CV: `WalkForwardSplit`
+
+`WalkForwardSplit` walks the train/test split forward in time: every fold trains only on data *before* its test block, the way a model is actually deployed. Purge is applied automatically on each fold; an asymmetric post-test embargo has no rows to remove in this layout. Use `window="expanding"` to keep all history, or `window="sliding"` to cap training at a fixed-size recent window.
+
+```python
+import numpy as np
+import pandas as pd
+from purgedcv import WalkForwardSplit
+
+# 24 daily rows; each label resolves 2 days later
+n     = 24
+pred  = pd.Series(pd.date_range("2024-01-01", periods=n, freq="D"))
+evalu = pred + pd.Timedelta(days=2)
+X     = np.zeros((n, 1))
+
+# Expanding window: every fold trains on all data before its test block.
+# purge_horizon drops the training rows whose label overlaps each test fold.
+cv = WalkForwardSplit(
+    n_splits=3,
+    test_size=4,
+    window="expanding",          # or "sliding" with train_size=...
+    prediction_times=pred,
+    evaluation_times=evalu,
+    purge_horizon="2D",
+)
+
+for i, (train_idx, test_idx) in enumerate(cv.split(X), 1):
+    print(f"fold {i}: train {train_idx[0]}..{train_idx[-1]}  test {test_idx[0]}..{test_idx[-1]}")
+# fold 1: train 0..8   test 12..15
+# fold 2: train 0..12  test 16..19
+# fold 3: train 0..16  test 20..23
+```
+
+Three folds tile the end of the series. Each fold trains on the past and tests on the next block; the red purge gap right before each test is removed automatically. *Expanding* grows the training set every fold; *sliding* keeps it a fixed size and moves it forward.
+
+![WalkForwardSplit over 24 rows: three folds, each training before its test block, with the purge gap removed; shown for both the expanding and the sliding training window.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/walkforward_example.png)
+
+| ---
+
+### 4. Purged k-fold: `PurgedKFold`
+
+A drop-in replacement for `KFold` for time-series data. Test folds tile the whole series contiguously, so most folds sit inside the data and the training set wraps around them on both sides. Purge and embargo are applied automatically on every fold.
+
+```python
+import numpy as np
+import pandas as pd
+from purgedcv import PurgedKFold
+
+# 24 daily rows; each label resolves 2 days later
+n     = 24
+pred  = pd.Series(pd.date_range("2024-01-01", periods=n, freq="D"))
+evalu = pred + pd.Timedelta(days=2)
+X     = np.zeros((n, 1))
+
+# 4 contiguous test folds; purge + embargo applied automatically per fold
+cv = PurgedKFold(
+    n_splits=4,
+    prediction_times=pred,
+    evaluation_times=evalu,
+    purge_horizon="2D",
+    embargo="2D",
+)
+
+for i, (train_idx, test_idx) in enumerate(cv.split(X), 1):
+    print(f"fold {i}: test {test_idx[0]}..{test_idx[-1]}  train rows {len(train_idx)}")
+# fold 1: test 0..5    train rows 14
+# fold 2: test 6..11   train rows 11
+# fold 3: test 12..17  train rows 11
+# fold 4: test 18..23  train rows 15
+```
+
+For a bar-count policy, replace `embargo="2D"` with either
+`embargo_observations=2` or, for example, `embargo_fraction=0.01`.
+
+Each test fold is a contiguous block. A middle fold trains on data both before and after it; the red purge gap before the test and the orange purge + embargo buffer after it are removed automatically, so no training row leaks into the fold.
+
+![PurgedKFold over 24 rows: four contiguous test folds, the training set wrapping around each, with the purge gap before and the embargo buffer after removed.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/purgedkfold_example.png)
+
+All four splitters (`WalkForwardSplit`, `PurgedKFold`, `PurgedGroupKFold`, `CombinatorialPurgedCV`) satisfy the sklearn splitter protocol and work inside `cross_val_score`, `GridSearchCV`, and `Pipeline`.
+
+| ---
+
+### 5. CPCV + path reconstruction + metrics: the full workflow
+
+Combinatorial Purged CV produces C(N, K) folds that tile into multiple out-of-sample backtest paths. The metric functions then evaluate a strategy's realised returns for statistical significance and selection bias.
+
+![C(6, 2) = 15 splits over 6 blocks tile into 5 backtest paths. Top panel: each split tests 2 blocks, and the number in a test cell is the path that block's out-of-sample prediction feeds. Bottom panel: the 5 reconstructed paths, each cell labelled with the split that produced that block's prediction.](https://raw.githubusercontent.com/eslazarev/purged-cross-validation/main/.github/images/cpcv_example.png)
+
+The split-to-path assignment in the figure comes straight from `cv.split` and `reconstruct_paths`, so it matches what the code below produces.
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.dummy import DummyRegressor
+from purgedcv import (
+    CombinatorialPurgedCV,
+    probabilistic_sharpe_ratio,
+    min_track_record_length,
+)
+
+rng   = np.random.default_rng(42)
+n     = 120
+pred  = pd.Series(pd.date_range("2023-01-01", periods=n, freq="D"))
+evalu = pred + pd.Timedelta(days=2)
+X     = rng.standard_normal((n, 3))
+y     = X @ np.array([0.5, -0.3, 0.2]) + rng.standard_normal(n) * 0.1
+
+# N=6, K=2  →  C(6,2) = 15 folds  →  C(5,1) = 5 backtest paths
+cv = CombinatorialPurgedCV(
+    n_splits=6,
+    n_test_groups=2,
+    prediction_times=pred,
+    evaluation_times=evalu,
+)
+
+# paths.shape == (n_paths, n_samples); NaN where a sample was not OOS in that path
+paths = cv.backtest_paths(DummyRegressor(strategy="mean"), X, y)
+print(f"Backtest paths: {paths.shape}")  # (5, 120)
+
+# PSR evaluates one strategy's realised RETURN series (not the prediction paths
+# above, which are model outputs, not returns). Shown on a synthetic daily series:
+strategy_returns = rng.normal(0.0008, 0.01, 504)
+psr = probabilistic_sharpe_ratio(strategy_returns, benchmark_skill=0.0)
+print(f"PSR: {psr:.3f}")  # P(true Sharpe > 0)
+
+# MinTRL: observations needed to show an observed Sharpe beats a benchmark at
+# 95% confidence. The Sharpes and the count share one frequency, so a high
+# per-bar Sharpe (0.7) needs few bars.
+n_min = min_track_record_length(
+    observed_sharpe=0.7, target_sharpe=0.5, alpha=0.05, skew=0.0, kurtosis=3.0
+)
+print(f"MinTRL: {int(n_min)} observations")
+```
+
+For the full selection-bias workflow on a real search, the Deflated Sharpe Ratio with the correct `var_sharpe`, `effective_n_trials` for correlated Optuna trials, `minimum_backtest_length`, and PBO are worked end to end on real BTC/USDT data in [`examples/backtest_overfitting_audit.ipynb`](https://github.com/eslazarev/purged-cross-validation/blob/main/examples/backtest_overfitting_audit.ipynb). The Deflated Sharpe Ratio deflates by the number of strategy *configurations* searched (not the number of CPCV paths), with `var_sharpe` estimated from the spread of trial Sharpes rather than assumed.
+
+| ---
+
+## Methodology references
+
+- Lopez de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley. Chapters 7 (purge/embargo) and 12 (CPCV).
+- Bailey, D. H., & Lopez de Prado, M. (2012). The Sharpe Ratio Efficient Frontier. *Journal of Risk*, 15(2).
+- Bailey, D. H., & Lopez de Prado, M. (2014). The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting and Non-Normality. *Journal of Portfolio Management*, 40(5).
+
+| ---
+
+## Contributing and development
+
+Bug reports, feature requests, and pull requests are welcome. The full
+development setup, the local gates (`ruff`, `black`, `mypy --strict`,
+`pytest`, `mkdocs build --strict`), the end-to-end test convention, and the
+prose-quality gate are documented in [CONTRIBUTING.md](https://github.com/eslazarev/purged-cross-validation/blob/main/CONTRIBUTING.md).
+Conduct is governed by the [Contributor Covenant](https://github.com/eslazarev/purged-cross-validation/blob/main/CODE_OF_CONDUCT.md);
+security reports go through [SECURITY.md](https://github.com/eslazarev/purged-cross-validation/blob/main/SECURITY.md).
+
+## Use of generative AI
+
+This project was developed with the help of AI coding assistants.
+They were used to draft and refactor implementation code, expand the test
+suite, and edit documentation. The methodology, the public API design, the
+choice and execution of every experiment, and all reported numbers are the
+author's own: each empirical result in this repository comes from a script
+in `examples/` or `tools/` that is committed and reproducible, and the
+numbers were verified against those runs rather than generated as text.
+
+## License
+
+MIT. See [LICENSE](https://github.com/eslazarev/purged-cross-validation/blob/main/LICENSE).
+--- 2026-10-01T08:58:54Z method=報告組込 target=purged-cross-validation rc=0 time_s=0.632 note=報告の46回目の節に、下書き(draft46_rows.md=知見13-17、draft46_tail.md=当たりの判定・E2案Bの記録・問い・予算)を組み込み、知見2・7・9・10の直しを当てる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ python3 -c '
+import re
+D='"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/'"'"'
+R='"'"'docs/DATA/SCAN_2026-09-23_tools_cat8.md'"'"'
+P='"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/src/'"'"'
+t=open(R).read()
+i=t.index('"'"'## 区分8 — 46 回目の実行(2026-09-27)'"'"')
+head,sec=t[:i],t[i:]
+def rep(a,b):
+    global sec
+    assert sec.count(a)==1,(sec.count(a),a[:40])
+    sec=sec.replace(a,b)
+rep('"'"'ids = set(pd.read_csv(manifest)["LCLid"]); if len(ids) != 60: raise ValueError'"'"','"'"'ids = set(pd.read_csv(manifest)["LCLid"])if len(ids) != 60:raise ValueError(f"manifest must list 60 households, found {len(ids)}")'"'"')
+rep('"'"'README.md は知見5で読み直し済み。残り 8 頁'"'"','"'"'README.md は、知見5では 1・288 行目しか読み直しておらず、本文の全部は知見15で読んだ。残り 8 頁'"'"')
+rep('"'"'本文を全部読んだのは README.md(知見5・7)'"'"','"'"'本文を全部読んだのは README.md(知見15。知見5・7の「読み直し済み」は 1・288 行目だけだった訂正)'"'"')
+rep('"'"'docs/DATA/probes/20260923_tools_8_run46.log:543-560 docs/DATA/probes/20260923_tools_8_run46.log:561-1103 |'"'"','"'"'docs/DATA/probes/20260923_tools_8_run46.log:543-560 docs/DATA/probes/20260923_tools_8_run46.log:561-1103 docs/DATA/probes/20260923_tools_8_run46.log:1903-2320 |'"'"') if False else None
+rep('"'"'(`### E4 当たりの判定` 参照)'"'"','"'"'(`### 当たりの判定` 参照)'"'"')
+rep('"'"'(知見10、### E4当たりの判定)'"'"','"'"'(知見10、### 当たりの判定)'"'"')
+rows=open(D+'"'"'draft46_rows.md'"'"').read().rstrip('"'"'\n'"'"')
+tail=open(D+'"'"'draft46_tail.md'"'"').read().replace('"'"'@P@'"'"',P)
+m=re.search(r'"'"'^\| 12 \| .*\n'"'"',sec,re.M)
+assert m
+sec=sec[:m.end()]+rows+'"'"'\n'"'"'+sec[m.end():]
+sec=sec.rstrip('"'"'\n'"'"')+'"'"'\n'"'"'+tail
+open(R,'"'"'w'"'"').write(head+sec)
+print('"'"'ok'"'"',len(sec.splitlines()))
+'
+ok 760
+--- 2026-10-01T09:00:13Z method=報告組込 target=purged-cross-validation rc=0 time_s=0.375 note=報告の46回目の節の検査の指摘の直し(引用の記号・印の語・要素と段の段の書き方・E4の根拠の字・代替経路の小節)。スクリプトは scratchpad の fix46_a.py [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/fix46_a.py
+段の直し 269
+ok
+--- 2026-10-01T09:01:48Z method=確認 target=purged-cross-validation rc=0 time_s=8.990 note=起動文§2.5の最後の手(打ち直し): 全部の手のあと、scratchpad外の新規ファイル確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ bash -c 'find /tmp -maxdepth 1 -newermt '"'"'2026-09-27T08:46:26Z'"'"' -type f; echo '"'"'---root---'"'"'; find /root -xdev -newermt '"'"'2026-09-27T08:46:26Z'"'"' -not -path '"'"'/root/.claude/*'"'"' -type f'
+/tmp/claude-code-2150122879.diag.log
+/tmp/environment-manager-1928546768.diag.log
+/tmp/claude-code-461280901.diag.log
+/tmp/environment-manager-2090646738.diag.log
+/tmp/environment-manager-4222741883.diag.log
+/tmp/environment-manager-510005746.diag.log
+/tmp/environment-manager-292654611.diag.log
+/tmp/environment-manager-1947559391.diag.log
+/tmp/claude-command
+/tmp/environment-manager-308204994.diag.log
+/tmp/claude-code-1016513526.diag.log
+/tmp/env-manager.log
+/tmp/codesign-mcp-config.json
+/tmp/environment-manager.out
+/tmp/claude-code.log
+/tmp/claude-append-system-prompt.txt
+/tmp/environment-manager-2618053212.diag.log
+/tmp/environment-manager-2601144285.diag.log
+/tmp/claude-code-742835796.diag.log
+/tmp/claude-code-123710940.diag.log
+/tmp/claude-code-1582972556.diag.log
+/tmp/claude-code-679745410.diag.log
+/tmp/mcp-config-cse_01TMAR976APsVYhsgj5wkWht.json
+/tmp/environment-manager-2710056353.diag.log
+/tmp/claude-code-1832721449.diag.log
+/tmp/ca-certificates.tmp.glHtgn
+/tmp/claude-code-533859254.diag.log
+/tmp/claude-code-309589845.diag.log
+/tmp/ca-certificates.tmp.tU4aSg
+| ---root---
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-01-58-027Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-37-41-497Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-13-16-046Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T04-01-17-991Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-41-58-097Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T09-20-18-343Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T11-12-16-638Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-49-36-189Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T13-29-25-653Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-26-17-931Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-30T23-01-58-027Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-30T23-37-41-497Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-13-16-046Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T04-01-17-991Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-41-58-097Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T09-20-18-343Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T11-12-16-638Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-49-36-189Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T13-29-25-653Z
+[出力は 4257 文字。先頭 3000 文字だけを残した]
+--- 2026-10-01T09:02:04Z method=確認 target=purged-cross-validation rc=0 time_s=0.151 note=起動文§2.5の最後の手(打ち直し2回目。直前の手は --keep 3000 で出力が切れたので根拠にしない): scratchpad外の新規ファイル確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-042/sb46]
+$ bash -c 'find /tmp -maxdepth 1 -newermt '"'"'2026-09-27T08:46:26Z'"'"' -type f; echo '"'"'---root---'"'"'; find /root -xdev -newermt '"'"'2026-09-27T08:46:26Z'"'"' -not -path '"'"'/root/.claude/*'"'"' -type f'
+/tmp/claude-code-2150122879.diag.log
+/tmp/environment-manager-1928546768.diag.log
+/tmp/claude-code-461280901.diag.log
+/tmp/environment-manager-2090646738.diag.log
+/tmp/environment-manager-4222741883.diag.log
+/tmp/environment-manager-510005746.diag.log
+/tmp/environment-manager-292654611.diag.log
+/tmp/environment-manager-1947559391.diag.log
+/tmp/claude-command
+/tmp/environment-manager-308204994.diag.log
+/tmp/claude-code-1016513526.diag.log
+/tmp/env-manager.log
+/tmp/codesign-mcp-config.json
+/tmp/environment-manager.out
+/tmp/claude-code.log
+/tmp/claude-append-system-prompt.txt
+/tmp/environment-manager-2618053212.diag.log
+/tmp/environment-manager-2601144285.diag.log
+/tmp/claude-code-742835796.diag.log
+/tmp/claude-code-123710940.diag.log
+/tmp/claude-code-1582972556.diag.log
+/tmp/claude-code-679745410.diag.log
+/tmp/mcp-config-cse_01TMAR976APsVYhsgj5wkWht.json
+/tmp/environment-manager-2710056353.diag.log
+/tmp/claude-code-1832721449.diag.log
+/tmp/ca-certificates.tmp.glHtgn
+/tmp/claude-code-533859254.diag.log
+/tmp/claude-code-309589845.diag.log
+/tmp/ca-certificates.tmp.tU4aSg
+| ---root---
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-01-58-027Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-37-41-497Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-13-16-046Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T04-01-17-991Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-41-58-097Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T09-20-18-343Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T11-12-16-638Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-10-01T08-49-36-189Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-27T13-29-25-653Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-github/2026-09-30T23-26-17-931Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-30T23-01-58-027Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-30T23-37-41-497Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-13-16-046Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T04-01-17-991Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-41-58-097Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T09-20-18-343Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T11-12-16-638Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-10-01T08-49-36-189Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-27T13-29-25-653Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Code-Remote/2026-09-30T23-26-17-931Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-30T23-01-58-027Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-30T23-37-41-497Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-10-01T08-13-16-046Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-27T04-01-17-991Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-10-01T08-41-58-097Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-27T09-20-18-343Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-27T11-12-16-638Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-10-01T08-49-36-189Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-27T13-29-25-653Z.jsonl
+/root/.cache/claude-cli-nodejs/-home-user-trade/mcp-logs-Claude-Docs/2026-09-30T23-26-17-931Z.jsonl
+/root/.gitconfig
+/root/.claude.json
+/root/.ccr/ca-bundle.crt
+/root/.ccr/README.md
+/root/.ccr/agent-proxy-ca.crt
+/root/.ccr/system-trust.ca.pem

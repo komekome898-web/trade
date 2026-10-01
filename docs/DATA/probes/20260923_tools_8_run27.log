@@ -1,0 +1,332 @@
+=== 区分8 27回目 開始 対象: 8-031 Debezium(1行だけ、E2・E4の印を探し尽くす、E1a・E1b・E5・E6の案Bの記録の確かめ、§4.0の未確認の一部を試す) 申し送り: 起動文 docs/DATA/delegations/20260923_tools_survey_cat8_run27_prompt.md@b06ea566dbc3
+--- 2026-09-26T14:30:56Z method=印探索 target=E2_E4_述語列挙語 rc=0 time_s=0.133 note=E2述語の列挙(時系列・約定・板・足・参照データ)とE4述語(記録した市場データ)に相当する英語表現がソース全体にあるかをファイル名だけ出す形で確認
+$ grep -rlI -i -E 'market data|time series|time-series|order.?book|reference data|tick data|trade data|candlestick|OHLC' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/transformations/timescaledb.adoc
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/operations/debezium-platform.adoc
+--- 2026-09-26T14:31:02Z method=印探索 target=timescaledb_adoc rc=0 time_s=0.004 note=timescaledb.adocのtime series等の当たり行を確認
+$ grep -n -i -E 'market data|time series|time-series|order.?book|reference data|tick data|trade data|candlestick|OHLC' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/transformations/timescaledb.adoc
+13:link:https://github.com/timescale/timescaledb[TimescaleDB] is an open-source database designed to make SQL scalable for time-series data.
+43:Hypertable is a logical table that is used to store time-series data.
+--- 2026-09-26T14:31:07Z method=印探索 target=debezium_platform_adoc rc=0 time_s=0.004 note=debezium-platform.adocのmarket data等の当たり行を確認
+$ grep -n -i -E 'market data|time series|time-series|order.?book|reference data|tick data|trade data|candlestick|OHLC' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/operations/debezium-platform.adoc
+927:Prometheus:: Scrapes metrics from the OpenTelemetry Collector and stores them as time-series data.
+--- 2026-09-26T14:31:16Z method=印探索 target=market_data単独 rc=1 time_s=0.091 note=market dataという語だけを単独で確認(件数のみ)
+$ grep -rlI -i 'market data' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium
+
+--- 2026-09-26T14:31:33Z method=印探索 target=market_data単独_再 rc=1 time_s=0.077 note=market dataという語だけを単独で確認(ファイル名のみ、パイプ無し)
+$ grep -rlI -i 'market data' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium
+
+--- 2026-09-26T14:31:40Z method=印探索 target=reference_data単独 rc=1 time_s=0.086 note=reference dataという語だけを単独で確認(ファイル名のみ)
+$ grep -rlI -i 'reference data' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium
+
+--- 2026-09-26T14:31:49Z method=印探索 target=ソース最上位一覧 rc=0 time_s=0.004 note=ソースの最上位ディレクトリの一覧を再確認(26回目の知見7と同じ範囲の確認)
+$ ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium
+AGENTS.md
+AI_USAGE_POLICY.md
+CHANGELOG.md
+CONTRIBUTING.md
+COPYRIGHT.txt
+DOCUMENTATION.md
+GITHUB_ACTIONS.md
+LICENSE-3rd-PARTIES.txt
+LICENSE.txt
+README.md
+README_JA.md
+README_KO.md
+README_ZH.md
+RELEASING.md
+context7.json
+dco.txt
+debezium-ai
+debezium-api
+debezium-assembly-descriptors
+debezium-bom
+debezium-common
+debezium-config
+debezium-connect-plugins
+debezium-connector-binlog
+debezium-connector-common
+debezium-connector-jdbc
+debezium-connector-mariadb
+debezium-connector-mongodb
+debezium-connector-mysql
+debezium-connector-oracle
+debezium-connector-postgres
+debezium-connector-sqlserver
+debezium-core
+debezium-ddl-parser
+debezium-e2e-benchmark
+debezium-embedded
+debezium-interceptor
+debezium-kafka-adapters
+debezium-microbenchmark
+debezium-microbenchmark-engine
+debezium-microbenchmark-oracle
+debezium-openlineage
+debezium-parent
+debezium-quarkus-outbox
+debezium-quarkus-outbox-common
+debezium-quarkus-outbox-reactive
+debezium-schema-generator
+debezium-scripting
+debezium-server
+debezium-sink
+debezium-storage
+debezium-testing
+debezium-util
+documentation
+github-support
+jenkins-jobs
+mvnw
+mvnw.cmd
+pom.xml
+quarkus-debezium-parent
+support
+--- 2026-09-26T14:31:56Z method=印探索 target=schema_generator調査 rc=0 time_s=0.004 note=debezium-schema-generatorの中身をファイル名で確認(E2のschema関連の候補)
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator -type f -name '*.java' -o -name 'README*'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/schema/debezium/DebeziumDescriptorSchemaCreatorTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/schema/DebeziumDescriptorSchemaTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/source/kafkaconnect/KafkaConnectDiscoveryServiceTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/source/kafkaconnect/ConfigDefAdapterTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/source/kafkaconnect/ConfigDefExtractorTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/source/kafkaconnect/KafkaConnectComponentSourceTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/test/java/io/debezium/schemagenerator/source/DebeziumComponentSourceTest.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/SchemaName.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/SchemaDescriptor.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/DefaultFieldFilter.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/Schema.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/debezium/DebeziumDescriptorSchemaCreator.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io/debezium/schemagenerator/schema/debezium/DebeziumDescriptorSchema.java
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/debezium-schema-generator/src/main/java/io
+[出力は 6878 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T14:32:35Z method=estimate target=E2見積もり rc=0 time_s=4.285 note=8-031 E2の当たりの量の見積もり(500行の上限判定用、§2.4の語のとおり)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/estimate.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/filelist_full.bin '欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid'
+files=4520 files_with_hit=2154 total_lines=39223
+--- 2026-09-26T14:32:44Z method=estimate target=E4見積もり rc=0 time_s=1.576 note=8-031 E4の当たりの量の見積もり(500行の上限判定用、§2.4の語のとおり)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/estimate.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/filelist_full.bin 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun'
+files=4520 files_with_hit=1162 total_lines=28751
+--- 2026-09-26T14:32:59Z method=印探索 target=schema_change_filter_read rc=0 time_s=0.004 note=transformations/schema-change-event-filter.adocを読み、E2述語(列挙データの品質検出)に当たる逐語が無いことを確認
+$ sed -n 1,40p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/transformations/schema-change-event-filter.adoc
+:page-aliases: configuration/schema-change-event-filter.adoc
+// Category: debezium-using
+// Type: assembly
+// ModuleID: filtering-debezium-schema-change-event-records
+// Title: Filtering {prodname} schema change event records
+[id="schema-change-event-filter"]
+= SchemaChangeEventFilter
+ifdef::community[]
+:toc:
+:toc-placement: macro
+:linkattrs:
+:icons: font
+:source-highlighter: highlight.js
+
+toc::[]
+endif::community[]
+Use the `SchemaChangeEventFilter` single message transformation (SMT) to filter schema change events that the connector captures from a table and sends to Kafka.
+After you enable the SMT, the connector synchronizes only the unfiltered DDL events to Kafka, giving you control over which DDL operations are exposed to consuming applications.
+
+// Type: concept
+[[schema-change-event-filter-configuration]]
+== Schema change event filter configuration
+To use the transformation, add the `SchemaChangeEventFilter` to the connector configuration, and specify the types of events that you want to remove.
+The following excerpt from a connector configuration shows how you would add the transformation to the connector and set it to remove `DROP` and `TRUNCATE` events from the DDL messages that the connector captures.
+[[example-configuration-schema-change-event-filter]]
+.Schema change event filter configuration to remove `DROP` and `TRUNCATE` events
+
+[source]
+| ----
+transforms=filterTableDropAndTruncateEvent
+transforms.filterTableDropAndTruncateEvent.type=io.debezium.transforms.SchemaChangeEventFilter
+transforms.filterTableDropAndTruncateEvent.schema.change.event.exclude.list=DROP,TRUNCATE
+| ----
+
+For more information about configuring the transformation, see the xref:schema-change-event-filter-configuration-options[schema change event filter configuration options].
+
+// Type: concept
+[[schema-change-event-filter-effect-of-applying-the-schemachangeeventfilter-smt]]
+== Effect of applying the `SchemaChangeEventFilter` SMT
+After you configure the SMT for a connector, whenever the connector captures  schema change events that match the xref:schema-change-event-exclude-list[configured types], it resets the values for those events to `null`.
+--- 2026-09-26T14:34:06Z method=websearch target=宣伝詐欺_scam検索 rc=NA time_s=NA note=8-031 宣伝詐欺の兆候: X投稿の発見(WebSearch site:x.com Debezium scam/airdrop/get-rich)。結果はscamワードのヒットなし(Debezium固有の詐欺投稿は0件)
+$ site:x.com Debezium scam OR "get rich" OR airdrop OR "guaranteed profit"
+Debeziumに固有の詐欺・宣伝投稿は0件。ヒットしたのはPhantom・Sui・Toobit等の一般的な暗号資産詐欺注意喚起投稿で、Debeziumとは無関係。
+--- 2026-09-26T14:34:13Z method=websearch target=宣伝詐欺_通常投稿検索 rc=NA time_s=NA note=8-031 宣伝詐欺の兆候: X投稿の発見(WebSearch site:x.com Debezium CDC)。公式アカウント@debeziumと一般的な紹介・利用報告投稿を確認(URL一覧は生ログ参照)
+$ site:x.com Debezium CDC
+1. https://x.com/debezium (公式アカウント)
+2. https://x.com/debezium/status/1311687377715367937 (公式: バージョン告知)
+3. https://x.com/scylladb/status/1440787634033287168 (ScyllaDB社: Debezium connector紹介)
+4. https://x.com/adambien/status/1183374066268459008 (個人: ポッドキャスト告知)
+5. https://x.com/debezium/status/1226903885924708355 (公式: ブログ告知)
+6. https://x.com/moderndatastack/status/1555442837575049216 (企業アカウント: 使用例紹介)
+7. https://x.com/martinkl/status/1214646262022201355 (著名エンジニアMartin Kleppmann: Netflixが自作CDCツールを作った件でDebeziumへの貢献の方が良かったのではとの私見)
+8. https://x.com/RHMiddleware/status/1184170328274153473 (Red Hat公式)
+9. https://x.com/dltHub/status/1888932095893872655 (企業アカウント: dltとの統合紹介)
+10. https://x.com/debezium/status/1900136906748198979 (公式)
+--- 2026-09-26T14:34:25Z method=x_fetch target=x_martinkl_1214646262022201355 rc=0 time_s=0.640 note=8-031 宣伝詐欺の兆候: X投稿本文の取得(著名エンジニアの私見、使用報告の印付けのため)
+$ python3 scripts/x_fetch.py --no-walk https://x.com/martinkl/status/1214646262022201355
+{"id": "1214646262022201355", "http": 200, "fetched_at": "2026-09-26T14:34:26.402011+00:00", "url": "https://x.com/martinkl/status/1214646262022201355", "author": "martinkl", "created_at": "Tue Jan 07 20:33:30 +0000 2020", "text": "Netflix have made their own Change Data Capture (CDC) tool for MySQL and PostgreSQL… though maybe it would have been better to contribute to @debezium? https://medium.com/netflix-techblog/dblog-a-generic-change-data-capture-framework-69351fb9099b", "likes": 624, "retweets": 181, "replies": 19, "views": null, "quote": null, "replying_to_status": null}
+--- 2026-09-26T14:34:31Z method=x_fetch target=x_dltHub_1888932095893872655 rc=0 time_s=0.345 note=8-031 宣伝詐欺の兆候: X投稿本文の取得(企業アカウントの使用例紹介、宣伝/使用報告の印付けのため)
+$ python3 scripts/x_fetch.py --no-walk https://x.com/dltHub/status/1888932095893872655
+{"id": "1888932095893872655", "http": 200, "fetched_at": "2026-09-26T14:34:31.788228+00:00", "url": "https://x.com/dltHub/status/1888932095893872655", "author": "dltHub", "created_at": "Mon Feb 10 12:44:40 +0000 2025", "text": "Debezium + CDC + Python + dlt → Real-time PostgreSQL replication, no Kafka.\n\n🔥 New blog by OSS contributor Ismail Simsek → A Python-native CDC pipeline for PostgreSQL & DuckDB.\n\n✅ No Kafka\n✅ Python-first\n✅ Step-by-step guide\nRead it now → https://dlthub.com/blog/debezium-and-dlt", "likes": 2, "retweets": 0, "replies": 0, "views": 196, "quote": null, "replying_to_status": null}
+--- 2026-09-26T14:34:36Z method=公式 target=debezium_legal rc=0 time_s=0.496 note=8-031 宣伝詐欺の兆候: 公式サイトの規約・legal頁の有無をcurlで確認
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -w '\nHTTP_CODE=%{http_code}\n' https://debezium.io/legal/ https://debezium.io/terms/ https://debezium.io/tos/
+<!DOCTYPE html> <html> <head> <title></title> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> <meta name="description" content="Debezium is an open source distributed platform for change data capture. Start it up, point it at your databases, and your apps can start responding to all of the inserts, updates, and deletes that other apps commit to your databases. Debezium is durable and fast, so your apps can respond quickly and never miss an event, even when things go wrong."> <meta content="Debezium" property="og:site_name"> <meta content="Debezium" property="og:title"> <meta content="https://debezium.io/assets/images/color_black_debezium_type_1200px.png" property="og:image" name="image"> <meta property="og:description" content="Debezium is an open source distributed platform for change data capture. Start it up, point it at your databases, and your apps can start responding to all of the inserts, updates, and deletes that other apps commit to your databases. Debezium is durable and fast, so your apps can respond quickly and never miss an event, even when things go wrong."> <meta property="og:url" content="https://debezium.io/404.html"> <meta name="twitter:site" content="@debezium"> <meta name="twitter:title" content=""> <meta name="twitter:creator" content="@debezium"> <meta name="twitter:description" content="Debezium is an open source distributed platform for change data capture. Start it up, point it at your databases, and your apps can start responding to all of the inserts, updates, and deletes that other apps commit to your databases. Debezium is durable and fast, so your apps can respond quickly and never miss an event, even when things go wrong."> <meta name="twitter:card" content="summary_large_image"> <meta name="twitter:image" content="https://debezium.io/assets/images/color_black_debezium_type_1200px.png"> <meta property="twitter:url" content="https://debezium.io/404.html"> <link rel="alternate" type="application/rss+xml" title="Debezium Blog" href="/blog.atom"> <link rel="shortcut icon" type="image/png" href="/favicon.ico"> <link rel="stylesheet" href="/assets/css/bootstrap.min.css"/> <link rel="stylesheet" href="/assets/css/custom.css"/> <link rel="stylesheet" href="/assets/css/highlight.min.css"/> <link rel="stylesheet" href="/assets/css/coderay.css"/> </head> <body class="base"> <div id> <div class="container" id="content"> <nav class="navbar navbar-inverse navbar-fix"> <div class="container-fluid"> <div class="navbar-header"> <button class="navbar-toggle collapsed border-0" type="button" data-toggle="collapse" data-target="#navigation" aria-controls="navigation" aria-expanded="false" aria-label="Toggle navigation"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </button> <a class="navbar-brand" href="/"><img class="project-logo" src="/assets/images/color_white_debezium_type_600px.svg" style="height: 32px; margin-right: 5px; margin-top: -5px;
+[出力は 27516 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T14:34:44Z method=公式 target=redhat_debezium_pricing rc=0 time_s=2.306 note=8-031 料金体系: Red Hat build of Debeziumの商用サポート価格頁をcurlで確認
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -w '\nHTTP_CODE=%{http_code}\n' https://www.redhat.com/en/technologies/jboss-middleware/debezium https://access.redhat.com/products/red-hat-build-of-debezium
+  
+<!DOCTYPE html>
+<html lang="en" dir="ltr" prefix="og: https://ogp.me/ns#" class="pf-v6-theme-felt">
+    <head>
+        <script>performance.mark('HEAD Start');</script>
+        <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>404 - Red Hat</title>
+        <link rel="preconnect" href="https://static.redhat.com">
+    <link rel="preconnect" href="https://consent.trustarc.com">
+            <script id="rhdc_analytics_get_top_eddl_pagedata">var pageData = {"pageCategory":"404","pageName":"rh|404|technologies|jboss-middleware|debezium","pageTitle":"Page Not Found | 404 - Red Hat","pageType":"page","pageSubType":"","siteExperience":"","siteLanguage":"en","subsection":"","subsection2":"","subsection3":"","cms":"RH CMS 1.0","analyticsTitle":"","contentID":"703901","contentType":"","destinationURL":"https:\/\/www.redhat.com\/en\/technologies\/jboss-middleware\/debezium","gated":"false","offerID":"","errorType":404,"contentPublishDate":"2020-07-30","recommendations_group":"","recommendations_id":"703901_rh_en","siteName":"rh","dataObject":"appEventData","queryParameters":{"destination":"\/en","_exception_statuscode":404},"pageStatus":"published"};</script>
+<script id="rhdc_analytics_get_top_eddl_js">!function(e,a){"use strict";e.appEventData=e.appEventData||[],e.pageData=e.pageData||[];const t={event:"Page Load Started",page:pageData};if(a.referrer){let e=a.createElement("a");e.href=a.referrer,t.page.previousPage=e.href}t.page.siteExperience=e.innerWidth<=768?"tablet":"desktop",appEventData.push(t)}(window,document);</script>
+<script id="dpal" src="https://www.redhat.com/dtm.js" async></script>
+<script id="trustarc" src="https://static.redhat.com/libs/redhat/marketing/latest/trustarc/trustarc.js" async></script>
+<script src="https://static.redhat.com/libs/redhat/marketing/latest/trustarc/trustecm/js/trustecm.js" data-domain="www.redhat.com" async></script>
+<script class="trustecm" data-src="https://static.redhat.com/libs/redhat/marketing/latest/trustarc/trustecm/js/trustecm-functional.js" data-tracker-type="functional"></script>
+<script class="trustecm" data-src="https://static.redhat.com/libs/redhat/marketing/latest/trustarc/trustecm/js/trustecm-advertising.js" data-tracker-type="advertising"></script>
+<script type="importmap">{"imports":{"@rhds/elements/":"/modules/contrib/red_hat_shared_libs/dist/rhds-elements/4.2.1/"},"scopes":{}}</script>
+
+    <script type="application/json" data-drupal-selector="drupal-settings-json">{"path":{"baseUrl":"\/","pathPrefix":"en\/","currentPath":"","currentPathIsAdmin":false,"isFront":false,"currentLanguage":"en"},"pluralDelimiter":"\u0003","suppressDeprecationErrors":true,"redHatPageBuilder":{"settings":{"_core":{"default_config_hash":"z6fGhTT3aFdfxvFq8UXkwEKtT15FprAraliGnLYiM04"},"max_section_depth":2,"section_library_categories":[{"name":"Layouts","show_as_tab":true},{"name":"Content","show_as_tab":true},{"name":"Products","show_as_tab":true},{"name":"Eve
+[出力は 425520 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T14:34:57Z method=websearch target=redhat_pricing_search rc=NA time_s=NA note=8-031 料金体系(Red Hat商用サポート版)の公開価格の有無をWebSearchで確認
+$ "Red Hat build of Debezium" pricing subscription
+Red Hat build of Debeziumはサブスクリプション制の商用サポート製品(docs.redhat.com/access.redhat.comの製品文書で確認)だが、公開の価格ページはヒットせず、文書は「サブスクリプション契約に応じてサポートを提供する」とのみ記載。価格は営業への問い合わせが必要(公開されていない)。
+--- 2026-09-26T14:35:02Z method=公式 target=mvnrepository_dl試行 rc=0 time_s=0.436 note=8-031 週DL数: mvnrepository.comのDebezium embeddedページで週DL相当の指標(usage/使用数)の有無をcurlで確認
+$ curl -sS --cacert /root/.ccr/ca-bundle.crt -w '\nHTTP_CODE=%{http_code}\n' https://mvnrepository.com/artifact/io.debezium/debezium-embedded
+<!DOCTYPE html><html lang="en-US"><head><title>Just a moment...</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=Edge"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="content-security-policy" content="default-src &#39;none&#39;; script-src &#39;nonce-4ssLHcjaIjp7uFQ9VdnJIG&#39; &#39;unsafe-eval&#39; https://challenges.cloudflare.com; script-src-attr &#39;none&#39;; style-src &#39;unsafe-inline&#39;; img-src &#39;self&#39; https://challenges.cloudflare.com; connect-src &#39;self&#39; https://challenges.cloudflare.com; frame-src &#39;self&#39; https://challenges.cloudflare.com blob:; child-src &#39;self&#39; https://challenges.cloudflare.com blob:; worker-src blob:; form-action http: https:; base-uri &#39;self&#39;"><style>*{box-sizing:border-box;margin:0;padding:0}html{line-height:1.15;-webkit-text-size-adjust:100%;color:#313131;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji"}body{display:flex;flex-direction:column;height:100vh;min-height:100vh}.main-content{margin:8rem auto;padding-left:1.5rem;max-width:60rem}@media (width <= 720px){.main-content{margin-top:4rem}}#challenge-error-text{background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgZmlsbD0ibm9uZSI+PHBhdGggZmlsbD0iI0IyMEYwMyIgZD0iTTE2IDNhMTMgMTMgMCAxIDAgMTMgMTNBMTMuMDE1IDEzLjAxNSAwIDAgMCAxNiAzbTAgMjRhMTEgMTEgMCAxIDEgMTEtMTEgMTEuMDEgMTEuMDEgMCAwIDEtMTEgMTEiLz48cGF0aCBmaWxsPSIjQjIwRjAzIiBkPSJNMTcuMDM4IDE4LjYxNUgxNC44N0wxNC41NjMgOS41aDIuNzgzem0tMS4wODQgMS40MjdxLjY2IDAgMS4wNTcuMzg4LjQwNy4zODkuNDA3Ljk5NCAwIC41OTYtLjQwNy45ODQtLjM5Ny4zOS0xLjA1Ny4zODktLjY1IDAtMS4wNTYtLjM4OS0uMzk4LS4zODktLjM5OC0uOTg0IDAtLjU5Ny4zOTgtLjk4NS40MDYtLjM5NyAxLjA1Ni0uMzk3Ii8+PC9zdmc+");background-repeat:no-repeat;background-size:contain;padding-left:34px}</style><meta http-equiv="refresh" content="360"></head><body><div class="main-wrapper" role="main"><div class="main-content"><noscript><div class="h2"><span id="challenge-error-text">Enable JavaScript and cookies to continue</span></div></noscript></div></div><script nonce="4ssLHcjaIjp7uFQ9VdnJIG">(function(){window._cf_chl_opt = {cFPWv: 'b',cH: '.n1BQYpTuD5zB8znPJDmQ1r19r6jBihvBDN5OO_hEw4-1790433302-1.2.1.1-2bYUrav0tjuqXReIW6Ce0OoBprG.sh7JZ7pyUfynu1NHSiY7XSy7SwqRtfHzvt2Y',cITimeS: '1790433302',cN: '4ssLHcjaIjp7uFQ9VdnJIG',cRay: 'a412fe2e28e55702',cTplB: '0',cTplC:0,cTplO:0,cTplV:5,cType: 'managed',cUPMDTk:"/artifact/io.debezium/debezium-embedded?__cf_chl_tk=gePAlf.HS6PnvI.CNOdJOs._Rs1.FxTvX1FcBE8oWxQ-1790433302-1.0.1.1-XeEBMmm5XLfT5Od0EHeX1KjHemwobdVGM8SqmTcLTZE",cvId: '3',cZone: 'mvnrepository.com',fa:"/artifact/io.debezium/debezium-embedded?__cf_chl_f_tk=gePAlf.HS6PnvI.CNOdJOs._Rs1.FxTvX1FcBE8oWxQ-1
+[出力は 5516 文字。先頭 3000 文字だけを残した]
+--- 2026-09-26T14:35:11Z method=公式 target=mvnrepository_render試行 rc=0 time_s=19.471 note=8-031 週DL数: mvnrepository.comをJS描画で再試行(cloudflareのjschallenge通過を試す)
+$ node scripts/cat8_render.js https://mvnrepository.com/artifact/io.debezium/debezium-embedded 6000
+HTTP 403 https://mvnrepository.com/artifact/io.debezium/debezium-embedded
+mvnrepository.com
+Performing security verification
+
+This website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.
+
+Ray ID: a412fe6dde50430c
+Performance and Security by Cloudflare
+Privacy
+| --- frame https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/b/turnstile/f/av0/rch/qmgx7/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal?lang=auto
+
+INCOMPLETE 合計 0 件
+--- 2026-09-26T14:35:42Z method=一次資料 target=当方データ投入_connectors_index rc=0 time_s=0.004 note=8-031 当方データ投入: connectors/index.adoc(Source Connectors Overview)から投入経路(対応DBソース)の逐語を探す
+$ sed -n 1,60p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/index.adoc
+= Source Connectors
+
+{prodname} provides a growing library of source connectors that capture changes from a variety of database management systems.
+Each connector produces change events with very similar structures, making it easy for your applications to consume and respond to events, regardless of their origin.
+
+We currently have the following connectors:
+
+* xref:connectors/mongodb.adoc[MongoDB]
+* xref:connectors/mariadb.adoc[MariaDB]
+* xref:connectors/mysql.adoc[MySQL]
+* xref:connectors/postgresql.adoc[PostgreSQL]
+* xref:connectors/sqlserver.adoc[SQL Server]
+* xref:connectors/oracle.adoc[Oracle]
+* xref:connectors/db2.adoc[Db2]
+* xref:connectors/cassandra.adoc[Cassandra]
+* xref:connectors/vitess.adoc[Vitess] (Incubating)
+* xref:connectors/spanner.adoc[Spanner] (Incubating)
+* xref:connectors/informix.adoc[Informix] (Incubating)
+* xref:connectors/cockroachdb.adoc[CockroachDB] (Incubating)
+* xref:connectors/yashandb.adoc[YashanDB] (Incubating)
+* xref:connectors/ingres.adoc[Ingres] (Incubating)
+* xref:connectors/milvus.adoc[Milvus] (Incubating)
+
+[NOTE]
+====
+An incubating connector is one that has been released for preview purposes and is subject to changes that may not always be backward compatible.
+====
+--- 2026-09-26T14:36:15Z method=印探索 target=nav_adoc_再確認 rc=0 time_s=0.004 note=8-031 E2・E4の印を探す範囲の確認: 文書の目次nav.adoc(全88行)をこの回であらためて全文読了
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/nav.adoc
+* Getting Started
+** xref:tutorials.adoc[Tutorials]
+*** xref:kc-tutorial.adoc[Kafka Connect]
+** xref:install.adoc[Installation]
+*** xref:install-kafka-connect.adoc[Kafka Connect]
+*** xref:postgres-plugins.adoc[PostgreSQL Decoding Plugins]
+** xref:architecture.adoc[Architecture]
+** xref:features.adoc[Features]
+* Configuration
+** xref:configuration/avro.adoc[Avro Serialization]
+** xref:configuration/topic-auto-create-config.adoc[Customizing Topic Auto-Creation]
+** xref:configuration/signalling.adoc[Sending Signals to Debezium]
+** xref:configuration/notification.adoc[Receive notifications from Debezium]
+** xref:configuration/storage.adoc[Store Debezium state]
+** xref:configuration/eos.adoc[Exactly-once delivery]
+* Source Connectors
+** xref:connectors/index.adoc[Overview]
+** xref:connectors/mysql.adoc[MySQL]
+** xref:connectors/mariadb.adoc[MariaDB]
+** xref:connectors/mongodb.adoc[MongoDB]
+** xref:connectors/postgresql.adoc[PostgreSQL]
+** xref:connectors/oracle.adoc[Oracle]
+** xref:connectors/sqlserver.adoc[SQL Server]
+** xref:connectors/db2.adoc[Db2]
+** xref:connectors/cassandra.adoc[Cassandra]
+** xref:connectors/vitess.adoc[Vitess]
+** xref:connectors/spanner.adoc[Spanner]
+** xref:connectors/informix.adoc[Informix]
+** xref:connectors/cockroachdb.adoc[CockroachDB]
+** xref:connectors/yashandb.adoc[YashanDB]
+** xref:connectors/ingres.adoc[Ingres]
+** xref:connectors/milvus.adoc[Milvus]
+* Sink Connectors
+** xref:connectors/index-sink.adoc[Overview]
+** xref:connectors/jdbc.adoc[JDBC]
+** xref:connectors/mongodb-sink.adoc[MongoDB Sink]
+* Transformations
+** xref:transformations/index.adoc[Overview]
+** xref:transformations/topic-routing.adoc[Topic Routing]
+** xref:transformations/event-flattening.adoc[New Record State Extraction]
+** xref:transformations/mongodb-event-flattening.adoc[MongoDB New Document State Extraction]
+** xref:transformations/mongodb-relational-mapping.adoc[MongoDB Relational Mapping]
+** xref:transformations/event-changes.adoc[Event Changes]
+** xref:transformations/outbox-event-router.adoc[Outbox Event Router]
+** xref:transformations/mongodb-outbox-event-router.adoc[MongoDB Outbox Event Router]
+** xref:transformations/filtering.adoc[Message Filtering]
+** xref:transformations/schema-change-event-filter.adoc[Schema Change Event Filtering]
+** xref:transformations/content-based-routing.adoc[Content-Based Routing]
+** xref:transformations/applying-transformations-selectively.adoc[Using SMT Predicates to Selectively Apply Transformations]
+** xref:transformations/partition-routing.adoc[Partition Routing]
+** xref:transformations/header-to-value.adoc[HeaderToValue]
+** xref:transformations/timezone-converter.adoc[Timezone Converter]
+** xref:transformations/geometry-format-transformer.adoc[Geometry Format Conversion]
+** xref:transformations/timescaledb.adoc[TimescaleDB Integration]
+** xref:transformations/decode-logical-decoding-message-content.adoc[Decode Logical Decoding Message Content]
+** xref:transformations/vector-to-json.adoc[Vector Data Types to JSON Types]
+** xref:transformations/neo4j-cud-converter.adoc[Neo4j CUD Converter]
+** xref:transformations/enforce-record-size.adoc[Enforce Record Size]
+** xref:transformations/swap-geometry-coordinates.adoc[Swap Geometry Coordinates]
+* Post Processors
+** xref:post-processors/index.adoc[Overview]
+** xref:post-processors/reselect-columns.adoc[Reselect Columns]
+** xref:post-processors/s3-large-message.adoc[S3 Large Message]
+* API and SPI
+** xref:development/engine.adoc[Debezium Engine]
+** xref:development/converters.adoc[Custom Converters]
+* Integrations
+** xref:integrations/serdes.adoc[Change Event SerDes]
+** xref:integrations/outbox.adoc[Outbox Quarkus Extension]
+** xref:integrations/cloudevents.adoc[CloudEvents]
+** xref:integrations/openlineage.adoc[OpenLineage]
+** xref:integrations/tracing.adoc[OpenTelemetry]
+** xref:integrations/quarkus-debezium-engine-extension.adoc[Debezium Extensions for Quarkus]
+** xref:integrations/hibernate-cache.adoc[Hibernate Cache Invalidation]
+** xref:inte
+[出力は 4662 文字。先頭 4000 文字だけを残した]
+--- 2026-09-26T14:41:06Z method=一次資料 target=run26_知見7_確認 rc=0 time_s=0.009 note=8-031 E1a・E1b・E5・E6の案Bの記録(26回目の知見7)を確かめる: 26回目の報告40862行目を抜粋して、読んだ範囲と当たりの行の数が揃っていることを確認
+$ sed -n 40862p docs/DATA/SCAN_2026-09-23_tools_cat8.md
+| 7 | `Debezium` / E1a・E1b・E5・E6 未判別(500行超・案Bの記録): 見積もり(`cat8_step`経由、N全体4,520ファイル)でE1a=2,121行(509ファイル)・E1b=1,946行(498ファイル)・E5=18,200行(1,287ファイル)・E6=62,088行(2,255ファイル)となり、いずれも500行を超えたため`cat8_search.py`は打たず未判別のまま残す。読んだ範囲: 文書の目次(`documentation/modules/ROOT/nav.adoc`全88行を読了)。本文を読んだ頁: `configuration/signalling.adoc`(ad hoc/incremental snapshot)・`configuration/notification.adoc`・`configuration/eos.adoc`(Exactly-once delivery)・`operations/monitoring.adoc`・`integrations/testcontainers.adoc`・`integrations/openlineage.adoc`・`post-processors/reselect-columns.adoc`・`transformations/neo4j-cud-converter.adoc`(reconcileの語の当たりを確認)・`connectors/mongodb.adoc`(offset reconciliationの語の当たりを確認)・`operations/openshift.adoc`・`operations/kubernetes.adoc`(checksumの語の当たりを確認)。的を絞った文書内語検索で「reconcil」(全2件)・「checksum」(全2件)を読み、いずれも述語に当たらないことを確認した(知見に記載の逐語のとおり)。ソースは最上位ディレクトリの一覧(`debezium-embedded`等41件)を確認し、`development/engine.adoc`(Debezium Engineのoffset.storage設定)を読んだ。限界: 題と目次で頁を選ぶ方式のため、`connectors/*.adoc`の個別コネクタの設定項目一覧(数千行規模)の本文や、題に出ない機能記述は読み落としうる | 一次資料 | docs/DATA/probes/20260923_tools_8_run26.log:202-225 docs/DATA/probes/20260923_tools_8_run26.log:1373-1383 |
+--- 2026-09-26T14:41:16Z method=一次資料 target=sqlserver_replay_quote_再確認 rc=0 time_s=0.005 note=8-031 E4: 26回目に印の根拠としたsqlserver.adocの逐語をこの回であらためて確認(対象が市場データであることを言う語が無いことの確認)
+$ grep -n 'in the same order in which they occurred' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-031/src/debezium/documentation/modules/ROOT/pages/connectors/sqlserver.adoc
+507:This sorting order ensures that the changes are replayed by {prodname} in the same order in which they occurred in the database.

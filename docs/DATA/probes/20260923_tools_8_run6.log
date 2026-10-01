@@ -1,0 +1,1621 @@
+=== 区分8 6回目実行 2026-09-24 指定: docs/DATA/delegations/20260923_tools_survey_cat8_run6_prompt.md@a3a735b35643 対象6行: 8-003 8-006 8-007 8-008 8-013 8-016。予算で止めない(追補§5 L-507案A)。
+--- 2026-09-24T03:37:33Z method=公式 target=prediction-market-backtester rc=0 time_s=0.778 note=ファイル一覧全件を取る(既定枝)
+$ curl -sS https://ungh.cc/repos/Quentin-Piot/prediction-market-backtester
+{"repo":{"id":1155546190,"name":"prediction-market-backtester","repo":"Quentin-Piot/prediction-market-backtester","description":"Quant-style backtesting engine for prediction markets (Polymarket + Kalshi), focused on correctness, reproducibility, and performance.","createdAt":"2026-02-11T16:25:18Z","updatedAt":"2026-05-05T00:54:01Z","pushedAt":"2026-03-07T11:43:49Z","stars":6,"watchers":0,"forks":2,"defaultBranch":"master"}}
+--- 2026-09-24T03:37:38Z method=公式 target=prediction-market-backtester rc=0 time_s=0.270 note=ファイル一覧全件(既定枝master)
+$ curl -sS https://ungh.cc/repos/Quentin-Piot/prediction-market-backtester/files/master
+{"meta":{"sha":"c77dff74680bceadc4e028019821db7a54bf1014"},"files":[{"path":".env.example","mode":"100644","sha":"329297379695bd9d4c56564535eb98c298d9d43f","size":248},{"path":".github/workflows/ci.yml","mode":"100644","sha":"d7dd4b9289fa725c449487d6eb95a0c08d1b4ef3","size":695},{"path":".gitignore","mode":"100644","sha":"3b8ac4c1aaccef7a836288c4bddc89987850d860","size":4826},{"path":".pre-commit-config.yaml","mode":"100644","sha":"2e16fc55ca0699456b6b1c47927ce5007ab1515d","size":260},{"path":"LICENSE","mode":"100644","sha":"4939db624027ee22b66ba2debeea6ff303dc07f4","size":1069},{"path":"Makefile","mode":"100644","sha":"29e7749e1d382b134b800b6ef4d39654f7947c1d","size":738},{"path":"README.md","mode":"100644","sha":"72fb8486529099c3bc95cfe62e163c38572a73ff","size":6343},{"path":"ROADMAP.md","mode":"100644","sha":"0d6fe1753025a63d28a89012903279707a89bbc8","size":13773},{"path":"THIRD_PARTY_NOTICES.md","mode":"100644","sha":"411df7088cf61d5a13cc82b9db9794e14dfb16c0","size":447},{"path":"configs/event_threshold/default.yaml","mode":"100644","sha":"e8cacd3c882336002312f8bbe1953766790597b7","size":108},{"path":"configs/mean_reversion/default.yaml","mode":"100644","sha":"b4fe5861bd84e475693f526e81448e78ebf79d53","size":81},{"path":"configs/momentum/default.yaml","mode":"100644","sha":"0b2e7ac5d1366b862249be0c5e587ff1222ba0b0","size":70},{"path":"configs/scanner/default.yaml","mode":"100644","sha":"69d557481f4fa4a784cddc49f3f85e346eaa1d08","size":167},{"path":"docs/engine-contracts.md","mode":"100644","sha":"13767cceb5a58fa1f268a1c2e08be0cc16dd5f79","size":2318},{"path":"docs/performance-baseline.md","mode":"100644","sha":"64f00c18a7fe100b63a103634541dcd10883324e","size":2027},{"path":"docs/prediction-markets-vs-tradfi.md","mode":"100644","sha":"60bf60ba5948df7da73c6e5254e162c17a7a2575","size":5267},{"path":"pyproject.toml","mode":"100644","sha":"5391d4575f1358dfe29d822d5ee33c2896ddb1c7","size":1311},{"path":"scripts/index_data.py","mode":"100644","sha":"1524a0ae9fc58466ecec81d9ad4bc7e8f1b1605f","size":2572},{"path":"scripts/profile_backtest.py","mode":"100644","sha":"a5b4c4b5adc52694458828417e557cb37357111f","size":4793},{"path":"scripts/setup_data.sh","mode":"100755","sha":"09d42ecf24cc55e4c692a2f7287ce6e076957b9b","size":2061},{"path":"src/pm_bt/__init__.py","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":"src/pm_bt/backtest/__init__.py","mode":"100644","sha":"6e34c6d647a5f2dac346f5748858888ae12928e7","size":119},{"path":"src/pm_bt/backtest/engine.py","mode":"100644","sha":"01a80dc49fddd5f0217aed6ef2025b81e41af7b5","size":21488},{"path":"src/pm_bt/cli.py","mode":"100644","sha":"89afd174a4ffc58ec1d474d3cc24f1f301057f66","size":23348},{"path":"src/pm_bt/common/__init__.py","mode":"100644","sha":"17546cf57807db6e05850a6e3d3d27fadbea84ce","size":1323},{"path":"src/pm_bt/common/categories.py","mode":"100644","sha":"eb0e1fcb2e0cb1406ad4a57e5f05ddeb874ffe51","size":2528},{"path":"src/pm_bt/common/models.py","mode":"100644","sha":"469324827b4430a068d2f7fbea41d544c0181f1b","size":6009},{"path":"src/pm_bt/common/types.py","mode":"100644","sha":"492d9e14597ae84fec363b70dd44c71841f560b7","size":742},{"path":"src/pm_bt/common/utils.py","mode":"100644","sha":"2e5efa078245f7126a784d159bcfc202bf9df887","size":1504},{"path":"src/pm_bt/data/__init__.py","mode":"100644","sha":"56e0b02113b4d282a63fa63aa3f15604be6f3ac2","size":334},{"path":"src/pm_bt/data/loaders.py","mode":"100644","sha":"1c3ba0ea296f45ed5c99894717f4daed0df6323f","size":14801},{"path":"src/pm_bt/data/quality.py","mode":"100644","sha":"cbc1c8ddf4724a0b3c40a69dffae3f1cb234e693","size":7841},{"path":"src/pm_bt/execution/__init__.py","mode":"100644","sha":"7ec8ad207a45dae22ce1366849bd2ee6c77758eb","size":212},{"path":"src/pm_bt/execution/simulator.py","mode":"100644","sha":"dba2f45284fcfacda16c77ee3329e65cf03444c8","size":11598},{"path":"src/pm_bt/features/__init__.py","mode":"100644","sha":"dc15ca0e3ac9832a198f531c6769dc7137aa2144","size":111},{"path":"src/pm_bt/features/bars.py","mode":"100644","sha":"9f2ccb1be93b25fd41d8fa468e7ab2b0a782120a","size":2809},{"path":"src/pm_bt/reporting/__init__.py","mode":"100644","sha":"fa7dba1f5333286321aca6e6d09e193c5315e761","size":3096},{"path":"src/pm_bt/reporting/calibration.py","mode":"100644","sha":"0b884b886241e71d924cfc3564fe295b2cbd7720","size":7394},{"path":"src/pm_bt/reporting/metrics.py","mode":"100644","sha":"ffdcd3d07f81ff95dd9e119a8be3c8362799da0a","size":2435},{"path":"src/pm_bt/reporting/plots.py","mode":"100644","sha":"1c383ec2387e34d2a8e87401e0be22a386f6fa0d","size":2967},{"path":"src/pm_bt/reporting/validation.py","mode":"100644","sha":"5bbc2723d6c1d0fff56510984439a717a01a71d4","size":7411},{"path":"src/pm_bt/scanner/__init__.py","mode":"100644","sha":"cf519a84bfa0ae5dde9b7f7dee75f5e769441aff","size":448},{"path":"src/pm_bt/scanner/checks/__init__.py","mode":"100644","sha":"bd8bf63b964c582d8c32b69e694c07c519f303cc","size":335},{"path":"src/pm_bt/scanner/checks/consistency.py","mode":"100644","sha":"aa93d12fb421edc36b87d0cef1ae2fb6a364005f","size":6853},{"path":"src/pm_bt/scanner/checks/whale.py","mode":"100644","sha":"6a2fcf7217dd3621d6ec4eba85024a41c7c02dad","size":6181},{"path":"src/pm_bt/scanner/models.py","mode":"100644","sha":"711929f5f347bc7153c592ca3c15fe7a76075757","size":1604},{"path":"src/pm_bt/scanner/output.py","mode":"100644","sha":"772821017c7a345c680d6c2b2a81b2db7a54fb1d","size":2778},{"path":"src/pm_bt/scanner/runner.py","mode":"100644","sha":"0d06d4dacc2a8123d22e26a8a02f9904c3cfb1d2","size":5429},{"path":"src/pm_bt/strategies/__init__.py","mode":"100644","sha":"3829a991e82e4cea090b9182721ec3fe1125aafd","size":346},{"path":"src/pm_bt/strategies/_utils.py","mode":"100644","sha":"861c29f5a0cd826113a91b91bb49b951db649696","size":434},{"path":"src/pm_bt/strategies/base.py","mode":"100644","sha":"61896ede4f6c8d1bb985dd9632bc655e5151b72f","size":676},{"path":"src/pm_bt/strategies/event_threshold.py","mode":"100644","sha":"f340d5ef2c2f300b636833a632cb14997425bb2f","size":1521},{"path":"src/pm_bt/strategies/mean_reversion.py","mode":"100644","sha":"5a0084ed11cd310c82fb9ee998c4425ac4ff345a","size":1413},{"path":"src/pm_bt/strategies/momentum.py","mode":"100644","sha":"6e59df264b3c1b0128bf7683c6fb153e3cd96ec2","size":1368},{"path":"tests/__init__.py","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":"tests/conftest.py","mode":"100644","sha":"b1541faf3290f72daa04dc6e6a8e4c6743863c39","size":672},{"path":"tests/fixtures/markets_small.csv","mode":"100644","sha":"54bbfe15fdcad83b0392f9518aa5c1c70513c000","size":336},{"path":"tests/fixtures/trades_small.csv","mode":"100644","sha":"97ff9d7ba9ff10cc567f2648c955740596db161a","size":688},{"path":"tests/test_backtest_engine.py","mode":"100644","sha":"d6881f56186de3c7d9de4f5bd0b2ec3fb648efec","size":17409},{"path":"tests/test_bars.py","mode":"100644","sha":"61711feb4f0aaa5d6d6c501cbe69d9cc45b8b4ba","size":1238},{"path":"tests/test_calibration.py","mode":"100644","sha":"df7685a113893047d74524bc2d6609885469f8cc","size":2717},{"path":"tests/test_categories.py","mode":"100644","sha":"2f7248f6ec4a512b89380ee32f8cdc56a9525de7","size":1270},{"path":"tests/test_cli.py","mode":"100644","sha":"6ac010e22fa39a436225dc4bf3c84a985ed8880f","size":11747},{"path":"tests/test_data_contracts.py","mode":"100644","sha":"896206c9cfb24c89f8cd9dc37081a9c6cc9a99e9","size":2964},{"path":"tests/test_data_loaders.py","mode":"100644","sha":"1aed866368472d8e7ba4c3658cdc444030b006d8","size":5212},{"path":"tests/test_data_quality.py","mode":"100644","sha":"5b815a2b8b9b42b5c8c1dcc0052d66acc7a9e243","size":1967},{"path":"tests/test_execution.py","mode":"100644","sha":"9f0cf2253b28ccde8b1620e8dd967ff0e41b1a12","size":7165},{"path":"tests/test_real_data_integration.py","mode":"100644","sha":"1b8d75c4b08cff9821fbe96005408642b998636b","size":3846},{"path":"tests/test_reporting.py","mode":"100644","sha":"c884ccda36f36d2414ca78688845bdd4cf620578","size":8707},{"path":"tests/test_scanner.py","mode":"100644","sha":"04a55afc02c6d37e6846ca79af12f28da75b10b3","size":23766},{"path":"tests/test_smoke.py","mode":"100644","sha":"850a65f392d89351aa4cd5a099198b7aca7226bd","size":79},{"path":"tests/test_strategies.py","mode":"100644","sha":"5c4d11df0d9efe6050a8ab3ef6ad62d5ec790abf","size":2166},{"path":"uv.lock","mode":"100644","sha":"d36b9c13d40e9719072781a4874282426a437272","size":632627},{"path":"vendor/prediction-market-analysis/LICENSE","mode":"100644","sha":"1e4336d0e2293baf91b4fc0ecebce2d976e959d5","size":1072},{"path":"vendor/prediction-market-analysis/docs/SCHEMAS.md","mode":"100644","sha":"ba241fe673908c6553a49bb6e41d43acabf38d89","size":6328},{"path":"vendor/prediction-market-analysis/src/common/__init__.py","mode":"100644","sha":"b1443a57a2f863a0c59ed5347bec9cac7cd25a2a","size":137},{"path":"vendor/prediction-market-analysis/src/common/analysis.py","mode":"100644","sha":"dca143698946be3bbe0a76eb9394f6744328276d","size":5726},{"path":"vendor/prediction-market-analysis/src/common/client.py","mode":"100644","sha":"d8fbeb11ac30f5393ce8e39174daf6f41800691f","size":1070},{"path":"vendor/prediction-market-analysis/src/common/indexer.py","mode":"100644","sha":"af4d5be00e31a8cc025dde79f39b80d3cf221517","size":1964},{"path":"vendor/prediction-market-analysis/src/common/interfaces/__init__.py","mode":"100644","sha":"a40e86558b83f7998e22ecedcdfb69c2685b191c","size":422},{"path":"vendor/prediction-market-analysis/src/common/interfaces/chart.py","mode":"100644","sha":"55c3dbf27260db7ff93fdd64fd3a2c411d55d876","size":7505},{"path":"vendor/prediction-market-analysis/src/common/storage.py","mode":"100644","sha":"fa51266668f862aadea19983b1e633a176010468","size":2725},{"path":"vendor/prediction-market-analysis/src/common/util/__init__.py","mode":"100644","sha":"c0840a7ce6f3ca1d1ea3dfc7f626b06d508e701d","size":104},{"path":"vendor/prediction-market-analysis/src/common/util/package.py","mode":"100644","sha":"221d143159a83971e92304a1e79a9c8238bfefb2","size":883},{"path":"vendor/prediction-market-analysis/src/common/util/strings.py","mode":"100644","sha":"17e382b8a9eb70b9d091f83432d30dbded69b1d7","size":125},{"path":"vendor/prediction-market-analysis/src/indexers/__init__.py","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":"vendor/prediction-market-analysis/src/indexers/kalshi/__init__.py","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":"vendor/prediction-market-analysis/src/indexers/kalshi/client.py","mode":"100644","sha":"c9a1cc7cef3befd57a64b5ba23688890dc05a8af","size":3889},{"path":"vendor/prediction-market-analysis/src/indexers/kalshi/markets.py","mode":"100644","sha":"6eaa16021b33cba363ac52ca0cbdd6a6288bce43","size":1918},{"path":"vendor/prediction-market-analysis/src/indexers/kalshi/models.py","mode":"100644","sha":"253819f01d754c585e8d7d3fd0822891598077a1","size":2696},{"path":"vendor/prediction-market-analysis/src/indexers/kalshi/trades.py","mode":"100644","sha":"11f9a8bed648a7da96bfc3100ccd72b98478a566","size":5596},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/__init__.py","mode":"100644","sha":"e69de29bb2d1d6434b8b29ae775ad8c2e48c5391","size":0},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/blockchain.py","mode":"100644","sha":"9b9f2b7ea8653069d2d0c8040f1faa7d994a6783","size":8795},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/blocks.py","mode":"100644","sha":"14080406c6d7149a3d237a52eb1e65264a065430","size":6100},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/client.py","mode":"100644","sha":"63d34fc8f8715d7dd7f5bb692ed1be55720c25f9","size":3501},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/fpmm_trades.py","mode":"100644","sha":"a52da24b48d273774901a8b66919923879cbe88b","size":12165},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/markets.py","mode":"100644","sha":"42ecfa4353a62b50e06c3b7e81dfdcc32448feaf","size":2591},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/models.py","mode":"100644","sha":"e402f972f572965b468ef01a3bb218e3db97e533","size":2638},{"path":"vendor/prediction-market-analysis/src/indexers/polymarket/trades.py","mode":"100644","sha":"4d3f667c00381f2cefa24231f5cc426d9c664dbb","size":5806}]}
+--- 2026-09-24T03:37:59Z method=公式 target=prediction-market-backtester rc=0 time_s=0.883 note=リポジトリをclone(隔離scratchpad)して全文検索の準備
+$ bash -c 'rm -rf /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && git clone --depth 1 --branch master https://github.com/Quentin-Piot/prediction-market-backtester /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo 2>&1 | tail -20 && find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo -type f | grep -v '"'"'/\.git/'"'"' | wc -l'
+Cloning into '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo'...
+99
+--- 2026-09-24T03:38:06Z method=実測 target=prediction-market-backtester rc=1 time_s=0.011 note=E3a/E3b: look-ahead/lookahead/ルックアヘッド/防ぐ/検出 をuv.lock以外の98件で検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && grep -rniE '"'"'look-?ahead|lookahead|ルックアヘッド|leak|future.?leak|forward.?fill.?bias|survivorship'"'"' --include='"'"'*'"'"' -l . | grep -v '"'"'\.git/'"'"' | grep -v '"'"'uv\.lock'"'"''
+
+--- 2026-09-24T03:38:13Z method=実測 target=prediction-market-backtester rc=0 time_s=0.009 note=DATA_SHA256の原文箇所を探す
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && grep -rn '"'"'DATA_SHA256'"'"' . | grep -v '"'"'\.git/'"'"''
+./README.md:145:# set DATA_URL (and optionally DATA_SHA256)
+./README.md:151:- optionally verifies `DATA_SHA256`
+./scripts/setup_data.sh:10:DATA_SHA256="${DATA_SHA256:-}"
+./scripts/setup_data.sh:40:if [[ -n "$DATA_SHA256" ]]; then
+./scripts/setup_data.sh:42:  echo "${DATA_SHA256}  ${DATA_ARCHIVE}" | sha256sum --check --status
+./.env.example:5:DATA_SHA256=
+--- 2026-09-24T03:38:20Z method=実測 target=prediction-market-backtester rc=0 time_s=0.010 note=setup_data.shの全文を読む(DATA_SHA256の文脈)
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/scripts/setup_data.sh
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+DATA_DIR="${DATA_DIR:-data}"
+DATA_ARCHIVE="${DATA_ARCHIVE:-data.tar.zst}"
+DATA_URL="${DATA_URL:-}"
+DATA_SHA256="${DATA_SHA256:-}"
+SETUP_MARKER="${DATA_DIR}/.setup_complete"
+
+if [[ -f "$SETUP_MARKER" ]]; then
+  echo "[setup] dataset already initialized at ${DATA_DIR} (marker found)"
+  exit 0
+fi
+
+if [[ ! -f "$DATA_ARCHIVE" ]]; then
+  if [[ -z "$DATA_URL" ]]; then
+    echo "[setup] DATA_URL is required when ${DATA_ARCHIVE} is missing"
+    echo "[setup] set DATA_URL in .env or environment"
+    exit 1
+  fi
+
+  tmp_archive="${DATA_ARCHIVE}.part"
+  echo "[setup] downloading dataset archive from ${DATA_URL}"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl --fail --location --retry 5 --retry-delay 2 --output "$tmp_archive" "$DATA_URL"
+  elif command -v wget >/dev/null 2>&1; then
+    wget --tries=5 --wait=2 --output-document="$tmp_archive" "$DATA_URL"
+  else
+    echo "[setup] curl or wget is required"
+    exit 1
+  fi
+
+  mv "$tmp_archive" "$DATA_ARCHIVE"
+fi
+
+if [[ -n "$DATA_SHA256" ]]; then
+  echo "[setup] verifying sha256"
+  echo "${DATA_SHA256}  ${DATA_ARCHIVE}" | sha256sum --check --status
+fi
+
+echo "[setup] validating archive paths"
+if tar --zstd -tf "$DATA_ARCHIVE" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+  echo "[setup] archive contains unsafe paths"
+  exit 1
+fi
+
+echo "[setup] extracting ${DATA_ARCHIVE}"
+mkdir -p "$DATA_DIR"
+extract_tmp="${DATA_DIR}.extract_tmp"
+rm -rf "$extract_tmp"
+mkdir -p "$extract_tmp"
+tar --zstd -xf "$DATA_ARCHIVE" -C "$extract_tmp"
+
+source_root=""
+if [[ -d "${extract_tmp}/data" ]]; then
+  source_root="${extract_tmp}/data"
+elif [[ -d "${extract_tmp}/kalshi" || -d "${extract_tmp}/polymarket" ]]; then
+  source_root="${extract_tmp}"
+fi
+
+if [[ -z "$source_root" ]]; then
+  echo "[setup] unsupported archive root layout; expected data/ or venue directories"
+  rm -rf "$extract_tmp"
+  exit 1
+fi
+
+cp -a "${source_root}/." "${DATA_DIR}/"
+rm -rf "$extract_tmp"
+
+touch "$SETUP_MARKER"
+echo "[setup] complete"
+--- 2026-09-24T03:38:41Z method=実測 target=prediction-market-backtester rc=0 time_s=0.011 note=E5関連: seed/reproduc/deterministic/pinを検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && grep -rniE '"'"'seed|reproduc|deterministic|\bpin(ned)?\b|regression'"'"' . | grep -v '"'"'\.git/'"'"' | grep -v '"'"'uv\.lock'"'"''
+./src/pm_bt/reporting/calibration.py:164:    - Currently only yes/no outcome IDs can be scored deterministically.
+./src/pm_bt/scanner/checks/consistency.py:175:                    # No per-row timestamp; use epoch as deterministic placeholder.
+./src/pm_bt/scanner/runner.py:84:    # Deduplicate by alert_id (deterministic: last-writer-wins within fixed
+./src/pm_bt/scanner/runner.py:85:    # check ordering) and sort for reproducibility.
+./src/pm_bt/scanner/models.py:13:    """A single scanner alert — deterministic by (reason, market_id, ts)."""
+./src/pm_bt/scanner/models.py:52:    """Deterministic alert identifier."""
+./README.md:3:Quant-style backtesting engine for prediction markets (Polymarket + Kalshi), focused on correctness, reproducibility, and performance.
+./README.md:9:- Prioritize correctness, reproducibility, and explicit execution assumptions.
+./README.md:24:A reproducible local performance baseline is documented in `docs/performance-baseline.md`, and can
+./ROADMAP.md:6:Goal: a quant-style backtesting engine for prediction markets (Polymarket + Kalshi) built on Parquet datasets, with realistic execution simulation (bid/ask, fees, slippage, latency) and reproducible results. UI can be added on top of the same engine for run orchestration and analysis, but core logic remains engine-side.
+./ROADMAP.md:34:- Reproducibility is mandatory (config + git commit hash stored with results).
+./ROADMAP.md:117:- Create a **tiny deterministic fixture dataset** for tests:
+./ROADMAP.md:124:- [x] Fixture dataset is small (< 100 KB) and deterministic
+./ROADMAP.md:267:- [x] Sampling rule for prediction snapshots is documented and deterministic.
+./ROADMAP.md:311:- [x] Scanner runs on a subset of markets and produces alerts deterministically
+./ROADMAP.md:320:- Improve reproducibility:
+./ROADMAP.md:387:- [x] Results are reproducible (config + commit hash)
+./.gitignore:99:#   This is especially recommended for binary packages to ensure reproducibility, and is more
+./.gitignore:105:#   This is especially recommended for binary packages to ensure reproducibility, and is more
+./tests/test_scanner.py:69:    def test_alert_id_is_deterministic(self) -> None:
+./tests/test_scanner.py:531:    def test_deterministic_output(self) -> None:
+./tests/conftest.py:18:    """Load the deterministic trades fixture as a typed Polars DataFrame."""
+./docs/prediction-markets-vs-tradfi.md:9:- reproducibility of runs
+./docs/prediction-markets-vs-tradfi.md:37:- **Reproducibility**: every run stores config, dataset slice, commit hash, and artifacts.
+./docs/prediction-markets-vs-tradfi.md:100:- generate reproducible artifacts and core metrics
+./docs/performance-baseline.md:5:This document records a simple, reproducible CLI profiling baseline for a real local backtest run.
+./docs/performance-baseline.md:7:regressions.
+./docs/performance-baseline.md:9:## Reproduce
+./docs/engine-contracts.md:22:- `RunResult`: reproducible run payload containing config, dataset slice, git commit, timings,
+--- 2026-09-24T03:38:45Z method=実測 target=prediction-market-backtester rc=0 time_s=0.004 note=docs/performance-baseline.md 全文
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/docs/performance-baseline.md
+# Performance Baseline
+
+## Purpose
+
+This document records a simple, reproducible CLI profiling baseline for a real local backtest run.
+It is not a claim about every market or every machine. It is a concrete sample used to track
+regressions.
+
+## Reproduce
+
+From the repository root:
+
+```bash
+make profile-sample
+```
+
+Equivalent direct command:
+
+```bash
+uv run python scripts/profile_backtest.py \
+  --venue kalshi \
+  --strategy momentum \
+  --config configs/momentum/default.yaml \
+  --data-root data \
+  --output-root output/profiling \
+  --bar-timeframe 5m
+```
+
+The script:
+
+- runs a real `pm-bt backtest` code path
+- auto-selects the top-volume market for the chosen venue when `--market` is omitted
+- validates result coherence against `results.json`, `equity.csv`, and `trades.csv`
+- writes `profile_summary.json` into the generated run directory
+
+## Sample Baseline
+
+Sample captured on **2026-03-07** from a local developer machine with the bundled local dataset.
+
+- Venue: `kalshi`
+- Strategy: `momentum`
+- Config: `configs/momentum/default.yaml`
+- Timeframe: `5m`
+- Selected market: `PRES-2024-KH`
+- Run directory: `/tmp/pm-bt-profile/20260307_100156_b9bcfc5`
+
+Observed metrics from `profile_summary.json`:
+
+- CLI wall-clock time: `5.67s`
+- Engine `load_s`: `2.70s`
+- Engine `execution_s`: `0.11s`
+- Reporting `reporting_s`: `2.56s`
+- Engine `total_s`: `5.67s`
+- Bars processed: `10,763`
+- Fills: `1,174`
+- Final equity: `9909.00`
+- Total PnL: `-91.00`
+- Max drawdown: `0.93%`
+
+## Interpretation
+
+- The main runtime cost in this sample is data loading plus report generation, not bar-by-bar
+  execution.
+- `timings.total_s` is now coherent with the full run pipeline and is close to the outer CLI
+  wall-clock time reported by the profiling script.
+- The profiling script also checks basic coherence invariants:
+  - `total_pnl == final_equity - initial_cash`
+  - `fills_count == len(trades.csv)`
+  - `bars_processed == len(equity.csv)`
+  - turnover, max drawdown, and exposure metrics match the generated CSV artifacts
+--- 2026-09-24T03:38:56Z method=実測 target=prediction-market-backtester rc=0 time_s=0.004 note=ROADMAP.md 30-40行と380-390行(再現性の文脈)
+$ sed -n '28,40p;380,392p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/ROADMAP.md
+| ---
+
+## 0) Non-negotiables (apply in every phase)
+
+### Principles
+- Correctness > features.
+- Reproducibility is mandatory (config + git commit hash stored with results).
+- Performance by design (Parquet scans, lazy evaluation, avoid Python loops over ticks).
+- Type hints everywhere (public functions, dataclasses/pydantic models).
+- Tests for critical math (PnL, execution, fees, slippage).
+- Domain correctness is mandatory (binary settlement, resolution, implied probability semantics).
+
+### Definition of Done (global)
+## Final “Prod-grade” acceptance checklist
+
+### Quality
+- [ ] CI green on main
+- [x] Tests cover: bar building, execution (bid/ask), PnL, fees, slippage, latency
+- [x] Type checking passes
+- [x] Lint passes
+- [x] Results are reproducible (config + commit hash)
+
+### Performance
+- [ ] Single-market multi-year backtest finishes in seconds on laptop
+- [ ] Batch mode runs on N markets without OOM
+- [x] Parquet scans use filters and lazy evaluation
+--- 2026-09-24T03:38:56Z method=実測 target=prediction-market-backtester rc=0 time_s=0.004 note=docs/engine-contracts.md 全文(RunResultの文脈)
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/docs/engine-contracts.md
+# Engine Contracts
+
+## Purpose
+
+This note summarizes the typed contracts that define the engine surface in `pm_bt`.
+It is intentionally short and mirrors the current implementation rather than a future design.
+
+## Core Data Models
+
+The canonical domain models live in `src/pm_bt/common/models.py`.
+
+- `Market`: venue, market identifier, outcome identifier, question/category metadata, close time,
+  resolution state, winning outcome, resolution timestamp, and market structure.
+- `TradeTick`: timestamped trade with implied-probability price, size, side, venue, and optional
+  trade identifier / paid fee.
+- `Bar`: time-bucketed OHLCV row with `vwap` and `trade_count`.
+- `OrderIntent`: strategy output for a bar, including timestamp, side, quantity, and optional
+  limit/target metadata.
+- `Fill`: execution result with fill price, fees, slippage cost, and latency.
+- `BacktestConfig`: typed run configuration for venue/market selection, bar timeframe, execution
+  assumptions, and output roots.
+- `RunResult`: reproducible run payload containing config, dataset slice, git commit, timings,
+  trading metrics, forecasting metrics, and artifact paths.
+
+## Loader Output Contracts
+
+Loaders normalize venue-specific schemas into canonical columns.
+
+Markets:
+
+- `market_id`
+- `venue`
+- `outcome_id`
+- `question`
+- `category`
+- `close_ts`
+- `resolved`
+- `winning_outcome`
+- `resolved_ts`
+- `market_structure`
+
+Trades:
+
+- `ts`
+- `market_id`
+- `outcome_id`
+- `venue`
+- `price`
+- `size`
+- `side`
+- `trade_id`
+- `fee_paid`
+
+## Strategy Interface
+
+The strategy contract lives in `src/pm_bt/strategies/base.py`.
+
+- Input: `on_bar(bar: Bar, features: Mapping[str, object])`
+- Output: `list[OrderIntent]`
+- Semantics:
+  - `bar` is the validated bar for the current decision step
+  - `features` contains same-row derived features such as returns, rolling moments, or momentum
+  - strategies may be stateless or stateful
+  - execution, PnL accounting, and risk enforcement stay engine-side
+
+## Reporting Contract
+
+Single-run reporting writes:
+
+- `config.json`
+- `results.json`
+- `equity.csv`
+- `trades.csv`
+- `equity_curve.png`
+- `drawdown.png`
+- `returns_distribution.png`
+
+Batch mode writes:
+
+- `summary.csv`
+- `data_quality.json`
+- `checkpoint.json`
+
+Scanner mode writes:
+
+- `alerts.json`
+- `alerts.csv`
+- optional `alerts.html`
+--- 2026-09-24T03:39:18Z method=実測 target=prediction-market-backtester rc=1 time_s=0.015 note=E3a/E3b追加語: peek/future.?data/purge/embargo/walk-forward/in-sample/out-of-sample
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && grep -rniE '"'"'peek|future.?data|purge|embargo|walk-forward|in-sample|out-of-sample|snoop'"'"' . | grep -v '"'"'\.git/'"'"' | grep -v '"'"'uv\.lock'"'"''
+
+--- 2026-09-24T03:39:23Z method=実測 target=prediction-market-backtester rc=0 time_s=0.006 note=reporting/validation.py 冒頭のdocstringと関数一覧
+$ bash -c 'sed -n '"'"'1,60p'"'"' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/src/pm_bt/reporting/validation.py'
+from __future__ import annotations
+
+import json
+import math
+from dataclasses import dataclass
+from pathlib import Path
+from typing import cast
+
+import polars as pl
+
+
+def _compute_max_drawdown(equity: pl.Series) -> float:
+    peak = 0.0
+    max_drawdown = 0.0
+    for raw_value in cast(list[float], equity.to_list()):
+        value = float(raw_value)
+        peak = max(peak, value)
+        if peak <= 0.0:
+            continue
+        max_drawdown = max(max_drawdown, (peak - value) / peak)
+    return max_drawdown
+
+
+def _assert_close(name: str, actual: float, expected: float, *, tolerance: float) -> None:
+    if not math.isclose(actual, expected, rel_tol=tolerance, abs_tol=tolerance):
+        raise ValueError(f"{name} mismatch: actual={actual} expected={expected}")
+
+
+@dataclass(slots=True)
+class RunCoherenceSummary:
+    run_dir: Path
+    run_id: str
+    fills_count: int
+    bars_processed: int
+    final_equity: float
+    total_pnl: float
+    total_return: float
+    max_drawdown: float
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "run_dir": str(self.run_dir),
+            "run_id": self.run_id,
+            "fills_count": self.fills_count,
+            "bars_processed": self.bars_processed,
+            "final_equity": self.final_equity,
+            "total_pnl": self.total_pnl,
+            "total_return": self.total_return,
+            "max_drawdown": self.max_drawdown,
+        }
+
+
+def validate_run_directory(
+    run_dir: Path,
+    *,
+    tolerance: float = 1e-9,
+) -> RunCoherenceSummary:
+    results_path = run_dir / "results.json"
+    if not results_path.exists():
+        raise FileNotFoundError(f"Missing results.json in {run_dir}")
+--- 2026-09-24T03:39:31Z method=実測 target=prediction-market-backtester rc=0 time_s=0.004 note=reporting/validation.py 60-140行
+$ sed -n 60,140p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/src/pm_bt/reporting/validation.py
+        raise FileNotFoundError(f"Missing results.json in {run_dir}")
+
+    payload = cast(dict[str, object], json.loads(results_path.read_text(encoding="utf-8")))
+    config = cast(dict[str, object], payload["config"])
+    artifacts = cast(dict[str, str], payload["artifacts"])
+    trading_metrics = cast(dict[str, float], payload["trading_metrics"])
+    forecasting_metrics = cast(dict[str, float], payload["forecasting_metrics"])
+    timings = cast(dict[str, float], payload["timings"])
+
+    for artifact_name, artifact_path in artifacts.items():
+        if not Path(artifact_path).exists():
+            raise FileNotFoundError(f"Artifact path missing for {artifact_name}: {artifact_path}")
+
+    if cast(str, payload["run_id"]) not in Path(artifacts["results_json"]).parent.as_posix():
+        # Batch mode may use a run directory name that differs from run_id, so only validate
+        # the results.json path parent matches the supplied run_dir.
+        pass
+
+    if payload.get("git_commit") is not None:
+        git_commit = cast(str, payload["git_commit"])
+        run_id = cast(str, payload["run_id"])
+        if not run_id.endswith(git_commit):
+            raise ValueError(f"run_id {run_id} does not end with git_commit {git_commit}")
+
+    equity_df = pl.read_csv(
+        Path(artifacts["equity_csv"]),
+        try_parse_dates=True,
+    )
+    trades_df = pl.read_csv(
+        Path(artifacts["trades_csv"]),
+        try_parse_dates=True,
+    )
+
+    initial_cash = float(cast(float, config["initial_cash"]))
+    final_equity = (
+        float(cast(float, equity_df["equity"][-1])) if equity_df.height else float(initial_cash)
+    )
+    final_realized = float(cast(float, equity_df["realized_pnl"][-1])) if equity_df.height else 0.0
+    final_unrealized = (
+        float(cast(float, equity_df["unrealized_pnl"][-1])) if equity_df.height else 0.0
+    )
+    max_cash_at_risk = (
+        float(cast(float, equity_df["cash_at_risk_gross"].max())) if equity_df.height else 0.0
+    )
+    max_gross_notional = (
+        float(cast(float, equity_df["gross_notional_exposure"].max())) if equity_df.height else 0.0
+    )
+    total_notional = float(cast(float, trades_df["notional"].sum())) if trades_df.height else 0.0
+    computed_drawdown = _compute_max_drawdown(equity_df["equity"]) if equity_df.height else 0.0
+
+    _assert_close(
+        "total_pnl",
+        float(trading_metrics["total_pnl"]),
+        final_equity - initial_cash,
+        tolerance=tolerance,
+    )
+    _assert_close(
+        "total_return",
+        float(trading_metrics["total_return"]),
+        (final_equity / initial_cash) - 1.0,
+        tolerance=tolerance,
+    )
+    _assert_close(
+        "realized_pnl",
+        float(trading_metrics["realized_pnl"]),
+        final_realized,
+        tolerance=tolerance,
+    )
+    _assert_close(
+        "unrealized_pnl",
+        float(trading_metrics["unrealized_pnl"]),
+        final_unrealized,
+        tolerance=tolerance,
+    )
+    _assert_close(
+        "max_cash_at_risk_gross",
+        float(trading_metrics["max_cash_at_risk_gross"]),
+        max_cash_at_risk,
+        tolerance=tolerance,
+    )
+    _assert_close(
+--- 2026-09-24T03:40:14Z method=実測 target=prediction-market-backtester rc=0 time_s=0.496 note=99件のfile型を確認(除外対象=画像/ロックファイル/バイナリのみ)
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && find . -type f | grep -v '"'"'/\.git/'"'"' | xargs -I{} file -b {} | sort | uniq -c'
+     17 ASCII text
+      1 ASCII text, with very long lines (371)
+      1 Bourne-Again shell script, ASCII text executable
+      2 CSV ASCII text
+     62 Python script, ASCII text executable
+      8 Python script, Unicode text, UTF-8 text executable
+      2 Unicode text, UTF-8 text
+      1 Unicode text, UTF-8 text, with very long lines (321)
+      5 empty
+--- 2026-09-24T03:40:29Z method=実測 target=prediction-market-backtester rc=0 time_s=0.014 note=E6: verify/validat/reproduc/determinis/golden/regression/検証/再現/確認/品質/quality を全98件(uv.lock除く)で検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo && grep -rniE '"'"'verify|validat|reproduc|determinis|golden|regression|検証|再現|確認|品質|quality'"'"' . | grep -v '"'"'\.git/'"'"' | grep -v '"'"'uv\.lock'"'"''
+./src/pm_bt/cli.py:21:    evaluate_market_trade_quality,
+./src/pm_bt/cli.py:145:    return BacktestConfig.model_validate(config_data)
+./src/pm_bt/cli.py:158:    return BacktestConfig.model_validate(config_data)
+./src/pm_bt/cli.py:385:                quality = evaluate_market_trade_quality(
+./src/pm_bt/cli.py:393:                quality_payload = quality.as_dict()
+./src/pm_bt/cli.py:394:                if not quality.passes:
+./src/pm_bt/cli.py:396:                        "Skipping %s/%s due to quality gate: %s",
+./src/pm_bt/cli.py:399:                        ",".join(quality.failed_checks),
+./src/pm_bt/cli.py:404:                        "status": "skipped_quality",
+./src/pm_bt/cli.py:405:                        "quality": quality_payload,
+./src/pm_bt/cli.py:436:                        "quality": quality_payload,
+./src/pm_bt/cli.py:446:                        "quality": quality_payload,
+./src/pm_bt/cli.py:470:        quality_rows = [
+./src/pm_bt/cli.py:471:            cast(dict[str, object], entry["quality"]) for entry in all_entries if "quality" in entry
+./src/pm_bt/cli.py:473:        quality_path = batch_dir / "data_quality.json"
+./src/pm_bt/cli.py:474:        _ = quality_path.write_text(
+./src/pm_bt/cli.py:475:            json.dumps({"entries": quality_rows}, indent=2, sort_keys=True),
+./src/pm_bt/cli.py:526:    return ScannerConfig.model_validate(config_data)
+./src/pm_bt/reporting/calibration.py:164:    - Currently only yes/no outcome IDs can be scored deterministically.
+./src/pm_bt/reporting/__init__.py:23:from pm_bt.reporting.validation import RunCoherenceSummary, validate_run_directory
+./src/pm_bt/reporting/__init__.py:41:    "validate_run_directory",
+./src/pm_bt/reporting/validation.py:53:def validate_run_directory(
+./src/pm_bt/reporting/validation.py:74:        # Batch mode may use a run directory name that differs from run_id, so only validate
+./src/pm_bt/backtest/engine.py:237:            self._validate_orders(incoming_orders=incoming_orders, bar=bar)
+./src/pm_bt/backtest/engine.py:459:    def _validate_orders(*, incoming_orders: list[OrderIntent], bar: Bar) -> None:
+./src/pm_bt/strategies/base.py:16:    - `bar`: validated domain bar object for the current step
+./src/pm_bt/common/models.py:7:from pydantic import BaseModel, ConfigDict, Field, model_validator
+./src/pm_bt/common/models.py:22:    model_config: ClassVar[ConfigDict] = ConfigDict(extra="forbid", validate_assignment=True)
+./src/pm_bt/common/models.py:37:    @model_validator(mode="after")
+./src/pm_bt/common/models.py:38:    def validate_resolution_fields(self) -> Market:
+./src/pm_bt/common/models.py:74:    @model_validator(mode="after")
+./src/pm_bt/common/models.py:75:    def validate_ohlc(self) -> Bar:
+./src/pm_bt/common/models.py:139:    @model_validator(mode="after")
+./src/pm_bt/common/models.py:140:    def validate_date_range(self) -> BacktestConfig:
+./src/pm_bt/common/models.py:173:    @model_validator(mode="after")
+./src/pm_bt/common/models.py:174:    def validate_metric_namespaces(self) -> RunResult:
+./src/pm_bt/data/__init__.py:2:from pm_bt.data.quality import (
+./src/pm_bt/data/__init__.py:3:    MarketDataQuality,
+./src/pm_bt/data/__init__.py:5:    evaluate_market_trade_quality,
+./src/pm_bt/data/__init__.py:9:    "MarketDataQuality",
+./src/pm_bt/data/__init__.py:11:    "evaluate_market_trade_quality",
+./src/pm_bt/data/quality.py:11:class MarketDataQuality:
+./src/pm_bt/data/quality.py:50:def evaluate_market_trade_quality(
+./src/pm_bt/data/quality.py:58:) -> MarketDataQuality:
+./src/pm_bt/data/quality.py:59:    """Evaluate data quality checks on canonical trade rows for one market."""
+./src/pm_bt/data/quality.py:137:    # quality gate.  Parquet files from the upstream indexer are partitioned by
+./src/pm_bt/data/quality.py:143:    return MarketDataQuality(
+./src/pm_bt/scanner/checks/consistency.py:175:                    # No per-row timestamp; use epoch as deterministic placeholder.
+./src/pm_bt/scanner/runner.py:84:    # Deduplicate by alert_id (deterministic: last-writer-wins within fixed
+./src/pm_bt/scanner/runner.py:85:    # check ordering) and sort for reproducibility.
+./src/pm_bt/scanner/models.py:13:    """A single scanner alert — deterministic by (reason, market_id, ts)."""
+./src/pm_bt/scanner/models.py:52:    """Deterministic alert identifier."""
+./README.md:3:Quant-style backtesting engine for prediction markets (Polymarket + Kalshi), focused on correctness, reproducibility, and performance.
+./README.md:9:- Prioritize correctness, reproducibility, and explicit execution assumptions.
+./README.md:24:A reproducible local performance baseline is documented in `docs/performance-baseline.md`, and can
+./README.md:138:- `data_quality.json` - per-market quality checks and gate status
+./ROADMAP.md:6:Goal: a quant-style backtesting engine for prediction markets (Polymarket + Kalshi) built on Parquet datasets, with realistic execution simulation (bid/ask, fees, slippage, latency) and reproducible results. UI can be added on top of the same engine for run orchestration and analysis, but core logic remains engine-side.
+./ROADMAP.md:26:- [x] Forecasting quality metrics are explicitly separated from trading performance metrics in docs and results.
+./ROADMAP.md:34:- Reproducibility is mandatory (config + git commit hash stored with results).
+./ROADMAP.md:117:- Create a **tiny deterministic fixture dataset** for tests:
+./ROADMAP.md:124:- [x] Fixture dataset is small (< 100 KB) and deterministic
+./ROADMAP.md:125:- [x] At least 1 unit test validates parsing/typing of the fixture data
+./ROADMAP.md:162:- [x] Unit tests validate at least one bar computation (open/high/low/close + vwap)
+./ROADMAP.md:267:- [x] Sampling rule for prediction snapshots is documented and deterministic.
+./ROADMAP.md:311:- [x] Scanner runs on a subset of markets and produces alerts deterministically
+./ROADMAP.md:320:- Improve reproducibility:
+./ROADMAP.md:325:  - golden tests with expected equity curve hash
+./ROADMAP.md:337:- [ ] Golden test passes on CI (equity hash)
+./ROADMAP.md:382:### Quality
+./ROADMAP.md:387:- [x] Results are reproducible (config + commit hash)
+./scripts/setup_data.sh:41:  echo "[setup] verifying sha256"
+./scripts/setup_data.sh:45:echo "[setup] validating archive paths"
+./scripts/profile_backtest.py:14:from pm_bt.reporting import validate_run_directory
+./scripts/profile_backtest.py:57:        description="Profile a real CLI backtest and validate artifacts"
+./scripts/profile_backtest.py:125:    summary = validate_run_directory(run_dir)
+./.gitignore:99:#   This is especially recommended for binary packages to ensure reproducibility, and is more
+./.gitignore:105:#   This is especially recommended for binary packages to ensure reproducibility, and is more
+./tests/test_cli.py:11:from pm_bt.reporting import validate_run_directory
+./tests/test_cli.py:186:    summary = validate_run_directory(run_dir)
+./tests/test_cli.py:302:def test_cli_batch_writes_summary_and_data_quality(tmp_path: Path) -> None:
+./tests/test_cli.py:339:    quality_path = batch_dir / "data_quality.json"
+./tests/test_cli.py:341:    assert quality_path.exists()
+./tests/test_data_quality.py:7:from pm_bt.data.quality import compute_tradability_metrics, evaluate_market_trade_quality
+./tests/test_data_quality.py:30:def test_evaluate_market_trade_quality_passes_for_clean_data() -> None:
+./tests/test_data_quality.py:31:    quality = evaluate_market_trade_quality(
+./tests/test_data_quality.py:40:    assert quality.passes is True
+./tests/test_data_quality.py:41:    assert quality.failed_checks == []
+./tests/test_data_quality.py:42:    assert quality.trade_count == 3
+./tests/test_data_quality.py:45:def test_evaluate_market_trade_quality_fails_for_low_trade_count() -> None:
+./tests/test_data_quality.py:46:    quality = evaluate_market_trade_quality(
+./tests/test_data_quality.py:55:    assert quality.passes is False
+./tests/test_data_quality.py:56:    assert "trade_count_below_threshold" in quality.failed_checks
+./tests/test_scanner.py:9:from pydantic import TypeAdapter, ValidationError
+./tests/test_scanner.py:60:    return _JSON_ROWS_ADAPTER.validate_json(path.read_text("utf-8"))
+./tests/test_scanner.py:69:    def test_alert_id_is_deterministic(self) -> None:
+./tests/test_scanner.py:83:        with pytest.raises(ValidationError):
+./tests/test_scanner.py:84:            _ = ScannerConfig.model_validate({"unknown_field": 1})
+./tests/test_scanner.py:87:        with pytest.raises(ValidationError):
+./tests/test_scanner.py:89:        with pytest.raises(ValidationError):
+./tests/test_scanner.py:531:    def test_deterministic_output(self) -> None:
+./tests/test_backtest_engine.py:243:def test_backtest_engine_equity_curve_matches_golden_hash() -> None:
+./tests/test_backtest_engine.py:268:        name="engine-golden",
+./tests/conftest.py:18:    """Load the deterministic trades fixture as a typed Polars DataFrame."""
+./docs/prediction-markets-vs-tradfi.md:9:- reproducibility of runs
+./docs/prediction-markets-vs-tradfi.md:24:| Evaluation | Profit + calibration quality (Brier/log loss) | Mostly risk-adjusted returns |
+./docs/prediction-markets-vs-tradfi.md:37:- **Reproducibility**: every run stores config, dataset slice, commit hash, and artifacts.
+./docs/prediction-markets-vs-tradfi.md:51:   - calibration (Brier/log loss) measures predictive quality on resolved markets
+./docs/prediction-markets-vs-tradfi.md:74:- **Calibration sampling rule**: prediction-quality metrics are computed from **fill execution
+./docs/prediction-markets-vs-tradfi.md:100:- generate reproducible artifacts and core metrics
+./docs/performance-baseline.md:5:This document records a simple, reproducible CLI profiling baseline for a real local backtest run.
+./docs/performance-baseline.md:7:regressions.
+./docs/performance-baseline.md:9:## Reproduce
+./docs/performance-baseline.md:33:- validates result coherence against `results.json`, `equity.csv`, and `trades.csv`
+./docs/engine-contracts.md:22:- `RunResult`: reproducible run payload containing config, dataset slice, git commit, timings,
+./docs/engine-contracts.md:61:  - `bar` is the validated bar for the current decision step
+./docs/engine-contracts.md:81:- `data_quality.json`
+grep: ./.git/index: binary file matches
+--- 2026-09-24T03:40:42Z method=実測 target=prediction-market-backtester rc=0 time_s=0.004 note=tests/test_backtest_engine.py 230-300行(golden hash テスト全文)
+$ sed -n 230,300p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/pmb_repo/tests/test_backtest_engine.py
+    assert artifacts.fills.height == 2
+    _assert_close(_series_value(artifacts.fills, "price_fill", 0), 0.51)
+    _assert_close(_series_value(artifacts.fills, "price_fill", 1), 0.59)
+
+    _assert_close(_series_value(artifacts.equity_curve, "cash", -1), 100.8)
+    _assert_close(_series_value(artifacts.equity_curve, "cash_at_risk_gross", -1), 0.0)
+    final_equity = _series_value(artifacts.equity_curve, "equity", -1)
+    _assert_close(final_equity, 100.8)
+    _assert_close(artifacts.run_result.trading_metrics["realized_pnl"], 0.8)
+    _assert_close(artifacts.run_result.trading_metrics["unrealized_pnl"], 0.0)
+    _assert_close(artifacts.run_result.trading_metrics["total_pnl"], 0.8)
+
+
+def test_backtest_engine_equity_curve_matches_golden_hash() -> None:
+    bars = pl.DataFrame(
+        {
+            "ts_open": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "ts_close": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "market_id": ["KX-RAIN-2026-01-01", "KX-RAIN-2026-01-01"],
+            "outcome_id": ["yes", "yes"],
+            "venue": ["kalshi", "kalshi"],
+            "open": [0.50, 0.60],
+            "high": [0.50, 0.60],
+            "low": [0.50, 0.60],
+            "close": [0.50, 0.60],
+            "volume": [100.0, 100.0],
+            "vwap": [0.50, 0.60],
+            "trade_count": [1, 1],
+            "momentum": [None, 0.2],
+        }
+    )
+    config = BacktestConfig(
+        name="engine-golden",
+        venue=Venue.KALSHI,
+        market_id="KX-RAIN-2026-01-01",
+        initial_cash=100.0,
+        fee_bps=0.0,
+        slippage_bps=0.0,
+        latency_bars=0,
+        max_position_size=100.0,
+        max_gross_exposure=10_000.0,
+    )
+
+    artifacts = BacktestEngine(config=config, strategy=_RoundTripStrategy()).run(bars)
+
+    assert _equity_curve_hash(artifacts.equity_curve) == (
+        "a5eea69a69124f895bf2a3f9c26f8ba682bb1cd10a8b09832a1f2a984715a18b"
+    )
+
+
+def test_backtest_engine_passes_row_features_to_strategy() -> None:
+    bars = pl.DataFrame(
+        {
+            "ts_open": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "ts_close": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "market_id": ["KX-RAIN-2026-01-01", "KX-RAIN-2026-01-01"],
+            "outcome_id": ["yes", "yes"],
+            "venue": ["kalshi", "kalshi"],
+            "open": [0.50, 0.60],
+--- 2026-09-24T03:41:45Z method=公式 target=freqtrade rc=0 time_s=0.817 note=既定枝を確認
+$ curl -sS https://ungh.cc/repos/freqtrade/freqtrade
+{"repo":{"id":91629816,"name":"freqtrade","repo":"freqtrade/freqtrade","description":"Free, open source crypto trading bot","createdAt":"2017-05-17T23:48:53Z","updatedAt":"2026-09-24T03:33:15Z","pushedAt":"2026-09-24T02:39:16Z","stars":54733,"watchers":779,"forks":11347,"defaultBranch":"develop"}}
+--- 2026-09-24T03:41:50Z method=公式 target=freqtrade rc=0 time_s=0.182 note=startup_candle_count の docs 原文(strategy-customization.md)
+$ curl -sS https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/strategy-customization.md
+# Strategy Customization
+
+This page explains how to customize your strategies, add new indicators and set up trading rules.
+
+If you haven't already, please familiarize yourself with:
+
+- the [Freqtrade strategy 101](strategy-101.md), which provides a quick start to strategy development
+- the [Freqtrade bot basics](bot-basics.md), which provides overall info on how the bot operates
+
+## Develop your own strategy
+
+The bot includes a default strategy file.
+
+Also, several other strategies are available in the [strategy repository](https://github.com/freqtrade/freqtrade-strategies).
+
+You will however most likely have your own idea for a strategy.
+
+This document intends to help you convert your ideas into a working strategy.
+
+### Generating a strategy template
+
+To get started, you can use the command:
+
+```bash
+freqtrade new-strategy --strategy AwesomeStrategy
+```
+
+This will create a new strategy called `AwesomeStrategy` from a template, which will be located using the filename `user_data/strategies/AwesomeStrategy.py`.
+
+!!! Note
+    There is a difference between the *name* of the strategy and the filename. In most commands, Freqtrade uses the *name* of the strategy, *not the filename*.
+
+!!! Note
+    The `new-strategy` command generates starting examples which will not be profitable out of the box.
+
+??? Hint "Different template levels"
+    `freqtrade new-strategy` has an additional parameter, `--template`, which controls the amount of pre-build information you get in the created strategy. Use `--template minimal` to get an empty strategy without any indicator examples, or `--template advanced` to get a template with more complicated features defined.
+
+### Anatomy of a strategy
+
+A strategy file contains all the information needed to build the strategy logic:
+
+- Candle data in OHLCV format
+- Indicators
+- Entry logic
+  - Signals
+- Exit logic
+  - Signals
+  - Minimal ROI
+  - Callbacks ("custom functions")
+- Stoploss
+  - Fixed/absolute
+  - Trailing
+  - Callbacks ("custom functions")
+- Pricing [optional]
+- Position adjustment [optional]
+
+The bot includes a sample strategy called `SampleStrategy` that you can use as a basis: `user_data/strategies/sample_strategy.py`.
+You can test it with the parameter: `--strategy SampleStrategy`. Remember that you use the strategy class name, not the filename.
+
+Additionally, there is an attribute called `INTERFACE_VERSION`, which defines the version of the strategy interface the bot should use.
+The current version is 3 - which is also the default when it's not set explicitly in the strategy.
+
+You may see older strategies set to interface version 2, and these will need to be updated to v3 terminology as future versions will require this to be set.
+
+Starting the bot in dry or live mode is accomplished using the `trade` command:
+
+```bash
+freqtrade trade --strategy AwesomeStrategy
+```
+
+### Bot modes
+
+Freqtrade strategies can be processed by the Freqtrade bot in 5 main modes:
+
+- backtesting
+- hyperopting
+- dry ("forward testing")
+- live
+- FreqAI (not covered here)
+
+Check the [configuration documentation](configuration.md) about how to set the bot to dry or live mode.
+
+**Always use dry mode when testing as this gives you an idea of how your strategy will work in reality without risking capital.**
+
+## Diving in deeper
+
+**For the following section we will use the [user_data/strategies/sample_strategy.py](https://github.com/freqtrade/freqtrade/blob/develop/freqtrade/templates/sample_strategy.py)
+file as reference.**
+
+!!! Note "Strategies and Backtesting"
+    To avoid problems and unexpected differences between backtesting and dry/live modes, please be aware
+    that during backtesting the full time range is passed to the `populate_*()` methods at once.
+    It is therefore best to use vectorized operations (across the whole dataframe, not loops) and
+    avoid index referencing (`df.iloc[-1]`), but instead use `df.shift()` to get to the previous candle.
+
+!!! Warning "Warning: Using future data"
+    Since backtesting passes the full time range to the `populate_*()` methods, the strategy author
+    needs to take care to avoid having the strategy utilize data from the future.
+    Some common patterns for this are listed in the [Common Mistakes](#common-mistakes-when-developing-strategies) section of this document.
+
+??? Hint "Lookahead and recursive analysis"
+    Freqtrade includes two helpful commands to help assess common lookahead (using future data) and
+    recursive bias (variance in indicator values) issues. Before running a strategy in dry or live more,
+    you should always use these commands first. Please check the relevant documentation for
+    [lookahead](lookahead-analysis.md) and [recursive](recursive-analysis.md) analysis.
+
+### Dataframe
+
+Freqtrade uses [pandas](https://pandas.pydata.org/) to store/provide the candlestick (OHLCV) data.
+Pandas is a great library developed for processing large amounts of data in tabular format.
+
+Each row in a dataframe corresponds to one candle on a chart, with the latest complete candle always being the last in the dataframe (sorted by date).
+
+!!! Warning "Row order matters"
+    Please do not sort, shuffle, or any other way to change the row order of the dataframe - doing so will make the bot act on the wrong candle. Freqtrade assume last row to be the latest closed candle, hence all actions will be based of the last row.
+
+If we were to look at the first few rows of the main dataframe using the pandas `head()` function, we would see:
+
+```output
+> dataframe.head()
+                       date      open      high       low     close     volume
+0 2021-11-09 23:25:00+00:00  67279.67  67321.84  67255.01  67300.97   44.62253
+1 2021-11-09 23:30:00+00:00  67300.97  67301.34  67183.03  67187.01   61.38076
+2 2021-11-09 23:35:00+00:00  67187.02  67187.02  67031.93  67123.81  113.42728
+3 2021-11-09 23:40:00+00:00  67123.80  67222.40  67080.33  67160.48   78.96008
+4 2021-11-09 23:45:00+00:00  67160.48  67160.48  66901.26  66943.37  111.39292
+```
+
+A dataframe is a table where columns are not single values, but a series of data values. As such, simple python comparisons like the following will not work:
+
+``` python
+    if dataframe['rsi'] > 30:
+        dataframe['enter_long'] = 1
+```
+
+The above section will fail with `The truth value of a Series is ambiguous [...]`.
+
+This must instead be written in a pandas-compatible way, so the operation is performed across the whole dataframe, i.e. `vectorisation`.
+
+``` python
+    dataframe.loc[
+        (dataframe['rsi'] > 30)
+    , 'enter_long'] = 1
+```
+
+With this section, you have a new column in your dataframe, which has `1` assigned whenever RSI is above 30.
+
+Freqtrade uses this new column as an entry signal, where it is assumed that a trade will subsequently open on the next open candle.
+
+Pandas provides fast ways to calculate metrics, i.e. "vectorisation". To benefit from this speed, it is advised to not use loops, but use vectorized methods instead.
+
+Vectorized operations perform calculations across the whole range of data and are therefore, compared to looping through each row, a lot faster when calculating indicators.
+
+??? Hint "Signals vs Trades"
+    - Signals are generated from indicators at candle close, and are intentions to enter a trade.
+    - Trades are orders that are executed (on the exchange in live mode) where a trade will then open as close to next candle open as possible.
+
+!!! Warning "Trade order assumptions"
+    In backtesting, signals are generated on candle close. Trades are then initiated immeditely on next candle open.
+
+    In dry and live, this may be delayed due to all pair dataframes needing to be analysed first, then trade processing 
+    for each of those pairs happens. This means that in dry/live you need to be mindful of having as low a computation 
+    delay as possible, usually by running a low number of pairs and having a CPU with a good clock speed.
+
+#### Why can't I see "real time" candle data?
+
+Freqtrade does not store incomplete/unfinish
+[出力は 65544 文字。先頭 8000 文字だけを残した]
+--- 2026-09-24T03:42:03Z method=公式 target=freqtrade rc=0 time_s=0.224 note=FreqAI freqai-configuration.md のshuffle原文
+$ curl -sS https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/freqai-configuration.md -o /tmp/ft_freqai.md
+
+--- 2026-09-24T03:42:08Z method=公式 target=freqtrade rc=35 time_s=11.094 note=docs内のfreqai関連ファイル一覧
+$ curl -sS https://ungh.cc/repos/freqtrade/freqtrade/files/develop -o /tmp/ft_files.json
+curl: (35) Recv failure: Connection reset by peer
+--- 2026-09-24T03:42:27Z method=公式 target=freqtrade rc=0 time_s=0.911 note=docs内のfreqai関連ファイル一覧(打ち直し)
+$ curl -sS https://ungh.cc/repos/freqtrade/freqtrade/files/develop -o /tmp/ft_files.json
+
+--- 2026-09-24T03:42:34Z method=公式 target=freqtrade rc=0 time_s=0.206 note=freqai-feature-engineering.md のshuffle原文
+$ curl -sS https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/freqai-feature-engineering.md -o /tmp/ft_fe.md
+
+--- 2026-09-24T03:42:34Z method=公式 target=freqtrade rc=0 time_s=0.216 note=freqai-parameter-table.md のshuffle原文
+$ curl -sS https://raw.githubusercontent.com/freqtrade/freqtrade/develop/docs/freqai-parameter-table.md -o /tmp/ft_pt.md
+
+--- 2026-09-24T03:42:50Z method=公式 target=freqtrade rc=2 time_s=0.007 note=freqai系md全部でleak/look-ahead/chronolog/future/train_test_splitを検索
+$ bash -c 'grep -n -i -E '"'"'leak|look.?ahead|chronolog|future.data|purge|embargo'"'"' /tmp/ft_freqai.md /tmp/ft_running.md /tmp/ft_developers.md /tmp/ft_reinforcement-learning.md /tmp/ft_fe.md /tmp/ft_pt.md 2>&1'
+/tmp/ft_freqai.md:20:* **Crash resilience** - Store trained models to disk to make reloading from a crash fast and easy, and [purge obsolete files](freqai-running.md#purging-old-model-data) for sustained dry/live runs
+grep: /tmp/ft_running.md: No such file or directory
+grep: /tmp/ft_developers.md: No such file or directory
+grep: /tmp/ft_reinforcement-learning.md: No such file or directory
+/tmp/ft_pt.md:18:| `purge_old_models` | Number of models to keep on disk (not relevant to backtesting). Default is 2, which means that dry/live runs will keep the latest 2 models on disk. Setting to 0 keeps all models. This parameter also accepts a boolean to maintain backwards compatibility. <br> **Datatype:** Integer. <br> Default: `2`.
+/tmp/ft_pt.md:59:| `shuffle` | Shuffle the training data points during training. Typically, to not remove the chronological order of data in time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean. <br> Default: `False`.
+--- 2026-09-24T03:42:55Z method=公式 target=freqtrade rc=0 time_s=0.009 note=freqai系md全部でleak/look-ahead/chronolog/future/purge/embargoを検索(再実行、ファイル名修正)
+$ bash -c 'grep -n -i -E '"'"'leak|look.?ahead|chronolog|future.?data|embargo|train.?test.?split|walk.?forward'"'"' /tmp/ft_freqai.md /tmp/ft_freqai-running.md /tmp/ft_freqai-developers.md /tmp/ft_freqai-reinforcement-learning.md /tmp/ft_fe.md /tmp/ft_pt.md'
+/tmp/ft_freqai-running.md:71:    Backtesting calls `set_freqai_targets()` one time for each backtest window (where the number of windows is the full backtest timerange divided by the `backtest_period_days` parameter). Doing this means that the targets simulate dry/live behavior without look ahead bias. However, the definition of the features in `feature_engineering_*()` is performed once on the entire training timerange. This means that you should be sure that features do not look-ahead into the future.
+/tmp/ft_freqai-running.md:72:    More details about look-ahead bias can be found in [Common Mistakes](strategy-customization.md#common-mistakes-when-developing-strategies).
+/tmp/ft_freqai-running.md:130:Data split parameters are defined in `data_split_parameters` which can be any parameters associated with scikit-learn's `train_test_split()` function. `train_test_split()` has a parameters called `shuffle` which allows to shuffle the data or keep it unshuffled. This is particularly useful to avoid biasing training with temporally auto-correlated data. More details about these parameters can be found the [scikit-learn website](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website).
+/tmp/ft_pt.md:57:| `data_split_parameters` | Include any additional parameters available from scikit-learn `test_train_split()`, which are shown [here](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.train_test_split.html) (external website). <br> **Datatype:** Dictionary.
+/tmp/ft_pt.md:59:| `shuffle` | Shuffle the training data points during training. Typically, to not remove the chronological order of data in time-series forecasting, this is set to `False`. <br> **Datatype:** Boolean. <br> Default: `False`.
+--- 2026-09-24T03:43:30Z method=公式 target=backtrex rc=0 time_s=1.135 note=sitemap.xmlの取得を試す(全頁一覧)
+$ curl -sS -A Mozilla/5.0 https://backtrex.com/sitemap.xml -o /tmp/backtrex_sitemap.xml
+
+--- 2026-09-24T03:44:00Z method=実測 target=backtrex rc=0 time_s=0.016 note=sitemapからen/docsとen/blogのURL件数を数える(N=140)
+$ bash -c 'grep -o '"'"'<loc>[^<]*</loc>'"'"' /tmp/backtrex_sitemap.xml | sed '"'"'s/<[^>]*>//g'"'"' | sort -u > /tmp/backtrex_all_urls.txt; echo docs=$(grep -c '"'"'/en/docs'"'"' /tmp/backtrex_all_urls.txt); echo blog=$(grep -c '"'"'/en/blog'"'"' /tmp/backtrex_all_urls.txt)'
+docs=10
+blog=130
+--- 2026-09-24T03:44:10Z method=実測 target=backtrex rc=0 time_s=114.034 note=Documentation10件とBlog130件、計140件を全件curlで取得(隔離scratchpadに保存)
+$ bash /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/backtrex_fetch_all.sh
+total=140 ok=140 fail=0
+--- 2026-09-24T03:46:10Z method=実測 target=backtrex rc=0 time_s=0.030 note=E3a: Documentation10+Blog130=140件全部でlook-ahead/lookahead/repaint/ルックアヘッド/繰り返し塗り/未来のデータ を検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/backtrex_pages && grep -l -i -E '"'"'look-?ahead|repaint|future.?leak|未来のデータ|ルックアヘッド'"'"' *.html | sort'
+en__blog.html
+en__blog__1-step-vs-2-step-prop-firm-comparison.html
+en__blog__ai-powered-backtesting-natural-language-strategy.html
+en__blog__algorithmic-trading-without-coding-guide.html
+en__blog__automate-trading-strategy-without-coding.html
+en__blog__automated-trading-bot-no-programming.html
+en__blog__automated-trading-strategy-builder-no-api.html
+en__blog__back-date-testing-software-trading-guide.html
+en__blog__backtest-metrics-expectancy-profit-factor.html
+en__blog__backtest-performance-ratios-sharpe-sortino-calmar.html
+en__blog__backtest-strategy-avoid-overfitting-red-flags.html
+en__blog__backtest-strategy-without-overfitting.html
+en__blog__backtesting-options-strategies-guide.html
+en__blog__backtesting-platform-comparison.html
+en__blog__backtesting-platform-complete-guide.html
+en__blog__backtesting-program-traders.html
+en__blog__backtesting-prop-firm-rules.html
+en__blog__backtesting-robustness-stress-test-trading-strategy.html
+en__blog__backtesting-vs-forward-testing.html
+en__blog__backtrex-vs-tradingview-backtesting.html
+en__blog__best-backtesting-platforms.html
+en__blog__best-backtesting-software-beginners-2026.html
+en__blog__best-forex-backtesting-app.html
+en__blog__best-no-code-algo-trading-platforms-2026.html
+en__blog__best-prop-firms-beginners-2026.html
+en__blog__best-prop-firms-futures-trading-2026.html
+en__blog__best-quantitative-backtesting-platform-2026.html
+en__blog__best-quantitative-backtesting-platform-time-series.html
+en__blog__best-quantitative-backtesting-software.html
+en__blog__bos-vs-choch-smc-guide.html
+en__blog__break-of-structure-bos-smc-ict.html
+en__blog__build-trading-bot-no-code.html
+en__blog__build-trading-strategy-without-code.html
+en__blog__casper-smc-trading-strategy-jesse-rogers-guide.html
+en__blog__choch-change-of-character-smc-trading.html
+en__blog__choch-ict-change-of-character-trading-strategy.html
+en__blog__common-backtesting-mistakes.html
+en__blog__crypto-trading-strategy-backtesting-guide.html
+en__blog__detect-lucky-backtests-monte-carlo-reshuffling.html
+en__blog__equity-curve-confidence-intervals-strategy-robustness.html
+en__blog__expectancy-formula-compare-trading-strategies.html
+en__blog__fair-value-gap-trading-strategy.html
+en__blog__forex-expert-advisor-no-code-builder-guide.html
+en__blog__forward-testing-trading-strategy-results-analysis.html
+en__blog__free-backtesting-app-android-mobile.html
+en__blog__free-backtesting-tool-trading-2026.html
+en__blog__free-online-backtesting-software-2026.html
+en__blog__ftmo-challenge-strategy-guide.html
+en__blog__funded-account-risk-management-rules-guide.html
+en__blog__funded-account-trading-how-to-get.html
+en__blog__good-trading-expectancy-guide.html
+en__blog__hedge-fund-backtesting-quantitative-strategy.html
+en__blog__how-to-backtest-trading-strategy.html
+en__blog__how-to-pass-prop-firm-challenge-guide.html
+en__blog__how-to-read-backtesting-results-metrics.html
+en__blog__ict-breaker-block-trading-guide.html
+en__blog__ict-dealing-range-ipda-data-range-guide.html
+en__blog__ict-displacement-candle-market-concept.html
+en__blog__ict-fibonacci-golden-pocket-ote-setup.html
+en__blog__ict-fibonacci-settings-levels-complete-guide.html
+en__blog__ict-kill-zones-trading-hours-strategy.html
+en__blog__ict-market-maker-model-mmxm.html
+en__blog__ict-market-structure-beginner-guide.html
+en__blog__ict-market-structure-shift-mss-guide.html
+en__blog__ict-michael-huddleston-method-trading-guide.html
+en__blog__ict-optimal-trade-entry-ote-fibonacci-guide.html
+en__blog__ict-order-block-backtest-strategy.html
+en__blog__ict-silver-bullet-strategy-trading-guide.html
+en__blog__ict-standard-deviation-projection-price-targets.html
+en__blog__ict-turtle-soup-reversal-strategy.html
+en__blog__instant-funded-account-prop-firm-comparison.html
+en__blog__instant-funding-prop-firms-no-challenge.html
+en__blog__institutional-order-flow-smc-smart-money.html
+en__blog__intraday-scalping-strategy-backtesting.html
+en__blog__liquidity-sweep-smc-ict-trading-guide.html
+en__blog__maximum-adverse-excursion-mae-backtest-trading.html
+en__blog__mean-reversion-strategy-backtesting-guide.html
+en__blog__metatrader-5-strategy-tester-backtesting-tutorial.html
+en__blog__michael-j-huddleston-biography-ict-trader.html
+en__blog__monte-carlo-risk-of-ruin-trading-backtest.html
+en__blog__monte-carlo-simulation-trading.html
+en__blog__monte-carlo-simulation-vs-traditional-backtesting.html
+en__blog__mss-vs-bos-smc-trading-difference.html
+en__blog__multi-timeframe-backtesting-guide.html
+en__blog__no-code-algorithmic-trading-software-guide.html
+en__blog__no-code-backtesting-tools-comparison-guide.html
+en__blog__no-code-stock-screener-trading-strategy.html
+en__blog__no-code-trading-platform-beginners-2026.html
+en__blog__no-code-trading-signal-generator-platforms.html
+en__blog__no-code-vs-coding-trading-strategies.html
+en__blog__ohlc-data-quality-validation-backtesting-guide.html
+en__blog__order-block-vs-supply-demand-zone.html
+en__blog__out-of-sample-testing-trading-strategy-validation.html
+en__blog__overfitting-backtesting-detect-prevent.html
+en__blog__pine-script-alternatives.html
+en__blog__pine-script-vs-python-backtesting-comparison.html
+en__blog__position-sizing-kelly-criterion-trading.html
+en__blog__probability-of-ruin-trading-monte-carlo.html
+en__blog__prop-firm-challenge-reset-rules-refund.html
+en__blog__prop-firm-challenge-success-rate.html
+en__blog__prop-firm-comparison-ftmo-vs-topstep.html
+en__blog__prop-firm-consistency-rule-30-percent-explained.html
+en__blog__prop-firm-news-trading-restrictions-strategies.html
+en__blog__prop-firm-payout-structure-profit-split.html
+en__blog__prop-firm-payout-withdrawal-rules-guide.html
+en__blog__prop-firm-scaling-plan-guide.html
+en__blog__prop-firm-trading-strategies.html
+en__blog__risk-reward-ratio-backtesting-optimization.html
+en__blog__risk-reward-ratio-trading-expectancy-relationship.html
+en__blog__slippage-commission-backtesting-realistic-results.html
+en__blog__smart-money-concept-beginners.html
+en__blog__smc-asian-session-range-liquidity-trap.html
+en__blog__smc-inducement-concept-trading.html
+en__blog__smc-order-blocks-fair-value-gaps-guide.html
+en__blog__smc-trader-meaning-smart-money-concepts.html
+en__blog__smc-trading-setups-entry-guide.html
+en__blog__survivorship-bias-trading-backtesting.html
+en__blog__topstep-futures-evaluation-rules.html
+en__blog__trading-logic-blocks-entry-exit-conditions.html
+en__blog__tradingview-alternative-no-code-backtesting.html
+en__blog__tradingview-bar-replay-backtesting-tutorial.html
+en__blog__trailing-drawdown-prop-firm-explained.html
+en__blog__true-forex-funds-review-2026.html
+en__blog__visual-backtesting-vs-manual-backtesting.html
+en__blog__visual-trading-strategy-builder-no-code.html
+en__blog__walk-forward-optimization-backtesting-guide.html
+en__blog__what-is-backtesting.html
+en__blog__what-is-smart-money-concepts-trading.html
+en__blog__who-created-ict-inner-circle-trader.html
+en__blog__win-rate-misleading-trading-strategy-evaluation.html
+en__docs.html
+en__docs__backtesting__anti-repainting.html
+en__docs__backtesting__running-backtests.html
+en__docs__backtesting__understanding-metrics.html
+en__docs__export__export-to-tradingview.html
+en__docs__getting-started__first-strategy.html
+en__docs__getting-started__introduction.html
+en__docs__risk-management__position-sizing.html
+en__docs__strategy-building__blocks-overview.html
+en__docs__strategy-building__indicators.html
+--- 2026-09-24T03:46:25Z method=実測 target=backtrex rc=2 time_s=0.005 note=docs/backtesting/anti-repaintingページの本文(article本体)抽出
+$ bash -c 'python3 -c "
+import re
+t=open('"'"'/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/backtrex_pages/en__docs__backtesting__anti-repainting.html'"'"',encoding='"'"'utf-8'"'"',errors='"'"'replace'"'"').read()
+# find main article-like content via og:description and article body between markers
+m=re.search(r'"'"'<article[^>]*>(.*?)</article>'"'"', t, re.S)
+if m:
+    body=re.sub('"'"'<[^>]+>'"'"','"'"' '"'"', m.group(1))
+    body=re.sub(r'"'"'\s+'"'"','"'"' '"'"', body)
+    print(body[:3000])
+else:
+    print('"'"'NO ARTICLE TAG FOUND; trying og:description'"'"')
+    m2=re.search(r'"'"'property="og:description" content="([^"]*)"'"'"', t)
+    print(m2.group(1) if m2 else '"'"'none'"'"')
+"'
+bash: -c: line 12: syntax error near unexpected token `('
+bash: -c: line 12: `    m2=re.search(r'property="og:description" content="([^"]*)"', t)'
+--- 2026-09-24T03:46:34Z method=実測 target=backtrex rc=0 time_s=0.031 note=docs/backtesting/anti-repaintingページの本文抽出(<main>タグ内)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/extract_article.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/backtrex_pages/en__docs__backtesting__anti-repainting.html
+Home / Documentation / Backtesting / Anti-Repainting Safeguards Documentation navigation Getting Started Strategy Building Backtesting Running Backtests Understanding Metrics Anti-Repainting Safeguards Export Risk Management Anti-Repainting Safeguards Understand what indicator repainting is, how Backtrex prevents it, and why your backtest results are reliable. What is Repainting? Repainting occurs when an indicator or strategy changes its historical signals after the fact. A signal that appeared to trigger a buy at a specific time may disappear or change when you look at the same chart later. This is one of the most common sources of misleading backtest results. A strategy that looks highly profitable in backtesting may perform poorly in live trading because the signals it showed historically were modified after the price moved. Common Causes of Repainting Using Current Bar Data Many indicators use the current bar&#x27;s close price while the bar is still forming. The value changes with every tick until the bar closes, which means: A &quot;buy&quot; signal may appear mid-bar, then disappear by the time the bar closes Backtest engines that use final bar data will show the signal as if it were confirmed, but in live trading, you would have acted on an unconfirmed signal Lookahead Bias Some indicator calculations reference future data points. For example, a zigzag indicator needs to &quot;look ahead&quot; to find the next pivot, which means its historical values change as new data arrives. Recalculating History Certain indicators recalculate their entire history when new data arrives, effectively rewriting past signals. How Backtrex Prevents Repainting Confirmed Bar Data Only Backtrex enforces a strict rule: all indicator calculations and signal evaluations use confirmed bar data only . Specifically: All price references use close[1] (the previous bar&#x27;s confirmed close), not close[0] (the current forming bar) No indicator can access the current bar&#x27;s data for signal generation This ensures that every signal in your backtest existed and was visible at the time it triggered No Lookahead The backtest engine processes bars strictly in chronological order. At any given bar: Only past data is available Future bars are completely invisible to the calculation No indicator can reference data that would not have been available at that point in time What This Means for You When you see a buy signal at a specific bar in your Backtrex backtest: That signal was generated using only data available at the time The signal would have been visible to you if you were watching the chart live The same signal will appear if you export to TradingView and check the same bar Verification Through Export The Pine Script export feature provides an additional verification layer: Export your strategy and run it on TradingView Compare the signals and trade entries between Backtrex and TradingView The guaranteed less than 2% divergence confirms that anti-repainting is working correctly Why This Matters A strategy with realistic backtest results gives you: Confidence : What you see is what you would have experienced in live trading Accurate risk assessment : Drawdown and loss figures reflect real risk Reliable optimization : Parameter changes produce genuine improvements, not artifacts of repainting Common Misconception Some traders believe that using close[1] instead of close[0] means &quot;missing&quot; one bar. This is not a limitation. It is the only correct way to evaluate signals: In live trading, you can only act on a signal after the bar closes Using close[0] would give you a signal based on data you cannot trade on in real-time The one-bar &quot;delay&quot; is actually how real trading works
+--- 2026-09-24T03:47:16Z method=公式 target=FXReplay rc=0 time_s=2.806 note=8分類のカテゴリ頁を全部curlで取得
+$ bash -c '
+BASE=https://support-webflow.fxreplay.app
+DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/fxreplay_cats
+mkdir -p $DIR
+for c in account-management billing-and-payments community-resources fx-replay-battles getting-started journal product-guide-features support; do
+  curl -sS -A "Mozilla/5.0" -o "$DIR/$c.html" "$BASE/categories/$c"
+  n=$(wc -c < "$DIR/$c.html")
+  echo "$c bytes=$n"
+done
+'
+account-management bytes=282927
+billing-and-payments bytes=276423
+community-resources bytes=285164
+fx-replay-battles bytes=281603
+getting-started bytes=294014
+journal bytes=285238
+product-guide-features bytes=366732
+support bytes=294623
+--- 2026-09-24T03:47:29Z method=実測 target=FXReplay rc=0 time_s=0.037 note=8分類の記事URLを合算し重複除去してN(記事の一覧の全件)を数える
+$ bash -c '
+for c in account-management billing-and-payments community-resources fx-replay-battles getting-started journal product-guide-features support; do
+  grep -o '"'"'href="/articles/[^"]*"'"'"' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/fxreplay_cats/$c.html | sed '"'"'s/href="//;s/"//'"'"'
+done | sort -u > /tmp/fxreplay_all_articles.txt
+wc -l /tmp/fxreplay_all_articles.txt
+cat /tmp/fxreplay_all_articles.txt
+'
+107 /tmp/fxreplay_all_articles.txt
+/articles/accounts-access-assets
+/articles/am-i-able-to-save-drawing-templates
+/articles/analytic-metrics-defined
+/articles/analytics
+/articles/analyzing-your-trades-how-to-use-the-fx-replay-analytics-page
+/articles/available-hotkeys-for-fx-replay
+/articles/basic-troubleshooting
+/articles/battle-creation-hosting
+/articles/battle-flow-controls
+/articles/battle-types-objectives
+/articles/charts-visual-performance-metrics
+/articles/chat-comunication
+/articles/coexistence-with-backtesting-journal
+/articles/comprehensive-futures-trading-guide
+/articles/configuring-your-trading-strategy
+/articles/creating-your-checklist-in-fx-replay
+/articles/currency-correlations
+/articles/do-charts-have-autosave-my-charts-are-not-saving
+/articles/does-fx-replay-offer-a-free-trial
+/articles/exploring-the-trader-dashboard-overview
+/articles/ftmo-discount
+/articles/fundamental-analysis-in-forex
+/articles/fx-replay-discord-bot----privacy-notice
+/articles/fx-replay-indicators
+/articles/general-overview
+/articles/general-session-basics
+/articles/go-to-date-feature
+/articles/how-do-i-enable-dark-mode
+/articles/how-far-back-does-the-data-go-can-i-trade-the-1m-far-back
+/articles/how-to-add-the-session-indicator
+/articles/how-to-cancel-my-subscription
+/articles/how-to-create-a-backtesting-session
+/articles/how-to-delete-trades-and-sessions-in-the-journal
+/articles/how-to-download-your-invoices
+/articles/how-to-drag-and-place-stop-loss-take-profit-on-the-chart
+/articles/how-to-get-support
+/articles/how-to-manage-risk-in-trading
+/articles/how-to-merge-trades-in-the-journal
+/articles/how-to-place-trades-with-right-click-order-execution
+/articles/how-to-reset-your-password
+/articles/how-to-save-my-indicator-settings
+/articles/how-to-separate-markings-on-your-charts-for-different-backtesting-sessions
+/articles/how-to-take-partial-profits-in-fx-replay
+/articles/how-to-use-bar-by-bar-rewind
+/articles/how-to-use-bar-replay---right-click-replay
+/articles/how-to-use-drawdown-analytics
+/articles/how-to-use-keyboard-shortcuts-tooltips
+/articles/how-to-use-scalper-mode-for-faster-trade-execution
+/articles/how-to-use-tags-when-backtesting
+/articles/how-to-use-the-monte-carlo-simulation
+/articles/how-to-use-the-replay-feature
+/articles/how-to-use-the-rr-simulator
+/articles/i-am-unable-to-play-out-my-session
+/articles/i-am-unable-to-save-notes-in-the-journal
+/articles/i-can-not-get-past-captcha
+/articles/i-cant-place-a-buy-i-get-an-error
+/articles/introducing-oanda-our-new-data-provider
+/articles/is-it-possible-to-have-multiple-charts-each-with-different-timeframes-or-different-pairs
+/articles/issues-editing-fibonacci-levels
+/articles/join-our-discord-community
+/articles/live-trades
+/articles/managing-devices-on-your-account
+/articles/mastering-the-replay-feature
+/articles/maximize-your-backtesting-explore-multiple-assets-with-fx-replay
+/articles/multipair---feature
+/articles/my-chart-will-not-load
+/articles/navigation-participation
+/articles/overview
+/articles/placing-buy-and-sell-orders-on-fx-replay
+/articles/prop-firm-simulator
+/articles/purchased-the-wrong-plan-heres-how-to-upgrade
+/articles/refund-policy
+/articles/rules-mechanics
+/articles/saving-a-chart-layout
+/articles/session-freezes-and-the-price-data-stops
+/articles/session-playback-and-skip-button-not-working-troubleshooting
+/articles/session-stats-overview
+/articles/setting-up-your-first-backtesting-session
+/articles/setting-up-your-fx-replay-account
+/articles/signing-up-and-getting-started-with-fx-replay
+/articles/stay-connected-with-fx-replay-on-social-media
+/articles/support-fxreplay-com-articles-exporting-reports-for-the-journal
+/articles/tag-analysis
+/articles/top-5-golden-indicators
+/articles/tracking-your-trades-with-the-journal-feature
+/articles/trades-and-logging
+/articles/trading-accounts
+/articles/trading-on-seconds-timeframes-in-forex-and-futures-markets
+/articles/troubleshooting
+/articles/unable-to-access-my-account
+/articles/understanding-price-differences-forex-vs-futures-markets
+/articles/understanding-spreads-and-commissions
+/articles/understanding-swing-highs-and-lows-in-trading
+/articles/using-the-economic-calendar-feature
+/articles/what-are-the-differences-between-fx-replay-plans-and-their-pricing
+/articles/what-are-the-trading-session-hours-that-fx-replay-takes-into-account-for-analytics
+/articles/what-assets-are-available-for-backtesting
+/articles/what-broker-data-sources-does-fx-replay-use-for-its-charts
+/articles/what-candles-does-fx-replay-offer
+/articles/what-happens-if-i-miss-a-promotional-offer-and-are-there-alternative-discounts-available
+/articles/what-indicators-does-fx-replay-offer
+/articles/what-is-the-smoothing-candle-feature
+/articles/what-is-your-refund-policy
+/articles/what-payment-methods-are-available
+/articles/what-to-do-if-your-chart-isnt-displaying-candle-bars
+/articles/why-historical-price-levels-may-look-different-on-fx-replay-vs-tradingview
+/articles/why-isnt-my-trade-being-placed
+--- 2026-09-24T03:48:01Z method=実測 target=FXReplay rc=0 time_s=26.947 note=Support Center 107記事(8分類重複除去)を全部curlで取得
+$ bash /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/fxreplay_fetch_all.sh
+total=107 ok=107 fail=0
+--- 2026-09-24T03:49:20Z method=実測 target=FXReplay rc=0 time_s=0.008 note=旧根拠no automated reconciliation の逐語が実際に原文にあるか確認(全105記事)
+$ bash -c 'grep -rli -E '"'"'reconcil|no automated'"'"' /tmp/fx_text/ | wc -l'
+0
+--- 2026-09-24T03:49:24Z method=実測 target=FXReplay rc=0 time_s=0.016 note=E1a: cross-check/reconcile/diff/discrepancy/compare platforms を全105記事で検索
+$ bash -c 'grep -rn -i -E '"'"'cross.check|reconcil|discrepanc|\bdiff\b|突き合わせ'"'"' /tmp/fx_text/ | head -60; echo TOTAL:; grep -rl -i -E '"'"'cross.check|reconcil|discrepanc|\bdiff\b|突き合わせ'"'"' /tmp/fx_text/ | wc -l'
+/tmp/fx_text/what-broker-data-sources-does-fx-replay-use-for-its-charts.txt:1:At FX Replay, we utilize data from different sources to provide comprehensive coverage across various financial instruments: 1. Dukascopy Broker: Adds Provides data for cryptocurrencies and FOREX pairs. Known for reliable and accurate price feeds. 2. OANDA Broker: Adds further depth to our forex data offering, providing extensive historical and live data. Recognized for its advanced trading features and widespread market coverage. 3. CME Futures Broker: Data source for futures assets, ensuring robust coverage in the futures market. Understanding Price Variations: In the FOREX market, prices can vary slightly between brokers, especially on lower time frames. This discrepancy arises because FOREX lacks a centralized volume aggregator like futures markets. Instead, each broker sources its price feed independently from various liquidity providers or aggregators. Key Points: Comparing brokers such as FXCM and OANDA may show subtle differences in price data due to their unique feed sources. These variations are natural in the FOREX market and are not indicative of data inaccuracies but rather reflect different market conditions and liquidity providers. Conclusion: At FX Replay, we ensure to provide accurate and reliable data sourced from reputable brokers and exchanges. Understanding these nuances in broker data helps traders make informed decisions and conduct precise backtesting and analysis. ‍ Heading Heading More articles How to use the replay feature View more <div class="fxr-card-title fxr-grid-c
+/tmp/fx_text/understanding-price-differences-forex-vs-futures-markets.txt:1:Understanding the price differences between the Forex (foreign exchange) and Futures markets involves analyzing several factors, including the underlying assets, market participants, liquidity, leverage, and the nature of the markets themselves. 1. Market Structure Forex Market : The Forex market is a decentralized global market where currencies are traded directly between participants over-the-counter (OTC). It operates 24 hours a day, five days a week. The market is highly liquid, with large volumes traded daily, often resulting in tighter spreads (the difference between the bid and ask prices). Futures Market : The Futures market is a centralized exchange-traded market where contracts to buy or sell an asset at a future date are traded. These contracts can be based on commodities, currencies, indices, and more. Because it’s exchange-traded, there is more regulation, standardization, and transparency. 2. Underlying Asset Forex : Prices in the Forex market represent the relative value of one currency against another (currency pairs). The most common pairs involve major currencies like USD, EUR, JPY, and GBP. Futures : Futures contracts can be based on various underlying assets, including currencies, but also commodities like oil, gold, or agricultural products, as well as stock indices and bonds. The price of a futures contract is influenced by the expected future value of the underlying asset. 3. Liquidity and Volume Forex : The Forex market is the most liquid market globally, with daily trading volumes exceeding $6 trillion. This immense liquidity often leads to smaller price differences and tighter spreads. Futures : While the Futures market is also highly liquid, particularly for contracts on major assets, it generally has lower trading volumes compared to Forex, especially for less popular contracts. This can lead to wider spreads and larger price fluctuations. 4. Leverage Forex : The Forex market typically offers higher leverage, allowing traders to control larger positions with a smaller amount of capital. This high leverage can amplify both gains and losses, and the price movements can appear more significant in the context of leveraged positions. Futures : Futures markets also offer leverage, but typically less than Forex. The margin requirements are determined by the exchanges and can vary depending on the contract and the broker. 5. Pricing Mechanisms Forex : Prices in the Forex market are determined by supply and demand, geopolitical events, economic data releases, and central bank policies. Since there is no central exchange, prices can vary slightly between brokers. Futures : Futures prices are influenced by the expected future price of the underlying asset, interest rates, and carrying costs (for commodities). Prices are standardized across the exchange, ensuring that traders have access to the same price information. 6. Trading Hours Forex : The Forex market operates 24 hours a day, providing continuous price action during the trading week. This allows for immediate reaction to news and events from around the world. Futures : Futures markets have specific trading hours depending on the exchange and the asset class. While some futures contracts trade nearly 24 hours a day, others may have limited trading sessions. This can lead to gaps in prices between sessions. 7. Market Participants Forex : Participants in the Forex market include central banks, financial institutions, corporations, hedge funds, and individual retail traders. The diversity of participants contributes to its deep liquidity. Futures : The Futures market includes participants such as hedgers (producers and consumers of the underlying asset), speculators, and arbitrageurs. The presence of hedgers can sometimes lead to different price dynamics compared to the Forex market. 8. Regulation Forex : Forex is less regulated compared to Futures, especially in the OTC space. This can sometimes lead to wider variations in prices between brokers and more counterparty risk. Futures : Futures are traded on regulated exchanges, such as the CME or NYMEX, which provides a higher level of transparency, security, and standardization. Prices are typically more consistent and monitored closely by regulatory bodies. Summary of Price Differences: Forex Prices tend to be more stable with tighter spreads due to higher liquidity and continuous trading hours. However, they are more sensitive to short-term geopolitical and economic events. Futures Prices can exhibit more volatility, especially in less liquid contracts or during periods when the underlying asset is affected by specific events. Futures contracts also reflect expectations about future prices, which can create discrepancies between spot prices and futures prices. Understanding these differences is crucial for traders and investors when choosing between Forex and Futures, as it impacts their trading strategies, risk management, and potential profitability. Heading Heading More articles Join our Discord community View more <img width="488" loading="lazy" alt="" src="https://cdn.prod.website-files.com/676174e24c49177d0e49fa3b/69656187a0163d5fc5a92895_How%20to%20manage%20Risk%20in%20trading.png" sizes="(max-
+TOTAL:
+2
+--- 2026-09-24T03:49:29Z method=実測 target=FXReplay rc=0 time_s=0.011 note=E2: gap/duplicate/missing.?data/out.of.order/outlier/timestamp/データ品質 を全105記事で検索
+$ bash -c 'grep -rl -i -E '"'"'gap in (the )?data|duplicate|missing data|out of order|outlier|data quality|データ品質|欠損|重複'"'"' /tmp/fx_text/ ; echo TOTAL:; grep -rl -i -E '"'"'gap in (the )?data|duplicate|missing data|out of order|outlier|data quality|データ品質|欠損|重複'"'"' /tmp/fx_text/ | wc -l'
+/tmp/fx_text/what-is-your-refund-policy.txt
+/tmp/fx_text/how-to-merge-trades-in-the-journal.txt
+TOTAL:
+2
+--- 2026-09-24T03:49:38Z method=実測 target=FXReplay rc=0 time_s=0.006 note=E2追加語: bad tick/erroneous/stale/spike/data error/smoothing/合成 を検索し、該当記事を個別確認
+$ bash -c 'grep -rn -i -E '"'"'bad tick|erroneous|stale data|spike|data error|smooth'"'"' /tmp/fx_text/what-is-the-smoothing-candle-feature.txt /tmp/fx_text/what-candles-does-fx-replay-offer.txt /tmp/fx_text/how-far-back-does-the-data-go-can-i-trade-the-1m-far-back.txt 2>&1'
+/tmp/fx_text/what-is-the-smoothing-candle-feature.txt:1:Smoothing candles help reduce noise and make price charts easier to analyze. Here we have provide a video on how to enable and use the smoothing candles feature. Watch video now! ‍ Heading Heading More articles What broker data sources does FX Replay use for its charts? View more <img width="488" loading="lazy" alt="" src="https://cdn.prod.website-files.com/676174e24c49177d0e49fa3b/67be255a4b3eba7d9bb9adf2_thumbnail3.png" sizes="(max-width: 767px) 100vw, 488px" srcset="https://cdn.prod.website-files.com/676174e24c49177d0e4
+--- 2026-09-24T03:49:44Z method=実測 target=FXReplay rc=0 time_s=0.010 note=E3a/E3b: look-ahead/lookahead/repaint/ルックアヘッド を全105記事で検索
+$ bash -c 'grep -rn -i -E '"'"'look-?ahead|repaint|ルックアヘッド'"'"' /tmp/fx_text/ ; echo TOTAL:; grep -rl -i -E '"'"'look-?ahead|repaint|ルックアヘッド'"'"' /tmp/fx_text/ | wc -l'
+TOTAL:
+0
+--- 2026-09-24T03:49:59Z method=実測 target=FXReplay rc=0 time_s=0.012 note=E5: reproduc/seed/deterministic/再現/固定 を全105記事で検索
+$ bash -c 'grep -rl -i -E '"'"'reproduc|\bseed\b|deterministic|再現性?|固定シード'"'"' /tmp/fx_text/ ; echo TOTAL:; grep -rl -i -E '"'"'reproduc|\bseed\b|deterministic|再現性?|固定シード'"'"' /tmp/fx_text/ | wc -l'
+TOTAL:
+0
+--- 2026-09-24T03:50:05Z method=実測 target=FXReplay rc=0 time_s=0.011 note=E6: verify/validat/accuracy/quality/検証/確認/品質 を全105記事で検索
+$ bash -c 'grep -rl -i -E '"'"'verify|validat|accuracy|\bquality\b|検証|確認|品質'"'"' /tmp/fx_text/ ; echo TOTAL:; grep -rl -i -E '"'"'verify|validat|accuracy|\bquality\b|検証|確認|品質'"'"' /tmp/fx_text/ | wc -l'
+/tmp/fx_text/ftmo-discount.txt
+/tmp/fx_text/how-to-use-the-rr-simulator.txt
+/tmp/fx_text/charts-visual-performance-metrics.txt
+/tmp/fx_text/why-historical-price-levels-may-look-different-on-fx-replay-vs-tradingview.txt
+/tmp/fx_text/i-cant-place-a-buy-i-get-an-error.txt
+/tmp/fx_text/comprehensive-futures-trading-guide.txt
+/tmp/fx_text/what-to-do-if-your-chart-isnt-displaying-candle-bars.txt
+/tmp/fx_text/troubleshooting.txt
+TOTAL:
+8
+--- 2026-09-24T03:50:32Z method=公式 target=rusty-bot rc=0 time_s=0.670 note=既定枝確認とファイル一覧全件取得
+$ curl -sS https://ungh.cc/repos/yasstake/rbot
+{"repo":{"id":571366031,"name":"rbot","repo":"yasstake/rbot","description":null,"createdAt":"2022-11-28T00:41:18Z","updatedAt":"2025-09-01T11:16:53Z","pushedAt":"2026-05-11T14:41:48Z","stars":16,"watchers":1,"forks":5,"defaultBranch":"main"}}
+--- 2026-09-24T03:50:36Z method=公式 target=rusty-bot rc=0 time_s=0.564 note=ファイル一覧全件(既定枝main)
+$ curl -sS https://ungh.cc/repos/yasstake/rbot/files/main -o /tmp/rbot_files.json
+
+--- 2026-09-24T03:50:43Z method=公式 target=rusty-bot rc=0 time_s=0.968 note=リポジトリをclone(隔離scratchpad)
+$ bash -c 'rm -rf /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && git clone --depth 1 --branch main https://github.com/yasstake/rbot /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo 2>&1 | tail -10 && find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo -type f | grep -v '"'"'/\.git/'"'"' | wc -l'
+Cloning into '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo'...
+171
+--- 2026-09-24T03:50:49Z method=実測 target=rusty-bot rc=0 time_s=0.011 note=171件のfile型を確認(除外候補=画像/ロックファイル/バイナリ)
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && find . -type f | grep -v '"'"'/\.git/'"'"' | sed '"'"'s#.*/##'"'"' | sort | sed -E '"'"'s/.*\.([a-zA-Z0-9]+)$/\1/'"'"' | sort | uniq -c | sort -rn'
+     75 rs
+     35 py
+     30 ipynb
+     14 toml
+      4 md
+      3 json
+      2 yml
+      2 txt
+      2 png
+      2 =
+      1 gitignore
+      1 gitattributes
+--- 2026-09-24T03:50:56Z method=実測 target=rusty-bot rc=0 time_s=0.008 note=png/lock/LICENSE等の除外候補ファイル名を特定
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && find . -type f | grep -v '"'"'/\.git/'"'"' | grep -iE '"'"'\.(png|lock|jpg|jpeg|gif|ico|zip|whl|so|dylib|dll)$|LICENSE|/=|^\./='"'"''
+./doc/img/backtest_sample.png
+./doc/img/rbot_outline.png
+./test/tutorial/=
+./test/manual/=
+./LICENSE.txt
+--- 2026-09-24T03:51:11Z method=実測 target=rusty-bot rc=1 time_s=0.021 note=E3a: look-ahead/lookahead/ルックアヘッド/repaint/leak/future.data/purge/embargo/survivorship を171件中169件(png2件除く)で検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && grep -rniE '"'"'look-?ahead|lookahead|ルックアヘッド|repaint|future.?leak|future.?data|\bpurge\b|embargo|survivorship'"'"' . | grep -v '"'"'/\.git/'"'"' | grep -v '"'"'\.png'"'"''
+
+--- 2026-09-24T03:51:16Z method=実測 target=rusty-bot rc=0 time_s=0.018 note=E5: reproduc/seed/deterministic/再現/固定 を171件中169件(png2件除く)で検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && grep -rniE '"'"'reproduc|\bseed\b|deterministic|再現|固定'"'"' . | grep -v '"'"'/\.git/'"'"' | grep -v '"'"'\.png'"'"''
+./LICENSE.txt:39:and utility programs needed for reproducing the Combined Work from the
+--- 2026-09-24T03:51:25Z method=実測 target=rusty-bot rc=0 time_s=0.017 note=E5補足: random/rng/同じ結果/consistent results を171件中169件で検索
+$ bash -c 'cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo && grep -rniE '"'"'\brandom\b|\brng\b|same result|consistent result'"'"' . | grep -v '"'"'/\.git/'"'"' | grep -v '"'"'\.png'"'"' | grep -v '"'"'\.ipynb'"'"''
+./modules/rbot_lib/src/net/ws.rs:169:                let random = NOW() % 5_000;
+./modules/rbot_lib/src/net/ws.rs:178:                tokio::time::sleep(Duration::from_millis(random as u64)).await;
+./test/00_suite/test_02_config.py:101:    """Test that opening the same exchange multiple times returns consistent results"""
+--- 2026-09-24T03:51:30Z method=実測 target=rusty-bot rc=0 time_s=0.004 note=test_02_config.py 90-115行(consistent resultsの文脈)
+$ sed -n 90,115p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/test/00_suite/test_02_config.py
+        ('bybit', 'ETH/USDT'),
+        ('binance', 'ETH/USDT')
+    ]
+)
+def test_open_market_multiple_exchanges_symbols(exchange_name, symbol):
+    exchange = ExchangeConfig.open(exchange_name)
+    market = exchange.open_market(symbol)
+    assert market is not None
+
+
+def test_exchange_config_consistency():
+    """Test that opening the same exchange multiple times returns consistent results"""
+    exchange1 = ExchangeConfig.open('bybit')
+    exchange2 = ExchangeConfig.open('bybit')
+    
+    assert exchange1.symbols == exchange2.symbols
+
+
+def test_symbols_contain_common_pairs():
+    """Test that exchanges contain expected common trading pairs"""
+    exchange = ExchangeConfig.open('bybit')
+    symbols = exchange.symbols
+    
+    common_pairs = ['BTC/USDT', 'ETH/USDT']
+    for pair in common_pairs:
+        assert pair in symbols, f"Expected {pair} to be in available symbols"
+--- 2026-09-24T03:51:41Z method=公式 target=th2-net rc=0 time_s=0.253 note=GitHub組織th2-netのリポジトリ一覧HTML頁2を試す
+$ curl -sS -A Mozilla/5.0 -o /tmp/th2net_p2.html -w 'http_code=%{http_code} size=%{size_download}\n' 'https://github.com/orgs/th2-net/repositories?page=2'
+http_code=403 size=249
+--- 2026-09-24T03:51:47Z method=公式 target=th2-net rc=0 time_s=0.247 note=api.github.com org repos ページ2を試す(REST API)
+$ curl -sS -A Mozilla/5.0 -w '\nhttp_code=%{http_code}\n' 'https://api.github.com/orgs/th2-net/repos?per_page=100&page=2'
+{"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.anthropic.com/en/docs/claude-code/github-actions"}
+http_code=403
+--- 2026-09-24T03:51:54Z method=公式 target=th2-net rc=0 time_s=0.218 note=api.github.com org repos ページ1(比較用)
+$ curl -sS -w '\nhttp_code=%{http_code}\n' 'https://api.github.com/orgs/th2-net/repos?per_page=100&page=1'
+{"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.anthropic.com/en/docs/claude-code/github-actions"}
+http_code=403
+--- 2026-09-24T03:51:55Z method=公式 target=th2-net rc=0 time_s=0.195 note=github.com組織頁トップ(page指定なし)を試す
+$ curl -sS -A Mozilla/5.0 -w '\nhttp_code=%{http_code}\n' https://github.com/th2-net -o /tmp/th2net_org.html -w 'http_code=%{http_code}\n'
+http_code=403
+--- 2026-09-24T03:52:01Z method=公式 target=th2-net rc=0 time_s=1.887 note=ungh.ccの組織エンドポイント(users)を試す
+$ curl -sS -w '\nhttp_code=%{http_code}\n' 'https://ungh.cc/users/th2-net/repos?page=2'
+{"repos":[{"id":310243205,"name":".github","repo":"th2-net/.github","description":"Organization workflows","createdAt":"2020-11-05T09:03:14Z","updatedAt":"2026-04-29T15:28:27Z","pushedAt":"2026-04-29T15:26:38Z","stars":1,"watchers":1,"forks":1,"defaultBranch":"main"},{"id":312016926,"name":"cradleapi","repo":"th2-net/cradleapi","description":null,"createdAt":"2020-11-11T15:50:30Z","updatedAt":"2026-03-05T06:12:23Z","pushedAt":"2026-05-04T22:50:40Z","stars":1,"watchers":1,"forks":1,"defaultBranch":"master"},{"id":339365612,"name":"e2e-test-schema","repo":"th2-net/e2e-test-schema","description":null,"createdAt":"2021-02-16T10:45:05Z","updatedAt":"2021-06-23T15:19:43Z","pushedAt":"2021-07-20T09:38:54Z","stars":0,"watchers":0,"forks":1,"defaultBranch":"master"},{"id":334963959,"name":"infra-operator-tpl","repo":"th2-net/infra-operator-tpl","description":null,"createdAt":"2021-02-01T13:47:23Z","updatedAt":"2022-01-26T11:31:55Z","pushedAt":"2022-06-24T18:44:24Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":606036832,"name":"jsonToHtmlParser","repo":"th2-net/jsonToHtmlParser","description":null,"createdAt":"2023-02-24T13:06:19Z","updatedAt":"2023-02-24T13:30:39Z","pushedAt":"2023-02-24T15:03:08Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":697247727,"name":"junit-jupiter-integration","repo":"th2-net/junit-jupiter-integration","description":"JUnit Jupiter extension for th2 integration testing","createdAt":"2023-09-27T10:50:44Z","updatedAt":"2026-02-18T16:06:43Z","pushedAt":"2026-04-27T21:43:11Z","stars":1,"watchers":1,"forks":0,"defaultBranch":"master"},{"id":464446019,"name":"provider_call","repo":"th2-net/provider_call","description":null,"createdAt":"2022-02-28T10:58:52Z","updatedAt":"2022-02-28T10:59:32Z","pushedAt":"2022-09-19T14:56:05Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":489402108,"name":"pytest-th2-bdd","repo":"th2-net/pytest-th2-bdd","description":null,"createdAt":"2022-05-06T15:18:58Z","updatedAt":"2022-05-13T14:44:27Z","pushedAt":"2022-05-13T15:24:36Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":721144704,"name":"qfj-dictionary-converter","repo":"th2-net/qfj-dictionary-converter","description":"CLI utility to convert QuickFIXJ data dictionaries into th2 format and validate them","createdAt":"2023-11-20T12:56:08Z","updatedAt":"2023-11-20T13:12:40Z","pushedAt":"2023-11-20T13:11:19Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":610292627,"name":"recon-lw","repo":"th2-net/recon-lw","description":null,"createdAt":"2023-03-06T13:38:21Z","updatedAt":"2023-03-06T13:43:54Z","pushedAt":"2025-01-24T09:26:11Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":317858220,"name":"remotehand","repo":"th2-net/remotehand","description":null,"createdAt":"2020-12-02T12:41:13Z","updatedAt":"2022-06-28T05:08:08Z","pushedAt":"2025-05-05T14:28:18Z","stars":1,"watchers":1,"forks":0,"defaultBranch":"master"},{"id":667523355,"name":"run-one","repo":"th2-net/run-one","description":null,"createdAt":"2023-07-17T17:43:32Z","updatedAt":"2024-09-04T13:32:22Z","pushedAt":"2024-09-04T13:32:23Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":503743273,"name":"schema-test","repo":"th2-net/schema-test","description":null,"createdAt":"2022-06-15T11:49:57Z","updatedAt":"2022-06-15T14:51:30Z","pushedAt":"2022-08-15T14:24:20Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":920627481,"name":"test-management-sync","repo":"th2-net/test-management-sync","description":"Library to manage synchronize test execution results with test management systems","createdAt":"2025-01-22T13:48:38Z","updatedAt":"2025-05-01T13:57:49Z","pushedAt":"2025-05-01T13:57:46Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":310260868,"name":"test-repo","repo":"th2-net/test-repo","description":null,"createdAt":"2020-11-05T10:14:39Z","updatedAt":"2020-12-15T14:55:00Z","pushedAt":"2021-01-28T16:38:14Z","stars":0,"watchers
+[出力は 27065 文字。先頭 4000 文字だけを残した]
+--- 2026-09-24T03:52:03Z method=公式 target=th2-net rc=0 time_s=1.147 note=ungh.ccの組織エンドポイント page1(比較)
+$ curl -sS -w '\nhttp_code=%{http_code}\n' https://ungh.cc/users/th2-net/repos
+{"repos":[{"id":310243205,"name":".github","repo":"th2-net/.github","description":"Organization workflows","createdAt":"2020-11-05T09:03:14Z","updatedAt":"2026-04-29T15:28:27Z","pushedAt":"2026-04-29T15:26:38Z","stars":1,"watchers":1,"forks":1,"defaultBranch":"main"},{"id":312016926,"name":"cradleapi","repo":"th2-net/cradleapi","description":null,"createdAt":"2020-11-11T15:50:30Z","updatedAt":"2026-03-05T06:12:23Z","pushedAt":"2026-05-04T22:50:40Z","stars":1,"watchers":1,"forks":1,"defaultBranch":"master"},{"id":339365612,"name":"e2e-test-schema","repo":"th2-net/e2e-test-schema","description":null,"createdAt":"2021-02-16T10:45:05Z","updatedAt":"2021-06-23T15:19:43Z","pushedAt":"2021-07-20T09:38:54Z","stars":0,"watchers":0,"forks":1,"defaultBranch":"master"},{"id":334963959,"name":"infra-operator-tpl","repo":"th2-net/infra-operator-tpl","description":null,"createdAt":"2021-02-01T13:47:23Z","updatedAt":"2022-01-26T11:31:55Z","pushedAt":"2022-06-24T18:44:24Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":606036832,"name":"jsonToHtmlParser","repo":"th2-net/jsonToHtmlParser","description":null,"createdAt":"2023-02-24T13:06:19Z","updatedAt":"2023-02-24T13:30:39Z","pushedAt":"2023-02-24T15:03:08Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":697247727,"name":"junit-jupiter-integration","repo":"th2-net/junit-jupiter-integration","description":"JUnit Jupiter extension for th2 integration testing","createdAt":"2023-09-27T10:50:44Z","updatedAt":"2026-02-18T16:06:43Z","pushedAt":"2026-04-27T21:43:11Z","stars":1,"watchers":1,"forks":0,"defaultBranch":"master"},{"id":464446019,"name":"provider_call","repo":"th2-net/provider_call","description":null,"createdAt":"2022-02-28T10:58:52Z","updatedAt":"2022-02-28T10:59:32Z","pushedAt":"2022-09-19T14:56:05Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":489402108,"name":"pytest-th2-bdd","repo":"th2-net/pytest-th2-bdd","description":null,"createdAt":"2022-05-06T15:18:58Z","updatedAt":"2022-05-13T14:44:27Z","pushedAt":"2022-05-13T15:24:36Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":721144704,"name":"qfj-dictionary-converter","repo":"th2-net/qfj-dictionary-converter","description":"CLI utility to convert QuickFIXJ data dictionaries into th2 format and validate them","createdAt":"2023-11-20T12:56:08Z","updatedAt":"2023-11-20T13:12:40Z","pushedAt":"2023-11-20T13:11:19Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":610292627,"name":"recon-lw","repo":"th2-net/recon-lw","description":null,"createdAt":"2023-03-06T13:38:21Z","updatedAt":"2023-03-06T13:43:54Z","pushedAt":"2025-01-24T09:26:11Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":317858220,"name":"remotehand","repo":"th2-net/remotehand","description":null,"createdAt":"2020-12-02T12:41:13Z","updatedAt":"2022-06-28T05:08:08Z","pushedAt":"2025-05-05T14:28:18Z","stars":1,"watchers":1,"forks":0,"defaultBranch":"master"},{"id":667523355,"name":"run-one","repo":"th2-net/run-one","description":null,"createdAt":"2023-07-17T17:43:32Z","updatedAt":"2024-09-04T13:32:22Z","pushedAt":"2024-09-04T13:32:23Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":503743273,"name":"schema-test","repo":"th2-net/schema-test","description":null,"createdAt":"2022-06-15T11:49:57Z","updatedAt":"2022-06-15T14:51:30Z","pushedAt":"2022-08-15T14:24:20Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":920627481,"name":"test-management-sync","repo":"th2-net/test-management-sync","description":"Library to manage synchronize test execution results with test management systems","createdAt":"2025-01-22T13:48:38Z","updatedAt":"2025-05-01T13:57:49Z","pushedAt":"2025-05-01T13:57:46Z","stars":0,"watchers":0,"forks":0,"defaultBranch":"master"},{"id":310260868,"name":"test-repo","repo":"th2-net/test-repo","description":null,"createdAt":"2020-11-05T10:14:39Z","updatedAt":"2020-12-15T14:55:00Z","pushedAt":"2021-01-28T16:38:14Z","stars":0,"watchers
+[出力は 27065 文字。先頭 4000 文字だけを残した]
+--- 2026-09-24T03:52:26Z method=公式 target=th2-net rc=0 time_s=1.392 note=ungh.cc/users/th2-net/repos 全件件数を数える(打ち直し)
+$ curl -sS https://ungh.cc/users/th2-net/repos -o /tmp/th2net_repos.json
+
+--- 2026-09-24T03:52:43Z method=公式 target=th2-net rc=0 time_s=0.218 note=search API経由でorg:th2-netを試す
+$ curl -sS -w '\nhttp_code=%{http_code}\n' 'https://api.github.com/search/repositories?q=org%3Ath2-net&per_page=100&page=2'
+{"message":"This GitHub API path is not available: sessions are bound to their configured repositories. Use repository-scoped endpoints (repos/{owner}/{repo}/...).","documentation_url":"https://docs.anthropic.com/en/docs/claude-code/github-actions"}
+http_code=403
+--- 2026-09-24T03:52:50Z method=公式 target=th2-net rc=0 time_s=3.166 note=web.archive.orgでgithub.com/orgs/th2-net/repositoriesのスナップショットを探す
+$ curl -sS 'https://archive.org/wayback/available?url=github.com/orgs/th2-net/repositories'
+{"url": "github.com/orgs/th2-net/repositories", "archived_snapshots": {"closest": {"status": "200", "available": true, "url": "http://web.archive.org/web/20251104233453/https://github.com/orgs/th2-net/repositories", "timestamp": "20251104233453"}}}
+--- 2026-09-24T03:53:00Z method=公式 target=th2-net rc=0 time_s=0.026 note=wayback機のgithub.com/orgs/th2-net/repositoriesスナップショット取得
+$ curl -sS -A Mozilla/5.0 http://web.archive.org/web/20251104233453/https://github.com/orgs/th2-net/repositories -o /tmp/th2net_wayback.html
+
+--- 2026-09-24T03:53:32Z method=公式 target=th2-net rc=0 time_s=0.792 note=th2-docs の既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-docs
+{"repo":{"id":454080323,"name":"th2-docs","repo":"th2-net/th2-docs","description":null,"createdAt":"2022-01-31T16:22:54Z","updatedAt":"2022-12-18T09:11:36Z","pushedAt":"2023-09-25T12:01:37Z","stars":4,"watchers":2,"forks":1,"defaultBranch":"master"}}
+--- 2026-09-24T03:53:33Z method=公式 target=th2-net rc=0 time_s=0.547 note=th2-check1 の既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-check1
+{"repo":{"id":314775556,"name":"th2-check1","repo":"th2-net/th2-check1","description":null,"createdAt":"2020-11-21T09:24:10Z","updatedAt":"2026-02-18T15:22:12Z","pushedAt":"2026-06-03T10:23:48Z","stars":1,"watchers":2,"forks":1,"defaultBranch":"master"}}
+--- 2026-09-24T03:53:33Z method=公式 target=th2-net rc=0 time_s=0.555 note=th2-check2-recon の既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-check2-recon
+{"repo":{"id":314797563,"name":"th2-check2-recon","repo":"th2-net/th2-check2-recon","description":null,"createdAt":"2020-11-21T11:36:42Z","updatedAt":"2022-03-18T16:45:12Z","pushedAt":"2024-01-09T14:50:49Z","stars":0,"watchers":2,"forks":1,"defaultBranch":"master"}}
+--- 2026-09-24T03:53:34Z method=公式 target=th2-net rc=0 time_s=0.578 note=th2-check2-recon-template の既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-check2-recon-template
+{"repo":{"id":315256593,"name":"th2-check2-recon-template","repo":"th2-net/th2-check2-recon-template","description":null,"createdAt":"2020-11-23T09:03:15Z","updatedAt":"2024-09-08T07:34:12Z","pushedAt":"2024-01-09T14:54:23Z","stars":0,"watchers":2,"forks":4,"defaultBranch":"master"}}
+--- 2026-09-24T03:53:38Z method=公式 target=th2-net rc=0 time_s=0.210 note=th2-check1 README全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-check1/master/README.md -o /tmp/th2_check1_readme.md
+
+--- 2026-09-24T03:53:39Z method=公式 target=th2-net rc=0 time_s=0.196 note=th2-check2-recon README全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-check2-recon/master/README.md -o /tmp/th2_check2recon_readme.md
+
+--- 2026-09-24T03:53:48Z method=公式 target=th2-net rc=0 time_s=0.201 note=th2-check2-recon-template README全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-check2-recon-template/master/README.md -o /tmp/th2_recontemplate.md
+
+--- 2026-09-24T03:54:07Z method=公式 target=th2-net rc=35 time_s=11.253 note=th2-estore README全文(既定枝mainかmasterか確認込み)
+$ curl -sS https://ungh.cc/repos/th2-net/th2-estore
+curl: (35) Recv failure: Connection reset by peer
+--- 2026-09-24T03:54:24Z method=公式 target=th2-net rc=0 time_s=0.760 note=th2-estore 既定枝確認(打ち直し)
+$ curl -sS https://ungh.cc/repos/th2-net/th2-estore
+{"repo":{"id":313693337,"name":"th2-estore","repo":"th2-net/th2-estore","description":null,"createdAt":"2020-11-17T17:27:52Z","updatedAt":"2026-02-16T12:51:46Z","pushedAt":"2026-04-27T01:19:01Z","stars":0,"watchers":2,"forks":0,"defaultBranch":"master"}}
+--- 2026-09-24T03:54:29Z method=公式 target=th2-net rc=0 time_s=0.203 note=th2-estore README全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-estore/master/README.md -o /tmp/th2_estore.md
+
+--- 2026-09-24T03:54:37Z method=公式 target=th2-net rc=0 time_s=0.584 note=th2-rpt-viewer 既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-rpt-viewer
+{"repo":{"id":313868910,"name":"th2-rpt-viewer","repo":"th2-net/th2-rpt-viewer","description":null,"createdAt":"2020-11-18T08:26:11Z","updatedAt":"2026-02-06T13:09:36Z","pushedAt":"2026-02-09T06:06:29Z","stars":6,"watchers":3,"forks":0,"defaultBranch":"version-5.2"}}
+--- 2026-09-24T03:54:41Z method=公式 target=th2-net rc=0 time_s=0.237 note=th2-rpt-viewer README全文(既定枝version-5.2)
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-rpt-viewer/version-5.2/README.md -o /tmp/th2_rptviewer.md
+
+--- 2026-09-24T03:55:07Z method=実測 target=th2-net rc=1 time_s=0.007 note=取得済みREADME群(check1/check2-recon/check2-recon-template/estore/rpt-viewer)でlook-ahead/replay/reproduc/seed/regressionを検索
+$ bash -c 'grep -niE '"'"'look-?ahead|replay|reproduc|\bseed\b|regression|deterministic'"'"' /tmp/th2_check1_readme.md /tmp/th2_check2recon_readme.md /tmp/th2_recontemplate.md /tmp/th2_estore.md /tmp/th2_rptviewer.md'
+
+--- 2026-09-24T03:55:15Z method=公式 target=th2-net rc=0 time_s=0.404 note=th2-docs README(組織の中心文書)全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-docs/master/README.md -o /tmp/th2_docs_readme.md
+
+--- 2026-09-24T03:55:21Z method=公式 target=th2-net rc=60 time_s=0.531 note=th2.dev トップ頁を試す
+$ curl -sS -A Mozilla/5.0 -o /tmp/th2dev_home.html -w 'http_code=%{http_code} size=%{size_download}\n' https://th2.dev/
+http_code=000 size=0
+curl: (60) SSL: no alternative certificate subject name matches target host name 'th2.dev'
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+--- 2026-09-24T03:55:30Z method=公式 target=th2-net rc=1 time_s=1.319 note=th2.dev はTLS証明書のホスト名不一致で到達不可。cat8_render.jsでも試す
+$ env NODE_PATH=/opt/node22/lib/node_modules NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node scripts/cat8_render.js https://th2.dev/ 3000
+INCOMPLETE fetch-failed https://th2.dev/ Error: route.fetch: Hostname/IP does not match certificate's altnames: Host: th2.dev. is not in the cert's altnames: DNS:*.exactpro.com
+INCOMPLETE request-failed https://th2.dev/ net::ERR_FAILED
+INCOMPLETE error Error: page.goto: net::ERR_FAILED at https://th2.dev/
+INCOMPLETE 合計 3 件
+--- 2026-09-24T03:55:37Z method=公式 target=th2-net rc=0 time_s=1.181 note=exactpro.com配下でth2文書を探す
+$ curl -sS -A Mozilla/5.0 -o /tmp/exactpro_home.html -w 'http_code=%{http_code} size=%{size_download}\n' https://exactpro.com/
+http_code=200 size=72156
+--- 2026-09-24T03:55:49Z method=公式 target=th2-net rc=0 time_s=0.816 note=th2-data-services 既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-data-services
+{"repo":{"id":388158983,"name":"th2-data-services","repo":"th2-net/th2-data-services","description":null,"createdAt":"2021-07-21T15:17:38Z","updatedAt":"2025-11-21T14:01:22Z","pushedAt":"2026-06-19T10:42:55Z","stars":2,"watchers":3,"forks":2,"defaultBranch":"master"}}
+--- 2026-09-24T03:55:50Z method=公式 target=th2-net rc=0 time_s=0.555 note=th2-crawler 既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-crawler
+{"repo":{"id":383426231,"name":"th2-crawler","repo":"th2-net/th2-crawler","description":null,"createdAt":"2021-07-06T10:17:16Z","updatedAt":"2021-08-05T15:49:59Z","pushedAt":"2023-02-08T12:57:54Z","stars":0,"watchers":2,"forks":0,"defaultBranch":"master"}}
+--- 2026-09-24T03:55:51Z method=公式 target=th2-net rc=0 time_s=0.564 note=th2-cradle-admin-tool 既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-cradle-admin-tool
+{"repo":{"id":694678447,"name":"th2-cradle-admin-tool","repo":"th2-net/th2-cradle-admin-tool","description":"CMD tool and service with REST API which allows user to manage books/pages ","createdAt":"2023-09-21T13:29:00Z","updatedAt":"2026-02-25T06:24:34Z","pushedAt":"2026-04-28T21:44:28Z","stars":0,"watchers":1,"forks":0,"defaultBranch":"master"}}
+--- 2026-09-24T03:55:51Z method=公式 target=th2-net rc=0 time_s=0.633 note=th2-cache-common 既定枝確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-cache-common
+{"repo":{"id":575821558,"name":"th2-cache-common","repo":"th2-net/th2-cache-common","description":null,"createdAt":"2022-12-08T11:27:27Z","updatedAt":"2022-12-08T11:27:27Z","pushedAt":"2023-02-23T11:47:26Z","stars":0,"watchers":1,"forks":1,"defaultBranch":"master"}}
+--- 2026-09-24T03:55:55Z method=公式 target=th2-net rc=0 time_s=0.196 note=th2-data-services README全文
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-data-services/master/README.md -o /tmp/th2_dataservices.md
+
+--- 2026-09-24T03:58:20Z method=実測 target=rusty-bot rc=2 time_s=0.013 note=LICENSE.txt冒頭・README.md冒頭・Cargo.tomlのversion
+$ bash -c 'head -5 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/LICENSE.txt; echo ---; head -20 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/README.md 2>/dev/null; echo ---cargo---; cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/Cargo.toml 2>/dev/null | head -20; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/*.toml /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/**/Cargo.toml 2>/dev/null'
+                   GNU LESSER GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
+
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+| ---
+# rbot (Rusty bot framwrok for crypto trading)
+
+`rbot` is a python crypt trading bot framework written in Rust.
+
+The feature is;
+* Your Bot can be executed in three mode `backtest`, `dry_run` and `production` without modification.
+* TICK BASED backtesting.
+* Written in Rust and Provided as Python plugin. So you can write your own bot in Python with super efficent Rust back end.
+
+## For 0.4.0 Beta release (This is beta release)
+
+### Change:
+	OHLCVのTimestampの型をi64からDateTimeへ変更(->Agentに影響あり）
+	約定ログの保存方式をSQLiteからparquetへ変更（ファイルサイズが５分の１へ縮小）
+	注意：過去にダウンロードした約定ログは使えません。DBディレクトリごと削除し、再度ダウンロードしてください。
+	DownloadとBackテストにProgressBarを導入
+
+
+### Fix:
+	#244 立ち上げ直後に最初のTickでon_clockがよびだされていたのを修正
+| ---cargo---
+[package]
+name = "rbot"
+version = "0.1.8"       # for test pypi
+# version = "0.4.0"     # for main release branch
+edition = "2021"
+exclude = ["test/**"]
+
+[lib]
+name = "rbot"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bybit = {path = "exchanges/bybit"}
+binance = {path = "exchanges/binance"}
+bitbank = {path= "exchanges/bitbank"}
+# hyperliquid = {path = "exchanges/hyperliquid"}
+
+rbot_lib = {path="modules/rbot_lib"}
+rbot_session = {path="modules/rbot_session"}
+rbot_server = {path="modules/rbot_server"}
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/Cargo.toml
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_repo/pyproject.toml
+--- 2026-09-24T03:58:24Z method=公式 target=rusty-bot rc=0 time_s=0.072 note=PyPIでrbotパッケージを確認
+$ curl -sS -w '\nhttp_code=%{http_code}\n' https://pypi.org/pypi/rbot/json
+{"info":{"author":"@yasstake","author_email":null,"bugtrack_url":null,"classifiers":["Intended Audience :: Developers","License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)","Programming Language :: Python :: Implementation :: CPython","Programming Language :: Python :: Implementation :: PyPy","Programming Language :: Rust"],"description":"# rbot (Rusty bot framwrok for crypto trading)\n\n`rbot` is a python crypt trading bot framework written in Rust.\n\nThe feature is;\n* Store historical transaction data(tick) in sqlite database.\n* Calculate OHLCV data with any window sizefrom historical tick data\n* Provide bot framework that enables `backtest`, `dry_run` and `production`.\n\n### the execution sample\n\nIn the backtest mode, you can run with Jupyter notebook. So, you can make such analysis below. This example is provided in the github, which can be executed on the Google colab!! Please try.\n\n[sample1: basil bot](https://github.com/yasstake/rusty-bot/blob/main/tutorial/basilbot/basilbot_backtest.ipynb)\n[sample2: breakout bot](https://github.com/yasstake/rusty-bot/blob/main/tutorial/channel_breakout/breakout_agent.ipynb)\n\n![backtest sample](https://github.com/yasstake/rbot/blob/87fff10f16b364816f4c6281a07e0bc7d338e486/img/backtest_sample.png?raw=true)\n\n\n\n\n## Architecture\n\nThe only you have to make is `Agent`. The other class will support you Agent will work.\n\n* `Session` will provide abstruction layer to the Market. Agent only interact with `Session` for ordering, fetching market information and current order status.\n* `Market` is the API and DB wrapper for each trading pair in the exchange. At this version `Bybit` and `Biannce` exchange are supportd.\n* `Runner` makes session to run `back_test`, `dry_run` or `real_run`.\n* `Logger` stores the result of execution. That provide the result in polars `DataFrame`.\n\n![architecture](https://github.com/yasstake/rbot/blob/87fff10f16b364816f4c6281a07e0bc7d338e486/img/rbot_outline.png?raw=true)\n\n## install\n```shell\n$ pip install rbot\n```\n\n## download historical data\n\n\n### create market object\n```python\nfrom rbot import Bybit, BybitConfig\nexchange = Bybit(production=True)\n\nconfig = BybitConfig.BTCUSDT          # use BTC/USDT pair\nmarket = exchange.open_market(config) \n```\n\nyou can find the locatin of data base.\n```python\nmarket.file_name\n```\n\nIn case you want to alter the location of db, you can specify the path by environment variable `RBOT_DB_ROOT`.\n\n### enable order\n\nOrdering is disabled by default. You can enable it by setting `enable_order_with_my_own_risk` to `True`.\n```python\nexchange.enable_order_with_my_own_risk = True\n```\n\n\n### download archive data\n\n```python\nmarket.download_archive(\n    ndays=1,        # specify from past days\n    force=False,    # if false, the cache data will be used.\n    verbose=True    # verbose to print download progress.\n)\n```\n\n### get OHLCV data\n\n```python\nohlcv = market.ohlcv(\n    start_time=0,           # start time in unix timestamp(microseconds)\n    end_time=0,             # end time in unix timestamp(microseconds)\n    window_sec=60           # ohlc bar window size in seconds\n)\n```\nThe OHLCV data is a polars data frames with the following columns:\n* timestamp (in asc order)\n* open\n* high\n* low\n* close\n* volume (sum of volume in order size)\n* count (number of ticks)\n\nif you want to use it as pandas dataframe, you can convert it by the following code.\n```python\npandas_df = ohlcv.to_pandas(use_pyarrow_extension_array=True)\n```\n\n\n## Creating skelton bot \n\nYou can make Bot class with any kind of names. Only rules is you must implement `on_init`, `on_tick`, `on_clock`, and `on_update`, if you want to recieve such event(It is not necessary to implement all of them).\n\nEach method receives `session` object. You can use it to get market information, place order, cancel order, etc.\n\n##### Example:\n```python\nclass SkeltonAgent:      # yo
+[出力は 29563 文字。先頭 4000 文字だけを残した]
+--- 2026-09-24T03:58:30Z method=公式 target=rusty-bot rc=0 time_s=0.091 note=PyPIメタデータ(version/release date/urls/requires_dist)を抽出
+$ bash -c 'curl -sS https://pypi.org/pypi/rbot/json -o /tmp/rbot_pypi.json; python3 -c "
+import json
+d=json.load(open('"'"'/tmp/rbot_pypi.json'"'"'))
+print('"'"'version'"'"', d['"'"'info'"'"']['"'"'version'"'"'])
+print('"'"'license'"'"', d['"'"'info'"'"'].get('"'"'license'"'"'))
+print('"'"'requires_dist'"'"', d['"'"'info'"'"'].get('"'"'requires_dist'"'"'))
+print('"'"'home_page'"'"', d['"'"'info'"'"'].get('"'"'home_page'"'"'), d['"'"'info'"'"'].get('"'"'project_url'"'"'))
+rel=d['"'"'releases'"'"']
+vers=sorted(rel.keys())
+print('"'"'total_versions'"'"', len(vers))
+print('"'"'latest3'"'"', vers[-3:])
+last=rel[vers[-1]]
+for f in last:
+    print(f['"'"'filename'"'"'], f['"'"'upload_time'"'"'], f['"'"'size'"'"'], f.get('"'"'python_version'"'"'))
+"'
+version 0.3.5
+license None
+requires_dist None
+home_page None https://pypi.org/project/rbot/
+total_versions 4
+latest3 ['0.2.14', '0.3.4', '0.3.5']
+rbot-0.3.5-cp38-abi3-macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2.whl 2024-04-05T04:30:16 26580861 cp38
+rbot-0.3.5-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl 2024-04-05T04:30:20 17704674 cp38
+rbot-0.3.5-cp38-abi3-win_amd64.whl 2024-04-05T04:30:24 12756591 cp38
+rbot-0.3.5.tar.gz 2024-04-05T04:30:27 127697 source
+--- 2026-09-24T03:58:35Z method=公式 target=rusty-bot rc=0 time_s=0.669 note=pypistatsで週DL数を確認
+$ curl -sS https://pypistats.org/api/packages/rbot/recent
+{"data":{"last_day":0,"last_month":10,"last_week":4},"package":"rbot","type":"recent_downloads"}
+--- 2026-09-24T03:58:42Z method=実測 target=rusty-bot rc=0 time_s=5.930 note=隔離venvを作りpip install rbotを試す(所要秒計測)
+$ bash -c '
+rm -rf /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv
+python3 -m venv /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv
+source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/bin/activate
+t0=$(date +%s.%N)
+pip install --quiet rbot 2>&1 | tail -20
+rc=$?
+t1=$(date +%s.%N)
+echo INSTALL_RC=$rc INSTALL_SECONDS=$(echo "$t1 - $t0" | bc)
+pip check 2>&1
+echo PIP_CHECK_RC=$?
+pip show rbot 2>&1 | head -10
+'
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+INSTALL_RC=0 INSTALL_SECONDS=1.809182781
+No broken requirements found.
+PIP_CHECK_RC=0
+Name: rbot
+Version: 0.3.5
+Summary: crypt trading framework, support back_test, dry_run and real_run
+Home-page: 
+Author: @yasstake
+Author-email: 
+License: 
+Location: /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages
+Requires: 
+Required-by: 
+--- 2026-09-24T03:58:55Z method=実測 target=rusty-bot rc=0 time_s=0.468 note=wheel展開・同梱バイナリ・依存数を確認
+$ bash -c '
+source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/bin/activate
+python3 -c "import rbot, os; print('"'"'rbot module file:'"'"', rbot.__file__); print(os.path.getsize(rbot.__file__.replace('"'"'.py'"'"','"'"'.so'"'"')) if os.path.exists(rbot.__file__.replace('"'"'.py'"'"','"'"'.so'"'"')) else '"'"'n/a'"'"')"
+find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages -maxdepth 2 -iname '"'"'rbot*'"'"'
+pip list 2>&1
+'
+rbot module file: /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages/rbot/__init__.py
+n/a
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages/rbot
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages/rbot/rbot.abi3.so
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages/rbot-0.3.5.dist-info
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/lib/python3.11/site-packages/rbot.libs
+Package    Version
+| ---------- -------
+pip        24.0
+rbot       0.3.5
+setuptools 79.0.1
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+--- 2026-09-24T03:59:01Z method=実測 target=rusty-bot rc=0 time_s=0.021 note=最小実行: import rbotとクラス一覧を確認
+$ bash -c '
+source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/bin/activate
+python3 -c "
+import rbot
+print('"'"'rbot attrs:'"'"', [a for a in dir(rbot) if not a.startswith('"'"'_'"'"')])
+"
+'
+rbot attrs: ['AccountCoins', 'AccountPair', 'Binance', 'BinanceConfig', 'BoardItem', 'Bybit', 'BybitConfig', 'DAYS', 'DAYS_BEFORE', 'ExecuteMode', 'FLOOR_SEC', 'HHMM', 'Logger', 'MIN', 'MarketConfig', 'NOW', 'Order', 'OrderSide', 'OrderStatus', 'OrderType', 'Runner', 'SEC', 'Session', 'Trade', 'get_db_root', 'get_orderbook', 'get_orderbook_list', 'init_debug_log', 'init_log', 'rbot', 'set_db_root', 'time_string']
+--- 2026-09-24T03:59:13Z method=実測 target=rusty-bot rc=0 time_s=0.029 note=最小実行: Bybit/BybitConfigでMarketオブジェクト構築を試す(鍵不要のはず)
+$ bash -c '
+export RBOT_DB_ROOT=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_dbroot
+mkdir -p $RBOT_DB_ROOT
+source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_venv/bin/activate
+python3 -c "
+import rbot
+from rbot import Bybit, BybitConfig
+exchange = Bybit(production=True)
+config = BybitConfig.BTCUSDT
+market = exchange.open_market(config)
+print('"'"'market file_name:'"'"', market.file_name)
+print('"'"'OK: market object constructed without network call or key'"'"')
+"
+'
+market file_name: /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/rbot_dbroot/DB/BYBIT/linear-BTCUSDT.db
+OK: market object constructed without network call or key
+--- 2026-09-24T03:59:31Z method=公式 target=th2-net rc=0 time_s=0.732 note=th2-check1のGitHubメタデータ(星/最終更新/ライセンス)を確認
+$ curl -sS https://ungh.cc/repos/th2-net/th2-check1
+{"repo":{"id":314775556,"name":"th2-check1","repo":"th2-net/th2-check1","description":null,"createdAt":"2020-11-21T09:24:10Z","updatedAt":"2026-02-18T15:22:12Z","pushedAt":"2026-06-03T10:23:48Z","stars":1,"watchers":2,"forks":1,"defaultBranch":"master"}}
+--- 2026-09-24T03:59:32Z method=公式 target=th2-net rc=0 time_s=0.228 note=th2-check1のLICENSEファイル確認
+$ curl -sS https://raw.githubusercontent.com/th2-net/th2-check1/master/LICENSE
+                                 Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editori
+[出力は 11357 文字。先頭 2000 文字だけを残した]
+--- 2026-09-24T04:00:34Z method=公式 target=th2-net rc=0 time_s=0.025 note=exactpro.com トップから料金/登録に関する記載を確認
+$ bash -c 'python3 -c "
+import re
+t=open('"'"'/tmp/exactpro_home.html'"'"',encoding='"'"'utf-8'"'"',errors='"'"'replace'"'"').read()
+t2=re.sub('"'"'<[^>]+>'"'"','"'"' '"'"',t)
+t2=re.sub(r'"'"'\s+'"'"','"'"' '"'"',t2)
+print(t2[:2500])
+"'
+ Exactpro – Independent AI-enabled software testing services provider for financial sector organisations (function(h,o,t,j,a,r){ h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)}; h._hjSettings={hjid:3365490,hjsv:6}; a=o.getElementsByTagName('head')[0]; r=o.createElement('script');r.async=1; r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv; a.appendChild(r); })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv='); (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src= 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f); })(window,document,'script','dataLayer','GTM-KS44SW'); (function(n,u,t){n[u]=n[u]||function(){(n[u].q=n[u].q||[]).push(arguments)}}(window,'Nutsheller')); Nutsheller('boot', {instance: '384698', authToken: 'chaYvNi43TNZwEOfq6bQBNsuavS3Vs9gS5RjNwYPkgs.2', target: 'nutshell-boot-384698'}); Build Software to Test Software Search Search Enter the terms you wish to search for. Search Contact us Menu Home AI Testing PoC Programme Case Studies Client Collaborations Trading Market Data RAG-driven Generative AI Market Surveillance Post Trade Collateral Management Risk Management Conformance Certification Payments Distributed Ledger (DLT) Cloud &amp; Data Warehouse Services Functional testing Non-functional testing Automation in Testing Regulatory Compliance Development &amp; Prototyping Related services Environment support GUI Testing Onboarding Test Tools th2 th2-loader Sailfish Shsha ClearTH Minirobots GitHub Ideas White Papers Research Papers Blog Videos Clients &amp; Partners Company About us Management team Locations Our Statement on Ukraine Diversity &amp; Inclusion ESG Modern Slavery Act Statement COVID-19 response AI Testing Training Careers Events News Exactpro releases Exactpro in the media The EXACTPRO website uses cookies for analytical purposes. You can block, disable or delete cookie files and similar elements at any time if your web browser or device allows for that. In that case, however, you may not be able to use some of this website’s functions, services, applications or tools. If you consent to the use of cookies, please click “Yes, I agree”. Cookies policy Yes, I agree Warsaw Stock Exchange Engaged Exactpro to Extend the Scope of GPW WATS Testing Read more --> Read more Connamara Technologies engages Exactpro as independent testing pr

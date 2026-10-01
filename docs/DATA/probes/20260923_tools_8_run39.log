@@ -1,0 +1,1897 @@
+--- 2026-09-27T01:04:08Z method=setup target=開始 rc=0 time_s=0.048 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-27T01:04:08Z
+alldirs.txt
+build_doc_titles.py
+build_excludes.py
+check
+check_extract
+core_demo.py
+doc_sample.html
+doc_titles.txt
+draft
+e3a_full.txt
+exclude_args.txt
+list.txt
+run
+run_mklist.py
+sb38
+sb39
+scipy_about.html
+scipy_org.html
+scipy_pypi.json
+src
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-27T01:04:15Z method=検索 target=SciPy rc=0 time_s=0.042 note=時系列を名指す語(time series)をdoc_source全体で検索 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rn -i 'time series' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source | wc -l
+2
+--- 2026-09-27T01:04:20Z method=検索 target=SciPy rc=0 time_s=0.018 note=時系列を名指す語(time series)のdoc_source内の当たり行を印字 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rn -i 'time series' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/signal.rst:1367:For a time series comprising :math:`N_{t}` measurements :math:`X_{j}\equiv
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/signal.rst:2218:.. [#Scargle1982] J.D. Scargle "Studies in astronomical time series analysis. II -
+--- 2026-09-27T01:04:25Z method=検索 target=SciPy rc=0 time_s=0.136 note=時系列を名指す語(time series)をscipyソース本体(scipy/)で検索 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rn -i 'time series' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy --include='*.py' --include='*.pyx' --include='*.pyi'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:124:    .. [2] J.D. Scargle "Studies in astronomical time series analysis. II -
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:352:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:354:        Sampling frequency of the `x` time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:508:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:510:        Sampling frequency of the `x` time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:686:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:688:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:690:        Sampling frequency of the `x` and `y` time series. Defaults
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:980:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:982:        Sampling frequency of the `x` time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1435:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1437:        Sampling frequency of the `x` time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1626:        Sampling frequency of the time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1762:    then convert back to a time series via inverse STFT
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1923:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1925:        Time series of measurement values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:1927:        Sampling frequency of the `x` and `y` time series. Defaults
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_spectral_py.py:2057:        Sampling frequency of the time series. Defaults to 1.0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_whittaker.py:83:        points of a signal, e.g. a time series with constant time lag.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/stats/__init__.py:20:  regression, linear models, time series analysis, extensions to topics
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/stats/__init__.py:22:- `Pandas <https://pandas.pydata.org/>`__: tabular data, time series
+--- 2026-09-27T01:04:34Z method=検索 target=SciPy rc=0 time_s=0.005 note=_whittaker.pyの time series 前後の文脈を確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ sed -n '1,40p;70,110p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/_whittaker.py
+import warnings
+import numpy as np
+from scipy._lib._util import _RichResult, _validate_int
+from scipy.linalg.lapack import get_lapack_funcs
+from scipy.optimize import minimize_scalar
+from scipy.special import binom
+
+
+def _solveh_banded(ab, b, calc_logdet=False):
+    """
+    Solve the equation ``a @ x = b`` for ``x``,  where ``a`` is the
+    Hermitian positive-definite banded matrix defined by `ab`.
+
+    Same as scipy.linalg.solveh_banded(lower=True, check_finite=False), but:
+    - also returns the log of the determinant and info
+    - no error is raised if info > 0
+    - no input validation
+    - only real values, no complex
+    - only `lower = True` code path
+    - always overwrite_XX = False
+    - b only a 1-dim array
+
+    Parameters
+    ----------
+    ab : (``u`` + 1, M) array_like
+        Banded matrix
+    b : (M,) array_like
+        Right-hand side
+
+    Returns
+    -------
+    x : (M,) ndarray
+        The solution to the system ``a x = b``. Shape of return matches shape of `b`.
+    logdet : float
+        Logarithm of the determinant of `ab`. Returns 0 if ``calc_logdet=False``.
+    info : int
+    """
+    a1 = ab
+    b1 = b
+    overwrite_b = False
+
+    This implements WH smoothing with a difference penalty of the specified ``order``
+    and penalty strength ``lamb``, see [1]_, [2]_ and [3]_. WH can be seen as a
+    penalized B-Spline (P-Spline) of degree zero for equidistant knots at the signal
+    positions.
+
+    In econometrics, the WH graduation of order 2 is referred to as the
+    Hodrick-Prescott filter [4]_.
+
+    Parameters
+    ----------
+    signal : array_like
+        A one-dimensional array of length ``order + 1`` representing equidistant data
+        points of a signal, e.g. a time series with constant time lag.
+
+    lamb : str or float, optional
+        Smoothing or penalty parameter, default is ``"reml"`` which minimizes the
+        restricted maximum likelihood (REML) criterion to find the parameter ``lamb``.
+        If a number is passed, it must be non-negative and it is used directly.
+
+    order : int, default: 2
+        The order of the difference penalty, must be at least 1.
+
+    weights : array_like or None, optional
+        A one-dimensional array of case weights with the same length as `signal`.
+        ``None`` is equivalent to an array of all ones, ``np.ones_like(signal)``.
+
+    Returns
+    -------
+     res : _RichResult
+        An object similar to an instance of `scipy.optimize.OptimizeResult` with the
+        following attributes:
+
+        x : ndarray
+            The WH smoothed signal.
+        lamb : float
+            The penalty parameter. If the input ``lamb`` is a number, this value is
+            returned. If the input was ``"reml"``, the penalty parameter that minimized
+            the REML criterion is returned.
+
+    Notes
+--- 2026-09-27T01:04:46Z method=検索 target=SciPy rc=0 time_s=0.099 note=対象領域を名指す語(tick/order book/OHLC/financial/market data/tardis)をdoc_source+scipy本体で検索 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rniE 'order.book|OHLC|tick data|market data|financial data|\btrades?\b' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy --include='*.py' --include='*.rst' --include='*.md' | grep -viE 'trade-?off|trades?_' | head -80
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api.rst:1276:   ``lazy_xp_function`` is actually quite high, and the current design trades off on
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.0-notes.rst:168:  trade off between runtime and accuracy for both the default and FFT methods of
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/tests/test_bsplines.py:2999:        # trades curvature for residual; exact reproduction must FAIL
+--- 2026-09-27T01:04:54Z method=検索 target=SciPy rc=0 time_s=0.072 note=reference data / candlestick / bar dataの語をdoc_source+scipy本体で検索 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rniE 'reference.data|candlestick|\bbar data\b' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy --include='*.py' --include='*.rst' --include='*.md'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.12.0-notes.rst:1105:* `#19842 <https://github.com/scipy/scipy/pull/19842>`__: TST: move reference data for test_real_transforms to a fixture
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_interpolate.py:309:        # collection.  See: https://docs.python.org/reference/datamodel.html
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/stats/tests/test_generation/reference_distributions.py:7:    """Minimalist distribution infrastructure for generating reference data.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/stats/tests/test_distributions.py:1230:        # Reference data generated with `reference_distributions.NormInvGauss`,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/special/tests/test_basic.py:3537:        # reference data obtained from mathematica [ a, b, x, m(a,b,x)]:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fftpack/tests/test_real_transforms.py:12:# Matlab reference data
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fftpack/tests/test_real_transforms.py:17:# FFTW reference data: the data are organized as follows:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/spatial/_procrustes.py:45:        reference data, after it is standardised, the data from `data2` will be
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:31:def reference_data():
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:32:    # Matlab reference data
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:37:    # FFTW reference data: the data are organized as follows:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:73:def fftwdata_size(request, reference_data):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:74:    return reference_data['FFTWDATA_SIZES'][request.param]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:77:def mdata_x(request, reference_data):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:78:    return reference_data['X'][request.param]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:82:def mdata_xy(request, reference_data):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:83:    y = reference_data['Y'][request.param]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:84:    x = reference_data['X'][request.param]
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/fft/_duccfft/tests/test_real_transforms.py:93:def fftw_dct_ref(type, size, dt, reference_data)
+[出力は 7542 文字。先頭 4000 文字だけを残した]
+--- 2026-09-27T01:05:21Z method=読み直し target=SciPy_E2 rc=0 time_s=0.065 note=文書432頁の道と題を読み直す(38回目に作ったbuild_doc_titles.pyを再実行) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/build_doc_titles.py > /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt; tail -1 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt; wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt; sha256sum /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt
+TOTAL=432
+433 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt
+70c3a70ee19613e60f21d9ac0e1659d76514835e6c4cf32c8857341fa10e8b77  /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt
+--- 2026-09-27T01:05:26Z method=案B target=SciPy_E2 rc=0 time_s=0.005 note=文書432頁の道と題(全文印字) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/attribute.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/class.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/function.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/method.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/ndarray_subclass.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/_templates/autosummary/property.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/blas_lapack.rst	BLAS and LAPACK
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/compilers_and_options.rst	Compiler selection and customizing a build
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/contributor.rst	Building SciPy for Contributors
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/cross_compilation.rst	Cross compilation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/index.rst	Building from source
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/introspecting_a_build.rst	Introspecting build steps
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/redistributable_binaries.rst	Building redistributable binaries
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/system_level.rst	System-level dependencies
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/building/understanding_meson.rst	Understanding Meson
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api.rst	Support for the array API standard
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/cluster_hierarchy.rst	Array API Standard Support: ``cluster.hierarchy``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/cluster_vq.rst	Array API Standard Support: ``cluster.vq``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/constants.rst	Array API Standard Support: ``constants``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/differentiate.rst	Array API Standard Support: ``differentiate``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/fft.rst	Array API Standard Support: ``fft``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/integrate.rst	Array API Standard Support: ``integrate``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/interpolate.rst	Array API Standard Support: ``interpolate``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/linalg.rst	Array API Standard Support: ``linalg``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/linalg_interpolative.rst	Array API Standard Support: ``linalg.interpolative``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/ndimage.rst	Array API Standard Support: ``ndimage``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/optimize.rst	Array API Standard Support: ``optimize``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/optimize_elementwise.rst	Array API Standard Support: ``optimize.elementwise``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/signal.rst	Array API Standard Support: ``signal``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/signal_windows.rst	Array API Standard Support: ``signal.windows``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/sparse.rst	Array API Standard Support: ``sparse``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/sparse_csgraph.rst	Array API Standard Support: ``sparse.csgraph``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/sparse_linalg.rst	Array API Standard Support: ``sparse.linalg``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/spatial.rst	Array API Standard Support: ``spatial``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/spatial_distance.rst	Array API Standard Support: ``spatial.distance``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/spatial_transform.rst	Array API Standard Support: ``spatial.transform``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/special.rst	Array API Standard Support: ``special``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/stats.rst	Array API Standard Support: ``stats``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/stats_contingency.rst	Array API Standard Support: ``stats.contingency``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/array_api_modules_tables/stats_qmc.rst	Array API Standard Support: ``stats.qmc``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/design_conventions_modules.rst	Design Conventions for Modules
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/nan_policy.rst	A Design Specification for ``nan_policy``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/api-dev/special_ufuncs.rst	Adding vectorized ufuncs in ``scipy.special``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/conduct/ai_policy.rst	AI Policy
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/conduct/code_of_conduct.rst	SciPy Code of Conduct
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/conduct/report_handling_manual.rst	SciPy Code of Conduct - How to follow up on a report
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/adding_new.rst	Adding New Methods, Functions, and Classes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/adding_notebooks.rst	Adding or editing tutorials as Jupyter notebooks
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/benchmarking.rst	Benchmarking SciPy with airspeed velocity
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/compiled_code.rst	Beyond Python
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/continuous_integration.rst	Continuous Integration
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/contributor_toc.rst	SciPy contributor guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/cython.rst	. Include your code in a file with a ``.pyx``
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/debugging_linalg_issues.rst	Debugging linear algebra related issues
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/development_workflow.rst	. In a terminal, introduce yourself to Git::
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/devpy_test.rst	Running SciPy Tests Locally
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/pep8.rst	PEP8 and SciPy
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/public_cython_api.rst	Public Cython APIs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/rendering_documentation.rst	. Then run ``spin docs`` to build the documentation.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/reviewing_prs.rst	Reviewing Pull Requests
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/using_act.rst	`act` for running GitHub Actions locally
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/contributor/writing_test_tips.rst	Tips for writing tests
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/core-dev/index.rst	SciPy Core Developer Guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/dev_quickstart.rst	Contributor quickstart guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/configure_git.rst	Git configuration
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/development_setup.rst	* Developing with git can be done entirely without GitHub. Git is a distributed
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/dot2_dot3.rst	Two and three dots in difference specs
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/git_resources.rst	Additional Git_ Resources
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/gitwash.rst	Git for development
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/gitwash/useful_git.rst	Git tips
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/governance.rst	SciPy Project Governance
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/hacking.rst	Ways to Contribute
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/index.rst	Developer Documentation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/missing-bits.rst	Code and Documentation Style Guide - The Missing Bits
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/roadmap-detailed.rst	Detailed SciPy Roadmap
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/roadmap.rst	SciPy Roadmap
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/toolchain.rst	Toolchain Roadmap
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/triage.rst	Triaging and curating issues
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/index.rst	SciPy documentation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/cluster.hierarchy.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/cluster.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/cluster.vq.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/constants.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/datasets.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/differentiate.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/fft.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/fftpack.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/index.rst	API Reference
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/integrate.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/interpolate.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/io.matlab.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/io.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.blas.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.cython_blas.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.cython_lapack.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.interpolative.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.lapack.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/linalg.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/ndimage.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.cython_optimize.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.elementwise.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-highs-ds.rst	linprog(method='highs-ds')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-highs-ipm.rst	linprog(method='highs-ipm')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-highs.rst	linprog(method='highs')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-interior-point.rst	linprog(method='interior-point')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-revised_simplex.rst	linprog(method='revised simplex')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.linprog-simplex.rst	linprog(method='simplex')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-bfgs.rst	minimize(method='BFGS')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-cg.rst	minimize(method='CG')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-cobyla.rst	minimize(method='COBYLA')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-cobyqa.rst	minimize(method='COBYQA')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-dogleg.rst	minimize(method='dogleg')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-lbfgsb.rst	minimize(method='L-BFGS-B')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-neldermead.rst	minimize(method='Nelder-Mead')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-newtoncg.rst	minimize(method='Newton-CG')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-powell.rst	minimize(method='Powell')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-slsqp.rst	minimize(method='SLSQP')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-tnc.rst	minimize(method='TNC')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-trustconstr.rst	minimize(method='trust-constr')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-trustexact.rst	minimize(method='trust-exact')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-trustkrylov.rst	minimize(method='trust-krylov')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize-trustncg.rst	minimize(method='trust-ncg')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize_scalar-bounded.rst	minimize_scalar(method='bounded')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize_scalar-brent.rst	minimize_scalar(method='brent')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.minimize_scalar-golden.rst	minimize_scalar(method='golden')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.qap-2opt.rst	quadratic_assignment(method='2opt')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.qap-faq.rst	quadratic_assignment(method='faq')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-anderson.rst	root(method='anderson')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-broyden1.rst	root(method='broyden1')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-broyden2.rst	root(method='broyden2')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-dfsane.rst	root(method='df-sane')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-diagbroyden.rst	root(method='diagbroyden')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-excitingmixing.rst	root(method='excitingmixing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-hybr.rst	root(method='hybr')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-krylov.rst	root(method='krylov')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-linearmixing.rst	root(method='linearmixing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root-lm.rst	root(method='lm')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-bisect.rst	root_scalar(method='bisect')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-brenth.rst	root_scalar(method='brenth')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-brentq.rst	root_scalar(method='brentq')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-halley.rst	root_scalar(method='halley')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-newton.rst	root_scalar(method='newton')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-ridder.rst	root_scalar(method='ridder')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-secant.rst	root_scalar(method='secant')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.root_scalar-toms748.rst	root_scalar(method='toms748')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/optimize.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/signal.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/signal.windows.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.csgraph.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.linalg.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.linalg.svds-arpack.rst	svds(solver='arpack')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.linalg.svds-lobpcg.rst	svds(solver='lobpcg')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.linalg.svds-propack.rst	svds(solver='propack')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.migration_to_sparray.rst	Migration from spmatrix to sparray
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/sparse.spmatrix_api.rst	Sparse Matrix Legacy Interface (:mod:`scipy.sparse`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/spatial.distance.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/spatial.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/spatial.transform.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/special.cython_special.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/special.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats._result_classes.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats.contingency.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats.mstats.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats.qmc.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/reference/stats.sampling.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release.rst	Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.10.0-notes.rst	SciPy 0.10.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.10.1-notes.rst	SciPy 0.10.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.11.0-notes.rst	SciPy 0.11.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.12.0-notes.rst	SciPy 0.12.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.12.1-notes.rst	SciPy 0.12.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.13.0-notes.rst	SciPy 0.13.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.13.1-notes.rst	SciPy 0.13.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.13.2-notes.rst	SciPy 0.13.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.14.0-notes.rst	SciPy 0.14.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.14.1-notes.rst	SciPy 0.14.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.15.0-notes.rst	SciPy 0.15.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.15.1-notes.rst	SciPy 0.15.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.16.0-notes.rst	SciPy 0.16.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.16.1-notes.rst	SciPy 0.16.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.17.0-notes.rst	SciPy 0.17.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.17.1-notes.rst	SciPy 0.17.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.18.0-notes.rst	SciPy 0.18.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.18.1-notes.rst	SciPy 0.18.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.19.0-notes.rst	SciPy 0.19.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.19.1-notes.rst	SciPy 0.19.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.7.0-notes.rst	SciPy 0.7.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.7.1-notes.rst	SciPy 0.7.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.7.2-notes.rst	SciPy 0.7.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.8.0-notes.rst	SciPy 0.8.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/0.9.0-notes.rst	SciPy 0.9.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.0.0-notes.rst	SciPy 1.0.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.0.1-notes.rst	SciPy 1.0.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.1.0-notes.rst	SciPy 1.1.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.10.0-notes.rst	SciPy 1.10.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.10.1-notes.rst	SciPy 1.10.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.11.0-notes.rst	SciPy 1.11.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.11.1-notes.rst	SciPy 1.11.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.11.2-notes.rst	SciPy 1.11.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.11.3-notes.rst	SciPy 1.11.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.11.4-notes.rst	SciPy 1.11.4 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.12.0-notes.rst	SciPy 1.12.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.13.0-notes.rst	SciPy 1.13.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.13.1-notes.rst	SciPy 1.13.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.14.0-notes.rst	SciPy 1.14.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.14.1-notes.rst	SciPy 1.14.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.0-notes.rst	SciPy 1.15.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.1-notes.rst	SciPy 1.15.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.2-notes.rst	SciPy 1.15.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.15.3-notes.rst	SciPy 1.15.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.0-notes.rst	SciPy 1.16.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.1-notes.rst	SciPy 1.16.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.2-notes.rst	SciPy 1.16.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.16.3-notes.rst	SciPy 1.16.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.17.0-notes.rst	SciPy 1.17.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.17.1-notes.rst	SciPy 1.17.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.18.0-notes.rst	SciPy 1.18.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.18.1-notes.rst	SciPy 1.18.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.2.0-notes.rst	SciPy 1.2.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.2.1-notes.rst	SciPy 1.2.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.2.2-notes.rst	SciPy 1.2.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.2.3-notes.rst	SciPy 1.2.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.3.0-notes.rst	SciPy 1.3.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.3.1-notes.rst	SciPy 1.3.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.3.2-notes.rst	SciPy 1.3.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.3.3-notes.rst	SciPy 1.3.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.4.0-notes.rst	SciPy 1.4.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.4.1-notes.rst	SciPy 1.4.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.5.0-notes.rst	SciPy 1.5.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.5.1-notes.rst	SciPy 1.5.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.5.2-notes.rst	SciPy 1.5.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.5.3-notes.rst	SciPy 1.5.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.5.4-notes.rst	SciPy 1.5.4 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.6.0-notes.rst	SciPy 1.6.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.6.1-notes.rst	SciPy 1.6.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.6.2-notes.rst	SciPy 1.6.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.6.3-notes.rst	SciPy 1.6.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.7.0-notes.rst	SciPy 1.7.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.7.1-notes.rst	SciPy 1.7.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.7.2-notes.rst	SciPy 1.7.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.7.3-notes.rst	SciPy 1.7.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.8.0-notes.rst	SciPy 1.8.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.8.1-notes.rst	SciPy 1.8.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.0-notes.rst	SciPy 1.9.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.1-notes.rst	SciPy 1.9.1 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.2-notes.rst	SciPy 1.9.2 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/1.9.3-notes.rst	SciPy 1.9.3 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/release/2.0.0-notes.rst	SciPy 2.0.0 Release Notes
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/_LaTeXMathMacros.rst	(見出し無し)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/arpack.rst	Sparse eigenvalue problems with ARPACK
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/csgraph.rst	Compressed Sparse Graph Routines (`scipy.sparse.csgraph`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/fft.rst	Discrete Fourier Transforms (:mod:`scipy.fft`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/index.rst	SciPy User Guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/integrate.rst	Integration (:mod:`scipy.integrate`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate.rst	Interpolation (:mod:`scipy.interpolate`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/1D.rst	1-D interpolation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/2D_fill_from_border.rst	Filling an image from a border
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/ND_regular_grid.rst	Multivariate data interpolation on a regular grid (:class:`RegularGridInterpolator`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/ND_unstructured.rst	Scattered data interpolation (:func:`griddata`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/extrapolation_examples.rst	Extrapolation tips and tricks
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/interp_transition_guide.md	`interp2d` transition guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/smoothing_splines.rst	Smoothing splines
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/interpolate/splines_and_polynomials.rst	Piecewise polynomials and splines
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/io.rst	File IO (:mod:`scipy.io`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/linalg.rst	Linear Algebra (`scipy.linalg`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/linalg_batch.md	Batched Linear Operations
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/ndimage.rst	Multidimensional Image Processing (`scipy.ndimage`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/optimize.rst	Optimization (:mod:`scipy.optimize`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/parallel_execution.rst	Parallel execution support in SciPy
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/security.rst	Security
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/signal.rst	. Extract the :math:`p`-th slice by windowing with the window :math:`w[m]`
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/sparse.rst	Sparse Arrays (`scipy.sparse`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/spatial.rst	Spatial Data Structures and Algorithms (`scipy.spatial`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/special.rst	Special Functions (:mod:`scipy.special`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats.rst	Statistics (`scipy.stats`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/analysing_one_sample.rst	Analysing one sample
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/comparing_two_samples.rst	Comparing two samples
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous.rst	Continuous Statistical Distributions
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_alpha.rst	Alpha Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_anglit.rst	Anglit Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_arcsine.rst	Arcsine Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_beta.rst	Beta Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_betaprime.rst	Beta Prime Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_bradford.rst	Bradford Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_burr.rst	Burr Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_burr12.rst	Burr12 Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_cauchy.rst	Cauchy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_chi.rst	Chi Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_chi2.rst	Chi-squared Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_cosine.rst	Cosine Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_dgamma.rst	Double Gamma Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_dpareto_lognorm.rst	Double Pareto Lognormal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_dweibull.rst	Double Weibull Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_erlang.rst	Erlang Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_expon.rst	Exponential Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_exponpow.rst	Exponential Power Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_exponweib.rst	Exponentiated Weibull Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_f.rst	F-ratio (or F) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_fatiguelife.rst	Fatigue Life (Birnbaum-Saunders) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_fisk.rst	Fisk (Log Logistic) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_foldcauchy.rst	Folded Cauchy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_foldnorm.rst	Folded Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gamma.rst	Gamma Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gausshyper.rst	Gauss Hypergeometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genexpon.rst	Generalized Exponential Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genextreme.rst	Generalized Extreme Value Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gengamma.rst	Generalized Gamma Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genhalflogistic.rst	Generalized Half-Logistic Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genhyperbolic.rst	Generalized Hyperbolic Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_geninvgauss.rst	Generalized Inverse Gaussian Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genlogistic.rst	Generalized Logistic Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gennorm.rst	Generalized Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_genpareto.rst	Generalized Pareto Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gibrat.rst	Gibrat Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gompertz.rst	Gompertz (Truncated Gumbel) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gumbel_l.rst	Gumbel Left-skewed (for minimum order statistic) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gumbel_r.rst	Gumbel (LogWeibull, Fisher-Tippett, Type I Extreme Value) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_halfcauchy.rst	HalfCauchy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_halflogistic.rst	Half-Logistic Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_halfnorm.rst	HalfNormal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_hypsecant.rst	Hyperbolic Secant Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_invgamma.rst	Inverted Gamma Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_invgauss.rst	Inverse Normal (Inverse Gaussian) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_invweibull.rst	Inverted Weibull Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_jf_skew_t.rst	Jones and Faddy Skew-T Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_johnsonsb.rst	Johnson SB Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_johnsonsu.rst	Johnson SU Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_ksone.rst	KSone Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_kstwo.rst	KStwo Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_kstwobign.rst	KStwobign Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_landau.rst	Landau distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_laplace.rst	Laplace (Double Exponential, Bilateral Exponential) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_laplace_asymmetric.rst	Asymmetric Laplace Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_levy.rst	Lévy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_levy_l.rst	Left-skewed Lévy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_loggamma.rst	Log Gamma Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_logistic.rst	Logistic (Sech-squared) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_loglaplace.rst	Log Double Exponential (Log-Laplace) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_lognorm.rst	Log Normal (Cobb-Douglas) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_loguniform.rst	Log-Uniform Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_lomax.rst	Pareto Second Kind (Lomax) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_maxwell.rst	Maxwell Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_mielke.rst	Mielke's Beta-Kappa Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_nakagami.rst	Nakagami Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_ncf.rst	Noncentral F Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_nct.rst	Noncentral t Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_ncx2.rst	Noncentral chi-squared Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_norm.rst	Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_norminvgauss.rst	Normal Inverse Gaussian Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_pareto.rst	Pareto Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_powerlaw.rst	Power-function Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_powerlognorm.rst	Power Log Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_powernorm.rst	Power Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_rayleigh.rst	Rayleigh Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_rdist.rst	R-distribution Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_recipinvgauss.rst	Reciprocal Inverse Gaussian Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_rel_breitwigner.rst	Relativistic Breit-Wigner Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_rice.rst	Rice Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_semicircular.rst	Semicircular Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_skewcauchy.rst	Skewed Cauchy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_studentized_range.rst	Studentized Range Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_t.rst	Student t Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_trapezoid.rst	Trapezoidal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_triang.rst	Triangular Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_truncexpon.rst	Truncated Exponential Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_truncnorm.rst	Truncated Normal Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_truncpareto.rst	Truncated Pareto Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_truncweibull_min.rst	Truncated Weibull Minimum Extreme Value Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_tukeylambda.rst	Tukey-Lambda Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_uniform.rst	Uniform Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_vonmises.rst	Von Mises Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_wald.rst	Wald Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_weibull_max.rst	Weibull Maximum Extreme Value Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_weibull_min.rst	Weibull Minimum Extreme Value Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_wrapcauchy.rst	Wrapped Cauchy Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete.rst	Discrete Statistical Distributions
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_bernoulli.rst	Bernoulli Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_betabinom.rst	Beta-Binomial Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_betanbinom.rst	Beta-Negative Binomial Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_binom.rst	Binomial Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_boltzmann.rst	Boltzmann (truncated Planck) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_dlaplace.rst	Discrete Laplacian Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_geom.rst	Geometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_hypergeom.rst	Hypergeometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_logser.rst	Logarithmic (Log-Series, Series) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_nbinom.rst	Negative Binomial Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_nchypergeom_fisher.rst	Fisher's Noncentral Hypergeometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_nchypergeom_wallenius.rst	Wallenius' Noncentral Hypergeometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_nhypergeom.rst	Negative Hypergeometric Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_planck.rst	Planck (discrete exponential) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_poisson.rst	Poisson Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_randint.rst	Discrete Uniform (randint) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_yulesimon.rst	Yule-Simon Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_zipf.rst	Zipf (Zeta) Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/discrete_zipfian.rst	Zipfian Distribution
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_bartlett.md	Bartlett's test for equal variances
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_chi2_contingency.md	Chi-square test of independence of variables in a contingency table
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_chisquare.md	Chi-square test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_dunnett.md	Dunnett's test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_fisher_exact.md	Fisher's exact test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_fligner.md	Fligner-Killeen test for equality of variance
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_friedmanchisquare.md	Friedman test for repeated samples
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_jarque_bera.md	Jarque-Bera goodness of fit test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_kendalltau.md	Kendall's tau test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_kurtosistest.md	Kurtosis test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_levene.md	Levene test for equal variances
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_normaltest.md	Normal test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_odds_ratio.md	Odds ratio for a contingency table
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_pearsonr.md	Pearson's Correlation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_shapiro.md	Shapiro-Wilk test for normality
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_skewtest.md	Skewness test
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_spearmanr.md	Spearman correlation coefficient
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_tests.rst	Hypothesis tests
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/kernel_density_estimation.rst	Kernel density estimation
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/landau_energy_loss.md	Energy loss of charged particles in matter
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/missing_data.md	Working with Missing Data
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/multiscale_graphcorr.rst	Multiscale Graph Correlation (MGC)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/outliers.md	Trimming and winsorization transition guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/probability_distributions.rst	Probability distributions
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/quasi_monte_carlo.rst	Quasi-Monte Carlo
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/resampling.rst	Resampling and Monte Carlo Methods
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/rv_infrastructure.md	Random Variable Transition Guide
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling.md	Universal Non-Uniform Random Number Sampling in SciPy
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_dau.rst	Discrete Alias Urn (DAU)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_dgt.rst	Discrete Guide Table (DGT)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_hinv.rst	Hermite interpolation based INVersion of CDF (HINV)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_pinv.rst	Polynomial interpolation based INVersion of CDF (PINV)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_srou.rst	Simple Ratio-of-Uniforms (SROU)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/sampling_tdr.rst	Transformed Density Rejection (TDR)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/thread_safety.rst	Thread Safety in SciPy
+TOTAL=432
+--- 2026-09-27T01:05:34Z method=案B target=SciPy_E2 rc=0 time_s=0.006 note=文書432頁の道+題にE2の語の組を機械的に当てて選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/doc_titles.txt; echo RC=$?
+74:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/missing-bits.rst	Code and Documentation Style Guide - The Missing Bits
+318:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_gumbel_l.rst	Gumbel Left-skewed (for minimum order statistic) Distribution
+327:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_jf_skew_t.rst	Jones and Faddy Skew-T Distribution
+337:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_levy_l.rst	Left-skewed Lévy Distribution
+362:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_skewcauchy.rst	Skewed Cauchy Distribution
+363:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/continuous_studentized_range.rst	Studentized Range Distribution
+413:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/hypothesis_skewtest.md	Skewness test
+418:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/missing_data.md	Working with Missing Data
+420:/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/outliers.md	Trimming and winsorization transition guide
+RC=0
+--- 2026-09-27T01:05:42Z method=案B target=SciPy_E2 rc=0 time_s=0.004 note=選んだ頁1/9 missing-bits.rstを読む [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ cat '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/dev/missing-bits.rst'
+:orphan:
+
+.. _missing-bits:
+
+Code and Documentation Style Guide - The Missing Bits
+=====================================================
+
+This is a collection of coding and documentation guidelines for SciPy that
+are not explicitly stated in the existing guidelines and standards, including
+
+* `PEP-8 <https://www.python.org/dev/peps/pep-0008>`_ Style Guide for Python Code
+* `PEP-257 <https://www.python.org/dev/peps/pep-0257>`_ Docstring Conventions
+* `NumPy docstring standard
+  <https://numpydoc.readthedocs.io/en/latest/format.html>`_
+* :doc:`NumPy Testing Guidelines <numpy:reference/testing>`
+
+Some of these are trivial, and might not seem worth discussing, but in many
+cases, the issue has come up in a pull request review in either the SciPy
+or NumPy repositories.  If a style issue is important enough that a reviewer
+will require a change before merging, then it is important enough to be
+documented--at least for cases where the issue can be resolved with a simple
+rule.
+
+
+Coding Style and Guidelines
+| ---------------------------
+Note that docstrings should be generally made up of ASCII characters
+in spite of being Unicode. The following code block from the file
+``tools/linting/check_unicode.py`` tells the linter which additional characters
+are allowed:
+
+.. literalinclude:: ../../../tools/linting/check_unicode.py
+    :start-after: # BEGIN_INCLUDE_RST
+    :end-before: # END_INCLUDE_RST
+    :lineno-match:
+
+
+Required keyword names
+~~~~~~~~~~~~~~~~~~~~~~
+For new functions or methods with more than a few arguments, all parameters
+after the first few "obvious" ones should *require* the use of the keyword
+when given.  This is implemented by including ``*`` at the appropriate point
+in the signature.
+
+For example, a function ``foo`` that operates on a single array but that has
+several optional parameters (say ``method``, ``flag``, ``rtol`` and ``atol``)
+would be defined as::
+
+    def foo(x, *, method='basic', flag=False, rtol=1.5e-8, atol=1-12):
+        ...
+
+To call ``foo``, all parameters other than ``x`` must be given with an
+explicit keyword, e.g. ``foo(arr, rtol=1e-12, method='better')``.
+
+This forces callers to give explicit keyword parameters (which most users
+would probably do anyway even without the use of ``*``), *and* it means
+additional parameters can be added to the function anywhere after the
+``*``; new parameters do not have to be added after the existing parameters.
+
+
+Return Objects
+~~~~~~~~~~~~~~
+For new functions or methods that return two or more conceptually distinct
+elements, return the elements in an object type that is not iterable. In
+particular, do not return a ``tuple``, ``namedtuple``, or a "bunch" produced
+by ``scipy._lib._bunch.make_tuple_bunch``, the latter being reserved for adding
+new attributes to iterables returned by existing functions. Instead, use an
+existing return class (e.g. `~scipy.optimize.OptimizeResult`), a new, custom
+return class.
+
+This practice of returning non-iterable objects forces callers to be more
+explicit about the element of the returned object that they wish to access,
+and it makes it easier to extend the function or method in a backward
+compatible way.
+
+If the return class is simple and not public (i.e. importable from a public
+module), it may be documented like::
+
+    Returns
+    -------
+    res : MyResultObject
+        An object with attributes:
+
+        attribute1 : ndarray
+            Customized description of attribute 1.
+        attribute2 : ndarray
+            Customized description of attribute 2.
+
+Here "MyResultObject" above does not link to external documentation because it
+is simple enough to fully document all attributes immediately below its name.
+
+Some return classes are sufficiently complex to deserve their own rendered
+documentation. This is fairly standard if the return class is public, but
+return classes should only be public if 1) they are intended to be imported by
+end-users and 2) if they have been approved by the forum. For complex,
+private return classes, please see  how `~scipy.stats.binomtest` summarizes
+`~scipy.stats._result_classes.BinomTestResult` and links to its documentation,
+and note that ``BinomTestResult`` cannot be imported from `~scipy.stats`.
+
+Depending on the complexity of "MyResultObject", a normal class or a dataclass
+can be used. When using dataclasses, do not use ``dataclasses.make_dataclass``,
+instead use a proper declaration. This allows autocompletion to list all
+the attributes of the result object and improves static analysis.
+Finally, hide private attributes if any::
+
+    @dataclass
+    class MyResultObject:
+        statistic: np.ndarray
+        pvalue: np.ndarray
+        confidence_interval: ConfidenceInterval
+        _rho: np.ndarray = field(repr=False)
+
+
+Test functions from `numpy.testing`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In new code, don't use `assert_almost_equal`, `assert_approx_equal` or
+`assert_array_almost_equal`. This is from the docstrings of these functions::
+
+    It is recommended to use one of `assert_allclose`,
+    `assert_array_almost_equal_nulp` or `assert_array_max_ulp`
+    instead of this function for more consistent floating point
+    comparisons.
+
+For more information about writing unit tests, see the
+:doc:`NumPy Testing Guidelines <numpy:reference/testing>`.
+
+
+Testing expected exceptions/ warnings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+When writing a new test that a function call raises an exception or emits a
+warning, the preferred style is to use ``pytest.raises``/``pytest.warns`` as
+a context manager, with the code that is supposed to raise the exception in
+the code block defined by the context manager. The ``match`` keyword argument
+is given with enough of the expected message attached to the exception/warning
+to distinguish it from other exceptions/warnings of the same class. Do not use
+``np.testing.assert_raises`` or ``np.testing.assert_warns``, as they do not
+support a ``match`` parameter.
+
+For example, the function `scipy.stats.zmap` is supposed to raise a
+``ValueError`` if the input contains ``nan`` and ``nan_policy`` is ``"raise"``.
+A test for this is::
+
+    scores = np.array([1, 2, 3])
+    compare = np.array([-8, -3, 2, 7, 12, np.nan])
+    with pytest.raises(ValueError, match='input contains nan'):
+        stats.zmap(scores, compare, nan_policy='raise')
+
+The ``match`` argument ensures that the test doesn't pass by raising
+a ``ValueError`` that is not related to the input containing ``nan``.
+--- 2026-09-27T01:05:52Z method=案B target=SciPy_E2 rc=0 time_s=0.004 note=選んだ頁2/9 missing_data.mdを読む [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ cat '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/missing_data.md'
+| ---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.19.5
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+| ---
+
++++ {"tags": ["jupyterlite_sphinx_strip"]}
+
+```{eval-rst}
+.. notebooklite:: missing_data.md
+   :new_tab: True
+```
+
+(missing_data)=
+
++++
+
+# Working with Missing Data
+## Motivation
+Suppose a longitudinal study is intended to measure some feature of a subject at a number of points in time. To keep track of which measured value corresponds with each time point, the data is stored in an array: index 0 corresponds with the first time, index 1 corresponds with the second, and so on.
+
+```{code-cell} ipython3
+import os
+os.environ['SCIPY_ARRAY_API'] = '1'
+import numpy as np
+
+# Measurements at each of five times
+data = np.asarray([1.2, 2.3, 3.4, 4.5, 5.6])
+```
+
+If no measurement is made at a designated time, how should the corresponding element of the array be filled? In general, how do we deal with missing data given the constraints that arrays must be rectanglar - not [ragged](https://awkward-array.org/doc/main/getting-started/jagged-ragged-awkward-arrays.html) - and all entries must be filled?
+
++++
+
+## Sentinel Values
+In the simplest approach, a "sentinel value", which does not appear elsewhere in the valid measurement data, is chosen to represent a missing measurement. Frequently, this is a value that lies outside the possible range of measurement, such as a negative value when the possible range is strictly positive.
+
+```{code-cell} ipython3
+# A sentinel value, -1., can be used to represent a
+# missing measurement of a positive quantity
+data = np.asarray([1.1, 1.2, 1.3, -1., 1.5])
+```
+
+This approach satisfies the requirements of arrays, and in principle we can track the fact that the data is missing. But how can we perform valid computations with this data, given than `-1` must not be interpreted as a measurement?
+
++++
+
+### Manual Sentinel Value Removal
+
++++
+
+Suppose we wish to take the harmonic mean of the valid measurements using {func}`scipy.stats.hmean<scipy.stats.hmean>`. One approach is to manually eliminate the sentinel values, producing a temporary array of a smaller size, and to pass this temporary array to {func}`hmean<scipy.stats.hmean>`.
+
+```{code-cell} ipython3
+from scipy import stats
+temp = data[data > 0]
+stats.hmean(temp)
+```
+
+But suppose we have more than one subject, with different missing measurements for each subject.
+
+```{code-cell} ipython3
+data = np.asarray([[1.1, 1.2, 1.3, -1., 1.5],   # four valid measurements, subject 1
+                   [2.9, -1., -1., 2.6, 2.5]])  # three valid measurements, subject 2
+```
+
+We cannot  follow the same approach here:
+
+```{code-cell} ipython3
+temp = data[data > 0]
+temp
+```
+
+```{code-cell} ipython3
+stats.hmean(temp, axis=-1)
+```
+
+`data[data > 0]` produces a one-dimensional array, so {func}`hmean<scipy.stats.hmean>` is not be able to produce separate harmonic means for each subject.
+
++++
+
+One solution is to loop manually over the rows:
+
+```{code-cell} ipython3
+res = []
+for row in data:
+    temp = row[row > 0]
+    res.append(stats.hmean(temp))
+res = np.asarray(res)
+res
+```
+
+This is valid, but cumbersome and potentially slow for datasets with many subjects. Fortunately, SciPy provides alternatives.
+
++++
+
+### A Common Choice: `nan_policy='omit'`
+
++++
+
+If the floating point value NaN (Not a Number) is used as the sentinel:
+
+```{code-cell} ipython3
+NaN = np.nan
+# data[data < 0] = NaN, or more explicitly:
+data = np.asarray([[1.1, 1.2, 1.3, NaN, 1.5],   # four valid measurements, subject 1
+                   [2.9, NaN, NaN, 2.6, 2.5]])  # three valid measurements, subject 2
+```
+
+then passing the option `nan_policy='omit'` instructs SciPy to automatically remove NaNs from each slice of the data while performing the computation.
+
+```{code-cell} ipython3
+stats.hmean(data, axis=-1, nan_policy='omit')
+```
+
+Almost all reducing statistics in {mod}`scipy.stats<scipy.stats>` support `nan_policy='omit'`. Coverage is nearly complete because it is implemented in the generic way: looping over the slices, and eliminating the NaNs before performing the operation for each slice. As discussed, this Python-level looping can be slow when there are many slices, so `nan_policy='omit'` is offered merely for batch calculation convenience, not for speed. Another problem with this approach is that it overloads the meaning of NaN, which is ordinarily used as the result of an *invalid calculation*, like `0 / 0`. Finally, this option is not offered for backends other than NumPy (e.g. CuPy, PyTorch).
+
+Fortunately, there is a more principled approach that can be compatible with alternative backends and faster for large batches.
+
++++
+
+## Masked Arrays
+
++++
+
+Instead of using sentinel values, fill the space of missing values with arbitrary data, and use a second, boolean array of the same shape - a "mask" - to keep track of which elements are missing.
+
+```{code-cell} ipython3
+data = np.asarray([[1.1, 1.2, 1.3, 1.4, 1.5],
+                   [2.9, 2.8, 2.7, 2.6, 2.5]])
+mask = np.asarray([[False, False, False,  True, False],
+                   [False,  True,  True, False, False]])
+```
+
+### The Traditional Option: {class}`MaskedArray<numpy.ma.MaskedArray>`
+
++++
+
+NumPy offers {class}`numpy.ma.MaskedArray<numpy.ma.MaskedArray>` for working with masked data, and functions in {mod}`scipy.stats.mstats` were provided to work with these NumPy masked arrays.
+
+In principle, the masked array approach is advantageous because it has the potential to avoid conflating *missing* NaN values with *invalid* NaN values. It can also be faster in batch calculations with many slices, because batched masked array calculations can be implemented to ignore masked values without introducing Python `for` loops.
+
+However, the {func}`mstats.hmean<scipy.stats.mstats.hmean>` function is now deprecated along with the {mod}`mstats<scipy.stats.mstats>` namespace and all other uses of {class}`MaskedArray<numpy.ma.MaskedArray>` in {mod}`scipy.stats<scipy.stats>`.
+
+```{code-cell} ipython3
+x = np.ma.MaskedArray(data, mask=mask)
+stats.mstats.hmean(x, axis=-1)
+```
+
+There are several reasons.
+
+The first is that NumPy masked arrays do, in fact, conflate invalid and missing values. Consider the following example:
+
+```{code-cell} ipython3
+x = np.asarray([0, 1, 2, 3, 4])
+np.sum(x / x)
+```
+
+Ordinary NumPy arrays warn that `0 / 0` produces NaN, and this invalid value propagates in the sum. It is impossible to get a valid numerical result when a NaN is involved in arithmetic.
+
+Yet NumPy masked arrays seem to provide a number.
+
+```{code-cell} ipython3
+y = np.ma.MaskedArray(x)
+np.sum(y / y)
+```
+
+This occurs because NaNs arising from invalid numerical calculations involving NumPy masked arrays are masked without warning (and subsequently ignored).
+
+```{code-cell} ipython3
+y / y
+```
+
+This can lead to invalid calculations producing apparently valid but actually bogus numerical results, which is clearly unsafe in scientific computing. Rather than alerting the user to the invalid result so it can be fixed, NumPy masked arrays hide the problem and produce erroneous values.
+
++++
+
+The second reason for deprecating {mod}`mstats<scipy.stats.mstats>` is that its function interfaces and implementations were entirely separate from those of {mod}`stats<scipy.stats>`, and often neglected in terms of maintenance and enhancements. Consider, for instance, the stark difference in documentation thoroughness and feature completeness between {func}`stats.mannwhitneyu<scipy.stats.mannwhitneyu>` and {func}`mstats.mannwhitneyu<scipy.stats.mstats.mannwhitneyu>`. Eliminating {mod}`mstats<scipy.stats.mstats>` in favor of adding missing data support to {mod}`stats<scipy.stats>` allows SciPy maintainers to provide users with one, complete implementation with a single interface.
+
++++
+
+The final reason for deprecating {mod}`mstats<scipy.stats.mstats>` and support for NumPy masked arrays is the rise in support for array API standard compatible arrays throughout SciPy. NumPy masked arrays themselves are mostly unmaintained and do not conform to the Array API Standard, so when adding support for high priority libraries like CuPy, JAX, and PyTorch, which *are* compatible with the standard, it is difficult to also preserve support for the legacy {class}`MaskedArray<numpy.ma.MaskedArray>` type.
+
++++
+
+### The Modern Option: [MArray](https://mdhaber.github.io/marray/tutorial.html)
+Fortunately, as support for the Array API Standard closes this window, it opens the door toward a new way of supporting masked data. Specifically, [MArray](https://mdhaber.github.io/marray/tutorial.html) is an array API standard compatible array type that *wraps* the functionality of other array backends and endows them with support for masks.
+
+```{code-cell} ipython3
+from marray import numpy as xp  # or:
+# from marray import torch as xp
+# from marray import cupy as xp
+x = xp.asarray(data, mask=mask)
+x
+```
+
+```{code-cell} ipython3
+stats.hmean(x, axis=-1)
+```
+
+Consequently, existing users of {mod}`mstats<scipy.stats.mstats>` and NumPy masked arrays are advised to begin using the corresponding {mod}`stats<scipy.stats>`  functions with MArrays where possible (see function documentation) and `nan_policy='omit'` otherwise.
+--- 2026-09-27T01:06:12Z method=案B target=SciPy_E2 rc=0 time_s=0.012 note=選んだ頁3-7/9(歪度・順序統計量の分布記述4件+skewtest)を読む [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ for f in doc/source/tutorial/stats/continuous_gumbel_l.rst doc/source/tutorial/stats/continuous_jf_skew_t.rst doc/source/tutorial/stats/continuous_levy_l.rst doc/source/tutorial/stats/continuous_skewcauchy.rst doc/source/tutorial/stats/continuous_studentized_range.rst doc/source/tutorial/stats/hypothesis_skewtest.md; do echo ==$f==; cat "/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/$f"; echo; done
+==doc/source/tutorial/stats/continuous_gumbel_l.rst==
+
+.. _continuous-gumbel_l:
+
+Gumbel Left-skewed (for minimum order statistic) Distribution
+=============================================================
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*} f\left(x\right) & = & \exp\left(x-e^{x}\right)\\ F\left(x\right) & = & 1-\exp\left(-e^{x}\right)\\ G\left(q\right) & = & \log\left(-\log\left(1-q\right)\right)\end{eqnarray*}
+
+.. math::
+
+     M\left(t\right)=\Gamma\left(1+t\right)
+
+Note, that :math:`\mu` is negative the mean for the right-skewed distribution. Similar for
+median and mode. All other moments are the same.
+
+.. math::
+
+     h\left[X\right]\approx1.0608407169541684911.
+
+Implementation: `scipy.stats.gumbel_l`
+
+==doc/source/tutorial/stats/continuous_jf_skew_t.rst==
+
+.. _continuous-jf_skew_t:
+
+Jones and Faddy Skew-T Distribution
+===================================
+
+A skew extension of the `t` distribution, defined for :math:`a>0` and
+:math:`b>0`.
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    f(x;a,b) & = & C_{a,b}^{-1} \left(1+\frac{x}{\left(a+b+x^2\right)^{1/2}}\right)^{a+1/2} \left(1-\frac{x}{\left(a+b+x^2\right)^{1/2}}\right)^{b+1/2} \\
+    F(x;a,b) & = & I\left(\frac{1+x(a+b+x^2)^{-1/2}}{2};a,b\right) \\
+    \mu_{n}^{\prime} & = & \frac{(a+b)^{n/2}}{2^nB(a,b)}\sum_{i=0}^{n}{n \choose i}(-1)^iB\left(a+\frac{n}{2}-i, b-\frac{n}{2}+i\right)
+    \end{eqnarray*}
+
+where :math:`C_{a,b}=2^{a+b-1}B(a,b)(a+b)^{1/2}`, :math:`B` is the beta
+function `scipy.special.beta` and the formula for the moments
+:math:`\mu_{n}^{\prime}` holds provided that :math:`a>n/2` and :math:`b>n/2`.
+
+When :math:`a<b`, the distribution is negatively skewed, and when :math:`a>b`,
+the distribution is positively skewed. If :math:`a=b`, then we recover the `t`
+distribution with :math:`2a` degrees of freedom.
+
+References
+| ----------
+
+-  M.C. Jones and M.J. Faddy. "A skew extension of the t distribution, with
+   applications" *Journal of the Royal Statistical Society*, Series B
+   (Statistical Methodology) 65, no. 1 (2003): 159-174.
+   :doi:`10.1111/1467-9868.00378`
+
+Implementation: `scipy.stats.jf_skew_t`
+
+==doc/source/tutorial/stats/continuous_levy_l.rst==
+
+.. _continuous-levy_l:
+
+Left-skewed Lévy Distribution
+==============================
+
+Special case of Lévy-stable distribution with :math:`\alpha=\frac{1}{2}` and
+:math:`\beta=-1`. The support is :math:`x\leq0` . In standard form
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*} f\left(x\right) & = & \frac{1}{\left|x\right|\sqrt{2\pi\left|x\right|}}\exp\left(-\frac{1}{2\left|x\right|}\right)\\ F\left(x\right) & = & 2\Phi\left(\frac{1}{\sqrt{\left|x\right|}}\right)-1\\ G\left(q\right) & = & -\left[\Phi^{-1}\left(\frac{q+1}{2}\right)\right]^{-2}.\end{eqnarray*}
+
+No moments.
+
+Implementation: `scipy.stats.levy_l`
+
+==doc/source/tutorial/stats/continuous_skewcauchy.rst==
+.. _continuous-skew-cauchy:
+
+Skewed Cauchy Distribution
+==========================
+
+This distribution is a generalization of the Cauchy distribution. It
+has a single shape parameter :math:`-1 < a < 1` that skews the distribution.
+The special case :math:`a=0` yields the Cauchy distribution.
+
+Functions
+| ---------
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    f(x, a) & = & \frac{1}{\pi \left(\frac{x^2}{\left(a x + 1 \right)^2} + 1 \right)},\quad x\ge0; \\
+                 & = & \frac{1}{\pi \left(\frac{x^2}{\left(-a x + 1 \right)^2} + 1 \right)},\quad x<0. \\
+    F(x, a) & = & \frac{1 - a}{2} + \frac{1 + a}{\pi} \arctan\left(\frac{x}{1 + a} \right),\quad x\ge0; \\
+                 & = & \frac{1 - a}{2} + \frac{1 - a}{\pi} \arctan\left(\frac{x}{1 - a} \right),\quad x<0.
+    \end{eqnarray*}
+
+The mean, variance, skewness, and kurtosis are all undefined.
+
+References
+| ----------
+
+-  "Skewed generalized *t* distribution", Wikipedia
+   https://en.wikipedia.org/wiki/Skewed_generalized_t_distribution#Skewed_Cauchy_distribution
+
+Implementation: `scipy.stats.skewcauchy`
+
+==doc/source/tutorial/stats/continuous_studentized_range.rst==
+.. _continuous-studentized_range:
+
+Studentized Range Distribution
+==============================
+This distribution has two shape parameters, :math:`k>1` and :math:`\nu>0`, and the support is :math:`x \geq 0`.
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    f(x; k, \nu) = \frac{k(k-1)\nu^{\nu/2}}{\Gamma(\nu/2)2^{\nu/2-1}}
+    \int_{0}^{\infty} \int_{-\infty}^{\infty} s^{\nu} e^{-\nu s^2/2} \phi(z) \phi(sx + z)
+    [\Phi(sx + z) - \Phi(z)]^{k-2} \,dz \,ds
+    \end{eqnarray*}
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    F(q; k, \nu) = \frac{k\nu^{\nu/2}}{\Gamma(\nu/2)2^{\nu/2-1}}
+    \int_{0}^{\infty} \int_{-\infty}^{\infty} s^{\nu-1} e^{-\nu s^2/2} \phi(z)
+    [\Phi(sq + z) - \Phi(z)]^{k-1} \,dz \,ds
+    \end{eqnarray*}
+
+Note: :math:`\phi(z)` and :math:`\Phi(z)` represent the normal PDF and normal CDF, respectively.
+
+When :math:`\nu` exceeds 100,000, the asymptotic approximation of :math:`F(x; k, \nu=\infty)` or :math:`f(x; k, \nu=\infty)` is used:
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    F(x; k, \nu=\infty) = k \int_{-\infty}^{\infty} \phi(z)
+    [\Phi(x + z) - \Phi(z)]^{k-1} \,dz
+    \end{eqnarray*}
+
+.. math::
+   :nowrap:
+
+    \begin{eqnarray*}
+    f(x; k, \nu=\infty) = k(k-1) \int_{-\infty}^{\infty} \phi(z)\phi(x + z)
+    [\Phi(x + z) - \Phi(z)]^{k-2} \,dz
+    \end{eqnarray*}
+
+
+Implementation: `scipy.stats.studentized_range`
+
+==doc/source/tutorial/stats/hypothesis_skewtest.md==
+| ---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.1
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+| ---
+
++++ {"tags": ["jupyterlite_sphinx_strip"]}
+
+```{eval-rst}
+.. notebooklite:: hypothesis_skewtest.md
+   :new_tab: True
+```
+
+(hypothesis_skewtest)=
+
++++
+
+# Skewness test
+
+This function tests the null hypothesis that the skewness of the population that
+the sample was drawn from is the same as that of a corresponding normal
+distribution.
+
+Suppose we wish to infer from measurements wheth
+[出力は 10491 文字。先頭 6000 文字だけを残した]
+--- 2026-09-27T01:06:20Z method=案B target=SciPy_E2 rc=0 time_s=0.003 note=選んだ頁8/9 outliers.md(38回目に読んだ頁の読み直し) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ cat '/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/doc/source/tutorial/stats/outliers.md'
+| ---
+jupytext:
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.4
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+| ---
+
++++ {"tags": ["jupyterlite_sphinx_strip"]}
+
+```{eval-rst}
+.. notebooklite:: outliers.md
+   :new_tab: True
+```
+
+(outliers)=
+
++++
+
+# Trimming and winsorization transition guide
+
+An outlier is an observation that differs substantially from other observations in a sample. There are many references available about identifying outliers, whether to make adjustments for outliers, and if so, what adjustments to make. This guide does not make any recommendations on these topics. Instead, the focus is on how to perform two of the most common procedures:
+
+- trimming: removing outliers from the dataset, and
+- winsorization: replacing outliers with a more central value,
+
+using tools available in SciPy, with an emphasis on transitioning from use of legacy functions to the preferred approach.
+
+## Motivation
+In the past, SciPy has offered several "convenience functions" that combine trimming with computation of a statistic. Consider, for instance, {func}`scipy.stats.trim_mean`.
+
+```{code-cell} ipython3
+import os
+os.environ['SCIPY_ARRAY_API'] = '1'
+import numpy as np
+from scipy import stats
+np.set_printoptions(linewidth=120)
+x = np.arange(20.)
+stats.trim_mean(x, proportiontocut=0.1)
+```
+
+Without carefully reading the documentation, it is not immediately obvious how the operation was performed: does `proportiontocut` refer to the proportion to cut from each tail, or is it the total proportion of the data to remove?
+
+Likewise, when the proportion multiplied by the number of elements would not result in an integer, is the number to remove rounded up or down?
+
+What if instead of removing a proportion, we want to remove data below and above specified thresholds. It turns out that we cannot achieve this with {func}`trim_mean <scipy.stats.trim_mean>`; we would need to use {func}`tmean <scipy.stats.tmean>` or (the similarly-named, but curiously relegated to a separate namespace) {func}`scipy.stats.mstats.trimmed_mean`, instead.
+
+What if we want to remove data outside a "confidence interval" estimate. Do any of these functions offer anything to facilitate that?  No, not really.
+
+One could take the mean after using one of the seven functions for trimming data. But which one(s) will do what we need?
+
+- {func}`scipy.stats.mstats.trim`
+- {func}`scipy.stats.mstats.trima`
+- {func}`scipy.stats.mstats.trimr`
+- {func}`scipy.stats.mstats.trimtail`
+- {func}`scipy.stats.mstats.trimboth`
+- {func}`scipy.stats.trimboth`
+- {func}`scipy.stats.trim1`
+
+So at the time of writing, SciPy offers at least half a dozen ways of taking a trimmed mean, but deciding which to use requires a lot of research, and none are able to perform *all* variations of the trimmed mean that we might reasonably expect them.
+
+What about other statistics - should we use {func}`scipy.stats.tvar`, {func}`scipy.stats.mstats.tvar`, or {func}`scipy.stats.mstats.trimmed_var` to compute the trimmed variance? If there are three functions for that and three for the mean, surely there is at least one function for computing the trimmed skewness? (Nope!)
+
+In the spirit of the Zen of Python, we suggest the new "one-- and preferably only one --obvious way" to calculate the trimmed version of many statistics: manually, in two or three lines of code, using more familiar, general-purpose features of NumPy and SciPy. Whether calculating a trimmed or winsorized statistic, there will be three steps:
+
+1. Identify the outlier threshold.
+2. Trim or winsorize.
+3. Compute the statistic.
+
++++
+
+## Identifying the threshold
+
+SciPy now offers a {func}`quantile <scipy.stats.quantile>` function with several methods useful for identifying thresholds beyond which data are to be trimmed or winsorized. The most common thresholds are those corresponding with a certain *percentage* of the data in each tail. To set the threshold at $p=10\%$ of the data in each tail, rounding the number of points to trim *down*:
+
+```{code-cell} ipython3
+x = np.arange(22.)
+p = 0.1
+stats.quantile(x, [p, 1-p], method='round_outward')
+```
+
+Rounding the number of points to trim *up*:
+
+```{code-cell} ipython3
+stats.quantile(x, [p, 1-p], method='round_inward')
+```
+
+Rounding the number of points to trim to the nearest integer:
+
+```{code-cell} ipython3
+stats.quantile(x, [p, 1-p], method='round_nearest')
+```
+
+Note that these methods are all subtly different from estimating the 10th and 90th percentiles of the data, which might be called for in different circumstances. Using the default method:
+
+```{code-cell} ipython3
+stats.quantile(x, [p, 1-p])
+```
+
+The Harrell-Davis method:
+
+```{code-cell} ipython3
+stats.quantile(x, [p, 1-p], method='harrell-davis')
+```
+
+Note that {func}`quantile <scipy.stats.quantile>` is fully vectorized. Suppose we have two rows of data, and we wish to set different thresholds for each row.
+
+```{code-cell} ipython3
+x2d = np.stack([x, x])
+p2d = [[p  , 1 - p  ],  # thresholds for zeroth row
+       [2*p, 1 - 2*p]]  # thresholds for next row
+stats.quantile(x2d, p2d, method='round_outward', axis=-1)
+```
+
+### Missing data
+
++++
+
+When there are missing or ignorable values but omitting them would lead to a ragged array, the two historical options have been to:
+
+- cover the missing/ignorable values with the "mask" of a NumPy masked array and use `stats.mstats` functions for analysis, or
+- replace missing/ignorable values with NaNs and use `stats` functions with `nan_policy='omit'` for analysis.
+
+The downsides of these approaches are documented elsewhere; here, we recommend using an [MArray](https://mdhaber.github.io/marray/tutorial.html) with `stats` functions.
+
+```{code-cell} ipython3
+from marray import numpy as mxp
+mask = ((x2d % 2) == 0)  # ignore odd elements
+y = mxp.asarray(x2d, mask=mask)
+print(y)
+```
+
+{func}`quantile <scipy.stats.quantile>` and many other `scipy.stats` functions natively support `MArray`s, and support grows with each version of SciPy.
+
+```{code-cell} ipython3
+stats.quantile(y, mxp.asarray(p2d), method='round_outward', axis=-1)
+```
+
+## Trimming and winsorizing
+
++++
+
+### Winsorizing is `clip`ing
+
++++
+
+Once a numerical threshold has been identified, winsorizing is simply an application of a fundamental data operation: `clip`.
+
+Suppose we have $n=22$ observations and we wish to winsorize $p=10\%$ from each side of the data. Rounding down with `method='round_outward'`, we would expect to winsorize $\left \lfloor{pn}\right \rfloor = 2$ points on each side. In this case, {func}`quantile <scipy.stats.quantile>` returns the *third* data point from the left (at index `2`) as the lower limit. `clip`ing to this limit will winsorize the two lower observations, leaving the third observation unchanged. The story is similar on the right.
+
+```{code-cell} ipython3
+x = np.arange(22.)
+p = 0.1
+low, high = stats.quantile(x, [p, 1-p], method='round_outward')
+x_winsorized = np.clip(x, low, high)
+x_winsorized
+```
+
+When extracting the `low` and `high` thresholds from the result of quantile, just remember that their positions correspond with the positions of values in the `p` argument.
+
+```{code-cell} ipython3
+stats.quantile(x2d, p2d, method='round_outward', axis=-1)
+```
+
+Here, we want the columns, and we want to preserve their shape so they still align with the shape of `x2d`.
+
+```{code-cell} ipython3
+low_high = stats.quantile(x2d, p2d, method='round_outward', axis=-1)
+low2d = low_high[:, :1]
+high2d = low_high[:, 1:]
+low2d, high2d
+```
+
+```{code-cell} ipython3
+x2d_winsorized = np.clip(x2d, low2d, high2d)
+x2d_winsorized
+```
+
+### Trimming
+
++++
+Like winsorization, trimming is also a straightforward application of fundamental array operations.
+
+For 1-D data, trimming is just indexing with a boolean mask that selects data to be retained.
+
+As in the 1-D winsorization example above, suppose we want to trim two points on either side. `low` is the *third* observation from the left - the first we want to keep. Therefore, we'll form a boolean mask with *non-strict* inequalities to select the data to be kept.
+
+```{code-cell} ipython3
+low, high = stats.quantile(x, [p, 1-p], method='round_outward')  # get the threshold values
+mask = (x >= low) & (x <= high)
+x_trimmed = x[mask]
+x_trimmed
+```
+
+Rather than changing to strict inequalities, use `method='round_inward'` if you want to round the other way.
+
+```{code-cell} ipython3
+low, high = stats.quantile(x, [p, 1-p], method='round_inward')  # get the threshold values
+mask = (x >= low) & (x <= high)
+x[mask]
+```
+
+In 2-D, this approach of retaining only certain data *may* be possible if the number of elements retained in each row happen to be identical. There is one complication: boolean indexing results in a 1-D array:
+
+```{code-cell} ipython3
+mask = (x2d >= low) & (x2d <= high)
+x2d[mask]
+```
+
+*When the number of elements retained in each row are identical (and only then)*, it is safe to reshape the output to an array with the original number of rows.
+
+```{code-cell} ipython3
+x2d[mask].reshape(x2d.shape[0], -1)  # -1 means "infer from the number of elements"
+```
+
+The more general option is to keep the trimmed elements in their original locations but to *mask* them.
+
+Note that the mask of elements to *remove* is the logical NOT of the elements to be kept. Since we used *non-strict* inequalities to retain elements, we use *strict* inequalities to trim them.
+
+```{code-cell} ipython3
+mask2d = (x2d < low2d) | (x2d > high2d)
+x2d_masked = mxp.asarray(x2d, mask=mask2d)
+print(x2d_masked)
+```
+
+## Computing the statistic
+
++++
+
+When the data is winsorized or trimmed data has actually been removed, working with it is no different than any other data.
+
+```{code-cell} ipython3
+np.mean(x_trimmed)
+```
+
+```{code-cell} ipython3
+np.mean(x_winsorized)  # result happens to be identical *for this data*
+```
+
+```{code-cell} ipython3
+np.mean(x2d_winsorized, axis=-1)  # results happen to be identical *for this data*
+`
+[出力は 21248 文字。先頭 10000 文字だけを残した]
+--- 2026-09-27T01:06:32Z method=案B target=SciPy_E2 rc=0 time_s=0.005 note=ソース全365ディレクトリの一覧を読み直す(全文印字) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/alldirs.txt; wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/alldirs.txt
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy
+doc
+doc/source
+doc/source/dev
+doc/source/dev/api-dev
+doc/source/dev/api-dev/array_api_modules_tables
+doc/source/dev/contributor
+doc/source/dev/contributor/adding_new
+doc/source/dev/contributor/_code_examples
+doc/source/dev/conduct
+doc/source/dev/core-dev
+doc/source/dev/gitwash
+doc/source/tutorial
+doc/source/tutorial/interpolate
+doc/source/tutorial/interpolate/plots
+doc/source/tutorial/stats
+doc/source/tutorial/stats/plots
+doc/source/tutorial/examples
+doc/source/tutorial/examples/ndimage
+doc/source/release
+doc/source/_templates
+doc/source/_templates/autosummary
+doc/source/building
+doc/source/reference
+doc/source/_static
+doc/source/_static/scipy-mathjax
+subprojects
+subprojects/duccfft
+subprojects/duccfft/ducc0
+subprojects/duccfft/ducc0/math
+subprojects/duccfft/ducc0/bindings
+subprojects/duccfft/ducc0/infra
+subprojects/duccfft/ducc0/fft
+subprojects/unuran
+subprojects/array_api_extra
+subprojects/array_api_compat
+subprojects/xsf
+subprojects/cobyqa
+subprojects/pyprima
+subprojects/pyprima/pyprima
+subprojects/pyprima/pyprima/pyprima
+subprojects/pyprima/pyprima/pyprima/src
+subprojects/pyprima/pyprima/pyprima/src/pyprima
+subprojects/pyprima/pyprima/pyprima/src/pyprima/common
+subprojects/pyprima/pyprima/pyprima/src/pyprima/examples
+subprojects/pyprima/pyprima/pyprima/src/pyprima/examples/cobyla
+subprojects/pyprima/pyprima/pyprima/src/pyprima/cobyla
+subprojects/pyprima/pyprima/pyprima/tests
+subprojects/boost_math
+subprojects/boost_math/math
+subprojects/qhull_r
+subprojects/qhull_r/libqhull_r
+subprojects/qhull_r/patches
+subprojects/highs
+subprojects/biteopt
+subprojects/biteopt/biteopt
+.github
+.github/ISSUE_TEMPLATE
+.github/workflows
+.github/apt-get
+.github/ccache
+.git
+.git/hooks
+.git/objects
+.git/objects/info
+.git/objects/pack
+.git/refs
+.git/refs/heads
+.git/refs/remotes
+.git/refs/remotes/origin
+.git/refs/tags
+.git/logs
+.git/logs/refs
+.git/logs/refs/heads
+.git/logs/refs/remotes
+.git/logs/refs/remotes/origin
+.git/branches
+.git/info
+scipy
+scipy/differentiate
+scipy/differentiate/tests
+scipy/_lib
+scipy/_lib/src
+scipy/_lib/_uarray
+scipy/_lib/tests
+scipy/signal
+scipy/signal/tests
+scipy/signal/tests/data
+scipy/signal/windows
+scipy/signal/docs
+scipy/interpolate
+scipy/interpolate/src
+scipy/interpolate/tests
+scipy/interpolate/tests/data
+scipy/constants
+scipy/constants/tests
+scipy/stats
+scipy/stats/_levy_stable
+scipy/stats/_levy_stable/c_src
+scipy/stats/_unuran
+scipy/stats/_rcont
+scipy/stats/biasedurn
+scipy/stats/tests
+scipy/stats/tests/test_generation
+scipy/stats/tests/data
+scipy/stats/tests/data/levy_stable
+scipy/stats/tests/data/nist_linregress
+scipy/stats/tests/data/nist_anova
+scipy/stats/libnpyrandom
+scipy/sparse
+scipy/sparse/csgraph
+scipy/sparse/csgraph/tests
+scipy/sparse/linalg
+scipy/sparse/linalg/_propack
+scipy/sparse/linalg/_propack/PROPACK
+scipy/sparse/linalg/_propack/PROPACK/src
+scipy/sparse/linalg/_propack/PROPACK/src/include
+scipy/sparse/linalg/_propack/PROPACK/include
+scipy/sparse/linalg/_propack/PROPACK/include/propack
+scipy/sparse/linalg/_isolve
+scipy/sparse/linalg/_isolve/tests
+scipy/sparse/linalg/tests
+scipy/sparse/linalg/_eigen
+scipy/sparse/linalg/_eigen/tests
+scipy/sparse/linalg/_eigen/arpack
+scipy/sparse/linalg/_eigen/arpack/arnaud
+scipy/sparse/linalg/_eigen/arpack/arnaud/src
+scipy/sparse/linalg/_eigen/arpack/arnaud/include
+scipy/sparse/linalg/_eigen/arpack/arnaud/include/arnaud
+scipy/sparse/linalg/_eigen/arpack/tests
+scipy/sparse/linalg/_eigen/lobpcg
+scipy/sparse/linalg/_eigen/lobpcg/tests
+scipy/sparse/linalg/_dsolve
+scipy/sparse/linalg/_dsolve/tests
+scipy/sparse/linalg/_dsolve/SuperLU
+scipy/sparse/linalg/_dsolve/SuperLU/SRC
+scipy/sparse/sparsetools
+scipy/sparse/tests
+scipy/integrate
+scipy/integrate/src
+scipy/integrate/_rules
+scipy/integrate/tests
+scipy/integrate/_ivp
+scipy/integrate/_ivp/tests
+scipy/special
+scipy/special/ellint_carlson_cpp_lite
+scipy/special/tests
+scipy/special/tests/data
+scipy/special/tests/data/gsl
+scipy/special/tests/data/boost
+scipy/special/tests/data/boost/ellint_rf_xy0_ipp
+scipy/special/tests/data/boost/digamma_small_data_ipp
+scipy/special/tests/data/boost/ibeta_data_ipp
+scipy/special/tests/data/boost/igamma_int_data_ipp
+scipy/special/tests/data/boost/ellint_rj_data_ipp
+scipy/special/tests/data/boost/sph_neumann_data_ipp
+scipy/special/tests/data/boost/ellint_pi2_data_ipp
+scipy/special/tests/data/boost/laguerre3_ipp
+scipy/special/tests/data/boost/bessel_yv_data_ipp
+scipy/special/tests/data/boost/bessel_k_prime_int_data_ipp
+scipy/special/tests/data/boost/ellint_pi3_data_ipp
+scipy/special/tests/data/boost/tgamma_delta_ratio_int_ipp
+scipy/special/tests/data/boost/ellint_rd_data_ipp
+scipy/special/tests/data/boost/bessel_i_prime_int_data_ipp
+scipy/special/tests/data/boost/binomial_quantile_ipp
+scipy/special/tests/data/boost/erf_inv_data_ipp
+scipy/special/tests/data/boost/ellint_f_data_ipp
+scipy/special/tests/data/boost/tgamma_delta_ratio_data_ipp
+scipy/special/tests/data/boost/beta_exp_data_ipp
+scipy/special/tests/data/boost/ellint_e_data_ipp
+scipy/special/tests/data/boost/bessel_k_data_ipp
+scipy/special/tests/data/boost/sinc_data_ipp
+scipy/special/tests/data/boost/gamma_inv_big_data_ipp
+scipy/special/tests/data/boost/digamma_neg_data_ipp
+scipy/special/tests/data/boost/negative_binomial_quantile_ipp
+scipy/special/tests/data/boost/digamma_root_data_ipp
+scipy/special/tests/data/boost/erfc_inv_big_data_ipp
+scipy/special/tests/data/boost/ibeta_inv_data_ipp
+scipy/special/tests/data/boost/ellint_k_data_ipp
+scipy/special/tests/data/boost/erf_small_data_ipp
+scipy/special/tests/data/boost/nccs_ipp
+scipy/special/tests/data/boost/ibeta_small_data_ipp
+scipy/special/tests/data/boost/ellint_rf_data_ipp
+scipy/special/tests/data/boost/bessel_j_large_data_ipp
+scipy/special/tests/data/boost/bessel_i_data_ipp
+scipy/special/tests/data/boost/bessel_k_int_data_ipp
+scipy/special/tests/data/boost/bessel_j_prime_large_data_ipp
+scipy/special/tests/data/boost/poisson_quantile_ipp
+scipy/special/tests/data/boost/ellint_pi3_large_data_ipp
+scipy/special/tests/data/boost/expint_data_ipp
+scipy/special/tests/data/boost/bessel_k_prime_data_ipp
+scipy/special/tests/data/boost/bessel_y01_data_ipp
+scipy/special/tests/data/boost/digamma_data_ipp
+scipy/special/tests/data/boost/gamma_inv_small_data_ipp
+scipy/special/tests/data/boost/zeta_neg_data_ipp
+scipy/special/tests/data/boost/ellint_rd_xxz_ipp
+scipy/special/tests/data/boost/zeta_data_ipp
+scipy/special/tests/data/boost/erf_large_data_ipp
+scipy/special/tests/data/boost/bessel_i_int_data_ipp
+scipy/special/tests/data/boost/beta_med_data_ipp
+scipy/special/tests/data/boost/laguerre2_ipp
+scipy/special/tests/data/boost/ibeta_int_data_ipp
+scipy/special/tests/data/boost/ellint_rd_xxx_ipp
+scipy/special/tests/data/boost/expint_1_data_ipp
+scipy/special/tests/data/boost/ellint_rg_xxx_ipp
+scipy/special/tests/data/boost/log1p_expm1_data_ipp
+scipy/special/tests/data/boost/binomial_data_ipp
+scipy/special/tests/data/boost/legendre_p_large_ipp
+scipy/special/tests/data/boost/igamma_inva_data_ipp
+scipy/special/tests/data/boost/bessel_j_int_data_ipp
+scipy/special/tests/data/boost/expinti_data_ipp
+scipy/special/tests/data/boost/erfc_inv_data_ipp
+scipy/special/tests/data/boost/ellint_rd_0xy_ipp
+scipy/special/tests/data/boost/igamma_small_data_ipp
+scipy/special/tests/data/boost/zeta_1_below_data_ipp
+scipy/special/tests/data/boost/erf_data_ipp
+scipy/special/tests/data/boost/ncbeta_big_ipp
+scipy/special/tests/data/boost/assoc_legendre_p_ipp
+scipy/special/tests/data/boost/ellint_rc_data_ipp
+scipy/special/tests/data/boost/ncbeta_ipp
+scipy/special/tests/data/boost/bessel_yv_prime_data_ipp
+scipy/special/tests/data/boost/bessel_yn_data_ipp
+scipy/special/tests/data/boost/bessel_j_prime_int_data_ipp
+scipy/special/tests/data/boost/expint_small_data_ipp
+scipy/special/tests/data/boost/sph_bessel_data_ipp
+scipy/special/tests/data/boost/bessel_j_data_ipp
+scipy/special/tests/data/boost/tgamma_delta_ratio_int2_ipp
+scipy/special/tests/data/boost/test_gamma_data_ipp
+scipy/special/tests/data/boost/spherical_harmonic_ipp
+scipy/special/tests/data/boost/nccs_big_ipp
+scipy/special/tests/data/boost/binomial_large_data_ipp
+scipy/special/tests/data/boost/legendre_p_ipp
+scipy/special/tests/data/boost/igamma_med_data_ipp
+scipy/special/tests/data/boost/ellint_rg_xy0_ipp
+scipy/special/tests/data/boost/owens_t_large_data_ipp
+scipy/special/tests/data/boost/expinti_data_long_ipp
+scipy/special/tests/data/boost/tgamma_ratio_data_ipp
+scipy/special/tests/data/boost/cbrt_data_ipp
+scipy/special/tests/data/boost/gamma_inv_data_ipp
+scipy/special/tests/data/boost/ibeta_inva_data_ipp
+scipy/special/tests/data/boost/ellint_e2_data_ipp
+scipy/special/tests/data/boost/ellint_rf_xxx_ipp
+scipy/special/tests/data/boost/ellint_rd_xyy_ipp
+scipy/special/tests/data/boost/hermite_ipp
+scipy/special/tests/data/boost/ellint_rg_00x_ipp
+scipy/special/tests/data/boost/ibeta_large_data_ipp
+scipy/special/tests/data/boost/igamma_big_data_ipp
+scipy/special/tests/data/boost/zeta_1_up_data_ipp
+scipy/special/tests/data/boost/ellint_rf_0yy_ipp
+scipy/special/tests/data/boost/owens_t_ipp
+scipy/special/tests/data/boost/ellint_rd_0yy_ipp
+scipy/special/tests/data/boost/expinti_data_double_ipp
+scipy/special/tests/data/local
+scipy/special/tests/_cython_examples
+scipy/special/_precompute
+scipy/special/utils
+scipy/linalg
+scipy/linalg/src
+scipy/linalg/src/lapack
+scipy/linalg/src/wrapper
+scipy/linalg/src/blas
+scipy/linalg/tests
+scipy/linalg/tests/data
+scipy/linalg/tests/_cython_examples
+scipy/linalg/tests/_cython_examples/ilp64_test_package
+scipy/linalg/tests/_cython_examples/ilp64_test_package/src
+scipy/linalg/tests/_cython_examples/ilp64_test_package/src/ilp64_test_package
+scipy/linalg/tests/_cython_examples/ilp64_test_package/tests
+scipy/fftpack
+scipy/fftpack/tests
+scipy/spatial
+scipy/spatial/ckdtree
+scipy/spatial/ckdtree/src
+scipy/spatial/distance
+scipy/spatial/distance/src
+scipy/spatial/distance/tests
+scipy/spatial/distance/tests/data
+scipy/spatial/transform
+scipy/spatial/transform/tests
+scipy/spatial/tests
+scipy/spatial/tests/data
+scipy/_external
+scipy/_external/packaging_version
+scipy/_external/packaging_version/src
+scipy/datasets
+scipy/datasets/tests
+scipy/ndimage
+scipy/ndimage/src
+scipy/ndimage/tests
+scipy/ndimage/tests/data
+scipy/ndimage/utils
+scipy/_build_utils
+scipy/_build_utils/src
+scipy/io
+scipy/io/arff
+scipy/io/arff/tests
+scipy/io/arff/tests/data
+scipy/io/_harwell_boeing
+scipy/io/_harwell_boeing/tests
+scipy/io/matlab
+scipy/io/matlab/tests
+scipy/io/matlab/tests/data
+scipy/io/tests
+scipy/io/tests/data
+scipy/io/_fast_matrix_market
+scipy/io/_fast_matrix_market/src
+scipy/io/_fast_matrix_market/fast_matrix_market
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies/ryu
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies/ryu/ryu
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies/fast_float
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies/fast_float/include
+scipy/io/_fast_matrix_market/fast_matrix_market/dependencies/fast_float/include/fast_float
+scipy/io/_fast_matrix_market/fast_matrix_market/include
+scipy/io/_fast_matrix_market/fast_matrix_market/include/fast_matrix_market
+scipy/io/_fast_matrix_market/fast_matrix_market/include/fast_matrix_market/app
+scipy/io/_fast_matrix_market/fast_matrix_market/include/fast_matrix_market/thirdparty
+scipy/cluster
+scipy/cluster/hierarchy
+scipy/cluster/hierarchy/tests
+scipy/cluster/vq
+scipy/cluster/vq/tests
+scipy/fft
+scipy/fft/tests
+scipy/fft/_duccfft
+scipy/fft/_duccfft/tests
+scipy/optimize
+scipy/optimize/cython_optimize
+scipy/optimize/tnc
+scipy/optimize/src
+scipy/optimize/_trlib
+scipy/optimize/_trlib/trlib
+scipy/optimize/rectangular_lsap
+scipy/optimize/_lsq
+scipy/optimize/_highspy
+scipy/optimize/_biteopt
+scipy/optimize/tests
+scipy/optimize/tests/_cython_examples
+scipy/optimize/_shgo_lib
+scipy/optimize/_trustregion_constr
+scipy/optimize/_trustregion_constr/tests
+scipy/optimize/Zeros
+scipy/optimize/_direct
+scipy/optimize/_pava
+.circleci
+.devcontainer
+tools
+tools/refguide
+tools/vendoring
+tools/linting
+tools/wheels
+tools/release
+tools/intel_oneAPI
+tools/building
+tools/building/tempita
+benchmarks
+benchmarks/benchmarks
+benchmarks/benchmarks/linprog_benchmark_files
+benchmarks/benchmarks/linprog_benchmark_files/infeasible
+benchmarks/benchmarks/svds_benchmark_files
+benchmarks/benchmarks/go_benchmark_functions
+benchmarks/benchmarks/tests
+benchmarks/benchmarks/qapdata
+benchmarks/benchmarks/cutest
+.spin
+365 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/alldirs.txt
+--- 2026-09-27T01:06:39Z method=案B target=SciPy_E2 rc=0 time_s=0.005 note=ソース全365ディレクトリにE2の語の組を機械的に当てて選ぶ [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/alldirs.txt; echo RC=$?
+RC=1
+--- 2026-09-27T01:06:46Z method=見積もり target=SciPy rc=0 time_s=0.323 note=E2当たりの量の見積もり(grep_-I_-c_-i_-E) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ xargs -0 -a /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/list.txt grep -I -c -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out of order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' 2>/dev/null | awk -F: '{s+=$NF; if($NF>0) f++} END{print "E2 files_with_hits="f" total_lines="s}'
+E2 files_with_hits=1179 total_lines=16907
+--- 2026-09-27T01:06:57Z method=公式 target=SciPy rc=0 time_s=1.036 note=scipy.orgサイト自体のソースリポジトリの有無をgit ls-remoteで確かめる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ git ls-remote --symref https://github.com/scipy/scipy.org.git HEAD 2>&1 | head -20; echo ---; git ls-remote --symref https://github.com/scipy/scipy-cookbook.git HEAD 2>&1 | head -5
+ref: refs/heads/main	HEAD
+1c4547b7f7ee494076e4eeffee87ddae12731e7f	HEAD
+| ---
+ref: refs/heads/main	HEAD
+9b9d05d28feb3e5189376fcbd10ef52c62bc43c6	HEAD
+--- 2026-09-27T01:07:05Z method=公式 target=SciPy rc=0 time_s=0.732 note=scipy.orgリポジトリのREADMEを取得して用途を確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ curl -sS -L https://raw.githubusercontent.com/scipy/scipy.org/main/README.md | head -30; echo ---cookbook---; curl -sS -L https://raw.githubusercontent.com/scipy/scipy-cookbook/main/README.md | head -15
+# scipy.org
+
+The SciPy website is built on the
+[scientific-python-hugo-theme](https://github.com/scientific-python/scientific-python-hugo-theme)
+and served using [Hugo](https://gohugo.io).
+
+## Build
+
+```
+git submodule update --init
+pixi run build
+```
+
+The pages are in `public/`.
+
+To run the development server, which hosts the site and recompiles
+automatically on edits:
+
+```
+pixi run serve
+```
+
+## Team lists
+
+To update the teams, the `team_query.py` provided by the theme is used.
+It needs a
+[GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
+with `read:org` permissions. Pass the token to `pixi run teams`:
+
+```
+| ---cookbook---
+Scipy Cookbook
+==============
+
+This is a conversion and second life of SciPy Cookbook (previously at
+http://wiki.scipy.org/Cookbook/); as a bunch of Ipython notebooks. 
+
+It can be found live at http://scipy-cookbook.readthedocs.org/
+
+Contributing
+============
+
+**Add new notebooks or fix old ones by sending pull requests**
+
+Alternatively open an issue and attach (drag-and-drop) a fixed notebook file.
+--- 2026-09-27T01:10:10Z method=検索 target=SciPy rc=0 time_s=0.012 note=interpolate/statsのmonotonic重複xの検出がtime系の語と同居するか確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ grep -rn -iE 'strictly increasing|must be increasing|duplicate.*x|x.*must be sorted|non-monotonic' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/*.py /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/signal/*.py 2>/dev/null | head -40
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_bsplines.py:2072:        raise ValueError("Expect x to be a 1D strictly increasing sequence.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_bsplines.py:2353:        raise ValueError("Expect t to be a 1D strictly increasing sequence.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_bsplines.py:2361:        raise ValueError("Expect x to be a 1D strictly increasing sequence.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_cubic.py:69:        raise ValueError("`x` must be strictly increasing sequence.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_cubic.py:95:        Values must be real, finite and in strictly increasing order.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_cubic.py:657:        Values must be real, finite and in strictly increasing order.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:412:        1-D array of independent input data. Must be increasing;
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:413:        must be strictly increasing if `s` is 0.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:587:                raise ValueError("x must be increasing if s > 0")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:590:                raise ValueError("x must be strictly increasing if s = 0")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1021:        Input dimension of data points -- must be strictly increasing
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1104:            raise ValueError('x must be strictly increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1143:        Input dimension of data points -- must be increasing
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1252:            raise ValueError('x must be increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1431:                raise ValueError("x must be strictly increasing when `grid` is True")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1433:                raise ValueError("y must be strictly increasing when `grid` is True")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:1999:            raise ValueError('x must be strictly increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:2001:            raise ValueError('y must be strictly increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:2738:            raise ValueError('u must be strictly increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_fitpack2.py:2740:            raise ValueError('v must be strictly increasing')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_interpolate.py:612:            raise ValueError("`x` must be strictly increasing or decreasing.")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_polyint.py:267:        Known x-coordinates. Must be sorted in increasing order.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:8:`Z[i, j]` sampled on strictly increasing coordinates `x[i]`, `y[j]`. It mirrors
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:211:            raise ValueError("x must be strictly increasing when `grid` is True")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:213:            raise ValueError("y must be strictly increasing when `grid` is True")
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:805:        Strictly increasing sample coordinates.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:925:        Strictly increasing coordinate vectors.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:1064:        Strictly increasing 1-D coordinate vectors.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/src/scipy/scipy/interpolate/_regrid.py:1095:        raise ValueE
+[出力は 6642 文字。先頭 6000 文字だけを残した]
+--- 2026-09-27T01:18:51Z method=最後 target=SciPy rc=0 time_s=0.180 note=scratchpadの外_生ログに無い手の確認(最終) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-040/sb39]
+$ find /tmp -maxdepth 1 -newermt '2026-09-27T01:04:08Z'; echo ---; find /root -xdev -newermt '2026-09-27T01:04:08Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/build2.py
+/tmp/build3.py
+/tmp/claude-code.log
+/tmp/claude-0
+/tmp/run38_candidates.txt
+/tmp/claude-code-1656662159.diag.log
+/tmp/run38_elements_table.txt
+| ---

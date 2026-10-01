@@ -1,0 +1,198 @@
+--- 2026-09-26T22:29:13Z method=setup target=開始 rc=0 time_s=0.053 note=開始の時刻と置き場所 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ date -u +%Y-%m-%dT%H:%M:%SZ; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip
+2026-09-26T22:29:13Z
+alldirs.txt
+aux_exec.py
+check
+check_extract
+doc_titles.py
+doc_titles.txt
+draft
+e3a_matches.txt
+e3a_table.md
+gen_40_table.py
+gen_e3a_table.py
+gen_findings.py
+gen_full_table.py
+list.txt
+list_repo.txt
+min_exec.py
+mklist_cmd.sh
+mklist_cmd2.sh
+mklist_excludes.py
+net_check.py
+numpy_about.html
+numpy_assert_allclose.html
+numpy_contribute.html
+numpy_docstable.html
+numpy_install.html
+numpy_org.html
+numpy_pypi.json
+numpy_userguide.html
+run
+sb35
+sb36
+src
+verify_findings_quotes.py
+verify_quotes.py
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T22:29:41Z method=印探索 target=E2_datetime文書 rc=0 time_s=0.005 note=時刻の型(datetime64/timedelta64)関連の3文書にE2の語(欠損/missing/gap/欠け,重複/duplicat,順序/out.of.order/monoton/sort,外れ値/outlier/anomal,時刻のずれ/clock/skew/timestamp,型/範囲/schema/range/valid,食い違い/discrepan/inconsisten/cross-source)を当てる [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ grep -n -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/routines.datetime.rst /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/c-api/datetimes.rst
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:19:AD range, `datetime64` allows also for dates BC; years BC follow the `Astronomical
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:34:.. [#] The assumption of 86400 seconds per calendar day is not valid for UTC,
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:141:POSIX timestamps with the given unit.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:158:example :func:`arange` can be used to generate ranges of dates.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:168:    >>> np.arange('2005-02', '2005-03', dtype='datetime64[D]')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:302:The length of the span is the range of a 64-bit integer times the length
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:410:the week are valid, NumPy includes a set of "busday" (business day)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:413:The default for busday functions is that the only valid days are Monday
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:415:a "weekmask" containing 7 Boolean flags to indicate valid days; custom
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:416:weekmasks are possible that specify other sets of valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:419:specific dates that are not valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:438:date to a valid business day, then applies the offset. The
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:509:To test a `datetime64` value to see if it is a valid day, use :func:`is_busday`.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:523:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:529:To find how many valid days there are in a specified range of datetime64
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:544:how many of them are valid dates, you can do this:
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:552:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:562:specify the "busday" default of Monday through Friday being valid days.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:569:    # list or other sequence; 0 == invalid day, 1 == valid day
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:571:    # string '0' == invalid day, '1' == valid day
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:590:- It is impossible to parse valid UTC timestamps occurring during a positive
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:596:    23:59:60.450 UTC" is a valid timestamp which is not parseable by
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:606:      ValueError: Seconds out of range in datetime string "2016-12-31 23:59:60.450"
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:649:      seconds of a clock in sync with the Earth's rotation. The exact value in SI
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/c-api/datetimes.rst:121:    specified by the unit metadata. The date is assumed to be valid.
+--- 2026-09-26T22:31:52Z method=最小実行 target=E2_isnat_is_busday rc=0 time_s=0.097 note=合成の約定タイムスタンプ(datetime64[ms])にNaT混入、isnatで欠けを自動検出。合成の約定日(datetime64[D])にis_busdayで非営業日(型/範囲の違反)を自動検出 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/run/bin/python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/e2_datetime_check.py
+| --- isnat docstring ---
+isnat(x, /, out=None, *, where=True, casting='same_kind', order='K', dtype=None, subok=True[, signature])
+
+Test element-wise for NaT (not a time) and return result as a boolean array.
+
+Parameters
+| ----------
+x : array_like
+    Input array with datetime or timedelta data type.
+out : ndarray, None, or tuple of ndarray and None, optional
+    A location into which the result is stored. If provided, it must have
+    a shape that the inputs broadcast to. If not provided or None,
+    a freshly-allocated array is returned. A tuple (possible only as a
+    keyword argument) must have length equal to the number of outputs.
+where : array_like, optional
+    This condition is broadcast over the input. At locations where the
+    condition is True, the `out` array will be set to the ufunc result.
+    Elsewhere, the `out` array will retain its original value.
+    Note that if an uninitialized `out` array is created via the default
+    ``out=None``, locations within it where the condition is False will
+    remain uninitialized.
+**kwargs
+    For other keyword-only arguments, see the
+    :ref:`ufunc docs <ufuncs.kwargs>`.
+
+Returns
+| -------
+y : ndarray or bool
+    True where ``x`` is NaT, false otherwise.
+    This is a scalar if `x` is a scalar.
+
+See Also
+| --------
+isnan, isinf, isneginf, isposinf, isfinite
+
+Examples
+| --------
+>>> import numpy as np
+>>> np.isnat(np.datetime64("NaT", "D"))
+True
+>>> np.isnat(np.datetime64("2016-01-01"))
+False
+>>> np.isnat(np.array(["NaT", "2016-01-01"], dtype="datetime64[ns]"))
+array([ True, False])
+| --- is_busday docstring ---
+is_busday(
+    dates,
+    weekmask='1111100',
+    holidays=None,
+    busdaycal=None,
+    out=None,
+)
+
+Calculates which of the given dates are valid days, and which are not.
+
+Parameters
+| ----------
+dates : array_like of datetime64[D]
+    The array of dates to process.
+weekmask : str or array_like of bool, optional
+    A seven-element array indicating which of Monday through Sunday are
+    valid days. May be specified as a length-seven list or array, like
+    [1,1,1,1,1,0,0]; a length-seven string, like '1111100'; or a string
+    like "Mon Tue Wed Thu Fri", made up of 3-character abbreviations for
+    weekdays, optionally separated by white space. Valid abbreviations
+    are: Mon Tue Wed Thu Fri Sat Sun
+holidays : array_like of datetime64[D], optional
+    An array of dates to consider as invalid dates.  They may be
+    specified in any order, and NaT (not-a-time) dates are ignored.
+    This list is saved in a normalized form that is suited for
+    fast calculations of valid days.
+busdaycal : busdaycalendar, optional
+    A `busdaycalendar` object which specifies the valid days. If this
+    parameter is provided, neither weekmask nor holidays may be
+    provided.
+out : array of bool, optional
+    If provided, this array is filled with the result.
+
+Returns
+| -------
+out : array of bool
+    An array with the same shape as ``dates``, containing True for
+    each valid day, and False for each invalid day.
+
+See Also
+| --------
+busdaycalendar : An object that specifies a custom set of valid days.
+busday_offset : Applies an offset counted in valid days.
+busday_count : Counts how many valid days are in a half-open date range.
+
+Examples
+| --------
+>>> import numpy as np
+>>> # The weekdays are Friday, Saturday, and Monday
+... np.is_busday(['2011-07-01', '2011-07-02', '2011-07-18'],
+...                 holidays=['2011-07-01', '2011-07-04', '2011-07-17'])
+array([False, False,  True])
+| --- isnat 実行(合成の約定タイムスタンプ、1件NaT混入) ---
+ts= ['2026-09-01T00:00:00.000'                     'NaT'
+ '2026-09-01T00:00:01.000' '2026-09-01T00:00:02.000']
+isnat(ts)= [False  True False False]
+欠けた時刻の件数= 1
+| --- is_busday 実行(合成の約定日、金/土/日) ---
+dates= ['2026-09-25' '2026-09-26' '2026-09-27']
+is_busday(dates)= [ True False False]
+非営業日の件数= 2
+--- 2026-09-26T22:33:44Z method=印探索 target=E2_datetime64広域文書 rc=0 time_s=0.010 note=全文書(.rst)でdatetime64/timedelta64の語とE2語の組み合わせをファイル名だけ確認(件数把握) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ grep -rlI -i -E 'datetime64|timedelta64' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source | wc -l
+34
+--- 2026-09-26T22:33:53Z method=印探索 target=E2_datetime64語同居行 rc=0 time_s=0.013 note=datetime64/timedelta64を含む34文書で、同じ行にE2の語(欠損/missing/gap欠け/重複/duplicat/順序out-of-order/monoton/sort/外れ値outlier/anomal/時刻のずれclock/skew/timestamp/型範囲schema/range/valid/食い違いdiscrepan/inconsisten/cross-source)が同居する行を列挙 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ grep -rlI -i -E 'datetime64|timedelta64' "/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source" | xargs grep -n -i -E 'datetime64|timedelta64' | grep -i -E '欠損|missing|gap|欠け|重複|duplicat|順序|out.?of.?order|monoton|sort|外れ値|outlier|anomal|時刻のずれ|clock|skew|timestamp|型|範囲|schema|range|valid|食い違い|discrepan|inconsisten|cross-source'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/release/1.20.3-notes.rst:29:* `#18763 <https://github.com/numpy/numpy/pull/18763>`__: BUG: Correct ``datetime64`` missing type overload for ``datetime.date``...
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:19:AD range, `datetime64` allows also for dates BC; years BC follow the `Astronomical
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:168:    >>> np.arange('2005-02', '2005-03', dtype='datetime64[D]')
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:509:To test a `datetime64` value to see if it is a valid day, use :func:`is_busday`.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:523:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:529:To find how many valid days there are in a specified range of datetime64
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/src/numpy/doc/source/reference/arrays.datetime.rst:552:    >>> a = np.arange(np.datetime64('2011-07-11'), np.datetime64('2011-07-18'))
+--- 2026-09-26T22:41:18Z method=最後の確認 target=scratchpad外の書き込み rc=0 time_s=1.126 note=開始時刻2026-09-26T22:29:13Z以降にscratchpadの外・/rootの下へ書かれたファイルが無いかを確認 [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ find /tmp -maxdepth 1 -newermt '2026-09-26T22:29:13Z' ; echo '---root---'; find /root -xdev -newermt '2026-09-26T22:29:13Z' -not -path '/root/.claude/*' -type f
+/tmp
+/tmp/claude-code.log
+/tmp/claude-0
+/tmp/claude-code-1656662159.diag.log
+| ---root---
+--- 2026-09-26T22:42:09Z method=確認 target=台帳8-039行 rc=0 time_s=0.008 note=台帳のNumPy(8-039)行を確認(E1a・E1b・E3a・E3b・E4・E5・E6はこの回に触らない) [sandbox /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-039/sb36]
+$ awk -F'\t' 'NR==1||$2=="NumPy"' docs/DATA/tools_catalog_cat8.tsv
+番号	名前	初出の回	発見の経路	発見の出典	区分1の番号	状態	E1a	E1b	E2	E3a	E3b	E4	E5	E6	段_E1a	段_E1b	段_E2	段_E3a	段_E3b	段_E4	段_E5	段_E6	他の区分へ	安全側の所見	最後の記載の回	最後の記載の行
+8-039	NumPy	10	一覧の辿り	1 回目の検索計画 7 の結果(10 回目の辿る一覧 7、生ログ docs/DATA/probes/20260923_tools_8_run10.log:6462、この結果の中の NumPy)		浅い	印	印	未判別	なし	なし	未判別	印	印	4	2	未判別	-	-	未判別	2	4			35	46594

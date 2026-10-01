@@ -1,0 +1,1895 @@
+=== 32回目 8-034 Pandas の残り(§6-1やり直し・最小実行やり直し・E2・E3a・E4・E6の案B・宣伝詐欺の兆候) 起動文指紋 20260923_tools_survey_cat8_run32_prompt.md@5d1ede7b3274
+--- 2026-09-26T18:13:58Z method=setup target=tmpdir_and_baseline rc=1 time_s=0.044 note=最初の手: TMPDIR用ディレクトリ作成とscratchpad外キャッシュの確認
+$ mkdir -p /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp; ls /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034; ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip; ls /tmp | grep -c -E '^pip-|^pandas'
+check
+list.txt
+run
+src
+tmp
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+0
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T18:14:12Z method=版確認 target=pandas依存 rc=0 time_s=1.192 note=現在解決されるpandasの依存版をdry-runで確認(ソースは作らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip install --no-index --dry-run pandas==3.0.6 2>&1; echo '---real dry-run with index (no install)---'; TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip download --no-deps --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 --only-binary :all: pandas==3.0.6
+ERROR: Could not find a version that satisfies the requirement pandas==3.0.6 (from versions: none)
+ERROR: No matching distribution found for pandas==3.0.6
+| ---real dry-run with index (no install)---
+Collecting pandas==3.0.6
+  Using cached pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+Using cached pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.1 MB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded pandas
+--- 2026-09-26T18:14:22Z method=版確認 target=依存解決 rc=0 time_s=1.375 note=pip installのdry-run+reportで依存の版を確認(実際の導入はしない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip install --dry-run --report /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/report.json pandas==3.0.6 2>&1 | tail -5; echo '---report---'; python3 -c "import json; d=json.load(open('/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/report.json')); [print(p['metadata']['name'], p['metadata']['version']) for p in d['install']]"
+Requirement already satisfied: python-dateutil>=2.8.2 in /root/.local/lib/python3.11/site-packages (from pandas==3.0.6) (2.9.0.post0)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3/dist-packages (from python-dateutil>=2.8.2->pandas==3.0.6) (1.16.0)
+Using cached pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.1 MB)
+Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+Would install numpy-2.4.6 pandas-3.0.6
+| ---report---
+pandas 3.0.6
+numpy 2.4.6
+--- 2026-09-26T18:14:33Z method=版確認 target=依存解決やり直し rc=0 time_s=4.910 note=隔離venvを新規作成しdry-run+reportで依存の版を確認(ambient環境のsite-packagesを使わない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp python3 -m venv /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/resolve_venv && TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/resolve_venv/bin/python -m pip install --dry-run --report /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/report2.json pandas==3.0.6 2>&1 | tail -8; echo '---report2---'; /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/resolve_venv/bin/python -c "import json; d=json.load(open('/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp/report2.json')); [print(p['metadata']['name'], p['metadata']['version']) for p in d['install']]"
+Using cached pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (11.1 MB)
+Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Would install numpy-2.4.6 pandas-3.0.6 python-dateutil-2.9.0.post0 six-1.17.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python -m pip install --upgrade pip
+| ---report2---
+pandas 3.0.6
+numpy 2.4.6
+python-dateutil 2.9.0.post0
+six 1.17.0
+--- 2026-09-26T18:14:43Z method=6-1取得 target=pandas rc=0 time_s=0.909 note=wheelのみ取得(--only-binary :all: --no-deps。ソースから作らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip download --no-deps --only-binary :all: --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 'pandas==3.0.6'
+Collecting pandas==3.0.6
+  File was already downloaded /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded pandas
+--- 2026-09-26T18:14:44Z method=6-1取得 target=numpy rc=0 time_s=0.860 note=wheelのみ取得(--only-binary :all: --no-deps。ソースから作らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip download --no-deps --only-binary :all: --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 'numpy==2.4.6'
+Collecting numpy==2.4.6
+  Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (6.6 kB)
+Using cached numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+Successfully downloaded numpy
+--- 2026-09-26T18:14:45Z method=6-1取得 target=python-dateutil rc=0 time_s=0.517 note=wheelのみ取得(--only-binary :all: --no-deps。ソースから作らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip download --no-deps --only-binary :all: --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 'python-dateutil==2.9.0.post0'
+Collecting python-dateutil==2.9.0.post0
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+Successfully downloaded python-dateutil
+--- 2026-09-26T18:14:46Z method=6-1取得 target=six rc=0 time_s=0.480 note=wheelのみ取得(--only-binary :all: --no-deps。ソースから作らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache python3 -m pip download --no-deps --only-binary :all: --dest /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 'six==1.17.0'
+Collecting six==1.17.0
+  Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Saved /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/six-1.17.0-py2.py3-none-any.whl
+Successfully downloaded six
+--- 2026-09-26T18:14:52Z method=6-1展開 target=全4配布物 rc=0 time_s=0.886 note=4つのwheelを全部展開しファイル一覧を確認
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && for w in /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/*.whl; do d=$(basename $w .whl); mkdir -p $d; python3 -m zipfile -e $w $d; done; find . -maxdepth 2 -type d | sort; echo '---ファイル数(拡張子ごと、全体)---'; find . -type f | sed -E 's/.*\.([a-zA-Z0-9]+)$/\1/' | sort | uniq -c | sort -rn
+.
+./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64
+./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy
+./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info
+./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy.libs
+./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64
+./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas
+./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas-3.0.6.dist-info
+./python_dateutil-2.9.0.post0-py2.py3-none-any
+./python_dateutil-2.9.0.post0-py2.py3-none-any/dateutil
+./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info
+./six-1.17.0-py2.py3-none-any
+./six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info
+| ---ファイル数(拡張子ごと、全体)---
+   1927 py
+    305 pyi
+     65 so
+     61 f90
+     53 c
+     30 csv
+     27 h
+     24 f
+     11 txt
+     10 md
+      8 tpl
+      7 pyf
+      7 pxd
+      5 npy
+      4 pyx
+      4 gz
+      3 ini
+      3 build
+      2 npz
+      2 a
+      2 0
+      1 typed
+      1 toml
+      1 template
+      1 rst
+      1 pkl
+      1 pc
+      1 inc
+      1 fits
+      1 f95
+      1 cpp
+      1 cfg
+      1 ./six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info/WHEEL
+      1 ./six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info/RECORD
+      1 ./six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info/METADATA
+      1 ./six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info/LICENSE
+      1 ./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info/zip-safe
+      1 ./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info/WHEEL
+      1 ./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info/RECORD
+      1 ./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info/METADATA
+      1 ./python_dateutil-2.9.0.post0-py2.py3-none-any/python_dateutil-2.9.0.post0.dist-info/LICENSE
+      1 ./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas-3.0.6.dist-info/WHEEL
+      1 ./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas-3.0.6.dist-info/RECORD
+      1 ./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas-3.0.6.dist-info/METADATA
+      1 ./pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas-3.0.6.dist-info/LICENSE
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/ma/LICENSE
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/f2py/tests/src/f2cmap/.f2py_f2cmap
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/f2py/tests/src/assumed_shape/.f2py_f2cmap
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/licenses/numpy/ma/LICENSE
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/licenses/numpy/_core/src/umath/svml/LICENSE
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/licenses/numpy/_core/src/highway/LICENSE
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/licenses/numpy/_core/src/common/pythoncapi-compat/COPYING
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/WHEEL
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/RECORD
+      1 ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy-2.4.6.dist-info/METADATA
+--- 2026-09-26T18:15:00Z method=6-1_so一覧 target=全4配布物 rc=0 time_s=0.582 note=全.soのldd確認(外部ネイティブライブラリの同梱が無いか)
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && find . -name '*.so' | sort | while read f; do echo "== $f"; ldd "$f" 2>&1 | sed 's/^/  /'; done | head -c 200000
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy.libs/libscipy_openblas64_-32a4b2a6.so
+  	linux-vdso.so.1 (0x00007f71c140c000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f71bfb17000)
+  	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f71c13f6000)
+  	libgfortran-040039e1-0352e75f.so.5.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy.libs/libgfortran-040039e1-0352e75f.so.5.0.0 (0x00007f71bf600000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f71bf200000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f71c140e000)
+  	libquadmath-96973f99-934c22de.so.0.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy.libs/libquadmath-96973f99-934c22de.so.0.0.0 (0x00007f71bee00000)
+  	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f71c13d8000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f71c13aa000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_multiarray_tests.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007ffa8776c000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007ffa87654000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ffa87400000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007ffa8776e000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_multiarray_umath.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007fb05a6bc000)
+  	libscipy_openblas64_-32a4b2a6.so => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/../../numpy.libs/libscipy_openblas64_-32a4b2a6.so (0x00007fb058400000)
+  	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fb058000000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fb05a5c2000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fb05a592000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fb057c00000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007fb05a6be000)
+  	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fb05a58d000)
+  	libgfortran-040039e1-0352e75f.so.5.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/../../numpy.libs/libgfortran-040039e1-0352e75f.so.5.0.0 (0x00007fb057600000)
+  	libquadmath-96973f99-934c22de.so.0.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/../../numpy.libs/libquadmath-96973f99-934c22de.so.0.0.0 (0x00007fb057200000)
+  	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fb059be4000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_operand_flag_tests.cpython-311-x86_64-linux-gnu.so
+  	statically linked
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_rational_tests.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007f45a67be000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f45a6400000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f45a67c0000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_simd.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007fb35a74f000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fb35a4fa000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fb35a200000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007fb35a751000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_struct_ufunc_tests.cpython-311-x86_64-linux-gnu.so
+  	statically linked
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/_core/_umath_tests.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007f324fcdd000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f324fbd8000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f324f800000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f324fcdf000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/fft/_pocketfft_umath.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007f74bfa0c000)
+  	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f74bf600000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f74bf894000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f74bf5d2000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f74bf200000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f74bfa0e000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/_umath_linalg.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007fe372c11000)
+  	libscipy_openblas64_-32a4b2a6.so => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libscipy_openblas64_-32a4b2a6.so (0x00007fe371400000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fe371317000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe371000000)
+  	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fe372bc7000)
+  	libgfortran-040039e1-0352e75f.so.5.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libgfortran-040039e1-0352e75f.so.5.0.0 (0x00007fe370a00000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007fe372c13000)
+  	libquadmath-96973f99-934c22de.so.0.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libquadmath-96973f99-934c22de.so.0.0.0 (0x00007fe370600000)
+  	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007fe372bab000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fe372b7d000)
+== ./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/lapack_lite.cpython-311-x86_64-linux-gnu.so
+  	linux-vdso.so.1 (0x00007f6fb75e0000)
+  	libscipy_openblas64_-32a4b2a6.so => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libscipy_openblas64_-32a4b2a6.so (0x00007f6fb5e00000)
+  	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f6fb5d17000)
+  	libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f6fb75c2000)
+  	libgfortran-040039e1-0352e75f.so.5.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libgfortran-040039e1-0352e75f.so.5.0.0 (0x00007f6fb5800000)
+  	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6fb5400000)
+  	/lib64/ld-linux-x86-64.so.2 (0x00007f6fb75e2000)
+  	libquadmath-96973f99-934c22de.so.0.0.0 => /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract/./numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/linalg/../../numpy.libs/libquadmath-96973f99-934c22de.so.0.0.0 (0x00007f6fb5000000)
+  	libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f6fb75a4000)
+  	libgcc_s.so.1 => /lib/x86_64-linux-gn
+[出力は 24532 文字。先頭 8000 文字だけを残した]
+--- 2026-09-26T18:15:19Z method=6-1_so要約 target=全4配布物 rc=0 time_s=0.562 note=全.soの数とldd参照先ライブラリ名を集計(外部ネイティブライブラリの同梱が無いか要約)
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && echo 'so数(パッケージごと):'; find . -name '*.so' | sed -E 's#^\./([^/]+)/.*#\1#' | sort | uniq -c; echo; echo '参照される共有ライブラリ名の種類(basenameのみ、バージョン番号を落とす):'; find . -name '*.so' -exec ldd {} \; 2>&1 | grep -oE '[A-Za-z0-9_.+-]+\.so[0-9.]*' | sed -E 's/-[0-9a-f]{8,}//' | sort -u
+so数(パッケージごと):
+     20 numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64
+     45 pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64
+
+参照される共有ライブラリ名の種類(basenameのみ、バージョン番号を落とす):
+ld-linux-x86-64.so.2
+libc.so.6
+libgcc_s.so.1
+libgfortran-0352e75f.so.5.0.0
+libm.so.6
+libpthread.so.0
+libquadmath-934c22de.so.0.0.0
+libscipy_openblas64_.so
+libstdc++.so.6
+libz.so.1
+linux-vdso.so.1
+--- 2026-09-26T18:15:27Z method=6-1_metadata target=全4配布物 rc=0 time_s=0.011 note=各配布物のMETADATA(Requires-Dist・配布元URL)を確認
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && for d in */; do echo "== $d"; grep -E '^(Name|Version|Home-page|Author-email|Project-URL|Requires-Dist|Requires-Python|License):' "${d}"*.dist-info/METADATA 2>/dev/null; echo; done
+== numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/
+Name: numpy
+Version: 2.4.6
+Project-URL: homepage, https://numpy.org
+Project-URL: documentation, https://numpy.org/doc/
+Project-URL: source, https://github.com/numpy/numpy
+Project-URL: download, https://pypi.org/project/numpy/#files
+Project-URL: tracker, https://github.com/numpy/numpy/issues
+Project-URL: release notes, https://numpy.org/doc/stable/release
+Requires-Python: >=3.11
+
+== pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/
+Name: pandas
+Version: 3.0.6
+License: BSD 3-Clause License
+Project-URL: homepage, https://pandas.pydata.org
+Project-URL: documentation, https://pandas.pydata.org/docs/
+Project-URL: repository, https://github.com/pandas-dev/pandas
+Requires-Python: >=3.11
+Requires-Dist: numpy>=1.26.0; python_version < "3.14"
+Requires-Dist: numpy>=2.3.3; python_version >= "3.14"
+Requires-Dist: python-dateutil>=2.8.2
+Requires-Dist: tzdata; sys_platform == "win32"
+Requires-Dist: tzdata; sys_platform == "emscripten"
+Requires-Dist: hypothesis>=6.116.0; extra == "test"
+Requires-Dist: pytest<9.1,>=8.3.4; extra == "test"
+Requires-Dist: pytest-xdist>=3.6.1; extra == "test"
+Requires-Dist: pyarrow>=13.0.0; extra == "pyarrow"
+Requires-Dist: bottleneck>=1.4.2; extra == "performance"
+Requires-Dist: numba>=0.60.0; extra == "performance"
+Requires-Dist: numexpr>=2.10.2; extra == "performance"
+Requires-Dist: scipy>=1.14.1; extra == "computation"
+Requires-Dist: xarray>=2024.10.0; extra == "computation"
+Requires-Dist: fsspec>=2024.10.0; extra == "fss"
+Requires-Dist: s3fs>=2024.10.0; extra == "aws"
+Requires-Dist: gcsfs>=2024.10.0; extra == "gcp"
+Requires-Dist: odfpy>=1.4.1; extra == "excel"
+Requires-Dist: openpyxl>=3.1.5; extra == "excel"
+Requires-Dist: python-calamine>=0.3.0; extra == "excel"
+Requires-Dist: pyxlsb>=1.0.10; extra == "excel"
+Requires-Dist: xlrd>=2.0.1; extra == "excel"
+Requires-Dist: xlsxwriter>=3.2.0; extra == "excel"
+Requires-Dist: pyarrow>=13.0.0; extra == "parquet"
+Requires-Dist: pyarrow>=13.0.0; extra == "feather"
+Requires-Dist: pyiceberg>=0.8.1; extra == "iceberg"
+Requires-Dist: tables>=3.10.1; extra == "hdf5"
+Requires-Dist: pyreadstat>=1.2.8; extra == "spss"
+Requires-Dist: SQLAlchemy>=2.0.36; extra == "postgresql"
+Requires-Dist: psycopg2>=2.9.10; extra == "postgresql"
+Requires-Dist: adbc-driver-postgresql>=1.2.0; extra == "postgresql"
+Requires-Dist: SQLAlchemy>=2.0.36; extra == "mysql"
+Requires-Dist: pymysql>=1.1.1; extra == "mysql"
+Requires-Dist: SQLAlchemy>=2.0.36; extra == "sql-other"
+Requires-Dist: adbc-driver-postgresql>=1.2.0; extra == "sql-other"
+Requires-Dist: adbc-driver-sqlite>=1.2.0; extra == "sql-other"
+Requires-Dist: beautifulsoup4>=4.12.3; extra == "html"
+Requires-Dist: html5lib>=1.1; extra == "html"
+Requires-Dist: lxml>=5.3.0; extra == "html"
+Requires-Dist: lxml>=5.3.0; extra == "xml"
+Requires-Dist: matplotlib>=3.9.3; extra == "plot"
+Requires-Dist: jinja2>=3.1.5; extra == "output-formatting"
+Requires-Dist: tabulate>=0.9.0; extra == "output-formatting"
+Requires-Dist: PyQt5>=5.15.9; extra == "clipboard"
+Requires-Dist: qtpy>=2.4.2; extra == "clipboard"
+Requires-Dist: zstandard>=0.23.0; extra == "compression"
+Requires-Dist: pytz>=2020.1; extra == "timezone"
+Requires-Dist: adbc-driver-postgresql>=1.2.0; extra == "all"
+Requires-Dist: adbc-driver-sqlite>=1.2.0; extra == "all"
+Requires-Dist: beautifulsoup4>=4.12.3; extra == "all"
+Requires-Dist: bottleneck>=1.4.2; extra == "all"
+Requires-Dist: fastparquet>=2024.11.0; extra == "all"
+Requires-Dist: fsspec>=2024.10.0; extra == "all"
+Requires-Dist: gcsfs>=2024.10.0; extra == "all"
+Requires-Dist: html5lib>=1.1; extra == "all"
+Requires-Dist: hypothesis>=6.116.0; extra == "all"
+Requires-Dist: jinja2>=3.1.5; extra == "all"
+Requires-Dist: lxml>=5.3.0; extra == "all"
+Requires-Dist: matplotlib>=3.9.3; extra == "all"
+Requires-Dist: numba>=0.60.0; extra == "all"
+Requires-Dist: numexpr>=2.10.2; extra == "all"
+Requires-Dist: odfpy>=1.4.1; extra == "all"
+Requires-Dist: openpyxl>=3.1.5; extra == "all"
+Requires-Dist: psycopg2>=2.9.10; extra == "all"
+Requires-Dist: pyarrow>=13.0.0; extra == "all"
+Requires-Dist: pyiceberg>=0.8.1; extra == "all"
+Requires-Dist: pymysql>=1.1.1; extra == "all"
+Requires-Dist: PyQt5>=5.15.9; extra == "all"
+Requires-Dist: pyreadstat>=1.2.8; extra == "all"
+Requires-Dist: pytest>=8.3.4; extra == "all"
+Requires-Dist: pytest-xdist>=3.6.1; extra == "all"
+Requires-Dist: python-calamine>=0.3.0; extra == "all"
+Requires-Dist: pytz>=2020.1; extra == "all"
+Requires-Dist: pyxlsb>=1.0.10; extra == "all"
+Requires-Dist: qtpy>=2.4.2; extra == "all"
+Requires-Dist: scipy>=1.14.1; extra == "all"
+Requires-Dist: s3fs>=2024.10.0; extra == "all"
+Requires-Dist: SQLAlchemy>=2.0.36; extra == "all"
+Requires-Dist: tables>=3.10.1; extra == "all"
+Requires-Dist: tabulate>=0.9.0; extra == "all"
+Requires-Dist: xarray>=2024.10.0; extra == "all"
+Requires-Dist: xlrd>=2.0.1; extra == "all"
+Requires-Dist: xlsxwriter>=3.2.0; extra == "all"
+Requires-Dist: zstandard>=0.23.0; extra == "all"
+
+== python_dateutil-2.9.0.post0-py2.py3-none-any/
+Name: python-dateutil
+Version: 2.9.0.post0
+Home-page: https://github.com/dateutil/dateutil
+Author-email: gustavo@niemeyer.net
+License: Dual License
+Project-URL: Documentation, https://dateutil.readthedocs.io/en/stable/
+Project-URL: Source, https://github.com/dateutil/dateutil
+Requires-Python: !=3.0.*,!=3.1.*,!=3.2.*,>=2.7
+Requires-Dist: six >=1.5
+
+== six-1.17.0-py2.py3-none-any/
+Name: six
+Version: 1.17.0
+Home-page: https://github.com/benjaminp/six
+Author-email: benjamin@python.org
+License: MIT
+Requires-Python: >=2.7, !=3.0.*, !=3.1.*, !=3.2.*
+--- 2026-09-26T18:15:34Z method=6-1_不審検査 target=全4配布物 rc=0 time_s=0.277 note=外部取得・任意コード実行の兆候をpyファイル全体でgrep(urlopen/requests/subprocess/os.system/eval/exec/curl/wget)
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && grep -rInE 'urlopen|requests\.(get|post)|subprocess\.|os\.system|eval\(|exec\(|curl |wget ' --include='*.py' . | wc -l; echo '---件数(パッケージごと)---'; grep -rlnE 'urlopen|requests\.(get|post)|subprocess\.|os\.system|eval\(|exec\(|curl |wget ' --include='*.py' . | sed -E 's#^\./([^/]+)/.*#\1#' | sort | uniq -c
+570
+| ---件数(パッケージごと)---
+     58 numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64
+     33 pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64
+      1 python_dateutil-2.9.0.post0-py2.py3-none-any
+      1 six-1.17.0-py2.py3-none-any
+--- 2026-09-26T18:15:45Z method=6-1_init時実行 target=全4配布物 rc=0 time_s=0.010 note=各配布物のトップレベル__init__.pyに、import時に走る不審な呼び出し(urlopen/subprocess/os.system/eval/exec)が無いか確認
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && for f in numpy-*/numpy/__init__.py pandas-*/pandas/__init__.py python_dateutil-*/dateutil/__init__.py six-*/six.py; do echo "== $f"; grep -nE 'urlopen|requests\.(get|post)|subprocess\.|os\.system|eval\(|exec\(' "$f" || echo '(該当なし)'; done
+== numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64/numpy/__init__.py
+(該当なし)
+== pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64/pandas/__init__.py
+(該当なし)
+== python_dateutil-2.9.0.post0-py2.py3-none-any/dateutil/__init__.py
+(該当なし)
+== six-1.17.0-py2.py3-none-any/six.py
+408:    MovedAttribute("urlopen", "urllib2", "urllib.request"),
+740:        exec("""exec _code_ in _globs_, _locs_""")
+--- 2026-09-26T18:15:53Z method=6-1_URL一覧 target=全4配布物 rc=0 time_s=0.049 note=全.pyファイル中のhttp(s)URLのホスト名を集計し、公式以外の不審なホストが無いか確認
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32_extract && grep -rhoE 'https?://[A-Za-z0-9._-]+' --include='*.py' . | sed -E 's#https?://##' | sort | uniq -c | sort -rn | head -60
+    916 github.com
+    111 pandas.pydata.org
+     74 en.wikipedia.org
+     65 docs.python.org
+     24 example.com
+     22 arrow.apache.org
+     16 stackoverflow.com
+     15 www.w3.org
+     15 www.python.org
+     14 pypi.org
+     14 numpy.org
+      9 docs.scipy.org
+      9 bugs.python.org
+      8 www.opengis.net
+      6 haven.tidyverse.org
+      5 www.google.com
+      5 tools.ietf.org
+      5 docs.sqlalchemy.org
+      5 data-apis.org
+      4 www.web.com
+      4 www.python.
+      4 www.netlib.org
+      4 web.com
+      4 web.archive.org
+      4 other.org
+      4 mypy.readthedocs.io
+      4 google.brand.edgar-online.com
+      3 www.stata.com
+      3 www.ikea.com
+      3 support.sas.com
+      3 msdn.com
+      3 mail.python.org
+      3 doi.org
+      2 www.web
+      2 www.pgroup.com
+      2 www.gnu.org
+      2 user
+      2 raw.githubusercontent.com
+      2 msdn.microsoft.com
+      2 metacpan.org
+      2 matplotlib.org
+      2 hypothesis.readthedocs.io
+      2 html.spec.whatwg.org
+      2 google.com
+      2 example.xom
+      2 en.wiktionary.org
+      2 cygwin.com
+      2 cens.ioc.ee
+      2 bitbucket.org
+      1 yahoo.brand.edgar-online.com
+      1 xlrd.readthedocs.io
+      1 xarray.pydata.org
+      1 wwwn.cdc.gov
+      1 www.xyz.edu
+      1 www.tondering.dk
+      1 www.swig.org
+      1 www.statsmodels.org
+      1 www.scipy.org
+      1 www.opm.gov
+      1 www.openblas.net
+--- 2026-09-26T18:16:04Z method=6-1_脆弱性 target=全4配布物 rc=0 time_s=1.345 note=OSV.devでnumpy 2.4.6・python-dateutil 2.9.0.post0・six 1.17.0の既知の脆弱性を確認(pandas 3.0.6は31回目で実測済み、確認し直す)
+$ for pkg_ver in 'numpy:2.4.6' 'python-dateutil:2.9.0.post0' 'six:1.17.0' 'pandas:3.0.6'; do pkg=${pkg_ver%%:*}; ver=${pkg_ver##*:}; echo "== $pkg==$ver"; curl -sS -X POST https://api.osv.dev/v1/query -d "{\"version\":\"$ver\",\"package\":{\"name\":\"$pkg\",\"ecosystem\":\"PyPI\"}}"; echo; done
+== numpy==2.4.6
+{}
+== python-dateutil==2.9.0.post0
+{}
+== six==1.17.0
+{}
+== pandas==3.0.6
+{}
+--- 2026-09-26T18:16:14Z method=6-1_PyPI情報 target=依存3件 rc=0 time_s=0.505 note=numpy・python-dateutil・sixのPyPI project_urls/author/初回公開日を確認(配布元の一致)
+$ for pkg in numpy python-dateutil six; do echo "== $pkg"; curl -sS https://pypi.org/pypi/$pkg/json -o /tmp/x_$pkg.json 2>/dev/null; python3 -c "import json; d=json.load(open('/tmp/x_'.replace('$pkg','')+'.json')) if False else None" 2>/dev/null; python3 - "$pkg" <<'PYEOF'
+import json,sys
+pkg=sys.argv[1]
+d=json.load(open(f'/tmp/x_{pkg}.json'))
+info=d['info']
+print('author_email:', info.get('author_email'))
+print('home_page:', info.get('home_page'))
+print('project_urls:', info.get('project_urls'))
+rels=d['releases']
+first=min((k for k,v in rels.items() if v), key=lambda k: rels[k][0]['upload_time_iso_8601'] if rels[k] else '9999') if rels else None
+print('first_release_version:', first, 'upload:', rels[first][0]['upload_time_iso_8601'] if first else None)
+PYEOF
+rm -f /tmp/x_$pkg.json
+done
+== numpy
+author_email: None
+home_page: None
+project_urls: {'documentation': 'https://numpy.org/doc/', 'download': 'https://pypi.org/project/numpy/#files', 'homepage': 'https://numpy.org', 'release notes': 'https://numpy.org/doc/stable/release', 'source': 'https://github.com/numpy/numpy', 'tracker': 'https://github.com/numpy/numpy/issues'}
+first_release_version: 1.0 upload: 2006-12-02T02:07:43Z
+== python-dateutil
+author_email: gustavo@niemeyer.net
+home_page: https://github.com/dateutil/dateutil
+project_urls: {'Documentation': 'https://dateutil.readthedocs.io/en/stable/', 'Homepage': 'https://github.com/dateutil/dateutil', 'Source': 'https://github.com/dateutil/dateutil'}
+first_release_version: 1.4 upload: 2008-08-06T19:11:48Z
+== six
+author_email: benjamin@python.org
+home_page: https://github.com/benjaminp/six
+project_urls: {'Homepage': 'https://github.com/benjaminp/six'}
+first_release_version: 0.9.0 upload: 2010-06-29T19:56:36.719942Z
+--- 2026-09-26T18:16:22Z method=6-1_週DL数 target=依存3件 rc=0 time_s=1.602 note=pypistats.orgで依存3件の週DL数を確認(保守の活発さ)
+$ for pkg in numpy python-dateutil six; do echo "== $pkg"; curl -sS "https://pypistats.org/api/packages/$pkg/recent?period=week"; echo; done
+== numpy
+{"data":{"last_week":186364274},"package":"numpy","type":"recent_downloads"}
+
+== python-dateutil
+{"data":{"last_week":208033416},"package":"python-dateutil","type":"recent_downloads"}
+
+== six
+<a href="/api/#etiquette">429 RATE LIMIT EXCEEDED</a>
+--- 2026-09-26T18:16:29Z method=6-1_週DL数再試行 target=six rc=0 time_s=3.366 note=sixの週DL数を再試行(前の手はレート制限429)
+$ sleep 3; curl -sS 'https://pypistats.org/api/packages/six/recent?period=week'
+{"data":{"last_week":205364977},"package":"six","type":"recent_downloads"}
+--- 2026-09-26T18:16:46Z method=結論 target=6-1_結論_pandas-numpy-python-dateutil-six rc=0 time_s=0.002 note=導入・実行で使う配布物は pandas==3.0.6(生ログ48-52,74-238,240-363,372-443,383-444,445-453行) numpy==2.4.6(生ログ53-59,74-238,240-363,372-443,383-444,445-453行) python-dateutil==2.9.0.post0(生ログ60-66,74-238,240-363,372-443,383-444,445-453,455-484,485-496行) six==1.17.0(生ログ67-73,74-238,240-363,372-443,383-444,445-453,455-484,485-496行) の4つ。全部--only-binary :all: --no-depsでwheelのみ取得(ソースから作らない)、全wheel展開、全.soのldd確認(標準システムライブラリとnumpy自身が同梱するopenblas/gfortran/quadmathのみ)、METADATA確認(配布元一致)、pyファイル全体の不審コード検査(top-level __init__.pyには無し)、URL一覧確認、OSV.devで4件とも既知の脆弱性0件、PyPI project_urls確認、週DL数確認(numpy 186M・python-dateutil 208M・six 205M)。導入を止める所見は無い
+$ echo '§6-1結論: 危険の所見なし。導入・実行で使う配布物4件(pandas 3.0.6, numpy 2.4.6, python-dateutil 2.9.0.post0, six 1.17.0)は全部wheelのみ取得・展開・中身を開いて確認済み。導入前検査完了。この行より前が§6-1、この行より後が導入・実行'
+§6-1結論: 危険の所見なし。導入・実行で使う配布物4件(pandas 3.0.6, numpy 2.4.6, python-dateutil 2.9.0.post0, six 1.17.0)は全部wheelのみ取得・展開・中身を開いて確認済み。導入前検査完了。この行より前が§6-1、この行より後が導入・実行
+--- 2026-09-26T18:16:52Z method=導入 target=run32venv作成 rc=0 time_s=3.399 note=隔離venvを新規作成(31回目のrun/は使わない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp python3 -m venv /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv
+
+--- 2026-09-26T18:16:56Z method=導入 target=pandas一式 rc=0 time_s=6.580 note=check32のwheelだけから導入(--no-index --find-links、網から取らない)
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp PIP_CACHE_DIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/pipcache /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python -m pip install --no-index --find-links /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32 pandas==3.0.6
+Looking in links: /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32
+Processing /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/pandas-3.0.6-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+Processing /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/numpy-2.4.6-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (from pandas==3.0.6)
+Processing /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/python_dateutil-2.9.0.post0-py2.py3-none-any.whl (from pandas==3.0.6)
+Processing /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/check32/six-1.17.0-py2.py3-none-any.whl (from python-dateutil>=2.8.2->pandas==3.0.6)
+Installing collected packages: six, numpy, python-dateutil, pandas
+Successfully installed numpy-2.4.6 pandas-3.0.6 python-dateutil-2.9.0.post0 six-1.17.0
+--- 2026-09-26T18:17:08Z method=導入 target=pip_list rc=0 time_s=0.553 note=入った配布物の一覧(§6-1の結論の一覧と同じであることの確認)
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python -m pip list --format=freeze
+numpy==2.4.6
+pandas==3.0.6
+pip==24.0
+python-dateutil==2.9.0.post0
+setuptools==79.0.1
+six==1.17.0
+
+[notice] A new release of pip is available: 24.0 -> 26.2.1
+[notice] To update, run: python -m pip install --upgrade pip
+--- 2026-09-26T18:17:09Z method=導入 target=pip_check rc=0 time_s=0.529 note=pip checkの結果
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python -m pip check
+No broken requirements found.
+--- 2026-09-26T18:17:34Z method=最小実行 target=中核 rc=0 time_s=0.384 note=合成データでE1a(PASS/FAIL/tolerance)・E1b(groupby/corr)・E2(duplicated/is_monotonic/merge indicator)・E3b(merge_asof backward)・E5(sample random_state)の中核を実行
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/pandas_minimal32.py
+pandas version: 3.0.6
+| --- E1a PASS ---
+PASS: no exception (dataframes equal)
+| --- E1a FAIL (rtol=1e-5 既定) ---
+PASS(期待通り検出): AssertionError raised
+DataFrame.iloc[:, 0] (column name="price") are different
+
+DataFrame.iloc[:, 0] (column name="price") values are different (33.33333 %)
+[index]: [0, 1, 2]
+[left]:  [100.0, 101.0, 102.0]
+[right]: [100.0, 101.0, 999.0]
+At positional index 2, first diff: 102.0 != 999.0
+| --- E1a FAIL with rtol/atol tolerance specified (段5のアの確認) ---
+PASS: tolerance absorbed the difference (rtol/atol指定で通過)
+| --- E1b groupby().sum() ---
+{'A': 30.0, 'B': 5.0}
+| --- E1b corr() ---
+     x    y
+x  1.0  1.0
+y  1.0  1.0
+| --- E2 duplicated ---
+[False, True, False]
+| --- E2 is_monotonic_increasing ---
+sorted: True unsorted: False
+| --- E2 merge indicator (情報源間の食い違い検出) ---
+   id  px_a  px_b      _merge
+0   1  10.0   NaN   left_only
+1   2  20.0  20.0        both
+2   3  30.0  31.0        both
+3   4   NaN  40.0  right_only
+| --- E3b merge_asof direction=backward (未来のデータを混入させない) ---
+                 time  qty  price
+0 2026-01-01 09:07:00    5    101
+確認: 09:07の約定は09:10(未来)の価格を使わず、09:05(既知)の価格101を使った
+| --- E5 sample random_state ---
+同じrandom_stateで同じ標本か: True
+ALL DONE
+--- 2026-09-26T18:17:35Z method=最小実行 target=pip_check再確認 rc=0 time_s=0.464 note=最小実行後もpip checkに問題が無いか
+$ /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python -m pip check
+No broken requirements found.
+--- 2026-09-26T18:17:48Z method=当方データ投入 target=合成tardis形式 rc=0 time_s=0.459 note=tardis形式(timestamp,symbol,side,price,amount)のマイクロ秒timestampを持つ合成csv.gzを生成し、pandasで読み込みUTC datetimeへ変換
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32 && TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp venv/bin/python gen_synthetic.py && TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp venv/bin/python -c "
+import pandas as pd, time
+t0=time.perf_counter()
+df = pd.read_csv('synthetic_tardis_trades32.csv.gz', compression='gzip')
+df['dt'] = pd.to_datetime(df['timestamp'], unit='us', utc=True)
+print(df.dtypes)
+print(df.head(3))
+print('rows:', len(df))
+print('elapsed:', time.perf_counter()-t0)
+"
+wrote synthetic file
+timestamp                  int64
+symbol                       str
+side                         str
+price                      int64
+amount                   float64
+dt           datetime64[us, UTC]
+dtype: object
+          timestamp      symbol  ...  amount                               dt
+0  1735689600000000  FX_BTC_JPY  ...  0.8444        2025-01-01 00:00:00+00:00
+1  1735689600500000  FX_BTC_JPY  ...  0.7580 2025-01-01 00:00:00.500000+00:00
+2  1735689601000000  FX_BTC_JPY  ...  0.4206        2025-01-01 00:00:01+00:00
+
+[3 rows x 6 columns]
+rows: 2000
+elapsed: 0.01421334999758983
+--- 2026-09-26T18:17:55Z method=規模の見積 target=100万行 rc=0 time_s=0.551 note=合成100万行でのDataFrame構築・1分足floor集計の時間とピークRSSを実測
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32 && TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp venv/bin/python -c "
+import pandas as pd, numpy as np, time, resource
+t0=time.perf_counter()
+n=1_000_000
+df = pd.DataFrame({'ts': pd.date_range('2025-01-01', periods=n, freq='500ms', tz='UTC'), 'price': np.random.random(n)+10000000, 'amount': np.random.random(n)})
+t1=time.perf_counter()
+agg = df.set_index('ts').resample('1min')['price'].agg(['mean','std','count'])
+t2=time.perf_counter()
+print('build_s:', round(t1-t0,3))
+print('resample_agg_s:', round(t2-t1,3))
+print('peak_rss_MB:', round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024,1))
+print('agg_rows:', len(agg))
+"
+build_s: 0.154
+resample_agg_s: 0.036
+peak_rss_MB: 113.6
+agg_rows: 8334
+--- 2026-09-26T18:18:03Z method=外部送信 target=import時 rc=0 time_s=0.378 note=importのみでtelemetry/analytics等の語がpandas/__init__.py・pandas/_config配下に無いか、importのみで外部通信が試みられないか確認
+$ cd /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32 && grep -riE 'telemetry|analytics|phone.?home' venv/lib/python3.11/site-packages/pandas/__init__.py venv/lib/python3.11/site-packages/pandas/_config/*.py 2>&1; echo '---rc='$?; TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp venv/bin/python -c "import socket; orig=socket.socket.connect; hit=[]
+def blocked(self,*a,**k):
+    hit.append(a); raise OSError('blocked for test')
+socket.socket.connect=blocked
+import pandas as pd
+print('import後の接続試行回数:', len(hit))
+"
+| ---rc=1
+import後の接続試行回数: 0
+--- 2026-09-26T18:19:21Z method=E2印 target=asfreq rc=0 time_s=0.004 note=core/generic.pyのasfreq docstringを印字(時系列+欠けの報告の同一機能内での逐語)
+$ sed -n '9097,9124p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/generic.py
+    def asfreq(
+        self,
+        freq: Frequency,
+        method: FillnaOptions | None = None,
+        how: Literal["start", "end"] | None = None,
+        normalize: bool = False,
+        fill_value: Hashable | None = None,
+    ) -> Self:
+        """
+        Convert time series to specified frequency.
+
+        Returns the original data conformed to a new index with the specified
+        frequency.
+
+        If the index of this Series/DataFrame is a :class:`~pandas.PeriodIndex`, the
+        new index is the result of transforming the original index with
+        :meth:`PeriodIndex.asfreq <pandas.PeriodIndex.asfreq>` (so the original index
+        will map one-to-one to the new index).
+
+        Otherwise, the new index will be equivalent to ``pd.date_range(start, end,
+        freq=freq)`` where ``start`` and ``end`` are, respectively, the min and
+        max entries in the original index (see :func:`pandas.date_range`). The
+        values corresponding to any timesteps in the new index which were not present
+        in the original index will be null (``NaN``), unless a method for filling
+        such unknowns is provided (see the ``method`` parameter below).
+
+        The :meth:`resample` method is more appropriate if an operation on each group of
+        timesteps (such as an aggregate) is necessary to represent the data at the new
+--- 2026-09-26T18:19:29Z method=E2実測 target=asfreq_gap検出 rc=0 time_s=0.327 note=合成の約定風時系列(1秒間隔、1点欠落)にasfreqを当て、欠けた時点がNaNとして報告されることを実測
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/venv/bin/python -c "
+import pandas as pd
+idx = pd.date_range('2026-01-01 00:00:00', periods=5, freq='1s').delete(2)  # 02秒を欠落させる(合成約定風の時系列)
+s = pd.Series([100.0,101.0,103.0,104.0], index=idx, name='price')
+print('元の時系列(欠落あり):'); print(s)
+out = s.asfreq('1s')
+print('asfreq後(欠けた時点がNaNとして報告される):'); print(out)
+print('欠けを検出したか(NaNの数):', out.isna().sum())
+"
+元の時系列(欠落あり):
+2026-01-01 00:00:00    100.0
+2026-01-01 00:00:01    101.0
+2026-01-01 00:00:03    103.0
+2026-01-01 00:00:04    104.0
+Name: price, dtype: float64
+asfreq後(欠けた時点がNaNとして報告される):
+2026-01-01 00:00:00    100.0
+2026-01-01 00:00:01    101.0
+2026-01-01 00:00:02      NaN
+2026-01-01 00:00:03    103.0
+2026-01-01 00:00:04    104.0
+Freq: s, Name: price, dtype: float64
+欠けを検出したか(NaNの数): 1
+--- 2026-09-26T18:19:49Z method=検索 target=E3a rc=0 time_s=2.793 note=E3aの語の組(ルックアヘッド・look-ahead / survivorship・生存者 / leak・リーク・未来 / point-in-time・as-of・時点)でcat8_search.pyを打ち直し
+$ python3 scripts/cat8_search.py --list /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt --candidate 8-034 --ignore-case --pattern 'ルックアヘッド|look-ahead|survivorship|生存者|leak|リーク|未来|point-in-time|as-of|時点' > /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full.txt 2>&1; wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full.txt; tail -5 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full.txt
+116 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full.txt
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/data/html_encoding/letz_latin1.html	cp1252 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/data/xml/baby_names.xml	cp1252 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/sauron.SHIFT_JIS.csv	cp932 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/unicode_series.csv	cp932 として読んだ
+cat8_search: complete files=2234 read=2234 files_with_hits=44 hits=66 list=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt sha=88c92c0478681d3d candidate=8-034
+--- 2026-09-26T18:21:08Z method=文書頁一覧 target=doc_source全217件 rc=0 time_s=0.048 note=doc/source配下の全.rst/.md/.ipynbの道と題を1行ずつ出力(機械的選定の前段)
+$ python3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/titles.py > /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt; wc -l /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt; tail -3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt
+218 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt
+whatsnew/v3.0.6.rst	What's new in 3.0.6 (September 17, 2026)
+whatsnew/v3.1.0.rst	What's new in 3.1.0 (Month XX, 2026)
+| ---count=217---
+--- 2026-09-26T18:21:15Z method=文書頁一覧全文 target=doc_source全217件 rc=0 time_s=0.003 note=doc/source配下の全217件の道と題を1行ずつ全文出力(§1の「文書の全頁の題を1行ずつ印字して全部読む」)
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt
+development/community.rst	Contributor community
+development/contributing.rst	Contributing to pandas
+development/contributing_codebase.rst	Contributing to the code base
+development/contributing_docstring.rst	pandas docstring guide
+development/contributing_documentation.rst	Contributing to the documentation
+development/contributing_environment.rst	Creating a development environment
+development/copy_on_write.rst	Copy on write
+development/debugging_extensions.rst	Debugging C extensions
+development/developer.rst	Developer
+development/extending.rst	Extending pandas
+development/index.rst	Development
+development/internals.rst	Internals
+development/maintaining.rst	pandas maintenance
+development/policies.rst	Policies
+getting_started/comparison/comparison_with_r.rst	Comparison with R / R libraries
+getting_started/comparison/comparison_with_sas.rst	Comparison with SAS
+getting_started/comparison/comparison_with_spreadsheets.rst	Comparison with spreadsheets
+getting_started/comparison/comparison_with_spss.rst	Comparison with SPSS
+getting_started/comparison/comparison_with_sql.rst	Comparison with SQL
+getting_started/comparison/comparison_with_stata.rst	Comparison with Stata
+getting_started/comparison/includes/case.rst	(見出し無し)
+getting_started/comparison/includes/column_operations.rst	(見出し無し)
+getting_started/comparison/includes/column_selection.rst	Keep certain columns
+getting_started/comparison/includes/construct_dataframe.rst	(見出し無し)
+getting_started/comparison/includes/copies.rst	(見出し無し)
+getting_started/comparison/includes/extract_substring.rst	(見出し無し)
+getting_started/comparison/includes/filtering.rst	(見出し無し)
+getting_started/comparison/includes/find_substring.rst	(見出し無し)
+getting_started/comparison/includes/groupby.rst	(見出し無し)
+getting_started/comparison/includes/if_then.rst	(見出し無し)
+getting_started/comparison/includes/introduction.rst	(見出し無し)
+getting_started/comparison/includes/length.rst	(見出し無し)
+getting_started/comparison/includes/limit.rst	(見出し無し)
+getting_started/comparison/includes/merge.rst	(見出し無し)
+getting_started/comparison/includes/merge_setup.rst	(見出し無し)
+getting_started/comparison/includes/missing.rst	Drop rows with missing values
+getting_started/comparison/includes/missing_intro.rst	(見出し無し)
+getting_started/comparison/includes/nth_word.rst	(見出し無し)
+getting_started/comparison/includes/sorting.rst	(見出し無し)
+getting_started/comparison/includes/time_date.rst	(見出し無し)
+getting_started/comparison/includes/transform.rst	(見出し無し)
+getting_started/comparison/index.rst	Comparison with other tools
+getting_started/index.rst	Getting started
+getting_started/install.rst	Installation
+getting_started/intro_tutorials/01_table_oriented.rst	What kind of data does pandas handle?
+getting_started/intro_tutorials/02_read_write.rst	How do I read and write tabular data?
+getting_started/intro_tutorials/03_subset_data.rst	How do I select a subset of a ``DataFrame``?
+getting_started/intro_tutorials/04_plotting.rst	How do I create plots in pandas?
+getting_started/intro_tutorials/05_add_columns.rst	How to create new columns derived from existing columns
+getting_started/intro_tutorials/06_calculate_statistics.rst	How to calculate summary statistics
+getting_started/intro_tutorials/07_reshape_table_layout.rst	How to reshape the layout of tables
+getting_started/intro_tutorials/08_combine_dataframes.rst	How to combine data from multiple tables
+getting_started/intro_tutorials/09_timeseries.rst	How to handle time series data with ease
+getting_started/intro_tutorials/10_text_data.rst	How to manipulate textual data
+getting_started/intro_tutorials/includes/air_quality_no2.rst	(見出し無し)
+getting_started/intro_tutorials/includes/titanic.rst	(見出し無し)
+getting_started/intro_tutorials/index.rst	Getting started tutorials
+getting_started/overview.rst	Package overview
+getting_started/tutorials.rst	Tutorials and Books
+reference/aliases.rst	pandas typing aliases
+reference/arrays.rst	pandas arrays, scalars, and data types
+reference/extensions.rst	Extensions
+reference/frame.rst	DataFrame
+reference/general_functions.rst	General functions
+reference/groupby.rst	GroupBy
+reference/index.rst	API reference
+reference/indexing.rst	Index objects
+reference/io.rst	Input/output
+reference/missing_value.rst	Missing values
+reference/offset_frequency.rst	Date offsets
+reference/options.rst	Options and settings
+reference/plotting.rst	Plotting
+reference/resampling.rst	Resampling
+reference/series.rst	Series
+reference/style.rst	Style
+reference/testing.rst	Testing
+reference/window.rst	Window
+user_guide/10min.rst	10 minutes to pandas
+user_guide/advanced.rst	MultiIndex / advanced indexing
+user_guide/basics.rst	Essential basic functionality
+user_guide/boolean.rst	Nullable Boolean data type
+user_guide/categorical.rst	Categorical data
+user_guide/cookbook.rst	Cookbook
+user_guide/dsintro.rst	Intro to data structures
+user_guide/duplicates.rst	Duplicate Labels
+user_guide/enhancingperf.rst	Enhancing performance
+user_guide/gotchas.rst	Frequently Asked Questions (FAQ)
+user_guide/groupby.rst	Group by: split-apply-combine
+user_guide/index.rst	User Guide
+user_guide/indexing.rst	Indexing and selecting data
+user_guide/integer_na.rst	Nullable integer data type
+user_guide/io.rst	IO tools (text, CSV, HDF5, ...)
+user_guide/merging.rst	Merge, join, concatenate and compare
+user_guide/migration.rst	Migration Guides
+user_guide/missing_data.rst	Working with missing data
+user_guide/options.rst	Options and settings
+user_guide/pyarrow.rst	PyArrow Functionality
+user_guide/reshaping.rst	Reshaping and pivot tables
+user_guide/scale.rst	Scaling to large datasets
+user_guide/sparse.rst	Sparse data structures
+user_guide/style.ipynb	Table Visualization
+user_guide/text.rst	Working with text data
+user_guide/timedeltas.rst	Time deltas
+user_guide/timeseries.rst	Time series / date functionality
+user_guide/user_defined_functions.rst	User-Defined Functions (UDFs)
+user_guide/visualization.rst	Chart visualization
+user_guide/window.rst	Windowing operations
+whatsnew/index.rst	Release notes
+whatsnew/v0.10.0.rst	Version 0.10.0 (December 17, 2012)
+whatsnew/v0.10.1.rst	Version 0.10.1 (January 22, 2013)
+whatsnew/v0.11.0.rst	Version 0.11.0 (April 22, 2013)
+whatsnew/v0.12.0.rst	Version 0.12.0 (July 24, 2013)
+whatsnew/v0.13.0.rst	Version 0.13.0 (January 3, 2014)
+whatsnew/v0.13.1.rst	Version 0.13.1 (February 3, 2014)
+whatsnew/v0.14.0.rst	Version 0.14.0 (May 31 , 2014)
+whatsnew/v0.14.1.rst	Version 0.14.1 (July 11, 2014)
+whatsnew/v0.15.0.rst	Version 0.15.0 (October 18, 2014)
+whatsnew/v0.15.1.rst	Version 0.15.1 (November 9, 2014)
+whatsnew/v0.15.2.rst	Version 0.15.2 (December 12, 2014)
+whatsnew/v0.16.0.rst	Version 0.16.0 (March 22, 2015)
+whatsnew/v0.16.1.rst	Version 0.16.1 (May 11, 2015)
+whatsnew/v0.16.2.rst	Version 0.16.2 (June 12, 2015)
+whatsnew/v0.17.0.rst	Version 0.17.0 (October 9, 2015)
+whatsnew/v0.17.1.rst	Version 0.17.1 (November 21, 2015)
+whatsnew/v0.18.0.rst	Version 0.18.0 (March 13, 2016)
+whatsnew/v0.18.1.rst	Version 0.18.1 (May 3, 2016)
+whatsnew/v0.19.0.rst	Version 0.19.0 (October 2, 2016)
+whatsnew/v0.19.1.rst	Version 0.19.1 (November 3, 2016)
+whatsnew/v0.19.2.rst	Version 0.19.2 (December 24, 2016)
+whatsnew/v0.20.0.rst	Version 0.20.1 (May 5, 2017)
+whatsnew/v0.20.2.rst	Version 0.20.2 (June 4, 2017)
+whatsnew/v0.20.3.rst	Version 0.20.3 (July 7, 2017)
+whatsnew/v0.21.0.rst	Version 0.21.0 (October 27, 2017)
+whatsnew/v0.21.1.rst	Version 0.21.1 (December 12, 2017)
+whatsnew/v0.22.0.rst	Version 0.22.0 (December 29, 2017)
+whatsnew/v0.23.0.rst	What's new in 0.23.0 (May 15, 2018)
+whatsnew/v0.23.1.rst	What's new in 0.23.1 (June 12, 2018)
+whatsnew/v0.23.2.rst	What's new in 0.23.2 (July 5, 2018)
+whatsnew/v0.23.3.rst	What's new in 0.23.3 (July 7, 2018)
+whatsnew/v0.23.4.rst	What's new in 0.23.4 (August 3, 2018)
+whatsnew/v0.24.0.rst	What's new in 0.24.0 (January 25, 2019)
+whatsnew/v0.24.1.rst	What's new in 0.24.1 (February 3, 2019)
+whatsnew/v0.24.2.rst	What's new in 0.24.2 (March 12, 2019)
+whatsnew/v0.25.0.rst	What's new in 0.25.0 (July 18, 2019)
+whatsnew/v0.25.1.rst	What's new in 0.25.1 (August 21, 2019)
+whatsnew/v0.25.2.rst	What's new in 0.25.2 (October 15, 2019)
+whatsnew/v0.25.3.rst	What's new in 0.25.3 (October 31, 2019)
+whatsnew/v0.4.x.rst	Versions 0.4.1 through 0.4.3 (September 25 - October 9, 2011)
+whatsnew/v0.5.0.rst	Version 0.5.0 (October 24, 2011)
+whatsnew/v0.6.0.rst	Version 0.6.0 (November 25, 2011)
+whatsnew/v0.6.1.rst	Version 0.6.1 (December 13, 2011)
+whatsnew/v0.7.0.rst	Version 0.7.0 (February 9, 2012)
+whatsnew/v0.7.1.rst	Version 0.7.1 (February 29, 2012)
+whatsnew/v0.7.2.rst	Version 0.7.2 (March 16, 2012)
+whatsnew/v0.7.3.rst	Version 0.7.3 (April 12, 2012)
+whatsnew/v0.8.0.rst	Version 0.8.0 (June 29, 2012)
+whatsnew/v0.8.1.rst	Version 0.8.1 (July 22, 2012)
+whatsnew/v0.9.0.rst	Version 0.9.0 (October 7, 2012)
+whatsnew/v0.9.1.rst	Version 0.9.1 (November 14, 2012)
+whatsnew/v1.0.0.rst	What's new in 1.0.0 (January 29, 2020)
+whatsnew/v1.0.1.rst	What's new in 1.0.1 (February 5, 2020)
+whatsnew/v1.0.2.rst	What's new in 1.0.2 (March 12, 2020)
+whatsnew/v1.0.3.rst	What's new in 1.0.3 (March 17, 2020)
+whatsnew/v1.0.4.rst	What's new in 1.0.4 (May 28, 2020)
+whatsnew/v1.0.5.rst	What's new in 1.0.5 (June 17, 2020)
+whatsnew/v1.1.0.rst	What's new in 1.1.0 (July 28, 2020)
+whatsnew/v1.1.1.rst	What's new in 1.1.1 (August 20, 2020)
+whatsnew/v1.1.2.rst	What's new in 1.1.2 (September 8, 2020)
+whatsnew/v1.1.3.rst	What's new in 1.1.3 (October 5, 2020)
+whatsnew/v1.1.4.rst	What's new in 1.1.4 (October 30, 2020)
+whatsnew/v1.1.5.rst	What's new in 1.1.5 (December 07, 2020)
+whatsnew/v1.2.0.rst	What's new in 1.2.0 (December 26, 2020)
+whatsnew/v1.2.1.rst	What's new in 1.2.1 (January 20, 2021)
+whatsnew/v1.2.2.rst	What's new in 1.2.2 (February 09, 2021)
+whatsnew/v1.2.3.rst	What's new in 1.2.3 (March 02, 2021)
+whatsnew/v1.2.4.rst	What's new in 1.2.4 (April 12, 2021)
+whatsnew/v1.2.5.rst	What's new in 1.2.5 (June 22, 2021)
+whatsnew/v1.3.0.rst	What's new in 1.3.0 (July 2, 2021)
+whatsnew/v1.3.1.rst	What's new in 1.3.1 (July 25, 2021)
+whatsnew/v1.3.2.rst	What's new in 1.3.2 (August 15, 2021)
+whatsnew/v1.3.3.rst	What's new in 1.3.3 (September 12, 2021)
+whatsnew/v1.3.4.rst	What's new in 1.3.4 (October 17, 2021)
+whatsnew/v1.3.5.rst	What's new in 1.3.5 (December 12, 2021)
+whatsnew/v1.4.0.rst	What's new in 1.4.0 (January 22, 2022)
+whatsnew/v1.4.1.rst	What's new in 1.4.1 (February 12, 2022)
+whatsnew/v1.4.2.rst	What's new in 1.4.2 (April 2, 2022)
+whatsnew/v1.4.3.rst	What's new in 1.4.3 (June 23, 2022)
+whatsnew/v1.4.4.rst	What's new in 1.4.4 (August 31, 2022)
+whatsnew/v1.5.0.rst	What's new in 1.5.0 (September 19, 2022)
+whatsnew/v1.5.1.rst	What's new in 1.5.1 (October 19, 2022)
+whatsnew/v1.5.2.rst	What's new in 1.5.2 (November 21, 2022)
+whatsnew/v1.5.3.rst	What's new in 1.5.3 (January 18, 2023)
+whatsnew/v2.0.0.rst	What's new in 2.0.0 (April 3, 2023)
+whatsnew/v2.0.1.rst	What's new in 2.0.1 (April 24, 2023)
+whatsnew/v2.0.2.rst	What's new in 2.0.2 (May 29, 2023)
+whatsnew/v2.0.3.rst	What's new in 2.0.3 (June 28, 2023)
+whatsnew/v2.1.0.rst	What's new in 2.1.0 (Aug 30, 2023)
+whatsnew/v2.1.1.rst	What's new in 2.1.1 (September 20, 2023)
+whatsnew/v2.1.2.rst	What's new in 2.1.2 (October 26, 2023)
+whatsnew/v2.1.3.rst	What's new in 2.1.3 (November 10, 2023)
+whatsnew/v2.1.4.rst	What's new in 2.1.4 (December 8, 2023)
+whatsnew/v2.2.0.rst	What's new in 2.2.0 (January 19, 2024)
+whatsnew/v2.2.1.rst	What's new in 2.2.1 (February 22, 2024)
+whatsnew/v2.2.2.rst	What's new in 2.2.2 (April 10, 2024)
+whatsnew/v2.2.3.rst	What's new in 2.2.3 (September 20, 2024)
+whatsnew/v2.3.0.rst	What's new in 2.3.0 (June 4, 2025)
+whatsnew/v2.3.1.rst	What's new in 2.3.1 (July 7, 2025)
+whatsnew/v2.3.2.rst	What's new in 2.3.2 (August 21, 2025)
+whatsnew/v2.3.3.rst	What's new in 2.3.3 (September 29, 2025)
+whatsnew/v3.0.0.rst	What's new in 3.0.0 (January 21, 2026)
+whatsnew/v3.0.1.rst	What's new in 3.0.1 (February 17, 2026)
+whatsnew/v3.0.2.rst	What's new in 3.0.2 (March 30, 2026)
+whatsnew/v3.0.3.rst	What's new in 3.0.3 (May 11, 2026)
+whatsnew/v3.0.4.rst	What's new in 3.0.4 (June 28, 2026)
+whatsnew/v3.0.5.rst	What's new in 3.0.5 (July 22, 2026)
+whatsnew/v3.0.6.rst	What's new in 3.0.6 (September 17, 2026)
+whatsnew/v3.1.0.rst	What's new in 3.1.0 (Month XX, 2026)
+| ---count=217---
+--- 2026-09-26T18:21:23Z method=文書頁選定 target=E4 rc=1 time_s=0.005 note=doc_titles.txt(道+題)にE4の語の組(リプレイ・再生・replay/record・記録・capture/playback・再実行・rerun)をgrep -i -Eで当てて選ぶ
+$ grep -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt
+
+--- 2026-09-26T18:21:23Z method=文書頁選定 target=E6 rc=0 time_s=0.004 note=doc_titles.txt(道+題)にE6の語の組(検証・verif・validat/品質・quality/test・assert・check)をgrep -i -Eで当てて選ぶ
+$ grep -i -E '検証|verif|validat|品質|quality|test|assert|check' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/doc_titles.txt
+getting_started/intro_tutorials/includes/air_quality_no2.rst	(見出し無し)
+reference/testing.rst	Testing
+--- 2026-09-26T18:21:45Z method=ソース全ディレクトリ target=全体 rc=0 time_s=0.010 note=find pandas -type dで全ディレクトリ一覧(E4/E6の機械選定の母集合)
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas -type d | sed "s#/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/##" | sort
+.git
+.git/branches
+.git/hooks
+.git/info
+.git/logs
+.git/logs/refs
+.git/logs/refs/heads
+.git/logs/refs/remotes
+.git/logs/refs/remotes/origin
+.git/objects
+.git/objects/info
+.git/objects/pack
+.git/refs
+.git/refs/heads
+.git/refs/remotes
+.git/refs/remotes/origin
+.git/refs/tags
+.github
+.github/ISSUE_TEMPLATE
+.github/actions
+.github/actions/run-tests
+.github/actions/setup-pixi
+.github/workflows
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas
+LICENSES
+asv_bench
+asv_bench/benchmarks
+asv_bench/benchmarks/algos
+asv_bench/benchmarks/io
+asv_bench/benchmarks/tslibs
+ci
+ci/suppressions
+doc
+doc/_templates
+doc/_templates/autosummary
+doc/cheatsheet
+doc/data
+doc/scripts
+doc/source
+doc/source/_static
+doc/source/_static/css
+doc/source/_static/schemas
+doc/source/_static/spreadsheets
+doc/source/_static/style
+doc/source/development
+doc/source/getting_started
+doc/source/getting_started/comparison
+doc/source/getting_started/comparison/includes
+doc/source/getting_started/intro_tutorials
+doc/source/getting_started/intro_tutorials/includes
+doc/source/reference
+doc/source/user_guide
+doc/source/user_guide/templates
+doc/source/whatsnew
+doc/sphinxext
+pandas
+pandas/_config
+pandas/_libs
+pandas/_libs/include
+pandas/_libs/include/pandas
+pandas/_libs/include/pandas/datetime
+pandas/_libs/include/pandas/parser
+pandas/_libs/include/pandas/simd
+pandas/_libs/include/pandas/vendored
+pandas/_libs/include/pandas/vendored/klib
+pandas/_libs/include/pandas/vendored/numpy
+pandas/_libs/include/pandas/vendored/numpy/datetime
+pandas/_libs/include/pandas/vendored/ujson
+pandas/_libs/include/pandas/vendored/ujson/lib
+pandas/_libs/simd
+pandas/_libs/src
+pandas/_libs/src/datetime
+pandas/_libs/src/parser
+pandas/_libs/src/vendored
+pandas/_libs/src/vendored/numpy
+pandas/_libs/src/vendored/numpy/datetime
+pandas/_libs/src/vendored/ujson
+pandas/_libs/src/vendored/ujson/lib
+pandas/_libs/src/vendored/ujson/python
+pandas/_libs/tslibs
+pandas/_libs/window
+pandas/_testing
+pandas/api
+pandas/api/executors
+pandas/api/extensions
+pandas/api/indexers
+pandas/api/interchange
+pandas/api/types
+pandas/api/typing
+pandas/arrays
+pandas/compat
+pandas/compat/numpy
+pandas/core
+pandas/core/_numba
+pandas/core/_numba/kernels
+pandas/core/array_algos
+pandas/core/arrays
+pandas/core/arrays/arrow
+pandas/core/arrays/sparse
+pandas/core/computation
+pandas/core/dtypes
+pandas/core/groupby
+pandas/core/indexers
+pandas/core/indexes
+pandas/core/interchange
+pandas/core/internals
+pandas/core/methods
+pandas/core/ops
+pandas/core/reshape
+pandas/core/sparse
+pandas/core/strings
+pandas/core/tools
+pandas/core/util
+pandas/core/window
+pandas/errors
+pandas/io
+pandas/io/clipboard
+pandas/io/excel
+pandas/io/formats
+pandas/io/formats/templates
+pandas/io/json
+pandas/io/parsers
+pandas/io/sas
+pandas/plotting
+pandas/plotting/_matplotlib
+pandas/tests
+pandas/tests/api
+pandas/tests/apply
+pandas/tests/arithmetic
+pandas/tests/arrays
+pandas/tests/arrays/boolean
+pandas/tests/arrays/categorical
+pandas/tests/arrays/datetimes
+pandas/tests/arrays/floating
+pandas/tests/arrays/integer
+pandas/tests/arrays/interval
+pandas/tests/arrays/masked
+pandas/tests/arrays/numpy_
+pandas/tests/arrays/period
+pandas/tests/arrays/sparse
+pandas/tests/arrays/string_
+pandas/tests/arrays/timedeltas
+pandas/tests/base
+pandas/tests/computation
+pandas/tests/config
+pandas/tests/construction
+pandas/tests/copy_view
+pandas/tests/copy_view/index
+pandas/tests/dtypes
+pandas/tests/dtypes/cast
+pandas/tests/extension
+pandas/tests/extension/array_with_attr
+pandas/tests/extension/base
+pandas/tests/extension/date
+pandas/tests/extension/decimal
+pandas/tests/extension/json
+pandas/tests/extension/list
+pandas/tests/extension/uuid
+pandas/tests/frame
+pandas/tests/frame/constructors
+pandas/tests/frame/indexing
+pandas/tests/frame/methods
+pandas/tests/generic
+pandas/tests/groupby
+pandas/tests/groupby/aggregate
+pandas/tests/groupby/methods
+pandas/tests/groupby/transform
+pandas/tests/indexes
+pandas/tests/indexes/base_class
+pandas/tests/indexes/categorical
+pandas/tests/indexes/datetimelike_
+pandas/tests/indexes/datetimes
+pandas/tests/indexes/datetimes/methods
+pandas/tests/indexes/interval
+pandas/tests/indexes/multi
+pandas/tests/indexes/numeric
+pandas/tests/indexes/object
+pandas/tests/indexes/period
+pandas/tests/indexes/period/methods
+pandas/tests/indexes/ranges
+pandas/tests/indexes/string
+pandas/tests/indexes/timedeltas
+pandas/tests/indexes/timedeltas/methods
+pandas/tests/indexing
+pandas/tests/indexing/interval
+pandas/tests/indexing/multiindex
+pandas/tests/interchange
+pandas/tests/internals
+pandas/tests/io
+pandas/tests/io/data
+pandas/tests/io/data/csv
+pandas/tests/io/data/excel
+pandas/tests/io/data/feather
+pandas/tests/io/data/fixed_width
+pandas/tests/io/data/html
+pandas/tests/io/data/html_encoding
+pandas/tests/io/data/legacy_hdf
+pandas/tests/io/data/legacy_hdf/2.0
+pandas/tests/io/data/legacy_hdf/2.1
+pandas/tests/io/data/legacy_hdf/2.3
+pandas/tests/io/data/legacy_hdf/3.0
+pandas/tests/io/data/legacy_pickle
+pandas/tests/io/data/legacy_pickle/1.1.0
+pandas/tests/io/data/legacy_pickle/1.2.4
+pandas/tests/io/data/legacy_pickle/1.3.5
+pandas/tests/io/data/legacy_pickle/1.4.2
+pandas/tests/io/data/legacy_pickle/1.5.3
+pandas/tests/io/data/legacy_pickle/2.0.3
+pandas/tests/io/data/legacy_pickle/2.1.4
+pandas/tests/io/data/legacy_pickle/2.2.3
+pandas/tests/io/data/orc
+pandas/tests/io/data/parquet
+pandas/tests/io/data/pickle
+pandas/tests/io/data/spss
+pandas/tests/io/data/stata
+pandas/tests/io/data/tar
+pandas/tests/io/data/xml
+pandas/tests/io/excel
+pandas/tests/io/formats
+pandas/tests/io/formats/data
+pandas/tests/io/formats/data/html
+pandas/tests/io/formats/style
+pandas/tests/io/json
+pandas/tests/io/json/data
+pandas/tests/io/parser
+pandas/tests/io/parser/common
+pandas/tests/io/parser/data
+pandas/tests/io/parser/dtypes
+pandas/tests/io/parser/usecols
+pandas/tests/io/pytables
+pandas/tests/io/sas
+pandas/tests/io/sas/data
+pandas/tests/io/xml
+pandas/tests/libs
+pandas/tests/plotting
+pandas/tests/plotting/frame
+pandas/tests/reductions
+pandas/tests/resample
+pandas/tests/reshape
+pandas/tests/reshape/concat
+pandas/tests/reshape/data
+pandas/tests/reshape/merge
+pandas/tests/scalar
+pandas/tests/scalar/interval
+pandas/tests/scalar/period
+pandas/tests/scalar/timedelta
+pandas/tests/scalar/timedelta/methods
+pandas/tests/scalar/timestamp
+pandas/tests/scalar/timestamp/methods
+pandas/tests/series
+pandas/tests/series/accessors
+pandas/tests/series/indexing
+pandas/tests/series/methods
+pandas/tests/strings
+pandas/tests/tools
+pandas/tests/tseries
+pandas/tests/tseries/frequencies
+pandas/tests/tseries/holiday
+pandas/tests/tseries/offsets
+pandas/tests/tseries/offsets/data
+pandas/tests/tslibs
+pandas/tests/util
+pandas/tests/window
+pandas/tests/window/moments
+pandas/tseries
+pandas/util
+pandas/util/version
+scripts
+scripts/issue_assignment
+scripts/tests
+scripts/tests/data
+subprojects
+subprojects/packagefiles
+subprojects/packagefiles/fast_float
+subprojects/packagefiles/xsimd
+web
+web/interactive_terminal
+web/pandas
+web/pandas/_templates
+web/pandas/about
+web/pandas/community
+web/pandas/community/blog
+web/pandas/pdeps
+web/pandas/static
+web/pandas/static/css
+web/pandas/static/img
+web/pandas/static/img/blog
+web/pandas/static/img/blog/2019-user-survey
+web/pandas/static/img/books
+web/pandas/static/img/partners
+web/tests
+--- 2026-09-26T18:21:51Z method=ソースディレクトリ選定 target=E4 rc=1 time_s=0.009 note=全ディレクトリ一覧にE4の語の組をgrep -i -Eで当てて選ぶ
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas -type d | sed "s#/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/##" | grep -i -E 'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun'
+
+--- 2026-09-26T18:21:51Z method=ソースディレクトリ選定 target=E6 rc=0 time_s=0.009 note=全ディレクトリ一覧にE6の語の組をgrep -i -Eで当てて選ぶ
+$ find /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas -type d | sed "s#/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/##" | grep -i -E '検証|verif|validat|品質|quality|test|assert|check'
+web/tests
+.github/actions/run-tests
+scripts/tests
+scripts/tests/data
+pandas/_testing
+pandas/tests
+pandas/tests/series
+pandas/tests/series/methods
+pandas/tests/series/accessors
+pandas/tests/series/indexing
+pandas/tests/libs
+pandas/tests/util
+pandas/tests/strings
+pandas/tests/config
+pandas/tests/frame
+pandas/tests/frame/constructors
+pandas/tests/frame/methods
+pandas/tests/frame/indexing
+pandas/tests/window
+pandas/tests/window/moments
+pandas/tests/scalar
+pandas/tests/scalar/timestamp
+pandas/tests/scalar/timestamp/methods
+pandas/tests/scalar/timedelta
+pandas/tests/scalar/timedelta/methods
+pandas/tests/scalar/interval
+pandas/tests/scalar/period
+pandas/tests/arrays
+pandas/tests/arrays/datetimes
+pandas/tests/arrays/string_
+pandas/tests/arrays/timedeltas
+pandas/tests/arrays/sparse
+pandas/tests/arrays/numpy_
+pandas/tests/arrays/integer
+pandas/tests/arrays/boolean
+pandas/tests/arrays/interval
+pandas/tests/arrays/masked
+pandas/tests/arrays/categorical
+pandas/tests/arrays/period
+pandas/tests/arrays/floating
+pandas/tests/api
+pandas/tests/apply
+pandas/tests/tseries
+pandas/tests/tseries/holiday
+pandas/tests/tseries/offsets
+pandas/tests/tseries/offsets/data
+pandas/tests/tseries/frequencies
+pandas/tests/construction
+pandas/tests/tslibs
+pandas/tests/generic
+pandas/tests/internals
+pandas/tests/reshape
+pandas/tests/reshape/concat
+pandas/tests/reshape/data
+pandas/tests/reshape/merge
+pandas/tests/indexes
+pandas/tests/indexes/datetimes
+pandas/tests/indexes/datetimes/methods
+pandas/tests/indexes/string
+pandas/tests/indexes/timedeltas
+pandas/tests/indexes/timedeltas/methods
+pandas/tests/indexes/datetimelike_
+pandas/tests/indexes/object
+pandas/tests/indexes/base_class
+pandas/tests/indexes/multi
+pandas/tests/indexes/ranges
+pandas/tests/indexes/interval
+pandas/tests/indexes/categorical
+pandas/tests/indexes/period
+pandas/tests/indexes/period/methods
+pandas/tests/indexes/numeric
+pandas/tests/groupby
+pandas/tests/groupby/aggregate
+pandas/tests/groupby/transform
+pandas/tests/groupby/methods
+pandas/tests/extension
+pandas/tests/extension/json
+pandas/tests/extension/date
+pandas/tests/extension/array_with_attr
+pandas/tests/extension/list
+pandas/tests/extension/decimal
+pandas/tests/extension/base
+pandas/tests/extension/uuid
+pandas/tests/arithmetic
+pandas/tests/resample
+pandas/tests/computation
+pandas/tests/plotting
+pandas/tests/plotting/frame
+pandas/tests/base
+pandas/tests/tools
+pandas/tests/copy_view
+pandas/tests/copy_view/index
+pandas/tests/reductions
+pandas/tests/io
+pandas/tests/io/json
+pandas/tests/io/json/data
+pandas/tests/io/parser
+pandas/tests/io/parser/usecols
+pandas/tests/io/parser/common
+pandas/tests/io/parser/data
+pandas/tests/io/parser/dtypes
+pandas/tests/io/xml
+pandas/tests/io/sas
+pandas/tests/io/sas/data
+pandas/tests/io/formats
+pandas/tests/io/formats/data
+pandas/tests/io/formats/data/html
+pandas/tests/io/formats/style
+pandas/tests/io/data
+pandas/tests/io/data/orc
+pandas/tests/io/data/html
+pandas/tests/io/data/xml
+pandas/tests/io/data/legacy_pickle
+pandas/tests/io/data/legacy_pickle/2.2.3
+pandas/tests/io/data/legacy_pickle/1.1.0
+pandas/tests/io/data/legacy_pickle/2.1.4
+pandas/tests/io/data/legacy_pickle/1.2.4
+pandas/tests/io/data/legacy_pickle/2.0.3
+pandas/tests/io/data/legacy_pickle/1.3.5
+pandas/tests/io/data/legacy_pickle/1.5.3
+pandas/tests/io/data/legacy_pickle/1.4.2
+pandas/tests/io/data/tar
+pandas/tests/io/data/legacy_hdf
+pandas/tests/io/data/legacy_hdf/2.0
+pandas/tests/io/data/legacy_hdf/2.3
+pandas/tests/io/data/legacy_hdf/2.1
+pandas/tests/io/data/legacy_hdf/3.0
+pandas/tests/io/data/pickle
+pandas/tests/io/data/parquet
+pandas/tests/io/data/fixed_width
+pandas/tests/io/data/csv
+pandas/tests/io/data/stata
+pandas/tests/io/data/excel
+pandas/tests/io/data/spss
+pandas/tests/io/data/html_encoding
+pandas/tests/io/data/feather
+pandas/tests/io/pytables
+pandas/tests/io/excel
+pandas/tests/indexing
+pandas/tests/indexing/multiindex
+pandas/tests/indexing/interval
+pandas/tests/dtypes
+pandas/tests/dtypes/cast
+pandas/tests/interchange
+--- 2026-09-26T18:22:18Z method=見積もり target=E4 rc=0 time_s=4.757 note=E4の語の組でgrep -I -c -i -Eの合計を見積もる(cat8_search.pyに渡すのと同じ正規表現)
+$ python3 -c "
+import subprocess
+data = open('/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt','rb').read()
+paths = [p.decode('utf-8','surrogateescape') for p in data.split(b'\x00') if p.strip()]
+pat = r'リプレイ|再生|replay|record|記録|capture|playback|再実行|rerun'
+total_lines = 0
+files_with_hits = 0
+for p in paths:
+    r = subprocess.run(['grep','-I','-c','-i','-E',pat,p], capture_output=True, text=True)
+    n = int(r.stdout.strip() or 0)
+    if n>0:
+        total_lines += n; files_with_hits += 1
+print('files=', len(paths), 'files_with_hits=', files_with_hits, 'total_lines=', total_lines)
+"
+files= 2234 files_with_hits= 167 total_lines= 950
+--- 2026-09-26T18:22:31Z method=見積もり target=E6 rc=0 time_s=4.528 note=E6の語の組でgrep -I -c -i -Eの合計を見積もる(cat8_search.pyに渡すのと同じ正規表現)
+$ python3 -c "
+import subprocess
+data = open('/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt','rb').read()
+paths = [p.decode('utf-8','surrogateescape') for p in data.split(b'\x00') if p.strip()]
+pat = r'検証|verif|validat|品質|quality|test|assert|check'
+total_lines = 0
+files_with_hits = 0
+for p in paths:
+    r = subprocess.run(['grep','-I','-c','-i','-E',pat,p], capture_output=True, text=True)
+    n = int(r.stdout.strip() or 0)
+    if n>0:
+        total_lines += n; files_with_hits += 1
+print('files=', len(paths), 'files_with_hits=', files_with_hits, 'total_lines=', total_lines)
+"
+files= 2234 files_with_hits= 1603 total_lines= 101494
+--- 2026-09-26T18:22:41Z method=頁本文 target=E6_reference_testing rc=0 time_s=0.004 note=E6で選ばれたreference/testing.rstの本文を全部読む
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/reference/testing.rst
+{{ header }}
+
+.. _api.testing:
+
+=======
+Testing
+=======
+.. currentmodule:: pandas
+
+.. _api.general.testing:
+
+Assertion functions
+| -------------------
+.. autosummary::
+   :toctree: api/
+
+   testing.assert_frame_equal
+   testing.assert_series_equal
+   testing.assert_index_equal
+   testing.assert_extension_array_equal
+
+Exceptions and warnings
+| -----------------------
+.. autosummary::
+   :toctree: api/
+
+   errors.AbstractMethodError
+   errors.AttributeConflictWarning
+   errors.CategoricalConversionWarning
+   errors.ChainedAssignmentError
+   errors.ClosedFileError
+   errors.CSSWarning
+   errors.DatabaseError
+   errors.DataError
+   errors.DtypeWarning
+   errors.DuplicateLabelError
+   errors.EmptyDataError
+   errors.IncompatibilityWarning
+   errors.IncompatibleFrequency
+   errors.IndexingError
+   errors.InvalidColumnName
+   errors.InvalidComparison
+   errors.InvalidIndexError
+   errors.InvalidVersion
+   errors.IntCastingNaNError
+   errors.LossySetitemError
+   errors.MergeError
+   errors.NoBufferPresent
+   errors.NullFrequencyError
+   errors.NumbaUtilError
+   errors.NumExprClobberingError
+   errors.OptionError
+   errors.OutOfBoundsDatetime
+   errors.OutOfBoundsTimedelta
+   errors.PandasChangeWarning
+   errors.Pandas4Warning
+   errors.Pandas5Warning
+   errors.PandasPendingDeprecationWarning
+   errors.PandasDeprecationWarning
+   errors.PandasFutureWarning
+   errors.ParserError
+   errors.ParserWarning
+   errors.PerformanceWarning
+   errors.PossibleDataLossError
+   errors.PossiblePrecisionLoss
+   errors.PyperclipException
+   errors.PyperclipWindowsException
+   errors.SpecificationError
+   errors.UndefinedVariableError
+   errors.UnsortedIndexError
+   errors.UnsupportedFunctionCall
+   errors.ValueLabelTypeMismatch
+
+Bug report function
+| -------------------
+.. autosummary::
+   :toctree: api/
+
+   show_versions
+
+Test suite runner
+| -----------------
+.. autosummary::
+   :toctree: api/
+
+   test
+--- 2026-09-26T18:22:55Z method=頁本文 target=E6_air_quality_no2 rc=0 time_s=0.005 note=E6で選ばれたgetting_started/intro_tutorials/includes/air_quality_no2.rstの本文を全部読む(quality語の一致)
+$ cat /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/getting_started/intro_tutorials/includes/air_quality_no2.rst
+.. raw:: html
+
+    <div data-bs-toggle="collapse" href="#collapsedata" role="button" aria-expanded="false" aria-controls="collapsedata">
+        <span class="badge bg-secondary">Air quality data</span>
+    </div>
+    <div class="collapse" id="collapsedata">
+        <div class="card-body">
+            <p class="card-text">
+
+For this tutorial, air quality data about :math:`NO_2` is used, made
+available by `OpenAQ <https://openaq.org>`__ and using the
+`py-openaq <http://dhhagan.github.io/py-openaq/index.html>`__ package.
+The ``air_quality_no2.csv`` data set provides :math:`NO_2` values for
+the measurement stations *FR04014*, *BETR801* and *London Westminster*
+in respectively Paris, Antwerp and London.
+
+.. raw:: html
+
+            </p>
+            <a href="https://github.com/pandas-dev/pandas/tree/main/doc/data/air_quality_no2.csv" class="btn btn-dark btn-sm">To raw data</a>
+        </div>
+    </div>
+--- 2026-09-26T18:23:27Z method=websearch target=宣伝詐欺_1 rc=NA time_s=NA note=site:x.com pandas python scam giveaway
+$ site:x.com pandas python scam giveaway
+9件: Panda Global scam bot warning / M&S giveaway scam / PandaScripts / scamminghandles / Rocket City Trash Pandas / business_today Elon $20M crypto giveaway / Whatsgoingonth "Data Pandas a legit source" / Pandabuy wiki / Pandas(software) wiki。
+いずれもソフトウェアのpandas(pydata)とは別の「panda」を冠した無関係アカウント(スポーツチーム・NFT・別サービス)や一般的な詐欺注意喚起で、pandasライブラリ固有の宣伝・詐欺は無い。
+--- 2026-09-26T18:23:34Z method=websearch target=宣伝詐欺_2 rc=NA time_s=NA note=site:x.com "pandas" airdrop wallet crypto fake
+$ site:x.com "pandas" airdrop wallet crypto fake
+9件: KanpaiPandas($1.1M prize pool のairdrop、暗号資産プロジェクトのPanda wallet) / HOKANEWS Pandas Airdrop Listing / crypt0pandas NFT / CryptoPandasYT / Airdrop(cryptocurrency) wiki / ThePandasNFT / Pandupandas / cointelegraph fake X links hack解説 / techcrunch a16z fake crypto tweet解説。
+「Pandas」を名乗る暗号資産トークン・NFTプロジェクト(Kanpai Pandas等)は実在し、airdrop宣伝・ウォレット接続を促す投稿があるが、いずれもPythonのデータ分析ライブラリpandas(pandas-dev/pandas.pydata.org)とは無関係な別プロジェクト(名前が同じだけ)。
+--- 2026-09-26T18:23:42Z method=websearch target=宣伝詐欺_3 rc=NA time_s=NA note=site:x.com pandas pydata 使ってみた トレード
+$ site:x.com pandas pydata 使ってみた トレード
+9件: yoshizaki_91(Pandasの練習問題投稿) / pandas_dev公式 / PyData公式 / pandas_io / Pandas(software)wiki / pydatapdx / svpino("Pandas is the world's most popular data library, but it's slow...") / TradeWithPanda(トレーダーを名乗るアカウント、無関係) / ponderdata / Pandabuy wiki。
+「使ってみたトレード」の日本語完全一致は無かった。svpinoの投稿はpandasの実際の使用報告(遅いという技術的な指摘)で宣伝でも詐欺でもない。TradeWithPandaは名前が似ているだけの別アカウント(トレーダーを名乗る個人、pandasライブラリと無関係と見られる、本文未確認)。
+--- 2026-09-26T18:23:48Z method=x本文 target=実際の投稿本文取得 rc=0 time_s=2.132 note=候補に近い投稿(pandas_dev公式・svpinoの使用報告・KanpaiPandasのairdrop勧誘)の本文をfxtwitter APIで逐語取得
+$ TMPDIR=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/tmp python3 scripts/x_fetch.py https://x.com/svpino/status/1897277165542269439 https://x.com/KanpaiPandas/status/1664630242596495361 --no-walk
+{"id": "1897277165542269439", "http": 200, "fetched_at": "2026-09-26T18:23:48.938957+00:00", "url": "https://x.com/svpino/status/1897277165542269439", "author": "svpino", "created_at": "Wed Mar 05 13:25:00 +0000 2025", "text": "Pandas is the world's most popular data library, but it's slow, and many libraries have significantly improved over it.\n\nBut people don't want to migrate their code base. Pandas is extremely popular, and there aren't enough incentives to make changes unless necessary.\n\nThe good news is that you don't have to change anything to achieve many times the performance you are getting today.\n\nFireDucks is a multi-threaded, compiler-accelerated library with a fully compatible pandas API.\n\nIt's up to 48x faster than Pandas, and you don't have to touch anything to use it.\n\nYou have two options to start using FireDucks:\n\n1. import fireducks.pandas as pd, or\n2. Run your code as-is: python -mfireducks.imhook yourfile[.]py\n\nFireDucks is faster than Pandas and faster than Polars. Below is a link to some benchmarks that compare Pandas, Polars, and FireDucks. FireDucks wins, hands down.", "likes": 572, "retweets": 54, "replies": 19, "views": 77185, "quote": null, "replying_to_status": null}
+{"id": "1664630242596495361", "http": 200, "fetched_at": "2026-09-26T18:23:50.507404+00:00", "url": "https://x.com/KanpaiPandas/status/1664630242596495361", "author": "KanpaiPandas", "created_at": "Fri Jun 02 13:49:11 +0000 2023", "text": "AIRDROP UPDATE 🐼🥋\n\nThe @KarateCombat <> Kanpai Pandas competitive  airdrop is making waves with a $1.1M prize pool (based on today’s price). \n\nBut that's not all! An additional $275k is allocated as an airdrop for Panda wallets participating in the competition. To claim your airdrop and compete, you simply need to hold a Panda.\nA🧵\n1/6", "likes": 138, "retweets": 77, "replies": 21, "views": 36513, "quote": null, "replying_to_status": null}
+--- 2026-09-26T18:24:09Z method=setup target=最後の確かめ rc=0 time_s=0.055 note=最小実行と検索が全部終わり、返す前の最後の確かめ(scratchpad外のキャッシュ・/tmpの再確認・常駐プロセスの確認)
+$ ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip; ls /tmp | grep -c -E '^pip-|^pandas'; ps aux | grep -iE 'python|pytest' | grep -v grep | wc -l
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+0
+0
+ls: cannot access '/root/.m2': No such file or directory
+--- 2026-09-26T18:25:12Z method=N一覧再作成 target=Pandas rc=0 time_s=0.047 note=この回の生ログにcat8_mklist.pyの手を残す(N・list.txtは31回目と同じ、取り直さない。検査がなしの根拠に同一生ログ内のmklistの手を要求するための再実行)
+$ python3 scripts/cat8_mklist.py --root /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas --candidate 8-034 --out /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt --absent 'pandas/tests/io/sas/data/DEMO_G.csv=候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない' --absent 'pandas/tests/io/sas/data/DEMO_G.xpt=候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない' --absent 'pandas/tests/io/sas/data/DRXFCD_G.xpt=候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない' --absent 'pixi.lock=開発環境の依存固定ファイルで機能の記述を含まない、1MB超で取得もしていない'
+無い	pandas/tests/io/sas/data/DEMO_G.csv	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pandas/tests/io/sas/data/DEMO_G.xpt	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pandas/tests/io/sas/data/DRXFCD_G.xpt	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pixi.lock	開発環境の依存固定ファイルで機能の記述を含まない、1MB超で取得もしていない
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt in_root=2657 added=0 absent=4 excluded=0 listed=2657 sha=e45dca7e95c201ae candidate=8-034
+--- 2026-09-26T18:25:49Z method=N一覧再作成 target=Pandas_バイナリ除外 rc=0 time_s=0.064 note=31回目と同じ423件の拡張子バイナリ除外(scratchpadに移された同じスクリプトを再実行)。listed=2234はN全体2657から4件absent・423件excludeを引いたもので31回目と同じ
+$ sh /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/run31_tmp/pandas_mklist_cmd.sh | tail -5
+無い	pandas/tests/io/sas/data/DEMO_G.csv	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pandas/tests/io/sas/data/DEMO_G.xpt	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pandas/tests/io/sas/data/DRXFCD_G.xpt	候補が自分自身を試験する仕組み(SASリーダーの単体テストのフィクスチャ)、L-516により対象外、1MB超で取得もしていない
+無い	pixi.lock	開発環境の依存固定ファイルで機能の記述を含まない、1MB超で取得もしていない
+cat8_mklist: complete out=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt in_root=2657 added=0 absent=4 excluded=423 listed=2234 sha=88c92c0478681d3d candidate=8-034
+--- 2026-09-26T18:26:04Z method=検索 target=E3a rc=0 time_s=2.977 note=E3aの語の組(ルックアヘッド・look-ahead / survivorship・生存者 / leak・リーク・未来 / point-in-time・as-of・時点)でcat8_search.pyを打ち直し(直前のcat8_mklist.pyの手のあとに置き直す)
+$ python3 scripts/cat8_search.py --list /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt --candidate 8-034 --ignore-case --pattern 'ルックアヘッド|look-ahead|survivorship|生存者|leak|リーク|未来|point-in-time|as-of|時点' > /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full2.txt 2>&1; tail -3 /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full2.txt; diff /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full.txt /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/run32/E3a_search_full2.txt && echo IDENTICAL
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/sauron.SHIFT_JIS.csv	cp932 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/unicode_series.csv	cp932 として読んだ
+cat8_search: complete files=2234 read=2234 files_with_hits=44 hits=66 list=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt sha=88c92c0478681d3d candidate=8-034
+IDENTICAL
+--- 2026-09-26T18:26:41Z method=検索 target=E3a rc=0 time_s=2.779 note=E3aの語の組(ルックアヘッド・look-ahead/survivorship・生存者/leak・リーク・未来/point-in-time・as-of・時点)でcat8_search.pyを打ち直し(直前のcat8_mklist.pyの手のあとに置き直す。リダイレクトを使わず出力を直接生ログに残す)
+$ python3 scripts/cat8_search.py --list /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt --candidate 8-034 --ignore-case --pattern 'ルックアヘッド|look-ahead|survivorship|生存者|leak|リーク|未来|point-in-time|as-of|時点'
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/.github/workflows/unit-tests.yml:418:           ASAN_OPTIONS: detect_leaks=0
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.17.0.rst:1254: - Bug causes memory leak in time-series line and area plot (:issue:`9003`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.23.4.rst:36: - Bug in ``roll_quantile`` caused a memory leak when calling ``.rolling(...).quantile(q)`` with ``q`` in (0,1) (:issue:`21965`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.24.0.rst:2018: - Bug in :func:`read_csv` in which memory leaks occurred in the C engine when parsing ``NaN`` values due to insufficient cleanup on completion or error (:issue:`21353`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.25.0.rst:1315: - Fixed memory leak in :meth:`DataFrame.to_json` when dealing with numeric data (:issue:`24889`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.25.0.rst:1350: - Bug in :meth:`.Rolling.min` and :meth:`.Rolling.max` that caused a memory leak (:issue:`25893`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.1.0.rst:1299: - Bug in :func:`read_csv` was causing a file descriptor leak on an empty file (:issue:`31488`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.2.0.rst:791: - :func:`read_sas` no longer leaks resources on failure (:issue:`35566`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.3.4.rst:40: - Fixed memory leaks in :meth:`Series.rolling.quantile` and :meth:`Series.rolling.median` (:issue:`43339`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.4.0.rst:1058: - Bug in :meth:`DataFrame.to_json` fix memory leak (:issue:`43877`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.5.2.rst:31: - Fixed memory leak in :meth:`.Styler.to_excel` (:issue:`49751`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.0.0.rst:1207: - Fixed a reference leak in :func:`read_hdf` (:issue:`37441`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.0.0.rst:1208: - Fixed a memory leak in :meth:`DataFrame.to_json` and :meth:`Series.to_json` when serializing datetimes and timedeltas (:issue:`40443`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.0.0.rst:1379: - Fixed memory leak which stemmed from the initialization of the internal JSON module (:issue:`49222`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.2.1.rst:22: - Fixed memory leak in :func:`read_csv` (:issue:`57039`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.3.3.rst:68: - Fix memory leak in :meth:`DataFrame.to_json` with datetime columns (:issue:`62204`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.0.6.rst:44: - Fixed memory leak in :func:`read_csv` with ``engine="c"`` when a string or ``category`` column failed to decode, for example invalid UTF-8 under ``encoding="utf-8"`` and the default ``encoding_errors="strict"`` (:issue:`67931`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:946: - Bug in :meth:`Series.loc` and :meth:`DataFrame.loc` setitem-with-expansion silently corrupting a value just outside the integer dtype's range (e.g. ``2**63`` for ``int64``) on some platforms instead of keeping the ``float64`` result; ``inf`` was similarly affected, and both leaked a ``RuntimeWarning`` (:issue:`66394`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1036: - :func:`read_stata` now raises ``OutOfBoundsDatetime`` for a date too far from the epoch to represent in any of the Stata date formats, instead of silently decoding it to an unrelated date -- a far-future value could come back as a far-past one, or as ``NaT`` -- and no longer leaks a bare numpy ``RuntimeWarning``; previously only far-future ``%td`` values raised (:issue:`36096`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1092: - Fixed memory leak in :func:`read_csv` (:issue:`19941`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1093: - Fixed memory leak in :func:`read_csv` with ``engine="c"`` when a string or ``category`` column failed to decode, for example invalid UTF-8 under the default ``encoding_errors="strict"`` (:issue:`67931`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1094: - Fixed memory leak in :meth:`DataFrame.to_json` and :meth:`Series.to_json` when serializing :class:`Timestamp` with timezones (:issue:`54865`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1095: - Fixed memory leak in :meth:`DataFrame.to_json` and :meth:`Series.to_json` when serializing object-dtype ``numpy.datetime64`` values (:issue:`67930`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst:1101: - Fixed memory leaks in :meth:`DataFrame.to_json` and :meth:`Series.to_json` when serialization failed, particularly for large outputs and for index or column labels that could not be encoded (:issue:`66356`)
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/src/parser/tokenizer.cpp:114: // message is likewise free, where the old code leaked it.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/src/parser/tokenizer.cpp:1906:     // Assigning realloc's result straight to word_ends would leak the old
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/tslib.pyx:523:                     #  cast_from_unit's guard, leaking OverflowError
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/conftest.py:1943:     # GH#35711 make sure sqlite history file handle is not leaked.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/conftest.py:1944:     # Using :memory: avoids leaking a file on disk; disabling the history
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/conftest.py:1945:     # manager entirely avoids leaking the underlying sqlite3.Connection.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/arrays/datetimelike.py:318:         # do not cache or you'll create a memory leak
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/common.py:993:             # Do not leak the handles that were opened before the failure; the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/formats/format.py:1080:             # GH#30034 open instead of codecs.open prevents a file leak
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/arrays/sparse/test_reductions.py:590:     #  boxed already and so would not reach the leak
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/config/test_localization.py:83: def test_can_set_locale_no_leak(lang, enc, lc_var):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/config/test_localization.py:84:     # Test that can_set_locale does not leak even when returning False. See GH#46595
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/copy_view/test_replace.py:398:     # the copy triggered by ``view`` must not have leaked the original values
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/extension/test_arrow.py:1508:     # GH#62682 a 2-D EA operand leaked "Mask must be 1D array" for the
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/frame/test_reductions.py:3053:     # than leak the -1 cython sentinel as a column label.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/indexes/multi/test_indexing.py:1301:     #  last level entry, which would both leak the NaN row in...
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_pandas.py:1673:         # GH#66007 a dt64tz index must not leak a stale UTC flag onto naive
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py:487:     def test_decode_broken_json_leak(self, broken_json, err_msg):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py:1251:     # leaked the output buffer once it had outgrown the one the encoder starts
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py:1253:     # it; a leak here would be ~50 * 256 KiB.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py:1361:     # The encoder is called directly so that a leak of ~160 bytes per call
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py:1373:     # a leak here would be ~3.2 MiB over this loop
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_file_buffer_url.py:439: def test_file_descriptor_leak(all_parsers, temp_file):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_read_errors.py:58:     # GH#66317 previously leaked a cryptic error from pyarrow option
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_c_parser_only.py:1235:     # leaking across the sweep would dereference NULL rather than corrupt data.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_c_parser_only.py:1680:     # on the success path, so a decode failure part-way through a column leaked
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_c_parser_only.py:1691:     # fake the leak
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_parallel_read.py:1511:     # rows; the reused worker parsers must not leak StopIteration out of
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_errors.py:218:     # leak the opaque "too many inputs" ValueError.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_select.py:105:     # is silently dropped and extra rows leak through.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_clipboard.py:187:     ``qapp``, with the process-wide locale it leaked put back.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_compression.py:398:     # GH#58131 the source opened by _get_filepath_or_buffer must not leak either
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_compression.py:422:     # OpenFile.close() empties fobjects, so a leaked source would leave it there
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/plotting/frame/test_frame.py:2149:     def test_memory_leak(self, kind):
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/scalar/timedelta/test_arithmetic.py:1672:     #  out NaN; the cast used to leak "cannot convert float NaN to integer",
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_logical_ops.py:527:     #  matrix is the point: bool/int64 leaked only through a raw ndarray, boolean
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_logical_ops.py:528:     #  and Sparse leaked through every box
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_ufunc.py:527:     #  ones np.asarray flattens to object leaked the scalar itself into the result
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/tseries/offsets/test_common.py:427:     #  cython signature error leaking out of the offset's _add_datetime
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/about/governance.md:181:     leak into their work with the Project.
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/community/ecosystem.md:241: database that contains point-in-time data (i.e. historic data
+/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/community/ecosystem.md:244: point-in-time data from ALFRED. fredapi makes use of pandas and returns
+== ファイルごとの当たった行の数
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/.github/workflows/unit-tests.yml
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.17.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.23.4.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.24.0.rst
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v0.25.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.1.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.2.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.3.4.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.4.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v1.5.2.rst
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.0.0.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.2.1.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v2.3.3.rst
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.0.6.rst
+7	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/doc/source/whatsnew/v3.1.0.rst
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/src/parser/tokenizer.cpp
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_libs/tslib.pyx
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/conftest.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/arrays/datetimelike.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/common.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/io/formats/format.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/arrays/sparse/test_reductions.py
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/config/test_localization.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/copy_view/test_replace.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/extension/test_arrow.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/frame/test_reductions.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/indexes/multi/test_indexing.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_pandas.py
+5	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/json/test_ujson.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_file_buffer_url.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/common/test_read_errors.py
+3	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_c_parser_only.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/test_parallel_read.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_errors.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/pytables/test_select.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_clipboard.py
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/test_compression.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/plotting/frame/test_frame.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/scalar/timedelta/test_arithmetic.py
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_logical_ops.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/series/test_ufunc.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/tseries/offsets/test_common.py
+1	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/about/governance.md
+2	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/web/pandas/community/ecosystem.md
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/data/html_encoding/letz_latin1.html	cp1252 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/data/xml/baby_names.xml	cp1252 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/sauron.SHIFT_JIS.csv	cp932 として読んだ
+符号化	/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/tests/io/parser/data/unicode_series.csv	cp932 として読んだ
+cat8_search: complete files=2234 read=2234 files_with_hits=44 hits=66 list=/tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/list.txt sha=88c92c0478681d3d candidate=8-034
+--- 2026-09-26T18:28:30Z method=逐語再印字 target=E1a_assert_frame_equal rc=0 time_s=0.004 note=この回のログにassert_frame_equalのdocstringを印字(段4の根拠の逐語をこの回のログ内に持つ)
+$ sed -n '1351,1420p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_testing/asserters.py | grep -n 'intended to compare\|rtol\|atol\|relative tolerance' 
+16:    rtol: float | lib.NoDefault = lib.no_default,
+17:    atol: float | lib.NoDefault = lib.no_default,
+23:    This function is intended to compare two DataFrames and output any
+55:        relative tolerance (``rtol``) and absolute tolerance (``atol``)
+57:        according to the formula: ``|a - b| <= (atol + rtol * |b|)``.
+62:            ``check_exact``, ``rtol`` and ``atol`` are specified.
+--- 2026-09-26T18:28:36Z method=逐語 target=E1a_docstring rc=0 time_s=0.004 note=assert_frame_equalのdocstring本文(段4の根拠)
+$ sed -n '1351,1420p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/_testing/asserters.py
+def assert_frame_equal(
+    left: DataFrame,
+    right: DataFrame,
+    check_dtype: bool | Literal["equiv"] = True,
+    check_index_type: bool | Literal["equiv"] = "equiv",
+    check_column_type: bool | Literal["equiv"] = "equiv",
+    check_frame_type: bool = True,
+    check_names: bool = True,
+    by_blocks: bool = False,
+    check_exact: bool | lib.NoDefault = lib.no_default,
+    check_datetimelike_compat: bool = False,
+    check_categorical: bool = True,
+    check_like: bool = False,
+    check_freq: bool | lib.NoDefault = lib.no_default,
+    check_flags: bool = True,
+    rtol: float | lib.NoDefault = lib.no_default,
+    atol: float | lib.NoDefault = lib.no_default,
+    obj: str = "DataFrame",
+) -> None:
+    """
+    Check that left and right DataFrame are equal.
+
+    This function is intended to compare two DataFrames and output any
+    differences. It is mostly intended for use in unit tests.
+    Additional parameters allow varying the strictness of the
+    equality checks performed.
+
+    Parameters
+    ----------
+    left : DataFrame
+        First DataFrame to compare.
+    right : DataFrame
+        Second DataFrame to compare.
+    check_dtype : bool, default True
+        Whether to check the DataFrame dtype is identical.
+    check_index_type : bool or {'equiv'}, default 'equiv'
+        Whether to check the Index class, dtype and inferred_type
+        are identical.
+    check_column_type : bool or {'equiv'}, default 'equiv'
+        Whether to check the columns class, dtype and inferred_type
+        are identical. Is passed as the ``exact`` argument of
+        :func:`assert_index_equal`.
+    check_frame_type : bool, default True
+        Whether to check the DataFrame class is identical.
+    check_names : bool, default True
+        Whether to check that the `names` attribute for both the `index`
+        and `column` attributes of the DataFrame is identical.
+    by_blocks : bool, default False
+        Specify how to compare internal data. If False, compare by columns.
+        If True, compare by blocks.
+
+        .. deprecated:: 3.1
+    check_exact : bool, default False
+        Whether to compare number exactly. If False, the comparison uses the
+        relative tolerance (``rtol``) and absolute tolerance (``atol``)
+        parameters to determine if two values are considered close,
+        according to the formula: ``|a - b| <= (atol + rtol * |b|)``.
+
+        .. versionchanged:: 2.2.0
+
+            Defaults to True for integer dtypes if none of
+            ``check_exact``, ``rtol`` and ``atol`` are specified.
+
+        .. versionchanged:: 3.0.0
+
+            When ``check_exact=True``, the comparison of object-dtype values
+            containing nested :class:`numpy.ndarray` objects takes the type of
+            the nested object into account. In particular, a nested
+            ``numpy.ndarray`` is not considered equivalent to a Python
+            ``list``, Python ``tuple``, or a pandas
+--- 2026-09-26T18:28:42Z method=逐語 target=E3b_merge_asof_docstring rc=0 time_s=0.004 note=merge_asofのdocstring本文(段4の根拠、direction backward)
+$ sed -n '647,700p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/reshape/merge.py
+def merge_asof(
+    left: DataFrame | Series,
+    right: DataFrame | Series,
+    on: IndexLabel | None = None,
+    left_on: IndexLabel | None = None,
+    right_on: IndexLabel | None = None,
+    left_index: bool = False,
+    right_index: bool = False,
+    by=None,
+    left_by=None,
+    right_by=None,
+    suffixes: Suffixes = ("_x", "_y"),
+    tolerance: int | datetime.timedelta | None = None,
+    allow_exact_matches: bool = True,
+    direction: str = "backward",
+) -> DataFrame:
+    """
+    Perform a merge by key distance.
+
+    This is similar to a left-join except that we match on nearest
+    key rather than equal keys. Both DataFrames must be first sorted by
+    the merge key in ascending order before calling this function.
+    Sorting by any additional 'by' grouping columns is not required.
+
+    For each row in the left DataFrame:
+
+      - A "backward" search selects the last row in the right DataFrame whose
+        'on' key is less than or equal to the left's key.
+
+      - A "forward" search selects the first row in the right DataFrame whose
+        'on' key is greater than or equal to the left's key.
+
+      - A "nearest" search selects the row in the right DataFrame whose 'on'
+        key is closest in absolute distance to the left's key.
+
+    Optionally match on equivalent keys with 'by' before searching with 'on'.
+
+    Parameters
+    ----------
+    left : DataFrame or named Series
+        First pandas object to merge.
+    right : DataFrame or named Series
+        Second pandas object to merge.
+    on : label
+        Field name to join on. Must be found in both DataFrames.
+        The data MUST be in ascending order. Furthermore this must be
+        a numeric column, such as datetimelike, integer, or float. ``on``
+        or ``left_on`` / ``right_on`` must be given.
+    left_on : label or array-like
+        Field name to join on in left DataFrame. Can also be an array of the
+        length of the left DataFrame, which is treated as if it were a column.
+        If specified, sort the left DataFrame by this key in ascending order
+        before merging.
+    right_on : label or array-like
+--- 2026-09-26T18:28:47Z method=逐語 target=E5_sample_docstring rc=0 time_s=0.004 note=sample(random_state)のdocstring本文(段2の根拠)
+$ sed -n '6051,6100p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/generic.py
+    def sample(
+        self,
+        n: int | None = None,
+        frac: float | None = None,
+        replace: bool = False,
+        weights=None,
+        random_state: RandomState | None = None,
+        axis: Axis | None = None,
+        ignore_index: bool = False,
+    ) -> Self:
+        """
+        Return a random sample of items from an axis of object.
+
+        You can use `random_state` for reproducibility.
+
+        Parameters
+        ----------
+        n : int, optional
+            Number of items from axis to return. Cannot be used with `frac`.
+            Default = 1 if `frac` = None.
+        frac : float, optional
+            Fraction of axis items to return. Cannot be used with `n`.
+        replace : bool, default False
+            Allow or disallow sampling of the same row more than once.
+        weights : str or ndarray-like, optional
+            Default ``None`` results in equal probability weighting.
+            If passed a Series, will align with target object on index. Index
+            values in weights not found in sampled object will be ignored and
+            index values in sampled object not in weights will be assigned
+            weights of zero.
+            If called on a DataFrame, will accept the name of a column
+            when axis = 0.
+            Unless weights are a Series, weights must be same length as axis
+            being sampled.
+            If weights do not sum to 1, they will be normalized to sum to 1.
+            Missing values in the weights column will be treated as zero.
+            Infinite values not allowed.
+            When replace = False will not allow ``(n * max(weights) / sum(weights)) > 1``
+            in order to avoid biased results. See the Notes below for more details.
+        random_state : int, array-like, BitGenerator, np.random.RandomState, np.random.Generator, optional
+            If int, array-like, or BitGenerator, seed for random number generator.
+            If np.random.RandomState or np.random.Generator, use as given.
+            Default ``None`` results in sampling with the current state of np.random.
+        axis : {0 or 'index', 1 or 'columns', None}, default None
+            Axis to sample. Accepts axis number or name. Default is stat axis
+            for given data type. For `Series` this parameter is unused and defaults to `None`.
+        ignore_index : bool, default False
+            If True, the resulting index will be labeled 0, 1, …, n - 1.
+
+        Returns
+--- 2026-09-26T18:28:57Z method=逐語 target=E1b_groupby_corr_docstring rc=0 time_s=0.007 note=groupby/corrのdocstring本文(段2の根拠、利用者が列・窓を選び計算の中身はpandasが持つ)
+$ sed -n '13678,13695p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/frame.py; echo '--- corr ---'; sed -n '16590,16602p' /tmp/claude-0/-home-user-trade/2da9385f-4fe4-506a-be3d-78153c549662/scratchpad/cat8/venvs/8-034/src/pandas/pandas/core/frame.py
+        observed: bool = True,
+        dropna: bool = True,
+    ) -> DataFrameGroupBy:
+        """
+        Group DataFrame using a mapper or by a Series of columns.
+
+        A groupby operation involves some combination of splitting the
+        object, applying a function, and combining the results. This can be
+        used to group large amounts of data and compute operations on these
+        groups.
+
+        Parameters
+        ----------
+        by : mapping, function, label, pd.Grouper or list of such
+            Used to determine the groups for the groupby.
+            If ``by`` is a function, it's called on each value of the object's
+            index. If a dict or Series is passed, the Series or dict VALUES
+            will be used to determine the groups (the Series' values are first
+| --- corr ---
+    def corr(
+        self,
+        method: CorrelationMethod = "pearson",
+        min_periods: int = 1,
+        numeric_only: bool = False,
+    ) -> DataFrame:
+        """
+        Compute pairwise correlation of columns, excluding NA/null values.
+
+        The result is a symmetric DataFrame where each element represents
+        the correlation coefficient between two columns. By default, the
+        Pearson correlation is computed, but Kendall and Spearman methods
+        as well as arbitrary callables are also supported.
+--- 2026-09-26T18:29:11Z method=setup target=最終確認 rc=0 time_s=0.051 note=全ての手が終わったあとの最終確認(scratchpad外キャッシュ・/tmp・常駐プロセス・大きさ)
+$ ls -ld /root/.m2 /root/.gradle; du -sh /root/.cache/pip; ls /tmp | grep -c -E '^pip-|^pandas'; ps aux | grep -iE 'python|pytest' | grep -v grep | wc -l; wc -c docs/DATA/probes/20260923_tools_8_run32.log
+drwxr-xr-x 4 root root 4096 Mar 31 13:27 /root/.gradle
+728M	/root/.cache/pip
+0
+0
+130144 docs/DATA/probes/20260923_tools_8_run32.log
+ls: cannot access '/root/.m2': No such file or directory
