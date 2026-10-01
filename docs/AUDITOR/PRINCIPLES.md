@@ -1,6 +1,6 @@
 # 監査役の原則集(PRINCIPLES)
 
-`docs/AUDITOR/KNOWN_ANSWERS.md` の 16 件から抽出した、繰り返し現れる原則。
+`docs/AUDITOR/KNOWN_ANSWERS.md`(と `KNOWN_ANSWERS_ADDENDUM.md`)から抽出した、繰り返し現れる原則。
 各原則には対応する KA ID と、監査役が本文を読むだけで使える「検出の合図」(この文言・構造が
 出てきたら疑う、という具体的なパターン)を付ける。
 
