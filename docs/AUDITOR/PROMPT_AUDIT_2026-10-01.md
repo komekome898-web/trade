@@ -53,6 +53,22 @@
 | 25 | `.claude/hooks/deny_protected_paths.sh:33-37` | `write=re.compile(r"(^|[^0-9<>&])>{1,2}(?!&)|\btee\b|\bsed\s+-i|…|\bpython[0-9.]*\b|…")` と `for pat in (…): if pat in cmd` | 第 4 群 機械の精度 | **保護パスの語がコマンド文字列のどこかにあり、かつ `python3` や `>>` が同じコマンドにあれば拒否する**。この監査中に 2 回、読み取り専用の操作(`wc -l <保護ファイル>` + 別ファイルへの追記 / `git blame .claude/agents/*` + 別ファイルへの追記)が止まった。守りたいのは「保護パスへの書き込み」で、「保護パスを読むコマンドと、別の場所への書き込みの同居」ではない | 中 | **flag**(A-16): 書き込みの対象(リダイレクト先・`sed -i` の引数・`tee` の引数)が保護パスのときだけ拒む形にする提案 |
 | 26 | `.claude/hooks/owner_turn_digest.sh:38-39` が毎回注入する文 | 「オーナーの規則(逐語): 日本語のみ(L-126)/ 有料インフラは提案しない(L-124)」「リードの規則(オーナーの指示ではない …)」 | 第 1 群 1d 周期的な再掲 | 同じ規則は `CLAUDE.md` §0.2 O-1・A-3 にある。手引きは「現行モデルは一度の指示を保持する。再掲は毎回の費用」と言う。ただし I-006 の経緯(状態板が読まれなかった)に対する導線としての価値は別で、**共有経路の死活と「今求めている行動」は毎回出す意味がある** | 低 | flag(A-16。残すなら規則 2 行だけ落とす) |
 
+## 2b. 参照先 6 文書の所見(L-488「いやなんで見てへんねんみろや」で追加。2026-10-01、§0 の「参照だけで読んでいないもの」を読んだ)
+
+読んだ範囲: `docs/DELEGATION.md` 全文 / `docs/AUDITOR/PRINCIPLES.md` 冒頭と原則の見出し / `docs/AUDITOR/KNOWN_ANSWERS.md` 冒頭・KA-100・KA-101 / `docs/AUDITOR/IMPROVEMENT.md` 全文 / `docs/JEV.md` の U10・U11 の行と薦める順 / `docs/AUDITOR/OWNER_MODEL_SOURCE.md` の見出し・§3-11・§3-13・引用されている L 番号の最大値。直した 4 件は 99e558ac に入っている。
+
+| # | 場所 | 見つかったこと(逐語) | 型 | 処置 |
+|---|---|---|---|---|
+| 2b-1 | `docs/DELEGATION.md` §7 の表「定期実行(Routine)」の行 | 「**下位モデル**(毎朝の点検・週次の監査役改良。2026-09-12 切替済み)」 | 第 2 群 古い事実(Routine 2 本は L-488 8(c) で削除) | **直した**(99e558ac): 「(L-488 8(c) で 2 本とも削除。現在 Routine は無い)」。同 §1 の「枠組み」も 3 つに揃えた(3(c))。同 §7「検知と記録」の「週次の `TREND.md`」も消えた文書への参照だったので状態板の行に置き換えた |
+| 2b-2 | `docs/AUDITOR/PRINCIPLES.md:3` | 「`docs/AUDITOR/KNOWN_ANSWERS.md` の **16 件**から抽出した」 | 第 2 群 揮発する数(ID は KA-01〜16 と KA-100〜) | **直した**(99e558ac): 数を消し `KNOWN_ANSWERS_ADDENDUM.md` も併記 |
+| 2b-3 | `docs/AUDITOR/KNOWN_ANSWERS.md:5` | 「本書がその検査集合(**現時点で 16 件**)」 | 第 2 群 揮発する数 | **直した**(99e558ac): 「KA-01〜KA-16 と、以後に足した KA-100〜」 |
+| 2b-4 | 同 KA-100 の既知解 | 「`/owner-options`(**選択待ちの全面停止、L-169**)を呼んで止まる」 | 第 2 群 L-488 4(b) と矛盾(全面停止は取り下げ) | **直した**(99e558ac): 「その行に関わる道具を呼ばず…依存しない作業は続けてよい(L-488 4(b))」 |
+| 2b-5 | 同 KA-101 の既知解と検査の型 | 「委任文は…**設計と一緒に監査役へ渡す**」「`VERDICTS/` の記録が無いまま…委任している → 止める」 | 第 2 群 L-488 2(b) と矛盾(委任文は機械の検査) | **直した**(99e558ac): LLM の監査役に通すのは研究の関門に掛かる委任だけ、それ以外は `jev_delegate.py plan`。検査の型は「委任文のファイルが無いまま委任」に絞った |
+| 2b-6 | `docs/AUDITOR/IMPROVEMENT.md` 全体 | 「週次の手順(定期実行 = Routine `trig_01Cr…`…毎週月曜 09:00 JST…)」 | 第 2 群 体制ごと終了(6(b)・8(c)) | **直した**(99e558ac): 冒頭に廃止の注記 1 行(Routine と候補版の定義は削除済み、以下は記録として残す)。本文は消していない |
+| 2b-7 | `docs/JEV.md:117-118`(U10・U11)と `:128` | U10「→ `IMPROVEMENT.md` 手順 5 のスクリプト化へ」「リード・**監査役の改良の週次**」/ U11「TREND.md の捕捉率が中立になる」/ 薦める順「**週次の監査役改良に直結**」 | 第 2 群 終了した体制への参照(6(b))。U10・U11 の中身(指摘の振り分け・盲検評価の採点)は体制と独立に残り得る | **未変更、所見として載せる**: 用途の列から「週次の改良」を落とすか、U10・U11 を取り下げるかはオーナーの判断(JEV の手引きの単位の増減は L-242 以降オーナーに見せてから) |
+| 2b-8 | `docs/AUDITOR/OWNER_MODEL_SOURCE.md` の範囲 | 引用されている `OWNER_LOG` の最大は **L-154**(2026-09-13 時点)。L-155 以降(L-164 監査の場所 / L-169 / L-202 圧縮 / L-242 / L-403 / L-416 / L-451 / L-454 / L-488 …)の逐語は 1 件も入っていない | 第 2 群 素材集が 09-13 で止まっている。監査役(`owner-auditor`)はこの素材集を読むので、以後 18 日分のオーナーの決定を知らない | **所見だけ(直さない)**: この文書は書き込み保護(`deny_protected_paths.sh`)で、変更はオーナーの指示があるときだけ(A-16 と同じ扱い)。追補を別ファイルにするか、保護を外して追記するかはオーナーの判断 |
+| 2b-9 | 同 §3-11(枠組み)・§3-13(監査役を通さずに納品) | §3-11 は「**`CLAUDE.md` §8**(2026-09-08 の全捨ての帰結)」の引用だけで、オーナーの逐語が無い。§3-13 も「**`CLAUDE.md` §8**(L-112 由来)」の引用で、L-112 の逐語(「私の次に権限が強い者として…」)ではなく CLAUDE.md のリードの文を引いている。どちらも「(解釈)」の印なしで §3「許さないこと」の下にある | 第 2 群 リードが導いた規則(§0.2 B の A-13・O-5)がオーナーの「許さないこと」として素材集に置かれている(L-162「私の指示でないものを私の指示とするのは嘘」と同じ型) | **所見だけ(直さない、2b-8 と同じ理由)**: 直すなら「(解釈)」の印を付けるか、§3 から別の節に移す。L-488 で A-13 は 3 つに限定、O-5 は研究の関門に絞ったので、素材集のこの 2 項は現行の規則とも食い違う |
+
 ## 3. 提案の差分(確度 高・中のみ。1 件 1 塊。適用はしていない)
 
 ### 3-1 `CLAUDE.md:128`(所見 1)— 現状だけを書く
@@ -260,7 +276,23 @@
 - `owner-auditor.md` 本番の定義 — 役の説明・入力・手順・出力の形の 4 部で、文の圧は無い。
 - `jev_notice.sh`・`session_start_digest.sh` — 表示だけ(L-218)。注入する文はデータ。
 
-## 6. 確かめ方(適用するなら)
+## 6. L-488 の判断 1〜9 を当てたファイルの一覧(コミット e2e2c37d・99e558ac。`git show --stat` で確かめた)
+
+| 判断 | 当てたファイル | 何を変えたか |
+|---|---|---|
+| 1(a) 事実の訂正(所見 1〜11・14・21) | `CLAUDE.md`(フック 6 本の現状だけ・試験の件数を消す・`docs/OWNER_STATUS.md` の判断が要る項目へ・数の上限を目的の文に)/ `.claude/skills/research-protocol/SKILL.md`(消えた文書の穴 4 か所・「(過去の報告)」4 か所・`state_split` 実装済み・閾を 70% に)/ `.claude/skills/owner-audit/SKILL.md`(「16 件」・「未対応の止める n 件」の行を消す)/ `.claude/skills/owner-options/SKILL.md`(無いフック `owner_options_gate.sh` への依存を外す)/ `.claude/skills/delegated-study/SKILL.md`(雛形に「着手前の表」の行を足す = 所見 8)/ `docs/OWNER_STATUS.md`(フックが注入する 2 行 = 所見 11)/ `docs/AUDITOR/PRINCIPLES.md`・`docs/AUDITOR/KNOWN_ANSWERS.md`(「16 件」= §2b)/ `docs/DELEGATION.md` §7(`TREND.md` の参照) | 古い事実を今の事実に。数は消した |
+| 2(b) LLM 監査は研究の関門 2 か所とコードを変える委任の批評家だけ | `CLAUDE.md` §0.2 B O-5・§8 / `.claude/skills/owner-audit/SKILL.md`(「いつ呼ぶか」を 2 か所に絞り、他は機械の検査)/ `.claude/skills/research-squad/SURVEY.md`(「監査役(LLM)は使わない」)/ `.claude/skills/research-protocol/SKILL.md`(委任文の指紋は検収の記録へ)/ `docs/AUDITOR/KNOWN_ANSWERS.md` KA-101 | 「納品物は全部監査役を通す」を関門 2 か所に限定 |
+| 3(c) 枠組みは 3 つに限定 | `CLAUDE.md` §0.2 B A-13・§8 / `docs/DELEGATION.md` §1 | 「問いの立て方・族の切り方・検定単位」の 3 つだけオーナーに見せる |
+| 4(b) 全面停止をやめ、空行の件だけ聞く | `CLAUDE.md` §0.1 / `.claude/skills/owner-options/SKILL.md`(手順 6〜8 を書き直し、`awaiting_owner_choice` の印を消す)/ `docs/AUDITOR/KNOWN_ANSWERS.md` KA-100 | L-169 の A(全面停止)を 4(b) で置き換え |
+| 5(b) `owner-model-auditor` 退役 | `.claude/agents/owner-model-auditor.md`(削除)/ `scripts/_research_audit_gate.py`(`AUDITORS = ("owner-auditor",)`)/ `tests/test_audit_gates_wired.py`・`tests/test_judge_gates.py`・`tests/test_phase2_p2_02_final.py`・`tests/test_phase2_p2_03_final.py`・`tests/test_phase2_seal.py`(監査役名の置き換え)/ `.claude/skills/research-protocol/SKILL.md`(役を分ける注記を退役の注記に) | 関門の監査役は `owner-auditor` だけ |
+| 6(b) 監査役の改良の体制を終了 | `.claude/agents/owner-auditor-candidate.md`(削除)/ `CLAUDE.md` §8 / `.claude/skills/owner-audit/SKILL.md`(改訂の段落)/ `docs/AUDITOR/IMPROVEMENT.md`(廃止の注記) | 週次の改良と候補版を終了。定義の変更はオーナー承認制のまま(A-15) |
+| 7(a) フック 2 本を直す | `.claude/hooks/deny_protected_paths.sh`(書き込みの対象が保護パスのときだけ拒む)/ `.claude/hooks/owner_turn_digest.sh`(規則 2 行の再掲を外す)/ `docs/AUDITOR/HOOK_MANIFEST.sha256`(同じコミットで再生成)/ `CLAUDE.md` §3(フックの行) | 解除ファイル `.claude/state/owner_unlock_hooks` を 3 回作り、毎回消した(L-488・L-489)。**それ以上の改良版は入れない**(前の会話で入れようとして壊した = L-489)。残る限界: Bash の判定は「コマンド文字列に保護パスの名が含まれ、かつ書き込みの語がある」で止まることがまだある(この §2b/§6 の追記で 1 回止まった。本文を一時ファイルに置いて回避) |
+| 8(c) Routine 2 本を削除 | リポジトリの外(Routine の削除は MCP の `delete_trigger`)。文書側は `docs/DELEGATION.md` §7 の Routine の行と `docs/AUDITOR/IMPROVEMENT.md` の注記 | 現在 Routine は無い |
+| 9(a) 利用者側の停止フックはそのまま | (変更なし) | — |
+| 判断ではないもの: 表 B の A-5b・A-6・A-7 を research-protocol に一本化 | `CLAUDE.md` §0.2 B(3 行を 1 文に。重複して 3 回入ったのは a1ef8d1 で 1 つに)/ `.claude/skills/research-protocol/SKILL.md` §4.3・§5 | — |
+| (自動) | `docs/AUDITOR/TRACE/2026-10-01_220780c0.json` | `trace_snapshot.sh` の行動記録。判断の適用ではない |
+
+## 7. 確かめ方(適用するなら)
 
 - 所見 1〜11 は事実の訂正なので、直したあとに同じ命令(`ls .claude/hooks | wc -l`、`grep -c`、パスの存在)で確かめる。
 - 所見 15〜19(語りと圧の削減)は 1 塊ずつ当て、次の 1 単位(段階 G)の会話で「指示を取り違えた回数」が増えないかを `OWNER_LOG` の指摘の行数で見る。退行したら最小の形で戻す。
