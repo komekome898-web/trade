@@ -39,7 +39,7 @@ WIRED = [
 # (指紋の台帳は共有部品にしか掛かっておらず、呼び出し側の現役コードに掛けると
 #  普通の研究作業が止まるため。台帳の範囲はオーナーが決めること。)
 
-AUDITORS = ("owner-model-auditor", "owner-auditor")
+AUDITORS = ("owner-auditor",)  # owner-model-auditor retired 2026-10-01 (owner decision L-488 5(b))
 
 
 def _root(root: Path | str | None = None) -> Path:
@@ -125,10 +125,8 @@ def require_audit(unit: str, stage: str, root: Path | str | None = None) -> None
   1. **測定後・報告前(L-164 でオーナーが足した監査)は `owner-auditor` を呼ぶ。**
      渡すのは (a) この一手 (b) 応えているオーナーの逐語
      (c) **事前登録と、生の出力の両方**
-     (2026-09-14、L-169「ア = 役を分ける」。**行動の監査 `owner-model-auditor` は
-      入力を「オーナーの逐語 + TRACE」に限ったので、事前登録を見られない。**
-      役を分けないと、この監査が数値を見られなくなり、09-13 の欠陥 10 件を
-      捕まえていた唯一の場所が塞がる)
+     (行動の監査 `owner-model-auditor` は 2026-10-01、L-488 5(b) で退役。この関門の監査役は
+      `owner-auditor` だけ)
   2. 返ってきた指摘と判定を、**逐語で**この会話に出す
   3. {LOG_REL} に次を含む節を作る:
        「監査対象: {unit}/{stage}」/ 監査役の名前 / 逐語 8 行以上 / 行頭の「判定: 通す」

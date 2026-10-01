@@ -43,7 +43,7 @@ from phase2 import p2_02_run as p2  # noqa: E402
 def write_audit_record(root: Path, unit: str, stage: str) -> None:
     """4 つ目の門(2026-09-13、L-164)が要求する監査の記録を、一時の root に置く。
 
-    本番では `owner-model-auditor` が返した逐語をリードが ACTION_LOG に転記する。
+    本番では `owner-auditor` が返した逐語をリードが ACTION_LOG に転記する。
     ここでは同じ形を合成して、**門が「記録があれば通す」側も測れるように**する
     (拒否される側しか測っていない、というのが 2026-09-13 の 3 本目の監査の指摘だった)。
     """
@@ -51,7 +51,7 @@ def write_audit_record(root: Path, unit: str, stage: str) -> None:
     log.parent.mkdir(parents=True, exist_ok=True)
     body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
     log.write_text(
-        f"## 試験\n\n監査対象: {unit}/{stage}\n**監査役**: `owner-model-auditor`\n\n"
+        f"## 試験\n\n監査対象: {unit}/{stage}\n**監査役**: `owner-auditor`\n\n"
         f"{body}\n\n判定: 通す\n", encoding="utf-8")
 
 

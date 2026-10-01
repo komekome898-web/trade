@@ -597,7 +597,7 @@ def _write_result_audit(root, unit="TESTUNIT"):
     log = root / "docs" / "AUDITOR" / "ACTION_LOG.md"
     log.parent.mkdir(parents=True, exist_ok=True)
     body = "\n".join(f"> 指摘の本文 {i} 行目。これは監査役が書いた文である。" for i in range(1, 10))
-    log.write_text(f"## 試験\n\n監査対象: {unit}/結果\n**監査役**: `owner-model-auditor`\n\n"
+    log.write_text(f"## 試験\n\n監査対象: {unit}/結果\n**監査役**: `owner-auditor`\n\n"
                    f"{body}\n\n判定: 通す\n", encoding="utf-8")
 
 

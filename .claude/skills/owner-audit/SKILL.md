@@ -1,36 +1,36 @@
 ---
 name: owner-audit
-description: "Invoke the owner-auditor subagent on any pre-registration/report/survey before it goes to the owner, and answer its questions in the artifact before delivery. Use before delivering docs/PHASE2/**/PREREG.md, RESULT.md, or any docs/DISCUSSIONS survey to the owner."
+description: "Invoke the owner-auditor subagent at the two research gates (before opening the judgment interval; after measurement, before the report) and answer its questions in the artifact before delivery. Other documents go through the machine checks (jev_check.py, check_scan_report.py), not the LLM auditor (owner decision L-488 2(b))."
 ---
 
-# オーナー監査の呼び出し(L-104 / L-105)
+# オーナー監査の呼び出し(L-104 / L-105 / L-164 / L-488)
 
 ## これは何か
 
 `.claude/agents/owner-auditor.md`(下位モデル)に、オーナーが過去に実際に指摘した型
-(`docs/AUDITOR/PRINCIPLES.md` の P1〜P9)が成果物に残っていないかを検査させる。
+(`docs/AUDITOR/PRINCIPLES.md` の P1〜)が成果物に残っていないかを検査させる。
 **承認機関ではない。判定でもない。** 返るのは問いの一覧だけで、採否はリードが決める。
 
-**ブロッキングフックではない。** 呼ぶかどうか・いつ呼ぶかはリードの判断。仕組みで強制しない
-(CLAUDE.md §5.2 — 規則を機械で縛ることは偽陰性を防がない。読む・答える運用を守ることが本体)。
+## いつ呼ぶか(L-488 2(b) で絞った)
 
-## いつ呼ぶか
+LLM の監査役を呼ぶのは次の 2 か所だけ(`CLAUDE.md` §5.0 の研究の関門。L-164 でオーナー承認):
 
-次のいずれかを**オーナーに渡す前**:
+1. **判定区間を開ける前** — 事前登録(`PREREG.md` / `*_PREREG.md`)と `INTENT_MAP.md`。`src/bot/research/sealed.py: load_sealed` の門が監査の記録を要求する。
+2. **測定後・報告前** — 判定の報告(`RESULT.md` の新しい部)。`scripts/judge_gates.py` の門が要求する。渡すのは**事前登録と生の出力の両方**。
 
-- 事前登録(`PREREG.md` / `*_PREREG.md` 系)
-- 研究報告(`docs/PHASE2/**/RESULT.md` の新規部、`docs/RESEARCH_REPORT_*.md`)
-- 外部調査サーベイ・データ在庫調査などの調達票類
+これ以外の成果物(調達票・調査の報告・委任文・環境の報告など)は **LLM の監査役に通さない**。
+機械の検査(`scripts/jev_check.py audit`、調査なら `scripts/check_scan_report.py`・`scripts/jev_survey.py`、委任文なら `scripts/jev_delegate.py plan`、受領なら `scripts/jev_report_intake.py check`)とリードの抜き取りで足りるとオーナーが決めた(L-488。費用の実測は `research-squad/SURVEY.md` §6)。
+コードを変える委任の**批評家**(委任文 §3 に置くもの)は別で、これは残す。
 
 ## 前段(Jev。オーナー承認 2026-09-19、L-225「段1を承認する」)
 
-監査役を呼ぶ**前**に、成果物に Jev の前段を当てる(手引き `docs/JEV.md` §5・§8 の U10 と同じ作り):
+監査役を呼ぶ**前**に、成果物に Jev の前段を当てる(手引き `docs/JEV.md` §5・§8 の U10):
 
 ```
 PYTHONPATH=. python3 scripts/jev_check.py audit <成果物のパス> --out data/jev/check
 ```
 
-- 出るのは**対ごとの確率と要確認の印だけ**(取れないの根拠 / 確かめたの証拠 / 全部の数え上げ / 記号の定義 / 射程と判定バー / 意図マップと測定対象 / なぜと結果)。Jev は判定しない。
+- 出るのは**対ごとの確率と要確認の印だけ**。Jev は判定しない。
 - **監査役は全件のまま呼ぶ(省略しない)。**印の付いた対の一覧(`data/jev/check/<成果物>.jsonl` の要確認の行の `kind` / `anchor` / 断片の先頭)を、監査役への prompt に「前段で印が付いた箇所」として**パスと行番号だけ**添える(どの事案かの説明は書かない)。
 - 末尾 1 行(`印 N 件(内訳)` / `jev: 未到達(理由)`)を `VERDICTS/` の記録の先頭に写す。**未到達のときも監査役は呼ぶ**(前段は補助で、無くても監査は成立する)。
 - 数値の結果(確率)は `data/jev/`(リポジトリに入れない)にだけ残す。
@@ -66,27 +66,22 @@ Task(
 
 ## 限界(オーナーに伝えること)
 
-- 監査役は`KNOWN_ANSWERS.md`の 16 件から抽出した**既知の型**にしか強い。未知の盲点は
+- 監査役は `KNOWN_ANSWERS.md` から抽出した**既知の型**にしか強い。未知の盲点は
   見つけない(L-104 のリード回答どおり)
 - 下位モデルなので、複雑な数値の当否(相場についての主張の真偽)は判定できない —
   検査対象は手続き(範囲明記・出所・網羅性・なぜ・射程の整合)であって結論ではない
-- 誤検出(false alarm)の実測は `docs/AUDITOR/EVAL_*.md` を参照。ここで割合の高い指摘型は
-  優先して直し、低い型は参考程度に扱う
+- 誤検出(false alarm)の実測は `docs/AUDITOR/EVAL_*.md` を参照
 
 ## 改良
 
-監査役のプロンプト自体の改訂は**リードが決める**(このスキル・エージェント定義を書く側の
-仕事であり、監査役自身に自己改訂させない)。改良案は `docs/AUDITOR/EVAL_*.md` の
-測定結果から出す。
+週次の改良の体制(L-116)は **L-488 6(b) で終了**した。定義の変更はオーナー承認制のまま(A-15)。リードは差分を提案し、承認まで旧版を使う。
 
 ## 権限(オーナー指示 2026-09-11、L-112)
 
 順位は **オーナー > 監査役 > リード > 下位モデル**。この順位は手順で担保する:
 
-1. **納品の門**: 事前登録・報告・調査・オーナーへの手順の指示は、監査役の問いに答えるまでオーナーへ出さない。委任先の調査報告もリードが読む前に監査役へ渡す。
+1. **関門の門**: 上の 2 か所の成果物は、監査役の問いに答えるまでオーナーへ出さない。
 2. **書面の応答**: 監査役の出力を `docs/AUDITOR/VERDICTS/<日付>_<成果物>.md` にそのまま保存し、各問いの直下にリードの応答を書く。応答は 3 値: `直した(箇所)` / `上申(オーナー判断を仰ぐ。両論を書く)` / `採用しない(理由。「止める」には使えない)`。
 3. **「止める」の扱い**: リードは単独で退けられない。直すか上申する。上申中の成果物は「未監査扱い」でオーナーへ出す(その旨を明記)。
 4. **誤警報の判定**: 「誤警報」と書くには 1 件ずつ読んで理由を添える(L-110 の再発防止)。要約の語をそのまま使わない。
-5. **監査役の改変**: 定義・既知解・原則の変更はオーナー承認制。リードは差分を提案し、承認まで旧版を使う。測定のための一時的な変更も同じ。
-6. **状態板**: `docs/OWNER_STATUS.md` に「未対応の止める n 件 / 上申中 m 件」を持つ(監査のたびに更新)。
-
+5. **監査役の改変**: 定義・既知解・原則の変更はオーナー承認制。
