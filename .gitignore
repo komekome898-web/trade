@@ -74,3 +74,8 @@ deploy/_restart_all_copy.bat
 # the MD5SUMS-listed working copy that 50 real-data tests read. It is derived
 # (zcat table.csv.gz > table.csv), 91 MB, and must never be deleted as "untracked".
 backtest_data/o3c_reaction_20260918_full/gap*/table.csv
+
+# K1 stage G folded bars (157 MB, reproducible by scripts/k1_newenv_g_fold.py; FOLD_MANIFEST.json is tracked)
+backtest_data/k1_newenv_g_20261001/*.csv.gz
+backtest_data/k1_newenv_g_20261001/*.json
+!backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json

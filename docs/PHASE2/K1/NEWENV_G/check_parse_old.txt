@@ -1,0 +1,3 @@
+(b) rows that agree with each json source: {'design|full': 390, 'design|2022_2026': 328}
+cells read 412
+mismatches 0

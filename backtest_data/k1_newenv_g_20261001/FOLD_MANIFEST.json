@@ -1,0 +1,710 @@
+{
+ "cut": "2023-12-18T00:00:00",
+ "cut_source": "backtest_data/phase2_sealed/P2-08/SEALED.json seal_from_ts",
+ "inputs": [
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+   "sha256": "590178034c6e31b32e63e531804cbb5b2301253bc36eb904e4b45c21829b06a6",
+   "size": 4982605,
+   "sealed_unit": "P2-08",
+   "rows_read": 196544,
+   "rows_kept_in_range": 196544,
+   "events_after_policy": 172848,
+   "anomalies": {
+    "synthetic": 23696,
+    "off_grid": 20401,
+    "gap": 20897
+   },
+   "policies": {
+    "gap": "accept",
+    "off_grid": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2017-01-01T00:00:00",
+    "2018-01-01T00:00:00"
+   ],
+   "first_ts": "2017-08-17T04:00:00",
+   "last_ts": "2017-12-31T23:59:00",
+   "last_ts_after_policy": "2017-12-31T23:59:00",
+   "off_minute_rows": 20320
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2017.csv.gz",
+   "sha256": "b0c74ccfbf5a70439432672c760a80ac519b8e62be521c99b3461cb86bcfdc7f",
+   "size": 11880824,
+   "sealed_unit": null,
+   "rows_read": 519072,
+   "rows_kept_in_range": 519072,
+   "events_after_policy": 519072,
+   "anomalies": {
+    "gap": 6528
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2017-01-01T00:00:00",
+    "2018-01-01T00:00:00"
+   ],
+   "first_ts": "2017-01-01T00:00:00",
+   "last_ts": "2017-12-31T23:59:00",
+   "last_ts_after_policy": "2017-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+    "source_sha256": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8",
+    "rows_read": 525596,
+    "dropped_blank_open": 6524,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2017-01-01T00:00:00+00:00",
+    "copy_last_ts": "2017-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+   "sha256": "f66cc2228c3b3b4c78ed418014f323f00690050b7319c57fba83a9e3d2389347",
+   "size": 17715123,
+   "sealed_unit": "P2-08",
+   "rows_read": 521624,
+   "rows_kept_in_range": 521624,
+   "events_after_policy": 521604,
+   "anomalies": {
+    "synthetic": 20,
+    "off_grid": 1201,
+    "gap": 5177
+   },
+   "policies": {
+    "gap": "accept",
+    "off_grid": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2018-01-01T00:00:00",
+    "2019-01-01T00:00:00"
+   ],
+   "first_ts": "2018-01-01T00:00:00",
+   "last_ts": "2018-12-31T23:59:00",
+   "last_ts_after_policy": "2018-12-31T23:59:00",
+   "off_minute_rows": 1201
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2018.csv.gz",
+   "sha256": "a21b600bb601ab30bff3e60b6c7f49fc093d5bb76837f09d68eb86cf067e89c3",
+   "size": 12796922,
+   "sealed_unit": null,
+   "rows_read": 521307,
+   "rows_kept_in_range": 521307,
+   "events_after_policy": 521307,
+   "anomalies": {
+    "gap": 4293
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2018-01-01T00:00:00",
+    "2019-01-01T00:00:00"
+   ],
+   "first_ts": "2018-01-01T00:00:00",
+   "last_ts": "2018-12-31T23:59:00",
+   "last_ts_after_policy": "2018-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+    "source_sha256": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df",
+    "rows_read": 525600,
+    "dropped_blank_open": 4293,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2018-01-01T00:00:00+00:00",
+    "copy_last_ts": "2018-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+   "sha256": "ffb1fde499ae1c47f39e1df341d31d9db3cbb138a46bef36e9ed433c5135bb12",
+   "size": 18128682,
+   "sealed_unit": "P2-08",
+   "rows_read": 523836,
+   "rows_kept_in_range": 523836,
+   "events_after_policy": 523760,
+   "anomalies": {
+    "synthetic": 76,
+    "gap": 1764
+   },
+   "policies": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2019-01-01T00:00:00",
+    "2020-01-01T00:00:00"
+   ],
+   "first_ts": "2019-01-01T00:00:00",
+   "last_ts": "2019-12-31T23:59:00",
+   "last_ts_after_policy": "2019-12-31T23:59:00",
+   "off_minute_rows": 0
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2019.csv.gz",
+   "sha256": "2020c868452162404af6109fbfb2551eef3eae2b413ead7bb7fe9d11214f61f8",
+   "size": 12848023,
+   "sealed_unit": null,
+   "rows_read": 519892,
+   "rows_kept_in_range": 519892,
+   "events_after_policy": 519892,
+   "anomalies": {
+    "gap": 5708
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2019-01-01T00:00:00",
+    "2020-01-01T00:00:00"
+   ],
+   "first_ts": "2019-01-01T00:00:00",
+   "last_ts": "2019-12-31T23:59:00",
+   "last_ts_after_policy": "2019-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+    "source_sha256": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3",
+    "rows_read": 525600,
+    "dropped_blank_open": 5708,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2019-01-01T00:00:00+00:00",
+    "copy_last_ts": "2019-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+   "sha256": "655ab3497125c7a5bbd1f11cd23c655c29b2788a7916a3f8e6bd2048d98dda34",
+   "size": 18859023,
+   "sealed_unit": "P2-08",
+   "rows_read": 525788,
+   "rows_kept_in_range": 525788,
+   "events_after_policy": 525738,
+   "anomalies": {
+    "synthetic": 50,
+    "gap": 1252
+   },
+   "policies": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2020-01-01T00:00:00",
+    "2021-01-01T00:00:00"
+   ],
+   "first_ts": "2020-01-01T00:00:00",
+   "last_ts": "2020-12-31T23:59:00",
+   "last_ts_after_policy": "2020-12-31T23:59:00",
+   "off_minute_rows": 0
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2020.csv.gz",
+   "sha256": "6450d55d1ed0a906cc93a41bfa9ae009f6a70af678a3ee82b8132f5a6177ec71",
+   "size": 13052591,
+   "sealed_unit": null,
+   "rows_read": 519967,
+   "rows_kept_in_range": 519967,
+   "events_after_policy": 519967,
+   "anomalies": {
+    "gap": 7073
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2020-01-01T00:00:00",
+    "2021-01-01T00:00:00"
+   ],
+   "first_ts": "2020-01-01T00:00:00",
+   "last_ts": "2020-12-31T23:59:00",
+   "last_ts_after_policy": "2020-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+    "source_sha256": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23",
+    "rows_read": 526668,
+    "dropped_blank_open": 6701,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2020-01-01T00:00:00+00:00",
+    "copy_last_ts": "2020-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+   "sha256": "56d016ad19008cb7c56bbe9754a74c32b1b7ce2061b6ae9133dccecb2a7dc859",
+   "size": 19734685,
+   "sealed_unit": "P2-08",
+   "rows_read": 524607,
+   "rows_kept_in_range": 524607,
+   "events_after_policy": 524518,
+   "anomalies": {
+    "synthetic": 89,
+    "gap": 993
+   },
+   "policies": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2021-01-01T00:00:00",
+    "2022-01-01T00:00:00"
+   ],
+   "first_ts": "2021-01-01T00:00:00",
+   "last_ts": "2021-12-31T23:59:00",
+   "last_ts_after_policy": "2021-12-31T23:59:00",
+   "off_minute_rows": 0
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2021.csv.gz",
+   "sha256": "253c909684b5d2b03fff3805578df6b504585058b12ff8de5ae888f329602c69",
+   "size": 13039698,
+   "sealed_unit": null,
+   "rows_read": 518630,
+   "rows_kept_in_range": 518630,
+   "events_after_policy": 518630,
+   "anomalies": {
+    "gap": 6970
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2021-01-01T00:00:00",
+    "2022-01-01T00:00:00"
+   ],
+   "first_ts": "2021-01-01T00:00:00",
+   "last_ts": "2021-12-31T23:59:00",
+   "last_ts_after_policy": "2021-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+    "source_sha256": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76",
+    "rows_read": 525600,
+    "dropped_blank_open": 6970,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2021-01-01T00:00:00+00:00",
+    "copy_last_ts": "2021-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+   "sha256": "cdc318ee448879f567812cd2bdc4a60964e9e9f3806cf7adaba6e295b52b5ca4",
+   "size": 18912760,
+   "sealed_unit": "P2-08",
+   "rows_read": 525600,
+   "rows_kept_in_range": 525600,
+   "events_after_policy": 525600,
+   "anomalies": {},
+   "policies": {},
+   "range": [
+    "2022-01-01T00:00:00",
+    "2023-01-01T00:00:00"
+   ],
+   "first_ts": "2022-01-01T00:00:00",
+   "last_ts": "2022-12-31T23:59:00",
+   "last_ts_after_policy": "2022-12-31T23:59:00",
+   "off_minute_rows": 0
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2022.csv.gz",
+   "sha256": "6c155c5a5904195be09cf5844d683ceae4ce5ac2c571774ed4846d4d344dd9f8",
+   "size": 12985907,
+   "sealed_unit": null,
+   "rows_read": 520884,
+   "rows_kept_in_range": 520884,
+   "events_after_policy": 520884,
+   "anomalies": {
+    "gap": 4716
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2022-01-01T00:00:00",
+    "2023-01-01T00:00:00"
+   ],
+   "first_ts": "2022-01-01T00:00:00",
+   "last_ts": "2022-12-31T23:59:00",
+   "last_ts_after_policy": "2022-12-31T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+    "source_sha256": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56",
+    "rows_read": 525600,
+    "dropped_blank_open": 4716,
+    "dropped_at_or_after_cut": 0,
+    "copy_first_ts": "2022-01-01T00:00:00+00:00",
+    "copy_last_ts": "2022-12-31T23:59:00+00:00"
+   }
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+   "sha256": "1a83012af9283a4dd6952c30c3daf7aa82a31f0ccbf1af46ccfd11a358ac282e",
+   "size": 17719908,
+   "sealed_unit": "P2-08",
+   "rows_read": 525520,
+   "rows_kept_in_range": 505360,
+   "events_after_policy": 505288,
+   "anomalies": {
+    "synthetic": 72,
+    "gap": 80
+   },
+   "policies": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "range": [
+    "2023-01-01T00:00:00",
+    "2023-12-18T00:00:00"
+   ],
+   "first_ts": "2023-01-01T00:00:00",
+   "last_ts": "2023-12-17T23:59:00",
+   "last_ts_after_policy": "2023-12-17T23:59:00",
+   "off_minute_rows": 0
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/tmp_bitflyer_2023.csv.gz",
+   "sha256": "effa1a661abc22410ea6304fbeadd9e6770bda4a1bb18cf6801b3ce458131548",
+   "size": 10011383,
+   "sealed_unit": null,
+   "rows_read": 457839,
+   "rows_kept_in_range": 457839,
+   "events_after_policy": 457839,
+   "anomalies": {
+    "gap": 47601
+   },
+   "policies": {
+    "gap": "accept"
+   },
+   "range": [
+    "2023-01-01T00:00:00",
+    "2023-12-18T00:00:00"
+   ],
+   "first_ts": "2023-01-01T00:00:00",
+   "last_ts": "2023-12-17T23:59:00",
+   "last_ts_after_policy": "2023-12-17T23:59:00",
+   "off_minute_rows": 0,
+   "copy_of": {
+    "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+    "source_sha256": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15",
+    "rows_read": 525600,
+    "dropped_blank_open": 47601,
+    "dropped_at_or_after_cut": 20160,
+    "copy_first_ts": "2023-01-01T00:00:00+00:00",
+    "copy_last_ts": "2023-12-17T23:59:00+00:00"
+   }
+  }
+ ],
+ "bitflyer_copies": [],
+ "outputs": [
+  {
+   "foot": 5,
+   "range": "full_unjoined",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_5m_full_unjoined.csv.gz",
+   "rows": 663749,
+   "sha256": "e0577aaf302f70058b6e5df7345a6efc5ea0fcfc0300234d29fb0911e16e903c",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:55:00"
+  },
+  {
+   "foot": 15,
+   "range": "full_unjoined",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_15m_full_unjoined.csv.gz",
+   "rows": 221506,
+   "sha256": "cc42d3dab4714955c2cce0e108229ae66e1db7c31626cea531fbe047df1759db",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:45:00"
+  },
+  {
+   "foot": 1,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_1m_2022_20231217.csv.gz",
+   "rows": 978571,
+   "sha256": "62c1cf3a9b9f70294a721fd6eb90525518428bf67240183bf6ae60a5173ec658",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:59:00"
+  },
+  {
+   "foot": 1,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_1m_2022_20231217.csv.gz",
+   "rows": 978571,
+   "sha256": "809c181afa307a0da4f553e6510fd74a4523baba733ab3a3373ac4f632b9c572",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:59:00"
+  },
+  {
+   "foot": 3,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_3m_2022_20231217.csv.gz",
+   "rows": 338253,
+   "sha256": "ce416c4b5dafb79a7ea441e7ad2e696cd19fda0a351e4c38dede548f8cfa7737",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:57:00"
+  },
+  {
+   "foot": 3,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_3m_2022_20231217.csv.gz",
+   "rows": 338253,
+   "sha256": "15913e9382818e7a6e70b891da23d245489d0b64ddfbfd791b66417664c49143",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:57:00"
+  },
+  {
+   "foot": 5,
+   "range": "full",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_5m_full.csv.gz",
+   "rows": 658860,
+   "sha256": "c13d06da02fa39a7e102d7c4295804c63b86e382d317347926555a5c923aa737",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:55:00"
+  },
+  {
+   "foot": 5,
+   "range": "full",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_5m_full.csv.gz",
+   "rows": 658860,
+   "sha256": "482cad87c202b05ddcd5f196d656068f217eb3b02a449a4e0dfa48d5e3daea78",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:55:00"
+  },
+  {
+   "foot": 5,
+   "range": "2018_2021",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_5m_2018_2021.csv.gz",
+   "rows": 416233,
+   "sha256": "36c67956a122c2c01d5e88d48eb1d9e583c250e8dba3c134f8076928d3be3898",
+   "first_start": "2018-01-01T00:00:00",
+   "last_start": "2021-12-31T23:55:00"
+  },
+  {
+   "foot": 5,
+   "range": "2018_2021",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2018_2021.csv.gz",
+   "rows": 416233,
+   "sha256": "ef3bddcca316a20d86624e6fcc903c65eb98d59cba1e64745d74d9faaead4c13",
+   "first_start": "2018-01-01T00:00:00",
+   "last_start": "2021-12-31T23:55:00"
+  },
+  {
+   "foot": 5,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_5m_2022_20231217.csv.gz",
+   "rows": 204458,
+   "sha256": "cf0ac706c3a9b314b6e2694742a0376e3b7b88c3cb45fc9c1c5eb9bf64a1785c",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:55:00"
+  },
+  {
+   "foot": 5,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2022_20231217.csv.gz",
+   "rows": 204458,
+   "sha256": "947cd5d0b9e63b12314a3c295020803cd1030cbaacb23660bf03e447f7e2ccb0",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:55:00"
+  },
+  {
+   "foot": 15,
+   "range": "full",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_15m_full.csv.gz",
+   "rows": 221000,
+   "sha256": "3b5f5306e1a401b672e46d920e4b83f8a70e9131f0289ec57ceab681f9e24991",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:45:00"
+  },
+  {
+   "foot": 15,
+   "range": "full",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_15m_full.csv.gz",
+   "rows": 221000,
+   "sha256": "c0ee56da6e1bb125b03e55bc718125a7895f8aff93c7a1bf6a5d4700ce545999",
+   "first_start": "2017-08-17T04:00:00",
+   "last_start": "2023-12-17T23:45:00"
+  },
+  {
+   "foot": 15,
+   "range": "2018_2021",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_15m_2018_2021.csv.gz",
+   "rows": 139333,
+   "sha256": "254ecc18f909d07498e11abed79e608e075434f6f3e03eafcf9851b3154fad5b",
+   "first_start": "2018-01-01T00:00:00",
+   "last_start": "2021-12-31T23:45:00"
+  },
+  {
+   "foot": 15,
+   "range": "2018_2021",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_15m_2018_2021.csv.gz",
+   "rows": 139333,
+   "sha256": "3f86496be1c448e8a18c3681d9fc3a769971e86c915a0a542c223892cddb1bc6",
+   "first_start": "2018-01-01T00:00:00",
+   "last_start": "2021-12-31T23:45:00"
+  },
+  {
+   "foot": 15,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_15m_2022_20231217.csv.gz",
+   "rows": 68638,
+   "sha256": "9d686ecbbad3a5ec19400234bb21bb732c815c37df1752f64f22ccc25739ca0a",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:45:00"
+  },
+  {
+   "foot": 15,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_15m_2022_20231217.csv.gz",
+   "rows": 68638,
+   "sha256": "f98ebcd3957db764897d11dcfa909a84c061e0c26bd8f37a5aecd5f0a5820135",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:45:00"
+  },
+  {
+   "foot": 30,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_30m_2022_20231217.csv.gz",
+   "rows": 34327,
+   "sha256": "9a10cf8a9e782c2db53879b73e7043f06c4ea053d32569835d85030076918e33",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:30:00"
+  },
+  {
+   "foot": 30,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_30m_2022_20231217.csv.gz",
+   "rows": 34327,
+   "sha256": "9131ae2473087516ef70f0b75ffaefe12f0f40d841e53cb4c8f1c85df9629bb0",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:30:00"
+  },
+  {
+   "foot": 60,
+   "range": "2022_20231217",
+   "venue": "binance",
+   "path": "backtest_data/k1_newenv_g_20261001/binance_60m_2022_20231217.csv.gz",
+   "rows": 17169,
+   "sha256": "b9ae521a6e2e27ca2d0dceb5ee41d753bc396e1e212f982293f71b2404353388",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:00:00"
+  },
+  {
+   "foot": 60,
+   "range": "2022_20231217",
+   "venue": "bitflyer",
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_60m_2022_20231217.csv.gz",
+   "rows": 17169,
+   "sha256": "34c2d38d331f1f002e26280cc3edc9ca20eeb56d31fad5317ad98ffc53ab077a",
+   "first_start": "2022-01-01T00:00:00",
+   "last_start": "2023-12-17T23:00:00"
+  }
+ ],
+ "alignment": {
+  "2017": {
+   "minutes_signal": 172848,
+   "minutes_price": 519072,
+   "minutes_both": 170984,
+   "dropped_share_signal": 0.0108,
+   "dropped_share_price": 0.6706
+  },
+  "2018": {
+   "minutes_signal": 521604,
+   "minutes_price": 521307,
+   "minutes_both": 517326,
+   "dropped_share_signal": 0.0082,
+   "dropped_share_price": 0.0076
+  },
+  "2019": {
+   "minutes_signal": 523760,
+   "minutes_price": 519892,
+   "minutes_both": 518052,
+   "dropped_share_signal": 0.0109,
+   "dropped_share_price": 0.0035
+  },
+  "2020": {
+   "minutes_signal": 525738,
+   "minutes_price": 519967,
+   "minutes_both": 518665,
+   "dropped_share_signal": 0.0135,
+   "dropped_share_price": 0.0025
+  },
+  "2021": {
+   "minutes_signal": 524518,
+   "minutes_price": 518630,
+   "minutes_both": 517553,
+   "dropped_share_signal": 0.0133,
+   "dropped_share_price": 0.0021
+  },
+  "2022": {
+   "minutes_signal": 525600,
+   "minutes_price": 520884,
+   "minutes_both": 520884,
+   "dropped_share_signal": 0.009,
+   "dropped_share_price": 0.0
+  },
+  "2023": {
+   "minutes_signal": 505288,
+   "minutes_price": 457839,
+   "minutes_both": 457687,
+   "dropped_share_signal": 0.0942,
+   "dropped_share_price": 0.0003
+  }
+ },
+ "self_check": {
+  "signal_minutes_collided_by_floor": 0,
+  "price_minutes_collided_by_floor": 0,
+  "max_bar_end_written": "2023-12-18T00:00:00",
+  "max_bar_end_le_cut": true,
+  "max_input_event_start": "2023-12-17T23:59:00",
+  "max_input_event_end_le_cut": true
+ },
+ "wall_s": 143.4,
+ "files_opened_under_data_roots": [
+  "backtest_data/k1_newenv_g_20261001/binance_5m_full_unjoined.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_15m_full_unjoined.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_1m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_1m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_3m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_3m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_5m_full.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_5m_full.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_5m_2018_2021.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2018_2021.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_5m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_15m_full.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_15m_full.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_15m_2018_2021.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_15m_2018_2021.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_15m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_15m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_30m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_30m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/binance_60m_2022_20231217.csv.gz",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_60m_2022_20231217.csv.gz"
+ ]
+}
