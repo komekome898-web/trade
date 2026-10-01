@@ -1,4 +1,4 @@
-"""K1 段階 G を閉じる委任(docs/DATA/delegations/20261001_k1_stage_g_close.md §2)の変異の確かめ(FIXES.md):
+"""K1 段階 G を閉じる委任(docs/DATA/delegations/20261001_k1_stage_g_close.md §2・§4)の変異の確かめ(FIXES.md):
 src の写しに 1 か所ずつ「直しを外す」変異を入れ、その直しの試験を回す(-x)。写しは作業の置き場
 (環境変数 K1G_MUT_DIR。無ければ tempfile.mkdtemp() の新しいフォルダ)に作り、回した後に消す。
 写しを PYTHONPATH の先頭に置き、pytest の pythonpath(pyproject.toml の "src")を空にし、import bot が写しを指すことを
@@ -16,7 +16,7 @@ MUTANTS = [
      [f"{T}/item_0/test_bt0_fix_g1_stream_name.py", f"{T}/item_2/test_i2_fix_g1_venue_streams.py",
       f"{T}/item_4/test_i4_fix_g1_k1_xvenue.py", f"{T}/item_1/test_i1_fix_g2_no_trade.py",
       f"{T}/item_3/test_i3_fix_g3_runner_range.py", f"{T}/item_1/test_i1_fix_g4_session.py",
-      f"{T}/item_1/test_i1_fix_g6_loader_cost.py"]),
+      f"{T}/item_1/test_i1_fix_g6_loader_cost.py", f"{T}/item_1/test_i1_fix_g7_range_before_values.py"]),
     ("M1_G1_core_no_stream_stamp", "bot/bt/core/engine.py",
      '        object.__setattr__(event, "stream", name)\n', "",
      [f"{T}/item_0/test_bt0_fix_g1_stream_name.py"]),
@@ -51,9 +51,18 @@ MUTANTS = [
      "        json.dumps(rec, sort_keys=True)\n        out.append(Row(rec, ev, fi, line, t, key, cells.rest(), synth))",
      [f"{T}/item_1/test_i1_fix_g6_loader_cost.py"]),
     ("M11_G6_seal_time_read_twice", "bot/bt/data/loader.py",
-     "                st = seal_time_ns(cells.get(ent.time_column), raw_t)",
+     "                st = seal_time_ns(cells.get(ent.time_column), raw_t if same_time else None)",
      "                st = seal_time_ns(cells.get(ent.time_column))",
      [f"{T}/item_1/test_i1_fix_g6_loader_cost.py"]),
+    # G-7(第 2 回、委任文 §4): 値を範囲の判定より前に読む(直す前)/ 範囲の後・封印の照合より前に読む
+    ("M12_G7_values_before_the_range", "bot/bt/data/loader.py",
+     "        raw_t = _read_time(d.spec, cells, reader, where)\n",
+     "        raw_t = _read_time(d.spec, cells, reader, where)\n        _build(d.spec, cells, raw_t, where)\n",
+     [f"{T}/item_1/test_i1_fix_g7_range_before_values.py"]),
+    ("M13_G7_values_before_the_seal", "bot/bt/data/loader.py",
+     "        if ent is not None:\n            try:\n                st = seal_time_ns(",
+     "        _build(d.spec, cells, raw_t, where)\n        if ent is not None:\n            try:\n                st = seal_time_ns(",
+     [f"{T}/item_1/test_i1_fix_g7_range_before_values.py"]),
 ]
 out = []
 for name, rel, old, new, tests in MUTANTS:

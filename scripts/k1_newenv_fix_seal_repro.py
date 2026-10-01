@@ -26,7 +26,7 @@ L.hashlib.sha256 = spy
 spec = {"format": "csv", "header": True, "delimiter": ",", "kind": "bar", "symbol": "X", "asset": "crypto",
         "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"},
         "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-        "bar": {"interval_s": 1, "label": "start"}, "key": "start"}
+        "bar": {"interval_s": 1, "label": "start", "session": "24x7"}, "key": "start"}  # G-4 (2026-10-01): required
 try:
     load(root, [{"name": "d", "paths": ["backtest_data/x/f.csv"], "spec": spec}])
     print("NOT refused")

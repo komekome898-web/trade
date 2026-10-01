@@ -49,7 +49,12 @@ SPEC = {"format": "csv", "header": True, "delimiter": ",", "compression": "gzip"
         "symbol": "XBTUSD", "asset": "crypto",
         "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"},
         "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-        "bar": {"interval_s": 1, "label": "start"}, "key": "start"}
+        "bar": {"interval_s": 1, "label": "start", "session": "24x7"}, "key": "start"}
+# session 24x7: G-4 of K1 stage G (2026-10-01) refuses a crypto bar spec without it. With it the gap check runs on
+# the 1-second bars: a second with no trade has no 1-second bar (RESULT.md 1.2 above), so gaps are expected and named
+# "accept"; every other anomaly still stops the fold. Gaps exist: FOLD_MANIFEST.json rows_1s_total 49,054,818 is
+# below the 94,608,000 seconds of 2017-2019, and its first day file 20170101 has 3,272 rows (FIXES.md §13)
+POLICY = {"gap": "accept"}
 
 
 def allowlist(years) -> AllowList:
@@ -72,14 +77,17 @@ def fold_year(args):
     files, anomalies, out = [], {}, {f: [] for f in feet}
     t0 = time.time()
     rows_total = 0
+    gaps = 0
     for name in names:
         rel = f"{SRC_DIR}/{year}/{name}"
         r = load(REPO, [{"name": "d", "paths": [rel], "spec": SPEC}], allowlist=al)
         an = r.anomalies("d")
-        if an:
-            anomalies[rel] = an[:20]
-            raise SystemExit(f"{rel}: {len(an)} anomalies ({an[0]}); the fold does not resolve them silently")
-        ev = r.events("d")
+        other = [a for a in an if a["kind"] not in POLICY]
+        if other:
+            anomalies[rel] = other[:20]
+            raise SystemExit(f"{rel}: {len(other)} anomalies ({other[0]}); the fold does not resolve them silently")
+        gaps += len(an) - len(other)
+        ev = r.events("d", POLICY)
         rows_total += len(ev)
         st = [e.start_time_ns for e in ev]
         o = [e.open for e in ev]
@@ -95,7 +103,7 @@ def fold_year(args):
             files.append(d)
     wall = time.time() - t0
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
-    return {"year": year, "files": files, "rows": rows_total, "wall_s": round(wall, 1), "max_rss_mb": round(rss, 1),
+    return {"year": year, "files": files, "rows": rows_total, "gaps_accepted": gaps, "policy": POLICY, "wall_s": round(wall, 1), "max_rss_mb": round(rss, 1),
             "bars": {f: out[f] for f in feet}}
 
 

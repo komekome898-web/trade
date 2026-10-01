@@ -210,9 +210,8 @@ def _side(spec: Spec, raw: Any, where: str, allowed: tuple) -> str:
     return side
 
 
-def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Optional[Event], int, Optional[Any]]:
-    """(record, event, row time, key). The event is None only for a row the spec's `no_trade` declares a
-    minute with no trade (G-2): such a row is reported by the checks and never reaches events."""
+def _read_time(spec: Spec, cells: _Cells, reader, where: str) -> int:
+    """The time written in the row (int64 UTC ns), read strictly; nothing else of the row is read (G-7)."""
     tcols = spec.time.columns
     tvals = [cells.get(c) for c in tcols]
     for c, v in zip(tcols, tvals):
@@ -223,9 +222,24 @@ def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Optiona
     else:
         tv = tvals[0]
     try:
-        t = reader.read(tv)
+        return reader.read(tv)
     except TimeParseError as exc:
         raise TimeParseError(f"{where}: {exc}") from None
+
+
+def _row_time(spec: Spec, t: int) -> int:
+    """The row's time as the range and the checks see it: `t`, or a bar's start (t - interval when labelled by
+    its end)."""
+    if spec.kind == "bar" and spec.bar.label != "start":
+        return t - spec.bar.interval_ns
+    return t
+
+
+def _build(spec: Spec, cells: _Cells, t: int, where: str) -> tuple[dict, Optional[Event], int, Optional[Any]]:
+    """(record, event, row time, key) of a row whose written time `t` (`_read_time`) has already been read and
+    kept by the range and the seal (G-7: the values of a row are read only after that). The event is None only for
+    a row the spec's `no_trade` declares a minute with no trade (G-2): such a row is reported by the checks and
+    never reaches events."""
     f = spec.fields
     k = spec.kind
 
@@ -252,7 +266,7 @@ def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Optiona
             return rec, ev, t, (t if spec.key == "time" else None)
         if k == "bar":
             iv = spec.bar.interval_ns
-            start = t if spec.bar.label == "start" else t - iv
+            start = _row_time(spec, t)
             nt = spec.no_trade
             if nt is not None and all(_blank(cells.get(f[n])) for n in nt):
                 # G-2: a declared no-trade row -- reported (anomaly no_trade), never an event
@@ -356,7 +370,9 @@ def _rows_jsonl(text: str, spec: Spec, given: str):
         if not line.strip():
             continue
         try:
-            obj = json.loads(line, parse_float=Decimal, parse_constant=_reject_constant)
+            # G-7: JSON numbers stay as written (text) here; a value is turned into a number only by _build,
+            # after the range and the seal have kept the row (parse_float/parse_int=str).
+            obj = json.loads(line, parse_float=str, parse_int=str, parse_constant=_reject_constant)
         except ValueError as exc:
             raise ParseError(f"{given!r} line {i}: not JSON: {exc}") from None
         if not isinstance(obj, dict):
@@ -520,18 +536,19 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
     # cell the way the dataset's reader just did (allowlist.seal_time_ns: ISO text -> TimeReader("iso", "UTC"));
     # its time is handed over instead of read a second time
     same_time = (ent is not None and tsp.unit == "iso" and tsp.tz == "UTC" and tsp.columns == (ent.time_column,))
-    end_label = d.spec.kind == "bar" and d.spec.bar.label == "end"
+    # G-7 (K1 stage G, 2026-10-01): a row's time is read first; a row outside the range is skipped with its values
+    # unread, and a kept row of a sealed file is checked against the seal before its values are read (before: every
+    # row was built -- values turned into numbers, the core event made -- and only then tested against the range)
     for line, row in rows:
         n_read += 1
         where = f"{shown} line {line}"
         cells = _Cells(d.spec, row, where, None, used)
-        rec, ev, t, key = _build(d.spec, cells, reader, where)
-        if not _in_range(d.spec, t, d.range_ns):
+        raw_t = _read_time(d.spec, cells, reader, where)
+        if not _in_range(d.spec, _row_time(d.spec, raw_t), d.range_ns):
             continue
         if ent is not None:
             try:
-                raw_t = (t + d.spec.bar.interval_ns if end_label else t) if same_time else None
-                st = seal_time_ns(cells.get(ent.time_column), raw_t)
+                st = seal_time_ns(cells.get(ent.time_column), raw_t if same_time else None)
             except ParseError:
                 raise SealedRangeError(f"{where}: the file is sealed on column {ent.time_column!r}, "
                                        f"which the row does not have") from None
@@ -541,6 +558,7 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
                 raise SealedRangeError(
                     f"{where}: kept by the range, but its seal time ({ent.time_column!r}) is at or after "
                     f"the seal cutoff {ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier")
+        rec, ev, t, key = _build(d.spec, cells, raw_t, where)
         n_kept += 1
         synth = False
         if d.spec.synthetic is not None:

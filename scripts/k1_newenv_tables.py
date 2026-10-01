@@ -50,7 +50,11 @@ def spec(foot: int) -> dict:
             "symbol": "XBTUSD", "asset": "crypto",
             "time": {"columns": ["start_ts"], "unit": "iso", "tz": "UTC"},
             "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-            "bar": {"interval_s": foot * 60, "label": "start"}, "key": "start"}
+            "bar": {"interval_s": foot * 60, "label": "start", "session": "24x7"}, "key": "start"}
+    # session 24x7: G-4 of K1 stage G (2026-10-01) refuses a crypto bar spec without it. The folded bars have gaps
+    # (minutes with no 1-second bar, K1 RESULT.md 1.2); counted by the data layer on 2026-10-01 (FIXES.md §13):
+    # 1m 52,923 / 3m 4,640 / 5m 1,191 / 15m 64 / 30m 16 / 60m 4, no other anomaly; records() (bar_index) does not
+    # resolve anomalies, so no policy is named here
 
 
 def bar_index(foot: int) -> dict[int, int]:

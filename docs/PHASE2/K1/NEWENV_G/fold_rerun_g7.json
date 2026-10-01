@@ -1,0 +1,264 @@
+{
+ "what": "G-7 の後に scripts/k1_newenv_g_fold.py --out-dir <スクラッチパッド> を段階 G の門の下で回し直し、backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json(段階 G)と並べた(FIXES.md §11)",
+ "command": "PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/fold_refused.log setsid nohup python3 scripts/k1_newenv_g_fold.py --out-dir <S>/r2/fold",
+ "compare_command": "K1G_DATAGATE_LOG=<S>/r2/logs/foldcmp_refused.log python3 <S>/r2/fold_compare.py <S>/r2/fold/FOLD_MANIFEST.json",
+ "new_wall_s": 682.6,
+ "inputs": [
+  {
+   "input": "binance 2017",
+   "before": {
+    "rows_read": 196544,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 23696,
+    "events_after_policy": 172848
+   },
+   "after_G7": {
+    "rows_read": 196544,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 23696,
+    "events_after_policy": 172848
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2018",
+   "before": {
+    "rows_read": 521624,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 20,
+    "events_after_policy": 521604
+   },
+   "after_G7": {
+    "rows_read": 521624,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 20,
+    "events_after_policy": 521604
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2019",
+   "before": {
+    "rows_read": 523836,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 76,
+    "events_after_policy": 523760
+   },
+   "after_G7": {
+    "rows_read": 523836,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 76,
+    "events_after_policy": 523760
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2020",
+   "before": {
+    "rows_read": 525788,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 50,
+    "events_after_policy": 525738
+   },
+   "after_G7": {
+    "rows_read": 525788,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 50,
+    "events_after_policy": 525738
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2021",
+   "before": {
+    "rows_read": 524607,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 89,
+    "events_after_policy": 524518
+   },
+   "after_G7": {
+    "rows_read": 524607,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 89,
+    "events_after_policy": 524518
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2022",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 0,
+    "events_after_policy": 525600
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_synthetic": 0,
+    "events_after_policy": 525600
+   },
+   "same": true
+  },
+  {
+   "input": "binance 2023",
+   "before": {
+    "rows_read": 525520,
+    "dropped_out_of_range": 20160,
+    "dropped_synthetic": 72,
+    "events_after_policy": 505288
+   },
+   "after_G7": {
+    "rows_read": 525520,
+    "dropped_out_of_range": 20160,
+    "dropped_synthetic": 72,
+    "events_after_policy": 505288
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2017",
+   "before": {
+    "rows_read": 525596,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6524,
+    "events_after_policy": 519072
+   },
+   "after_G7": {
+    "rows_read": 525596,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6524,
+    "events_after_policy": 519072
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2018",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 4293,
+    "events_after_policy": 521307
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 4293,
+    "events_after_policy": 521307
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2019",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 5708,
+    "events_after_policy": 519892
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 5708,
+    "events_after_policy": 519892
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2020",
+   "before": {
+    "rows_read": 526668,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6701,
+    "events_after_policy": 519967
+   },
+   "after_G7": {
+    "rows_read": 526668,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6701,
+    "events_after_policy": 519967
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2021",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6970,
+    "events_after_policy": 518630
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 6970,
+    "events_after_policy": 518630
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2022",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 4716,
+    "events_after_policy": 520884
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 0,
+    "dropped_no_trade": 4716,
+    "events_after_policy": 520884
+   },
+   "same": true
+  },
+  {
+   "input": "bitflyer 2023",
+   "before": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 20160,
+    "dropped_no_trade": 47601,
+    "events_after_policy": 457839
+   },
+   "after_G7": {
+    "rows_read": 525600,
+    "dropped_out_of_range": 20160,
+    "dropped_no_trade": 47601,
+    "events_after_policy": 457839
+   },
+   "same": true
+  }
+ ],
+ "summary": {
+  "outputs_old": 22,
+  "outputs_new": 22,
+  "outputs_rows_and_sha256_differ": [],
+  "alignment_same": true,
+  "self_check_same": true,
+  "inputs_differ": 0,
+  "new_files_opened": [
+   "backtest_data/phase2_sealed/P2-01/SEALED.json",
+   "backtest_data/phase2_sealed/P2-02/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03b/SEALED.json",
+   "backtest_data/phase2_sealed/P2-04/SEALED.json",
+   "backtest_data/phase2_sealed/P2-07/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08b/SEALED.json",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz"
+  ]
+ }
+}

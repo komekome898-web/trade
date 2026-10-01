@@ -156,7 +156,13 @@ def main() -> None:
     ap.add_argument("--offgrid-drop", action="store_true",
                     help="変種: 分の境界に乗っていない Binance の行を落とす(切り下げない)。出力は *_{tag}、5・15 分だけ")
     ap.add_argument("--tag", default=None)
+    ap.add_argument("--out-dir", default=None,
+                    help="出力の置き場(既定は OUT_DIR)。段階 G の出力を書き換えずに回し直して比べるとき(G-7 の確かめ、"
+                         "FIXES.md §11)はスクラッチパッドを名指しする")
     a = ap.parse_args()
+    global OUT_DIR
+    if a.out_dir:
+        OUT_DIR = os.path.abspath(a.out_dir)
     if a.offgrid_drop:
         OFF_GRID["policy"] = "drop"
     t0 = time.time()

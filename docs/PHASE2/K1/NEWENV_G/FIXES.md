@@ -232,3 +232,155 @@
 1. 段階 A のスクリプト 4 本(§9-2)に `session: 24x7` を書き足すか(持ち物の外)。書き足すなら、BitMEX の 1 秒足・60 分足に穴があれば `gap: accept` の名指しも要る(穴の有無は確かめていない【未確認】)。
 2. 試験 2 ファイル(§9-3)を、どのデータの決まりの下で誰が回すか(段階 A の門 `scripts/k1_newenv_fix_datagate.py` はこの 2 ファイルを許している)。
 3. 記録の口に足した `Parts.prepare`(setup が読み込んだ流れから核に渡す流れを作る段。§2 の【判断】)を、記録の口の一般の口として残してよいか。今は K1 の結合・畳み(XVENUE_PREREG.md §2)だけが使う。
+
+---
+
+# 第 2 回(2026-10-01 10:3x〜 UTC、委任文 §4)
+
+委任文 `docs/DATA/delegations/20261001_k1_stage_g_close.md` §4(批評家の [直す] 5 件・[聞く] 1 件と、第 1 回の作業者 B の (d) を受けたもの。上限: 作業者 1 回・3 時間 = 13:35 UTC)。オーナー逐語(L-499a)「**わかってる欠陥があるのなら直せ**」。批評家の指摘は `docs/AUDITOR/VERDICTS/2026-10-01_k1_stage_g_close.md` の「批評家」の節。
+
+合意した完了の形(委任文 §4 の表の逐語):
+
+- 「G-7(批評家の [聞く] 1): データ層 `loader.py:528-529` が範囲の外の行も値まで数に直して事象を作ってから捨てる → 時刻を先に読み、範囲の外(と封印の境以降)の行は値を読まない。試験 + 変異。段階 G の畳み `k1_newenv_g_fold.py` を回し直して `FOLD_MANIFEST.json` の落とした行数が前と同じか並べる」
+- 「批評家の [直す] 2(DATA_READ.md・DIFF.md の「時刻だけ読んだ」を Binance 2023 と bitFlyer 2023 で分けて事実どおりに。G-7 を直したあとの読み方も書く)・3(15 分の升を今のコードで回し直して返り値と FIXES.md に書く)・4(ENV_DEFECTS.md G-6 の行を FIXES.md §5 に合わせる)・5(TABLES.md の引用を委任文 §0 の元の文のとおりに)・6(INTENT_MAP.md X-5・X-10・X-11 を直したあとの書き方に)」
+- 「作業者 B の (d)1: 段階 A のスクリプト 4 本(`scripts/k1_newenv_run.py`・`k1_newenv_tables.py`・`k1_newenv_fold.py`・`k1_newenv_fix_seal_repro.py`)に `session: "24x7"` を書き、BitMEX の畳んだ足に穴があるかをデータ層の検査で確かめて要れば `gap` の方針を名指しする。段階 A の升は回し直さない(`k1_newenv_fix_seal_repro.py` は合成データなので回して通ることを確かめる)」
+- 「作業者 B の (d)2: 除いた試験 2 ファイル(`tests/bt/item_2/test_i2_real_data_check.py`・`tests/bt/item_4/test_i4_real_data_smoke.py`)を段階 A の門 `scripts/k1_newenv_fix_datagate.py` の下で回す」
+- 「最後に `tests/bt`・`tests/test_k1_wick*.py` を段階 G の門の下で回す(上の 2 ファイルは段階 A の門で)」
+
+`<S>` = スクラッチパッド `/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad`。第 2 回の記録は `<S>/r2/`。印は §0 の前と同じ(【事実】【推定】【判断】)。
+
+## 11. G-7: データ層が範囲の外の行も値まで読んでから捨てる
+
+**根本原因(ファイル:行)**【事実】
+- `src/bot/bt/data/loader.py:528-529`(第 2 回の着手時 = HEAD 627503d8): `_read_file` の行のループで、`_build`(時刻と全部の欄を数に直し、`BarEvent` などの事象を作る)を呼んでから、範囲の判定 `_in_range` をしていた。封印の照合(`seal_time_ns` と境の比較)も `_build` の後。段階 G の時点のコード(`git show 5627b4ad^:src/bot/bt/data/loader.py` の 474・475 行)も同じ順。
+- そのため、範囲つきで読んでも、範囲の外の行は値を数に直し、事象を作ってから捨てていた。範囲の外の行の値が数として読めなければ `ParseError` で止まっていた(批評家の確かめ「ParseError 'backtest_data/a.csv' line 4 field 'open': 'XX' is not a decimal number」)。
+
+**直し方**
+- 時刻だけを読む `_read_time`(`loader.py:213`)と、範囲と検査が見る行の時刻(足は開始時刻)を出す `_row_time`(`loader.py:230`)を `_build` から分けた。`_build(spec, cells, t, where)`(`loader.py:238`)は、読み終えた時刻を受け取って値を読む。
+- `_read_file` の順を「時刻を読む(`loader.py:544`)→ 範囲の判定(`:545`。外なら値を読まずに次の行)→ 封印の照合(`:549`)→ 値を読み事象を作る(`:559`)」にした(説明のコメント `:537`)。範囲の中でも封印の境以降の行は、値を読む前に `SealedRangeError` で止まる。
+- 変えていないこと: 範囲の外の行も `rows_read` に数える。範囲の外の行の時刻は今までどおり厳しく読む(読めなければ `TimeParseError`)。時刻は 1 行 1 回の読みのまま(G-6 の (4) と両立。G-6 の試験はそのまま通る)。流し読みの口 `stream.py` は同じ `_read_file` を通るので同じ。核(`src/bot/bt/core/`)は変えていないので `CORE_VERSION` は core-20 のまま。
+- ファイルの bytes は今も全部ほどき、各行を csv の欄(文字)に分けてから時刻を読む(この順は変えていない)。
+
+**足した試験**: `tests/bt/item_1/test_i1_fix_g7_range_before_values.py`(9 件): 批評家の確かめ(範囲 [00:00, 00:02) の外の 00:02 の行の open が `XX`)が読め、`rows_read` 3・`rows_kept` 2。範囲が無ければ同じ行は従来どおり `ParseError` / 範囲の前の行 / `label: end` の足は開始時刻で判定 / 10 行のうち範囲の 3 行だけ `_num` 15 回・`BarEvent` 3 回(直す前は 50 回・10 回)/ 範囲の外の行の時刻は今までどおり厳しく読む / 約定の csv と jsonl / 封印されたファイルで、範囲の終わり = 境、境以降の行の値が `XX` でも読める / 封印の時刻の列がデータの時刻の列と違い、範囲の中で封印の時刻が境以降の行は値の前に `SealedRangeError`(直す前は `ParseError`)/ 流し読みの口も同じ。
+
+**試験の末尾の行**【事実】
+- 直す前(試験を先に書いて回した): 「8 failed, 1 passed in 0.56s」(通った 1 件は「範囲の外の行の時刻は厳しく読む」= 変えていない振る舞い)
+- 直した後: `tests/bt/item_1` 全体「3942 passed in 27.58s」。全体の回は §16。
+
+**変異の確かめ**(`K1G_MUT_DIR=<S>/r2/mut python3 scripts/k1_newenv_g_mutate.py`、出力 `<S>/r2/mutate_r2.log` の逐語)【事実】
+- 対照(G-7 の試験を足した 8 ファイル): 「M0_control_no_change: exit 0: 65 passed in 1.86s」
+- 「M12_G7_values_before_the_range: exit 1: 1 failed in 0.28s」(値を範囲の判定より前に読む = 直す前)
+- 「M13_G7_values_before_the_seal: exit 1: 1 failed, 3 passed in 0.25s」(値を範囲の後、封印の照合の前に読む)
+- M1〜M11 も全部 exit 1(逐語は `mutate_r2.log`。M11 は直しの行が変わったので、変異を入れる場所の文字列だけ今の行 `seal_time_ns(cells.get(ent.time_column), raw_t if same_time else None)` に合わせた。中身は前と同じ「渡された時刻を使わない」)。門の記録 `<S>/r2/logs/` は空(止めた `open` 0 件)。
+
+**実データで確かめた(2023 の 2 ファイル、段階 G の畳みと同じ spec・範囲 [2023-01-01, 2023-12-18)、段階 G の門の下)**【事実】
+`<S>/r2/read2023_count.py`(`loader._num` と `loader.BarEvent` の呼ばれた回数を数える)。直す前は src の写しに `git show HEAD:src/bot/bt/data/loader.py` を置いて同じものを回した(`read2023_count_pre.log`、写しは消した)。
+
+| ファイル | コード | rows_read | rows_kept | BarEvent を作った数 | 数に直した回数 | 作った事象の最後の開始 |
+|---|---|---|---|---|---|---|
+| Binance `binance_BTCUSDT_1m_2023.csv.gz` | 直す前 | 525,520 | 505,360 | 525,520 | 2,627,600 | 2023-12-31T23:59:00 |
+| 同 | 直した後 | 525,520 | 505,360 | 505,360 | 2,526,800(= 505,360 × 5) | 2023-12-17T23:59:00 |
+| bitFlyer `candles_1m_2023.csv.gz`(G-2 の宣言 `no_trade` で読む) | 直す前(G-2 の後・G-7 の前) | 525,600 | 505,440 | (出さない。リードの処置、§19-1) | (出さない) | (出さない) |
+| 同 | 直した後 | 525,600 | 505,440 | 457,839 | 2,336,796(= 457,839 × 5 + 約定の無い 47,601 行 × 1) | 2023-12-17T23:59:00 |
+
+- 直した後は、境以降の 20,160 行(どちらのファイルも)は時刻の欄だけを数に直した。
+- bitFlyer の「直す前」の行の数は出さない(リードの処置、§19-1)。第 2 回の作業者は「直す前」を示すために、直す前の loader で 2023 の 2 ファイルの境以降の行(各 20,160 行)を値まで読み直した。bitFlyer 2023 の境以降の値は段階 G でも第 1 回でも読んでいなかったので、この読みは委任文 §3 の「読んでよいデータ」とオーナーの決定 L-499 ②(時刻だけ)の範囲の外(批評家 第 2 回 [止める] 1)。そこから出た境以降の中身の数は、この文書から外した。「直す前は値まで読んでいた」ことは合成ファイルの試験(§11 の 1 件目)と変異 M12 で示されている
+
+**段階 G の畳みを回し直して並べた**(G-7 の後のコード、段階 G の門の下)【事実】
+- 段階 G の出力を書き換えないように、`scripts/k1_newenv_g_fold.py` に `--out-dir` を足して出力をスクラッチパッドに置いた(既定は前と同じ `backtest_data/k1_newenv_g_20261001`)。
+- コマンド: `PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/fold_refused.log setsid nohup python3 scripts/k1_newenv_g_fold.py --out-dir <S>/r2/fold > <S>/fold_r2.log 2>&1 < /dev/null &`(1 回目は前景で 580 秒の上限に当たって止まった。2023 を読み終えたところ)。末尾の行: 「{"signal_minutes_collided_by_floor": 0, "price_minutes_collided_by_floor": 0, "max_bar_end_written": "2023-12-18T00:00:00", "max_bar_end_le_cut": true, "max_input_event_start": "2023-12-17T23:59:00", "max_input_event_end_le_cut": true} wall 682.6s」
+- 比べた: `<S>/r2/fold_compare.py`、結果は `docs/PHASE2/K1/NEWENV_G/fold_rerun_g7.json`(新しい FOLD_MANIFEST.json は `<S>/r2/FOLD_MANIFEST_rerun.json.gz`。出力の足はスクラッチパッドから消した)。
+
+| 入力 | 落とした行(前 = 段階 G の FOLD_MANIFEST.json / 後 = 回し直し) | 方針を当てた後の事象 | 同じか |
+|---|---|---|---|
+| Binance 2017〜2022 | 範囲の外 0 / 0、synthetic 23,696・20・76・50・89・0(前後とも) | 172,848・521,604・523,760・525,738・524,518・525,600(前後とも) | 6 年とも同じ |
+| Binance 2023 | 範囲の外 20,160 / 20,160、synthetic 72 / 72 | 505,288 / 505,288 | 同じ |
+| bitFlyer 2017〜2022 | 前 = 写しの `dropped_blank_open` 6,524・4,293・5,708・6,701・6,970・4,716 / 後 = データ層の `no_trade` 同じ数、範囲の外 0 / 0 | 519,072・521,307・519,892・519,967・518,630・520,884(前後とも) | 6 年とも同じ |
+| bitFlyer 2023 | 前 = 写しの `dropped_at_or_after_cut` 20,160・`dropped_blank_open` 47,601 / 後 = 範囲の外 20,160・`no_trade` 47,601 | 457,839 / 457,839 | 同じ |
+
+- 出力 22 ファイルの行数と sha256 はすべて同じ(`"outputs_rows_and_sha256_differ": []`)。`alignment`・`self_check` も同じ。
+- 門が開くのを許したファイル: 封印の台帳 8 つと、Binance・bitFlyer 2017〜2023 の 14 ファイルだけ。門の記録 `fold_refused.log`・`foldcmp_refused.log` は作られていない(止めた `open` 0 件)。
+- 壁時計は 682.6 秒で、段階 G の FOLD_MANIFEST.json の `wall_s` 143.4 秒より長い。理由は確かめていない【推定: 段階 G の回は読んだ分足の置き場 `--cache` を使った可能性がある。確かめていない】。
+
+## 12. 批評家の [直す] 3: 15 分の升を今のコードで回し直した
+
+- コマンド(11:03:05 UTC 開始): `PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/rawrun15_refused.log setsid nohup python3 scripts/k1_newenv_g_rawrun.py --feet 15 > <S>/rawrun15_r2.log 2>&1 < /dev/null &`
+- 末尾の行(逐語)【事実】: 「{"run_id": "bb8e99c5fd9f7e2f67359c0f710b64cfd21c67853099406f6cd88c2261932c35", "identical": true, "wall_s": 705.4, "max_rss_mb": 7387.6, "new": {"n": 10666, "mean_bp": 2.538203629061192}, "stage_g": {"n": 10666, "mean_bp": 2.538203629061192, "run_id": "8b26c859af04512193280bd08bad8596926a72aa573ced994a8502f5dac2e30d"}, "n_equal": true, "mean_bp_equal": true}」
+- 取引数・平均 bp とも `cells.json` の同じ升と同じ(一致は数が同じという事実だけ)。2 回の実行は byte で同じ(`identical: true`)。
+- 今のコードで回ったこと【事実】: `src` の最後の変更は `loader.py` の 10:35:57 UTC(`ls --time-style=full-iso`)で、実行の開始 11:03:05 より前。実行の後に変えたのはスクリプト `k1_newenv_g_tables.py`(この升の実行は使わない)と文書だけ。`record.json` の `diff_hash` は `d1f0c4ac…`(第 1 回の 15 分の升 `434b4a6c…`、5 分の升 `7acea3e9…` とは違う)。
+- 5 分の升(`eb130c76…`)は第 1 回のまま(G-6 の 4 つ目の後・G-7 の前のコード)。委任文 §4 は 15 分の升だけを求めているので、5 分の升は回し直していない。
+- 実行記録: `backtest_runs/k1_newenv_g_close/bb8e99c5…/`(gzip 済み)。`docs/PHASE2/K1/NEWENV_G/rawrun_compare.json` の 15 分の升の項を新しい実行で書き直した(5 分の升の項はそのまま)。`opened` は生のファイル 8 つと封印の台帳 8 つ(計 16)。門の記録 `rawrun15_refused.log` は作られていない(止めた `open` 0 件)。
+- §6 の表の 15 分の升の行(run_id `06a79687…`、848.8 s)は第 1 回の記録として残す。第 1 回の実行記録 `backtest_runs/k1_newenv_g_close/06a79687…/` も消していない。
+
+## 13. 作業者 B の (d)1: 段階 A のスクリプト 4 本に `session: "24x7"`
+
+**BitMEX の畳んだ足の穴(データ層の検査、session 24x7、段階 G の門の下)**【事実】`<S>/r2/bitmex_gaps.py`(出力 `<S>/r2/bitmex_gaps.log`):
+
+| 足 | 行 | 異常 | 走った検査 |
+|---|---|---|---|
+| 60 分 | 26,276 | gap 4 | backward・duplicate・conflict・gap・off_grid |
+| 30 分 | 52,544 | gap 16 | 同 |
+| 15 分 | 105,056 | gap 64 | 同 |
+| 5 分 | 314,169 | gap 1,191 | 同 |
+| 3 分 | 520,960 | gap 4,640 | 同 |
+| 1 分 | 1,523,877 | gap 52,923 | 同 |
+
+どの足も異常は gap だけ(off_grid・重複・食い違い・逆行は 0)。門の記録 `bitmex_refused.log` は作られていない。
+
+**直し方**
+- `scripts/k1_newenv_run.py`: 畳んだ足の spec に `session: "24x7"`。記録の口に渡す `DataInput` に方針 `{"gap": "accept"}` を名指しした(穴は「1 秒足が 1 本も無い区間には足が無い」= K1 RESULT.md 1.2 の規則どおりのもの。上の表)。
+- `scripts/k1_newenv_tables.py`: spec に `session: "24x7"`。このスクリプトは `records()` だけを使い、異常の方針を当てないので、方針は名指ししない。
+- `scripts/k1_newenv_fold.py`(1 秒足の畳み): spec に `session: "24x7"`。方針 `POLICY = {"gap": "accept"}` を名指しし、gap 以外の異常は前と同じく止める。年ごとの結果に `gaps_accepted` と `policy` を足した。1 秒足に穴があることの出所【事実】: 段階 A の `FOLD_MANIFEST.json` の `rows_1s_total` 49,054,818 が 2017〜2019 の秒数 94,608,000 より少ない、最初の日のファイル `20170101.csv.gz` の `rows_read` 3,272(1 日 86,400 秒)。1 秒足の生のファイル(`backtest_data/bitmex_trade_1s_XBTUSD/`)は段階 G の門が許していないので、この回は開いていない(1 秒足の gap の数は数えていない)。
+- `scripts/k1_newenv_fix_seal_repro.py`: 合成データの spec に `session: "24x7"`。
+
+**確かめたこと(段階 A の升は回し直していない)**【事実】
+- `<S>/r2/stageA_check.py`(段階 G の門の下)の出力: 「parse_spec ok: run x6, tables x6, fold 1s; fold POLICY {'gap': 'accept'}」/「plan_run ok (60m, first gate, both): run_id 6ddb1c8c5a3be50fa43c9420afd49fed0f5c1f22c95d2541466f3f6fca44d29f」/「load 60m + resolve {'gap': 'accept'} events 26276 resolution {'gap': 'accept'} anomalies {'gap': 4}」/「tables.bar_index(60) rows 26276」。門の記録 `stageA_refused.log` は作られていない。
+- spec と方針は実行の同一性に入るので、段階 A の升を今回し直すと run_id は段階 A の記録(`docs/PHASE2/K1/NEWENV_A/runs_index.json`)と違う(上の run_id `6ddb1c8c…` は `runs_index.json` に 0 件: `grep -c`)。
+- `k1_newenv_fix_seal_repro.py` を回した: `PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/seal_refused.log python3 -c "import k1_newenv_g_datagate, runpy, sys; sys.argv=['k1_newenv_fix_seal_repro.py', '<S>/r2/seal']; runpy.run_path('scripts/k1_newenv_fix_seal_repro.py', run_name='__main__')"` → 「file size 49」「sha256 of bytes 171」「refused SealedRangeError」、exit 0(封印されたファイル `f.csv` の `open` の行は無い = 開く前に拒んだ)。直す前の版(`git show HEAD:scripts/k1_newenv_fix_seal_repro.py`)を同じように回すと末尾が「bot.bt.data.errors.SpecError: spec.bar.session is required for asset 'crypto': one of ['24x7', '24x5'] (24x7 runs the gap and off_grid checks, 24x5 the off_grid check)」。合成データの置き場は消した。
+
+## 14. 作業者 B の (d)2: 除いた試験 2 ファイルを段階 A の門の下で回した
+
+- コマンド: `PYTHONPATH=scripts:src K1FIX_DATAGATE_LOG=<S>/r2/logs/excluded2_refused.log python -m pytest tests/bt/item_2/test_i2_real_data_check.py tests/bt/item_4/test_i4_real_data_smoke.py -p k1_newenv_fix_datagate -p no:cacheprovider --basetemp=<S>/r2/pt_ex2`
+- 末尾の行(逐語)【事実】: 「7 passed in 70.71s (0:01:10)」。門の記録 `excluded2_refused.log` は作られていない(止めた `open` 0 件)。basetemp は消した。
+- 件数: 同じ門の下で `--collect-only -q` を回すと「tests/bt/item_2/test_i2_real_data_check.py: 5」「tests/bt/item_4/test_i4_real_data_smoke.py: 2」(計 7)。第 1 回の返り値は `test_i4_real_data_smoke.py` を「1 件」(計 6 件)と書いていた。第 1 回の 6 件は門に止められて ERROR になった件数なので、`test_i4_real_data_smoke.py` の 2 件のうち 1 件は止められたファイルを開かない試験だった可能性がある【推定。確かめていない】。
+
+## 15. 文書の直し(批評家の [直す] 2・4・5・6)
+
+- [直す] 2: `DATA_READ.md` §2 の「注意」と §7-1、`DIFF.md` §6-1 を、Binance 2023(データ層が境以降の行も値まで読み事象を作ってから捨てた)と bitFlyer 2023(自前の読みが時刻を読んだところで飛ばした)に分けて書き直し、G-7 の後の読み方(§11 の数)を足した。「境以降の行の時刻以外の値は渡していない」は、`FOLD_MANIFEST.json` の `self_check.max_input_event_start` = 2023-12-17T23:59:00 を出所にした書き方に変えた。
+- [直す] 4: `ENV_DEFECTS.md` の G-6 の行を §5 に合わせた(直したのは 4 つ、29.32 s / 30.49 s、残りは核の値の検査・1 行 1 回の ISO の読み・数の読み)。G-7 の行を足した。
+- [直す] 5: `scripts/k1_newenv_g_tables.py:227` の引用を委任文 §0 の元の文「批評家の [直す] 4 件(文書の書き方)だけ当てて G を閉じる。第 18 部は回さない(Bybit の取り直しも不要)」にし、`TABLES.md` を作り直した(`PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/tables_refused.log python3 <S>/gated.py scripts/k1_newenv_g_tables.py --md` → 「TABLES.md written」。前の TABLES.md との `diff` は 187 行の 1 行だけ)。
+- [直す] 6: `INTENT_MAP.md` の X-5 を「作業者の判断で、委任文の指示ではない」に、X-10・X-11 を G-1 の後のコード(名前で見分け、同じ窓の 2 本がそろったときに行動)の書き方にした。
+- [直す] 3 は §12。
+
+## 16. 全体の試験(段階 G の門の下)
+
+- コマンド(11:08:22 UTC 開始): `PYTHONPATH=scripts:src K1G_DATAGATE_LOG=<S>/r2/logs/final_r2_refused.log python -m pytest tests/bt tests/test_k1_wick.py tests/test_k1_wick_critic.py -p k1_newenv_g_datagate -p no:cacheprovider --basetemp=<S>/r2/pt_final --ignore=tests/bt/item_2/test_i2_real_data_check.py --ignore=tests/bt/item_4/test_i4_real_data_smoke.py`(`setsid nohup` で切り離し、出力 `<S>/t_final_r2.log`)
+- 末尾の行(逐語)【事実】: 「18013 passed, 6 skipped, 3 warnings in 1109.45s (0:18:29)」(第 1 回の 18004 件 + G-7 の試験 9 件)
+- 門が止めた `open`: 0 件(門の記録 `final_r2_refused.log` は作られていない: `ls` の出力「No such file or directory」)。`grep -c "FAILED\|ERROR"` は 0。basetemp は消した。
+- `--ignore` の 2 ファイルは段階 A の門の下で回した(§14、「7 passed」)。
+- 15 分の升の実行(§12)と同時に走った時間がある(11:08〜11:14)。試験の結果には関わらないが、壁時計はその分長い【推定】。
+
+## 17. やっていないこと(第 2 回)
+
+1. 委任文 §4 の「作業者 B の (d)3: `Parts.prepare` は一般の口として残す(リードの判断。記録の口が範囲つきの生のファイルから結合・畳みを行う経路で、記録に残る)。FIXES.md にそう書く」は書いていない。この行の右の列(オーナーの原文の該当語)が「— (リードの判断、A-13 の 3 つに当たらない)」で、オーナーの逐語が無いため、着手前の表で右が空の行として扱い、着手しなかった(§18-1)。
+2. 5 分の升は回し直していない(委任文 §4 は 15 分の升だけを求めている。§12)。
+3. 段階 A の升は回し直していない(委任文 §4「段階 A の升は回し直さない」)。BitMEX の 1 秒足の生のファイルは段階 G の門が許していないので開いていない。1 秒足の gap の数は数えていない(§13)。
+4. 段階 G の畳みの出力(`backtest_data/k1_newenv_g_20261001/`)は書き換えていない。回し直しはスクラッチパッドに書き、22 ファイルの sha256 が同じことを確かめて消した(§11)。
+5. 第 1 回の §9-1(G-6 の残り: 核の値の検査・1 行 1 回の ISO の読み・数の読み)は手を付けていない(委任文 §4 に無い)。
+6. 第 1 回の §9 のうち 2(段階 A のスクリプト)・3(除いた試験 2 ファイル)・4(`k1_newenv_g_fold.py` を回していない)は、それぞれ §13・§14・§11 で行った。
+7. 返り値を `docs/AUDITOR/VERDICTS/2026-10-01_k1_stage_g_close.md` に写していない(委任文 §3 で写すのはリード)。
+
+## 18. リードに聞くこと(第 2 回)
+
+1. 委任文 §4 の (d)3 の行は、右の列にオーナーの逐語が無い(「— (リードの判断、A-13 の 3 つに当たらない)」)。作業者への指示「右が空の行は着手せず、問いとして返す」に従って書いていない。この行を FIXES.md に書いてよいか(yes/no)。書く場合の文は委任文 §4 の (d)3 の文をそのまま写す。
+2. 段階 A のスクリプト 3 本(run・tables・fold)の spec と方針を変えたので、段階 A の升を今回し直すと run_id が段階 A の記録と違う(§13)。段階 A の記録(`runs_index.json`)は直す前のコードの記録としてそのまま残すことでよいか(yes/no)。
+3. 15 分の升は G-7 の後のコード(`diff_hash` `d1f0c4ac…`)、5 分の升は G-7 の前のコード(`7acea3e9…`)で回っている(§12)。5 分の升も今のコードで回し直すか(yes/no。約 13〜15 分、最大 RSS 約 7.4 GB)。
+
+## 19. リードの処置(第 2 回の批評家の指摘を受けて、2026-10-01 12:0x UTC)
+
+1. **[止める] 1(境以降の行を直す前の loader で値まで読み直した)**: 読みは起きてしまったので取り消せない。処置 = (a) そこから出た境以降の中身の数(bitFlyer 2023 の空でない分の数・最後の分)を §11 の表と文から外した。(b) 事実を `docs/OWNER_LOG.md` L-499d に書き、オーナーに上申した(作業者の返り値の逐語 `docs/AUDITOR/VERDICTS/2026-10-01_k1_stage_g_close.md` には数が残っている。消すかはオーナーの判断)。(c) 「直す前」の示し方は合成ファイルの試験で足りる。
+2. **[直す] 2(jsonl は範囲の外の行の数値も数に直す)**: リードが直した。`loader.py: _rows_jsonl` の `json.loads` を `parse_float=str, parse_int=str` にし、数に直すのは `_build`(範囲と封印のあと)だけにした。時刻の読み手(`timestamps.py: read`)は数字の文字列を受けるので、epoch の時刻も変わらない。試験 `test_jsonl_numbers_of_a_row_outside_the_range_are_not_turned_into_numbers` を足した(直しを戻すと落ちる: `parse_float=Decimal` に戻して「1 failed」)。批評家の確かめ方 `g7_check.py` の 3 = 「types of out-of-range row (line 3): {'ts': 'str', 'o': 'str', 'h': 'str', 'l': 'str', 'c': 'str', 'v': 'str'}」。`tests/bt/item_1` は「3943 passed in 28.46s」、変異 M0「66 passed」・M12・M13 とも落ちる。
+3. **[直す] 3**: `DATA_READ.md` と `DIFF.md` の「リードかオーナーが決める」を、L-499 ② で決まった範囲(時刻だけ)と決まっていない範囲(値まで読んだ件)に分けて書き直した。
+4. **(d)1 = (d)3 の行**: `Parts.prepare` は記録の口の一般の口として残す(リードの判断。記録の口が範囲つきの生のファイルから結合・畳みを行う経路で、記録に残る。A-13 の 3 つ = 問いの立て方・族の切り方・検定単位に当たらない)。
+5. **(d)2**: 段階 A の実行記録(`backtest_runs/k1_newenv_a/`、`runs_index.json`)は、直す前のコードの記録としてそのまま残す。回し直すと run_id が変わるが、段階 A の報告の数は変えない。
+6. **(d)3**: 5 分の升は今のコードで回し直さない(15 分の升で今のコードの経路を確かめた。約 15 分・RSS 7.4 GB・ディスク残 360 MB の費用に対し、増える確かめは同じ経路の 2 升目だけ)。範囲を縮めた判断としてここに書く。

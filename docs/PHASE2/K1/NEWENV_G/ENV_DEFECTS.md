@@ -29,4 +29,5 @@
 | G-3 | 直した | `DataInput.range_ns`: 封印の台帳に載ったファイルを境より前の範囲で入力にでき、範囲は run_id と record.json に入る。境を越える範囲・範囲無しは開く前に `RunSealedRangeError` |
 | G-4 | 直した | 暗号資産・FX の足の spec は `session` を省けない(`SpecError`)。JPX の省略は許し、走らなかった検査と理由を `checks_not_run` に出す |
 | G-5 | 直していない(委任文 §1「環境の欠陥ではないので直さない」) | — |
-| G-6 | 一部直した | 行ごとに作り直していた 3 つ(封印の時刻の読み手・使う列の集合・identity の JSON)を 1 回 / 読まれたときに。Binance 2018 の `load` 45.8〜53.6 s → 39.6〜39.75 s。残り(核の事象の検査・ISO 時刻の 2 回の読み)は FIXES.md「やっていないこと」 |
+| G-6 | 一部直した | 行ごとに作っていた 4 つを直した(FIXES.md §5): (1) 封印の時刻の読み手 `TimeReader` を行ごとに作る → 1 つを使い回す、(2) 使う列の集合 `columns_used()` を行ごとに作る → ファイルごとに 1 回、(3) identity の JSON を全行で書く → 読まれたときに作る、(4) 封印の時刻の列がデータの時刻の列と同じとき同じセルを ISO として 2 回読む → 1 回。Binance 2018(521,624 行)の `load`: 直す前 53.6 s / 45.8 s → (1)〜(3) の後 39.75 s / 39.61 s → (1)〜(4) の後 29.32 s / 30.49 s(`scripts/k1_newenv_g_loadprof.py time`、出力 `time_before.txt`・`time_after1.txt`・`time_after2.txt`)。残り(直した後の cProfile `prof_after2.txt`、全体 80.8 s): 核の `BarEvent` の値の検査 30.2 s・1 行 1 回の ISO 時刻の読み 12.2 s・数の読み 11.2 s は FIXES.md §9-1「やっていないこと」 |
+| G-7(第 2 回で足した。前回の批評家の [聞く] 1) | 直した | データ層 `loader.py` の `_read_file` が、範囲の外の行も値まで数に直し事象を作ってから捨てていた → 時刻を先に読み、範囲の外の行と、範囲の中でも封印の境以降の行は値を読まない。試験 `tests/bt/item_1/test_i1_fix_g7_range_before_values.py`、変異 M12・M13、段階 G の畳みを回し直して落とした行数・出力 22 ファイルの sha256 が前と同じ(FIXES.md §11) |
