@@ -376,7 +376,7 @@
 2. 段階 A のスクリプト 3 本(run・tables・fold)の spec と方針を変えたので、段階 A の升を今回し直すと run_id が段階 A の記録と違う(§13)。段階 A の記録(`runs_index.json`)は直す前のコードの記録としてそのまま残すことでよいか(yes/no)。
 3. 15 分の升は G-7 の後のコード(`diff_hash` `d1f0c4ac…`)、5 分の升は G-7 の前のコード(`7acea3e9…`)で回っている(§12)。5 分の升も今のコードで回し直すか(yes/no。約 13〜15 分、最大 RSS 約 7.4 GB)。
 
-## 19. リードの処置(第 2 回の批評家の指摘を受けて、2026-10-01 12:0x UTC)
+## 19. リードの処置(第 2 回の批評家の指摘を受けて、2026-10-01 11:3x UTC)
 
 1. **[止める] 1(境以降の行を直す前の loader で値まで読み直した)**: 読みは起きてしまったので取り消せない。処置 = (a) そこから出た境以降の中身の数(bitFlyer 2023 の空でない分の数・最後の分)を §11 の表と文から外した。(b) 事実を `docs/OWNER_LOG.md` L-499d に書き、オーナーに上申した(作業者の返り値の逐語 `docs/AUDITOR/VERDICTS/2026-10-01_k1_stage_g_close.md` には数が残っている。消すかはオーナーの判断)。(c) 「直す前」の示し方は合成ファイルの試験で足りる。
 2. **[直す] 2(jsonl は範囲の外の行の数値も数に直す)**: リードが直した。`loader.py: _rows_jsonl` の `json.loads` を `parse_float=str, parse_int=str` にし、数に直すのは `_build`(範囲と封印のあと)だけにした。時刻の読み手(`timestamps.py: read`)は数字の文字列を受けるので、epoch の時刻も変わらない。試験 `test_jsonl_numbers_of_a_row_outside_the_range_are_not_turned_into_numbers` を足した(直しを戻すと落ちる: `parse_float=Decimal` に戻して「1 failed」)。批評家の確かめ方 `g7_check.py` の 3 = 「types of out-of-range row (line 3): {'ts': 'str', 'o': 'str', 'h': 'str', 'l': 'str', 'c': 'str', 'v': 'str'}」。`tests/bt/item_1` は「3943 passed in 28.46s」、変異 M0「66 passed」・M12・M13 とも落ちる。
