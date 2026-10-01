@@ -1317,3 +1317,298 @@ def test_missing_default_config_and_no_params_raises(tmp_path, monkeypatch):
         CompositeStrategy({})
     # explicit core params are still enough to construct without the file
     assert CompositeStrategy(dict(PARAMS)).params["k"] == 10
+
+
+# ---- L-532: a tripped kill switch stops TRADING, not market data ----------
+def _record_trading_calls(app, monkeypatch) -> list[str]:
+    """Wrap (not replace) every trading entry point so a test can see whether
+    it was reached; the originals still run."""
+    calls: list[str] = []
+
+    def spy(name, fn):
+        def wrapped(*a, **k):
+            calls.append(name)
+            return fn(*a, **k)
+        return wrapped
+
+    monkeypatch.setattr(app, "_sweep_open_orders",
+                        spy("sweep", app._sweep_open_orders))
+    monkeypatch.setattr(app, "_try_order", spy("try_order", app._try_order))
+    monkeypatch.setattr(app.strategy, "on_candles",
+                        spy("strategy", app.strategy.on_candles))
+    monkeypatch.setattr(app.orders, "cancel_all_active",
+                        spy("cancel_all", app.orders.cancel_all_active))
+    return calls
+
+
+def _spread_rows(workdir) -> list[str]:
+    return (workdir / "data" / "spread_FX_BTC_JPY.csv").read_text(
+        encoding="utf-8").splitlines()[1:]
+
+
+def test_tripped_step_still_polls_records_and_updates_status(workdir, monkeypatch):
+    """(1) The ticker is still polled, the spread still recorded, the leader
+    still polled and status.json still written — with the kill state in it."""
+    app = build_test_app(monkeypatch)
+    leader_polls: list[int] = []
+    monkeypatch.setattr(app.leader_feed, "poll", lambda: leader_polls.append(1))
+    app.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, "market data stale: 900s > 60s")
+
+    app.step()
+    app.step()
+
+    rows = _spread_rows(workdir)
+    assert len(rows) == 2
+    assert rows[0].endswith(",9999000.0,10001000.0,10000000.0")
+    assert app.feed.last_tick.price == 10_000_000
+    assert leader_polls == [1, 1]
+    status = json.loads((workdir / "logs" / "status.json").read_text(encoding="utf-8"))
+    assert status["running"] is False
+    assert status["last_price"] == 10_000_000
+    assert status["kill_switch"]["reason"] == "market_data_anomaly"
+
+
+def test_tripped_step_builds_candles_but_never_trades(workdir, monkeypatch):
+    """(2) Candles complete while tripped, yet the sweep, the strategy, the
+    order path and the cancel path are never reached and the book is unmoved."""
+    app = build_test_app(monkeypatch)
+    calls = _record_trading_calls(app, monkeypatch)
+    app.kill_switch.trip(KillReason.MANUAL, "operator")
+
+    drive(app, TICKS, LEADER)            # the same ticks that open a short below
+
+    assert len(app.candles.completed) >= 4
+    assert len(_spread_rows(workdir)) == len(TICKS)
+    assert calls == []
+    assert app.portfolio.position_size == 0.0
+    assert app.store.active_orders("FX_BTC_JPY") == []
+    assert app.kill_switch.state["reason"] == "manual"
+
+
+def test_untripped_step_still_trades_as_before(workdir, monkeypatch):
+    """(4) Not tripped: sweep and strategy run every completed candle and the
+    same ticks open the same short as before the change."""
+    app = build_test_app(monkeypatch)
+    calls = _record_trading_calls(app, monkeypatch)
+
+    drive(app, TICKS, LEADER)
+
+    assert calls.count("sweep") == len(TICKS)
+    assert "strategy" in calls and "try_order" in calls
+    assert "cancel_all" not in calls
+    assert app.portfolio.position_size == pytest.approx(-0.013)
+    assert len(_spread_rows(workdir)) == len(TICKS)
+    assert not app.kill_switch.is_tripped
+
+
+def test_untripped_anomaly_still_trips_and_alerts_once(workdir, monkeypatch):
+    """(4) First anomaly while trading: trip, cancel, alert — unchanged."""
+    from bot.market_data.feed import MarketDataAnomaly
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    cancels: list[str] = []
+    monkeypatch.setattr(app.orders, "cancel_all_active", lambda s: cancels.append(s))
+    monkeypatch.setattr(app.feed, "poll_ticker", lambda: (_ for _ in ()).throw(
+        MarketDataAnomaly("crossed book")))
+
+    app.step()
+
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert [t for t, _, _ in notifier.sent] == ["KILL SWITCH"]
+    assert cancels == ["FX_BTC_JPY"]
+
+
+def test_data_failures_while_tripped_neither_retrip_nor_realert(workdir, monkeypatch):
+    """(3) After the first trip, more anomalies and more API errors (enough to
+    trip API_ERRORS twice over) change nothing: same state, one alert, one
+    cancel, no counter — and recording resumes when the data comes back."""
+    from bot.exchange.bitflyer_client import BitflyerError, NetworkError
+    from bot.market_data.feed import MarketDataAnomaly
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    cancels: list[str] = []
+    monkeypatch.setattr(app.orders, "cancel_all_active", lambda s: cancels.append(s))
+    real_poll = app.feed.poll_ticker
+    errors = ([MarketDataAnomaly("crossed book")]
+              + [MarketDataAnomaly("abnormal spread")] * 3
+              + [BitflyerError(400, "nope")] * 10
+              + [NetworkError("connection reset")] * 3)
+
+    def failing_poll():
+        raise errors.pop(0)
+    monkeypatch.setattr(app.feed, "poll_ticker", failing_poll)
+
+    app.step()                                   # the real first trip
+    first_state = dict(app.kill_switch.state)
+    while errors:
+        app.step()
+
+    assert app.kill_switch.state == first_state
+    assert json.loads((workdir / "data" / "kill_switch.json")
+                      .read_text(encoding="utf-8")) == first_state
+    assert [t for t, _, _ in notifier.sent] == ["KILL SWITCH"]
+    assert cancels == ["FX_BTC_JPY"]
+    assert app._api_errors_in_row == 0
+    assert app.status.status.consecutive_api_errors == 0
+
+    monkeypatch.setattr(app.feed, "poll_ticker", real_poll)
+    app.step()
+    assert len(_spread_rows(workdir)) == 1
+
+
+def test_run_loop_keeps_recording_after_a_trip_and_alerts_once(workdir, monkeypatch):
+    """(3) The loop no longer ends on a trip: a feed that stays stale trips the
+    switch once, alerts once, and every later cycle still polls and records."""
+    import bot.main as bot_main
+    from bot.market_data.feed import MarketDataAnomaly
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    calls = _record_trading_calls(app, monkeypatch)
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: (_ for _ in ()).throw(
+        MarketDataAnomaly("market data stale: 900s > 60s")))
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) >= 5:
+            raise KeyboardInterrupt()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    titles = [t for t, _, _ in notifier.sent]
+    assert titles == ["BOT START", "KILL SWITCH"]
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert len(_spread_rows(workdir)) == 5       # one per cycle, trip or not
+    assert calls.count("sweep") == 1             # the cycle before the trip only
+    assert calls.count("cancel_all") == 1        # from the one _on_kill
+
+
+def test_run_loop_survives_faults_while_tripped_and_alerts_a_manual_kill_once(
+        workdir, monkeypatch):
+    """(3) A KILL file dropped mid-run is alerted ONCE (it never goes through
+    _on_kill); after that an unexpected fault in a data cycle neither ends the
+    loop nor re-trips nor re-alerts."""
+    import bot.main as bot_main
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: None)
+    real_step = app.step
+    cycles: list[int] = []
+
+    def step():
+        cycles.append(1)
+        if len(cycles) == 4:
+            raise ValueError("bad row in a data cycle")
+        real_step()
+    monkeypatch.setattr(app, "step", step)
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) == 2:
+            (workdir / "KILL").write_text("", encoding="utf-8")
+        if len(sleeps) >= 6:
+            raise KeyboardInterrupt()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    titles = [t for t, _, _ in notifier.sent]
+    assert titles == ["BOT START", "KILL SWITCH"]
+    assert app.kill_switch.state["reason"] == "manual"
+    assert len(cycles) == 6
+    assert len(_spread_rows(workdir)) == 5       # every cycle but the faulty one
+
+
+def test_main_starts_data_only_when_tripped(workdir, monkeypatch, capsys):
+    """A restart while tripped no longer exits: it records data, trades
+    nothing, and says why on stdout."""
+    import bot.main as bot_main
+    KillSwitch().trip(KillReason.MARKET_DATA_ANOMALY, "market data stale")
+    app = build_test_app(monkeypatch, notifier=RecordingNotifier())
+    ran: list[bool] = []
+    monkeypatch.setattr(bot_main, "load_settings", lambda root: app.settings)
+    monkeypatch.setattr(bot_main, "setup_logging", lambda: None)
+    monkeypatch.setattr(bot_main, "register_secret", lambda value: None)
+    monkeypatch.setattr(bot_main, "build_app", lambda settings: app)
+    monkeypatch.setattr(app, "run_forever", lambda: ran.append(app.kill_switch.is_tripped))
+
+    assert bot_main.main() == 0
+    assert ran == [True]
+    assert "refusing to trade" in capsys.readouterr().out
+
+
+def test_a_feed_that_stays_down_while_tripped_logs_each_kind_once(
+        workdir, monkeypatch, caplog):
+    """(3) A down venue fails the poll AND the freshness check every cycle; the
+    log gets one line per kind for the outage, not two lines per cycle."""
+    import bot.main as bot_main
+    from bot.exchange.bitflyer_client import NetworkError
+    from bot.market_data.feed import MarketDataAnomaly
+    KillSwitch().trip(KillReason.MARKET_DATA_ANOMALY, "market data stale")
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)   # boots tripped
+    real_poll = app.feed.poll_ticker
+    down = {"on": True}
+
+    def poll():
+        if down["on"]:
+            raise NetworkError("connection reset")
+        return real_poll()
+    monkeypatch.setattr(app.feed, "poll_ticker", poll)
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: (_ for _ in ()).throw(
+        MarketDataAnomaly("market data stale: 900s > 60s")) if down["on"] else None)
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) == 10:
+            down["on"] = False
+        if len(sleeps) >= 12:
+            raise KeyboardInterrupt()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    with caplog.at_level(logging.INFO, logger="bot.main"):
+        with pytest.raises(KeyboardInterrupt):
+            app.run_forever()
+
+    events = [getattr(r, "data", {}).get("event") for r in caplog.records]
+    assert events.count("data_only_failure") == 2        # NetworkError + anomaly
+    assert events.count("data_only_recovered") == 1
+    assert events.count("kill_switch_data_only") == 1
+    assert [t for t, _, _ in notifier.sent] == ["BOT START"]   # tripped at boot
+    assert len(_spread_rows(workdir)) == 2               # the two cycles after recovery
+
+
+def test_a_trip_inside_step_is_not_alerted_again_by_the_freshness_check(
+        workdir, monkeypatch):
+    """(3) step() trips API_ERRORS and alerts; the freshness check that fails
+    in the SAME cycle must not trip, cancel or alert a second time."""
+    import bot.main as bot_main
+    from bot.exchange.bitflyer_client import BitflyerError
+    from bot.market_data.feed import MarketDataAnomaly
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    cancels: list[str] = []
+    monkeypatch.setattr(app.orders, "cancel_all_active", lambda s: cancels.append(s))
+    monkeypatch.setattr(app.feed, "poll_ticker", lambda: (_ for _ in ()).throw(
+        BitflyerError(400, "nope")))
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: (_ for _ in ()).throw(
+        MarketDataAnomaly("market data stale")) if app.kill_switch.is_tripped else None)
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) >= 8:
+            raise KeyboardInterrupt()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    assert app.kill_switch.state["reason"] == "api_errors"
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", "KILL SWITCH"]
+    assert cancels == ["FX_BTC_JPY"]
