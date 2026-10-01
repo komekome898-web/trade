@@ -6482,10 +6482,10 @@
   {
    "move": 229,
    "tools": {
-    "Bash": 1,
+    "Bash": 3,
     "Workflow": 1
    },
-   "n_tools": 2,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
