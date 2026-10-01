@@ -491,7 +491,7 @@ def _assert_read_only(url: str) -> None:
 def http_get(url: str, timeout: float = HTTP_TIMEOUT) -> tuple[str | None, int | None, str | None]:
     """GET を 1 回。(本文, HTTP コード, 失敗の理由)。
 
-    **取れなくても続行する**(`CLAUDE.md` §5.2 / §0.2 O-2: 「取れない」と書かずに、
+    **取れなくても続行する**(research-protocol(旧 `CLAUDE.md` §5.2) / §0.2 O-2: 「取れない」と書かずに、
     HTTP コードか例外の型を記録して先へ進む)。
     """
     _assert_read_only(url)

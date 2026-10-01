@@ -165,7 +165,7 @@ def _collapse_two_bars(df: pd.DataFrame, i: int) -> pd.DataFrame:
 
 
 def _write_unseal_audit(root: Path, unit: str = "P2-03") -> None:
-    """封印の 4 つ目の門(CLAUDE.md §5.0 の 1、2026-09-13)を通すための記録。
+    """封印の 4 つ目の門(CLAUDE.md §5 の監査 ①、2026-09-13)を通すための記録。
 
     既存の 3 門(env / 承認ファイル / トークン)と同じ扱いで、この試験用の根に置く。
     **門そのものが効くかは `test_guards_pass_only_when_all_three_are_present` の系列と

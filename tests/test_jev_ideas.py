@@ -4,7 +4,7 @@
 (オーナー逐語 L-218)。**順位・重みは作らない。**
 ネットワークには一切触れない(`--dry-run` か、差し替えた偽の client でしか通さない)。
 
-**CLAUDE.md §5.1(全捨て)・§0.2 A-5 の検査**: 文書に過去の判定語が混ざっていても、
+**CLAUDE.md §5(全捨て)(全捨て)・§0.2 A-5 の検査**: 文書に過去の判定語が混ざっていても、
 抽出は案の本文だけなので state に写らないこと(`test_state_carries_only_the_idea_body`、
 `test_multi_id_note_bullet_is_not_an_idea`)。
 """

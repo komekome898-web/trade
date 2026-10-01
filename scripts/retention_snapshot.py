@@ -19,7 +19,7 @@ before the upstream data actually expires:
     bitFlyer executions   31d  -> every <=15 days  (data/tape/*.csv.gz,
                                   data/candles_*.csv -- the extract_tape.py /
                                   fetch_history.py outputs already used for
-                                  long-term storage, see CLAUDE.md §2)
+                                  long-term storage, see docs/OPERATIONS.md)
     OKX open interest 1H  30d  -> every <=14 days  (data/okx_btc_oi_1h.csv)
     OKX open interest 5m  2-3d -> daily            (data/okx_btc_oi_5m.csv)
     OKX long/short ratio  60d  -> every <=28 days  (data/okx_btc_lsratio_1h.csv,

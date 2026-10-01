@@ -66,7 +66,7 @@ def test_the_four_verdicts_exist_with_the_proxy_case():
 
 
 def test_a_negative_without_the_map_is_downgraded_to_unknown():
-    """**陰性と不明を分ける**規律(CLAUDE.md §5.2)との接続。
+    """**陰性と不明を分ける**規律(research-protocol(旧 CLAUDE.md §5.2))との接続。
     代理や未実装が残ったままの陰性は陰性ではない。"""
     text = _text(PROTOCOL)
     assert "陰性ではなく不明" in text or "陰性ではなく不明である" in text

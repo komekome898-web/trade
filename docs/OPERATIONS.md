@@ -661,7 +661,7 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 チェックもブロックも行わない — 該当する操作の直前/直後に関連規則を CLAUDE.md や
 スキルから実行時に grep して見せるだけ:
 
-1. `PreToolUse`(`Agent` ツール)— 委任前に CLAUDE.md §5.2 の「取れない・無い」の
+1. `PreToolUse`(`Agent` ツール)— 委任前に research-protocol(旧 CLAUDE.md §5.2) の「取れない・無い」の
    主張ルール(L-099)+ 調達票の必須項目を表示。
 2. `PreToolUse`(`Write`/`Edit`、対象が `docs/PHASE2/**/*PREREG*.md` または
    `docs/**/*_PREREG.md` のときのみ)— 同ルールと research-protocol §1 の

@@ -5,7 +5,7 @@
   python3 scripts/jev_prescreen.py <成果物.md> --model <版付きID> [--out PATH] [--dry-run]
 
 `--dry-run` は鍵が無くても動く(送らずに質問と文字数だけ出す)。
-**監査役の判定そのものを置き換えない**(`CLAUDE.md` §5.0 の 2)。前段の分類結果を
+**監査役の判定そのものを置き換えない**(`CLAUDE.md` §5 の監査 ②)。前段の分類結果を
 `owner-audit` の手順に足す材料として使う。
 """
 from __future__ import annotations

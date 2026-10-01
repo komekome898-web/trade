@@ -28,7 +28,7 @@ description: X(旧 Twitter)の公開投稿を、鍵も課金も無しに、こ�
 1. **発見**: `WebSearch` を語を変えて 3 回以上(例: `site:x.com typesafe jev` / `site:x.com "system one" model` / `site:x.com @typesafeai` / 日本語 `site:x.com jev typesafe 使ってみた`)。結果の URL から ID を集める。**引いた語を全部、件数と一緒に報告に書く**(「無い」は、引いた語と件数を添えてはじめて書ける)。
 2. **本文**: `python3 scripts/x_fetch.py <URL または ID> ...` を打つ(1 秒に 1 件以下)。1 行 1 投稿の JSON が出る。返信先があれば根まで自動で辿る(`--no-walk` で止める)。
 3. **記録**: 各投稿について **URL / 著者 / 日時 / 本文(逐語)/ いいね・RT・返信・表示 / 引用元の要旨 / 取得時刻 / HTTP コード** を残す。本文は要約せず逐語で。判断は書かない(調査班は判定しない)。
-4. **取れないとき**: 「どの経路で(URL)・いつ・HTTP 何番」を書く。それ無しに「取れない」と書かない(CLAUDE.md §5.2)。
+4. **取れないとき**: 「どの経路で(URL)・いつ・HTTP 何番」を書く。それ無しに「取れない」と書かない(research-protocol(旧 CLAUDE.md §5.2))。
 
 ## 4. 規則
 

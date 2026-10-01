@@ -110,7 +110,7 @@ def test_o3c_reaction_judge_calls_the_gate():
 
     **呼び出しを消すとここが赤くなる。**前版はこの道具が試験に無く、
     `require_audit("o3c_reaction_20260918", "結果")` を消してもテストが通っていた
-    (`CLAUDE.md` §5.0 の「関門が呼ばれていることを毎回の pytest で測る」が
+    (`CLAUDE.md` §5(監査を掛ける 3 点) の「関門が呼ばれていることを毎回の pytest で測る」が
     この道具に掛かっていなかった)。
 
     **`scripts/_research_audit_gate.py` の `WIRED` の一覧への追記は、

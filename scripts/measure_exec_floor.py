@@ -2,7 +2,7 @@
 """④-1 執行層の経費の床(`docs/PHASE2/EXEC/EXEC_FLOOR_PREREG.md` §2/§8)。
 
 表 E-a〜E-i を生成し `results/PHASE2/EXEC/exec_floor.json` に書く。過去の経費の数値は
-一つも引用しない(`CLAUDE.md` §5.1)。すべて今回生のテープ/板/約定/資金調達率/遅延
+一つも引用しない(`CLAUDE.md` §5(全捨て))。すべて今回生のテープ/板/約定/資金調達率/遅延
 ファイルから作る。実弾は使わない(K1 の値は RESULT.md §18.2 から**並べるだけ**で
 再計算しない)。
 
@@ -1132,7 +1132,7 @@ print("  K1 経費前(並べるだけ): 5分 +0.70 / 15分 +1.75 bp/取引")
 
 payload = {
     "note": ("④-1 執行層の経費の床(EXEC_FLOOR_PREREG.md)。過去の経費の数値は一つも引用していない"
-             "(CLAUDE.md §5.1)。すべて今回、backtest_data/auto_bitflyer_executions_20260905 の"
+             "(CLAUDE.md §5(全捨て))。すべて今回、backtest_data/auto_bitflyer_executions_20260905 の"
              "テープ/板/約定と data/funding_rate_history.csv・data/latency/ws_vm.csv・"
              "Binance/Bybit 1分足から生成。実弾は使っていない。帰無・MDE・判定バーは作っていない。"),
     "data_ranges": {

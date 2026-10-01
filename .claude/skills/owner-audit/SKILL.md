@@ -13,7 +13,7 @@ description: "Invoke the owner-auditor subagent at the two research gates (befor
 
 ## いつ呼ぶか(L-488 2(b) で絞った)
 
-LLM の監査役を呼ぶのは次の 2 か所だけ(`CLAUDE.md` §5.0 の研究の関門。L-164 でオーナー承認):
+LLM の監査役を呼ぶのは次の 2 か所だけ(`CLAUDE.md` §5(監査を掛ける 3 点) の研究の関門。L-164 でオーナー承認):
 
 1. **判定区間を開ける前** — 事前登録(`PREREG.md` / `*_PREREG.md`)と `INTENT_MAP.md`。`src/bot/research/sealed.py: load_sealed` の門が監査の記録を要求する。
 2. **測定後・報告前** — 判定の報告(`RESULT.md` の新しい部)。`scripts/judge_gates.py` の門が要求する。渡すのは**事前登録と生の出力の両方**。

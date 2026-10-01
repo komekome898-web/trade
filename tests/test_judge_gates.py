@@ -589,7 +589,7 @@ def test_report_is_deterministic_and_idempotent(tmp_path):
 
 
 def _write_result_audit(root, unit="TESTUNIT"):
-    """測定後・報告前の関門(CLAUDE.md §5.0 の 2)を通すための記録を tmp に置く。
+    """測定後・報告前の関門(CLAUDE.md §5 の監査 ②)を通すための記録を tmp に置く。
 
     2026-09-13 に `--unit` を必須にしたので、`main` を呼ぶ試験はこの記録が要る。
     関門は `--root` を台帳の根として見る(`judge_gates.py` の `_require_audit` の呼び出し)。
