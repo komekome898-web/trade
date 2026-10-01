@@ -12,7 +12,7 @@ from .time import TIME_CONTRACT
 from .values import CALL_FRAMES, FIELD_RULE, INT_TEXT_BITS, MAX_HASH_VISITS, MAX_NESTING, PLAIN_DATA_RULE, bind_carriers
 from .window import POSITION_RULE, POSITION_RULE_TEXT
 
-CORE_VERSION = "core-19"
+CORE_VERSION = "core-20"  # core-20: Event.stream (G-1 of K1 stage G, 2026-10-01)
 
 # Every class whose instances cross a path of the core (values.py): each
 # makes every field a built-in value when it is made, and is slotted.
@@ -75,7 +75,9 @@ CORE_CONTRACT: dict = {
                  "their arrival time; never earlier",
         "source": "one stream or named streams merged by time; each consumed lazily (at most one "
                   "pending event per stream); each must be non-decreasing in exchange_time_ns "
-                  "(else EventOrderError); a stream's own order is never re-sorted",
+                  "(else EventOrderError); a stream's own order is never re-sorted; every source event "
+                  "carries its stream's name in Event.stream, set by the engine on intake (a source event "
+                  "naming another stream is refused; notices and timers carry \"\")",
         "order_state": "the strategy's view and the venue ledger keep facts (acked, filled, "
                        "cancels in flight (counted one by one; each cancel gets exactly one answer), "
                        "unknown about the new order / about a cancel, final); "

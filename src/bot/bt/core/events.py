@@ -28,6 +28,14 @@ optionally records the bar's open; if given it must be strictly before the
 close (a bar covers [start, close) with a positive length), so an
 open-stamped bar (start == close) is refused.
 
+`stream` (G-1 of K1 stage G, 2026-10-01) names the input stream a source
+event came from: the engine sets it to the name of the stream it pulled the
+event from (engine.py `_SourceMerger`), so the strategy and the fill model
+can tell two markets' bars apart by name, not by the order the merge rule
+happens to deliver them in. A source may leave it "" or give the very name
+of its stream; any other name is refused. Order notices and the strategy's
+own timers come from no input stream: their `stream` is "".
+
 Every event is frozen and validated at construction; `to_dict()` returns a
 JSON-friendly copy of every field (tuples become lists). An event crosses a
 path (source -> venue and strategy, venue -> strategy), so it is a value
@@ -154,6 +162,7 @@ class Event:
     received_time_ns: Nanos
     exchange_time_ns: Optional[Nanos] = None
     seq: int = 0  # set by the engine on delivery: the strategy's own delivery count (1, 2, 3, ...)
+    stream: str = ""  # set by the engine on intake: the name of the input stream (G-1); "" = no input stream
 
     EVENT_TYPE: ClassVar[EventType]
 
@@ -170,6 +179,7 @@ class Event:
             )
         object.__setattr__(self, "exchange_time_ns", exch)
         object.__setattr__(self, "seq", _value(as_int, "seq", self.seq))
+        object.__setattr__(self, "stream", _str("stream", self.stream))
         self._validate()
 
     def _validate(self) -> None:  # overridden per type

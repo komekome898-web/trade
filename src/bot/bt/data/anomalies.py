@@ -26,6 +26,9 @@ row's time -- a bar's start):
                    there could not be told from a new row
   synthetic        (spec.synthetic declared) a row its flag column marks as
                    synthetic
+  no_trade         (spec.no_trade declared, G-2 of K1 stage G) a bar row
+                   whose declared price fields are all blank: a minute with
+                   no trade. It has no event; its only policy is "drop"
 
 A check that cannot run for a dataset (no key declared, no 24x7 session --
 a 24x5 session runs off_grid but not gap: the layer has no weekly-close
@@ -44,6 +47,7 @@ policy the caller named:
   generation_gap   "accept"
   unkeyed_overlap  "accept"
   synthetic        "drop" | "accept"
+  no_trade         "drop"
 
 After the policies, rows are ordered by time (a stable sort: rows of one
 time keep their delivered order), which is the order the core's streams
@@ -56,7 +60,8 @@ from typing import Mapping, Optional
 
 from .errors import SpecError, UnresolvedAnomalyError
 
-KINDS = ("duplicate", "conflict", "backward", "gap", "off_grid", "generation_gap", "unkeyed_overlap", "synthetic")
+KINDS = ("duplicate", "conflict", "backward", "gap", "off_grid", "generation_gap", "unkeyed_overlap", "synthetic",
+         "no_trade")
 POLICIES: dict[str, tuple[str, ...]] = {
     "duplicate": ("drop",),
     "conflict": ("keep_first", "keep_last"),
@@ -66,6 +71,7 @@ POLICIES: dict[str, tuple[str, ...]] = {
     "generation_gap": ("accept",),
     "unkeyed_overlap": ("accept",),
     "synthetic": ("drop", "accept"),
+    "no_trade": ("drop",),
 }
 
 
@@ -128,6 +134,10 @@ def detect(spec, rows: list, n_files: int) -> tuple[tuple, tuple]:
         checks.append("synthetic")
         out.extend(_a("synthetic", r.time_ns, i, rows) for i, r in enumerate(rows) if r.synthetic)
 
+    if getattr(spec, "no_trade", None) is not None:
+        checks.append("no_trade")
+        out.extend(_a("no_trade", r.time_ns, i, rows) for i, r in enumerate(rows) if r.event is None)
+
     if spec.kind == "bar" and spec.bar.session in ("24x7", "24x5") and rows:
         checks += ["gap", "off_grid"] if spec.bar.session == "24x7" else ["off_grid"]
         iv = spec.bar.interval_ns
@@ -181,6 +191,8 @@ def resolve(name: str, rows: list, anoms, policies: Mapping[str, str]) -> tuple[
         drop.update(a["row"] for a in by["synthetic"])
     if policies.get("off_grid") == "drop" and "off_grid" in present:
         drop.update(a["row"] for a in by["off_grid"])
+    if "no_trade" in present:  # its one policy: a no-trade row has no event to keep
+        drop.update(a["row"] for a in by["no_trade"])
     kept = [r for i, r in enumerate(rows) if i not in drop]
     kept.sort(key=lambda r: int(r.event.exchange_time_ns))
     return kept, applied

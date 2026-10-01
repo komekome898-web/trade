@@ -35,7 +35,7 @@ T2020 = 1577836800 * NS  # 2020-01-01T00:00:00Z
 SPEC = {"format": "csv", "header": True, "delimiter": ",", "kind": "bar", "symbol": "X", "asset": "crypto",
         "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"},
         "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-        "bar": {"interval_s": 60, "label": "start"}, "key": "start"}
+        "bar": {"interval_s": 60, "label": "start", "session": "24x7"}, "key": "start"}  # session: G-4 (2026-10-01)
 BODY = ("ts,o,h,l,c,vol\n"
         "2019-12-31T23:58:00,1,2,0.5,1.5,1\n"
         "2019-12-31T23:59:00,1.5,2,1,1.25,1\n"

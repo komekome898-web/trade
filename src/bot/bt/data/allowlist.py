@@ -288,7 +288,17 @@ _YYYYMMDD = re.compile(r"^\d{8}$")
 _NUMBER = re.compile(r"^[+-]?(\d+(\.\d*)?|\.\d+)$")
 
 
-def seal_time_ns(value) -> Fraction:
+_SEAL_ISO: list = []  # the one ISO reader of seal times, made on first use (G-6: it was made again for every row)
+
+
+def _seal_iso_reader():
+    if not _SEAL_ISO:
+        from .timestamps import TimeReader
+        _SEAL_ISO.append(TimeReader("iso", "UTC", (-(2**63), 2**63 - 1)))
+    return _SEAL_ISO[0]
+
+
+def seal_time_ns(value, iso_utc_ns: Optional[int] = None) -> Fraction:
     """A cell of a seal's time column, read the way the seal was made
     (`bot.research.sealed.parse_ts`: YYYYMMDD and ISO without an offset are
     UTC; a bare number is epoch seconds / ms / us by its magnitude), but
@@ -307,8 +317,11 @@ def seal_time_ns(value) -> Fraction:
             if factor is None:
                 raise SealedRangeError(f"seal time {value!r}: a number below 1e8 is no epoch time")
             return v * factor
-        from .timestamps import TimeReader
-        return Fraction(TimeReader("iso", "UTC", (-(2**63), 2**63 - 1)).read(text))
+        if iso_utc_ns is not None:
+            # the caller has read this very cell already with TimeReader("iso", "UTC") (the dataset's own time
+            # column, declared iso in UTC): the same reading as the line below gives (G-6: not read twice a row)
+            return Fraction(int(iso_utc_ns))
+        return Fraction(_seal_iso_reader().read(text))
     except SealedRangeError:
         raise
     except Exception as exc:  # noqa: BLE001 -- any unreadable seal time fails closed

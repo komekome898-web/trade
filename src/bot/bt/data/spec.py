@@ -21,16 +21,33 @@ Keys:
   fields       logical field -> column (per kind, below)
   side_map     raw value -> "buy" | "sell" | "" (optional)
   bar          kind "bar" only, required: {"interval_s": int > 0,
-               "label": "start" | "end", "session": "24x7" | "24x5" (optional)}
+               "label": "start" | "end", "session": "24x7" | "24x5"}
                (24x5 = a market closed at the weekend, FX; item 4 integration,
                2026-09-26: the data layer has no weekly-close calendar, so for
-               24x5 only the off_grid check runs, not the gap check)
+               24x5 only the off_grid check runs, not the gap check).
+               `session` is required for asset crypto and fx (G-4 of K1 stage
+               G, 2026-10-01): it decides which calendar checks run (24x7: gap
+               and off_grid; 24x5: off_grid), so leaving it out may not turn
+               them off silently. For asset jpx the layer has no exchange
+               calendar: `session` may be left out, and the result then
+               records that gap and off_grid did not run and why
+               (LoadResult.checks_not_run)
   key          "id" | "start" | "time" (optional): the key that identifies a
                row for the duplicate / conflict / generation checks
   synthetic    {"column": col, "values": [text, ...]} (optional): a column
                that marks a row as synthetic (a filled bar in a real
                series); such rows are reported (anomaly "synthetic") and
                reach events only by a named policy (drop / accept)
+  no_trade     kind "bar" only, {"fields": [field, ...]} (optional; G-2 of K1
+               stage G, 2026-10-01): the declaration that a row whose listed
+               price fields are ALL blank is a minute with no trade (bitFlyer
+               lightchart writes such rows with open/high/low/close empty).
+               Such a row is reported (anomaly "no_trade", one per row) and
+               never becomes an event: its only policy is "drop", which the
+               caller names like any other. A row with only some of the
+               listed fields blank, or a blank field not listed, is still
+               refused (ParseError). Without this key every blank field is
+               refused, as before.
 
 Fields per kind (required unless marked optional):
   trade        px, qty; side (optional; absent = "" aggressor unknown),
@@ -59,8 +76,10 @@ KEYS = ("id", "start", "time")
 SIDES = ("buy", "sell", "")
 
 _TOP = {"format", "header", "names", "delimiter", "compression", "kind", "symbol", "asset",
-        "time", "fields", "side_map", "bar", "key", "synthetic"}
+        "time", "fields", "side_map", "bar", "key", "synthetic", "no_trade"}
 _SYNTH = {"column", "values"}
+_NO_TRADE = {"fields"}
+NO_TRADE_FIELDS = ("open", "high", "low", "close", "volume")
 _TIME = {"columns", "join", "unit", "tz", "plausible_ns"}
 _BAR = {"interval_s", "label", "session"}
 
@@ -111,6 +130,7 @@ class Spec:
     key: Optional[str]
     synthetic: Optional[tuple[str, frozenset]] = None
     source: Mapping[str, Any] = field(repr=False, compare=False, default=None)
+    no_trade: Optional[tuple[str, ...]] = None  # logical bar fields whose all-blank marks a no-trade row (G-2)
 
     def columns_used(self) -> tuple[str, ...]:
         cols = list(self.time.columns) + ([self.synthetic[0]] if self.synthetic else [])
@@ -273,6 +293,10 @@ def parse_spec(raw: Any) -> Spec:
         session = b.get("session")
         if session is not None:
             _choice(session, SESSIONS, "spec.bar.session")
+        elif asset in ("crypto", "fx"):
+            # G-4: the session decides which calendar checks run; an omitted key may not turn them off silently
+            raise SpecError(f"spec.bar.session is required for asset {asset!r}: one of {list(SESSIONS)} "
+                            f"(24x7 runs the gap and off_grid checks, 24x5 the off_grid check)")
         bar = BarSpec(iv * 1_000_000_000, label, session)
     elif "bar" in m:
         raise SpecError(f"spec.bar is for kind 'bar' only, not {kind!r}")
@@ -298,5 +322,22 @@ def parse_spec(raw: Any) -> Spec:
         if names is not None and synthetic[0] not in names:
             raise SpecError(f"spec.names has no column {synthetic[0]!r} (spec.synthetic.column)")
 
+    no_trade = None
+    if "no_trade" in m:
+        if kind != "bar":
+            raise SpecError(f"spec.no_trade is for kind 'bar' only, not {kind!r}")
+        nt = _mapping(m["no_trade"], "spec.no_trade")
+        _unknown(nt, _NO_TRADE, "spec.no_trade")
+        if "fields" not in nt:
+            raise SpecError("spec.no_trade requires 'fields'")
+        fl = nt["fields"]
+        if (not isinstance(fl, (list, tuple)) or not fl or any(type(x) is not str for x in fl)
+                or len(set(fl)) != len(fl)):
+            raise SpecError(f"spec.no_trade.fields must be a non-empty list of distinct field names, got {fl!r}")
+        bad = [x for x in fl if x not in NO_TRADE_FIELDS]
+        if bad:
+            raise SpecError(f"spec.no_trade.fields: {bad} are not bar fields {list(NO_TRADE_FIELDS)}")
+        no_trade = tuple(fl)
+
     return Spec(fmt, header, names, delimiter, compression, kind, symbol, asset, tspec,
-                fields, side_map, bar, key, synthetic, source=m)
+                fields, side_map, bar, key, synthetic, source=m, no_trade=no_trade)

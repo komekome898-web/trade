@@ -31,7 +31,7 @@ T0 = 1_483_228_800  # 2017-01-01T00:00:00Z
 SPEC = {"format": "csv", "header": True, "delimiter": ",", "compression": "none", "kind": "bar", "symbol": "XBTUSD",
         "asset": "crypto", "time": {"columns": ["start_ts"], "unit": "iso", "tz": "UTC"},
         "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-        "bar": {"interval_s": IV_S, "label": "start"}, "key": "start"}
+        "bar": {"interval_s": IV_S, "label": "start", "session": "24x7"}, "key": "start"}  # session: G-4 (2026-10-01)
 
 
 @pytest.fixture()

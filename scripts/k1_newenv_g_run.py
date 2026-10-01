@@ -42,15 +42,21 @@ def spec(foot: int, symbol: str) -> dict:
     return {"format": "csv", "header": True, "delimiter": ",", "compression": "gzip", "kind": "bar",
             "symbol": symbol, "asset": "crypto", "time": {"columns": ["start_ts"], "unit": "iso", "tz": "UTC"},
             "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-            "bar": {"interval_s": foot * 60, "label": "start"}, "key": "start"}
+            "bar": {"interval_s": foot * 60, "label": "start", "session": "24x7"}, "key": "start"}
+
+
+# G-4 の直し(2026-10-01)の後: 暗号資産の足は session を書かなければ読めない。結合・畳み済みの足は欠けた窓が
+# ある(結合で落ちた分)ので gap を accept と名指しする(結合で落ちた窓は欠けとして扱う = 当時の規則)
+RESOLVE = {"gap": "accept"}
 
 
 def plan_args(mode, rng, foot, s, b, strength) -> dict:
-    data = [DataInput(f"{DATA_DIR}/binance_{foot}m_{rng}.csv.gz", spec(foot, "BTCUSDT"))]
+    data = [DataInput(f"{DATA_DIR}/binance_{foot}m_{rng}.csv.gz", spec(foot, "BTCUSDT"), RESOLVE)]
     if mode != "single":
-        data.append(DataInput(f"{DATA_DIR}/bitflyer_{foot}m_{rng}.csv.gz", spec(foot, "FX_BTC_JPY")))
+        data.append(DataInput(f"{DATA_DIR}/bitflyer_{foot}m_{rng}.csv.gz", spec(foot, "FX_BTC_JPY"), RESOLVE))
     cfg = {"instrument": "BTCUSDT" if mode == "single" else "FX_BTC_JPY", "foot_min": foot,
-           "gate": {"s": s, "b": b}, "strength": strength, "mode": mode, "fill": FILL_NAME, "costs": COSTS}
+           "gate": {"s": s, "b": b}, "strength": strength, "mode": mode, "fill": FILL_NAME, "costs": COSTS,
+           "streams": {"signal": ["d0"], "price": ["d0" if mode == "single" else "d1"]}, "prepare": "none"}
     return dict(root=REPO, data=data, config=cfg, seed=0, setup=K1XSetup(), purpose="研究", prereg=PREREG)
 
 

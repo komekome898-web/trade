@@ -663,8 +663,11 @@ def test_every_receiver_on_every_path_reads_what_was_sent_and_holds_its_own():
     def market_snap_for(obj_snap):
         f = dict(obj_snap)
         for want, _ev in source_snaps:
-            keys = [k for k in want if k not in ("seq", "received_time_ns")]
-            if all(f.get(k) == want[k] for k in keys) and f.get("received_time_ns") is not None:
+            # core-20 (G-1 of K1 stage G): the engine names a source event by its stream on intake (the sender
+            # sent stream "" into the one unnamed stream, "events"); every other field is what was sent
+            keys = [k for k in want if k not in ("seq", "received_time_ns", "stream")]
+            if all(f.get(k) == want[k] for k in keys) and f.get("received_time_ns") is not None \
+                    and f.get("stream") == ("str", repr("events")):
                 return want
         return None
 

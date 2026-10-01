@@ -168,6 +168,7 @@ def _event_key(ev) -> tuple:
     d = ev.to_dict()
     d.pop("received_time_ns", None)
     d.pop("seq", None)
+    d.pop("stream", None)  # core-20 (G-1): set by the engine on intake; the label names the event as the scene wrote it
     return tuple(sorted((k, repr(v)) for k, v in d.items()))
 
 

@@ -80,18 +80,30 @@ class FileRecord:
     rows_kept: int
 
 
-@dataclass
+@dataclass(slots=True)
 class Row:
     """One kept row: its record, its core event, where it came from, and
-    what the checks compare (time, key, identity)."""
+    what the checks compare (time, key, identity). `event` is None for a
+    declared no-trade row (spec.no_trade, G-2): the anomaly no_trade reports
+    it and its one policy drops it before events are made.
+
+    `identity` (what the duplicate check compares: every declared field as
+    normalised, every other column as written) is made when it is read, not
+    for every row (G-6 of K1 stage G, 2026-10-01: the JSON text of every
+    record was written once per row although only rows sharing a key are
+    ever compared); the class is slotted (no per-row __dict__)."""
     record: dict
-    event: Event
+    event: Optional[Event]
     file_index: int
     line: int
     time_ns: int  # t_ns, or a bar's start
     key: Optional[Any]
-    identity: tuple
+    rest: Any  # the columns beyond the declared ones, as written (_Cells.rest)
     synthetic: bool = False
+
+    @property
+    def identity(self) -> tuple:
+        return (json.dumps(self.record, sort_keys=True), self.rest)
 
 
 @dataclass
@@ -158,10 +170,16 @@ def _without(obj: Any, paths: Iterable[str]) -> Any:
 
 
 class _Cells:
-    """Uniform access to a row's cells, whatever the format."""
+    """Uniform access to a row's cells, whatever the format. `used`: the
+    spec's columns_used() as a set, made once per file by the caller (G-6:
+    it was made again for every row)."""
 
-    def __init__(self, spec: Spec, row: Any, where: str, names: Optional[tuple] = None) -> None:
+    __slots__ = ("spec", "row", "where", "names", "used")
+
+    def __init__(self, spec: Spec, row: Any, where: str, names: Optional[tuple] = None,
+                 used: Optional[frozenset] = None) -> None:
         self.spec, self.row, self.where, self.names = spec, row, where, names
+        self.used = used
 
     def get(self, col: str) -> Any:
         if self.spec.format == "jsonl":
@@ -173,7 +191,7 @@ class _Cells:
     def rest(self) -> Any:
         """What the row carries beyond the declared columns (compared by the
         duplicate check as written)."""
-        used = set(self.spec.columns_used())
+        used = self.used if self.used is not None else set(self.spec.columns_used())
         if self.spec.format == "jsonl":
             return json.dumps(_without(self.row, used), sort_keys=True)
         return tuple((k, v) for k, v in self.row.items() if k not in used)
@@ -192,7 +210,9 @@ def _side(spec: Spec, raw: Any, where: str, allowed: tuple) -> str:
     return side
 
 
-def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Event, int, Optional[Any]]:
+def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Optional[Event], int, Optional[Any]]:
+    """(record, event, row time, key). The event is None only for a row the spec's `no_trade` declares a
+    minute with no trade (G-2): such a row is reported by the checks and never reaches events."""
     tcols = spec.time.columns
     tvals = [cells.get(c) for c in tcols]
     for c, v in zip(tcols, tvals):
@@ -233,6 +253,13 @@ def _build(spec: Spec, cells: _Cells, reader, where: str) -> tuple[dict, Event, 
         if k == "bar":
             iv = spec.bar.interval_ns
             start = t if spec.bar.label == "start" else t - iv
+            nt = spec.no_trade
+            if nt is not None and all(_blank(cells.get(f[n])) for n in nt):
+                # G-2: a declared no-trade row -- reported (anomaly no_trade), never an event
+                rec = {"start_ns": start, **{n: (None if n in nt else num(n))
+                                             for n in ("open", "high", "low", "close", "volume")}}
+                key = start if spec.key in ("start", "time") else None
+                return rec, None, start, key
             vals = {n: num(n) for n in ("open", "high", "low", "close", "volume")}
             rec = {"start_ns": start, **vals}
             ev = BarEvent(received_time_ns=start + iv, start_time_ns=start, **vals)
@@ -378,6 +405,19 @@ def _in_range(spec: Spec, t: int, rng: Optional[tuple[int, int]]) -> bool:
     return lo <= t < hi
 
 
+def _not_run(spec: Spec) -> dict[str, str]:
+    """G-4: the calendar checks a bar dataset does not get, and why."""
+    if spec.kind != "bar":
+        return {}
+    if spec.bar.session is None:
+        why = (f"spec.bar.session not given (allowed for asset {spec.asset!r} only: the data layer has no "
+               f"exchange calendar for it)")
+        return {"gap": why, "off_grid": why}
+    if spec.bar.session == "24x5":
+        return {"gap": "session 24x5: the data layer has no weekly-close calendar"}
+    return {}
+
+
 class LoadResult:
     def __init__(self, root: str, datasets: list[_Dataset], files: list[FileRecord],
                  seals: SealRegistry, allowlist: AllowList) -> None:
@@ -410,6 +450,11 @@ class LoadResult:
 
     def anomalies(self, name: str) -> list[dict]:
         return [dict(a) for a in self._get(name).anomalies]
+
+    def checks_not_run(self, name: str) -> dict[str, str]:
+        """The calendar checks that did not run for this dataset, with why (G-4: an absent check is said, not
+        only left out of `checks`)."""
+        return dict(_not_run(self._get(name).spec))
 
     def checks(self, name: str) -> list[str]:
         """The checks that ran for this dataset (a check that could not run --
@@ -453,6 +498,7 @@ class LoadResult:
                              "range_ns": list(self._ds[n].range_ns) if self._ds[n].range_ns else None,
                              "rows": len(self._ds[n].rows),
                              "checks": list(self._ds[n].checks),
+                             "checks_not_run": _not_run(self._ds[n].spec),
                              "anomalies": A.count(self._ds[n].anomalies),
                              "resolution": self.resolutions.get(n)}
                          for n in self._order},
@@ -467,16 +513,25 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
     rows = _rows_csv(text, d.spec, cp.given) if d.spec.format == "csv" else _rows_jsonl(text, d.spec, cp.given)
     n_read = n_kept = 0
     out: list[Row] = []
+    used = frozenset(d.spec.columns_used())  # once per file (G-6)
+    shown = repr(cp.given)
+    tsp = d.spec.time
+    # G-6: when the seal's time column is the dataset's one time column, read as ISO in UTC, the seal reads the
+    # cell the way the dataset's reader just did (allowlist.seal_time_ns: ISO text -> TimeReader("iso", "UTC"));
+    # its time is handed over instead of read a second time
+    same_time = (ent is not None and tsp.unit == "iso" and tsp.tz == "UTC" and tsp.columns == (ent.time_column,))
+    end_label = d.spec.kind == "bar" and d.spec.bar.label == "end"
     for line, row in rows:
         n_read += 1
-        where = f"{cp.given!r} line {line}"
-        cells = _Cells(d.spec, row, where)
+        where = f"{shown} line {line}"
+        cells = _Cells(d.spec, row, where, None, used)
         rec, ev, t, key = _build(d.spec, cells, reader, where)
         if not _in_range(d.spec, t, d.range_ns):
             continue
         if ent is not None:
             try:
-                st = seal_time_ns(cells.get(ent.time_column))
+                raw_t = (t + d.spec.bar.interval_ns if end_label else t) if same_time else None
+                st = seal_time_ns(cells.get(ent.time_column), raw_t)
             except ParseError:
                 raise SealedRangeError(f"{where}: the file is sealed on column {ent.time_column!r}, "
                                        f"which the row does not have") from None
@@ -490,7 +545,7 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
         synth = False
         if d.spec.synthetic is not None:
             synth = _text_of(cells.get(d.spec.synthetic[0])) in d.spec.synthetic[1]
-        out.append(Row(rec, ev, fi, line, t, key, (json.dumps(rec, sort_keys=True), cells.rest()), synth))
+        out.append(Row(rec, ev, fi, line, t, key, cells.rest(), synth))
     return out, FileRecord(d.name, cp.given, cp.real, cp.rel_real, len(raw), sha,
                            ent.unit if ent else None, n_read, n_kept)
 

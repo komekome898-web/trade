@@ -242,7 +242,7 @@ def test_streams_feed_the_core_engine(tmp_path):
     bar = {"format": "csv", "header": True, "delimiter": ",", "kind": "bar", "symbol": "X", "asset": "crypto",
            "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"},
            "fields": {"open": "c", "high": "c", "low": "c", "close": "c", "volume": "v"},
-           "bar": {"interval_s": 60, "label": "start"}}
+           "bar": {"interval_s": 60, "label": "start", "session": "24x7"}}  # session: G-4 (2026-10-01)
     res = load(str(tmp_path), [{"name": "tr", "paths": ["backtest_data/x/t.csv"], "spec": TRADE},
                                {"name": "bars", "paths": ["backtest_data/x/b.csv"], "spec": bar}])
     with pytest.raises(DataError):

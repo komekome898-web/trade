@@ -22,7 +22,10 @@ NS = 10**9
 T0 = 1_483_228_800  # 2017-01-01T00:00:00Z
 
 
-def spec(session=None):
+GAP = {"gap": "accept"}  # the files' holes, reported since G-4 (the spec names its session)
+
+
+def spec(session="24x7"):  # G-4 (2026-10-01): a crypto bar spec names its session
     s = {"format": "csv", "header": True, "delimiter": ",", "kind": "bar", "symbol": "XBTUSD", "asset": "crypto",
          "time": {"columns": ["ts"], "unit": "iso", "tz": "UTC"},
          "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
@@ -56,12 +59,14 @@ def test_chunks_equal_load(tmp_path):
              write(tmp_path, "c.csv", [3600, 3601])]
     ds = {"name": "d", "paths": paths, "spec": spec()}
     ref = load(str(tmp_path), [ds])
-    s = stream(str(tmp_path), ds)
+    s = stream(str(tmp_path), ds, resolve=GAP)
     chunks = list(s)
     assert [c.index for c in chunks] == [0, 1, 2]
-    assert [ev_tuple(e) for c in chunks for e in c.events] == [ev_tuple(e) for e in ref.events("d")]
+    assert [ev_tuple(e) for c in chunks for e in c.events] == [ev_tuple(e) for e in ref.events("d", GAP)]
     assert [c.file for c in chunks] == ref.files() == s.files()
-    assert all(c.anomalies == () for c in chunks) and ref.anomalies("d") == []
+    # G-4: the spec names its session (24x7), so the holes are reported -- the same ones by both doors
+    got = sorted((a["kind"], a["t_ns"]) for c in chunks for a in c.anomalies)
+    assert got == sorted((a["kind"], a["t_ns"]) for a in ref.anomalies("d")) and {k for k, _ in got} == {"gap"}
     assert s._d.rows == []  # the dataset holds no row: each chunk's rows are dropped once handed out
     m = s.manifest()
     assert m["dataset"]["files_read"] == 3 and m["seal_records"] == ref.manifest()["seal_records"]
@@ -70,11 +75,11 @@ def test_chunks_equal_load(tmp_path):
 def test_fold_per_chunk_equals_fold_of_load(tmp_path):
     paths = [write(tmp_path, f"{k}.csv", [k * 3600 + s for s in (0, 1, 59, 60, 3599)], 100.0 + k) for k in range(3)]
     ds = {"name": "d", "paths": paths, "spec": spec()}
-    ev = load(str(tmp_path), [ds]).events("d")
+    ev = load(str(tmp_path), [ds]).events("d", GAP)
     whole = bars_from_bars([e.start_time_ns for e in ev], [e.open for e in ev], [e.high for e in ev],
                            [e.low for e in ev], [e.close for e in ev], [e.volume for e in ev], 60)
     parts = []
-    for c in stream(str(tmp_path), ds):
+    for c in stream(str(tmp_path), ds, resolve=GAP):
         e = c.events
         parts += bars_from_bars([x.start_time_ns for x in e], [x.open for x in e], [x.high for x in e],
                                 [x.low for x in e], [x.close for x in e], [x.volume for x in e], 60)
@@ -83,7 +88,7 @@ def test_fold_per_chunk_equals_fold_of_load(tmp_path):
 
 def test_overlapping_files_are_refused(tmp_path):
     paths = [write(tmp_path, "a.csv", [0, 1, 10]), write(tmp_path, "b.csv", [10, 11])]  # b starts AT a's last row
-    it = iter(stream(str(tmp_path), {"name": "d", "paths": paths, "spec": spec()}))
+    it = iter(stream(str(tmp_path), {"name": "d", "paths": paths, "spec": spec()}, resolve=GAP))
     next(it)
     with pytest.raises(StreamOrderError):
         next(it)

@@ -17,7 +17,7 @@ T0 = 1_483_228_800
 SPEC = {"format": "csv", "header": True, "delimiter": ",", "compression": "none", "kind": "bar", "symbol": "XBTUSD",
         "asset": "crypto", "time": {"columns": ["start_ts"], "unit": "iso", "tz": "UTC"},
         "fields": {"open": "o", "high": "h", "low": "l", "close": "c", "volume": "vol"},
-        "bar": {"interval_s": 3600, "label": "start"}, "key": "start"}
+        "bar": {"interval_s": 3600, "label": "start", "session": "24x7"}, "key": "start"}  # session: G-4 (2026-10-01)
 ROWS = [(4000, 4001, 3999, 4000.5), (4000, 4002, 3990, 4001), (4001, 4003, 4000, 4002),
         (4002, 4003, 3985, 3989), (3989, 3999, 3988, 3990), (3990, 3991, 3989, 3990.5)]
 

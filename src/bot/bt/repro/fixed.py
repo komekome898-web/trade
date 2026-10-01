@@ -194,6 +194,10 @@ class Parts:
     # the currency the prices (and so the P&L and fees) are in: the product's quote currency. None = the setup
     # does not state it; the record then says so and the dashboard shows no currency (D-4, 2026-09-27)
     currency: Optional[str] = None
+    # the setup's step from the data layer's streams (name -> events) to the streams the engine runs on, or None
+    # (the engine runs on the loaded streams). Code of the setup's module, so its sha256 is in setup.identity()
+    # (G-3 of K1 stage G, 2026-10-01: K1's join of two markets on the UTC minute and fold to the foot)
+    prepare: Optional[Any] = None
 
 
 class FixedSetup:

@@ -55,6 +55,7 @@ def test_accepted_notice_known_answer():
     got = _run(lambda o: (Ack(o.client_order_id, "v-1"),))
     assert got == [{
         "type": "ORDER_ACK", "received_time_ns": TS, "exchange_time_ns": TS, "seq": got[0]["seq"],
+        "stream": "",  # core-20 (G-1 of K1 stage G): a notice comes from no input stream
         "client_order_id": "synthetic-1", "venue_order_id": "v-1",
     }]
 

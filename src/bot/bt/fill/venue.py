@@ -36,6 +36,16 @@ size (a bar's close is known at the bar's end, which is when the venue sees
 it; no bar yet -> Canceled "no_price_yet"). K1's rule (D-1, 2026-09-27):
 「建値も決済値も『その足の終値』」.
 
+Which market data the venue takes (G-1 of K1 stage G, 2026-10-01): every
+market event carries the name of its input stream (`Event.stream`, set by the
+core). `streams` names the streams of this venue's instrument; events of any
+other stream (another market read in the same run, e.g. the signal market of
+a cross-venue strategy) do not reach the venue's state at all. With `streams`
+None the venue takes every stream, but one kind of price source -- bars
+(`last_bar_close`, bar fills), trades (`last_trade`, trade fills) or the book
+-- may come from one stream only: a second stream of the same kind is refused
+(ExecutionModelError), never allowed to overwrite the first silently.
+
 Resting orders fill by the selected tier (`spec.py`), as the maker, at their
 limit price. OCO: a fill of one cancels the other (Canceled "oco"); a cancel
 of one by the strategy cancels the other ("oco_partner_canceled").
@@ -170,12 +180,14 @@ class FillRecord:
 
 
 class SimVenue:
-    """The fill-model socket. Every argument is required (keyword-only):
+    """The fill-model socket. Every argument but `streams` is required (keyword-only):
     `faults=FaultPlan(())` for none, `l3=None` for a run without a per-order
-    feed."""
+    feed. `streams`: the names of the input streams of this venue's
+    instrument (see the module docstring); None = every stream, one stream
+    per kind of price source."""
 
     def __init__(self, *, product: Product, rules: VenueRules, fill: FillSpec, costs: CostSchedule,
-                 faults: FaultPlan, l3: Optional[L3Feed]) -> None:
+                 faults: FaultPlan, l3: Optional[L3Feed], streams: Optional[tuple[str, ...]] = None) -> None:
         for name, obj, cls in (("product", product, Product), ("rules", rules, VenueRules),
                                ("fill", fill, FillSpec), ("costs", costs, CostSchedule),
                                ("faults", faults, FaultPlan)):
@@ -185,6 +197,13 @@ class SimVenue:
             raise ExecutionModelError("SimVenue l3 must be an L3Feed or None")
         if fill.cancel_stance in ("l3_advance", "l3_mark") and l3 is None:
             raise FillSpecError(f"cancel_stance {fill.cancel_stance!r} reads a per-order feed; l3 is None")
+        if streams is not None:
+            if (type(streams) is not tuple or not streams
+                    or any(type(n) is not str or not n for n in streams) or len(set(streams)) != len(streams)):
+                raise ExecutionModelError(f"SimVenue streams must be a non-empty tuple of distinct non-empty str "
+                                          f"(or None), got {streams!r}")
+        self.streams: Optional[frozenset] = None if streams is None else frozenset(streams)
+        self.source_by_kind: dict[str, str] = {}  # "bar" / "trade" / "book" -> the one stream that feeds it
         self.product, self.rules, self.fill, self.costs, self.faults, self.l3 = product, rules, fill, costs, faults, l3
         self.tier = fill.tier
         self.book = ExternalBook()
@@ -272,8 +291,28 @@ class SimVenue:
             self._oco_done.setdefault(partner, "oco_partner_filled" if reason == "oco" else reason)
 
     # --------------------------------------------------------------- sockets
+    def _takes(self, event: Event) -> bool:
+        """Whether this market event is the venue's own (G-1): of a declared
+        stream, and of the one stream that feeds its kind of price source."""
+        name = event.stream
+        if self.streams is not None and name not in self.streams:
+            return False
+        et = type(event)
+        kind = ("bar" if et is BarEvent else "trade" if et is TradeEvent
+                else "book" if et in (BookSnapshotEvent, BookDeltaEvent) else None)
+        if kind is not None:
+            first = self.source_by_kind.setdefault(kind, name)
+            if first != name:
+                raise ExecutionModelError(
+                    f"{kind} events from two streams ({first!r}, then {name!r}) reach the venue of "
+                    f"{self.product.symbol}: which one prices its orders is not declared; name the venue's "
+                    f"stream(s) with SimVenue(streams=...)")
+        return True
+
     def on_market_event(self, event: Event, venue_time_ns: int) -> Sequence[VenueReport]:
         t = int(venue_time_ns)
+        if not self._takes(event):
+            return []  # another instrument's stream: not this venue's market
         self._advance(t)
         out: list = []
         if type(event) is BookSnapshotEvent:

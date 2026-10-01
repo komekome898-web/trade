@@ -45,7 +45,7 @@ from ..report import exports as X
 from ..report import metrics as M
 from ..report.trades import round_trips
 from .code_state import REPO, code_state, version
-from .errors import NotReproducibleError, ReproError
+from .errors import NotReproducibleError, ReproError, RunSealedRangeError
 
 DEFAULT_RUNS_DIR = os.path.join(REPO, "backtest_runs")  # gitignored by the .gitignore run() writes into it
 MARKOUT_HORIZONS_S = (60, 300)
@@ -67,10 +67,30 @@ def _sha(b: bytes) -> str:
 class DataInput:
     """One data file of a run: its path (relative to the run's root) and its
     declaration for the data layer (bot.bt.data.spec); `resolve` = the
-    anomaly policies (bot.bt.data.anomalies) if the file has anomalies."""
+    anomaly policies (bot.bt.data.anomalies) if the file has anomalies;
+    `range_ns` = [lo, hi) of the rows the run reads (the data layer's
+    range_ns: a bar is kept when its whole interval lies inside).
+
+    G-3 of K1 stage G (2026-10-01): with a range, a file the seal records
+    list is an input like any other, as long as the range ends at or before
+    the seal's cutoff -- the data layer reads it by its range, and the range
+    is part of the run's identity and record. A sealed file without a range,
+    or with a range that ends after the cutoff, is refused when the run is
+    planned (RunSealedRangeError, a ReproError and a SealedRangeError),
+    before the file is opened."""
     path: str
     spec: Mapping
     resolve: Optional[Mapping[str, str]] = None
+    range_ns: Optional[tuple] = None
+
+    def checked_range(self) -> Optional[tuple[int, int]]:
+        r = self.range_ns
+        if r is None:
+            return None
+        if (not isinstance(r, (list, tuple)) or len(r) != 2 or any(type(x) is not int for x in r)
+                or r[0] >= r[1]):
+            raise ReproError(f"data {self.path!r}: range_ns must be [lo, hi] ints (ns) with lo < hi, got {r!r}")
+        return (r[0], r[1])
 
 
 @dataclass
@@ -137,17 +157,17 @@ def plan_run(*, root: str, data: Sequence[DataInput], config: Any, seed: int, se
         raise ReproError(f"seal records: {exc}") from None
     for d in ds:
         full = os.path.join(root, d.path)
-        try:
-            raw, _ = seals.read_checked(os.path.realpath(full), d.path, None)  # the run loads without a range
+        rng = d.checked_range()
+        try:  # G-3: the input's own range meets the seals here, as the data layer will read it
+            raw, _ = seals.read_checked(os.path.realpath(full), d.path, rng)
             hashes[d.path] = _sha(raw)
         except SealedRangeError as exc:
-            raise ReproError(f"data {d.path!r}: {type(exc).__name__}: {exc}") from None
+            raise RunSealedRangeError(f"data {d.path!r}: {type(exc).__name__}: {exc}") from None
         except OSError as exc:
             raise ReproError(f"data {d.path!r} cannot be read: {exc}") from None
     code = code_state(repo)
     identity = {
-        "config": cfg, "data": [{"path": d.path, "spec": json.loads(canonical(d.spec)),
-                                 "resolve": json.loads(canonical(d.resolve)) if d.resolve else None} for d in ds],
+        "config": cfg, "data": [_data_identity(d) for d in ds],
         "data_sha256": hashes, "seed": seed, "setup": setup.identity(), "git_sha": code["git_sha"],
         "diff_hash": code["diff_hash"], "code_scope": code["code_scope"], "version": version(),
         "purpose": p, "prereg_sha256": prereg_sha,
@@ -156,9 +176,26 @@ def plan_run(*, root: str, data: Sequence[DataInput], config: Any, seed: int, se
     return RunPlan(_sha(canonical(identity).encode()), identity, root, ds, config, seed, setup, p, prereg)
 
 
+def _data_identity(d: DataInput) -> dict:
+    """What a data input contributes to the identity (and so to record.json). The range appears only when one is
+    given, so the identity of a run without ranges is what it was before G-3."""
+    out = {"path": d.path, "spec": json.loads(canonical(d.spec)),
+           "resolve": json.loads(canonical(d.resolve)) if d.resolve else None}
+    rng = d.checked_range()
+    if rng is not None:
+        out["range_ns"] = list(rng)
+    return out
+
+
 def _execute(plan: RunPlan, out_dir: str) -> None:
     """One execution of the plan, writing every output file into out_dir."""
-    datasets = [{"name": f"d{i}", "paths": [d.path], "spec": dict(d.spec)} for i, d in enumerate(plan.data)]
+    datasets = []
+    for i, d in enumerate(plan.data):
+        ds = {"name": f"d{i}", "paths": [d.path], "spec": dict(d.spec)}
+        rng = d.checked_range()
+        if rng is not None:
+            ds["range_ns"] = list(rng)
+        datasets.append(ds)
     try:
         loaded = load(plan.root, datasets)
         streams = loaded.streams({f"d{i}": dict(d.resolve) for i, d in enumerate(plan.data) if d.resolve})
@@ -168,6 +205,10 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
     if got != plan.identity["data_sha256"]:
         raise ReproError(f"data changed between planning and execution: {got} vs {plan.identity['data_sha256']}")
     parts = plan.setup.build(plan.config, plan.seed)
+    if parts.prepare is not None:  # the setup's own step from the loaded streams to the engine's (its code is in
+        streams = parts.prepare(streams)  # setup.identity): e.g. a join and a fold the strategy's rules state
+        if not isinstance(streams, dict) or not streams:
+            raise ReproError("the setup's prepare must return a non-empty dict of stream name -> events")
     ccy = parts.currency
     if ccy is not None and (type(ccy) is not str or not ccy.strip()):
         raise ReproError(f"the setup's currency must be a non-empty str or None (not stated), got {ccy!r}")

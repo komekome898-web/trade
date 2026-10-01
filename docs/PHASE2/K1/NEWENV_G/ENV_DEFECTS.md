@@ -17,3 +17,16 @@
 - 段 C(参考列 (iii))・段 D(参考列 (i))の実行では新しい欠陥は出ていない(`driver.log` の 8 升すべて `identical: true`)。
 - sameclose の変種(`sameclose|2018_2019_offgriddrop|{5,15}`)を足して回した。これも新しい欠陥は出ていない。
 - G-1〜G-6 はすべて **直していない**(委任文 §2-4)。
+
+## 直した(2026-10-01、委任文 `docs/DATA/delegations/20261001_k1_stage_g_close.md` 作業者 B)
+
+オーナー逐語(L-499a)「**わかってる欠陥があるのなら直せ**」。直し方・試験・変異の確かめは `FIXES.md`。上の表の「回避」の列は直す前の段階 G の記録としてそのまま残した。
+
+| # | いまの状態 | どこを直したか(詳しくは FIXES.md) |
+|---|---|---|
+| G-1 | 直した | 核: `Event.stream`(核が取り込みのときに流れの名前を付ける。`CORE_VERSION` core-20)/ 約定の口: `SimVenue(streams=...)`、名指しが無いときは同じ種類の価格の出どころが 2 本なら止まる / 戦略: `k1_xvenue.py` は名前で見分け、窓の 2 本がそろったときに行動(INTENT_MAP X-9 = ○) |
+| G-2 | 直した | spec の宣言 `no_trade` + 異常の種類 `no_trade`(方針 drop だけ)。`k1_newenv_g_fold.py` の `filter_bitflyer`(写し)を消した |
+| G-3 | 直した | `DataInput.range_ns`: 封印の台帳に載ったファイルを境より前の範囲で入力にでき、範囲は run_id と record.json に入る。境を越える範囲・範囲無しは開く前に `RunSealedRangeError` |
+| G-4 | 直した | 暗号資産・FX の足の spec は `session` を省けない(`SpecError`)。JPX の省略は許し、走らなかった検査と理由を `checks_not_run` に出す |
+| G-5 | 直していない(委任文 §1「環境の欠陥ではないので直さない」) | — |
+| G-6 | 一部直した | 行ごとに作り直していた 3 つ(封印の時刻の読み手・使う列の集合・identity の JSON)を 1 回 / 読まれたときに。Binance 2018 の `load` 45.8〜53.6 s → 39.6〜39.75 s。残り(核の事象の検査・ISO 時刻の 2 回の読み)は FIXES.md「やっていないこと」 |

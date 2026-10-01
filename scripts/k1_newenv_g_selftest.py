@@ -99,14 +99,18 @@ def ev(t0, i, foot, x):
                     open=o, high=h, low=l, close=c, volume=1.0, start_time_ns=t0 + i * foot * NS)
 
 
-def run_engine(mode, s, b, keep, sb, pb, t0, foot):
+def run_engine(mode, s, b, keep, sb, pb, t0, foot, names=("d0", "d1")):
+    """names = (シグナルの流れの名前, 価格の流れの名前)。G-1 の直しの後は、名前の順(核の合流で同じ時刻のどちらが
+    先に届くか)によらず同じ往復になるはず: ("d0", "d1") はシグナルが先、("z", "a") は価格が先に届く。"""
+    sn, pn = names
     cfg = {"instrument": "BTCUSDT" if mode == "single" else "FX_BTC_JPY", "foot_min": 1, "gate": {"s": s, "b": b},
            "strength": keep, "mode": mode, "fill": "last_bar_close",
-           "costs": {"maker_fee_rate": 0, "taker_fee_rate": 0, "source": "test"}}
+           "costs": {"maker_fee_rate": 0, "taker_fee_rate": 0, "source": "test"},
+           "streams": {"signal": [sn], "price": [sn if mode == "single" else pn]}, "prepare": "none"}
     parts = K1XSetup().build(cfg, 0)
-    streams = {"d0": [ev(t0, i, foot, x) for i, x in enumerate(sb)]}
+    streams = {sn: [ev(t0, i, foot, x) for i, x in enumerate(sb)]}
     if mode != "single":
-        streams["d1"] = [ev(t0, i, foot, x) for i, x in enumerate(pb)]
+        streams[pn] = [ev(t0, i, foot, x) for i, x in enumerate(pb)]
     eng = CoreEngine(parts.strategy, streams, parts.fill_model, parts.latency_model, parts.cost_model, parts.account)
     res = eng.run()
     sides = {o.client_order_id: o.request.side for o in res.orders.values()}
@@ -134,14 +138,15 @@ def main():
                 for mode in ("design", "sameclose", "single"):
                     px = [x[3] for x in (sb if mode == "single" else pb)]
                     want = ref_trades(sb, px, times, s, b, keep, delay=(mode != "sameclose"))
-                    got = run_engine(mode, s, b, keep, sb, pb, t0, foot)
-                    n_cases += 1
-                    n_trades += len(want)
-                    if got != want:
-                        fails += 1
-                        if fails <= 3:
-                            print("MISMATCH", trial, s, b, keep, mode, len(got), len(want),
-                                  next((x for x in zip(got, want) if x[0] != x[1]), None))
+                    for names in (("d0", "d1"), ("z", "a")):
+                        got = run_engine(mode, s, b, keep, sb, pb, t0, foot, names)
+                        n_cases += 1
+                        n_trades += len(want)
+                        if got != want:
+                            fails += 1
+                            if fails <= 3:
+                                print("MISMATCH", trial, s, b, keep, mode, names, len(got), len(want),
+                                      next((x for x in zip(got, want) if x[0] != x[1]), None))
     print(f"cases {n_cases} trades compared {n_trades} mismatched cases {fails}")
     sys.exit(1 if fails else 0)
 

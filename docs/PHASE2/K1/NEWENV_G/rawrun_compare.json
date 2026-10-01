@@ -1,0 +1,362 @@
+{
+ "design|2018_2021|15|s19/b24|weak": {
+  "data_quality": {
+   "d0": {
+    "anomalies": {
+     "gap": 5177,
+     "off_grid": 1201,
+     "synthetic": 20
+    },
+    "resolution": {
+     "gap": "accept",
+     "off_grid": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 521624
+   },
+   "d1": {
+    "anomalies": {
+     "gap": 1764,
+     "synthetic": 76
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 523836
+   },
+   "d2": {
+    "anomalies": {
+     "gap": 1252,
+     "synthetic": 50
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 525788
+   },
+   "d3": {
+    "anomalies": {
+     "gap": 993,
+     "synthetic": 89
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 524607
+   },
+   "d4": {
+    "anomalies": {
+     "no_trade": 4293
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   },
+   "d5": {
+    "anomalies": {
+     "no_trade": 5708
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   },
+   "d6": {
+    "anomalies": {
+     "gap": 372,
+     "no_trade": 6701
+    },
+    "resolution": {
+     "gap": "accept",
+     "no_trade": "drop"
+    },
+    "rows": 526668
+   },
+   "d7": {
+    "anomalies": {
+     "no_trade": 6970
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   }
+  },
+  "identical": true,
+  "max_rss_mb": 7363.4,
+  "mean_bp_diff": 0.0,
+  "mean_bp_equal": true,
+  "n_equal": true,
+  "new": {
+   "mean_bp": 2.538203629061192,
+   "n": 10666
+  },
+  "opened": [
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "backtest_data/phase2_sealed/P2-01/SEALED.json",
+   "backtest_data/phase2_sealed/P2-02/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03b/SEALED.json",
+   "backtest_data/phase2_sealed/P2-04/SEALED.json",
+   "backtest_data/phase2_sealed/P2-07/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08b/SEALED.json"
+  ],
+  "record_data_ranges": [
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+    "range_ns": [
+     1514764800000000000,
+     1546300800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+    "range_ns": [
+     1546300800000000000,
+     1577836800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+    "range_ns": [
+     1577836800000000000,
+     1609459200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+    "range_ns": [
+     1609459200000000000,
+     1640995200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+    "range_ns": [
+     1514764800000000000,
+     1546300800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+    "range_ns": [
+     1546300800000000000,
+     1577836800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+    "range_ns": [
+     1577836800000000000,
+     1609459200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+    "range_ns": [
+     1609459200000000000,
+     1640995200000000000
+    ]
+   }
+  ],
+  "run_id": "06a79687344a5b89a7985c38726c9747aba31efc753a3210e20c8d9fc04029ac",
+  "stage_g": {
+   "mean_bp": 2.538203629061192,
+   "n": 10666,
+   "run_id": "8b26c859af04512193280bd08bad8596926a72aa573ced994a8502f5dac2e30d"
+  },
+  "wall_s": 848.8
+ },
+ "design|2018_2021|5|s19/b24|weak": {
+  "data_quality": {
+   "d0": {
+    "anomalies": {
+     "gap": 5177,
+     "off_grid": 1201,
+     "synthetic": 20
+    },
+    "resolution": {
+     "gap": "accept",
+     "off_grid": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 521624
+   },
+   "d1": {
+    "anomalies": {
+     "gap": 1764,
+     "synthetic": 76
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 523836
+   },
+   "d2": {
+    "anomalies": {
+     "gap": 1252,
+     "synthetic": 50
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 525788
+   },
+   "d3": {
+    "anomalies": {
+     "gap": 993,
+     "synthetic": 89
+    },
+    "resolution": {
+     "gap": "accept",
+     "synthetic": "drop"
+    },
+    "rows": 524607
+   },
+   "d4": {
+    "anomalies": {
+     "no_trade": 4293
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   },
+   "d5": {
+    "anomalies": {
+     "no_trade": 5708
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   },
+   "d6": {
+    "anomalies": {
+     "gap": 372,
+     "no_trade": 6701
+    },
+    "resolution": {
+     "gap": "accept",
+     "no_trade": "drop"
+    },
+    "rows": 526668
+   },
+   "d7": {
+    "anomalies": {
+     "no_trade": 6970
+    },
+    "resolution": {
+     "no_trade": "drop"
+    },
+    "rows": 525600
+   }
+  },
+  "identical": true,
+  "max_rss_mb": 7360.9,
+  "mean_bp_diff": 0.0,
+  "mean_bp_equal": true,
+  "n_equal": true,
+  "new": {
+   "mean_bp": 3.4532744966127042,
+   "n": 12999
+  },
+  "opened": [
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+   "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "backtest_data/phase2_sealed/P2-01/SEALED.json",
+   "backtest_data/phase2_sealed/P2-02/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03/SEALED.json",
+   "backtest_data/phase2_sealed/P2-03b/SEALED.json",
+   "backtest_data/phase2_sealed/P2-04/SEALED.json",
+   "backtest_data/phase2_sealed/P2-07/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08/SEALED.json",
+   "backtest_data/phase2_sealed/P2-08b/SEALED.json"
+  ],
+  "record_data_ranges": [
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+    "range_ns": [
+     1514764800000000000,
+     1546300800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+    "range_ns": [
+     1546300800000000000,
+     1577836800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+    "range_ns": [
+     1577836800000000000,
+     1609459200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+    "range_ns": [
+     1609459200000000000,
+     1640995200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+    "range_ns": [
+     1514764800000000000,
+     1546300800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+    "range_ns": [
+     1546300800000000000,
+     1577836800000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+    "range_ns": [
+     1577836800000000000,
+     1609459200000000000
+    ]
+   },
+   {
+    "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+    "range_ns": [
+     1609459200000000000,
+     1640995200000000000
+    ]
+   }
+  ],
+  "run_id": "eb130c76b2fa38bd0859028344dcdec87684d888bbd71787ded855f0efb74079",
+  "stage_g": {
+   "mean_bp": 3.4532744966127042,
+   "n": 12999,
+   "run_id": "5b75e7e1da7fd60e99ab4f99923a0690ed9ecb1c069600804748a600f4c7d870"
+  },
+  "wall_s": 798.3
+ }
+}

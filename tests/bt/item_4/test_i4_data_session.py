@@ -2,7 +2,8 @@
 the integrated run (item 4): accepted by the declaration; the off_grid check
 runs; the gap check does not (the layer has no weekly-close calendar), so it
 is not listed in the dataset's checks. The grid: session {24x7, 24x5, none}
-x rows {on the grid, one off the grid, one missing start} (9 cells)."""
+x rows {on the grid, one off the grid, one missing start} (9 cells). Since G-4 of K1 stage G (2026-10-01) "none"
+is refused for asset fx (the omitted key no longer turns the checks off silently)."""
 from __future__ import annotations
 
 import os
@@ -40,12 +41,17 @@ EXPECT = {
     ("24x7", "gap"): (True, True, ["gap"]),
     ("24x5", "clean"): (False, True, []), ("24x5", "off_grid"): (False, True, ["off_grid"]),
     ("24x5", "gap"): (False, True, []),
-    (None, "clean"): (False, False, []), (None, "off_grid"): (False, False, []), (None, "gap"): (False, False, []),
+    # G-4 of K1 stage G (2026-10-01): an FX bar spec without a session is refused (before: no check ran, silently)
+    (None, "clean"): "refused", (None, "off_grid"): "refused", (None, "gap"): "refused",
 }
 
 
 @pytest.mark.parametrize("session,rows", list(EXPECT))
 def test_session_checks(session, rows):
+    if EXPECT[(session, rows)] == "refused":
+        with pytest.raises(SpecError, match="session is required for asset 'fx'"):
+            _load(session, ROWS[rows])
+        return
     checks, kinds = _load(session, ROWS[rows])
     gap_runs, off_runs, want = EXPECT[(session, rows)]
     assert ("gap" in checks) == gap_runs and ("off_grid" in checks) == off_runs

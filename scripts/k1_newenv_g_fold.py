@@ -5,8 +5,10 @@
 規則(docs/PHASE2/K1/XVENUE_PREREG.md §2「揃え方」、RESULT.md 1.2):
   - シグナル側 = Binance BTCUSDT 現物 1 分足。n_trades == 0 の行は約定の無い分として落とす
     (データ層の synthetic 印 + drop の方針)。
-  - 価格側 = bitFlyer FX_BTC_JPY 1 分足。open が空の行(約定 0 の分)は落とす。データ層は空の欄を
-    読めない(ENV_DEFECTS.md G-2)ので、この行だけを落とした写しを自前で作り、写しをデータ層で読む。
+  - 価格側 = bitFlyer FX_BTC_JPY 1 分足。OHLC が空の行(約定 0 の分)は落とす。G-2 の直し(2026-10-01)の後は
+    データ層の宣言 no_trade(open / high / low / close が全部空)+ 方針 drop で読む(写しは作らない。
+    落とした行数は FOLD_MANIFEST.json の inputs[].anomalies.no_trade)。直す前は写しを自前で作っていた
+    (filter_bitflyer、ENV_DEFECTS.md G-2 の回避。消した)。
   - 両取引所の分足を「UTC の分」で内部結合する。分の境界に乗っていない行(Binance に実在)は、
     bars_from_bars(60 秒)で分の頭に切り下げてから結合する(規則の文「UTC の分」による。当時の
     コードの結合の仕方とは違いうる。DIFF.md で扱う)。
@@ -26,7 +28,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 import gzip
 import hashlib
 import io
@@ -67,19 +68,21 @@ def iso(t_ns: int) -> str:
     return datetime.fromtimestamp(t_ns // NS, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def spec(symbol: str, tcol: str, fields: dict, synthetic=None) -> dict:
+def spec(symbol: str, tcol: str, fields: dict, synthetic=None, no_trade=None) -> dict:
     s = {"format": "csv", "header": True, "delimiter": ",", "compression": "gzip", "kind": "bar",
          "symbol": symbol, "asset": "crypto", "time": {"columns": [tcol], "unit": "iso", "tz": "UTC"},
          "fields": fields, "bar": {"interval_s": 60, "label": "start", "session": "24x7"}, "key": "start"}
     if synthetic:
         s["synthetic"] = synthetic
+    if no_trade:
+        s["no_trade"] = {"fields": list(no_trade)}
     return s
 
 
 BIN_SPEC = spec("BTCUSDT", "open_time", {"open": "open", "high": "high", "low": "low", "close": "close",
                                          "volume": "volume"}, {"column": "n_trades", "values": ["0"]})
 BF_SPEC = spec("FX_BTC_JPY", "ts", {"open": "open", "high": "high", "low": "low", "close": "close",
-                                    "volume": "volume"})
+                                    "volume": "volume"}, no_trade=("open", "high", "low", "close"))
 
 
 def sha_file(path: str) -> str:
@@ -95,7 +98,7 @@ def read_layer(rel: str, sp: dict, lo: int, hi: int) -> tuple[dict, dict]:
     r = load(REPO, [{"name": "d", "paths": [rel], "spec": sp, "range_ns": [lo, hi]}])
     an = r.anomalies("d")
     kinds = sorted({a["kind"] for a in an})
-    pol = {"synthetic": "drop", "gap": "accept", "off_grid": OFF_GRID["policy"]}
+    pol = {"synthetic": "drop", "no_trade": "drop", "gap": "accept", "off_grid": OFF_GRID["policy"]}
     unknown = [k for k in kinds if k not in pol]
     if unknown:
         raise SystemExit(f"{rel}: anomalies {unknown} have no policy in this delegation")
@@ -122,38 +125,6 @@ def read_layer(rel: str, sp: dict, lo: int, hi: int) -> tuple[dict, dict]:
             "last_ts_after_policy": iso(max(cols["t"])) if cols["t"] else None,
             "off_minute_rows": sum(1 for t in cols["t"] if t % (60 * NS) != 0)}
     return cols, info
-
-
-def filter_bitflyer(year: int, tmp_dir: str) -> tuple[str, dict]:
-    """bitFlyer の 1 年のファイルから、open が空の行と CUT 以降の行を落とした写しを作る(G-2 の回避)。
-    写しは CUT より前の行だけを持つ。元のファイルは open() を 1 回だけ(gzip で読む)。"""
-    src = f"{BF_DIR}/candles_1m_{year}.csv.gz"
-    dst_rel = f"{OUT_DIR}/tmp_bitflyer_{year}.csv.gz"
-    n_read = n_blank = n_after = 0
-    first = last = None
-    with gzip.open(os.path.join(REPO, src), "rt", newline="") as fi, \
-            gzip.open(os.path.join(REPO, dst_rel), "wt", newline="", compresslevel=1) as fo:
-        rd = csv.reader(fi)
-        wr = csv.writer(fo, lineterminator="\n")
-        header = next(rd)
-        if header[:6] != ["ts", "open", "high", "low", "close", "volume"]:
-            raise SystemExit(f"{src}: header {header}")
-        wr.writerow(header[:6])
-        for row in rd:
-            n_read += 1
-            t = int(datetime.fromisoformat(row[0]).timestamp()) * NS
-            if t + 60 * NS > CUT:
-                n_after += 1
-                continue
-            if row[1] == "":
-                n_blank += 1
-                continue
-            wr.writerow(row[:6])
-            first = row[0] if first is None else first
-            last = row[0]
-    return dst_rel, {"source": src, "source_sha256": sha_file(os.path.join(REPO, src)), "rows_read": n_read,
-                     "dropped_blank_open": n_blank, "dropped_at_or_after_cut": n_after,
-                     "copy_first_ts": first, "copy_last_ts": last}
 
 
 def to_minutes(cols: dict) -> dict:
@@ -191,7 +162,7 @@ def main() -> None:
     t0 = time.time()
     os.makedirs(os.path.join(REPO, OUT_DIR), exist_ok=True)
     man = {"cut": iso(CUT), "cut_source": "backtest_data/phase2_sealed/P2-08/SEALED.json seal_from_ts",
-           "inputs": [], "bitflyer_copies": [], "outputs": [], "alignment": {}, "self_check": {}}
+           "inputs": [], "outputs": [], "alignment": {}, "self_check": {}}
     sig = {k: [] for k in ("t", "o", "h", "l", "c", "v")}
     pri = {k: [] for k in ("t", "o", "h", "l", "c", "v")}
     cached = a.cache and os.path.isfile(a.cache)
@@ -207,11 +178,8 @@ def main() -> None:
         man["inputs"].append(info)
         for k in sig:
             sig[k].extend(cols[k])
-        cp, cinfo = filter_bitflyer(y, OUT_DIR)
-        cols, info = read_layer(cp, BF_SPEC, lo, hi)
-        info["copy_of"] = cinfo
+        cols, info = read_layer(f"{BF_DIR}/candles_1m_{y}.csv.gz", BF_SPEC, lo, hi)  # G-2: 写しを作らない
         man["inputs"].append(info)
-        os.remove(os.path.join(REPO, cp))  # 中間物は消す
         for k in pri:
             pri[k].extend(cols[k])
         print(f"[{time.time() - t0:6.0f}s] {y} read", flush=True)

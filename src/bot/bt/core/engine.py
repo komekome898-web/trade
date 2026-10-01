@@ -88,7 +88,9 @@ files). Streams are merged by time (ordering.py: exchange time, then
 stream name in `sorted()` order, then position inside the stream), so the
 events are processed in time order whatever order the streams, or the
 types, were handed over in; inside a stream, the stream's own order is
-kept whatever the types. Each stream is consumed lazily: the engine
+kept whatever the types. Every source event carries the name of its stream
+(`Event.stream`, set here on intake; G-1 of K1 stage G), so a strategy or a
+fill model reading two markets tells them apart by name. Each stream is consumed lazily: the engine
 holds at most one not-yet-processed event per stream and pulls the next
 one only when the queue has nothing earlier to process, so a stream can be
 a generator over a file larger than memory. Nothing the strategy is handed
@@ -694,6 +696,14 @@ class _SourceMerger:
             event = _rebuilt(event)
         except Unsettled as exc:
             raise EventValidationError(f"stream {name!r} yielded a {etype.value} event holding {exc}") from None
+        # the stream's name goes with the event (G-1, K1 stage G): the strategy and the
+        # venue tell the streams apart by name, never by the merge order of one instant
+        given = event.stream
+        if given and given != name:
+            raise EventValidationError(
+                f"stream {name!r} event #{self.counts[rank] + 1} ({etype.value}) names the stream {given!r}; "
+                f"the engine names a source event by the stream it came from (leave stream empty)")
+        object.__setattr__(event, "stream", name)
         exch = int(event.exchange_time_ns)
         if self._span is not None:
             _check_in_span(event, exch, self._span, name, self.counts[rank] + 1)
