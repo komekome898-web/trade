@@ -79,7 +79,7 @@ def test_reencoded_market_rows_declared_synthetic_do_not_admit_a_price_rule(mark
         ds = [{"name": name, "paths": [os.path.relpath(dst, tmp)], "spec": spec, "origin": "synthetic"}]
         # the origin rule is checked at planning (the worker's own grid plans only, its docstring); a later refusal
         # for another reason (a data anomaly without a named resolution) would not be this rule
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="origin"):
             plan_pipeline(root=tmp, datasets=ds, instruments=[{"name": name, "price": name, "with": []}],
                           strategy=PRICE_RULE, fill=G.FILL, costs=G.ZERO, purpose="動作確認")
     finally:
