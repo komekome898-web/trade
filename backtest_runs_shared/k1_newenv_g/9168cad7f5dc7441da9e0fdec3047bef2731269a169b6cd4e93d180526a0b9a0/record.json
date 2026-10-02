@@ -1,0 +1,129 @@
+{
+ "code_scope": [
+  "src",
+  "scripts",
+  "config",
+  "pyproject.toml"
+ ],
+ "components": {
+  "defaults_used": [],
+  "models": {
+   "account": "bot.bt.core.interfaces.NullAccount",
+   "cost_model": "bot.bt.repro.fixed.DeclaredFeeCost",
+   "fill_model": "bot.bt.fill.venue.SimVenue",
+   "latency_model": "bot.bt.core.interfaces.ZeroLatency"
+  },
+  "notes": {
+   "fill": "SimVenue market_ref last_bar_close: 直前に受けた足の終値(design/sameclose では 同じ窓の 2 本目 = bitFlyer の足)",
+   "mode": "design",
+   "seed": "unused",
+   "streams": "design/sameclose: d0 = 海外の足, d1 = bitFlyer の足(同じ窓)"
+  }
+ },
+ "config": {
+  "costs": {
+   "maker_fee_rate": 0,
+   "source": "K1 RESULT.md 1.4「経費は引いていない」: 費用 0",
+   "taker_fee_rate": 0
+  },
+  "fill": "last_bar_close",
+  "foot_min": 5,
+  "gate": {
+   "b": "-",
+   "s": "19"
+  },
+  "instrument": "FX_BTC_JPY",
+  "mode": "design",
+  "strength": "weak"
+ },
+ "currency": "JPY",
+ "data": [
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/binance_5m_2022_20231217.csv.gz",
+   "resolve": null,
+   "spec": {
+    "asset": "crypto",
+    "bar": {
+     "interval_s": 300,
+     "label": "start"
+    },
+    "compression": "gzip",
+    "delimiter": ",",
+    "fields": {
+     "close": "c",
+     "high": "h",
+     "low": "l",
+     "open": "o",
+     "volume": "vol"
+    },
+    "format": "csv",
+    "header": true,
+    "key": "start",
+    "kind": "bar",
+    "symbol": "BTCUSDT",
+    "time": {
+     "columns": [
+      "start_ts"
+     ],
+     "tz": "UTC",
+     "unit": "iso"
+    }
+   }
+  },
+  {
+   "path": "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2022_20231217.csv.gz",
+   "resolve": null,
+   "spec": {
+    "asset": "crypto",
+    "bar": {
+     "interval_s": 300,
+     "label": "start"
+    },
+    "compression": "gzip",
+    "delimiter": ",",
+    "fields": {
+     "close": "c",
+     "high": "h",
+     "low": "l",
+     "open": "o",
+     "volume": "vol"
+    },
+    "format": "csv",
+    "header": true,
+    "key": "start",
+    "kind": "bar",
+    "symbol": "FX_BTC_JPY",
+    "time": {
+     "columns": [
+      "start_ts"
+     ],
+     "tz": "UTC",
+     "unit": "iso"
+    }
+   }
+  }
+ ],
+ "data_sha256": {
+  "backtest_data/k1_newenv_g_20261001/binance_5m_2022_20231217.csv.gz": "cf0ac706c3a9b314b6e2694742a0376e3b7b88c3cb45fc9c1c5eb9bf64a1785c",
+  "backtest_data/k1_newenv_g_20261001/bitflyer_5m_2022_20231217.csv.gz": "947cd5d0b9e63b12314a3c295020803cd1030cbaacb23660bf03e447f7e2ccb0"
+ },
+ "diff_hash": "bad13e33b76a957d86a384e2922bac57e1d7afb20dc018372a59f3561c2b2b43",
+ "engine": {
+  "delivery_digest": "49cee5d9cdba6b01233723146b5f553df62aa4bc39ddfd910226e0551b81aae4",
+  "events_processed": 416410,
+  "first_time_ns": 1640995500000000000,
+  "last_time_ns": 1702857600000000000,
+  "source_events": 408916
+ },
+ "git_sha": "cb496cefd72c6132540ba655a66cd28cb2374d13",
+ "prereg": "docs/PHASE2/K1/XVENUE_PREREG.md",
+ "prereg_sha256": "ad1f0b3e15252ebdbc579f96fbd0ab4ef4fb4e1a1e433729586a7d81c82e3217",
+ "purpose": "研究",
+ "run_id": "9168cad7f5dc7441da9e0fdec3047bef2731269a169b6cd4e93d180526a0b9a0",
+ "seed": 0,
+ "setup": {
+  "name": "bot.strategy.k1_xvenue:K1XSetup",
+  "source_sha256": "7dbacd8db1b49126b11b0bc401a7da07947a83204a48d3381c3a4a74970d7aad"
+ },
+ "version": "bt-item3-r1; core core-19; python 3.11.15; numpy 2.4.6; pandas 3.0.6"
+}

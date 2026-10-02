@@ -1,0 +1,111 @@
+{
+ "rule": {
+  "boundary": "2023-12-18T00:00:00Z",
+  "boundary_ns": 1702857600000000000,
+  "boundary_units": [
+   "P2-08",
+   "P2-08b"
+  ],
+  "units": {
+   "P2-01": "日本株",
+   "P2-02": "日本株",
+   "P2-03": "日本株",
+   "P2-03b": "日本株",
+   "P2-04": "日本株",
+   "P2-07": "日本株",
+   "P2-08": "暗号資産・FX",
+   "P2-08b": "暗号資産・FX"
+  }
+ },
+ "runs": [
+  {
+   "at_boundary": false,
+   "end": "2022-01-01T00:00:00Z",
+   "files": {
+    "data_quality.json.gz": {
+     "bytes": 280651,
+     "sha256": "9adc11854b5e51312dc4f7cf8db5ccc51a4b21f4fa3d432b91e64e7f37de098c"
+    },
+    "metrics.json.gz": {
+     "bytes": 229720,
+     "sha256": "2ce1ef12a6e1e824c0fb6bace7b3a6eb84e234244a290382bd0f39888d7e053c"
+    },
+    "record.json": {
+     "bytes": 10410,
+     "sha256": "7f5f8296ca4f451793bcf9cf3680f56e4ac73d8c6ea4940aa12afa8dac658f25"
+    },
+    "repro.json": {
+     "bytes": 567,
+     "sha256": "6cca676bdcf73cd689bfec7004ef36070b25478bbe66760901cf1f953d60b69b"
+    },
+    "trades.json.gz": {
+     "bytes": 342360,
+     "sha256": "3afc7869688f4d5500656b2fd53d34fa8065bfcf884edf9b89c8fdf13a7e8f21"
+    }
+   },
+   "run_id": "06a79687344a5b89a7985c38726c9747aba31efc753a3210e20c8d9fc04029ac",
+   "shared": true,
+   "start": "2018-01-01T00:00:00Z"
+  },
+  {
+   "at_boundary": false,
+   "end": "2022-01-01T00:00:00Z",
+   "files": {
+    "data_quality.json.gz": {
+     "bytes": 280651,
+     "sha256": "ed2487065b987768a0aca1f345c40800f7885e941ff39aad30260aab5a839e39"
+    },
+    "metrics.json.gz": {
+     "bytes": 229720,
+     "sha256": "1d2042f2c8450a9446f242f4e1b642244f8c1533ba46e988e0a50848b00e655e"
+    },
+    "record.json": {
+     "bytes": 10410,
+     "sha256": "f32346bd5024df0c36dd17e66837ec87962428b3cbce6e56f61b4fbaafb3f9fc"
+    },
+    "repro.json": {
+     "bytes": 567,
+     "sha256": "53de683ff6061c3936fb79ed1d006f1a2aba52d4c79955fb6dc30c543979c3a8"
+    },
+    "trades.json.gz": {
+     "bytes": 342360,
+     "sha256": "0add7459286cc6d0b55b74dd9930141a6a35ed52d2073b8602760357160e2008"
+    }
+   },
+   "run_id": "bb8e99c5fd9f7e2f67359c0f710b64cfd21c67853099406f6cd88c2261932c35",
+   "shared": true,
+   "start": "2018-01-01T00:00:00Z"
+  },
+  {
+   "at_boundary": false,
+   "end": "2022-01-01T00:00:00Z",
+   "files": {
+    "data_quality.json.gz": {
+     "bytes": 280649,
+     "sha256": "a13a9d4920cb2aaebfb00028128f0ddb2f17e5da146ea7291b50445631f16b9b"
+    },
+    "metrics.json.gz": {
+     "bytes": 277246,
+     "sha256": "9fc9f1965b096aa78eeca4525ef54dee7e33fc8ccdae0fae85bf96fdacb87c1f"
+    },
+    "record.json": {
+     "bytes": 10409,
+     "sha256": "f482033bc658e4b8583f9e15e507c90cd3af1f14d566a64340914c672a264c2c"
+    },
+    "repro.json": {
+     "bytes": 567,
+     "sha256": "51699c7eab7e862f363a44c8da8f52d425b754c9b6ee0b2dcdb3930109035ccf"
+    },
+    "trades.json.gz": {
+     "bytes": 411630,
+     "sha256": "313e32ec93fe6edbdeb3ea9511234f96f5e23a4f30a304282f04f5115f3f0324"
+    }
+   },
+   "run_id": "eb130c76b2fa38bd0859028344dcdec87684d888bbd71787ded855f0efb74079",
+   "shared": true,
+   "start": "2018-01-01T00:00:00Z"
+  }
+ ],
+ "source": "k1_newenv_g_close",
+ "what": "scripts/share_backtest_runs.py が写した実行と、写さなかった実行とその理由"
+}

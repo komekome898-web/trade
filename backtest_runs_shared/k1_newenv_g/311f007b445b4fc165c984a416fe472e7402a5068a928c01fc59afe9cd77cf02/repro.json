@@ -1,0 +1,12 @@
+{
+ "identical": true,
+ "runs": 2,
+ "sha256": {
+  "data_quality.json": "5c0d8851eff63b05df80e47157842b3dd2b98caed79dcdf1efcc1ec11547f80c",
+  "fills.json": "9630c0654f5b55a5754aea3bf1793df7fcdd28217b34bdd0126520a1337e8e98",
+  "metrics.json": "5b72d47690a82ea57b38ebe66898e2cb7c47093e7666ac809476d956cf70e1a2",
+  "orders.json": "4c9084afd2989d8c4e7aecbe6803d3980826841f3defea9530ff800b39204237",
+  "record.json": "5575d76884e2d458fe0b511ad255c618f6a5762e6a2ce6eb83ec8900eb2fc446",
+  "trades.json": "8d20cdef015cdec3f687d047bc21e43854bdf1c48718dce9d42ddcfe6551d9dc"
+ }
+}

@@ -1,0 +1,93 @@
+{
+ "code_scope": [
+  "src",
+  "scripts",
+  "config",
+  "pyproject.toml"
+ ],
+ "components": {
+  "defaults_used": [],
+  "models": {
+   "account": "bot.bt.core.interfaces.NullAccount",
+   "cost_model": "bot.bt.repro.fixed.DeclaredFeeCost",
+   "fill_model": "bot.strategy.k1_wick.BarCloseMarketFill",
+   "latency_model": "bot.bt.core.interfaces.ZeroLatency"
+  },
+  "notes": {
+   "fill": "market order priced at the close of the bar that decided it (RESULT.md 1.4)",
+   "holding_bars": "measured by bar index in the tables script (bars with no trade do not exist)",
+   "seed": "unused: K1 draws nothing"
+  }
+ },
+ "config": {
+  "costs": {
+   "maker_fee_rate": 0,
+   "source": "K1 RESULT.md 1.4「経費は引いていない」: 費用 0",
+   "taker_fee_rate": 0
+  },
+  "fill": "signal_bar_close",
+  "foot_min": 3,
+  "gate": {
+   "b": "-",
+   "s": "10"
+  },
+  "instrument": "XBTUSD",
+  "strength": "strong"
+ },
+ "data": [
+  {
+   "path": "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz",
+   "resolve": null,
+   "spec": {
+    "asset": "crypto",
+    "bar": {
+     "interval_s": 180,
+     "label": "start"
+    },
+    "compression": "gzip",
+    "delimiter": ",",
+    "fields": {
+     "close": "c",
+     "high": "h",
+     "low": "l",
+     "open": "o",
+     "volume": "vol"
+    },
+    "format": "csv",
+    "header": true,
+    "key": "start",
+    "kind": "bar",
+    "symbol": "XBTUSD",
+    "time": {
+     "columns": [
+      "start_ts"
+     ],
+     "tz": "UTC",
+     "unit": "iso"
+    }
+   }
+  }
+ ],
+ "data_sha256": {
+  "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz": "34c8e1cd327b97d6d7307a2eeb67d78c7b0f19076656fac64ef0164fd3fc76ec"
+ },
+ "diff_hash": "53e0c26e7812db4779dfb38e105bf51087f93c2fa2507fb79064eece57312c64",
+ "engine": {
+  "delivery_digest": "f871421711d1b6c67459486871837d95cb38a3519d4ab94a81ea3f4400283fd1",
+  "events_processed": 603990,
+  "first_time_ns": 1483228980000000000,
+  "last_time_ns": 1577836800000000000,
+  "source_events": 520960
+ },
+ "git_sha": "685b0f939d81279d78ff1490b3a921a40add6c49",
+ "prereg": "docs/PHASE2/K1/PREREG.md",
+ "prereg_sha256": "a36bbf51dba5822c2ff20e4045ef0332531499e05782adb8e066ec2a72207082",
+ "purpose": "研究",
+ "run_id": "b41335bae1a7e275da1b8b55eecedc35b509c6655a6b9ca97ab43b7c2aa23eb7",
+ "seed": 0,
+ "setup": {
+  "name": "bot.strategy.k1_wick:K1Setup",
+  "source_sha256": "4435c3fd6089b97da31c348afdc2acca9a0bc9d252759e91cb0ea101f2ee4ad2"
+ },
+ "version": "bt-item3-r1; core core-19; python 3.11.15; numpy 2.4.6; pandas 3.0.6"
+}

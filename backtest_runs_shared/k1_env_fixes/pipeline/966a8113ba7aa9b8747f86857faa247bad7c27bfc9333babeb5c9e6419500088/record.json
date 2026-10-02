@@ -1,0 +1,308 @@
+{
+ "code_scope": [
+  "src",
+  "scripts",
+  "config",
+  "pyproject.toml"
+ ],
+ "components": {
+  "account": {
+   "optimistic": {
+    "XBTUSD": {
+     "avg_px": null,
+     "cash": 1000000000.0,
+     "currency": "USD",
+     "equity": 999976778.46,
+     "exposure_ns": 66232800000000000,
+     "fees": 0.0,
+     "funding_paid": 0.0,
+     "leverage": 1,
+     "liquidated_t": null,
+     "liquidation": null,
+     "margin_check": "position_only",
+     "mark": "last_trade",
+     "position": 0.0,
+     "realized": -23221.540000000008,
+     "swap_paid": 0.0,
+     "unrealized": 0.0
+    }
+   },
+   "pessimistic": {
+    "XBTUSD": {
+     "avg_px": null,
+     "cash": 1000000000.0,
+     "currency": "USD",
+     "equity": 999976778.46,
+     "exposure_ns": 66232800000000000,
+     "fees": 0.0,
+     "funding_paid": 0.0,
+     "leverage": 1,
+     "liquidated_t": null,
+     "liquidation": null,
+     "margin_check": "position_only",
+     "mark": "last_trade",
+     "position": 0.0,
+     "realized": -23221.540000000008,
+     "swap_paid": 0.0,
+     "unrealized": 0.0
+    }
+   }
+  },
+  "defaults_used": {
+   "optimistic": {
+    "XBTUSD": []
+   },
+   "pessimistic": {
+    "XBTUSD": []
+   }
+  },
+  "fill_range": {
+   "optimistic": {
+    "tier": 2
+   },
+   "pessimistic": {
+    "tier": 2
+   }
+  },
+  "latency": {
+   "declared": {
+    "cancel": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "feed": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "notice": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "order": {
+     "kind": "constant",
+     "ns": 0
+    }
+   },
+   "drawn": {
+    "optimistic": {
+     "XBTUSD": {
+      "draws": {
+       "cancel": 0,
+       "feed": 26276,
+       "notice": 28264,
+       "order": 14132
+      },
+      "total_ns": {
+       "cancel": 0,
+       "feed": 0,
+       "notice": 0,
+       "order": 0
+      }
+     }
+    },
+    "pessimistic": {
+     "XBTUSD": {
+      "draws": {
+       "cancel": 0,
+       "feed": 26276,
+       "notice": 28264,
+       "order": 14132
+      },
+      "total_ns": {
+       "cancel": 0,
+       "feed": 0,
+       "notice": 0,
+       "order": 0
+      }
+     }
+    }
+   }
+  },
+  "models": {
+   "optimistic": {
+    "XBTUSD": {
+     "account": "bot.bt.pipeline.DeferredMarginAccount",
+     "cost_model": "bot.bt.costs.schedule.ScheduleCostModel",
+     "fill_model": "bot.bt.pipeline.ArrivalGate",
+     "latency_model": "bot.bt.latency.LatencyModel"
+    }
+   },
+   "pessimistic": {
+    "XBTUSD": {
+     "account": "bot.bt.pipeline.DeferredMarginAccount",
+     "cost_model": "bot.bt.costs.schedule.ScheduleCostModel",
+     "fill_model": "bot.bt.pipeline.ArrivalGate",
+     "latency_model": "bot.bt.latency.LatencyModel"
+    }
+   }
+  },
+  "notes": {}
+ },
+ "config": {
+  "account": {
+   "cash": 1000000000.0,
+   "currency": "USD",
+   "leverage": 1,
+   "liquidation": null,
+   "margin_check": "position_only",
+   "mark": "last_trade"
+  },
+  "costs": {
+   "fee_table": null,
+   "funding": null,
+   "maker_rate": 0,
+   "source": "K1 RESULT.md 1.4「経費は引いていない」: 費用 0(委任文 20260927_k1_env_fixes §2-2: 費用 0・遅延 0)",
+   "spread": 0,
+   "swap": null,
+   "taker_rate": 0
+  },
+  "fill": {
+   "optimistic": {
+    "tier": 2
+   },
+   "pessimistic": {
+    "tier": 2
+   }
+  },
+  "instrument": "XBTUSD",
+  "instruments": [
+   {
+    "name": "XBTUSD",
+    "price": "xbtusd_60m",
+    "price_kind": "bar",
+    "product": {
+     "margin": true,
+     "min_qty": 1.0,
+     "qty_step": 1.0,
+     "quote_ccy": "USD",
+     "symbol": "XBTUSD",
+     "tick": 0.5,
+     "venue": "bitmex"
+    },
+    "rules": {
+     "market_ref": "last_bar_close"
+    },
+    "with": []
+   }
+  ],
+  "latency": {
+   "cancel": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "feed": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "notice": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "order": {
+    "kind": "constant",
+    "ns": 0
+   }
+  },
+  "strategy": {
+   "factory": "pipeline_strategy",
+   "kind": "module",
+   "module": "bot.strategy.k1_wick",
+   "module_source_sha256": "a09c5c4840e29d0545a79ff24e6afe06c7f57d6c331ac6edb3fe780afed921cf",
+   "params": {
+    "b": "40",
+    "s": "-",
+    "strength": "both"
+   }
+  }
+ },
+ "data": [
+  {
+   "dataset": "xbtusd_60m",
+   "origin": "real",
+   "origin_evidence": {
+    "by": "rows",
+    "market_path": "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz",
+    "rows_matched": 26276,
+    "rows_read": 26276,
+    "sealed_skipped": []
+   },
+   "path": "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz",
+   "spec": {
+    "asset": "crypto",
+    "bar": {
+     "interval_s": 3600,
+     "label": "start"
+    },
+    "compression": "gzip",
+    "delimiter": ",",
+    "fields": {
+     "close": "c",
+     "high": "h",
+     "low": "l",
+     "open": "o",
+     "volume": "vol"
+    },
+    "format": "csv",
+    "header": true,
+    "key": "start",
+    "kind": "bar",
+    "symbol": "XBTUSD",
+    "time": {
+     "columns": [
+      "start_ts"
+     ],
+     "tz": "UTC",
+     "unit": "iso"
+    }
+   }
+  }
+ ],
+ "data_sha256": {
+  "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz": "cafe2ea91c83ccd1c2691d2a7dee124a8b7eb93930ef8498228c5f005559f5be"
+ },
+ "diff_hash": "28f498a0de9e6fa77278974ed0ce3e1a57d443c39123eeae26cd746f96e299a7",
+ "engine": {
+  "optimistic": {
+   "XBTUSD": {
+    "book_shown_to_venue": true,
+    "delivery_digest": "0411496a916592e995022e6093487d3c124ae04e285d5560925ed60b87c85e29",
+    "events_processed": 54541,
+    "fill_tier": 2,
+    "fill_venue": "SimVenue",
+    "first_time_ns": 1483228800000000000,
+    "last_time_ns": 1577836800000000000,
+    "source_events": 26277,
+    "venue_used": {
+     "spread": 14132
+    }
+   }
+  },
+  "pessimistic": {
+   "XBTUSD": {
+    "book_shown_to_venue": true,
+    "delivery_digest": "0411496a916592e995022e6093487d3c124ae04e285d5560925ed60b87c85e29",
+    "events_processed": 54541,
+    "fill_tier": 2,
+    "fill_venue": "SimVenue",
+    "first_time_ns": 1483228800000000000,
+    "last_time_ns": 1577836800000000000,
+    "source_events": 26277,
+    "venue_used": {
+     "spread": 14132
+    }
+   }
+  }
+ },
+ "generators": {},
+ "git_sha": "bf44529a9bc9aa0fdac80a9a5d45f629a3179e38",
+ "prereg": "docs/PHASE2/K1/PREREG.md",
+ "prereg_sha256": "a36bbf51dba5822c2ff20e4045ef0332531499e05782adb8e066ec2a72207082",
+ "purpose": "研究",
+ "run_id": "966a8113ba7aa9b8747f86857faa247bad7c27bfc9333babeb5c9e6419500088",
+ "seed": null,
+ "setup": {
+  "name": "bot.bt.pipeline:module",
+  "source_sha256": "ae45b7d04e90bfbe1c15621f8d49fe81a77e28968966a49ba2e83aefe8cdd694"
+ },
+ "version": "bt-item4-pipeline-r4; random_walk-1; bt-item3-r1; core core-19; python 3.11.15; numpy 2.4.6; pandas 3.0.6"
+}

@@ -10,3 +10,4 @@
 # alike are stored and checked out exactly as committed.
 backtest_data/** -text
 paper_logs/** -text
+backtest_runs_shared/** -text
