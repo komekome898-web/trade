@@ -1137,6 +1137,20 @@ def test_overlay_state_save_never_raises(tmp_path):
 
 
 # ---- B1(b): an unhandled exception must trip the persisted kill switch -----
+def _interrupt_on_sleep(monkeypatch, after: int = 3) -> list[float]:
+    """The loop carries on in data-only mode after a fault (L-532), so a test
+    ends it with Ctrl-C on the `after`-th sleep."""
+    import bot.main as bot_main
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) >= after:
+            raise KeyboardInterrupt()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+    return sleeps
+
+
 def test_unhandled_step_exception_trips_kill_switch(workdir, monkeypatch):
     notifier = RecordingNotifier()
     app = build_test_app(monkeypatch, notifier=notifier)
@@ -1144,8 +1158,9 @@ def test_unhandled_step_exception_trips_kill_switch(workdir, monkeypatch):
     def boom():
         raise ZeroDivisionError("bad math in a strategy")
     monkeypatch.setattr(app, "step", boom)
+    _interrupt_on_sleep(monkeypatch)
 
-    with pytest.raises(ZeroDivisionError):
+    with pytest.raises(KeyboardInterrupt):
         app.run_forever()
 
     state = app.kill_switch.state
@@ -1182,8 +1197,9 @@ def test_kill_reason_survives_a_failing_notifier(workdir, monkeypatch):
         app.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, "ticker stale for 900s")
         raise RuntimeError("a second fault while shutting down")
     monkeypatch.setattr(app, "step", trip_then_raise)
+    _interrupt_on_sleep(monkeypatch)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(KeyboardInterrupt):
         app.run_forever()
 
     state = app.kill_switch.state
@@ -1215,8 +1231,9 @@ def test_exception_outside_step_trips_the_switch(workdir, monkeypatch):
     monkeypatch.setattr(app, "step", lambda: None)
     monkeypatch.setattr(app.feed, "check_freshness",
                         lambda: (_ for _ in ()).throw(ValueError("clock went backwards")))
+    _interrupt_on_sleep(monkeypatch)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyboardInterrupt):
         app.run_forever()
 
     assert app.kill_switch.state["reason"] == "unhandled_exception"
@@ -1247,7 +1264,8 @@ def test_kill_switch_detail_is_redacted(workdir, monkeypatch):
         app = build_test_app(monkeypatch, notifier=RecordingNotifier())
         monkeypatch.setattr(app, "step", lambda: (_ for _ in ()).throw(
             ValueError("auth failed for super-secret-api-key")))
-        with pytest.raises(ValueError):
+        _interrupt_on_sleep(monkeypatch)
+        with pytest.raises(KeyboardInterrupt):
             app.run_forever()
     finally:
         _SECRET_PATTERNS[:] = before
@@ -1440,9 +1458,10 @@ def test_data_failures_while_tripped_neither_retrip_nor_realert(workdir, monkeyp
 
     app.step()                                   # the real first trip
     first_state = dict(app.kill_switch.state)
-    while errors:
+    for _ in range(len(errors)):                 # bounded: a regression fails, not hangs
         app.step()
 
+    assert not errors
     assert app.kill_switch.state == first_state
     assert json.loads((workdir / "data" / "kill_switch.json")
                       .read_text(encoding="utf-8")) == first_state
@@ -1612,3 +1631,168 @@ def test_a_trip_inside_step_is_not_alerted_again_by_the_freshness_check(
     assert app.kill_switch.state["reason"] == "api_errors"
     assert [t for t, _, _ in notifier.sent] == ["BOT START", "KILL SWITCH"]
     assert cancels == ["FX_BTC_JPY"]
+
+
+# ---- critic fixes to L-532: jump freeze (A), reset exit (B), fault (C) -----
+def _quotes(monkeypatch, app) -> dict:
+    """Mutable ticker answer for `app`, with the production jump limit (5%)."""
+    app.feed.max_price_jump_pct = 5.0
+    quotes = {"ltp": 10_000_000, "best_bid": 9_999_000, "best_ask": 10_001_000}
+    monkeypatch.setattr(app.feed._client, "ticker", lambda product: dict(quotes))
+    return quotes
+
+
+def test_tripped_feed_takes_a_price_jump_as_the_new_reference(workdir, monkeypatch):
+    """(A) At the production 5% limit, a +6% move while tripped is recorded and
+    becomes the reference, so the record does not freeze; a crossed book is
+    still rejected and nothing re-trips."""
+    app = build_test_app(monkeypatch)
+    quotes = _quotes(monkeypatch, app)
+    app.kill_switch.trip(KillReason.MANUAL, "operator")
+    app.step()
+    quotes.update(ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
+
+    for _ in range(50):
+        app.step()
+
+    rows = _spread_rows(workdir)
+    assert len(rows) == 51
+    assert rows[-1].endswith(",10599000.0,10601000.0,10600000.0")
+    assert app.feed.last_tick.price == 10_600_000
+    assert app.status.status.last_price == 10_600_000
+    quotes.update(best_bid=10_602_000)                   # crossed book
+    app.step()
+    assert len(_spread_rows(workdir)) == 51
+    assert app.kill_switch.state["reason"] == "manual"
+
+
+def test_untripped_price_jump_still_trips_and_is_not_recorded(workdir, monkeypatch):
+    """(A) Not tripped: the same +6% move trips the switch exactly as before."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    quotes = _quotes(monkeypatch, app)
+    app.step()
+    quotes.update(ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
+
+    app.step()
+
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert "abnormal price jump" in app.kill_switch.state["detail"]
+    assert [t for t, _, _ in notifier.sent] == ["KILL SWITCH"]
+    assert len(_spread_rows(workdir)) == 1
+    assert app.feed.last_tick.price == 10_000_000
+
+
+class _LoopDidNotEnd(BaseException):
+    """Backstop for a loop that should have ended by itself: not an Exception,
+    so the loop's guards do not swallow it, and not KeyboardInterrupt."""
+
+
+def test_an_operator_reset_ends_the_data_only_process_without_trading(
+        workdir, monkeypatch):
+    """(B) A reset by another KillSwitch (state file and KILL file removed)
+    ends the loop: no order on the way, the files are not written back, the
+    in-memory switch stays tripped (no auto-resume), one BOT STOPPED."""
+    import bot.main as bot_main
+    (workdir / "KILL").write_text("", encoding="utf-8")
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)      # boots tripped
+    calls = _record_trading_calls(app, monkeypatch)
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: None)
+    assert (workdir / "data" / "kill_switch.json").exists()
+    sleeps: list[float] = []
+
+    def fake_sleep(sec):
+        sleeps.append(sec)
+        if len(sleeps) == 3:
+            KillSwitch().reset(operator_confirm=True)
+        if len(sleeps) >= 10:
+            raise _LoopDidNotEnd()
+    monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    app.run_forever()                                    # returns: normal exit
+
+    assert len(sleeps) == 3
+    assert calls == []
+    assert app.portfolio.trades == []
+    assert app.store.active_orders("FX_BTC_JPY") == []
+    assert not (workdir / "data" / "kill_switch.json").exists()
+    assert not (workdir / "KILL").exists()
+    assert app.kill_switch.is_tripped
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", "BOT STOPPED"]
+    assert len(_spread_rows(workdir)) == 3
+
+
+def test_an_unexpected_fault_while_trading_trips_once_and_keeps_recording(
+        workdir, monkeypatch):
+    """(C) A fault in a trading cycle trips (persisted) and alerts once, and
+    the process goes on recording in data-only mode instead of exiting."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    cancels: list[str] = []
+    monkeypatch.setattr(app.orders, "cancel_all_active", lambda s: cancels.append(s))
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: None)
+    real_step = app.step
+    cycles: list[int] = []
+
+    def step():
+        cycles.append(1)
+        if len(cycles) == 2:
+            raise ValueError("bad row in a trading cycle")
+        real_step()
+    monkeypatch.setattr(app, "step", step)
+    _interrupt_on_sleep(monkeypatch, after=6)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    assert app.kill_switch.state["reason"] == "unhandled_exception"
+    assert "bad row" in app.kill_switch.state["detail"]
+    assert json.loads((workdir / "data" / "kill_switch.json")
+                      .read_text(encoding="utf-8"))["reason"] == "unhandled_exception"
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", "KILL SWITCH"]
+    assert cancels == ["FX_BTC_JPY"]
+    assert len(cycles) == 6
+    assert len(_spread_rows(workdir)) == 5               # every cycle but the faulty one
+
+
+def test_a_fault_after_a_kill_in_the_same_cycle_is_not_alerted_twice(
+        workdir, monkeypatch):
+    """(C) step() trips and runs _on_kill, then a fault in the same cycle: the
+    first reason stays, and there is no second cancel or alert."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    cancels: list[str] = []
+    monkeypatch.setattr(app.orders, "cancel_all_active", lambda s: cancels.append(s))
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: None)
+
+    def kill_then_fault():
+        if not app.kill_switch.is_tripped:
+            app.kill_switch.trip(KillReason.API_ERRORS, "5 in a row")
+            app._on_kill("5 in a row")
+            raise RuntimeError("a fault after the kill")
+    monkeypatch.setattr(app, "step", kill_then_fault)
+    _interrupt_on_sleep(monkeypatch, after=4)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    assert app.kill_switch.state["reason"] == "api_errors"
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", "KILL SWITCH"]
+    assert cancels == ["FX_BTC_JPY"]
+
+
+def test_a_trip_never_seen_on_disk_is_not_taken_for_a_reset(workdir, monkeypatch):
+    """(B) An in-memory trip whose state file is missing (as if the write had
+    failed) is not a reset: the process stays data-only, it does not exit."""
+    app = build_test_app(monkeypatch, notifier=RecordingNotifier())
+    monkeypatch.setattr(app.feed, "check_freshness", lambda: None)
+    app.kill_switch.trip(KillReason.MANUAL, "operator")
+    (workdir / "data" / "kill_switch.json").unlink()
+    _interrupt_on_sleep(monkeypatch, after=5)
+
+    with pytest.raises(KeyboardInterrupt):
+        app.run_forever()
+
+    assert app.kill_switch.is_tripped
+    assert len(_spread_rows(workdir)) == 5

@@ -67,7 +67,7 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 | 通常停止 | `sudo systemctl stop bitflyer-bot` |
 | 緊急停止(Kill Switch) | リポジトリ直下に `touch KILL` |
 | Kill Switch 状態確認 | `cat data/kill_switch.json` |
-| Kill Switch 解除(原因調査後のみ) | **Windows: `deploy\reset_kill.bat` をダブルクリック**(発動理由を表示 → `YES` 入力 → 停止→解除→再起動まで通しで実行)。Linux: `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"` の後、手動で再起動 |
+| Kill Switch 解除(原因調査後のみ) | **Windows: `deploy\reset_kill.bat` をダブルクリック**(発動理由を表示 → `YES` 入力 → 停止→解除→再起動まで通しで実行)。Linux: `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"`。発動中のプロセスは取引せずに市場データの記録だけを続けており、解除を検知するとそのまま(取引を再開せずに)終了する。その後 `sudo systemctl start bitflyer-bot` で起動する(このユニットは `Restart=on-failure` なので、解除による終了(終了コード 0)は systemd が起こし直さない)。Windows で `reset_kill.bat` を使わずに解除した場合も同じく終了し、1 時間ごとの `start_all.bat` が起こし直す |
 | サイジングブレーキ状態確認 | `cat data/overlay_state.json` |
 | サイジングブレーキ解除(口座を作り直した時のみ) | `rm data/overlay_state.json` |
 | PAPER 帳簿の確認 | `cat data/paper_state.json` |
@@ -462,7 +462,7 @@ Kill Switch が発動している間は**決済も含めて全注文が拒否さ
 1. Discord サーバー設定 → 連携サービス → Webhook を作成し URL をコピー
 2. `.env` に `DISCORD_WEBHOOK_URL=...` を設定して BOT を再起動
 
-通知内容: BOT起動/停止、Kill Switch 発動、1時間毎のステータスレポート。
+通知内容: BOT起動(Kill Switch 発動中の起動なら、取引せず記録だけを続けると本文に書く)、Kill Switch 発動(発動 1 回につき 1 回)、BOT停止(発動中に人の解除を検知してプロセスが終わるとき)、1時間毎のステータスレポート(発動中も送る)。
 
 ## 4.5 更新手順(重要)
 
@@ -535,7 +535,7 @@ git pull --rebase origin claude/bitflyer-trading-bot-hhxxaf
 
 手動操作: 一括起動 `deploy\start_all.bat` / 一括停止 `deploy\stop_all.bat` /
 更新して再起動 `deploy\restart_all.bat`(§4.5。pull + pip install + 停止 + 起動) /
-緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOT・スキャルパー両方が停止)。
+緊急停止はリポジトリ直下に `KILL` ファイル作成(メインBOTは取引を止めるが市場データの記録は続ける。スキャルパーは停止)。
 
 ログ: `logs\run_paper.out.log`(メイン)/ `logs\recorder.out.log`(板記録)/
 `logs\liquidations.out.log`(清算ストリーム記録、`scripts\record_liquidations.py`)。

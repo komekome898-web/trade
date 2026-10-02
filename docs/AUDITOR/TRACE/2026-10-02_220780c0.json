@@ -17372,9 +17372,10 @@
   {
    "move": 637,
    "tools": {
-    "Agent": 1
+    "Agent": 1,
+    "Bash": 2
    },
-   "n_tools": 1,
+   "n_tools": 3,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

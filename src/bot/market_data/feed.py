@@ -6,11 +6,14 @@ the caller can stop trading on the safe side (rule 8).
 """
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from bot.exchange.bitflyer_client import BitflyerClient
+
+logger = logging.getLogger(__name__)
 
 
 class MarketDataAnomaly(Exception):
@@ -117,6 +120,11 @@ class MarketDataFeed:
         self.last_tick: Tick | None = None
         self.last_update: float | None = None
         self._last_exec_id = 0
+        # Set by the app ONLY while the kill switch is tripped (data-only): the
+        # jump check guards trading, and with no trading a rejected jump would
+        # freeze `last_tick` and reject every later tick. Then a jump is taken
+        # as the new reference instead; the other checks still reject.
+        self.accept_price_jumps = False
 
     def poll_ticker(self) -> Tick:
         data = self._client.ticker(self.product_code)
@@ -144,6 +152,11 @@ class MarketDataFeed:
         if self.last_tick is not None:
             jump = abs(tick.price - self.last_tick.price) / self.last_tick.price * 100
             if jump > self.max_price_jump_pct:
+                if self.accept_price_jumps:
+                    logger.warning(
+                        "price jump %.2f%% (from %s to %s) accepted as the new "
+                        "reference (trading off)", jump, self.last_tick.price, tick.price)
+                    return
                 raise MarketDataAnomaly(
                     f"abnormal price jump {jump:.2f}% (from {self.last_tick.price} to {tick.price})"
                 )
