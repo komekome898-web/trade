@@ -63,6 +63,7 @@ MARKETS: dict = {
     "bitflyer:BTC_JPY": ("backtest_data/bitflyer_lightchart_BTC_JPY_*/*",),
     "binance:BTCUSDT": ("backtest_data/binance_BTCUSDT_*/*",),
     "binance_um:BTCUSDT": ("backtest_data/binance_um_BTCUSDT_*/*",),
+    "bitmex:XBTUSD": ("backtest_data/bitmex_XBTUSD_1m_from1s_*/*",),
     "fx:USDJPY": ("backtest_data/fx_usdjpy_*/*",),
     "jpx:n225_futures": ("backtest_data/n225f_225labo_*/*", "paper_logs/nk225_sessions.csv",
                          "paper_logs/on1_ledger.csv"),

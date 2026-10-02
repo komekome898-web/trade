@@ -185,6 +185,22 @@ def test_the_repository_ledger_maps_to_markets():
     assert cc.problems(card_text(**data(um, "2025-01-01T00:00:00Z")), str(ROOT)) == []
 
 
+def test_the_bitmex_row_is_used():
+    """The BitMEX XBTUSD 1m store (built from the 1 s store) maps to `bitmex:XBTUSD` and only to it; the real
+    ledger has no BitMEX file, so the market has no seal boundary and a card on it is not refused by a seal.
+    Without the row the same path is refused as a path of no market. Only the ledger is read, no data."""
+    rel = "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2021.csv.gz"
+    assert cc.market_of(rel, cc.MARKETS) == ["bitmex:XBTUSD"]
+    assert cc.market_of("backtest_data/bitmex_trade_1s_XBTUSD/2017/20170101.csv.gz", cc.MARKETS) == []
+    assert cc.market_of("backtest_data/binance_um_BTCUSDT_1m_20261002/f.csv.gz", cc.MARKETS) == ["binance_um:BTCUSDT"]
+    bounds, problems = cc.boundaries(str(ROOT), cc.MARKETS)
+    assert problems == [] and "bitmex:XBTUSD" not in bounds
+    text = card_text(**data(rel, "2021-12-31T15:00:00Z"))
+    assert cc.problems(text, str(ROOT)) == []
+    without = {k: v for k, v in cc.MARKETS.items() if k != "bitmex:XBTUSD"}
+    assert any("市場の表" in p for p in cc._markets_check(cc.parse(text), str(ROOT), without))
+
+
 @pytest.mark.parametrize("period", [
     "- 開始: 2020-01-01T00:00:00Z",                                      # no end
     "- 開始: 2020-01-01T00:00:00\n- 終了: 2021-01-01T00:00:00",         # no offset

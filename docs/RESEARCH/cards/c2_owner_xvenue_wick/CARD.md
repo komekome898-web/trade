@@ -1,6 +1,6 @@
 # カード c2_owner_xvenue_wick: オーナー由来 O-6「シグナルは外、執行は自市場」+ O-3 カツオのヒゲ
 
-W4 の仕様(`docs/DISCUSSIONS/2026-10-02_W4_spec.md`)§1 の 2 枚目。状態: **測る前**(意図の地図のオーナーの確認を待つ。研究手順書 §0.5、W4 の仕様 §2 の 4。オーナーに聞くのは INTENT_MAP §6 の 1 件)。差し戻し 1 回目(リードの読み)を反映した: シグナル源 3 つ × 足の長さ 6 つの変種(下の「変種と測る順」)。
+W4 の仕様(`docs/DISCUSSIONS/2026-10-02_W4_spec.md`)§1 の 2 枚目。状態: **変種 (a) を測定中**(2026-10-02。意図の地図はオーナーに見せ、INTENT_MAP §6 の 1 件は L-554「・A」で確定。ほかの部分への指摘は無かった。研究手順書 §0.5、W4 の仕様 §2 の 4)。(b)・(c) はデータの準備が済んだ(批評家 `docs/AUDITOR/VERDICTS/2026-10-02_W4_bitmex_store.md`)。差し戻し 1 回目(リードの読み)を反映した: シグナル源 3 つ × 足の長さ 6 つの変種(下の「変種と測る順」)。
 印: 【事実】= ファイルを読んで確かめたこと、【推定】= 根拠から導いたが確かめていないこと、【仮説】= 測って確かめること。
 
 ## 原文(逐語)
@@ -108,7 +108,9 @@ W4 の仕様(`docs/DISCUSSIONS/2026-10-02_W4_spec.md`)§1 の 2 枚目。状態:
 - `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz` 同上
 - `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz` 同上。2023-12-18 以降の行は封印。読み込みの範囲は測る期間の終わり(2023-12-17T15:00:00Z)で切る(データ層の封印の検査は 2023-12-18T00:00:00Z で止める)
 
-シグナルの足(参照の系列): Binance BTCUSDT 現物の 1 分足の 4 本値を、`binance_open` / `binance_high` / `binance_low` / `binance_close` の 4 系列として読む(1 系列 1 値。`bot.bt.data.reference`)。時刻の列 = `open_time`、遅れ 60 秒。
+シグナルの足(参照の系列)は変種ごとに 1 組(4 系列)を使う。下のパスは 3 変種の分を全部並べる(`scripts/check_card.py` は全部のパスを、下の「測る期間」の 1 つの期間で検める。変種ごとの期間は「変種と測る順」)。
+
+変種 (a): Binance BTCUSDT 現物の 1 分足の 4 本値を、`binance_open` / `binance_high` / `binance_low` / `binance_close` の 4 系列として読む(1 系列 1 値。`bot.bt.data.reference`)。時刻の列 = `open_time`、遅れ 60 秒。
 
 - `backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz` 参照 4 系列。遅れ 60 秒(`open_time` + 60 秒に使える)
 - `backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz` 同上
@@ -117,6 +119,23 @@ W4 の仕様(`docs/DISCUSSIONS/2026-10-02_W4_spec.md`)§1 の 2 枚目。状態:
 - `backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz` 同上
 - `backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz` 同上
 - `backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz` 同上。範囲は上と同じく測る期間の終わりで切る
+
+変種 (b): Binance USD-M BTCUSDT 先物の 1 分足の 4 本値を、`binance_um_open` / `binance_um_high` / `binance_um_low` / `binance_um_close` の 4 系列として読む。時刻の列 = `open_time`(1 分の始まり【事実: `backtest_data/binance_um_BTCUSDT_1m_20261002/README.md`「`open_time`: 分の始まり。ISO-8601、UTC」】)。行の時刻は置き場のまま、遅れ 60 秒。置き場は 2020-01-01 00:00 〜 2023-12-17 23:59 UTC、抜け 0 か所【事実: 同じ README】。
+
+- `backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2020.csv.gz` 参照 4 系列。遅れ 60 秒(`open_time` + 60 秒に使える)
+- `backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2021.csv.gz` 同上
+- `backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2022.csv.gz` 同上
+- `backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2023.csv.gz` 同上。範囲は (b) の測る期間の終わり(2023-12-17T15:00:00Z)で切る
+
+変種 (c): BitMEX XBTUSD の 1 秒足から作った 1 分足の 4 本値を、`bitmex_open` / `bitmex_high` / `bitmex_low` / `bitmex_close` の 4 系列として読む。時刻の列 = `open_time`(1 分の始まり【事実: `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/README.md`】)。行の時刻は置き場のまま、遅れ 60 秒。置き場は 2017-01-01 00:00 〜 2021-12-31 23:59 UTC。**約定の無い分は行が無い**(値を埋めていない。抜けは README の表。2017 年は 28,351 か所)【事実: 同じ README】。値段は USD。
+
+- `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2017.csv.gz` 参照 4 系列。遅れ 60 秒(`open_time` + 60 秒に使える)
+- `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2018.csv.gz` 同上
+- `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2019.csv.gz` 同上
+- `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2020.csv.gz` 同上
+- `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2021.csv.gz` 同上。範囲は (c) の測る期間の終わり(2021-12-31T15:00:00Z)で切る
+
+(c) の測る期間(2017-01-01T15:00:00Z 〜 2021-12-31T15:00:00Z)は、執行の足 bitFlyer FX_BTC_JPY の 1 分足の封印の境 2023-12-18T00:00:00Z より前で、封印の外【事実: 境は `scripts/check_card.py` の `boundaries` が台帳から出した値】。BitMEX の置き場は台帳に載っておらず、`bitmex:XBTUSD` に封印の境は無い【事実: 同じ `boundaries` の出力に `bitmex:XBTUSD` が無い】。(b) の期間の終わり 2023-12-17T15:00:00Z も bitFlyer の境より前。`binance_um:BTCUSDT` の境は 2026-08-23T00:00:00Z。
 
 USDJPY は使わない(シグナルも無効化ラインも Binance の USDT 建ての値どうしで比べ、bitFlyer の円の値と比べない。迷った点 5)。
 
@@ -134,6 +153,14 @@ USDJPY は使わない(シグナルも無効化ラインも Binance の USDT 建
 - 参照: binance_high | lag_ns: 60000000000 | 出所: 同じ README の open_time。高値は分の終わりまで決まらない
 - 参照: binance_low | lag_ns: 60000000000 | 出所: 同じ README の open_time。安値は分の終わりまで決まらない
 - 参照: binance_close | lag_ns: 60000000000 | 出所: 同じ README の open_time。終値は分の終わりに決まる
+- 参照: binance_um_open | lag_ns: 60000000000 | 出所: 変種 (b)。backtest_data/binance_um_BTCUSDT_1m_20261002/README.md の時刻の列は open_time(分の始まり)。W4 の仕様 §3 のリードの訂正(行の時刻は置き場のまま、lag_ns = 60 秒)
+- 参照: binance_um_high | lag_ns: 60000000000 | 出所: 変種 (b)。同じ README の open_time。高値は分の終わりまで決まらない
+- 参照: binance_um_low | lag_ns: 60000000000 | 出所: 変種 (b)。同じ README の open_time。安値は分の終わりまで決まらない
+- 参照: binance_um_close | lag_ns: 60000000000 | 出所: 変種 (b)。同じ README の open_time。終値は分の終わりに決まる
+- 参照: bitmex_open | lag_ns: 60000000000 | 出所: 変種 (c)。backtest_data/bitmex_XBTUSD_1m_from1s_20261002/README.md の時刻の列は open_time(分の始まり。1 秒足の ts の分まで)。W4 の仕様 §3 のリードの訂正(行の時刻は置き場のまま、lag_ns = 60 秒)
+- 参照: bitmex_high | lag_ns: 60000000000 | 出所: 変種 (c)。同じ README の open_time。高値は分の終わりまで決まらない
+- 参照: bitmex_low | lag_ns: 60000000000 | 出所: 変種 (c)。同じ README の open_time。安値は分の終わりまで決まらない
+- 参照: bitmex_close | lag_ns: 60000000000 | 出所: 変種 (c)。同じ README の open_time。終値は分の終わりに決まる
 
 ## 測る期間
 
@@ -147,8 +174,11 @@ USDJPY は使わない(シグナルも無効化ラインも Binance の USDT 建
 | 変種 | シグナル源(引数 `series`) | 期間 | I-11a の印 | 測れる時期 |
 |---|---|---|---|---|
 | (a) | Binance BTCUSDT 現物の 1 分足(`SERIES_SPOT`) | 2017-08-17T15:00Z〜2023-12-17T15:00Z(上の「測る期間」) | △ | **先に測る**(手元にある) |
-| (b) | Binance USD-M BTCUSDT 先物の 1 分足(`SERIES_UM`) | 2020-01〜(公開アーカイブの始まり。PROCUREMENT.md)〜2023-12-17 | ○ | 調達の後(リードが手配する)。市場の表には `binance_um:BTCUSDT` が既にある |
-| (c) | BitMEX XBTUSD の 1 秒足から作った 1 分足(`SERIES_BITMEX`) | 2017〜2021 | ○(I-18 も ○) | 市場の表への行の追加と封印の確かめ(リードが行う)の後 |
+| (b) | Binance USD-M BTCUSDT 先物の 1 分足(`SERIES_UM`) | [2020-01-01T15:00:00Z, 2023-12-17T15:00:00Z)。始まり = 置き場の最初の行(2020-01-01 00:00 UTC = 日本時間 09:00)の後の最初の日本時間 0 時(日本時間 2020-01-02 0 時)、終わり = (a) と同じ日本時間 2023-12-18 0 時(迷った点 9) | ○ | データは `backtest_data/binance_um_BTCUSDT_1m_20261002/` に取得済み。市場の表は `binance_um:BTCUSDT` |
+| (c) | BitMEX XBTUSD の 1 秒足から作った 1 分足(`SERIES_BITMEX`) | [2017-01-01T15:00:00Z, 2021-12-31T15:00:00Z)。始まり = 置き場の最初の行(2017-01-01 00:00 UTC = 日本時間 09:00)の後の最初の日本時間 0 時(日本時間 2017-01-02 0 時)、終わり = 置き場の最後の行(2021-12-31 23:59 UTC = 日本時間 2022-01-01 08:59)の前の最後の日本時間 0 時(日本時間 2022-01-01 0 時)(迷った点 9) | ○(I-18 も ○) | データは `backtest_data/bitmex_XBTUSD_1m_from1s_20261002/`(1 秒足から作成)。市場の表は `bitmex:XBTUSD`(封印の境は無い)。期間は bitFlyer の 1 分足の封印の境 2023-12-18 より前 |
+
+- `scripts/check_card.py` が読める期間は「測る期間」の 1 つだけ(`## 測る期間` の見出しが 2 つあれば拒む。`## 測る期間(b)` のような見出しも同じ欄の 2 つ目として拒む: `bot.research.cards.cardmd.parse`)。そこで「測る期間」は (a) の期間のまま置き、(b)・(c) の期間はこの表に書く。(b)・(c) の終わりはどちらも (a) の終わり以前なので、check_card が全部のパスを (a) の期間で検めて通れば、各変種の期間でも封印の検めは通る。
+- 「測定の設定」には 3 変種の参照の宣言を全部(12 行)書く。`measure_card` は、走らせた変種が使う系列の宣言が CARD.md と一致することだけを確かめ、使わない宣言があっても拒まない(`src/bot/research/cards/measure.py` の `run.ref_decl == {name: want.get(name) for name in run.ref_decl}`)。
 
 - それぞれの変種を、足の長さ 6 つ(1・3・5・15・30・60 分。既定 15)で走らせる。変種は全部 ITER に記録する(第 4 版 §3-1)。
 - 診断(検定の数に入れない): 19 の枝だけ・24 の枝だけで出たシグナルの数と平均損益を分けて出す(INTENT_MAP §7、L-053)。
@@ -161,5 +191,7 @@ USDJPY は使わない(シグナルも無効化ラインも Binance の USDT 建
 4. **ヒゲどうしの比べ方**: 原典は `int(topbeard) > int(underbeard)`(ドルの整数に切り捨てて比べる)。既定: 切り捨てずに比べる(INTENT_MAP §3 の X-1)。
 5. **無効化ラインを比べる値段**: 原典は先端も終値も同じ BitMEX の値。既定: 先端も終値も Binance の値(シグナルの取引所の足の形で判断する。bitFlyer の円の値と比べるには USDJPY と円の上乗せが要り、カード 3 の領分)。
 6. **強弱を分けて測る**: このカードは強弱で持ち高の扱いを変える(ドテン / 決済)が、測定器の出力では強い足由来と弱い足由来の損益を分けて出さない。分けるには「強いだけ」「弱いだけ」の変種のカードが要る。この回は作らない。
-7. **シグナル源の取引所(リードの決定で決着)**: 変種 (a)(b)(c) にした(下の「変種と測る順」)。(a) の Binance 現物は △、(b)(c) は ○。この CARD.md の「使うデータと遅れ」「測定の設定」は (a) の分だけを書く。(b)(c) の行は、調達と市場の表への追加(リードが行う)の後に足す。BitMEX は `scripts/check_card.py` の市場の表 `MARKETS` にまだ行が無いので、今書くと拒まれる。
+7. **シグナル源の取引所(リードの決定で決着)**: 変種 (a)(b)(c) にした(下の「変種と測る順」)。(a) の Binance 現物は △、(b)(c) は ○。2026-10-02 に (b)(c) の行を「使うデータと遅れ」「測定の設定」に足した(データの取得・作成と、`scripts/check_card.py` の市場の表 `MARKETS` への `bitmex:XBTUSD` の追加の後)。変種ごとの期間は「変種と測る順」の表(check_card が読む「測る期間」は (a) の期間)。
 8. **研究手順書 §0.5 が指す「本skill §15」の書式**: 手順書に §15 が無い【事実: `grep -n "## 15" .claude/skills/research-protocol/SKILL.md` は該当なし】。意図の地図は手本 `docs/legacy/KATSUO_INTENT_MAP.md` の書式に合わせた。
+9. **(b)・(c) の期間の端(委任文の読み)**: (b) の始まりを「置き場の最初の行の後の最初の日本時間 0 時」= 2020-01-01T15:00:00Z(日本時間 2020-01-02 0 時)と読んだ。別の読み「日本時間 2020-01-01 0 時」= 2019-12-31T15:00:00Z は置き場の最初の行(2020-01-01 00:00 UTC)より 9 時間前で、最初の日本時間の日が半端になる。(c) の終わりを「置き場の最後の行の前の最後の日本時間 0 時」= 2021-12-31T15:00:00Z(日本時間 2022-01-01 0 時)と読んだ。別の読み「日本時間の暦で 2021 年の最後の 0 時」= 2021-12-30T15:00:00Z(日本時間 2021-12-31 0 時)にすると、日本時間 2021-12-31 の 1 日が入らない。どちらも (a) の始まりの決め方(最初の行の後の最初の日本時間 0 時)に合わせた。
+10. **BitMEX の 1 分足の抜けと出来高**: (c) の 1 分足は約定の無い分に行が無い(2017 年は抜け 28,351 か所、抜けた分の合計 52,721)。関数は足の中にある 1 分足だけで 4 本値をまとめ、行の無い足は判定しない(`exposure` は行のある分だけを足に入れる。読んだだけで、抜けのある系列での試験はしていない【推定】)。`volume` は XBTUSD の契約の枚数(USD)で BTC ではない【推定。README】。このカードは出来高を使わない。
