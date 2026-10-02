@@ -19480,11 +19480,11 @@
   {
    "move": 715,
    "tools": {
-    "Bash": 2,
+    "Bash": 3,
     "ReadNotifications": 1,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 4,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

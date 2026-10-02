@@ -80,3 +80,4 @@ backtest_data/k1_newenv_g_20261001/*.csv.gz
 backtest_data/k1_newenv_g_20261001/*.json
 !backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json
 backtest_data/binance_um_BTCUSDT_1m_20261002/raw/
+docs/RESEARCH/cards/*/measure/*/run.npz

@@ -1,0 +1,22 @@
+{
+ "4-2_vwap_vs_mean": {
+  "differ_share": 0.05265332095796594,
+  "n_decisions": 3982104,
+  "what": "平均の代わりに量の重みの平均(VWAP = Σ close × volume ÷ Σ volume、セッションの中の呼ばれた足、今の足を含む)を使った持ち高が、カードの持ち高と違う決定の割合"
+ },
+ "5_boundary_carry": {
+  "carried_sum_bp": -246.51639405334555,
+  "minutes_after_boundary_median": 12.0,
+  "minutes_after_boundary_total": 8045.0,
+  "n_carried": 197,
+  "n_sessions": 2941,
+  "what": "セッションの最後の 1 分に約定が無く、区切りの前の最後の決定の持ち高 ≠ 0 のまま区切りをまたいだ回数、その決定の P の合計、区切りの後に持っていた分(次の決定の約定の足の始値 − 区切り)"
+ },
+ "not_computed": {
+  "4-1 区切りを 24 通りずらした対照": "原文に無い形。リードの決定に無いので測っていない"
+ },
+ "rewrite_check": {
+  "n_mismatch": 0,
+  "what": "台本で書き直した平均(セッションごとの np.cumsum ÷ 本数)の持ち高とカードの持ち高の食い違いの数"
+ }
+}
