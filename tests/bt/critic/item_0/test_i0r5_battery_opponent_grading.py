@@ -43,7 +43,7 @@ csv.field_size_limit(10**9)
 
 
 def _cells(target: str) -> dict[str, dict]:
-    path = BATTERY / "survey_results" / f"{target}.tsv"
+    path = BATTERY / "survey_results" / f"{target.replace(':', '%3A')}.tsv"  # Windows
     with path.open(encoding="utf-8") as fh:
         return {r["scene_id"]: r for r in csv.DictReader(fh, delimiter="\t")}
 

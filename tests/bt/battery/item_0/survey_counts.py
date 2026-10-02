@@ -44,7 +44,8 @@ def main() -> None:
                 hit[r["viewpoint"]] += r["correctness"] == "正解と一致"
                 same += r["reproducibility"] == "2 回の実行で同じ"
         vps |= set(tot)
-        rows.append((no_of.get(p.stem, 0), p.stem, hit, tot, same, sum(tot.values())))
+        name = p.stem.replace("%3A", ":")      # file names spell ":" as %3A (Windows)
+        rows.append((no_of.get(name, 0), name, hit, tot, same, sum(tot.values())))
     vps = sorted(vps)
     print("| 候補 | 対象 | " + " | ".join(f"{v}" for v in vps) + " | 2 回の実行で同じ |")
     print("|---" * (len(vps) + 3) + "|")

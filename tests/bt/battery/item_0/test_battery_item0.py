@@ -359,7 +359,9 @@ def test_every_ran_candidate_has_all_scenes_from_its_own_adapter():             
             continue
         assert r["target"] in run_battery.OPPONENTS, r["cand"]
         for t in run_battery.configured_targets(r["target"]):  # round r8-1: every configured target of the candidate
-            p = HERE / "survey_results" / f"{t}.tsv"
+            # ":" is not a legal file-name character on Windows (the owner's PC):
+            # the target name keeps it, the file name spells it %3A.
+            p = HERE / "survey_results" / f"{t.replace(':', '%3A')}.tsv"
             with p.open(encoding="utf-8") as f:
                 ids = [row["scene_id"] for row in csv.DictReader(f, delimiter="\t")]
             assert sorted(ids) == sorted(s.id for s in scenes.SCENES), (r["cand"], t)
@@ -461,7 +463,7 @@ def _records() -> dict[str, list[dict]]:
     out = {}
     for p in sorted((HERE / "survey_results").glob("*.tsv")):
         with p.open(encoding="utf-8") as f:
-            out[p.stem] = list(csv.DictReader(f, delimiter="\t"))
+            out[p.stem.replace("%3A", ":")] = list(csv.DictReader(f, delimiter="\t"))  # Windows names
     return out
 
 
