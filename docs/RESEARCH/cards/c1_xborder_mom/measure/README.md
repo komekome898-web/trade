@@ -70,3 +70,6 @@ sha256 は封印の門が読んだときに計算した値(門の manifest。走
 | `default/daily_stats.json` | `a7a5044cf3e30af915747b5c37dc73f9786aa05d9ba6b048cb9e3d82ccc2a904` |
 | `default/measure.json` | `f78710853600664586a69cc63745552b98101707e33aedba35688a7dff1ca860` |
 | `default/week_block.json` | `f7ab2fc18dc17fc6e62170d337f97667f87ff47279d94ff9b4300192b45c3cbd` |
+
+## 2026-10-02 リードの追記(関門 ② 2 回目の [直す])
+- 「封印(2023-12-18 00:00Z 以降)」の境の出所: `scripts/check_card.py` の `boundaries()` が封印の台帳(`backtest_data/phase2_sealed/*/SEALED.json`)から出す `bitflyer:FX_BTC_JPY` と `binance:BTCUSDT` の境 = 2023-12-18T00:00:00Z(UTC)。測る期間の終わりは W4 の仕様 §3 の訂正で日本時間の 0 時にそろえた 2023-12-17T15:00:00Z で、境より 9 時間前。P2-01 の `forward_start`(2026-09-06)は別の封印。

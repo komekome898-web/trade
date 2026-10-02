@@ -92,3 +92,6 @@ sha256 は封印の門が読んだときに計算した値(門の manifest。走
 | `1w/daily.csv` | `38c944a0dca7af82a2a1e51cf96a2e651065dbbc456813aae72fad4da6839e95` |
 | `1w/daily_stats.json` | `279386a0528f8994c2e18cc167801c5fdf2df677d19df687c5c64ceeb9eb07fe` |
 | `1w/diagnostics.json` | `b750052267a14458e67845ef1724895c6471a3750b9149553f9ffcfc8aad6e92` |
+
+## 2026-10-02 リードの追記(関門 ② 2 回目の [直す])
+- `1w/daily_stats.json` の `w4.chunks[0].note` にある「1 回目の起動は測定の後の診断(現物の足の読み込み)で止まった」は、1h の注の文面の写しで、**1w には当てはまらない(誤り)**。1w の npz は、区切りの run_card だけの起動(`jobs/c3_1w.runonly.log`、14:34Z 保存)から作った。出力ファイルは sha256 を載せているので書き換えず、ここで訂正する。
