@@ -869,6 +869,9 @@ def test_full_size_rejection_is_not_retried_at_overlay_size(app):
     budget. Full size (0.013 BTC, ~650 JPY of stop risk) is refused; the
     halved size (~300 JPY) would pass — entering it anyway would move the
     champion's rejection boundary, so there must be NO entry at all."""
+    # The daily risk budget is a LIVE rule since owner L-552 (PAPER measures
+    # its losses untouched); the overlay invariant under test is LIVE's.
+    app.checker.enforce_loss_limits = True
     _set_daily_pnl(app.portfolio, -5500.0)
     app.overlay_state.consecutive_losses = 3     # overlay factor 0.5
     drive(app, TICKS, LEADER)
