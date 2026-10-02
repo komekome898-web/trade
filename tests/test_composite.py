@@ -2213,3 +2213,26 @@ def test_pause_and_resume_alerts_are_japanese_and_the_resume_repeats_the_close(
         assert "market data stale" not in body
         assert "最後に市場データを受け取ってから" in body
     assert "売り建玉 0.013 を最後に受け取った値段" in resume_body
+
+
+def test_a_refused_stale_pause_close_trips_as_before(workdir, monkeypatch):
+    """Owner L-547 "2.(a)": when the close at the pause is refused the
+    position is not left open through the pause with no stop-loss — the
+    kill switch trips, as it did before the pause existed."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_200)
+    real = app._try_order
+
+    def refuse_when_stale(*a, **k):
+        if rig.now >= 10_100.0:
+            return None
+        return real(*a, **k)
+    monkeypatch.setattr(app, "_try_order", refuse_when_stale)
+    rig.run()
+
+    assert app.kill_switch.is_tripped
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert "could not be closed" in app.kill_switch.state["detail"]
+    assert app._stale_pause is None
+    assert app.portfolio.position_size == pytest.approx(-0.013)
+    assert PAUSE_TITLE not in [t for t, _, _ in notifier.sent]

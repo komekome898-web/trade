@@ -640,3 +640,28 @@ def test_files_are_never_written_or_modified(tmp_path):
     after = {p: (p.stat().st_size, p.stat().st_mtime)
              for p in tmp_path.rglob("*") if p.is_file()}
     assert before == after
+
+
+def test_a_stale_pause_close_is_counted_and_marked(tmp_path):
+    """Owner L-547 "3.(ア)": a trade closed by the stale-data pause (at the
+    last received quote, exit_signal STALE_PAUSE) stays in the sample and is
+    marked — counted in the meta and named in G1's notes."""
+    def row(ts, signal, price, pnl, order_id):
+        return {"PnL": pnl, "decision": "ORDER_SENT", "event": "decision",
+                "execution_price": None, "execution_status": "FILLED",
+                "order_id": order_id, "order_price": None, "order_size": SIZE,
+                "price": price, "reason": "test", "strategy_signal": signal,
+                "symbol": "FX_BTC_JPY",
+                "timestamp": datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()}
+
+    write_bot(tmp_path, [
+        row(BASE_DAY, "SELL", 10_000_000.0, 0.0, "o1"),
+        row(BASE_DAY + 600, "STALE_PAUSE", 10_001_000.0, -20.0, "o2"),
+    ])
+    trades, meta = jg.load_champion_trades(tmp_path)
+    assert [t.exit_signal for t in trades] == ["STALE_PAUSE"]
+    assert trades[0].pnl_jpy == pytest.approx(-20.0)
+    assert meta["stale_pause_closes"] == 1
+    g1 = by_id(jg.judge_all(tmp_path, iters=200), "G1")
+    assert g1.n == 1
+    assert any("stale-data pause" in n for n in g1.notes)

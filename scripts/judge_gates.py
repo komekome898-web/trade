@@ -280,6 +280,7 @@ def load_champion_trades(root: Path) -> tuple[list[ChampionTrade], dict[str, Any
         "path": str(path), "exists": path.exists(), "records": len(records),
         "bad_lines": bad, "decisions": 0, "open_at_end": False,
         "unresolved_orders": 0, "unmeasured_closes": 0,
+        "stale_pause_closes": 0,
     }
     trades: list[ChampionTrade] = []
     last_pnl: float | None = None
@@ -342,6 +343,11 @@ def load_champion_trades(root: Path) -> tuple[list[ChampionTrade], dict[str, Any
             pnl_pct = delta / notional * 100
         if delta is None:
             meta["unmeasured_closes"] += 1
+        if signal == "STALE_PAUSE":
+            # closed by the stale-data pause at the LAST RECEIVED quote, not
+            # at a live price (bot/main.py `_close_for_stale_pause`). Kept in
+            # the sample and marked, not dropped (owner L-547 "3.(ア)").
+            meta["stale_pause_closes"] += 1
         trades.append(ChampionTrade(
             entry_ts=open_trade["ts"], exit_ts=ts, side=open_trade["side"],
             entry_price=open_trade["price"], size=open_trade["size"],
@@ -568,6 +574,10 @@ def gate_main_bot(trades: list[ChampionTrade], meta: dict, equity0: float, *,
     if meta["unmeasured_closes"]:
         res.notes.append(f"{meta['unmeasured_closes']} close(s) had no PnL "
                          "field and are counted but not averaged.")
+    if meta.get("stale_pause_closes"):
+        res.notes.append(f"{meta['stale_pause_closes']} trade(s) were closed by "
+                         "the stale-data pause at the last received quote "
+                         "(exit_signal STALE_PAUSE); they are counted.")
     if meta["open_at_end"]:
         res.notes.append("a position is still open at the end of the log; it "
                          "is not counted.")

@@ -1561,6 +1561,16 @@ class TradingApp:
             return
         if self.kill_switch.is_tripped:
             return  # the close tripped it (a risk check); `_on_kill` has run
+        if self.portfolio.position_size != 0.0:
+            # The owner approved the pause as "close the position and stop
+            # ordering" (L-544). When the close is refused the position would
+            # sit through the pause with no stop-loss, so it trips as before
+            # the pause existed (owner L-547 "2.(a)").
+            fault = (f"{detail}; the paper position could not be closed for "
+                     f"the stale-data pause ({closed})")
+            self._trip_once(KillReason.MARKET_DATA_ANOMALY, fault)
+            self._on_kill(fault)
+            return
         self._stale_pause["closed"] = closed
         self._save_paper_state()
         self.status.status.data_stale_pause = self._stale_pause_view()
