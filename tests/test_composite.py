@@ -2328,9 +2328,63 @@ def test_paper_records_a_crossed_loss_limit_and_neither_trips_nor_refuses(
     assert [r.data["reason"] for r in crossed] == ["daily_loss_limit"]
 
 
+def test_paper_takes_an_entry_past_the_daily_risk_budget(workdir, monkeypatch):
+    """(critic 972d8ae6) The daily risk budget refused new entries in PAPER
+    too: with -5500 spent of 6000, the champion's entry (about 650 JPY of
+    stop risk) was refused. Since L-552 PAPER takes it."""
+    app = build_test_app(monkeypatch)
+    _set_daily_pnl(app.portfolio, -5500.0)
+    drive(app, TICKS, LEADER)
+    assert app.portfolio.position_size == pytest.approx(-0.013)
+    assert not app.kill_switch.is_tripped
+
+
+@pytest.mark.parametrize("prep,reason", [
+    (lambda app: setattr(app.portfolio, "consecutive_losses", 99), "consecutive_losses"),
+    (lambda app: setattr(app.portfolio, "equity_peak_jpy",
+                         app.portfolio.initial_equity_jpy * 2), "max_drawdown"),
+])
+def test_paper_records_the_drawdown_and_streak_limits_too(
+        workdir, monkeypatch, caplog, prep, reason):
+    """(critic 972d8ae6) All three limits, not only the daily one: the entry
+    goes out, nothing trips, one record — and one Japanese notice — per limit
+    per day however many orders cross it."""
+    import logging
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    prep(app)
+    with caplog.at_level(logging.WARNING, logger="bot.main"):
+        drive(app, TICKS, LEADER)
+        app._note_paper_loss_limit(__import__(
+            "bot.risk.kill_switch", fromlist=["KillReason"]).KillReason(reason), "again")
+    assert app.portfolio.position_size == pytest.approx(-0.013)
+    assert not app.kill_switch.is_tripped
+    crossed = [r.data["reason"] for r in caplog.records
+               if getattr(r, "data", {}).get("event") == "paper_loss_limit_crossed"]
+    assert crossed == [reason]
+    notices = [b for t, b, _ in notifier.sent if t == "paper: 損失の上限に到達(記録のみ)"]
+    assert len(notices) == 1 and "paper では止めず" in notices[0]
+
+
 def test_live_still_enforces_the_loss_limits(workdir, monkeypatch):
-    """The LIVE checker is built with the loss limits on (L-552 is PAPER only)."""
-    from bot.main import TradingApp
-    import inspect
-    src = inspect.getsource(TradingApp.__init__)
-    assert "enforce_loss_limits=settings.mode is not Mode.PAPER" in src
+    """(critic 972d8ae6: the first version only read the source text) A LIVE
+    app is built with the loss limits on, and its checker refuses an entry
+    past the daily limit and trips the switch."""
+    from tests.test_paper_state import live_app
+    from tests.conftest import FakeResponse, FakeSession
+    from bot.risk.pre_trade_checks import AccountState, OrderRequest
+    session = FakeSession()
+    session.set("GET", "/v1/ticker", FakeResponse(200, {
+        "ltp": 1e7, "best_bid": 1e7 - 1000, "best_ask": 1e7 + 1000}))
+    session.set("GET", "/v1/me/getpermissions", FakeResponse(200, [
+        "/v1/me/getbalance", "/v1/me/sendchildorder"]))
+    session.set("GET", "/v1/me/getbalance", FakeResponse(200, [
+        {"currency_code": "JPY", "available": 50000}]))
+    session.set("GET", "/v1/me/getpositions", FakeResponse(200, []))
+    app = live_app(session)
+    assert app.checker.enforce_loss_limits is True
+    d = app.checker.check(
+        OrderRequest("FX_BTC_JPY", "SELL", 0.001, 1e7, stop_price=1.005e7),
+        AccountState(balance_jpy=200000, position_notional_jpy=0, open_orders=0,
+                     daily_pnl_jpy=-7000, drawdown_pct=0, consecutive_losses=0))
+    assert not d.approved and app.kill_switch.is_tripped

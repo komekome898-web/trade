@@ -1087,6 +1087,31 @@ class TradingApp:
         return round(int(size * factor / self.product.min_size)
                      * self.product.min_size, 8)
 
+    _LOSS_LIMIT_JA = {
+        KillReason.DAILY_LOSS_LIMIT: "日次損失の上限",
+        KillReason.MAX_DRAWDOWN: "ドローダウンの上限",
+        KillReason.CONSECUTIVE_LOSSES: "連敗の上限",
+    }
+
+    def _note_paper_loss_limit(self, reason: KillReason, detail: str) -> None:
+        """A PAPER order crossed a loss limit that PAPER does not enforce
+        (owner L-552). Logged and told to the owner once per limit per UTC day
+        — the crossing is the measurement paper exists for, so it is reported,
+        not acted on."""
+        day = time.strftime("%Y-%m-%d", time.gmtime())
+        if (reason.value, day) in self._loss_limits_seen:
+            return
+        self._loss_limits_seen.add((reason.value, day))
+        logger.warning("paper loss limit crossed (recorded only, not "
+                       "enforced: owner L-552)", extra={"data": {
+                           "event": "paper_loss_limit_crossed",
+                           "reason": reason.value, "detail": detail}})
+        name = self._LOSS_LIMIT_JA.get(reason, reason.value)
+        self._notify("paper: 損失の上限に到達(記録のみ)",
+                     f"paper の {name}に届きました({detail})。paper では止めず、"
+                     f"取引を続けます(実弾なら、ここでキルスイッチが発動します)。"
+                     f"同じ上限についてのお知らせは、この日(UTC)はこれが最後です。")
+
     def _warn_overlay_suppressed(self, factor: float, price: float, full_size: float) -> None:
         """One notifier warning per UTC day; the log line is per occurrence.
 
@@ -1169,13 +1194,7 @@ class TradingApp:
         )
         decision = self.checker.check(request, account)
         for reason, detail in decision.observed:
-            day = time.strftime("%Y-%m-%d", time.gmtime())
-            if (reason.value, day) not in self._loss_limits_seen:
-                self._loss_limits_seen.add((reason.value, day))
-                logger.warning("paper loss limit crossed (recorded only, not "
-                               "enforced: owner L-552)", extra={"data": {
-                                   "event": "paper_loss_limit_crossed",
-                                   "reason": reason.value, "detail": detail}})
+            self._note_paper_loss_limit(reason, detail)
         if not decision.approved:
             logger.warning("order rejected by risk checks", extra={"data": {
                 "event": "risk_reject", "reasons": decision.reasons}})
