@@ -23,3 +23,22 @@
 - **[聞く] L-532** → (a) は範囲内。L-532 の依頼は「**キルスイッチでデータの取得まで止まってしまう**」で、答えは「発動中も取得・記録を続け、取引だけ止める」だった(`docs/OWNER_STATUS.md` の L-532 の行)。注文の状態を読むのは取得・記録で、送信も取消しもしない。
 - **[直す]** は全部直す: `_kill_message` 全体を日本語にし、残した決済・状態不明の決済があるときは「手で決済しない」案内にする。`OrderStateUnknown` と日次損失の両方の理由を出す。送信後の例外でも決済を外せるようにする。docstring を正確にする。試験の不足を埋める。
 - 計画 §4-1 により、2 回目の批評家にも [止める] が出たら、直し続けずに止めて原因を出す。
+
+## 2 回目の批評家(2026-10-02)
+
+止める 1・直す 3・聞く 0
+
+**読み(逐語)**: 1 回目に指摘した 3 つの再現は、直した版ではすべて正しく振る舞う。発動中の読み直しは、step を回した端から端までの試験でも送信・取消しが 0 件で、L-532 の「取引だけ止める」を守っている。PAPER と、注文が残っていない毎晩の LIVE の再起動は、`venue_fill` で止まらない。ただし新しく足した `_resume_kept_watch` が、発動したままの再起動のときに STATE_UNKNOWN と PENDING_SUBMIT も見張りに載せる。それを `match_once` で確定して記帳するので、1 回目と同じ種類の二重記帳が別の入口から戻ってきている。具体的には、起動のときに取り込んだ建玉(getpositions)の上に、その中にすでに入っている約定をもう一度記帳する。さらに起動直後は照合の基準に「前に見た注文」が無いので、1 週間前のオーナーの手の決済まで「bot の決済」として取り込み、取引所は LONG 0.01 なのに bot は平らと思い込む。毎晩 04:02 に再起動するので、この経路は普通に通る。ここを直すまではコミットしてはいけない。
+
+- **[止める]** 発動したまま再起動すると、STATE_UNKNOWN の決済を照合で確定し、取り込んだ建玉の上に二重に記帳する。古い手の注文も取り込む / `_resume_kept_watch` × `recheck_kept` の `match_once` × `_adopt_fill_watermarks` / 再現: `[bot_real_order] … after watch pos=-0.01 rec=FILLED acc=ACC-BOT writes=[]`、`[owner_hand_close] … after watch pos=-0.01 … acc=ACC-HAND`、`[oldhand] venue=LONG 0.01 boot pos=0.01 after watch pos=0.0 rec=FILLED acc=ACC-OLDHAND`。原因: `adopt_stale_pending` が起動時に確定するのは PENDING_SUBMIT だけで印より前。STATE_UNKNOWN は印の段で素通りし、見張りが後で確定して記帳する。`AutoReconciler._match` は時刻で選り分けず、起動直後は `_observed` が空。
+- 確かめたこと: 1 回目の再現 5 件は直った(`5 passed`)。発動後の送信・取消しは 0 件(`writes_after=[]`)。毎晩の再起動の普通の場合は止まらない(`[ok_flat_no_orders] tripped=False getchild_calls=0`)。指定の 14 ファイル `747 passed`。
+- **[直す]** 変異の生き残り: N1(再起動時の見張りから STATE_UNKNOWN/PENDING を外す)・N3(見張りの間隔)・N4(LIVE だけの条件)・N5・N6 が `227 passed`。
+- **[直す]** 発動中(再起動していない)にも、確かめた後のオーナーの手の決済を bot の決済として取り込みうる【推定】。
+- **[直す・別件]** `tests/test_record_liquidations.py::test_a_second_that_still_saturates_is_recorded_as_truncated` は時間ではなく記憶に依存(`counts` が 6,481,800 項目、見積もり約 910MB + 返す行 約 810MB)。仮想記憶 950MB で単独に回すと `MemoryError`。
+- 欠陥 2(鍵): docstring は直った。M7 を落とす試験が足された。
+
+## リードの応答(2 回目)
+
+- 計画 §4-1 により、欠陥 1 は直し続けずに止めた。原因と次の設計の不変条件は `docs/DISCUSSIONS/2026-10-02_kill_keep_close/README.md`。2 回目の差分は同じ置き場の `attempt_r2_shelved.patch` に退避し、作業ツリーから戻した。**2 回目の [止める] の直接の原因は、リードが追加で指示した「STATE_UNKNOWN・PENDING_SUBMIT も見張りに戻す」**。
+- 欠陥 2 と Deribit の案内文は、2 回とも [止める] 無しなのでコミットした。
+- [直す・別件] 清算の記録の試験の記憶 → 試験を直す(別のコミット)。

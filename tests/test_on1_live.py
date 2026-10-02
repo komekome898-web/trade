@@ -669,6 +669,60 @@ def test_run_lock_takes_over_a_stale_lock(tmp_path):
         assert path.exists()
 
 
+def _empty_lock(path, age_sec):
+    """The corpse a crash between O_EXCL-create and the write leaves: an empty
+    file, last modified `age_sec` ago (wall clock, as the filesystem keeps it)."""
+    import os
+    import time
+    path.write_bytes(b"")
+    t = time.time() - age_sec
+    os.utime(path, (t, t))
+
+
+def test_run_lock_takes_over_an_old_empty_lock(tmp_path):
+    """Critic's reproduction: an empty lock two days old used to read as
+    "held, age None" forever (exit code 3 on every run). Unreadable content
+    now falls back to the file's mtime, and two days is past any stale bound."""
+    path = tmp_path / "exit.lock"
+    _empty_lock(path, 2 * 86400)
+    with RunLock(path):
+        stamp = json.loads(path.read_text(encoding="utf-8"))
+        assert set(stamp) == {"pid", "ts"}         # re-written by the new holder
+
+
+def test_run_lock_ages_an_empty_lock_on_the_wall_clock_not_the_injected_one(
+        tmp_path):
+    """The mtime is wall-clock time. Measured against an injected clock (here
+    0.0) a two-day-old empty lock would come out "age 0" and be held forever."""
+    path = tmp_path / "exit.lock"
+    _empty_lock(path, 2 * 86400)
+    with RunLock(path, clock=lambda: 0.0):
+        assert json.loads(path.read_text(encoding="utf-8"))["ts"] == 0.0
+
+
+def test_run_lock_honours_a_fresh_empty_lock(tmp_path):
+    """An empty file younger than stale_after_sec may be a holder that has
+    created the file and not yet written it: still busy."""
+    path = tmp_path / "exit.lock"
+    _empty_lock(path, 5)
+    with pytest.raises(LockBusy):
+        RunLock(path).acquire()
+    assert path.read_bytes() == b""                # left alone
+
+
+def test_run_lock_with_content_still_ages_by_its_stamp_not_mtime(tmp_path):
+    """A readable lock keeps its old meaning: the age is the clock minus the
+    written ts, whatever the file's mtime says."""
+    path = tmp_path / "exit.lock"
+    path.write_text(json.dumps({"pid": 1, "ts": 1_000.0}), encoding="utf-8")
+    import os
+    os.utime(path, (0, 0))                          # mtime: 1970, ancient
+    with pytest.raises(LockBusy):                   # stamp: 100 s old -> fresh
+        RunLock(path, stale_after_sec=900.0, clock=lambda: 1_100.0).acquire()
+    with RunLock(path, stale_after_sec=900.0, clock=lambda: 2_000.0):
+        pass                                        # stamp: 1,000 s old -> stale
+
+
 # ---------------------------------------------------------------------------
 # wiring
 

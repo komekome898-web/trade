@@ -274,8 +274,10 @@ class BufferedDailyGz:
 # Two processes appending to the same day file can interleave members and
 # make it unreadable. The lock file <out-dir>.lock is held for the whole run
 # and its time is refreshed by a background thread; a lock not refreshed for
-# LOCK_STALE_SEC belongs to a dead process and is taken over. stop_all.bat
-# deletes the lock of the process it force-killed.
+# LOCK_STALE_SEC belongs to a dead process and is taken over. This script is
+# not resident (one run per fetch_all.bat pass, seconds long), so stop_all.bat
+# neither stops it nor deletes its lock; the stale bound is what frees a lock
+# a killed run left behind.
 LOCK_STALE_SEC = 180.0          # same values as record_liquidations.py
 LOCK_BEAT_SEC = 45.0
 
@@ -299,8 +301,11 @@ def _acquire_lock(lock_path: Path):
         lock.acquire()
     except LockBusy as exc:
         _log(f"another process already writes here ({exc}); exiting so two "
-             f"processes never append to the same file. Stop the resident "
-             f"with deploy\\stop_all.bat or use another --out-dir.")
+             f"processes never append to the same file. It is another run of "
+             f"this script (fetch_all.bat or a manual run), which normally ends "
+             f"within seconds: run again once it has finished, or use another "
+             f"--out-dir. A lock left by a killed run is taken over after "
+             f"{LOCK_STALE_SEC:.0f} s.")
         return False
     return lock
 
