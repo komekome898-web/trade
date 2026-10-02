@@ -382,3 +382,8 @@ sha256 は封印の門が読んだときに計算した値(門の manifest。走
 | `c_60m/daily.csv` | `03985f3160f3c308ae1bdad5d6aa3e0a1f1576532392fbe4cd0e9ce25de198bb` |
 | `c_60m/daily_stats.json` | `05304582966499e17a4ee22f477a88ccee9f4edabbfc340f646739ba36221bf2` |
 | `c_60m/diagnostics.json` | `1a1579821f09f0aa052ee20714536959f48aebbd8b20d08a19f51b4198e615fe` |
+
+## 関門 ② の監査の後の追記(2026-10-03、数値は変えていない)
+
+- (b) の最初の 2 回 `c2_b_1m`(14:29:43Z 開始)・`c2_b_3m`(14:33:43Z 開始)は途中で止めて捨てた(どちらも exit 143、14:33:53Z。`scratchpad/w4/measure/jobs/c2_b_1m.log`・`c2_b_3m.log`)。結果への混入は無い。(b) の最終出力はその後の `.bc.log` の回(`summary_b_1m.json` 16:13:32Z、`summary_b_3m.json` 16:37:39Z)。
+- (b)(c) の区切りの同一性は確かめていない(上の「照合の範囲」)。オーナーへの報告では未確認として扱う。
