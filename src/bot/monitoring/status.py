@@ -84,4 +84,7 @@ class StatusWriter:
             f"daily_pnl={s.daily_pnl_jpy:.1f} total_pnl={s.total_pnl_jpy:.1f} "
             f"max_dd={s.max_drawdown_pct:.2f}% trades={s.trade_count}\n"
             f"errors={s.error_count} kill_switch={s.kill_switch}"
+            + (f"\ndata_stale_pause=since {s.data_stale_pause.get('since')} "
+               f"fresh_since={s.data_stale_pause.get('fresh_since')}"
+               if s.data_stale_pause else "")
         )

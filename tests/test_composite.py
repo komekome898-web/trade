@@ -2152,3 +2152,64 @@ def test_a_price_jump_across_the_outage_resumes_instead_of_tripping(
                                                     RESUME_TITLE]
     assert app.kill_switch.state["reason"] == "market_data_anomaly"
     assert "abnormal price jump" in app.kill_switch.state["detail"]
+
+
+def test_a_price_jump_after_the_first_fresh_tick_still_trips(workdir, monkeypatch):
+    """(critic 1c37399b #1) Only the FIRST fresh tick may jump. A +6% print
+    at 10_255 — the data has been back since 10_180 — is checked as in
+    normal running: it trips, it does not become the reference the resume
+    is built on (before the fix it resumed at 10_260 on that price)."""
+    app, rig = _gap_app(monkeypatch, until=10_400)
+    app.feed.max_price_jump_pct = 5.0
+    rig.hooks[10_250.0] = lambda: rig.quotes.update(
+        ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
+    rig.run()
+
+    assert app.kill_switch.is_tripped
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert "abnormal price jump" in app.kill_switch.state["detail"]
+    assert next(t for t, _, k in rig.log if k) == 10_255.0   # on that tick
+    assert not any(n == "strategy" for t, n, _ in rig.calls if t >= 10_180.0)
+
+
+def test_stale_again_before_the_resume_restarts_the_resume_clock(
+        workdir, monkeypatch):
+    """(critic 1c37399b #4) Data back at 10_180, down again 10_230-10_330,
+    stale again at 10_290: the candle 10_200 is no longer all fresh, so no
+    resume at 10_260. The clock restarts at the next fresh tick (10_330),
+    the first all-fresh candle is 10_380, resume at 10_440. No second pause
+    alert."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_500)
+    real = rig._ticker
+
+    def ticker(product):
+        if 10_230 <= rig.now < 10_330:
+            raise rig.error
+        return real(product)
+    monkeypatch.setattr(app.feed._client, "ticker", ticker)
+    rig.run()
+
+    for t in (10_260.0, 10_290.0, 10_330.0, 10_435.0):
+        assert rig.paused_at(t), t
+    assert rig.first(paused=False, after=10_100.0) == 10_440.0
+    assert [c.start for c in app.candles.completed][0] == 10_380
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", PAUSE_TITLE,
+                                                RESUME_TITLE]
+    assert not app.kill_switch.is_tripped
+
+
+def test_pause_and_resume_alerts_are_japanese_and_the_resume_repeats_the_close(
+        workdir, monkeypatch):
+    """(critic 1c37399b #3, #9) The pause alert may be lost when the PC's
+    own network is what went down, so the resume alert carries the reason
+    and the close as well. Neither carries the English log detail (O-1)."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_300)
+    rig.run()
+
+    (_, pause_body, _), (_, resume_body, _) = notifier.sent[1], notifier.sent[2]
+    for body in (pause_body, resume_body):
+        assert "market data stale" not in body
+        assert "最後に市場データを受け取ってから" in body
+    assert "売り建玉 0.013 を最後に受け取った値段" in resume_body

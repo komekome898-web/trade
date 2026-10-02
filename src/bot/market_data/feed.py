@@ -25,7 +25,16 @@ class MarketDataStale(MarketDataAnomaly):
     PAPER bot pauses on instead of tripping the kill switch (bot/main.py,
     `_pause_for_stale_data`, owner L-544). A subclass, so every existing
     `except MarketDataAnomaly` still catches it, and the pause is decided by
-    the exception's type, never by its message text."""
+    the exception's type, never by its message text.
+
+    `detail_ja` is the same fact for the owner's alert (O-1: owner-facing
+    text is Japanese); the English message stays the log's."""
+
+    def __init__(self, age_sec: float, limit_sec: float) -> None:
+        super().__init__(f"market data stale: {age_sec:.0f}s > {limit_sec}s")
+        self.age_sec, self.limit_sec = age_sec, limit_sec
+        self.detail_ja = (f"最後に市場データを受け取ってから {age_sec:.0f} 秒"
+                          f"(上限 {limit_sec:g} 秒)")
 
 
 @dataclass
@@ -193,4 +202,4 @@ class MarketDataFeed:
             raise MarketDataAnomaly("no market data received yet")
         age = self._clock() - self.last_update
         if age > self.max_staleness_sec:
-            raise MarketDataStale(f"market data stale: {age:.0f}s > {self.max_staleness_sec}s")
+            raise MarketDataStale(age, self.max_staleness_sec)

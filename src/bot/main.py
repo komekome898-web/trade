@@ -693,11 +693,15 @@ class TradingApp:
         # failure while tripped neither re-trips nor re-alerts. While tripped a
         # price jump is taken as the new reference (see MarketDataFeed).
         tripped = self.kill_switch.is_tripped
-        # Also while a PAPER bot is paused on stale data (owner L-544): no order
-        # can be sent, and a move of more than the jump limit during the outage
-        # must not turn the pause into a permanent trip. Resuming needs one
-        # whole candle of fresh data first (`_resume_if_fresh_candle`).
-        self.feed.accept_price_jumps = tripped or self._stale_pause is not None
+        # Also for the FIRST fresh tick after a stale-data pause (owner L-544):
+        # a move of more than the jump limit during the outage must not turn
+        # the pause into a permanent trip, so that one tick becomes the new
+        # reference. Only that one: from the second fresh tick on the jump
+        # check is back, so a bad print after the data returns still trips
+        # instead of becoming the reference the resume is built on.
+        self.feed.accept_price_jumps = tripped or (
+            self._stale_pause is not None
+            and self._stale_pause["fresh_since"] is None)
         # Before the polls, not after: a widened read timeout has to apply to
         # the very call that is struggling, not to the one after it.
         self._refresh_condition()
@@ -1509,7 +1513,7 @@ class TradingApp:
                                        "error": kind, "detail": str(error)}})
 
     # ---- stale-data pause (PAPER ONLY, owner L-544) ------------------------
-    def _pause_for_stale_data(self, detail: str) -> None:
+    def _pause_for_stale_data(self, detail: str, detail_ja: str) -> None:
         """Stale market data PAUSES a PAPER bot instead of tripping the kill
         switch (owner L-544: close the position, stop ordering, resume by
         itself once the data is back). Called only for `MarketDataStale` in
@@ -1539,7 +1543,8 @@ class TradingApp:
             return
         since = time.time()
         self._stale_pause = {"since": since, "detail": detail,
-                             "fresh_since": None}
+                             "detail_ja": detail_ja, "fresh_since": None,
+                             "closed": None}
         logger.warning("market data stale: paper trading paused (kill switch "
                        "NOT tripped)", extra={"data": {
                            "event": "stale_pause_entered", "detail": detail,
@@ -1556,12 +1561,13 @@ class TradingApp:
             return
         if self.kill_switch.is_tripped:
             return  # the close tripped it (a risk check); `_on_kill` has run
+        self._stale_pause["closed"] = closed
         self._save_paper_state()
         self.status.status.data_stale_pause = self._stale_pause_view()
         self.status.write()
         self._notify("データ停滞: 取引を一時停止",
                      f"市場データが古くなったため、paper の取引を一時停止しました"
-                     f"({detail})。キルスイッチは発動していません。{closed}。"
+                     f"({detail_ja})。キルスイッチは発動していません。{closed}。"
                      f"データが戻り、新しいデータだけでできた "
                      f"{self.candles.interval_sec} 秒足が 1 本完成したら、"
                      f"自動で再開します。")
@@ -1651,10 +1657,16 @@ class TradingApp:
                            "candles_dropped": dropped}})
         self.status.status.data_stale_pause = None
         self.status.write()
+        # The pause alert is sent while the data is down, and a data outage
+        # is often the PC's own network (2026-09-27: `notify_failed` at the
+        # same second as the stale trip), so it may never have arrived. This
+        # alert repeats what the pause did, so it stands on its own.
         self._notify("データ回復: 取引を再開",
                      f"市場データが戻り、新しいデータだけでできた足が 1 本完成"
                      f"したため、paper の取引を再開しました(一時停止は約 "
-                     f"{paused_sec:.0f} 秒)。それより前の足 {dropped} 本は"
+                     f"{paused_sec:.0f} 秒)。一時停止の理由: "
+                     f"{pause['detail_ja']}。一時停止のときの決済: "
+                     f"{pause['closed']}。それより前の足 {dropped} 本は"
                      f"戦略の判断から外しました。")
         return True
 
@@ -1800,7 +1812,7 @@ class TradingApp:
                         and not self.kill_switch.is_tripped:
                     # PAPER only (owner L-544): stale data pauses, it does not
                     # trip. LIVE, and every other anomaly, trips as before.
-                    self._pause_for_stale_data(str(e))
+                    self._pause_for_stale_data(str(e), e.detail_ja)
                 else:
                     self._trip_once(KillReason.MARKET_DATA_ANOMALY, str(e))
                     self._on_kill(str(e))

@@ -36,6 +36,7 @@ SIGNAL_JA = {
     "CLOSE": "決済",
     "HOLD": "待機",
     "STOP_LOSS": "損切り",
+    "STALE_PAUSE": "データ停滞で一時停止",
 }
 
 # ---- exact reasons ---------------------------------------------------------
@@ -80,6 +81,9 @@ _EXACT = {
     "exchange_stopped": "取引所が停止中",
     "exchange_condition": "取引所コンディション悪化",
     "exchange_degraded": "取引所の応答が劣化",
+    # bot/main.py `_close_for_stale_pause` (owner L-544)
+    "market data stale: paper position closed at the last received quote":
+        "データ停滞: 最後に受け取った値段で paper の建玉を決済",
 }
 
 # ---- reasons that carry a number -------------------------------------------
