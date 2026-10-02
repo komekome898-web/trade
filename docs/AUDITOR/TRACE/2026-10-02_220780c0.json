@@ -19374,9 +19374,10 @@
   {
    "move": 711,
    "tools": {
-    "Bash": 1
+    "Bash": 6,
+    "Agent": 2
    },
-   "n_tools": 1,
+   "n_tools": 8,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
