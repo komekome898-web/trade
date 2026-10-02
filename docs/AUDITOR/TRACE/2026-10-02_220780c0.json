@@ -18079,9 +18079,11 @@
   {
    "move": 663,
    "tools": {
-    "Bash": 2
+    "Bash": 7,
+    "ToolSearch": 1,
+    "SendMessage": 1
    },
-   "n_tools": 2,
+   "n_tools": 9,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
