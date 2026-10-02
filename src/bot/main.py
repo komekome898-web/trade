@@ -1566,11 +1566,11 @@ class TradingApp:
         report_every = float(self.settings.config.get("notifications", {})
                              .get("status_report_interval_sec", 3600))
         last_report = time.time()
-        self.notifier.send("BOT START", f"mode={self.settings.mode.value} "
-                                        f"product={self.settings.product_code}"
-                                        + (" kill_switch=TRIPPED (data recording "
-                                           "only, no trading)"
-                                           if self.kill_switch.is_tripped else ""))
+        self._notify("BOT START", f"mode={self.settings.mode.value} "
+                                  f"product={self.settings.product_code}"
+                                  + (" kill_switch=TRIPPED (data recording "
+                                     "only, no trading)"
+                                     if self.kill_switch.is_tripped else ""))
         try:
             self._run_loop(poll, report_every, last_report)
         finally:
@@ -1583,10 +1583,10 @@ class TradingApp:
             self._save_paper_state()
         # Reached only by the operator-reset exit (see `_run_loop`): this
         # process ends without trading; a freshly started one trades.
-        self.notifier.send("BOT STOPPED",
-                           f"kill switch reset by an operator; this process exits "
-                           f"without trading and a fresh start resumes trading "
-                           f"(reset trip: {self.kill_switch.state})", urgent=True)
+        self._notify("BOT STOPPED",
+                     f"kill switch reset by an operator; this process exits "
+                     f"without trading and a fresh start resumes trading "
+                     f"(reset trip: {self.kill_switch.state})", urgent=True)
 
     def _run_loop(self, poll: float, report_every: float, last_report: float) -> None:
         # A tripped switch no longer ends the loop: it keeps recording market
@@ -1654,8 +1654,14 @@ class TradingApp:
         """True once an operator has reset the switch on disk (state file and
         KILL file gone, `KillSwitch.reset`) after this process saw the trip
         there. Reads a FRESH `KillSwitch()`; `self.kill_switch` is never reset
-        or re-read, so nothing in this process can trade again."""
-        if KillSwitch().is_tripped:
+        or re-read, so nothing in this process can trade again. A read that
+        fails counts as "not reset": it must not stop the recording."""
+        try:
+            on_disk = KillSwitch().is_tripped
+        except Exception as e:
+            self._note_data_only_failure(e)
+            return False
+        if on_disk:
             self._trip_seen_on_disk = True
             return False
         return self._trip_seen_on_disk

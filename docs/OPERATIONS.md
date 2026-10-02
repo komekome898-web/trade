@@ -67,7 +67,7 @@ tail -f logs/bot.jsonl                  # 全売買判断の構造化ログ
 | 通常停止 | `sudo systemctl stop bitflyer-bot` |
 | 緊急停止(Kill Switch) | リポジトリ直下に `touch KILL` |
 | Kill Switch 状態確認 | `cat data/kill_switch.json` |
-| Kill Switch 解除(原因調査後のみ) | **Windows: `deploy\reset_kill.bat` をダブルクリック**(発動理由を表示 → `YES` 入力 → 停止→解除→再起動まで通しで実行)。Linux: `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"`。発動中のプロセスは取引せずに市場データの記録だけを続けており、解除を検知するとそのまま(取引を再開せずに)終了する。その後 `sudo systemctl start bitflyer-bot` で起動する(このユニットは `Restart=on-failure` なので、解除による終了(終了コード 0)は systemd が起こし直さない)。Windows で `reset_kill.bat` を使わずに解除した場合も同じく終了し、1 時間ごとの `start_all.bat` が起こし直す |
+| Kill Switch 解除(原因調査後のみ) | **Windows: `deploy\reset_kill.bat` をダブルクリック**(発動理由を表示 → `YES` 入力 → 停止→解除→再起動まで通しで実行)。Linux: `.venv/bin/python -c "import sys; sys.path.insert(0,'src'); from bot.risk.kill_switch import KillSwitch; KillSwitch().reset(operator_confirm=True)"`。発動中のプロセスは取引せずに市場データの記録だけを続けており、解除を検知するとそのまま(取引を再開せずに)終了する。その後 `sudo systemctl restart bitflyer-bot` で起こし直す(このユニットは `Restart=on-failure` なので、解除による終了(終了コード 0)は systemd が起こし直さない。`start` だと、解除の検知の前(最大でポーリング 1 周)に打ったとき空振りし、その後の終了で止まったままになるので `restart` を使う)。Windows で `reset_kill.bat` を使わずに解除した場合も同じく終了し、1 時間ごとの `start_all.bat` が起こし直す |
 | サイジングブレーキ状態確認 | `cat data/overlay_state.json` |
 | サイジングブレーキ解除(口座を作り直した時のみ) | `rm data/overlay_state.json` |
 | PAPER 帳簿の確認 | `cat data/paper_state.json` |

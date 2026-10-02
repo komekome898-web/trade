@@ -1194,8 +1194,11 @@ def test_kill_reason_survives_a_failing_notifier(workdir, monkeypatch):
     app = build_test_app(monkeypatch, notifier=notifier)
 
     def trip_then_raise():
-        app.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, "ticker stale for 900s")
-        raise RuntimeError("a second fault while shutting down")
+        # Trip ONCE: re-tripping every cycle would restore the reason and hide
+        # an overwrite by `_trip_once`.
+        if not app.kill_switch.is_tripped:
+            app.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, "ticker stale for 900s")
+            raise RuntimeError("a second fault while shutting down")
     monkeypatch.setattr(app, "step", trip_then_raise)
     _interrupt_on_sleep(monkeypatch)
 
