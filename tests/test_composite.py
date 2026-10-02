@@ -2250,3 +2250,22 @@ def test_stale_pause_close_logs_its_execution_status(workdir, monkeypatch):
     assert [(r["decision"], r["execution_status"]) for r in stale] == [
         ("ORDER_SENT", "REJECTED")]
     assert app.kill_switch.is_tripped
+
+
+def test_a_stop_loss_past_the_daily_limit_closes_first_then_trips(
+        workdir, monkeypatch):
+    """Owner L-549 "通す": a short of 0.013 and a +5% move in one cycle puts
+    the day past MAX_DAILY_LOSS_JPY. The stop-loss close is no longer refused
+    by the limit it is trying to honour: it fills, the book is flat, and the
+    daily-loss kill switch trips right after (before L-549 the position was
+    left open and frozen)."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    drive(app, TICKS, LEADER)
+    assert app.portfolio.position_size == pytest.approx(-0.013)
+    drive(app, [(390, 1.05e7)], LEADER)
+
+    assert app.portfolio.position_size == 0.0
+    assert app.portfolio.trades[-1].side == "BUY"
+    assert app.kill_switch.state["reason"] == "daily_loss_limit"
+    assert notifier.sent[-1][0] == "KILL SWITCH"

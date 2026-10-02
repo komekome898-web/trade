@@ -235,7 +235,16 @@ def test_an_adverse_move_after_boot_still_counts_toward_the_daily_brake(
     app = boot(monkeypatch)
     assert app.portfolio.daily_pnl_jpy(PRICE) == pytest.approx(0.0)   # the anchor
     assert app.portfolio.daily_pnl_jpy(GAP) == pytest.approx(-6500.0)  # since it
-    app.checker.check(wide_stop_entry(), account_of(app, GAP))
+    # The SELL against yesterday's long is a pure close: since owner L-549 the
+    # limit lets it through and hands the trip to the caller, to make right
+    # after sending it. The loss is counted all the same.
+    closing = app.checker.check(wide_stop_entry(), account_of(app, GAP))
+    assert closing.approved
+    assert [r for r, _ in closing.trip_after] == [KillReason.DAILY_LOSS_LIMIT]
+    assert not app.kill_switch.is_tripped
+    # An order that adds exposure trips it on the spot, as before.
+    adding = OrderRequest(SYMBOL, "BUY", 0.001, GAP, stop_price=GAP * 0.98)
+    app.checker.check(adding, account_of(app, GAP))
     assert app.kill_switch.is_tripped
     assert app.kill_switch.state["reason"] == KillReason.DAILY_LOSS_LIMIT.value
 

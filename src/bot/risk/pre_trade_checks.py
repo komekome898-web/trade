@@ -5,7 +5,7 @@ The checker also decides when a limit breach must trip the kill switch
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bot.risk.kill_switch import KillReason, KillSwitch
 from bot.settings import RiskLimits
@@ -49,6 +49,10 @@ class OrderRequest:
 class RiskDecision:
     approved: bool
     reasons: list[str]
+    # Kill-switch trips the caller owes AFTER sending this order: a purely
+    # closing order is let through the daily loss limit first (owner L-549),
+    # and the limit trips once the close has been sent.
+    trip_after: list[tuple[KillReason, str]] = field(default_factory=list)
 
 
 class PreTradeChecker:
@@ -59,14 +63,27 @@ class PreTradeChecker:
 
     def check(self, order: OrderRequest, account: AccountState) -> RiskDecision:
         reasons: list[str] = []
+        trip_after: list[tuple[KillReason, str]] = []
+        # A purely closing order: everything it sends reduces the position
+        # (see THE REDUCING EXEMPTION below for how the split is made).
+        reducible = (max(0.0, -account.position_size) if order.side == "BUY"
+                     else max(0.0, account.position_size))
+        purely_closing = (order.size > 0 and reducible > 0
+                          and order.size - min(order.size, reducible) <= _SIZE_EPSILON)
 
         # Kill-switch-tripping conditions first (these stop the bot entirely)
         if account.daily_pnl_jpy <= -self.limits.max_daily_loss_jpy:
-            self.kill_switch.trip(
-                KillReason.DAILY_LOSS_LIMIT,
-                f"daily pnl {account.daily_pnl_jpy:.0f} <= -{self.limits.max_daily_loss_jpy}",
-            )
-            reasons.append("daily loss limit reached (kill switch tripped)")
+            detail = (f"daily pnl {account.daily_pnl_jpy:.0f} <= "
+                      f"-{self.limits.max_daily_loss_jpy}")
+            if purely_closing and not self.kill_switch.is_tripped:
+                # Owner L-549 "通す": the limit must not refuse the order that
+                # stops the loss (a stop-loss refused here left the position
+                # frozen with no exit). The close goes first; the caller trips
+                # the switch right after sending it.
+                trip_after.append((KillReason.DAILY_LOSS_LIMIT, detail))
+            else:
+                self.kill_switch.trip(KillReason.DAILY_LOSS_LIMIT, detail)
+                reasons.append("daily loss limit reached (kill switch tripped)")
         if account.drawdown_pct >= self.limits.max_drawdown_pct:
             self.kill_switch.trip(
                 KillReason.MAX_DRAWDOWN,
@@ -170,10 +187,21 @@ class PreTradeChecker:
                 f"insufficient balance: need {order.notional_jpy:.0f}, have {account.balance_jpy:.0f}"
             )
         remaining_daily_budget = self.limits.max_daily_loss_jpy + min(account.daily_pnl_jpy, 0.0)
-        if order.estimated_loss_jpy > remaining_daily_budget:
+        # The daily budget binds what an order RISKS; a purely closing order
+        # risks nothing new, and past the limit the budget is negative, which
+        # would refuse the close the limit itself is waiting for (L-549).
+        if not purely_closing and order.estimated_loss_jpy > remaining_daily_budget:
             reasons.append(
                 f"estimated loss {order.estimated_loss_jpy:.0f} exceeds remaining daily risk budget "
                 f"{remaining_daily_budget:.0f}"
             )
 
-        return RiskDecision(approved=not reasons, reasons=reasons)
+        if reasons:
+            # Refused anyway (another check): nothing will be sent, so the
+            # deferred trip happens now, exactly as before L-549.
+            for reason, detail in trip_after:
+                self.kill_switch.trip(reason, detail)
+                reasons.append("daily loss limit reached (kill switch tripped)")
+            trip_after = []
+        return RiskDecision(approved=not reasons, reasons=reasons,
+                            trip_after=trip_after)

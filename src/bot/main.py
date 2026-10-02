@@ -1179,6 +1179,23 @@ class TradingApp:
                     "scaled_size": scaled,
                     "consecutive_losses": self.overlay_state.consecutive_losses}})
                 size = scaled
+        if not decision.trip_after:
+            return self._submit_checked(side, size, price, opening)
+        # A close let through the daily loss limit (owner L-549): send it,
+        # then trip — whatever the send returned, the limit has been reached.
+        try:
+            return self._submit_checked(side, size, price, opening)
+        finally:
+            for reason, detail in decision.trip_after:
+                self._trip_once(reason, detail)
+            if not self._kill_notified:
+                self._on_kill("; ".join(d for _, d in decision.trip_after))
+
+    def _submit_checked(self, side: str, size: float, price: float,
+                        opening: bool):
+        """Send an order the risk checks approved, refresh it once and book
+        what it filled. Returns the order record, or None when nothing was
+        sent."""
         try:
             order = self.orders.submit(
                 symbol=self.settings.product_code, side=side, size=size,
