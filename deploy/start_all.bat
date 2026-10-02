@@ -29,6 +29,18 @@ call :launch "liq-recorder" "scripts\record_liquidations.py" record_liquidations
 rem read-only API latency probe (P13, L-098; autostart approved L-133). Exits after
 rem 168h; the guard above relaunches it at the next start_all (nightly restart).
 call :launch "latency-probe" "scripts\probe_api_latency.py" probe_api_latency.py "logs\latency_probe.out.log"
+rem Forward-only sources (owner L-039, L-531, L-550): the APIs serve only the
+rem current value, so history exists only from the day recording starts. One
+rem round takes minutes to hours, too long for the sequential 15-minute
+rem fetch_all.bat, so they run resident like record_venues.py. stop_all.bat
+rem stops both and restart_all.bat checks they are gone. Each holds a lock
+rem (data\hyperliquid.lock, data\okx_traders.lock) so a second copy exits.
+rem Hyperliquid: positions of every account on the published leaderboard, at
+rem half the documented rate limit.
+call :launch "hl-recorder" "scripts\record_hyperliquid.py --loop" record_hyperliquid.py "logs\hyperliquid.out.log"
+rem OKX: published copy-trading lead traders, their open/closed positions and
+rem the top-trader ratios, hourly.
+call :launch "okx-trader-recorder" "scripts\record_okx_traders.py --loop 3600" record_okx_traders.py "logs\okx_traders.out.log"
 call :launch "dashboard"   "scripts\dashboard.py"       dashboard.py       "logs\dashboard.out.log"
 
 echo.

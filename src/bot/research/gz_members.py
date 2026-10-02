@@ -33,11 +33,34 @@ ends exactly where the next member's header begins). Decompressing a piece
 that lacks its own trailer then simply runs out of input — no exception,
 just a partial result — instead of decoding into another member's header.
 
-A 3-byte magic match can in principle occur by chance inside genuinely
-compressed data (~1/2^24 per byte offset); for this project's file sizes
-(single-digit MB at most) that is not a realistic concern, and a false
-split only produces one extra piece that `decompress_piece` reports as
-unreadable — it never loses a correctly-split neighbor's data.
+**A 3-byte magic match DOES occur by chance inside healthy members, at
+this project's file sizes** (corrected 2026-10-02; this paragraph used to
+say it was "not a realistic concern"). Treating compressed bytes as
+uniform random bytes, each byte offset matches with p = 2^-24 (about
+6.0e-8), so a blob of N bytes holds about N * 2^-24 chance matches, and
+P(at least one) = 1 - exp(-N * 2^-24):
+    N = 1 MiB     -> 0.0625 expected, P = 6.1 %
+    N = 4.25 MB   -> 0.253  expected, P = 22 %  (one Hyperliquid
+                     leaderboard member, scripts/record_hyperliquid.py)
+    N = 5.44 MB   -> 0.324  expected, P = 28 %  (a day of Deribit option
+                     books, scripts/record_deribit_oi.py)
+    a 28 KB member checked 96 times a day -> 0.16 per day (about one
+                     day in six)
+The gzip trailer can carry the bytes too: ISIZE (uncompressed length mod
+2^32, little-endian) starts with 1f 8b 08 whenever that length mod 2^24 is
+0x088B1F. The second-round critic of 2026-10-02 reproduced it on real
+shapes (`docs/AUDITOR/VERDICTS/2026-10-02_W2_recorders.md`).
+What a false split costs: `split_raw_members` cuts the member there, the
+first piece decodes up to the false offset and is reported incomplete, the
+second piece is reported unreadable — so `recover_json_lines` loses the
+rest of that one member, and a reader that treats "a piece other than the
+last did not end" as corruption reports a healthy file as corrupted.
+**Never use the magic split to decide whether a file is whole** (whether
+it may be appended to, renamed, or trusted): use `last_member_is_complete`
+/ `iter_members_in_order` below, which find every boundary where zlib
+itself says the member ended (`unused_data`), so a byte pattern inside a
+member can never be taken for a boundary. The magic split stays only for
+RECOVERING rows from a file that is already broken mid-way.
 
 Used by `scripts/repair_liquidation_gz.py` (read-only recovery to a
 separate output directory) and by `scripts/intake_ledger.py`'s
@@ -172,3 +195,89 @@ def is_cleanly_readable(data: bytes) -> bool:
         return True
     except Exception:  # noqa: BLE001 - any failure means "not cleanly readable"
         return False
+
+
+# ---------------------------------------------------------------------------
+# Reading members IN ORDER (2026-10-02). This is the only safe way to decide
+# whether a file ends with a whole member (see the module docstring on why
+# the raw magic split must not decide it).
+# ---------------------------------------------------------------------------
+
+OUT_CHUNK = 8 << 20                    # cap on decompressed bytes per call
+
+
+@dataclass
+class OrderedMember:
+    start: int                         # byte offset of the member's header
+    end: int                           # offset just past its trailer; len(data) if it did not end
+    complete: bool                     # zlib reached this member's end-of-stream
+    payload: bytes | None = None       # decompressed bytes (None when keep_payload=False)
+    error: str | None = None           # set when zlib raised on this member
+
+
+def iter_members_in_order(data: bytes, keep_payload: bool = True):
+    """Yield the gzip members of `data` from offset 0, one after another.
+
+    Each member is decoded by its own `zlib.decompressobj`; where that
+    decoder says the member ended, the bytes it did not consume
+    (`unused_data`) are where the next member starts. No byte pattern is
+    searched for, so 1f 8b 08 occurring inside compressed data (or in a
+    trailer) is never mistaken for a boundary.
+
+    The walk stops after the first member that does not end — cut by a kill
+    mid-write, stray bytes after the last whole member, or bytes zlib
+    rejects (`error` set). That member is yielded with complete=False and
+    end=len(data); nothing after it is read, because without its end there
+    is no reliable place where the next member starts.
+
+    keep_payload=False discards the decompressed bytes as they come (memory
+    stays bounded by OUT_CHUNK even for large files)."""
+    n = len(data)
+    pos = 0
+    while pos < n:
+        dec = zlib.decompressobj(GZIP_WBITS)
+        out = bytearray() if keep_payload else None
+        cur = pos
+        error = None
+        try:
+            while cur < n and not dec.eof:
+                buf = data[cur:cur + READ_CHUNK]
+                cur += len(buf)
+                while True:
+                    piece = dec.decompress(buf, OUT_CHUNK)
+                    if out is not None:
+                        out += piece
+                    buf = dec.unconsumed_tail
+                    if dec.eof or not buf:
+                        break
+                if dec.eof:
+                    # At the member's end zlib reports the input it did not
+                    # use in unused_data (unconsumed_tail then repeats the
+                    # same bytes, so it must not be subtracted as well).
+                    cur -= len(dec.unused_data)
+        except zlib.error as exc:
+            error = str(exc)
+        payload = bytes(out) if out is not None else None
+        if error is None and dec.eof:
+            yield OrderedMember(start=pos, end=cur, complete=True, payload=payload)
+            pos = cur
+            continue
+        yield OrderedMember(start=pos, end=n, complete=False, payload=payload,
+                            error=error)
+        return
+
+
+def last_member_is_complete(data: bytes) -> bool:
+    """True iff `data` can be read member by member from its start to its
+    very last byte and the last member reached its end — i.e. appending a
+    new member after it keeps the file readable by any plain gzip reader.
+
+    False when a member was cut (a kill mid-write), when anything that is
+    not a whole member follows the last whole member, or when zlib rejects
+    a member on the way (the walk cannot get past it). Empty data is True
+    (there is nothing to cut). Read-only: decodes in memory and discards the
+    output."""
+    last = None
+    for member in iter_members_in_order(data, keep_payload=False):
+        last = member
+    return last is None or last.complete

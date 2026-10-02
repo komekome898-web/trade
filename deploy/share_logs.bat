@@ -60,6 +60,16 @@ if exist data\venues\*.csv.gz copy /Y data\venues\*.csv.gz paper_logs\venues\ >n
 rem Binance daily metrics + USDJPY (dashboard G6 features / yen conversion)
 if not exist paper_logs\binance_daily mkdir paper_logs\binance_daily
 if exist data\binance_daily\*.csv copy /Y data\binance_daily\*.csv paper_logs\binance_daily\ >nul 2>&1
+rem Forward-only sources (owner L-039, L-531; volume accepted L-550):
+rem record_hyperliquid.py and record_okx_traders.py (resident, start_all.bat),
+rem record_deribit_oi.py (fetch_all.bat). ONLY FILES OF FINISHED UTC DAYS are
+rem copied: the name's YYYYMMDD must be before today's UTC date. Today's file is
+rem still being appended to; copying it as well would put each day into git
+rem twice (half-written, then finished), about 1.9x the volume. A file already
+rem copied with the same size is skipped. The renamed *.truncN.csv.gz files
+rem (a day file a kill cut mid-write) are copied like the others once their
+rem day is over: their rows up to the cut cannot be fetched again.
+powershell -NoProfile -Command "$t = (Get-Date).ToUniversalTime().ToString('yyyyMMdd'); foreach ($s in 'hyperliquid','okx_traders','deribit_options') { $src = 'data\' + $s; $dst = 'paper_logs\' + $s; if (-not (Test-Path $src)) { continue }; if (-not (Test-Path $dst)) { New-Item -ItemType Directory -Path $dst | Out-Null }; Get-ChildItem -Path $src -Filter '*.csv.gz' | Where-Object { $_.Name -match '_(\d{8})\.' -and $Matches[1] -lt $t } | ForEach-Object { $o = Join-Path $dst $_.Name; if (-not (Test-Path $o) -or (Get-Item $o).Length -ne $_.Length) { Copy-Item -LiteralPath $_.FullName -Destination $o -Force } } }" >nul 2>&1
 rem Round 17 board-round derived series (scripts\run_board_round.py output;
 rem the 1GB data\ws raw recordings stay local, only the ~8MB derived series
 rem and its coverage report are shared)

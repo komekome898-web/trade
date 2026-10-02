@@ -644,6 +644,68 @@ ticker(10秒毎)を公開 REST のみで記録し、`data/venues/quotes_YYYYMMDD
 追記する。両方とも `share_logs.bat` が共有する。単独の常駐モードも可能:
 `python scripts/record_funding_basis.py --loop 3600`。手順: P12。
 
+**後から取れない出所の前向きの記録(L-039・L-531。共有の量は L-550 で受け入れ。2026-10-02 追加)** — 出所が
+今の値しか出さないため、記録を始めた日からしか履歴が残らない 3 つ(`docs/DISCUSSIONS/2026-10-01_research_structure_intake_and_combiner.md`
+§5-1B の区分 C)。3 つとも公開の読み取りだけ(鍵なし・発注なし)。出力は行の受け取った時刻(`ts_recv_utc`)の
+UTC 日ごとの `.csv.gz` への追記で、全行に受け取った時刻と出所の時刻を持ち、失敗した呼び出しは
+`errors_YYYYMMDD.csv.gz` に 1 行残して続ける。
+- `scripts/record_hyperliquid.py`(**常駐**、`start_all.bat`。ログ `logs\hyperliquid.out.log`): Hyperliquid が公開する
+  順位表(`stats-data.hyperliquid.xyz/Mainnet/leaderboard`)を UTC 1 日 1 回そのまま記録し、そこに載る**全口座**の
+  建玉(`clearinghouseState`)を順に巡回する(同じアドレスが 2 回載っていても 1 周で 1 回だけ聞く)。口座を選ばない
+  (順位表は 1 つの列で並んでいないので、上位 N を取るには並べ方を当方が決めることになるため)。速さは公表の上限
+  (1 分あたり重み 1200、この呼び出しは重み 2)の半分 = 1 分 300 回。1 周は約 157 分で、周を続けて回す。
+  出力 `data/hyperliquid/`: `leaderboard_*`・`accounts_*`(建玉のある口座だけ)・`positions_*`・`sweeps_*`・`errors_*`。
+  `sweeps_*` は 1 周に 2 行(`phase` = `start` / `end`)。各行の `ts_recv_utc` は書いた時刻なので、UTC 0 時を
+  またいだ周の `end` の行は翌日のファイルに入る(`sweep_id` = 周の開始時刻で結ぶ)。`end` の行が無い周(夜間の
+  再起動などで途中で止まった周)は、行の無い口座が「建玉なし」か「聞いていない」かが分からない。再起動後は
+  順位表の先頭から新しい周を始める(途中から続けない)。同じ UTC 日の再起動では、その日の順位表をファイルから
+  読み直す(取り直さない)。
+- `scripts/record_okx_traders.py`(**常駐**、`start_all.bat`、1 時間ごと。ログ `logs\okx_traders.out.log`): OKX が
+  公開するコピートレードの指導者の一覧(SWAP・SPOT の全頁、OKX の既定の並び)、SWAP の指導者の今の建玉と
+  決済済みの建玉、上位の人の比率(口座数・建玉、5 分足)。SPOT の建玉は OKX が `code 51000` を返すので取らない。
+  出力 `data/okx_traders/`: `leadtraders_*`・`positions_*`・`history_*`・`ratios_*`・`errors_*`。同じ行は二度書かない。
+  決済済みの建玉の鍵は全部の `history_*` から戻すので一生に 1 回だけ書く。例外: 一覧の鍵は昨日と今日のファイル
+  からしか戻さないので、同じ `dataVer` が 1 日を越えて続いたまま再起動すると、その版の一覧をもう一度書く。
+- `scripts/record_deribit_oi.py`(`fetch_all.bat`、15 分ごと。**一回きりのプロセス**: 起動して BTC・ETH を 1 回ずつ
+  取り、追記して終わる。常駐ではないので `stop_all.bat` の対象外): Deribit のオプションの銘柄(行使価格・満期)
+  ごとの建玉ほか(`get_book_summary_by_currency`)。出力 `data/deribit_options/book_*`・`errors_*`。前の回の
+  ファイルを読み戻さない(各回は新しい応答で、`us_out` = Deribit の応答時刻が毎回違うので、重複の鍵が当たらない)。
+  1 回の重さ: 研究環境で、批評家が保存した実物の応答(BTC 990 銘柄・ETH 832 銘柄)を 96 回書いた日のファイル
+  (5.44 MB・192 メンバ = 1 日の終わり)に、もう 1 回追記するのに通信を除いて 0.19〜0.21 秒、うち末尾の検め
+  0.11〜0.12 秒、最大メモリ 39.5 MB(2026-10-02)。
+- 量の見込み【推定】(研究環境での小さな試しの圧縮後の大きさから延ばした値。オーナーの PC での実測ではない):
+  Hyperliquid 約 15〜25 MB/日、OKX 約 10 MB/日(初回は決済済みの履歴の取り込みで数 MB 多い)、Deribit 約 5.6 MB/日。
+- **書き方**(`record_liquidations.py` の `Writer` と同じ型、L-121): 行は手元に積み、1 ファイル分を完結した 1 つの
+  gzip メンバにして `open(path, "ab")` の 1 回で追記する。積んだ行は書き込みが成功してから手放す。書き込みの失敗
+  (別のプログラムがファイルを開いている間など)は `errors_*` に `write` の行を残し、常駐の 2 つはその行を手元に
+  残したまま周を続けて、次の書き出し(最長 60 秒後)で書き直す。**Deribit は一回きりのプロセスなので、その回の
+  終わりに 1 回だけ書き直し、それでも書けなかった行はプロセスと一緒に消える**(終了コード 1 と、書けなかった行数の
+  ログが残る。次の回は新しい応答を取るだけで、消えた行を引き継がない)。
+- **強制終了の後始末**: プロセスがあるファイルに初めて書く前(と、書き込みに失敗した後の次の書き込みの前)に、
+  ファイルを先頭から順にメンバごとに解き(`bot.research.gz_members.last_member_is_complete`。メンバの境目は zlib が
+  そのメンバの終わりと言った位置で決め、圧縮済みのバイト列の中の 1f 8b 08 では決めない)、最後まで解けて最後の
+  メンバが終わっていなければ、**ファイルを丸ごと `<名前>_<日>.truncN.csv.gz` に改名して新しいファイルに書き始める**
+  (N は既存を上書きしない次の番号。その場で切り詰めない)。改名されたファイルは、切れたメンバの手前までが
+  `iter_members_in_order` で読める(普通の gzip の読み手は切れたところで止まる)。新しいファイルは普通の gzip の
+  読み手で全部読める。切れたメンバの行は記録に数えない(重複防止の鍵にも戻さない)ので、出所がまだ返すものは
+  次の回に一度だけ書き直される。改名されたファイルの行は鍵の復元に数える。
+- **二重起動の防止**(`record_liquidations.py` の鍵と同じ型): 出力の置き場ごとに鍵のファイル
+  (`data\hyperliquid.lock`・`data\okx_traders.lock`・`data\deribit_options.lock`)を持ち、取れなければ終了コード 3 で
+  何も書かずに終わる。生きている間は 45 秒ごとに鍵の時刻を書き直し、180 秒書き直されていない鍵は死んだプロセスの
+  ものとして取り直す。`stop_all.bat` は強制終了した 2 つの常駐の鍵を消す(消さないと、直後の `start_all.bat` が
+  起動した写しが 180 秒以内なので終了コード 3 で終わり、次の 1 時間ごとの `start_all.bat` まで記録が止まる)。
+  一回きりの実行(`--max-addresses`・`--max-pages 500` の取り込みなど)を常駐と同じ置き場に打つと終了コード 3 で
+  終わる。常駐を `stop_all.bat` で止めてから打つか、`--out-dir` を変える。一回きりの実行が動いている間は、
+  `start_all.bat` の見張りが同じ名前のプロセスを見て常駐の起動を飛ばす(終わった後の次の 1 時間ごとの見張りで起動する)。
+- **停止と再起動**: `stop_all.bat` が 2 つの常駐を止め、`restart_all.bat` の [4/5] が止まったことを確かめる
+  (試験 `test_every_launched_component_is_also_stopped_and_verified`)。
+- **共有**(`share_logs.bat`): 3 つの置き場の `.csv.gz` のうち、**名前の日付が今日(UTC)より前のもの = 終わった
+  UTC 日のファイルだけ**を `paper_logs\hyperliquid\`・`paper_logs\okx_traders\`・`paper_logs\deribit_options\` へ写す
+  (改名された `*.truncN.csv.gz` も、その日が終われば写す。切れたところまでの行は二度と取れないため)。今日の
+  書きかけのファイルは写さない(書きかけと完成の 2 回コミットすると git の中の量が約 1.9 倍になるため)。同じ大きさで
+  写し済みのファイルは写し直さない。日付は PowerShell の `(Get-Date).ToUniversalTime()` で決める。既存の記録(清算・
+  venues など)の共有の仕方は変えていない。
+
 **API応答遅延の読み取り専用プローブ(経費の床 E-h、オーナー承認 2026-09-11 L-098。
 1週間限定)** — `deploy/probe_latency.bat` で `scripts/probe_api_latency.py`
 を起動すると、認証つき読み取り専用エンドポイント(`getpermissions`。注文系では

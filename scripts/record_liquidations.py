@@ -79,9 +79,9 @@ LOCK_PATH = REPO / "data" / "liquidations.lock"
 
 sys.path.insert(0, str(REPO / "src"))
 try:
-    from bot.research.gz_members import decompress_piece, split_raw_members
+    from bot.research.gz_members import last_member_is_complete
 except Exception:  # noqa: BLE001 - 自己修復が読めなくても記録は止めない
-    decompress_piece = split_raw_members = None
+    last_member_is_complete = None
 
 # **出力で死なせない。** Windows の既定コンソールは cp932 で、そこに cp932 が
 # 表現できない文字(em ダッシュなど)を print すると UnicodeEncodeError が上がる。
@@ -203,16 +203,24 @@ class Writer:
         としてそのまま拾う。検査自体が読めない場合(自己修復機構の import
         失敗)は、記録を止めないために**検査せず追記を続ける**(壊れた
         ファイルへの追記が再発するリスクはあるが、記録停止より優先度が低い)。
+
+        **完結の判定(2026-10-02 に置き換え)**: 以前は圧縮済みのバイト列の
+        中の 1f 8b 08 でメンバを割り(`split_raw_members`)、最後の断片が
+        解けるかで決めていた。その 3 バイトは正常なメンバの中にも偶然現れる
+        (数 MB のファイルで無視できない確率。`bot.research.gz_members` の
+        冒頭の説明)ので、正常なファイルを不完全と誤判定して退避していた。
+        今は `gz_members.last_member_is_complete` で先頭から順にメンバを
+        解き(1 つ終わったら zlib の `unused_data` から次を解く)、最後まで
+        解けて最後のメンバが終わっていれば完結とする。
         """
         if not path.exists():
             return
-        if split_raw_members is None or decompress_piece is None:
+        if last_member_is_complete is None:
             _log(f"{self.venue}: 警告: 自己修復機構を読めないので "
                  f"警告: 自己修復なし - {path.name} の末尾メンバを検査せず追記する")
             return
         try:
-            pieces = split_raw_members(path.read_bytes())
-            healthy = bool(pieces) and decompress_piece(pieces[-1]).complete
+            healthy = last_member_is_complete(path.read_bytes())
         except Exception as e:  # noqa: BLE001 - 読めない = 不完全とみなす(安全側)
             _log(f"{self.venue}: 警告: {path.name} の検査に失敗 "
                  f"{type(e).__name__}: {str(e)[:80]} — 不完全として退避する")

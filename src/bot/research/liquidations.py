@@ -36,6 +36,11 @@
   `LiquidationFileCorrupted` を送出する(黙って部分結果や 0 行を返さない)。
 - 呼び出し側が明示的に `strict=False` を渡したときだけ、読めたところまでの
   行を `ReadResult(truncated=True, error=...)` として返す。
+
+**2026-10-02 修正**: magic bytes(1f 8b 08)は正常なメンバの圧縮済みのバイト列の
+中にも偶然現れるので、最初から magic bytes で切ると正常なファイルを破損と
+判定しうる。今は先にメンバを先頭から順に解き(`gz_members.iter_members_in_order`)、
+順に解けなかったメンバから先だけを magic bytes で切る(`_decode_all_members`)。
 """
 from __future__ import annotations
 
@@ -45,7 +50,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
-from bot.research.gz_members import decompress_piece, split_raw_members
+from bot.research.gz_members import (
+    decompress_piece, iter_members_in_order, split_raw_members,
+)
 
 
 class LiquidationFileCorrupted(RuntimeError):
@@ -66,34 +73,60 @@ class _Decoded:
 
 
 def _decode_all_members(data: bytes) -> _Decoded:
-    """生バイト列をメンバ境界で先に切ってから、メンバごとに展開する。
+    """メンバを先頭から順に解き、順に解けなかった所から先だけを境界で切って回収する。
 
-    `bot.research.gz_members`(回収ツールと共通)を使う — 展開前に境界を
-    切るので、あるメンバの decompress 呼び出しが次のメンバのヘッダバイトを
-    誤って読み込んで丸ごと例外になる、という旧実装の弱点が起きない。
+    **2026-10-02 に直した(W2 の批評家の指摘と同じ原因)**: 以前はファイル全体を
+    最初から生バイト列の 1f 8b 08 で切っていた。その 3 バイトは正常なメンバの
+    圧縮済みのバイト列の中(や末尾の ISIZE)にも偶然現れる(数 MB のファイルで
+    無視できない確率。`bot.research.gz_members` の冒頭の説明)ので、正常な
+    ファイルを「境界破損の疑い」として `LiquidationFileCorrupted` にしえた。
+
+    今は:
+    1. `gz_members.iter_members_in_order` で先頭から順に解く(1 つのメンバが
+       終わったら zlib の `unused_data` の位置から次を解く。バイト列の模様では
+       境目を決めない)。全部のメンバが終わっていれば、それが全部(破損なし)。
+    2. 順に解けなかった(終わらないメンバに当たった・zlib が例外を出した)
+       ときだけ、**そのメンバの始まりから先**を、従来どおり生バイト列の境界で
+       切ってメンバごとに展開する(旧クラッシュの「終わりの無いメンバの直後に
+       新しいメンバのヘッダが直結した」形を読むため)。破損の判定(どの場合に
+       `error` を立てるか)はこの部分について従来と同じ。
     """
-    pieces = split_raw_members(data)
     out = bytearray()
+    members_found = 0
     members_complete = 0
+    rest_at = len(data)
+    for member in iter_members_in_order(data):
+        if not member.complete:
+            rest_at = member.start
+            break
+        out += member.payload
+        members_found += 1
+        members_complete += 1
     error: str | None = None
-    n = len(pieces)
-    for i, piece in enumerate(pieces):
-        member = decompress_piece(piece)
-        out += member.decompressed
-        if member.complete:
-            members_complete += 1
-        elif member.error is not None:
-            # decode 自体が失敗 = 正真正銘の破損(境界の問題ではない)
-            if error is None:
-                error = member.error
-        elif i != n - 1:
-            # 最後以外のメンバが終端マーカーに達しないまま終わった
-            # = 記録中の開きっぱなし(それは常に「最後の」メンバのはず)ではあり得ない
-            #   境界破損の疑い(例: 旧クラッシュで次のメンバのヘッダが直結した)
-            if error is None:
-                error = f"gzip メンバ {i + 1}/{n} が終端マーカー前に終わっている(境界破損の疑い)"
+    if rest_at < len(data):
+        pieces = split_raw_members(data[rest_at:])
+        n = len(pieces)
+        before = members_found              # メンバの番号はファイル全体で数える
+        for i, piece in enumerate(pieces):
+            member = decompress_piece(piece)
+            out += member.decompressed
+            members_found += 1
+            if member.complete:
+                members_complete += 1
+            elif member.error is not None:
+                # decode 自体が失敗 = 正真正銘の破損(境界の問題ではない)
+                if error is None:
+                    error = member.error
+            elif i != n - 1:
+                # 最後以外のメンバが終端マーカーに達しないまま終わった
+                # = 記録中の開きっぱなし(それは常に「最後の」メンバのはず)ではあり得ない
+                #   境界破損の疑い(例: 旧クラッシュで次のメンバのヘッダが直結した)
+                if error is None:
+                    error = (f"gzip メンバ {before + i + 1}/{before + n} "
+                             f"が終端マーカー前に終わっている(境界破損の疑い)")
     return _Decoded(text=out.decode("utf-8", errors="replace"),
-                     members_found=n, members_complete=members_complete, error=error)
+                     members_found=members_found, members_complete=members_complete,
+                     error=error)
 
 
 def read_text(path: str | Path) -> str:

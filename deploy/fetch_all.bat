@@ -16,6 +16,15 @@ rem Time-critical, cheap collector FIRST (DATA_QA_TRIAGE: the 2026-08-31 2.9h OI
 rem was a stalled earlier step in this sequential batch, not an outage). Nothing
 rem network-heavy runs before it.
 ".venv\Scripts\python.exe" "scripts\record_oi.py" >> "logs\fetch_all.out.log" 2>&1
+rem Deribit option open interest per instrument (strike/expiry). The API serves it
+rem only as the current value, so it is recorded forward (owner L-039, L-550). A
+rem one-shot process: one public call per currency (BTC, ETH), appended to
+rem data\deribit_options\book_YYYYMMDD.csv.gz, then it exits. Besides the two
+rem calls a run took 0.2 s and 40 MB at the end of a simulated day (5.4 MB file,
+rem research environment 2026-10-02), so it sits right after record_oi.py,
+rem before anything network-heavy. Not stopped by stop_all.bat (it is not
+rem resident); data\deribit_options.lock keeps two runs from appending at once.
+".venv\Scripts\python.exe" "scripts\record_deribit_oi.py" >> "logs\fetch_all.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\fetch_history.py" >> "logs\fetch_all.out.log" 2>&1
 ".venv\Scripts\python.exe" "scripts\fetch_external.py" --days 2 --swing-days 30 >> "logs\fetch_all.out.log" 2>&1
 rem OKX open interest + long/short ratio history (30d / 2-3d API windows; the

@@ -102,3 +102,38 @@ Workflow wf_3706782f-c5b のレーンの批評家の出力(構造化された返
   1. 強制終了で切れた gzip の後始末(heal_tail)が、圧縮済みのバイト列の中に偶然現れる gzip の先頭の印(1f 8b 08)でメンバを割る既存の部品(`gz_members.split_raw_members`)を使い、その場で切り詰めた。リポジトリには、ファイルを丸ごと改名するだけで中身を壊さない実績のある型(`record_liquidations.py` の Writer)があったのに、委任文はそれを型として指定していなかった。
   2. 起動の台本(start_all.bat)はレーンの範囲に入れ、止める台本(stop_all.bat・restart_all.bat)は範囲の外にした。起動と停止は対になっているのに、リードが範囲を片側だけで切った。1 回目の批評家がこれを [止める] とし、作業者は範囲の外なので直せなかった。
   どちらも委任文(リードの仕様)の不備(F2)。作り直すときは、Writer の型を指定し、起動・停止・再起動の 3 つを同じ範囲に入れる。共有の量(月に約 1 GB を git に積む)はオーナーに判断を求める。
+
+---
+
+# 第 2 版(仕様 `docs/DISCUSSIONS/2026-10-02_W2_recorders_spec_r2.md`)の批評家
+
+## 第 2 版 1 回目の批評家(2026-10-02)
+
+止める 0・直す 0・聞く 1
+
+**読み(逐語)**: PC に入れてよいと読む。止める・直すに当たる欠陥は見つからなかった。仕様 §2-1〜§2-3(完結した 1 メンバを "ab" の 1 回で追記、書けてからバッファを空にする、flush の失敗で周を打ち切らない、鍵、切り詰めずに改名、順に読む判定、終わった UTC 日だけを共有)は 3 本の台本と record_liquidations.py の全部で仕様どおり【事実: コードを読み、下の試験と変異で確かめた】。中心の直し(gz_members.iter_members_in_order / last_member_is_complete)は、READ_CHUNK と OUT_CHUNK を 1 バイトまで揺らした 24,790 件で誤判定 0(完結は全部完結、最後のメンバをどこで切っても不完全)、実ファイル 144 個での新旧の読み手の突き合わせで違いは 9 個だけ、9 個とも gzip.decompress で丸ごと読める健全なファイルを旧版が「境界破損の疑い」としていたもので、新版の出力は gzip.decompress とバイト単位で一致、本当に壊れたファイルの判定は新旧で同じ【事実】。仕様 §3 の試験 1〜6 はそろい全部通る(§3-6 の「第 1 版で 2・3 が落ちる」は成果物としてはリポジトリに無かったので私が再現した: 第 1 版の台本で 3 本とも強制終了と偶然の 1f8b08 の試験が全部落ちる)。聞く 1 件は、仕様 §1 の範囲の外の src/bot/research/liquidations.py の読み手を変えた件で、実際に共有されている 6 ファイルの読み結果が変わる(例外 → 全行)。安全不変条件・封印への抵触は無い。第 1 版の指摘は範囲外の 1 件(retention_snapshot)と文書化で済ませた 2 件を除いて解消。
+
+- **[聞く]** 【事実】仕様 §1 の範囲に無い src/bot/research/liquidations.py(清算の読み手 read_rows / _decode_all_members)を作業者が変えた(まず順に読み、順に読めなかったメンバから先だけ 1f8b08 で割って回収)。この読み手は測定器 liq_response.py が read_rows(path)(strict=True が既定)で使う。実データで新旧を比べると paper_logs/liquidations の 85 ファイルのうち 6 ファイルで結果が変わる(旧版は strict で LiquidationFileCorrupted、新版は全行を読み、中身は gzip.decompress と一致)。良くなる方向だが、範囲の外の測定器を同じコミットで変えてよいか・この 6 日分に触れた進行中の研究があるかはリードが決めること。
+  - 場所: src/bot/research/liquidations.py `_decode_all_members` / src/bot/research/liq_response.py:299
+  - 根拠: `python scratchpad/critic_w2r2/diff_readers.py scratchpad/critic_w2r2/old/liquidations_old.py` → 「DIFF paper_logs/liquidations/binance_cm_20260919.jsonl.gz … old gzip メンバ 8842/9820 が終端マーカー前に終わっている(境界破損の疑い) 9820 9818 new None 9819 9819」、同じ形で binance_cm_20260920・20260927・okx_20260928・20260929・binance_cm_20260911.trunc1、ほか backtest_data/liquidations_repaired_* の 3 ファイル。「files 111 same 102 diff 9」、9 ファイルとも「CLEAN … new_text==gzip.decompress True」、「other backtest_data jsonl.gz files 33 same 33 diff 0」。
+  - 付記【推定】: binance_cm_20260911.trunc1.jsonl.gz はメンバ 1 つの健全なファイル(30,063 行)で、偶然の 1f8b08 を 1 つ持つ。旧版の _heal_if_needed が健全なファイルをオーナーの PC で誤って退避させた実例と読める。
+- **[注記]** 作業者の自己申告の弱点(終わりの無い最後のメンバに偶然 1f8b08 があると strict で破損と出る)は旧版と同じ振る舞いで後退ではない【事実】。確率は 1 ファイルあたりおよそ「切れたメンバのバイト数 / 2^24」【推定】。起きれば大きな音の出る例外で、黙って行を失わない。
+- **[注記]** 変異で試験の強さを確かめた【事実】: HL の速さの制御・OKX の history の glob・ページ上限・大きさの検め・HL の del は全部試験が落ちる。書き込み失敗の後の `_checked.discard` を外しても通るのは独立の 2 つ目の守り(size の検め)が拾うため。**Deribit の「回の終わりにもう一度書く」を外しても 11 passed(文書の振る舞いが試験で固められていない)**。
+- **[注記]** HL の偶然の 1f8b08 の試験は heal の筋を通らない(旧判定の変異でも通る)。ただし heal_if_needed は 3 本で同じ字面で、OKX・Deribit・清算の試験が落とすので実質ふさがっている(変異で「11 failed, 74 passed」)。
+- **[注記]** §3-6 は私が再現: 第 1 版の台本で新しい試験を実行 → 「18 failed, 28 passed」。
+- **[注記]** Windows: 共有の 1 行を PowerShell 7.4.6(Linux)で実行して 5 passed(既定の pytest では飛ばされる。PWSH を設定して流す必要がある)。Windows PowerShell 5.1 と cmd /c の引用符の外し方は【推定】(cmd.exe が無い)。bat の追加行の非 ASCII は 0 件、改行は LF のみ。
+- **[注記]** **Deribit の鍵が空のファイルとして残ると永久に起動しない**【事実】(RunLock は中身の JSON が読めないと年齢 None で「使用中」とし、stop_all は data\deribit_options.lock を消さない。ログの案内「stop_all.bat で止めよ」では直らない)。隙間は O_EXCL で作ってから最初に書くまで(電源断など)。RunLock は ON1 の発注の重複防止と共有の部品なので、このレーンでは決めない。根拠: 2 日前の時刻の空の鍵を置いて main を呼ぶと「… held, age None); exiting …」「exit code 3」。
+- **[注記]** Deribit の重さ(0.19〜0.21 秒・39.5 MB)は再現できた: 「one more run 0.186 s … maxrss MB before/after 39.6 39.6」。
+- **[注記]** 安全不変条件・封印への抵触は無い【事実】(出所 4 つとも公開の読み取りだけ、秘密の語の grep は注記の文面だけ、SEALED.json 8 ファイル中 0 件、risk_limits・config・settings・.claude・githooks の変更 0 件)。
+- **[注記]** 第 1 版から残る 2 点: GitHub の 1 ファイル 100MB の上限は【未確認】、新しい 3 つの出所は scripts/retention_snapshot.py の保全の対象に入っていない(範囲外)。
+
+(第 1 版の指摘の解消の表は、批評家の返り値の全文に 19 行。止める 3 件・直す 7 件は全部「解消」、注記の 3 件が「一部解消 / 文書化のみ / 範囲外」。)
+
+## リードの応答(第 2 版 1 回目)
+
+- **[聞く] 清算の読み手の変更を同じコミットに入れるか → 入れる。** 読み手の直しは、リードが作業者に追加で指示したもの(仕様 §2-2 の「1f8b08 で割る判定をしない」の原因が読み手にもあったため)。範囲の外ではあるが、リードの指示の内。進行中の研究で、この 6 日分の清算を測ったものは無い(全捨て L-019 の後、清算の測定の単位は開いていない【事実: `docs/OWNER_STATUS.md` の進行中の項に清算の測定が無い】)。変わる方向は「健全なファイルを壊れていると誤って止めていた」のを直すもので、壊れたファイルの判定は新旧で同じ(批評家の実データの突き合わせ)。
+- 注記の扱い(持ち越し。いずれも PC に入れる妨げではない):
+  1. Deribit の「回の終わりにもう一度書く」の試験 → 次に Deribit の台本を触る回に足す。
+  2. 鍵が空のファイルとして残ると永久に起動しない件 → RunLock は ON1 の発注の重複防止と共有なので、別の単位で直す(LIVE の前に直すものの一覧に載せる)。
+  3. 新しい 3 つの出所を retention_snapshot の保全に入れる → 次の単位。
+  4. 1 ファイル 100MB の上限 → PC で動き始めた最初の週の共有で、最大のファイルの大きさを確かめる。

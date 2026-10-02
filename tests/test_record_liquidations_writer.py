@@ -279,3 +279,74 @@ def test_close_flushes_whatever_is_buffered(tmp_path, monkeypatch):
     w.close()
     assert _magic_count(path) == 1
     assert _read_all(path)[0]["raw"]["i"] == 0
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-02: the tail check reads members in order (gz_members.
+# last_member_is_complete) instead of splitting on the bytes 1f 8b 08, which
+# also occur inside healthy members (docs/AUDITOR/VERDICTS/
+# 2026-10-02_W2_recorders.md).
+# ---------------------------------------------------------------------------
+
+ISIZE_MAGIC_LEN = 0x088B1F     # a member this long ends with ISIZE = 1f 8b 08 00
+
+
+def _rows_before_the_cut(path: Path) -> list[dict]:
+    from bot.research.gz_members import iter_members_in_order
+    out = []
+    for m in iter_members_in_order(path.read_bytes()):
+        if not m.complete:
+            break
+        out += [json.loads(x) for x in m.payload.decode("utf-8").splitlines()]
+    return out
+
+
+def test_kill_mid_write_then_restart_renames_the_file_and_keeps_both_parts(tmp_path, monkeypatch):
+    """A kill that lands inside the write of a member: the first half of the
+    member is on disk. The restarted Writer must (a) leave every row written
+    before the kill readable in the renamed file and (b) start a new file that
+    a plain gzip reader reads end to end."""
+    monkeypatch.setattr(rec, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(rec, "FLUSH_MAX_LINES", 2)
+    monkeypatch.setattr(rec, "FLUSH_INTERVAL_SEC", 999.0)
+    dead = rec.Writer("okx")
+    for i in range(4):
+        dead.write({"venue": "okx", "recv_us": i, "raw": {"i": i}})
+    path = tmp_path / f"okx_{_today()}.jsonl.gz"
+    cut_member = gzip.compress(b"".join(
+        (json.dumps({"venue": "okx", "recv_us": i, "raw": {"i": i}}) + "\n").encode()
+        for i in (4, 5)))
+    with open(path, "ab") as f:                 # the write the kill interrupted
+        f.write(cut_member[: len(cut_member) // 2])
+
+    fresh = rec.Writer("okx")
+    fresh.write({"venue": "okx", "recv_us": 9, "raw": {"i": 9}})
+    fresh.close()
+
+    moved = tmp_path / f"okx_{_today()}.trunc1.jsonl.gz"
+    assert [r["raw"]["i"] for r in _rows_before_the_cut(moved)] == [0, 1, 2, 3]   # (a)
+    assert [r["raw"]["i"] for r in _read_all(path)] == [9]                     # (b)
+
+
+def test_a_healthy_file_whose_trailer_holds_the_magic_is_appended_to_not_renamed(tmp_path, monkeypatch):
+    """1f 8b 08 inside a healthy member (here in its ISIZE trailer field). The
+    old split-based check took the last 4 bytes for a cut member and moved a
+    healthy day file aside."""
+    monkeypatch.setattr(rec, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(rec, "FLUSH_MAX_LINES", 10_000)
+    monkeypatch.setattr(rec, "FLUSH_INTERVAL_SEC", 999.0)
+    path = tmp_path / f"okx_{_today()}.jsonl.gz"
+    head = json.dumps({"venue": "okx", "recv_us": 0, "raw": {"pad": ""}})
+    pad = ISIZE_MAGIC_LEN - len(head) - 1
+    text = json.dumps({"venue": "okx", "recv_us": 0, "raw": {"pad": "x" * pad}}) + "\n"
+    assert len(text.encode()) == ISIZE_MAGIC_LEN
+    member = gzip.compress(text.encode())
+    assert member[-4:] == b"\x1f\x8b\x08\x00"
+    path.write_bytes(member)
+
+    w = rec.Writer("okx")
+    w.write({"venue": "okx", "recv_us": 1, "raw": {"i": 1}})
+    w.close()
+
+    assert not list(tmp_path.glob("*.trunc*")), "a healthy file was moved aside"
+    assert [r["recv_us"] for r in _read_all(path)] == [0, 1]

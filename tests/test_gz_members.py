@@ -191,3 +191,115 @@ def test_is_cleanly_readable_false_for_the_corrupted_boundary_case():
 
 def test_is_cleanly_readable_false_for_a_plain_truncated_member():
     assert is_cleanly_readable(_unterminated_member("x\n")) is False
+
+
+# ---------------------------------------------------------------------------
+# iter_members_in_order / last_member_is_complete (2026-10-02)
+# The bytes 1f 8b 08 occur by chance inside healthy members; deciding member
+# boundaries by them cut healthy files (docs/AUDITOR/VERDICTS/
+# 2026-10-02_W2_recorders.md). The in-order walk asks zlib where each member
+# ends instead.
+# ---------------------------------------------------------------------------
+
+import random  # noqa: E402
+
+from bot.research.gz_members import (  # noqa: E402
+    iter_members_in_order,
+    last_member_is_complete,
+)
+
+ISIZE_MAGIC_LEN = 0x088B1F     # a member this long ends with ISIZE = 1f 8b 08 00
+
+
+def _random_rows(seed: int) -> str:
+    r = random.Random(seed)
+    return "".join(f"{r.randbytes(16).hex()},{r.random():.9f}\n" for _ in range(4000))
+
+
+def member_with_inner_magic(make_text, start_seed: int):
+    """(text, member) whose compressed deflate data (not its header, not its
+    trailer) contains 1f 8b 08. start_seed is the first hit found with zlib
+    1.3 (2026-10-02); another zlib searches on from there."""
+    for seed in range(start_seed, start_seed + 50_000):
+        text = make_text(seed)
+        data = gzip.compress(text.encode("utf-8"), mtime=0)
+        i = data.find(b"\x1f\x8b\x08", 10)
+        if i != -1 and i < len(data) - 8:
+            return text, data
+    raise AssertionError("no member with an inner 1f 8b 08 found")
+
+
+def test_in_order_walk_finds_every_member_and_its_bytes():
+    a, b, c = _member("a\n"), _member("b\n" * 1000), _member("c\n")
+    members = list(iter_members_in_order(a + b + c))
+    assert [(m.start, m.end, m.complete) for m in members] == [
+        (0, len(a), True), (len(a), len(a) + len(b), True),
+        (len(a) + len(b), len(a) + len(b) + len(c), True)]
+    assert [m.payload for m in members] == [b"a\n", b"b\n" * 1000, b"c\n"]
+    assert last_member_is_complete(a + b + c) is True
+
+
+def test_member_larger_than_the_read_and_output_chunks():
+    """One member spanning several READ_CHUNKs and several OUT_CHUNKs."""
+    import os
+    big = gzip.compress(os.urandom(3 << 20))
+    zeros = gzip.compress(b"\0" * (50 << 20))
+    tail = _member("end\n")
+    assert last_member_is_complete(big + zeros + tail) is True
+    ends = [m.end for m in iter_members_in_order(big + zeros + tail,
+                                                 keep_payload=False)]
+    assert ends == [len(big), len(big) + len(zeros),
+                    len(big) + len(zeros) + len(tail)]
+
+
+@pytest.mark.parametrize("keep", [1, 2, 9, 10, 30, -9, -1])
+def test_a_member_cut_by_a_kill_is_not_complete(keep):
+    """A kill mid-write leaves the first `keep` bytes of the new member (a
+    negative keep: all but the last bytes)."""
+    data = _member("x\n") + _member(_random_rows(1))[:keep]
+    assert last_member_is_complete(data) is False
+    members = list(iter_members_in_order(data))
+    assert members[0].complete and members[0].payload == b"x\n"
+    assert members[-1].complete is False and members[-1].end == len(data)
+
+
+def test_stray_bytes_after_the_last_whole_member_are_not_complete():
+    assert last_member_is_complete(_member("x\n") + b"\x1f") is False
+    assert last_member_is_complete(_member("x\n") + b"\x1f\x8b\x08") is False
+
+
+def test_old_style_unterminated_member_followed_by_a_new_one_is_not_complete():
+    """The 2026-09-11 shape (gzip.open 'at' killed, then appended to): the walk
+    cannot get past the dead member, so the file is not whole."""
+    corrupted = _unterminated_member(_jsonl(_rows(5))) + _member(_jsonl(_rows(5)))
+    assert last_member_is_complete(corrupted) is False
+
+
+def test_garbage_and_empty():
+    assert last_member_is_complete(b"not gzip at all") is False
+    assert last_member_is_complete(b"") is True        # nothing to cut
+    assert list(iter_members_in_order(b"")) == []
+
+
+def test_magic_inside_deflate_data_is_complete_but_the_old_split_said_cut():
+    """The critic's reproduction (false_magic2.py): a healthy member whose
+    compressed bytes contain 1f 8b 08. The old judgment (split on the magic,
+    decode the last piece) calls it cut; the in-order walk does not."""
+    text, member = member_with_inner_magic(_random_rows, 888)
+    data = _member("header\n") + member
+    assert gzip.decompress(data).decode() == "header\n" + text     # healthy
+    assert last_member_is_complete(data) is True
+    assert [m.payload for m in iter_members_in_order(data)] == \
+        [b"header\n", text.encode()]
+    # the first version's judgment on the same bytes
+    assert decompress_piece(split_raw_members(data)[-1]).complete is False
+
+
+def test_magic_in_the_trailer_is_complete_but_the_old_split_said_cut():
+    """ISIZE (length mod 2^32, little-endian) = 0x00088B1F puts 1f 8b 08 00 in
+    the last four bytes of a healthy member."""
+    member = gzip.compress(b"y" * ISIZE_MAGIC_LEN)
+    assert member[-4:] == b"\x1f\x8b\x08\x00"
+    data = _member("header\n") + member
+    assert last_member_is_complete(data) is True
+    assert decompress_piece(split_raw_members(data)[-1]).complete is False

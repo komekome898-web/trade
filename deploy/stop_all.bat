@@ -1,6 +1,7 @@
 @echo off
 rem Stop all bitflyer-bot python components (main bot, scalper, WS recorder,
-rem venue recorder, liquidation recorder, dashboard).
+rem venue recorder, liquidation recorder, latency probe, Hyperliquid recorder,
+rem OKX trader recorder, dashboard).
 rem The list MUST match the :launch lines in start_all.bat - a component missing
 rem here is never restarted by restart_all.bat and silently keeps running the old
 rem code (that happened to the liquidation recorder, 2026-09-09). A test pins it.
@@ -9,11 +10,17 @@ cd /d "%~dp0.."
 rem -ErrorAction SilentlyContinue: killing a parent python can take its child
 rem down first, so a later Stop-Process may find the PID already gone — fine.
 powershell -NoProfile -Command ^
-  "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*probe_api_latency.py*' -or $_.CommandLine -like '*dashboard.py*' } | ForEach-Object { Write-Host ('stopping PID ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
+  "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%%'\" | Where-Object { $_.CommandLine -like '*run_paper.py*' -or $_.CommandLine -like '*run_scalp_paper.py*' -or $_.CommandLine -like '*record_realtime.py*' -or $_.CommandLine -like '*record_venues.py*' -or $_.CommandLine -like '*record_liquidations.py*' -or $_.CommandLine -like '*probe_api_latency.py*' -or $_.CommandLine -like '*record_hyperliquid.py*' -or $_.CommandLine -like '*record_okx_traders.py*' -or $_.CommandLine -like '*dashboard.py*' } | ForEach-Object { Write-Host ('stopping PID ' + $_.ProcessId); Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 rem The liquidation recorder holds a lock file so two copies can never append
 rem to the same gzip. A force-killed recorder leaves it behind, and start_all
 rem would then refuse to start - so the authority that killed it clears it.
 if exist "data\liquidations.lock" del /q "data\liquidations.lock"
+rem Same for the two forward-only recorders (record_hyperliquid.py,
+rem record_okx_traders.py): a lock left by a killed copy counts as live for
+rem 180 s, so the copy restart_all.bat starts right after this would exit
+rem (code 3) and recording would wait for the next hourly start_all.
+if exist "data\hyperliquid.lock" del /q "data\hyperliquid.lock"
+if exist "data\okx_traders.lock" del /q "data\okx_traders.lock"
 echo All bot components stopped.
 timeout /t 5 >nul
 rem Explicit success: stopping a process that was already gone is not a

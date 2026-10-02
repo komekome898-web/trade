@@ -234,3 +234,78 @@ def test_truly_empty_file_is_distinct_from_corrupted_zero_rows(tmp_path):
     assert corrupt_res.rows == []
     assert corrupt_res.truncated is True
     assert corrupt_res.error is not None
+
+
+# ---------------------------------------------------------------------------
+# 2026-10-02: 1f 8b 08 occurs by chance inside healthy members. Reading the
+# members in order first keeps such a file healthy; the magic split is used
+# only from the first member that does not end.
+# ---------------------------------------------------------------------------
+
+ISIZE_MAGIC_LEN = 0x088B1F     # a member this long ends with ISIZE = 1f 8b 08 00
+
+
+def _healthy_member_with_magic_in_its_trailer():
+    head = json.dumps({"venue": "okx", "recv_us": 2_000_000, "raw": {"pad": ""}})
+    pad = ISIZE_MAGIC_LEN - len(head) - 1
+    text = json.dumps({"venue": "okx", "recv_us": 2_000_000, "raw": {"pad": "x" * pad}}) + "\n"
+    assert len(text.encode()) == ISIZE_MAGIC_LEN
+    member = gzip.compress(text.encode())
+    assert member[-4:] == b"\x1f\x8b\x08\x00"
+    return member
+
+
+def _healthy_member_with_magic_in_its_deflate_data():
+    """Random rows until the compressed deflate data (not header, not trailer)
+    holds 1f 8b 08. 79 is the first hit for this shape with zlib 1.3."""
+    import random
+    for seed in range(79, 79 + 50_000):
+        r = random.Random(seed)
+        rows = [{"venue": "okx", "recv_us": 3_000_000 + i,
+                 "raw": {"h": r.randbytes(16).hex(), "x": f"{r.random():.9f}"}}
+                for i in range(2500)]
+        member = gzip.compress("".join(json.dumps(x) + "\n" for x in rows).encode(),
+                               mtime=0)
+        i = member.find(b"\x1f\x8b\x08", 10)
+        if i != -1 and i < len(member) - 8:
+            return rows, member
+    raise AssertionError("no member with an inner 1f 8b 08 found")
+
+
+def test_healthy_file_with_the_magic_in_a_trailer_reads_in_full_under_strict(tmp_path):
+    path = tmp_path / "okx_20261002.jsonl.gz"
+    path.write_bytes(_closed_member(_rows(3)) + _healthy_member_with_magic_in_its_trailer()
+                     + _closed_member(_rows(2, start=5_000_000)))
+    res = read_rows(path)                       # strict=True: must not raise
+    assert [r["recv_us"] for r in res.rows] == \
+        [1_000_000, 2_000_000, 3_000_000, 2_000_000, 5_000_000, 6_000_000]
+    assert res.truncated is False and res.error is None
+    assert res.members_found == res.members_complete == 3
+
+
+def test_healthy_file_with_the_magic_inside_deflate_data_reads_in_full_under_strict(tmp_path):
+    rows, member = _healthy_member_with_magic_in_its_deflate_data()
+    path = tmp_path / "bybit_20261002.jsonl.gz"
+    path.write_bytes(_closed_member(_rows(2)) + member)
+    res = read_rows(path)
+    assert len(res.rows) == 2 + len(rows)
+    assert res.rows[2:] == rows
+    assert res.truncated is False and res.members_complete == 2
+
+
+def test_old_style_damage_after_healthy_members_is_still_detected_and_recovered(tmp_path):
+    """Healthy members first (read in order), then the 2026-09-11 shape: a
+    member without its end glued to a new member's header. The damage is
+    still detected under strict, and strict=False still recovers both sides."""
+    dying = _write_live_file(tmp_path / "_tmp_dying.jsonl.gz", _rows(4, start=7_000_000))
+    path = tmp_path / "okx_20261003.jsonl.gz"
+    path.write_bytes(_closed_member(_rows(2)) + dying.read_bytes()
+                     + _closed_member(_rows(3, start=9_000_000)))
+    with pytest.raises(LiquidationFileCorrupted):
+        read_rows(path)
+    res = read_rows(path, strict=False)
+    assert res.truncated is True and res.error is not None
+    got = {r["recv_us"] for r in res.rows}
+    assert {1_000_000, 2_000_000} <= got                         # healthy prefix
+    assert {9_000_000, 10_000_000, 11_000_000} <= got            # member after the damage
+    assert res.members_found == 3 and res.members_complete == 2
