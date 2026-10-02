@@ -1,0 +1,182 @@
+{
+ "source": {
+  "monthly": "https://data.binance.vision/data/futures/um/monthly/klines/BTCUSDT/1m/BTCUSDT-1m-YYYY-MM.zip (2020-01..2023-11)",
+  "daily": "https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2023-12-DD.zip (2023-12-01..2023-12-17)",
+  "fetched_utc": "2026-10-02T10:01:55Z",
+  "monthly_404": [
+   "2019-09",
+   "2019-10",
+   "2019-11",
+   "2019-12"
+  ]
+ },
+ "time_column": "open_time",
+ "columns": [
+  "open_time",
+  "open",
+  "high",
+  "low",
+  "close",
+  "volume",
+  "quote_volume",
+  "n_trades",
+  "taker_buy_base"
+ ],
+ "raw_zip_count": 64,
+ "raw_zip_checksum_sha256_ok": "64/64",
+ "raw_rows_read": 2083680,
+ "raw_time_unit_rows": {
+  "ms": 2083680,
+  "us": 0
+ },
+ "years": {
+  "2020": {
+   "rows": 527040,
+   "first": "2020-01-01 00:00:00+00:00",
+   "last": "2020-12-31 23:59:00+00:00",
+   "md5": "15d4795871be01063c3cb399d15288ca",
+   "bytes": 16564324,
+   "checks": {
+    "rows": 527040,
+    "dup_ts": 0,
+    "dup_ts_differing_content": 0,
+    "steps_not_60s": 0,
+    "missing_minutes": 0,
+    "high_lt_low": 0,
+    "high_lt_max_open_close": 0,
+    "low_gt_min_open_close": 0,
+    "price_le_0": 0,
+    "volume_lt_0": 0,
+    "n_trades_0": 2,
+    "out_of_order": 0
+   }
+  },
+  "2021": {
+   "rows": 525600,
+   "first": "2021-01-01 00:00:00+00:00",
+   "last": "2021-12-31 23:59:00+00:00",
+   "md5": "ce806cc3fcb5f01a2a25ea35a7d9e89e",
+   "bytes": 18260639,
+   "checks": {
+    "rows": 525600,
+    "dup_ts": 0,
+    "dup_ts_differing_content": 0,
+    "steps_not_60s": 0,
+    "missing_minutes": 0,
+    "high_lt_low": 0,
+    "high_lt_max_open_close": 0,
+    "low_gt_min_open_close": 0,
+    "price_le_0": 0,
+    "volume_lt_0": 0,
+    "n_trades_0": 59,
+    "out_of_order": 0
+   }
+  },
+  "2022": {
+   "rows": 525600,
+   "first": "2022-01-01 00:00:00+00:00",
+   "last": "2022-12-31 23:59:00+00:00",
+   "md5": "1906ddd3390e74c8e184361015d73113",
+   "bytes": 16829285,
+   "checks": {
+    "rows": 525600,
+    "dup_ts": 0,
+    "dup_ts_differing_content": 0,
+    "steps_not_60s": 0,
+    "missing_minutes": 0,
+    "high_lt_low": 0,
+    "high_lt_max_open_close": 0,
+    "low_gt_min_open_close": 0,
+    "price_le_0": 0,
+    "volume_lt_0": 0,
+    "n_trades_0": 64,
+    "out_of_order": 0
+   }
+  },
+  "2023": {
+   "rows": 505440,
+   "first": "2023-01-01 00:00:00+00:00",
+   "last": "2023-12-17 23:59:00+00:00",
+   "md5": "dc9ea079448941c9ea25e3020169a3f5",
+   "bytes": 15487528,
+   "checks": {
+    "rows": 505440,
+    "dup_ts": 0,
+    "dup_ts_differing_content": 0,
+    "steps_not_60s": 0,
+    "missing_minutes": 0,
+    "high_lt_low": 0,
+    "high_lt_max_open_close": 0,
+    "low_gt_min_open_close": 0,
+    "price_le_0": 0,
+    "volume_lt_0": 0,
+    "n_trades_0": 118,
+    "out_of_order": 0
+   }
+  }
+ },
+ "checks_total": {
+  "rows": 2083680,
+  "dup_ts": 0,
+  "dup_ts_differing_content": 0,
+  "steps_not_60s": 0,
+  "missing_minutes": 0,
+  "high_lt_low": 0,
+  "high_lt_max_open_close": 0,
+  "low_gt_min_open_close": 0,
+  "price_le_0": 0,
+  "volume_lt_0": 0,
+  "n_trades_0": 243,
+  "out_of_order": 0,
+  "longest_step": null
+ },
+ "notes": "steps_not_60s: consecutive rows whose open_time step != 60 s (step across a year boundary is counted in the later year); missing_minutes: sum of (step/60s - 1); OHLC counters are separate (a row can hit more than one); n_trades_0 = rows with n_trades == 0 (informational).",
+ "load_check": {
+  "how": "bot.bt.data.load, spec = scripts/k1_newenv_g_loadprof.py SPEC, range_ns = [Jan 1, next Jan 1) (2023: [2023-01-01, 2023-12-18))",
+  "date_utc": "2026-10-02",
+  "years": {
+   "2020": {
+    "rows_read": 527040,
+    "rows_kept": 527040,
+    "sealed_unit": null,
+    "sha256": "2ea050f79edc34a8dd44ba31b024a7955a6e23499ed4ecdd77b5c56a848e4655",
+    "anomalies": {
+     "synthetic": 2
+    }
+   },
+   "2021": {
+    "rows_read": 525600,
+    "rows_kept": 525600,
+    "sealed_unit": null,
+    "sha256": "94076ccd75bd7bbc49ef5e623e7c8d7457ebd0c0a98bb3ebedfec642ef1d1ca3",
+    "anomalies": {
+     "synthetic": 59
+    }
+   },
+   "2022": {
+    "rows_read": 525600,
+    "rows_kept": 525600,
+    "sealed_unit": null,
+    "sha256": "ddae7954bacef08135500b92ee390394126ff8885f653d73b0f097941d4b750f",
+    "anomalies": {
+     "synthetic": 64
+    }
+   },
+   "2023": {
+    "rows_read": 505440,
+    "rows_kept": 505440,
+    "sealed_unit": null,
+    "sha256": "13cef357910e5d6c47528af4fdad18fa2ec6df7e29942ab680f4d797a8311282",
+    "anomalies": {
+     "synthetic": 118
+    }
+   }
+  }
+ },
+ "seal_check": {
+  "market": "binance_um:BTCUSDT (scripts/check_card.py MARKETS)",
+  "boundary": "2026-08-23T00:00:00+00:00 (check_card.boundaries; ledger P2-08b, binance_um aggTrades only)",
+  "this_dir_last_row": "2023-12-17 23:59:00+00:00",
+  "ledger_entries_for_this_dir": 0
+ }
+}

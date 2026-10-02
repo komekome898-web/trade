@@ -80,6 +80,7 @@
 | 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
 |---|---|---|---|---|---|---|
 | Binance BTCUSDT 現物 1分足(積み上げ) | `data/binance_BTCUSDT_1m.csv`, `data/binance_BTCUSDT_1m_full.csv`, `backtest_data/binance_BTCUSDT_1m_210d_20260820.csv.gz`, `backtest_data/binance_BTCUSDT_1m_20170801_20231231/`, `backtest_data/binance_BTCUSDT_1m_20240101_20260831/` | 2017-08〜2026-08 | 取得済 | 2026-09-11 | — | K1 取引所横断 段階1(L-093)、面探索多数(重度消費) |
+| Binance BTCUSDT USD-M 先物 1分足 | `backtest_data/binance_um_BTCUSDT_1m_20261002/`(年ごとの csv.gz を git に入れる。`raw/` の月・日の zip は git の外) | 2020-01-01〜2023-12-17 | 取得済(data.binance.vision、CHECKSUM 64/64、抜け 0) | 2026-10-02 | — | W4 カード 2 の変種 (b)(シグナル源 = 高レバの取引所) |
 | Binance BTCUSDT 1秒足 / aggTrades | `backtest_data/binance_BTCUSDT_1s_20260723_20260906/`, `backtest_data/binance_BTCUSDT_aggTrades_20260723_20260906/`, `backtest_data/binance_um_BTCUSDT_aggTrades_20260723_20260906/`, `backtest_data/binance_BTCUSDT_aggTrades_tardis_days/` | 2026-07-23〜09-06 | 取得済 | 2026-09-11 | — | P2-08b 用(未読み) |
 | Binance BTCUSDT 1秒足(高頻度サンプル) | `data/binance_BTCUSDT_1s_hi1.csv` 等 4 本 + `_today.csv` | 個別サンプル日 | 取得済 | 2026-09-11 | — | 未使用 |
 | Binance XRPUSDT 1分/1日/4時間足 | `data/binance_XRPUSDT_*.csv`, `backtest_data/binance_XRPUSDT_*.csv` | 複数粒度 | 取得済 | 2026-09-11 | — | 未使用 |
