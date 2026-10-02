@@ -124,24 +124,17 @@ class MarketDataFeed:
         product_code: str,
         *,
         max_staleness_sec: float = 60,
-        max_price_jump_pct: float = 5.0,
         max_spread_pct: float = 1.0,
         clock=time.time,
     ):
         self._client = client
         self.product_code = product_code
         self.max_staleness_sec = max_staleness_sec
-        self.max_price_jump_pct = max_price_jump_pct
         self.max_spread_pct = max_spread_pct
         self._clock = clock
         self.last_tick: Tick | None = None
         self.last_update: float | None = None
         self._last_exec_id = 0
-        # Set by the app ONLY while the kill switch is tripped (data-only): the
-        # jump check guards trading, and with no trading a rejected jump would
-        # freeze `last_tick` and reject every later tick. Then a jump is taken
-        # as the new reference instead; the other checks still reject.
-        self.accept_price_jumps = False
 
     def poll_ticker(self) -> Tick:
         data = self._client.ticker(self.product_code)
@@ -166,17 +159,10 @@ class MarketDataFeed:
             raise MarketDataAnomaly(
                 f"abnormal spread {tick.spread_pct:.3f}% > {self.max_spread_pct}%"
             )
-        if self.last_tick is not None:
-            jump = abs(tick.price - self.last_tick.price) / self.last_tick.price * 100
-            if jump > self.max_price_jump_pct:
-                if self.accept_price_jumps:
-                    logger.warning(
-                        "price jump %.2f%% (from %s to %s) accepted as the new "
-                        "reference (trading off)", jump, self.last_tick.price, tick.price)
-                    return
-                raise MarketDataAnomaly(
-                    f"abnormal price jump {jump:.2f}% (from {self.last_tick.price} to {tick.price})"
-                )
+        # No check on the size of the move from the last tick (owner L-548
+        # "外す"): the 5% limit had no recorded basis, never fired in paper,
+        # and a real crash moves more than 5% within a minute — it would have
+        # frozen the position with no stop-loss exactly then.
 
     def poll_executions(self, builder: CandleBuilder) -> list[Candle]:
         """Fetch new public executions and feed them into `builder`, returning

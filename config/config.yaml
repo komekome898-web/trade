@@ -72,7 +72,6 @@ resilience:
 # Market data safety
 market_data:
   max_staleness_sec: 60          # kill switch if no fresh data for this long
-  max_price_jump_pct: 5.0        # single-tick move larger than this % = anomaly
   max_spread_pct: 1.0            # spread wider than this % = anomaly, no trading
 
 # Fees / paper fill model (verify real account fee via check_api.py)

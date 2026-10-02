@@ -1303,7 +1303,7 @@ def _paper_app(tmp_path, monkeypatch, resilience_cfg=None, session=None,
                      "params": {"k": 2, "thr_pct": 0.15, "exit_pct": 0.03}},
         "costs": {"slippage_pct": 0.0},
         "market_data": {"max_staleness_sec": staleness_sec,
-                        "max_price_jump_pct": 50, "max_spread_pct": 5.0},
+                        "max_spread_pct": 5.0},
     }
     if resilience_cfg is not None:
         config["resilience"] = resilience_cfg
@@ -2657,7 +2657,7 @@ def _live_boot_app(tmp_path, monkeypatch, *, positions, notifier=None,
                                         "exit_pct": 0.03}},
                 "costs": {"slippage_pct": 0.0},
                 "market_data": {"max_staleness_sec": 3600,
-                                "max_price_jump_pct": 50, "max_spread_pct": 5.0}},
+                                "max_spread_pct": 5.0}},
         risk_limits=RiskLimits.from_dict({
             "MAX_ORDER_SIZE_JPY": 130000, "MAX_POSITION_SIZE_JPY": 130000,
             "MAX_DAILY_LOSS_JPY": 6000, "MAX_DRAWDOWN_PCT": 10.0,

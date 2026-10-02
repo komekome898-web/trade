@@ -141,7 +141,6 @@ class TradingApp:
         self.feed = MarketDataFeed(
             client, settings.product_code,
             max_staleness_sec=float(md.get("max_staleness_sec", 60)),
-            max_price_jump_pct=float(md.get("max_price_jump_pct", 5.0)),
             max_spread_pct=float(md.get("max_spread_pct", 1.0)),
         )
         self.candles = CandleBuilder(int(cfg.get("candle_interval_sec", 60)))
@@ -690,18 +689,8 @@ class TradingApp:
         # spread record, the candles and status.json keep running (owner
         # L-532). Everything after `_update_status` below — stop-loss, strategy,
         # orders — and the order sweep are skipped while tripped, and a data
-        # failure while tripped neither re-trips nor re-alerts. While tripped a
-        # price jump is taken as the new reference (see MarketDataFeed).
+        # failure while tripped neither re-trips nor re-alerts.
         tripped = self.kill_switch.is_tripped
-        # Also for the FIRST fresh tick after a stale-data pause (owner L-544):
-        # a move of more than the jump limit during the outage must not turn
-        # the pause into a permanent trip, so that one tick becomes the new
-        # reference. Only that one: from the second fresh tick on the jump
-        # check is back, so a bad print after the data returns still trips
-        # instead of becoming the reference the resume is built on.
-        self.feed.accept_price_jumps = tripped or (
-            self._stale_pause is not None
-            and self._stale_pause["fresh_since"] is None)
         # Before the polls, not after: a widened read timeout has to apply to
         # the very call that is struggling, not to the one after it.
         self._refresh_condition()

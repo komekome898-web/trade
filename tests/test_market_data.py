@@ -8,7 +8,7 @@ from tests.conftest import make_ticker
 
 
 def make_feed(client, **kw):
-    return MarketDataFeed(client, "XRP_JPY", max_price_jump_pct=5.0,
+    return MarketDataFeed(client, "XRP_JPY",
                           max_spread_pct=1.0, max_staleness_sec=60, **kw)
 
 
@@ -18,13 +18,15 @@ def test_poll_ticker_ok(client, fake_session):
     assert tick.price == 100.0
 
 
-def test_abnormal_price_jump_detected(client, fake_session):
+def test_a_large_move_between_ticks_is_not_an_anomaly(client, fake_session):
+    """Owner L-548 "外す": no limit on the move from the last tick. A +10%
+    tick is taken as it is and becomes the reference."""
     feed = make_feed(client)
     fake_session.set("GET", "/v1/ticker", make_ticker(100.0, 99.9, 100.1))
     feed.poll_ticker()
     fake_session.set("GET", "/v1/ticker", make_ticker(110.0, 109.9, 110.1))  # +10%
-    with pytest.raises(MarketDataAnomaly, match="price jump"):
-        feed.poll_ticker()
+    assert feed.poll_ticker().price == 110.0
+    assert feed.last_tick.price == 110.0
 
 
 def test_abnormal_spread_detected(client, fake_session):

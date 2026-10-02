@@ -32,7 +32,7 @@ def app(tmp_path, monkeypatch):
                      "params": {"k": 2, "thr_pct": 0.15, "exit_pct": 0.03}},
         "leader": {"exchange": "binance", "symbol": "BTCUSDT"},
         "costs": {"slippage_pct": 0.0},
-        "market_data": {"max_staleness_sec": 3600, "max_price_jump_pct": 50,
+        "market_data": {"max_staleness_sec": 3600,
                         "max_spread_pct": 5.0},
     }
     limits = RiskLimits.from_dict({

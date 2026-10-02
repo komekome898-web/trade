@@ -657,7 +657,7 @@ def app_config(strategy_name: str = "composite", paper_equity_jpy: float = 20000
                      "params": {"k": 2, "thr_pct": 0.15, "exit_pct": 0.03}},
         "leader": {"exchange": "binance", "symbol": "BTCUSDT"},
         "costs": {"slippage_pct": 0.0},
-        "market_data": {"max_staleness_sec": 3600, "max_price_jump_pct": 50,
+        "market_data": {"max_staleness_sec": 3600,
                         "max_spread_pct": 5.0},
     }
 
@@ -1638,17 +1638,16 @@ def test_a_trip_inside_step_is_not_alerted_again_by_the_freshness_check(
 
 # ---- critic fixes to L-532: jump freeze (A), reset exit (B), fault (C) -----
 def _quotes(monkeypatch, app) -> dict:
-    """Mutable ticker answer for `app`, with the production jump limit (5%)."""
-    app.feed.max_price_jump_pct = 5.0
+    """Mutable ticker answer for `app`."""
     quotes = {"ltp": 10_000_000, "best_bid": 9_999_000, "best_ask": 10_001_000}
     monkeypatch.setattr(app.feed._client, "ticker", lambda product: dict(quotes))
     return quotes
 
 
 def test_tripped_feed_takes_a_price_jump_as_the_new_reference(workdir, monkeypatch):
-    """(A) At the production 5% limit, a +6% move while tripped is recorded and
-    becomes the reference, so the record does not freeze; a crossed book is
-    still rejected and nothing re-trips."""
+    """(A) A +6% move while tripped is recorded and becomes the reference, so
+    the record does not freeze; a crossed book is still rejected and nothing
+    re-trips."""
     app = build_test_app(monkeypatch)
     quotes = _quotes(monkeypatch, app)
     app.kill_switch.trip(KillReason.MANUAL, "operator")
@@ -1669,8 +1668,9 @@ def test_tripped_feed_takes_a_price_jump_as_the_new_reference(workdir, monkeypat
     assert app.kill_switch.state["reason"] == "manual"
 
 
-def test_untripped_price_jump_still_trips_and_is_not_recorded(workdir, monkeypatch):
-    """(A) Not tripped: the same +6% move trips the switch exactly as before."""
+def test_untripped_large_move_does_not_trip_and_is_recorded(workdir, monkeypatch):
+    """Owner L-548 "外す": not tripped, a +6% move between two ticks is a price
+    like any other — no trip, no alert, recorded, the new reference."""
     notifier = RecordingNotifier()
     app = build_test_app(monkeypatch, notifier=notifier)
     quotes = _quotes(monkeypatch, app)
@@ -1679,11 +1679,10 @@ def test_untripped_price_jump_still_trips_and_is_not_recorded(workdir, monkeypat
 
     app.step()
 
-    assert app.kill_switch.state["reason"] == "market_data_anomaly"
-    assert "abnormal price jump" in app.kill_switch.state["detail"]
-    assert [t for t, _, _ in notifier.sent] == ["KILL SWITCH"]
-    assert len(_spread_rows(workdir)) == 1
-    assert app.feed.last_tick.price == 10_000_000
+    assert not app.kill_switch.is_tripped
+    assert notifier.sent == []
+    assert len(_spread_rows(workdir)) == 2
+    assert app.feed.last_tick.price == 10_600_000
 
 
 class _LoopDidNotEnd(BaseException):
@@ -2019,11 +2018,6 @@ NON_STALE_FAULTS = [
      "market_data_anomaly"),
     ("non_positive_price", lambda rig: rig.quotes.update(ltp=0),
      "market_data_anomaly"),
-    ("price_jump", lambda rig: (setattr(rig.app.feed, "max_price_jump_pct", 5.0),
-                                rig.quotes.update(ltp=10_600_000,
-                                                  best_bid=10_599_000,
-                                                  best_ask=10_601_000)),
-     "market_data_anomaly"),
     ("api_errors", lambda rig: setattr(rig, "error", __import__(
         "bot.exchange.bitflyer_client", fromlist=["BitflyerError"]
     ).BitflyerError(400, "nope")), "api_errors"),
@@ -2073,10 +2067,7 @@ def test_paper_no_data_ever_still_trips(workdir, monkeypatch):
     assert _status_json(workdir)["data_stale_pause"] is None
 
 
-# A price jump is not among them: while paused no order can be sent, so a
-# move larger than the jump limit across the outage is taken as the new
-# reference (see the test after this one), not a trip.
-DURING_PAUSE_FAULTS = [f for f in NON_STALE_FAULTS if f[0] != "price_jump"]
+DURING_PAUSE_FAULTS = NON_STALE_FAULTS
 
 
 @pytest.mark.parametrize("name,inject,reason", DURING_PAUSE_FAULTS,
@@ -2132,44 +2123,26 @@ def test_a_restart_does_not_carry_the_pause(workdir, monkeypatch):
     assert restarted.portfolio.position_size == pytest.approx(-0.013)
 
 
-def test_a_price_jump_across_the_outage_resumes_instead_of_tripping(
+def test_large_moves_across_and_after_the_outage_do_not_trip(
         workdir, monkeypatch):
-    """(L-544, lead decision) The price moved +6% while the data was gone
-    (jump limit 5%): the first fresh tick becomes the new reference, the
-    pause ends after one fresh candle as usual, nothing trips. After the
-    resume the jump check is back: a second +6% move trips."""
+    """Owner L-548 "外す": +6% while the data was gone, another +6% on a fresh
+    tick before the resume (10_255), and a third after it (10_300): none
+    trips; the pause ends after one fresh candle as usual."""
     notifier = RecordingNotifier()
     app, rig = _gap_app(monkeypatch, notifier, until=10_400)
-    app.feed.max_price_jump_pct = 5.0
     rig.hooks[UP - 5] = lambda: rig.quotes.update(
         ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
-    rig.hooks[10_300.0] = lambda: rig.quotes.update(
+    rig.hooks[10_250.0] = lambda: rig.quotes.update(
         ltp=11_236_000, best_bid=11_235_000, best_ask=11_237_000)
+    rig.hooks[10_300.0] = lambda: rig.quotes.update(
+        ltp=11_910_000, best_bid=11_909_000, best_ask=11_911_000)
     rig.run()
 
     assert rig.first(paused=False, after=10_100.0) == 10_260.0
-    assert [t for t, _, _ in notifier.sent][:3] == ["BOT START", PAUSE_TITLE,
-                                                    RESUME_TITLE]
-    assert app.kill_switch.state["reason"] == "market_data_anomaly"
-    assert "abnormal price jump" in app.kill_switch.state["detail"]
-
-
-def test_a_price_jump_after_the_first_fresh_tick_still_trips(workdir, monkeypatch):
-    """(critic 1c37399b #1) Only the FIRST fresh tick may jump. A +6% print
-    at 10_255 — the data has been back since 10_180 — is checked as in
-    normal running: it trips, it does not become the reference the resume
-    is built on (before the fix it resumed at 10_260 on that price)."""
-    app, rig = _gap_app(monkeypatch, until=10_400)
-    app.feed.max_price_jump_pct = 5.0
-    rig.hooks[10_250.0] = lambda: rig.quotes.update(
-        ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
-    rig.run()
-
-    assert app.kill_switch.is_tripped
-    assert app.kill_switch.state["reason"] == "market_data_anomaly"
-    assert "abnormal price jump" in app.kill_switch.state["detail"]
-    assert next(t for t, _, k in rig.log if k) == 10_255.0   # on that tick
-    assert not any(n == "strategy" for t, n, _ in rig.calls if t >= 10_180.0)
+    assert not app.kill_switch.is_tripped
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", PAUSE_TITLE,
+                                                RESUME_TITLE]
+    assert app.feed.last_tick.price == 11_910_000
 
 
 def test_stale_again_before_the_resume_restarts_the_resume_clock(
