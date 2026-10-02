@@ -72,30 +72,32 @@ class PreTradeChecker:
                           and order.size - min(order.size, reducible) <= _SIZE_EPSILON)
 
         # Kill-switch-tripping conditions first (these stop the bot entirely)
+        breaches: list[tuple[KillReason, str, str]] = []
         if account.daily_pnl_jpy <= -self.limits.max_daily_loss_jpy:
-            detail = (f"daily pnl {account.daily_pnl_jpy:.0f} <= "
-                      f"-{self.limits.max_daily_loss_jpy}")
-            if purely_closing and not self.kill_switch.is_tripped:
-                # Owner L-549 "通す": the limit must not refuse the order that
-                # stops the loss (a stop-loss refused here left the position
-                # frozen with no exit). The close goes first; the caller trips
-                # the switch right after sending it.
-                trip_after.append((KillReason.DAILY_LOSS_LIMIT, detail))
-            else:
-                self.kill_switch.trip(KillReason.DAILY_LOSS_LIMIT, detail)
-                reasons.append("daily loss limit reached (kill switch tripped)")
+            breaches.append((KillReason.DAILY_LOSS_LIMIT,
+                             f"daily pnl {account.daily_pnl_jpy:.0f} <= "
+                             f"-{self.limits.max_daily_loss_jpy}",
+                             "daily loss limit reached (kill switch tripped)"))
         if account.drawdown_pct >= self.limits.max_drawdown_pct:
-            self.kill_switch.trip(
-                KillReason.MAX_DRAWDOWN,
-                f"drawdown {account.drawdown_pct:.2f}% >= {self.limits.max_drawdown_pct}%",
-            )
-            reasons.append("max drawdown reached (kill switch tripped)")
+            breaches.append((KillReason.MAX_DRAWDOWN,
+                             f"drawdown {account.drawdown_pct:.2f}% >= "
+                             f"{self.limits.max_drawdown_pct}%",
+                             "max drawdown reached (kill switch tripped)"))
         if account.consecutive_losses >= self.limits.max_consecutive_losses:
-            self.kill_switch.trip(
-                KillReason.CONSECUTIVE_LOSSES,
-                f"{account.consecutive_losses} consecutive losses",
-            )
-            reasons.append("max consecutive losses reached (kill switch tripped)")
+            breaches.append((KillReason.CONSECUTIVE_LOSSES,
+                             f"{account.consecutive_losses} consecutive losses",
+                             "max consecutive losses reached (kill switch tripped)"))
+        if breaches and purely_closing and not self.kill_switch.is_tripped:
+            # Owner L-549 (daily loss) and L-550 (drawdown, consecutive
+            # losses) "通す": a limit must not refuse the order that stops the
+            # loss — refused here, the stop-loss left the position frozen with
+            # no exit. The close goes first; the caller trips the switch right
+            # after sending it.
+            trip_after.extend((r, d) for r, d, _ in breaches)
+        else:
+            for reason, detail, msg in breaches:
+                self.kill_switch.trip(reason, detail)
+                reasons.append(msg)
 
         if self.kill_switch.is_tripped:
             reasons.append(f"kill switch active: {self.kill_switch.state}")
@@ -199,9 +201,10 @@ class PreTradeChecker:
         if reasons:
             # Refused anyway (another check): nothing will be sent, so the
             # deferred trip happens now, exactly as before L-549.
+            msgs = {r: m for r, _, m in breaches}
             for reason, detail in trip_after:
                 self.kill_switch.trip(reason, detail)
-                reasons.append("daily loss limit reached (kill switch tripped)")
+                reasons.append(msgs[reason])
             trip_after = []
         return RiskDecision(approved=not reasons, reasons=reasons,
                             trip_after=trip_after)

@@ -179,3 +179,27 @@ def test_kill_switch_reset_requires_confirmation(tmp_path):
         ks.reset()
     ks.reset(operator_confirm=True)
     assert not ks.is_tripped
+
+
+# ---- owner L-550: drawdown and consecutive-loss limits let a pure close through
+@pytest.mark.parametrize("field,value,reason", [
+    ("drawdown_pct", 10.5, "max_drawdown"),
+    ("consecutive_losses", 4, "consecutive_losses"),
+])
+def test_a_pure_close_past_the_drawdown_or_streak_limit_goes_first(
+        checker, kill_switch, field, value, reason):
+    """Owner L-550 "通す": like the daily loss limit (L-549), the drawdown and
+    consecutive-loss limits no longer refuse the order that closes the
+    position; they are handed to the caller to trip right after sending.
+    An order that adds exposure still trips on the spot."""
+    acct = healthy_account(position_notional_jpy=1000, position_size=-0.01,
+                           **{field: value})
+    close = OrderRequest("XRP_JPY", "BUY", 0.01, 100_000, stop_price=100_000)
+    d = checker.check(close, acct)
+    assert d.approved
+    assert [r.value for r, _ in d.trip_after] == [reason]
+    assert not kill_switch.is_tripped
+    entry = OrderRequest("XRP_JPY", "SELL", 0.001, 100_000, stop_price=100_500)
+    d = checker.check(entry, acct)
+    assert not d.approved and kill_switch.is_tripped
+    assert kill_switch.state["reason"] == reason
