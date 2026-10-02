@@ -37,6 +37,10 @@ class BotStatus:
     consecutive_api_errors: int = 0
     last_data_time: float | None = None
     kill_switch: dict | None = None
+    # PAPER only: trading paused because market data went stale (bot/main.py
+    # `_pause_for_stale_data`, owner L-544). None when not paused. Not the
+    # kill switch: nothing is persisted and it resumes by itself.
+    data_stale_pause: dict | None = None
     # Composite-strategy telemetry; None when the running strategy has neither
     # (bot/main.py: _overlay_status / _active_module_names).
     overlay: dict | None = None            # {factor, consecutive_losses, dd_pct}

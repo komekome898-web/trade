@@ -18,6 +18,7 @@ actually went wrong.
 from __future__ import annotations
 
 import logging
+import math
 import time
 
 from bot.exchange.bitflyer_client import BitflyerClient, BitflyerError, NetworkError
@@ -28,7 +29,9 @@ from bot.exchange.resilience import (
 )
 from bot.execution.paper import PaperExecutor
 from bot.logging_setup import log_decision, redact, register_secret, setup_logging
-from bot.market_data.feed import CandleBuilder, MarketDataAnomaly, MarketDataFeed
+from bot.market_data.feed import (
+    CandleBuilder, MarketDataAnomaly, MarketDataFeed, MarketDataStale,
+)
 from bot.monitoring.notifier import DiscordNotifier, Notifier, NullNotifier
 from bot.monitoring.status import StatusWriter
 from bot.order_management.manager import OrderManager
@@ -300,6 +303,10 @@ class TradingApp:
         # SEEN the trip on disk, so a trip whose file write failed is never
         # mistaken for a reset.
         self._trip_seen_on_disk = False
+        # PAPER only: trading paused on stale market data (owner L-544), see
+        # `_pause_for_stale_data`. In-process state on purpose — never written
+        # to disk, so a restart starts unpaused.
+        self._stale_pause: dict | None = None
         from bot.market_data.feed import SpreadRecorder
         self.spread_recorder = SpreadRecorder(f"data/spread_{settings.product_code}.csv")
 
@@ -686,7 +693,11 @@ class TradingApp:
         # failure while tripped neither re-trips nor re-alerts. While tripped a
         # price jump is taken as the new reference (see MarketDataFeed).
         tripped = self.kill_switch.is_tripped
-        self.feed.accept_price_jumps = tripped
+        # Also while a PAPER bot is paused on stale data (owner L-544): no order
+        # can be sent, and a move of more than the jump limit during the outage
+        # must not turn the pause into a permanent trip. Resuming needs one
+        # whole candle of fresh data first (`_resume_if_fresh_candle`).
+        self.feed.accept_price_jumps = tripped or self._stale_pause is not None
         # Before the polls, not after: a widened read timeout has to apply to
         # the very call that is struggling, not to the one after it.
         self._refresh_condition()
@@ -699,6 +710,11 @@ class TradingApp:
             self.spread_recorder.record(tick)
             if tripped:
                 self._note_data_only_failure(None)
+            elif self._stale_pause is not None \
+                    and self._stale_pause["fresh_since"] is None:
+                # First fresh tick after the outage: the resume clock starts
+                # here (`_stale_resume_boundary`).
+                self._stale_pause["fresh_since"] = tick.timestamp
         except MarketDataAnomaly as e:
             if tripped:
                 self._note_data_only_failure(e)
@@ -737,6 +753,8 @@ class TradingApp:
         self._update_status(tick.price)
         if self.kill_switch.is_tripped:
             return  # data only: no stop-loss, no strategy, no order
+        if self._stale_pause is not None and not self._resume_if_fresh_candle():
+            return  # paused on stale data: no stop-loss, no strategy, no order
         if finished is None:
             return  # decide only on completed candles
 
@@ -1411,6 +1429,8 @@ class TradingApp:
         except Exception:
             logger.exception("cancel_all_active failed during kill switch")
         self._save_paper_state()
+        self._stale_pause = None          # the kill switch supersedes a pause
+        self.status.status.data_stale_pause = None
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
         self._kill_notified = True
@@ -1454,6 +1474,8 @@ class TradingApp:
         self._data_only = True
         state = self.kill_switch.state or {}
         self._save_paper_state()
+        self._stale_pause = None          # the kill switch supersedes a pause
+        self.status.status.data_stale_pause = None
         self.status.status.running = False
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
@@ -1485,6 +1507,156 @@ class TradingApp:
                        exc_info=error,
                        extra={"data": {"event": "data_only_failure",
                                        "error": kind, "detail": str(error)}})
+
+    # ---- stale-data pause (PAPER ONLY, owner L-544) ------------------------
+    def _pause_for_stale_data(self, detail: str) -> None:
+        """Stale market data PAUSES a PAPER bot instead of tripping the kill
+        switch (owner L-544: close the position, stop ordering, resume by
+        itself once the data is back). Called only for `MarketDataStale` in
+        PAPER mode (`_run_loop`); LIVE and every other anomaly still trip.
+
+        Nothing is persisted: the kill-switch file is not written, so this is
+        not the permanent trip, and a restart starts unpaused. Data keeps
+        flowing (`step`): polls, the spread record, candles and status.json.
+
+        The paper position is closed at the LAST RECEIVED quote
+        (`_close_for_stale_pause`). Anything unexpected while closing is an
+        unknown state and trips the switch exactly as the loop would — this
+        runs inside the loop's `except` clause, where an escaping exception
+        would end the process with no trip at all.
+
+        Called again while paused (still stale, or stale AGAIN after the data
+        came back): no second alert, and the resume clock restarts, because a
+        candle that spans this second gap is not built from fresh data either.
+        """
+        if self._stale_pause is not None:
+            if self._stale_pause["fresh_since"] is not None:
+                logger.warning("market data stale again during the pause; the "
+                               "resume clock restarts", extra={"data": {
+                                   "event": "stale_pause_relapse",
+                                   "detail": detail}})
+                self._stale_pause["fresh_since"] = None
+            return
+        since = time.time()
+        self._stale_pause = {"since": since, "detail": detail,
+                             "fresh_since": None}
+        logger.warning("market data stale: paper trading paused (kill switch "
+                       "NOT tripped)", extra={"data": {
+                           "event": "stale_pause_entered", "detail": detail,
+                           "since": since,
+                           "position_size": self.portfolio.position_size}})
+        try:
+            closed = self._close_for_stale_pause()
+        except Exception as e:
+            fault = redact(f"unhandled exception while pausing on stale data: {e!r}")
+            logger.exception("closing the paper position for the stale-data "
+                             "pause failed; kill switch tripped")
+            self._trip_once(KillReason.UNHANDLED_EXCEPTION, fault)
+            self._on_kill(fault)
+            return
+        if self.kill_switch.is_tripped:
+            return  # the close tripped it (a risk check); `_on_kill` has run
+        self._save_paper_state()
+        self.status.status.data_stale_pause = self._stale_pause_view()
+        self.status.write()
+        self._notify("データ停滞: 取引を一時停止",
+                     f"市場データが古くなったため、paper の取引を一時停止しました"
+                     f"({detail})。キルスイッチは発動していません。{closed}。"
+                     f"データが戻り、新しいデータだけでできた "
+                     f"{self.candles.interval_sec} 秒足が 1 本完成したら、"
+                     f"自動で再開します。")
+
+    def _close_for_stale_pause(self) -> str:
+        """Close the paper position at the LAST RECEIVED quote; returns the
+        sentence for the alert.
+
+        The last received quote, not the first one after the data returns:
+        the decision to close is taken now, and the first post-outage price
+        does not exist yet — booking at it would be a future price. The fill
+        goes through the normal closing path (`_try_order`: risk checks, the
+        paper executor, whose quote is `feed.last_tick`, fees and slippage).
+        One attempt; a refused close leaves the position open and says so.
+        """
+        pos = self.portfolio.position_size
+        if pos == 0.0:
+            return "建玉はありません"
+        side_ja = "買い" if pos > 0 else "売り"
+        tick = self.feed.last_tick
+        if tick is None:
+            logger.error("stale-data pause: no quote to close the paper "
+                         "position at", extra={"data": {
+                             "event": "stale_pause_close_unpriced",
+                             "position_size": pos}})
+            return (f"{side_ja}建玉 {abs(pos)} は値段が無いため決済できず、"
+                    f"残っています")
+        side = "SELL" if pos > 0 else "BUY"
+        order = self._try_order(side, tick, size=abs(pos))
+        log_decision(
+            logger, symbol=self.settings.product_code, price=tick.price,
+            strategy_signal="STALE_PAUSE", indicator_values={},
+            decision="ORDER_SENT" if order else "REJECTED",
+            reason="market data stale: paper position closed at the last "
+                   "received quote",
+            order_id=order.local_id if order else None,
+            pnl=self.portfolio.realized_pnl_jpy,
+        )
+        if order is None or self.portfolio.position_size != 0.0:
+            return (f"{side_ja}建玉 {abs(pos)} の決済ができず、"
+                    f"{abs(self.portfolio.position_size)} が残っています")
+        return (f"{side_ja}建玉 {abs(pos)} を最後に受け取った値段"
+                f"(買値 {tick.best_bid} / 売値 {tick.best_ask})で決済しました")
+
+    def _stale_resume_boundary(self) -> int | None:
+        """Start of the first candle built ONLY from fresh data: the first
+        `candle_interval_sec` boundary at or after the first fresh tick. The
+        candle the first fresh tick lands in began during the outage, so it
+        is missing part of its interval; the next one is whole. None while no
+        fresh tick has arrived since the data went stale."""
+        if self._stale_pause is None or self._stale_pause["fresh_since"] is None:
+            return None
+        interval = self.candles.interval_sec
+        return int(math.ceil(self._stale_pause["fresh_since"] / interval)) * interval
+
+    def _stale_pause_view(self) -> dict | None:
+        """The pause, for status.json; None when not paused."""
+        if self._stale_pause is None:
+            return None
+        return {**self._stale_pause,
+                "resume_after_candle_start": self._stale_resume_boundary()}
+
+    def _resume_if_fresh_candle(self) -> bool:
+        """Resume once one candle built only from fresh data has COMPLETED.
+
+        The strategy decides on completed candles, so it may decide again
+        only when there is at least one that contains no gap. Before it does,
+        every candle older than that one is dropped from its history: a
+        window reaching back across the outage would put pre-gap candles next
+        to post-gap ones as if they were consecutive, and a signal from such
+        a window would be read across the gap.
+        """
+        boundary = self._stale_resume_boundary()
+        completed = self.candles.completed
+        if boundary is None or not completed or completed[-1].start < boundary:
+            return False
+        dropped = sum(1 for c in completed if c.start < boundary)
+        completed[:] = [c for c in completed if c.start >= boundary]
+        pause, self._stale_pause = self._stale_pause, None
+        paused_sec = time.time() - pause["since"]
+        logger.warning("market data fresh again: paper trading resumed",
+                       extra={"data": {
+                           "event": "stale_pause_resumed",
+                           "since": pause["since"], "paused_sec": paused_sec,
+                           "first_fresh_ts": pause["fresh_since"],
+                           "first_fresh_candle_start": boundary,
+                           "candles_dropped": dropped}})
+        self.status.status.data_stale_pause = None
+        self.status.write()
+        self._notify("データ回復: 取引を再開",
+                     f"市場データが戻り、新しいデータだけでできた足が 1 本完成"
+                     f"したため、paper の取引を再開しました(一時停止は約 "
+                     f"{paused_sec:.0f} 秒)。それより前の足 {dropped} 本は"
+                     f"戦略の判断から外しました。")
+        return True
 
     def _roll_paper_day(self) -> None:
         """Persist the daily-P&L reset when the UTC day turns under a running
@@ -1522,6 +1694,7 @@ class TradingApp:
         s.max_drawdown_pct = max(s.max_drawdown_pct, self.portfolio.drawdown_pct(price))
         s.last_data_time = self.feed.last_update
         s.kill_switch = self.kill_switch.state
+        s.data_stale_pause = self._stale_pause_view()
         s.overlay = self._overlay_status(price)
         s.active_modules = self._active_module_names()
         snap = self.condition_monitor.snapshot()
@@ -1622,6 +1795,12 @@ class TradingApp:
                     # Already tripped and alerted (at the top of this cycle,
                     # or by step() inside it): no second trip, no alert.
                     self._note_data_only_failure(e)
+                elif isinstance(e, MarketDataStale) \
+                        and self.settings.mode is Mode.PAPER \
+                        and not self.kill_switch.is_tripped:
+                    # PAPER only (owner L-544): stale data pauses, it does not
+                    # trip. LIVE, and every other anomaly, trips as before.
+                    self._pause_for_stale_data(str(e))
                 else:
                     self._trip_once(KillReason.MARKET_DATA_ANOMALY, str(e))
                     self._on_kill(str(e))

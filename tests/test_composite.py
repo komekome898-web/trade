@@ -1799,3 +1799,356 @@ def test_a_trip_never_seen_on_disk_is_not_taken_for_a_reset(workdir, monkeypatch
 
     assert app.kill_switch.is_tripped
     assert len(_spread_rows(workdir)) == 5
+
+
+# ---- L-544: stale market data PAUSES a paper bot (no kill switch) ----------
+STALE_SEC = 60.0
+PAUSE_TITLE = "データ停滞: 取引を一時停止"
+RESUME_TITLE = "データ回復: 取引を再開"
+
+
+def _safe_retry_error():
+    """What a 503 on the ticker really raises: classified SAFE_RETRY, so it
+    never counts towards API_ERRORS — staleness is all it causes."""
+    from bot.exchange.bitflyer_client import BitflyerClient
+    session = FakeSession()
+    session.set("GET", "/v1/ticker", FakeResponse(503, {"error_message": "busy"}))
+    try:
+        BitflyerClient(session=session, sleep=lambda s: None).ticker("FX_BTC_JPY")
+    except Exception as e:                         # noqa: BLE001 - captured
+        return e
+    raise AssertionError("a 503 did not raise")
+
+
+class _StaleRig:
+    """Drives `run_forever` on a virtual clock: the feed reads `now`, every
+    loop sleep advances it by the poll interval, and the ticker is down
+    (`error`) while down_at <= now < up_at. `log` holds (now, paused,
+    tripped) at the end of each cycle; `hooks[t]` runs at the end of the
+    cycle at clock t."""
+
+    def __init__(self, app, monkeypatch, *, start, down_at=None, up_at=None,
+                 until):
+        import bot.main as bot_main
+        self.app, self.now, self.until = app, float(start), float(until)
+        self.down_at, self.up_at = down_at, up_at
+        self.error = _safe_retry_error()
+        self.quotes = {"ltp": 10_000_000, "best_bid": 9_999_000,
+                       "best_ask": 10_001_000}
+        self.log: list[tuple[float, bool, bool]] = []
+        self.hooks: dict[float, object] = {}
+        self.calls: list[tuple[float, str, object]] = []
+        app.feed.max_staleness_sec = STALE_SEC
+        app._base_staleness_sec = STALE_SEC
+        app.feed._clock = lambda: self.now
+        monkeypatch.setattr(app.feed._client, "ticker", self._ticker)
+        real_try, real_strategy = app._try_order, app.strategy.on_candles
+
+        def try_order(*a, **k):
+            self.calls.append((self.now, "try_order", a[0]))
+            return real_try(*a, **k)
+
+        def on_candles(df):
+            self.calls.append((self.now, "strategy", list(df["start"])))
+            return real_strategy(df)
+        monkeypatch.setattr(app, "_try_order", try_order)
+        monkeypatch.setattr(app.strategy, "on_candles", on_candles)
+
+        def fake_sleep(sec):
+            self.log.append((self.now, getattr(app, "_stale_pause", None) is not None,
+                             app.kill_switch.is_tripped))
+            hook = self.hooks.get(self.now)
+            if hook is not None:
+                hook()
+            if self.now >= self.until:
+                raise KeyboardInterrupt()
+            self.now += sec
+        monkeypatch.setattr(bot_main.time, "sleep", fake_sleep)
+
+    def _ticker(self, product):
+        if self.down_at is not None and self.down_at <= self.now \
+                and (self.up_at is None or self.now < self.up_at):
+            raise self.error
+        return dict(self.quotes)
+
+    def run(self):
+        with pytest.raises(KeyboardInterrupt):
+            self.app.run_forever()
+
+    def paused_at(self, t: float) -> bool:
+        return next(p for now, p, _ in self.log if now == t)
+
+    def first(self, *, paused: bool, after: float = float("-inf")) -> float:
+        return next(now for now, p, _ in self.log if p is paused and now > after)
+
+
+# Timeline (candle_interval_sec = 60, poll 5s): the leader falls 0.2% a
+# candle, so k=2 momentum is -0.4% and the strategy opens a short early on.
+# The ticker is down from 10_040; the last fresh tick is 10_035, so the data
+# is stale (> 60s) at 10_100. It is back at 10_180 — mid-candle — so the
+# first candle built only from fresh data starts at 10_200 and completes
+# with the first tick at or after 10_260.
+START, DOWN, UP, BOUNDARY = 9_630.0, 10_040.0, 10_180.0, 10_200
+GAP_LEADER = {s: 100000.0 * float(np.exp(-0.002 * ((s - 9_600) // 60)))
+              for s in range(9_600, BOUNDARY, 60)}
+# After the gap the leader sits far lower and flat: a window that reaches
+# back across the gap reads a huge drop (a SELL), a window of fresh candles
+# reads no momentum at all.
+GAP_LEADER.update({s: 90000.0 for s in range(BOUNDARY, 11_000, 60)})
+
+
+def _gap_app(monkeypatch, notifier=None, *, until, up_at=UP, strategy_name="composite"):
+    app = build_test_app(monkeypatch, notifier=notifier or RecordingNotifier(),
+                         strategy_name=strategy_name)
+    app.leader_feed._closes.update(GAP_LEADER)
+    rig = _StaleRig(app, monkeypatch, start=START, down_at=DOWN, up_at=up_at,
+                    until=until)
+    return app, rig
+
+
+def _status_json(workdir) -> dict:
+    return json.loads((workdir / "logs" / "status.json").read_text(encoding="utf-8"))
+
+
+def test_stale_paper_data_pauses_closes_and_alerts_once(workdir, monkeypatch):
+    """(1) PAPER + stale: paused, not tripped — no kill-switch file — the
+    short is closed at the LAST RECEIVED quote, no order or strategy call
+    after that, one alert across many stale cycles, status.json says so."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=UP - 5)
+    rig.run()
+
+    pause_t = rig.first(paused=True)
+    assert pause_t == 10_100.0                    # first cycle older than 60s
+    assert all(p for t, p, _ in rig.log if t >= pause_t)
+    assert not app.kill_switch.is_tripped
+    assert not (workdir / "data" / "kill_switch.json").exists()
+    opened = [c for c in rig.calls if c[1] == "try_order" and c[0] < pause_t]
+    assert opened and opened[0][2] == "SELL"      # the short opened before
+    assert app.portfolio.position_size == 0.0
+    close = app.portfolio.trades[-1]
+    assert (close.side, close.price) == ("BUY", 10_001_000)   # last ask seen
+    assert [c for c in rig.calls if c[0] > pause_t] == []
+    assert [(t, n, s) for t, n, s in rig.calls if t == pause_t] == [
+        (pause_t, "try_order", "BUY")]
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", PAUSE_TITLE]
+    assert "キルスイッチは発動していません" in notifier.sent[-1][1]
+    pause = _status_json(workdir)["data_stale_pause"]
+    assert "market data stale" in pause["detail"]
+    assert pause["fresh_since"] is None
+    assert _status_json(workdir)["kill_switch"] is None
+
+
+def test_paused_bot_resumes_after_one_fresh_candle_and_alerts_once(
+        workdir, monkeypatch):
+    """(2) Data back at 10_180: the first all-fresh candle (10_200) completes
+    at 10_260 and trading resumes there, with one alert. The quote moved
+    when the data came back, and the close is still at the old price."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_400)
+    rig.hooks[UP - 5] = lambda: rig.quotes.update(
+        ltp=10_050_000, best_bid=10_049_000, best_ask=10_051_000)
+    rig.run()
+
+    assert rig.first(paused=False, after=10_100.0) == 10_260.0
+    assert all(not p for t, p, _ in rig.log if t >= 10_260.0)
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", PAUSE_TITLE,
+                                                RESUME_TITLE]
+    assert not app.kill_switch.is_tripped
+    assert not (workdir / "data" / "kill_switch.json").exists()
+    assert app.portfolio.trades[-1].price == 10_001_000      # no future price
+    assert _status_json(workdir)["data_stale_pause"] is None
+    assert any(n == "strategy" for t, n, _ in rig.calls if t >= 10_260.0)
+
+
+def test_pause_does_not_resume_before_a_fresh_candle_completes(workdir, monkeypatch):
+    """(3) Fresh ticks from 10_180 on, and the part-fresh candle 10_140
+    completes at 10_200 — still paused. Only 10_260 (10_200 + one
+    candle_interval_sec) resumes."""
+    app, rig = _gap_app(monkeypatch, until=10_260)
+    rig.run()
+
+    for t in (10_180.0, 10_200.0, 10_230.0, 10_255.0):
+        assert rig.paused_at(t), t
+    assert not rig.paused_at(10_260.0)
+    assert [c for c in rig.calls if 10_100.0 < c[0] < 10_260.0] == []
+
+
+def test_live_stale_data_still_trips_the_kill_switch(workdir, monkeypatch):
+    """(4) LIVE is unchanged: stale data trips the persisted kill switch,
+    alerts KILL SWITCH, and never pauses."""
+    from bot.exchange.bitflyer_client import BitflyerClient
+    from bot.settings import Secret
+    session = FakeSession()
+    session.set("GET", "/v1/me/getpermissions", FakeResponse(200, [
+        "/v1/me/getbalance", "/v1/me/sendchildorder"]))
+    session.set("GET", "/v1/me/getbalance", FakeResponse(200, [
+        {"currency_code": "JPY", "available": 200000}]))
+    session.set("GET", "/v1/me/getpositions", FakeResponse(200, []))
+    settings = Settings(mode=Mode.LIVE, product_code="FX_BTC_JPY",
+                        api_key=Secret("key"), api_secret=Secret("secret"),
+                        config=app_config("xborder_momentum"),
+                        risk_limits=RiskLimits.from_dict(dict(APP_LIMITS)))
+    client = BitflyerClient(settings.api_key, settings.api_secret,
+                            session=session, sleep=lambda s: None)
+    notifier = RecordingNotifier()
+    app = TradingApp(settings, client, notifier)
+    monkeypatch.setattr(app.leader_feed, "poll", lambda: None)
+    rig = _StaleRig(app, monkeypatch, start=START, down_at=DOWN, until=10_200)
+    rig.run()
+
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert "market data stale" in app.kill_switch.state["detail"]
+    assert json.loads((workdir / "data" / "kill_switch.json").read_text(
+        encoding="utf-8"))["reason"] == "market_data_anomaly"
+    assert [t for t, _, _ in notifier.sent] == ["BOT START", "KILL SWITCH"]
+    assert not any(p for _, p, _ in rig.log)
+    assert _status_json(workdir)["data_stale_pause"] is None
+
+
+def _boom(*a, **k):
+    raise ValueError("bad row")
+
+
+# (name, what to break, expected kill reason). Each is injected at the end of
+# the cycle at clock `at`, so the next cycle meets it.
+NON_STALE_FAULTS = [
+    ("crossed_book", lambda rig: rig.quotes.update(best_bid=10_002_000),
+     "market_data_anomaly"),
+    ("abnormal_spread", lambda rig: rig.quotes.update(best_bid=9_000_000),
+     "market_data_anomaly"),
+    ("non_positive_price", lambda rig: rig.quotes.update(ltp=0),
+     "market_data_anomaly"),
+    ("price_jump", lambda rig: (setattr(rig.app.feed, "max_price_jump_pct", 5.0),
+                                rig.quotes.update(ltp=10_600_000,
+                                                  best_bid=10_599_000,
+                                                  best_ask=10_601_000)),
+     "market_data_anomaly"),
+    ("api_errors", lambda rig: setattr(rig, "error", __import__(
+        "bot.exchange.bitflyer_client", fromlist=["BitflyerError"]
+    ).BitflyerError(400, "nope")), "api_errors"),
+    ("kill_file", lambda rig: (Path("KILL").write_text("", encoding="utf-8")),
+     "manual"),
+    ("unexpected_exception",
+     lambda rig: setattr(rig.app.spread_recorder, "record", _boom),
+     "unhandled_exception"),
+]
+
+
+@pytest.mark.parametrize("name,inject,reason", NON_STALE_FAULTS,
+                         ids=[f[0] for f in NON_STALE_FAULTS])
+def test_paper_non_stale_faults_still_trip(workdir, monkeypatch, name, inject,
+                                           reason):
+    """(5) PAPER, data fresh, any anomaly but staleness: the kill switch trips
+    (persisted) exactly as before — no pause. API errors are injected by
+    taking the ticker down with a COUNTED error, five polls before it could
+    go stale."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    rig = _StaleRig(app, monkeypatch, start=START, until=START + 120)
+    rig.hooks[START + 20] = lambda: inject(rig)
+    if name == "api_errors":
+        rig.down_at = START + 25
+    rig.run()
+
+    assert app.kill_switch.state["reason"] == reason
+    assert (workdir / "data" / "kill_switch.json").exists()
+    assert not any(p for _, p, _ in rig.log)
+    titles = [t for t, _, _ in notifier.sent]
+    assert "KILL SWITCH" in titles and PAUSE_TITLE not in titles
+    assert _status_json(workdir)["data_stale_pause"] is None
+
+
+def test_paper_no_data_ever_still_trips(workdir, monkeypatch):
+    """(5) 'no market data received yet' is not staleness — there is no
+    fresh data to go back to — and still trips, as before."""
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    rig = _StaleRig(app, monkeypatch, start=START, down_at=START, until=START + 30)
+    rig.run()
+
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert app.kill_switch.state["detail"] == "no market data received yet"
+    assert not any(p for _, p, _ in rig.log)
+    assert _status_json(workdir)["data_stale_pause"] is None
+
+
+# A price jump is not among them: while paused no order can be sent, so a
+# move larger than the jump limit across the outage is taken as the new
+# reference (see the test after this one), not a trip.
+DURING_PAUSE_FAULTS = [f for f in NON_STALE_FAULTS if f[0] != "price_jump"]
+
+
+@pytest.mark.parametrize("name,inject,reason", DURING_PAUSE_FAULTS,
+                         ids=[f[0] for f in DURING_PAUSE_FAULTS])
+def test_non_stale_fault_during_the_pause_trips(workdir, monkeypatch, name,
+                                                inject, reason):
+    """(6) Paused at 10_100; the fault is armed while paused and data comes
+    back at 10_180 (API errors: the outage turns into counted errors
+    instead). The kill switch trips as it always has, and the pause ends."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_250)
+    rig.hooks[10_150.0] = lambda: inject(rig)
+    rig.run()
+
+    assert rig.paused_at(10_150.0)
+    assert app.kill_switch.state["reason"] == reason
+    assert (workdir / "data" / "kill_switch.json").exists()
+    titles = [t for t, _, _ in notifier.sent]
+    assert titles == ["BOT START", PAUSE_TITLE, "KILL SWITCH"]
+    assert app._stale_pause is None
+    assert _status_json(workdir)["data_stale_pause"] is None
+    assert not any(p for t, p, _ in rig.log if t > 10_185.0)
+
+
+def test_candles_from_before_the_resume_never_reach_the_strategy(
+        workdir, monkeypatch):
+    """(7) A window reaching back across the gap reads the leader's drop
+    (100000 -> 90000) as a SELL. After the resume the strategy only ever
+    sees candles from 10_200 on, and fresh candles hold no momentum: no
+    order, the book stays flat."""
+    app, rig = _gap_app(monkeypatch, until=10_500)
+    rig.run()
+
+    after = [s for t, n, s in rig.calls if n == "strategy" and t >= 10_260.0]
+    assert len(after) >= 5
+    assert all(min(starts) >= BOUNDARY for starts in after)
+    assert [c for c in rig.calls if c[1] == "try_order" and c[0] > 10_100.0] == []
+    assert app.portfolio.position_size == 0.0
+    assert [c.start for c in app.candles.completed][0] == BOUNDARY
+
+
+def test_a_restart_does_not_carry_the_pause(workdir, monkeypatch):
+    """(8) The pause lives in the process: a restart after one finds nothing
+    tripped and nothing paused, and trades normally."""
+    app, rig = _gap_app(monkeypatch, until=10_150)
+    rig.run()
+    assert rig.paused_at(10_150.0)
+
+    restarted = build_test_app(monkeypatch)
+    assert restarted._stale_pause is None
+    assert not restarted.kill_switch.is_tripped
+    drive(restarted, TICKS, LEADER)
+    assert restarted.portfolio.position_size == pytest.approx(-0.013)
+
+
+def test_a_price_jump_across_the_outage_resumes_instead_of_tripping(
+        workdir, monkeypatch):
+    """(L-544, lead decision) The price moved +6% while the data was gone
+    (jump limit 5%): the first fresh tick becomes the new reference, the
+    pause ends after one fresh candle as usual, nothing trips. After the
+    resume the jump check is back: a second +6% move trips."""
+    notifier = RecordingNotifier()
+    app, rig = _gap_app(monkeypatch, notifier, until=10_400)
+    app.feed.max_price_jump_pct = 5.0
+    rig.hooks[UP - 5] = lambda: rig.quotes.update(
+        ltp=10_600_000, best_bid=10_599_000, best_ask=10_601_000)
+    rig.hooks[10_300.0] = lambda: rig.quotes.update(
+        ltp=11_236_000, best_bid=11_235_000, best_ask=11_237_000)
+    rig.run()
+
+    assert rig.first(paused=False, after=10_100.0) == 10_260.0
+    assert [t for t, _, _ in notifier.sent][:3] == ["BOT START", PAUSE_TITLE,
+                                                    RESUME_TITLE]
+    assert app.kill_switch.state["reason"] == "market_data_anomaly"
+    assert "abnormal price jump" in app.kill_switch.state["detail"]

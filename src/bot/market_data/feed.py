@@ -20,6 +20,14 @@ class MarketDataAnomaly(Exception):
     """Abnormal price / spread / staleness — trading must pause or stop."""
 
 
+class MarketDataStale(MarketDataAnomaly):
+    """No fresh data for longer than `max_staleness_sec` — the ONE anomaly a
+    PAPER bot pauses on instead of tripping the kill switch (bot/main.py,
+    `_pause_for_stale_data`, owner L-544). A subclass, so every existing
+    `except MarketDataAnomaly` still catches it, and the pause is decided by
+    the exception's type, never by its message text."""
+
+
 @dataclass
 class Tick:
     timestamp: float
@@ -185,4 +193,4 @@ class MarketDataFeed:
             raise MarketDataAnomaly("no market data received yet")
         age = self._clock() - self.last_update
         if age > self.max_staleness_sec:
-            raise MarketDataAnomaly(f"market data stale: {age:.0f}s > {self.max_staleness_sec}s")
+            raise MarketDataStale(f"market data stale: {age:.0f}s > {self.max_staleness_sec}s")

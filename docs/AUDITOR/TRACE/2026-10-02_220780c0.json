@@ -17890,10 +17890,10 @@
   {
    "move": 656,
    "tools": {
-    "Bash": 4,
+    "Bash": 6,
     "Write": 1
    },
-   "n_tools": 5,
+   "n_tools": 7,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": true,
