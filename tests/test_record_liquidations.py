@@ -191,8 +191,14 @@ def test_saturated_window_is_split_and_the_pieces_do_not_overlap(monkeypatch):
 def test_a_second_that_still_saturates_is_recorded_as_truncated(monkeypatch):
     """1 秒でも飽和したら**取りこぼしを台帳に残す**。黙って落とさない。"""
     frm = 0
-    counts = {(a, b): gate.LIMIT for a in range(gate.HOUR) for b in range(a, gate.HOUR)}
-    fw, _calls = _fake_gate(counts)
+    # Every window saturates. Answered by a function and ONE shared page, not by
+    # a table of every (a, b) with fresh rows: the table was 6.5M entries and the
+    # rows ~0.8GB, which failed with MemoryError whenever the box was busy
+    # (critic, 2026-10-02).
+    page = [{"time": frm, "n": i} for i in range(gate.LIMIT)]
+
+    def fw(contract, a, b):                       # noqa: ARG001
+        return page
     monkeypatch.setattr(gate, "fetch_window", fw)
     monkeypatch.setattr(gate.time, "sleep", lambda *_: None)
     _rows, truncated = gate.fetch_hour("BTC_USDT", frm)
