@@ -61,7 +61,14 @@ def clock(monkeypatch):
 def boot(monkeypatch, **kwargs):
     """A paper TradingApp on the champion strategy = one process start."""
     kwargs.setdefault("strategy_name", "xborder_momentum")
-    return build_test_app(monkeypatch, **kwargs)
+    app = build_test_app(monkeypatch, **kwargs)
+    # This file tests the loss brakes' MEMORY across restarts (the anchors,
+    # the persisted daily P&L). Since owner L-552 a PAPER bot only records a
+    # crossing and LIVE enforces it, so the brakes are switched on here to
+    # keep the memory under test; PAPER's own behaviour is tested in
+    # tests/test_composite.py.
+    app.checker.enforce_loss_limits = True
+    return app
 
 
 def write_state(**fields) -> None:

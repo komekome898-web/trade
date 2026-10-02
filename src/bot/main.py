@@ -212,8 +212,13 @@ class TradingApp:
         self._base_staleness_sec = self.feed.max_staleness_sec
 
         self.kill_switch = KillSwitch()
-        self.checker = PreTradeChecker(settings.risk_limits, self.kill_switch,
-                                       product=self.product)
+        self.checker = PreTradeChecker(
+            settings.risk_limits, self.kill_switch, product=self.product,
+            # PAPER measures its losses untouched (owner L-552).
+            enforce_loss_limits=settings.mode is not Mode.PAPER)
+        # (reason, UTC day) of every loss limit a PAPER order crossed, so a
+        # crossing is logged once a day per limit, not on every order.
+        self._loss_limits_seen: set[tuple[str, str]] = set()
         self.store = OrderStore()
         costs = cfg.get("costs", {})
 
@@ -1163,6 +1168,14 @@ class TradingApp:
             position_size=self.portfolio.position_size,
         )
         decision = self.checker.check(request, account)
+        for reason, detail in decision.observed:
+            day = time.strftime("%Y-%m-%d", time.gmtime())
+            if (reason.value, day) not in self._loss_limits_seen:
+                self._loss_limits_seen.add((reason.value, day))
+                logger.warning("paper loss limit crossed (recorded only, not "
+                               "enforced: owner L-552)", extra={"data": {
+                                   "event": "paper_loss_limit_crossed",
+                                   "reason": reason.value, "detail": detail}})
         if not decision.approved:
             logger.warning("order rejected by risk checks", extra={"data": {
                 "event": "risk_reject", "reasons": decision.reasons}})

@@ -2261,6 +2261,7 @@ def test_a_stop_loss_past_the_daily_limit_closes_first_then_trips(
     left open and frozen)."""
     notifier = RecordingNotifier()
     app = build_test_app(monkeypatch, notifier=notifier)
+    app.checker.enforce_loss_limits = True     # the LIVE rule (L-552: not PAPER)
     drive(app, TICKS, LEADER)
     assert app.portfolio.position_size == pytest.approx(-0.013)
     drive(app, [(390, 1.05e7)], LEADER)
@@ -2301,3 +2302,32 @@ def test_a_ticker_that_keeps_failing_keeps_status_json_and_the_dashboard_pause_a
     # and it is not the kill switch
     assert not app.kill_switch.is_tripped
     assert not (workdir / "data" / "kill_switch.json").exists()
+
+
+def test_paper_records_a_crossed_loss_limit_and_neither_trips_nor_refuses(
+        workdir, monkeypatch, caplog):
+    """Owner L-552 (a): "どんくらい損失するかを無傷で測れるのがpaperの利点".
+    A PAPER bot past the daily loss limit (short 0.013, +5% in one cycle)
+    takes its stop-loss and keeps trading: no kill switch, no refusal, one
+    log line per limit per day."""
+    import logging
+    notifier = RecordingNotifier()
+    app = build_test_app(monkeypatch, notifier=notifier)
+    assert app.checker.enforce_loss_limits is False
+    drive(app, TICKS, LEADER)
+    with caplog.at_level(logging.WARNING, logger="bot.main"):
+        drive(app, [(390, 1.05e7)], LEADER)
+    assert app.portfolio.position_size == 0.0              # the stop went out
+    assert not app.kill_switch.is_tripped
+    assert "KILL SWITCH" not in [t for t, _, _ in notifier.sent]
+    crossed = [r for r in caplog.records
+               if getattr(r, "data", {}).get("event") == "paper_loss_limit_crossed"]
+    assert [r.data["reason"] for r in crossed] == ["daily_loss_limit"]
+
+
+def test_live_still_enforces_the_loss_limits(workdir, monkeypatch):
+    """The LIVE checker is built with the loss limits on (L-552 is PAPER only)."""
+    from bot.main import TradingApp
+    import inspect
+    src = inspect.getsource(TradingApp.__init__)
+    assert "enforce_loss_limits=settings.mode is not Mode.PAPER" in src

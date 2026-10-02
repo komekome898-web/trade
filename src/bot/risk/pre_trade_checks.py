@@ -53,13 +53,24 @@ class RiskDecision:
     # closing order is let through the daily loss limit first (owner L-549),
     # and the limit trips once the close has been sent.
     trip_after: list[tuple[KillReason, str]] = field(default_factory=list)
+    # Loss limits crossed but not enforced (PAPER, owner L-552): recorded by
+    # the caller, never a trip or a refusal.
+    observed: list[tuple[KillReason, str]] = field(default_factory=list)
 
 
 class PreTradeChecker:
-    def __init__(self, limits: RiskLimits, kill_switch: KillSwitch, product=None):
+    def __init__(self, limits: RiskLimits, kill_switch: KillSwitch, product=None,
+                 *, enforce_loss_limits: bool = True):
         self.limits = limits
         self.kill_switch = kill_switch
         self.product = product        # optional bot.products.ProductSpec
+        # False for PAPER (owner L-552): "how much it loses" is what paper is
+        # for measuring, untouched — so the daily loss, drawdown and
+        # consecutive-loss limits (and the daily risk budget derived from the
+        # first) neither trip the switch nor refuse an order; a crossing is
+        # only reported. The other checks (size, position, open orders,
+        # margin, data, API) are unchanged. LIVE always enforces them.
+        self.enforce_loss_limits = enforce_loss_limits
 
     def check(self, order: OrderRequest, account: AccountState) -> RiskDecision:
         reasons: list[str] = []
@@ -87,6 +98,10 @@ class PreTradeChecker:
             breaches.append((KillReason.CONSECUTIVE_LOSSES,
                              f"{account.consecutive_losses} consecutive losses",
                              "max consecutive losses reached (kill switch tripped)"))
+        observed: list[tuple[KillReason, str]] = []
+        if breaches and not self.enforce_loss_limits:
+            observed = [(r, d) for r, d, _ in breaches]
+            breaches = []
         if breaches and purely_closing and not self.kill_switch.is_tripped:
             # Owner L-549 (daily loss) and L-550 (drawdown, consecutive
             # losses) "通す": a limit must not refuse the order that stops the
@@ -192,7 +207,8 @@ class PreTradeChecker:
         # The daily budget binds what an order RISKS; a purely closing order
         # risks nothing new, and past the limit the budget is negative, which
         # would refuse the close the limit itself is waiting for (L-549).
-        if not purely_closing and order.estimated_loss_jpy > remaining_daily_budget:
+        if (self.enforce_loss_limits and not purely_closing
+                and order.estimated_loss_jpy > remaining_daily_budget):
             reasons.append(
                 f"estimated loss {order.estimated_loss_jpy:.0f} exceeds remaining daily risk budget "
                 f"{remaining_daily_budget:.0f}"
@@ -207,4 +223,4 @@ class PreTradeChecker:
                 reasons.append(msgs[reason])
             trip_after = []
         return RiskDecision(approved=not reasons, reasons=reasons,
-                            trip_after=trip_after)
+                            trip_after=trip_after, observed=observed)
