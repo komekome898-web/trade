@@ -115,7 +115,7 @@
 - **測るもの**: 版ごと・エッジごとの損益、同じ期間のバックテストとの差、障害の記録。
 - **いまの状態【事実】**:
   - PC で paper bot(`xborder_momentum`、Binance を先行市場とする取引所横断)が 2026-08-20 頃から動いている。根拠は全捨て前の研究(XRP の先行、`docs/RESEARCH_REPORT`)。
-  - bot は 1 プロセスに戦略 1 つ(`src/bot/main.py:157`)。複数の版の並走はできない。
+  - bot は 1 プロセスに戦略 1 つ(`src/bot/main.py:157`)で、口は `on_candles`。研究の口の戦略は動かせない。複数の版の並走はできない。
   - paper の帳簿は保有の費用(レバレッジポイント)を入れていない(リポジトリに記述 0 件)。
 - **いまの paper bot の扱い【設計】**: 止めない。段 7 の練習台として使う。
   - 同じ期間をバックテストで再生し、paper との差を分解する。U5 の記録が足りるかを、ここで先に確かめられる。
@@ -200,7 +200,7 @@ L-539「**海外取引所で見つかったエッジが日本取引所で効く�
 
 - **すること**: バックテスト環境(L-405)を閉じる報告を出す。信頼できる部分・できない部分・残る持ち越し・ダッシュボードの状態(L-186 の閉じ方)。
 - **ゴールの側からの要求(閉じる報告の項目に入れる)**:
-  - **U1 研究と本番を同じコードにする**: いまは研究の環境(`src/bot/bt`)と本番の戦略(`src/bot/strategy`、口は `on_candles`)が別のコード【事実】。案: カードの口を 1 つに決め、バックテストのエンジンも本番の bot もその口を呼ぶ。
+  - **U1 研究と本番を同じコードにする**: いまは戦略の口が 2 つある【事実】。本番の bot の口(`on_candles`)と、研究の環境の口(`bot.bt.core.Strategy`、事象を受けて注文の要求を出す形)。研究の口で書いた戦略(`k1_wick`・`k1_xvenue`)はすでにあるが、本番の bot では動かせない。案: 研究の口を正にして、本番の bot がその口の戦略を動かせるようにする(本番の気配・約定を研究の口の事象に直す橋を作る)。口を 1 つにすれば、研究で測ったカードを書き直さずに paper・実弾に持ち込める。
   - **U2 エッジごとの損益の帰属**を、バックテスト・paper・実弾で出す。
   - **U4 複数の版の paper の並走**。
   - **U5 本番の期間を再生できる記録**。
@@ -287,7 +287,7 @@ L-539「**海外取引所で見つかったエッジが日本取引所で効く�
 | 1 日の約定 38 億〜146 億円(2026-09-24〜30) | 共有の `paper_logs/tape/executions_*.csv.gz` の集計 |
 | paper bot は xborder_momentum(Binance を先行市場、根拠は全捨て前の研究) | `config/config.yaml` 22〜33 行、`src/bot/strategy/xborder_momentum.py` の docstring |
 | bot は 1 プロセスに戦略 1 つ | `src/bot/main.py:157` |
-| 研究の環境と本番の戦略は別のコード | `src/bot/strategy/*.py` は `bot.bt` を import しない(grep) |
+| 戦略の口が 2 つある。本番の bot の口(`bot.strategy.base.Strategy`、`on_candles`)と研究の環境の口(`bot.bt.core.Strategy`)。`k1_wick.py`・`k1_xvenue.py` は研究の口で書かれ(`from bot.bt.core import ... Strategy`、39・49 行)、本番の bot の登録表に入っていない | `src/bot/strategy/__init__.py` 11〜20 行の `STRATEGIES`、grep |
 | PC の記録は bitFlyer の WebSocket・国内の取引所・清算・建玉。海外の価格の秒単位は無い | `scripts/record_realtime.py`・`record_venues.py`・`record_liquidations.py`・`record_oi.py` の docstring、`deploy/start_all.bat` |
 | Binance の約定のアーカイブ(現物 2019-09-01・先物 2020-01-01)に届く | `curl` → 200 |
 | 資金調達の履歴は 2024-03-28 21:00 から取れる | READINESS R-4 |
