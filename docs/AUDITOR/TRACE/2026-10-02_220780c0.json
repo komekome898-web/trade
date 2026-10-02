@@ -18298,14 +18298,15 @@
   {
    "move": 671,
    "tools": {
-    "Bash": 4
+    "Bash": 16,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 4,
+   "n_tools": 17,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,
-   "claims_total": 1,
+   "claims_total": 2,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -18334,9 +18335,9 @@
    "value": 0.2165
   },
   "P3_claim_with_output": {
-   "num": 254,
-   "den": 608,
-   "value": 0.4178
+   "num": 255,
+   "den": 609,
+   "value": 0.4187
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
