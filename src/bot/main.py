@@ -771,6 +771,7 @@ class TradingApp:
                     decision="ORDER_SENT" if order else "REJECTED",
                     reason=f"protective stop: unrealized -{loss_pct:.2f}%",
                     order_id=order.local_id if order else None,
+                    execution_status=order.state.value if order else None,
                     pnl=self.portfolio.realized_pnl_jpy,
                 )
                 self._update_status(tick.price)
@@ -1603,6 +1604,7 @@ class TradingApp:
             reason="market data stale: paper position closed at the last "
                    "received quote",
             order_id=order.local_id if order else None,
+            execution_status=order.state.value if order else None,
             pnl=self.portfolio.realized_pnl_jpy,
         )
         if order is None or self.portfolio.position_size != 0.0:

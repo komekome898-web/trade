@@ -2220,3 +2220,33 @@ def test_status_report_shows_the_pause_in_japanese_with_jst_times():
     assert "開始 09:00:00 JST" in line and "データ回復 10:00:00 JST" in line
     assert "since" not in line and "3600" not in line
     assert "データ回復 -" in _stale_pause_line({"since": 0.0, "fresh_since": None})
+
+
+def test_stale_pause_close_logs_its_execution_status(workdir, monkeypatch):
+    """(third critic, finding on judge_gates) The STALE_PAUSE decision row
+    carries the order's state, so a close the exchange REJECTED is not read
+    by the judge as a filled exit (it reads a missing state as filled). A
+    filled close says FILLED; a rejected one says REJECTED and trips."""
+    import types
+    import bot.main as bot_main
+    rows = []
+    real_log = bot_main.log_decision
+    monkeypatch.setattr(bot_main, "log_decision",
+                        lambda *a, **k: (rows.append(k), real_log(*a, **k)))
+    app, rig = _gap_app(monkeypatch, until=10_150)
+    rig.run()
+    stale = [r for r in rows if r["strategy_signal"] == "STALE_PAUSE"]
+    assert [r["execution_status"] for r in stale] == ["FILLED"]
+
+    rows.clear()
+    app, rig = _gap_app(monkeypatch, until=10_150)
+    rejected = types.SimpleNamespace(local_id="x",
+                                     state=types.SimpleNamespace(value="REJECTED"))
+    real_try = app._try_order
+    monkeypatch.setattr(app, "_try_order", lambda *a, **k: (
+        rejected if rig.now >= 10_100.0 else real_try(*a, **k)))
+    rig.run()
+    stale = [r for r in rows if r["strategy_signal"] == "STALE_PAUSE"]
+    assert [(r["decision"], r["execution_status"]) for r in stale] == [
+        ("ORDER_SENT", "REJECTED")]
+    assert app.kill_switch.is_tripped

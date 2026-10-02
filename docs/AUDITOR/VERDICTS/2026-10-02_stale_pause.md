@@ -264,3 +264,144 @@
 
 - 「1.外す」: 急変の上限(`max_price_jump_pct`)を feed・main・config から外した。2 回目の批評家の B1〜B3 はこれで消えた(急変を理由とする発動が無くなったため)。試験は、上限を戻す変異で 4 件落ちる(実測「4 failed, 194 passed」)。
 - 「後半はこのまま」: 再開の待ち方は変えない。
+
+---
+
+# 3 回目の批評家(対象 a732b858..f81d0f37 の src・tests・config・scripts)
+
+## 批評家の出力(全文)
+
+批評家(3 回目)の報告です。対象は a732b858..f81d0f37 のうち src・tests・config・scripts の差分です。
+
+**作業の環境**
+- リポジトリのファイルは変えていません。commit・stash・checkout・reset も打っていません。
+- 試験と変異は、`git archive f81d0f37 src tests config scripts pyproject.toml` を `<scratchpad>/critic3` に取り出した複製の上で行いました。全部の試験を回すために、同じ版の docs と deploy も複製に足しています。新旧を比べるために、a732b858 を `critic3/old` に取り出しました。
+- 終了時に、自分で作ったもの(critic3 一式、critic3_pt*、critic3_*.txt)はすべて消しました。`ls -d critic3*` の結果は「No such file or directory」です。
+- `git status --short` に出ている M と ?? は、私の作業ではありません。一覧は始めに見たものと同じでしたが、`docs/RESEARCH/` の 1 行だけが消えていました。私はリポジトリの docs に触っていません。
+- レビューの間に、HEAD が f3073c45 まで進んでいました。下の行番号はすべて f81d0f37 のものです。
+
+### 問い 1. 決済が拒否されたら必ず発動するか(59927c6d)
+
+**[注記] たどった 8 つの経路は、すべて発動しました(事実)。一時停止の間に、建玉が損切りなしで残る経路は見つかりませんでした。**
+
+確かめ方: 複製に一時的な試験ファイルを置き、`_gap_app(until=10_200)` で回しました。どの経路も、10_100 に一時停止に入るときの決済を失敗させています。実行したコマンドは `python -m pytest tests/test_zz_critic3.py --basetemp=… -p no:cacheprovider -s` です。
+
+| 経路 | 発動の理由 | 建玉 | kill_switch.json | `_stale_pause` | status.json の data_stale_pause / kill_switch | 通知 |
+|---|---|---|---|---|---|---|
+| `_try_order` が None を返す | market_data_anomaly「…could not be closed… (売り建玉 0.013 の決済ができず、0.013 が残っています)」 | -0.013 | 有 | None | None / market_data_anomaly | BOT START, KILL SWITCH |
+| 端数の建玉(-0.0005) | market_data_anomaly(同じ文で 0.0005) | -0.0005 | 有 | None | None / 同 | BOT START, **DUST POSITION**, KILL SWITCH |
+| DuplicateOrderError(発動なし) | market_data_anomaly | -0.013 | 有 | None | None / 同 | BOT START, KILL SWITCH |
+| DuplicateOrderError(注文管理の側で発動) | system_error | -0.013 | 有 | None(次の周) | None / system_error | BOT START, KILL SWITCH |
+| 取引所が決済を拒否(ゲートウェイが ValueError) | system_error「closing order BUY 0.013 … rejected」 | -0.013 | 有 | None(次の周) | None / system_error | BOT START, CANNOT CLOSE POSITION, KILL SWITCH |
+| 半分だけ約定 | market_data_anomaly「…0.0065 が残っています」 | -0.0065 | 有 | None | None / 同 | BOT START, KILL SWITCH |
+| ゲートウェイが RuntimeError | market_data_anomaly | -0.013 | 有 | None | None / 同 | BOT START, KILL SWITCH |
+| 決済の途中の例外(`_book_fill_delta` で KeyError) | unhandled_exception | -0.013 | 有 | None | None / unhandled_exception | BOT START, KILL SWITCH |
+
+- どの経路でも、発動した後の注文の呼び出しは 0 件でした(`calls_after_trip=[]`)。一時停止の通知(PAUSE_TITLE)は出ていません。
+- 再起動すると、発動したままで、建玉は -0.013 です(`restart tripped: True pos: -0.013`)。
+
+変異試験: 試験 7 ファイル(composite・market_data・judge_gates・resilience・app_fx_integration・paper_state・dashboard)に変異を当てました。
+- N4(発動の分岐を `if False:` にする)→「1 failed, 573 passed」。落ちるのは `test_a_refused_stale_pause_close_trips_as_before` です。
+- N5(新しい分岐から `_on_kill` を外す)→「574 passed」で、**生き残ります**。次の周の `_enter_data_only` が同じ後始末と通知をするため、試験からは区別がつきません。前回の M7 と同じ理由です。
+
+この問いの小さな件:
+- [注記] main.py:1552 のコメント「`_on_kill` has run」は、注文管理の側で発動した経路(上の表の Duplicate で発動・取引所の拒否)では正しくありません。この 2 つの経路では、`_stale_pause` が 1 周のあいだ残ります。rig のログでは 10_100 が `(paused=True, tripped=True)`、10_105 が `(False, True)` でした。status.json の kill_switch は、次の周に書かれるまで古いままです。周の間隔は 1 回分のずれです。害はありません。
+- [注記] 端数の建玉の経路では、「DUST POSITION … Trading continues.」と送った直後に KILL SWITCH を送ります。2 つの通知の内容が食い違います。`report_dust_position` の docstring には「端数はキルスイッチの条件ではない」とあり(manager.py:341 以下)、今回の分岐は端数でも発動します。ただし paper で端数が生じる経路はほぼありません(推定)。根拠は 2 つです。注文の大きさは `_quantize` で min_size(0.001)の倍数になります(main.py:1059-1060)。paper の約定は常に全量です(paper.py:66-67)。
+- [注記] ゲートウェイの RuntimeError は、`_try_order` の `except (DuplicateOrderError, RuntimeError)` で None になります。このため、発動の理由は unhandled ではなく market_data_anomaly になり、例外の中身は detail に残りません。この except は前からある処理です。
+- [注記] KILL SWITCH の通知の本文は、英語の文の中に日本語の `closed` が入り、その後に英語の「OPEN POSITION … The bot will NOT close it …」が続きます(O-1)。KILL の本文が英語なのは前からです。
+
+### 問い 2. 判定の台本の数え(STALE_PAUSE)
+
+**[注記] 建玉が無いのに来た STALE_PAUSE と、REJECTED の STALE_PAUSE は数えません。G1 の件数と損益は前と同じです(事実)。**
+- 数えているのは、建玉がある場合の分岐の中(judge_gates.py:350)だけです。建玉が無い場合は、:317 の `signal not in ("BUY","SELL")` で先に continue します。
+- 確かめ方: 合成のログを作り、a732b858 と f81d0f37 の judge_gates を並べて回しました。ログの中身は、建て 40 回と手仕舞い 40 回(STALE_PAUSE 10 件を含む)、建玉が無いときの STALE_PAUSE 6 件、decision が REJECTED の STALE_PAUSE 5 件です。
+  ```
+  jg_old n_trades 40 sum_pnl 667.430381 stale_in_trades 10 meta_stale None | G1 n 40
+  jg_new n_trades 40 sum_pnl 667.430381 stale_in_trades 10 meta_stale 10 | G1 n 40
+     notes: [..., '10 trade(s) were closed by the stale-data pause at the last received quote (exit_signal STALE_PAUSE); they are counted.']
+  ```
+- 変異: N6(建玉の有無を見る前に数える)・N7(STALE_PAUSE を標本から外す)・N8(注記を出さない)は、どれも `test_a_stale_pause_close_is_counted_and_marked` で落ちます(各「1 failed, 573 passed」)。
+
+**[直す] 取引所に拒否された STALE_PAUSE の決済を、成立した手仕舞いとして数えます(事実)。PC に入れるのを止める件ではありません。**
+- 原因: `_close_for_stale_pause` の `log_decision`(main.py:1599-1607)は `execution_status` を渡していません。取引所に拒否された決済では、`_try_order` が REJECTED の注文を返します(None ではない)。このため記録は `ORDER_SENT` で、execution_status は None になります。judge は :309 の `filled = state is None or …` により、これを約定として扱います。
+- 実測(上の表の「取引所が決済を拒否」と同じ筋書きで、log_decision に渡された記録を集めて judge に掛けました):
+  ```
+  [judge] ORDER_SENT records: [('SELL', 'FILLED', 0.0), ('STALE_PAUSE', None, 0.0)]
+  [judge] trades: [('STALE_PAUSE', 0.0)] stale_pause_closes: 1 open_at_end: False unresolved: 0
+  [judge] position after: -0.013
+  ```
+  建玉は残っているのに、損益 0 の取引が 1 件と、一時停止の手仕舞い 1 件が数えられます。さらに `open_at_end` が False になります。後で手で建玉を閉じると、次の ORDER_SENT が「建て」と組まれ、取引の組み合わせがずれます。
+- 直し方の案: main.py:817 と同じく、`execution_status=order.state.value if order else None` を渡す。STOP_LOSS の log_decision(:768-775)にも同じ欠けがあります。こちらは前からです。
+- paper で起こる頻度(推定): ほぼ 0 です。paper.py:90-93 の `_fill_margin` が ValueError を投げるのは、建てるときと増し玉のときだけで、決済では投げません。
+
+**[注記]** 一部だけ約定した決済は、全部閉じた 1 件の取引として数えられます(前からある組み合わせの規則です)。その後に発動するので、残りの建玉は凍結されます。注記の文が英語なのは、G1 の既存の注記と同じです。
+
+### 問い 3. 日本時間の変換(cd104320)
+
+**[注記] 正しい(事実)。**
+- 確かめ方: `_jst` を、`datetime.fromtimestamp(ts, tz=+9h)` と比べました。
+  ```
+  53999 -> 23:59:59 JST | ref 1970-01-01 23:59:59
+  54000 -> 00:00:00 JST | ref 1970-01-02 00:00:00
+  1790917215.148857 -> 14:00:15 JST | ref 2026-10-02 14:00:15
+  None -> -    '1790917215'(文字列) -> -    -1.0 -> 08:59:59 JST
+  nan EXC ValueError / inf EXC OverflowError
+  ```
+- 日付をまたぐ時刻も正しく出ます。ただし日付は出ないので、24 時間を超える一時停止では、開始と回復の前後が読み取れません。
+- `_jst(True)` は「09:00:01 JST」になります(bool が int の一種のため)。この経路は使われません。
+- NaN と inf では例外になり、format_report が `_run_loop` の中で呼ばれるため、unhandled の発動に化けます。ただし、渡る値は `time.time()` と `tick.timestamp = self._clock()`(feed.py:143)だけなので、届く経路はありません(推定)。
+- 変異 N9(+9 時間 → +8 時間)は、`test_status_report_shows_the_pause_in_japanese_with_jst_times` で落ちます。
+
+### 問い 4. 急変の上限を外した影響(f81d0f37)
+
+**[注記] 上限に頼っていた試験・コメント・文書・設定の残りはありません(事実)。**
+- 確かめた grep:
+  - `git grep -n -i "price_jump\|price jump\|max_price_jump\|accept_price_jumps\|急変" f81d0f37 -- src scripts tests config deploy 'docs/*.md'`(議事録の類を除く)の結果は、研究の調査記録だけでした。ほかは、試験の名前 `test_tripped_feed_takes_a_price_jump_as_the_new_reference` と、test_app_fx_integration.py:98 のコメントです。
+  - `git grep -n -i jump` を src・scripts・docs/OPERATIONS*.md で打った結果、bot の経路に関係する行はありませんでした。研究側の `xborder_p2.misprint_mask` の `jump` は別の仕組みで、`max_price_jump_pct` は使っていません。
+  - `MarketDataFeed(` を作っている 4 か所は、どれも `max_price_jump_pct` を渡していません。設定は main.py:140 の `md.get` だけで読まれます。PC の config に古い鍵が残っていても、無視されるだけです。
+- 検査がまだ発動すること:
+  - 変異 N1(値段 0 以下の検査を外す)・N2(板の交差)・N3(スプレッド)は、どれも 3 件ずつ落ちます。落ちるのは `test_paper_non_stale_faults_still_trip[…]`・`test_non_stale_fault_during_the_pause_trips[…]`・test_market_data の各試験で、N2 では発動中の試験も落ちます。
+  - 発動中(データだけの動作)に +6% 動いても、記録は止まりません。`test_tripped_feed_takes_a_price_jump_as_the_new_reference`(51 行記録され、基準の値段は 10_600_000。板が交差した tick は記録されません)は、関係する試験の一式の中で通っています。
+- 「paper で一度も発動していない」の確認: `grep -c "abnormal price jump" paper_logs/bot.jsonl` の結果は 0 です。
+
+**[聞く] 外した理由として書かれている「暴落のときに、損切りなしで建玉が凍結される」は、上限を外した後も、逆向きに 4.6% 以上動いたときにはそのまま起こります(事実。前からある挙動で、今回の後退ではありません)。**
+- 書かれている場所: feed.py:162-165 のコメントと、コミットのメッセージ「real crashes move more than 5% within a minute」。
+- 実測: 0.013 の売り建玉を持った状態で、bid・ask・ltp をそろえて 1 周の間に上げました。
+  ```
+  +3%   kill None             (損切りが成立)
+  +4.5% kill None             pos 0.0(損切りが成立)
+  +5%   kill daily_loss_limit daily pnl -6513 <= -6000.0  pos -0.013
+  +6%   kill daily_loss_limit daily pnl -7813             pos -0.013
+  +10%  kill daily_loss_limit daily pnl -13013            pos -0.013
+  ```
+- 原因: pre_trade_checks.py:64 の日次損失の検査は、決済の注文にも先に掛かります。そこで発動して拒否するため、損切りそのものが出せません。上限は MAX_ORDER_SIZE_JPY 130000、MAX_DAILY_LOSS_JPY 6000 で、config/risk_limits.yaml と同じ値です。13 万円の建玉で、約 4.6% です。その日にすでに損失があれば、もっと小さい動きで同じことが起こります。
+- 上限を外して実際に良くなったのは、次の 2 点です(推定)。有利な方向に 5% を超えて動いたときに、凍結されなくなった。不利な方向でも、5% から約 4.6% までの間なら損切りが出せるようになった。ただし、この区間は 13 万円の建玉では実質ありません。
+- オーナーに上限を外す理由をどう説明したかは、記録の中では確かめられませんでした(未確認)。OWNER_STATUS には「根拠の記録が無い・paper での発動 0 回・暴落の 5 日すべてで 1 分の値幅が 5% 超」とあるだけです。損切りについて説明していたなら、この訂正をオーナーに伝える必要があります。PC に入れるのを止める件ではありません。
+
+**[注記] 最終取引価格(ltp)を、板の買値・売値と照らす検査が無くなりました。**
+- これまで ltp だけの誤った値段(買値・売値は正常)を止めていたのは、急変の上限だけでした。
+- 実測: 売り建玉 0.013 を持った状態で、ltp だけを 11,000,000 にした tick を 1 本入れました(買値・売値は 9,999,000 / 10,001,000 のまま)。
+  ```
+  kill: {'reason': 'daily_loss_limit', 'detail': 'daily pnl -13013 <= -6000.0'}
+  candle (9960, high 11000000.0, close 10000000.0)
+  ```
+  損切りの判定と日次損失の計算に、誤った ltp が入ります。前のコードでも、この tick は「abnormal price jump」で永続の発動になっていました(凍結されるのは前後で同じ)。違いは、発動の理由が誤解を招く daily_loss_limit になる点と、足の高値が汚れる点です。
+- 実データでの頻度: spread_FX_BTC_JPY.csv の 529,690 行で、|ltp ÷ 買値と売値の中央 − 1| の最大は 0.2018%、0.5% を超えた行は 0 でした。60 秒以内の tick から tick への ltp の動きは、最大 0.7281%、1% を超えたものは 0 でした。ただし、この記録は検査を通った tick だけなので、上限で止められた tick は入っていません。
+- 検査を足すかどうかは、リードの設計の範囲です(A-13)。オーナーが上限を外した直後に安全側の規則を足すのは A-18 に当たりうるので、ここでは案として書くだけにします。
+
+### 問い 5. 差分を敵対的に読む・試験
+
+- [注記] 関係する試験はすべて通ります。コマンド: `python -m pytest tests/test_app_fx_integration.py tests/test_composite.py tests/test_dashboard.py tests/test_market_data.py tests/test_market_view.py tests/test_paper_state.py tests/test_resilience.py tests/test_xborder.py tests/test_judge_gates.py tests/test_modes.py tests/test_orders.py tests/test_clock_burst.py tests/test_constants.py tests/test_deploy.py tests/test_audit_gates_wired.py --basetemp=… -p no:cacheprovider` → 「724 passed, 1 skipped」(変異を戻した後に、改めて回しました)。
+- [注記] 全部の試験(tests/bt を除く): 「54 failed, 2853 passed, 104 skipped」。失敗した 54 件は、a732b858 の複製でも同じ顔ぶれで失敗します。a732b858 で失敗した組との差分は、test_preflight_prereg の 2 件だけでした。この 2 件も、a732b858 の複製で個別に回すと同じ「2 failed」です。原因はどちらも、複製に無い `results/PHASE2/K1/dispersion.json` の FileNotFoundError です。失敗の原因は、複製に .git・results・backtest_data などが無いことです(FileNotFoundError・KeyError など)。bot の経路の試験は含まれません。tests/bt は、複製に無いファイルが原因で、読み込みの段階で 13 件の ERROR になるため外しました。なお、1 回目の全部の試験は変異と同じ時間に走っていたので、捨てて回し直しました。
+- 壊したものは、ほかに見つかりませんでした。
+
+### PC のブランチ(PAPER で動いている bot)に入れてよいか
+
+入れてよい、という読みです。[止める] はありません。決済が拒否された 8 つの経路は、すべて発動しました。キルスイッチのファイル・status.json・通知・`_stale_pause` の後始末もそろっていて、建玉が損切りなしで一時停止の間に残る経路は見つかりませんでした。a732b858 と比べても、一時停止ができる前と比べても、安全側が悪くなった点はありません。[直す] は 1 件です。STALE_PAUSE の記録に `execution_status` が無い件で、引数を 1 つ足すだけです。paper ではほぼ起こらないので、入れた後に直しても構いません。[聞く] は 1 件です。上限を外す理由に書かれた「損切りなしの凍結を防ぐ」は、日次損失の上限によって、不利な方向に約 4.6% 以上動くと今も起こります。オーナーへの説明の訂正であって、PC に入れるための関門ではありません。
+
+## リードの応答
+
+- 問い 2 の [直す]: **直した。** STALE_PAUSE と STOP_LOSS(同じ原因で前からある欠け)の両方の記録に `execution_status` を足した。試験 `test_stale_pause_close_logs_its_execution_status`(約定は FILLED、拒否は REJECTED で発動)。STALE_PAUSE の側を外すと落ちる(実測「1 failed」)。
+- 問い 4 の [聞く](損切りの説明の訂正): **上申。** リードはオーナーに L-547 の回答で「発動すると建玉は閉じず、損切りもしないまま止まる。本物の暴落でこそ建玉が凍結される」と書いた。上限を外しても、日次損失の上限(6,000 円)が決済の注文にも先に掛かるため、13 万円の建玉で不利に約 4.6% 動けば損切りが出せずに凍結される。この訂正と、決済の注文を日次損失の検査より先に通すかの判断をオーナーに出す。
+- 問い 4 の [注記](ltp と板の照合): **上申。** 検査を足すかは、閾値の要らない形(損切りと損益の計算を ltp ではなく買値と売値の中央で行う)を含めてオーナーに出す。
+- その他の [注記]: **記録。**
