@@ -19534,12 +19534,13 @@
   {
    "move": 717,
    "tools": {
-    "Bash": 86,
+    "Bash": 88,
     "Agent": 1,
     "Write": 5,
-    "mcp__Claude_Code_Remote__list_triggers": 1
+    "mcp__Claude_Code_Remote__list_triggers": 1,
+    "ReadNotifications": 1
    },
-   "n_tools": 93,
+   "n_tools": 96,
    "read_goal": false,
    "first_write_at": 14,
    "table_shown": false,
