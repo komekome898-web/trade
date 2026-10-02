@@ -125,3 +125,137 @@
 1 番を直してから入れる、という読みです。直すのは main.py:700 の 1 式で、急変の受け入れを最初の新しい tick だけにします。LIVE と実弾に害が及ぶ経路は見つかりませんでした(6 番)。止める理由も見つかりませんでした。2 番(該当語なしの 2 行)は、入れる前にオーナーに見せるかどうかをリードが決めてください。3・4・5・9・10 番は、入れた後に直しても安全側を崩しません。過去の stale の発動 7 回はすべて建玉 0 だったので、入れた直後に決済の値段が成績へ与える影響は小さいと推定します。
 
 **応答:** 1 番は直した。PC への反映(W7)の承認は、2・5・10 番の答えと W6(ダッシュボード)の批評家が済んでから求める。
+
+---
+
+# 2 回目の批評家(対象 a732b858)
+
+## 批評家の出力(全文)
+
+批評家(2 回目)の報告です。対象は a732b858 です。リポジトリのファイルは変えていません。commit・stash・checkout・reset も打っていません。
+
+**作業の環境**
+- 試験と変異は、`git archive a732b858 src tests config pyproject.toml | tar -x -C <scratchpad>/critic2` で取り出した複製の上で行いました。作業ツリーには W6 の未コミットの変更があるため、作業ツリーからは写していません。比べるために、1c37399b の src・config も `critic2/old` に取り出しました。
+- 注意: pyproject の `pythonpath = ["src"]` が PYTHONPATH より優先されます。このため old の実行は `-o pythonpath=old/src` で行い、読み込まれたモジュールのパス `.../critic2/old/src/bot/main.py` を出力して確かめました。
+- 終了時に、自分が作ったもの(src・tests・config・scripts・pyproject.toml・old・mut_c2.py・critic2_pt)は消しました。critic2 に残っている g7_check.py・mut.py・mut2.py・__pycache__ は 10-01 の日付で、私が作ったものではないので残しています。
+- `git status --short` の M と ?? はすべて、私の作業ではありません。M は aggregate.py・dashboard.py・test_dashboard.py・docs/OPERATIONS.md・deploy/*.bat など、?? は scripts/record_*.py・tests/research/ などです。
+- **レビューの間に HEAD が 68108933 まで進みました。** 新しく入った 59927c6d(「決済が拒否されたら発動する」、main.py に +10 行)は、この批評の範囲外で、検査していません。下に書く行番号はすべて a732b858 のものです。
+
+### 問い 1. 1 番の直しは A・A2・A3 を塞いだか
+
+**[注記] 塞いだ(事実)。**
+
+コマンド: 一時的な試験ファイルで、`_gap_app(until=10_400)`、`max_price_jump_pct=5.0`、hooks で値段を差し替えました。新しいコードは `PYTHONPATH=src python -m pytest tests/test_zz_critic2.py ... -s`、古いコードは `-o pythonpath=old/src` で回しました。
+
+新しいコード(a732b858)の結果:
+```
+[A]  trip_t=10255.0 state=abnormal price jump 6.00% (from 10000000.0 to 10600000.0) ... alerts=['BOT START','データ停滞: 取引を一時停止','KILL SWITCH'] strat_after=[]
+[A2] trip_t=10260.0 state=abnormal price jump 6.00% (from 10000000.0 to 10600000.0) ... strat_after=[]
+[A3] trip_t=10260.0 state=abnormal price jump 6.00% (from 10000000.0 to 10600000.0) ... strat_after=[]
+```
+
+古いコード(1c37399b)の結果。1 回目の批評家の再現と一致します:
+```
+[A]  trip_t=None resume_t=10260.0 first_candle=(10200, 10600000.0, 10600000.0) strat_after=[10260.0, 10320.0, 10380.0]
+[A2] trip_t=None resume_t=10260.0 last_tick=10600000.0
+[A3] trip_t=10265.0 state=abnormal price jump 5.66% (from 10600000.0 to 10000000.0) alerts=[...,'データ回復: 取引を再開','KILL SWITCH'] strat_after=[10260.0]
+```
+
+読み:
+- A・A2・A3 はどれも、誤った値段の tick そのもので発動するようになりました。発動の記録は「from 正 to 誤」です。
+- 発動は再開の前に起きます。戦略は呼ばれません。
+
+新しく生じた害: オーナーが例に挙げた「データが戻った最初の tick が誤った値段」の筋書きを回しました。比べるために、平常時の 1 tick だけの誤値(N)も回しています。
+
+```
+新: [B1] hooks{10_175:+6%, 10_180:戻す} → trip_t=10185.0 state=abnormal price jump 5.66% (from 10600000.0 to 10000000.0) strat_after=[]
+新: [B2] hooks{10_175:+6%, 10_255:戻す} → trip_t=10260.0 state=... (from 10600000.0 to 10000000.0) strat_after=[]
+新: [B3] hooks{10_175:+6% のまま}      → trip_t=None resume_t=10260.0 first_candle=(10200, 10600000.0, 10600000.0) strat_after=[10260.0, ...]
+旧: [B1] trip_t=None resume_t=10260.0   旧: [B2] trip_t=None first_candle=(10200, 10600000.0, ...)   旧: [B3] 新と同じ
+対照 [N] 平常時に 1 tick の +6% → trip_t=9705.0 (from 10000000.0 to 10600000.0)
+```
+
+- [注記] B1・B2 は 1 回目の A3 と同じ形です。誤った値段が基準になり、正しい値段に戻る動きが急変として扱われて、永続の発動になります。
+- ただし A3 より悪くはなっていません(事実、上の出力)。古い A3: 再開の後に発動し、その前に戦略が 1 回呼ばれていました(`strat_after=[10260.0]`)。新しい B1: 再開の前(10_185)に発動します。建玉は一時停止のときに閉じてあり、戦略は呼ばれません。平常時(N)でも、1 tick の誤値は発動します。新しいコードの B1 は、平常時と同じ安全側の発動が 1 tick 遅れて来るものです。古いコードでは B1 は発動しませんでした。発動が増えたのは、この直しの代わりに生じた変化です。
+- [注記] 発動の記録が「from 誤 to 正」になります。調べる人には、正しい値段のほうが急変の行き先に見えます。調べる人を誤らせうる点です。
+- [注記] B3(最初の tick が誤っていて、その値段が続く)では、誤った値段の上で再開します。これは新旧で同じです。今回の後退ではなく、「データが戻った最初の 1 tick は検査しない」という設計の残りです。この設計はリードがオーナーへ上申している 2 番です。リーダー(Binance)の値段と突き合わせる案はありますが、必須ではありません。
+- 起こる頻度: 実測(事実):
+  ```
+  python3 -c "...paper_logs/spread_FX_BTC_JPY.csv ..."
+  rows 529691 days 42.7 / gaps>60s 57
+  first->second fresh tick ltp jump %: max 0.781 median 0.0106 n>5% 0
+  across-gap ltp jump %: max 7.471 ... n>5% 1   (この 1 件は 2026-09-21T01:29 の 693,876 秒 = 約 8 日の停止をまたいだもの)
+  ```
+  読み(推定): B1 の形は 57 回の空白で 0 回でした。未確認: bitFlyer のメンテナンス明けの最初の tick が不正確になりやすいかどうか。
+
+### 問い 2. 3 番の直し: 再開の通知に理由と決済が入ったか、「None」が出る経路はあるか
+
+[注記] 入りました。「None」が出る経路は、たどった範囲で見つかりませんでした(事実)。
+
+コードの読み:
+- `closed` は main.py:1545-1547 で None として作られ、決済が成功し、かつ発動していないときだけ main.py:1564 で設定されます。
+- 決済の途中で例外が出たとき(1555-1561)と、決済が発動を起こしたとき(1562-1563)は、`_on_kill`(1436)か、次の周の `_enter_data_only`(1481)で `_stale_pause = None` になります。
+- step は発動中なら、再開を判定する前に return します(main.py:758-760)。発動中は再開の通知に届きません。
+- relapse(1536-1543)は早めに return するので、`closed` は残ります。
+
+実測(`_gap_app` で筋書きを作り、通知の本文を出力しました):
+
+| 経路 | 通知 | 通知の本文に「None」 |
+|---|---|---|
+| P1 決済の途中で例外 | BOT START, KILL SWITCH(pause=None) | False |
+| P2 決済の中で発動(`_on_kill` を通らない) | BOT START, KILL SWITCH(pause=None) | False |
+| P3 relapse(建玉あり) | 停止・回復の 2 本。再開の本文は「一時停止のときの決済: 売り建玉 0.013 を最後に受け取った値段(買値 9999000.0 / 売値 10001000.0)で決済しました」 | False |
+| P4 決済が拒否された | 再開の本文は「…決済ができず、0.013 が残っています」 | False |
+| P5 建玉なし | 「一時停止のときの決済: 建玉はありません」 | False |
+
+- P4 は、HEAD の 59927c6d で「発動する」に変わっています。その版は検査していません(未確認)。
+- 変異 M17(main.py:1564 を消す。再開の通知に「None」が出る)は、`test_pause_and_resume_alerts_are_japanese_and_the_resume_repeats_the_close` で落ちます。結果は「1 failed, 25 passed」です。
+- [注記] 細かい点: 本文は「(最後に市場データを受け取ってから 65 秒(上限 60 秒))」と括弧が二重になります。値段は「9999000.0」と .0 付きで出ます。読めないものではありません。
+
+### 問い 3. 4 番の試験は M9 を捕まえるか
+
+[注記] 捕まえます(事実)。
+- 変異 M9: main.py:1542 の `self._stale_pause["fresh_since"] = None` を `pass` に置き換え。
+- 結果:
+  ```
+  == M9 relapse does not reset fresh_since
+  FAILED tests/test_composite.py::test_stale_again_before_the_resume_restarts_the_resume_clock
+  1 failed, 25 passed, 164 deselected
+  ```
+- 同じ回に当てたほかの変異(試験は、一時停止に関係する 26 件): M15 古い式に戻す(一時停止の間ずっと急変を受け入れる) → `test_a_price_jump_after_the_first_fresh_tick_still_trips` が落ちる / M16 一時停止の間は一度も受け入れない → `test_a_price_jump_across_the_outage_resumes_instead_of_tripping` が落ちる / M17 `closed` を保存しない → 3 番の試験が落ちる / M18 再開の通知から決済を外す → 3 番の試験が落ちる / M19 停止の通知の理由を英語の detail に戻す → 3 番の試験が落ちる / M20 再開の通知の理由を英語の detail に戻す → 3 番の試験が落ちる。すべて 1 failed でした。終了後に main.py を元に戻し、差分が 0 であることを確かめました。
+
+### 問い 4. 英語の残り、例外のメッセージ、別の引数で作っている箇所
+
+- **[直す] 小さな件。`format_report` に足した一時停止の行(status.py:87-89)が英語で、Unix の時刻をそのまま出しています。**
+  - この文は STATUS の通知としてオーナーに送られます(main.py:1802 `self.notifier.send("STATUS", self.status.format_report())`)。
+  - 実測の出力:
+    ```
+    errors=0 kill_switch=None
+    data_stale_pause=since 1790489273.512 fresh_since=1790489310.0
+    ```
+  - STATUS の報告の既存の行もすべて英語です。ただ、この行は 9 番の直しとしてこのコミットで新しく足されたもので、O-1 と O-6(意味の分からない数字)に当たります。
+  - 送られる時期: `check_freshness` を通った後なので、データが戻ってから再開するまで(約 60〜120 秒、relapse があれば延びる)の間に、1 時間ごとの報告の時刻が重なったときだけです。
+  - 「fresh_since=None」はこの経路では実際には出ません。成功した poll と同じ step で `fresh_since` が設定されるためです(main.py:717-721)。
+  - 日本語の文と JST の時刻にする案があります。
+- [注記] 通知の本文は日本語になりました。停止の通知(1568-1574)と再開の通知(1664-1670)は、英語の detail を含みません。P3〜P5 の本文で確かめました。`signal_ja('STALE_PAUSE')` は「データ停滞で一時停止」、決済の理由は「データ停滞: 最後に受け取った値段で paper の建玉を決済」になります(実測)。残っている英語(この差分の外で、前からあるもの): KILL SWITCH の通知の本文(`_kill_message` の「OPEN POSITION … The bot will NOT close it …」と、`str(e)` の detail。P1 の本文は「unhandled exception while pausing on stale data: RuntimeError('x')」)/ ダッシュボードの `reason_ja('market data stale: 65s > 60.0s')` は英語のまま返る(実測)/ コンソールの StreamHandler(logging_setup.py:63)に出るログは英語(docstring は「英語はログ用」)/ HEAD の 59927c6d の発動の detail は、英語の文に日本語の `closed` を挟んでいる(読んだだけで、検査していない)。
+- [注記] 例外のメッセージの文字列は前と同じです(事実)。前と後の式は同じ `f"market data stale: {age:.0f}s > {limit}s"` で、limit には同じ `self.max_staleness_sec` が渡されます。実測: (65.4, 60.0) → `'market data stale: 65s > 60.0s' True`、(65.4, 60) → `'…60s' True`、(900.0, 60.0) → True、(61.0, 90.0) → True。`e.args == (msg,)` で、`isinstance(e, MarketDataAnomaly)` も True でした。ログを読む側の `grep "market data stale"` は壊れません。前からある注意: 1c37399b 以降、一時停止の開始・relapse・決済の判断ログにも "market data stale" という語が入っています。発動の回数をこの語の grep で数えると、多めに数えます。
+- [注記] `MarketDataStale` を別の引数で作っている箇所はありません。コマンド: `git grep -n "MarketDataStale" a732b858 -- src tests scripts deploy`。作っているのは feed.py:205 の `raise MarketDataStale(age, self.max_staleness_sec)` だけでした。ほかは import と isinstance と docstring です。試験は `MarketDataAnomaly("market data stale…")` を使っていて、`MarketDataStale` は作っていません。
+- [注記] 独自の __init__ の副作用として、copy と pickle が壊れます。実測: `copy FAIL TypeError MarketDataStale.__init__() missing 1 required positional argument: 'limit_sec'`。pickle も同じエラーです。`grep -rn "QueueHandler\|multiprocessing\|pickle\|copy.copy\|deepcopy" src/bot` の結果、bot の実行経路には該当がありませんでした。今は害がありません。
+
+### 問い 5. 差分を敵対的に読む
+
+- [注記] 関係する試験はすべて通ります。コマンド: `PYTHONPATH=src python -m pytest tests/test_app_fx_integration.py tests/test_composite.py tests/test_dashboard.py tests/test_market_data.py tests/test_market_view.py tests/test_paper_state.py tests/test_realtime_recorder.py tests/test_resilience.py tests/test_xborder.py tests/test_judge_gates.py --basetemp=… -p no:cacheprovider`。結果: 657 passed。複製に scripts も写して回しました。全部の試験は、複製に docs が無いため回していません(未確認)。
+- [注記] relapse と新しい式の組み合わせ。relapse で `fresh_since` が None に戻るので、次にデータが戻った最初の tick でも急変を受け入れます。設計と一致しています。60 秒未満の短い途切れでは relapse にならず、平常時と同じ検査になります。
+- [注記] `_stale_pause_view` に `detail_ja` と `closed` が増え、status.json に出るようになりました。どちらも文字列なので JSON にできます。
+- 壊したものは見つかりませんでした。
+
+### PC のブランチ(PAPER で動いている bot)に入れてよいか
+
+入れてよい、という読みです。[止める] はありません。1 番の直しで A・A2・A3 は実測で塞がっていて、誤った値段で戦略が動く筋書きはなくなりました。新しく生じた発動(B1・B2)は、平常時の 1 tick の誤値と同じ安全側の発動です。再開の前に起き、建玉も 0 です。実データの 57 回の空白では 0 回でした。[直す] は STATUS の報告の英語の 1 行(status.py:87-89)だけで、送られる時期はまれです。入れた後に直しても安全側を崩しません。上申中の 2・5・10 番は、リード自身の記録どおり、PC に入れる前の関門として残っています。HEAD の 59927c6d(5 番の (a) の実装)は、この批評では見ていません。PC に入れるのがその版なら、別に批評家を通してください。
+
+## リードの応答
+
+- 問い 4 の [直す](STATUS の報告の英語の行): **直した。** 日本語の文と JST の時刻にした(`_stale_pause_line`、試験 `test_status_report_shows_the_pause_in_japanese_with_jst_times`)。
+- 問い 1 の [注記] B1・B2・B3: **記録。** どれも「急変の上限」の挙動。オーナーが L-547 で上限そのものが要るかを問い、リードは外す案を出して答えを待っている。外すなら B1〜B3 は消え、残すなら B1 の「from 誤 to 正」の記録の読みにくさを直す。
+- 59927c6d(決済が拒否されたら発動)とこの直しは、2 回目の批評の範囲外。急変の上限の答えを受けてコードが決まったところで、まとめて 1 回批評家に通す(監査を増やさないため。F6)。PC への反映はその後。
+- その他の [注記]: **記録。**

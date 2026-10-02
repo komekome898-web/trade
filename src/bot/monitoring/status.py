@@ -84,7 +84,19 @@ class StatusWriter:
             f"daily_pnl={s.daily_pnl_jpy:.1f} total_pnl={s.total_pnl_jpy:.1f} "
             f"max_dd={s.max_drawdown_pct:.2f}% trades={s.trade_count}\n"
             f"errors={s.error_count} kill_switch={s.kill_switch}"
-            + (f"\ndata_stale_pause=since {s.data_stale_pause.get('since')} "
-               f"fresh_since={s.data_stale_pause.get('fresh_since')}"
-               if s.data_stale_pause else "")
+            + (_stale_pause_line(s.data_stale_pause) if s.data_stale_pause else "")
         )
+
+
+def _jst(ts) -> str:
+    """HH:MM:SS in JST from a Unix time, or "-" when there is none."""
+    if not isinstance(ts, (int, float)):
+        return "-"
+    return time.strftime("%H:%M:%S", time.gmtime(ts + 9 * 3600)) + " JST"
+
+
+def _stale_pause_line(pause: dict) -> str:
+    """The stale-data pause for the owner's STATUS report (O-1: Japanese)."""
+    return (f"\nデータ停滞で paper の取引を一時停止中(開始 {_jst(pause.get('since'))}、"
+            f"データ回復 {_jst(pause.get('fresh_since'))}。新しいデータだけの足が "
+            f"1 本そろったら再開)")

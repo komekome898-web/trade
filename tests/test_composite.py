@@ -2236,3 +2236,14 @@ def test_a_refused_stale_pause_close_trips_as_before(workdir, monkeypatch):
     assert app._stale_pause is None
     assert app.portfolio.position_size == pytest.approx(-0.013)
     assert PAUSE_TITLE not in [t for t, _, _ in notifier.sent]
+
+
+def test_status_report_shows_the_pause_in_japanese_with_jst_times():
+    """(second critic, finding on status.py) The STATUS report goes to the
+    owner: the pause line is Japanese and the times are JST clock times,
+    not Unix seconds."""
+    from bot.monitoring.status import _stale_pause_line
+    line = _stale_pause_line({"since": 0.0, "fresh_since": 3600.0})
+    assert "開始 09:00:00 JST" in line and "データ回復 10:00:00 JST" in line
+    assert "since" not in line and "3600" not in line
+    assert "データ回復 -" in _stale_pause_line({"since": 0.0, "fresh_since": None})
