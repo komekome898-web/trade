@@ -18052,10 +18052,10 @@
   {
    "move": 662,
    "tools": {
-    "Bash": 10,
+    "Bash": 12,
     "Agent": 1
    },
-   "n_tools": 11,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
