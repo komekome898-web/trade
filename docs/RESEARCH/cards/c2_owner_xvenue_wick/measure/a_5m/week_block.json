@@ -1,0 +1,47 @@
+{
+ "day": {
+  "block_len": 1440,
+  "ci": [
+   -0.004010138814094795,
+   0.018511330992040758
+  ],
+  "from": "measure.json の overall.mean_bp(測定器が出した 1 日の区間)",
+  "mde": 0.016197636758880155,
+  "se": 0.005781597023770069
+ },
+ "day_recomputed": {
+  "block_len": 1440,
+  "ci": [
+   -0.004010138814094629,
+   0.018511330992040814
+  ],
+  "estimate": 0.006834468421369719,
+  "mde": 0.016197636758880144,
+  "n_over_block": 2257.8819444444443,
+  "note": "照合用。同じ関数・同じ種・同じ L で P_t から直接計算した 1 日の区間",
+  "se": 0.005781597023770065
+ },
+ "formula": {
+  "ci": "block_bootstrap_ci(P_t, block_len=L, n_resamples=1000, seed, alpha=0.05, method='circular', statistic='mean') の 2.5%・97.5% の百分位(np.quantile 線形)",
+  "mde": "mde(n, sd = se × √n, alpha 0.05, power 0.80, sides 2, approx 'normal') = (z_0.975 + z_0.80) × se",
+  "se": "1,000 個の再標本の平均の標準偏差(ddof 1)"
+ },
+ "mean_bp": 0.006834468421369719,
+ "method": "circular",
+ "n": 3251350,
+ "n_resamples": 1000,
+ "pw_b": 258.70780758082356,
+ "rule": "L_w = max(ceil(Politis-White circular b of P_t), 10080)(W4 の仕様 §3 の 1 週。測定器の L は 1 日 = 1440 が下限)",
+ "seed": 20261002,
+ "week": {
+  "block_len": 10080,
+  "ci": [
+   -0.004440332727069186,
+   0.01738893138261611
+  ],
+  "estimate": 0.006834468421369719,
+  "mde": 0.015781439088688055,
+  "n_over_block": 322.5545634920635,
+  "se": 0.005633039104667243
+ }
+}
