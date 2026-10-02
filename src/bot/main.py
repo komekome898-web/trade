@@ -6,11 +6,14 @@ Startup safety sequence:
 3. Kill switch state check — a tripped switch from a previous run blocks trading.
 4. In LIVE mode only: verify API permissions contain no withdrawal access.
 
-The loop is fail-closed: any unhandled exception out of the loop body trips the
-persisted kill switch before the process dies, so a supervisor restart lands on
-the refusal in `main()` instead of resuming trading in an unknown state. The
-FIRST reason recorded wins (`_trip_once`) — a failure while shutting down must
-not overwrite the diagnosis of what actually went wrong.
+The loop is fail-closed: any unhandled exception in the loop body trips the
+persisted kill switch, and the process carries on recording market data with
+trading off (data-only, owner L-532); a restart lands in the same data-only
+mode, because the trip is persisted. The process ends on its own only when an
+operator resets the switch: it then exits without trading, and only a freshly
+started process trades again. The FIRST reason recorded wins (`_trip_once`) —
+a failure while shutting down must not overwrite the diagnosis of what
+actually went wrong.
 """
 from __future__ import annotations
 
@@ -287,6 +290,16 @@ class TradingApp:
         self.status = StatusWriter()
         self.status.status.mode = settings.mode.value
         self._api_errors_in_row = 0
+        # Data-only mode (kill switch tripped): the operator is alerted once
+        # per trip, not once per cycle. Tripped at boot = already alerted by
+        # whoever tripped it (an earlier process, or the LIVE boot above).
+        self._kill_notified = self.kill_switch.is_tripped
+        self._data_only = False
+        self._data_only_failures: set[str] = set()
+        # Operator reset detection (data-only): a fresh read must first have
+        # SEEN the trip on disk, so a trip whose file write failed is never
+        # mistaken for a reset.
+        self._trip_seen_on_disk = False
         from bot.market_data.feed import SpreadRecorder
         self.spread_recorder = SpreadRecorder(f"data/spread_{settings.product_code}.csv")
 
@@ -332,7 +345,7 @@ class TradingApp:
 
         A failure to ask is NOT "assume flat". It is refusal: the kill switch
         is tripped (`system_error`, 'live boot reconciliation failed') so
-        `main()` refuses to start and no order can be placed, and a human
+        `main()` refuses to trade and no order can be placed, and a human
         decides. Assuming flat is the phantom-flat state again, this time
         chosen deliberately. A venue answer this process cannot PARSE is the
         same fact and takes the same path — an unreadable answer is not an
@@ -666,24 +679,39 @@ class TradingApp:
 
     # ---- one iteration of the trading loop --------------------------------
     def step(self) -> None:
-        if self.kill_switch.is_tripped:
-            return
+        # A tripped switch stops TRADING, not market data: the polls, the
+        # spread record, the candles and status.json keep running (owner
+        # L-532). Everything after `_update_status` below — stop-loss, strategy,
+        # orders — and the order sweep are skipped while tripped, and a data
+        # failure while tripped neither re-trips nor re-alerts. While tripped a
+        # price jump is taken as the new reference (see MarketDataFeed).
+        tripped = self.kill_switch.is_tripped
+        self.feed.accept_price_jumps = tripped
         # Before the polls, not after: a widened read timeout has to apply to
         # the very call that is struggling, not to the one after it.
         self._refresh_condition()
-        self._sweep_open_orders()
+        if not tripped:
+            self._sweep_open_orders()
         try:
             tick = self.feed.poll_ticker()
             self._api_errors_in_row = 0
             self.status.status.api_connected = True
             self.spread_recorder.record(tick)
+            if tripped:
+                self._note_data_only_failure(None)
         except MarketDataAnomaly as e:
+            if tripped:
+                self._note_data_only_failure(e)
+                return
             self.kill_switch.trip(KillReason.MARKET_DATA_ANOMALY, str(e))
             self._on_kill(str(e))
             return
         except (BitflyerError, NetworkError) as e:
             self.status.status.error_count += 1
             self.status.status.api_connected = False
+            if tripped:
+                self._note_data_only_failure(e)
+                return
             if self._counts_towards_api_errors(e):
                 self._api_errors_in_row += 1
                 self.status.status.consecutive_api_errors = self._api_errors_in_row
@@ -707,6 +735,8 @@ class TradingApp:
         else:
             finished = self.candles.add_trade(tick.timestamp, tick.price, 0.0)
         self._update_status(tick.price)
+        if self.kill_switch.is_tripped:
+            return  # data only: no stop-loss, no strategy, no order
         if finished is None:
             return  # decide only on completed candles
 
@@ -1383,6 +1413,7 @@ class TradingApp:
         self._save_paper_state()
         self.status.status.kill_switch = self.kill_switch.state
         self.status.write()
+        self._kill_notified = True
         try:
             self.notifier.send("KILL SWITCH", self._kill_message(detail), urgent=True)
         except Exception:
@@ -1411,6 +1442,49 @@ class TradingApp:
                 f"it by hand on bitFlyer if you want it flat, then investigate "
                 f"and reset the switch "
                 f"(KillSwitch().reset(operator_confirm=True)).")
+
+    def _enter_data_only(self) -> None:
+        """First loop cycle that finds the switch tripped: say so ONCE.
+
+        A trip that went through `_on_kill` has already alerted; one that did
+        not (the KILL file, an order-manager trip) gets its single alert here
+        (before L-532 the loop's exit sent it as BOT STOPPED; BOT STOPPED now
+        means an operator reset was detected). No order is touched.
+        """
+        self._data_only = True
+        state = self.kill_switch.state or {}
+        self._save_paper_state()
+        self.status.status.running = False
+        self.status.status.kill_switch = self.kill_switch.state
+        self.status.write()
+        if not self._kill_notified:
+            self._kill_notified = True
+            self._notify("KILL SWITCH",
+                         self._kill_message(str(state.get("detail", ""))),
+                         urgent=True)
+        logger.warning("kill switch tripped: trading stopped, market data "
+                       "recording continues", extra={"data": {
+                           "event": "kill_switch_data_only",
+                           "state": self.kill_switch.state}})
+
+    def _note_data_only_failure(self, error: Exception | None) -> None:
+        """Log each KIND of data failure once per outage while tripped (and
+        the recovery once), so a feed that stays down cannot flood the log.
+        `error=None` is a successful poll and ends the outage."""
+        if error is None:
+            if self._data_only_failures:
+                self._data_only_failures.clear()
+                logger.info("market data recovered while the kill switch is tripped",
+                            extra={"data": {"event": "data_only_recovered"}})
+            return
+        kind = type(error).__name__
+        if kind in self._data_only_failures:
+            return
+        self._data_only_failures.add(kind)
+        logger.warning("market data failed while the kill switch is tripped",
+                       exc_info=error,
+                       extra={"data": {"event": "data_only_failure",
+                                       "error": kind, "detail": str(error)}})
 
     def _roll_paper_day(self) -> None:
         """Persist the daily-P&L reset when the UTC day turns under a running
@@ -1492,8 +1566,11 @@ class TradingApp:
         report_every = float(self.settings.config.get("notifications", {})
                              .get("status_report_interval_sec", 3600))
         last_report = time.time()
-        self.notifier.send("BOT START", f"mode={self.settings.mode.value} "
-                                        f"product={self.settings.product_code}")
+        self._notify("BOT START", f"mode={self.settings.mode.value} "
+                                  f"product={self.settings.product_code}"
+                                  + (" kill_switch=TRIPPED (data recording "
+                                     "only, no trading)"
+                                     if self.kill_switch.is_tripped else ""))
         try:
             self._run_loop(poll, report_every, last_report)
         finally:
@@ -1504,10 +1581,21 @@ class TradingApp:
             # is the difference between a stop being continuous and being a
             # silent partial reset.
             self._save_paper_state()
-        self.notifier.send("BOT STOPPED", str(self.kill_switch.state), urgent=True)
+        # Reached only by the operator-reset exit (see `_run_loop`): this
+        # process ends without trading; a freshly started one trades.
+        self._notify("BOT STOPPED",
+                     f"kill switch reset by an operator; this process exits "
+                     f"without trading and a fresh start resumes trading "
+                     f"(reset trip: {self.kill_switch.state})", urgent=True)
 
     def _run_loop(self, poll: float, report_every: float, last_report: float) -> None:
-        while not self.kill_switch.is_tripped:
+        # A tripped switch no longer ends the loop: it keeps recording market
+        # data with trading off (see `step`) until a human resets the switch.
+        # The reset is detected here and ends the loop WITHOUT trading; the
+        # in-memory switch stays tripped (no auto-resume), and only a freshly
+        # started process trades again.
+        while True:
+            tripped = self.kill_switch.is_tripped
             # The WHOLE body is guarded, not just step(): a failure in the
             # freshness check, the status report or the notifier is just as
             # much an unknown state as a failure in step(). KeyboardInterrupt
@@ -1515,6 +1603,14 @@ class TradingApp:
             # through — an operator stopping the bot must not leave a tripped
             # switch behind for the next start to refuse.
             try:
+                if tripped and not self._data_only:
+                    self._enter_data_only()
+                if tripped and self._reset_seen_on_disk():
+                    logger.warning("kill switch reset by an operator: exiting "
+                                   "without trading", extra={"data": {
+                                       "event": "kill_switch_reset_detected",
+                                       "state": self.kill_switch.state}})
+                    break
                 self.step()
                 self.feed.check_freshness()
                 if time.time() - last_report >= report_every:
@@ -1522,20 +1618,53 @@ class TradingApp:
                     last_report = time.time()
                 time.sleep(poll)
             except MarketDataAnomaly as e:
-                self._trip_once(KillReason.MARKET_DATA_ANOMALY, str(e))
-                self._on_kill(str(e))
-                break
+                if tripped or self._kill_notified:
+                    # Already tripped and alerted (at the top of this cycle,
+                    # or by step() inside it): no second trip, no alert.
+                    self._note_data_only_failure(e)
+                else:
+                    self._trip_once(KillReason.MARKET_DATA_ANOMALY, str(e))
+                    self._on_kill(str(e))
+                time.sleep(poll)
             except Exception as e:
+                if tripped:
+                    # No trading can happen while tripped, so a fault here
+                    # must not also end the data recording.
+                    self._note_data_only_failure(e)
+                    time.sleep(poll)
+                    continue
                 # An unexpected exception is an unknown state, not a hiccup: a
                 # bare crash would let systemd/the watchdog restart the process
                 # straight back into trading. Trip the (persisted) kill switch
                 # first, so the restarted process refuses to trade until a human
                 # has investigated and reset it (see main()).
+                # The process then carries on in data-only mode instead of
+                # dying: a restart would land there too (the trip is
+                # persisted), minus the recording gap. A kill already handled
+                # in this cycle (`_kill_notified`) is not cancelled or alerted
+                # twice.
                 detail = redact(f"unhandled exception in loop: {e!r}")
                 self._trip_once(KillReason.UNHANDLED_EXCEPTION, detail)
                 logger.exception("unhandled exception in loop; kill switch tripped")
-                self._on_kill(detail)
-                raise
+                if not self._kill_notified:
+                    self._on_kill(detail)
+                time.sleep(poll)
+
+    def _reset_seen_on_disk(self) -> bool:
+        """True once an operator has reset the switch on disk (state file and
+        KILL file gone, `KillSwitch.reset`) after this process saw the trip
+        there. Reads a FRESH `KillSwitch()`; `self.kill_switch` is never reset
+        or re-read, so nothing in this process can trade again. A read that
+        fails counts as "not reset": it must not stop the recording."""
+        try:
+            on_disk = KillSwitch().is_tripped
+        except Exception as e:
+            self._note_data_only_failure(e)
+            return False
+        if on_disk:
+            self._trip_seen_on_disk = True
+            return False
+        return self._trip_seen_on_disk
 
     def _trip_once(self, reason: KillReason, detail: str) -> None:
         """Trip the kill switch only if it is not already tripped.
@@ -1563,10 +1692,11 @@ def main() -> int:
         register_secret(secret.reveal())
     app = build_app(settings)
     if app.kill_switch.is_tripped:
-        print(f"kill switch is tripped, refusing to start: {app.kill_switch.state}")
+        # Trading stays refused; market data recording still runs (L-532).
+        print(f"kill switch is tripped, refusing to trade (market data recording "
+              f"only): {app.kill_switch.state}")
         print("After investigating, reset with: python -c \"from bot.risk.kill_switch import "
               "KillSwitch; KillSwitch().reset(operator_confirm=True)\"")
-        return 1
     app.run_forever()
     return 0
 
