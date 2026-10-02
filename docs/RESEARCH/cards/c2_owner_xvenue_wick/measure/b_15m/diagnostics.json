@@ -1,0 +1,43 @@
+{
+ "branches": {
+  "19 の枝だけ(19 bp 以上かつヒゲ > 実体、24 bp 未満)": {
+   "mean_pnl_bp_per_nonzero_decision": -0.015011160848256822,
+   "mean_pnl_bp_per_signal": -0.6958717001000366,
+   "n_buy": 4552,
+   "n_decisions_attributed": 675020,
+   "n_decisions_nonzero": 404279,
+   "n_sell": 4169,
+   "n_signals": 8721,
+   "sum_pnl_bp": -6068.6970965724195
+  },
+  "24 の枝だけ(24 bp 以上、ヒゲ <= 実体)": {
+   "mean_pnl_bp_per_nonzero_decision": 0.002290721357323607,
+   "mean_pnl_bp_per_signal": 0.047844790889011814,
+   "n_buy": 4967,
+   "n_decisions_attributed": 281463,
+   "n_decisions_nonzero": 202326,
+   "n_sell": 4720,
+   "n_signals": 9687,
+   "sum_pnl_bp": 463.47248934185745
+  },
+  "両方の枝(24 bp 以上かつヒゲ > 実体)": {
+   "mean_pnl_bp_per_nonzero_decision": -0.028099588612894515,
+   "mean_pnl_bp_per_signal": -0.9067529773248408,
+   "n_buy": 12480,
+   "n_decisions_attributed": 1059466,
+   "n_decisions_nonzero": 763523,
+   "n_sell": 11181,
+   "n_signals": 23661,
+   "sum_pnl_bp": -21454.68219648306
+  }
+ },
+ "formula": {
+  "P_t": "測定器と同じ P_t = e_t × (open_{t+2} / open_{t+1} − 1) × 10,000(pnl.py)",
+  "mean_pnl_bp_per_nonzero_decision": "帰属した決定のうち持ち高 != 0 の決定の P_t の平均(bp)",
+  "mean_pnl_bp_per_signal": "帰属した決定の P_t の合計 ÷ その枝のシグナルの数(bp/シグナル)",
+  "帰属": "決定 t(bitFlyer の空でない足の終わり)の P_t を、signal_log の足の終わり <= t の最新のシグナルに帰属させる(同じ t までに複数のシグナルが処理されたら最後のもの)。シグナルの後に持ち高が変わらない・0 になる足もそのシグナルに帰属する"
+ },
+ "n_decisions_before_first_signal": 44,
+ "n_signals_total": 42069,
+ "what": "INTENT_MAP §7 の診断(検定の数に入れない)。材料は関数の signal_log(足の終わり, 向き, 19 の枝, 24 の枝)"
+}
