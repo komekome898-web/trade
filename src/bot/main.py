@@ -728,6 +728,13 @@ class TradingApp:
                     self.kill_switch.trip(KillReason.API_ERRORS,
                                           f"{self._api_errors_in_row} in a row: {e}")
                     self._on_kill(str(e))
+            if self._stale_pause is not None:
+                # A ticker that keeps failing is the commonest cause of the
+                # stale data. Without this write status.json stops at the
+                # moment the pause began, and the dashboard turns the pause
+                # into "not running" after about 2 minutes.
+                self.status.status.data_stale_pause = self._stale_pause_view()
+                self.status.write()
             return
 
         if self.leader_feed is not None:

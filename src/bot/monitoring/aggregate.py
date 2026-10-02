@@ -10,7 +10,7 @@ import importlib.util
 import json
 import re
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -613,6 +613,64 @@ def _liveness(age_sec: float | None, warn_after: float, dead_after: float) -> st
     return "down"
 
 
+_JST = timezone(timedelta(hours=9))
+
+
+def _jst(ts: Any) -> str | None:
+    """Epoch seconds as 日本時間 'YYYY-MM-DD HH:MM:SS'; None for anything that is not a number."""
+    if type(ts) not in (int, float):
+        return None
+    try:
+        return datetime.fromtimestamp(ts, tz=_JST).strftime("%Y-%m-%d %H:%M:%S")
+    except (OverflowError, OSError, ValueError):
+        return None
+
+
+def _stale_pause(status: dict) -> dict | None:
+    """The PAPER bot's stale-data pause as status.json carries it (bot/main.py
+    `_stale_pause_view`: since, detail, fresh_since, resume_after_candle_start;
+    None when not paused), with the times in 日本時間 and the resume condition
+    as a sentence. Not the kill switch: nothing is persisted and the bot
+    resumes by itself once ONE candle built only from fresh data has completed
+    (`_resume_if_fresh_candle`). The candle interval is not in status.json, so
+    the moment of the resume is not computed here; the candle is named by its
+    start.
+
+    The reason shown to the owner is `detail_ja` (O-1: the owner's screen is
+    in Japanese); `detail` stays the raw English text main.py logs. Every
+    pause main.py writes carries `detail_ja` (`_pause_for_stale_data`), so
+    the fixed Japanese sentence below is only for a status.json without it;
+    the English `detail` is never put in its place.
+
+    `closed` is the sentence main.py wrote about the paper position at the
+    moment of the pause (`_close_for_stale_pause`, Japanese; owner L-547: the
+    position is closed at the last received quote). None while status.json
+    has none."""
+    p = status.get("data_stale_pause")
+    if not isinstance(p, dict):
+        return None
+    fresh, boundary = p.get("fresh_since"), p.get("resume_after_candle_start")
+    if _jst(fresh) is None:
+        cond = ("データはまだ戻っていない。データが戻り、新しいデータだけでできた足が "
+                "1 本完成したら自動で再開する")
+    elif _jst(boundary) is None:
+        cond = (f"データは {_jst(fresh)}(日本時間)に戻った。新しいデータだけでできた足が "
+                "1 本完成したら自動で再開する")
+    else:
+        cond = (f"データは {_jst(fresh)}(日本時間)に戻った。新しいデータだけでできた最初の足"
+                f"(開始 {_jst(boundary)} 日本時間)が完成したら自動で再開する")
+    ja = p.get("detail_ja")
+    if not (isinstance(ja, str) and ja.strip()):
+        ja = "市場データが古くなった(理由の日本語の記録が status.json に無い)"
+    closed = p.get("closed")
+    closed = closed if isinstance(closed, str) and closed.strip() else None
+    return {"since": p.get("since"), "since_jst": _jst(p.get("since")), "detail": p.get("detail"),
+            "detail_ja": ja, "closed": closed,
+            "fresh_since": fresh, "fresh_since_jst": _jst(fresh),
+            "resume_after_candle_start": boundary, "resume_after_candle_start_jst": _jst(boundary),
+            "resume_condition": cond}
+
+
 def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str, Any]:
     root = Path(root)
     now = now or time.time()
@@ -682,13 +740,22 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
     bot_age = (now - status["updated_at"]) if status.get("updated_at") else None
     scalp_age = (now - scalp_last["ts"]) if scalp_last else None
     ws_age = ws_latest["age_sec"] if ws_latest else None
+    # killed > not running (a status.json that stopped being written carries a
+    # pause that may be over) > paused for stale data > liveness
+    main_live = _liveness(bot_age, 30, 120)
+    stale_pause = _stale_pause(status)
+    if kill or manual_kill:
+        main_state = "killed"
+    elif stale_pause is not None and main_live in ("ok", "warn"):
+        main_state = "paused"
+    else:
+        main_state = main_live
 
     return {
         "generated_at": now,
         "components": {
             "main_bot": {
-                "state": ("killed" if (kill or manual_kill) else
-                          _liveness(bot_age, 30, 120)),
+                "state": main_state,
                 "age_sec": round(bot_age, 1) if bot_age is not None else None,
             },
             # retired 2026-08-21 after the formal paper rejection (report
@@ -720,6 +787,10 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
         "api_health": _api_health(root / "data" / "api_health.csv", now, status),
         "kill_switch": kill,
         "manual_kill_file": manual_kill,
+        # PAPER stale-data pause (owner L-544): shown only while the main bot
+        # is in that state — under a kill, or with a status.json that stopped
+        # being written, the bot's state is the kill / the outage instead.
+        "data_stale_pause": stale_pause if main_state == "paused" else None,
         "ws": {"files": len(ws_files), "total_mb": ws_total_mb, "latest": ws_latest},
         "collectors": collectors,
         "ingest": ingest,

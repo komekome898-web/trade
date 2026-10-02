@@ -2269,3 +2269,35 @@ def test_a_stop_loss_past_the_daily_limit_closes_first_then_trips(
     assert app.portfolio.trades[-1].side == "BUY"
     assert app.kill_switch.state["reason"] == "daily_loss_limit"
     assert notifier.sent[-1][0] == "KILL SWITCH"
+
+
+def test_a_ticker_that_keeps_failing_keeps_status_json_and_the_dashboard_pause_alive(
+        workdir, monkeypatch):
+    """(W6 critic, 2nd) The ticker is down for good (up_at=None): `step` returns
+    from its except clause before `_update_status`, so status.json used to stop
+    at the moment the pause began, and the dashboard (collect_status) called
+    the bot "down" after ~2 minutes and dropped the pause. status.json must be
+    written every cycle while paused, and the dashboard must keep showing the
+    pause (with the close sentence), with the status clock on the same
+    virtual time as the loop."""
+    from bot.monitoring.aggregate import collect_status
+    app, rig = _gap_app(monkeypatch, until=10_600, up_at=None)
+    app.status._clock = lambda: rig.now            # status.json's updated_at on the loop's clock
+    rig.run()
+
+    pause_t = rig.first(paused=True)
+    assert pause_t == 10_100.0
+    st = _status_json(workdir)
+    assert st["updated_at"] == 10_600.0            # still written 500 s after the pause began
+    assert st["api_connected"] is False
+    assert st["data_stale_pause"]["detail_ja"]
+    assert "決済しました" in st["data_stale_pause"]["closed"]
+    # the dashboard, 5 s and 60 s after the last write: still the pause, not "down"
+    for later in (5.0, 60.0):
+        d = collect_status(workdir, now=st["updated_at"] + later)
+        assert d["components"]["main_bot"]["state"] == "paused", later
+        assert d["data_stale_pause"] is not None
+        assert "決済しました" in d["data_stale_pause"]["closed"]
+    # and it is not the kill switch
+    assert not app.kill_switch.is_tripped
+    assert not (workdir / "data" / "kill_switch.json").exists()

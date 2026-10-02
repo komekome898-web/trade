@@ -662,6 +662,11 @@ api.refresh().then(() => {
     tilesPaper: els["tiles-paper"].innerHTML,
     ladder: els["ladder"].innerHTML,
     banner: els["banner"].textContent,
+    bannerShown: els["banner"].style.display,
+    pauseBanner: els["pause-banner"].textContent,
+    pauseShown: els["pause-banner"].style.display,
+    mainPill: els["p-main"].innerHTML,
+    mainPillClass: els["p-main"].className,
     updated: els["updated"].textContent,
   }));
 }).catch(e => { console.error(e && e.stack || String(e)); process.exit(3); });
@@ -1607,3 +1612,180 @@ def test_console_page_has_no_gate_or_history_sections():
     # 収集そのものは全て継続している
     assert 'id="t-col"' in page and "データ収集" in page
     assert 'id="t-ledger"' in page and "データ台帳" in page
+
+
+# ---- データ停滞の一時停止(L-544)とキルスイッチの区別 ------------------------
+# 1_800_000_000 = 2027-01-15T08:00:00Z = 2027-01-15 17:00:00 日本時間
+# detail / detail_ja as bot/main.py `_pause_for_stale_data` writes them (feed.py MarketDataStale)
+_PAUSE = {"since": 1_800_000_000.0, "detail": "no ticker for 65.0s",
+          "detail_ja": "最後に市場データを受け取ってから 65 秒(上限 60 秒)",
+          "fresh_since": None, "resume_after_candle_start": None,
+          "closed": "売り建玉 0.013 を最後に受け取った値段(買値 10001000 / 売値 10002000)で決済しました"}
+
+
+def _pause_root(tmp_path, pause, age=5.0, kill=False):
+    now = 1_800_000_600.0
+    (tmp_path / "logs").mkdir(exist_ok=True)
+    (tmp_path / "logs" / "status.json").write_text(json.dumps({
+        "mode": "paper", "position_size": 0.0, "data_stale_pause": pause,
+        "updated_at": now - age}), encoding="utf-8")
+    if kill:
+        (tmp_path / "data").mkdir(exist_ok=True)
+        (tmp_path / "data" / "kill_switch.json").write_text(
+            json.dumps({"reason": "manual", "detail": "test"}), encoding="utf-8")
+    return collect_status(tmp_path, now=now)
+
+
+def test_stale_pause_is_its_own_state_with_jst_reason_and_resume_condition(tmp_path):
+    d = _pause_root(tmp_path, dict(_PAUSE))
+    assert d["components"]["main_bot"]["state"] == "paused"
+    sp = d["data_stale_pause"]
+    assert sp["since_jst"] == "2027-01-15 17:00:00"
+    assert sp["detail"] == "no ticker for 65.0s"   # the raw English text, as main.py logs it
+    assert sp["detail_ja"] == "最後に市場データを受け取ってから 65 秒(上限 60 秒)"
+    assert sp["closed"] == _PAUSE["closed"]        # L-547: what happened to the position (Japanese, as main.py writes it)
+    assert "データはまだ戻っていない" in sp["resume_condition"]
+    assert "新しいデータだけでできた足が 1 本完成したら自動で再開" in sp["resume_condition"]
+    assert d["kill_switch"] is None and d["manual_kill_file"] is False
+
+
+def test_a_pause_without_the_japanese_reason_says_so_in_japanese(tmp_path):
+    p = {k: v for k, v in _PAUSE.items() if k != "detail_ja"}
+    sp = _pause_root(tmp_path, p)["data_stale_pause"]
+    assert sp["detail_ja"] == "市場データが古くなった(理由の日本語の記録が status.json に無い)"
+    assert "no ticker" not in sp["detail_ja"]
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_page_never_shows_the_english_reason_of_a_pause(tmp_path):
+    p = {k: v for k, v in _PAUSE.items() if k != "detail_ja"}
+    paused = _render_console_in_node(tmp_path, _pause_root(tmp_path, p))
+    assert "理由: 市場データが古くなった(理由の日本語の記録が status.json に無い)" in paused["pauseBanner"]
+    assert "no ticker" not in paused["pauseBanner"]
+
+
+def test_a_pause_without_the_close_sentence_says_so_in_japanese(tmp_path):
+    p = {k: v for k, v in _PAUSE.items() if k != "closed"}
+    assert _pause_root(tmp_path, p)["data_stale_pause"]["closed"] is None
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_the_banner_says_in_japanese_when_the_close_sentence_is_missing(tmp_path):
+    p = {k: v for k, v in _PAUSE.items() if k != "closed"}
+    (tmp_path / "p").mkdir()
+    paused = _render_console_in_node(tmp_path, _pause_root(tmp_path / "p", p))
+    assert "一時停止のときの決済: (status.json に記録が無い)" in paused["pauseBanner"]
+
+
+def test_stale_pause_after_the_data_came_back_names_the_candle(tmp_path):
+    p = dict(_PAUSE, fresh_since=1_800_000_130.0, resume_after_candle_start=1_800_000_180)
+    sp = _pause_root(tmp_path, p)["data_stale_pause"]
+    assert sp["fresh_since_jst"] == "2027-01-15 17:02:10"
+    assert sp["resume_after_candle_start_jst"] == "2027-01-15 17:03:00"
+    assert "開始 2027-01-15 17:03:00 日本時間" in sp["resume_condition"]
+    assert "完成したら自動で再開" in sp["resume_condition"]
+
+
+def test_no_pause_leaves_the_bot_running(tmp_path):
+    d = _pause_root(tmp_path, None)
+    assert d["components"]["main_bot"]["state"] == "ok"
+    assert d["data_stale_pause"] is None
+
+
+def test_kill_switch_wins_over_the_pause_and_is_not_called_a_pause(tmp_path):
+    d = _pause_root(tmp_path, dict(_PAUSE), kill=True)
+    assert d["components"]["main_bot"]["state"] == "killed"
+    assert d["data_stale_pause"] is None
+
+
+def test_a_stopped_status_file_is_not_shown_as_a_live_pause(tmp_path):
+    d = _pause_root(tmp_path, dict(_PAUSE), age=600.0)
+    assert d["components"]["main_bot"]["state"] == "down"
+    assert d["data_stale_pause"] is None
+
+
+@pytest.mark.skipif(_node() is None, reason="node not installed")
+def test_page_shows_the_pause_and_the_kill_in_separate_banners(tmp_path):
+    (tmp_path / "p").mkdir()
+    paused = _render_console_in_node(tmp_path, _pause_root(tmp_path / "p", dict(_PAUSE)))
+    assert "一時停止(データ停滞)" in paused["mainPill"] and "paused" in paused["mainPillClass"]
+    assert paused["pauseShown"] == "block"
+    assert "開始 2027-01-15 17:00:00(日本時間)" in paused["pauseBanner"]
+    assert "理由: 最後に市場データを受け取ってから 65 秒(上限 60 秒)" in paused["pauseBanner"]
+    assert "no ticker" not in paused["pauseBanner"]   # O-1: the English detail is not shown
+    assert ("一時停止のときの決済: 売り建玉 0.013 を最後に受け取った値段"
+            "(買値 10001000 / 売値 10002000)で決済しました") in paused["pauseBanner"]   # L-547
+    assert "新しいデータだけでできた足が 1 本完成したら自動で再開" in paused["pauseBanner"]
+    assert "キルスイッチではない" in paused["pauseBanner"]
+    assert paused["bannerShown"] == "none" and "Kill" not in paused["mainPill"]
+
+    (tmp_path / "k").mkdir()
+    killed = _render_console_in_node(tmp_path, _pause_root(tmp_path / "k", dict(_PAUSE), kill=True))
+    assert "停止(Kill)" in killed["mainPill"] and "一時停止" not in killed["mainPill"]
+    assert killed["bannerShown"] == "block" and "Kill Switch 発動中" in killed["banner"]
+    assert killed["pauseShown"] == "none"
+
+    (tmp_path / "r").mkdir()
+    running = _render_console_in_node(tmp_path, _pause_root(tmp_path / "r", None))
+    assert "稼働中" in running["mainPill"]
+    assert running["pauseShown"] == "none" and running["bannerShown"] == "none"
+
+
+# ---- バックテスト: 入れ子の集まり・.json.gz・複数の置き場 ---------------------
+def _fake_run(d, *, gz=True, purpose="研究", n=3):
+    import gzip
+
+    d.mkdir(parents=True)
+    (d / "record.json").write_text(json.dumps({
+        "purpose": purpose, "config": {"instrument": "XBTUSD"}, "setup": {"name": "s"}, "seed": None,
+        "currency": "USD", "data": [], "engine": {"first_time_ns": 1, "last_time_ns": 2}}), encoding="utf-8")
+    (d / "repro.json").write_text(json.dumps({"runs": 2, "identical": True, "sha256": {}}), encoding="utf-8")
+    metrics = {"purpose": "m", "data": {"trades": {"n": n, "per_trade_bp": [1.0] * n, "neg_frac": 0.0},
+                                        "pnl": {"realized": 1.5}}}
+    trades = {"purpose": "t", "data": [{"id": i, "side": "buy", "qty": 1, "pnl": 0.5} for i in range(n)]}
+    for name, doc in (("metrics", metrics), ("trades", trades)):
+        raw = json.dumps(doc).encode()
+        if gz:
+            (d / f"{name}.json.gz").write_bytes(gzip.compress(raw))
+        else:
+            (d / f"{name}.json").write_bytes(raw)
+
+
+def test_backtest_tab_finds_nested_collections_and_reads_gzipped_exports(tmp_path):
+    from bot.monitoring import backtest_view as BV
+
+    runs = tmp_path / "backtest_runs"
+    a, b, c = "a" * 64, "b" * 64, "c" * 64
+    _fake_run(runs / "k1_x" / a)
+    _fake_run(runs / "k1_y" / "pipeline" / b, gz=False, n=2)
+    _fake_run(runs / ".work-1" / c)              # an unfinished work dir is not a run
+    (runs / "k1_x" / ("d" * 64)).mkdir()          # no record / repro: unfinished
+    listed = {r["run_id"]: r for r in BV.list_runs(str(runs))}
+    assert set(listed) == {a, b}
+    assert listed[a]["group"] == "k1_x" and listed[a]["trades"] == 3
+    assert listed[b]["group"] == "k1_y/pipeline" and listed[b]["trades"] == 2
+    tabs = {t["label"]: t["text"] for t in BV.run_view(str(runs), a)["tabs"]}
+    assert "往復 3 件" in tabs["取引"] and "往復の数: 3" in tabs["概要"]
+
+
+def test_dashboard_reads_the_shared_place_beside_backtest_runs(tmp_path):
+    dash = _dashboard_module()
+    assert dash.BACKTEST_DIRS == ("backtest_runs", "backtest_runs_shared")
+    assert dash.Handler.backtest_runs_dir == dash.BACKTEST_DIRS
+    local, shared = tmp_path / "backtest_runs", tmp_path / "backtest_runs_shared"
+    a, b = "a" * 64, "b" * 64
+    _fake_run(local / a)
+    _fake_run(shared / "k1_newenv_g" / b)
+    h = dash.make_handler([str(local), str(shared)])
+    assert h.backtest_runs_dir == (str(local), str(shared))
+    status, _, body = dash._backtest("/api/backtest/runs", h.backtest_runs_dir)
+    got = {r["run_id"]: r["group"] for r in json.loads(body)["runs"]}
+    assert status == 200 and got == {a: "", b: "k1_newenv_g"}
+    status, _, body = dash._backtest(f"/api/backtest/run/{b}", h.backtest_runs_dir)
+    assert status == 200 and [t["label"] for t in json.loads(body)["tabs"]][0] == "概要"
+    status, _, _ = dash._backtest("/api/backtest/run/" + "e" * 64, h.backtest_runs_dir)
+    assert status == 404
+    # one directory as before (tests/bt/item_3/i3_driver.py)
+    assert dash.make_handler(str(local)).backtest_runs_dir == str(local)
+    page = dash.PAGE
+    assert "<th>集まり</th>" in page and "r.group" in page

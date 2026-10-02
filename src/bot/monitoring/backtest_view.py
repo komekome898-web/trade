@@ -8,12 +8,26 @@ with record.json, repro.json and the exports) and renders them on the
 server: every tab's HTML and its plain text are made here, so what the page
 shows is what the API serves (no chart library, no external URL).
 
-    list_runs(runs_dir)          -> [{run_id, purpose, instrument, setup, trades, ...}], newest first
+    list_runs(runs_dir)          -> [{run_id, purpose, instrument, setup, trades, group, ...}], newest first
     run_view(runs_dir, run_id)   -> {run_id, purpose, warning, tabs: [{label, text, html}], values}
     run_page(view)               -> a complete HTML page of one run (no script)
+
+`runs_dir` may be one directory or a list of them (the dashboard reads
+backtest_runs/ and the git-tracked backtest_runs_shared/ that
+scripts/share_backtest_runs.py fills). Runs are found directly under a
+directory and in its sub-directories down to SCAN_DEPTH levels (the research
+scripts write <runs_dir>/<collection>/<run_id>/ and
+<runs_dir>/<collection>/<sub>/<run_id>/); `group` is that sub-path ("" when the
+run sits directly under the directory). An export is read as <kind>.json or,
+when the run's script compressed it in place, <kind>.json.gz.
+
+The files a run's view reads (VIEW_FILES) are record.json, repro.json and the
+metrics / trades / data_quality / validation exports; fills and orders are
+not read by any tab.
 """
 from __future__ import annotations
 
+import gzip
 import html
 import json
 import os
@@ -24,6 +38,9 @@ TABS = ("概要", "前提", "損益", "取引", "約定の質", "費用", "分�
 SMOKE = "動作確認"
 WARNING = "動作確認の実行。相場の結論には使わない"
 _RUN_ID = re.compile(r"^[0-9a-f]{64}$")
+SCAN_DEPTH = 3  # <dir>/<run_id>, <dir>/<a>/<run_id>, <dir>/<a>/<b>/<run_id>
+EXPORTS_READ = ("metrics", "trades", "data_quality", "validation")
+VIEW_FILES = ("record.json", "repro.json") + tuple(f"{k}.json{z}" for k in EXPORTS_READ for z in ("", ".gz"))
 
 
 class BacktestViewError(ValueError):
@@ -31,45 +48,95 @@ class BacktestViewError(ValueError):
 
 
 def _load(path: str) -> Any:
-    with open(path, "r", encoding="utf-8") as fh:
+    op = gzip.open if path.endswith(".gz") else open
+    with op(path, "rt", encoding="utf-8") as fh:
         return json.load(fh)
 
 
-def _run_dir(runs_dir: str, run_id: str) -> str:
+def _export_path(d: str, kind: str) -> Optional[str]:
+    for name in (f"{kind}.json", f"{kind}.json.gz"):
+        p = os.path.join(d, name)
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+_TRADES_N: dict[tuple, Any] = {}  # (metrics path, mtime_ns, size) -> trades n: the list is polled, the files are big
+
+
+def _trades_n(d: str) -> Any:
+    p = _export_path(d, "metrics")
+    if p is None:
+        return None
+    st = os.stat(p)
+    key = (p, st.st_mtime_ns, st.st_size)
+    if key not in _TRADES_N:
+        _TRADES_N[key] = _load(p)["data"]["trades"].get("n")
+    return _TRADES_N[key]
+
+
+def _roots(runs_dir: Any) -> list[str]:
+    return [str(runs_dir)] if isinstance(runs_dir, (str, os.PathLike)) else [str(r) for r in runs_dir]
+
+
+def _finished(d: str) -> bool:
+    return os.path.isfile(os.path.join(d, "record.json")) and os.path.isfile(os.path.join(d, "repro.json"))
+
+
+def find_runs(runs_dir: Any) -> list[tuple[str, str, str]]:
+    """(run_id, run directory, group) of every finished run under the directories, first found wins for an id
+    (the roots in the order given; inside a root, shallower first, then by path)."""
+    out, seen = [], set()
+    for root in _roots(runs_dir):
+        if not os.path.isdir(root):
+            continue
+        level = [("", root)]
+        for _ in range(SCAN_DEPTH):
+            nxt = []
+            for group, d in level:
+                try:
+                    names = sorted(os.listdir(d))
+                except OSError:
+                    continue
+                for name in names:
+                    p = os.path.join(d, name)
+                    if not os.path.isdir(p):
+                        continue
+                    if _RUN_ID.match(name):
+                        if _finished(p) and name not in seen:
+                            seen.add(name)
+                            out.append((name, p, group))
+                    elif not name.startswith("."):
+                        nxt.append((f"{group}/{name}" if group else name, p))
+            level = nxt
+    return out
+
+
+def _run_dir(runs_dir: Any, run_id: str) -> str:
     if type(run_id) is not str or not _RUN_ID.match(run_id):
         raise BacktestViewError(f"not a run id: {run_id!r}")
-    d = os.path.join(runs_dir, run_id)
-    if not (os.path.isfile(os.path.join(d, "record.json")) and os.path.isfile(os.path.join(d, "repro.json"))):
-        raise BacktestViewError(f"no finished run {run_id}")
-    return d
+    for root in _roots(runs_dir):  # the plain <runs_dir>/<run_id> first, as before
+        d = os.path.join(root, run_id)
+        if _finished(d):
+            return d
+    for rid, d, _ in find_runs(runs_dir):
+        if rid == run_id:
+            return d
+    raise BacktestViewError(f"no finished run {run_id}")
 
 
-def list_runs(runs_dir: str) -> list[dict]:
+def list_runs(runs_dir: Any) -> list[dict]:
     """Finished runs, newest first (by the time record.json was written;
     run ids are content hashes, so their order says nothing), ties by id."""
+    found = []
+    for rid, d, group in find_runs(runs_dir):
+        found.append((-os.stat(os.path.join(d, "record.json")).st_mtime_ns, rid, d, group))
     out = []
-    if not os.path.isdir(runs_dir):
-        return out
-    names = []
-    for name in os.listdir(runs_dir):
-        try:
-            d = _run_dir(runs_dir, name)
-        except BacktestViewError:
-            continue
-        names.append((-os.stat(os.path.join(d, "record.json")).st_mtime_ns, name))
-    for _, name in sorted(names):
-        try:
-            d = _run_dir(runs_dir, name)
-        except BacktestViewError:
-            continue
+    for _, name, d, group in sorted(found):
         rec = _load(os.path.join(d, "record.json"))
-        n = None
-        mp = os.path.join(d, "metrics.json")
-        if os.path.isfile(mp):
-            n = _load(mp)["data"]["trades"].get("n")
         out.append({"run_id": name, "purpose": rec.get("purpose"), "instrument": (rec.get("config") or {}).get("instrument"),
-                    "setup": (rec.get("setup") or {}).get("name"), "seed": rec.get("seed"), "trades": n,
-                    "git_sha": rec.get("git_sha")})
+                    "setup": (rec.get("setup") or {}).get("name"), "seed": rec.get("seed"), "trades": _trades_n(d),
+                    "git_sha": rec.get("git_sha"), "group": group})
     return out
 
 
@@ -96,8 +163,8 @@ def _kv(pairs: list[tuple[str, Any]]) -> tuple[str, str]:
 
 
 def _export(d: str, kind: str) -> Optional[Any]:
-    p = os.path.join(d, f"{kind}.json")
-    return _load(p)["data"] if os.path.isfile(p) else None
+    p = _export_path(d, kind)
+    return _load(p)["data"] if p is not None else None
 
 
 NO_CURRENCY = "通貨の記録なし"
@@ -121,7 +188,7 @@ def _unit(ccy: Optional[str]) -> str:
     return "(円)" if ccy == "JPY" else f"({ccy})"
 
 
-def run_view(runs_dir: str, run_id: str) -> dict:
+def run_view(runs_dir: Any, run_id: str) -> dict:
     d = _run_dir(runs_dir, run_id)
     rec = _load(os.path.join(d, "record.json"))
     repro = _load(os.path.join(d, "repro.json"))

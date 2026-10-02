@@ -10,10 +10,13 @@ so the page renders offline exactly as it did before they existed. Worst case
 they add 2 requests per PUBLIC_TTL seconds (0.4 req/s) against the 500 per
 5 minutes per-IP public budget the bot also draws on.
 
-Usage: python scripts/dashboard.py [--port 8300] [--runs-dir backtest_runs]
+Usage: python scripts/dashboard.py [--port 8300] [--runs-dir DIR ...]
 
-The バックテスト tab lists the runs bot.bt.repro wrote under --runs-dir and
-shows each run's tabs, rendered on the server (src/bot/monitoring/backtest_view.py).
+The バックテスト tab lists the runs bot.bt.repro wrote under each --runs-dir
+(repeatable; default backtest_runs and backtest_runs_shared) and shows each
+run's tabs, rendered on the server (src/bot/monitoring/backtest_view.py).
+backtest_runs/ is not in git, so a machine that only pulls the repository sees
+the runs scripts/share_backtest_runs.py copied into backtest_runs_shared/.
 """
 from __future__ import annotations
 
@@ -36,6 +39,8 @@ from bot.monitoring.market_view import (  # noqa: E402
 from bot.monitoring import backtest_view  # noqa: E402
 
 BACKTEST_RUNS_DIR = "backtest_runs"  # bot.bt.repro writes <runs_dir>/<run_id>/
+BACKTEST_SHARED_DIR = "backtest_runs_shared"  # git-tracked copies (scripts/share_backtest_runs.py)
+BACKTEST_DIRS = (BACKTEST_RUNS_DIR, BACKTEST_SHARED_DIR)
 
 PAGE = """<!doctype html>
 <html lang="ja"><head>
@@ -75,6 +80,7 @@ PAGE = """<!doctype html>
   .pill.down i, .pill.missing i, .pill.killed i { background: var(--crit); }
   .pill.down, .pill.missing, .pill.killed { color: var(--crit); }
   .pill.retired i { background: var(--muted); } .pill.retired { color: var(--muted); }
+  .pill.paused i { background: var(--warn); } .pill.paused { color: var(--warn); border-color: var(--warn); }
   #updated { margin-left: auto; color: var(--muted); font-size: 12px; }
   main { padding: 20px; max-width: 1200px; margin: 0 auto;
          display: flex; flex-direction: column; gap: 20px; }
@@ -83,6 +89,7 @@ PAGE = """<!doctype html>
     border: 1px solid var(--crit); border-radius: 8px; padding: 12px 16px;
     display: none;
   }
+  .banner.pause { background: color-mix(in srgb, var(--warn) 16%, var(--panel)); border-color: var(--warn); }
   /* 168px, not 150: the widest tile value (ポジション: LONG 0.013 @ 11,234,567)
      is auto-shrunk to fit the NARROWEST tile, and at 150px that dropped it to
      ~12px. See TILE_W in the script — the two numbers are one decision. */
@@ -212,6 +219,7 @@ PAGE = """<!doctype html>
 </nav>
 <main id="view-console">
   <div class="banner" id="banner"></div>
+  <div class="banner pause" id="pause-banner"></div>
   <div class="tiles" id="tiles"></div>
 
   <div class="group-h">1. データ蓄積</div>
@@ -275,7 +283,8 @@ PAGE = """<!doctype html>
 <script>
 const fmt = (v, d=1) => v == null ? "—" : Number(v).toLocaleString("ja-JP", {maximumFractionDigits: d});
 const age = s => s == null ? "—" : s < 90 ? `${Math.round(s)}秒前` : s < 5400 ? `${Math.round(s/60)}分前` : `${(s/3600).toFixed(1)}時間前`;
-const stateLabel = {ok: "稼働中", warn: "遅延", down: "停止?", missing: "未起動", killed: "停止(Kill)", retired: "退役"};
+const stateLabel = {ok: "稼働中", warn: "遅延", down: "停止?", missing: "未起動", killed: "停止(Kill)", retired: "退役",
+                    paused: "一時停止(データ停滞)"};
 
 function setPill(id, name, comp) {
   const el = document.getElementById(id);
@@ -589,6 +598,18 @@ async function refresh() {
       (d.kill_switch ? `${d.kill_switch.reason} — ${d.kill_switch.detail || ""}` : "手動KILLファイル");
   } else banner.style.display = "none";
 
+  // データ停滞の一時停止(PAPER のみ、L-544)。キルスイッチとは別の帯: 何も永続化
+  // されず、新しいデータだけでできた足が 1 本完成したら自動で再開する。
+  const pb = document.getElementById("pause-banner");
+  const sp = d.data_stale_pause;
+  if (sp) {
+    pb.style.display = "block";
+    pb.textContent = "⏸ メインBOT 一時停止(データ停滞・キルスイッチではない): " +
+      `開始 ${sp.since_jst || "—"}(日本時間) / 理由: ${sp.detail_ja || "—"} / ` +
+      `一時停止のときの決済: ${sp.closed || "(status.json に記録が無い)"} / ` +
+      `再開の条件: ${sp.resume_condition}`;
+  } else pb.style.display = "none";
+
   const b = d.bot || {};
   document.getElementById("tiles").innerHTML =
     // 成績タイル(仮想残高・本日/累積損益・最大DD・約定回数)は 2026-09-08 の
@@ -747,9 +768,9 @@ function loadBacktestRuns() {
   return fetch("/api/backtest/runs").then(r => r.json()).then(d => {
     const rows = (d.runs || []).map(r =>
       `<tr class="bt-row" onclick="openBacktestRun('${btEsc(r.run_id)}')"><td class="mono">${btEsc(r.run_id.slice(0, 12))}</td>` +
-      `<td>${btEsc(r.purpose)}</td><td>${btEsc(r.instrument)}</td><td>${btEsc(r.setup)}</td><td>${btEsc(r.trades)}</td></tr>`);
+      `<td>${btEsc(r.group || "")}</td><td>${btEsc(r.purpose)}</td><td>${btEsc(r.instrument)}</td><td>${btEsc(r.setup)}</td><td>${btEsc(r.trades)}</td></tr>`);
     document.getElementById("bt-list").innerHTML = rows.length
-      ? `<table><tr><th>実行 ID</th><th>目的</th><th>商品</th><th>手順</th><th>往復</th></tr>${rows.join("")}</table>`
+      ? `<table><tr><th>実行 ID</th><th>集まり</th><th>目的</th><th>商品</th><th>手順</th><th>往復</th></tr>${rows.join("")}</table>`
       : '<span class="empty">実行がまだ無い</span>';
   });
 }
@@ -1406,7 +1427,7 @@ def market_body(root: str = ".", now: float | None = None) -> bytes:
         return json.dumps(cached).encode()
 
 
-def _backtest(path: str, runs_dir: str):
+def _backtest(path: str, runs_dir):
     """(status, content type, body) for the バックテスト routes, or None."""
     route = path.split("?", 1)[0]
     try:
@@ -1425,7 +1446,7 @@ def _backtest(path: str, runs_dir: str):
 
 
 class Handler(BaseHTTPRequestHandler):
-    backtest_runs_dir = BACKTEST_RUNS_DIR
+    backtest_runs_dir = BACKTEST_DIRS
 
     def do_GET(self):
         bt = _backtest(self.path, self.backtest_runs_dir)
@@ -1462,18 +1483,32 @@ class Handler(BaseHTTPRequestHandler):
         pass  # keep the console quiet
 
 
-def make_handler(runs_dir: str) -> type:
-    """A Handler whose バックテスト tab reads `runs_dir`."""
-    return type("BacktestHandler", (Handler,), {"backtest_runs_dir": str(runs_dir)})
+def make_handler(runs_dir) -> type:
+    """A Handler whose バックテスト tab reads `runs_dir` (one directory or several)."""
+    dirs = str(runs_dir) if isinstance(runs_dir, (str, Path)) else tuple(str(d) for d in runs_dir)
+    return type("BacktestHandler", (Handler,), {"backtest_runs_dir": dirs})
+
+
+def _warm_backtest_list(runs_dirs) -> None:
+    """Read every run's trade count once at start (backtest_view caches it), so the first click of the
+    tab does not wait for it. Measured 2026-10-02 in the dev container on the 430 runs of backtest_runs/:
+    the first listing took 10.18 s, the second (cached) 0.03 s; a colder disk can take longer."""
+    try:
+        backtest_view.list_runs(runs_dirs)
+    except Exception:  # noqa: BLE001 -- a warm-up must not stop the dashboard; the tab reports its own error
+        pass
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8300)
-    ap.add_argument("--runs-dir", default=BACKTEST_RUNS_DIR,
-                    help="where bot.bt.repro wrote the backtest runs (the バックテスト tab)")
+    ap.add_argument("--runs-dir", action="append", default=None,
+                    help="where the backtest runs are (the バックテスト tab); repeatable. "
+                         f"Default: {' and '.join(BACKTEST_DIRS)}")
     args = ap.parse_args()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(args.runs_dir))
+    runs_dirs = tuple(args.runs_dir) if args.runs_dir else BACKTEST_DIRS
+    threading.Thread(target=_warm_backtest_list, args=(runs_dirs,), daemon=True).start()
+    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(runs_dirs))
     print(f"dashboard: http://127.0.0.1:{args.port}  (Ctrl+C to stop)", flush=True)
     try:
         server.serve_forever()
