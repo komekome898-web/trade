@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-21T03:17:38.726861+00:00",
+  "generated_at": "2026-10-01T21:08:06.952741+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -520,6 +520,146 @@
     {
       "unit": "auto_okx_open_interest_5m_20260921",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260921\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260922",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260922\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260923",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260923\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260924",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260924\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260925",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260925\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260926",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260926\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260927",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260927\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260928",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260928\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260929",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260929\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20260930",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20260930\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261001",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261001\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -3900,14 +4040,13 @@
       "unit": "o3c_oi_distance_split_20260918",
       "md5sums_path": "backtest_data\\o3c_oi_distance_split_20260918\\MD5SUMS",
       "file_count": 4,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 4,
+      "matched": 4,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 4
+      "extra": []
     },
     {
       "unit": "o3c_price_level_band_20260917",
@@ -4083,14 +4222,13 @@
       "unit": "o3c_reaction_20260918_full",
       "md5sums_path": "backtest_data\\o3c_reaction_20260918_full\\MD5SUMS",
       "file_count": 19,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 19,
+      "matched": 19,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 19
+      "extra": []
     },
     {
       "unit": "o3c_reaction_20260918_judge",
@@ -4108,14 +4246,13 @@
       "unit": "o3c_reaction_20260918_sample",
       "md5sums_path": "backtest_data\\o3c_reaction_20260918_sample\\MD5SUMS",
       "file_count": 12,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 12,
+      "matched": 12,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 12
+      "extra": []
     },
     {
       "unit": "o3c_reaction_20260918_scale12_judgmentdays",
@@ -4246,14 +4383,13 @@
       "unit": "o3c_signal_policy_20260920",
       "md5sums_path": "backtest_data\\o3c_signal_policy_20260920\\MD5SUMS",
       "file_count": 17,
-      "status": "newly_sealed",
-      "checked": 0,
-      "matched": 0,
+      "status": "verified",
+      "checked": 17,
+      "matched": 17,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
-      "extra": [],
-      "sealed_file_count": 17
+      "extra": []
     },
     {
       "unit": "okx_20260905",
@@ -5064,19 +5200,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6514,
+    "checked": 6534,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 115,
-    "verified": 82,
+    "unit_count": 125,
+    "verified": 96,
     "verified_line_ending_only": 21,
-    "newly_sealed": 4,
+    "newly_sealed": 0,
     "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
     "total_missing": 1567,
-    "total_extra_untracked": 1321,
+    "total_extra_untracked": 1331,
     "ledger_mismatches": 0
   },
   "ok": false
