@@ -47,7 +47,7 @@ for w in (10, 20, 40, 80, 160):
                 RUNS.append((f"A3_w{w}_b{b}_{r}", "A3",
                              ["--window-min", str(w), "--bar-min", str(b), "--range-from", r]))
 # A4 幅の門(門を外した 1 本。十分位の曲線は analysis.json の width/終値 で読む)
-RUNS.append(("A4_nogate", "A4", ["--width-gate", "false"]))
+RUNS.append(("A4_nogate", "A4", ["--width-gate", "False"]))
 # A5 回転(緩め 1 分・成行 2 分)
 RUNS.append(("A5_alert1", "A5", ["--alert-min", "1"]))
 # B1 止める合図(ブレイクの判定の遅れ。比の十分位の曲線は analysis.json の比で読む)
