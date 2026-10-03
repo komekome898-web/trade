@@ -1,0 +1,94 @@
+{
+ "作る日": [
+  "2023-06-25",
+  "2024-02-18"
+ ],
+ "測る日": [
+  "2024-02-19",
+  "2024-10-14"
+ ],
+ "材料": [
+  "mat1_same_side_count_60s_and_elapsed",
+  "mat2_interval_ratio_last_two",
+  "mat3_notional_and_ratio_to_previous",
+  "mat4_move_since_cascade_start_and_bounce",
+  "mat5_distance_to_liquidation_node",
+  "mat8_open_interest_mass_ahead",
+  "mat9_taker_imbalance_5s",
+  "mat10_oi_slope_and_funding",
+  "mat11_notional_over_60s_range",
+  "mat12_notional_over_max_recent_print",
+  "mat13_taker_imbalance_trend",
+  "mat14_trade_count_60s",
+  "mat15_burst_ratio_10s_over_60s"
+ ],
+ "ラベル": "cont_60",
+ "場面": {
+  "1件目": {
+   "件数(作る)": 9475,
+   "基準率(作る)": 0.4378891820580475,
+   "分割数": 5,
+   "わからないの帯": [
+    0.42,
+    0.48
+   ],
+   "基準率を跨ぐ帯": [
+    0.42,
+    0.44
+   ],
+   "係数": {
+    "切片": -1.1408891363543052,
+    "mat1_same_side_count_60s_and_elapsed": 0.0,
+    "mat2_interval_ratio_last_two": 0.09803772927208045,
+    "mat3_notional_and_ratio_to_previous": 0.008690532017478731,
+    "mat4_move_since_cascade_start_and_bounce": 0.0,
+    "mat5_distance_to_liquidation_node": 0.37683971442412484,
+    "mat8_open_interest_mass_ahead": -1.324156103254307,
+    "mat9_taker_imbalance_5s": 0.12726315364443164,
+    "mat10_oi_slope_and_funding": 0.15681089878978102,
+    "mat11_notional_over_60s_range": -0.08091223580916312,
+    "mat12_notional_over_max_recent_print": 0.0,
+    "mat13_taker_imbalance_trend": 0.17019146013677108,
+    "mat14_trade_count_60s": 1.6987686910640856,
+    "mat15_burst_ratio_10s_over_60s": 0.49297779203200814
+   }
+  },
+  "連鎖の中": {
+   "件数(作る)": 13300,
+   "基準率(作る)": 0.6880451127819549,
+   "分割数": 5,
+   "わからないの帯": [
+    0.68,
+    0.7
+   ],
+   "基準率を跨ぐ帯": [
+    0.7,
+    0.72
+   ],
+   "係数": {
+    "切片": -0.21185223358619132,
+    "mat1_same_side_count_60s_and_elapsed": 0.21390552177711164,
+    "mat2_interval_ratio_last_two": -0.13943160856968123,
+    "mat3_notional_and_ratio_to_previous": -0.10784157163375757,
+    "mat4_move_since_cascade_start_and_bounce": 0.635087009049602,
+    "mat5_distance_to_liquidation_node": 0.35394195992097793,
+    "mat8_open_interest_mass_ahead": -1.2111064067123014,
+    "mat9_taker_imbalance_5s": 0.2720097860194458,
+    "mat10_oi_slope_and_funding": 0.20034159088598574,
+    "mat11_notional_over_60s_range": -0.1807890346620209,
+    "mat12_notional_over_max_recent_print": 0.02892362071499831,
+    "mat13_taker_imbalance_trend": 0.3743888475377682,
+    "mat14_trade_count_60s": 1.114733468848946,
+    "mat15_burst_ratio_10s_over_60s": 0.6086830913312431
+   }
+  }
+ },
+ "判断の件数(プリント)": {
+  "作る_止まる": 10298,
+  "作る_わからない": 1736,
+  "作る_続く": 10741,
+  "測る_止まる": 10252,
+  "測る_わからない": 2774,
+  "測る_続く": 17597
+ }
+}
