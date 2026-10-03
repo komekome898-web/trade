@@ -20549,9 +20549,12 @@
   {
    "move": 755,
    "tools": {
-    "Bash": 18
+    "Bash": 26,
+    "Read": 1,
+    "ToolSearch": 1,
+    "SendMessage": 1
    },
-   "n_tools": 18,
+   "n_tools": 29,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
