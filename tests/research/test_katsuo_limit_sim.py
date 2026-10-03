@@ -19,7 +19,7 @@ from bot.research.cards import run_card
 from bot.research.cards.library.c2_owner_xvenue_wick import ROW_LAG_NS, SERIES_SPOT, C2OwnerXvenueWick
 from bot.research.katsuo_limit_sim import (EXIT_CLOSE, EXIT_DOTEN, EXIT_END, EXIT_LIMIT, EXIT_SL1, EXIT_SL2, EXIT_SM,
                                            STRONG, WEAK, XSIG_LINE, XSIG_WEAK, KatsuoLimitSim, action, k1_signal,
-                                           tercile)
+                                           tercile, tick_down, tick_up)
 
 NS = 1_000_000_000
 M = 60 * NS
@@ -83,9 +83,13 @@ def short_half(s):
 
 
 def exit_prices(x, c_ov, d):
+    """降りる 4 本の値段(1 円刻み、自分に不利な側: 降りる注文は −d の向き。指値は売り切り下げ・買い切り上げ、
+    引き金は売りのストップ切り上げ・買いのストップ切り下げ)。u は丸める前の 1 ドルの幅。"""
     u = x / c_ov
-    return {"u": u, "x": x, "t1": x - d * 1.5 * u, "l1": x - d * 1.0 * u, "t2": x - d * 3.5 * u,
-            "l2": x - d * 3.0 * u, "t3": x - d * 5.0 * u}
+    lim = tick_down if d == 1 else tick_up
+    trg = tick_up if d == 1 else tick_down
+    return {"u": u, "x": x, "t1": trg(x - d * 1.5 * u), "l1": lim(x - d * 1.0 * u), "t2": trg(x - d * 3.5 * u),
+            "l2": lim(x - d * 3.0 * u), "t3": trg(x - d * 5.0 * u)}
 
 
 # ---------------------------------------------------------------- 仕様 3-1: 入り 2 本
@@ -94,7 +98,7 @@ def test_entry_buy_two_orders_prices_and_sizes():
     step(s, 0, ref=BUY)
     assert s._orders == []  # 合図の行は分 1 の頭まで使えない
     step(s, 1)  # 分 1 の頭で注文。分 1 の足は安値 = P(等号なし)なので約定しない
-    assert orders(s) == [("ent1", 1, 0.5, P, None, False), ("ent2", 1, 0.5, P * (1 - R_BUY / 2), None, False)]
+    assert orders(s) == [("ent1", 1, 0.5, P, None, False), ("ent2", 1, 0.5, tick_up(P * (1 - R_BUY / 2)), None, False)]
     assert s._pos == 0.0
 
 
@@ -102,7 +106,7 @@ def test_entry_sell_two_orders_prices_and_sizes():
     s = sim()
     step(s, 0, ref=SELL)
     step(s, 1)
-    assert orders(s) == [("ent1", -1, 0.5, P, None, False), ("ent2", -1, 0.5, P * (1 + R_SELL / 2), None, False)]
+    assert orders(s) == [("ent1", -1, 0.5, P, None, False), ("ent2", -1, 0.5, tick_down(P * (1 + R_SELL / 2)), None, False)]
 
 
 def test_p1_is_the_close_of_the_bar_just_before_t():
@@ -132,7 +136,7 @@ def test_fill_is_strict_and_at_the_order_price():
 def test_orders_rest_until_the_next_order_and_are_cancelled_by_it():
     s = sim()
     i = long_half(s)
-    p2 = P * (1 - R_BUY / 2)
+    p2 = tick_up(P * (1 - R_BUY / 2))
     for k in range(i, i + 5):  # 期限は無い。2 本目は残る
         step(s, k, lo=P - 1)
     assert orders(s) == [("ent2", 1, 0.5, p2, None, False)]
@@ -141,7 +145,7 @@ def test_orders_rest_until_the_next_order_and_are_cancelled_by_it():
     assert orders(s) == [("ent2", 1, 0.5, p2, None, False)]
     step(s, i + 7, ref=SELL)
     step(s, i + 8)  # 売りの合図: 全部取り消して売りの 2 本(ドテンの量)
-    assert orders(s) == [("ent1", -1, 1.0, P, None, False), ("ent2", -1, 0.5, P * (1 + R_SELL / 2), None, False)]
+    assert orders(s) == [("ent1", -1, 1.0, P, None, False), ("ent2", -1, 0.5, tick_down(P * (1 + R_SELL / 2)), None, False)]
 
 
 # ---------------------------------------------------------------- 仕様 3-1: 増し玉と上限
@@ -181,7 +185,7 @@ def test_doten_size_and_trade_boundary():
     i = short_half(s)
     step(s, i, c=P - 200, ref=BUY)
     step(s, i + 1, o=P - 200)
-    assert orders(s) == [("ent1", 1, 1.0, P - 200, None, False), ("ent2", 1, 0.5, (P - 200) * (1 - R_BUY / 2), None, False)]
+    assert orders(s) == [("ent1", 1, 1.0, P - 200, None, False), ("ent2", 1, 0.5, tick_up((P - 200) * (1 - R_BUY / 2)), None, False)]
     rows = step(s, i + 2, o=P - 200, lo=P - 201)
     assert len(rows) == 1
     r = rows[0]
@@ -198,15 +202,15 @@ def test_opposite_signal_at_max(at_max):
     s = sim(at_max=at_max)
     step(s, 0, ref=BUY)
     step(s, 1)
-    step(s, 2, lo=P * (1 - R_BUY / 2) - 1, c=P)  # 2 本とも約定 → 買い 1
+    step(s, 2, lo=tick_up(P * (1 - R_BUY / 2)) - 1, c=P)  # 2 本とも約定 → 買い 1
     assert s._pos == 1.0 and s._orders == []
     step(s, 3, ref=SELL)
     step(s, 4)
     if at_max == "skip":
         assert s._orders == [] and s.decisions["skip_at_max_opposite"] == 1
     else:
-        assert orders(s) == [("ent1", -1, 1.5, P, None, False), ("ent2", -1, 0.5, P * (1 + R_SELL / 2), None, False)]
-        rows = step(s, 5, h=P * (1 + R_SELL / 2) + 1)  # 2 本とも約定 → 売り 1
+        assert orders(s) == [("ent1", -1, 1.5, P, None, False), ("ent2", -1, 0.5, tick_down(P * (1 + R_SELL / 2)), None, False)]
+        rows = step(s, 5, h=tick_down(P * (1 + R_SELL / 2)) + 1)  # 2 本とも約定 → 売り 1
         assert s._pos == -1.0 and rows[0]["exit_reason"] == EXIT_DOTEN and rows[0]["max_size"] == 1.0
 
 
@@ -294,7 +298,7 @@ def test_stop_limit_2_and_stop_market():
     step(s, i, ref=UPB)
     step(s, i + 1)
     rows = step(s, i + 2, o=P - 1.2 * u, lo=P - 6 * u, c=P - 6 * u)
-    assert [(r["exit_reason"], r["exit_price"], r["undecided"]) for r in rows] == [(EXIT_SM, e["t3"], 0)]
+    assert [(r["exit_reason"], r["exit_price"], r["undecided"]) for r in rows] == [(EXIT_SM, e["t3"] - 1, 0)]
 
 
 def test_short_exit_stop_limit_is_mirrored():
@@ -331,14 +335,43 @@ def test_head_stop_market_fills_at_the_open_when_open_is_beyond():
     assert [(r["exit_reason"], r["exit_price"], r["undecided"]) for r in rows] == [(EXIT_SM, P - 10 * e["u"], 0)]
 
 
-def test_in_bar_stop_market_fills_at_the_trigger():
+def test_in_bar_stop_market_fills_one_yen_beyond_the_trigger():
+    """足の中で引き金を越えたストップ成行は、丸めた引き金の 1 円向こう(売りのストップ −1 円、買いのストップ +1 円)。
+    足の値段は 1 円刻み・判定は等号なしなので、引き金を越えた最初の値段がそこ。"""
     s = sim()
     i = long_half(s)
     step(s, i, ref=UPB)
     step(s, i + 1)
     e = exit_prices(P, Q + 10, 1)
-    rows = step(s, i + 2, o=P - 1.2 * e["u"], lo=P - 11 * e["u"], c=P - 11 * e["u"])
-    assert [(r["exit_reason"], r["exit_price"]) for r in rows] == [(EXIT_SM, e["t3"])]
+    rows = step(s, i + 2, o=round(P - 1.2 * e["u"]), lo=round(P - 11 * e["u"]), c=round(P - 11 * e["u"]))
+    assert [(r["exit_reason"], r["exit_price"]) for r in rows] == [(EXIT_SM, e["t3"] - 1)]
+    s = sim()
+    i = short_half(s)
+    step(s, i, ref=DNB)
+    step(s, i + 1)
+    e = exit_prices(P, Q - 10, -1)
+    rows = step(s, i + 2, o=round(P + 1.2 * e["u"]), h=round(P + 11 * e["u"]), c=round(P + 11 * e["u"]))
+    assert [(r["side"], r["exit_reason"], r["exit_price"]) for r in rows] == [(-1, EXIT_SM, e["t3"] + 1)]
+
+
+@pytest.mark.parametrize("d", [1, -1])
+@pytest.mark.parametrize("c_ov", [Q + 10, Q + 3.7, Q + 17.3, 2 * Q, 4321.0])
+def test_in_bar_stop_market_fill_is_on_the_unfavorable_side_of_the_unrounded_trigger(d, c_ov):
+    """約定の値段は、丸める前の引き金(X − d × 5 ドルの幅)より自分に不利な側(買い持ちなら下、売り持ちなら上)。
+    1 円の幅の 1 円未満の端数をいくつか変えて見る。"""
+    s = sim()
+    i = long_half(s) if d == 1 else short_half(s)
+    shape = (Q, Q + 40, Q, Q + 10) if d == 1 else (Q, Q, Q - 40, Q - 10)
+    k = c_ov / shape[3]  # 終値が c_ov になるように海外の足を拡大する
+    step(s, i, ref=tuple(x * k for x in shape))
+    step(s, i + 1)
+    raw = P - d * 5.0 * P / c_ov
+    far = round(P - d * 20.0 * P / c_ov)
+    rows = step(s, i + 2, o=round(P - d * 1.2 * P / c_ov), h=None if d == 1 else far, lo=far if d == 1 else None,
+                c=far)
+    assert len(rows) == 1 and rows[0]["exit_reason"] == EXIT_SM
+    px = rows[0]["exit_price"]
+    assert float(px).is_integer() and d * (raw - px) > 0
 
 
 @pytest.mark.parametrize("fill_side", ["good", "bad"])
@@ -359,7 +392,7 @@ def test_head_entry_both_orders_below_open_fill_at_their_prices():
     s = sim()
     step(s, 0, ref=BUY)
     step(s, 1)
-    p2 = P * (1 - R_BUY / 2)
+    p2 = tick_up(P * (1 - R_BUY / 2))
     step(s, 2, o=p2 - 100, lo=p2 - 110)
     assert s._pos == 1.0 and s._trade["avg"] == (P + p2) / 2
     assert [x[3] for x in s.order_log] == [T0 + 3 * M, T0 + 3 * M]
@@ -424,7 +457,7 @@ def test_entry_bars_are_never_undecided():
     s = sim(fill_side="bad")
     step(s, 0, ref=BUY)
     step(s, 1)
-    p2 = P * (1 - R_BUY / 2)
+    p2 = tick_up(P * (1 - R_BUY / 2))
     step(s, 2, o=P + 10, h=P + 3000, lo=p2 - 1, c=P)
     assert s._pos == 1.0 and s.undecided_bars == 0
 
@@ -434,7 +467,7 @@ def test_pnl_weighted_entry_and_signal_columns():
     s = sim()
     step(s, 0, ref=BUY_SMALL)
     step(s, 1)
-    p2 = P * (1 - 30 / (Q + 10) / 2)  # r = |終値 − 先端| / 終値 = (Q + 10 − (Q − 20)) / (Q + 10)
+    p2 = tick_up(P * (1 - 30 / (Q + 10) / 2))  # r = |終値 − 先端| / 終値 = (Q + 10 − (Q − 20)) / (Q + 10)
     step(s, 2, lo=P - 1)
     step(s, 3, lo=p2 - 1, c=P)
     assert s._pos == 1.0
@@ -470,9 +503,9 @@ def _walk(n, seed, t0, vol0=53):
         lo = min(o, c) - (rnd.uniform(0, 40) if rnd.random() < 0.4 else rnd.uniform(0, 3))
         refs.append((t0 + i * M, o, h, lo, c))
         q = c
-        o = p
-        c = o + rnd.uniform(-1500, 1500)
-        bars.append(bar(i, o, max(o, c) + rnd.uniform(0, 1500), min(o, c) - rnd.uniform(0, 1500), c,
+        o = p  # bitFlyer の値段は 1 円刻み(L-595)
+        c = o + round(rnd.uniform(-1500, 1500))
+        bars.append(bar(i, o, max(o, c) + round(rnd.uniform(0, 1500)), min(o, c) - round(rnd.uniform(0, 1500)), c,
                         vol=0.0 if i % vol0 == 7 else 1.0, t0=t0))
         p = c
     return refs, bars
@@ -817,7 +850,7 @@ def test_k1_entry_forms(entry):
     for i in range(16):
         s.feed(bar(i))
     r = 30 / (Q + 10)  # |終値 Q + 10 − 先端 Q + 40| / 終値
-    p2 = P * (1 + r / 2)
+    p2 = tick_down(P * (1 + r / 2))
     if entry == "a":
         assert s._orders == []  # H3: 次の足の区切り(T0+30分)まで待つ
         for i in range(16, 31):
@@ -1108,3 +1141,83 @@ def test_k1_chunked_by_calendar_year_equals_one_pass(entry, fill, gate):
         r2 += [r for b in bars if lo_ <= b.start_time_ns < hi_ for r in two.feed(b)]
     r2 += two.finish()
     assert len(r1) > 10 and r1 == r2 and one.order_log == two.order_log and one.action_log == two.action_log
+
+
+# ---------------------------------------------------------------- 値段の刻み(L-595: bitFlyer は 1 円刻み)
+def test_tick_rounding_helpers_and_float_error():
+    assert tick_up(998001.2) == 998002.0 and tick_down(998001.8) == 998001.0
+    assert tick_up(1_000_000.0000000001) == 1_000_000.0 and tick_down(999_999.9999999999) == 1_000_000.0  # 誤差は整数
+    assert tick_up(-0.5) == 0.0 and tick_down(7.0) == 7.0
+
+
+def test_order_prices_are_rounded_to_the_unfavorable_side():
+    """買いの指値は切り上げ・売りの指値は切り下げ。売りのストップの引き金は切り上げ・買いのストップは切り下げ。"""
+    s = sim()
+    step(s, 0, ref=BUY)
+    step(s, 1)
+    assert s._orders[1].price == math.ceil(P * (1 - R_BUY / 2)) and s._orders[1].price != P * (1 - R_BUY / 2)
+    s = sim()
+    step(s, 0, ref=SELL)
+    step(s, 1)
+    assert s._orders[1].price == math.floor(P * (1 + R_SELL / 2)) and s._orders[1].price != P * (1 + R_SELL / 2)
+    s = sim()
+    i = long_half(s)
+    step(s, i, ref=UPB)
+    step(s, i + 1)
+    u = P / (Q + 10)
+    lim = {o.kind: (o.side, o.price, o.trig) for o in s._orders}
+    assert lim["x_lim"] == (-1, P, None)
+    assert lim["x_sl1"] == (-1, math.floor(P - 1.0 * u), math.ceil(P - 1.5 * u))  # 売り: 指値 ↓、引き金 ↑
+    assert lim["x_sl2"] == (-1, math.floor(P - 3.0 * u), math.ceil(P - 3.5 * u))
+    assert lim["x_sm"] == (-1, None, math.ceil(P - 5.0 * u))
+    s = sim()
+    i = short_half(s)
+    step(s, i, ref=DNB)
+    step(s, i + 1)
+    u = P / (Q - 10)
+    lim = {o.kind: (o.side, o.price, o.trig) for o in s._orders}
+    assert lim["x_sl1"] == (1, math.ceil(P + 1.0 * u), math.floor(P + 1.5 * u))  # 買い: 指値 ↑、引き金 ↓
+    assert lim["x_sl2"] == (1, math.ceil(P + 3.0 * u), math.floor(P + 3.5 * u))
+    assert lim["x_sm"] == (1, None, math.floor(P + 5.0 * u))
+
+
+def test_fill_is_judged_on_the_rounded_price():
+    """買いの半値: 丸める前 P2、丸めた後 ceil(P2)。安値が P2 と ceil(P2) の間なら、丸めた値段で約定を判定するので約定し、
+    約定の値段は ceil(P2)。(bitFlyer の 4 本値は整数なので、実データでは約定するかどうかは丸めで変わらず、約定の
+    値段だけが自分に不利な側へ 1 円未満動く。ここでは判定に丸めた値段を使うことを見るために端数の安値を置く)"""
+    raw = P * (1 - R_BUY / 2)
+    s = sim()
+    step(s, 0, ref=BUY)
+    step(s, 1)
+    step(s, 2, o=P + 5, lo=(raw + math.ceil(raw)) / 2, c=P + 1)  # 1 本目(P)も約定する
+    assert s._pos == 1.0 and s.order_log[1][3] == T0 + 3 * M
+    assert s._trade["avg"] == (P + math.ceil(raw)) / 2  # 建値は平均(端数が残りうる)
+    s = sim()
+    step(s, 0, ref=BUY)
+    step(s, 1)
+    step(s, 2, o=P + 5, lo=math.ceil(raw), c=P + 1)  # 安値 = 丸めた値段: 等号なしで約定しない
+    assert s._pos == 0.5
+
+
+@pytest.mark.parametrize("kw", [{"design": "v03", "at_max": "flip"}, {"design": "k1", "entry": "a"},
+                                {"design": "k1", "entry": "b"}, {"design": "k1", "entry": "c"}])
+def test_no_fractional_prices_in_orders_or_fills(kw):
+    """1 円刻みの bitFlyer の足を通すと、置いた注文の値段・引き金と、取引の行の出の値段に端数が無い。建値は 1 本の
+    約定なら整数、2 本の平均なら 0.5 円刻み。"""
+    t0 = 1_546_300_800 * NS
+    refs = _k1_walk(6000, 51, t0=t0) if kw["design"] == "k1" else _walk(6000, 52, t0)[0]
+    _r, bars = _walk(6000, 53, t0)
+    s = KatsuoLimitSim(fill_side="bad", foot_min=15 if kw["design"] == "k1" else 1, **kw)
+    s.add_refs(refs)
+    rows, seen = [], 0
+    for b in bars:
+        rows += s.feed(b)
+        for o in s._orders:
+            for v in (o.price, o.trig):
+                if v is not None:
+                    assert float(v).is_integer(), (o.kind, v)
+                    seen += 1
+    rows += s.finish()
+    assert len(rows) > 10 and seen > 0
+    assert all(float(r["exit_price"]).is_integer() for r in rows)
+    assert all(float(r["entry_price"] * 2).is_integer() for r in rows)

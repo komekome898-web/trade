@@ -73,6 +73,20 @@ classify_detail と、カードの _apply と同じ分岐を使い、変える�
   ここでもそれを合図の足の vol_prev とする(合図の足が閉じた時点で分かる。先読みなし)。足が 101 本そろうまでは
   値なし(三分位なし、門では入らない)。三分位の切り方は bucket_of(v < q1 低い、v < q2 中、それ以外 高い)。
 
+値段の刻み(オーナー L-595「bitFlyerの値段に小数点があるのはタダのバグだから放置せず直して」)
+-----------------------------------------------------------------------------------------------
+bitFlyer FX_BTC_JPY の値段は 1 円刻み(1 分足の 4 本値に端数は無い)。bitFlyer に出す注文の値段は、置くとき(_order)に
+全部 1 円刻みに丸め、約定の判定も約定の値段も丸めた値段で行う。向きは自分に不利な側:
+  - 指値(入りの 1 本目・2 本目、降りる指値、ストップ指値の指値): 売りは切り下げ、買いは切り上げ。
+  - ストップの引き金(ストップ指値・ストップ成行): 引き金が早く引かれる側。売りのストップは切り上げ、買いのストップは
+    切り下げ。
+  - ストップ成行の約定の値段: 足の中で引き金を越えたときは、丸めた引き金の 1 円向こう(売りのストップは引き金 − 1 円、
+    買いのストップは引き金 + 1 円)。足の値段は 1 円刻みで判定は等号なしなので、引き金を越えた最初の値段はそこで、
+    丸める前の引き金より必ず自分に不利な側にある(批評家の指摘・リードの決め)。足の頭で越えたときは始値。
+    どちらも整数。参照の形(fill="close")は bitFlyer の終値(整数)。
+  - 浮動小数の誤差で整数の値段が切り上げ・切り下げで 1 円動かないよう、TICK_EPS(1e-6 円)の幅は整数とみなす。
+建値は約定の量で重みを付けた平均なので小数が残りうる。損益は丸めた約定の値段から出す。
+
 時刻(仕様 2 の最後の項)
 -----------------------
 海外の 1 分足の行(時刻 = open_time)は open_time + 60 秒(ROW_LAG_NS、カードの宣言)に使える。bitFlyer の足
@@ -85,7 +99,7 @@ P1・X(直前の bitFlyer の終値)= それまでに受け取った足(終わ�
 足の頭: 始値 O の時点で既に越えている値段(上がる側で起きるものは値段 < O、下がる側は値段 > O)は 2 本の脚より前に
 起きたものとし、値段はその注文の値段のまま。ただしストップ成行は始値で約定させる(前の足の終値から次の足の始値の
 間に約定は無いので、最初に約定できるのは始値。批評家の指摘 1・リードの直し 1)。足の中(脚)で引き金を越えたストップ
-成行は引き金の値段(仕様 3-2 の 4)。上がる側 → 下がる側の順
+成行は引き金の 1 円向こう(下の「値段の刻み」)。上がる側 → 下がる側の順
 (カード 4 の再現と同じ)。続けて 2 通りの道で通す: 上が先(O → 高値 → 安値)と下が先(O → 安値 → 高値)。脚の中では
 越えた値段の順(上りは安い方から、下りは高い方から。同じ値段なら注文を出した順)。
 上がる側で起きるもの = 売りの指値の約定(高値 > 値段)と買いのストップの引き金(値段 > 引き金)。
@@ -138,6 +152,17 @@ EXIT_LIMIT, EXIT_SL1, EXIT_SL2, EXIT_SM = "指値", "ストップ指値 1", "ス
 EXIT_DOTEN, EXIT_END = "ドテン", "期間の終わり"
 EXIT_CLOSE = "終値"  # fill="close" の降りる約定
 FILLS = ("limit", "close")
+TICK_EPS = 1e-6  # 1 円刻みに丸めるとき、この幅の中は整数とみなす(浮動小数の誤差)
+
+
+def tick_up(x: float) -> float:
+    """1 円刻みに切り上げ。"""
+    return float(math.ceil(x - TICK_EPS))
+
+
+def tick_down(x: float) -> float:
+    """1 円刻みに切り下げ。"""
+    return float(math.floor(x + TICK_EPS))
 # 入りの合図の強弱(仕様 8-2、K1 の言葉): 強い = 陽線 × 下ヒゲ → 買い・陰線 × 上ヒゲ → 売り、
 # 弱い = 陽線 × 上ヒゲ → 売り・陰線 × 下ヒゲ → 買い
 STRONG, WEAK = "強い", "弱い"
@@ -227,6 +252,11 @@ class _Order:
 
 
 def _order(kind, side, qty, price, trig, reduce, t_place, info, rec) -> _Order:
+    """注文を置く。値段は 1 円刻みに、自分に不利な側へ丸める(モジュールの説明「値段の刻み」)。"""
+    if price is not None:
+        price = tick_up(price) if side == 1 else tick_down(price)  # 買いの指値は切り上げ、売りは切り下げ
+    if trig is not None:
+        trig = tick_down(trig) if side == 1 else tick_up(trig)  # 買いのストップは切り下げ、売りは切り上げ
     o = _Order()
     o.kind, o.side, o.qty, o.price, o.trig, o.armed = kind, side, qty, price, trig, False
     o.reduce, o.t_place, o.info, o.rec = reduce, t_place, info, rec
@@ -566,8 +596,8 @@ class KatsuoLimitSim:
             _, od, thr = best
             if od.trig is not None and not od.armed:
                 st.events.append(("trig", od.kind, thr))
-                if od.price is None:  # ストップ成行: 足の中は引き金の値段(仕様 3-2 の 4)、足の頭は始値(直し 1)
-                    self._fill(st, od, ext if head else thr, t_end)
+                if od.price is None:  # ストップ成行: 足の中は引き金の 1 円向こう(売り −1・買い +1)、足の頭は始値
+                    self._fill(st, od, ext if head else thr + od.side, t_end)
                 else:
                     od.armed = True  # ストップ指値: 指値として残る(post-only)
             else:
@@ -664,5 +694,5 @@ class KatsuoLimitSim:
         return [self._row(tr) for tr in st.closed]
 
 
-__all__ = ["EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
+__all__ = ["TICK_EPS", "tick_down", "tick_up", "EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
            "KatsuoLimitSim", "SIZE_DEF", "SIZE_MAX", "STOP_LIMITS", "STOP_MARKET", "action"]
