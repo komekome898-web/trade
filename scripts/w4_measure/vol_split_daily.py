@@ -194,7 +194,7 @@ def main() -> int:
         r["same_within_prev"] = {k: within_diff(all_days, s, cls_same, cls, k) for k in ("low", "mid", "high")}
         rows.append(r)
     L = ["# 前の日のボラで日を分けた、カードごとの 1 日あたりの損益", "",
-         "`scripts/w4_measure/vol_split_daily.py` が出した。読み方の決まり R1〜R6 はその台本の docstring。経費の前。", "",
+         "`scripts/w4_measure/vol_split_daily.py` が出した。読み方の決まり R1〜R9 はその台本の docstring。経費の前。", "",
          "| 系列 | 低(日数) | 中(日数) | 高(日数) | 高 − 低 | 95% 区間(5 日の塊) | 区間が 0 を含むか |", "|---|---|---|---|---|---|---|"]
     for r in rows:
         f = lambda k: "—" if r[k]["mean"] is None else f"{r[k]['mean']:.2f}({r[k]['days']})"
