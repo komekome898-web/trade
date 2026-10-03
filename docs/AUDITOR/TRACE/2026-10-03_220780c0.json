@@ -20715,10 +20715,10 @@
   {
    "move": 761,
    "tools": {
-    "Bash": 10,
+    "Bash": 11,
     "SendMessage": 1
    },
-   "n_tools": 11,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
