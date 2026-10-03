@@ -13,6 +13,9 @@ R4 系列: `overlap_daily.py` の SERIES と同じ 13 本(同じ読み込み)。
 R5 出すもの: 系列ごとに、低・中・高の日の 1 日あたりの損益(平均)と日数、高 − 低 の差と、その 95% 区間
    (5 日の塊の日の塊の再抽出 1,000 回、種 20261003)。区間が 0 を含むかだけを書き、境は置かない(A-12)。
 R6 経費なし。探索の読みで判定ではない。2023-12-17 より後の日は使わない(封印の境の前)。
+関門 ② の 1 回目の後に足した出力(読み方の決まり R1〜R6 は変えていない): 分けた日だけの全体の平均(同じ母数)、
+低・中・高それぞれの平均の 95% 区間(5 日の塊)、高 − 低 の 20 日の塊の区間(塊の長さの確かめ)、
+診断としてその日のボラ(先読みあり。門には使えない)で同じ境で分けた 高 − 低。
 
 出力: docs/RESEARCH/cards/VOLSPLIT/TABLES.md と volsplit.json。
 
@@ -73,8 +76,9 @@ def classify(vol: dict[str, float]) -> dict[str, str]:
     return out
 
 
-def block_bootstrap_diff(days: list[str], pnl: dict[str, float], cls: dict[str, str]) -> tuple[float, float, float]:
-    """R5。高 − 低 の 1 日あたりの差と、5 日の塊の再抽出の 95% 区間。"""
+def block_bootstrap_diff(days: list[str], pnl: dict[str, float], cls: dict[str, str],
+                         block: int = BLOCK) -> tuple[float, float, float]:
+    """R5。高 − 低 の 1 日あたりの差と、塊の再抽出の 95% 区間(既定は 5 日の塊)。"""
     ds = [d for d in days if d in cls]
     x = np.array([pnl[d] for d in ds])
     c = np.array([cls[d] for d in ds])
@@ -85,16 +89,38 @@ def block_bootstrap_diff(days: list[str], pnl: dict[str, float], cls: dict[str, 
 
     point = diff(x, c)
     n = len(ds)
-    nb = max(1, n // BLOCK)
-    starts = np.arange(0, n - BLOCK + 1) if n >= BLOCK else np.array([0])
+    nb = max(1, n // block)
+    starts = np.arange(0, n - block + 1) if n >= block else np.array([0])
     rng = np.random.default_rng(SEED)
     reps = []
     for _ in range(REPS):
         pick = rng.choice(starts, size=nb, replace=True)
-        idx = np.concatenate([np.arange(s, min(s + BLOCK, n)) for s in pick])
+        idx = np.concatenate([np.arange(s, min(s + block, n)) for s in pick])
         reps.append(diff(x[idx], c[idx]))
     lo, hi = np.nanpercentile(reps, [2.5, 97.5])
     return float(point), float(lo), float(hi)
+
+
+def class_mean_ci(x: np.ndarray, block: int = BLOCK) -> tuple[float, float, float]:
+    """1 つの区分の日の平均と、塊の再抽出の 95% 区間(区分の日を時刻順に並べた列で塊を作る)。"""
+    n = len(x)
+    if n == 0:
+        return math.nan, math.nan, math.nan
+    rng = np.random.default_rng(SEED)
+    starts = np.arange(0, max(1, n - block + 1))
+    nb = max(1, n // block)
+    ms = [x[np.concatenate([np.arange(s0, min(s0 + block, n)) for s0 in rng.choice(starts, size=nb)])].mean()
+          for _ in range(REPS)]
+    lo, hi = np.percentile(ms, [2.5, 97.5])
+    return float(x.mean()), float(lo), float(hi)
+
+
+def classify_same_day(vol: dict[str, float]) -> dict[str, str]:
+    """診断(先読みあり): 日 d をその日の量 v(d) で、classify と同じ前の暦年の境で分ける。"""
+    prev = {}
+    for d, v in vol.items():
+        prev[(datetime.fromisoformat(d) + timedelta(days=1)).date().isoformat()] = v
+    return classify(prev)
 
 
 def load_closes_by_day() -> dict[str, list[float]]:
@@ -116,6 +142,7 @@ def load_closes_by_day() -> dict[str, list[float]]:
 def main() -> int:
     vol = daily_vol(load_closes_by_day())
     cls = classify(vol)
+    cls_same = classify_same_day(vol)
     names = [n for n, _, _ in ov.SERIES]
     rows = []
     for name, kind, d in ov.SERIES:
@@ -126,6 +153,12 @@ def main() -> int:
             v = [s[x] for x in days if cls[x] == k]
             r[k] = {"days": len(v), "mean": float(np.mean(v)) if v else None}
         r["diff"], r["lo"], r["hi"] = block_bootstrap_diff(days, s, cls)
+        _, r["lo20"], r["hi20"] = block_bootstrap_diff(days, s, cls, block=20)
+        r["all_split_days"] = {"days": len(days), "mean": float(np.mean([s[x] for x in days])) if days else None}
+        for k in ("low", "mid", "high"):
+            r[k]["mean"], r[k]["lo"], r[k]["hi"] = class_mean_ci(np.array([s[x] for x in days if cls[x] == k]))
+        days_same = sorted(k for k in s if k in cls_same)
+        r["same_day_diff"], r["same_day_lo"], r["same_day_hi"] = block_bootstrap_diff(days_same, s, cls_same)
         rows.append(r)
     L = ["# 前の日のボラで日を分けた、カードごとの 1 日あたりの損益", "",
          "`scripts/w4_measure/vol_split_daily.py` が出した。読み方の決まり R1〜R6 はその台本の docstring。経費の前。", "",
@@ -134,6 +167,13 @@ def main() -> int:
         f = lambda k: "—" if r[k]["mean"] is None else f"{r[k]['mean']:.2f}({r[k]['days']})"
         L.append(f"| {r['name']} | {f('low')} | {f('mid')} | {f('high')} | {r['diff']:+.2f} | [{r['lo']:+.2f}, {r['hi']:+.2f}] | "
                  f"{'含む' if r['lo'] <= 0 <= r['hi'] else '含まない'} |")
+    L += ["", "## 表 2: 同じ母数・区分ごとの区間・塊の長さ・その日のボラ(関門 ② の 1 回目の後に足した)", "",
+          "| 系列 | 分けた日の全体(日数) | 低 [区間] | 中 [区間] | 高 [区間] | 高 − 低 の 20 日の塊の区間 | 診断: その日のボラで分けた 高 − 低 [5 日の塊] |",
+          "|---|---|---|---|---|---|---|"]
+    for r in rows:
+        g = lambda k: f"{r[k]['mean']:.2f} [{r[k]['lo']:.2f}, {r[k]['hi']:.2f}]"
+        L.append(f"| {r['name']} | {r['all_split_days']['mean']:.2f}({r['all_split_days']['days']}) | {g('low')} | {g('mid')} | {g('high')} | "
+                 f"[{r['lo20']:+.2f}, {r['hi20']:+.2f}] | {r['same_day_diff']:+.2f} [{r['same_day_lo']:+.2f}, {r['same_day_hi']:+.2f}] |")
     n_by = {k: sum(1 for v in cls.values() if v == k) for k in ("low", "mid", "high")}
     L += ["", f"分けた日: 低 {n_by['low']}・中 {n_by['mid']}・高 {n_by['high']}(2017-01-01〜{ov.LAST_DAY})"]
     out = os.path.join(ov.REPO, "docs", "RESEARCH", "cards", "VOLSPLIT")
