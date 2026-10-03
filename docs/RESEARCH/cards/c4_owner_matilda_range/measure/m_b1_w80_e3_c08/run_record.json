@@ -1,0 +1,265 @@
+{
+ "card": "c4_owner_matilda_range",
+ "chunk": "year",
+ "chunks": [
+  {
+   "bars": 7499,
+   "decisions": 7499,
+   "delivery_digest": "0b6d2c140339e9b0e67d64a7f51291f06f021e70217aa4891a94acdcc9b6df2e",
+   "range": [
+    "2015-11-28T15:00:00Z",
+    "2016-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 398453,
+   "decisions": 398453,
+   "delivery_digest": "966b4888cc36c81b4346207c903fb26fc03cac00f5c2e6d56e778b93727d4c6e",
+   "range": [
+    "2016-01-01T00:00:00Z",
+    "2017-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 519072,
+   "decisions": 519072,
+   "delivery_digest": "9ff5a3896d17af140700cc291a53d785175f3b04be15b60d7b1ce0627ddbbe35",
+   "range": [
+    "2017-01-01T00:00:00Z",
+    "2018-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 521307,
+   "decisions": 520293,
+   "delivery_digest": "4157cc5a9f136457483c8f404565b2921c144d3f653a69cbc82b870804e460d7",
+   "range": [
+    "2018-01-01T00:00:00Z",
+    "2019-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 519892,
+   "decisions": 519892,
+   "delivery_digest": "e5fb59d4cc056f63420279edc1d333a8c5aff18c013d1515bd6cf6b230886615",
+   "range": [
+    "2019-01-01T00:00:00Z",
+    "2020-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 519967,
+   "decisions": 519967,
+   "delivery_digest": "7c5d5773978fd4c2a961f3c8c20da3a4966d69811da8e796d3148c91f996ec4b",
+   "range": [
+    "2020-01-01T00:00:00Z",
+    "2021-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 518630,
+   "decisions": 518630,
+   "delivery_digest": "3c5895d39471d2d00a1022f40fbb2f7eb3a9fe8f1973ef1eb716e5af1bfaf2e0",
+   "range": [
+    "2021-01-01T00:00:00Z",
+    "2022-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 520884,
+   "decisions": 520884,
+   "delivery_digest": "069b2059888f90e7e7e9370af14fb76396be4f486c3493eb96791227863fd6c0",
+   "range": [
+    "2022-01-01T00:00:00Z",
+    "2023-01-01T00:00:00Z"
+   ],
+   "ref_rows": null
+  },
+  {
+   "bars": 457414,
+   "decisions": 457414,
+   "delivery_digest": "34e83229c01dafb6df34f8b2c0a27949e2d123c9c2c53dd8a552b8582429f9c4",
+   "range": [
+    "2023-01-01T00:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "ref_rows": null
+  }
+ ],
+ "clock": [
+  [
+   "区切り 2015-11-28〜2016-01-01 足 7499 参照 None",
+   9.0,
+   0.28
+  ],
+  [
+   "区切り 2016-01-01〜2017-01-01 足 398453 参照 None",
+   99.0,
+   0.91
+  ],
+  [
+   "区切り 2017-01-01〜2018-01-01 足 519072 参照 None",
+   210.5,
+   1.11
+  ],
+  [
+   "区切り 2018-01-01〜2019-01-01 足 521307 参照 None",
+   321.7,
+   1.26
+  ],
+  [
+   "区切り 2019-01-01〜2020-01-01 足 519892 参照 None",
+   430.2,
+   1.36
+  ],
+  [
+   "区切り 2020-01-01〜2021-01-01 足 519967 参照 None",
+   541.2,
+   1.36
+  ],
+  [
+   "区切り 2021-01-01〜2022-01-01 足 518630 参照 None",
+   650.5,
+   1.36
+  ],
+  [
+   "区切り 2022-01-01〜2023-01-01 足 520884 参照 None",
+   759.0,
+   1.37
+  ],
+  [
+   "区切り 2023-01-01〜2023-12-17 足 457414 参照 None",
+   849.7,
+   1.37
+  ],
+  [
+   "区切りの run_card(読み込みを含む) 850s 決定 3982104",
+   849.9,
+   1.37
+  ],
+  [
+   "npz を保存",
+   863.4,
+   1.37
+  ],
+  [
+   "日ごとの測定と診断 2s",
+   865.8,
+   1.37
+  ]
+ ],
+ "headline": {
+  "changes": 18735,
+  "ci_1d_per_day": [
+   -0.9700231932931311,
+   -0.5427109744787015
+  ],
+  "ci_5d_per_day": [
+   -0.9886782281144736,
+   -0.5380024710383493
+  ],
+  "drawdown": {
+   "final_cum_bp": -2247.405918952482,
+   "max_bp": 2559.0957826194735,
+   "peak_day": "2017-03-12",
+   "trough_day": "2023-03-27"
+  },
+  "mde_1d_per_day": 0.3140643738201745,
+  "month": {
+   "best": {
+    "bp": 98.67640905956408,
+    "month": "2016-12"
+   },
+   "n": 98,
+   "positive_share": 0.2755102040816326,
+   "worst": {
+    "bp": -127.07667351014344,
+    "month": "2018-02"
+   },
+   "zero_share": 0.0
+  },
+  "n_days": 2941,
+  "n_decisions": 3982102,
+  "nonzero_share": 0.010926384644901288,
+  "per_day_bp": -0.7641638622755822,
+  "per_minute_bp": -0.0005643767836565934,
+  "sum_abs_de": 3040.0,
+  "trades": {
+   "best_bp": 91.65441187900873,
+   "hold_decisions_median": 4.0,
+   "hold_minutes_mean": 5.736874613959234,
+   "hold_minutes_median": 4.0,
+   "long": {
+    "n": 4002,
+    "sum_bp": -1202.2147421785917,
+    "win_rate": 0.4890054972513743
+   },
+   "loss_rate": 0.5161210623841878,
+   "mean_bp": -0.277628896720505,
+   "median_bp": -0.06733716526691984,
+   "n": 8095,
+   "per_day": 2.7524651479088744,
+   "short": {
+    "n": 4093,
+    "sum_bp": -1045.1911767738961,
+    "win_rate": 0.4705594918152944
+   },
+   "win_rate": 0.47967881408276714,
+   "worst_bp": -34.15843900612987,
+   "zero_rate": 0.00420012353304509
+  },
+  "worst_day": {
+   "bp": -48.31247653468033,
+   "day": "2017-12-09"
+  },
+  "year_per_day_bp": {
+   "2015": 2.4822649043222875,
+   "2016": 0.3134441273264836,
+   "2017": -1.2893308854150864,
+   "2018": -1.295590380117465,
+   "2019": -0.884868369456122,
+   "2020": -0.8876052735710825,
+   "2021": -1.443969358927701,
+   "2022": -0.9081467311315439,
+   "2023": 0.016575237529602785
+  }
+ },
+ "inputs": {
+  "bars": {
+   "anomalies": {
+    "gap": 3287,
+    "no_trade": 248632
+   },
+   "files": {
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz": "c71f47b09ee07c25ef3f8bc92080383a6aefd7420cc147506adc07b315bb62fd",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz": "73d10b88f8dde8a1b5825f4feecd093cc075ba5dd29e56e50b5b59f1a849c3bb",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+   }
+  }
+ },
+ "npz": "docs/RESEARCH/cards/c4_owner_matilda_range/measure/m_b1_w80_e3_c08/run.npz",
+ "period": [
+  "2015-11-28T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "timing": {
+  "chunked_run_s": 849.9,
+  "measure_s": 2.4,
+  "peak_rss_gb": 1.37,
+  "total_s": 865.8
+ },
+ "variant": "m_b1_w80_e3_c08"
+}
