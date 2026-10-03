@@ -6,7 +6,8 @@
 - `run_a/` に写したもの: 委任文の一覧どおり `dist_*.csv`・`label_counts.csv`・`policy_*_counts.csv`・`three_way_calibration.csv`・`three_way_model.json`・`run_meta.json`。
 - 写していないもの: 委任文で「写さない」とされた大きい gz(`anchors_prints`・`controls`・`policy_cascades`・`policy_legs`・`jev_states`)。
 - **委任文の一覧に名指しの無い 2 つ**: `anchors_bundles.csv.gz` と `three_way_probs.csv.gz`(どちらも `.csv.gz`)。「写す」一覧の `three_way_*.csv/json` に `.csv.gz` が入るかは書かれていないので、写さずに下の表に載せた(作業者の判断。写すかはリードが決める)。
-- `chunks/`(日ごとの途中の出力)は載せていない。
+- `chunks/`(日ごとの途中の出力)は載せていない(第 2 稿の `make_tables.py` は `chunks/scurve` と `chunks/controls` の見出しを読む)。
+- 第 2 稿で足した `control_iv.py` の出力 `run_a/control_iv_out/`(対照 (iv)・起点を変えた react・(ii) の流し直し)は、リードの指示で `run_a/` に置いた。sha256 と行数は表 manifest_iv。
 - 走らせの記録 `data/c9_run_a/full.log` は一つ上の置き場にあるので、別の表(manifest_log)に載せた。
 - 行数は、gzip を開いて数えた物理行と、別の出所(`run_meta.json`・`dist_policy.csv`)の数を表 manifest_check で突き合わせた。
 
@@ -14,7 +15,7 @@
 
 ```
 PYTHONPATH=src python3 docs/RESEARCH/cards/c9_liquidation_cascade/run_a/make_tables.py \
-    --in data/c9_run_a/full_20230625_20241014 --section manifest
+    --in data/c9_run_a/full_20230625_20241014 --iv docs/RESEARCH/cards/c9_liquidation_cascade/run_a/control_iv_out --section manifest
 ```
 
 <!-- BLOCK:manifest -->
@@ -70,6 +71,17 @@ PYTHONPATH=src python3 docs/RESEARCH/cards/c9_liquidation_cascade/run_a/make_tab
 | anchors_bundles.csv.gz | 65204 | 65204 | 1 | run_meta 束の数 の和 |
 | policy_cascades.csv.gz | 932372 | 932372 | 1 | dist_policy.csv 単位 = 連鎖1本(入らないを0で含める) の 連鎖の数 の和 |
 | policy_legs.csv.gz | 1108974 | 1108974 | 1 | dist_policy.csv 単位 = 1レグ の n + n_nan の和 |
+<!-- /BLOCK -->
+
+<!-- BLOCK:manifest_iv -->
+出所: `control_iv.py` の出力(この回の追加の計算)
+
+| ファイル | バイト | sha256 | 行数 | 数え方 |
+|---|---|---|---|---|
+| run_a/control_iv_out/control_iv_meta.json | 3126 | c65105aee629e59d835c62cf27aae3fc82464bf152132d3ccf06254e1b753de1 | - | json(行の表ではない) |
+| run_a/control_iv_out/controls_iv.csv.gz | 4531456 | daded3273823226dd232daaa65dfed9c4b5ae29107293f0582a4901084538cbf | 16968 | 見出しを除いた行数 |
+| run_a/control_iv_out/ii_reproduction.csv.gz | 1423248 | 593ec4b2c452d1784ad4228765f58613578c398eb92323237dfd86690af7843f | 53398 | 見出しを除いた行数 |
+| run_a/control_iv_out/prints_reanchor.csv.gz | 10005668 | 4a3444d1774ea43749787c95b1d25bb0d5915bf25566097851794d1702423663 | 53398 | 見出しを除いた行数 |
 <!-- /BLOCK -->
 
 <!-- BLOCK:manifest_log -->
