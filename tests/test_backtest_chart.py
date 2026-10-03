@@ -13,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from bot.monitoring import backtest_cards as K
 from bot.monitoring import backtest_chart as C
 from bot.monitoring import backtest_themes as T
 
@@ -26,7 +27,7 @@ FXDIR = "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
 @pytest.fixture(autouse=True)
 def _fresh(tmp_path, monkeypatch):
     monkeypatch.setenv("BT_CHART_CACHE_DIR", str(tmp_path / "cache"))
-    for d in (C._STORES, C._TRADES, C._REC, C._RULES):
+    for d in (C._STORES, C._TRADES, C._REC, C._RULES, K._MAN, K._OK, K._PROV):
         d.clear()
 
 
@@ -451,3 +452,323 @@ def test_after_seal_run_is_400_over_the_route(tmp_path):
     root = _run(tmp_path, "7" * 64, data=[], first=(BOUNDARY + 100) * NS, last=(BOUNDARY + 200) * NS, trades=[])
     assert dash._backtest(f"/api/backtest/chart/{'7' * 64}", root, tmp_path)[0] == 400
     assert json.loads(dash._backtest(f"/api/backtest/summary/{'7' * 64}", root, tmp_path)[2])["after_seal"] is True
+
+
+# ---- the research cards (backtest_cards.py, the CARD_THEMES ledger) ------------------------------------------------
+CARD_MANIFEST = REPO / "backtest_runs_shared" / "cards" / "manifest.json"
+FXCOLS = "ts,open,high,low,close,vol"
+
+
+def _write_card(root: Path, card: str, variant: str, t0: int, trades: list, period=None, prov_extra=None):
+    """One card variant's output as scripts/dashboard_cards writes it: trades.json.gz (column form, bp only), daily.csv,
+    provenance.json. `trades` = [(entry_t, exit_t, entry_px, exit_px, side, pnl_bp)] in UTC seconds."""
+    d = root / "backtest_runs_shared" / "cards" / card / variant
+    d.mkdir(parents=True, exist_ok=True)
+    cols = {"version": 1, "t_unit": "ns", "entry_t_ns": [t[0] * NS for t in trades], "entry_px": [t[2] for t in trades],
+            "exit_t_ns": [t[1] * NS for t in trades], "exit_px": [t[3] for t in trades], "side": [t[4] for t in trades],
+            "qty": [1] * len(trades), "pnl_bp": [t[5] for t in trades]}
+    with gzip.open(d / "trades.json.gz", "wb") as fh:
+        fh.write(json.dumps(cols).encode())
+    (d / "daily.csv").write_text("day,pnl_bp,n\n2023-01-01,%s,%d\n" % (sum(t[5] for t in trades), len(trades)))
+    prov = {"card": card, "variant": variant, "display_ok": True, "trade_definition": "def", "seal": "s", "data_dirs_read": [FXDIR],
+            "script": {"export": "e", "research_cmd": ["c"]}, "verified_items": ["daily_csv_sha256"], "not_verified": ["取引数は照合していない"]}
+    prov.update(prov_extra or {})
+    (d / "provenance.json").write_text(json.dumps(prov), encoding="utf-8")
+    return d
+
+
+def _row(card, variant, d=None, ok=True, period=("2023-01-01T00:00:00Z", "2023-01-03T00:00:00Z"), **kw):
+    row = {"card": card, "variant": variant, "status": "exported" if ok else "not_exported", "display_ok": ok, "period": list(period)}
+    if ok:
+        row.update(verified_items=["daily_csv_sha256"], not_verified=["取引数は照合していない"], n_trades=kw.pop("n_trades", 0))
+        if d is not None:
+            row["file_bytes"] = {f: (d / f).stat().st_size for f in K.FILES if (d / f).exists()}
+    else:
+        row["reason"] = "未実行または失敗"
+    row.update(kw)
+    return row
+
+
+def _manifest(root: Path, rows, excluded=()):
+    p = root / "backtest_runs_shared" / "cards" / "manifest.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"version": 1, "git_sha": "g", "total_bytes": 1, "variants": list(rows), "excluded": list(excluded)}), encoding="utf-8")
+    return p
+
+
+def _cards_world(tmp_path, n_min=3000, start="2023-01-01T00:00:00"):
+    """Seal ledger, a FX_BTC_JPY store (1-minute files) and the card c7_barrier_race with variants: 1h (ready), 1d (display_ok
+    false), 1w (display_ok but its trades file is missing: being written)."""
+    _seal(tmp_path)
+    t0 = _ts(start)
+    _csv(tmp_path / FXDIR / "candles_1m_2023.csv.gz", [(t0 + i * 60, 100 + i, 101 + i, 99 + i, 100.5 + i) for i in range(n_min)], header=FXCOLS)
+    trades = [(t0 + 600, t0 + 1200, 110, 120, 1, 90.9), (t0 + 3000, t0 + 3600, 130, 120, -1, 76.9)]
+    d = _write_card(tmp_path, "c7_barrier_race", "1h", t0, trades)
+    d_w = _write_card(tmp_path, "c7_barrier_race", "1w", t0, trades)
+    (d_w / "trades.json.gz").unlink()
+    _manifest(tmp_path, [_row("c7_barrier_race", "1h", d, n_trades=2), _row("c7_barrier_race", "1d", ok=False),
+                         _row("c7_barrier_race", "1w", d_w, n_trades=2)],
+              [{"card": "c9_liquidation_cascade", "variant": "-", "status": "excluded", "reason": "対象外: 測定が無い(文書のみ)"}])
+    return t0, str(tmp_path / "backtest_runs_shared")
+
+
+def _card_themes(root):
+    return {t["id"]: t for t in C.catalog(root)["themes"] if t.get("is_card")}
+
+
+def test_card_ledger_is_complete_and_every_card_has_title_description_and_sources():
+    ids = [ct["card"] for ct in T.CARD_THEMES]
+    assert len(ids) == len(set(ids)) and ids == sorted(ids, key=lambda c: int(c[1:].split("_")[0]))
+    for ct in T.CARD_THEMES:
+        assert ct["title"] and ct["summary"] and ct["sources"] and "docs/RESEARCH/cards/" in ct["sources"][0]
+        assert (ct["card"] in ("c9_liquidation_cascade",)) == (ct["instrument"] is None)
+        if ct["card"] in ("c2_owner_xvenue_wick", "c4_owner_matilda_range"):  # owner-derived: the verbatim section is a source
+            assert ct["owner_origin"] and "原文(逐語)" in ct["sources"][0]
+        for fam in T.card_families(ct):
+            assert 3 <= len(fam["description"]) <= 6 and fam["sources"] and fam["id"]
+            import re
+            names = set(re.compile(fam["pattern"]).groupindex)
+            assert names == set(fam["axes"]) and names <= set(T.CARD_AXES), fam["id"]
+    assert [f["id"] for f in T.card_families(T.card_theme("c4_owner_matilda_range"))] == ["parts", "map", "limit"]
+
+
+def test_axis_values_of_the_ledger_equal_the_names_the_measuring_scripts_make():
+    """The axis tokens of the ledger are checked against the scripts that make the variants (read as text, not imported)."""
+    import re
+    b2 = (REPO / "scripts/w4_measure/run_b2.py").read_text(encoding="utf-8")
+    v2 = (REPO / "scripts/w4_measure/run_v2.py").read_text(encoding="utf-8")
+    kw = set(re.findall(r'^C4_KW = \{(.*?)\n\}?$', b2, re.S | re.M)[0:1] and re.findall(r'"(\w+)": \{', b2[b2.index("C4_KW"):b2.index("def make_card")]))
+    assert kw == {t for t in T.CARD_AXES["c4_part"]["values"] if t != "follow"} | {"follow"} - set() and "follow" in kw
+    tp = set(re.findall(r'"(\w+)": \{', b2[b2.index("C4_TP"):b2.index("C4_MAP")]))
+    assert tp == set(T.CARD_AXES["c4_tp"]["values"])
+    assert set(re.findall(r'^    "([abc])": \(', v2[v2.index("C2_VARIANTS"):], re.M)) == set(T.CARD_AXES["c2_series"]["values"])
+    for card, key in (("c6", "c6_gap"), ("c7", "c7_window"), ("c8", "c8_session")):
+        m = re.search(rf'"{card}": \("[a-z0-9_]+", \(([^)]*)\)', b2)
+        assert set(re.findall(r'"(\w+)"', m.group(1))) == set(T.CARD_AXES[key]["values"]), card
+    assert re.search(r'"c3".*window|--window', v2) and set(T.CARD_AXES["c3_window"]["values"]) == {"1h", "1d", "1w"}
+    assert [v for v in re.findall(r'"c4_owner_matilda_range", tuple\(f"\{k\}_\{r\}" for k in \(([^)]*)\)', b2)[0].replace('"', "").split(", ")] == \
+        [t for t in T.CARD_AXES["c4_part"]["values"] if t not in ("follow", "core")][:5] + ["follow", "core"]
+
+
+def test_variant_names_split_into_axes_by_machine_rule():
+    ct2, ct4 = T.card_theme("c2_owner_xvenue_wick"), T.card_theme("c4_owner_matilda_range")
+    assert T.card_family_of(ct2, "b_30m")[1] == {"c2_series": "b", "c2_foot": "30"}
+    f, tok = T.card_family_of(ct4, "no_width_wick")
+    assert f["id"] == "parts" and tok == {"c4_part": "no_width", "c4_range": "wick"}
+    f, tok = T.card_family_of(ct4, "m_b5_w160_e3_c08")
+    assert f["id"] == "map" and tok == {"c4_bar": "5", "c4_win": "160", "c4_entry": "3", "c4_tp": "c08"}
+    assert T.card_family_of(ct4, "m_b1_w10_e1_c0")[1]["c4_tp"] == "c0"
+    f, tok = T.card_family_of(ct4, "limit_v37_bad")
+    assert f["id"] == "limit" and tok == {"c4_fill": "bad"}
+    assert T.card_family_of(ct4, "something_new") == (None, {})
+    assert T.card_axis_label("c2_foot", "15") == ("15 分足", "") and T.card_axis_label("c4_entry", "2")[0] == "2 × 平均実体"
+    assert T.card_axis_label("c4_tp", "dote")[0] == "利確の線なし(ドテン)"
+    assert T.card_axis_label("c4_part", "brand_new")[1]  # no Japanese label: shown as it is, and the note says so
+    assert sorted(["60", "5", "15"], key=lambda v: T.card_axis_order("c2_foot", v)) == ["5", "15", "60"]
+
+
+@pytest.mark.skipif(not CARD_MANIFEST.is_file(), reason="no cards manifest in this checkout")
+def test_the_real_manifest_agrees_with_the_ledger():
+    man = K.load_manifest(CARD_MANIFEST.parent)
+    assert man is not None and man.error is None and man.rows
+    for (card, variant), row in man.rows.items():
+        ct = T.card_theme(card)
+        assert ct is not None, f"card {card} of the manifest is not in the ledger"
+        fam, tok = T.card_family_of(ct, variant)
+        assert fam is not None, f"variant {card}/{variant} is split by no family pattern"
+        for k, v in tok.items():
+            assert T.card_axis_label(k, v)[1] != "台帳にこの値の日本語の説明が無い", f"{card}/{variant}: {k}={v} has no Japanese label"
+    for e in man.excluded:
+        assert T.card_theme(e["card"]) is not None
+    themes = {t["id"]: t for t in C.catalog(str(REPO / "backtest_runs_shared"))["themes"] if t.get("is_card")}
+    for (card, variant), row in man.rows.items():
+        strat = [s for s in themes[f"card:{card}"]["strategies"]]
+        ready = {r["variant"] for s in strat for r in s["runs"]}
+        other = {u["variant"]: u for s in strat for u in s["unavailable"]}
+        assert (variant in ready) != (variant in other)
+        if row["display_ok"] is not True:
+            assert variant in other and other[variant]["reason"], (card, variant)
+
+
+def test_card_catalog_lists_ready_blocked_preparing_and_excluded_with_reasons(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    th = _card_themes(root)
+    c7 = th["card:c7_barrier_race"]["strategies"][0]
+    assert [r["variant"] for r in c7["runs"]] == ["1h"] and c7["runs"][0]["run_id"] == "cards/c7_barrier_race/1h"
+    un = {u["variant"]: u for u in c7["unavailable"]}
+    assert un["1d"]["state"] == "not_exported" and "未実行" in un["1d"]["reason"]
+    assert un["1w"]["state"] == "preparing" and "trades.json.gz" in un["1w"]["reason"]
+    assert [a["key"] for a in c7["axes"]] == ["c7_window"] and c7["axes"][0]["values"][0]["label"] == "1 時間"
+    c9 = th["card:c9_liquidation_cascade"]["strategies"][0]
+    assert c9["runs"] == [] and c9["excluded"][0]["reason"].startswith("対象外") and 3 <= len(c9["description"]) <= 6
+    cat = C.catalog(root)
+    assert cat["n_card_runs"] == 1 and cat["n_runs"] == 1 and cat["themes"][-1]["id"] == T.UNLISTED_THEME or cat["themes"][-1].get("is_card")
+
+
+def test_card_with_display_ok_false_is_never_served(tmp_path):
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+    d = _write_card(tmp_path, "c7_barrier_race", "1d", t0, [(t0 + 600, t0 + 1200, 110, 120, 1, 1.0)])  # files exist, the manifest says no
+    for route in ("summary", "chart", "run"):
+        st, _, body = dash._backtest(f"/api/backtest/{route}/cards/c7_barrier_race/1d", root, tmp_path)
+        assert st == 404 and (route == "run" or "not displayable" in json.loads(body)["error"]), route
+    assert {u["variant"] for u in _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["unavailable"]} >= {"1d"}
+    assert [r["variant"] for r in _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["runs"]] == ["1h"]
+
+
+def test_card_ids_outside_the_manifest_or_with_path_tricks_are_404(tmp_path):
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+    (tmp_path / "secret").mkdir()
+    (tmp_path / "secret" / "trades.json.gz").write_bytes(b"x")
+    for rid in ("cards/c7_barrier_race/nope", "cards/c1_xborder_mom/default", "cards/../secret", "cards/c7_barrier_race/../1h",
+                "cards%2F..%2F..%2Fsecret%2Fx", "cards/c7_barrier_race", "cards/c7_barrier_race/1h/extra", "cards//1h", "cards/c7_barrier_race/",
+                "cards/c7_barrier_race/1h%00", "cards\\c7_barrier_race\\1h", "cards/c9_liquidation_cascade/-", "cards/./1h", "Cards/c7_barrier_race/1h"):
+        for route in ("summary", "chart", "run"):
+            st = dash._backtest(f"/api/backtest/{route}/{rid}", root, tmp_path)[0]
+            assert st == 404, (rid, route, st)
+    for ok in ("cards/c7_barrier_race/1h", "cards%2Fc7_barrier_race%2F1h"):
+        assert dash._backtest(f"/api/backtest/summary/{ok}", root, tmp_path)[0] == 200
+    # the 64-hex run id form is untouched
+    assert dash._backtest("/api/backtest/summary/" + "9" * 64, root, tmp_path)[0] == 404
+
+
+def test_symlink_that_leaves_the_cards_directory_is_refused(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "trades.json.gz").write_bytes(b"x")
+    d = tmp_path / "backtest_runs_shared" / "cards" / "c7_barrier_race" / "1h"
+    for f in d.iterdir():
+        f.unlink()
+    d.rmdir()
+    os.symlink(outside, d)
+    with pytest.raises(Exception) as ei:
+        K.resolve(root, "cards/c7_barrier_race/1h")
+    assert "not a run id" in str(ei.value)
+
+
+def test_half_written_variants_are_shown_as_preparing_not_as_errors(tmp_path):
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+    st, _, body = dash._backtest("/api/backtest/summary/cards/c7_barrier_race/1w", root, tmp_path)
+    j = json.loads(body)
+    assert st == 200 and "準備中" in j["preparing"] and "stats" not in j
+    st, _, body = dash._backtest("/api/backtest/chart/cards/c7_barrier_race/1w", root, tmp_path)
+    assert st == 400 and "準備中" in json.loads(body)["error"]
+    # a gzip cut in the middle (the writer is still writing): preparing, and the catalog does not fail
+    p = tmp_path / "backtest_runs_shared" / "cards" / "c7_barrier_race" / "1h" / "trades.json.gz"
+    raw = p.read_bytes()
+    p.write_bytes(raw[: len(raw) // 2])
+    j = json.loads(dash._backtest("/api/backtest/summary/cards/c7_barrier_race/1h", root, tmp_path)[2])
+    assert "準備中" in j["preparing"] and ("gzip" in j["preparing"] or "大きさ" in j["preparing"])
+    c7 = _card_themes(root)["card:c7_barrier_race"]["strategies"][0]
+    assert c7["runs"] == [] and {u["variant"]: u["state"] for u in c7["unavailable"]}["1h"] == "preparing"
+    # the same size as the manifest says but the stream is cut (the manifest was written from a longer file): still preparing
+    row = _row("c7_barrier_race", "1h", None, n_trades=2)
+    row["file_bytes"] = {}
+    _manifest(tmp_path, [row])
+    K._MAN.clear()
+    assert "gzip" in K.variant_state(K.manifests(root)[0], K.manifests(root)[0].rows[("c7_barrier_race", "1h")])[1]
+    # writing finishes: it shows up again
+    p.write_bytes(raw)
+    _manifest(tmp_path, [_row("c7_barrier_race", "1h", p.parent, n_trades=2)])
+    assert _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["runs"][0]["variant"] == "1h"
+    assert json.loads(dash._backtest("/api/backtest/summary/cards/c7_barrier_race/1h", root, tmp_path)[2])["stats"]["n"] == 2
+
+
+def test_manifest_is_read_again_when_it_changes_and_a_half_written_one_keeps_the_last(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    assert len(_card_themes(root)["card:c7_barrier_race"]["strategies"][0]["runs"]) == 1
+    d = _write_card(tmp_path, "c7_barrier_race", "1d", t0, [(t0 + 600, t0 + 1200, 110, 120, 1, 1.0)])
+    rows = [_row("c7_barrier_race", "1h", tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1h", n_trades=2), _row("c7_barrier_race", "1d", d, n_trades=1)]
+    p = _manifest(tmp_path, rows)
+    assert [r["variant"] for r in _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["runs"]] == ["1d", "1h"] or \
+        {r["variant"] for r in _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["runs"]} == {"1h", "1d"}  # a new variant appears without a restart
+    p.write_text('{"version": 1, "variants": [{"card": "c7_bar', encoding="utf-8")  # cut in the middle
+    cat = C.catalog(root)
+    assert cat["card_notes"] and cat["n_card_runs"] == 2  # the last good read is used and the page is told
+    p.write_text("not json at all", encoding="utf-8")
+    assert C.catalog(root)["n_card_runs"] == 2
+
+
+def test_card_trades_are_cut_at_the_seal_boundary_like_a_run(tmp_path):
+    dash = _dash()
+    _seal(tmp_path)
+    start = BOUNDARY - 3600
+    _csv(tmp_path / FXDIR / "candles_1m_2023.csv.gz", [(start + i * 60, 100 + i, 101 + i, 99 + i, 100.5 + i) for i in range(180)], header=FXCOLS)
+    trades = [(start + 60, start + 600, 100, 110, 1, 10.0), (start + 700, BOUNDARY - 60, 110, 105, -1, 5.0),
+              (BOUNDARY - 30, BOUNDARY, 105, 120, 1, 7.0), (BOUNDARY + 60, BOUNDARY + 600, 120, 130, 1, 100.0)]
+    d = _write_card(tmp_path, "c8_session_mean_revert", "jst_day", start, trades)
+    # the card's own period reaches past the boundary (as a bug in the exporter or a later export would make it)
+    _manifest(tmp_path, [_row("c8_session_mean_revert", "jst_day", d, period=(_iso_z(start), _iso_z(BOUNDARY + 3600)), n_trades=4)])
+    root = str(tmp_path / "backtest_runs_shared")
+    s = C.run_summary(root, "cards/c8_session_mean_revert/jst_day", tmp_path)
+    assert s["stats"]["n"] == 2 and s["stats"]["total_bp"] == 15.0  # the trade that exits AT the boundary and the one after it are not shown
+    ch = C.run_chart(root, "cards/c8_session_mean_revert/jst_day", root=tmp_path, from_s=start, to_s=BOUNDARY + 7200)
+    assert [t["xt"] for t in ch["trades"]] == [start + 600, BOUNDARY - 60] and ch["trades_total"] == 2
+    assert all(p[0] < BOUNDARY for p in ch["pnl"]) and all(b[0] < BOUNDARY for b in ch["bars"])
+    # a card variant wholly after the boundary shows no number
+    d2 = _write_card(tmp_path, "c8_session_mean_revert", "bf_maint", start, [(BOUNDARY + 60, BOUNDARY + 600, 1, 2, 1, 1.0)])
+    _manifest(tmp_path, [_row("c8_session_mean_revert", "bf_maint", d2, period=(_iso_z(BOUNDARY + 60), _iso_z(BOUNDARY + 3600)), n_trades=1)])
+    j = json.loads(dash._backtest("/api/backtest/summary/cards/c8_session_mean_revert/bf_maint", root, tmp_path)[2])
+    assert j["after_seal"] and "stats" not in j
+    assert dash._backtest("/api/backtest/chart/cards/c8_session_mean_revert/bf_maint", root, tmp_path)[0] == 400
+
+
+def _iso_z(s):
+    return datetime.fromtimestamp(s, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def test_card_summary_holds_bp_only_the_checks_and_the_price_of_the_ledgers_instrument(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert s["pnl_derived"] is True and s["currency"] is None and s["stats"]["total"] is None and s["stats"]["total_bp"] == pytest.approx(167.8)
+    assert s["instrument"] == "FX_BTC_JPY" and s["price"]["available"] and s["price"]["same_source"] and s["price"]["label"] == "bitFlyer FX_BTC_JPY"
+    c = s["card"]
+    assert c["verified_items"] == ["daily_csv_sha256"] and c["not_verified"] == ["取引数は照合していない"] and c["n_trades_manifest"] == 2
+    assert c["card_title"] == T.card_theme("c7_barrier_race")["title"] and "FX_BTC_JPY" in c["instrument_source"] + c["instrument"]
+    ch = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path)
+    assert ch["pnl_derived"] and len(ch["trades"]) == 2 and ch["trades"][0]["pnl"] is None and ch["trades"][0]["bp"] == 90.9
+    assert [p[2] for p in ch["pnl"]][-1] == pytest.approx(167.8)
+    # the price directory the card read is not the store's: say so instead of claiming the same source
+    d = _write_card(tmp_path, "c7_barrier_race", "1h", t0, [(t0 + 600, t0 + 1200, 110, 120, 1, 90.9)], prov_extra={"data_dirs_read": ["backtest_data/other"]})
+    _manifest(tmp_path, [_row("c7_barrier_race", "1h", d, n_trades=1)])
+    K._PROV.clear(); C._TRADES.clear()
+    s2 = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert s2["price"]["same_source"] is False and "data_dirs_read" in s2["price"]["note"]
+
+
+def test_card_with_an_instrument_the_ledger_has_no_store_for_shows_the_cumulative_profit_only(tmp_path, monkeypatch):
+    t0, root = _cards_world(tmp_path)
+    monkeypatch.setitem(T.card_theme("c7_barrier_race"), "instrument", "USDJPY")
+    s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert not s["price"]["available"] and "MARKETS" in s["price"]["reason"] and s["stats"]["n"] == 2
+    ch = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path)
+    assert ch["bars"] == [] and len(ch["pnl"]) >= 2
+
+
+def test_daily_csv_and_the_trades_of_every_exported_variant_agree_on_the_total():
+    """sum(daily.csv pnl_bp) = sum(trades pnl_bp). The trades' pnl_bp are rounded to 4 decimals when written (compact(x, 4) in
+    export_card_trades.py), so the two sums can differ by at most n * 0.00005 bp; the per-day split differs by construction (daily.csv
+    books a decision's profit on the decision's day, a trade books its whole profit at its exit)."""
+    if not CARD_MANIFEST.is_file():
+        pytest.skip("no cards manifest in this checkout")
+    rd = str(REPO / "backtest_runs_shared")
+    n_checked = 0
+    for th in C.catalog(rd)["themes"]:
+        for st in th["strategies"] if th.get("is_card") else []:
+            for r in st["runs"]:
+                ref = K.resolve(rd, r["run_id"])
+                ts = C.load_trades(str(ref.dir))
+                assert ts.n == ref.row["n_trades"], r["run_id"]
+                assert abs(float(ts.cum_bp[-1]) - K.daily_sum_bp(ref)) <= ts.n * 0.00005 + 1e-6, r["run_id"]
+                n_checked += 1
+    assert n_checked >= 1
+
+
+def test_card_page_and_script_carry_the_card_pieces():
+    dash = _dash()
+    assert 'id="bt-card-note"' in dash.PAGE
+    js = (Path(C.STATIC_DIR) / "backtest_tab.js").read_text(encoding="utf-8")
+    assert "選べない変種" in js and "対象外" in js and "照合の範囲" in js and "isCard" in js

@@ -1,0 +1,553 @@
+{
+ "version": 1,
+ "git_sha": "90b16529b0a5ab12a4a049749ec86769b8f4061c",
+ "total_bytes": 16522907,
+ "variants": [
+  {
+   "card": "c1_xborder_mom",
+   "variant": "default",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency"
+   ],
+   "not_verified": [
+    "取引数は git に記録が無く照合していない(日ごとの損益・overall・frequency の一致で表示可とした)"
+   ],
+   "n_trades": 23106,
+   "period": [
+    "2017-08-17T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 77750,
+    "provenance.json": 6363,
+    "trades.json.gz": 416911
+   },
+   "seconds": 1505.2,
+   "reason": null
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_15m",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency"
+   ],
+   "not_verified": [
+    "取引数は git に記録が無く照合していない(日ごとの損益・overall・frequency の一致で表示可とした)"
+   ],
+   "n_trades": 32988,
+   "period": [
+    "2017-08-17T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 80588,
+    "provenance.json": 6400,
+    "trades.json.gz": 570972
+   },
+   "seconds": 2249.7,
+   "reason": null
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_1m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_30m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_3m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_5m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "a_60m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_15m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_1m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_30m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_3m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_5m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "b_60m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_15m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_1m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_30m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_3m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_5m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c2_owner_xvenue_wick",
+   "variant": "c_60m",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c3_yen_premium_revert",
+   "variant": "1d",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c3_yen_premium_revert",
+   "variant": "1h",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency"
+   ],
+   "not_verified": [
+    "取引数は git に記録が無く照合していない(日ごとの損益・overall・frequency の一致で表示可とした)"
+   ],
+   "n_trades": 477109,
+   "period": [
+    "2017-08-17T15:00:00Z",
+    "2022-12-31T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 67611,
+    "provenance.json": 7048,
+    "trades.json.gz": 7984553
+   },
+   "seconds": 1452.7,
+   "reason": null
+  },
+  {
+   "card": "c3_yen_premium_revert",
+   "variant": "1w",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "core_body",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 266338,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102604,
+    "provenance.json": 10989,
+    "trades.json.gz": 4138859
+   },
+   "seconds": 919.1,
+   "reason": null
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "core_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "follow_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "follow_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "full_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "full_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e1_c0",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e1_c08",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e1_dote",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e1_v37",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e2_c08",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b1_w10_e2_v37",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_levels_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_levels_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_time_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_time_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_trend_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_trend_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_width_body",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "no_width_wick",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c5_tokyo_fix_momentum",
+   "variant": "default",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 31479,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 89929,
+    "provenance.json": 10946,
+    "trades.json.gz": 489879
+   },
+   "seconds": 945.6,
+   "reason": null
+  },
+  {
+   "card": "c6_weekend_gap_revert",
+   "variant": "btc",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c6_weekend_gap_revert",
+   "variant": "usdjpy",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 282,
+   "period": [
+    "2017-08-01T15:00:00Z",
+    "2022-12-31T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 43743,
+    "provenance.json": 11136,
+    "trades.json.gz": 6244
+   },
+   "seconds": 818.7,
+   "reason": null
+  },
+  {
+   "card": "c7_barrier_race",
+   "variant": "1d",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c7_barrier_race",
+   "variant": "1h",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 16260,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102437,
+    "provenance.json": 10850,
+    "trades.json.gz": 295651
+   },
+   "seconds": 875.7,
+   "reason": null
+  },
+  {
+   "card": "c7_barrier_race",
+   "variant": "1w",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c8_session_mean_revert",
+   "variant": "bf_maint",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c8_session_mean_revert",
+   "variant": "jst_day",
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 124911,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102461,
+    "provenance.json": 10964,
+    "trades.json.gz": 1878019
+   },
+   "seconds": 873.9,
+   "reason": null
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "limit_v37_good",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "limit_v37_bad",
+   "status": "not_exported",
+   "display_ok": false,
+   "reason": "未実行または失敗"
+  }
+ ],
+ "excluded": [
+  {
+   "card": "c3_yen_premium_revert",
+   "variant": "measure_limit/{1h,1d,1w}",
+   "status": "excluded",
+   "reason": "対象外: 台本 scratchpad/w4/limit/limit_core.py がリポジトリに無い"
+  },
+  {
+   "card": "c9_liquidation_cascade",
+   "variant": "-",
+   "status": "excluded",
+   "reason": "対象外: 測定が無い(文書のみ)"
+  },
+  {
+   "card": "c4_owner_matilda_range",
+   "variant": "m_b{1,5}_w*_e*_* のうち git に出力が無い 114 個",
+   "status": "excluded",
+   "reason": "対象外: git に出力がある変種だけを対象にする(リードの判断)"
+  }
+ ]
+}
