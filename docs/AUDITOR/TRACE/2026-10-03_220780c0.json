@@ -22683,11 +22683,11 @@
   {
    "move": 833,
    "tools": {
-    "Bash": 14,
+    "Bash": 16,
     "Write": 2,
     "Agent": 4
    },
-   "n_tools": 20,
+   "n_tools": 22,
    "read_goal": false,
    "first_write_at": 8,
    "table_shown": true,
