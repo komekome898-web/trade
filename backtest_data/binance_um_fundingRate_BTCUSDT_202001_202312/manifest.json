@@ -1,0 +1,8 @@
+{
+ "source": "https://data.binance.vision/data/futures/um/monthly/fundingRate/BTCUSDT/",
+ "files": 48,
+ "months": "2020-01..2023-12",
+ "columns": "calc_time,funding_interval_hours,last_funding_rate",
+ "fetched_utc": "2026-10-03",
+ "note": "measurements use rows with calc_time before 2023-12-17T15:00Z only (seal P2-08 starts 2023-12-18)"
+}
