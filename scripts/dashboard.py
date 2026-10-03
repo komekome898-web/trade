@@ -12,9 +12,13 @@ they add 2 requests per PUBLIC_TTL seconds (0.4 req/s) against the 500 per
 
 Usage: python scripts/dashboard.py [--port 8300] [--runs-dir DIR ...]
 
-The バックテスト tab lists the runs bot.bt.repro wrote under each --runs-dir
-(repeatable; default backtest_runs and backtest_runs_shared) and shows each
-run's tabs, rendered on the server (src/bot/monitoring/backtest_view.py).
+The バックテスト tab shows the runs bot.bt.repro wrote under each --runs-dir
+(repeatable; default backtest_runs and backtest_runs_shared) as a tree of
+themes -> strategies (the ledger src/bot/monitoring/backtest_themes.py), a
+dropdown per family axis, a candle chart of the chosen run with its trades and
+cumulative profit and loss (src/bot/monitoring/backtest_chart.py; the chart
+library is served from src/bot/monitoring/static/, no CDN), and the run's ten
+detail tabs rendered on the server (src/bot/monitoring/backtest_view.py).
 backtest_runs/ is not in git, so a machine that only pulls the repository sees
 the runs scripts/share_backtest_runs.py copied into backtest_runs_shared/.
 """
@@ -36,7 +40,7 @@ from bot.monitoring.aggregate import collect_status  # noqa: E402
 from bot.monitoring.market_view import (  # noqa: E402
     PRODUCT, attach_board, bars_from_executions, collect_market,
 )
-from bot.monitoring import backtest_view  # noqa: E402
+from bot.monitoring import backtest_chart, backtest_view  # noqa: E402
 
 BACKTEST_RUNS_DIR = "backtest_runs"  # bot.bt.repro writes <runs_dir>/<run_id>/
 BACKTEST_SHARED_DIR = "backtest_runs_shared"  # git-tracked copies (scripts/share_backtest_runs.py)
@@ -47,6 +51,7 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bot Console</title>
+<link rel="stylesheet" href="/static/backtest_tab.css">
 <style>
   :root {
     --bg: #0c1322; --panel: #131c30; --line: #223050;
@@ -200,7 +205,6 @@ PAGE = """<!doctype html>
   .bt-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
   .bt-tabs button { background: none; color: var(--ink); border: 1px solid var(--line); padding: 4px 8px; cursor: pointer; }
   .bt-tabs button.on { border-color: var(--accent); }
-  .bt-row { cursor: pointer; }
   .bt-warn { border: 1px solid #d39e00; padding: 6px 8px; margin: 4px 0; }
 </style></head><body>
 <header>
@@ -270,16 +274,36 @@ PAGE = """<!doctype html>
   </section>
 </main>
 <main id="view-backtest" hidden>
-  <section>
-    <h2>バックテストの実行 <span class="sub">実行の一覧(実行 ID = 内容のハッシュ)。行を押すと項目別のタブを開く</span></h2>
-    <div class="scroll" id="bt-list"><span class="empty">読込中…</span></div>
-  </section>
-  <section>
-    <h2 id="bt-title">実行を選んでください</h2>
-    <div class="bt-tabs" id="bt-tabs"></div>
-    <div id="bt-body"></div>
-  </section>
+  <div class="bt-layout">
+    <aside class="bt-tree" id="bt-tree"><span class="empty">読込中…</span></aside>
+    <div class="bt-main">
+      <section id="bt-head" class="bt-card"><span class="empty">左の木から戦略を選んでください</span></section>
+      <section id="bt-family" class="bt-card" hidden></section>
+      <div class="tiles" id="bt-stats"></div>
+      <section id="bt-chartbox" class="bt-card" hidden>
+        <div class="bt-notes" id="bt-price-note"></div>
+        <div class="bt-frame" id="bt-frame"></div>
+        <div class="bt-chartwrap" id="bt-pricewrap">
+          <div class="bt-panel" id="bt-panel"></div>
+          <div id="bt-price"></div>
+          <canvas id="bt-overlay"></canvas>
+          <div class="bt-tip" id="bt-tip"></div>
+        </div>
+        <div class="bt-cap" id="bt-pnl-cap">累計損益</div>
+        <div id="bt-pnl"></div>
+        <div class="bt-legend" id="bt-legend"></div>
+      </section>
+      <details class="bt-card bt-detail" id="bt-detail">
+        <summary>詳細(概要・前提・損益・取引・約定の質・費用・分布・検証・再現性・データ品質)</summary>
+        <h2 id="bt-title">実行を選んでください</h2>
+        <div class="bt-tabs" id="bt-tabs"></div>
+        <div id="bt-body"></div>
+      </details>
+    </div>
+  </div>
 </main>
+<script src="/static/lightweight-charts.standalone.production.js"></script>
+<script src="/static/backtest_tab.js"></script>
 <script>
 const fmt = (v, d=1) => v == null ? "—" : Number(v).toLocaleString("ja-JP", {maximumFractionDigits: d});
 const age = s => s == null ? "—" : s < 90 ? `${Math.round(s)}秒前` : s < 5400 ? `${Math.round(s/60)}分前` : `${(s/3600).toFixed(1)}時間前`;
@@ -756,41 +780,10 @@ function showTab(name) {
     refreshMarket();
     startMarketTimer();
   } else if (marketTimer) { clearInterval(marketTimer); marketTimer = null; }
-  if (name === "backtest") loadBacktestRuns();
+  if (name === "backtest" && window.btInit) btInit();
 }
 
-// バックテスト tab: the server renders every tab of a run (backtest_view.py);
-// this only lists the runs and swaps the server's HTML in.
-const btEsc = s => String(s == null ? "—" : s).replace(/[&<>"']/g,
-  c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
-let btView = null;
-function loadBacktestRuns() {
-  return fetch("/api/backtest/runs").then(r => r.json()).then(d => {
-    const rows = (d.runs || []).map(r =>
-      `<tr class="bt-row" onclick="openBacktestRun('${btEsc(r.run_id)}')"><td class="mono">${btEsc(r.run_id.slice(0, 12))}</td>` +
-      `<td>${btEsc(r.group || "")}</td><td>${btEsc(r.purpose)}</td><td>${btEsc(r.instrument)}</td><td>${btEsc(r.setup)}</td><td>${btEsc(r.trades)}</td></tr>`);
-    document.getElementById("bt-list").innerHTML = rows.length
-      ? `<table><tr><th>実行 ID</th><th>集まり</th><th>目的</th><th>商品</th><th>手順</th><th>往復</th></tr>${rows.join("")}</table>`
-      : '<span class="empty">実行がまだ無い</span>';
-  });
-}
-function openBacktestRun(id) {
-  return fetch("/api/backtest/run/" + encodeURIComponent(id)).then(r => r.json()).then(v => {
-    btView = v;
-    document.getElementById("bt-title").innerHTML = `実行 <span class="mono">${btEsc(v.run_id)}</span>(目的: ${btEsc(v.purpose)})`;
-    document.getElementById("bt-tabs").innerHTML = v.tabs.map((t, i) =>
-      `<button id="bt-tab-${i}" onclick="showBacktestTab(${i})">${btEsc(t.label)}</button>`).join("");
-    showBacktestTab(0);
-  });
-}
-function showBacktestTab(i) {
-  if (!btView) return;
-  btView.tabs.forEach((t, k) => {
-    const b = document.getElementById("bt-tab-" + k);
-    if (b) b.className = (k === i) ? "on" : "";
-  });
-  document.getElementById("bt-body").innerHTML = btView.tabs[i].html;
-}
+// バックテスト tab: static/backtest_tab.js (theme tree, family dropdowns, chart, detail tabs).
 
 // Slope arrow. SVG y grows downward, so a rising slope (positive angle) is
 // drawn as a negative rotation.
@@ -1427,29 +1420,68 @@ def market_body(root: str = ".", now: float | None = None) -> bytes:
         return json.dumps(cached).encode()
 
 
-def _backtest(path: str, runs_dir):
-    """(status, content type, body) for the バックテスト routes, or None."""
-    route = path.split("?", 1)[0]
+def _json(obj, status: int = 200):
+    return status, "application/json", json.dumps(obj, ensure_ascii=False).encode()
+
+
+def _query(path: str) -> dict:
+    from urllib.parse import parse_qs  # noqa: PLC0415
+    return {k: v[-1] for k, v in parse_qs(path.split("?", 1)[1] if "?" in path else "").items()}
+
+
+def _num(q: dict, key: str, cast, default=None):
+    if key not in q or q[key] == "":
+        return default
     try:
+        return cast(q[key])
+    except ValueError:
+        raise backtest_chart.ChartError(f"query {key} is not a number: {q[key]!r}") from None
+
+
+def _backtest(path: str, runs_dir, data_root=None):
+    """(status, content type, body) for the バックテスト routes, or None. `data_root` = the repository root the
+    price files are read from (default: this repository)."""
+    route = path.split("?", 1)[0]
+    root = Path(data_root) if data_root else backtest_chart.REPO_ROOT
+    try:
+        if route.startswith("/static/"):
+            got = backtest_chart.static_file(route[len("/static/"):])
+            return (200, got[0], got[1]) if got else _json({"error": "not found"}, 404)
         if route == "/api/backtest/runs":
-            return 200, "application/json", json.dumps({"runs": backtest_view.list_runs(runs_dir)},
-                                                       ensure_ascii=False).encode()
+            return _json({"runs": backtest_view.list_runs(runs_dir)})
+        if route == "/api/backtest/catalog":
+            return _json(backtest_chart.catalog(runs_dir))
+        if route.startswith("/api/backtest/summary/"):
+            q = _query(path)
+            return _json(backtest_chart.run_summary(runs_dir, route[len("/api/backtest/summary/"):], root,
+                                                    range_name=q.get("range") or None))
+        if route.startswith("/api/backtest/chart/"):
+            q = _query(path)
+            return _json(backtest_chart.run_chart(
+                runs_dir, route[len("/api/backtest/chart/"):], from_s=_num(q, "from", float), to_s=_num(q, "to", float),
+                max_bars=_num(q, "max_bars", int, backtest_chart.DEFAULT_MAX_BARS), range_name=q.get("range") or None, root=root,
+                interval_s=_num(q, "interval", int)))
         if route.startswith("/api/backtest/run/"):
             view = backtest_view.run_view(runs_dir, route[len("/api/backtest/run/"):])
-            return 200, "application/json", json.dumps(view, ensure_ascii=False).encode()
+            return _json(view)
         if route.startswith("/backtest/run/"):
             view = backtest_view.run_view(runs_dir, route[len("/backtest/run/"):])
             return 200, "text/html; charset=utf-8", backtest_view.run_page(view).encode()
     except backtest_view.BacktestViewError as exc:
-        return 404, "application/json", json.dumps({"error": str(exc)}, ensure_ascii=False).encode()
+        return _json({"error": str(exc)}, 404)
+    except backtest_chart.ChartError as exc:
+        return _json({"error": str(exc)}, 400)
+    except Exception as exc:  # noqa: BLE001 -- a file that cannot be read is an answer for the page, not a dead connection
+        return _json({"error": f"{type(exc).__name__}: {exc}"}, 500)
     return None
 
 
 class Handler(BaseHTTPRequestHandler):
     backtest_runs_dir = BACKTEST_DIRS
+    backtest_data_root = None  # None: this repository (backtest_chart.REPO_ROOT)
 
     def do_GET(self):
-        bt = _backtest(self.path, self.backtest_runs_dir)
+        bt = _backtest(self.path, self.backtest_runs_dir, self.backtest_data_root)
         if bt is not None:
             status, ctype, body = bt
             self.send_response(status)
@@ -1483,10 +1515,11 @@ class Handler(BaseHTTPRequestHandler):
         pass  # keep the console quiet
 
 
-def make_handler(runs_dir) -> type:
-    """A Handler whose バックテスト tab reads `runs_dir` (one directory or several)."""
+def make_handler(runs_dir, data_root=None) -> type:
+    """A Handler whose バックテスト tab reads `runs_dir` (one directory or several); prices from `data_root`."""
     dirs = str(runs_dir) if isinstance(runs_dir, (str, Path)) else tuple(str(d) for d in runs_dir)
-    return type("BacktestHandler", (Handler,), {"backtest_runs_dir": dirs})
+    return type("BacktestHandler", (Handler,), {"backtest_runs_dir": dirs,
+                                                 "backtest_data_root": str(data_root) if data_root else None})
 
 
 def _warm_backtest_list(runs_dirs) -> None:
@@ -1495,6 +1528,7 @@ def _warm_backtest_list(runs_dirs) -> None:
     the first listing took 10.18 s, the second (cached) 0.03 s; a colder disk can take longer."""
     try:
         backtest_view.list_runs(runs_dirs)
+        backtest_chart.catalog(runs_dirs)
     except Exception:  # noqa: BLE001 -- a warm-up must not stop the dashboard; the tab reports its own error
         pass
 
