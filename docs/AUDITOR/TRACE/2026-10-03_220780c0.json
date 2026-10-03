@@ -20523,9 +20523,9 @@
   {
    "move": 754,
    "tools": {
-    "Bash": 11
+    "Bash": 13
    },
-   "n_tools": 11,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

@@ -279,3 +279,10 @@ python <scratchpad>/w4/limit/make_tables.py
 
 **訂正(2026-10-03、L-570)**: 上の「BitMEX の 1 秒足 2017〜2021 は手元にある」は使わない(BitMEX のデータは測定に使わない)。カード 3 が見ているのは Binance 現物なので、分の中の値段は Binance 現物の 1 秒足を使う(公開の置き場に 2019 年の分もある【事実: `https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1s/BTCUSDT-1s-2019-03-01.zip.CHECKSUM` が HTTP 200】)。
 
+
+**追記(2026-10-03、L-584 の問い「bitFlyerの1秒足はバイナンスと同じ期間あるの？」)**: 無い。
+- bitFlyer のチャートの口は分・時・日だけ【事実: `https://lightchart.bitflyer.com/api/ohlc?symbol=FX_BTC_JPY&period=s` → HTTP 400「instance.period is not one of enum values: m,h,d」】。
+- 約定の口は直近 31 日だけ【事実: `https://api.bitflyer.com/v1/executions?product_code=FX_BTC_JPY&before=100000000` → HTTP 400「Execution history is limited to the most recent 31 days.」】。
+- 手元の bitFlyer の秒より細かい記録は、自分で取った約定(2026-07-23〜、`backtest_data/bitflyer_executions_us_20260723_20260906` ほか)と板(2026-08-20〜)だけで、どちらも封印の区間(P2-08b)にある。
+- Binance 現物の 1 秒足は 2017-08-17 からある【事実: `BTCUSDT-1s-2017-08-17.zip.CHECKSUM` が HTTP 200】。
+- 帰結: 候補 B(海外が分の中で動いたとき段を置き直せば追いつけるか)は、長い過去では「海外は 1 秒、bitFlyer は 1 分足の高値・安値」でしか測れない。bitFlyer の指値が分の中のいつ約定したかは分からない(カード 4 の段 1 と同じ限界)。
