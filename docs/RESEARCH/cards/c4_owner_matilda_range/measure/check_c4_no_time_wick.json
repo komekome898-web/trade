@@ -1,0 +1,18 @@
+{
+ "card": "c4_owner_matilda_range",
+ "chunk": "month",
+ "exposure_identical": true,
+ "n_bars": 521307,
+ "n_boundaries": 11,
+ "n_decisions": 520293,
+ "n_exposure_diff": 0,
+ "nonzero_share": 0.030813407061021387,
+ "peak_rss_gb": 1.18,
+ "range": [
+  "2018-01-01T00:00:00Z",
+  "2019-01-01T00:00:00Z"
+ ],
+ "same_bars": true,
+ "seconds": 755.4,
+ "variant": "no_time_wick"
+}
