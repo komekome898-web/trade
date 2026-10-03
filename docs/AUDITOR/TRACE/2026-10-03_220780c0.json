@@ -20907,12 +20907,12 @@
   {
    "move": 768,
    "tools": {
-    "Bash": 5,
+    "Bash": 6,
     "SendMessage": 1,
     "Write": 1,
     "mcp__Claude_Code_Remote__create_session": 2
    },
-   "n_tools": 9,
+   "n_tools": 10,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": false,

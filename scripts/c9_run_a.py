@@ -524,18 +524,33 @@ def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, 
 
 
 def concat_chunks(paths, dest: Path) -> None:
-    """見出しを 1 回だけ残して gz の CSV をつなぐ(列は日ごとに同じ順で書いてある)。"""
+    """見出しを 1 回だけ残して gz の CSV をつなぐ(列は日ごとに同じ順で書いてある)。
+
+    対照の (ii) が 1 件も合わなかった日は day_offset の列が無い(add_ctrl は出た種類の列だけを書く)。
+    列の数が一番多い見出しを基準にし、列がその部分集合の日は基準の並びに直して空欄で埋める。
+    基準に無い列がある日は止める。"""
+    heads = {}
+    for p in paths:
+        with gzip.open(p, "rt", encoding="utf-8", newline="") as fi:
+            heads[p] = fi.readline()
+    if not heads:
+        with gzip.open(dest, "wt", encoding="utf-8", newline=""):
+            return
+    header = max(heads.values(), key=lambda h: (len(h.rstrip("\r\n").split(",")), list(heads.values()).count(h)))
+    cols = header.rstrip("\r\n").split(",")
     with gzip.open(dest, "wt", encoding="utf-8", newline="") as fo:
-        header = None
+        fo.write(header)
         for p in paths:
-            with gzip.open(p, "rt", encoding="utf-8", newline="") as fi:
-                h = fi.readline()
-                if header is None:
-                    header = h
-                    fo.write(h)
-                elif h != header:
-                    raise SystemExit(f"[止め] 列が日ごとに違う: {p}")
-                shutil.copyfileobj(fi, fo)
+            if heads[p] == header:
+                with gzip.open(p, "rt", encoding="utf-8", newline="") as fi:
+                    fi.readline()
+                    shutil.copyfileobj(fi, fo)
+                continue
+            own = heads[p].rstrip("\r\n").split(",")
+            if not set(own) <= set(cols):
+                raise SystemExit(f"[止め] 列が日ごとに違う(基準に無い列): {p}")
+            df = pd.read_csv(p, dtype=str, keep_default_na=False).reindex(columns=cols, fill_value="")
+            df.to_csv(fo, index=False, header=False)
 
 
 def read_chunks(paths, usecols=None) -> pd.DataFrame:
