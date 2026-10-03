@@ -63,9 +63,10 @@ def fmt(x) -> str:
 
 def md(df: pd.DataFrame) -> str:
     cols = list(df.columns)
-    out = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+    esc = lambda x: str(x).replace("|", "\\|")  # noqa: E731  (GFM の表の中の縦棒)
+    out = ["| " + " | ".join(esc(c) for c in cols) + " |", "|" + "---|" * len(cols)]
     for _, r in df.iterrows():
-        out.append("| " + " | ".join(fmt(r[c]).replace("|", "/") for c in cols) + " |")
+        out.append("| " + " | ".join(esc(fmt(r[c])) for c in cols) + " |")
     return "\n".join(out)
 
 
@@ -143,11 +144,26 @@ def manifest(src: Path, ivdir: Path | None = None) -> str:
                                        "別の出所": d} for a, b, c, d in chk]))))
     if ivdir is not None and ivdir.exists():
         rr = []
-        for p in sorted(x for x in ivdir.iterdir() if x.is_file()):
-            n, how = count_rows(p)
-            rr.append({"ファイル": f"run_a/{ivdir.name}/{p.name}", "バイト": p.stat().st_size, "sha256": sha256(p),
-                       "行数": ("-" if n < 0 else n), "数え方": how})
-        out.append(block("manifest_iv", "`control_iv.py` の出力(この回の追加の計算)", md(pd.DataFrame(rr))))
+        for dd in (ivdir, ivdir.parent / "control_ivh_out", ivdir.parent / "three_way_m_out"):
+            if not dd.exists():
+                continue
+            for p in sorted(x for x in dd.iterdir() if x.is_file()):
+                n, how = count_rows(p)
+                rr.append({"ファイル": f"run_a/{dd.name}/{p.name}", "バイト": p.stat().st_size, "sha256": sha256(p),
+                           "行数": ("-" if n < 0 else n), "数え方": how})
+        out.append(block("manifest_iv", "第 2 稿・第 3 稿の追加の計算の出力(`control_iv.py`・`control_ivh.py`・`three_way_m.py`)", md(pd.DataFrame(rr))))
+    sc = sorted((src / "chunks" / "scurve").glob("*.npz"))
+    if sc:
+        rr = []
+        for p in sc:
+            z = np.load(p)
+            rr.append({"ファイル": f"chunks/scurve/{p.name}", "バイト": p.stat().st_size, "sha256": sha256(p),
+                       "点の数(s の長さ)": int(z["s"].size), "列(遅れ × h)": int(z["v"].shape[1]) if z["v"].ndim == 2 else 0})
+        df = pd.DataFrame(rr)
+        tot = pd.DataFrame([{"ファイル": f"合計 {len(df)} ファイル", "バイト": int(df["バイト"].sum()), "sha256": "",
+                             "点の数(s の長さ)": int(df["点の数(s の長さ)"].sum()), "列(遅れ × h)": ""}])
+        out.append(block("manifest_scurve", f"`{src.relative_to(REPO)}/chunks/scurve/`(t8 の元。監査の聞く 22 で載せた)",
+                         md(pd.concat([tot, df], ignore_index=True))))
     log = src.parent / "full.log"
     if log.exists():
         out.append(block("manifest_log", "走らせの記録",
@@ -164,7 +180,7 @@ def manifest(src: Path, ivdir: Path | None = None) -> str:
 ST_COLS = ["n", "q25", "q50", "q75", "share_pos", "share_neg", "pooled_mean", "se_pooled_cluster",
            "day_eq_mean", "se_day_eq", "n_days"]
 ST_SHORT = ["n", "q50", "pooled_mean", "se_pooled_cluster", "day_eq_mean", "se_day_eq", "n_days"]
-PER = {"作る": "前半(作る)", "測る": "後半(測る)"}
+PER = {"作る": "前半(標本内、列 period = 作る)", "測る": "後半(標本内、列 period = 測る)"}
 
 
 def st(vals, days) -> dict:
@@ -238,7 +254,16 @@ def tables(src: Path, ivdir: Path) -> str:
     LG = pd.read_csv(src / "policy_legs.csv.gz", dtype={"day": str})
     TP = pd.read_csv(src / "three_way_probs.csv.gz", dtype={"day": str})
     c2 = C[C["kind"] == "(ii)合わせた時刻"]
-    G = {"実": P, "対照(i)": C[C["kind"] == "(i)無作為"], "対照(ii)": c2, "対照(iv)": IV}
+    ivhdir, twdir = ivdir.parent / "control_ivh_out", ivdir.parent / "three_way_m_out"
+    IVH = pd.read_csv(ivhdir / "controls_ivh.csv.gz", dtype={"day": str, "ref_id": str})
+    PVv = pd.read_csv(ivhdir / "prints_versions.csv.gz", dtype={"day": str, "print_id": str})
+    IVV = pd.read_csv(ivhdir / "controls_iv_versions.csv.gz", dtype={"day": str, "ref_id": str})
+    CZ = pd.read_csv(ivhdir / "iv_unmatched_cause.csv.gz", dtype={"day": str, "print_id": str})
+    ivhm = json.loads((ivhdir / "control_ivh_meta.json").read_text(encoding="utf-8"))
+    TPM = pd.read_csv(twdir / "three_way_m_probs.csv.gz", dtype={"day": str})
+    MM = json.loads((twdir / "three_way_m_model.json").read_text(encoding="utf-8"))
+    CALM = pd.read_csv(twdir / "three_way_m_calibration.csv")
+    G = {"実": P, "対照(i)": C[C["kind"] == "(i)無作為"], "対照(ii)": c2, "対照(iv)": IV, "対照(iv-h)": IVH}
 
     # ---- t0 走らせの数 ----
     tm = meta["対照の取れた数"]
@@ -253,6 +278,8 @@ def tables(src: Path, ivdir: Path) -> str:
     for k in ("(i)無作為", "(ii)合わせた時刻", "(iii)プラセボ_g30", "(iii)プラセボ_g60", "(iii)プラセボ_g180"):
         rows.append((f"対照 {k} 取れた / 求めた", f'{tm[k]["取れた"]} / {tm[k]["求めた"]}', f"run_meta 対照の取れた数.{k}"))
     rows.append(("対照 (iv) 取れた / 求めた", f'{ivm["対照(iv)取れた"]} / {ivm["プリント"]}', "control_iv_meta.json"))
+    rows.append(("対照 (iv-h) 取れた / 求めた", f'{ivhm["対照(iv-h)取れた"]} / {ivhm["プリント"]}', "control_ivh_meta.json"))
+    rows.append(("control_ivh.py の所要_秒", ivhm["所要_秒"], "control_ivh_meta.json"))
     rows.append(("対照 (ii) 日のずれ別(0,−1,+1,−2,+2,−3,+3)",
                  " / ".join(str(tm["(ii)日のずれ別"][o]) for o in ("0", "-1", "1", "-2", "2", "-3", "3")), "run_meta"))
     rows.append(("対照 (iv) 日のずれ別(同じ順)",
@@ -299,6 +326,14 @@ def tables(src: Path, ivdir: Path) -> str:
         ("s の上限", f"{v2.S_MAX} 秒", "仮定", "設計 §3.1(g の最大)"),
         ("1 枚 = 100 USD", "100", "実測", "置き場の metrics からの計算(README_TOOL_A)。銘柄を指した一次資料は未確認"),
         ("清算の向き(SELL = ロングの強制決済)", "-", "一次資料", "Binance の文書の逐語(CARD.md 98 行の引用)"),
+        ("3 分位の切り(t4m・t6d・t9)", "3", "仮定", "リード(設計 §9-4「3 分位」)。t4m の m・材料 4 への当てはめは作業者"),
+        ("上位 10 日の除き方(t6e)", "10 日 × 正/負/絶対値", "仮定", "作業者(監査の直す 4 の「上位 10 日」に合わせた)"),
+        ("起点 版C の +1 秒(t1r・t2v)", "1 秒", "仮定", "作業者(状態機械の遅れ 1 秒と同じ)。リードが追認(監査の聞く 24)"),
+        ("起点 版D(押した向きの成行の最初の約定)", "-", "仮定", "作業者(止める 2 の (b) で、プリントと対照に同じ規則で置ける起点として)"),
+        ("MDE の 2.8(t2・t2stat・t6f)", "2.8 × SE", "仮定", "慣用の値(両側 5%・検出力 80%)。作業者が置き、リードが追認(聞く 24)"),
+        ("(iv)(iv-h) の候補から清算の zip の無い日を外す", "-", "仮定", "作業者(監査 1 回目の直す 10)。リードが追認(聞く 24)"),
+        ("(iv-h) の時の帯", "UTC の 0〜23 時", "仮定", "リード(この回の指示「帯 = 今の (iv) の帯 × 時」)"),
+        ("3 択の作り直しで足した材料 |m10|・|m60|", "2 本", "仮定", "リード(この回の指示。代替の記録の回答者 A の 1 位)"),
     ]
     B("t0s_settings", "`liq_cascade_v2` の定数・`o3c_signal_logit` の定数を台本で読んだ(値の列)。分類は 一次資料 / 実測 / 仮定(KNOWN_ANSWERS 80 行)",
       pd.DataFrame(rows, columns=["設定", "値", "出所の分類", "誰の・どこの"]))
@@ -318,10 +353,14 @@ def tables(src: Path, ivdir: Path) -> str:
         for v_, lab in (("A", "版A 走らせと同じ(ts 以後の最初)"), ("B", "版B 版A の約定より厳密に後の最初"),
                         ("C", "版C ts + 1 秒 以後の最初")):
             rows.append({"h": H_LABEL[h], "起点": lab} | st(RA[f"react{v_}_{h}"], RA["day"]))
-    B("t1r_reanchor", "`control_iv_out/prints_reanchor.csv.gz`(react の規則は走らせと同じ。版A は走らせの react と一致、t0)",
+    for h in H_ALL:
+        rows.append({"h": H_LABEL[h], "起点": "版D ts 以後の、清算の向きの成行の最初"} | st(PVv[f"reactD_{h}"], PVv["day"]))
+    rows = sorted(rows, key=lambda r: (H_ALL.index([k for k, v in H_LABEL.items() if v == r["h"]][0]), r["起点"]))
+    B("t1r_reanchor", "版A・B・C = `control_iv_out/prints_reanchor.csv.gz`、版D = `control_ivh_out/prints_versions.csv.gz`(react の規則は走らせと同じ。版A は走らせの react と一致、t0)",
       pd.DataFrame(rows))
     rows = []
-    for v_ in ("A", "B", "C"):
+    RAm = RAm.merge(PVv[["print_id", "t0_D", "p0_D"]], on="print_id")
+    for v_ in ("A", "B", "C", "D"):
         lag = (RAm[f"t0_{v_}"] - RAm["ts_ms"]).to_numpy(float)
         rows.append({"起点": v_, "起点の時刻 − ts の中央値(ms)": float(np.nanmedian(lag)),
                      "95 分位(ms)": float(np.nanpercentile(lag, 95)),
@@ -337,12 +376,22 @@ def tables(src: Path, ivdir: Path) -> str:
                 s = st(df[f"{k}_{h}"], df["day"])
                 rows.append({"量": k, "h": H_LABEL[h], "群": gname, "n": s["n"], "q25": s["q25"], "q50": s["q50"],
                              "q75": s["q75"], "day_eq_mean": s["day_eq_mean"], "se_day_eq": s["se_day_eq"]})
-    B("t1b_excursion", "t1 と同じファイルの mfe・mae・giveback(h = 10 秒・60 秒・5 分・60 分)", pd.DataFrame(rows))
+    B("t1b_excursion", "t1 と同じファイルの mfe・mae・giveback(h = 10 秒・60 秒・5 分・60 分)。**群ごとに母集団が違う**(実 = 全プリント、(iv)(iv-h) = 取れた分だけ。同じ母集団の版は t1b_same)", pd.DataFrame(rows))
+    rows = []
+    for lab, cc in (("(iv)", IV), ("(iv-h)", IVH)):
+        sub = P[P["print_id"].isin(set(cc["ref_id"]))]
+        for k in ("mfe", "mae", "giveback"):
+            for h in (10, 60, 300, 3600):
+                for gl, df in ((f"実({lab} が取れたプリント)", sub), (f"対照{lab}", cc)):
+                    s = st(df[f"{k}_{h}"], df["day"])
+                    rows.append({"組": lab, "量": k, "h": H_LABEL[h], "群": gl, "n": s["n"], "q50": s["q50"],
+                                 "pooled_mean": s["pooled_mean"], "day_eq_mean": s["day_eq_mean"], "se_day_eq": s["se_day_eq"]})
+    B("t1b_same", "t1b を、対照が取れたプリントだけ(同じ母集団)にした版。実 = `anchors_prints.csv.gz` の該当の print_id", pd.DataFrame(rows))
 
     # ---- t2 対の差 (ii)(iv) ----
     Pi = P.set_index("print_id")
     pairs = {}
-    for lab, cc in (("(ii)", c2), ("(iv)", IV)):
+    for lab, cc in (("(ii)", c2), ("(iv)", IV), ("(iv-h)", IVH)):
         M = cc.merge(P[["print_id", "day", "before_seal", "scene"] + xk], left_on="ref_id", right_on="print_id",
                      suffixes=("_c", "_p"))
         pairs[lab] = M
@@ -350,8 +399,10 @@ def tables(src: Path, ivdir: Path) -> str:
     for h in H_ALL:
         for lab, M in pairs.items():
             d = M[f"react_{h}_p"].to_numpy(float) - M[f"react_{h}_c"].to_numpy(float)
-            rows.append({"h": H_LABEL[h], "対照": lab} | st(d, M["day_p"]))
-    B("t2_paired", "対照の `ref_id` を `anchors_prints.csv.gz` の `print_id` につないだ組。値 = react_h(プリント)− react_h(対照)、日 = プリントの日",
+            s = st(d, M["day_p"])
+            rows.append({"h": H_LABEL[h], "対照": lab} | s | {"q75−q25": s["q75"] - s["q25"],
+                        "MDE(day_eq)": 2.8 * s["se_day_eq"], "MDE(pooled)": 2.8 * s["se_pooled_cluster"]})
+    B("t2_paired", "対照の `ref_id` を `anchors_prints.csv.gz` の `print_id` につないだ組。値 = react_h(プリント)− react_h(対照)、日 = プリントの日。MDE = 2.8 × SE(仮定、t0s)",
       pd.DataFrame(rows))
 
     both = set(pairs["(ii)"]["print_id"]) & set(pairs["(iv)"]["print_id"])
@@ -366,28 +417,107 @@ def tables(src: Path, ivdir: Path) -> str:
     B("t2s_samepop", f"(ii) と (iv) の両方が取れたプリント {len(both)} 件に限った対の差(母集団をそろえた比べ)",
       pd.DataFrame(rows))
 
+    # ---- t2stat 止める 1: 統計ごとの向き ----
+    rows = []
+    for lab in ("(iv)", "(iv-h)"):
+        M = pairs[lab]
+        for h in (60, 300, 900, 3600, 14400):
+            x, y = M[f"react_{h}_p"].to_numpy(float), M[f"react_{h}_c"].to_numpy(float)
+            sx, sy, sd = st(x, M["day_p"]), st(y, M["day_p"]), st(x - y, M["day_p"])
+            for stat, se_key in (("pooled_mean", "se_pooled_cluster"), ("day_eq_mean", "se_day_eq")):
+                rows.append({"対照": lab, "h": H_LABEL[h], "統計": stat, "実(同じプリント)": sx[stat], "対照の値": sy[stat],
+                             "対の差": sd[stat], "対の差の SE": sd[se_key], "MDE = 2.8×SE": 2.8 * sd[se_key],
+                             "|実の react|": abs(sx[stat])})
+            for stat in ("q25", "q50", "q75"):
+                rows.append({"対照": lab, "h": H_LABEL[h], "統計": stat, "実(同じプリント)": sx[stat], "対照の値": sy[stat],
+                             "対の差": sd[stat], "対の差の SE": np.nan, "MDE = 2.8×SE": np.nan, "|実の react|": abs(sx[stat])})
+            rows.append({"対照": lab, "h": H_LABEL[h], "統計": "q75−q25", "実(同じプリント)": sx["q75"] - sx["q25"],
+                         "対照の値": sy["q75"] - sy["q25"], "対の差": np.nan, "対の差の SE": np.nan, "MDE = 2.8×SE": np.nan,
+                         "|実の react|": np.nan})
+    B("t2stat", "t2 の (iv)・(iv-h) の組を統計ごとに並べた。「実(同じプリント)」= 対照が取れたプリントの react_h、「対照の値」= 対照の react_h、"
+      "「対の差」= 1 組ごとの差の統計(q25・q50・q75 は差の分布の分位で、実と対照の分位の差ではない)", pd.DataFrame(rows))
+
+    rows = []
+    for lab in ("(iv)", "(iv-h)"):
+        M = pairs[lab]
+        for scn in ("1件目", "連鎖の中"):
+            mm = M[M["scene"] == scn]
+            for h in (5, 10, 60, 300, 900, 3600, 14400):
+                d = mm[f"react_{h}_p"].to_numpy(float) - mm[f"react_{h}_c"].to_numpy(float)
+                s = st(d, mm["day_p"])
+                rows.append({"対照": lab, "場面": scn, "h": H_LABEL[h]} | {k: s[k] for k in ST_SHORT} |
+                            {"q25": s["q25"], "q75": s["q75"], "MDE(day_eq)": 2.8 * s["se_day_eq"]})
+    B("t2first", "t2 の (iv)・(iv-h) の組を、プリントの場面(1件目 = 直前 60 秒に同じ側の清算が無い / 連鎖の中)で分けた", pd.DataFrame(rows))
+
+    rows = []
+    VV = {"(iv)": IVV.merge(PVv, left_on="ref_id", right_on="print_id", suffixes=("_c", "_p")),
+          "(iv-h)": IVH.merge(PVv, left_on="ref_id", right_on="print_id", suffixes=("_c", "_p"))}
+    for lab, M in VV.items():
+        A = pairs[lab].set_index("print_id")
+        for v_ in ("A", "B", "C", "D"):
+            for h in (5, 10, 60, 300, 3600):
+                if v_ == "A":
+                    d = A[f"react_{h}_p"].to_numpy(float) - A[f"react_{h}_c"].to_numpy(float)
+                    dd = A["day_p"]
+                else:
+                    d = M[f"react{v_}_{h}_p"].to_numpy(float) - M[f"react{v_}_{h}_c"].to_numpy(float)
+                    dd = M["day_p"] if "day_p" in M else M["day"]
+                s = st(d, dd)
+                rows.append({"対照": lab, "起点の版(両側に同じ規則)": v_, "h": H_LABEL[h]} | {k: s[k] for k in ST_SHORT} |
+                            {"MDE(day_eq)": 2.8 * s["se_day_eq"]})
+    B("t2v_anchor", "起点の版をプリントと対照の両側に同じ規則で当てた対の差。版A = 起点の時刻以後の最初の約定(走らせ)、B = A の約定より厳密に後、"
+      "C = +1 秒以後、D = 押した向きの成行の最初の約定。B・C・D = `control_ivh_out/prints_versions.csv.gz` と `controls_iv_versions.csv.gz`・`controls_ivh.csv.gz`",
+      pd.DataFrame(rows))
+
+    hp = pd.to_datetime(P["ts_ms"], unit="ms", utc=True).dt.hour
+    h4 = pd.to_datetime(IV["anchor_ms"], unit="ms", utc=True).dt.hour
+    h5 = pd.to_datetime(IVH["anchor_ms"], unit="ms", utc=True).dt.hour
+    hp4 = pd.to_datetime(P.loc[P["print_id"].isin(set(IV["ref_id"])), "ts_ms"], unit="ms", utc=True).dt.hour
+    rows = [{"UTC の時": hh, "プリント 全部": float((hp == hh).mean()), "プリント (iv) が取れた": float((hp4 == hh).mean()),
+             "対照 (iv)": float((h4 == hh).mean()), "対照 (iv-h)": float((h5 == hh).mean())} for hh in range(24)]
+    B("t2hour", "時刻(UTC の時)ごとの割合。プリント = `anchors_prints.csv.gz` の ts_ms、対照 = anchor_ms", pd.DataFrame(rows))
+
     # 大きさのつり合い
     REPm = REP.merge(P[["print_id", "a10", "a60"]], on="print_id")
     got2 = REPm["anchor_new"].notna()
     got4 = P["print_id"].isin(set(IV["ref_id"]))
     rows = [
         {"群": "実 全プリント", "n": len(P), "|m10| 中央値": P["a10"].median(), "|m60| 中央値": P["a60"].median()},
-        {"群": "実 (ii) が取れたプリント", "n": int(got2.sum()), "|m10| 中央値": REPm.loc[got2, "a10"].median(),
+        {"群": "実 (ii) が取れたプリント(流し直しの集合。t2 の 48039 とは違う)", "n": int(got2.sum()), "|m10| 中央値": REPm.loc[got2, "a10"].median(),
          "|m60| 中央値": REPm.loc[got2, "a60"].median()},
-        {"群": "対照 (ii)(合わせた候補)", "n": int(got2.sum()), "|m10| 中央値": REPm.loc[got2, "cand_a10"].median(),
+        {"群": "対照 (ii)(流し直しで選んだ候補)", "n": int(got2.sum()), "|m10| 中央値": REPm.loc[got2, "cand_a10"].median(),
          "|m60| 中央値": REPm.loc[got2, "cand_a60"].median()},
         {"群": "実 (iv) が取れたプリント", "n": int(got4.sum()), "|m10| 中央値": P.loc[got4, "a10"].median(),
          "|m60| 中央値": P.loc[got4, "a60"].median()},
         {"群": "対照 (iv)(合わせた候補)", "n": len(IV), "|m10| 中央値": IV["cand_a10"].median(),
          "|m60| 中央値": IV["cand_a60"].median()},
+        {"群": "実 (iv-h) が取れたプリント", "n": len(IVH), "|m10| 中央値": IVH["print_a10"].median(),
+         "|m60| 中央値": IVH["print_a60"].median()},
+        {"群": "対照 (iv-h)(合わせた候補)", "n": len(IVH), "|m10| 中央値": IVH["cand_a10"].median(),
+         "|m60| 中央値": IVH["cand_a60"].median()},
     ]
     B("t2bal_magnitude", "直前の値動きの大きさ(bp)。実 = `anchors_prints` の |m10_signed|・|m60_signed|、"
       "(ii) の候補 = `control_iv_out/ii_reproduction.csv.gz` の cand_a10・cand_a60(同じ選び方を流し直して記録、t0 で一致を確かめた)、"
       "(iv) = `controls_iv.csv.gz` の cand_a10・cand_a60", pd.DataFrame(rows))
+    cut10 = np.array(ivm["帯の境"]["a10"])
+    bnd = v2.band_of(IV["print_a10"].to_numpy(float), cut10)
+    rows = []
+    for b_ in range(10):
+        m = bnd == b_
+        q = lambda c: IV.loc[m, c].quantile([0.25, 0.5, 0.75]).to_numpy()  # noqa: E731
+        pa, ca, p6, c6 = q("print_a10"), q("cand_a10"), q("print_a60"), q("cand_a60")
+        rows.append({"|m10| の帯(10 分位)": b_ + 1, "n": int(m.sum()),
+                     "プリント |m10| q25/q50/q75": " / ".join(f"{x:.3g}" for x in pa),
+                     "候補 |m10| q25/q50/q75": " / ".join(f"{x:.3g}" for x in ca),
+                     "プリント |m60| q50": p6[1], "候補 |m60| q50": c6[1],
+                     "|m10| の差(プリント − 候補)の中央値": float((IV.loc[m, "print_a10"] - IV.loc[m, "cand_a10"]).median())})
+    B("t2res_band", "`controls_iv.csv.gz` の print_a10・cand_a10・print_a60・cand_a60 を、プリントの |m10| の帯(t0 の (iv) の境)ごとに並べた(帯の中の残差)",
+      pd.DataFrame(rows))
 
     # 取れなかった群の偏り(直す 2)
     rows = []
-    for lab, got in (("(ii)", P["print_id"].isin(set(c2["ref_id"]))), ("(iv)", got4)):
+    for lab, got in (("(ii)", P["print_id"].isin(set(c2["ref_id"]))), ("(iv)", got4),
+                     ("(iv-h)", P["print_id"].isin(set(IVH["ref_id"])))):
         for gl, m in (("取れた", got), ("取れなかった", ~got)):
             sub = P[m.to_numpy()]
             s36 = st(sub["react_3600"], sub["day"])
@@ -397,8 +527,33 @@ def tables(src: Path, ivdir: Path) -> str:
                          "react 60分 q50": s36["q50"], "react 60分 day_eq_mean": s36["day_eq_mean"],
                          "react 60分 se_day_eq": s36["se_day_eq"],
                          "多い日 上位 5": "; ".join(f"{d}={n}" for d, n in top.items())})
-    B("t2u_unmatched", "`anchors_prints.csv.gz` を、対照が取れたか(`controls.csv.gz` / `controls_iv.csv.gz` の ref_id にあるか)で分けた",
+    B("t2u_unmatched", "`anchors_prints.csv.gz` を、対照が取れたか(`controls.csv.gz` / `controls_iv.csv.gz` / `controls_ivh.csv.gz` の ref_id にあるか)で分けた",
       pd.DataFrame(rows))
+    # 直す 7: |m10| の 10 分位ごとの取れた割合と、取れない原因
+    pb10 = v2.band_of(P["a10"].to_numpy(float), cut10)
+    CZm = CZ.set_index("print_id")
+    rows = []
+    for b_ in range(10):
+        m = pb10 == b_
+        ids = set(P.loc[m, "print_id"])
+        g4 = len(ids & set(IV["ref_id"]))
+        g5 = len(ids & set(IVH["ref_id"]))
+        cz = CZm.loc[CZm.index.isin(ids)]
+        rows.append({"|m10| の帯(10 分位)": b_ + 1, "プリント": int(m.sum()), "(iv) 取れた": g4, "(iv) 取れた割合": g4 / max(int(m.sum()), 1),
+                     "(iv-h) 取れた": g5, "(iv-h) 取れた割合": g5 / max(int(m.sum()), 1),
+                     "(iv) 取れず: 帯が欠け": int((cz["帯が欠け"] == 1).sum()),
+                     "(iv) 取れず: ±3 日の格子に同じ帯の時刻が無い": int(((cz["帯が欠け"] == 0) & (cz["n_all_pm3"] == 0)).sum()),
+                     "(iv) 取れず: 前後 15 分に清算無しの条件で消えた": int(((cz["n_all_pm3"] > 0) & (cz["n_noliq_pm3"] == 0)).sum()),
+                     "(iv) 取れず: 清算の zip の無い日にだけあった": int(((cz["n_noliq_pm3"] > 0) & (cz["n_cand_pm3"] == 0)).sum()),
+                     "(iv) 取れず: 候補はあったが先に使われた": int((cz["n_cand_pm3"] > 0).sum())})
+    df = pd.DataFrame(rows)
+    tot = {c: (df[c].sum() if df[c].dtype != object else "") for c in df.columns}
+    tot["|m10| の帯(10 分位)"] = "合計"
+    tot["(iv) 取れた割合"] = df["(iv) 取れた"].sum() / df["プリント"].sum()
+    tot["(iv-h) 取れた割合"] = df["(iv-h) 取れた"].sum() / df["プリント"].sum()
+    B("t2dec", "プリントの |m10| の帯(t0 の (iv) の境)ごとの取れた割合と、(iv) が取れなかった原因。原因 = `control_ivh_out/iv_unmatched_cause.csv.gz`"
+      "(±3 日の 10 秒格子で帯 4 つが同じ時刻を、清算の条件なし / 前後 15 分に清算無し / それに zip のある日、で数えた)",
+      pd.concat([df, pd.DataFrame([tot])], ignore_index=True))
 
     # (ii) の候補が清算の zip の無い日から来た数(直す 10)
     noz = set(ivm["清算のzipが無く候補から外した日"])
@@ -408,6 +563,8 @@ def tables(src: Path, ivdir: Path) -> str:
     rows = [{"対照": "(ii)", "候補の日": d, "行": int(n)} for d, n in vc.items()]
     rows.append({"対照": "(ii)", "候補の日": "合計", "行": int(vc.sum())})
     rows.append({"対照": "(iv)", "候補の日": "合計", "行": int(cd4.isin(noz).sum())})
+    cd5 = pd.to_datetime(IVH["anchor_ms"], unit="ms", utc=True).dt.strftime("%Y-%m-%d")
+    rows.append({"対照": "(iv-h)", "候補の日": "合計", "行": int(cd5.isin(noz).sum())})
     B("t2z_nozip", "対照の時刻(anchor_ms)の UTC の日が、清算の zip が無い日(t0)に入る行の数", pd.DataFrame(rows))
 
     # ---- t3 プラセボ ----
@@ -532,10 +689,11 @@ def tables(src: Path, ivdir: Path) -> str:
             rows.append({"type": typ, "g": g_, "d": d_, "対": len(sub), "差の総和": float(np.nansum(d)),
                          "pooled_mean": s["pooled_mean"], "se_pooled_cluster": s["se_pooled_cluster"],
                          "day_eq_mean": s["day_eq_mean"], "se_day_eq": s["se_day_eq"],
+                         "day_eq_mean ÷ se_day_eq": s["day_eq_mean"] / s["se_day_eq"],
                          "MDE(day_eq)= 2.8×se_day_eq": 2.8 * s["se_day_eq"],
                          "MDE(pooled)= 2.8×se_pooled_cluster": 2.8 * s["se_pooled_cluster"]})
     B("t6f_3way_vs_fade", "`policy_cascades.csv.gz` の同じ bundle_id・g・遅れ で、規則_3択(型 A・B)− 全部逆張り(後半、入らない = 0)。"
-      "MDE の 2.8 = 1.96 + 0.84(両側 5%・検出力 80% の慣用の値。仮定、作業者が置いた)", pd.DataFrame(rows))
+      "MDE の 2.8 = 1.96 + 0.84(両側 5%・検出力 80% の慣用の値。仮定、作業者が置き、リードが追認)", pd.DataFrame(rows))
 
     # ---- t7 行動・判断 ----
     a = AC[(AC["policy"] == "規則_3択") & (AC["gap_s"] == 60) & (AC["delay_s"] == 1)].sort_values(["type", "行動"])
@@ -590,39 +748,45 @@ def tables(src: Path, ivdir: Path) -> str:
                             {k: s[k] for k in ST_SHORT})
     B("t9_size", "`anchors_prints.csv.gz`(3 分位の境は `tertile_cuts`。`dist_size_split.csv` と同じ作り)", pd.DataFrame(rows))
 
-    # ---- t10 3 択 ----
+    # ---- t10 3 択(旧 = 走らせの材料 13 本 / 新 = |m10|・|m60| を足した 15 本。止める 3) ----
+    VERS = (("旧(13 本)", model, TP, CAL), ("新(15 本、|m10|・|m60| を足した)", MM, TPM, CALM))
     rows = []
-    for s_, v in model["場面"].items():
-        rows.append({"場面": s_, "件数(前半)": v["件数(作る)"], "基準率(前半)": v["基準率(作る)"], "分割数": v["分割数"],
-                     "わからないの帯": str(v["わからないの帯"]), "基準率を跨ぐ帯": str(v["基準率を跨ぐ帯"])})
-    B("t10b_band", "`three_way_model.json` 場面", pd.DataFrame(rows))
-    B("t10_calib", "`three_way_calibration.csv`(そのまま。前半の out-of-fold 確率)", CAL)
+    for vl, mdl, _tp, _cal in VERS:
+        for s_, v in mdl["場面"].items():
+            rows.append({"版": vl, "場面": s_, "件数(前半)": v["件数(作る)"], "基準率(前半)": v["基準率(作る)"], "分割数": v["分割数"],
+                         "わからないの帯": str(v["わからないの帯"]), "基準率を跨ぐ帯(区別できない帯が無いときだけ使う境)": str(v["基準率を跨ぐ帯"])})
+    B("t10b_band", "旧 = `three_way_model.json`、新 = `run_a/three_way_m_out/three_way_m_model.json` の 場面", pd.DataFrame(rows))
+    B("t10_calib", "旧: `three_way_calibration.csv`(そのまま。前半の out-of-fold 確率)", CAL)
+    B("t10_calib_m", "新: `three_way_m_out/three_way_m_calibration.csv`(そのまま。前半の out-of-fold 確率)", CALM)
     rows = []
-    for (per, s_, j), g in TP.groupby(["期間", "場面", "判断"]):
-        rows.append({"期間": PER[per], "場面": s_, "判断": j, "プリント": len(g), "続く(cont_60)の割合": float(g["cont_60"].mean())})
-    B("t10d_judge_hit", "`three_way_probs.csv.gz`(期間・場面・判断ごとの事後のラベル cont_60 の割合。前半は模型を作った行そのもの)",
+    for vl, _m, tp, _c in VERS:
+        for (per, s_, j), g in tp.groupby(["期間", "場面", "判断"]):
+            rows.append({"版": vl, "期間": PER[per], "場面": s_, "判断": j, "プリント": len(g), "続く(cont_60)の割合": float(g["cont_60"].mean())})
+    B("t10d_judge_hit", "旧 = `three_way_probs.csv.gz`、新 = `three_way_m_probs.csv.gz`(期間・場面・判断ごとの事後のラベル cont_60 の割合。前半は模型を作った行そのもの)",
       pd.DataFrame(rows))
     rows = []
-    for (per, s_), g in TP.groupby(["期間", "場面"]):
-        base = model["場面"][s_]["基準率(作る)"]
-        maj = 1 if base >= 0.5 else 0
-        y = g["cont_60"].to_numpy(float)
-        dec = g["判断"].isin(["止まる", "続く"]).to_numpy()
-        pred = (g["判断"] == "続く").to_numpy().astype(float)
-        rows.append({"期間": PER[per], "場面": s_, "プリント": len(g),
-                     "3択が止まる/続くと言った行": int(dec.sum()),
-                     "その行での 3択の当たり": float((pred[dec] == y[dec]).mean()),
-                     "その行での 基準率の分類の当たり": float((maj == y[dec]).mean()),
-                     "基準率の分類(前半の基準率で多い側)": "続く" if maj else "止まる",
-                     "全行での 基準率の分類の当たり": float((maj == y).mean()),
-                     "AUC(続くの確率 対 cont_60)": auc(g["続くの確率"], y)})
-    B("t10e_vs_base", "`three_way_probs.csv.gz`。基準率の分類 = 場面ごとに前半の基準率(t10b)で多い側をいつも言う分類。AUC は順位(Mann–Whitney)で計算",
+    for vl, mdl, tp, _c in VERS:
+        for (per, s_), g in tp.groupby(["期間", "場面"]):
+            base = mdl["場面"][s_]["基準率(作る)"]
+            maj = 1 if base >= 0.5 else 0
+            y = g["cont_60"].to_numpy(float)
+            dec = g["判断"].isin(["止まる", "続く"]).to_numpy()
+            pred = (g["判断"] == "続く").to_numpy().astype(float)
+            rows.append({"版": vl, "期間": PER[per], "場面": s_, "プリント": len(g),
+                         "3択が止まる/続くと言った行": int(dec.sum()),
+                         "その行での 3択の当たり": float((pred[dec] == y[dec]).mean()),
+                         "その行での 基準率の分類の当たり": float((maj == y[dec]).mean()),
+                         "基準率の分類(前半の基準率で多い側)": "続く" if maj else "止まる",
+                         "全行での 基準率の分類の当たり": float((maj == y).mean()),
+                         "AUC(続くの確率 対 cont_60)": auc(g["続くの確率"], y)})
+    B("t10e_vs_base", "旧・新の判断を、基準率の分類(場面ごとに前半の基準率で多い側をいつも言う)と同じ行で比べた。AUC は順位(Mann–Whitney)",
       pd.DataFrame(rows))
     rows = []
-    for s_, v in model["場面"].items():
-        for k, b_ in v["係数"].items():
-            rows.append({"場面": s_, "材料": k, "係数": b_})
-    B("t10c_coef", "`three_way_model.json` 場面.係数(入力は中央順位 0〜1、L2 1e-3 のニュートン法。係数 = 順位が 0 から 1 に動いたときの対数オッズの変化)",
+    for vl, mdl, _t, _c in VERS:
+        for s_, v in mdl["場面"].items():
+            for k, b_ in v["係数"].items():
+                rows.append({"版": vl, "場面": s_, "材料": k, "係数": b_})
+    B("t10c_coef", "旧・新の 場面.係数(入力は中央順位 0〜1、L2 1e-3 のニュートン法。係数 = 順位が 0 から 1 に動いたときの対数オッズの変化)",
       pd.DataFrame(rows))
 
     # ---- t11 月 ----
@@ -641,7 +805,20 @@ def tables(src: Path, ivdir: Path) -> str:
             r[f"対{lab}の差 day_eq_mean"] = sd["day_eq_mean"]
             r[f"対{lab}の差 se_day_eq"] = sd["se_day_eq"]
         rows.append(r)
-    B("t11_month", "`anchors_prints.csv.gz` の react_3600(60 分)を年月で分けた。対の差は t2 と同じ組", pd.DataFrame(rows))
+    B("t11_month", "`anchors_prints.csv.gz` の react_3600(60 分)を年月で分けた。対の差は t2 と同じ組(この表は (ii)・(iv)・(iv-h))", pd.DataFrame(rows))
+    rows = []
+    for mth, g in P.groupby("month"):
+        s = st(g["react_60"], g["day"])
+        r = {"月": mth, "プリント": len(g), "react 60秒 q50": s["q50"], "pooled_mean": s["pooled_mean"],
+             "se_pooled_cluster": s["se_pooled_cluster"], "day_eq_mean": s["day_eq_mean"], "se_day_eq": s["se_day_eq"]}
+        for lab in ("(ii)", "(iv)"):
+            M = pairs[lab]
+            mm = M[M["day_p"].str[:7] == mth]
+            sd = st(mm["react_60_p"].to_numpy(float) - mm["react_60_c"].to_numpy(float), mm["day_p"])
+            r[f"対{lab}の差 day_eq_mean"] = sd["day_eq_mean"]
+            r[f"対{lab}の差 se_day_eq"] = sd["se_day_eq"]
+        rows.append(r)
+    B("t11s_month_60s", "`anchors_prints.csv.gz` の react_60(60 秒)を年月で分けた(第 1 稿にあった 60 秒の月の表を戻した)", pd.DataFrame(rows))
     CA["month"] = CA["day"].str[:7]
     sub = CA[(CA["gap_s"] == 60) & (CA["delay_s"] == 1)]
     rows = []
@@ -755,7 +932,7 @@ def tables(src: Path, ivdir: Path) -> str:
                  "policy_action_counts.csv", "policy_judge_counts.csv", "label_counts.csv", "three_way_calibration.csv"):
         df = pd.read_csv(src / name)
         rows.append({"もの": f"走らせの {name}", "行": len(df), "セル(行 × 列)": int(df.size)})
-    rows.append({"もの": "この文書の表(BLOCK の数 = " + str(len(nblk)) + ")", "行": sum(r for _, r, _ in nblk),
+    rows.append({"もの": "この文書の表のうち t0c 以外(BLOCK の数 = " + str(len(nblk)) + "。t0c 自身の行とセルは含まない)", "行": sum(r for _, r, _ in nblk),
                  "セル(行 × 列)": sum(c for _, _, c in nblk)})
     B("t0c_counts", "走らせの集計表と、この文書の表の行・セルの数(台本で数えた)", pd.DataFrame(rows))
     return "\n".join(out)
