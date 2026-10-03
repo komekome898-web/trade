@@ -3,10 +3,10 @@
 **L-592(10-03)やることの整理**:
 | # | やること | 設計 | 走らせ方 | 状態 |
 |---|---|---|---|---|
-| 1 | カード 4 段 1 の族 A・B の 1 周(84 本) | 済み(INTENT_MAP §11-3、SPEC §5) | 測定用セッション 3 つ(session_0146Lu6zx6dPwiDUoBMAT1SP・session_016JTPusGKcGvLjPZakZhLdV・session_015E6q2LdiamYVStzYskxJvK、ブランチ claude/w4-c4-limit-s0〜s2、08:11 UTC 起動) | 走らせ中 |
+| 1 | カード 4 段 1 の族 A・B の 1 周(84 本) | 済み(INTENT_MAP §11-3、SPEC §5) | 丸めの直し(L-595)と前の測定から引き継ぐ切り方(INTENT_MAP §11-5、L-590)を入れた 78429453 で走らせ直し: 測定用セッション 3 つ(session_019RPJttaB3dQpRmAiVZVNJt・session_01SPoZ8x3Rs5ShUfRAVxLmdn・session_015LF7WRiz8y3jS6GigKaNoL、ブランチ claude/w4-c4-limit-r2-s0〜s2、10:25 UTC 起動)。丸め前の s0〜s2 の出力(families/)は使わない | 走らせ中 |
 | 2 | カツオの高ボラの門 問い 1(続くか)・問い 2(前もって取れるか) | 済み(c2/vol_gate/DESIGN.md) | この会話の作業者 | 問い 1 済み。問い 2 は再現の検めの差(境目の丸め・D-1)の説明がついたので続行中 |
 | 3 | カード 9 の全期間(Binance COIN-M) → 関門 ② | 済み | この容器の背景 | 走らせ中(2024-03 台) |
-| 4 | カード 2 の指値の再現(入り方 3 つ × 門) | 済み(SPEC §9・§9-1) | 部品は批評家を通してコミット済み(5f702583)。門なし + 参照の形の 40 本を測定用セッション 2 つ(session_011sxoJuPBvK5TvggDBPhFSa・session_01WTBp1guX7cFZJfebN8DZ5r、ブランチ claude/w4-c2-limit-s0・s1、08:53 UTC 起動)。門ありは 2 の問い 2 の後 | 走らせ中 |
+| 4 | カード 2 の指値の再現(入り方 3 つ × 門) | 済み(SPEC §9・§9-1) | 部品は批評家を通してコミット済み(5f702583)。門なし + 参照の形の 40 本を、丸めの直し(L-595)を入れた 26badda6 で走らせ直し: 測定用セッション 2 つ(session_01YEjS8z3BquacEviXXNBgzg・session_01JRtNzqGNMipwnpAi2bKEfE、ブランチ claude/w4-c2-limit-r2-s0・s1、10:23 UTC 起動)。丸め前の s0・s1 は使わない。門ありは 2 の問い 2 の後 | 走らせ中 |
 | 5 | カード 4 の組み合わせ C(9 本) | 1 の結果から決める | — | 1 の後 |
 | 6 | 門の問い 3(ほかのカードに当てる) | 2 と 1 の結果を使う | — | 1・2 の後 |
 | 7 | カード 4 のなぜの分析と最適化 | 1・5・6 の後 | — | — |
