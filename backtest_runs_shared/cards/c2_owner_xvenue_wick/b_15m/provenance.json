@@ -1,0 +1,123 @@
+{
+ "card": "c2_owner_xvenue_wick",
+ "variant": "b_15m",
+ "period": [
+  "2020-01-01T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "display_ok": true,
+ "display_ok_rule": "daily.csv の sha256・daily_stats の overall と frequency(・c4〜c8 は extra.json の trades と drawdown・run_record の headline)が git の記録と完全一致",
+ "checks": {
+  "daily_csv_sha256": {
+   "same": true,
+   "rerun": "1de07323c9d1e2debb24b7fb733a321e325341687837b08503ee426890aa039b",
+   "git": "1de07323c9d1e2debb24b7fb733a321e325341687837b08503ee426890aa039b"
+  },
+  "daily_stats.overall": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 2015993,
+    "n_days": 1446,
+    "per_minute_bp": -0.013422619425619843,
+    "per_day_bp": -18.71362849496101,
+    "sum_bp": -27059.906803713624
+   },
+   "git": {
+    "n_days": 1446,
+    "n_decisions": 2015993,
+    "per_day_bp": -18.71362849496101,
+    "per_minute_bp": -0.013422619425619843,
+    "sum_bp": -27059.906803713624
+   }
+  },
+  "daily_stats.frequency": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 2015995,
+    "nonzero_share": 0.6796296617799151,
+    "changes": 31555
+   },
+   "git": {
+    "changes": 31555,
+    "n_decisions": 2015995,
+    "nonzero_share": 0.6796296617799151
+   }
+  },
+  "trades_n": {
+   "same": null,
+   "note": "git に取引の数の記録が無い(c1〜c3)。日ごとの損益と頻度だけを照合"
+  },
+  "sum_trade_pnl_vs_final_cum_bp": {
+   "trades_sum": -27059.906803713617,
+   "final_cum_bp": -27059.90680371367
+  }
+ },
+ "n_trades": 19069,
+ "source_record": {
+  "path": "docs/RESEARCH/cards/c2_owner_xvenue_wick/measure/b_15m/daily_stats.json",
+  "sha256": "42cac4d27fd2b0b81ae307e7fb4b084b1a73dee182ecd1ae7b764da03c349fc0"
+ },
+ "script": {
+  "export": "scripts/dashboard_cards/export_card_trades.py",
+  "export_sha256": "3ecd78ba660c255d71b711ed66ed60cc3f8b6aa146d006433342af0d76431ad7",
+  "research_cmd": [
+   "PYTHONPATH=src python3 scripts/w4_measure/run_v2.py --card c2 --variant b --foot 15 --no-measure",
+   "(--out-root / --save-root は作業置き場)"
+  ],
+  "research_script_sha256": "4a8fab966bd9b034bd29689c606ae226c5b55f920b6ef1c2d9e2feb447b84810"
+ },
+ "git_sha": "7dad0e339c196954149b174c600db6d2a62b474e",
+ "git_dirty_w4_measure": false,
+ "data_dirs_read": [
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906",
+  "backtest_data/binance_um_BTCUSDT_1m_20261002"
+ ],
+ "inputs_sha256": [
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "sha256": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "sha256": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+   "sha256": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+   "sha256": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+  },
+  {
+   "path": "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2020.csv.gz",
+   "sha256": "2ea050f79edc34a8dd44ba31b024a7955a6e23499ed4ecdd77b5c56a848e4655"
+  },
+  {
+   "path": "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2021.csv.gz",
+   "sha256": "94076ccd75bd7bbc49ef5e623e7c8d7457ebd0c0a98bb3ebedfec642ef1d1ca3"
+  },
+  {
+   "path": "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2022.csv.gz",
+   "sha256": "ddae7954bacef08135500b92ee390394126ff8885f653d73b0f097941d4b750f"
+  },
+  {
+   "path": "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2023.csv.gz",
+   "sha256": "13cef357910e5d6c47528af4fdad18fa2ec6df7e29942ab680f4d797a8311282"
+  }
+ ],
+ "trade_definition": "(= scripts/w4_measure/light_b2.py の extra_stats と同じ関数をそのまま import して使う。extra.json の trades の数え方):\n  P_t = bot.research.cards.pnl.pnl(e_t × (open_{t+2}/open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。\n  取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(足し増し・一部決済は同じ取引のまま、\n  +1 から −1 へ直接変われば 2 つの取引)。損益 = 区間の P_t の合計。\n  建てた時刻・値段 = 区間の最初の決定の約定の足(fill_bar)の始まり・始値。決済の時刻・値段 = 区間の最後の決定の決済の足\n  (exit_bar = 次の決定の約定の足)の始まり・始値。qty = 区間の決定の |e| の平均。\n",
+ "seal": "期間の終わり 2023-12-17T15:00:00Z は封印の境 2023-12-18T00:00:00Z より前。phase2_sealed は読んでいない",
+ "seconds": {
+  "research_run": 1035.1,
+  "total": 1036.4
+ },
+ "verified_items": [
+  "daily_csv_sha256",
+  "daily_stats.overall",
+  "daily_stats.frequency"
+ ],
+ "not_verified": [
+  "取引数は git に記録が無く照合していない(日ごとの損益・overall・frequency の一致で表示可とした)"
+ ]
+}

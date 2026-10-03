@@ -1,0 +1,147 @@
+{
+ "card": "c2_owner_xvenue_wick",
+ "variant": "a_5m",
+ "period": [
+  "2017-08-17T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "display_ok": true,
+ "display_ok_rule": "daily.csv の sha256・daily_stats の overall と frequency(・c4〜c8 は extra.json の trades と drawdown・run_record の headline)が git の記録と完全一致",
+ "checks": {
+  "daily_csv_sha256": {
+   "same": true,
+   "rerun": "612e93a9ac5ba6279af966c617ab98d578f17abc9fa5422ddc23dd7fb7a55934",
+   "git": "612e93a9ac5ba6279af966c617ab98d578f17abc9fa5422ddc23dd7fb7a55934"
+  },
+  "daily_stats.overall": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 3251350,
+    "n_days": 2313,
+    "per_minute_bp": 0.006834468421369719,
+    "per_day_bp": 9.607111501003223,
+    "sum_bp": 22221.248901820436
+   },
+   "git": {
+    "n_days": 2313,
+    "n_decisions": 3251350,
+    "per_day_bp": 9.607111501003223,
+    "per_minute_bp": 0.006834468421369719,
+    "sum_bp": 22221.248901820436
+   }
+  },
+  "daily_stats.frequency": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 3251352,
+    "nonzero_share": 0.5946769220927172,
+    "changes": 75670
+   },
+   "git": {
+    "changes": 75670,
+    "n_decisions": 3251352,
+    "nonzero_share": 0.5946769220927172
+   }
+  },
+  "trades_n": {
+   "same": null,
+   "note": "git に取引の数の記録が無い(c1〜c3)。日ごとの損益と頻度だけを照合"
+  },
+  "sum_trade_pnl_vs_final_cum_bp": {
+   "trades_sum": 22221.24890182045,
+   "final_cum_bp": 22221.24890182038
+  }
+ },
+ "n_trades": 43939,
+ "source_record": {
+  "path": "docs/RESEARCH/cards/c2_owner_xvenue_wick/measure/a_5m/measure.json",
+  "sha256": "44351c550d97a2f36c17359baab49ab9830b6d1a69738921c47eed5ef1be6024"
+ },
+ "script": {
+  "export": "scripts/dashboard_cards/export_card_trades.py",
+  "export_sha256": "3ecd78ba660c255d71b711ed66ed60cc3f8b6aa146d006433342af0d76431ad7",
+  "research_cmd": [
+   "PYTHONPATH=src python3 scripts/w4_measure/run_v2.py --card c2 --variant a --foot 5 --no-measure",
+   "(--out-root / --save-root は作業置き場)"
+  ],
+  "research_script_sha256": "4a8fab966bd9b034bd29689c606ae226c5b55f920b6ef1c2d9e2feb447b84810"
+ },
+ "git_sha": "7dad0e339c196954149b174c600db6d2a62b474e",
+ "git_dirty_w4_measure": false,
+ "data_dirs_read": [
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906",
+  "backtest_data/binance_BTCUSDT_1m_20170801_20231231"
+ ],
+ "inputs_sha256": [
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+   "sha256": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "sha256": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "sha256": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "sha256": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "sha256": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+   "sha256": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+   "sha256": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+   "sha256": "590178034c6e31b32e63e531804cbb5b2301253bc36eb904e4b45c21829b06a6"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+   "sha256": "f66cc2228c3b3b4c78ed418014f323f00690050b7319c57fba83a9e3d2389347"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+   "sha256": "ffb1fde499ae1c47f39e1df341d31d9db3cbb138a46bef36e9ed433c5135bb12"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+   "sha256": "655ab3497125c7a5bbd1f11cd23c655c29b2788a7916a3f8e6bd2048d98dda34"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+   "sha256": "56d016ad19008cb7c56bbe9754a74c32b1b7ce2061b6ae9133dccecb2a7dc859"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+   "sha256": "cdc318ee448879f567812cd2bdc4a60964e9e9f3806cf7adaba6e295b52b5ca4"
+  },
+  {
+   "path": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+   "sha256": "1a83012af9283a4dd6952c30c3daf7aa82a31f0ccbf1af46ccfd11a358ac282e"
+  }
+ ],
+ "trade_definition": "(= scripts/w4_measure/light_b2.py の extra_stats と同じ関数をそのまま import して使う。extra.json の trades の数え方):\n  P_t = bot.research.cards.pnl.pnl(e_t × (open_{t+2}/open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。\n  取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(足し増し・一部決済は同じ取引のまま、\n  +1 から −1 へ直接変われば 2 つの取引)。損益 = 区間の P_t の合計。\n  建てた時刻・値段 = 区間の最初の決定の約定の足(fill_bar)の始まり・始値。決済の時刻・値段 = 区間の最後の決定の決済の足\n  (exit_bar = 次の決定の約定の足)の始まり・始値。qty = 区間の決定の |e| の平均。\n",
+ "seal": "期間の終わり 2023-12-17T15:00:00Z は封印の境 2023-12-18T00:00:00Z より前。phase2_sealed は読んでいない",
+ "seconds": {
+  "research_run": 1866.2,
+  "total": 1868.9
+ },
+ "verified_items": [
+  "daily_csv_sha256",
+  "daily_stats.overall",
+  "daily_stats.frequency"
+ ],
+ "not_verified": [
+  "取引数は git に記録が無く照合していない(日ごとの損益・overall・frequency の一致で表示可とした)"
+ ]
+}

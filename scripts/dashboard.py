@@ -282,6 +282,7 @@ PAGE = """<!doctype html>
       <div class="tiles" id="bt-stats"></div>
       <section id="bt-chartbox" class="bt-card" hidden>
         <div class="bt-notes" id="bt-price-note"></div>
+        <div class="bt-notes" id="bt-card-note"></div>
         <div class="bt-frame" id="bt-frame"></div>
         <div class="bt-chartwrap" id="bt-pricewrap">
           <div class="bt-panel" id="bt-panel"></div>
@@ -1438,6 +1439,13 @@ def _num(q: dict, key: str, cast, default=None):
         raise backtest_chart.ChartError(f"query {key} is not a number: {q[key]!r}") from None
 
 
+def _rid(route: str, prefix: str) -> str:
+    """The run id after `prefix`, percent-decoded once (a card variant's id "cards/<card>/<variant>" holds slashes the page
+    sends as %2F). What it names is decided by the id check of backtest_view / backtest_cards, not here."""
+    from urllib.parse import unquote  # noqa: PLC0415
+    return unquote(route[len(prefix):])
+
+
 def _backtest(path: str, runs_dir, data_root=None):
     """(status, content type, body) for the バックテスト routes, or None. `data_root` = the repository root the
     price files are read from (default: this repository)."""
@@ -1453,19 +1461,19 @@ def _backtest(path: str, runs_dir, data_root=None):
             return _json(backtest_chart.catalog(runs_dir))
         if route.startswith("/api/backtest/summary/"):
             q = _query(path)
-            return _json(backtest_chart.run_summary(runs_dir, route[len("/api/backtest/summary/"):], root,
+            return _json(backtest_chart.run_summary(runs_dir, _rid(route, "/api/backtest/summary/"), root,
                                                     range_name=q.get("range") or None))
         if route.startswith("/api/backtest/chart/"):
             q = _query(path)
             return _json(backtest_chart.run_chart(
-                runs_dir, route[len("/api/backtest/chart/"):], from_s=_num(q, "from", float), to_s=_num(q, "to", float),
+                runs_dir, _rid(route, "/api/backtest/chart/"), from_s=_num(q, "from", float), to_s=_num(q, "to", float),
                 max_bars=_num(q, "max_bars", int, backtest_chart.DEFAULT_MAX_BARS), range_name=q.get("range") or None, root=root,
                 interval_s=_num(q, "interval", int)))
         if route.startswith("/api/backtest/run/"):
-            view = backtest_view.run_view(runs_dir, route[len("/api/backtest/run/"):])
+            view = backtest_view.run_view(runs_dir, _rid(route, "/api/backtest/run/"))
             return _json(view)
         if route.startswith("/backtest/run/"):
-            view = backtest_view.run_view(runs_dir, route[len("/backtest/run/"):])
+            view = backtest_view.run_view(runs_dir, _rid(route, "/backtest/run/"))
             return 200, "text/html; charset=utf-8", backtest_view.run_page(view).encode()
     except backtest_view.BacktestViewError as exc:
         return _json({"error": str(exc)}, 404)

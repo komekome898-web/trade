@@ -65,3 +65,10 @@
                    font-size: 12px; padding: 3px 11px; cursor: pointer; }
 .bt-frame button.on { color: var(--ink); border-color: var(--accent); }
 .bt-frame button:disabled { opacity: .4; cursor: default; }
+.bt-unav { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.bt-unav summary { cursor: pointer; }
+.bt-unav ul { margin: 4px 0 4px 18px; padding: 0; line-height: 1.5; }
+.bt-unav b { color: var(--ink); font-weight: 500; }
+#bt-card-note details { font-size: 12px; }
+#bt-card-note summary { cursor: pointer; }
+#bt-card-note ul { margin: 2px 0 6px 18px; padding: 0; }

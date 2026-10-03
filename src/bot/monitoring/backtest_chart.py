@@ -35,6 +35,7 @@ import shutil
 import sys
 import threading
 import time
+import zlib
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -45,6 +46,7 @@ import numpy as np
 
 from bot.bt.data.allowlist import DEFAULT_ALLOWLIST
 from bot.bt.data.errors import PathRefused
+from bot.monitoring import backtest_cards as CARDS
 from bot.monitoring import backtest_themes as T
 from bot.monitoring import backtest_view as BV
 
@@ -170,7 +172,9 @@ def _strategy_entry(st: dict, runs: list[dict], theme_title: str) -> dict:
 
 def catalog(runs_dir: Any) -> dict:
     """The theme tree with every run placed in it. Runs whose 組 is in no strategy of the ledger are listed under
-    「台帳に無い実行」; ledger groups that hold no run are named in `missing_groups`."""
+    「台帳に無い実行」; ledger groups that hold no run are named in `missing_groups`. The research cards (backtest_cards.py) are
+    themes of their own (`is_card`), one per card of backtest_runs_shared/cards/manifest.json; their variants are runs with the id
+    "cards/<card>/<variant>"."""
     by_group = T.strategy_groups()
     found = BV.find_runs(runs_dir)
     placed: dict[str, list[dict]] = {}
@@ -209,7 +213,33 @@ def catalog(runs_dir: Any) -> dict:
         themes.append({"id": T.UNLISTED_THEME, "title": T.UNLISTED_TITLE,
                        "summary": "テーマの台帳に載っていない組の実行。", "sources": [], "strategies": strategies})
     present = {g for _, _, g in found}
-    return {"themes": themes, "n_runs": len(found), "missing_groups": sorted(g for g in by_group if g not in present)}
+    card_themes, n_cards, card_notes = CARDS.catalog_themes(runs_dir)
+    if card_themes:  # the cards come before 「台帳に無い実行」, which stays last
+        at = next((i for i, t in enumerate(themes) if t["id"] == T.UNLISTED_THEME), len(themes))
+        themes[at:at] = card_themes
+    return {"themes": themes, "n_runs": len(found) + n_cards, "n_card_runs": n_cards, "card_notes": card_notes,
+            "missing_groups": sorted(g for g in by_group if g not in present)}
+
+
+@dataclass
+class Target:
+    """What a run id names: a run directory with its record, or a card variant (backtest_cards) with a record shaped like one."""
+    run_id: str
+    dir: str
+    rec: dict
+    card: Optional[Any] = None
+
+
+def _tp(tg: "Target") -> dict:
+    return {"path": str(Path(tg.dir) / "trades.json.gz")} if tg.card is not None else {}
+
+
+def _target(runs_dir: Any, run_id: str) -> Target:
+    ref = CARDS.resolve(runs_dir, run_id)  # None: not the card form; BacktestViewError: not in the manifest / not displayable
+    if ref is None:
+        d = BV._run_dir(runs_dir, run_id)
+        return Target(run_id, d, _record(d))
+    return Target(run_id, str(ref.dir), CARDS.record_of(ref), ref)
 
 
 # ---- the seal -------------------------------------------------------------------------------------------------
@@ -388,10 +418,10 @@ def _raw(path: str) -> Any:
     return doc["data"] if isinstance(doc, dict) and isinstance(doc.get("data"), dict) else doc
 
 
-def load_trades(run_dir: str, range_name: Optional[str] = None, limit_ns: Optional[int] = None) -> TradeSet:
+def load_trades(run_dir: str, range_name: Optional[str] = None, limit_ns: Optional[int] = None, path: Optional[str] = None) -> TradeSet:
     """The run's trades (trades.json[.gz], either form) as arrays sorted by exit time, cut at `limit_ns`. A run through
     bot.bt.pipeline writes every trade once per fill range: `range_name` picks one (default: the first)."""
-    p = BV._export_path(run_dir, "trades")
+    p = path or BV._export_path(run_dir, "trades")  # a card variant passes its trades.json.gz: the file the completeness check looked at
     if p is None:
         raise ChartError("この実行に trades の出力が無い")
     st = os.stat(p)
@@ -493,6 +523,14 @@ def price_plan(rec: dict, root: Path, rule: dict) -> Plan:
     m = MARKETS[inst]
     if not files:
         return Plan(inst, label=m["label"], reason=why)
+    card = rec.get("_card")
+    if card is not None:  # a card variant: its trades are on the ledger's instrument; provenance names the directories it read
+        dirs = card.get("data_dirs_read") or []
+        same = bool(m.get("dir")) and m["dir"] in dirs
+        note = (f"価格は、カードが読んだ {m['label']} の 1 分足と同じ置き場(provenance の data_dirs_read にある)から表示の足に畳んだ。"
+                "取引の値段はこの足の始値(約定の模型)" if same else
+                f"{FALLBACK_NOTE}({m['label']} の 1 分足から作った。カードの provenance の data_dirs_read にこの置き場が無い)")
+        return Plan(inst, files, m["label"], note, "", same, [Path(x).name for x in dirs])
     run_files = [e["path"] for e in rec.get("data") or [] if (e.get("spec") or {}).get("symbol") == inst]
     rels = {r for _, r in files}
     same = bool(run_files) and set(run_files) <= rels
@@ -681,18 +719,26 @@ def _summary_price(plan: Plan) -> dict:
 
 
 def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: Optional[str] = None) -> dict:
-    d = BV._run_dir(runs_dir, run_id)
-    rec = _record(d)
+    try:
+        tg = _target(runs_dir, run_id)
+    except CARDS.CardPreparing as exc:  # in the manifest with display_ok, but the files are not complete: not an error of the page
+        return {"run_id": run_id, "preparing": str(exc), "card": {"variant": run_id}}
+    d, rec = tg.dir, tg.rec
     try:
         rule = seal_rule(root)
         cut = run_cut(rec, rule)
     except (SealBlocked, AfterSeal) as exc:
         return {"run_id": run_id, "purpose": rec.get("purpose"), "blocked": str(exc), "after_seal": isinstance(exc, AfterSeal)}
     ccy = BV.run_currency(rec)
-    ts = load_trades(d, range_name, cut.limit_ns)
+    try:
+        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
+    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
+        if tg.card is None:
+            raise
+        return {"run_id": run_id, "preparing": f"準備中: trades を読めない(書きかけ): {type(exc).__name__}", "card": {"variant": run_id}}
     plan = price_plan(rec, Path(root), rule)
     mbar = _run_bar_s(rec)
-    return {"run_id": run_id, "purpose": rec.get("purpose"), "instrument": (rec.get("config") or {}).get("instrument"),
+    out = {"run_id": run_id, "purpose": rec.get("purpose"), "instrument": (rec.get("config") or {}).get("instrument"),
             "currency": ccy, "unit_label": ccy if ccy else BV.NO_CURRENCY, "stats": trade_stats(ts),
             "ranges": ts.ranges, "ranges_identical": ts.ranges_identical, "pnl_derived": ts.pnl_derived,
             "range": range_name if range_name in ts.ranges else (ts.ranges[0] if ts.ranges else None),
@@ -700,6 +746,10 @@ def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: 
             "period": {"first_s": cut.first_ns // 10**9, "last_s": cut.last_ns // 10**9, "last_incl_s": cut.last_ns // 10**9 - 1,
                        "first_iso": _iso(cut.first_ns / 1e9), "last_iso": _iso(cut.last_ns / 1e9)},
             "price": _summary_price(plan), "seal_boundary_s": cut.b // 10**9, "seal_boundary_iso": _iso(cut.b / 1e9)}
+    if tg.card is not None:
+        out["card"] = CARDS.info(tg.card, ts.n)
+        out["stats"], out["card"]["headline"] = CARDS.headline(tg.card, out["stats"], ts.n)
+    return out
 
 
 def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: Optional[float] = None,
@@ -710,11 +760,19 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
     to the store's data and to the seal boundary. Bars use the display frame `interval_s` (rounded up to a frame), or the
     smallest frame that gives at most `max_bars` bars; more than HARD_MAX_BARS bars narrow the range around its centre
     (`narrowed`)."""
-    d = BV._run_dir(runs_dir, run_id)
-    rec = _record(d)
+    try:
+        tg = _target(runs_dir, run_id)
+    except CARDS.CardPreparing as exc:
+        raise ChartError(str(exc)) from None
+    d, rec = tg.dir, tg.rec
     rule = seal_rule(root)
     cut = run_cut(rec, rule)
-    ts = load_trades(d, range_name, cut.limit_ns)
+    try:
+        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
+    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
+        if tg.card is None:
+            raise
+        raise ChartError(f"準備中: trades を読めない(書きかけ): {type(exc).__name__}") from None
     plan = price_plan(rec, Path(root), rule)
     price = _summary_price(plan)
     store = None

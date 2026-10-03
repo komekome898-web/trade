@@ -39,9 +39,11 @@
     let h = "";
     for (const th of CAT.themes) {
       if (!th.strategies.length) continue;
-      h += `<details open><summary>${esc(th.title)}</summary><div class="sum">${esc(th.summary)}</div>`;
-      for (const st of th.strategies)
-        h += `<button class="st" data-sid="${esc(st.id)}">${esc(st.title)} <span class="n">${st.n_runs} 本</span></button>`;
+      h += `<details open><summary>${esc(th.title)}${th.owner_origin ? ' <span class="n">オーナー由来</span>' : ""}</summary><div class="sum">${esc(th.summary)}</div>`;
+      for (const st of th.strategies) {
+        const un = (st.unavailable || []).length;
+        h += `<button class="st" data-sid="${esc(st.id)}">${esc(st.title)} <span class="n">${st.n_runs} 本${un ? "・選べない " + un + " 本" : ""}</span></button>`;
+      }
       h += "</details>";
     }
     $("bt-tree").innerHTML = h || '<span class="empty">実行がまだ無い</span>';
@@ -55,6 +57,11 @@
     $("bt-tree").querySelectorAll("button.st").forEach(b => b.classList.toggle("on", b.dataset.sid === sid));
     renderHead();
     const first = STRAT.runs.find(r => r.run_id === STRAT.default_run_id) || STRAT.runs[0];
+    if (!first) {  // a card with nothing to show yet (no measurement, or every variant not exported / being written)
+      SEL = {}; VER = 0; SEQ++; RUN = null; SUM = null;
+      $("bt-family").hidden = true; $("bt-chartbox").hidden = true; $("bt-stats").innerHTML = "";
+      return;
+    }
     SEL = Object.assign({}, first.axes);
     VER = 0;
     renderFamily("");
@@ -66,7 +73,21 @@
     const axSrc = s.axes.map(a => `<li>${esc(a.label)}: ${esc(a.source)}</li>`).join("");
     $("bt-head").innerHTML = `<div class="bt-crumb">${esc(s.theme)}</div><h2>${esc(s.title)}</h2>` +
       `<ul class="bt-desc">${s.description.map(t => `<li>${esc(t)}</li>`).join("")}</ul>` +
-      `<details class="bt-src"><summary>説明の出所</summary><ul>${s.sources.map(t => `<li>${esc(t)}</li>`).join("")}${axSrc}</ul></details>`;
+      `<details class="bt-src"><summary>説明の出所</summary><ul>${s.sources.map(t => `<li>${esc(t)}</li>`).join("")}${axSrc}</ul></details>` +
+      renderUnavailable(s);
+  }
+  // card variants that cannot be chosen: being written (準備中), not exported, the check did not match, and what the manifest excludes
+  function renderUnavailable(s) {
+    const un = s.unavailable || [], ex = s.excluded || [];
+    let h = "";
+    if (!s.runs.length && s.card) h += '<div class="bt-msg">この組に、いま表示できる変種は無い。</div>';
+    if (un.length)
+      h += `<details class="bt-unav" ${s.runs.length ? "" : "open"}><summary>選べない変種 ${un.length} 本(理由つき)</summary><ul>` +
+        un.map(u => `<li><b>${esc(u.axes_text)}</b>(${esc(u.variant)}) — ${esc(u.state_label)}${u.reason && u.reason !== u.state_label ? ": " + esc(u.reason) : ""}</li>`).join("") + "</ul></details>";
+    if (ex.length)
+      h += `<details class="bt-unav" open><summary>対象外 ${ex.length} 件</summary><ul>` +
+        ex.map(u => `<li><b>${esc(u.variant)}</b> — ${esc(u.reason)}</li>`).join("") + "</ul></details>";
+    return h;
   }
 
   // ---- the family dropdowns ----------------------------------------------------------------------------------
@@ -149,9 +170,15 @@
     $("bt-price-note").innerHTML = "読み込み中…";
     $("bt-frame").innerHTML = "";
     $("bt-chartbox").hidden = false;
+    $("bt-card-note").innerHTML = "";
     getJSON("/api/backtest/summary/" + encodeURIComponent(id) + (PX.opts.range ? "?range=" + encodeURIComponent(PX.opts.range) : "")).then(sum => {
       if (my !== SEQ) return;
       SUM = sum;
+      if (sum.preparing) {  // in the manifest, but the files are not complete: shown as 準備中 (it will appear when they are)
+        $("bt-pricewrap").hidden = true; $("bt-pnl").hidden = true; $("bt-pnl-cap").hidden = true; $("bt-legend").innerHTML = ""; $("bt-frame").innerHTML = "";
+        $("bt-price-note").innerHTML = `<span class="warn">${esc(sum.preparing)}。書き足しが終わると表示できる(ページを開き直してください)。</span>`;
+        return;
+      }
       if (sum.blocked) {
         $("bt-pricewrap").hidden = true; $("bt-pnl").hidden = true; $("bt-pnl-cap").hidden = true; $("bt-legend").innerHTML = "";
         $("bt-price-note").innerHTML = `<span class="warn">${esc(sum.blocked)}</span>`;
@@ -171,6 +198,26 @@
     });
     if ($("bt-detail").open) openBacktestRun(id);
   }
+  const isCard = id => String(id).startsWith("cards/");
+
+  // where a card variant's numbers come from and how far they were checked (manifest row / provenance.json, as written)
+  function renderCardNote() {
+    const c = SUM.card, box = $("bt-card-note");
+    if (!c) { box.innerHTML = ""; return; }
+    const li = a => (a || []).map(t => `<li>${esc(t)}</li>`).join("") || "<li>(なし)</li>";
+    const hl = c.headline || {};
+    box.innerHTML = `<div class="warn" id="bt-card-bpnote">${esc(c.bp_note || "")}</div>` +
+      `<div>見出しの数の出所: 勝率 = ${esc(hl.win_rate || "—")} / 最大の落ち込み = ${esc(hl.max_dd || "—")} / 取引数 = ${esc(hl.n || "—")}` +
+      `${hl.research_max_dd_bp != null ? "(研究の最大の落ち込み " + num(hl.research_max_dd_bp, 1) + " bp)" : ""}</div>` +
+      `<details open><summary>照合の範囲(研究のカード ${esc(c.card)} / 変種 ${esc(c.variant)})</summary>` +
+      `<div>照合した項目</div><ul>${li(c.verified_items)}</ul><div class="warn">照合していない項目</div><ul>${li(c.not_verified)}</ul>` +
+      `<div>表示の条件: ${esc(c.display_ok_rule || "—")}</div>` +
+      `<div>取引は研究の台本を走らせ直して作った(取引数 ${num(c.n_trades_manifest)} 件${c.n_trades_cut != null && c.n_trades_cut !== c.n_trades_manifest ? "、封印の境で切って " + num(c.n_trades_cut) + " 件" : ""}、損益は bp だけで通貨の額は無い)。</div>` +
+      `<div>値付けの銘柄: ${esc(c.instrument || "—")}(出所: ${esc(c.instrument_source || "—")})</div>` +
+      `<details><summary>取引の定義(provenance.json)</summary><div style="white-space:pre-wrap">${esc(c.trade_definition || "—")}</div>` +
+      `<div>走らせ直しのコマンド: ${esc((c.research_cmd || []).join(" ")) || "—"}</div><div>データの置き場: ${esc((c.data_dirs_read || []).join(" / ")) || "—"}</div>` +
+      `<div>封印: ${esc(c.seal || "—")}</div></details></details>`;
+  }
 
   function renderStats() {
     const s = SUM.stats, u = unitName(), d = s.total == null ? 0 : moneyDigits(SUM.currency, s.total);
@@ -183,7 +230,7 @@
       t(`累計損益(${s.total == null ? "bp" : u})`, s.total == null ? signed(s.total_bp, 0) : signed(s.total, d), tot > 0 ? "pos" : tot < 0 ? "neg" : "", s.total == null ? "通貨の額は記録に無い" : `${signed(s.total_bp, 0)} bp`) +
       t(`最大の落ち込み(${s.max_dd == null ? "bp" : u})`, s.max_dd == null ? num(s.max_dd_bp, 0) : num(s.max_dd, d), "", s.max_dd == null ? "" : `${num(s.max_dd_bp, 0)} bp`) +
       t("期間(UTC・終わりの日を含む)", utc(SUM.period.first_s) + " 〜 " + utc(SUM.period.last_incl_s)) +
-      t("実行 ID", esc(SUM.run_id.slice(0, 10)), "", "内容のハッシュ");
+      (SUM.card ? t("カードの変種", esc(SUM.card.variant), "", esc(SUM.card.card)) : t("実行 ID", esc(SUM.run_id.slice(0, 10)), "", "内容のハッシュ"));
   }
 
   function renderNotes() {
@@ -194,8 +241,9 @@
     h += ` / 価格は ${esc(SUM.seal_boundary_iso)} より前だけ(封印の境)。時刻は UTC。`;
     if (SUM.pnl_derived) h += ' <span class="warn">この実行の記録は bp だけで、通貨の額は無い。</span>';
     if (SUM.purpose === "動作確認") h += ' <span class="warn">動作確認の実行。相場の結論には使わない。</span>';
-    h += ` <a href="/backtest/run/${esc(SUM.run_id)}" target="_blank" style="color:var(--accent)">この実行の単独ページ(実行 ID ${esc(SUM.run_id)})</a>`;
+    if (!SUM.card) h += ` <a href="/backtest/run/${esc(SUM.run_id)}" target="_blank" style="color:var(--accent)">この実行の単独ページ(実行 ID ${esc(SUM.run_id)})</a>`;
     $("bt-price-note").innerHTML = h;
+    renderCardNote();
   }
 
   // 表示の足 (the chart's bar width) is chosen apart from 測定に使った足 (the bar the run was measured on)
@@ -205,7 +253,7 @@
     h += `<button data-f="auto" class="${o.frame === "auto" ? "on" : ""}"${avail ? "" : " disabled"}>自動</button>`;
     for (const f of FRAMES) h += `<button data-f="${f}" class="${o.frame === f ? "on" : ""}"${avail ? "" : " disabled"}>${FRAME_NAME[f]}</button>`;
     h += ` <span class="k" id="bt-frame-now"></span>`;
-    h += ` <span class="k">測定に使った足: ${SUM.measure_interval_s ? esc(FRAME_NAME[SUM.measure_interval_s] || (SUM.measure_interval_s / 60) + "分") : "記録なし"}(実行の記録 data[].spec.bar.interval_s。表示の足とは別)</span>`;
+    h += ` <span class="k">${SUM.card ? "測定に使った足: 変種の説明を参照(カードは足を自分で決める。表示の足とは別)" : "測定に使った足: " + (SUM.measure_interval_s ? esc(FRAME_NAME[SUM.measure_interval_s] || (SUM.measure_interval_s / 60) + "分") : "記録なし") + "(実行の記録 data[].spec.bar.interval_s。表示の足とは別)"}</span>`;
     $("bt-frame").innerHTML = h;
     $("bt-frame").querySelectorAll("button").forEach(b => b.onclick = () => {
       o.frame = b.dataset.f === "auto" ? "auto" : Number(b.dataset.f);
@@ -287,7 +335,8 @@
 
   function renderLegend() {
     const u = PX.opts.unit === "bp" ? "bp" : unitName();
-    $("bt-legend").innerHTML =
+    const bpn = SUM && SUM.card && SUM.card.bp_note ? `<span class="warn" id="bt-bpnote">${esc(SUM.card.bp_note)}</span>` : "";
+    $("bt-legend").innerHTML = bpn +
       `<span><i style="border-color:${BUY}"></i>買い</span><span><i style="border-color:${SELL}"></i>売り</span>` +
       `<span><i style="border-color:#aab"></i>実線 = 勝ち</span><span><i style="border-top-style:dashed;border-color:#aab"></i>破線 = 負け</span>` +
       `<span><i style="border-color:${CUM}"></i>累計損益(${esc(u)})</span><span>点線の縦線 = 開始・終了</span><span>ホイールで拡大・縮小、ドラッグで移動</span>`;
@@ -519,7 +568,7 @@
     const t = best.t, u = unitName();
     tip.textContent = `${t.side > 0 ? "買い" : "売り"}  ${t.pnl > 0 ? "勝ち" : t.pnl < 0 ? "負け" : "±0"}\n` +
       `建て ${utc(t.et, true)}  ${num(t.ep, 2)}\n決済 ${utc(t.xt, true)}  ${num(t.xp, 2)}\n` +
-      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.bp, 1)} bp\n決済理由 ${t.reason == null ? "—" : t.reason}`;
+      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.bp, 1)} bp\n${SUM.card && SUM.card.bp_note ? "※" + SUM.card.bp_note + "\n" : ""}決済理由 ${t.reason == null ? "—" : t.reason}`;
     tip.style.display = "block";
     tip.style.left = Math.min(mx + 14, r.width - 260) + "px"; tip.style.top = Math.min(my + 14, r.height - 100) + "px";
   }
@@ -527,6 +576,12 @@
   // ---- the ten detail tabs (the server renders them; backtest_view.py) ---------------------------------------
   window.openBacktestRun = function (id) {
     detailRun = id;
+    if (isCard(id)) {  // a card variant has no run record: the ten detail tabs do not exist for it
+      btView = null;
+      $("bt-title").textContent = "研究のカードの変種には、この 10 個の詳細タブが無い(上の「照合の範囲」を見てください)";
+      $("bt-tabs").innerHTML = ""; $("bt-body").innerHTML = "";
+      return Promise.resolve();
+    }
     return fetch("/api/backtest/run/" + encodeURIComponent(id)).then(r => r.json()).then(v => {
       if (detailRun !== id) return;
       btView = v;
