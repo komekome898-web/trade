@@ -59,6 +59,15 @@ for d in (0, 3):
 # B2 止めた後
 for ob in ("close", "follow"):
     RUNS.append((f"B2_{ob}", "B2", ["--on-break", ob]))
+# C 組み合わせ(L-620「1〜3はそれですすめて」の 1): 中心から測る利確 4 つ × 5 分足のレンジの物差し 2 つ。
+# 1 分足 40 分(v37 の物差し)との組は A1_center_* が、利確が v37 の組は A3_w*_b5_body が既にある。
+COMBO_CENTERS = ((2, 0.8), (3, 2), (4, 3), (5, 1))
+COMBO_RULERS = ((20, 5, "body"), (40, 5, "body"))
+for e, x in COMBO_CENTERS:
+    for w, b, r in COMBO_RULERS:
+        RUNS.append((f"C_center_{e}_{x}_w{w}_b{b}_{r}", "C",
+                     ["--exit-form", "center", "--entry", str(e), "--exit-setting", str(x),
+                      "--window-min", str(w), "--bar-min", str(b), "--range-from", r]))
 
 SIDES = ("good", "bad")
 # 門の診断(docs/RESEARCH/cards/c4_owner_matilda_range/diag_gate/README.md「比の十分位ごとの P」)の境。INTENT_MAP §11-5 P-2
