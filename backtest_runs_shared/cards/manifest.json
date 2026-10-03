@@ -1,7 +1,7 @@
 {
  "version": 1,
- "git_sha": "6a5b3e275d5a20a036182a23cac867f047556e9b",
- "total_bytes": 68188579,
+ "git_sha": "74fa2b85da17ef36bfc5b949d001f5e5bc91e2f2",
+ "total_bytes": 164214981,
  "variants": [
   {
    "card": "c1_xborder_mom",
@@ -774,93 +774,366 @@
   {
    "card": "c4_owner_matilda_range",
    "variant": "m_b1_w10_e1_c08",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "ログの最後: [   352.0s 最大RSS  1.26GB] 区切り 2018-01-01〜2019-01-01 足 521307 参照 None"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 575385,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102317,
+    "provenance.json": 10911,
+    "trades.json.gz": 9058735
+   },
+   "seconds": 944.7,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "m_b1_w10_e1_dote",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "ログの最後: [   357.2s 最大RSS  1.26GB] 区切り 2018-01-01〜2019-01-01 足 521307 参照 None"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 321225,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102239,
+    "provenance.json": 10911,
+    "trades.json.gz": 5340806
+   },
+   "seconds": 949.2,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "m_b1_w10_e1_v37",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "ログの最後: [   105.2s 最大RSS  0.91GB] 区切り 2016-01-01〜2017-01-01 足 398453 参照 None"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 565208,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102301,
+    "provenance.json": 10917,
+    "trades.json.gz": 8904376
+   },
+   "seconds": 937.5,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "m_b1_w10_e2_c08",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 361854,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102181,
+    "provenance.json": 10891,
+    "trades.json.gz": 5852613
+   },
+   "seconds": 923.5,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "m_b1_w10_e2_v37",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 404788,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102110,
+    "provenance.json": 10884,
+    "trades.json.gz": 6454261
+   },
+   "seconds": 938.7,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_levels_body",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 132223,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102636,
+    "provenance.json": 10894,
+    "trades.json.gz": 2111557
+   },
+   "seconds": 928.2,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_levels_wick",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 58058,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102607,
+    "provenance.json": 10893,
+    "trades.json.gz": 947093
+   },
+   "seconds": 930.8,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_time_body",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 150282,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102771,
+    "provenance.json": 10912,
+    "trades.json.gz": 2407272
+   },
+   "seconds": 925.1,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_time_wick",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 62031,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102944,
+    "provenance.json": 10887,
+    "trades.json.gz": 1011659
+   },
+   "seconds": 922.7,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_trend_body",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 417583,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102271,
+    "provenance.json": 10923,
+    "trades.json.gz": 6627117
+   },
+   "seconds": 931.3,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_trend_wick",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 419029,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102247,
+    "provenance.json": 10922,
+    "trades.json.gz": 6646828
+   },
+   "seconds": 931.3,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_width_body",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 150306,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102786,
+    "provenance.json": 10914,
+    "trades.json.gz": 2407620
+   },
+   "seconds": 926.6,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "no_width_wick",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 62045,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102964,
+    "provenance.json": 10916,
+    "trades.json.gz": 1011834
+   },
+   "seconds": 936.7,
+   "reason": null
   },
   {
    "card": "c5_tokyo_fix_momentum",
@@ -893,9 +1166,30 @@
   {
    "card": "c6_weekend_gap_revert",
    "variant": "btc",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 282,
+   "period": [
+    "2017-08-01T15:00:00Z",
+    "2022-12-31T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 43732,
+    "provenance.json": 10992,
+    "trades.json.gz": 6250
+   },
+   "seconds": 845.7,
+   "reason": null
   },
   {
    "card": "c6_weekend_gap_revert",
@@ -928,9 +1222,30 @@
   {
    "card": "c7_barrier_race",
    "variant": "1d",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 784,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 99679,
+    "provenance.json": 10736,
+    "trades.json.gz": 10896
+   },
+   "seconds": 903.4,
+   "reason": null
   },
   {
    "card": "c7_barrier_race",
@@ -963,16 +1278,58 @@
   {
    "card": "c7_barrier_race",
    "variant": "1w",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 146,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 99508,
+    "provenance.json": 10728,
+    "trades.json.gz": 2279
+   },
+   "seconds": 913.4,
+   "reason": null
   },
   {
    "card": "c8_session_mean_revert",
    "variant": "bf_maint",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "daily_csv_sha256",
+    "daily_stats.overall",
+    "daily_stats.frequency",
+    "extra.trades",
+    "extra.drawdown",
+    "run_record.headline",
+    "n_trades_exported"
+   ],
+   "not_verified": [],
+   "n_trades": 122185,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 102453,
+    "provenance.json": 10860,
+    "trades.json.gz": 1837331
+   },
+   "seconds": 899.9,
+   "reason": null
   },
   {
    "card": "c8_session_mean_revert",
@@ -1005,16 +1362,66 @@
   {
    "card": "c4_owner_matilda_range",
    "variant": "limit_v37_good",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "summary.json(全体)",
+    "run_record.params",
+    "run_record.period",
+    "run_record.trades",
+    "run_record.undecided_bars_total",
+    "run_record.chunks",
+    "run_record.inputs",
+    "n_trades_exported",
+    "sum_pnl_bp_vs_summary_all_sum_bp(小数 3 桁)"
+   ],
+   "not_verified": [
+    "取引の行そのものは git に無く照合していない。日ごとの損益は走らせ直した取引から作った(git に daily.csv 無し)"
+   ],
+   "n_trades": 1180531,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 100268,
+    "provenance.json": 4686,
+    "trades.json.gz": 20531819
+   },
+   "seconds": 408.0,
+   "reason": null
   },
   {
    "card": "c4_owner_matilda_range",
    "variant": "limit_v37_bad",
-   "status": "not_exported",
-   "display_ok": false,
-   "reason": "未実行または失敗"
+   "status": "exported",
+   "display_ok": true,
+   "verified_items": [
+    "summary.json(全体)",
+    "run_record.params",
+    "run_record.period",
+    "run_record.trades",
+    "run_record.undecided_bars_total",
+    "run_record.chunks",
+    "run_record.inputs",
+    "n_trades_exported",
+    "sum_pnl_bp_vs_summary_all_sum_bp(小数 3 桁)"
+   ],
+   "not_verified": [
+    "取引の行そのものは git に無く照合していない。日ごとの損益は走らせ直した取引から作った(git に daily.csv 無し)"
+   ],
+   "n_trades": 709379,
+   "period": [
+    "2015-11-28T15:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "file_bytes": {
+    "daily.csv": 101147,
+    "provenance.json": 4676,
+    "trades.json.gz": 12782442
+   },
+   "seconds": 385.6,
+   "reason": null
   }
  ],
  "excluded": [

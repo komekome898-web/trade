@@ -187,9 +187,12 @@ def _variant_dir(man: Manifest, card: str, variant: str) -> Optional[Path]:
     return d if real == os.path.join(root, card, variant) or real.startswith(root + os.sep) else None
 
 
-def variant_state(man: Manifest, row: dict) -> tuple[str, str]:
+def variant_state(man: Manifest, row: dict, deep: bool = False) -> tuple[str, str]:
     """(state, reason): "ready" (selectable), "preparing" (display_ok but the files are not complete), "blocked" (display_ok
-    is false: the manifest's reason is shown) or "not_exported" (the manifest says it was not exported)."""
+    is false: the manifest's reason is shown) or "not_exported" (the manifest says it was not exported).
+    The list (catalog) asks with deep = False: only the manifest and the files' presence, sizes (against the manifest's file_bytes)
+    and provenance.json (a few KB) are looked at, so listing 50 variants costs a few stat calls. Opening one variant asks with
+    deep = True: its gzip is read to the end and daily.csv is parsed (the result is cached by path, mtime and size)."""
     if row.get("display_ok") is not True:
         if row.get("status") == "not_exported" and str(row.get("reason") or GENERIC_REASON) == GENERIC_REASON:
             return "not_exported", ""  # waiting for the measurement: not a failure
@@ -208,8 +211,9 @@ def variant_state(man: Manifest, row: dict) -> tuple[str, str]:
         if f in want and type(want[f]) is int and want[f] != st.st_size:
             return "preparing", f"{f} の大きさ({st.st_size} B)が manifest の記録({want[f]} B)と違う(書き足し中)"
     st = (d / "trades.json.gz").stat()
-    why = (_gzip_complete(d / "trades.json.gz", st) or _json_complete(d / "provenance.json", (d / "provenance.json").stat())
-           or _daily_complete(d / "daily.csv", (d / "daily.csv").stat()))
+    why = _json_complete(d / "provenance.json", (d / "provenance.json").stat())
+    if not why and deep:
+        why = _gzip_complete(d / "trades.json.gz", st) or _daily_complete(d / "daily.csv", (d / "daily.csv").stat())
     if why and why.startswith("BLOCKED:"):
         return "blocked", why[len("BLOCKED:"):]
     if why:
@@ -255,7 +259,7 @@ def resolve(runs_dir: Any, run_id: Any, require_ready: bool = True) -> Optional[
             raise BV.BacktestViewError(f"not a run id: {run_id!r}")
         ref = CardRef(man, row, key[0], key[1], d)
         if require_ready:
-            state, why = variant_state(man, row)
+            state, why = variant_state(man, row, deep=True)
             if state == "blocked":
                 raise BV.BacktestViewError(f"card variant {run_id} is not displayable: {why}")
             if state != "ready":

@@ -30,9 +30,42 @@
   const width = n => n >= 86400 ? (n / 86400) + "日足" : n >= 3600 ? (n / 3600) + "時間足" : (n / 60) + "分足";
   function moneyDigits(ccy, v) { return Math.abs(v) < 1000 && ccy !== "JPY" ? 2 : 0; }
   const unitName = () => (SUM && SUM.currency) ? (SUM.currency === "JPY" ? "円" : SUM.currency) : "通貨の記録なし";
-  function getJSON(url) {
-    return fetch(url).then(r => r.json().then(j => { if (!r.ok) throw new Error(j.error || r.status); return j; }));
+  // Every request has a time limit and says why it failed (HTTP status, the server's error text, time-out, no connection):
+  // the page never stays black without a reason.
+  const FETCH_MS = 150000;
+  function getJSON(url, ms) {
+    const ctl = new AbortController(), lim = ms || FETCH_MS, t0 = Date.now();
+    const timer = setTimeout(() => ctl.abort(), lim);
+    return fetch(url, {signal: ctl.signal}).then(r => r.text().then(txt => {
+      let j = null;
+      try { j = JSON.parse(txt); } catch (e) { /* not JSON */ }
+      if (!r.ok) throw new Error(`HTTP ${r.status} ${(j && j.error) || r.statusText || txt.slice(0, 200)}(${url.split("?")[0]})`);
+      if (j === null) throw new Error(`応答が JSON でない(HTTP ${r.status}、${url.split("?")[0]})`);
+      return j;
+    })).catch(err => {
+      if (err && err.name === "AbortError") throw new Error(`時間切れ(${Math.round((Date.now() - t0) / 1000)} 秒待った。${url.split("?")[0]})`);
+      if (err instanceof TypeError) throw new Error(`サーバーに接続できない(${err.message}。${url.split("?")[0]})`);
+      throw err;
+    }).finally(() => clearTimeout(timer));
   }
+  // "読み込み中" with the seconds waited, for as long as the request runs
+  const BUSY = {};
+  function busy(id, text) {
+    idle(id);
+    const t0 = Date.now(), el = $(id);
+    if (!el) return;
+    const tick = () => { el.innerHTML = `<span class="busy">${esc(text)}(${Math.round((Date.now() - t0) / 1000)} 秒経過)</span>`; };
+    tick(); BUSY[id] = setInterval(tick, 1000);
+  }
+  function idle(id) { if (BUSY[id]) { clearInterval(BUSY[id]); delete BUSY[id]; } }
+  function banner(where, err) {
+    const el = $("bt-banner");
+    const msg = `${where}: ${err && err.message ? err.message : err}`;
+    if (el) { el.hidden = false; el.textContent = "バックテストの画面でエラー — " + msg; }
+    try { console.error(msg, err); } catch (e) { /* no console */ }
+  }
+  window.addEventListener("error", e => { if (!$("view-backtest").hidden) banner("画面の処理(JS の例外)", e.error || e.message); });
+  window.addEventListener("unhandledrejection", e => { if (!$("view-backtest").hidden) banner("画面の処理(未処理の失敗)", e.reason); });
 
   // ---- the tree ----------------------------------------------------------------------------------------------
   function renderTree() {
@@ -167,12 +200,14 @@
     RUN = id;
     if (!keepRange) PX.opts.range = null;
     $("bt-stats").innerHTML = "";
-    $("bt-price-note").innerHTML = "読み込み中…";
+    busy("bt-price-note", "実行の要約を読み込み中");
     $("bt-frame").innerHTML = "";
     $("bt-chartbox").hidden = false;
     $("bt-card-note").innerHTML = "";
+    $("bt-banner").hidden = true;
     getJSON("/api/backtest/summary/" + encodeURIComponent(id) + (PX.opts.range ? "?range=" + encodeURIComponent(PX.opts.range) : "")).then(sum => {
       if (my !== SEQ) return;
+      idle("bt-price-note");
       SUM = sum;
       if (sum.preparing) {  // in the manifest, but the files are not complete: shown as 準備中 (it will appear when they are)
         $("bt-pricewrap").hidden = true; $("bt-pnl").hidden = true; $("bt-pnl-cap").hidden = true; $("bt-legend").innerHTML = ""; $("bt-frame").innerHTML = "";
@@ -194,7 +229,9 @@
       return fetchChart(null, null, true, my);
     }).catch(err => {
       if (my !== SEQ) return;
+      idle("bt-price-note");
       $("bt-price-note").innerHTML = `<span class="warn">読み込めなかった: ${esc(err.message)}</span>`;
+      banner("実行の要約", err);
     });
     if ($("bt-detail").open) openBacktestRun(id);
   }
@@ -394,12 +431,25 @@
     let url = `/api/backtest/chart/${encodeURIComponent(RUN)}?max_bars=${barsPerView() * 3}&interval=${pickInterval(Math.max((to - from) / 3, 60))}`;
     if (from != null) url += `&from=${from}&to=${to}`;
     if (o.range) url += `&range=${encodeURIComponent(o.range)}`;
+    busy("bt-chart-busy", "チャートのデータを読み込み中");
     return getJSON(url).then(d => {
       if (my !== SEQ) return;
+      idle("bt-chart-busy"); $("bt-chart-busy").innerHTML = "";
       applyChart(d, fit, keep);
+      if (d.building) {  // the price store is being made in the background (first time only): poll, then draw the chart
+        const b = d.building;
+        const stage = b.stage === "reading" ? "1 分足のファイルを読んでいます" : b.stage === "folding" ? `足を作っています(足 ${b.frame}/${b.frames})` :
+          b.stage === "saving" ? `キャッシュに保存しています(足 ${b.frame}/${b.frames})` : "開始しています";
+        $("bt-chart-busy").innerHTML = `<span class="busy">価格のキャッシュを作っています(初回だけ)。銘柄 ${esc(b.label || b.market)}、${esc(stage)}、経過 ${esc(b.elapsed_s)} 秒。` +
+          `累計損益と見出しの数字は先に出ています。できたら自動でチャートを出します。</span>`;
+        clearTimeout(PX.poll);
+        PX.poll = setTimeout(() => { if (my === SEQ) fetchChart(from, to, fit, my, keep); }, 3000);
+      }
     }).catch(err => {
       if (my !== SEQ) return;
-      $("bt-price-note").innerHTML += ` <span class="warn">チャートの取得に失敗: ${esc(err.message)}</span>`;
+      idle("bt-chart-busy");
+      $("bt-chart-busy").innerHTML = `<span class="warn">チャートの取得に失敗: ${esc(err.message)}</span>`;
+      banner("チャートの取得", err);
     });
   }
   function visibleTimes() {
@@ -418,6 +468,9 @@
     PX.data = d; PX.bars = d.bars; PX.interval = d.interval_s;
     PX.winFrom = d.from_s; PX.winTo = d.to_s; PX.loLimit = d.chart_lo_s; PX.hiLimit = d.chart_hi_s;
     PX.restoring = true;
+    $("bt-pricewrap").hidden = !!d.building || !SUM.price.available;  // while the store is being made: only the profit chart (alone)
+    $("bt-pnl").classList.toggle("alone", !!d.building || !SUM.price.available);
+    if (!d.building && SUM.price.available) resize();
     PX.candle.setData(SUM.price.available ? d.bars.map(b => ({time: b[0], open: b[1], high: b[2], low: b[3], close: b[4]})) : []);
     setPnl();
     showFrameNow();
@@ -435,7 +488,7 @@
         }
       }
       if (!done) PX.price.timeScale().fitContent();
-    } else if (!SUM.price.available) {
+    } else if (!SUM.price.available || d.building) {
       PX.pnl.timeScale().fitContent();
     }
     setTimeout(() => {
@@ -600,12 +653,14 @@
   window.btInit = function () {
     if (CAT) { resize(); PX.sig = ""; return Promise.resolve(); }
     $("bt-detail").addEventListener("toggle", () => { if ($("bt-detail").open && RUN && detailRun !== RUN) openBacktestRun(RUN); });
+    busy("bt-tree", "テーマの一覧を読み込み中");
     return getJSON("/api/backtest/catalog").then(c => {
+      idle("bt-tree");
       CAT = c;
       renderTree();
       const first = allStrategies()[0];
       if (first) selectStrategy(first.id);
       else $("bt-head").innerHTML = '<span class="empty">実行がまだ無い</span>';
-    }).catch(err => { $("bt-tree").innerHTML = `<span class="empty">読み込めなかった: ${esc(err.message)}</span>`; });
+    }).catch(err => { idle("bt-tree"); $("bt-tree").innerHTML = `<span class="empty">読み込めなかった: ${esc(err.message)}</span>`; banner("テーマの一覧", err); });
   };
 })();

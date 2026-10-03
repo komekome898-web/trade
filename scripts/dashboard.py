@@ -274,6 +274,7 @@ PAGE = """<!doctype html>
   </section>
 </main>
 <main id="view-backtest" hidden>
+  <div id="bt-banner" class="bt-warn" hidden></div>
   <div class="bt-layout">
     <aside class="bt-tree" id="bt-tree"><span class="empty">読込中…</span></aside>
     <div class="bt-main">
@@ -282,6 +283,7 @@ PAGE = """<!doctype html>
       <div class="tiles" id="bt-stats"></div>
       <section id="bt-chartbox" class="bt-card" hidden>
         <div class="bt-notes" id="bt-price-note"></div>
+        <div class="bt-notes" id="bt-chart-busy"></div>
         <div class="bt-notes" id="bt-card-note"></div>
         <div class="bt-frame" id="bt-frame"></div>
         <div class="bt-chartwrap" id="bt-pricewrap">
@@ -1447,8 +1449,25 @@ def _rid(route: str, prefix: str) -> str:
 
 
 def _backtest(path: str, runs_dir, data_root=None):
-    """(status, content type, body) for the バックテスト routes, or None. `data_root` = the repository root the
-    price files are read from (default: this repository)."""
+    """(status, content type, body) for the バックテスト routes, or None; the time and the failures of the tab's requests go to
+    logs/dashboard_bt.log (a request of 0.5 s or more, and every status of 400 or more; a static file is not logged)."""
+    import time as _time  # noqa: PLC0415
+    t0 = _time.time()
+    out = _backtest_route(path, runs_dir, data_root)
+    if out is not None and path.startswith("/api/backtest/"):
+        dt = _time.time() - t0
+        if dt >= 0.5 or out[0] >= 400:
+            note = ""
+            if out[0] >= 400:
+                try:
+                    note = " " + str(json.loads(out[2]).get("error", ""))
+                except Exception:  # noqa: BLE001
+                    pass
+            backtest_chart.bt_log("GET " + path.split("?", 1)[0][:160], dt, f"HTTP {out[0]}{note}")
+    return out
+
+
+def _backtest_route(path: str, runs_dir, data_root=None):
     route = path.split("?", 1)[0]
     root = Path(data_root) if data_root else backtest_chart.REPO_ROOT
     try:
@@ -1468,7 +1487,7 @@ def _backtest(path: str, runs_dir, data_root=None):
             return _json(backtest_chart.run_chart(
                 runs_dir, _rid(route, "/api/backtest/chart/"), from_s=_num(q, "from", float), to_s=_num(q, "to", float),
                 max_bars=_num(q, "max_bars", int, backtest_chart.DEFAULT_MAX_BARS), range_name=q.get("range") or None, root=root,
-                interval_s=_num(q, "interval", int)))
+                interval_s=_num(q, "interval", int), wait=False))
         if route.startswith("/api/backtest/run/"):
             view = backtest_view.run_view(runs_dir, _rid(route, "/api/backtest/run/"))
             return _json(view)
@@ -1550,6 +1569,7 @@ def main() -> int:
     args = ap.parse_args()
     runs_dirs = tuple(args.runs_dir) if args.runs_dir else BACKTEST_DIRS
     threading.Thread(target=_warm_backtest_list, args=(runs_dirs,), daemon=True).start()
+    backtest_chart.start_store_warmup(backtest_chart.REPO_ROOT)  # the price stores, one instrument after the other, in the background
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(runs_dirs))
     print(f"dashboard: http://127.0.0.1:{args.port}  (Ctrl+C to stop)", flush=True)
     try:

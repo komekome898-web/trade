@@ -610,11 +610,38 @@ class Store:
     build_s: Optional[float]
     cache_bytes: int
     from_cache: bool
+    pinned: bool = False
 
 
 _STORES: "OrderedDict[str, Store]" = OrderedDict()
 _BUILD: dict = {}
+_PROGRESS: dict = {}  # store key -> {market, label, stage, frame, frames, t0}: what a build is doing now (the page shows it)
+_JOBS: dict = {}  # store key -> {thread, error, t_err}: background builds
 _COLS = ("t", "o", "h", "l", "c")
+
+
+# ---- the log of the tab's own work (logs/dashboard_bt.log: one line per event, read the next morning) -------------
+_LOGLOCK = threading.Lock()
+
+
+def _log_path() -> Path:
+    env = os.environ.get("BT_LOG_PATH")
+    return Path(env) if env else REPO_ROOT / "logs" / "dashboard_bt.log"
+
+
+def bt_log(action: str, seconds: Optional[float], result: str) -> None:
+    """Append "<UTC time>\t<action>\t<seconds>\t<result>" to the tab's log. A log that cannot be written is told on stderr
+    once per call, never raised (a log must not stop the tab)."""
+    line = "%s\t%s\t%s\t%s\n" % (datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), action,
+                                  "-" if seconds is None else f"{seconds:.2f}s", " ".join(str(result).split())[:400])
+    try:
+        with _LOGLOCK:
+            p = _log_path()
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "a", encoding="utf-8") as fh:
+                fh.write(line)
+    except OSError as exc:
+        print(f"dashboard_bt.log: cannot write ({exc}): {line.strip()}", file=sys.stderr, flush=True)
 
 
 def _signature(plan: Plan, rule: dict) -> str:
@@ -625,6 +652,10 @@ def _signature(plan: Plan, rule: dict) -> str:
         st = p.stat()
         parts.append(f"{rel}|{st.st_size}|{st.st_mtime_ns}")
     return hashlib.sha1("\n".join(parts).encode()).hexdigest()[:20]
+
+
+def store_key(plan: Plan, rule: dict) -> str:
+    return f"{plan.market}-{_signature(plan, rule)}"
 
 
 def _cut_frames(frames: dict, boundary_s: int) -> dict:
@@ -640,10 +671,18 @@ def _load_dir(d: Path) -> dict:
     return {w: tuple(np.load(d / f"i{w}_{c}.npy", mmap_mode="r") for c in _COLS) for w in FRAMES}
 
 
+def _progress(key: str, plan: Plan, stage: str, frame: int = 0) -> None:
+    with _LOCK:
+        pr = _PROGRESS.setdefault(key, {"market": plan.market, "label": MARKETS[plan.market]["label"], "t0": time.time()})
+        pr.update(stage=stage, frame=frame, frames=len(FRAMES))
+
+
 def get_store(plan: Plan, rule: dict) -> Store:
-    """The price store of the plan's instrument: memory, else the disk cache, else built ONCE from the 1-minute files."""
-    sig = _signature(plan, rule)
-    key = f"{plan.market}-{sig}"
+    """The price store of the plan's instrument: memory, else the disk cache, else built ONCE from the 1-minute files (one
+    thread builds a key; a second request for it waits on the same lock and then finds the store in memory). A cache that
+    cannot be written (a locked file on Windows, a full disk) is logged and the store stays in memory, pinned: it is not
+    built again for every request."""
+    key = store_key(plan, rule)
     b_s = int(rule["boundary_ns"]) // 10**9
     with _LOCK:
         if key in _STORES:
@@ -657,7 +696,8 @@ def get_store(plan: Plan, rule: dict) -> Store:
         root = _cache_root()
         d = root / key
         t0 = time.time()
-        frames, from_cache = None, False
+        _progress(key, plan, "reading", 0)
+        frames, from_cache, pinned = None, False, False
         if (d / "meta.json").exists():
             try:
                 frames, from_cache = _load_dir(d), True
@@ -666,15 +706,22 @@ def get_store(plan: Plan, rule: dict) -> Store:
                 frames = None
         if frames is None:
             cols = MARKETS[plan.market]["cols"]
-            parts = [_read_file(p, rel, rule, cols) for p, rel in plan.files]
+            parts = []
+            for p, rel in plan.files:
+                parts.append(_read_file(p, rel, rule, cols))
+                _progress(key, plan, "reading", 0)
             cat = [np.concatenate([a[i] for a in parts]) for i in range(5)]
             order = np.argsort(cat[0], kind="stable")
             cat = [a[order] for a in cat]
             keep = np.ones(cat[0].size, dtype=bool)
             keep[1:] = cat[0][1:] != cat[0][:-1]
             base = tuple(a[keep] for a in cat)
-            frames = {w: (base if w == 60 else _fold(*base, w)) for w in FRAMES}
+            frames = {}
+            for i, w in enumerate(FRAMES):
+                _progress(key, plan, "folding", i + 1)
+                frames[w] = base if w == 60 else _fold(*base, w)
             frames = _cut_frames(frames, b_s)
+            _progress(key, plan, "saving", len(FRAMES))
             try:
                 root.mkdir(parents=True, exist_ok=True)
                 tmp = root / f".{key}.{os.getpid()}.{threading.get_ident()}.tmp"
@@ -685,23 +732,101 @@ def get_store(plan: Plan, rule: dict) -> Store:
                         np.save(tmp / f"i{w}_{c}.npy", a)
                 (tmp / "meta.json").write_text(json.dumps({"market": plan.market, "rows": int(base[0].size)}))
                 if d.exists():
-                    shutil.rmtree(tmp, ignore_errors=True)
-                else:
-                    os.replace(tmp, d)
+                    shutil.rmtree(d, ignore_errors=True)  # a directory without a complete meta.json: replace it
+                os.replace(tmp, d)
                 _evict(root, d)
                 frames = _load_dir(d)
-            except OSError:
-                pass  # no cache directory: the frames stay in memory
+            except (OSError, ValueError) as exc:
+                pinned = True  # no usable cache directory: the frames stay in memory, and the failure is on the record
+                shutil.rmtree(root / f".{key}.{os.getpid()}.{threading.get_ident()}.tmp", ignore_errors=True)
+                bt_log("cache_write_failed", time.time() - t0, f"{key} {type(exc).__name__}: {exc} (the store stays in memory)")
+                print(f"dashboard: price cache write failed for {key}: {type(exc).__name__}: {exc}; kept in memory", file=sys.stderr, flush=True)
         frames = _cut_frames(frames, b_s)
         t1 = frames[60][0]
         size = _dir_bytes(d) if d.exists() else 0
         st = Store(plan.market, frames, int(t1[0]) if t1.size else 0, int(t1[-1]) + 60 if t1.size else 0, int(t1.size),
                    None if from_cache else round(time.time() - t0, 2), size, from_cache)
+        st.pinned = pinned
         with _LOCK:
             _STORES[key] = st
             while len(_STORES) > 2:
-                _STORES.popitem(last=False)
+                victim = next((k for k, v in _STORES.items() if not getattr(v, "pinned", False) and k != key), None)
+                if victim is None:
+                    break
+                _STORES.pop(victim)
+            _PROGRESS.pop(key, None)
+        bt_log("store_built" if not from_cache else "store_loaded", time.time() - t0, f"{key} rows={st.rows} cache_bytes={size}")
         return st
+
+
+def store_peek(plan: Plan, rule: dict) -> tuple[Optional[Store], Optional[dict]]:
+    """(store, None) when the store is in memory or its disk cache exists (loading that is quick); else (None, status) after
+    making sure a background thread is building it. `status` = {market, label, stage, frame, frames, elapsed_s} or {error}.
+    The request never waits for a build."""
+    key = store_key(plan, rule)
+    with _LOCK:
+        if key in _STORES:
+            _STORES.move_to_end(key)
+            return _STORES[key], None
+    if (_cache_root() / key / "meta.json").exists():
+        return get_store(plan, rule), None
+    with _LOCK:
+        job = _JOBS.get(key)
+        if job and job.get("error") and time.time() - job["t_err"] < 60:
+            return None, {"market": plan.market, "label": plan.label, "error": job["error"]}
+        if not job or (not job["thread"].is_alive()):
+            def run() -> None:
+                t0 = time.time()
+                try:
+                    get_store(plan, rule)
+                    with _LOCK:
+                        _JOBS.pop(key, None)
+                except Exception as exc:  # noqa: BLE001 -- the page is told why there is no chart
+                    with _LOCK:
+                        _JOBS[key] = {"thread": threading.current_thread(), "error": f"{type(exc).__name__}: {exc}", "t_err": time.time()}
+                        _PROGRESS.pop(key, None)
+                    bt_log("store_build_failed", time.time() - t0, f"{key} {type(exc).__name__}: {exc}")
+            th = threading.Thread(target=run, name=f"bt-store-{plan.market}", daemon=True)
+            _JOBS[key] = {"thread": th, "error": None, "t_err": 0.0}
+            _PROGRESS.setdefault(key, {"market": plan.market, "label": plan.label, "t0": time.time(), "stage": "starting", "frame": 0,
+                                       "frames": len(FRAMES)})
+            th.start()
+        pr = dict(_PROGRESS.get(key) or {"market": plan.market, "label": plan.label, "t0": time.time(), "stage": "starting", "frame": 0,
+                                         "frames": len(FRAMES)})
+    pr["elapsed_s"] = round(time.time() - pr.pop("t0"), 1)
+    return None, pr
+
+
+def start_store_warmup(root: Path = REPO_ROOT) -> threading.Thread:
+    """At dashboard start: build the price store of every instrument of MARKETS in turn, in the background (one that is in the
+    disk cache is only read). The cards' instrument goes first. A request that comes before its store exists gets "building"."""
+    def run() -> None:
+        t0 = time.time()
+        try:
+            rule = seal_rule(root)
+        except SealBlocked as exc:
+            bt_log("warmup", time.time() - t0, f"blocked: {exc}")
+            return
+        order = sorted(MARKETS, key=lambda k: (k != "FX_BTC_JPY", k))
+        for m in order:
+            t1 = time.time()
+            try:
+                plan = price_plan({"config": {"instrument": m}}, Path(root), rule)
+                if not plan.files:
+                    bt_log("warmup", time.time() - t1, f"{m}: no store ({plan.reason})")
+                    continue
+                store_peek(plan, rule)
+                with _LOCK:
+                    job = _JOBS.get(store_key(plan, rule))
+                th = job["thread"] if job else None
+                if th is not None:
+                    th.join()
+            except Exception as exc:  # noqa: BLE001 -- a warm-up must not stop the dashboard
+                bt_log("warmup", time.time() - t1, f"{m}: {type(exc).__name__}: {exc}")
+        bt_log("warmup", time.time() - t0, "done")
+    th = threading.Thread(target=run, name="bt-store-warmup", daemon=True)
+    th.start()
+    return th
 
 
 def pick_interval(span_s: float, max_bars: int) -> int:
@@ -754,7 +879,7 @@ def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: 
 
 def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: Optional[float] = None,
               max_bars: int = DEFAULT_MAX_BARS, range_name: Optional[str] = None, root: Path = REPO_ROOT,
-              interval_s: Optional[int] = None) -> dict:
+              interval_s: Optional[int] = None, wait: bool = True) -> dict:
     """Bars (from the instrument's price store), cumulative profit and loss and trades (from the run) of the visible
     range [from_s, to_s] (UTC seconds; default: the run's period). The range may leave the run's period; it is clipped
     to the store's data and to the seal boundary. Bars use the display frame `interval_s` (rounded up to a frame), or the
@@ -776,9 +901,16 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
     plan = price_plan(rec, Path(root), rule)
     price = _summary_price(plan)
     store = None
+    building = None
     if price["available"]:
         try:
-            store = get_store(plan, rule)
+            if wait:
+                store = get_store(plan, rule)
+            else:  # the dashboard: never wait for a build; the page gets the progress and the numbers that need no price
+                store, building = store_peek(plan, rule)
+                if building and building.get("error"):
+                    price.update(available=False, reason=f"価格の置き場を作れない({building['error']})")
+                    building = None
         except SealBlocked:
             raise
         except Exception as exc:  # noqa: BLE001 -- the page shows why there is no chart
@@ -809,7 +941,7 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
         span = t - f
     out: dict = {"run_id": run_id, "from_s": f, "to_s": t, "interval_s": interval, "frames": list(FRAMES),
                  "chart_lo_s": lo_s, "chart_hi_s": hi_s, "bars": [], "price": price, "narrowed": narrowed,
-                 "measure_interval_s": _run_bar_s(rec) or None}
+                 "measure_interval_s": _run_bar_s(rec) or None, "building": building}
     if store is not None:
         tt, o, h, l, c_ = store.frames[interval]
         a = int(np.searchsorted(tt, int(f // interval * interval), side="left"))
