@@ -10,6 +10,16 @@
         design=k1・--fill limit では、同じ入力に --fill close の物を並走させ、取り逃しを数える(下の missed.csv.gz)。
         --fill limit_entry_close_exit(入りは指値・降りるは終値)|close_entry_limit_exit(入りは終値・降りるは 4 本)は
         参照との差を入りと降りに分ける形(design=k1 だけ)。取り逃しは入りが指値の limit_entry_close_exit でも数える。
+    参照の行(合図の足の元)の読み方の切り替え(既定はどちらも切 = 今までと同じ。段階 G のデータの扱いに合わせて原因を
+    確かめるためのもの。limit_sim/runs/READ_K1YEAR/CAUSE.md):
+        --ref-join-bitflyer   (a) 内部結合: 参照の行のうち、その分(open_time を分の頭に切り下げた時刻)に bitFlyer の
+                              足(4 本値のある行 = load_bars の後の足。出来高 0 の足も含む)がある行だけを使う。
+                              段階 G の結合(分の頭に切り下げ、分の開始時刻の積集合)と同じ分を残す。
+        --ref-drop-no-trade   (b) Binance の n_trades == 0 の行を落とす。n_trades は参照の行と同じファイルの
+                              n_trades の列を open_time で引く(参照の行の時刻と 1 対 1 に揃わなければ止める)。
+        切り替えは参照の形(並走の fill="close" の物)にも同じに当てる。落とした行の数は run_record.json の
+        区切りごとの ref_rows_dropped_join・ref_rows_dropped_no_trade、summary.json の params.ref_filter に出す
+        (切り替えが 1 つでも入のときだけ。既定の出力は今までと同じ形)。
 
 暦年ごとに、その区切りの参照の行(海外の 1 分足の 4 本値。カード 2 の測定 run_v2.py の c2 と同じ置き場・同じ
 binance_ref_dataset・同じ load_reference と CARD.md の宣言)と bitFlyer の足(common.load_bars、封印の門)を読み、
@@ -106,6 +116,49 @@ def find_missed(rows_limit: list, rows_close: list, order_log_limit: list) -> li
     have = {r["signal_ns"] for r in rows_limit}
     placed = {x[5] for x in order_log_limit}
     return [dict(r, limit_order_placed=r["signal_ns"] in placed) for r in rows_close if r["signal_ns"] not in have]
+
+
+def binance_n_trades(paths_abs: list, lo_ns: int, hi_ns: int) -> dict:
+    """Binance の 1 分足のファイル(参照の行と同じもの)から {open_time ns: n_trades}。lo <= t < hi の行だけ。
+    行は時刻の順なので、hi 以上の行に来たらそのファイルは読むのを止める(封印の境より後の行の値を読まない)。"""
+    out = {}
+    for p in paths_abs:
+        with gzip.open(p, "rt", encoding="utf-8", newline="") as fh:
+            r = csv.reader(fh)
+            head = next(r)
+            if head[0] != "open_time" or "n_trades" not in head:
+                raise SystemExit(f"{p} の見出しに open_time・n_trades が無い: {head}")
+            k = head.index("n_trades")
+            for row in r:
+                t = iso(row[0])
+                if t >= hi_ns:
+                    break
+                if t >= lo_ns:
+                    out[t] = int(row[k])
+    return out
+
+
+def filter_ref_rows(ts: list, vals: list, *, join: bool, drop_no_trade: bool, bar_starts=None, n_trades=None):
+    """参照の行の切り替え(モジュールの説明)。ts = 参照の行の時刻(ns)、vals = 4 本値の列(各 ts と同じ長さ)。
+    join: bar_starts(bitFlyer の足の始まり ns の集合)に、行の時刻を分の頭に切り下げた時刻がある行だけ残す。
+    drop_no_trade: n_trades({時刻: n_trades})が 0 の行を落とす(時刻が n_trades に無ければ止める)。
+    (残した ts, 残した vals, 結合で落とした数, n_trades == 0 で落とした数)。結合を先に見る。"""
+    if not join and not drop_no_trade:
+        return ts, vals, 0, 0
+    if drop_no_trade:
+        missing = [t for t in ts if t not in n_trades]
+        if missing:
+            raise SystemExit(f"参照の行 {len(missing)} 行の時刻に n_trades が無い(最初 {to_iso(missing[0])})")
+    keep, dj, dn = [], 0, 0
+    for i, t in enumerate(ts):
+        if join and (t - t % MIN_NS) not in bar_starts:
+            dj += 1
+            continue
+        if drop_no_trade and n_trades[t] == 0:
+            dn += 1
+            continue
+        keep.append(i)
+    return [ts[i] for i in keep], [[v[i] for i in keep] for v in vals], dj, dn
 
 
 def missed_stats(ms: list) -> dict:
@@ -209,9 +262,13 @@ def main() -> int:
     ap.add_argument("--entry", default="c", choices=["a", "b", "c"])
     ap.add_argument("--side-keep", default="weak", choices=["weak", "strong"])
     ap.add_argument("--vol-gate", action="store_true")
+    ap.add_argument("--vol-gate-mode", default="fixed", choices=["fixed", "rolling"],
+                    help="fixed = K1 の境目(2018〜2019 年)/ rolling = 直前 365 日の合図の上位 3 分の 1(L-619)")
     ap.add_argument("--fill", default="limit",
                     choices=["limit", "close", "limit_entry_close_exit", "close_entry_limit_exit"])
     ap.add_argument("--fill-side", required=True, choices=["good", "bad"])
+    ap.add_argument("--ref-join-bitflyer", action="store_true")
+    ap.add_argument("--ref-drop-no-trade", action="store_true")
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
     ap.add_argument("--out", required=True)
@@ -219,10 +276,14 @@ def main() -> int:
     attr, ref_dir, ref_file, period, vdesc = C2_VARIANTS[a.series]
     series = getattr(C2, attr)
     edges_v, edges_src = vol_edges(a.foot_min)
-    if a.vol_gate and edges_v is None:
+    if a.vol_gate and a.vol_gate_mode == "rolling":
+        edges_v, edges_src = None, {"mode": "rolling", "days": 365, "min_signals": 100}
+    if a.vol_gate and edges_v is None and a.vol_gate_mode == "fixed":
         raise SystemExit(f"止める: 高ボラの門の境目が K1 の出力に無い({edges_src})。境目は作らない(仕様 9)")
     kw = {"fill_side": a.fill_side, "at_max": a.at_max, "foot_min": a.foot_min, "design": a.design,
           "entry": a.entry, "side_keep": a.side_keep, "vol_gate": a.vol_gate, "vol_edges": edges_v, "fill": a.fill}
+    if a.vol_gate:
+        kw["vol_gate_mode"] = a.vol_gate_mode
     sim = KatsuoLimitSim(**kw)  # 表の外の値はここで拒む
     shadow = (KatsuoLimitSim(**dict(kw, fill="close"))
               if (a.design == "k1" and a.fill in ("limit", "limit_entry_close_exit")) else None)
@@ -238,6 +299,8 @@ def main() -> int:
     clock = Clock()
     edges = [lo] + boundaries(lo, hi, "year") + [hi]
     rows, chunks, bar_files, kinds_all, ref_man = [], [], {}, {}, {n: [] for n in series}
+    filt = a.ref_join_bitflyer or a.ref_drop_no_trade
+    filt_tot = {"dropped_join": 0, "dropped_no_trade": 0, "rows_read": 0, "rows_used": 0}
     t0 = time.time()
     for x, y in zip(edges[:-1], edges[1:]):
         cols = []
@@ -250,10 +313,18 @@ def main() -> int:
         ts = cols[0][0]
         if any(c[0] != ts for c in cols):
             raise SystemExit(f"4 本値の参照の行の時刻が揃わない {[len(c[0]) for c in cols]}")
-        sim.add_refs(zip(ts, *(c[1] for c in cols)))
-        if shadow is not None:
-            shadow.add_refs(zip(ts, *(c[1] for c in cols)))
         bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y)  # 封印の門(check_end で 2023-12-18 より後を拒む)
+        n_ref_read = len(ts)
+        vals = [c[1] for c in cols]
+        if filt:
+            ntr = (binance_n_trades([os.path.join(ROOT, q) for q in paths(ref_dir, ref_file, x, y)], x, y)
+                   if a.ref_drop_no_trade else None)
+            ts, vals, dj, dn = filter_ref_rows(ts, vals, join=a.ref_join_bitflyer, drop_no_trade=a.ref_drop_no_trade,
+                                               bar_starts={int(b.start_time_ns) for b in bars}, n_trades=ntr)
+            del ntr
+        sim.add_refs(zip(ts, *vals))
+        if shadow is not None:
+            shadow.add_refs(zip(ts, *vals))
         bar_files.update(h)
         for k, v in kinds.items():
             kinds_all[k] = kinds_all.get(k, 0) + v
@@ -264,8 +335,13 @@ def main() -> int:
                 rows_close += shadow.feed(b)
         chunks.append({"range": [to_iso(x), to_iso(y)], "bars": len(bars), "ref_rows": len(ts),
                        "trades_closed": len(rows) - n0})
+        if filt:
+            chunks[-1].update({"ref_rows_read": n_ref_read, "ref_rows_dropped_join": dj,
+                               "ref_rows_dropped_no_trade": dn})
+            for k, v in (("dropped_join", dj), ("dropped_no_trade", dn), ("rows_read", n_ref_read), ("rows_used", len(ts))):
+                filt_tot[k] += v
         clock.mark(f"区切り {to_iso(x)[:10]}〜{to_iso(y)[:10]} 足 {len(bars)} 参照 {len(ts)} 取引 {len(rows) - n0}")
-        del bars, cols, ts
+        del bars, cols, ts, vals
     rows += sim.finish()
     if shadow is not None:
         rows_close += shadow.finish()
@@ -296,9 +372,11 @@ def main() -> int:
                 w.writerow([to_iso(m["signal_ns"]), m["side"], to_iso(m["entry_ns"]), to_iso(m["exit_ns"]),
                             repr(m["entry_price"]), repr(m["exit_price"]), repr(m["pnl_bp"]), m["vol_tercile"] or "",
                             m["limit_order_placed"]])
-    summary = {"params": dict(kw, series=a.series, series_desc=vdesc, series_names=list(series),
-                              vol_edges_source=edges_src),
-               "period": [to_iso(lo), to_iso(hi)], **build_summary(rows, sim.order_log, ms, lo, hi, edges, a.vol_gate),
+    params = dict(kw, series=a.series, series_desc=vdesc, series_names=list(series), vol_edges_source=edges_src)
+    if filt:
+        params["ref_filter"] = {"join_bitflyer": a.ref_join_bitflyer, "drop_no_trade": a.ref_drop_no_trade, **filt_tot}
+    summary = {"params": params,
+               "period": [to_iso(lo), to_iso(hi)], **build_summary(rows, sim.order_log, ms, lo, hi, edges, a.vol_gate and a.vol_gate_mode == "fixed"),
                "close_shadow_trades": None if shadow is None else len(rows_close),
                "undecided_bars_total": sim.undecided_bars, "decisions": sim.decisions,
                "signals": len(sim.signal_log)}

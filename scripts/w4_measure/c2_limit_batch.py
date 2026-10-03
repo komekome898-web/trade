@@ -45,6 +45,16 @@ for f in (5, 15):
     for e in ("a", "b"):
         JOBS_GATED.append((f"weak_f{f}_gate_close_{e}", base + ["--entry", e, "--fill", "close", "--fill-side", "good"]))
 
+# 門の境目を直前 365 日の合図の上位 3 分の 1 にした門あり(L-619「直し方案で測り直してください」)。--rolling で走らせる。
+JOBS_ROLLING: list = []
+for f in (5, 15):
+    base = ["--series", "a", "--design", "k1", "--foot-min", str(f), "--vol-gate", "--vol-gate-mode", "rolling"]
+    for e in ("a", "b", "c"):
+        for side in ("good", "bad"):
+            JOBS_ROLLING.append((f"weak_f{f}_rgate_limit_{e}_{side}", base + ["--entry", e, "--fill", "limit", "--fill-side", side]))
+    for e in ("a", "b"):
+        JOBS_ROLLING.append((f"weak_f{f}_rgate_close_{e}", base + ["--entry", e, "--fill", "close", "--fill-side", "good"]))
+
 # 参照との差を入りと降りに分ける(limit_sim/runs/READ/RESULTS.md §3 の 1)。--ablation で走らせる。
 # le_cx = 入りは指値・降りるは終値、ce_lx = 入りは終値・降りるは 4 本
 JOBS_ABLATION: list = []
@@ -81,8 +91,9 @@ def main() -> int:
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--gated", action="store_true", help="門あり 5・15 分の組(JOBS_GATED)を走らせる")
     ap.add_argument("--ablation", action="store_true", help="入りと降りを分ける組(JOBS_ABLATION)を走らせる")
+    ap.add_argument("--rolling", action="store_true", help="境目を直前 365 日にした門ありの組(JOBS_ROLLING)を走らせる")
     a = ap.parse_args()
-    jobs = JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS)
+    jobs = JOBS_ROLLING if a.rolling else (JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS))
     mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
         for n, ar in mine:
