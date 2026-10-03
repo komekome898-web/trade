@@ -1,0 +1,1417 @@
+{
+ "all": {
+  "avg_loss_bp": -95.58567906138921,
+  "avg_win_bp": 77.50895939217709,
+  "by_exit_signal": {
+   "ヒゲ先端を終値で越えた": {
+    "avg_bp": null,
+    "losses": 0,
+    "sum_bp": 0.0,
+    "trades": 0,
+    "wins": 0
+   },
+   "反対の弱い合図": {
+    "avg_bp": -2.3416072021970122,
+    "losses": 6943,
+    "sum_bp": -35245.87160746943,
+    "trades": 15052,
+    "wins": 8108
+   },
+   "降りる注文以外(ドテン・期間の終わり)": {
+    "avg_bp": -58.44104304543518,
+    "losses": 1,
+    "sum_bp": -58.44104304543518,
+    "trades": 1,
+    "wins": 0
+   }
+  },
+  "by_strength": {
+   "弱い": {
+    "avg_loss_bp": -95.58567906138921,
+    "avg_win_bp": 77.50895939217709,
+    "exit_reasons": {
+     "ストップ成行": 7060,
+     "ストップ指値 1": 1252,
+     "ストップ指値 2": 729,
+     "指値": 6011,
+     "期間の終わり": 1
+    },
+    "losses": 6944,
+    "sum_bp": -35304.31265051486,
+    "sum_loss_bp": -663746.9554022867,
+    "sum_win_bp": 628442.6427517718,
+    "trades": 15053,
+    "trades_with_undecided": 7258,
+    "undecided_bars_in_trades": 7266,
+    "wins": 8108
+   },
+   "強い": {
+    "avg_loss_bp": null,
+    "avg_win_bp": null,
+    "exit_reasons": {},
+    "losses": 0,
+    "sum_bp": 0.0,
+    "sum_loss_bp": 0.0,
+    "sum_win_bp": 0.0,
+    "trades": 0,
+    "trades_with_undecided": 0,
+    "undecided_bars_in_trades": 0,
+    "wins": 0
+   }
+  },
+  "by_vol_tercile": {
+   "high": {
+    "avg_bp": -0.009322466283297508,
+    "losses": 2149,
+    "sum_bp": -42.51044625183664,
+    "trades": 4560,
+    "wins": 2411
+   },
+   "low": {
+    "avg_bp": -4.206162197256122,
+    "losses": 2231,
+    "sum_bp": -21224.29444735439,
+    "trades": 5046,
+    "wins": 2815
+   },
+   "mid": {
+    "avg_bp": -2.579195726101866,
+    "losses": 2560,
+    "sum_bp": -14023.087162815846,
+    "trades": 5437,
+    "wins": 2876
+   },
+   "値なし": {
+    "avg_bp": -1.4420594092789958,
+    "losses": 4,
+    "sum_bp": -14.420594092789958,
+    "trades": 10,
+    "wins": 6
+   }
+  },
+  "days": 2313.0,
+  "entry_orders": {
+   "ent1": {
+    "fill_ratio": 0.986564425219557,
+    "filled": 15053,
+    "placed": 15258,
+    "wait_min_mean": 1.8197701454859496,
+    "wait_min_median": 1.0
+   },
+   "ent2": {
+    "fill_ratio": null,
+    "filled": 0,
+    "placed": 0,
+    "wait_min_mean": null,
+    "wait_min_median": null
+   }
+  },
+  "exit_reasons": {
+   "ストップ成行": 7060,
+   "ストップ指値 1": 1252,
+   "ストップ指値 2": 729,
+   "指値": 6011,
+   "期間の終わり": 1
+  },
+  "losses": 6944,
+  "missed": {
+   "avg_bp": 57.114240318357254,
+   "limit_order_not_placed": {
+    "avg_bp": 11.255445996491598,
+    "losses": 114,
+    "sum_bp": 2881.394175101849,
+    "trades": 256,
+    "wins": 131
+   },
+   "limit_order_placed": {
+    "avg_bp": 119.89419404240864,
+    "losses": 0,
+    "sum_bp": 22420.214285930415,
+    "trades": 187,
+    "wins": 175
+   },
+   "losses": 114,
+   "sum_bp": 25301.608461032265,
+   "trades": 443,
+   "wins": 306
+  },
+  "per_day": {
+   "pnl_bp": -15.263429593823979,
+   "trades": 6.507998270644185,
+   "wins": 3.5054042369217466
+  },
+  "sum_bp": -35304.31265051486,
+  "sum_loss_bp": -663746.9554022867,
+  "sum_win_bp": 628442.6427517718,
+  "trades": 15053,
+  "trades_with_undecided": 7258,
+  "undecided_bars_in_trades": 7266,
+  "vol_gate_in_sample": false,
+  "vol_gate_lookahead": false,
+  "vol_tercile_lookahead": true,
+  "wins": 8108
+ },
+ "all_2018on": {
+  "avg_loss_bp": -95.40006383467498,
+  "avg_win_bp": 76.6398517411903,
+  "by_exit_signal": {
+   "ヒゲ先端を終値で越えた": {
+    "avg_bp": null,
+    "losses": 0,
+    "sum_bp": 0.0,
+    "trades": 0,
+    "wins": 0
+   },
+   "反対の弱い合図": {
+    "avg_bp": -1.9526363169521448,
+    "losses": 6029,
+    "sum_bp": -25772.84674745136,
+    "trades": 13199,
+    "wins": 7169
+   },
+   "降りる注文以外(ドテン・期間の終わり)": {
+    "avg_bp": -58.44104304543518,
+    "losses": 1,
+    "sum_bp": -58.44104304543518,
+    "trades": 1,
+    "wins": 0
+   }
+  },
+  "by_strength": {
+   "弱い": {
+    "avg_loss_bp": -95.40006383467498,
+    "avg_win_bp": 76.6398517411903,
+    "exit_reasons": {
+     "ストップ成行": 6127,
+     "ストップ指値 1": 1010,
+     "ストップ指値 2": 589,
+     "指値": 5473,
+     "期間の終わり": 1
+    },
+    "losses": 6030,
+    "sum_bp": -25831.287790496797,
+    "sum_loss_bp": -575262.3849230901,
+    "sum_win_bp": 549431.0971325933,
+    "trades": 13200,
+    "trades_with_undecided": 6091,
+    "undecided_bars_in_trades": 6095,
+    "wins": 7169
+   },
+   "強い": {
+    "avg_loss_bp": null,
+    "avg_win_bp": null,
+    "exit_reasons": {},
+    "losses": 0,
+    "sum_bp": 0.0,
+    "sum_loss_bp": 0.0,
+    "sum_win_bp": 0.0,
+    "trades": 0,
+    "trades_with_undecided": 0,
+    "undecided_bars_in_trades": 0,
+    "wins": 0
+   }
+  },
+  "by_vol_tercile": {
+   "high": {
+    "avg_bp": 2.4717803984178546,
+    "losses": 1607,
+    "sum_bp": 8586.965104103627,
+    "trades": 3474,
+    "wins": 1867
+   },
+   "low": {
+    "avg_bp": -4.297921260968124,
+    "losses": 2201,
+    "sum_bp": -21382.158273316418,
+    "trades": 4975,
+    "wins": 2774
+   },
+   "mid": {
+    "avg_bp": -2.7438633174666394,
+    "losses": 2222,
+    "sum_bp": -13036.094621284004,
+    "trades": 4751,
+    "wins": 2528
+   },
+   "値なし": {
+    "avg_bp": null,
+    "losses": 0,
+    "sum_bp": 0.0,
+    "trades": 0,
+    "wins": 0
+   }
+  },
+  "days": 2176.625,
+  "entry_orders": {
+   "ent1": {
+    "fill_ratio": 0.9864723467862482,
+    "filled": 13199,
+    "placed": 13380,
+    "wait_min_mean": 1.8396090612925222,
+    "wait_min_median": 1.0
+   },
+   "ent2": {
+    "fill_ratio": null,
+    "filled": 0,
+    "placed": 0,
+    "wait_min_mean": null,
+    "wait_min_median": null
+   }
+  },
+  "exit_reasons": {
+   "ストップ成行": 6127,
+   "ストップ指値 1": 1010,
+   "ストップ指値 2": 589,
+   "指値": 5473,
+   "期間の終わり": 1
+  },
+  "losses": 6030,
+  "missed": {
+   "avg_bp": 57.751335366499305,
+   "limit_order_not_placed": {
+    "avg_bp": 10.849999727303215,
+    "losses": 98,
+    "sum_bp": 2419.549939188617,
+    "trades": 223,
+    "wins": 114
+   },
+   "limit_order_placed": {
+    "avg_bp": 121.1392011091704,
+    "losses": 0,
+    "sum_bp": 19987.968183013116,
+    "trades": 165,
+    "wins": 154
+   },
+   "losses": 98,
+   "sum_bp": 22407.51812220173,
+   "trades": 388,
+   "wins": 268
+  },
+  "per_day": {
+   "pnl_bp": -11.867587568137276,
+   "trades": 6.0644346178142765,
+   "wins": 3.2936311950841324
+  },
+  "sum_bp": -25831.287790496797,
+  "sum_loss_bp": -575262.3849230901,
+  "sum_win_bp": 549431.0971325933,
+  "trades": 13200,
+  "trades_with_undecided": 6091,
+  "undecided_bars_in_trades": 6095,
+  "vol_gate_in_sample": false,
+  "vol_gate_lookahead": false,
+  "vol_tercile_lookahead": false,
+  "wins": 7169
+ },
+ "close_shadow_trades": 15214,
+ "decisions": {
+  "buy": 8169,
+  "exit": 15067,
+  "flip_at_max": 0,
+  "k1_doten": 0,
+  "k1_same_side": 16554,
+  "k1_same_side_resting": 110,
+  "k1_vol_gate_skip": 0,
+  "no_price": 0,
+  "sell": 7089,
+  "skip_at_max_opposite": 0,
+  "skip_at_max_same": 0
+ },
+ "params": {
+  "at_max": null,
+  "design": "k1",
+  "entry": "a",
+  "fill": "limit",
+  "fill_side": "bad",
+  "foot_min": 15,
+  "series": "a",
+  "series_desc": "(a) SERIES_SPOT Binance BTCUSDT 現物",
+  "series_names": [
+   "binance_open",
+   "binance_high",
+   "binance_low",
+   "binance_close"
+  ],
+  "side_keep": "weak",
+  "vol_edges": [
+   24.81,
+   42.31
+  ],
+  "vol_edges_source": {
+   "design": {
+    "delay_entry": true,
+    "flip_body": true,
+    "keep": "weak",
+    "use_invalid": false
+   },
+   "edges_bp_own": [
+    24.81,
+    42.31
+   ],
+   "file": "results/PHASE2/K1/xvenue/vol_terciles.json",
+   "foot": 15,
+   "gate": "s19/b24"
+  },
+  "vol_gate": false
+ },
+ "period": [
+  "2017-08-17T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "signals": 73410,
+ "undecided_bars_total": 7266,
+ "years": {
+  "2017": {
+   "avg_loss_bp": -96.81025216542302,
+   "avg_win_bp": 84.14435103213906,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -5.112263820840835,
+     "losses": 914,
+     "sum_bp": -9473.024860018068,
+     "trades": 1853,
+     "wins": 939
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -96.81025216542302,
+     "avg_win_bp": 84.14435103213906,
+     "exit_reasons": {
+      "ストップ成行": 933,
+      "ストップ指値 1": 242,
+      "ストップ指値 2": 140,
+      "指値": 538
+     },
+     "losses": 914,
+     "sum_bp": -9473.024860018068,
+     "sum_loss_bp": -88484.57047919664,
+     "sum_win_bp": 79011.54561917858,
+     "trades": 1853,
+     "trades_with_undecided": 1167,
+     "undecided_bars_in_trades": 1171,
+     "wins": 939
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": -7.946110083200241,
+     "losses": 542,
+     "sum_bp": -8629.475550355462,
+     "trades": 1086,
+     "wins": 544
+    },
+    "low": {
+     "avg_bp": 2.223434168479252,
+     "losses": 30,
+     "sum_bp": 157.86382596202688,
+     "trades": 71,
+     "wins": 41
+    },
+    "mid": {
+     "avg_bp": -1.4387646378015178,
+     "losses": 338,
+     "sum_bp": -986.9925415318412,
+     "trades": 686,
+     "wins": 348
+    },
+    "値なし": {
+     "avg_bp": -1.4420594092789958,
+     "losses": 4,
+     "sum_bp": -14.420594092789958,
+     "trades": 10,
+     "wins": 6
+    }
+   },
+   "days": 136.375,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.987220447284345,
+     "filled": 1854,
+     "placed": 1878,
+     "wait_min_mean": 1.6785329018338726,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 933,
+    "ストップ指値 1": 242,
+    "ストップ指値 2": 140,
+    "指値": 538
+   },
+   "losses": 914,
+   "missed": {
+    "avg_bp": 52.619824342373306,
+    "limit_order_not_placed": {
+     "avg_bp": 13.995279876158557,
+     "losses": 16,
+     "sum_bp": 461.8442359132324,
+     "trades": 33,
+     "wins": 17
+    },
+    "limit_order_placed": {
+     "avg_bp": 110.55664104169541,
+     "losses": 0,
+     "sum_bp": 2432.246102917299,
+     "trades": 22,
+     "wins": 21
+    },
+    "losses": 16,
+    "sum_bp": 2894.090338830532,
+    "trades": 55,
+    "wins": 38
+   },
+   "per_day": {
+    "pnl_bp": -69.4630603851004,
+    "trades": 13.587534372135655,
+    "wins": 6.885426214482126
+   },
+   "sum_bp": -9473.024860018068,
+   "sum_loss_bp": -88484.57047919664,
+   "sum_win_bp": 79011.54561917858,
+   "trades": 1853,
+   "trades_with_undecided": 1167,
+   "undecided_bars_in_trades": 1171,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": true,
+   "wins": 939
+  },
+  "2018": {
+   "avg_loss_bp": -93.64432875748565,
+   "avg_win_bp": 78.23407477304522,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -1.5430656086381884,
+     "losses": 1573,
+     "sum_bp": -5229.44934767482,
+     "trades": 3389,
+     "wins": 1816
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -93.64432875748565,
+     "avg_win_bp": 78.23407477304522,
+     "exit_reasons": {
+      "ストップ成行": 1603,
+      "ストップ指値 1": 425,
+      "ストップ指値 2": 259,
+      "指値": 1102
+     },
+     "losses": 1573,
+     "sum_bp": -5229.44934767482,
+     "sum_loss_bp": -147302.52913552494,
+     "sum_win_bp": 142073.07978785012,
+     "trades": 3389,
+     "trades_with_undecided": 2094,
+     "undecided_bars_in_trades": 2095,
+     "wins": 1816
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": -1.9279800722054399,
+     "losses": 675,
+     "sum_bp": -2747.371602892752,
+     "trades": 1425,
+     "wins": 750
+    },
+    "low": {
+     "avg_bp": -5.7760248799673635,
+     "losses": 383,
+     "sum_bp": -4869.188973812487,
+     "trades": 843,
+     "wins": 460
+    },
+    "mid": {
+     "avg_bp": 2.12944801876041,
+     "losses": 515,
+     "sum_bp": 2387.1112290304195,
+     "trades": 1121,
+     "wins": 606
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 365.0,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9854608897935446,
+     "filled": 3389,
+     "placed": 3439,
+     "wait_min_mean": 1.4364119209206256,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 1603,
+    "ストップ指値 1": 425,
+    "ストップ指値 2": 259,
+    "指値": 1102
+   },
+   "losses": 1573,
+   "missed": {
+    "avg_bp": 89.95768276949094,
+    "limit_order_not_placed": {
+     "avg_bp": 0.10337005452346422,
+     "losses": 20,
+     "sum_bp": 5.271872780696675,
+     "trades": 51,
+     "wins": 28
+    },
+    "limit_order_placed": {
+     "avg_bp": 194.10699978002143,
+     "losses": 0,
+     "sum_bp": 8540.707990320943,
+     "trades": 44,
+     "wins": 40
+    },
+    "losses": 20,
+    "sum_bp": 8545.97986310164,
+    "trades": 95,
+    "wins": 68
+   },
+   "per_day": {
+    "pnl_bp": -14.32725848678033,
+    "trades": 9.284931506849315,
+    "wins": 4.975342465753425
+   },
+   "sum_bp": -5229.44934767482,
+   "sum_loss_bp": -147302.52913552494,
+   "sum_win_bp": 142073.07978785012,
+   "trades": 3389,
+   "trades_with_undecided": 2094,
+   "undecided_bars_in_trades": 2095,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 1816
+  },
+  "2019": {
+   "avg_loss_bp": -93.8912748407129,
+   "avg_win_bp": 70.01570250838515,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -3.9140885414272213,
+     "losses": 926,
+     "sum_bp": -8035.623775550085,
+     "trades": 2053,
+     "wins": 1127
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -93.8912748407129,
+     "avg_win_bp": 70.01570250838515,
+     "exit_reasons": {
+      "ストップ成行": 669,
+      "ストップ指値 1": 254,
+      "ストップ指値 2": 124,
+      "指値": 1006
+     },
+     "losses": 926,
+     "sum_bp": -8035.623775550085,
+     "sum_loss_bp": -86943.32050250014,
+     "sum_win_bp": 78907.69672695006,
+     "trades": 2053,
+     "trades_with_undecided": 946,
+     "undecided_bars_in_trades": 947,
+     "wins": 1127
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": 8.104165737299756,
+     "losses": 181,
+     "sum_bp": 3184.937134758804,
+     "trades": 393,
+     "wins": 212
+    },
+    "low": {
+     "avg_bp": -8.485119889801723,
+     "losses": 434,
+     "sum_bp": -8256.021652777077,
+     "trades": 973,
+     "wins": 539
+    },
+    "mid": {
+     "avg_bp": -4.315195425810498,
+     "losses": 311,
+     "sum_bp": -2964.539257531812,
+     "trades": 687,
+     "wins": 376
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 365.0,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9903521466473709,
+     "filled": 2053,
+     "placed": 2073,
+     "wait_min_mean": 1.3078421821724306,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 669,
+    "ストップ指値 1": 254,
+    "ストップ指値 2": 124,
+    "指値": 1006
+   },
+   "losses": 926,
+   "missed": {
+    "avg_bp": 22.53057092469444,
+    "limit_order_not_placed": {
+     "avg_bp": -13.424127332307833,
+     "losses": 12,
+     "sum_bp": -308.7549286430802,
+     "trades": 23,
+     "wins": 10
+    },
+    "limit_order_placed": {
+     "avg_bp": 68.47268536419735,
+     "losses": 0,
+     "sum_bp": 1232.5083365555522,
+     "trades": 18,
+     "wins": 15
+    },
+    "losses": 12,
+    "sum_bp": 923.7534079124721,
+    "trades": 41,
+    "wins": 25
+   },
+   "per_day": {
+    "pnl_bp": -22.015407604246807,
+    "trades": 5.624657534246575,
+    "wins": 3.0876712328767124
+   },
+   "sum_bp": -8035.623775550085,
+   "sum_loss_bp": -86943.32050250014,
+   "sum_win_bp": 78907.69672695006,
+   "trades": 2053,
+   "trades_with_undecided": 946,
+   "undecided_bars_in_trades": 947,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 1127
+  },
+  "2020": {
+   "avg_loss_bp": -94.79151857821017,
+   "avg_win_bp": 80.8445191682175,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": 2.1921639748929533,
+     "losses": 858,
+     "sum_bp": 4202.3783398697915,
+     "trades": 1917,
+     "wins": 1058
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -94.79151857821017,
+     "avg_win_bp": 80.8445191682175,
+     "exit_reasons": {
+      "ストップ成行": 750,
+      "ストップ指値 1": 204,
+      "ストップ指値 2": 96,
+      "指値": 867
+     },
+     "losses": 858,
+     "sum_bp": 4202.3783398697915,
+     "sum_loss_bp": -81331.12294010432,
+     "sum_win_bp": 85533.50127997412,
+     "trades": 1917,
+     "trades_with_undecided": 961,
+     "undecided_bars_in_trades": 962,
+     "wins": 1058
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": 14.801989682192438,
+     "losses": 159,
+     "sum_bp": 5506.340161775587,
+     "trades": 372,
+     "wins": 213
+    },
+    "low": {
+     "avg_bp": 3.8889597570258783,
+     "losses": 392,
+     "sum_bp": 3472.841063024109,
+     "trades": 893,
+     "wins": 501
+    },
+    "mid": {
+     "avg_bp": -7.3263847928372785,
+     "losses": 307,
+     "sum_bp": -4776.802884929905,
+     "trades": 652,
+     "wins": 344
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 366.0,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9881443298969073,
+     "filled": 1917,
+     "placed": 1940,
+     "wait_min_mean": 2.0365153886280645,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 750,
+    "ストップ指値 1": 204,
+    "ストップ指値 2": 96,
+    "指値": 867
+   },
+   "losses": 858,
+   "missed": {
+    "avg_bp": 41.5224733546742,
+    "limit_order_not_placed": {
+     "avg_bp": 5.378221667136606,
+     "losses": 15,
+     "sum_bp": 172.1030933483714,
+     "trades": 32,
+     "wins": 12
+    },
+    "limit_order_placed": {
+     "avg_bp": 102.39700251263226,
+     "losses": 0,
+     "sum_bp": 1945.5430477400128,
+     "trades": 19,
+     "wins": 17
+    },
+    "losses": 15,
+    "sum_bp": 2117.646141088384,
+    "trades": 51,
+    "wins": 29
+   },
+   "per_day": {
+    "pnl_bp": 11.481908032431125,
+    "trades": 5.237704918032787,
+    "wins": 2.890710382513661
+   },
+   "sum_bp": 4202.3783398697915,
+   "sum_loss_bp": -81331.12294010432,
+   "sum_win_bp": 85533.50127997412,
+   "trades": 1917,
+   "trades_with_undecided": 961,
+   "undecided_bars_in_trades": 962,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 1058
+  },
+  "2021": {
+   "avg_loss_bp": -93.98911592198019,
+   "avg_win_bp": 77.69210322343984,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -4.411729353768999,
+     "losses": 1560,
+     "sum_bp": -14391.061151994476,
+     "trades": 3262,
+     "wins": 1702
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -93.98911592198019,
+     "avg_win_bp": 77.69210322343984,
+     "exit_reasons": {
+      "ストップ成行": 1792,
+      "ストップ指値 1": 42,
+      "ストップ指値 2": 32,
+      "指値": 1396
+     },
+     "losses": 1560,
+     "sum_bp": -14391.061151994476,
+     "sum_loss_bp": -146623.02083828909,
+     "sum_win_bp": 132231.9596862946,
+     "trades": 3262,
+     "trades_with_undecided": 1068,
+     "undecided_bars_in_trades": 1068,
+     "wins": 1702
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": 1.818442234311622,
+     "losses": 458,
+     "sum_bp": 1776.6180629224548,
+     "trades": 977,
+     "wins": 519
+    },
+    "low": {
+     "avg_bp": -13.20222863912695,
+     "losses": 341,
+     "sum_bp": -9558.413534727912,
+     "trades": 724,
+     "wins": 383
+    },
+    "mid": {
+     "avg_bp": -4.233994670204368,
+     "losses": 761,
+     "sum_bp": -6609.265680189018,
+     "trades": 1561,
+     "wins": 800
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 365.0,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9804628794709949,
+     "filled": 3262,
+     "placed": 3327,
+     "wait_min_mean": 1.8546903740036786,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 1792,
+    "ストップ指値 1": 42,
+    "ストップ指値 2": 32,
+    "指値": 1396
+   },
+   "losses": 1560,
+   "missed": {
+    "avg_bp": 55.33865925179047,
+    "limit_order_not_placed": {
+     "avg_bp": 22.700154723932904,
+     "losses": 39,
+     "sum_bp": 1929.5131515342969,
+     "trades": 85,
+     "wins": 44
+    },
+    "limit_order_placed": {
+     "avg_bp": 100.08499610449842,
+     "losses": 0,
+     "sum_bp": 6205.269758478902,
+     "trades": 62,
+     "wins": 60
+    },
+    "losses": 39,
+    "sum_bp": 8134.7829100131985,
+    "trades": 147,
+    "wins": 104
+   },
+   "per_day": {
+    "pnl_bp": -39.427564799984864,
+    "trades": 8.936986301369863,
+    "wins": 4.663013698630137
+   },
+   "sum_bp": -14391.061151994476,
+   "sum_loss_bp": -146623.02083828909,
+   "sum_win_bp": 132231.9596862946,
+   "trades": 3262,
+   "trades_with_undecided": 1068,
+   "undecided_bars_in_trades": 1068,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 1702
+  },
+  "2022": {
+   "avg_loss_bp": -101.43216666536058,
+   "avg_win_bp": 74.6596711920441,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -0.9178714177788189,
+     "losses": 788,
+     "sum_bp": -1685.2119230419114,
+     "trades": 1836,
+     "wins": 1048
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -101.43216666536058,
+     "avg_win_bp": 74.6596711920441,
+     "exit_reasons": {
+      "ストップ成行": 964,
+      "ストップ指値 1": 56,
+      "ストップ指値 2": 47,
+      "指値": 769
+     },
+     "losses": 788,
+     "sum_bp": -1685.2119230419114,
+     "sum_loss_bp": -79928.54733230414,
+     "sum_win_bp": 78243.33540926222,
+     "trades": 1836,
+     "trades_with_undecided": 778,
+     "undecided_bars_in_trades": 778,
+     "wins": 1048
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": 2.4443921245201055,
+     "losses": 126,
+     "sum_bp": 708.8737161108306,
+     "trades": 290,
+     "wins": 164
+    },
+    "low": {
+     "avg_bp": -0.6394200707977822,
+     "losses": 388,
+     "sum_bp": -598.4971862667242,
+     "trades": 936,
+     "wins": 548
+    },
+    "mid": {
+     "avg_bp": -2.9435876276819966,
+     "losses": 274,
+     "sum_bp": -1795.5884528860179,
+     "trades": 610,
+     "wins": 336
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 365.0,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9940443963183541,
+     "filled": 1836,
+     "placed": 1847,
+     "wait_min_mean": 1.9166666666666667,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 964,
+    "ストップ指値 1": 56,
+    "ストップ指値 2": 47,
+    "指値": 769
+   },
+   "losses": 788,
+   "missed": {
+    "avg_bp": 20.16802036678992,
+    "limit_order_not_placed": {
+     "avg_bp": -9.843952262958743,
+     "losses": 8,
+     "sum_bp": -187.03509299621612,
+     "trades": 19,
+     "wins": 11
+    },
+    "limit_order_placed": {
+     "avg_bp": 72.00688218181034,
+     "losses": 0,
+     "sum_bp": 792.0757039999138,
+     "trades": 11,
+     "wins": 11
+    },
+    "losses": 8,
+    "sum_bp": 605.0406110036977,
+    "trades": 30,
+    "wins": 22
+   },
+   "per_day": {
+    "pnl_bp": -4.6170189672381134,
+    "trades": 5.03013698630137,
+    "wins": 2.871232876712329
+   },
+   "sum_bp": -1685.2119230419114,
+   "sum_loss_bp": -79928.54733230414,
+   "sum_win_bp": 78243.33540926222,
+   "trades": 1836,
+   "trades_with_undecided": 778,
+   "undecided_bars_in_trades": 778,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 1048
+  },
+  "2023": {
+   "avg_loss_bp": -101.95028976728457,
+   "avg_win_bp": 77.61130201498132,
+   "by_exit_signal": {
+    "ヒゲ先端を終値で越えた": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    },
+    "反対の弱い合図": {
+     "avg_bp": -0.8542842170618064,
+     "losses": 324,
+     "sum_bp": -633.8788890598603,
+     "trades": 742,
+     "wins": 418
+    },
+    "降りる注文以外(ドテン・期間の終わり)": {
+     "avg_bp": -58.44104304543518,
+     "losses": 1,
+     "sum_bp": -58.44104304543518,
+     "trades": 1,
+     "wins": 0
+    }
+   },
+   "by_strength": {
+    "弱い": {
+     "avg_loss_bp": -101.95028976728457,
+     "avg_win_bp": 77.61130201498132,
+     "exit_reasons": {
+      "ストップ成行": 349,
+      "ストップ指値 1": 29,
+      "ストップ指値 2": 31,
+      "指値": 333,
+      "期間の終わり": 1
+     },
+     "losses": 325,
+     "sum_bp": -692.3199321052955,
+     "sum_loss_bp": -33133.844174367485,
+     "sum_win_bp": 32441.52424226219,
+     "trades": 743,
+     "trades_with_undecided": 244,
+     "undecided_bars_in_trades": 245,
+     "wins": 418
+    },
+    "強い": {
+     "avg_loss_bp": null,
+     "avg_win_bp": null,
+     "exit_reasons": {},
+     "losses": 0,
+     "sum_bp": 0.0,
+     "sum_loss_bp": 0.0,
+     "sum_win_bp": 0.0,
+     "trades": 0,
+     "trades_with_undecided": 0,
+     "undecided_bars_in_trades": 0,
+     "wins": 0
+    }
+   },
+   "by_vol_tercile": {
+    "high": {
+     "avg_bp": 9.268684201688368,
+     "losses": 8,
+     "sum_bp": 157.56763142870224,
+     "trades": 17,
+     "wins": 9
+    },
+    "low": {
+     "avg_bp": -2.5955082322711656,
+     "losses": 263,
+     "sum_bp": -1572.8779887563262,
+     "trades": 606,
+     "wins": 343
+    },
+    "mid": {
+     "avg_bp": 6.02492021018607,
+     "losses": 54,
+     "sum_bp": 722.9904252223284,
+     "trades": 120,
+     "wins": 66
+    },
+    "値なし": {
+     "avg_bp": null,
+     "losses": 0,
+     "sum_bp": 0.0,
+     "trades": 0,
+     "wins": 0
+    }
+   },
+   "days": 350.625,
+   "entry_orders": {
+    "ent1": {
+     "fill_ratio": 0.9840848806366048,
+     "filled": 742,
+     "placed": 754,
+     "wait_min_mean": 4.386792452830188,
+     "wait_min_median": 1.0
+    },
+    "ent2": {
+     "fill_ratio": null,
+     "filled": 0,
+     "placed": 0,
+     "wait_min_mean": null,
+     "wait_min_median": null
+    }
+   },
+   "exit_reasons": {
+    "ストップ成行": 349,
+    "ストップ指値 1": 29,
+    "ストップ指値 2": 31,
+    "指値": 333,
+    "期間の終わり": 1
+   },
+   "losses": 325,
+   "missed": {
+    "avg_bp": 86.67979954509747,
+    "limit_order_not_placed": {
+     "avg_bp": 62.18860332034986,
+     "losses": 4,
+     "sum_bp": 808.4518431645482,
+     "trades": 13,
+     "wins": 9
+    },
+    "limit_order_placed": {
+     "avg_bp": 115.62394053798099,
+     "losses": 0,
+     "sum_bp": 1271.8633459177909,
+     "trades": 11,
+     "wins": 11
+    },
+    "losses": 4,
+    "sum_bp": 2080.315189082339,
+    "trades": 24,
+    "wins": 20
+   },
+   "per_day": {
+    "pnl_bp": -1.9745310006568142,
+    "trades": 2.119073083778966,
+    "wins": 1.192156862745098
+   },
+   "sum_bp": -692.3199321052955,
+   "sum_loss_bp": -33133.844174367485,
+   "sum_win_bp": 32441.52424226219,
+   "trades": 743,
+   "trades_with_undecided": 244,
+   "undecided_bars_in_trades": 245,
+   "vol_gate_in_sample": false,
+   "vol_gate_lookahead": false,
+   "vol_tercile_lookahead": false,
+   "wins": 418
+  }
+ }
+}
