@@ -3,7 +3,7 @@
   "api_health": {
    "checks": {
     "gaps": {
-     "count": 5,
+     "count": 12,
      "examples": [
       {
        "examples": [
@@ -18,22 +18,22 @@
          "ts": "2026-09-30T11:00:25.978000+00:00"
         },
         {
+         "gap_seconds": 13770.626,
+         "row": 34927,
+         "ts": "2026-10-02T22:02:06.263000+00:00"
+        },
+        {
+         "gap_seconds": 174.405,
+         "row": 22775,
+         "ts": "2026-10-02T03:09:10.621000+00:00"
+        },
+        {
          "gap_seconds": 126.775,
          "row": 8469,
          "ts": "2026-09-30T20:16:43.817000+00:00"
-        },
-        {
-         "gap_seconds": 61.276,
-         "row": 9888,
-         "ts": "2026-09-30T22:06:25.855000+00:00"
-        },
-        {
-         "gap_seconds": 40.805,
-         "row": 9094,
-         "ts": "2026-09-30T21:04:49.676000+00:00"
         }
        ],
-       "median_gap_seconds": 5.065,
+       "median_gap_seconds": 5.066,
        "path": "data/api_health.csv"
       }
      ],
@@ -3551,7 +3551,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 33,
+   "files_checked": 34,
    "files_flagged": 0
   },
   "qa_synthetic": {
@@ -5147,7 +5147,7 @@
      "files": 451
     },
     "gaps": {
-     "count": 1097840055,
+     "count": 1154211665,
      "examples": [
       {
        "examples": [
@@ -5285,11 +5285,11 @@
        "path": "backtest_data/mini_topixf_225labo_20260907/day_session_daily.csv.gz"
       }
      ],
-     "files": 2491
+     "files": 2526
     }
    },
-   "files_checked": 2948,
-   "files_flagged": 2498
+   "files_checked": 3064,
+   "files_flagged": 2533
   },
   "venue_survey": {
    "checks": {},
@@ -13634,6 +13634,14 @@
     32561,
     "2026-09-30T23:31:42.783240+00:00",
     "a809a06235b376dd0f55b8850819a816"
+   ],
+   "result": {}
+  },
+  "backtest_data/auto_okx_open_interest_5m_20261002/okx_btc_oi_5m.csv": {
+   "content_key": [
+    32496,
+    "2026-10-02T21:40:50.133628+00:00",
+    "dd3b64d39f87d6747d834a07908a85ec"
    ],
    "result": {}
   },
@@ -132193,6 +132201,54 @@
     }
    }
   },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz": {
+   "content_key": [
+    1734195,
+    "2026-10-02T21:37:49.346059+00:00",
+    "8f1ebada163a9b20f00eca585b5aebfa"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_1m_2017_2019.csv.gz": {
+   "content_key": [
+    20169900,
+    "2026-10-02T21:37:49.812606+00:00",
+    "dea9b0f7b9d0bc407699a98db78633e3"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_30m_2017_2019.csv.gz": {
+   "content_key": [
+    904839,
+    "2026-10-02T21:37:49.820605+00:00",
+    "a181981289872fe7c7cd5937fef120e1"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz": {
+   "content_key": [
+    7643259,
+    "2026-10-02T21:37:49.993837+00:00",
+    "c458019c6c6962dacc3bb9fbfda91f53"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_5m_2017_2019.csv.gz": {
+   "content_key": [
+    4792238,
+    "2026-10-02T21:37:50.021836+00:00",
+    "e93b5edd9c4b2747ccf0f5e19ed74056"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz": {
+   "content_key": [
+    471132,
+    "2026-10-02T21:37:50.025836+00:00",
+    "5e0cf9add436f7285d9c616fa4cbd2e5"
+   ],
+   "result": {}
+  },
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260909.jsonl.gz": {
    "content_key": [
     2478901,
@@ -134504,6 +134560,598 @@
     283293,
     "2026-09-21T02:29:16.372854+00:00",
     "afee422225cff7a5561dc8d5be143545"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/spread/spread_by_day.csv": {
+   "content_key": [
+    3684,
+    "2026-10-02T21:37:50.057451+00:00",
+    "e540971a1582e63da78e91585609ff4c"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/action_counts.csv": {
+   "content_key": [
+    2401,
+    "2026-10-02T21:37:50.068461+00:00",
+    "534d24756a57fcb31ff4350e862f79eb"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_chain.csv": {
+   "content_key": [
+    2486,
+    "2026-10-02T21:37:50.069461+00:00",
+    "1bb974b7fd042f863fe77ef120a74549"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_first.csv": {
+   "content_key": [
+    2456,
+    "2026-10-02T21:37:50.070447+00:00",
+    "7967df36d842816eda028d566031c5b1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/cascades.csv.gz": {
+   "content_key": [
+    1662648,
+    "2026-10-02T21:37:50.090460+00:00",
+    "f5cce98697a997d680a7691d14dc5503"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/dist_table.csv": {
+   "content_key": [
+    39351,
+    "2026-10-02T21:37:50.092446+00:00",
+    "aef4911846530055b0dd3b222138995a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/exposure.csv": {
+   "content_key": [
+    648,
+    "2026-10-02T21:37:50.092446+00:00",
+    "7b4d01426241c632e9da334d080f142a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/grid.csv": {
+   "content_key": [
+    44568,
+    "2026-10-02T21:37:50.093445+00:00",
+    "7a3ecf2d2fef24088206af56edd92ca3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/judge_counts.csv": {
+   "content_key": [
+    1006,
+    "2026-10-02T21:37:50.095461+00:00",
+    "304e5b41cfd32de543f3da44449ea46b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/knob_contrib.csv": {
+   "content_key": [
+    1858,
+    "2026-10-02T21:37:50.095461+00:00",
+    "9b5128821e006ec390835b17f81de119"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/position_breakdown.csv": {
+   "content_key": [
+    10577,
+    "2026-10-02T21:37:50.096445+00:00",
+    "4cf4663f123f4cfb51634880c97b5ef1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q0_selfcheck.csv": {
+   "content_key": [
+    1328,
+    "2026-10-02T21:37:50.097445+00:00",
+    "85e4daea2440b9f37af6e6c7a401edee"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q5b_secs_firsthalf.csv": {
+   "content_key": [
+    2201,
+    "2026-10-02T21:37:50.097445+00:00",
+    "505856db7627f87a8510dfc048889f15"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/synthetic_traces.csv": {
+   "content_key": [
+    5051,
+    "2026-10-02T21:37:50.098445+00:00",
+    "4946cd12cb57d02d56047cd4de99719d"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/time_to_target.csv": {
+   "content_key": [
+    1035,
+    "2026-10-02T21:37:50.100446+00:00",
+    "73d28f0234541581cc4cc3e63524879d"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/action_counts.csv": {
+   "content_key": [
+    767,
+    "2026-10-02T21:37:50.102445+00:00",
+    "c1877625d14393a543a6c33782a9247e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/cascades.csv.gz": {
+   "content_key": [
+    3695531,
+    "2026-10-02T21:37:50.184601+00:00",
+    "eb78b8516465afed864f88c14fb5f21f"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/prints_policy.csv.gz": {
+   "content_key": [
+    721585,
+    "2026-10-02T21:37:50.191600+00:00",
+    "47654749db37e962006d770c1b9d9aa3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q0_selfcheck.csv": {
+   "content_key": [
+    404,
+    "2026-10-02T21:37:50.192600+00:00",
+    "1565baf33dcd8fc2dd6e50858b43be39"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_cost.csv": {
+   "content_key": [
+    1225,
+    "2026-10-02T21:37:50.193600+00:00",
+    "313b03c69174bb6c11e0984042a12748"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_day.csv": {
+   "content_key": [
+    834,
+    "2026-10-02T21:37:50.193600+00:00",
+    "8678846018b88f18aa9628d12f0a3ba2"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_delay.csv": {
+   "content_key": [
+    1289,
+    "2026-10-02T21:37:50.194600+00:00",
+    "aeb4e01edb2cbb257d8ca06a0155b6bb"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_first_action.csv": {
+   "content_key": [
+    4297,
+    "2026-10-02T21:37:50.195601+00:00",
+    "b1822b9db54b4bc2d0ba071d58b1e8af"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_side.csv": {
+   "content_key": [
+    799,
+    "2026-10-02T21:37:50.195601+00:00",
+    "b09c3be262c5bc24d5cbccbceb8b0adc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_size.csv": {
+   "content_key": [
+    1224,
+    "2026-10-02T21:37:50.196601+00:00",
+    "49364f3464aed908f7f722408b1ea447"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exits.csv": {
+   "content_key": [
+    3112,
+    "2026-10-02T21:37:50.197601+00:00",
+    "3a957f138b9313942926fee733b81b38"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exposure.csv": {
+   "content_key": [
+    322,
+    "2026-10-02T21:37:50.197601+00:00",
+    "8183df5ebc7701301d383b892af85426"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_main.csv": {
+   "content_key": [
+    886,
+    "2026-10-02T21:37:50.198600+00:00",
+    "5d8d11336c775ad19fb621bc3618ad90"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_pair_diff.csv": {
+   "content_key": [
+    422,
+    "2026-10-02T21:37:50.199600+00:00",
+    "9fdcb77ec7fd677a6c883552103f390e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_seconds.csv": {
+   "content_key": [
+    458,
+    "2026-10-02T21:37:50.200606+00:00",
+    "4f3a9b4866e1dbea0fe267ed6a76afc2"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/action_counts.csv": {
+   "content_key": [
+    1840,
+    "2026-10-02T21:37:50.203601+00:00",
+    "9240fb8bc63c697b2fd3fdbbfeb53c6b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/calib_5000.csv": {
+   "content_key": [
+    0,
+    "2026-10-02T21:37:50.203601+00:00",
+    "d41d8cd98f00b204e9800998ecf8427e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/cascades.csv.gz": {
+   "content_key": [
+    3994,
+    "2026-10-02T21:37:50.222609+00:00",
+    "0cebb5a5f8a04ecf38d7dd3232fa97e0"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/dist_table.csv": {
+   "content_key": [
+    41008,
+    "2026-10-02T21:37:50.223599+00:00",
+    "29b7ccab3f40bb8fc72d892342fdb25b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/judge_counts.csv": {
+   "content_key": [
+    983,
+    "2026-10-02T21:37:50.223599+00:00",
+    "930c1522d5d051da75791a7810de7f59"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/position_breakdown.csv": {
+   "content_key": [
+    8262,
+    "2026-10-02T21:37:50.224615+00:00",
+    "b11da643df824f84431a3cc3114ea8e7"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/prints_policy.csv.gz": {
+   "content_key": [
+    1043,
+    "2026-10-02T21:37:50.225608+00:00",
+    "ca9810c9b917692a7e3ff9cfde80df56"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q0_selfcheck.csv": {
+   "content_key": [
+    70,
+    "2026-10-02T21:37:50.225608+00:00",
+    "b1f435e76feb19c2dc5918c1f89df0f8"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_day.csv": {
+   "content_key": [
+    1116,
+    "2026-10-02T21:37:50.226599+00:00",
+    "164c848f97a1ea1a33facf9934f1d207"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_position.csv": {
+   "content_key": [
+    916,
+    "2026-10-02T21:37:50.226599+00:00",
+    "249cc1968499b1fde2e6675773cb7f09"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_side.csv": {
+   "content_key": [
+    1373,
+    "2026-10-02T21:37:50.227599+00:00",
+    "a3ae19a1c49ad3786d7e8a85ddd45f00"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_size.csv": {
+   "content_key": [
+    2067,
+    "2026-10-02T21:37:50.228601+00:00",
+    "a683ea6323d0585c3051ccf8ff1dd99c"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_exposure.csv": {
+   "content_key": [
+    496,
+    "2026-10-02T21:37:50.228601+00:00",
+    "6fadda2995f55509c7fa40363fa56f22"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_main.csv": {
+   "content_key": [
+    1714,
+    "2026-10-02T21:37:50.229599+00:00",
+    "fe8081637af2e578b8172cd70427c7fc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_pair_diff.csv": {
+   "content_key": [
+    1039,
+    "2026-10-02T21:37:50.229599+00:00",
+    "53ff5bedd31403c43073357101c2c9b8"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q5b_secs_secondhalf.csv": {
+   "content_key": [
+    0,
+    "2026-10-02T21:37:50.230599+00:00",
+    "d41d8cd98f00b204e9800998ecf8427e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/action_counts.csv": {
+   "content_key": [
+    2696,
+    "2026-10-02T21:37:50.233599+00:00",
+    "e819b987653fa86c443e8314c28b322b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/calib_5000.csv": {
+   "content_key": [
+    7260,
+    "2026-10-02T21:37:50.234600+00:00",
+    "7790d42c782aa75cf8d57288d3869628"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/cascades.csv.gz": {
+   "content_key": [
+    3340896,
+    "2026-10-02T21:37:50.289783+00:00",
+    "b07b67fd3b31d10ada199e9ad889e099"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/dist_table.csv": {
+   "content_key": [
+    42432,
+    "2026-10-02T21:37:50.330323+00:00",
+    "6aaeb107383e4f311ebdb4a6fe34fa03"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/judge_counts.csv": {
+   "content_key": [
+    1027,
+    "2026-10-02T21:37:50.331308+00:00",
+    "48aef4309e5fba9b11f9df098194df17"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/position_breakdown.csv": {
+   "content_key": [
+    8605,
+    "2026-10-02T21:37:50.332308+00:00",
+    "b8336a4cef44e3bee7cf83fbe8680d50"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/prints_policy.csv.gz": {
+   "content_key": [
+    488105,
+    "2026-10-02T21:37:50.335308+00:00",
+    "0d2192e63c31fbb20b36f97e4660ae71"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q0_selfcheck.csv": {
+   "content_key": [
+    976,
+    "2026-10-02T21:37:50.336308+00:00",
+    "56ebcdcf3ae70418c7e067fec968d82e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_day.csv": {
+   "content_key": [
+    1721,
+    "2026-10-02T21:37:50.337308+00:00",
+    "4cd1db6770be57f8077fac18acf3e15f"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_position.csv": {
+   "content_key": [
+    1929,
+    "2026-10-02T21:37:50.338308+00:00",
+    "93e418ecc1efde8f5f8e64cd37d82853"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_side.csv": {
+   "content_key": [
+    1595,
+    "2026-10-02T21:37:50.339309+00:00",
+    "3eaaa5dc19a704eba77b81a38d048d88"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_size.csv": {
+   "content_key": [
+    2335,
+    "2026-10-02T21:37:50.339309+00:00",
+    "0dc680f0e8f623e529132e9c0e775b53"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_exposure.csv": {
+   "content_key": [
+    522,
+    "2026-10-02T21:37:50.340308+00:00",
+    "63e0b0bc9a16a6836d0dc82b9c7cb070"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_main.csv": {
+   "content_key": [
+    1808,
+    "2026-10-02T21:37:50.341308+00:00",
+    "e9cb568031a77dc6db0a6144702a43ac"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_pair_diff.csv": {
+   "content_key": [
+    1098,
+    "2026-10-02T21:37:50.341308+00:00",
+    "aa7e7a8cc65ade5e3937e1ef25968930"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q5b_secs_secondhalf.csv": {
+   "content_key": [
+    2194,
+    "2026-10-02T21:37:50.342308+00:00",
+    "4f5ddca0ff99d39b54561b423484a60e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_cost.csv": {
+   "content_key": [
+    1219,
+    "2026-10-02T21:37:50.343308+00:00",
+    "1750a62da0ca77ca71d8db4e11591528"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_day.csv": {
+   "content_key": [
+    831,
+    "2026-10-02T21:37:50.344308+00:00",
+    "e2273a36ffe8be9f16e10662411ed954"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_delay.csv": {
+   "content_key": [
+    1277,
+    "2026-10-02T21:37:50.344308+00:00",
+    "42f376889d0bf4fb554e5e28a91db2cc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_first_action.csv": {
+   "content_key": [
+    4264,
+    "2026-10-02T21:37:50.345308+00:00",
+    "4e06707158681c8ee24aeb40b711ede1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_side.csv": {
+   "content_key": [
+    788,
+    "2026-10-02T21:37:50.346309+00:00",
+    "6eefe82a90bd74947c67597f565dddd3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_size.csv": {
+   "content_key": [
+    1212,
+    "2026-10-02T21:37:50.347308+00:00",
+    "578f834f6a10d246d5f428c6cc0acbd9"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exits.csv": {
+   "content_key": [
+    3068,
+    "2026-10-02T21:37:50.347308+00:00",
+    "9afe1701938556e192fc115696ae314a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exposure.csv": {
+   "content_key": [
+    319,
+    "2026-10-02T21:37:50.348308+00:00",
+    "a04b555264e7fb383cc893389cd04f17"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_main.csv": {
+   "content_key": [
+    878,
+    "2026-10-02T21:37:50.349308+00:00",
+    "4a2e882030912d7cd16479e4bb0be712"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_pair_diff.csv": {
+   "content_key": [
+    420,
+    "2026-10-02T21:37:50.349308+00:00",
+    "da3fc2d81c02db7e08dc8d6661df7977"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_q0.csv": {
+   "content_key": [
+    929,
+    "2026-10-02T21:37:50.350308+00:00",
+    "4cba5f846b122ec296a752082658c191"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_seconds.csv": {
+   "content_key": [
+    467,
+    "2026-10-02T21:37:50.351309+00:00",
+    "eae12edd37875611c3b959eec8f11c9b"
    ],
    "result": {}
   },
@@ -139360,6 +140008,54 @@
    ],
    "result": {}
   },
+  "backtest_data/spread_backfill_20261002/gaps.csv": {
+   "content_key": [
+    13607,
+    "2026-10-02T21:37:50.358308+00:00",
+    "73de2c624d05ae3bb10ced36e3368da7"
+   ],
+   "result": {}
+  },
+  "backtest_data/spread_backfill_20261002/spread_backfill.csv.gz": {
+   "content_key": [
+    1671269,
+    "2026-10-02T21:37:50.395322+00:00",
+    "54a68b41c1320236de35d1e6e4c1a2d5"
+   ],
+   "result": {
+    "gaps": {
+     "count": 141,
+     "examples": [
+      {
+       "gap_seconds": 742486.429,
+       "row": 4074,
+       "ts": "2026-09-08T05:11:18.633000+00:00"
+      },
+      {
+       "gap_seconds": 296200.581,
+       "row": 2413,
+       "ts": "2026-08-25T18:31:57.348000+00:00"
+      },
+      {
+       "gap_seconds": 230144.08,
+       "row": 4090,
+       "ts": "2026-09-10T21:08:17.713000+00:00"
+      },
+      {
+       "gap_seconds": 210895.384,
+       "row": 4044,
+       "ts": "2026-08-30T14:54:06.699000+00:00"
+      },
+      {
+       "gap_seconds": 169708.967,
+       "row": 4041,
+       "ts": "2026-08-28T04:19:01.315000+00:00"
+      }
+     ],
+     "median_gap_seconds": 5.0
+    }
+   }
+  },
   "backtest_data/storm_events_20260820/event_20260721_1410.csv.gz": {
    "content_key": [
     44505,
@@ -139834,13 +140530,13 @@
   },
   "data/api_health.csv": {
    "content_key": [
-    1025159,
-    "2026-10-01T21:05:36.838237+00:00",
-    "fa54b388804ea3ea2304bdb6859bbddc"
+    2045633,
+    "2026-10-02T23:35:36.269040+00:00",
+    "cf960bbb8e796acd5125acd227ca5805"
    ],
    "result": {
     "gaps": {
-     "count": 5,
+     "count": 12,
      "examples": [
       {
        "gap_seconds": 46127.864,
@@ -139853,22 +140549,22 @@
        "ts": "2026-09-30T11:00:25.978000+00:00"
       },
       {
+       "gap_seconds": 13770.626,
+       "row": 34927,
+       "ts": "2026-10-02T22:02:06.263000+00:00"
+      },
+      {
+       "gap_seconds": 174.405,
+       "row": 22775,
+       "ts": "2026-10-02T03:09:10.621000+00:00"
+      },
+      {
        "gap_seconds": 126.775,
        "row": 8469,
        "ts": "2026-09-30T20:16:43.817000+00:00"
-      },
-      {
-       "gap_seconds": 61.276,
-       "row": 9888,
-       "ts": "2026-09-30T22:06:25.855000+00:00"
-      },
-      {
-       "gap_seconds": 40.805,
-       "row": 9094,
-       "ts": "2026-09-30T21:04:49.676000+00:00"
       }
      ],
-     "median_gap_seconds": 5.065
+     "median_gap_seconds": 5.066
     }
    }
   },
@@ -256344,11 +257040,1371 @@
      "median_gap_seconds": 0.019495
     }
    }
+  },
+  "data/archive/bitmex/data/quote/20210901.csv.gz": {
+   "content_key": [
+    62758218,
+    "2026-09-10T02:43:54.789711+00:00",
+    "2f2a36cad6a47a8c1379fd7eb72f5992"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1833188,
+     "examples": [
+      {
+       "gap_seconds": 5715.077462,
+       "row": 327606,
+       "ts": "2021-09-01T02:14:12.899097+00:00"
+      },
+      {
+       "gap_seconds": 4306.599042,
+       "row": 832915,
+       "ts": "2021-09-01T01:50:56.510136+00:00"
+      },
+      {
+       "gap_seconds": 3928.807569,
+       "row": 329124,
+       "ts": "2021-09-01T20:50:08.494271+00:00"
+      },
+      {
+       "gap_seconds": 2257.600173,
+       "row": 329136,
+       "ts": "2021-09-01T22:21:56.842306+00:00"
+      },
+      {
+       "gap_seconds": 1860.682969,
+       "row": 833045,
+       "ts": "2021-09-01T03:48:44.219305+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.017121
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210902.csv.gz": {
+   "content_key": [
+    60155935,
+    "2026-09-10T02:44:41.903964+00:00",
+    "a3728b2400e13fbfc69d45163856e43c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1747799,
+     "examples": [
+      {
+       "gap_seconds": 1943.398606,
+       "row": 359411,
+       "ts": "2021-09-02T23:36:09.342645+00:00"
+      },
+      {
+       "gap_seconds": 1566.33944,
+       "row": 357033,
+       "ts": "2021-09-02T04:04:49.667610+00:00"
+      },
+      {
+       "gap_seconds": 1484.093371,
+       "row": 357144,
+       "ts": "2021-09-02T06:11:10.254705+00:00"
+      },
+      {
+       "gap_seconds": 1241.185317,
+       "row": 359276,
+       "ts": "2021-09-02T21:15:12.342305+00:00"
+      },
+      {
+       "gap_seconds": 1146.38723,
+       "row": 359404,
+       "ts": "2021-09-02T22:52:30.718070+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.017721
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210903.csv.gz": {
+   "content_key": [
+    65293166,
+    "2026-09-10T02:45:35.803775+00:00",
+    "e11be3d91e08d9c93690729964a9cd4c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1869879,
+     "examples": [
+      {
+       "gap_seconds": 2069.727637,
+       "row": 356704,
+       "ts": "2021-09-03T23:28:05.560852+00:00"
+      },
+      {
+       "gap_seconds": 2069.512582,
+       "row": 940826,
+       "ts": "2021-09-03T23:28:05.531777+00:00"
+      },
+      {
+       "gap_seconds": 1794.530078,
+       "row": 940828,
+       "ts": "2021-09-03T23:58:00.540570+00:00"
+      },
+      {
+       "gap_seconds": 1628.10863,
+       "row": 354399,
+       "ts": "2021-09-03T01:32:53.939272+00:00"
+      },
+      {
+       "gap_seconds": 1441.174612,
+       "row": 937213,
+       "ts": "2021-09-03T00:34:06.833488+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.018956
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210904.csv.gz": {
+   "content_key": [
+    55946579,
+    "2026-09-10T02:46:30.040126+00:00",
+    "164afb1e708fcd5cca1558973d843acb"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1662852,
+     "examples": [
+      {
+       "gap_seconds": 3405.907605,
+       "row": 371614,
+       "ts": "2021-09-04T21:00:24.502545+00:00"
+      },
+      {
+       "gap_seconds": 2537.215697,
+       "row": 371064,
+       "ts": "2021-09-04T13:14:27.226209+00:00"
+      },
+      {
+       "gap_seconds": 2089.680435,
+       "row": 1541910,
+       "ts": "2021-09-04T08:02:24.752823+00:00"
+      },
+      {
+       "gap_seconds": 1351.415786,
+       "row": 371130,
+       "ts": "2021-09-04T15:34:18.322572+00:00"
+      },
+      {
+       "gap_seconds": 1345.569539,
+       "row": 370918,
+       "ts": "2021-09-04T11:16:14.668609+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020862
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210905.csv.gz": {
+   "content_key": [
+    55718695,
+    "2026-09-10T02:47:21.237624+00:00",
+    "9835d08204a6cd1b74c16057850b6883"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1659204,
+     "examples": [
+      {
+       "gap_seconds": 1806.996631,
+       "row": 385710,
+       "ts": "2021-09-05T03:49:58.666980+00:00"
+      },
+      {
+       "gap_seconds": 1458.614499,
+       "row": 387306,
+       "ts": "2021-09-05T22:53:19.583551+00:00"
+      },
+      {
+       "gap_seconds": 1220.160207,
+       "row": 1067893,
+       "ts": "2021-09-05T23:04:25.111601+00:00"
+      },
+      {
+       "gap_seconds": 1126.719801,
+       "row": 1477197,
+       "ts": "2021-09-05T07:45:34.418747+00:00"
+      },
+      {
+       "gap_seconds": 1050.348641,
+       "row": 386116,
+       "ts": "2021-09-05T08:05:16.304892+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020388
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210906.csv.gz": {
+   "content_key": [
+    56512491,
+    "2026-09-10T02:48:04.293339+00:00",
+    "1b905c5c190134cc68e552b1295c4ca6"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1665429,
+     "examples": [
+      {
+       "gap_seconds": 1958.639225,
+       "row": 371529,
+       "ts": "2021-09-06T19:31:30.170687+00:00"
+      },
+      {
+       "gap_seconds": 1734.677005,
+       "row": 369468,
+       "ts": "2021-09-06T03:15:43.916444+00:00"
+      },
+      {
+       "gap_seconds": 1276.738446,
+       "row": 1048120,
+       "ts": "2021-09-06T02:45:17.153430+00:00"
+      },
+      {
+       "gap_seconds": 1164.091343,
+       "row": 371527,
+       "ts": "2021-09-06T18:58:51.461154+00:00"
+      },
+      {
+       "gap_seconds": 1029.817888,
+       "row": 369480,
+       "ts": "2021-09-06T03:51:15.188561+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022731
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210907.csv.gz": {
+   "content_key": [
+    87437388,
+    "2026-09-10T02:49:12.199364+00:00",
+    "3445aa1bb095920f152311a7c39ed8fe"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2343990,
+     "examples": [
+      {
+       "gap_seconds": 2036.011413,
+       "row": 616160,
+       "ts": "2021-09-07T02:41:27.994928+00:00"
+      },
+      {
+       "gap_seconds": 1803.523001,
+       "row": 1533392,
+       "ts": "2021-09-07T14:16:55.371101+00:00"
+      },
+      {
+       "gap_seconds": 1375.268284,
+       "row": 1533139,
+       "ts": "2021-09-07T12:25:40.186094+00:00"
+      },
+      {
+       "gap_seconds": 1279.870289,
+       "row": 1530599,
+       "ts": "2021-09-07T02:41:11.793941+00:00"
+      },
+      {
+       "gap_seconds": 1172.610522,
+       "row": 1533128,
+       "ts": "2021-09-07T11:58:18.135211+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.0214
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210908.csv.gz": {
+   "content_key": [
+    80015292,
+    "2026-09-10T02:50:06.971617+00:00",
+    "a87c2d7e00c28428dcb810366e148b44"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2184758,
+     "examples": [
+      {
+       "gap_seconds": 1165.024703,
+       "row": 560802,
+       "ts": "2021-09-08T23:18:11.231999+00:00"
+      },
+      {
+       "gap_seconds": 1020.459511,
+       "row": 553744,
+       "ts": "2021-09-08T01:10:44.069327+00:00"
+      },
+      {
+       "gap_seconds": 996.377306,
+       "row": 557441,
+       "ts": "2021-09-08T11:55:23.366146+00:00"
+      },
+      {
+       "gap_seconds": 854.572657,
+       "row": 553881,
+       "ts": "2021-09-08T01:58:37.612313+00:00"
+      },
+      {
+       "gap_seconds": 834.331159,
+       "row": 560798,
+       "ts": "2021-09-08T22:58:01.186782+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025921
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210909.csv.gz": {
+   "content_key": [
+    65437776,
+    "2026-09-10T02:50:58.599939+00:00",
+    "116548023471f1eac42041eeafec11b7"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1754086,
+     "examples": [
+      {
+       "gap_seconds": 5138.234945,
+       "row": 424530,
+       "ts": "2021-09-09T01:37:41.405577+00:00"
+      },
+      {
+       "gap_seconds": 2520.232082,
+       "row": 428206,
+       "ts": "2021-09-09T22:11:00.980701+00:00"
+      },
+      {
+       "gap_seconds": 2455.066652,
+       "row": 424981,
+       "ts": "2021-09-09T06:26:37.226293+00:00"
+      },
+      {
+       "gap_seconds": 2328.116647,
+       "row": 424676,
+       "ts": "2021-09-09T04:27:18.066367+00:00"
+      },
+      {
+       "gap_seconds": 2113.9633,
+       "row": 424677,
+       "ts": "2021-09-09T05:02:32.029667+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.029406
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210910.csv.gz": {
+   "content_key": [
+    65623353,
+    "2026-09-10T02:51:44.467376+00:00",
+    "f5a6f32e6609d8a5491d302b4b66e55a"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1840389,
+     "examples": [
+      {
+       "gap_seconds": 4644.630401,
+       "row": 431961,
+       "ts": "2021-09-10T06:34:16.122302+00:00"
+      },
+      {
+       "gap_seconds": 2473.963134,
+       "row": 431949,
+       "ts": "2021-09-10T04:57:39.060451+00:00"
+      },
+      {
+       "gap_seconds": 1955.417474,
+       "row": 433525,
+       "ts": "2021-09-10T13:04:32.575904+00:00"
+      },
+      {
+       "gap_seconds": 1530.083811,
+       "row": 431923,
+       "ts": "2021-09-10T03:42:42.706247+00:00"
+      },
+      {
+       "gap_seconds": 1293.386014,
+       "row": 4134342,
+       "ts": "2021-09-10T11:53:11.524844+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025529
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210911.csv.gz": {
+   "content_key": [
+    54208895,
+    "2026-09-10T02:52:59.452248+00:00",
+    "7c519a9b1bb27f15d08f9a392d3ff344"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1554744,
+     "examples": [
+      {
+       "gap_seconds": 1724.195557,
+       "row": 462192,
+       "ts": "2021-09-11T03:03:01.821239+00:00"
+      },
+      {
+       "gap_seconds": 1483.477673,
+       "row": 462372,
+       "ts": "2021-09-11T05:27:11.035557+00:00"
+      },
+      {
+       "gap_seconds": 1422.172911,
+       "row": 462084,
+       "ts": "2021-09-11T00:44:28.581237+00:00"
+      },
+      {
+       "gap_seconds": 1278.695628,
+       "row": 462196,
+       "ts": "2021-09-11T03:32:17.058199+00:00"
+      },
+      {
+       "gap_seconds": 1121.558659,
+       "row": 3587696,
+       "ts": "2021-09-11T20:48:26.035929+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.027704
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210912.csv.gz": {
+   "content_key": [
+    52403030,
+    "2026-09-10T02:53:40.110678+00:00",
+    "7e95a491c00413a700198db5182ab1af"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1451110,
+     "examples": [
+      {
+       "gap_seconds": 4242.413291,
+       "row": 1067854,
+       "ts": "2021-09-12T06:18:58.336214+00:00"
+      },
+      {
+       "gap_seconds": 2626.997223,
+       "row": 1067863,
+       "ts": "2021-09-12T07:42:18.150592+00:00"
+      },
+      {
+       "gap_seconds": 2462.052812,
+       "row": 1067871,
+       "ts": "2021-09-12T08:23:55.281223+00:00"
+      },
+      {
+       "gap_seconds": 1858.573752,
+       "row": 441649,
+       "ts": "2021-09-12T04:32:28.967342+00:00"
+      },
+      {
+       "gap_seconds": 1629.704498,
+       "row": 1067855,
+       "ts": "2021-09-12T06:46:08.040712+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.031032
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210913.csv.gz": {
+   "content_key": [
+    69494566,
+    "2026-09-10T02:54:36.260685+00:00",
+    "4c7c78bbde889e0a7139e526840b7008"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1784033,
+     "examples": [
+      {
+       "gap_seconds": 1492.360414,
+       "row": 490555,
+       "ts": "2021-09-13T18:13:26.916564+00:00"
+      },
+      {
+       "gap_seconds": 1144.99912,
+       "row": 1168090,
+       "ts": "2021-09-13T21:38:22.615389+00:00"
+      },
+      {
+       "gap_seconds": 1113.177781,
+       "row": 4513893,
+       "ts": "2021-09-13T20:56:26.630700+00:00"
+      },
+      {
+       "gap_seconds": 1050.740332,
+       "row": 490492,
+       "ts": "2021-09-13T16:45:40.432206+00:00"
+      },
+      {
+       "gap_seconds": 1034.81806,
+       "row": 2021098,
+       "ts": "2021-09-13T19:19:54.744617+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.029498
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210914.csv.gz": {
+   "content_key": [
+    59786999,
+    "2026-09-10T02:55:35.940031+00:00",
+    "e2f282a140da983a9401bcdf2476b274"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1519363,
+     "examples": [
+      {
+       "gap_seconds": 1797.741398,
+       "row": 374599,
+       "ts": "2021-09-14T04:51:23.975632+00:00"
+      },
+      {
+       "gap_seconds": 1780.528211,
+       "row": 903666,
+       "ts": "2021-09-14T15:37:37.975884+00:00"
+      },
+      {
+       "gap_seconds": 1688.855953,
+       "row": 374597,
+       "ts": "2021-09-14T04:16:21.571875+00:00"
+      },
+      {
+       "gap_seconds": 1668.640693,
+       "row": 375298,
+       "ts": "2021-09-14T11:17:48.480079+00:00"
+      },
+      {
+       "gap_seconds": 1596.956945,
+       "row": 901967,
+       "ts": "2021-09-14T04:48:03.191179+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.026297
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210915.csv.gz": {
+   "content_key": [
+    53939360,
+    "2026-09-10T02:56:24.439059+00:00",
+    "fa2cad9dfa0e6150b8ef5ddd812c16fd"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1448414,
+     "examples": [
+      {
+       "gap_seconds": 7388.513017,
+       "row": 3736080,
+       "ts": "2021-09-15T23:39:11.369193+00:00"
+      },
+      {
+       "gap_seconds": 6656.425904,
+       "row": 3736073,
+       "ts": "2021-09-15T20:59:29.102680+00:00"
+      },
+      {
+       "gap_seconds": 2296.51458,
+       "row": 924953,
+       "ts": "2021-09-15T08:32:10.260994+00:00"
+      },
+      {
+       "gap_seconds": 2244.972634,
+       "row": 396258,
+       "ts": "2021-09-15T10:15:21.965735+00:00"
+      },
+      {
+       "gap_seconds": 2078.961425,
+       "row": 3735660,
+       "ts": "2021-09-15T14:46:15.438365+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028392
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210916.csv.gz": {
+   "content_key": [
+    59646625,
+    "2026-09-10T02:57:13.818266+00:00",
+    "01d7292ecdd266e2a12281fe1a3b272a"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1587977,
+     "examples": [
+      {
+       "gap_seconds": 1845.347041,
+       "row": 3976950,
+       "ts": "2021-09-16T13:35:02.884292+00:00"
+      },
+      {
+       "gap_seconds": 1503.324242,
+       "row": 396014,
+       "ts": "2021-09-16T04:06:11.511345+00:00"
+      },
+      {
+       "gap_seconds": 1439.58968,
+       "row": 396071,
+       "ts": "2021-09-16T04:57:07.077008+00:00"
+      },
+      {
+       "gap_seconds": 1334.34665,
+       "row": 393254,
+       "ts": "2021-09-16T05:40:23.928015+00:00"
+      },
+      {
+       "gap_seconds": 1186.72403,
+       "row": 396562,
+       "ts": "2021-09-16T11:17:06.400947+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.026161
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210917.csv.gz": {
+   "content_key": [
+    61422983,
+    "2026-09-10T02:58:01.181140+00:00",
+    "b780dbe4fadbf140b803d9b252bb5407"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1636930,
+     "examples": [
+      {
+       "gap_seconds": 1808.517497,
+       "row": 480666,
+       "ts": "2021-09-17T02:31:34.243823+00:00"
+      },
+      {
+       "gap_seconds": 1630.73957,
+       "row": 480661,
+       "ts": "2021-09-17T01:58:07.062800+00:00"
+      },
+      {
+       "gap_seconds": 1393.758888,
+       "row": 6757022,
+       "ts": "2021-09-17T04:57:49.669725+00:00"
+      },
+      {
+       "gap_seconds": 1312.5591,
+       "row": 6756920,
+       "ts": "2021-09-17T02:23:21.154585+00:00"
+      },
+      {
+       "gap_seconds": 1161.252121,
+       "row": 4695173,
+       "ts": "2021-09-17T08:19:30.906058+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.026074
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210918.csv.gz": {
+   "content_key": [
+    53926193,
+    "2026-09-10T02:59:01.809911+00:00",
+    "c8415a11e37b1fd223072a106b97c8ac"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1394156,
+     "examples": [
+      {
+       "gap_seconds": 4721.87405,
+       "row": 2536799,
+       "ts": "2021-09-18T17:24:41.079643+00:00"
+      },
+      {
+       "gap_seconds": 4059.499963,
+       "row": 4034857,
+       "ts": "2021-09-18T20:20:11.192604+00:00"
+      },
+      {
+       "gap_seconds": 3450.414633,
+       "row": 4034882,
+       "ts": "2021-09-18T21:38:36.555749+00:00"
+      },
+      {
+       "gap_seconds": 3188.672298,
+       "row": 1972354,
+       "ts": "2021-09-18T19:07:32.587536+00:00"
+      },
+      {
+       "gap_seconds": 2625.74097,
+       "row": 4034816,
+       "ts": "2021-09-18T18:04:58.984795+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028092
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210919.csv.gz": {
+   "content_key": [
+    48471347,
+    "2026-09-10T02:59:44.995825+00:00",
+    "f69f4e44cf4874e014dd25a304ea1203"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1294833,
+     "examples": [
+      {
+       "gap_seconds": 3116.551442,
+       "row": 3453428,
+       "ts": "2021-09-19T11:42:38.166494+00:00"
+      },
+      {
+       "gap_seconds": 2836.930412,
+       "row": 3451582,
+       "ts": "2021-09-19T08:11:31.050422+00:00"
+      },
+      {
+       "gap_seconds": 2440.759462,
+       "row": 2426779,
+       "ts": "2021-09-19T04:07:51.170559+00:00"
+      },
+      {
+       "gap_seconds": 2166.168951,
+       "row": 1903751,
+       "ts": "2021-09-19T06:10:40.398839+00:00"
+      },
+      {
+       "gap_seconds": 2057.828094,
+       "row": 444431,
+       "ts": "2021-09-19T14:40:08.810434+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.030562
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210920.csv.gz": {
+   "content_key": [
+    84154668,
+    "2026-09-10T03:00:45.201022+00:00",
+    "05e549c718ea844665f7aa9b4bc69820"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2095233,
+     "examples": [
+      {
+       "gap_seconds": 1205.599319,
+       "row": 6111451,
+       "ts": "2021-09-20T14:49:58.315696+00:00"
+      },
+      {
+       "gap_seconds": 1181.491435,
+       "row": 6114165,
+       "ts": "2021-09-20T18:02:33.407591+00:00"
+      },
+      {
+       "gap_seconds": 1141.013344,
+       "row": 2249005,
+       "ts": "2021-09-20T03:38:53.666265+00:00"
+      },
+      {
+       "gap_seconds": 1005.207558,
+       "row": 3554732,
+       "ts": "2021-09-20T05:50:03.606183+00:00"
+      },
+      {
+       "gap_seconds": 924.779629,
+       "row": 686590,
+       "ts": "2021-09-20T17:25:50.253156+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.02777
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210921.csv.gz": {
+   "content_key": [
+    83376404,
+    "2026-09-10T03:01:46.303596+00:00",
+    "30bc955de85a1f0fa3a7153a7d21bb2e"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2121291,
+     "examples": [
+      {
+       "gap_seconds": 1660.962995,
+       "row": 5945828,
+       "ts": "2021-09-21T11:51:04.643609+00:00"
+      },
+      {
+       "gap_seconds": 1496.187594,
+       "row": 4274588,
+       "ts": "2021-09-21T06:29:45.492411+00:00"
+      },
+      {
+       "gap_seconds": 1113.23167,
+       "row": 5945822,
+       "ts": "2021-09-21T11:21:42.966542+00:00"
+      },
+      {
+       "gap_seconds": 1025.454881,
+       "row": 3493912,
+       "ts": "2021-09-21T06:32:06.432640+00:00"
+      },
+      {
+       "gap_seconds": 876.897039,
+       "row": 5945757,
+       "ts": "2021-09-21T10:47:09.801944+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.026411
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210922.csv.gz": {
+   "content_key": [
+    74519301,
+    "2026-09-10T03:02:52.206414+00:00",
+    "03f301ef0e642785aa4bba5181ba60ab"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1992459,
+     "examples": [
+      {
+       "gap_seconds": 1452.147901,
+       "row": 5109695,
+       "ts": "2021-09-22T09:40:35.962949+00:00"
+      },
+      {
+       "gap_seconds": 1159.987769,
+       "row": 556206,
+       "ts": "2021-09-22T22:27:55.978573+00:00"
+      },
+      {
+       "gap_seconds": 1092.754384,
+       "row": 5507688,
+       "ts": "2021-09-22T13:29:42.008192+00:00"
+      },
+      {
+       "gap_seconds": 1070.31742,
+       "row": 554921,
+       "ts": "2021-09-22T17:49:14.323476+00:00"
+      },
+      {
+       "gap_seconds": 1017.650046,
+       "row": 1876544,
+       "ts": "2021-09-22T22:16:22.365793+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025323
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210923.csv.gz": {
+   "content_key": [
+    64085464,
+    "2026-09-10T03:03:47.760568+00:00",
+    "14470edc3028be3feb73fb479dbb7366"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1669164,
+     "examples": [
+      {
+       "gap_seconds": 2089.043653,
+       "row": 7112507,
+       "ts": "2021-09-23T05:34:21.522118+00:00"
+      },
+      {
+       "gap_seconds": 1932.875842,
+       "row": 6342650,
+       "ts": "2021-09-23T05:19:22.445800+00:00"
+      },
+      {
+       "gap_seconds": 1872.767974,
+       "row": 7111992,
+       "ts": "2021-09-23T02:40:03.291520+00:00"
+      },
+      {
+       "gap_seconds": 1280.788484,
+       "row": 7112515,
+       "ts": "2021-09-23T06:23:06.707248+00:00"
+      },
+      {
+       "gap_seconds": 1170.573538,
+       "row": 481533,
+       "ts": "2021-09-23T11:47:16.285129+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.02543
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210924.csv.gz": {
+   "content_key": [
+    71247762,
+    "2026-09-10T03:04:46.400305+00:00",
+    "ff1e75066dc40ab6816dc8326f23d617"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1850926,
+     "examples": [
+      {
+       "gap_seconds": 2789.280602,
+       "row": 555525,
+       "ts": "2021-09-24T03:48:30.189669+00:00"
+      },
+      {
+       "gap_seconds": 1976.675951,
+       "row": 7823976,
+       "ts": "2021-09-24T06:26:19.569735+00:00"
+      },
+      {
+       "gap_seconds": 1513.014183,
+       "row": 7823979,
+       "ts": "2021-09-24T06:57:06.031334+00:00"
+      },
+      {
+       "gap_seconds": 1311.726493,
+       "row": 1814282,
+       "ts": "2021-09-24T22:17:17.342535+00:00"
+      },
+      {
+       "gap_seconds": 1123.83768,
+       "row": 1814273,
+       "ts": "2021-09-24T21:33:20.283501+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024039
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210925.csv.gz": {
+   "content_key": [
+    55563625,
+    "2026-09-10T03:05:32.224250+00:00",
+    "2a0a81e1f99001eda1226c7f7fdea753"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1583021,
+     "examples": [
+      {
+       "gap_seconds": 1883.361293,
+       "row": 1617190,
+       "ts": "2021-09-25T10:48:20.180509+00:00"
+      },
+      {
+       "gap_seconds": 1814.673019,
+       "row": 612947,
+       "ts": "2021-09-25T05:00:29.060898+00:00"
+      },
+      {
+       "gap_seconds": 1466.872601,
+       "row": 6132121,
+       "ts": "2021-09-25T13:02:16.434253+00:00"
+      },
+      {
+       "gap_seconds": 1216.329834,
+       "row": 6132099,
+       "ts": "2021-09-25T10:56:39.880513+00:00"
+      },
+      {
+       "gap_seconds": 1209.19356,
+       "row": 2387244,
+       "ts": "2021-09-25T20:29:02.504302+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022963
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210926.csv.gz": {
+   "content_key": [
+    62025085,
+    "2026-09-10T03:06:24.765815+00:00",
+    "c9e672b677f443365a436038836a7558"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1713080,
+     "examples": [
+      {
+       "gap_seconds": 3744.830914,
+       "row": 1743256,
+       "ts": "2021-09-26T13:23:10.622118+00:00"
+      },
+      {
+       "gap_seconds": 1902.741482,
+       "row": 3215652,
+       "ts": "2021-09-26T21:02:26.812941+00:00"
+      },
+      {
+       "gap_seconds": 1493.157448,
+       "row": 1743905,
+       "ts": "2021-09-26T16:54:23.576086+00:00"
+      },
+      {
+       "gap_seconds": 1360.043496,
+       "row": 3215682,
+       "ts": "2021-09-26T22:58:28.457988+00:00"
+      },
+      {
+       "gap_seconds": 1127.505397,
+       "row": 3215665,
+       "ts": "2021-09-26T22:02:30.706077+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023047
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210927.csv.gz": {
+   "content_key": [
+    55343278,
+    "2026-09-10T03:07:04.423301+00:00",
+    "5fcd35b357be51c7ecbbaf067cef9a24"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1538694,
+     "examples": [
+      {
+       "gap_seconds": 2256.828493,
+       "row": 471676,
+       "ts": "2021-09-27T12:05:00.220830+00:00"
+      },
+      {
+       "gap_seconds": 2224.067431,
+       "row": 473504,
+       "ts": "2021-09-27T21:45:09.570976+00:00"
+      },
+      {
+       "gap_seconds": 2087.331164,
+       "row": 2783895,
+       "ts": "2021-09-27T14:34:47.437055+00:00"
+      },
+      {
+       "gap_seconds": 1879.271193,
+       "row": 2783983,
+       "ts": "2021-09-27T16:35:04.685253+00:00"
+      },
+      {
+       "gap_seconds": 1879.146579,
+       "row": 1476775,
+       "ts": "2021-09-27T16:25:30.933456+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024606
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210928.csv.gz": {
+   "content_key": [
+    57933745,
+    "2026-09-10T03:07:49.592931+00:00",
+    "061cf94e0b5b917bb09958716940454c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1532667,
+     "examples": [
+      {
+       "gap_seconds": 2188.296717,
+       "row": 347146,
+       "ts": "2021-09-28T03:34:04.360876+00:00"
+      },
+      {
+       "gap_seconds": 2084.801109,
+       "row": 347170,
+       "ts": "2021-09-28T05:57:32.296760+00:00"
+      },
+      {
+       "gap_seconds": 1869.831785,
+       "row": 349325,
+       "ts": "2021-09-28T22:06:55.552405+00:00"
+      },
+      {
+       "gap_seconds": 1720.705083,
+       "row": 1316701,
+       "ts": "2021-09-28T12:42:21.232021+00:00"
+      },
+      {
+       "gap_seconds": 1624.011575,
+       "row": 6452915,
+       "ts": "2021-09-28T22:45:44.080095+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022406
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210929.csv.gz": {
+   "content_key": [
+    49756671,
+    "2026-09-10T03:08:25.533942+00:00",
+    "18ed223ea1f1a0631ae7857e36b1e1da"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1411926,
+     "examples": [
+      {
+       "gap_seconds": 3095.502679,
+       "row": 293323,
+       "ts": "2021-09-29T20:02:44.469989+00:00"
+      },
+      {
+       "gap_seconds": 2899.909722,
+       "row": 293395,
+       "ts": "2021-09-29T22:20:03.104963+00:00"
+      },
+      {
+       "gap_seconds": 2574.014284,
+       "row": 1245968,
+       "ts": "2021-09-29T06:45:29.009797+00:00"
+      },
+      {
+       "gap_seconds": 2541.451514,
+       "row": 5493511,
+       "ts": "2021-09-29T09:45:45.003103+00:00"
+      },
+      {
+       "gap_seconds": 1537.950232,
+       "row": 1245917,
+       "ts": "2021-09-29T02:58:05.075309+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025023
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20210930.csv.gz": {
+   "content_key": [
+    47246449,
+    "2026-09-10T03:09:07.259384+00:00",
+    "01ce6f2bbb3e8241f60c2b9e1ba0a47b"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1359685,
+     "examples": [
+      {
+       "gap_seconds": 1988.170519,
+       "row": 286030,
+       "ts": "2021-09-30T22:12:22.046112+00:00"
+      },
+      {
+       "gap_seconds": 1965.573911,
+       "row": 284051,
+       "ts": "2021-09-30T12:31:33.158970+00:00"
+      },
+      {
+       "gap_seconds": 1944.865009,
+       "row": 5228143,
+       "ts": "2021-09-30T03:42:44.253566+00:00"
+      },
+      {
+       "gap_seconds": 1861.189723,
+       "row": 5228528,
+       "ts": "2021-09-30T06:59:24.286470+00:00"
+      },
+      {
+       "gap_seconds": 1766.835197,
+       "row": 281814,
+       "ts": "2021-09-30T03:33:05.540031+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024357
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211001.csv.gz": {
+   "content_key": [
+    53065365,
+    "2026-09-10T03:09:46.661374+00:00",
+    "53bc00995709704aac7a97da5722bb42"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1459340,
+     "examples": [
+      {
+       "gap_seconds": 2035.24581,
+       "row": 5888908,
+       "ts": "2021-10-01T23:11:57.621500+00:00"
+      },
+      {
+       "gap_seconds": 1675.526128,
+       "row": 1259589,
+       "ts": "2021-10-01T01:31:44.384294+00:00"
+      },
+      {
+       "gap_seconds": 1610.862398,
+       "row": 328526,
+       "ts": "2021-10-01T10:27:47.173119+00:00"
+      },
+      {
+       "gap_seconds": 1570.226104,
+       "row": 328521,
+       "ts": "2021-10-01T09:52:12.713525+00:00"
+      },
+      {
+       "gap_seconds": 1292.242818,
+       "row": 5888282,
+       "ts": "2021-10-01T20:26:12.658779+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023491
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211002.csv.gz": {
+   "content_key": [
+    41366882,
+    "2026-09-10T03:10:16.668139+00:00",
+    "c15a728363aa3117be8753e0c47762e6"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1207699,
+     "examples": [
+      {
+       "gap_seconds": 7692.971879,
+       "row": 2855216,
+       "ts": "2021-10-02T08:24:56.031764+00:00"
+      },
+      {
+       "gap_seconds": 3690.259957,
+       "row": 2855207,
+       "ts": "2021-10-02T04:33:39.600338+00:00"
+      },
+      {
+       "gap_seconds": 3148.298267,
+       "row": 2855209,
+       "ts": "2021-10-02T05:46:32.692154+00:00"
+      },
+      {
+       "gap_seconds": 2876.839336,
+       "row": 385850,
+       "ts": "2021-10-02T23:29:28.834510+00:00"
+      },
+      {
+       "gap_seconds": 2030.931832,
+       "row": 1128686,
+       "ts": "2021-10-02T11:13:55.680966+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028937
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211003.csv.gz": {
+   "content_key": [
+    39656034,
+    "2026-09-10T03:10:42.788143+00:00",
+    "a8c2e544695dddd79ca5159d725d12ab"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1102910,
+     "examples": [
+      {
+       "gap_seconds": 2748.994157,
+       "row": 1238766,
+       "ts": "2021-10-03T07:02:12.011090+00:00"
+      },
+      {
+       "gap_seconds": 1715.911757,
+       "row": 1238690,
+       "ts": "2021-10-03T04:53:57.046821+00:00"
+      },
+      {
+       "gap_seconds": 1618.290429,
+       "row": 409543,
+       "ts": "2021-10-03T07:00:53.493982+00:00"
+      },
+      {
+       "gap_seconds": 1511.598069,
+       "row": 1238646,
+       "ts": "2021-10-03T03:29:23.580795+00:00"
+      },
+      {
+       "gap_seconds": 1502.092848,
+       "row": 405203,
+       "ts": "2021-10-03T14:21:28.559152+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.035775
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211004.csv.gz": {
+   "content_key": [
+    52821914,
+    "2026-09-10T03:11:18.237064+00:00",
+    "1a1dc4422860680c6200cb800a9b0859"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1500240,
+     "examples": [
+      {
+       "gap_seconds": 2440.476525,
+       "row": 2285266,
+       "ts": "2021-10-04T07:35:33.036227+00:00"
+      },
+      {
+       "gap_seconds": 1938.151806,
+       "row": 417555,
+       "ts": "2021-10-04T16:00:10.748611+00:00"
+      },
+      {
+       "gap_seconds": 1890.370178,
+       "row": 3494405,
+       "ts": "2021-10-04T09:08:06.091002+00:00"
+      },
+      {
+       "gap_seconds": 1752.504908,
+       "row": 3502338,
+       "ts": "2021-10-04T21:08:10.487152+00:00"
+      },
+      {
+       "gap_seconds": 1557.861545,
+       "row": 2285371,
+       "ts": "2021-10-04T10:03:33.887090+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.027061
+    }
+   }
   }
  },
- "generated_at": "2026-10-01T21:38:58.624537+00:00",
+ "generated_at": "2026-10-03T00:03:06.249068+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 2948,
+ "schema_undefined_count": 3064,
  "schema_undefined_files": [
   "backtest_data/audit_fetch_P2-08b_20260906/binance_1s_2026-09-05_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2019-06-01_head5.csv",
@@ -256365,6 +258421,12 @@
   "backtest_data/coinalyze_liquidations_20260921/BTCUSDT.6_1min.csv",
   "backtest_data/coinalyze_liquidations_20260921/BTCUSDT_PERP.3_1min.csv",
   "backtest_data/coinalyze_liquidations_20260921/BTCUSD_PERP.3_1min.csv",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_1m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_30m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_5m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260909.jsonl.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260910.jsonl.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260911.jsonl.gz",
@@ -256523,6 +258585,80 @@
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/judge_counts.csv",
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/position_breakdown.csv",
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/spread/spread_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_chain.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_first.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/grid.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/knob_contrib.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q5b_secs_firsthalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/synthetic_traces.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/time_to_target.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_cost.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_delay.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_first_action.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exits.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_seconds.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/calib_5000.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_position.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q5b_secs_secondhalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/calib_5000.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_position.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q5b_secs_secondhalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_cost.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_delay.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_first_action.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exits.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_q0.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_seconds.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
@@ -256818,6 +258954,8 @@
   "backtest_data/phase2_sealed/P2-01/UNSEAL_LOG.jsonl",
   "backtest_data/phase2_sealed/P2-02/UNSEAL_LOG.jsonl",
   "backtest_data/phase2_sealed/P2-03/UNSEAL_LOG.jsonl",
+  "backtest_data/spread_backfill_20261002/gaps.csv",
+  "backtest_data/spread_backfill_20261002/spread_backfill.csv.gz",
   "backtest_data/topixf_225labo_20260907/bars_1min.csv.gz",
   "backtest_data/topixf_225labo_20260907/day_session_daily.csv.gz",
   "backtest_data/topixf_225labo_20260907/full_day_daily.csv.gz",
@@ -259297,6 +261435,40 @@
   "data/archive/bitmex/data/quote/20210828.csv.gz",
   "data/archive/bitmex/data/quote/20210829.csv.gz",
   "data/archive/bitmex/data/quote/20210830.csv.gz",
-  "data/archive/bitmex/data/quote/20210831.csv.gz"
+  "data/archive/bitmex/data/quote/20210831.csv.gz",
+  "data/archive/bitmex/data/quote/20210901.csv.gz",
+  "data/archive/bitmex/data/quote/20210902.csv.gz",
+  "data/archive/bitmex/data/quote/20210903.csv.gz",
+  "data/archive/bitmex/data/quote/20210904.csv.gz",
+  "data/archive/bitmex/data/quote/20210905.csv.gz",
+  "data/archive/bitmex/data/quote/20210906.csv.gz",
+  "data/archive/bitmex/data/quote/20210907.csv.gz",
+  "data/archive/bitmex/data/quote/20210908.csv.gz",
+  "data/archive/bitmex/data/quote/20210909.csv.gz",
+  "data/archive/bitmex/data/quote/20210910.csv.gz",
+  "data/archive/bitmex/data/quote/20210911.csv.gz",
+  "data/archive/bitmex/data/quote/20210912.csv.gz",
+  "data/archive/bitmex/data/quote/20210913.csv.gz",
+  "data/archive/bitmex/data/quote/20210914.csv.gz",
+  "data/archive/bitmex/data/quote/20210915.csv.gz",
+  "data/archive/bitmex/data/quote/20210916.csv.gz",
+  "data/archive/bitmex/data/quote/20210917.csv.gz",
+  "data/archive/bitmex/data/quote/20210918.csv.gz",
+  "data/archive/bitmex/data/quote/20210919.csv.gz",
+  "data/archive/bitmex/data/quote/20210920.csv.gz",
+  "data/archive/bitmex/data/quote/20210921.csv.gz",
+  "data/archive/bitmex/data/quote/20210922.csv.gz",
+  "data/archive/bitmex/data/quote/20210923.csv.gz",
+  "data/archive/bitmex/data/quote/20210924.csv.gz",
+  "data/archive/bitmex/data/quote/20210925.csv.gz",
+  "data/archive/bitmex/data/quote/20210926.csv.gz",
+  "data/archive/bitmex/data/quote/20210927.csv.gz",
+  "data/archive/bitmex/data/quote/20210928.csv.gz",
+  "data/archive/bitmex/data/quote/20210929.csv.gz",
+  "data/archive/bitmex/data/quote/20210930.csv.gz",
+  "data/archive/bitmex/data/quote/20211001.csv.gz",
+  "data/archive/bitmex/data/quote/20211002.csv.gz",
+  "data/archive/bitmex/data/quote/20211003.csv.gz",
+  "data/archive/bitmex/data/quote/20211004.csv.gz"
  ]
 }
