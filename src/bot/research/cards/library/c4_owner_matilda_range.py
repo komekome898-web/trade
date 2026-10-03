@@ -1,41 +1,72 @@
-"""カード 4: オーナー由来 O-1「レンジ中心回帰(マチルダの戦略ロジック)」+ O-2「レンジ性の判定器(vr)」。
+"""カード 4: オーナー由来 O-1「レンジ中心回帰グリッド(マチルダの戦略ロジック)」+ O-2「レンジ性の判定器(vr)」。
 
 説明と原文: docs/RESEARCH/cards/c4_owner_matilda_range/CARD.md
-意図の地図: docs/RESEARCH/cards/c4_owner_matilda_range/INTENT_MAP.md(印と行の対応はそこに書く)
+意図の地図: docs/RESEARCH/cards/c4_owner_matilda_range/INTENT_MAP.md(印と行の対応はそこに書く。オーナーの答えは §8、L-564)
 
 何をするか
 ----------
-bitFlyer FX_BTC_JPY の 1 分足の終わり t ごとに呼ばれ、持ち高 −1 / 0 / +1 を返す。参照の系列は使わない
+bitFlyer FX_BTC_JPY の 1 分足の終わり t ごとに呼ばれ、持ち高を [−1, +1] で返す。参照の系列は使わない
 (足は `view.bars` だけで読む。核が t より後の足を読ませない)。
 
-窓(既定 40 分。O-1「直近40分ほど」、原典 v37 124-125 行)= 始まりが t − 窓 以上の 1 分足。足の本数ではなく
-時刻で切る(約定 0 の分が抜けても 40 分は 40 分)。窓の中で毎分:
+足の長さ bar_min(既定 1 分。原典 v37 122 行 foot = 1): 1 分足を UTC の 0 時から数えた bar_min 分ごとの区切りに
+まとめ(始値 = 最初の足の始値、終値 = 最後の足の終値、高値・安値 = 最大・最小)、区切りの終わりで判定する。
+区切りの終わりの 1 分足が無い(約定 0)ときは、次に呼ばれた時に、終わった区切りを古い順に判定する(各判定の
+時刻はその区切りの終わり)。bar_min = 1 なら、1 分足ごとに判定する。
+
+窓(既定 40 分。O-1「直近40分ほど」、原典 v37 124-125 行)= 始まりが 判定の時刻 − 窓 以上の足。足の本数ではなく
+時刻で切る(約定 0 の分が抜けても 40 分は 40 分)。窓の中で:
   上端 hi・下端 lo: 既定は実体の端(max(始値, 終値) / min(始値, 終値))。原典 v37 458-478 行はヒゲが
     beard_ignore = 1 円(151 行)を超えると高値・安値を実体の端に置き換える = ほぼ全部のヒゲを捨てる。
     変種 range_from="wick" は高値・安値。
   幅 width = hi − lo、中心 center = (hi + lo) / 2(原典 499-500 行)。
   ボラ vola = 窓の中の足の |終値 − 始値| の平均(原典 488-489 行。原典の「39 本の和 ÷ 40」は直した。INTENT_MAP §4)。
-  比 range_body_ratio = width / vola(O-2 の「vr = レンジ幅 ÷ 平均実体」。原典 v52 1113 行。W1 の場面の変数の
+  比 ratio = width / vola(O-2 の「vr = レンジ幅 ÷ 平均実体」。原典 v52 1113 行。W1 の場面の変数の
     「vr」(分散比)とは別の量なので、名前を変えた)。
 
-状態と持ち高(足の終わり t の終値 close で判定する):
-  1. 一方向の動きの状態(vr_max が None でないときだけ):
-     比 >= vr_max なら trend = sign(close − center)(0 なら前のまま)。
-     比 < vr_max で、trend の向きの側から close が中心に戻った(上向きなら close <= center、下向きなら
+段(levels=True のとき。原典 v37 109-110 行 sizemin = 0.02・sizemax = 0.14、118 行 pos_count = 7、236 行
+order_count = sizemax // sizemin = 7、154-156 行 step_setting): 1 段の量はどれも sizemin(830-870 行の
+order_limit(sizemin, ...))。持ち高 = 向き × 積んだ段の数 ÷ 段の数 n_levels。levels=False なら段は 1 つだけで、
+持ち高は −1 / 0 / +1。
+  売りの段の数 = 終値 > 中心 + (entry_setting + k × step_setting) × vola を満たす k(0 ≤ k < 段の数)の個数。
+  買いは 終値 < 中心 − (…) × vola。vola が 0 なら合図なし。
+
+状態と持ち高(判定の時刻 t の足の終値 close で判定する):
+  1. 一方向の動きの状態(trend_gate=True のときだけ。比の門 VR_MAX = 10、L-564 問い 5 = A):
+     比 >= 10 なら trend = sign(close − center)(0 なら前のまま)。
+     比 < 10 で、trend の向きの側から close が中心に戻った(上向きなら close <= center、下向きなら
      close >= center)なら trend = 0(O-1「価格が新しいレンジの中心へ戻ってきた時点で…再開」)。
-  2. trend != 0 の間: on_trend="flat" なら持ち高 0(静観)、"follow" なら持ち高 = trend(逆転順張り)。
+  2. trend != 0 の間: on_trend="flat" なら持ち高 0(静観)、"follow" なら 動きの向きに 1 段(逆転順張り)。
      trend が 0 に戻った足では、まず持ち高を 0 にしてから 3 を当てる。
   3. trend == 0(レンジ):
-     建ててよい = (min_width_jpy が None)または width >= min_width_jpy(原典 976・993 行)。
-     入りの合図: close > center + ENTRY_K × vola なら売り(−1)、close < center − ENTRY_K × vola なら買い(+1)
-       (原典 978-981・995-998 行)。
-     持ち高 0: 建ててよく合図があれば合図の向きに建てる。
-     持ち高あり: 建ててよく反対の合図なら反対へ(原典 1010・1018 行の exit_flg = 3 のあと反対の入り)。
-       そうでなく close が中心に届いた(買いなら close >= center、売りなら close <= center)なら 0(利確)。
-       そうでなく建ててから HOLD_MAX_MIN 分たったなら 0(時間成行。原典 1010・1018 行 alert_count × 2)。
+     建ててよい = (width_gate=False)または width / close >= MIN_WIDTH_RATIO(原典 976・993 行の
+       range_setting = 150 円を、2019-09-04 の値段に対する割合にした。L-564 問い 4 = B)。
+     持ち高 0: 建ててよく合図があれば、合図の向きに上の段の数だけ建てる。
+     持ち高あり: 建ててよく反対の合図なら、全部閉じて反対へ(段の数は持ち高 0 からの入りと同じ決め方。
+       原典 1010・1018 行の exit_flg = 3 → reflesh で全部成行、そのあと反対の入り)。
+       そうでなく利確の線に届いたなら全部 0。利確の形 exit_mode(v52 162 行。L-566 で引数に):
+         0 = ドテン: 利確の線は無い(v52 942-943 行 exit_flg = 0)。反対の入りの条件で閉じて反対へ(上の分岐)。
+           v52 の mode 0 は時間成行も止まるので、そろえるなら time_exit=False と組む。
+         1 = センター付近(既定): 買いは close >= center − exit_setting × vola、売りは
+           close <= center + exit_setting × vola(v37 138・142 行のコメント、v52 1120-1121 行 sep / lep。
+           L-564 問い 1 = B)。exit_guard=True なら、線が建値より損の側にあるとき線を 建値 ∓ 100 円 にする
+           (v52 840-843・873-876 行)。
+         2 = 値幅: 買いは close > 建値 + d、売りは close < 建値 − d。d = exit_step × vola
+           (exit_prorate=True なら ÷ 積んだ段の数 = v37 881 行・v52 817 行 × sizemin / mybtc)。
+       建値 = 積んだ段の約定の値段の平均。約定の値段 = 段を足した判定の次の空でない 1 分足の始値(W1 の仕様 C2)。
+       そうでなく time_exit=True で、向きを持ってから hold_max_min 分たったなら全部 0(時間成行。
+       原典 1010・1018 行 alert_count × 2。時計は向きが変わったときだけ始める = 1050・1066 行 poschangetime)。
+       そうでなく建ててよく同じ向きの合図なら、段の数 = max(今の段の数, 合図の段の数)(段は 0 になるまで
+       減らさない。原典 881 行 order_exit と 703-714 行 reflesh は持ち高 mybtc の全部を閉じる)。
 
-窓が満ちるまで(最初に見た足の始まり + 窓 > t − 窓 の間)は 0 を返し、状態も動かさない。
+部品の切り替え(部品ごとの効果を分けて測るため。リードの指示、L-565・L-566): width_gate(小さすぎの門)・
+trend_gate(静観と再開)・time_exit(時間で出る)・levels(段)・exit_prorate(値幅の按分)・exit_guard(建値の守り)。逆転順張りは on_trend="follow"
+(trend_gate=False とは組めない)。
+
+窓が満ちるまで(最初に見た 1 分足の始まり > t − 窓 の間)は 0 を返し、状態も動かさない。
 出来高 0 の足と、値段が有限でない足は窓に入れない(値段の情報が無い)。
+
+水準の表(WINDOWS など)は、原典の値(窓だけは W1 の仕様 C4 の 1 時間・1 日・1 週も)だけを持ち、表の外の値は
+拒む。どの値を測るかはリードが決める(L-565)。
 """
 from __future__ import annotations
 
@@ -48,16 +79,50 @@ from bot.research.cards.card import CardError, CardView
 NS = 1_000_000_000
 MIN_NS = 60 * NS
 WINDOW_MIN = 40  # O-1「直近40分ほど」/ 原典 v37 124 行 vola_count = 40・125 行 range_count = 40
-WINDOWS = (40, 60, 1440, 10080)  # 40 = 原文。60・1440・10080 = W1 の仕様 C4 の 1 時間・1 日・1 週(変種)
-ENTRY_K = 2.0  # 原典 v37 141 行 entry_setting = 2、v52 128・130 行(inner・outer とも 2)
+WINDOWS = (40, 60, 1440, 10080)  # 40 = 原文。60・1440・10080 = W1 の仕様 C4 の 1 時間・1 日・1 週
+BAR_MIN = 1  # 原典 v37 123 行 foot = 1(分)
+BAR_MINS = (1,)
+ENTRY_K = 2.0  # 原典 v37 141 行 entry_setting = 2
+ENTRY_SETTINGS = (2.0,)
+EXIT_K = 0.8  # 原典 v37 142 行 exit_setting = 0.8(L-564 問い 1 = B)
+EXIT_SETTINGS = (0.8, 2.0)  # 0.8 = v37 142 行 / 2 = v52 128・130 行(inner・outer とも)
+EXIT_MODE = 1  # v52 162 行 exit_mode = 1(センター付近)。v37 138 行のコメントの利確の形も同じ
+EXIT_MODES = (0, 1, 2)  # v52 162 行「0:ドテン(ポジと反対のエントリー時) 1:センター付近 2:値幅」
+EXIT_STEP = 0.8  # v37 157 行 step_exit = 0.8(v37 の利確の値幅。v52 では exit_step と改名)
+EXIT_STEPS = (0.8, 0.0)  # 0.8 = v37 157 行 step_exit / 0 = v52 163 行 exit_step
+EXIT_GUARD_JPY = 100.0  # v52 841・849・855・874・882・888 行 entry_price ∓ 100(円)
+STEP_K = 1.0  # 原典 v37 156 行 step_setting = 1
+STEP_SETTINGS = (1.0,)
+N_LEVELS = 7  # 原典 v37 118 行 pos_count = 7 / 236 行 order_count = sizemax // sizemin = 0.14 // 0.02 = 7
+LEVEL_COUNTS = (7,)
 ALERT_MIN = 20  # 原典 v37 126 行 alert_count = 20(分)
 HOLD_MAX_MIN = 2 * ALERT_MIN  # 原典 v37 1010・1018 行 alert_count * 2 で成行の決済
-VR_MAXES = (None, 10.0, 100.0)  # None = 門なし / 10 = v52 125 行のコメントの例 / 100 = v52 129 行の出荷値
-VR_MAX = 10.0
-MIN_WIDTHS = (None, 150.0)  # 150 = 原典 v37 134 行 range_setting(円)/ None = 門なし
-MIN_WIDTH_JPY = 150.0
+HOLD_MAXES = (40,)
+VR_MAX = 10.0  # v52 125 行のコメントの例「vr>10」(L-564 問い 5 = A。変種 None・100 は外した)
+# 原典 v37 134 行 range_setting = 150(円)÷ 2019-09-04(日本時間)の bitFlyer FX_BTC_JPY の 1 分足の終値の
+# 中央値 1,152,502 円(L-564 問い 4 = B。出し方は CARD.md「水準とその出所」)
+MIN_WIDTH_RATIO = 150.0 / 1152502.0
+FOLLOW_LEVELS = 1  # 逆転順張りで持つ段の数(原典 v37 は一方向の動きの間も order_buy / order_sell で 1 段ずつ置く)
 RANGE_FROMS = ("body", "wick")
 ON_TRENDS = ("flat", "follow")
+
+
+def _num_in(name: str, value, table: tuple, card: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value not in table:
+        raise CardError(f"{card}: {name} は {list(table)} のどれか: {value!r}")
+    return float(value)
+
+
+def _int_in(name: str, value, table: tuple, card: str) -> int:
+    if type(value) is not int or value not in table:
+        raise CardError(f"{card}: {name} は {list(table)} のどれか(整数): {value!r}")
+    return value
+
+
+def _flag(name: str, value, card: str) -> bool:
+    if type(value) is not bool:
+        raise CardError(f"{card}: {name} は True / False: {value!r}")
+    return value
 
 
 class C4OwnerMatildaRange:
@@ -66,35 +131,63 @@ class C4OwnerMatildaRange:
     name = "c4_owner_matilda_range"
     requires: tuple = ()
 
-    def __init__(self, *, window_min: int = WINDOW_MIN, vr_max: Optional[float] = VR_MAX,
-                 min_width_jpy: Optional[float] = MIN_WIDTH_JPY, range_from: str = "body",
-                 on_trend: str = "flat") -> None:
-        if type(window_min) is not int or window_min not in WINDOWS:
-            raise CardError(f"{self.name}: window_min は {list(WINDOWS)} のどれか: {window_min!r}")
-        if vr_max not in VR_MAXES:
-            raise CardError(f"{self.name}: vr_max は {list(VR_MAXES)} のどれか: {vr_max!r}")
-        if min_width_jpy not in MIN_WIDTHS:
-            raise CardError(f"{self.name}: min_width_jpy は {list(MIN_WIDTHS)} のどれか: {min_width_jpy!r}")
+    def __init__(self, *, window_min: int = WINDOW_MIN, bar_min: int = BAR_MIN,
+                 entry_setting: float = ENTRY_K, exit_setting: float = EXIT_K, step_setting: float = STEP_K,
+                 n_levels: int = N_LEVELS, hold_max_min: int = HOLD_MAX_MIN,
+                 exit_mode: int = EXIT_MODE, exit_step: float = EXIT_STEP, exit_prorate: bool = True,
+                 exit_guard: bool = False,
+                 range_from: str = "body", on_trend: str = "flat",
+                 width_gate: bool = True, trend_gate: bool = True, time_exit: bool = True,
+                 levels: bool = True) -> None:
+        n = self.name
+        self.window_min = _int_in("window_min", window_min, WINDOWS, n)
+        self.bar_min = _int_in("bar_min", bar_min, BAR_MINS, n)
+        self.entry_setting = _num_in("entry_setting", entry_setting, ENTRY_SETTINGS, n)
+        self.exit_setting = _num_in("exit_setting", exit_setting, EXIT_SETTINGS, n)
+        self.step_setting = _num_in("step_setting", step_setting, STEP_SETTINGS, n)
+        self.n_levels = _int_in("n_levels", n_levels, LEVEL_COUNTS, n)
+        self.hold_max_min = _int_in("hold_max_min", hold_max_min, HOLD_MAXES, n)
+        self.exit_mode = _int_in("exit_mode", exit_mode, EXIT_MODES, n)
+        self.exit_step = _num_in("exit_step", exit_step, EXIT_STEPS, n)
+        self.exit_prorate = _flag("exit_prorate", exit_prorate, n)
+        self.exit_guard = _flag("exit_guard", exit_guard, n)
         if range_from not in RANGE_FROMS:
-            raise CardError(f"{self.name}: range_from は {list(RANGE_FROMS)} のどれか: {range_from!r}")
+            raise CardError(f"{n}: range_from は {list(RANGE_FROMS)} のどれか: {range_from!r}")
         if on_trend not in ON_TRENDS:
-            raise CardError(f"{self.name}: on_trend は {list(ON_TRENDS)} のどれか: {on_trend!r}")
-        self.window_min = window_min
-        self.window_ns = window_min * MIN_NS
-        self.vr_max = vr_max
-        self.min_width_jpy = min_width_jpy
+            raise CardError(f"{n}: on_trend は {list(ON_TRENDS)} のどれか: {on_trend!r}")
+        self.width_gate = _flag("width_gate", width_gate, n)
+        self.trend_gate = _flag("trend_gate", trend_gate, n)
+        self.time_exit = _flag("time_exit", time_exit, n)
+        self.levels = _flag("levels", levels, n)
+        # 原典 v37 139 行「必ず entry_setting > exit_setting」。v52 128・130 行は両方 2(等しい)なので、等しいまでは受ける
+        if self.exit_setting > self.entry_setting:
+            raise CardError(f"{n}: exit_setting > entry_setting: {entry_setting!r}, {exit_setting!r}")
+        if self.exit_guard and self.exit_mode != 1:
+            raise CardError(f"{n}: exit_guard は exit_mode=1 のときだけ(v52 837-843・872-876 行)")
+        if self.window_min % self.bar_min:
+            raise CardError(f"{n}: window_min が bar_min の倍数でない: {window_min!r}, {bar_min!r}")
+        if on_trend == "follow" and not self.trend_gate:
+            raise CardError(f"{n}: on_trend='follow' は trend_gate=True のときだけ(一方向の状態が無いと同じ動き)")
         self.range_from = range_from
         self.on_trend = on_trend
-        self._bars: deque = deque()  # (start, hi, lo, |body|) 窓の中の足、古い順
+        self.window_ns = self.window_min * MIN_NS
+        self.bar_ns = self.bar_min * MIN_NS
+        self.hold_ns = self.hold_max_min * MIN_NS
+        self.max_levels = self.n_levels if self.levels else 1
+        self._bars: deque = deque()  # (start, hi, lo, |body|) 窓の中の足(bar_min 分)、古い順
         self._maxq: deque = deque()  # (start, hi) hi が減っていく並び(窓の最大)
         self._minq: deque = deque()  # (start, lo) lo が増えていく並び(窓の最小)
         self._body_sum = 0.0
         self._removed = 0  # 和を作り直してから窓から出た足の数
-        self._last_end: Optional[int] = None  # 取り込んだ最後の足の終わり
-        self._first_start: Optional[int] = None  # 最初に取り込んだ足の始まり
+        self._last_end: Optional[int] = None  # 取り込んだ最後の 1 分足の終わり
+        self._first_start: Optional[int] = None  # 最初に取り込んだ 1 分足の始まり
+        self._agg: Optional[list] = None  # まとめ中の足 [区切りの番号, 始値, 高値, 安値, 終値]
         self._close: Optional[float] = None
-        self._pos = 0
-        self._entry_t: Optional[int] = None  # 今の持ち高を作った足の終わり
+        self._side = 0  # 向き −1 / 0 / +1
+        self._n = 0  # 積んだ段の数
+        self._entry_t: Optional[int] = None  # 今の向きを持った判定の時刻
+        self._fills: list = []  # 積んだ段の約定の値段(判定の次の足の始値。W1 の仕様 C2)
+        self._pending = 0  # 約定の値段がまだ分からない段の数
         self._trend = 0
 
     # 足の取り込み(呼ばれなかった間の足も古い順に全部取り込む)
@@ -107,7 +200,7 @@ class C4OwnerMatildaRange:
             n *= 2
         return [b for b in bs if self._last_end is None or b.received_time_ns > self._last_end]
 
-    def _push(self, b) -> None:
+    def _ingest(self, b) -> None:
         self._last_end = b.received_time_ns
         o, h, lo, c = float(b.open), float(b.high), float(b.low), float(b.close)
         if not (b.volume > 0) or not all(math.isfinite(x) for x in (o, h, lo, c)):
@@ -115,6 +208,26 @@ class C4OwnerMatildaRange:
         start = int(b.start_time_ns)
         if self._first_start is None:
             self._first_start = start
+        idx = start // self.bar_ns
+        if self._agg is not None and self._agg[0] != idx:
+            self._close_agg()
+        if self._pending:  # 前の判定で足した段は、この足(判定の後の最初の空でない足)の始値で約定
+            self._fills.extend([o] * self._pending)
+            self._pending = 0
+        if self._agg is None:
+            self._agg = [idx, o, h, lo, c]
+        else:
+            a = self._agg
+            a[2], a[3], a[4] = max(a[2], h), min(a[3], lo), c
+
+    def _close_agg(self) -> None:
+        idx, o, h, lo, c = self._agg
+        self._agg = None
+        start = idx * self.bar_ns
+        self._push(start, o, h, lo, c)
+        self._decide(start + self.bar_ns)
+
+    def _push(self, start: int, o: float, h: float, lo: float, c: float) -> None:
         if self.range_from == "body":
             top, bot = max(o, c), min(o, c)
         else:
@@ -142,19 +255,55 @@ class C4OwnerMatildaRange:
             self._body_sum = math.fsum(x[3] for x in self._bars)
             self._removed = 0
 
-    def _set(self, pos: int, t: int) -> None:
-        if pos != self._pos:
-            self._pos = pos
-            self._entry_t = t if pos != 0 else None
+    def _hold(self, side: int, n: int, t: int) -> None:
+        if side == 0 or n == 0:
+            side, n = 0, 0
+        if side != self._side:  # 時計は向きが変わったときだけ(段を足しても戻さない)
+            self._entry_t = t if side != 0 else None
+            self._fills, self._pending = [], n
+        elif n > self._n:
+            self._pending += n - self._n
+        self._side, self._n = side, n
 
-    def exposure(self, view: CardView) -> float:
-        t = view.now_ns
-        for b in self._new_bars(view):
-            self._push(b)
+    def _entry_price(self) -> Optional[float]:
+        """建値 = 積んだ段の約定の値段の平均(段の量はどれも同じ)。まだ分からない段があれば None。"""
+        if self._pending or not self._fills:
+            return None
+        return math.fsum(self._fills) / len(self._fills)
+
+    def _take_profit(self, close: float, center: float, vola: float) -> bool:
+        """利確の線に届いたか(exit_mode。v52 815-904 行・v37 879-928 行)。"""
+        side = self._side
+        if self.exit_mode == 0:  # ドテン: 利確の線は無い。反対の入りの条件で閉じる(呼び出し側)
+            return False
+        if self.exit_mode == 1:  # センター付近: 売りは 中心 + exit_setting × vola(v52 1120 行 sep)、買いは −(lep)
+            line = center - side * self.exit_setting * vola
+            if self.exit_guard:  # v52 840-843 行: 線が建値より損の側なら、建値 ∓ 100 円
+                ep = self._entry_price()
+                if ep is not None and side * (line - ep) < 0:
+                    line = ep + side * EXIT_GUARD_JPY  # 売り: 建値 − 100(841 行)、買い: 建値 + 100(874 行)
+            return close >= line if side == 1 else close <= line
+        # 値幅: 建値から exit_step × vola(按分なら × 1 段の量 ÷ 持ち高 = 1 / 段の数。v52 817 行・v37 881 行)
+        ep = self._entry_price()
+        if ep is None:
+            return False
+        dist = self.exit_step * vola / (self._n if self.exit_prorate else 1)
+        return close > ep + dist if side == 1 else close < ep - dist
+
+    def _reach(self, dist: float, vola: float) -> int:
+        """終値が中心から dist 離れているとき、越えた段の数(0 なら合図なし)。"""
+        if not vola > 0:
+            return 0
+        k = 0
+        while k < self.max_levels and dist > (self.entry_setting + k * self.step_setting) * vola:
+            k += 1
+        return k
+
+    def _decide(self, t: int) -> None:
         lo_start = t - self.window_ns
         self._trim(lo_start)
         if self._first_start is None or self._first_start > lo_start or not self._bars:
-            return float(self._pos)  # 窓が満ちるまで(持ち高は 0 のまま)
+            return  # 窓が満ちるまで(持ち高は 0 のまま)
         hi, lo = self._maxq[0][1], self._minq[0][1]
         width = hi - lo
         center = (hi + lo) / 2.0
@@ -167,8 +316,8 @@ class C4OwnerMatildaRange:
 
         # 1. 一方向の動きの状態(O-2 の門)
         was_trend = self._trend
-        if self.vr_max is not None:
-            if ratio >= self.vr_max:
+        if self.trend_gate:
+            if ratio >= VR_MAX:
                 d = (close > center) - (close < center)
                 if d != 0:
                     self._trend = d
@@ -176,29 +325,40 @@ class C4OwnerMatildaRange:
                 self._trend = 0
         # 2. 一方向の動きの間
         if self._trend != 0:
-            self._set(0 if self.on_trend == "flat" else self._trend, t)
-            return float(self._pos)
+            if self.on_trend == "flat":
+                self._hold(0, 0, t)
+            else:
+                self._hold(self._trend, FOLLOW_LEVELS, t)
+            return
         if was_trend != 0:
-            self._set(0, t)
+            self._hold(0, 0, t)
         # 3. レンジ
-        allowed = self.min_width_jpy is None or width >= self.min_width_jpy
-        sig = 0
-        if close > center + ENTRY_K * vola:
-            sig = -1
-        elif close < center - ENTRY_K * vola:
-            sig = 1
-        pos = self._pos
-        if pos == 0:
+        allowed = (not self.width_gate) or width / close >= MIN_WIDTH_RATIO
+        sell_n = self._reach(close - center, vola)
+        buy_n = self._reach(center - close, vola)
+        sig, n = (-1, sell_n) if sell_n else ((1, buy_n) if buy_n else (0, 0))
+        side = self._side
+        if side == 0:
             if allowed and sig != 0:
-                self._set(sig, t)
-        elif allowed and sig == -pos:
-            self._set(sig, t)
-        elif (pos == 1 and close >= center) or (pos == -1 and close <= center):
-            self._set(0, t)
-        elif t - self._entry_t >= HOLD_MAX_MIN * MIN_NS:
-            self._set(0, t)
-        return float(self._pos)
+                self._hold(sig, n, t)
+        elif allowed and sig == -side:
+            self._hold(sig, n, t)
+        elif self._take_profit(close, center, vola):
+            self._hold(0, 0, t)
+        elif self.time_exit and t - self._entry_t >= self.hold_ns:
+            self._hold(0, 0, t)
+        elif allowed and sig == side:
+            self._hold(side, max(self._n, n), t)
+
+    def exposure(self, view: CardView) -> float:
+        t = view.now_ns
+        for b in self._new_bars(view):
+            self._ingest(b)
+        if self._agg is not None and (self._agg[0] + 1) * self.bar_ns <= t:
+            self._close_agg()
+        return self._side * self._n / self.max_levels
 
 
-__all__ = ["ALERT_MIN", "C4OwnerMatildaRange", "ENTRY_K", "HOLD_MAX_MIN", "MIN_WIDTHS", "MIN_WIDTH_JPY", "ON_TRENDS",
-           "RANGE_FROMS", "VR_MAX", "VR_MAXES", "WINDOWS", "WINDOW_MIN"]
+__all__ = ["ALERT_MIN", "BAR_MIN", "BAR_MINS", "C4OwnerMatildaRange", "ENTRY_K", "ENTRY_SETTINGS", "EXIT_GUARD_JPY",
+           "EXIT_K", "EXIT_MODE", "EXIT_MODES", "EXIT_SETTINGS", "EXIT_STEP", "EXIT_STEPS", "FOLLOW_LEVELS", "HOLD_MAXES", "HOLD_MAX_MIN", "LEVEL_COUNTS", "MIN_WIDTH_RATIO",
+           "N_LEVELS", "ON_TRENDS", "RANGE_FROMS", "STEP_K", "STEP_SETTINGS", "VR_MAX", "WINDOWS", "WINDOW_MIN"]
