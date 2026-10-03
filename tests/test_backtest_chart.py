@@ -28,6 +28,7 @@ FXDIR = "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
 def _fresh(tmp_path, monkeypatch):
     monkeypatch.setenv("BT_CHART_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setenv("BT_LOG_PATH", str(tmp_path / "dashboard_bt.log"))
+    monkeypatch.setattr(C, "BUILD_IN_CHILD", False)  # most tests patch the readers in this process; the child-process tests set it True
     for d in (C._STORES, C._TRADES, C._REC, C._RULES, K._MAN, K._OK, K._PROV, C._PROGRESS, C._JOBS):
         d.clear()
 
@@ -969,7 +970,7 @@ def test_cache_write_failure_is_logged_and_the_store_stays_in_memory_without_reb
 
 def test_warmup_builds_every_store_in_the_background_and_a_later_request_finds_it(tmp_path):
     t0, root = _cards_world(tmp_path)
-    C.start_store_warmup(tmp_path).join(60)
+    C.start_store_warmup(tmp_path).join(60)  # no runs_dir: every instrument of MARKETS that has files
     d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
     assert not d["building"] and d["bars"]
     assert "warmup" in (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
@@ -995,3 +996,63 @@ def test_page_script_never_leaves_a_black_screen_without_a_reason():
         assert need in js, need
     assert 'id="bt-banner"' in dash.PAGE and 'id="bt-chart-busy"' in dash.PAGE
     assert "start_store_warmup" in (REPO / "scripts" / "dashboard.py").read_text(encoding="utf-8")
+
+
+# ---- the store is built by a separate process; only the instruments the tab uses are warmed -------------------------
+def test_store_is_built_by_a_child_process_and_requests_stay_quick_meanwhile(tmp_path, monkeypatch):
+    import threading
+    import time
+    t0, root = _cards_world(tmp_path)
+    monkeypatch.setattr(C, "BUILD_IN_CHILD", True)
+    parent_reads = []
+    orig = C._read_file
+    monkeypatch.setattr(C, "_read_file", lambda *a, **k: (parent_reads.append(1), orig(*a, **k))[1])  # patched in THIS process only
+    d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert d["building"]  # the answer did not wait for the build
+    slow = []
+    deadline = time.time() + 120
+    while time.time() < deadline:
+        t = time.time()
+        C.catalog(root)  # the list keeps answering while the child works
+        slow.append(time.time() - t)
+        d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+        if not d["building"]:
+            break
+        time.sleep(0.3)
+    assert not d["building"] and d["bars"], d["building"]
+    assert max(slow) < 2.0, slow
+    assert parent_reads == []  # this process never read the 1-minute files: the child did
+    log = (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+    pid = int(next(ln for ln in log.splitlines() if "\tstore_child\t" in ln).rsplit("pid=", 1)[1])
+    assert pid != os.getpid() and "store_built" in log and "store_loaded" in log
+    assert list((tmp_path / "cache").glob("FX_BTC_JPY-*/meta.json"))
+
+
+def test_a_child_that_cannot_write_the_cache_leaves_the_build_to_this_process_in_memory(tmp_path, monkeypatch):
+    t0, root = _cards_world(tmp_path)
+    monkeypatch.setattr(C, "BUILD_IN_CHILD", True)
+    # the cache directory is a plain file: the child cannot create it
+    (tmp_path / "cache").write_text("not a directory")
+    d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    import threading
+    import time
+    for _ in range(240):
+        if not d["building"]:
+            break
+        time.sleep(0.5)
+        d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert d["bars"] and not d["building"]
+    log = (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+    assert "cache_write_failed" in log and "store_child_no_cache" in log
+
+
+def test_warmup_builds_only_the_instruments_the_runs_and_cards_use_most_runs_first(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    for i in range(2):  # two runs on XBTUSD (the cards use FX_BTC_JPY with one ready variant)
+        _run(tmp_path, f"{i + 1:064x}", "g", {"instrument": "XBTUSD"}, first=t0 * NS, last=(t0 + 600) * NS, trades=[])
+    _csv(tmp_path / XBT, _minute_rows(t0, 600))
+    assert C.used_markets(root) == ["XBTUSD", "FX_BTC_JPY"]
+    C.start_store_warmup(tmp_path, root).join(60)
+    built = {p.name.split("-")[0] for p in (tmp_path / "cache").glob("*-*") if (p / "meta.json").exists()}
+    assert built == {"XBTUSD", "FX_BTC_JPY"}  # BTC_JPY and BTCUSDT: no run uses them, so nothing was made for them
+    assert "instruments: XBTUSD, FX_BTC_JPY" in (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
