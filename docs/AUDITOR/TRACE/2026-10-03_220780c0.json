@@ -21782,10 +21782,10 @@
   {
    "move": 800,
    "tools": {
-    "Bash": 3,
+    "Bash": 4,
     "SendMessage": 1
    },
-   "n_tools": 4,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
