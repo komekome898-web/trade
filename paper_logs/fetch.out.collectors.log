@@ -3,21 +3,6 @@ fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/
 extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
 record_funding_basis: +0 funding row(s), 1 basis row
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
-extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
-record_funding_basis: +0 funding row(s), 1 basis row
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
-extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
-record_funding_basis: +0 funding row(s), 1 basis row
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
-extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
-record_funding_basis: +0 funding row(s), 1 basis row
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
-extract_tape: 1 file(s) advanced, 12089 execution row(s) written, 32435 ticker row(s) written, 27185 board row(s) written
-record_funding_basis: +0 funding row(s), 1 basis row
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
-extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
-record_funding_basis: +0 funding row(s), 1 basis row
-fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
 extract_tape: 1 file(s) advanced, 3095 execution row(s) written, 6422 ticker row(s) written, 5675 board row(s) written
 record_funding_basis: +1 funding row(s), 1 basis row
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-09-29.zip)
@@ -197,4 +182,19 @@ record_funding_basis: +0 funding row(s), 1 basis row
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)
 extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
 record_funding_basis: +1 funding row(s), 1 basis row
+fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)
+extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
+extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
+record_funding_basis: +0 funding row(s), 1 basis row
+fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)
+Traceback (most recent call last):
+PermissionError: [WinError 5] アクセスが拒否されました。: 'C:\\Users\\ryoma\\trade\\data\\QUALITY.cache.json.tmp' -> 'C:\\Users\\ryoma\\trade\\data\\QUALITY.cache.json'
+extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
+record_funding_basis: +0 funding row(s), 1 basis row
+fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)
+extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
+record_funding_basis: +0 funding row(s), 1 basis row
+fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)
+extract_tape: 0 file(s) advanced, 0 execution row(s) written, 0 ticker row(s) written, 0 board row(s) written
+record_funding_basis: +0 funding row(s), 1 basis row
 fetch_binance_daily: GET failed after 3 tries: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip (404 Client Error: Not Found for url: https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2026-10-02.zip)

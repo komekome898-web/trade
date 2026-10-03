@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T21:10:39.636785+00:00",
+  "generated_at": "2026-10-02T23:38:28.754735+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -3965,6 +3965,30 @@
       "extra": []
     },
     {
+      "unit": "k1_newenv_a_20260927",
+      "md5sums_path": "backtest_data\\k1_newenv_a_20260927\\MD5SUMS",
+      "file_count": 7,
+      "status": "verified",
+      "checked": 7,
+      "matched": 7,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "k1_newenv_g_20261001",
+      "md5sums_path": "backtest_data\\k1_newenv_g_20261001\\MD5SUMS",
+      "file_count": 1,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "liquidations_repaired_20260912",
       "md5sums_path": "backtest_data\\liquidations_repaired_20260912\\MD5SUMS",
       "file_count": 15,
@@ -4400,6 +4424,18 @@
       "status": "verified",
       "checked": 17,
       "matched": 17,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
+      "unit": "o3c_signal_value_20260921",
+      "md5sums_path": "backtest_data\\o3c_signal_value_20260921\\MD5SUMS",
+      "file_count": 90,
+      "status": "verified",
+      "checked": 90,
+      "matched": 90,
       "mismatches": [],
       "line_ending_mismatches": [],
       "missing": [],
@@ -5127,6 +5163,18 @@
       ]
     },
     {
+      "unit": "spread_backfill_20261002",
+      "md5sums_path": "backtest_data\\spread_backfill_20261002\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 3,
+      "matched": 3,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "storm_events_20260820",
       "md5sums_path": "backtest_data\\storm_events_20260820\\MD5SUMS",
       "file_count": 16,
@@ -5214,12 +5262,12 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6536,
+    "checked": 6637,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 126,
-    "verified": 97,
+    "unit_count": 130,
+    "verified": 101,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 8,

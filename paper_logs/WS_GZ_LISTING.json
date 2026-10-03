@@ -2898,12 +2898,12 @@
     "recoverable_bytes": 1315506
   },
   {
-    "bytes": 6104989,
-    "complete_members": 122,
+    "bytes": 11795243,
+    "complete_members": 275,
     "error": null,
     "last_member_complete": true,
-    "members": 122,
+    "members": 275,
     "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261002_191034.jsonl.gz",
-    "recoverable_bytes": 54131128
+    "recoverable_bytes": 116728630
   }
 ]

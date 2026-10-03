@@ -3,7 +3,7 @@
   "api_health": {
    "checks": {
     "gaps": {
-     "count": 10,
+     "count": 12,
      "examples": [
       {
        "examples": [
@@ -18,6 +18,11 @@
          "ts": "2026-09-30T11:00:25.978000+00:00"
         },
         {
+         "gap_seconds": 13770.626,
+         "row": 34927,
+         "ts": "2026-10-02T22:02:06.263000+00:00"
+        },
+        {
          "gap_seconds": 174.405,
          "row": 22775,
          "ts": "2026-10-02T03:09:10.621000+00:00"
@@ -26,11 +31,6 @@
          "gap_seconds": 126.775,
          "row": 8469,
          "ts": "2026-09-30T20:16:43.817000+00:00"
-        },
-        {
-         "gap_seconds": 81.18,
-         "row": 20544,
-         "ts": "2026-10-02T00:14:31.489000+00:00"
         }
        ],
        "median_gap_seconds": 5.066,
@@ -5147,7 +5147,7 @@
      "files": 451
     },
     "gaps": {
-     "count": 1150400675,
+     "count": 1154211665,
      "examples": [
       {
        "examples": [
@@ -5285,11 +5285,11 @@
        "path": "backtest_data/mini_topixf_225labo_20260907/day_session_daily.csv.gz"
       }
      ],
-     "files": 2522
+     "files": 2526
     }
    },
-   "files_checked": 2979,
-   "files_flagged": 2529
+   "files_checked": 3064,
+   "files_flagged": 2533
   },
   "venue_survey": {
    "checks": {},
@@ -13640,7 +13640,7 @@
   "backtest_data/auto_okx_open_interest_5m_20261002/okx_btc_oi_5m.csv": {
    "content_key": [
     32496,
-    "2026-10-01T23:45:44.259467+00:00",
+    "2026-10-02T21:40:50.133628+00:00",
     "dd3b64d39f87d6747d834a07908a85ec"
    ],
    "result": {}
@@ -132201,6 +132201,54 @@
     }
    }
   },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz": {
+   "content_key": [
+    1734195,
+    "2026-10-02T21:37:49.346059+00:00",
+    "8f1ebada163a9b20f00eca585b5aebfa"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_1m_2017_2019.csv.gz": {
+   "content_key": [
+    20169900,
+    "2026-10-02T21:37:49.812606+00:00",
+    "dea9b0f7b9d0bc407699a98db78633e3"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_30m_2017_2019.csv.gz": {
+   "content_key": [
+    904839,
+    "2026-10-02T21:37:49.820605+00:00",
+    "a181981289872fe7c7cd5937fef120e1"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz": {
+   "content_key": [
+    7643259,
+    "2026-10-02T21:37:49.993837+00:00",
+    "c458019c6c6962dacc3bb9fbfda91f53"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_5m_2017_2019.csv.gz": {
+   "content_key": [
+    4792238,
+    "2026-10-02T21:37:50.021836+00:00",
+    "e93b5edd9c4b2747ccf0f5e19ed74056"
+   ],
+   "result": {}
+  },
+  "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz": {
+   "content_key": [
+    471132,
+    "2026-10-02T21:37:50.025836+00:00",
+    "5e0cf9add436f7285d9c616fa4cbd2e5"
+   ],
+   "result": {}
+  },
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260909.jsonl.gz": {
    "content_key": [
     2478901,
@@ -134512,6 +134560,598 @@
     283293,
     "2026-09-21T02:29:16.372854+00:00",
     "afee422225cff7a5561dc8d5be143545"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/spread/spread_by_day.csv": {
+   "content_key": [
+    3684,
+    "2026-10-02T21:37:50.057451+00:00",
+    "e540971a1582e63da78e91585609ff4c"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/action_counts.csv": {
+   "content_key": [
+    2401,
+    "2026-10-02T21:37:50.068461+00:00",
+    "534d24756a57fcb31ff4350e862f79eb"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_chain.csv": {
+   "content_key": [
+    2486,
+    "2026-10-02T21:37:50.069461+00:00",
+    "1bb974b7fd042f863fe77ef120a74549"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_first.csv": {
+   "content_key": [
+    2456,
+    "2026-10-02T21:37:50.070447+00:00",
+    "7967df36d842816eda028d566031c5b1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/cascades.csv.gz": {
+   "content_key": [
+    1662648,
+    "2026-10-02T21:37:50.090460+00:00",
+    "f5cce98697a997d680a7691d14dc5503"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/dist_table.csv": {
+   "content_key": [
+    39351,
+    "2026-10-02T21:37:50.092446+00:00",
+    "aef4911846530055b0dd3b222138995a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/exposure.csv": {
+   "content_key": [
+    648,
+    "2026-10-02T21:37:50.092446+00:00",
+    "7b4d01426241c632e9da334d080f142a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/grid.csv": {
+   "content_key": [
+    44568,
+    "2026-10-02T21:37:50.093445+00:00",
+    "7a3ecf2d2fef24088206af56edd92ca3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/judge_counts.csv": {
+   "content_key": [
+    1006,
+    "2026-10-02T21:37:50.095461+00:00",
+    "304e5b41cfd32de543f3da44449ea46b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/knob_contrib.csv": {
+   "content_key": [
+    1858,
+    "2026-10-02T21:37:50.095461+00:00",
+    "9b5128821e006ec390835b17f81de119"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/position_breakdown.csv": {
+   "content_key": [
+    10577,
+    "2026-10-02T21:37:50.096445+00:00",
+    "4cf4663f123f4cfb51634880c97b5ef1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q0_selfcheck.csv": {
+   "content_key": [
+    1328,
+    "2026-10-02T21:37:50.097445+00:00",
+    "85e4daea2440b9f37af6e6c7a401edee"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q5b_secs_firsthalf.csv": {
+   "content_key": [
+    2201,
+    "2026-10-02T21:37:50.097445+00:00",
+    "505856db7627f87a8510dfc048889f15"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/synthetic_traces.csv": {
+   "content_key": [
+    5051,
+    "2026-10-02T21:37:50.098445+00:00",
+    "4946cd12cb57d02d56047cd4de99719d"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/time_to_target.csv": {
+   "content_key": [
+    1035,
+    "2026-10-02T21:37:50.100446+00:00",
+    "73d28f0234541581cc4cc3e63524879d"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/action_counts.csv": {
+   "content_key": [
+    767,
+    "2026-10-02T21:37:50.102445+00:00",
+    "c1877625d14393a543a6c33782a9247e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/cascades.csv.gz": {
+   "content_key": [
+    3695531,
+    "2026-10-02T21:37:50.184601+00:00",
+    "eb78b8516465afed864f88c14fb5f21f"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/prints_policy.csv.gz": {
+   "content_key": [
+    721585,
+    "2026-10-02T21:37:50.191600+00:00",
+    "47654749db37e962006d770c1b9d9aa3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q0_selfcheck.csv": {
+   "content_key": [
+    404,
+    "2026-10-02T21:37:50.192600+00:00",
+    "1565baf33dcd8fc2dd6e50858b43be39"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_cost.csv": {
+   "content_key": [
+    1225,
+    "2026-10-02T21:37:50.193600+00:00",
+    "313b03c69174bb6c11e0984042a12748"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_day.csv": {
+   "content_key": [
+    834,
+    "2026-10-02T21:37:50.193600+00:00",
+    "8678846018b88f18aa9628d12f0a3ba2"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_delay.csv": {
+   "content_key": [
+    1289,
+    "2026-10-02T21:37:50.194600+00:00",
+    "aeb4e01edb2cbb257d8ca06a0155b6bb"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_first_action.csv": {
+   "content_key": [
+    4297,
+    "2026-10-02T21:37:50.195601+00:00",
+    "b1822b9db54b4bc2d0ba071d58b1e8af"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_side.csv": {
+   "content_key": [
+    799,
+    "2026-10-02T21:37:50.195601+00:00",
+    "b09c3be262c5bc24d5cbccbceb8b0adc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_size.csv": {
+   "content_key": [
+    1224,
+    "2026-10-02T21:37:50.196601+00:00",
+    "49364f3464aed908f7f722408b1ea447"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exits.csv": {
+   "content_key": [
+    3112,
+    "2026-10-02T21:37:50.197601+00:00",
+    "3a957f138b9313942926fee733b81b38"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exposure.csv": {
+   "content_key": [
+    322,
+    "2026-10-02T21:37:50.197601+00:00",
+    "8183df5ebc7701301d383b892af85426"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_main.csv": {
+   "content_key": [
+    886,
+    "2026-10-02T21:37:50.198600+00:00",
+    "5d8d11336c775ad19fb621bc3618ad90"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_pair_diff.csv": {
+   "content_key": [
+    422,
+    "2026-10-02T21:37:50.199600+00:00",
+    "9fdcb77ec7fd677a6c883552103f390e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_seconds.csv": {
+   "content_key": [
+    458,
+    "2026-10-02T21:37:50.200606+00:00",
+    "4f3a9b4866e1dbea0fe267ed6a76afc2"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/action_counts.csv": {
+   "content_key": [
+    1840,
+    "2026-10-02T21:37:50.203601+00:00",
+    "9240fb8bc63c697b2fd3fdbbfeb53c6b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/calib_5000.csv": {
+   "content_key": [
+    0,
+    "2026-10-02T21:37:50.203601+00:00",
+    "d41d8cd98f00b204e9800998ecf8427e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/cascades.csv.gz": {
+   "content_key": [
+    3994,
+    "2026-10-02T21:37:50.222609+00:00",
+    "0cebb5a5f8a04ecf38d7dd3232fa97e0"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/dist_table.csv": {
+   "content_key": [
+    41008,
+    "2026-10-02T21:37:50.223599+00:00",
+    "29b7ccab3f40bb8fc72d892342fdb25b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/judge_counts.csv": {
+   "content_key": [
+    983,
+    "2026-10-02T21:37:50.223599+00:00",
+    "930c1522d5d051da75791a7810de7f59"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/position_breakdown.csv": {
+   "content_key": [
+    8262,
+    "2026-10-02T21:37:50.224615+00:00",
+    "b11da643df824f84431a3cc3114ea8e7"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/prints_policy.csv.gz": {
+   "content_key": [
+    1043,
+    "2026-10-02T21:37:50.225608+00:00",
+    "ca9810c9b917692a7e3ff9cfde80df56"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q0_selfcheck.csv": {
+   "content_key": [
+    70,
+    "2026-10-02T21:37:50.225608+00:00",
+    "b1f435e76feb19c2dc5918c1f89df0f8"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_day.csv": {
+   "content_key": [
+    1116,
+    "2026-10-02T21:37:50.226599+00:00",
+    "164c848f97a1ea1a33facf9934f1d207"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_position.csv": {
+   "content_key": [
+    916,
+    "2026-10-02T21:37:50.226599+00:00",
+    "249cc1968499b1fde2e6675773cb7f09"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_side.csv": {
+   "content_key": [
+    1373,
+    "2026-10-02T21:37:50.227599+00:00",
+    "a3ae19a1c49ad3786d7e8a85ddd45f00"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_size.csv": {
+   "content_key": [
+    2067,
+    "2026-10-02T21:37:50.228601+00:00",
+    "a683ea6323d0585c3051ccf8ff1dd99c"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_exposure.csv": {
+   "content_key": [
+    496,
+    "2026-10-02T21:37:50.228601+00:00",
+    "6fadda2995f55509c7fa40363fa56f22"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_main.csv": {
+   "content_key": [
+    1714,
+    "2026-10-02T21:37:50.229599+00:00",
+    "fe8081637af2e578b8172cd70427c7fc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_pair_diff.csv": {
+   "content_key": [
+    1039,
+    "2026-10-02T21:37:50.229599+00:00",
+    "53ff5bedd31403c43073357101c2c9b8"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q5b_secs_secondhalf.csv": {
+   "content_key": [
+    0,
+    "2026-10-02T21:37:50.230599+00:00",
+    "d41d8cd98f00b204e9800998ecf8427e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/action_counts.csv": {
+   "content_key": [
+    2696,
+    "2026-10-02T21:37:50.233599+00:00",
+    "e819b987653fa86c443e8314c28b322b"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/calib_5000.csv": {
+   "content_key": [
+    7260,
+    "2026-10-02T21:37:50.234600+00:00",
+    "7790d42c782aa75cf8d57288d3869628"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/cascades.csv.gz": {
+   "content_key": [
+    3340896,
+    "2026-10-02T21:37:50.289783+00:00",
+    "b07b67fd3b31d10ada199e9ad889e099"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/dist_table.csv": {
+   "content_key": [
+    42432,
+    "2026-10-02T21:37:50.330323+00:00",
+    "6aaeb107383e4f311ebdb4a6fe34fa03"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/judge_counts.csv": {
+   "content_key": [
+    1027,
+    "2026-10-02T21:37:50.331308+00:00",
+    "48aef4309e5fba9b11f9df098194df17"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/position_breakdown.csv": {
+   "content_key": [
+    8605,
+    "2026-10-02T21:37:50.332308+00:00",
+    "b8336a4cef44e3bee7cf83fbe8680d50"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/prints_policy.csv.gz": {
+   "content_key": [
+    488105,
+    "2026-10-02T21:37:50.335308+00:00",
+    "0d2192e63c31fbb20b36f97e4660ae71"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q0_selfcheck.csv": {
+   "content_key": [
+    976,
+    "2026-10-02T21:37:50.336308+00:00",
+    "56ebcdcf3ae70418c7e067fec968d82e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_day.csv": {
+   "content_key": [
+    1721,
+    "2026-10-02T21:37:50.337308+00:00",
+    "4cd1db6770be57f8077fac18acf3e15f"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_position.csv": {
+   "content_key": [
+    1929,
+    "2026-10-02T21:37:50.338308+00:00",
+    "93e418ecc1efde8f5f8e64cd37d82853"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_side.csv": {
+   "content_key": [
+    1595,
+    "2026-10-02T21:37:50.339309+00:00",
+    "3eaaa5dc19a704eba77b81a38d048d88"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_size.csv": {
+   "content_key": [
+    2335,
+    "2026-10-02T21:37:50.339309+00:00",
+    "0dc680f0e8f623e529132e9c0e775b53"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_exposure.csv": {
+   "content_key": [
+    522,
+    "2026-10-02T21:37:50.340308+00:00",
+    "63e0b0bc9a16a6836d0dc82b9c7cb070"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_main.csv": {
+   "content_key": [
+    1808,
+    "2026-10-02T21:37:50.341308+00:00",
+    "e9cb568031a77dc6db0a6144702a43ac"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_pair_diff.csv": {
+   "content_key": [
+    1098,
+    "2026-10-02T21:37:50.341308+00:00",
+    "aa7e7a8cc65ade5e3937e1ef25968930"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q5b_secs_secondhalf.csv": {
+   "content_key": [
+    2194,
+    "2026-10-02T21:37:50.342308+00:00",
+    "4f5ddca0ff99d39b54561b423484a60e"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_cost.csv": {
+   "content_key": [
+    1219,
+    "2026-10-02T21:37:50.343308+00:00",
+    "1750a62da0ca77ca71d8db4e11591528"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_day.csv": {
+   "content_key": [
+    831,
+    "2026-10-02T21:37:50.344308+00:00",
+    "e2273a36ffe8be9f16e10662411ed954"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_delay.csv": {
+   "content_key": [
+    1277,
+    "2026-10-02T21:37:50.344308+00:00",
+    "42f376889d0bf4fb554e5e28a91db2cc"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_first_action.csv": {
+   "content_key": [
+    4264,
+    "2026-10-02T21:37:50.345308+00:00",
+    "4e06707158681c8ee24aeb40b711ede1"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_side.csv": {
+   "content_key": [
+    788,
+    "2026-10-02T21:37:50.346309+00:00",
+    "6eefe82a90bd74947c67597f565dddd3"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_size.csv": {
+   "content_key": [
+    1212,
+    "2026-10-02T21:37:50.347308+00:00",
+    "578f834f6a10d246d5f428c6cc0acbd9"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exits.csv": {
+   "content_key": [
+    3068,
+    "2026-10-02T21:37:50.347308+00:00",
+    "9afe1701938556e192fc115696ae314a"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exposure.csv": {
+   "content_key": [
+    319,
+    "2026-10-02T21:37:50.348308+00:00",
+    "a04b555264e7fb383cc893389cd04f17"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_main.csv": {
+   "content_key": [
+    878,
+    "2026-10-02T21:37:50.349308+00:00",
+    "4a2e882030912d7cd16479e4bb0be712"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_pair_diff.csv": {
+   "content_key": [
+    420,
+    "2026-10-02T21:37:50.349308+00:00",
+    "da3fc2d81c02db7e08dc8d6661df7977"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_q0.csv": {
+   "content_key": [
+    929,
+    "2026-10-02T21:37:50.350308+00:00",
+    "4cba5f846b122ec296a752082658c191"
+   ],
+   "result": {}
+  },
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_seconds.csv": {
+   "content_key": [
+    467,
+    "2026-10-02T21:37:50.351309+00:00",
+    "eae12edd37875611c3b959eec8f11c9b"
    ],
    "result": {}
   },
@@ -139368,6 +140008,54 @@
    ],
    "result": {}
   },
+  "backtest_data/spread_backfill_20261002/gaps.csv": {
+   "content_key": [
+    13607,
+    "2026-10-02T21:37:50.358308+00:00",
+    "73de2c624d05ae3bb10ced36e3368da7"
+   ],
+   "result": {}
+  },
+  "backtest_data/spread_backfill_20261002/spread_backfill.csv.gz": {
+   "content_key": [
+    1671269,
+    "2026-10-02T21:37:50.395322+00:00",
+    "54a68b41c1320236de35d1e6e4c1a2d5"
+   ],
+   "result": {
+    "gaps": {
+     "count": 141,
+     "examples": [
+      {
+       "gap_seconds": 742486.429,
+       "row": 4074,
+       "ts": "2026-09-08T05:11:18.633000+00:00"
+      },
+      {
+       "gap_seconds": 296200.581,
+       "row": 2413,
+       "ts": "2026-08-25T18:31:57.348000+00:00"
+      },
+      {
+       "gap_seconds": 230144.08,
+       "row": 4090,
+       "ts": "2026-09-10T21:08:17.713000+00:00"
+      },
+      {
+       "gap_seconds": 210895.384,
+       "row": 4044,
+       "ts": "2026-08-30T14:54:06.699000+00:00"
+      },
+      {
+       "gap_seconds": 169708.967,
+       "row": 4041,
+       "ts": "2026-08-28T04:19:01.315000+00:00"
+      }
+     ],
+     "median_gap_seconds": 5.0
+    }
+   }
+  },
   "backtest_data/storm_events_20260820/event_20260721_1410.csv.gz": {
    "content_key": [
     44505,
@@ -139842,13 +140530,13 @@
   },
   "data/api_health.csv": {
    "content_key": [
-    1973645,
-    "2026-10-02T18:12:35.636755+00:00",
-    "1e42ad321bc31eea9fba7e29a0a14987"
+    2045633,
+    "2026-10-02T23:35:36.269040+00:00",
+    "cf960bbb8e796acd5125acd227ca5805"
    ],
    "result": {
     "gaps": {
-     "count": 10,
+     "count": 12,
      "examples": [
       {
        "gap_seconds": 46127.864,
@@ -139861,6 +140549,11 @@
        "ts": "2026-09-30T11:00:25.978000+00:00"
       },
       {
+       "gap_seconds": 13770.626,
+       "row": 34927,
+       "ts": "2026-10-02T22:02:06.263000+00:00"
+      },
+      {
        "gap_seconds": 174.405,
        "row": 22775,
        "ts": "2026-10-02T03:09:10.621000+00:00"
@@ -139869,11 +140562,6 @@
        "gap_seconds": 126.775,
        "row": 8469,
        "ts": "2026-09-30T20:16:43.817000+00:00"
-      },
-      {
-       "gap_seconds": 81.18,
-       "row": 20544,
-       "ts": "2026-10-02T00:14:31.489000+00:00"
       }
      ],
      "median_gap_seconds": 5.066
@@ -257592,11 +258280,131 @@
      "median_gap_seconds": 0.023491
     }
    }
+  },
+  "data/archive/bitmex/data/quote/20211002.csv.gz": {
+   "content_key": [
+    41366882,
+    "2026-09-10T03:10:16.668139+00:00",
+    "c15a728363aa3117be8753e0c47762e6"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1207699,
+     "examples": [
+      {
+       "gap_seconds": 7692.971879,
+       "row": 2855216,
+       "ts": "2021-10-02T08:24:56.031764+00:00"
+      },
+      {
+       "gap_seconds": 3690.259957,
+       "row": 2855207,
+       "ts": "2021-10-02T04:33:39.600338+00:00"
+      },
+      {
+       "gap_seconds": 3148.298267,
+       "row": 2855209,
+       "ts": "2021-10-02T05:46:32.692154+00:00"
+      },
+      {
+       "gap_seconds": 2876.839336,
+       "row": 385850,
+       "ts": "2021-10-02T23:29:28.834510+00:00"
+      },
+      {
+       "gap_seconds": 2030.931832,
+       "row": 1128686,
+       "ts": "2021-10-02T11:13:55.680966+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028937
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211003.csv.gz": {
+   "content_key": [
+    39656034,
+    "2026-09-10T03:10:42.788143+00:00",
+    "a8c2e544695dddd79ca5159d725d12ab"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1102910,
+     "examples": [
+      {
+       "gap_seconds": 2748.994157,
+       "row": 1238766,
+       "ts": "2021-10-03T07:02:12.011090+00:00"
+      },
+      {
+       "gap_seconds": 1715.911757,
+       "row": 1238690,
+       "ts": "2021-10-03T04:53:57.046821+00:00"
+      },
+      {
+       "gap_seconds": 1618.290429,
+       "row": 409543,
+       "ts": "2021-10-03T07:00:53.493982+00:00"
+      },
+      {
+       "gap_seconds": 1511.598069,
+       "row": 1238646,
+       "ts": "2021-10-03T03:29:23.580795+00:00"
+      },
+      {
+       "gap_seconds": 1502.092848,
+       "row": 405203,
+       "ts": "2021-10-03T14:21:28.559152+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.035775
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211004.csv.gz": {
+   "content_key": [
+    52821914,
+    "2026-09-10T03:11:18.237064+00:00",
+    "1a1dc4422860680c6200cb800a9b0859"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1500240,
+     "examples": [
+      {
+       "gap_seconds": 2440.476525,
+       "row": 2285266,
+       "ts": "2021-10-04T07:35:33.036227+00:00"
+      },
+      {
+       "gap_seconds": 1938.151806,
+       "row": 417555,
+       "ts": "2021-10-04T16:00:10.748611+00:00"
+      },
+      {
+       "gap_seconds": 1890.370178,
+       "row": 3494405,
+       "ts": "2021-10-04T09:08:06.091002+00:00"
+      },
+      {
+       "gap_seconds": 1752.504908,
+       "row": 3502338,
+       "ts": "2021-10-04T21:08:10.487152+00:00"
+      },
+      {
+       "gap_seconds": 1557.861545,
+       "row": 2285371,
+       "ts": "2021-10-04T10:03:33.887090+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.027061
+    }
+   }
   }
  },
- "generated_at": "2026-10-02T21:29:07.619644+00:00",
+ "generated_at": "2026-10-03T00:03:06.249068+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 2979,
+ "schema_undefined_count": 3064,
  "schema_undefined_files": [
   "backtest_data/audit_fetch_P2-08b_20260906/binance_1s_2026-09-05_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2019-06-01_head5.csv",
@@ -257613,6 +258421,12 @@
   "backtest_data/coinalyze_liquidations_20260921/BTCUSDT.6_1min.csv",
   "backtest_data/coinalyze_liquidations_20260921/BTCUSDT_PERP.3_1min.csv",
   "backtest_data/coinalyze_liquidations_20260921/BTCUSD_PERP.3_1min.csv",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_15m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_1m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_30m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_3m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_5m_2017_2019.csv.gz",
+  "backtest_data/k1_newenv_a_20260927/xbtusd_60m_2017_2019.csv.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260909.jsonl.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260910.jsonl.gz",
   "backtest_data/liquidations_repaired_20260912/paper_logs/liquidations/binance_cm_20260911.jsonl.gz",
@@ -257771,6 +258585,80 @@
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/judge_counts.csv",
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/position_breakdown.csv",
   "backtest_data/o3c_signal_policy_20260920/stage2_secondhalf/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/spread/spread_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_chain.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/calib_first.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/grid.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/knob_contrib.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/q5b_secs_firsthalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/synthetic_traces.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_firsthalf/time_to_target.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_cost.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_delay.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_first_action.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exits.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage1_tp/q_tp_seconds.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/calib_5000.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_position.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q4_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_dryrun/q5b_secs_secondhalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/action_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/calib_5000.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/cascades.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/dist_table.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/judge_counts.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/position_breakdown.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/prints_policy.csv.gz",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q0_selfcheck.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_position.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q4_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q5b_secs_secondhalf.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_cost.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_day.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_delay.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_first_action.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_side.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_by_size.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exits.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_exposure.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_main.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_pair_diff.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_q0.csv",
+  "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_seconds.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
@@ -258066,6 +258954,8 @@
   "backtest_data/phase2_sealed/P2-01/UNSEAL_LOG.jsonl",
   "backtest_data/phase2_sealed/P2-02/UNSEAL_LOG.jsonl",
   "backtest_data/phase2_sealed/P2-03/UNSEAL_LOG.jsonl",
+  "backtest_data/spread_backfill_20261002/gaps.csv",
+  "backtest_data/spread_backfill_20261002/spread_backfill.csv.gz",
   "backtest_data/topixf_225labo_20260907/bars_1min.csv.gz",
   "backtest_data/topixf_225labo_20260907/day_session_daily.csv.gz",
   "backtest_data/topixf_225labo_20260907/full_day_daily.csv.gz",
@@ -260576,6 +261466,9 @@
   "data/archive/bitmex/data/quote/20210928.csv.gz",
   "data/archive/bitmex/data/quote/20210929.csv.gz",
   "data/archive/bitmex/data/quote/20210930.csv.gz",
-  "data/archive/bitmex/data/quote/20211001.csv.gz"
+  "data/archive/bitmex/data/quote/20211001.csv.gz",
+  "data/archive/bitmex/data/quote/20211002.csv.gz",
+  "data/archive/bitmex/data/quote/20211003.csv.gz",
+  "data/archive/bitmex/data/quote/20211004.csv.gz"
  ]
 }

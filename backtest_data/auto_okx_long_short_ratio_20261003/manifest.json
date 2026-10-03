@@ -1,0 +1,33 @@
+{
+ "created_at": "2026-10-03T00:41:57.255530+00:00",
+ "files": [
+  {
+   "bytes": 22967,
+   "first_ts": "2026-09-03T01:00:00+00:00",
+   "last_ts": "2026-10-03T00:00:00+00:00",
+   "md5": "80f22fb75e1ff3b64fd234eb86afd695",
+   "name": "okx_btc_lsratio_1h.csv",
+   "row_count": 720
+  },
+  {
+   "bytes": 18346,
+   "first_ts": "2026-10-01T00:20:00+00:00",
+   "last_ts": "2026-10-03T00:10:00+00:00",
+   "md5": "5cdee204e1d36c5a8862e6d135e02494",
+   "name": "okx_btc_lsratio_5m.csv",
+   "row_count": 575
+  }
+ ],
+ "first_ts": "2026-09-03T01:00:00+00:00",
+ "last_ts": "2026-10-03T00:10:00+00:00",
+ "notes": "OKX rubik long-short-account-ratio: empirically 60-90 days.",
+ "rows": 1295,
+ "source": "okx_long_short_ratio",
+ "window": {
+  "interval_days": 28,
+  "retention_days": [
+   60,
+   90
+  ]
+ }
+}
