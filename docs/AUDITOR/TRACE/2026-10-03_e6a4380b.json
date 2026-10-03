@@ -387,9 +387,9 @@
   {
    "move": 15,
    "tools": {
-    "Bash": 4
+    "Bash": 5
    },
-   "n_tools": 4,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
