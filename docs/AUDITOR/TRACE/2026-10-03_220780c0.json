@@ -19591,11 +19591,11 @@
   {
    "move": 719,
    "tools": {
-    "Bash": 18,
+    "Bash": 19,
     "ToolSearch": 1,
     "Monitor": 1
    },
-   "n_tools": 20,
+   "n_tools": 21,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
