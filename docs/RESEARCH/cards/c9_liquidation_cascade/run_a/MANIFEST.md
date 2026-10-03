@@ -7,7 +7,7 @@
 - 写していないもの: 委任文で「写さない」とされた大きい gz(`anchors_prints`・`controls`・`policy_cascades`・`policy_legs`・`jev_states`)。
 - **委任文の一覧に名指しの無い 2 つ**: `anchors_bundles.csv.gz` と `three_way_probs.csv.gz`(どちらも `.csv.gz`)。「写す」一覧の `three_way_*.csv/json` に `.csv.gz` が入るかは書かれていないので、写さずに下の表に載せた(作業者の判断。写すかはリードが決める)。
 - `chunks/`(日ごとの途中の出力)は載せていない(第 2 稿の `make_tables.py` は `chunks/scurve` と `chunks/controls` の見出しを読む)。
-- 第 2 稿の `control_iv.py` の出力 `run_a/control_iv_out/`、第 3 稿の `control_ivh.py` の出力 `run_a/control_ivh_out/`(対照 (iv-h)・起点の版・(iv) の取れなかった原因)と `three_way_m.py` の出力 `run_a/three_way_m_out/`(3 択の作り直し)、第 4 稿の `control_iv_days.py` の出力 `run_a/control_iv_days_out/` と `three_way_m_policy.py` の出力(`three_way_m_out/` の `policy_*_3m*`)は、リードの指示で `run_a/` に置いた。sha256 と行数は表 manifest_iv。
+- 第 2 稿の `control_iv.py` の出力 `run_a/control_iv_out/`、第 3 稿の `control_ivh.py` の出力 `run_a/control_ivh_out/`(対照 (iv-h)・起点の版・(iv) の取れなかった原因)と `three_way_m.py` の出力 `run_a/three_way_m_out/`(3 択の作り直し)、第 4 稿の `control_iv_days.py` の出力 `run_a/control_iv_days_out/` と `three_way_m_policy.py` の出力(`three_way_m_out/` の `policy_*_3m*`)は、リードの指示で `run_a/` に置いた。sha256 と行数は表 manifest_iv。第 5 稿で `three_way_m_policy.py --features old` を後半の全 239 日で流し直し、`three_way_m_out/` の `policy_*_3m_oldcheck*` を置き換えた(第 4 稿は 5 日分。監査 4 回目の直す 13)。
 - t8 の元の `chunks/scurve/*.npz`(走らせの途中の出力。git の外)の sha256 と点の数は表 manifest_scurve(2 回目の監査の聞く 22。リードが受け入れた)。
 - 走らせの記録 `data/c9_run_a/full.log` は一つ上の置き場にあるので、別の表(manifest_log)に載せた。
 - 行数は、gzip を開いて数えた物理行と、別の出所(`run_meta.json`・`dist_policy.csv`)の数を表 manifest_check で突き合わせた。
@@ -89,11 +89,11 @@ PYTHONPATH=src python3 docs/RESEARCH/cards/c9_liquidation_cascade/run_a/make_tab
 | run_a/control_ivh_out/iv_unmatched_cause.csv.gz | 117838 | b29153f3cd3424f67f9740f0d4b5e80a853befc58b06379c4e4c3720c7978fae | 36430 | 見出しを除いた行数 |
 | run_a/control_ivh_out/prints_versions.csv.gz | 9616982 | c119caab02972564d7c713a6c04f41e768e2b0de9cc4bb9718d0ca68b52a8ed3 | 53398 | 見出しを除いた行数 |
 | run_a/three_way_m_out/policy_3m_meta.json | 7208 | aecc71b69005ef20b4393e2cd6179bd68d148c625346b01630e8b6ac2fba50ad | - | json(行の表ではない) |
-| run_a/three_way_m_out/policy_3m_meta_oldcheck.json | 8036 | 51e431543fb9246f8c6dd5706cb0d2682e70737a6feb5a0db4563aafca2da531 | - | json(行の表ではない) |
+| run_a/three_way_m_out/policy_3m_meta_oldcheck.json | 8253 | 8a03e291268b79ffc2ed338cd37b3aff3e1c2c417c6d96a7151acbb90841d5f1 | - | json(行の表ではない) |
 | run_a/three_way_m_out/policy_cascades_3m.csv.gz | 1227302 | dec915846196d82b62263f858f682f662e0134d6d39fc12389099e10c548cee3 | 149924 | 見出しを除いた行数 |
-| run_a/three_way_m_out/policy_cascades_3m_oldcheck.csv.gz | 23080 | a3d17fa181da024896d866f9758fcfba1fcac7c7b862df76d84793525dec29cb | 2756 | 見出しを除いた行数 |
+| run_a/three_way_m_out/policy_cascades_3m_oldcheck.csv.gz | 1275577 | fe57123f2da77da142e95a959d2dc3110b713d5c0ef6cd81e097ca561233c121 | 149924 | 見出しを除いた行数 |
 | run_a/three_way_m_out/policy_legs_3m.csv.gz | 1211089 | 0a0353e566e08aee06be9970e452cf42b57c1f9777230a15a4991c984524f014 | 160022 | 見出しを除いた行数 |
-| run_a/three_way_m_out/policy_legs_3m_oldcheck.csv.gz | 25461 | 87225e4318f9929ec07714593f99be20a3ac7b70a5539c9d93f952a5efb7ae99 | 3236 | 見出しを除いた行数 |
+| run_a/three_way_m_out/policy_legs_3m_oldcheck.csv.gz | 1394638 | aba282f86b10955f6701fc450d1670c3442766fe3b9fca7b2ca4d7f1413269dd | 176520 | 見出しを除いた行数 |
 | run_a/three_way_m_out/three_way_m_calibration.csv | 5198 | 1ef63cfae6f28c9999780dc8ca36ca813bcd6d708c0da9704e96ae5def43d67e | 75 | 見出しを除いた行数 |
 | run_a/three_way_m_out/three_way_m_model.json | 3235 | 0592c76dcf67f13239b7ec2959a1957e4ef1a75de3ffb8ff43ae029000283310 | - | json(行の表ではない) |
 | run_a/three_way_m_out/three_way_m_probs.csv.gz | 494955 | b57e849d59e009fa723c4418749bf36b4b41608fa90386b19599f987163e3226 | 53398 | 見出しを除いた行数 |
@@ -597,3 +597,4 @@ PYTHONPATH=src python3 docs/RESEARCH/cards/c9_liquidation_cascade/run_a/make_tab
 |---|---|---|---|
 | data/c9_run_a/full.log | 30314 | 7b070b673a7d4a575a75082380ad265b91c7a04028a43fc02e778deccc36ad6d | 485 |
 <!-- /BLOCK -->
+

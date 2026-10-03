@@ -239,15 +239,23 @@ def boot_q(vals, days, qs=(25, 50, 75), b=BOOT_B, seed=BOOT_SEED) -> dict:
 
 
 def klass(diff, se, real_abs) -> str:
-    """分類の規則(監査 3 回目の止める 1、リードの決定): (x) 対の差が 2 SE の外 / 内、(y) MDE(= 2.8 × SE)が |実| 以上 / 未満。
-    |実| が SE より小さい行は「比べる大きさが無い」。SE が無い行は「SE が無い」。"""
-    if not (np.isfinite(se) and np.isfinite(diff) and np.isfinite(real_abs)):
+    """区分の規則(監査 4 回目の止める 1 を受けたリードの決定、第 5 稿): まず (x)「|対の差| > 2 × SE なら 2SE の外、それ以外は
+    2SE の内」を当て、次に (y)「MDE(= 2.8 × SE)が |実| 以上なら MDE ≥ |実|、未満なら MDE < |実|」を当てる。
+    |実| < SE は区分にせず、別の列の印にする(`small`)。SE が無い行は「SE が無い」。"""
+    if not (np.isfinite(se) and np.isfinite(diff)):
         return "SE が無い"
-    if real_abs < se:
-        return "比べる大きさが無い"
     x = "2SE の外" if abs(diff) > 2 * se else "2SE の内"
+    if not np.isfinite(real_abs):
+        return x
     y = "MDE ≥ |実|" if 2.8 * se >= real_abs else "MDE < |実|"
     return f"{x}・{y}"
+
+
+def small(se, real_abs) -> str:
+    """|実| が対の差の SE より小さい行の印(区分を上書きしない)。"""
+    if np.isfinite(se) and np.isfinite(real_abs) and real_abs < se:
+        return "印"
+    return ""
 
 
 def tables(src: Path, ivdir: Path) -> str:
@@ -372,7 +380,7 @@ def tables(src: Path, ivdir: Path) -> str:
         ("対照 (ii)(iv) の前後に清算無しの幅", f"±{v2.CTRL2_NO_LIQ_MS // 60000} 分", "仮定", "前の O-3c の Q7 の委任先(CONTINUE 設計 120 行)。引き継ぎはリードの決定(設計 §6 の 6)"),
         ("対照 (ii)(iv) の帯", f"{v2.CTRL2_N_BANDS} 分位", "仮定", "同上"),
         ("対照 (ii)(iv) の格子", f"{v2.CTRL_GRID_MS // 1000} 秒", "仮定", "同上"),
-        ("対照 (ii)(iv) の日のずれ", f"±{max(v2.CTRL2_DAY_OFFSETS)} 日", "仮定", "リード(決定 第 2 稿の 2)"),
+        ("対照 (ii)(iv)(iv-h) の日のずれ", f"±{max(v2.CTRL2_DAY_OFFSETS)} 日(第 4 稿で同じ日だけ・±7 日の (iv) を足した)", "仮定", "リード(決定 第 2 稿の 2)"),
         ("対照 (iv) の大きさの帯(|m10|・|m60|)", f"{v2.CTRL2_N_BANDS} 分位", "仮定", "リード(この回の指示「|m10| と |m60| の水準(10 分位)」)"),
         ("対照 (iii) の規模の許容", f"±{v2.PLACEBO_TOL:.0%}", "仮定", "前の段 0 の委任先(liq_response.sample_placebo_windows の size_tolerance。その docstring に「判断の置き所」)"),
         ("対照 (i)(iii) の清算からの余白", f"±{v2.CTRL_MARGIN_MS // 60000} 分", "仮定", "段 A の対照 (i) の委任先"),
@@ -394,6 +402,12 @@ def tables(src: Path, ivdir: Path) -> str:
         ("MDE の 2.8(t2・t2stat・t6f)", "2.8 × SE", "仮定", "慣用の値(両側 5%・検出力 80%)。作業者が置き、リードが追認(聞く 24)"),
         ("(iv)(iv-h) の候補から清算の zip の無い日を外す", "-", "仮定", "作業者(監査 1 回目の直す 10)。リードが追認(聞く 24)"),
         ("(iv-h) の時の帯", "UTC の 0〜23 時", "仮定", "リード(この回の指示「帯 = 今の (iv) の帯 × 時」)"),
+        ("区分の (x) の境", "2 × SE", "仮定", "リード(監査 3 回目の止める 1 への応答で 2SE と決め、4 回目の止める 1 を受けて (x) を先に当てる順にした)"),
+        ("「実の値動きが SE より小さい」の印の境", "|実| < SE", "仮定", "リード(同上。区分ではなく印)"),
+        ("分位の SE の日ブロック再抽出", f"{BOOT_B} 回・種 {BOOT_SEED}", "仮定", "作業者。別の種で SE が安定するかは確かめていない"),
+        ("(iv) の日の幅の版", "同じ日だけ / ±7 日", "仮定", "リード(監査 3 回目の止める 3・直す 14 への指示)。±7 日の 7 は指示の値"),
+        ("トリム平均の落とす割合", "両側 1%・5%・10%", "仮定", "作業者(監査 4 回目の直す 4 が挙げた割合に合わせた)"),
+        ("新の 3 択の手順の確かめ", "後半の全 239 日", "仮定", "作業者(第 4 稿は 5 日。監査 4 回目の直す 13 で全日にした)"),
         ("3 択の作り直しで足した材料 |m10|・|m60|", "2 本", "仮定", "リード(この回の指示。代替の記録の回答者 A の 1 位)"),
     ]
     B("t0s_settings", "`liq_cascade_v2` の定数・`o3c_signal_logit` の定数を台本で読んだ(値の列)。分類は 一次資料 / 実測 / 仮定(KNOWN_ANSWERS 80 行)",
@@ -488,16 +502,16 @@ def tables(src: Path, ivdir: Path) -> str:
             sx, sy, sd = st(x, dd), st(y, dd), st(x - y, dd)
             for stat, se_key in (("pooled_mean", "se_pooled_cluster"), ("day_eq_mean", "se_day_eq")):
                 se = sd[se_key]
-                rows.append({"対照": lab, "h": H_LABEL[h], "統計": stat, "実(同じプリント)": sx[stat], "対照の値": sy[stat],
+                rows.append({"対照": lab, "h": H_LABEL[h], "n": sd["n"], "統計": stat, "実(同じプリント)": sx[stat], "対照の値": sy[stat],
                              "対の差": sd[stat], "対の差の SE": se, "SE の種類": se_key, "MDE = 2.8×SE": 2.8 * se,
-                             "|実の react|": abs(sx[stat]), "区分": klass(sd[stat], se, abs(sx[stat]))})
+                             "|実の react|": abs(sx[stat]), "区分": klass(sd[stat], se, abs(sx[stat])), "実の値動きが SE より小さい": small(se, abs(sx[stat]))})
             bq = boot_q(x - y, dd)
             for q in (25, 50, 75):
                 stat = f"q{q}"
                 se = bq[q]
-                rows.append({"対照": lab, "h": H_LABEL[h], "統計": f"{stat}(対の差の分布の分位)", "実(同じプリント)": sx[stat],
+                rows.append({"対照": lab, "h": H_LABEL[h], "n": sd["n"], "統計": f"{stat}(対の差の分布の分位)", "実(同じプリント)": sx[stat],
                              "対照の値": sy[stat], "対の差": sd[stat], "対の差の SE": se, "SE の種類": "日ブロックの再抽出",
-                             "MDE = 2.8×SE": 2.8 * se, "|実の react|": abs(sx[stat]), "区分": klass(sd[stat], se, abs(sx[stat]))})
+                             "MDE = 2.8×SE": 2.8 * se, "|実の react|": abs(sx[stat]), "区分": (klass(sd[stat], se, abs(sx[stat])) if q == 50 else "区分を当てない(差の分布の広がりの分位)"), "実の値動きが SE より小さい": (small(se, abs(sx[stat])) if q == 50 else "")})
             # 実と対照の中央値の差(周辺の中央値の差)と、その日ブロックの SE
             u = M["day_p"].astype(str).to_numpy()
             uu, inv = np.unique(u, return_inverse=True)
@@ -510,16 +524,31 @@ def tables(src: Path, ivdir: Path) -> str:
                 est.append(np.median(x[idx][fx[idx]]) - np.median(y[idx][fy[idx]]))
             se = float(np.std(est, ddof=1))
             md_ = float(np.median(x[fx]) - np.median(y[fy]))
-            rows.append({"対照": lab, "h": H_LABEL[h], "統計": "q50 の差(実の中央値 − 対照の中央値)", "実(同じプリント)": sx["q50"],
+            rows.append({"対照": lab, "h": H_LABEL[h], "n": sd["n"], "統計": "q50 の差(実の中央値 − 対照の中央値)", "実(同じプリント)": sx["q50"],
                          "対照の値": sy["q50"], "対の差": md_, "対の差の SE": se, "SE の種類": "日ブロックの再抽出",
-                         "MDE = 2.8×SE": 2.8 * se, "|実の react|": abs(sx["q50"]), "区分": klass(md_, se, abs(sx["q50"]))})
-            rows.append({"対照": lab, "h": H_LABEL[h], "統計": "q75−q25(幅)", "実(同じプリント)": sx["q75"] - sx["q25"],
+                         "MDE = 2.8×SE": 2.8 * se, "|実の react|": abs(sx["q50"]), "区分": klass(md_, se, abs(sx["q50"])), "実の値動きが SE より小さい": small(se, abs(sx["q50"]))})
+            rows.append({"対照": lab, "h": H_LABEL[h], "n": sd["n"], "統計": "q75−q25(幅)", "実(同じプリント)": sx["q75"] - sx["q25"],
                          "対照の値": sy["q75"] - sy["q25"], "対の差": np.nan, "対の差の SE": np.nan, "SE の種類": "",
                          "MDE = 2.8×SE": np.nan, "|実の react|": np.nan, "区分": "対の差が無い行"})
     B("t2stat", "t2 の (iv)・(iv-h) の組を統計ごとに並べ、区分を機械で当てた。「実(同じプリント)」= 対照が取れたプリントの react_h、「対照の値」= 対照の react_h、"
       "「対の差」= 1 組ごとの差の統計。分位の SE は日ブロックの再抽出(日を置換ありで 200 回、種 20261003)。"
       "区分 = (x) |対の差| > 2 SE なら「2SE の外」/ それ以外「2SE の内」、(y) MDE(2.8 × SE)≥ |実| なら「MDE ≥ |実|」/ それ以外「MDE < |実|」。"
-      "|実| < SE の行は「比べる大きさが無い」(`klass`)", pd.DataFrame(rows))
+      "|実| < SE の行は区分を変えず、列「実の値動きが SE より小さい」に印(`klass`・`small`)。q25・q75 の行は差の分布の広がりの分位なので区分を当てない", pd.DataFrame(rows))
+
+    from scipy.stats import trim_mean
+    rows = []
+    for lab in ("(iv)", "(iv-h)"):
+        M = pairs[lab]
+        for h in (60, 300, 900, 3600, 14400):
+            d = (M[f"react_{h}_p"] - M[f"react_{h}_c"]).to_numpy(float)
+            d = d[np.isfinite(d)]
+            r = {"対照": lab, "h": H_LABEL[h], "n": d.size, "平均(pooled_mean)": float(d.mean())}
+            for c in (0.01, 0.05, 0.10):
+                r[f"{int(c * 100)}% トリム平均(両側)"] = float(trim_mean(d, c))
+            r["中央値"] = float(np.median(d))
+            rows.append(r)
+    B("t2trim", "t2 の (iv)・(iv-h) の組ごとの対の差(react_h(プリント)− react_h(対照))の平均と、両側を 1%・5%・10% ずつ落としたトリム平均"
+      "(`scipy.stats.trim_mean`、1 件ごと、日の重みなし)と中央値。監査 4 回目の直す 4", pd.DataFrame(rows))
 
     rows = []
     for lab in ("(iv)", "(iv-h)"):
@@ -534,7 +563,10 @@ def tables(src: Path, ivdir: Path) -> str:
                             {"q25": s["q25"], "q75": s["q75"], "MDE(day_eq)": 2.8 * s["se_day_eq"],
                              "実の react の day_eq_mean": sx["day_eq_mean"],
                              "区分(day_eq_mean)": klass(s["day_eq_mean"], s["se_day_eq"], abs(sx["day_eq_mean"])),
-                             "区分(pooled_mean)": klass(s["pooled_mean"], s["se_pooled_cluster"], abs(sx["pooled_mean"]))})
+                             "印(day_eq_mean)": small(s["se_day_eq"], abs(sx["day_eq_mean"])),
+                             "実の react の pooled_mean": sx["pooled_mean"],
+                             "区分(pooled_mean)": klass(s["pooled_mean"], s["se_pooled_cluster"], abs(sx["pooled_mean"])),
+                             "印(pooled_mean)": small(s["se_pooled_cluster"], abs(sx["pooled_mean"]))})
     B("t2first", "t2 の (iv)・(iv-h) の組を、プリントの場面(1件目 = 直前 60 秒に同じ側の清算が無い / 連鎖の中)で分けた。区分は t2stat と同じ規則(|実| = その場面の実の react)", pd.DataFrame(rows))
 
     rows = []
@@ -553,7 +585,7 @@ def tables(src: Path, ivdir: Path) -> str:
                 for stat, se_key in (("pooled_mean", "se_pooled_cluster"), ("day_eq_mean", "se_day_eq")):
                     rows.append({"対照": lab, "起点の版(両側に同じ規則)": v_, "h": H_LABEL[h], "統計": stat, "n": s["n"],
                                  "実の react": sx[stat], "対の差": s[stat], "SE": s[se_key], "MDE": 2.8 * s[se_key],
-                                 "区分": klass(s[stat], s[se_key], abs(sx[stat]))})
+                                 "区分": klass(s[stat], s[se_key], abs(sx[stat])), "実の値動きが SE より小さい": small(s[se_key], abs(sx[stat]))})
     B("t2v_anchor", "起点の版をプリントと対照の両側に同じ規則で当てた対の差。版A = 起点の時刻以後の最初の約定(走らせ)、B = A の約定より厳密に後、"
       "C = +1 秒以後、D = 押した向きの成行の最初の約定。B・C・D = `control_ivh_out/prints_versions.csv.gz` と `controls_iv_versions.csv.gz`・`controls_ivh.csv.gz`。"
       "「実の react」= 同じ版の起点でのプリントの react。区分は t2stat と同じ規則",
@@ -595,7 +627,7 @@ def tables(src: Path, ivdir: Path) -> str:
                 sx, s_ = st(xr, dd), st(xr - yr, dd)
                 rows.append({"対照": lab, "版": v_, "h": H_LABEL[h], "統計": "day_eq_mean(|m10| = 0 の対照を除く)", "n": s_["n"],
                              "対の差": s_["day_eq_mean"], "SE": s_["se_day_eq"], "MDE": 2.8 * s_["se_day_eq"],
-                             "区分": klass(s_["day_eq_mean"], s_["se_day_eq"], abs(sx["day_eq_mean"]))})
+                             "区分": klass(s_["day_eq_mean"], s_["se_day_eq"], abs(sx["day_eq_mean"])), "実の値動きが SE より小さい": small(s_["se_day_eq"], abs(sx["day_eq_mean"]))})
     B("t2dir0", "対照の向き dir は直前 10 秒の変位の符号で、変位が 0 のときは +1(`liq_cascade_v2.pre_state_arrays` の dir10 の規約)。"
       "|m10| = 0 の対照では向きが規約で決まり、版D の「押した向きの成行」もその規約の向きになる。その対照を除いた対の差(監査 3 回目の直す 5)",
       pd.DataFrame(rows))
@@ -740,7 +772,9 @@ def tables(src: Path, ivdir: Path) -> str:
     B("t2days_n", "日の幅を変えた (iv) の取れた数(帯は t0 の (iv) の境)。同じ日だけ・±7 日 = `control_iv_days_out/controls_iv_d0.csv.gz`・`controls_iv_d7.csv.gz`",
       pd.concat([df, pd.DataFrame([tot])], ignore_index=True))
     rows = []
+    common = set(IV["ref_id"]) & set(IVD0["ref_id"]) & set(IVD7["ref_id"])
     for vl, df_ in VAR.items():
+        df_ = df_[df_["ref_id"].isin(common)]
         M = df_.merge(P[["print_id", "day"] + xk], left_on="ref_id", right_on="print_id", suffixes=("_c", "_p"))
         if "day_offset" in M:
             rows.append({"版": vl, "h": "-", "統計": "日のずれ 0 の割合", "n": len(M), "実の react": np.nan,
@@ -750,8 +784,9 @@ def tables(src: Path, ivdir: Path) -> str:
             sx, s_ = st(x, M["day_p"]), st(x - y, M["day_p"])
             for stat, se_key in (("pooled_mean", "se_pooled_cluster"), ("day_eq_mean", "se_day_eq")):
                 rows.append({"版": vl, "h": H_LABEL[h], "統計": stat, "n": s_["n"], "実の react": sx[stat], "対の差": s_[stat],
-                             "SE": s_[se_key], "MDE": 2.8 * s_[se_key], "区分": klass(s_[stat], s_[se_key], abs(sx[stat]))})
-    B("t2days_diff", "日の幅を変えた (iv) の対の差(値 = react_h(プリント)− react_h(対照)、日 = プリントの日)。「実の react」= その版で対照が取れたプリントの react。区分は t2stat と同じ規則",
+                             "SE": s_[se_key], "MDE": 2.8 * s_[se_key], "区分": klass(s_[stat], s_[se_key], abs(sx[stat])), "実の値動きが SE より小さい": small(s_[se_key], abs(sx[stat]))})
+    B("t2days_diff", f"日の幅を変えた (iv) の対の差を、**3 つの版のすべてで対照が取れた共通のプリント {len(common)} 件だけ**で出した(監査 4 回目の止める 2)。"
+      "値 = react_h(プリント)− react_h(対照)、日 = プリントの日。「実の react」= 共通のプリントの react(3 つの版で同じ)。区分は t2stat と同じ規則",
       pd.DataFrame(rows))
 
     # (ii) の候補が清算の zip の無い日から来た数(直す 10)
@@ -834,7 +869,11 @@ def tables(src: Path, ivdir: Path) -> str:
     l60 = LG[(LG["gap_s"] == 60) & (LG["delay_s"] == 1) & (LG["period"] == "測る")]
     for (pol, typ), g in sorted(l60.groupby(["policy", "type"]), key=lambda kv: (order[kv[0][0]], kv[0][1])):
         rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"], g["day"]).items() if k in ST_SHORT})
-    B("t6a_units", "同じ条件の、入った連鎖だけ(`policy_cascades`)と 1 レグ(`policy_legs.csv.gz`)", pd.DataFrame(rows))
+    LG3 = pd.read_csv(twdir / "policy_legs_3m.csv.gz", dtype={"day": str})
+    l3 = LG3[(LG3["gap_s"] == 60) & (LG3["delay_s"] == 1)]
+    for (pol, typ), g in l3.groupby(["policy", "type"]):
+        rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"], g["day"]).items() if k in ST_SHORT})
+    B("t6a_units", "同じ条件の、入った連鎖だけ(`policy_cascades`)と 1 レグ(`policy_legs.csv.gz`、新の 3 択は `three_way_m_out/policy_legs_3m.csv.gz`)", pd.DataFrame(rows))
     rows = []
     for (g_, d_), sub in CA[CA["period"] == "測る"].groupby(["gap_s", "delay_s"]):
         for r in pol_rows(sub, {"g": g_, "d": d_}):
@@ -963,8 +1002,8 @@ def tables(src: Path, ivdir: Path) -> str:
             rows.append({"版": vl, "場面": s_, "件数(前半)": v["件数(作る)"], "基準率(前半)": v["基準率(作る)"], "分割数": v["分割数"],
                          "わからないの帯": str(v["わからないの帯"]), "基準率を跨ぐ帯(区別できない帯が無いときだけ使う境)": str(v["基準率を跨ぐ帯"])})
     B("t10b_band", "旧 = `three_way_model.json`、新 = `run_a/three_way_m_out/three_way_m_model.json` の 場面", pd.DataFrame(rows))
-    B("t10_calib", "旧: `three_way_calibration.csv`(そのまま。前半の out-of-fold 確率)", CAL)
-    B("t10_calib_m", "新: `three_way_m_out/three_way_m_calibration.csv`(そのまま。前半の out-of-fold 確率)", CALM)
+    B("t10_calib", "旧: `three_way_calibration.csv`(前半の out-of-fold 確率。列「区分」は対の差の区分と紛れるので「帯の判断」と名前だけ替えた)", CAL.rename(columns={"区分": "帯の判断"}))
+    B("t10_calib_m", "新: `three_way_m_out/three_way_m_calibration.csv`(同じく列の名前だけ替えた)", CALM.rename(columns={"区分": "帯の判断"}))
     rows = []
     for vl, _m, tp, _c in VERS:
         for (per, s_, j), g in tp.groupby(["期間", "場面", "判断"]):
