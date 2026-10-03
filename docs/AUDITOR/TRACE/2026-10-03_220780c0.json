@@ -22656,10 +22656,10 @@
   {
    "move": 832,
    "tools": {
-    "Bash": 13,
+    "Bash": 16,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 14,
+   "n_tools": 17,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
