@@ -22160,17 +22160,19 @@
   {
    "move": 814,
    "tools": {
-    "Bash": 2
+    "Bash": 5,
+    "Write": 1,
+    "Agent": 1
    },
-   "n_tools": 2,
+   "n_tools": 7,
    "read_goal": false,
-   "first_write_at": null,
+   "first_write_at": 5,
    "table_shown": false,
    "claims_without_output": 0,
    "claims_total": 1,
-   "audit_calls": 0,
+   "audit_calls": 1,
    "audit_pasted_immediately": 0,
-   "audit_followed_by_real_edit": 0,
+   "audit_followed_by_real_edit": 1,
    "protected_writes": 0,
    "protected_by_path": {
     "docs/PROJECT_GOAL.md": 0,
@@ -22187,13 +22189,13 @@
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 69,
-   "den": 111,
-   "value": 0.6216
+   "den": 112,
+   "value": 0.6161
   },
   "P2_table_shown_before_first_write": {
    "num": 21,
-   "den": 111,
-   "value": 0.1892
+   "den": 112,
+   "value": 0.1875
   },
   "P3_claim_with_output": {
    "num": 297,
@@ -22202,7 +22204,7 @@
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 202,
+   "den": 203,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -22211,9 +22213,9 @@
    "n": 782
   },
   "P6_findings_applied": {
-   "num": 62,
-   "den": 202,
-   "value": 0.3069,
+   "num": 63,
+   "den": 203,
+   "value": 0.3103,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
