@@ -20742,10 +20742,10 @@
   {
    "move": 762,
    "tools": {
-    "Bash": 5,
+    "Bash": 6,
     "SendMessage": 2
    },
-   "n_tools": 7,
+   "n_tools": 8,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
