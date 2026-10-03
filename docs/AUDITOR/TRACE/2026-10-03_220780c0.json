@@ -19834,9 +19834,9 @@
   {
    "move": 728,
    "tools": {
-    "Bash": 4
+    "Bash": 7
    },
-   "n_tools": 4,
+   "n_tools": 7,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
