@@ -135,6 +135,8 @@ def v37_quantile(root: str) -> dict:
 
 
 def _f(x: float, nd: int = 1) -> str:
+    if x != 0 and abs(x) < 0.05:
+        return f"{x:+.4f}"  # 0 に近い差を「+0.0」と見せてラベルと食い違わないように
     return f"{x:+.{nd}f}"
 
 
@@ -172,7 +174,46 @@ def render(runs: dict, rows: list[dict], q: dict) -> str:
             items = a.items() if key == "by_break" else [(f"{x.get('lo', x.get('bin'))}〜{x.get('hi', '')}" if key == "by_hold" else str(x["bin"]), x) for x in a["rows"]]
             for k, v in items:
                 L.append(f"| {'良' if s == 'good' else '悪'} | {k} | {v['trades']} | {v['wins']} | {v['sum_bp']:.0f} | {v['small_win_sum_bp']:.0f} | {v['big_loss_sum_bp']:.0f} |")
+    L += derived_lines(runs, rows)
     return "\n".join(L) + "\n"
+
+
+def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
+    """表 7: 報告と知見台帳に写す派生の数(84 本を並べて見た後に足した出力。読み方の決まり R1〜R6 は変えていない)。"""
+    L = ["", "## 表 7: 読みに使う派生の数", ""]
+    for s in SIDES:
+        a = runs[("v37", s)]["analysis"]
+        bb = a["by_break"]
+        n_all = runs[("v37", s)]["trades"]
+        L.append(f"- v37 {'良' if s == 'good' else '悪'}: ブレイクで閉じた取引 {bb['closed_by_break']['trades']} 件"
+                 f"(全取引の {bb['closed_by_break']['trades'] / n_all:.4f})の損益 {bb['closed_by_break']['sum_bp']:.0f}bp、"
+                 f"ほかの取引 {bb['other']['sum_bp']:.0f}bp")
+        per = [x["sum_bp"] / x["trades"] for x in a["ratio_fixed_bins"]["rows"] if x["trades"]]
+        L.append(f"- v37 {'良' if s == 'good' else '悪'}: 比の区分 1〜10 の 1 取引あたりの損益(bp) "
+                 + " / ".join(f"{v:+.3f}" for v in per))
+    for ax in AXES:
+        n_same = sum(1 for r in rows if r[ax]["label"] in ("増える(両側)", "減る(両側)", "同じ"))
+        L.append(f"- 軸「{AXIS_JA[ax]}」の向きが両側でそろった変種: {n_same}/{len(rows)}")
+    dup = [r["name"] for r in rows if r["name"] == "A2_step2_n1"]
+    if dup:
+        L.append("- A2_step1_n1 と A2_step2_n1 は段が 1 つなので段の間隔が効かず、同じ走らせになる(下の数は 2 本を別に数えている)")
+    for n in ("v37", "A1_center_5_1", "A1_center_4_3", "A1_center_3_2", "A1_center_2_0.8", "A3_w20_b5_body", "A3_w40_b5_body",
+              "A1_v37_entry5", "A5_alert1", "B1_delay0"):
+        for s in SIDES:
+            if (n, s) not in runs:
+                continue
+            r = runs[(n, s)]
+            br = r["by_reason"]
+            L.append(f"- {n} {'良' if s == 'good' else '悪'}: 平均の勝ち {r['avg_win_bp']:.3f}bp・勝ち率 {r['wins'] / max(1, r['trades']):.3f}・"
+                     f"取引 {r['per_day']['trades']:.1f}/日・決まらない足に当たった取引の割合 {r['undecided_share']:.3f}・"
+                     f"終わり方「時間」{br.get('時間', {}).get('trades', 0)} 件 {br.get('時間', {}).get('sum_bp', 0.0):.0f}bp・"
+                     f"「利確2」{br.get('利確2', {}).get('trades', 0)} 件 {br.get('利確2', {}).get('sum_bp', 0.0):.0f}bp・"
+                     f"「反対のブレイク」{br.get('反対のブレイク', {}).get('trades', 0)} 件 {br.get('反対のブレイク', {}).get('sum_bp', 0.0):.0f}bp")
+    n8 = sum(1 for r in rows if r["years_good"] == 8 and r["years_bad"] == 8)
+    L.append(f"- 年の一致が両側とも 8/8 の変種: {n8}/{len(rows)}")
+    gap = runs[("v37", "good")]["per_day"]["pnl"] - runs[("v37", "bad")]["per_day"]["pnl"]
+    L.append(f"- v37 の良い側と悪い側の損益の差: {gap:.1f} bp/日")
+    return L
 
 
 def main(argv: list[str] | None = None) -> int:
