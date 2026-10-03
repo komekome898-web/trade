@@ -21619,9 +21619,11 @@
   {
    "move": 794,
    "tools": {
-    "Bash": 1
+    "Bash": 2,
+    "ReadNotifications": 1,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 1,
+   "n_tools": 4,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
