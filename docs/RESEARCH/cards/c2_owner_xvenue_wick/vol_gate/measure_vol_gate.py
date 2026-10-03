@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""高ボラの門(`DESIGN.md`)の問い 1・2 を測る台本(第 2 版の定めで測り直す版)。
+"""高ボラの門(`DESIGN.md`)の問い 1・2 を測る台本(第 2 版の定めに、第 3 版の 1〜4 を足した版)。
 
 DESIGN.md の問い(逐語):
 
@@ -40,14 +40,22 @@ DESIGN.md の問い(逐語):
   - 取引所(定め 5): vol_prev を bitFlyer の足で測った (a)(b) も並べる(Binance / bitFlyer × 固定 / 前年 = 2 × 2)。
 - 分けて出す表(定め 5): 保有の長さ 1 本 / 2〜7 本 / 8〜21 本 / 22 本以上 × 分け方 × 区分の取引数・平均・総損益・
   足 1 本あたりの損益(総損益 ÷ 保有の本数の和)・ボラで割った損益の平均。ボラで割った損益 = 損益 bp ÷ 入口の足の Binance の
-  vol_prev(bp)。合図の強さ(H1 で反転した足か = 合図の足で flip_body=True と False のシグナルが違う)・取引の向きで分けた表。
-  この 3 つの表は 2018〜2023 を束ねた取引で、区間は出さない。
+  vol_prev(bp)。合図の強さ(H1 で反転した足か = 合図の足で flip_body=True と False のシグナルが違う)・取引の向き・
+  時間帯(入口の足の UTC 0〜5・6〜11・12〜17・18〜23 時)で分けた表。この表は 2018〜2023 を束ねた取引で、区間は出さない。
 - 束ねた升(定め 6): 2018〜2023 と、2020・2021 を除いた 2018・2019・2022・2023。各区分の取引数の割合と総損益の割合、
-  区間は日の塊(`measure_katsuo_effect.block_bootstrap`、入口の日、200 回)と年の塊(同じ関数に、足の時刻の代わりに
-  「年 × 86400」を渡して、塊を年にしたもの)。
-- 年ごとの升の区間: 日の塊。升ごとに新しい `random.Random(measure_katsuo_effect.SEED)`。取引数 30 未満の升は区間を出さない
-  (K1 の summarize_cell と同じ足切り)。
-- 読み方(定め 8)の条件 (i)(ii)(iii) を、(b) について機械的に数えて「成り立つ / 成り立たない」を出す。言葉の判定は書かない。
+  区間は日の塊と年の塊。
+- 区間(監査の 2 回目 9): `measure_katsuo_robustness.np_boot`(塊ごとの (合計, 件数) を畳んで塊を復元抽出、2000 回、
+  種 = 升の名前の sha256)。塊は入口の日、または入口の年。取引数 30 未満の升は区間を出さない(K1 の summarize_cell と同じ足切り)。
+  (b) の束ねた升には、種を変えて 5 回再抽出した端の範囲(端の揺れ)と、標準誤差・最小検出差((1.96 + 0.84) × 標準誤差)を付ける。
+  問い 1 の順位相関の区間は 200 回のまま(条件の数えに使わない)。
+- 第 3 版(DESIGN.md、測った後・監査の後に足した計算)の 1〜4:
+  1. 第 2 版 8 の (ii) の数え方 2 通り(6 年のうち 4 年以上 / 束ねた升)×(iii) の区間 2 通り(日の塊 / 年の塊)の成否を全部並べる。
+  2. 割る量 4 通り: v1 = mean(r ÷ 入口の vol_prev)、v2 = mean(r ÷ その年の全取引の vol_prev の平均)、
+     v3 = Σr ÷ Σvol_prev、v4 = median(r ÷ 入口の vol_prev)。(ii) を版ごとに数える。
+  3. 保有の構成をそろえた比べ: 高と低の区分の、保有の層の内の平均を、相手の層の構成で重み付け直す。同じ形で時間帯の層でも出す。
+  4. 無作為の時刻の入りの対照: 同じ足・同じ年・同じ (b) 区分の足のうち、遅らせた合図が 0 の足を無作為に選び(1 件あたり 10 回、
+     種 = 足の名前の sha256)、元の取引と同じ向き・同じ保有の本数で bitFlyer の終値で入って出る。逆向きの入りはその符号違い。
+- 読み方(定め 8)の条件を、(b) について機械的に数えて「成り立つ / 成り立たない」を出す。言葉の判定は書かない。
   条件の数え方は vol_gate.json の `q2.criteria_definition`。
 
 出力: 同じフォルダの `vol_gate.json` と `TABLES.md`(どちらもこの台本が書く)。それ以外は書かない
@@ -311,6 +319,21 @@ def q1_table(bars, years=Q1_YEARS):
 
 # ---------------------------------------------------------------- 問い 2
 
+BOOT_REPS = 2000          # 監査の 2 回目 9: 再抽出を 2000 回に(第 2 版は 200 回)
+WOBBLE_SEEDS = 5          # 端の揺れ: 種を変えて 5 回
+MIN_N = 30                # K1 の summarize_cell と同じ足切り
+Z_MDE = 1.959964 + 0.841621   # 両側 5%・検出力 80% の最小検出差 = (z_0.975 + z_0.80) × 標準誤差
+CTRL_DRAWS = 10           # 無作為の時刻の入り: 取引 1 件あたりの抽出数
+VERSIONS = ("v1", "v2", "v3", "v4")
+VERSION_LABEL = {
+    "v1": "v1 = 比の平均 mean(r ÷ 入口の vol_prev)(第 2 版)",
+    "v2": "v2 = 比の平均 mean(r ÷ その年の全取引の vol_prev の平均)",
+    "v3": "v3 = 区分の合計 ÷ 区分の vol_prev の合計 Σr ÷ Σvol_prev",
+    "v4": "v4 = 比の中央値 median(r ÷ 入口の vol_prev)",
+}
+STD_METHODS = ("a", "b", "c_prev", "c_same")
+
+
 def trade_records(sig_bars, price_bars):
     sg_flip = eff.signals(sig_bars, GATE_S, GATE_B, flip_body=True)        # H1
     sg_raw = eff.signals(sig_bars, GATE_S, GATE_B, flip_body=False)        # 反転の有無を見るためだけ
@@ -324,40 +347,111 @@ def trade_records(sig_bars, price_bars):
         i, r, h, _w = tr
         old = [abs(math.log(pc[j] / pc[j - 1])) * 1e4 for j in range(i + 1, i + h + 1)]
         vp = float(fd_s.vol_prev[i])
-        recs.append({"tr": tr, "i": i, "y": int(fd_s.year[i]), "r": r, "h": h,
+        recs.append({"tr": tr, "i": i, "y": int(fd_s.year[i]), "day": int(fd_s.day[i]), "r": r, "h": h,
+                     "hour6": int(fd_s.hour[i]) // 6,
                      "vp_bin": vp, "vp_bf": float(fd_p.vol_prev[i]), "c_next": float(vn[i]),
                      "c_old": sum(old) / len(old) if old else float("nan"),
                      "rn": r / vp if vp == vp and vp > 0 else float("nan"),
                      "flipped": sg_flip[i - 1][0] != sg_raw[i - 1][0],
-                     "dir": "long" if sg[i][0] > 0 else "short"})
-    day_ts = [b[0] for b in sig_bars]
-    year_ts = (fd_s.year * 86400).tolist()   # block_bootstrap は ts // 86400 を塊にする → 塊 = 年
-    return recs, day_ts, year_ts
+                     "dir": "long" if sg[i][0] > 0 else "short", "sgn": 1 if sg[i][0] > 0 else -1})
+    # v2 の分母: その年の全取引の vol_prev の平均
+    mvp = {}
+    for y in set(t["y"] for t in recs):
+        v = [t["vp_bin"] for t in recs if t["y"] == y and t["vp_bin"] == t["vp_bin"]]
+        mvp[y] = sum(v) / len(v) if v else float("nan")
+    for t in recs:
+        m = mvp[t["y"]]
+        t["rn2"] = t["r"] / m if m == m and m > 0 else float("nan")
+    aux = {"fd": fd_s, "pc": np.asarray(pc, dtype=np.float64), "sg_delayed": np.array([s[0] for s in sg]),
+           "mean_vp_year": {str(y): rnd(v) for y, v in sorted(mvp.items())}}
+    return recs, aux
 
 
-def stats(sub, day_ts, year_ts=None, ci=True):
+def boot(vals, keys, name, reps=BOOT_REPS):
+    """塊の再抽出(measure_katsuo_robustness.np_boot、種 = 升の名前の sha256)。"""
+    if len(vals) < MIN_N:
+        return None
+    _u, inv = np.unique(np.asarray(keys), return_inverse=True)
+    inv = inv.ravel()
+    bsum = np.bincount(inv, weights=np.asarray(vals, dtype=np.float64))
+    bn = np.bincount(inv).astype(np.float64)
+    lo, hi = rb.np_boot(bsum, bn, name, reps)
+    return None if lo is None or hi is None else [round(lo, 3), round(hi, 3)]
+
+
+def boot_se(vals, keys, name, reps=BOOT_REPS):
+    """同じ塊の再抽出の平均の標準偏差(最小検出差に使う)。"""
+    if len(vals) < MIN_N:
+        return None
+    _u, inv = np.unique(np.asarray(keys), return_inverse=True)
+    inv = inv.ravel()
+    bsum = np.bincount(inv, weights=np.asarray(vals, dtype=np.float64))
+    bn = np.bincount(inv).astype(np.float64)
+    k = bsum.size
+    rng = np.random.default_rng(rb.seed_of(name + "|se"))
+    idx = rng.integers(0, k, size=(reps, k))
+    means = bsum[idx].sum(axis=1) / bn[idx].sum(axis=1)
+    return round(float(means.std(ddof=1)), 4)
+
+
+def wobble(vals, keys, name):
+    """種を変えて 5 回再抽出したときの下端・上端の範囲。"""
+    res = [boot(vals, keys, f"{name}|w{k}") for k in range(WOBBLE_SEEDS)]
+    res = [x for x in res if x]
+    if not res:
+        return None
+    los, his = [x[0] for x in res], [x[1] for x in res]
+    return {"lo_min": min(los), "lo_max": max(los), "hi_min": min(his), "hi_max": max(his),
+            "lo_width": round(max(los) - min(los), 3), "hi_width": round(max(his) - min(his), 3)}
+
+
+def stats(sub, name, ci=True, year_ci=False, extra=False):
     n = len(sub)
-    out = {"n": n, "mean_bp": None, "total_bp": 0.0, "ci95_day": None}
+    out = {"n": n, "mean_bp": None, "total_bp": 0.0}
     if n == 0:
         return out
-    rs = [t["r"] for t in sub]
-    out["mean_bp"] = round(sum(rs) / n, 3)
-    out["total_bp"] = round(sum(rs), 1)
-    nn = [t for t in sub if t["rn"] == t["rn"]]
-    out["n_norm"] = len(nn)
-    out["mean_norm"] = round(sum(t["rn"] for t in nn) / len(nn), 5) if nn else None
-    if ci and n >= 30:
-        trs = [t["tr"] for t in sub]
-        lo, hi = eff.block_bootstrap(trs, day_ts, random.Random(eff.SEED))
-        out["ci95_day"] = [round(lo, 3), round(hi, 3)]
-        if len(nn) >= 30:
-            trn = [(t["i"], t["rn"], t["h"], t["tr"][3]) for t in nn]
-            lo, hi = eff.block_bootstrap(trn, day_ts, random.Random(eff.SEED))
-            out["ci95_day_norm"] = [round(lo, 5), round(hi, 5)]
-        if year_ts is not None:
-            lo, hi = eff.block_bootstrap(trs, year_ts, random.Random(eff.SEED))
-            out["ci95_year"] = [round(lo, 3), round(hi, 3)]
+    r = [t["r"] for t in sub]
+    out["mean_bp"] = round(sum(r) / n, 3)
+    out["total_bp"] = round(sum(r), 1)
+    fin = [t for t in sub if t["rn"] == t["rn"]]
+    if fin:
+        rn = np.array([t["rn"] for t in fin])
+        out["v1"] = round(float(rn.mean()), 5)
+        out["v3"] = round(float(sum(t["r"] for t in fin) / sum(t["vp_bin"] for t in fin)), 5)
+        out["v4"] = round(float(np.median(rn)), 5)
+    fin2 = [t["rn2"] for t in sub if t["rn2"] == t["rn2"]]
+    if fin2:
+        out["v2"] = round(sum(fin2) / len(fin2), 5)
+    if ci and n >= MIN_N:
+        days = [t["day"] for t in sub]
+        out["ci95_day"] = boot(r, days, name + "|bp|day")
+        if len(fin) >= MIN_N:
+            out["ci95_day_v1"] = boot([t["rn"] for t in fin], [t["day"] for t in fin], name + "|v1|day")
+        if year_ci:
+            years = [t["y"] for t in sub]
+            out["ci95_year"] = boot(r, years, name + "|bp|year")
+        if extra:
+            out["se_day"] = boot_se(r, days, name + "|bp|day")
+            out["mde80_day"] = round(Z_MDE * out["se_day"], 3) if out["se_day"] is not None else None
+            out["wobble_day"] = wobble(r, days, name + "|bp|day")
+            if year_ci:
+                out["wobble_year"] = wobble(r, [t["y"] for t in sub], name + "|bp|year")
     return out
+
+
+def light(sub):
+    n = len(sub)
+    c = {"n": n, "mean_bp": None, "total_bp": 0.0}
+    if n:
+        r = [t["r"] for t in sub]
+        c["mean_bp"] = round(sum(r) / n, 3)
+        c["total_bp"] = round(sum(r), 1)
+        fin = [t["rn"] for t in sub if t["rn"] == t["rn"]]
+        c["v1"] = round(sum(fin) / len(fin), 5) if fin else None
+    hs = sum(t["h"] for t in sub)
+    c["bars_held"] = hs
+    c["per_bar_bp"] = round(c["total_bp"] / hs, 4) if hs else None
+    return c
 
 
 def assign_buckets(recs):
@@ -405,17 +499,99 @@ def spearman_pairs(recs, pairs):
     return out
 
 
-def q2_foot(sig_bars, price_bars):
-    recs, day_ts, year_ts = trade_records(sig_bars, price_bars)
+def mix_standardize(sub, m, key, groups):
+    """高と低の区分の中身を `key` の層で分け、層の内の平均を相手の層の構成で重み付け直す。"""
+    H = [t for t in sub if t["bk_" + m] == "high"]
+    Lw = [t for t in sub if t["bk_" + m] == "low"]
+    out = {"layers": {}}
+    mh, ml, wh, wl = {}, {}, {}, {}
+    for g in groups:
+        hg = [t for t in H if key(t) == g]
+        lg = [t for t in Lw if key(t) == g]
+        wh[g] = len(hg) / len(H) if H else 0.0
+        wl[g] = len(lg) / len(Lw) if Lw else 0.0
+        mh[g] = sum(t["r"] for t in hg) / len(hg) if hg else None
+        ml[g] = sum(t["r"] for t in lg) / len(lg) if lg else None
+        out["layers"][str(g)] = {"n_high": len(hg), "n_low": len(lg), "share_high": round(wh[g], 4),
+                                 "share_low": round(wl[g], 4), "mean_high": rnd(mh[g], 3), "mean_low": rnd(ml[g], 3)}
+    empty = [str(g) for g in groups if (mh[g] is None and wl[g] > 0) or (ml[g] is None and wh[g] > 0)]
+    out["layers_with_empty_side"] = empty
+    if empty:
+        return out
+    h_act = sum(wh[g] * mh[g] for g in groups if wh[g] > 0)
+    l_act = sum(wl[g] * ml[g] for g in groups if wl[g] > 0)
+    h_at_l = sum(wl[g] * mh[g] for g in groups if wl[g] > 0)
+    l_at_h = sum(wh[g] * ml[g] for g in groups if wh[g] > 0)
+    out.update({"high_actual": rnd(h_act, 3), "low_actual": rnd(l_act, 3),
+                "high_mean_with_low_mix": rnd(h_at_l, 3), "low_mean_with_high_mix": rnd(l_at_h, 3),
+                "diff_actual": rnd(h_act - l_act, 3),
+                "within_layer_at_low_mix": rnd(h_at_l - l_act, 3), "mix_part_at_high_means": rnd(h_act - h_at_l, 3),
+                "within_layer_at_high_mix": rnd(h_act - l_at_h, 3), "mix_part_at_low_means": rnd(l_at_h - l_act, 3)})
+    return out
+
+
+def random_controls(recs, aux, edges_b, foot):
+    """回答者 A の処方: 同じ足・同じ年・同じ (b) 区分の中で、合図の無い足(遅らせた合図が 0 の足)の終値で入り、
+    同じ向き・同じ保有の本数で出る。1 件あたり CTRL_DRAWS 回の平均。逆向きの入りはその符号を変えたもの。"""
+    fd, pc, sgd = aux["fd"], aux["pc"], aux["sg_delayed"]
+    n = pc.size
+    vp, yr = fd.vol_prev, fd.year
+    rng = np.random.default_rng(rb.seed_of(f"{foot}|random_entry"))
+    for t in recs:
+        t["ctrl"] = float("nan")
+    for y in Q2_YEARS:
+        e = edges_b.get(y)
+        if e is None:
+            continue
+        bars_y = np.flatnonzero((yr == y) & (sgd == 0) & ~np.isnan(vp))
+        bk_bars = np.array([xv.bucket_of(float(v), e) for v in vp[bars_y]], dtype=object)
+        for bk in BUCKETS:
+            E = bars_y[bk_bars == bk]
+            ts = [t for t in recs if t["y"] == y and t["bk_b"] == bk]
+            if not ts or E.size == 0:
+                continue
+            J = E[rng.integers(0, E.size, size=(len(ts), CTRL_DRAWS))]
+            Hh = np.array([t["h"] for t in ts])[:, None]
+            sgn = np.array([t["sgn"] for t in ts])[:, None]
+            K = J + Hh
+            ok = K < n
+            Kc = np.where(ok, K, 0)
+            ret = np.where(ok, sgn * (pc[Kc] / pc[J] - 1.0) * 1e4, np.nan)
+            allnan = np.isnan(ret).all(axis=1)
+            cnt = (~np.isnan(ret)).sum(axis=1)
+            cm = np.where(allnan, np.nan, np.nansum(ret, axis=1) / np.maximum(cnt, 1))
+            for k, t in enumerate(ts):
+                t["ctrl"] = float("nan") if allnan[k] else float(cm[k])
+    return {"draws_per_trade": CTRL_DRAWS,
+            "rule": ("同じ足・同じ年・同じ (b) 区分(足の vol_prev をその年の (b) の境目で分けた区分)の足のうち、"
+                     "遅らせた合図が 0 の足を無作為に選び、その足の bitFlyer の終値で入り、元の取引と同じ向き・同じ保有の本数で出る。"
+                     "逆向きの入りは同じ抽出で向きを逆にしたもので、平均は同じ向きの平均の符号違いになる(恒等式)。")}
+
+
+def control_cells(sub, name):
+    s = [t for t in sub if t["ctrl"] == t["ctrl"]]
+    if not s:
+        return {"n": 0}
+    d = [t["r"] - t["ctrl"] for t in s]
+    return {"n": len(s), "mean_actual": round(sum(t["r"] for t in s) / len(s), 3),
+            "mean_random_same_dir": round(sum(t["ctrl"] for t in s) / len(s), 3),
+            "mean_random_opposite_dir": round(-sum(t["ctrl"] for t in s) / len(s), 3),
+            "mean_actual_minus_random": round(sum(d) / len(d), 3),
+            "ci95_day_actual_minus_random": boot(d, [t["day"] for t in s], name + "|ctrl|day")}
+
+
+def q2_foot(sig_bars, price_bars, foot):
+    recs, aux = trade_records(sig_bars, price_bars)
     edges = assign_buckets(recs)
+    ctrl_rule = random_controls(recs, aux, edges["b"], foot)
     out = {"n_trades": len(recs),
            "n_flipped": sum(1 for t in recs if t["flipped"]),
            "edges_fixed_bp": {m: [rnd(edges[m][2018][0]), rnd(edges[m][2018][1])] for m in ("a", "a_bf")},
+           "mean_vol_prev_by_year_v2_divisor": aux["mean_vp_year"],
            "years": {}, "pooled": {}, "hold": {}, "splits": {}}
-    # 年ごと
     for y in Q2_YEARS:
         ys = [t for t in recs if t["y"] == y]
-        yr = {"all": stats(ys, day_ts)}
+        yr = {"all": stats(ys, f"{foot}|{y}|all")}
         for m in METHODS:
             e = edges[m][y]
             d = {"edges_bp": None if e is None else [rnd(e[0]), rnd(e[1])], "mark": mark_of(m, y)}
@@ -424,43 +600,43 @@ def q2_foot(sig_bars, price_bars):
             else:
                 for bk in BUCKETS:
                     sub = [t for t in ys if t["bk_" + m] == bk]
-                    d[bk] = stats(sub, day_ts)
+                    d[bk] = stats(sub, f"{foot}|{y}|{m}|{bk}")
                     d[bk]["share_n"] = round(len(sub) / len(ys), 4) if ys else None
                 d["n_unbucketed"] = sum(1 for t in ys if t["bk_" + m] is None)
             yr[m] = d
         out["years"][str(y)] = yr
-    # 束ねた升
     for pname, pyears in PERIODS.items():
         ps = [t for t in recs if t["y"] in pyears]
-        allc = stats(ps, day_ts, year_ts)
+        allc = stats(ps, f"{foot}|{pname}|all", year_ci=True, extra=True)
         p = {"years": list(pyears), "all": allc}
         for m in METHODS:
             p[m] = {}
             for bk in BUCKETS:
                 sub = [t for t in ps if t["bk_" + m] == bk]
-                c = stats(sub, day_ts, year_ts)
+                c = stats(sub, f"{foot}|{pname}|{m}|{bk}", year_ci=True, extra=(m == "b"))
                 c["share_n"] = round(len(sub) / len(ps), 4) if ps else None
                 c["share_total"] = round(c["total_bp"] / allc["total_bp"], 4) if allc["total_bp"] else None
                 p[m][bk] = c
             p[m]["n_unbucketed"] = sum(1 for t in ps if t["bk_" + m] is None)
+        # 保有の構成・時間帯の構成をそろえた比べ
+        p["hold_standardized"] = {m: mix_standardize(ps, m, lambda t: next(
+            k for k, lo, hi in HOLD_BINS if lo <= t["h"] <= hi), [h[0] for h in HOLD_BINS]) for m in STD_METHODS}
+        p["hour6_standardized"] = {m: mix_standardize(ps, m, lambda t: t["hour6"], [0, 1, 2, 3]) for m in STD_METHODS}
+        # 無作為の時刻の入りの対照((b) の区分ごと)
+        p["random_entry_control_b"] = {bk: control_cells([t for t in ps if t["bk_b"] == bk], f"{foot}|{pname}|b|{bk}")
+                                       for bk in BUCKETS}
+        p["random_entry_control_b"]["all_bucketed"] = control_cells([t for t in ps if t["bk_b"] in BUCKETS],
+                                                                    f"{foot}|{pname}|b|allb")
         out["pooled"][pname] = p
-    # 保有の長さ(2018〜2023 を束ねる。区間なし)
     ps = [t for t in recs if t["y"] in PERIODS["2018_2023"]]
-
-    def light(sub):
-        c = stats(sub, day_ts, ci=False)
-        hs = sum(t["h"] for t in sub)
-        c["bars_held"] = hs
-        c["per_bar_bp"] = round(c["total_bp"] / hs, 4) if hs else None
-        return c
     for hname, lo, hi in HOLD_BINS:
         hsub = [t for t in ps if lo <= t["h"] <= hi]
         d = {"all": light(hsub), "share_n_of_period": round(len(hsub) / len(ps), 4) if ps else None}
         for m in METHODS:
             d[m] = {bk: light([t for t in hsub if t["bk_" + m] == bk]) for bk in BUCKETS}
         out["hold"][hname] = d
-    # 合図の強さ・向き(2018〜2023 を束ねる。区間なし)
-    for sname, key, vals in (("strength", "flipped", (True, False)), ("direction", "dir", ("long", "short"))):
+    for sname, key, vals in (("strength", "flipped", (True, False)), ("direction", "dir", ("long", "short")),
+                             ("hour6_utc", "hour6", (0, 1, 2, 3))):
         d = {}
         for v in vals:
             vsub = [t for t in ps if t[key] == v]
@@ -469,6 +645,7 @@ def q2_foot(sig_bars, price_bars):
                 dv[m] = {bk: light([t for t in vsub if t["bk_" + m] == bk]) for bk in BUCKETS}
             d[str(v)] = dv
         out["splits"][sname] = d
+    out["random_entry_rule"] = ctrl_rule
     out["spearman_2018_2023"] = spearman_pairs(ps, (("vp_bin", "c_next"), ("vp_bin", "h"), ("c_next", "h"),
                                                     ("c_old", "h"), ("vp_bin", "vp_bf"), ("vp_bin", "abs_r"),
                                                     ("c_next", "abs_r"), ("c_old", "abs_r")))
@@ -480,14 +657,16 @@ def q2_foot(sig_bars, price_bars):
 
 CRITERIA_DEFINITION = (
     "DESIGN.md 第 2 版 8 の条件を (b)(Binance の vol_prev × 前の暦年の境目)について機械的に数えたもの。"
-    "条件 A(年 Y)= (b) の高い区分の平均 > その年の全取引の平均 かつ > (b) の低い区分の平均(どれかの升が空なら成り立たない)。"
-    "(i) = 2018〜2023 の 6 年のうち条件 A(損益 bp)が成り立つ年が 4 年以上。"
-    "(ii) = 条件 A をボラで割った損益(r ÷ 入口の Binance の vol_prev)の平均で数えて、6 年のうち 4 年以上"
-    "(参考に、2018〜2023 を束ねた升で条件 A が成り立つかも並べる)。"
-    "(iii 日)・(iii 年) = 2020・2021 を除いた束ね(2018・2019・2022・2023)で条件 A が成り立ち、かつ (b) の高い区分の"
-    "95% 区間(日の塊 / 年の塊)の下端 > 0。"
-    "(基) = 2018〜2023 を束ねた升で条件 A(損益 bp)が成り立つか(第 2 版 8 の本文の「高い区分が全取引の平均と低い区分の平均の"
-    "両方を上回り」)。")
+    "第 2 版 8 の文面に無い読み(DESIGN.md 第 3 版 1・2、測った後・監査の後に足したもの)は全部並べ、どれか 1 つを選ばない。"
+    "条件 A(升の組)= (b) の高い区分の値 > 全取引の値 かつ > (b) の低い区分の値(どれかが空なら成り立たない)。"
+    "(基) = 2018〜2023 を束ねた升で条件 A(損益 bp の平均)。第 2 版 8 の本文「高い区分が全取引の平均と低い区分の平均の両方を上回り」。"
+    "(i) = 2018〜2023 の 6 年のうち条件 A(損益 bp の平均)が成り立つ年が 4 年以上。"
+    "(ii) は「ボラで割った損益でも同じ向きで」。数え方 2 通り × 割る量 4 通り: (ii-年) = 6 年のうち 4 年以上 / "
+    "(ii-束) = 2018〜2023 を束ねた升で 1 回。割る量 v1〜v4 は q2.versions。"
+    "(iii) は「2020・2021 を除いた束ねでも区間が 0 を跨がない」。区間 2 通り: (iii-日) = 日の塊 / (iii-年) = 年の塊。"
+    "どちらも、2018・2019・2022・2023 の束ねで条件 A(損益 bp)が成り立ち、かつ (b) の高い区分の 95% 区間の下端 > 0。"
+    "組み合わせ = (基) ∧ (i) ∧ (ii-年 か ii-束)[v] ∧ (iii-日 か iii-年)。"
+    "(ii-年) を第 2 版で作業者が選んだのは、データを 2023-01-31 で切った煙の試しの出力を見た後だった(監査の 2 回目 1)。")
 
 
 def criteria(fq):
@@ -497,25 +676,45 @@ def criteria(fq):
             return False
         return hi > al and hi > lo
     yrs = PERIODS["2018_2023"]
-    ok_bp = [y for y in yrs if not fq["years"][str(y)]["b"].get("blank") and cond(fq["years"][str(y)], "mean_bp")]
-    ok_nm = [y for y in yrs if not fq["years"][str(y)]["b"].get("blank") and cond(fq["years"][str(y)], "mean_norm")]
     p_all, p_ex = fq["pooled"]["2018_2023"], fq["pooled"]["2018_2019_2022_2023"]
+
+    def years_ok(key):
+        return [y for y in yrs if not fq["years"][str(y)]["b"].get("blank") and cond(fq["years"][str(y)], key)]
     hi_ex = p_ex["b"]["high"]
-    rows = [
-        {"id": "base", "name": "(基) 2018〜2023 を束ねた升で条件 A", "value": cond(p_all, "mean_bp"),
-         "detail": f"高 {p_all['b']['high']['mean_bp']} / 全 {p_all['all']['mean_bp']} / 低 {p_all['b']['low']['mean_bp']}"},
-        {"id": "i", "name": "(i) 条件 A が 6 年のうち 4 年以上", "value": len(ok_bp) >= 4,
-         "detail": f"{len(ok_bp)} 年 {ok_bp}"},
-        {"id": "ii", "name": "(ii) ボラで割った損益で条件 A が 6 年のうち 4 年以上", "value": len(ok_nm) >= 4,
-         "detail": f"{len(ok_nm)} 年 {ok_nm}。束ねた升(2018〜2023)では {cond(p_all, 'mean_norm')}"},
-        {"id": "iii_day", "name": "(iii 日) 2020・2021 を除いた束ねで条件 A、かつ高の区間(日の塊)の下端 > 0",
-         "value": bool(cond(p_ex, "mean_bp") and hi_ex.get("ci95_day") and hi_ex["ci95_day"][0] > 0),
-         "detail": f"条件 A {cond(p_ex, 'mean_bp')}、高 {hi_ex['mean_bp']} 区間 {hi_ex.get('ci95_day')}"},
-        {"id": "iii_year", "name": "(iii 年) 同、高の区間(年の塊)の下端 > 0",
-         "value": bool(cond(p_ex, "mean_bp") and hi_ex.get("ci95_year") and hi_ex["ci95_year"][0] > 0),
-         "detail": f"条件 A {cond(p_ex, 'mean_bp')}、高 {hi_ex['mean_bp']} 区間 {hi_ex.get('ci95_year')}"},
-    ]
-    return rows
+    comp = {
+        "base": {"value": cond(p_all, "mean_bp"),
+                 "detail": {"high": p_all["b"]["high"]["mean_bp"], "all": p_all["all"]["mean_bp"], "low": p_all["b"]["low"]["mean_bp"]}},
+        "i": {"value": len(years_ok("mean_bp")) >= 4, "years": years_ok("mean_bp")},
+        "iii_day": {"value": bool(cond(p_ex, "mean_bp") and hi_ex.get("ci95_day") and hi_ex["ci95_day"][0] > 0),
+                    "cond_A": cond(p_ex, "mean_bp"), "high_mean": hi_ex["mean_bp"], "ci": hi_ex.get("ci95_day"),
+                    "wobble": hi_ex.get("wobble_day"), "n_high": hi_ex["n"]},
+        "iii_year": {"value": bool(cond(p_ex, "mean_bp") and hi_ex.get("ci95_year") and hi_ex["ci95_year"][0] > 0),
+                     "cond_A": cond(p_ex, "mean_bp"), "high_mean": hi_ex["mean_bp"], "ci": hi_ex.get("ci95_year"),
+                     "wobble": hi_ex.get("wobble_year"), "n_high": hi_ex["n"]},
+    }
+    for v in VERSIONS:
+        comp[f"ii_year_{v}"] = {"value": len(years_ok(v)) >= 4, "years": years_ok(v)}
+        comp[f"ii_pool_{v}"] = {"value": cond(p_all, v),
+                                "detail": {"high": p_all["b"]["high"].get(v), "all": p_all["all"].get(v), "low": p_all["b"]["low"].get(v)}}
+    combos = {}
+    for v in VERSIONS:
+        for ii in ("year", "pool"):
+            for iii in ("day", "year"):
+                combos[f"{v}|ii_{ii}|iii_{iii}"] = bool(comp["base"]["value"] and comp["i"]["value"]
+                                                        and comp[f"ii_{ii}_{v}"]["value"] and comp[f"iii_{iii}"]["value"])
+    # 陰性・不明の機械の区分と最小検出差
+    if not comp["base"]["value"]:
+        cls = "(基) が成り立たない(束ねた升で高い区分の平均が全取引か低い区分の平均以下)"
+    elif all(combos.values()):
+        cls = "16 通りの読みすべてで成り立つ"
+    elif any(combos.values()):
+        cls = "(基) は成り立ち、読みによって成り立つ / 成り立たないが分かれる"
+    else:
+        cls = "(基) は成り立つが、16 通りの読みのどれでも、どれかの条件が欠ける"
+    mde = {p: {"high_mean": fq["pooled"][p]["b"]["high"]["mean_bp"], "high_n": fq["pooled"][p]["b"]["high"]["n"],
+               "se_day": fq["pooled"][p]["b"]["high"].get("se_day"),
+               "mde80_day": fq["pooled"][p]["b"]["high"].get("mde80_day")} for p in PERIODS}
+    return {"components": comp, "combos": combos, "class": cls, "mde_high_vs_zero": mde}
 
 
 # ---------------------------------------------------------------- TABLES.md
@@ -536,7 +735,7 @@ def cell_y(c):
     if c["n"] == 0:
         return "0"
     sh = f"({c['share_n'] * 100:.0f}%)" if c.get("share_n") is not None else ""
-    nm = f" / {c['mean_norm']:+.3f}" if c.get("mean_norm") is not None else ""
+    nm = f" / {c['v1']:+.3f}" if c.get("v1") is not None else ""
     return f"{c['n']:,}{sh} / {c['mean_bp']:+.2f}{ci_s(c)} / {c['total_bp']:+,.0f}{nm}"
 
 
@@ -544,7 +743,7 @@ def cell_light(c):
     if c["n"] == 0:
         return "0"
     pb = f" / {c['per_bar_bp']:+.3f}" if c.get("per_bar_bp") is not None else ""
-    nm = f" / {c['mean_norm']:+.3f}" if c.get("mean_norm") is not None else ""
+    nm = f" / {c['v1']:+.3f}" if c.get("v1") is not None else ""
     return f"{c['n']:,} / {c['mean_bp']:+.2f} / {c['total_bp']:+,.0f}{pb}{nm}"
 
 
@@ -648,31 +847,91 @@ def write_md(res: dict, path: Path):
     for line in q2["notes"]:
         L.append(f"- {line}")
     L.append("")
-    L.append("### 4.0 第 2 版 8 の条件を機械的に数えたもの(`q2.feet.<足>.criteria`)")
+    L.append("割る量(`q2.versions`): " + " / ".join(q2["versions"].values()))
+    L.append("")
+    L.append("### 4.0 読みごとの成否(`q2.feet.<足>.criteria`)")
     L.append("")
     L.append(q2["criteria_definition"])
     L.append("")
-    ids = [r["id"] for r in next(iter(q2["feet"].values()))["criteria"]]
-    names = {r["id"]: r["name"] for r in next(iter(q2["feet"].values()))["criteria"]}
-    L.append("| 条件 | " + " | ".join(f"{f} 分" for f in q2["feet"]) + " |")
-    L.append("|---|" + "---|" * len(q2["feet"]))
-    for cid in ids:
-        row = []
-        for f, fv in q2["feet"].items():
-            r = next(x for x in fv["criteria"] if x["id"] == cid)
-            row.append(("成り立つ" if r["value"] else "成り立たない") + f"({r['detail']})")
-        L.append(f"| {names[cid]} | " + " | ".join(row) + " |")
+    feet = list(q2["feet"])
+    yn = lambda b: "成り立つ" if b else "成り立たない"  # noqa: E731
+    L.append("#### 4.0.1 条件ごと")
+    L.append("")
+    L.append("| 条件 | " + " | ".join(f"{f} 分" for f in feet) + " |")
+    L.append("|---|" + "---|" * len(feet))
+    rows = [("(基)", "base"), ("(i)", "i")] + [(f"(ii-年) {v}", f"ii_year_{v}") for v in VERSIONS] \
+        + [(f"(ii-束) {v}", f"ii_pool_{v}") for v in VERSIONS] + [("(iii-日)", "iii_day"), ("(iii-年)", "iii_year")]
+    for lab, key in rows:
+        cells = []
+        for f in feet:
+            c = q2["feet"][f]["criteria"]["components"][key]
+            det = ""
+            if "years" in c:
+                det = f"({len(c['years'])} 年 {c['years']})"
+            elif key.startswith("iii"):
+                det = f"(条件 A {c['cond_A']}、高 {c['high_mean']}(n {c['n_high']:,})区間 {c['ci']})"
+            elif "detail" in c:
+                dd = c["detail"]
+                det = f"(高 {dd['high']} / 全 {dd['all']} / 低 {dd['low']})"
+            cells.append(yn(c["value"]) + det)
+        L.append(f"| {lab} | " + " | ".join(cells) + " |")
+    L.append("")
+    L.append("#### 4.0.2 組み合わせ((基)∧(i)∧(ii)∧(iii)、割る量 4 × (ii) 2 × (iii) 2 = 16 通り)")
+    L.append("")
+    combos = list(next(iter(q2["feet"].values()))["criteria"]["combos"])
+    L.append("| 読み | " + " | ".join(f"{f} 分" for f in feet) + " |")
+    L.append("|---|" + "---|" * len(feet))
+    for k in combos:
+        L.append(f"| {k} | " + " | ".join(yn(q2["feet"][f]["criteria"]["combos"][k]) for f in feet) + " |")
+    L.append("")
+    L.append("#### 4.0.3 機械の区分・最小検出差・区間の端の揺れ")
+    L.append("")
+    L.append("最小検出差 = (1.96 + 0.84) × 日の塊の再抽出の標準誤差((b) の高い区分の平均、0 との差、両側 5%・検出力 80%)。"
+             "端の揺れ = 種を変えて 5 回再抽出した 95% 区間の下端の範囲。")
+    L.append("")
+    L.append("| 足 | 機械の区分 | 2018〜2023 の高: 平均 / n / 最小検出差 | 2020・2021 を除いた高: 平均 / n / 最小検出差 | (iii-日) 下端の揺れ | (iii-年) 下端の揺れ |")
+    L.append("|---|---|---|---|---|---|")
+    for f in feet:
+        cr = q2["feet"][f]["criteria"]
+        m1, m2 = cr["mde_high_vs_zero"]["2018_2023"], cr["mde_high_vs_zero"]["2018_2019_2022_2023"]
+        wd, wy = cr["components"]["iii_day"]["wobble"], cr["components"]["iii_year"]["wobble"]
+        ws = lambda w: f"{w['lo_min']:+.3f}〜{w['lo_max']:+.3f}" if w else "—"  # noqa: E731
+        L.append(f"| {f} 分 | {cr['class']} | {m1['high_mean']} / {m1['high_n']:,} / {m1['mde80_day']} | "
+                 f"{m2['high_mean']} / {m2['high_n']:,} / {m2['mde80_day']} | {ws(wd)} | {ws(wy)} |")
+    L.append("")
+    L.append("#### 4.0.4 (b) の年ごとの升(条件 (i)・(ii-年) が数える升。取引数と区間を並べる)")
+    L.append("")
+    L.append("| 足 | 年 | 高: n(割合)/ 平均 [日の塊] | 低: n(割合)/ 平均 [日の塊] | 全取引: n / 平均 | 条件 A: bp / v1 / v2 / v3 / v4 |")
+    L.append("|---|---|---|---|---|---|")
+    for f in feet:
+        for y in map(str, PERIODS["2018_2023"]):
+            yr = q2["feet"][f]["years"][y]
+            b = yr["b"]
+            if b.get("blank"):
+                continue
+
+            def cy(c):
+                return f"{c['n']:,}({c['share_n'] * 100:.0f}%)/ {fmt(c['mean_bp'])}{ci_s(c)}"
+
+            def ca(key):
+                h, lo_, al = b["high"].get(key), b["low"].get(key), yr["all"].get(key)
+                return "○" if (h is not None and lo_ is not None and al is not None and h > al and h > lo_) else "×"
+            L.append(f"| {f} 分 | {y} | {cy(b['high'])} | {cy(b['low'])} | {yr['all']['n']:,} / {fmt(yr['all']['mean_bp'])} | "
+                     + " / ".join(ca(k) for k in ("mean_bp",) + VERSIONS) + " |")
+    L.append("")
+    L.append("(○ = 条件 A が成り立つ、× = 成り立たない。記号はこの表の中だけで使う。)")
     for foot, fv in q2["feet"].items():
         L.append("")
         L.append(f"### 足 {foot} 分(取引 {fv['n_trades']:,} 件、うち H1 で反転した合図 {fv['n_flipped']:,} 件)")
         L.append("")
         L.append(f"固定の境目(2018〜2019 の取引から): (a) {fv['edges_fixed_bp']['a']}、(a bitFlyer) {fv['edges_fixed_bp']['a_bf']}。"
-                 f"保有の本数の分位(2018〜2023): {fv['hold_quantiles_2018_2023']}。")
+                 f"保有の本数の分位(2018〜2023): {fv['hold_quantiles_2018_2023']}。v2 の分母(年ごとの全取引の vol_prev の平均): "
+                 f"{fv['mean_vol_prev_by_year_v2_divisor']}。")
         L.append("")
         L.append("順位相関(2018〜2023 の取引、区間なし。`spearman_2018_2023`): " + "、".join(
             f"{k} {v['rho']}(n {v['n']:,})" for k, v in fv["spearman_2018_2023"].items()))
         L.append("")
-        L.append("#### 年ごと(各升 = 取引数(その年の取引に対する割合)/ 平均 bp [日の塊の区間] / 総損益 bp / ボラで割った損益の平均)")
+        L.append("#### 年ごと(各升 = 取引数(その年の取引に対する割合)/ 平均 bp [日の塊の区間] / 総損益 bp / v1)")
         L.append("")
         L.append("| 年 | 全取引 |")
         L.append("|---|---|")
@@ -694,15 +953,15 @@ def write_md(res: dict, path: Path):
                          + " | ".join(cell_y(d[b]) for b in BUCKETS) + f" | {d['n_unbucketed']:,} |")
         for pname, p in fv["pooled"].items():
             L.append("")
-            L.append(f"#### 束ねた升 {pname}(年 {p['years']}。三分位は年ごとの境目で分けたものを束ねた)")
+            L.append(f"#### 束ねた升 {pname}(年 {p['years']}。三分位は年ごとの境目で分けたものを束ねた。(a) は境目を決めた 2018・2019 を含む)")
             L.append("")
             a = p["all"]
             L.append(f"全取引: {a['n']:,} / 平均 {a['mean_bp']:+.2f} [日{ci_s(a)}] [年{ci_s(a, 'ci95_year')}] / 総損益 {a['total_bp']:+,.0f}"
-                     f" / ボラで割った平均 {fmt(a.get('mean_norm'), 3)}{ci_s(a, 'ci95_day_norm', 3)}")
+                     f" / v1 {fmt(a.get('v1'), 3)} / v2 {fmt(a.get('v2'), 3)} / v3 {fmt(a.get('v3'), 3)} / v4 {fmt(a.get('v4'), 3)}")
             L.append("")
-            L.append("| 分け方 | 区分 | 取引数(割合) | 総損益(割合) | 平均 bp [日の塊] [年の塊] | ボラで割った平均 [日の塊] |")
+            L.append("| 分け方 | 区分 | 取引数(割合) | 総損益(割合) | 平均 bp [日の塊] [年の塊] | v1 [日の塊] / v2 / v3 / v4 |")
             L.append("|---|---|---|---|---|---|")
-            for m, (_v, _h, label) in METHODS.items():
+            for m in METHODS:
                 for b in BUCKETS:
                     c = p[m][b]
                     if c["n"] == 0:
@@ -710,9 +969,41 @@ def write_md(res: dict, path: Path):
                         continue
                     stt = "—" if c["share_total"] is None else f"{c['share_total'] * 100:.0f}%"
                     L.append(f"| {m} | {b} | {c['n']:,}({c['share_n'] * 100:.1f}%) | {c['total_bp']:+,.0f}({stt}) | "
-                             f"{c['mean_bp']:+.2f}{ci_s(c)}{ci_s(c, 'ci95_year')} | {fmt(c.get('mean_norm'), 3)}{ci_s(c, 'ci95_day_norm', 3)} |")
+                             f"{c['mean_bp']:+.2f}{ci_s(c)}{ci_s(c, 'ci95_year')} | {fmt(c.get('v1'), 3)}{ci_s(c, 'ci95_day_v1', 3)}"
+                             f" / {fmt(c.get('v2'), 3)} / {fmt(c.get('v3'), 3)} / {fmt(c.get('v4'), 3)} |")
+            for tag, title in (("hold_standardized", "保有の構成をそろえた比べ(層 = 保有 1 / 2〜7 / 8〜21 / 22 本以上)"),
+                               ("hour6_standardized", "時間帯の構成をそろえた比べ(層 = 入口の足の UTC 0〜5・6〜11・12〜17・18〜23 時)")):
+                L.append("")
+                L.append(f"{title}。保有は入口の後に決まる量なので、保有の比べは結果で条件づけている:")
+                L.append("")
+                L.append("| 分け方 | 高 実際 | 低 実際 | 高の層の平均 × 低の構成 | 低の層の平均 × 高の構成 | 差 実際 | 層の内の差(低の構成) | 構成の差(高の平均) | 層の内の差(高の構成) | 構成の差(低の平均) |")
+                L.append("|---|---|---|---|---|---|---|---|---|---|")
+                for m, s in p[tag].items():
+                    if s.get("layers_with_empty_side"):
+                        L.append(f"| {m} | 片側が空の層 {s['layers_with_empty_side']} | | | | | | | | |")
+                        continue
+                    L.append(f"| {m} | {s['high_actual']} | {s['low_actual']} | {s['high_mean_with_low_mix']} | {s['low_mean_with_high_mix']} | "
+                             f"{s['diff_actual']} | {s['within_layer_at_low_mix']} | {s['mix_part_at_high_means']} | "
+                             f"{s['within_layer_at_high_mix']} | {s['mix_part_at_low_means']} |")
+                L.append("")
+                L.append("層ごとの (b)(n 高 / n 低 / 高の割合 / 低の割合 / 高の平均 / 低の平均): " + "、".join(
+                    f"{g}: {d['n_high']:,} / {d['n_low']:,} / {d['share_high']} / {d['share_low']} / {d['mean_high']} / {d['mean_low']}"
+                    for g, d in p[tag]["b"]["layers"].items()))
+            L.append("")
+            L.append("無作為の時刻の入りの対照((b) の区分ごと。`random_entry_control_b`):")
+            L.append("")
+            L.append("| 区分 | n | 実際の平均 | 無作為・同じ向き | 無作為・逆向き | 実際 − 無作為・同じ向き [日の塊] |")
+            L.append("|---|---|---|---|---|---|")
+            for bk, c in p["random_entry_control_b"].items():
+                if c["n"] == 0:
+                    L.append(f"| {bk} | 0 | | | | |")
+                    continue
+                L.append(f"| {bk} | {c['n']:,} | {c['mean_actual']:+.2f} | {c['mean_random_same_dir']:+.2f} | {c['mean_random_opposite_dir']:+.2f} | "
+                         f"{c['mean_actual_minus_random']:+.2f}{ci_s(c, 'ci95_day_actual_minus_random')} |")
         L.append("")
-        L.append("#### 保有の長さで分けた表(2018〜2023 を束ねる。各升 = 取引数 / 平均 bp / 総損益 / 足 1 本あたりの損益 bp / ボラで割った平均。区間なし)")
+        L.append(f"対照の作り方: {fv['random_entry_rule']['rule']}(1 件あたり {fv['random_entry_rule']['draws_per_trade']} 回)")
+        L.append("")
+        L.append("#### 保有の長さで分けた表(2018〜2023 を束ねる。各升 = 取引数 / 平均 bp / 総損益 / 足 1 本あたりの損益 bp / v1。区間なし)")
         L.append("")
         for m in METHODS:
             L.append(f"{METHODS[m][2]}:")
@@ -723,10 +1014,11 @@ def write_md(res: dict, path: Path):
                 L.append(f"| {hname} 本 | {cell_light(d['all'])}({d['share_n_of_period'] * 100:.1f}%) | "
                          + " | ".join(cell_light(d[m][b]) for b in BUCKETS) + " |")
             L.append("")
-        L.append("#### 合図の強さ・向きで分けた表(2018〜2023 を束ねる。各升は保有の表と同じ。区間なし)")
+        L.append("#### 合図の強さ・向き・時間帯で分けた表(2018〜2023 を束ねる。各升は保有の表と同じ。区間なし)")
         L.append("")
         for sname, title, lab in (("strength", "合図の強さ", {"True": "H1 で反転した合図", "False": "元から弱い合図"}),
-                                  ("direction", "取引の向き", {"long": "買い", "short": "売り"})):
+                                  ("direction", "取引の向き", {"long": "買い", "short": "売り"}),
+                                  ("hour6_utc", "時間帯(入口の足の UTC)", {"0": "0〜5 時", "1": "6〜11 時", "2": "12〜17 時", "3": "18〜23 時"})):
             L.append(f"{title}:")
             L.append("")
             L.append("| 区分 | 分け方 | 全取引 | 低 | 中 | 高 |")
@@ -793,7 +1085,7 @@ def main() -> None:
     print("問い 2", flush=True)
     q2 = {}
     for foot in FEET:
-        q2[str(foot)] = q2_foot(sig_bars[foot], price_bars[foot])
+        q2[str(foot)] = q2_foot(sig_bars[foot], price_bars[foot], foot)
         print(f"  {foot}分 完了(取引 {q2[str(foot)]['n_trades']:,} 件)", flush=True)
 
     s15 = check["stage_g_read"]["15"]["stored_edges"]["2017"]
@@ -849,7 +1141,7 @@ def main() -> None:
         "q1": q1,
         "q2": {
             "notes": [
-                "DESIGN.md 第 2 版の定め 1〜8 で測った。読みは段階 G の読み。年は取引の入口の足の年。経費前・建玉 1 単位・"
+                "DESIGN.md 第 2 版の定め 1〜8 に、第 3 版の 1〜4(測った後・監査の後に足した読みと計算。事前登録ではない)を足して測った。読みは段階 G の読み。年は取引の入口の足の年。経費前・建玉 1 単位・"
                 "約定は bitFlyer の足の終値(段階 G と同じ)。指値は見ていない。",
                 "「三分位」= 境目で 3 つに分けた区分。(b)・(c 前年)・(a) では、その年に入る割合が 1/3 にならない。各升に割合を並べた。",
                 "(a) の境目はこの読みの 2018〜2019 の取引から edges_from_vol で決めた値。K1 の保存値(丸めたもの、"
@@ -859,12 +1151,18 @@ def main() -> None:
                 "2017 = 空欄。(c 同年)・旧 (c) = その年の値で切った(後でしか分からない。ボラの門には使えない)。",
                 "(c) は定め直した: 入口の足の次から固定 100 本の Binance の足の実際のボラ(問い 1 の vol_next と同じ)。保有の長さと"
                 "取引所を (a)(b) とそろえた。旧 (c)(取引の間の bitFlyer のボラ)は参考の列。",
-                "ボラで割った損益 = 損益 bp ÷ 入口の足の Binance の vol_prev(bp)。単位は無い。",
+                "ボラで割った損益は 4 通り(q2.versions)。v1 は割る量が分ける量の vol_prev そのもの(第 2 版)。単位は無い。",
+                "第 2 版 8 の (ii) の数え方と (iii) の区間は DESIGN.md の文面に無い。第 2 版で作業者が (ii) を「6 年のうち 4 年以上」と決めたのは、"
+                "データを 2023-01-31 で切った煙の試しの出力が出た後だった。この版では全部の組み合わせを並べ、どれか 1 つを結論にしない。",
                 "K1 の設計そのもの(ヒゲの門 s19/b24 を含む)は 2017〜2026 の Binance を見て選んだ(in-sample)。2018〜2023 の束ねは"
                 "新しい期間に対する検証ではない。満たしても「K1 の期間の中で前もって分けられた」までしか言わない(DESIGN.md 第 2 版 8)。",
                 "2023 は 2023-12-17 まで。2017 は K1 当時の結合と大きく違う年(§2 の注)。",
             ],
             "criteria_definition": CRITERIA_DEFINITION,
+            "versions": VERSION_LABEL,
+            "bootstrap": {"reps": BOOT_REPS, "method": "measure_katsuo_robustness.np_boot(塊の (合計, 件数) を畳んで塊を復元抽出、種 = 升の名前の sha256)",
+                          "wobble_seeds": WOBBLE_SEEDS, "min_n": MIN_N,
+                          "q1_spearman_reps": REPS},
             "methods": {m: v[2] for m, v in METHODS.items()},
             "hold_bins": [h[0] for h in HOLD_BINS],
             "feet": q2,
@@ -874,7 +1172,7 @@ def main() -> None:
     out_json.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     write_md(res, HERE / "TABLES.md")
     print(f"→ {out_json} / {HERE / 'TABLES.md'}", flush=True)
-    print(json.dumps({f: [(r["id"], r["value"]) for r in v["criteria"]] for f, v in q2.items()}, ensure_ascii=False), flush=True)
+    print(json.dumps({f: v["criteria"]["class"] for f, v in q2.items()}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
