@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T00:03:31.765124+00:00",
+  "generated_at": "2026-10-03T21:43:55.066709+00:00",
   "data_md": "docs/DATA.md",
   "max_age_days": 14,
   "today": "2026-10-03",
@@ -20,22 +20,22 @@
       "row_count": 5
     },
     {
-      "header_line": 180,
+      "header_line": 182,
       "header": "資産 | 所在 | 状態 | 最終確認日 | 使った単位",
       "row_count": 9
     },
     {
-      "header_line": 213,
+      "header_line": 215,
       "header": "# | 何が | 期間 | 原因 | 復旧可否 | 記録日",
       "row_count": 15
     },
     {
-      "header_line": 269,
+      "header_line": 271,
       "header": "ソース | 上限 | 仕組みでの扱い | 状態",
       "row_count": 5
     },
     {
-      "header_line": 292,
+      "header_line": 294,
       "header": "ベニュー | 状態【事実・一次情報】 | 期限 | 対応",
       "row_count": 2
     }
@@ -70,6 +70,10 @@
     {
       "unit": "auto_oi_snapshots_20260921",
       "file_count": 2
+    },
+    {
+      "unit": "auto_okx_long_short_ratio_20261003",
+      "file_count": 3
     },
     {
       "unit": "auto_okx_open_interest_1h_20260905",
@@ -161,6 +165,10 @@
     },
     {
       "unit": "auto_okx_open_interest_5m_20261002",
+      "file_count": 2
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261003",
       "file_count": 2
     },
     {
@@ -344,6 +352,10 @@
       "file_count": 1
     },
     {
+      "unit": "okx_traders_backfill_20261003",
+      "file_count": 4
+    },
+    {
       "unit": "spread_backfill_20261002",
       "file_count": 3
     }
@@ -365,67 +377,67 @@
       "path": "data/binance_BTCUSDT_1m_full.csv"
     },
     {
-      "line": 84,
+      "line": 86,
       "asset": "Binance BTCUSDT 1秒足(高頻度サンプル)",
       "path": "data/binance_BTCUSDT_1s_hi1.csv"
     },
     {
-      "line": 101,
+      "line": 103,
       "asset": "Kraken XBTUSD 1分足",
       "path": "data/kraken_XBTUSD_1m.csv"
     },
     {
-      "line": 102,
+      "line": 104,
       "asset": "Deribit DVOL(ボラ指数)",
       "path": "data/deribit_dvol_1h.csv"
     },
     {
-      "line": 102,
+      "line": 104,
       "asset": "Deribit DVOL(ボラ指数)",
       "path": "data/deribit_dvol_1m_7d.csv"
     },
     {
-      "line": 104,
+      "line": 106,
       "asset": "資金調達率・基差(自前結合、粒度不明)",
       "path": "data/basis_1m.csv"
     },
     {
-      "line": 133,
+      "line": 135,
       "asset": "Binance COIN-M aggTrades の読み込み可否(`PriceSeries.from_trades` 用)",
       "path": "backtest_data/binance_cm_o3c_20260913/aggTrades/BTCUSD_PERP/"
     },
     {
-      "line": 143,
+      "line": 145,
       "asset": "bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(candles/executions/flow)",
       "path": "data/candles_{BTC,ETH,XRP}_JPY.csv"
     },
     {
-      "line": 154,
+      "line": 156,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/calendar.csv"
     },
     {
-      "line": 154,
+      "line": 156,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/calendar_cache*"
     },
     {
-      "line": 154,
+      "line": 156,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "path": "data/fx/events/"
     },
     {
-      "line": 185,
+      "line": 187,
       "asset": "ストーム/バーストイベント抽出",
       "path": "data/storm_events/"
     },
     {
-      "line": 185,
+      "line": 187,
       "asset": "ストーム/バーストイベント抽出",
       "path": "data/burst_events/"
     },
     {
-      "line": 188,
+      "line": 190,
       "asset": "PC 時計・レイテンシ",
       "path": "data/latency/ws_vm.csv"
     }
@@ -435,7 +447,7 @@
     "path": "data\\INTAKE_latest.json",
     "selection": "両方あり、新しい data/ 側を使った",
     "state": "読込済",
-    "entry_count": 15523
+    "entry_count": 15594
   },
   "stale_rows": [
     {
@@ -541,451 +553,451 @@
       "age_days": 22
     },
     {
-      "line": 83,
+      "line": 85,
       "asset": "Binance BTCUSDT 1秒足 / aggTrades",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 84,
+      "line": 86,
       "asset": "Binance BTCUSDT 1秒足(高頻度サンプル)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 85,
+      "line": 87,
       "asset": "Binance XRPUSDT 1分/1日/4時間足",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 86,
+      "line": 88,
       "asset": "Binance 資金調達率・板深さ・清算(このデータセンターから)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 87,
+      "line": 89,
       "asset": "Bybit BTCUSDT 無期限 1分足",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 88,
+      "line": 90,
       "asset": "Bybit 現物/無期限 到達確認サンプル(2日分)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 89,
+      "line": 91,
       "asset": "Bybit REST API(資金調達率・板・清算)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 90,
+      "line": 92,
       "asset": "Bybit 静的アーカイブ(`public.bybit.com`、約定のみ)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 91,
+      "line": 93,
       "asset": "OKX 資金調達率(現在値・履歴)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 92,
+      "line": 94,
       "asset": "OKX 基差(mark/index の履歴、basisの代理)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 93,
+      "line": 95,
       "asset": "OKX 板の深さ(現在値のみ)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 94,
+      "line": 96,
       "asset": "OKX 建玉(OI)・L/S比 スナップショット(自前記録)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 95,
+      "line": 97,
       "asset": "Coinalyze(清算・OIの集計値、鍵必須)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 96,
+      "line": 98,
       "asset": "Gate.io 個別清算約定(90日、鍵不要)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 98,
+      "line": 100,
       "asset": "BitMEX 保険基金 日次残高(全通貨)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 99,
+      "line": 101,
       "asset": "Binance/BitMEX/Bybit/OKX 清算 WS ストリーム(自前記録)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 100,
+      "line": 102,
       "asset": "BitMEX XBTUSD 1秒足(取引所閉鎖前の保全)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 101,
+      "line": 103,
       "asset": "Kraken XBTUSD 1分足",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 102,
+      "line": 104,
       "asset": "Deribit DVOL(ボラ指数)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 103,
+      "line": 105,
       "asset": "現物 BTC/ETH 日足(Bitstamp/Coinbase/Yahoo、複数取引所横断)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 104,
+      "line": 106,
       "asset": "資金調達率・基差(自前結合、粒度不明)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 105,
+      "line": 107,
       "asset": "Tardis.dev(第三者・有料、メタデータのみ確認)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 106,
+      "line": 108,
       "asset": "CryptoDataDownload(第三者・無料、OHLCVのみ想定)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 107,
+      "line": 109,
       "asset": "ベニュー横断調査(サーベイ文書)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 108,
+      "line": 110,
       "asset": "Binance COIN-M BTCUSD_PERP liquidationSnapshot(強制決済イベント、公開アーカイブ)",
       "last_checked": "2026-09-13",
       "age_days": 20
     },
     {
-      "line": 109,
+      "line": 111,
       "asset": "Binance COIN-M BTCUSD_PERP metrics(建玉`sum_open_interest`・L/S比、5分粒度)",
       "last_checked": "2026-09-18",
       "age_days": 15
     },
     {
-      "line": 110,
+      "line": 112,
       "asset": "Binance COIN-M metrics の欠測の広がり(BTCUSD_PERP / ETHUSD_PERP / USD-M BTCUSDT の比較)と配信の継続",
       "last_checked": "2026-09-18",
       "age_days": 15
     },
     {
-      "line": 111,
+      "line": 113,
       "asset": "Binance USD-M liquidationSnapshot アーカイブ(全シンボル)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 112,
+      "line": 114,
       "asset": "BitMEX 公開バルクアーカイブの清算専用フォルダ",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 113,
+      "line": 115,
       "asset": "CoinGlass 個別イベント清算(`/api/futures/liquidation/order`)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 114,
+      "line": 116,
       "asset": "OKX 1分足(無期限、history-candles)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 115,
+      "line": 117,
       "asset": "Gate 1分足(candlesticks、真の OHLC)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 116,
+      "line": 118,
       "asset": "ccxt `fetchLiquidations`(bitmex)実装",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 117,
+      "line": 119,
       "asset": "Tardis.dev BitMEX `liquidation`チャネル(第三者・有料)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 118,
+      "line": 120,
       "asset": "archive.org(public.bitmex.com 過去スナップショット確認経路)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 119,
+      "line": 121,
       "asset": "`deploy/mirror_bitmex.bat` の保全対象範囲",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 120,
+      "line": 122,
       "asset": "Binance USD-M BTCUSDT metrics(建玉・L/S比、5分粒度、公開アーカイブ)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 121,
+      "line": 123,
       "asset": "Binance COIN-M BTCUSD_PERP aggTrades/trades(個別約定、公開アーカイブ)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 122,
+      "line": 124,
       "asset": "OKX rubik open-interest-history(REST、保持期間の実測)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 123,
+      "line": 125,
       "asset": "OKX rubik long-short-account-ratio(REST、保持期間の実測)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 124,
+      "line": 126,
       "asset": "Gate contract_stats(建玉・L/S比・mark_price、1分粒度)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 125,
+      "line": 127,
       "asset": "BitMEX instrument 建玉(openInterest、現在値のみ)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 126,
+      "line": 128,
       "asset": "CryptoCompare(CoinDesk Data) histominute(gate.io、第三者)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 127,
+      "line": 129,
       "asset": "Hyperliquid BTC無期限 `userFills`/`userFillsByTime`(清算識別可、`liquidation`フィールド)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 128,
+      "line": 130,
       "asset": "Hyperliquid BTC無期限 `candleSnapshot`(1分足)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 129,
+      "line": 131,
       "asset": "Hyperliquid BTC無期限 `metaAndAssetCtxs`(建玉・資金調達率、現在値のみ)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 130,
+      "line": 132,
       "asset": "Hyperliquid S3アーカイブ(板 L2Book想定、`hyperliquid-archive`)",
       "last_checked": "2026-09-12",
       "age_days": 21
     },
     {
-      "line": 131,
+      "line": 133,
       "asset": "CoinGlass 建玉履歴(`/api/futures/open-interest/history`)",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 132,
+      "line": 134,
       "asset": "Binance COIN-M metrics のレバレッジ関連列(`count_toptrader_long_short_ratio` / `sum_toptrader_long_short_ratio` / `count_long_short_ratio`)",
       "last_checked": "2026-09-18",
       "age_days": 15
     },
     {
-      "line": 133,
+      "line": 135,
       "asset": "Binance COIN-M aggTrades の読み込み可否(`PriceSeries.from_trades` 用)",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 134,
+      "line": 136,
       "asset": "Binance liquidationSnapshot 欠落 3 日の再プローブ",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 135,
+      "line": 137,
       "asset": "Binance USD-M `openInterestHist`(REST)",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 136,
+      "line": 138,
       "asset": "Binance COIN-M aggTrades の補遺 1 日(2023-06-24)",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 137,
+      "line": 139,
       "asset": "Binance COIN-M `liquidationSnapshot` の重複行",
       "last_checked": "2026-09-17",
       "age_days": 16
     },
     {
-      "line": 143,
+      "line": 145,
       "asset": "bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(candles/executions/flow)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 144,
+      "line": 146,
       "asset": "bitbank BTC/XRP JPY",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 145,
+      "line": 147,
       "asset": "GMO・bitbank 横断(quotes/trades)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 151,
+      "line": 153,
       "asset": "USD/JPY 1分足(3.5年)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 152,
+      "line": 154,
       "asset": "USD/JPY 1分足(拡張、2017-2022)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 153,
+      "line": 155,
       "asset": "FX イベントティック(2005-2014 / 2015-2026)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 154,
+      "line": 156,
       "asset": "FX ファンダメンタルズ・カレンダー",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 155,
+      "line": 157,
       "asset": "FRED 系列(政策金利・スワップ)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 156,
+      "line": 158,
       "asset": "GMO USD/JPY スワップ",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 162,
+      "line": 164,
       "asset": "日経225先物 225Labo 日足",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 163,
+      "line": 165,
       "asset": "TOPIX先物/miniTOPIX先物 225Labo",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 164,
+      "line": 166,
       "asset": "ETF 日足(1343/1321/1348 等)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 165,
+      "line": 167,
       "asset": "ETF 代替候補調査",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 166,
+      "line": 168,
       "asset": "REIT / ONR(オーバーナイトリターン)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 167,
+      "line": 169,
       "asset": "優待(yutai)ユニバース",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 168,
+      "line": 170,
       "asset": "日本ファクター",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 169,
+      "line": 171,
       "asset": "日経225イベント",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 170,
+      "line": 172,
       "asset": "JPX デリバティブ日報(生 zip)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 171,
+      "line": 173,
       "asset": "JPX 日次セッション",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 172,
+      "line": 174,
       "asset": "JPX Tick 調査(監査)",
       "last_checked": "2026-09-11",
       "age_days": 22
     },
     {
-      "line": 173,
+      "line": 175,
       "asset": "kabuステーション API(実口座・実発注)",
       "last_checked": "2026-09-11",
       "age_days": 22
@@ -993,8 +1005,8 @@
   ],
   "undated_rows": [],
   "summary": {
-    "unit_count": 160,
-    "units_without_ledger_row": 75,
+    "unit_count": 165,
+    "units_without_ledger_row": 78,
     "missing_paths": 16,
     "units_with_files_not_in_intake": 0,
     "files_not_in_intake": 0,

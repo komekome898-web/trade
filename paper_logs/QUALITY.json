@@ -3,7 +3,7 @@
   "api_health": {
    "checks": {
     "gaps": {
-     "count": 12,
+     "count": 16,
      "examples": [
       {
        "examples": [
@@ -33,7 +33,7 @@
          "ts": "2026-09-30T20:16:43.817000+00:00"
         }
        ],
-       "median_gap_seconds": 5.066,
+       "median_gap_seconds": 5.064,
        "path": "data/api_health.csv"
       }
      ],
@@ -3551,7 +3551,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 34,
+   "files_checked": 37,
    "files_flagged": 0
   },
   "qa_synthetic": {
@@ -5147,7 +5147,7 @@
      "files": 451
     },
     "gaps": {
-     "count": 1154211665,
+     "count": 1195372488,
      "examples": [
       {
        "examples": [
@@ -5276,20 +5276,40 @@
       {
        "examples": [
         {
-         "gap_seconds": 950400.0,
-         "row": 2665,
-         "ts": "2019-05-07T00:00:00+00:00"
+         "gap_seconds": 15360.0,
+         "row": 217300,
+         "ts": "2017-07-06T03:45:00+00:00"
+        },
+        {
+         "gap_seconds": 4260.0,
+         "row": 235593,
+         "ts": "2017-07-19T14:40:00+00:00"
+        },
+        {
+         "gap_seconds": 4140.0,
+         "row": 228478,
+         "ts": "2017-07-14T14:20:00+00:00"
+        },
+        {
+         "gap_seconds": 2700.0,
+         "row": 84704,
+         "ts": "2017-03-22T21:50:00+00:00"
+        },
+        {
+         "gap_seconds": 2520.0,
+         "row": 41278,
+         "ts": "2017-02-12T14:41:00+00:00"
         }
        ],
-       "median_gap_seconds": 86400.0,
-       "path": "backtest_data/mini_topixf_225labo_20260907/day_session_daily.csv.gz"
+       "median_gap_seconds": 60.0,
+       "path": "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2017.csv.gz"
       }
      ],
-     "files": 2526
+     "files": 2560
     }
    },
-   "files_checked": 3064,
-   "files_flagged": 2533
+   "files_checked": 3104,
+   "files_flagged": 2567
   },
   "venue_survey": {
    "checks": {},
@@ -13453,6 +13473,22 @@
    ],
    "result": {}
   },
+  "backtest_data/auto_okx_long_short_ratio_20261003/okx_btc_lsratio_1h.csv": {
+   "content_key": [
+    22967,
+    "2026-10-03T00:15:53.451285+00:00",
+    "80f22fb75e1ff3b64fd234eb86afd695"
+   ],
+   "result": {}
+  },
+  "backtest_data/auto_okx_long_short_ratio_20261003/okx_btc_lsratio_5m.csv": {
+   "content_key": [
+    18346,
+    "2026-10-03T00:15:52.748043+00:00",
+    "5cdee204e1d36c5a8862e6d135e02494"
+   ],
+   "result": {}
+  },
   "backtest_data/auto_okx_open_interest_1h_20260905/okx_btc_oi_1h.csv": {
    "content_key": [
     41310,
@@ -13642,6 +13678,14 @@
     32496,
     "2026-10-02T21:40:50.133628+00:00",
     "dd3b64d39f87d6747d834a07908a85ec"
+   ],
+   "result": {}
+  },
+  "backtest_data/auto_okx_open_interest_5m_20261003/okx_btc_oi_5m.csv": {
+   "content_key": [
+    32546,
+    "2026-10-03T00:15:51.355800+00:00",
+    "6d4f8db49d8a178b49326d663a842986"
    ],
    "result": {}
   },
@@ -22715,6 +22759,38 @@
     }
    }
   },
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2020.csv.gz": {
+   "content_key": [
+    16564324,
+    "2026-10-03T14:30:57.610371+00:00",
+    "15d4795871be01063c3cb399d15288ca"
+   ],
+   "result": {}
+  },
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2021.csv.gz": {
+   "content_key": [
+    18260639,
+    "2026-10-03T14:30:57.871200+00:00",
+    "ce806cc3fcb5f01a2a25ea35a7d9e89e"
+   ],
+   "result": {}
+  },
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2022.csv.gz": {
+   "content_key": [
+    16829285,
+    "2026-10-03T14:30:58.185197+00:00",
+    "1906ddd3390e74c8e184361015d73113"
+   ],
+   "result": {}
+  },
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2023.csv.gz": {
+   "content_key": [
+    15487528,
+    "2026-10-03T14:30:58.323206+00:00",
+    "dc9ea079448941c9ea25e3020169a3f5"
+   ],
+   "result": {}
+  },
   "backtest_data/bitbank_btc_jpy_transactions_monthly_first_days/btc_jpy_transactions_20170901.csv.gz": {
    "content_key": [
     53426,
@@ -26056,6 +26132,139 @@
        "ts": "2026-01-01T02:06:00+00:00"
       }
      ]
+    }
+   }
+  },
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2017.csv.gz": {
+   "content_key": [
+    6325243,
+    "2026-10-03T14:30:58.485737+00:00",
+    "45bf54dadd12f7a0a8c68305fb0f340f"
+   ],
+   "result": {
+    "gaps": {
+     "count": 498,
+     "examples": [
+      {
+       "gap_seconds": 15360.0,
+       "row": 217300,
+       "ts": "2017-07-06T03:45:00+00:00"
+      },
+      {
+       "gap_seconds": 4260.0,
+       "row": 235593,
+       "ts": "2017-07-19T14:40:00+00:00"
+      },
+      {
+       "gap_seconds": 4140.0,
+       "row": 228478,
+       "ts": "2017-07-14T14:20:00+00:00"
+      },
+      {
+       "gap_seconds": 2700.0,
+       "row": 84704,
+       "ts": "2017-03-22T21:50:00+00:00"
+      },
+      {
+       "gap_seconds": 2520.0,
+       "row": 41278,
+       "ts": "2017-02-12T14:41:00+00:00"
+      }
+     ],
+     "median_gap_seconds": 60.0
+    }
+   }
+  },
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2018.csv.gz": {
+   "content_key": [
+    6795326,
+    "2026-10-03T14:30:58.517737+00:00",
+    "12259318ddc5af2d8ad1f35700b94b98"
+   ],
+   "result": {
+    "gaps": {
+     "count": 3,
+     "examples": [
+      {
+       "gap_seconds": 5760.0,
+       "row": 197063,
+       "ts": "2018-05-17T22:24:00+00:00"
+      },
+      {
+       "gap_seconds": 3600.0,
+       "row": 335458,
+       "ts": "2018-08-22T02:00:00+00:00"
+      },
+      {
+       "gap_seconds": 1080.0,
+       "row": 46884,
+       "ts": "2018-02-02T13:40:00+00:00"
+      }
+     ],
+     "median_gap_seconds": 60.0
+    }
+   }
+  },
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2019.csv.gz": {
+   "content_key": [
+    6474934,
+    "2026-10-03T14:30:58.537737+00:00",
+    "5e41b5d5eff65e083eee62c3c86b9aad"
+   ],
+   "result": {}
+  },
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2020.csv.gz": {
+   "content_key": [
+    6763358,
+    "2026-10-03T14:30:58.749731+00:00",
+    "d356dabf4affd067cce47284795811fc"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1,
+     "examples": [
+      {
+       "gap_seconds": 6000.0,
+       "row": 200865,
+       "ts": "2020-05-19T13:40:00+00:00"
+      }
+     ],
+     "median_gap_seconds": 60.0
+    }
+   }
+  },
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2021.csv.gz": {
+   "content_key": [
+    7693668,
+    "2026-10-03T14:30:59.597229+00:00",
+    "d9b8a4a1666a98b20957f0391008d220"
+   ],
+   "result": {
+    "gaps": {
+     "count": 4,
+     "examples": [
+      {
+       "gap_seconds": 4860.0,
+       "row": 320890,
+       "ts": "2021-08-12T03:35:00+00:00"
+      },
+      {
+       "gap_seconds": 1860.0,
+       "row": 139803,
+       "ts": "2021-04-08T02:45:00+00:00"
+      },
+      {
+       "gap_seconds": 1260.0,
+       "row": 190056,
+       "ts": "2021-05-13T00:44:00+00:00"
+      },
+      {
+       "gap_seconds": 780.0,
+       "row": 190059,
+       "ts": "2021-05-13T00:59:00+00:00"
+      }
+     ],
+     "median_gap_seconds": 60.0
     }
    }
   },
@@ -135219,6 +135428,54 @@
    ],
    "result": {}
   },
+  "backtest_data/okx_traders_backfill_20261003/history_20261003.csv.gz": {
+   "content_key": [
+    1431522,
+    "2026-10-03T14:31:02.066800+00:00",
+    "7b7d5bd6ccf0c84d1b9d6aa61780fab3"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1146,
+     "examples": [
+      {
+       "gap_seconds": 7941943.725,
+       "row": 24226,
+       "ts": "2026-10-02T15:09:12.323000+00:00"
+      },
+      {
+       "gap_seconds": 7902259.458,
+       "row": 9555,
+       "ts": "2026-10-02T19:22:14.938000+00:00"
+      },
+      {
+       "gap_seconds": 3164377.527,
+       "row": 19885,
+       "ts": "2026-09-14T09:22:43.058000+00:00"
+      },
+      {
+       "gap_seconds": 1574850.054,
+       "row": 23978,
+       "ts": "2026-07-23T07:11:49.778000+00:00"
+      },
+      {
+       "gap_seconds": 1242777.376,
+       "row": 3207,
+       "ts": "2026-10-01T19:18:03.751000+00:00"
+      }
+     ],
+     "median_gap_seconds": 2463.291
+    }
+   }
+  },
+  "backtest_data/okx_traders_backfill_20261003/positions_20261003.csv.gz": {
+   "content_key": [
+    48880,
+    "2026-10-03T14:31:02.184798+00:00",
+    "19a3798d31fb35c13c1a6c168a6b8b4a"
+   ],
+   "result": {}
+  },
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv": {
    "content_key": [
     19661,
@@ -140530,13 +140787,13 @@
   },
   "data/api_health.csv": {
    "content_key": [
-    2045633,
-    "2026-10-02T23:35:36.269040+00:00",
-    "cf960bbb8e796acd5125acd227ca5805"
+    3052207,
+    "2026-10-03T21:22:16.321324+00:00",
+    "b7e26b63551fbfcddb2175b951f5d602"
    ],
    "result": {
     "gaps": {
-     "count": 12,
+     "count": 16,
      "examples": [
       {
        "gap_seconds": 46127.864,
@@ -140564,7 +140821,7 @@
        "ts": "2026-09-30T20:16:43.817000+00:00"
       }
      ],
-     "median_gap_seconds": 5.066
+     "median_gap_seconds": 5.064
     }
    }
   },
@@ -258400,21 +258657,1190 @@
      "median_gap_seconds": 0.027061
     }
    }
+  },
+  "data/archive/bitmex/data/quote/20211005.csv.gz": {
+   "content_key": [
+    50284109,
+    "2026-09-10T03:11:56.959212+00:00",
+    "d9ab8cf56c2c2d1638989c6cfaa4c2d8"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1350069,
+     "examples": [
+      {
+       "gap_seconds": 2448.003743,
+       "row": 328059,
+       "ts": "2021-10-05T05:20:01.750135+00:00"
+      },
+      {
+       "gap_seconds": 2202.870894,
+       "row": 3467655,
+       "ts": "2021-10-05T22:55:52.633679+00:00"
+      },
+      {
+       "gap_seconds": 1797.017241,
+       "row": 5539202,
+       "ts": "2021-10-05T03:21:23.005059+00:00"
+      },
+      {
+       "gap_seconds": 1634.309284,
+       "row": 2219554,
+       "ts": "2021-10-05T22:43:34.875408+00:00"
+      },
+      {
+       "gap_seconds": 1598.285217,
+       "row": 328021,
+       "ts": "2021-10-05T04:09:55.054493+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028467
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211006.csv.gz": {
+   "content_key": [
+    56809949,
+    "2026-09-10T03:12:32.341894+00:00",
+    "2abd5926b003ce05472da3df601fb385"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1590149,
+     "examples": [
+      {
+       "gap_seconds": 3701.830427,
+       "row": 402624,
+       "ts": "2021-10-06T10:34:57.734646+00:00"
+      },
+      {
+       "gap_seconds": 1479.561178,
+       "row": 808880,
+       "ts": "2021-10-06T00:31:20.387226+00:00"
+      },
+      {
+       "gap_seconds": 1475.150802,
+       "row": 2711498,
+       "ts": "2021-10-06T23:37:20.943866+00:00"
+      },
+      {
+       "gap_seconds": 1269.431047,
+       "row": 4135842,
+       "ts": "2021-10-06T02:44:13.240065+00:00"
+      },
+      {
+       "gap_seconds": 1256.074575,
+       "row": 811897,
+       "ts": "2021-10-06T05:59:00.743818+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024473
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211007.csv.gz": {
+   "content_key": [
+    54371630,
+    "2026-09-10T03:13:11.747427+00:00",
+    "ce30b11a09e364b962f2790842585108"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1529639,
+     "examples": [
+      {
+       "gap_seconds": 1565.466283,
+       "row": 2503935,
+       "ts": "2021-10-07T19:59:18.906717+00:00"
+      },
+      {
+       "gap_seconds": 1482.300532,
+       "row": 5949978,
+       "ts": "2021-10-07T13:41:46.385180+00:00"
+      },
+      {
+       "gap_seconds": 1152.43996,
+       "row": 5950908,
+       "ts": "2021-10-07T19:48:59.004123+00:00"
+      },
+      {
+       "gap_seconds": 1144.26794,
+       "row": 1852075,
+       "ts": "2021-10-07T21:20:00.036400+00:00"
+      },
+      {
+       "gap_seconds": 1143.04021,
+       "row": 527333,
+       "ts": "2021-10-07T22:33:39.093994+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.026732
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211008.csv.gz": {
+   "content_key": [
+    48531223,
+    "2026-09-10T03:13:45.861689+00:00",
+    "59efa7ad3e75fded2e2e19b0c382527a"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1332190,
+     "examples": [
+      {
+       "gap_seconds": 2294.130591,
+       "row": 2052462,
+       "ts": "2021-10-08T18:55:11.643085+00:00"
+      },
+      {
+       "gap_seconds": 1296.133864,
+       "row": 426008,
+       "ts": "2021-10-08T16:26:08.858562+00:00"
+      },
+      {
+       "gap_seconds": 1224.224054,
+       "row": 425972,
+       "ts": "2021-10-08T15:55:42.499933+00:00"
+      },
+      {
+       "gap_seconds": 1105.371287,
+       "row": 2046949,
+       "ts": "2021-10-08T02:22:18.360090+00:00"
+      },
+      {
+       "gap_seconds": 939.136084,
+       "row": 2046795,
+       "ts": "2021-10-08T00:20:25.080946+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.028548
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211009.csv.gz": {
+   "content_key": [
+    39445113,
+    "2026-09-10T03:14:07.678455+00:00",
+    "99ef06e4e22ba6c924bd048784e9aee7"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1169197,
+     "examples": [
+      {
+       "gap_seconds": 1741.849643,
+       "row": 363839,
+       "ts": "2021-10-09T01:12:40.579357+00:00"
+      },
+      {
+       "gap_seconds": 1428.080547,
+       "row": 1189840,
+       "ts": "2021-10-09T20:34:46.417031+00:00"
+      },
+      {
+       "gap_seconds": 1343.812731,
+       "row": 1559820,
+       "ts": "2021-10-09T13:12:25.412458+00:00"
+      },
+      {
+       "gap_seconds": 1188.531838,
+       "row": 1558220,
+       "ts": "2021-10-09T01:40:54.734215+00:00"
+      },
+      {
+       "gap_seconds": 1036.080425,
+       "row": 370341,
+       "ts": "2021-10-09T18:16:07.142126+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.032327
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211010.csv.gz": {
+   "content_key": [
+    45160409,
+    "2026-09-10T03:14:44.528924+00:00",
+    "7e9ff7f15b752526676860381577dc58"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1272864,
+     "examples": [
+      {
+       "gap_seconds": 1793.251904,
+       "row": 358855,
+       "ts": "2021-10-10T12:41:17.591401+00:00"
+      },
+      {
+       "gap_seconds": 1761.619609,
+       "row": 1176293,
+       "ts": "2021-10-10T19:38:27.193265+00:00"
+      },
+      {
+       "gap_seconds": 1703.140992,
+       "row": 356037,
+       "ts": "2021-10-10T01:37:32.474952+00:00"
+      },
+      {
+       "gap_seconds": 1532.40189,
+       "row": 2760358,
+       "ts": "2021-10-10T03:55:09.954179+00:00"
+      },
+      {
+       "gap_seconds": 1133.729696,
+       "row": 2974210,
+       "ts": "2021-10-10T08:07:19.898993+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.029383
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211011.csv.gz": {
+   "content_key": [
+    46663699,
+    "2026-09-10T03:15:28.609143+00:00",
+    "4ef34fc39f14a5838ded0cc973b89483"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1347203,
+     "examples": [
+      {
+       "gap_seconds": 2141.946827,
+       "row": 383287,
+       "ts": "2021-10-11T12:37:28.419142+00:00"
+      },
+      {
+       "gap_seconds": 1543.616498,
+       "row": 3122938,
+       "ts": "2021-10-11T05:19:31.252977+00:00"
+      },
+      {
+       "gap_seconds": 1488.773653,
+       "row": 5125364,
+       "ts": "2021-10-11T09:52:35.074930+00:00"
+      },
+      {
+       "gap_seconds": 1282.201812,
+       "row": 5126321,
+       "ts": "2021-10-11T15:27:05.439223+00:00"
+      },
+      {
+       "gap_seconds": 1267.27322,
+       "row": 2384867,
+       "ts": "2021-10-11T18:34:44.622523+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.027349
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211012.csv.gz": {
+   "content_key": [
+    57140805,
+    "2026-09-10T03:16:14.071734+00:00",
+    "bf5a9b70f84094f7b02453b1f41e4da4"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1675487,
+     "examples": [
+      {
+       "gap_seconds": 1607.327929,
+       "row": 479505,
+       "ts": "2021-10-12T03:06:04.686099+00:00"
+      },
+      {
+       "gap_seconds": 947.30362,
+       "row": 479335,
+       "ts": "2021-10-12T01:32:15.190852+00:00"
+      },
+      {
+       "gap_seconds": 849.977762,
+       "row": 484233,
+       "ts": "2021-10-12T17:32:13.676097+00:00"
+      },
+      {
+       "gap_seconds": 832.194436,
+       "row": 1789151,
+       "ts": "2021-10-12T11:47:05.863795+00:00"
+      },
+      {
+       "gap_seconds": 800.26188,
+       "row": 3111293,
+       "ts": "2021-10-12T04:41:29.312684+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023555
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211013.csv.gz": {
+   "content_key": [
+    51556907,
+    "2026-09-10T03:16:55.901513+00:00",
+    "3a1a0491b78c124ae7e073c8e96b3810"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1533584,
+     "examples": [
+      {
+       "gap_seconds": 1923.181801,
+       "row": 674322,
+       "ts": "2021-10-13T05:19:04.953813+00:00"
+      },
+      {
+       "gap_seconds": 1718.305445,
+       "row": 677208,
+       "ts": "2021-10-13T11:38:46.027185+00:00"
+      },
+      {
+       "gap_seconds": 1558.585058,
+       "row": 1922976,
+       "ts": "2021-10-13T13:32:14.561749+00:00"
+      },
+      {
+       "gap_seconds": 1480.769543,
+       "row": 296852,
+       "ts": "2021-10-13T10:27:09.484528+00:00"
+      },
+      {
+       "gap_seconds": 1440.165232,
+       "row": 296850,
+       "ts": "2021-10-13T09:57:36.707899+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023066
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211014.csv.gz": {
+   "content_key": [
+    42011447,
+    "2026-09-10T03:17:30.938531+00:00",
+    "f4c674d6c527af183de3001e035ed9a8"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1256781,
+     "examples": [
+      {
+       "gap_seconds": 1762.27918,
+       "row": 966021,
+       "ts": "2021-10-14T20:12:55.635385+00:00"
+      },
+      {
+       "gap_seconds": 1318.821314,
+       "row": 1520927,
+       "ts": "2021-10-14T18:26:57.910267+00:00"
+      },
+      {
+       "gap_seconds": 1284.052458,
+       "row": 2557166,
+       "ts": "2021-10-14T15:34:16.230459+00:00"
+      },
+      {
+       "gap_seconds": 1139.891285,
+       "row": 4608505,
+       "ts": "2021-10-14T00:41:18.616230+00:00"
+      },
+      {
+       "gap_seconds": 1129.216282,
+       "row": 4614778,
+       "ts": "2021-10-14T22:18:55.572936+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025145
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211015.csv.gz": {
+   "content_key": [
+    58220292,
+    "2026-09-10T03:18:21.972615+00:00",
+    "84cf8afa24cb335940915c2d858a6d3d"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1612294,
+     "examples": [
+      {
+       "gap_seconds": 4263.170918,
+       "row": 3647634,
+       "ts": "2021-10-15T02:19:26.695041+00:00"
+      },
+      {
+       "gap_seconds": 1524.297232,
+       "row": 265590,
+       "ts": "2021-10-15T11:06:12.183629+00:00"
+      },
+      {
+       "gap_seconds": 1263.079552,
+       "row": 3648443,
+       "ts": "2021-10-15T04:11:11.682018+00:00"
+      },
+      {
+       "gap_seconds": 1036.622299,
+       "row": 1414716,
+       "ts": "2021-10-15T06:06:44.542589+00:00"
+      },
+      {
+       "gap_seconds": 954.332308,
+       "row": 268510,
+       "ts": "2021-10-15T23:41:49.086916+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020849
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211016.csv.gz": {
+   "content_key": [
+    40985069,
+    "2026-09-10T03:18:52.036419+00:00",
+    "00d81f60134e1871a8080529d8391f6c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1233439,
+     "examples": [
+      {
+       "gap_seconds": 2624.035258,
+       "row": 1487553,
+       "ts": "2021-10-16T19:38:30.151785+00:00"
+      },
+      {
+       "gap_seconds": 1892.098179,
+       "row": 254071,
+       "ts": "2021-10-16T10:49:54.682354+00:00"
+      },
+      {
+       "gap_seconds": 1459.750993,
+       "row": 255896,
+       "ts": "2021-10-16T23:30:48.326788+00:00"
+      },
+      {
+       "gap_seconds": 1161.466055,
+       "row": 254126,
+       "ts": "2021-10-16T11:59:26.463031+00:00"
+      },
+      {
+       "gap_seconds": 1150.962248,
+       "row": 1483987,
+       "ts": "2021-10-16T06:18:10.564390+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023496
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211017.csv.gz": {
+   "content_key": [
+    43336497,
+    "2026-09-10T03:19:21.214378+00:00",
+    "f28b1399036ae4c74bba0183fc8e7cbd"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1279776,
+     "examples": [
+      {
+       "gap_seconds": 2182.558642,
+       "row": 242055,
+       "ts": "2021-10-17T02:17:43.423399+00:00"
+      },
+      {
+       "gap_seconds": 1615.287567,
+       "row": 1636260,
+       "ts": "2021-10-17T14:24:16.764580+00:00"
+      },
+      {
+       "gap_seconds": 1484.54222,
+       "row": 240656,
+       "ts": "2021-10-17T15:12:37.757945+00:00"
+      },
+      {
+       "gap_seconds": 1397.67349,
+       "row": 1011319,
+       "ts": "2021-10-17T01:56:29.944337+00:00"
+      },
+      {
+       "gap_seconds": 1219.95445,
+       "row": 239937,
+       "ts": "2021-10-17T06:15:38.602846+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.021658
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211018.csv.gz": {
+   "content_key": [
+    50591537,
+    "2026-09-10T03:19:57.265728+00:00",
+    "388ada587a9373f1ef2171658bd278d4"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1393899,
+     "examples": [
+      {
+       "gap_seconds": 2960.30959,
+       "row": 213054,
+       "ts": "2021-10-18T04:29:47.377547+00:00"
+      },
+      {
+       "gap_seconds": 1850.928482,
+       "row": 1294551,
+       "ts": "2021-10-18T18:18:05.400388+00:00"
+      },
+      {
+       "gap_seconds": 1310.774273,
+       "row": 214178,
+       "ts": "2021-10-18T17:43:09.284298+00:00"
+      },
+      {
+       "gap_seconds": 1208.691394,
+       "row": 214591,
+       "ts": "2021-10-18T23:44:57.771505+00:00"
+      },
+      {
+       "gap_seconds": 1188.776409,
+       "row": 520230,
+       "ts": "2021-10-18T06:28:52.284414+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020021
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211019.csv.gz": {
+   "content_key": [
+    44158655,
+    "2026-09-10T03:20:31.981682+00:00",
+    "750df3a0c208d0c4079ce9d283d0c6af"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1249155,
+     "examples": [
+      {
+       "gap_seconds": 1854.191819,
+       "row": 876892,
+       "ts": "2021-10-19T12:41:07.020323+00:00"
+      },
+      {
+       "gap_seconds": 1324.14624,
+       "row": 166223,
+       "ts": "2021-10-19T08:37:43.062681+00:00"
+      },
+      {
+       "gap_seconds": 1277.180773,
+       "row": 550489,
+       "ts": "2021-10-19T23:05:49.714554+00:00"
+      },
+      {
+       "gap_seconds": 1064.82626,
+       "row": 877111,
+       "ts": "2021-10-19T14:23:41.875946+00:00"
+      },
+      {
+       "gap_seconds": 1057.048417,
+       "row": 166992,
+       "ts": "2021-10-19T17:46:17.174365+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.019471
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211020.csv.gz": {
+   "content_key": [
+    45163143,
+    "2026-09-10T03:21:01.205542+00:00",
+    "0a1c3df4edd2c6df8c2ab005671e32bd"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1250625,
+     "examples": [
+      {
+       "gap_seconds": 2256.91382,
+       "row": 248363,
+       "ts": "2021-10-20T10:19:18.401359+00:00"
+      },
+      {
+       "gap_seconds": 1825.29603,
+       "row": 249838,
+       "ts": "2021-10-20T17:59:32.025387+00:00"
+      },
+      {
+       "gap_seconds": 1587.767464,
+       "row": 251920,
+       "ts": "2021-10-20T19:03:14.225802+00:00"
+      },
+      {
+       "gap_seconds": 1380.547316,
+       "row": 248158,
+       "ts": "2021-10-20T07:23:07.735780+00:00"
+      },
+      {
+       "gap_seconds": 1375.641179,
+       "row": 2770726,
+       "ts": "2021-10-20T03:14:43.399055+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.021062
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211021.csv.gz": {
+   "content_key": [
+    73862364,
+    "2026-09-10T03:21:54.382005+00:00",
+    "469fdd1416ab3ae15c6411ec4c4969f7"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1821002,
+     "examples": [
+      {
+       "gap_seconds": 1482.921657,
+       "row": 346040,
+       "ts": "2021-10-21T14:08:45.558349+00:00"
+      },
+      {
+       "gap_seconds": 1412.218621,
+       "row": 1533060,
+       "ts": "2021-10-21T12:58:32.300595+00:00"
+      },
+      {
+       "gap_seconds": 1058.171486,
+       "row": 345979,
+       "ts": "2021-10-21T13:20:21.230640+00:00"
+      },
+      {
+       "gap_seconds": 1056.152305,
+       "row": 1534516,
+       "ts": "2021-10-21T17:16:32.610572+00:00"
+      },
+      {
+       "gap_seconds": 948.57383,
+       "row": 347004,
+       "ts": "2021-10-21T21:46:17.031376+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020481
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211022.csv.gz": {
+   "content_key": [
+    58241662,
+    "2026-09-10T03:22:40.035467+00:00",
+    "9581f97e1ec69f03264f8856289ef0d8"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1519037,
+     "examples": [
+      {
+       "gap_seconds": 3299.47589,
+       "row": 3938132,
+       "ts": "2021-10-22T21:34:45.243260+00:00"
+      },
+      {
+       "gap_seconds": 1743.849678,
+       "row": 211075,
+       "ts": "2021-10-22T17:59:52.403174+00:00"
+      },
+      {
+       "gap_seconds": 1554.125033,
+       "row": 3934732,
+       "ts": "2021-10-22T05:50:14.589578+00:00"
+      },
+      {
+       "gap_seconds": 1537.755752,
+       "row": 3938317,
+       "ts": "2021-10-22T22:45:25.140631+00:00"
+      },
+      {
+       "gap_seconds": 1511.619866,
+       "row": 209628,
+       "ts": "2021-10-22T03:04:18.746355+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022032
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211023.csv.gz": {
+   "content_key": [
+    42607027,
+    "2026-09-10T03:23:08.835979+00:00",
+    "bfc4aa707c608410cc5d32b6151e4949"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1252234,
+     "examples": [
+      {
+       "gap_seconds": 4060.129309,
+       "row": 2851218,
+       "ts": "2021-10-23T03:55:36.235908+00:00"
+      },
+      {
+       "gap_seconds": 2409.797113,
+       "row": 234584,
+       "ts": "2021-10-23T10:27:50.779757+00:00"
+      },
+      {
+       "gap_seconds": 2263.968569,
+       "row": 1077197,
+       "ts": "2021-10-23T20:56:13.754576+00:00"
+      },
+      {
+       "gap_seconds": 1944.413221,
+       "row": 234309,
+       "ts": "2021-10-23T08:50:37.382785+00:00"
+      },
+      {
+       "gap_seconds": 1888.986788,
+       "row": 605017,
+       "ts": "2021-10-23T12:13:04.975884+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022016
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211024.csv.gz": {
+   "content_key": [
+    48827474,
+    "2026-09-10T03:23:54.739089+00:00",
+    "2c9a9f29246ef039438613ce4057e020"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1324324,
+     "examples": [
+      {
+       "gap_seconds": 5763.407996,
+       "row": 5459324,
+       "ts": "2021-10-24T04:14:45.114100+00:00"
+      },
+      {
+       "gap_seconds": 3909.237112,
+       "row": 276529,
+       "ts": "2021-10-24T23:58:03.041477+00:00"
+      },
+      {
+       "gap_seconds": 3705.827577,
+       "row": 276216,
+       "ts": "2021-10-24T18:42:40.709442+00:00"
+      },
+      {
+       "gap_seconds": 2989.580854,
+       "row": 5462082,
+       "ts": "2021-10-24T17:00:48.196000+00:00"
+      },
+      {
+       "gap_seconds": 2843.596641,
+       "row": 5459325,
+       "ts": "2021-10-24T05:02:08.710741+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022139
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211025.csv.gz": {
+   "content_key": [
+    46476486,
+    "2026-09-10T03:24:32.300130+00:00",
+    "4fa764a4a6e5a19c1c35626ebf9b851e"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1274049,
+     "examples": [
+      {
+       "gap_seconds": 4020.619895,
+       "row": 189693,
+       "ts": "2021-10-25T20:32:47.717332+00:00"
+      },
+      {
+       "gap_seconds": 3998.829476,
+       "row": 185922,
+       "ts": "2021-10-25T07:11:28.903822+00:00"
+      },
+      {
+       "gap_seconds": 2750.723569,
+       "row": 5176295,
+       "ts": "2021-10-25T09:48:54.162887+00:00"
+      },
+      {
+       "gap_seconds": 2440.305174,
+       "row": 555999,
+       "ts": "2021-10-25T20:32:47.753797+00:00"
+      },
+      {
+       "gap_seconds": 2416.638618,
+       "row": 186806,
+       "ts": "2021-10-25T19:49:47.648715+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024701
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211026.csv.gz": {
+   "content_key": [
+    47213271,
+    "2026-09-10T03:25:09.617872+00:00",
+    "6c9d01ecc3022c67d6e4aa87534dce99"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1341679,
+     "examples": [
+      {
+       "gap_seconds": 1916.459907,
+       "row": 5228007,
+       "ts": "2021-10-26T12:02:40.773918+00:00"
+      },
+      {
+       "gap_seconds": 1872.038692,
+       "row": 1127358,
+       "ts": "2021-10-26T12:26:10.029554+00:00"
+      },
+      {
+       "gap_seconds": 1661.042923,
+       "row": 1127356,
+       "ts": "2021-10-26T11:54:57.955959+00:00"
+      },
+      {
+       "gap_seconds": 1196.079256,
+       "row": 670143,
+       "ts": "2021-10-26T19:53:42.128872+00:00"
+      },
+      {
+       "gap_seconds": 1186.277773,
+       "row": 279798,
+       "ts": "2021-10-26T19:01:16.078065+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.0238
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211027.csv.gz": {
+   "content_key": [
+    73890075,
+    "2026-09-10T03:26:02.207025+00:00",
+    "b0dcc3067b7995ea542a9d0d301e7db5"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1931695,
+     "examples": [
+      {
+       "gap_seconds": 1845.951705,
+       "row": 1913996,
+       "ts": "2021-10-27T03:45:12.113550+00:00"
+      },
+      {
+       "gap_seconds": 1654.076024,
+       "row": 449679,
+       "ts": "2021-10-27T01:01:27.971323+00:00"
+      },
+      {
+       "gap_seconds": 1288.832773,
+       "row": 1936900,
+       "ts": "2021-10-27T21:52:55.134543+00:00"
+      },
+      {
+       "gap_seconds": 1219.137912,
+       "row": 2867909,
+       "ts": "2021-10-27T01:44:45.663982+00:00"
+      },
+      {
+       "gap_seconds": 1051.692596,
+       "row": 449692,
+       "ts": "2021-10-27T02:13:44.034644+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022195
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211028.csv.gz": {
+   "content_key": [
+    69221085,
+    "2026-09-10T03:26:51.124735+00:00",
+    "d081fb5bb65ef5a58a93cb6d8cecb0fc"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1835756,
+     "examples": [
+      {
+       "gap_seconds": 3630.315582,
+       "row": 4574352,
+       "ts": "2021-10-28T15:47:07.602024+00:00"
+      },
+      {
+       "gap_seconds": 1552.250598,
+       "row": 780390,
+       "ts": "2021-10-28T04:39:00.514105+00:00"
+      },
+      {
+       "gap_seconds": 1537.71025,
+       "row": 780345,
+       "ts": "2021-10-28T03:56:54.430054+00:00"
+      },
+      {
+       "gap_seconds": 1469.034915,
+       "row": 3686927,
+       "ts": "2021-10-28T13:16:01.616669+00:00"
+      },
+      {
+       "gap_seconds": 1316.452931,
+       "row": 4574279,
+       "ts": "2021-10-28T14:00:16.281167+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020661
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211029.csv.gz": {
+   "content_key": [
+    56386976,
+    "2026-09-10T03:27:27.174888+00:00",
+    "a12d29cb2949c7a7bf26483b06091f7c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1520363,
+     "examples": [
+      {
+       "gap_seconds": 1910.025808,
+       "row": 161886,
+       "ts": "2021-10-29T04:36:41.942661+00:00"
+      },
+      {
+       "gap_seconds": 1700.191241,
+       "row": 2307947,
+       "ts": "2021-10-29T20:47:39.993660+00:00"
+      },
+      {
+       "gap_seconds": 1024.669107,
+       "row": 162097,
+       "ts": "2021-10-29T06:15:36.832279+00:00"
+      },
+      {
+       "gap_seconds": 1007.805049,
+       "row": 2308490,
+       "ts": "2021-10-29T23:23:31.029376+00:00"
+      },
+      {
+       "gap_seconds": 969.925906,
+       "row": 3039982,
+       "ts": "2021-10-29T21:27:22.240105+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.020886
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211030.csv.gz": {
+   "content_key": [
+    44381472,
+    "2026-09-10T03:28:03.395560+00:00",
+    "94c71058d729114d686b0e1c76eae748"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1257117,
+     "examples": [
+      {
+       "gap_seconds": 3185.765998,
+       "row": 1218044,
+       "ts": "2021-10-30T05:53:25.012986+00:00"
+      },
+      {
+       "gap_seconds": 1736.690308,
+       "row": 119265,
+       "ts": "2021-10-30T12:15:57.186817+00:00"
+      },
+      {
+       "gap_seconds": 1316.400371,
+       "row": 118871,
+       "ts": "2021-10-30T09:30:13.205511+00:00"
+      },
+      {
+       "gap_seconds": 1129.428289,
+       "row": 1780028,
+       "ts": "2021-10-30T17:25:04.260977+00:00"
+      },
+      {
+       "gap_seconds": 1124.409729,
+       "row": 613151,
+       "ts": "2021-10-30T02:56:29.766766+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.022076
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211031.csv.gz": {
+   "content_key": [
+    57372601,
+    "2026-09-10T03:28:49.336553+00:00",
+    "eaa10abf5676d02e2eebf70f335dfe65"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1421830,
+     "examples": [
+      {
+       "gap_seconds": 2767.322647,
+       "row": 1441178,
+       "ts": "2021-10-31T20:26:14.971382+00:00"
+      },
+      {
+       "gap_seconds": 2137.50268,
+       "row": 2132257,
+       "ts": "2021-10-31T09:50:05.266865+00:00"
+      },
+      {
+       "gap_seconds": 1706.128425,
+       "row": 2134389,
+       "ts": "2021-10-31T19:34:05.564016+00:00"
+      },
+      {
+       "gap_seconds": 1662.007697,
+       "row": 2665693,
+       "ts": "2021-10-31T18:00:10.435233+00:00"
+      },
+      {
+       "gap_seconds": 1612.297771,
+       "row": 142775,
+       "ts": "2021-10-31T19:13:30.438212+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.024513
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211101.csv.gz": {
+   "content_key": [
+    56821008,
+    "2026-09-10T03:29:31.744362+00:00",
+    "ab122fef7ae3b5bc818e6c099f1565f0"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1472211,
+     "examples": [
+      {
+       "gap_seconds": 2247.87903,
+       "row": 174866,
+       "ts": "2021-11-01T02:13:54.027517+00:00"
+      },
+      {
+       "gap_seconds": 1816.604807,
+       "row": 174841,
+       "ts": "2021-11-01T01:11:05.829938+00:00"
+      },
+      {
+       "gap_seconds": 1766.390329,
+       "row": 176053,
+       "ts": "2021-11-01T12:33:57.762437+00:00"
+      },
+      {
+       "gap_seconds": 1577.000349,
+       "row": 176168,
+       "ts": "2021-11-01T14:26:52.618274+00:00"
+      },
+      {
+       "gap_seconds": 1575.637873,
+       "row": 2712243,
+       "ts": "2021-11-01T01:08:19.454890+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.023954
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20211102.csv.gz": {
+   "content_key": [
+    50901866,
+    "2026-09-10T03:30:11.615674+00:00",
+    "eb6a2016025419010c74dc94b0451c8a"
+   ],
+   "result": {
+    "gaps": {
+     "count": 1111523,
+     "examples": [
+      {
+       "gap_seconds": 3629.657608,
+       "row": 1320723,
+       "ts": "2021-11-02T08:48:46.376931+00:00"
+      },
+      {
+       "gap_seconds": 3174.765984,
+       "row": 1321550,
+       "ts": "2021-11-02T11:48:14.819839+00:00"
+      },
+      {
+       "gap_seconds": 2340.42316,
+       "row": 130047,
+       "ts": "2021-11-02T09:38:21.390310+00:00"
+      },
+      {
+       "gap_seconds": 2285.715705,
+       "row": 1321887,
+       "ts": "2021-11-02T15:24:43.739068+00:00"
+      },
+      {
+       "gap_seconds": 2106.304838,
+       "row": 1320683,
+       "ts": "2021-11-02T06:41:31.632737+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.025798
+    }
+   }
   }
  },
- "generated_at": "2026-10-03T00:03:06.249068+00:00",
+ "generated_at": "2026-10-03T21:43:43.013601+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 3064,
+ "schema_undefined_count": 3104,
  "schema_undefined_files": [
   "backtest_data/audit_fetch_P2-08b_20260906/binance_1s_2026-09-05_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2019-06-01_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2026-09-05_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/tardis_sample_FX_BTC_JPY_2020-01-01_head1000.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/tardis_sample_FX_BTC_JPY_2026-08-01_head1000.csv",
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2020.csv.gz",
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2021.csv.gz",
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2022.csv.gz",
+  "backtest_data/binance_um_BTCUSDT_1m_20261002/binance_um_BTCUSDT_1m_2023.csv.gz",
   "backtest_data/bitflyer_executions_backfill_20260921/executions_20260918.csv.gz",
   "backtest_data/bitflyer_executions_backfill_20260921/executions_20260919.csv.gz",
   "backtest_data/bitflyer_executions_backfill_20260921/executions_20260920.csv.gz",
   "backtest_data/bitflyer_executions_backfill_20260921/executions_20260921.csv.gz",
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2017.csv.gz",
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2018.csv.gz",
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2019.csv.gz",
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2020.csv.gz",
+  "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2021.csv.gz",
   "backtest_data/bitmex_insurance_20260912/insurance.jsonl.gz",
   "backtest_data/bitmex_insurance_20260912/insurance_daily.csv",
   "backtest_data/coinalyze_liquidations_20260921/BTCUSD.6_1min.csv",
@@ -258659,6 +260085,8 @@
   "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_pair_diff.csv",
   "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_q0.csv",
   "backtest_data/o3c_signal_value_20260921/stage2_secondhalf/q_tp_seconds.csv",
+  "backtest_data/okx_traders_backfill_20261003/history_20261003.csv.gz",
+  "backtest_data/okx_traders_backfill_20261003/positions_20261003.csv.gz",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_diff_table.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_null.csv",
   "backtest_data/phase2_runs/G1_state_analysis_20260906/P2-01_state_table.csv",
@@ -261469,6 +262897,35 @@
   "data/archive/bitmex/data/quote/20211001.csv.gz",
   "data/archive/bitmex/data/quote/20211002.csv.gz",
   "data/archive/bitmex/data/quote/20211003.csv.gz",
-  "data/archive/bitmex/data/quote/20211004.csv.gz"
+  "data/archive/bitmex/data/quote/20211004.csv.gz",
+  "data/archive/bitmex/data/quote/20211005.csv.gz",
+  "data/archive/bitmex/data/quote/20211006.csv.gz",
+  "data/archive/bitmex/data/quote/20211007.csv.gz",
+  "data/archive/bitmex/data/quote/20211008.csv.gz",
+  "data/archive/bitmex/data/quote/20211009.csv.gz",
+  "data/archive/bitmex/data/quote/20211010.csv.gz",
+  "data/archive/bitmex/data/quote/20211011.csv.gz",
+  "data/archive/bitmex/data/quote/20211012.csv.gz",
+  "data/archive/bitmex/data/quote/20211013.csv.gz",
+  "data/archive/bitmex/data/quote/20211014.csv.gz",
+  "data/archive/bitmex/data/quote/20211015.csv.gz",
+  "data/archive/bitmex/data/quote/20211016.csv.gz",
+  "data/archive/bitmex/data/quote/20211017.csv.gz",
+  "data/archive/bitmex/data/quote/20211018.csv.gz",
+  "data/archive/bitmex/data/quote/20211019.csv.gz",
+  "data/archive/bitmex/data/quote/20211020.csv.gz",
+  "data/archive/bitmex/data/quote/20211021.csv.gz",
+  "data/archive/bitmex/data/quote/20211022.csv.gz",
+  "data/archive/bitmex/data/quote/20211023.csv.gz",
+  "data/archive/bitmex/data/quote/20211024.csv.gz",
+  "data/archive/bitmex/data/quote/20211025.csv.gz",
+  "data/archive/bitmex/data/quote/20211026.csv.gz",
+  "data/archive/bitmex/data/quote/20211027.csv.gz",
+  "data/archive/bitmex/data/quote/20211028.csv.gz",
+  "data/archive/bitmex/data/quote/20211029.csv.gz",
+  "data/archive/bitmex/data/quote/20211030.csv.gz",
+  "data/archive/bitmex/data/quote/20211031.csv.gz",
+  "data/archive/bitmex/data/quote/20211101.csv.gz",
+  "data/archive/bitmex/data/quote/20211102.csv.gz"
  ]
 }
