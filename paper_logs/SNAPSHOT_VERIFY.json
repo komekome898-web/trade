@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-02T23:38:28.754735+00:00",
+  "generated_at": "2026-10-03T21:25:06.926015+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -350,6 +350,20 @@
       ]
     },
     {
+      "unit": "auto_okx_long_short_ratio_20261003",
+      "md5sums_path": "backtest_data\\auto_okx_long_short_ratio_20261003\\MD5SUMS",
+      "file_count": 3,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_okx_open_interest_1h_20260905",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260905\\MD5SUMS",
       "file_count": 2,
@@ -674,6 +688,20 @@
     {
       "unit": "auto_okx_open_interest_5m_20261002",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261002\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261003",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261003\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -2243,6 +2271,18 @@
       "extra": []
     },
     {
+      "unit": "binance_um_BTCUSDT_1m_20261002",
+      "md5sums_path": "backtest_data\\binance_um_BTCUSDT_1m_20261002\\MD5SUMS",
+      "file_count": 6,
+      "status": "verified",
+      "checked": 6,
+      "matched": 6,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "binance_um_BTCUSDT_aggTrades_20260723_20260906",
       "md5sums_path": "backtest_data\\binance_um_BTCUSDT_aggTrades_20260723_20260906\\MD5SUMS",
       "file_count": 1,
@@ -3642,6 +3682,18 @@
       ]
     },
     {
+      "unit": "bitmex_XBTUSD_1m_from1s_20261002",
+      "md5sums_path": "backtest_data\\bitmex_XBTUSD_1m_from1s_20261002\\MD5SUMS",
+      "file_count": 7,
+      "status": "verified",
+      "checked": 7,
+      "matched": 7,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
+    },
+    {
       "unit": "board_round_20260904",
       "md5sums_path": "backtest_data\\board_round_20260904\\MD5SUMS",
       "file_count": 5,
@@ -4485,6 +4537,21 @@
       ]
     },
     {
+      "unit": "okx_traders_backfill_20261003",
+      "md5sums_path": "backtest_data\\okx_traders_backfill_20261003\\MD5SUMS",
+      "file_count": 4,
+      "status": "verified",
+      "checked": 2,
+      "matched": 2,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "README.md",
+        "backfill_run.py"
+      ]
+    },
+    {
       "unit": "phase2_runs",
       "md5sums_path": "backtest_data\\phase2_runs\\MD5SUMS",
       "file_count": 327,
@@ -5262,19 +5329,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6637,
+    "checked": 6659,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 130,
-    "verified": 101,
+    "unit_count": 135,
+    "verified": 106,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
     "total_missing": 1567,
-    "total_extra_untracked": 1332,
+    "total_extra_untracked": 1336,
     "ledger_mismatches": 0
   },
   "ok": false
