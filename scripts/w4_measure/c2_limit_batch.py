@@ -34,6 +34,17 @@ for keep, feet in (("weak", (5, 15, 30, 60)), ("strong", (1,))):
         for e in ("a", "b"):
             JOBS.append((f"{keep}_f{f}_close_{e}", base + ["--entry", e, "--fill", "close", "--fill-side", "good"]))
 
+# 門あり 5・15 分(SPEC §9-1「門なしを全部と、門あり 5・15 分 × 入り方 3 を走らせる」。境目は K1 の値。
+# 最初の一覧から抜けていた分。--gated で走らせる。2026-10-03 リード)
+JOBS_GATED: list = []
+for f in (5, 15):
+    base = ["--series", "a", "--design", "k1", "--foot-min", str(f), "--vol-gate"]
+    for e in ("a", "b", "c"):
+        for side in ("good", "bad"):
+            JOBS_GATED.append((f"weak_f{f}_gate_limit_{e}_{side}", base + ["--entry", e, "--fill", "limit", "--fill-side", side]))
+    for e in ("a", "b"):
+        JOBS_GATED.append((f"weak_f{f}_gate_close_{e}", base + ["--entry", e, "--fill", "close", "--fill-side", "good"]))
+
 
 def run_one(job: tuple, root: str) -> str:
     name, args = job
@@ -54,12 +65,14 @@ def main() -> int:
     ap.add_argument("--nshards", type=int, default=1)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--gated", action="store_true", help="門あり 5・15 分の組(JOBS_GATED)を走らせる")
     a = ap.parse_args()
-    mine = [j for i, j in enumerate(JOBS) if i % a.nshards == a.shard]
+    jobs = JOBS_GATED if a.gated else JOBS
+    mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
         for n, ar in mine:
             print(n, " ".join(ar))
-        print(f"{len(mine)} / {len(JOBS)}")
+        print(f"{len(mine)} / {len(jobs)}")
         return 0
     os.makedirs(a.out_root, exist_ok=True)
     with ThreadPoolExecutor(max_workers=a.jobs) as ex:
