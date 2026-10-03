@@ -35,6 +35,7 @@ import shutil
 import sys
 import threading
 import time
+import zlib
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -229,6 +230,10 @@ class Target:
     card: Optional[Any] = None
 
 
+def _tp(tg: "Target") -> dict:
+    return {"path": str(Path(tg.dir) / "trades.json.gz")} if tg.card is not None else {}
+
+
 def _target(runs_dir: Any, run_id: str) -> Target:
     ref = CARDS.resolve(runs_dir, run_id)  # None: not the card form; BacktestViewError: not in the manifest / not displayable
     if ref is None:
@@ -413,10 +418,10 @@ def _raw(path: str) -> Any:
     return doc["data"] if isinstance(doc, dict) and isinstance(doc.get("data"), dict) else doc
 
 
-def load_trades(run_dir: str, range_name: Optional[str] = None, limit_ns: Optional[int] = None) -> TradeSet:
+def load_trades(run_dir: str, range_name: Optional[str] = None, limit_ns: Optional[int] = None, path: Optional[str] = None) -> TradeSet:
     """The run's trades (trades.json[.gz], either form) as arrays sorted by exit time, cut at `limit_ns`. A run through
     bot.bt.pipeline writes every trade once per fill range: `range_name` picks one (default: the first)."""
-    p = BV._export_path(run_dir, "trades")
+    p = path or BV._export_path(run_dir, "trades")  # a card variant passes its trades.json.gz: the file the completeness check looked at
     if p is None:
         raise ChartError("この実行に trades の出力が無い")
     st = os.stat(p)
@@ -726,8 +731,8 @@ def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: 
         return {"run_id": run_id, "purpose": rec.get("purpose"), "blocked": str(exc), "after_seal": isinstance(exc, AfterSeal)}
     ccy = BV.run_currency(rec)
     try:
-        ts = load_trades(d, range_name, cut.limit_ns)
-    except (OSError, EOFError, ValueError, KeyError) as exc:
+        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
+    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
         if tg.card is None:
             raise
         return {"run_id": run_id, "preparing": f"準備中: trades を読めない(書きかけ): {type(exc).__name__}", "card": {"variant": run_id}}
@@ -743,6 +748,7 @@ def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: 
             "price": _summary_price(plan), "seal_boundary_s": cut.b // 10**9, "seal_boundary_iso": _iso(cut.b / 1e9)}
     if tg.card is not None:
         out["card"] = CARDS.info(tg.card, ts.n)
+        out["stats"], out["card"]["headline"] = CARDS.headline(tg.card, out["stats"], ts.n)
     return out
 
 
@@ -762,8 +768,8 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
     rule = seal_rule(root)
     cut = run_cut(rec, rule)
     try:
-        ts = load_trades(d, range_name, cut.limit_ns)
-    except (OSError, EOFError, ValueError, KeyError) as exc:
+        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
+    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
         if tg.card is None:
             raise
         raise ChartError(f"準備中: trades を読めない(書きかけ): {type(exc).__name__}") from None

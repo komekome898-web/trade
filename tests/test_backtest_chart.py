@@ -587,7 +587,7 @@ def test_the_real_manifest_agrees_with_the_ledger():
         other = {u["variant"]: u for s in strat for u in s["unavailable"]}
         assert (variant in ready) != (variant in other)
         if row["display_ok"] is not True:
-            assert variant in other and other[variant]["reason"], (card, variant)
+            assert variant in other and (other[variant]["reason"] or other[variant]["state"] == "not_exported"), (card, variant)
 
 
 def test_card_catalog_lists_ready_blocked_preparing_and_excluded_with_reasons(tmp_path):
@@ -596,7 +596,7 @@ def test_card_catalog_lists_ready_blocked_preparing_and_excluded_with_reasons(tm
     c7 = th["card:c7_barrier_race"]["strategies"][0]
     assert [r["variant"] for r in c7["runs"]] == ["1h"] and c7["runs"][0]["run_id"] == "cards/c7_barrier_race/1h"
     un = {u["variant"]: u for u in c7["unavailable"]}
-    assert un["1d"]["state"] == "not_exported" and "未実行" in un["1d"]["reason"]
+    assert un["1d"]["state"] == "not_exported" and "測定待ち" in un["1d"]["state_label"]
     assert un["1w"]["state"] == "preparing" and "trades.json.gz" in un["1w"]["reason"]
     assert [a["key"] for a in c7["axes"]] == ["c7_window"] and c7["axes"][0]["values"][0]["label"] == "1 時間"
     c9 = th["card:c9_liquidation_cascade"]["strategies"][0]
@@ -772,3 +772,98 @@ def test_card_page_and_script_carry_the_card_pieces():
     assert 'id="bt-card-note"' in dash.PAGE
     js = (Path(C.STATIC_DIR) / "backtest_tab.js").read_text(encoding="utf-8")
     assert "選べない変種" in js and "対象外" in js and "照合の範囲" in js and "isCard" in js
+
+
+# ---- critic fixes: bp note, headline source, waiting state, provenance display_ok, zlib, wording -----------------
+@pytest.mark.skipif(not CARD_MANIFEST.is_file(), reason="no cards manifest in this checkout")
+@pytest.mark.parametrize("cid,pid", [("c4_owner_matilda_range", "core_body"), ("c5_tokyo_fix_momentum", "default")])
+def test_card_headline_equals_the_researchs_numbers(cid, pid):
+    rd = str(REPO / "backtest_runs_shared")
+    ref = K.resolve(rd, f"cards/{cid}/{pid}")
+    git = ref and K.provenance(ref)["checks"]
+    s = C.run_summary(rd, f"cards/{cid}/{pid}", REPO)
+    st, hl = s["stats"], s["card"]["headline"]
+    assert st["n"] == git["extra.trades"]["git"]["n"] and st["win_rate"] == git["extra.trades"]["git"]["win_rate"]
+    assert st["max_dd_bp"] == pytest.approx(git["extra.drawdown"]["git"]["max_bp"], rel=1e-9)
+    assert "研究の値" in hl["win_rate"] and "daily.csv" in hl["max_dd"] and "研究と同じ定義" in hl["max_dd"]
+    assert s["card"]["bp_note"].startswith("bp = 持っていた間の 1 決定ごとの値動きの和") and "建値と決済値の比ではない" in s["card"]["bp_note"]
+
+
+def test_headline_without_the_researchs_values_is_computed_and_says_so(tmp_path):
+    t0, root = _cards_world(tmp_path)  # provenance has no checks
+    s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    hl = s["card"]["headline"]
+    assert "丸め" in hl["win_rate"] and "daily.csv" in hl["max_dd"]
+    assert s["stats"]["max_dd_bp"] == 0.0 and s["stats"]["win_rate"] == 1.0
+    d = tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1h"
+    prov = json.loads((d / "provenance.json").read_text())
+    prov["checks"] = {"extra.trades": {"git": {"n": 2, "win_rate": 0.5}}, "extra.drawdown": {"git": {"max_bp": 1.0}}}
+    (d / "provenance.json").write_text(json.dumps(prov))
+    _manifest(tmp_path, [_row("c7_barrier_race", "1h", d, n_trades=2)])
+    s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert s["stats"]["win_rate"] == 0.5 and "研究の値" in s["card"]["headline"]["win_rate"] and s["stats"]["wins"] == 1
+
+
+def test_limit_variant_bp_note_differs_and_every_card_trade_explains_bp(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    ref = K.resolve(root, "cards/c7_barrier_race/1h")
+    assert K.info(ref)["bp_note"] == T.BP_NOTE
+    ref.variant = "limit_v37_good"
+    assert K.info(ref)["bp_note"] == T.BP_NOTE_LIMIT and "段の約定の平均" in T.BP_NOTE_LIMIT
+    js = (Path(C.STATIC_DIR) / "backtest_tab.js").read_text(encoding="utf-8")
+    assert js.count("bp_note") >= 4 and "bt-bpnote" in js and "bt-card-bpnote" in js  # legend, tooltip, card note
+
+
+def test_waiting_variants_are_apart_from_failures_and_provenance_display_ok_false_blocks(tmp_path):
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+    c7 = _card_themes(root)["card:c7_barrier_race"]["strategies"][0]
+    un = {u["variant"]: u for u in c7["unavailable"]}
+    assert un["1d"]["state_label"] == K.WAITING == "測定待ち(書き出し・照合がまだ)" and un["1d"]["reason"] == ""
+    d = tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1d"
+    _write_card(tmp_path, "c7_barrier_race", "1d", t0, [(t0 + 600, t0 + 1200, 110, 120, 1, 1.0)])
+    _manifest(tmp_path, [_row("c7_barrier_race", "1h", tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1h", n_trades=2),
+                         _row("c7_barrier_race", "1d", d, n_trades=1, ok=True), _row("c7_barrier_race", "1w", ok=False, reason="照合が一致しない: daily_csv_sha256", status="exported")])
+    c7 = _card_themes(root)["card:c7_barrier_race"]["strategies"][0]
+    un = {u["variant"]: u for u in c7["unavailable"]}
+    assert un["1w"]["state"] == "blocked" and "照合が一致しない" in un["1w"]["reason"] and un["1w"]["state_label"] != K.WAITING
+    assert {r["variant"] for r in c7["runs"]} == {"1h", "1d"}
+    pj = d / "provenance.json"
+    prov = json.loads(pj.read_text())
+    prov["display_ok"] = False
+    pj.write_text(json.dumps(prov))
+    _manifest(tmp_path, [_row("c7_barrier_race", "1d", d, n_trades=1)])
+    st = _card_themes(root)["card:c7_barrier_race"]["strategies"][0]["unavailable"][0]
+    assert st["state"] == "blocked" and "display_ok" in st["reason"]
+    assert dash._backtest("/api/backtest/summary/cards/c7_barrier_race/1d", root, tmp_path)[0] == 404
+
+
+def test_card_loads_its_gz_even_when_a_plain_trades_json_sits_beside_it(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    d = tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1h"
+    (d / "trades.json").write_text(json.dumps({"version": 1, "t_unit": "ns", "entry_t_ns": [t0 * NS], "entry_px": [1], "exit_t_ns": [(t0 + 60) * NS],
+                                               "exit_px": [1], "side": [1], "qty": [1], "pnl_bp": [999.0]}))
+    s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert s["stats"]["n"] == 2 and s["stats"]["total_bp"] == pytest.approx(167.8)
+
+
+def test_zlib_error_while_reading_trades_is_preparing_not_a_500(tmp_path, monkeypatch):
+    import zlib
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+
+    def boom(*a, **k):
+        raise zlib.error("incomplete")
+    monkeypatch.setattr(C, "load_trades", boom)
+    assert "準備中" in json.loads(dash._backtest("/api/backtest/summary/cards/c7_barrier_race/1h", root, tmp_path)[2])["preparing"]
+    assert dash._backtest("/api/backtest/chart/cards/c7_barrier_race/1h", root, tmp_path)[0] == 400
+
+
+def test_card_descriptions_follow_the_sources_wording():
+    assert "比" in T.card_theme("c3_yen_premium_revert")["summary"] and "差" not in T.card_theme("c3_yen_premium_revert")["summary"]
+    c = T.CARD_AXES["c2_series"]
+    assert "measure/README.md" in c["source"] and "run_v2.py" in c["source"] and "CARD.md" not in c["source"]
+    note = c["values"]["c"][1]
+    assert "L-570" in note and "以後は測らない" in note and "参考として残す" in note and "食い違う" in note
+    lim = T.card_families(T.card_theme("c4_owner_matilda_range"))[2]
+    assert any("段の約定の平均" in x and "1 段目" in x and "範囲の外" in x for x in lim["description"]) and len(lim["description"]) <= 6

@@ -494,9 +494,10 @@
   {
    "move": 19,
    "tools": {
-    "SendMessage": 2
+    "SendMessage": 2,
+    "Bash": 1
    },
-   "n_tools": 2,
+   "n_tools": 3,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

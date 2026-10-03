@@ -315,11 +315,14 @@ CARD_AXES: dict[str, dict] = {
                 "values": {}},
     "c2_series": {
         "label": "シグナルを作る海外の系列", "numeric": False,
-        "source": f"{RUN_V2} の C2_VARIANTS(変種名の先頭の a / b / c = シグナルの系列)と {_card('c2_owner_xvenue_wick', '「変種と測る順」の表')}",
+        "source": f"{RUN_V2} の C2_VARIANTS(変種名の先頭の a / b / c = シグナルの系列と期間)と {CARDS_DIR}/c2_owner_xvenue_wick/measure/README.md の「変種 (b)・(c)」の節",
         "values": {
             "a": ("Binance 現物 BTCUSDT", "高レバ取引所ではない代理(CARD.md 意図の地図 I-11a)。期間 2017-08-17T15:00Z〜2023-12-17T15:00Z"),
             "b": ("Binance USD-M 先物 BTCUSDT", "先物の系列。期間 2020-01-01T15:00Z〜2023-12-17T15:00Z"),
-            "c": ("BitMEX XBTUSD(1 秒足から作った 1 分足)", "期間 2017-08-17T15:00Z〜2021-12-31T15:00Z"),
+            "c": ("BitMEX XBTUSD(1 秒足から作った 1 分足)・以後は測らない参考",
+              "期間は run_v2.py の C2_VARIANTS では 2017-08-17T15:00Z〜2021-12-31T15:00Z。CARD.md「変種と測る順」の表は 2017-01-01T15:00Z〜2021-12-31T15:00Z と書いていて食い違う(この画面は台本の値)。"
+              "オーナーの決定 L-570(OWNER_LOG L-570「BITMEXのデータは測定には使わないでいきましょう」、CARD.md「2026-10-03 オーナーの決定(L-570)」): "
+              "変種 (c) は BitMEX の閉鎖で運用できないので以後は測らない。測った結果は参考として残す"),
         }},
     "c2_foot": {
         "label": "海外の足の長さ", "numeric": True, "unit": "分足",
@@ -478,7 +481,7 @@ CARD_THEMES: list[dict] = [
     {
         "card": "c3_yen_premium_revert", "owner_origin": False,
         "title": "円の上乗せの戻り(bitFlyer と Binance × USDJPY の差が開いたあと)",
-        "summary": "bitFlyer の価格と、Binance × USDJPY(円に直した海外の価格)の差(円の上乗せ)が直近の分布から開いたとき、戻る向きに bitFlyer を持つ。",
+        "summary": "bitFlyer の価格と、Binance × USDJPY(円に直した海外の価格)の比(円の上乗せ)が直近の分布から開いたとき、戻る向きに bitFlyer を持つ。",
         "sources": [_card("c3_yen_premium_revert", "「原文(逐語)」(案 D1-D-21 の全欄と、第 3 版 §5-1・W4 の仕様 §1 の逐語)")],
         "instrument": "FX_BTC_JPY",
         "instrument_source": _card("c3_yen_premium_revert", "「意図の地図」I-1c(bitFlyer の価格 = FX_BTC_JPY の 1 分足)と I-6b(bitFlyer の脚だけを持つ)"),
@@ -518,7 +521,8 @@ CARD_THEMES: list[dict] = [
                  "レンジの中心から入りの離れ(2 × 平均実体)の値段に指値を置き、約定は指値の値段そのもの(次の足の始値ではない)。",
                  "取引は、持ち高が 0 から離れて 0 に戻るまでを 1 件とする(段の損益の和)。建て・決済の時刻は足の終わりの時刻。",
                  "1 分足は高値と安値のどちらが先かを持たないので、1 本の足に入りと利確などが重なる足は「決まらない足」とし、損益の良い方の道(良い側)・悪い方の道(悪い側)の 2 通りで進める。",
-                 "期間は 2015-11-28T15:00Z〜2023-12-17T15:00Z。損益は取引の値段から出した bp(SPEC §4)で、SPEC に経費の記載は無い。"],
+                 "期間は 2015-11-28T15:00Z〜2023-12-17T15:00Z。損益は取引の値段から出した bp(SPEC §4)で、SPEC に経費の記載は無い。",
+                 "矢印の建値は積んだ段の約定の平均、建てた時刻は 1 段目の約定の時刻なので、矢印の始点が足の値の範囲の外に出ることがある(matilda_limit_sim.py の _close_row・仕様 4)。"],
              "sources": [_card(C4, "limit_sim/SPEC.md の §1〜§4(入力・指値の約定・決まらない足・損益)"),
                          "src/bot/research/matilda_limit_sim.py の docstring(1 本の足の中の扱い・決まらない足)", f"{W4_SCRIPTS}/c4_limit_run.py の --fill-side"],
              "pattern": r"limit_v37_(?P<c4_fill>good|bad)", "axes": ["c4_fill"], "prefix": "limit_"},
@@ -638,3 +642,9 @@ def card_family_of(ct: dict, variant: str) -> tuple[Optional[dict], dict]:
         if m:
             return fam, {k: v for k, v in m.groupdict().items() if v is not None}
     return None, {}
+
+
+#: Shown beside every card trade (tooltip, legend, the card note): what the bp of a card trade is (provenance's trade_definition).
+BP_NOTE = "bp = 持っていた間の 1 決定ごとの値動きの和(provenance の取引の定義)。建値と決済値の比ではない。"
+BP_NOTE_LIMIT = ("bp = 段ごとの (出の値段 ÷ 入りの値段 − 1) × 1 万 ÷ 段の上限 の和(limit_sim/SPEC.md §4)。"
+                 "建値は積んだ段の約定の平均、時刻は 1 段目の約定で、矢印の始点が足の値の範囲の外に出ることがある。")

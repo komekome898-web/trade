@@ -139,6 +139,7 @@ def _gzip_complete(p: Path, st: os.stat_result) -> Optional[str]:
 
 
 def _json_complete(p: Path, st: os.stat_result) -> Optional[str]:
+    """None when provenance.json parses and does not say display_ok = false; else why not ("書きかけ" or "display_ok が false")."""
     key = (str(p), st.st_mtime_ns, st.st_size)
     with _LOCK:
         if key in _OK:
@@ -146,9 +147,31 @@ def _json_complete(p: Path, st: os.stat_result) -> Optional[str]:
     why = None
     try:
         with open(p, "r", encoding="utf-8") as fh:
-            json.load(fh)
+            doc = json.load(fh)
+        if isinstance(doc, dict) and doc.get("display_ok") is False:
+            why = "BLOCKED:provenance.json の display_ok が false"
     except (OSError, ValueError) as exc:
         why = f"{p.name} を読めない(書きかけ): {type(exc).__name__}"
+    with _LOCK:
+        _OK[key] = why
+    return why
+
+
+def _daily_complete(p: Path, st: os.stat_result) -> Optional[str]:
+    key = (str(p), st.st_mtime_ns, st.st_size)
+    with _LOCK:
+        if key in _OK:
+            return _OK[key]
+    why = None
+    try:
+        with open(p, "r", encoding="utf-8", newline="") as fh:
+            rows = list(csv.DictReader(fh))
+        if not rows:
+            why = "daily.csv が空(書きかけ)"
+        for r in rows:
+            float(r["pnl_bp"])
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        why = f"daily.csv を読めない(書きかけ): {type(exc).__name__}"
     with _LOCK:
         _OK[key] = why
     return why
@@ -168,8 +191,10 @@ def variant_state(man: Manifest, row: dict) -> tuple[str, str]:
     """(state, reason): "ready" (selectable), "preparing" (display_ok but the files are not complete), "blocked" (display_ok
     is false: the manifest's reason is shown) or "not_exported" (the manifest says it was not exported)."""
     if row.get("display_ok") is not True:
+        if row.get("status") == "not_exported" and str(row.get("reason") or GENERIC_REASON) == GENERIC_REASON:
+            return "not_exported", ""  # waiting for the measurement: not a failure
         if row.get("status") == "not_exported":
-            return "not_exported", str(row.get("reason") or "未実行または失敗")
+            return "blocked", str(row["reason"])
         return "blocked", str(row.get("reason") or "照合が一致しなかった(manifest の display_ok が false)")
     d = _variant_dir(man, row["card"], row["variant"])
     if d is None:
@@ -183,7 +208,10 @@ def variant_state(man: Manifest, row: dict) -> tuple[str, str]:
         if f in want and type(want[f]) is int and want[f] != st.st_size:
             return "preparing", f"{f} の大きさ({st.st_size} B)が manifest の記録({want[f]} B)と違う(書き足し中)"
     st = (d / "trades.json.gz").stat()
-    why = _gzip_complete(d / "trades.json.gz", st) or _json_complete(d / "provenance.json", (d / "provenance.json").stat())
+    why = (_gzip_complete(d / "trades.json.gz", st) or _json_complete(d / "provenance.json", (d / "provenance.json").stat())
+           or _daily_complete(d / "daily.csv", (d / "daily.csv").stat()))
+    if why and why.startswith("BLOCKED:"):
+        return "blocked", why[len("BLOCKED:"):]
     if why:
         return "preparing", why
     return "ready", ""
@@ -228,6 +256,8 @@ def resolve(runs_dir: Any, run_id: Any, require_ready: bool = True) -> Optional[
         ref = CardRef(man, row, key[0], key[1], d)
         if require_ready:
             state, why = variant_state(man, row)
+            if state == "blocked":
+                raise BV.BacktestViewError(f"card variant {run_id} is not displayable: {why}")
             if state != "ready":
                 raise CardPreparing(f"準備中: {why}")
         return ref
@@ -288,8 +318,60 @@ def info(ref: CardRef, trades_cut: Optional[int] = None) -> dict:
             "n_trades_cut": trades_cut, "trade_definition": prov.get("trade_definition"), "git_sha": prov.get("git_sha"),
             "manifest_git_sha": ref.man.git_sha, "seal": prov.get("seal"), "data_dirs_read": list(prov.get("data_dirs_read") or []),
             "research_cmd": (prov.get("script") or {}).get("research_cmd"), "export": (prov.get("script") or {}).get("export"),
+            "bp_note": T.BP_NOTE_LIMIT if ref.variant.startswith("limit_") else T.BP_NOTE,
             "seconds": row.get("seconds"), "instrument": ct.get("instrument") if ct else None,
             "instrument_source": ct.get("instrument_source") if ct else None}
+
+
+def daily_rows(ref: CardRef) -> list:
+    with open(ref.dir / "daily.csv", "r", encoding="utf-8", newline="") as fh:
+        return [(r["day"], float(r["pnl_bp"])) for r in csv.DictReader(fh)]
+
+
+def daily_drawdown_bp(ref: CardRef) -> float:
+    """The research's maximum drawdown (scripts/w4_measure/light_b2.py extra_stats): the largest fall of the running sum of
+    the daily profits (daily.csv, one row per day) below its running peak, the sum starting at 0."""
+    s = 0.0
+    peak = 0.0
+    dd = 0.0
+    for _, v in daily_rows(ref):
+        s += v
+        peak = max(peak, s)
+        dd = max(dd, peak - s)
+    return dd
+
+
+def headline(ref: CardRef, stats: dict, n_after_cut: int) -> tuple[dict, dict]:
+    """(stats with the card's headline numbers, what each came from). Trades count, win rate: the research's own values
+    copied into provenance.json (checks["extra.trades"]["git"], from the research's extra.json) when there are some and no
+    trade was cut at the seal boundary; else computed from the exported trades (their pnl_bp are rounded to 4 decimals, so
+    a tiny win can become 0: the small difference from the research). Maximum drawdown: from daily.csv by the research's
+    definition (no trade cut), else from the trades one by one (not the research's definition)."""
+    prov = provenance(ref)
+    checks = prov.get("checks") or {}
+    git_tr = (checks.get("extra.trades") or {}).get("git")
+    git_dd = (checks.get("extra.drawdown") or {}).get("git")
+    out = dict(stats)
+    src: dict = {}
+    n_exp = ref.row.get("n_trades")
+    uncut = n_exp is None or n_after_cut == n_exp
+    if uncut and isinstance(git_tr, dict) and type(git_tr.get("n")) is int and git_tr.get("win_rate") is not None and git_tr["n"] == stats["n"]:
+        out["win_rate"] = float(git_tr["win_rate"])
+        out["wins"] = int(round(out["win_rate"] * git_tr["n"]))
+        src["win_rate"] = "研究の値(provenance に写した extra.json の trades。書き出しの丸めの影響を受けない)"
+    else:
+        src["win_rate"] = "書き出した取引から計算(pnl_bp の小数 4 桁の丸めで、微小な勝ちが 0 になり、研究の数とわずかにずれることがある)"
+    if uncut:
+        try:
+            out["max_dd_bp"] = daily_drawdown_bp(ref)
+            src["max_dd"] = "daily.csv から日ごとに計算(研究と同じ定義: 日ごとの損益の累計の、それまでの最高値からの最大の落ち込み)"
+        except (OSError, ValueError, KeyError):
+            src["max_dd"] = "取引ごとの累計から計算(研究の定義ではない)"
+    else:
+        src["max_dd"] = "取引ごとの累計から計算(封印の境で取引を切ったため daily.csv は使えない。研究の定義ではない)"
+    src["n"] = "書き出した取引の数(封印の境で切った後)"
+    src["research_max_dd_bp"] = (git_dd or {}).get("max_bp") if isinstance(git_dd, dict) else None
+    return out, src
 
 
 def daily_sum_bp(ref: CardRef) -> float:
@@ -299,7 +381,10 @@ def daily_sum_bp(ref: CardRef) -> float:
 
 
 # ---- the catalog ------------------------------------------------------------------------------------------------
-STATE_LABEL = {"ready": "表示できる", "preparing": "準備中", "blocked": "表示できない(照合が一致しない)", "not_exported": "未実行または失敗"}
+WAITING = "測定待ち(書き出し・照合がまだ)"
+GENERIC_REASON = "未実行または失敗"  # what scripts/dashboard_cards writes for a variant it has not exported yet
+STATE_LABEL = {"ready": "表示できる", "preparing": "準備中", "blocked": "表示できない(失敗: 照合が一致しない、または display_ok = false)",
+               "not_exported": WAITING}
 
 
 def _axes_of(ct: Optional[dict], variant: str) -> tuple[Optional[dict], dict]:

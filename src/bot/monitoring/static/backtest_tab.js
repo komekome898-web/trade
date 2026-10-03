@@ -205,7 +205,11 @@
     const c = SUM.card, box = $("bt-card-note");
     if (!c) { box.innerHTML = ""; return; }
     const li = a => (a || []).map(t => `<li>${esc(t)}</li>`).join("") || "<li>(なし)</li>";
-    box.innerHTML = `<details open><summary>照合の範囲(研究のカード ${esc(c.card)} / 変種 ${esc(c.variant)})</summary>` +
+    const hl = c.headline || {};
+    box.innerHTML = `<div class="warn" id="bt-card-bpnote">${esc(c.bp_note || "")}</div>` +
+      `<div>見出しの数の出所: 勝率 = ${esc(hl.win_rate || "—")} / 最大の落ち込み = ${esc(hl.max_dd || "—")} / 取引数 = ${esc(hl.n || "—")}` +
+      `${hl.research_max_dd_bp != null ? "(研究の最大の落ち込み " + num(hl.research_max_dd_bp, 1) + " bp)" : ""}</div>` +
+      `<details open><summary>照合の範囲(研究のカード ${esc(c.card)} / 変種 ${esc(c.variant)})</summary>` +
       `<div>照合した項目</div><ul>${li(c.verified_items)}</ul><div class="warn">照合していない項目</div><ul>${li(c.not_verified)}</ul>` +
       `<div>表示の条件: ${esc(c.display_ok_rule || "—")}</div>` +
       `<div>取引は研究の台本を走らせ直して作った(取引数 ${num(c.n_trades_manifest)} 件${c.n_trades_cut != null && c.n_trades_cut !== c.n_trades_manifest ? "、封印の境で切って " + num(c.n_trades_cut) + " 件" : ""}、損益は bp だけで通貨の額は無い)。</div>` +
@@ -331,7 +335,8 @@
 
   function renderLegend() {
     const u = PX.opts.unit === "bp" ? "bp" : unitName();
-    $("bt-legend").innerHTML =
+    const bpn = SUM && SUM.card && SUM.card.bp_note ? `<span class="warn" id="bt-bpnote">${esc(SUM.card.bp_note)}</span>` : "";
+    $("bt-legend").innerHTML = bpn +
       `<span><i style="border-color:${BUY}"></i>買い</span><span><i style="border-color:${SELL}"></i>売り</span>` +
       `<span><i style="border-color:#aab"></i>実線 = 勝ち</span><span><i style="border-top-style:dashed;border-color:#aab"></i>破線 = 負け</span>` +
       `<span><i style="border-color:${CUM}"></i>累計損益(${esc(u)})</span><span>点線の縦線 = 開始・終了</span><span>ホイールで拡大・縮小、ドラッグで移動</span>`;
@@ -563,7 +568,7 @@
     const t = best.t, u = unitName();
     tip.textContent = `${t.side > 0 ? "買い" : "売り"}  ${t.pnl > 0 ? "勝ち" : t.pnl < 0 ? "負け" : "±0"}\n` +
       `建て ${utc(t.et, true)}  ${num(t.ep, 2)}\n決済 ${utc(t.xt, true)}  ${num(t.xp, 2)}\n` +
-      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.bp, 1)} bp\n決済理由 ${t.reason == null ? "—" : t.reason}`;
+      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.bp, 1)} bp\n${SUM.card && SUM.card.bp_note ? "※" + SUM.card.bp_note + "\n" : ""}決済理由 ${t.reason == null ? "—" : t.reason}`;
     tip.style.display = "block";
     tip.style.left = Math.min(mx + 14, r.width - 260) + "px"; tip.style.top = Math.min(my + 14, r.height - 100) + "px";
   }
