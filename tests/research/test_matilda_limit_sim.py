@@ -643,14 +643,29 @@ def test_width_gate_upper_limit():
         assert s._side == side, (amp, gate)
 
 
-def _runner():
+def _load_w4(name):
+    """scripts/w4_measure の台本を読み込む。台本は `from common import ...` で同じ置き場の common を読むが、
+    全部の試験を続けて回すと別の試験が別の `common`(tests/bt/battery/item_0/adapters/common.py など)を
+    sys.modules に先に入れていて取り違える。読み込む間だけ別の置き場の common・post・run_v2 を外し、後で戻す。"""
+    import importlib
     import os
     import sys
-    d = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "w4_measure")
+    d = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "w4_measure"))
     if d not in sys.path:
         sys.path.insert(0, d)
-    import c4_limit_run
-    return c4_limit_run
+    if name in sys.modules:
+        return sys.modules[name]
+    foreign = {k: sys.modules.pop(k) for k in ("common", "post", "run_v2") if k in sys.modules
+               and os.path.dirname(os.path.abspath(getattr(sys.modules[k], "__file__", None) or "")) != d}
+    try:
+        return importlib.import_module(name)
+    finally:
+        for k, m in foreign.items():
+            sys.modules[k] = m
+
+
+def _runner():
+    return _load_w4("c4_limit_run")
 
 
 def test_year_stats():

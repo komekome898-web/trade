@@ -21,6 +21,28 @@ from bot.research.katsuo_limit_sim import (EXIT_CLOSE, EXIT_DOTEN, EXIT_END, EXI
                                            STRONG, WEAK, XSIG_LINE, XSIG_WEAK, KatsuoLimitSim, action, k1_signal,
                                            tercile, tick_down, tick_up)
 
+
+def _load_w4(name):
+    """scripts/w4_measure の台本を読み込む。台本は `from common import ...` で同じ置き場の common を読むが、
+    全部の試験を続けて回すと別の試験が別の `common`(tests/bt/battery/item_0/adapters/common.py など)を
+    sys.modules に先に入れていて取り違える。読み込む間だけ別の置き場の common・post・run_v2 を外し、後で戻す。"""
+    import importlib
+    import os
+    import sys
+    d = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "w4_measure"))
+    if d not in sys.path:
+        sys.path.insert(0, d)
+    if name in sys.modules:
+        return sys.modules[name]
+    foreign = {k: sys.modules.pop(k) for k in ("common", "post", "run_v2") if k in sys.modules
+               and os.path.dirname(os.path.abspath(getattr(sys.modules[k], "__file__", None) or "")) != d}
+    try:
+        return importlib.import_module(name)
+    finally:
+        for k, m in foreign.items():
+            sys.modules[k] = m
+
+
 NS = 1_000_000_000
 M = 60 * NS
 T0 = 1_704_067_200 * NS  # 2024-01-01T00:00:00Z。試験の時刻で、データではない
@@ -1011,7 +1033,7 @@ def _run_pair(refs, bars, **kw):
 
 def test_k1_missed_is_a_close_trade_without_a_limit_trade_for_the_same_signal():
     """取り逃し = 参照の形で建った取引のうち、指値の形に同じ合図の時刻の取引が無いもの(直し 5)。"""
-    import c2_limit_run as R
+    R = _load_w4("c2_limit_run")
     refs = foot_rows(0, WEAK_SELL) + foot_rows(1, WEAK_BUY) + foot_rows(2, FLAT) + foot_rows(3, FLAT)
     bars = [bar(i, P, c=P) for i in range(30)] + [bar(i, P - 1000, c=P - 1000) for i in range(30, 50)]
     lim, rl, rc = _run_pair(refs, bars, entry="b")
@@ -1032,7 +1054,7 @@ def test_k1_missed_is_a_close_trade_without_a_limit_trade_for_the_same_signal():
 
 
 def test_find_missed_marks_signals_without_a_limit_order():
-    import c2_limit_run as R
+    R = _load_w4("c2_limit_run")
     rc = [{"signal_ns": 1, "pnl_bp": 5.0}, {"signal_ns": 2, "pnl_bp": -3.0}, {"signal_ns": 3, "pnl_bp": 1.0}]
     rl = [{"signal_ns": 3, "pnl_bp": 0.5}]
     log = [["ent2", 10, 1.0, None, 0, 1]]
@@ -1071,7 +1093,7 @@ def test_tercile_matches_k1_bucket_of(v):
 
 # ---------------------------------------------------------------- 走らせの集計(c2_limit_run.build_summary)
 def test_run_summary_by_year_flags_and_2018on():
-    import c2_limit_run as R
+    R = _load_w4("c2_limit_run")
     y17, y18 = 1_483_228_800 * NS, 1_514_764_800 * NS  # 2017-01-01・2018-01-01
     lo, hi = y17 + 300 * 86_400 * NS, y18 + 31 * 86_400 * NS
     edges = [lo, y18, hi]
