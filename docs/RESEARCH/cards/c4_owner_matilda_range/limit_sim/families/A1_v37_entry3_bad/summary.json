@@ -1,0 +1,212 @@
+{
+ "all": {
+  "avg_loss_bp": -18.5343799676639,
+  "avg_win_bp": 0.6395653889775363,
+  "days": 2941.0,
+  "losses": 46320,
+  "per_day": {
+   "pnl_bp": -174.04535862324994,
+   "trades": 200.04182250935057,
+   "wins": 184.29139748384904
+  },
+  "sum_bp": -511867.3997109781,
+  "sum_loss_bp": -858512.4801021918,
+  "sum_win_bp": 346645.08039121365,
+  "trades": 588323,
+  "trades_with_undecided": 431997,
+  "undecided_bars_in_trades": 541137,
+  "wins": 542001
+ },
+ "exit_reasons": {
+  "利確1": 540714,
+  "利確2": 4053,
+  "反対のブレイク": 42574,
+  "時間": 981,
+  "期間の終わり": 1
+ },
+ "params": {
+  "alert_min": 20,
+  "bar_min": 1,
+  "break_delay": 1,
+  "entry": 3,
+  "exit_form": "v37",
+  "exit_setting": null,
+  "fill_side": "bad",
+  "n_levels": 7,
+  "on_break": "hold",
+  "range_from": "body",
+  "step": 1,
+  "step_exit": 0.8,
+  "width_gate": true,
+  "window_min": 40
+ },
+ "period": [
+  "2015-11-28T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "undecided_bars_total": 541137,
+ "years": {
+  "2015": {
+   "avg_loss_bp": -19.81721307752791,
+   "avg_win_bp": 0.44263120185599614,
+   "days": 33.375,
+   "losses": 371,
+   "per_day": {
+    "pnl_bp": -215.63513108348766,
+    "trades": 21.632958801498127,
+    "wins": 10.51685393258427
+   },
+   "sum_bp": -7196.822499911401,
+   "sum_loss_bp": -7352.186051762855,
+   "sum_win_bp": 155.36355185145464,
+   "trades": 722,
+   "trades_with_undecided": 127,
+   "undecided_bars_in_trades": 136,
+   "wins": 351
+  },
+  "2016": {
+   "avg_loss_bp": -12.222268677046884,
+   "avg_win_bp": 0.2833576851706067,
+   "days": 366.0,
+   "losses": 6196,
+   "per_day": {
+    "pnl_bp": -167.0490152639439,
+    "trades": 157.60928961748633,
+    "wins": 140.67486338797815
+   },
+   "sum_bp": -61139.93958660346,
+   "sum_loss_bp": -75729.17672298249,
+   "sum_win_bp": 14589.237136379028,
+   "trades": 57685,
+   "trades_with_undecided": 33083,
+   "undecided_bars_in_trades": 37589,
+   "wins": 51487
+  },
+  "2017": {
+   "avg_loss_bp": -28.08847796018242,
+   "avg_win_bp": 0.9587469402386837,
+   "days": 365.0,
+   "losses": 5270,
+   "per_day": {
+    "pnl_bp": -217.80515767030465,
+    "trades": 210.26301369863015,
+    "wins": 195.82465753424657
+   },
+   "sum_bp": -79498.8825496612,
+   "sum_loss_bp": -148026.27885016135,
+   "sum_win_bp": 68527.39630050016,
+   "trades": 76746,
+   "trades_with_undecided": 56888,
+   "undecided_bars_in_trades": 69969,
+   "wins": 71476
+  },
+  "2018": {
+   "avg_loss_bp": -21.074158944869126,
+   "avg_win_bp": 0.7768165361878346,
+   "days": 365.0,
+   "losses": 5782,
+   "per_day": {
+    "pnl_bp": -172.39188552629184,
+    "trades": 223.67123287671234,
+    "wins": 207.83013698630137
+   },
+   "sum_bp": -62923.038217096524,
+   "sum_loss_bp": -121850.78701923328,
+   "sum_win_bp": 58927.74880213676,
+   "trades": 81640,
+   "trades_with_undecided": 64120,
+   "undecided_bars_in_trades": 80526,
+   "wins": 75858
+  },
+  "2019": {
+   "avg_loss_bp": -15.792020461175182,
+   "avg_win_bp": 0.5561612724818678,
+   "days": 365.0,
+   "losses": 5703,
+   "per_day": {
+    "pnl_bp": -132.56271664487898,
+    "trades": 220.92876712328768,
+    "wins": 205.3041095890411
+   },
+   "sum_bp": -48385.391575380825,
+   "sum_loss_bp": -90061.89269008207,
+   "sum_win_bp": 41676.50111470124,
+   "trades": 80639,
+   "trades_with_undecided": 62850,
+   "undecided_bars_in_trades": 80715,
+   "wins": 74936
+  },
+  "2020": {
+   "avg_loss_bp": -16.829118704192574,
+   "avg_win_bp": 0.5881811730804971,
+   "days": 366.0,
+   "losses": 5738,
+   "per_day": {
+    "pnl_bp": -143.81098220887358,
+    "trades": 219.74590163934425,
+    "wins": 204.06830601092895
+   },
+   "sum_bp": -52634.819488447734,
+   "sum_loss_bp": -96565.48312465698,
+   "sum_win_bp": 43930.66363620925,
+   "trades": 80427,
+   "trades_with_undecided": 62142,
+   "undecided_bars_in_trades": 79605,
+   "wins": 74689
+  },
+  "2021": {
+   "avg_loss_bp": -25.356117380469513,
+   "avg_win_bp": 0.8712160906461345,
+   "days": 365.0,
+   "losses": 5710,
+   "per_day": {
+    "pnl_bp": -232.5059517594585,
+    "trades": 204.07123287671232,
+    "wins": 188.42739726027398
+   },
+   "sum_bp": -84864.67239220235,
+   "sum_loss_bp": -144783.4302424809,
+   "sum_win_bp": 59918.75785027855,
+   "trades": 74486,
+   "trades_with_undecided": 55579,
+   "undecided_bars_in_trades": 70966,
+   "wins": 68776
+  },
+  "2022": {
+   "avg_loss_bp": -17.283666060489246,
+   "avg_win_bp": 0.5587781197085853,
+   "days": 365.0,
+   "losses": 5790,
+   "per_day": {
+    "pnl_bp": -164.34893292246014,
+    "trades": 212.4027397260274,
+    "wins": 196.53972602739725
+   },
+   "sum_bp": -59987.360516697954,
+   "sum_loss_bp": -100072.42649023274,
+   "sum_win_bp": 40085.06597353478,
+   "trades": 77527,
+   "trades_with_undecided": 58663,
+   "undecided_bars_in_trades": 74945,
+   "wins": 71737
+  },
+  "2023": {
+   "avg_loss_bp": -12.859517171979006,
+   "avg_win_bp": 0.3574490145493996,
+   "days": 350.625,
+   "losses": 5760,
+   "per_day": {
+    "pnl_bp": -157.5371775685609,
+    "trades": 166.70516934046347,
+    "wins": 150.27736185383245
+   },
+   "sum_bp": -55236.47288497667,
+   "sum_loss_bp": -74070.81891059908,
+   "sum_win_bp": 18834.346025622413,
+   "trades": 58451,
+   "trades_with_undecided": 38545,
+   "undecided_bars_in_trades": 46686,
+   "wins": 52691
+  }
+ }
+}
