@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""高ボラの門(`DESIGN.md`)の問い 1・2 を測る台本(第 2 版の定めに、第 3 版の 1〜4 を足した版)。
+"""高ボラの門(`DESIGN.md`)の問い 1・2 を測る台本(第 2 版の定めに、第 3 版の 1〜4 と、関門 ② の 3 回目を受けた第 4 版の計算を足した版)。
 
 DESIGN.md の問い(逐語):
 
@@ -55,8 +55,13 @@ DESIGN.md の問い(逐語):
   3. 保有の構成をそろえた比べ: 高と低の区分の、保有の層の内の平均を、相手の層の構成で重み付け直す。同じ形で時間帯の層でも出す。
   4. 無作為の時刻の入りの対照: 同じ足・同じ年・同じ (b) 区分の足のうち、遅らせた合図が 0 の足を無作為に選び(1 件あたり 10 回、
      種 = 足の名前の sha256)、元の取引と同じ向き・同じ保有の本数で bitFlyer の終値で入って出る。逆向きの入りはその符号違い。
-- 読み方(定め 8)の条件を、(b) について機械的に数えて「成り立つ / 成り立たない」を出す。言葉の判定は書かない。
-  条件の数え方は vol_gate.json の `q2.criteria_definition`。
+- 第 4 版(関門 ② の 3 回目を受けて足した計算。測った後・監査の後):
+  判定の目標の差(高 − 低、高 − 全)の日の塊の区間と標準誤差・最小検出差(`diff_boot`、3 つの期間・6 つの足に同じ規則)/
+  (iii) を主の種と種を変えた 5 回で数えた成否と「前もって分けられた」の数(全部 / v2 の (ii-年) を除く / (iii-年) を除く / 両方)/
+  2023 年も除いた束ね 2018・2019・2022 / 足ごとの保有の分位(10・50・75%)の区切りで構成をそろえた比べ /
+  (高の 実際 − 対照)−(低の 実際 − 対照)の区間 / (c 同年) の高 − 低の区間 / 割らない bp の中央値。
+- 読み方(定め 8)の条件を、(b) について機械的に数えて「前もって分けられた / 分けられたと言えない」(DESIGN 第 3 版 5 の 2 語)を
+  読みごとに出す。条件の数え方は vol_gate.json の `q2.criteria_definition`。
 
 出力: 同じフォルダの `vol_gate.json` と `TABLES.md`(どちらもこの台本が書く)。それ以外は書かない
 (`--cache` を名指ししたときだけ、読んだ分足をその場所に .npz で置く / あれば読み直さずに使う)。
@@ -230,9 +235,20 @@ def run_check(sig_bars_by_foot, price_bars_by_foot, k1, label):
 # ---------------------------------------------------------------- 共通
 
 REPS = eff.BOOTSTRAP
+ASSUMPTIONS = {   # 新しく置いた値の出所(監査の 3 回目 14)
+    "Z_MDE": "作業者の仮定: 最小検出差の両側 5%・検出力 80% は慣例の値。一次資料・実測の根拠は無い",
+    "CTRL_DRAWS": "作業者の仮定: 無作為の対照を 1 件あたり 10 回抽出。計算量と平均のばらつきの釣り合いで決めた。実測の根拠は無い",
+    "HOLD_BINS": "リードの仮定: DESIGN 第 2 版 5 の区切り 1 / 2〜7 / 8〜21 / 22 本以上(5 分の保有の 10・25・50・75% 点 1・3・7・21 から丸めた)。他の足にも同じ区切りを当てたのは第 2 版の定めのとおり",
+    "HOLD_BINS_FOOT": "作業者の仮定: 第 4 版で足した、足ごとの保有の 10・50・75% 点の区切り(リードの仮定 HOLD_BINS の作り方を足ごとに当てたもの)",
+    "HOUR6": "作業者の仮定: DESIGN 第 3 版 4 の「UTC の時(または 6 時間の塊)」のうち 6 時間の塊を選んだ。1 時間の層は層ごとの件数が少なくなるため",
+    "BOOT_REPS": "リードの仮定: 監査の 2 回目 9 を受けた委任文の「再抽出を 2000 回に」",
+    "WOBBLE_SEEDS": "リードの仮定: 同じ委任文の「種を変えて 5 回」",
+    "MIN_N": "既存の値: K1 の summarize_cell の 30 件の足切り",
+}
 Q2_YEARS = tuple(range(2017, 2024))
 PERIODS = {"2018_2023": (2018, 2019, 2020, 2021, 2022, 2023),
-           "2018_2019_2022_2023": (2018, 2019, 2022, 2023)}
+           "2018_2019_2022_2023": (2018, 2019, 2022, 2023),
+           "2018_2019_2022": (2018, 2019, 2022)}   # 第 4 版: 2023 年(5 分の (b) 高 n=60)も除いた版(監査の 3 回目 8)
 HOLD_BINS = (("1", 1, 1), ("2-7", 2, 7), ("8-21", 8, 21), ("22+", 22, 10 ** 12))
 METHODS = {
     "a": ("vp_bin", "fixed", "(a) Binance の vol_prev × 2018〜2019 の取引で決めた固定の境目"),
@@ -402,7 +418,48 @@ def wobble(vals, keys, name):
         return None
     los, his = [x[0] for x in res], [x[1] for x in res]
     return {"lo_min": min(los), "lo_max": max(los), "hi_min": min(his), "hi_max": max(his),
-            "lo_width": round(max(los) - min(los), 3), "hi_width": round(max(his) - min(his), 3)}
+            "lo_width": round(max(los) - min(los), 3), "hi_width": round(max(his) - min(his), 3),
+            "los": los, "his": his}
+
+
+def diff_boot(A, B, name, val=lambda t: t["r"], reps=BOOT_REPS):
+    """2 つの取引の組の平均の差(A − B)を、入口の日の塊を同じ抽出で再抽出して区間・標準誤差を出す。
+    B が A を含む(高 − 全)場合も同じ抽出の中で両方の平均を取る。種 = 名前の sha256。種を変えて 5 回の下端も出す。"""
+    A = [t for t in A if val(t) == val(t)]
+    B = [t for t in B if val(t) == val(t)]
+    out = {"nA": len(A), "nB": len(B), "diff": None, "ci95_day": None, "se_day": None, "mde80_day": None}
+    if not A or not B:
+        return out
+    ma, mb = sum(val(t) for t in A) / len(A), sum(val(t) for t in B) / len(B)
+    out["diff"] = round(ma - mb, 3)
+    if len(A) < MIN_N or len(B) < MIN_N:
+        return out
+    days = sorted(set(t["day"] for t in A) | set(t["day"] for t in B))
+    ix = {d: k for k, d in enumerate(days)}
+    k = len(days)
+    sA, nA, sB, nB = (np.zeros(k) for _ in range(4))
+    for t in A:
+        sA[ix[t["day"]]] += val(t)
+        nA[ix[t["day"]]] += 1
+    for t in B:
+        sB[ix[t["day"]]] += val(t)
+        nB[ix[t["day"]]] += 1
+
+    def draw(seed_name):
+        rng = np.random.default_rng(rb.seed_of(seed_name))
+        idx = rng.integers(0, k, size=(reps, k))
+        ca, cb = nA[idx].sum(axis=1), nB[idx].sum(axis=1)
+        ok = (ca > 0) & (cb > 0)
+        d = sA[idx].sum(axis=1)[ok] / ca[ok] - sB[idx].sum(axis=1)[ok] / cb[ok]
+        d.sort()
+        r = d.size
+        return d, [round(float(d[int(0.025 * (r - 1))]), 3), round(float(d[int(0.975 * (r - 1))]), 3)]
+    d, ci = draw(name + "|diff|day")
+    out["ci95_day"] = ci
+    out["se_day"] = round(float(d.std(ddof=1)), 4)
+    out["mde80_day"] = round(Z_MDE * out["se_day"], 3)
+    out["wobble_lo"] = [draw(f"{name}|diff|day|w{w}")[1][0] for w in range(WOBBLE_SEEDS)]
+    return out
 
 
 def stats(sub, name, ci=True, year_ci=False, extra=False):
@@ -413,6 +470,7 @@ def stats(sub, name, ci=True, year_ci=False, extra=False):
     r = [t["r"] for t in sub]
     out["mean_bp"] = round(sum(r) / n, 3)
     out["total_bp"] = round(sum(r), 1)
+    out["med_bp"] = round(float(np.median(r)), 3)   # 第 4 版: 割らない bp の中央値(監査の 3 回目 12)
     fin = [t for t in sub if t["rn"] == t["rn"]]
     if fin:
         rn = np.array([t["rn"] for t in fin])
@@ -516,6 +574,8 @@ def mix_standardize(sub, m, key, groups):
                                  "share_low": round(wl[g], 4), "mean_high": rnd(mh[g], 3), "mean_low": rnd(ml[g], 3)}
     empty = [str(g) for g in groups if (mh[g] is None and wl[g] > 0) or (ml[g] is None and wh[g] > 0)]
     out["layers_with_empty_side"] = empty
+    out["layers_n_lt_30"] = [str(g) for g in groups if 0 < out["layers"][str(g)]["n_high"] < MIN_N
+                             or 0 < out["layers"][str(g)]["n_low"] < MIN_N]
     if empty:
         return out
     h_act = sum(wh[g] * mh[g] for g in groups if wh[g] > 0)
@@ -605,6 +665,17 @@ def q2_foot(sig_bars, price_bars, foot):
                 d["n_unbucketed"] = sum(1 for t in ys if t["bk_" + m] is None)
             yr[m] = d
         out["years"][str(y)] = yr
+    ps0 = [t for t in recs if t["y"] in PERIODS["2018_2023"]]
+    hq = {q: int(np.percentile([t["h"] for t in ps0], q, method="lower")) for q in (10, 50, 75)} if ps0 else {}
+    foot_bins = []
+    lo_ = 1
+    for hi_ in (hq.get(10, 1), hq.get(50, 1), hq.get(75, 1)):
+        if hi_ >= lo_:
+            foot_bins.append((f"{lo_}-{hi_}", lo_, hi_))
+            lo_ = hi_ + 1
+    foot_bins.append((f"{lo_}+", lo_, 10 ** 12))
+    out["hold_bins_foot"] = {"rule": "その足の 2018〜2023 の保有の本数の 10・50・75% 点(下側の値)で区切る。同じ値が続く区切りは 1 つにまとめる",
+                             "quantiles": hq, "bins": [b[0] for b in foot_bins]}
     for pname, pyears in PERIODS.items():
         ps = [t for t in recs if t["y"] in pyears]
         allc = stats(ps, f"{foot}|{pname}|all", year_ci=True, extra=True)
@@ -621,12 +692,24 @@ def q2_foot(sig_bars, price_bars, foot):
         # 保有の構成・時間帯の構成をそろえた比べ
         p["hold_standardized"] = {m: mix_standardize(ps, m, lambda t: next(
             k for k, lo, hi in HOLD_BINS if lo <= t["h"] <= hi), [h[0] for h in HOLD_BINS]) for m in STD_METHODS}
+        p["hold_standardized_foot_bins"] = {m: mix_standardize(ps, m, lambda t: next(
+            k for k, lo, hi in foot_bins if lo <= t["h"] <= hi), [b[0] for b in foot_bins]) for m in STD_METHODS}
         p["hour6_standardized"] = {m: mix_standardize(ps, m, lambda t: t["hour6"], [0, 1, 2, 3]) for m in STD_METHODS}
+        # 第 4 版: 判定の目標の差(高 − 低、高 − 全)の区間・標準誤差・最小検出差(監査の 3 回目 1)
+        bh = [t for t in ps if t["bk_b"] == "high"]
+        bl = [t for t in ps if t["bk_b"] == "low"]
+        p["diffs_b"] = {"high_minus_low": diff_boot(bh, bl, f"{foot}|{pname}|b|h-l"),
+                        "high_minus_all": diff_boot(bh, ps, f"{foot}|{pname}|b|h-all")}
+        p["diffs_c_same"] = {"high_minus_low": diff_boot([t for t in ps if t["bk_c_same"] == "high"],
+                                                         [t for t in ps if t["bk_c_same"] == "low"], f"{foot}|{pname}|c_same|h-l")}
         # 無作為の時刻の入りの対照((b) の区分ごと)
         p["random_entry_control_b"] = {bk: control_cells([t for t in ps if t["bk_b"] == bk], f"{foot}|{pname}|b|{bk}")
                                        for bk in BUCKETS}
         p["random_entry_control_b"]["all_bucketed"] = control_cells([t for t in ps if t["bk_b"] in BUCKETS],
                                                                     f"{foot}|{pname}|b|allb")
+        # (高の 実際 − 対照)−(低の 実際 − 対照)の区間(監査の 3 回目 4)
+        p["random_entry_control_b"]["high_minus_low_of_actual_minus_random"] = diff_boot(
+            bh, bl, f"{foot}|{pname}|ctrl|h-l", val=lambda t: t["r"] - t["ctrl"] if t["ctrl"] == t["ctrl"] else float("nan"))
         out["pooled"][pname] = p
     ps = [t for t in recs if t["y"] in PERIODS["2018_2023"]]
     for hname, lo, hi in HOLD_BINS:
@@ -696,25 +779,60 @@ def criteria(fq):
         comp[f"ii_year_{v}"] = {"value": len(years_ok(v)) >= 4, "years": years_ok(v)}
         comp[f"ii_pool_{v}"] = {"value": cond(p_all, v),
                                 "detail": {"high": p_all["b"]["high"].get(v), "all": p_all["all"].get(v), "low": p_all["b"]["low"].get(v)}}
-    combos = {}
-    for v in VERSIONS:
-        for ii in ("year", "pool"):
-            for iii in ("day", "year"):
-                combos[f"{v}|ii_{ii}|iii_{iii}"] = bool(comp["base"]["value"] and comp["i"]["value"]
-                                                        and comp[f"ii_{ii}_{v}"]["value"] and comp[f"iii_{iii}"]["value"])
-    # 陰性・不明の機械の区分と最小検出差
-    if not comp["base"]["value"]:
-        cls = "(基) が成り立たない(束ねた升で高い区分の平均が全取引か低い区分の平均以下)"
-    elif all(combos.values()):
-        cls = "16 通りの読みすべてで成り立つ"
-    elif any(combos.values()):
-        cls = "(基) は成り立ち、読みによって成り立つ / 成り立たないが分かれる"
-    else:
-        cls = "(基) は成り立つが、16 通りの読みのどれでも、どれかの条件が欠ける"
-    mde = {p: {"high_mean": fq["pooled"][p]["b"]["high"]["mean_bp"], "high_n": fq["pooled"][p]["b"]["high"]["n"],
-               "se_day": fq["pooled"][p]["b"]["high"].get("se_day"),
-               "mde80_day": fq["pooled"][p]["b"]["high"].get("mde80_day")} for p in PERIODS}
-    return {"components": comp, "combos": combos, "class": cls, "mde_high_vs_zero": mde}
+    # 第 4 版: (iii-日)・(iii-年) を主の種と、種を変えた 5 回それぞれで数える(監査の 3 回目 6)
+    def iii_by_seed(kind):
+        c = comp[f"iii_{kind}"]
+        w = c.get("wobble") or {}
+        los = ([c["ci"][0]] if c.get("ci") else [None]) + list(w.get("los", []))
+        return [bool(c["cond_A"] and lo is not None and lo > 0) for lo in los]
+    comp["iii_day"]["by_seed"] = iii_by_seed("day")
+    comp["iii_year"]["by_seed"] = iii_by_seed("year")
+    comp["iii_year"]["note"] = ("年の塊は 4 つ(2018・2019・2022・2023)。4 年の (b) 高の平均がすべて正なら、下端 > 0 は"
+                                "機械的に成り立つ(監査の 3 回目 7)")
+    comp["iii_year"]["high_means_by_year"] = {str(y): fq["years"][str(y)]["b"]["high"]["mean_bp"]
+                                              for y in PERIODS["2018_2019_2022_2023"]}
+    # v2 の (ii-年) は (i) の言い直し(年の中で定数で割っても条件 A は変わらない。監査の 3 回目 2)
+    comp["ii_year_v2"]["same_years_as_i"] = comp["ii_year_v2"]["years"] == comp["i"]["years"]
+    # 2023 年も除いた束ね(監査の 3 回目 8。数えには入れない参考)
+    p_ex3 = fq["pooled"]["2018_2019_2022"]
+    hi3 = p_ex3["b"]["high"]
+    comp["ref_iii_excl_2023"] = {"cond_A": cond(p_ex3, "mean_bp"), "high_mean": hi3["mean_bp"], "n_high": hi3["n"],
+                                 "ci_day": hi3.get("ci95_day"), "ci_year": hi3.get("ci95_year"),
+                                 "wobble_day": hi3.get("wobble_day")}
+
+    def combos_for(seed_idx):
+        cmb = {}
+        for v in VERSIONS:
+            for ii in ("year", "pool"):
+                for iii in ("day", "year"):
+                    iii_v = comp[f"iii_{iii}"]["by_seed"][seed_idx]
+                    cmb[f"{v}|ii_{ii}|iii_{iii}"] = bool(comp["base"]["value"] and comp["i"]["value"]
+                                                         and comp[f"ii_{ii}_{v}"]["value"] and iii_v)
+        return cmb
+    n_seeds = len(comp["iii_day"]["by_seed"])
+    combos = combos_for(0)
+
+    def counts(cmb):
+        keep_all = list(cmb)
+        no_dup = [k for k in keep_all if not k.startswith("v2|ii_year")]
+        no_iiiy = [k for k in keep_all if not k.endswith("iii_year")]
+        both = [k for k in no_dup if not k.endswith("iii_year")]
+        return {f"all_{len(keep_all)}": sum(cmb[k] for k in keep_all),
+                f"without_v2_ii_year_{len(no_dup)}": sum(cmb[k] for k in no_dup),
+                f"without_iii_year_{len(no_iiiy)}": sum(cmb[k] for k in no_iiiy),
+                f"without_both_{len(both)}": sum(cmb[k] for k in both)}
+    counts_by_seed = [counts(combos_for(i)) for i in range(n_seeds)]
+    # 判定の目標の差の最小検出差(監査の 3 回目 1)
+    mde = {}
+    for pn in PERIODS:
+        dd = fq["pooled"][pn]["diffs_b"]
+        mde[pn] = {k: {"diff": v["diff"], "ci95_day": v["ci95_day"], "se_day": v["se_day"], "mde80_day": v["mde80_day"],
+                       "wobble_lo": v.get("wobble_lo")} for k, v in dd.items()}
+    words = {k: ("前もって分けられた" if v else "分けられたと言えない") for k, v in combos.items()}
+    return {"components": comp, "combos": combos, "words": words, "counts": counts_by_seed[0],
+            "counts_by_seed": counts_by_seed,
+            "seed_note": "by_seed と counts_by_seed の 0 番は主の種、1〜5 番は種を変えた 5 回(端の揺れ)",
+            "mde_targets": mde}
 
 
 # ---------------------------------------------------------------- TABLES.md
@@ -869,12 +987,28 @@ def write_md(res: dict, path: Path):
             if "years" in c:
                 det = f"({len(c['years'])} 年 {c['years']})"
             elif key.startswith("iii"):
-                det = f"(条件 A {c['cond_A']}、高 {c['high_mean']}(n {c['n_high']:,})区間 {c['ci']})"
+                det = (f"(条件 A {c['cond_A']}、高 {c['high_mean']}(n {c['n_high']:,})区間 {c['ci']}。"
+                       f"主の種と種を変えた 5 回で成り立つ数 {sum(c['by_seed'])}/{len(c['by_seed'])})")
             elif "detail" in c:
                 dd = c["detail"]
                 det = f"(高 {dd['high']} / 全 {dd['all']} / 低 {dd['low']})"
             cells.append(yn(c["value"]) + det)
         L.append(f"| {lab} | " + " | ".join(cells) + " |")
+    med_cells = []
+    for f in feet:
+        pa = q2["feet"][f]["pooled"]["2018_2023"]
+        h, lo_, al = pa["b"]["high"].get("med_bp"), pa["b"]["low"].get("med_bp"), pa["all"].get("med_bp")
+        med_cells.append(f"{yn(h > al and h > lo_)}(高 {h} / 全 {al} / 低 {lo_})")
+    L.append("| 参考: 割らない bp の中央値で、束ねた升の条件 A(数えに入れない) | " + " | ".join(med_cells) + " |")
+    L.append("")
+    L.append("- (ii-年) v2 は、年の中で一定の値で割るので条件 A が変わらず、(i) の言い直しになる。年の集合が (i) と同じか: "
+             + "、".join(f"{f} 分 {q2['feet'][f]['criteria']['components']['ii_year_v2']['same_years_as_i']}" for f in feet) + "。")
+    L.append("- (iii-年) は年の塊が 4 つ。4 年の (b) 高の平均がすべて正なら、下端 > 0 は機械的に成り立つ。4 年の (b) 高の平均: "
+             + "、".join(f"{f} 分 {q2['feet'][f]['criteria']['components']['iii_year']['high_means_by_year']}" for f in feet) + "。")
+    L.append("- 参考(数えに入れない): 2023 年も除いた束ね(2018・2019・2022)の (b) 高: " + "、".join(
+        f"{f} 分 {q2['feet'][f]['criteria']['components']['ref_iii_excl_2023']['high_mean']}(n "
+        f"{q2['feet'][f]['criteria']['components']['ref_iii_excl_2023']['n_high']:,})日 {q2['feet'][f]['criteria']['components']['ref_iii_excl_2023']['ci_day']}"
+        f" 年 {q2['feet'][f]['criteria']['components']['ref_iii_excl_2023']['ci_year']}" for f in feet) + "。")
     L.append("")
     L.append("#### 4.0.2 組み合わせ((基)∧(i)∧(ii)∧(iii)、割る量 4 × (ii) 2 × (iii) 2 = 16 通り)")
     L.append("")
@@ -882,22 +1016,38 @@ def write_md(res: dict, path: Path):
     L.append("| 読み | " + " | ".join(f"{f} 分" for f in feet) + " |")
     L.append("|---|" + "---|" * len(feet))
     for k in combos:
-        L.append(f"| {k} | " + " | ".join(yn(q2["feet"][f]["criteria"]["combos"][k]) for f in feet) + " |")
+        L.append(f"| {k} | " + " | ".join(q2["feet"][f]["criteria"]["words"][k] for f in feet) + " |")
     L.append("")
-    L.append("#### 4.0.3 機械の区分・最小検出差・区間の端の揺れ")
+    L.append("「前もって分けられた」の数(主の種。括弧は種を変えた 5 回を含む 6 回の最小〜最大。`criteria.counts`・`counts_by_seed`):")
     L.append("")
-    L.append("最小検出差 = (1.96 + 0.84) × 日の塊の再抽出の標準誤差((b) の高い区分の平均、0 との差、両側 5%・検出力 80%)。"
-             "端の揺れ = 種を変えて 5 回再抽出した 95% 区間の下端の範囲。")
+    keys = list(next(iter(q2["feet"].values()))["criteria"]["counts"])
+    lab = {keys[0]: "16 通り", keys[1]: "v2 の (ii-年) を除いた 14 通り", keys[2]: "(iii-年) を除いた 8 通り", keys[3]: "両方を除いた 7 通り"}
+    L.append("| 数え方 | " + " | ".join(f"{f} 分" for f in feet) + " |")
+    L.append("|---|" + "---|" * len(feet))
+    for k in keys:
+        cells = []
+        for f in feet:
+            cb = q2["feet"][f]["criteria"]["counts_by_seed"]
+            vals = [c[k] for c in cb]
+            cells.append(f"{cb[0][k]}({min(vals)}〜{max(vals)})")
+        L.append(f"| {lab[k]} | " + " | ".join(cells) + " |")
     L.append("")
-    L.append("| 足 | 機械の区分 | 2018〜2023 の高: 平均 / n / 最小検出差 | 2020・2021 を除いた高: 平均 / n / 最小検出差 | (iii-日) 下端の揺れ | (iii-年) 下端の揺れ |")
-    L.append("|---|---|---|---|---|---|")
+    L.append("#### 4.0.3 判定の目標の差(高 − 低、高 − 全)の区間・最小検出差(`criteria.mde_targets`、`pooled.<期間>.diffs_b`)")
+    L.append("")
+    L.append("差の区間 = 入口の日の塊を同じ抽出で再抽出(2000 回)。最小検出差 = (1.96 + 0.84) × その差の標準誤差。"
+             "下端の揺れ = 種を変えた 5 回の下端。2 つの差・3 つの期間・6 つの足に同じ規則。")
+    L.append("")
+    L.append("| 足 | 期間 | 高 − 低: 差 [日の塊] / 最小検出差 / 下端の揺れ | 高 − 全: 差 [日の塊] / 最小検出差 / 下端の揺れ |")
+    L.append("|---|---|---|---|")
     for f in feet:
-        cr = q2["feet"][f]["criteria"]
-        m1, m2 = cr["mde_high_vs_zero"]["2018_2023"], cr["mde_high_vs_zero"]["2018_2019_2022_2023"]
-        wd, wy = cr["components"]["iii_day"]["wobble"], cr["components"]["iii_year"]["wobble"]
-        ws = lambda w: f"{w['lo_min']:+.3f}〜{w['lo_max']:+.3f}" if w else "—"  # noqa: E731
-        L.append(f"| {f} 分 | {cr['class']} | {m1['high_mean']} / {m1['high_n']:,} / {m1['mde80_day']} | "
-                 f"{m2['high_mean']} / {m2['high_n']:,} / {m2['mde80_day']} | {ws(wd)} | {ws(wy)} |")
+        for pn, md in q2["feet"][f]["criteria"]["mde_targets"].items():
+            def dcell(x):
+                if x["ci95_day"] is None:
+                    return f"{x['diff']}(区間なし)"
+                w = x.get("wobble_lo") or []
+                return (f"{x['diff']:+.2f} [{x['ci95_day'][0]:+.2f}, {x['ci95_day'][1]:+.2f}] / {x['mde80_day']:.2f} / "
+                        f"{min(w):+.2f}〜{max(w):+.2f}")
+            L.append(f"| {f} 分 | {pn} | {dcell(md['high_minus_low'])} | {dcell(md['high_minus_all'])} |")
     L.append("")
     L.append("#### 4.0.4 (b) の年ごとの升(条件 (i)・(ii-年) が数える升。取引数と区間を並べる)")
     L.append("")
@@ -971,7 +1121,11 @@ def write_md(res: dict, path: Path):
                     L.append(f"| {m} | {b} | {c['n']:,}({c['share_n'] * 100:.1f}%) | {c['total_bp']:+,.0f}({stt}) | "
                              f"{c['mean_bp']:+.2f}{ci_s(c)}{ci_s(c, 'ci95_year')} | {fmt(c.get('v1'), 3)}{ci_s(c, 'ci95_day_v1', 3)}"
                              f" / {fmt(c.get('v2'), 3)} / {fmt(c.get('v3'), 3)} / {fmt(c.get('v4'), 3)} |")
-            for tag, title in (("hold_standardized", "保有の構成をそろえた比べ(層 = 保有 1 / 2〜7 / 8〜21 / 22 本以上)"),
+            dc = p["diffs_c_same"]["high_minus_low"]
+            L.append("")
+            L.append(f"(c 同年) の高 − 低: {dc['diff']} [日の塊 {dc['ci95_day']}](`diffs_c_same`)。")
+            for tag, title in (("hold_standardized", "保有の構成をそろえた比べ(層 = 保有 1 / 2〜7 / 8〜21 / 22 本以上。5 分の分位から丸めた区切り)"),
+                               ("hold_standardized_foot_bins", f"保有の構成をそろえた比べ(層 = この足の保有の 10・50・75% 点の区切り {fv['hold_bins_foot']['bins']})"),
                                ("hour6_standardized", "時間帯の構成をそろえた比べ(層 = 入口の足の UTC 0〜5・6〜11・12〜17・18〜23 時)")):
                 L.append("")
                 L.append(f"{title}。保有は入口の後に決まる量なので、保有の比べは結果で条件づけている:")
@@ -989,17 +1143,26 @@ def write_md(res: dict, path: Path):
                 L.append("層ごとの (b)(n 高 / n 低 / 高の割合 / 低の割合 / 高の平均 / 低の平均): " + "、".join(
                     f"{g}: {d['n_high']:,} / {d['n_low']:,} / {d['share_high']} / {d['share_low']} / {d['mean_high']} / {d['mean_low']}"
                     for g, d in p[tag]["b"]["layers"].items()))
+                small = {m: s_.get("layers_n_lt_30") for m, s_ in p[tag].items() if s_.get("layers_n_lt_30")}
+                if small:
+                    L.append("")
+                    L.append(f"注: 高か低の取引数が 30 未満の層がある(分け方: 層): {small}。その層の平均は件数が少ない。")
             L.append("")
             L.append("無作為の時刻の入りの対照((b) の区分ごと。`random_entry_control_b`):")
             L.append("")
-            L.append("| 区分 | n | 実際の平均 | 無作為・同じ向き | 無作為・逆向き | 実際 − 無作為・同じ向き [日の塊] |")
+            L.append("| 区分 | n | 実際の平均 | 無作為・同じ向き | 無作為・逆向き(同じ抽出の符号違い。独立の測定ではない) | 実際 − 無作為・同じ向き [日の塊] |")
             L.append("|---|---|---|---|---|---|")
             for bk, c in p["random_entry_control_b"].items():
+                if bk == "high_minus_low_of_actual_minus_random":
+                    continue
                 if c["n"] == 0:
                     L.append(f"| {bk} | 0 | | | | |")
                     continue
                 L.append(f"| {bk} | {c['n']:,} | {c['mean_actual']:+.2f} | {c['mean_random_same_dir']:+.2f} | {c['mean_random_opposite_dir']:+.2f} | "
                          f"{c['mean_actual_minus_random']:+.2f}{ci_s(c, 'ci95_day_actual_minus_random')} |")
+            hl = p["random_entry_control_b"]["high_minus_low_of_actual_minus_random"]
+            L.append("")
+            L.append(f"(高の 実際 − 対照)−(低の 実際 − 対照): {hl['diff']} [日の塊 {hl['ci95_day']}]、最小検出差 {hl['mde80_day']}。")
         L.append("")
         L.append(f"対照の作り方: {fv['random_entry_rule']['rule']}(1 件あたり {fv['random_entry_rule']['draws_per_trade']} 回)")
         L.append("")
@@ -1151,6 +1314,8 @@ def main() -> None:
                 "2017 = 空欄。(c 同年)・旧 (c) = その年の値で切った(後でしか分からない。ボラの門には使えない)。",
                 "(c) は定め直した: 入口の足の次から固定 100 本の Binance の足の実際のボラ(問い 1 の vol_next と同じ)。保有の長さと"
                 "取引所を (a)(b) とそろえた。旧 (c)(取引の間の bitFlyer のボラ)は参考の列。",
+                "第 4 版: 足ごとの言葉は DESIGN 第 3 版 5 の 2 語「前もって分けられた / 分けられたと言えない」だけを、読みごとに機械的に出す。"
+                "最小検出差は判定の目標の差(高 − 低、高 − 全)の標準誤差から出す。新しく置いた値の出所は q2.assumptions。",
                 "ボラで割った損益は 4 通り(q2.versions)。v1 は割る量が分ける量の vol_prev そのもの(第 2 版)。単位は無い。",
                 "第 2 版 8 の (ii) の数え方と (iii) の区間は DESIGN.md の文面に無い。第 2 版で作業者が (ii) を「6 年のうち 4 年以上」と決めたのは、"
                 "データを 2023-01-31 で切った煙の試しの出力が出た後だった。この版では全部の組み合わせを並べ、どれか 1 つを結論にしない。",
@@ -1160,6 +1325,7 @@ def main() -> None:
             ],
             "criteria_definition": CRITERIA_DEFINITION,
             "versions": VERSION_LABEL,
+            "assumptions": ASSUMPTIONS,
             "bootstrap": {"reps": BOOT_REPS, "method": "measure_katsuo_robustness.np_boot(塊の (合計, 件数) を畳んで塊を復元抽出、種 = 升の名前の sha256)",
                           "wobble_seeds": WOBBLE_SEEDS, "min_n": MIN_N,
                           "q1_spearman_reps": REPS},
@@ -1172,7 +1338,7 @@ def main() -> None:
     out_json.write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     write_md(res, HERE / "TABLES.md")
     print(f"→ {out_json} / {HERE / 'TABLES.md'}", flush=True)
-    print(json.dumps({f: v["criteria"]["class"] for f, v in q2.items()}, ensure_ascii=False), flush=True)
+    print(json.dumps({f: v["criteria"]["counts"] for f, v in q2.items()}, ensure_ascii=False), flush=True)
 
 
 if __name__ == "__main__":
