@@ -439,7 +439,8 @@
       if (d.building) {  // the price store is being made in the background (first time only): poll, then draw the chart
         const b = d.building;
         const stage = b.stage === "reading" ? "1 分足のファイルを読んでいます" : b.stage === "folding" ? `足を作っています(足 ${b.frame}/${b.frames})` :
-          b.stage === "saving" ? `キャッシュに保存しています(足 ${b.frame}/${b.frames})` : "開始しています";
+          b.stage === "saving" ? `キャッシュに保存しています(足 ${b.frame}/${b.frames})` :
+          b.stage === "queued" ? "順番待ちです(別の銘柄を作っています)" : "開始しています";
         $("bt-chart-busy").innerHTML = `<span class="busy">価格のキャッシュを作っています(初回だけ)。銘柄 ${esc(b.label || b.market)}、${esc(stage)}、経過 ${esc(b.elapsed_s)} 秒。` +
           `累計損益と見出しの数字は先に出ています。できたら自動でチャートを出します。</span>`;
         clearTimeout(PX.poll);

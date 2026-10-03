@@ -671,7 +671,15 @@ def _load_dir(d: Path) -> dict:
     return {w: tuple(np.load(d / f"i{w}_{c}.npy", mmap_mode="r") for c in _COLS) for w in FRAMES}
 
 
+_HOOK: list = []  # in a build child: [function(stage, frame)] that sends the progress to the parent
+
+
 def _progress(key: str, plan: Plan, stage: str, frame: int = 0) -> None:
+    if _HOOK:
+        try:
+            _HOOK[0](stage, frame)
+        except Exception:  # noqa: BLE001 -- a lost progress message must not stop the build
+            pass
     with _LOCK:
         pr = _PROGRESS.setdefault(key, {"market": plan.market, "label": MARKETS[plan.market]["label"], "t0": time.time()})
         pr.update(stage=stage, frame=frame, frames=len(FRAMES))
@@ -759,6 +767,96 @@ def get_store(plan: Plan, rule: dict) -> Store:
         return st
 
 
+#: True: a store is built by a separate process (spawn: works on Windows), so the work of reading and folding 4 million rows
+#: never takes the Python lock the request threads need; False: in a thread of this process (tests that patch the readers).
+BUILD_IN_CHILD = True
+_CHILD_LOCK = threading.Lock()  # one build child at a time
+
+
+def _child_main(market: str, root: str, conn: Any) -> None:
+    """The build child: makes the store of `market` into the disk cache (get_store writes it there) and tells the parent the
+    progress, then {done, cached} or {error}. Module level and picklable arguments only (spawn)."""
+    try:
+        _HOOK.append(lambda stage, frame: conn.send({"stage": stage, "frame": frame}))
+        rule = seal_rule(Path(root))
+        plan = price_plan({"config": {"instrument": market}}, Path(root), rule)
+        if not plan.files:
+            raise RuntimeError(plan.reason or "no price files")
+        get_store(plan, rule)
+        conn.send({"done": True, "cached": (_cache_root() / store_key(plan, rule) / "meta.json").exists()})
+    except BaseException as exc:  # noqa: BLE001 -- the parent is told, whatever it was
+        try:
+            conn.send({"error": f"{type(exc).__name__}: {exc}"})
+        except Exception:  # noqa: BLE001
+            pass
+        raise SystemExit(2)
+
+
+def _build_store_job(plan: Plan, rule: dict, key: str) -> None:
+    """Run in the background thread of a store request: make the store, in a child process when BUILD_IN_CHILD. The parent only
+    waits on a pipe and then reads the finished cache (memory-mapped). A child that could not write the cache, or died, leaves no
+    cache: the store is then built in this process, in memory (the old way, logged), so the chart still comes."""
+    if not BUILD_IN_CHILD:
+        get_store(plan, rule)
+        return
+    import multiprocessing as mp  # noqa: PLC0415
+    _progress(key, plan, "queued")
+    result: dict = {}
+    t0 = time.time()
+    with _CHILD_LOCK:
+        meta = _cache_root() / key / "meta.json"
+        if not meta.exists():
+            ctx = mp.get_context("spawn")
+            rd, wr = ctx.Pipe(False)
+            proc = ctx.Process(target=_child_main, args=(plan.market, str(rule["root"]), wr), daemon=True, name=f"bt-build-{plan.market}")
+            proc.start()
+            wr.close()
+            bt_log("store_child", None, f"{key} pid={proc.pid}")
+            _progress(key, plan, "reading", 0)
+            while True:
+                if rd.poll(0.5):
+                    try:
+                        msg = rd.recv()
+                    except EOFError:
+                        break
+                    if "stage" in msg:
+                        _progress(key, plan, msg["stage"], msg["frame"])
+                    else:
+                        result = msg
+                elif not proc.is_alive():
+                    break
+            proc.join(10)
+            if result.get("error"):
+                raise RuntimeError(f"build process: {result['error']}")
+            if not result.get("done"):
+                raise RuntimeError(f"build process died (exit code {proc.exitcode})")
+    key_cached = (_cache_root() / key / "meta.json").exists()
+    if not key_cached:
+        bt_log("store_child_no_cache", time.time() - t0, f"{key} the child left no cache: building in this process, in memory")
+    get_store(plan, rule)  # from the cache (memory-mapped, quick), else built here in memory and pinned
+
+
+def used_markets(runs_dir: Any) -> list[str]:
+    """The instruments the tab really shows, most runs first: every finished run's config.instrument (the catalog's runs) and the
+    ready variants of every research card (the ledger's instrument). Only those that have a row in MARKETS. An instrument no
+    run uses is not here: its store is built only when a request asks for it."""
+    count: dict[str, int] = {}
+    for _, d, _ in BV.find_runs(runs_dir):
+        try:
+            inst = (_record(d).get("config") or {}).get("instrument")
+        except (OSError, ValueError):
+            continue
+        if inst in MARKETS:
+            count[inst] = count.get(inst, 0) + 1
+    themes, _n, _notes = CARDS.catalog_themes(runs_dir)
+    for th in themes:
+        ct = T.card_theme(th["id"][len("card:"):])
+        inst = ct.get("instrument") if ct else None
+        if inst in MARKETS:
+            count[inst] = count.get(inst, 0) + sum(st["n_runs"] for st in th["strategies"])
+    return [m for m, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])) if n > 0]
+
+
 def store_peek(plan: Plan, rule: dict) -> tuple[Optional[Store], Optional[dict]]:
     """(store, None) when the store is in memory or its disk cache exists (loading that is quick); else (None, status) after
     making sure a background thread is building it. `status` = {market, label, stage, frame, frames, elapsed_s} or {error}.
@@ -778,7 +876,7 @@ def store_peek(plan: Plan, rule: dict) -> tuple[Optional[Store], Optional[dict]]
             def run() -> None:
                 t0 = time.time()
                 try:
-                    get_store(plan, rule)
+                    _build_store_job(plan, rule, key)
                     with _LOCK:
                         _JOBS.pop(key, None)
                 except Exception as exc:  # noqa: BLE001 -- the page is told why there is no chart
@@ -797,9 +895,10 @@ def store_peek(plan: Plan, rule: dict) -> tuple[Optional[Store], Optional[dict]]
     return None, pr
 
 
-def start_store_warmup(root: Path = REPO_ROOT) -> threading.Thread:
-    """At dashboard start: build the price store of every instrument of MARKETS in turn, in the background (one that is in the
-    disk cache is only read). The cards' instrument goes first. A request that comes before its store exists gets "building"."""
+def start_store_warmup(root: Path = REPO_ROOT, runs_dir: Any = None) -> threading.Thread:
+    """At dashboard start: build, one after the other and in the background, the price store of the instruments the tab really
+    uses (`used_markets(runs_dir)`, most runs first; one already in the disk cache is only read). An instrument no run uses is
+    left alone until a request asks for it. With no `runs_dir` every instrument of MARKETS is made (the cards' one first)."""
     def run() -> None:
         t0 = time.time()
         try:
@@ -807,7 +906,12 @@ def start_store_warmup(root: Path = REPO_ROOT) -> threading.Thread:
         except SealBlocked as exc:
             bt_log("warmup", time.time() - t0, f"blocked: {exc}")
             return
-        order = sorted(MARKETS, key=lambda k: (k != "FX_BTC_JPY", k))
+        try:
+            order = used_markets(runs_dir) if runs_dir is not None else sorted(MARKETS, key=lambda k: (k != "FX_BTC_JPY", k))
+        except Exception as exc:  # noqa: BLE001
+            bt_log("warmup", time.time() - t0, f"cannot tell the used instruments: {type(exc).__name__}: {exc}")
+            return
+        bt_log("warmup", None, "instruments: " + ", ".join(order))
         for m in order:
             t1 = time.time()
             try:

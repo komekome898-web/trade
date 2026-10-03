@@ -1569,7 +1569,7 @@ def main() -> int:
     args = ap.parse_args()
     runs_dirs = tuple(args.runs_dir) if args.runs_dir else BACKTEST_DIRS
     threading.Thread(target=_warm_backtest_list, args=(runs_dirs,), daemon=True).start()
-    backtest_chart.start_store_warmup(backtest_chart.REPO_ROOT)  # the price stores, one instrument after the other, in the background
+    backtest_chart.start_store_warmup(backtest_chart.REPO_ROOT, runs_dirs)  # the price stores, one instrument after the other, in the background
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(runs_dirs))
     print(f"dashboard: http://127.0.0.1:{args.port}  (Ctrl+C to stop)", flush=True)
     try:
