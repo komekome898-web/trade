@@ -3,7 +3,8 @@
 
 SPEC §9-1 の「門あり 5・15 分 × 入り方 3」(`limit_sim/SPEC.md` 129 行)。門 = K1 の境目
 (`results/PHASE2/K1/xvenue/vol_terciles.json`、2018〜2019 年の取引の前 100 本のボラの三分位)で、
-合図の時点のボラが低の三分位なら入らない。読み方の決まり(16 本を並べて見る前に、この台本と
+合図の時点のボラが高の三分位のときだけ入る(低・中では入らない。`katsuo_limit_sim.py` 471 行。関門 ② の 1 回目の止める 1 で
+「低なら入らない」の書き誤りを直した)。読み方の決まり(16 本を並べて見る前に、この台本と
 `tests/research/test_c2_read_gated.py` で固めた。research-protocol §0.7 の 7):
 
 R1 比べる相手: 門ありの各走らせ(weak_f<足>_gate_<型>)と、同じ足・同じ型・同じ側の門なし(weak_f<足>_<型>)。
@@ -15,6 +16,8 @@ R3 境目を決めた期間の外: 門の境目は 2018〜2019 年の取引か�
    読みの主はこちら(境目を決めた期間の外)。
 R4 年ごとの安定: 2020〜2023 の 4 年で、年の損益の差(門あり − 門なし)の符号が R3 の差の符号と同じ年の数を「n/4」。
 R5 経費なし。探索の読みで判定ではない。門の境目は K1 の値をそのまま使い、決め直さない。
+関門 ② の 1 回目の後に足した出力(R1〜R5 は変えていない。表を見た後に足したもの): 表 3 = 年ごとの損益の差(門あり − 門なし、
+2020〜2023 の各年)と、K1 で判定の区間として開けた 2020・2021 年を除いた 2022-01-01〜2023-12-17(716 日)の 1 日あたりの差。
 
 出力: runs/READ_GATED/TABLES.md と read.json。数字は手で書かない(research-protocol §1.2)。
 
@@ -90,8 +93,21 @@ def side_labels(rows: list[dict]) -> dict[str, str]:
     return out
 
 
+LATE_DAYS = 716  # 2022-01-01〜2023-12-17(両端を含む)
+
+
+def year_diffs(runs: dict, rows: list[dict]) -> list[dict]:
+    """関門 ② の 1 回目の後に足した表 3。"""
+    out = []
+    for r in rows:
+        G, U = runs[r["gated"]], runs[r["ungated"]]
+        d = {y: G["year_pnl"].get(y, 0.0) - U["year_pnl"].get(y, 0.0) for y in OOS_YEARS}
+        out.append({"gated": r["gated"], "by_year": d, "late_per_day": (d[2022] + d[2023]) / LATE_DAYS})
+    return out
+
+
 def render(runs: dict, rows: list[dict], labels: dict[str, str]) -> str:
-    L = ["# カツオ: 門あり(K1 の境目、合図の時点のボラが低なら入らない)と門なしの比べ", "",
+    L = ["# カツオ: 門あり(K1 の境目、合図の時点のボラが高の三分位のときだけ入る)と門なしの比べ", "",
          "`scripts/w4_measure/c2_read_gated.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。", "",
          "## 表 1: 門あり − 門なし(全期間と、境目を決めた期間の外の 2020〜2023 年)", "",
          "| 門あり | 1 日あたり損益の差(全期間) | 取引の数の差 /日 | 1 取引あたりの差 | 2020〜2023 の 1 日あたり 門あり / 門なし | その差 | 年の一致 |",
@@ -102,6 +118,11 @@ def render(runs: dict, rows: list[dict], labels: dict[str, str]) -> str:
     L += ["", "## 表 2: 指値の型ごとの向き(2020〜2023 の差、良い側と悪い側)", "", "| 型 | 向き |", "|---|---|"]
     for k, v in labels.items():
         L.append(f"| {k} | {v} |")
+    L += ["", "## 表 3: 年ごとの損益の差(門あり − 門なし、bp)と 2022〜2023 年の 1 日あたりの差(関門 ② の 1 回目の後に足した)", "",
+          "| 門あり | 2020 | 2021 | 2022 | 2023 | 2022〜2023 の 1 日あたり |", "|---|---|---|---|---|---|"]
+    for y in year_diffs(runs, rows):
+        b = y["by_year"]
+        L.append(f"| {y['gated']} | {b[2020]:+.0f} | {b[2021]:+.0f} | {b[2022]:+.0f} | {b[2023]:+.0f} | {y['late_per_day']:+.2f} |")
     return "\n".join(L) + "\n"
 
 
