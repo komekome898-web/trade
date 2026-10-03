@@ -20827,9 +20827,9 @@
    "move": 765,
    "tools": {
     "Agent": 1,
-    "Bash": 10
+    "Bash": 11
    },
-   "n_tools": 11,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
