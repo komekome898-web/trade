@@ -20769,10 +20769,10 @@
   {
    "move": 763,
    "tools": {
-    "Bash": 5,
+    "Bash": 6,
     "Agent": 1
    },
-   "n_tools": 6,
+   "n_tools": 7,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
