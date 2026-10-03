@@ -36,23 +36,33 @@ sizemin(844・868 行 order_limit(sizemin, ...))。持ち高 = 向き × 積ん�
     price > sell_status['price'] + step。等号なし)。1 本の足で足すのは 1 段まで(原典の 1 巡回 1 段)。
     段の数が n_levels に届いたら足さない(843・867 行 obc / osc < order_count)。
 
-状態と持ち高(判定の時刻 t の足の終値 close で判定する):
-  1. 一方向の動きの状態(trend_gate=True のときだけ。比の門 VR_MAX = 10、L-564 問い 5 = A):
-     比 >= 10 なら trend = sign(close − center)(0 なら前のまま)。
-     比 < 10 で、trend の向きの側から close が中心に戻った(上向きなら close <= center、下向きなら
-     close >= center)なら trend = 0(O-1「価格が新しいレンジの中心へ戻ってきた時点で…再開」)。
-  2. trend != 0 の間: on_trend="flat" なら持ち高 0(静観)。"follow"(逆転順張り)なら、動きの向きを合図として
-     段の規則をそのまま当てる(v37 1002-1005 行 break_flg の間は entry_flg = break_flg、1083-1090 行 order_buy /
-     order_sell。幅の門は見ない = 985-1005 行は range_width を読まない): 持ち高 0 なら 1 段、反対の向きなら全部閉じて
-     1 段(1028 行 exit_flg = 3)、同じ向きなら上の「2 段目から」の規則で足す(段は減らさない)。
-     trend が 0 に戻った足では、まず持ち高を 0 にしてから 3 を当てる。
-  3. trend == 0(レンジ):
+状態と持ち高(判定の時刻 t の足の終値 close で判定する。第 4 稿: 足 1 本 = v37 の巡回 1 回(1038〜1100 行)と読み、
+1 本の足の中の順番を v37 の巡回の順 = 一方向の動きの判定 → 入り → 決済の判定 → 一方向の動きが解けたかの判定 にした):
+  1. 一方向の動きに入ったか(trend_gate=True のときだけ。比の門 VR_MAX = 10、L-564 問い 5 = A。v37 の
+     break_judge の代わり): 比 >= 10 なら trend = sign(close − center)(0 なら前のまま)。
+  2. trend != 0 の間(v37 の break_flg != 0。幅の門は見ない = 985-1005 行は range_width を読まない):
+     trend_close=True で、この足で trend が始まった(向きが変わった)なら、全部閉じてこの足は終わり(第 3 稿までの
+       flat の「閉じる」を引数で残した。既定 off。v37 937-948 行の break の始まりの処理は文字列に入れて消されている)。
+     持ち高 0: on_trend="flat"(既定)は入らない(v37 1002 行 b_signal == 0 and posside == 'None' → entry_flg = 0。
+       b_signal = 出来高とヒゲの確からしさは使わない)。"follow" は「break の向きに入る」変種で、trend の向きに 1 段
+       (b_signal が向きを認めた場合の 1004-1005 行 entry_flg = break_flg の代わり)。
+     持ち高あり(entry_flg = break_flg、1004-1005 行): 反対の向きなら全部閉じる(1027-1028 行 exit_flg = 3。
+       その足では入らない)。同じ向きなら、利確の線(形 2 なら緩めなし。1029-1030 行 exit_flg = 1)に届けば全部 0、
+       届かなければ上の「2 段目から」の規則で段を足す(843・867 行)。時間成行は無い(1027-1036 行に alert_count × 2
+       が無い)。
+  3. trend == 0(レンジ。v37 の break_flg == 0):
      建ててよい = (width_gate=False)または width / close >= MIN_WIDTH_RATIO(原典 976・993 行の
-       range_setting = 150 円を、2019-09-04 の値段に対する割合にした。L-564 問い 4 = B)。
-     持ち高 0: 建ててよく合図があれば、合図の向きに 1 段。
-     持ち高あり: 建ててよく反対の合図なら、全部閉じて反対へ 1 段(原典 1010・1018 行の exit_flg = 3 → reflesh で
-       全部成行、そのあと反対の 1 段目)。
-       そうでなく利確の線に届いたなら全部 0。利確の形 exit_mode(v52 162 行。L-566 で引数に):
+       range_setting = 150 円を、2019-09-04 の値段に対する割合にした。L-564 問い 4 = B)。入りの向き entry =
+       建ててよければ合図、でなければ 0。
+     持ち高 0: entry があれば、その向きに 1 段。
+     持ち高あり(入りのあとに決済の判定。v37 1083-1100 行):
+       buy_ref_reset=True で、買いを持ち entry が 0 なら、次の段の起点を建値の平均にする(v37 1091-1092 行の
+         or と and の順で買いだけ指値が取り消され、836-839 行が起点を entry_price に置き直す。既定 off =
+         売り買いとも前の段の終値)。
+       entry が反対の向きか、time_exit=True で向きを持ってから hold_max_min 分たったなら全部閉じる(1010・1018 行
+         exit_flg = 3 → reflesh。その巡回で置いた入りの指値も取り消すので、反対の 1 段目は次の足で合図が続けば建てる)。
+         時計は向きが変わったときだけ始める(1050・1066 行 poschangetime)。
+       そうでなく利確の線に届いたなら全部 0(v37 1012-1022 行 exit_flg = 2 / 1)。利確の形 exit_mode(v52 162 行。L-566 で引数に):
          2 = 値幅(既定。v37 のコードの実際の利確): 買いは close > 建値 + d、売りは close < 建値 − d。
            d = exit_step × vola(exit_prorate=True なら ÷ 積んだ段の数 = v37 881 行 × sizemin / mybtc)。
            exit_relax=True(既定)なら、向きを持ってから hold_max_min ÷ 2 分(v37 126 行 alert_count = 20)たつか、
@@ -63,18 +73,24 @@ sizemin(844・868 行 order_limit(sizemin, ...))。持ち高 = 向き × 積ん�
            close <= center + exit_setting × vola(v37 138・142 行のコメント、v52 1120-1121 行 sep / lep)。
            exit_guard=True なら、線が建値より損の側にあるとき線を 建値 ∓ close × EXIT_GUARD_RATIO にする
            (v52 840-843・873-876 行の 100 円を、幅の門と同じく 2019-09-04 の値段に対する割合にした)。
-         0 = ドテン: 利確の線は無い(v52 942-943 行 exit_flg = 0)。反対の入りの条件で閉じて反対へ(上の分岐)。
+         0 = ドテン: 利確の線は無い(v52 942-943 行 exit_flg = 0)。反対の入りの条件で閉じる(上の分岐)。
            v52 の mode 0 は時間成行も止まるので、そろえるなら time_exit=False と組む。
-         exit_prorate・exit_relax は形 2 のときだけ効く(形 0・1 では有無で同じ動き)。
+         exit_prorate・exit_relax は形 2 のときだけ効く(形 0・1 では有無で同じ動き)。利確の線に届いた足で同じ向きの
+         段は足さない【推定: 売りなら段を足す 終値 > 前の段 + 間隔 と 利確の 終値 < 線 は、約定の値段の飛びが無ければ
+         同じ足で両方は起きない】。
        建値 = 積んだ段の約定の値段の平均。約定の値段 = 段を足した判定の次の空でない 1 分足の始値(W1 の仕様 C2)。
-       そうでなく time_exit=True で、向きを持ってから hold_max_min 分たったなら全部 0(時間成行。
-       原典 1010・1018 行 alert_count × 2。時計は向きが変わったときだけ始める = 1050・1066 行 poschangetime)。
-       そうでなく建ててよく同じ向きの合図なら、上の「2 段目から」の規則で 1 段足す(段は 0 になるまで減らさない。
+       そうでなく entry が同じ向きなら、上の「2 段目から」の規則で 1 段足す(段は 0 になるまで減らさない。
        原典 881 行 order_exit と 703-714 行 reflesh は持ち高 mybtc の全部を閉じる)。
+  4. 一方向の動きが解けたか(巡回の最後。v37 952-965 行 break_off_judge): 比 < 10 で、trend の向きの側から close が
+     中心に戻った(上向きなら close <= center、下向きなら close >= center)なら trend = 0(O-1「価格が新しいレンジの
+     中心へ戻ってきた時点で…再開」)。持ち高はそのまま(v37 どおり)。trend_end_close=True なら全部閉じる(第 3 稿までの
+     動きを引数で残した。既定 off)。
 
 部品の切り替え(部品ごとの効果を分けて測るため。リードの指示、L-565・L-566): width_gate(小さすぎの門)・
-trend_gate(静観と再開)・time_exit(時間で出る)・levels(段)・exit_prorate(値幅の按分)・exit_relax(20 分と
-損の側の緩め)・exit_guard(建値の守り)。逆転順張りは on_trend="follow"(trend_gate=False とは組めない)。
+trend_gate(一方向の動きの状態と再開)・time_exit(時間で出る)・levels(段)・exit_prorate(値幅の按分)・exit_relax
+(20 分と損の側の緩め)・exit_guard(建値の守り)・trend_close(動きの始まりで閉じる)・trend_end_close(動きが解けた
+足で閉じる)・buy_ref_reset(v37 の買いだけの起点の戻り)。break の向きに入る変種は on_trend="follow"
+(trend_gate=False とは組めない)。
 
 窓が満ちるまで(最初に見た 1 分足の始まり > t − 窓 の間)は 0 を返し、状態も動かさない。
 出来高 0 の足と、値段が有限でない足は窓に入れない(値段の情報が無い)。
@@ -151,6 +167,7 @@ class C4OwnerMatildaRange:
                  exit_mode: int = EXIT_MODE, exit_step: float = EXIT_STEP, exit_prorate: bool = True,
                  exit_relax: bool = True, exit_guard: bool = False,
                  range_from: str = "body", on_trend: str = "flat",
+                 trend_close: bool = False, trend_end_close: bool = False, buy_ref_reset: bool = False,
                  width_gate: bool = True, trend_gate: bool = True, time_exit: bool = True,
                  levels: bool = True) -> None:
         n = self.name
@@ -174,6 +191,9 @@ class C4OwnerMatildaRange:
         self.trend_gate = _flag("trend_gate", trend_gate, n)
         self.time_exit = _flag("time_exit", time_exit, n)
         self.levels = _flag("levels", levels, n)
+        self.trend_close = _flag("trend_close", trend_close, n)
+        self.trend_end_close = _flag("trend_end_close", trend_end_close, n)
+        self.buy_ref_reset = _flag("buy_ref_reset", buy_ref_reset, n)
         # 原典 v37 139 行「必ず entry_setting > exit_setting」。v52 128・130 行は両方 2(等しい)なので、等しいまでは受ける
         if self.exit_setting > self.entry_setting:
             raise CardError(f"{n}: exit_setting > entry_setting: {entry_setting!r}, {exit_setting!r}")
@@ -299,7 +319,7 @@ class C4OwnerMatildaRange:
             return None
         return math.fsum(self._fills) / len(self._fills)
 
-    def _take_profit(self, close: float, center: float, vola: float, t: int) -> bool:
+    def _take_profit(self, close: float, center: float, vola: float, t: int, relax: bool) -> bool:
         """利確の線に届いたか(exit_mode。v37 879-928 行・v52 815-904 行)。"""
         side = self._side
         if self.exit_mode == 0:  # ドテン: 利確の線は無い。反対の入りの条件で閉じる(呼び出し側)
@@ -316,7 +336,7 @@ class C4OwnerMatildaRange:
         if ep is None:
             return False
         line = ep + side * self.exit_step * vola / (self._n if self.exit_prorate else 1)
-        if self.exit_relax and (t - self._entry_t >= self.relax_ns or side * (ep - center) > 0):
+        if relax and (t - self._entry_t >= self.relax_ns or side * (ep - center) > 0):
             # v37 897-898 行(売り): 中心 と 建値 − exit_vola の高い方。911-912 行(買い): 低い方
             line = min(center, line) if side == 1 else max(center, line)
         return close > line if side == 1 else close < line
@@ -346,40 +366,69 @@ class C4OwnerMatildaRange:
         else:
             ratio = math.inf if width > 0 else 0.0
 
-        # 1. 一方向の動きの状態(O-2 の門)
+        # 足 1 本 = v37 の巡回 1 回(1038〜1100 行): 一方向の動きの判定(ently_judge の頭の break_judge)→ 入り
+        # (order_buy / order_sell)→ 決済の判定(exit_judge。exit_flg = 3 の reflesh はその巡回で置いた入りの
+        # 指値ごと取り消して全部成行)→ 一方向の動きが解けたかの判定(break_off_judge)。
+        # 1. 一方向の動きに入ったか(O-2 の門。v37 の break_judge の代わり)
         was_trend = self._trend
-        if self.trend_gate:
-            if ratio >= VR_MAX:
-                d = (close > center) - (close < center)
-                if d != 0:
-                    self._trend = d
-            elif self._trend == 1 and close <= center or self._trend == -1 and close >= center:
-                self._trend = 0
-        # 2. 一方向の動きの間
+        if self.trend_gate and ratio >= VR_MAX:
+            d = (close > center) - (close < center)
+            if d != 0:
+                self._trend = d
         if self._trend != 0:
-            if self.on_trend == "flat":
-                self._flat()
-            elif self._side != self._trend:  # 持ち高 0 なら 1 段目、反対なら全部閉じて 1 段目(v37 1028 行)
-                self._open(self._trend, t, close)
-            else:  # 同じ向き: 段を足す規則はレンジと同じ(v37 1002-1005・843・867 行)
-                self._add(close, vola)
-            return
-        if was_trend != 0:
+            self._in_trend(t, close, center, vola, started=self._trend != was_trend)
+        else:
+            self._in_range(t, close, center, vola, width)
+        # 4. 一方向の動きが解けたか(v37 952〜965 行 break_off_judge。巡回の最後。持ち高はそのまま)
+        if self._trend == 1 and close <= center or self._trend == -1 and close >= center:
+            if ratio < VR_MAX:
+                self._trend = 0
+                if self.trend_end_close:  # 第 3 稿までの動き(引数で残す。既定 off)
+                    self._flat()
+
+    def _in_trend(self, t: int, close: float, center: float, vola: float, started: bool) -> None:
+        """一方向の動きの間(v37 の break_flg != 0)。幅の門は見ない(985〜1005 行は range_width を読まない)。"""
+        d = self._trend
+        if started and self.trend_close:  # 第 3 稿までの「閉じる」(引数で残す。既定 off。v37 937〜948 行は消されている)
             self._flat()
-        # 3. レンジ
-        allowed = (not self.width_gate) or width / close >= MIN_WIDTH_RATIO
-        sig = self._signal(close, center, vola)
+            return
         side = self._side
         if side == 0:
-            if allowed and sig != 0:
-                self._open(sig, t, close)
-        elif allowed and sig == -side:
-            self._open(sig, t, close)
-        elif self._take_profit(close, center, vola, t):
+            # v37 1002 行: b_signal == 0 で持ち高 0 なら entry_flg = 0。b_signal は使わないので flat は入らない。
+            # follow は「break の向きに入る」変種(b_signal が向きを認めた場合の 1004〜1005 行 entry_flg = break_flg)
+            if self.on_trend == "follow":
+                self._open(d, t, close)
+            return
+        # 持ち高あり: entry_flg = break_flg(1004〜1005 行)
+        if side != d:  # 反対の向き: 1027〜1028 行 exit_flg = 3 → reflesh で全部閉じる(入りの指値も取り消す)
             self._flat()
-        elif self.time_exit and t - self._entry_t >= self.hold_ns:
+        elif self._take_profit(close, center, vola, t, relax=False):  # 1029〜1030 行 exit_flg = 1(緩めなし)
             self._flat()
-        elif allowed and sig == side:
+        else:  # 同じ向き: order_buy / order_sell の間隔の規則で段を足す(843・867 行)。時間成行は無い
+            self._add(close, vola)
+
+    def _in_range(self, t: int, close: float, center: float, vola: float, width: float) -> None:
+        """レンジ(v37 の break_flg == 0)。"""
+        allowed = (not self.width_gate) or width / close >= MIN_WIDTH_RATIO
+        sig = self._signal(close, center, vola)
+        entry = sig if allowed else 0  # v37 976・993 行: 幅の門を割れば entry_flg = 0
+        side = self._side
+        if side == 0:
+            if entry != 0:
+                self._open(entry, t, close)
+            return
+        if self.buy_ref_reset and side == 1 and entry == 0:
+            # v37 1091〜1092 行(or と and の順で、買いの指値があると持ち高があっても全部取り消す)→ 次の合図で
+            # 836〜839 行が起点を建値の平均 entry_price に置き直す。売りは取り消されない
+            ep = self._entry_price()
+            if ep is not None:
+                self._last_px = ep
+        # 入り(同じ向きなら段を足す指値)のあとに決済の判定(1007〜1022 行)。exit_flg = 3 はその巡回の入りを取り消す
+        if entry == -side or (self.time_exit and t - self._entry_t >= self.hold_ns):  # exit_flg = 3
+            self._flat()
+        elif self._take_profit(close, center, vola, t, relax=self.exit_relax):  # exit_flg = 2(緩め)/ 1
+            self._flat()
+        elif entry == side:
             self._add(close, vola)
 
     def exposure(self, view: CardView) -> float:

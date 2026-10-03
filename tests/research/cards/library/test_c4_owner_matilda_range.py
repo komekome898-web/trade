@@ -9,6 +9,10 @@ L-565 のリードの指示: 水準を引数で受ける(表は原典の値だ�
 間も follow なら同じ規則で段を足す / 利確の既定 = 形 2(建値からの値幅)+ 按分 + 0.8 + 20 分の緩め(v37 881・
 897〜898・911〜912 行)/ 建値の守りは値段に対する割合。利確の線の形 1(中心 ∓ 0.8 × 平均実体)を確かめる試験は
 exit_mode=1 を明示する。
+第 4 稿(リードの決め、v37 の動きにそろえる): 一方向の動きの間は持ち高 0 からは入らない(flat。follow は入る)、
+持ち高は動きと反対なら閉じ、同じ向きなら形 2 の利確と段の規則(時間成行なし)/ 動きの始まり・解けた足で閉じない
+(trend_close・trend_end_close 既定 False)/ 足 1 本 = v37 の巡回 1 回(入り → 決済の判定)で、反対の合図の足は
+閉じるだけ / 買いだけの起点の戻りは buy_ref_reset(既定 False)。
 
 入力の作り方: bitFlyer の 1 分足。値段は P = 1,000,000 円の近く。「往復の足」は偶数番目が P → P+200 の陽線、
 奇数番目が P+200 → P の陰線(実体 200 円、ヒゲ無し)。窓 40 分なら、40 本目(番号 39)の足の終わりで
@@ -119,7 +123,7 @@ def window_ratio(bars, i):
 
 def test_I19_levels_can_pass_three_while_the_ratio_gate_is_below_10():
     """I-19・I-9: 第 2 稿は段を中心から数えたので、比 < 10 の間は |終値 − 中心| < 5 × 平均実体 で 3 段(3/7)までだった。
-    前の段から数える形では、比 < 10 のまま 5 段まで積める(上限 3 が無くなる)。比が 10 を越えた足では静観で 0。
+    前の段から数える形では、比 < 10 のまま 5 段まで積める(上限 3 が無くなる)。比が 10 を越えた足では、上向きの動きと反対の売りなので閉じて 0(v37 1027〜1028 行)。
     40: 平均実体 222.5 / 41: 225 / 42: 227.5 / 43: 230。どの足も 前の段 + 平均実体 < 終値、中心 + 2 × 平均実体 < 終値。
     売りで値段が上がり続けるので、既定の利確(形 2: 終値 < 建値 − 値幅)には届かない。"""
     bars = climb_bars()
@@ -183,12 +187,16 @@ def test_I6_I7_I3_take_profit_then_trade_again():
     assert ex(r, 41) == pytest.approx(-L)  # 窓が 1 分進み、上端 P+1200・中心 P+600・平均実体 242.5・門 P+1085
 
 
-def test_I18_opposite_signal_flips_with_the_entry_rule():
-    """I-18: 持ち高があるときに反対側の入りの条件がそろえば、全部閉じて反対へ 1 段(原典 v37 1010・1018 行
-    exit_flg = 3 → reflesh で全部成行、そのあと order_buy / order_sell の 1 段目)。"""
-    r = run(base() + [bar(39, P, P + 1000), bar(40, P + 1000, P - 600)])
+def test_I18_opposite_signal_closes_this_bar_and_enters_the_next_bar():
+    """I-18・第 4 稿(v37 の巡回 1 回 = 足 1 本): 反対側の入りの条件がそろった足では全部閉じるだけ(1083〜1096 行:
+    入りの指値を置いたあと exit_judge が 1010・1018 行で exit_flg = 3 → reflesh が指値ごと取り消して成行で閉じる)。
+    次の足でも合図が続いていれば、反対の 1 段目を建てる。
+    40: 中心 P+200、平均実体 255、終値 P-600 < P-310 → 閉じて 0。
+    41: 平均実体 252.5、上端 P+1000・下端 P-700・中心 P+150、終値 P-700 < P-355 → 1 段の買い。"""
+    r = run(base() + [bar(39, P, P + 1000), bar(40, P + 1000, P - 600), bar(41, P - 600, P - 700)])
     assert ex(r, 39) == pytest.approx(-L)
-    assert ex(r, 40) == pytest.approx(L)  # 中心 P+200、平均実体 255、離れ 800/255 = 3.14 でも 1 段の買い
+    assert ex(r, 40) == 0.0
+    assert ex(r, 41) == pytest.approx(L)
 
 
 def clock_bars():
@@ -257,16 +265,20 @@ def test_I9_I14_I15_I16_stand_aside_on_one_way_move():
     assert ex(run(trend_bars(), C4OwnerMatildaRange(on_trend="follow")), 39) == pytest.approx(L)
 
 
-def test_I9_flat_closes_a_range_position():
-    """I-9: 静観(flat)では、レンジで建てた段も一方向の動きを見たら全部 0 にする。"""
+def test_I9_opposite_position_is_closed_by_the_move():
+    """I-9・第 4 稿: 一方向の動きと反対の向きの持ち高は、その足で閉じる(v37 1002〜1005 行: 持ち高があれば
+    entry_flg = break_flg、1027〜1028 行: 反対の entry_flg で exit_flg = 3)。flat は持ち高 0 からは入らない
+    (1002 行 b_signal == 0 and posside == 'None' → entry_flg = 0。b_signal は使わない)。"""
     bars = base() + [bar(39, P, P + 1000)] + [bar(40 + j, P + 1000 + 2000 * j, P + 1000 + 2000 * (j + 1))
                                               for j in range(3)]
     r = run(bars)
     assert ex(r, 39) == pytest.approx(-L)
     assert ex(r, 40) == 0.0  # 上端 P+3000、比 3000 / 265 > 10、終値は中心 P+1500 より上 → 上向きの動き
     assert ex(r, 42) == 0.0
-    # follow: 売りは動きと反対なので全部閉じ、動きの向きに 1 段(v37 1010・1018・1028 行の exit_flg = 3 と、その後の入り)
-    assert ex(run(bars, C4OwnerMatildaRange(on_trend="follow")), 40) == pytest.approx(L)
+    # follow: 40 で閉じ(exit_flg = 3)、41 で動きの向きに 1 段(窓 2〜41、平均実体 310、比 16、終値 P+5000 > 中心)。
+    # 42: 建値 P+5000(42 の始値)、終値 P+7000 > 建値 + 値幅 → 一方向の動きの間も形 2 の利確で 0(1029〜1030 行)
+    fol = run(bars, C4OwnerMatildaRange(on_trend="follow"))
+    assert ex(fol, 40) == 0.0 and ex(fol, 41) == pytest.approx(L) and ex(fol, 42) == 0.0
 
 
 def test_I13_follow_adds_levels_during_the_move_with_the_same_step_rule():
@@ -299,13 +311,20 @@ def resume_bars():
 def test_I10_I13_resume_only_when_price_returns_to_center():
     """I-10: 一方向の動きの後は、比が下がっただけでは再開せず、価格が新しい中心へ戻ったときに再開する。
     I-13: follow(逆転順張り)は、その間ずっと動きの向きに持つ(この足の並びでは、前の段 P+4000 より下に
-    平均実体以上離れる終値が無いので 1 段 = +1/7 のまま)。"""
-    r = run(resume_bars(), C4OwnerMatildaRange(on_trend="follow"))
+    平均実体以上離れる終値が無いので 1 段 = +1/7 のまま)。
+    第 4 稿: 形 0(利確の線なし)で、状態が続く間 follow の 1 段が持たれ続けることを見る。状態が解けるのは
+    k = 30 の足の終わり(v37 952〜965 行 break_off_judge は巡回の最後)で、既定ではその足で持ち高を 0 にしない。
+    trend_end_close=True(第 3 稿までの動き)なら k = 30 で 0。flat は持ち高 0 からは入らないので 0 のまま。"""
+    r = run(resume_bars(), C4OwnerMatildaRange(on_trend="follow", exit_mode=0))
     k13_ratio = (5000 - 1300) / ((27 * 100 + 13 * 1000) / 40)
     assert k13_ratio < 10
-    for k in range(0, 30):
+    for k in range(0, 31):
         assert ex(r, 39 + k) == pytest.approx(L), k
-    assert ex(r, 39 + 30) == 0.0  # 中心 P+4000 に終値 P+4000 が戻った
+    end = run(resume_bars(), C4OwnerMatildaRange(on_trend="follow", exit_mode=0, trend_end_close=True))
+    assert ex(end, 39 + 29) == pytest.approx(L)
+    assert ex(end, 39 + 30) == 0.0  # 中心 P+4000 に終値 P+4000 が戻った
+    flat = run(resume_bars())
+    assert all(ex(flat, 39 + k) == 0.0 for k in range(0, 31))
 
 
 def test_I17_range_from_bodies_ignores_wicks():
@@ -462,8 +481,8 @@ def test_exit_mode_0_has_no_take_profit_line_and_closes_on_the_opposite_signal()
     card = lambda: C4OwnerMatildaRange(exit_mode=0)  # noqa: E731
     r = run(stack_bars() + [bar(42, P + 1200, P + 900)], card())  # exit_mode=1 なら 42 で利確(上の試験)
     assert ex(r, 42) == pytest.approx(-2 * L)
-    flip = run(base() + [bar(39, P, P + 1000), bar(40, P + 1000, P - 600)], card())
-    assert ex(flip, 40) == pytest.approx(L)
+    flip = run(base() + [bar(39, P, P + 1000), bar(40, P + 1000, P - 600), bar(41, P - 600, P - 700)], card())
+    assert ex(flip, 40) == 0.0 and ex(flip, 41) == pytest.approx(L)
 
 
 def test_exit_mode_2_takes_profit_at_a_distance_from_the_entry_price():
@@ -582,3 +601,66 @@ def test_default_take_profit_is_v37_code():
     """既定の利確 = v37 のコードの実際の動き: 形 2(建値から値幅)+ 按分 + step_exit 0.8 + 20 分の緩め。"""
     card = C4OwnerMatildaRange()
     assert (card.exit_mode, card.exit_prorate, card.exit_step, card.exit_relax) == (2, True, 0.8, True)
+
+
+# 第 4 稿(リードの決め: 一方向の動きの間と、足 1 本の中の順番を v37 にそろえる)
+
+def up_move_bars():
+    """39 で 1 段買い(P+200 → P-800。中心 P-300、平均実体 220、P-800 < P-740)。40 は P-800 → P+2500 の大陽線
+    (窓 1〜40: 平均実体 (38 × 200 + 1000 + 3300) / 40 = 297.5、幅 3,300、比 11.09、終値 > 中心 P+850 → 上向き)。
+    41〜85 は 100 円ずつ上がる陽線(比は 10 を越えたまま)。"""
+    out = base() + [bar(39, P + 200, P - 800), bar(40, P - 800, P + 2500)]
+    out += [bar(41 + j, P + 2500 + 100 * j, P + 2600 + 100 * j) for j in range(45)]
+    return out
+
+
+def test_with_trend_position_is_kept_when_the_move_starts():
+    """v37 937〜948 行: break の始まりで閉じる処理は文字列に入れて消されている。動きと同じ向きの持ち高(上向きの
+    動きの買い)は閉じない(既定 trend_close=False)。trend_close=True(第 3 稿までの flat の動き)なら閉じ、
+    flat なのでそのあとも入らない。利確の線の無い形 0 で見る。"""
+    keep = run(up_move_bars(), C4OwnerMatildaRange(exit_mode=0))
+    assert ex(keep, 39) == pytest.approx(L) and ex(keep, 40) == pytest.approx(L) and ex(keep, 41) == pytest.approx(L)
+    close = run(up_move_bars(), C4OwnerMatildaRange(exit_mode=0, trend_close=True))
+    assert ex(close, 40) == 0.0 and ex(close, 41) == 0.0
+
+
+def test_no_time_exit_during_the_move():
+    """v37 1027〜1036 行: break の間の exit_judge には alert_count × 2 の時間成行が無い。39 で建てて 41 分後の
+    80(窓 41〜80: 幅 4,000、平均実体 100、比 40)でも持ったまま。"""
+    r = run(up_move_bars(), C4OwnerMatildaRange(exit_mode=0))
+    assert ex(r, 80) == pytest.approx(L)
+
+
+def test_take_profit_by_distance_works_during_the_move():
+    """v37 1029〜1030 行: break の間も b_signal == 0 なら exit_flg = 1(形 2 の利確の指値)。既定の形 2 なら、
+    40 で 建値 P-800(40 の始値)+ 0.8 × 297.5 = P-562 < 終値 P+2500 → 0。"""
+    assert ex(run(up_move_bars()), 40) == 0.0
+
+
+def buy_lapse_bars():
+    """39 で 1 段買い(終値 P-800)。40 は P-500 で始まる(1 段目の約定 = 建値 P-500)P-500 → P-400 で合図が切れる
+    (中心 P-300、平均実体 217.5、P-400 > P-735)。41 は P-400 → P-760(平均実体 221.5、中心 P-300、P-760 < P-743 で合図)。"""
+    return base() + [bar(39, P + 200, P - 800), bar(40, P - 500, P - 400), bar(41, P - 400, P - 760)]
+
+
+def test_buy_reference_resets_to_the_entry_price_only_when_asked():
+    """迷った点 20: v37 1092 行の or と and の順で、買いは合図の切れた巡回で指値が全部取り消され、次の合図で起点が
+    建値の平均 entry_price になる(836〜839 行)。既定(buy_ref_reset=False)は売り買い同じ = 前の段の終値 P-800 から
+    数え、41 の P-760 は P-800 − 221.5 より上なので足さない。True なら起点 P-500 から数え、P-760 < P-721.5 で 2 段。
+    売り(上下を裏返した足)は True でも戻らない(1 段のまま)。"""
+    assert ex(run(buy_lapse_bars()), 41) == pytest.approx(L)
+    assert ex(run(buy_lapse_bars(), C4OwnerMatildaRange(buy_ref_reset=True)), 41) == pytest.approx(2 * L)
+    m = lambda x: 2 * P + 200 - x  # noqa: E731
+    mirror = [bar(i, m(b.open), m(b.close)) for i, b in enumerate(buy_lapse_bars())]
+    assert ex(run(mirror, C4OwnerMatildaRange(buy_ref_reset=True)), 41) == pytest.approx(-L)
+
+
+@pytest.mark.parametrize("kw", [dict(trend_close=1), dict(trend_end_close=None), dict(buy_ref_reset="yes")])
+def test_new_switches_take_only_bools(kw):
+    with pytest.raises(CardError):
+        C4OwnerMatildaRange(**kw)
+
+
+def test_new_switch_defaults_follow_v37():
+    card = C4OwnerMatildaRange()
+    assert (card.on_trend, card.trend_close, card.trend_end_close, card.buy_ref_reset) == ("flat", False, False, False)
