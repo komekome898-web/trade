@@ -43,3 +43,9 @@ def test_side_labels_from_oos_diff():
             {"gated": "weak_f15_gate_limit_b_bad", "d_oos_day": 3.0}]
     lab = rg.side_labels(rows)
     assert lab == {"f5_limit_a": "側で割れる", "f15_limit_b": "増える(両側)"}
+
+
+def test_pairs_with_rolling_tag():
+    names = {"weak_f15_rgate_limit_b_bad", "weak_f15_limit_b_bad", "weak_f15_gate_limit_b_bad"}
+    assert rg.pairs(names, "rgate") == [("weak_f15_rgate_limit_b_bad", "weak_f15_limit_b_bad")]
+    assert rg.pairs(names) == [("weak_f15_gate_limit_b_bad", "weak_f15_limit_b_bad")]

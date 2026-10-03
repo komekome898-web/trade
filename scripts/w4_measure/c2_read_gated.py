@@ -16,6 +16,9 @@ R3 境目を決めた期間の外: 門の境目は 2018〜2019 年の取引か�
    読みの主はこちら(境目を決めた期間の外)。
 R4 年ごとの安定: 2020〜2023 の 4 年で、年の損益の差(門あり − 門なし)の符号が R3 の差の符号と同じ年の数を「n/4」。
 R5 経費なし。探索の読みで判定ではない。門の境目は K1 の値をそのまま使い、決め直さない。
+--tag rgate(L-619、表を見る前に足した): 門の境目を、合図の時点の直前 365 日の合図の vol_prev の 1/3・2/3 分位にした走らせ
+(weak_f<足>_rgate_<型>)を、同じ R1〜R5 で門なしと比べる。境目を決めた期間というものは無いが、比べやすさのため R3 の 2020〜2023 年と
+表 3 の 2022〜2023 年をそのまま使う。直前の合図が 100 本に満たない間は入らない(始めの数日)。出力は runs/READ_RGATED/。
 関門 ② の 1 回目の後に足した出力(R1〜R5 は変えていない。表を見た後に足したもの): 表 3 = 年ごとの損益の差(門あり − 門なし、
 2020〜2023 の各年)と、K1 で判定の区間として開けた 2020・2021 年を除いた 2022-01-01〜2023-12-17(716 日)の 1 日あたりの差。
 
@@ -41,13 +44,16 @@ OOS_DAYS = 1447  # 2020-01-01〜2023-12-17(両端を含む)
 FEET = (5, 15)
 
 
-def pairs(names: set[str]) -> list[tuple[str, str]]:
-    """R1。(門あり, 門なし) の組。両方がある組だけ。"""
+TAG = "gate"  # main の --tag で替える("rgate" = 直前 365 日の境目、L-619)
+
+
+def pairs(names: set[str], tag: str | None = None) -> list[tuple[str, str]]:
+    """R1。(門あり, 門なし) の組。両方がある組だけ。tag = "gate"(固定の境目)/ "rgate"(直前 365 日の境目、L-619)。"""
     out = []
     for f in FEET:
         types = [f"limit_{e}_{s}" for e in ("a", "b", "c") for s in rl.SIDES] + [f"close_{e}" for e in ("a", "b")]
         for t in types:
-            g, u = f"weak_f{f}_gate_{t}", f"weak_f{f}_{t}"
+            g, u = f"weak_f{f}_{tag or TAG}_{t}", f"weak_f{f}_{t}"
             if g in names and u in names:
                 out.append((g, u))
     return out
@@ -87,7 +93,7 @@ def side_labels(rows: list[dict]) -> dict[str, str]:
     out = {}
     for f in FEET:
         for e in ("a", "b", "c"):
-            kg, kb = f"weak_f{f}_gate_limit_{e}_good", f"weak_f{f}_gate_limit_{e}_bad"
+            kg, kb = f"weak_f{f}_{TAG}_limit_{e}_good", f"weak_f{f}_{TAG}_limit_{e}_bad"
             if kg in by and kb in by:
                 out[f"f{f}_limit_{e}"] = rl.label(by[kg]["d_oos_day"], by[kb]["d_oos_day"])
     return out
@@ -129,13 +135,16 @@ def render(runs: dict, rows: list[dict], labels: dict[str, str]) -> str:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=rl.DEFAULT_ROOT)
+    ap.add_argument("--tag", default="gate", choices=["gate", "rgate"])
     a = ap.parse_args(argv)
+    global TAG
+    TAG = a.tag
     names = [n for n in os.listdir(a.root) if os.path.isfile(os.path.join(a.root, n, "summary.json"))]
     want = {x for p in pairs(set(names)) for x in p}
     runs = {n: rl.load_run(os.path.join(a.root, n)) for n in names if n in want}
     rows = compare(runs)
     labels = side_labels(rows)
-    out = os.path.join(a.root, "READ_GATED")
+    out = os.path.join(a.root, "READ_GATED" if TAG == "gate" else "READ_RGATED")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "TABLES.md"), "w", encoding="utf-8") as fh:
         fh.write(render(runs, rows, labels))

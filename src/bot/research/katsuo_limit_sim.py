@@ -231,6 +231,18 @@ def k1_signal(o: float, h: float, lo: float, c: float, flip_body: bool):
     return sig, lc, csign, ("strong" if sig == csign else "weak"), ok_small, ok_big, flipped
 
 
+VOL_GATE_MODES = ("fixed", "rolling")  # fixed = K1 の境目(2018〜2019 年)/ rolling = 合図の時点の直前 vol_roll_days 日の合図の上位 3 分の 1(L-619)
+
+
+def quantile_linear(xs: list, q: float) -> float:
+    """numpy.quantile の既定(線形補間)と同じ。xs は空でないこと。"""
+    ys = sorted(xs)
+    pos = (len(ys) - 1) * q
+    lo = int(math.floor(pos))
+    hi = min(lo + 1, len(ys) - 1)
+    return ys[lo] + (ys[hi] - ys[lo]) * (pos - lo)
+
+
 def tercile(v: Optional[float], edges: Optional[tuple]) -> Optional[str]:
     """measure_katsuo_xvenue.py の bucket_of と同じ切り方。値なし・境目なしは None。"""
     if edges is None or v is None or v != v:
@@ -285,7 +297,8 @@ class KatsuoLimitSim:
 
     def __init__(self, *, fill_side: str, at_max: Optional[str] = None, foot_min: int = 15, design: str = "v03",
                  entry: str = "c", side_keep: str = "weak", vol_gate: bool = False,
-                 vol_edges: Optional[tuple] = None, fill: str = "limit") -> None:
+                 vol_edges: Optional[tuple] = None, fill: str = "limit", vol_gate_mode: str = "fixed",
+                 vol_roll_days: int = 365, vol_roll_min: int = 100) -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.fill = _in("fill", fill, FILLS)
         if fill != "limit" and design != "k1":
@@ -314,12 +327,23 @@ class KatsuoLimitSim:
                 raise ValueError("入りと降りの切り分け(fill の 2 つ)は side_keep='weak' だけ(強い 1 分の組は走らせの表に無い)")
         self.side_keep = side_keep
         self.vol_gate = vol_gate
-        if vol_edges is not None:
+        self.vol_gate_mode = _in("vol_gate_mode", vol_gate_mode, VOL_GATE_MODES)
+        if vol_gate_mode == "rolling":
+            if not vol_gate:
+                raise ValueError("vol_gate_mode='rolling' は vol_gate=True のときだけ")
+            if type(vol_roll_days) is not int or vol_roll_days <= 0 or type(vol_roll_min) is not int or vol_roll_min < 3:
+                raise ValueError(f"vol_roll_days は正の整数、vol_roll_min は 3 以上の整数: {vol_roll_days!r} {vol_roll_min!r}")
+        self.vol_roll_ns = vol_roll_days * 86400 * 10**9
+        self.vol_roll_min = vol_roll_min
+        self._sig_hist: deque = deque()  # rolling: (合図の時刻, その合図の vol_prev)
+        if vol_gate_mode == "rolling":
+            vol_edges = None  # 固定の境目は使わない
+        elif vol_edges is not None:
             if len(vol_edges) != 2 or not all(math.isfinite(float(x)) for x in vol_edges) or not vol_edges[0] < vol_edges[1]:
                 raise ValueError(f"vol_edges は (q1, q2) で q1 < q2: {vol_edges!r}")
             vol_edges = (float(vol_edges[0]), float(vol_edges[1]))
         elif vol_gate:
-            raise ValueError("vol_gate=True には vol_edges(K1 の出力の境目)が要る")
+            raise ValueError("vol_gate=True(fixed)には vol_edges(K1 の出力の境目)が要る")
         self.vol_edges = vol_edges
         self.foot_ns = foot_min * MIN_NS
         # 海外の足(カードの _bucket / _agg と同じ)
@@ -348,7 +372,7 @@ class KatsuoLimitSim:
         self.action_log: list = []  # design="k1" の行動 (種類 "open"/"exit"/"doten", 時刻 T, 合図の向き)
         self.decisions = {"buy": 0, "sell": 0, "exit": 0, "skip_at_max_same": 0, "skip_at_max_opposite": 0,
                           "flip_at_max": 0, "no_price": 0, "k1_same_side": 0, "k1_same_side_resting": 0,
-                          "k1_vol_gate_skip": 0, "k1_doten": 0}
+                          "k1_vol_gate_skip": 0, "k1_doten": 0, "k1_vol_gate_warmup": 0}
         self.undecided_bars = 0  # 決まらない足の数(全体)
 
     # ------------------------------------------------------------------ 仕様 1: 入力
@@ -419,6 +443,16 @@ class KatsuoLimitSim:
         else:
             self._decide_k1(T, o, h, lo, c, vol)
 
+    def _rolling_edges(self, T: int) -> Optional[tuple]:
+        """rolling: 時刻 T より前の vol_roll_days 日の合図の vol_prev の 1/3・2/3 分位。足りなければ None。"""
+        while self._sig_hist and self._sig_hist[0][0] < T - self.vol_roll_ns:
+            self._sig_hist.popleft()
+        xs = [v for t, v in self._sig_hist if t < T]
+        if len(xs) < self.vol_roll_min:
+            return None
+        q1, q2 = quantile_linear(xs, 1 / 3), quantile_linear(xs, 2 / 3)
+        return (q1, q2) if q1 < q2 else (q1, math.nextafter(q1, math.inf))
+
     def _push_close(self, c: float) -> Optional[float]:
         """この足の終値を入れて、この足の vol_prev(K1 の vol_prev[この足 + 1]。モジュールの説明)を返す。"""
         self._closes.append(c)
@@ -436,6 +470,10 @@ class KatsuoLimitSim:
         if sig != 0 and strength == self.side_keep:
             act = {"sig": sig, "T": T, "c_ov": c, "r": abs(c - lc) / c, "small": small, "big": big, "h1": flipped,
                    "strength": STRONG if strength == "strong" else WEAK, "vol": vol}
+            if self.vol_gate_mode == "rolling":
+                act["edges"] = self._rolling_edges(T)  # この合図より前の合図だけから(先読みなし)
+                if vol is not None:
+                    self._sig_hist.append((T, vol))
         pend, self._pending = self._pending, None
         if pend is not None:  # H3: 前の足の合図の行動を、この区切りで
             self._act_k1(T, pend)
@@ -468,7 +506,11 @@ class KatsuoLimitSim:
                 self.action_log.append(("exit", T, d))
                 self._place_exit(T, a["c_ov"], XSIG_WEAK)
             return
-        if self.vol_gate and tercile(a["vol"], self.vol_edges) != "high":
+        if self.vol_gate and self.vol_gate_mode == "rolling" and a.get("edges") is None:
+            self.decisions["k1_vol_gate_warmup"] += 1  # 直前の合図が vol_roll_min 本に足りない: 入らない
+            self._orders = [od for od in self._orders if od.reduce or od.side == d]
+            return
+        if self.vol_gate and tercile(a["vol"], a.get("edges", self.vol_edges)) != "high":
             self.decisions["k1_vol_gate_skip"] += 1  # 高い三分位のときだけ入る(降りる注文は門に関係なし)
             self._orders = [od for od in self._orders if od.reduce or od.side == d]  # 反対向きの入りは取り消す(直し 4)
             return
@@ -528,7 +570,7 @@ class KatsuoLimitSim:
             legs = (("ent1", q, p1),) if self.entry == "a" else (("ent2", q, p2),)
         vol = a.get("vol")
         info = {"t_sig": a["T"], "small": a["small"], "big": a["big"], "r": r, "strength": a["strength"],
-                "h1": a["h1"], "vol": vol, "tercile": tercile(vol, self.vol_edges)}
+                "h1": a["h1"], "vol": vol, "tercile": tercile(vol, a.get("edges", self.vol_edges))}
         sid = self._n_sets
         self._n_sets += 1
         for kind, q, px in legs:
@@ -700,5 +742,5 @@ class KatsuoLimitSim:
         return [self._row(tr) for tr in st.closed]
 
 
-__all__ = ["TICK_EPS", "tick_down", "tick_up", "EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
+__all__ = ["VOL_GATE_MODES", "quantile_linear", "TICK_EPS", "tick_down", "tick_up", "EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
            "KatsuoLimitSim", "SIZE_DEF", "SIZE_MAX", "STOP_LIMITS", "STOP_MARKET", "action"]

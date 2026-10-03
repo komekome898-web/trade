@@ -1341,3 +1341,31 @@ def test_ablation_fills_reject_strong_side_keep():
     for fill in ("limit_entry_close_exit", "close_entry_limit_exit"):
         with pytest.raises(ValueError):
             KatsuoLimitSim(fill_side="good", foot_min=1, design="k1", side_keep="strong", fill=fill)
+
+
+def test_quantile_linear_matches_numpy():
+    import numpy as np
+    from bot.research.katsuo_limit_sim import quantile_linear
+    xs = [5.0, 1.0, 9.0, 3.0, 7.0, 2.0]
+    for q in (0.0, 1 / 3, 0.5, 2 / 3, 1.0):
+        assert abs(quantile_linear(xs, q) - float(np.quantile(xs, q))) < 1e-12
+
+
+def test_rolling_gate_needs_vol_gate_and_ignores_fixed_edges():
+    with pytest.raises(ValueError):
+        KatsuoLimitSim(fill_side="good", foot_min=5, design="k1", entry="a", vol_gate_mode="rolling")
+    s = KatsuoLimitSim(fill_side="good", foot_min=5, design="k1", entry="a", vol_gate=True,
+                       vol_gate_mode="rolling", vol_roll_min=3)
+    assert s.vol_edges is None
+
+
+def test_rolling_edges_use_only_earlier_signals_within_window():
+    day = 86400 * 10**9
+    s = KatsuoLimitSim(fill_side="good", foot_min=5, design="k1", entry="a", vol_gate=True,
+                       vol_gate_mode="rolling", vol_roll_days=10, vol_roll_min=3)
+    assert s._rolling_edges(0) is None                      # 合図が無い: 入らない
+    for i, v in enumerate([100.0, 1.0, 2.0, 3.0]):           # 1 本目は 20 日前で窓の外
+        s._sig_hist.append((-20 * day if i == 0 else i * day, v))
+    e = s._rolling_edges(4 * day)
+    assert e is not None and abs(e[0] - (1 + 2 / 3)) < 1e-9 and abs(e[1] - (2 + 1 / 3)) < 1e-9
+    assert s._rolling_edges(3 * day) is None                 # 3 日目の合図より前は 2 本だけ(同じ時刻は数えない)
