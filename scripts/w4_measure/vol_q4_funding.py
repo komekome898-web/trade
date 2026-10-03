@@ -145,11 +145,11 @@ def main() -> int:
     FS = np.array([fs1[d] for d in days])
     n = len(days)
     out = {"days": n, "first": days[0], "last": days[-1], "a": {}, "b": {}}
-    for name, x in (("|資金調達率|(d−1)", FA), ("符号つき資金調達率(d−1)", FS), ("bitFlyer のボラ v(d−1)", V1)):
+    for name, x in (("資金調達率の絶対値(d−1)", FA), ("符号つき資金調達率(d−1)", FS), ("bitFlyer のボラ v(d−1)", V1)):
         p = spearman(x, V)
         lo, hi = block_ci(lambda i, x=x: spearman(x[i], V[i]), n)
         out["a"][name] = [p, lo, hi]
-    for name, x in (("|資金調達率|(d−1)", FA), ("符号つき資金調達率(d−1)", FS)):
+    for name, x in (("資金調達率の絶対値(d−1)", FA), ("符号つき資金調達率(d−1)", FS)):
         def stat(i, x=x):
             return spearman(x[i], residual_log(V[i], V1[i]))
         p = stat(np.arange(n))
@@ -178,7 +178,7 @@ def main() -> int:
     for k, (p, lo, hi) in out["b"].items():
         L.append(f"| {k} | {p:+.3f} [{lo:+.3f}, {hi:+.3f}] | {'含む' if lo <= 0 <= hi else '含まない'} |")
     L += ["", f"## 表 3: その日のボラが高の日の割合 (c)(2021 年から、{len(cdays)} 日)", "",
-          "| 前の日のボラの区分 | |資金調達率|(d−1) 低 | 中 | 高 |", "|---|---|---|---|"]
+          "| 前の日のボラの区分 | 資金調達率の絶対値(d−1) 低 | 中 | 高 |", "|---|---|---|---|"]
     for pk in ("all", "low", "mid", "high"):
         cells = []
         for fk in ("low", "mid", "high"):
