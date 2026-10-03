@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 793,
+ "n_moves": 794,
  "moves": [
   {
    "move": 1,
@@ -21587,7 +21587,7 @@
   {
    "move": 793,
    "tools": {
-    "Bash": 27,
+    "Bash": 28,
     "ToolSearch": 1,
     "ListAgents": 1,
     "mcp__Claude_Code_Remote__get_session": 2,
@@ -21595,7 +21595,33 @@
     "mcp__Claude_Code_Remote__create_session": 5,
     "SendMessage": 1
    },
-   "n_tools": 42,
+   "n_tools": 43,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 794,
+   "tools": {
+    "Bash": 1
+   },
+   "n_tools": 1,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -21639,9 +21665,9 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 6,
+   "median": 6.0,
    "max": 153,
-   "n": 761
+   "n": 762
   },
   "P6_findings_applied": {
    "num": 60,
