@@ -57,3 +57,17 @@ def test_bootstrap_is_deterministic():
     pnl = {d: float(i) for i, d in enumerate(days)}
     cls = {d: ("high" if i % 3 == 0 else "low") for i, d in enumerate(days)}
     assert vs.block_bootstrap_diff(days, pnl, cls) == vs.block_bootstrap_diff(days, pnl, cls)
+
+
+def test_classify_same_day_uses_that_day():
+    # 2016 は境のため、2017 の 1 日だけ大きな値を入れる。その日自身が「高」になり、翌日・翌々日は変わらない
+    vol = {}
+    for i, d in enumerate(_year_days(2016)):
+        vol[d] = float(i + 1)
+    for d in _year_days(2017)[:40]:
+        vol[d] = 1.0
+    vol["2017-01-20"] = 10_000.0
+    same = vs.classify_same_day(vol)
+    prev = vs.classify(vol)
+    assert same["2017-01-20"] == "high" and same["2017-01-21"] == "low" and same["2017-01-19"] == "low"
+    assert prev["2017-01-21"] == "high" and prev["2017-01-20"] == "low"

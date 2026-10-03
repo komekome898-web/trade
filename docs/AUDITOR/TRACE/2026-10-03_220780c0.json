@@ -22483,19 +22483,19 @@
   {
    "move": 826,
    "tools": {
-    "Bash": 61,
-    "Write": 4,
-    "Agent": 4
+    "Bash": 69,
+    "Write": 5,
+    "Agent": 6
    },
-   "n_tools": 69,
+   "n_tools": 80,
    "read_goal": false,
    "first_write_at": 15,
    "table_shown": false,
    "claims_without_output": 0,
    "claims_total": 0,
-   "audit_calls": 3,
+   "audit_calls": 4,
    "audit_pasted_immediately": 0,
-   "audit_followed_by_real_edit": 1,
+   "audit_followed_by_real_edit": 2,
    "protected_writes": 0,
    "protected_by_path": {
     "docs/PROJECT_GOAL.md": 0,
@@ -22527,7 +22527,7 @@
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 210,
+   "den": 211,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -22536,9 +22536,9 @@
    "n": 794
   },
   "P6_findings_applied": {
-   "num": 68,
-   "den": 210,
-   "value": 0.3238,
+   "num": 69,
+   "den": 211,
+   "value": 0.327,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {

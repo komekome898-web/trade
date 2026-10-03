@@ -117,10 +117,12 @@ def class_mean_ci(x: np.ndarray, block: int = BLOCK) -> tuple[float, float, floa
 
 def classify_same_day(vol: dict[str, float]) -> dict[str, str]:
     """診断(先読みあり): 日 d をその日の量 v(d) で、classify と同じ前の暦年の境で分ける。"""
-    prev = {}
+    # classify は日 d' を vol[d' − 1] で分けるので、v(d) を d − 1 の鍵に置けば、日 d' は v(d') で分かれる。
+    # (関門 ② の 2 回目の止める 1: 前は d + 1 の鍵に置いていて、2 日前のボラで分けていた)
+    shifted = {}
     for d, v in vol.items():
-        prev[(datetime.fromisoformat(d) + timedelta(days=1)).date().isoformat()] = v
-    return classify(prev)
+        shifted[(datetime.fromisoformat(d) - timedelta(days=1)).date().isoformat()] = v
+    return classify(shifted)
 
 
 def load_closes_by_day() -> dict[str, list[float]]:
