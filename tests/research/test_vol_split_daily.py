@@ -71,3 +71,22 @@ def test_classify_same_day_uses_that_day():
     prev = vs.classify(vol)
     assert same["2017-01-20"] == "high" and same["2017-01-21"] == "low" and same["2017-01-19"] == "low"
     assert prev["2017-01-21"] == "high" and prev["2017-01-20"] == "low"
+
+
+def test_cross_cells_needs_both_classes():
+    days = ["2020-01-01", "2020-01-02", "2020-01-03"]
+    pnl = {"2020-01-01": 1.0, "2020-01-02": 3.0, "2020-01-03": 5.0}
+    prev = {"2020-01-01": "low", "2020-01-02": "low", "2020-01-03": "high"}
+    same = {"2020-01-01": "high", "2020-01-02": "high"}
+    c = vs.cross_cells(days, pnl, prev, same)
+    assert c == {("low", "high"): (2, 2.0)}
+
+
+def test_within_diff_holds_other_class_fixed():
+    days = [f"2020-03-{i:02d}" for i in range(1, 21)]
+    pnl = {d: float(i) for i, d in enumerate(days)}
+    split = {d: ("high" if i % 2 else "low") for i, d in enumerate(days)}
+    hold = {d: ("mid" if i < 10 else "high") for i, d in enumerate(days)}
+    point, lo, hi, nh, nl = vs.within_diff(days, pnl, split, hold, "mid")
+    # mid の日 = 0..9。high = 1,3,5,7,9(平均 5)、low = 0,2,4,6,8(平均 4)
+    assert point == 1.0 and nh == 5 and nl == 5 and lo <= hi

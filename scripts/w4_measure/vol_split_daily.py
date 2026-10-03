@@ -17,6 +17,15 @@ R6 経費なし。探索の読みで判定ではない。2023-12-17 より後の
 低・中・高それぞれの平均の 95% 区間(5 日の塊)、高 − 低 の 20 日の塊の区間(塊の長さの確かめ)、
 診断としてその日のボラ(先読みあり。門には使えない)で同じ境で分けた 高 − 低。
 
+関門 ② の 2 回目の後に足した表 3(R7〜R9、表を見る前にこの台本と試験で固めた):
+R7 前の日のボラの区分(classify)とその日のボラの区分(classify_same_day)の 3 × 3 で日を分け、系列ごとに各升の
+   1 日あたりの損益の平均と日数を出す。両方の区分がある日だけ。
+R8 その日のボラの区分ごとに、前の日のボラの 高 − 低 と 95% 区間(5 日の塊、R5 と同じ再抽出)。前の日のボラの
+   区分ごとに、その日のボラの 高 − 低 と区間。区間が 0 を含むかだけを書く。
+R9 読み: その日の区分の中でも前の日の 高 − 低 が同じ向きに残るなら、前の日の量がその日の量と別に効いている
+   【推定】。消えるなら、前の日の差はその日の差の写し。升の日数が 30 日未満の差は「日数が少ない」と書く(30 は
+   読み手の目安で、判定の境ではない)。
+
 出力: docs/RESEARCH/cards/VOLSPLIT/TABLES.md と volsplit.json。
 
     PYTHONPATH=src python3 scripts/w4_measure/vol_split_daily.py
@@ -125,6 +134,24 @@ def classify_same_day(vol: dict[str, float]) -> dict[str, str]:
     return classify(shifted)
 
 
+def cross_cells(days: list[str], pnl: dict[str, float], cls_prev: dict[str, str],
+                cls_same: dict[str, str]) -> dict[tuple[str, str], tuple[int, float]]:
+    """R7。(前の日の区分, その日の区分) → (日数, 1 日あたりの平均)。両方の区分がある日だけ。"""
+    out: dict[tuple[str, str], list[float]] = {}
+    for d in days:
+        if d in cls_prev and d in cls_same:
+            out.setdefault((cls_prev[d], cls_same[d]), []).append(pnl[d])
+    return {k: (len(v), float(np.mean(v))) for k, v in out.items()}
+
+
+def within_diff(days: list[str], pnl: dict[str, float], split_by: dict[str, str], hold: dict[str, str],
+                k: str) -> tuple[float, float, float, int, int]:
+    """R8。hold の区分が k の日だけで、split_by の 高 − 低 と 5 日の塊の区間、高・低の日数。"""
+    ds = [d for d in days if d in split_by and hold.get(d) == k]
+    point, lo, hi = block_bootstrap_diff(ds, pnl, split_by)
+    return point, lo, hi, sum(1 for d in ds if split_by[d] == "high"), sum(1 for d in ds if split_by[d] == "low")
+
+
 def load_closes_by_day() -> dict[str, list[float]]:
     sys.path.insert(0, os.path.join(ov.REPO, "src"))
     from common import FX_DIR, load_bars  # noqa: E402
@@ -161,6 +188,10 @@ def main() -> int:
             r[k]["mean"], r[k]["lo"], r[k]["hi"] = class_mean_ci(np.array([s[x] for x in days if cls[x] == k]))
         days_same = sorted(k for k in s if k in cls_same)
         r["same_day_diff"], r["same_day_lo"], r["same_day_hi"] = block_bootstrap_diff(days_same, s, cls_same)
+        all_days = sorted(s)
+        r["cross"] = {f"{a}|{b}": v for (a, b), v in cross_cells(all_days, s, cls, cls_same).items()}
+        r["prev_within_same"] = {k: within_diff(all_days, s, cls, cls_same, k) for k in ("low", "mid", "high")}
+        r["same_within_prev"] = {k: within_diff(all_days, s, cls_same, cls, k) for k in ("low", "mid", "high")}
         rows.append(r)
     L = ["# 前の日のボラで日を分けた、カードごとの 1 日あたりの損益", "",
          "`scripts/w4_measure/vol_split_daily.py` が出した。読み方の決まり R1〜R6 はその台本の docstring。経費の前。", "",
@@ -176,6 +207,31 @@ def main() -> int:
         g = lambda k: f"{r[k]['mean']:.2f} [{r[k]['lo']:.2f}, {r[k]['hi']:.2f}]"
         L.append(f"| {r['name']} | {r['all_split_days']['mean']:.2f}({r['all_split_days']['days']}) | {g('low')} | {g('mid')} | {g('high')} | "
                  f"[{r['lo20']:+.2f}, {r['hi20']:+.2f}] | {r['same_day_diff']:+.2f} [{r['same_day_lo']:+.2f}, {r['same_day_hi']:+.2f}] |")
+    J = {"low": "低", "mid": "中", "high": "高"}
+
+    def wd(t):
+        p, lo, hi, nh, nl = t
+        few = "・日数が少ない" if min(nh, nl) < 30 else ""
+        return f"{p:+.2f} [{lo:+.2f}, {hi:+.2f}]({nh}/{nl}{few})"
+    L += ["", "## 表 3: 前の日のボラとその日のボラを同時に入れた区分(関門 ② の 2 回目の後に足した。R7〜R9)", "",
+          "### 3-1 その日のボラの区分の中で、前の日のボラの 高 − 低 [5 日の塊](高の日数/低の日数)", "",
+          "| 系列 | その日 低 | その日 中 | その日 高 |", "|---|---|---|---|"]
+    for r in rows:
+        L.append(f"| {r['name']} | " + " | ".join(wd(r["prev_within_same"][k]) for k in ("low", "mid", "high")) + " |")
+    L += ["", "### 3-2 前の日のボラの区分の中で、その日のボラの 高 − 低 [5 日の塊](高の日数/低の日数)", "",
+          "| 系列 | 前の日 低 | 前の日 中 | 前の日 高 |", "|---|---|---|---|"]
+    for r in rows:
+        L.append(f"| {r['name']} | " + " | ".join(wd(r["same_within_prev"][k]) for k in ("low", "mid", "high")) + " |")
+    L += ["", "### 3-3 各升の 1 日あたりの平均(日数)。列は 前の日/その日", "",
+          "| 系列 | " + " | ".join(f"{J[a]}/{J[b]}" for a in ("low", "mid", "high") for b in ("low", "mid", "high")) + " |",
+          "|---|" + "---|" * 9]
+    for r in rows:
+        cells = []
+        for a in ("low", "mid", "high"):
+            for b in ("low", "mid", "high"):
+                v = r["cross"].get(f"{a}|{b}")
+                cells.append("—" if v is None else f"{v[1]:.2f}({v[0]})")
+        L.append(f"| {r['name']} | " + " | ".join(cells) + " |")
     n_by = {k: sum(1 for v in cls.values() if v == k) for k in ("low", "mid", "high")}
     L += ["", f"分けた日: 低 {n_by['low']}・中 {n_by['mid']}・高 {n_by['high']}(2017-01-01〜{ov.LAST_DAY})"]
     out = os.path.join(ov.REPO, "docs", "RESEARCH", "cards", "VOLSPLIT")
