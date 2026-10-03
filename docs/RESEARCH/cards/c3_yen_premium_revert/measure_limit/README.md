@@ -276,3 +276,6 @@ python <scratchpad>/w4/limit/make_tables.py
 - 【推定】指値が持ちたい大きさに付いていけない主な理由は、持ちたい大きさを動かしているのが「bitFlyer の値段」だけでなく「海外の値段」でもあり、海外が動いた分は bitFlyer の指値では拾えないこと。指値の段を 1 分の間固定していることは、その上に重なる。
 - 次に要るもの(改良の候補 B の判断材料): 海外の値段が分の中で動いたとき、指値の段を置き直せば追いつけるか。それには海外の 1 分より細かい値段が要る(BitMEX の 1 秒足 2017〜2021 は手元にある【事実: backtest_data/bitmex_XBTUSD_1m_from1s_20261002 の元】。Binance の 1 秒足は未確認)。
 台本は会話の中の 1 回の計算(下の式)。`dC = diff(ln close)`、`dBU = diff(ln(ov_value·fx_value))`、`de = diff(e_card)`、de を [dC, −dBU] に最小二乗で回帰し、各項の分散 ÷ var(de)。
+
+**訂正(2026-10-03、L-570)**: 上の「BitMEX の 1 秒足 2017〜2021 は手元にある」は使わない(BitMEX のデータは測定に使わない)。カード 3 が見ているのは Binance 現物なので、分の中の値段は Binance 現物の 1 秒足を使う(公開の置き場に 2019 年の分もある【事実: `https://data.binance.vision/data/spot/daily/klines/BTCUSDT/1s/BTCUSDT-1s-2019-03-01.zip.CHECKSUM` が HTTP 200】)。
+
