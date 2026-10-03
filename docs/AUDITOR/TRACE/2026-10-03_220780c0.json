@@ -22133,10 +22133,10 @@
   {
    "move": 813,
    "tools": {
-    "Bash": 2,
+    "Bash": 7,
     "Agent": 1
    },
-   "n_tools": 3,
+   "n_tools": 8,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
