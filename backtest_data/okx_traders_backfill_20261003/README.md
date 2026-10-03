@@ -2,7 +2,7 @@
 
 PC の常駐の記録(`scripts/record_okx_traders.py --loop 3600`、0b264b74)の 1 回目(2026-10-03 07:02 JST〜)で、3 人の閉じた建玉の履歴がページの上限(50 ページ × 100 件)に当たり、新しい 5,000 件だけが取られた(共有 a963327a の `paper_logs/okx_traders/errors_20261002.csv.gz` の `page cap 50 reached` 3 行)。常駐は 2 回目以降、知っている建玉に当たった所で止まるので、それより古い分は取りに行かない(台本の説明どおり)。そこで研究の環境から一度だけ、上限を 500 ページにして 3 人の履歴を取り直した。
 
-- 台本: `backfill_run.py`(`OkxTradersRecorder(max_pages=500).record_trader` を 3 人に 1 回ずつ)。取得 2026-10-03 00:54〜01:03 UTC。
+- 台本: `backfill_run.py`(`OkxTradersRecorder(max_pages=500).record_trader` を 3 人に 1 回ずつ)。取得は 2026-10-03 01:03 UTC に終わった(出力の書き込みの時刻。始まりの時刻は記録していない)。
 - 3 人とも上限 500 に当たらず、OKX が返す最後のページまで取れた(エラーの行 0)。
 
 | uniqueCode | 閉じた建玉 | いちばん古い決済(UTC) | いちばん新しい決済(UTC) |
