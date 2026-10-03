@@ -35,12 +35,12 @@ def test_classify_uses_previous_day_and_previous_year_edges():
     for i, d in enumerate(_year_days(2016)):
         vol[d] = float(i + 1)          # 2016 の分位: 1/3 → 約 123、2/3 → 約 245
     for d in _year_days(2017)[:5]:
-        vol[d] = 100.0                 # 2017 の値は 2017 の境に使わない
+        vol[d] = 1000.0                # 2017 の値は 2017 の境に使わない
     vol["2016-12-31"] = 0.0
     c = vs.classify(vol)
     assert "2016-06-01" not in c       # 2016 は分けない(2017 から)
     assert c["2017-01-01"] == "low"    # 前の日 2016-12-31 = 0.0
-    assert c["2017-01-02"] == "high"   # 前の日 2017-01-01 = 100(境は 2016 の分位)
+    assert c["2017-01-02"] == "high"   # 前の日 2017-01-01 = 1000(境は 2016 の分位)
     assert "2017-01-06" not in c       # 前の日 2017-01-05 は値なし → 分けない(1 月 6 日の値も無い)
 
 
