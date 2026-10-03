@@ -1788,4 +1788,4 @@ def test_dashboard_reads_the_shared_place_beside_backtest_runs(tmp_path):
     # one directory as before (tests/bt/item_3/i3_driver.py)
     assert dash.make_handler(str(local)).backtest_runs_dir == str(local)
     page = dash.PAGE
-    assert "<th>集まり</th>" in page and "r.group" in page
+    assert "/static/backtest_tab.js" in page and "/static/backtest_tab.css" in page
