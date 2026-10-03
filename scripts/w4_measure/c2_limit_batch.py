@@ -45,6 +45,20 @@ for f in (5, 15):
     for e in ("a", "b"):
         JOBS_GATED.append((f"weak_f{f}_gate_close_{e}", base + ["--entry", e, "--fill", "close", "--fill-side", "good"]))
 
+# 参照との差を入りと降りに分ける(limit_sim/runs/READ/RESULTS.md §3 の 1)。--ablation で走らせる。
+# le_cx = 入りは指値・降りるは終値、ce_lx = 入りは終値・降りるは 4 本
+JOBS_ABLATION: list = []
+for f in (5, 15, 30, 60):
+    base = ["--series", "a", "--design", "k1", "--foot-min", str(f)]
+    for tag, fill in (("le_cx", "limit_entry_close_exit"), ("ce_lx", "close_entry_limit_exit")):
+        # le_cx は降りが終値で決まらない足が無く、良い側と悪い側で取引の行が同じ → 良い側だけ。
+        # ce_lx は入りが終値なので入り方 b と c で取引の行が同じ → c を省く(既存の close の c と同じ扱い)。
+        # (作業者の 1 か月の走らせで確かめた。2026-10-03 リード)
+        for e in (("a", "b", "c") if tag == "le_cx" else ("a", "b")):
+            for side in (("good",) if tag == "le_cx" else ("good", "bad")):
+                JOBS_ABLATION.append((f"weak_f{f}_{tag}_{e}_{side}",
+                                      base + ["--entry", e, "--fill", fill, "--fill-side", side]))
+
 
 def run_one(job: tuple, root: str) -> str:
     name, args = job
@@ -66,8 +80,9 @@ def main() -> int:
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--gated", action="store_true", help="門あり 5・15 分の組(JOBS_GATED)を走らせる")
+    ap.add_argument("--ablation", action="store_true", help="入りと降りを分ける組(JOBS_ABLATION)を走らせる")
     a = ap.parse_args()
-    jobs = JOBS_GATED if a.gated else JOBS
+    jobs = JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS)
     mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
         for n, ar in mine:

@@ -785,11 +785,13 @@ def _ref_events(sg, t, keep, entry):
 
 
 @pytest.mark.parametrize("keep,foot", [("weak", 15), ("weak", 5), ("strong", 1)])
-@pytest.mark.parametrize("fill", ["limit", "close"])
+@pytest.mark.parametrize("fill", ["limit", "close", "limit_entry_close_exit", "close_entry_limit_exit"])
 def test_k1_entry_a_action_sequence_matches_k1_functions(keep, foot, fill):
     """手で作った海外の足の並びを K1 の関数(signals → delay_signals → simulate)と再現の両方に通し、行動の列(種類・
     向き・時刻)が一致する。入り方 a は入りも降りるも H3。limit は bitFlyer の足の幅を広くして、どの注文も次の 1 分で
     約定させる(約定した持ち高 = K1 の持ち高)。"""
+    if keep == "strong" and fill in ("limit_entry_close_exit", "close_entry_limit_exit"):
+        pytest.skip("入りと降りの切り分けは side_keep='weak' だけ(test_ablation_fills_reject_strong_side_keep)")
     n_min = 3000 if foot > 1 else 600
     rows = _k1_walk(n_min, 5 + foot)
     ev, bars, tr, _sg = _k1_events(rows, foot, keep, delay=True)
@@ -1020,6 +1022,93 @@ def test_k1_close_fill_enters_and_exits_at_the_last_close_at_the_action_time():
     assert s.order_log[0][3] == T0 + 15 * M
 
 
+_XCOLS = ("exit_ns", "exit_price", "exit_reason", "exit_signal", "exit_signal_ns")
+_NCOLS = ("entry_ns", "entry_price", "side", "max_size", "signal_ns")
+
+
+def _feed_all(sims, bars):
+    out = {k: [] for k in sims}
+    for b in bars:
+        for k, x in sims.items():
+            out[k] += x.feed(b)
+    return out
+
+
+@pytest.mark.parametrize("entry", ["a", "b", "c"])
+def test_k1_limit_entry_close_exit_enters_like_limit_and_exits_like_close(entry):
+    """fill="limit_entry_close_exit": 入りは "limit" と同じ注文・同じ約定(値段・時刻)、降りるは "close" と同じ
+    (行動の時刻の直前の終値で全量、終わり方 "終値")。"""
+    refs = foot_rows(0, WEAK_SELL) + foot_rows(1, WEAK_BUY) + foot_rows(2, FLAT) + foot_rows(3, FLAT) + foot_rows(4, FLAT)
+    sims = {f: k1sim(entry=entry, fill=f) for f in ("limit_entry_close_exit", "limit", "close")}
+    for x in sims.values():
+        x.add_refs(refs)
+    fill_bar = 31 if entry == "a" else 16  # 入りの注文が約定する足(a は T0+30分、b・c は T0+15分 に出す)
+    bars = ([bar(i) for i in range(fill_bar)] + [bar(fill_bar, P, h=P + WIDE)]
+            + [bar(i, P - 300, c=P - 300) for i in range(fill_bar + 1, 60)] + [bar(i) for i in range(60, 70)])
+    _feed_all(sims, bars[:fill_bar])
+    lx, lim = sims["limit_entry_close_exit"], sims["limit"]
+    assert orders(lx) == orders(lim) and orders(lx) and all(o[0].startswith("ent") for o in orders(lx))
+    out = _feed_all(sims, bars[fill_bar:])
+    out = {k: v + sims[k].finish() for k, v in out.items()}
+    assert lx.order_log == lim.order_log and lx.order_log[0][3] == T0 + (fill_bar + 1) * M  # 同じ約定の時刻
+    t_exit = T0 + 45 * M  # 足 1(T0+30分)の反対の合図の降りる行動(H3。入り方 a の入りも T0+30分)
+    assert [tuple(r[k] for k in _NCOLS) for r in out["limit_entry_close_exit"]] == [
+        tuple(r[k] for k in _NCOLS) for r in out["limit"]]  # 入りの値段・時刻・向き・量・合図が同じ
+    assert [tuple(r[k] for k in _XCOLS) for r in out["limit_entry_close_exit"]] == [
+        tuple(r[k] for k in _XCOLS) for r in out["close"]] == [(t_exit, P - 300, EXIT_CLOSE, XSIG_WEAK, t_exit)]
+    assert out["limit"][0]["exit_reason"] != EXIT_CLOSE  # limit の形は 4 本で降りる(ここでは違う降り方)
+    assert lx.undecided_bars == 0
+
+
+@pytest.mark.parametrize("entry", ["a", "b", "c"])
+@pytest.mark.parametrize("exit_bar", ["limit", "stops"])
+def test_k1_close_entry_limit_exit_enters_like_close_and_exits_like_limit(entry, exit_bar):
+    """fill="close_entry_limit_exit": 入りは "close" と同じ(行動の時刻の直前の終値で全量。b・c も)、降りるは "limit"
+    と同じ 4 本の注文が置かれ、同じ足で同じように約定する。"""
+    refs = foot_rows(0, WEAK_SELL) + foot_rows(1, WEAK_BUY) + foot_rows(2, FLAT) + foot_rows(3, FLAT) + foot_rows(4, FLAT)
+    sims = {f: k1sim(entry=entry, fill=f) for f in ("close_entry_limit_exit", "limit", "close")}
+    for x in sims.values():
+        x.add_refs(refs)
+    t_open = 30 if entry == "a" else 15
+    t_exit = 45  # 足 1(T0+30分)の反対の合図の降りる行動(H3)
+    # 入りの行動の直前の足の終値は P + 7、次の足で limit の入りの注文も約定させる(降りるときの持ち高を揃える)
+    bars = ([bar(i, P, c=P + 7 if i == t_open - 1 else P) for i in range(t_open)]
+            + [bar(t_open, P, h=P + WIDE)] + [bar(i, P - 300, c=P - 300) for i in range(t_open + 1, t_exit)])
+    out = _feed_all(sims, bars)
+    cx, clo, lim = sims["close_entry_limit_exit"], sims["close"], sims["limit"]
+    assert cx._pos == clo._pos == lim._pos == -1.0
+    assert (cx._trade["avg"], cx._trade["entry_ns"]) == (clo._trade["avg"], clo._trade["entry_ns"]) == (
+        P + 7, T0 + t_open * M)
+    assert cx.order_log == clo.order_log
+    x = P - 300
+    if exit_bar == "limit":
+        last = bar(t_exit, x, lo=x - 1, c=x)  # 買いの指値 X が約定
+    else:
+        last = bar(t_exit, x, h=x + WIDE, c=x + WIDE)  # 上抜け: ストップの引き金
+    tail = [last] + [bar(i, x + WIDE if exit_bar == "stops" else x) for i in range(t_exit + 1, t_exit + 3)]
+    out2 = _feed_all({k: sims[k] for k in ("close_entry_limit_exit", "limit")}, tail)
+    assert orders(cx) == orders(lim) == []
+    got = [tuple(r[k] for k in _XCOLS + ("undecided",)) for r in out2["close_entry_limit_exit"]]
+    assert got == [tuple(r[k] for k in _XCOLS + ("undecided",)) for r in out2["limit"]]
+    assert len(got) == 1 and got[0][0] == T0 + (t_exit + 1) * M and got[0][2] in (EXIT_LIMIT, EXIT_SL1, EXIT_SL2, EXIT_SM)
+    assert (got[0][2] == EXIT_LIMIT) == (exit_bar == "limit")
+    assert out["close_entry_limit_exit"] == []
+
+
+def test_k1_close_entry_limit_exit_places_the_same_four_exit_orders_as_limit():
+    refs = foot_rows(0, WEAK_SELL) + foot_rows(1, WEAK_BUY) + foot_rows(2, FLAT)
+    sims = {f: k1sim(entry="b", fill=f) for f in ("close_entry_limit_exit", "limit")}
+    for x in sims.values():
+        x.add_refs(refs)
+    _feed_all(sims, [bar(i) for i in range(15)] + [bar(15, P, h=P + WIDE)]
+              + [bar(i, P - 300, c=P - 300) for i in range(16, 46)])
+    cx, lim = sims["close_entry_limit_exit"], sims["limit"]
+    e = exit_prices(P - 300, Q - 10, -1)
+    want = [("x_lim", 1, 1.0, e["x"], None, False), ("x_sl1", 1, 1.0, e["l1"], e["t1"], False),
+            ("x_sl2", 1, 1.0, e["l2"], e["t2"], False), ("x_sm", 1, 1.0, None, e["t3"], False)]
+    assert orders(cx) == orders(lim) == want
+
+
 def _run_pair(refs, bars, **kw):
     lim, clo = k1sim(**kw), k1sim(**dict(kw, fill="close"))
     lim.add_refs(refs)
@@ -1139,13 +1228,15 @@ def test_k1_values_outside_the_table_are_refused(kw):
 
 
 def test_v03_refuses_k1_only_values():
-    for kw in ({"entry": "a"}, {"vol_gate": True, "vol_edges": (1.0, 2.0)}, {"fill": "close"}):
+    for kw in ({"entry": "a"}, {"vol_gate": True, "vol_edges": (1.0, 2.0)}, {"fill": "close"},
+               {"fill": "limit_entry_close_exit"}, {"fill": "close_entry_limit_exit"}):
         with pytest.raises(ValueError):
             sim(**kw)
 
 
 @pytest.mark.parametrize("entry", ["a", "b", "c"])
-@pytest.mark.parametrize("fill,gate", [("limit", False), ("limit", True), ("close", False)])
+@pytest.mark.parametrize("fill,gate", [("limit", False), ("limit", True), ("close", False),
+                                       ("limit_entry_close_exit", False), ("close_entry_limit_exit", False)])
 def test_k1_chunked_by_calendar_year_equals_one_pass(entry, fill, gate):
     cut = 1_546_300_800 * NS  # 2019-01-01T00:00Z
     t0 = cut - 3000 * M
@@ -1243,3 +1334,10 @@ def test_no_fractional_prices_in_orders_or_fills(kw):
     assert len(rows) > 10 and seen > 0
     assert all(float(r["exit_price"]).is_integer() for r in rows)
     assert all(float(r["entry_price"] * 2).is_integer() for r in rows)
+
+
+def test_ablation_fills_reject_strong_side_keep():
+    import pytest
+    for fill in ("limit_entry_close_exit", "close_entry_limit_exit"):
+        with pytest.raises(ValueError):
+            KatsuoLimitSim(fill_side="good", foot_min=1, design="k1", side_keep="strong", fill=fill)

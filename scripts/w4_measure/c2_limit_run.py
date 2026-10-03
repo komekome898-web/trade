@@ -8,6 +8,8 @@
         --vol-gate のときは止める(作らない)。門なしのときは三分位の列を空にする。
         --fill limit(既定)|close。close は参照の形(行動の時刻の直前の bitFlyer の終値で必ず約定。design=k1 だけ)。
         design=k1・--fill limit では、同じ入力に --fill close の物を並走させ、取り逃しを数える(下の missed.csv.gz)。
+        --fill limit_entry_close_exit(入りは指値・降りるは終値)|close_entry_limit_exit(入りは終値・降りるは 4 本)は
+        参照との差を入りと降りに分ける形(design=k1 だけ)。取り逃しは入りが指値の limit_entry_close_exit でも数える。
 
 暦年ごとに、その区切りの参照の行(海外の 1 分足の 4 本値。カード 2 の測定 run_v2.py の c2 と同じ置き場・同じ
 binance_ref_dataset・同じ load_reference と CARD.md の宣言)と bitFlyer の足(common.load_bars、封印の門)を読み、
@@ -24,7 +26,7 @@ binance_ref_dataset・同じ load_reference と CARD.md の宣言)と bitFlyer �
                   時刻の暦年。仕様 8-2: 入りの合図の強い / 弱いで分けた表(by_strength)と、降りる注文を出した理由
                   (反対の弱い合図 / ヒゲ先端を終値で越えた)ごとの件数・損益の合計(by_exit_signal)。勝ち = 損益 > 0、負け = 損益 < 0(0 はどちらにも入れない)。1 日あたり = その年の期間の日数
                   (読んだ範囲と暦年の重なり、24 時間 = 1 日)で割った 取引の数・勝ちの数・損益。
-  missed.csv.gz   (design=k1・--fill limit)取り逃し = 並走させた参照の形(fill="close")で建った取引のうち、指値の形に
+  missed.csv.gz   (design=k1・--fill limit / limit_entry_close_exit)取り逃し = 並走させた参照の形(fill="close")で建った取引のうち、指値の形に
                   同じ合図の時刻(signal_t)の取引が無いもの。列は参照の形の取引の行と、limit_order_placed(指値の
                   形がその合図で注文を出したか。False は持ち高・残っていた注文のせいで注文自体を出していない)。
                   summary の years[年].missed(年 = 合図の時刻の暦年)。
@@ -207,7 +209,8 @@ def main() -> int:
     ap.add_argument("--entry", default="c", choices=["a", "b", "c"])
     ap.add_argument("--side-keep", default="weak", choices=["weak", "strong"])
     ap.add_argument("--vol-gate", action="store_true")
-    ap.add_argument("--fill", default="limit", choices=["limit", "close"])
+    ap.add_argument("--fill", default="limit",
+                    choices=["limit", "close", "limit_entry_close_exit", "close_entry_limit_exit"])
     ap.add_argument("--fill-side", required=True, choices=["good", "bad"])
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
@@ -221,7 +224,8 @@ def main() -> int:
     kw = {"fill_side": a.fill_side, "at_max": a.at_max, "foot_min": a.foot_min, "design": a.design,
           "entry": a.entry, "side_keep": a.side_keep, "vol_gate": a.vol_gate, "vol_edges": edges_v, "fill": a.fill}
     sim = KatsuoLimitSim(**kw)  # 表の外の値はここで拒む
-    shadow = KatsuoLimitSim(**dict(kw, fill="close")) if (a.design == "k1" and a.fill == "limit") else None
+    shadow = (KatsuoLimitSim(**dict(kw, fill="close"))
+              if (a.design == "k1" and a.fill in ("limit", "limit_entry_close_exit")) else None)
     rows_close: list = []
     lo, hi = iso(a.start or period[0]), iso(a.end or period[1])
     if lo < iso(period[0]) or hi > iso(period[1]) or hi > iso(END_MAX) or lo >= hi:

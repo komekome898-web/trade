@@ -67,6 +67,10 @@ classify_detail と、カードの _apply と同じ分岐を使い、変える�
 合図・機械・足の作り方・行動の時刻は fill="limit" と同じで、注文を出したその時刻(行動の時刻)の直前の bitFlyer の
 終値で、入りも降りるも全量を必ず約定させる(入り方 b の半値・c の 2 本目もこの終値)。降りる約定の終わり方は "終値"。
 足の中を通さないので決まらない足は無い。入り方 a は K1 の H3(足の終値で約定)と同じ規則になる。
+参照との差を入りと降りに分ける形(design="k1" だけ): fill="limit_entry_close_exit" は入りを "limit" と同じ指値で
+置き、降りる注文は "close" と同じく行動の時刻の直前の終値で全量を約定(終わり方 "終値")。fill="close_entry_limit_exit"
+は入りを "close" と同じく終値で全量を約定(入り方 b・c も)、降りるは "limit" と同じ 4 本。注文を置くたびに全部を
+取り消す(_place_entry・_place_exit の頭)ので、_fill_now が約定させるのはその時刻に置いた側の注文だけ。
 - vol_prev(measure_katsuo_robustness.py 215〜226 行 FootData.vol_prev): vol[i] = Σ_{j=i−100}^{i−1} |log(c_j/c_{j−1})|
   × 1e4 / 100。境目は K1 の取引の vol_prev[entry_i](measure_katsuo_xvenue.py の run_vol_terciles)、entry_i は H3 で
   遅らせた行動の足 = 合図の足 + 1 なので、合図の足までの 100 本の値動き(合図の足の終値を含む)の平均になる。
@@ -151,7 +155,7 @@ VOL_WINDOW = 100  # measure_katsuo_robustness.py 69 行
 EXIT_LIMIT, EXIT_SL1, EXIT_SL2, EXIT_SM = "指値", "ストップ指値 1", "ストップ指値 2", "ストップ成行"
 EXIT_DOTEN, EXIT_END = "ドテン", "期間の終わり"
 EXIT_CLOSE = "終値"  # fill="close" の降りる約定
-FILLS = ("limit", "close")
+FILLS = ("limit", "close", "limit_entry_close_exit", "close_entry_limit_exit")
 TICK_EPS = 1e-6  # 1 円刻みに丸めるとき、この幅の中は整数とみなす(浮動小数の誤差)
 
 
@@ -284,8 +288,8 @@ class KatsuoLimitSim:
                  vol_edges: Optional[tuple] = None, fill: str = "limit") -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.fill = _in("fill", fill, FILLS)
-        if fill == "close" and design != "k1":
-            raise ValueError("fill='close'(参照の形)は design='k1' だけ")
+        if fill != "limit" and design != "k1":
+            raise ValueError(f"fill={fill!r}(参照の形・入りと降りの切り分け)は design='k1' だけ")
         self.design = _in("design", design, DESIGNS)
         self.foot_min = _in("foot_min", foot_min, FOOTS)
         if type(foot_min) is not int:
@@ -306,6 +310,8 @@ class KatsuoLimitSim:
                 raise ValueError(f"side_keep={side_keep!r} の足は {list(K1_FEET[side_keep])} のどれか: {foot_min!r}")
             if side_keep == "strong" and vol_gate:
                 raise ValueError("side_keep='strong'(1 分の組)は vol_gate を使わない(仕様 9 の走らせの表)")
+            if side_keep == "strong" and fill in ("limit_entry_close_exit", "close_entry_limit_exit"):
+                raise ValueError("入りと降りの切り分け(fill の 2 つ)は side_keep='weak' だけ(強い 1 分の組は走らせの表に無い)")
         self.side_keep = side_keep
         self.vol_gate = vol_gate
         if vol_edges is not None:
@@ -529,7 +535,7 @@ class KatsuoLimitSim:
             if q > 0:
                 self.order_log.append([kind, T, q, None, sid, a["T"]])
                 self._orders.append(_order(kind, d, q, px, None, False, T, info, len(self.order_log) - 1))
-        if self.fill == "close":
+        if self.fill in ("close", "close_entry_limit_exit"):
             self._fill_now(T)
 
     # ------------------------------------------------------------------ 仕様 3-2: 降りる
@@ -547,7 +553,7 @@ class KatsuoLimitSim:
         for kind, (tw, pw) in zip(("x_sl1", "x_sl2"), STOP_LIMITS):
             self._orders.append(_order(kind, s, q, x - d * pw * u, x - d * tw * u, True, T, info, None))
         self._orders.append(_order("x_sm", s, q, None, x - d * STOP_MARKET * u, True, T, info, None))
-        if self.fill == "close":
+        if self.fill in ("close", "limit_entry_close_exit"):
             self._fill_now(T)
 
     def _fill_now(self, T: int) -> None:
