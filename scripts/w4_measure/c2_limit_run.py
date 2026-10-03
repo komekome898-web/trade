@@ -15,6 +15,7 @@ binance_ref_dataset・同じ load_reference と CARD.md の宣言)と bitFlyer �
 来るまで行を持ち越す)。最後に持っている持ち高は最後の終値で閉じる(終わり方 = 期間の終わり)。
 
 出力(--out):
+  trades.json.gz  取引の記録(L-D04。src/bot/research/trade_record.py の形。git に入れる)
   trades.csv.gz   取引の行(仕様 5 の列。時刻は UTC の ISO。entry_t = 最初の約定の足の終わり、exit_t = 出た約定の足の
                   終わり、signal_t = 取引を始めた注文を出した時刻 T、strength = その合図の強い / 弱い、
                   exit_signal / exit_signal_t = 降りる注文を出した理由と時刻(降りる注文で閉じた取引だけ))
@@ -60,6 +61,7 @@ from run_v2 import C2_VARIANTS, boundaries, ref_rows  # noqa: E402
 from bot.research.cards import cardmd  # noqa: E402
 from bot.research.cards.library import c2_owner_xvenue_wick as C2  # noqa: E402
 from bot.research.katsuo_limit_sim import STRONG, WEAK, XSIG_LINE, XSIG_WEAK, KatsuoLimitSim  # noqa: E402
+from bot.research.trade_record import write_trades_json  # noqa: E402
 
 Y2018_NS = 1_514_764_800 * 1_000_000_000  # 2018-01-01T00:00:00Z
 
@@ -275,6 +277,11 @@ def main() -> int:
                         r["exit_signal"] or "",
                         to_iso(r["exit_signal_ns"]) if r["exit_signal_ns"] is not None else "", r["h1"],
                         "" if r["vol_prev"] is None else repr(r["vol_prev"]), r["vol_tercile"] or ""])
+    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = その取引の最大の持ち高)
+    write_trades_json(os.path.join(a.out, "trades.json.gz"),
+                      ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
+                        "exit_px": r["exit_price"], "side": r["side"], "qty": r["max_size"],
+                        "pnl_bp": r["pnl_bp"]} for r in rows))
     ms = find_missed(rows, rows_close, sim.order_log) if shadow is not None else None
     if ms is not None:
         with gzip.open(os.path.join(a.out, "missed.csv.gz"), "wt", encoding="utf-8", newline="") as fh:

@@ -78,6 +78,8 @@ PYTHONPATH=. python3 scripts/jev_delegate.py plan --prompt <委任文のファ�
 【テスト】既存スイートをフルで実行し全パスを確認。変更した挙動に対応する
   テストを新規追加する(件数を報告)。
 【差分】最小diff。無関係な整形・リネーム・リファクタ禁止。
+【取引の記録】測定台本は 1 回の実行ごとに `trades.json.gz` を run_record.json と同じ所に出し git に入れる
+  (`src/bot/research/trade_record.py: write_trades_json`。封印の境以降の取引は書かない。オーナー L-D04、L-594)。
 【禁止】コード・コメント・ログ・ドキュメントにモデル名(Claude/Opus/Sonnet 等)を書かない。
 Do not commit. Do not push.
 ```

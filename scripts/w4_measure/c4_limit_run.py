@@ -15,6 +15,7 @@
                   1 日あたり = その年の日数(読んだ範囲 [始め, 終わり) と暦年の重なり、24 時間 = 1 日。0 日なら null)で
                   割った 取引の数・勝ちの数・損益。
                   決まらない足の数 = 取引の行の「決まらない足の数」の合計と、それが 1 以上の取引の数。
+  trades.json.gz  取引の記録(L-D04。src/bot/research/trade_record.py の形。git に入れる)
   run_record.json 引数・期間・区切りごとの足の数・読んだファイルの sha256・異常の種類・所要時間・全体の決まらない足の数。
 """
 from __future__ import annotations
@@ -36,6 +37,7 @@ from post import write_json  # noqa: E402
 from run_v2 import boundaries  # noqa: E402
 
 from bot.research.matilda_limit_sim import MatildaLimitSim  # noqa: E402
+from bot.research.trade_record import write_trades_json  # noqa: E402
 
 FULL = ("2015-11-28T15:00:00Z", "2023-12-17T15:00:00Z")  # 仕様 1(run_b2.FULL と同じ)
 COLS = ("entry_t", "exit_t", "side", "levels", "entry_price", "exit_price", "exit_reason", "pnl_bp", "undecided",
@@ -140,6 +142,11 @@ def main() -> int:
             w.writerow([to_iso(r["entry_ns"]), to_iso(r["exit_ns"]), r["side"], r["levels"], repr(r["entry_price"]),
                         repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_bp"]), r["undecided"],
                         repr(r["width"]), repr(r["vola"]), repr(r["ratio"]), r["brk"], repr(r["close_k"])])
+    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = 段の数 / 段の数の上限)
+    write_trades_json(os.path.join(a.out, "trades.json.gz"),
+                      ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
+                        "exit_px": r["exit_price"], "side": r["side"], "qty": r["levels"] / sim.n_levels,
+                        "pnl_bp": r["pnl_bp"]} for r in rows))
     years = by_year(rows, lo, hi)
     reasons: dict = {}
     for r in rows:
