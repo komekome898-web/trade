@@ -31,10 +31,10 @@
   {
    "move": 2,
    "tools": {
-    "Bash": 13,
+    "Bash": 15,
     "Agent": 1
    },
-   "n_tools": 14,
+   "n_tools": 16,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": true,
@@ -78,7 +78,7 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 16.5,
+   "median": 17.5,
    "max": 19,
    "n": 2
   },
