@@ -186,6 +186,16 @@ def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
         m = (runs[n]["missed"] or {}).get("limit_order_placed") or {}
         if m.get("trades"):
             L.append(f"- {n}: 指値を置いたが約定せず取り逃した取引の損益の和 {m['sum_bp']:.0f}bp = {m['sum_bp'] / runs[n]['days']:.2f} bp/日")
+    for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
+        q = (runs[n]["missed"] or {}).get("limit_order_not_placed") or {}
+        if q.get("trades"):
+            L.append(f"- {n}: 指値を置かなかったために取り逃した取引の損益の和 {q['sum_bp']:.0f}bp = {q['sum_bp'] / runs[n]['days']:.2f} bp/日")
+    for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
+        eo = runs[n]["entry_orders"] or {}
+        for k in ("ent1", "ent2"):
+            e = eo.get(k) or {}
+            if e.get("placed"):
+                L.append(f"- {n} {k}: 置いた {e['placed']}・約定 {e['filled']}・約定までの分 平均 {e['wait_min_mean']:.1f}・中央 {e['wait_min_median']:.1f}")
     for n in sorted(k for k in runs if "_close_a" in k):
         L.append(f"- 参照 {n}: 損益 {runs[n]['per_day']['pnl']:.2f} bp/日")
     return L

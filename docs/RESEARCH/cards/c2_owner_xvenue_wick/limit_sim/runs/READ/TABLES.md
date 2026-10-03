@@ -208,6 +208,41 @@
 - weak_f60_limit_a_good: 指値を置いたが約定せず取り逃した取引の損益の和 8693bp = 3.76 bp/日
 - weak_f60_limit_b_good: 指値を置いたが約定せず取り逃した取引の損益の和 164346bp = 71.05 bp/日
 - weak_f60_limit_c_good: 指値を置いたが約定せず取り逃した取引の損益の和 84634bp = 36.59 bp/日
+- strong_f1_limit_a_good: 指値を置かなかったために取り逃した取引の損益の和 -6282bp = -2.72 bp/日
+- strong_f1_limit_b_good: 指値を置かなかったために取り逃した取引の損益の和 -15933bp = -6.89 bp/日
+- strong_f1_limit_c_good: 指値を置かなかったために取り逃した取引の損益の和 -6282bp = -2.72 bp/日
+- weak_f15_limit_a_good: 指値を置かなかったために取り逃した取引の損益の和 2881bp = 1.25 bp/日
+- weak_f15_limit_b_good: 指値を置かなかったために取り逃した取引の損益の和 14317bp = 6.19 bp/日
+- weak_f15_limit_c_good: 指値を置かなかったために取り逃した取引の損益の和 19554bp = 8.45 bp/日
+- weak_f30_limit_a_good: 指値を置かなかったために取り逃した取引の損益の和 2141bp = 0.93 bp/日
+- weak_f30_limit_b_good: 指値を置かなかったために取り逃した取引の損益の和 -12059bp = -5.21 bp/日
+- weak_f30_limit_c_good: 指値を置かなかったために取り逃した取引の損益の和 15687bp = 6.78 bp/日
+- weak_f5_limit_a_good: 指値を置かなかったために取り逃した取引の損益の和 2492bp = 1.08 bp/日
+- weak_f5_limit_b_good: 指値を置かなかったために取り逃した取引の損益の和 25687bp = 11.11 bp/日
+- weak_f5_limit_c_good: 指値を置かなかったために取り逃した取引の損益の和 15989bp = 6.91 bp/日
+- weak_f60_limit_a_good: 指値を置かなかったために取り逃した取引の損益の和 1220bp = 0.53 bp/日
+- weak_f60_limit_b_good: 指値を置かなかったために取り逃した取引の損益の和 -3805bp = -1.65 bp/日
+- weak_f60_limit_c_good: 指値を置かなかったために取り逃した取引の損益の和 13922bp = 6.02 bp/日
+- strong_f1_limit_a_good ent1: 置いた 11901・約定 11901・約定までの分 平均 39.6・中央 1.0
+- strong_f1_limit_b_good ent2: 置いた 1205・約定 1204・約定までの分 平均 1910.6・中央 2.0
+- strong_f1_limit_c_good ent1: 置いた 11901・約定 11901・約定までの分 平均 39.6・中央 1.0
+- strong_f1_limit_c_good ent2: 置いた 11901・約定 9407・約定までの分 平均 53.3・中央 2.0
+- weak_f15_limit_a_good ent1: 置いた 15258・約定 15053・約定までの分 平均 1.8・中央 1.0
+- weak_f15_limit_b_good ent2: 置いた 16662・約定 12412・約定までの分 平均 18.0・中央 3.0
+- weak_f15_limit_c_good ent1: 置いた 15680・約定 14275・約定までの分 平均 1.7・中央 1.0
+- weak_f15_limit_c_good ent2: 置いた 15680・約定 11965・約定までの分 平均 18.5・中央 4.0
+- weak_f30_limit_a_good ent1: 置いた 11943・約定 11824・約定までの分 平均 1.8・中央 1.0
+- weak_f30_limit_b_good ent2: 置いた 13118・約定 9498・約定までの分 平均 22.5・中央 5.0
+- weak_f30_limit_c_good ent1: 置いた 12403・約定 10997・約定までの分 平均 1.9・中央 1.0
+- weak_f30_limit_c_good ent2: 置いた 12403・約定 9186・約定までの分 平均 23.7・中央 6.0
+- weak_f5_limit_a_good ent1: 置いた 18974・約定 18665・約定までの分 平均 1.6・中央 1.0
+- weak_f5_limit_b_good ent2: 置いた 20553・約定 15693・約定までの分 平均 12.1・中央 2.0
+- weak_f5_limit_c_good ent1: 置いた 19300・約定 18022・約定までの分 平均 1.8・中央 1.0
+- weak_f5_limit_c_good ent2: 置いた 19300・約定 15041・約定までの分 平均 12.2・中央 2.0
+- weak_f60_limit_a_good ent1: 置いた 8307・約定 8227・約定までの分 平均 2.2・中央 1.0
+- weak_f60_limit_b_good ent2: 置いた 9172・約定 6518・約定までの分 平均 31.4・中央 8.0
+- weak_f60_limit_c_good ent1: 置いた 8682・約定 7491・約定までの分 平均 2.3・中央 1.0
+- weak_f60_limit_c_good ent2: 置いた 8682・約定 6286・約定までの分 平均 33.6・中央 9.0
 - 参照 strong_f1_close_a: 損益 -12.77 bp/日
 - 参照 weak_f15_close_a: 損益 10.94 bp/日
 - 参照 weak_f30_close_a: 損益 5.05 bp/日
