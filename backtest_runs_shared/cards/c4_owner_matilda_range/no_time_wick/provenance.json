@@ -1,0 +1,350 @@
+{
+ "card": "c4_owner_matilda_range",
+ "variant": "no_time_wick",
+ "period": [
+  "2015-11-28T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "display_ok": true,
+ "display_ok_rule": "daily.csv の sha256・daily_stats の overall と frequency(・c4〜c8 は extra.json の trades と drawdown・run_record の headline)が git の記録と完全一致",
+ "checks": {
+  "daily_csv_sha256": {
+   "same": true,
+   "rerun": "0cccb6e7f08a154e46e1d9398c37b18ed5328b2f4000835049ece0676a2a4771",
+   "git": "0cccb6e7f08a154e46e1d9398c37b18ed5328b2f4000835049ece0676a2a4771"
+  },
+  "daily_stats.overall": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 3982102,
+    "n_days": 2941,
+    "per_minute_bp": -0.0020571745761343223,
+    "per_day_bp": -2.785405982309975,
+    "sum_bp": -8191.878993973637
+   },
+   "git": {
+    "n_days": 2941,
+    "n_decisions": 3982102,
+    "per_day_bp": -2.785405982309975,
+    "per_minute_bp": -0.0020571745761343223,
+    "sum_bp": -8191.878993973637
+   }
+  },
+  "daily_stats.frequency": {
+   "same": true,
+   "rerun": {
+    "n_decisions": 3982104,
+    "nonzero_share": 0.0451296600992842,
+    "changes": 144501
+   },
+   "git": {
+    "changes": 144501,
+    "n_decisions": 3982104,
+    "nonzero_share": 0.0451296600992842
+   }
+  },
+  "extra.trades": {
+   "same": true,
+   "rerun": {
+    "n": 62031,
+    "per_day": 21.0918055083305,
+    "mean_bp": -0.1320610500229504,
+    "median_bp": 0.411996456211039,
+    "win_rate": 0.6460318227982783,
+    "loss_rate": 0.3499701762022215,
+    "zero_rate": 0.00399800099950025,
+    "hold_decisions_median": 2.0,
+    "hold_minutes_median": 2.0,
+    "hold_minutes_mean": 3.0982250810078833,
+    "long": {
+     "n": 30918,
+     "sum_bp": -3749.7808619288535,
+     "win_rate": 0.6462901869461155
+    },
+    "short": {
+     "n": 31113,
+     "sum_bp": -4442.098132044784,
+     "win_rate": 0.6457750779416964
+    },
+    "best_bp": 96.44829875161336,
+    "worst_bp": -149.71264484698432
+   },
+   "git": {
+    "best_bp": 96.44829875161336,
+    "hold_decisions_median": 2.0,
+    "hold_minutes_mean": 3.0982250810078833,
+    "hold_minutes_median": 2.0,
+    "long": {
+     "n": 30918,
+     "sum_bp": -3749.7808619288535,
+     "win_rate": 0.6462901869461155
+    },
+    "loss_rate": 0.3499701762022215,
+    "mean_bp": -0.1320610500229504,
+    "median_bp": 0.411996456211039,
+    "n": 62031,
+    "per_day": 21.0918055083305,
+    "short": {
+     "n": 31113,
+     "sum_bp": -4442.098132044784,
+     "win_rate": 0.6457750779416964
+    },
+    "win_rate": 0.6460318227982783,
+    "worst_bp": -149.71264484698432,
+    "zero_rate": 0.00399800099950025
+   }
+  },
+  "extra.drawdown": {
+   "same": true,
+   "rerun": {
+    "max_bp": 8552.4390328272,
+    "peak_day": "2017-03-14",
+    "trough_day": "2023-05-22",
+    "final_cum_bp": -8191.878993973642
+   },
+   "git": {
+    "final_cum_bp": -8191.878993973642,
+    "max_bp": 8552.4390328272,
+    "peak_day": "2017-03-14",
+    "trough_day": "2023-05-22"
+   }
+  },
+  "run_record.headline": {
+   "same": true,
+   "rerun": {
+    "changes": 144501,
+    "ci_1d_per_day": [
+     -3.3304751558686703,
+     -2.2433410489468066
+    ],
+    "ci_5d_per_day": [
+     -3.4592013350799027,
+     -2.0949703529656234
+    ],
+    "drawdown": {
+     "final_cum_bp": -8191.878993973642,
+     "max_bp": 8552.4390328272,
+     "peak_day": "2017-03-14",
+     "trough_day": "2023-05-22"
+    },
+    "mde_1d_per_day": 0.7975760641658969,
+    "month": {
+     "best": {
+      "bp": 337.7637727949568,
+      "month": "2016-12"
+     },
+     "n": 98,
+     "positive_share": 0.20408163265306123,
+     "worst": {
+      "bp": -730.8887520311508,
+      "month": "2021-01"
+     },
+     "zero_share": 0.0
+    },
+    "n_days": 2941,
+    "n_decisions": 3982102,
+    "nonzero_share": 0.0451296600992842,
+    "per_day_bp": -2.785405982309975,
+    "per_minute_bp": -0.0020571745761343223,
+    "sum_abs_de": 23562.85714285714,
+    "trades": {
+     "best_bp": 96.44829875161336,
+     "hold_decisions_median": 2.0,
+     "hold_minutes_mean": 3.0982250810078833,
+     "hold_minutes_median": 2.0,
+     "long": {
+      "n": 30918,
+      "sum_bp": -3749.7808619288535,
+      "win_rate": 0.6462901869461155
+     },
+     "loss_rate": 0.3499701762022215,
+     "mean_bp": -0.1320610500229504,
+     "median_bp": 0.411996456211039,
+     "n": 62031,
+     "per_day": 21.0918055083305,
+     "short": {
+      "n": 31113,
+      "sum_bp": -4442.098132044784,
+      "win_rate": 0.6457750779416964
+     },
+     "win_rate": 0.6460318227982783,
+     "worst_bp": -149.71264484698432,
+     "zero_rate": 0.00399800099950025
+    },
+    "worst_day": {
+     "bp": -159.51933763656746,
+     "day": "2018-01-17"
+    },
+    "year_per_day_bp": {
+     "2015": 2.9506431106069804,
+     "2016": 0.08704372372352175,
+     "2017": -6.039182997923277,
+     "2018": -3.5465724140957295,
+     "2019": -0.9699326366296862,
+     "2020": -2.043454689019485,
+     "2021": -7.244287128037602,
+     "2022": -2.3943492865582363,
+     "2023": -0.5762831174959838
+    }
+   },
+   "git": {
+    "changes": 144501,
+    "ci_1d_per_day": [
+     -3.3304751558686703,
+     -2.2433410489468066
+    ],
+    "ci_5d_per_day": [
+     -3.4592013350799027,
+     -2.0949703529656234
+    ],
+    "drawdown": {
+     "final_cum_bp": -8191.878993973642,
+     "max_bp": 8552.4390328272,
+     "peak_day": "2017-03-14",
+     "trough_day": "2023-05-22"
+    },
+    "mde_1d_per_day": 0.7975760641658969,
+    "month": {
+     "best": {
+      "bp": 337.7637727949568,
+      "month": "2016-12"
+     },
+     "n": 98,
+     "positive_share": 0.20408163265306123,
+     "worst": {
+      "bp": -730.8887520311508,
+      "month": "2021-01"
+     },
+     "zero_share": 0.0
+    },
+    "n_days": 2941,
+    "n_decisions": 3982102,
+    "nonzero_share": 0.0451296600992842,
+    "per_day_bp": -2.785405982309975,
+    "per_minute_bp": -0.0020571745761343223,
+    "sum_abs_de": 23562.85714285714,
+    "trades": {
+     "best_bp": 96.44829875161336,
+     "hold_decisions_median": 2.0,
+     "hold_minutes_mean": 3.0982250810078833,
+     "hold_minutes_median": 2.0,
+     "long": {
+      "n": 30918,
+      "sum_bp": -3749.7808619288535,
+      "win_rate": 0.6462901869461155
+     },
+     "loss_rate": 0.3499701762022215,
+     "mean_bp": -0.1320610500229504,
+     "median_bp": 0.411996456211039,
+     "n": 62031,
+     "per_day": 21.0918055083305,
+     "short": {
+      "n": 31113,
+      "sum_bp": -4442.098132044784,
+      "win_rate": 0.6457750779416964
+     },
+     "win_rate": 0.6460318227982783,
+     "worst_bp": -149.71264484698432,
+     "zero_rate": 0.00399800099950025
+    },
+    "worst_day": {
+     "bp": -159.51933763656746,
+     "day": "2018-01-17"
+    },
+    "year_per_day_bp": {
+     "2015": 2.9506431106069804,
+     "2016": 0.08704372372352175,
+     "2017": -6.039182997923277,
+     "2018": -3.5465724140957295,
+     "2019": -0.9699326366296862,
+     "2020": -2.043454689019485,
+     "2021": -7.244287128037602,
+     "2022": -2.3943492865582363,
+     "2023": -0.5762831174959838
+    }
+   }
+  },
+  "n_trades_exported": {
+   "same": true,
+   "rerun": 62031,
+   "git": 62031
+  },
+  "sum_trade_pnl_vs_final_cum_bp": {
+   "trades_sum": -8191.878993973637,
+   "final_cum_bp": -8191.878993973642
+  }
+ },
+ "n_trades": 62031,
+ "source_record": {
+  "path": "docs/RESEARCH/cards/c4_owner_matilda_range/measure/no_time_wick/run_record.json",
+  "sha256": "cb1aea003025aaa96e114ecc6771b0202aa0488baceb3ab810ea42d78ecd31e3"
+ },
+ "script": {
+  "export": "scripts/dashboard_cards/export_card_trades.py",
+  "export_sha256": "344834c80b590ed419d8fc91c549459c896a1649c63c87207df1077775bc860a",
+  "research_cmd": [
+   "PYTHONPATH=src python3 scripts/w4_measure/run_b2.py --card c4 --variant no_time_wick",
+   "(--out-root / --save-root は作業置き場)"
+  ],
+  "research_script_sha256": "8325879e0799f7bb584104e5cda5914f9102cb7a127a8b4ed6549fe9ed67b530"
+ },
+ "git_sha": "74fa2b85da17ef36bfc5b949d001f5e5bc91e2f2",
+ "git_dirty_w4_measure": false,
+ "data_dirs_read": [
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
+ ],
+ "inputs_sha256": [
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz",
+   "sha256": "c71f47b09ee07c25ef3f8bc92080383a6aefd7420cc147506adc07b315bb62fd"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz",
+   "sha256": "73d10b88f8dde8a1b5825f4feecd093cc075ba5dd29e56e50b5b59f1a849c3bb"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+   "sha256": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "sha256": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "sha256": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "sha256": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "sha256": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+   "sha256": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+   "sha256": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+  }
+ ],
+ "trade_definition": "(= scripts/w4_measure/light_b2.py の extra_stats と同じ関数をそのまま import して使う。extra.json の trades の数え方):\n  P_t = bot.research.cards.pnl.pnl(e_t × (open_{t+2}/open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。\n  取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(足し増し・一部決済は同じ取引のまま、\n  +1 から −1 へ直接変われば 2 つの取引)。損益 = 区間の P_t の合計。\n  建てた時刻・値段 = 区間の最初の決定の約定の足(fill_bar)の始まり・始値。決済の時刻・値段 = 区間の最後の決定の決済の足\n  (exit_bar = 次の決定の約定の足)の始まり・始値。qty = 区間の決定の |e| の平均。\n",
+ "seal": "期間の終わり 2023-12-17T15:00:00Z は封印の境 2023-12-18T00:00:00Z より前。phase2_sealed は読んでいない",
+ "seconds": {
+  "research_run": 922.7,
+  "total": 926.9
+ },
+ "verified_items": [
+  "daily_csv_sha256",
+  "daily_stats.overall",
+  "daily_stats.frequency",
+  "extra.trades",
+  "extra.drawdown",
+  "run_record.headline",
+  "n_trades_exported"
+ ],
+ "not_verified": []
+}

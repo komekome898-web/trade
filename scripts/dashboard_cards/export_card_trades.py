@@ -5,7 +5,7 @@
 
 研究の台本(scripts/w4_measure/)は変えず、子プロセスとして呼ぶ(c4〜c8 = run_b2.py --out-root、c1〜c3 = run_v2.py --no-measure)。
 封印の門(bot.bt.data)を通して読むのは研究の台本。この台本自身は backtest_data の年別ファイルの sha256 を取るだけで、
-phase2_sealed は読まない。期間の終わりが 2023-12-18T00:00:00Z 以降なら拒否する。docs/RESEARCH/ には書かない。
+phase2_sealed は読まない。期間 [始め, 終わり) の終わりが封印の境 2023-12-18T00:00:00Z より後なら拒否する(common.check_end: 終わり > 境。終わり = 境ちょうどは通る = 境の前までの区間)。docs/RESEARCH/ には書かない。
 
 取引の定義(= scripts/w4_measure/light_b2.py の extra_stats と同じ関数をそのまま import して使う。extra.json の trades の数え方):
   P_t = bot.research.cards.pnl.pnl(e_t × (open_{t+2}/open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。
@@ -269,6 +269,9 @@ def main():
         frec = os.path.join(work, vname, "run_record.json")
         if os.path.exists(frec):
             cmp("run_record.headline", json.load(open(frec))["headline"], grec["headline"])
+        else:
+            ok = False
+            checks["run_record.headline"] = {"same": False, "reason": "走らせ直しの run_record.json が無く headline を照合できない(表示しない)"}
         cmp("n_trades_exported", len(trades["side"]), gex["trades"]["n"])
     else:
         checks["trades_n"] = {"same": None, "note": "git に取引の数の記録が無い(c1〜c3)。日ごとの損益と頻度だけを照合"}
