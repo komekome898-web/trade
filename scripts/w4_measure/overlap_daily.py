@@ -113,8 +113,16 @@ def pair_stats(a: dict[str, float], b: dict[str, float]) -> dict:
         wa = set(np.argsort(x, kind="stable")[:k].tolist())
         wb = set(np.argsort(y, kind="stable")[:k].tolist())
         out["worst5_overlap"] = len(wa & wb) / k
+        # 関門 ② の 2 回目の直す 1 で足した: 良い日の重なりと、損益の絶対値が大きい日の重なり
+        ba = set(np.argsort(-x, kind="stable")[:k].tolist())
+        bb = set(np.argsort(-y, kind="stable")[:k].tolist())
+        out["best5_overlap"] = len(ba & bb) / k
+        aa = set(np.argsort(-np.abs(x), kind="stable")[:k].tolist())
+        ab = set(np.argsort(-np.abs(y), kind="stable")[:k].tolist())
+        out["absbig5_overlap"] = len(aa & ab) / k
+        out["worst_vs_best5"] = len(wa & bb) / k  # 行の悪い日が列の良い日
     else:
-        out["worst5_overlap"] = None
+        out["worst5_overlap"] = out["best5_overlap"] = out["absbig5_overlap"] = out["worst_vs_best5"] = None
     return out
 
 
@@ -162,6 +170,17 @@ def main() -> int:
     L += ["", "## 表 5: 悪い日の重なりの分布(組ごとに 2 方向の大きい方。無関係なら 0.05 前後)", "",
           f"- 組の数 {len(pairs)}(同じカードの変種どうしを含む)",
           f"- 0.10 以上 {sum(v >= 0.10 for v in mx)}・0.15 以上 {sum(v >= 0.15 for v in mx)}・0.20 より大 {sum(v > 0.20 for v in mx)}"]
+    # 表 6(関門 ② の 2 回目の直す 1 で足した): 悪い日・良い日・絶対値の大きい日・悪い日 × 良い日 の重なりの平均
+    sparse = {"カツオ 強い1分 半値", "週末ギャップ USDJPY"}
+    dense = [n for n in names if n not in sparse and not n.endswith(" 悪")]
+    dp = [(a, b) for i, a in enumerate(dense) for b in dense[i + 1:]]
+    def avg(key):
+        v = [(stats[a][b][key] + stats[b][a][key]) / 2 for a, b in dp if stats[a][b][key] is not None]
+        return sum(v) / len(v)
+    L += ["", "## 表 6: 上位・下位 5% の日の重なりの平均(取引の疎い 2 本と悪い側を除く系列の組。無関係なら 0.05 前後)", "",
+          f"- 系列 {len(dense)}・組 {len(dp)}(同じカードの変種どうしを含む)",
+          f"- 悪い日どうし {avg('worst5_overlap'):.3f}・良い日どうし {avg('best5_overlap'):.3f}・"
+          f"損益の絶対値が大きい日どうし {avg('absbig5_overlap'):.3f}・片方の悪い日が他方の良い日 {avg('worst_vs_best5'):.3f}"]
     out = os.path.join(REPO, "docs", "RESEARCH", "cards", "OVERLAP")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "TABLES.md"), "w", encoding="utf-8") as fh:
