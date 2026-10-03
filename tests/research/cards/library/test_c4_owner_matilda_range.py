@@ -68,7 +68,7 @@ def test_constants_are_from_the_source():
     assert HOLD_MAX_MIN == 40 and VR_MAX == 10.0 and BAR_MIN == 1 and c4.ALERT_MIN == 20
     assert c4.EXIT_MODE == 2 and c4.EXIT_STEP == 0.8  # v37 のコードの実際の利確(881 行)が既定
     assert c4.EXIT_GUARD_RATIO == 100.0 / 1152502.0  # v52 の 100 円 ÷ 2019-09-04 の値段(幅の門と同じ)
-    assert c4.EXIT_SETTINGS == (0.8, 2.0) and c4.EXIT_STEPS == (0.8, 0.0) and c4.EXIT_MODES == (0, 1, 2)
+    assert c4.EXIT_SETTINGS == (0.0, 0.8, 2.0) and c4.EXIT_STEPS == (0.8, 0.0) and c4.EXIT_MODES == (0, 1, 2)
     assert MIN_WIDTH_RATIO == 150.0 / 1152502.0  # 150 円 ÷ 2019-09-04(日本時間)の終値の中央値
 
 
@@ -374,16 +374,17 @@ def test_same_input_same_output():
 
 
 def test_window_range_and_trend_variants_are_accepted():
-    """窓 4 × flat/follow × body/wick(INTENT_MAP §8)は全部受け入れる。どれを測るかはリードが決める(L-565)。"""
+    """窓 8(地図 L-565)× flat/follow × body/wick は全部受け入れる。どれを測るかはリードが決める(L-565)。"""
     made = {(c.window_min, c.on_trend, c.range_from) for c in
             (C4OwnerMatildaRange(window_min=w, on_trend=o, range_from=f)
              for w in WINDOWS for o in ON_TRENDS for f in RANGE_FROMS)}
-    assert WINDOWS == (40, 60, 1440, 10080) and len(made) == 16
+    assert WINDOWS == (10, 20, 40, 60, 80, 160, 1440, 10080) and len(made) == 32
+    assert c4.BAR_MINS == (1, 5) and c4.ENTRY_SETTINGS == (1.0, 2.0, 3.0)  # 地図(L-565)
 
 
 @pytest.mark.parametrize("kw", [dict(window_min=45), dict(window_min=40.0), dict(range_from="x"),
-                                dict(on_trend="x"), dict(bar_min=5), dict(bar_min=1.0), dict(entry_setting=3.0),
-                                dict(exit_setting=0.0), dict(step_setting=2.0), dict(n_levels=5),
+                                dict(on_trend="x"), dict(bar_min=3), dict(bar_min=1.0), dict(entry_setting=4.0),
+                                dict(exit_setting=0.5), dict(step_setting=2.0), dict(n_levels=5),
                                 dict(hold_max_min=20), dict(entry_setting=True), dict(width_gate=1),
                                 dict(trend_gate=None), dict(time_exit="no"), dict(levels=0),
                                 dict(on_trend="follow", trend_gate=False), dict(exit_mode=3),

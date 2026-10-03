@@ -109,13 +109,13 @@ from bot.research.cards.card import CardError, CardView
 NS = 1_000_000_000
 MIN_NS = 60 * NS
 WINDOW_MIN = 40  # O-1「直近40分ほど」/ 原典 v37 124 行 vola_count = 40・125 行 range_count = 40
-WINDOWS = (40, 60, 1440, 10080)  # 40 = 原文。60・1440・10080 = W1 の仕様 C4 の 1 時間・1 日・1 週
+WINDOWS = (10, 20, 40, 60, 80, 160, 1440, 10080)  # 40 = 原文。60・1440・10080 = W1 の仕様 C4 の 1 時間・1 日・1 週。10・20・80・160 = 地図(L-565)の 40 の半分・4 分の 1・倍・4 倍
 BAR_MIN = 1  # 原典 v37 123 行 foot = 1(分)
-BAR_MINS = (1,)
+BAR_MINS = (1, 5)  # 1 = v37。5 = 地図(L-565)。v52 の 5 秒足は封印の外の bitFlyer に無い(1 分足が最小)
 ENTRY_K = 2.0  # 原典 v37 141 行 entry_setting = 2
-ENTRY_SETTINGS = (2.0,)
+ENTRY_SETTINGS = (1.0, 2.0, 3.0)  # 2 = v37・v52。1・3 = 地図(L-565)の 2 の前後
 EXIT_K = 0.8  # 原典 v37 142 行 exit_setting = 0.8(L-564 問い 1 = B)
-EXIT_SETTINGS = (0.8, 2.0)  # 0.8 = v37 142 行 / 2 = v52 128・130 行(inner・outer とも)
+EXIT_SETTINGS = (0.0, 0.8, 2.0)  # 0.8 = v37 142 行 / 2 = v52 128・130 行(inner・outer とも)/ 0 = 中心ちょうど(O-1「中心近くで利確」の端。地図 L-565)
 EXIT_MODE = 2  # v37 のコードの実際の利確(881 行 建値から按分した値幅)。v52 162 行の番号では 2 = 値幅
 EXIT_MODES = (0, 1, 2)  # v52 162 行「0:ドテン(ポジと反対のエントリー時) 1:センター付近 2:値幅」
 EXIT_STEP = 0.8  # v37 157 行 step_exit = 0.8(v37 の利確の値幅。v52 では exit_step と改名)
