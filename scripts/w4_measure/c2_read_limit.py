@@ -167,7 +167,28 @@ def render(runs: dict, rows: list[dict]) -> str:
         bv = runs[n]["by_vol"]
         L.append(f"| {n} | " + " | ".join(f"{(bv.get(k) or {}).get('avg_bp') or 0:.2f}({(bv.get(k) or {}).get('trades', 0)})"
                                             for k in ("low", "mid", "high")) + " |")
+    L += derived_lines(runs, rows)
     return "\n".join(L) + "\n"
+
+
+def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
+    """表 6: 報告と知見台帳に写す派生の数(40 本を並べて見た後に足した出力。読み方の決まり R1〜R6 は変えていない)。"""
+    L = ["", "## 表 6: 読みに使う派生の数", ""]
+    groups = sorted({n.split("_limit_")[0] for n in runs if "_limit_" in n})
+    for g in groups:
+        for e in ("a", "b", "c"):
+            k = f"{g}_limit_{e}"
+            if f"{k}_good" in runs and f"{k}_bad" in runs:
+                pg, pb = runs[f"{k}_good"]["per_day"]["pnl"], runs[f"{k}_bad"]["per_day"]["pnl"]
+                if pg > 0 and pb > 0:
+                    L.append(f"- 損益が両側とも正: {k}(良 {pg:.2f} / 悪 {pb:.2f} bp/日、取引 {runs[f'{k}_good']['per_day']['trades']:.2f}/日)")
+    for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
+        m = (runs[n]["missed"] or {}).get("limit_order_placed") or {}
+        if m.get("trades"):
+            L.append(f"- {n}: 指値を置いたが約定せず取り逃した取引の損益の和 {m['sum_bp']:.0f}bp = {m['sum_bp'] / runs[n]['days']:.2f} bp/日")
+    for n in sorted(k for k in runs if "_close_a" in k):
+        L.append(f"- 参照 {n}: 損益 {runs[n]['per_day']['pnl']:.2f} bp/日")
+    return L
 
 
 def main(argv: list[str] | None = None) -> int:
