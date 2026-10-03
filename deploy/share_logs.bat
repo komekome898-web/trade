@@ -25,6 +25,7 @@ copy /Y logs\status.json      paper_logs\ >nul 2>&1
 rem nightly unattended restart (deploy\nightly_restart.bat, P4-N): the lead reads
 rem this log the next morning instead of asking the owner (L-122 / L-125).
 copy /Y logs\nightly_restart.log paper_logs\ >nul 2>&1
+copy /Y logs\dashboard_bt.log paper_logs\ >nul 2>&1
 rem liquidation recorder log: the self-heal line ("不完全 -> ... へ退避") after a
 rem restart is read from here (P14), so the owner never has to open it.
 copy /Y logs\liquidations.out.log paper_logs\ >nul 2>&1

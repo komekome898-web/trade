@@ -72,3 +72,5 @@
 #bt-card-note details { font-size: 12px; }
 #bt-card-note summary { cursor: pointer; }
 #bt-card-note ul { margin: 2px 0 6px 18px; padding: 0; }
+.busy { color: #e6b450; }
+#bt-banner { margin: 6px 0; color: #ff8b8b; border-color: #ff5a5f; }

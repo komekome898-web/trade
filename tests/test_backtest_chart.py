@@ -27,7 +27,8 @@ FXDIR = "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906"
 @pytest.fixture(autouse=True)
 def _fresh(tmp_path, monkeypatch):
     monkeypatch.setenv("BT_CHART_CACHE_DIR", str(tmp_path / "cache"))
-    for d in (C._STORES, C._TRADES, C._REC, C._RULES, K._MAN, K._OK, K._PROV):
+    monkeypatch.setenv("BT_LOG_PATH", str(tmp_path / "dashboard_bt.log"))
+    for d in (C._STORES, C._TRADES, C._REC, C._RULES, K._MAN, K._OK, K._PROV, C._PROGRESS, C._JOBS):
         d.clear()
 
 
@@ -669,7 +670,7 @@ def test_half_written_variants_are_shown_as_preparing_not_as_errors(tmp_path):
     row["file_bytes"] = {}
     _manifest(tmp_path, [row])
     K._MAN.clear()
-    assert "gzip" in K.variant_state(K.manifests(root)[0], K.manifests(root)[0].rows[("c7_barrier_race", "1h")])[1]
+    assert "gzip" in K.variant_state(K.manifests(root)[0], K.manifests(root)[0].rows[("c7_barrier_race", "1h")], deep=True)[1]
     # writing finishes: it shows up again
     p.write_bytes(raw)
     _manifest(tmp_path, [_row("c7_barrier_race", "1h", p.parent, n_trades=2)])
@@ -867,3 +868,130 @@ def test_card_descriptions_follow_the_sources_wording():
     assert "L-570" in note and "以後は測らない" in note and "参考として残す" in note and "食い違う" in note
     lim = T.card_families(T.card_theme("c4_owner_matilda_range"))[2]
     assert any("段の約定の平均" in x and "1 段目" in x and "範囲の外" in x for x in lim["description"]) and len(lim["description"]) <= 6
+
+
+# ---- slow first open: light list, background price stores, visible failures, the tab's log ----------------------------
+def test_listing_cards_does_not_read_any_gzip_and_opening_one_does(tmp_path, monkeypatch):
+    t0, root = _cards_world(tmp_path)
+    calls = []
+    orig = K._gzip_complete
+    monkeypatch.setattr(K, "_gzip_complete", lambda p, st: calls.append(str(p)) or orig(p, st))
+    C.catalog(root)
+    assert calls == []  # the list looks at the manifest, sizes and provenance only
+    C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert len(calls) == 1 and calls[0].endswith("1h/trades.json.gz")
+    C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
+    assert len(calls) == 2 and K._OK  # asked again, answered from the (path, mtime, size) cache inside _gzip_complete
+
+
+def test_chart_request_does_not_wait_for_the_price_store_and_the_page_gets_progress_then_bars(tmp_path, monkeypatch):
+    import threading
+    t0, root = _cards_world(tmp_path)
+    gate, entered = threading.Event(), threading.Event()
+    orig = C._read_file
+
+    def slow(*a, **k):
+        entered.set()
+        gate.wait(20)
+        return orig(*a, **k)
+    monkeypatch.setattr(C, "_read_file", slow)
+    import time
+    t = time.time()
+    d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert time.time() - t < 5 and d["building"] and d["bars"] == [] and d["building"]["market"] == "FX_BTC_JPY"
+    assert d["building"]["stage"] in ("starting", "reading") and "elapsed_s" in d["building"] and d["price"]["available"]
+    assert d["trades_total"] == 2 and len(d["pnl"]) >= 2 and d["trades"]  # the numbers that need no price are already there
+    assert entered.wait(10)
+    d2 = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert d2["building"] and len([th for th in threading.enumerate() if th.name == "bt-store-FX_BTC_JPY"]) == 1  # not built twice
+    gate.set()
+    for th in list(threading.enumerate()):
+        if th.name.startswith("bt-store-"):
+            th.join(30)
+    d3 = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert not d3["building"] and d3["bars"] and d3["price"]["available"]
+    assert "store_built" in (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+
+
+def test_a_failed_background_build_is_told_to_the_page_not_polled_for_ever(tmp_path, monkeypatch):
+    t0, root = _cards_world(tmp_path)
+    monkeypatch.setattr(C, "_read_file", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("disk on fire")))
+    C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    import threading
+    for th in list(threading.enumerate()):
+        if th.name.startswith("bt-store-"):
+            th.join(10)
+    d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert not d["building"] and not d["price"]["available"] and "disk on fire" in d["price"]["reason"]
+    assert "store_build_failed" in (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+
+
+def test_two_threads_asking_for_one_store_build_it_once(tmp_path, monkeypatch):
+    import threading
+    t0, root = _cards_world(tmp_path)
+    n = []
+    orig = C._read_file
+    monkeypatch.setattr(C, "_read_file", lambda *a, **k: (n.append(1), orig(*a, **k))[1])
+    rule = C.seal_rule(tmp_path)
+    plan = C.price_plan({"config": {"instrument": "FX_BTC_JPY"}}, tmp_path, rule)
+    out = []
+    ths = [threading.Thread(target=lambda: out.append(C.get_store(plan, rule))) for _ in range(4)]
+    [t.start() for t in ths]
+    [t.join(30) for t in ths]
+    assert len(out) == 4 and all(o is out[0] for o in out) and len(n) == len(plan.files)
+
+
+def test_cache_write_failure_is_logged_and_the_store_stays_in_memory_without_rebuilding(tmp_path, monkeypatch):
+    t0, root = _cards_world(tmp_path)
+    rule = C.seal_rule(tmp_path)
+    plan = C.price_plan({"config": {"instrument": "FX_BTC_JPY"}}, tmp_path, rule)
+    n = []
+    orig = C._read_file
+    monkeypatch.setattr(C, "_read_file", lambda *a, **k: (n.append(1), orig(*a, **k))[1])
+
+    def locked(*a, **k):
+        raise PermissionError("[WinError 32] file is being used by another process")
+    monkeypatch.setattr(C.np, "save", locked)
+    st = C.get_store(plan, rule)
+    assert st.rows == 3000 and st.pinned and not st.from_cache
+    log = (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+    assert "cache_write_failed" in log and "WinError 32" in log
+    assert not list((tmp_path / "cache").glob(".*.tmp"))  # no half-written directory is left
+    # other stores come and go: the pinned one is not pushed out, so the next request does not parse again
+    for i in range(3):
+        C._STORES[f"x{i}"] = C.Store("x", st.frames, 0, 0, 0, None, 0, False)
+        with C._LOCK:
+            while len(C._STORES) > 2:
+                v = next((k for k, o in C._STORES.items() if not o.pinned), None)
+                C._STORES.pop(v)
+    assert C.get_store(plan, rule) is st and len(n) == len(plan.files)
+
+
+def test_warmup_builds_every_store_in_the_background_and_a_later_request_finds_it(tmp_path):
+    t0, root = _cards_world(tmp_path)
+    C.start_store_warmup(tmp_path).join(60)
+    d = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path, wait=False)
+    assert not d["building"] and d["bars"]
+    assert "warmup" in (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8")
+
+
+def test_tab_log_has_one_line_per_event_and_the_dashboard_logs_slow_and_failed_requests(tmp_path):
+    dash = _dash()
+    t0, root = _cards_world(tmp_path)
+    assert dash._backtest("/api/backtest/summary/cards/c7_barrier_race/nope", root, tmp_path)[0] == 404
+    lines = (tmp_path / "dashboard_bt.log").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 1
+    ts, action, sec, result = lines[0].split("\t")
+    assert ts.endswith("Z") and action.startswith("GET /api/backtest/summary/") and sec.endswith("s") and result.startswith("HTTP 404")
+    bat = (REPO / "deploy" / "share_logs.bat").read_text(encoding="utf-8")
+    assert "copy /Y logs\\dashboard_bt.log paper_logs\\ >nul 2>&1" in bat
+
+
+def test_page_script_never_leaves_a_black_screen_without_a_reason():
+    dash = _dash()
+    js = (Path(C.STATIC_DIR) / "backtest_tab.js").read_text(encoding="utf-8")
+    for need in ("AbortController", "時間切れ", "サーバーに接続できない", "HTTP ${r.status}", 'addEventListener("error"', "unhandledrejection",
+                 "価格のキャッシュを作っています(初回だけ)", "秒経過", "d.building"):
+        assert need in js, need
+    assert 'id="bt-banner"' in dash.PAGE and 'id="bt-chart-busy"' in dash.PAGE
+    assert "start_store_warmup" in (REPO / "scripts" / "dashboard.py").read_text(encoding="utf-8")

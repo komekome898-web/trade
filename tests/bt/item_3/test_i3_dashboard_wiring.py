@@ -88,6 +88,12 @@ def test_backtest_tab_is_wired_from_page_to_run(tmp_path):
         summ = json.loads(_get(port, f"/api/backtest/summary/{rid}"))
         assert summ["stats"]["n"] == 1 and summ["price"]["available"] and summ["price"]["market"] == "FX_BTC_JPY"
         chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
+        import time as _t
+        for _ in range(60):  # the price store is built in the background: the first answer may say "building" (the page polls)
+            if not chart.get("building"):
+                break
+            _t.sleep(0.5)
+            chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
         assert chart["bars"] and chart["interval_s"] == 60 and chart["trades_total"] == 1 and chart["pnl"]
         view = json.loads(_get(port, f"/api/backtest/run/{rid}"))
         assert [t["label"] for t in view["tabs"]] == TABS
