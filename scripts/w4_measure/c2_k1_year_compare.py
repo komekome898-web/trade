@@ -162,6 +162,9 @@ def k1_load(k1: dict, foot: int) -> dict:
         v = (c.get("per_year") or {}).get(str(y))
         # 総損益 = 年別 n × 年別平均(RESULT.md 11.7、XVENUE_TABLES.md と同じ作り)。mean_bp は小数 3 桁に丸めた値
         per[y] = None if v is None else (v["n"], v["n"] * v["mean_bp"], v["mean_bp"])
+    # K1 の 2023 は 12-31 までの分(封印の境 2023-12-18 の後)を含むので出さない(関門 ② の 1 回目の聞く 1。
+    # 段階 G との差が封印の後の約 2 週間を差し引きで取り出す形になるため)。
+    per[2023] = None
     return {"key": key, "per_year": per, "missing": False, "reasons": sorted((c.get("exit_reasons") or {}).keys())}
 
 
@@ -171,7 +174,7 @@ def mark(y: int, foot: int, g: dict) -> str:
     if y == 2017:
         m.append("読み始めが違う(§1 の「期間」の行)")
     if y == 2023:
-        m.append("比べられない(封印、2023 は区間が違う: 参照 〜12-17 15:00Z・段階 G 〜12-18 00:00Z・K1 〜12-31)")
+        m.append("比べられない(2023 は区間が違う: 参照 〜12-17 15:00Z・段階 G 〜12-18 00:00Z。K1 は 12-31 までの分を含むので出さない)")
     if g.get("key", "") and "2022_20231217" in g["key"] and y >= 2022:
         m.append("段階 G は 2022-01-01 から読み始めた別の実行")
     return "。".join(m)
@@ -402,7 +405,7 @@ def main() -> int:
         same = len({(c[0]["ref_rows"], c[0]["bars"]) for c in ch.values() if c}) == 1
         fb_ = fold_bin.get(y)
         ff_ = fold_bf.get(y)
-        a = alg.get(str(y))
+        a = alg.get(str(y)) if y != 2023 else None  # K1 の 2023 は封印の後の分を含むので出さない
         w(f"| {y} | {fn(c15['ref_rows'] if c15 else None)} | "
           f"{fn(fb_['rows_kept_in_range'] if fb_ else None)} / {fn(fb_['events_after_policy'] if fb_ else None)} / "
           f"{fn((fb_ or {}).get('anomalies', {}).get('synthetic'))} | "
