@@ -7,9 +7,12 @@ v37 の既定から 1 つだけ変えた変種を、良い側・悪い側の両�
     PYTHONPATH=src python3 scripts/w4_measure/c4_limit_batch.py --out-root <置き場> \\
         --shard 0 --nshards 3 --jobs 2
 
-- 走らせごとに <置き場>/<名前>_<側>/ に summary.json・run_record.json・trades.csv.gz と、
+- 走らせごとに <置き場>/<名前>_<側>/ に summary.json・run_record.json・trades.csv.gz・trades.json.gz と、
   trades から作る analysis.json(年ごと・入りの時の比 width/vola の十分位・width/終値 の十分位・
-  終わり方ごとの取引数と損益の和)を出す。summary.json があれば飛ばす(冪等)。
+  終わり方ごとの取引数と損益の和)を出す。analysis.json があれば飛ばす(冪等)。
+- 前の測定から引き継ぐ問い(INTENT_MAP §11-5、L-590)の鍵も analysis.json に出す: P-1 `by_break`
+  (ブレイクで閉じた / ブレイクの間に入った / ほか)、P-2 `ratio_fixed_bins`(門の診断の十分位の境で固定。84 本で同じ境)、
+  P-4 `by_hold`(保有の分)・`decided_only`(決まらない足に当たらなかった取引だけ)。
 - B5 は再現で動きが変わらない(SPEC 3-3)ので作らない。B3・B4 は A5・A2 と同じ(§11-3)。
 """
 from __future__ import annotations
@@ -58,6 +61,10 @@ for ob in ("close", "follow"):
     RUNS.append((f"B2_{ob}", "B2", ["--on-break", ob]))
 
 SIDES = ("good", "bad")
+# 門の診断(docs/RESEARCH/cards/c4_owner_matilda_range/diag_gate/README.md「比の十分位ごとの P」)の境。INTENT_MAP §11-5 P-2
+RATIO_FIXED_EDGES = (7.51, 8.52, 9.34, 10.14, 10.96, 11.87, 12.96, 14.40, 16.77)
+# 保有の分の区切り(INTENT_MAP §11-5 P-4)。0 = 同じ足の中で入って出た。[lo, hi) 分
+HOLD_BINS = ((0, 1), (1, 2), (2, 6), (6, 21), (21, 41), (41, None))
 
 
 def _deciles(x: np.ndarray, pnl: np.ndarray) -> dict:
@@ -74,6 +81,16 @@ def _deciles(x: np.ndarray, pnl: np.ndarray) -> dict:
                      "wins": int((pnl[m] > 0).sum()), "sum_bp": float(pnl[m].sum()),
                      "mean_bp": float(pnl[m].mean()) if m.any() else None})
     return {"rows": rows}
+
+
+def _sums(m: np.ndarray, pnl: np.ndarray) -> dict:
+    return {"trades": int(m.sum()), "wins": int((pnl[m] > 0).sum()), "sum_bp": float(pnl[m].sum()),
+            "small_win_sum_bp": float(pnl[m & (pnl > 0)].sum()), "big_loss_sum_bp": float(pnl[m & (pnl <= -10)].sum())}
+
+
+def _iso_min(t: str) -> int:
+    from datetime import datetime
+    return int(datetime.fromisoformat(t.replace("Z", "+00:00")).timestamp()) // 60
 
 
 def analyse(d: str) -> None:
@@ -97,6 +114,22 @@ def analyse(d: str) -> None:
                                     "small_win_sum_bp": float(pnl[(year == y) & (pnl > 0)].sum()),
                                     "undecided_trades": int(((year == y) & (und > 0)).sum())}
                            for y in sorted(set(year.tolist()))}}
+        brk = np.array([int(r["brk"]) for r in rows])
+        # P-1: ブレイクに逆らう持ち高 = ブレイクで閉じた取引(反対のブレイク・ブレイク)。v37 は持ち高 0 からブレイクの
+        # 間に入らないので、入った時点の brk が 0 でないのは follow の入りだけ(2019 年の 1 か月の試しの v37 で brk≠0 の入りは 0 件)
+        brk_exit = np.isin(reason, ("反対のブレイク", "ブレイク"))
+        groups = {"closed_by_break": brk_exit, "entered_during_break": ~brk_exit & (brk != 0),
+                  "other": ~brk_exit & (brk == 0)}
+        out["by_break"] = {k: _sums(m, pnl) for k, m in groups.items()}
+        fb = np.searchsorted(np.array(RATIO_FIXED_EDGES), ratio, side="right")
+        out["ratio_fixed_bins"] = {"edges": list(RATIO_FIXED_EDGES),
+                                   "rows": [{"bin": k + 1, **_sums(fb == k, pnl)} for k in range(len(RATIO_FIXED_EDGES) + 1)]}
+        hold = np.array([_iso_min(r["exit_t"]) - _iso_min(r["entry_t"]) for r in rows])
+        out["by_hold"] = {"bins_min": [list(b) for b in HOLD_BINS], "median_min": float(np.median(hold)),
+                          "rows": [{"lo": lo, "hi": hi, **_sums((hold >= lo) & ((hold < hi) if hi is not None else True), pnl)}
+                                   for lo, hi in HOLD_BINS]}
+        dec = und == 0
+        out["decided_only"] = {**_sums(dec, pnl), "by_break": {k: _sums(dec & m, pnl) for k, m in groups.items()}}
     with open(os.path.join(d, "analysis.json"), "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=1)
 

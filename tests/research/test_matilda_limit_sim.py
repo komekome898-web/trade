@@ -329,9 +329,9 @@ def test_8_add_and_take_profit_in_one_bar():
     g = _two_level_short()
     q = g._q
     tp = (P + 600) - 0.8 * q.vola / 2
-    nxt = max(q.s1, P + 700 + q.vola)
+    nxt = math.floor(max(q.s1, P + 700 + q.vola))  # 売りの段は 1 円に切り下げ(L-595)
     fills3 = [P + 500, P + 700, nxt]
-    tp3 = math.fsum(fills3) / 3 - 0.8 * q.vola / 3
+    tp3 = math.ceil(math.fsum(fills3) / 3 - 0.8 * q.vola / 3)  # 売り持ちの利確は 1 円に切り上げ
     b41 = bar(41, P + 650, P + 650, h=nxt + 1, lo=tp - 1)
     assert tp3 > tp - 1
     rows = g.feed(b41)
@@ -374,7 +374,8 @@ def test_10_pnl_formula_and_trade_boundaries():
     rows = feed(s, base() + [bar(40, P + 900, P + 900, h=P + 1300.5, lo=P + 900)])  # 売り 5 段
     assert rows == [] and s._fills == [P + 500, P + 700, P + 900, P + 1100, P + 1300]
     q = s._q
-    tp = (P + 900) - 0.8 * q.vola / 5
+    tp = math.ceil((P + 900) - 0.8 * q.vola / 5)  # 売り持ちの利確は 1 円に切り上げ(L-595)
+    assert tp != (P + 900) - 0.8 * q.vola / 5
     rows = s.feed(bar(41, P + 1000, tp - 1, h=P + 1000, lo=tp - 1))
     assert len(rows) == 1
     r = rows[0]
@@ -384,7 +385,7 @@ def test_10_pnl_formula_and_trade_boundaries():
     # 次の取引は 0 から始まる(段・時計を引き継がない)
     q = s._q
     rows = s.feed(bar(42, q.b1 + 1, q.b1 + 1, h=q.b1 + 1, lo=q.b1 - 1))
-    assert s._side == 1 and s._fills == [q.b1] and s._info["entry_ns"] == T0 + 43 * M
+    assert s._side == 1 and s._fills == [math.ceil(q.b1)] and s._info["entry_ns"] == T0 + 43 * M  # 買いは切り上げ
 
 
 # ---------------------------------------------------------------- 11. 暦年の区切りでつないでも同じ
@@ -677,3 +678,147 @@ def test_by_year_uses_exit_year_and_keeps_the_finish_row():
     assert (out["2018"]["trades"], out["2018"]["days"]) == (1, 2.0)
     assert (out["2019"]["trades"], out["2019"]["days"], out["2019"]["per_day"]["trades"]) == (1, 0.0, None)
     assert sum(v["trades"] for v in out.values()) == len(rows)
+
+
+# ---------------------------------------------------------------- 1 円刻み(オーナー L-595)
+def test_order_prices_are_rounded_to_one_yen_against_us():
+    """売りの注文は切り下げ、買いの注文は切り上げ。窓を 40 本の往復 P ↔ P+201(実体 201、中心 P+100.5、
+    vola 201)にすると S1 = P+502.5 → 売りの入り P+502、B1 = P−301.5 → 買いの入り P−301。"""
+    from bot.research.matilda_limit_sim import _dn, _up
+    assert (_dn(10.7), _up(10.2), _dn(10.0), _up(10.0)) == (10.0, 11.0, 10.0, 10.0)
+    assert (_dn(1000502.9999999999), _up(1000502.0000000001)) == (1000503.0, 1000502.0)  # 浮動小数の誤差は吸う
+    assert (_dn(10.9995), _up(10.0005)) == (10.0, 11.0)  # 遊びは誤差の大きさ(1e-6)だけ。0.0005 円は吸わない
+    s = sim()
+    feed(s, base(amp=201.0))
+    assert (s._q.s1, s._q.b1) == (P + 502.5, P - 301.5)
+    feed(s, [bar(40, P + 450, P + 450, h=P + 503, lo=P + 450)])
+    assert s._fills == [P + 502]
+    b = sim()
+    feed(b, base(amp=201.0) + [bar(40, P - 250, P - 250, h=P - 250, lo=P - 302)])
+    assert b._fills == [P - 301]
+    # 利確: 買い持ちは売りの注文 = 切り下げ、売り持ちは買いの注文 = 切り上げ
+    st = b._state()
+    tp, _ = b._tp(st, b._q, T0 + 41 * M)
+    raw = (P - 301) + 0.8 * b._q.vola
+    assert raw != int(raw) and tp == math.floor(raw)
+    st2 = s._state()
+    tp2, _ = s._tp(st2, s._q, T0 + 41 * M)
+    raw2 = (P + 502) - 0.8 * s._q.vola
+    assert raw2 != int(raw2) and tp2 == math.ceil(raw2)
+
+
+def test_fills_are_judged_against_the_rounded_price():
+    """S1 = P+502.5 の売りの注文は P+502。高値 P+502.5(> 丸めた値段)なら約定、P+502 ちょうどなら約定しない。"""
+    s = sim()
+    feed(s, base(amp=201.0) + [bar(40, P + 450, P + 450, h=P + 502, lo=P + 450)])
+    assert s._side == 0
+    s = sim()
+    feed(s, base(amp=201.0) + [bar(40, P + 450, P + 450, h=P + 502.5, lo=P + 450)])
+    assert s._fills == [P + 502]  # 丸める前の S1(P+502.5)は越えていないが、丸めた P+502 は越えた
+
+
+def test_break_close_price_is_rounded_but_the_break_threshold_is_not():
+    """entry = 1。判定値 pb は丸めずに越えたかを見て、売り持ちを閉じる値段(買い)は _up(pb)。"""
+    s = sim(entry=1)
+    feed(s, two_phase(a1=401.0))
+    q = s._q
+    pb = max(q.bup, q.hi2)
+    assert pb == P + 401
+    rows = s.feed(bar(80, P + 200, P + 401, h=P + 401.5, lo=P + 200))
+    assert s._brk == 1 and rows[0]["exit_reason"] == "反対のブレイク" and rows[0]["exit_price"] == P + 401
+
+
+def test_no_fractional_prices_in_trade_rows():
+    """約定の値段(各段と出の値段)は全部 1 円刻み。建値(平均)は小数が残ってよい。"""
+    for fill_side in ("good", "bad"):
+        s = sim(fill_side=fill_side)
+        rows = []
+        orig = s._close
+        fills_seen = []
+        s._close = lambda st, price, reason, t, _o=orig: (fills_seen.extend(st.fills), _o(st, price, reason, t))[1]
+        for b in _walk(3000, 5, T0):  # bitFlyer の足と同じく 4 本値を 1 円刻みにする
+            o, c = round(b.open), round(b.close)
+            rows += s.feed(bar(int((b.start_time_ns - T0) // M), o, c, max(o, c, round(b.high)),
+                               min(o, c, round(b.low)), vol=b.volume))
+        rows += s.finish()
+        assert len(rows) > 20 and fills_seen
+        assert all(r["exit_price"] == int(r["exit_price"]) for r in rows)
+        assert all(f == int(f) for f in fills_seen)
+        assert any(r["entry_price"] != int(r["entry_price"]) for r in rows)
+
+
+# ---------------------------------------------------------------- 1 円刻みの向き(批評家の指摘、リードの決め)
+def _half_up():
+    """上のブレイクの判定値が半端(P+301.5)になる並び: 前半 P ↔ P+300、後半 P ↔ P+201。
+    番号 79 の足の終わりで hi = P+201・幅 201 → bup = P+301.5、hi2 = P+300 → pb = P+301.5。"""
+    return two_phase(a1=300.0, a2=201.0)
+
+
+def _half_down():
+    """下のブレイクの判定値が半端(P−100.5)になる並び: 前半 P−100 ↔ P+201、後半 P ↔ P+201。
+    lo = P・幅 201 → bdp = P−100.5、lo2 = P−100 → pb = P−100.5。hi == hi2 なので上は未定。"""
+    return two_phase(a1=301.0, a2=201.0, lo1=P - 100)
+
+
+def test_half_break_price_closes_short_at_ceil_and_long_at_floor():
+    s = sim()
+    feed(s, _half_up())
+    assert max(s._q.bup, s._q.hi2) == P + 301.5
+    _inject(s, -1, [P + 250], T0 + 80 * M)
+    rows = s.feed(bar(80, P + 200, P + 200, h=P + 302, lo=P + 200))
+    assert (rows[0]["exit_reason"], rows[0]["exit_price"]) == ("反対のブレイク", P + 302)  # 買い = 切り上げ
+    s = sim()
+    feed(s, _half_down())
+    assert s._q.bup is None and min(s._q.bdp, s._q.lo2) == P - 100.5
+    _inject(s, 1, [P + 50], T0 + 80 * M)
+    rows = s.feed(bar(80, P + 50, P + 50, h=P + 50, lo=P - 101))
+    assert (rows[0]["exit_reason"], rows[0]["exit_price"]) == ("反対のブレイク", P - 101)  # 売り = 切り下げ
+
+
+def test_follow_enters_up_break_at_ceil_and_down_break_at_floor():
+    s = sim(on_break="follow")
+    feed(s, _half_up())
+    s.feed(bar(80, P + 200, P + 200, h=P + 302, lo=P + 200))
+    assert (s._side, s._fills) == (1, [P + 302])
+    s = sim(on_break="follow")
+    feed(s, _half_down())
+    s.feed(bar(80, P + 50, P + 50, h=P + 50, lo=P - 101))
+    assert (s._side, s._fills) == (-1, [P - 101])
+
+
+def test_center_form_half_take_profit_is_floor_for_long_and_ceil_for_short():
+    """中心 P+100.5・vola 201、exit_setting 2: 売り持ちの利確 P+502.5 → P+503、買い持ちの利確 P−301.5 → P−302。"""
+    s = sim(exit_form="center", entry=3, exit_setting=2)
+    feed(s, base(amp=201.0))
+    _inject(s, -1, [P + 700], T0 + 40 * M)
+    assert s._tp(s._state(), s._q, T0 + 40 * M) == (P + 503, "中心型の利確")
+    _inject(s, 1, [P - 500], T0 + 40 * M)
+    assert s._tp(s._state(), s._q, T0 + 40 * M) == (P - 302, "中心型の利確")
+
+
+def test_opposite_entry_close_price_is_dn_s1_for_long_and_up_b1_for_short(monkeypatch):
+    """反対の入りは feed からは起きない(利確が先)ので _leg を直に呼ぶ。S1 = P+502.5 → 買い持ちは P+502 で閉じる、
+    B1 = P−301.5 → 売り持ちは P−301 で閉じる。"""
+    s = sim()
+    feed(s, base(amp=201.0))
+    q = s._q
+    monkeypatch.setattr(s, "_tp", lambda st, q, t: (P + st.side * 10 ** 6, "利確1"))
+    _inject(s, 1, [P - 400], T0 + 40 * M)
+    st = s._state()
+    s._leg(st, True, P + 503, q, 0, None, False, T0 + 40 * M, T0 + 41 * M)
+    assert st.events[0] == ("opp", P + 502) and st.closed[0][2] == P + 502
+    _inject(s, -1, [P + 600], T0 + 40 * M)
+    st = s._state()
+    s._leg(st, False, P - 302, q, 0, None, False, T0 + 40 * M, T0 + 41 * M)
+    assert st.events[0] == ("opp", P - 301) and st.closed[0][2] == P - 301
+
+
+def test_break_is_ordered_at_its_tick_before_a_level_at_the_same_tick():
+    """entry = 1: 売りの次の段 = _dn(S1 = P+301.5) = P+301。ブレイクの判定値 P+301.5 は上りの脚では P+301 の刻みに
+    並び、同じ刻みの段の追加より先に起きる → 段を足さずに 1 段のまま P+302 で閉じる。"""
+    s = sim(entry=1)
+    feed(s, _half_up())
+    assert s._q.s1 == P + 301.5
+    _inject(s, -1, [P + 100], T0 + 80 * M)
+    rows = s.feed(bar(80, P + 200, P + 200, h=P + 302, lo=P + 200))
+    assert (rows[0]["exit_reason"], rows[0]["levels"], rows[0]["exit_price"]) == ("反対のブレイク", 1, P + 302)

@@ -36,7 +36,7 @@
 足の頭で起きたものは 2 通りの道で同じなので、それだけでは決まらない足にならない。
 続けて、足 k+1 の値段の動きを 2 通りの道で通す: 上が先(始値 → 高値 → 安値)と、下が先(始値 → 安値 → 高値)。
 各「脚」(高値へ向かう上り / 安値へ向かう下り)の中では、越えた値段の順に出来事を起こす(上りは安い値段から、
-下りは高い値段から。同じ値段ならブレイク → 利確 → 反対の入り → 入りの順)。出来事は
+下りは高い値段から。ブレイクは上の「値段の刻み」の刻みに置く。同じ値段ならブレイク → 利確 → 反対の入り → 入りの順)。出来事は
   ブレイク(判定値の値段)/ 利確(利確の値段)/ 反対の入り(S1 または B1 で閉じる)/ 入り・段の追加(段の値段)。
 2 通りの道で結果が同じなら決まる足。違えば決まらない足で、
   - 片方の道でだけ利確が起きる: 良い側 = 利確が起きる道(仕様「利確が先」)。悪い側 = もう一方の道を、利確の値段の
@@ -56,6 +56,21 @@
 決まらない足に数える。どの出来事でも閉じた後に同じ足で持った持ち高は、その足では利確と反対の入りでは閉じない
 (1 本の足で数える往復は 1 回まで。L-581)【置いた形】。同じ脚の先にあるブレイクでは閉じる(値段の順で決まるため)。
 決まらない足は、その足で持っていた取引(その足で閉じた取引と、足の終わりに持っている取引)に 1 ずつ数える。
+
+値段の刻み(オーナー L-595「bitFlyerの値段に小数点があるのはタダのバグだから放置せず直して」)
+----------------------------------------------------------------------------------------------
+bitFlyer FX_BTC_JPY の値段は 1 円刻み。注文の値段と約定の値段は、計算した値段を自分に不利な側へ 1 円に丸める:
+  売りの注文(売りの入り・買い持ちの利確・買い持ちを閉じる)は切り下げ(_dn)、買いの注文(買いの入り・売り持ちの
+  利確・売り持ちを閉じる)は切り上げ(_up)。
+  - 入りと段の値段: 売りは _dn(max(S1, 前の段 + step × vola))、買いは _up(min(B1, 前の段 − step × vola))。
+  - 利確の値段(flg 1・2・中心型): 買い持ちは _dn、売り持ちは _up。
+  - 反対の入りで閉じる: 買い持ちは _dn(S1)(売りの入りの注文の値段で、閉じるのも売り)、売り持ちは _up(B1)。
+  - ブレイクで閉じる・follow で入る: 判定値 pb を、売りなら _dn(pb)、買いなら _up(pb)。
+約定の判定(等号なしで越えたら約定)は丸めた後の値段で行う。ブレイクの判定(越えたか)は注文ではないので、判定値
+pb は丸めない。脚の中で並べるときだけ、ブレイクを実際に起きる刻み(上りの脚は _dn(pb)、下りの脚は _up(pb))に置く
+(リードの決め)。同じ刻みなら下の _PRIO の順(ブレイクが先)。時間の成行(次の足の始値)と期間の終わり(最後の終値)は足の値段
+そのもの(1 円刻み)。建値(段の平均)は小数が残ってよい。損益は丸めた約定の値段から出す。
+丸めは浮動小数の誤差を吸うため 1e-6 円の遊びを持たせる(_dn(x) = floor(x + 1e-6)、_up(x) = ceil(x − 1e-6))。
 
 時刻の決め(【置いた形】)
 - 入りの時刻 entry_ns・時計の t0 = 1 段目が約定した足の終わり(カードの _entry_t = 判定の時刻と同じ考え)。
@@ -102,6 +117,16 @@ EXIT_OPP, EXIT_OPP_BRK, EXIT_BRK = "反対の入り", "反対のブレイク", "
 EXIT_TIME, EXIT_END = "時間", "期間の終わり"
 
 _PRIO = {"brk": 0, "tp": 1, "stop": 1, "opp": 2, "ent": 3}
+
+
+def _dn(x: float) -> float:
+    """売りの注文の値段: 1 円刻みに切り下げ(自分に不利な側)。"""
+    return float(math.floor(x + 1e-6))
+
+
+def _up(x: float) -> float:
+    """買いの注文の値段: 1 円刻みに切り上げ(自分に不利な側)。"""
+    return float(math.ceil(x - 1e-6))
 
 
 def _in(name, value, table):
@@ -327,20 +352,25 @@ class MatildaLimitSim:
         """(利確の値段, 終わり方)。"""
         s = st.side
         if self.exit_form == "center":  # v37 138〜139 行のコメントの定義。flg 1・2 の代わり(ブレイク中も)
-            return q.center - s * self.exit_setting * q.vola, EXIT_TPC
+            return self._px(s, q.center - s * self.exit_setting * q.vola), EXIT_TPC
         e = math.fsum(st.fills) / len(st.fills)
         ev = self.step_exit * q.vola / len(st.fills)  # v37 881 行 vola × step_exit × (sizemin / mybtc)
         line = e + s * ev
         if st.brk == 0 and (t_start - st.t0 >= self.alert_ns or s * (e - q.center) > 0):
             # exit_flg 2(v37 1012〜1014・1020〜1022 行、897〜898・911〜912 行)
-            return (min(q.center, line) if s == 1 else max(q.center, line)), EXIT_TP2
-        return line, EXIT_TP1  # exit_flg 1(ブレイク中は v37 1029〜1030 行 b_signal == 0 → 1。仕様は 1033 行と書く)
+            return self._px(s, min(q.center, line) if s == 1 else max(q.center, line)), EXIT_TP2
+        return self._px(s, line), EXIT_TP1  # exit_flg 1(ブレイク中は v37 1029〜1030 行 b_signal == 0 → 1。仕様は 1033 行と書く)
+
+    @staticmethod
+    def _px(s: int, x: float) -> float:
+        """s の向きの持ち高を閉じる注文の値段(買い持ちは売り = 切り下げ、売り持ちは買い = 切り上げ)。"""
+        return _dn(x) if s == 1 else _up(x)
 
     def _next_level(self, st: _St, d: int, q: _Q) -> float:
         """d の向きの次の段の値段(仕様 3-2)。売り: max(S1, 前の段 + step × vola)、買い: min(B1, 前の段 − step × vola)。"""
         if d == -1:
-            return q.s1 if not st.fills else max(q.s1, st.fills[-1] + self.step * q.vola)
-        return q.b1 if not st.fills else min(q.b1, st.fills[-1] - self.step * q.vola)
+            return _dn(q.s1 if not st.fills else max(q.s1, st.fills[-1] + self.step * q.vola))
+        return _up(q.b1 if not st.fills else min(q.b1, st.fills[-1] - self.step * q.vola))
 
     # ------------------------------------------------------------------ 1 本の脚
     def _leg(self, st: _St, up: bool, ext: float, q: _Q, ev: int, pb: Optional[float], tp_stop: bool,
@@ -350,12 +380,16 @@ class MatildaLimitSim:
         while True:
             cands = []
 
-            def add(thr, kind):
+            def add(thr, kind, at=None):
+                # 越えたかは thr で見る。並べる値段は at(無ければ thr)
                 if thr is not None and (ext > thr if up else ext < thr):
-                    cands.append(((thr if up else -thr), _PRIO[kind], kind, thr))
+                    k = thr if at is None else at
+                    cands.append(((k if up else -k), _PRIO[kind], kind, thr))
 
             if ev == d and not st.brk_done:
-                add(pb, "brk")
+                # ブレイクは丸めない pb を越えたかで判定し、並べるときは実際に起きる刻み(上りは _dn(pb)、下りは _up(pb))
+                # に置く。同じ刻みの段の追加・利確などより先(_PRIO)。リードの決め
+                add(pb, "brk", _dn(pb) if up else _up(pb))
             s = st.side
             if stopped:
                 if not cands:
@@ -367,7 +401,7 @@ class MatildaLimitSim:
                 tp, why = self._tp(st, q, t_start)
                 add(tp, "stop" if tp_stop else "tp")
                 if st.brk == 0 and q.gate and q.vola > 0:  # 反対の入り(幅の門を通るときだけ。v37 976・993 行)
-                    add(q.s1 if d == 1 else q.b1, "opp")
+                    add(_dn(q.s1) if d == 1 else _up(q.b1), "opp")
             e = -d  # この脚で入る向き
             if not st.tp_done and not st.no_entry and q.vola > 0 and len(st.fills) < self.n_levels:
                 if s == 0 and st.brk == 0 and q.gate:
@@ -384,9 +418,9 @@ class MatildaLimitSim:
             if kind == "brk":
                 st.brk, st.brk_done = ev, True
                 if st.side == -ev or (st.side == ev and self.on_break == "close"):
-                    self._close(st, px, EXIT_OPP_BRK if st.side == -ev else EXIT_BRK, t_end)
+                    self._close(st, self._px(st.side, px), EXIT_OPP_BRK if st.side == -ev else EXIT_BRK, t_end)
                 if st.side == 0 and self.on_break == "follow" and not st.tp_done:
-                    self._open(st, ev, px, q, t_end)  # 判定値の値段で 1 段
+                    self._open(st, ev, _up(px) if ev == 1 else _dn(px), q, t_end)  # 判定値の値段で 1 段
             elif kind == "tp":
                 self._close(st, px, why, t_end)
                 st.tp_done = True  # 利確の後、この足では入らない
@@ -438,7 +472,7 @@ class MatildaLimitSim:
             elif q.bdp is not None and min(q.bdp, q.lo2) > lo and st.brk != -1:
                 ev, pb = -1, min(q.bdp, q.lo2)
             # 2. 何も起きない足は道を試さない
-            can_enter = st.brk == 0 and q.gate and q.vola > 0 and (h > q.s1 or lo < q.b1)
+            can_enter = st.brk == 0 and q.gate and q.vola > 0 and (h > _dn(q.s1) or lo < _up(q.b1))
             if st.side == 0 and not can_enter and (ev == 0 or self.on_break != "follow"):
                 if ev:
                     st.brk = ev
