@@ -20578,12 +20578,12 @@
   {
    "move": 756,
    "tools": {
-    "Bash": 5,
+    "Bash": 7,
     "Read": 1,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 8,
+   "n_tools": 10,
    "read_goal": false,
    "first_write_at": 6,
    "table_shown": false,
