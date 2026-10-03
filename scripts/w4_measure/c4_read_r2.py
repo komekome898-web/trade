@@ -211,6 +211,12 @@ def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
                      f"「反対のブレイク」{br.get('反対のブレイク', {}).get('trades', 0)} 件 {br.get('反対のブレイク', {}).get('sum_bp', 0.0):.0f}bp")
     n8 = sum(1 for r in rows if r["years_good"] == 8 and r["years_bad"] == 8)
     L.append(f"- 年の一致が両側とも 8/8 の変種: {n8}/{len(rows)}")
+    both_pos = [r["name"] for r in rows
+                if runs[(r["name"], "good")]["per_day"]["pnl"] > 0 and runs[(r["name"], "bad")]["per_day"]["pnl"] > 0]
+    L.append(f"- 損益が両側とも正の変種: {len(both_pos)}/{len(rows)}" + (f"({', '.join(both_pos)})" if both_pos else ""))
+    L.append(f"- v37 の損益: 良 {runs[('v37', 'good')]['per_day']['pnl']:.1f} / 悪 {runs[('v37', 'bad')]['per_day']['pnl']:.1f} bp/日")
+    wq = runs[("v37", "good")]["analysis"]["width_over_close_deciles"]["rows"][0]
+    L.append(f"- v37 良の幅 ÷ 終値の十分位 1 の下端: {wq['lo']:.6f}(幅の門の下限 150 ÷ 1152502 = {150 / 1152502:.6f})")
     gap = runs[("v37", "good")]["per_day"]["pnl"] - runs[("v37", "bad")]["per_day"]["pnl"]
     L.append(f"- v37 の良い側と悪い側の損益の差: {gap:.1f} bp/日")
     return L
