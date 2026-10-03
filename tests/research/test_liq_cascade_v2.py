@@ -189,6 +189,7 @@ def test_reactions_mfe_mae_giveback_hand():
     assert [up[f"mfe_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([100, 100, 200, 200])
     assert [up[f"mae_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([0, -100, -100, -100])
     assert [up[f"giveback_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([0, 200, 200, 200])
+    assert [up[f"mfe_minus_react_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([0, 200, 0, 200])
     dn = v2.reactions_from_anchor(tr, np.array([D0]), np.array([-1.0]), (1, 2, 3, 4))
     assert [dn[f"react_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([-100, 100, -200, 0])
     assert [dn[f"mfe_{h}"][0] for h in (1, 2, 3, 4)] == pytest.approx([0, 100, 100, 100])
@@ -222,38 +223,120 @@ def _subset_prints(pr, keep):
                      pr.price[keep], pr.print_id[keep])
 
 
+def _side_data(t_lo_ms, t_hi_ms, seed=5):
+    rng = np.random.default_rng(seed)
+    t_oi = np.arange(t_lo_ms, t_hi_ms, 300_000, dtype=np.int64)
+    oi = 1e6 + np.cumsum(rng.normal(0, 1e3, t_oi.size))
+    tls = rng.uniform(0.5, 1.5, t_oi.size)
+    t_f = np.arange(t_lo_ms, t_hi_ms, 8 * 3_600_000, dtype=np.int64)
+    r_f = rng.normal(1e-4, 5e-5, t_f.size)
+    buckets = {"t_ms": t_oi[1:], "delta": rng.uniform(1, 100, t_oi.size - 1),
+               "vwap": 30000 + rng.normal(0, 20, t_oi.size - 1),
+               "buy_share": rng.uniform(0, 1, t_oi.size - 1), "t_all": t_oi[1:]}
+    return v2.SideData(t_oi, oi, tls, t_f, r_f, buckets)
+
+
+def _cut_side(sd, ts):
+    k = sd.t_oi <= ts
+    kf = sd.t_fund <= ts
+    b = sd.oi_buckets
+    kb = b["t_ms"] <= ts
+    return v2.SideData(sd.t_oi[k], sd.oi[k], sd.tls[k], sd.t_fund[kf], sd.r_fund[kf],
+                       {"t_ms": b["t_ms"][kb], "delta": b["delta"][kb], "vwap": b["vwap"][kb],
+                        "buy_share": b["buy_share"][kb], "t_all": b["t_all"][b["t_all"] <= ts]})
+
+
+def _world_long(seed=7):
+    """約定 10 時間(材料 5 の 8 時間の窓のため)、清算は最後の 1 時間。"""
+    rng = np.random.default_rng(seed)
+    t = np.sort(D0 + rng.integers(0, 36_000_000, 20_000))
+    px = 30000 + np.cumsum(rng.normal(0, 2, t.size))
+    tr = _trades(t, px, rng.uniform(1, 50, t.size), rng.random(t.size) < 0.5)
+    lt = np.sort(D0 + rng.integers(32_400_000, 35_900_000, 30))
+    pr = v2.Prints.from_rows([(int(x), "SELL" if rng.random() < 0.6 else "BUY",
+                               float(rng.integers(1, 99)), 100.0,
+                               float(30000 + rng.normal(0, 30))) for x in lt])
+    return tr, pr, _side_data(D0 - 3_600_000, D0 + 36_000_000)
+
+
+def _assert_same(a, b):
+    if isinstance(a, str) or isinstance(b, str):
+        assert a == b
+    else:
+        np.testing.assert_equal(float(a), float(b))
+
+
 def test_no_lookahead_truncate_and_perturb():
-    tr, pr = _world()
+    tr, pr, sd = _world_long()
     ctx = v2.same_side_context(pr)
-    pre = v2.pre_state_arrays(tr, pr.ts)
     b60 = v2.same_side_bundles(pr, 60)
+    sel = np.arange(len(pr))
+    mats = v2.print_materials(pr, sel, tr, ctx, b60, sd)
+    pre = v2.pre_state_arrays(tr, pr.ts)
     past_ctx = ("n_prev60", "elapsed_prev_s", "qty_ratio_prev", "qty_ratio_max60")
+    n_fin8 = 0
     for i in range(len(pr)):
         ts = int(pr.ts[i])
-        # (1) ts 以後の約定を消す・ts より後の清算を消す
+        # (1) ts 以後の約定・ts より後の清算・ts より後の metrics/資金調達率/建玉の桶を消す
         tr_cut = tr.slice_time(0, ts)
-        keep = np.arange(len(pr)) <= i
-        pr_cut = _subset_prints(pr, keep)
+        pr_cut = _subset_prints(pr, np.arange(len(pr)) <= i)
         ctx_c = v2.same_side_context(pr_cut)
-        pre_c = v2.pre_state_arrays(tr_cut, pr_cut.ts)
         b_c = v2.same_side_bundles(pr_cut, 60)
+        sd_c = _cut_side(sd, ts)
+        m_c = v2.print_materials(pr_cut, np.array([i]), tr_cut, ctx_c, b_c, sd_c)
+        for k in mats:
+            _assert_same(m_c[k][0], mats[k][i])
+        n_fin8 += int(np.isfinite(mats[v2.MAT_COL[8]][i]))
         for k in past_ctx:
             np.testing.assert_equal(ctx_c[k][i], ctx[k][i])
+        pre_c = v2.pre_state_arrays(tr_cut, pr_cut.ts)
         for k in pre:
             np.testing.assert_equal(pre_c[k][i], pre[k][i])
         assert b_c["k_in_bundle"][i] == b60["k_in_bundle"][i]
         assert b_c["qty_so_far"][i] == b60["qty_so_far"][i]
-        s_full = v2.jev_state_raw(i, pr, ctx, pre, b60, tr)
-        s_cut = v2.jev_state_raw(i, pr_cut, ctx_c, pre_c, b_c, tr_cut)
-        assert s_full == s_cut
-        # 規則の判断も ts 以前だけで決まる
+        row = {k: mats[k][i] for k in mats}
+        row_c = {k: m_c[k][0] for k in m_c}
+        assert v2.jev_state_raw(i, pr, row, b60) == v2.jev_state_raw(i, pr_cut, row_c, b_c)
         assert v2.judge_rule_mat1(ctx_c["n_prev60"][i]) == v2.judge_rule_mat1(ctx["n_prev60"][i])
-        # (2) p₀(ts 以後の約定の価格)を書き換えても変わらない
+        # (2) ts 以後の約定の価格(p₀ を含む)を書き換えても変わらない
         tr_pert = v2.Trades(tr.times, np.where(tr.times >= ts, tr.prices + 500.0, tr.prices),
                             tr.qtys, tr.maker)
-        pre_p = v2.pre_state_arrays(tr_pert, pr.ts[i:i + 1])
-        for k in pre:
-            np.testing.assert_equal(pre_p[k][0], pre[k][i])
+        m_p = v2.print_materials(pr, np.array([i]), tr_pert, ctx, b60, sd)
+        for k in mats:
+            _assert_same(m_p[k][0], mats[k][i])
+    # 試験が空振りしていないこと: 材料 5・8・10 が実際に値を持つ行がある
+    assert n_fin8 > 0
+    assert np.isfinite(mats[v2.MAT_COL[5]]).any() and np.isfinite(mats[v2.MAT_COL[10]]).any()
+
+
+def test_materials_hand():
+    ks = np.arange(-100, 201)
+    tr = _trades(D0 + ks * 1000, 200.0 + ks)                  # 毎秒、価格 = 200 + 秒、全部 買い taker
+    pr = v2.Prints.from_rows([(D0, "SELL", 1, 1, 100.0), (D0 + 10_000, "SELL", 2, 2, 100.0),
+                              (D0 + 30_000, "SELL", 3, 3, 100.0)])
+    sd = v2.SideData(np.array([D0 - 3_600_000, D0, D0 + 25_000]), np.array([100.0, 110, 999]),
+                     np.array([1.0, 2, 3]), np.array([D0 - 28_800_000, D0 + 20_000]),
+                     np.array([1e-4, 2e-4]), None)
+    ctx = v2.same_side_context(pr)
+    m = v2.print_materials(pr, np.arange(3), tr, ctx, v2.same_side_bundles(pr, 60), sd)
+    C = v2.MAT_COL
+    assert m[C[1]].tolist() == [0, 1, 2]
+    assert m["mat1_elapsed_since_burst_s"].tolist() == [0, 10, 30]
+    assert math.isnan(m[C[2]][1]) and m[C[2]][2] == pytest.approx(0.5)        # 10 ÷ 20
+    assert m[C[3]][2] == pytest.approx(1.5) and m[C[12]][2] == pytest.approx(1.5)
+    # 材料 4: 連鎖の最初 = 0 秒のプリント、p₀ = 200。p_pre = 29 秒の 229。SELL なので −
+    assert math.isnan(m[C[4]][0])                    # 最初が自分 → p₀ は ts 以後 → 使わない
+    assert m[C[4]][2] == pytest.approx(-(229 - 200) / 200 * 1e4)
+    assert m["mat4_bounce_bp"][2] == pytest.approx(-(229 - 210) / 210 * 1e4)
+    assert m[C[14]][2] == 60                          # [−30 秒, 30 秒) の約定
+    assert m[C[11]][2] == pytest.approx(300 / ((229 - 170) / 229 * 1e4))
+    assert m[C[9]][2] == -1.0 and m[C[13]][2] == 0.0  # 偏り 5 秒 = 30 秒 = +1、SELL
+    assert m[C[10]][2] == pytest.approx((999 - 100) / 100 * 1e4)
+    assert m[C[10]][1] == pytest.approx((110 - 100) / 100 * 1e4)               # 25 秒の行はまだ無い
+    assert m["mat10_funding_rate"].tolist() == [1e-4, 1e-4, 2e-4]
+    assert m["mat10_taker_ls_ratio"].tolist() == [2.0, 2.0, 3.0]
+    assert m[C[6]].tolist() == ["UTC 00–06"] * 3
+    assert np.isnan(m[C[8]]).all()                    # 建玉の桶を渡していない
 
 
 # --------------------------------------------------------------------------- #
@@ -280,6 +363,20 @@ def test_control_matched_nearest_in_band_without_replacement():
     # 1 件目: 帯 (1,1) の候補 0,1,3 → 最も近い 0。2 件目: 0 は使用済み → 1 と 3 のうち近い 1。
     # 3 件目: 帯 (0,1) → 候補 2。4 件目: 帯 (1,0) → 候補無し
     assert pick.tolist() == [0, 1, 2, -1]
+
+
+def test_match_across_days_order_and_used():
+    cuts = np.array([0.0])
+    mk = lambda a15, a9: {"t": np.arange(len(a15)), "mat15": np.array(a15, float),  # noqa: E731
+                          "mat9": np.array(a9, float), "dir": np.ones(len(a15)),
+                          "used": np.zeros(len(a15), bool)}
+    cands = {0: mk([0.55], [0.5]), -1: mk([0.9], [0.9]), 1: mk([0.61], [0.6])}
+    off, pick = v2.match_across_days(np.array([0.5, 0.6, 0.7, -0.5]),
+                                     np.array([0.5, 0.6, 0.7, 0.5]), cands, cuts, cuts)
+    # 1 件目は同じ日。2 件目は同じ日が使用済み → −1 日を +1 日より先に探す。
+    # 3 件目は −1 日も使用済み → +1 日。4 件目は帯 (0,1) の候補がどの日にも無い
+    assert off.tolist() == [0, -1, 1, 99] and pick.tolist() == [0, 0, 0, -1]
+    assert cands[-1]["used"].tolist() == [True] and cands[1]["used"].tolist() == [True]
 
 
 def test_control_placebo_volume_tolerance_and_margin():
@@ -327,3 +424,86 @@ def test_cluster_se_matches_prior_tool():
     m, se, _naive, n, g = ex2.mean_se_cluster(vals, days)
     se2, g2 = v2.cluster_se(vals, days)
     assert se2 == pytest.approx(se) and g2 == g
+
+
+# --------------------------------------------------------------------------- #
+# 規則(3 択): 期間の分け方・帯の決め方・入らないの分岐
+# --------------------------------------------------------------------------- #
+def test_split_days_make_before_measure():
+    make, meas = v2.split_days(["2023-07-03", "2023-07-01", "2023-07-05", "2023-07-02",
+                                "2023-07-04"])
+    assert make == ["2023-07-01", "2023-07-02", "2023-07-03"]
+    assert meas == ["2023-07-04", "2023-07-05"]
+    assert max(make) < min(meas)
+
+
+def _calib_data():
+    """帯ごとに件数 1000、続く割合 0.2 / 0.5 / 0.52 / 0.8(基準率 0.505、2SE ≈ 0.03)。"""
+    probs, ys = [], []
+    for p, rate in ((0.31, 0.2), (0.51, 0.5), (0.53, 0.52), (0.71, 0.8)):
+        k = int(round(rate * 1000))
+        probs += [p] * 1000
+        ys += [1.0] * k + [0.0] * (1000 - k)
+    return np.array(probs), np.array(ys)
+
+
+def test_band_rule_l277_and_judge():
+    cal = v2.value_module().calibration_table(*_calib_data())
+    # 0.50〜0.52 と 0.52〜0.54 は基準率と 2SE で区別できず、基準率を跨ぐ位置(0.52 の帯)を含む
+    assert cal["帯"] == (0.5, 0.54)
+    band, cross = cal["帯"], cal["跨ぐ位置の帯"]
+    assert v2.judge_three_way(0.49, band, cross) == "止まる"
+    assert v2.judge_three_way(0.51, band, cross) == "わからない"
+    assert v2.judge_three_way(0.54, band, cross) == "続く"
+    assert v2.judge_three_way(float("nan"), band, cross) == "わからない"
+    # 区別できない帯が無いときは、基準率を跨ぐ帯の下端で側に寄せる
+    assert v2.judge_three_way(0.49, None, (0.5, 0.52)) == "止まる"
+    assert v2.judge_three_way(0.50, None, (0.5, 0.52)) == "続く"
+
+
+def test_three_way_unknown_means_no_entry():
+    pr = _prints([(D0, "SELL", 1), (D0 + 10_000, "SELL", 1)])
+    ctx = v2.same_side_context(pr)
+    b = _bundle(pr)
+    model = {v2.SCENE_FIRST: {"band": (0.4, 0.6), "cross": None},
+             v2.SCENE_CHAIN: {"band": (0.4, 0.6), "cross": None}}
+    tr = _ramp(0, 200)
+    jd = v2.judgments_for(v2.POLICY_3WAY, b["members"], ctx, np.array([0.5, 0.7]), model)
+    assert jd == ["わからない", "続く"]
+    res = v2.simulate_bundle(pr, b, jd, "A", 1, v2.make_price_fn(tr))
+    assert [p["行動"] for p in res["path"] if p["print_id"]] == ["何もしない", "新規_順張り"]
+    jd2 = v2.judgments_for(v2.POLICY_3WAY, b["members"], ctx, np.array([0.5, 0.45]), model)
+    res2 = v2.simulate_bundle(pr, b, jd2, "B", 1, v2.make_price_fn(tr))
+    assert not res2["entered"] and res2["pnl_bp"] == 0.0 and res2["n_entries"] == 0
+
+
+def _logit_df(seed=0):
+    import pandas as pd
+    rng = np.random.default_rng(seed)
+    days = np.repeat([f"2023-07-0{k}" for k in range(1, 7)], 80)
+    d = {"day": days, "cont_60": (rng.random(days.size) < 0.6).astype(float)}
+    for f in v2.LOGIT_FEATURES:
+        d[f] = rng.normal(size=days.size)
+    d[v2.MAT_COL[1]] = rng.integers(0, 3, days.size).astype(float)
+    return pd.DataFrame(d)
+
+
+def test_fit_three_way_reads_only_make_period():
+    df = _logit_df()
+    make, meas = v2.split_days(sorted(set(df["day"])))
+    m1 = v2.fit_three_way(df, make)
+    df2 = df.copy()
+    late = df2["day"].isin(meas)
+    for f in v2.LOGIT_FEATURES:
+        df2.loc[late, f] = 1e6                       # 後半の材料とラベルを壊す
+    df2.loc[late, "cont_60"] = 1.0 - df2.loc[late, "cont_60"]
+    m2 = v2.fit_three_way(df2, make)
+    for sc in (v2.SCENE_FIRST, v2.SCENE_CHAIN):
+        np.testing.assert_array_equal(m1[sc]["beta"], m2[sc]["beta"])
+        assert m1[sc]["band"] == m2[sc]["band"] and m1[sc]["n"] == m2[sc]["n"]
+        for f in v2.LOGIT_FEATURES:
+            np.testing.assert_array_equal(m1[sc]["ecdf"][f], m2[sc]["ecdf"][f])
+    p1 = v2.predict_three_way(m1, df[~late])
+    p2 = v2.predict_three_way(m2, df2[~late])
+    np.testing.assert_array_equal(p1, p2)
+    assert np.isfinite(p1).all()

@@ -31,7 +31,15 @@
 5. 直前の状態(m10・m60・成行の偏り)はプリントにも対照の時刻にも同じ関数
    `pre_state_arrays` を当て、`t − 1 ms` 以前の約定だけを使う(前の Q7 の格子は `t` ちょうどの
    約定を含めていた。プリントでは `t` ちょうどの約定は清算そのものでありうるので外した)。
-6. 値段の続きの 5 bp のラベルは使わない(A-12)。最大順行・最大逆行・山からの最大の戻りを出す。
+6. 値段の続きの 5 bp のラベルは使わない(A-12)。最大順行・最大逆行・山からの最大の戻り
+   (`giveback`)と `mfe − react` の両方を出す。
+7. 材料(第 2 稿): 前の同じ側のプリントは ts が厳密に小さいもの、材料 4 の基準の p₀ は ts − 1 ms
+   以前の約定のときだけ、材料 5 は `rx.profile_columns` で作り直す(`print_materials` の docstring)。
+8. 対照 (ii) は同じ日に無ければ ±3 日まで探す(`match_across_days`)。
+9. 規則(3 択)(L-569・L-277): 前半で確率(前の logistic の形、係数は作り直し)と「わからない」の帯を
+   作り、後半に当てる(`fit_three_way` / `judge_three_way`)。
+
+使い方・出力の列・既知の限り: `docs/RESEARCH/cards/c9_liquidation_cascade/README_TOOL_A.md`。
 
 ## 符号(O-7: 2 つを混ぜない)
 
@@ -103,6 +111,17 @@ SEED = 20261003
 
 REACT_SIGN = {"SELL": -1.0, "BUY": 1.0}
 
+#: 前の材料の列名(`o3c_signal_continue.MAT_COL` と同じ)。
+MAT_COL = {
+    1: "mat1_same_side_count_60s_and_elapsed", 2: "mat2_interval_ratio_last_two",
+    3: "mat3_notional_and_ratio_to_previous", 4: "mat4_move_since_cascade_start_and_bounce",
+    5: "mat5_distance_to_liquidation_node", 6: "mat6_time_of_day_band",
+    8: "mat8_open_interest_mass_ahead", 9: "mat9_taker_imbalance_5s",
+    10: "mat10_oi_slope_and_funding", 11: "mat11_notional_over_60s_range",
+    12: "mat12_notional_over_max_recent_print", 13: "mat13_taker_imbalance_trend",
+    14: "mat14_trade_count_60s", 15: "mat15_burst_ratio_10s_over_60s",
+}
+
 # 状態機械の判断の語(前の道具の語をそのまま使う)
 JUDGE_STOP, JUDGE_CONTINUE, JUDGE_UNKNOWN = "止まる", "続く", "わからない"
 
@@ -134,6 +153,21 @@ def policy_module():
 def oi_module():
     """`scripts/o3c_oi_distance.py`(約定の読み手)。"""
     return _load_script("o3c_oi_distance")
+
+
+def cont_module():
+    """`scripts/o3c_signal_continue.py`(材料 1〜15 の小道具。状態機械の道具が既に読んでいる)。"""
+    return policy_module().cont
+
+
+def ex5_module():
+    """`scripts/o3c_signal_explore5.py`(材料 5・8 の下請け: `build_oi_context`・`rx.profile_columns`)。"""
+    return cont_module().ex5
+
+
+def cascade_read_module():
+    """`docs/DATA/probes/20260920_o3c_cascade_read.py`(材料 8 の `oi_band_amounts`)。"""
+    return cont_module().cr
 
 
 # --------------------------------------------------------------------------- #
@@ -395,6 +429,8 @@ def same_side_context(pr: Prints) -> dict:
     out = {k: np.full(n, NAN) for k in ("n_prev60", "elapsed_prev_s", "qty_ratio_prev",
                                          "qty_ratio_max60")}
     out["gap_next_ms"] = np.full(n, np.inf)
+    out["prev1_idx"] = np.full(n, -1, dtype=np.int64)   # 直前の同じ側(ts が厳密に小さい)
+    out["prev2_idx"] = np.full(n, -1, dtype=np.int64)
     for s in ("SELL", "BUY"):
         idx = np.flatnonzero(pr.side == s)
         if idx.size == 0:
@@ -407,6 +443,10 @@ def same_side_context(pr: Prints) -> dict:
         for k, j in enumerate(idx.tolist()):
             p = first_same[k] - 1
             if p >= 0:
+                out["prev1_idx"][j] = idx[p]
+                p2 = int(np.searchsorted(t, t[p], side="left")) - 1
+                if p2 >= 0:
+                    out["prev2_idx"][j] = idx[p2]
                 out["elapsed_prev_s"][j] = (t[k] - t[p]) / 1000.0
                 out["qty_ratio_prev"][j] = q[k] / q[p] if q[p] > 0 else NAN
             if first_same[k] > lo[k]:
@@ -435,6 +475,7 @@ def same_side_bundles(pr: Prints, gap_s: int) -> dict:
     n_b = np.zeros(n, dtype=np.int64)
     q_sofar = np.zeros(n)
     pos = np.full(n, "", dtype=object)
+    start_idx = np.full(n, -1, dtype=np.int64)
     bundles: list[dict] = []
     for s in ("SELL", "BUY"):
         idx = np.flatnonzero(pr.side == s)
@@ -456,6 +497,7 @@ def same_side_bundles(pr: Prints, gap_s: int) -> dict:
                 k_in[j] = k
                 n_b[j] = c.n_events
                 q_sofar[j] = cum[k]
+                start_idx[j] = members[0]
                 pos[j] = ("単発" if c.n_events == 1 else "最初" if k == 0
                           else "最後" if k == c.n_events - 1 else "途中")
             bundles.append({"bundle_id": b, "side": s, "gap_s": gap_s,
@@ -464,12 +506,16 @@ def same_side_bundles(pr: Prints, gap_s: int) -> dict:
                             "members": members})
         assert o == idx.size
     return {"bundle_id": bid, "k_in_bundle": k_in, "n_in_bundle": n_b,
-            "qty_so_far": q_sofar, "pos_label": pos, "bundles": bundles}
+            "qty_so_far": q_sofar, "pos_label": pos, "start_idx": start_idx,
+            "bundles": bundles}
 
 
 # --------------------------------------------------------------------------- #
 # 起点からの値動き・最大順行・最大逆行・山からの戻り
 # --------------------------------------------------------------------------- #
+REACTION_KEYS: tuple[str, ...] = ("react", "mfe", "mae", "giveback", "mfe_minus_react")
+
+
 def reactions_from_anchor(tr: Trades, anchor_ms: np.ndarray, direction: np.ndarray,
                           horizons_s: Sequence[int] = HORIZONS_S) -> dict:
     """起点 t₀ = `anchor_ms` 以後の最初の約定、p₀ = その価格。h ごとに:
@@ -478,7 +524,9 @@ def reactions_from_anchor(tr: Trades, anchor_ms: np.ndarray, direction: np.ndarr
     - `mfe_h` / `mae_h`: (t₀, t₀+h] の約定の最大順行 / 最大逆行(bp、向き付き。mae は ≤ 0)
     - `giveback_h`: (t₀, t₀+h] の「それまでの山(p₀ を 0 とする)からの最大の下がり」(bp、≥ 0)
       = 最大順行の後の戻り(設計 §6 の 9)。
-    `react_h` が NaN(穴)の行は mfe/mae/giveback も NaN にする。
+    - `mfe_minus_react_h` = mfe_h − react_h(≥ 0)= 最大順行から h の時点までに戻した量
+      (リードの決定 第 2 稿の 3: `giveback_h` と両方出す)。
+    `react_h` が NaN(穴)の行は他の量も NaN にする。
     """
     anchor_ms = np.asarray(anchor_ms, dtype=np.int64)
     direction = np.asarray(direction, dtype=float)
@@ -490,7 +538,7 @@ def reactions_from_anchor(tr: Trades, anchor_ms: np.ndarray, direction: np.ndarr
     out = {"t0_ms": t0, "p0": p0, "p0_lag_ms": np.where(ok0, t0 - anchor_ms, -1)}
     hs = list(horizons_s)
     for h in hs:
-        for k in ("react", "mfe", "mae", "giveback"):
+        for k in REACTION_KEYS:
             out[f"{k}_{h}"] = np.full(n, NAN)
     if n == 0 or tr.times.size == 0:
         return out
@@ -514,6 +562,7 @@ def reactions_from_anchor(tr: Trades, anchor_ms: np.ndarray, direction: np.ndarr
             out[f"mfe_{h}"][r] = cmax[e]
             out[f"mae_{h}"][r] = cmin[e]
             out[f"giveback_{h}"][r] = dd[e]
+            out[f"mfe_minus_react_{h}"][r] = cmax[e] - out[f"react_{h}"][r]
     return out
 
 
@@ -580,8 +629,19 @@ JUDGED_POLICIES = ("規則_材料1", "完全な判断")
 BASELINE_POLICIES = {"全部順張り": "順張り", "全部逆張り": "逆張り"}
 
 
-def judgments_for(policy: str, members: np.ndarray, ctx: dict) -> list[str]:
+POLICY_3WAY = "規則_3択"
+
+
+def judgments_for(policy: str, members: np.ndarray, ctx: dict, prob: np.ndarray | None = None,
+                  model: dict | None = None) -> list[str]:
+    """`prob`(プリントの添字で引く「続く」の確率)と `model`(場面 → 帯)は `規則_3択` だけで使う。"""
     n = int(members.size)
+    if policy == POLICY_3WAY:
+        out = []
+        for j in members.tolist():
+            m = model[SCENE_CHAIN if ctx["n_prev60"][j] >= 1 else SCENE_FIRST]
+            out.append(judge_three_way(prob[j], m["band"], m["cross"]))
+        return out
     if policy == "完全な判断":
         return [judge_perfect(k, n) for k in range(n)]
     if policy == "規則_材料1":
@@ -603,6 +663,121 @@ def simulate_bundle(pr: Prints, bundle: dict, judgments: list[str] | None, polic
         return pol.simulate_baseline(prints, side_sign, baseline, delay_s, price_fn, end_ts)
     return pol.simulate_cascade(prints, judgments, side_sign, policy_type, delay_s,
                                 price_fn, end_ts)
+
+
+# --------------------------------------------------------------------------- #
+# 規則(3 択): 材料 → 「続く」の確率(前の logistic の形)→ L-277 の帯で 3 択
+# --------------------------------------------------------------------------- #
+#: 入力の材料(数の材料すべて。6 = 時刻帯はカテゴリなので入れない)。前の道具の材料の
+#: 組(cand_*)は前の段の派生物なので使わず、この道具の材料 1〜15 で作り直す(L-019)。
+LOGIT_FEATURES: tuple[str, ...] = tuple(MAT_COL[n] for n in (1, 2, 3, 4, 5, 8, 9, 10, 11, 12,
+                                                             13, 14, 15))
+#: 「続く」のラベル = 同じ側の次のプリントが 60 秒以内(前の label_60 と同じ)。
+LOGIT_LABEL = "cont_60"
+SCENE_FIRST, SCENE_CHAIN = "1件目", "連鎖の中"   # 前の道具の場面(材料 1 == 0 か)
+
+
+def logit_module():
+    """`scripts/o3c_signal_logit.py`(中央順位・ニュートン法)。"""
+    return policy_module().lg
+
+
+def value_module():
+    """`scripts/o3c_signal_value.py`(日でブロックした分割・L-277 の較正表)。"""
+    return _load_script("o3c_signal_value")
+
+
+def scene_of(mat1) -> np.ndarray:
+    v = np.asarray(mat1, dtype=float)
+    return np.where(np.nan_to_num(v, nan=0.0) >= 1.0, SCENE_CHAIN, SCENE_FIRST).astype(object)
+
+
+def split_days(days: Sequence[str]) -> tuple[list[str], list[str]]:
+    """日付順に前半(確率を作る + 帯を決める)と後半(測る)に分ける。前半 = 先頭 ceil(n/2) 日。
+    前半の日はすべて後半の日より前(試験で固定)。"""
+    ds = sorted(days)
+    k = (len(ds) + 1) // 2
+    return ds[:k], ds[k:]
+
+
+def fit_three_way(df, make_days: Sequence[str], features: Sequence[str] = LOGIT_FEATURES,
+                  label: str = LOGIT_LABEL) -> dict:
+    """前半(`make_days`)の行**だけ**で、場面ごとに:
+    1. 経験分布の中央順位(`lg.build_ecdf` / `apply_frozen_rank`)→ ニュートン法 L2 1e-3
+       (`lg.newton_logistic`)で係数(前の道具の形。係数は前の値を使わず今回のデータで作る)。
+    2. 日でブロックした分割(`value.day_block_folds`、分割数 = min(5, 日数))の out-of-fold 確率に、
+       L-277 の帯の規則(`value.calibration_table`、幅 0.02、基準率と 2 SE)を当てて帯を決める。
+    戻り値: 場面 → {beta, ecdf, band, cross, calib, n, base}。後半の行は一切読まない。"""
+    lg, val = logit_module(), value_module()
+    feats = list(features)
+    make = set(make_days)
+    d = df[df["day"].astype(str).isin(make)].reset_index(drop=True)
+    out = {}
+    for scene in (SCENE_FIRST, SCENE_CHAIN):
+        ds = d[scene_of(d[MAT_COL[1]]) == scene].reset_index(drop=True)
+        y_all = np.asarray(ds[label], dtype=float) if len(ds) else np.zeros(0)
+        ok = np.isfinite(y_all)
+        ds, y = ds[ok].reset_index(drop=True), y_all[ok]
+        if len(ds) == 0:
+            out[scene] = {"beta": None, "ecdf": None, "band": None, "cross": None,
+                          "calib": [], "n": 0, "base": NAN}
+            continue
+        ecdf = lg.build_ecdf(ds, feats)
+        X = lg.apply_frozen_rank(ecdf, feats, ds)
+        beta = lg.newton_logistic(X, y)
+        days_r = ds["day"].astype(str).to_numpy(object)
+        nf = max(1, min(lg.N_FOLDS, len(set(days_r.tolist()))))
+        folds = val.day_block_folds(days_r, n_folds=nf)
+        oof = np.full(len(ds), NAN)
+        for i, te in enumerate(folds):
+            tr_ = np.concatenate([folds[j] for j in range(len(folds)) if j != i]) \
+                if len(folds) > 1 else np.zeros(0, dtype=np.int64)
+            if te.size == 0:
+                continue
+            if tr_.size == 0:
+                oof[te] = float(y.mean())            # 分割できない(1 日だけ)ときは基準率
+                continue
+            oof[te] = lg.predict(X[te], lg.newton_logistic(X[tr_], y[tr_]))
+        cal = val.calibration_table(oof, y)
+        out[scene] = {"beta": beta, "ecdf": ecdf, "band": cal["帯"],
+                      "cross": cal.get("跨ぐ位置の帯"), "calib": cal["rows"], "n": int(len(ds)),
+                      "base": cal["基準率"], "n_folds": nf}
+    return out
+
+
+def predict_three_way(model: dict, df, features: Sequence[str] = LOGIT_FEATURES) -> np.ndarray:
+    """凍結した経験分布と係数で「続く」の確率(行ごと、場面ごとの模型)。"""
+    lg = logit_module()
+    feats = list(features)
+    prob = np.full(len(df), NAN)
+    sc = scene_of(df[MAT_COL[1]]) if len(df) else np.zeros(0, object)
+    for scene, m in model.items():
+        idx = np.flatnonzero(sc == scene)
+        if idx.size == 0 or m["beta"] is None:
+            continue
+        sub = df.iloc[idx].reset_index(drop=True)
+        prob[idx] = lg.predict(lg.apply_frozen_rank(m["ecdf"], feats, sub), m["beta"])
+    return prob
+
+
+def judge_three_way(prob, band, cross) -> str:
+    """帯 [lo, hi) の中 = わからない(入らない)、下 = 止まる、上 = 続く(L-277)。
+    区別できない帯が 1 つも無いとき(`band` が None)は、前の道具では全部「わからない」に
+    なっていたが、L-277 の「その外側は側に寄せる」に合わせ、基準率を跨ぐ帯の下端で 2 択にする。
+    確率が読めなければ「わからない」。"""
+    if prob is None or not math.isfinite(float(prob)):
+        return JUDGE_UNKNOWN
+    p = float(prob)
+    if band is None:
+        if cross is None:
+            return JUDGE_UNKNOWN
+        return JUDGE_CONTINUE if p >= float(cross[0]) else JUDGE_STOP
+    lo, hi = band
+    if p < lo:
+        return JUDGE_STOP
+    if p >= hi:
+        return JUDGE_CONTINUE
+    return JUDGE_UNKNOWN
 
 
 # --------------------------------------------------------------------------- #
@@ -646,15 +821,21 @@ def band_of(v: np.ndarray, cuts: np.ndarray) -> np.ndarray:
 
 def control_matched(target_15: np.ndarray, target_9: np.ndarray, cand_t: np.ndarray,
                     cand_15: np.ndarray, cand_9: np.ndarray, cuts15: np.ndarray,
-                    cuts9: np.ndarray) -> np.ndarray:
+                    cuts9: np.ndarray, used: np.ndarray | None = None,
+                    only: np.ndarray | None = None) -> np.ndarray:
     """対照 (ii): 目標ごとに、同じ帯(材料 15 と材料 9 の 10 分位)の候補から
     |Δ材料15| + |Δ材料9| が最小のものを置換なしで 1 つ選ぶ。取れなければ −1。
-    候補はあらかじめ「同じ日・前後 15 分に清算無し・値が有限」に絞って渡す。"""
+    候補はあらかじめ「その日・前後 15 分に清算無し・値が有限」に絞って渡す。
+    `used`(候補と同じ長さ)を渡すと、日をまたいで置換なしを保つ(その場で書き換える)。
+    `only`(目標と同じ長さの bool)を渡すと、True の目標だけを探す(前後の日で探し直す用)。"""
     tb15, tb9 = band_of(target_15, cuts15), band_of(target_9, cuts9)
     cb15, cb9 = band_of(cand_15, cuts15), band_of(cand_9, cuts9)
-    used = np.zeros(cand_t.size, dtype=bool)
+    if used is None:
+        used = np.zeros(cand_t.size, dtype=bool)
     out = np.full(np.asarray(target_15).size, -1, dtype=np.int64)
     for r in range(out.size):
+        if only is not None and not bool(only[r]):
+            continue
         if tb15[r] < 0 or tb9[r] < 0:
             continue
         idx = np.flatnonzero(~used & (cb15 == tb15[r]) & (cb9 == tb9[r]))
@@ -775,40 +956,223 @@ def tertile_cuts(v: np.ndarray) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------- #
+# 材料 1〜15(7 は無し)。前の `o3c_signal_continue.compute_print_row` の定義に従う
+# --------------------------------------------------------------------------- #
+MAT_EXTRA = ("mat1_elapsed_since_burst_s", "mat4_bounce_bp", "mat3_notional_raw",
+             "mat5_bin_pct", "mat8_amt_5bp", "mat8_amt_20bp", "mat8_covered",
+             "mat10_taker_ls_ratio", "mat10_funding_rate", "p_pre")
+PROFILE_WINDOW_MS = 8 * 3_600_000      # 材料 5 の窓 W = 8 時間(前の explore5 の W_HOURS)
+PROFILE_BIN_PCT = 0.1                  # 材料 5 の価格ビン(前の BIN_PCT)
+OI_SLOPE_WINDOW_MS = 3_600_000         # 材料 10(前と同じ)
+RANGE_WINDOW_MS = 60_000               # 材料 11(前と同じ)
+TRADE_COUNT_WINDOW_MS = 60_000         # 材料 14(前と同じ)
+IMB30_WINDOW_MS = 30_000               # 材料 13(前と同じ)
+
+
+@dataclass
+class SideData:
+    """約定以外の材料の入力(すべて時刻昇順)。`ts` より後の行を渡しても使わない。"""
+
+    t_oi: np.ndarray = field(default_factory=lambda: np.zeros(0, np.int64))
+    oi: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    tls: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    t_fund: np.ndarray = field(default_factory=lambda: np.zeros(0, np.int64))
+    r_fund: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    oi_buckets: dict | None = None
+
+
+def load_side_data(data_root: Path, day: str, store: "TradeStore", metrics_cache: dict,
+                   bucket_cache: dict, funding: tuple | None) -> SideData:
+    """`day` のプリントの材料 8・10 の入力を前の道具で読む(metrics は [前日, 当日]、
+    建玉の桶は 8 時間の窓の日、資金調達率は全期間を 1 回)。約定は `store` の持ち回しを渡す。"""
+    cont, ex5 = cont_module(), ex5_module()
+    t_oi, oi, tls = cont.load_metrics_window(Path(data_root), day, metrics_cache)
+    need = ex5.base.days_needed(day, ex5.W_HOURS)
+    trade_cache = {}
+    for d in need:
+        v = store.day(d)
+        trade_cache[d] = None if v is None else (v.times, v.prices, v.qtys, v.maker)
+    buckets, _cov, _miss = ex5.build_oi_context(Path(data_root), Path(data_root), day,
+                                                trade_cache, {}, bucket_cache)
+    tf, rf = funding if funding is not None else (np.zeros(0, np.int64), np.zeros(0))
+    return SideData(t_oi, oi, tls, tf, rf, buckets)
+
+
+def print_materials(pr: Prints, sel: np.ndarray, tr: Trades, ctx: dict, bund60: dict,
+                    sd: SideData) -> dict:
+    """`sel` のプリントの材料(配列、`sel` の順)。**ts より前のプリント、ts − 1 ms 以前の約定、
+    ts 以前の metrics・資金調達率・建玉の桶だけ**を使う(試験で固定)。
+
+    前の定義(`compute_print_row`)から変えた点:
+    - 前の同じ側のプリントは「ts が厳密に小さい」もの(前は並び順で、同じ ms の先の行も数えた)。
+    - 材料 4 の基準(連鎖の最初 / 直前のプリントの p₀)は、その p₀ の約定が ts − 1 ms 以前の
+      ときだけ使う(前は無条件。連鎖の最初が自分自身のとき p₀ は ts 以後で、先読みになっていた)。
+    - 材料 5 は前の段 5 の出力を読まず、`rx.profile_columns` で作り直す(p_liq = そのプリントの
+      `average_price`。前の探索 5 と同じ与え方。窓は [ts − 8 時間, ts))。
+    - 想定元本 notional = 数量 × average_price(前と同じ。逆数契約なので USD ではない)。
+    """
+    cont = cont_module()
+    sel = np.asarray(sel, dtype=np.int64)
+    n = sel.size
+    ts = pr.ts[sel]
+    side = pr.side[sel]
+    sg = pr.sign[sel]
+    notional_all = pr.qty * pr.price
+    out = {c: np.full(n, NAN) for c in MAT_COL.values()}
+    out[MAT_COL[6]] = np.full(n, "", dtype=object)
+    for c in MAT_EXTRA:
+        out[c] = np.full(n, NAN)
+    if n == 0:
+        return out
+    ip, okp = idx_at_or_before(tr.times, ts - 1)
+    p_pre = np.where(okp, tr.prices[ip] if tr.times.size else NAN, NAN)
+    out["p_pre"] = p_pre
+    pre = pre_state_arrays(tr, ts)
+    imb5 = pre["imb5"]
+    imb30 = imbalance(tr, ts, IMB30_WINDOW_MS)
+    # p₀ を基準に使ってよいかの判定用(プリント j の p₀ の約定時刻)
+    def p0_if_past(j: int, t_now: int) -> float:
+        if j < 0:
+            return NAN
+        i0, ok0 = idx_at_or_after(tr.times, np.array([pr.ts[j]]))
+        if not bool(ok0[0]) or int(tr.times[i0[0]]) > t_now - 1:
+            return NAN
+        return float(tr.prices[i0[0]])
+
+    cnt_hi = np.searchsorted(tr.times, ts, side="left")
+    cnt_lo = np.searchsorted(tr.times, ts - TRADE_COUNT_WINDOW_MS, side="left")
+    for r, i in enumerate(sel.tolist()):
+        t_i = int(ts[r])
+        s_ = float(sg[r])
+        nt = float(notional_all[i])
+        out["mat3_notional_raw"][r] = nt
+        out[MAT_COL[1]][r] = ctx["n_prev60"][i]
+        st = int(bund60["start_idx"][i])
+        out["mat1_elapsed_since_burst_s"][r] = (t_i - int(pr.ts[st])) / 1000.0 if st >= 0 else NAN
+        p1, p2 = int(ctx["prev1_idx"][i]), int(ctx["prev2_idx"][i])
+        if p1 >= 0 and p2 >= 0:
+            ga, gb = t_i - int(pr.ts[p1]), int(pr.ts[p1]) - int(pr.ts[p2])
+            out[MAT_COL[2]][r] = gb / ga if ga > 0 else NAN
+        if p1 >= 0 and notional_all[p1] > 0:
+            out[MAT_COL[3]][r] = nt / float(notional_all[p1])
+        if bool(okp[r]):
+            b0 = p0_if_past(st, t_i)
+            if b0 == b0 and b0 > 0:
+                out[MAT_COL[4]][r] = s_ * (p_pre[r] - b0) / b0 * 1e4
+            b1 = p0_if_past(p1, t_i)
+            if b1 == b1 and b1 > 0:
+                out["mat4_bounce_bp"][r] = s_ * (p_pre[r] - b1) / b1 * 1e4
+        # 材料 12: [ts − 60 秒, ts) の同じ側の想定元本の最大
+        same = np.flatnonzero((pr.side == side[r]) & (pr.ts >= t_i - SAME_SIDE_WINDOW_MS)
+                              & (pr.ts < t_i))
+        if same.size:
+            mx = float(np.max(notional_all[same]))
+            out[MAT_COL[12]][r] = nt / mx if mx > 0 else NAN
+        out[MAT_COL[6]][r] = cont.hour_band_of(t_i)
+        out[MAT_COL[10]][r] = cont.oi_slope_1h(sd.t_oi, sd.oi, t_i, OI_SLOPE_WINDOW_MS)
+        out["mat10_taker_ls_ratio"][r] = cont.latest_at_or_before(sd.t_oi, sd.tls, t_i)
+        out["mat10_funding_rate"][r] = cont.latest_at_or_before(sd.t_fund, sd.r_fund, t_i)
+        if bool(okp[r]):
+            rng60 = cont.range_bp_window(tr.times, tr.prices, t_i, float(p_pre[r]),
+                                         RANGE_WINDOW_MS)
+            out[MAT_COL[11]][r] = nt / rng60 if (rng60 == rng60 and rng60 > 0) else NAN
+            if sd.oi_buckets is not None:
+                o8 = cascade_read_module().oi_band_amounts(sd.oi_buckets, t_i,
+                                                           float(p_pre[r]), str(side[r]))
+                cov = bool(o8.get("covered", False))
+                out["mat8_covered"][r] = float(cov)
+                if cov:
+                    for key, col in (("amt_10bp", MAT_COL[8]), ("amt_5bp", "mat8_amt_5bp"),
+                                     ("amt_20bp", "mat8_amt_20bp")):
+                        v = o8.get(key)
+                        out[col][r] = NAN if v is None else float(v)
+    out[MAT_COL[9]] = np.where(np.isfinite(imb5), sg * imb5, NAN)
+    out[MAT_COL[13]] = np.where(np.isfinite(imb5) & np.isfinite(imb30), sg * (imb5 - imb30), NAN)
+    out[MAT_COL[14]] = (cnt_hi - cnt_lo).astype(float)
+    out[MAT_COL[15]] = pre["mat15"]
+    # 材料 5(前の `rx.profile_columns`、窓 [ts − 8 時間, ts))
+    ex5 = ex5_module()
+    order = np.argsort(ts, kind="stable")
+    sub = tr.slice_time(int(ts.min()) - PROFILE_WINDOW_MS, int(ts.max()))
+    if sub.times.size:
+        events = [{"profile_ts_ms": int(ts[k]), "p_liq": float(pr.price[sel[k]])}
+                  for k in order.tolist()]
+        cols, _note = ex5.rx.profile_columns(events, sub.times, sub.prices, sub.qtys,
+                                             PROFILE_WINDOW_MS,
+                                             float(ex5.base.log_step(PROFILE_BIN_PCT)))
+        for pos_, k in enumerate(order.tolist()):
+            out[MAT_COL[5]][k] = cols[pos_].get("dist_node_bp", NAN)
+            out["mat5_bin_pct"][k] = cols[pos_].get("bin_pct", NAN)
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# 対照 (ii) の候補(日ごと)
+# --------------------------------------------------------------------------- #
+def grid_candidates(day: str, tr: Trades, liq_ts_sorted: np.ndarray) -> dict:
+    """`day` の 10 秒刻みで、前後 15 分に清算が無く、材料 15・9(向き = 直前 10 秒の符号)が
+    有限の時刻。前の Q7 の `day_grid_materials` と同じ量を `pre_state_arrays` で作る。"""
+    d0 = day_start_ms(day)
+    grid = d0 + np.arange(MS_DAY // CTRL_GRID_MS, dtype=np.int64) * CTRL_GRID_MS
+    pre = pre_state_arrays(tr, grid)
+    ok = no_liq_mask(grid, liq_ts_sorted, CTRL2_NO_LIQ_MS) & np.isfinite(pre["mat15"]) & \
+        np.isfinite(pre["mat9"])
+    idx = np.flatnonzero(ok)
+    return {"t": grid[idx], "mat15": pre["mat15"][idx], "mat9": pre["mat9"][idx],
+            "dir": pre["dir10"][idx], "used": np.zeros(idx.size, dtype=bool)}
+
+
+#: 対照 (ii) で同じ日に取れないときに探す日のずれの順(リードの決定 第 2 稿の 2: ±3 日まで)
+CTRL2_DAY_OFFSETS: tuple[int, ...] = (0, -1, 1, -2, 2, -3, 3)
+
+
+def match_across_days(t15: np.ndarray, t9: np.ndarray, cands_by_offset: dict,
+                      cuts15: np.ndarray, cuts9: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """目標ごとに、ずれ 0 → −1 → +1 → … → +3 日の順で候補を探す。戻り値 = (ずれ, 候補の添字)。
+    取れなければ (ずれ 99, −1)。`cands_by_offset[ずれ]` = `grid_candidates` の戻り値(無い日は無し)。"""
+    n = np.asarray(t15).size
+    off = np.full(n, 99, dtype=np.int64)
+    pick = np.full(n, -1, dtype=np.int64)
+    for o in CTRL2_DAY_OFFSETS:
+        c = cands_by_offset.get(o)
+        todo = pick < 0
+        if c is None or not todo.any() or c["t"].size == 0:
+            continue
+        got = control_matched(t15, t9, c["t"], c["mat15"], c["mat9"], cuts15, cuts9,
+                              used=c["used"], only=todo)
+        new = todo & (got >= 0)
+        pick[new] = got[new]
+        off[new] = o
+    return off, pick
+
+
+# --------------------------------------------------------------------------- #
 # Jev に渡す状態(呼ばない。入力の作り方まで)
 # --------------------------------------------------------------------------- #
-def jev_state_raw(i: int, pr: Prints, ctx: dict, pre: dict, bund60: dict, tr: Trades) -> dict:
-    """プリント `i` の時点の状態(生の数)。**ts より前のプリントと ts − 1 ms 以前の約定だけ**。
-    前の `jev_state_for_print`(V3 = 価格の道筋なし)の形に、束のここまで(g = 60)を足した。"""
+def jev_state_raw(i: int, pr: Prints, mats_row: dict, bund60: dict) -> dict:
+    """プリント `i` の時点の状態(生の数)。**ts より前のプリントと、ts 以前だけで作った材料**。
+    前の `jev_state_for_print`(V3 = 価格の道筋なし)と同じ形(side・直前 60 秒のプリント・
+    材料)に、束のここまで(g = 60)を足した。`mats_row` = `print_materials` の 1 行。"""
     ts = int(pr.ts[i])
-    s = str(pr.side[i])
     lo = int(np.searchsorted(pr.ts, ts - SAME_SIDE_WINDOW_MS, side="left"))
     hi = int(np.searchsorted(pr.ts, ts, side="left"))
     prev = [{"t_rel_s": round((int(pr.ts[j]) - ts) / 1000.0, 3),
-             "qty_contracts": float(pr.qty[j]), "side": str(pr.side[j])}
-            for j in range(lo, hi)]
+             "notional": round(float(pr.qty[j] * pr.price[j]), 2),
+             "side": str(pr.side[j])} for j in range(lo, hi)]
 
     def f(x):
+        if isinstance(x, str):
+            return x or None
         x = float(x)
-        return None if not math.isfinite(x) else round(x, 6)
+        return None if not math.isfinite(x) else round(x, 8)
 
-    return {
-        "side": s,
-        "qty_contracts": float(pr.qty[i]),
-        "prints_last_60s": prev,
-        "materials": {
-            "same_side_count_60s": f(ctx["n_prev60"][i]),
-            "elapsed_since_prev_same_side_s": f(ctx["elapsed_prev_s"][i]),
-            "qty_ratio_to_previous": f(ctx["qty_ratio_prev"][i]),
-            "qty_ratio_to_max_recent_60s": f(ctx["qty_ratio_max60"][i]),
-            "move_10s_bp_signed": f(REACT_SIGN[s] * pre["raw_m10"][i]),
-            "move_60s_bp_signed": f(REACT_SIGN[s] * pre["raw_m60"][i]),
-            "burst_ratio_10s_over_60s": f(pre["mat15"][i]),
-            "taker_imbalance_5s": f(pre["imb5"][i]),
+    mats = {name.split("_", 1)[1]: f(mats_row[name]) for name in MAT_COL.values()}
+    for k in ("mat1_elapsed_since_burst_s", "mat4_bounce_bp", "mat8_amt_5bp",
+              "mat8_amt_20bp", "mat10_taker_ls_ratio", "mat10_funding_rate"):
+        mats[k.split("_", 1)[1]] = f(mats_row[k])
+    return {"side": str(pr.side[i]), "prints_last_60s": prev, "materials": mats,
             "cascade_so_far_count_g60": int(bund60["k_in_bundle"][i]) + 1,
-            "cascade_so_far_qty_g60": f(bund60["qty_so_far"][i]),
-        },
-    }
+            "cascade_so_far_qty_g60": f(bund60["qty_so_far"][i])}
 
 
 def write_jsonl_gz(path: Path, rows: Sequence[dict]) -> None:
