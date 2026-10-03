@@ -115,6 +115,18 @@ def table() -> int:
                 L.append(f"| 予想との一致(`toggle_predict.json`、2019〜2022) | | 走らせ {len(rr):,} 本・予想 {len(p):,} 本・"
                          f"一致しない鍵 {bad} | | | | | | | | |")
         L.append("")
+    # どの切り替えで段階 G に近づくか: 差(走らせ − 段階 G)と、片側だけの本数(この走らせだけ + 段階 G だけ)
+    L += ["## 切り替えごとの、段階 G との差と片側だけの本数", "",
+          "升 = 損益の差(この走らせ − 段階 G、bp)/ 片側だけの本数(この走らせだけ + 段階 G だけ)。「—」= 走らせの出力が無い。", "",
+          "| 足 | 年 | " + " | ".join(d for _s, _c, d in VARIANTS) + " |", "|---|---|" + "---|" * len(VARIANTS)]
+    for f in mm.FEET:
+        for y in mm.YEARS:
+            cs = []
+            for suffix, _c, _d in VARIANTS:
+                m = res.get(f"{f}{suffix}|{y}")
+                cs.append("—" if m is None else f"{m['diff_bp']:+,.2f} / {m['r_only_n'] + m['g_only_n']}")
+            L.append(f"| {f} 分 | {y} | " + " | ".join(cs) + " |")
+    L.append("")
     with open(os.path.join(OUT, "CAUSE_TABLES2.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")
     with open(os.path.join(OUT, "toggle_cmp.json"), "w", encoding="utf-8") as fh:
