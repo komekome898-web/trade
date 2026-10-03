@@ -80,3 +80,6 @@ for v in binance_cm bitmex bybit okx; do ls paper_logs/liquidations | grep "^$v"
 sed -n 16p docs/NEGATIVE_FACTS.md ; head -30 backtest_data/bitmex_insurance_20260912/README.md
 ls -la backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/ ; python3 -c "…candles_1m_index.json…"
 ```
+
+## 訂正(2026-10-03、REDESIGN_2026-10-03.md の作業で分かった事実)
+上の表の「bitFlyer の秒の値段」の行の「封印の外の 2023 …(手元に無い)」は誤り。`data/tardis/bitflyer_FX_BTC_JPY_trades/` に、封印の前の 6 日(2023-07-01・08-01・09-01・10-01・11-01・12-01)の約定がある【事実: ls の出力】。同じ置き場には 2024-01-01 以降の毎月 1 日もあり、それは封印の後(開封の手続きの後に読む)。
