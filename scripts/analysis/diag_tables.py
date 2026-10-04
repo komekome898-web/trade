@@ -234,7 +234,24 @@ def contains_zero(r: dict) -> str:
 
 # ---------------------------------------------------------------- D0〜D8
 
-def d0(run: dict) -> dict:
+def signal_delay(run: dict, valid_min: float | None) -> dict | None:
+    """合図が分かった時刻 → 建ての時刻(entry_t = 約定した足の終わり)の分。valid_min(合図の有効期間、分)を渡すと、
+    それを越えて建った取引の数・損益の和を分ける(L-659: 合図の意味が切れた後の約定が混ざっていないか)。"""
+    ts = [t for t in (run["trades"] or []) if t.get("signal_t")]
+    if not ts:
+        return None
+    d = np.array([(t["entry_ns"] - _iso_ns(t["signal_t"])) / 6e10 for t in ts])
+    out = {"trades": len(ts), "q": {str(q): float(np.percentile(d, q)) for q in (25, 50, 75, 90, 99)},
+           "max": float(d.max()), "valid_min": valid_min}
+    if valid_min is not None:
+        pn = np.array([t["pnl_bp"] for t in ts])
+        late = d > valid_min
+        out["within"] = {"trades": int((~late).sum()), "sum": float(pn[~late].sum())}
+        out["late"] = {"trades": int(late.sum()), "sum": float(pn[late].sum())}
+    return out
+
+
+def d0(run: dict, valid_min: float | None = None) -> dict:
     s = run["summary"] or {}
     have = set(run["fields"])
     steps = {"D1 時間": True, "D3 日の集まり": True,
@@ -244,7 +261,8 @@ def d0(run: dict) -> dict:
              "D8 決まらない足": "undecided" in have}
     return {"name": run["name"], "kind": run["kind"], "period": s.get("period"), "params": s.get("params"),
             "fields": run["fields"], "steps": steps,
-            "trades": len(run["trades"]) if run["trades"] is not None else None}
+            "trades": len(run["trades"]) if run["trades"] is not None else None,
+            "signal_delay": signal_delay(run, valid_min)}
 
 
 def d1(daily: dict[str, float]) -> dict:
@@ -404,7 +422,17 @@ def render(res: dict) -> str:
     L += ["## D0 入力", "", f"- 種類: {z['kind']} / 期間: {z['period']} / 取引: {z['trades']}",
           f"- 引数: `{json.dumps(z['params'], ensure_ascii=False) if z['params'] else '—'}`",
           f"- 列: {', '.join(z['fields']) if z['fields'] else '(daily.csv: day, pnl_bp, n)'}",
-          "- 出せる手順: " + "、".join(f"{k} {'○' if v else '✕(列が無い)'}" for k, v in z["steps"].items()), ""]
+          "- 出せる手順: " + "、".join(f"{k} {'○' if v else '✕(列が無い)'}" for k, v in z["steps"].items())]
+    sd = z.get("signal_delay")
+    if sd:
+        L.append("- 合図が分かった時刻 → 建ての時刻(分。建ての時刻は約定した 1 分足の終わり)の 25・50・75・90・99% 点: "
+                 + "・".join(_f(v) for v in sd["q"].values()) + f"、最大 {_f(sd['max'])}(取引 {sd['trades']})")
+        if sd["valid_min"] is None:
+            L.append("- **合図の有効期間が決まっていない**(`--valid-min` で渡す。スキル P・D0)。有効期間を越えて建った取引は、合図の評価には混ざりもの")
+        else:
+            L.append(f"- 合図の有効期間 {_f(sd['valid_min'])} 分: 以内に建った {sd['within']['trades']} 本・和 {_f(sd['within']['sum'])}、"
+                     f"**越えて建った {sd['late']['trades']} 本・和 {_f(sd['late']['sum'])}**(結果で決まる群。期限を付けた形の損益はここから言えない)")
+    L.append("")
     d1r = res["d1"]
     L += ["## D1 時間(1 日あたり、bp/日)", "", "年ごと(記述。区切りの判断には使わない):", "",
           "| 期間 | 日数 | 1 日あたり [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|"]
@@ -478,10 +506,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--vs", default=None)
     ap.add_argument("--bad", default=None)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--valid-min", type=float, default=None, help="合図の有効期間(分)。設計の前に決めた値を渡す")
     a = ap.parse_args(argv)
     run = load_run(a.run)
     daily = daily_series(run)
-    res = {"d0": d0(run), "d1": d1(daily), "d3": d3(run, daily), "d6": d6(run, daily)}
+    res = {"d0": d0(run, a.valid_min), "d1": d1(daily), "d3": d3(run, daily), "d6": d6(run, daily)}
     if a.vs:
         vs = load_run(a.vs)
         res["d7"], res["vs_name"] = d7(run, vs), vs["name"]
