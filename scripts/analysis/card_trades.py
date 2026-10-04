@@ -63,7 +63,8 @@ def build(measure: str) -> dict:
     held = e != 0
     wkend = ((day_ns + 3) % 7) >= 5  # 日本時間の曜日(1970-01-01 は木曜 = 3、月 = 0)。土日
     minute_rate = {}
-    for lbl, msk in (("held", held), ("nh_weekday", ~held & ~wkend), ("nh_weekend", ~held & wkend)):
+    for lbl, msk in (("held", held), ("nh_weekday", ~held & ~wkend), ("nh_weekend", ~held & wkend),
+                     ("held_buy", e > 0), ("held_sell", e < 0)):
         ss = np.bincount(inv, weights=np.where(msk, r, 0.0), minlength=len(uniq))
         nn = np.bincount(inv, weights=msk.astype(float), minlength=len(uniq))
         minute_rate[lbl] = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): (float(a), int(c))
@@ -171,7 +172,8 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
     cc = b["control_calc"]
     L += ["## 買いだけの対照: 同じ分に買いだけで持った場合(向きの情報を抜いたもの)", "",
           "買いだけの対照 = カードが持ち高を持っていた同じ 1 分に、同じ大きさで買いだけで持った損益(|e_t| × 値動き)。カード − 買いだけの対照"
-          " = 売りの決定の損益の 2 倍。差が 0 と区別できなければ、カードの稼ぎはその時間帯の値動きの偏り(上げ下げの片寄り)と区別がつかない。1 日あたり bp。", "",
+          " = 売りの決定の損益の 2 倍。向きの情報の有無はこの差では決まらない(その時間帯に上げの偏りがあれば、情報が無くても負になる)。"
+          "向きの情報は下の「向きの情報の検め」で見る。1 日あたり bp。", "",
           "| 区分 | 日数 | カード | 買いだけの対照 | カード − 買いだけの対照 |", "|---|---|---|---|---|"]
     for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
         L.append(f"| {lbl} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
@@ -189,6 +191,20 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
             cells.append("分 0" if not g["trades"] else f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
         L.append(f"| {lbl} | {cells[0]} | {cells[1]} | {cells[2]} | {rate_diff(ds, b['minute_rate'])} |")
     L.append("")
+    # 向きの情報の検め
+    L += ["## 向きの情報の検め: 買いの合図の分 − 売りの合図の分(1 分あたりの値動き、bp/分)", "",
+          "買いの合図の分 = 持ち高が正だった 1 分、売りの合図の分 = 持ち高が負だった 1 分。どちらも値段そのものの動き(向きを掛けない)。"
+          "差が正 = 値段が合図の向きに動いた(向きの情報がある)。合図に情報が無ければ、両方とも同じ時間帯の上げ下げの偏りだけを含むので差は 0。"
+          "区間は日の塊で日を選び直して作り直したもの。", "",
+          "| 区分 | 買いの合図の分 | 売りの合図の分 | 差(買い − 売り) |", "|---|---|---|---|"]
+    for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
+        cells = []
+        for k in ("held_buy", "held_sell"):
+            mr = b["minute_rate"][k]
+            g = group_ratio_ci(ds, {d: mr.get(d, (0.0, 0))[0] for d in ds}, {d: mr.get(d, (0.0, 0))[1] for d in ds})
+            cells.append("分 0" if not g["trades"] else f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
+        L.append(f"| {lbl} | {cells[0]} | {cells[1]} | {rate_diff(ds, b['minute_rate'], 'held_buy', 'held_sell')} |")
+    L.append("")
     # 曜日
     wd = "月火水木金土日"
     L += ["## 曜日ごと(合図の時刻の日本時間の曜日。1 日あたり bp)【建ての前に決まる群】", "",
@@ -199,14 +215,15 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
         ds = [d for d in days if _date.fromisoformat(d).weekday() == k]
         L.append(f"| {wd[k]} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
                  f"{ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds]))} |")
-    L += ["", "曜日 × 前半・後半(カード − 買いだけの対照 / 買いだけの対照、1 日あたり bp):", "",
-          "| 曜日 | 前半 カード − 買いだけの対照 | 後半 カード − 買いだけの対照 | 前半 買いだけ | 後半 買いだけ |", "|---|---|---|---|---|"]
+    L += ["", "曜日 × 前半・後半(カード / カード − 買いだけの対照 / 買いだけの対照、1 日あたり bp):", "",
+          "| 曜日 | 前半 カード | 後半 カード | 前半 カード − 買いだけの対照 | 後半 カード − 買いだけの対照 | 前半 買いだけ | 後半 買いだけ |", "|---|---|---|---|---|---|---|"]
     for k in range(7):
         c = []
         for part in (days[:h], days[h:]):
             ds = [d for d in part if _date.fromisoformat(d).weekday() == k]
-            c.append((ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds])), ci(mean_ci([cc.get(d, 0.0) for d in ds]))))
-        L.append(f"| {wd[k]} | {c[0][0]} | {c[1][0]} | {c[0][1]} | {c[1][1]} |")
+            c.append((ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds])), ci(mean_ci([cc.get(d, 0.0) for d in ds])),
+                      ci(mean_ci([daily[d] for d in ds]))))
+        L.append(f"| {wd[k]} | {c[0][2]} | {c[1][2]} | {c[0][0]} | {c[1][0]} | {c[0][1]} | {c[1][1]} |")
     L.append("")
     # 勝ち負けの分解
     L += ["## 勝ち負けの分解(全期間・前半・後半・年ごと)", "",
