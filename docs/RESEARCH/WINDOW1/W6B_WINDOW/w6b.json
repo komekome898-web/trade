@@ -1,0 +1,724 @@
+{
+ "bar_anomalies": {
+  "no_trade": 74366
+ },
+ "bar_files": {
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56",
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15",
+  "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2024.csv.gz": "f05b1e8b804995fb91cf115fa15d177caf5319bda707eae2fdb1b4f7d207b5d9"
+ },
+ "bars_loaded": 1112194,
+ "bars_range": [
+  "2022-07-01T00:00:00Z",
+  "2024-10-02T00:00:00Z"
+ ],
+ "days": [
+  "2024-01-01",
+  "2024-02-01",
+  "2024-03-01",
+  "2024-04-01",
+  "2024-05-01",
+  "2024-06-01",
+  "2024-07-01",
+  "2024-08-01",
+  "2024-09-01",
+  "2024-10-01"
+ ],
+ "gate": {
+  "bad": {
+   "2024-01-01": true,
+   "2024-02-01": true,
+   "2024-03-01": true,
+   "2024-04-01": true,
+   "2024-05-01": true,
+   "2024-06-01": true,
+   "2024-07-01": true,
+   "2024-08-01": true,
+   "2024-09-01": true,
+   "2024-10-01": true
+  },
+  "good": {
+   "2024-01-01": true,
+   "2024-02-01": true,
+   "2024-03-01": true,
+   "2024-04-01": true,
+   "2024-05-01": true,
+   "2024-06-01": true,
+   "2024-07-01": true,
+   "2024-08-01": true,
+   "2024-09-01": true,
+   "2024-10-01": true
+  }
+ },
+ "mismatch": {
+  "by_day": {
+   "2024-01-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1014,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-02-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1420,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-03-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1244,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-04-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1414,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-05-01": {
+    "any_diff": 2,
+    "bars_only": 0,
+    "both": 1427,
+    "hi_diff": 0,
+    "lo_diff": 2,
+    "trades_only": 0
+   },
+   "2024-06-01": {
+    "any_diff": 7,
+    "bars_only": 0,
+    "both": 1275,
+    "hi_diff": 4,
+    "lo_diff": 3,
+    "trades_only": 0
+   },
+   "2024-07-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1423,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-08-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1424,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-09-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1405,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   },
+   "2024-10-01": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 1424,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   }
+  },
+  "subtotals": {
+   "after": {
+    "any_diff": 9,
+    "bars_only": 0,
+    "both": 9792,
+    "hi_diff": 4,
+    "lo_diff": 5,
+    "trades_only": 0
+   },
+   "before": {
+    "any_diff": 0,
+    "bars_only": 0,
+    "both": 3678,
+    "hi_diff": 0,
+    "lo_diff": 0,
+    "trades_only": 0
+   }
+  },
+  "total": {
+   "any_diff": 9,
+   "bars_only": 0,
+   "both": 13470,
+   "hi_diff": 4,
+   "lo_diff": 5,
+   "trades_only": 0
+  }
+ },
+ "sides": {
+  "bad": {
+   "by_day": {
+    "2024-01-01": {
+     "compared": 17,
+     "match": 16,
+     "ratio": 0.9411764705882353,
+     "same": 0,
+     "truth_decided": 17,
+     "truth_down": 10,
+     "truth_up": 7,
+     "undecided": 19,
+     "wilson": [
+      0.7301796936242461,
+      0.9895395990150025
+     ]
+    },
+    "2024-02-01": {
+     "compared": 51,
+     "match": 33,
+     "ratio": 0.6470588235294118,
+     "same": 0,
+     "truth_decided": 51,
+     "truth_down": 27,
+     "truth_up": 24,
+     "undecided": 51,
+     "wilson": [
+      0.5098605845450523,
+      0.7636551154847915
+     ]
+    },
+    "2024-03-01": {
+     "compared": 32,
+     "match": 22,
+     "ratio": 0.6875,
+     "same": 0,
+     "truth_decided": 32,
+     "truth_down": 18,
+     "truth_up": 14,
+     "undecided": 33,
+     "wilson": [
+      0.5143332169904459,
+      0.8204745836639026
+     ]
+    },
+    "2024-04-01": {
+     "compared": 60,
+     "match": 45,
+     "ratio": 0.75,
+     "same": 0,
+     "truth_decided": 60,
+     "truth_down": 39,
+     "truth_up": 21,
+     "undecided": 61,
+     "wilson": [
+      0.6276792992295218,
+      0.8422347746994333
+     ]
+    },
+    "2024-05-01": {
+     "compared": 39,
+     "match": 31,
+     "ratio": 0.7948717948717948,
+     "same": 0,
+     "truth_decided": 39,
+     "truth_down": 19,
+     "truth_up": 20,
+     "undecided": 39,
+     "wilson": [
+      0.644660319864177,
+      0.8922028176928961
+     ]
+    },
+    "2024-06-01": {
+     "compared": 63,
+     "match": 51,
+     "ratio": 0.8095238095238095,
+     "same": 0,
+     "truth_decided": 63,
+     "truth_down": 36,
+     "truth_up": 27,
+     "undecided": 63,
+     "wilson": [
+      0.6959321285012545,
+      0.8875380812770755
+     ]
+    },
+    "2024-07-01": {
+     "compared": 55,
+     "match": 42,
+     "ratio": 0.7636363636363637,
+     "same": 0,
+     "truth_decided": 55,
+     "truth_down": 24,
+     "truth_up": 31,
+     "undecided": 55,
+     "wilson": [
+      0.6365163381083228,
+      0.8563334413026682
+     ]
+    },
+    "2024-08-01": {
+     "compared": 50,
+     "match": 43,
+     "ratio": 0.86,
+     "same": 0,
+     "truth_decided": 50,
+     "truth_down": 26,
+     "truth_up": 24,
+     "undecided": 50,
+     "wilson": [
+      0.7381380628941446,
+      0.9304916657298371
+     ]
+    },
+    "2024-09-01": {
+     "compared": 39,
+     "match": 33,
+     "ratio": 0.8461538461538461,
+     "same": 0,
+     "truth_decided": 39,
+     "truth_down": 15,
+     "truth_up": 24,
+     "undecided": 39,
+     "wilson": [
+      0.7027053635107331,
+      0.927525276230179
+     ]
+    },
+    "2024-10-01": {
+     "compared": 40,
+     "match": 34,
+     "ratio": 0.85,
+     "same": 0,
+     "truth_decided": 40,
+     "truth_down": 25,
+     "truth_up": 15,
+     "undecided": 40,
+     "wilson": [
+      0.709276756335103,
+      0.9293881228267964
+     ]
+    }
+   },
+   "by_kind": {
+    "both_tp": {
+     "compared": 32,
+     "match": 16,
+     "ratio": 0.5,
+     "same": 0,
+     "truth_decided": 32,
+     "truth_down": 12,
+     "truth_up": 20,
+     "undecided": 32,
+     "wilson": [
+      0.33630882869327483,
+      0.6636911713067252
+     ]
+    },
+    "one_tp": {
+     "compared": 414,
+     "match": 334,
+     "ratio": 0.8067632850241546,
+     "same": 0,
+     "truth_decided": 414,
+     "truth_down": 227,
+     "truth_up": 187,
+     "undecided": 418,
+     "wilson": [
+      0.7659799081870663,
+      0.8419061563429678
+     ]
+    }
+   },
+   "log_len_all": 48392,
+   "mismatch_undecided": {
+    "any_diff": 0,
+    "both": 450,
+    "undecided": 450
+   },
+   "subtotals": {
+    "after": {
+     "compared": 346,
+     "match": 279,
+     "ratio": 0.8063583815028902,
+     "same": 0,
+     "truth_decided": 346,
+     "truth_down": 184,
+     "truth_up": 162,
+     "undecided": 347,
+     "wilson": [
+      0.7614507689663057,
+      0.8445380143947234
+     ]
+    },
+    "before": {
+     "compared": 100,
+     "match": 71,
+     "ratio": 0.71,
+     "same": 0,
+     "truth_decided": 100,
+     "truth_down": 55,
+     "truth_up": 45,
+     "undecided": 103,
+     "wilson": [
+      0.6146110882442888,
+      0.7898516425087772
+     ]
+    }
+   },
+   "total": {
+    "compared": 446,
+    "match": 350,
+    "ratio": 0.7847533632286996,
+    "same": 0,
+    "truth_decided": 446,
+    "truth_down": 239,
+    "truth_up": 207,
+    "undecided": 450,
+    "wilson": [
+     0.7442640830668421,
+     0.8203792929925529
+    ]
+   },
+   "undecided_bars_all": 48392
+  },
+  "good": {
+   "by_day": {
+    "2024-01-01": {
+     "compared": 19,
+     "match": 1,
+     "ratio": 0.05263157894736842,
+     "same": 0,
+     "truth_decided": 19,
+     "truth_down": 10,
+     "truth_up": 9,
+     "undecided": 21,
+     "wilson": [
+      0.009351994062300362,
+      0.24638731166898786
+     ]
+    },
+    "2024-02-01": {
+     "compared": 55,
+     "match": 20,
+     "ratio": 0.36363636363636365,
+     "same": 0,
+     "truth_decided": 55,
+     "truth_down": 28,
+     "truth_up": 27,
+     "undecided": 55,
+     "wilson": [
+      0.2493053153030725,
+      0.4957723850015874
+     ]
+    },
+    "2024-03-01": {
+     "compared": 39,
+     "match": 13,
+     "ratio": 0.3333333333333333,
+     "same": 0,
+     "truth_decided": 39,
+     "truth_down": 20,
+     "truth_up": 19,
+     "undecided": 40,
+     "wilson": [
+      0.20632956189598373,
+      0.4902260560065401
+     ]
+    },
+    "2024-04-01": {
+     "compared": 65,
+     "match": 17,
+     "ratio": 0.26153846153846155,
+     "same": 0,
+     "truth_decided": 65,
+     "truth_down": 41,
+     "truth_up": 24,
+     "undecided": 66,
+     "wilson": [
+      0.17018193413221397,
+      0.37950802696022556
+     ]
+    },
+    "2024-05-01": {
+     "compared": 39,
+     "match": 8,
+     "ratio": 0.20512820512820512,
+     "same": 0,
+     "truth_decided": 39,
+     "truth_down": 20,
+     "truth_up": 19,
+     "undecided": 39,
+     "wilson": [
+      0.10779718230710382,
+      0.35533968013582296
+     ]
+    },
+    "2024-06-01": {
+     "compared": 67,
+     "match": 12,
+     "ratio": 0.1791044776119403,
+     "same": 0,
+     "truth_decided": 67,
+     "truth_down": 37,
+     "truth_up": 30,
+     "undecided": 67,
+     "wilson": [
+      0.10553591339881956,
+      0.28747489247918
+     ]
+    },
+    "2024-07-01": {
+     "compared": 59,
+     "match": 15,
+     "ratio": 0.2542372881355932,
+     "same": 0,
+     "truth_decided": 59,
+     "truth_down": 29,
+     "truth_up": 30,
+     "undecided": 59,
+     "wilson": [
+      0.16055977573236907,
+      0.37796144028927275
+     ]
+    },
+    "2024-08-01": {
+     "compared": 58,
+     "match": 10,
+     "ratio": 0.1724137931034483,
+     "same": 0,
+     "truth_decided": 58,
+     "truth_down": 28,
+     "truth_up": 30,
+     "undecided": 58,
+     "wilson": [
+      0.09644292662938801,
+      0.2890825650932622
+     ]
+    },
+    "2024-09-01": {
+     "compared": 44,
+     "match": 7,
+     "ratio": 0.1590909090909091,
+     "same": 0,
+     "truth_decided": 44,
+     "truth_down": 17,
+     "truth_up": 27,
+     "undecided": 44,
+     "wilson": [
+      0.0792667701220125,
+      0.29366205062240613
+     ]
+    },
+    "2024-10-01": {
+     "compared": 44,
+     "match": 8,
+     "ratio": 0.18181818181818182,
+     "same": 0,
+     "truth_decided": 44,
+     "truth_down": 28,
+     "truth_up": 16,
+     "undecided": 44,
+     "wilson": [
+      0.09512805715627728,
+      0.3196055088718468
+     ]
+    }
+   },
+   "by_kind": {
+    "both_tp": {
+     "compared": 26,
+     "match": 14,
+     "ratio": 0.5384615384615384,
+     "same": 0,
+     "truth_decided": 26,
+     "truth_down": 11,
+     "truth_up": 15,
+     "undecided": 26,
+     "wilson": [
+      0.35457938746858797,
+      0.7124414646960878
+     ]
+    },
+    "one_tp": {
+     "compared": 463,
+     "match": 97,
+     "ratio": 0.20950323974082075,
+     "same": 0,
+     "truth_decided": 463,
+     "truth_down": 247,
+     "truth_up": 216,
+     "undecided": 467,
+     "wilson": [
+      0.17490081068066127,
+      0.2488864410353045
+     ]
+    }
+   },
+   "log_len_all": 54810,
+   "mismatch_undecided": {
+    "any_diff": 0,
+    "both": 493,
+    "undecided": 493
+   },
+   "subtotals": {
+    "after": {
+     "compared": 376,
+     "match": 77,
+     "ratio": 0.2047872340425532,
+     "same": 0,
+     "truth_decided": 376,
+     "truth_down": 200,
+     "truth_up": 176,
+     "undecided": 377,
+     "wilson": [
+      0.16708052796881512,
+      0.24846510338682876
+     ]
+    },
+    "before": {
+     "compared": 113,
+     "match": 34,
+     "ratio": 0.3008849557522124,
+     "same": 0,
+     "truth_decided": 113,
+     "truth_down": 58,
+     "truth_up": 55,
+     "undecided": 116,
+     "wilson": [
+      0.22401224708191042,
+      0.39085048696647756
+     ]
+    }
+   },
+   "total": {
+    "compared": 489,
+    "match": 111,
+    "ratio": 0.22699386503067484,
+    "same": 0,
+    "truth_decided": 489,
+    "truth_down": 258,
+    "truth_up": 231,
+    "undecided": 493,
+    "wilson": [
+     0.19207842217093415,
+     0.266165207253229
+    ]
+   },
+   "undecided_bars_all": 54810
+  }
+ },
+ "sim_kw": {
+  "entry": 4,
+  "exit_form": "center",
+  "exit_setting": 3,
+  "ratio_gate_mode": "rolling"
+ },
+ "trade_files": {
+  "2024-01-01": {
+   "file": "FX_BTC_JPY_20240101.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "819b4120e2528180605fe1e22b082452",
+    "md5sums": "819b4120e2528180605fe1e22b082452"
+   },
+   "minutes": 1014,
+   "rows": 10490
+  },
+  "2024-02-01": {
+   "file": "FX_BTC_JPY_20240201.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "8ea19d938903d3fe539dd7b0f8c6de2c",
+    "md5sums": "8ea19d938903d3fe539dd7b0f8c6de2c"
+   },
+   "minutes": 1420,
+   "rows": 43362
+  },
+  "2024-03-01": {
+   "file": "FX_BTC_JPY_20240301.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "1dcd5f6f4d3bc8bfd95e7ec46c33fc88",
+    "md5sums": "1dcd5f6f4d3bc8bfd95e7ec46c33fc88"
+   },
+   "minutes": 1244,
+   "rows": 14475
+  },
+  "2024-04-01": {
+   "file": "FX_BTC_JPY_20240401.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "4a92f44304f4a303bc53c721fa70294c",
+    "md5sums": "4a92f44304f4a303bc53c721fa70294c"
+   },
+   "minutes": 1414,
+   "rows": 46523
+  },
+  "2024-05-01": {
+   "file": "FX_BTC_JPY_20240501.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "551598279715e9b97004b1945b2f02cf",
+    "md5sums": "551598279715e9b97004b1945b2f02cf"
+   },
+   "minutes": 1427,
+   "rows": 130050
+  },
+  "2024-06-01": {
+   "file": "FX_BTC_JPY_20240601.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "d2d51ed8931ab1e22e5b64e85e510349",
+    "md5sums": "d2d51ed8931ab1e22e5b64e85e510349"
+   },
+   "minutes": 1275,
+   "rows": 14703
+  },
+  "2024-07-01": {
+   "file": "FX_BTC_JPY_20240701.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "399a01081e77379e1539aeb8df48e844",
+    "md5sums": "399a01081e77379e1539aeb8df48e844"
+   },
+   "minutes": 1423,
+   "rows": 38673
+  },
+  "2024-08-01": {
+   "file": "FX_BTC_JPY_20240801.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "e0bbc10bdf0f73627c8f7976e30512fc",
+    "md5sums": "e0bbc10bdf0f73627c8f7976e30512fc"
+   },
+   "minutes": 1424,
+   "rows": 76610
+  },
+  "2024-09-01": {
+   "file": "FX_BTC_JPY_20240901.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "4004e1c076b505ce8d0998e20b0ad7b9",
+    "md5sums": "4004e1c076b505ce8d0998e20b0ad7b9"
+   },
+   "minutes": 1405,
+   "rows": 42750
+  },
+  "2024-10-01": {
+   "file": "FX_BTC_JPY_20241001.csv.gz",
+   "md5": {
+    "match": true,
+    "md5": "ba1c54286ad37b069dd8a059f634e3b8",
+    "md5sums": "ba1c54286ad37b069dd8a059f634e3b8"
+   },
+   "minutes": 1424,
+   "rows": 80734
+  }
+ },
+ "window": true
+}

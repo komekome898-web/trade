@@ -23114,13 +23114,15 @@
   {
    "move": 848,
    "tools": {
-    "Bash": 53,
-    "Agent": 5,
+    "Bash": 58,
+    "Agent": 6,
     "Read": 5,
     "Write": 4,
-    "Edit": 5
+    "Edit": 5,
+    "mcp__Claude_Code_Remote__create_session": 3,
+    "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 72,
+   "n_tools": 82,
    "read_goal": false,
    "first_write_at": 27,
    "table_shown": false,
