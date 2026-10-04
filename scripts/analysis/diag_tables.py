@@ -1,0 +1,400 @@
+#!/usr/bin/env python3
+"""分析のスキル(`.claude/skills/analysis-lens`)の第 2 部の表を、このプロジェクトの測定の出力から出す共通の読み口。
+
+新しい走らせはしない。既にある出力(カードの測定の `daily.csv`、指値の再現の `trades.csv.gz` / `trades.json.gz` と
+`summary.json`)を読むだけ。封印の窓の出力は読まない(`--allow-window` は無い。窓の出力の置き場を渡したら止める)。
+
+出す表(手順の番号はスキルの第 2 部):
+  D0 入力の表: 出力の種類・期間・引数・列の有無と、その列で出せる手順
+  D1 時間の表: 暦年ごとの 1 日あたり・95% 区間・MDE・区間が 0 を含むか / 前提が成り立つ年の続き(最長の連続)と、
+     それがデータの最後の年まで届くか(届かなければ「前提が崩れた」の枝)
+  D3 集まりの表: 上位・下位 5% の日の損益の割合 / 取引の損益の分位 / 出の理由・合図の強さ・保有時間の四分位ごとの
+     1 取引あたり(日の塊の区間)
+  D6 固まりの表: 前の出から次の建てまでの間隔の四分位ごとの 1 取引あたり(日の塊の区間)
+  D7 比べの表(--vs): 同じ日どうしの日ごとの差の平均・区間・MDE / 年ごとの差 / 取引の突き合わせ(建ての時刻で)
+  D8 仮定の表(--bad): 良い側・悪い側の年ごとの 1 日あたりと符号が同じか / 決まらない足を含む取引の数と損益の割合
+
+決まり(スキル第 2 部の共通の決まり):
+  - 損益は既に向きを含む(pnl_bp は取引の向きで符号を付けた損益)。値動きを使う計算(MFE など)はこの台本では出さない。
+  - 区間は日の塊(循環、塊 5 日・1,000 回・種 20261004)。日ごとの損益の平均は `bot.bt.validation.block_bootstrap_ci`、
+    取引の群の 1 取引あたりは、日を塊で選び直して群の損益の和 ÷ 取引の数を作り直す(同じ塊・回数・種)。
+  - MDE は 5% 両側・80%・正規近似(`bot.bt.validation.mde`)。
+  - 閾値で判定の言葉を出さない。「区間が 0 を含む」「符号が同じ」などの事実の列だけを出す。
+  - 取引の日 = 出の時刻の UTC の暦日(改良の周 2 の読み R10・R6 と同じ)。カードの測定は `daily.csv` の日(日本時間)。
+
+    PYTHONPATH=src python3 scripts/analysis/diag_tables.py --run <置き場> [--vs <比べる置き場>] [--bad <悪い側の置き場>] --out <出力.md>
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import gzip
+import json
+import math
+import os
+import sys
+from collections import defaultdict
+from datetime import date, datetime, timezone
+
+import numpy as np
+
+SEED, N_RES, BLOCK = 20261004, 1000, 5
+WINDOW_MARK = "docs/RESEARCH/WINDOW1"  # 封印の窓の出力の置き場(読まない)
+
+
+# ---------------------------------------------------------------- 読み
+
+def _iso_ns(s: str) -> int:
+    dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    return int(dt.timestamp()) * 10**9 + dt.microsecond * 1000
+
+
+def load_run(d: str) -> dict:
+    """出力の置き場を読む。種類 = card(daily.csv)/ trades(trades.csv.gz か trades.json.gz)。"""
+    if WINDOW_MARK in os.path.abspath(d).replace(os.sep, "/"):
+        raise SystemExit(f"止める: {d} は封印の窓の出力の置き場(この台本では読まない)")
+    out: dict = {"dir": d, "name": os.path.basename(os.path.normpath(d)), "summary": None, "trades": None, "daily": None,
+                 "fields": []}
+    sp = os.path.join(d, "summary.json")
+    if os.path.isfile(sp):
+        with open(sp, encoding="utf-8") as fh:
+            out["summary"] = json.load(fh)
+    dp = os.path.join(d, "daily.csv")
+    if os.path.isfile(dp):
+        with open(dp, encoding="utf-8") as fh:
+            out["daily"] = {r["day"]: float(r["pnl_bp"]) for r in csv.DictReader(fh)}
+        out["kind"] = "card"
+        return out
+    cp, jp = os.path.join(d, "trades.csv.gz"), os.path.join(d, "trades.json.gz")
+    rows = []
+    if os.path.isfile(cp):
+        with gzip.open(cp, "rt", encoding="utf-8", newline="") as fh:
+            rd = csv.DictReader(fh)
+            out["fields"] = list(rd.fieldnames or [])
+            for r in rd:
+                if r.get("in_measure", "True") == "False":
+                    continue
+                t = {"entry_ns": _iso_ns(r["entry_t"]), "exit_ns": _iso_ns(r["exit_t"]), "pnl_bp": float(r["pnl_bp"])}
+                for k in ("exit_reason", "strength", "signal_t"):
+                    if k in r:
+                        t[k] = r[k]
+                if "undecided" in r and r["undecided"] != "":
+                    t["undecided"] = int(float(r["undecided"]))
+                rows.append(t)
+    elif os.path.isfile(jp):
+        with gzip.open(jp, "rt", encoding="utf-8") as fh:
+            o = json.load(fh)
+        scale = {"ns": 1, "s": 10**9}[o["t_unit"]]
+        out["fields"] = [k for k in o if k not in ("version", "t_unit")]
+        rows = [{"entry_ns": int(e) * scale, "exit_ns": int(x) * scale, "pnl_bp": float(p)}
+                for e, x, p in zip(o["entry_t_ns"], o["exit_t_ns"], o["pnl_bp"])]
+    else:
+        raise SystemExit(f"止める: {d} に daily.csv も trades.csv.gz も trades.json.gz も無い")
+    rows.sort(key=lambda t: (t["entry_ns"], t["exit_ns"]))
+    out["trades"] = rows
+    out["kind"] = "trades"
+    return out
+
+
+def utc_day(ns: int) -> str:
+    return datetime.fromtimestamp(ns // 10**9, tz=timezone.utc).date().isoformat()
+
+
+def period_days(run: dict) -> list[str]:
+    """日の一覧。trades は summary.json の period(無ければ最初と最後の取引)の UTC の日。card は daily.csv の日。"""
+    if run["kind"] == "card":
+        return sorted(run["daily"])
+    if run["summary"] and run["summary"].get("period"):
+        p0, p1 = run["summary"]["period"]
+        lo = datetime.fromisoformat(p0.replace("Z", "+00:00")).date()
+        hi = datetime.fromtimestamp((_iso_ns(p1) - 1) // 10**9, tz=timezone.utc).date()
+    else:
+        lo = date.fromisoformat(utc_day(run["trades"][0]["exit_ns"]))
+        hi = date.fromisoformat(utc_day(run["trades"][-1]["exit_ns"]))
+    return [date.fromordinal(o).isoformat() for o in range(lo.toordinal(), hi.toordinal() + 1)]
+
+
+def daily_series(run: dict) -> dict[str, float]:
+    days = period_days(run)
+    if run["kind"] == "card":
+        return dict(run["daily"])
+    out = {d: 0.0 for d in days}
+    for t in run["trades"]:
+        d = utc_day(t["exit_ns"])
+        if d in out:
+            out[d] += t["pnl_bp"]
+    return out
+
+
+# ---------------------------------------------------------------- 統計
+
+def mean_ci(x: list[float]) -> dict:
+    from bot.bt.validation import block_bootstrap_ci, mde
+    n = len(x)
+    if n < BLOCK * 2:
+        return {"n": n, "mean": float(np.mean(x)) if n else None, "lo": None, "hi": None, "mde": None}
+    c = block_bootstrap_ci([float(v) for v in x], block_len=BLOCK, n_resamples=N_RES, seed=SEED, alpha=0.05,
+                           method="circular", statistic="mean")
+    sd = c.se * n ** 0.5
+    return {"n": n, "mean": c.estimate, "lo": c.lo, "hi": c.hi,
+            "mde": mde(n=n, sd=sd, alpha=0.05, power=0.80, sides=2, approx="normal") if sd > 0 else None}
+
+
+def group_ratio_ci(days: list[str], sums: dict[str, float], counts: dict[str, int]) -> dict:
+    """群の 1 取引あたり = Σ損益 ÷ Σ取引の数。日を循環の塊で選び直して作り直す(塊 5・1,000 回・種 20261004)。"""
+    s = np.array([sums.get(d, 0.0) for d in days])
+    c = np.array([counts.get(d, 0) for d in days], dtype=float)
+    n = len(days)
+    tot_c = c.sum()
+    if tot_c == 0:
+        return {"trades": 0, "sum": 0.0, "per_trade": None, "lo": None, "hi": None}
+    point = float(s.sum() / tot_c)
+    if n < BLOCK * 2:
+        return {"trades": int(tot_c), "sum": float(s.sum()), "per_trade": point, "lo": None, "hi": None}
+    rng = np.random.default_rng(SEED)
+    nb = math.ceil(n / BLOCK)
+    reps = []
+    for _ in range(N_RES):
+        starts = rng.integers(0, n, size=nb)
+        idx = (starts[:, None] + np.arange(BLOCK)[None, :]).ravel()[:n] % n
+        cc = c[idx].sum()
+        if cc > 0:
+            reps.append(s[idx].sum() / cc)
+    lo, hi = np.percentile(reps, [2.5, 97.5])
+    return {"trades": int(tot_c), "sum": float(s.sum()), "per_trade": point, "lo": float(lo), "hi": float(hi)}
+
+
+def contains_zero(r: dict) -> str:
+    if r.get("lo") is None:
+        return "区間なし"
+    return "含む" if r["lo"] <= 0 <= r["hi"] else ("正" if r["lo"] > 0 else "負")
+
+
+# ---------------------------------------------------------------- D0〜D8
+
+def d0(run: dict) -> dict:
+    s = run["summary"] or {}
+    have = set(run["fields"])
+    steps = {"D1 時間": True, "D3 日の集まり": True,
+             "D3 取引の分位": run["kind"] == "trades",
+             "D3 出の理由ごと": "exit_reason" in have, "D3 合図の強さごと": "strength" in have,
+             "D3 保有時間ごと": run["kind"] == "trades", "D6 固まり": run["kind"] == "trades",
+             "D8 決まらない足": "undecided" in have}
+    return {"name": run["name"], "kind": run["kind"], "period": s.get("period"), "params": s.get("params"),
+            "fields": run["fields"], "steps": steps,
+            "trades": len(run["trades"]) if run["trades"] is not None else None}
+
+
+def d1(daily: dict[str, float]) -> dict:
+    days = sorted(daily)
+    rows = [{"label": "全期間", **mean_ci([daily[d] for d in days])}]
+    years = sorted({d[:4] for d in days})
+    for y in years:
+        rows.append({"label": y, **mean_ci([daily[d] for d in days if d[:4] == y])})
+    for r in rows:
+        r["zero"] = contains_zero(r)
+    # 前提が成り立つ年の続き: 区間が 0 を含まない同じ符号の年の最長の連続
+    yr = [r for r in rows[1:]]
+    best, cur = [], []
+    for r in yr:
+        if r["zero"] in ("正", "負") and (not cur or cur[-1]["zero"] == r["zero"]):
+            cur.append(r)
+        elif r["zero"] in ("正", "負"):
+            cur = [r]
+        else:
+            cur = []
+        if len(cur) > len(best):
+            best = list(cur)
+    run_years = [r["label"] for r in best]
+    return {"rows": rows, "run_years": run_years, "run_sign": best[0]["zero"] if best else None,
+            "reaches_last_year": bool(run_years) and run_years[-1] == years[-1], "last_year": years[-1] if years else None}
+
+
+def d3(run: dict, daily: dict[str, float]) -> dict:
+    days = sorted(daily)
+    v = np.array([daily[d] for d in days])
+    tot = float(v.sum())
+    k = max(1, int(round(len(v) * 0.05)))
+    srt = np.sort(v)
+    out = {"total": tot, "days": len(v), "top5_days_sum": float(srt[-k:].sum()), "bottom5_days_sum": float(srt[:k].sum()),
+           "k": k}
+    if run["kind"] != "trades":
+        return out
+    tr = run["trades"]
+    p = np.array([t["pnl_bp"] for t in tr])
+    out["trade_quantiles"] = {q: float(np.quantile(p, q)) for q in (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)}
+    out["n_trades"] = len(tr)
+    hold = np.array([(t["exit_ns"] - t["entry_ns"]) / 6e10 for t in tr])
+    qs = list(np.quantile(hold, [0.25, 0.5, 0.75]))
+    def hband(h):
+        return "Q1" if h <= qs[0] else "Q2" if h <= qs[1] else "Q3" if h <= qs[2] else "Q4"
+    groups = {"保有時間の四分位": lambda t: hband((t["exit_ns"] - t["entry_ns"]) / 6e10)}
+    if any("exit_reason" in t for t in tr):
+        groups["出の理由"] = lambda t: t.get("exit_reason", "")
+    if any("strength" in t for t in tr):
+        groups["合図の強さ"] = lambda t: t.get("strength", "")
+    out["hold_quartiles_min"] = [float(x) for x in qs]
+    out["groups"] = {name: group_table(tr, days, f) for name, f in groups.items()}
+    return out
+
+
+def group_table(tr: list[dict], days: list[str], key) -> dict:
+    sums: dict = defaultdict(lambda: defaultdict(float))
+    cnts: dict = defaultdict(lambda: defaultdict(int))
+    for t in tr:
+        g, d = key(t), utc_day(t["exit_ns"])
+        sums[g][d] += t["pnl_bp"]
+        cnts[g][d] += 1
+    return {g: group_ratio_ci(days, sums[g], cnts[g]) for g in sorted(sums)}
+
+
+def d6(run: dict, daily: dict[str, float]) -> dict | None:
+    if run["kind"] != "trades":
+        return None
+    tr = run["trades"]
+    gaps = [None] + [(tr[i]["entry_ns"] - tr[i - 1]["exit_ns"]) / 6e10 for i in range(1, len(tr))]
+    g = np.array([x for x in gaps if x is not None])
+    qs = list(np.quantile(g, [0.25, 0.5, 0.75]))
+    def band(x):
+        if x is None:
+            return "最初"
+        return "Q1" if x <= qs[0] else "Q2" if x <= qs[1] else "Q3" if x <= qs[2] else "Q4"
+    keyed = [dict(t, _band=band(x)) for t, x in zip(tr, gaps)]
+    return {"gap_quartiles_min": [float(x) for x in qs],
+            "groups": group_table(keyed, sorted(daily), lambda t: t["_band"])}
+
+
+def d7(a: dict, b: dict) -> dict:
+    da, db = daily_series(a), daily_series(b)
+    common = sorted(set(da) & set(db))
+    diff = [da[d] - db[d] for d in common]
+    out = {"all": mean_ci(diff), "years": {}}
+    for y in sorted({d[:4] for d in common}):
+        out["years"][y] = mean_ci([da[d] - db[d] for d in common if d[:4] == y])
+    if a["kind"] == "trades" and b["kind"] == "trades":
+        ka = {t["entry_ns"]: t["pnl_bp"] for t in a["trades"]}
+        kb = {t["entry_ns"]: t["pnl_bp"] for t in b["trades"]}
+        both = set(ka) & set(kb)
+        out["match"] = {"both": len(both), "only_a": len(set(ka) - both), "only_b": len(set(kb) - both),
+                        "sum_only_a": float(sum(ka[k] for k in set(ka) - both)),
+                        "sum_only_b": float(sum(kb[k] for k in set(kb) - both)),
+                        "sum_both_a_minus_b": float(sum(ka[k] - kb[k] for k in both))}
+    return out
+
+
+def d8(good: dict, bad: dict) -> dict:
+    dg, db = daily_series(good), daily_series(bad)
+    rows = []
+    for y in ["全期間"] + sorted({d[:4] for d in dg}):
+        sel = (lambda d: True) if y == "全期間" else (lambda d, y=y: d[:4] == y)
+        rg = mean_ci([dg[d] for d in sorted(dg) if sel(d)])
+        rb = mean_ci([db[d] for d in sorted(db) if sel(d)])
+        same = None if rg["mean"] is None or rb["mean"] is None else (np.sign(rg["mean"]) == np.sign(rb["mean"]))
+        rows.append({"label": y, "good": rg, "bad": rb, "same_sign": bool(same) if same is not None else None})
+    und = {}
+    for name, r in (("good", good), ("bad", bad)):
+        if r["kind"] == "trades" and any("undecided" in t for t in r["trades"]):
+            u = [t for t in r["trades"] if t.get("undecided", 0) > 0]
+            tot = sum(t["pnl_bp"] for t in r["trades"])
+            und[name] = {"trades": len(u), "share_trades": len(u) / len(r["trades"]),
+                         "pnl_sum": float(sum(t["pnl_bp"] for t in u)), "pnl_total": float(tot)}
+    return {"rows": rows, "undecided": und}
+
+
+# ---------------------------------------------------------------- 書き出し
+
+def _f(x, nd=2):
+    return "—" if x is None else f"{x:+.{nd}f}"
+
+
+def _ci(r):
+    return f"{_f(r.get('mean', r.get('per_trade')))} [{_f(r.get('lo'))}, {_f(r.get('hi'))}]"
+
+
+def render(res: dict) -> str:
+    L = [f"# 診断の表: {res['d0']['name']}", "",
+         "`scripts/analysis/diag_tables.py` が出した(手で書いていない)。損益は bp、経費の前。区間は 95%(日の塊 5 日・1,000 回)。"
+         "MDE は 5% 両側・80%。", ""]
+    z = res["d0"]
+    L += ["## D0 入力", "", f"- 種類: {z['kind']} / 期間: {z['period']} / 取引: {z['trades']}",
+          f"- 引数: `{json.dumps(z['params'], ensure_ascii=False) if z['params'] else '—'}`",
+          f"- 列: {', '.join(z['fields']) if z['fields'] else '(daily.csv: day, pnl_bp, n)'}",
+          "- 出せる手順: " + "、".join(f"{k} {'○' if v else '✕(列が無い)'}" for k, v in z["steps"].items()), ""]
+    d1r = res["d1"]
+    L += ["## D1 時間(1 日あたり、bp/日)", "", "| 期間 | 日数 | 1 日あたり [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|"]
+    for r in d1r["rows"]:
+        L.append(f"| {r['label']} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {r['zero']} |")
+    L += ["", f"- 区間が 0 を含まない同じ符号の年の最長の続き: {', '.join(d1r['run_years']) or 'なし'}"
+          f"({d1r['run_sign'] or '—'})。データの最後の年 {d1r['last_year']} まで届くか: "
+          f"{'届く' if d1r['reaches_last_year'] else '届かない'}", ""]
+    d3r = res["d3"]
+    L += ["## D3 集まり", "",
+          f"- 全体の和 {_f(d3r['total'],0)} bp({d3r['days']} 日)。上位 5% の日({d3r['k']} 日)の和 {_f(d3r['top5_days_sum'],0)} bp、"
+          f"下位 5% の日の和 {_f(d3r['bottom5_days_sum'],0)} bp。", ""]
+    if "trade_quantiles" in d3r:
+        q = d3r["trade_quantiles"]
+        L += [f"- 取引 {d3r['n_trades']} 本の損益の分位(bp): " + "、".join(f"{int(k*100)}% {_f(v)}" for k, v in q.items()),
+              f"- 保有時間の四分位の境(分): {', '.join(f'{x:.1f}' for x in d3r['hold_quartiles_min'])}", ""]
+        for gname, tab in d3r["groups"].items():
+            L += [f"### {gname}ごとの 1 取引あたり(bp)", "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
+            for g, r in tab.items():
+                L.append(f"| {g or '(空)'} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
+            L.append("")
+    if res.get("d6"):
+        r6 = res["d6"]
+        L += ["## D6 固まり(前の出から次の建てまでの間隔の四分位ごと、1 取引あたり bp)", "",
+              f"- 間隔の四分位の境(分): {', '.join(f'{x:.1f}' for x in r6['gap_quartiles_min'])}", "",
+              "| 間隔 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
+        for g, r in r6["groups"].items():
+            L.append(f"| {g} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
+        L.append("")
+    if res.get("d7"):
+        r7 = res["d7"]
+        L += [f"## D7 比べ({res['d0']['name']} − {res['vs_name']}、同じ日どうしの日ごとの差、bp/日)", "",
+              "| 期間 | 日数 | 差 [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|",
+              f"| 全期間 | {r7['all']['n']} | {_ci(r7['all'])} | {_f(r7['all']['mde'])} | {contains_zero(r7['all'])} |"]
+        for y, r in r7["years"].items():
+            L.append(f"| {y} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {contains_zero(r)} |")
+        if "match" in r7:
+            m = r7["match"]
+            L += ["", f"- 取引の突き合わせ(建ての時刻): 両方 {m['both']} 本(差の和 {_f(m['sum_both_a_minus_b'],0)} bp)/ "
+                  f"こちらだけ {m['only_a']} 本(和 {_f(m['sum_only_a'],0)})/ 相手だけ {m['only_b']} 本(和 {_f(m['sum_only_b'],0)})"]
+        L.append("")
+    if res.get("d8"):
+        r8 = res["d8"]
+        L += ["## D8 仮定(良い側・悪い側、1 日あたり bp/日)", "", "| 期間 | 良い側 [区間] | 悪い側 [区間] | 符号が同じ |", "|---|---|---|---|"]
+        for r in r8["rows"]:
+            L.append(f"| {r['label']} | {_ci(r['good'])} | {_ci(r['bad'])} | {r['same_sign']} |")
+        for k, u in r8["undecided"].items():
+            L.append(f"- 決まらない足を含む取引({k}): {u['trades']} 本({u['share_trades']:.1%})、その損益の和 {_f(u['pnl_sum'],0)} bp"
+                     f"(全体 {_f(u['pnl_total'],0)} bp)")
+        L.append("")
+    return "\n".join(L)
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", required=True)
+    ap.add_argument("--vs", default=None)
+    ap.add_argument("--bad", default=None)
+    ap.add_argument("--out", required=True)
+    a = ap.parse_args(argv)
+    run = load_run(a.run)
+    daily = daily_series(run)
+    res = {"d0": d0(run), "d1": d1(daily), "d3": d3(run, daily), "d6": d6(run, daily)}
+    if a.vs:
+        vs = load_run(a.vs)
+        res["d7"], res["vs_name"] = d7(run, vs), vs["name"]
+    if a.bad:
+        res["d8"] = d8(run, load_run(a.bad))
+    os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
+    with open(a.out, "w", encoding="utf-8") as fh:
+        fh.write(render(res) + "\n")
+    with open(os.path.splitext(a.out)[0] + ".json", "w", encoding="utf-8") as fh:
+        json.dump(res, fh, ensure_ascii=False, indent=1, default=str)
+    print(f"-> {a.out}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
