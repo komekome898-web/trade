@@ -5,20 +5,20 @@
   {
    "move": 1,
    "tools": {
-    "Bash": 53,
-    "Read": 1,
+    "Bash": 77,
+    "Read": 3,
     "Write": 1,
-    "Agent": 10,
+    "Agent": 14,
     "ScheduleWakeup": 2,
     "SendMessage": 7,
-    "ReadNotifications": 1
+    "ReadNotifications": 2
    },
-   "n_tools": 75,
+   "n_tools": 106,
    "read_goal": false,
    "first_write_at": 12,
    "table_shown": false,
-   "claims_without_output": 1,
-   "claims_total": 5,
+   "claims_without_output": 2,
+   "claims_total": 9,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -47,9 +47,9 @@
    "value": 0.0
   },
   "P3_claim_with_output": {
-   "num": 4,
-   "den": 5,
-   "value": 0.8
+   "num": 7,
+   "den": 9,
+   "value": 0.7778
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -57,8 +57,8 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 75,
-   "max": 75,
+   "median": 106,
+   "max": 106,
    "n": 1
   },
   "P6_findings_applied": {
