@@ -77,6 +77,26 @@ classify_detail と、カードの _apply と同じ分岐を使い、変える�
   ここでもそれを合図の足の vol_prev とする(合図の足が閉じた時点で分かる。先読みなし)。足が 101 本そろうまでは
   値なし(三分位なし、門では入らない)。三分位の切り方は bucket_of(v < q1 低い、v < q2 中、それ以外 高い)。
 
+長い保有の降り方(design="k1" だけ。オーナー L-620「1〜3はそれですすめて」の 3。既定はどちらも切 = None)
+--------------------------------------------------------------------------------------------------------
+入り方 a・fill="close" のときだけ使える(それ以外の組み合わせは ValueError)。降りた後は持ち高 0 で、その後の合図の
+扱いは今までと同じ(持ち高 0 → 入る)。
+  - 値段で降りる k1_stop_k = k: 持ち高を建てた合図の vol_prev を v(bp、門で使う量と同じ)として、bitFlyer の 1 分足の
+    終値が建値から不利な向きに k × v bp 以上動いたら(−向き × (終値 / 建値 − 1) × 1e4 >= k × v。等号で閉じる
+    【置いた形】)、その終値で閉じる。出の時刻はその足の終わり。終わり方 EXIT_K1_STOP。v が無い取引(足が 101 本
+    そろう前の合図)には掛けない。判定は終値だけ(高値・安値が越えても終値が越えなければ閉じない)。
+  - 時間で降りる k1_time_exit_bars = N: 建てた時刻より後に閉じた海外の足の区切り(H3 の「次に閉じた足の区切り」と
+    同じ数え方。参照の行が無くて閉じなかった足は数えない)が N 本目になったら、その区切りの直前の bitFlyer の
+    1 分足の終値で閉じる。出の時刻はその区切り。終わり方 EXIT_K1_TIME。
+  - 取引の行の exit_signal / exit_signal_ns には、終わり方と同じ名前と閉じた時刻を入れる。
+  - 同じ時刻に重なったとき【置いた形】: 時間で降りるのは、その区切りで持ち越した合図の行動(反対 → 降りる・
+    ドテン)をした後に、まだ持っていれば閉じる(反対の弱い合図で閉じる取引はそのまま合図で閉じ、閉じた後に
+    反対の向きへ入ることはない)。値段で降りるのは 1 分足の終わりで判定するので、同じ時刻の区切りの行動より先に
+    なる。
+  - 値段で降りた後、降りる前に出て持ち越した合図は今の形のまま扱う(リードの決め。合図の扱いを降り方で変えない):
+    持ち高 0 なので、次の区切りで、反対の向きの合図なら反対の向きへ入り、同じ向きの合図なら同じ向きへ入り直す。
+    入り直した取引の時間で降りる数えは、その取引を建てた時刻から 0 で数え直す(数えは取引ごと)。
+
 値段の刻み(オーナー L-595「bitFlyerの値段に小数点があるのはタダのバグだから放置せず直して」)
 -----------------------------------------------------------------------------------------------
 bitFlyer FX_BTC_JPY の値段は 1 円刻み(1 分足の 4 本値に端数は無い)。bitFlyer に出す注文の値段は、置くとき(_order)に
@@ -155,6 +175,7 @@ VOL_WINDOW = 100  # measure_katsuo_robustness.py 69 行
 EXIT_LIMIT, EXIT_SL1, EXIT_SL2, EXIT_SM = "指値", "ストップ指値 1", "ストップ指値 2", "ストップ成行"
 EXIT_DOTEN, EXIT_END = "ドテン", "期間の終わり"
 EXIT_CLOSE = "終値"  # fill="close" の降りる約定
+EXIT_K1_STOP, EXIT_K1_TIME = "値段で降りる", "時間で降りる"  # 長い保有の降り方(k1_stop_k・k1_time_exit_bars)
 FILLS = ("limit", "close", "limit_entry_close_exit", "close_entry_limit_exit")
 TICK_EPS = 1e-6  # 1 円刻みに丸めるとき、この幅の中は整数とみなす(浮動小数の誤差)
 
@@ -298,7 +319,8 @@ class KatsuoLimitSim:
     def __init__(self, *, fill_side: str, at_max: Optional[str] = None, foot_min: int = 15, design: str = "v03",
                  entry: str = "c", side_keep: str = "weak", vol_gate: bool = False,
                  vol_edges: Optional[tuple] = None, fill: str = "limit", vol_gate_mode: str = "fixed",
-                 vol_roll_days: int = 365, vol_roll_min: int = 100) -> None:
+                 vol_roll_days: int = 365, vol_roll_min: int = 100, k1_stop_k: Optional[float] = None,
+                 k1_time_exit_bars: Optional[int] = None) -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.fill = _in("fill", fill, FILLS)
         if fill != "limit" and design != "k1":
@@ -326,6 +348,16 @@ class KatsuoLimitSim:
             if side_keep == "strong" and fill in ("limit_entry_close_exit", "close_entry_limit_exit"):
                 raise ValueError("入りと降りの切り分け(fill の 2 つ)は side_keep='weak' だけ(強い 1 分の組は走らせの表に無い)")
         self.side_keep = side_keep
+        if k1_stop_k is not None or k1_time_exit_bars is not None:
+            if not (design == "k1" and entry == "a" and fill == "close"):
+                raise ValueError("k1_stop_k・k1_time_exit_bars は design='k1'・entry='a'・fill='close' だけ")
+            if k1_stop_k is not None and (isinstance(k1_stop_k, bool) or not isinstance(k1_stop_k, (int, float))
+                                          or not math.isfinite(k1_stop_k) or k1_stop_k <= 0):
+                raise ValueError(f"k1_stop_k は正の有限の数: {k1_stop_k!r}")
+            if k1_time_exit_bars is not None and (type(k1_time_exit_bars) is not int or k1_time_exit_bars < 1):
+                raise ValueError(f"k1_time_exit_bars は 1 以上の整数: {k1_time_exit_bars!r}")
+        self.k1_stop_k = None if k1_stop_k is None else float(k1_stop_k)
+        self.k1_time_exit_bars = k1_time_exit_bars
         self.vol_gate = vol_gate
         self.vol_gate_mode = _in("vol_gate_mode", vol_gate_mode, VOL_GATE_MODES)
         if vol_gate_mode == "rolling":
@@ -404,6 +436,10 @@ class KatsuoLimitSim:
         if self._orders:
             out += self._bar(o, h, lo, c, start, end)
         self._last_close, self._last_end = c, end
+        tr = self._trade
+        if self.k1_stop_k is not None and tr is not None and tr["vol"] is not None:
+            if -tr["side"] * (c / tr["avg"] - 1.0) * 1e4 >= self.k1_stop_k * tr["vol"]:  # 値段で降りる
+                out += self._k1_close(c, end, EXIT_K1_STOP)
         return out
 
     def finish(self) -> list:
@@ -477,6 +513,13 @@ class KatsuoLimitSim:
         pend, self._pending = self._pending, None
         if pend is not None:  # H3: 前の足の合図の行動を、この区切りで
             self._act_k1(T, pend)
+        tr = self._trade
+        if self.k1_time_exit_bars is not None and tr is not None and tr["entry_ns"] < T:  # 時間で降りる(行動の後)
+            tr["k1_feet"] = tr.get("k1_feet", 0) + 1
+            if tr["k1_feet"] >= self.k1_time_exit_bars:
+                if self._last_end > T:
+                    raise RuntimeError(f"先読み: 時刻 {T} の判定に、終わりが {self._last_end} の足の終値を使おうとした")
+                self._out += self._k1_close(self._last_close, T, EXIT_K1_TIME)
         if act is not None:
             if self.entry != "a" and self._pos == 0:
                 self._act_k1(T, act)  # 入り方 b・c の入り: 合図の時点
@@ -606,6 +649,14 @@ class KatsuoLimitSim:
                 self._fill(st, od, self._last_close, T, EXIT_CLOSE)
         self._load(st)
         self._out += [self._row(tr) for tr in st.closed]
+
+    def _k1_close(self, px: float, t: int, reason: str) -> list:
+        """長い保有の降り方: 持ち高の全量を値段 px・時刻 t で閉じ、閉じた取引の行を返す。"""
+        st = self._state()
+        self._apply_fill(st, -self._trade["side"], abs(st.pos), px, t, reason, {"xsig": reason, "t_xsig": t})
+        st.orders = []
+        self._load(st)
+        return [self._row(tr) for tr in st.closed]
 
     # ------------------------------------------------------------------ 状態の出し入れ
     def _state(self) -> _St:
@@ -742,5 +793,5 @@ class KatsuoLimitSim:
         return [self._row(tr) for tr in st.closed]
 
 
-__all__ = ["VOL_GATE_MODES", "quantile_linear", "TICK_EPS", "tick_down", "tick_up", "EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
+__all__ = ["EXIT_K1_STOP", "EXIT_K1_TIME", "VOL_GATE_MODES", "quantile_linear", "TICK_EPS", "tick_down", "tick_up", "EXIT_CLOSE", "FILLS", "DESIGNS", "ENTRIES", "K1_FEET", "SIDE_KEEPS", "VOL_WINDOW", "k1_signal", "tercile", "STRONG", "WEAK", "XSIG_LINE", "XSIG_WEAK", "AT_MAXES", "EXIT_DOTEN", "EXIT_END", "EXIT_LIMIT", "EXIT_SL1", "EXIT_SL2", "EXIT_SM", "FILL_SIDES",
            "KatsuoLimitSim", "SIZE_DEF", "SIZE_MAX", "STOP_LIMITS", "STOP_MARKET", "action"]

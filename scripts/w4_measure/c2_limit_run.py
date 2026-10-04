@@ -10,6 +10,8 @@
         design=k1・--fill limit では、同じ入力に --fill close の物を並走させ、取り逃しを数える(下の missed.csv.gz)。
         --fill limit_entry_close_exit(入りは指値・降りるは終値)|close_entry_limit_exit(入りは終値・降りるは 4 本)は
         参照との差を入りと降りに分ける形(design=k1 だけ)。取り逃しは入りが指値の limit_entry_close_exit でも数える。
+        --k1-stop-k <k>(値段で降りる)/ --k1-time-exit-bars <N>(時間で降りる)は長い保有の降り方(既定は切。
+        --design k1 --entry a --fill close だけ。中身は再現のモジュールの説明「長い保有の降り方」)。
     参照の行(合図の足の元)の読み方の切り替え(既定はどちらも切 = 今までと同じ。段階 G のデータの扱いに合わせて原因を
     確かめるためのもの。limit_sim/runs/READ_K1YEAR/CAUSE.md):
         --ref-join-bitflyer   (a) 内部結合: 参照の行のうち、その分(open_time を分の頭に切り下げた時刻)に bitFlyer の
@@ -233,7 +235,8 @@ def split_stats(rows: list) -> dict:
     for v in by_strength.values():
         v.pop("days"), v.pop("per_day")
     by_xsig = {}
-    for k in (XSIG_WEAK, XSIG_LINE, None):
+    extra = sorted({r["exit_signal"] for r in rows} - {XSIG_WEAK, XSIG_LINE, None})  # 値段で降りる・時間で降りる
+    for k in (XSIG_WEAK, XSIG_LINE, *extra, None):
         xs = [r["pnl_bp"] for r in rows if r["exit_signal"] == k]
         by_xsig[k or "降りる注文以外(ドテン・期間の終わり)"] = {
             "trades": len(xs), "sum_bp": math.fsum(xs), "wins": sum(1 for x in xs if x > 0),
@@ -267,6 +270,8 @@ def main() -> int:
     ap.add_argument("--fill", default="limit",
                     choices=["limit", "close", "limit_entry_close_exit", "close_entry_limit_exit"])
     ap.add_argument("--fill-side", required=True, choices=["good", "bad"])
+    ap.add_argument("--k1-stop-k", type=float, default=None, help="値段で降りる: 建値から不利に k × vol_prev bp")
+    ap.add_argument("--k1-time-exit-bars", type=int, default=None, help="時間で降りる: 建ててから海外の足の区切り N 本")
     ap.add_argument("--ref-join-bitflyer", action="store_true")
     ap.add_argument("--ref-drop-no-trade", action="store_true")
     ap.add_argument("--start", default=None)
@@ -284,6 +289,10 @@ def main() -> int:
           "entry": a.entry, "side_keep": a.side_keep, "vol_gate": a.vol_gate, "vol_edges": edges_v, "fill": a.fill}
     if a.vol_gate:
         kw["vol_gate_mode"] = a.vol_gate_mode
+    if a.k1_stop_k is not None:
+        kw["k1_stop_k"] = a.k1_stop_k
+    if a.k1_time_exit_bars is not None:
+        kw["k1_time_exit_bars"] = a.k1_time_exit_bars
     sim = KatsuoLimitSim(**kw)  # 表の外の値はここで拒む
     shadow = (KatsuoLimitSim(**dict(kw, fill="close"))
               if (a.design == "k1" and a.fill in ("limit", "limit_entry_close_exit")) else None)

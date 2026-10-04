@@ -69,6 +69,17 @@ for f in (5, 15, 30, 60):
                 JOBS_ABLATION.append((f"weak_f{f}_{tag}_{e}_{side}",
                                       base + ["--entry", e, "--fill", fill, "--fill-side", side]))
 
+# 長い保有の降り方(L-620「1〜3はそれですすめて」の 3)。--exits で走らせる。入り方 a・参照の形・弱いだけ・門なし。
+# 値段で降りる k = 1・2・3 と、時間で降りる N = 6・12・24 を片方ずつ。足 5・15 分で 12 本。
+JOBS_EXITS: list = []
+for f in (5, 15):
+    base = ["--series", "a", "--design", "k1", "--foot-min", str(f), "--entry", "a", "--fill", "close",
+            "--fill-side", "good"]
+    for k in (1, 2, 3):
+        JOBS_EXITS.append((f"weak_f{f}_close_a_stop{k}", base + ["--k1-stop-k", str(k)]))
+    for n in (6, 12, 24):
+        JOBS_EXITS.append((f"weak_f{f}_close_a_time{n}", base + ["--k1-time-exit-bars", str(n)]))
+
 
 def run_one(job: tuple, root: str) -> str:
     name, args = job
@@ -92,8 +103,10 @@ def main() -> int:
     ap.add_argument("--gated", action="store_true", help="門あり 5・15 分の組(JOBS_GATED)を走らせる")
     ap.add_argument("--ablation", action="store_true", help="入りと降りを分ける組(JOBS_ABLATION)を走らせる")
     ap.add_argument("--rolling", action="store_true", help="境目を直前 365 日にした門ありの組(JOBS_ROLLING)を走らせる")
+    ap.add_argument("--exits", action="store_true", help="長い保有の降り方の組(JOBS_EXITS)を走らせる")
     a = ap.parse_args()
-    jobs = JOBS_ROLLING if a.rolling else (JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS))
+    jobs = JOBS_EXITS if a.exits else (
+        JOBS_ROLLING if a.rolling else (JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS)))
     mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
         for n, ar in mine:

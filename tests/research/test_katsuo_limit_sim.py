@@ -1369,3 +1369,230 @@ def test_rolling_edges_use_only_earlier_signals_within_window():
     e = s._rolling_edges(4 * day)
     assert e is not None and abs(e[0] - (1 + 2 / 3)) < 1e-9 and abs(e[1] - (2 + 1 / 3)) < 1e-9
     assert s._rolling_edges(3 * day) is None                 # 3 日目の合図より前は 2 本だけ(同じ時刻は数えない)
+
+
+# ---------------------------------------------------------------- 長い保有の降り方(L-620 の 3。k1_stop_k・k1_time_exit_bars)
+from bot.research.katsuo_limit_sim import EXIT_K1_STOP, EXIT_K1_TIME  # noqa: E402
+
+
+def _feed_range(s, lo_, hi_, closes=None, highs=None):
+    out = []
+    for i in range(lo_, hi_):
+        c = (closes or {}).get(i, P)
+        out += s.feed(bar(i, P, h=max(P, c, (highs or {}).get(i, P)), c=c))
+    return out
+
+
+def test_k1_stop_k_closes_on_the_bitflyer_close_k_times_vol_against_the_entry():
+    """値段で降りる: 売り持ち(建値 P)で、終値が建値から上へ k × v bp 以上動いた足の終値で閉じる。高値だけが越えた足
+    では閉じない(判定は終値)。v = 建てた合図の vol_prev。"""
+    s = k1sim(foot_min=5, entry="a", fill="close", k1_stop_k=2)
+    s.add_refs(_gate_rows(102) + foot_rows(102, WEAK_SELL, foot=5) + foot_rows(103, FLAT, foot=5)
+               + foot_rows(104, FLAT, foot=5))
+    out = _feed_range(s, 0, 521)  # 足 102 の合図 → 区切り T0+520分 で売り(H3)、bar 519 の終値 P で約定
+    assert out == [] and s._pos == -1.0 and s._trade["entry_ns"] == T0 + 520 * M and s._trade["avg"] == P
+    v = s._trade["vol"]
+    assert v is not None and v > 0
+    line = P * (1 + 2 * v / 1e4)  # 建値から不利に 2v bp
+    near, hit = math.floor(line) - 1, math.ceil(line) + 1
+    out = _feed_range(s, 521, 522, closes={521: near}, highs={521: P + WIDE})  # 高値は越えたが終値は手前
+    assert out == [] and s._pos == -1.0
+    out = _feed_range(s, 522, 524, closes={522: hit, 523: P + WIDE})
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["exit_signal"], r["exit_signal_ns"], r["entry_ns"],
+             r["vol_prev"], r["side"]) for r in out] == [
+        (EXIT_K1_STOP, hit, T0 + 523 * M, EXIT_K1_STOP, T0 + 523 * M, T0 + 520 * M, v, -1)]
+    assert out[0]["pnl_bp"] == pytest.approx(-1 * (hit / P - 1) * 1e4, rel=1e-12)
+    assert s._pos == 0.0 and s._trade is None and s.finish() == []
+
+
+def test_k1_stop_k_is_not_applied_without_vol_prev():
+    """v が無い取引(足が 101 本そろう前の合図)には掛けない。"""
+    s = k1sim(entry="a", fill="close", k1_stop_k=1)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(2, FLAT))
+    out = _feed_range(s, 0, 31)
+    assert s._pos == -1.0 and s._trade["vol"] is None
+    out += _feed_range(s, 31, 45, closes={i: P + WIDE for i in range(31, 45)})
+    assert out == [] and s._pos == -1.0
+    assert [r["exit_reason"] for r in s.finish()] == [EXIT_END]
+
+
+def test_k1_time_exit_closes_at_the_nth_foot_boundary_on_the_last_close_then_next_signal_enters():
+    """時間で降りる(N = 2): 区切り T0+30分 で建て、その後の区切り 45 分(1 本目)・60 分(2 本目)で、区切りの直前の
+    bitFlyer の 1 分足(bar 59)の終値で閉じる。閉じた後は持ち高 0 で、次の合図(足 4 の弱い買い)で今までどおり入る。"""
+    s = k1sim(entry="a", fill="close", k1_time_exit_bars=2)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(2, FLAT) + foot_rows(3, FLAT)
+               + foot_rows(4, WEAK_BUY) + foot_rows(5, FLAT) + foot_rows(6, FLAT))
+    out = _feed_range(s, 0, 60, closes={29: P + 7, 59: P - 123})
+    assert out == [] and s._pos == -1.0 and s._trade["avg"] == P + 7
+    out = _feed_range(s, 60, 61, closes={60: P - 999})
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["exit_signal"], r["exit_signal_ns"], r["entry_ns"])
+            for r in out] == [(EXIT_K1_TIME, P - 123, T0 + 60 * M, EXIT_K1_TIME, T0 + 60 * M, T0 + 30 * M)]
+    assert out[0]["pnl_bp"] == pytest.approx(-1 * ((P - 123) / (P + 7) - 1) * 1e4, rel=1e-12)
+    assert s._pos == 0.0 and s._trade is None
+    out = _feed_range(s, 61, 91, closes={89: P + 55})
+    assert out == [] and s._pos == 1.0 and s._trade["avg"] == P + 55 and s._trade["entry_ns"] == T0 + 90 * M
+    assert s.action_log == [("open", T0 + 30 * M, -1), ("open", T0 + 90 * M, 1)]
+
+
+def test_k1_time_exit_at_the_same_boundary_as_an_opposite_signal_exit_keeps_the_signal_exit():
+    """同じ区切りで持ち越した反対の弱い合図の降りると時間で降りるが重なったら、合図の行動が先(取引は合図で閉じ、
+    その後に反対の向きへ入らない)。【置いた形】"""
+    s = k1sim(entry="a", fill="close", k1_time_exit_bars=2)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(2, WEAK_BUY) + foot_rows(3, FLAT)
+               + foot_rows(4, FLAT))
+    out = _feed_range(s, 0, 80, closes={59: P - 40})
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["exit_signal"]) for r in out] == [
+        (EXIT_CLOSE, P - 40, T0 + 60 * M, XSIG_WEAK)]
+    assert s.action_log == [("open", T0 + 30 * M, -1), ("exit", T0 + 60 * M, 1)] and s._pos == 0.0
+
+
+
+def test_k1_time_exit_counts_only_feet_that_closed():
+    """時間で降りる(N = 2)の数え方: 参照の行が無い足(足 2、30〜45 分)は閉じないので数えない。建てたのは 30 分、
+    その後に閉じる区切りは 60 分(1 本目)・75 分(2 本目)で、75 分の直前の終値(bar 74)で閉じる(時計の 60 分ではない)。"""
+    s = k1sim(entry="a", fill="close", k1_time_exit_bars=2)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(3, FLAT) + foot_rows(4, FLAT)
+               + foot_rows(5, FLAT))
+    out = _feed_range(s, 0, 75, closes={59: P - 5, 74: P - 77})
+    assert out == [] and s._pos == -1.0 and s._trade["entry_ns"] == T0 + 30 * M
+    out = _feed_range(s, 75, 76)
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"]) for r in out] == [(EXIT_K1_TIME, P - 77, T0 + 75 * M)]
+
+
+@pytest.mark.parametrize("held,want_side", [(WEAK_SELL, -1), (WEAK_BUY, 1)])
+def test_k1_stop_then_the_held_signal_acts_on_flat_position(held, want_side):
+    """値段で降りた後、降りる前に出て持ち越した合図は今の形のまま(リードの決め): 持ち高 0 なので、次の区切りで
+    同じ向きの合図なら同じ向きへ入り直し、反対の向きの合図なら反対の向きへ入る。
+    足 104(520〜525 分)の合図は区切り 525 分で出て、530 分まで持ち越す。その間の 526 分の足で値段で降りる。"""
+    s = k1sim(foot_min=5, entry="a", fill="close", k1_stop_k=2)
+    s.add_refs(_gate_rows(102) + foot_rows(102, WEAK_SELL, foot=5) + foot_rows(103, FLAT, foot=5)
+               + foot_rows(104, held, foot=5) + foot_rows(105, FLAT, foot=5) + foot_rows(106, FLAT, foot=5))
+    out = _feed_range(s, 0, 526)
+    assert out == [] and s._pos == -1.0 and s._pending is not None and s._pending["sig"] == want_side
+    hit = math.ceil(P * (1 + 2 * s._trade["vol"] / 1e4)) + 1
+    out = _feed_range(s, 526, 531, closes={i: hit for i in range(526, 531)})
+    assert [(r["exit_reason"], r["exit_ns"]) for r in out] == [(EXIT_K1_STOP, T0 + 527 * M)]
+    assert s._pos == want_side * 1.0 and s._trade["entry_ns"] == T0 + 530 * M and s._trade["avg"] == hit
+    assert s.action_log == [("open", T0 + 520 * M, -1), ("open", T0 + 530 * M, want_side)]
+
+
+def test_k1_time_exit_count_restarts_for_each_trade():
+    """時間で降りる(N = 2)の数えは取引ごと: 1 本目は 30 分に建てて 60 分に閉じる。2 本目は 90 分に建て、自分の建てた
+    時刻から 2 本目の区切り 120 分に閉じる(1 本目の数えを引き継げば 105 分に閉じる)。"""
+    s = k1sim(entry="a", fill="close", k1_time_exit_bars=2)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(2, FLAT) + foot_rows(3, FLAT)
+               + foot_rows(4, WEAK_BUY) + sum((foot_rows(j, FLAT) for j in range(5, 10)), []))
+    out = _feed_range(s, 0, 121, closes={59: P - 123, 89: P + 55, 119: P + 66})
+    assert [(r["side"], r["entry_ns"], r["exit_ns"], r["exit_price"], r["exit_reason"]) for r in out] == [
+        (-1, T0 + 30 * M, T0 + 60 * M, P - 123, EXIT_K1_TIME), (1, T0 + 90 * M, T0 + 120 * M, P + 66, EXIT_K1_TIME)]
+
+
+def test_k1_stop_closes_exactly_at_k_times_vol():
+    """ちょうど k × v bp で閉じる(等号)。建値 2^20 円・終値 2^20 + 2^10 円で、不利な動きは 1e4 × 2^-10 = 9.765625 bp
+    (浮動小数で厳密)。k = 2.5、v = 3.90625(厳密)で k × v = 9.765625。v は試験の中で取引に置く。"""
+    avg, c_eq = 1048576.0, 1049600.0
+    assert (c_eq / avg - 1.0) * 1e4 == 2.5 * 3.90625 == 9.765625
+    s = k1sim(entry="a", fill="close", k1_stop_k=2.5)
+    s.add_refs(foot_rows(0, WEAK_SELL) + foot_rows(1, FLAT) + foot_rows(2, FLAT))
+    for i in range(31):
+        s.feed(bar(i, avg, c=avg))
+    assert s._pos == -1.0 and s._trade["avg"] == avg and s._trade["vol"] is None
+    s._trade["vol"] = 3.90625
+    assert s.feed(bar(31, avg, c=c_eq - 1)) == []  # 1 円手前
+    out = s.feed(bar(32, avg, c=c_eq))
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"]) for r in out] == [(EXIT_K1_STOP, c_eq, T0 + 33 * M)]
+
+@pytest.mark.parametrize("kw", [{"k1_stop_k": 1e9}, {"k1_time_exit_bars": 10**6},
+                                {"k1_stop_k": 1e9, "k1_time_exit_bars": 10**6}])
+def test_k1_exits_that_never_fire_leave_the_output_unchanged(kw):
+    rows = _k1_walk(6000, 61)
+    out = {}
+    for name, extra in (("off", {}), ("on", kw)):
+        s = k1sim(entry="a", fill="close", foot_min=5, **extra)
+        s.add_refs(rows)
+        r = _feed_range(s, 0, 6002, closes={i: P + 37 * ((i * 7919) % 41 - 20) for i in range(6002)}) + s.finish()
+        out[name] = (r, s.order_log, s.action_log, s.decisions, s.signal_log)
+    assert len(out["off"][0]) > 10 and out["on"] == out["off"]
+
+
+def _default_digest(kind, kw, n=3000):
+    """既定(切)の出力の指紋(取引の行・注文の記録・行動の記録・判定の数・決まらない足・合図)。"""
+    import hashlib
+    import json
+    t0 = 1_546_300_800 * NS - 3000 * M
+    refs = _k1_walk(n, 41, t0=t0) if kind == "k1" else _walk(n, 52, t0)[0]
+    _r, bars = _walk(n, 42, t0)
+    s = KatsuoLimitSim(**kw)
+    s.add_refs(refs)
+    rows = [r for b in bars for r in s.feed(b)] + s.finish()
+    blob = json.dumps({"rows": rows, "order_log": s.order_log, "action_log": s.action_log,
+                       "decisions": s.decisions, "und": s.undecided_bars, "signals": s.signal_log},
+                      sort_keys=True, ensure_ascii=False)
+    return len(rows), hashlib.sha256(blob.encode()).hexdigest()
+
+
+def _default_configs():
+    out = []
+    for foot in (1, 15):
+        for at_max in ("skip", "flip"):
+            for side in ("good", "bad"):
+                out.append(("v03", {"fill_side": side, "at_max": at_max, "foot_min": foot}))
+    for foot in (5, 15):
+        for entry in ("a", "b", "c"):
+            for fill in ("limit", "close", "limit_entry_close_exit", "close_entry_limit_exit"):
+                for gate in (False, True):
+                    out.append(("k1", {"fill_side": "bad", "design": "k1", "foot_min": foot, "entry": entry,
+                                       "fill": fill, "vol_gate": gate, "vol_edges": (3.0, 6.0)}))
+    for entry in ("a", "b", "c"):
+        for fill in ("limit", "close"):
+            out.append(("k1", {"fill_side": "good", "design": "k1", "foot_min": 1, "side_keep": "strong",
+                               "entry": entry, "fill": fill}))
+    out.append(("k1", {"fill_side": "good", "design": "k1", "foot_min": 5, "entry": "a", "fill": "close",
+                       "vol_gate": True, "vol_gate_mode": "rolling", "vol_roll_days": 2, "vol_roll_min": 5}))
+    return out
+
+
+def test_default_output_is_the_same_as_before_the_exit_switches():
+    """既定(切)の出力が、切り替えを足す前のコード(コミット c8af047)と同じ。63 組の指紋をまとめた値を、そのコードで
+    同じ関数を回して出した値と比べる。"""
+    import hashlib
+    tot = hashlib.sha256()
+    for kind, kw in _default_configs():
+        nrows, h = _default_digest(kind, kw)
+        assert nrows > 5
+        tot.update(h.encode())
+    assert tot.hexdigest() == "e32bdfd29238f6f3bbc296785904e881f258176acf956c4733a7518f97a72fef"
+
+
+@pytest.mark.parametrize("kw", [
+    {"design": "v03", "at_max": "skip", "entry": "c", "k1_stop_k": 1},
+    {"design": "v03", "at_max": "skip", "entry": "c", "k1_time_exit_bars": 6},
+    {"entry": "b", "fill": "close", "k1_stop_k": 1}, {"entry": "c", "fill": "close", "k1_time_exit_bars": 6},
+    {"entry": "a", "fill": "limit", "k1_stop_k": 1}, {"entry": "a", "fill": "limit", "k1_time_exit_bars": 6},
+    {"entry": "a", "fill": "limit_entry_close_exit", "k1_stop_k": 1},
+    {"entry": "a", "fill": "close_entry_limit_exit", "k1_time_exit_bars": 6},
+    {"fill": "close", "k1_stop_k": 0}, {"fill": "close", "k1_stop_k": -1}, {"fill": "close", "k1_stop_k": True},
+    {"fill": "close", "k1_stop_k": float("nan")}, {"fill": "close", "k1_stop_k": float("inf")},
+    {"fill": "close", "k1_stop_k": "1"}, {"fill": "close", "k1_time_exit_bars": 0},
+    {"fill": "close", "k1_time_exit_bars": 6.0}, {"fill": "close", "k1_time_exit_bars": True}])
+def test_k1_exit_switches_outside_entry_a_close_are_refused(kw):
+    with pytest.raises(ValueError):
+        k1sim(**kw)
+
+
+def test_run_split_stats_gives_the_new_exits_their_own_bucket_and_batch_lists_the_exit_jobs():
+    R = _load_w4("c2_limit_run")
+
+    def row(xsig, pnl):
+        return {"pnl_bp": pnl, "exit_signal": xsig, "strength": WEAK, "undecided": 0, "exit_reason": EXIT_CLOSE}
+    base = [row(XSIG_WEAK, 1.0), row(None, -2.0)]
+    assert list(R.split_stats(base)["by_exit_signal"]) == [XSIG_WEAK, XSIG_LINE, "降りる注文以外(ドテン・期間の終わり)"]
+    got = R.split_stats(base + [row(EXIT_K1_STOP, -3.0), row(EXIT_K1_TIME, 4.0)])["by_exit_signal"]
+    assert got[EXIT_K1_STOP]["sum_bp"] == -3.0 and got[EXIT_K1_TIME]["sum_bp"] == 4.0
+    assert sum(v["trades"] for v in got.values()) == 4
+    B = _load_w4("c2_limit_batch")
+    assert [n for n, _a in B.JOBS_EXITS] == [f"weak_f{f}_close_a_{x}" for f in (5, 15)
+                                             for x in ("stop1", "stop2", "stop3", "time6", "time12", "time24")]
+    for n, a in B.JOBS_EXITS:
+        assert a[a.index("--entry") + 1] == "a" and a[a.index("--fill") + 1] == "close" and "--vol-gate" not in a
+        assert ("--k1-stop-k" in a) == ("stop" in n) and ("--k1-time-exit-bars" in a) == ("time" in n)
