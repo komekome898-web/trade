@@ -8,6 +8,8 @@ O6 境は置かない。どちらの側を主にするかは書かない(リー�
 """
 # 走らせ(読むだけ・冪等・ネットワークなし。出力に時刻・所要時間は入れない):
 #     PYTHONPATH=src python3 scripts/w4_measure/c4_w6b_order.py [--out docs/RESEARCH/WINDOW1/W6B_PRESEAL]
+#     W4_WINDOW1=P2-08-explore PYTHONPATH=src python3 scripts/w4_measure/c4_w6b_order.py --window [--out docs/RESEARCH/WINDOW1/W6B_WINDOW]
+#         (--window は窓の 10 日を測る。窓の口の門 = 環境変数と承認のファイルが要る。走らせはリードが、窓の口の批評家を通った後に行う)
 # 約定の記録は下の TRADE_FILES の 6 日だけ(2023 年。窓の中の 2024 年のファイルは開かない。名前が表に無ければ拒む)。
 # 1 分足は common.load_bars の既定(封印の門のまま。終わりは 2023-12-02T00:00Z で、2023-12-18 より前)。
 # 台本の決め(委任文に書いていない所。TABLES.md の「測り方の補足」に同じ文を出す):
@@ -18,6 +20,14 @@ O6 境は置かない。どちらの側を主にするかは書かない(リー�
 #     行の中で最も早い時刻を「最初の約定の時刻」とする(ファイルの行の順に頼らない)。
 #   - (2026-10-04 追記、批評家の問 6)約定の記録に無い分は「決まらない」。O5 は値の等しさ。足は 2 回に分けて続けて流す。
 #     足は no_trade を落とす既定。2023 年のファイルの範囲外の行はデータ層が落とす。
+# --window(2026-10-04 追記。読み方の決まり O1〜O6 は変えない。日の一覧と足の範囲だけが変わる):
+#   - 約定の記録は下の TRADE_FILES_WINDOW の 10 日(2024 年の 1〜10 月の各 1 日)だけ。表に無い名前は --window でも拒む。
+#     --window なしは 6 日の表だけで、窓の 10 日の名前は拒む(既定の出力は変わらない)。
+#   - 足は 2022-07-01 から 2024-10-02T00:00Z まで、暦年ごとに 3 回(〜2023-01-01、〜2024-01-01、〜2024-10-02)に分けて同じ
+#     シミュレーターに続けて流す。数えるのは 10 日の足だけ(外の足は流すが数えない)。封印の境(2023-12-18)より後に
+#     かかる区切りは common.load_bars(window=True)(窓の口。環境変数・承認のファイル・記録)で読む。
+#   - 約定の記録の 10 日のファイルを開く前に common.window_guard を 1 回呼ぶ(記録に 1 行。門が欠ければ何も開かずに拒む)。
+#   - 2024-03-28 の商品の切り替え(FX → CFD)の前(1〜3 月の 3 日)と後(4〜10 月の 7 日)の小計を足す(O4 と同じ数え方。日ごとの数の合計)。
 from __future__ import annotations
 
 import argparse
@@ -31,25 +41,33 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from common import FX_DIR, MIN_NS, NS, ROOT, iso, load_bars, to_iso  # noqa: E402
+from common import FX_DIR, MIN_NS, NS, ROOT, SEAL, iso, load_bars, to_iso, to_ns, window_guard  # noqa: E402
 
 from bot.research.matilda_limit_sim import MatildaLimitSim  # noqa: E402
 
 TRADE_DIR = "data/tardis/bitflyer_FX_BTC_JPY_trades"
 TRADE_FILES = tuple(f"FX_BTC_JPY_2023{md}.csv.gz" for md in ("0701", "0801", "0901", "1001", "1101", "1201"))
+TRADE_FILES_WINDOW = tuple(f"FX_BTC_JPY_2024{md}.csv.gz"
+                           for md in ("0101", "0201", "0301", "0401", "0501", "0601", "0701", "0801", "0901", "1001"))
+WINDOW_BARS_END = "2024-10-02T00:00:00Z"  # 窓の 10 日の最後の日(2024-10-01)の終わり
+WINDOW_BAR_CUTS = ("2023-01-01T00:00:00Z", "2024-01-01T00:00:00Z")  # 窓の足の暦年ごとの区切り
+SWITCH_DAY = "2024-03-28"  # 商品の切り替え(FX → CFD。事前登録 §1)。この日より前の日 = 前、この日以後 = 後
 START = "2022-07-01T00:00:00Z"  # 足を流し始める日(過去だけの門の 365 日の履歴のため)
 END = "2023-12-02T00:00:00Z"  # 6 日目(2023-12-01)の終わり
 SIM_KW = {"ratio_gate_mode": "rolling", "exit_form": "center", "entry": 4, "exit_setting": 3}
 SIDES = ("good", "bad")
+PERIOD_LABELS = (("before", "前(FX、〜2024-03-27)の小計"), ("after", "後(CFD、2024-03-28〜)の小計"))
 US_PER_MIN = 60_000_000
 Z95 = 1.959963984540054
 OUT_DEFAULT = os.path.join(ROOT, "docs/RESEARCH/WINDOW1/W6B_PRESEAL")
+OUT_WINDOW = os.path.join(ROOT, "docs/RESEARCH/WINDOW1/W6B_WINDOW")
 
 
-def day_of(name: str) -> str:
-    """ファイル名 FX_BTC_JPY_YYYYMMDD.csv.gz の日付(UTC)。表に無い名前は拒む。"""
-    if name not in TRADE_FILES:
-        raise SystemExit(f"拒否: 約定のファイル {name!r} は使う 6 日の表に無い(2024 年のファイルは開かない)")
+def day_of(name: str, table: tuple = TRADE_FILES) -> str:
+    """ファイル名 FX_BTC_JPY_YYYYMMDD.csv.gz の日付(UTC)。表(既定は 6 日。--window は 10 日)に無い名前は拒む。"""
+    if name not in table:
+        raise SystemExit(f"拒否: 約定のファイル {name!r} は使う {len(table)} 日の表に無い"
+                         + ("(2024 年のファイルは --window でだけ開く)" if table is TRADE_FILES else ""))
     d = name[len("FX_BTC_JPY_"):len("FX_BTC_JPY_") + 8]
     return f"{d[:4]}-{d[4:6]}-{d[6:]}"
 
@@ -92,9 +110,9 @@ def minute_order(trades) -> str:
     return m.order()
 
 
-def read_trade_minutes(name: str) -> dict:
+def read_trade_minutes(name: str, table: tuple = TRADE_FILES) -> dict:
     """1 日のファイルを読み、UTC の分の始まり(ns)→ MinuteAgg。日の外の時刻の行があれば拒む。"""
-    day = day_of(name)
+    day = day_of(name, table)
     lo_us, hi_us = day_ns(day) // 1000, day_ns(day) // 1000 + 86_400 * 1_000_000
     out: dict = {}
     with gzip.open(os.path.join(ROOT, TRADE_DIR, name), "rt", encoding="utf-8", newline="") as fh:
@@ -109,9 +127,9 @@ def read_trade_minutes(name: str) -> dict:
     return out
 
 
-def md5_check(name: str) -> dict:
+def md5_check(name: str, table: tuple = TRADE_FILES) -> dict:
     """MD5SUMS の該当行(その行だけを読む)と、ファイルの md5 の照合。"""
-    day_of(name)
+    day_of(name, table)
     want = None
     with open(os.path.join(ROOT, TRADE_DIR, "MD5SUMS"), encoding="utf-8") as fh:
         for line in fh:
@@ -183,7 +201,23 @@ def add_counts(rows: list) -> dict:
     return r
 
 
+def period_of(day: str) -> str:
+    """商品の切り替え(SWITCH_DAY)の前 = "before"(FX)、以後 = "after"(CFD)。日付(UTC の日)で決める。"""
+    return "before" if day < SWITCH_DAY else "after"
+
+
+def subtotals(by_day: dict, days: list) -> dict:
+    """日ごとの数え(count_matches の出力。キーは日)を、切り替えの前後に分けた合計(add_counts。割合と区間は小計の数から作り直す)。"""
+    return {p: add_counts([by_day[d] for d in days if period_of(d) == p]) for p in ("before", "after")}
+
+
 # ---------------------------------------------------------------- O5 足の食い違い
+def mismatch_subtotals(mm_day: dict, days: list) -> dict:
+    """O5 の日ごとの数(count_mismatch の出力。キーは日)の、切り替えの前後の合計。"""
+    return {p: {k: sum(mm_day[d][k] for d in days if period_of(d) == p) for k in next(iter(mm_day.values()))}
+            for p in ("before", "after")}
+
+
 def count_mismatch(bars: dict, minutes: dict, in_range) -> dict:
     """bars: 分の始まり(ns)→ (高値, 安値)。minutes: 分の始まり(ns)→ MinuteAgg。範囲内の分を数える。
     both = 両方にある分。hi_diff / lo_diff / any_diff = そのうち高値 / 安値 / どちらかが違う分。bars_only / trades_only = 片方にだけある分。"""
@@ -236,7 +270,9 @@ def ci(r) -> str:
 
 def render(res: dict) -> str:
     days = res["days"]
-    L = ["# W6b 順序の確かめ(封印の前の 6 日)", "",
+    win = res.get("window", False)
+    n = len(days)
+    L = [f"# W6b 順序の確かめ({'窓の ' if win else '封印の前の '}{n} 日)", "",
          "数字はすべて `scripts/w4_measure/c4_w6b_order.py` が出した(手で書いていない)。読み方の決まり O1〜O6 は台本の docstring の冒頭。"
          "読みは書かない(O6)。", "",
          "## 測り方の補足(台本の決め。委任文に書いていない所)", "",
@@ -250,11 +286,26 @@ def render(res: dict) -> str:
          # 2026-10-04 追記(批評家の問 6 の [直す]。数え方は変えていない。開示の文だけ)
          "- 約定の記録に無い分は、本当の順序を「決まらない」として数える。",
          "- O5 の「違う」は値の等しさで判定する(値段は整数の円)。",
-         "- 1 分足は 2023-01-01T00:00Z で 2 回に分けて読み、同じシミュレーターに続けて流す。",
+         ("- (6 日の版の補足)" if win else "- ") + "1 分足は 2023-01-01T00:00Z で 2 回に分けて読み、同じシミュレーターに続けて流す。",
          "- 1 分足は読み込みの既定(`no_trade` の分 = 約定の無い分を落とす)で流す(落とした分の数は下の「異常の種類」)。",
-         "- 年ごとのファイル `candles_1m_2023.csv.gz` は 2023-12-31 までの行を含む。データ層がファイルを 1 回読んで範囲の外の行を"
-         "落とし、台本とシミュレーターには 2023-12-02T00:00Z より前の足だけが渡る(既存のデータ層の振る舞い)。", "",
-         "## 入力", "",
+         ("- (6 日の版の補足)" if win else "- ")
+         + "年ごとのファイル `candles_1m_2023.csv.gz` は 2023-12-31 までの行を含む。データ層がファイルを 1 回読んで範囲の外の行を"
+         "落とし、台本とシミュレーターには 2023-12-02T00:00Z より前の足だけが渡る(既存のデータ層の振る舞い)。"]
+    if win:
+        L += ["- (この版で足した決め・窓の口)1 分足は 2022-07-01T00:00Z から 2024-10-02T00:00Z まで(終わりは含まない)、暦年ごとに 3 回"
+              "(〜2023-01-01、〜2024-01-01、〜2024-10-02)に分けて読み、同じシミュレーターに続けて流す。数えるのは 10 日の足だけ"
+              "(10 日の外の足は流すが数えない)。",
+              "- (この版で足した決め・窓の口)2023-12-18 より後にかかる区切り(2023 年、2024 年の 2 回)は `common.load_bars(window=True)` で読む"
+              "(窓の口の門 = 環境変数 `W4_WINDOW1` と承認のファイル、読む前に記録へ 1 行)。2022 年の区切りは既定の呼び方。",
+              "- (この版で足した決め・窓の口)約定の記録の 10 日のファイルを開く前に、`common.window_guard` を 1 回呼ぶ"
+              "(2024-01-01T00:00Z 〜 2024-10-02T00:00Z、記録に 1 行。門が欠ければ何も開かずに拒む)。",
+              "- (この版で足した決め・窓の口)年ごとのファイル `candles_1m_2024.csv.gz` は 2024-10-02T00:00Z 以後の行を含む。データ層の範囲"
+              "(終わりを含まない)で落とされ、台本とシミュレーターには 2024-10-02T00:00Z より前の足だけが渡る。",
+              "- (この版で足した決め・前後の小計)商品の切り替え 2024-03-28(FX → CFD。事前登録 §1)の前 = 1〜3 月の 3 日、後 = 4〜10 月の 7 日。"
+              "日付で分ける(10 日のどの日も 2024-03-28 をまたがない)。小計は日ごとの数の合計で、割合と Wilson 区間は小計の数から作り直す"
+              "(O4 の数え方と同じ。O5 の食い違いも日ごとの数の合計)。",
+              "- 約定の記録は 10 日の表(2024 年の 1〜10 月の各 1 日)だけ。表に無い名前は拒む。"]
+    L += ["", "## 入力", "",
          f"- 1 分足: `{FX_DIR}`、{res['bars_range'][0]} 〜 {res['bars_range'][1]}(終わりは含まない)、"
          f"読んだ足 {res['bars_loaded']} 本、異常の種類 {json.dumps(res['bar_anomalies'], ensure_ascii=False)}",
          f"- 形: `MatildaLimitSim(fill_side=…, " + ", ".join(f"{k}={v!r}" for k, v in SIM_KW.items()) + ")`",
@@ -263,7 +314,7 @@ def render(res: dict) -> str:
     for d in days:
         v = res["trade_files"][d]
         L.append(f"| {d} | {v['file']} | {v['md5']['match']} | {v['rows']} | {v['minutes']} |")
-    L += ["", "- 過去だけの門の日: 6 日それぞれで門が掛かった(境が None でない)か: "
+    L += ["", f"- 過去だけの門の日: {n} 日それぞれで門が掛かった(境が None でない)か: "
           + ", ".join(f"{s} {res['gate'][s]}" for s in SIDES), ""]
 
     for s in SIDES:
@@ -278,7 +329,16 @@ def render(res: dict) -> str:
               + " / ".join(f"{d} {res['sides'][s]['by_day'][d]['truth_up']}・{res['sides'][s]['by_day'][d]['truth_down']}"
                            for d in days)
               + f" / 合計 {res['sides'][s]['total']['truth_up']}・{res['sides'][s]['total']['truth_down']}", ""]
-        L += [f"決まらない足の場合分け(6 日の合計。`kind` は記録の口の分類):", "",
+        if win:
+            L += ["前後の小計(商品の切り替え 2024-03-28 の前 = 1〜3 月の 3 日、後 = 4〜10 月の 7 日。日ごとの数の合計):", "",
+                  "| 小計 | 決まらない足 | 両方同じ扱い | 本当の順序が決まった | 照合の対象 | 一致 | 割合 | Wilson 95% |",
+                  "|---|---|---|---|---|---|---|---|"]
+            for p, label in PERIOD_LABELS:
+                r = res["sides"][s]["subtotals"][p]
+                L.append(f"| {label} | {r['undecided']} | {r['same']} | {r['truth_decided']} | {r['compared']} | {r['match']} "
+                         f"| {pct(r)} | {ci(r)} |")
+            L.append("")
+        L += [f"決まらない足の場合分け({n} 日の合計。`kind` は記録の口の分類):", "",
               "| 場合 | 決まらない足 | 両方同じ扱い | 本当の順序が決まった | 照合の対象 | 一致 | 割合 | Wilson 95% |",
               "|---|---|---|---|---|---|---|---|"]
         for k, r in res["sides"][s]["by_kind"].items():
@@ -292,7 +352,11 @@ def render(res: dict) -> str:
     for d in days + ["合計"]:
         r = res["mismatch"]["by_day"].get(d) if d != "合計" else res["mismatch"]["total"]
         L.append(f"| {d} | {r['both']} | {r['hi_diff']} | {r['lo_diff']} | {r['any_diff']} | {r['bars_only']} | {r['trades_only']} |")
-    L += ["", "決まらない足(6 日の合計)の中で、足と約定の記録の両方がある分のうち、高値・安値のどちらかが違う分(O4 の数えから除いていない):", "",
+    if win:
+        for p, label in PERIOD_LABELS:
+            r = res["mismatch"]["subtotals"][p]
+            L.append(f"| {label} | {r['both']} | {r['hi_diff']} | {r['lo_diff']} | {r['any_diff']} | {r['bars_only']} | {r['trades_only']} |")
+    L += ["", f"決まらない足({n} 日の合計)の中で、足と約定の記録の両方がある分のうち、高値・安値のどちらかが違う分(O4 の数えから除いていない):", "",
           "| 側 | 決まらない足 | 両方にある分 | どちらかが違う |", "|---|---|---|---|"]
     for s in SIDES:
         r = res["sides"][s]["mismatch_undecided"]
@@ -305,11 +369,16 @@ def render(res: dict) -> str:
 
 
 # ---------------------------------------------------------------- 本体
-def main() -> int:
+def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=OUT_DEFAULT)
-    a = ap.parse_args()
-    days = [day_of(n) for n in TRADE_FILES]
+    ap.add_argument("--out", default=None, help=f"既定は {OUT_DEFAULT}(--window は {OUT_WINDOW})")
+    ap.add_argument("--window", action="store_true", help="窓の 10 日(2024 年の 1〜10 月の各 1 日)を測る。窓の口の門が要る")
+    a = ap.parse_args(argv)
+    table = TRADE_FILES_WINDOW if a.window else TRADE_FILES
+    out = a.out or (OUT_WINDOW if a.window else OUT_DEFAULT)
+    days = [day_of(n, table) for n in table]
+    if a.window:  # 約定の記録の 10 日のファイルを開く前に、窓の口の門を 1 回(記録に 1 行。欠ければここで拒む)
+        window_guard(day_ns(days[0]), iso(WINDOW_BARS_END), script=os.path.basename(__file__), what="w6b 約定の記録 10 日")
     day_starts = [day_ns(d) for d in days]
 
     def in_days(ns: int) -> bool:
@@ -322,10 +391,10 @@ def main() -> int:
     # 約定の記録(6 日だけ)
     minutes: dict = {}
     tfiles: dict = {}
-    for n, d in zip(TRADE_FILES, days):
-        m = read_trade_minutes(n)
+    for n, d in zip(table, days):
+        m = read_trade_minutes(n, table)
         minutes.update(m)
-        md5 = md5_check(n)
+        md5 = md5_check(n, table)
         if not md5["match"]:
             raise SystemExit(f"拒否: {n} の md5 が MD5SUMS と違う")
         rows = 0
@@ -335,14 +404,15 @@ def main() -> int:
     truth = {k: m.order() for k, m in minutes.items()}
 
     # 1 分足を 2 つのシミュレーターに流す(封印の門の既定の呼び方。年ごとに区切る)
-    lo, hi = iso(START), iso(END)
-    cut = iso("2023-01-01T00:00:00Z")
+    lo, hi = iso(START), iso(WINDOW_BARS_END if a.window else END)
+    edges = [lo, *(iso(c) for c in WINDOW_BAR_CUTS), hi] if a.window else [lo, iso("2023-01-01T00:00:00Z"), hi]
     logs = {s: [] for s in SIDES}
     sims = {s: MatildaLimitSim(fill_side=s, undecided_log=logs[s], **SIM_KW) for s in SIDES}
     bars_6: dict = {}
     n_bars, kinds_all, hashes = 0, {}, {}
-    for x, y in ((lo, cut), (cut, hi)):
-        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y)
+    for x, y in zip(edges[:-1], edges[1:]):
+        # 窓のときは、封印の境(2023-12-18)より後にかかる区切りだけ窓の口(window=True)で読む。それ以外は既定の呼び方
+        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y, **({"window": True} if a.window and y > to_ns(SEAL) else {}))
         hashes.update(h)
         for k, v in kinds.items():
             kinds_all[k] = kinds_all.get(k, 0) + v
@@ -368,13 +438,18 @@ def main() -> int:
     mm_day = {d: count_mismatch(bars_6, minutes, in_day(i)) for i, d in enumerate(days)}
     tot = {k: sum(x[k] for x in mm_day.values()) for k in next(iter(mm_day.values()))}
     res["mismatch"] = {"by_day": mm_day, "total": tot}
+    if a.window:  # 窓の版だけ: 商品の切り替えの前後の小計(--window なしの出力には何も足さない)
+        res["window"] = True
+        for s in SIDES:
+            res["sides"][s]["subtotals"] = subtotals(res["sides"][s]["by_day"], days)
+        res["mismatch"]["subtotals"] = mismatch_subtotals(mm_day, days)
 
-    os.makedirs(a.out, exist_ok=True)
-    with open(os.path.join(a.out, "w6b.json"), "w", encoding="utf-8") as fh:
+    os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "w6b.json"), "w", encoding="utf-8") as fh:
         fh.write(json.dumps(res, ensure_ascii=False, sort_keys=True, indent=1, allow_nan=False) + "\n")
-    with open(os.path.join(a.out, "TABLES.md"), "w", encoding="utf-8") as fh:
+    with open(os.path.join(out, "TABLES.md"), "w", encoding="utf-8") as fh:
         fh.write(render(res))
-    print(f"書いた: {a.out}(足 {n_bars} 本)")
+    print(f"書いた: {out}(足 {n_bars} 本)")
     return 0
 
 

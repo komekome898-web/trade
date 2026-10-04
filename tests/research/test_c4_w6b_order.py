@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import gzip
 import importlib.util
+import json
 import os
 import sys
 from pathlib import Path
@@ -256,3 +257,172 @@ def test_undecided_log_does_not_change_the_rolling_center_form_either():
         ra, rb = tm.feed(a, bars) + a.finish(), tm.feed(b, bars) + b.finish()
         assert ra == rb and a.undecided_bars == b.undecided_bars == len(la)
         assert a.rolling_edges == b.rolling_edges
+
+
+# ---------------------------------------------------------------- --window(窓の 10 日。合成の置き場だけ。窓のデータは開かない)
+CM = sys.modules[w.load_bars.__module__]  # w が読み込んだ common
+
+
+def test_window_table_is_the_ten_2024_days_and_refuses_other_names():
+    """--window の日の一覧は 2024 年の 1〜10 月の各 1 日の 10 日。表に無い名前(2025 年・2023 年・別の日・パスの細工)は拒む。"""
+    t = w.TRADE_FILES_WINDOW
+    assert [w.day_of(n, t) for n in t] == ["2024-01-01", "2024-02-01", "2024-03-01", "2024-04-01", "2024-05-01",
+                                           "2024-06-01", "2024-07-01", "2024-08-01", "2024-09-01", "2024-10-01"]
+    for name in ("FX_BTC_JPY_20250101.csv.gz", "FX_BTC_JPY_20251001.csv.gz", "FX_BTC_JPY_20230701.csv.gz",
+                 "FX_BTC_JPY_20240102.csv.gz", "FX_BTC_JPY_20241101.csv.gz", "../x.csv.gz"):
+        with pytest.raises(SystemExit):
+            w.day_of(name, t)
+        with pytest.raises(SystemExit):
+            w.read_trade_minutes(name, t)
+        with pytest.raises(SystemExit):
+            w.md5_check(name, t)
+    # 既定(--window なし)は今までと同じ 6 日だけ。窓の 10 日の名前は拒む
+    assert w.TRADE_FILES == tuple(f"FX_BTC_JPY_2023{md}.csv.gz" for md in ("0701", "0801", "0901", "1001", "1101", "1201"))
+    for name in t:
+        with pytest.raises(SystemExit):
+            w.day_of(name)
+
+
+def _synthetic_root(tmp_path, monkeypatch, env=False, approval=False):
+    """偽の置き場(本物の backtest_data/phase2_sealed/P2-08/ は使わない)。w と common の ROOT を差し替える。"""
+    r = tmp_path / "root"
+    (r / "backtest_data" / "phase2_sealed" / "P2-08").mkdir(parents=True)
+    monkeypatch.setattr(CM, "ROOT", str(r))
+    monkeypatch.setattr(w, "ROOT", str(r))
+    monkeypatch.delenv(CM.WINDOW1_ENV, raising=False)
+    if env:
+        monkeypatch.setenv(CM.WINDOW1_ENV, CM.WINDOW1_ENV_VALUE)
+    if approval:
+        (r / CM.WINDOW1_APPROVAL).write_text("test approval (合成)\n", encoding="utf-8")
+    return r
+
+
+class _Opened(Exception):
+    pass
+
+
+@pytest.mark.parametrize("env,approval", [(False, False), (True, False), (False, True)])
+def test_window_refuses_before_opening_any_trade_file_when_a_door_is_missing(tmp_path, monkeypatch, env, approval):
+    r = _synthetic_root(tmp_path, monkeypatch, env=env, approval=approval)
+
+    def boom(*a, **k):
+        raise _Opened("門より先に約定の記録または足を開いた")
+    for fn in ("read_trade_minutes", "md5_check", "load_bars"):
+        monkeypatch.setattr(w, fn, boom)
+    monkeypatch.setattr(w.gzip, "open", boom)
+    with pytest.raises(SystemExit) as e:
+        w.main(["--window", "--out", str(tmp_path / "out")])
+    assert "探索の窓の口" in str(e.value)
+    assert not (r / CM.WINDOW1_LOG).exists()      # 門が欠ければ記録にも書かない
+    assert not (tmp_path / "out").exists()
+
+
+def test_window_guard_is_called_once_with_the_ten_day_range_before_the_first_trade_file(tmp_path, monkeypatch):
+    """門が揃うと、約定の記録を開く前に記録へ 1 行(10 日の範囲)。その直後の最初のファイルを開くところで止める(窓のデータは開かない)。"""
+    r = _synthetic_root(tmp_path, monkeypatch, env=True, approval=True)
+    seen = []
+
+    def stop(name, table=None):
+        seen.append((name, table))
+        raise _Opened(name)
+    monkeypatch.setattr(w, "read_trade_minutes", stop)
+    with pytest.raises(_Opened):
+        w.main(["--window", "--out", str(tmp_path / "out")])
+    assert seen == [("FX_BTC_JPY_20240101.csv.gz", w.TRADE_FILES_WINDOW)]
+    lines = [json.loads(x) for x in (r / CM.WINDOW1_LOG).read_text(encoding="utf-8").splitlines()]
+    assert len(lines) == 1
+    assert (lines[0]["lo"], lines[0]["hi"], lines[0]["script"]) == ("2024-01-01T00:00:00Z", "2024-10-02T00:00:00Z",
+                                                                  "c4_w6b_order.py")
+
+
+def test_default_run_does_not_touch_the_window_door(tmp_path, monkeypatch):
+    """--window なしは窓の口を呼ばない(門が欠けていても、記録は書かれず、6 日の表で進む)。"""
+    r = _synthetic_root(tmp_path, monkeypatch)
+    seen = []
+
+    def stop(name, table=None):
+        seen.append((name, table))
+        raise _Opened(name)
+    monkeypatch.setattr(w, "read_trade_minutes", stop)
+    with pytest.raises(_Opened):
+        w.main(["--out", str(tmp_path / "out")])
+    assert seen == [("FX_BTC_JPY_20230701.csv.gz", w.TRADE_FILES)]
+    assert not (r / CM.WINDOW1_LOG).exists()
+
+
+# ---------------------------------------------------------------- 前後の小計
+def test_period_split_is_by_the_product_switch_day():
+    assert [w.period_of(d) for d in ("2024-01-01", "2024-03-01", "2024-03-27", "2024-03-28", "2024-04-01", "2024-10-01")] == [
+        "before", "before", "before", "after", "after", "after"]
+    days = [w.day_of(n, w.TRADE_FILES_WINDOW) for n in w.TRADE_FILES_WINDOW]
+    assert [w.period_of(d) for d in days] == ["before"] * 3 + ["after"] * 7
+
+
+def test_subtotals_are_summed_counts_per_period_not_averaged_ratios():
+    """合成の記録。前 = 1〜3 月の 3 日、後 = 4〜10 月の 7 日。割合と区間は小計の数から作り直す。"""
+    days = [w.day_of(n, w.TRADE_FILES_WINDOW) for n in w.TRADE_FILES_WINDOW]
+    by_day = {}
+    for i, d in enumerate(days):
+        if i == 0:      # 前の 1 日目: 2 件とも一致
+            log, truth = [_e(0, "up"), _e(1, "up")], {0: "up", M: "up"}
+        elif i == 1:    # 前の 2 日目: 1 件、不一致(下 ≠ 上)
+            log, truth = [_e(0, "down")], {0: "up"}
+        elif i == 2:    # 前の 3 日目: 同じ扱い 1 件 + 順序が決まらない 1 件
+            log, truth = [_e(0, "same", "r2_same_events"), _e(1, "up")], {0: "up", M: "none"}
+        elif i == 3:    # 後の 1 日目: 3 件一致
+            log, truth = [_e(0, "down"), _e(1, "down"), _e(2, "up")], {0: "down", M: "down", 2 * M: "up"}
+        else:           # 後の残りの日: 記録なし
+            log, truth = [], {}
+        by_day[d] = w.count_matches(log, truth, lambda ns: True)
+    st = w.subtotals(by_day, days)
+    b, a = st["before"], st["after"]
+    assert (b["undecided"], b["same"], b["truth_decided"], b["compared"], b["match"]) == (5, 1, 4, 3, 2)
+    assert b["ratio"] == pytest.approx(2 / 3) and b["wilson"] == w.wilson(2, 3)
+    assert (a["undecided"], a["same"], a["truth_decided"], a["compared"], a["match"]) == (3, 0, 3, 3, 3)
+    assert a["ratio"] == 1.0 and a["wilson"] == w.wilson(3, 3)
+    # 前後の小計の合計 = 10 日の合計(O4 の数え方は同じ)
+    assert w.add_counts([b, a]) == w.add_counts(list(by_day.values()))
+
+
+def test_mismatch_subtotals_are_summed_per_period():
+    days = [w.day_of(n, w.TRADE_FILES_WINDOW) for n in w.TRADE_FILES_WINDOW]
+    base = {"both": 0, "hi_diff": 0, "lo_diff": 0, "any_diff": 0, "bars_only": 0, "trades_only": 0}
+    mm = {d: dict(base) for d in days}
+    mm[days[0]].update(both=10, hi_diff=1, any_diff=1)
+    mm[days[2]].update(both=5, lo_diff=2, any_diff=2, trades_only=1)
+    mm[days[9]].update(both=7, hi_diff=3, lo_diff=1, any_diff=3, bars_only=2)
+    st = w.mismatch_subtotals(mm, days)
+    assert st["before"] == {"both": 15, "hi_diff": 1, "lo_diff": 2, "any_diff": 3, "bars_only": 0, "trades_only": 1}
+    assert st["after"] == {"both": 7, "hi_diff": 3, "lo_diff": 1, "any_diff": 3, "bars_only": 2, "trades_only": 0}
+
+
+def test_render_window_has_subtotals_and_default_render_has_none():
+    """表の形: 窓の版だけが前後の小計の行と補足を持つ。既定の版の文面に窓の語は入らない。"""
+    def counts(k):
+        return {"undecided": k, "same": 0, "truth_decided": k, "truth_up": k, "truth_down": 0, "compared": k, "match": k,
+                "ratio": 1.0 if k else None, "wilson": w.wilson(k, k)}
+    mm0 = {"both": 1, "hi_diff": 0, "lo_diff": 0, "any_diff": 0, "bars_only": 0, "trades_only": 0}
+
+    def res_for(days, window):
+        r = {"days": days, "bars_range": ["a", "b"], "bars_loaded": 1, "bar_anomalies": {}, "bar_files": {}, "sim_kw": w.SIM_KW,
+             "trade_files": {d: {"file": "f", "md5": {"match": True}, "rows": 1, "minutes": 1} for d in days},
+             "gate": {s: {d: True for d in days} for s in w.SIDES}, "sides": {},
+             "mismatch": {"by_day": {d: dict(mm0) for d in days}, "total": dict(mm0)}}
+        for s in w.SIDES:
+            r["sides"][s] = {"by_day": {d: counts(1) for d in days}, "total": counts(len(days)), "by_kind": {"one_tp": counts(1)},
+                             "mismatch_undecided": {"undecided": 1, "both": 1, "any_diff": 0}, "undecided_bars_all": 1,
+                             "log_len_all": 1}
+        if window:
+            r["window"] = True
+            for s in w.SIDES:
+                r["sides"][s]["subtotals"] = {"before": counts(3), "after": counts(7)}
+            r["mismatch"]["subtotals"] = {"before": dict(mm0), "after": dict(mm0)}
+        return r
+    wdays = [w.day_of(n, w.TRADE_FILES_WINDOW) for n in w.TRADE_FILES_WINDOW]
+    t_win = w.render(res_for(wdays, True))
+    assert t_win.startswith("# W6b 順序の確かめ(窓の 10 日)")
+    assert t_win.count("前(FX、〜2024-03-27)の小計") == 3 and t_win.count("後(CFD、2024-03-28〜)の小計") == 3  # 良い・悪い・O5
+    assert "(6 日の版の補足)" in t_win and "window_guard" in t_win and "前後の小計" in t_win
+    t_pre = w.render(res_for(list(w.day_of(n) for n in w.TRADE_FILES), False))
+    assert t_pre.startswith("# W6b 順序の確かめ(封印の前の 6 日)")
+    assert "小計" not in t_pre and "window" not in t_pre and "窓" not in t_pre
