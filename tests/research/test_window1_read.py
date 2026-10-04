@@ -165,3 +165,54 @@ def test_check_d0_rounded_terms_for_kb_minus_ka():
     assert r["K-B − K-A"]["d0_from_rounded_terms"] == round(1.13 - 12.00, 10) or abs(
         r["K-B − K-A"]["d0_from_rounded_terms"] - (-10.87)) < 1e-9
     assert r["K-B − K-A"]["match"] and r["K-A − K-0"]["match"]
+
+
+# ---------------------------------------------------------------- 批評家の [直す](2026-10-04)
+
+def test_label_more_boundaries():
+    assert wr.label(1.0, 12.0, 12.0) == "引き継がれた側"          # 上端 = d0 は添えない
+    assert wr.label(-5.0, 0.0, -10.87) == "元の大きさは否定"      # d0 < 0 の上端 = 0(反転後の下端 = 0)
+    assert wr.label(0.0, 0.0, 12.0) == "逆向き"
+
+
+def test_paired_ci_equals_round2_readers():
+    """W1 の区間の定数(塊 5・1,000 回・種 20261004・循環・MDE 5% 両側 80%)が改良の周 2 の R10・R6 と同じ。"""
+    import c2_read_r2
+    _s = importlib.util.spec_from_file_location("c4_read_round2", REPO / "scripts" / "w4_measure" / "c4_read_round2.py")
+    c4 = importlib.util.module_from_spec(_s)
+    _s.loader.exec_module(c4)
+    rng = random.Random(3)
+    x = [rng.gauss(1, 3) for _ in range(200)]
+    b = [rng.gauss(0, 3) for _ in range(200)]
+    assert wr.paired_ci(x, b) == c2_read_r2.paired_ci(x, b) == c4.paired_ci(x, b)
+    assert (wr.SEED, wr.N_RES, wr.BLOCK) == (20261004, 1000, 5)
+
+
+def test_same_sign_and_params_check():
+    assert wr.same_sign(3.0, 12.0) == "同じ" and wr.same_sign(-3.0, 12.0) == "逆" and wr.same_sign(0.0, 1.0) == "0"
+    assert wr.check_params({"a": 1, "measure_from": "x", "window1": True}, {"a": 1}) == []
+    assert wr.check_params({"a": 2}, {"a": 1, "b": 3}) == ["a: 窓 2 / 元 1", "b: 窓 None / 元 3"]
+
+
+def test_dist_compare_splits_window_and_original():
+    vol = {"2016-12-31": 100.0, "2017-01-01": 1.0, "2023-12-17": 2.0, "2023-12-18": 50.0, "2025-12-11": 60.0,
+           "2025-12-12": 999.0}
+    r = wr.dist_compare(vol)
+    assert r["original"]["days"] == 2 and r["window"]["days"] == 2 and r["window"]["median"] == 55.0
+
+
+def test_batch_args_match_original_batches():
+    """window1_batch の引数が元の走らせの一覧(c2_limit_batch の _r2・_r2g、c4_limit_batch の R2_RUNS)と同じ形。"""
+    import c2_limit_batch as cb
+    import c4_limit_batch as mb
+    import window1_batch as wb
+    jobs = {n: a for n, _, a in wb.JOBS["k"]}
+    assert jobs["K-0"] == cb._r2
+    assert jobs["K-A"] == cb._r2 + ["--k1-time-exit-bars", "6"]
+    assert jobs["K-B"] == cb._r2 + cb._r2g + ["--k1-time-exit-bars", "9"]
+    ma = dict((n, a) for n, _, a in mb.R2_RUNS)["R2_ratio_gate_rolling_center_4_3"]
+    m = {n: a for n, _, a in wb.JOBS["m"]}
+    assert m["M-0_good"] == ["--fill-side", "good"] and m["M-A_bad"] == ["--fill-side", "bad"] + ma
+    assert sorted(m) == sorted(wr.M_RUNS) and sorted(jobs) == sorted(wr.K_RUNS)
+    for _, cmd in wb.commands("k") + wb.commands("m"):
+        assert "--window1" in cmd and "--measure-from" not in cmd

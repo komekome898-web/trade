@@ -30,6 +30,16 @@ W10 意図の地図の制限を結果の文書に毎回書く(render の末尾�
  f. W7 の年は UTC の日の暦年(2023 年は 12-18〜12-31 の 14 日)。区間は W1 と同じ計算(塊 5 日)。
  g. W9 の言葉は窓の全期間の行にだけ当てる(d0 は全期間の値しか無い)。W5・W7 の行は区間と MDE だけを出す。
  h. W7 の境は classify と同じ式(前の暦年の日の 1/3・2/3 分位、300 日以上の年だけ)を edges() で出す(classify は変えない)。
+    あわせて、窓の日(日本時間 2023-12-18〜2025-12-11)そのものの量の三分位と、元のデータの日(2017-01-01〜2023-12-17)の
+    量の三分位を並べる(dist_compare)。
+(2026-10-04 追記。批評家の問 1・4・6 の [直す]。窓の結果を見る前):
+ b'. 決め b のため、2023-12-18T00:00:00Z ちょうどに出た取引は走らせの集計(出の時刻 ≥ 2023-12-18T00:00Z)には入るが、
+    この台本では 2023-12-17 の日 = 窓の外になる。走らせの summary.json の取引数と W4 の取引数は 0〜数本ずれうる。
+    元の区間(R10・R6 の規約)と、この台本の規約の区間は端が約 0.1bp ずれる(批評家の実測)。W3 では元の d0 の点の値だけを並べる。
+ i. W3 の「符号が同じか」を列に出す(d0 と窓の平均の符号。0 は「0」)。
+ j. 走らせの params を元の走らせ(ORIG)の params と突き合わせ、measure_from・window1 の鍵だけを除いて食い違えば表を出さずに止める
+    (check_params)。走らせの一覧は window1_batch.py。
+ k. 区分の無い日に建った取引の数を、日の門の 2 形ごとに出す。
 
     W4_WINDOW1=P2-08-explore PYTHONPATH=src python3 scripts/w4_measure/window1_read.py      # 窓の読み(窓の口を通る)
     PYTHONPATH=src python3 scripts/w4_measure/window1_read.py --check-d0                       # 元のデータで d0 を計算し直す(窓は読まない)
@@ -196,6 +206,39 @@ def vol_table(vol: dict[str, float], cls: dict[str, str], last_day: str) -> list
     return rows
 
 
+def dist_compare(vol: dict[str, float], last_day: str = "2025-12-11") -> dict:
+    """決め h の追記: 窓の日(日本時間 2023-12-18〜last_day)と元のデータの日(2017-01-01〜2023-12-17)の量の三分位・中央値・日数。"""
+    def q(xs):
+        if not xs:
+            return None
+        return {"q1": float(np.quantile(xs, 1 / 3)), "q2": float(np.quantile(xs, 2 / 3)), "median": float(np.median(xs)),
+                "days": len(xs)}
+    return {"window": q([v for d, v in vol.items() if "2023-12-18" <= d <= last_day]),
+            "original": q([v for d, v in vol.items() if "2017-01-01" <= d <= "2023-12-17"])}
+
+
+def same_sign(mean: float, d0: float) -> str:
+    """決め i。"""
+    if mean == 0 or d0 == 0:
+        return "0"
+    return "同じ" if (mean > 0) == (d0 > 0) else "逆"
+
+
+def check_params(win: dict, orig: dict) -> list[str]:
+    """決め j。走らせの params と元の走らせの params の食い違い(measure_from・window1 を除く)。空なら一致。"""
+    skip = {"measure_from", "window1"}
+    keys = (set(win) | set(orig)) - skip
+    return sorted(f"{k}: 窓 {win.get(k)!r} / 元 {orig.get(k)!r}" for k in keys if win.get(k) != orig.get(k))
+
+
+def load_params(d: str) -> dict | None:
+    p = os.path.join(d, "summary.json")
+    if not os.path.isfile(p):
+        return None
+    with open(p, encoding="utf-8") as fh:
+        return json.load(fh)["params"]
+
+
 # ---------------------------------------------------------------- 組み立て
 
 def series(trades: dict, cls: dict[str, str]) -> tuple[dict, dict]:
@@ -208,6 +251,7 @@ def series(trades: dict, cls: dict[str, str]) -> tuple[dict, dict]:
             continue
         out[name], n = gate_drop(trades[src], cls, avoid)
         dropped[name] = (n, len(trades[src]))
+        dropped[name + " 区分なしの日に建った"] = (sum(1 for t in trades[src] if jst_day(t[0]) not in cls), len(trades[src]))
     return out, dropped
 
 
@@ -219,6 +263,7 @@ def diffs(tr: dict, lo: date, hi: date, with_label: bool) -> dict:
             continue
         r = paired_ci(daily(tr[x], lo, hi), daily(tr[b], lo, hi))
         r["d0"] = D0[k]
+        r["same_sign"] = same_sign(r["mean"], D0[k])
         if with_label:
             r["label"] = label(r["lo"], r["hi"], D0[k])
         out[k] = r
@@ -251,6 +296,7 @@ def build(trades: dict, cls: dict[str, str], vol: dict[str, float] | None, last_
         r["W7"]["years"][y] = diffs(tr, lo, hi, False)
     if vol is not None:
         r["W7"]["vol"] = vol_table(vol, cls, last_day)
+        r["W7"]["dist"] = dist_compare(vol, last_day)
     return r
 
 
@@ -268,7 +314,7 @@ W8_TEXT = ("カツオ: 時間で降りる N の 7 通り(6〜12)× 2(時間だ�
            "K-B = 組んだ形 N = 9)。日の門の決まり 1 つ(L-629)。マチルダ: 過去だけの比の門 1 つ(× 利確 4:3)。"
            "選んだのは元のデータ(〜2023-12-17)で、d0 は選んだ分だけ大きく出ている。窓は探索で、ここで採用は決めない。")
 W10_TEXT = ("カツオ: `c2_owner_xvenue_wick/INTENT_MAP.md` の △(I-11a Binance 現物は高レバの取引所でない、I-5u ほか)・"
-            "✕(I-10・I-12・I-20)が残る。「弱いだけ」は I-2・I-3(強い合図のドテン、○)を外した形。陰性・逆向きは「この代理・"
+            "✕(I-10・I-12・I-20)が残る。「弱いだけ」は I-2・I-3(強い合図のドテン、○)を外した形(K1 第 14 部・K-018 の残った形)。陰性・逆向きは「この代理・"
             "この形では」までしか言わない。マチルダ: `c4_owner_matilda_range/INTENT_MAP.md` §11 の指値の再現(families_r2)に対応し、"
             "I-8・I-9・I-19 △、I-13 の flat ✕、B5 未実装、L-581 の限界(1 分の中の往復を数えず小勝ちを少なく数える【推定】、"
             "板の位置は再現できない)。経費なし。参照の形(カツオ)は足の終値で遅れなく全量が約定する仮定。")
@@ -282,10 +328,10 @@ def render(r: dict) -> str:
     if r["missing"]:
         L += [f"**足りない走らせ: {', '.join(r['missing'])}**", ""]
     L += ["## W1・W1b・W2・W3・W9(窓の全期間)", "",
-          "| 差 | 窓 平均 [区間] | MDE | 日数 | 元のデータの d0 | W9 の言葉 |", "|---|---|---|---|---|---|"]
+          "| 差 | 窓 平均 [区間] | MDE | 日数 | 元のデータの d0 | 符号(W3) | W9 の言葉 |", "|---|---|---|---|---|---|---|"]
     for k, v in r["W1"].items():
         L.append(f"| {k} | {_ci(v)} | {_f(v['mde']) if v else '—'} | {v['days'] if v else '—'} | {_f(D0[k])} | "
-                 f"{v['label'] if v else '—'} |")
+                 f"{v['same_sign'] if v else '—'} | {v['label'] if v else '—'} |")
     L += ["", "日の門で外した取引(外した / 全体): " + "、".join(f"{k} {a} / {b}" for k, (a, b) in r["dropped"].items()), ""]
     L += ["## W4 水準(窓の全期間)", "", "| 形 | 1 日あたり | 取引/日 | 1 取引あたり | 取引 |", "|---|---|---|---|---|"]
     for k, v in r["W4"].items():
@@ -313,6 +359,13 @@ def render(r: dict) -> str:
             e = "—" if not v["edges"] else f"{v['edges'][0]:.3f}, {v['edges'][1]:.3f}"
             mv = "—" if v["median_vol"] is None else f"{v['median_vol']:.3f}"
             L.append(f"| {v['year']} | {e} | {mv} | {v['days']['low']} | {v['days']['mid']} | {v['days']['high']} |")
+    if r["W7"].get("dist"):
+        L += ["", "W7 窓の日と元のデータの日の量の分布(決め h の追記):", "", "| 日 | 1/3 分位 | 2/3 分位 | 中央値 | 日数 |",
+              "|---|---|---|---|---|"]
+        for k, nm in (("original", "元のデータ(2017-01-01〜2023-12-17)"), ("window", "窓(2023-12-18〜2025-12-11)")):
+            v = r["W7"]["dist"][k]
+            L.append(f"| {nm} | " + ("— | — | — | —" if not v else
+                                    f"{v['q1']:.3f} | {v['q2']:.3f} | {v['median']:.3f} | {v['days']}") + " |")
     L += ["", "## W6 マチルダの約定の仮定", "",
           "良い側・悪い側を別々に出し、同じ側どうしでだけ比べた(上の表の「良」「悪」)。主の側は決めていない。"
           "順序の確かめ W6b は `docs/RESEARCH/WINDOW1/W6B_PRESEAL/`(封印の前の 6 日)と、窓の 10 日の表(別の台本)。", "",
@@ -379,6 +432,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if all(v and v["match"] for v in r["diffs"].values()) else 1
     vol = vs.daily_vol(vs.load_closes_by_day(window=True))
     cls = vs.classify(vol, window=True)
+    bad = {}
+    for k in K_RUNS + M_RUNS:
+        wp, op = load_params(os.path.join(a.root, k)), load_params(ORIG[k])
+        if wp is not None:
+            diff = check_params(wp, op)
+            if diff:
+                bad[k] = diff
+    if bad:
+        raise SystemExit("止める(決め j): 窓の走らせの params が元の走らせと食い違う: " + json.dumps(bad, ensure_ascii=False))
     trades = {k: read_trades(os.path.join(a.root, k)) for k in K_RUNS + M_RUNS}
     r = build(trades, cls, vol)
     with open(os.path.join(OUT, "TABLES.md"), "w", encoding="utf-8") as fh:
