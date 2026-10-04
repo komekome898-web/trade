@@ -359,9 +359,9 @@
    "both": 12108,
    "only_a": 9105,
    "only_b": 3106,
-   "sum_only_a": 12412.764934131586,
-   "sum_only_b": -6417.157710135267,
-   "sum_both_a_minus_b": 8935.603709030356
+   "sum_only_a": 12412.764934131566,
+   "sum_only_b": -6417.157710135301,
+   "sum_both_a_minus_b": 8935.603709030336
   }
  },
  "vs_name": "weak_f15_close_a"

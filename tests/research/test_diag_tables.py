@@ -42,6 +42,18 @@ def test_outcome_rules_direct():
     assert dt.d1_outcome(f, {"mean": 40, "lo": 10, "hi": 70}, {"lo": -30, "hi": 10}) == "続いている"
     assert dt.d1_outcome(f, {"mean": 20, "lo": -1, "hi": 40}, {"lo": -50, "hi": 5}) == "決まらない"
     assert dt.d1_outcome(f, {"mean": -40, "lo": -60, "hi": -20}, {"lo": -120, "hi": -70}) == "崩れた"  # 逆の符号
+    assert dt.d1_outcome(f, {"mean": 30, "lo": 10, "hi": 50}, {"lo": -40, "hi": -2}) == "続いている(縮んだ)"
+
+
+def test_direction_is_fixed_not_taken_from_first_half():
+    """前半が負で後半が正は「崩れた」ではない。前半が 0 付近で後半が正は「続いている」ではない。"""
+    neg = {"mean": -20, "lo": -35, "hi": -5}
+    pos = {"mean": 20, "lo": 5, "hi": 35}
+    zero = {"mean": 0, "lo": -15, "hi": 15}
+    assert dt.d1_outcome(neg, pos, {"lo": 20, "hi": 60}) == "後半だけ"
+    assert dt.d1_outcome(zero, pos, {"lo": -5, "hi": 40}) == "後半だけ"
+    assert dt.d1_outcome(neg, neg, {"lo": -20, "hi": 20}) == "成り立たない(逆向き)"
+    assert dt.d1_outcome(zero, zero, {"lo": -20, "hi": 20}) == "決まらない"
 
 
 def test_bands_do_not_collapse_on_ties():

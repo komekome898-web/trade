@@ -7,7 +7,7 @@
 出す表(手順の番号はスキルの第 2 部):
   D0 入力の表: 出力の種類・期間・引数・列の有無と、その列で出せる手順
   D1 時間の表: 暦年ごとの 1 日あたり・95% 区間・MDE・区間が 0 を含むか(記述)/ 前半・後半(日数で 2 つに分ける。結果を
-     見る前に決めた分け方)と 後半 − 前半 の区間 / 3 つの結果(崩れた・続いている・決まらない。決まりは d1_outcome)
+     見る前に決めた分け方)と 後半 − 前半 の区間 / 結果(崩れた・続いている・決まらない・後半だけ ほか。決まりは d1_outcome)
   D3 集まりの表: 上位・下位 5% の日の損益の割合 / 取引の損益の分位 / 出の理由・合図の強さ・保有時間の四分位ごとの
      1 取引あたり(日の塊の区間)
   D6 固まりの表: 前の出から次の建てまでの間隔の四分位ごとの 1 取引あたり(日の塊の区間)
@@ -163,20 +163,34 @@ def diff_ci(first: list[float], second: list[float]) -> dict:
     return {"mean": float(b.mean() - a.mean()), "lo": float(lo), "hi": float(hi)}
 
 
+def half_state(r: dict) -> str:
+    """半分の状態: 正 = 区間が 0 より上 / 負 = 区間が 0 より下 / 含む = 区間が 0 を含む(区間なしも含む)。"""
+    if r.get("lo") is None:
+        return "含む"
+    return "正" if r["lo"] > 0 else ("負" if r["hi"] < 0 else "含む")
+
+
 def d1_outcome(first: dict, second: dict, diff: dict) -> str:
-    """3 つの結果(決まり。閾値は置かない):
-    崩れた = 後半 − 前半 の区間が 0 を含まない かつ 後半の区間が 0 を含むか前半と逆の符号。
-    続いている = 後半の区間が 0 を含まず前半と同じ符号(戦略の向き = 前半の符号。前半の平均が無ければ正)。
-    決まらない = どちらでもない。"""
-    if second.get("lo") is None or diff.get("lo") is None:
-        return "決まらない"
-    sign_first = 1 if first.get("mean") is None or first["mean"] >= 0 else -1
-    second_excl_same = (second["lo"] > 0) if sign_first > 0 else (second["hi"] < 0)
-    diff_excl = diff["lo"] > 0 or diff["hi"] < 0
-    if diff_excl and not second_excl_same:
-        return "崩れた"
-    if second_excl_same:
-        return "続いている"
+    """結果の決まり(閾値は置かない。戦略の向きは正 = 損益が正、で固定。標本から決めない):
+    前半 × 後半 の状態(正・含む・負)と 後半 − 前半 の区間で決める。
+      正 → 正: 続いている(差の区間が 0 より下なら「続いている(縮んだ)」)
+      正 → 含む・負: 差の区間が 0 より下なら 崩れた、そうでなければ 決まらない
+      含む・負 → 正: 後半だけ(成り立ち始めたのか偶然かは区別できない)
+      含む → 含む、負 → 含む: 決まらない
+      含む → 負: 後半は逆向き
+      負 → 負: 成り立たない(逆向き)"""
+    f, s2 = half_state(first), half_state(second)
+    diff_down = diff.get("hi") is not None and diff["hi"] < 0
+    if f == "正" and s2 == "正":
+        return "続いている(縮んだ)" if diff_down else "続いている"
+    if f == "正":
+        return "崩れた" if diff_down else "決まらない"
+    if s2 == "正":
+        return "後半だけ"
+    if f == "負" and s2 == "負":
+        return "成り立たない(逆向き)"
+    if s2 == "負":
+        return "後半は逆向き"
     return "決まらない"
 
 
@@ -392,7 +406,7 @@ def render(res: dict) -> str:
           f"| 後半 | {sg['second']['from']}〜{sg['second']['to']} | {sg['second']['n']} | {_ci(sg['second'])} | {_f(sg['second']['mde'])} |",
           f"| 後半 − 前半 | | | {_ci(sg['diff'])} | |", "",
           f"- 結果(決まり d1_outcome): **{sg['outcome']}**"
-          + ("。全期間の行は一部の期間の稼ぎ" if sg["outcome"] == "崩れた" else ""), ""]
+          + ("。全期間の行は一部の期間の稼ぎ" if sg["outcome"] in ("崩れた", "後半だけ") else ""), ""]
     d3r = res["d3"]
     L += ["## D3 集まり", "",
           f"- 全体の和 {_f(d3r['total'],0)} bp({d3r['days']} 日)。上位 5% の日({d3r['k']} 日)の和 {_f(d3r['top5_days_sum'],0)} bp、"
@@ -432,6 +446,8 @@ def render(res: dict) -> str:
             L.append(f"| {r['label']} | {_ci(r['good'])} | {_ci(r['bad'])} | {r['same_sign']} |")
         for k, f in r8.get("assumption_free", {}).items():
             L.append(f"- 仮定に左右されない部分({k}。決まらない足を含まない取引だけ)の 1 日あたり: {_ci(f)} bp/日")
+        L.append("  (注: 決まらない足を含まない取引は、含む取引と性質が違う(利確に届かずに止まった取引に寄る)。この値は戦略の損益の"
+                 "見積もりではなく、仮定の外にある部分の大きさ)")
         L.append(f"- 止める(良い側と悪い側の全期間の符号が違う、または良い側と仮定に左右されない部分の符号が違う): **{r8['stop']}**")
         for k, u in r8["undecided"].items():
             L.append(f"- 決まらない足を含む取引({k}): {u['trades']} 本({u['share_trades']:.1%})、その損益の和 {_f(u['pnl_sum'],0)} bp"
