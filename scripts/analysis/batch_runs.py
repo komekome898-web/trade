@@ -149,7 +149,7 @@ def analyze(run_dir: str, out_dir: str) -> dict:
     with open(os.path.join(out_dir, f"{name}.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")
     w = (p > 0).mean() if len(p) else None
-    return {"name": name, "trades": int(inside.sum()), "sum_ok": abs(p.sum() - al.get("sum_bp", p.sum())) < 0.05,  # CSV の値の丸めの差(0.01 bp 程度)は一致とみなす
+    return {"name": name, "trades": int(inside.sum()), "sum_ok": abs(p.sum() - al.get("sum_bp", p.sum())) < max(0.05, 1e-5 * abs(p.sum())),  # 値の丸め・和の順の差は一致とみなす
             "full": full, "first": f1, "second": f2, "outcome": outcome, "dir": dirs, "win": w,
             "ctl": ctls["全期間"][0], "days": n}
 
