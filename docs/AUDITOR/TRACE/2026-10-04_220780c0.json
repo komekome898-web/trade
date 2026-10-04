@@ -24462,14 +24462,16 @@
   {
    "move": 899,
    "tools": {
-    "Agent": 1
+    "Agent": 1,
+    "Bash": 3,
+    "Write": 1
    },
-   "n_tools": 1,
+   "n_tools": 5,
    "read_goal": false,
-   "first_write_at": null,
+   "first_write_at": 4,
    "table_shown": false,
    "claims_without_output": 0,
-   "claims_total": 0,
+   "claims_total": 1,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -24489,18 +24491,18 @@
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 134,
-   "value": 0.5224
+   "den": 135,
+   "value": 0.5185
   },
   "P2_table_shown_before_first_write": {
    "num": 29,
-   "den": 134,
-   "value": 0.2164
+   "den": 135,
+   "value": 0.2148
   },
   "P3_claim_with_output": {
-   "num": 353,
-   "den": 772,
-   "value": 0.4573
+   "num": 354,
+   "den": 773,
+   "value": 0.458
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
