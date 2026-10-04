@@ -35,6 +35,10 @@ def missed_row(entry_only: dict, ref: dict) -> dict:
         "missed_trades": int(m.get("trades", 0)),
         "placed_trades": int(pl.get("trades", 0)), "placed_avg": pl.get("avg_bp"), "placed_losses": pl.get("losses"),
         "not_placed_trades": int(npl.get("trades", 0)), "not_placed_avg": npl.get("avg_bp"),
+        # 関門 ② の 1 回目の直す 4 の後に足した: 約定しなかった取引の和が参照の総損益に占める割合と、参照の取引の数に占める割合
+        "ref_sum_bp": float(b["sum_bp"]), "ref_trades": int(b["trades"]),
+        "placed_share_of_ref_pnl": float(pl.get("sum_bp", 0.0)) / float(b["sum_bp"]) if float(b["sum_bp"]) else float("nan"),
+        "placed_share_of_ref_trades": int(pl.get("trades", 0)) / max(1, int(b["trades"])),
     }
 
 
@@ -45,8 +49,8 @@ def main(argv: list[str] | None = None) -> int:
     L = ["# カツオ: 入りの分と、入りの指値で取り逃した取引の損益", "",
          "`scripts/w4_measure/c2_read_ablation_missed.py` が出した(表 1 を見た後に足した)。経費の前。1 日あたり bp。"
          "取り逃しの分 = −(取り逃した取引を参照の形で入っていたら得た損益の和)÷ 日数。", "",
-         "| 足 | 入り方 | 入りの分 | 取り逃しの分 | 取り逃した本数 | うち指値を置いて約定しなかった 本数・平均 bp・負けの数 | うち指値を置かなかった 本数・平均 bp |",
-         "|---|---|---|---|---|---|---|"]
+         "| 足 | 入り方 | 入りの分 | 取り逃しの分 | 取り逃した本数 | うち指値を置いて約定しなかった 本数・平均 bp・負けの数 | うち指値を置かなかった 本数・平均 bp | 約定しなかった取引が参照の 取引の数・総損益 に占める割合 |",
+         "|---|---|---|---|---|---|---|---|"]
     out = {}
     for f in ra.FEET:
         for e in ra.ENTRIES:
@@ -59,7 +63,8 @@ def main(argv: list[str] | None = None) -> int:
             pa = "—" if r["placed_avg"] is None else f"{r['placed_avg']:+.1f}"
             na = "—" if r["not_placed_avg"] is None else f"{r['not_placed_avg']:+.1f}"
             L.append(f"| {f} 分 | {e} | {r['entry_part']:+.2f} | {r['missed_per_day']:+.2f} | {r['missed_trades']:,} | "
-                     f"{r['placed_trades']:,}・{pa}・{r['placed_losses']} | {r['not_placed_trades']:,}・{na} |")
+                     f"{r['placed_trades']:,}・{pa}・{r['placed_losses']} | {r['not_placed_trades']:,}・{na} | "
+                     f"{r['placed_share_of_ref_trades']:.3f}・{r['placed_share_of_ref_pnl']:.3f}(参照の総損益 {r['ref_sum_bp']:+,.0f}) |")
     od = os.path.join(a.root, "READ_ABLATION")
     os.makedirs(od, exist_ok=True)
     with open(os.path.join(od, "MISSED.md"), "w", encoding="utf-8") as fh:

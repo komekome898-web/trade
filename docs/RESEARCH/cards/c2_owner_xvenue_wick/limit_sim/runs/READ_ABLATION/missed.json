@@ -7,7 +7,11 @@
   "placed_avg": 97.58911857676753,
   "placed_losses": 0,
   "not_placed_trades": 377,
-  "not_placed_avg": 9.68339610007976
+  "not_placed_avg": 9.68339610007976,
+  "ref_sum_bp": 55200.37300411728,
+  "ref_trades": 18912,
+  "placed_share_of_ref_pnl": 0.5268362468077451,
+  "placed_share_of_ref_trades": 0.01575719120135364
  },
  "5|b": {
   "entry_part": -8.202670980338272,
@@ -17,7 +21,11 @@
   "placed_avg": 69.10129853486708,
   "placed_losses": 459,
   "not_placed_trades": 3324,
-  "not_placed_avg": 5.912759061676132
+  "not_placed_avg": 5.912759061676132,
+  "ref_sum_bp": 53416.01907778825,
+  "ref_trades": 18912,
+  "placed_share_of_ref_pnl": 4.024525665772859,
+  "placed_share_of_ref_trades": 0.16449873096446702
  },
  "5|c": {
   "entry_part": -10.11941923905224,
@@ -27,7 +35,11 @@
   "placed_avg": 82.5186855041672,
   "placed_losses": 39,
   "not_placed_trades": 421,
-  "not_placed_avg": 6.659852780381781
+  "not_placed_avg": 6.659852780381781,
+  "ref_sum_bp": 53416.01907778825,
+  "ref_trades": 18912,
+  "placed_share_of_ref_pnl": 0.4989801912986291,
+  "placed_share_of_ref_trades": 0.017079103214890017
  },
  "15|a": {
   "entry_part": -11.18614432000092,
@@ -37,7 +49,11 @@
   "placed_avg": 115.51208005160748,
   "placed_losses": 0,
   "not_placed_trades": 240,
-  "not_placed_avg": 15.535623995399162
+  "not_placed_avg": 15.535623995399162,
+  "ref_sum_bp": 25306.114539838927,
+  "ref_trades": 15214,
+  "placed_share_of_ref_pnl": 0.8900953789094337,
+  "placed_share_of_ref_trades": 0.012817142105955042
  },
  "15|b": {
   "entry_part": -1.937120620269949,
@@ -47,7 +63,11 @@
   "placed_avg": 70.91519433134609,
   "placed_losses": 388,
   "not_placed_trades": 2653,
-  "not_placed_avg": 2.9511326660123953
+  "not_placed_avg": 2.9511326660123953,
+  "ref_sum_bp": 3240.5240555221917,
+  "ref_trades": 15214,
+  "placed_share_of_ref_pnl": 55.19111015358116,
+  "placed_share_of_ref_trades": 0.16576837123701854
  },
  "15|c": {
   "entry_part": -4.572037657272068,
@@ -57,7 +77,11 @@
   "placed_avg": 87.62961312920932,
   "placed_losses": 19,
   "not_placed_trades": 245,
-  "not_placed_avg": 3.938990921229386
+  "not_placed_avg": 3.938990921229386,
+  "ref_sum_bp": 3240.5240555221917,
+  "ref_trades": 15214,
+  "placed_share_of_ref_pnl": 5.164984373177834,
+  "placed_share_of_ref_trades": 0.012554226370448271
  },
  "30|a": {
   "entry_part": -8.795215789677194,
@@ -67,7 +91,11 @@
   "placed_avg": 128.68162047446714,
   "placed_losses": 0,
   "not_placed_trades": 159,
-  "not_placed_avg": 17.003319666495187
+  "not_placed_avg": 17.003319666495187,
+  "ref_sum_bp": 11674.08466056705,
+  "ref_trades": 11933,
+  "placed_share_of_ref_pnl": 1.3999012578227705,
+  "placed_share_of_ref_trades": 0.01064275538422861
  },
  "30|b": {
   "entry_part": -1.1757824472541243,
@@ -77,7 +105,11 @@
   "placed_avg": 78.78375868459376,
   "placed_losses": 342,
   "not_placed_trades": 2074,
-  "not_placed_avg": -9.055847229226142
+  "not_placed_avg": -9.055847229226142,
+  "ref_sum_bp": 8807.37117608909,
+  "ref_trades": 11933,
+  "placed_share_of_ref_pnl": 18.462907339078257,
+  "placed_share_of_ref_trades": 0.17296572529958937
  },
  "30|c": {
   "entry_part": -4.934300859195588,
@@ -87,7 +119,11 @@
   "placed_avg": 114.93621307395199,
   "placed_losses": 20,
   "not_placed_trades": 167,
-  "not_placed_avg": -6.482957321567511
+  "not_placed_avg": -6.482957321567511,
+  "ref_sum_bp": 8807.37117608909,
+  "ref_trades": 11933,
+  "placed_share_of_ref_pnl": 1.7356502903314208,
+  "placed_share_of_ref_trades": 0.011145562725215788
  },
  "60|a": {
   "entry_part": -3.8109150848230597,
@@ -97,7 +133,11 @@
   "placed_avg": 112.90112319559547,
   "placed_losses": 0,
   "not_placed_trades": 96,
-  "not_placed_avg": 14.111776604975576
+  "not_placed_avg": 14.111776604975576,
+  "ref_sum_bp": 7049.205122531066,
+  "ref_trades": 8291,
+  "placed_share_of_ref_pnl": 1.2332435125592474,
+  "placed_share_of_ref_trades": 0.009287178868652756
  },
  "60|b": {
   "entry_part": -1.6094595530874172,
@@ -107,7 +147,11 @@
   "placed_avg": 95.1939887025553,
   "placed_losses": 218,
   "not_placed_trades": 1447,
-  "not_placed_avg": -3.456964651131359
+  "not_placed_avg": -3.456964651131359,
+  "ref_sum_bp": -2807.769302321488,
+  "ref_trades": 8291,
+  "placed_share_of_ref_pnl": -47.431386219930346,
+  "placed_share_of_ref_trades": 0.16873718489928838
  },
  "60|c": {
   "entry_part": -0.7964041718385186,
@@ -117,6 +161,10 @@
   "placed_avg": 95.08013848352404,
   "placed_losses": 9,
   "not_placed_trades": 70,
-  "not_placed_avg": -17.03189641085618
+  "not_placed_avg": -17.03189641085618,
+  "ref_sum_bp": -2807.769302321488,
+  "ref_trades": 8291,
+  "placed_share_of_ref_pnl": -1.9640673567749443,
+  "placed_share_of_ref_trades": 0.006995537329634543
  }
 }
