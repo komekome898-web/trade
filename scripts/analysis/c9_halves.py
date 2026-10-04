@@ -67,6 +67,23 @@ def main(argv=None) -> int:
             dd = diff_ci(list(f.values), list(b.values))
             L.append(f"| 組の差 実 − {k}(組 {len(m):,}) | {cell(s)} | {cell(f)} | {cell(b)} | {dd['mean']:+.3f} [{dd['lo']:+.3f}, {dd['hi']:+.3f}] |")
         L.append("")
+    # 量で分けた表: 3 分位の境を前半のプリントだけから決め、前半・後半に当てる(境を結果の期間の外から決める)
+    SPLITS = ("g60_qty_so_far", "g180_qty_so_far", "qty", "qty_ratio_max60")
+    PP = pd.read_csv(f"{a.data}/anchors_prints.csv.gz", usecols=["print_id", "day"] + list(SPLITS) + [f"react_{h}" for h in (300, 3600)])
+    L += ["## 量で分けた表(3 分位の境は前半のプリントだけから決めた)", "",
+          "| 分け | 境(前半の 3 分位) | 3 分位 | h | 前半 | 後半 |", "|---|---|---|---|---|---|"]
+    for col in SPLITS:
+        first = PP[PP["day"] < SPLIT]
+        q1, q2 = first[col].quantile([1 / 3, 2 / 3]).tolist()
+        band = pd.cut(PP[col], [-float("inf"), q1, q2, float("inf")], labels=[1, 2, 3])
+        for t in (1, 2, 3):
+            for h in (300, 3600):
+                sub = PP[band == t]
+                s_ = day_means(sub, f"react_{h}")
+                f, b = s_[s_.index < SPLIT], s_[s_.index >= SPLIT]
+                L.append(f"| {col} | {q1:.4g} / {q2:.4g} | {t} | {h} 秒 | {cell(f)}(プリント {int((sub['day'] < SPLIT).sum()):,}) | "
+                         f"{cell(b)}(プリント {int((sub['day'] >= SPLIT).sum()):,}) |")
+    L.append("")
     open(a.out, "w", encoding="utf-8").write("\n".join(L))
     print(a.out)
     return 0
