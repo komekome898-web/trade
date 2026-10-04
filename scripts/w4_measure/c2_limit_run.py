@@ -23,6 +23,12 @@
         区切りごとの ref_rows_dropped_join・ref_rows_dropped_no_trade、summary.json の params.ref_filter に出す
         (切り替えが 1 つでも入のときだけ。既定の出力は今までと同じ形)。
 
+探索の窓(--window1、P2-08。common.window_guard の門 = 環境変数 W4_WINDOW1 と承認のファイルが要る。記録は
+explore_access_log.jsonl): 系列 (a) だけ。読み始め既定 2022-12-18、終わり既定・上限 2025-12-12T00:00Z(判定の期間は読めない)。
+参照の行は 2023 年分を今の置き場、2024 年以降を単一のファイルから読む。--measure-from(窓では既定 2023-12-18T00:00Z)より前に
+出た取引は集計(summary.json)から外し、trades.csv.gz には in_measure 列(False)を付けて残す(trades.json.gz は集計に入れた取引だけ)。
+--ref-drop-no-trade とは併用できない(その読みは窓の口を通らないため)。
+
 暦年ごとに、その区切りの参照の行(海外の 1 分足の 4 本値。カード 2 の測定 run_v2.py の c2 と同じ置き場・同じ
 binance_ref_dataset・同じ load_reference と CARD.md の宣言)と bitFlyer の足(common.load_bars、封印の門)を読み、
 同じ再現の物を区切りをまたいで使い続ける。区切りごとに参照の行を先に渡し、その後で足を渡す(再現は使える時刻が
@@ -67,8 +73,9 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from common import (DAY_NS, FX_DIR, MIN_NS, ROOT, Clock, binance_ref_dataset, iso, load_bars, paths,  # noqa: E402
-                    peak_rss_gb, to_iso)
+from common import (DAY_NS, FX_DIR, MIN_NS, ROOT, WINDOW1, WINDOW1_WARMUP_START, Clock, _window_doors,  # noqa: E402
+                    binance_ref_dataset, iso, load_bars, paths, peak_rss_gb, split_measured, to_iso, window_guard,
+                    window_trim_report)
 from post import write_json  # noqa: E402
 from run_v2 import C2_VARIANTS, boundaries, ref_rows  # noqa: E402
 
@@ -274,6 +281,8 @@ def main() -> int:
     ap.add_argument("--k1-time-exit-bars", type=int, default=None, help="時間で降りる: 建ててから海外の足の区切り N 本")
     ap.add_argument("--ref-join-bitflyer", action="store_true")
     ap.add_argument("--ref-drop-no-trade", action="store_true")
+    ap.add_argument("--window1", action="store_true", help="探索の窓(2023-12-18〜2025-12-12)の口を通して読む")
+    ap.add_argument("--measure-from", default=None, help="これより前に出た取引は集計から外す(窓の既定は 2023-12-18T00:00Z)")
     ap.add_argument("--start", default=None)
     ap.add_argument("--end", default=None)
     ap.add_argument("--out", required=True)
@@ -297,15 +306,27 @@ def main() -> int:
     shadow = (KatsuoLimitSim(**dict(kw, fill="close"))
               if (a.design == "k1" and a.fill in ("limit", "limit_entry_close_exit")) else None)
     rows_close: list = []
-    lo, hi = iso(a.start or period[0]), iso(a.end or period[1])
-    if lo < iso(period[0]) or hi > iso(period[1]) or hi > iso(END_MAX) or lo >= hi:
-        raise SystemExit(f"拒否: 期間 {to_iso(lo)}〜{to_iso(hi)} は変種 ({a.series}) の期間 {period} の外")
+    if a.window1:
+        if a.series != "a" or a.ref_drop_no_trade:
+            raise SystemExit("拒否: --window1 は系列 (a) だけで、--ref-drop-no-trade とは併用できない")
+        lo, hi = iso(a.start or WINDOW1_WARMUP_START), iso(a.end or to_iso(WINDOW1[1]))
+        mf = iso(a.measure_from) if a.measure_from else WINDOW1[0]
+        if lo < iso(period[0]) or hi > WINDOW1[1] or not (lo <= mf < hi) or mf < WINDOW1[0]:
+            raise SystemExit(f"拒否: 窓の期間 読み {to_iso(lo)}〜{to_iso(hi)}・集計の始め {to_iso(mf)} は窓 "
+                             f"{to_iso(WINDOW1[0])}〜{to_iso(WINDOW1[1])} の外")
+        _window_doors(hi)  # 門が欠けていれば、ここで(何も読む前に)拒む
+    else:
+        lo, hi = iso(a.start or period[0]), iso(a.end or period[1])
+        mf = iso(a.measure_from) if a.measure_from else None
+        if lo < iso(period[0]) or hi > iso(period[1]) or hi > iso(END_MAX) or lo >= hi or (mf is not None and not lo <= mf < hi):
+            raise SystemExit(f"拒否: 期間 {to_iso(lo)}〜{to_iso(hi)} は変種 ({a.series}) の期間 {period} の外")
     with open(CARD_MD, encoding="utf-8") as fh:
         st, problems = cardmd.settings(cardmd.parse(fh.read()))
     if problems:
         raise SystemExit(f"CARD.md の測定の設定が読めない: {problems}")
     decl = dict(st.declarations)
     clock = Clock()
+    WIN = {"window": True} if a.window1 else {}  # 窓のときだけ load_bars・binance_ref_dataset に窓の引数を渡す(既定の呼び方は今までと同じ)
     edges = [lo] + boundaries(lo, hi, "year") + [hi]
     rows, chunks, bar_files, kinds_all, ref_man = [], [], {}, {}, {n: [] for n in series}
     filt = a.ref_join_bitflyer or a.ref_drop_no_trade
@@ -313,16 +334,23 @@ def main() -> int:
     t0 = time.time()
     for x, y in zip(edges[:-1], edges[1:]):
         cols = []
+        if a.window1:
+            window_guard(x, y, what="c2_limit_run 参照の行")
         for n in series:  # run_v2.py の c2 の mk(n) と同じ読み方
-            ds = binance_ref_dataset(n, n.rsplit("_", 1)[1], x, y)
-            ds["paths"] = paths(ref_dir, ref_file, x, y)
+            ds = binance_ref_dataset(n, n.rsplit("_", 1)[1], x, y, **WIN)
+            if not a.window1:
+                ds["paths"] = paths(ref_dir, ref_file, x, y)
             tt, vv, man = ref_rows(n, ds, decl)
             ref_man[n] += man
             cols.append((tt.tolist(), vv))
+        if a.window1:  # 読んだ直後に、判定の期間の行を数えて記録し(値は見ない)、残っていれば止める
+            window_trim_report(ds["paths"], "open_time", what="c2_limit_run 参照の行")
+            if any(c[0] and max(c[0]) >= WINDOW1[1] for c in cols):
+                raise SystemExit("拒否: 参照の行に判定の期間の行が残っている")
         ts = cols[0][0]
         if any(c[0] != ts for c in cols):
             raise SystemExit(f"4 本値の参照の行の時刻が揃わない {[len(c[0]) for c in cols]}")
-        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y)  # 封印の門(check_end で 2023-12-18 より後を拒む)
+        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y, **WIN)  # 封印の門(既定は check_end が 2023-12-18 より後を拒む)
         n_ref_read = len(ts)
         vals = [c[1] for c in cols]
         if filt:
@@ -356,22 +384,27 @@ def main() -> int:
         rows_close += shadow.finish()
     t_run = time.time() - t0
     os.makedirs(a.out, exist_ok=True)
+    kept, dropped = split_measured(rows, mf)  # 集計に入れる取引(出の時刻が mf 以上)と外す取引
+    cols_out = COLS + (("in_measure",) if mf is not None else ())
     with gzip.open(os.path.join(a.out, "trades.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(COLS)
+        w.writerow(cols_out)
         for r in rows:
             w.writerow([to_iso(r["entry_ns"]), to_iso(r["exit_ns"]), r["side"], repr(r["max_size"]),
                         repr(r["entry_price"]), repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_bp"]),
                         r["undecided"], r["small"], r["big"], repr(r["r"]), to_iso(r["signal_ns"]), r["strength"],
                         r["exit_signal"] or "",
                         to_iso(r["exit_signal_ns"]) if r["exit_signal_ns"] is not None else "", r["h1"],
-                        "" if r["vol_prev"] is None else repr(r["vol_prev"]), r["vol_tercile"] or ""])
-    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = その取引の最大の持ち高)
+                        "" if r["vol_prev"] is None else repr(r["vol_prev"]), r["vol_tercile"] or ""]
+                       + ([r["exit_ns"] >= mf] if mf is not None else []))
+    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = その取引の最大の持ち高)。窓では集計に入れた取引だけ(封印の境の検査は窓の終わりまで)
     write_trades_json(os.path.join(a.out, "trades.json.gz"),
                       ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
                         "exit_px": r["exit_price"], "side": r["side"], "qty": r["max_size"],
-                        "pnl_bp": r["pnl_bp"]} for r in rows))
-    ms = find_missed(rows, rows_close, sim.order_log) if shadow is not None else None
+                        "pnl_bp": r["pnl_bp"]} for r in kept),
+                      **({"seal_start_ns": WINDOW1[1]} if a.window1 else {}))
+    ms_all = find_missed(rows, rows_close, sim.order_log) if shadow is not None else None
+    ms = None if ms_all is None else split_measured(ms_all, mf, "signal_ns")[0]
     if ms is not None:
         with gzip.open(os.path.join(a.out, "missed.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
             w = csv.writer(fh)
@@ -381,11 +414,17 @@ def main() -> int:
                 w.writerow([to_iso(m["signal_ns"]), m["side"], to_iso(m["entry_ns"]), to_iso(m["exit_ns"]),
                             repr(m["entry_price"]), repr(m["exit_price"]), repr(m["pnl_bp"]), m["vol_tercile"] or "",
                             m["limit_order_placed"]])
+    order_kept = sim.order_log if mf is None else [o for o in sim.order_log if o[1] >= mf]
+    lo_s = lo if mf is None else mf  # 集計の始め(日数・年の区切りは集計の期間で数える)
+    edges_s = edges if mf is None else [lo_s] + [e for e in edges[1:] if e > lo_s]
     params = dict(kw, series=a.series, series_desc=vdesc, series_names=list(series), vol_edges_source=edges_src)
     if filt:
         params["ref_filter"] = {"join_bitflyer": a.ref_join_bitflyer, "drop_no_trade": a.ref_drop_no_trade, **filt_tot}
+    if mf is not None:
+        params["measure_from"] = to_iso(mf)
+        params["window1"] = a.window1
     summary = {"params": params,
-               "period": [to_iso(lo), to_iso(hi)], **build_summary(rows, sim.order_log, ms, lo, hi, edges, a.vol_gate and a.vol_gate_mode == "fixed"),
+               "period": [to_iso(lo_s), to_iso(hi)], **build_summary(kept, order_kept, ms, lo_s, hi, edges_s, a.vol_gate and a.vol_gate_mode == "fixed"),
                "close_shadow_trades": None if shadow is None else len(rows_close),
                "undecided_bars_total": sim.undecided_bars, "decisions": sim.decisions,
                "signals": len(sim.signal_log)}
@@ -397,6 +436,10 @@ def main() -> int:
                          "peak_rss_gb": round(peak_rss_gb(), 2)},
               "trades": len(rows), "undecided_bars_total": sim.undecided_bars, "decisions": sim.decisions,
               "clock": clock.marks}
+    if mf is not None:  # 集計から外した取引の数は記録に残す(外した取引の行は trades.csv.gz の in_measure = False)
+        record["measure"] = {"read_from": to_iso(lo), "measure_from": to_iso(mf), "trades_excluded": len(dropped),
+                             "trades_in_measure": len(kept),
+                             "trades_in_measure_entered_before": sum(1 for r in kept if r["entry_ns"] < mf)}
     write_json(record, os.path.join(a.out, "run_record.json"))
     clock.mark(f"終わり 取引 {len(rows)} 走らせ {t_run:.1f}s")
     return 0

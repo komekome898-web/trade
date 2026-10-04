@@ -66,8 +66,15 @@ def prev_day(d: str) -> str:
     return (datetime.fromisoformat(d) - timedelta(days=1)).date().isoformat()
 
 
-def classify(vol: dict[str, float]) -> dict[str, str]:
-    """R2・R3。日 d → "low" / "mid" / "high"(前の日の量を、前の暦年の日の分位で切る)。"""
+def classify(vol: dict[str, float], window: bool = False) -> dict[str, str]:
+    """R2・R3。日 d → "low" / "mid" / "high"(前の日の量を、前の暦年の日の分位で切る)。
+    window=True は窓の口の門(common._window_doors: 環境変数・承認のファイル)を通ったときだけ、最後の日を
+    WINDOW1_LAST_DAY(2025-12-11)にする。既定は ov.LAST_DAY(2023-12-17)で今までと同じ。"""
+    last_day = ov.LAST_DAY
+    if window:
+        from common import WINDOW1, WINDOW1_LAST_DAY, _window_doors  # noqa: E402
+        _window_doors(WINDOW1[1])
+        last_day = WINDOW1_LAST_DAY
     by_year: dict[int, list[float]] = {}
     for d, v in vol.items():
         by_year.setdefault(int(d[:4]), []).append(v)
@@ -77,7 +84,7 @@ def classify(vol: dict[str, float]) -> dict[str, str]:
     for d in sorted(vol):
         p = prev_day(d)
         y = int(d[:4])
-        if p not in vol or y not in edges or y < 2017 or d > ov.LAST_DAY:
+        if p not in vol or y not in edges or y < 2017 or d > last_day:
             continue
         q1, q2 = edges[y]
         v = vol[p]
@@ -124,14 +131,14 @@ def class_mean_ci(x: np.ndarray, block: int = BLOCK) -> tuple[float, float, floa
     return float(x.mean()), float(lo), float(hi)
 
 
-def classify_same_day(vol: dict[str, float]) -> dict[str, str]:
+def classify_same_day(vol: dict[str, float], window: bool = False) -> dict[str, str]:
     """診断(先読みあり): 日 d をその日の量 v(d) で、classify と同じ前の暦年の境で分ける。"""
     # classify は日 d' を vol[d' − 1] で分けるので、v(d) を d − 1 の鍵に置けば、日 d' は v(d') で分かれる。
     # (関門 ② の 2 回目の止める 1: 前は d + 1 の鍵に置いていて、2 日前のボラで分けていた)
     shifted = {}
     for d, v in vol.items():
         shifted[(datetime.fromisoformat(d) - timedelta(days=1)).date().isoformat()] = v
-    return classify(shifted)
+    return classify(shifted, window)
 
 
 def cross_cells(days: list[str], pnl: dict[str, float], cls_prev: dict[str, str],
@@ -152,16 +159,21 @@ def within_diff(days: list[str], pnl: dict[str, float], split_by: dict[str, str]
     return point, lo, hi, sum(1 for d in ds if split_by[d] == "high"), sum(1 for d in ds if split_by[d] == "low")
 
 
-def load_closes_by_day() -> dict[str, list[float]]:
+def load_closes_by_day(window: bool = False) -> dict[str, list[float]]:
+    """日(日本時間)→ その日の 1 分足の終値の並び。既定は 2015〜2023-12-17T15:00Z まで。
+    window=True は窓の口(common.window_guard。環境変数・承認のファイル・記録)を通ったときだけ、2025-12-12T00:00Z の前まで読む。
+    窓のときは、どの年の読みも窓の口を通る(記録に残る。2022 年以前のファイルも同じ)。"""
     sys.path.insert(0, os.path.join(ov.REPO, "src"))
-    from common import FX_DIR, load_bars  # noqa: E402
+    from common import FX_DIR, WINDOW1, load_bars  # noqa: E402
     out: dict[str, list[float]] = {}
-    for y in range(2015, 2024):
+    last_utc = datetime.fromtimestamp(WINDOW1[1] / 1e9, tz=timezone.utc) if window else datetime(2023, 12, 17, 15, tzinfo=timezone.utc)
+    for y in range(2015, 2026 if window else 2024):
         lo = datetime(y, 1, 1, tzinfo=timezone.utc)
-        hi = min(datetime(y + 1, 1, 1, tzinfo=timezone.utc), datetime(2023, 12, 17, 15, tzinfo=timezone.utc))
+        hi = min(datetime(y + 1, 1, 1, tzinfo=timezone.utc), last_utc)
         if lo >= hi:
             continue
-        bars, _, _ = load_bars(FX_DIR, "FX_BTC_JPY", int(lo.timestamp() * 1e9), int(hi.timestamp() * 1e9))
+        hi_ns = int(hi.timestamp() * 1e9)
+        bars, _, _ = load_bars(FX_DIR, "FX_BTC_JPY", int(lo.timestamp() * 1e9), hi_ns, **({"window": True} if window else {}))
         for b in bars:
             d = datetime.fromtimestamp(int(b.start_time_ns) / 1e9, tz=JST).date().isoformat()
             out.setdefault(d, []).append(float(b.close))

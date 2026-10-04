@@ -3,6 +3,11 @@
     PYTHONPATH=src python scripts/w4_measure/c4_limit_run.py --fill-side good|bad --out <置き場>
         [--start 2015-11-28T15:00:00Z --end 2023-12-17T15:00:00Z] [族の値: --window-min 40 --entry 2 ...]
 
+探索の窓(--window1、P2-08。common.window_guard の門 = 環境変数 W4_WINDOW1 と承認のファイルが要る。記録は
+explore_access_log.jsonl): 読み始め既定 2022-12-18(過去だけの比の門が窓の始まりで前の 365 日を使えるように)、終わり既定・上限
+2025-12-12T00:00Z。--measure-from(窓では既定 2023-12-18T00:00Z)より前に出た取引は集計(summary.json)から外し、
+trades.csv.gz には in_measure 列(False)を付けて残す(trades.json.gz は集計に入れた取引だけ)。
+
 暦年ごとに足を封印の門(common.load_bars)から読み、同じ再現の物を区切りをまたいで使い続ける(run_b2.run_chunks と
 同じ考え)。最後に持っている持ち高は最後の終値で閉じる(終わり方 = 期間の終わり)。
 
@@ -35,7 +40,8 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from common import DAY_NS, FX_DIR, Clock, iso, load_bars, peak_rss_gb, to_iso  # noqa: E402
+from common import (DAY_NS, FX_DIR, WINDOW1, WINDOW1_WARMUP_START, Clock, _window_doors, iso, load_bars,  # noqa: E402
+                    peak_rss_gb, split_measured, to_iso)
 from post import write_json  # noqa: E402
 from run_v2 import boundaries  # noqa: E402
 
@@ -113,8 +119,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fill-side", required=True, choices=["good", "bad"])
     ap.add_argument("--out", required=True)
-    ap.add_argument("--start", default=FULL[0])
-    ap.add_argument("--end", default=FULL[1])
+    ap.add_argument("--window1", action="store_true", help="探索の窓(2023-12-18〜2025-12-12)の口を通して読む")
+    ap.add_argument("--measure-from", default=None, help="これより前に出た取引は集計から外す(窓の既定は 2023-12-18T00:00Z)")
+    ap.add_argument("--start", default=None)
+    ap.add_argument("--end", default=None)
     ap.add_argument("--window-min", type=int, default=40)
     ap.add_argument("--bar-min", type=int, default=1)
     ap.add_argument("--range-from", default="body")
@@ -144,12 +152,24 @@ def main() -> int:
         kw["break_close_offset"] = a.break_close_offset
     sim = MatildaLimitSim(**kw)  # 表の外の値はここで拒む
     clock = Clock()
-    lo, hi = iso(a.start), iso(a.end)
+    WIN = {"window": True} if a.window1 else {}  # 窓のときだけ load_bars・binance_ref_dataset に窓の引数を渡す(既定の呼び方は今までと同じ)
+    if a.window1:
+        lo, hi = iso(a.start or WINDOW1_WARMUP_START), iso(a.end or to_iso(WINDOW1[1]))
+        mf = iso(a.measure_from) if a.measure_from else WINDOW1[0]
+        if lo < iso(FULL[0]) or hi > WINDOW1[1] or not (lo <= mf < hi) or mf < WINDOW1[0]:
+            raise SystemExit(f"拒否: 窓の期間 読み {to_iso(lo)}〜{to_iso(hi)}・集計の始め {to_iso(mf)} は窓 "
+                             f"{to_iso(WINDOW1[0])}〜{to_iso(WINDOW1[1])} の外")
+        _window_doors(hi)  # 門が欠けていれば、ここで(何も読む前に)拒む
+    else:
+        lo, hi = iso(a.start or FULL[0]), iso(a.end or FULL[1])
+        mf = iso(a.measure_from) if a.measure_from else None
+        if mf is not None and not lo <= mf < hi:
+            raise SystemExit(f"拒否: 集計の始め {to_iso(mf)} が期間 {to_iso(lo)}〜{to_iso(hi)} の外")
     edges = [lo] + boundaries(lo, hi, "year") + [hi]
     rows, chunks, files, kinds_all = [], [], {}, {}
     t0 = time.time()
     for x, y in zip(edges[:-1], edges[1:]):
-        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y)  # 封印の門(check_end で 2023-12-18 より後を拒む)
+        bars, kinds, h = load_bars(FX_DIR, "FX_BTC_JPY", x, y, **WIN)  # 封印の門(既定は check_end が 2023-12-18 より後を拒む)
         files.update(h)
         for k, v in kinds.items():
             kinds_all[k] = kinds_all.get(k, 0) + v
@@ -162,33 +182,47 @@ def main() -> int:
     rows += sim.finish()
     t_run = time.time() - t0
     os.makedirs(a.out, exist_ok=True)
+    kept, dropped = split_measured(rows, mf)  # 集計に入れる取引(出の時刻が mf 以上)と外す取引
     with gzip.open(os.path.join(a.out, "trades.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(COLS)
+        w.writerow(COLS + (("in_measure",) if mf is not None else ()))
         for r in rows:
             w.writerow([to_iso(r["entry_ns"]), to_iso(r["exit_ns"]), r["side"], r["levels"], repr(r["entry_price"]),
                         repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_bp"]), r["undecided"],
-                        repr(r["width"]), repr(r["vola"]), repr(r["ratio"]), r["brk"], repr(r["close_k"])])
-    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = 段の数 / 段の数の上限)
+                        repr(r["width"]), repr(r["vola"]), repr(r["ratio"]), r["brk"], repr(r["close_k"])]
+                       + ([r["exit_ns"] >= mf] if mf is not None else []))
+    # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = 段の数 / 段の数の上限)。窓では集計に入れた取引だけ(封印の境の検査は窓の終わりまで)
     write_trades_json(os.path.join(a.out, "trades.json.gz"),
                       ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
                         "exit_px": r["exit_price"], "side": r["side"], "qty": r["levels"] / sim.n_levels,
-                        "pnl_bp": r["pnl_bp"]} for r in rows))
-    years = by_year(rows, lo, hi)
+                        "pnl_bp": r["pnl_bp"]} for r in kept),
+                      **({"seal_start_ns": WINDOW1[1]} if a.window1 else {}))
+    lo_s = lo if mf is None else mf  # 集計の始め(日数は集計の期間で数える)
+    years = by_year(kept, lo_s, hi)
     reasons: dict = {}
-    for r in rows:
+    for r in kept:
         reasons[r["exit_reason"]] = reasons.get(r["exit_reason"], 0) + 1
-    summary = {"params": kw, "period": [to_iso(lo), to_iso(hi)], "years": years,
-               "all": year_stats(rows, (hi - lo) / DAY_NS), "exit_reasons": reasons,
+    summary = {"params": kw, "period": [to_iso(lo_s), to_iso(hi)], "years": years,
+               "all": year_stats(kept, (hi - lo_s) / DAY_NS), "exit_reasons": reasons,
                "undecided_bars_total": sim.undecided_bars}
+    if mf is not None:
+        summary["measure"] = {"read_from": to_iso(lo), "measure_from": to_iso(mf), "window1": a.window1}
     if sim.ratio_gate_mode == "rolling":
-        summary["ratio_gate_rolling"] = rolling_summary(sim.rolling_edges, sim.ungated_days)
+        if mf is None:
+            summary["ratio_gate_rolling"] = rolling_summary(sim.rolling_edges, sim.ungated_days)
+        else:  # 集計の始めより前の日(門の慣らしの日)は要約に入れない
+            ed = {d: e for d, e in sim.rolling_edges.items() if d * DAY_NS >= mf}
+            summary["ratio_gate_rolling"] = rolling_summary(ed, sum(1 for e in ed.values() if e is None))
     write_json(summary, os.path.join(a.out, "summary.json"))
     record = {"params": kw, "period": [to_iso(lo), to_iso(hi)], "chunks": chunks,
               "inputs": {"bars": {"files": files, "anomalies": kinds_all}},
               "timing": {"run_s": round(t_run, 1), "total_s": round(time.time() - clock.t0, 1),
                          "peak_rss_gb": round(peak_rss_gb(), 2)},
               "trades": len(rows), "undecided_bars_total": sim.undecided_bars, "clock": clock.marks}
+    if mf is not None:  # 集計から外した取引の数は記録に残す(外した取引の行は trades.csv.gz の in_measure = False)
+        record["measure"] = {"read_from": to_iso(lo), "measure_from": to_iso(mf), "trades_excluded": len(dropped),
+                             "trades_in_measure": len(kept),
+                             "trades_in_measure_entered_before": sum(1 for r in kept if r["entry_ns"] < mf)}
     write_json(record, os.path.join(a.out, "run_record.json"))
     clock.mark(f"終わり 取引 {len(rows)} 走らせ {t_run:.1f}s")
     return 0
