@@ -113,7 +113,8 @@ def year_diffs(runs: dict, rows: list[dict]) -> list[dict]:
 
 
 def render(runs: dict, rows: list[dict], labels: dict[str, str]) -> str:
-    L = ["# カツオ: 門あり(K1 の境目、合図の時点のボラが高の三分位のときだけ入る)と門なしの比べ", "",
+    head = ("K1 の境目" if TAG == "gate" else "境目は合図の時点の直前 365 日の合図の vol_prev の 1/3・2/3 分位(--tag rgate)")
+    L = [f"# カツオ: 門あり({head}、合図の時点のボラが高の三分位のときだけ入る)と門なしの比べ", "",
          "`scripts/w4_measure/c2_read_gated.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。", "",
          "## 表 1: 門あり − 門なし(全期間と、境目を決めた期間の外の 2020〜2023 年)", "",
          "| 門あり | 1 日あたり損益の差(全期間) | 取引の数の差 /日 | 1 取引あたりの差 | 2020〜2023 の 1 日あたり 門あり / 門なし | その差 | 年の一致 |",
