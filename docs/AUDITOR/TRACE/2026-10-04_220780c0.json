@@ -22737,23 +22737,23 @@
   {
    "move": 835,
    "tools": {
-    "Bash": 45,
+    "Bash": 55,
     "ToolSearch": 4,
     "mcp__Claude_Code_Remote__create_session": 6,
     "mcp__Claude_Code_Remote__get_session": 1,
     "SendMessage": 2,
-    "Agent": 2,
-    "Write": 5,
+    "Agent": 3,
+    "Write": 7,
     "ReadNotifications": 1,
     "mcp__Claude_Code_Remote__update_trigger": 1
    },
-   "n_tools": 67,
+   "n_tools": 80,
    "read_goal": false,
    "first_write_at": 28,
    "table_shown": true,
    "claims_without_output": 0,
    "claims_total": 0,
-   "audit_calls": 0,
+   "audit_calls": 1,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
    "protected_writes": 0,
@@ -22787,7 +22787,7 @@
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 220,
+   "den": 221,
    "value": 0.0
   },
   "P5_tools_per_move": {
@@ -22797,8 +22797,8 @@
   },
   "P6_findings_applied": {
    "num": 73,
-   "den": 220,
-   "value": 0.3318,
+   "den": 221,
+   "value": 0.3303,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
