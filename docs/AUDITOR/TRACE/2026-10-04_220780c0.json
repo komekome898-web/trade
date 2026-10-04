@@ -23084,13 +23084,13 @@
   {
    "move": 847,
    "tools": {
-    "Bash": 28,
+    "Bash": 31,
     "TaskCreate": 1,
-    "Agent": 5,
+    "Agent": 6,
     "SendMessage": 1,
     "Grep": 3
    },
-   "n_tools": 38,
+   "n_tools": 42,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
