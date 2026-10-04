@@ -22883,11 +22883,11 @@
   {
    "move": 840,
    "tools": {
-    "Bash": 10,
+    "Bash": 11,
     "ReadNotifications": 1,
     "mcp__Claude_Code_Remote__get_trigger": 1
    },
-   "n_tools": 12,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
