@@ -6,6 +6,8 @@
 
 V1 系列(改良した形。K-047・K-048 の読みでリードが決めた形と、比べの相手):
    カツオ = weak_f15_close_a_time6・weak_f15_close_a_time9(15 分・足の終値・時間で降りる・門なし)と基準 weak_f15_close_a。
+   あわせて weak_f15_rgate_close_a_time9(直前 365 日の門 × 時間で降りる N = 9。K-048 の関門 ② 1 回目の止める 1 を受けて、
+   2019〜2023 年では門ありの形も候補に残るので足した。この表を見る前に足した。2026-10-04)。
    マチルダ = R2_ratio_gate_rolling_center_4_3(過去だけの比の門 × 中心から測る利確 4:3)の良い側・悪い側と、
    比べの相手 A1_center_4_3(利確だけ)の良い側・悪い側。
    日ごとの損益は overlap_daily.daily_from_trades(取引の記録 trades.json.gz、日本時間の日、出の時刻で数える)。
@@ -43,6 +45,7 @@ SERIES = (
     ("カツオ 時間で降りる N=6", os.path.join(C2R, "weak_f15_close_a_time6")),
     ("カツオ 時間で降りる N=9", os.path.join(C2R, "weak_f15_close_a_time9")),
     ("カツオ 基準(降り方なし)", os.path.join(C2R, "weak_f15_close_a")),
+    ("カツオ 門 × 時間で降りる N=9", os.path.join(C2R, "weak_f15_rgate_close_a_time9")),
     ("マチルダ 過去だけの門 × 利確 4:3 良", os.path.join(C4R, "R2_ratio_gate_rolling_center_4_3_good")),
     ("マチルダ 過去だけの門 × 利確 4:3 悪", os.path.join(C4R, "R2_ratio_gate_rolling_center_4_3_bad")),
     ("マチルダ 利確 4:3 だけ 良", os.path.join(C4R, "A1_center_4_3_good")),
