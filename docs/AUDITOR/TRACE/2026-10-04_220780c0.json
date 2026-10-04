@@ -23114,7 +23114,7 @@
   {
    "move": 848,
    "tools": {
-    "Bash": 58,
+    "Bash": 62,
     "Agent": 6,
     "Read": 5,
     "Write": 4,
@@ -23122,7 +23122,7 @@
     "mcp__Claude_Code_Remote__create_session": 3,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 82,
+   "n_tools": 86,
    "read_goal": false,
    "first_write_at": 27,
    "table_shown": false,
