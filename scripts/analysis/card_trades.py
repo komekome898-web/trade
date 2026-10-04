@@ -61,8 +61,9 @@ def build(measure: str) -> dict:
     ctl = np.bincount(inv, weights=np.abs(e) * (z["open"][ex] / z["open"][fill] - 1.0) * BP)
     r = (z["open"][ex] / z["open"][fill] - 1.0) * BP
     held = e != 0
+    wkend = ((day_ns + 3) % 7) >= 5  # 日本時間の曜日(1970-01-01 は木曜 = 3、月 = 0)。土日
     minute_rate = {}
-    for lbl, msk in (("held", held), ("not_held", ~held)):
+    for lbl, msk in (("held", held), ("nh_weekday", ~held & ~wkend), ("nh_weekend", ~held & wkend)):
         ss = np.bincount(inv, weights=np.where(msk, r, 0.0), minlength=len(uniq))
         nn = np.bincount(inv, weights=msk.astype(float), minlength=len(uniq))
         minute_rate[lbl] = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): (float(a), int(c))
@@ -127,11 +128,11 @@ def winloss(trades: list[dict]) -> dict:
             "win_rate": len(w) / len(p) if len(p) else None}
 
 
-def rate_diff(days: list[str], mr: dict) -> str:
+def rate_diff(days: list[str], mr: dict, k1: str = "held", k2: str = "nh_weekday") -> str:
     """持っていた分と持っていなかった分の 1 分あたりの差。日を循環の塊で選び直して(塊 5・1,000 回・種 20261004)作り直す。"""
     import math
     from diag_tables import SEED, N_RES, BLOCK
-    a = np.array([[*mr["held"].get(d, (0.0, 0)), *mr["not_held"].get(d, (0.0, 0))] for d in days], dtype=float)
+    a = np.array([[*mr[k1].get(d, (0.0, 0)), *mr[k2].get(d, (0.0, 0))] for d in days], dtype=float)
     pt = (a[:, 0].sum() / a[:, 1].sum() - a[:, 2].sum() / a[:, 3].sum()) if a[:, 1].sum() > 0 and a[:, 3].sum() > 0 else float("nan")
     rng = np.random.default_rng(SEED)
     n = len(days)
@@ -168,25 +169,44 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
     def ci(r):
         return f"{_f(r['mean'])} [{_f(r['lo'])}, {_f(r['hi'])}]"
     cc = b["control_calc"]
-    L += ["## 対照: 同じ分に買いだけで持った場合(向きの情報を抜いたもの)", "",
-          "対照 = カードが持ち高を持っていた同じ 1 分に、同じ大きさで買いだけで持った損益(|e_t| × 値動き)。カードとの差 = カード − 対照"
+    L += ["## 買いだけの対照: 同じ分に買いだけで持った場合(向きの情報を抜いたもの)", "",
+          "買いだけの対照 = カードが持ち高を持っていた同じ 1 分に、同じ大きさで買いだけで持った損益(|e_t| × 値動き)。カード − 買いだけの対照"
           " = 売りの決定の損益の 2 倍。差が 0 と区別できなければ、カードの稼ぎはその時間帯の値動きの偏り(上げ下げの片寄り)と区別がつかない。1 日あたり bp。", "",
-          "| 区分 | 日数 | カード | 対照(買いだけ) | カード − 対照 |", "|---|---|---|---|---|"]
+          "| 区分 | 日数 | カード | 買いだけの対照 | カード − 買いだけの対照 |", "|---|---|---|---|---|"]
     for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
         L.append(f"| {lbl} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
                  f"{ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds]))} |")
     dd = diff_ci([daily[d] - cc.get(d, 0.0) for d in days[:h]], [daily[d] - cc.get(d, 0.0) for d in days[h:]])
-    L += ["", f"カード − 対照 の 後半 − 前半: {ci(dd)}", ""]
-    L += ["買いだけで持った 1 分あたりの値動き(bp/分)を、カードが持っていた分と持っていなかった分で並べる(その時間帯に固有の偏りか、"
-          "期間全体の上げ下げかを見る)。区間は日の塊で日を選び直して 和 ÷ 分の数 を作り直したもの。", "",
-          "| 区分 | 持っていた分 | 持っていなかった分 | 差(持っていた − 持っていなかった) |", "|---|---|---|---|"]
+    L += ["", f"カード − 買いだけの対照 の 後半 − 前半: {ci(dd)}", ""]
+    L += ["買いだけで持った 1 分あたりの値動き(bp/分)を、カードが持っていた分・持っていなかった平日の分・持っていなかった土日の分で並べる"
+          "(その時間帯に固有の偏りか、期間全体の上げ下げかを見る)。曜日は合図の時刻の日本時間。区間は日の塊で日を選び直して 和 ÷ 分の数 を作り直したもの。", "",
+          "| 区分 | 持っていた分 | 持っていなかった平日の分 | 持っていなかった土日の分 | 差(持っていた − 持っていなかった平日) |", "|---|---|---|---|---|"]
     for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
         cells = []
-        for k in ("held", "not_held"):
+        for k in ("held", "nh_weekday", "nh_weekend"):
             mr = b["minute_rate"][k]
             g = group_ratio_ci(ds, {d: mr.get(d, (0.0, 0))[0] for d in ds}, {d: mr.get(d, (0.0, 0))[1] for d in ds})
-            cells.append(f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
-        L.append(f"| {lbl} | {cells[0]} | {cells[1]} | {rate_diff(ds, b['minute_rate'])} |")
+            cells.append("分 0" if not g["trades"] else f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
+        L.append(f"| {lbl} | {cells[0]} | {cells[1]} | {cells[2]} | {rate_diff(ds, b['minute_rate'])} |")
+    L.append("")
+    # 曜日
+    wd = "月火水木金土日"
+    L += ["## 曜日ごと(合図の時刻の日本時間の曜日。1 日あたり bp)【建ての前に決まる群】", "",
+          "区間は、その曜日の日だけを並べた列を日の塊(5 日)で選び直したもの(並べた日は 7 日おき)。", "",
+          "| 曜日 | 日数 | カード | 買いだけの対照 | カード − 買いだけの対照 |", "|---|---|---|---|---|"]
+    from datetime import date as _date
+    for k in range(7):
+        ds = [d for d in days if _date.fromisoformat(d).weekday() == k]
+        L.append(f"| {wd[k]} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
+                 f"{ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds]))} |")
+    L += ["", "曜日 × 前半・後半(カード − 買いだけの対照 / 買いだけの対照、1 日あたり bp):", "",
+          "| 曜日 | 前半 カード − 買いだけの対照 | 後半 カード − 買いだけの対照 | 前半 買いだけ | 後半 買いだけ |", "|---|---|---|---|---|"]
+    for k in range(7):
+        c = []
+        for part in (days[:h], days[h:]):
+            ds = [d for d in part if _date.fromisoformat(d).weekday() == k]
+            c.append((ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds])), ci(mean_ci([cc.get(d, 0.0) for d in ds]))))
+        L.append(f"| {wd[k]} | {c[0][0]} | {c[1][0]} | {c[0][1]} | {c[1][1]} |")
     L.append("")
     # 勝ち負けの分解
     L += ["## 勝ち負けの分解(全期間・前半・後半・年ごと)", "",
