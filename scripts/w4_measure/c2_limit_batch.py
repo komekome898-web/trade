@@ -81,6 +81,24 @@ for f in (5, 15):
         JOBS_EXITS.append((f"weak_f{f}_close_a_time{n}", base + ["--k1-time-exit-bars", str(n)]))
 
 
+# 改良の周 2(L-627 の段取り 1、L-628「ア では進めてください」)。--r2 で走らせる。15 分・入り方 a・参照の形・弱いだけ。
+# (1) 時間で降りる N = 7〜11(6・12 は JOBS_EXITS にある)(2) 直前 365 日の門 × 時間で降りる N = 6〜12
+# (3) 内部結合(--ref-join-bitflyer、K-040)で、時間で降りる 6・門・門 × 6・門 × 12。内部結合の門なし降り方なしは既にある
+#     (weak_f15_close_a_refjoin)。読み方の決まりは c2_read_r2.py。
+JOBS_R2: list = []
+_r2 = ["--series", "a", "--design", "k1", "--foot-min", "15", "--entry", "a", "--fill", "close", "--fill-side", "good"]
+_r2g = ["--vol-gate", "--vol-gate-mode", "rolling"]
+for n in (7, 8, 9, 10, 11):
+    JOBS_R2.append((f"weak_f15_close_a_time{n}", _r2 + ["--k1-time-exit-bars", str(n)]))
+for n in (6, 7, 8, 9, 10, 11, 12):
+    JOBS_R2.append((f"weak_f15_rgate_close_a_time{n}", _r2 + _r2g + ["--k1-time-exit-bars", str(n)]))
+JOBS_R2.append(("weak_f15_close_a_refjoin_time6", _r2 + ["--ref-join-bitflyer", "--k1-time-exit-bars", "6"]))
+JOBS_R2.append(("weak_f15_rgate_close_a_refjoin", _r2 + _r2g + ["--ref-join-bitflyer"]))
+for n in (6, 12):
+    JOBS_R2.append((f"weak_f15_rgate_close_a_refjoin_time{n}",
+                    _r2 + _r2g + ["--ref-join-bitflyer", "--k1-time-exit-bars", str(n)]))
+
+
 def run_one(job: tuple, root: str) -> str:
     name, args = job
     d = os.path.join(root, name)
@@ -104,8 +122,9 @@ def main() -> int:
     ap.add_argument("--ablation", action="store_true", help="入りと降りを分ける組(JOBS_ABLATION)を走らせる")
     ap.add_argument("--rolling", action="store_true", help="境目を直前 365 日にした門ありの組(JOBS_ROLLING)を走らせる")
     ap.add_argument("--exits", action="store_true", help="長い保有の降り方の組(JOBS_EXITS)を走らせる")
+    ap.add_argument("--r2", action="store_true", help="改良の周 2 の組(JOBS_R2)を走らせる")
     a = ap.parse_args()
-    jobs = JOBS_EXITS if a.exits else (
+    jobs = JOBS_R2 if a.r2 else JOBS_EXITS if a.exits else (
         JOBS_ROLLING if a.rolling else (JOBS_ABLATION if a.ablation else (JOBS_GATED if a.gated else JOBS)))
     mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
