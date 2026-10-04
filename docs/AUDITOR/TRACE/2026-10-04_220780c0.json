@@ -23114,10 +23114,10 @@
   {
    "move": 848,
    "tools": {
-    "Bash": 6,
+    "Bash": 8,
     "Agent": 1
    },
-   "n_tools": 7,
+   "n_tools": 9,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

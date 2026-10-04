@@ -222,7 +222,7 @@ class MatildaLimitSim:
                  step_exit: float = 0.8, step: float = 1, n_levels: int = 7, alert_min: int = 20,
                  width_gate: bool = True, break_delay: int = 1, on_break: str = "hold",
                  ratio_gate: Optional[float] = None, break_close_offset: float = 0,
-                 ratio_gate_mode: str = "fixed") -> None:
+                 ratio_gate_mode: str = "fixed", undecided_log: Optional[list] = None) -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.window_min = _in("window_min", window_min, WINDOWS)
         self.bar_min = _in("bar_min", bar_min, BAR_MINS)
@@ -285,6 +285,10 @@ class MatildaLimitSim:
         self._last_close: Optional[float] = None
         self._last_end: Optional[int] = None
         self.undecided_bars = 0  # 決まらない足の数(取引に入らない足を含む全体)
+        # 決まらない足の記録の口(既定 None = 記録しない)。list を渡すと、決まらない足ごとに
+        # {"start_ns": 足の始まり, "path": "up"(上が先)/ "down"(下が先)/ "same"(2 本の道の出来事が同じ = 両方同じ扱い),
+        # "kind": 下の _bar の 3. のどの場合か} を足す。記録は読むだけで、挙動・出力は変えない
+        self._undecided_log = undecided_log
         # 族 D 比の門。_gate_now = 今の日の境(fixed は ratio_gate のまま。rolling は日ごとに _roll_start が書き換える。None = 門なし)
         self._gate_now: Optional[float] = self.ratio_gate
         self._roll_day: Optional[int] = None  # rolling: 今の UTC の日の番号
@@ -637,6 +641,7 @@ class MatildaLimitSim:
                 near_up = (h - o) <= (o - lo)  # 始値に近い方の端へ先に行く道
                 a = self._run_path(st, True, bar, q, ev, pb, False)
                 b = self._run_path(st, False, bar, q, ev, pb, False)
+                path, kind = "same", "r2_same_events"  # 記録用(挙動には使わない)
                 if a.events == b.events and (a.side, a.fills, a.brk) == (b.side, b.fills, b.brk):
                     st, und = a, a.r2
                 else:
@@ -648,17 +653,25 @@ class MatildaLimitSim:
                         va, vb = self._path_value(a, c), self._path_value(b, c)
                         if va == vb:
                             st = a if near_up else b
+                            kind = "both_tp_tie"
                         else:
                             better, worse = (a, b) if va > vb else (b, a)
                             st = better if self.fill_side == "good" else worse
+                            kind = "both_tp"
+                        path = "up" if st is a else "down"
                     elif ta or tb:  # 片方の道でだけ利確: 良い側 = その道、悪い側 = もう一方を利確の手前で止める
                         # 悪い側は利確の無い方の道(a に利確があれば下が先の道 b)
                         st = (a if ta else b) if self.fill_side == "good" else self._run_path(st, tb, bar, q, ev, pb,
                                                                                               True)
+                        # 良い側 = 利確が起きる道(a なら上が先)。悪い側 = 止めた道(up_first = tb)
+                        path, kind = "up" if (ta if self.fill_side == "good" else tb) else "down", "one_tp"
                     else:
                         st = a if near_up else b
+                        path, kind = "up" if st is a else "down", "no_tp"
                 if und:
                     self.undecided_bars += 1
+                    if self._undecided_log is not None:
+                        self._undecided_log.append({"start_ns": start, "path": path, "kind": kind})
                 out += self._rows(st, undecided=und)
             # 5. 時間の成行の判定(足の終わり。ブレイク中は判定しない)
             if st.side != 0 and st.brk == 0 and t_end - st.t0 >= 2 * self.alert_ns:
