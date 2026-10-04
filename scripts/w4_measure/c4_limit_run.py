@@ -15,6 +15,8 @@
                   1 日あたり = その年の日数(読んだ範囲 [始め, 終わり) と暦年の重なり、24 時間 = 1 日。0 日なら null)で
                   割った 取引の数・勝ちの数・損益。
                   決まらない足の数 = 取引の行の「決まらない足の数」の合計と、それが 1 以上の取引の数。
+                  --ratio-gate-mode rolling のときだけ ratio_gate_rolling(日ごとの境の要約: 年ごとの境の最小・中央・最大と、
+                  門を掛けなかった日の数。年 = 境の日の UTC の暦年)。
   trades.json.gz  取引の記録(L-D04。src/bot/research/trade_record.py の形。git に入れる)
   run_record.json 引数・期間・区切りごとの足の数・読んだファイルの sha256・異常の種類・所要時間・全体の決まらない足の数。
 """
@@ -25,6 +27,7 @@ import csv
 import gzip
 import math
 import os
+import statistics
 import sys
 import time
 from datetime import datetime, timezone
@@ -91,6 +94,21 @@ def by_year(rows: list, lo: int, hi: int) -> dict:
     return out
 
 
+def rolling_summary(edges: dict, ungated_days: int) -> dict:
+    """ratio_gate_mode="rolling" の日ごとの境(日の番号 → 境か None)の要約。年(UTC の暦年)ごとに、足を処理した日の数・
+    門を掛けなかった日の数・門を掛けた日の境の最小・中央・最大(無ければ null)。"""
+    by_year: dict = {}
+    for day, edge in sorted(edges.items()):
+        by_year.setdefault(_year(day * DAY_NS), []).append(edge)
+    years = {}
+    for y, es in by_year.items():
+        v = [e for e in es if e is not None]
+        years[str(y)] = {"days": len(es), "days_ungated": len(es) - len(v),
+                         "edge_min": min(v) if v else None, "edge_median": statistics.median(v) if v else None,
+                         "edge_max": max(v) if v else None}
+    return {"days": len(edges), "days_ungated": ungated_days, "years": years}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fill-side", required=True, choices=["good", "bad"])
@@ -111,6 +129,7 @@ def main() -> int:
     ap.add_argument("--break-delay", type=int, default=1)
     ap.add_argument("--on-break", default="hold")
     ap.add_argument("--ratio-gate", type=float, default=None)  # 族 D 比の門(既定 None = 門なし = v37)
+    ap.add_argument("--ratio-gate-mode", default=None)  # 族 D 比の門の境の決め方(既定 None = fixed。rolling = 走らせる前の期間だけから)
     ap.add_argument("--break-close-offset", type=float, default=0.0)  # 族 D 閉じる位置(既定 0 = 判定値 = v37)
     a = ap.parse_args()
     kw = {"fill_side": a.fill_side, "window_min": a.window_min, "bar_min": a.bar_min, "range_from": a.range_from,
@@ -119,6 +138,8 @@ def main() -> int:
           "break_delay": a.break_delay, "on_break": a.on_break}
     if a.ratio_gate is not None:  # 既定の走らせの summary.json・run_record.json の引数の欄は変えない
         kw["ratio_gate"] = a.ratio_gate
+    if a.ratio_gate_mode is not None:  # 同上。--ratio-gate と同時に指定すると表の検査で拒む
+        kw["ratio_gate_mode"] = a.ratio_gate_mode
     if a.break_close_offset != 0:
         kw["break_close_offset"] = a.break_close_offset
     sim = MatildaLimitSim(**kw)  # 表の外の値はここで拒む
@@ -160,6 +181,8 @@ def main() -> int:
     summary = {"params": kw, "period": [to_iso(lo), to_iso(hi)], "years": years,
                "all": year_stats(rows, (hi - lo) / DAY_NS), "exit_reasons": reasons,
                "undecided_bars_total": sim.undecided_bars}
+    if sim.ratio_gate_mode == "rolling":
+        summary["ratio_gate_rolling"] = rolling_summary(sim.rolling_edges, sim.ungated_days)
     write_json(summary, os.path.join(a.out, "summary.json"))
     record = {"params": kw, "period": [to_iso(lo), to_iso(hi)], "chunks": chunks,
               "inputs": {"bars": {"files": files, "anomalies": kinds_all}},

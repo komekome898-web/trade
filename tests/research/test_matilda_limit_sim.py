@@ -1192,3 +1192,280 @@ def test_main_leg_does_not_reenter_at_a_price_below_its_open():
     assert [(r["entry_price"], r["levels"], r["exit_price"], r["exit_reason"]) for r in rows] == [
         (P + 500, 1, P + 700, "閉じる位置で閉じる")]
     assert s._side == 0
+
+
+# ---------------------------------------------------------------- 族 D 比の門の境を走らせる前の期間だけから決める(改良の周 2)
+D0 = T0 // (86_400 * NS)  # T0 の UTC の日の番号(試験の時刻で、データではない)
+
+
+def _day(day, k, cross=False):
+    """k は 1〜39。UTC の日 D0 + day の 0 時から 40 本。番号 0 と k+1〜39 は窓の中心 P+100 の十字、番号 1〜k は P ↔ P+200 の往復
+    (実体 200)。窓が満ちた足(番号 39 の終わり)の幅 200・vola = 5k・比 = 40 / k。
+    十字は S1・B1 に届かず、往復の足も、その足の前までに作った量の S1・B1(中心 ± 2 vola、vola ≥ 100)には届かない
+    (前の日の量が残る 1 本目が十字なので、日をまたいでも入らない)ので、この 40 本の中では入らない。
+    窓は日の中の足だけで満ちる(日の間は何も無い)。
+    cross=True なら続けて、売りの 1 段目(S1 = P + 100 + 10k)を越える足と、その利確(建値 − 0.8 vola)まで下がる足(往復 1 回)。"""
+    t0 = T0 + day * 86_400 * NS
+    out = []
+    for i in range(40):
+        if 1 <= i <= k:
+            out.append(bar(i, P, P + 200, t0=t0) if i % 2 == 1 else bar(i, P + 200, P, t0=t0))
+        else:
+            out.append(bar(i, P + 100, P + 100, t0=t0))
+    if cross:
+        s1 = P + 100 + 10 * k
+        out.append(bar(40, s1 - 10, s1 - 10, h=s1 + 1, lo=s1 - 10, t0=t0))
+        out.append(bar(41, s1 - 4 * k + 1, s1 - 4 * k + 1, lo=s1 - 4 * k - 1, t0=t0))  # 利確 s1 − 4k(0.8 × vola)にだけ届く
+    return out
+
+
+def _hist_k(d):
+    return 4 + d % 7  # 日の最後の窓の比 = 40 / k = 5.7 〜 10
+
+
+def _history(n, cross=False):
+    out = []
+    for d in range(n):
+        out += _day(d, _hist_k(d), cross)
+    return out
+
+
+def _cross_entries(rows, day):
+    """日の cross=True の足(番号 40。入りの時刻 = 番号 40 の足の終わり)で入った取引。窓が満ちた足の量の比で入りが決まる。"""
+    t = (D0 + day) * 86_400 * NS + 41 * M
+    return [(r["entry_ns"], r["entry_price"]) for r in rows if r["entry_ns"] == t]
+
+
+def _entries_on(rows, day):
+    lo = (D0 + day) * 86_400 * NS
+    return [(r["entry_ns"], r["entry_price"]) for r in rows if lo <= r["entry_ns"] < lo + 86_400 * NS]
+
+
+def test_rolling_edge_is_the_70th_percentile_of_the_previous_365_days():
+    """境 = 日 d−365〜d−1 に溜めた比の 70% 点(numpy.percentile の既定)。その日(d)と d−366 は入らない。有限でない比は溜めない。"""
+    import numpy as np
+    rnd = random.Random(7)
+    s = sim(ratio_gate_mode="rolling")
+    per_day = {}
+    for d in range(400):
+        s._roll_start(D0 + d)
+        vals = [rnd.uniform(1, 30) for _ in range(rnd.randint(1, 50))]
+        if d == 34:
+            vals = [1e9]  # d = 400 の窓(35〜399)の外
+        per_day[d] = vals
+        for v in vals + [math.inf, -math.inf, math.nan]:
+            s._roll_add(v)
+    s._roll_start(D0 + 400)
+    expect = float(np.percentile([v for d in range(35, 400) for v in per_day[d]], 70))
+    assert s.rolling_edges[D0 + 400] == expect and s._gate_now == expect
+    assert s.rolling_edges[D0 + 399] == float(np.percentile([v for d in range(34, 399) for v in per_day[d]], 70))
+    s._roll_add(1e9)  # 日 400 の比は日 400 の境に入らない(境は日の最初の足の前に決めて動かさない)
+    assert s.rolling_edges[D0 + 400] == expect and s._gate_now == expect
+
+
+@pytest.mark.parametrize("n_days,gated", [(179, False), (180, True)])
+def test_rolling_needs_180_days_with_ratios(n_days, gated):
+    """前の 365 日に比を溜めた日が 180 日未満なら門を掛けない(None)。180 日あれば掛ける。"""
+    s = sim(ratio_gate_mode="rolling")
+    for d in range(n_days):
+        s._roll_start(D0 + d)
+        s._roll_add(5.0 + d)
+    s._roll_start(D0 + n_days + 3)  # 間の 3 日は比を溜めない日(溜めた日の数は変わらない)
+    assert (s.rolling_edges[D0 + n_days + 3] is not None) == gated
+    assert s.ungated_days == n_days + (0 if gated else 1)  # 日 0〜n_days−1 は履歴が足りない
+    assert s._gate_now == s.rolling_edges[D0 + n_days + 3]
+
+
+def test_rolling_gate_direction_at_or_above_the_edge_blocks_and_infinite_blocks():
+    s = sim(ratio_gate_mode="rolling")
+    s._gate_now = 10.0
+
+    class Q:
+        pass
+
+    def ok(width, vola):
+        q = Q()
+        q.width, q.vola = width, vola
+        return s._ratio_ok(q)
+
+    assert ok(99.0, 10.0) and not ok(100.0, 10.0) and not ok(101.0, 10.0) and not ok(5.0, 0.0)
+    s._gate_now = None
+    assert ok(1e9, 10.0) and ok(5.0, 0.0)  # 門なしの日は比が無限でも入る(v37 と同じ)
+
+
+def _recorded(s):
+    """_make_q が作った q の (足の始まりの日, 比 = width / vola) を記録する(試験の側で境を数え直すため)。"""
+    rec = []
+    orig = s._make_q
+
+    def wrap(t, close):
+        q = orig(t, close)
+        if q is not None:
+            r = s._ratio(q)
+            if math.isfinite(r):
+                rec.append(((t - s.bar_ns) // (86_400 * NS), r))
+        return q
+
+    s._make_q = wrap
+    return rec
+
+
+def test_rolling_edges_equal_a_recount_from_the_ratios_of_all_bars_before_the_day():
+    """通しの走らせで、日ごとの境が「その日より前の日に q が作られた全部の足の有限の比」の 70% 点と一致する(180 日未満は None)。"""
+    import numpy as np
+    s = sim(ratio_gate_mode="rolling")
+    rec = _recorded(s)
+    feed(s, _history(210))
+    s.finish()
+    assert len(s.rolling_edges) == 210 and s.ungated_days == 180  # 日 0〜179 は履歴が 180 日未満
+    for day, edge in s.rolling_edges.items():
+        win = [(d, r) for d, r in rec if day - 365 <= d <= day - 1]
+        if len({d for d, _ in win}) < 180:
+            assert edge is None
+        else:
+            assert edge == float(np.percentile([r for _, r in win], 70))
+    assert sum(1 for e in s.rolling_edges.values() if e is not None) == 30
+
+
+def test_rolling_edge_and_entries_do_not_depend_on_that_day_or_later():
+    """先読みが無い: 日 D の境と、日 D の入りが、日 D の最初の足より後・日 D より後の比に依らない。
+    世界 A = 履歴 + 日 D(通常の比)+ 後の日。世界 B = 後の日の比を極端に変えた。世界 C = 日 D の 2 本目以降の足を極端に変えた
+    (日 D の 1 本目の足までは同じ)。"""
+    D = 200
+    hist = _history(D, cross=True)
+
+    def world(day_bars, later):
+        s = sim(ratio_gate_mode="rolling")
+        rows = feed(s, hist + day_bars + later)
+        return s, rows
+
+    n_later = 60
+    later_a = [b for i in range(n_later) for b in _day(D + 1 + i, _hist_k(D + 1 + i), cross=True)]
+    later_b = [b for i in range(n_later) for b in _day(D + 1 + i, 39, cross=True)]  # 比が 1 に近い日が続く(日 D の比と大きく違う)
+    day_a = _day(D, 39, cross=True)  # 比 40 / 39(境より小さい。境が掛かる日で入る)
+    sa, ra = world(day_a, later_a)
+    sb, rb = world(day_a, later_b)
+    assert sa.rolling_edges[D0 + D] is not None  # 空の比べではない
+    assert sa.rolling_edges[D0 + D] == sb.rolling_edges[D0 + D]
+    assert {d: e for d, e in sa.rolling_edges.items() if d <= D0 + D} == {d: e for d, e in sb.rolling_edges.items()
+                                                                       if d <= D0 + D}
+    assert sa.rolling_edges[D0 + D + 1] == sb.rolling_edges[D0 + D + 1]  # 日 D+1 の境は日 D までの比だけ
+    assert sa.rolling_edges[D0 + D + n_later] != sb.rolling_edges[D0 + D + n_later]  # 後の日の比は、後の日の境には効く(比べが効く形)
+    assert _entries_on(ra, D) == _entries_on(rb, D) and _entries_on(ra, D)
+    # 世界 C: 日 D の 1 本目より後の足だけを変える
+    day_c = day_a[:1] + _day(D, 1, cross=True)[1:]
+    sc, rc = world(day_c, [])
+    assert sc.rolling_edges[D0 + D] == sa.rolling_edges[D0 + D]
+    assert {d: e for d, e in sc.rolling_edges.items() if d < D0 + D} == {d: e for d, e in sa.rolling_edges.items()
+                                                                      if d < D0 + D}
+
+
+def test_rolling_without_180_days_enters_exactly_like_v37_without_a_gate():
+    """履歴が 180 日未満の間は、入り・出が門なし(v37)と同じ(取引の行が全部同じ)。極端に比の大きい日も含める。"""
+    bars = _history(60, cross=True) + _day(60, 1, cross=True) + _day(61, 5, cross=True)
+    base_rows = feed(sim(), bars)
+    s = sim(ratio_gate_mode="rolling")
+    rows = feed(s, bars)
+    assert rows == base_rows and len(rows) >= 62
+    assert s.ungated_days == len(s.rolling_edges) == 62 and set(s.rolling_edges.values()) == {None}
+
+
+def test_rolling_gate_blocks_a_high_ratio_day_and_lets_a_low_ratio_day_enter():
+    """境が掛かる日(履歴 200 日)で、境以上の比の日は入らず、境より小さい比の日は入る。門なしはどちらも入る。"""
+    D = 200
+    hist = _history(D)
+    rolling, nogate = sim(ratio_gate_mode="rolling", break_delay=0), sim(break_delay=0)  # ブレイクの状態を持ち込まない
+    for s in (rolling, nogate):
+        feed(s, hist)
+    edge_rows = {}
+    for tag, day, k in (("high", D, 1), ("low", D + 1, 39)):  # 比 40 / 1 と 40 / 39
+        r_r, r_n = feed(rolling, _day(day, k, cross=True)), feed(nogate, _day(day, k, cross=True))
+        edge = rolling.rolling_edges[D0 + day]
+        assert edge is not None
+        edge_rows[tag] = (40 / k < edge, _cross_entries(r_r, day), _cross_entries(r_n, day))
+    assert edge_rows["high"][0] is False and edge_rows["low"][0] is True
+    assert edge_rows["high"][1] == [] and len(edge_rows["high"][2]) == 1
+    assert len(edge_rows["low"][1]) == 1 and edge_rows["low"][1] == edge_rows["low"][2]
+
+
+def test_rolling_default_mode_is_fixed_and_leaves_rolling_state_empty():
+    s = sim()
+    assert s.ratio_gate_mode == "fixed" and s._gate_now is None
+    feed(s, _day(0, 5, cross=True))
+    assert s.rolling_edges == {} and s.ungated_days == 0 and s._roll_hist == {} and s._roll_today == []
+    assert sim(ratio_gate=12.96)._gate_now == 12.96
+
+
+@pytest.mark.parametrize("name,kw", GOLDEN_CONFIGS)
+def test_default_rows_are_unchanged_when_ratio_gate_mode_fixed_is_given(name, kw):
+    """ratio_gate_mode="fixed" を明示した形の取引の行が、足す前の指紋と同じ。"""
+    assert _golden_rows_digest({**kw, "ratio_gate_mode": "fixed"}) == GOLDEN_SIM[name]
+
+
+@pytest.mark.parametrize("kw", [{"ratio_gate_mode": "rolling", "ratio_gate": 12.96},
+                                {"ratio_gate_mode": "daily"}, {"ratio_gate_mode": "Rolling"}, {"ratio_gate_mode": None},
+                                {"ratio_gate_mode": True}, {"ratio_gate_mode": 1}])
+def test_ratio_gate_mode_rolling_with_ratio_gate_and_values_outside_the_table_are_refused(kw):
+    with pytest.raises(ValueError):
+        sim(**kw)
+    from bot.research.matilda_limit_sim import RATIO_GATE_MODES
+    assert RATIO_GATE_MODES == ("fixed", "rolling")
+    sim(ratio_gate_mode="fixed", ratio_gate=12.96)  # fixed と ratio_gate は今まで通り
+
+
+@pytest.mark.parametrize("side", ["good", "bad"])
+def test_run_script_rolling_mode_writes_params_and_ratio_gate_rolling(tmp_path, side):
+    """--ratio-gate-mode rolling のときだけ、引数の欄に ratio_gate_mode が載り、summary.json に ratio_gate_rolling が出る。
+    履歴が 180 日未満なので全部の日が門なし。--ratio-gate との同時指定は拒む。"""
+    import json
+    import sys
+    r = _runner()
+    _golden_run_digest(r, side, str(tmp_path / "rolling"), ["--ratio-gate-mode", "rolling"])
+    with open(tmp_path / "rolling" / "summary.json", encoding="utf-8") as fh:
+        summ = json.load(fh)
+    assert summ["params"]["ratio_gate_mode"] == "rolling" and "ratio_gate" not in summ["params"]
+    g = summ["ratio_gate_rolling"]
+    assert g["days"] == g["days_ungated"] >= 2
+    assert g["years"] == {"2019": {"days": g["days"], "days_ungated": g["days"], "edge_min": None, "edge_median": None,
+                                   "edge_max": None}}
+    with open(tmp_path / "rolling" / "run_record.json", encoding="utf-8") as fh:
+        assert json.load(fh)["params"]["ratio_gate_mode"] == "rolling"
+    argv = sys.argv
+    sys.argv = ["c4_limit_run.py", "--fill-side", side, "--out", str(tmp_path / "both"), "--ratio-gate-mode", "rolling",
+                "--ratio-gate", "12.96"]
+    try:
+        with pytest.raises(ValueError):
+            r.main()
+    finally:
+        sys.argv = argv
+
+
+def test_run_script_rolling_summary_by_year_min_median_max():
+    r = _runner()
+    d0 = 1_546_300_800 * NS // (86_400 * NS)  # 2019-01-01
+    out = r.rolling_summary({d0: None, d0 + 1: 4.0, d0 + 2: 8.0, d0 + 3: 6.0, d0 + 365: 9.0}, 1)
+    assert out == {"days": 5, "days_ungated": 1,
+                   "years": {"2019": {"days": 4, "days_ungated": 1, "edge_min": 4.0, "edge_median": 6.0, "edge_max": 8.0},
+                             "2020": {"days": 1, "days_ungated": 0, "edge_min": 9.0, "edge_median": 9.0, "edge_max": 9.0}}}
+
+
+def test_batch_r2_list_is_six_runs_and_the_existing_list_is_unchanged(capsys, monkeypatch):
+    """--r2 --list は 3 変種 × 良い側・悪い側の 6 本。--r2 無しの一覧(RUNS)は変わらない。"""
+    import sys
+    bt = _load_w4("c4_limit_batch")
+    assert bt.R2_RUNS == [
+        ("R2_ratio_gate12.96_center_4_3", "R2",
+         ["--ratio-gate", "12.96", "--exit-form", "center", "--entry", "4", "--exit-setting", "3"]),
+        ("R2_ratio_gate_rolling", "R2", ["--ratio-gate-mode", "rolling"]),
+        ("R2_ratio_gate_rolling_center_4_3", "R2",
+         ["--ratio-gate-mode", "rolling", "--exit-form", "center", "--entry", "4", "--exit-setting", "3"])]
+    monkeypatch.setattr(sys, "argv", ["c4_limit_batch.py", "--r2", "--list", "--out-root", "unused"])
+    assert bt.main() == 0
+    lines = capsys.readouterr().out.strip().splitlines()
+    assert lines[-1] == "6 / 6" and len(lines) == 7
+    assert [ln.split()[0] for ln in lines[:-1]] == [n for n, _f, _a in bt.R2_RUNS for _s in ("good", "bad")]
+    assert [ln.split()[1] for ln in lines[:-1]] == ["good", "bad"] * 3
+    assert not any(x[1] == "R2" for x in bt.RUNS)
+    monkeypatch.setattr(sys, "argv", ["c4_limit_batch.py", "--list", "--out-root", "unused"])
+    assert bt.main() == 0
+    assert capsys.readouterr().out.strip().splitlines()[-1] == f"{2 * len(bt.RUNS)} / {2 * len(bt.RUNS)}"

@@ -79,6 +79,15 @@ for c, tag in ((-0.5, "m0.5"), (0.5, "p0.5")):
 # 比の門: 入る時点の比が境以上なら入らない。境 12.96 = RATIO_FIXED_EDGES の 7 番目(門の診断の「全期間の分の比から」の
 # 十分位の境)。走らせる期間と同じデータから決めた値(標本の中)
 RUNS.append((f"D_ratio_gate{RATIO_FIXED_EDGES[6]}", "D", ["--ratio-gate", str(RATIO_FIXED_EDGES[6])]))
+# 改良の周 2(docs/RESEARCH/cards/c4_owner_matilda_range/limit_sim/families_r2/R2/DELEGATION_rolling_ratio_gate.md)。
+# 既存の RUNS には足さず(--r2 のときだけ走らせる)、3 変種 × 良い側・悪い側 = 6 本。追加しない
+R2_RUNS: list = [
+    (f"R2_ratio_gate{RATIO_FIXED_EDGES[6]}_center_4_3", "R2",
+     ["--ratio-gate", str(RATIO_FIXED_EDGES[6]), "--exit-form", "center", "--entry", "4", "--exit-setting", "3"]),
+    ("R2_ratio_gate_rolling", "R2", ["--ratio-gate-mode", "rolling"]),
+    ("R2_ratio_gate_rolling_center_4_3", "R2",
+     ["--ratio-gate-mode", "rolling", "--exit-form", "center", "--entry", "4", "--exit-setting", "3"]),
+]
 # 合計をそろえた段は作らない: 損益の式(matilda_limit_sim の _close_row)が 1 段 = 1/段の数 なので、全部の段が約定した
 # ときの合計は既定でどの段の数でも 1(リードの答え 3a)
 # 保有の分の区切り(INTENT_MAP §11-5 P-4)。0 = 同じ足の中で入って出た。[lo, hi) 分
@@ -180,8 +189,9 @@ def main() -> int:
     ap.add_argument("--nshards", type=int, default=1)
     ap.add_argument("--jobs", type=int, default=1)
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--r2", action="store_true", help="改良の周 2 の一覧(R2_RUNS)だけを走らせる")
     a = ap.parse_args()
-    jobs = [(n, f, ar, s) for (n, f, ar) in RUNS for s in SIDES]
+    jobs = [(n, f, ar, s) for (n, f, ar) in (R2_RUNS if a.r2 else RUNS) for s in SIDES]
     mine = [j for i, j in enumerate(jobs) if i % a.nshards == a.shard]
     if a.list:
         for j in mine:

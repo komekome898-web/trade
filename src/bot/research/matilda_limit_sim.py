@@ -21,6 +21,7 @@
   3-2 入り(幅の門・段の値段・上限 N・反対の入り・brk != 0・follow・時計): _leg の "ent"・"opp"、_open
   族 D 比の門(ratio_gate。仕様に無い、L-620): 持ち高 0 から入る時点の比(取引の行の ratio と同じ量)が値以上なら
       入らない。段の追加・反対の入りで閉じるのは止めない: _ratio・_leg の "ent"・"brk"(follow)
+  族 D 比の門の境を走らせる前の期間だけから決める(ratio_gate_mode="rolling")。下の「比の門の境(rolling)」
   族 D 閉じる位置(break_close_offset。仕様に無い、L-620): ブレイクに逆らう持ち高を閉じる値段を判定値 pb から
       値 × vola だけずらす: _leg の "bcl"・"brk"。下の「閉じる位置(族 D)」
   3-3 利確の指値(flg 1・2・中心型・ブレイク中): _tp
@@ -107,6 +108,19 @@ _leg は脚の中で値段がどこまで進んだか(pos = 選んだ出来事�
 閉じる位置で閉じた後、同じ脚では、進んだ位置と同じ値段の入りも選ばない(同じ値段で入り直すと、また同じ値段で閉じる
 繰り返しになるため)。既定(c = 0)では手前の出来事は起きない(既定の出力の指紋と、族 A〜C の 200 通りの比べで確かめた)。
 
+比の門の境(rolling。族 D、改良の周 2、2026-10-04)
+------------------------------------------------------
+ratio_gate_mode="rolling" は、比の門の境(fixed の 12.96 は全期間の分から決めた値)を、その日より前のデータだけから決める。
+  - 溜める比 = _ratio(q) と同じ量。足ごとに q が作られる分すべて(持ち高の有無・入ったかに関係なく)。有限の値だけ。
+    足 k の終わりで作った q は、足 k の始まりの UTC の日に溜める(その q が使われるのは足 k+1 以降なので、日 d の最初の足を
+    処理する前に溜まっているのは日 d−1 までの足で作った q だけ)。
+  - UTC の日 d の境 = 日 d−365〜d−1(その日を含まない)に溜めた比の 70% 点(numpy.percentile の既定の補間)。日 d の最初の
+    足を処理する前に 1 回だけ計算し、その日の間は変えない。
+  - 比を溜めた日が 180 日未満なら、その日は門を掛けない(v37 と同じに入る)。門を掛けなかった日の数を ungated_days に数える
+    (足を処理した日すべてが数の対象。q がまだ作られない窓の満ちる前の日も含む)。
+  - 入りの判定は fixed と同じ向き(比が境以上なら入らない。比が無限なら入らない)。_ratio_ok が _gate_now を読む。
+  - 日ごとの境の記録 = rolling_edges(日の番号 → 境か None)。
+
 先読みが無いこと: 足 k+1 の出来事は、足 k までで作った量 _q だけを使う。足 k+1 を窓に入れて量を作り直すのは
 足 k+1 の出来事を済ませた後(_bar の 7.)。
 """
@@ -116,6 +130,8 @@ import math
 from collections import deque
 from typing import Optional
 
+import numpy as np
+
 from bot.research.cards.library.c4_owner_matilda_range import BAR_MINS, MIN_WIDTH_RATIO, RANGE_FROMS
 
 # 幅の門の上限: v37 135 行 over_range_setting = 100000(円)を、下限 MIN_WIDTH_RATIO(v37 134 行 150 円)と同じ
@@ -124,6 +140,7 @@ MAX_WIDTH_RATIO = 100000.0 / 1152502.0
 
 NS = 1_000_000_000
 MIN_NS = 60 * NS
+DAY_NS = 86_400 * NS
 
 # 仕様 5 の表(値の出所は INTENT_MAP §10・§11)
 WINDOWS = (10, 20, 40, 80, 160)
@@ -142,6 +159,12 @@ FILL_SIDES = ("good", "bad")
 # その README の「十分位の境 … 12.96 …(全期間の分の比から)」の 7 番目の境。走らせる期間(封印の前の全期間)と同じ
 # データから決めた値(標本の中)なので、門の効きの新しい証拠にはならない
 RATIO_GATES = (12.96,)
+# 族 D 比の門の境の決め方(改良の周 2)。"fixed" = ratio_gate の値(既定)、"rolling" = 走らせる前の期間だけから日ごとに決める。
+# モジュールの説明「比の門の境(rolling)」。窓(日)・最小の日数・百分位は委任文(DELEGATION_rolling_ratio_gate.md)の値
+RATIO_GATE_MODES = ("fixed", "rolling")
+ROLLING_WINDOW_DAYS = 365
+ROLLING_MIN_DAYS = 180
+ROLLING_PERCENTILE = 70
 # 族 D 閉じる位置(L-620 の 2。オーナー「負けている持ち高を閉じる位置を、今より手前・同じ・先の 3 通りにする」)。
 # −0.5 = 手前・+0.5 = 先(× vola)。既定 0 = 同じ = v37。モジュールの説明「閉じる位置(族 D)」
 BREAK_CLOSE_OFFSETS = (-0.5, 0.5)
@@ -198,7 +221,8 @@ class MatildaLimitSim:
                  entry: float = 2, exit_form: str = "v37", exit_setting: Optional[float] = None,
                  step_exit: float = 0.8, step: float = 1, n_levels: int = 7, alert_min: int = 20,
                  width_gate: bool = True, break_delay: int = 1, on_break: str = "hold",
-                 ratio_gate: Optional[float] = None, break_close_offset: float = 0) -> None:
+                 ratio_gate: Optional[float] = None, break_close_offset: float = 0,
+                 ratio_gate_mode: str = "fixed") -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.window_min = _in("window_min", window_min, WINDOWS)
         self.bar_min = _in("bar_min", bar_min, BAR_MINS)
@@ -224,6 +248,9 @@ class MatildaLimitSim:
         self.break_delay = _in("break_delay", break_delay, BREAK_DELAYS)
         self.on_break = _in("on_break", on_break, ON_BREAKS)
         self.ratio_gate = None if ratio_gate is None else float(_in("ratio_gate", ratio_gate, RATIO_GATES))
+        self.ratio_gate_mode = _in("ratio_gate_mode", ratio_gate_mode, RATIO_GATE_MODES)
+        if self.ratio_gate_mode == "rolling" and ratio_gate is not None:
+            raise ValueError("ratio_gate_mode='rolling' のときは ratio_gate を同時に指定しない(どちらか 1 つ)")
         c = break_close_offset
         if isinstance(c, bool) or not (c == 0 or c in BREAK_CLOSE_OFFSETS):
             raise ValueError(f"break_close_offset は 0(既定)か {list(BREAK_CLOSE_OFFSETS)} のどれか: {break_close_offset!r}")
@@ -258,6 +285,13 @@ class MatildaLimitSim:
         self._last_close: Optional[float] = None
         self._last_end: Optional[int] = None
         self.undecided_bars = 0  # 決まらない足の数(取引に入らない足を含む全体)
+        # 族 D 比の門。_gate_now = 今の日の境(fixed は ratio_gate のまま。rolling は日ごとに _roll_start が書き換える。None = 門なし)
+        self._gate_now: Optional[float] = self.ratio_gate
+        self._roll_day: Optional[int] = None  # rolling: 今の UTC の日の番号
+        self._roll_today: list = []  # rolling: 今の日に溜めた有限の比
+        self._roll_hist: dict = {}  # rolling: 終わった日の番号 → その日に溜めた比(np.ndarray)。日 d−365 より前は捨てる
+        self.rolling_edges: dict = {}  # rolling: 足を処理した日の番号 → その日の境(None = 門を掛けなかった)
+        self.ungated_days = 0  # rolling: 門を掛けなかった日の数
 
     # ------------------------------------------------------------------ 足の取り込み(カードの _ingest と同じ)
     def feed(self, b) -> list:
@@ -374,8 +408,31 @@ class MatildaLimitSim:
         return q.width / q.vola if q.vola > 0 else (math.inf if q.width > 0 else 0.0)
 
     def _ratio_ok(self, q: _Q) -> bool:
-        """比の門: 持ち高 0 から入ってよいか(ratio_gate が None なら常に入ってよい。値以上なら入らない)。"""
-        return self.ratio_gate is None or self._ratio(q) < self.ratio_gate
+        """比の門: 持ち高 0 から入ってよいか(境が None なら常に入ってよい。境以上なら入らない。比が無限なら入らない)。"""
+        return self._gate_now is None or self._ratio(q) < self._gate_now
+
+    # ------------------------------------------------------------------ 族 D 比の門の境(rolling)
+    def _roll_add(self, ratio: float) -> None:
+        """今の日に比を溜める(有限の値だけ)。"""
+        if math.isfinite(ratio):
+            self._roll_today.append(ratio)
+
+    def _roll_start(self, day: int) -> None:
+        """日 day の最初の足を処理する前に 1 回だけ呼ぶ: 日 day−365〜day−1 に溜めた比の 70% 点を、その日の境にする。"""
+        if self._roll_day is not None and self._roll_today:
+            self._roll_hist[self._roll_day] = np.array(self._roll_today)
+        self._roll_today = []
+        self._roll_day = day
+        for k in [k for k in self._roll_hist if k < day - ROLLING_WINDOW_DAYS]:
+            del self._roll_hist[k]
+        days = [k for k in self._roll_hist if day - ROLLING_WINDOW_DAYS <= k <= day - 1]
+        if len(days) < ROLLING_MIN_DAYS:
+            edge = None
+            self.ungated_days += 1
+        else:
+            edge = float(np.percentile(np.concatenate([self._roll_hist[k] for k in days]), ROLLING_PERCENTILE))
+        self._gate_now = edge
+        self.rolling_edges[day] = edge
 
     def _close(self, st: _St, price: float, reason: str, t: int) -> None:
         st.closed.append((st.info, list(st.fills), price, reason, t))
@@ -553,6 +610,8 @@ class MatildaLimitSim:
     def _bar(self, start: int, t_end: int, first_start: int, o, h, lo, c) -> list:
         q = self._q
         out: list = []
+        if self.ratio_gate_mode == "rolling" and start // DAY_NS != self._roll_day:
+            self._roll_start(start // DAY_NS)  # 日の最初の足(q が無い足も含む)を処理する前に、その日の境を決める
         if q is not None:
             st = self._state()
             # 0. 時間の成行(前の足の終わりで決めた): この足の始値で閉じる
@@ -611,9 +670,11 @@ class MatildaLimitSim:
         # 7. 足 k+1 を窓に入れて量を作り直す(ブレイクの判定値は解けた後の brk で更新)
         self._push(start, o, h, lo, c)
         self._q = self._make_q(t_end, c)
+        if self.ratio_gate_mode == "rolling" and self._q is not None:
+            self._roll_add(self._ratio(self._q))  # 足 k の始まりの日に溜める(今の日)
         self._last_close, self._last_end = c, t_end
         return out
 
 
 __all__ = ["ALERTS", "BREAK_CLOSE_OFFSETS", "BREAK_DELAYS", "CENTER_PAIRS", "ENTRY_V37", "EXIT_FORMS", "FILL_SIDES", "MAX_WIDTH_RATIO", "MatildaLimitSim",
-           "N_LEVELS", "ON_BREAKS", "RATIO_GATES", "STEPS", "STEP_EXITS", "WINDOWS"]
+           "N_LEVELS", "ON_BREAKS", "RATIO_GATES", "RATIO_GATE_MODES", "STEPS", "STEP_EXITS", "WINDOWS"]
