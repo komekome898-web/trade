@@ -1,0 +1,122 @@
+{
+ "5|a": {
+  "entry_part": -14.057714796720372,
+  "missed_per_day": -14.151404092350539,
+  "missed_trades": 675,
+  "placed_trades": 298,
+  "placed_avg": 97.58911857676753,
+  "placed_losses": 0,
+  "not_placed_trades": 377,
+  "not_placed_avg": 9.68339610007976
+ },
+ "5|b": {
+  "entry_part": -8.202670980338272,
+  "missed_per_day": -101.43888926199004,
+  "missed_trades": 6435,
+  "placed_trades": 3111,
+  "placed_avg": 69.10129853486708,
+  "placed_losses": 459,
+  "not_placed_trades": 3324,
+  "not_placed_avg": 5.912759061676132
+ },
+ "5|c": {
+  "entry_part": -10.11941923905224,
+  "missed_per_day": -12.73555271871454,
+  "missed_trades": 744,
+  "placed_trades": 323,
+  "placed_avg": 82.5186855041672,
+  "placed_losses": 39,
+  "not_placed_trades": 421,
+  "not_placed_avg": 6.659852780381781
+ },
+ "15|a": {
+  "entry_part": -11.18614432000092,
+  "missed_per_day": -11.350369809320908,
+  "missed_trades": 435,
+  "placed_trades": 195,
+  "placed_avg": 115.51208005160748,
+  "placed_losses": 0,
+  "not_placed_trades": 240,
+  "not_placed_avg": 15.535623995399162
+ },
+ "15|b": {
+  "entry_part": -1.937120620269949,
+  "missed_per_day": -80.70794425706256,
+  "missed_trades": 5175,
+  "placed_trades": 2522,
+  "placed_avg": 70.91519433134609,
+  "placed_losses": 388,
+  "not_placed_trades": 2653,
+  "not_placed_avg": 2.9511326660123953
+ },
+ "15|c": {
+  "entry_part": -4.572037657272068,
+  "missed_per_day": -7.6533977014181485,
+  "missed_trades": 436,
+  "placed_trades": 191,
+  "placed_avg": 87.62961312920932,
+  "placed_losses": 19,
+  "not_placed_trades": 245,
+  "not_placed_avg": 3.938990921229386
+ },
+ "30|a": {
+  "entry_part": -8.795215789677194,
+  "missed_per_day": -8.23436819162562,
+  "missed_trades": 286,
+  "placed_trades": 127,
+  "placed_avg": 128.68162047446714,
+  "placed_losses": 0,
+  "not_placed_trades": 159,
+  "not_placed_avg": 17.003319666495187
+ },
+ "30|b": {
+  "entry_part": -1.1757824472541243,
+  "missed_per_day": -62.18238252122202,
+  "missed_trades": 4138,
+  "placed_trades": 2064,
+  "placed_avg": 78.78375868459376,
+  "placed_losses": 342,
+  "not_placed_trades": 2074,
+  "not_placed_avg": -9.055847229226142
+ },
+ "30|c": {
+  "entry_part": -4.934300859195588,
+  "missed_per_day": -6.140883037671353,
+  "missed_trades": 300,
+  "placed_trades": 133,
+  "placed_avg": 114.93621307395199,
+  "placed_losses": 20,
+  "not_placed_trades": 167,
+  "not_placed_avg": -6.482957321567511
+ },
+ "60|a": {
+  "entry_part": -3.8109150848230597,
+  "missed_per_day": -4.344192408187854,
+  "missed_trades": 173,
+  "placed_trades": 77,
+  "placed_avg": 112.90112319559547,
+  "placed_losses": 0,
+  "not_placed_trades": 96,
+  "not_placed_avg": 14.111776604975576
+ },
+ "60|b": {
+  "entry_part": -1.6094595530874172,
+  "missed_per_day": -55.41468324456888,
+  "missed_trades": 2846,
+  "placed_trades": 1399,
+  "placed_avg": 95.1939887025553,
+  "placed_losses": 218,
+  "not_placed_trades": 1447,
+  "not_placed_avg": -3.456964651131359
+ },
+ "60|c": {
+  "entry_part": -0.7964041718385186,
+  "missed_per_day": -1.8687485012038314,
+  "missed_trades": 128,
+  "placed_trades": 58,
+  "placed_avg": 95.08013848352404,
+  "placed_losses": 9,
+  "not_placed_trades": 70,
+  "not_placed_avg": -17.03189641085618
+ }
+}
