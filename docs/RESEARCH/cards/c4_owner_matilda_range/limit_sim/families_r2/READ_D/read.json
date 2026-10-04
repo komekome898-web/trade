@@ -1,0 +1,103 @@
+{
+ "compare": [
+  {
+   "name": "D_breakclose_m0.5",
+   "family": "D",
+   "small_win": {
+    "d_good": -0.58137476796378,
+    "d_bad": 0.3468471011081533,
+    "label": "側で割れる"
+   },
+   "big_loss": {
+    "d_good": -26.173241813352945,
+    "d_bad": -24.307957114042097,
+    "label": "減る(両側)"
+   },
+   "pnl": {
+    "d_good": -44.544034488368,
+    "d_bad": -43.016334643680636,
+    "label": "減る(両側)"
+   },
+   "closed_by_break": {
+    "d_good": -46.207658314714024,
+    "d_bad": -46.58114911708287,
+    "label": "減る(両側)"
+   },
+   "trades": {
+    "d_good": 4.466507990479386,
+    "d_bad": 6.221013260795672,
+    "label": "増える(両側)"
+   },
+   "years_good": 8,
+   "years_bad": 8,
+   "decided_good": true,
+   "decided_bad": true
+  },
+  {
+   "name": "D_breakclose_p0.5",
+   "family": "D",
+   "small_win": {
+    "d_good": 1.1916214975030073,
+    "d_bad": 0.8444268088525746,
+    "label": "増える(両側)"
+   },
+   "big_loss": {
+    "d_good": 1.31016831773303,
+    "d_bad": -7.306474896891189,
+    "label": "側で割れる"
+   },
+   "pnl": {
+    "d_good": 9.983772446210992,
+    "d_bad": -0.4948931275606867,
+    "label": "側で割れる"
+   },
+   "closed_by_break": {
+    "d_good": 10.393846351766001,
+    "d_bad": 0.7174483280572872,
+    "label": "増える(両側)"
+   },
+   "trades": {
+    "d_good": -0.031281876912657935,
+    "d_bad": -0.016320979258750867,
+    "label": "減る(両側)"
+   },
+   "years_good": 7,
+   "years_bad": 5,
+   "decided_good": true,
+   "decided_bad": false
+  },
+  {
+   "name": "D_ratio_gate12.96",
+   "family": "D",
+   "small_win": {
+    "d_good": -21.390238036676465,
+    "d_bad": -11.665881612777781,
+    "label": "減る(両側)"
+   },
+   "big_loss": {
+    "d_good": 57.03082448103655,
+    "d_bad": 46.05140559960557,
+    "label": "増える(両側)"
+   },
+   "pnl": {
+    "d_good": 39.391266835886086,
+    "d_bad": 37.64321290787379,
+    "label": "増える(両側)"
+   },
+   "closed_by_break": {
+    "d_good": 50.575005244823274,
+    "d_bad": 39.370253603993945,
+    "label": "増える(両側)"
+   },
+   "trades": {
+    "d_good": -37.72322339340366,
+    "d_bad": -22.44338660319619,
+    "label": "減る(両側)"
+   },
+   "years_good": 8,
+   "years_bad": 8,
+   "decided_good": true,
+   "decided_bad": true
+  }
+ ]
+}
