@@ -22737,7 +22737,7 @@
   {
    "move": 835,
    "tools": {
-    "Bash": 19,
+    "Bash": 21,
     "ToolSearch": 3,
     "mcp__Claude_Code_Remote__create_session": 4,
     "mcp__Claude_Code_Remote__get_session": 1,
@@ -22745,7 +22745,7 @@
     "Agent": 1,
     "Write": 2
    },
-   "n_tools": 31,
+   "n_tools": 33,
    "read_goal": false,
    "first_write_at": 28,
    "table_shown": true,
