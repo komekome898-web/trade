@@ -22829,11 +22829,11 @@
   {
    "move": 838,
    "tools": {
-    "Bash": 10,
+    "Bash": 11,
     "Write": 1,
     "Agent": 2
    },
-   "n_tools": 13,
+   "n_tools": 14,
    "read_goal": false,
    "first_write_at": 11,
    "table_shown": false,
