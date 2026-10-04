@@ -23020,7 +23020,7 @@
    "tools": {
     "ToolSearch": 2,
     "TaskCreate": 4,
-    "Bash": 64,
+    "Bash": 70,
     "Edit": 2,
     "TaskUpdate": 5,
     "Agent": 5,
@@ -23029,7 +23029,7 @@
     "ListAgents": 1,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 91,
+   "n_tools": 97,
    "read_goal": false,
    "first_write_at": 14,
    "table_shown": false,
