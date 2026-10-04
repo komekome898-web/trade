@@ -51,3 +51,20 @@ def test_hold_diff_by_band():
     assert rx.hold_diff(x, b) == [{"lo": 0, "hi": 5, "d_trades": 1, "d_sum_bp": -3.0},
                                   {"lo": 480, "hi": None, "d_trades": -3, "d_sum_bp": 40.0}]
     assert rx.hold_diff(None, b) is None
+
+
+def test_carried_entry_after_new_exit():
+    rows = [
+        {"entry_t": "2020-01-01T00:00:00Z", "exit_t": "2020-01-01T00:20:00Z", "signal_t": "2019-12-31T23:55:00Z",
+         "exit_reason": "値段で降りる", "pnl_bp": "-30"},
+        # 合図は 00:15(降りる前)→ 降りた後の入り直し
+        {"entry_t": "2020-01-01T00:25:00Z", "exit_t": "2020-01-01T01:00:00Z", "signal_t": "2020-01-01T00:15:00Z",
+         "exit_reason": "終値", "pnl_bp": "12"},
+        # 直前は新しい降り方ではない → 数えない
+        {"entry_t": "2020-01-01T01:10:00Z", "exit_t": "2020-01-01T01:30:00Z", "signal_t": "2020-01-01T00:50:00Z",
+         "exit_reason": "時間で降りる", "pnl_bp": "5"},
+        # 直前は時間で降りた。合図は 01:35(降りた後)→ 数えない
+        {"entry_t": "2020-01-01T01:40:00Z", "exit_t": "2020-01-01T02:00:00Z", "signal_t": "2020-01-01T01:35:00Z",
+         "exit_reason": "終値", "pnl_bp": "7"},
+    ]
+    assert rx.carried_after_new_exit(list(reversed(rows))) == {"trades": 1, "sum_bp": 12.0}

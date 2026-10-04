@@ -8,6 +8,10 @@ R1 比べる相手: 各走らせ weak_f<足>_close_a_stop<k> / weak_f<足>_close
    (入り方 a・終値で約定・弱いだけ・門なし。降り方の切り替えだけが違う)。
 R2 出すもの(1 日あたり、降り方あり − なし): 損益・取引の数・勝ちの和・負けの和、と 1 取引あたりの損益の差。
    あわせて、新しい降り方で閉じた取引の本数と損益の和(summary の by_exit_signal の「値段で降りる」「時間で降りる」)。
+R2b 降りた後の入り直し(関門の外の批評家の指摘 8 を受け、走らせる前に足した。`VERDICTS/2026-10-04_c2_exits_critic.md`):
+   値段で降りた後、降りる前に出て持ち越した合図で入った取引は、降り方なしには無い取引になりうる。そこで trades.csv.gz で、
+   直前の取引(建ての時刻の順)が新しい降り方で閉じ、その取引の合図の時刻(signal_t)が直前の取引の出の時刻(exit_t)より
+   前のものを「降りた後の入り直し」として、本数と損益の和を出す。損益の差のうち、どれだけがこの取引から来るかを読む。
 R3 年ごとの安定: 2018〜2023 の 6 年で、年の損益の差(あり − なし)の符号が全期間の差の符号と同じ年の数を「n/6」
    (c2_read_limit.year_agreement と同じ数え方)。
 R4 保有時間の帯ごとの差: 0〜5・5〜30・30〜120・120〜480・480 分〜 の 5 帯で、取引の数と損益の和の差(あり − なし)。
@@ -21,6 +25,8 @@ R5 境は置かない(A-12)。k や N の間で良い悪いの線を引かない
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import json
 import os
 import sys
@@ -54,6 +60,25 @@ def new_exit(summary_all: dict) -> dict:
             "sum_bp": sum(float(by[k]["sum_bp"]) for k in NEW_EXITS if k in by)}
 
 
+def carried_after_new_exit(rows: list[dict]) -> dict:
+    """R2b。rows = trades.csv.gz の行(entry_t・exit_t・signal_t は同じ書式の UTC ISO の文字列、exit_reason、pnl_bp)。"""
+    rs = sorted(rows, key=lambda r: r["entry_t"])
+    n, s = 0, 0.0
+    for prev, cur in zip(rs, rs[1:]):
+        if prev["exit_reason"] in NEW_EXITS and cur["signal_t"] and cur["signal_t"] < prev["exit_t"]:
+            n += 1
+            s += float(cur["pnl_bp"])
+    return {"trades": n, "sum_bp": s}
+
+
+def read_csv_rows(d: str) -> list[dict] | None:
+    p = os.path.join(d, "trades.csv.gz")
+    if not os.path.isfile(p):
+        return None
+    with gzip.open(p, "rt", encoding="utf-8", newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
 def hold_diff(x: list[dict] | None, b: list[dict] | None) -> list[dict] | None:
     """R4。"""
     if x is None or b is None:
@@ -62,7 +87,7 @@ def hold_diff(x: list[dict] | None, b: list[dict] | None) -> list[dict] | None:
             for p, q in zip(x, b)]
 
 
-def compare(runs: dict, alls: dict) -> list[dict]:
+def compare(runs: dict, alls: dict, carried: dict | None = None) -> list[dict]:
     rows = []
     for x, b in pairs(set(runs)):
         X, B = runs[x], runs[b]
@@ -75,6 +100,7 @@ def compare(runs: dict, alls: dict) -> list[dict]:
             "d_loss_day": alls[x]["sum_loss_bp"] / dX - alls[b]["sum_loss_bp"] / dB,
             "d_per_trade": X["per_trade"] - B["per_trade"],
             "new_exit": new_exit(alls[x]),
+            "carried": (carried or {}).get(x),
             "years_agree": rl.year_agreement(X, B),
             "hold": hold_diff(X["hold"], B["hold"]),
         })
@@ -89,12 +115,13 @@ def render(rows: list[dict]) -> str:
     L = ["# カツオ: 長い保有の降り方(値段で降りる・時間で降りる)と降り方なしの比べ", "",
          "`scripts/w4_measure/c2_read_exits.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。bp。", "",
          "## 表 1: 降り方あり − なし(1 日あたり)", "",
-         "| 降り方あり | 損益の差 | 取引の数の差 | 勝ちの和の差 | 負けの和の差 | 1 取引あたりの差 | 新しい降り方で閉じた本数・損益の和 | 年の一致 |",
-         "|---|---|---|---|---|---|---|---|"]
+         "| 降り方あり | 損益の差 | 取引の数の差 | 勝ちの和の差 | 負けの和の差 | 1 取引あたりの差 | 新しい降り方で閉じた本数・損益の和 | 降りた後の入り直し 本数・損益の和 | 年の一致 |",
+         "|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
-        ne = r["new_exit"]
+        ne, ca = r["new_exit"], r["carried"]
+        cs = f"{ca['trades']:,} 本・{ca['sum_bp']:+,.0f}" if ca else "取引の行なし"
         L.append(f"| {r['variant']} | {rl._f(r['d_pnl_day'], 2)} | {rl._f(r['d_trades_day'], 3)} | {rl._f(r['d_win_day'], 2)} | "
-                 f"{rl._f(r['d_loss_day'], 2)} | {rl._f(r['d_per_trade'], 2)} | {ne['trades']:,} 本・{ne['sum_bp']:+,.0f} | "
+                 f"{rl._f(r['d_loss_day'], 2)} | {rl._f(r['d_per_trade'], 2)} | {ne['trades']:,} 本・{ne['sum_bp']:+,.0f} | {cs} | "
                  f"{r['years_agree']}/{len(rl.YEARS)} |")
     L += ["", "## 表 2: 保有時間の帯ごとの差(あり − なし。取引の数 / 損益の和 bp)", ""]
     bands = next((r["hold"] for r in rows if r["hold"]), None)
@@ -119,7 +146,11 @@ def main(argv: list[str] | None = None) -> int:
         runs[n] = rl.load_run(d)
         with open(os.path.join(d, "summary.json"), encoding="utf-8") as fh:
             alls[n] = json.load(fh)["all"]
-    rows = compare(runs, alls)
+    carried = {}
+    for x, _b in pairs(set(runs)):
+        cr = read_csv_rows(os.path.join(a.root, x))
+        carried[x] = None if cr is None else carried_after_new_exit(cr)
+    rows = compare(runs, alls, carried)
     out = os.path.join(a.root, "READ_EXITS")
     os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "TABLES.md"), "w", encoding="utf-8") as fh:
