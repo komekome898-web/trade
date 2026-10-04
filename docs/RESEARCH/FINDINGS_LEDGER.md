@@ -110,7 +110,7 @@
 - 出所: `docs/RESEARCH/cards/c4_owner_matilda_range/limit_sim/families_r2/READ/TABLES.md` の表 6・表 7
 - 測った日: 2026-10-03
 - 射程: bitFlyer FX_BTC_JPY の 1 分足、2015-11-28〜2023-12-17、v37 の指値の再現(良い側・悪い側)、経費なし。境は前の門の診断の十分位の境(7.51〜16.77)
-- 大きさ: 良い側 +0.292 → −2.231bp/取引、悪い側 −0.532 → −3.227bp/取引 【L-672: 今の走らせの出力(`docs/RESEARCH/cards/c4_owner_matilda_range/limit_sim/families_r2/v37_good/analysis.json` の ratio_deciles)では、十分位 1 → 10 で良い側 +0.302 → −1.151、悪い側 −0.517 → −1.940 bp/取引。向きは同じで、上の大きさとは合わない】
+- 大きさ: 良い側 +0.292 → −2.231bp/取引、悪い側 −0.532 → −3.227bp/取引 【L-672 の注記を 2026-10-05 に直した: 上の大きさは表 6 の「固定の境」の区分の値で、表 6 から計算し直すと一致する(良い側 区分 1 = 52,324 ÷ 179,079 = +0.292、区分 10 = −38,306 ÷ 17,173 = −2.231)。今の走らせの出力(`docs/RESEARCH/cards/c4_owner_matilda_range/limit_sim/families_r2/v37_good/analysis.json` の ratio_deciles)は、その走らせの取引を同じ数ずつに分けた十分位(境 1.0〜7.07〜…)で、十分位 1 → 10 で良い側 +0.302 → −1.151、悪い側 −0.517 → −1.940 bp/取引。分け方が違うだけで、どちらも正しい。向きは同じ。L-672 で「合わない、直す」と書いたのはリードの誤り】
 - 確かさ: 監査済
 - 監査: `docs/AUDITOR/VERDICTS/2026-10-03_c4_families_r2_read.md`(関門 ② 2 回、最後の回の止める 0)
 - 否定を含む: いいえ
