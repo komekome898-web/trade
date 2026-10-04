@@ -23055,12 +23055,12 @@
   {
    "move": 846,
    "tools": {
-    "Bash": 29,
+    "Bash": 36,
     "Agent": 4,
     "Write": 1,
     "TaskUpdate": 2
    },
-   "n_tools": 36,
+   "n_tools": 43,
    "read_goal": false,
    "first_write_at": 20,
    "table_shown": false,
