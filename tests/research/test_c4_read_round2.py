@@ -60,3 +60,16 @@ def test_daily_and_ci():
     assert rr.daily(rows, date(2020, 1, 1), date(2020, 1, 3)) == [4.0, 0.0, -1.0]
     c = rr.paired_ci([2.0, 4.0, 6.0, 8.0, 10.0, 12.0], [0.0] * 6)
     assert c["days"] == 6 and abs(c["mean"] - 7.0) < 1e-12 and c["lo"] <= 7.0 <= c["hi"] and c["mde"] > 0
+
+
+def test_read_trades_from_json(tmp_path):
+    import gzip
+    import json
+    d = tmp_path / "run"
+    d.mkdir()
+    o = {"version": 1, "t_unit": "ns", "entry_t_ns": [1577836800 * 10**9], "exit_t_ns": [1577840400 * 10**9],
+         "entry_px": [1.0], "exit_px": [1.0], "side": [1], "qty": [1.0], "pnl_bp": [-12.5]}
+    with gzip.open(d / "trades.json.gz", "wt", encoding="utf-8") as fh:
+        json.dump(o, fh)
+    assert rr.read_trades(str(d)) == [("2020-01-01T00:00:00Z", "2020-01-01T01:00:00Z", -12.5)]
+    assert rr.read_trades(str(tmp_path / "none")) is None

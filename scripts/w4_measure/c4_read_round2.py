@@ -37,7 +37,7 @@ import gzip
 import json
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -91,12 +91,22 @@ def rolling_minus_fixed(dec: dict) -> dict | None:
 
 
 def read_trades(d: str) -> list[tuple[str, str, float]] | None:
-    """trades.csv.gz の (entry_t, exit_t, pnl_bp)。無ければ None。"""
-    p = os.path.join(d, "trades.csv.gz")
+    """(entry_t, exit_t, pnl_bp)。trades.json.gz から全部の走らせで同じに読む(時刻は UTC の ISO の文字列に直す)。
+    2026-10-04 追記: 基準の v37・A1 の走らせには trades.csv.gz が無い(git に入れたのは trades.json.gz だけ)ので、
+    同じ取引の行を持つ trades.json.gz に替えた。読み方の決まり R1〜R7 は変えていない。"""
+    p = os.path.join(d, "trades.json.gz")
     if not os.path.isfile(p):
         return None
-    with gzip.open(p, "rt", encoding="utf-8", newline="") as fh:
-        return [(r["entry_t"], r["exit_t"], float(r["pnl_bp"])) for r in csv.DictReader(fh)]
+    with gzip.open(p, "rt", encoding="utf-8") as fh:
+        o = json.load(fh)
+    scale = {"ns": 1, "s": 10**9}[o["t_unit"]]
+
+    def iso(t) -> str:
+        ns = int(t) * scale
+        if ns % 10**9:
+            raise ValueError(f"秒未満の時刻 {ns}(この読みは秒で突き合わせる)")
+        return datetime.fromtimestamp(ns // 10**9, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [(iso(e), iso(x), float(p_)) for e, x, p_ in zip(o["entry_t_ns"], o["exit_t_ns"], o["pnl_bp"])]
 
 
 def big_loss_overlap(base: list, gate: list, tp: list) -> dict:
