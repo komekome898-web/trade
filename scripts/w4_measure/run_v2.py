@@ -68,8 +68,8 @@ def boundaries(lo: int, hi: int, chunk: str) -> list:
         out.append(b)
 
 
-def ref_rows(name, dataset, decl):
-    s = load_reference(ROOT, dataset, declarations=decl)
+def ref_rows(name, dataset, decl, explore_window=None):
+    s = load_reference(ROOT, dataset, declarations=decl, explore_window=explore_window)
     return (np.array(s.times_ns, dtype=np.int64), list(s.values), [list(m) for m in s.manifest])
 
 

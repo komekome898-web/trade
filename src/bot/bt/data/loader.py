@@ -557,7 +557,7 @@ def _read_file(d: _Dataset, fi: int, cp, seals: SealRegistry, reader) -> tuple[l
             if st >= ent.cutoff_ns:
                 raise SealedRangeError(
                     f"{where}: kept by the range, but its seal time ({ent.time_column!r}) is at or after "
-                    f"the seal cutoff {ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier")
+                    f"the seal cutoff {ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier{ent.note}")
         rec, ev, t, key = _build(d.spec, cells, raw_t, where)
         n_kept += 1
         synth = False
@@ -573,16 +573,20 @@ def _check_paths(root: str, parsed: list[_Dataset], allow: AllowList) -> list[li
     return [[allow.check(root, p) for p in d.paths] for d in parsed]
 
 
-def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None) -> LoadResult:
+def load(root: str, datasets: Any, *, allowlist: Optional[AllowList] = None,
+         explore_window: Optional[str] = None) -> LoadResult:
     """Read every dataset (see module docstring). Refuses (a `DataError`)
-    on the first path, seal, declaration or row it cannot read exactly."""
+    on the first path, seal, declaration or row it cannot read exactly.
+    `explore_window="P2-08"` asks for the explore-window override of that seal unit's cutoff
+    (allowlist.py: it needs the environment variable and the approval file too; default None = no override)."""
     if type(root) is not str or not root:
         raise SpecError("root must be a non-empty str (the data root)")
     allow = DEFAULT_ALLOWLIST if allowlist is None else allowlist
     if not isinstance(allow, AllowList):
         raise SpecError("allowlist must be an AllowList")
     parsed = _parse_datasets(datasets)
-    seals = SealRegistry(root)
+    seals = SealRegistry(root, explore_window)
+    seals.log_explore_access("load", [(d.name, d.range_ns) for d in parsed])  # a line before any byte is read
     files: list[FileRecord] = []
     # every path of every dataset is checked before any row is read
     checked = _check_paths(root, parsed, allow)

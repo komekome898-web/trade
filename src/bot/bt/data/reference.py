@@ -327,7 +327,7 @@ def _decode(raw: bytes, compression: str, given: str) -> str:
 
 
 def load_reference(root: str, dataset: Any, *, declarations: Mapping[str, Any],
-                   allowlist: Optional[AllowList] = None) -> ReferenceSeries:
+                   allowlist: Optional[AllowList] = None, explore_window: Optional[str] = None) -> ReferenceSeries:
     """Read one reference series from its files (module docstring). The
     declaration is checked before any path is touched."""
     if type(root) is not str or not root:
@@ -342,7 +342,8 @@ def load_reference(root: str, dataset: Any, *, declarations: Mapping[str, Any],
     if not isinstance(allow, AllowList):
         raise SpecError("allowlist must be an AllowList")
     checked = [allow.check(root, p) for p in paths]  # every path before any byte is read
-    seals = SealRegistry(root)
+    seals = SealRegistry(root, explore_window)
+    seals.log_explore_access("load_reference", [(name, rng)])  # a line before any byte is read
     reader = TimeReader(spec["unit"], spec["tz"])
     rows: list[tuple] = []
     manifest = []
@@ -381,7 +382,7 @@ def load_reference(root: str, dataset: Any, *, declarations: Mapping[str, Any],
                     if st >= ent.cutoff_ns:
                         raise SealedRangeError(f"{where}: kept by the range, but its seal time "
                                                f"({ent.time_column!r}) is at or after the seal cutoff "
-                                               f"{ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier")
+                                               f"{ent.cutoff_ns} ns (unit {ent.unit}); end the range earlier{ent.note}")
                 text_v = row[spec["value"]].strip()
                 if not _NUM.match(text_v):
                     raise ParseError(f"{where}: value {text_v!r} is not a decimal number")

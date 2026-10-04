@@ -73,7 +73,7 @@ from datetime import datetime, timezone
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from common import (DAY_NS, FX_DIR, MIN_NS, ROOT, WINDOW1, WINDOW1_WARMUP_START, Clock, _window_doors,  # noqa: E402
+from common import (DAY_NS, FX_DIR, MIN_NS, ROOT, WINDOW1, WINDOW1_UNIT, WINDOW1_WARMUP_START, Clock, _window_doors,  # noqa: E402
                     binance_ref_dataset, iso, load_bars, paths, peak_rss_gb, split_measured, to_iso, window_guard,
                     window_trim_report)
 from post import write_json  # noqa: E402
@@ -340,7 +340,7 @@ def main() -> int:
             ds = binance_ref_dataset(n, n.rsplit("_", 1)[1], x, y, **WIN)
             if not a.window1:
                 ds["paths"] = paths(ref_dir, ref_file, x, y)
-            tt, vv, man = ref_rows(n, ds, decl)
+            tt, vv, man = ref_rows(n, ds, decl, WINDOW1_UNIT if a.window1 else None)
             ref_man[n] += man
             cols.append((tt.tolist(), vv))
         if a.window1:  # 読んだ直後に、判定の期間の行を数えて記録し(値は見ない)、残っていれば止める

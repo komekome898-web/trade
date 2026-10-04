@@ -56,6 +56,7 @@ WINDOW1_LAST_DAY = "2025-12-11"  # 窓の終わり(2025-12-12T00:00Z = 日本時
 WINDOW1_WARMUP_START = "2022-12-18T00:00:00Z"  # 窓の走らせの読み始め(窓の始まりの直前 365 日の門のため)
 WINDOW1_ENV = "W4_WINDOW1"
 WINDOW1_ENV_VALUE = "P2-08-explore"
+WINDOW1_UNIT = "P2-08"  # データ層(SealRegistry)の探索の窓の引数 explore_window の値。窓の口を通ったときだけ load・load_reference に渡す
 WINDOW1_APPROVAL = "backtest_data/phase2_sealed/P2-08/EXPLORE_WINDOW_APPROVED"  # リードがオーナーの言葉を写して作る。このコードは作らない
 WINDOW1_LOG = "backtest_data/phase2_sealed/P2-08/explore_access_log.jsonl"
 
@@ -193,7 +194,7 @@ def load_bars(d: str, symbol: str, lo_ns: int, hi_ns: int, window: bool = False)
     if window:
         window_guard(lo_ns, hi_ns, what=f"load_bars {d}")
     ds = bar_dataset(d, symbol, lo_ns, hi_ns, window=window)
-    res = load(ROOT, [ds])
+    res = load(ROOT, [ds], explore_window=WINDOW1_UNIT if window else None)  # 窓の口の 2 つの門の後に、データ層の門(3 つ)
     kinds = {}
     for a in res.anomalies("bars"):
         kinds[a["kind"]] = kinds.get(a["kind"], 0) + 1

@@ -57,6 +57,8 @@ import hashlib
 import json
 import os
 import re
+import sys
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from decimal import Decimal
 from fractions import Fraction
@@ -74,6 +76,13 @@ MANDATORY_DENY: tuple[tuple[str, str], ...] = (
     ("phase2_sealed", "the seal ledger (phase2_sealed)"),
 )
 SEAL_DIR = ("backtest_data", "phase2_sealed")
+EXPLORE_UNIT = "P2-08"  # the one seal unit the explore window may open (also the value of the `explore_window` argument)
+EXPLORE_ENV = "W4_WINDOW1"
+EXPLORE_ENV_VALUE = "P2-08-explore"
+EXPLORE_APPROVAL = SEAL_DIR + (EXPLORE_UNIT, "EXPLORE_WINDOW_APPROVED")  # made by the lead, never by this code
+EXPLORE_LOG = SEAL_DIR + (EXPLORE_UNIT, "explore_access_log.jsonl")
+EXPLORE_END_ISO = "2025-12-12T00:00:00Z"  # the start of the judgment period: no override reaches it
+EXPLORE_END_NS = int(to_nanos(EXPLORE_END_ISO, "iso"))  # made once at import (a registry is made per load)
 
 
 def _parts(rel: str) -> list[str]:
@@ -156,13 +165,19 @@ class SealEntry:
     time_column: str
     cutoff_ns: int
     md5: Optional[str] = None  # the digest the seal record wrote of the sealed bytes
+    note: str = ""  # appended to a refusal: why the explore-window override is not in force (P2-08 entries only)
 
 
 class SealRegistry:
     """The seal records under one data root, read once per load."""
 
-    def __init__(self, root: str) -> None:
+    def __init__(self, root: str, explore_window: Optional[str] = None) -> None:
         self.root = root
+        self.explore_end_ns = EXPLORE_END_NS
+        self.explore_missing = self._explore_missing(root, explore_window)
+        self.explore_active = not self.explore_missing
+        note = "" if self.explore_active else (
+            f" (探索の窓の上書きは効いていない: {' / '.join(self.explore_missing)})")
         self.entries: list[SealEntry] = []
         self.records_read: dict[str, str] = {}  # seal record path -> sha256
         self._by_real: dict[str, SealEntry] = {}
@@ -194,7 +209,13 @@ class SealRegistry:
                     md5 = e.get("md5")
                     if md5 is not None and (type(md5) is not str or not re.fullmatch(r"[0-9a-f]{32}", md5)):
                         raise ValueError(f"files[{i}].md5 must be 32 lowercase hex digits")
-                    ent = SealEntry(str(data.get("unit", unit)), p, real, col, cut, md5)
+                    ent_unit = str(data.get("unit", unit))
+                    if ent_unit == EXPLORE_UNIT:  # the explore window moves this unit's cutoff only
+                        if self.explore_active:
+                            cut = self.explore_end_ns
+                        ent = SealEntry(ent_unit, p, real, col, cut, md5, note)
+                    else:
+                        ent = SealEntry(ent_unit, p, real, col, cut, md5)
                     self.entries.append(ent)
                     self._by_real[real] = ent
                     if md5 is not None:
@@ -211,6 +232,44 @@ class SealRegistry:
             except OSError:
                 continue
             self._by_size.setdefault(size, []).append(ent)
+
+    @staticmethod
+    def _explore_missing(root: str, explore_window: Optional[str]) -> list[str]:
+        """What is missing of the three things the explore-window override needs (empty = all there)."""
+        why = []
+        if explore_window != EXPLORE_UNIT:
+            why.append(f"引数 explore_window が {EXPLORE_UNIT!r} でない(渡された値 {explore_window!r})")
+        if os.environ.get(EXPLORE_ENV) != EXPLORE_ENV_VALUE:
+            why.append(f"環境変数 {EXPLORE_ENV} が {EXPLORE_ENV_VALUE!r} でない")
+        if not os.path.isfile(os.path.join(os.path.realpath(root), *EXPLORE_APPROVAL)):
+            why.append(f"承認のファイル {'/'.join(EXPLORE_APPROVAL)} が無い")
+        return why
+
+    def log_explore_access(self, what: str, ranges: list) -> None:
+        """When the override is in force, add one line (time, ranges, caller) to the explore access log, before any
+        byte is read; a log that cannot be written refuses the load. Nothing is written when it is not in force or the
+        ledger has no P2-08 entry.
+        `ranges`: [(dataset name, range_ns or None), ...]."""
+        if not self.explore_active or not any(e.unit == EXPLORE_UNIT for e in self.entries):
+            return  # not in force, or no P2-08 entry for the override to move
+        f = sys._getframe(1)
+        here = os.path.dirname(os.path.abspath(__file__))
+        while f is not None and os.path.dirname(os.path.abspath(f.f_code.co_filename)) == here:
+            f = f.f_back  # the first frame outside this package is the caller
+        caller = f"{f.f_code.co_filename}:{f.f_lineno} {f.f_code.co_name}" if f is not None else ""
+
+        def _t(ns):
+            return datetime.fromtimestamp(ns / 1e9, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        rec = {"ts_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ"), "script": caller,
+               "what": what, "cut": EXPLORE_END_ISO,
+               "ranges": [{"name": n, "lo": None if r is None else _t(r[0]), "hi": None if r is None else _t(r[1])}
+                          for n, r in ranges]}
+        try:
+            with open(os.path.join(os.path.realpath(self.root), *EXPLORE_LOG), "a", encoding="utf-8") as fh:
+                fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+        except OSError as exc:
+            raise SealedRangeError(f"探索の窓の記録 {'/'.join(EXPLORE_LOG)} に書けない({exc}); 読まずに拒む") from None
 
     @staticmethod
     def _iso(value, rec: str, where: str) -> int:
@@ -277,11 +336,11 @@ class SealRegistry:
         if range_ns is None:
             raise SealedRangeError(
                 f"{given!r} is sealed (unit {ent.unit}) from {ent.cutoff_ns} ns; give range_ns with an "
-                f"end at or before it (the sealed window is read only through load_sealed's gates)")
+                f"end at or before it (the sealed window is read only through load_sealed's gates){ent.note}")
         if range_ns[1] > ent.cutoff_ns:
             raise SealedRangeError(
                 f"{given!r}: range end {range_ns[1]} ns is after the seal cutoff {ent.cutoff_ns} ns "
-                f"(unit {ent.unit}); the half-open range would reach sealed rows")
+                f"(unit {ent.unit}); the half-open range would reach sealed rows{ent.note}")
 
 
 _YYYYMMDD = re.compile(r"^\d{8}$")
