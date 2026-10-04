@@ -6,13 +6,14 @@
 
 出す表(手順の番号はスキルの第 2 部):
   D0 入力の表: 出力の種類・期間・引数・列の有無と、その列で出せる手順
-  D1 時間の表: 暦年ごとの 1 日あたり・95% 区間・MDE・区間が 0 を含むか / 前提が成り立つ年の続き(最長の連続)と、
-     それがデータの最後の年まで届くか(届かなければ「前提が崩れた」の枝)
+  D1 時間の表: 暦年ごとの 1 日あたり・95% 区間・MDE・区間が 0 を含むか(記述)/ 前半・後半(日数で 2 つに分ける。結果を
+     見る前に決めた分け方)と 後半 − 前半 の区間 / 3 つの結果(崩れた・続いている・決まらない。決まりは d1_outcome)
   D3 集まりの表: 上位・下位 5% の日の損益の割合 / 取引の損益の分位 / 出の理由・合図の強さ・保有時間の四分位ごとの
      1 取引あたり(日の塊の区間)
   D6 固まりの表: 前の出から次の建てまでの間隔の四分位ごとの 1 取引あたり(日の塊の区間)
   D7 比べの表(--vs): 同じ日どうしの日ごとの差の平均・区間・MDE / 年ごとの差 / 取引の突き合わせ(建ての時刻で)
-  D8 仮定の表(--bad): 良い側・悪い側の年ごとの 1 日あたりと符号が同じか / 決まらない足を含む取引の数と損益の割合
+  D8 仮定の表(--bad): 良い側・悪い側の年ごとの 1 日あたりと符号が同じか / 決まらない足を含む取引の数と損益の割合 /
+     仮定に左右されない部分(決まらない足を含まない取引だけ)の 1 日あたり。良い側とその部分の符号が違えば「止める」
 
 決まり(スキル第 2 部の共通の決まり):
   - 損益は既に向きを含む(pnl_bp は取引の向きで符号を付けた損益)。値動きを使う計算(MFE など)はこの台本では出さない。
@@ -140,6 +141,45 @@ def mean_ci(x: list[float]) -> dict:
             "mde": mde(n=n, sd=sd, alpha=0.05, power=0.80, sides=2, approx="normal") if sd > 0 else None}
 
 
+def _boot_means(x: np.ndarray, rng) -> np.ndarray:
+    n = len(x)
+    nb = math.ceil(n / BLOCK)
+    out = np.empty(N_RES)
+    for i in range(N_RES):
+        starts = rng.integers(0, n, size=nb)
+        idx = (starts[:, None] + np.arange(BLOCK)[None, :]).ravel()[:n] % n
+        out[i] = x[idx].mean()
+    return out
+
+
+def diff_ci(first: list[float], second: list[float]) -> dict:
+    """後半 − 前半 の平均の差と 95% 区間(2 つの半分をそれぞれ日の塊で選び直し、差の分布の 2.5・97.5%)。"""
+    a, b = np.array(first, dtype=float), np.array(second, dtype=float)
+    if len(a) < BLOCK * 2 or len(b) < BLOCK * 2:
+        return {"mean": float(b.mean() - a.mean()) if len(a) and len(b) else None, "lo": None, "hi": None}
+    rng = np.random.default_rng(SEED)
+    d = _boot_means(b, rng) - _boot_means(a, rng)
+    lo, hi = np.percentile(d, [2.5, 97.5])
+    return {"mean": float(b.mean() - a.mean()), "lo": float(lo), "hi": float(hi)}
+
+
+def d1_outcome(first: dict, second: dict, diff: dict) -> str:
+    """3 つの結果(決まり。閾値は置かない):
+    崩れた = 後半 − 前半 の区間が 0 を含まない かつ 後半の区間が 0 を含むか前半と逆の符号。
+    続いている = 後半の区間が 0 を含まず前半と同じ符号(戦略の向き = 前半の符号。前半の平均が無ければ正)。
+    決まらない = どちらでもない。"""
+    if second.get("lo") is None or diff.get("lo") is None:
+        return "決まらない"
+    sign_first = 1 if first.get("mean") is None or first["mean"] >= 0 else -1
+    second_excl_same = (second["lo"] > 0) if sign_first > 0 else (second["hi"] < 0)
+    diff_excl = diff["lo"] > 0 or diff["hi"] < 0
+    if diff_excl and not second_excl_same:
+        return "崩れた"
+    if second_excl_same:
+        return "続いている"
+    return "決まらない"
+
+
 def group_ratio_ci(days: list[str], sums: dict[str, float], counts: dict[str, int]) -> dict:
     """群の 1 取引あたり = Σ損益 ÷ Σ取引の数。日を循環の塊で選び直して作り直す(塊 5・1,000 回・種 20261004)。"""
     s = np.array([sums.get(d, 0.0) for d in days])
@@ -193,21 +233,13 @@ def d1(daily: dict[str, float]) -> dict:
         rows.append({"label": y, **mean_ci([daily[d] for d in days if d[:4] == y])})
     for r in rows:
         r["zero"] = contains_zero(r)
-    # 前提が成り立つ年の続き: 区間が 0 を含まない同じ符号の年の最長の連続
-    yr = [r for r in rows[1:]]
-    best, cur = [], []
-    for r in yr:
-        if r["zero"] in ("正", "負") and (not cur or cur[-1]["zero"] == r["zero"]):
-            cur.append(r)
-        elif r["zero"] in ("正", "負"):
-            cur = [r]
-        else:
-            cur = []
-        if len(cur) > len(best):
-            best = list(cur)
-    run_years = [r["label"] for r in best]
-    return {"rows": rows, "run_years": run_years, "run_sign": best[0]["zero"] if best else None,
-            "reaches_last_year": bool(run_years) and run_years[-1] == years[-1], "last_year": years[-1] if years else None}
+    h = len(days) // 2
+    first, second = [daily[d] for d in days[:h]], [daily[d] for d in days[h:]]
+    seg = {"first": {"from": days[0], "to": days[h - 1], **mean_ci(first)},
+           "second": {"from": days[h], "to": days[-1], **mean_ci(second)},
+           "diff": diff_ci(first, second)}
+    seg["outcome"] = d1_outcome(seg["first"], seg["second"], seg["diff"])
+    return {"rows": rows, "segments": seg}
 
 
 def d3(run: dict, daily: dict[str, float]) -> dict:
@@ -224,18 +256,37 @@ def d3(run: dict, daily: dict[str, float]) -> dict:
     p = np.array([t["pnl_bp"] for t in tr])
     out["trade_quantiles"] = {q: float(np.quantile(p, q)) for q in (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)}
     out["n_trades"] = len(tr)
-    hold = np.array([(t["exit_ns"] - t["entry_ns"]) / 6e10 for t in tr])
-    qs = list(np.quantile(hold, [0.25, 0.5, 0.75]))
-    def hband(h):
-        return "Q1" if h <= qs[0] else "Q2" if h <= qs[1] else "Q3" if h <= qs[2] else "Q4"
-    groups = {"保有時間の四分位": lambda t: hband((t["exit_ns"] - t["entry_ns"]) / 6e10)}
+    hold = [(t["exit_ns"] - t["entry_ns"]) / 6e10 for t in tr]
+    qs, hband = bands_by_edges(hold)
+    groups = {"保有時間の帯": lambda t: hband((t["exit_ns"] - t["entry_ns"]) / 6e10)}
     if any("exit_reason" in t for t in tr):
         groups["出の理由"] = lambda t: t.get("exit_reason", "")
     if any("strength" in t for t in tr):
         groups["合図の強さ"] = lambda t: t.get("strength", "")
-    out["hold_quartiles_min"] = [float(x) for x in qs]
+    out["hold_edges_min"] = qs
     out["groups"] = {name: group_table(tr, days, f) for name, f in groups.items()}
     return out
+
+
+def bands_by_edges(values: list[float]):
+    """四分位の境を、同じ値をまとめて重ならない境にする。帯の名前は実際の範囲(分)。"""
+    edges = sorted(set(float(x) for x in np.quantile(values, [0.25, 0.5, 0.75])))
+    def name(x):
+        lo = None
+        for e in edges:
+            if x <= e:
+                return _rng(lo, e)
+            lo = e
+        return _rng(lo, None)
+    return edges, name
+
+
+def _rng(lo, hi):
+    if lo is None:
+        return f"〜{hi:g} 分"
+    if hi is None:
+        return f"{lo:g} 分超"
+    return f"{lo:g} 分超〜{hi:g} 分"
 
 
 def group_table(tr: list[dict], days: list[str], key) -> dict:
@@ -252,15 +303,10 @@ def d6(run: dict, daily: dict[str, float]) -> dict | None:
     if run["kind"] != "trades":
         return None
     tr = run["trades"]
-    gaps = [None] + [(tr[i]["entry_ns"] - tr[i - 1]["exit_ns"]) / 6e10 for i in range(1, len(tr))]
-    g = np.array([x for x in gaps if x is not None])
-    qs = list(np.quantile(g, [0.25, 0.5, 0.75]))
-    def band(x):
-        if x is None:
-            return "最初"
-        return "Q1" if x <= qs[0] else "Q2" if x <= qs[1] else "Q3" if x <= qs[2] else "Q4"
-    keyed = [dict(t, _band=band(x)) for t, x in zip(tr, gaps)]
-    return {"gap_quartiles_min": [float(x) for x in qs],
+    gaps = [(tr[i]["entry_ns"] - tr[i - 1]["exit_ns"]) / 6e10 for i in range(1, len(tr))]
+    qs, band = bands_by_edges(gaps)
+    keyed = [dict(t, _band=band(x)) for t, x in zip(tr[1:], gaps)]  # 最初の取引は間隔が無いので外す
+    return {"gap_edges_min": qs,
             "groups": group_table(keyed, sorted(daily), lambda t: t["_band"])}
 
 
@@ -272,8 +318,13 @@ def d7(a: dict, b: dict) -> dict:
     for y in sorted({d[:4] for d in common}):
         out["years"][y] = mean_ci([da[d] - db[d] for d in common if d[:4] == y])
     if a["kind"] == "trades" and b["kind"] == "trades":
-        ka = {t["entry_ns"]: t["pnl_bp"] for t in a["trades"]}
-        kb = {t["entry_ns"]: t["pnl_bp"] for t in b["trades"]}
+        key = "signal_t" if all("signal_t" in t for t in a["trades"] + b["trades"]) else "entry_ns"
+        ka, kb = defaultdict(float), defaultdict(float)
+        for t in a["trades"]:
+            ka[t[key]] += t["pnl_bp"]
+        for t in b["trades"]:
+            kb[t[key]] += t["pnl_bp"]
+        out["match_key"] = key
         both = set(ka) & set(kb)
         out["match"] = {"both": len(both), "only_a": len(set(ka) - both), "only_b": len(set(kb) - both),
                         "sum_only_a": float(sum(ka[k] for k in set(ka) - both)),
@@ -291,6 +342,15 @@ def d8(good: dict, bad: dict) -> dict:
         rb = mean_ci([db[d] for d in sorted(db) if sel(d)])
         same = None if rg["mean"] is None or rb["mean"] is None else (np.sign(rg["mean"]) == np.sign(rb["mean"]))
         rows.append({"label": y, "good": rg, "bad": rb, "same_sign": bool(same) if same is not None else None})
+    free = {}
+    for name, r in (("good", good), ("bad", bad)):
+        if r["kind"] == "trades" and any("undecided" in t for t in r["trades"]):
+            fr = dict(r, trades=[t for t in r["trades"] if t.get("undecided", 0) == 0])
+            dfree = daily_series(fr)
+            free[name] = mean_ci([dfree[d] for d in sorted(dfree)])
+    stop = rows[0]["same_sign"] is False
+    if "good" in free and free["good"]["mean"] is not None and rows[0]["good"]["mean"] is not None:
+        stop = stop or bool(np.sign(free["good"]["mean"]) != np.sign(rows[0]["good"]["mean"]))
     und = {}
     for name, r in (("good", good), ("bad", bad)):
         if r["kind"] == "trades" and any("undecided" in t for t in r["trades"]):
@@ -298,7 +358,7 @@ def d8(good: dict, bad: dict) -> dict:
             tot = sum(t["pnl_bp"] for t in r["trades"])
             und[name] = {"trades": len(u), "share_trades": len(u) / len(r["trades"]),
                          "pnl_sum": float(sum(t["pnl_bp"] for t in u)), "pnl_total": float(tot)}
-    return {"rows": rows, "undecided": und}
+    return {"rows": rows, "undecided": und, "assumption_free": free, "stop": stop}
 
 
 # ---------------------------------------------------------------- 書き出し
@@ -321,12 +381,18 @@ def render(res: dict) -> str:
           f"- 列: {', '.join(z['fields']) if z['fields'] else '(daily.csv: day, pnl_bp, n)'}",
           "- 出せる手順: " + "、".join(f"{k} {'○' if v else '✕(列が無い)'}" for k, v in z["steps"].items()), ""]
     d1r = res["d1"]
-    L += ["## D1 時間(1 日あたり、bp/日)", "", "| 期間 | 日数 | 1 日あたり [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|"]
+    L += ["## D1 時間(1 日あたり、bp/日)", "", "年ごと(記述。区切りの判断には使わない):", "",
+          "| 期間 | 日数 | 1 日あたり [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|"]
     for r in d1r["rows"]:
         L.append(f"| {r['label']} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {r['zero']} |")
-    L += ["", f"- 区間が 0 を含まない同じ符号の年の最長の続き: {', '.join(d1r['run_years']) or 'なし'}"
-          f"({d1r['run_sign'] or '—'})。データの最後の年 {d1r['last_year']} まで届くか: "
-          f"{'届く' if d1r['reaches_last_year'] else '届かない'}", ""]
+    sg = d1r["segments"]
+    L += ["", "前半・後半(日数で 2 つに分ける。結果を見る前に決めた分け方):", "",
+          "| 区切り | 期間 | 日数 | 1 日あたり [区間] | MDE |", "|---|---|---|---|---|",
+          f"| 前半 | {sg['first']['from']}〜{sg['first']['to']} | {sg['first']['n']} | {_ci(sg['first'])} | {_f(sg['first']['mde'])} |",
+          f"| 後半 | {sg['second']['from']}〜{sg['second']['to']} | {sg['second']['n']} | {_ci(sg['second'])} | {_f(sg['second']['mde'])} |",
+          f"| 後半 − 前半 | | | {_ci(sg['diff'])} | |", "",
+          f"- 結果(決まり d1_outcome): **{sg['outcome']}**"
+          + ("。全期間の行は一部の期間の稼ぎ" if sg["outcome"] == "崩れた" else ""), ""]
     d3r = res["d3"]
     L += ["## D3 集まり", "",
           f"- 全体の和 {_f(d3r['total'],0)} bp({d3r['days']} 日)。上位 5% の日({d3r['k']} 日)の和 {_f(d3r['top5_days_sum'],0)} bp、"
@@ -334,7 +400,7 @@ def render(res: dict) -> str:
     if "trade_quantiles" in d3r:
         q = d3r["trade_quantiles"]
         L += [f"- 取引 {d3r['n_trades']} 本の損益の分位(bp): " + "、".join(f"{int(k*100)}% {_f(v)}" for k, v in q.items()),
-              f"- 保有時間の四分位の境(分): {', '.join(f'{x:.1f}' for x in d3r['hold_quartiles_min'])}", ""]
+              ""]
         for gname, tab in d3r["groups"].items():
             L += [f"### {gname}ごとの 1 取引あたり(bp)", "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
             for g, r in tab.items():
@@ -342,8 +408,7 @@ def render(res: dict) -> str:
             L.append("")
     if res.get("d6"):
         r6 = res["d6"]
-        L += ["## D6 固まり(前の出から次の建てまでの間隔の四分位ごと、1 取引あたり bp)", "",
-              f"- 間隔の四分位の境(分): {', '.join(f'{x:.1f}' for x in r6['gap_quartiles_min'])}", "",
+        L += ["## D6 固まり(前の出から次の建てまでの間隔の帯ごと、1 取引あたり bp。帯は四分位の境を重ならないようにまとめたもの)", "",
               "| 間隔 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
         for g, r in r6["groups"].items():
             L.append(f"| {g} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
@@ -357,7 +422,7 @@ def render(res: dict) -> str:
             L.append(f"| {y} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {contains_zero(r)} |")
         if "match" in r7:
             m = r7["match"]
-            L += ["", f"- 取引の突き合わせ(建ての時刻): 両方 {m['both']} 本(差の和 {_f(m['sum_both_a_minus_b'],0)} bp)/ "
+            L += ["", f"- 取引の突き合わせ({'合図の時刻' if r7.get('match_key') == 'signal_t' else '建ての時刻'}): 両方 {m['both']} 本(差の和 {_f(m['sum_both_a_minus_b'],0)} bp)/ "
                   f"こちらだけ {m['only_a']} 本(和 {_f(m['sum_only_a'],0)})/ 相手だけ {m['only_b']} 本(和 {_f(m['sum_only_b'],0)})"]
         L.append("")
     if res.get("d8"):
@@ -365,6 +430,9 @@ def render(res: dict) -> str:
         L += ["## D8 仮定(良い側・悪い側、1 日あたり bp/日)", "", "| 期間 | 良い側 [区間] | 悪い側 [区間] | 符号が同じ |", "|---|---|---|---|"]
         for r in r8["rows"]:
             L.append(f"| {r['label']} | {_ci(r['good'])} | {_ci(r['bad'])} | {r['same_sign']} |")
+        for k, f in r8.get("assumption_free", {}).items():
+            L.append(f"- 仮定に左右されない部分({k}。決まらない足を含まない取引だけ)の 1 日あたり: {_ci(f)} bp/日")
+        L.append(f"- 止める(良い側と悪い側の全期間の符号が違う、または良い側と仮定に左右されない部分の符号が違う): **{r8['stop']}**")
         for k, u in r8["undecided"].items():
             L.append(f"- 決まらない足を含む取引({k}): {u['trades']} 本({u['share_trades']:.1%})、その損益の和 {_f(u['pnl_sum'],0)} bp"
                      f"(全体 {_f(u['pnl_total'],0)} bp)")
