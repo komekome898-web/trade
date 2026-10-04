@@ -44,7 +44,10 @@ def _jst_day(ns: int) -> str:
     return datetime.fromtimestamp(ns // 10**9, tz=JST).date().isoformat()
 
 
-def build(measure: str) -> dict:
+SESSION_BANDS = ((0, 10), (10, 60), (60, 240), (240, 720), (720, 1440))  # セッションの始まりからの分(帯の境は結果を見る前に置いた)
+
+
+def build(measure: str, session_hour: int | None = None) -> dict:
     with np.load(os.path.join(measure, "run.npz")) as f:  # 鍵ごとに読み直さないよう、先に全部読む
         z = {k: f[k] for k in ("decided", "exposure", "open", "end_ns", "start_ns")}
     dec = np.flatnonzero(z["decided"])
@@ -69,6 +72,16 @@ def build(measure: str) -> dict:
         nn = np.bincount(inv, weights=msk.astype(float), minlength=len(uniq))
         minute_rate[lbl] = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): (float(a), int(c))
                             for u, a, c in zip(uniq, ss, nn)}
+    session = {}
+    if session_hour is not None:
+        since = ((t_ns // 60_000_000_000) - session_hour * 60) % 1440  # セッションの始まり(UTC の時)からの分
+        for lo, hi in SESSION_BANDS:
+            inb = (since >= lo) & (since < hi)
+            for lbl, msk in (("buy", (e > 0) & inb), ("sell", (e < 0) & inb)):
+                ss = np.bincount(inv, weights=np.where(msk, r, 0.0), minlength=len(uniq))
+                nn = np.bincount(inv, weights=msk.astype(float), minlength=len(uniq))
+                session[(lo, hi, lbl)] = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): (float(a), int(c))
+                                          for u, a, c in zip(uniq, ss, nn)}
     control_calc = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): float(s)
                     for u, s in zip(uniq, ctl)}
     daily_calc = {datetime.fromtimestamp(int(u) * 86400, tz=timezone.utc).date().isoformat(): float(s)
@@ -87,7 +100,7 @@ def build(measure: str) -> dict:
             trades.append({"signal_ns": int(t_ns[k0]), "entry_ns": int(z["start_ns"][fill[k0]]),
                            "exit_ns": int(z["start_ns"][ex[k1]]), "side": int(sg[k0]),
                            "size": float(np.abs(e[k0])), "pnl_bp": float(cp[b] - cp[a]), "decisions": int(b - a)})
-    return {"trades": trades, "daily_calc": daily_calc, "control_calc": control_calc, "minute_rate": minute_rate, "n_dec": int(m), "sizes": sorted(set(np.round(np.abs(e[nz]), 6).tolist()))[:10]}
+    return {"trades": trades, "daily_calc": daily_calc, "control_calc": control_calc, "minute_rate": minute_rate, "session": session, "n_dec": int(m), "sizes": sorted(set(np.round(np.abs(e[nz]), 6).tolist()))[:10]}
 
 
 def load_daily(measure: str) -> dict[str, float]:
@@ -205,6 +218,19 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
             cells.append("分 0" if not g["trades"] else f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
         L.append(f"| {lbl} | {cells[0]} | {cells[1]} | {rate_diff(ds, b['minute_rate'], 'held_buy', 'held_sell')} |")
     L.append("")
+    if b.get("session"):
+        L += ["## 向きの情報の検め × セッションの始まりからの経過時間(決定の時刻、bp/分)", "",
+              "帯の境(分)は結果を見る前に置いた: 0〜10・10〜60・60〜240・240〜720・720〜1440。", "",
+              "| 経過(分) | 区分 | 買いの合図の分 | 売りの合図の分 | 差(買い − 売り) |", "|---|---|---|---|---|"]
+        for lo, hi in SESSION_BANDS:
+            mr = {"held_buy": b["session"][(lo, hi, "buy")], "held_sell": b["session"][(lo, hi, "sell")]}
+            for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
+                cells = []
+                for k in ("held_buy", "held_sell"):
+                    g = group_ratio_ci(ds, {d: mr[k].get(d, (0.0, 0))[0] for d in ds}, {d: mr[k].get(d, (0.0, 0))[1] for d in ds})
+                    cells.append("分 0" if not g["trades"] else f"{_f(g['per_trade'], 4)} [{_f(g['lo'], 4)}, {_f(g['hi'], 4)}](分 {g['trades']:,})")
+                L.append(f"| {lo}〜{hi} | {lbl} | {cells[0]} | {cells[1]} | {rate_diff(ds, mr, 'held_buy', 'held_sell')} |")
+        L.append("")
     # 曜日
     wd = "月火水木金土日"
     L += ["## 曜日ごと(合図の時刻の日本時間の曜日。1 日あたり bp)【建ての前に決まる群】", "",
@@ -279,10 +305,11 @@ def main(argv=None) -> int:
     ap.add_argument("--measure", required=True)
     ap.add_argument("--trades-out", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--session-hour", type=int, default=None, help="セッションの始まりの UTC の時(カード 8: jst_day = 15、bf_maint = 19)")
     a = ap.parse_args(argv)
     if "docs/RESEARCH/WINDOW1" in os.path.abspath(a.measure).replace(os.sep, "/"):
         raise SystemExit("止める: 封印の窓の出力は読まない")
-    b = build(a.measure)
+    b = build(a.measure, a.session_hour)
     daily = load_daily(a.measure)
     with open(os.path.join(a.measure, "extra.json"), encoding="utf-8") as fh:
         extra = json.load(fh)
