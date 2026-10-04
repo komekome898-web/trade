@@ -110,11 +110,17 @@ def main() -> int:
     ap.add_argument("--width-gate", type=_bool, default=True)
     ap.add_argument("--break-delay", type=int, default=1)
     ap.add_argument("--on-break", default="hold")
+    ap.add_argument("--ratio-gate", type=float, default=None)  # 族 D 比の門(既定 None = 門なし = v37)
+    ap.add_argument("--break-close-offset", type=float, default=0.0)  # 族 D 閉じる位置(既定 0 = 判定値 = v37)
     a = ap.parse_args()
     kw = {"fill_side": a.fill_side, "window_min": a.window_min, "bar_min": a.bar_min, "range_from": a.range_from,
           "entry": a.entry, "exit_form": a.exit_form, "exit_setting": a.exit_setting, "step_exit": a.step_exit,
           "step": a.step, "n_levels": a.n_levels, "alert_min": a.alert_min, "width_gate": a.width_gate,
           "break_delay": a.break_delay, "on_break": a.on_break}
+    if a.ratio_gate is not None:  # 既定の走らせの summary.json・run_record.json の引数の欄は変えない
+        kw["ratio_gate"] = a.ratio_gate
+    if a.break_close_offset != 0:
+        kw["break_close_offset"] = a.break_close_offset
     sim = MatildaLimitSim(**kw)  # 表の外の値はここで拒む
     clock = Clock()
     lo, hi = iso(a.start), iso(a.end)

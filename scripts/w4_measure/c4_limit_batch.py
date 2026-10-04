@@ -72,6 +72,15 @@ for e, x in COMBO_CENTERS:
 SIDES = ("good", "bad")
 # 門の診断(docs/RESEARCH/cards/c4_owner_matilda_range/diag_gate/README.md「比の十分位ごとの P」)の境。INTENT_MAP §11-5 P-2
 RATIO_FIXED_EDGES = (7.51, 8.52, 9.34, 10.14, 10.96, 11.87, 12.96, 14.40, 16.77)
+# D ブレイクの負けを直接減らす(L-620「1〜3はそれですすめて」の 2)。
+# 閉じる位置: ブレイクに逆らう持ち高を閉じる値段を、判定値から −0.5(手前)・+0.5(先)× vola ずらす(0 = v37)
+for c, tag in ((-0.5, "m0.5"), (0.5, "p0.5")):
+    RUNS.append((f"D_breakclose_{tag}", "D", ["--break-close-offset", str(c)]))
+# 比の門: 入る時点の比が境以上なら入らない。境 12.96 = RATIO_FIXED_EDGES の 7 番目(門の診断の「全期間の分の比から」の
+# 十分位の境)。走らせる期間と同じデータから決めた値(標本の中)
+RUNS.append((f"D_ratio_gate{RATIO_FIXED_EDGES[6]}", "D", ["--ratio-gate", str(RATIO_FIXED_EDGES[6])]))
+# 合計をそろえた段は作らない: 損益の式(matilda_limit_sim の _close_row)が 1 段 = 1/段の数 なので、全部の段が約定した
+# ときの合計は既定でどの段の数でも 1(リードの答え 3a)
 # 保有の分の区切り(INTENT_MAP §11-5 P-4)。0 = 同じ足の中で入って出た。[lo, hi) 分
 HOLD_BINS = ((0, 1), (1, 2), (2, 6), (6, 21), (21, 41), (41, None))
 
@@ -127,8 +136,13 @@ def analyse(d: str) -> None:
         # P-1: ブレイクに逆らう持ち高 = ブレイクで閉じた取引(反対のブレイク・ブレイク)。v37 は持ち高 0 からブレイクの
         # 間に入らないので、入った時点の brk が 0 でないのは follow の入りだけ(2019 年の 1 か月の試しの v37 で brk≠0 の入りは 0 件)
         brk_exit = np.isin(reason, ("反対のブレイク", "ブレイク"))
-        groups = {"closed_by_break": brk_exit, "entered_during_break": ~brk_exit & (brk != 0),
-                  "other": ~brk_exit & (brk == 0)}
+        # 族 D 閉じる位置の止めで閉じた取引(終わり方「閉じる位置で閉じる」)は別の群。その取引が無い走らせ(既定など)では
+        # 群を出さず、ほかの群も前と同じ
+        bcl = reason == "閉じる位置で閉じる"
+        groups = {"closed_by_break": brk_exit, "entered_during_break": ~brk_exit & ~bcl & (brk != 0),
+                  "other": ~brk_exit & ~bcl & (brk == 0)}
+        if bcl.any():
+            groups["closed_by_bcl"] = bcl
         out["by_break"] = {k: _sums(m, pnl) for k, m in groups.items()}
         fb = np.searchsorted(np.array(RATIO_FIXED_EDGES), ratio, side="right")
         out["ratio_fixed_bins"] = {"edges": list(RATIO_FIXED_EDGES),

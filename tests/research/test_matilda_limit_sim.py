@@ -837,3 +837,358 @@ def test_break_is_ordered_at_its_tick_before_a_level_at_the_same_tick():
     _inject(s, -1, [P + 100], T0 + 80 * M)
     rows = s.feed(bar(80, P + 200, P + 200, h=P + 302, lo=P + 200))
     assert (rows[0]["exit_reason"], rows[0]["levels"], rows[0]["exit_price"]) == ("反対のブレイク", 1, P + 302)
+
+
+# ---------------------------------------------------------------- 既定の出力が変わっていないこと(族 D の切り替えを足す前の指紋)
+G0 = 1_546_300_800 * NS  # 2019-01-01T00:00:00Z。封印の境より前(取引の記録が書ける)。試験の時刻で、データではない
+
+
+def _golden_bars():
+    """1 円刻みの乱歩 3000 本(G0 から)。数字は試験の入力で、データではない。"""
+    out = []
+    for b in _walk(3000, 5, G0):
+        o, c = round(b.open), round(b.close)
+        out.append(bar(int((b.start_time_ns - G0) // M), o, c, max(o, c, round(b.high)), min(o, c, round(b.low)),
+                       vol=b.volume, t0=G0))
+    return out
+
+
+GOLDEN_CONFIGS = (("good", {"fill_side": "good"}), ("bad", {"fill_side": "bad"}),
+                  ("bad_b5", {"fill_side": "bad", "bar_min": 5}),
+                  ("good_follow", {"fill_side": "good", "on_break": "follow"}),
+                  ("bad_center", {"fill_side": "bad", "exit_form": "center", "entry": 3, "exit_setting": 2}),
+                  ("good_step2_n1", {"fill_side": "good", "step": 2, "n_levels": 1}))
+
+
+def _golden_rows_digest(kw):
+    import hashlib
+    s = MatildaLimitSim(**kw)
+    rows = feed(s, _golden_bars()) + s.finish()
+    return hashlib.sha256(repr((rows, s.undecided_bars)).encode()).hexdigest()
+
+
+def _golden_run_digest(r, side, out, extra):
+    """c4_limit_run.main を、足を読む所だけ差し替えて走らせ、出力 3 つ(trades.csv.gz・trades.json.gz の中身と
+    summary.json)の指紋を返す。run_record.json は所要時間を含むので引数の欄だけを入れる。"""
+    import gzip
+    import hashlib
+    import json
+    import os
+    import sys
+    bars = _golden_bars()
+    orig, argv = r.load_bars, sys.argv
+    r.load_bars = lambda d, sym, lo, hi: ([b for b in bars if lo <= b.start_time_ns < hi], {}, {})
+    sys.argv = ["c4_limit_run.py", "--fill-side", side, "--out", out, "--start", "2019-01-01T00:00:00Z",
+                "--end", "2019-01-04T00:00:00Z"] + list(extra)
+    try:
+        assert r.main() == 0
+    finally:
+        r.load_bars, sys.argv = orig, argv
+    h = hashlib.sha256()
+    for name in ("trades.csv.gz", "trades.json.gz"):
+        with gzip.open(os.path.join(out, name), "rb") as fh:
+            h.update(fh.read())
+    with open(os.path.join(out, "summary.json"), "rb") as fh:
+        h.update(fh.read())
+    with open(os.path.join(out, "run_record.json"), encoding="utf-8") as fh:
+        h.update(json.dumps(json.load(fh)["params"], sort_keys=True).encode())
+    return h.hexdigest()
+
+
+# 上の指紋は族 D の切り替えを足す前のコード(コミット dd34297)で取った値
+GOLDEN_SIM = {"good": "9becb5908f65282b0a98b35a74ca243d30f94538284725afb6b307ded9415ddc",
+              "bad": "dcea9663776da6c445614b5a5028ac447c04b4b2b8d778530c43a781005da0ee",
+              "bad_b5": "3a5d52839698ba7c2002cf6feabb58c04caa7d0955d3fdb68a76902ff3622a87",
+              "good_follow": "43160b8b589d52776c52230c7fd908fecdc991788f64be204652a90622672bde",
+              "bad_center": "164ffb5157f1d9e44c557a0b221c112f52678c4f908a326ac132b3119d6137e6",
+              "good_step2_n1": "8568e16551b4149795d6fbf919c0ce7726702ff4bea197f04b312fe47cac5c34"}
+GOLDEN_RUN = {"good": "728da1e3563631dffeab0597d8665ad08c72cf21302d7968d25cc9a512fe4d12",
+              "bad": "71baba72fbcaca623ec4e76b3a4b1a71b000a233d19694833a530b8bc7dd2b56"}
+
+
+@pytest.mark.parametrize("name,kw", GOLDEN_CONFIGS)
+def test_default_rows_are_unchanged_by_the_family_d_switch(name, kw):
+    """既定(ratio_gate なし)と ratio_gate=None を明示した形の取引の行が、切り替えを足す前と同じ。"""
+    assert _golden_rows_digest(kw) == GOLDEN_SIM[name]
+    assert _golden_rows_digest({**kw, "ratio_gate": None, "break_close_offset": 0}) == GOLDEN_SIM[name]
+
+
+@pytest.mark.parametrize("side", ["good", "bad"])
+def test_run_script_default_outputs_are_unchanged(tmp_path, side):
+    """c4_limit_run.py を既定の引数で走らせた出力(trades.csv.gz・trades.json.gz・summary.json・run_record.json の
+    引数の欄)が、切り替えを足す前と同じ。--ratio-gate を渡したときだけ引数の欄に ratio_gate が載る。"""
+    import json
+    r = _runner()
+    assert _golden_run_digest(r, side, str(tmp_path / "default"), []) == GOLDEN_RUN[side]
+    with open(tmp_path / "default" / "summary.json", encoding="utf-8") as fh:
+        params = json.load(fh)["params"]
+        assert "ratio_gate" not in params and "break_close_offset" not in params
+    _golden_run_digest(r, side, str(tmp_path / "bcl"), ["--break-close-offset", "-0.5"])
+    with open(tmp_path / "bcl" / "summary.json", encoding="utf-8") as fh:
+        assert json.load(fh)["params"]["break_close_offset"] == -0.5
+    _golden_run_digest(r, side, str(tmp_path / "gated"), ["--ratio-gate", "12.96"])
+    with open(tmp_path / "gated" / "summary.json", encoding="utf-8") as fh:
+        assert json.load(fh)["params"]["ratio_gate"] == 12.96
+
+
+# ---------------------------------------------------------------- 族 D 比の門(L-620 の 2)
+def _ratio_window(k, width):
+    """40 本: 番号 0〜k−1 は P ↔ P+200 の往復(実体 200)、残りは十字(実体 0)で P と P+width を交互。
+    窓の上端 P+width・下端 P、vola = 200k / 40 = 5k、比 = width / 5k。2 倍の窓の端は窓の端と同じなのでブレイクしない。"""
+    return [osc(i) if i < k else bar(i, P + (width if i % 2 else 0), P + (width if i % 2 else 0)) for i in range(40)]
+
+
+@pytest.mark.parametrize("k,width,ratio,enters", [(5, 324.0, 12.96, False), (5, 300.0, 12.0, True),
+                                                  (6, 324.0, 10.8, True)])
+def test_ratio_gate_blocks_entry_from_flat_at_or_above_the_value(k, width, ratio, enters):
+    """入る時点の比(取引の行の ratio と同じ量)が 12.96 以上なら入らない。等しい(12.96)も入らない。門なしは入る。"""
+    rows = {}
+    for gate in (None, 12.96):
+        s = sim(ratio_gate=gate)
+        feed(s, _ratio_window(k, width))
+        assert s._ratio(s._q) == ratio
+        s1 = s._q.s1
+        feed(s, [bar(40, s1 - 10, s1 - 10, h=s1 + 1, lo=s1 - 10)])  # 売りの 1 段目を越える。利確(S1 − 0.8 vola)には届かない
+        rows[gate] = (s._side, s.finish())
+    side, fin = rows[None]
+    assert side == -1 and len(fin) == 1 and fin[0]["ratio"] == ratio
+    side, fin = rows[12.96]
+    assert (side, len(fin)) == ((-1, 1) if enters else (0, 0))
+
+
+def test_ratio_gate_reads_the_ratio_of_the_bar_and_does_not_stop_adding_levels():
+    """持ち高 0 からの入りは、その足の量の比で止める。持っている持ち高への段の追加は止めない(門は「入る時点」だけ)。"""
+    s = sim(ratio_gate=12.96)
+    feed(s, base() + [bar(40, P + 600, P + 600, h=P + 701, lo=P + 600)])  # 比 1: 売り 2 段(P+500・P+700)
+    assert s._fills == [P + 500, P + 700]
+    q = s._q
+    nxt = math.floor(max(q.s1, P + 700 + q.vola))  # 次の段(売りは 1 円に切り下げ)
+    q.width = 13 * q.vola  # 比 13 ≥ 12.96(量を直に置いて規則だけ確かめる)
+    s.feed(bar(41, P + 650, P + 650, h=nxt + 1, lo=P + 650))  # 次の段を越える。利確(建値 − 0.8 vola / 2)には届かない
+    assert s._fills == [P + 500, P + 700, nxt]
+    for gate, side in ((None, -1), (12.96, 0)):
+        f = sim(ratio_gate=gate)
+        feed(f, base())
+        f._q.width = 13 * f._q.vola
+        f.feed(bar(40, P + 600, P + 600, h=P + 701, lo=P + 600))
+        assert f._side == side, gate
+
+
+@pytest.mark.parametrize("gate,side", [(None, 1), (12.96, 0)])
+def test_ratio_gate_also_blocks_the_follow_entry(gate, side):
+    """on_break="follow" の判定値の値段での入りも、持ち高 0 から入るので比の門で止める。ブレイクの状態は変わる。"""
+    s = sim(on_break="follow", ratio_gate=gate)
+    feed(s, two_phase())
+    s._q.width = 13 * s._q.vola
+    s.feed(bar(80, P + 200, P + 420, h=P + 450, lo=P + 200))
+    assert s._brk == 1 and s._side == side
+
+
+@pytest.mark.parametrize("v", [12.0, 13, True, "12.96"])
+def test_ratio_gate_outside_the_table_is_refused(v):
+    with pytest.raises(ValueError):
+        sim(ratio_gate=v)
+
+
+def test_batch_family_d_runs():
+    """族 D は閉じる位置 −0.5・+0.5 と比の門 12.96(RATIO_FIXED_EDGES の 7 番目)の 3 本。前からある走らせ(50 本)は
+    変えない。合計をそろえた段は作らない(既定が既に全段約定で合計 1)。"""
+    from bot.research.matilda_limit_sim import BREAK_CLOSE_OFFSETS, RATIO_GATES
+    bt = _load_w4("c4_limit_batch")
+    d = [x for x in bt.RUNS if x[1] == "D"]
+    assert d == [("D_breakclose_m0.5", "D", ["--break-close-offset", "-0.5"]),
+                 ("D_breakclose_p0.5", "D", ["--break-close-offset", "0.5"]),
+                 ("D_ratio_gate12.96", "D", ["--ratio-gate", "12.96"])]
+    assert bt.RATIO_FIXED_EDGES[6] == 12.96 and float(d[2][2][1]) in RATIO_GATES
+    assert tuple(float(x[2][1]) for x in d[:2]) == BREAK_CLOSE_OFFSETS
+    assert len([x for x in bt.RUNS if x[1] != "D"]) == 50 and bt.RUNS[-1][1] == "D"
+
+
+# ---------------------------------------------------------------- 族 D 閉じる位置(L-620 の 2、リードの答え 2026-10-04)
+@pytest.mark.parametrize("up", [True, False])
+def test_break_close_before_the_threshold_closes_without_a_break(up):
+    """c = −0.5(手前): 逆らう持ち高に pb − 0.5 vola(売りなら上、買いなら下)の止め。ブレイクが起きなくても越えたら
+    その値段(1 円に丸め、自分に不利な側)で、その足の終わりの時刻に閉じる。終わり方は「閉じる位置で閉じる」。閉じた後、
+    同じ脚では通り過ぎた入りの値段(S1・B1)では入らない(脚の中の値段の進み)。
+    上: 前半 P ↔ P+800 → pb = max(bup P+300, hi2 P+800) = P+800、vola 200、止め P+700。売り 1 段 P+600(利確 P+440)。
+    下: 前半 P−600 ↔ P+200 → pb = min(bdp P−100, lo2 P−600) = P−600、止め P−500。買い 1 段 P−400(利確 P−240)。
+    どちらも入りの 1 段目(S1 = P+500・B1 = P−300)は止めの手前にある(閉じた後に入れば通り過ぎた値段になる)。"""
+    if up:
+        phase, side, fill, b80, stop = (two_phase(a1=800.0), -1, P + 600,
+                                        bar(80, P + 600, P + 750, h=P + 750, lo=P + 600), P + 700)
+    else:
+        phase, side, fill, b80, stop = (two_phase(a1=800.0, lo1=P - 600), 1, P - 400,
+                                        bar(80, P - 400, P - 550, h=P - 400, lo=P - 550), P - 500)
+    out = {}
+    for c in (0, -0.5, 0.5):
+        s = sim(break_close_offset=c)
+        feed(s, phase)
+        q = s._q
+        pb = max(q.bup, q.hi2) if up else min(q.bdp, q.lo2)
+        assert (pb, q.vola) == ((P + 800, 200.0) if up else (P - 600, 200.0))
+        _inject(s, side, [fill], T0 + 80 * M)
+        out[c] = (s.feed(b80), s._side, s._brk)
+    rows, sd, brk = out[-0.5]
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["undecided"]) for r in rows] == [
+        ("閉じる位置で閉じる", stop, T0 + 81 * M, 0)]
+    assert (sd, brk) == (0, 0)  # ブレイクは起きていない。入り直していない
+    assert out[0] == ([], side, 0) and out[0.5] == ([], side, 0)  # 既定と先は、判定値に届かないので閉じない
+
+
+def test_break_close_beyond_the_threshold_in_the_same_bar():
+    """c = +0.5(先): ブレイク(判定値 P+400)では閉じず、P+400 + 0.5 × 200 = P+500 に固定。同じ足でそこを越えたら
+    P+500 で閉じる(終わり方は「閉じる位置で閉じる」)。既定は判定値 P+400 で閉じる(「反対のブレイク」)。"""
+    for c, px, why in ((0.5, P + 500, "閉じる位置で閉じる"), (0, P + 400, "反対のブレイク")):
+        s = sim(break_close_offset=c)
+        feed(s, two_phase())
+        _inject(s, -1, [P + 250], T0 + 80 * M)
+        rows = s.feed(bar(80, P + 200, P + 520, h=P + 520, lo=P + 200))
+        assert [(r["exit_reason"], r["exit_price"], r["exit_ns"]) for r in rows] == [(why, px, T0 + 81 * M)]
+        assert s._brk == 1 and s._side == 0 and s._bline is None
+
+
+def test_break_close_beyond_is_fixed_at_the_break_and_closes_on_a_later_bar():
+    """ブレイクの足で P+500 に固定。次の足では判定値が作り直されて動くが、閉じる値段は P+500 のまま。"""
+    s = sim(break_close_offset=0.5)
+    feed(s, two_phase())
+    _inject(s, -1, [P + 250], T0 + 80 * M)
+    assert s.feed(bar(80, P + 200, P + 420, h=P + 450, lo=P + 200)) == []
+    assert (s._brk, s._side, s._bline) == (1, -1, (1, P + 500))
+    assert max(s._q.bup, s._q.hi2) != P + 400  # ブレイクの間は判定値を作り直す(v37 504〜509 行)
+    rows = s.feed(bar(81, P + 450, P + 480, h=P + 501, lo=P + 450))
+    assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["entry_price"]) for r in rows] == [
+        ("閉じる位置で閉じる", P + 500, T0 + 82 * M, P + 250)]
+    assert s._side == 0 and s._bline is None
+
+
+def test_break_close_beyond_does_not_close_if_price_returns_and_take_profit_closes_it():
+    """固定した値段に届かずに値が戻れば、その持ち高は閉じず、今までどおり利確で閉じる。"""
+    s = sim(break_close_offset=0.5)
+    feed(s, two_phase())
+    _inject(s, -1, [P + 250], T0 + 80 * M)
+    s.feed(bar(80, P + 200, P + 420, h=P + 450, lo=P + 200))
+    assert s.feed(bar(81, P + 420, P + 300, h=P + 430, lo=P + 300)) == []
+    assert (s._side, s._bline) == (-1, (1, P + 500))
+    tp, why = s._tp(s._state(), s._q, T0 + 82 * M)
+    rows = s.feed(bar(82, P + 300, tp - 1, h=P + 300, lo=tp - 1))
+    assert [(r["exit_reason"], r["exit_price"]) for r in rows] == [(why, tp)] and why.startswith("利確")
+    assert s._side == 0 and s._bline is None
+
+
+@pytest.mark.parametrize("v", [0.25, -1, 1, True, "0.5"])
+def test_break_close_offset_outside_the_table_is_refused(v):
+    with pytest.raises(ValueError):
+        sim(break_close_offset=v)
+    assert sim(break_close_offset=0).break_close_offset == 0.0
+
+
+# ---------------------------------------------------------------- 批評家の指摘(2026-10-04)の試験
+def test_stop_behind_the_entry_closes_at_the_reached_price_not_an_unreached_one():
+    """[止める] 入りの値段より手前に止めがある形: S1 = P+500、pb = P+550、止め = P+450。上りの脚で P+500 で売った後、
+    値段は P+450 に戻っていないので P+450 では閉じない。進んだ位置(= 入った値段 P+500)で閉じる。同じ値段で入り直さない。"""
+    s = sim(break_close_offset=-0.5)
+    feed(s, two_phase(a1=550.0))
+    q = s._q
+    assert (q.s1, max(q.bup, q.hi2), max(q.bup, q.hi2) - 0.5 * q.vola) == (P + 500, P + 550, P + 450)
+    b80 = bar(80, P + 400, P + 510, h=P + 520, lo=P + 400)
+    rows = s.feed(b80)
+    assert [(r["entry_price"], r["exit_price"], r["exit_reason"], r["pnl_bp"]) for r in rows] == [
+        (P + 500, P + 500, "閉じる位置で閉じる", 0.0)]
+    assert all(b80.low <= r["exit_price"] <= b80.high for r in rows)
+    assert s._side == 0 and s._brk == 0
+
+
+def test_after_a_break_close_the_opposite_leg_can_still_enter():
+    """[聞く] 閉じる位置で閉じた後も、反対の脚(下り)の入り(B1 = P−300 の買い)は止めない(前の no_entry は止めていた)。
+    上が先の道を直に通す。"""
+    s = sim(break_close_offset=-0.5)
+    feed(s, two_phase(a1=550.0))
+    q = s._q
+    st = s._run_path(s._state(), True, (P + 400, P + 520, P - 301, T0 + 80 * M, T0 + 81 * M), q, 0, None, False)
+    assert st.events == [("ent", P + 500), ("bcl", P + 500), ("ent", P - 300)]
+    assert st.side == 1 and st.fills == [P - 300]
+
+
+def test_break_close_comes_before_an_add_at_the_same_tick():
+    """(変異 M4)止め P+700 と売りの次の段 P+700 が同じ刻み: 止めが先で、1 段のまま P+700 で閉じる。"""
+    s = sim(break_close_offset=-0.5)
+    feed(s, two_phase(a1=800.0))
+    _inject(s, -1, [P + 500], T0 + 80 * M)
+    assert s._next_level(s._state(), -1, s._q) == P + 700
+    rows = s.feed(bar(80, P + 600, P + 750, h=P + 750, lo=P + 600))
+    assert [(r["levels"], r["exit_price"], r["exit_reason"]) for r in rows] == [(1, P + 700, "閉じる位置で閉じる")]
+    assert s._side == 0
+
+
+def test_break_close_price_is_rounded_against_us():
+    """(変異 M7)vola 201 で止め = P+800 − 100.5 = P+699.5。売り持ちを閉じるのは買い = 切り上げて P+700。"""
+    s = sim(break_close_offset=-0.5)
+    feed(s, two_phase(a1=800.0, a2=201.0))
+    assert max(s._q.bup, s._q.hi2) - 0.5 * s._q.vola == P + 699.5
+    _inject(s, -1, [P + 600], T0 + 80 * M)
+    rows = s.feed(bar(80, P + 600, P + 750, h=P + 750, lo=P + 600))
+    assert [(r["exit_price"], r["exit_reason"]) for r in rows] == [(P + 700, "閉じる位置で閉じる")]
+
+
+def test_fixed_close_price_is_not_moved_by_a_later_break():
+    """(変異 M3)先の値段は最初に固定した値段のまま。P+500 に固定した売り持ちに、判定値 P+300 の上のブレイクが
+    もう一度起きても P+400(= P+300 + 0.5 × 200)に動かさない。高値 P+450 なので閉じない。"""
+    s = sim(break_close_offset=0.5)
+    feed(s, two_phase())
+    _inject(s, -1, [P + 250], T0 + 80 * M)
+    s._bline = (1, P + 500)
+    st = s._run_path(s._state(), True, (P + 250, P + 450, P + 250, T0 + 80 * M, T0 + 81 * M), s._q, 1, P + 300, False)
+    assert st.events == [("brk", P + 300)] and st.closed == []
+    assert (st.side, st.brk, st.bline) == (-1, 1, (1, P + 500))
+
+
+@pytest.mark.parametrize("c,stop", [(-0.5, P + 700), (0.5, P + 900)])
+def test_break_close_good_and_bad_sides_end_differently(c, stop):
+    """売り 1 段 P+600(利確 P+440)を持ち、1 本の足で止め(手前 P+700 / 先 P+900)と利確の両方を越える。良い側は利確、
+    悪い側は止めで閉じ、どちらも決まらない足に数える。"""
+    out = {}
+    for side in ("good", "bad"):
+        s = sim(break_close_offset=c, fill_side=side)
+        feed(s, two_phase(a1=800.0))
+        _inject(s, -1, [P + 600], T0 + 80 * M)
+        assert s._tp(s._state(), s._q, T0 + 80 * M) == (P + 440, "利確1")
+        rows = s.feed(bar(80, P + 600, P + 500, h=P + 950, lo=P + 400))
+        out[side] = [(r["exit_reason"], r["exit_price"], r["undecided"]) for r in rows]
+    assert out == {"good": [("利確1", P + 440, 1)], "bad": [("閉じる位置で閉じる", stop, 1)]}
+
+
+# 既定の走らせの analysis.json(c4_limit_batch.analyse)の指紋。変える前のコード(dd34297)の analyse で取った値
+GOLDEN_ANALYSIS = {"good": "41ad80ad5a75d068723f19ff97a99ecbef5b5b58967dc40bede0dea9eb2d22f5",
+                   "bad": "753209e50b42442a4fcfa825f1ed1ee38169927bb60e1d2567e9dc54becd81d1"}
+
+
+@pytest.mark.parametrize("side", ["good", "bad"])
+def test_batch_analysis_default_unchanged_and_bcl_group_only_when_present(tmp_path, side):
+    """既定の走らせの analysis.json は前と同じ(closed_by_bcl の群は出ない)。閉じる位置で閉じた取引がある走らせでは
+    closed_by_bcl の群に入り、closed_by_break(反対のブレイク・ブレイク)には入らない。"""
+    import hashlib
+    import json
+    r, bt = _runner(), _load_w4("c4_limit_batch")
+    d = tmp_path / "default"
+    _golden_run_digest(r, side, str(d), [])
+    bt.analyse(str(d))
+    assert hashlib.sha256((d / "analysis.json").read_bytes()).hexdigest() == GOLDEN_ANALYSIS[side]
+    d = tmp_path / "bcl"
+    _golden_run_digest(r, side, str(d), ["--break-close-offset", "-0.5"])
+    bt.analyse(str(d))
+    out = json.loads((d / "analysis.json").read_text(encoding="utf-8"))
+    n = out["by_reason"]["閉じる位置で閉じる"]["trades"]
+    assert n > 0 and out["by_break"]["closed_by_bcl"]["trades"] == n
+    assert out["by_break"]["closed_by_break"]["trades"] == out["by_reason"].get("反対のブレイク", {"trades": 0})["trades"]
+    assert sum(g["trades"] for g in out["by_break"].values()) == out["trades"]
+
+
+def test_main_leg_does_not_reenter_at_a_price_below_its_open():
+    """(変異 P2)始値 P+760 > 止め P+700 > S1 = P+500。足の頭で売り(P+500)→ 止め(P+700)で閉じた後、主の上りの脚は
+    始値 P+750 から始まるので、通り過ぎた S1 では入り直さない(1 回だけ閉じる)。"""
+    s = sim(break_close_offset=-0.5)
+    feed(s, two_phase(a1=800.0))
+    rows = s.feed(bar(80, P + 750, P + 755, h=P + 760, lo=P + 740))
+    assert [(r["entry_price"], r["levels"], r["exit_price"], r["exit_reason"]) for r in rows] == [
+        (P + 500, 1, P + 700, "閉じる位置で閉じる")]
+    assert s._side == 0

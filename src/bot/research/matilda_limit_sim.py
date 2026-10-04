@@ -19,6 +19,10 @@
   2   足 k の量(窓・端・幅・中心・ボラ・2 倍の窓・ブレイクの判定値): _push / _make_q / _update_break_prices
   3-1 ブレイク(上を先に、判定値の値段、解ける): _bar の 1. と 6.、_leg の "brk"
   3-2 入り(幅の門・段の値段・上限 N・反対の入り・brk != 0・follow・時計): _leg の "ent"・"opp"、_open
+  族 D 比の門(ratio_gate。仕様に無い、L-620): 持ち高 0 から入る時点の比(取引の行の ratio と同じ量)が値以上なら
+      入らない。段の追加・反対の入りで閉じるのは止めない: _ratio・_leg の "ent"・"brk"(follow)
+  族 D 閉じる位置(break_close_offset。仕様に無い、L-620): ブレイクに逆らう持ち高を閉じる値段を判定値 pb から
+      値 × vola だけずらす: _leg の "bcl"・"brk"。下の「閉じる位置(族 D)」
   3-3 利確の指値(flg 1・2・中心型・ブレイク中): _tp
   3-4 成行で閉じる(反対の入り・反対のブレイク・時間): _leg の "opp"・"brk"、_bar の 0. と 5.
   3-5 決まらない足(良い側・悪い側): _bar の 3.・4.、_run_path
@@ -80,6 +84,29 @@ pb は丸めない。脚の中で並べるときだけ、ブレイクを実際�
 - そのほかの出の時刻 = 出来事が起きた足の終わり。
 - bar_min > 1 のとき「足」は bar_min 分にまとめた足(仕様 2 の定義)。
 
+閉じる位置(族 D、break_close_offset = c。L-620 の 2。リードの答え 2026-10-04)
+------------------------------------------------------------------------
+c = 0(既定)は v37(ブレイクの判定値 pb で閉じる)。脚の向き d(上り 1・下り −1)の逆らう持ち高(向き −d)について:
+  - c < 0(手前): 止めの値段 = pb_d + d × c × vola。pb_d は足 k の量の判定値(上 max(bup, hi2)・下 min(bdp, lo2)、
+    判定値が未定なら止めも無い)、vola は足 k の vola。ブレイクが起きなくても越えたら閉じる。越えたかの判定・並べる刻み・
+    閉じる値段の丸めはブレイクと同じ(丸めない値段で越えたかを見て、上りは _dn・下りは _up の刻みに並べ、_px で閉じる)。
+    その向きのブレイクが既に起きている間(brk == d)は置かない。
+  - c > 0(先): ブレイクでは閉じずに持ち、そのブレイクの判定値 pb から c × vola 先の値段(pb + d × c × vola。vola は
+    ブレイクが起きた足の量)に固定する。越えたら閉じる(判定・刻み・丸めは上と同じ)。値が戻れば、その持ち高は今までどおり
+    利確などで閉じる。固定した値段は、その持ち高が閉じるまで残す(ブレイクが解けても、次のブレイクでも動かさない)【置いた形】。
+  - 終わり方は「閉じる位置で閉じる」(既定のブレイクの「反対のブレイク」とは別の名前。O-7)。同じ刻みではブレイク・利確
+    などより先(_PRIO の "bcl")。利確の手前で止めた道(悪い側)では見ない(止めた後は持ち高を閉じない)。止めた道は持ち高が
+    脚と同じ向きのときだけ起き、その脚のブレイクには逆らわないので、c > 0 の固定もそこでは起きない。
+  - 足の頭の扱いは既定のブレイクと同じ(始値より手前の止めは、頭で止めの値段で閉じる。リードの決め 2026-10-04)。
+
+脚の中の値段の進み(批評家の [止める]、リードの決め (a) 2026-10-04)
+------------------------------------------------------------------
+_leg は脚の中で値段がどこまで進んだか(pos = 選んだ出来事の並べる値段の最大。主の脚は始まりの値段 = 1 本目は始値、
+2 本目は 1 本目の端から、頭の脚は −∞ から)を持ち、それより手前の値段の出来事は選ばない。ただし閉じる位置の止めは、
+手前にあれば(入った後に、入りの値段より手前に止めがある形など)進んだ位置の値段で閉じる(付かない値段では閉じない)。
+閉じる位置で閉じた後、同じ脚では、進んだ位置と同じ値段の入りも選ばない(同じ値段で入り直すと、また同じ値段で閉じる
+繰り返しになるため)。既定(c = 0)では手前の出来事は起きない(既定の出力の指紋と、族 A〜C の 200 通りの比べで確かめた)。
+
 先読みが無いこと: 足 k+1 の出来事は、足 k までで作った量 _q だけを使う。足 k+1 を窓に入れて量を作り直すのは
 足 k+1 の出来事を済ませた後(_bar の 7.)。
 """
@@ -110,13 +137,22 @@ ALERTS = (20, 1)  # v37 126 行 alert_count = 20 / v52 152 行 1。成行はそ�
 BREAK_DELAYS = (0, 1, 3)  # v37 144〜149 行
 ON_BREAKS = ("hold", "close", "follow")
 FILL_SIDES = ("good", "bad")
+# 族 D 比の門(L-620「1〜3はそれですすめて」の 2)。12.96 は scripts/w4_measure/c4_limit_batch.py の RATIO_FIXED_EDGES の
+# 7 番目 = 門の診断(docs/RESEARCH/cards/c4_owner_matilda_range/diag_gate/README.md「比の十分位ごとの P」)の十分位の境。
+# その README の「十分位の境 … 12.96 …(全期間の分の比から)」の 7 番目の境。走らせる期間(封印の前の全期間)と同じ
+# データから決めた値(標本の中)なので、門の効きの新しい証拠にはならない
+RATIO_GATES = (12.96,)
+# 族 D 閉じる位置(L-620 の 2。オーナー「負けている持ち高を閉じる位置を、今より手前・同じ・先の 3 通りにする」)。
+# −0.5 = 手前・+0.5 = 先(× vola)。既定 0 = 同じ = v37。モジュールの説明「閉じる位置(族 D)」
+BREAK_CLOSE_OFFSETS = (-0.5, 0.5)
 
 # 終わり方(仕様 4)。"ブレイク" は on_break="close" で同じ向きの持ち高をブレイクで閉じたとき(仕様 4 の一覧に無い)
 EXIT_TP1, EXIT_TP2, EXIT_TPC = "利確1", "利確2", "中心型の利確"
 EXIT_OPP, EXIT_OPP_BRK, EXIT_BRK = "反対の入り", "反対のブレイク", "ブレイク"
 EXIT_TIME, EXIT_END = "時間", "期間の終わり"
+EXIT_BCL = "閉じる位置で閉じる"  # 族 D 閉じる位置(break_close_offset ≠ 0)の止めで閉じたとき
 
-_PRIO = {"brk": 0, "tp": 1, "stop": 1, "opp": 2, "ent": 3}
+_PRIO = {"bcl": -1, "brk": 0, "tp": 1, "stop": 1, "opp": 2, "ent": 3}  # "bcl" = 族 D の閉じる位置(既定では出ない)
 
 
 def _dn(x: float) -> float:
@@ -143,7 +179,7 @@ class _Q:
 class _St:
     """1 本の足を通すときの状態(2 通りの道を試すので写せるようにする)。"""
     __slots__ = ("side", "fills", "t0", "info", "brk", "brk_done", "tp_done", "no_entry", "exit_block", "r2",
-                 "events", "closed")
+                 "events", "closed", "bline")
 
     def copy(self) -> "_St":
         s = _St()
@@ -151,6 +187,7 @@ class _St:
         s.brk_done, s.tp_done, s.no_entry, s.exit_block, s.r2 = (self.brk_done, self.tp_done, self.no_entry,
                                                                     self.exit_block, self.r2)
         s.events, s.closed = list(self.events), list(self.closed)
+        s.bline = self.bline
         return s
 
 
@@ -160,7 +197,8 @@ class MatildaLimitSim:
     def __init__(self, *, fill_side: str, window_min: int = 40, bar_min: int = 1, range_from: str = "body",
                  entry: float = 2, exit_form: str = "v37", exit_setting: Optional[float] = None,
                  step_exit: float = 0.8, step: float = 1, n_levels: int = 7, alert_min: int = 20,
-                 width_gate: bool = True, break_delay: int = 1, on_break: str = "hold") -> None:
+                 width_gate: bool = True, break_delay: int = 1, on_break: str = "hold",
+                 ratio_gate: Optional[float] = None, break_close_offset: float = 0) -> None:
         self.fill_side = _in("fill_side", fill_side, FILL_SIDES)
         self.window_min = _in("window_min", window_min, WINDOWS)
         self.bar_min = _in("bar_min", bar_min, BAR_MINS)
@@ -185,6 +223,11 @@ class MatildaLimitSim:
         self.width_gate = width_gate
         self.break_delay = _in("break_delay", break_delay, BREAK_DELAYS)
         self.on_break = _in("on_break", on_break, ON_BREAKS)
+        self.ratio_gate = None if ratio_gate is None else float(_in("ratio_gate", ratio_gate, RATIO_GATES))
+        c = break_close_offset
+        if isinstance(c, bool) or not (c == 0 or c in BREAK_CLOSE_OFFSETS):
+            raise ValueError(f"break_close_offset は 0(既定)か {list(BREAK_CLOSE_OFFSETS)} のどれか: {break_close_offset!r}")
+        self.break_close_offset = float(break_close_offset)
         if self.window_min % self.bar_min:
             raise ValueError(f"window_min が bar_min の倍数でない: {window_min!r}, {bar_min!r}")
         self.window_ns = self.window_min * MIN_NS
@@ -210,6 +253,7 @@ class MatildaLimitSim:
         self._t0: Optional[int] = None
         self._info: Optional[dict] = None
         self._brk = 0
+        self._bline: Optional[tuple] = None  # 族 D 閉じる位置 c > 0 で固定した (向き, 値段)。既定では常に None
         self._pending_time = False
         self._last_close: Optional[float] = None
         self._last_end: Optional[int] = None
@@ -310,22 +354,33 @@ class MatildaLimitSim:
         s.side, s.fills, s.t0, s.info, s.brk = self._side, list(self._fills), self._t0, self._info, self._brk
         s.brk_done = s.tp_done = s.no_entry = s.exit_block = s.r2 = False
         s.events, s.closed = [], []
+        s.bline = self._bline
         return s
 
     def _load(self, st: _St) -> None:
         self._side, self._fills, self._t0, self._info, self._brk = st.side, st.fills, st.t0, st.info, st.brk
+        self._bline = st.bline
 
     # ------------------------------------------------------------------ 持ち高の操作
     def _open(self, st: _St, side: int, price: float, q: _Q, t_end: int) -> None:
         """持ち高 0 から 1 段目。時計 t0 はここで始める(向きが変わったとき。段を足しても戻さない)。"""
         st.side, st.fills, st.t0 = side, [price], t_end
-        ratio = q.width / q.vola if q.vola > 0 else (math.inf if q.width > 0 else 0.0)
-        st.info = {"entry_ns": t_end, "side": side, "width": q.width, "vola": q.vola, "ratio": ratio,
+        st.info = {"entry_ns": t_end, "side": side, "width": q.width, "vola": q.vola, "ratio": self._ratio(q),
                    "brk": st.brk, "close_k": q.close}
+
+    @staticmethod
+    def _ratio(q: _Q) -> float:
+        """入りの時の比 width / vola(取引の行の ratio)。"""
+        return q.width / q.vola if q.vola > 0 else (math.inf if q.width > 0 else 0.0)
+
+    def _ratio_ok(self, q: _Q) -> bool:
+        """比の門: 持ち高 0 から入ってよいか(ratio_gate が None なら常に入ってよい。値以上なら入らない)。"""
+        return self.ratio_gate is None or self._ratio(q) < self.ratio_gate
 
     def _close(self, st: _St, price: float, reason: str, t: int) -> None:
         st.closed.append((st.info, list(st.fills), price, reason, t))
         st.side, st.fills, st.t0, st.info = 0, [], None, None
+        st.bline = None
         st.exit_block = True  # 閉じた後に同じ足で持った持ち高は、その足では利確・反対の入りで閉じない(L-581)
 
     def _rows(self, st: _St, undecided: bool) -> list:
@@ -372,11 +427,37 @@ class MatildaLimitSim:
             return _dn(q.s1 if not st.fills else max(q.s1, st.fills[-1] + self.step * q.vola))
         return _up(q.b1 if not st.fills else min(q.b1, st.fills[-1] - self.step * q.vola))
 
+    # ------------------------------------------------------------------ 族 D 閉じる位置
+    def _bcl_line(self, st: _St, d: int, q: _Q) -> Optional[float]:
+        """d の向きの脚で、逆らう持ち高(向き −d)を閉じる値段(丸めない)。無ければ None。"""
+        c = self.break_close_offset
+        if c == 0 or st.side != -d:
+            return None
+        if c > 0:
+            return st.bline[1] if st.bline is not None and st.bline[0] == d else None
+        if st.brk == d:
+            return None
+        pb = (max(q.bup, q.hi2) if q.bup is not None else None) if d == 1 else (
+            min(q.bdp, q.lo2) if q.bdp is not None else None)
+        return None if pb is None else pb + d * c * q.vola
+
+    def _fix_bline(self, st: _St, ev: int, pb: float, q: _Q) -> bool:
+        """c > 0 で、ブレイク ev に逆らう持ち高があれば、閉じる値段を pb + ev × c × vola に固定する(既にあれば動かさない)。
+        持ち高を閉じずに持つなら True。"""
+        if self.break_close_offset <= 0 or st.side != -ev:
+            return False
+        if st.bline is None:
+            st.bline = (ev, pb + ev * self.break_close_offset * q.vola)
+        return True
+
     # ------------------------------------------------------------------ 1 本の脚
     def _leg(self, st: _St, up: bool, ext: float, q: _Q, ev: int, pb: Optional[float], tp_stop: bool,
-             t_start: int, t_end: int) -> None:
+             t_start: int, t_end: int, start: Optional[float] = None) -> None:
         d = 1 if up else -1  # この脚で利確する持ち高の向き(上りは買いの利確・売りの入り)
         stopped = False  # 利確の手前で止めた後は、この脚の先のブレイクの判定値だけを見る
+        # 値段の進んだ位置(並べる値段。下りは符号を反す)。主の脚は start(脚の始まりの値段)から、頭の脚は −∞ から
+        pos = -math.inf if start is None else (start if up else -start)
+        after_bcl = False  # 閉じる位置で閉じた後は、進んだ位置と同じ値段の入りも選ばない
         while True:
             cands = []
 
@@ -384,7 +465,12 @@ class MatildaLimitSim:
                 # 越えたかは thr で見る。並べる値段は at(無ければ thr)
                 if thr is not None and (ext > thr if up else ext < thr):
                     k = thr if at is None else at
-                    cands.append(((k if up else -k), _PRIO[kind], kind, thr))
+                    key = k if up else -k
+                    if key < pos or (after_bcl and kind == "ent" and key <= pos):
+                        if kind != "bcl":
+                            return  # 進んだ位置より手前の値段の出来事は選ばない
+                        key, thr = pos, (pos if up else -pos)  # 止めは進んだ位置の値段で閉じる(付かない値段では閉じない)
+                    cands.append((key, _PRIO[kind], kind, thr))
 
             if ev == d and not st.brk_done:
                 # ブレイクは丸めない pb を越えたかで判定し、並べるときは実際に起きる刻み(上りは _dn(pb)、下りは _up(pb))
@@ -397,6 +483,9 @@ class MatildaLimitSim:
                 st.events.append(("brk", pb))
                 st.brk, st.brk_done = ev, True  # ブレイクの状態だけ変える(持ち高は閉じない)
                 continue
+            line = self._bcl_line(st, d, q)
+            if line is not None:  # 族 D 閉じる位置(既定 c = 0 では常に None)
+                add(line, "bcl", _dn(line) if up else _up(line))
             if s == d and not st.exit_block:
                 tp, why = self._tp(st, q, t_start)
                 add(tp, "stop" if tp_stop else "tp")
@@ -404,23 +493,29 @@ class MatildaLimitSim:
                     add(_dn(q.s1) if d == 1 else _up(q.b1), "opp")
             e = -d  # この脚で入る向き
             if not st.tp_done and not st.no_entry and q.vola > 0 and len(st.fills) < self.n_levels:
-                if s == 0 and st.brk == 0 and q.gate:
+                if s == 0 and st.brk == 0 and q.gate and self._ratio_ok(q):
                     add(self._next_level(st, e, q), "ent")
                 elif s == e and ((st.brk == 0 and q.gate) or st.brk == e):
                     add(self._next_level(st, e, q), "ent")
             if not cands:
                 return
-            _, _, kind, px = min(cands)
+            key, _, kind, px = min(cands)
+            pos = max(pos, key)
             st.events.append((kind, px))
             if kind == "stop":
                 stopped = True
                 continue
             if kind == "brk":
                 st.brk, st.brk_done = ev, True
-                if st.side == -ev or (st.side == ev and self.on_break == "close"):
+                if self._fix_bline(st, ev, px, q):
+                    pass  # c > 0: 閉じずに持ち、閉じる値段を固定した
+                elif st.side == -ev or (st.side == ev and self.on_break == "close"):
                     self._close(st, self._px(st.side, px), EXIT_OPP_BRK if st.side == -ev else EXIT_BRK, t_end)
-                if st.side == 0 and self.on_break == "follow" and not st.tp_done:
+                if st.side == 0 and self.on_break == "follow" and not st.tp_done and self._ratio_ok(q):
                     self._open(st, ev, _up(px) if ev == 1 else _dn(px), q, t_end)  # 判定値の値段で 1 段
+            elif kind == "bcl":
+                self._close(st, self._px(st.side, px), EXIT_BCL, t_end)
+                after_bcl = True
             elif kind == "tp":
                 self._close(st, px, why, t_end)
                 st.tp_done = True  # 利確の後、この足では入らない
@@ -448,8 +543,10 @@ class MatildaLimitSim:
         # 利確の手前で止める(tp_stop)は頭には掛けない(頭の利確は決まっている)。上りの頭 → 下りの頭の順【置いた形】
         for up in (True, False):
             self._leg(st, up, o, q, ev, pb, False, t_start, t_end)
+        start = o  # 主の脚の始まりの値段: 1 本目は始値、2 本目は 1 本目の端
         for up in ((True, False) if up_first else (False, True)):
-            self._leg(st, up, h if up else lo, q, ev, pb, tp_stop, t_start, t_end)
+            self._leg(st, up, h if up else lo, q, ev, pb, tp_stop, t_start, t_end, start)
+            start = h if up else lo
         return st
 
     # ------------------------------------------------------------------ 1 本の足
@@ -518,5 +615,5 @@ class MatildaLimitSim:
         return out
 
 
-__all__ = ["ALERTS", "BREAK_DELAYS", "CENTER_PAIRS", "ENTRY_V37", "EXIT_FORMS", "FILL_SIDES", "MAX_WIDTH_RATIO", "MatildaLimitSim",
-           "N_LEVELS", "ON_BREAKS", "STEPS", "STEP_EXITS", "WINDOWS"]
+__all__ = ["ALERTS", "BREAK_CLOSE_OFFSETS", "BREAK_DELAYS", "CENTER_PAIRS", "ENTRY_V37", "EXIT_FORMS", "FILL_SIDES", "MAX_WIDTH_RATIO", "MatildaLimitSim",
+           "N_LEVELS", "ON_BREAKS", "RATIO_GATES", "STEPS", "STEP_EXITS", "WINDOWS"]

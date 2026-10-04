@@ -33,3 +33,9 @@ def test_compare_uses_r2_rules_against_v37_same_side():
     assert row["closed_by_break"]["d_good"] == 2.0 and row["closed_by_break"]["d_bad"] == -1.0
     assert row["pnl"]["label"] == rd.r2.label(1.0, -1.0)
     assert row["years_good"] == len(rd.r2.YEARS)
+
+
+def test_lose_close_adds_bcl_group_when_present():
+    a = {"by_break": {"closed_by_break": {"sum_bp": -30.0}, "closed_by_bcl": {"sum_bp": -10.0}}}
+    assert rd.lose_close_per_day(a, 2.0) == -20.0
+    assert rd.lose_close_per_day({"by_break": {"closed_by_break": {"sum_bp": -30.0}}}, 2.0) == -15.0
