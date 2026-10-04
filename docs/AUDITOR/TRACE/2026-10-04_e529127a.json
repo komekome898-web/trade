@@ -5,11 +5,11 @@
   {
    "move": 1,
    "tools": {
-    "Bash": 10,
+    "Bash": 16,
     "Read": 2,
-    "Agent": 2
+    "Agent": 3
    },
-   "n_tools": 14,
+   "n_tools": 21,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -53,8 +53,8 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 14,
-   "max": 14,
+   "median": 21,
+   "max": 21,
    "n": 1
   },
   "P6_findings_applied": {
