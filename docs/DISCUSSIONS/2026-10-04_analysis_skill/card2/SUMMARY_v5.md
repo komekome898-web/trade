@@ -58,6 +58,32 @@ L-676 の夜の全カードのまとめ(`ALL_CARDS.md`)で、知見 3 に前半�
 | 建ての時刻 | 15 分 | +1.94 [+0.45, +3.58] | +0.00 [-1.38, +1.37] | +0.99 [-0.29, +2.25] | -0.22 [-1.56, +1.25] |
 | 建ての時刻 | 60 分 | +2.43 [-0.69, +5.46] | +3.10 [+0.19, +6.06] | -0.21 [-3.10, +2.40] | +0.56 [-2.42, +3.68] |
 
+分け方の命令(この回の会話で実行。リポジトリの直下で):
+
+```
+python3 - <<'EOF2'
+import json, gzip, csv, os, sys
+sys.path.insert(0, 'scripts/analysis')
+from diag_tables import load_run, period_days
+R = 'docs/RESEARCH/cards/c2_owner_xvenue_wick/limit_sim/runs/weak_f15_close_a'
+run = load_run(R); days = period_days(run); split = days[len(days) // 2]   # 2020-10-17(D1 の前半・後半と同じ)
+S = '<一時置き場>/k0half'
+rows = list(csv.DictReader(gzip.open(f'{R}/trades.csv.gz', 'rt')))
+for name, cond in (('first', lambda r: r['exit_t'][:10] < split), ('second', lambda r: r['exit_t'][:10] >= split)):
+    d = f'{S}/weak_f15_close_a_{name}'; os.makedirs(d, exist_ok=True)
+    sel = [r for r in rows if cond(r)]
+    with gzip.open(f'{d}/trades.csv.gz', 'wt', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys())); w.writeheader(); w.writerows(sel)
+    sm = json.load(open(f'{R}/summary.json'))
+    sm['period'] = [days[0] + 'T00:00:00Z', split + 'T00:00:00Z'] if name == 'first' else [split + 'T00:00:00Z', sm['period'][1]]
+    json.dump(sm, open(f'{d}/summary.json', 'w'))
+EOF2
+PYTHONPATH=src python3 scripts/analysis/diag_paths.py --run <一時置き場>/k0half/weak_f15_close_a_first --out docs/DISCUSSIONS/2026-10-04_analysis_skill/card2/K0_paths_first_half.md
+PYTHONPATH=src python3 scripts/analysis/diag_paths.py --run <一時置き場>/k0half/weak_f15_close_a_second --out docs/DISCUSSIONS/2026-10-04_analysis_skill/card2/K0_paths_second_half.md
+```
+
+出力: 前半 8,813 本・後半 6,401 本。それぞれ約 2 分 15 秒。
+
 読み:
 - 【事実】建ててから 5 分の戻り(ヒゲの逆への動き)は、前半・後半とも 0 より上(+1.60・+1.62)で、対照(24 時間後の同じ時刻)はどちらも 0 を含む。15 分は前半だけ 0 より上(後半 +0.99 は 0 を含む)。
 - 【事実】合図から 15 分のヒゲの向きへの続きは、後半は 0 より下(−1.23 [−2.48, −0.04])、前半は区間の上端が +0.01 でわずかに 0 を含む。後半は合図から 1 分・5 分ですでに続いている(−0.75・−1.18)。
