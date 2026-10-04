@@ -97,3 +97,10 @@ def test_assumption_free_part_and_stop(tmp_path):
 def test_refuses_window_outputs(tmp_path):
     with pytest.raises(SystemExit):
         dt.load_run(str(REPO / "docs" / "RESEARCH" / "WINDOW1" / "runs" / "K-0"))
+
+
+def test_days_needed():
+    x = [10.0, -10.0] * 50  # 標準偏差 ≈ 10.05
+    n = dt.days_needed(x, 2.0)
+    assert 190 <= n <= 200  # (2.8 × 10.05 / 2)² ≈ 198
+    assert dt.days_needed(x, 0.0) is None

@@ -163,6 +163,14 @@ def diff_ci(first: list[float], second: list[float]) -> dict:
     return {"mean": float(b.mean() - a.mean()), "lo": float(lo), "hi": float(hi)}
 
 
+def days_needed(x: list[float], effect: float | None) -> int | None:
+    """前半の大きさ effect を、後半と同じ散らばりの日ごとの損益で見分けるのに要る日数(5% 両側・80%):
+    (2.8 × 日ごとの標準偏差 ÷ |effect|)²。日の塊の依存は入れていない(目安)。"""
+    if effect is None or effect == 0 or len(x) < 2:
+        return None
+    return int(np.ceil((2.8 * float(np.std(x, ddof=1)) / abs(effect)) ** 2))
+
+
 def half_state(r: dict) -> str:
     """半分の状態: 正 = 区間が 0 より上 / 負 = 区間が 0 より下 / 含む = 区間が 0 を含む(区間なしも含む)。"""
     if r.get("lo") is None:
@@ -253,6 +261,8 @@ def d1(daily: dict[str, float]) -> dict:
            "second": {"from": days[h], "to": days[-1], **mean_ci(second)},
            "diff": diff_ci(first, second)}
     seg["outcome"] = d1_outcome(seg["first"], seg["second"], seg["diff"])
+    seg["days_needed"] = days_needed(second, seg["first"].get("mean"))
+    seg["days_needed_second"] = days_needed(second, seg["second"].get("mean"))
     return {"rows": rows, "segments": seg}
 
 
@@ -272,11 +282,12 @@ def d3(run: dict, daily: dict[str, float]) -> dict:
     out["n_trades"] = len(tr)
     hold = [(t["exit_ns"] - t["entry_ns"]) / 6e10 for t in tr]
     qs, hband = bands_by_edges(hold)
-    groups = {"保有時間の帯": lambda t: hband((t["exit_ns"] - t["entry_ns"]) / 6e10)}
+    # 群は 2 種類: 建ての前に決まる群(原因の候補として比べられる)と、結果で決まる群(群どうしの差から原因を言えない)
+    groups = {"保有時間の帯【結果で決まる群】": lambda t: hband((t["exit_ns"] - t["entry_ns"]) / 6e10)}
     if any("exit_reason" in t for t in tr):
-        groups["出の理由"] = lambda t: t.get("exit_reason", "")
+        groups["出の理由【結果で決まる群】"] = lambda t: t.get("exit_reason", "")
     if any("strength" in t for t in tr):
-        groups["合図の強さ"] = lambda t: t.get("strength", "")
+        groups["合図の強さ【建ての前に決まる群】"] = lambda t: t.get("strength", "")
     out["hold_edges_min"] = qs
     out["groups"] = {name: group_table(tr, days, f) for name, f in groups.items()}
     return out
@@ -405,6 +416,9 @@ def render(res: dict) -> str:
           f"| 前半 | {sg['first']['from']}〜{sg['first']['to']} | {sg['first']['n']} | {_ci(sg['first'])} | {_f(sg['first']['mde'])} |",
           f"| 後半 | {sg['second']['from']}〜{sg['second']['to']} | {sg['second']['n']} | {_ci(sg['second'])} | {_f(sg['second']['mde'])} |",
           f"| 後半 − 前半 | | | {_ci(sg['diff'])} | |", "",
+          f"- 0 と見分けるのに要る日数の目安(後半の散らばりで。日の依存は入れていない。後半は {sg['second']['n']} 日): "
+          f"前半の大きさ({_f(sg['first']['mean'])})なら {sg.get('days_needed') or '—'} 日、"
+          f"後半の点({_f(sg['second']['mean'])})なら {sg.get('days_needed_second') or '—'} 日",
           f"- 結果(決まり d1_outcome): **{sg['outcome']}**"
           + ("。全期間の行は一部の期間の稼ぎ" if sg["outcome"] in ("崩れた", "後半だけ") else ""), ""]
     d3r = res["d3"]
@@ -416,7 +430,9 @@ def render(res: dict) -> str:
         L += [f"- 取引 {d3r['n_trades']} 本の損益の分位(bp): " + "、".join(f"{int(k*100)}% {_f(v)}" for k, v in q.items()),
               ""]
         for gname, tab in d3r["groups"].items():
-            L += [f"### {gname}ごとの 1 取引あたり(bp)", "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
+            note = ("(取引の結果で群が決まるので、群どうしの差から原因は言えない。記述だけ)" if "結果で決まる" in gname
+                    else "(建ての前に決まる群。群どうしの差は原因の候補になる)")
+            L += [f"### {gname}ごとの 1 取引あたり(bp)", "", note, "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
             for g, r in tab.items():
                 L.append(f"| {g or '(空)'} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
             L.append("")
