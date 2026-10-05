@@ -20,15 +20,20 @@
 欄「測った日」は --date(既定は今日の日本時間の日付)。「確かさ: 未監査」「監査: なし」「状態: 開いている」は固定。
 
 止めるもの(台帳は書き換えない。終了コード 1):
-- 定義ファイルに ROWS・SCOPE・PRED・DATA が無い、タプルの長さが 10 でない、値が文字列でない、値に改行がある
-  (改行があると台帳の `- 欄: 値` の 1 行の形が壊れ、検査が見逃す)
+- 定義ファイルに ROWS・SCOPE・PRED・DATA が無い、タプルの長さが 10 でない、値が文字列でない、値が 1 行でない
+  (`str.splitlines()` が切る字 = \n・\r・U+2028 などを含む。台帳の `- 欄: 値` の 1 行の形が壊れ、検査が見逃す。
+  空の値は 1 行の扱いで、台帳の検査が「欄が空」で止める)
+- 測った日が `数字 4 桁-数字 2 桁-数字 2 桁` の形でない、または暦に無い日
 - K 番号の形が `K-数字 3 桁以上` でない、定義ファイルの中で同じ K 番号が 2 回ある、台帳に既にある
   (台帳にあるかは検査と同じ読み方で見る。`## 書式` の囲み ``` の中の見本は数えない)
 - 台帳に `## カード` の見出しが無い(行は `## カード` の手前に足す)
+- 足した後の台帳を検査と同じ読み方で読んで、観察の行が足した数だけ増えていない、または足した K 番号が見えない
+  (例: 最初の `## カード` が ``` の囲みの中にあり、行が囲みの中に入った)
 - 足した後の台帳全体に台帳の検査が問題を 1 件でも出す。足す前から台帳にある問題でも止まる
   (台帳の検査が問題 0 の台帳にしか足さない)
 
-書き方: 足した後の台帳の文を作って先に検査し、問題 0 のときだけ書く(一時ファイルに書いて置き換える)。
+書き方: 足した後の台帳の文を作って先に検査し、問題 0 のときだけ書く(一時ファイルに書いて置き換える。
+置き換えた後のファイルの権限は元のファイルと同じにする)。
 書いた後にファイルを読み直してもう一度検査し、問題があれば元の中身に戻して止める。
 """
 from __future__ import annotations
@@ -38,6 +43,7 @@ import importlib.util
 import os
 import re
 import runpy
+import stat
 import sys
 import tempfile
 from datetime import date, datetime, timedelta, timezone
@@ -48,6 +54,7 @@ DEFAULT_LEDGER = REPO / "docs" / "RESEARCH" / "FINDINGS_LEDGER.md"
 CARD_MARK = "\n## カード\n"
 ROW_LEN = 10
 KID = re.compile(r"K-\d{3,}")
+DATE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")  # \d は全角の数字も通すので使わない
 
 _spec = importlib.util.spec_from_file_location("check_findings_ledger", REPO / "scripts" / "check_findings_ledger.py")
 cfl = importlib.util.module_from_spec(_spec)
@@ -62,14 +69,19 @@ def today_jst() -> str:
     return datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
 
 
+def one_line(v: str) -> bool:
+    """改行の字(`str.splitlines()` が切る字。\\n・\\r・U+2028 など)を含まない。空の文字列は 1 行の扱い。"""
+    return v == "" or v.splitlines() == [v]
+
+
 def load_rows(path: str) -> dict:
     d = runpy.run_path(path)
     missing = [k for k in ("ROWS", "SCOPE", "PRED", "DATA") if k not in d]
     if missing:
         raise Refused(f"定義ファイルに {', '.join(missing)} が無い")
     for k in ("SCOPE", "PRED", "DATA"):
-        if not isinstance(d[k], str) or "\n" in d[k]:
-            raise Refused(f"{k} が 1 行の文字列でない")
+        if not isinstance(d[k], str) or not one_line(d[k]):
+            raise Refused(f"{k} が 1 行の文字列でない(改行の字がある)")
     rows = list(d["ROWS"])
     if not rows:
         raise Refused("ROWS が空")
@@ -79,8 +91,8 @@ def load_rows(path: str) -> dict:
         for j, v in enumerate(r):
             if not isinstance(v, str):
                 raise Refused(f"ROWS の {i} 番目の {j + 1} 個目が文字列でない")
-            if "\n" in v:
-                raise Refused(f"ROWS の {i} 番目({r[0]})の {j + 1} 個目に改行がある")
+            if not one_line(v):
+                raise Refused(f"ROWS の {i} 番目({r[0]})の {j + 1} 個目に改行の字がある({v!r:.60})")
         if not KID.fullmatch(r[0]):
             raise Refused(f"ROWS の {i} 番目の K 番号「{r[0]}」が K-数字 3 桁以上の形でない")
     return {"ROWS": rows, "SCOPE": d["SCOPE"], "PRED": d["PRED"], "DATA": d["DATA"]}
@@ -112,6 +124,8 @@ def block(row: tuple, scope: str, pred: str, data: str, measured: str) -> str:
 def add_rows(ledger_text: str, d: dict, measured: str) -> str:
     """足した後の台帳の文を返す。止める理由があれば Refused。検査はしない。"""
     try:
+        if not DATE.fullmatch(measured):
+            raise ValueError
         date.fromisoformat(measured)
     except ValueError:
         raise Refused(f"測った日「{measured}」が YYYY-MM-DD でない")
@@ -126,14 +140,22 @@ def add_rows(ledger_text: str, d: dict, measured: str) -> str:
     if CARD_MARK not in ledger_text:
         raise Refused("台帳に「## カード」の見出しが無い(行はその手前に足す)")
     blocks = [block(r, d["SCOPE"], d["PRED"], d["DATA"], measured) for r in d["ROWS"]]
-    return ledger_text.replace(CARD_MARK, "\n" + "\n".join(blocks) + CARD_MARK, 1)
+    new = ledger_text.replace(CARD_MARK, "\n" + "\n".join(blocks) + CARD_MARK, 1)
+    obs_new, _, _ = cfl._parse(new)
+    unseen = [k for k in seen if k not in obs_new]
+    if len(obs_new) != len(obs) + len(d["ROWS"]) or unseen:
+        raise Refused(f"足した後の台帳を読むと、観察の行が {len(obs)} → {len(obs_new)}(足したのは {len(d['ROWS'])})"
+                      f"、見えない K 番号 {sorted(unseen)}(「## カード」が ``` の囲みの中にあるなど)")
+    return new
 
 
 def _write(path: Path, text: str) -> None:
+    mode = stat.S_IMODE(os.stat(path).st_mode)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".ledger_rows.", suffix=".tmp")
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
             fh.write(text)
+        os.chmod(tmp, mode)
         os.replace(tmp, path)
     finally:
         if os.path.exists(tmp):

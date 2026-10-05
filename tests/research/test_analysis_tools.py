@@ -186,6 +186,53 @@ def test_ledger_rows_restores_when_check_after_write_fails(tmp_path, ledger, mon
     assert not [p for p in tmp_path.iterdir() if p.name.startswith(".ledger_rows.")]
 
 
+def test_ledger_rows_no_card_heading_stops(tmp_path, ledger, capsys):
+    """壊し方 M4: 「## カード」が無い台帳では止まる(置き換えが何もしないまま通らない)。"""
+    ledger.write_text(LEDGER[:LEDGER.index("## カード")], encoding="utf-8")
+    before = ledger.read_bytes()
+    assert lr.main([_defs(tmp_path, [ROW]), "--ledger", str(ledger), "--date", "2026-10-05"]) == 1
+    assert "「## カード」の見出しが無い" in capsys.readouterr().err
+    assert ledger.read_bytes() == before
+
+
+def test_ledger_rows_card_heading_inside_fence_stops(tmp_path, ledger, capsys):
+    """最初の「## カード」が ``` の囲みの中にあると、足した行が囲みに入って検査から見えない。行の数で止める。"""
+    fenced = LEDGER.replace("## 書式\n\n```\n", "## 書式\n\n```\n## カード\n", 1)
+    assert lr.cfl.check_ledger_text(fenced, repo=ROOT) == []
+    ledger.write_text(fenced, encoding="utf-8")
+    before = ledger.read_bytes()
+    assert lr.main([_defs(tmp_path, [ROW]), "--ledger", str(ledger), "--date", "2026-10-05"]) == 1
+    assert "見えない K 番号 ['K-011']" in capsys.readouterr().err
+    assert ledger.read_bytes() == before
+
+
+@pytest.mark.parametrize("brk", ["\n", "\r", "\r\n", " ", " ", "\x85", "\x0b", "\x0c"])
+def test_ledger_rows_any_line_break_in_value_stops(tmp_path, ledger, capsys, brk):
+    """値の改行の字は \\n だけでなく str.splitlines() が切る字すべてで止める(\\r で偽の行を作れないように)。"""
+    before = ledger.read_bytes()
+    bad = ROW[:3] + (f"観察の文{brk}### K-999 偽の行",) + ROW[4:]
+    assert lr.main([_defs(tmp_path, [bad]), "--ledger", str(ledger), "--date", "2026-10-05"]) == 1
+    assert "改行の字" in capsys.readouterr().err
+    p = tmp_path / "scope_break.py"
+    p.write_text(f"ROWS = {[ROW]!r}\nSCOPE = {('a' + brk + 'b')!r}\nPRED = 'x'\nDATA = '見つけたのと同じ'\n", encoding="utf-8")
+    assert lr.main([str(p), "--ledger", str(ledger), "--date", "2026-10-05"]) == 1
+    assert ledger.read_bytes() == before
+
+
+@pytest.mark.parametrize("bad", ["20261005", "2026-W40-1", "2026-10-5", "2026-02-30", "２０２６-10-05"])
+def test_ledger_rows_date_must_be_yyyy_mm_dd(tmp_path, ledger, capsys, bad):
+    before = ledger.read_bytes()
+    assert lr.main([_defs(tmp_path, [ROW]), "--ledger", str(ledger), "--date", bad]) == 1
+    assert "YYYY-MM-DD" in capsys.readouterr().err
+    assert ledger.read_bytes() == before
+
+
+def test_ledger_rows_keeps_file_mode(tmp_path, ledger):
+    os.chmod(ledger, 0o664)
+    assert lr.main([_defs(tmp_path, [ROW]), "--ledger", str(ledger), "--date", "2026-10-05"]) == 0
+    assert (os.stat(ledger).st_mode & 0o777) == 0o664
+
+
 # ---------------------------------------------------------------- count_tables
 
 DOC_TABLES = """# 診断
@@ -256,6 +303,19 @@ def test_count_tables_main_prints_total(tmp_path, capsys):
     assert "P: 表 2・行 3" in out and "計: 表 4・行 4" in out
 
 
+def test_count_tables_section_closes_at_h2():
+    """壊し方 M22: 「## 」の見出しで節を閉じる。次の手順の見出しの下・「当てたこと」の前の表は数えない。"""
+    text = ("### 当てたこと(P)\n\n| a |\n|---|\n| 1 |\n\n## D0 次\n\n| 外の表 |\n|---|\n| 9 |\n| 9 |\n\n"
+            "### 当てたこと(D0)\n\n文。\n")
+    assert ct.count(text) == {"P": (1, 1), "D0": (0, 0)}
+
+
+def test_count_tables_block_without_separator_is_not_a_table():
+    """壊し方 M23: 2 行以上でも、2 行目が区切りの行でない塊は表と数えない。"""
+    text = "### 当てたこと(P)\n\n| 区切りの無い |\n| 2 行の塊 |\n| 3 行目 |\n\n| a |\n|---|\n| 1 |\n"
+    assert ct.count(text) == {"P": (1, 1)}
+
+
 # ---------------------------------------------------------------- local_effects
 
 DOC_HALVES = """## D2 場面
@@ -303,6 +363,49 @@ def test_local_effects_main_prints(tmp_path, capsys):
     assert "両半分で同じ側 3" in out and "前半 +1.2 [+0.1, +2.0]" in out
 
 
+def test_local_effects_next_table_with_same_width_is_not_read_with_old_header():
+    """壊し方 M16(カード 7 の D5 の形): 前半・後半の表の後に、列の数が同じで前半・後半の見出しの無い表が来ても、
+    前の見出しの列の位置で読まない(一時置き場の版は「起点から」の列を前半として読んでいた)。"""
+    text = """### 当てたこと(D5)
+
+| 区分 | 全期間 | 前半 [区間] | 後半 [区間] |
+|---|---|---|---|
+| a | +1.0 [+0.5, +1.5] | +1.2 [−0.1, +2.0] | +0.9 [−0.2, +1.7] |
+
+| 窓 | 合図 | 起点から [区間] | 対照 [区間] |
+|---|---|---|---|
+| 1w | 145 | +40.39 [+7.74, +90.12] | +2.18 [+0.31, +4.50] |
+"""
+    assert le.scan(text) == (1, [])
+
+
+def test_local_effects_short_separator_is_not_a_row():
+    """区切りの行は「-」1 字からでも区切り(`|:-|`)。中身の行と数えない。"""
+    text = """### 当てたこと(D3)
+
+| 区分 | 前半 | 後半 |
+|:-|-:|:-:|
+| a | +1.2 [+0.1, +2.0] | +0.9 [+0.2, +1.7] |
+"""
+    n, hits = le.scan(text)
+    assert n == 1 and [h[1] for h in hits] == ["a / +1.2 [+0.1, +2.0] / +0.9 [+0.2, +1.7]"]
+
+
+def test_local_effects_section_closes_at_h2():
+    """壊し方 M17: 「## 」の見出しで節を閉じる。D2 の後の「## D9」の下の表は拾わない。"""
+    text = """### 当てたこと(D2)
+
+文。
+
+## D9 次
+
+| 区分 | 前半 | 後半 |
+|---|---|---|
+| 外 | +1.2 [+0.1, +2.0] | +0.9 [+0.2, +1.7] |
+"""
+    assert le.scan(text) == (0, [])
+
+
 # ---------------------------------------------------------------- check_placeholders
 
 def test_check_placeholders_finds_placeholder(tmp_path, capsys):
@@ -337,6 +440,50 @@ def test_check_placeholders_missing_file_is_2(tmp_path):
     assert cp.main([str(tmp_path / "none.md")]) == 2
 
 
+@pytest.mark.parametrize("line", [
+    "観察 3「区間なし」→ 番号は後で書き足す",      # 壊し方 M7: 閉じた「」の後は数える
+    "| 3 | 番号は後で書き足す |",                   # 壊し方 M9: 表の行の中も数える
+    "a > b のとき、番号は後で書き足す",              # 壊し方 M11: 行の途中の「>」は引用の行ではない
+])
+def test_check_placeholders_counts_outside_quotes_tables_and_mid_gt(line):
+    assert [h[1] for h in cp.find(line + "\n")] == ["番号は後で書き足す"]
+
+
+@pytest.mark.parametrize("line,word", [
+    ("この番号は後で書き足します。", "番号は後で書き足します"),
+    ("番号はあとで埋めます", "番号はあとで埋めます"),
+    ("この番号は後で書く", "後で書く"),
+    ("番号は後で追記", "後で追記"),
+    ("この表は後ほど 追記", "後ほど 追記"),
+    ("番号はあとで書きたす", "番号はあとで書きたす"),
+    ("ここに後で追記する", "ここに後で追記する"),
+])
+def test_check_placeholders_wider_word_forms(line, word):
+    assert [h[1] for h in cp.find(line + "\n")][0] == word
+
+
+@pytest.mark.parametrize("line", [
+    "番号は後で追記した", "カード 7 の D9b の後に書き足しました", "✕ を後で埋めた",
+    "D9b を書いた後で表を書く決まり", "崩れたと分かった後で記述する",
+])
+def test_check_placeholders_past_and_descriptive_forms_pass(line):
+    assert cp.find(line + "\n") == []
+
+
+def test_check_placeholders_unclosed_fence_stops(tmp_path, capsys):
+    p = tmp_path / "c.md"
+    p.write_text("# x\n\n```\n見本\n\n番号は後で書き足す\n", encoding="utf-8")
+    assert cp.main([str(p)]) == 1
+    out = capsys.readouterr().out
+    assert ":3: ``` の囲みが閉じていない" in out
+    p.write_text("# x\n\n```\n見本\n```\n", encoding="utf-8")
+    assert cp.main([str(p)]) == 0
+
+
+def test_check_placeholders_default_is_recursive():
+    assert cp.DEFAULT_GLOB.endswith(os.path.join("docs", "ANALYSIS", "**", "*.md"))
+
+
 # ---------------------------------------------------------------- commit_gate.sh
 
 def _gate_repo(tmp_path):
@@ -360,7 +507,10 @@ def _gate_repo(tmp_path):
     return r, env
 
 
-def _gate(r, env, msg="docs: test"):
+MSG = "docs: test\n\nClaude-Session: https://example.invalid/session"
+
+
+def _gate(r, env, msg=MSG):
     p = subprocess.run(["sh", str(r / "scripts" / "analysis" / "commit_gate.sh"), msg], cwd=r, env=env,
                        capture_output=True, text=True)
     log = subprocess.run(["git", "log", "--oneline"], cwd=r, env=env, capture_output=True, text=True).stdout
@@ -384,7 +534,7 @@ def test_commit_gate_stops_on_placeholder(tmp_path):
 
 def test_commit_gate_commits_when_both_clean(tmp_path):
     r, env = _gate_repo(tmp_path)
-    rc, out, log = _gate(r, env, "docs: clean")
+    rc, out, log = _gate(r, env, "docs: clean\n\nClaude-Session: https://example.invalid/session")
     assert rc == 0, out
     assert "docs: clean" in log
     files = subprocess.run(["git", "show", "--name-only", "--format="], cwd=r, env=env,
@@ -396,3 +546,54 @@ def test_commit_gate_needs_message(tmp_path):
     r, env = _gate_repo(tmp_path)
     rc, _, log = _gate(r, env, "")
     assert rc == 2 and log == ""
+
+
+def test_commit_gate_needs_session_trailer(tmp_path):
+    r, env = _gate_repo(tmp_path)
+    rc, out, log = _gate(r, env, "docs: no trailer")
+    assert rc == 1 and "Claude-Session" in out and log == ""
+
+
+def _fake_checker(r, text, code):
+    (r / "scripts" / "check_findings_ledger.py").write_text(
+        f"import sys\nprint({text!r})\nsys.exit({code})\n", encoding="utf-8")
+
+
+def test_commit_gate_reads_exit_code_even_if_line_says_zero(tmp_path):
+    """壊し方 M13 を落とす: 最後の行が「問題 0」でも、終了コードが 1 なら止める。"""
+    r, env = _gate_repo(tmp_path)
+    _fake_checker(r, "観察の行 1・カードの節 1・問題 0", 1)
+    rc, out, log = _gate(r, env)
+    assert rc == 1 and "終了コード 1" in out and log == ""
+
+
+def test_commit_gate_reads_last_line_even_if_exit_code_is_zero(tmp_path):
+    """壊し方 M14 を落とす: 終了コードが 0 でも、最後の行が「問題 0」で終わらなければ止める。"""
+    r, env = _gate_repo(tmp_path)
+    _fake_checker(r, "観察の行 1・カードの節 1・問題 1", 0)
+    rc, out, log = _gate(r, env)
+    assert rc == 1 and "問題 1" in out and log == ""
+
+
+def test_commit_gate_stops_when_index_has_files_outside_docs(tmp_path):
+    r, env = _gate_repo(tmp_path)
+    (r / "src.py").write_text("x = 1\n", encoding="utf-8")
+    subprocess.run(["git", "add", "src.py"], cwd=r, env=env, check=True)
+    rc, out, log = _gate(r, env)
+    assert rc == 1 and "src.py" in out and "docs/ の外" in out and log == ""
+
+
+@pytest.mark.parametrize("script", ["scripts/check_findings_ledger.py", "scripts/analysis/check_placeholders.py"])
+def test_commit_gate_missing_checker_says_so(tmp_path, script):
+    r, env = _gate_repo(tmp_path)
+    (r / script).unlink()
+    rc, out, log = _gate(r, env)
+    assert rc == 1 and f"検査の台本 {script} が無い" in out and log == ""
+
+
+def test_commit_gate_checks_placeholders_in_analysis_subdirs(tmp_path):
+    r, env = _gate_repo(tmp_path)
+    (r / "docs" / "ANALYSIS" / "sub").mkdir()
+    (r / "docs" / "ANALYSIS" / "sub" / "x.md").write_text("番号は後で書き足す\n", encoding="utf-8")
+    rc, out, log = _gate(r, env)
+    assert rc == 1 and "sub/x.md" in out and log == ""
