@@ -9946,3 +9946,12 @@ L-331 で見つかった `data_quality.py`(09-18 18:09 JST 起動、3 日居座�
 
 
 追記(L-609): オーナー「**監査役の変更を入れる許可 両方承認します。**」を受けて、解除の印を作り、文案 (1)〜(3) をそのまま当て、解除の印を消した。コミットの git add もフックで止まったので、コミットのためにもう 1 回作って消した(この指示で計 2 回)。定義のファイルは指紋の台帳(`HOOK_MANIFEST.sha256`)に載っていないので、台帳の再生成は要らなかった【事実: `grep -n "owner-auditor" docs/AUDITOR/HOOK_MANIFEST.sha256` → 出力なし】。
+
+## 080 — 分析の文書の骨組みのフック β の追加(オーナー指示 L-694、2026-10-05)
+
+オーナー逐語(L-694): 「**案1+α+βを実施してください。フックもスキルの変更も許可します。**」(案は L-693)。
+
+- 新しいフック `.claude/hooks/analysis_skeleton_gate.sh`(PreToolUse、Write|Edit|MultiEdit|Bash)。`docs/ANALYSIS/` の `.md`(README を除く)への書き込みの、書いた後の中身に、分析のスキル第 2 部の手順ごとの節とスキルの本文の写しが、スキルの順で一字違わず揃っていなければ止める。Bash での `docs/ANALYSIS/` への書き込みは止める。
+- 骨組みを作る台本 `scripts/analysis/diag_skeleton.py`、試験 `tests/research/test_diag_skeleton.py`(フックを何もしない版に差し替えると落ちる試験があることを確かめた)。
+- `settings.json` に PreToolUse の項目を 1 つ足した。台帳を再生成した。解除の印 `.claude/state/owner_unlock_hooks` をこの指示で作り(作る呼び出しと、入れて消す呼び出しは別。作った回数は OWNER_LOG の L-694 結果に書く)、入れ終えた呼び出しの中で消した。
+- 限界: 形を見るだけで読みの正しさは見ない(L-688)。`docs/ANALYSIS/` の外に書く・別のファイルの台本から書くと迂回できる(L-691)。手順を上から順に埋めたかは見ない。

@@ -76,7 +76,7 @@
 - テスト: `PYTHONPATH=src python -m pytest`(`addopts = "-q"` があるので `-q` を足さない)。件数は書かない。
 - `git pull` 後は必ず `pip install -e ".[dev]"`(`docs/OPERATIONS.md` §4.5。Windows は `deploy\restart_all.bat`)。Windows 運用は `docs/OPERATIONS.md` §5、ON1 実弾ジョブは `docs/OPERATIONS_JPX.md` §5.1。
 - 新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する(押し出しの関門 `githooks/pre-push` は実行するまで効かない)。
-- フックは 6 本(実物は `ls .claude/hooks`。一覧と経緯は `docs/AUDITOR/ACTION_LOG.md` 063・076・078)。フック・`settings.json`・`githooks/`・監査役の定義はオーナーの指示があったときだけ変え(A-16)、変えたら同じコミットで `sh scripts/regen_hook_manifest.sh`。台帳(`docs/AUDITOR/HOOK_MANIFEST.sha256`)に載ったファイルを消す・書き換えるときは、削除・台帳の再生成・コミット・押し出しを 1 回の Bash 呼び出しにまとめて最後に打つ(I-012)。`settings.json` にはスキーマの鍵しか置かない(I-010)。
+- フックは 7 本(実物は `ls .claude/hooks`。一覧と経緯は `docs/AUDITOR/ACTION_LOG.md` 063・076・078・080)。フック・`settings.json`・`githooks/`・監査役の定義はオーナーの指示があったときだけ変え(A-16)、変えたら同じコミットで `sh scripts/regen_hook_manifest.sh`。台帳(`docs/AUDITOR/HOOK_MANIFEST.sha256`)に載ったファイルを消す・書き換えるときは、削除・台帳の再生成・コミット・押し出しを 1 回の Bash 呼び出しにまとめて最後に打つ(I-012)。`settings.json` にはスキーマの鍵しか置かない(I-010)。
 - `python3 scripts/verify_gates.py` は関門の部品を叩くだけで、ハーネスが呼んでいるかは見ない。効いているかを確かめる唯一の方法は、止まるはずの操作をして止まるかを見ること(`docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md`)。
 - 数え直しは範囲を切らずに次を全部打ち、コマンドを結果と一緒に出す(L-173): ファイル数 `git ls-files -z | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c` / 行数 `git ls-files -z | xargs -0 grep -c '<語>' | grep -v ':0$'` / ファイルごとの出現数 `git ls-files -z | xargs -0 grep -o '<語>' | cut -d: -f1 | uniq -c` / 合計 `git ls-files -z | xargs -0 grep -oh '<語>' | wc -l`。範囲を切ったら切ったことを書き、「全部数えた」と書かない。
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成。ダッシュボード: http://127.0.0.1:8300
@@ -90,6 +90,7 @@
 ## 5. 研究の規律
 
 - 新戦略とパラメータチューニングはすべて `.claude/skills/research-protocol` に従う。規律の本文はそこにだけ置き、ここには写さない(バックテスト環境の刷新 L-405 で変わる)。
+- 分析(測定の結果・データ・仕組みを読んで知見を書くこと)は、分析のスキル `.claude/skills/analysis-lens` を呼び出し、その「呼び出したら最初にすること」から始める。1 単位(カード 1 枚・問い 1 つ)ごとに呼び直し、`scripts/analysis/diag_skeleton.py` で `docs/ANALYSIS/` に骨組みを作り、手順の節を上から埋める。骨組みの無い書き込みはフック `analysis_skeleton_gate.sh` が止める(L-694)。経緯となったオーナーの言葉: 「**分析には分析スキルを使うって当たり前のことをどうやったらあなたはしてくれるのか**」(L-685)。
 - 監査を掛ける場所は 3 点(L-164 承認、L-202 で 3 点に): ① 判定区間を開ける前(`src/bot/research/sealed.py: load_sealed`・`scripts/phase2/p2_02_final.py: check_guards`の門)② 測定後・報告前(`scripts/judge_gates.py --unit` → `scripts/_research_audit_gate.py`。監査役には事前登録と生の出力の両方を渡し、監査のあとに数値を変えたら記録して監査をやり直す)③ フック・設定・監査役の定義の変更(指紋の台帳 + `_verify_manifest.sh` + `githooks/pre-push`)。
 - 全捨て(L-019)。オーナー逐語: 「**盲目的に全捨てが妥当。KNOWLEDGE.md すらも捨てれば同じ過ちを繰り返さない**」。過去の検証結果・分析結果は破棄済み。git 履歴から掘り起こして根拠に使わない。「既に棄却済み」と書かない(「本単位では測らない」と書く)。引用してよい過去の数値は無い。
 - 進め方(L-019)。オーナー逐語: 「**過去の検証結果を軸にした優先度など何の意味もない。私が思いつく戦略と、私が思いつけないあなたが見つけた戦略を、片っ端から検証し知見を深め、最強の戦略へブラッシュアップしていく。これが本来私がやりたかったこと**」。市場の順序は 暗号資産 → FX → 株。案の一覧は `docs/STRATEGY_IDEAS.md`(優先順位は書かない)。
