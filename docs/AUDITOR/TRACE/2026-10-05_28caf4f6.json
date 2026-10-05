@@ -253,12 +253,12 @@
   {
    "move": 10,
    "tools": {
-    "Bash": 72,
+    "Bash": 74,
     "Edit": 12,
     "Write": 4,
     "Read": 7
    },
-   "n_tools": 95,
+   "n_tools": 97,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
