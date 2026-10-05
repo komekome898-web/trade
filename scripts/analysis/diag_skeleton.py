@@ -86,15 +86,24 @@ def new_doc(unit: str, date: str) -> str:
 
 
 def refresh(path: str) -> str:
-    """写し(<!-- step:X --> 〜 <!-- /step:X -->)だけを今のスキルの本文に入れ替える。当てたことの欄は残す。"""
+    """写し(<!-- step:X --> 〜 <!-- /step:X -->)を今のスキルの本文に入れ替える。当てたことの欄は残す。
+    スキルに手順が足された後(L-702 の D9b など)、文書に無い節は、スキルの順の位置(次にある節の見出しの手前、
+    次が無ければ文書の終わり)に、写しと空の「当てたこと」の欄で足す。"""
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     steps = skill_steps()
     names = [s[0] for s in steps]
-    have = re.findall(r"<!-- step:(\S+) -->", text)
-    missing = [n for n in names if n not in have]
-    if missing:
-        raise SystemExit(f"手順の節が無い: {', '.join(missing)}(--refresh は写しの入れ替えだけ。節を足すなら作り直す)")
+    for i, (name, head, body) in enumerate(steps):
+        if f"<!-- step:{name} -->" in text:
+            continue
+        block = "\n".join(step_block(name, head, body))
+        nxt = next((n for n in names[i + 1:] if f"<!-- step:{n} -->" in text), None)
+        if nxt is None:
+            text = text.rstrip("\n") + "\n\n" + block
+            continue
+        at = text.index(f"<!-- step:{nxt} -->")
+        at = text.rindex("\n## ", 0, at) + 1
+        text = text[:at] + block + "\n" + text[at:]
     for name, head, body in steps:
         pat = re.compile(rf"<!-- step:{re.escape(name)} -->\n.*?<!-- /step:{re.escape(name)} -->", re.S)
         text = pat.sub(lambda m: "\n".join([f"<!-- step:{name} -->", *quote(body), f"<!-- /step:{name} -->"]), text, count=1)

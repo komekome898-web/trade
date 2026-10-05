@@ -26,6 +26,9 @@ GOOD_ROW = """
 - 否定を含む: いいえ
 - 渡す先: カツオ(ヒゲ逆張り)の降り方の改良
 - 次の問い: 長く持ったときの降り方を変えて測る
+- なぜの仮説: ① 短く持つと戻りだけを取る ② 偶然 ③ 測りの癖(約定の側)
+- 予言: ①-a 別の期間でも短く持つ方が稼ぐ(外れ = 区間が 0 を含む)→ 未 / 試した 1・当たった 0・外れた 0・未 1
+- 確かめのデータ: 見つけたのと同じ(表 1)
 - 状態: 開いている
 """
 
@@ -137,3 +140,43 @@ def test_report_needs_section_with_next_move():
     assert cfl.check_report_text(ok, ledger) == []
     assert cfl.check_report_text(ok.replace("次の手", "次"), ledger)
     assert cfl.check_report_text(ok.replace("K-001", "K-005"), ledger)
+
+
+INITIAL = "初期値(L-702 で欄を足した。1 行ずつは未確認)"
+
+
+def test_new_fields_must_exist():
+    """L-702 で足した 3 つの欄(なぜの仮説・予言・確かめのデータ)が無い行は止まる。"""
+    for name in ("なぜの仮説", "予言", "確かめのデータ"):
+        lines = [ln for ln in GOOD_ROW.split("\n") if not ln.startswith(f"- {name}:")]
+        errs = _errs("\n".join(lines))
+        assert any(name in e and "無い" in e for e in errs), name
+
+
+def test_confirmed_needs_other_data():
+    """「確かめた」は、見つけるのに使っていないデータで予言が当たったときだけ(L-702)。"""
+    conf = GOOD_ROW.replace("状態: 開いている", "状態: 確かめた(K-001)")
+    errs = _errs(conf)
+    assert any("確かめた" in e and "別" in e for e in errs)
+    ok = conf.replace("確かめのデータ: 見つけたのと同じ(表 1)", "確かめのデータ: 別: Binance の 2024 年の 5 分足(見つけるのに使っていない)")
+    assert _errs(ok) == []
+
+
+def test_data_field_values():
+    errs = _errs(GOOD_ROW.replace("確かめのデータ: 見つけたのと同じ(表 1)", "確かめのデータ: たぶん別"))
+    assert any("確かめのデータ" in e for e in errs)
+    for bad in ("未記入", "なし", ""):
+        errs = _errs(GOOD_ROW.replace("① 短く持つと戻りだけを取る ② 偶然 ③ 測りの癖(約定の側)", bad))
+        assert any("なぜの仮説" in e for e in errs), bad
+
+
+def test_initial_value_only_for_rows_before_the_change():
+    """初期値は、欄を足す前(測った日 2026-10-05 以前)の行だけ許す。それより後の行は中身を書く。"""
+    init = GOOD_ROW
+    for name, val in (("なぜの仮説", "① 短く持つと戻りだけを取る ② 偶然 ③ 測りの癖(約定の側)"),
+                      ("予言", "①-a 別の期間でも短く持つ方が稼ぐ(外れ = 区間が 0 を含む)→ 未 / 試した 1・当たった 0・外れた 0・未 1"),
+                      ("確かめのデータ", "見つけたのと同じ(表 1)")):
+        init = init.replace(f"- {name}: {val}", f"- {name}: {INITIAL}")
+    assert _errs(init) == []
+    errs = _errs(init.replace("2026-10-03", "2026-10-06"))
+    assert sum("初期値" in e for e in errs) == 3

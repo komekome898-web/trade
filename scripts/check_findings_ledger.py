@@ -14,6 +14,9 @@
 - 状態が「確かめた / 覆った」なのに、指す K 番号が台帳に無い
 - カードの節(`### カード: …`)で、閉じたのに改良の周が 0、または次に打てる手が空
 - カードの物差しの欄が、台帳に無い K 番号を指す
+- 欄「なぜの仮説」「予言」「確かめのデータ」(L-702 で足した)が無い・空。確かめのデータが
+  「見つけたのと同じ…」「別: …」のどちらでもない。初期値は欄を足す前(測った日 2026-10-05 以前)の行だけ
+- 状態が「確かめた」なのに、確かめのデータが「別: …」(見つけるのに使っていないデータ)でない(L-702)
 
 `--report <報告.md>` を付けると、測定の報告に「## 知見台帳に足した行」の節があり、
 そこに書かれた K 番号がすべて台帳にあり、「次の手」が書かれているかも見る。
@@ -38,8 +41,13 @@ ZENSUTE = date(2026, 9, 8)
 
 OBS_FIELDS = (
     "観察", "対象", "出所", "測った日", "射程", "大きさ", "確かさ", "監査",
-    "否定を含む", "渡す先", "次の問い", "状態",
+    "否定を含む", "渡す先", "次の問い", "なぜの仮説", "予言", "確かめのデータ", "状態",
 )
+# L-702(2026-10-05)で足した欄。足す前の行には初期値を入れ、なぜと予言のスキルが候補を受け取ったときに 1 行ずつ埋める。
+WHY_FIELDS = ("なぜの仮説", "予言", "確かめのデータ")
+INITIAL = "初期値(L-702 で欄を足した。1 行ずつは未確認)"
+INITIAL_UNTIL = date(2026, 10, 5)
+DATA_SAME, DATA_OTHER = "見つけたのと同じ", "別:"
 CARD_FIELDS = (
     "状態", "場面ごとの効き", "なぜ", "安定", "重なり", "経費と約定",
     "bitFlyer で効くか", "改良の周", "次に打てる手",
@@ -111,7 +119,7 @@ def check_ledger_text(text: str, repo: Path = REPO) -> list[str]:
         for name in OBS_FIELDS:
             if name not in row:
                 errors.append(f"{at}: 欄「{name}」が無い")
-        for name in ("観察", "渡す先", "次の問い", "射程", "大きさ", "出所"):
+        for name in ("観察", "渡す先", "次の問い", "射程", "大きさ", "出所") + WHY_FIELDS:
             if name in row and row[name] in EMPTY_VALUES:
                 errors.append(f"{at}: 欄「{name}」が「{row[name]}」だけ(出口にしない。L-604)")
         for name, val in row.items():
@@ -145,7 +153,19 @@ def check_ledger_text(text: str, repo: Path = REPO) -> list[str]:
         for p in src:
             if not (repo / p.split("#")[0].split(":")[0]).exists():
                 errors.append(f"{at}: 出所のファイル `{p}` がリポジトリに無い")
+        try:
+            old_row = date.fromisoformat(row.get("測った日", "")) <= INITIAL_UNTIL
+        except ValueError:
+            old_row = False
+        for name in WHY_FIELDS:
+            if row.get(name) == INITIAL and not old_row:
+                errors.append(f"{at}: 欄「{name}」の初期値は、欄を足す前(測った日 {INITIAL_UNTIL} 以前)の行だけ。中身を書く")
+        data = row.get("確かめのデータ", "")
+        if data and data != INITIAL and not (data.startswith(DATA_SAME) or data.startswith(DATA_OTHER)):
+            errors.append(f"{at}: 確かめのデータ「{data[:20]}…」は「{DATA_SAME}…」「{DATA_OTHER} …」のどちらでもない")
         st = row.get("状態", "")
+        if st.startswith("確かめた") and not data.startswith(DATA_OTHER):
+            errors.append(f"{at}: 状態が確かめたなのに、確かめのデータが「{DATA_OTHER} …」(見つけるのに使っていないデータ)でない(L-702)")
         if st:
             if st == "開いている":
                 pass

@@ -47,7 +47,7 @@ def doc(root, name="2026-10-05_x.md"):
 def test_steps_in_skill_order():
     names = [n for n, _, _ in ds.skill_steps()]
     assert names[0] == "P" and names[-1] == "D10"
-    assert names == ["P", "D0", "D8", "D1", "D1b", "D2", "D3", "D4", "D5", "D6", "D7", "D9", "D10"]
+    assert names == ["P", "D0", "D8", "D1", "D1b", "D2", "D3", "D4", "D5", "D6", "D7", "D9", "D9b", "D10"]
     assert all(body for _, _, body in ds.skill_steps())
 
 
@@ -125,3 +125,40 @@ def test_refresh_keeps_filled_sections(root, monkeypatch):
         fh.write(text.replace("> - 入力: カードの文書", "> - 入力: 古い版の文", 1))
     out = ds.refresh(p)
     assert "前提: 書いた。" in out and out == text
+
+
+def _drop_step(text, name):
+    """節 1 つ(見出しから次の見出しの手前まで)を消す = その節が無かった古い版の文書。"""
+    a = text.index(f"<!-- step:{name} -->")
+    a = text.rindex("\n## ", 0, a) + 1
+    b = text.index("\n## ", text.index(f"<!-- /step:{name} -->")) + 1
+    return text[:a] + text[b:]
+
+
+def test_old_document_without_new_step_is_stopped_then_refresh_adds_it(root):
+    """スキルに手順を足した後(L-702 の D9b)、その節が無い古い文書への書き込みは止まり、
+    --refresh が無い節をスキルの順の位置に空の欄で足すと通る。書いた欄は残る。"""
+    p = doc(root)
+    full = ds.new_doc("x", "2026-10-05").replace("(未記入)", "前提: 書いた。", 1)
+    old = _drop_step(full, "D9b")
+    assert "<!-- step:D9b -->" not in old
+    with open(p, "w", encoding="utf-8") as fh:
+        fh.write(old)
+    rc, err = run(root, "Edit", {"file_path": p, "old_string": "前提: 書いた。", "new_string": "前提: 書き直した。"})
+    assert rc == 2 and "手順 D9b の節" in err
+    out = ds.refresh(p)
+    assert out == full
+    assert out.index("<!-- step:D9 -->") < out.index("<!-- step:D9b -->") < out.index("<!-- step:D10 -->")
+    with open(p, "w", encoding="utf-8") as fh:
+        fh.write(out)
+    rc, err = run(root, "Edit", {"file_path": p, "old_string": "前提: 書いた。", "new_string": "前提: 書き直した。"})
+    assert rc == 0, err
+
+
+def test_refresh_adds_missing_last_and_first_steps(root):
+    p = doc(root)
+    full = ds.new_doc("x", "2026-10-05")
+    for name in ("D10", "P"):
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write(_drop_step(full, name) if name != "D10" else full[:full.rindex("\n## D10 ") + 1])
+        assert ds.refresh(p) == full, name
