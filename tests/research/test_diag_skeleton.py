@@ -46,8 +46,8 @@ def doc(root, name="2026-10-05_x.md"):
 
 def test_steps_in_skill_order():
     names = [n for n, _, _ in ds.skill_steps()]
-    assert names[0] == "P" and names[-1] == "D10"
-    assert names == ["P", "D0", "D8", "D1", "D1b", "D2", "D3", "D4", "D5", "D6", "D7", "D9", "D9b", "D10"]
+    assert names[0] == "P" and names[-1] == "R"  # R 相方の検め(L-711)は手順の最後
+    assert names == ["P", "D0", "D8", "D1", "D1b", "D2", "D3", "D4", "D5", "D6", "D7", "D9", "D9b", "D10", "R"]
     assert all(body for _, _, body in ds.skill_steps())
 
 
