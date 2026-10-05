@@ -260,7 +260,8 @@ def test_undecided_log_does_not_change_the_rolling_center_form_either():
 
 
 # ---------------------------------------------------------------- --window(窓の 10 日。合成の置き場だけ。窓のデータは開かない)
-CM = sys.modules[w.load_bars.__module__]  # w が読み込んだ common
+CM = sys.modules["_w4measure__common"]  # w が読み込んだ common(名前 common で引き直さない。tm._load_w4 の注)
+assert w.load_bars.__globals__ is CM.__dict__
 
 
 def test_window_table_is_the_ten_2024_days_and_refuses_other_names():
@@ -289,6 +290,7 @@ def _synthetic_root(tmp_path, monkeypatch, env=False, approval=False):
     (r / "backtest_data" / "phase2_sealed" / "P2-08").mkdir(parents=True)
     monkeypatch.setattr(CM, "ROOT", str(r))
     monkeypatch.setattr(w, "ROOT", str(r))
+    monkeypatch.setitem(sys.modules, "common", CM)  # 台本の中の遅い `from common import` があっても CM を読む
     monkeypatch.delenv(CM.WINDOW1_ENV, raising=False)
     if env:
         monkeypatch.setenv(CM.WINDOW1_ENV, CM.WINDOW1_ENV_VALUE)

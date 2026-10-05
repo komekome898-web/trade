@@ -23,24 +23,44 @@ from bot.research.katsuo_limit_sim import (EXIT_CLOSE, EXIT_DOTEN, EXIT_END, EXI
 
 
 def _load_w4(name):
-    """scripts/w4_measure の台本を読み込む。台本は `from common import ...` で同じ置き場の common を読むが、
-    全部の試験を続けて回すと別の試験が別の `common`(tests/bt/battery/item_0/adapters/common.py など)を
-    sys.modules に先に入れていて取り違える。読み込む間だけ別の置き場の common・post・run_v2 を外し、後で戻す。"""
+    """scripts/w4_measure の台本を読み込む(test_window1_loader・test_c2_limit_run_ref_filter・test_katsuo_limit_sim・
+    test_matilda_limit_sim の _load_w4 は同じ中身)。台本は `from common import ...` で同じ置き場の common を読むが、
+    別の試験は別の `common`(tests/bt/battery/item_0/adapters/common.py など)を同じ名前 common で使う。
+    - 読み込む間だけ、名前 common・post・run_v2 に w4_measure の物を置く。前に読んだ物は sys.modules の
+      `_w4measure__<名前>` に控えた同じ物を使う(全部の試験で w4_measure の common は 1 つ)。
+    - 終わったら名前 common・post・run_v2 を読み込む前の状態に戻す(前に無ければ消す)。他の試験に w4_measure の物を残さない。
+    - sys.path も読み込む前の並びに戻す(台本が自分の置き場を先頭に足したままにすると、別の試験の `import common` が
+      w4_measure の common.py を見つける)。
+    台本の common を試験で使うときは名前 common で引き直さず、`sys.modules["_w4measure__common"]` を使う。"""
     import importlib
     import os
     import sys
     d = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "w4_measure"))
-    if d not in sys.path:
-        sys.path.insert(0, d)
     if name in sys.modules:
         return sys.modules[name]
-    foreign = {k: sys.modules.pop(k) for k in ("common", "post", "run_v2") if k in sys.modules
-               and os.path.dirname(os.path.abspath(getattr(sys.modules[k], "__file__", None) or "")) != d}
+    shared = ("common", "post", "run_v2")
+
+    def mine(m):
+        return os.path.dirname(os.path.abspath(getattr(m, "__file__", None) or "")) == d
+
+    before = {k: sys.modules.pop(k) for k in shared if k in sys.modules}
+    for k, m in before.items():
+        if mine(m):
+            sys.modules.setdefault("_w4measure__" + k, m)
+    for k in shared:
+        if "_w4measure__" + k in sys.modules:
+            sys.modules[k] = sys.modules["_w4measure__" + k]
+    path_before = list(sys.path)
+    sys.path.insert(0, d)
     try:
         return importlib.import_module(name)
     finally:
-        for k, m in foreign.items():
-            sys.modules[k] = m
+        sys.path[:] = path_before  # 台本自身も置き場を sys.path の先頭に足す(c4_limit_run・c2_limit_run・run_v2)
+        for k in shared:
+            m = sys.modules.pop(k, None)
+            if m is not None and mine(m):
+                sys.modules.setdefault("_w4measure__" + k, m)
+        sys.modules.update(before)
 
 
 NS = 1_000_000_000
@@ -694,7 +714,6 @@ def test_exit_signal_is_empty_for_doten():
 import sys  # noqa: E402
 
 sys.path.insert(0, "/home/user/trade/scripts")
-sys.path.insert(0, "/home/user/trade/scripts/w4_measure")
 import measure_katsuo_dispersion as k1_base  # noqa: E402
 import measure_katsuo_effect as k1_eff  # noqa: E402
 import measure_katsuo_robustness as k1_rb  # noqa: E402
