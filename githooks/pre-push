@@ -7,6 +7,13 @@
 # 残したのは **指紋の照合** だけ: フック・`settings.json`・`githooks/`・監査役の定義が
 # 台帳 `docs/AUDITOR/HOOK_MANIFEST.sha256` と一致しなければ押し出さない。
 #
+# 2026-10-05、オーナーの指示 L-706「**3.y**」(L-705 の案 §5 (3)「押し出しの門(案 C)を入れてよいか」への yes)で、
+# **分析の門** を 2 つ足した(案 C の (i)(ii)。(iii)「相方の節が空でない」は渡す情報の形が決まってから)。
+#   (i) 知見台帳の検査 `scripts/check_findings_ledger.py` が終了コード 0 で、最後の行が「問題 0」で終わる
+#   (ii) 仮置きの検査 `scripts/analysis/check_placeholders.py` が終了コード 0(docs/ANALYSIS/ の下に「後で書き足す」の類が無い)
+# 経緯: 10-05、台帳の検査に問題 2 件を残したまま押し出した(3fb6c4e7)。仮置きが 4 枚に残った。
+# 台帳・分析の置き場があるのに検査の台本が無いときは、開けずに止める(検査を消して門を開けさせない)。
+#
 # **なぜ git 側に置くか。**どう呼ばれても、押し出しをするのは git である。
 # env / eval / xargs / 別名 / スクリプト経由、どれでも git は必ずこのフックを実行する。
 #
@@ -17,6 +24,9 @@
 #   3. `core.hooksPath` を別の場所に向ければ、このフックごと無効にできる。
 #   4. このファイルと `scripts/install_git_hooks.sh` は指紋の台帳に入れてあるので、
 #      書き換えると他の操作が止まる。台帳を同じコミットで直せば通る。
+#   5. 分析の門が見るのは作業ツリーの今の中身で、押し出すコミットの中身ではない
+#      (コミットしていない直しがあれば、それを含めて検める)。
+#   6. 分析の門が見るのは形(台帳の欄・仮置きの語)だけで、読みの正しさは見ない。
 # **この関門はうっかりを止めるものであって、意図した迂回は止めない。**
 # 迂回はコミットの差分と reflog に残る。
 
@@ -28,6 +38,37 @@ if [ -f .claude/hooks/_verify_manifest.sh ]; then
   if ! sh .claude/hooks/_verify_manifest.sh </dev/null; then
     echo "" >&2
     echo "[pre-push] 指紋の台帳と食い違っているので押し出しを止めた。オーナーの指示で変えたのなら、同じコミットで sh scripts/regen_hook_manifest.sh を実行すること。" >&2
+    exit 1
+  fi
+fi
+
+# 分析の門 (i) 知見台帳の検査
+if [ -f docs/RESEARCH/FINDINGS_LEDGER.md ]; then
+  if [ ! -f scripts/check_findings_ledger.py ]; then
+    echo "[pre-push] 知見台帳があるのに検査の台本 scripts/check_findings_ledger.py が無いので押し出しを止めた。" >&2
+    exit 1
+  fi
+  LEDGER_OUT="$(python3 scripts/check_findings_ledger.py 2>&1)"
+  LEDGER_RC=$?
+  LEDGER_LAST="$(printf '%s\n' "$LEDGER_OUT" | tail -n 1)"
+  if [ "$LEDGER_RC" -ne 0 ] || ! printf '%s\n' "$LEDGER_LAST" | grep -q '問題 0$'; then
+    printf '%s\n' "$LEDGER_OUT" >&2
+    echo "[pre-push] 知見台帳の検査が「問題 0」でないので押し出しを止めた(終了コード $LEDGER_RC)。" >&2
+    exit 1
+  fi
+fi
+
+# 分析の門 (ii) 仮置きの検査
+if [ -d docs/ANALYSIS ]; then
+  if [ ! -f scripts/analysis/check_placeholders.py ]; then
+    echo "[pre-push] 分析の置き場があるのに仮置きの検査の台本 scripts/analysis/check_placeholders.py が無いので押し出しを止めた。" >&2
+    exit 1
+  fi
+  PH_OUT="$(python3 scripts/analysis/check_placeholders.py 2>&1)"
+  PH_RC=$?
+  if [ "$PH_RC" -ne 0 ]; then
+    printf '%s\n' "$PH_OUT" >&2
+    echo "[pre-push] 分析の文書に仮置き(後で書き足す の類)が残っているので押し出しを止めた。" >&2
     exit 1
   fi
 fi
