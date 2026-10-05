@@ -26931,9 +26931,10 @@
   {
    "move": 991,
    "tools": {
-    "Bash": 3
+    "Bash": 4,
+    "Agent": 1
    },
-   "n_tools": 3,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
