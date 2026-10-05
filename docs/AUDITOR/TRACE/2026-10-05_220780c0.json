@@ -26062,10 +26062,10 @@
   {
    "move": 959,
    "tools": {
-    "Bash": 7,
+    "Bash": 9,
     "Edit": 1
    },
-   "n_tools": 8,
+   "n_tools": 10,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": false,
