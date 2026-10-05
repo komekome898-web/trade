@@ -27042,14 +27042,14 @@
   {
    "move": 995,
    "tools": {
-    "Bash": 29,
+    "Bash": 30,
     "Read": 13,
     "Write": 8,
     "Agent": 4,
     "Edit": 16,
     "SendMessage": 2
    },
-   "n_tools": 72,
+   "n_tools": 73,
    "read_goal": false,
    "first_write_at": 5,
    "table_shown": false,
