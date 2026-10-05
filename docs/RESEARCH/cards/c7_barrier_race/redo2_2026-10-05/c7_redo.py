@@ -58,8 +58,13 @@ def ratio_by_day(dayarr, vals, pd):
 
 def main():
     out = ["# カード 7 のやり直しの表(保存済みの出力から。bp、経費の前、成行・次の足の始値で約定)", ""]
-    import vol_split_daily as vs
-    cls = vs.classify(vs.daily_vol(vs.load_closes_by_day()))
+    import pickle
+    cache = os.environ.get("C7_CLS_CACHE")  # 速さのため: 区分(vol_split_daily.classify の戻り値)を保存した pickle があれば使う
+    if cache and os.path.exists(cache):
+        cls = pickle.load(open(cache, "rb"))
+    else:
+        import vol_split_daily as vs
+        cls = vs.classify(vs.daily_vol(vs.load_closes_by_day()))
     f = lambda q: "—" if q["per_trade"] is None else (f"{q['per_trade']:+.3f}" + ("" if q["lo"] is None else f" [{q['lo']:+.3f}, {q['hi']:+.3f}]"))  # noqa: E731
     d2 = ["## D2 前の日(日本時間)の荒れ具合 × 前半・後半(1 日あたり bp、daily.csv)", "", "| 窓 | 区分 | 全期間: 日数・1 日あたり [区間] | 前半 | 後半 |", "|---|---|---|---|---|"]
     dec_t = ["## 決定ごと(持ち高 ≠ 0)。始値 → 始値(= 損益 P_t)・中ほどの値・対照(24 時間後)(bp/決定)", "",
@@ -67,8 +72,11 @@ def main():
              "|---|---|---|---|---|---|---|---|---|"]
     tr_t = ["## 取引ごと: 買い・売り × 本体(約定の始値 → 出の始値)・対照(24 時間後の同じ時刻から同じ向き・同じ長さ)(bp/取引)", "",
             "| 窓 | 向き | 期間 | 取引 | 本体 [区間] | 対照 [区間] | 本体 − 対照 [区間] |", "|---|---|---|---|---|---|---|"]
-    for v in ("1h", "1d", "1w"):
-        z = np.load(os.path.join(M, v, "run.npz"))
+    import time
+    for v in os.environ.get("C7_WINDOWS", "1h,1d,1w").split(","):
+        print(v, "start", time.strftime("%H:%M:%S"), flush=True)
+        _z = np.load(os.path.join(M, v, "run.npz"))
+        z = {k_: _z[k_] for k_ in _z.files}  # 圧縮された npz は z[名前] のたびに解き直すので、最初に 1 回だけ読む
         d = np.flatnonzero(z["decided"])
         m = len(d) - 2
         bar, fill, ex = d[:m], d[1:m + 1], d[2:m + 2]
