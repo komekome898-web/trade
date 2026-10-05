@@ -26960,11 +26960,12 @@
   {
    "move": 992,
    "tools": {
-    "Bash": 9,
+    "Bash": 11,
     "Write": 2,
-    "Agent": 2
+    "Agent": 2,
+    "SendMessage": 1
    },
-   "n_tools": 13,
+   "n_tools": 16,
    "read_goal": false,
    "first_write_at": 2,
    "table_shown": false,
