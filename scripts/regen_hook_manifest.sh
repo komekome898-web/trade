@@ -14,7 +14,7 @@ cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}" || exit 1
 # `install_git_hooks.sh` を書き換えれば `core.hooksPath` を別の場所へ向けられるので、
 # **関門の本体と同じ重さのファイルである。**
 for f in .claude/hooks/*.sh githooks/* .claude/settings.json \
-         .claude/agents/owner-model-auditor.md \
+         .claude/agents/owner-auditor.md \
          scripts/install_git_hooks.sh scripts/regen_hook_manifest.sh \
          scripts/_research_audit_gate.py; do
   [ -f "$f" ] || continue
