@@ -1,6 +1,7 @@
 """カード 4 の D2: 前の日の荒れ具合(vol_split_daily.classify、判断の時点で分かる)× 前半・後半。カード 1 の
-redo2 の台本と同じ形。日ごとの損益は diag_tables.load_run・daily_series(カードの測定は日本時間の日、取引の行は
-出の時刻の UTC の日。区分は日本時間の日で引くので、取引の行の走らせでは日の境が 9 時間ずれる【限界として書く】)。
+redo2 の台本と同じ形。取引は diag_tables.load_run で読み、日ごとの損益は出の時刻の日本時間の日に集める
+(区分も日本時間の日なので境がそろう。overlap_daily.py の _jst_day・days_between と同じ決まり: 出の時刻 − 1ns の日本時間の日)。
+2026-10-05 にアドバイザーの指摘(止める 2)で、出の時刻の UTC の日(9 時間ずれ)から直した。
 区間は diag_tables.mean_ci(日の塊 5 日・1,000 回・種 20261004)。前半・後半は日数で 2 つ。
     PYTHONPATH=src python3 docs/RESEARCH/cards/c4_owner_matilda_range/redo2_2026-10-05/d2_volsplit.py
 出力: このフォルダの D2_VOLSPLIT.md・d2_volsplit.json
@@ -15,6 +16,7 @@ sys.path.insert(0, os.path.join(REPO, "scripts/analysis"))
 sys.path.insert(0, os.path.join(REPO, "scripts/w4_measure"))
 sys.path.insert(0, os.path.join(REPO, "src"))
 import diag_tables as dt  # noqa: E402
+import overlap_daily as od  # noqa: E402
 import vol_split_daily as vs  # noqa: E402
 
 C2 = os.path.join(HERE, "..")
@@ -25,10 +27,15 @@ NM = {"low": "低", "mid": "中", "high": "高"}
 
 def main():
     cls = vs.classify(vs.daily_vol(vs.load_closes_by_day()))
-    res, out = {}, ["# カード 4 の D2: 前の日の荒れ具合 × 前半・後半(bp/日、経費の前)", "",
+    res, out = {}, ["# カード 4 の D2: 前の日の荒れ具合 × 前半・後半(bp/日、経費の前、日本時間の日)", "",
                     "| 走らせ | 前の日の区分 | 全期間: 日数・1 日あたり [区間] | 前半 | 後半 |", "|---|---|---|---|---|"]
     for name, path in RUNS.items():
-        daily = dt.daily_series(dt.load_run(path))
+        run = dt.load_run(path)
+        daily = {d: 0.0 for d in od.days_between(*run["summary"]["period"])}
+        for t in run["trades"]:
+            d = od._jst_day(int(t["exit_ns"]) - 1)
+            if d in daily:
+                daily[d] += t["pnl_bp"]
         days = sorted(daily)
         half = len(days) // 2
         parts = {"全期間": set(days), "前半": set(days[:half]), "後半": set(days[half:])}
