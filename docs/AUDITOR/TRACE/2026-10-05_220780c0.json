@@ -27042,14 +27042,14 @@
   {
    "move": 995,
    "tools": {
-    "Bash": 23,
-    "Read": 12,
-    "Write": 6,
-    "Agent": 2,
-    "Edit": 15,
+    "Bash": 29,
+    "Read": 13,
+    "Write": 8,
+    "Agent": 4,
+    "Edit": 16,
     "SendMessage": 2
    },
-   "n_tools": 60,
+   "n_tools": 72,
    "read_goal": false,
    "first_write_at": 5,
    "table_shown": false,
@@ -27067,8 +27067,8 @@
     ".claude/agents/": 0
    },
    "readdo_reads": 0,
-   "unlock_created": 0,
-   "unlock_in_test": 0
+   "unlock_created": 2,
+   "unlock_in_test": 1
   }
  ],
  "rollup": {
@@ -27109,13 +27109,13 @@
    "value": null
   },
   "R4_unlock_created": {
-   "num": 25,
+   "num": 27,
    "den": null,
    "value": null,
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 18,
+   "num": 19,
    "den": null,
    "value": null
   },
