@@ -1,11 +1,3 @@
-FX_BTC_JPY_20260918_191921.jsonl.gz  4057256   75       75        yes      34468522         
-FX_BTC_JPY_20260918_203625.jsonl.gz  8442986   194      194       yes      82237586         
-FX_BTC_JPY_20260918_235635.jsonl.gz  2366153   50       50        yes      21270558         
-FX_BTC_JPY_20260919_004909.jsonl.gz  2788707   52       52        yes      23730251         
-FX_BTC_JPY_20260919_014448.jsonl.gz  1050611   23       23        yes      9264283          
-FX_BTC_JPY_20260919_021027.jsonl.gz  19606     2        2         yes      159036           
-FX_BTC_JPY_20260919_021148.jsonl.gz  413687    11       11        yes      3802285          
-FX_BTC_JPY_20260919_022341.jsonl.gz  4078221   90       90        yes      38142125         
 FX_BTC_JPY_20260919_035959.jsonl.gz  2218807   49       49        yes      20646772         
 FX_BTC_JPY_20260919_045715.jsonl.gz  1934096   45       45        yes      18177136         
 FX_BTC_JPY_20260919_054624.jsonl.gz  728928    18       18        yes      6897992          
@@ -153,19 +145,23 @@ FX_BTC_JPY_20261003_190406.jsonl.gz  122       1        1         yes      70
 FX_BTC_JPY_20261003_190523.jsonl.gz  20949425  530      530       yes      216347399        
 FX_BTC_JPY_20261004_035730.jsonl.gz  202388    5        5         yes      1876433          
 FX_BTC_JPY_20261004_040338.jsonl.gz  37640185  897      897       yes      373398482        
-FX_BTC_JPY_20261004_190430.jsonl.gz  3432511   99       99        yes      39365275         
+FX_BTC_JPY_20261004_190430.jsonl.gz  50442863  941      941       yes      435913095        
+FX_BTC_JPY_20261005_104947.jsonl.gz  16500204  279      279       yes      138050128        
+FX_BTC_JPY_20261005_152950.jsonl.gz  2774200   47       47        yes      23019812         
+FX_BTC_JPY_20261005_161646.jsonl.gz  8592269   166      166       yes      74869307         
+FX_BTC_JPY_20261005_190409.jsonl.gz  4085606   92       92        yes      38770116         
 
-331 files scanned, 34 with a truncated last member, 28241590191 decompressed bytes recoverable in total
+335 files scanned, 34 with a truncated last member, 28912847374 decompressed bytes recoverable in total
 wrote C:\Users\ryoma\trade\data\WS_GZ_LISTING.json
-data_quality: 4036/12783 data/api_health.csv 2016 0.0s
-data_quality: 6599/12783 data/archive/bitmex/data/quote/20211127.csv.gz 6858033 1087.7s
-data_quality: budget exhausted after 6599/12783 files (1094.6s); the rest resumes next run
-data_quality: skipped 6597 unchanged
-data_quality: 31 datasets, 1235280686 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
-check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-04、E��度のしきぁE14 日)
-  単佁E167 件 / 台帳に行が無ぁE��佁E80 件 / 所在が実在しなぁE��E16 件 / 受領台帳に無ぁE��ァイル 0 倁E(0 単佁E / 最終確認日が古ぁE��E92 件
+data_quality: 4157/12952 data/api_health.csv 20987 0.4s
+data_quality: 6739/12952 data/archive/bitmex/data/quote/20211216.csv.gz 7032253 1545.8s
+data_quality: budget exhausted after 6739/12952 files (1553.9s); the rest resumes next run
+data_quality: skipped 6737 unchanged
+data_quality: 31 datasets, 1268958477 flagged rows total -> C:\Users\ryoma\trade\data\QUALITY.json
+check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-05、E��度のしきぁE14 日)
+  単佁E171 件 / 台帳に行が無ぁE��佁E84 件 / 所在が実在しなぁE��E16 件 / 受領台帳に無ぁE��ァイル 0 倁E(0 単佁E / 最終確認日が古ぁE��E92 件
 
-受領台帳: data\INTAKE_latest.json(両方あり、新しい data/ 側を使った、読込済、E5677 衁E
+受領台帳: data\INTAKE_latest.json(両方あり、新しい data/ 側を使った、読込済、E5854 衁E
 
 [飛�Eした表] ヘッダが標準形でなぁE�Eで鮮度検査の対象夁E(7 表)
   14 行目: 部品E| 役割 | 所在(11 衁E
@@ -179,7 +175,7 @@ check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-04�
 [飛�Eした行] セル数が�EチE��と合わなぁE(1 衁E
   行番号: 69
 
-(i) 台帳に行が無ぁE��佁E E80 件
+(i) 台帳に行が無ぁE��佁E E84 件
   | 単佁E| ファイル数 |
   | backtest_data/audit_fetch_P2-08_docs_20260906 | 10 |
   | backtest_data/audit_fetch_P2-08b_20260906 | 11 |
@@ -187,9 +183,11 @@ check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-04�
   | backtest_data/auto_bitflyer_executions_20260921 | 94 |
   | backtest_data/auto_oi_snapshots_20260905 | 2 |
   | backtest_data/auto_oi_snapshots_20260921 | 2 |
+  | backtest_data/auto_oi_snapshots_20261005 | 2 |
   | backtest_data/auto_okx_long_short_ratio_20261003 | 3 |
   | backtest_data/auto_okx_open_interest_1h_20260905 | 2 |
   | backtest_data/auto_okx_open_interest_1h_20260921 | 2 |
+  | backtest_data/auto_okx_open_interest_1h_20261005 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20260906 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20260907 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20260908 | 2 |
@@ -213,7 +211,9 @@ check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-04�
   | backtest_data/auto_okx_open_interest_5m_20261002 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20261003 | 2 |
   | backtest_data/auto_okx_open_interest_5m_20261004 | 2 |
+  | backtest_data/auto_okx_open_interest_5m_20261005 | 2 |
   | backtest_data/auto_venues_20260921 | 131 |
+  | backtest_data/auto_venues_20261005 | 118 |
   | backtest_data/binance_BTCUSDT_1m.csv | 1 |
   | backtest_data/binance_um_fundingRate_BTCUSDT_202001_202312 | 49 |
   | backtest_data/candles_BTC_JPY_20260820.csv | 1 |
@@ -285,116 +285,116 @@ check_data_ledger: docs/DATA.md と実物の相互参照 (基準日 2026-10-04�
 
 (iv) 最終確認日ぁE14 日より古ぁE��E E92 件
   | 衁E| 賁E�� | 最終確認日 | 経過日数 |
-  | 58 | TradingView MCP 経由の `BITFLYER:FXBTCJPY`  | 2026-09-16 | 18 |
-  | 59 | FX_BTC_JPY 1刁E��チャーチElightchart) | 2026-09-11 | 23 |
-  | 60 | BTC_JPY 1刁E��チャーチElightchart、現物) | 2026-09-11 | 23 |
-  | 61 | 板・ticker・紁E��E1刁E��度、監査用) | 2026-09-11 | 23 |
-  | 64 | 板 top5(高頻度) | 2026-09-11 | 23 |
-  | 65 | 紁E���Eticker(高頻度チE�EチE | 2026-09-11 | 23 |
-  | 66 | WS 生ログ(jsonl) | 2026-09-11 | 23 |
-  | 67 | **WS 生ログ(オーナ�E PC、未共朁E** | 2026-09-11 | 23 |
-  | 68 | 紁E��E31日ロングチE�EチEus、tardis形弁E | 2026-09-11 | 23 |
-  | 70 | 紁E��E31日スナップショチE��(2本) | 2026-09-11 | 23 |
-  | 71 | 紁E��E31日スナップショチE��(2026-09-08) | 2026-09-11 | 23 |
-  | 72 | 継続ローリング(生、日次更新) | 2026-09-11 | 23 |
-  | 73 | 1刁E�� 30日/継続結合 | 2026-09-11 | 23 |
-  | 74 | 渁E���E強制決渁Elosscut) 履歴 | 2026-09-12 | 22 |
-  | 75 | 板の深さ�E履歴(ヒストリカル) | 2026-09-11 | 23 |
-  | 76 | bitFlyer SFD・証拠金維持率・ロスカチE��閾値の一次賁E��(公式FAQ) | 2026-09-12 | 22 |
-  | 82 | Binance BTCUSDT 現物 1刁E��(積み上げ) | 2026-09-11 | 23 |
-  | 85 | Binance BTCUSDT 1秒足 / aggTrades | 2026-09-11 | 23 |
-  | 86 | Binance BTCUSDT 1秒足(高頻度サンプル) | 2026-09-11 | 23 |
-  | 87 | Binance XRPUSDT 1刁E1日/4時間足 | 2026-09-11 | 23 |
-  | 88 | Binance 賁E��調達率・板深さ�E渁E��Eこ�EチE�Eタセンターから) | 2026-09-11 | 23 |
-  | 89 | Bybit BTCUSDT 無期限 1刁E�� | 2026-09-11 | 23 |
-  | 90 | Bybit 現物/無期限 到達確認サンプル(2日刁E | 2026-09-11 | 23 |
-  | 91 | Bybit REST API(賁E��調達率・板・渁E��E | 2026-09-11 | 23 |
-  | 92 | Bybit 静的アーカイチE`public.bybit.com`、紁E���Eみ) | 2026-09-11 | 23 |
-  | 93 | OKX 賁E��調達率(現在値・履歴) | 2026-09-11 | 23 |
-  | 94 | OKX 基差(mark/index の履歴、basisの代琁E | 2026-09-11 | 23 |
-  | 95 | OKX 板の深ぁE現在値のみ) | 2026-09-11 | 23 |
-  | 96 | OKX 建玁EOI)・L/S毁EスナップショチE��(自前記録) | 2026-09-11 | 23 |
-  | 97 | Coinalyze(渁E���EOIの雁E��値、E��忁E��E | 2026-09-11 | 23 |
-  | 98 | Gate.io 個別渁E��紁E��E90日、E��不要E | 2026-09-11 | 23 |
-  | 100 | BitMEX 保険基釁E日次残髁E全通貨) | 2026-09-12 | 22 |
-  | 101 | Binance/BitMEX/Bybit/OKX 渁E��EWS ストリーム(自前訁E| 2026-09-11 | 23 |
-  | 102 | BitMEX XBTUSD 1秒足(取引所閉鎖前�E保�E) | 2026-09-11 | 23 |
-  | 103 | Kraken XBTUSD 1刁E�� | 2026-09-11 | 23 |
-  | 104 | Deribit DVOL(ボラ持E��) | 2026-09-11 | 23 |
-  | 105 | 現物 BTC/ETH 日足(Bitstamp/Coinbase/Yahoo、褁E�� | 2026-09-11 | 23 |
-  | 106 | 賁E��調達率・基差(自前結合、粒度不�E) | 2026-09-11 | 23 |
-  | 107 | Tardis.dev(第三老E�E有料、メタチE�Eタのみ確誁E | 2026-09-11 | 23 |
-  | 108 | CryptoDataDownload(第三老E�E無料、OHLCVのみ想宁E | 2026-09-11 | 23 |
-  | 109 | ベニュー横断調査(サーベイ斁E��) | 2026-09-11 | 23 |
-  | 110 | Binance COIN-M BTCUSD_PERP liquidationSn | 2026-09-13 | 21 |
-  | 111 | Binance COIN-M BTCUSD_PERP metrics(建玉`su | 2026-09-18 | 16 |
-  | 112 | Binance COIN-M metrics の欠測の庁E��めEBTCUSD_PE | 2026-09-18 | 16 |
-  | 113 | Binance USD-M liquidationSnapshot アーカイチE | 2026-09-12 | 22 |
-  | 114 | BitMEX 公開バルクアーカイブ�E渁E��専用フォルダ | 2026-09-12 | 22 |
-  | 115 | CoinGlass 個別イベント渁E��E`/api/futures/liquida | 2026-09-12 | 22 |
-  | 116 | OKX 1刁E��(無期限、history-candles) | 2026-09-12 | 22 |
-  | 117 | Gate 1刁E��(candlesticks、真の OHLC) | 2026-09-12 | 22 |
-  | 118 | ccxt `fetchLiquidations`(bitmex)実裁E| 2026-09-12 | 22 |
-  | 119 | Tardis.dev BitMEX `liquidation`チャネル(第三老E�E | 2026-09-12 | 22 |
-  | 120 | archive.org(public.bitmex.com 過去スナップショチE�� | 2026-09-12 | 22 |
-  | 121 | `deploy/mirror_bitmex.bat` の保�E対象篁E�� | 2026-09-12 | 22 |
-  | 122 | Binance USD-M BTCUSDT metrics(建玉�EL/S比、E刁E| 2026-09-12 | 22 |
-  | 123 | Binance COIN-M BTCUSD_PERP aggTrades/tra | 2026-09-12 | 22 |
-  | 124 | OKX rubik open-interest-history(REST、保持朁E| 2026-09-12 | 22 |
-  | 125 | OKX rubik long-short-account-ratio(REST、E| 2026-09-12 | 22 |
-  | 126 | Gate contract_stats(建玉�EL/S比�Emark_price、E | 2026-09-12 | 22 |
-  | 127 | BitMEX instrument 建玁EopenInterest、現在値のみ) | 2026-09-12 | 22 |
-  | 128 | CryptoCompare(CoinDesk Data) histominute | 2026-09-12 | 22 |
-  | 129 | Hyperliquid BTC無期限 `userFills`/`userFill | 2026-09-12 | 22 |
-  | 130 | Hyperliquid BTC無期限 `candleSnapshot`(1刁E��) | 2026-09-12 | 22 |
-  | 131 | Hyperliquid BTC無期限 `metaAndAssetCtxs`(建玁E| 2026-09-12 | 22 |
-  | 132 | Hyperliquid S3アーカイチE板 L2Book想定、`hyperliq | 2026-09-12 | 22 |
-  | 133 | CoinGlass 建玉履歴(`/api/futures/open-intere | 2026-09-17 | 17 |
-  | 134 | Binance COIN-M metrics のレバレチE��関連刁E`count_ | 2026-09-18 | 16 |
-  | 135 | Binance COIN-M aggTrades の読み込み可否(`PriceS | 2026-09-17 | 17 |
-  | 136 | Binance liquidationSnapshot 欠落 3 日の再�EローチE| 2026-09-17 | 17 |
-  | 137 | Binance USD-M `openInterestHist`(REST) | 2026-09-17 | 17 |
-  | 138 | Binance COIN-M aggTrades の補遺 1 日(2023-06 | 2026-09-17 | 17 |
-  | 139 | Binance COIN-M `liquidationSnapshot` の重褁E| 2026-09-17 | 17 |
-  | 145 | bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(can | 2026-09-11 | 23 |
-  | 146 | bitbank BTC/XRP JPY | 2026-09-11 | 23 |
-  | 147 | GMO・bitbank 横断(quotes/trades) | 2026-09-11 | 23 |
-  | 153 | USD/JPY 1刁E��(3.5年) | 2026-09-11 | 23 |
-  | 154 | USD/JPY 1刁E��(拡張、E017-2022) | 2026-09-11 | 23 |
-  | 155 | FX イベントティチE��(2005-2014 / 2015-2026) | 2026-09-11 | 23 |
-  | 156 | FX ファンダメンタルズ・カレンダー | 2026-09-11 | 23 |
-  | 157 | FRED 系刁E政策��利・スワチE�E) | 2026-09-11 | 23 |
-  | 158 | GMO USD/JPY スワチE�E | 2026-09-11 | 23 |
-  | 164 | 日絁E25先物 225Labo 日足 | 2026-09-11 | 23 |
-  | 165 | TOPIX先物/miniTOPIX先物 225Labo | 2026-09-11 | 23 |
-  | 166 | ETF 日足(1343/1321/1348 筁E | 2026-09-11 | 23 |
-  | 167 | ETF 代替候補調査 | 2026-09-11 | 23 |
-  | 168 | REIT / ONR(オーバ�Eナイトリターン) | 2026-09-11 | 23 |
-  | 169 | 優征Eyutai)ユニバース | 2026-09-11 | 23 |
-  | 170 | 日本ファクター | 2026-09-11 | 23 |
-  | 171 | 日絁E25イベンチE| 2026-09-11 | 23 |
-  | 172 | JPX チE��バティブ日報(甁Ezip) | 2026-09-11 | 23 |
-  | 173 | JPX 日次セチE��ョン | 2026-09-11 | 23 |
-  | 174 | JPX Tick 調査(監査) | 2026-09-11 | 23 |
-  | 175 | kabuスチE�Eション API(実口座・実発注) | 2026-09-11 | 23 |
+  | 58 | TradingView MCP 経由の `BITFLYER:FXBTCJPY`  | 2026-09-16 | 19 |
+  | 59 | FX_BTC_JPY 1刁E��チャーチElightchart) | 2026-09-11 | 24 |
+  | 60 | BTC_JPY 1刁E��チャーチElightchart、現物) | 2026-09-11 | 24 |
+  | 61 | 板・ticker・紁E��E1刁E��度、監査用) | 2026-09-11 | 24 |
+  | 64 | 板 top5(高頻度) | 2026-09-11 | 24 |
+  | 65 | 紁E���Eticker(高頻度チE�EチE | 2026-09-11 | 24 |
+  | 66 | WS 生ログ(jsonl) | 2026-09-11 | 24 |
+  | 67 | **WS 生ログ(オーナ�E PC、未共朁E** | 2026-09-11 | 24 |
+  | 68 | 紁E��E31日ロングチE�EチEus、tardis形弁E | 2026-09-11 | 24 |
+  | 70 | 紁E��E31日スナップショチE��(2本) | 2026-09-11 | 24 |
+  | 71 | 紁E��E31日スナップショチE��(2026-09-08) | 2026-09-11 | 24 |
+  | 72 | 継続ローリング(生、日次更新) | 2026-09-11 | 24 |
+  | 73 | 1刁E�� 30日/継続結合 | 2026-09-11 | 24 |
+  | 74 | 渁E���E強制決渁Elosscut) 履歴 | 2026-09-12 | 23 |
+  | 75 | 板の深さ�E履歴(ヒストリカル) | 2026-09-11 | 24 |
+  | 76 | bitFlyer SFD・証拠金維持率・ロスカチE��閾値の一次賁E��(公式FAQ) | 2026-09-12 | 23 |
+  | 82 | Binance BTCUSDT 現物 1刁E��(積み上げ) | 2026-09-11 | 24 |
+  | 85 | Binance BTCUSDT 1秒足 / aggTrades | 2026-09-11 | 24 |
+  | 86 | Binance BTCUSDT 1秒足(高頻度サンプル) | 2026-09-11 | 24 |
+  | 87 | Binance XRPUSDT 1刁E1日/4時間足 | 2026-09-11 | 24 |
+  | 88 | Binance 賁E��調達率・板深さ�E渁E��Eこ�EチE�Eタセンターから) | 2026-09-11 | 24 |
+  | 89 | Bybit BTCUSDT 無期限 1刁E�� | 2026-09-11 | 24 |
+  | 90 | Bybit 現物/無期限 到達確認サンプル(2日刁E | 2026-09-11 | 24 |
+  | 91 | Bybit REST API(賁E��調達率・板・渁E��E | 2026-09-11 | 24 |
+  | 92 | Bybit 静的アーカイチE`public.bybit.com`、紁E���Eみ) | 2026-09-11 | 24 |
+  | 93 | OKX 賁E��調達率(現在値・履歴) | 2026-09-11 | 24 |
+  | 94 | OKX 基差(mark/index の履歴、basisの代琁E | 2026-09-11 | 24 |
+  | 95 | OKX 板の深ぁE現在値のみ) | 2026-09-11 | 24 |
+  | 96 | OKX 建玁EOI)・L/S毁EスナップショチE��(自前記録) | 2026-09-11 | 24 |
+  | 97 | Coinalyze(渁E���EOIの雁E��値、E��忁E��E | 2026-09-11 | 24 |
+  | 98 | Gate.io 個別渁E��紁E��E90日、E��不要E | 2026-09-11 | 24 |
+  | 100 | BitMEX 保険基釁E日次残髁E全通貨) | 2026-09-12 | 23 |
+  | 101 | Binance/BitMEX/Bybit/OKX 渁E��EWS ストリーム(自前訁E| 2026-09-11 | 24 |
+  | 102 | BitMEX XBTUSD 1秒足(取引所閉鎖前�E保�E) | 2026-09-11 | 24 |
+  | 103 | Kraken XBTUSD 1刁E�� | 2026-09-11 | 24 |
+  | 104 | Deribit DVOL(ボラ持E��) | 2026-09-11 | 24 |
+  | 105 | 現物 BTC/ETH 日足(Bitstamp/Coinbase/Yahoo、褁E�� | 2026-09-11 | 24 |
+  | 106 | 賁E��調達率・基差(自前結合、粒度不�E) | 2026-09-11 | 24 |
+  | 107 | Tardis.dev(第三老E�E有料、メタチE�Eタのみ確誁E | 2026-09-11 | 24 |
+  | 108 | CryptoDataDownload(第三老E�E無料、OHLCVのみ想宁E | 2026-09-11 | 24 |
+  | 109 | ベニュー横断調査(サーベイ斁E��) | 2026-09-11 | 24 |
+  | 110 | Binance COIN-M BTCUSD_PERP liquidationSn | 2026-09-13 | 22 |
+  | 111 | Binance COIN-M BTCUSD_PERP metrics(建玉`su | 2026-09-18 | 17 |
+  | 112 | Binance COIN-M metrics の欠測の庁E��めEBTCUSD_PE | 2026-09-18 | 17 |
+  | 113 | Binance USD-M liquidationSnapshot アーカイチE | 2026-09-12 | 23 |
+  | 114 | BitMEX 公開バルクアーカイブ�E渁E��専用フォルダ | 2026-09-12 | 23 |
+  | 115 | CoinGlass 個別イベント渁E��E`/api/futures/liquida | 2026-09-12 | 23 |
+  | 116 | OKX 1刁E��(無期限、history-candles) | 2026-09-12 | 23 |
+  | 117 | Gate 1刁E��(candlesticks、真の OHLC) | 2026-09-12 | 23 |
+  | 118 | ccxt `fetchLiquidations`(bitmex)実裁E| 2026-09-12 | 23 |
+  | 119 | Tardis.dev BitMEX `liquidation`チャネル(第三老E�E | 2026-09-12 | 23 |
+  | 120 | archive.org(public.bitmex.com 過去スナップショチE�� | 2026-09-12 | 23 |
+  | 121 | `deploy/mirror_bitmex.bat` の保�E対象篁E�� | 2026-09-12 | 23 |
+  | 122 | Binance USD-M BTCUSDT metrics(建玉�EL/S比、E刁E| 2026-09-12 | 23 |
+  | 123 | Binance COIN-M BTCUSD_PERP aggTrades/tra | 2026-09-12 | 23 |
+  | 124 | OKX rubik open-interest-history(REST、保持朁E| 2026-09-12 | 23 |
+  | 125 | OKX rubik long-short-account-ratio(REST、E| 2026-09-12 | 23 |
+  | 126 | Gate contract_stats(建玉�EL/S比�Emark_price、E | 2026-09-12 | 23 |
+  | 127 | BitMEX instrument 建玁EopenInterest、現在値のみ) | 2026-09-12 | 23 |
+  | 128 | CryptoCompare(CoinDesk Data) histominute | 2026-09-12 | 23 |
+  | 129 | Hyperliquid BTC無期限 `userFills`/`userFill | 2026-09-12 | 23 |
+  | 130 | Hyperliquid BTC無期限 `candleSnapshot`(1刁E��) | 2026-09-12 | 23 |
+  | 131 | Hyperliquid BTC無期限 `metaAndAssetCtxs`(建玁E| 2026-09-12 | 23 |
+  | 132 | Hyperliquid S3アーカイチE板 L2Book想定、`hyperliq | 2026-09-12 | 23 |
+  | 133 | CoinGlass 建玉履歴(`/api/futures/open-intere | 2026-09-17 | 18 |
+  | 134 | Binance COIN-M metrics のレバレチE��関連刁E`count_ | 2026-09-18 | 17 |
+  | 135 | Binance COIN-M aggTrades の読み込み可否(`PriceS | 2026-09-17 | 18 |
+  | 136 | Binance liquidationSnapshot 欠落 3 日の再�EローチE| 2026-09-17 | 18 |
+  | 137 | Binance USD-M `openInterestHist`(REST) | 2026-09-17 | 18 |
+  | 138 | Binance COIN-M aggTrades の補遺 1 日(2023-06 | 2026-09-17 | 18 |
+  | 139 | Binance COIN-M `liquidationSnapshot` の重褁E| 2026-09-17 | 18 |
+  | 145 | bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(can | 2026-09-11 | 24 |
+  | 146 | bitbank BTC/XRP JPY | 2026-09-11 | 24 |
+  | 147 | GMO・bitbank 横断(quotes/trades) | 2026-09-11 | 24 |
+  | 153 | USD/JPY 1刁E��(3.5年) | 2026-09-11 | 24 |
+  | 154 | USD/JPY 1刁E��(拡張、E017-2022) | 2026-09-11 | 24 |
+  | 155 | FX イベントティチE��(2005-2014 / 2015-2026) | 2026-09-11 | 24 |
+  | 156 | FX ファンダメンタルズ・カレンダー | 2026-09-11 | 24 |
+  | 157 | FRED 系刁E政策��利・スワチE�E) | 2026-09-11 | 24 |
+  | 158 | GMO USD/JPY スワチE�E | 2026-09-11 | 24 |
+  | 164 | 日絁E25先物 225Labo 日足 | 2026-09-11 | 24 |
+  | 165 | TOPIX先物/miniTOPIX先物 225Labo | 2026-09-11 | 24 |
+  | 166 | ETF 日足(1343/1321/1348 筁E | 2026-09-11 | 24 |
+  | 167 | ETF 代替候補調査 | 2026-09-11 | 24 |
+  | 168 | REIT / ONR(オーバ�Eナイトリターン) | 2026-09-11 | 24 |
+  | 169 | 優征Eyutai)ユニバース | 2026-09-11 | 24 |
+  | 170 | 日本ファクター | 2026-09-11 | 24 |
+  | 171 | 日絁E25イベンチE| 2026-09-11 | 24 |
+  | 172 | JPX チE��バティブ日報(甁Ezip) | 2026-09-11 | 24 |
+  | 173 | JPX 日次セチE��ョン | 2026-09-11 | 24 |
+  | 174 | JPX Tick 調査(監査) | 2026-09-11 | 24 |
+  | 175 | kabuスチE�Eション API(実口座・実発注) | 2026-09-11 | 24 |
 
 食い違い: あり
 wrote C:\Users\ryoma\trade\data\LEDGER_CHECK.json
-[record_oi] C:\Users\ryoma\trade\data\oi_snapshots.csv += 1 row (6/6 fields): ts_utc=2026-10-04T21:15:09+00:00  okx_usdt_oi=2857471.8100000108  okx_usd_oi=5528149.199999999  okx_ls_ratio=1.22  dvol=36.11  deribit_oi=799588810.0  btc_usd=85954.7
-[record_deribit_oi] BTC=+996 rows  ETH=+836 rows
-loaded 1879717 stored executions
-appended 1667 new executions
-wrote 52246 candles -> C:\Users\ryoma\trade\data\candles_FX_BTC_JPY.csv
-binance_XRPUSDT_1m.csv: 92141 rows (2026-07-30 02:50:00+00:00 .. 2026-10-04 21:15:00+00:00)
-binance_BTCUSDT_1m.csv: 92141 rows (2026-07-30 02:50:00+00:00 .. 2026-10-04 21:15:00+00:00)
-binance_XRPUSDT_4h.csv: 4655 rows (2024-08-20 04:00:00+00:00 .. 2026-10-04 20:00:00+00:00)
-binance_XRPUSDT_1d.csv: 775 rows (2024-08-21 00:00:00+00:00 .. 2026-10-04 00:00:00+00:00)
-binance_BTCUSDT_4h.csv: 4655 rows (2024-08-20 04:00:00+00:00 .. 2026-10-04 20:00:00+00:00)
-binance_BTCUSDT_1d.csv: 775 rows (2024-08-21 00:00:00+00:00 .. 2026-10-04 00:00:00+00:00)
-bitbank_xrp_jpy_1m.csv: 93532 rows (2026-07-30 00:00:00+00:00 .. 2026-10-04 21:15:00+00:00)
-[fetch_okx] open-interest BTC-USDT-SWAP: [{'instId': 'BTC-USDT-SWAP', 'instType': 'SWAP', 'oi': '2858933.59000001025', 'oiCcy': '28589.3359000001025', 'oiUsd': '2458554235.38845881453875', 'ts': '1791148549923'}]
-[fetch_okx] open-interest BTC-USD-SWAP: [{'instId': 'BTC-USD-SWAP', 'instType': 'SWAP', 'oi': '5530121.89999999936', 'oiCcy': '6428.9539520338522419', 'oiUsd': '553012189.999999936', 'ts': '1791148550457'}]
-[fetch_okx] oi period=5m: 575 rows, span 2026-10-02 21:20:00+00:00 .. 2026-10-04 21:10:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_5m.csv
-[fetch_okx] oi period=1H: 720 rows, span 2026-09-04 22:00:00+00:00 .. 2026-10-04 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_1h.csv
-[fetch_okx] lsratio period=5m: 575 rows, span 2026-10-02 21:20:00+00:00 .. 2026-10-04 21:10:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_5m.csv
-[fetch_okx] lsratio period=1H: 720 rows, span 2026-09-04 22:00:00+00:00 .. 2026-10-04 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_1h.csv
+[record_oi] C:\Users\ryoma\trade\data\oi_snapshots.csv += 1 row (6/6 fields): ts_utc=2026-10-05T21:15:08+00:00  okx_usdt_oi=2863899.380000007  okx_usd_oi=5532813.800000001  okx_ls_ratio=1.19  dvol=36.16  deribit_oi=816828900.0  btc_usd=85709.5
+[record_deribit_oi] BTC=+946 rows  ETH=+790 rows
+loaded 1935924 stored executions
+appended 1763 new executions
+wrote 53671 candles -> C:\Users\ryoma\trade\data\candles_FX_BTC_JPY.csv
+binance_XRPUSDT_1m.csv: 93581 rows (2026-07-30 02:50:00+00:00 .. 2026-10-05 21:15:00+00:00)
+binance_BTCUSDT_1m.csv: 93581 rows (2026-07-30 02:50:00+00:00 .. 2026-10-05 21:15:00+00:00)
+binance_XRPUSDT_4h.csv: 4661 rows (2024-08-20 04:00:00+00:00 .. 2026-10-05 20:00:00+00:00)
+binance_XRPUSDT_1d.csv: 776 rows (2024-08-21 00:00:00+00:00 .. 2026-10-05 00:00:00+00:00)
+binance_BTCUSDT_4h.csv: 4661 rows (2024-08-20 04:00:00+00:00 .. 2026-10-05 20:00:00+00:00)
+binance_BTCUSDT_1d.csv: 776 rows (2024-08-21 00:00:00+00:00 .. 2026-10-05 00:00:00+00:00)
+bitbank_xrp_jpy_1m.csv: 94972 rows (2026-07-30 00:00:00+00:00 .. 2026-10-05 21:15:00+00:00)
+[fetch_okx] open-interest BTC-USDT-SWAP: [{'instId': 'BTC-USDT-SWAP', 'instType': 'SWAP', 'oi': '2863976.29000000706', 'oiCcy': '28639.7629000000706', 'oiUsd': '2455286873.417006052538', 'ts': '1791234952765'}]
+[fetch_okx] open-interest BTC-USD-SWAP: [{'instId': 'BTC-USD-SWAP', 'instType': 'SWAP', 'oi': '5532975.0000000011', 'oiCcy': '6451.5160489911675746', 'oiUsd': '553297500.00000011', 'ts': '1791234953292'}]
+[fetch_okx] oi period=5m: 575 rows, span 2026-10-03 21:20:00+00:00 .. 2026-10-05 21:10:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_5m.csv
+[fetch_okx] oi period=1H: 720 rows, span 2026-09-05 22:00:00+00:00 .. 2026-10-05 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_oi_1h.csv
+[fetch_okx] lsratio period=5m: 575 rows, span 2026-10-03 21:20:00+00:00 .. 2026-10-05 21:10:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_5m.csv
+[fetch_okx] lsratio period=1H: 720 rows, span 2026-09-05 22:00:00+00:00 .. 2026-10-05 21:00:00+00:00 -> C:\Users\ryoma\trade\data\okx_btc_lsratio_1h.csv

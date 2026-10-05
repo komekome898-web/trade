@@ -695,3 +695,16 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-04T19:04:34+00:00 binance_cm: -> binance_cm_20261004.jsonl.gz
 2026-10-04T19:04:34+00:00 bybit: 接続
 2026-10-04T19:04:35+00:00 bybit: -> bybit_20261004.jsonl.gz
+2026-10-05T00:00:04+00:00 binance_cm: -> binance_cm_20261005.jsonl.gz
+2026-10-05T00:00:04+00:00 okx: -> okx_20261005.jsonl.gz
+2026-10-05T00:00:06+00:00 bybit: -> bybit_20261005.jsonl.gz
+2026-10-05T10:51:06+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-05T10:51:18+00:00 okx: 接続
+2026-10-05T14:09:30+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-05T14:09:36+00:00 bybit: 接続
+2026-10-05T15:29:13+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-05T15:29:17+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-05T15:30:18+00:00 bybit: 接続の時間切れ — 4s 後に再接続
+2026-10-05T15:30:18+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-05T15:30:23+00:00 okx: 接続
+2026-10-05T15:30:23+00:00 bybit: 接続

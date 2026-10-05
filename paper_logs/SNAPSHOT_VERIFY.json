@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-04T20:41:32.842989+00:00",
+  "generated_at": "2026-10-05T20:32:43.380664+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -336,6 +336,20 @@
       ]
     },
     {
+      "unit": "auto_oi_snapshots_20261005",
+      "md5sums_path": "backtest_data\\auto_oi_snapshots_20261005\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_okx_long_short_ratio_20260905",
       "md5sums_path": "backtest_data\\auto_okx_long_short_ratio_20260905\\MD5SUMS",
       "file_count": 3,
@@ -380,6 +394,20 @@
     {
       "unit": "auto_okx_open_interest_1h_20260921",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260921\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20261005",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20261005\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -728,6 +756,20 @@
       ]
     },
     {
+      "unit": "auto_okx_open_interest_5m_20261005",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261005\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_venues_20260905",
       "md5sums_path": "backtest_data\\auto_venues_20260905\\MD5SUMS",
       "file_count": 51,
@@ -754,6 +796,18 @@
       "extra": [
         "manifest.json"
       ]
+    },
+    {
+      "unit": "auto_venues_20261005",
+      "md5sums_path": "backtest_data\\auto_venues_20261005\\MD5SUMS",
+      "file_count": 118,
+      "status": "verified",
+      "checked": 118,
+      "matched": 118,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
     },
     {
       "unit": "binance_BTCUSDT_1m_20170801_20231231",
@@ -5357,19 +5411,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6710,
+    "checked": 6833,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 137,
-    "verified": 108,
+    "unit_count": 141,
+    "verified": 112,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
     "total_missing": 1567,
-    "total_extra_untracked": 1338,
+    "total_extra_untracked": 1341,
     "ledger_mismatches": 0
   },
   "ok": false
