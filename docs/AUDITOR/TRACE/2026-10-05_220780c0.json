@@ -26902,16 +26902,17 @@
   {
    "move": 990,
    "tools": {
-    "Bash": 15,
-    "Write": 3,
-    "Agent": 1
+    "Bash": 25,
+    "Write": 7,
+    "Agent": 1,
+    "Read": 1
    },
-   "n_tools": 19,
+   "n_tools": 34,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": false,
    "claims_without_output": 1,
-   "claims_total": 1,
+   "claims_total": 2,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -26924,8 +26925,8 @@
     ".claude/agents/": 0
    },
    "readdo_reads": 0,
-   "unlock_created": 1,
-   "unlock_in_test": 0
+   "unlock_created": 2,
+   "unlock_in_test": 2
   }
  ],
  "rollup": {
@@ -26940,9 +26941,9 @@
    "value": 0.2
   },
   "P3_claim_with_output": {
-   "num": 371,
-   "den": 830,
-   "value": 0.447
+   "num": 372,
+   "den": 831,
+   "value": 0.4477
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -26966,13 +26967,13 @@
    "value": null
   },
   "R4_unlock_created": {
-   "num": 24,
+   "num": 25,
    "den": null,
    "value": null,
    "note_key": "excludes_test_origin"
   },
   "R4b_unlock_in_test": {
-   "num": 16,
+   "num": 18,
    "den": null,
    "value": null
   },
