@@ -8,9 +8,10 @@
 # 台帳 `docs/AUDITOR/HOOK_MANIFEST.sha256` と一致しなければ押し出さない。
 #
 # 2026-10-05、オーナーの指示 L-706「**3.y**」(L-705 の案 §5 (3)「押し出しの門(案 C)を入れてよいか」への yes)で、
-# **分析の門** を 2 つ足した(案 C の (i)(ii)。(iii)「相方の節が空でない」は渡す情報の形が決まってから)。
+# **分析の門** を 2 つ足した(案 C の (i)(ii))。2026-10-06、L-711「**案1で**」で (iii) を足した。
 #   (i) 知見台帳の検査 `scripts/check_findings_ledger.py` が終了コード 0 で、最後の行が「問題 0」で終わる
 #   (ii) 仮置きの検査 `scripts/analysis/check_placeholders.py` が終了コード 0(docs/ANALYSIS/ の下に「後で書き足す」の類が無い)
+#   (iii) 相方の記録の検査 `scripts/analysis/check_partner.py` が終了コード 0(手順 R のある分析の文書で D10 が埋まっていれば、R の表に行があり、記録のファイルがあるか「無し(遡り」で始まる)
 # 経緯: 10-05、台帳の検査に問題 2 件を残したまま押し出した(3fb6c4e7)。仮置きが 4 枚に残った。
 # 台帳・分析の置き場があるのに検査の台本が無いときは、開けずに止める(検査を消して門を開けさせない)。
 #
@@ -69,6 +70,21 @@ if [ -d docs/ANALYSIS ]; then
   if [ "$PH_RC" -ne 0 ]; then
     printf '%s\n' "$PH_OUT" >&2
     echo "[pre-push] 分析の文書に仮置き(後で書き足す の類)が残っているので押し出しを止めた。" >&2
+    exit 1
+  fi
+fi
+
+# 分析の門 (iii) 相方の記録の検査
+if [ -d docs/ANALYSIS ]; then
+  if [ ! -f scripts/analysis/check_partner.py ]; then
+    echo "[pre-push] 分析の置き場があるのに相方の記録の検査の台本 scripts/analysis/check_partner.py が無いので押し出しを止めた。" >&2
+    exit 1
+  fi
+  PT_OUT="$(python3 scripts/analysis/check_partner.py 2>&1)"
+  PT_RC=$?
+  if [ "$PT_RC" -ne 0 ]; then
+    printf '%s\n' "$PT_OUT" >&2
+    echo "[pre-push] D10 まで書いた分析の文書に、相方の検め(手順 R)の記録が無いので押し出しを止めた。" >&2
     exit 1
   fi
 fi
