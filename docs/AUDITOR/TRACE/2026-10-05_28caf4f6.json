@@ -57,13 +57,13 @@
   {
    "move": 3,
    "tools": {
-    "Bash": 52,
+    "Bash": 55,
     "Read": 6,
     "Write": 1,
     "Edit": 24,
     "ToolSearch": 1
    },
-   "n_tools": 84,
+   "n_tools": 87,
    "read_goal": false,
    "first_write_at": 23,
    "table_shown": true,
@@ -107,8 +107,8 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 46.0,
-   "max": 84,
+   "median": 47.5,
+   "max": 87,
    "n": 2
   },
   "P6_findings_applied": {
