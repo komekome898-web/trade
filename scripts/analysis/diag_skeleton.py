@@ -9,7 +9,7 @@
 が、この場所への書き込みで、手順の節が欠けた・写しがスキルの本文と違う内容を止める。
 
     python3 scripts/analysis/diag_skeleton.py --unit <単位の名前> [--date YYYY-MM-DD]
-    python3 scripts/analysis/diag_skeleton.py --refresh docs/ANALYSIS/<ファイル>.md   # スキルの改訂の後、写しだけを今の本文に入れ替える
+    python3 scripts/analysis/diag_skeleton.py --refresh docs/ANALYSIS/<ファイル>.md   # スキルの改訂の後、写しを今の本文に入れ替え、無い節をスキルの順の位置に空の欄で足す
 
 写しの抜き出し方(フックと同じ): スキルの `## P ` の見出しから `## 道具` の見出しの手前までを、`## ` の見出しで
 区切る。手順の名前 = 見出しの最初の語。本文 = 見出しの次の行から次の見出しの手前まで(前後の空行は除く)。

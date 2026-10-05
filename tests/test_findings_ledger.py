@@ -158,7 +158,11 @@ def test_confirmed_needs_other_data():
     conf = GOOD_ROW.replace("状態: 開いている", "状態: 確かめた(K-001)")
     errs = _errs(conf)
     assert any("確かめた" in e and "別" in e for e in errs)
-    ok = conf.replace("確かめのデータ: 見つけたのと同じ(表 1)", "確かめのデータ: 別: Binance の 2024 年の 5 分足(見つけるのに使っていない)")
+    other = conf.replace("確かめのデータ: 見つけたのと同じ(表 1)", "確かめのデータ: 別: Binance の 2024 年の 5 分足(見つけるのに使っていない)")
+    errs = _errs(other)
+    assert any("当たった予言が無い" in e for e in errs)  # 予言がまだ「未」
+    ok = other.replace("(外れ = 区間が 0 を含む)→ 未 / 試した 1・当たった 0・外れた 0・未 1",
+                       "(外れ = 区間が 0 を含む)→ 当たった / 試した 1・当たった 1・外れた 0・未 0")
     assert _errs(ok) == []
 
 
