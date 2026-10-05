@@ -26845,11 +26845,11 @@
   {
    "move": 988,
    "tools": {
-    "Bash": 16,
+    "Bash": 18,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 18,
+   "n_tools": 20,
    "read_goal": false,
    "first_write_at": 5,
    "table_shown": false,
