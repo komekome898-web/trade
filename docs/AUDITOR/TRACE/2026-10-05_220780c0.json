@@ -26902,11 +26902,11 @@
   {
    "move": 990,
    "tools": {
-    "Bash": 8,
-    "Write": 1,
+    "Bash": 13,
+    "Write": 3,
     "Agent": 1
    },
-   "n_tools": 10,
+   "n_tools": 17,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": false,
@@ -26924,7 +26924,7 @@
     ".claude/agents/": 0
    },
    "readdo_reads": 0,
-   "unlock_created": 0,
+   "unlock_created": 1,
    "unlock_in_test": 0
   }
  ],
@@ -26966,7 +26966,7 @@
    "value": null
   },
   "R4_unlock_created": {
-   "num": 23,
+   "num": 24,
    "den": null,
    "value": null,
    "note_key": "excludes_test_origin"
