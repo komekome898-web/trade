@@ -26902,12 +26902,12 @@
   {
    "move": 990,
    "tools": {
-    "Bash": 25,
+    "Bash": 29,
     "Write": 7,
     "Agent": 1,
     "Read": 1
    },
-   "n_tools": 34,
+   "n_tools": 38,
    "read_goal": false,
    "first_write_at": 4,
    "table_shown": false,
