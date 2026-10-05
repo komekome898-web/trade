@@ -27,7 +27,12 @@
 3. 手順は文書の上から 1 つずつ。各節の引用を読み直してから「当てたこと」を書く。
 4. **相方の検め(手順 R)**: 少なくとも D9b の後と D10 の前に、`python3 scripts/analysis/partner_brief.py --doc <文書> --at <時点> --done "<完了の形>"` で渡し書きを作り、advisor の道具があれば渡し書きを Read してから呼ぶ。無ければ `analysis-partner` に渡し書きのパスを渡す。相方の出力は返答に逐語で出し、`docs/RESEARCH/partner/<文書>/` の記録ファイルにも写して、1 件ずつ応答を書く。R 節の表に 1 行足す。
 5. D9b の候補は `python3 scripts/analysis/ledger_rows.py <行の定義ファイル>` で台帳に足す(手で台帳を書かない)。
-6. コミットは `sh scripts/analysis/commit_gate.sh "<英語のメッセージ>\n\nClaude-Session: <この会話の URL>"`(台帳の検査と仮置きが 0 でなければコミットしない)。押し出しは `git push -u origin <ブランチ>`(押し出しの門が、指紋の照合・台帳の検査・仮置き・相方の記録を検める)。
+6. コミットは次の形(引用符の中で実際に改行する。`\n` と書いても sh では改行にならず、門の「`Claude-Session: ` で始まる行」の検めで止まる)。台帳の検査と仮置きが 0 でなければコミットしない。
+
+       sh scripts/analysis/commit_gate.sh "<英語のメッセージ>
+
+       Claude-Session: <この会話の URL>"
+押し出しは `git push -u origin <ブランチ>`(押し出しの門が、指紋の照合・台帳の検査・仮置き・相方の記録を検める)。
 7. 候補を確かめるときは、なぜと予言のスキル `why-predict` を Skill の道具で呼ぶ(1 候補 1 呼び出し)。
 
 ## 決まっていること
