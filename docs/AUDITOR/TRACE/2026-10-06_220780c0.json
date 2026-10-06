@@ -27295,14 +27295,15 @@
   {
    "move": 1004,
    "tools": {
-    "Bash": 19,
-    "Write": 5,
-    "Agent": 3,
+    "Bash": 31,
+    "Write": 6,
+    "Agent": 4,
     "Read": 1,
     "ToolSearch": 1,
-    "SendMessage": 1
+    "SendMessage": 1,
+    "Edit": 3
    },
-   "n_tools": 30,
+   "n_tools": 47,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
