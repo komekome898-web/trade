@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1038,
+ "n_moves": 1040,
  "moves": [
   {
    "move": 1,
@@ -28298,23 +28298,76 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1039,
+   "tools": {
+    "Bash": 5,
+    "Write": 1
+   },
+   "n_tools": 6,
+   "read_goal": false,
+   "first_write_at": 4,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 2,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1040,
+   "tools": {
+    "Bash": 1
+   },
+   "n_tools": 1,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 192,
-   "value": 0.3646
+   "den": 193,
+   "value": 0.3627
   },
   "P2_table_shown_before_first_write": {
    "num": 34,
-   "den": 192,
-   "value": 0.1771
+   "den": 193,
+   "value": 0.1762
   },
   "P3_claim_with_output": {
-   "num": 386,
-   "den": 889,
-   "value": 0.4342
+   "num": 387,
+   "den": 892,
+   "value": 0.4339
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -28324,12 +28377,12 @@
   "P5_tools_per_move": {
    "median": 6.0,
    "max": 169,
-   "n": 972
+   "n": 974
   },
   "P6_findings_applied": {
-   "num": 97,
+   "num": 98,
    "den": 253,
-   "value": 0.3834,
+   "value": 0.3874,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
