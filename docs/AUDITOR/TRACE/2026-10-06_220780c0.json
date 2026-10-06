@@ -27478,7 +27478,7 @@
   {
    "move": 1010,
    "tools": {
-    "Bash": 80,
+    "Bash": 82,
     "Agent": 10,
     "ReadNotifications": 1,
     "Write": 5,
@@ -27488,7 +27488,7 @@
     "Grep": 1,
     "mcp__Claude_Code_Remote__create_session": 1
    },
-   "n_tools": 133,
+   "n_tools": 135,
    "read_goal": false,
    "first_write_at": 12,
    "table_shown": false,
