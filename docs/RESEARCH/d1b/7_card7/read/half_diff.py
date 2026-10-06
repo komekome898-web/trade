@@ -25,5 +25,21 @@ for win, wd in d["windows"].items():
                 return "—" if u is None or dn is None else f"{(u - dn) / 2:+.4f}"
             out.append(f"| {win} | {band} | {'流れを抜いた値' if qty == 'detrended' else 'そのまま'} | {qa['est']:.4f} [{qa['lo']:.4f}, {qa['hi']:.4f}] | "
                        f"{qb['est']:.4f} [{qb['lo']:.4f}, {qb['hi']:.4f}] | {diff:+.4f} [{diff - 1.96 * se:+.4f}, {diff + 1.96 * se:+.4f}] | {dl(a)} / {dl(b)} |")
+# 4(監査役 1 回目の直す 4): 流れを抜いた値の 低い帯 − 高い帯。2 つの帯は同じ日を使うので、差の se の上限 se_低 + se_高 で
+# 保守の区間を作る(差の se は √(se_低² + se_高² − 2 共分散) で、共分散が正でも負でも se_低 + se_高 を越えない)。
+out += ["", "## 流れを抜いた値の 低い帯 − 高い帯(保守の区間: 差の se の上限 = se_低 + se_高)", "",
+        "| 窓 | 期間 | 低い帯 | 高い帯 | 低 − 高 [保守の区間] | 台本のそのままの続きの割合の 低 − 高 |", "|---|---|---|---|---|---|"]
+for win, wd in d["windows"].items():
+    bands = [b for b in wd["cont"] if b != "全部"]
+    lo_b, hi_b = bands[0], bands[-1]
+    for per in ("全期間", "前半", "後半"):
+        a = wd["cont"][lo_b].get(per, {}).get("detrended") or {}
+        b = wd["cont"][hi_b].get(per, {}).get("detrended") or {}
+        if a.get("se") is None or b.get("se") is None:
+            continue
+        diff = a["est"] - b["est"]; se = a["se"] + b["se"]
+        orig = wd["diff_low_minus_high"].get(per, {})
+        out.append(f"| {win} | {per} | {a['est']:.4f} | {b['est']:.4f} | {diff:+.4f} [{diff - 1.96 * se:+.4f}, {diff + 1.96 * se:+.4f}] | "
+                   f"{orig.get('est', float('nan')):+.4f} [{orig.get('lo', float('nan')):+.4f}, {orig.get('hi', float('nan')):+.4f}] |")
 open(os.path.join(HERE, "half_diff.md"), "w").write("\n".join(out) + "\n")
 print("\n".join(out))
