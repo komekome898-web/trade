@@ -1,12 +1,17 @@
-"""検査のツールの受け入れの場面 7(委任文 DELEGATION_one_road_step1.md)。"""
+"""検査のツールの受け入れの場面 7(委任文 DELEGATION_one_road_step1.md)と、直し 1 の場面
+(まとめの約定の数・取引ごとの表の突き合わせ、日本語の文。DELEGATION_one_road_step1_fix1.md 3.・4.・5.)。"""
 from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
+from decimal import Decimal
 
-from bot.bt.road.check import SUMMARY_FILE, check_bars, check_outputs, write_store
+import pytest
+
+from bot.bt.road.check import FILLS_FILE, SUMMARY_FILE, check_bars, check_outputs, write_store
 
 M = 60_000_000_000
 T0 = 1_700_000_040_000_000_000  # 分の区切り
@@ -52,7 +57,8 @@ def test_scene7_summary_off_by_one_yen_fails(tmp_path):
     write_store(str(d), _fills())
     path = d / SUMMARY_FILE
     s = json.loads(path.read_text(encoding="utf-8"))
-    s["pnl_jpy"] = s["pnl_jpy"] + 1
+    assert s["pnl_jpy"] == "5"
+    s["pnl_jpy"] = str(Decimal(s["pnl_jpy"]) + 1)  # "6"
     path.write_text(json.dumps(s), encoding="utf-8")
     res = check_outputs(str(d), _bars(_fills()))
     assert not res.ok
@@ -80,6 +86,85 @@ def test_missing_summary_file_fails(tmp_path):
     os.remove(d / SUMMARY_FILE)
     res = check_outputs(str(d), _bars(_fills()))
     assert not res.ok
+    assert "まとめのファイルが無い" in res.failures[0]["reason"]
+
+
+def test_broken_json_store_fails_in_japanese(tmp_path):
+    d = tmp_path / "run"
+    write_store(str(d), _fills())
+    (d / FILLS_FILE).write_text("{", encoding="utf-8")
+    res = check_outputs(str(d), _bars(_fills()))
+    assert len(res.failures) == 1 and "JSON として読めない" in res.failures[0]["reason"]
+    assert "Expecting" not in res.failures[0]["reason"]
+
+
+def test_number_written_where_string_belongs_fails(tmp_path):
+    # 損益は帳簿のツールが出す 10 進の文字列。同じ値でも数 5.0 で書かれていたら違うとみなす
+    d = tmp_path / "run"
+    write_store(str(d), _fills())
+    path = d / SUMMARY_FILE
+    s = json.loads(path.read_text(encoding="utf-8"))
+    s["pnl_jpy"] = 5.0
+    path.write_text(json.dumps(s), encoding="utf-8")
+    assert [f["row"] for f in check_outputs(str(d), _bars(_fills())).failures] == ["pnl_jpy"]
+
+
+@pytest.mark.parametrize("key,value", [("hold_ns", 1), ("levels", 4), ("max_position", "0.04"),
+                                       ("status", "open"), ("first_t_ns", T0), ("pnl_jpy", "4")])
+def test_trade_row_tampered_fails(tmp_path, key, value):
+    d = tmp_path / "run"
+    write_store(str(d), _fills())
+    path = d / SUMMARY_FILE
+    s = json.loads(path.read_text(encoding="utf-8"))
+    s["trades"][0][key] = value
+    path.write_text(json.dumps(s), encoding="utf-8")
+    assert [f["row"] for f in check_outputs(str(d), _bars(_fills())).failures] == [f"trades[0].{key}"]
+
+
+# 批評家の場面: 閉じた取引の後に、2 段足して一部決済した途中の取引
+def _s8():
+    def f(m, side, q, px):
+        return {"t_ns": T0 + m * M + 5, "side": side, "qty": q, "px": px, "ccy": "JPY"}
+    return [f(0, "buy", 0.01, 10000), f(1, "sell", 0.01, 10100), f(2, "buy", 0.01, 10000), f(3, "buy", 0.01, 10200),
+            f(4, "sell", 0.01, 10300)]
+
+
+def _s8_bars():
+    return [{"t_ns": T0 + k * M, "high": 10400, "low": 9900} for k in range(5)]
+
+
+def _store_without_fill(tmp_path, i):
+    d = tmp_path / f"del{i}"
+    write_store(str(d), _s8())
+    path = d / FILLS_FILE
+    body = json.loads(path.read_text(encoding="utf-8"))
+    body["fills"].pop(i)
+    path.write_text(json.dumps(body), encoding="utf-8")
+    return d
+
+
+def test_critic_s8_clean_store_passes(tmp_path):
+    d = tmp_path / "run"
+    write_store(str(d), _s8())
+    assert check_outputs(str(d), _s8_bars()).ok
+
+
+def test_critic_deleting_partial_close_of_open_trade_fails(tmp_path):
+    # 途中の取引の一部決済の約定(約定 4)を消した置き場: 前は通った(批評家の指摘 3)
+    d = _store_without_fill(tmp_path, 4)
+    res = check_outputs(str(d), _s8_bars())
+    rows = [f["row"] for f in res.failures]
+    assert rows == ["fill_count", "trades[1].last_t_ns", "trades[1].pnl_jpy"], res.failures
+    p = _run_cli(d, _s8_bars(), tmp_path)
+    assert p.returncode == 1 and "trades[1].pnl_jpy" in p.stdout
+
+
+@pytest.mark.parametrize("i", range(5))
+def test_critic_deleting_any_fill_fails(tmp_path, i):
+    d = _store_without_fill(tmp_path, i)
+    res = check_outputs(str(d), _s8_bars())
+    assert not res.ok
+    assert "fill_count" in [f["row"] for f in res.failures]
 
 
 def test_scene7_price_one_yen_above_high_fails(tmp_path):
@@ -132,4 +217,23 @@ def test_cli_needs_bars(tmp_path):
     write_store(str(d), _fills())
     env = dict(os.environ, PYTHONPATH=os.path.join(REPO, "src"))
     p = subprocess.run([sys.executable, SCRIPT, str(d)], capture_output=True, text=True, env=env)
-    assert p.returncode != 0
+    assert p.returncode == 2
+    assert "--bars(1 分足の JSON)が無い" in p.stderr and "使い方" in p.stderr
+    assert "usage" not in (p.stdout + p.stderr) and "error" not in (p.stdout + p.stderr)
+
+
+def test_cli_messages_are_japanese(tmp_path):
+    d = tmp_path / "run"
+    write_store(str(d), _fills())
+    env = dict(os.environ, PYTHONPATH=os.path.join(REPO, "src"))
+    p = subprocess.run([sys.executable, SCRIPT, str(d), "--bars", str(tmp_path / "nothing.json")], capture_output=True,
+                       text=True, env=env)
+    assert p.returncode == 2 and "1 分足のファイルが無い" in p.stderr
+    p = subprocess.run([sys.executable, SCRIPT, "--help"], capture_output=True, text=True, env=env)
+    assert p.returncode == 0 and "使い方" in p.stdout
+    p = subprocess.run([sys.executable, SCRIPT, str(d), "--bars", "x", "--verbose"], capture_output=True, text=True,
+                       env=env)
+    assert p.returncode == 2 and "知らない引数" in p.stderr
+    for out in (p.stdout, p.stderr):
+        # 英語の文(英字の語が 3 つ以上続く)が無い
+        assert not re.search(r"[A-Za-z]+ [A-Za-z]+ [A-Za-z]+", out.replace("PYTHONPATH=src python3", ""))

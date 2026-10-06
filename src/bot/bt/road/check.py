@@ -8,8 +8,10 @@
 `tests/road/` の場面の試験で確かめる。
 
 (a) まとめの計算し直し: 置き場の約定の列(`road_fills.json`)から帳簿のツール(`ledger.book`)でまとめを計算し直し、
-    置き場に書かれたまとめ(`road_summary.json`)と鍵・値が 1 つでも違えば失敗。値は == で比べる(同じツールで
-    同じ順に足すので、JSON に書いた浮動小数はそのまま戻る)。
+    置き場に書かれたまとめ(`road_summary.json`)と鍵・値が 1 つでも違えば失敗。まとめには約定の数と取引ごとの表
+    (最初の約定の時刻・最後の約定の時刻・段の数・最大の建玉・保有時間・損益・状態)も入っているので、取引の行ごと・
+    欄ごとに突き合わせる(約定を 1 つ消すと、約定の数と、その約定が属する取引の行が変わる)。
+    値は型も含めて == で比べる(損益・建玉は帳簿のツールが出す 10 進の文字列。数で書かれていたら違うとみなす)。
 (b) 足の検査: 約定ごとに、
     - 約定の時刻 t を含む 1 分足(始まり s ≤ t < s + 60 秒)があるか(無ければ失敗)
     - 当たる足が 2 本以上なら失敗(足が重なっている)
@@ -19,7 +21,10 @@
 
 置き場の形(この段で決めたもの。道につなぐ段で変えるときは `write_store` / `read_store` の 2 つだけを直す):
 - `road_fills.json`: {"fills": [約定の行 ...], "fx": [{"t_ns", "pair", "rate"} ...]}  約定の行は `ledger` の入力の形
-- `road_summary.json`: {"closed_trades": 整数, "pnl_jpy": 数, "open_trades": 整数}
+- `road_summary.json`: 帳簿のツールのまとめ(`ledger.SUMMARY_KEYS`: fill_count・closed_trades・pnl_jpy・open_trades・
+  trades。trades の行は `ledger.TRADE_KEYS`)
+
+ここで出す文は全部日本語(O-1)。下の層の例外の英語の文は出さない。
 """
 from __future__ import annotations
 
@@ -30,7 +35,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Mapping, Sequence
 
-from .ledger import SUMMARY_KEYS, book
+from .ledger import SUMMARY_KEYS, TRADE_KEYS, LedgerError, book
 
 FILLS_FILE = "road_fills.json"
 SUMMARY_FILE = "road_summary.json"
@@ -62,38 +67,97 @@ def write_store(run_dir: str, fills: Sequence[Mapping], fx: Sequence[Mapping] = 
     return summary
 
 
+class StoreError(ValueError):
+    """置き場が読めない(文は日本語)。"""
+
+
+def load_json(path: str, what: str) -> object:
+    """JSON のファイルを読む。読めなければ日本語の文の `StoreError`。"""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        raise StoreError(f"{what}のファイルが無い: {path}") from None
+    except json.JSONDecodeError as exc:
+        raise StoreError(f"{what}のファイルが JSON として読めない: {path}(行 {exc.lineno} 列 {exc.colno})") from None
+    except UnicodeDecodeError:
+        raise StoreError(f"{what}のファイルが UTF-8 の文字として読めない: {path}") from None
+    except OSError as exc:
+        raise StoreError(f"{what}のファイルを開けない: {path}(OS の誤りの番号 {exc.errno})") from None
+
+
 def read_store(run_dir: str) -> tuple[list, list, object]:
-    """(約定の列, 為替の列, 書かれたまとめ)。ファイルが無い・読めないときは例外。"""
-    with open(os.path.join(run_dir, FILLS_FILE), "r", encoding="utf-8") as fh:
-        body = json.load(fh)
-    with open(os.path.join(run_dir, SUMMARY_FILE), "r", encoding="utf-8") as fh:
-        summary = json.load(fh)
+    """(約定の列, 為替の列, 書かれたまとめ)。ファイルが無い・読めないときは `StoreError`。"""
+    body = load_json(os.path.join(run_dir, FILLS_FILE), "約定の列")
+    summary = load_json(os.path.join(run_dir, SUMMARY_FILE), "まとめ")
     if not isinstance(body, dict) or not isinstance(body.get("fills"), list):
-        raise ValueError(f"{FILLS_FILE} に fills の列が無い")
+        raise StoreError(f"{FILLS_FILE} に fills の列が無い")
     fx = body.get("fx", [])
     if not isinstance(fx, list):
-        raise ValueError(f"{FILLS_FILE} の fx が列でない")
+        raise StoreError(f"{FILLS_FILE} の fx が列でない")
     return body["fills"], fx, summary
 
 
+def _same(a: object, b: object) -> bool:
+    return type(a) is type(b) and a == b
+
+
 def check_summary(fills: Sequence[Mapping], fx: Sequence[Mapping], written: object) -> list:
-    """(a) まとめを計算し直して書かれたまとめと突き合わせる。"""
-    out = []
+    """(a) まとめ(約定の数・取引ごとの表を含む)を計算し直して書かれたまとめと突き合わせる。"""
     try:
         again = book(fills, list(fx) or None).summary
-    except Exception as exc:  # 帳簿のツールが止まった約定の列は、それ自体が失敗
-        return [{"check": "a", "row": "fills", "reason": f"帳簿のツールで計算し直せない: {type(exc).__name__}: {exc}"}]
+    except LedgerError as exc:  # 帳簿のツールが止まった約定の列は、それ自体が失敗
+        return [{"check": "a", "row": "約定の列", "reason": f"帳簿のツールで計算し直せない: {exc}"}]
+    except Exception as exc:  # 想定外(作りの誤り)。下の層の英語の文は出さない
+        return [{"check": "a", "row": "約定の列",
+                 "reason": f"帳簿のツールが想定外の形で止まった(例外の種類 {type(exc).__name__})"}]
     if not isinstance(written, dict):
-        return [{"check": "a", "row": "summary", "reason": f"書かれたまとめが辞書でない: {type(written).__name__}"}]
+        return [{"check": "a", "row": "まとめ", "reason": f"書かれたまとめが辞書でない({type(written).__name__})"}]
+    if set(again) != set(SUMMARY_KEYS):
+        return [{"check": "a", "row": "まとめ", "reason": "帳簿のツールのまとめの鍵が SUMMARY_KEYS と違う(作りの誤り)"}]
+    out = []
     for k in sorted(set(again) | set(written)):
         if k not in written:
             out.append({"check": "a", "row": k, "reason": f"書かれたまとめに {k} が無い(計算し直すと {again[k]!r})"})
         elif k not in again:
             out.append({"check": "a", "row": k, "reason": f"書かれたまとめに帳簿のツールが出さない鍵 {k} がある"})
-        elif type(written[k]) is bool or written[k] != again[k]:
+        elif k == "trades":
+            out.extend(_check_trades(written[k], again[k]))
+        elif not _same(written[k], again[k]):
             out.append({"check": "a", "row": k,
                         "reason": f"書かれた値 {written[k]!r} と計算し直した値 {again[k]!r} が違う"})
-    assert set(again) == set(SUMMARY_KEYS)
+    return out
+
+
+def _check_trades(written: object, again: list) -> list:
+    """まとめの取引ごとの表を、行ごと・欄ごとに突き合わせる。"""
+    if not isinstance(written, list):
+        return [{"check": "a", "row": "trades", "reason": f"書かれた取引ごとの表が列でない({type(written).__name__})"}]
+    out = []
+    if len(written) != len(again):
+        out.append({"check": "a", "row": "trades",
+                    "reason": f"書かれた取引の数 {len(written)} と計算し直した取引の数 {len(again)} が違う"})
+    for j in range(max(len(written), len(again))):
+        if j >= len(written):
+            out.append({"check": "a", "row": f"trades[{j}]", "reason": f"書かれた表にこの取引が無い(計算し直すと {again[j]!r})"})
+            continue
+        if j >= len(again):
+            out.append({"check": "a", "row": f"trades[{j}]", "reason": f"計算し直すと無い取引が書かれている: {written[j]!r}"})
+            continue
+        w, a = written[j], again[j]
+        if not isinstance(w, dict):
+            out.append({"check": "a", "row": f"trades[{j}]", "reason": f"書かれた取引の行が辞書でない({type(w).__name__})"})
+            continue
+        for k in TRADE_KEYS:
+            if k not in w:
+                out.append({"check": "a", "row": f"trades[{j}].{k}",
+                            "reason": f"書かれた取引の行に {k} が無い(計算し直すと {a[k]!r})"})
+            elif not _same(w[k], a[k]):
+                out.append({"check": "a", "row": f"trades[{j}].{k}",
+                            "reason": f"書かれた値 {w[k]!r} と計算し直した値 {a[k]!r} が違う"})
+        for k in sorted(set(w) - set(TRADE_KEYS)):
+            out.append({"check": "a", "row": f"trades[{j}].{k}",
+                        "reason": f"書かれた取引の行に帳簿のツールが出さない鍵 {k} がある"})
     return out
 
 
@@ -105,15 +169,15 @@ def check_bars(fills: Sequence[Mapping], bars: Sequence[Mapping]) -> list:
         try:
             s, hi, lo = b["t_ns"], b["high"], b["low"]
         except (KeyError, TypeError):
-            out.append({"check": "b", "row": f"bar {j}", "reason": "足に t_ns / high / low が無い"})
+            out.append({"check": "b", "row": f"足 {j}", "reason": "足に t_ns / high / low が無い"})
             continue
         if type(s) is not int:
-            out.append({"check": "b", "row": f"bar {j}", "reason": f"足の t_ns が ns の整数でない: {s!r}"})
+            out.append({"check": "b", "row": f"足 {j}", "reason": f"足の t_ns が ns の整数でない: {s!r}"})
             continue
         bad = [n for n, v in (("high", hi), ("low", lo))
                if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(float(v))]
         if bad:
-            out.append({"check": "b", "row": f"bar {j}", "reason": f"足の {'・'.join(bad)} が有限の数でない"})
+            out.append({"check": "b", "row": f"足 {j}", "reason": f"足の {'・'.join(bad)} が有限の数でない"})
             continue
         rows.append((s, j, float(hi), float(lo)))
     rows.sort()
@@ -137,12 +201,12 @@ def check_bars(fills: Sequence[Mapping], bars: Sequence[Mapping]) -> list:
         s, j, hi, lo = hits[0]
         if s % MINUTE_NS != 0:
             out.append({"check": "b", "row": i,
-                        "reason": f"約定の時刻 {t} が属する足(bar {j})の始まり {s} が分の区切りから "
+                        "reason": f"約定の時刻 {t} が属する足(足 {j})の始まり {s} が分の区切りから "
                                   f"{s % MINUTE_NS} ns ずれている"})
             continue
         if not (lo <= float(px) <= hi):
             out.append({"check": "b", "row": i,
-                        "reason": f"約定の値段 {px} がその分の足(bar {j})の安値 {lo}〜高値 {hi} の外"})
+                        "reason": f"約定の値段 {px} がその分の足(足 {j})の安値 {lo}〜高値 {hi} の外"})
     return out
 
 
@@ -150,6 +214,6 @@ def check_outputs(run_dir: str, bars: Sequence[Mapping]) -> CheckResult:
     """置き場 1 つに (a) と (b) を当てる。置き場が読めなければ失敗。"""
     try:
         fills, fx, written = read_store(run_dir)
-    except Exception as exc:
-        return CheckResult([{"check": "a", "row": run_dir, "reason": f"置き場が読めない: {type(exc).__name__}: {exc}"}])
+    except StoreError as exc:
+        return CheckResult([{"check": "a", "row": run_dir, "reason": f"置き場が読めない: {exc}"}])
     return CheckResult(check_summary(fills, fx, written) + check_bars(fills, bars))
