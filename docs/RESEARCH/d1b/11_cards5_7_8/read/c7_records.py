@@ -29,6 +29,7 @@ def main():
     d0, nd = int(days.nums[0]), len(days.nums)
     # 日ごと × 窓 × 区分の無い形で: 前が上・前が下 の 続き・分母
     acc = {}
+    mins = {}
     with gzip.open(REC, "rt") as fh:
         for r in csv.DictReader(fh):
             side, pr = int(r["side"]), int(r["prior_window_move"])
@@ -39,6 +40,7 @@ def main():
             if not (0 <= k < nd):
                 continue
             a = acc.setdefault(r["window"], {x: np.zeros(nd) for x in ("nu", "du", "nd", "dd")})
+            mins.setdefault(r["window"], []).append((k, float(r["minutes"])))
             if pr > 0:
                 a["du"][k] += 1; a["nu"][k] += (side == pr)
             else:
@@ -141,6 +143,38 @@ def main():
                 e = strat(ai, flow); b = L._boot(n, lambda i, flow=flow: strat(i, flow))
                 cells.append(f"{e:+.4f} [{b['lo']:+.4f}, {b['hi']:+.4f}]" if b["lo"] is not None else f"{e:+.3f}(区間なし: {b['why']})")
             out.append(f"| {w} | {pn} | {','.join(str(y) for y in ys)} | " + " | ".join(cells) + " |")
+    # 5. 1 週の線の依存(相方 01 の指摘 1): レースの長さの分位・区分ごとの週の数・塊を長くした区間(結果を見た後の選び = 探索)
+    out += ["", "## 5. 1 週の線の依存の大きさ(相方の指摘で足した。塊を長くした区間は結果を見た後の選び = 探索)", "",
+            "| 区分 | 起点 | 起点のある週(暦の週)| 当たるまでの分 25/50/75/90 % 点 |", "|---|---|---|---|"]
+    ks = np.array([k for k, _ in mins["1w"]]); ms = np.array([m for _, m in mins["1w"]])
+    wk = (days.nums[ks] + 3) // 7  # 1970-01-01 は木曜。+3 で月曜始まりの週の番号
+    for c in CL:
+        m = clsv[ks] == c
+        q = np.percentile(ms[m], [25, 50, 75, 90])
+        out.append(f"| {c} | {int(m.sum())} | {len(np.unique(wk[m]))} | " + "/".join(f"{x:.0f}" for x in q) + " |")
+    out += ["", "| 塊の長さ(日) | 抜かない low − high(全期間) | 抜いた low − high(全期間) |", "|---|---|---|"]
+    a = acc["1w"]; n = nd; ai = np.arange(n)
+    def raw1(i):
+        r = []
+        for c in ("low", "high"):
+            m = clsv[i] == c
+            r.append((a["nu"] + a["nd"])[i][m].sum() / (a["du"] + a["dd"])[i][m].sum())
+        return r[0] - r[1]
+    def fl1(i):
+        r = []
+        for c in ("low", "high"):
+            m = clsv[i] == c
+            du, dd = a["du"][i][m].sum(), a["dd"][i][m].sum()
+            if du <= 0 or dd <= 0:
+                return np.nan
+            r.append((a["nu"][i][m].sum() / du + a["nd"][i][m].sum() / dd) / 2)
+        return r[0] - r[1]
+    keep = L.BLOCK
+    for bl in (5, 14, 28, 56):
+        L.BLOCK = bl
+        br, bf = L._boot(n, raw1), L._boot(n, fl1)
+        out.append(f"| {bl} | {raw1(ai):+.3f} [{br['lo']:+.3f}, {br['hi']:+.3f}] | {fl1(ai):+.3f} [{bf['lo']:+.3f}, {bf['hi']:+.3f}] |")
+    L.BLOCK = keep
     open(os.path.join(HERE, "c7_records.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
 
