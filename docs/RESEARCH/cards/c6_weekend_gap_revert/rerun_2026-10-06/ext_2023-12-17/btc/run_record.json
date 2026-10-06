@@ -1,0 +1,252 @@
+{
+ "card": "c6_weekend_gap_revert",
+ "chunk": "year",
+ "chunks": [
+  {
+   "bars": 217125,
+   "decisions": 217125,
+   "delivery_digest": "fde020c74469af46e6196eff90f4d8f7dfb57303a880758f7adb5976fc81a230",
+   "range": [
+    "2017-08-01T15:00:00Z",
+    "2018-01-01T00:00:00Z"
+   ],
+   "ref_rows": 184860
+  },
+  {
+   "bars": 521307,
+   "decisions": 520293,
+   "delivery_digest": "851dca11bc34936910ed1eb9a40aeab796b46d52716e0ca44e95e37c8e315fb9",
+   "range": [
+    "2018-01-01T00:00:00Z",
+    "2019-01-01T00:00:00Z"
+   ],
+   "ref_rows": 447840
+  },
+  {
+   "bars": 519892,
+   "decisions": 519892,
+   "delivery_digest": "5b3ab2d005354a403c6c884cb301e3aabf9406a64e7f82c55825011e23323a15",
+   "range": [
+    "2019-01-01T00:00:00Z",
+    "2020-01-01T00:00:00Z"
+   ],
+   "ref_rows": 446400
+  },
+  {
+   "bars": 519967,
+   "decisions": 519967,
+   "delivery_digest": "23939389cada2c71a095f0a8b2de86b06cff162e70d6ebb2a8396652786044c5",
+   "range": [
+    "2020-01-01T00:00:00Z",
+    "2021-01-01T00:00:00Z"
+   ],
+   "ref_rows": 449280
+  },
+  {
+   "bars": 518630,
+   "decisions": 518630,
+   "delivery_digest": "d2c97ef4dcf2b9d046e1c4db1bdb417b5c2ed1f032bd3954d20ac7b0379400d1",
+   "range": [
+    "2021-01-01T00:00:00Z",
+    "2022-01-01T00:00:00Z"
+   ],
+   "ref_rows": 446400
+  },
+  {
+   "bars": 520884,
+   "decisions": 520884,
+   "delivery_digest": "928c76e0a9482520e4d431839f4df8acf0e13a604e278c7924cf6fbbdf9c8da0",
+   "range": [
+    "2022-01-01T00:00:00Z",
+    "2023-01-01T00:00:00Z"
+   ],
+   "ref_rows": 446400
+  },
+  {
+   "bars": 457414,
+   "decisions": 457414,
+   "delivery_digest": "12c45d713ce5bafd6af9cf185aa4956f2233cc8944f3d8c9d1a47aa0d9c0f356",
+   "range": [
+    "2023-01-01T00:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "ref_rows": 432900
+  }
+ ],
+ "clock": [
+  [
+   "USDJPY の行 2854080",
+   91.9,
+   1.66
+  ],
+  [
+   "区切り 2017-08-01〜2018-01-01 足 217125 参照 184860",
+   158.7,
+   1.66
+  ],
+  [
+   "区切り 2018-01-01〜2019-01-01 足 521307 参照 447840",
+   313.0,
+   1.66
+  ],
+  [
+   "区切り 2019-01-01〜2020-01-01 足 519892 参照 446400",
+   460.3,
+   1.66
+  ],
+  [
+   "区切り 2020-01-01〜2021-01-01 足 519967 参照 449280",
+   609.7,
+   1.66
+  ],
+  [
+   "区切り 2021-01-01〜2022-01-01 足 518630 参照 446400",
+   759.2,
+   1.66
+  ],
+  [
+   "区切り 2022-01-01〜2023-01-01 足 520884 参照 446400",
+   908.8,
+   1.66
+  ],
+  [
+   "区切り 2023-01-01〜2023-12-17 足 457414 参照 432900",
+   1033.5,
+   1.66
+  ],
+  [
+   "区切りの run_card(読み込みを含む) 942s 決定 3274205",
+   1034.0,
+   1.66
+  ],
+  [
+   "npz を保存",
+   1046.4,
+   1.66
+  ],
+  [
+   "日ごとの測定と診断 6s",
+   1052.4,
+   1.66
+  ]
+ ],
+ "headline": {
+  "changes": 664,
+  "ci_1d_per_day": [
+   0.26977810232521354,
+   3.823181765716065
+  ],
+  "ci_5d_per_day": [
+   0.2291257864261655,
+   3.8891130446242284
+  ],
+  "drawdown": {
+   "final_cum_bp": 4343.935360692366,
+   "max_bp": 840.4334286904327,
+   "peak_day": "2018-07-23",
+   "trough_day": "2019-07-08"
+  },
+  "mde_1d_per_day": 2.553748408585944,
+  "month": {
+   "best": {
+    "bp": 1459.6244376884758,
+    "month": "2020-03"
+   },
+   "n": 77,
+   "positive_share": 0.5714285714285714,
+   "worst": {
+    "bp": -371.25318448081305,
+    "month": "2017-08"
+   },
+   "zero_share": 0.0
+  },
+  "n_days": 2329,
+  "n_decisions": 3274203,
+  "nonzero_share": 0.005879900617096364,
+  "per_day_bp": 1.8651504339598,
+  "per_minute_bp": 0.001326715344373081,
+  "sum_abs_de": 664.0,
+  "trades": {
+   "best_bp": 1393.9405674361142,
+   "hold_decisions_median": 59.0,
+   "hold_minutes_mean": 58.984939759036145,
+   "hold_minutes_median": 59.0,
+   "long": {
+    "n": 140,
+    "sum_bp": 5094.47464516802,
+    "win_rate": 0.6428571428571429
+   },
+   "loss_rate": 0.45180722891566266,
+   "mean_bp": 13.084142652687873,
+   "median_bp": 4.40784112463733,
+   "n": 332,
+   "per_day": 0.14255045083726922,
+   "short": {
+    "n": 192,
+    "sum_bp": -750.5392844756441,
+    "win_rate": 0.4791666666666667
+   },
+   "win_rate": 0.5481927710843374,
+   "worst_bp": -376.487396832349,
+   "zero_rate": 0.0
+  },
+  "worst_day": {
+   "bp": -376.48739683234913,
+   "day": "2017-11-13"
+  },
+  "year_per_day_bp": {
+   "2017": -2.574146685791063,
+   "2018": 4.507599924120251,
+   "2019": -0.641324034952755,
+   "2020": 5.121286515315888,
+   "2021": 3.591135828100298,
+   "2022": 1.204254219360608,
+   "2023": -0.8566759958471972
+  }
+ },
+ "inputs": {
+  "bars": {
+   "anomalies": {
+    "gap": 372,
+    "no_trade": 78169
+   },
+   "files": {
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+   }
+  },
+  "references": {
+   "usdjpy_close": [
+    [
+     "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz",
+     "755670f47b6c99ea7fc1cc33479afe1f7cc9044bdb525ef2b14b37b09c76ccce",
+     2422080,
+     2421180
+    ],
+    [
+     "backtest_data/fx_usdjpy_1m_20260822.csv.gz",
+     "a08b4ae180940e57b6e5e13bd6eb30afee0a9d4164003a3d18fe16699352c35d",
+     1640160,
+     432900
+    ]
+   ]
+  }
+ },
+ "npz": "docs/RESEARCH/cards/c6_weekend_gap_revert/rerun_2026-10-06/ext_2023-12-17/btc/run.npz",
+ "period": [
+  "2017-08-01T15:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "timing": {
+  "chunked_run_s": 942.1,
+  "measure_s": 6.0,
+  "peak_rss_gb": 1.66,
+  "total_s": 1052.4
+ },
+ "variant": "btc"
+}
