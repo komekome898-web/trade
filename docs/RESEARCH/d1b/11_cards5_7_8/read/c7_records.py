@@ -106,6 +106,41 @@ def main():
             ai = np.arange(n); br, bf = L._boot(n, raw), L._boot(n, fl)
             fmt = lambda e, b: f"{e:+.3f} [{b['lo']:+.3f}, {b['hi']:+.3f}]" if b["lo"] is not None else f"{e:+.3f}(区間なし)"
             out.append(f"| {w} | {y} | {nl} | {nh} | {fmt(raw(ai), br)} | {fmt(fl(ai), bf)} |")
+    # 4. 年で層に分けた low − high(年ごとの low − high を、重み w_y = n_low・n_high ÷ (n_low + n_high)(日の数)で平均)
+    out += ["", "## 4. 年で層に分けた low − high(区分の年の偏りを除く。重み = 年ごとの low・high の日の数の調和の半分。low と high の両方が 10 日以上ある年だけ)", "",
+            "| 窓 | 期間 | 使った年 | 抜かない | 抜いた |", "|---|---|---|---|---|"]
+    yrs_all = np.array([int(L.day_str(int(d))[:4]) for d in days.nums])
+    for w, a in acc.items():
+        for pn, nums in parts.items():
+            s_, c_ = sub(a, nums)
+            yk = yrs_all[np.asarray(nums) - d0]
+            ys = [y for y in np.unique(yk) if ((c_ == "low") & (yk == y)).sum() >= 10 and ((c_ == "high") & (yk == y)).sum() >= 10]
+            def strat(i, flow):
+                num = den = 0.0
+                for y in ys:
+                    r = []
+                    for c in ("low", "high"):
+                        m = (c_[i] == c) & (yk[i] == y)
+                        if flow:
+                            du, dd = s_["du"][i][m].sum(), s_["dd"][i][m].sum()
+                            if du <= 0 or dd <= 0:
+                                return np.nan
+                            r.append((s_["nu"][i][m].sum() / du + s_["nd"][i][m].sum() / dd) / 2)
+                        else:
+                            dn = (s_["du"] + s_["dd"])[i][m].sum()
+                            if dn <= 0:
+                                return np.nan
+                            r.append((s_["nu"] + s_["nd"])[i][m].sum() / dn)
+                    nl, nh = ((c_ == "low") & (yk == y)).sum(), ((c_ == "high") & (yk == y)).sum()
+                    wy = nl * nh / (nl + nh)
+                    num += wy * (r[0] - r[1]); den += wy
+                return num / den
+            n = len(c_); ai = np.arange(n)
+            cells = []
+            for flow in (False, True):
+                e = strat(ai, flow); b = L._boot(n, lambda i, flow=flow: strat(i, flow))
+                cells.append(f"{e:+.4f} [{b['lo']:+.4f}, {b['hi']:+.4f}]" if b["lo"] is not None else f"{e:+.3f}(区間なし: {b['why']})")
+            out.append(f"| {w} | {pn} | {','.join(str(y) for y in ys)} | " + " | ".join(cells) + " |")
     open(os.path.join(HERE, "c7_records.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
 
