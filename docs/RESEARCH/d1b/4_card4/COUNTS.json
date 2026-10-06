@@ -1,0 +1,60 @@
+{
+ "counts": {
+  "episodes": 341066,
+  "signal_bars": 2616870,
+  "control_bars": 1361708,
+  "ratio_edges_first_half": [
+   8.450072923178377,
+   10.72506975143568
+  ]
+ },
+ "meta": {
+  "command": "scripts/d1b/g2/run_g2.py --mode counts --items 4,5,6,7,8,11",
+  "mode": "counts",
+  "grid": {
+   "source": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906",
+   "lo": "2015-11-28T15:00:00Z",
+   "hi": "2023-12-17T15:00:00Z",
+   "anomalies": {
+    "no_trade": 248632,
+    "gap": 3287
+   },
+   "hashes": {
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz": "c71f47b09ee07c25ef3f8bc92080383a6aefd7420cc147506adc07b315bb62fd",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz": "73d10b88f8dde8a1b5825f4feecd093cc075ba5dd29e56e50b5b59f1a849c3bb",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56",
+    "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+   },
+   "bars": 3983118,
+   "vol0_bars": 1014
+  },
+  "days": {
+   "全期間": {
+    "from": "2015-11-29",
+    "to": "2023-12-17",
+    "days": 2941
+   },
+   "前半": {
+    "from": "2015-11-29",
+    "to": "2019-12-07",
+    "days": 1470
+   },
+   "後半": {
+    "from": "2019-12-08",
+    "to": "2023-12-17",
+    "days": 1471
+   }
+  }
+ },
+ "readings": [
+  "読み: 1 回の離れ = 同じ側に離れた決定の足が続く間の最初の足(直前の決定の足が同じ側に離れていなければ新しい 1 回)。",
+  "読み: 対照(離れていない足)の向き = 中心の側(終値 > 中心なら下へ、< なら上へ。= は除く)。",
+  "読み: 戻る前の一番深い不利な点に、戻った足そのものは入れない(足の中の順序が分からないため)。",
+  "読み: 窓は期間の始まりより前の足で埋めない(カードと同じ温まり)。"
+ ]
+}

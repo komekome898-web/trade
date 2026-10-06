@@ -1,0 +1,11 @@
+c3_yen_premium_revert 1d 期間 2017-08-17T15:00:00Z 〜 2022-12-31T15:00:00Z 区切り 5
+[   170.9s 最大RSS  1.50GB] 区切り 2017-08-17〜2018-01-01 足 194272 参照 {'binance_btcusdt_close': 195884, 'usdjpy_close': 164700}
+[   374.6s 最大RSS  1.75GB] 区切り 2018-01-01〜2019-01-01 足 521307 参照 {'binance_btcusdt_close': 521624, 'usdjpy_close': 447841}
+[   576.7s 最大RSS  1.83GB] 区切り 2019-01-01〜2020-01-01 足 519892 参照 {'binance_btcusdt_close': 523836, 'usdjpy_close': 446401}
+[   771.7s 最大RSS  1.89GB] 区切り 2020-01-01〜2021-01-01 足 519967 参照 {'binance_btcusdt_close': 525788, 'usdjpy_close': 449281}
+[   966.1s 最大RSS  1.92GB] 区切り 2021-01-01〜2022-01-01 足 518630 参照 {'binance_btcusdt_close': 524607, 'usdjpy_close': 446401}
+[  1147.3s 最大RSS  1.97GB] 区切り 2022-01-01〜2022-12-31 足 520356 参照 {'binance_btcusdt_close': 525060, 'usdjpy_close': 446401}
+[  1148.6s 最大RSS  1.97GB] 1d: 区切りの run_card(読み込みを含む) 1149s 決定 2793410
+[  1166.4s 最大RSS  1.97GB] npz を保存
+{"variant": "1d", "period": ["2017-08-17T15:00:00Z", "2022-12-31T15:00:00Z"], "npz": "docs/RESEARCH/cards/c3_yen_premium_revert/rerun_2026-10-06/1d/run.npz", "npz_keys": ["close", "decided", "end_ns", "exposure", "fx_time", "fx_value", "high", "low", "open", "ov_time", "ov_value", "start_ns", "volume"], "daily_csv_sha256": "7830610c22f28ec4c0e1d2810423ded28554a81052af2e92407524ae6cbc4daa", "n_decisions": 2793410, "timing": {"chunked_run_s": 1148.6, "total_s": 1166.4, "peak_rss_gb": 1.97}}
+[  1166.7s 最大RSS  1.97GB] 終わり(測定なし)

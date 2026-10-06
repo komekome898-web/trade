@@ -1,0 +1,84 @@
+{
+ "cols": {
+  "c2_kind": {
+   "counts": {
+    "strong_buy": 10764,
+    "strong_sell": 9640,
+    "weak_buy": 15123,
+    "weak_sell": 13129
+   },
+   "n_color": 48656,
+   "n_signals": 48656,
+   "ok": true
+  },
+  "decided_equals_nonempty": true,
+  "high_low": {
+   "n_high_below_open_or_close": 0,
+   "n_low_above_open_or_close": 0,
+   "n_nonempty": 2272525,
+   "ok": true
+  },
+  "keys": [
+   "close",
+   "decided",
+   "end_ns",
+   "exposure",
+   "high",
+   "low",
+   "open",
+   "signal_color",
+   "signal_log",
+   "signal_strong",
+   "start_ns",
+   "volume"
+  ]
+ },
+ "dir": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/c_15m",
+ "npz_vs_daily_csv_same": true,
+ "ok": true,
+ "orig": "docs/RESEARCH/cards/c2_owner_xvenue_wick/measure/c_15m",
+ "reproduce": {
+  "identical": true,
+  "n_days_new": 1597,
+  "n_days_orig": 1597,
+  "new": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/c_15m/daily.csv",
+  "ok": true,
+  "orig": "docs/RESEARCH/cards/c2_owner_xvenue_wick/measure/c_15m/daily.csv",
+  "require_identical": true,
+  "same_last_line": true,
+  "same_n_days": true,
+  "sha256_new": "32d6af860e012713103fced833e81539b28fd82c9332a40cb215805ca60d3474",
+  "sha256_orig": "32d6af860e012713103fced833e81539b28fd82c9332a40cb215805ca60d3474"
+ },
+ "signals": {
+  "n_rows": 48656,
+  "n_signal_log": 48656,
+  "ok": true,
+  "path": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/c_15m/signals.csv.gz"
+ },
+ "trades": {
+  "columns": [
+   "signal_t",
+   "entry_t",
+   "exit_t",
+   "side",
+   "pnl_bp"
+  ],
+  "daily_calc_days_not_in_daily_csv": 0,
+  "daily_calc_mismatch_days": 0,
+  "daily_calc_mismatch_examples": [],
+  "info_days_where_signal_day_sum_differs": 1247,
+  "info_note": "取引を signal_t の日本時間の日に寄せた和と daily.csv の比べ。0 時をまたいだ取引の日は合わないのが正しい(判定に入れない)",
+  "n_trades": 21605,
+  "ok": true,
+  "path": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/c_15m/trades.csv.gz",
+  "sides": {
+   "buy": 11075,
+   "sell": 10530
+  },
+  "sum_abs_diff": 3.45182343153283e-05,
+  "sum_daily_bp": -54536.30651151832,
+  "sum_tolerance": 0.010857036306511518,
+  "sum_trades_bp": -54536.306477000086
+ }
+}

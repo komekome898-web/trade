@@ -1,0 +1,491 @@
+{
+ "what": "カード 8 の門(Binance)の区分。日 d の区分 = 前の日 d − 1 の量 v を、d の年の前の暦年の日の分位で切ったもの(vol_split_daily.classify をそのまま当てた)",
+ "rule_half": "区分のある日を日付順に並べ、n // 2 番目の日から後半",
+ "half_boundary_day": "2021-06-25",
+ "n_classified": 1812,
+ "first_day": "2019-01-01",
+ "last_day": "2023-12-17",
+ "n_days_with_vol_by_year": {
+  "2017": 124,
+  "2018": 364,
+  "2019": 365,
+  "2020": 366,
+  "2021": 365,
+  "2022": 365,
+  "2023": 351
+ },
+ "n_days_closes": 2300,
+ "edges": {
+  "2019": {
+   "q1": 5.011720591923641,
+   "q2": 8.368318165283187,
+   "from_year": 2018,
+   "n_days_from_year": 364
+  },
+  "2020": {
+   "q1": 3.8232177135464016,
+   "q2": 5.685131025198433,
+   "from_year": 2019,
+   "n_days_from_year": 365
+  },
+  "2021": {
+   "q1": 4.238820017002618,
+   "q2": 6.084510615868016,
+   "from_year": 2020,
+   "n_days_from_year": 366
+  },
+  "2022": {
+   "q1": 6.277620303579709,
+   "q2": 8.548284194856866,
+   "from_year": 2021,
+   "n_days_from_year": 365
+  },
+  "2023": {
+   "q1": 4.282444788574725,
+   "q2": 5.7393850139396445,
+   "from_year": 2022,
+   "n_days_from_year": 365
+  },
+  "2024": {
+   "q1": 2.5935639109047375,
+   "q2": 3.768560448133474,
+   "from_year": 2023,
+   "n_days_from_year": 351
+  }
+ },
+ "classify_vs_edges_mismatch": 0,
+ "classified_2018": "2018 年の日は区分されていない",
+ "read": [
+  {
+   "year": 2017,
+   "range": [
+    "2017-08-17T00:00:00Z",
+    "2018-01-01T00:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 23696,
+    "off_grid": 20401,
+    "gap": 20897
+   },
+   "n_bars_kept": 152528,
+   "n_synthetic_dropped": 23696,
+   "n_missing_minutes": 20897,
+   "n_off_grid_dropped": 20401,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2017.csv.gz",
+     "sha256": "590178034c6e31b32e63e531804cbb5b2301253bc36eb904e4b45c21829b06a6",
+     "size": 4982605,
+     "sealed_unit": "P2-08",
+     "rows_read": 196544,
+     "rows_kept": 196544
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "off_grid": "drop",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2017-08-17T04:00:00Z",
+   "last_start": "2017-12-31T23:59:00Z"
+  },
+  {
+   "year": 2018,
+   "range": [
+    "2018-01-01T00:00:00Z",
+    "2019-01-01T00:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 20,
+    "off_grid": 1201,
+    "gap": 5177
+   },
+   "n_bars_kept": 520403,
+   "n_synthetic_dropped": 20,
+   "n_missing_minutes": 5177,
+   "n_off_grid_dropped": 1201,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2018.csv.gz",
+     "sha256": "f66cc2228c3b3b4c78ed418014f323f00690050b7319c57fba83a9e3d2389347",
+     "size": 17715123,
+     "sealed_unit": "P2-08",
+     "rows_read": 521624,
+     "rows_kept": 521624
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "off_grid": "drop",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2018-01-01T00:00:00Z",
+   "last_start": "2018-12-31T23:59:00Z",
+   "missing_minutes_at_year_start": 0
+  },
+  {
+   "year": 2019,
+   "range": [
+    "2019-01-01T00:00:00Z",
+    "2020-01-01T00:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 76,
+    "gap": 1764
+   },
+   "n_bars_kept": 523760,
+   "n_synthetic_dropped": 76,
+   "n_missing_minutes": 1764,
+   "n_off_grid_dropped": 0,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2019.csv.gz",
+     "sha256": "ffb1fde499ae1c47f39e1df341d31d9db3cbb138a46bef36e9ed433c5135bb12",
+     "size": 18128682,
+     "sealed_unit": "P2-08",
+     "rows_read": 523836,
+     "rows_kept": 523836
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2019-01-01T00:00:00Z",
+   "last_start": "2019-12-31T23:59:00Z",
+   "missing_minutes_at_year_start": 0
+  },
+  {
+   "year": 2020,
+   "range": [
+    "2020-01-01T00:00:00Z",
+    "2021-01-01T00:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 50,
+    "gap": 1252
+   },
+   "n_bars_kept": 525738,
+   "n_synthetic_dropped": 50,
+   "n_missing_minutes": 1252,
+   "n_off_grid_dropped": 0,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2020.csv.gz",
+     "sha256": "655ab3497125c7a5bbd1f11cd23c655c29b2788a7916a3f8e6bd2048d98dda34",
+     "size": 18859023,
+     "sealed_unit": "P2-08",
+     "rows_read": 525788,
+     "rows_kept": 525788
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2020-01-01T00:00:00Z",
+   "last_start": "2020-12-31T23:59:00Z",
+   "missing_minutes_at_year_start": 0
+  },
+  {
+   "year": 2021,
+   "range": [
+    "2021-01-01T00:00:00Z",
+    "2022-01-01T00:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 89,
+    "gap": 993
+   },
+   "n_bars_kept": 524518,
+   "n_synthetic_dropped": 89,
+   "n_missing_minutes": 993,
+   "n_off_grid_dropped": 0,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2021.csv.gz",
+     "sha256": "56d016ad19008cb7c56bbe9754a74c32b1b7ce2061b6ae9133dccecb2a7dc859",
+     "size": 19734685,
+     "sealed_unit": "P2-08",
+     "rows_read": 524607,
+     "rows_kept": 524607
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2021-01-01T00:00:00Z",
+   "last_start": "2021-12-31T23:59:00Z",
+   "missing_minutes_at_year_start": 0
+  },
+  {
+   "year": 2022,
+   "range": [
+    "2022-01-01T00:00:00Z",
+    "2023-01-01T00:00:00Z"
+   ],
+   "anomalies": {},
+   "n_bars_kept": 525600,
+   "n_synthetic_dropped": 0,
+   "n_missing_minutes": 0,
+   "n_off_grid_dropped": 0,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2022.csv.gz",
+     "sha256": "cdc318ee448879f567812cd2bdc4a60964e9e9f3806cf7adaba6e295b52b5ca4",
+     "size": 18912760,
+     "sealed_unit": "P2-08",
+     "rows_read": 525600,
+     "rows_kept": 525600
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {},
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2022-01-01T00:00:00Z",
+   "last_start": "2022-12-31T23:59:00Z",
+   "missing_minutes_at_year_start": 0
+  },
+  {
+   "year": 2023,
+   "range": [
+    "2023-01-01T00:00:00Z",
+    "2023-12-17T15:00:00Z"
+   ],
+   "anomalies": {
+    "synthetic": 72,
+    "gap": 80
+   },
+   "n_bars_kept": 504748,
+   "n_synthetic_dropped": 72,
+   "n_missing_minutes": 80,
+   "n_off_grid_dropped": 0,
+   "checks": [
+    "backward",
+    "duplicate",
+    "conflict",
+    "synthetic",
+    "gap",
+    "off_grid"
+   ],
+   "checks_not_run": {},
+   "files": [
+    {
+     "given": "backtest_data/binance_BTCUSDT_1m_20170801_20231231/binance_BTCUSDT_1m_2023.csv.gz",
+     "sha256": "1a83012af9283a4dd6952c30c3daf7aa82a31f0ccbf1af46ccfd11a358ac282e",
+     "size": 17719908,
+     "sealed_unit": "P2-08",
+     "rows_read": 525520,
+     "rows_kept": 504820
+    }
+   ],
+   "seal_records": {
+    "/home/user/trade/backtest_data/phase2_sealed/P2-01/SEALED.json": "fefbef7427c88aed79c43604959aa1a9ab036f1caad7ae2ed44c8329297b6fb5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-02/SEALED.json": "658d5456af4e24dff5946da26301d641dfdc5a6886bb9d03d231ae4c446a9d26",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03/SEALED.json": "f34a0c668a4be45b84789512b97d71a755ed6abad5227a855a8777acbe4d1733",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-03b/SEALED.json": "527d0251b36be25a9b1b4d62c8a26cea692d8fac22dccf1828784bbd02f9645e",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-04/SEALED.json": "3fa8bfa9133933af4aca5322768a9c5b78eef4aa02250c1064265dcd6e70808b",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-07/SEALED.json": "1d537e66ca7dc01538c850a821b813ab69d100478bae17ac136035a43853faa5",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08/SEALED.json": "7fe5ecbaaaf886051f938a903c3e83e71e801006e58da4601e9a17e8673941e2",
+    "/home/user/trade/backtest_data/phase2_sealed/P2-08b/SEALED.json": "c8f74a8358c7bb4ebf7cfa6325db84c8a3fbe972184f8644e9b3e895abfe1137"
+   },
+   "resolution": {
+    "gap": "accept",
+    "synthetic": "drop"
+   },
+   "n_ntrades0_volume_pos": 0,
+   "n_kept_volume0": 0,
+   "n_synthetic_not_flat": 0,
+   "first_start": "2023-01-01T00:00:00Z",
+   "last_start": "2023-12-17T14:59:00Z",
+   "missing_minutes_at_year_start": 0
+  }
+ ],
+ "read_range": [
+  "2017-08-17T00:00:00Z",
+  "2023-12-17T15:00:00Z"
+ ],
+ "counts": {
+  "by_year": {
+   "2019": {
+    "low": 203,
+    "mid": 110,
+    "high": 52,
+    "total": 365
+   },
+   "2020": {
+    "low": 93,
+    "mid": 134,
+    "high": 139,
+    "total": 366
+   },
+   "2021": {
+    "low": 8,
+    "mid": 97,
+    "high": 260,
+    "total": 365
+   },
+   "2022": {
+    "low": 269,
+    "mid": 63,
+    "high": 33,
+    "total": 365
+   },
+   "2023": {
+    "low": 269,
+    "mid": 59,
+    "high": 23,
+    "total": 351
+   }
+  },
+  "all": {
+   "low": 842,
+   "mid": 463,
+   "high": 507,
+   "total": 1812
+  },
+  "first_half": {
+   "low": 297,
+   "mid": 257,
+   "high": 352,
+   "total": 906
+  },
+  "second_half": {
+   "low": 545,
+   "mid": 206,
+   "high": 155,
+   "total": 906
+  }
+ }
+}

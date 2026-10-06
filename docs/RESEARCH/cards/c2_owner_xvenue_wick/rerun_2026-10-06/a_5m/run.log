@@ -1,0 +1,12 @@
+c2_owner_xvenue_wick a_5m 期間 2017-08-17T15:00:00Z 〜 2023-12-17T15:00:00Z 区切り 6
+[   134.6s 最大RSS  0.98GB] 区切り 2017-08-17〜2018-01-01 足 194272 参照 {'binance_open': 195884, 'binance_high': 195884, 'binance_low': 195884, 'binance_close': 195884}
+[   449.5s 最大RSS  2.52GB] 区切り 2018-01-01〜2019-01-01 足 521307 参照 {'binance_open': 521624, 'binance_high': 521624, 'binance_low': 521624, 'binance_close': 521624}
+[   756.2s 最大RSS  2.70GB] 区切り 2019-01-01〜2020-01-01 足 519892 参照 {'binance_open': 523836, 'binance_high': 523836, 'binance_low': 523836, 'binance_close': 523836}
+[  1055.8s 最大RSS  2.95GB] 区切り 2020-01-01〜2021-01-01 足 519967 参照 {'binance_open': 525788, 'binance_high': 525788, 'binance_low': 525788, 'binance_close': 525788}
+[  1354.8s 最大RSS  3.04GB] 区切り 2021-01-01〜2022-01-01 足 518630 参照 {'binance_open': 524607, 'binance_high': 524607, 'binance_low': 524607, 'binance_close': 524607}
+[  1655.0s 最大RSS  3.11GB] 区切り 2022-01-01〜2023-01-01 足 520884 参照 {'binance_open': 525600, 'binance_high': 525600, 'binance_low': 525600, 'binance_close': 525600}
+[  1909.8s 最大RSS  3.11GB] 区切り 2023-01-01〜2023-12-17 足 457414 参照 {'binance_open': 504820, 'binance_high': 504820, 'binance_low': 504820, 'binance_close': 504820}
+[  1911.8s 最大RSS  3.11GB] a_5m: 区切りの run_card(読み込みを含む) 1912s 決定 3251352
+[  1924.6s 最大RSS  3.11GB] npz を保存
+{"variant": "a_5m", "period": ["2017-08-17T15:00:00Z", "2023-12-17T15:00:00Z"], "npz": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/a_5m/run.npz", "npz_keys": ["close", "decided", "end_ns", "exposure", "high", "low", "open", "signal_color", "signal_log", "signal_strong", "start_ns", "volume"], "daily_csv_sha256": "612e93a9ac5ba6279af966c617ab98d578f17abc9fa5422ddc23dd7fb7a55934", "n_decisions": 3251352, "timing": {"chunked_run_s": 1911.8, "total_s": 1924.6, "peak_rss_gb": 3.11}}
+[  1924.8s 最大RSS  3.11GB] 終わり(測定なし)

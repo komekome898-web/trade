@@ -1,0 +1,9 @@
+c2_owner_xvenue_wick b_3m 期間 2020-01-01T15:00:00Z 〜 2023-12-17T15:00:00Z 区切り 3
+[   281.3s 最大RSS  2.54GB] 区切り 2020-01-01〜2021-01-01 足 519067 参照 {'binance_um_open': 526140, 'binance_um_high': 526140, 'binance_um_low': 526140, 'binance_um_close': 526140}
+[   558.8s 最大RSS  2.61GB] 区切り 2021-01-01〜2022-01-01 足 518630 参照 {'binance_um_open': 525600, 'binance_um_high': 525600, 'binance_um_low': 525600, 'binance_um_close': 525600}
+[   838.8s 最大RSS  2.83GB] 区切り 2022-01-01〜2023-01-01 足 520884 参照 {'binance_um_open': 525600, 'binance_um_high': 525600, 'binance_um_low': 525600, 'binance_um_close': 525600}
+[  1072.5s 最大RSS  2.83GB] 区切り 2023-01-01〜2023-12-17 足 457414 参照 {'binance_um_open': 504900, 'binance_um_high': 504900, 'binance_um_low': 504900, 'binance_um_close': 504900}
+[  1073.5s 最大RSS  2.83GB] b_3m: 区切りの run_card(読み込みを含む) 1073s 決定 2015995
+[  1081.9s 最大RSS  2.83GB] npz を保存
+{"variant": "b_3m", "period": ["2020-01-01T15:00:00Z", "2023-12-17T15:00:00Z"], "npz": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/b_3m/run.npz", "npz_keys": ["close", "decided", "end_ns", "exposure", "high", "low", "open", "signal_color", "signal_log", "signal_strong", "start_ns", "volume"], "daily_csv_sha256": "d70d053348df8c320ffb8b159fd844819bfaa94f1554505f81151f81e543ee48", "n_decisions": 2015995, "timing": {"chunked_run_s": 1073.5, "total_s": 1081.9, "peak_rss_gb": 2.83}}
+[  1082.0s 最大RSS  2.83GB] 終わり(測定なし)
