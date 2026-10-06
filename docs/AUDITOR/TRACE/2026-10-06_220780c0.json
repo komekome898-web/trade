@@ -27478,7 +27478,7 @@
   {
    "move": 1010,
    "tools": {
-    "Bash": 38,
+    "Bash": 39,
     "Agent": 6,
     "ReadNotifications": 1,
     "Write": 3,
@@ -27487,7 +27487,7 @@
     "Read": 1,
     "Grep": 1
    },
-   "n_tools": 76,
+   "n_tools": 77,
    "read_goal": false,
    "first_write_at": 12,
    "table_shown": false,
