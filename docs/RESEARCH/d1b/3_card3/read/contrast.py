@@ -176,17 +176,19 @@ def increments_section():
     d = parse()
     W = json.load(open(os.path.join(BASE, "result_outside_onset_last1m.json"), encoding="utf-8"))["窓"]
     L = ["## 6. 1 分目を除いた増分(h − 1 分。どちらも 実 − 対照平均、se の和の保守。結果を見てから作った切り口)", "",
-         "| 窓 | 原因の脚 | 時間 | 脚 | 全期間 | 前半 | 後半 |", "|---|---|---|---|---|---|---|"]
+         "| 窓 | 原因の脚 | 時間 | 脚 | 全期間 | 前半 | 後半 | 後半 − 前半(√(a² + b²)) |", "|---|---|---|---|---|---|---|---|"]
     for w in WINDOWS:
         for cause in ("全部", "bitFlyer", "Binance", "USDJPY"):
             for hz in ("5分", "15分", "60分"):
                 for leg in LEGS:
                     if w != "1d" and (cause != "全部" or leg != "合計(上乗せの戻り)"):
                         continue
-                    row = []
+                    row, vals = [], {}
                     for p in PERIODS:
                         a, b = con(d, w, cause, hz, leg, p), con(d, w, cause, "1分", leg, p)
-                        row.append(ci(a[0] - b[0], a[1] + b[1]))
+                        vals[p] = (a[0] - b[0], a[1] + b[1])
+                        row.append(ci(*vals[p]))
+                    row.append(ci(vals["後半"][0] - vals["前半"][0], math.hypot(vals["前半"][1], vals["後半"][1])))
                     L.append(f"| {w} | {cause} | {hz} − 1分 | {LSHORT.get(leg, leg)} | " + " | ".join(row) + " |")
     years = sorted(W["1d"]["実|60分|原因 全部|合計(上乗せの戻り)"]["年ごと(記述)"])
 
