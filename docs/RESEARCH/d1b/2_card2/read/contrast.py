@@ -165,3 +165,55 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ---- 年ごと(記述)と分位(関門 ② 1 回目の止める 1 で足した。result_<出所>.json の各表の「年ごと(記述)」「分位」から)
+def _json(src):
+    import json
+    return json.load(open(os.path.join(BASE, f"result_{src}.json"), encoding="utf-8"))["表"]
+
+
+def _cell(t, st, ctl, ser, hz, kind, year):
+    """(n, 点, se)。st = 強い・弱い・全部(全部は件数の重み、se は重み × se の和の保守)。"""
+    if st == "全部":
+        a, b = _cell(t, "強い", ctl, ser, hz, kind, year), _cell(t, "弱い", ctl, ser, hz, kind, year)
+        if a is None or b is None:
+            return None
+        n = a[0] + b[0]
+        return n, (a[0] * a[1] + b[0] * b[1]) / n, (a[0] * a[2] + b[0] * b[2]) / n
+    x = t[f"{st}|{ctl}|{ser}|{hz}|{kind}"]["年ごと(記述)"].get(year)
+    return None if x is None else (x["n"], x["estimate"], x["se"])
+
+
+def years_section():
+    L = []
+    for src in ("um", "spot"):
+        t = _json(src)
+        years = sorted(t[f"強い|実|bitFlyer|15分|終点"]["年ごと(記述)"])
+        L += [f"## 年ごと({src}。実 − 対照平均、保守。記述)", "",
+              "| 合図 | 系列 | 時間 | " + " | ".join(years) + " |", "|---|---|---|" + "---|" * len(years)]
+        for st in ("全部", "強い", "弱い"):
+            for ser in SERIES:
+                for hz in HORIZONS:
+                    row = []
+                    for y in years:
+                        r, a, f = (_cell(t, st, c, ser, hz, "終点", y) for c in ("実", "24 時間前", "24 時間後"))
+                        if None in (r, a, f):
+                            row.append("—")
+                            continue
+                        row.append(ci(r[1] - (a[1] + f[1]) / 2, r[2] + (a[2] + f[2]) / 2))
+                    L.append(f"| {st} | {ser} | {hz} | " + " | ".join(row) + " |")
+        L += ["", f"## 分位({src}。実の終点、1 合図の値、bp。全期間)", "",
+              "| 合図 | 系列 | 時間 | q05 | q25 | q50 | q75 | q95 |", "|---|---|---|---|---|---|---|---|"]
+        for st in ("強い", "弱い"):
+            for ser in SERIES:
+                for hz in HORIZONS:
+                    q = t[f"{st}|実|{ser}|{hz}|終点"]["分位"]
+                    L.append(f"| {st} | {ser} | {hz} | " + " | ".join(f"{q[k]:+.2f}" for k in ("q05", "q25", "q50", "q75", "q95")) + " |")
+        L.append("")
+    return L
+
+
+if __name__ == "__main__":
+    with open(os.path.join(HERE, "contrast.md"), "a", encoding="utf-8") as fh:
+        fh.write("\n".join(years_section()) + "\n")
