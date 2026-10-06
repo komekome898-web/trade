@@ -27295,12 +27295,12 @@
   {
    "move": 1004,
    "tools": {
-    "Bash": 13,
-    "Write": 2,
+    "Bash": 15,
+    "Write": 3,
     "Agent": 3,
     "Read": 1
    },
-   "n_tools": 19,
+   "n_tools": 22,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
