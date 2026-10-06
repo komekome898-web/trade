@@ -708,3 +708,32 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-05T15:30:18+00:00 okx: 接続の時間切れ — 4s 後に再接続
 2026-10-05T15:30:23+00:00 okx: 接続
 2026-10-05T15:30:23+00:00 bybit: 接続
+2026-10-06T00:00:10+00:00 binance_cm: -> binance_cm_20261006.jsonl.gz
+2026-10-06T00:00:11+00:00 okx: -> okx_20261006.jsonl.gz
+2026-10-06T00:00:11+00:00 bybit: -> bybit_20261006.jsonl.gz
+2026-10-06T04:10:50+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-06T04:11:37+00:00 okx: 接続
+2026-10-06T06:15:55+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T06:16:17+00:00 bybit: 接続
+2026-10-06T06:16:27+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T06:16:33+00:00 bybit: 接続
+2026-10-06T10:03:07+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-06T10:18:51+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T10:19:14+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:19:57+00:00 binance_um: 切断 ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received — 2s 後に再接続
+2026-10-06T10:19:58+00:00 binance_cm: 切断 ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received — 2s 後に再接続
+2026-10-06T10:20:08+00:00 bybit: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:44+00:00 binance_um: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:45+00:00 okx: 接続の時間切れ — 8s 後に再接続
+2026-10-06T10:20:45+00:00 binance_cm: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:47+00:00 bybit: 接続
+2026-10-06T10:20:50+00:00 binance_um: 接続
+2026-10-06T10:20:50+00:00 binance_cm: 接続
+2026-10-06T10:20:57+00:00 okx: 接続
+2026-10-06T18:06:38+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T18:06:44+00:00 okx: 接続
+2026-10-06T20:04:50+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T20:06:05+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T20:06:13+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-06T20:06:30+00:00 bybit: 接続
+2026-10-06T20:06:30+00:00 okx: 接続
