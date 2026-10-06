@@ -75,7 +75,11 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(bars, list):
         print(f"足のファイルが列でない: {bars_path}", file=sys.stderr)
         return 2
-    res = check_outputs(run_dir, bars)
+    try:
+        res = check_outputs(run_dir, bars)
+    except Exception as exc:  # 想定していない壊れ方の置き場でも、英語の文を出さずに失敗として止める(O-1)
+        print(f"検査 失敗: {run_dir}(検査の途中で想定していない壊れ方に当たった: {type(exc).__name__})", file=sys.stderr)
+        return 3
     if res.ok:
         print(f"検査 通過: {run_dir}")
         return 0

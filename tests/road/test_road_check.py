@@ -237,3 +237,34 @@ def test_cli_messages_are_japanese(tmp_path):
     for out in (p.stdout, p.stderr):
         # 英語の文(英字の語が 3 つ以上続く)が無い
         assert not re.search(r"[A-Za-z]+ [A-Za-z]+ [A-Za-z]+", out.replace("PYTHONPATH=src python3", ""))
+
+
+# 批評家 2 回目の指摘 1: 壊れた置き場で英語の文を出して落ちない(O-1)
+@pytest.mark.parametrize("bad_fills", [[7], [[1, 2]]])
+def test_fill_rows_not_mappings_fail_in_japanese(tmp_path, bad_fills):
+    d = tmp_path / "run"
+    write_store(str(d), _fills())
+    (d / FILLS_FILE).write_text(json.dumps({"fills": bad_fills, "fx": []}), encoding="utf-8")
+    p = _run_cli(d, _bars(_fills()), tmp_path)
+    assert p.returncode != 0
+    assert "Traceback" not in p.stderr and "Error:" not in p.stderr
+    assert "検査 失敗" in (p.stdout + p.stderr)
+
+
+@pytest.mark.parametrize("where", ["fill_px", "bar_high"])
+def test_huge_integers_fail_in_japanese(tmp_path, where):
+    d = tmp_path / "run"
+    fills = _fills()
+    write_store(str(d), fills)
+    bars = _bars(fills)
+    huge = int("1" + "0" * 400)
+    if where == "fill_px":
+        store = json.loads((d / FILLS_FILE).read_text(encoding="utf-8"))
+        store["fills"][0]["px"] = huge
+        (d / FILLS_FILE).write_text(json.dumps(store), encoding="utf-8")
+    else:
+        bars[0]["high"] = huge
+    p = _run_cli(d, bars, tmp_path)
+    assert p.returncode != 0
+    assert "Traceback" not in p.stderr
+    assert "検査 失敗" in (p.stdout + p.stderr)

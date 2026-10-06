@@ -174,8 +174,7 @@ def check_bars(fills: Sequence[Mapping], bars: Sequence[Mapping]) -> list:
         if type(s) is not int:
             out.append({"check": "b", "row": f"足 {j}", "reason": f"足の t_ns が ns の整数でない: {s!r}"})
             continue
-        bad = [n for n, v in (("high", hi), ("low", lo))
-               if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(float(v))]
+        bad = [n for n, v in (("high", hi), ("low", lo)) if not _finite_number(v)]
         if bad:
             out.append({"check": "b", "row": f"足 {j}", "reason": f"足の {'・'.join(bad)} が有限の数でない"})
             continue
@@ -183,8 +182,11 @@ def check_bars(fills: Sequence[Mapping], bars: Sequence[Mapping]) -> list:
     rows.sort()
     starts = [r[0] for r in rows]
     for i, f in enumerate(fills):
+        if not isinstance(f, Mapping):
+            out.append({"check": "b", "row": i, "reason": f"約定の行が辞書の形でない: {type(f).__name__}"})
+            continue
         t, px = f.get("t_ns"), f.get("px")
-        if type(t) is not int or isinstance(px, bool) or not isinstance(px, (int, float)):
+        if type(t) is not int or not _finite_number(px):
             out.append({"check": "b", "row": i, "reason": f"約定の t_ns / px が読めない: {t!r} / {px!r}"})
             continue
         # 始まり s が t - 60 秒 < s <= t の足が、t を含む足
@@ -208,6 +210,16 @@ def check_bars(fills: Sequence[Mapping], bars: Sequence[Mapping]) -> list:
             out.append({"check": "b", "row": i,
                         "reason": f"約定の値段 {px} がその分の足(足 {j})の安値 {lo}〜高値 {hi} の外"})
     return out
+
+
+def _finite_number(v) -> bool:
+    """真偽値でない有限の数か(とても大きい整数で float に直せないものも有限でないとみなす)。"""
+    if isinstance(v, bool) or not isinstance(v, (int, float)):
+        return False
+    try:
+        return math.isfinite(float(v))
+    except OverflowError:
+        return False
 
 
 def check_outputs(run_dir: str, bars: Sequence[Mapping]) -> CheckResult:

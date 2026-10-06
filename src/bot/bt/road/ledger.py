@@ -79,6 +79,7 @@ SUMMARY_KEYS = ("fill_count", "closed_trades", "pnl_jpy", "open_trades", "trades
 TRADE_KEYS = ("first_t_ns", "last_t_ns", "levels", "max_position", "hold_ns", "pnl_jpy", "status")
 PNL_TOL_JPY = 1e-6  # 帳簿の計算と口座の計算の、約定ごとの確定損益の差の上限(円)
 POS_TOL_BTC = 1e-9  # 同じく建玉の差の上限(BTC)
+REL_TOL = 1e-12  # 口座の浮動小数の誤差は扱った値の大きさに比例するので、大きい値ではこの割合を上限にする
 OUT_PLACES = 12  # 有限小数で表せない値を出力の文字列にするときの位(1e-12)
 
 
@@ -332,9 +333,12 @@ def _cross_check(acct: MarginAccount, i: int, f: Mapping, pnl: Fraction, pos: Fr
     except ExecutionModelError:
         raise LedgerError(f"約定 {i} を口座が受け付けない(帳簿のツールの作りの誤り)") from None
     acct_pnl = acct.realized_account - r0
-    if abs(acct_pnl - float(pnl)) > PNL_TOL_JPY:
+    # 口座は浮動小数なので、累計や値段が大きいほど誤差が大きくなる。上限は 1e-6 円か、口座が扱った値の大きさの 1e-12 倍の大きい方。
+    tol = max(PNL_TOL_JPY, REL_TOL * max(abs(acct.realized_account), abs(r0), abs(float(pnl)),
+                                          abs(float(f["px"])) * abs(float(f["qty"]))))
+    if abs(acct_pnl - float(pnl)) > tol:
         raise LedgerError(f"約定 {i} の確定損益が、帳簿の計算 {dec_str(pnl)} 円と口座の計算 {acct_pnl!r} 円で "
-                          f"{PNL_TOL_JPY} 円より離れている(2 つの計算が合わない)")
+                          f"{tol} 円より離れている(2 つの計算が合わない)")
     if abs(acct.position - float(pos)) > POS_TOL_BTC:
         raise LedgerError(f"約定 {i} の後の建玉が、帳簿の計算 {dec_str(pos)} と口座の計算 {acct.position!r} で "
                           f"{POS_TOL_BTC} BTC より離れている(2 つの計算が合わない)")

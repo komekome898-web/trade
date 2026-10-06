@@ -236,3 +236,19 @@ def test_refuses(fills):
     with pytest.raises(LedgerError) as ei:
         book(fills)
     assert re.search(r"[぀-ヿ一-鿿]", str(ei.value))  # 文は日本語
+
+
+# 批評家 2 回目の指摘 4: 口座との突き合わせが、大きな累計の後の正しい入力を拒まない
+def test_cross_check_tolerates_float_error_after_large_cumulative():
+    from bot.bt.road.ledger import book
+    M = 60_000_000_000
+    T = 1_700_000_040_000_000_000
+    fills = []
+    t = T
+    for _ in range(20):  # 100 BTC を 1,000 万円で建てて 6,000 万円で閉じるのを繰り返し、累計を 1e11 円にする
+        fills.append({"t_ns": t, "side": "buy", "qty": 100.0, "px": 10_000_000, "ccy": "JPY"}); t += M
+        fills.append({"t_ns": t, "side": "sell", "qty": 100.0, "px": 60_000_000, "ccy": "JPY"}); t += M
+    fills.append({"t_ns": t, "side": "buy", "qty": 0.003, "px": 10_000_001, "ccy": "JPY"}); t += M
+    fills.append({"t_ns": t, "side": "sell", "qty": 0.003, "px": 10_000_002, "ccy": "JPY"})
+    out = book(fills)
+    assert out.summary["trades"][-1]["pnl_jpy"] == "0.003"
