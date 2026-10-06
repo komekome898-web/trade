@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1004,
+ "n_moves": 1005,
  "moves": [
   {
    "move": 1,
@@ -27295,17 +27295,42 @@
   {
    "move": 1004,
    "tools": {
-    "Bash": 32,
-    "Write": 6,
-    "Agent": 4,
+    "Bash": 35,
+    "Write": 7,
+    "Agent": 5,
     "Read": 1,
     "ToolSearch": 1,
     "SendMessage": 1,
-    "Edit": 3
+    "Edit": 3,
+    "AskUserQuestion": 1
    },
-   "n_tools": 48,
+   "n_tools": 54,
    "read_goal": false,
    "first_write_at": 3,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1005,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
    "table_shown": false,
    "claims_without_output": 0,
    "claims_total": 0,
@@ -27338,8 +27363,8 @@
   },
   "P3_claim_with_output": {
    "num": 377,
-   "den": 845,
-   "value": 0.4462
+   "den": 846,
+   "value": 0.4456
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
