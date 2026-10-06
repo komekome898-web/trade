@@ -27,7 +27,7 @@
 
 ## 読み方の決まり
 
-`scripts/w4_measure/c8_binance/bn_read_gate.py` の docstring の G0〜G8(と走らせる前に足す G9)と `tests/research/test_c8_binance.py`(走らせる前にコミット)。境は置かない(A-12)。
+`scripts/w4_measure/c8_binance/bn_read_gate.py` の docstring の G0〜G10(G9 年ごとの表・G10 対照群は批評家 1 回目の後に足した)と `tests/research/test_c8_binance.py`(走らせる前にコミット)。境は置かない(A-12)。
 - 主の量: G3 の A − 門なし・B − 門なし(設計の段の判定で 2 名とも「直接」)。印 = 区間が 0 より上 / 0 を含む / 0 より下(G7)。
 - A と B に順位を付けない(G2)。
 - 「0 を含む」のときは「区別がつかない(MDE)」と書き、「効かない」と書かない。特に A は、下の見積もりで欲しい効果が MDE をわずかに下回るので、0 を含めば「不明」(§4.1・§5)。

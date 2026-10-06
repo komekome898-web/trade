@@ -17,11 +17,20 @@ bot.bt.data.loader.load を通す(許された根 AllowList.check と封印の�
     「取引の無い分は足が無い」。
   - 行の無い分(ファイルに行が無い分): 異常 gap として数え、方針 accept(bitFlyer の口と同じ BAR_RESOLVE の gap)。
   - 分の頭からずれた行(異常 off_grid、2017・2018 年): 落とす(下の RESOLVE の注)。bitFlyer の口には無い扱い。
-  - 値段の単位: USDT(bitFlyer は JPY)。カード 8 は終値と平均の差の符号しか使わず、損益は比(open / open − 1)なので、
-    単位は持ち高にも損益の bp にも効かない(試験 test_unit_does_not_change_exposure_or_pnl)。
+  - 値段の単位: 置き場は USDT(0.01 USDT 刻みの小数。bitFlyer は 1 円刻みの JPY)。この口は既定(cents=True)で、
+    始値・高値・安値・終値を整数のセント(0.01 USDT を 1 とする整数 = round(値段 × 100)、浮動小数で持つ)にして返す。
+    理由(批評家 1 回目の問 1、委任文 fix1 の 1): カード 8 は「終値 = セッションの平均なら持ち高 0」で、平均は終値の和 ÷ 本数。
+    値段が整数なら和は正確(2**53 未満のうち)で、平均ちょうどの足は 0 になる(bitFlyer の 1 円単位と同じ扱い)。
+    0.01 USDT 刻みの小数のままだと和に丸めが入り、同じ値段が続く足(平らな区間)で持ち高が 0 でなく ±1 になる
+    (試験 test_flat_bars_float_vs_cents)。損益の bp は値段の比なので、単位(USDT かセントか)は損益の式を変えない。
+    同値の無い足では、持ち高も USDT のままと同じになる(試験 test_unit_does_not_change_exposure_or_pnl)。
+    セントにしたときに整数から外れていた値段の数(|値段 × 100 − 丸め| > 1e-6)を事実 n_not_whole_cent に数える
+    (0 でなければ 0.01 USDT 刻みでない値段があったということ)。
+    bn_split(区分)は cents=False で USDT のまま読む(コミット済みの split/classes.json と同じ入力にするため)。
 """
 from __future__ import annotations
 
+import dataclasses
 import os
 import sys
 from datetime import datetime, timezone
@@ -44,6 +53,24 @@ VENUE = "binance"
 # そのまま入れると前後の足と時間が重なり run_card が拒むので落とす。落とすと日本時間の 2018-02-09 は足が 0 本になり、
 # その日の量 v は無い(2019 年の境は 2018 年の 364 日から)。入れたときとの区分の食い違いは 2019-01-03 の 1 日(報告に書く)。
 RESOLVE = {"gap": "accept", "synthetic": "drop", "off_grid": "drop"}
+PRICE_SCALE = 100  # 1 USDT = 100 セント(値段の最小の刻み 0.01 USDT を 1 とする)
+PRICE_UNIT_CENTS = "0.01 USDT(整数のセント。round(USDT の値段 × 100))"
+WHOLE_CENT_TOL = 1e-6
+
+
+def to_cents(bars) -> tuple:
+    """始値・高値・安値・終値を整数のセント(浮動小数で持つ整数)にした BarEvent の並びと、整数から外れていた値段の数。
+    量・時刻はそのまま。丸めは単調なので 高値 ≥ 始値・終値 ≥ 安値 の関係は保たれる。"""
+    out, n_off = [], 0
+    for b in bars:
+        kw = {}
+        for k in ("open", "high", "low", "close"):
+            x = float(getattr(b, k)) * PRICE_SCALE
+            r = round(x)
+            n_off += abs(x - r) > WHOLE_CENT_TOL
+            kw[k] = float(r)
+        out.append(dataclasses.replace(b, **kw))
+    return tuple(out), n_off
 
 
 def bar_spec() -> dict:
@@ -83,10 +110,12 @@ def year_chunks(lo_ns: int, hi_ns: int) -> list:
         y += 1
 
 
-def load_chunk(lo_ns: int, hi_ns: int, root: str = ROOT, *, check_flags: bool = True):
+def load_chunk(lo_ns: int, hi_ns: int, root: str = ROOT, *, check_flags: bool = True, cents: bool = True):
     """[lo, hi) の足(1 つの暦年の中)を読む。戻り: (BarEvent のタプル, 読みの事実 dict)。
+    cents=True(既定)なら値段を整数のセントにして返す(docstring の「値段の単位」)。
     事実: ファイル(given・sha256・大きさ・封印の単位)・読んだ行・範囲に残った行・落とした取引の無い分・行の無い分・
-    n_trades = 0 と volume = 0 が食い違う行の数・最初と最後の足の始まり・封印の記録の一覧(パスと sha256)。"""
+    n_trades = 0 と volume = 0 が食い違う行の数・最初と最後の足の始まり・封印の記録の一覧(パスと sha256)・
+    値段の単位・整数のセントから外れていた値段の数(cents=True のとき)。"""
     from bot.bt.data.loader import load
     check_range(lo_ns, hi_ns)
     ys = {datetime.fromtimestamp(lo_ns // NS, tz=timezone.utc).year,
@@ -116,6 +145,12 @@ def load_chunk(lo_ns: int, hi_ns: int, root: str = ROOT, *, check_flags: bool = 
         facts["n_kept_volume0"] = sum(1 for b in bars if b.volume == 0)
         facts["n_synthetic_not_flat"] = sum(1 for i in syn if len({recs[i][k] for k in ("open", "high", "low", "close")}) != 1)
         del recs
+    if cents:
+        bars, n_off = to_cents(bars)
+        facts["price_unit"] = PRICE_UNIT_CENTS
+        facts["n_not_whole_cent"] = n_off
+    else:
+        facts["price_unit"] = "USDT(置き場のまま)"
     if bars:
         facts["first_start"] = to_iso(int(bars[0].start_time_ns))
         facts["last_start"] = to_iso(int(bars[-1].start_time_ns))
@@ -130,5 +165,5 @@ def iter_range(lo_ns: int, hi_ns: int, root: str = ROOT, **kw):
         yield y, bars, facts
 
 
-__all__ = ["HI", "LO", "RESOLVE", "SYMBOL", "VENUE", "bar_spec", "check_range", "iter_range", "load_chunk",
-           "year_chunks", "year_path"]
+__all__ = ["HI", "LO", "PRICE_SCALE", "PRICE_UNIT_CENTS", "RESOLVE", "SYMBOL", "VENUE", "bar_spec", "check_range",
+           "iter_range", "load_chunk", "to_cents", "year_chunks", "year_path"]

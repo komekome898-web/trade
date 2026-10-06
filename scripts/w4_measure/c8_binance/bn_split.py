@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """部品 2: Binance の足で前の日の荒れ具合の区分を作り、区分ごとの日数を数える(損益は 1 つも計算しない)。
 
-  1. 部品 1(bn_bars)の足(取引の無い分は落とした後)から、日本時間の日 → その日の 1 分足の終値の並び(時刻順)を作る。
+  1. 部品 1(bn_bars)の足(取引の無い分は落とした後。値段は USDT のまま = cents=False)から、日本時間の日 → その日の 1 分足の終値の並び(時刻順)を作る。
      日 = 足の始まり(start_time_ns)の日本時間の日(vol_split_daily.load_closes_by_day と同じ)。
   2. vol_split_daily.daily_vol と vol_split_daily.classify をそのまま当てる(写さない。最後の日 ov.LAST_DAY = 2023-12-17 も同じ)。
   3. 出力: 日 → low / mid / high の JSON(classes.json)、日数の表(年ごと × 区分、全体、前半・後半)、
@@ -111,7 +111,9 @@ def main() -> int:
     closes: dict = {}
     reads = []
     prev_last = None
-    for y, bars, facts in bn_bars.iter_range(bn_bars.LO, bn_bars.HI):
+    # cents=False: 値段は置き場の USDT のまま(コミット 8f2a8a24 の split/classes.json を作ったときと同じ入力。
+    # 量 v は値段の比の対数なので単位に依らないが、セントに丸めると浮動小数の末の桁が変わり、分位の境の日が動きうるため)
+    for y, bars, facts in bn_bars.iter_range(bn_bars.LO, bn_bars.HI, cents=False):
         add_closes(closes, bars)
         if prev_last is not None and bars:  # 年の境(ファイルの境)の行の無い分(データ層は 1 ファイルずつなので見ない)
             facts["missing_minutes_at_year_start"] = int((int(bars[0].start_time_ns) - prev_last) // bn_bars.MIN_NS) - 1
