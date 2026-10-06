@@ -19,6 +19,8 @@
                        その決定の日を足した。列: day = その決定の損益が乗った日(daily.csv と同じ日)・t・pnl_bp・
                        minutes_after_boundary)。数と和が diagnostics.json と合うことを run_record.json に書く。
   run_record.json の close_eq_mean  診断: 終値 = セッションの平均だった決定の数(整数のセントで正確に比べる。close_eq_mean)。
+                       段 2 の経路(--dry なし)で not_computed(整数でない終値がある = セントで回っていない)なら、
+                       出力を書いた後に終わり方 4 で終わる。
 値段の単位: カードと run.npz の値段は部品 1 の口が返す整数のセント(0.01 USDT = 1)。trades.json.gz の値段だけ USDT に戻す。
 損益の bp は値段の比なので単位に依らない。run_record.json の price_unit に書く。
 
@@ -292,6 +294,10 @@ def main() -> int:
     s = write_outputs(run, outdir, lo, hi, {"chunks": log, "inputs": {"bars": facts_all},
                                             "timing": {"total_s": round(time.time() - t0, 1)}})
     print(json.dumps({"out": outdir, "boundary_carry_check": s["boundary_carry_check"]}, ensure_ascii=False), flush=True)
+    if "not_computed" in s["close_eq_mean"]:  # 本番の経路がセントで回らなかった(委任文 fix2 の 3、批評家 2 回目の問 2 (2))
+        print(json.dumps({"stop": "整数でない終値がある(値段がセントでない)", "close_eq_mean": s["close_eq_mean"]},
+                         ensure_ascii=False), flush=True)
+        return 4
     return 0
 
 

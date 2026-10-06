@@ -19,7 +19,7 @@ import bn_read_gate as rg  # noqa: E402
 import bn_run_c8 as rc  # noqa: E402
 import bn_split as sp  # noqa: E402
 import vol_split_daily as vs  # noqa: E402
-from common import BIN_DIR, iso  # noqa: E402
+from common import BIN_DIR, ROOT, iso  # noqa: E402
 
 from bot.research.cards.library.c8_session_mean_revert import SessionMeanRevert  # noqa: E402
 from bot.research.cards.pnl import pnl  # noqa: E402
@@ -382,7 +382,8 @@ def test_g10_placebo_matches_reference_and_prereg_values():
     cls = {d: ["low", "mid", "high"][int(rng.integers(0, 3))] for d in days}
     pnl_ = {d: float(rng.normal()) for d in days}
     res = rg.read_all({"open": pnl_, "mid": pnl_}, cls, days[20], set(), None)
-    pl = res["placebo"]
+    assert res["placebo"]["primary"] == "G10a"
+    pl = res["placebo"]["G10c"]  # 元の作り方(並べて出すだけ。委任文 fix2 の 1「G10c = 今の作り方(残す)」)
     assert pl["seed"] == 20261007 and pl["n_resamples"] == 1000 and pl["block_days"] == 5
     x = [pnl_[d] for d in days]
     for f, m in (("A", sum(cls[d] != "high" for d in days)), ("B", sum(cls[d] == "low" for d in days))):
@@ -455,8 +456,9 @@ def test_g10_null_uniform_and_class_driven_near_zero():
     res = rg.read_all({"open": pnl_, "mid": pnl_}, cls, days[150], set(), None, placebo_n=300)
     for f in ("A", "B"):
         for price in ("open", "mid"):
-            q = res["placebo"]["forms"][f][price]
-            assert q["upper_share"] <= 0.01 and q["actual_gt_q95"]
+            for g in ("G10a", "G10b", "G10c"):
+                q = res["placebo"][g]["forms"][f][price]
+                assert q["upper_share"] <= 0.01 and q["actual_gt_q95"], g
 
 
 def test_gated_days_are_zero():
@@ -524,6 +526,7 @@ def test_main_non_dry_path_on_fabricated_bars(tmp_path, monkeypatch):
     seen = {}
 
     def fake_iter(lo, hi, **kw):
+        assert kw.get("cents", True) is True  # 本番の経路はセントで読む(委任文 fix2 の 3、批評家 2 回目の問 2 (2))
         seen["range"] = (lo, hi)
         yield 2019, fab[:k], {"year": 2019, "fake": True}
         yield 2019, fab[k:], {"year": 2019, "fake": True}
@@ -542,3 +545,222 @@ def test_main_non_dry_path_on_fabricated_bars(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["bn_run_c8.py", "--end", "2023-12-18T00:00:00Z", "--out-root", str(tmp_path)])
     with pytest.raises(SystemExit):  # 終わりが 2023-12-17T15:00Z より後なら、読む前に拒む
         rc.main()
+
+
+def test_main_stops_when_not_cents(tmp_path, monkeypatch):
+    """本番の経路で値段がセントでない(USDT の小数のまま)なら close_eq_mean が not_computed になり、0 でない終わり方(4)。"""
+    fab = rc.fabricated_bars(n=7 * 1440, scale=356.9872)  # USDT の小数のまま(セントにしない)
+    assert any(b.close != round(b.close) for b in fab)
+
+    def fake_iter(lo, hi, **kw):
+        assert kw.get("cents", True) is True
+        yield 2019, fab, {"year": 2019, "fake": True}
+
+    monkeypatch.setattr(rc.bn_bars, "iter_range", fake_iter)
+    monkeypatch.setattr(sys, "argv", ["bn_run_c8.py", "--start", "2019-01-01T12:00:00Z", "--end", "2019-01-08T12:00:00Z",
+                                      "--out-root", str(tmp_path)])
+    rc_ = rc.main()
+    assert rc_ != 0 and rc_ == 4
+    rec = json.loads((tmp_path / "jst_day" / "run_record.json").read_text(encoding="utf-8"))
+    assert "not_computed" in rec["close_eq_mean"] and rec["close_eq_mean"]["n_close_not_integer"] > 0
+
+
+# ---------- 区分の日数の固定(委任文 fix2 の 4、批評家 2 回目の問 3) ----------
+
+def test_committed_classes_counts():
+    from collections import Counter
+    p = Path(ROOT) / "docs/RESEARCH/cards/c8_session_mean_revert/binance_gate/split/classes.json"
+    cj = json.loads(p.read_text(encoding="utf-8"))
+    cls = cj["classes"]
+    cnt = Counter(cls.values())
+    assert len(cls) == 1812
+    assert cnt["low"] == 842
+    assert sum(c != "high" for c in cls.values()) == 1305
+    assert cj["half_boundary_day"] == "2021-06-25"
+    assert min(cls) == "2019-01-01" and max(cls) == "2023-12-17"
+
+
+# ---------- G10a・G10b・読みの表・G6 の感度(委任文 fix2 の 1・2・5) ----------
+
+def _rot_ref(x, m):
+    """G10a を台本と別に np.roll で書いた物: d_k = −Σ x·roll(m, k) ÷ n(k = 1〜n − 1)。"""
+    x = np.asarray(x, dtype=float)
+    n = len(x)
+    return np.array([-(x * np.roll(np.asarray(m, dtype=float), k)).sum() / n for k in range(1, n)])
+
+
+def test_g10a_matches_np_roll_reference():
+    rng = np.random.default_rng(21)
+    for n in (2, 3, 37, 120):
+        x = rng.normal(size=n)
+        m = rng.random(n) < 0.4
+        got = rg.rot_diffs(x, m)
+        ref = _rot_ref(x, m)
+        assert len(got) == n - 1
+        assert np.allclose(got, ref, rtol=0, atol=1e-12)
+    # 台本の全体(read_all)を通して: 上側の割合(≥)・95 点(np.quantile の既定)・実際 > 95 点・k = 0 = G3
+    days = [str(np.datetime64("2020-01-01") + i) for i in range(61)]
+    cls = {d: ["low", "mid", "high"][(i // 7) % 3] for i, d in enumerate(days)}
+    pnl_ = {d: float(rng.normal()) + (0.5 if cls[d] == "high" else 0.0) for d in days}
+    pm = {d: v * 2.0 - 1.0 for d, v in pnl_.items()}
+    res = rg.read_all({"open": pnl_, "mid": pm}, cls, days[30], set(), None, placebo_n=50)
+    for price, P in (("open", pnl_), ("mid", pm)):
+        x = np.array([P[d] for d in days])
+        for f, rm in (("A", [cls[d] != "high" for d in days]), ("B", [cls[d] == "low" for d in days])):
+            q = res["placebo"]["G10a"]["forms"][f][price]
+            ref = _rot_ref(x, rm)
+            actual = res["prices"][price]["all"]["diffs"][f"{f}-none"]["per_day_bp"]
+            assert q["n_shifts"] == 60 and q["n_resamples"] == 60 and q["n_days"] == 61 and q["n_removed"] == sum(rm)
+            assert q["actual_bp"] == actual and q["k0_equals_actual"]
+            assert q["k0_bp"] == pytest.approx(-(x * np.array(rm, dtype=float)).sum() / 61)
+            assert q["upper_share"] == pytest.approx(float(np.mean(ref >= actual)))
+            assert q["q95_bp"] == pytest.approx(float(np.quantile(ref, 0.95)))
+            assert q["actual_gt_q95"] == bool(actual > np.quantile(ref, 0.95))
+            assert q["placebo_mean_bp"] == pytest.approx(float(ref.mean()))
+            assert q["placebo_sd_bp"] == pytest.approx(float(ref.std(ddof=1)))
+            # 読みの文は G3 の全期間の印と G10a の比べから
+            want = rg.g3_g10a_reading(res["prices"][price]["all"]["diffs"][f"{f}-none"]["mark"], q["actual_gt_q95"])
+            assert res["reading_g3_g10a"][f][price] == want and want is not None
+    md = rg.to_md(res)
+    assert "G10a(主)" in md and "| G10b |" in md and "| G10c |" in md and "G3 × G10a の読み" in md
+    assert res["reading_g3_g10a"]["A"]["open"]["text"] in md
+
+
+def _ar1(rng, n, phi, sd):
+    s = np.zeros(n)
+    e = rng.normal(0, sd * np.sqrt(1 - phi ** 2), n)
+    s[0] = rng.normal(0, sd)
+    for t in range(1, n):
+        s[t] = phi * s[t - 1] + e[t]
+    return s
+
+
+def test_g10a_holds_nominal_where_g10c_inflates():
+    """作り物(批評家の sim_g10.py が手本): 区分は 60 日ずつ low → mid → high と入れ替わる(長く続く)。損益は日ごとの雑音
+    (標準偏差 300 bp)+ 区分と無関係な遅い揺れ(AR(1)、φ 0.97・標準偏差 150 bp)。200 回。
+    G10a が「実際 > 95 点」を出す割合は名目の近く(0.02〜0.10)、G10c(5 日の塊)はそれを超える。"""
+    n, n_sim = 1200, 200
+    lab = np.array([["low", "mid", "high"][(i // 60) % 3] for i in range(n)])
+    rem = {"A": lab != "high", "B": lab == "low"}
+    masks_c = {f: rg.placebo_masks(n, int(rem[f].sum()), 20261007, 1000) for f in rem}
+    rng = np.random.default_rng(2)
+    hit_a = {"A": 0, "B": 0}
+    hit_c = {"A": 0, "B": 0}
+    for _ in range(n_sim):
+        x = rng.normal(0, 300, n) + _ar1(rng, n, 0.97, 150.0)
+        for f in rem:
+            actual = -x[rem[f]].sum() / n
+            hit_a[f] += rg.null_compare(rg.rot_diffs(x, rem[f]), actual)["actual_gt_q95"]
+            hit_c[f] += rg.placebo_compare(x, masks_c[f], actual)["actual_gt_q95"]
+    for f in rem:
+        ra, rc_ = hit_a[f] / n_sim, hit_c[f] / n_sim
+        assert 0.02 <= ra <= 0.10, (f, ra, rc_)
+        assert rc_ > ra, (f, ra, rc_)
+
+
+def _year_ref(univ, removed, n_res, seed, block=5):
+    """G10b を台本と別に書いた物: 1 回ごとに年を古い順に、その年の日の中で 5 日の塊(循環)を外す。"""
+    rng = np.random.default_rng(seed)
+    years = sorted({d[:4] for d in univ})
+    pos = {y: [i for i, d in enumerate(univ) if d[:4] == y] for y in years}
+    m_y = {y: sum(1 for i in pos[y] if removed[i]) for y in years}
+    out = np.zeros((n_res, len(univ)), dtype=bool)
+    for r in range(n_res):
+        for y in years:
+            ny, rm = len(pos[y]), set()
+            while len(rm) < m_y[y]:
+                s0 = int(rng.integers(0, ny))
+                for j in range(block):
+                    if len(rm) == m_y[y]:
+                        break
+                    rm.add((s0 + j) % ny)
+            for i in rm:
+                out[r, pos[y][i]] = True
+    return out, m_y
+
+
+def test_g10b_within_year_and_same_count_as_gate():
+    # 2019: 12 日、2020: 4 日(5 日未満)、2021: 9 日で外すのが 8 日、2022: 6 日で外すのが 0 日、2023: 7 日で外すのが 5 日
+    spec = {"2019": "llmhhllmhhlm", "2020": "lhlm", "2021": "lllllllhl", "2022": "hhmmhh", "2023": "lllllhh"}
+    code = {"l": "low", "m": "mid", "h": "high"}
+    cls = {}
+    for y, s_ in spec.items():
+        for i, c in enumerate(s_):
+            cls[f"{y}-03-{i + 1:02d}"] = code[c]
+    univ = sorted(cls)
+    rmB = np.array([cls[d] == "low" for d in univ])
+    masks, m_y = rg.year_masks(univ, rmB, 20261007, 300)
+    assert m_y == {"2019": 5, "2020": 2, "2021": 8, "2022": 0, "2023": 5}
+    yrs = np.array([d[:4] for d in univ])
+    for y, m in m_y.items():
+        assert np.all(masks[:, yrs == y].sum(axis=1) == m)  # 年ごとに実際の門と同じ日数、その年の中だけ
+    # 2023 年(7 日のうち 5 日): 残る 2 日がその年の中で循環して隣り合う(塊がほかの年へはみ出さない)
+    i23 = np.flatnonzero(yrs == "2023")
+    for row in masks:
+        kept = sorted(set(range(7)) - set(np.flatnonzero(row[i23]).tolist()))
+        assert len(kept) == 2 and (kept[1] - kept[0]) % 7 in (1, 6)
+    ref, m_ref = _year_ref(univ, rmB, 300, 20261007)
+    assert m_ref == m_y and np.array_equal(masks, ref)
+    # 台本の全体を通して(事前登録の数: 1,000 回・種 20261007・塊 5)
+    rng = np.random.default_rng(4)
+    pnl_ = {d: float(rng.normal()) for d in univ}
+    res = rg.read_all({"open": pnl_, "mid": pnl_}, cls, univ[19], set(), None)
+    pb = res["placebo"]["G10b"]
+    assert pb["seed"] == 20261007 and pb["n_resamples"] == 1000 and pb["block_days"] == 5
+    x = np.array([pnl_[d] for d in univ])
+    for f, rm in (("A", np.array([cls[d] != "high" for d in univ])), ("B", rmB)):
+        q = pb["forms"][f]["open"]
+        ref, m_ref = _year_ref(univ, rm, 1000, 20261007)
+        assert q["removed_by_year"] == m_ref and q["removed_by_year_exactly"]
+        assert q["n_removed"] == int(rm.sum()) == sum(m_ref.values())
+        d = -(ref.astype(float) @ x) / len(x)
+        actual = res["prices"]["open"]["all"]["diffs"][f"{f}-none"]["per_day_bp"]
+        assert q["upper_share"] == pytest.approx(float(np.mean(d >= actual)))
+        assert q["q95_bp"] == pytest.approx(float(np.quantile(d, 0.95)))
+        assert q["actual_gt_q95"] == bool(actual > np.quantile(d, 0.95))
+        assert pb["forms"][f]["mid"] == q  # 同じ損益なら始値と中ほどで同じ外し方
+
+
+# 事前登録 PREREG.md「G3 と G10 の組み合わせの読み方」の「書く読み」(試験に直に書く)
+_R1 = "「Binance でも、前の日の区分で外したことが効いた」(予言 P2・P3 が当たった)"
+_R2 = ("「門の差は 0 より上だが、区分の並びをずらしたのと区別がつかない。差は区分の効きでなく、外した時期(年・流れ)の分の公算」。"
+       "予言は当たったと書かない")
+_R3 = "「区分の効きの向きは対照より上だが、日ごとの区間では 0 と区別がつかない(MDE と並べる)」。予言は当たったと書かない"
+_R4 = "「区別がつかない(MDE と並べる)」"
+_R5 = "「門で外すと下がった(予言と逆向き)」"
+
+
+@pytest.mark.parametrize("g3,gt,row,text", [
+    ("0 より上", True, 1, _R1), ("0 より上", False, 2, _R2), ("0 を含む", True, 3, _R3),
+    ("0 を含む", False, 4, _R4), ("0 より下", True, 5, _R5), ("0 より下", False, 5, _R5)])
+def test_g3_g10a_reading_rows(g3, gt, row, text):
+    r = rg.g3_g10a_reading(g3, gt)
+    assert r["row"] == row and r["text"] == text and r["g3_mark"] == g3 and r["g10a_actual_gt_q95"] is gt
+
+
+def test_g3_g10a_reading_edges_and_prereg_text():
+    assert rg.g3_g10a_reading(None, True) is None and rg.g3_g10a_reading("0 より上", None) is None
+    with pytest.raises(ValueError):
+        rg.g3_g10a_reading("0 以上", True)
+    assert len(rg.READING) == 5
+    prereg = (Path(ROOT) / "docs/RESEARCH/cards/c8_session_mean_revert/binance_gate/PREREG.md").read_text(encoding="utf-8")
+    for _m, _g, text in rg.READING:  # 文は事前登録の表のまま
+        assert text in prereg, text
+
+
+def test_g6_block20_sensitivity_beside_block5():
+    from bot.bt.validation import block_bootstrap_ci
+    rng = np.random.default_rng(8)
+    days = [str(np.datetime64("2020-01-01") + i) for i in range(90)]
+    cls = {d: ["low", "mid", "high"][(i // 10) % 3] for i, d in enumerate(days)}
+    pnl_ = {d: float(rng.normal()) for d in days}
+    res = rg.read_all({"open": pnl_, "mid": pnl_}, cls, days[45], set(), None, placebo_n=20)
+    x = np.array([(pnl_[d] if cls[d] == "high" else 0.0) - pnl_[d] for d in days])
+    s = res["prices"]["open"]["all"]["diffs"]["A-none"]
+    w5 = block_bootstrap_ci(x.tolist(), block_len=5, n_resamples=1000, seed=20261006, alpha=0.05, method="circular", statistic="mean")
+    w20 = block_bootstrap_ci(x.tolist(), block_len=20, n_resamples=1000, seed=20261006, alpha=0.05, method="circular", statistic="mean")
+    assert s["ci"] == [w5.lo, w5.hi] and s["mark"] == rg.mark([w5.lo, w5.hi])  # 印は塊 5 日だけで決める
+    b = s["block20"]
+    assert b["block_days"] == 20 and b["ci"] == [w20.lo, w20.hi] and b["se"] == w20.se
+    assert b["mde"] == pytest.approx(2.8 * w20.se) and "mark" not in b
+    assert "塊 20 日の区間・MDE(感度)" in rg.to_md(res)
