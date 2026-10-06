@@ -1,8 +1,0 @@
-unit: P2-08
-scope: exploration window only, 2023-12-18T00:00:00Z <= t < 2025-12-12T00:00:00Z (judgment period 2025-12-12..2026-09-06 stays sealed)
-approved_by: owner
-approved_at_jst: 2026-10-04 15:4x
-owner_message: "ア" (answer to: "窓を開けるか。(ア) この事前登録で開ける / (イ) 先に W6b を済ませてから開ける / (ウ) まだ開けない"), following L-532 "決めること　開けてよい" and L-628 "ア では進めてください"
-preregistration: docs/RESEARCH/WINDOW1/PREREG.md (commit 9ec4fb46)
-owner_log: L-630
-file_created_by: lead, transcribing the owner's chat answer (this file is never created by code)
