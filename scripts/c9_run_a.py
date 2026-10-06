@@ -18,16 +18,6 @@
          `chunks/` へ書く**(行をメモリに溜めない。最大メモリが日の数で増えない)。
          `chunks/meta/<日>.json` がある日は `--resume` で飛ばす。
 各日に [4 日前, 11 日後] の約定を読む(1 週の h + 対照 (ii) の ±3 日 + その 1 週。読んだ日は持ち回す)。
-
-走らせ直し(2026-10-06、`docs/DISCUSSIONS/2026-10-06_held_batches/DELEGATION_rerun_impl.md` 担当 C):
-  `--fill-side quote` = 状態機械(判断の方策と基準の方策)の入りと出を、目標の時刻以前で最新の
-  最良気配(成行の買いは売り気配、売りは買い気配。`--quotes-dir` = `scripts/c9_fetch_bookticker.py`
-  の出力)で付ける(リードの決め。批評家 1 回目の [止める] を受けた直し)。直前の同じ側の約定 (b)・
-  以後で最初の同じ側の約定 (a)・元の付け方は並べる列。元の付け方の行は `chunks/*_any/` にも元と
-  同じ列で書く(再現の検め用)。既定 `any` = 元の走らせ(どちらの側の約定でもよい)。`--leg-path` = レグの行に
-  入り・出の約定と経路(MFE・MAE)の列を足す。どちらも状態機械の連鎖・レグの行にだけ効き、
-  値動き・s 秒の曲線・対照は変えない。中身は `bot.research.liq_cascade_fill` の docstring。
-  既定(どちらも付けない)は元のとおり `v2.make_price_fn` → `v2.simulate_bundle` を呼ぶ。
 """
 from __future__ import annotations
 
@@ -51,7 +41,6 @@ REPO_ROOT = _HERE.parent
 if str(REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from bot.research import liq_cascade_fill as fill  # noqa: E402
 from bot.research import liq_cascade_v2 as v2  # noqa: E402
 
 NAN = float("nan")
@@ -94,69 +83,12 @@ def reaction_cols(rx: dict) -> dict:
     return {f"{k}_{h}": rx[f"{k}_{h}"] for h in v2.HORIZONS_S for k in v2.REACTION_KEYS}
 
 
-def make_sim(pr, tr, price_fn, fill_side: str, leg_path: bool, present_days=None,
-             quotes=None):
-    """束 1 本を流す関数。既定(`any`・経路なし)は元のとおり `v2.simulate_bundle(…, price_fn)`。
-    `quote` のときは `present_days`(約定のファイルがある日)と `quotes`(`fill.QuoteBook`)を使う。"""
-    if fill_side == fill.FILL_ANY and not leg_path:
-        def sim(b, jd, typ, dly, baseline=None):
-            if baseline is None:
-                return v2.simulate_bundle(pr, b, jd, typ, dly, price_fn)
-            return v2.simulate_bundle(pr, b, jd, typ, dly, price_fn, baseline=baseline)
-        return sim
-    book = fill.TakerBook(tr, present_days) if fill_side == fill.FILL_QUOTE else None
-
-    def sim(b, jd, typ, dly, baseline=None):
-        return fill.simulate(pr, b, jd, typ, dly, tr, fill_side, leg_path,
-                             baseline=baseline, book=book, quotes=quotes)
-    return sim
-
-
-def baseline_legs(res: dict, direction: str) -> list:
-    """基準の方策のレグ(元の run_day の書き方そのまま)。"""
-    return [] if res["missing"] else [
-        {"位置": 0, "向き": direction, "出口の理由": "連鎖の終わり",
-         "レグ損益_bp": res["pnl_bp"], "保有秒": res["hold_seconds"]}]
-
-
-def any_rows(res: dict, crow: dict, lbase: dict, direction: str | None):
-    """`quote` の走らせで、1 回目(どちらの側でも)の結果から元と同じ列の連鎖の行・レグの行を作る
-    (再現の検めは `chunks/*_any/` どうしを元と比べる。主の付け方でレグの数が変わっても落ちない)。"""
-    ra = res["res_any"]
-    c = dict(crow) | {"pnl_bp": ra["pnl_bp"], "entered": int(bool(ra["entered"])),
-                      "n_entries": ra["n_entries"], "hold_s": ra["hold_seconds"],
-                      "missing": int(bool(ra["missing"])),
-                      "first_entry_pos": ra.get("first_entry_pos")}
-    legs = baseline_legs(ra, direction) if direction is not None else ra["legs"]
-    ls = [dict(lbase) | {"leg_pos": lg["位置"], "leg_dir": lg["向き"],
-                         "exit_reason": lg["出口の理由"], "pnl_bp": lg["レグ損益_bp"],
-                         "hold_s": lg["保有秒"]} for lg in legs]
-    return c, ls
-
-
-def stage3_window(day: str, fill_side: str) -> list[str]:
-    """段 3 の約定の窓。既定は元のとおり [当日, 翌日]。quote は段 2 とそろえて前の日も読む
-    ((b) の列が日の始め直後に前の日の約定を引けるように。批評家 1 回目の問 2)。any の値は以後の
-    約定しか使わないので、前の日を読んでも値は変わらない。"""
-    return window_days(day, 1 if fill_side == fill.FILL_QUOTE else 0, 1)
-
-
-def quote_book(fill_side: str, quotes_dir, days):
-    return (fill.QuoteBook.load(Path(quotes_dir), days) if fill_side == fill.FILL_QUOTE
-            else None)
-
-
-def extra_on(fill_side: str, leg_path: bool) -> bool:
-    return fill_side != fill.FILL_ANY or bool(leg_path)
-
-
 # =========================================================================== #
 # 日ごとの本体
 # =========================================================================== #
 def run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9, liq_ts,
             data_end_ms, store, metrics_cache, bucket_cache, funding, cand_cache, opened,
-            seed, chunks: Path, data_root: Path, period: str,
-            fill_side: str = fill.FILL_ANY, leg_path: bool = False, quotes_dir=None) -> dict:
+            seed, chunks: Path, data_root: Path, period: str) -> dict:
     tm: dict = {}
     t = time.time()
     rng = random.Random(seed * 100_000 + date.fromisoformat(day).toordinal())
@@ -217,13 +149,7 @@ def run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9, l
     # ---- 束と状態機械(束の最初のプリントがこの日) ----
     t = time.time()
     price_fn = v2.make_price_fn(tr)
-    wdays = window_days(day, BACK_DAYS, FWD_DAYS)
-    sim = make_sim(pr, tr, price_fn, fill_side, leg_path,
-                   present_days=[d for d in wdays if d not in set(miss)],
-                   quotes=quote_book(fill_side, quotes_dir, wdays))
-    xon = extra_on(fill_side, leg_path)
     brows, crows, lrows = [], [], []
-    crows_any, lrows_any = [], []
     act, jud = Counter(), Counter()
     for g in v2.GAPS_S:
         for b in bund[g]["bundles"]:
@@ -237,30 +163,18 @@ def run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9, l
                 for pol in v2.JUDGED_POLICIES:
                     jd = v2.judgments_for(pol, b["members"], ctx)
                     for typ in POLICY_TYPES:
-                        res = sim(b, jd, typ, dly)
+                        res = v2.simulate_bundle(pr, b, jd, typ, dly, price_fn)
                         runs.append((pol, typ, res))
                         for p in res["path"]:
                             act[f"{g}|{dly}|{pol}|{typ}|{p['行動']}"] += 1
                             jud[f"{g}|{dly}|{pol}|{typ}|{p['判断']}"] += 1
                 for pol, direction in v2.BASELINE_POLICIES.items():
-                    res = sim(b, None, "-", dly, baseline=direction)
+                    res = v2.simulate_bundle(pr, b, None, "-", dly, price_fn, baseline=direction)
                     res["legs"] = [] if res["missing"] else [
                         {"位置": 0, "向き": direction, "出口の理由": "連鎖の終わり",
                          "レグ損益_bp": res["pnl_bp"], "保有秒": res["hold_seconds"]}]
-                    res["_baseline_dir"] = direction
                     runs.append((pol, "-", res))
                 for pol, typ, res in runs:
-                    if fill_side == fill.FILL_QUOTE:
-                        ca, la = any_rows(
-                            res, {"bundle_id": b["bundle_id"], "day": day, "period": period,
-                                  "side": b["side"], "gap_s": g, "delay_s": dly, "policy": pol,
-                                  "type": typ, "n_prints": b["n_prints"],
-                                  "qty_total": b["qty_total"]},
-                            {"bundle_id": b["bundle_id"], "day": day, "period": period,
-                             "gap_s": g, "delay_s": dly, "policy": pol, "type": typ},
-                            res.get("_baseline_dir"))
-                        crows_any.append(ca)
-                        lrows_any.extend(la)
                     crows.append({"bundle_id": b["bundle_id"], "day": day, "period": period,
                                   "side": b["side"],
                                   "gap_s": g, "delay_s": dly, "policy": pol, "type": typ,
@@ -268,19 +182,15 @@ def run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9, l
                                   "pnl_bp": res["pnl_bp"], "entered": int(bool(res["entered"])),
                                   "n_entries": res["n_entries"], "hold_s": res["hold_seconds"],
                                   "missing": int(bool(res["missing"])),
-                                  "first_entry_pos": res.get("first_entry_pos")}
-                                 | (fill.cascade_extra(res, fill_side) if xon else {}))
-                    for li, lg in enumerate(res["legs"]):
+                                  "first_entry_pos": res.get("first_entry_pos")})
+                    for lg in res["legs"]:
                         lrows.append({"bundle_id": b["bundle_id"], "day": day, "period": period,
                                       "gap_s": g,
                                       "delay_s": dly, "policy": pol, "type": typ,
                                       "leg_pos": lg["位置"], "leg_dir": lg["向き"],
                                       "exit_reason": lg["出口の理由"],
-                                      "pnl_bp": lg["レグ損益_bp"], "hold_s": lg["保有秒"]}
-                                     | (fill.leg_extra(res, li, fill_side, leg_path)
-                                        if xon else {}))
-    for name, rows in (("bundles", brows), ("cascades", crows), ("legs", lrows),
-                       ("cascades_any", crows_any), ("legs_any", lrows_any)):
+                                      "pnl_bp": lg["レグ損益_bp"], "hold_s": lg["保有秒"]})
+    for name, rows in (("bundles", brows), ("cascades", crows), ("legs", lrows)):
         if rows:
             write_df(pd.DataFrame(rows), chunks / name / f"{day}.csv.gz")
     tm["状態機械"] = time.time() - t
@@ -371,14 +281,6 @@ def main(argv=None) -> int:
     ap.add_argument("--seed", type=int, default=v2.SEED)
     ap.add_argument("--resume", action="store_true",
                     help="chunks/meta/<日>.json がある日を飛ばす")
-    ap.add_argument("--fill-side", choices=fill.FILL_SIDES, default=fill.FILL_ANY,
-                    help="状態機械の値段の付け方。any = 元の走らせ(以後で最初の約定、どちらの側でも)、"
-                         "quote = 目標の時刻以前で最新の最良気配(買いは売り気配、売りは買い気配。"
-                         "liq_cascade_fill の docstring)")
-    ap.add_argument("--quotes-dir", default=str(REPO_ROOT / "data" / "c9_bookticker"),
-                    help="--fill-side quote の気配の置き場(scripts/c9_fetch_bookticker.py の出力)")
-    ap.add_argument("--leg-path", action="store_true",
-                    help="レグの行に入り・出の約定と経路(MFE・MAE)の列を足す")
     args = ap.parse_args(argv)
 
     t_all = time.time()
@@ -444,9 +346,7 @@ def main(argv=None) -> int:
             continue
         m = run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9,
                     liq_ts, data_end_ms, store, metrics_cache, bucket_cache, funding,
-                    cand_cache, opened, args.seed, chunks, data_root, period_of[day],
-                    fill_side=args.fill_side, leg_path=args.leg_path,
-                    quotes_dir=args.quotes_dir)
+                    cand_cache, opened, args.seed, chunks, data_root, period_of[day])
         store.drop_before(shift(day, 1 - BACK_DAYS))
         for k in [k for k in cand_cache if k < shift(day, 1 - 3)]:
             del cand_cache[k]
@@ -457,9 +357,7 @@ def main(argv=None) -> int:
     # ---- 段 3: 規則(3 択)。前半で確率と帯を作り、後半の束に当てる ----
     t = time.time()
     store.cache.clear()
-    three = stage3(out, chunks, make_days, meas_days, pr, ctx, bund, store, args.resume,
-                   fill_side=args.fill_side, leg_path=args.leg_path,
-                   quotes_dir=args.quotes_dir)
+    three = stage3(out, chunks, make_days, meas_days, pr, ctx, bund, store, args.resume)
     timing["段3 規則3択"] = time.time() - t
 
     # ---- 集計(chunks を読む) ----
@@ -520,12 +418,6 @@ def main(argv=None) -> int:
         "規則3択": three,
         "resume": bool(args.resume),
     }
-    if extra_on(args.fill_side, args.leg_path):
-        meta["走らせ直し_2026-10-06"] = {
-            "fill_side": args.fill_side, "leg_path": bool(args.leg_path),
-            "quotes_dir": args.quotes_dir if args.fill_side == fill.FILL_QUOTE else None,
-            "委任文": "docs/DISCUSSIONS/2026-10-06_held_batches/DELEGATION_rerun_impl.md",
-            "注": "状態機械の連鎖・レグの行だけに効く。値動き・s 秒の曲線・対照は元と同じ道具"}
     (out / "run_meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1))
     for p in out.glob("*.csv"):
         txt = p.read_text(encoding="utf-8")
@@ -541,8 +433,7 @@ def main(argv=None) -> int:
 # =========================================================================== #
 # 段 3: 規則(3 択)
 # =========================================================================== #
-def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, resume,
-           fill_side: str = fill.FILL_ANY, leg_path: bool = False, quotes_dir=None) -> dict:
+def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, resume) -> dict:
     """前半(作る)の日のプリントだけで確率の模型と帯を作り(`v2.fit_three_way`)、後半(測る)の日の
     束に「規則_3択」を当てて状態機械を流す。後半のラベルは模型にも帯にも入らない(試験で固定)。"""
     cols = ["print_id", "day", v2.LOGIT_LABEL] + list(v2.LOGIT_FEATURES)
@@ -581,18 +472,9 @@ def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, 
     for day in meas_days:
         if resume and (chunks / "meta3" / f"{day}.json").exists():
             continue
-        # 既定は元のとおり [当日, 翌日]。quote のときは段 2 とそろえて前の日も読む((b) の列が
-        # 日の始め直後に前の日の約定を引けるように。批評家 1 回目の問 2)。any の値は以後の約定しか
-        # 使わないので前の日を読んでも変わらない。
-        w3 = stage3_window(day, fill_side)
-        tr, _miss = store.window(w3)
+        tr, _miss = store.window(window_days(day, 0, 1))
         price_fn = v2.make_price_fn(tr)
-        sim = make_sim(pr, tr, price_fn, fill_side, leg_path,
-                       present_days=[d for d in w3 if d not in set(_miss)],
-                       quotes=quote_book(fill_side, quotes_dir, w3))
-        xon = extra_on(fill_side, leg_path)
         crows, lrows = [], []
-        crows_any, lrows_any = [], []
         act, jud = Counter(), Counter()
         for g in v2.GAPS_S:
             for b in bund[g]["bundles"]:
@@ -601,21 +483,10 @@ def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, 
                 jd = v2.judgments_for(v2.POLICY_3WAY, b["members"], ctx, prob, model)
                 for dly in v2.DELAYS_S:
                     for typ in POLICY_TYPES:
-                        res = sim(b, jd, typ, dly)
+                        res = v2.simulate_bundle(pr, b, jd, typ, dly, price_fn)
                         for p in res["path"]:
                             act[f"{g}|{dly}|{v2.POLICY_3WAY}|{typ}|{p['行動']}"] += 1
                             jud[f"{g}|{dly}|{v2.POLICY_3WAY}|{typ}|{p['判断']}"] += 1
-                        if fill_side == fill.FILL_QUOTE:
-                            ca, la = any_rows(
-                                res, {"bundle_id": b["bundle_id"], "day": day, "period": "測る",
-                                      "side": b["side"], "gap_s": g, "delay_s": dly,
-                                      "policy": v2.POLICY_3WAY, "type": typ,
-                                      "n_prints": b["n_prints"], "qty_total": b["qty_total"]},
-                                {"bundle_id": b["bundle_id"], "day": day, "period": "測る",
-                                 "gap_s": g, "delay_s": dly, "policy": v2.POLICY_3WAY,
-                                 "type": typ}, None)
-                            crows_any.append(ca)
-                            lrows_any.extend(la)
                         crows.append({"bundle_id": b["bundle_id"], "day": day, "period": "測る",
                                       "side": b["side"], "gap_s": g, "delay_s": dly,
                                       "policy": v2.POLICY_3WAY, "type": typ,
@@ -624,24 +495,18 @@ def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, 
                                       "entered": int(bool(res["entered"])),
                                       "n_entries": res["n_entries"], "hold_s": res["hold_seconds"],
                                       "missing": int(bool(res["missing"])),
-                                      "first_entry_pos": res.get("first_entry_pos")}
-                                     | (fill.cascade_extra(res, fill_side) if xon else {}))
-                        for li, lg in enumerate(res["legs"]):
+                                      "first_entry_pos": res.get("first_entry_pos")})
+                        for lg in res["legs"]:
                             lrows.append({"bundle_id": b["bundle_id"], "day": day,
                                           "period": "測る", "gap_s": g, "delay_s": dly,
                                           "policy": v2.POLICY_3WAY, "type": typ,
                                           "leg_pos": lg["位置"], "leg_dir": lg["向き"],
                                           "exit_reason": lg["出口の理由"],
-                                          "pnl_bp": lg["レグ損益_bp"], "hold_s": lg["保有秒"]}
-                                         | (fill.leg_extra(res, li, fill_side, leg_path)
-                                            if xon else {}))
+                                          "pnl_bp": lg["レグ損益_bp"], "hold_s": lg["保有秒"]})
         if crows:
             write_df(pd.DataFrame(crows), chunks / "cascades3" / f"{day}.csv.gz")
         if lrows:
             write_df(pd.DataFrame(lrows), chunks / "legs3" / f"{day}.csv.gz")
-        for name, rows in (("cascades3_any", crows_any), ("legs3_any", lrows_any)):
-            if rows:
-                write_df(pd.DataFrame(rows), chunks / name / f"{day}.csv.gz")
         (chunks / "meta3").mkdir(parents=True, exist_ok=True)
         (chunks / "meta3" / f"{day}.json").write_text(json.dumps(
             {"day": day, "action_counts": dict(act), "judge_counts": dict(jud)},

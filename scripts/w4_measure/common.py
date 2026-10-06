@@ -30,11 +30,6 @@ BAR_FILE = "candles_1m_{y}.csv.gz"
 BIN_DIR = "backtest_data/binance_BTCUSDT_1m_20170801_20231231"
 BIN_FILE = "binance_BTCUSDT_1m_{y}.csv.gz"
 USDJPY_PATH = "backtest_data/fx_usdjpy_1m_20170801_20221231/usdjpy_1m.csv.gz"
-# 2023-01-01 からの USDJPY(USDJPY_PATH の置き場の README「Extends … (2023-01-01 onward)」「0 overlapping rows」「Safe to
-# concatenate」)。usdjpy_ref_dataset(extend=True) で、終わりが 2023-01-01 より後のときだけ足す。extend=True の終わりは USDJPY_EXTEND_END まで。
-USDJPY_PATH_2023 = "backtest_data/fx_usdjpy_1m_20260822.csv.gz"
-USDJPY_2023_FROM = "2023-01-01T00:00:00Z"
-USDJPY_EXTEND_END = "2023-12-17T15:00:00Z"  # extend=True の終わりの上限(封印の境 2023-12-18T00:00Z の前の日本時間の日の終わり)
 BIN_DIR_2024 = "backtest_data/binance_BTCUSDT_1m_20240101_20260831"  # 2024 年以降は 1 つのファイル(窓の口でだけ使う)
 BIN_FILE_2024 = "binance_BTCUSDT_1m_20240101_20260831.csv.gz"
 BAR_RESOLVE = {"gap": "accept", "no_trade": "drop"}
@@ -185,19 +180,9 @@ def binance_ref_dataset(name: str, column: str, lo_ns: int, hi_ns: int, window: 
                      "time": {"columns": ["open_time"], "unit": "iso", "tz": "UTC"}, "value": column}}
 
 
-def usdjpy_ref_dataset(name: str, lo_ns: int, hi_ns: int, extend: bool = False) -> dict:
-    """既定(extend=False)は今までと同じ USDJPY_PATH の 1 ファイル。extend=True で終わりが USDJPY_2023_FROM より後なら
-    USDJPY_PATH_2023 を後ろに足す(読むのは封印の門 load_reference の中だけ。範囲 [lo, hi) の外の行は門が値を使わずに飛ばす)。
-    extend=True のときだけ、終わりが USDJPY_EXTEND_END(2023-12-17T15:00Z)より後なら拒む(check_end の境 2023-12-18T00:00Z より
-    9 時間前。既定の extend=False と、ほかの口の check_end は変えない)。"""
+def usdjpy_ref_dataset(name: str, lo_ns: int, hi_ns: int) -> dict:
     check_end(hi_ns)
-    if extend and hi_ns > iso(USDJPY_EXTEND_END):
-        raise SystemExit(f"拒否: extend=True の終わり {to_iso(hi_ns)} は {USDJPY_EXTEND_END} より後(2023 年の USDJPY の読みは "
-                         f"{USDJPY_EXTEND_END} まで)")
-    ps = [USDJPY_PATH]
-    if extend and hi_ns > iso(USDJPY_2023_FROM):
-        ps.append(USDJPY_PATH_2023)
-    return {"name": name, "paths": ps, "range_ns": [lo_ns, hi_ns],
+    return {"name": name, "paths": [USDJPY_PATH], "range_ns": [lo_ns, hi_ns],
             "spec": {"format": "csv", "header": True, "delimiter": ",", "compression": "gzip",
                      "time": {"columns": ["timestamp"], "unit": "iso", "tz": "UTC"}, "value": "close"}}
 

@@ -81,5 +81,3 @@ backtest_data/k1_newenv_g_20261001/*.json
 !backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json
 backtest_data/binance_um_BTCUSDT_1m_20261002/raw/
 docs/RESEARCH/cards/*/measure/*/run.npz
-docs/RESEARCH/cards/c8_session_mean_revert/binance_gate/measure/*/run.npz
-docs/RESEARCH/cards/*/rerun_2026-10-06/**/run.npz
