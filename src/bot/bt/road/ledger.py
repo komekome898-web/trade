@@ -7,7 +7,9 @@
 - L-749「**ならオッケー**」(取引の回数 = 往復。建玉 0 → 0 で 1 回。段を足しても同じ取引)
 - L-750「**ドテンは2回じゃなくて1回とまだ途中やろ**」
 - L-755「**3.合ってる**」(保有時間 = 最初の約定から建玉 0 まで)
-- L-756「**1.a 2.よい 3. 0.001**」(ドル建ての損益は確定時刻の USDJPY で円に。USDT は USD とみなす)
+- L-756「**1.a 2.よい 3. 0.001**」(USDT は USD とみなす)
+- L-763「**2.取引開始時点での最新の値**」/ L-764「**今回のお答えは、損益の円換算も取引開始時点の値にする、という意味で合っていますか。 合っている**」
+  (ドル建ての損益は、その取引の最初の約定の時刻での最新の USDJPY で円に)
 
 計算(平均の原価法。ここで正確な分数で計算し、その値を出す):
 - 値段・量・USDJPY は `Decimal(str(x))`(浮動小数の最短の 10 進の文字列)で受け、それを分数(`fractions.Fraction`、
@@ -20,16 +22,16 @@
 - 減らす向きの約定: 減らした量 c = min(量, |建玉|)。減らす原価 = C × c ÷ |建玉|(全部閉じるときは C)。
   確定損益 = 向き × (値段 × c − 減らす原価) = (値段 − 平均の建値) × c × 向き。
   ドテン(量 > |建玉|)は閉じる分 |建玉| と新しく建てる分(量 − |建玉|、建値はその約定の値段)に分ける。
-- ドル建ては確定損益(ドル)× 確定時刻の USDJPY(`FxRates.rate("USDJPY", t)`、その時刻以前の最後の相場)。
-  相場が無ければ止まる(1 とみなさない)。USDT は USD とみなす。
-- 2 つの計算の突き合わせ: 同じ約定を口座(`bot.bt.portfolio.account.MarginAccount`、浮動小数)にも通し、
-  約定ごとの確定損益(円)の差が 1e-6 円を超えたら止める。建玉の差が 1e-9 BTC を超えたときも止める。
+- ドル建ては確定損益(ドル)× その取引の開始の USDJPY(取引の最初の約定の時刻 t0 での `FxRates.rate("USDJPY", t0)`、
+  t0 以前の最後の相場)。1 つの取引の中の決済は全部同じ相場で円にする。ドテンで続く新しい取引は、ドテンの約定の時刻の相場。
+  取引の開始の時刻に相場が無ければ止まる(1 とみなさない)。USDT は USD とみなす。
+- 2 つの計算の突き合わせ: 同じ約定を口座(`bot.bt.portfolio.account.MarginAccount`、浮動小数。口座の通貨は値段の通貨に
+  そろえ、口座には円への換算をさせない)にも通し、約定ごとの確定損益(値段の通貨)の差が 1e-6 を超えたら止める。建玉の差が 1e-9 BTC を超えたときも止める。
 
 出力の数(建玉・平均の建値・損益・最大の建玉)は 10 進の文字列(例 "5"・"-1"・"0.05")。ちょうど 0 は "0"。
 有限小数で表せる値は全桁そのまま(丸めない)。閉じた取引の損益 = 向き × (決済の 値段 × 量 の和 − 建ての 値段 × 量 の和)
 (円建て)は必ず有限小数なので、円建ての閉じた取引の損益とまとめの損益の合計は常に式どおりの値。
-有限小数で表せない値(割り切れない平均の建値と、その平均での一部決済の損益、それを含む途中の取引の損益・累計、
-ドル建てで違う相場の一部決済を含む取引)だけは、出力の文字列にするときに 1e-12 の位で丸める(偶数への丸め)。
+有限小数で表せない値(割り切れない平均の建値と、その平均での一部決済の損益、それを含む途中の取引の損益・累計)だけは、出力の文字列にするときに 1e-12 の位で丸める(偶数への丸め)。
 検査のツールは同じ帳簿のツールで計算し直し、文字列で突き合わせる。
 
 `bot.bt.report.trades.round_trips`(建ての分と決済の約定の組ごとに 1 取引と数える FIFO)は使わない。
@@ -77,7 +79,7 @@ SIDES = ("buy", "sell")
 FX_PAIR = "USDJPY"
 SUMMARY_KEYS = ("fill_count", "closed_trades", "pnl_jpy", "open_trades", "trades")
 TRADE_KEYS = ("first_t_ns", "last_t_ns", "levels", "max_position", "hold_ns", "pnl_jpy", "status")
-PNL_TOL_JPY = 1e-6  # 帳簿の計算と口座の計算の、約定ごとの確定損益の差の上限(円)
+PNL_TOL_JPY = 1e-6  # 帳簿の計算と口座の計算の、約定ごとの確定損益(値段の通貨、換算の前)の差の上限
 POS_TOL_BTC = 1e-9  # 同じく建玉の差の上限(BTC)
 REL_TOL = 1e-12  # 口座の浮動小数の誤差は扱った値の大きさに比例するので、大きい値ではこの割合を上限にする
 OUT_PLACES = 12  # 有限小数で表せない値を出力の文字列にするときの位(1e-12)
@@ -199,24 +201,28 @@ def _fx_table(fx: object) -> Optional[FxRates]:
 
 
 def _usdjpy(fxr: Optional[FxRates], i: int, t: int) -> Fraction:
+    """取引の開始の約定 i(時刻 t)での最新の USDJPY(L-763・L-764)。"""
     if fxr is None:
-        raise LedgerError(f"約定 {i}(時刻 {t})の確定損益を円にする USDJPY の相場が渡されていない(1 とみなさない。L-756)")
+        raise LedgerError(f"約定 {i}(時刻 {t})で始まる取引の損益を円にする USDJPY の相場が渡されていない"
+                          f"(1 とみなさない。L-756)")
     try:
         r = fxr.rate(FX_PAIR, t)
     except FxRateMissingError:
-        raise LedgerError(f"約定 {i}(時刻 {t})の確定損益を円にする USDJPY の相場が無い(その時刻以前の相場が要る。"
-                          f"1 とみなさない。L-756)") from None
+        raise LedgerError(f"約定 {i}(時刻 {t})で始まる取引の損益を円にする USDJPY の相場が無い(取引の開始の時刻以前の"
+                          f"相場が要る。1 とみなさない。L-763)") from None
     return _frac(r)
 
 
-def _account(quote_ccy: str, fx: Optional[FxRates]) -> MarginAccount:
+def _account(quote_ccy: str) -> MarginAccount:
     # 突き合わせの相手。口座が損益の計算に使うのは quote_ccy と margin だけ。tick・min_qty・qty_step は apply_fill が
-    # 見ない(量の刻みはこの帳簿が _check_fills で見る)。cash は損益に入らない(20 万円)。
+    # 見ない(量の刻みはこの帳簿が _check_fills で見る)。cash は損益に入らない。
+    # 口座の通貨を値段の通貨にそろえる: 口座は約定の時刻の相場で換算するが、帳簿は取引の開始の相場で換算する(L-764)。
+    # 突き合わせるのは換算の前の確定損益(値段の差 × 建玉)で、換算は帳簿の側の 1 回の掛け算だけ。
     product = Product(symbol="BTC", venue="road", tick=1e-8, min_qty=0.001, qty_step=0.001,
                       quote_ccy=quote_ccy, margin=True)
     costs = CostSchedule(maker_rate=0.0, taker_rate=0.0, source="帳簿のツール: 損益は値段の差 × 建玉だけ(L-741)")
-    return MarginAccount(product=product, currency=ACCOUNT_CCY, cash=float(MARGIN_JPY), leverage=1.0,
-                         liquidation=None, mark="last_trade", costs=costs, fx=fx, reference=None, open_orders=None)
+    return MarginAccount(product=product, currency=quote_ccy, cash=float(MARGIN_JPY), leverage=1.0,
+                         liquidation=None, mark="last_trade", costs=costs, fx=None, reference=None, open_orders=None)
 
 
 def _sign(x) -> int:
@@ -239,7 +245,7 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
     quote = "USD" if usd else ccy  # L-756「**2.よい**」: USDT は USD とみなす
     fxr = _fx_table(fx)
     try:
-        acct = _account(quote, fxr)
+        acct = _account(quote)
     except ExecutionModelError:
         raise LedgerError("突き合わせの口座を作れない(帳簿のツールの作りの誤り)") from None
     out = Ledger()
@@ -247,12 +253,15 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
     pos = Fraction(0)  # 建玉(買いが +)
     cost = Fraction(0)  # 建玉の原価の合計 C(値段 × 量 の和、正)
     cum = Fraction(0)
+    rate = Fraction(1)  # 今の取引の開始の USDJPY(円建ては 1: 換算しない)
     for i, f in enumerate(fills):
         t, side = f["t_ns"], f["side"]
         q, px = _frac(f["qty"]), _frac(f["px"])
         s = 1 if side == "buy" else -1
         before = pos
         pnl = Fraction(0)
+        if usd and pos == 0:
+            rate = _usdjpy(fxr, i, t)  # 建玉 0 から建てる約定 = 取引の開始
         if pos == 0 or _sign(pos) == s:
             pos += s * q
             cost += px * q
@@ -260,18 +269,19 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
             d = _sign(pos)
             c = min(q, abs(pos))
             removed = cost * c / abs(pos)  # 全部閉じるときは cost そのもの
-            pnl = d * (px * c - removed)
-            if usd:
-                pnl = pnl * _usdjpy(fxr, i, t)
+            pnl = d * (px * c - removed)  # 値段の通貨
             rest = q - c
             if rest > 0:  # ドテン: 閉じる分 |建玉| と新しく建てる分 rest に分ける
                 pos, cost = s * rest, px * rest
             else:
                 pos += s * c
                 cost = Fraction(0) if pos == 0 else cost - removed
+        _cross_check(acct, i, f, pnl, pos)
+        pnl = pnl * rate  # 取引の開始の USDJPY で円に(円建ては 1)
+        if usd and _sign(before) != 0 and _sign(pos) not in (0, _sign(before)):
+            rate = _usdjpy(fxr, i, t)  # ドテン: 残りの新しい取引はこの約定で始まる
         cum += pnl
         avg = None if pos == 0 else cost / abs(pos)
-        _cross_check(acct, i, f, pnl, pos)
 
         s_before, s_after = _sign(before), _sign(pos)
         opens = None
@@ -323,22 +333,20 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
 
 
 def _cross_check(acct: MarginAccount, i: int, f: Mapping, pnl: Fraction, pos: Fraction) -> None:
-    """同じ約定を口座に通し、確定損益(円)と建玉を帳簿の計算と突き合わせる。離れていたら止める。"""
+    """同じ約定を口座に通し、確定損益(値段の通貨、換算の前)と建玉を帳簿の計算と突き合わせる。離れていたら止める。"""
     r0 = acct.realized_account
     try:
         acct.apply_fill(FillNotice(client_order_id=f"road-{i}", price=float(f["px"]), size=float(f["qty"]),
                                    side=f["side"], venue_time_ns=f["t_ns"], fee=0.0))
-    except FxRateMissingError:
-        raise LedgerError(f"約定 {i}(時刻 {f['t_ns']})で口座が円にする相場を見つけられない(1 とみなさない)") from None
     except ExecutionModelError:
         raise LedgerError(f"約定 {i} を口座が受け付けない(帳簿のツールの作りの誤り)") from None
     acct_pnl = acct.realized_account - r0
-    # 口座は浮動小数なので、累計や値段が大きいほど誤差が大きくなる。上限は 1e-6 円か、口座が扱った値の大きさの 1e-12 倍の大きい方。
+    # 口座は浮動小数なので、累計や値段が大きいほど誤差が大きくなる。上限は 1e-6(値段の通貨)か、口座が扱った値の大きさの 1e-12 倍の大きい方。
     tol = max(PNL_TOL_JPY, REL_TOL * max(abs(acct.realized_account), abs(r0), abs(float(pnl)),
                                           abs(float(f["px"])) * abs(float(f["qty"]))))
     if abs(acct_pnl - float(pnl)) > tol:
-        raise LedgerError(f"約定 {i} の確定損益が、帳簿の計算 {dec_str(pnl)} 円と口座の計算 {acct_pnl!r} 円で "
-                          f"{tol} 円より離れている(2 つの計算が合わない)")
+        raise LedgerError(f"約定 {i} の確定損益が、帳簿の計算 {dec_str(pnl)} と口座の計算 {acct_pnl!r} で "
+                          f"{tol} より離れている(値段の通貨、換算の前。2 つの計算が合わない)")
     if abs(acct.position - float(pos)) > POS_TOL_BTC:
         raise LedgerError(f"約定 {i} の後の建玉が、帳簿の計算 {dec_str(pos)} と口座の計算 {acct.position!r} で "
                           f"{POS_TOL_BTC} BTC より離れている(2 つの計算が合わない)")

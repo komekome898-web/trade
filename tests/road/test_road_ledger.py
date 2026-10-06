@@ -81,14 +81,15 @@ def test_open_trade_partial_pnl_not_in_sum():
 
 
 @pytest.mark.parametrize("ccy", ["USD", "USDT"])
-def test_scene6_usd_converted_at_close_time(ccy):
-    # 手計算: (30,100 − 30,000) × 0.01 = 1 USD、確定時の USDJPY 151 → 151 円
+def test_scene6_usd_converted_at_trade_start(ccy):
+    # 手計算: (30,100 − 30,000) × 0.01 = 1 USD、取引の開始(0:00)の USDJPY 150 → 150 円(L-763・L-764)。
+    # 確定時(0:05)の 151 は使わない。
     fx = [FxPoint(time_ns=T0, pair="USDJPY", rate=150.0), FxPoint(time_ns=T0 + 5 * M, pair="USDJPY", rate=151.0)]
     fills = [_f(0, "buy", 0.01, 30000, ccy), _f(5, "sell", 0.01, 30100, ccy)]
     led = book(fills, fx)
-    assert led.fills[1]["pnl_jpy"] == "151"
-    assert led.summary == {"fill_count": 2, "closed_trades": 1, "pnl_jpy": "151", "open_trades": 0,
-                           "trades": [_trade(0, 5, 1, "0.01", 5, "151", "closed")]}
+    assert led.fills[1]["pnl_jpy"] == "150"
+    assert led.summary == {"fill_count": 2, "closed_trades": 1, "pnl_jpy": "150", "open_trades": 0,
+                           "trades": [_trade(0, 5, 1, "0.01", 5, "150", "closed")]}
     # {t_ns, pair, rate} の辞書の列・FxRates でも同じ
     as_rows = [{"t_ns": p.time_ns, "pair": p.pair, "rate": p.rate} for p in fx]
     assert book(fills, as_rows).summary == led.summary
@@ -96,25 +97,48 @@ def test_scene6_usd_converted_at_close_time(ccy):
 
 
 def test_usd_rates_not_round_numbers_exact():
-    # 手計算: 0.02 を 60,000.5 で買い、0.01 を 60,100.25(USDJPY 150.11)・0.01 を 59,950.75(148.93)で売る
-    #   0.01 × 99.75 × 150.11 = 149.734725、0.01 × (−49.75) × 148.93 = −74.092675、合計 75.64205 円
+    # 手計算: 0.02 を 60,000.5 で買い(取引の開始、USDJPY 149.37)、0.01 を 60,100.25(その時 150.11)・
+    #   0.01 を 59,950.75(その時 148.93)で売る。1 つの取引なので両方とも開始の 149.37 で円に:
+    #   0.01 × 99.75 × 149.37 = 148.996575、0.01 × (−49.75) × 149.37 = −74.311575、合計 74.685 円
     fx = [FxPoint(time_ns=T0, pair="USDJPY", rate=149.37), FxPoint(time_ns=T0 + 2 * M, pair="USDJPY", rate=150.11),
           FxPoint(time_ns=T0 + 4 * M, pair="USDJPY", rate=148.93)]
     led = book([_f(0, "buy", 0.02, 60000.5, "USD"), _f(2, "sell", 0.01, 60100.25, "USD"),
                 _f(4, "sell", 0.01, 59950.75, "USD")], fx)
-    assert [r["pnl_jpy"] for r in led.fills] == ["0", "149.734725", "-74.092675"]
-    assert led.summary["pnl_jpy"] == "75.64205"
+    assert [r["pnl_jpy"] for r in led.fills] == ["0", "148.996575", "-74.311575"]
+    assert led.summary["pnl_jpy"] == "74.685"
+
+
+def test_usd_doten_new_trade_uses_rate_at_doten():
+    # 0:00 に 0.01 を 30,000 USD で買い(USDJPY 150)、0:05 に 0.02 を 30,100 で売る(その時 151、ドテン)、
+    # 0:08 に 0.01 を 30,000 で買い戻す(その時 152)。
+    # 手計算: 閉じた側 = 1 USD × 150(1 つ目の取引の開始)= 150 円。新しい売りの取引 = 1 USD × 151(ドテンの約定 = 開始)
+    #   = 151 円。合計 301 円(確定時の相場なら 151 + 152 = 303 円)。
+    fx = [FxPoint(time_ns=T0, pair="USDJPY", rate=150.0), FxPoint(time_ns=T0 + 5 * M, pair="USDJPY", rate=151.0),
+          FxPoint(time_ns=T0 + 8 * M, pair="USDJPY", rate=152.0)]
+    led = book([_f(0, "buy", 0.01, 30000, "USD"), _f(5, "sell", 0.02, 30100, "USD"),
+                _f(8, "buy", 0.01, 30000, "USD")], fx)
+    assert [r["pnl_jpy"] for r in led.fills] == ["0", "150", "151"]
+    assert led.summary["pnl_jpy"] == "301"
+    assert led.summary["closed_trades"] == 2 and led.summary["open_trades"] == 0
+
+
+def test_usd_rate_needed_at_trade_start():
+    # 確定の時刻(0:05)には相場があっても、取引の開始(0:00)の時刻以前に相場が無ければ止まる(1 とみなさない)
+    fills = [_f(0, "buy", 0.01, 30000, "USD"), _f(5, "sell", 0.01, 30100, "USD")]
+    after_start = [FxPoint(time_ns=T0 + 1 * M, pair="USDJPY", rate=150.0)]
+    with pytest.raises(LedgerError, match="約定 0.*始まる取引.*USDJPY の相場が無い"):
+        book(fills, after_start)
 
 
 def test_usd_without_rate_stops_in_japanese():
     fills = [_f(0, "buy", 0.01, 30000, "USD"), _f(5, "sell", 0.01, 30100, "USD")]
     with pytest.raises(LedgerError, match="USDJPY の相場が渡されていない"):
         book(fills)
-    # 確定時刻より後の相場しか無いときも止まる(1 とみなさない)
+    # 確定時刻より後の相場しか無いときも止まる(1 とみなさない。取引の開始の時刻にも相場が無い)
     late = [FxPoint(time_ns=T0 + 6 * M, pair="USDJPY", rate=151.0)]
     with pytest.raises(LedgerError, match="USDJPY の相場が無い"):
         book(fills, late)
-    # 逆向きの組(JPYUSD)だけでは止まる(口座は逆数で換算できるが、帳簿は USDJPY だけを使う: 2 つの計算をずらさない)
+    # 逆向きの組(JPYUSD)だけでは止まる(帳簿は USDJPY だけを使う)
     inv = [FxPoint(time_ns=T0, pair="JPYUSD", rate=1 / 150)]
     with pytest.raises(LedgerError, match="USDJPY の相場が無い"):
         book(fills, inv)
