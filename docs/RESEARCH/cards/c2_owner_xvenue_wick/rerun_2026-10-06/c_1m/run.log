@@ -1,0 +1,10 @@
+c2_owner_xvenue_wick c_1m 期間 2017-08-17T15:00:00Z 〜 2021-12-31T15:00:00Z 区切り 4
+[   118.7s 最大RSS  0.97GB] 区切り 2017-08-17〜2018-01-01 足 194272 参照 {'bitmex_open': 195914, 'bitmex_high': 195914, 'bitmex_low': 195914, 'bitmex_close': 195914}
+[   352.8s 最大RSS  2.53GB] 区切り 2018-01-01〜2019-01-01 足 521307 参照 {'bitmex_open': 525401, 'bitmex_high': 525401, 'bitmex_low': 525401, 'bitmex_close': 525401}
+[   575.2s 最大RSS  2.63GB] 区切り 2019-01-01〜2020-01-01 足 519892 参照 {'bitmex_open': 525597, 'bitmex_high': 525597, 'bitmex_low': 525597, 'bitmex_close': 525597}
+[   799.2s 最大RSS  2.69GB] 区切り 2020-01-01〜2021-01-01 足 519967 参照 {'bitmex_open': 526901, 'bitmex_high': 526901, 'bitmex_low': 526901, 'bitmex_close': 526901}
+[   994.0s 最大RSS  2.79GB] 区切り 2021-01-01〜2021-12-31 足 518101 参照 {'bitmex_open': 524259, 'bitmex_high': 524259, 'bitmex_low': 524259, 'bitmex_close': 524259}
+[   995.0s 最大RSS  2.79GB] c_1m: 区切りの run_card(読み込みを含む) 995s 決定 2272525
+[  1001.9s 最大RSS  2.79GB] npz を保存
+{"variant": "c_1m", "period": ["2017-08-17T15:00:00Z", "2021-12-31T15:00:00Z"], "npz": "docs/RESEARCH/cards/c2_owner_xvenue_wick/rerun_2026-10-06/c_1m/run.npz", "npz_keys": ["close", "decided", "end_ns", "exposure", "high", "low", "open", "signal_color", "signal_log", "signal_strong", "start_ns", "volume"], "daily_csv_sha256": "b09f376ca4c942b7068e6303bb8aafa194a00f2c1445b8425ce2f23722562fd8", "n_decisions": 2272525, "timing": {"chunked_run_s": 994.9, "total_s": 1001.9, "peak_rss_gb": 2.79}}
+[  1002.1s 最大RSS  2.79GB] 終わり(測定なし)
