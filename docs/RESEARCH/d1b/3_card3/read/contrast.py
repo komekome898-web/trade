@@ -168,3 +168,59 @@ def years_section():
 if __name__ == "__main__":
     with open(os.path.join(HERE, "contrast.md"), "a", encoding="utf-8") as fh:
         fh.write("\n".join(years_section()) + "\n")
+
+
+# ---- 6. 1 分目を除いた増分(h − 1 分)と、脚の 後半 − 前半(相方 01 の指摘 1・3 で足した)
+def increments_section():
+    import json
+    d = parse()
+    W = json.load(open(os.path.join(BASE, "result_outside_onset_last1m.json"), encoding="utf-8"))["窓"]
+    L = ["## 6. 1 分目を除いた増分(h − 1 分。どちらも 実 − 対照平均、se の和の保守。結果を見てから作った切り口)", "",
+         "| 窓 | 原因の脚 | 時間 | 脚 | 全期間 | 前半 | 後半 |", "|---|---|---|---|---|---|---|"]
+    for w in WINDOWS:
+        for cause in ("全部", "bitFlyer", "Binance", "USDJPY"):
+            for hz in ("5分", "15分", "60分"):
+                for leg in LEGS:
+                    if w != "1d" and (cause != "全部" or leg != "合計(上乗せの戻り)"):
+                        continue
+                    row = []
+                    for p in PERIODS:
+                        a, b = con(d, w, cause, hz, leg, p), con(d, w, cause, "1分", leg, p)
+                        row.append(ci(a[0] - b[0], a[1] + b[1]))
+                    L.append(f"| {w} | {cause} | {hz} − 1分 | {LSHORT.get(leg, leg)} | " + " | ".join(row) + " |")
+    years = sorted(W["1d"]["実|60分|原因 全部|合計(上乗せの戻り)"]["年ごと(記述)"])
+
+    def ycon(hz, cause, leg, y):
+        r, a, f = (W["1d"][f"{c}|{hz}|原因 {cause}|{leg}"]["年ごと(記述)"].get(y) for c in ("実", "24 時間前", "24 時間後"))
+        if None in (r, a, f):
+            return None
+        return r["estimate"] - (a["estimate"] + f["estimate"]) / 2, r["se"] + (a["se"] + f["se"]) / 2
+
+    L += ["", "年ごと(窓 1 日・原因 全部・合計、60 分 − 1 分、保守):", "", "| " + " | ".join(years) + " |", "|" + "---|" * len(years)]
+    out = []
+    for y in years:
+        a, b = ycon("60分", "全部", "合計(上乗せの戻り)", y), ycon("1分", "全部", "合計(上乗せの戻り)", y)
+        out.append("—" if None in (a, b) else ci(a[0] - b[0], a[1] + b[1]))
+    L.append("| " + " | ".join(out) + " |")
+    L += ["", "## 7. 脚の 後半 − 前半(実 − 対照平均、2 つの半分は別の日なので √(a² + b²))", "",
+          "| 窓 | 原因の脚 | 時間 | bitFlyer の脚 | Binance の脚 | USDJPY の脚 | 合計 |", "|---|---|---|---|---|---|---|"]
+    for cause in CAUSES[:4]:
+        for hz in HZ:
+            row = []
+            for leg in LEGS:
+                v1, v2 = con(d, "1d", cause, hz, leg, "前半"), con(d, "1d", cause, hz, leg, "後半")
+                row.append(ci(v2[0] - v1[0], math.hypot(v1[1], v2[1])))
+            L.append(f"| 1d | {cause} | {hz} | " + " | ".join(row) + " |")
+    L.append("")
+    # 年ごとの日数(2017 年の欠けの確かめ)
+    L += ["## 8. 年ごとの日数と件数(窓 1 日・原因 全部・合計・60 分、実)", "", "| 年 | 件数 | 日数 |", "|---|---|---|"]
+    for y in years:
+        x = W["1d"]["実|60分|原因 全部|合計(上乗せの戻り)"]["年ごと(記述)"][y]
+        L.append(f"| {y} | {x['n']} | {x['n_days']} |")
+    L.append("")
+    return L
+
+
+if __name__ == "__main__":
+    with open(os.path.join(HERE, "contrast.md"), "a", encoding="utf-8") as fh:
+        fh.write("\n".join(increments_section()) + "\n")
