@@ -1,9 +1,0 @@
-{
- "agree_share": 0.5283687943262412,
- "n_agree": 149,
- "n_both_nonzero": 282,
- "n_btc_zero": 0,
- "n_usdjpy_zero": 0,
- "n_weeks": 282,
- "what": "週明けの行 r ごとに、窓の最初の決定の持ち高の符号を 2 つの変種で比べた(INTENT_MAP §4-3)。両方 ≠ 0 の週だけで割合"
-}
