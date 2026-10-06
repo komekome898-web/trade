@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1010,
+ "n_moves": 1014,
  "moves": [
   {
    "move": 1,
@@ -27478,17 +27478,20 @@
   {
    "move": 1010,
    "tools": {
-    "Bash": 82,
-    "Agent": 10,
+    "Bash": 97,
+    "Agent": 11,
     "ReadNotifications": 1,
     "Write": 5,
     "Edit": 21,
-    "SendMessage": 12,
+    "SendMessage": 13,
     "Read": 2,
     "Grep": 1,
-    "mcp__Claude_Code_Remote__create_session": 1
+    "mcp__Claude_Code_Remote__create_session": 2,
+    "mcp__Claude_Code_Remote__get_session": 2,
+    "mcp__Claude_Code_Remote__archive_session": 1,
+    "Skill": 1
    },
-   "n_tools": 135,
+   "n_tools": 157,
    "read_goal": false,
    "first_write_at": 12,
    "table_shown": false,
@@ -27508,38 +27511,149 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1011,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1012,
+   "tools": {
+    "Bash": 27,
+    "Read": 4,
+    "SendMessage": 1,
+    "Edit": 26,
+    "Write": 1,
+    "Agent": 2,
+    "mcp__Claude_Code_Remote__get_session": 1,
+    "Skill": 1
+   },
+   "n_tools": 63,
+   "read_goal": false,
+   "first_write_at": 14,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 1,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1013,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1014,
+   "tools": {
+    "Bash": 41,
+    "Edit": 32,
+    "Read": 4,
+    "mcp__Claude_Code_Remote__create_session": 3,
+    "Agent": 4
+   },
+   "n_tools": 84,
+   "read_goal": false,
+   "first_write_at": 2,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 2,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 178,
-   "value": 0.3933
+   "den": 180,
+   "value": 0.3889
   },
   "P2_table_shown_before_first_write": {
    "num": 34,
-   "den": 178,
-   "value": 0.191
+   "den": 180,
+   "value": 0.1889
   },
   "P3_claim_with_output": {
    "num": 380,
-   "den": 855,
-   "value": 0.4444
+   "den": 856,
+   "value": 0.4439
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
-   "den": 236,
+   "den": 239,
    "value": 0.0
   },
   "P5_tools_per_move": {
    "median": 6.0,
    "max": 169,
-   "n": 954
+   "n": 956
   },
   "P6_findings_applied": {
-   "num": 82,
-   "den": 236,
-   "value": 0.3475,
+   "num": 83,
+   "den": 239,
+   "value": 0.3473,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
