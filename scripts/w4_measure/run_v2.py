@@ -5,13 +5,6 @@ CardRun に測定器を 1 回当てる(リードの走らせ方の変更、2026-
     PYTHONPATH=src python run_v2.py --card c3 --window 1w
     PYTHONPATH=src python run_v2.py --card c1
     (照合用) --start/--end/--chunk month|year/--out-root/--save-root/--no-measure
-    (走らせ直し 2026-10-06) --extra-cols --no-measure --save-root <置き場>
-      保存した列に足す: 高値 high・安値 low(全カード)。カード 2 は合図ごとの足の色 signal_color(+1 陽線 / −1 陰線)と
-      強い・弱い signal_strong(= 色と合図の向きが同じ。陽線 × 買い・陰線 × 売り が強い。カードの説明の 4 通り)を
-      signal_log と同じ並びで。npz の名前は <置き場>/run.npz、同じ置き場に daily.csv(日本時間の日ごとの P の和。
-      測定器の daily_rows・write_daily)と run_record.json(引数・期間・区切り・入力の sha256・所要)を書く。
-      measure_card・--light・--from-npz とは一緒に使えない(元の測定の置き場 measure/<変種>/ に書かないため)。
-      持ち高・始値・終値・量・決定の列は、この引数の有無で変わらない(試験 tests/research/test_w4_rerun_cols.py)。
 
 区切りのつなぎ方(区切りごとに読むのは、その区切りの足と参照の行だけ):
   c2・c3: 同じカードの物を区切りをまたいで使い続ける(持ち高・無効化ライン・まとめ中の足・窓の中の上乗せがそのまま続く)。
@@ -58,62 +51,6 @@ C2_VARIANTS = {  # 系列の名前の組の属性名, 置き場, ファイルの
     "c": ("SERIES_BITMEX", "backtest_data/bitmex_XBTUSD_1m_from1s_20261002", "bitmex_XBTUSD_1m_{y}.csv.gz",
           ("2017-08-17T15:00:00Z", "2021-12-31T15:00:00Z"), "(c) SERIES_BITMEX BitMEX XBTUSD(1 秒足から作った 1 分足)"),
 }
-
-
-def c2_kind_card(series: tuple, foot_min: int):
-    """--extra-cols のカード 2。カードの物そのもの(C2OwnerXvenueWick)を継ぎ、足 1 本の判定 _apply の前に、カードと同じ
-    classify_detail(import したもの。写していない)で足の色を出し、その判定で signal_log に行が足されたときだけ色を
-    signal_color に足す。持ち高の更新はカードの _apply のまま(色を読むだけで、カードの状態に触らない)。"""
-    from bot.research.cards.library import c2_owner_xvenue_wick as M
-
-    class C2WithKind(M.C2OwnerXvenueWick):
-        def __init__(self, **kw) -> None:
-            super().__init__(**kw)
-            self.signal_color: list = []  # signal_log と同じ並びの足の色(+1 陽線 / −1 陰線)
-
-        def _apply(self, end_ns: int, o: float, h: float, lo: float, c: float) -> None:
-            color = M.classify_detail(o, h, lo, c, small_gate_bp=self.small_gate_bp, big_gate_bp=self.big_gate_bp)[0]
-            n0 = len(self.signal_log)
-            super()._apply(end_ns, o, h, lo, c)
-            if len(self.signal_log) != n0:
-                self.signal_color.append(color)
-
-    return C2WithKind(series=series, foot_min=foot_min)
-
-
-def c2_kind_cols(card) -> dict:
-    """signal_log(足の終わり ns, 向き, 19 の枝, 24 の枝)と同じ並びの signal_color・signal_strong。"""
-    log = np.array(card.signal_log, dtype=np.int64).reshape(-1, 4)
-    color = np.array(card.signal_color, dtype=np.int8)
-    if len(color) != len(log):
-        raise SystemExit(f"signal_color {len(color)} 行と signal_log {len(log)} 行の数が違う")
-    return {"signal_color": color, "signal_strong": color == log[:, 1]}
-
-
-def save_npz(run: CardRun, save_root: str, tag: str, extra: dict, extra_cols: bool) -> str:
-    """1 分ごとの記録を npz に保存する。extra_cols が False なら今までと同じ名前・同じ列。True なら名前を run.npz にし、
-    高値・安値を足す。"""
-    cols = dict(end_ns=run.end_ns, start_ns=run.start_ns, open=run.open, close=run.close, volume=run.volume,
-                decided=run.decided, exposure=run.exposure)
-    if extra_cols:
-        cols.update(high=run.high, low=run.low)
-    path = os.path.join(save_root, "run.npz" if extra_cols else f"{tag}.npz")
-    np.savez_compressed(path, **cols, **extra)
-    return path
-
-
-def write_rerun_outputs(run: CardRun, save_root: str, npz_path: str, record: dict) -> dict:
-    """--extra-cols: npz の隣に daily.csv(測定器の daily_rows・write_daily、日本時間の日)と run_record.json を書く。"""
-    from bot.research.cards.measure import daily_rows, write_daily
-    p = pnl(run)
-    sha_daily = write_daily(daily_rows(p, "Asia/Tokyo"), os.path.join(save_root, "daily.csv"))
-    with np.load(npz_path) as z:
-        keys = sorted(z.files)
-    rec = dict(record)
-    rec.update({"npz": os.path.relpath(npz_path, ROOT), "npz_keys": keys, "daily_csv_sha256": sha_daily,
-                "n_decisions": int(p.n_decisions), "n_pnl": int(len(p.pnl_bp)), "n_undefined": int(p.n_undefined)})
-    write_json(rec, os.path.join(save_root, "run_record.json"))
-    return rec
 
 
 def boundaries(lo: int, hi: int, chunk: str) -> list:
@@ -309,12 +246,7 @@ def main() -> int:
     ap.add_argument("--no-measure", action="store_true")
     ap.add_argument("--from-npz", default=None)
     ap.add_argument("--light", action="store_true")
-    ap.add_argument("--extra-cols", action="store_true")
     a = ap.parse_args()
-    if a.extra_cols and (not a.no_measure or a.light or a.from_npz):
-        raise SystemExit("--extra-cols は --no-measure と一緒にだけ使う(--light・--from-npz とは使えない)")
-    if a.extra_cols and not a.save_root:
-        raise SystemExit("--extra-cols には --save-root(走らせ直しの置き場)が要る")
     clock = Clock()
     if a.card == "c2":
         from bot.research.cards.library import c2_owner_xvenue_wick as M
@@ -322,7 +254,7 @@ def main() -> int:
         attr, ref_dir, ref_file, period, vdesc = C2_VARIANTS[a.variant]
         series = getattr(M, attr)
         name = f"{a.variant}_{a.foot}m"
-        card = c2_kind_card(series, a.foot) if a.extra_cols else M.C2OwnerXvenueWick(series=series, foot_min=a.foot)
+        card = M.C2OwnerXvenueWick(series=series, foot_min=a.foot)
     elif a.card == "c3":
         from bot.research.cards.library.c3_yen_premium_revert import FX, OVERSEAS, YenPremiumRevert
         card_id = "c3_yen_premium_revert"
@@ -393,22 +325,12 @@ def main() -> int:
     extra = {}
     if a.card == "c2":
         extra["signal_log"] = np.array(card.signal_log, dtype=np.int64).reshape(-1, 4)
-        if a.extra_cols:
-            extra.update(c2_kind_cols(card))
     if a.card == "c3":
         extra.update(ov_time=run.ref_time[OVERSEAS], ov_value=run.ref_value[OVERSEAS],
                      fx_time=run.ref_time[FX], fx_value=run.ref_value[FX])
     if not a.from_npz:
-        npz_path = save_npz(run, save_root, tag, extra, a.extra_cols)
-    if a.extra_cols:
-        clock.mark("npz を保存")
-        rec = write_rerun_outputs(run, save_root, npz_path, {
-            "script": "scripts/w4_measure/run_v2.py", "argv": sys.argv[1:], "card": card_id, "variant": name,
-            "variant_desc": vdesc, "period": [to_iso(lo), to_iso(hi)], "chunk": a.chunk, "chunks": log,
-            "inputs": inputs, "timing": {"chunked_run_s": round(t_run, 1), "total_s": round(time.time() - clock.t0, 1),
-                                         "peak_rss_gb": round(peak_rss_gb(), 2)}, "clock": clock.marks})
-        print(json.dumps({k: rec[k] for k in ("variant", "period", "npz", "npz_keys", "daily_csv_sha256", "n_decisions",
-                                              "timing")}, ensure_ascii=False), flush=True)
+        np.savez_compressed(os.path.join(save_root, f"{tag}.npz"), end_ns=run.end_ns, start_ns=run.start_ns, open=run.open,
+                            close=run.close, volume=run.volume, decided=run.decided, exposure=run.exposure, **extra)
     if a.no_measure:
         clock.mark("終わり(測定なし)")
         return 0

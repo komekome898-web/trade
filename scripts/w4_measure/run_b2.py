@@ -2,10 +2,6 @@
 
     PYTHONPATH=src python run_b2.py --card c5|c6|c7|c8 --variant <変種> [--start --end --chunk year|month]
     (照合) PYTHONPATH=src python run_b2.py --card c7 --variant 1w --check --start 2018-01-01T00:00:00Z --end 2019-01-01T00:00:00Z
-    (カード 6 の延長、走らせ直し 2026-10-06) --card c6 --variant <btc|usdjpy> --end 2023-12-17T15:00:00Z --usdjpy-2023
-      --out-root <置き場>。--usdjpy-2023 は USDJPY の参照に common.USDJPY_PATH_2023(2023-01-01 から)を足す。
-      カード 6 で終わりが 2023-01-01 より後なのにこの引数が無ければ止める(2023 年の週明けが 1 つも無い走らせになるため)。
-      既定(引数なし)の読む置き場・期間は変わらない。
 
 走らせ方(scratchpad/w4/measure/run_v2.py の run_carry と同じつなぎ方):
   区切り(既定は暦年)ごとに、その区切りの足(と c6 の参照の行)だけを封印の門(bot.bt.data)から読み、同じカードの物を
@@ -32,8 +28,7 @@ MEAS = os.path.join(os.path.dirname(HERE), "measure")
 sys.path.insert(0, HERE)
 sys.path.insert(0, MEAS)
 
-from common import (FX_DIR, ROOT, USDJPY_2023_FROM, Clock, iso, load_bars, peak_rss_gb, to_iso,  # noqa: E402
-                    usdjpy_ref_dataset)
+from common import FX_DIR, ROOT, Clock, iso, load_bars, peak_rss_gb, to_iso, usdjpy_ref_dataset  # noqa: E402
 from post import write_json  # noqa: E402
 from run_v2 import boundaries, concat, ref_rows  # noqa: E402
 
@@ -124,7 +119,7 @@ def check(a, card_id, lo, hi, decl, fx_all):
     refs = {}
     if fx_all is not None:
         from bot.research.cards.library.c6_weekend_gap_revert import FX
-        refs = {FX: load_reference(ROOT, usdjpy_ref_dataset(FX, lo, hi, extend=a.usdjpy_2023), declarations=decl)}
+        refs = {FX: load_reference(ROOT, usdjpy_ref_dataset(FX, lo, hi), declarations=decl)}
     r1 = run_card(make_card(a.card, a.variant), bars, references=refs, declarations=decl, venue="bitflyer",
                   symbol="FX_BTC_JPY")
     del bars, refs
@@ -175,17 +170,12 @@ def main() -> int:
     ap.add_argument("--chunk", default="year", choices=["year", "month"])
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--out-root", default=None)
-    ap.add_argument("--usdjpy-2023", action="store_true")
     a = ap.parse_args()
     card_id, variants, period = CARDS[a.card]
     if a.variant not in variants:
         raise SystemExit(f"変種 {a.variant} は {variants} に無い")
     clock = Clock()
     lo, hi = iso(a.start or period[0]), iso(a.end or period[1])
-    if a.usdjpy_2023 and a.card != "c6":
-        raise SystemExit("--usdjpy-2023 はカード 6 だけ(USDJPY を参照に読むのはカード 6 だけ)")
-    if a.card == "c6" and hi > iso(USDJPY_2023_FROM) and not a.usdjpy_2023:
-        raise SystemExit(f"終わり {to_iso(hi)} は {USDJPY_2023_FROM} より後: 2023 年からの USDJPY を読むには --usdjpy-2023 が要る")
     with open(os.path.join(ROOT, f"docs/RESEARCH/cards/{card_id}/CARD.md"), encoding="utf-8") as fh:
         st, problems = cardmd.settings(cardmd.parse(fh.read()))
     if problems:
@@ -194,7 +184,7 @@ def main() -> int:
     fx_all = None
     if a.card == "c6":
         from bot.research.cards.library.c6_weekend_gap_revert import FX
-        fx_all = ref_rows(FX, usdjpy_ref_dataset(FX, lo, hi, extend=a.usdjpy_2023), decl)  # 全期間を 1 回だけ読む
+        fx_all = ref_rows(FX, usdjpy_ref_dataset(FX, lo, hi), decl)  # 1 ファイル。全期間を 1 回だけ読む
         clock.mark(f"USDJPY の行 {len(fx_all[0])}")
     if a.check:
         return check(a, card_id, lo, hi, decl, fx_all)
