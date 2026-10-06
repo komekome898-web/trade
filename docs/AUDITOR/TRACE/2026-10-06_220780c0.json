@@ -28722,9 +28722,9 @@
   {
    "move": 1055,
    "tools": {
-    "Bash": 11
+    "Bash": 12
    },
-   "n_tools": 11,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
