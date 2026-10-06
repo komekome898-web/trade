@@ -1,0 +1,19 @@
+# L-764 の削除(コミット a705e9ed)の後の全試験。4 つに分けて回した(1 本で回すと 1700 秒の上限で止まった)
+# コマンド: PYTHONPATH=src python -m pytest -p no:cacheprovider -rf <tests/bt | tests/research tests/road | tests/test_*.py の前半 | 後半>
+# 原因: test_c4_w6b_order = 3.F で消した WINDOW1/DELEGATION_w6b_order.md を読む / test_backtest_chart = 3.A で消した k1_* の組を台帳が挙げる / test_partner_tools・test_volgate_improved = L-761 の削除の後から失敗(test_failures_after_delete.txt)
+== bt
+17896 passed, 6 skipped, 3 warnings in 973.48s (0:16:13)
+EXIT 0
+== res
+FAILED tests/research/test_c4_w6b_order.py::test_docstring_starts_with_the_reading_rules_verbatim
+FAILED tests/research/test_partner_tools.py::test_check_partner_real_analysis_docs_pass
+FAILED tests/research/test_volgate_improved.py::test_series_paths_exist - Ass...
+3 failed, 1143 passed, 2 skipped in 479.77s (0:07:59)
+EXIT 1
+== a
+FAILED tests/test_backtest_chart.py::test_every_ledger_group_exists_and_every_shared_run_is_placed
+1 failed, 1877 passed, 8 skipped in 155.20s (0:02:35)
+EXIT 1
+== b
+1311 passed, 1 skipped, 1 warning in 428.08s (0:07:08)
+EXIT 0
