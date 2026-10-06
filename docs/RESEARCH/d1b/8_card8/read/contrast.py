@@ -121,3 +121,14 @@ for H in (1, 5, 15, 60):
         out4.append(f"| {H} | {per} | " + " | ".join(f"{x['est']:+.4f} [{x['lo']:+.4f}, {x['hi']:+.4f}]" for x in cs) + " |")
 with open(os.path.join(HERE, "contrast.md"), "a") as fh:
     fh.write("\n".join(out4) + "\n")
+
+# 10. 一致の割合の対照 − 0.5 の時間ごと(区切り 15・約定。時間 1 は 1 分目を含む、ほかは除く)
+out5 = ["", "## 10. 一致の割合の対照 − 0.5 の時間ごと(区切り 15・約定。各セルの台本の区間)", "",
+        "| 時間 | 対照 | 全期間 | 前半 | 後半 |", "|---|---|---|---|---|"]
+for H in (1, 5, 15, 60):
+    first = "含む" if H == 1 else "除く"
+    for c in ("24 時間前", "24 時間後"):
+        xs = [cell(15, H, "約定", first, c, p) for p in ("全期間", "前半", "後半")]
+        out5.append(f"| {H} | {c} | " + " | ".join(f"{x['est'] - 0.5:+.4f} [{x['lo'] - 0.5:+.4f}, {x['hi'] - 0.5:+.4f}]" for x in xs) + " |")
+with open(os.path.join(HERE, "contrast.md"), "a") as fh:
+    fh.write("\n".join(out5) + "\n")
