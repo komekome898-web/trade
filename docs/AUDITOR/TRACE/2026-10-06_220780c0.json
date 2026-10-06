@@ -27295,7 +27295,7 @@
   {
    "move": 1004,
    "tools": {
-    "Bash": 31,
+    "Bash": 32,
     "Write": 6,
     "Agent": 4,
     "Read": 1,
@@ -27303,7 +27303,7 @@
     "SendMessage": 1,
     "Edit": 3
    },
-   "n_tools": 47,
+   "n_tools": 48,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
