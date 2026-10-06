@@ -25,3 +25,16 @@ for q in Q:
         out.append(f"| {q} | {per} | {r['estimate']:+.2f} | {a['estimate']:+.2f} | {f['estimate']:+.2f} | {dd:+.2f} [{dd - 1.96 * se:+.2f}, {dd + 1.96 * se:+.2f}] |")
 open(os.path.join(HERE, "contrast.md"), "w").write("\n".join(out) + "\n")
 print("\n".join(out))
+
+# 3. 実 − 対照平均 の 後半 − 前半(各半分の保守の se を √(a² + b²))
+out3 = ["", "## 3. 実 − 対照平均 の 後半 − 前半(各半分の保守の se を √(a² + b²))", "", "| 量 | 後半 − 前半 |", "|---|---|"]
+for q in Q:
+    vals = []
+    for per in ("前半", "後半"):
+        r, a, f = cell("実", q, per), cell("24 時間前", q, per), cell("24 時間後", q, per)
+        vals.append((r["estimate"] - (a["estimate"] + f["estimate"]) / 2, r["se"] + (a["se"] + f["se"]) / 2))
+    dd = vals[1][0] - vals[0][0]; se = math.hypot(vals[0][1], vals[1][1])
+    out3.append(f"| {q} | {dd:+.2f} [{dd - 1.96 * se:+.2f}, {dd + 1.96 * se:+.2f}] |")
+with open(os.path.join(HERE, "contrast.md"), "a") as fh:
+    fh.write("\n".join(out3) + "\n")
+print("\n".join(out3))
