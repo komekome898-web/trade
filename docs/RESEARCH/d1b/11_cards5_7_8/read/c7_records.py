@@ -175,6 +175,66 @@ def main():
         br, bf = L._boot(n, raw1), L._boot(n, fl1)
         out.append(f"| {bl} | {raw1(ai):+.3f} [{br['lo']:+.3f}, {br['hi']:+.3f}] | {fl1(ai):+.3f} [{bf['lo']:+.3f}, {bf['hi']:+.3f}] |")
     L.BLOCK = keep
+    # 6. 起点の行を 1 分足と突き合わせる(監査役 1 回目の直す 5: # 7 の D0 で未確認だった起点の値・当たり・前の向き)。
+    #    台本と別に手で書いた素朴な走査で、窓ごとに決まった番号の行(全体の 1/7・3/7・5/7 番目)を作り直して比べる。
+    out += ["", "## 6. 起点の行と 1 分足の突き合わせ(素朴な走査で作り直し。監査役 1 回目の直す 5)", "",
+            "| 窓 | T | 記録の w・向き・分・前の向き | 作り直しの w・向き・分・前の向き | 一致 |", "|---|---|---|---|---|"]
+    WIN = {"1h": 3600, "1d": 86400, "1w": 7 * 86400}
+    idx = np.flatnonzero(g.ne); ends = g.start(idx) + L.MIN_NS; xl = np.log(g.c[idx])
+    rows = {}
+    with gzip.open(REC, "rt") as fh:
+        for r in csv.DictReader(fh):
+            rows.setdefault(r["window"], []).append(r)
+    for wname, rs in rows.items():
+        for frac in (1, 3, 5):
+            r = rs[len(rs) * frac // 7]
+            T = L.iso_ns(r["T"]); wn = WIN[wname] * 10**9
+            k = np.searchsorted(ends, T, side="right") - 1; a = xl[k]
+            j = np.searchsorted(ends, T - wn, side="right")
+            w = float(np.sqrt(np.sum(np.diff(xl[j - 1:k + 1]) ** 2))) if j >= 1 else float(np.sqrt(np.sum(np.diff(xl[j:k + 1]) ** 2)))
+            kp = np.searchsorted(ends, T - wn, side="right") - 1
+            pr = int(np.sign(a - xl[kp])) if kp >= 0 else 0
+            side = 0; mins = -1
+            for m in range(k + 1, len(xl)):
+                if xl[m] - a >= w:
+                    side = 1
+                elif xl[m] - a <= -w:
+                    side = -1
+                if side:
+                    mins = int((ends[m] - T) // (60 * 10**9)); break
+            rec = (float(r["w_bp"]), int(r["side"]), int(r["minutes"]), int(r["prior_window_move"]))
+            mine = (w * 1e4, side, mins, pr)
+            ok = abs(rec[0] - mine[0]) < 1e-3 * max(1.0, rec[0]) and rec[1:] == mine[1:]
+            out.append(f"| {wname} | {r['T']} | {rec[0]:.3f}・{rec[1]:+d}・{rec[2]}・{rec[3]:+d} | {mine[0]:.3f}・{mine[1]:+d}・{mine[2]}・{mine[3]:+d} | {'○' if ok else '✕'} |")
+    # 7. 年で層に分けた 1 日の線を 2017 年を除いて(監査役 1 回目の直す 2: 層に分けた +0.037 の下の端が 2017 年に依るか)
+    out += ["", "## 7. 年で層に分けた 1 日の線の low − high(2017 年を除く。監査役 1 回目の直す 2。結果を見た後の選び = 探索)", "",
+            "| 窓 | 使った年 | 抜かない | 抜いた |", "|---|---|---|---|"]
+    a1 = acc["1d"]; yk = np.array([int(L.day_str(int(dd))[:4]) for dd in days.nums])
+    ys = [2018, 2019, 2020, 2022, 2023]
+    def st(i, flow):
+        num = den = 0.0
+        for y in ys:
+            r = []
+            for c in ("low", "high"):
+                m = (clsv[i] == c) & (yk[i] == y)
+                if flow:
+                    du, dd = a1["du"][i][m].sum(), a1["dd"][i][m].sum()
+                    if du <= 0 or dd <= 0:
+                        return np.nan
+                    r.append((a1["nu"][i][m].sum() / du + a1["nd"][i][m].sum() / dd) / 2)
+                else:
+                    dn = (a1["du"] + a1["dd"])[i][m].sum()
+                    if dn <= 0:
+                        return np.nan
+                    r.append((a1["nu"] + a1["nd"])[i][m].sum() / dn)
+            nl, nh = ((clsv == "low") & (yk == y)).sum(), ((clsv == "high") & (yk == y)).sum()
+            wy = nl * nh / (nl + nh); num += wy * (r[0] - r[1]); den += wy
+        return num / den
+    cells = []
+    for flow in (False, True):
+        e = st(np.arange(nd), flow); b = L._boot(nd, lambda i, flow=flow: st(i, flow))
+        cells.append(f"{e:+.4f} [{b['lo']:+.4f}, {b['hi']:+.4f}]" if b["lo"] is not None else f"{e:+.4f}(区間なし)")
+    out.append(f"| 1d | {','.join(map(str, ys))} | " + " | ".join(cells) + " |")
     open(os.path.join(HERE, "c7_records.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
 
