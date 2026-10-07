@@ -39,3 +39,12 @@
 | test_report_ok・test_report_param_test_name_ok・test_report_mutation_table_bad・test_report_two_ids_in_one_cell・test_report_questions_need_midway_decisions・test_report_questions_section_required | test_report_checks | REPORT_CASES 11 行(「落ちなかった」を足した) |
 | test_report_rechecks_delegation_not_stamp・test_report_forged_stamp_does_not_matter・test_report_does_not_write_stamp・test_report_input_error_exit_2 | test_report_stamp_and_delegation_recheck | — |
 | test_report_read_kind_source_column | test_report_read_kind | — |
+
+## 追記(10-07 夜、批評家 1 回目と L-796 の後)
+
+| | 試験の関数 | 表の行 | 数え方 |
+|---|---|---|---|
+| 作り直しの前(コミット 2454069d) | 11 | 94 + 18 + 11 = 123 | 上と同じ |
+| 作り直しの試験 | 12 | 109 + 24 + 17 = 150 | `grep -c '^def test_' tests/delegation/test_spec.py` → 12、`len(FORM_CASES), len(PM_CASES), len(REPORT_CASES)` → 109 24 17 |
+
+- 足した関数は `test_seal_regardless_of_root` の 1 つ(封印を `--root` によらず見る)。足した表の行は、批評家 1 回目の場面(目的の引用・`<br>`・日本語の名前・コマンドの中の `パス:行`・終わる条件と上限の行・空の節 4・同じ見出し・指摘の書き方 6・報告の問いの文・着手前の表 4)。承認の結び付け(L-796)は `test_require_approval_and_stamp_flag` の中の確かめを足した。

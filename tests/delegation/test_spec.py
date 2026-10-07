@@ -6,6 +6,8 @@
 
 L-794「**重複していたり過剰すぎたりしている内容をまとめて少なくする方法はありませんか？**」を受けて、1 つの検めの場面は
 1 つの試験の表(CASES)で回し、落ちた場面を全部名前で出す形にした(確かめる場面は減らしていない)。
+作り終えた後の批評家 1 回目(`docs/AUDITOR/VERDICTS/2026-10-07_delegation_checker_critic1.md`)の 10 件の場面を足した。
+承認の結び付けは L-796「**私の返答はあなたの質問と合わせて記録するんですよね？ならそれと紐づければいいんじゃないの？**」による。
 
 道具の置き場: 環境変数 `DELEGATION_TOOLS_DIR`(無ければ `scripts/delegation/`)。道具が無ければこの組は飛ばす。
 
@@ -24,6 +26,8 @@ L-794「**重複していたり過剰すぎたりしている内容をまとめ�
 - 見出し(行頭の `## `、行末の空白を除いて一字違わず): どの種類にも `着手前の表`・`目的(オーナーの逐語)`・`読んだ事実`・
   `決めてよいこと・決めてはいけないこと`・`変えないもの`・`決まった制約`・`終わる条件と上限`・`報告`。作る はさらに `壊す場面`・
   `受け入れ`・`変異の表`。読む はさらに `出典の決まり`。足りない見出しは、その名前を出して失敗。ほかの見出しはあってよい。
+  要る見出しが 2 つ以上あれば `見出し` とその名前を出して失敗。要る見出しの本文(見出しの行の次から次の `## ` の行の手前まで)が
+  空白だけなら、その名前を出して失敗。
 - 読んだ事実の表(見出しの行と区切りの行を除く行): 1 列目に `データ`・`既存の決まり`・`列の意味` の 3 つが 1 行以上ずつある
   (無いものは名前を出して失敗)。3 列目(確かめ)は次の 3 つの形のどれかでなければ失敗: (i) `パス:行` を 1 つ以上含む(下の決まり)
   (ii) バッククォートで囲んだコマンドの後に `→` があり、その後に空白でない字がある (iii) `この委任には無い` の後に半角か全角の
@@ -35,38 +39,51 @@ L-794「**重複していたり過剰すぎたりしている内容をまとめ�
 - 壊す場面の表(作る): 1 列目が BREAK_SCENES の名前と同じ数・同じ並び・一字違わず同じ。BREAK_SCENES の名前が無ければその名前を出し、全部あって並びが違えば `壊す場面` を出す。
   2 列目は、`U<数字>` の参照(後ろに数字が続かない)が 1 つ以上あって全部が受け入れの節で定義されている、か、`この委任には無い`
   の後に括弧で中身 1 字以上。どちらでもなければ場面の名前を出し、定義されていない番号があればその番号も出して失敗。
-- 終わる条件と上限の節: 見出しの行を除いた本文に `終わる条件` と `上限` の語がある(無ければ その語を出して失敗)。
+- 終わる条件と上限の節: 行頭の `- 終わる条件:` と `- 上限:` の行があり、どちらもコロンの後に空白でない字がある(無い・空なら
+  その語を出して失敗)。
 - 表の行は、バッククォートの外の `|` で区切る。
 - 決まった制約の節は、FIXED の `## 決まった制約` の節と、行末の空白と空行を除いて行ごとに一字違わず同じ(違えば `決まった制約` を出す)。
 - オーナーの引用(`L-番号「**…**」` か `「**…**」L-番号`。番号は `L-` と数字 3 桁と英小文字 0〜1 字、または `L-D` と数字 2 桁)は、
   委任文の全部の節で、OWNER_LOG の 1 列目がちょうどその番号の行の 4 列目(オーナーの逐語の欄)に、空白の並びを 1 つの半角の
-  空白にそろえて含まれるか、で比べる。読みの列(5 列目)や「L-100 結果」のような 1 列目の行とは比べない。
+  空白にそろえて含まれるか、で比べる(`<br>`・`<br/>` は、比べる前に両方で空白に置き換える)。読みの列(5 列目)や
+  「L-100 結果」のような 1 列目の行とは比べない。
+  `## 目的(オーナーの逐語)` の節では、さらに: 番号の付いた引用が 1 つ以上要る(無ければ `目的` を出して失敗)。引用は、逐語の欄の
+  区切りで始まり区切りで終わる所に含まれる(区切り = 逐語の欄の端・空白・`。`・`！`・`？`・`!`・`?`・`•`・`→`。「区切りで始まる」=
+  直前の字が区切りか欄の頭、「区切りで終わる」= 最後の字が `。！？!?` か、直後の字が区切りか欄の終わり)。語の途中で切った引用は、
+  その番号を出して失敗。目的の節の外は、含まれるかだけで比べる。
   1 行に引用が続けて並び(`「**a**」「**b**」L-277` / `L-277「**a**」「**b**」`)番号が 1 つのときは、並びの全部がその番号の
   引用で、1 つずつ、その番号のどれかの行に含まれれば通る。バッククォートの中は見ない。番号の無い引用が失敗になるのは
   `## 目的(オーナーの逐語)` の節の中だけ(ほかの節の番号の無い引用は見ない)。合わない引用はその番号を出し、目的の節の
   番号の無い引用は `番号` の語を出して失敗。
-- 読んだ事実の確かめの欄の `パス:行`: パスは「/ を 1 つ以上含む ASCII の語」(点で始まるディレクトリ・拡張子の無いファイル
-  を含む)。欄の中の全部の `パス:行` を見る。ファイルに触れる前に、`--root` から解いて文字の上で畳んだパスを小文字にして封印の
-  置き場の下か・根の外かを見る(どちらも失敗)。次に ふつうのファイルか(`is_file()`)を見て、ふつうのファイルでなければ
+- 読んだ事実の確かめの欄の `パス:行`: (1) バッククォートの中身が丸ごと、空白を含まず `/` を含む `<パス>:<行>`(`a-b` も可)なら、
+  それが `パス:行`(日本語の名前も可) (2) それ以外の所では「/ を 1 つ以上含む ASCII の語」の直後の `:<行>`(点で始まるディレクトリ・
+  拡張子の無いファイルを含む。コマンドの中も見る)。欄の中の全部の `パス:行` を見る。ファイルに触れる前に、`--root` から解いて
+  文字の上で畳んだパスを小文字にして根の外かを見る(失敗)。封印は、畳んだ絶対パスを小文字にして `/docs/research/window1/` か
+  `/backtest_data/phase2_sealed/` を含むか、`--root` からの相対のパスがそれらで始まるかで見る(`--root` を何にしても外れない)。次に ふつうのファイルか(`is_file()`)を見て、ふつうのファイルでなければ
   失敗(開かない)。行の番号(範囲 `a-b` なら b)はファイルの行の数以下。
 - 事前の批評の記録(作る では 1 つ以上要る。無ければ `事前の批評` を出して失敗。読む・批評 では見ない):
   `<委任文の名前から .md を除いたもの>_premortem<数字>.md`。最後の回 = 番号の一番大きい記録。最後の回の
   1 行目 `委任文 sha256: <64 桁>` が今の委任文の事前の批評の sha256 と同じ(`## 事前の批評の後の変更` の節に `見た版の sha256:`
-  があればその値と同じ)。全部の回で、行頭が `- [直す]`・`- [聞く]` の指摘ごとに、次の指摘か見出しまでの、空白を除いた行頭が
+  があればその値と同じ)。全部の回で、指摘(正規表現 `^\s*(?:[-*]|\d+[.)])\s*(?:\*\*)?\[(直す|聞く|止める)\]` に当たる行)ごとに、次の指摘か見出しまでの、空白を除いた行頭が
   `応答: ` の行が 1 つあり、値は `直した`・`直さない`・`オーナーに聞く`・`次の版で直す` に半角か全角の括弧で、行末の閉じ括弧
   までの中身が 1 字以上。番号が 2 以上の最後の回は「直した」を書けない。失敗の語: sha256 の不一致は `sha256`、応答の欠け・形の誤りは `応答`、
   最後の回の「直した」は `最後の回`。
 - 印: 合格のとき委任文の横に `<名前>.stamp.json`。鍵: delegation_sha256 = 読んだバイト全体の sha256 の 16 進、body_sha256 =
   事前の批評の sha256、kind = 種類の値、premortem = 最後の回の記録のパス(記録が無ければ null)、approved = JSON の真偽。0 以外のときは
-  古い印を消す。approved = `## オーナーの承認` の節に、上の決まりで通るオーナーの引用が 1 つ以上ある。`--require-approval`
-  のときは approved でなければ `承認` を出して失敗。check_report は印を読まず書かず、委任文の検めをやり直す。
+  古い印を消す。approved = `## オーナーの承認` の節に、番号の付いたオーナーの引用があり、OWNER_LOG のその番号の行の 1 つが、4 列目に引用を
+  含み、かつ行のどこかに委任文のファイルの名前(パスの最後の部分)と今の事前の批評の sha256(64 桁)を含む(リードの問いを、
+  答えと同じ行に記録するので。L-796)。`--require-approval`
+  のときは approved でなければ `承認` を出して失敗。check_report は印を読まず書かず、委任文の検めを承認つき(`--require-approval` と同じ)でやり直す。
 - 報告(作る): `## 変異の表` の表で、委任文の U と H の番号が全部、どこかの行の 1 列目に出る(1 欄に複数可。U1 は U10 に
   当たらない)。U の行の 3 列目は `パス::名前`(`クラス::名前` と `[…]` の付いた名前を含む)で、`--root` から解いたファイルに
   その名前の関数がある(パスは上の封印の決まりも当てる)。空・`落ちなかった` は失敗。H の行の 3 列目は空でない。失敗の行は、その番号・試験の名前・ファイルのパス(封印なら `封印`)を含む。
 - 報告(読む): `## 結果` の節がある(無ければ `結果` を出して失敗)。その表の各行の最後の列(出典)が空でない(空なら `出典`)。
-- 報告(全部の種類): `## 問いとして返したこと` の節に、`問いとして返したことは無い。` か、行頭の `- Q<数字>:` があり、その
-  番号が全部、委任文の `## 途中の決め` の行頭の `- Q<数字>:` に出る(出ない番号を出して失敗。どちらも無ければ
-  `問いとして返したこと` を出して失敗)。
+- 報告(全部の種類): `## 問いとして返したこと` の節に、`問いとして返したことは無い。` か、行頭の `- Q<数字>: <問い>` があり、
+  委任文の `## 途中の決め` の同じ番号の行頭の `- Q<数字>:` の行が、その <問い> を(空白をそろえて)含む(無い・含まない番号を出して
+  失敗。どちらも無ければ `問いとして返したこと` を出して失敗)。
+- 報告(全部の種類): `## 着手前の表` の節の表に 1 行以上あり(無ければ `着手前の表`)、各行の 2 列目が、上の決まりで通る番号の
+  付いたオーナーの引用を含む(合わなければその番号)。含まない行は、その行の 1 列目の文が、問いとして返したことの `- Q<数字>:`
+  の行のどれかに含まれていなければ `着手前の表` を出して失敗。
 """
 from __future__ import annotations
 
@@ -106,6 +123,7 @@ OWNER_LOG = (
     "| L-499a | d | 決定 | 「**枝の番号の行**」 | x |\n"
     "| L-D01 | d | 決定 | 「**Dの番号の行**」 | x |\n"
     "| L-200 | d | 承認 | 「**委任してよい**」 | x |\n"
+    "| L-300 | d | 決定 | 「**一行目<br>二行目**」 | x |\n"
 )
 
 
@@ -174,6 +192,7 @@ class Env:
         self.tmp, self.kind = tmp, kind
         self.root = tmp / "root"
         for rel, txt in (("src/a.py", "x = 1\nx = 2\nx = 3\n"), (".cfg/b.md", "a\nb\n"), ("hooks/pre-push", "#!/bin/sh\n"),
+                         (".cfg/日本語.md", "a\nb\n"),
                          ("tests/test_a.py", "def test_one():\n    pass\n\nclass TestK:\n    def test_two(self):\n        pass\n")):
             (self.root / rel).parent.mkdir(parents=True, exist_ok=True)
             (self.root / rel).write_text(txt, encoding="utf-8")
@@ -208,9 +227,17 @@ class Env:
     def stamp(self):
         return self.d.parent / "DELEGATION_x.stamp.json"
 
-    def cd(self, *extra, path=None):
+    def approve(self):
+        """リードの問い(委任文の名前と今の版の印)とオーナーの答えを OWNER_LOG の 1 行に書き、承認の節を足す(L-796)。"""
+        h = body_hash(self.text())
+        with self.log.open("a", encoding="utf-8") as f:
+            f.write(f"| L-200 | d | 承認 | 「**委任してよい**」 | 問い: 委任文 DELEGATION_x.md(版 {h})を委任してよいか |\n")
+        if "## オーナーの承認" not in self.text():
+            self.write(self.text() + "\n## オーナーの承認\n\n- L-200「**委任してよい**」\n")
+
+    def cd(self, *extra, path=None, root=None):
         return _run([sys.executable, str(CD), str(path or self.d), "--owner-log", str(self.log), "--fixed", str(FIXED),
-                     "--scenes", str(SCENES), "--root", str(self.root), *extra])
+                     "--scenes", str(SCENES), "--root", str(root or self.root), *extra])
 
     def cr(self, report):
         return _run([sys.executable, str(CR), str(report), "--delegation", str(self.d), "--owner-log", str(self.log),
@@ -338,6 +365,15 @@ def _fifo(rel):
 
 FIRST_FIXED = _fixed_section().split("\n")[1]
 
+
+def _empty_section(h):
+    def f(env):
+        t = env.text()
+        a = t.index(h + "\n") + len(h) + 1
+        b = t.index("\n## ", a)
+        env.reset(t[:a] + "\n" + t[b:])
+    return f
+
 FORM_CASES = [
     # U2 種類
     ("種類 5 行目", _move_kind(5), "ok"),
@@ -359,6 +395,11 @@ FORM_CASES = [
     ("引用 並びの 2 つ目の誤り", E("- L-100「**甲の 乙を作れ すぐに**」", "- L-100「**甲の 乙を作れ すぐに**」\n- 「**一つ目**」「**二つ目の列**」L-277"), "L-277"),
     ("引用 目的の節の番号の無い引用", E("## 目的(オーナーの逐語)\n", "## 目的(オーナーの逐語)\n- 「**番号の無い引用**」\n"), "番号"),
     ("引用 目的の外のバッククォートの中は可", E("## 報告\n\n- 書く", "## 報告\n\n- 書く。例: `「**中**」`"), "ok"),
+    ("目的 番号の付いた引用が無い", E("- L-100「**甲の 乙を作れ すぐに**」", "- 道具を作る(オーナーの言葉は無い)"), "目的"),
+    ("目的 語の途中で切った引用", E("「**甲の 乙を作れ すぐに**」", "「**を作**」"), "L-100"),
+    ("目的 1 字の引用", E("「**甲の 乙を作れ すぐに**」", "「**て**」"), "L-100"),
+    ("目的の外は語の途中でも可", E("## 報告\n\n- 書く", "## 報告\n\n- 書く(L-100「**を作**」)"), "ok"),
+    ("引用 <br> は空白として比べる", E("- L-100「**甲の 乙を作れ すぐに**」", "- L-100「**甲の 乙を作れ すぐに**」\n- L-300「**一行目 二行目**」"), "ok"),
     # U5 読んだ事実
     ("事実 行の数ちょうど", _fact("`src/a.py:3`"), "ok"),
     ("事実 行の数 +1", _fact("`src/a.py:4`"), "読んだ事実"),
@@ -377,6 +418,9 @@ FORM_CASES = [
     ("事実 バッククォートの中の | は区切りでない", _fact('`grep "^| L-" src/a.py \\| wc -l` → 0'), "ok"),
     ("事実 ディレクトリ", _fact("`src/:1`"), "読んだ事実"),
     ("事実 名前付きパイプは開かない", _fifo("src/pipe.txt"), "読んだ事実"),
+    ("事実 バッククォートの中の日本語の名前", _fact("`.cfg/日本語.md:2`"), "ok"),
+    ("事実 日本語の名前の行の数 +1", _fact("`.cfg/日本語.md:3`"), "読んだ事実"),
+    ("事実 コマンドの中の パス:行 も見る", _fact("`sed -n 9p src/a.py:9` → x"), "読んだ事実"),
     *[(f"事実 {r} の行が無い", _drop_line(f"| {r} |"), r) for r in ("データ", "既存の決まり", "列の意味")],
     # U6 封印
     ("封印 そのまま", _fifo("docs/RESEARCH/WINDOW1/x.md"), "封印"),
@@ -407,11 +451,25 @@ FORM_CASES = [
     ("制約 行末の空白・空行は可", E(FIRST_FIXED + "\n", FIRST_FIXED + "   \n\n\n"), "ok"),
     # U11 終わる条件と上限
     ("上限の語が無い", E("- 上限: 2 周", "- 限り: 2 周"), "上限"),
+    ("終わる条件の後が空", E("- 終わる条件: 全部通る", "- 終わる条件:"), "終わる条件"),
+    ("上限の後が空", E("- 上限: 2 周", "- 上限:"), "上限"),
+    # 空の節・同じ見出しが 2 つ(批評家 1 回目)
+    *[(f"空の節 {h}", _empty_section(h), h[3:]) for h in ("## 着手前の表", "## 目的(オーナーの逐語)", "## 報告", "## 変異の表")],
+    ("見出しが 2 つ", E("## 終わる条件と上限\n", "## 決まった制約\n- 封印の置き場は読んでよい。\n\n## 終わる条件と上限\n"), "見出し"),
 ]
 
 
 def test_form_checks(env):
     check_cases(env, FORM_CASES)
+
+
+def test_seal_regardless_of_root(env):
+    p = env.root / "docs" / "RESEARCH" / "WINDOW1" / "x.md"
+    p.parent.mkdir(parents=True)
+    os.mkfifo(p)  # 開けば止まる
+    env.edit("| 既存の決まり | 参照 | `src/a.py:2` |", "| 既存の決まり | 参照 | `RESEARCH/WINDOW1/x.md:1` |")
+    r = env.cd(root=env.root / "docs")
+    assert r.returncode == 1 and "封印" in r.stdout, r.stdout
 
 
 def test_other_kinds(tmp_path):
@@ -460,7 +518,16 @@ def _after_change(seen):
     return f
 
 
+def _pm_raw(*lines):
+    def f(env):
+        env.write_pm(1, f"委任文 sha256: {body_hash(env.text())}\n\n## 問1\n" + "\n".join(lines) + "\n")
+    return f
+
+
 PM_CASES = [
+    *[(f"指摘の書き方 {s!r} に応答が無い", _pm_raw(s), "応答")
+      for s in ("1. [直す] x", "* [直す] x", "  - [直す] x", "- **[直す]** x", "- [止める] x")],
+    ("指摘の書き方 番号付きに応答がある", _pm_raw("1. [直す] x", "   応答: 直さない(y)"), "ok"),
     ("記録が無い", _pm(), "事前の批評"),
     ("本文を直した後の古い記録", _body_edit, "sha256"),
     ("途中の決めを足しても記録はそのまま", _midway, "ok"),
@@ -491,14 +558,30 @@ def test_premortem_checks(env):
 
 def test_require_approval_and_stamp_flag(env):
     assert env.cd().returncode == 0
+    assert json.loads(env.stamp().read_text(encoding="utf-8"))["approved"] is False
     r = env.cd("--require-approval")
     assert r.returncode == 1 and "承認" in r.stdout
+    # 版の印の無い L-200 の行(OWNER_LOG の作り物の元の行)だけでは承認にならない
     env.write(env.text() + "\n## オーナーの承認\n\n- L-200「**委任してよい**」\n")
+    r = env.cd("--require-approval")
+    assert r.returncode == 1 and "承認" in r.stdout
+    env.approve()
     assert env.cd("--require-approval").returncode == 0  # 承認の節は事前の批評の sha256 に入らない
     assert json.loads(env.stamp().read_text(encoding="utf-8"))["approved"] is True
-    env.write(env.text().replace("L-200「**委任してよい**」", "L-200「**委任してよいよ**」"))
+    env.write(env.text().replace("(まだ無い)", "- Q1: 「問い」→ 答え"))
+    assert env.cd("--require-approval").returncode == 0  # 途中の決めを足しても承認はそのまま
+    approved = env.text()
+    env.write(approved.replace("L-200「**委任してよい**」", "L-200「**委任してよいよ**」"))
     r = env.cd("--require-approval")
     assert r.returncode == 1 and "L-200" in r.stdout
+    env.write(approved.replace("- L-200「**委任してよい**」", "- L-100「**甲の 乙を作れ すぐに**」"))
+    r = env.cd("--require-approval")
+    assert r.returncode == 1 and "承認" in r.stdout  # 別の番号の行には版の印が無い
+    changed = approved.replace("- U2: 二つ目", "- U2: 二つ目を承認の後に直した")
+    env.write(changed)
+    env.write_pm(1, premortem(body_hash(changed), [("直す", "直さない(x)")]))
+    r = env.cd("--require-approval")
+    assert r.returncode == 1 and "承認" in r.stdout  # 承認の後に本文を変えたら承認は効かない
 
 
 def test_reads_delegation_once(env):
@@ -536,9 +619,13 @@ GOOD_ROWS = ("| U1 | 見出しの一覧から 1 つ消す | tests/test_a.py::tes
              "| H1 | git diff --stat | 3 本とも出ない(1 行の要約) |\n")
 
 
-def _report(env, rows=GOOD_ROWS, questions="問いとして返したことは無い。", name="REPORT.md"):
+START = "| 道具を作る | L-200「**委任してよい**」/ 節「作るもの」 |\n"
+
+
+def _report(env, rows=GOOD_ROWS, questions="問いとして返したことは無い。", name="REPORT.md", start=START):
     p = env.tmp / name
-    p.write_text("# 報告\n\n## 変異の表\n\n| 番号 | 壊した変更 | 落ちた試験 |\n|---|---|---|\n" + rows +
+    head = "" if start is None else "## 着手前の表\n\n| やろうとすること | オーナーの原文の該当語 |\n|---|---|\n" + start + "\n"
+    p.write_text("# 報告\n\n" + head + "## 変異の表\n\n| 番号 | 壊した変更 | 落ちた試験 |\n|---|---|---|\n" + rows +
                  "\n## 問いとして返したこと\n\n" + questions + "\n", encoding="utf-8")
     return p
 
@@ -555,11 +642,19 @@ REPORT_CASES = [
     ("封印の下の試験のファイル", {"rows": GOOD_ROWS.replace("tests/test_a.py::test_one", "tests/../docs/RESEARCH/WINDOW1/x.py::test_a")}, "封印"),
     ("問いの Q2 が途中の決めに無い", {"questions": "- Q2: これはどうするか"}, "Q2"),
     ("問いの節の文が無い", {"questions": "特に無し"}, "問いとして返したこと"),
+    ("問いの Q3 が途中の決めにある", {"questions": "- Q3: 別のことをするか"}, "ok"),
+    ("問いの Q3 の文が途中の決めと違う(番号だけ合う)", {"questions": "- Q3: 全く別の、まだ誰も答えていない問い"}, "Q3"),
+    ("着手前の表が無い", {"start": None}, "着手前の表"),
+    ("着手前の表 右の列が空で問いに無い", {"start": START + "| 別のことをする |  |\n"}, "着手前の表"),
+    ("着手前の表 右の列が空で問いに書いた", {"start": START + "| 別のことをする |  |\n", "questions": "- Q3: 別のことをするか"}, "ok"),
+    ("着手前の表 右の列の引用が逐語と違う", {"start": "| 道具を作る | L-200「**委任してよいよ**」 |\n"}, "L-200"),
 ]
 
 
 def test_report_checks(env):
-    assert env.cd().returncode == 0
+    env.write(env.text().replace("(まだ無い)", "- Q3: 「別のことをするか」→ しない"))
+    env.approve()
+    assert env.cd("--require-approval").returncode == 0
     bad = []
     for name, kw, expect in REPORT_CASES:
         r = env.cr(_report(env, **kw))
@@ -570,17 +665,22 @@ def test_report_checks(env):
 
 def test_report_stamp_and_delegation_recheck(env, tmp_path):
     p = _report(env)
+    r = env.cr(p)
+    assert r.returncode == 1 and "承認" in r.stdout  # 受け取りは承認つきで委任文を検め直す
+    env.approve()
     assert env.cr(p).returncode == 0 and not env.stamp().exists()  # 受け取りは印を書かない
     env.stamp().write_text('{"delegation_sha256": "' + "0" * 64 + '"}', encoding="utf-8")
     assert env.cr(p).returncode == 0  # 印は読まない
-    env.write(env.text().replace("(まだ無い)", "- Q2: こうする"))
+    env.write(env.text().replace("(まだ無い)", "- Q2: 「これはどうするか」→ こうする"))
     assert env.cr(_report(env, questions="- Q2: これはどうするか")).returncode == 0  # 途中の決めは記録の sha256 に入らない
     env.write(env.text().replace("- U2: 二つ目", "- U2: 二つ目を直した"))
     r = env.cr(p)
     assert r.returncode == 1 and "sha256" in r.stdout  # 委任文の検めをやり直す
     q = tmp_path / "R2.md"
-    q.write_text("# 報告\n\n## 変異の表\n\n| 番号 | 壊した変更 | 落ちた試験 |\n|---|---|---|\n" + GOOD_ROWS, encoding="utf-8")
+    q.write_text("# 報告\n\n## 着手前の表\n\n| a | b |\n|---|---|\n" + START +
+                 "\n## 変異の表\n\n| 番号 | 壊した変更 | 落ちた試験 |\n|---|---|---|\n" + GOOD_ROWS, encoding="utf-8")
     env.reset()
+    env.approve()
     r = env.cr(q)
     assert r.returncode == 1 and "問いとして返したこと" in r.stdout
     assert env.cr(tmp_path / "none.md").returncode == 2
@@ -588,11 +688,13 @@ def test_report_stamp_and_delegation_recheck(env, tmp_path):
 
 def test_report_read_kind(tmp_path):
     e = Env(tmp_path, kind="読む")
+    e.approve()
+    head = "# 報告\n\n## 着手前の表\n\n| a | b |\n|---|---|\n" + START + "\n"
     p = tmp_path / "R.md"
-    p.write_text("# 報告\n\n## 結果\n\n| # | 主張 | 出典 |\n|---|---|---|\n| 1 | a | `src/a.py:1` |\n| 2 | b |  |\n"
+    p.write_text(head + "## 結果\n\n| # | 主張 | 出典 |\n|---|---|---|\n| 1 | a | `src/a.py:1` |\n| 2 | b |  |\n"
                  "\n## 問いとして返したこと\n\n問いとして返したことは無い。\n", encoding="utf-8")
     r = e.cr(p)
     assert r.returncode == 1 and "出典" in r.stdout
-    p.write_text("# 報告\n\n## 問いとして返したこと\n\n問いとして返したことは無い。\n", encoding="utf-8")
+    p.write_text(head + "## 問いとして返したこと\n\n問いとして返したことは無い。\n", encoding="utf-8")
     r = e.cr(p)
     assert r.returncode == 1 and "結果" in r.stdout
