@@ -17,6 +17,16 @@ description: "How the lead delegates research/implementation to subagents in thi
 **分析はリードが書く(L-606「分析は絶対あなた役割です」)。** 測定の読み・「なぜ」・後の段に渡す知見・次の手は、リードが表と出力を読んで書く。下位モデルに渡すのは、表・出力・機械で出せる数字を作るところまで。委任文の「必須報告」の「なぜ」「表の要点」も、下位モデルには材料(出所つきの数字)として出させ、文章の読みはリードが書く。
 事前登録(`research-protocol` skill)はリードが書き、エージェントには「逸脱禁止」として渡す。
 
+## 1.4 委任の前の段取り(2026-10-07、L-791・L-793・L-796。jev の代わり)
+
+設計は `docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md` §2(限界は §4)。手本は同じ置き場の `DELEGATION_checker.md`。
+1. 委任文を書く。要る節・形は `tests/delegation/test_spec.py` の冒頭の注のとおり。`## 決まった制約` は `FIXED_CONSTRAINTS.md` を一字違わず写し、`## 壊す場面`(作る種類)は `BREAK_SCENES.md` の 12 の名前に全部答える。目的の節のオーナーの引用は、逐語の欄の区切り(空白・句点・読点・括弧など)で始まり区切りで終わる所を引く。途中を「…」で省かない(省くなら前と後を別々の引用にする)。
+2. 形の検め: `python3 scripts/delegation/check_delegation.py <委任文>`(終了コード 0 になるまで直す)。
+3. 事前の批評(作る種類): `python3 scripts/delegation/check_delegation.py <委任文> --print-hash` の値を添えて、`PREMORTEM_REQUEST.md` の依頼で担当に読ませ、答えを逐語で `<委任文の名前から .md を除いたもの>_premortem<数字>.md` に残し、指摘ごとに `応答:` を書く。上限は受け入れの形ごとに 2 回。
+4. オーナーの承認(L-793): 委任文の名前・何をするか 1 文・事前の批評の回数と指摘の数・パス・「着手前の表」の節の文と、**版の印(`--print-hash` の値)**を問いに入れて「委任してよいか」を聞く。答えを、その問いと同じ OWNER_LOG の行(1 列目は番号だけ)に記録し(L-796)、委任文の末尾に `## オーナーの承認` の節を足してその行の逐語を引く。承認の後に本文を変えたら取り直す(途中の決めに `- Q数字: 「問いの文」→ 答え` を足すだけなら取り直さない)。
+5. 渡す前に `python3 scripts/delegation/check_delegation.py <委任文> --require-approval` が 0。
+6. 受け取り: `python3 scripts/delegation/check_report.py <報告> --delegation <委任文>` が 0 になるまでコミットしない(§6)。
+
 ## 1.5 委任の前(Jev。オーナー承認 2026-09-19、L-225)
 
 > **2026-10-07(L-791)で、委任文の検めには使わない。**`scripts/jev_delegate.py plan` は委任文が名指したファイルを全部開いて行数を数える(`scripts/jev_delegate.py:104-119`)ので、決まった制約の塊が名指す封印の置き場を開きうる。呼ぶたびに `data/jev/delegate/` に書く(`:493-494`)。jev は今 402(クレジット切れ)で届かない。委任文の検めは `scripts/delegation/check_delegation.py`(作り中。設計は `docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md`)に置き換える。
@@ -116,7 +126,7 @@ Do not commit. Do not push.
 
 ## 6. 検収(リードの仕事)
 
-> **2026-10-07(L-791)で、報告の受け取りの検めは `scripts/delegation/check_report.py`(作り中)に置き換える。**下の `jev_report_intake.py check` は使わない(jev が 402 で届かない)。
+> **2026-10-07(L-791)で、報告の受け取りの検めは `scripts/delegation/check_report.py <報告> --delegation <委任文>` に置き換えた(§1.4 の 6)。**下の `jev_report_intake.py check` は使わない(jev が 402 で届かない)。
 
 **受領検査(Jev。オーナー承認 2026-09-19、L-225)**: 報告を読む前に当てる(`docs/JEV.md` §8 の U2):
 
