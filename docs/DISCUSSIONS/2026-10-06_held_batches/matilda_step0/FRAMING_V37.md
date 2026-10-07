@@ -106,3 +106,5 @@
 - ブレイク・b_signal・breakexitsize・step_exit の挙動は `BEHAVIOR_L784.md` に調べて書いた。ブレイク中の建ての値段と利確の値段が今の仕様と合わないこと(同 §1 の問題 1・2)をお聞きする。
 - entry_setting と exit_setting(L-785「**3:2・4:3・2:1 の3つの比の組み合わせで**」): (entry, exit) = (3, 2)・(4, 3)・(2, 1) の 3 組。比の数字をそのまま値にしたのはリードの読み。§5 の entry・exit の行(1 軸ずつ 9 本)はこれに置き換わる。
 - vola_count・range_count と alert_count(L-787「**vola_count とrange_countは揃える 20 40 80の3つ**」「**200分**」): vola_count = range_count を 1 つの軸として 20・40・80 本。alert_count = その本数 × foot の分 × 0.5・1・2(倍)。L-786 の「リードの案 10・20・40・80・160 本のまま」はこれで置き換わる。
+- breakexitsize = 段数の上限(L-788「**breakexitsizeはロット数上限に合わせる**」。族にしない)。
+- ブレイク中の建て・利確の値段は、原典のブレイク中の意図から読み直した(`BEHAVIOR_L784.md` §1、オーナーの確認待ち): 建て = 合図の足の終値から step ずつ、利確 = 建値 ± ボラ × step_exit ÷ 段数。
