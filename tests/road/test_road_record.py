@@ -1070,3 +1070,88 @@ def test_r4_flatten_cancel_only_leaves_a_row(tmp_path):
              r["signal_id"]) for r in o] == [
         ("limit", "CANCELED", str(T0 + 5 * M), "", "0.056", str(T0 + 3 * M), "s1"),
         ("market", ZERO_QTY_STATE, "", "flatten_call", "0.0", str(T0 + 5 * M), NO_SIGNAL)]
+
+
+# ================================================================ 5 周目(批評家 3 回目の [直す] 2 件。DELEGATION_record_form.md「## 5 周目」)
+# (2-1) close と flatten は reduce_only で出す: 後から建玉が減っても、決済が逆向きの建玉を作らず、「段」に数えられない
+def test_r5_close_after_doten_does_not_open_reverse(tmp_path):
+    # 批評家の close_run.py doten_after_close。手計算: +0.014 → ドテンの売り 0.028 で −0.014。0:05 の close の売り 0.014 は
+    # 0:07 の足で届くが、そのとき建玉は売り(−0.014)なので取引所の模型が reduce_only で閉じ、約定しない
+    _, store = _run(tmp_path, GEN_5M, {"mode": "doten_after_close", "quote_ccy": "JPY", "levels": 2, "open_bar": 3})
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        assert [(x["side"], x["qty"], x["position_after"]) for x in _side(t["ledger_fills"], side)] == [
+            ("buy", "0.014", "0.014"), ("sell", "0.028", "-0.014")]
+        assert [(x["direction"], x["levels"], x["max_position"], x["status"]) for x in _side(t["trades"], side)] == [
+            ("long", "1", "0.014", "closed"), ("short", "1", "0.014", "open")]
+        c = [r for r in _side(t["orders"], side) if r["exit_kind"] == "close"]
+        assert [(r["qty"], r["reduce_only"], r["filled_qty"], r["state"], r["close_reason"]) for r in c] == [
+            ("0.014", "true", "0", "CANCELED", "reduce_only")]
+
+
+def test_r5_close_then_partial_exit_is_cut(tmp_path):
+    # 批評家の close_run.py place_sell_after_close。手計算: 建玉 0.028、0:07 に close の売り 0.028 と成行の売り 0.014。
+    # 成行で 0.014 になった後、close は建玉の 0.014 だけ約定し(取引所の模型が切る)、建玉 0。空売りの取引はできない
+    _, store = _run(tmp_path, GEN_5M, {"mode": "place_sell_after_close", "quote_ccy": "JPY", "levels": 2,
+                                       "open_bar": 3})
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        assert [(x["side"], x["qty"], x["position_after"]) for x in _side(t["ledger_fills"], side)] == [
+            ("buy", "0.014", "0.014"), ("buy", "0.014", "0.028"), ("sell", "0.014", "0.014"), ("sell", "0.014", "0")]
+        assert [(x["direction"], x["levels"], x["max_position"], x["status"]) for x in _side(t["trades"], side)] == [
+            ("long", "2", "0.028", "closed")]
+        c = [r for r in _side(t["orders"], side) if r["exit_kind"] == "close"]
+        assert [(r["qty"], r["reduce_only"], r["filled_qty"], r["state"]) for r in c] == [
+            ("0.028", "true", "0.014", "CANCELED")]
+
+
+def test_r5_reduce_only_column(basic_store):
+    _, store = basic_store
+    o = _side(_tables(store)["orders"])
+    assert [(r["exit_kind"], r["reduce_only"]) for r in o] == [("", "false"), ("", "false"), ("flatten", "true")]
+
+
+# (2-5) 足で約定させた指値の約定は、t_ns で閉じた足と比べる(批評家の limit_at.py)
+def _limit_at(tmp_path, seed, px):
+    gen = _gen(5_000_000.0, step_pct=0.3, n=20, seed=seed)
+    _, store = _run(tmp_path, gen, {"mode": "limit_at", "quote_ccy": "JPY", "levels": 2, "open_bar": 3, "limit_px": px})
+    return gen, store
+
+
+def _bar_at(gen, minute):
+    return next(b for b in _bars(gen) if b["t_ns"] == T0 + minute * M)
+
+
+@pytest.mark.parametrize("seed", [2, 5])
+def test_r5_limit_fill_at_bar_high_passes(tmp_path, seed):
+    # 0:05 に、0:06 の足の高値ちょうど(刻み 0.5 で内側)の売りの指値。0:06 の足で約定し、t_ns は足が閉じた 0:07。
+    # 前の検査は 0:07 の足と比べて落とした(正直な記録が落ちた)
+    hi = _bar_at(_gen(5_000_000.0, step_pct=0.3, n=20, seed=seed), 6)["high"]
+    px = round(hi * 2) / 2
+    if px > hi:
+        px -= 0.5
+    gen, store = _limit_at(tmp_path, seed, px)
+    f = [x for x in _side(_tables(store)["fills"]) if x["order_id"] == "road-1"]
+    assert [(x["px"], x["t_ns"], x["liquidity"]) for x in f] == [(repr(px), str(T0 + 7 * M), "maker")]
+    assert px > _bar_at(gen, 7)["high"]  # 次の足(0:07)の高値より上: 前の検査はここで落とした
+    assert check_outputs(store, _bars(gen)).failures == []
+
+
+@pytest.mark.parametrize("seed,px", [(3, 4960000.0), (1, None)])
+def test_r5_limit_fill_outside_the_filling_bar_fails(tmp_path, seed, px):
+    # (3, 4960000.0): 0:06 の足の安値(約 4,967,307)より下の売りの指値。約定させた足の値幅の外なのに、前の検査は次の足と
+    # 比べて通した。(1, None): 終値 × 0.99 の売りの指値(相場より不利な側。取引所の模型が指値の値段で約定させる)
+    if px is None:
+        px = round(_bar_at(_gen(5_000_000.0, step_pct=0.3, n=20, seed=seed), 4)["close"] * 0.99 * 2) / 2
+    gen, store = _limit_at(tmp_path, seed, px)
+    f = check_outputs(store, _bars(gen)).failures
+    assert len(f) == 2 and all(x["check"] == "iv" and "約定させた足(足 6、始まり" in x["reason"] for x in f), f
+
+
+# (3) 説明の文
+def test_r5_flatten_doc_texts():
+    from bot.bt.road import strategy as S
+    assert "1 分足の走らせでは門が成行を次の足まで預かるので" in S.__doc__
+    assert "戦略が「出ている注文を\n  全部取り消す」と書くと、決済の成行に当たったところで止まる" in S.__doc__

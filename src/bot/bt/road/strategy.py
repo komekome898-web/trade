@@ -27,9 +27,14 @@
 - `flatten(合図の番号 or 「無し」, "market", None)`: 成行で全部を決済する意図(2 周目 (d)・3 周目 問 5・4 周目 (2))。
   土台が出していて閉じていない注文(close の注文も)を全部取り消し、その取り消しの答えが全部届いてから、
   |建玉 + 出ている決済の量| を成行で出し、その後に届いた約定の知らせのぶんも、建玉が 0 で注文が残らなくなるまで出し続ける。
-  指値は止める(指値の決済は close)。決済の成行が拒否された(または約定せずに閉じた)ら出し直さずに止める。
+  指値は止める(指値の決済は close)。決済の成行が拒否された(または約定せずに閉じた)ら出し直さずに止める
+  (黙って出し直すより、止まって理由が出る方が測りを誤らない。1 分足の走らせでは門が成行を次の足まで預かるので、
+  約定せずに閉じる形は起こせなかった。板の足の成行の残り(market_remainder)などで起これば走らせ全体が止まる)。
   呼んだときに注文を出さなければ flatten_call の行(「量が 0 で出さない」、呼んだ時刻と合図の番号)を 1 つ残す。
-  決済の途中(`is_flattening()`)は place・close・flatten を止め、決済の成行は cancel できない。
+  決済の途中(`is_flattening()`)は place・close・flatten を止め、決済の成行は cancel できない(戦略が「出ている注文を
+  全部取り消す」と書くと、決済の成行に当たったところで止まる。決済の途中かは is_flattening で読める)。
+  close と flatten の注文は reduce_only で出す(5 周目 (2-1)。取引所の模型が建玉を超える分を切り、切った分は注文の表の
+  約定した量と状態・閉じ方(reduce_only・reduce_only_size_cut_filled)に出る)。
 - `cancel(注文の番号)`: 取り消しを出す(出した時刻を記録して `ctx.cancel_order` に渡す)。
 
 注文の一生は、土台が戦略に届く注文の知らせ(`bot.bt.core.events` の `OrderAckEvent`・`OrderRejectEvent`・
@@ -304,7 +309,7 @@ class RoadStrategy(Strategy):
                "closed_venue_t_ns": "", "close_kind": "", "close_reason": "", "state": "", "filled_qty": "0",
                "margin_jpy": "", "use_ratio": "", "levels": "", "size_px": "", "size_px_source": "", "quote_ccy": "",
                "usdjpy": "", "usdjpy_t_ns": "", "qty_raw": "", "qty_source": "", "position_at_send": "",
-               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": ""}
+               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": "", "reduce_only": ""}
         self._orders[coid] = row
         return row
 
@@ -472,7 +477,7 @@ class RoadStrategy(Strategy):
         side = "sell" if net > 0 else "buy"
         qty = float(abs(net))
         row.update(side=side, qty=_num_text(qty))
-        return self._send(row, coid, side, order_type, qty, price, sig, now)
+        return self._send(row, coid, side, order_type, qty, price, sig, now, reduce_only=True)
 
     def _exit_signal(self, signal: Any, what: str) -> str:
         sig = NO_SIGNAL if signal == NO_SIGNAL else _sid(signal, what)
@@ -519,7 +524,7 @@ class RoadStrategy(Strategy):
             row.update(side=side, order_type="market", qty=_num_text(qty), placed_t_ns=now, quote_ccy=self.quote_ccy,
                        qty_source=QTY_FROM_POSITION, position_at_send=_dec_text(self._pos),
                        exit_pending_at_send=_dec_text(pending), placed_seq=self._seq, exit_kind=EXIT_FLATTEN)
-            sent = self._send(row, coid, side, "market", qty, None, f["signal"], now)
+            sent = self._send(row, coid, side, "market", qty, None, f["signal"], now, reduce_only=True)
         if self._pos == 0 and not self._open_rows():
             self._flat = None
         return sent
@@ -530,11 +535,15 @@ class RoadStrategy(Strategy):
         return coid
 
     def _send(self, row: dict, coid: str, side: str, order_type: str, qty: float, price: Optional[float], sig: str,
-              now: int) -> str:
+              now: int, reduce_only: bool = False) -> str:
         # 合図の番号は OrderRequest.extra に入れない: 取引所の模型(bot.bt.fill.venue)は知らない extra の鍵の注文を
         # 拒む(rejected_by_venue: unknown_extra:['road_signal'])。注文と合図のつなぎは土台の記録(注文の表の
         # signal_id)が持つ(委任文 DELEGATION_record_form.md 2 周目 (a): このまま、取引所の模型は変えない)。
-        req = OrderRequest(side=side, order_type=order_type, size=qty, price=price, client_order_id=coid)
+        # 決済の注文(close・flatten)は reduce_only で出す(5 周目 (2-1)): 送った後に建玉が減っても、取引所の模型が
+        # 建玉を超える分を切る(bot.bt.fill.venue の _fill)ので、決済が逆向きの建玉を作らない(「段」に数えられない)
+        req = OrderRequest(side=side, order_type=order_type, size=qty, price=price, client_order_id=coid,
+                           reduce_only=reduce_only)
+        row["reduce_only"] = "true" if reduce_only else "false"
         self.exit_reasons[coid] = f"道: 合図 {sig}"
         assert self._ctx is not None
         self._ctx.place_order(req)

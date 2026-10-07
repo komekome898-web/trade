@@ -228,3 +228,56 @@ def _step(self, event, ctx):
 
 
 SceneStrategy.step = _step
+
+
+# ---- 5 周目: 批評家 3 回目の場面(close_run.py・limit_at.py と同じ形) -------------------------------------------
+# - "doten_after_close":      0:03 に段数 2 の成行の買い(0.014)、0:05 に close の売りの指値(終値)と、同じ足でドテンの
+#                             成行の売り(段数 1 = 0.028)
+# - "place_sell_after_close": 0:03・0:05 に段数 2 の成行の買い(建玉 0.028)、0:07 に close の売りの指値(終値)と、同じ足で
+#                             段数 2 の成行の売り(0.014)
+# - "limit_at":               0:03 に段数 2 の成行の買い、0:05 に close の売りの指値(値段は params の limit_px)
+def _r5(self, event, ctx) -> bool:
+    m = self.mode
+    if m not in ("doten_after_close", "place_sell_after_close", "limit_at"):
+        return False
+    if not isinstance(event, BarEvent):
+        return True
+    self.bars += 1
+    b = self.bars
+    if b == 3:
+        self.signal_start("s1", "試験の合図", "long", None)
+        self.place("buy", "market", None, 2, "s1")
+    if m == "doten_after_close" and b == 5:
+        self.close("s1", "limit", event.close)
+        self.signal_start("s2", "試験の合図", "short", None)
+        self.place("sell", "market", None, 1, "s2")
+    if m == "place_sell_after_close" and b == 5:
+        self.place("buy", "market", None, 2, "s1")
+    if m == "place_sell_after_close" and b == 7:
+        self.close("s1", "limit", event.close)
+        self.place("sell", "market", None, 2, "s1")
+    if m == "limit_at" and b == 5:
+        self.close("s1", "limit", self.limit_px)
+    return True
+
+
+SceneStrategy._r5 = _r5
+_old_init5 = SceneStrategy.__init__
+
+
+def _init5(self, params):
+    _old_init5(self, params)
+    self.limit_px = params.get("limit_px")
+
+
+SceneStrategy.__init__ = _init5
+_old_step5 = SceneStrategy.step
+
+
+def _step5(self, event, ctx):
+    if self._r5(event, ctx):
+        return
+    _old_step5(self, event, ctx)
+
+
+SceneStrategy.step = _step5

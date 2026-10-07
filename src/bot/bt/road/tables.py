@@ -35,7 +35,8 @@ from .strategy import NO_SIGNAL
 
 ROAD_DIR = "road"
 SCHEMA_FILE = "SCHEMA.json"
-SCHEMA_VERSION = "road-record-4"  # 4: expired_t_ns → venue_closed_t_ns、exit_kind、flatten_pending_at_send → exit_pending_at_send(4 周目)
+SCHEMA_VERSION = "road-record-5"  # 5: reduce_only の列(5 周目)
+# 4  # 4: expired_t_ns → venue_closed_t_ns、exit_kind、flatten_pending_at_send → exit_pending_at_send(4 周目)
 # 3  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
 # 2  # 2: 拒否の時刻・量の出所・送る時点の建玉の列、summary の groups(2 周目)
 SUMMARY_TABLE = "summary"
@@ -136,6 +137,8 @@ SCHEMA: dict = {
                 ("position_at_send", "BTC", "注文を受けた時点の建玉(土台が約定の知らせから持つ建玉、買いが +)"),
                 ("exit_pending_at_send", "BTC", "決済の行(量の出所が建玉): 送る時点で出ていた決済の注文(close・flatten)のまだ約定していない量"
                                                 "(買いが +)。量 = |position_at_send + これ|"),
+                ("reduce_only", "-", "true = reduce_only で出した(close・flatten。取引所の模型が建玉を超える分を切る)/ false = "
+                                     "place の注文 / 空 = 出していない行・口座の強制の注文"),
                 ("exit_kind", "-", "決済の種類: close(close が出した注文)/ flatten(flatten が出した成行)/ flatten_call(flatten を"
                                    "呼んだときに注文を出さなかった記録の行)/ 空(place の注文)"),
             ]},

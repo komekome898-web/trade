@@ -32,7 +32,8 @@
      同じ関数)、行の数・1 欄でも違えば失敗(使った USDJPY の値と相場の時刻の欄も含む)。summary の (銘柄, 側) の組
      (groups)は、走らせの記録(../record.json)の銘柄 × 側と同じであること。
 (iii) 値の形とつなぎと順:
-     - 売買・種類・状態・閉じ方・量の出所・決済の種類・値段の通貨・出所・約定の liquidity が決まった値の中か、value_json が JSON として読めるか、
+     - 売買・種類・状態・閉じ方・量の出所・決済の種類・値段の通貨・出所・約定の liquidity が決まった値の中か、
+       reduce_only が決済の注文(close・flatten)で true・place の注文で false・出していない行で空か、value_json が JSON として読めるか、
        時刻・通し番号が整数か、fx の通貨の組が 6 文字の大文字か、fx の行の (銘柄, 側) が走らせの組の中か(黙って捨てない)
      - 時刻の順: 土台が受けた = 出した ≤ 受け付けられた ≤ 閉じた、出した ≤ 取り消しを出した ≤ 取り消した、
        取引所での時刻 ≤ 戦略に届いた時刻、取り消した・期限が切れた・拒否された時刻 = 閉じた時刻(閉じ方と合う)
@@ -40,7 +41,10 @@
        知らせの通し番号の順に届いた時刻が減らない
      - つなぎ: どの約定にも注文があり、約定の合図の番号 = その注文の合図の番号。どの注文にも存在する合図か「無し」が
        ある。合図のある注文は合図の発生の後に出ている。どの合図も発生 ≤ 消失、消失の時刻が空なら理由は「データの終わり」
-(iv) 足の検査: 約定は (b) と同じ(その分の 1 分足・分の区切り・安値以上高値以下)。合図の発生・消失の時刻は、
+(iv) 足の検査: 約定は (b) と同じ(その分の 1 分足・分の区切り・安値以上高値以下)。ただし、足で値段を付ける銘柄
+     (走らせの記録の price のデータが bar)の maker の約定(足で約定させた指値。t_ns = 取引所での時刻 = 約定させた足が
+     閉じた時刻)は、t_ns で閉じた足 [t − 60 秒, t) と比べる(5 周目 (2-5))。成行(門が預かって次の足の始値で付けた
+     約定。t_ns = 足の始まり)は今のまま。合図の発生・消失の時刻は、
      分の区切り(60 秒の倍数の ns)で、その時刻に閉じた 1 分足(始まり = 時刻 − 60 秒)があること
      (道は 1 分足で回し、戦略は足が閉じた時刻に足を見て合図を出す)。
      **足の遅れ(feed の遅延)が 0 でない走らせでは、合図の時刻が足の閉じた時刻より遅れて分の区切りから外れるので、
@@ -393,7 +397,15 @@ def _read_run(store_dir: str, out: list) -> dict | None:
                 h = hashlib.sha256(fh.read()).hexdigest()
             if h != want[n]:
                 _fail(out, "vi", f"{ROAD_DIR}/{n}", "ファイルの指紋が repro.json の指紋と違う(書き出しの後に書き換えた)")
-        names_i = [i["name"] for i in got["record.json"]["config"]["instruments"]]
+        rec = got["record.json"]
+        names_i = [i["name"] for i in rec["config"]["instruments"]]
+        # 足で値段を付ける銘柄(price のデータが 1 分足などの bar): 足で約定させた指値の約定の比べ方に使う((iv))
+        kinds = {}
+        for dd in rec["data"]:
+            k = (dd.get("generator") or {}).get("params", {}).get("kind") if dd.get("generator") else \
+                (dd.get("spec") or {}).get("kind")
+            kinds[dd["dataset"]] = k
+        bar_priced = {i["name"] for i in rec["config"]["instruments"] if kinds.get(i["price"]) == "bar"}
         pf = got["fills.json"]["data"]
         po = got["orders.json"]["data"]
         if not isinstance(pf, list) or not isinstance(po, list):
@@ -401,7 +413,8 @@ def _read_run(store_dir: str, out: list) -> dict | None:
     except (KeyError, TypeError, AttributeError):
         _fail(out, "vi", parent, "走らせの記録(repro.json・record.json・fills.json・orders.json)の形が読めない")
         return None
-    return {"groups": sorted((n, r) for n in names_i for r in RANGES), "pfills": pf, "porders": po}
+    return {"groups": sorted((n, r) for n in names_i for r in RANGES), "pfills": pf, "porders": po,
+            "bar_priced": bar_priced}
 
 
 def _check_derived(t: dict, out: list, run: dict | None) -> None:
@@ -495,6 +508,10 @@ def _check_forms(t: dict, out: list) -> None:
                 _fail(out, "iii", lab, "flatten の行が成行でない(flatten は成行だけ)")
         elif o["exit_kind"] != "":
             _fail(out, "iii", lab, "口座の強制の注文に決済の種類が書かれている")
+        if not forced:
+            want_ro = "" if o["sent_t_ns"] == "" else ("true" if o["qty_source"] == QTY_FROM_POSITION else "false")
+            if o["reduce_only"] != want_ro:
+                _fail(out, "iii", lab, f"reduce_only {o['reduce_only']!r} が {want_ro!r} でない(決済の注文は reduce_only で出す)")
         if o["order_type"] == "market" and o["limit_px"] != "":
             _fail(out, "iii", lab, f"成行の注文に指値の値段 {o['limit_px']!r} がある")
         if o["order_type"] == "limit" and o["limit_px"] == "":
@@ -656,18 +673,53 @@ def _check_links(t: dict, out: list, groups: list | None) -> None:
             _fail(out, "iii", lab, f"約定の合図の番号 {f['signal_id']!r} の合図が signals に無い")
 
 
-def _check_bars_tables(t: dict, bars: Sequence[Mapping], out: list) -> None:
-    """(iv) 約定は check_bars、合図の発生・消失の時刻は分の区切りとその時刻に閉じた足。"""
-    fl = []
+def _check_bars_tables(t: dict, bars: Sequence[Mapping], out: list, bar_priced: set | None = None) -> None:
+    """(iv) 約定は check_bars(足で値段を付ける銘柄の maker の約定は、t_ns で閉じた足と比べる)、合図の発生・消失の時刻は
+    分の区切りとその時刻に閉じた足。"""
+    fl, idx, at_close = [], [], []
     for k, f in enumerate(t["fills"]):
+        if bar_priced and f["instrument"] in bar_priced and f["liquidity"] == "maker":
+            at_close.append(k)  # 足で約定させた指値: t_ns = 取引所での時刻 = 約定させた足が閉じた時刻(5 周目 (2-5))
+            continue
         try:
             fl.append({"t_ns": int(f["t_ns"]), "px": float(f["px"])})
         except ValueError:
             fl.append({"t_ns": f["t_ns"], "px": f["px"]})
+        idx.append(k)
     for r in check_bars(fl, bars):
         if isinstance(r["row"], int):
-            r = dict(r, row=_label("fills", r["row"], t["fills"][r["row"]], "約定"))
+            k = idx[r["row"]]
+            r = dict(r, row=_label("fills", k, t["fills"][k], "約定"))
         _fail(out, "iv", r["row"], r["reason"])
+    by_start = {}
+    for j, b in enumerate(bars):
+        if isinstance(b, Mapping) and type(b.get("t_ns")) is int and _finite_number(b.get("high")) \
+                and _finite_number(b.get("low")):
+            by_start.setdefault(b["t_ns"], []).append((j, float(b["high"]), float(b["low"])))
+    for k in at_close:
+        f = t["fills"][k]
+        lab = _label("fills", k, f, "約定")
+        v = _int_or_none(f["t_ns"])
+        try:
+            px = float(f["px"])
+        except ValueError:
+            _fail(out, "iv", lab, f"約定の値段 {f['px']!r} が数でない")
+            continue
+        if v is None:
+            _fail(out, "iv", lab, f"約定の時刻 {f['t_ns']!r} が整数でない")
+            continue
+        if v % MINUTE_NS != 0:
+            _fail(out, "iv", lab, f"足で約定させた指値の約定の時刻 {v} が分の区切り(足が閉じた時刻)から {v % MINUTE_NS} ns ずれている")
+            continue
+        hits = by_start.get(v - MINUTE_NS, [])
+        if len(hits) != 1:
+            _fail(out, "iv", lab, f"足で約定させた指値の約定の時刻 {v} に閉じた 1 分足(始まり {v - MINUTE_NS})が "
+                                  f"{len(hits)} 本(1 本でない)")
+            continue
+        j, hi, lo = hits[0]
+        if not (lo <= px <= hi):
+            _fail(out, "iv", lab, f"足で約定させた指値の約定の値段 {f['px']} が、約定させた足(足 {j}、始まり {v - MINUTE_NS}・"
+                                  f"閉じた時刻 {v})の安値 {lo}〜高値 {hi} の外")
     starts = set()
     for b in bars:
         if isinstance(b, Mapping) and type(b.get("t_ns")) is int:
@@ -939,7 +991,7 @@ def check_tables(store_dir: str, bars: Sequence[Mapping]) -> CheckResult:
         _check_forms(t, out)
         _check_derived(t, out, run)
         _check_links(t, out, None if run is None else run["groups"])
-        _check_bars_tables(t, bars, out)
+        _check_bars_tables(t, bars, out, None if run is None else run["bar_priced"])
         _check_sizes(t, bars, out)
         if run is not None:
             _check_pipeline(t, run, out)
