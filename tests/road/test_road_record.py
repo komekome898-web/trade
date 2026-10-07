@@ -192,7 +192,7 @@ def test_scene1_order_lifecycle_times(basic_store):
     _, store = basic_store
     o = _side(_tables(store)["orders"])
     # 遅れ 0: 出した・受け付けられた時刻 = 足が届いた時刻。成行は次の足で全部約定(取り消し・期限切れは無い)
-    assert [(r["placed_t_ns"], r["sent_t_ns"], r["acked_t_ns"], r["canceled_t_ns"], r["expired_t_ns"], r["filled_qty"])
+    assert [(r["placed_t_ns"], r["sent_t_ns"], r["acked_t_ns"], r["canceled_t_ns"], r["venue_closed_t_ns"], r["filled_qty"])
             for r in o] == [(str(T0 + 3 * M), str(T0 + 3 * M), str(T0 + 3 * M), "", "", "0.014")] * 2 + [
         (str(T0 + 6 * M), str(T0 + 6 * M), str(T0 + 6 * M), "", "", "0.028")]
 
@@ -205,7 +205,7 @@ def test_scene1_limit_order_canceled_times(tmp_path):
     t = _tables(store)
     o = _side(t["orders"])
     assert [(r["order_type"], r["limit_px"], r["size_px"], r["size_px_source"], r["qty"], r["sent_t_ns"],
-             r["acked_t_ns"], r["cancel_sent_t_ns"], r["canceled_t_ns"], r["expired_t_ns"], r["close_kind"],
+             r["acked_t_ns"], r["cancel_sent_t_ns"], r["canceled_t_ns"], r["venue_closed_t_ns"], r["close_kind"],
              r["state"], r["filled_qty"]) for r in o] == [
         ("limit", "2500000.0", "2500000.0", "指値", "0.056", str(T0 + 3 * M), str(T0 + 3 * M), str(T0 + 6 * M),
          str(T0 + 6 * M), "", "cancel", "CANCELED", "0")]
@@ -456,7 +456,7 @@ def test_r2_check_v_fails_when_flatten_qty_is_not_the_position(basic_store, tmp_
     d = _copy(basic_store, tmp_path)
     _edit(d, "orders", _t_flat_qty)
     f = [x for x in check_outputs(str(d), _bars(GEN_5M)).failures if x["check"] == "v"]
-    assert len(f) == 1 and "注文 road-2" in f[0]["row"] and "建玉 0.028 と出ていた決済の量 0 の和の絶対値 '0.028'" in \
+    assert len(f) == 1 and "注文 road-2" in f[0]["row"] and "建玉 0.028 と出ていた決済の量 0 から決まる量 '0.028'" in \
         f[0]["reason"], f
 
 
@@ -468,7 +468,7 @@ def test_r2_rejections_go_to_rejected_not_expired(tmp_path):
                     rules={"market_ref": "next_bar_open", "below_min_qty": "reject"})
     o = _side(_tables(store)["orders"])
     got = [(r["order_type"], r["close_kind"], r["close_reason"].split(":")[0], r["rejected_t_ns"] != "",
-            r["expired_t_ns"], r["canceled_t_ns"]) for r in o]
+            r["venue_closed_t_ns"], r["canceled_t_ns"]) for r in o]
     assert got == [("market", "venue", "rejected_by_venue", True, "", ""), ("limit", "reject", got[1][2], True, "", "")]
     assert all(r["state"] in ("CANCELED", "REJECTED") for r in o)
     assert check_outputs(store, _bars(GEN_5M)).failures == []
@@ -477,6 +477,7 @@ def test_r2_rejections_go_to_rejected_not_expired(tmp_path):
 class _View:
     def __init__(self, state):
         self.state = state
+        self.cancel_pending = False
 
 
 class _Ctx:
@@ -497,7 +498,7 @@ class _Ctx:
 
 @pytest.mark.parametrize("make,col", [
     (lambda c: OrderCanceledEvent(received_time_ns=T0 + 5 * M, client_order_id=c, reason="expired", answers="venue"),
-     "expired_t_ns"),
+     "venue_closed_t_ns"),
     (lambda c: OrderCanceledEvent(received_time_ns=T0 + 5 * M, client_order_id=c, reason="rejected_by_venue: x",
                                   answers="venue"), "rejected_t_ns"),
     # 門が口座の確かめで止めたもの(pipeline.py の "refused_by_account: ...")も拒否(リードの直し)
@@ -521,7 +522,7 @@ def test_r2_close_notice_columns(scene_module, make, col):
     s._ctx = None
     s.on_event(make(coid), _Ctx(T0 + 5 * M))
     row = s.road_record()["orders"][0]
-    cols = ("expired_t_ns", "rejected_t_ns", "canceled_t_ns")
+    cols = ("venue_closed_t_ns", "rejected_t_ns", "canceled_t_ns")
     assert {c: row[c] for c in cols} == {c: (T0 + 5 * M if c == col else "") for c in cols}
     assert row["closed_t_ns"] == T0 + 5 * M
 
@@ -577,33 +578,34 @@ def _mutate(col, v):
     except ValueError:
         return v + "x"
     if col in ("qty", "filled_qty", "position_after", "max_position", "position", "position_at_send", "qty_raw",
-               "flatten_pending_at_send"):
+               "exit_pending_at_send"):
         return repr(round(x + 0.001, 6))
     if "." in v:
         return repr(x + 1.0)
     return str(int(x) + 1)
 
 
-def _sweep(res, gen, tmp_path, forge):
-    """悲観側の最初の行を、表ごと・欄ごとに 1 欄ずつ書き換え、検査を通った欄を返す。"""
+def _sweep(res, gen, tmp_path, forge, all_rows=False):
+    """悲観側の最初の行(all_rows なら悲観側の全部の行)を、表ごと・欄ごとに 1 欄ずつ書き換え、検査を通った欄を返す。"""
     store = os.path.join(res.run_dir, ROAD_DIR)
     passed = []
     for t in CSV_TABLES:
         head, rows = read_csv(os.path.join(store, SCHEMA["tables"][t]["file"]), t)
-        k = next((i for i, r in enumerate(rows) if r["range"] == "pessimistic"), None)
-        if k is None:
+        idx = [i for i, r in enumerate(rows) if r["range"] == "pessimistic"]
+        if not idx:
             continue
-        for c in head:
-            run = tmp_path / f"sw-{t}-{c}"
-            shutil.copytree(res.run_dir, run)
+        for k in (idx if all_rows else idx[:1]):
+            for c in head:
+                run = tmp_path / f"sw-{t}-{k}-{c}"
+                shutil.copytree(res.run_dir, run)
 
-            def fn(h, rs, c=c):
-                rs[k][c] = _mutate(c, rs[k][c])
-                return h, rs
-            _edit(run / ROAD_DIR, t, fn, forge=forge)
-            if not check_outputs(str(run / ROAD_DIR), _bars(gen)).failures:
-                passed.append(f"{t}.{c}")
-            shutil.rmtree(run)
+                def fn(h, rs, c=c, k=k):
+                    rs[k][c] = _mutate(c, rs[k][c])
+                    return h, rs
+                _edit(run / ROAD_DIR, t, fn, forge=forge)
+                if not check_outputs(str(run / ROAD_DIR), _bars(gen)).failures:
+                    passed.append(f"{t}[{k}].{c}" if all_rows else f"{t}.{c}")
+                shutil.rmtree(run)
     return passed
 
 
@@ -784,11 +786,15 @@ def test_r3_quick_flatten_returns_to_zero(tmp_path, notice_ns):
     t = _tables(store)
     for side in ("pessimistic", "optimistic"):
         o = _side(t["orders"], side)
-        # 買いの約定の知らせは 1 つずつ届くので、届くたびにそのぶん(0.014)を決済した
-        assert [(r["side"], r["qty"], r["qty_source"], r["position_at_send"], r["flatten_pending_at_send"])
+        # 4 周目 (2) C: 取り消しの答え(ここでは約定と取り消しの拒否)が全部届いてから、建玉 0.028 を 1 つの成行で決済した
+        assert [(r["side"], r["qty"], r["qty_source"], r["position_at_send"], r["exit_pending_at_send"], r["exit_kind"])
                 for r in o if r["sent_t_ns"]] == [
-            ("buy", "0.014", "量の計算", "0", ""), ("buy", "0.014", "量の計算", "0", ""),
-            ("sell", "0.014", "建玉", "0.014", "0"), ("sell", "0.014", "建玉", "0.028", "-0.014")]
+            ("buy", "0.014", "量の計算", "0", "", ""), ("buy", "0.014", "量の計算", "0", "", ""),
+            ("sell", "0.028", "建玉", "0.028", "0", "flatten")]
+        # 4 周目 (2) D: 呼んだときは答え待ちで出さなかったので、呼んだ記録の行が 1 つ残る(0:04、合図「無し」)
+        assert [(r["exit_kind"], r["qty"], r["state"], r["placed_t_ns"], r["signal_id"], r["position_at_send"])
+                for r in o if r["exit_kind"] == "flatten_call"] == [
+            ("flatten_call", "0.0", ZERO_QTY_STATE, str(T0 + 4 * M), NO_SIGNAL, "0")]
         # 0:04 の flatten の時点では買いの約定の知らせがまだ届いていない: 買いを取り消しに行き(既に約定していたので
         # 取り消しは拒否される)、届いた約定の知らせのぶんを決済した
         assert all(r["cancel_sent_t_ns"] == str(T0 + 4 * M) for r in o[:2])
@@ -828,7 +834,7 @@ def test_r3_notice_columns(scene_module, make, col, cancel_first):
     s._ctx = None
     s.on_event(make(coid), _Ctx(T0 + 5 * M))
     row = s.road_record()["orders"][0]
-    cols = ("expired_t_ns", "rejected_t_ns", "canceled_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns")
+    cols = ("venue_closed_t_ns", "rejected_t_ns", "canceled_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns")
     assert {c: row[c] for c in cols} == {c: (T0 + 5 * M if c == col else "") for c in cols}
 
 
@@ -848,7 +854,219 @@ def test_r3_cancel_answer_without_cancel_stops(scene_module):
 def test_r3_schema_texts():
     assert "FIFO" in SCHEMA["read_from"] and "trades.json" in SCHEMA["read_from"]
     cols = {c[0]: c[2] for c in SCHEMA["tables"]["orders"]["columns"]}
-    assert "成行の残り" in cols["expired_t_ns"] and "reduce_only" in cols["expired_t_ns"]
+    assert "成行の残り" in cols["venue_closed_t_ns"] and "reduce_only" in cols["venue_closed_t_ns"]
     assert "refused_by_account" in cols["rejected_t_ns"] and "post_only_would_take" in cols["rejected_t_ns"]
     assert "取引所の受け付けではない" in cols["acked_t_ns"]
     assert {"cancel_rejected_t_ns", "state_unknown_t_ns"} <= set(cols)
+
+
+# ================================================================ 4 周目(批評家 2 回目の指摘と決済の口。DELEGATION_record_form.md「## 4 周目」)
+from bot.bt.core import OrderFillEvent  # noqa: E402
+
+
+# (1) 問 2: 全部の行の全部の欄を 1 欄ずつ書き換え、repro.json の指紋も合わせた場合に通る欄(SCHEMA の limits に書いた欄)
+_FORGED_PASS_ALL = {
+    "JPY": ["signals[2].kind", "signals[2].direction", "signals[2].end_t_ns", "signals[2].end_reason",
+            "signals[3].signal_id", "signals[3].kind", "signals[3].direction", "signals[3].start_t_ns",
+            "orders[3].acked_t_ns", "orders[3].cancel_sent_t_ns", "orders[3].cancel_rejected_t_ns",
+            "orders[3].state_unknown_t_ns", "orders[4].placed_seq", "orders[4].acked_t_ns", "orders[4].cancel_sent_t_ns",
+            "orders[4].cancel_rejected_t_ns", "orders[4].state_unknown_t_ns", "orders[5].placed_seq",
+            "orders[5].acked_t_ns", "fills[4].notice_t_ns", "fills[4].notice_seq", "fills[5].notice_t_ns",
+            "fills[5].notice_seq"],
+    "USD": ["signals[1].kind", "signals[1].direction", "signals[1].end_t_ns", "signals[1].end_reason",
+            "orders[3].acked_t_ns", "orders[3].cancel_sent_t_ns", "orders[3].cancel_rejected_t_ns",
+            "orders[3].state_unknown_t_ns", "orders[4].placed_seq", "orders[4].acked_t_ns", "orders[4].cancel_sent_t_ns",
+            "orders[4].cancel_rejected_t_ns", "orders[4].state_unknown_t_ns", "orders[5].placed_seq",
+            "orders[5].acked_t_ns", "fills[4].notice_t_ns", "fills[4].notice_seq", "fills[5].notice_t_ns",
+            "fills[5].notice_seq", "fx[3].t_ns", "fx[3].rate", "fx[3].source", "fx[4].source", "fx[5].t_ns",
+            "fx[5].rate", "fx[5].source"],
+    "LIMIT": ["signals[1].kind", "signals[1].direction", "orders[1].placed_seq", "orders[1].acked_t_ns",
+              "orders[1].cancel_rejected_t_ns", "orders[1].state_unknown_t_ns", "orders[1].closed_seq",
+              "orders[1].close_reason"],
+}
+
+
+@pytest.mark.parametrize("kind", ["JPY", "USD", "LIMIT"])
+def test_r4_sweep_every_row_forged(tmp_path, kind):
+    if kind == "JPY":
+        res, _ = _run(tmp_path, GEN_5M, dict(BASIC, keep_open=True))
+        gen = GEN_5M
+    elif kind == "USD":
+        res, _ = _run(tmp_path, GEN_30K, USD_BASIC, "USD")
+        gen = GEN_30K
+    else:
+        res, _ = _run(tmp_path, GEN_5M, GEN_LIMIT)
+        gen = GEN_5M
+    passed = _sweep(res, gen, tmp_path, forge=True, all_rows=True)
+    assert passed == _FORGED_PASS_ALL[kind]
+    limit_text = " ".join(SCHEMA["limits"])
+    for f in passed:
+        assert f.split(".")[1] in limit_text, f
+    assert "全部の行の全部の欄" in limit_text
+
+
+# (1) 問 2: 決済の行の quote_ccy も値の形を確かめる(批評家の sweep2.py で orders[5].quote_ccy 'JPY'->'JPYx' が通った)
+def test_r4_quote_ccy_form_on_exit_rows(basic_store, tmp_path):
+    d = _copy(basic_store, tmp_path)
+
+    def fn(h, rs):
+        rs[_first_pess(rs, order_id="road-2")]["quote_ccy"] = "JPYx"
+        return h, rs
+    _edit(d, "orders", fn)
+    f = check_outputs(str(d), _bars(GEN_5M)).failures
+    assert any(x["check"] == "iii" and "値段の通貨 'JPYx'" in x["reason"] and "road-2" in x["row"] for x in f), f
+
+
+# (1) 問 4: expired_t_ns → venue_closed_t_ns(O-7)
+def test_r4_venue_closed_column_renamed():
+    cols = {c[0]: c[2] for c in SCHEMA["tables"]["orders"]["columns"]}
+    assert "expired_t_ns" not in cols
+    assert "期限切れはここに入る(今の取引所の模型には期限つきの注文が無い)" in cols["venue_closed_t_ns"]
+
+
+def _fresh(scene_module, quote="JPY"):
+    s = scene_module.SceneStrategy({"mode": "nothing", "quote_ccy": quote, "levels": 1, "open_bar": 1})
+    s.on_event(BarEvent(received_time_ns=T0 + M, start_time_ns=T0, open=1e6, high=1e6, low=1e6, close=1e6, volume=1.0),
+               _Ctx(T0 + M))
+    return s
+
+
+class _OpenCtx(_Ctx):
+    def order(self, coid):
+        from bot.bt.core.api import OrderState
+        return _View(OrderState.OPEN)
+
+
+# (2) A: 決済の成行が拒否されたら、出し直さずに止める(理由を文に入れる)
+@pytest.mark.parametrize("make", [
+    lambda c: OrderRejectEvent(received_time_ns=T0 + 3 * M, client_order_id=c, reason="off_tick"),
+    lambda c: OrderCanceledEvent(received_time_ns=T0 + 3 * M, client_order_id=c, reason="refused_by_account: x",
+                                 answers="venue"),
+])
+def test_r4_rejected_flatten_stops(scene_module, make):
+    s = _fresh(scene_module)
+    s._ctx = _OpenCtx(T0 + M)
+    buy = s.place("buy", "market", None, 1, NO_SIGNAL)
+    s._ctx = None
+    s.on_event(OrderFillEvent(received_time_ns=T0 + 2 * M, client_order_id=buy, price=1e6, size=0.14, side="buy"),
+               _Ctx(T0 + 2 * M))  # 0.14 BTC の建玉(140,000 円 ÷ 1,000,000)
+    s._ctx = _OpenCtx(T0 + 2 * M)
+    fid = s.flatten(NO_SIGNAL, "market", None)
+    s._ctx = None
+    assert s.road_record()["orders"][-1]["exit_kind"] == "flatten" and fid == "road-1"
+    with pytest.raises(RoadStrategyError, match=r"決済の注文 'road-1' が拒否された.*flatten は出し直さずに止める"):
+        s.on_event(make(fid), _Ctx(T0 + 3 * M))
+    assert len(s.road_record()["orders"]) == 2  # 出し直していない
+
+
+# (2) B: flatten は成行だけ
+def test_r4_flatten_limit_is_refused(scene_module):
+    s = _fresh(scene_module)
+    s._ctx = _Ctx(T0 + M)
+    with pytest.raises(RoadStrategyError, match="flatten: 成行だけ"):
+        s.flatten(NO_SIGNAL, "limit", 2e6)
+
+
+def _run_trades(tmp_path, params, tier, seed=2, step_pct=0.0, qty=0.01):
+    gen = {"name": "random_walk", "seed": seed, "params": {"kind": "trade", "start_ns": T0, "step_ns": M, "n": 30,
+                                                           "price0": 5_000_000.0, "step_pct": step_pct, "qty": qty}}
+    plan = P.plan_pipeline(
+        root=str(tmp_path), datasets=[{"name": "g", "generator": gen}],
+        instruments=[{"name": "BTCJPY", "price": "g", "with": [],
+                      "product": {"symbol": "BTCJPY", "venue": "test", "tick": 0.5, "min_qty": 0.001, "qty_step": 0.001,
+                                  "quote_ccy": "JPY", "margin": True}, "rules": {"market_ref": "last_trade"}}],
+        strategy={"kind": "module", "module": MODULE, "factory": "pipeline_strategy", "params": params},
+        fill={"optimistic": {"tier": tier}, "pessimistic": {"tier": tier}},
+        latency={"feed": ZERO, "order": ZERO, "cancel": ZERO, "notice": ZERO},
+        costs={"maker_rate": 0, "taker_rate": 0, "spread": 0, "source": "試験: 0"},
+        account={"currency": "JPY", "cash": 1e9, "leverage": 1, "mark": "last_trade", "liquidation": None,
+                 "margin_check": "position_only"},
+        purpose="動作確認", prereg=None)
+    res = P.run_pipeline(plan, runs_dir=str(tmp_path / "runs"))
+    # 約定(trade)の上の走らせ: 検査の足は約定の時刻の分ごとの足(値段の範囲は広く取る。終値は約定の値段)
+    bars = [{"t_ns": r["t_ns"], "high": 1e12, "low": 0.0, "close": r["px"]} for r in P._generate(gen)[1]]
+    return os.path.join(res.run_dir, ROAD_DIR), bars
+
+
+# (2) B: close。マチルダの利確の形(足ごとに線が動く指値を取り消して置き直し、最後に約定して建玉 0)
+def test_r4_close_moving_line_fills_and_flat(tmp_path):
+    # 約定(trade)の足・tier 3(線に届いた最初の約定で残りが約定)。線 = その足の値段 × 1.001(刻み 0.5)
+    store, bars = _run_trades(tmp_path, {"mode": "close_tp", "on_trades": True, "quote_ccy": "JPY", "levels": 1,
+                                         "open_bar": 3, "line_pct": 0.001}, tier=3, seed=3, step_pct=0.3, qty=1.0)
+    assert check_outputs(store, bars).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        o = _side(t["orders"], side)
+        closes = [r for r in o if r["exit_kind"] == "close"]
+        assert len(closes) >= 3  # 置き直した
+        assert all(r["state"] == "CANCELED" and r["cancel_sent_t_ns"] != "" for r in closes[:-1])
+        assert closes[-1]["state"] == "FILLED"
+        # 置き直すたびに線が動いた、量は毎回 建玉の全部(出ている決済は取り消しの答えで消えている)
+        assert len({r["limit_px"] for r in closes}) == len(closes)
+        assert {(r["qty"], r["exit_pending_at_send"], r["position_at_send"]) for r in closes} == {
+            (o[0]["qty"], "0", o[0]["qty"])}
+        assert _side(t["ledger_fills"], side)[-1]["position_after"] == "0"
+        assert [x["status"] for x in _side(t["trades"], side)] == ["closed"]
+
+
+# (2) B: 段を 2 つ積んだ後の close。手計算: 0:03・0:04 に 0.014 ずつ(5,000,000 円)、0:06 に close の成行 0.028。
+# 同じ足でもう 1 回 close: 出ている 1 回目の決済(0.028 の売り)で足りているので量 0 の行
+def test_r4_close_after_two_levels(tmp_path):
+    _, store = _run(tmp_path, GEN_5M, {"mode": "close_levels", "quote_ccy": "JPY", "levels": 2, "open_bar": 3,
+                                       "close_bar": 6})
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    t = _tables(store)
+    o = _side(t["orders"])
+    assert [(r["side"], r["qty"], r["exit_kind"], r["position_at_send"], r["exit_pending_at_send"], r["state"])
+            for r in o] == [("buy", "0.014", "", "0", "", "FILLED"),
+                            ("buy", "0.014", "", "0", "", "FILLED"),  # 0:04 の足は 1 つ目の約定の知らせより先に届く
+                            ("sell", "0.028", "close", "0.028", "0", "FILLED"),
+                            ("", "0.0", "close", "0.028", "-0.028", ZERO_QTY_STATE)]
+    assert [(x["status"], x["levels"], x["pnl_jpy"]) for x in _side(t["trades"])] == [("closed", "2", "0")]
+
+
+# (2) B: 一部だけ約定した close を取り消して置き直す。約定(trade)の量は 1 つ 0.01、tier 4(届いた約定の量まで約定)。
+# 手計算: 0.028 を 5,000,000 で買い、売りの線 4,995,000(× 0.999)に close 0.028 → 0.01 だけ約定 → 取り消し → 残りの
+# 建玉 0.018 で置き直し → 0.01 約定 → 0.008 で置き直し → 0.008 約定で建玉 0。損益 (4,995,000 − 5,000,000) × 0.028 = −140 円
+def test_r4_close_partial_cancel_and_replace(tmp_path):
+    store, bars = _run_trades(tmp_path, {"mode": "close_partial", "on_trades": True, "quote_ccy": "JPY", "levels": 1,
+                                         "open_bar": 3, "line_pct": -0.001}, tier=4)
+    assert check_outputs(store, bars).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        o = _side(t["orders"], side)
+        assert [(r["order_id"], r["qty"], r["filled_qty"], r["state"], r["exit_kind"], r["limit_px"]) for r in o] == [
+            ("road-0", "0.028", "0.028", "FILLED", "", ""),
+            ("road-1", "0.028", "0.01", "CANCELED", "close", "4995000.0"),
+            ("road-2", "0.018", "0.01", "CANCELED", "close", "4995000.0"),
+            ("road-3", "0.008", "0.008", "FILLED", "close", "4995000.0")]
+        assert [(x["status"], x["pnl_jpy"]) for x in _side(t["trades"], side)] == [("closed", "-140")]
+
+
+# (2) C: ドテンの後、知らせが届く前の flatten も、取り消しの答えを待ってから建玉の分だけ出す(建玉を倍にしない)
+@pytest.mark.parametrize("notice_ns", [0, 90_000_000_000])
+def test_r4_flatten_after_doten_waits(tmp_path, notice_ns):
+    params = {"mode": "doten_flatten", "quote_ccy": "JPY", "levels": 1, "open_bar": 3, "close_bar": 6}
+    res = P.run_pipeline(_plan(tmp_path, GEN_5M, params, notice={"kind": "constant", "ns": notice_ns}),
+                         runs_dir=str(tmp_path / "runs"))
+    store = os.path.join(res.run_dir, ROAD_DIR)
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        # 手計算: +0.014 → ドテン 0.028 の売りで −0.014 → flatten の買い 0.014 で 0(−0.028 を通らない)
+        assert [(x["side"], x["qty"], x["position_after"]) for x in _side(t["ledger_fills"], side)] == [
+            ("buy", "0.014", "0.014"), ("sell", "0.028", "-0.014"), ("buy", "0.014", "0")]
+        assert [(x["direction"], x["status"], x["levels"]) for x in _side(t["trades"], side)] == [
+            ("long", "closed", "1"), ("short", "closed", "1")]
+
+
+# (2) D: 建玉 0 で、出ている注文の取り消しだけの flatten も、呼んだ記録の行が 1 つ残る
+def test_r4_flatten_cancel_only_leaves_a_row(tmp_path):
+    _, store = _run(tmp_path, GEN_5M, {"mode": "flatten_cancel_only", "quote_ccy": "JPY", "levels": 1, "open_bar": 3,
+                                       "close_bar": 5})
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    o = _side(_tables(store)["orders"])
+    assert [(r["order_type"], r["state"], r["cancel_sent_t_ns"], r["exit_kind"], r["qty"], r["placed_t_ns"],
+             r["signal_id"]) for r in o] == [
+        ("limit", "CANCELED", str(T0 + 5 * M), "", "0.056", str(T0 + 3 * M), "s1"),
+        ("market", ZERO_QTY_STATE, "", "flatten_call", "0.0", str(T0 + 5 * M), NO_SIGNAL)]

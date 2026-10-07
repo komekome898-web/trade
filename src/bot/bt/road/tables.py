@@ -35,7 +35,8 @@ from .strategy import NO_SIGNAL
 
 ROAD_DIR = "road"
 SCHEMA_FILE = "SCHEMA.json"
-SCHEMA_VERSION = "road-record-3"  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
+SCHEMA_VERSION = "road-record-4"  # 4: expired_t_ns → venue_closed_t_ns、exit_kind、flatten_pending_at_send → exit_pending_at_send(4 周目)
+# 3  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
 # 2  # 2: 拒否の時刻・量の出所・送る時点の建玉の列、summary の groups(2 周目)
 SUMMARY_TABLE = "summary"
 RANGES = ("optimistic", "pessimistic")  # 約定の範囲の側(bot.bt.pipeline.SIDES と同じ。pipeline をここから読まない)
@@ -68,9 +69,13 @@ SCHEMA: dict = {
         "期限が切れた時刻: 取引所の模型に期限つきの注文(GTD)が無いので、ここに入るのは取引所が自分で閉じたもの"
         "(期限切れ・成行の残り・reduce_only など。理由は close_reason)",
         "書き出しの後の書き換えは repro.json の指紋で落ちる。repro.json の指紋も合わせて書き換えた場合に検査を通る欄"
-        "(3 周目に 1 欄ずつ書き換えて確かめた。tests/road/test_road_record.py): signals の kind・direction・end_t_ns・"
-        "end_reason、orders の acked_t_ns・cancel_sent_t_ns・cancel_rejected_t_ns・state_unknown_t_ns・close_reason、"
-        "約定の無い注文の placed_seq・closed_seq、どの計算にも使われていない fx の行の t_ns・rate・source",
+        "(4 周目に、表の全部の行の全部の欄を 1 欄ずつ書き換えて確かめた。tests/road/test_road_record.py の "
+        "test_r4_sweep_every_row_forged): "
+        "signals の kind・direction・end_reason、消えた合図の end_t_ns、注文の無い合図の signal_id・start_t_ns / "
+        "orders の acked_t_ns、取り消しの答えの無い注文の cancel_sent_t_ns、cancel_rejected_t_ns・state_unknown_t_ns、"
+        "表の順を崩さない範囲の placed_seq、約定の無い注文の closed_seq、close_reason / "
+        "fills の notice_t_ns・notice_seq(知らせの順を崩さない範囲) / "
+        "fx の source、どの計算にも使われていない fx の行の t_ns・rate",
     ],
     "tables": {
         "signals": {
@@ -94,7 +99,7 @@ SCHEMA: dict = {
                 ("order_type", "-", "market / limit"),
                 ("limit_px", "値段の通貨", "指値の値段(成行は空)"),
                 ("qty", "BTC", "注文の量(量の出所が「量の計算」なら切り捨て後の量、「建玉」なら |送る時点の建玉 + 出ている決済の量|)"),
-                ("placed_t_ns", "ns", "土台が place / flatten を受けた時刻(決済の続きは、その知らせが届いた時刻)"),
+                ("placed_t_ns", "ns", "土台が place / close / flatten を受けた時刻(flatten の続きは、その知らせが届いた時刻)"),
                 ("placed_seq", "-", "そのとき土台に届いていた出来事の通し番号(届いた順。約定の notice_seq と比べる)"),
                 ("sent_t_ns", "ns", "出した時刻(ctx.place_order に渡した時刻。出さなかった行は空)"),
                 ("acked_t_ns", "ns", "受け付けられた時刻(OrderAckEvent が戦略に届いた時刻。門が預かる成行は門の受け付けで、"
@@ -102,8 +107,10 @@ SCHEMA: dict = {
                 ("acked_venue_t_ns", "ns", "受け付けの取引所での時刻(OrderAckEvent の exchange_time_ns)"),
                 ("cancel_sent_t_ns", "ns", "取り消しを出した時刻(土台の cancel)"),
                 ("canceled_t_ns", "ns", "取り消した時刻(OrderCanceledEvent で answers = cancel が届いた時刻)"),
-                ("expired_t_ns", "ns", "取引所が自分で閉じた時刻(期限切れ・成行の残り・reduce_only など。理由は close_reason)。"
-                                       "OrderCanceledEvent で answers = venue、中身が拒否でないものが届いた時刻"),
+                ("venue_closed_t_ns", "ns", "取引所が自分で閉じた時刻(成行の残り・reduce_only・oco など。理由は close_reason)。"
+                                            "OrderCanceledEvent で answers = venue、中身が拒否でないものが届いた時刻。"
+                                            "期限切れはここに入る(今の取引所の模型には期限つきの注文が無い)。"
+                                            "列の名前は 3 周目までの expired_t_ns から変えた(一度出した語の意味を広げて使い回さない。O-7)"),
                 ("rejected_t_ns", "ns", "拒否された時刻: OrderRejectEvent(新規)、または中身が拒否の OrderCanceledEvent"
                                         "(answers = venue / new で、理由が rejected_by_venue・refused_by_account で始まるか "
                                         "post_only_would_take)が届いた時刻"),
@@ -125,10 +132,12 @@ SCHEMA: dict = {
                 ("usdjpy", "円/ドル", "量の計算に使った USDJPY(ドル建てのとき。出した時刻以前の最後の相場)"),
                 ("usdjpy_t_ns", "ns", "その相場の時刻"),
                 ("qty_raw", "BTC", "切り捨て前の量(Decimal、28 桁)"),
-                ("qty_source", "-", "量の出所: 量の計算(place。margin_jpy〜qty_raw の列で計算)/ 建玉(flatten。量の計算の列は空)"),
+                ("qty_source", "-", "量の出所: 量の計算(place。margin_jpy〜qty_raw の列で計算)/ 建玉(close・flatten。量の計算の列は空)"),
                 ("position_at_send", "BTC", "注文を受けた時点の建玉(土台が約定の知らせから持つ建玉、買いが +)"),
-                ("flatten_pending_at_send", "BTC", "決済の行: 送る時点で出ていた決済の注文のまだ約定していない量(買いが +)。"
-                                                   "量 = |position_at_send + これ|"),
+                ("exit_pending_at_send", "BTC", "決済の行(量の出所が建玉): 送る時点で出ていた決済の注文(close・flatten)のまだ約定していない量"
+                                                "(買いが +)。量 = |position_at_send + これ|"),
+                ("exit_kind", "-", "決済の種類: close(close が出した注文)/ flatten(flatten が出した成行)/ flatten_call(flatten を"
+                                   "呼んだときに注文を出さなかった記録の行)/ 空(place の注文)"),
             ]},
         "fills": {
             "file": "fills.csv.gz", "kind": RAW, "row": "約定 1 つ(道の約定 = pipeline の約定)",

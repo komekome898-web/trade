@@ -137,3 +137,94 @@ def _r3(self, event, ctx) -> bool:
 
 
 SceneStrategy._r3 = _r3
+
+
+# ---- 4 周目: close(決済の普通の注文)の場面 -------------------------------------------------------------------
+# on_trades が真なら「足」は約定(trade)の 1 つ 1 つ。
+# - "close_tp":     マチルダの利確の形。open_bar 本目に段数 1 の成行の買い(合図 s1)。次の足から足ごとに、出ている close の
+#                   指値を取り消し、取り消しの答えが届いたら、その足の終値 × (1 + line_pct) の線(刻み 0.5 に丸める)に
+#                   close の指値を置き直す。最後に約定して建玉 0
+# - "close_levels": open_bar 本目と次の足に段数 2 の成行の買い(段を 2 つ積む)、close_bar 本目に close の成行を 2 回
+#                   (2 回目は、出ている 1 回目の決済で足りているので量 0 の行)
+# - "doten_flatten": 0:03 に段数 2 の成行の買い(0.014)、0:05 に段数 1 の成行の売り(0.028、ドテン)、close_bar 本目に flatten
+# - "flatten_cancel_only": 0:03 に終値の半分の指値の買い(届かない)、close_bar 本目に flatten(建玉 0: 取り消しだけ)
+# - "close_partial": close_tp と同じ形を、線を値段の下(line_pct < 0)に置いて回す。量の分だけ約定が来ないと一部だけ約定し、
+#                   次の足で取り消し、答えが届いたら残りの建玉の量で置き直す
+def _r4(self, event, ctx) -> bool:
+    from bot.bt.core import OrderCanceledEvent, TradeEvent
+    m = self.mode
+    if m in ("doten_flatten", "flatten_cancel_only"):
+        if not isinstance(event, BarEvent):
+            return True
+        self.bars += 1
+        b = self.bars
+        if b == 3:
+            self.signal_start("s1", "試験の合図", "long", None)
+            if m == "doten_flatten":
+                self.place("buy", "market", None, 2, "s1")  # 0.014
+            else:
+                self.place("buy", "limit", event.close / 2, 1, "s1")  # 届かない指値
+        elif b == 5 and m == "doten_flatten":
+            self.signal_start("s2", "試験の合図", "short", None)
+            self.place("sell", "market", None, 1, "s2")  # 0.028: 0.014 の買いからドテン
+        elif b == self.close_bar:
+            self.flatten(NO_SIGNAL, "market", None)
+        return True
+    if m not in ("close_tp", "close_levels", "close_partial"):
+        return False
+    if isinstance(event, OrderCanceledEvent) and event.client_order_id == getattr(self, "close_id", None) \
+            and getattr(self, "replace_px", None) is not None:
+        self.close_id = self.close("s1", "limit", self.replace_px)  # 取り消しの答えが届いた: 置き直す
+        self.replace_px = None
+        return True
+    on_trades = self.on_trades
+    tick = isinstance(event, TradeEvent) if on_trades else isinstance(event, BarEvent)
+    if not tick:
+        return True
+    self.bars += 1
+    b = self.bars
+    px = event.price if on_trades else event.close
+    if b == self.open_bar:
+        self.signal_start("s1", "試験の合図", "long", None)
+        self.place("buy", "market", None, self.levels, "s1")
+        return True
+    if m == "close_levels":
+        if b == self.open_bar + 1:
+            self.place("buy", "market", None, self.levels, "s1")
+        elif b == self.close_bar:
+            self.close_id = self.close("s1", "market", None)
+            self.close_again = self.close("s1", "market", None)  # 出ている決済で足りている: 量 0 の行
+        return True
+    if b <= self.open_bar or self.position() == "0":
+        return True
+    line = round(px * (1 + self.params_line) * 2) / 2
+    cid = getattr(self, "close_id", None)
+    if cid is None:
+        self.close_id = self.close("s1", "limit", line)
+    elif self.order_state(cid) in ("OPEN", "PENDING_NEW"):
+        self.replace_px = line
+        self.cancel(cid)
+    return True
+
+
+SceneStrategy._r4 = _r4
+_old_init = SceneStrategy.__init__
+
+
+def _init(self, params):
+    _old_init(self, params)
+    self.params_line = params.get("line_pct", 0.0)
+    self.on_trades = params.get("on_trades", False)
+
+
+SceneStrategy.__init__ = _init
+_old_step = SceneStrategy.step
+
+
+def _step(self, event, ctx):
+    if self._r4(event, ctx):
+        return
+    _old_step(self, event, ctx)
+
+
+SceneStrategy.step = _step

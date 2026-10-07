@@ -21,12 +21,15 @@
   量が 0 になったら注文を出さず、注文の表に状態「量が 0 で出さない」の行だけを残す。
   種類は "market"(値段は None。その時の値段 = 直近の足の終値 / 直近の約定の値段 / 直近の板の仲値)と
   "limit"(値段 = 指値。量の計算もその値段)。
-- `flatten(合図の番号 or 「無し」, 種類, 値段)`: 決済の意図(2 周目 (d)、3 周目 問 5)。土台が出していて閉じていない注文を
-  全部取り消し、知っている建玉(土台が約定の知らせから持つ建玉)を決済し、その後に届いた約定の知らせのぶんも、建玉が 0 で
-  注文が残らなくなるまで決済の注文を出し続ける。量 = |送る時点の建玉 + 出ている決済の注文のまだ約定していない量|、売買は
-  その逆。注文の表の量の出所は「建玉」(place は「量の計算」)、送る時点の建玉と出ていた決済の量も残し、量の計算の列は空。
-  呼んだ時点で建玉 0・注文も無いなら出さずに「量が 0 で出さない」の行だけを残す。決済の途中(`is_flattening()`)は
-  place と flatten を止める。
+- `close(合図の番号 or 「無し」, 種類, 値段)`: 決済の普通の注文(4 周目 (2) B)。量 = |送る時点の建玉 + 出ている決済の注文の
+  まだ約定していない量|、売買は建玉の逆。成行も指値も出せ、cancel で取り消して置き直せる(マチルダの利確の線が足ごとに
+  動くため)。置き直すのは取り消しの答えが届いてから(届く前は前の注文の残りが「出ている決済の量」に入り、量が 0 になる)。
+- `flatten(合図の番号 or 「無し」, "market", None)`: 成行で全部を決済する意図(2 周目 (d)・3 周目 問 5・4 周目 (2))。
+  土台が出していて閉じていない注文(close の注文も)を全部取り消し、その取り消しの答えが全部届いてから、
+  |建玉 + 出ている決済の量| を成行で出し、その後に届いた約定の知らせのぶんも、建玉が 0 で注文が残らなくなるまで出し続ける。
+  指値は止める(指値の決済は close)。決済の成行が拒否された(または約定せずに閉じた)ら出し直さずに止める。
+  呼んだときに注文を出さなければ flatten_call の行(「量が 0 で出さない」、呼んだ時刻と合図の番号)を 1 つ残す。
+  決済の途中(`is_flattening()`)は place・close・flatten を止め、決済の成行は cancel できない。
 - `cancel(注文の番号)`: 取り消しを出す(出した時刻を記録して `ctx.cancel_order` に渡す)。
 
 注文の一生は、土台が戦略に届く注文の知らせ(`bot.bt.core.events` の `OrderAckEvent`・`OrderRejectEvent`・
@@ -99,6 +102,10 @@ VENUE_REJECT_PREFIXES = ("rejected_by_venue", "refused_by_account")
 # _activation_refusal: post_only が成り立たないとき、取引所の決まりが "cancel" なら取り消しで返す)。3 周目 問 4 (4)
 NEW_REJECT_REASONS = ("post_only_would_take",)
 OPEN_STATE_VALUES = ("PENDING_NEW", "OPEN", "PENDING_CANCEL", "STATE_UNKNOWN")  # core の OPEN_STATES の値
+EXIT_FLATTEN = "flatten"  # flatten が出した決済の成行
+EXIT_FLATTEN_CALL = "flatten_call"  # flatten を呼んだときに注文を出さなかった記録の行(4 周目 (2) D)
+EXIT_CLOSE = "close"  # close が出した決済の注文
+EXIT_KINDS = (EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_CLOSE)
 QTY_FROM_SIZING = "量の計算"
 QTY_FROM_POSITION = "建玉"
 
@@ -196,6 +203,7 @@ class RoadStrategy(Strategy):
         self._seq = 0  # 土台に届いた出来事の通し番号(1 から。届いた順)
         self._notices: dict = {}  # 注文の番号 -> [(届いた時刻, 通し番号, 量の文字列), ...](約定の知らせ)
         self._flat: Optional[dict] = None  # 決済の意図(flatten の後、建玉 0 で注文が残らなくなるまで)
+        self._cancel_pending: dict = {}  # 注文の番号 -> 取り消しの答えを待っているか(戦略の側の注文の見え方)
         self._n = 0
         self._ctx: Optional[StrategyContext] = None
         self._px: Optional[float] = None
@@ -259,7 +267,7 @@ class RoadStrategy(Strategy):
             elif is_reject_reason(event.answers, event.reason):
                 row["rejected_t_ns"] = now  # 中身は拒否(門が預かった注文を取引所・口座の確かめが拒んだ、post_only など)
             elif event.answers == "venue":
-                row["expired_t_ns"] = now  # 取引所が自分で閉じた(期限切れ・成行の残り・reduce_only など)
+                row["venue_closed_t_ns"] = now  # 取引所が自分で閉じた(期限切れ・成行の残り・reduce_only など)
             self._close(row, now, venue_t, event.answers, event.reason)
         elif isinstance(event, OrderRejectEvent):
             if event.request_kind == "new":
@@ -273,6 +281,13 @@ class RoadStrategy(Strategy):
         view = ctx.order(coid)
         if view is not None:
             row["state"] = view.state.value
+            self._cancel_pending[coid] = bool(view.cancel_pending)
+        if row["exit_kind"] == EXIT_FLATTEN and row["closed_t_ns"] != "" and self._filled.get(coid, Decimal(0)) == 0:
+            # 4 周目 (2) A: 決済の成行が拒否された(または約定せずに閉じた)ら出し直さずに止める(出し直すと同じ時刻に
+            # 拒否が返り続け、走らせが終わらない)
+            what = "拒否された" if row["rejected_t_ns"] != "" else "約定せずに閉じた"
+            _fail(f"決済の注文 {coid!r} が{what}(閉じ方 {row['close_kind']}・理由 {row['close_reason']!r})。"
+                  f"flatten は出し直さずに止める")
         if self._flat is not None:
             self._flatten_step(now)
 
@@ -284,12 +299,12 @@ class RoadStrategy(Strategy):
     def _new_row(self, coid: str, origin: str, signal: str) -> dict:
         row = {"order_id": coid, "origin": origin, "signal_id": signal, "side": "", "order_type": "", "limit_px": "",
                "qty": "", "placed_t_ns": "", "sent_t_ns": "", "acked_t_ns": "", "acked_venue_t_ns": "",
-               "cancel_sent_t_ns": "", "canceled_t_ns": "", "expired_t_ns": "", "rejected_t_ns": "",
+               "cancel_sent_t_ns": "", "canceled_t_ns": "", "venue_closed_t_ns": "", "rejected_t_ns": "",
                "cancel_rejected_t_ns": "", "state_unknown_t_ns": "", "closed_t_ns": "", "closed_seq": "",
                "closed_venue_t_ns": "", "close_kind": "", "close_reason": "", "state": "", "filled_qty": "0",
                "margin_jpy": "", "use_ratio": "", "levels": "", "size_px": "", "size_px_source": "", "quote_ccy": "",
                "usdjpy": "", "usdjpy_t_ns": "", "qty_raw": "", "qty_source": "", "position_at_send": "",
-               "flatten_pending_at_send": "", "placed_seq": ""}
+               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": ""}
         self._orders[coid] = row
         return row
 
@@ -389,49 +404,82 @@ class RoadStrategy(Strategy):
             return coid
         return self._send(row, coid, side, order_type, qty, price, sig, now)
 
-    def flatten(self, signal: Any, order_type: str, price: Optional[float]) -> Optional[str]:
-        """決済の口(2 周目 (d)、3 周目 問 5)。決済の意図として受け、
-        1. 土台が出していてまだ閉じていない注文(決済の注文を除く)を全部取り消し、
-        2. 知っている建玉(土台が約定の知らせから持つ建玉)から、決済の注文で出ていてまだ約定していない量を引いた分を、
-           建玉の逆の向きに出し、
-        3. その後に届いた約定の知らせのぶんも、建玉が 0 で注文が残らなくなるまで決済の注文を出し続ける。
-        量の出所は「建玉」、量の計算の列は空。送る時点の建玉(position_at_send)と、そのとき出ていた決済の注文の
-        まだ約定していない量(flatten_pending_at_send、買いが +)を残す。量 = |建玉 + 出ている決済の量|。
-        呼んだ時点で建玉 0・注文も無いなら注文を出さず、状態「量が 0 で出さない」の行だけを残す。
-        決済の途中は place も flatten も止める。返すのは呼んだときに出した(または残した)行の注文の番号、無ければ None。"""
+    def flatten(self, signal: Any, order_type: str = "market", price: Optional[float] = None) -> str:
+        """成行で全部を決済する口(2 周目 (d)・3 周目 問 5・4 周目 (2) A〜D)。決済の意図として受ける:
+        1. 土台が出していてまだ閉じていない注文(close の注文も)を全部取り消し、
+        2. その取り消しの答え(取り消した / 約定した / 取り消しの拒否)が全部届くのを待ってから、
+        3. |知っている建玉(土台が約定の知らせから持つ建玉) + 出ている決済の注文のまだ約定していない量| を成行で出し、
+        4. その後に届いた約定の知らせのぶんも、建玉が 0 で注文が残らなくなるまで出し続ける。
+        種類は成行だけ(指値で決済するときは close を使う。4 周目 (2) B)。決済の成行が拒否された(または約定せずに
+        閉じた)ら、出し直さずに `RoadStrategyError` で止める(4 周目 (2) A)。
+        呼んだときに注文を出さなければ(建玉 0、または取り消しの答え待ち)、注文の表に flatten_call の行を 1 つ残す
+        (状態「量が 0 で出さない」、呼んだ時刻と合図の番号。4 周目 (2) D)。決済の途中は place・close・flatten を止める。
+        返すのは、呼んだときに出した注文か残した行の注文の番号。"""
         now = self._now("flatten")
         if self._flat is not None:
             _fail("flatten: 既に決済の途中(建玉が 0 で注文が残らなくなるまで、is_flattening で読める)")
+        if order_type != "market" or price is not None:
+            _fail(f"flatten: 成行だけ(種類 market・値段 None)。指値で決済するときは close を使う: {order_type!r}・{price!r}")
+        sig = self._exit_signal(signal, "flatten")
+        waiting = []
+        for coid, row in list(self._orders.items()):
+            if row["origin"] == ORIGIN_ROAD and self._is_open(row):
+                if row["cancel_sent_t_ns"] == "" or not self._cancel_pending.get(coid, False):
+                    self.cancel(coid)
+                waiting.append(coid)
+        self._flat = {"signal": sig, "waiting": waiting}
+        sent = self._flatten_step(now)
+        if sent is not None:
+            return sent
+        pos, pending = self._pos, self._pending_exit()
+        coid = self._new_id()
+        row = self._new_row(coid, ORIGIN_ROAD, sig)
+        row.update(order_type="market", qty=_num_text(0.0), placed_t_ns=now, quote_ccy=self.quote_ccy,
+                   qty_source=QTY_FROM_POSITION, position_at_send=_dec_text(pos),
+                   exit_pending_at_send=_dec_text(pending), placed_seq=self._seq, state=ZERO_QTY_STATE,
+                   exit_kind=EXIT_FLATTEN_CALL)
+        return coid
+
+    def close(self, signal: Any, order_type: str, price: Optional[float]) -> str:
+        """決済の普通の注文(4 周目 (2) B)。量 = |送る時点の建玉 + 出ている決済の注文のまだ約定していない量|、売買は建玉の逆。
+        建玉が 0、またはその和が 0 か建玉と逆の向きなら、出さずに「量が 0 で出さない」の行を残す。成行も指値も出せ、
+        cancel で取り消して置き直せる(マチルダの利確の線が足ごとに動くため。MATILDA_ROAD_FRAMING.md §5)。
+        取り消してすぐ置き直すと、取り消しの答えが届くまでは前の注文の残りが「出ている決済の量」に入るので量が 0 になる。
+        置き直すのは取り消しの答えが届いてから。決済の途中(flatten の後)は止める。返すのは注文の番号。"""
+        now = self._now("close")
+        if self._flat is not None:
+            _fail("close: 決済の途中(flatten の後、建玉が 0 で注文が残らなくなるまで)は注文を出せない")
         if order_type not in ORDER_TYPES:
-            _fail(f"flatten: 種類は {ORDER_TYPES} のどれか: {order_type!r}")
+            _fail(f"close: 種類は {ORDER_TYPES} のどれか: {order_type!r}")
         if order_type == "limit":
             if isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(float(price)) \
                     or float(price) <= 0:
-                _fail(f"flatten: 指値の注文の値段は 0 より大きい有限の数: {price!r}")
+                _fail(f"close: 指値の注文の値段は 0 より大きい有限の数: {price!r}")
             price = float(price)
         elif price is not None:
-            _fail(f"flatten: 成行の注文に値段を渡さない: {price!r}")
-        sig = NO_SIGNAL if signal == NO_SIGNAL else _sid(signal, "flatten")
-        if sig != NO_SIGNAL and sig not in self._signals:
-            _fail(f"flatten: 合図 {sig} は発生していない(発生していない合図の番号の注文。合図に依らない注文は"
-                  f"「{NO_SIGNAL}」を明示する)")
-        self._flat = {"signal": sig, "order_type": order_type, "price": price}
-        for coid, row in list(self._orders.items()):
-            if row["origin"] == ORIGIN_ROAD and self._is_open(row) and row["cancel_sent_t_ns"] == "":
-                self.cancel(coid)
-        sent = self._flatten_step(now)
-        if sent is None and self._flat is not None and self._pos == 0 and not self._open_rows():
-            self._flat = None
-        if sent is None and self._flat is None:
-            # 建玉 0・出ている注文も無い: 出さずに「量が 0 で出さない」の行を残す
-            coid = self._new_id()
-            row = self._new_row(coid, ORIGIN_ROAD, sig)
-            row.update(order_type=order_type, limit_px="" if price is None else _num_text(price), qty=_num_text(0.0),
-                       placed_t_ns=now, quote_ccy=self.quote_ccy, qty_source=QTY_FROM_POSITION,
-                       position_at_send=_dec_text(self._pos), flatten_pending_at_send="0", placed_seq=self._seq,
-                       state=ZERO_QTY_STATE)
+            _fail(f"close: 成行の注文に値段を渡さない: {price!r}")
+        sig = self._exit_signal(signal, "close")
+        pos, pending = self._pos, self._pending_exit()
+        net = pos + pending
+        coid = self._new_id()
+        row = self._new_row(coid, ORIGIN_ROAD, sig)
+        row.update(order_type=order_type, limit_px="" if price is None else _num_text(price), placed_t_ns=now,
+                   quote_ccy=self.quote_ccy, qty_source=QTY_FROM_POSITION, position_at_send=_dec_text(pos),
+                   exit_pending_at_send=_dec_text(pending), placed_seq=self._seq, exit_kind=EXIT_CLOSE)
+        if pos == 0 or net == 0 or (net > 0) != (pos > 0):
+            row.update(qty=_num_text(0.0), state=ZERO_QTY_STATE)
             return coid
-        return sent
+        side = "sell" if net > 0 else "buy"
+        qty = float(abs(net))
+        row.update(side=side, qty=_num_text(qty))
+        return self._send(row, coid, side, order_type, qty, price, sig, now)
+
+    def _exit_signal(self, signal: Any, what: str) -> str:
+        sig = NO_SIGNAL if signal == NO_SIGNAL else _sid(signal, what)
+        if sig != NO_SIGNAL and sig not in self._signals:
+            _fail(f"{what}: 合図 {sig} は発生していない(発生していない合図の番号の注文。合図に依らない注文は"
+                  f"「{NO_SIGNAL}」を明示する)")
+        return sig
 
     def is_flattening(self) -> bool:
         """決済の途中か(flatten の後、建玉が 0 で注文が残らなくなるまで)。"""
@@ -444,8 +492,8 @@ class RoadStrategy(Strategy):
     def _open_rows(self) -> list:
         return [r for r in self._orders.values() if r["origin"] == ORIGIN_ROAD and self._is_open(r)]
 
-    def _pending_flatten(self) -> Decimal:
-        """出ていてまだ閉じていない決済の注文の、まだ約定していない量の和(買いが +)。"""
+    def _pending_exit(self) -> Decimal:
+        """出ていてまだ閉じていない決済の注文(flatten・close)の、まだ約定していない量の和(買いが +)。"""
         out = Decimal(0)
         for coid, r in self._orders.items():
             if r["qty_source"] == QTY_FROM_POSITION and self._is_open(r):
@@ -454,10 +502,13 @@ class RoadStrategy(Strategy):
         return out
 
     def _flatten_step(self, now: int) -> Optional[str]:
-        """決済の意図の 1 歩: 足りない決済の量を出す。建玉 0 で注文が残らなければ意図を終える。"""
+        """決済の意図の 1 歩: 取り消しの答えが全部届いていれば、足りない決済の量を成行で出す。
+        建玉 0 で注文が残らなければ意図を終える。"""
         f = self._flat
         assert f is not None
-        pending = self._pending_flatten()
+        if any(self._cancel_pending.get(c, False) for c in f["waiting"]):
+            return None  # 取り消しの答え待ち(4 周目 (2) C)
+        pending = self._pending_exit()
         net = self._pos + pending
         sent = None
         if net != 0:
@@ -465,12 +516,10 @@ class RoadStrategy(Strategy):
             qty = float(abs(net))
             coid = self._new_id()
             row = self._new_row(coid, ORIGIN_ROAD, f["signal"])
-            row.update(side=side, order_type=f["order_type"],
-                       limit_px="" if f["price"] is None else _num_text(f["price"]), qty=_num_text(qty),
-                       placed_t_ns=now, quote_ccy=self.quote_ccy, qty_source=QTY_FROM_POSITION,
-                       position_at_send=_dec_text(self._pos), flatten_pending_at_send=_dec_text(pending),
-                       placed_seq=self._seq)
-            sent = self._send(row, coid, side, f["order_type"], qty, f["price"], f["signal"], now)
+            row.update(side=side, order_type="market", qty=_num_text(qty), placed_t_ns=now, quote_ccy=self.quote_ccy,
+                       qty_source=QTY_FROM_POSITION, position_at_send=_dec_text(self._pos),
+                       exit_pending_at_send=_dec_text(pending), placed_seq=self._seq, exit_kind=EXIT_FLATTEN)
+            sent = self._send(row, coid, side, "market", qty, None, f["signal"], now)
         if self._pos == 0 and not self._open_rows():
             self._flat = None
         return sent
@@ -503,10 +552,13 @@ class RoadStrategy(Strategy):
         row = self._orders.get(order_id)
         if row is None or row["sent_t_ns"] == "":
             _fail(f"cancel: 注文 {order_id!r} は出していない")
+        if row["exit_kind"] == EXIT_FLATTEN:
+            _fail(f"cancel: 決済の成行 {order_id!r} は取り消せない(flatten は全部閉じるまで続く)")
         if row["cancel_sent_t_ns"] == "":
             row["cancel_sent_t_ns"] = now
         assert self._ctx is not None
         self._ctx.cancel_order(order_id)
+        self._cancel_pending[order_id] = True
 
     def order_state(self, order_id: str) -> str:
         """土台が記録した注文の最後の状態(量が 0 で出さなかった行は「量が 0 で出さない」)。"""

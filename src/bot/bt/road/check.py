@@ -32,7 +32,7 @@
      同じ関数)、行の数・1 欄でも違えば失敗(使った USDJPY の値と相場の時刻の欄も含む)。summary の (銘柄, 側) の組
      (groups)は、走らせの記録(../record.json)の銘柄 × 側と同じであること。
 (iii) 値の形とつなぎと順:
-     - 売買・種類・状態・閉じ方・量の出所・出所・約定の liquidity が決まった値の中か、value_json が JSON として読めるか、
+     - 売買・種類・状態・閉じ方・量の出所・決済の種類・値段の通貨・出所・約定の liquidity が決まった値の中か、value_json が JSON として読めるか、
        時刻・通し番号が整数か、fx の通貨の組が 6 文字の大文字か、fx の行の (銘柄, 側) が走らせの組の中か(黙って捨てない)
      - 時刻の順: 土台が受けた = 出した ≤ 受け付けられた ≤ 閉じた、出した ≤ 取り消しを出した ≤ 取り消した、
        取引所での時刻 ≤ 戦略に届いた時刻、取り消した・期限が切れた・拒否された時刻 = 閉じた時刻(閉じ方と合う)
@@ -51,9 +51,11 @@
        値段・直近の足の終値なら土台が受けた時刻以前に閉じた最後の 1 分足の終値(足の JSON に close が要る)、
        ドル建ての USDJPY = fx の土台が受けた時刻以前の最後の相場(時刻も)、円建ては USDJPY が空、
        受けた時点の建玉 = それまでに知らせの届いた約定の帳簿のツールの建玉
-     - 量の出所が「建玉」(flatten)の行: 量の計算の列は空、送る時点の建玉 = 注文を受けた時の通し番号までに知らせの
-       届いた約定で帳簿のツールが出す建玉、出ていた決済の量 = それより前の決済の行で閉じておらずまだ約定していない量
-       (同じ通し番号までの知らせで)、注文の量 = |建玉 + 出ていた決済の量|、売買はその逆(3 周目 問 5)
+     - 量の出所が「建玉」(close・flatten)の行: 量の計算の列は空、送る時点の建玉 = 注文を受けた時の通し番号までに
+       知らせの届いた約定で帳簿のツールが出す建玉、出ていた決済の量 = それより前の決済の行(close・flatten)で閉じておらず
+       まだ約定していない量(同じ通し番号までの知らせで)。決済の種類(exit_kind)ごとに:
+       flatten = |建玉 + 出ていた決済の量|(0 でない)、close = 同じ(ただし建玉 0、または和が 0 か建玉と逆の向きなら 0)、
+       flatten_call(呼んだ記録の行)= 0。売買はその逆(3 周目 問 5・4 周目 (2))
      - 量が 0 の行は状態「量が 0 で出さない」で出していない(出した時刻が空)、量が 0 でない行は状態がそれでない
      - 注文ごとに、知らせの届いた約定の量の和 = 約定した量、全部の約定の量の和 ≤ 注文の量
 (vi) 走らせの記録との突き合わせ: 置き場は道の走らせの置き場の road/ であること(../repro.json・record.json・
@@ -79,7 +81,9 @@ from typing import Mapping, Sequence
 from .ledger import SUMMARY_KEYS, TRADE_KEYS, LedgerError, book
 from .sizing import SizingError, size_detail
 from .strategy import DATA_END, NO_SIGNAL, ORIGIN_FORCED, ORIGIN_ROAD, ZERO_QTY_STATE
-from .strategy import OPEN_STATE_VALUES, QTY_FROM_POSITION, QTY_FROM_SIZING, _dec_text
+from .sizing import QUOTE_CCYS
+from .strategy import (EXIT_CLOSE, EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_KINDS, OPEN_STATE_VALUES, QTY_FROM_POSITION,
+                       QTY_FROM_SIZING, _dec_text)
 from .tables import (CSV_TABLES, RANGES, ROAD_DIR, SCHEMA, SCHEMA_FILE, SUMMARY_TABLE, TableError, columns, derive,
                      groups_of, is_table_store, read_csv, read_json, text)
 
@@ -447,7 +451,7 @@ def _check_derived(t: dict, out: list, run: dict | None) -> None:
 ORDER_STATES = OPEN_STATE_VALUES + ("FILLED", "CANCELED", "REJECTED")
 CLOSE_KINDS = ("", "cancel", "new", "venue", "reject")
 _ORDER_TIME_COLS = ("placed_t_ns", "sent_t_ns", "acked_t_ns", "acked_venue_t_ns", "cancel_sent_t_ns", "canceled_t_ns",
-                    "expired_t_ns", "rejected_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns", "closed_t_ns",
+                    "venue_closed_t_ns", "rejected_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns", "closed_t_ns",
                     "closed_venue_t_ns", "placed_seq", "closed_seq", "usdjpy_t_ns")
 
 
@@ -481,6 +485,16 @@ def _check_forms(t: dict, out: list) -> None:
             _fail(out, "iii", lab, f"閉じ方 {o['close_kind']!r} が {CLOSE_KINDS} のどれでもない")
         if not forced and o["qty_source"] not in (QTY_FROM_SIZING, QTY_FROM_POSITION):
             _fail(out, "iii", lab, f"量の出所 {o['qty_source']!r} が「{QTY_FROM_SIZING}」でも「{QTY_FROM_POSITION}」でもない")
+        if not forced:
+            want_kinds = ("",) if o["qty_source"] == QTY_FROM_SIZING else EXIT_KINDS
+            if o["exit_kind"] not in want_kinds:
+                _fail(out, "iii", lab, f"決済の種類 {o['exit_kind']!r} が量の出所 {o['qty_source']!r} の行の {want_kinds} のどれでもない")
+            if o["quote_ccy"] not in QUOTE_CCYS:
+                _fail(out, "iii", lab, f"値段の通貨 {o['quote_ccy']!r} が {QUOTE_CCYS} のどれでもない")
+            if o["exit_kind"] in (EXIT_FLATTEN, EXIT_FLATTEN_CALL) and o["order_type"] != "market":
+                _fail(out, "iii", lab, "flatten の行が成行でない(flatten は成行だけ)")
+        elif o["exit_kind"] != "":
+            _fail(out, "iii", lab, "口座の強制の注文に決済の種類が書かれている")
         if o["order_type"] == "market" and o["limit_px"] != "":
             _fail(out, "iii", lab, f"成行の注文に指値の値段 {o['limit_px']!r} がある")
         if o["order_type"] == "limit" and o["limit_px"] == "":
@@ -505,7 +519,7 @@ def _check_forms(t: dict, out: list) -> None:
                 _fail(out, "iii", lab, f"{c} {tv[c]} が出した時刻 {sent} より前(または出していない)")
         if "acked_t_ns" in tv and "closed_t_ns" in tv and tv["closed_t_ns"] < tv["acked_t_ns"]:
             _fail(out, "iii", lab, f"閉じた時刻 {tv['closed_t_ns']} が受け付けられた時刻 {tv['acked_t_ns']} より前")
-        for c, kinds in (("canceled_t_ns", ("cancel",)), ("expired_t_ns", ("venue",)),
+        for c, kinds in (("canceled_t_ns", ("cancel",)), ("venue_closed_t_ns", ("venue",)),
                          ("rejected_t_ns", ("reject", "venue", "new"))):
             if c in tv and (tv[c] != tv.get("closed_t_ns") or o["close_kind"] not in kinds):
                 _fail(out, "iii", lab, f"{c} {tv[c]} が閉じた時刻 {tv.get('closed_t_ns')}・閉じ方 {o['close_kind']!r} と合わない")
@@ -519,7 +533,7 @@ def _check_forms(t: dict, out: list) -> None:
                 _fail(out, "iii", lab, f"取引所での時刻 {c} {tv.get(c)} が戦略に届いた時刻 {v} {tv.get(v)} の後(または片方だけ)")
         if "closed_seq" in tv and tv["closed_seq"] < tv.get("placed_seq", 0):
             _fail(out, "iii", lab, f"閉じた知らせの番号 {tv['closed_seq']} が受けた時の番号 {tv.get('placed_seq')} より前")
-        if o["qty_source"] == QTY_FROM_SIZING and o["flatten_pending_at_send"] != "":
+        if o["qty_source"] == QTY_FROM_SIZING and o["exit_pending_at_send"] != "":
             _fail(out, "iii", lab, "量の計算の行に、出ていた決済の量が書かれている")
     # 届いた順: 土台が受けた時の番号は表の順に減らない。約定の知らせの番号は (銘柄, 側) の中で一意で、その注文を
     # 受けた時の番号より後、知らせの番号の順に届いた時刻が減らない
@@ -759,18 +773,27 @@ def _check_sizes(t: dict, bars: Sequence[Mapping], out: list) -> None:
                     _fail(out, "v", lab, f"量の出所が「建玉」の行に量の計算の列 {filled} が書かれている")
                 pos, pending = _flatten_expect(t, o, k)
                 net = Decimal(pos) + pending
-                want = repr(float(abs(net)))
+                kind = o["exit_kind"]
+                if kind == EXIT_FLATTEN_CALL:
+                    want_net = Decimal(0)  # 呼んだ記録の行: 注文は出していない(量 0)
+                elif kind == EXIT_CLOSE and (Decimal(pos) == 0 or net == 0 or (net > 0) != (Decimal(pos) > 0)):
+                    want_net = Decimal(0)  # close: 建玉 0、または出ている決済で足りている
+                else:
+                    want_net = net
+                want = repr(float(abs(want_net)))
                 if o["qty"] != want:
                     _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、送る時点までに知らせの届いた約定の建玉 {pos} と出ていた"
-                                         f"決済の量 {_dec_text(pending)} の和の絶対値 {want!r} と違う")
+                                         f"決済の量 {_dec_text(pending)} から決まる量 {want!r}(決済の種類 {kind})と違う")
+                if kind == EXIT_FLATTEN and net == 0:
+                    _fail(out, "v", lab, "flatten の成行なのに、送る時点の建玉と出ていた決済の量の和が 0")
                 if o["position_at_send"] != pos:
                     _fail(out, "v", lab, f"送る時点の建玉 {o['position_at_send']!r} が帳簿のツールの建玉 {pos!r} と違う")
-                if o["flatten_pending_at_send"] != _dec_text(pending):
-                    _fail(out, "v", lab, f"出ていた決済の量 {o['flatten_pending_at_send']!r} が計算し直した "
+                if o["exit_pending_at_send"] != _dec_text(pending):
+                    _fail(out, "v", lab, f"出ていた決済の量 {o['exit_pending_at_send']!r} が計算し直した "
                                          f"{_dec_text(pending)!r} と違う")
-                if net != 0 and o["side"] != ("sell" if net > 0 else "buy"):
+                if want_net != 0 and o["side"] != ("sell" if want_net > 0 else "buy"):
                     _fail(out, "v", lab, f"決済の売買 {o['side']!r} が建玉 {pos} の逆でない")
-                zero = net == 0
+                zero = want_net == 0
             elif o["qty_source"] == QTY_FROM_SIZING:
                 if o["margin_jpy"] != CHECK_MARGIN_JPY or o["use_ratio"] != CHECK_USE_RATIO:
                     _fail(out, "v", lab, f"証拠金 {o['margin_jpy']!r}・比率 {o['use_ratio']!r} が {CHECK_MARGIN_JPY} 円・"
