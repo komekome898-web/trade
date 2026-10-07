@@ -40,6 +40,7 @@
 | 既存の決まり | 原典は旗を直に入れ替える(上のブレイク中でも、下の線を割って b_signal ≠ 1 なら旗 = −1) | `docs/legacy/matilda_for_TaroCamp37.py:943-944` |
 | 既存の決まり | 合図の消える理由は、消えた合図では空でも「データの終わり」でもない語が要る(検査 (iii)) | `src/bot/bt/road/check.py:794-803` |
 | 既存の決まり | 受け入れの試験は、直す前のコードで、ブレイクの 2 件が「直に変わった」で止まり、遅さの試験が倍率で落ちる(5,000 個ずつで close 0.98 ミリ秒、10 個ずつの 10 倍を超える) | `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_r2_spec.py -k "a1 or cost"` → `RoadStrategyError: ブレイクの旗が 1 から -1 に直に変わった` 2 件・`AssertionError: ('close', {10: {'close': 5.43e-06, …}, 5000: {'close': 0.000984…, 'flatten': 0.0062…}})`・3 failed |
+| 既存の決まり | 検査の試験は、直す前のコードで、時間の試験が落ち(500 本 7.5 秒・2,000 本 165.0 秒 = 約 22 倍)、close の量の書き換えの試験は通る | `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_r2_spec.py -k a3 --durations=3` → `AssertionError: (7.518587469000067, 165.03278864899994)`・`1 failed, 1 passed` |
 | 既存の決まり | 記録の指紋の試験は、直す前のコードで通る(約 3 分かかる。大半は試験の最後の置き場の検査 `check_outputs`) | `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_r2_spec.py -k record --durations=3` → `172.95s call …test_a2_record_unchanged_on_walk`・1 passed |
 | 既存の決まり | 道の既存の試験は今全部通る | `PYTHONPATH=src python -m pytest tests/road --deselect tests/road/test_matilda_v37_r2_spec.py` → 315 passed, 4 deselected |
 | 既存の決まり | 測定 1 本の時間は、足が 2 倍で約 4.7 倍に伸びる(5,000 本 22.0 秒・20,000 本 174.8 秒・40,000 本 824.7 秒) | `docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/TIMING_L813.md:7-9` |
