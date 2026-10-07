@@ -1,6 +1,6 @@
 {
-  "delegation_sha256": "df00c6edeab0baee6853561ed5fffc4e84d1f3d4eb7297f6546a7cb20831f80f",
-  "body_sha256": "1d18430b677e6864543d440716614fdc6576a49eb6bc14e734c62949a53490e8",
+  "delegation_sha256": "aa422077a6270f19ce739cc55d597300dbff8e06c3669960b46be36208edef6b",
+  "body_sha256": "51c898fed817b9ad5a062bdafa0ed49d7f3dc5871e24556bcbaaf15f2ed90642",
   "kind": "作る",
   "premortem": "docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_matilda_v37_premortem2.md",
   "approved": false

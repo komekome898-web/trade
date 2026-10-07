@@ -497,18 +497,18 @@ def test_u4_place_with_exit_size_ref():
     assert rec[x]["qty"] == "0.009" and rec[x]["attached_to"] == e
 
 
-# ================================================================ U5 合図が無いとき・玉があるときの取り消し(L-784 売り買いをそろえる)
+# ================================================================ U5 合図が消えたときの取り消し(L-784 売り買いをそろえる・L-809)
 R2_BARS = WARM + [B7, (7000100, 7000100, 7000000, 7000000), (7000050, 7000050, 7000050, 7000050)]
 
 
 @need_m
 @pytest.mark.parametrize("mirror", [False, True], ids=["買い", "売り"])
-def test_u5_ladder_kept_while_position_then_canceled_when_flat(tmp_path, mirror):
+def test_u5_signal_off_cancels_ladder_even_with_position(tmp_path, mirror):
     # 足 8 本目: 段 1 だけ約定(買いの側: 7,000,050。段 2 の 6,999,950 は安値 7,000,000 より下)。
-    # 足 8 本目の判定: 合図 0。玉があるので、残りの段(road-2)と その決済(road-3)は取り消さない(原典 v37:1092 の
-    #   買いの側は玉があっても取り消していた。L-784 で売りにそろえる)。決済の旗 1 → 中心 7,000,150 − 100 = 7,000,050
-    #   (売りの側は 7,000,350 + 100 = 7,000,450)。road-1 は玉 0 のときに出したので取り消して close に置き直す。
-    # 足 9 本目: close が約定し建玉 0 → 足 9 本目の判定で残りの段を全部取り消す(v37:1047-1051)
+    # 足 8 本目の判定: 合図 0。段が出ているので、玉があっても全部取り消す(L-809「合図が消えた時は残りの段も全部取り消して、
+    #   利確だけ出し直す」。原典 v37:1092 の買いの側の形に売りもそろえる)。決済を先に(road-1・road-3)、建てを後に(road-2)。
+    #   答えが届いてから利確だけ出し直す: 決済の旗 1 → 中心 7,000,150 − 100 = 7,000,050(売りの側は 7,000,350 + 100 = 7,000,450)。
+    # 足 9 本目: close が約定し建玉 0
     bars = seq(reflect(R2_BARS) if mirror else R2_BARS)
     res = run(tmp_path, bars, BASE)
     check_ok(res)
@@ -522,8 +522,8 @@ def test_u5_ladder_kept_while_position_then_canceled_when_flat(tmp_path, mirror)
         assert orders(res, s) == [
             ("road-0", sd[0], "limit", px[0], "0.009", "", "", t(7), "FILLED", ""),
             ("road-1", sd[1], "limit", px[1], "0.009", "with_entry", "road-0", t(7), "CANCELED", t(8)),
-            ("road-2", sd[2], "limit", px[2], "0.009", "", "", t(7), "CANCELED", t(9)),
-            ("road-3", sd[3], "limit", px[3], "0.009", "with_entry", "road-2", t(7), "CANCELED", t(9)),
+            ("road-2", sd[2], "limit", px[2], "0.009", "", "", t(7), "CANCELED", t(8)),
+            ("road-3", sd[3], "limit", px[3], "0.009", "with_entry", "road-2", t(7), "CANCELED", t(8)),
             ("road-4", sd[4], "limit", px[4], "0.009", "close", "", t(8), "FILLED", "")]
         assert fills(res, s) == [("road-0", t(8), px[0]), ("road-4", t(9), px[4])]
 
@@ -561,7 +561,7 @@ def test_u5_flat_ladder_canceled_when_signal_off(tmp_path, mirror):
 def test_u6_exit_kept_when_new_price_is_further(tmp_path):
     # 足 8 本目(7,000,000〜7,000,500): 段 1 が約定。楽観側は同じ足で road-1(7,000,150)も約定 → 建玉 0 →
     #   足 8 本目の判定で残り(road-2・road-3)を取り消す。
-    # 悲観側: 足 8 本目の判定で close 7,000,050(U5 と同じ)。足 9 本目の判定(指標は足 8 本目まで): レンジ 7,000,000〜
+    # 悲観側: 足 8 本目の判定で合図 0 → 段も決済も全部取り消し、close 7,000,050(U5 と同じ)。足 9 本目の判定(指標は足 8 本目まで): レンジ 7,000,000〜
     #   7,000,500・中心 7,000,250・ボラ = (|足 6| + |足 7|) ÷ 2 = 150 → 新しい値段 7,000,100 は 7,000,050 より高い
     #   (売りの決済で、相場から遠ざかる向き)→ 置き直さない(v37:917-918 は相場に近づく向きだけ取り消す)
     rows = WARM + [B7, (7000100, 7000500, 7000000, 7000000), (7000000, 7000040, 7000000, 7000040)]
@@ -573,8 +573,8 @@ def test_u6_exit_kept_when_new_price_is_further(tmp_path):
     assert [(o[0], o[3], o[5], o[7], o[8], o[9]) for o in pes] == [
         ("road-0", "7000050.0", "", t(7), "FILLED", ""),
         ("road-1", "7000150.0", "with_entry", t(7), "CANCELED", t(8)),
-        ("road-2", "6999950.0", "", t(7), "OPEN", ""),
-        ("road-3", "7000150.0", "with_entry", t(7), "OPEN", ""),
+        ("road-2", "6999950.0", "", t(7), "CANCELED", t(8)),
+        ("road-3", "7000150.0", "with_entry", t(7), "CANCELED", t(8)),
         ("road-4", "7000050.0", "close", t(8), "OPEN", "")]
 
 
@@ -836,27 +836,29 @@ def test_u11_levels_fixed_across_trades(tmp_path):
         assert {(r["levels"], r["qty"]) for r in e2} == {("2", "0.01")}
 
 
-# ================================================================ U12 置き直した決済が、出ている自分の段と交差する(事前の批評 1 回目の問2)
+# ================================================================ U12 合図が消えた後に段が残らない(L-809。事前の批評 1 回目の問2 の場面)
 X_BARS = WARM + [B7, (7000120, 7000120, 7000040, 7000040), (7000040, 7000045, 6999960, 6999960),
                  (6999960, 6999990, 6999960, 6999970)]
 
 
 @need_m
-def test_u12_exit_crossing_own_ladder(tmp_path):
-    # 足 8: 段 1(7,000,050)だけ約定。判定(足 7 まで)で close 7,000,050(road-4)。
+def test_u12_no_ladder_left_after_signal_off(tmp_path):
+    # 足 8: 段 1(7,000,050)だけ約定。判定(足 7 まで)で合図 0 → 段 2(road-2)とその決済・段 1 の決済を全部取り消し、
+    #   close 7,000,050(road-4)だけ出す。
     # 足 9 の判定(足 8 まで): 中心 7,000,150・ボラ 150 → 7,000,000 < 7,000,050 → 置き直す(road-5)。
     # 足 10 の判定(足 9 まで): 中心 round((7,000,200 + 6,999,960) ÷ 2) = 7,000,080、ボラ (200 + 80) ÷ 2 = 140 →
-    #   7,000,080 − 140 = 6,999,940 < 7,000,000 → 置き直す(road-6)。出ている自分の買いの段 road-2(6,999,950)より下なので交差する。
-    # 戦略は計算した値段のまま出す(L-779)。交差の扱いは走らせの self_trade の決まり: 宣言しない走らせは止まり、
-    #   cancel_maker を宣言した走らせ(この試験だけの宣言。測るときの決まりは測る委任で決める)では待っていた road-2 が閉じる
-    with pytest.raises(Exception, match="self_trade"):
-        run(tmp_path / "a", seq(X_BARS), BASE)
-    res = run(tmp_path / "b", seq(X_BARS), BASE, rules={"market_ref": "next_bar_open", "self_trade": "cancel_maker"})
+    #   6,999,940 < 7,000,000 → 置き直す(road-6)。段 2 はもう出ていないので、自分の買いと交差しない
+    #   (4 版目までの「玉があれば段を残す」形では、段 2 の 6,999,950 と交差していた)。self_trade を宣言しない走らせが止まらない
+    res = run(tmp_path, seq(X_BARS), BASE)
     check_ok(res)
     for s in SIDES:
         rows = {r["order_id"]: r for r in res["orders"][s]}
-        assert [(o[0], o[1], o[3], o[5], o[7]) for o in orders(res, s)][4:] == [
-            ("road-4", "sell", "7000050.0", "close", t(8)), ("road-5", "sell", "7000000.0", "close", t(9)),
-            ("road-6", "sell", "6999940.0", "close", t(10))]
-        assert (rows["road-4"]["canceled_t_ns"], rows["road-5"]["canceled_t_ns"]) == (t(9), t(10))
-        assert (rows["road-2"]["state"], rows["road-2"]["close_reason"]) == ("CANCELED", "self_trade")
+        assert [(o[0], o[1], o[3], o[5], o[7], o[8], o[9]) for o in orders(res, s)] == [
+            ("road-0", "buy", "7000050.0", "", t(7), "FILLED", ""),
+            ("road-1", "sell", "7000150.0", "with_entry", t(7), "CANCELED", t(8)),
+            ("road-2", "buy", "6999950.0", "", t(7), "CANCELED", t(8)),
+            ("road-3", "sell", "7000150.0", "with_entry", t(7), "CANCELED", t(8)),
+            ("road-4", "sell", "7000050.0", "close", t(8), "CANCELED", t(9)),
+            ("road-5", "sell", "7000000.0", "close", t(9), "CANCELED", t(10)),
+            ("road-6", "sell", "6999940.0", "close", t(10), "OPEN", "")]
+        assert rows["road-2"]["close_reason"] != "self_trade"
