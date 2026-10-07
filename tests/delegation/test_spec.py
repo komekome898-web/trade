@@ -573,7 +573,7 @@ def test_premortem_last_finding_at_end_of_file(env):
 def test_second_round_is_last_and_cannot_say_fixed(env):
     h = body_hash(env.text())
     env.write_pm(2, premortem(h, [("直す", "直した(x)")]))
-    fails(env.run_cd(), "2 回目")
+    fails(env.run_cd(), "最後の回")
     env.write_pm(2, premortem(h, [("直す", "直さない(x)")]))
     ok(env.run_cd())
 
@@ -591,11 +591,17 @@ def test_next_version_response_needs_after_change_section(env):
     fails(env.run_cd(), "sha256")
 
 
-def test_next_version_not_allowed_in_round_1_when_round_2_exists(env):
+def test_last_record_is_highest_number(env):
+    """最後の回は番号の一番大きい記録(受け入れの形を変えると数え直すので、3 以上もありうる)。前の回の「直した」「次の版で直す」は可。"""
     h = body_hash(env.text())
-    env.write_pm(1, premortem(h, [("直す", "次の版で直す(x)")]))
-    env.write_pm(2, premortem(h, [("直す", "直さない(x)")]))
-    fails(env.run_cd(), "次の版で直す")
+    env.write_pm(1, premortem("0" * 64, [("直す", "直した(x)")]))
+    env.write_pm(2, premortem("1" * 64, [("直す", "次の版で直す(x)")]))
+    env.write_pm(3, premortem(h, [("直す", "直さない(x)")]))
+    ok(env.run_cd())
+    env.write_pm(3, premortem(h, [("直す", "直した(x)")]))
+    fails(env.run_cd(), "最後の回")
+    env.write_pm(3, premortem("2" * 64, [("直す", "直さない(x)")]))
+    fails(env.run_cd(), "sha256")
 
 
 # ---------------------------------------------------------------- 承認(L-793)
