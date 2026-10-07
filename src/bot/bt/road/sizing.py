@@ -52,6 +52,17 @@ def size_per_level(*, margin_jpy: float = MARGIN_JPY, use_ratio: float = USE_RAT
     usdjpy_at_entry: ドル建て(USD・USDT)のときだけ渡す、建てる時点の USDJPY。円建てで渡したら止める
     (どちらの式で計算したかが曖昧になるため)。
     """
+    return size_detail(margin_jpy=margin_jpy, use_ratio=use_ratio, levels=levels, price=price, quote_ccy=quote_ccy,
+                       usdjpy_at_entry=usdjpy_at_entry)[1]
+
+
+def size_detail(*, margin_jpy: float = MARGIN_JPY, use_ratio: float = USE_RATIO, levels: int, price: float,
+                quote_ccy: str, usdjpy_at_entry: float | None = None) -> tuple[Decimal, float]:
+    """(切り捨て前の量, 切り捨て後の量)。切り捨て後の量は `size_per_level` の答えそのもの。
+
+    切り捨て前の量は Decimal(既定の文脈の 28 桁。割り切れないときはその桁で丸めた値)。注文の表に
+    「量の計算に使った値」として残すために出す(L-767「**b残す**」)。
+    """
     if type(levels) is not int or levels < 1:
         raise SizingError(f"levels は 1 以上の整数: {levels!r}")
     if quote_ccy not in QUOTE_CCYS:
@@ -71,4 +82,4 @@ def size_per_level(*, margin_jpy: float = MARGIN_JPY, use_ratio: float = USE_RAT
         denom = p * _dec("usdjpy_at_entry", usdjpy_at_entry)
     raw = m * r / Decimal(levels) / denom
     q = raw.quantize(STEP_BTC, rounding=ROUND_DOWN)
-    return float(q)
+    return raw, float(q)

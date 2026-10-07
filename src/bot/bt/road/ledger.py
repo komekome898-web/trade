@@ -48,17 +48,23 @@
 
 出力:
 - 約定ごとの表 `fills`: i・t_ns・side・qty・px・ccy(入力のまま)・position_after(その後の建玉)・
-  avg_px_after(その後の平均の建値。建玉 0 なら None)・pnl_jpy(今回分の確定損益、円)・pnl_jpy_cum(累計)・
+  avg_px_after(その後の平均の建値。建玉 0 なら None)・pnl_quote(今回分の確定損益、値段の通貨、換算の前)・
+  usdjpy(この約定の損益を円にするのに使った USDJPY = 属する取引の開始の相場。円建ては "1")・
+  usdjpy_t_ns(その相場の時刻。円建ては None)・pnl_jpy(今回分の確定損益、円)・pnl_jpy_cum(累計)・
   trade(この約定が属する取引。ドテンなら閉じた側)・opens_trade(この約定で始まった取引。無ければ None)
 - 取引ごとの表 `trades`: first_t_ns・last_t_ns・direction(long / short)・levels(段の数)・max_position(最大の建玉)・
-  hold_ns(最初の約定から建玉 0 まで。途中は None)・pnl_jpy(確定損益、円。途中はそこまでの分)・fills・
-  status(closed / open)。途中の取引には position・avg_px(データの終わりの建玉と平均の建値)も付く
+  hold_ns(最初の約定から建玉 0 まで。途中は None)・pnl_jpy(確定損益、円。途中はそこまでの分)・
+  usdjpy・usdjpy_t_ns(損益を円にするのに使った、取引の開始の時刻以前の最後の USDJPY とその相場の時刻。
+  円建ては "1" と None)・fills・status(closed / open)。途中の取引には position・avg_px
+  (データの終わりの建玉と平均の建値)も付く
+  (RECORD_FORM_L766.md §1 の足りない 1: 使った USDJPY の値と相場の時刻を出力に残す。L-766「**ドル円変換に使ったusd/jpyの値**」)
 - まとめ `summary`: fill_count(約定の数)・closed_trades(閉じた取引の数)・pnl_jpy(閉じた取引の損益の合計、円)・
   open_trades(途中の取引の数)・trades(取引ごとの表から TRADE_KEYS の 7 つの欄: 最初の約定の時刻・最後の約定の時刻・
   段の数・最大の建玉・保有時間・損益・状態)
 """
 from __future__ import annotations
 
+import bisect
 import math
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -200,8 +206,8 @@ def _fx_table(fx: object) -> Optional[FxRates]:
         raise LedgerError("為替の表を作れない(行は FxPoint で渡す)") from None
 
 
-def _usdjpy(fxr: Optional[FxRates], i: int, t: int) -> Fraction:
-    """取引の開始の約定 i(時刻 t)での最新の USDJPY(L-763・L-764)。"""
+def _usdjpy(fxr: Optional[FxRates], i: int, t: int) -> tuple[Fraction, int]:
+    """取引の開始の約定 i(時刻 t)での最新の USDJPY(L-763・L-764)と、その相場の時刻。"""
     if fxr is None:
         raise LedgerError(f"約定 {i}(時刻 {t})で始まる取引の損益を円にする USDJPY の相場が渡されていない"
                           f"(1 とみなさない。L-756)")
@@ -210,7 +216,17 @@ def _usdjpy(fxr: Optional[FxRates], i: int, t: int) -> Fraction:
     except FxRateMissingError:
         raise LedgerError(f"約定 {i}(時刻 {t})で始まる取引の損益を円にする USDJPY の相場が無い(取引の開始の時刻以前の"
                           f"相場が要る。1 とみなさない。L-763)") from None
-    return _frac(r)
+    return _frac(r), _quote_time(fxr, t)
+
+
+def _quote_time(fxr: FxRates, t: int) -> int:
+    """`FxRates.rate(USDJPY, t)` が返した相場の時刻(t 以前の最後の相場の時刻)。
+
+    `FxRates` は相場の時刻を返す口を持たないので、同じ表の時刻の列(`_times`、`rate` が二分探索に使う列)を
+    同じ二分探索で読む(`bot.bt.costs.fx` は変えない)。同じ時刻の相場が 2 つあるときも、`rate` と同じ点の時刻になる。
+    """
+    times = fxr._times[FX_PAIR]  # noqa: SLF001 (rate が見つけた列。上の rate が通ったので必ずある)
+    return times[bisect.bisect_right(times, t) - 1]
 
 
 def _account(quote_ccy: str) -> MarginAccount:
@@ -229,9 +245,10 @@ def _sign(x) -> int:
     return (x > 0) - (x < 0)
 
 
-def _new_trade(t: int, i: int, pos: Fraction) -> dict:
+def _new_trade(t: int, i: int, pos: Fraction, rate: Fraction, rate_t: Optional[int]) -> dict:
     return {"first_t_ns": t, "last_t_ns": t, "direction": "long" if pos > 0 else "short", "levels": 1,
-            "max_position": abs(pos), "pnl_jpy": Fraction(0), "fills": [i]}
+            "max_position": abs(pos), "pnl_jpy": Fraction(0), "usdjpy": dec_str(rate), "usdjpy_t_ns": rate_t,
+            "fills": [i]}
 
 
 def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
@@ -254,6 +271,7 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
     cost = Fraction(0)  # 建玉の原価の合計 C(値段 × 量 の和、正)
     cum = Fraction(0)
     rate = Fraction(1)  # 今の取引の開始の USDJPY(円建ては 1: 換算しない)
+    rate_t: Optional[int] = None  # その相場の時刻(円建ては None)
     for i, f in enumerate(fills):
         t, side = f["t_ns"], f["side"]
         q, px = _frac(f["qty"]), _frac(f["px"])
@@ -261,7 +279,7 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
         before = pos
         pnl = Fraction(0)
         if usd and pos == 0:
-            rate = _usdjpy(fxr, i, t)  # 建玉 0 から建てる約定 = 取引の開始
+            rate, rate_t = _usdjpy(fxr, i, t)  # 建玉 0 から建てる約定 = 取引の開始
         if pos == 0 or _sign(pos) == s:
             pos += s * q
             cost += px * q
@@ -277,9 +295,11 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
                 pos += s * c
                 cost = Fraction(0) if pos == 0 else cost - removed
         _cross_check(acct, i, f, pnl, pos)
+        pnl_quote = pnl
+        used_rate, used_rate_t = rate, rate_t  # この約定の損益に使った相場 = 属する取引(ドテンなら閉じた側)の開始の相場
         pnl = pnl * rate  # 取引の開始の USDJPY で円に(円建ては 1)
         if usd and _sign(before) != 0 and _sign(pos) not in (0, _sign(before)):
-            rate = _usdjpy(fxr, i, t)  # ドテン: 残りの新しい取引はこの約定で始まる
+            rate, rate_t = _usdjpy(fxr, i, t)  # ドテン: 残りの新しい取引はこの約定で始まる
         cum += pnl
         avg = None if pos == 0 else cost / abs(pos)
 
@@ -287,7 +307,7 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
         opens = None
         if s_before == 0:
             # 建玉 0 から建てる: 新しい取引
-            cur = _new_trade(t, i, pos)
+            cur = _new_trade(t, i, pos, rate, rate_t)
             out.trades.append(cur)
             trade_no = opens = len(out.trades) - 1
         else:
@@ -307,11 +327,12 @@ def book(fills: Sequence[Mapping], fx: object = None) -> Ledger:
                 cur = None
                 if s_after != 0:
                     # ドテン: 残りが同じ約定から新しい取引(途中)として続く
-                    cur = _new_trade(t, i, pos)
+                    cur = _new_trade(t, i, pos, rate, rate_t)
                     out.trades.append(cur)
                     opens = len(out.trades) - 1
         out.fills.append({"i": i, "t_ns": t, "side": side, "qty": f["qty"], "px": f["px"], "ccy": ccy,
                           "position_after": dec_str(pos), "avg_px_after": dec_str(avg),
+                          "pnl_quote": dec_str(pnl_quote), "usdjpy": dec_str(used_rate), "usdjpy_t_ns": used_rate_t,
                           "pnl_jpy": dec_str(pnl), "pnl_jpy_cum": dec_str(cum), "trade": trade_no,
                           "opens_trade": opens})
     for tr in out.trades:

@@ -111,7 +111,8 @@ in time order may be missed as evidence; formats the data layer cannot read
 The run id is the sha256 of the identity (declarations, data sha256, code
 state, version, purpose, prereg hash); no clock enters it. The run directory
 holds record.json, repro.json and the exports metrics / trades / fills /
-orders / data_quality, each carrying the purpose (bot.bt.report.exports), in
+orders / data_quality, each carrying the purpose (bot.bt.report.exports) -- and, when the strategy is a road
+strategy (bot.bt.road.RoadStrategy), the road's record tables in road/ (bot.bt.road.tables) -- in
 the form bot.monitoring.backtest_view reads (its 10 tabs; under the purpose
 動作確認 every tab carries 「動作確認の実行。相場の結論には使わない」). The exports'
 headline numbers are those of the PESSIMISTIC side; metrics["range"] carries
@@ -149,6 +150,8 @@ from .report import exports as X
 from .report import metrics as M
 from .report.trades import round_trips
 from .repro.code_state import REPO, code_state, version
+from .road.strategy import RoadStrategy
+from .road.tables import ROAD_DIR, write_road_store
 
 DEFAULT_RUNS_DIR = os.path.join(REPO, "backtest_runs")
 ORIGINS = ("real",)  # a file dataset's only origin; synthetic data comes from GENERATORS
@@ -1046,6 +1049,7 @@ class InstrumentResult:
     engine: dict
     latency: dict
     account: dict
+    road: Optional[dict] = None  # the road strategy's record (bot.bt.road.RoadStrategy.road_record), else None
 
 
 def _streams(plan: PipelinePlan, it: dict, loaded) -> dict:
@@ -1136,7 +1140,8 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
                              "defaults_used": list(res.defaults_used), "fill_tier": venue.tier,
                              "fill_venue": type(venue).__qualname__, "book_shown_to_venue": not gate.hide_book,
                              "venue_used": dict(venue.used)},
-                            {"draws": dict(latency.draws), "total_ns": dict(latency.total_ns)}, account_state)
+                            {"draws": dict(latency.draws), "total_ns": dict(latency.total_ns)}, account_state,
+                            strat.road_record() if isinstance(strat, RoadStrategy) else None)
 
 
 def _summary(per: Mapping[str, InstrumentResult]) -> dict:
@@ -1254,6 +1259,11 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
     for kind, payload in (("metrics", metrics), ("trades", trades), ("fills", fills), ("orders", orders),
                           ("data_quality", quality)):
         X.write_export(out_dir, kind, payload, purpose=plan.purpose, run_id=rid)
+    if any(r.road is not None for side in SIDES for r in both[side].values()):
+        # the road's record tables (bot.bt.road.tables, RECORD_FORM_L766.md s2) in <out_dir>/road/
+        write_road_store(os.path.join(out_dir, ROAD_DIR),
+                         [(it["name"], side, it["product"]["quote_ccy"], both[side][it["name"]].fills,
+                           both[side][it["name"]].road) for side in SIDES for it in plan.instruments])
     return {"instruments": per, "range": both, "events_read": read}
 
 
@@ -1273,7 +1283,13 @@ class PipelineResult:
 def _digests(d: str) -> dict:
     out = {}
     for name in sorted(os.listdir(d)):
-        with open(os.path.join(d, name), "rb") as fh:
+        p = os.path.join(d, name)
+        if os.path.isdir(p):  # the road's record tables (road/): one level, named "road/<file>"
+            for sub in sorted(os.listdir(p)):
+                with open(os.path.join(p, sub), "rb") as fh:
+                    out[f"{name}/{sub}"] = _sha(fh.read())
+            continue
+        with open(p, "rb") as fh:
             out[name] = _sha(fh.read())
     return out
 
@@ -1317,6 +1333,6 @@ def run_pipeline(plan: PipelinePlan, *, runs_dir: str = DEFAULT_RUNS_DIR, runs: 
     with open(os.path.join(final, "record.json"), "r", encoding="utf-8") as fh:
         record = json.load(fh)
     exports = {n: X.read_export(os.path.join(final, n))["purpose"] for n in sorted(os.listdir(final))
-               if n not in ("record.json", "repro.json")}
+               if n not in ("record.json", "repro.json") and os.path.isfile(os.path.join(final, n))}
     return PipelineResult(plan.run_id, final, record, exports, repro, outs[0]["instruments"], outs[0]["range"],
                           outs[0]["events_read"])
