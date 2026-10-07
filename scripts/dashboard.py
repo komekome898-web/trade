@@ -12,13 +12,17 @@ they add 2 requests per PUBLIC_TTL seconds (0.4 req/s) against the 500 per
 
 Usage: python scripts/dashboard.py [--port 8300] [--runs-dir DIR ...]
 
-The バックテスト tab shows the runs bot.bt.repro wrote under each --runs-dir
+The バックテスト tab shows the runs bot.bt.pipeline wrote under each --runs-dir
 (repeatable; default backtest_runs and backtest_runs_shared) as a tree of
-themes -> strategies (the ledger src/bot/monitoring/backtest_themes.py), a
-dropdown per family axis, a candle chart of the chosen run with its trades and
-cumulative profit and loss (src/bot/monitoring/backtest_chart.py; the chart
-library is served from src/bot/monitoring/static/, no CDN), and the run's ten
-detail tabs rendered on the server (src/bot/monitoring/backtest_view.py).
+themes -> strategies (the ledger src/bot/monitoring/road_strategies.py; the
+family axes are read from the runs' record.json by src/bot/monitoring/road_catalog.py),
+a dropdown per family axis, and for the chosen run the road record (road/, 版
+road-record-7, read by src/bot/monitoring/road_view.py): a candle chart with the
+signals, limit orders, fills, average entry price, trades, position and
+cumulative profit in yen (src/bot/monitoring/backtest_chart.py; the chart library
+is served from src/bot/monitoring/static/, no CDN), the seven tables with every
+column, and the headline numbers computed from them. A run with no road/ is listed
+last as 古い形の走らせ (its old ten-tab page: src/bot/monitoring/backtest_view.py).
 backtest_runs/ is not in git, so a machine that only pulls the repository sees
 the runs scripts/share_backtest_runs.py copied into backtest_runs_shared/.
 """
@@ -280,11 +284,12 @@ PAGE = """<!doctype html>
     <div class="bt-main">
       <section id="bt-head" class="bt-card"><span class="empty">左の木から戦略を選んでください</span></section>
       <section id="bt-family" class="bt-card" hidden></section>
-      <div class="tiles" id="bt-stats"></div>
-      <section id="bt-chartbox" class="bt-card" hidden>
+      <section id="bt-scope" class="bt-card bt-scope" hidden></section>
+      <section id="bt-stats" class="bt-card" hidden></section>
+      <div class="bt-views" id="bt-views" hidden></div>
+      <section id="bt-v-chart" class="bt-card" hidden>
         <div class="bt-notes" id="bt-price-note"></div>
         <div class="bt-notes" id="bt-chart-busy"></div>
-        <div class="bt-notes" id="bt-card-note"></div>
         <div class="bt-frame" id="bt-frame"></div>
         <div class="bt-chartwrap" id="bt-pricewrap">
           <div class="bt-panel" id="bt-panel"></div>
@@ -292,16 +297,15 @@ PAGE = """<!doctype html>
           <canvas id="bt-overlay"></canvas>
           <div class="bt-tip" id="bt-tip"></div>
         </div>
-        <div class="bt-cap" id="bt-pnl-cap">累計損益</div>
+        <div class="bt-cap" id="bt-pos-cap">建玉(BTC。買いが +。帳簿の約定の position_after)</div>
+        <div id="bt-pos"></div>
+        <div class="bt-cap" id="bt-pnl-cap">累計損益(円)</div>
         <div id="bt-pnl"></div>
         <div class="bt-legend" id="bt-legend"></div>
       </section>
-      <details class="bt-card bt-detail" id="bt-detail">
-        <summary>詳細(概要・前提・損益・取引・約定の質・費用・分布・検証・再現性・データ品質)</summary>
-        <h2 id="bt-title">実行を選んでください</h2>
-        <div class="bt-tabs" id="bt-tabs"></div>
-        <div id="bt-body"></div>
-      </details>
+      <section id="bt-v-table" class="bt-card" hidden></section>
+      <section id="bt-v-record" class="bt-card" hidden></section>
+      <section id="bt-trace" class="bt-card" hidden></section>
     </div>
   </div>
 </main>
@@ -1442,10 +1446,22 @@ def _num(q: dict, key: str, cast, default=None):
 
 
 def _rid(route: str, prefix: str) -> str:
-    """The run id after `prefix`, percent-decoded once (a card variant's id "cards/<card>/<variant>" holds slashes the page
-    sends as %2F). What it names is decided by the id check of backtest_view / backtest_cards, not here."""
+    """The run id after `prefix`, percent-decoded once. What it names is decided by the id check of backtest_view, not here."""
     from urllib.parse import unquote  # noqa: PLC0415
     return unquote(route[len(prefix):])
+
+
+def _filters(q: dict):
+    """The table filter: query f = a JSON list of [column, op, value]."""
+    if not q.get("f"):
+        return None
+    try:
+        out = json.loads(q["f"])
+    except ValueError:
+        raise backtest_chart.ChartError(f"query f is not JSON: {q['f'][:80]!r}") from None
+    if not isinstance(out, list):
+        raise backtest_chart.ChartError("query f must be a JSON list of [column, op, value]")
+    return out
 
 
 def _backtest(path: str, runs_dir, data_root=None):
@@ -1478,16 +1494,32 @@ def _backtest_route(path: str, runs_dir, data_root=None):
             return _json({"runs": backtest_view.list_runs(runs_dir)})
         if route == "/api/backtest/catalog":
             return _json(backtest_chart.catalog(runs_dir))
+        q = _query(path)
         if route.startswith("/api/backtest/summary/"):
-            q = _query(path)
             return _json(backtest_chart.run_summary(runs_dir, _rid(route, "/api/backtest/summary/"), root,
-                                                    range_name=q.get("range") or None))
+                                                    range_name=q.get("range") or None, instrument=q.get("instrument") or None))
         if route.startswith("/api/backtest/chart/"):
-            q = _query(path)
             return _json(backtest_chart.run_chart(
                 runs_dir, _rid(route, "/api/backtest/chart/"), from_s=_num(q, "from", float), to_s=_num(q, "to", float),
                 max_bars=_num(q, "max_bars", int, backtest_chart.DEFAULT_MAX_BARS), range_name=q.get("range") or None, root=root,
-                interval_s=_num(q, "interval", int), wait=False))
+                interval_s=_num(q, "interval", int), wait=False, instrument=q.get("instrument") or None))
+        if route.startswith("/api/backtest/table/"):
+            rid, _, table = _rid(route, "/api/backtest/table/").partition("/")
+            return _json(backtest_chart.run_table(
+                runs_dir, rid, table, root, instrument=q.get("instrument") or None, range_name=q.get("range") or None,
+                sort=q.get("sort") or None, desc=q.get("dir") == "desc", filters=_filters(q), page=_num(q, "page", int, 0),
+                size=_num(q, "size", int, 100)))
+        if route.startswith("/api/backtest/trace/"):
+            rid, _, rest = _rid(route, "/api/backtest/trace/").partition("/")
+            table, _, row = rest.partition("/")
+            try:
+                n = int(row)
+            except ValueError:
+                raise backtest_chart.ChartError(f"row is not a number: {row!r}") from None
+            return _json(backtest_chart.run_trace(runs_dir, rid, table, n, root, instrument=q.get("instrument") or None))
+        if route.startswith("/api/backtest/file/"):
+            rid, _, name = _rid(route, "/api/backtest/file/").partition("/")
+            return _json(backtest_chart.run_files(runs_dir, rid, name))
         if route.startswith("/api/backtest/run/"):
             view = backtest_view.run_view(runs_dir, _rid(route, "/api/backtest/run/"))
             return _json(view)

@@ -3,7 +3,9 @@
 
 backtest_runs/ is not in git (bot.bt.repro writes a `*` .gitignore into it),
 so a machine that only pulls the repository has no run to show. This script
-copies, for the runs it is told to share, only the files
+copies, for the runs it is told to share, only the files the tab reads: for a
+road run (road/ beside record.json) record.json, repro.json and road/'s tables
+with SCHEMA.json (ROAD_SHARED); for a run without road/ the files
 `bot.monitoring.backtest_view` reads (VIEW_FILES: record.json, repro.json and
 the metrics / trades / data_quality / validation exports, as .json or
 .json.gz) into
@@ -87,7 +89,13 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 from bot.bt.data.allowlist import SealRegistry  # noqa: E402
+from bot.monitoring import road_view as RV  # noqa: E402
 from bot.monitoring.backtest_view import VIEW_FILES, find_runs  # noqa: E402
+
+#: what a road run (road/ beside record.json) shares: record.json, repro.json and the road tables with their SCHEMA.json.
+#: The pipeline's own exports (metrics / trades / fills / orders ...) are not copied: their trade count is FIFO, not the road's.
+ROAD_SHARED = ("record.json", "repro.json") + tuple(f"{RV.ROAD_DIR}/{n}" for n in (
+    RV.SCHEMA_FILE, "signals.csv.gz", "orders.csv.gz", "fills.csv.gz", "fx.csv.gz", "ledger_fills.csv.gz", "trades.csv.gz", "summary.json"))
 
 # Every seal unit this script knows, and whether its cutoff bounds a crypto / fx run. The markets are read from
 # the files each record names (backtest_data/phase2_sealed/<unit>/SEALED.json, 2026-10-02):
@@ -245,6 +253,10 @@ def decide(run_dir: str, rule: dict) -> dict:
             rec = json.load(fh)
     except (OSError, ValueError) as exc:
         return {"share": False, "reason": f"record.json が読めない({type(exc).__name__})"}
+    if RV.has_road(run_dir):  # a road run whose road/ the tab cannot show (other 版, a missing table) is not copied
+        st = RV.status(run_dir)
+        if not st.ok:
+            return {"share": False, "reason": "道の記録 road/ を写さない: " + st.reason}
     start, end, why = period(rec)
     if why:
         return {"share": False, "reason": why}
@@ -274,7 +286,9 @@ def decide(run_dir: str, rule: dict) -> dict:
 
 
 def _files(run_dir: str) -> dict[str, int]:
-    return {n: os.path.getsize(os.path.join(run_dir, n)) for n in VIEW_FILES if os.path.isfile(os.path.join(run_dir, n))}
+    """name (relative to the run directory, 'road/<file>' for a road table) -> bytes. A road run copies only ROAD_SHARED."""
+    names = ROAD_SHARED if RV.has_road(run_dir) else VIEW_FILES
+    return {n: os.path.getsize(os.path.join(run_dir, n)) for n in names if os.path.isfile(os.path.join(run_dir, n))}
 
 
 def _sha(p: str) -> str:
@@ -347,10 +361,13 @@ def write(p: dict, out: str) -> None:
                 raise SystemExit(f"refusing to write outside {out}: {dst}")
             if r["share"]:
                 os.makedirs(dst, exist_ok=True)
-                for name in os.listdir(dst):  # a file the view no longer reads, or one renamed .json <-> .json.gz
-                    if name not in r["files"]:
-                        os.remove(os.path.join(dst, name))
+                for base, _dirs, fnames in os.walk(dst):  # a file the view no longer reads, or one renamed .json <-> .json.gz
+                    for fn in fnames:
+                        rel = os.path.relpath(os.path.join(base, fn), dst).replace(os.sep, "/")
+                        if rel not in r["files"]:
+                            os.remove(os.path.join(base, fn))
                 for name in r["files"]:
+                    os.makedirs(os.path.dirname(os.path.join(dst, name)), exist_ok=True)
                     shutil.copy2(os.path.join(r["dir"], name), os.path.join(dst, name))
                 old[r["run_id"]] = {"run_id": r["run_id"], "shared": True, "start": r["start"], "end": r["end"],
                                     "at_boundary": r["at_boundary"],

@@ -3,6 +3,9 @@
 データ品質。日本語。CDN を使わない。…目的が `動作確認` の実行は全タブに「動作確認の実行。
 相場の結論には使わない」を出す」).
 
+This is the OLD form of a run's view (the pipeline's metrics / trades, FIFO round trips): it serves a run that has no road/
+record (a 古い形の走らせ) and refuses one that has (that run is shown by road_view / backtest_chart).
+
 Reads only the run directories that bot.bt.repro wrote (`<runs_dir>/<run_id>/`
 with record.json, repro.json and the exports) and renders them on the
 server: every tab's HTML and its plain text are made here, so what the page
@@ -33,6 +36,8 @@ import json
 import os
 import re
 from typing import Any, Optional
+
+from bot.monitoring import road_view as RV
 
 TABS = ("概要", "前提", "損益", "取引", "約定の質", "費用", "分布", "検証", "再現性", "データ品質")
 SMOKE = "動作確認"
@@ -134,8 +139,10 @@ def list_runs(runs_dir: Any) -> list[dict]:
     out = []
     for _, name, d, group in sorted(found):
         rec = _load(os.path.join(d, "record.json"))
+        road = RV.has_road(d)  # a road run: the pipeline's trade count (FIFO) is not the road's count, so none is given
         out.append({"run_id": name, "purpose": rec.get("purpose"), "instrument": (rec.get("config") or {}).get("instrument"),
-                    "setup": (rec.get("setup") or {}).get("name"), "seed": rec.get("seed"), "trades": _trades_n(d),
+                    "setup": (rec.get("setup") or {}).get("name"), "seed": rec.get("seed"), "road": road,
+                    "trades": None if road else _trades_n(d),
                     "git_sha": rec.get("git_sha"), "group": group})
     return out
 
@@ -190,6 +197,10 @@ def _unit(ccy: Optional[str]) -> str:
 
 def run_view(runs_dir: Any, run_id: str) -> dict:
     d = _run_dir(runs_dir, run_id)
+    if RV.has_road(d):
+        raise BacktestViewError("道の記録(road/)のある走らせには、この古い 10 個の詳細タブを使わない"
+                                "(pipeline の trades.json・metrics.json の取引は FIFO の数え方で、道の数え方ではない)。"
+                                "チャートと表の画面で見る")
     rec = _load(os.path.join(d, "record.json"))
     repro = _load(os.path.join(d, "repro.json"))
     m = _export(d, "metrics") or {}

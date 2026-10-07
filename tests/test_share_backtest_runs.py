@@ -351,3 +351,74 @@ def test_the_shared_place_is_not_ignored_by_git():
                         "backtest_runs_shared/k1_newenv_g/" + "a" * 64 + "/metrics.json.gz",
                         "backtest_runs_shared/k1_newenv_g/SHARED.json"], cwd=REPO, capture_output=True, text=True)
     assert r.returncode == 1 and r.stdout == ""  # 1 = none of the paths is ignored
+
+
+def _road_run(runs: Path, rid: str, last_ns: int, kind="bar", extras=True):
+    """A road run (road/ with the seven tables and SCHEMA.json) whose data entry is a file under the root."""
+    import sys
+    sys.path.insert(0, str(REPO / "tests"))
+    from road_fixture import trade, write_road_run  # noqa: PLC0415
+    f = runs.parent / "backtest_data" / "k1" / "bars.csv.gz"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_bytes(b"start,o,h,l,c\nbars")
+    data = [{"path": "backtest_data/k1/bars.csv.gz", "spec": {"asset": "crypto", "kind": kind}}]
+    write_road_run(runs.parent, rid, [trade(10, 20, 1, 2)], group="g", first=last_ns // 10**9 - 3600, last=last_ns // 10**9, data=data,
+                   shared="backtest_runs")
+    d = runs / "g" / rid
+    if extras:  # the pipeline's own exports sit beside road/: they are not shared for a road run
+        (d / "metrics.json.gz").write_bytes(gzip.compress(b'{"data": {"trades": {"n": 1}}}'))
+        (d / "trades.json").write_text("{}")
+        (d / "fills.json.gz").write_bytes(gzip.compress(b"{}"))
+        (d / "data_quality.json").write_text("{}")
+    return d
+
+
+def test_a_road_run_is_shared_with_record_repro_and_the_road_tables_only_and_the_seal_is_unchanged(tmp_path, share):
+    _seal(tmp_path)
+    runs = tmp_path / "backtest_runs"
+    inside, edge_trade, past = "a" * 64, "b" * 64, "c" * 64
+    _road_run(runs, inside, P208 - 100 * H)
+    _road_run(runs, edge_trade, P208, kind="trade")   # a row AT the boundary of a non-bar run is sealed
+    _road_run(runs, past, P208 + H)
+    assert _main(share, tmp_path, runs, "--all") == 0
+    out = tmp_path / "out" / "g"
+    got = sorted(str(p.relative_to(out / inside)) for p in (out / inside).rglob("*") if p.is_file())
+    assert got == sorted(["record.json", "repro.json", "road/SCHEMA.json", "road/signals.csv.gz", "road/orders.csv.gz", "road/fills.csv.gz",
+                          "road/fx.csv.gz", "road/ledger_fills.csv.gz", "road/trades.csv.gz", "road/summary.json"])
+    assert not (out / edge_trade).exists() and not (out / past).exists()   # the rule of the period's end is as before
+    man = {e["run_id"]: e for e in json.loads((out / "SHARED.json").read_text(encoding="utf-8"))["runs"]}
+    assert man[inside]["shared"] and sorted(man[inside]["files"]) == got
+    assert "封印の境" in man[past]["reason"] and "足以外の事象" in man[edge_trade]["reason"]
+    # what was shared is a run the tab can show
+    from bot.monitoring import road_view as RV
+    assert RV.status(str(out / inside)).ok
+    # a file the view does not read is removed from an earlier copy, and a road/ file is never left stale
+    (out / inside / "road" / "stale.txt").write_text("x")
+    assert _main(share, tmp_path, runs, "--all") == 0
+    assert not (out / inside / "road" / "stale.txt").exists() and RV.status(str(out / inside)).ok
+
+
+def test_a_run_without_road_still_shares_the_view_files(tmp_path, share):
+    _seal(tmp_path)
+    runs, ids = _tree(tmp_path)
+    p = share.plan(str(runs), str(tmp_path), [], [], True)
+    row = [r for r in p["rows"] if r["run_id"] == ids["before"]][0]
+    assert sorted(row["files"]) == ["data_quality.json", "metrics.json.gz", "record.json", "repro.json", "trades.json"]
+
+
+def test_a_road_run_the_tab_cannot_show_is_not_copied_and_the_reason_is_kept(tmp_path, share):
+    _seal(tmp_path)
+    runs = tmp_path / "backtest_runs"
+    other, lost = "a" * 64, "b" * 64
+    d1 = _road_run(runs, other, P208 - 100 * H, extras=False)
+    d2 = _road_run(runs, lost, P208 - 100 * H, extras=False)
+    sch = json.loads((d1 / "road" / "SCHEMA.json").read_text())
+    sch["version"] = "road-record-9"
+    (d1 / "road" / "SCHEMA.json").write_text(json.dumps(sch))
+    (d2 / "road" / "fills.csv.gz").unlink()
+    assert _main(share, tmp_path, runs, "--all") == 0
+    out = tmp_path / "out" / "g"
+    assert not (out / other).exists() and not (out / lost).exists()
+    man = {e["run_id"]: e for e in json.loads((out / "SHARED.json").read_text(encoding="utf-8"))["runs"]}
+    assert "road-record-9" in man[other]["reason"] and "知らない版" in man[other]["reason"]
+    assert "欠けた表" in man[lost]["reason"] and not man[lost]["shared"]

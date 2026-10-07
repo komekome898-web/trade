@@ -1,0 +1,20 @@
+{
+ "identical": true,
+ "runs": 2,
+ "sha256": {
+  "data_quality.json": "c1973b6d4eb3e77cb7c1f6390b17b9a6f50b9ca473d5bd1b514aca43ed041700",
+  "fills.json": "e57c880caa13e4d9d1cb75ad46496de41f45c919a7a98bfcafa3bdc6abd7f381",
+  "metrics.json": "0173b81f2bc3726dfc900c3f4c0c3eb06122488481a0a40aa3c9d14fd539438a",
+  "orders.json": "a6a191aefd65e35a267886d9e59fcc1b02832b457f92eb82b5bbcb80fed14a7c",
+  "record.json": "5c227280a05d503c8907fd26cd2903c8d44154b1e0b691139d0960c39b3c771e",
+  "road/SCHEMA.json": "4c66b2a8daff698484a78a6ef544c3de56f3ee9c18cd0111ca0518a86da6327a",
+  "road/fills.csv.gz": "24eb4348fbfb3293e5c80e7570b2f3085aa922083fd8671581021a85129c64f3",
+  "road/fx.csv.gz": "b1f438b6482e57dc70fb2642df763f8cdfa603e222e3d7db8feb7d0a838eabba",
+  "road/ledger_fills.csv.gz": "c097d408495c52b2750ed540d502456e9d15720926d4aea8f73bf2b65b4714c6",
+  "road/orders.csv.gz": "3b2446cc61b52d9547cf2217b59e1317517aae3b1a7d3e1a2fe2335d24182aaf",
+  "road/signals.csv.gz": "67a3f6fb9ee02f08c39bf16e785164caba6586cfd65a592d265f2743175910d8",
+  "road/summary.json": "5e61475d667e758c472ee9c5340ecc99885f82c46ae6179b5dadfa184830a7a2",
+  "road/trades.csv.gz": "a7c965391d4cfc59a5912e5305713c4966130f5254a7adceaf96b585243ab05c",
+  "trades.json": "144b22b7d71e93474c32744a693047f49e38e5d04166271322bed7d48f9327cf"
+ }
+}

@@ -1,0 +1,31 @@
+{
+ "groups": [
+  [
+   "FX_BTC_JPY",
+   "optimistic"
+  ],
+  [
+   "FX_BTC_JPY",
+   "pessimistic"
+  ]
+ ],
+ "rows": [
+  {
+   "closed_trades": 21,
+   "fill_count": 68,
+   "instrument": "FX_BTC_JPY",
+   "open_trades": 0,
+   "pnl_jpy": "-169.918",
+   "range": "optimistic"
+  },
+  {
+   "closed_trades": 21,
+   "fill_count": 68,
+   "instrument": "FX_BTC_JPY",
+   "open_trades": 0,
+   "pnl_jpy": "-169.918",
+   "range": "pessimistic"
+  }
+ ],
+ "version": "road-record-7"
+}

@@ -1,0 +1,311 @@
+{
+ "code_scope": [
+  "src",
+  "scripts",
+  "config",
+  "pyproject.toml"
+ ],
+ "components": {
+  "account": {
+   "optimistic": {
+    "FX_BTC_JPY": {
+     "avg_px": null,
+     "cash": 1000000000.0,
+     "currency": "JPY",
+     "equity": 999998603.52,
+     "exposure_ns": 18000000000000,
+     "fees": 0.0,
+     "funding_paid": 0.0,
+     "leverage": 1,
+     "liquidated_t": null,
+     "liquidation": null,
+     "margin_check": "position_only",
+     "mark": "last_trade",
+     "position": 0.0,
+     "realized": -1396.4799999999814,
+     "swap_paid": 0.0,
+     "unrealized": 0.0
+    }
+   },
+   "pessimistic": {
+    "FX_BTC_JPY": {
+     "avg_px": null,
+     "cash": 1000000000.0,
+     "currency": "JPY",
+     "equity": 999998603.52,
+     "exposure_ns": 18000000000000,
+     "fees": 0.0,
+     "funding_paid": 0.0,
+     "leverage": 1,
+     "liquidated_t": null,
+     "liquidation": null,
+     "margin_check": "position_only",
+     "mark": "last_trade",
+     "position": 0.0,
+     "realized": -1396.4799999999814,
+     "swap_paid": 0.0,
+     "unrealized": 0.0
+    }
+   }
+  },
+  "defaults_used": {
+   "optimistic": {
+    "FX_BTC_JPY": []
+   },
+   "pessimistic": {
+    "FX_BTC_JPY": []
+   }
+  },
+  "fill_range": {
+   "optimistic": {
+    "attached_exit": "same_bar",
+    "bar_rule": "range_open",
+    "tier": 2
+   },
+   "pessimistic": {
+    "attached_exit": "next_bar",
+    "bar_rule": "range_open",
+    "tier": 2
+   }
+  },
+  "latency": {
+   "declared": {
+    "cancel": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "feed": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "notice": {
+     "kind": "constant",
+     "ns": 0
+    },
+    "order": {
+     "kind": "constant",
+     "ns": 0
+    }
+   },
+   "drawn": {
+    "optimistic": {
+     "FX_BTC_JPY": {
+      "draws": {
+       "cancel": 0,
+       "feed": 4320,
+       "notice": 6,
+       "order": 3
+      },
+      "total_ns": {
+       "cancel": 0,
+       "feed": 0,
+       "notice": 0,
+       "order": 0
+      }
+     }
+    },
+    "pessimistic": {
+     "FX_BTC_JPY": {
+      "draws": {
+       "cancel": 0,
+       "feed": 4320,
+       "notice": 6,
+       "order": 3
+      },
+      "total_ns": {
+       "cancel": 0,
+       "feed": 0,
+       "notice": 0,
+       "order": 0
+      }
+     }
+    }
+   }
+  },
+  "models": {
+   "optimistic": {
+    "FX_BTC_JPY": {
+     "account": "bot.bt.pipeline.DeferredMarginAccount",
+     "cost_model": "bot.bt.costs.schedule.ScheduleCostModel",
+     "fill_model": "bot.bt.pipeline.ArrivalGate",
+     "latency_model": "bot.bt.latency.LatencyModel"
+    }
+   },
+   "pessimistic": {
+    "FX_BTC_JPY": {
+     "account": "bot.bt.pipeline.DeferredMarginAccount",
+     "cost_model": "bot.bt.costs.schedule.ScheduleCostModel",
+     "fill_model": "bot.bt.pipeline.ArrivalGate",
+     "latency_model": "bot.bt.latency.LatencyModel"
+    }
+   }
+  },
+  "notes": {}
+ },
+ "config": {
+  "account": {
+   "cash": 1000000000.0,
+   "currency": "JPY",
+   "leverage": 1,
+   "liquidation": null,
+   "margin_check": "position_only",
+   "mark": "last_trade"
+  },
+  "costs": {
+   "fee_table": null,
+   "funding": null,
+   "maker_rate": 0,
+   "source": "作り物: 0",
+   "spread": 0,
+   "swap": null,
+   "taker_rate": 0
+  },
+  "fill": {
+   "optimistic": {
+    "attached_exit": "same_bar",
+    "bar_rule": "range_open",
+    "tier": 2
+   },
+   "pessimistic": {
+    "attached_exit": "next_bar",
+    "bar_rule": "range_open",
+    "tier": 2
+   }
+  },
+  "instrument": "FX_BTC_JPY",
+  "instruments": [
+   {
+    "name": "FX_BTC_JPY",
+    "price": "g",
+    "price_kind": "bar",
+    "product": {
+     "margin": true,
+     "min_qty": 0.001,
+     "qty_step": 0.001,
+     "quote_ccy": "JPY",
+     "symbol": "FX_BTC_JPY",
+     "tick": 1.0,
+     "venue": "bitflyer"
+    },
+    "rules": {
+     "below_min_qty": "reject",
+     "market_ref": "next_bar_open",
+     "off_step": "round_down",
+     "self_trade": "cancel_taker"
+    },
+    "with": []
+   }
+  ],
+  "latency": {
+   "cancel": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "feed": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "notice": {
+    "kind": "constant",
+    "ns": 0
+   },
+   "order": {
+    "kind": "constant",
+    "ns": 0
+   }
+  },
+  "strategy": {
+   "factory": "pipeline_strategy",
+   "kind": "module",
+   "module": "bot.strategy.road_scene_test",
+   "module_source_sha256": "2ec0662c52fdb0268082fa5842b5250581c21c6580c0a4a36c880ae03043f620",
+   "params": {
+    "close_bar": 400,
+    "levels": 2,
+    "mode": "ladder",
+    "open_bar": 100,
+    "quote_ccy": "JPY"
+   }
+  }
+ },
+ "data": [
+  {
+   "dataset": "g",
+   "generator": {
+    "name": "random_walk",
+    "params": {
+     "kind": "bar",
+     "n": 4320,
+     "price0": 1.0,
+     "qty": 1.0,
+     "start_ns": 1583884800000000000,
+     "step_ns": 60000000000,
+     "step_pct": 0.0
+    },
+    "seed": 1
+   },
+   "origin": "synthetic",
+   "origin_evidence": {
+    "by": "generator",
+    "generator": "random_walk",
+    "seed": 1,
+    "version": "random_walk-1"
+   },
+   "path": null
+  }
+ ],
+ "data_sha256": {
+  "generator:g": "d572b5c7502264cc9a479e4ca074b3f517c5c7877cfc55ed85ff45372aaeeed6"
+ },
+ "diff_hash": "d0a05e1abf738deace98f525609b2e87ef189495bc46e4d06ee355a194b27027",
+ "engine": {
+  "optimistic": {
+   "FX_BTC_JPY": {
+    "book_shown_to_venue": true,
+    "delivery_digest": "6d7df375bb4d33b54eebe6fdfc0f349e9c729107ce94a893b272170b00617dff",
+    "events_processed": 4327,
+    "fill_tier": 2,
+    "fill_venue": "SimVenue",
+    "first_time_ns": 1583884800000000000,
+    "last_time_ns": 1584147660000000000,
+    "source_events": 4321,
+    "venue_used": {
+     "spread": 3
+    }
+   }
+  },
+  "pessimistic": {
+   "FX_BTC_JPY": {
+    "book_shown_to_venue": true,
+    "delivery_digest": "6d7df375bb4d33b54eebe6fdfc0f349e9c729107ce94a893b272170b00617dff",
+    "events_processed": 4327,
+    "fill_tier": 2,
+    "fill_venue": "SimVenue",
+    "first_time_ns": 1583884800000000000,
+    "last_time_ns": 1584147660000000000,
+    "source_events": 4321,
+    "venue_used": {
+     "spread": 3
+    }
+   }
+  }
+ },
+ "generators": {
+  "g": {
+   "name": "random_walk",
+   "seed": 1,
+   "version": "random_walk-1"
+  }
+ },
+ "git_sha": "ef73474f722d894985ead1b9524b5e7e2485a090",
+ "prereg": null,
+ "prereg_sha256": null,
+ "purpose": "動作確認",
+ "run_id": "9fcb3d09d8759a6289fdefba51e6699e075f4375058cd1ebd6c779e7b48c4d72",
+ "seed": null,
+ "setup": {
+  "name": "bot.bt.pipeline:module",
+  "source_sha256": "44019a7a360a1dffc70725e80615ab2ce42fd1327fba608a0e830945bd2333d3"
+ },
+ "version": "bt-item4-pipeline-r5; random_walk-1; bt-item3-r1; core core-20; python 3.11.15; numpy 2.4.6; pandas 3.0.6"
+}

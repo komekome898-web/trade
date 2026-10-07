@@ -1,0 +1,660 @@
+{
+ "fill_rules": [
+  "約定の決まりは走らせの宣言(record.json の config.fill の各側)で選ぶ。bar_rule が無い走らせは tier の決まりのまま(tier 2: 指値が置かれた時刻より後に始まる足から、安値・高値が指値に届けば指値の値段で約定。置かれた時刻ちょうどに始まる足は当てない)",
+  "bar_rule = range_open(オーナーのシナリオ L-769「**合図が出るのはcloseのタイミング(前の足) 指値は合図の次の足で出してhighからlowの範囲内であれば約定**」・L-770「**a 足の始値で約定する(出した時点で相場より有利な指値なので、すぐ約定したとみなす)**」): 指値を足が閉じた時刻 T に置いたら、T に始まる足(合図の足の次の足)から当てる。置いた時刻 = 取引所に着いた時刻なので、注文の遅れ(latency.order)が 0 でない走らせは pipeline が走らせる前に拒む。その足の 安値 ≤ 指値 ≤ 高値 なら指値の値段で約定。約定する向きに範囲の外(買いの指値 > 高値、売りの指値 < 安値)なら、その足の始値で約定。約定しない向きに範囲の外なら、その足では約定しない。楽観側・悲観側で建ての当て方は同じ。逆指値(stop)を出したら走らせを止める(この決まりの外。tier 2 の決まりで黙って当てない)",
+  "指値の値段: 注文の表の limit_px は戦略が計算した値段(切り捨て前)、sent_limit_px は道の土台が送った値段 = limit_px を銘柄の刻み(record.json の銘柄の product.tick)に切り捨てた値段(オーナーの決定 L-783「**間違えそうやから小数点以下は切り捨ててください**」。買いも売りも切り捨て)。オーナーの言葉は小数点以下の切り捨て(円の刻み)。ほかの刻みの銘柄はまだ聞いていない(今は刻みに切り捨てる形)。取引所の模型の off_tick の決まりは変えておらず、道からは刻みに乗った値段しか届かない。上の範囲の内・外の判定と約定の値段は送った値段で行う。量の計算の値段(size_px)は計算した値段のまま",
+  "建てと一緒に出す決済の指値(place_with_exit。exit_kind = with_entry、attached_to = 建ての注文の番号。L-770「**b 建ての指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は合図の足の終値から計算)**」): 建てが約定するまで量は 0 で、建てが約定した量(決済の量まで)が有効になる。有効になるときも、取引所に着いた注文と同じく、待っている自分の逆側の注文との交差を決まり self_trade で突き合わせる。楽観側(attached_exit = same_bar。L-769「**指値決済の良い側はその足内で指値があれば通り**」)は、建てが約定した足の中で 安値 ≤ 決済の値段 ≤ 高値 なら決済の値段で約定し、そうでなければ次の足から bar_rule で当てる。悲観側(attached_exit = next_bar。L-769「**悪い側は次の足内から**」)は、建てが約定した足の次の足から bar_rule で当てる。建てが約定しないまま閉じたら決済も閉じる(close_reason = attached_parent_closed)。決済の量のうち建てが約定した量を越える分は、建てが終わり決済がその量まで約定したところで閉じる(close_reason = attached_exit_above_entry_filled)。楽観側では損の側の決済(決済の値段が建ての値段より不利)も、利確と同じく建てと同じ足で約定させる(オーナーの決定 L-783「**今の作り**」)",
+  "liquidity: この決まりの約定は全部 maker(範囲の内 = 待っていた指値。始値の約定も maker: オーナーの決定 L-783「**maker**」)",
+  "約定の表の fill_rule・fill_exit_rule・fill_case は、取引所の模型がその約定をどの決まりで当てたか(模型が自分で残した印): bar_rule の約定は fill_rule = range_open、fill_exit_rule = その側の attached_exit(same_bar / next_bar)、fill_case = range(範囲の内、指値の値段)/ open(約定する向きに範囲の外、始値)/ entry_bar(建てと一緒に出した決済が建ての足で約定。楽観側だけ)。tier の決まりの約定は 3 つとも空",
+  "検査(check_outputs の (vii))は、走らせの記録(record.json の config.fill)の両側の組み合わせ(両側で同じ bar_rule、楽観側 = same_bar、悲観側 = next_bar)を掛け直し、約定の行の印がその側の宣言と同じか(印があるのに宣言に bar_rule が無ければ失敗)、送った値段 = 計算した値段を刻みに切り捨てた値か、bar_rule の側の注文の受け付けの時刻 = 置いた時刻か、指値の約定ごとに約定した足(t_ns に閉じた足)と値段・印・liquidity がこの決まりどおりか(範囲の内なら指値の値段、約定する向きに外なら始値。足の JSON に open が要る)、有効だった足(当て始める足から、約定・取り消し・データの終わりまで)で約定していたはずなのに約定していない足が無いか、決済が建てと同じ足で約定した行が楽観側にしか無いかを確かめる。足は「n 本目」(足の JSON の 1 本目から数える)と始まりの時刻で書く。足の長さは走らせの記録(record.json の data の、銘柄の price のデータの generator.params.step_ns か spec.bar.interval_s)から読む"
+ ],
+ "form": "表は gzip した CSV(UTF-8、1 行目が列の名前、全部の欄は文字列、空の欄は「無い」)。summary は JSON。時刻は UTC の ns の整数。数は 10 進の文字列(浮動小数は最短の 10 進)",
+ "keys": "走らせ → 合図の番号 → 注文の番号 → 約定の番号 → 取引の番号。番号は (instrument, range) の中で一意",
+ "limits": [
+  "戦略は同じ Python の中で動くので、戦略が土台の内部の記録(合図の発生・消失の時刻など)を書き換えるのは機械で塞ぎ切れない。外から照らせる記録(pipeline の約定・注文、足、fx、repro.json の指紋)との突き合わせで落とせない書き換え(合図の時刻を足の閉じた別の時刻に動かす、合図の種類・向き・値・消失の理由を変える)は検査を通る",
+  "量の計算の値段は、出所が「直近の足の終値」なら足の終値と、「指値」なら指値と突き合わせる。「直近の約定の値段」「直近の板の仲値」は突き合わせる記録が検査に渡らないので突き合わせない",
+  "合図の時刻の足の検査(足の長さの区切り・その時刻に閉じた足)は、足で動き足の遅れ(feed の遅延)が 0 の走らせを前提にする。足の遅れが 0 でない走らせは必ず落ちる",
+  "検査は置き場が道の走らせの置き場の road/ であることを求める(../repro.json・record.json・fills.json・orders.json)。repro.json も書き換えられるので、最後の錨は押し出しの関門(L-755、次の段)",
+  "受け付けられた時刻: 道の走らせの門(pipeline の ArrivalGate)が預かる成行は、門がその場で受け付けを返す(取引所の受け付けではない)",
+  "期限が切れた時刻: 取引所の模型に期限つきの注文(GTD)が無いので、ここに入るのは取引所が自分で閉じたもの(期限切れ・成行の残り・reduce_only など。理由は close_reason)",
+  "書き出しの後の書き換えは repro.json の指紋で落ちる。repro.json の指紋も合わせて書き換えた場合に検査を通る欄(4 周目に、表の全部の行の全部の欄を 1 欄ずつ書き換えて確かめた。tests/road/test_road_record.py の test_r4_sweep_every_row_forged): signals の kind・direction・end_reason、消えた合図の end_t_ns、注文の無い合図の signal_id・start_t_ns / orders の acked_t_ns、取り消しの答えの無い注文の cancel_sent_t_ns、cancel_rejected_t_ns・state_unknown_t_ns、表の順を崩さない範囲の placed_seq、約定の無い注文の closed_seq、close_reason / fills の notice_t_ns・notice_seq(知らせの順を崩さない範囲) / fx の source、どの計算にも使われていない fx の行の t_ns・rate"
+ ],
+ "read_from": "道の走らせの読み口は road/ のこの表だけ。同じ走らせの置き場の pipeline の trades.json と metrics.json の取引の数は、建ての分と決済の約定の組ごとに 1 取引と数える FIFO の数え方で、道の数え方(建玉 0 → 0 で 1 取引。L-749・L-750)ではない",
+ "tables": {
+  "fills": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "fill_id",
+     "-",
+     "約定の番号((instrument, range) の中の順番。0 から)"
+    ],
+    [
+     "order_id",
+     "-",
+     "注文の番号"
+    ],
+    [
+     "signal_id",
+     "-",
+     "合図の番号(注文の合図の番号を写したもの)"
+    ],
+    [
+     "t_ns",
+     "ns",
+     "約定の時刻(pipeline の t_ns: 値を決めた観測の時刻)"
+    ],
+    [
+     "venue_t_ns",
+     "ns",
+     "取引所での約定の時刻"
+    ],
+    [
+     "side",
+     "-",
+     "buy / sell"
+    ],
+    [
+     "qty",
+     "BTC",
+     "量"
+    ],
+    [
+     "px",
+     "値段の通貨",
+     "値段"
+    ],
+    [
+     "ccy",
+     "-",
+     "値段の通貨"
+    ],
+    [
+     "fee",
+     "口座の通貨",
+     "手数料(帳簿の損益には入れない。L-741)"
+    ],
+    [
+     "liquidity",
+     "-",
+     "maker(指値)/ taker(成行)"
+    ],
+    [
+     "notice_t_ns",
+     "ns",
+     "この約定の知らせが戦略(土台)に届いた時刻(データの終わりまで届かなければ空)"
+    ],
+    [
+     "notice_seq",
+     "-",
+     "そのときの出来事の通し番号(届いた順。注文の placed_seq と比べる)"
+    ],
+    [
+     "fill_rule",
+     "-",
+     "取引所の模型がこの約定を当てた決まり: range_open(bar_rule)/ 空(tier の決まり)。fill_rules"
+    ],
+    [
+     "fill_exit_rule",
+     "-",
+     "fill_rule が range_open のとき、その側の attached_exit(same_bar / next_bar)。ほかは空"
+    ],
+    [
+     "fill_case",
+     "-",
+     "fill_rule が range_open のとき: range(範囲の内、指値の値段)/ open(約定する向きに範囲の外、始値)/ entry_bar(建てと一緒に出した決済が建ての足で約定)。ほかは空"
+    ]
+   ],
+   "file": "fills.csv.gz",
+   "kind": "生",
+   "row": "約定 1 つ(道の約定 = pipeline の約定)"
+  },
+  "fx": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "t_ns",
+     "ns",
+     "相場の時刻"
+    ],
+    [
+     "pair",
+     "-",
+     "通貨の組(USDJPY = 1 ドルの円)"
+    ],
+    [
+     "rate",
+     "円/ドル",
+     "相場"
+    ],
+    [
+     "source",
+     "-",
+     "出所(戦略の宣言の fx_source)"
+    ]
+   ],
+   "file": "fx.csv.gz",
+   "kind": "生",
+   "row": "USDJPY の相場 1 点(戦略に渡した系列。円建ては行が無い)"
+  },
+  "ledger_fills": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "fill_id",
+     "-",
+     "約定の番号(fills と同じ)"
+    ],
+    [
+     "t_ns",
+     "ns",
+     "約定の時刻"
+    ],
+    [
+     "side",
+     "-",
+     "buy / sell"
+    ],
+    [
+     "qty",
+     "BTC",
+     "量"
+    ],
+    [
+     "px",
+     "値段の通貨",
+     "値段"
+    ],
+    [
+     "ccy",
+     "-",
+     "値段の通貨"
+    ],
+    [
+     "position_after",
+     "BTC",
+     "その後の建玉(買いが +)"
+    ],
+    [
+     "avg_px_after",
+     "値段の通貨",
+     "その後の平均の建値(建玉 0 なら空)"
+    ],
+    [
+     "pnl_quote",
+     "値段の通貨",
+     "今回の確定損益(換算の前)"
+    ],
+    [
+     "usdjpy",
+     "円/ドル",
+     "今回の損益を円にするのに使った USDJPY = 属する取引の開始の相場(円建ては 1)"
+    ],
+    [
+     "usdjpy_t_ns",
+     "ns",
+     "その相場の時刻(円建ては空)"
+    ],
+    [
+     "pnl_jpy",
+     "円",
+     "今回の確定損益(円)"
+    ],
+    [
+     "pnl_jpy_cum",
+     "円",
+     "累計の確定損益(円)"
+    ],
+    [
+     "trade_id",
+     "-",
+     "属する取引の番号(ドテンなら閉じた側)"
+    ],
+    [
+     "opens_trade_id",
+     "-",
+     "この約定で始まった取引の番号(無ければ空)"
+    ]
+   ],
+   "file": "ledger_fills.csv.gz",
+   "kind": "作ったもの(帳簿のツール)",
+   "row": "約定 1 つ(fills と fx から帳簿のツールで作る)"
+  },
+  "orders": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "order_id",
+     "-",
+     "注文の番号(土台が付ける client_order_id)"
+    ],
+    [
+     "origin",
+     "-",
+     "出所: 土台(戦略が place で出した)/ 口座の強制"
+    ],
+    [
+     "signal_id",
+     "-",
+     "合図の番号、または「無し」(合図に依らない注文)"
+    ],
+    [
+     "side",
+     "-",
+     "buy / sell"
+    ],
+    [
+     "order_type",
+     "-",
+     "market / limit"
+    ],
+    [
+     "limit_px",
+     "値段の通貨",
+     "戦略が計算した指値の値段(切り捨て前。成行は空)"
+    ],
+    [
+     "qty",
+     "BTC",
+     "注文の量(量の出所が「量の計算」なら切り捨て後の量、「建玉」なら |送る時点の建玉 + 出ている決済の量|)"
+    ],
+    [
+     "placed_t_ns",
+     "ns",
+     "土台が place / close / flatten を受けた時刻(flatten の続きは、その知らせが届いた時刻)"
+    ],
+    [
+     "placed_seq",
+     "-",
+     "そのとき土台に届いていた出来事の通し番号(届いた順。約定の notice_seq と比べる)"
+    ],
+    [
+     "sent_t_ns",
+     "ns",
+     "出した時刻(ctx.place_order に渡した時刻。出さなかった行は空)"
+    ],
+    [
+     "acked_t_ns",
+     "ns",
+     "受け付けられた時刻(OrderAckEvent が戦略に届いた時刻。門が預かる成行は門の受け付けで、取引所の受け付けではない)"
+    ],
+    [
+     "acked_venue_t_ns",
+     "ns",
+     "受け付けの取引所での時刻(OrderAckEvent の exchange_time_ns)"
+    ],
+    [
+     "cancel_sent_t_ns",
+     "ns",
+     "取り消しを出した時刻(土台の cancel)"
+    ],
+    [
+     "canceled_t_ns",
+     "ns",
+     "取り消した時刻(OrderCanceledEvent で answers = cancel が届いた時刻)"
+    ],
+    [
+     "venue_closed_t_ns",
+     "ns",
+     "取引所が自分で閉じた時刻(成行の残り・reduce_only・oco など。理由は close_reason)。OrderCanceledEvent で answers = venue、中身が拒否でないものが届いた時刻。期限切れはここに入る(今の取引所の模型には期限つきの注文が無い)。列の名前は 3 周目までの expired_t_ns から変えた(一度出した語の意味を広げて使い回さない。O-7)"
+    ],
+    [
+     "rejected_t_ns",
+     "ns",
+     "拒否された時刻: OrderRejectEvent(新規)、または中身が拒否の OrderCanceledEvent(answers = venue / new で、理由が rejected_by_venue・refused_by_account で始まるか post_only_would_take)が届いた時刻"
+    ],
+    [
+     "cancel_rejected_t_ns",
+     "ns",
+     "取り消しが拒否された時刻(OrderRejectEvent で request_kind = cancel、最初の 1 つ)"
+    ],
+    [
+     "state_unknown_t_ns",
+     "ns",
+     "状態不明の答えが届いた時刻(OrderStateUnknownEvent、新規・取り消しのどちらも。最初の 1 つ)"
+    ],
+    [
+     "closed_t_ns",
+     "ns",
+     "閉じた知らせ(取り消し・期限切れ・新規への答えの一部としての取り消し・拒否)が届いた時刻"
+    ],
+    [
+     "closed_venue_t_ns",
+     "ns",
+     "その取引所での時刻"
+    ],
+    [
+     "closed_seq",
+     "-",
+     "閉じた知らせが届いたときの出来事の通し番号"
+    ],
+    [
+     "close_kind",
+     "-",
+     "閉じ方の生の値: cancel / venue / new(OrderCanceledEvent の answers)/ reject"
+    ],
+    [
+     "close_reason",
+     "-",
+     "閉じた理由の生の値(知らせの reason)"
+    ],
+    [
+     "state",
+     "-",
+     "最後の状態(戦略の側の注文の見え方の状態)、または「量が 0 で出さない」"
+    ],
+    [
+     "filled_qty",
+     "BTC",
+     "約定した量(届いた OrderFillEvent の量の和)"
+    ],
+    [
+     "margin_jpy",
+     "円",
+     "量の計算に使った証拠金(L-743・L-744: 毎回 20 万円)"
+    ],
+    [
+     "use_ratio",
+     "割合",
+     "量の計算に使った比率(L-746: 70%)"
+    ],
+    [
+     "levels",
+     "段",
+     "段数(戦略が渡す)"
+    ],
+    [
+     "size_px",
+     "値段の通貨",
+     "量の計算に使ったその時の値段(指値 = 指値の値段、成行 = 直近の値段)"
+    ],
+    [
+     "size_px_source",
+     "-",
+     "その時の値段の出所: 指値 / 直近の足の終値 / 直近の約定の値段 / 直近の板の仲値"
+    ],
+    [
+     "quote_ccy",
+     "-",
+     "値段の通貨 JPY / USD / USDT"
+    ],
+    [
+     "usdjpy",
+     "円/ドル",
+     "量の計算に使った USDJPY(ドル建てのとき。出した時刻以前の最後の相場)"
+    ],
+    [
+     "usdjpy_t_ns",
+     "ns",
+     "その相場の時刻"
+    ],
+    [
+     "qty_raw",
+     "BTC",
+     "切り捨て前の量(Decimal、28 桁)"
+    ],
+    [
+     "qty_source",
+     "-",
+     "量の出所: 量の計算(place。margin_jpy〜qty_raw の列で計算)/ 建玉(close・flatten。量の計算の列は空)"
+    ],
+    [
+     "position_at_send",
+     "BTC",
+     "注文を受けた時点の建玉(土台が約定の知らせから持つ建玉、買いが +)"
+    ],
+    [
+     "exit_pending_at_send",
+     "BTC",
+     "決済の行(量の出所が建玉): 送る時点で出ていた決済の注文(close・flatten)のまだ約定していない量(買いが +)。量 = |position_at_send + これ|"
+    ],
+    [
+     "reduce_only",
+     "-",
+     "true = reduce_only で出した(close・flatten。取引所の模型が建玉を超える分を切る)/ false = place の注文 / 空 = 出していない行・口座の強制の注文"
+    ],
+    [
+     "exit_kind",
+     "-",
+     "決済の種類: close(close が出した注文)/ flatten(flatten が出した成行)/ flatten_call(flatten を呼んだときに注文を出さなかった記録の行)/ with_entry(place_with_exit が建ての指値と一緒に出した決済の指値。量 = 建ての注文の量。fill_rules)/ 空(place の注文)"
+    ],
+    [
+     "attached_to",
+     "-",
+     "建てと一緒に出した決済の行(exit_kind = with_entry)の、親の建ての注文の番号。ほかの行は空"
+    ],
+    [
+     "sent_limit_px",
+     "値段の通貨",
+     "送った指値の値段 = limit_px(戦略が計算した値段)を銘柄の刻みに切り捨てた値段(L-783。fill_rules)。出した指値の行だけ(ほかは空)"
+    ]
+   ],
+   "file": "orders.csv.gz",
+   "kind": "生",
+   "row": "注文 1 つ(量が 0 で出さなかった段も 1 行)"
+  },
+  "signals": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "signal_id",
+     "-",
+     "合図の番号(戦略が付ける)"
+    ],
+    [
+     "kind",
+     "-",
+     "合図の種類(戦略が宣言)"
+    ],
+    [
+     "direction",
+     "-",
+     "合図の向き(戦略が宣言)"
+    ],
+    [
+     "value_json",
+     "JSON",
+     "発生の時点で戦略が見た値(戦略が宣言したもの)"
+    ],
+    [
+     "start_t_ns",
+     "ns",
+     "発生の時刻(土台が ctx.now_ns で押す)"
+    ],
+    [
+     "end_t_ns",
+     "ns",
+     "消失の時刻 = 合図の条件が成り立たなくなった時刻(L-767 c)。データの終わりまで消えなければ空"
+    ],
+    [
+     "end_reason",
+     "-",
+     "消失の理由(戦略が宣言)。データの終わりまで消えなければ「データの終わり」"
+    ]
+   ],
+   "file": "signals.csv.gz",
+   "kind": "生",
+   "row": "合図 1 つ"
+  },
+  "summary": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "fill_count",
+     "件",
+     "約定の数"
+    ],
+    [
+     "closed_trades",
+     "件",
+     "閉じた取引の数"
+    ],
+    [
+     "pnl_jpy",
+     "円",
+     "閉じた取引の損益の合計"
+    ],
+    [
+     "open_trades",
+     "件",
+     "途中の取引の数"
+    ]
+   ],
+   "file": "summary.json",
+   "kind": "作ったもの(帳簿のツール)",
+   "row": "(instrument, range) 1 つ(JSON の rows の 1 要素。合図・注文・約定の無い組も 0 の行。groups は走らせの (instrument, range) の一覧 = 道の走らせの宣言の銘柄 × 側、生)"
+  },
+  "trades": {
+   "columns": [
+    [
+     "instrument",
+     "-",
+     "銘柄の名前(道の走らせの宣言)"
+    ],
+    [
+     "range",
+     "-",
+     "約定の範囲の側: pessimistic(悲観側)/ optimistic(楽観側)"
+    ],
+    [
+     "trade_id",
+     "-",
+     "取引の番号((instrument, range) の中の順番。0 から)"
+    ],
+    [
+     "signal_id",
+     "-",
+     "最初の約定の合図の番号"
+    ],
+    [
+     "first_fill_id",
+     "-",
+     "最初の約定の番号"
+    ],
+    [
+     "fill_count",
+     "件",
+     "この取引の約定の数"
+    ],
+    [
+     "first_t_ns",
+     "ns",
+     "最初の約定の時刻"
+    ],
+    [
+     "last_t_ns",
+     "ns",
+     "最後の約定の時刻"
+    ],
+    [
+     "direction",
+     "-",
+     "long / short"
+    ],
+    [
+     "levels",
+     "段",
+     "段の数(建てる向きの約定の数)"
+    ],
+    [
+     "max_position",
+     "BTC",
+     "最大の建玉"
+    ],
+    [
+     "hold_ns",
+     "ns",
+     "保有時間(最初の約定から建玉 0 まで。途中は空。L-755)"
+    ],
+    [
+     "pnl_jpy",
+     "円",
+     "損益(円。途中はそこまでの確定分)"
+    ],
+    [
+     "usdjpy",
+     "円/ドル",
+     "損益を円にするのに使った USDJPY = 取引の開始の時刻以前の最後の相場(円建ては 1。L-763・L-764)"
+    ],
+    [
+     "usdjpy_t_ns",
+     "ns",
+     "その相場の時刻(円建ては空)"
+    ],
+    [
+     "status",
+     "-",
+     "closed(閉じた)/ open(途中)"
+    ],
+    [
+     "position",
+     "BTC",
+     "データの終わりの建玉(途中の取引だけ)"
+    ],
+    [
+     "avg_px",
+     "値段の通貨",
+     "データの終わりの平均の建値(途中の取引だけ)"
+    ]
+   ],
+   "file": "trades.csv.gz",
+   "kind": "作ったもの(帳簿のツール)",
+   "row": "取引 1 つ(建玉 0 → 0。L-749・L-750)"
+  }
+ },
+ "version": "road-record-7"
+}

@@ -1,28 +1,28 @@
-"""The data behind the dashboard's バックテスト tab: the theme tree, the family axes, and the chart of one run.
+"""The data behind the dashboard's バックテスト tab: the price stores, the seal, and the chart of one road run.
 
-    catalog(runs_dir)                        -> {themes: [{id, title, summary, sources, strategies: [{id, title, description,
-                                                sources, axes: [{key, label, source, values: [{value, label, note}]}],
-                                                runs: [{run_id, group, axes: {key: value}}], default_run_id}]}], ...}
-    run_summary(runs_dir, run_id, root)      -> {stats, currency, period, ranges, price: {...}} or {blocked: reason}
-    run_chart(runs_dir, run_id, ...)         -> {bars, pnl, trades, interval_s, ...} for the visible range only
+    catalog(runs_dir)                        -> road_catalog.catalog: themes -> strategies -> family axes -> runs
+    run_summary(runs_dir, run_id, root)      -> {headline, summary rows, ranges, instruments, period, price: {...}} or {blocked: reason}
+    run_chart(runs_dir, run_id, ...)         -> {bars, layers per range, pos / cum lines, ...} for the visible range only
+    run_table(runs_dir, run_id, table, ...)  -> one page of one of the seven tables (road_view.table_page), cut at the seal
+    run_trace(runs_dir, run_id, table, row)  -> the rows tied to one row by their numbers (road_view.trace)
 
-Axes and their values are read from each run's record.json (backtest_themes.AXES says which config key is which axis
-and what it means); the ledger only groups the runs.
+What a run holds is the road record (road/, 版 road-record-7; road_view.py reads it). A run with no road/ is a 古い形の走らせ:
+it is listed, and neither a chart nor a table is made for it (the pipeline's FIFO trade count is not the road's count).
 
 Prices (L-D06). A run's chart does not read the run's own data files. Each instrument has ONE price store (MARKETS:
 one row per exchange and symbol, files in git); the store is built once from its 1-minute files (read through the data
 layer's door, SealRegistry.read_checked, after the seal boundary cut) into the display frames FRAMES (1 m, 5 m, 15 m,
 1 h, 4 h, 1 d), cached on disk outside the repository (_cache_root), and a chart request only slices the visible range
-of the frame the page asked for. A run supplies its trades only. When the bars a run read are not the store's bars
+of the frame the page asked for. A run supplies its tables only. When the bars a run read are not the store's bars
 (derived files) the page says so (FALLBACK_NOTE).
 
 Seal. The boundary is computed as scripts/share_backtest_runs.py computes it (seal_rule over bot.bt.data.allowlist.
 SealRegistry: the earliest cutoff of the crypto / fx units); a ledger that cannot be read, or a unit the rule does not
-know, blocks everything (SealBlocked: no price, no trade, the reason is shown). Layers, each cutting on its own: a
+know, blocks everything (SealBlocked: no price, no row, the reason is shown). Layers, each cutting on its own: a
 file is read only through read_checked and its rows at or after the boundary are dropped when parsed; a cached frame
-is cut again when it is loaded; a chart request cuts again at the index; the trades of a run are cut at
-limit_ns = boundary (+1 ns when every data entry of the run is a bar, as share_backtest_runs.reaches does) when they are
-loaded, and again in the chart. A run that lies wholly after the boundary shows no number.
+is cut again when it is loaded; a chart request cuts again at the index; the rows of the road tables are cut at
+limit_ns = boundary (+1 ns when every data entry of the run is a bar, as share_backtest_runs.reaches does) in every
+answer (chart, table page, trace, headline). A run that lies wholly after the boundary shows no number.
 """
 from __future__ import annotations
 
@@ -35,7 +35,6 @@ import shutil
 import sys
 import threading
 import time
-import zlib
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -46,9 +45,10 @@ import numpy as np
 
 from bot.bt.data.allowlist import DEFAULT_ALLOWLIST
 from bot.bt.data.errors import PathRefused
-from bot.monitoring import backtest_cards as CARDS
-from bot.monitoring import backtest_themes as T
 from bot.monitoring import backtest_view as BV
+from bot.monitoring import road_catalog as RC
+from bot.monitoring import road_strategies as RS
+from bot.monitoring import road_view as RV
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -92,154 +92,11 @@ class AfterSeal(ChartError):
 
 
 # ---- the catalog ----------------------------------------------------------------------------------------------
-_REC: "OrderedDict[tuple, dict]" = OrderedDict()  # (record path, mtime_ns, size) -> the fields the tab reads
-
-
-def _record(d: str) -> dict:
-    p = os.path.join(d, "record.json")
-    st = os.stat(p)
-    key = (p, st.st_mtime_ns, st.st_size)
-    with _LOCK:
-        if key in _REC:
-            _REC.move_to_end(key)
-            return _REC[key]
-    with open(p, "r", encoding="utf-8") as fh:
-        rec = json.load(fh)
-    keep = {k: rec[k] for k in ("config", "data", "engine", "git_sha", "diff_hash", "purpose", "currency", "setup") if k in rec}
-    with _LOCK:
-        _REC[key] = keep
-        while len(_REC) > 1200:
-            _REC.popitem(last=False)
-    return keep
-
-
-def _label(axis: dict, value: str) -> tuple[str, str]:
-    known = axis["values"].get(value)
-    if known:
-        return known[0], known[1]
-    if axis.get("unit") and value not in ("—", None):
-        return f"{value} {axis['unit']}", ""
-    return str(value), ""
-
-
-def _axis_values(runs: list[dict], key: str) -> Optional[list[str]]:
-    vals = {r["raw"].get(key) for r in runs}
-    vals.discard(None)
-    if not vals:
-        return None
-    ax = T.AXES[key]
-    try:
-        return [str(v) for v in sorted(vals, key=lambda v: ax["order"](v))]
-    except Exception:  # noqa: BLE001 -- a value the order key cannot read: plain string order
-        return sorted(str(v) for v in vals)
-
-
-def _strategy_entry(st: dict, runs: list[dict], theme_title: str) -> dict:
-    keys = [k for k in st["axes"] if k != "version"]
-    for r in runs:
-        r["axes"] = {k: ("—" if r["raw"].get(k) is None else str(r["raw"][k])) for k in keys}
-    seen: dict[tuple, int] = {}
-    for r in runs:
-        combo = tuple(r["axes"][k] for k in keys)
-        seen[combo] = seen.get(combo, 0) + 1
-    if "version" in st["axes"] and any(n > 1 for n in seen.values()):
-        keys.append("version")
-        for r in runs:
-            r["axes"]["version"] = "—" if r["raw"].get("version") is None else str(r["raw"]["version"])
-    axes = []
-    for k in keys:
-        spec = T.AXES[k]
-        values = _axis_values(runs, k)
-        if values is None:
-            continue
-        if "—" in {r["axes"][k] for r in runs} and "—" not in values:
-            values.append("—")
-        entries = []
-        for v in values:
-            lab, note = _label(spec, v)
-            entries.append({"value": v, "label": lab, "note": note})
-        axes.append({"key": k, "label": spec["label"], "source": spec["source"], "values": entries,
-                     "fixed": len(entries) == 1, "secondary": k == "version"})
-    order = {a["key"]: {e["value"]: i for i, e in enumerate(a["values"])} for a in axes}
-    runs.sort(key=lambda r: (tuple(order[a["key"]].get(r["axes"][a["key"]], 99) for a in axes), r["run_id"]))
-    for r in runs:
-        r["axes"] = {a["key"]: r["axes"][a["key"]] for a in axes}
-        del r["raw"]
-    return {"id": st["id"], "kind": st["kind"], "title": st["title"], "description": st["description"],
-            "sources": st["sources"], "groups": st["groups"], "theme": theme_title, "axes": axes, "runs": runs,
-            "n_runs": len(runs), "default_run_id": runs[0]["run_id"] if runs else None}
+_record = RV.record_of
 
 
 def catalog(runs_dir: Any) -> dict:
-    """The theme tree with every run placed in it. Runs whose 組 is in no strategy of the ledger are listed under
-    「台帳に無い実行」; ledger groups that hold no run are named in `missing_groups`. The research cards (backtest_cards.py) are
-    themes of their own (`is_card`), one per card of backtest_runs_shared/cards/manifest.json; their variants are runs with the id
-    "cards/<card>/<variant>"."""
-    by_group = T.strategy_groups()
-    found = BV.find_runs(runs_dir)
-    placed: dict[str, list[dict]] = {}
-    loose: dict[str, list[dict]] = {}
-    for rid, d, group in found:
-        rec = _record(d)
-        raw = {k: ax["get"](rec) for k, ax in T.AXES.items()}
-        item = {"run_id": rid, "group": group, "raw": raw}
-        if group in by_group:
-            placed.setdefault(by_group[group][1]["id"], []).append(item)
-        else:
-            loose.setdefault(group, []).append(item)
-    themes = []
-    for th in T.THEMES:
-        strategies = []
-        for st in th["strategies"]:
-            runs = placed.get(st["id"], [])
-            if runs:
-                strategies.append(_strategy_entry(st, runs, th["title"]))
-        themes.append({"id": th["id"], "title": th["title"], "summary": th["summary"], "sources": th["sources"],
-                       "strategies": strategies})
-    if loose:
-        strategies = []
-        for group, runs in sorted(loose.items()):
-            for r in runs:
-                r["axes"] = {"run": r["run_id"][:12]}
-                del r["raw"]
-            runs.sort(key=lambda r: r["run_id"])
-            strategies.append({
-                "id": f"{T.UNLISTED_THEME}:{group}", "kind": "unlisted", "title": group or "(組なし)",
-                "description": ["この組はテーマの台帳に載っていない。実行の設定から読める説明はまだ無い。"], "sources": [],
-                "groups": [group], "theme": T.UNLISTED_TITLE,
-                "axes": [{"key": "run", "label": "実行 ID", "source": "実行 ID の先頭 12 文字", "fixed": len(runs) == 1,
-                          "values": [{"value": r["axes"]["run"], "label": r["axes"]["run"], "note": ""} for r in runs]}],
-                "runs": runs, "n_runs": len(runs), "default_run_id": runs[0]["run_id"]})
-        themes.append({"id": T.UNLISTED_THEME, "title": T.UNLISTED_TITLE,
-                       "summary": "テーマの台帳に載っていない組の実行。", "sources": [], "strategies": strategies})
-    present = {g for _, _, g in found}
-    card_themes, n_cards, card_notes = CARDS.catalog_themes(runs_dir)
-    if card_themes:  # the cards come before 「台帳に無い実行」, which stays last
-        at = next((i for i, t in enumerate(themes) if t["id"] == T.UNLISTED_THEME), len(themes))
-        themes[at:at] = card_themes
-    return {"themes": themes, "n_runs": len(found) + n_cards, "n_card_runs": n_cards, "card_notes": card_notes,
-            "missing_groups": sorted(g for g in by_group if g not in present)}
-
-
-@dataclass
-class Target:
-    """What a run id names: a run directory with its record, or a card variant (backtest_cards) with a record shaped like one."""
-    run_id: str
-    dir: str
-    rec: dict
-    card: Optional[Any] = None
-
-
-def _tp(tg: "Target") -> dict:
-    return {"path": str(Path(tg.dir) / "trades.json.gz")} if tg.card is not None else {}
-
-
-def _target(runs_dir: Any, run_id: str) -> Target:
-    ref = CARDS.resolve(runs_dir, run_id)  # None: not the card form; BacktestViewError: not in the manifest / not displayable
-    if ref is None:
-        d = BV._run_dir(runs_dir, run_id)
-        return Target(run_id, d, _record(d))
-    return Target(run_id, str(ref.dir), CARDS.record_of(ref), ref)
+    return RC.catalog(runs_dir)
 
 
 # ---- the seal -------------------------------------------------------------------------------------------------
@@ -287,25 +144,25 @@ class Cut:
     last_ns: int
 
 
-def _period_ns(rec: dict) -> tuple[Optional[int], Optional[int]]:
-    return T._engine_ns(rec)
+def _period_ns(rec: dict, inst: Optional[str] = None) -> tuple[Optional[int], Optional[int]]:
+    return RV.engine_period(rec, inst)
 
 
-def _run_bar_s(rec: dict) -> int:
-    inst = (rec.get("config") or {}).get("instrument")
+def _run_bar_s(rec: dict, inst: Optional[str] = None) -> int:
+    inst = inst or (rec.get("config") or {}).get("instrument")
     vals = [int(((e.get("spec") or {}).get("bar") or {}).get("interval_s") or 0) for e in rec.get("data") or []
             if (e.get("spec") or {}).get("symbol") == inst]
     return max([v for v in vals if v] or [0])
 
 
-def run_cut(rec: dict, rule: dict) -> Cut:
-    first, last = _period_ns(rec)
+def run_cut(rec: dict, rule: dict, inst: Optional[str] = None) -> Cut:
+    first, last = _period_ns(rec, inst)
     if first is None or last is None:
         raise ChartError("実行の記録に期間(engine.first_time_ns / last_time_ns)が無い")
     b = int(rule["boundary_ns"])
     bars = bool(_share().bars_only(rec))
     limit = b + (1 if bars else 0)  # share_backtest_runs.reaches: a bar run may end AT the boundary, others must end before
-    lo, hi = max(0, first - _run_bar_s(rec) * 10**9), min(last, limit)
+    lo, hi = max(0, first - _run_bar_s(rec, inst) * 10**9), min(last, limit)
     if first >= limit or not lo < hi:
         raise AfterSeal(f"この実行は封印の境({_iso(b / 1e9)})より後で、数字を出さない(期間 {_iso(first / 1e9)}〜{_iso(last / 1e9)})")
     return Cut(b, bars, limit, lo, hi, first, last)
@@ -313,152 +170,6 @@ def run_cut(rec: dict, rule: dict) -> Cut:
 
 def _iso(s: float) -> str:
     return datetime.fromtimestamp(s, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-# ---- trades ---------------------------------------------------------------------------------------------------
-@dataclass
-class TradeSet:
-    et: np.ndarray  # entry time, ns
-    xt: np.ndarray  # exit time, ns (sorted ascending)
-    ep: np.ndarray
-    xp: np.ndarray
-    side: np.ndarray  # +1 buy, -1 sell
-    qty: np.ndarray
-    pnl: np.ndarray  # money (NaN when the record holds only bp)
-    bp: np.ndarray  # pnl per unit over the entry price, in bp
-    cum: np.ndarray
-    cum_bp: np.ndarray
-    reason: Optional[list]
-    ranges: list = field(default_factory=list)
-    ranges_identical: Optional[bool] = None
-    entry_sorted: bool = True
-    pnl_derived: bool = False  # True: the record holds bp only; no money amount exists
-
-    @property
-    def n(self) -> int:
-        return int(self.xt.size)
-
-
-def _from_arrays(et, xt, ep, xp, side, qty, pnl, reason, bp=None) -> TradeSet:
-    et, xt = np.asarray(et, np.int64), np.asarray(xt, np.int64)
-    ep, xp, qty = (np.asarray(v, np.float64) for v in (ep, xp, qty))
-    side = np.asarray(side, np.int64)
-    derived = pnl is None
-    pnl = np.full(xt.size, np.nan) if derived else np.asarray(pnl, np.float64)
-    bp = None if bp is None else np.asarray(bp, np.float64)
-    if xt.size > 1 and np.any(xt[1:] < xt[:-1]):
-        o = np.argsort(xt, kind="stable")
-        et, xt, ep, xp, side, qty, pnl = (v[o] for v in (et, xt, ep, xp, side, qty, pnl))
-        bp = None if bp is None else bp[o]
-        reason = [reason[i] for i in o] if reason is not None else None
-    if bp is None:
-        with np.errstate(divide="ignore", invalid="ignore"):
-            bp = np.where((ep * qty) != 0, pnl / (ep * qty) * 1e4, 0.0)
-    ts = TradeSet(et, xt, ep, xp, side, qty, pnl, bp, np.cumsum(pnl), np.cumsum(bp), reason)
-    ts.entry_sorted = bool(et.size < 2 or not np.any(et[1:] < et[:-1]))
-    ts.pnl_derived = derived
-    return ts
-
-
-def _build(rows: list) -> TradeSet:
-    """The row form {"data": [{entry_px, entry_t_ns, exit_px, exit_t_ns, pnl, qty, side: "buy"|"sell", reason}]}."""
-    def col(k: str, dtype) -> np.ndarray:
-        return np.array([r.get(k) for r in rows], dtype=dtype)
-    return _from_arrays(col("entry_t_ns", np.int64), col("exit_t_ns", np.int64), col("entry_px", np.float64),
-                        col("exit_px", np.float64), [1 if r.get("side") == "buy" else -1 for r in rows],
-                        col("qty", np.float64), col("pnl", np.float64), [r.get("reason") for r in rows])
-
-
-def _build_columns(doc: dict) -> TradeSet:
-    """The column form {"version": 1, "t_unit": "ns", entry_t_ns, entry_px, exit_t_ns, exit_px, side: [1|-1], qty,
-    pnl_bp}. It holds no money amount (a money value from bp would multiply by an average exposure the record does
-    not state), so only bp is shown: `pnl_derived` is True and the money fields are None."""
-    if doc.get("t_unit", "ns") != "ns":
-        raise ChartError(f"trades t_unit {doc.get('t_unit')!r} is not supported")
-    return _from_arrays(doc["entry_t_ns"], doc["exit_t_ns"], doc["entry_px"], doc["exit_px"], doc["side"], doc["qty"],
-                        None, None, bp=doc["pnl_bp"])
-
-
-def _same(a: TradeSet, b: TradeSet) -> bool:
-    return (a.n == b.n and np.array_equal(a.et, b.et) and np.array_equal(a.xt, b.xt) and np.array_equal(a.ep, b.ep)
-            and np.array_equal(a.xp, b.xp) and np.array_equal(a.pnl, b.pnl) and np.array_equal(a.side, b.side))
-
-
-def read_trades(doc: Any, range_name: Optional[str] = None) -> TradeSet:
-    """The one place the two trades.json shapes are read (row form and column form)."""
-    if isinstance(doc, dict) and "data" not in doc and "entry_t_ns" in doc:
-        return _build_columns(doc)
-    rows = doc["data"]
-    ranges = list(dict.fromkeys(r["range"] for r in rows if "range" in r))
-    pick = range_name if range_name in ranges else (ranges[0] if ranges else None)
-    ts = _build([r for r in rows if r.get("range") == pick] if ranges else rows)
-    ts.ranges = ranges
-    if len(ranges) > 1:
-        ts.ranges_identical = all(_same(_build([r for r in rows if r.get("range") == ranges[0]]),
-                                        _build([r for r in rows if r.get("range") == o])) for o in ranges[1:])
-    return ts
-
-
-def truncate(ts: TradeSet, limit_ns: int) -> TradeSet:
-    """The trades that exited before `limit_ns` (a trade at or after it is not part of the run as shown)."""
-    k = int(np.searchsorted(ts.xt, limit_ns, side="left"))
-    if k >= ts.n:
-        return ts
-    out = TradeSet(ts.et[:k], ts.xt[:k], ts.ep[:k], ts.xp[:k], ts.side[:k], ts.qty[:k], ts.pnl[:k], ts.bp[:k],
-                   np.cumsum(ts.pnl[:k]), np.cumsum(ts.bp[:k]), None if ts.reason is None else ts.reason[:k],
-                   ts.ranges, ts.ranges_identical, ts.entry_sorted, ts.pnl_derived)
-    return out
-
-
-_TRADES: "OrderedDict[tuple, TradeSet]" = OrderedDict()
-
-
-def _raw(path: str) -> Any:
-    doc = BV._load(path)
-    return doc["data"] if isinstance(doc, dict) and isinstance(doc.get("data"), dict) else doc
-
-
-def load_trades(run_dir: str, range_name: Optional[str] = None, limit_ns: Optional[int] = None, path: Optional[str] = None) -> TradeSet:
-    """The run's trades (trades.json[.gz], either form) as arrays sorted by exit time, cut at `limit_ns`. A run through
-    bot.bt.pipeline writes every trade once per fill range: `range_name` picks one (default: the first)."""
-    p = path or BV._export_path(run_dir, "trades")  # a card variant passes its trades.json.gz: the file the completeness check looked at
-    if p is None:
-        raise ChartError("この実行に trades の出力が無い")
-    st = os.stat(p)
-    key = (p, st.st_mtime_ns, st.st_size, range_name, limit_ns)
-    with _LOCK:
-        if key in _TRADES:
-            _TRADES.move_to_end(key)
-            return _TRADES[key]
-    ts = read_trades(_raw(p), range_name)
-    if limit_ns is not None:
-        ts = truncate(ts, limit_ns)
-    with _LOCK:
-        _TRADES[key] = ts
-        while len(_TRADES) > 8:
-            _TRADES.popitem(last=False)
-    return ts
-
-
-def _f(x: float) -> Optional[float]:
-    return None if x != x else float(x)
-
-
-def trade_stats(ts: TradeSet) -> dict:
-    """取引数・勝率・累計損益・最大の落ち込み, from the trades (bp = pnl per unit / entry price). Money fields are None
-    when the record holds bp only."""
-    n = ts.n
-    if n == 0:
-        return {"n": 0, "wins": 0, "win_rate": None, "total": None if ts.pnl_derived else 0.0, "total_bp": 0.0,
-                "max_dd": None if ts.pnl_derived else 0.0, "max_dd_bp": 0.0, "mean_bp": None}
-    wins = int(((ts.bp if ts.pnl_derived else ts.pnl) > 0).sum())
-
-    def dd(cum: np.ndarray) -> float:
-        c = np.concatenate(([0.0], cum))
-        return float((np.maximum.accumulate(c) - c).max())
-    return {"n": n, "wins": wins, "win_rate": wins / n, "total": None if ts.pnl_derived else float(ts.cum[-1]),
-            "total_bp": float(ts.cum_bp[-1]), "max_dd": None if ts.pnl_derived else dd(ts.cum),
-            "max_dd_bp": dd(ts.cum_bp), "mean_bp": float(ts.bp.mean())}
 
 
 # ---- the price stores ------------------------------------------------------------------------------------------
@@ -515,22 +226,14 @@ def market_files(key: str, root: Path, boundary_s: int) -> tuple[list, str]:
     return out, ""
 
 
-def price_plan(rec: dict, root: Path, rule: dict) -> Plan:
-    inst = (rec.get("config") or {}).get("instrument")
+def price_plan(rec: dict, root: Path, rule: dict, inst: Optional[str] = None) -> Plan:
+    inst = inst or (rec.get("config") or {}).get("instrument")
     if inst not in MARKETS:
         return Plan(None, reason=f"価格の置き場の台帳(MARKETS)に銘柄 {inst!r} が無い")
     files, why = market_files(inst, Path(root), int(rule["boundary_ns"]) // 10**9)
     m = MARKETS[inst]
     if not files:
         return Plan(inst, label=m["label"], reason=why)
-    card = rec.get("_card")
-    if card is not None:  # a card variant: its trades are on the ledger's instrument; provenance names the directories it read
-        dirs = card.get("data_dirs_read") or []
-        same = bool(m.get("dir")) and m["dir"] in dirs
-        note = (f"価格は、カードが読んだ {m['label']} の 1 分足と同じ置き場(provenance の data_dirs_read にある)から表示の足に畳んだ。"
-                "取引の値段はこの足の始値(約定の模型)" if same else
-                f"{FALLBACK_NOTE}({m['label']} の 1 分足から作った。カードの provenance の data_dirs_read にこの置き場が無い)")
-        return Plan(inst, files, m["label"], note, "", same, [Path(x).name for x in dirs])
     run_files = [e["path"] for e in rec.get("data") or [] if (e.get("spec") or {}).get("symbol") == inst]
     rels = {r for _, r in files}
     same = bool(run_files) and set(run_files) <= rels
@@ -837,23 +540,18 @@ def _build_store_job(plan: Plan, rule: dict, key: str) -> None:
 
 
 def used_markets(runs_dir: Any) -> list[str]:
-    """The instruments the tab really shows, most runs first: every finished run's config.instrument (the catalog's runs) and the
-    ready variants of every research card (the ledger's instrument). Only those that have a row in MARKETS. An instrument no
-    run uses is not here: its store is built only when a request asks for it."""
+    """The instruments the tab really shows, most runs first: every finished run's config.instrument and config.instruments[].name.
+    Only those that have a row in MARKETS. An instrument no run uses is not here: its store is built only when a request asks."""
     count: dict[str, int] = {}
     for _, d, _ in BV.find_runs(runs_dir):
         try:
-            inst = (_record(d).get("config") or {}).get("instrument")
+            cfg = _record(d).get("config") or {}
         except (OSError, ValueError):
             continue
-        if inst in MARKETS:
-            count[inst] = count.get(inst, 0) + 1
-    themes, _n, _notes = CARDS.catalog_themes(runs_dir)
-    for th in themes:
-        ct = T.card_theme(th["id"][len("card:"):])
-        inst = ct.get("instrument") if ct else None
-        if inst in MARKETS:
-            count[inst] = count.get(inst, 0) + sum(st["n_runs"] for st in th["strategies"])
+        names = {cfg.get("instrument")} | {i.get("name") for i in cfg.get("instruments") or [] if isinstance(i, dict)}
+        for inst in names:
+            if inst in MARKETS:
+                count[inst] = count.get(inst, 0) + 1
     return [m for m, n in sorted(count.items(), key=lambda kv: (-kv[1], kv[0])) if n > 0]
 
 
@@ -947,62 +645,104 @@ def _summary_price(plan: Plan) -> dict:
             "run_files": [Path(p).name for p in plan.run_files], "frames": list(FRAMES)}
 
 
-def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: Optional[str] = None) -> dict:
+@dataclass
+class Road:
+    """A road run resolved for one request: its record, tables, the instrument and the seal cut."""
+    run_id: str
+    dir: str
+    rec: dict
+    data: Any  # road_view.RoadData
+    inst: str
+    cut: Cut
+
+
+def _road(runs_dir: Any, run_id: str, root: Path, instrument: Optional[str]) -> Road:
+    """Raises BacktestViewError (no such run), ChartError (not a road run / cannot be shown), SealBlocked, AfterSeal."""
+    d = BV._run_dir(runs_dir, run_id)
+    rec = _record(d)
+    st = RV.status(d)
+    if not st.ok:
+        raise ChartError(st.reason)
     try:
-        tg = _target(runs_dir, run_id)
-    except CARDS.CardPreparing as exc:  # in the manifest with display_ok, but the files are not complete: not an error of the page
-        return {"run_id": run_id, "preparing": str(exc), "card": {"variant": run_id}}
-    d, rec = tg.dir, tg.rec
+        data = RV.load(d)
+    except RV.RoadError as exc:
+        raise ChartError(str(exc)) from None
+    cfg = rec.get("config") or {}
+    inst = instrument or cfg.get("instrument")
+    if inst not in data.instruments:
+        inst = data.instruments[0] if data.instruments else None
+        if instrument and instrument not in data.instruments:
+            raise ChartError(f"この走らせに銘柄 {instrument!r} は無い(あるのは {', '.join(data.instruments)})")
+    if inst is None:
+        raise ChartError("この走らせの道の記録に銘柄が無い")
+    rule = seal_rule(root)
+    cut = run_cut(rec, rule, inst)
+    return Road(run_id, d, rec, data, inst, cut)
+
+
+def _ranges(data: Any, range_name: Optional[str]) -> list[str]:
+    if range_name in (None, "", "both"):
+        return list(data.ranges) if range_name == "both" else [data.ranges[0]]
+    if range_name not in data.ranges:
+        raise ChartError(f"この走らせに約定の範囲 {range_name!r} は無い(あるのは {', '.join(data.ranges)})")
+    return [range_name]
+
+
+def run_summary(runs_dir: Any, run_id: str, root: Path = REPO_ROOT, range_name: Optional[str] = None,
+                instrument: Optional[str] = None) -> dict:
+    d = BV._run_dir(runs_dir, run_id)
+    rec0 = _record(d)
+    name = RC.strategy_name(rec0)
+    led = RS.strategy_entry(name)
+    base = {"run_id": run_id, "purpose": rec0.get("purpose"), "strategy": {"name": name, "title": led["title"], "fake": bool(led.get("fake")) or RC.is_synthetic(rec0)}}
+    st = RV.status(d)
+    if not st.ok:
+        return {**base, "legacy": not RV.has_road(d), "unavailable": st.reason}
     try:
-        rule = seal_rule(root)
-        cut = run_cut(rec, rule)
+        tg = _road(runs_dir, run_id, Path(root), instrument)
     except (SealBlocked, AfterSeal) as exc:
-        return {"run_id": run_id, "purpose": rec.get("purpose"), "blocked": str(exc), "after_seal": isinstance(exc, AfterSeal)}
-    ccy = BV.run_currency(rec)
-    try:
-        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
-    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
-        if tg.card is None:
-            raise
-        return {"run_id": run_id, "preparing": f"準備中: trades を読めない(書きかけ): {type(exc).__name__}", "card": {"variant": run_id}}
-    plan = price_plan(rec, Path(root), rule)
-    mbar = _run_bar_s(rec)
-    out = {"run_id": run_id, "purpose": rec.get("purpose"), "instrument": (rec.get("config") or {}).get("instrument"),
-            "currency": ccy, "unit_label": ccy if ccy else BV.NO_CURRENCY, "stats": trade_stats(ts),
-            "ranges": ts.ranges, "ranges_identical": ts.ranges_identical, "pnl_derived": ts.pnl_derived,
-            "range": range_name if range_name in ts.ranges else (ts.ranges[0] if ts.ranges else None),
+        return {**base, "blocked": str(exc), "after_seal": isinstance(exc, AfterSeal)}
+    data, rec, cut = tg.data, tg.rec, tg.cut
+    plan = price_plan(rec, Path(root), seal_rule(root), tg.inst)
+    mbar = _run_bar_s(rec, tg.inst)
+    rng = _ranges(data, range_name)[0]
+    crossing = cut.last_ns >= cut.limit_ns
+    heads = {r: RV.headline(data, data.group(tg.inst, r), cut.limit_ns, crossing) for r in data.ranges}
+    cfg = rec.get("config") or {}
+    # a run that crosses the boundary: no summary.json number (it is the whole run's), and the row counts are those of the rows shown
+    counts = ({t: int(data.visible(t, cut.limit_ns, True).sum()) for t in RV.CSV_TABLES} if crossing
+              else {t: int(len(data.frames[t])) for t in RV.CSV_TABLES})
+    return {**base, "road": {"version": data.version, "tables": counts, "bytes": int(data.nbytes), "counts_cut": crossing},
+            "instrument": tg.inst, "instruments": data.instruments, "ranges": data.ranges,
+            "range": rng, "range_ja": RV.RANGE_JA, "currency": "JPY" if _is_jpy(data) else None,
+            "summary_rows": [] if crossing else [r for r in RV.summary_rows(data) if r.get("instrument") == tg.inst],
+            "summary_cut": crossing, "summary_cut_reason": RV.SUMMARY_CUT_REASON if crossing else None, "headline": heads,
             "measure_interval_s": mbar or None,
             "period": {"first_s": cut.first_ns // 10**9, "last_s": cut.last_ns // 10**9, "last_incl_s": cut.last_ns // 10**9 - 1,
                        "first_iso": _iso(cut.first_ns / 1e9), "last_iso": _iso(cut.last_ns / 1e9)},
-            "price": _summary_price(plan), "seal_boundary_s": cut.b // 10**9, "seal_boundary_iso": _iso(cut.b / 1e9)}
-    if tg.card is not None:
-        out["card"] = CARDS.info(tg.card, ts.n)
-        out["stats"], out["card"]["headline"] = CARDS.headline(tg.card, out["stats"], ts.n)
-    return out
+            "price": _summary_price(plan), "seal_boundary_s": cut.b // 10**9, "seal_boundary_iso": _iso(cut.b / 1e9),
+            "config": {"strategy": cfg.get("strategy"), "fill": cfg.get("fill")}}
+
+
+def _is_jpy(data: Any) -> bool:
+    """Every money column the tab shows is in yen (pnl_jpy, pnl_jpy_cum): the road record is in yen by its SCHEMA."""
+    return True
 
 
 def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: Optional[float] = None,
               max_bars: int = DEFAULT_MAX_BARS, range_name: Optional[str] = None, root: Path = REPO_ROOT,
-              interval_s: Optional[int] = None, wait: bool = True) -> dict:
-    """Bars (from the instrument's price store), cumulative profit and loss and trades (from the run) of the visible
-    range [from_s, to_s] (UTC seconds; default: the run's period). The range may leave the run's period; it is clipped
+              interval_s: Optional[int] = None, wait: bool = True, instrument: Optional[str] = None) -> dict:
+    """Bars (from the instrument's price store) and the layers of the road tables (signals, orders, fills, the average
+    entry price, trades, position and cumulative profit in yen) of the visible range [from_s, to_s] (UTC seconds; default:
+    the run's period). `range_name` = pessimistic / optimistic / both. The range may leave the run's period; it is clipped
     to the store's data and to the seal boundary. Bars use the display frame `interval_s` (rounded up to a frame), or the
     smallest frame that gives at most `max_bars` bars; more than HARD_MAX_BARS bars narrow the range around its centre
-    (`narrowed`)."""
-    try:
-        tg = _target(runs_dir, run_id)
-    except CARDS.CardPreparing as exc:
-        raise ChartError(str(exc)) from None
-    d, rec = tg.dir, tg.rec
+    (`narrowed`). A layer with too many items in the range is not sent (`too_many`)."""
+    tg = _road(runs_dir, run_id, Path(root), instrument)
+    rec, cut, data = tg.rec, tg.cut, tg.data
     rule = seal_rule(root)
-    cut = run_cut(rec, rule)
-    try:
-        ts = load_trades(d, range_name, cut.limit_ns, **_tp(tg))
-    except (OSError, EOFError, ValueError, KeyError, zlib.error) as exc:
-        if tg.card is None:
-            raise
-        raise ChartError(f"準備中: trades を読めない(書きかけ): {type(exc).__name__}") from None
-    plan = price_plan(rec, Path(root), rule)
+    rngs = _ranges(data, range_name)
+    plan = price_plan(rec, Path(root), rule, tg.inst)
     price = _summary_price(plan)
     store = None
     building = None
@@ -1043,45 +783,58 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
         c, half = (f + t) / 2, HARD_MAX_BARS * interval / 2
         f, t = max(lo_s, c - half), min(hi_s, c + half)
         span = t - f
-    out: dict = {"run_id": run_id, "from_s": f, "to_s": t, "interval_s": interval, "frames": list(FRAMES),
-                 "chart_lo_s": lo_s, "chart_hi_s": hi_s, "bars": [], "price": price, "narrowed": narrowed,
-                 "measure_interval_s": _run_bar_s(rec) or None, "building": building}
+    out: dict = {"run_id": run_id, "instrument": tg.inst, "instruments": data.instruments, "from_s": f, "to_s": t,
+                 "interval_s": interval, "frames": list(FRAMES), "chart_lo_s": lo_s, "chart_hi_s": hi_s, "bars": [], "price": price,
+                 "narrowed": narrowed, "measure_interval_s": _run_bar_s(rec, tg.inst) or None, "building": building,
+                 "ranges": data.ranges, "range": range_name if range_name in (data.ranges + ["both"]) else rngs[0], "shown_ranges": rngs}
     if store is not None:
         tt, o, h, l, c_ = store.frames[interval]
         a = int(np.searchsorted(tt, int(f // interval * interval), side="left"))
         e = int(np.searchsorted(tt, min(int(np.ceil(t)), cut.b // 10**9), side="left"))  # a bar starting at the boundary never
         out["bars"] = [[int(x), float(y1), float(y2), float(y3), float(y4)]
                        for x, y1, y2, y3, y4 in zip(tt[a:e], o[a:e], h[a:e], l[a:e], c_[a:e])]
-    # profit and loss and trades of the range: binary searches on the sorted arrays (a run can hold 800,000 trades)
     f_ns, t_ns = int(f * 1e9), int(t * 1e9)
-    lim = int(np.searchsorted(ts.xt, cut.limit_ns, side="left"))
-    a = min(int(np.searchsorted(ts.xt, f_ns, side="left")), lim)
-    e = min(int(np.searchsorted(ts.xt, t_ns, side="right")), lim)
-    base_cum, base_bp = (_f(ts.cum[a - 1]), float(ts.cum_bp[a - 1])) if a > 0 else (0.0 if not ts.pnl_derived else None, 0.0)
-    pts = {int(f // interval * interval): [base_cum, base_bp]}
-    if e > a:
-        bt = ts.xt[a:e] // 10**9 // interval * interval
-        last = np.flatnonzero(np.r_[bt[1:] != bt[:-1], True]) + a
-        for k, ci in zip(bt[last - a], last):
-            pts[int(k)] = [_f(ts.cum[ci]), float(ts.cum_bp[ci])]
-    out["pnl"] = [[k, v[0], v[1]] for k, v in sorted(pts.items())]
-    if ts.entry_sorted:
-        c = min(int(np.searchsorted(ts.et, t_ns, side="right")), lim)
-        idx = np.arange(a, c) if c > a else np.arange(0)
-    else:
-        idx = a + np.flatnonzero(ts.et[a:lim] <= t_ns)
-    out["trades_in_range"] = int(idx.size)
-    out["too_many"] = bool(idx.size > MAX_TRADES)
-    out["max_trades"] = MAX_TRADES
-    out["trades"] = [] if out["too_many"] else [
-        {"i": int(i), "side": int(ts.side[i]), "et": int(round(ts.et[i] / 1e9)), "ep": float(ts.ep[i]),
-         "xt": int(round(ts.xt[i] / 1e9)), "xp": float(ts.xp[i]), "pnl": _f(ts.pnl[i]), "bp": float(ts.bp[i]),
-         "reason": None if ts.reason is None else ts.reason[i]} for i in idx]
-    out["trades_total"] = ts.n
-    out["ranges"] = ts.ranges
-    out["range"] = range_name if range_name in ts.ranges else (ts.ranges[0] if ts.ranges else None)
-    out["pnl_derived"] = ts.pnl_derived
+    out["layers"] = {r: RV.layers(data.group(tg.inst, r), f_ns, t_ns, cut.limit_ns, interval, cut.last_ns) for r in rngs}
+    out["max_items"] = dict(RV.MAX_ITEMS)
     return out
+
+
+def run_table(runs_dir: Any, run_id: str, table: str, root: Path = REPO_ROOT, instrument: Optional[str] = None,
+              range_name: Optional[str] = None, sort: Optional[str] = None, desc: bool = False, filters: Optional[list] = None,
+              page: int = 0, size: int = 100) -> dict:
+    """One page of one table (every column), rows before the seal limit only. `range_name` = a side or "all"."""
+    tg = _road(runs_dir, run_id, Path(root), instrument)
+    rng = range_name if range_name else tg.data.ranges[0]
+    if rng != "all" and rng not in tg.data.ranges:
+        raise ChartError(f"この走らせに約定の範囲 {rng!r} は無い")
+    try:
+        out = RV.table_page(tg.data, table, tg.inst, rng, tg.cut.limit_ns, sort, desc, filters, page, size,
+                            open_cut=tg.cut.last_ns >= tg.cut.limit_ns, cut_summary=tg.cut.last_ns >= tg.cut.limit_ns)
+    except RV.RoadError as exc:
+        raise ChartError(str(exc)) from None
+    out.update(instrument=tg.inst, range=rng, run_id=run_id, table_ja=RV.TABLE_JA[table])
+    return out
+
+
+def run_trace(runs_dir: Any, run_id: str, table: str, row: int, root: Path = REPO_ROOT, instrument: Optional[str] = None) -> dict:
+    tg = _road(runs_dir, run_id, Path(root), instrument)
+    try:
+        return RV.trace(tg.data, table, int(row), tg.cut.limit_ns, tg.cut.last_ns >= tg.cut.limit_ns)
+    except RV.RoadError as exc:
+        raise ChartError(str(exc)) from None
+
+
+def run_files(runs_dir: Any, run_id: str, name: str) -> dict:
+    """record.json or road/SCHEMA.json as written (the names are fixed; a name is never joined into a path)."""
+    d = BV._run_dir(runs_dir, run_id)
+    rel = {"record.json": "record.json", "SCHEMA.json": os.path.join(RV.ROAD_DIR, RV.SCHEMA_FILE)}.get(name)
+    if rel is None:
+        raise ChartError(f"見られるファイルは record.json と SCHEMA.json だけ: {name!r}")
+    p = os.path.join(d, rel)
+    if not os.path.isfile(p):
+        raise ChartError(f"{name} が無い")
+    with open(p, "r", encoding="utf-8") as fh:
+        return {"run_id": run_id, "name": name, "json": json.load(fh)}
 
 
 # ---- static files (the chart library and the tab's own script / style: no CDN) ---------------------------------

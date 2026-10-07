@@ -85,16 +85,16 @@ def test_backtest_tab_is_wired_from_page_to_run(tmp_path):
         cat = json.loads(_get(port, "/api/backtest/catalog"))
         listed = [r["run_id"] for t in cat["themes"] for s in t["strategies"] for r in s["runs"]]
         assert listed == [rid]
+        # a run with no road/ record is an 古い形の走らせ: it is listed (last), has no chart and no table, and keeps its old detail tabs
+        assert cat["themes"][-1]["id"] == "legacy" and cat["n_legacy_runs"] == 1
         summ = json.loads(_get(port, f"/api/backtest/summary/{rid}"))
-        assert summ["stats"]["n"] == 1 and summ["price"]["available"] and summ["price"]["market"] == "FX_BTC_JPY"
-        chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
-        import time as _t
-        for _ in range(60):  # the price store is built in the background: the first answer may say "building" (the page polls)
-            if not chart.get("building"):
-                break
-            _t.sleep(0.5)
-            chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
-        assert chart["bars"] and chart["interval_s"] == 60 and chart["trades_total"] == 1 and chart["pnl"]
+        assert summ["legacy"] is True and "古い形" in summ["unavailable"] and "stats" not in summ
+        for path in (f"/api/backtest/chart/{rid}", f"/api/backtest/table/{rid}/trades"):
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}{path}", timeout=20)
+                raise AssertionError(f"{path} answered 200")
+            except urllib.error.HTTPError as exc:
+                assert exc.code == 400
         view = json.loads(_get(port, f"/api/backtest/run/{rid}"))
         assert [t["label"] for t in view["tabs"]] == TABS
         assert all("動作確認の実行。相場の結論には使わない" in t["text"] for t in view["tabs"])
@@ -116,6 +116,50 @@ def test_unknown_run_is_404_not_a_crash(tmp_path):
                 raise AssertionError(f"{path} answered 200")
             except urllib.error.HTTPError as exc:
                 assert exc.code == 404
+    finally:
+        srv.shutdown()
+        srv.server_close()
+
+
+def test_backtest_tab_is_wired_for_a_road_run(tmp_path):
+    """catalog -> summary -> chart -> table -> trace for a road run (road/ beside record.json), over the real handler."""
+    import threading
+    from http.server import ThreadingHTTPServer
+    sys_path = str(Path(__file__).resolve().parents[2])
+    import sys
+    sys.path.insert(0, sys_path)
+    from road_fixture import trade, write_road_run  # noqa: PLC0415
+    _market(tmp_path)
+    t0 = 1700000000
+    rid = "d" * 64
+    write_road_run(tmp_path, rid, [trade(t0 + 600, t0 + 1200, 10000010, 10000030)], group="", instrument="FX_BTC_JPY", first=t0, last=t0 + 7000,
+                   shared="runs", data=[])
+    srv = ThreadingHTTPServer(("127.0.0.1", 0), D.dashboard_module().make_handler(os.path.join(tmp_path, "runs"), data_root=tmp_path))
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        port = srv.server_address[1]
+        cat = json.loads(_get(port, "/api/backtest/catalog"))
+        assert [r["run_id"] for t in cat["themes"] for s in t["strategies"] for r in s["runs"]] == [rid]
+        summ = json.loads(_get(port, f"/api/backtest/summary/{rid}"))
+        assert summ["road"]["version"] == "road-record-7" and summ["headline"]["pessimistic"]["trades"]["closed"] == 1 and summ["price"]["available"]
+        import time as _t
+        chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
+        for _ in range(60):
+            if not chart.get("building"):
+                break
+            _t.sleep(0.5)
+            chart = json.loads(_get(port, f"/api/backtest/chart/{rid}?interval=60"))
+        assert chart["bars"] and chart["layers"]["pessimistic"]["counts"]["trades"] == 1
+        tab = json.loads(_get(port, f"/api/backtest/table/{rid}/fills"))
+        assert tab["matched"] == 2 and len(tab["rows"]) == 2
+        tr = json.loads(_get(port, f"/api/backtest/trace/{rid}/trades/0"))
+        assert {l["table"]: l["count"] for l in tr["links"]}["fills"] == 2
+        # the old ten-tab view is not used for a road run
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/api/backtest/run/{rid}", timeout=20)
+            raise AssertionError("old view answered 200")
+        except urllib.error.HTTPError as exc:
+            assert exc.code == 404
     finally:
         srv.shutdown()
         srv.server_close()
