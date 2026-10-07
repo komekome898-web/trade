@@ -1,4 +1,5 @@
-"""マチルダ(v37)の直し A の受け入れの試験: ブレイクの向きの直の入れ替わり(L-815)と、道の土台の遅さ(L-815「4.直す」)。
+"""マチルダ(v37)の直し A の受け入れの試験: ブレイクの向きの直の入れ替わり(L-815)と、道の土台の遅さ(L-815「4.直す」)と、
+検査のツールの遅さ(L-818)。
 
 リードが書いた(委任文 docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_matilda_v37_fixA.md)。
 作業者は試験を変えずに通す(変えたいときは問いとして返す)。場面の道具は 1 本目の受け入れの試験
@@ -7,6 +8,7 @@
 オーナーの逐語:
 - L-815「**2.実際にあり得ない挙動に対応する必要はないけど、この挙動は本測定で起こりうる？**」(ブレイクの向きの直の
   入れ替わりは起こりうる、とリードが答えた)「**4.直す**」(測定 1 本の時間が足の本数の 2 乗で伸びる所を直す)
+- L-818「**検査ツールの遅さ(決済の行ごとに帳簿を作り直す所)も、直し A の委任に入れて直してよいですか。 →yes**」
 """
 from __future__ import annotations
 
@@ -22,8 +24,9 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import test_matilda_v37_spec as S  # noqa: E402  1 本目の受け入れの試験の場面の道具
 from bot.bt.core import BarEvent  # noqa: E402
+from bot.bt.road import check_outputs  # noqa: E402
 from bot.bt.road.strategy import RoadStrategy  # noqa: E402
-from bot.bt.road.tables import SCHEMA  # noqa: E402
+from bot.bt.road.tables import ROAD_DIR, SCHEMA  # noqa: E402
 
 M = S.M
 need_m = S.need_m
@@ -173,3 +176,53 @@ def test_a2_cost_does_not_grow_with_closed_orders():
     for k in ("close", "flatten"):
         assert costs[5000][k] < 0.002, (k, costs)
         assert costs[5000][k] < 10 * max(costs[10][k], 1e-5), (k, costs)
+
+
+# ================================================================ A3 検査のツールの遅さ(L-818)
+def _walk_store(tmp_path, n):
+    return S.run(tmp_path, _walk(n, 0, 3000), dict(M.V37_ORIGINAL),
+                 rules={"market_ref": "next_bar_open", "self_trade": "cancel_both"})
+
+
+def _check_secs(res):
+    t0 = time.perf_counter()
+    f = check_outputs(res["store"], res["bars"]).failures
+    return time.perf_counter() - t0, f
+
+
+@need_m
+def test_a3_checker_cost_grows_with_bars_not_squared(tmp_path):
+    # 合成の乱歩 500 本と 2,000 本(足 4 倍)。直す前は検査が 500 本 約 24 秒・2,000 本 約 160 秒(約 6.7 倍)で、
+    #   決済の行ごとに帳簿を最初から作り直す(`src/bot/bt/road/check.py` の `_flatten_expect`)。
+    #   直した後: 2,000 本の検査が 500 本の 5 倍以下(本数に比例なら約 4 倍)、かつ 2,000 本の検査が 30 秒以下。
+    #   検査の答え(落とす行)は両方とも 0 件のまま
+    s500, f500 = _check_secs(_walk_store(tmp_path / "a", 500))
+    s2000, f2000 = _check_secs(_walk_store(tmp_path / "b", 2000))
+    assert f500 == [] and f2000 == []
+    assert s2000 <= 30.0, (s500, s2000)
+    assert s2000 <= 5 * s500, (s500, s2000)
+
+
+@need_m
+def test_a3_checker_still_catches_close_size(tmp_path):
+    # 直した検査も、決済(close)の量を書き換えた行を (v) で落とす(帳簿の作り直しをやめても、送った時の建玉と出ていた
+    #   決済の量から量を確かめる)。乱歩 500 本の悲観側の、量が 0 でない close の行のうち最初と最後の 2 行を 1 つずつ書き換える
+    import shutil
+    from bot.bt.road.tables import read_csv as rc
+    res = _walk_store(tmp_path, 500)
+    path = os.path.join(res["store"], SCHEMA["tables"]["orders"]["file"])
+    head, rows = rc(path, "orders")
+    ids = [r["order_id"] for r in rows if r["range"] == "pessimistic" and r["exit_kind"] == "close"
+           and float(r["qty"]) != 0]
+    assert len(ids) >= 2
+    for oid in (ids[0], ids[-1]):
+        d = str(tmp_path / f"copy-{oid}")
+        shutil.copytree(os.path.dirname(res["store"]), d)
+        p2 = os.path.join(d, ROAD_DIR, SCHEMA["tables"]["orders"]["file"])
+        h2, r2 = rc(p2, "orders")
+        for r in r2:
+            if r["range"] == "pessimistic" and r["order_id"] == oid:
+                r["qty"] = str(round(float(r["qty"]) + 0.001, 3))
+        S._rewrite(p2, h2, r2, d)
+        f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
+        assert any(x["check"] == "v" for x in f), (oid, f)
