@@ -61,6 +61,8 @@ Declarations (every key required unless marked optional; nothing has a default):
                "bar_rule": "range_open" with "attached_exit": "same_bar" on the
                optimistic side and "next_bar" on the pessimistic side (both or
                neither; the owner's scenario L-769 / L-770, bot.bt.fill.spec).
+               Such a run needs latency.order to be 0 in every draw (refused
+               otherwise: the rule places a limit at the bar's close).
                The run executes
                BOTH sides (item 2: 「楽観側と悲観側の両方を必ず回して幅で出す」) and
                records and exports both; there is no one-side entry.
@@ -616,6 +618,26 @@ def _check_fill(fill: Mapping) -> FillRange:
     return fr
 
 
+def _zero_delay(d: Mapping) -> bool:
+    """Whether every draw of a (checked) delay declaration is 0 ns."""
+    if d["kind"] == "constant":
+        return d["ns"] == 0
+    if d["kind"] == "empirical":
+        return all(x == 0 for x in d["samples_ns"])
+    return d["low_ns"] == 0 and d["high_ns"] == 0
+
+
+def _check_bar_rule_latency(fr: FillRange, lat: Mapping) -> None:
+    """A run that selects bar_rule (L-769 「合図が出るのはcloseのタイミング(前の足) 指値は合図の次の足で出して」) needs the
+    order to reach the venue at the bar's close: an order delay that can be other than 0 is refused before the run
+    (with a delay of even 1 ns the order rests after the next bar has started and meets the bar after it)."""
+    if fr.optimistic.bar_rule is None and fr.pessimistic.bar_rule is None:
+        return
+    _need(_zero_delay(lat["order"]),
+          f"fill: bar_rule {fr.optimistic.bar_rule or fr.pessimistic.bar_rule!r} needs latency.order to be 0 in every "
+          f"draw (the limit is placed at the bar's close and tried from the next bar), got {dict(lat['order'])!r}")
+
+
 def _cost_schedule(c: Mapping) -> CostSchedule:
     kw = {k: c[k] for k in ("maker_rate", "taker_rate", "source")}
     if "spread" in c:
@@ -775,8 +797,9 @@ def plan_pipeline(*, root: str, datasets: Sequence[Mapping], instruments: Sequen
     st = _check_strategy(strategy)
     for lg in st.get("legs", []):
         _need(lg.get("instrument") in (None, *inames), f"an order names the unknown instrument {lg.get('instrument')!r}")
-    _check_fill(fill)
+    frange = _check_fill(fill)
     lat = _check_latency(latency)
+    _check_bar_rule_latency(frange, lat)
     cs = _check_costs(costs)
     acc = _check_account(account)
     for it in ins:
@@ -1066,6 +1089,9 @@ class InstrumentResult:
     latency: dict
     account: dict
     road: Optional[dict] = None  # the road strategy's record (bot.bt.road.RoadStrategy.road_record), else None
+    # what the venue model itself reports for the road's tables: which rule filled each fill (SimVenue.fills with
+    # SimVenue.fill_marks) and the price it holds each limit order at (SimVenue.limit_prices)
+    venue_facts: Optional[dict] = None
 
 
 def _streams(plan: PipelinePlan, it: dict, loaded) -> dict:
@@ -1105,8 +1131,11 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
         reasons = None
     streams["~clock"] = [ClockEvent(received_time_ns=first)]
     product = Product(**{k: it["product"][k] for k in PRODUCT_KEYS})
+    if isinstance(strat, RoadStrategy):
+        strat.set_price_tick(product.tick)  # the road floors its limit prices to the tick (L-783)
     costs = _cost_schedule(plan.costs)
     frange = _check_fill(plan.fill)
+    _check_bar_rule_latency(frange, plan.latency)
     spec = getattr(frange, side)
     venue = SimVenue(product=product, rules=VenueRules(**it["rules"]), fill=spec, costs=costs,
                      faults=FaultPlan(()), l3=None)
@@ -1157,7 +1186,10 @@ def _run_instrument(plan: PipelinePlan, it: dict, loaded, side: str) -> Instrume
                              "fill_venue": type(venue).__qualname__, "book_shown_to_venue": not gate.hide_book,
                              "venue_used": dict(venue.used)},
                             {"draws": dict(latency.draws), "total_ns": dict(latency.total_ns)}, account_state,
-                            strat.road_record() if isinstance(strat, RoadStrategy) else None)
+                            strat.road_record() if isinstance(strat, RoadStrategy) else None,
+                            {"fills": [(r.client_order_id, r.time_ns, r.price, r.size, r.liquidity, m)
+                                       for r, m in zip(venue.fills, venue.fill_marks)],
+                             "limit_prices": venue.limit_prices()})
 
 
 def _summary(per: Mapping[str, InstrumentResult]) -> dict:
@@ -1279,7 +1311,8 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
         # the road's record tables (bot.bt.road.tables, RECORD_FORM_L766.md s2) in <out_dir>/road/
         write_road_store(os.path.join(out_dir, ROAD_DIR),
                          [(it["name"], side, it["product"]["quote_ccy"], both[side][it["name"]].fills,
-                           both[side][it["name"]].road) for side in SIDES for it in plan.instruments])
+                           both[side][it["name"]].road, both[side][it["name"]].venue_facts)
+                          for side in SIDES for it in plan.instruments])
     return {"instruments": per, "range": both, "events_read": read}
 
 

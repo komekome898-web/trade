@@ -173,7 +173,8 @@ def test_scene4_entry_canceled_unfilled_takes_the_exit(spec):
 
 def test_scene4_partly_filled_entry_leaves_the_exit_for_that_part():
     # 建て 1.0 のうち 0.4 だけ約定(取引所の模型の中から 0.4 だけ約定させる)→ 決済の量は 0.4。建てを取り消すと、
-    # 決済は 0.4 で残り、0.4 約定して閉じる(理由 attached_parent_part_filled)
+    # 決済は 0.4 で残り、0.4 約定して閉じる(理由 attached_exit_above_entry_filled: 決済の量 1.0 のうち建てが約定した 0.4 を
+    # 越える分を閉じた)
     v = _scene4(PES)
     out: list = []
     v._fill(v._live["e"], 100.0, 0.4, "maker", 2 * M, out)
@@ -181,7 +182,7 @@ def test_scene4_partly_filled_entry_leaves_the_exit_for_that_part():
     assert [type(r).__name__ for r in v.on_cancel(CancelRequest(client_order_id="e"), 2 * M + 1)] == ["Canceled"]
     rep = v.on_market_event(bar(2, 100.5, 101.5, 100.0, 101.0), 3 * M)
     assert [(type(r).__name__, r.client_order_id, getattr(r, "size", None), getattr(r, "reason", None)) for r in rep] == [
-        ("Fill", "x", 0.4, None), ("Canceled", "x", None, "attached_parent_part_filled")]
+        ("Fill", "x", 0.4, None), ("Canceled", "x", None, "attached_exit_above_entry_filled")]
     assert v.position == 0.0
 
 
@@ -367,7 +368,20 @@ def test_road_scene4_exit_with_entry(tmp_path):
     with open(os.path.join(run_dir, "record.json"), "w", encoding="utf-8") as fh:
         json.dump(rec, fh)
     f = check_outputs(store, _bars(FLAT)).failures
-    assert [x["check"] for x in f] == ["vii"] and "楽観側" in f[0]["reason"] and "optimistic" in f[0]["row"], f
+    # 2 周目: record.json の指紋が repro.json と違うので (vi) で落ちる
+    assert any(x["check"] == "vi" and x["row"] == "record.json" for x in f), f
+    # 指紋も合わせた場合でも (vii) で落ちる: 組み合わせ・印・建てと同じ足の決済
+    rp = os.path.join(run_dir, "repro.json")
+    with open(rp, encoding="utf-8") as fh:
+        body = json.load(fh)
+    with open(os.path.join(run_dir, "record.json"), "rb") as fh:
+        body["sha256"]["record.json"] = hashlib.sha256(fh.read()).hexdigest()
+    with open(rp, "w", encoding="utf-8") as fh:
+        json.dump(body, fh)
+    f = check_outputs(store, _bars(FLAT)).failures
+    assert {x["check"] for x in f} == {"vii"}, f
+    assert any("楽観側" in x["reason"] and "optimistic" in x["row"] for x in f), f
+    assert any(x["row"] == "record.json" and "same_bar" in x["reason"] for x in f), f
 
 
 def test_road_scene4_attached_to_is_bound(tmp_path):
@@ -440,9 +454,13 @@ def test_pipeline_fill_range_sides():
 
 def test_schema_texts():
     from bot.bt.road.tables import SCHEMA_VERSION, columns
-    assert SCHEMA_VERSION == "road-record-6"
-    assert columns("orders")[-2:] == ["exit_kind", "attached_to"]
+    assert SCHEMA_VERSION == "road-record-7"
+    assert columns("orders")[-3:] == ["exit_kind", "attached_to", "sent_limit_px"]
+    assert columns("fills")[-3:] == ["fill_rule", "fill_exit_rule", "fill_case"]
     text = " ".join(SCHEMA["fill_rules"])
     for quote in ("指値は合図の次の足で出してhighからlowの範囲内であれば約定", "a 足の始値で約定する",
-                  "指値決済の良い側はその足内で指値があれば通り", "悪い側は次の足内から"):
-        assert quote in text
+                  "指値決済の良い側はその足内で指値があれば通り", "悪い側は次の足内から",
+                  "間違えそうやから小数点以下は切り捨ててください", "オーナーの言葉は小数点以下の切り捨て(円の刻み)。ほかの刻みの"
+                  "銘柄はまだ聞いていない", "オーナーの決定 L-783「**今の作り**」", "オーナーの決定 L-783「**maker**」"):
+        assert quote in text, quote
+    assert "聞いている途中" not in text and "60 秒" not in text

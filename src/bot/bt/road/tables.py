@@ -35,7 +35,8 @@ from .strategy import NO_SIGNAL
 
 ROAD_DIR = "road"
 SCHEMA_FILE = "SCHEMA.json"
-SCHEMA_VERSION = "road-record-6"  # 6: attached_to の列、exit_kind の with_entry、約定の決まりの説明(fill_rules。L-769・L-770)
+SCHEMA_VERSION = "road-record-7"  # 7: sent_limit_px の列、fills の fill_rule・fill_exit_rule・fill_case の列(L-769 2 周目)
+# 6  # 6: attached_to の列、exit_kind の with_entry、約定の決まりの説明(fill_rules。L-769・L-770)
 # 5  # 5: reduce_only の列(5 周目)
 # 4  # 4: expired_t_ns → venue_closed_t_ns、exit_kind、flatten_pending_at_send → exit_pending_at_send(4 周目)
 # 3  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
@@ -62,19 +63,41 @@ SCHEMA: dict = {
         "始まる足は当てない)",
         "bar_rule = range_open(オーナーのシナリオ L-769「**合図が出るのはcloseのタイミング(前の足) 指値は合図の次の足で出して"
         "highからlowの範囲内であれば約定**」・L-770「**a 足の始値で約定する(出した時点で相場より有利な指値なので、すぐ約定したと"
-        "みなす)**」): 指値を足が閉じた時刻 T に置いたら、足 [T, T+60 秒) から当てる。その足の 安値 ≤ 指値 ≤ 高値 なら指値の値段で"
-        "約定。約定する向きに範囲の外(買いの指値 > 高値、売りの指値 < 安値)なら、その足の始値で約定。約定しない向きに範囲の外"
-        "なら、その足では約定しない。楽観側・悲観側で建ての当て方は同じ。逆指値(stop)はこの決まりの外(tier 2 のまま)",
+        "みなす)**」): 指値を足が閉じた時刻 T に置いたら、T に始まる足(合図の足の次の足)から当てる。置いた時刻 = 取引所に着いた"
+        "時刻なので、注文の遅れ(latency.order)が 0 でない走らせは pipeline が走らせる前に拒む。その足の 安値 ≤ 指値 ≤ 高値 なら"
+        "指値の値段で約定。約定する向きに範囲の外(買いの指値 > 高値、売りの指値 < 安値)なら、その足の始値で約定。約定しない向きに"
+        "範囲の外なら、その足では約定しない。楽観側・悲観側で建ての当て方は同じ。逆指値(stop)を出したら走らせを止める"
+        "(この決まりの外。tier 2 の決まりで黙って当てない)",
+        "指値の値段: 注文の表の limit_px は戦略が計算した値段(切り捨て前)、sent_limit_px は道の土台が送った値段 = limit_px を"
+        "銘柄の刻み(record.json の銘柄の product.tick)に切り捨てた値段(オーナーの決定 L-783「**間違えそうやから小数点以下は"
+        "切り捨ててください**」。買いも売りも切り捨て)。オーナーの言葉は小数点以下の切り捨て(円の刻み)。ほかの刻みの銘柄は"
+        "まだ聞いていない(今は刻みに切り捨てる形)。取引所の模型の off_tick の決まりは変えておらず、道からは刻みに乗った値段"
+        "しか届かない。上の範囲の内・外の判定と約定の値段は送った値段で行う。量の計算の値段(size_px)は計算した値段のまま",
         "建てと一緒に出す決済の指値(place_with_exit。exit_kind = with_entry、attached_to = 建ての注文の番号。L-770「**b 建ての"
         "指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は合図の足の"
-        "終値から計算)**」): 建てが約定するまで量は 0 で、建てが約定した量(決済の量まで)が有効になる。楽観側"
+        "終値から計算)**」): 建てが約定するまで量は 0 で、建てが約定した量(決済の量まで)が有効になる。有効になるときも、取引所に"
+        "着いた注文と同じく、待っている自分の逆側の注文との交差を決まり self_trade で突き合わせる。楽観側"
         "(attached_exit = same_bar。L-769「**指値決済の良い側はその足内で指値があれば通り**」)は、建てが約定した足の中で "
         "安値 ≤ 決済の値段 ≤ 高値 なら決済の値段で約定し、そうでなければ次の足から bar_rule で当てる。悲観側(attached_exit = "
         "next_bar。L-769「**悪い側は次の足内から**」)は、建てが約定した足の次の足から bar_rule で当てる。建てが約定しないまま"
-        "閉じたら決済も閉じる(close_reason = attached_parent_closed)",
-        "検査(check_outputs の (vii))は、bar_rule の走らせの指値の約定ごとに、約定した足(t_ns に閉じた足)と値段がこの決まり"
-        "どおりか(範囲の内なら指値の値段、約定する向きに外なら始値。足の JSON に open が要る)、それより前の当てる足で約定して"
-        "いないか、決済が建てと同じ足で約定した行が楽観側にしか無いかを確かめる",
+        "閉じたら決済も閉じる(close_reason = attached_parent_closed)。決済の量のうち建てが約定した量を越える分は、建てが"
+        "終わり決済がその量まで約定したところで閉じる(close_reason = attached_exit_above_entry_filled)。"
+        "楽観側では損の側の決済(決済の値段が建ての値段より不利)も、利確と同じく建てと同じ足で約定させる"
+        "(オーナーの決定 L-783「**今の作り**」)",
+        "liquidity: この決まりの約定は全部 maker(範囲の内 = 待っていた指値。始値の約定も maker: オーナーの決定 L-783"
+        "「**maker**」)",
+        "約定の表の fill_rule・fill_exit_rule・fill_case は、取引所の模型がその約定をどの決まりで当てたか(模型が自分で"
+        "残した印): bar_rule の約定は fill_rule = range_open、fill_exit_rule = その側の attached_exit(same_bar / next_bar)、"
+        "fill_case = range(範囲の内、指値の値段)/ open(約定する向きに範囲の外、始値)/ entry_bar(建てと一緒に出した決済が"
+        "建ての足で約定。楽観側だけ)。tier の決まりの約定は 3 つとも空",
+        "検査(check_outputs の (vii))は、走らせの記録(record.json の config.fill)の両側の組み合わせ(両側で同じ bar_rule、"
+        "楽観側 = same_bar、悲観側 = next_bar)を掛け直し、約定の行の印がその側の宣言と同じか(印があるのに宣言に bar_rule が"
+        "無ければ失敗)、送った値段 = 計算した値段を刻みに切り捨てた値か、bar_rule の側の注文の受け付けの時刻 = 置いた時刻か、指値の約定ごとに約定した足(t_ns に閉じた足)と"
+        "値段・印・liquidity がこの決まりどおりか(範囲の内なら指値の値段、約定する向きに外なら始値。足の JSON に open が要る)、"
+        "有効だった足(当て始める足から、約定・取り消し・データの終わりまで)で約定していたはずなのに約定していない足が無いか、"
+        "決済が建てと同じ足で約定した行が楽観側にしか無いかを確かめる。足は「n 本目」(足の JSON の 1 本目から数える)と始まりの"
+        "時刻で書く。足の長さは走らせの記録(record.json の data の、銘柄の price のデータの generator.params.step_ns か "
+        "spec.bar.interval_s)から読む",
     ],
     "limits": [
         "戦略は同じ Python の中で動くので、戦略が土台の内部の記録(合図の発生・消失の時刻など)を書き換えるのは機械で"
@@ -82,7 +105,7 @@ SCHEMA: dict = {
         "書き換え(合図の時刻を足の閉じた別の時刻に動かす、合図の種類・向き・値・消失の理由を変える)は検査を通る",
         "量の計算の値段は、出所が「直近の足の終値」なら足の終値と、「指値」なら指値と突き合わせる。「直近の約定の値段」"
         "「直近の板の仲値」は突き合わせる記録が検査に渡らないので突き合わせない",
-        "合図の時刻の足の検査(分の区切り・その時刻に閉じた 1 分足)は、足で動き足の遅れ(feed の遅延)が 0 の走らせを"
+        "合図の時刻の足の検査(足の長さの区切り・その時刻に閉じた足)は、足で動き足の遅れ(feed の遅延)が 0 の走らせを"
         "前提にする。足の遅れが 0 でない走らせは必ず落ちる",
         "検査は置き場が道の走らせの置き場の road/ であることを求める(../repro.json・record.json・fills.json・"
         "orders.json)。repro.json も書き換えられるので、最後の錨は押し出しの関門(L-755、次の段)",
@@ -119,7 +142,7 @@ SCHEMA: dict = {
                 ("signal_id", "-", "合図の番号、または「無し」(合図に依らない注文)"),
                 ("side", "-", "buy / sell"),
                 ("order_type", "-", "market / limit"),
-                ("limit_px", "値段の通貨", "指値の値段(成行は空)"),
+                ("limit_px", "値段の通貨", "戦略が計算した指値の値段(切り捨て前。成行は空)"),
                 ("qty", "BTC", "注文の量(量の出所が「量の計算」なら切り捨て後の量、「建玉」なら |送る時点の建玉 + 出ている決済の量|)"),
                 ("placed_t_ns", "ns", "土台が place / close / flatten を受けた時刻(flatten の続きは、その知らせが届いた時刻)"),
                 ("placed_seq", "-", "そのとき土台に届いていた出来事の通し番号(届いた順。約定の notice_seq と比べる)"),
@@ -164,6 +187,8 @@ SCHEMA: dict = {
                                    "呼んだときに注文を出さなかった記録の行)/ with_entry(place_with_exit が建ての指値と一緒に"
                                    "出した決済の指値。量 = 建ての注文の量。fill_rules)/ 空(place の注文)"),
                 ("attached_to", "-", "建てと一緒に出した決済の行(exit_kind = with_entry)の、親の建ての注文の番号。ほかの行は空"),
+                ("sent_limit_px", "値段の通貨", "送った指値の値段 = limit_px(戦略が計算した値段)を銘柄の刻みに切り捨てた値段"
+                                               "(L-783。fill_rules)。出した指値の行だけ(ほかは空)"),
             ]},
         "fills": {
             "file": "fills.csv.gz", "kind": RAW, "row": "約定 1 つ(道の約定 = pipeline の約定)",
@@ -181,6 +206,10 @@ SCHEMA: dict = {
                 ("liquidity", "-", "maker(指値)/ taker(成行)"),
                 ("notice_t_ns", "ns", "この約定の知らせが戦略(土台)に届いた時刻(データの終わりまで届かなければ空)"),
                 ("notice_seq", "-", "そのときの出来事の通し番号(届いた順。注文の placed_seq と比べる)"),
+                ("fill_rule", "-", "取引所の模型がこの約定を当てた決まり: range_open(bar_rule)/ 空(tier の決まり)。fill_rules"),
+                ("fill_exit_rule", "-", "fill_rule が range_open のとき、その側の attached_exit(same_bar / next_bar)。ほかは空"),
+                ("fill_case", "-", "fill_rule が range_open のとき: range(範囲の内、指値の値段)/ open(約定する向きに範囲の外、"
+                                   "始値)/ entry_bar(建てと一緒に出した決済が建ての足で約定)。ほかは空"),
             ]},
         "fx": {
             "file": "fx.csv.gz", "kind": RAW, "row": "USDJPY の相場 1 点(戦略に渡した系列。円建ては行が無い)",
@@ -273,13 +302,25 @@ def _canon(obj: Any) -> str:
 
 
 # --------------------------------------------------------------------------- 生の表を作る(道の走らせの後)
+
+
 def raw_tables(runs: Iterable[tuple]) -> dict:
-    """runs: (銘柄, 側, 銘柄の値段の通貨, pipeline の約定の行の列, 土台の記録 `RoadStrategy.road_record()`) の列。
-    返すのは生の表 {signals, orders, fills, fx}(各々 文字列の行の列)。"""
+    """runs: (銘柄, 側, 銘柄の値段の通貨, pipeline の約定の行の列, 土台の記録 `RoadStrategy.road_record()`,
+    取引所の模型が残した事実 {"fills": [(注文の番号, 取引所での時刻, 値段, 量, liquidity, (fill_rule, fill_exit_rule,
+    fill_case)) ...], "limit_prices": {注文の番号: 模型が持つ指値の値段}}) の列。受け付けられた指値は、模型が持つ値段が
+    送った値段(sent_limit_px)と同じかを確かめる。
+    返すのは生の表 {signals, orders, fills, fx}(各々 文字列の行の列)。約定は注文ごとに k 番目どうしを模型の約定と
+    突き合わせ(取引所での時刻・値段・量・liquidity)、違えば止める(黙って合わせない)。"""
     out: dict = {t: [] for t in ("signals", "orders", "fills", "fx")}
-    for inst, rng, quote_ccy, fills, rec in runs:
+    for inst, rng, quote_ccy, fills, rec, venue in runs:
         if rec is None:
             raise TableError(f"銘柄 {inst}・側 {rng} に道の戦略の土台の記録が無い(道の戦略は bot.bt.road.RoadStrategy を継ぐ)")
+        if venue is None:
+            raise TableError(f"銘柄 {inst}・側 {rng} に取引所の模型の事実(約定の印・指値の値段)が無い(作りの誤り)")
+        vfills: dict = {}
+        for vf in venue["fills"]:
+            vfills.setdefault(vf[0], []).append(vf)
+        prices = venue["limit_prices"]
         if rec["quote_ccy"] != quote_ccy:
             raise TableError(f"銘柄 {inst}・側 {rng}: 戦略の値段の通貨 {rec['quote_ccy']} が銘柄の宣言の値段の通貨 "
                              f"{quote_ccy} と違う")
@@ -288,7 +329,14 @@ def raw_tables(runs: Iterable[tuple]) -> dict:
             out["signals"].append({**ir, **{k: text(s[k]) for k in columns("signals")[2:]}})
         sig_of = {}
         for o in rec["orders"]:
-            out["orders"].append({**ir, **{k: text(o[k]) for k in columns("orders")[2:]}})
+            row = {**ir, **{k: text(o[k]) for k in columns("orders")[2:]}}
+            # 取引所が受け付けた指値は、模型が持つ値段 = 送った値段(刻みに切り捨てた値段。模型は丸め直さない)
+            if row["order_type"] == "limit" and row["acked_venue_t_ns"] != "":
+                held = prices.get(o["order_id"])
+                if held is None or row["sent_limit_px"] == "" or float(held) != float(row["sent_limit_px"]):
+                    raise TableError(f"銘柄 {inst}・側 {rng}: 受け付けられた指値 {o['order_id']!r} の、取引所の模型が持つ値段 "
+                                     f"{held!r} が送った値段 {row['sent_limit_px']!r} と違う(作りの誤り)")
+            out["orders"].append(row)
             sig_of[o["order_id"]] = o["signal_id"]
         seen: dict = {}
         for k, f in enumerate(fills):
@@ -301,11 +349,23 @@ def raw_tables(runs: Iterable[tuple]) -> dict:
             seen[oid] = got + 1
             ns = rec.get("fill_notices", {}).get(oid, [])
             nt, nq = (ns[got][0], ns[got][1]) if got < len(ns) else ("", "")
+            mine = vfills.get(oid, [])
+            vf = mine[got] if got < len(mine) else None
+            if vf is None or (vf[1], float(vf[2]), float(vf[3]), vf[4]) != \
+                    (f["venue_t_ns"], float(f["px"]), float(f["qty"]), f["liquidity"]):
+                raise TableError(f"銘柄 {inst}・側 {rng}: 約定 {k}(注文 {oid!r} の {got + 1} 番目)が取引所の模型の約定と"
+                                 f"合わない(作りの誤り)")
+            mark = vf[5]
             out["fills"].append({**ir, "fill_id": str(k), "order_id": oid, "signal_id": sig_of[oid],
                                  "notice_t_ns": text(nt), "notice_seq": text(nq),
                                  "t_ns": text(f["t_ns"]), "venue_t_ns": text(f["venue_t_ns"]), "side": f["side"],
                                  "qty": text(float(f["qty"])), "px": text(float(f["px"])), "ccy": quote_ccy,
-                                 "fee": text(float(f["fee"])), "liquidity": text(f["liquidity"])})
+                                 "fee": text(float(f["fee"])), "liquidity": text(f["liquidity"]),
+                                 "fill_rule": text(mark[0]), "fill_exit_rule": text(mark[1]), "fill_case": text(mark[2])})
+        for oid, mine in vfills.items():
+            if len(mine) != seen.get(oid, 0):
+                raise TableError(f"銘柄 {inst}・側 {rng}: 注文 {oid!r} の約定の数 {seen.get(oid, 0)} が取引所の模型の約定の数 "
+                                 f"{len(mine)} と違う(作りの誤り)")
         for p in rec["fx"]:
             out["fx"].append({**ir, "t_ns": text(p["t_ns"]), "pair": p["pair"], "rate": text(float(p["rate"])),
                               "source": rec.get("fx_source", "")})

@@ -7,6 +7,8 @@
 足を数え(1 本目 = 1)、params の mode ごとに:
 - "entry":        open_bar 本目で合図 s1 の発生 → 指値(売買 side、値段 limit_px、無ければその足の終値)を段数 levels で 1 つ
 - "with_exit":    open_bar 本目で合図 s1 の発生 → place_with_exit(買い、値段 limit_px か終値、段数 levels、決済の値段 exit_px)
+- "with_exit_and_buy": "with_exit" と同じ時に、もう 1 つの買いの指値(値段 extra_px、段数 levels)を place で出す
+                  (決済が有効になったときに自分の注文と交差する場面。2 周目)
 - "moving_close": open_bar 本目で合図 s1 の発生 → 段数 levels の成行の買い。建玉ができた後の足ごとに、出ている close の
                   指値を取り消し、取り消しの答えが届いたら lines の値段(足の番号 → 値段。無い番号は前の値段)に close の
                   指値を置き直す(足の終わりに取り消して新しい値段で置く)。建玉が 0 になったら何もしない
@@ -26,6 +28,7 @@ class L769Strategy(RoadStrategy):
         self.side = params.get("side", "buy")
         self.limit_px = params.get("limit_px")
         self.exit_px = params.get("exit_px")
+        self.extra_px = params.get("extra_px")
         self.lines = {int(k): v for k, v in (params.get("lines") or {}).items()}
         self.bars = 0
         self.close_id = None
@@ -47,8 +50,10 @@ class L769Strategy(RoadStrategy):
             px = event.close if self.limit_px is None else self.limit_px
             if self.mode == "entry":
                 self.place(self.side, "limit", px, self.levels, "s1")
-            elif self.mode == "with_exit":
+            elif self.mode in ("with_exit", "with_exit_and_buy"):
                 self.place_with_exit("buy", px, self.levels, "s1", self.exit_px)
+                if self.mode == "with_exit_and_buy":
+                    self.place("buy", "limit", self.extra_px, self.levels, "s1")
             elif self.mode == "moving_close":
                 self.place("buy", "market", None, self.levels, "s1")
             return

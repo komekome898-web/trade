@@ -42,7 +42,15 @@ DELEGATION_fill_scenario_L769.md):
      low <= limit <= high fills it at the limit; a limit beyond the range in
      the direction that fills (a buy above the high, a sell below the low)
      fills it at the bar's open (L-770 a); beyond the range the other way it
-     does not fill on that bar. Stops keep the tier-2 rule.
+     does not fill on that bar. The limit is the price the venue holds (after
+     rounding to the tick by rule off_tick). Every such fill is the maker (the
+     open fill too: the owner's decision L-783 「maker」). A stop
+     order is refused (FillSpecError, the run stops): how a stop is tried
+     under this rule is not decided.
+     "Resting at a bar's close" is the order's arrival at the venue: the rule
+     needs the order delay to be 0 (bot.bt.pipeline refuses a run that
+     selects bar_rule with an order latency that can be other than 0; with a
+     delay the order would meet the bar after the signal's next one).
   attached_exit -- an exit limit sent with its entry (extra key
      `attached_to` = the entry's client_order_id; venue.ATTACHED_KEY) lives
      only after the entry fills, for the size the entry filled (L-770 b):

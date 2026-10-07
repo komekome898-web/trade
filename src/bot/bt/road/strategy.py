@@ -36,6 +36,11 @@
   close と flatten の注文は reduce_only で出す(5 周目 (2-1)。取引所の模型が建玉を超える分を切り、切った分は注文の表の
   約定した量と状態・閉じ方(reduce_only・reduce_only_size_cut_filled)に出る)。
 - `cancel(注文の番号)`: 取り消しを出す(出した時刻を記録して `ctx.cancel_order` に渡す)。
+- 指値の値段(place・close・place_with_exit の建てと決済): 戦略が計算した値段(注文の表の limit_px)を銘柄の刻みに切り捨てた
+  値段(注文の表の sent_limit_px)で送る(L-783「**間違えそうやから小数点以下は切り捨ててください**」。買いも売りも切り捨て。
+  刻み 1 円の銘柄では小数点以下の切り捨て。ほかの刻みの銘柄はオーナーにまだ聞いていないが、刻みに切り捨てる形にしてある)。
+  銘柄の刻みは道の走らせ(pipeline)が `set_price_tick` で渡す。渡されていない土台は指値を送らずに止める。
+  量の計算の値段(size_px)は今のまま戦略が計算した値段。
 - `place_with_exit(売買, 値段, 段数, 合図の番号, 決済の値段)`: 建ての指値と一緒に決済の指値を出す口(L-770 b
   「**建ての指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は
   合図の足の終値から計算)**」)。建ては place の指値と同じ(量は `size_per_level`)。決済は建ての逆の売買の指値、量 = 建ての
@@ -80,7 +85,7 @@ import bisect
 import json
 import math
 from abc import abstractmethod
-from decimal import Decimal
+from decimal import ROUND_FLOOR, Decimal
 from typing import Any, Mapping, Optional, Sequence
 
 from bot.bt.core import (
@@ -189,6 +194,7 @@ class RoadStrategy(Strategy):
         if quote_ccy not in QUOTE_CCYS:
             _fail(f"quote_ccy は {QUOTE_CCYS} のどれか: {quote_ccy!r}")
         self.quote_ccy = quote_ccy
+        self._tick: Optional[float] = None  # 銘柄の刻み(道の走らせが set_price_tick で渡す。指値の値段を切り捨てる)
         self.exit_reasons: dict = {}  # 道の走らせ(pipeline)が求める口。全部の注文に理由を書く(pipeline の trades は道では使わない)
         self._fx_rows: list = []
         pts = []
@@ -320,7 +326,7 @@ class RoadStrategy(Strategy):
                "closed_venue_t_ns": "", "close_kind": "", "close_reason": "", "state": "", "filled_qty": "0",
                "margin_jpy": "", "use_ratio": "", "levels": "", "size_px": "", "size_px_source": "", "quote_ccy": "",
                "usdjpy": "", "usdjpy_t_ns": "", "qty_raw": "", "qty_source": "", "position_at_send": "",
-               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": "", "reduce_only": "", "attached_to": ""}
+               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": "", "reduce_only": "", "attached_to": "", "sent_limit_px": ""}
         self._orders[coid] = row
         return row
 
@@ -370,6 +376,23 @@ class RoadStrategy(Strategy):
         if i < 0:
             _fail(f"時刻 {now} 以前の USDJPY の相場が無い(量の計算に使う。1 とみなさない。L-756)")
         return self._fx_rates[i], self._fx_times[i]
+
+    def set_price_tick(self, tick: float) -> None:
+        """銘柄の刻み(値段の通貨)。道の走らせ(pipeline)が銘柄の宣言の product.tick を渡す。指値は送る前にこの刻みに切り捨てる。"""
+        if isinstance(tick, bool) or not isinstance(tick, (int, float)) or not math.isfinite(float(tick)) or tick <= 0:
+            _fail(f"銘柄の刻みは 0 より大きい有限の数: {tick!r}")
+        self._tick = float(tick)
+
+    def _floor_to_tick(self, price: float) -> float:
+        """指値の値段を銘柄の刻みに切り捨てる(L-783。買いも売りも切り捨て。最短の 10 進の文字列で計算する)。"""
+        if self._tick is None:
+            _fail("指値を送るのに銘柄の刻みが渡されていない(道の走らせが set_price_tick で渡す)")
+        tk = Decimal(repr(self._tick))
+        n = (Decimal(repr(float(price))) / tk).to_integral_value(rounding=ROUND_FLOOR)
+        out = float(n * tk)
+        if out <= 0:
+            _fail(f"指値の値段 {price!r} を刻み {self._tick!r} に切り捨てると 0 以下になる")
+        return out
 
     def place(self, side: str, order_type: str, price: Optional[float], levels: int, signal: Any) -> str:
         """注文を出す。返すのは注文の番号(量が 0 で出さなかった行の番号も返す。状態は `order_state` で読める)。"""
@@ -584,6 +607,10 @@ class RoadStrategy(Strategy):
         # 決済の注文(close・flatten)は reduce_only で出す(5 周目 (2-1)): 送った後に建玉が減っても、取引所の模型が
         # 建玉を超える分を切る(bot.bt.fill.venue の _fill)ので、決済が逆向きの建玉を作らない(「段」に数えられない)
         # 建てと一緒に出す決済(place_with_exit)だけ、取引所の模型が知っている extra の鍵 attached_to(建ての注文の番号)を渡す
+        if order_type == "limit":
+            # 計算した値段(limit_px)は表に残し、刻みに切り捨てた値段を送る(L-783)
+            price = self._floor_to_tick(price)  # type: ignore[arg-type]
+            row["sent_limit_px"] = _num_text(price)
         req = OrderRequest(side=side, order_type=order_type, size=qty, price=price, client_order_id=coid,
                            reduce_only=reduce_only, extra=extra)
         row["reduce_only"] = "true" if reduce_only else "false"

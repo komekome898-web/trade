@@ -1147,7 +1147,7 @@ def test_r5_limit_fill_outside_the_filling_bar_fails(tmp_path, seed, px):
         px = round(_bar_at(_gen(5_000_000.0, step_pct=0.3, n=20, seed=seed), 4)["close"] * 0.99 * 2) / 2
     gen, store = _limit_at(tmp_path, seed, px)
     f = check_outputs(store, _bars(gen)).failures
-    assert len(f) == 2 and all(x["check"] == "iv" and "約定させた足(足 6、始まり" in x["reason"] for x in f), f
+    assert len(f) == 2 and all(x["check"] == "iv" and "約定させた足(足の JSON の 7 本目(始まり" in x["reason"] for x in f), f
 
 
 # (3) 説明の文

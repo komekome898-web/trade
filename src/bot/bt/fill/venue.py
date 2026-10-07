@@ -74,10 +74,25 @@ the entry it fills at its limit when low <= limit <= high, and from the next
 bar on as bar_rule; "next_bar": from the next bar on, as bar_rule. An entry
 that closes with nothing filled takes its exits with it (Canceled
 "attached_parent_closed"); one that closes partly filled leaves them for the
-part it filled (an exit done at that part is Canceled
-"attached_parent_part_filled", as an amended-down order is). An exit whose
-entry is unknown to the venue, or already closed with nothing filled, is
-Rejected.
+part it filled. An exit whose own size is above what its entry filled, once
+the entry is finished and the exit has filled that much, is Canceled
+"attached_exit_above_entry_filled" (the part above the entry's fill is
+closed, as an amended-down order is). An exit whose entry is unknown to the
+venue, or already closed with nothing filled, is Rejected. When an exit
+comes into force it meets our own resting orders on the other side exactly as
+a limit order arriving does (rule `self_trade`).
+
+A run that selects `bar_rule` refuses stop orders (FillSpecError: the run
+stops): the owner's scenario is about limit orders, and how a stop is tried
+under it is not decided (the run does not silently apply the tier-2 rule).
+
+Which rule filled each fill (`SimVenue.fill_marks`, one entry per
+`SimVenue.fills`, same order): ("", "", "") for the tier's own rule; under
+bar_rule (bar_rule, attached_exit, case) with case "range" (low <= limit <=
+high, at the limit), "open" (beyond the range in the filling direction, at
+the open) or "entry_bar" (an attached exit on its entry's bar, optimistic
+side). Every such fill is reported as the maker (the open fill too: the
+owner's decision L-783 「maker」).
 
 Same-instant order: everything with time <= t in the L3 feed is applied
 first; then the market event (or the request); orders held for the open are
@@ -130,7 +145,7 @@ from .spec import TIER_MECHANISM, FillSpec, FillSpecError
 _EPS = 1e-12
 ATTACHED_KEY = "attached_to"  # OrderRequest.extra: the entry an exit is attached to (its client_order_id)
 ATTACHED_PARENT_CLOSED = "attached_parent_closed"
-ATTACHED_PART_FILLED = "attached_parent_part_filled"
+ATTACHED_ABOVE_ENTRY = "attached_exit_above_entry_filled"  # the exit's size above what its entry filled is closed
 
 
 def _opp(side_name: str) -> str:
@@ -240,6 +255,7 @@ class SimVenue:
         self.impact_shift = 0.0
         self.arrivals: dict[str, int] = {}
         self.fills: list[FillRecord] = []
+        self.fill_marks: list[tuple[str, str, str]] = []  # per fill: (bar_rule, attached_exit, case) or ("", "", "")
         self._live: dict[str, _VOrder] = {}
         self._filled_any: set[str] = set()  # orders that had a fill (for OCO partners arriving later)
         self._oco_done: dict[str, str] = {}  # partner id -> why it must not live
@@ -279,8 +295,9 @@ class SimVenue:
                 # l3_mark: the entry stays in each queue, marked; skipped when reached
 
     # ------------------------------------------------------------- reporting
-    def _fill(self, o: _VOrder, price: float, qty: float, liquidity: str, t: int, out: list) -> float:
-        """Report a fill of up to `qty`; returns what was filled."""
+    def _fill(self, o: _VOrder, price: float, qty: float, liquidity: str, t: int, out: list,
+              mark: tuple = ("", "", "")) -> float:
+        """Report a fill of up to `qty`; returns what was filled. `mark`: which rule filled it (`fill_marks`)."""
         qty = min(qty, o.remaining)
         if o.reduce_only:
             if self.position == 0 or (self.position > 0) == (o.side == "buy"):
@@ -295,6 +312,7 @@ class SimVenue:
         if abs(self.position) < 1e-12:
             self.position = 0.0
         self.fills.append(FillRecord(t, o.coid, price, qty, liquidity))
+        self.fill_marks.append(mark)
         self._filled_any.add(o.coid)
         if o.remaining <= _EPS * max(1.0, o.size):
             parent = None if o.parent is None else self._by_id[o.parent]
@@ -323,27 +341,36 @@ class SimVenue:
     # ------------------------------------------------------ attached exits
     def _feed_children(self, parent: _VOrder, t: int, out: list) -> None:
         """The entry filled: each exit attached to it gets the size the entry filled and, waiting, starts to rest
-        now (`rest_since` = t: under bar_rule, bars starting at or after t). On the optimistic side
-        (attached_exit "same_bar") an exit starting on a bar fill is tried on that same bar: at its limit when the
-        limit is in [low, high]."""
+        now (`rest_since` = t: under bar_rule, bars starting at or after t), after meeting our own resting orders on
+        the other side as an arriving limit order does (rule self_trade). On the optimistic side (attached_exit
+        "same_bar") an exit starting on a bar fill is tried on that same bar: at its limit when the limit is in
+        [low, high]."""
         for c in self._children[parent.coid]:
             if c.state == "done":
                 continue
             c.size = min(c.full, parent.filled)
             if c.size < c.full * (1 - 1e-12):
-                c.size_cut_reason = ATTACHED_PART_FILLED
+                c.size_cut_reason = ATTACHED_ABOVE_ENTRY
             if c.state != "attached":
                 continue
             if c.remaining <= _EPS * max(1.0, c.size):
                 if parent.state == "done":  # the entry is finished and the exit has filled all it will get
                     c.state = "done"
                     self._live.pop(c.coid, None)
-                    out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_PART_FILLED))
+                    out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_ABOVE_ENTRY))
+                continue
+            # coming into force, the exit meets our own resting orders on the other side as an arriving limit does
+            # (_activate_limit: rule self_trade decides; with no book nothing else is taken)
+            c.state = "new"
+            if self.book.seen or self._own_opposite(c):
+                self._aggress(c, t, out, limit=c.price)
+            if c.state == "done":
                 continue
             c.state, c.rest_since = "resting", t
             bar = self._bar
             if self.fill.attached_exit == "same_bar" and bar is not None and bar.low <= c.price <= bar.high:  # type: ignore[operator]
-                self._fill(c, c.price, c.remaining, "maker", t, out)  # type: ignore[arg-type]
+                self._fill(c, c.price, c.remaining, "maker", t, out,  # type: ignore[arg-type]
+                           (self.fill.bar_rule, self.fill.attached_exit, "entry_bar"))
 
     def _parent_closed(self, parent: _VOrder, out: list) -> None:
         """The entry closed (cancelled, refused at a fill...): with nothing filled its exits go too; partly filled,
@@ -356,11 +383,11 @@ class SimVenue:
                 continue
             c.size = min(c.full, parent.filled)
             if c.size < c.full * (1 - 1e-12):
-                c.size_cut_reason = ATTACHED_PART_FILLED
+                c.size_cut_reason = ATTACHED_ABOVE_ENTRY
             if c.remaining <= _EPS * max(1.0, c.size):
                 c.state = "done"
                 self._live.pop(c.coid, None)
-                out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_PART_FILLED))
+                out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_ABOVE_ENTRY))
 
     def _attached_order(self, o: _VOrder, t: int, ack: VenueReport) -> list:
         """A new exit attached to an entry (module docstring)."""
@@ -435,6 +462,10 @@ class SimVenue:
 
     def on_order(self, order: OrderRequest, venue_time_ns: int) -> Sequence[VenueReport]:
         t = int(venue_time_ns)
+        if self.fill.bar_rule is not None and order.order_type in ("stop", "stop_limit"):
+            raise FillSpecError(f"order {order.client_order_id!r} is a {order.order_type} order, and this run selects "
+                                f"bar_rule {self.fill.bar_rule!r}: how a stop is tried under that rule is not decided "
+                                f"(the owner's scenario L-769 / L-770 is about limit orders); the run stops")
         self._advance(t)
         coid = order.client_order_id
         self.arrivals[coid] = self.arrivals.get(coid, 0) + 1
@@ -848,6 +879,11 @@ class SimVenue:
         default tier, so what it runs at "as is" is always the declared one)."""
         return {"mechanism": TIER_MECHANISM, "selected": self.tier}
 
+    def limit_prices(self) -> dict[str, float]:
+        """client_order_id -> the price the venue holds a limit order at (after rounding to the tick by rule
+        off_tick), for every limit order the venue built (a request refused before it was built is absent)."""
+        return {coid: o.price for coid, o in self._by_id.items() if o.kind == "limit" and o.price is not None}
+
     def open_orders(self) -> list[tuple[str, float]]:
         """(side, remaining size) of every order live at the venue (resting,
         waiting for a trigger, for the open or for a bar): what could still
@@ -918,9 +954,11 @@ class SimVenue:
                 if o.rest_since is None or start < o.rest_since:
                     continue
                 if ev.low <= o.price <= ev.high:  # type: ignore[operator]
-                    self._fill(o, o.price, o.remaining, "maker", t, out)  # type: ignore[arg-type]
+                    self._fill(o, o.price, o.remaining, "maker", t, out,  # type: ignore[arg-type]
+                               (rule, self.fill.attached_exit, "range"))
                 elif (o.price > ev.high) if o.side == "buy" else (o.price < ev.low):  # type: ignore[operator]
-                    self._fill(o, float(ev.open), o.remaining, "maker", t, out)
+                    # the open fill is the maker too (the owner's decision L-783 「maker」)
+                    self._fill(o, float(ev.open), o.remaining, "maker", t, out, (rule, self.fill.attached_exit, "open"))
                 continue
             if o.rest_since is None or start <= o.rest_since:
                 continue  # the bar began before (or as) the order rested: its low/high may predate it
