@@ -98,7 +98,9 @@ def _walk(n, seed, sig):
 
 
 # 直す前のコード(src を最後に変えたコミット 81e301d2)で、下の走らせの 4 つの表(signals・orders・fills・trades)の中身から取った指紋。
-# 2 回打って同じ値(docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_matilda_v37_fixA.md の読んだ事実)
+# 2 回打って同じ値(docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_matilda_v37_fixA.md の読んだ事実)。
+# 直し B(段の約定の決まりと交差、L-816)は記録を変える(注文の表の列・段の約定の値段)ので、B1・B2 の受け取りの後に
+# リードがこの値を取り直し、取り直した理由を B の委任の記録に書く(作業者は変えない)。
 PINNED = "ec36edecbcd8c276b19137e5c7527916c5c8717f09d4a4f275afb6621de1d7e5"
 
 
