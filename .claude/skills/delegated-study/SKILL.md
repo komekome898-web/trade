@@ -19,6 +19,8 @@ description: "How the lead delegates research/implementation to subagents in thi
 
 ## 1.5 委任の前(Jev。オーナー承認 2026-09-19、L-225)
 
+> **2026-10-07(L-791)で、委任文の検めには使わない。**`scripts/jev_delegate.py plan` は委任文が名指したファイルを全部開いて行数を数える(`scripts/jev_delegate.py:104-119`)ので、決まった制約の塊が名指す封印の置き場を開きうる。呼ぶたびに `data/jev/delegate/` に書く(`:489-491`)。jev は今 402(クレジット切れ)で届かない。委任文の検めは `scripts/delegation/check_delegation.py`(作り中。設計は `docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md`)に置き換える。
+
 委任文を書いたら、送る前に段の候補を見る(`docs/JEV.md` §8 の U8):
 
 ```
@@ -113,6 +115,8 @@ Do not commit. Do not push.
 1 だけで「不要」と結論しない。2〜4 は 1 が否でも独立に成立しうる。
 
 ## 6. 検収(リードの仕事)
+
+> **2026-10-07(L-791)で、報告の受け取りの検めは `scripts/delegation/check_report.py`(作り中)に置き換える。**下の `jev_report_intake.py check` は使わない(jev が 402 で届かない)。
 
 **受領検査(Jev。オーナー承認 2026-09-19、L-225)**: 報告を読む前に当てる(`docs/JEV.md` §8 の U2):
 
