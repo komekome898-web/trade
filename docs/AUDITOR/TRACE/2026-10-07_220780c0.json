@@ -30560,12 +30560,12 @@
   {
    "move": 1124,
    "tools": {
-    "Bash": 8,
+    "Bash": 9,
     "Read": 1,
     "Write": 1,
     "Agent": 1
    },
-   "n_tools": 11,
+   "n_tools": 12,
    "read_goal": false,
    "first_write_at": 8,
    "table_shown": false,
