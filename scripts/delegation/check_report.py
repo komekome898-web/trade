@@ -50,8 +50,10 @@ RE_HDEF = re.compile(r"^- H(\d+):")
 RE_QDEF = re.compile(r"^- Q(\d+):")
 RE_ITEM = re.compile(r"^\s*(?:[-*]|\d+[.)])\s*(?:\*\*)?\[(直す|聞く|止める)\]")
 RE_BR = re.compile(r"<br\s*/?>", re.I)
-QUOTE_SEP = set(" 。！？!?•→")
+QUOTE_SEP = set(" 。！？!?•→、，「」『』()（）")
 QUOTE_END = set("。！？!?")
+QUOTE_OPEN = set("「『(（")
+QUOTE_CLOSE = set("」』)）、，")
 RE_MDHEAD = re.compile(r"^#{1,6}(?:\s|$)")
 RE_RESP_ANY = re.compile(r"^応答\s*[:：]")
 RE_RESP = re.compile(r"^応答: (" + "|".join(RESPONSES) + r")[(（](.+)[)）]$")
@@ -234,7 +236,8 @@ def contains_bounded(v: str, q: str) -> bool:
         if i < 0:
             return False
         j = i + len(q)
-        if (i == 0 or v[i - 1] in QUOTE_SEP) and (q[-1] in QUOTE_END or j == len(v) or v[j] in QUOTE_SEP):
+        if ((i == 0 or v[i - 1] in QUOTE_SEP or q[0] in QUOTE_OPEN)
+                and (q[-1] in QUOTE_END or q[-1] in QUOTE_CLOSE or j == len(v) or v[j] in QUOTE_SEP)):
             return True
         start = i + 1
     return False
