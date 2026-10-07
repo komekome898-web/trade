@@ -35,7 +35,8 @@ from .strategy import NO_SIGNAL
 
 ROAD_DIR = "road"
 SCHEMA_FILE = "SCHEMA.json"
-SCHEMA_VERSION = "road-record-2"  # 2: 拒否の時刻・量の出所・送る時点の建玉の列、summary の groups(2 周目)
+SCHEMA_VERSION = "road-record-3"  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
+# 2  # 2: 拒否の時刻・量の出所・送る時点の建玉の列、summary の groups(2 周目)
 SUMMARY_TABLE = "summary"
 RANGES = ("optimistic", "pessimistic")  # 約定の範囲の側(bot.bt.pipeline.SIDES と同じ。pipeline をここから読まない)
 RAW = "生"
@@ -49,6 +50,28 @@ SCHEMA: dict = {
     "form": "表は gzip した CSV(UTF-8、1 行目が列の名前、全部の欄は文字列、空の欄は「無い」)。summary は JSON。"
             "時刻は UTC の ns の整数。数は 10 進の文字列(浮動小数は最短の 10 進)",
     "keys": "走らせ → 合図の番号 → 注文の番号 → 約定の番号 → 取引の番号。番号は (instrument, range) の中で一意",
+    "read_from": "道の走らせの読み口は road/ のこの表だけ。同じ走らせの置き場の pipeline の trades.json と metrics.json の"
+                 "取引の数は、建ての分と決済の約定の組ごとに 1 取引と数える FIFO の数え方で、道の数え方(建玉 0 → 0 で 1 取引。"
+                 "L-749・L-750)ではない",
+    "limits": [
+        "戦略は同じ Python の中で動くので、戦略が土台の内部の記録(合図の発生・消失の時刻など)を書き換えるのは機械で"
+        "塞ぎ切れない。外から照らせる記録(pipeline の約定・注文、足、fx、repro.json の指紋)との突き合わせで落とせない"
+        "書き換え(合図の時刻を足の閉じた別の時刻に動かす、合図の種類・向き・値・消失の理由を変える)は検査を通る",
+        "量の計算の値段は、出所が「直近の足の終値」なら足の終値と、「指値」なら指値と突き合わせる。「直近の約定の値段」"
+        "「直近の板の仲値」は突き合わせる記録が検査に渡らないので突き合わせない",
+        "合図の時刻の足の検査(分の区切り・その時刻に閉じた 1 分足)は、足で動き足の遅れ(feed の遅延)が 0 の走らせを"
+        "前提にする。足の遅れが 0 でない走らせは必ず落ちる",
+        "検査は置き場が道の走らせの置き場の road/ であることを求める(../repro.json・record.json・fills.json・"
+        "orders.json)。repro.json も書き換えられるので、最後の錨は押し出しの関門(L-755、次の段)",
+        "受け付けられた時刻: 道の走らせの門(pipeline の ArrivalGate)が預かる成行は、門がその場で受け付けを返す"
+        "(取引所の受け付けではない)",
+        "期限が切れた時刻: 取引所の模型に期限つきの注文(GTD)が無いので、ここに入るのは取引所が自分で閉じたもの"
+        "(期限切れ・成行の残り・reduce_only など。理由は close_reason)",
+        "書き出しの後の書き換えは repro.json の指紋で落ちる。repro.json の指紋も合わせて書き換えた場合に検査を通る欄"
+        "(3 周目に 1 欄ずつ書き換えて確かめた。tests/road/test_road_record.py): signals の kind・direction・end_t_ns・"
+        "end_reason、orders の acked_t_ns・cancel_sent_t_ns・cancel_rejected_t_ns・state_unknown_t_ns・close_reason、"
+        "約定の無い注文の placed_seq・closed_seq、どの計算にも使われていない fx の行の t_ns・rate・source",
+    ],
     "tables": {
         "signals": {
             "file": "signals.csv.gz", "kind": RAW, "row": "合図 1 つ",
@@ -70,19 +93,25 @@ SCHEMA: dict = {
                 ("side", "-", "buy / sell"),
                 ("order_type", "-", "market / limit"),
                 ("limit_px", "値段の通貨", "指値の値段(成行は空)"),
-                ("qty", "BTC", "注文の量(量の出所が「量の計算」なら切り捨て後の量、「建玉」なら送る時点の建玉の絶対値)"),
-                ("placed_t_ns", "ns", "土台が place を受けた時刻"),
+                ("qty", "BTC", "注文の量(量の出所が「量の計算」なら切り捨て後の量、「建玉」なら |送る時点の建玉 + 出ている決済の量|)"),
+                ("placed_t_ns", "ns", "土台が place / flatten を受けた時刻(決済の続きは、その知らせが届いた時刻)"),
+                ("placed_seq", "-", "そのとき土台に届いていた出来事の通し番号(届いた順。約定の notice_seq と比べる)"),
                 ("sent_t_ns", "ns", "出した時刻(ctx.place_order に渡した時刻。出さなかった行は空)"),
-                ("acked_t_ns", "ns", "受け付けられた時刻(OrderAckEvent が戦略に届いた時刻)"),
+                ("acked_t_ns", "ns", "受け付けられた時刻(OrderAckEvent が戦略に届いた時刻。門が預かる成行は門の受け付けで、"
+                                     "取引所の受け付けではない)"),
                 ("acked_venue_t_ns", "ns", "受け付けの取引所での時刻(OrderAckEvent の exchange_time_ns)"),
                 ("cancel_sent_t_ns", "ns", "取り消しを出した時刻(土台の cancel)"),
                 ("canceled_t_ns", "ns", "取り消した時刻(OrderCanceledEvent で answers = cancel が届いた時刻)"),
-                ("expired_t_ns", "ns", "期限が切れた時刻(OrderCanceledEvent で answers = venue = 取引所が自分で閉じた、で理由が "
-                                       "rejected_by_venue で始まらないものが届いた時刻)"),
-                ("rejected_t_ns", "ns", "拒否された時刻(OrderRejectEvent、または answers = venue で理由が rejected_by_venue で"
-                                        "始まる OrderCanceledEvent が届いた時刻)"),
+                ("expired_t_ns", "ns", "取引所が自分で閉じた時刻(期限切れ・成行の残り・reduce_only など。理由は close_reason)。"
+                                       "OrderCanceledEvent で answers = venue、中身が拒否でないものが届いた時刻"),
+                ("rejected_t_ns", "ns", "拒否された時刻: OrderRejectEvent(新規)、または中身が拒否の OrderCanceledEvent"
+                                        "(answers = venue / new で、理由が rejected_by_venue・refused_by_account で始まるか "
+                                        "post_only_would_take)が届いた時刻"),
+                ("cancel_rejected_t_ns", "ns", "取り消しが拒否された時刻(OrderRejectEvent で request_kind = cancel、最初の 1 つ)"),
+                ("state_unknown_t_ns", "ns", "状態不明の答えが届いた時刻(OrderStateUnknownEvent、新規・取り消しのどちらも。最初の 1 つ)"),
                 ("closed_t_ns", "ns", "閉じた知らせ(取り消し・期限切れ・新規への答えの一部としての取り消し・拒否)が届いた時刻"),
                 ("closed_venue_t_ns", "ns", "その取引所での時刻"),
+                ("closed_seq", "-", "閉じた知らせが届いたときの出来事の通し番号"),
                 ("close_kind", "-", "閉じ方の生の値: cancel / venue / new(OrderCanceledEvent の answers)/ reject"),
                 ("close_reason", "-", "閉じた理由の生の値(知らせの reason)"),
                 ("state", "-", "最後の状態(戦略の側の注文の見え方の状態)、または「量が 0 で出さない」"),
@@ -98,6 +127,8 @@ SCHEMA: dict = {
                 ("qty_raw", "BTC", "切り捨て前の量(Decimal、28 桁)"),
                 ("qty_source", "-", "量の出所: 量の計算(place。margin_jpy〜qty_raw の列で計算)/ 建玉(flatten。量の計算の列は空)"),
                 ("position_at_send", "BTC", "注文を受けた時点の建玉(土台が約定の知らせから持つ建玉、買いが +)"),
+                ("flatten_pending_at_send", "BTC", "決済の行: 送る時点で出ていた決済の注文のまだ約定していない量(買いが +)。"
+                                                   "量 = |position_at_send + これ|"),
             ]},
         "fills": {
             "file": "fills.csv.gz", "kind": RAW, "row": "約定 1 つ(道の約定 = pipeline の約定)",
@@ -113,6 +144,8 @@ SCHEMA: dict = {
                 ("ccy", "-", "値段の通貨"),
                 ("fee", "口座の通貨", "手数料(帳簿の損益には入れない。L-741)"),
                 ("liquidity", "-", "maker(指値)/ taker(成行)"),
+                ("notice_t_ns", "ns", "この約定の知らせが戦略(土台)に届いた時刻(データの終わりまで届かなければ空)"),
+                ("notice_seq", "-", "そのときの出来事の通し番号(届いた順。注文の placed_seq と比べる)"),
             ]},
         "fx": {
             "file": "fx.csv.gz", "kind": RAW, "row": "USDJPY の相場 1 点(戦略に渡した系列。円建ては行が無い)",
@@ -222,13 +255,19 @@ def raw_tables(runs: Iterable[tuple]) -> dict:
         for o in rec["orders"]:
             out["orders"].append({**ir, **{k: text(o[k]) for k in columns("orders")[2:]}})
             sig_of[o["order_id"]] = o["signal_id"]
+        seen: dict = {}
         for k, f in enumerate(fills):
             oid = f["order_id"]
             if oid not in sig_of:
                 raise TableError(f"銘柄 {inst}・側 {rng}: 約定 {k} の注文 {oid!r} が土台の記録に無い")
             if f.get("range", rng) != rng or f.get("instrument", inst) != inst:
                 raise TableError(f"銘柄 {inst}・側 {rng}: 約定 {k} の銘柄・側が違う")
+            got = seen.get(oid, 0)
+            seen[oid] = got + 1
+            ns = rec.get("fill_notices", {}).get(oid, [])
+            nt, nq = (ns[got][0], ns[got][1]) if got < len(ns) else ("", "")
             out["fills"].append({**ir, "fill_id": str(k), "order_id": oid, "signal_id": sig_of[oid],
+                                 "notice_t_ns": text(nt), "notice_seq": text(nq),
                                  "t_ns": text(f["t_ns"]), "venue_t_ns": text(f["venue_t_ns"]), "side": f["side"],
                                  "qty": text(float(f["qty"])), "px": text(float(f["px"])), "ccy": quote_ccy,
                                  "fee": text(float(f["fee"])), "liquidity": text(f["liquidity"])})

@@ -24,45 +24,64 @@
 - `road_summary.json`: 帳簿のツールのまとめ(`ledger.SUMMARY_KEYS`: fill_count・closed_trades・pnl_jpy・open_trades・
   trades。trades の行は `ledger.TRADE_KEYS`)
 
-表の形の置き場(道の走らせの `road/`。RECORD_FORM_L766.md §2・§4、委任文 DELEGATION_record_form.md 4.)には
-`check_tables` が次を当てる。失敗した行は {"check": "i"〜"v", "row": どの表のどの行か, "reason": 日本語}。
+表の形の置き場(道の走らせの `road/`。RECORD_FORM_L766.md §2・§4、委任文 DELEGATION_record_form.md 4.・3 周目)には
+`check_tables` が次を当てる。失敗した行は {"check": "i"〜"vi", "row": どの表のどの行か, "reason": 日本語}。
 (i)  表と列が SCHEMA どおりそろっているか: SCHEMA.json がこのコードの SCHEMA と同じ、表のファイルが全部あり、
      列の名前がその表の SCHEMA の列と同じ順で同じ(欠けたら失敗)。
 (ii) 生の表 `fills`・`fx` から帳簿のツールで `ledger_fills`・`trades`・`summary` を作り直し(`tables.derive`。書き出しと
      同じ関数)、行の数・1 欄でも違えば失敗(使った USDJPY の値と相場の時刻の欄も含む)。summary の (銘柄, 側) の組
-     (groups)は、置き場が走らせの置き場の road/ なら走らせの記録(../record.json)の銘柄 × 側と同じであること。
-(iii) つなぎ: どの約定にも注文があり、約定の合図の番号 = その注文の合図の番号。どの注文にも存在する合図か「無し」が
-     ある。合図のある注文は合図の発生の後に出ている(土台が受けた時刻 ≥ 発生の時刻)。どの合図も発生 ≤ 消失、
-     消失の時刻が空なら理由は「データの終わり」。番号は (銘柄, 側) の中で一意。
+     (groups)は、走らせの記録(../record.json)の銘柄 × 側と同じであること。
+(iii) 値の形とつなぎと順:
+     - 売買・種類・状態・閉じ方・量の出所・出所・約定の liquidity が決まった値の中か、value_json が JSON として読めるか、
+       時刻・通し番号が整数か、fx の通貨の組が 6 文字の大文字か、fx の行の (銘柄, 側) が走らせの組の中か(黙って捨てない)
+     - 時刻の順: 土台が受けた = 出した ≤ 受け付けられた ≤ 閉じた、出した ≤ 取り消しを出した ≤ 取り消した、
+       取引所での時刻 ≤ 戦略に届いた時刻、取り消した・期限が切れた・拒否された時刻 = 閉じた時刻(閉じ方と合う)
+     - 届いた順: 注文を受けた時の通し番号は表の順に減らない、約定の知らせの通し番号は一意でその注文を受けた後、
+       知らせの通し番号の順に届いた時刻が減らない
+     - つなぎ: どの約定にも注文があり、約定の合図の番号 = その注文の合図の番号。どの注文にも存在する合図か「無し」が
+       ある。合図のある注文は合図の発生の後に出ている。どの合図も発生 ≤ 消失、消失の時刻が空なら理由は「データの終わり」
 (iv) 足の検査: 約定は (b) と同じ(その分の 1 分足・分の区切り・安値以上高値以下)。合図の発生・消失の時刻は、
      分の区切り(60 秒の倍数の ns)で、その時刻に閉じた 1 分足(始まり = 時刻 − 60 秒)があること
      (道は 1 分足で回し、戦略は足が閉じた時刻に足を見て合図を出す)。
      **足の遅れ(feed の遅延)が 0 でない走らせでは、合図の時刻が足の閉じた時刻より遅れて分の区切りから外れるので、
      この検査に必ず落ちる**(2 周目 (e): 今のまま。`tests/road/test_road_record.py` の場面で確かめている)。
-(v)  注文の量: 出所が土台の注文のうち、量の出所が「量の計算」(place)の行は、記録した量の計算の値(証拠金・比率・
-     段数・その時の値段・値段の通貨・USDJPY)から `size_per_level` で計算し直した量 = 注文の量(切り捨て前の量も同じ)。
-     「建玉」(flatten)の行は、注文を受けた時刻以前の約定(この注文より前に出した注文の約定)までで帳簿のツールが出す
-     建玉の絶対値 = 注文の量、送る時点の建玉の列 = その建玉、売買は建玉の逆、量の計算の列は空(2 周目 (d))。
-     約定の知らせが戦略に届く前に決済を出す走らせ(知らせの遅れがある)では、土台の建玉と帳簿の建玉がずれてこの検査に落ちる。量が 0 の行は状態「量が 0 で出さない」で
-     出していない(出した時刻が空)、量が 0 でない行は状態がそれでない。
+(v)  注文の量と量の計算の値:
+     - 量の出所が「量の計算」(place)の行: 証拠金 = 200,000 円・比率 = 0.7(検査の側の定数。L-743・L-746)、記録した
+       量の計算の値から `size_per_level` で計算し直した量 = 注文の量(切り捨て前の量も)、量の計算の値段 = 指値なら指値の
+       値段・直近の足の終値なら土台が受けた時刻以前に閉じた最後の 1 分足の終値(足の JSON に close が要る)、
+       ドル建ての USDJPY = fx の土台が受けた時刻以前の最後の相場(時刻も)、円建ては USDJPY が空、
+       受けた時点の建玉 = それまでに知らせの届いた約定の帳簿のツールの建玉
+     - 量の出所が「建玉」(flatten)の行: 量の計算の列は空、送る時点の建玉 = 注文を受けた時の通し番号までに知らせの
+       届いた約定で帳簿のツールが出す建玉、出ていた決済の量 = それより前の決済の行で閉じておらずまだ約定していない量
+       (同じ通し番号までの知らせで)、注文の量 = |建玉 + 出ていた決済の量|、売買はその逆(3 周目 問 5)
+     - 量が 0 の行は状態「量が 0 で出さない」で出していない(出した時刻が空)、量が 0 でない行は状態がそれでない
+     - 注文ごとに、知らせの届いた約定の量の和 = 約定した量、全部の約定の量の和 ≤ 注文の量
+(vi) 走らせの記録との突き合わせ: 置き場は道の走らせの置き場の road/ であること(../repro.json・record.json・
+     fills.json・orders.json が読める)。road/ のファイルの指紋が repro.json の指紋と同じ(書き出しの後の書き換えは
+     ここで落ちる)。fills の各行 = pipeline の fills.json の行(注文の番号・時刻・取引所での時刻・売買・量・値段・
+     手数料・liquidity)、出した注文の量・売買・種類 = pipeline の orders.json(実際に送った量)。
+限界(SCHEMA.json の limits にも書く): 戦略が土台の合図の記録を書き換えるのは落とせない。repro.json の指紋も
+合わせて書き換えた場合に通る欄がある(SCHEMA の limits に列挙)。
 
 ここで出す文は全部日本語(O-1)。下の層の例外の英語の文は出さない。
 """
 from __future__ import annotations
 
 import bisect
+import hashlib
 import json
 import math
 import os
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Mapping, Sequence
 
 from .ledger import SUMMARY_KEYS, TRADE_KEYS, LedgerError, book
 from .sizing import SizingError, size_detail
 from .strategy import DATA_END, NO_SIGNAL, ORIGIN_FORCED, ORIGIN_ROAD, ZERO_QTY_STATE
-from .strategy import QTY_FROM_POSITION, QTY_FROM_SIZING
+from .strategy import OPEN_STATE_VALUES, QTY_FROM_POSITION, QTY_FROM_SIZING, _dec_text
 from .tables import (CSV_TABLES, RANGES, ROAD_DIR, SCHEMA, SCHEMA_FILE, SUMMARY_TABLE, TableError, columns, derive,
-                     groups_of, is_table_store, read_csv, read_json)
+                     groups_of, is_table_store, read_csv, read_json, text)
 
 FILLS_FILE = "road_fills.json"
 SUMMARY_FILE = "road_summary.json"
@@ -336,25 +355,54 @@ def _compare_rows(out: list, table: str, written: list, again: list, key: str) -
                       f"{c} の書かれた値 {w.get(c)!r} と生の表から作り直した値 {a.get(c)!r} が違う")
 
 
-def _run_groups(store_dir: str) -> list | None:
-    """置き場が道の走らせの置き場の road/ なら、走らせの記録(../record.json)の銘柄 × 側。読めなければ None。"""
+def _read_run(store_dir: str, out: list) -> dict | None:
+    """(vi) 置き場が道の走らせの置き場の road/ であることを求め、走らせの置き場の記録を読む:
+    repro.json(road/ のファイルの指紋を突き合わせる)・record.json(銘柄)・fills.json・orders.json(pipeline の書き出し)。
+    読めたら {groups, pfills, porders} を返す。"""
     d = os.path.normpath(store_dir)
     if os.path.basename(d) != ROAD_DIR:
+        _fail(out, "vi", store_dir, f"置き場が道の走らせの置き場の {ROAD_DIR}/ でない(走らせの記録 repro.json・record.json・"
+                                    f"fills.json・orders.json と突き合わせられない)")
         return None
-    path = os.path.join(os.path.dirname(d), "record.json")
-    if not os.path.isfile(path):
+    parent = os.path.dirname(d)
+    got = {}
+    for name, what in (("repro.json", "走らせの再現の記録"), ("record.json", "走らせの記録"),
+                       ("fills.json", "pipeline の約定の書き出し"), ("orders.json", "pipeline の注文の書き出し")):
+        try:
+            got[name] = read_json(os.path.join(parent, name), what)
+        except TableError as exc:
+            _fail(out, "vi", name, str(exc))
+    if len(got) != 4:
         return None
     try:
-        rec = read_json(path, "走らせの記録")
-        names = [i["name"] for i in rec["config"]["instruments"]]
-    except (TableError, KeyError, TypeError):
+        sha = got["repro.json"]["sha256"]
+        want = {k[len(ROAD_DIR) + 1:]: v for k, v in sha.items() if k.startswith(ROAD_DIR + "/")}
+        names = [n for n in sorted(os.listdir(d)) if os.path.isfile(os.path.join(d, n))]
+        for n in sorted(set(want) | set(names)):
+            if n not in names:
+                _fail(out, "vi", f"{ROAD_DIR}/{n}", "repro.json に指紋があるファイルが置き場に無い")
+                continue
+            if n not in want:
+                _fail(out, "vi", f"{ROAD_DIR}/{n}", "repro.json に指紋が無いファイルが置き場にある")
+                continue
+            with open(os.path.join(d, n), "rb") as fh:
+                h = hashlib.sha256(fh.read()).hexdigest()
+            if h != want[n]:
+                _fail(out, "vi", f"{ROAD_DIR}/{n}", "ファイルの指紋が repro.json の指紋と違う(書き出しの後に書き換えた)")
+        names_i = [i["name"] for i in got["record.json"]["config"]["instruments"]]
+        pf = got["fills.json"]["data"]
+        po = got["orders.json"]["data"]
+        if not isinstance(pf, list) or not isinstance(po, list):
+            raise TypeError
+    except (KeyError, TypeError, AttributeError):
+        _fail(out, "vi", parent, "走らせの記録(repro.json・record.json・fills.json・orders.json)の形が読めない")
         return None
-    return sorted((n, r) for n in names for r in RANGES)
+    return {"groups": sorted((n, r) for n in names_i for r in RANGES), "pfills": pf, "porders": po}
 
 
-def _check_derived(t: dict, out: list, store_dir: str = "") -> None:
+def _check_derived(t: dict, out: list, run: dict | None) -> None:
     """(ii) 生の表から作り直して突き合わせる。(銘柄, 側) の組は、走らせの記録があればその銘柄 × 側、
-    無ければ summary の groups と生の表に出てくる組を合わせたもの(summary の groups は走らせの記録と突き合わせる)。"""
+    無ければ summary の groups と生の表に出てくる組を合わせたもの。"""
     w = t[SUMMARY_TABLE]
     wg = w.get("groups") if isinstance(w, dict) else None
     written_groups = set()
@@ -362,13 +410,12 @@ def _check_derived(t: dict, out: list, store_dir: str = "") -> None:
         written_groups = {tuple(g) for g in wg}
     else:
         _fail(out, "ii", SUMMARY_TABLE, "summary の groups が [銘柄, 側] の列でない")
-    run = _run_groups(store_dir)
     groups = set(groups_of(t["signals"], t["orders"], t["fills"]))
     if run is not None:
-        if sorted(written_groups) != run:
+        if sorted(written_groups) != run["groups"]:
             _fail(out, "ii", SUMMARY_TABLE, f"summary の groups {sorted(written_groups)} が走らせの記録(record.json)の"
-                                            f"銘柄 × 側 {run} と違う")
-        groups |= set(run)
+                                            f"銘柄 × 側 {run['groups']} と違う")
+        groups |= set(run["groups"])
     else:
         groups |= written_groups
     try:
@@ -397,6 +444,134 @@ def _check_derived(t: dict, out: list, store_dir: str = "") -> None:
                       f"{c} の書かれた値 {got!r} と生の表から作り直した値 {ar.get(c)!r} が違う")
 
 
+ORDER_STATES = OPEN_STATE_VALUES + ("FILLED", "CANCELED", "REJECTED")
+CLOSE_KINDS = ("", "cancel", "new", "venue", "reject")
+_ORDER_TIME_COLS = ("placed_t_ns", "sent_t_ns", "acked_t_ns", "acked_venue_t_ns", "cancel_sent_t_ns", "canceled_t_ns",
+                    "expired_t_ns", "rejected_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns", "closed_t_ns",
+                    "closed_venue_t_ns", "placed_seq", "closed_seq", "usdjpy_t_ns")
+
+
+def _check_forms(t: dict, out: list) -> None:
+    """(iii) 値の形(決まった値の中か・JSON として読めるか・整数か)と時刻の順。"""
+    for k, s in enumerate(t["signals"]):
+        lab = _label("signals", k, s)
+        for c in ("kind", "direction"):
+            if s[c] == "":
+                _fail(out, "iii", lab, f"{c} が空")
+        try:
+            json.loads(s["value_json"])
+        except (ValueError, TypeError):
+            _fail(out, "iii", lab, f"value_json {s['value_json']!r} が JSON として読めない")
+    for k, o in enumerate(t["orders"]):
+        lab = _label("orders", k, o)
+        forced = o["origin"] == ORIGIN_FORCED
+        if o["origin"] not in (ORIGIN_ROAD, ORIGIN_FORCED):
+            _fail(out, "iii", lab, f"出所 {o['origin']!r} が「{ORIGIN_ROAD}」でも「{ORIGIN_FORCED}」でもない")
+        zero = o["state"] == ZERO_QTY_STATE
+        ok_side = ("buy", "sell") + (("",) if forced or (zero and o["qty_source"] == QTY_FROM_POSITION) else ())
+        if o["side"] not in ok_side:
+            _fail(out, "iii", lab, f"売買 {o['side']!r} が {ok_side} のどれでもない")
+        ok_type = ("market", "limit") + (("",) if forced else ())
+        if o["order_type"] not in ok_type:
+            _fail(out, "iii", lab, f"種類 {o['order_type']!r} が {ok_type} のどれでもない")
+        ok_state = ORDER_STATES + ((ZERO_QTY_STATE,) if not forced else ("",))
+        if o["state"] not in ok_state:
+            _fail(out, "iii", lab, f"状態 {o['state']!r} が決まった値(core の注文の状態か「{ZERO_QTY_STATE}」)でない")
+        if o["close_kind"] not in CLOSE_KINDS:
+            _fail(out, "iii", lab, f"閉じ方 {o['close_kind']!r} が {CLOSE_KINDS} のどれでもない")
+        if not forced and o["qty_source"] not in (QTY_FROM_SIZING, QTY_FROM_POSITION):
+            _fail(out, "iii", lab, f"量の出所 {o['qty_source']!r} が「{QTY_FROM_SIZING}」でも「{QTY_FROM_POSITION}」でもない")
+        if o["order_type"] == "market" and o["limit_px"] != "":
+            _fail(out, "iii", lab, f"成行の注文に指値の値段 {o['limit_px']!r} がある")
+        if o["order_type"] == "limit" and o["limit_px"] == "":
+            _fail(out, "iii", lab, "指値の注文に指値の値段が無い")
+        tv = {}
+        if forced:
+            continue  # 口座の強制の注文は知らせから作った行(出した時刻が無い)
+        for c in _ORDER_TIME_COLS:
+            if o[c] == "":
+                continue
+            v = _int_or_none(o[c])
+            if v is None:
+                _fail(out, "iii", lab, f"{c} {o[c]!r} が整数でない")
+            else:
+                tv[c] = v
+        # 時刻の順: 土台が受けた = 出した ≤ 受け付けられた ≤ 閉じた、出した ≤ 取り消しを出した ≤ 取り消した
+        if "sent_t_ns" in tv and tv.get("placed_t_ns") != tv["sent_t_ns"]:
+            _fail(out, "iii", lab, f"出した時刻 {tv['sent_t_ns']} が土台が受けた時刻 {tv.get('placed_t_ns')} と違う(同じ時に出す)")
+        sent = tv.get("sent_t_ns")
+        for c in ("acked_t_ns", "cancel_sent_t_ns", "closed_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns"):
+            if c in tv and (sent is None or tv[c] < sent):
+                _fail(out, "iii", lab, f"{c} {tv[c]} が出した時刻 {sent} より前(または出していない)")
+        if "acked_t_ns" in tv and "closed_t_ns" in tv and tv["closed_t_ns"] < tv["acked_t_ns"]:
+            _fail(out, "iii", lab, f"閉じた時刻 {tv['closed_t_ns']} が受け付けられた時刻 {tv['acked_t_ns']} より前")
+        for c, kinds in (("canceled_t_ns", ("cancel",)), ("expired_t_ns", ("venue",)),
+                         ("rejected_t_ns", ("reject", "venue", "new"))):
+            if c in tv and (tv[c] != tv.get("closed_t_ns") or o["close_kind"] not in kinds):
+                _fail(out, "iii", lab, f"{c} {tv[c]} が閉じた時刻 {tv.get('closed_t_ns')}・閉じ方 {o['close_kind']!r} と合わない")
+        if "canceled_t_ns" in tv and tv.get("cancel_sent_t_ns", tv["canceled_t_ns"] + 1) > tv["canceled_t_ns"]:
+            _fail(out, "iii", lab, "取り消した時刻の前に取り消しを出した時刻が無い")
+        if not (("closed_t_ns" in tv) == ("closed_seq" in tv) == ("closed_venue_t_ns" in tv) == (o["close_kind"] != "")
+                == (o["close_reason"] != "")):
+            _fail(out, "iii", lab, "閉じた時刻・取引所での時刻・閉じた知らせの番号・閉じ方・理由のそろい方が合わない")
+        for c, v in (("acked_venue_t_ns", "acked_t_ns"), ("closed_venue_t_ns", "closed_t_ns")):
+            if (c in tv) != (v in tv) or (c in tv and tv[c] > tv[v]):
+                _fail(out, "iii", lab, f"取引所での時刻 {c} {tv.get(c)} が戦略に届いた時刻 {v} {tv.get(v)} の後(または片方だけ)")
+        if "closed_seq" in tv and tv["closed_seq"] < tv.get("placed_seq", 0):
+            _fail(out, "iii", lab, f"閉じた知らせの番号 {tv['closed_seq']} が受けた時の番号 {tv.get('placed_seq')} より前")
+        if o["qty_source"] == QTY_FROM_SIZING and o["flatten_pending_at_send"] != "":
+            _fail(out, "iii", lab, "量の計算の行に、出ていた決済の量が書かれている")
+    # 届いた順: 土台が受けた時の番号は表の順に減らない。約定の知らせの番号は (銘柄, 側) の中で一意で、その注文を
+    # 受けた時の番号より後、知らせの番号の順に届いた時刻が減らない
+    last: dict = {}
+    placed_of = {}
+    for k, o in enumerate(t["orders"]):
+        if o["origin"] != ORIGIN_ROAD:
+            continue
+        g, v = (o["instrument"], o["range"]), _int_or_none(o["placed_seq"])
+        placed_of[g + (o["order_id"],)] = v
+        if v is None:
+            _fail(out, "iii", _label("orders", k, o), f"受けた時の番号 {o['placed_seq']!r} が整数でない")
+        elif v < last.get(g, 0):
+            _fail(out, "iii", _label("orders", k, o), f"受けた時の番号 {v} が前の行の {last[g]} より小さい(表は受けた順)")
+        else:
+            last[g] = v
+    notices: dict = {}
+    for k, f in enumerate(t["fills"]):
+        ns, nt = _int_or_none(f["notice_seq"]), _int_or_none(f["notice_t_ns"])
+        if ns is None or nt is None:
+            continue
+        g = (f["instrument"], f["range"])
+        lab = _label("fills", k, f)
+        pv = placed_of.get(g + (f["order_id"],))
+        if pv is not None and ns <= pv:
+            _fail(out, "iii", lab, f"約定の知らせの番号 {ns} が注文を受けた時の番号 {pv} より後でない")
+        if ns in notices.setdefault(g, {}):
+            _fail(out, "iii", lab, f"約定の知らせの番号 {ns} が同じ銘柄・側の中で二度ある")
+        notices[g][ns] = (nt, lab)
+    for g, d in notices.items():
+        prev = None
+        for ns in sorted(d):
+            nt, lab = d[ns]
+            if prev is not None and nt < prev:
+                _fail(out, "iii", lab, f"知らせの番号 {ns} の届いた時刻 {nt} が、前の番号の届いた時刻 {prev} より前")
+            prev = nt if prev is None else max(prev, nt)
+    for k, f in enumerate(t["fills"]):
+        lab = _label("fills", k, f)
+        if f["side"] not in ("buy", "sell"):
+            _fail(out, "iii", lab, f"売買 {f['side']!r} が buy / sell でない")
+        if f["liquidity"] not in ("maker", "taker"):
+            _fail(out, "iii", lab, f"liquidity {f['liquidity']!r} が maker / taker でない")
+        vt, nt = _int_or_none(f["venue_t_ns"]), _int_or_none(f["notice_t_ns"])
+        if (f["notice_t_ns"] == "") != (f["notice_seq"] == "") or (f["notice_seq"] and _int_or_none(f["notice_seq"]) is None):
+            _fail(out, "iii", lab, "知らせの時刻と通し番号のそろい方が合わない")
+        if nt is not None and vt is not None and nt < vt:
+            _fail(out, "iii", lab, f"知らせが届いた時刻 {nt} が取引所での約定の時刻 {vt} より前")
+    for k, p in enumerate(t["fx"]):
+        if len(p["pair"]) != 6 or not p["pair"].isupper() or not p["pair"].isalpha():
+            _fail(out, "iii", f"fx の {k} 行目", f"通貨の組 {p['pair']!r} が 6 文字の大文字でない")
+
+
 def _int_or_none(v: str) -> int | None:
     try:
         return int(v) if v != "" and v.strip() == v else None
@@ -404,8 +579,13 @@ def _int_or_none(v: str) -> int | None:
         return None
 
 
-def _check_links(t: dict, out: list) -> None:
-    """(iii) 合図 → 注文 → 約定のつなぎ、合図の発生 ≤ 消失。"""
+def _check_links(t: dict, out: list, groups: list | None) -> None:
+    """(iii) 合図 → 注文 → 約定のつなぎ、合図の発生 ≤ 消失、fx の組が走らせの組の中か。"""
+    if groups is not None:
+        for k, p in enumerate(t["fx"]):
+            if (p["instrument"], p["range"]) not in set(groups):
+                _fail(out, "iii", f"fx の {k} 行目", f"銘柄 {p['instrument']}・側 {p['range']} が走らせの組 {groups} に無い"
+                                                    f"(黙って捨てない)")
     sigs: dict = {}
     for k, s in enumerate(t["signals"]):
         key = (s["instrument"], s["range"], s["signal_id"])
@@ -505,73 +685,115 @@ def _num(v: str):
 
 
 SIZING_COLS = ("margin_jpy", "use_ratio", "levels", "size_px", "size_px_source", "usdjpy", "usdjpy_t_ns", "qty_raw")
+# 量の計算の定数は検査の側に書く(sizing・strategy の定数を読まない: 走らせの中で書き換えられても縛れるように)。
+# L-743「**俺は20万って言ってたのに**」・L-746「**70%**」
+CHECK_MARGIN_JPY = "200000"
+CHECK_USE_RATIO = "0.7"
 
 
-def _position_before(t: dict, o: Mapping, k: int, order_pos: dict) -> str:
-    """注文 o(orders の k 行目)を送る時刻以前の約定までで、帳簿のツールが出す建玉(10 進の文字列)。
-    使う約定: 同じ (銘柄, 側) の、時刻 ≤ 注文を受けた時刻で、注文の表でこの注文より前の行の注文の約定(この注文自身と、
-    後に出した注文の約定は入れない。道の約定の時刻は値を決めた観測の時刻で、注文を受けた時刻と同じことがあるため)。"""
-    placed = int(o["placed_t_ns"])
-    inp = []
+def _dsum(vals) -> Decimal:
+    out = Decimal(0)
+    for v in vals:
+        out += Decimal(v)
+    return out
+
+
+def _flatten_expect(t: dict, o: Mapping, k: int) -> tuple[str, Decimal]:
+    """決済の行 o(orders の k 行目)の (送る時点の建玉, 出ていた決済の注文のまだ約定していない量)。
+    建玉: 同じ (銘柄, 側) の約定のうち、知らせが届いた通し番号 ≤ この注文の placed_seq のもので、帳簿のツールが出す建玉。
+    出ていた決済の量: この行より前の決済の行で、閉じた知らせがこの通し番号までに届いておらず、まだ約定していない量
+    (届いた知らせの約定を引く。買いが +)。"""
+    seq = int(o["placed_seq"])
+    g = (o["instrument"], o["range"])
+    inp, by_order = [], {}
     for f in t["fills"]:
-        if (f["instrument"], f["range"]) != (o["instrument"], o["range"]):
-            continue
-        j = order_pos.get((f["instrument"], f["range"], f["order_id"]))
-        if j is None or j >= k or int(f["t_ns"]) > placed:
+        if (f["instrument"], f["range"]) != g or f["notice_seq"] == "" or int(f["notice_seq"]) > seq:
             continue
         inp.append({"t_ns": int(f["t_ns"]), "side": f["side"], "qty": float(f["qty"]), "px": float(f["px"]),
                     "ccy": f["ccy"]})
-    if not inp:
-        return "0"
-    fx = [{"t_ns": int(p["t_ns"]), "pair": p["pair"], "rate": float(p["rate"])} for p in t["fx"]
-          if (p["instrument"], p["range"]) == (o["instrument"], o["range"])]
-    return book(inp, fx or None).fills[-1]["position_after"]
+        by_order.setdefault(f["order_id"], []).append(f["qty"])
+    if inp:
+        fx = [{"t_ns": int(p["t_ns"]), "pair": p["pair"], "rate": float(p["rate"])} for p in t["fx"]
+              if (p["instrument"], p["range"]) == g]
+        pos = book(inp, fx or None).fills[-1]["position_after"]
+    else:
+        pos = "0"
+    pending = Decimal(0)
+    for j, r in enumerate(t["orders"]):
+        if j >= k or (r["instrument"], r["range"]) != g or r["qty_source"] != QTY_FROM_POSITION or r["sent_t_ns"] == "":
+            continue
+        if r["closed_seq"] != "" and int(r["closed_seq"]) <= seq:
+            continue
+        rest = Decimal(r["qty"]) - _dsum(by_order.get(r["order_id"], []))
+        pending += rest if r["side"] == "buy" else -rest
+    return pos, pending
 
 
-def _check_sizes(t: dict, out: list) -> None:
-    """(v) 注文の量: 量の出所が「量の計算」の行は、記録した量の計算の値から計算し直した量。「建玉」の行は、送る時刻
-    以前の約定までで帳簿のツールが出す建玉の絶対値(売買は建玉の逆、量の計算の列は空)。"""
-    order_pos = {(o["instrument"], o["range"], o["order_id"]): k for k, o in enumerate(t["orders"])}
+def _check_sizes(t: dict, bars: Sequence[Mapping], out: list) -> None:
+    """(v) 注文の量と、量の計算の値を外の記録と突き合わせる(モジュールの説明を参照)。"""
+    closes = {}
+    for b in bars:
+        if isinstance(b, Mapping) and type(b.get("t_ns")) is int:
+            closes[b["t_ns"] + MINUTE_NS] = b.get("close")  # 足が閉じた時刻 -> 終値
+    close_times = sorted(closes)
+    fx_by = {}
+    for p in t["fx"]:
+        if p["pair"] == "USDJPY":
+            v = _int_or_none(p["t_ns"])
+            if v is not None:
+                fx_by.setdefault((p["instrument"], p["range"]), []).append((v, p["rate"]))
+    for v in fx_by.values():
+        v.sort(key=lambda x: x[0])  # 同じ時刻は後の行(FxRates と同じ: 安定な並べ替えで後のものを最後に)
+    fills_by = {}
+    for f in t["fills"]:
+        fills_by.setdefault((f["instrument"], f["range"], f["order_id"]), []).append(f)
     for k, o in enumerate(t["orders"]):
-        lab = _label("orders", k, o, "注文")
-        if o["origin"] == ORIGIN_FORCED:
-            continue
+        lab = _label("orders", k, o)
         if o["origin"] != ORIGIN_ROAD:
-            _fail(out, "v", lab, f"出所 {o['origin']!r} が「{ORIGIN_ROAD}」でも「{ORIGIN_FORCED}」でもない")
             continue
-        if o["qty_source"] == QTY_FROM_POSITION:
-            filled = [c for c in SIZING_COLS if o[c] != ""]
-            if filled:
-                _fail(out, "v", lab, f"量の出所が「建玉」の行に量の計算の列 {filled} が書かれている")
-            try:
-                pos = _position_before(t, o, k, order_pos)
-            except (ValueError, KeyError, LedgerError) as exc:
-                _fail(out, "v", lab, f"送る時刻以前の約定から建玉を計算できない: {exc}")
-                continue
-            want = repr(abs(float(pos)))
-            if o["qty"] != want:
-                _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、送る時刻以前の約定までの建玉 {pos} の絶対値 {want!r} と違う")
-            if o["position_at_send"] != pos:
-                _fail(out, "v", lab, f"送る時点の建玉 {o['position_at_send']!r} が帳簿のツールの建玉 {pos!r} と違う")
-            if pos != "0" and o["side"] != ("sell" if not pos.startswith("-") else "buy"):
-                _fail(out, "v", lab, f"決済の売買 {o['side']!r} が建玉 {pos} の逆でない")
-            zero = pos == "0"
-        elif o["qty_source"] == QTY_FROM_SIZING:
-            try:
+        mine = fills_by.get((o["instrument"], o["range"], o["order_id"]), [])
+        try:
+            if o["qty_source"] == QTY_FROM_POSITION:
+                filled = [c for c in SIZING_COLS if o[c] != ""]
+                if filled:
+                    _fail(out, "v", lab, f"量の出所が「建玉」の行に量の計算の列 {filled} が書かれている")
+                pos, pending = _flatten_expect(t, o, k)
+                net = Decimal(pos) + pending
+                want = repr(float(abs(net)))
+                if o["qty"] != want:
+                    _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、送る時点までに知らせの届いた約定の建玉 {pos} と出ていた"
+                                         f"決済の量 {_dec_text(pending)} の和の絶対値 {want!r} と違う")
+                if o["position_at_send"] != pos:
+                    _fail(out, "v", lab, f"送る時点の建玉 {o['position_at_send']!r} が帳簿のツールの建玉 {pos!r} と違う")
+                if o["flatten_pending_at_send"] != _dec_text(pending):
+                    _fail(out, "v", lab, f"出ていた決済の量 {o['flatten_pending_at_send']!r} が計算し直した "
+                                         f"{_dec_text(pending)!r} と違う")
+                if net != 0 and o["side"] != ("sell" if net > 0 else "buy"):
+                    _fail(out, "v", lab, f"決済の売買 {o['side']!r} が建玉 {pos} の逆でない")
+                zero = net == 0
+            elif o["qty_source"] == QTY_FROM_SIZING:
+                if o["margin_jpy"] != CHECK_MARGIN_JPY or o["use_ratio"] != CHECK_USE_RATIO:
+                    _fail(out, "v", lab, f"証拠金 {o['margin_jpy']!r}・比率 {o['use_ratio']!r} が {CHECK_MARGIN_JPY} 円・"
+                                         f"{CHECK_USE_RATIO} でない(L-743・L-746)")
                 usd = None if o["usdjpy"] == "" else _num(o["usdjpy"])
                 raw, qty = size_detail(margin_jpy=_num(o["margin_jpy"]), use_ratio=_num(o["use_ratio"]),
                                        levels=int(o["levels"]), price=_num(o["size_px"]), quote_ccy=o["quote_ccy"],
                                        usdjpy_at_entry=usd)
-            except (ValueError, SizingError) as exc:
-                _fail(out, "v", lab, f"記録した量の計算の値から量を計算し直せない: {exc}")
-                continue
-            if o["qty"] != repr(qty):
-                _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、記録した量の計算の値から計算し直した量 {repr(qty)!r} と違う")
-            if o["qty_raw"] != str(raw):
-                _fail(out, "v", lab, f"切り捨て前の量 {o['qty_raw']!r} が計算し直した値 {str(raw)!r} と違う")
-            zero = qty == 0
-        else:
-            _fail(out, "v", lab, f"量の出所 {o['qty_source']!r} が「{QTY_FROM_SIZING}」でも「{QTY_FROM_POSITION}」でもない")
+                if o["qty"] != repr(qty):
+                    _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、記録した量の計算の値から計算し直した量 {repr(qty)!r} と違う")
+                if o["qty_raw"] != str(raw):
+                    _fail(out, "v", lab, f"切り捨て前の量 {o['qty_raw']!r} が計算し直した値 {str(raw)!r} と違う")
+                _check_size_px(o, lab, close_times, closes, out)
+                pos, _ = _flatten_expect(t, o, k)
+                if o["position_at_send"] != pos:
+                    _fail(out, "v", lab, f"受けた時点の建玉 {o['position_at_send']!r} が、それまでに知らせの届いた約定の"
+                                         f"帳簿のツールの建玉 {pos!r} と違う")
+                _check_usdjpy(o, lab, fx_by.get((o["instrument"], o["range"]), []), out)
+                zero = qty == 0
+            else:
+                continue  # (iii) が落とす
+        except (ValueError, KeyError, SizingError, LedgerError, ArithmeticError) as exc:
+            _fail(out, "v", lab, f"量を計算し直せない: {exc}")
             continue
         if zero:
             if o["state"] != ZERO_QTY_STATE or o["sent_t_ns"] != "":
@@ -579,19 +801,125 @@ def _check_sizes(t: dict, out: list) -> None:
                                      f"状態 {o['state']!r}・出した時刻 {o['sent_t_ns']!r}")
         elif o["state"] == ZERO_QTY_STATE or o["sent_t_ns"] == "":
             _fail(out, "v", lab, f"量が 0 でない行が出されていない: 状態 {o['state']!r}・出した時刻 {o['sent_t_ns']!r}")
+        # 約定の和: 知らせの届いた約定の和 = 約定した量、全部の約定の和 ≤ 注文の量
+        try:
+            seen = _dsum(f["qty"] for f in mine if f["notice_seq"] != "")
+            total = _dsum(f["qty"] for f in mine)
+            if seen != Decimal(o["filled_qty"]):
+                _fail(out, "v", lab, f"約定した量 {o['filled_qty']!r} が、知らせの届いた約定の和 {_dec_text(seen)} と違う")
+            if o["qty"] != "" and total > Decimal(o["qty"]):
+                _fail(out, "v", lab, f"約定の和 {_dec_text(total)} が注文の量 {o['qty']} を超える")
+        except ArithmeticError:
+            _fail(out, "v", lab, "約定した量・約定の量が数として読めない")
+
+
+def _check_size_px(o: Mapping, lab: str, close_times: list, closes: dict, out: list) -> None:
+    """量の計算の値段を、指値なら指値の値段と、直近の足の終値なら土台が受けた時刻以前に閉じた最後の足の終値と比べる。"""
+    src = o["size_px_source"]
+    if src == "指値":
+        if o["order_type"] != "limit" or o["limit_px"] != o["size_px"]:
+            _fail(out, "v", lab, f"量の計算の値段 {o['size_px']!r}(出所 指値)が指値の値段 {o['limit_px']!r} と違う")
+    elif src == "直近の足の終値":
+        if o["order_type"] != "market":
+            _fail(out, "v", lab, "出所が直近の足の終値なのに成行でない")
+        placed = int(o["placed_t_ns"])
+        i = bisect.bisect_right(close_times, placed) - 1
+        if i < 0:
+            _fail(out, "v", lab, f"土台が受けた時刻 {placed} 以前に閉じた 1 分足が無い")
+            return
+        c = closes[close_times[i]]
+        if not _finite_number(c):
+            _fail(out, "v", lab, "足に終値(close)が無いので、量の計算の値段を突き合わせられない")
+        elif float(o["size_px"]) != float(c):
+            _fail(out, "v", lab, f"量の計算の値段 {o['size_px']!r} が、土台が受けた時刻以前に閉じた最後の 1 分足"
+                                 f"(閉じた時刻 {close_times[i]})の終値 {c!r} と違う")
+    elif src not in ("直近の約定の値段", "直近の板の仲値"):
+        _fail(out, "v", lab, f"量の計算の値段の出所 {src!r} が決まった値でない")
+
+
+def _check_usdjpy(o: Mapping, lab: str, rates: list, out: list) -> None:
+    """注文の USDJPY を、fx の表の土台が受けた時刻以前の最後の相場と比べる(円建ては空)。"""
+    if o["quote_ccy"] == "JPY":
+        if o["usdjpy"] != "" or o["usdjpy_t_ns"] != "":
+            _fail(out, "v", lab, "円建ての注文に USDJPY が書かれている")
+        return
+    placed = int(o["placed_t_ns"])
+    last = None
+    for tt, r in rates:
+        if tt <= placed:
+            last = (tt, r)
+    if last is None:
+        _fail(out, "v", lab, f"fx に土台が受けた時刻 {placed} 以前の USDJPY が無い")
+    elif o["usdjpy_t_ns"] != str(last[0]) or float(o["usdjpy"] or "nan") != float(last[1]):
+        _fail(out, "v", lab, f"注文の USDJPY {o['usdjpy']!r}(時刻 {o['usdjpy_t_ns']!r})が、fx の土台が受けた時刻以前の"
+                             f"最後の相場 {last[1]!r}(時刻 {last[0]})と違う")
+
+
+_PFILL_COLS = ("order_id", "t_ns", "venue_t_ns", "side", "qty", "px", "fee", "liquidity")
+
+
+def _check_pipeline(t: dict, run: dict, out: list) -> None:
+    """(vi) 道の約定・注文を、同じ走らせの置き場の pipeline の書き出し(fills.json・orders.json)と突き合わせる。"""
+    def ptext(c, v):
+        return text(float(v)) if c in ("qty", "px", "fee") else text(v)
+    groups = sorted({(r["instrument"], r["range"]) for r in t["fills"]} |
+                    {(r.get("instrument"), r.get("range")) for r in run["pfills"] if isinstance(r, dict)})
+    for g in groups:
+        mine = [f for f in t["fills"] if (f["instrument"], f["range"]) == g]
+        theirs = [f for f in run["pfills"] if isinstance(f, dict) and (f.get("instrument"), f.get("range")) == g]
+        if len(mine) != len(theirs):
+            _fail(out, "vi", f"fills(銘柄 {g[0]}・側 {g[1]})",
+                  f"約定の数 {len(mine)} が pipeline の fills.json の約定の数 {len(theirs)} と違う")
+        for k in range(min(len(mine), len(theirs))):
+            for c in _PFILL_COLS:
+                try:
+                    want = ptext(c, theirs[k][c])
+                except (KeyError, TypeError, ValueError):
+                    want = None
+                if mine[k][c] != want:
+                    _fail(out, "vi", _label("fills", t["fills"].index(mine[k]), mine[k]),
+                          f"{c} {mine[k][c]!r} が pipeline の fills.json の {want!r} と違う")
+    sent = {(o["instrument"], o["range"], o["order_id"]): o for o in t["orders"] if o["sent_t_ns"] != ""}
+    seen = set()
+    for p in run["porders"]:
+        if not isinstance(p, dict):
+            continue
+        key = (p.get("instrument"), p.get("range"), p.get("id"))
+        seen.add(key)
+        o = sent.get(key)
+        if o is None:
+            _fail(out, "vi", f"orders.json の注文 {key[2]!r}(銘柄 {key[0]}・側 {key[1]})", "道の注文の表に出した行が無い")
+            continue
+        lab = _label("orders", t["orders"].index(o), o)
+        try:
+            pq, ps, pt = repr(float(p["qty"])), p["side"], p["type"]
+        except (KeyError, TypeError, ValueError):
+            _fail(out, "vi", lab, "pipeline の orders.json の行が読めない")
+            continue
+        if o["qty"] != pq:
+            _fail(out, "vi", lab, f"注文の量 {o['qty']!r} が pipeline の orders.json の量 {pq!r}(実際に送った量)と違う")
+        if o["side"] != ps or o["order_type"] != pt:
+            _fail(out, "vi", lab, f"売買・種類 {o['side']!r}・{o['order_type']!r} が orders.json の {ps!r}・{pt!r} と違う")
+    for key, o in sent.items():
+        if key not in seen and o["origin"] == ORIGIN_ROAD:
+            _fail(out, "vi", _label("orders", t["orders"].index(o), o), "出した注文が pipeline の orders.json に無い")
 
 
 def check_tables(store_dir: str, bars: Sequence[Mapping]) -> CheckResult:
-    """表の形の置き場 1 つに (i)〜(v) を当てる(モジュールの説明を参照)。"""
+    """表の形の置き場 1 つに (i)〜(vi) を当てる(モジュールの説明を参照)。"""
     out: list = []
     try:
+        run = _read_run(store_dir, out)
         t = _read_all(store_dir, out)
         if t is None:
-            return CheckResult(out)  # 表がそろわなければ、ほかの検査はしない((i) の失敗だけを出す)
-        _check_derived(t, out, store_dir)
-        _check_links(t, out)
+            return CheckResult(out)  # 表がそろわなければ、ほかの検査はしない
+        _check_forms(t, out)
+        _check_derived(t, out, run)
+        _check_links(t, out, None if run is None else run["groups"])
         _check_bars_tables(t, bars, out)
-        _check_sizes(t, out)
+        _check_sizes(t, bars, out)
+        if run is not None:
+            _check_pipeline(t, run, out)
     except Exception as exc:  # 想定外の壊れ方。英語の文を出さずに失敗として止める(O-1)
         _fail(out, "i", store_dir, f"検査の途中で想定していない壊れ方に当たった(例外の種類 {type(exc).__name__})")
     return CheckResult(out)

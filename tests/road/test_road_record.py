@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import gzip
+import hashlib
 import importlib.util
 import io
 import json
@@ -56,7 +57,7 @@ def _gen(price0, step_pct=0.0, n=30, seed=1):
                                                             "price0": price0, "step_pct": step_pct, "qty": 1.0}}
 
 
-def _plan(root, gen, params, ccy="JPY", min_qty=0.001, feed=ZERO, rules=None):
+def _plan(root, gen, params, ccy="JPY", min_qty=0.001, feed=ZERO, rules=None, notice=ZERO):
     sym = "BTCJPY" if ccy == "JPY" else "XBTUSD"
     return P.plan_pipeline(
         root=str(root), datasets=[{"name": "g", "generator": gen}],
@@ -66,7 +67,7 @@ def _plan(root, gen, params, ccy="JPY", min_qty=0.001, feed=ZERO, rules=None):
                       "rules": dict(rules or {"market_ref": "next_bar_open"})}],
         strategy={"kind": "module", "module": MODULE, "factory": "pipeline_strategy", "params": params},
         fill={"optimistic": {"tier": 2}, "pessimistic": {"tier": 2}},
-        latency={"feed": feed, "order": ZERO, "cancel": ZERO, "notice": ZERO},
+        latency={"feed": feed, "order": ZERO, "cancel": ZERO, "notice": notice},
         costs={"maker_rate": 0, "taker_rate": 0, "spread": 0, "source": "試験: 0"},
         account={"currency": ccy, "cash": 1e9, "leverage": 1, "mark": "last_trade", "liquidation": None,
                  "margin_check": "position_only"},
@@ -79,7 +80,7 @@ def _run(root, gen, params, ccy="JPY", **kw):
 
 
 def _bars(gen):
-    return [{"t_ns": r["t_ns"], "high": r["high"], "low": r["low"]} for r in P._generate(gen)[1]]
+    return [{"t_ns": r["t_ns"], "high": r["high"], "low": r["low"], "close": r["close"]} for r in P._generate(gen)[1]]
 
 
 def _tables(store):
@@ -265,17 +266,32 @@ def test_scene3_signal_alive_at_data_end(tmp_path):
 
 # ---------------------------------------------------------------- 場面 4: 検査の失敗
 def _copy(basic_store, tmp_path):
-    _, store = basic_store
-    d = tmp_path / "store"
-    shutil.copytree(store, d)
-    return d
+    """走らせの置き場ごと写し、写した road/ を返す(検査は road/ の外の repro.json・record.json・fills.json・orders.json も読む)。"""
+    res, _ = basic_store
+    run = tmp_path / "run"
+    shutil.copytree(res.run_dir, run)
+    return run / ROAD_DIR
 
 
-def _edit(d, table, fn):
+def _forge_repro(d):
+    """書き換えた人が repro.json の road/ の指紋も合わせた場合(指紋の突き合わせの後ろの検査だけを見るため)。"""
+    rp = os.path.join(os.path.dirname(str(d)), "repro.json")
+    with open(rp, encoding="utf-8") as fh:
+        body = json.load(fh)
+    for n in os.listdir(d):
+        with open(os.path.join(d, n), "rb") as fh:
+            body["sha256"][f"{ROAD_DIR}/{n}"] = hashlib.sha256(fh.read()).hexdigest()
+    with open(rp, "w", encoding="utf-8") as fh:
+        json.dump(body, fh)
+
+
+def _edit(d, table, fn, forge=True):
     path = os.path.join(d, SCHEMA["tables"][table]["file"])
     head, rows = read_csv(path, table)
     head, rows = fn(head, rows)
     _write_csv(path, head, rows)
+    if forge:
+        _forge_repro(d)
 
 
 def _first_pess(rows, **kw):
@@ -440,7 +456,8 @@ def test_r2_check_v_fails_when_flatten_qty_is_not_the_position(basic_store, tmp_
     d = _copy(basic_store, tmp_path)
     _edit(d, "orders", _t_flat_qty)
     f = [x for x in check_outputs(str(d), _bars(GEN_5M)).failures if x["check"] == "v"]
-    assert len(f) == 1 and "注文 road-2" in f[0]["row"] and "建玉 0.028 の絶対値 '0.028'" in f[0]["reason"], f
+    assert len(f) == 1 and "注文 road-2" in f[0]["row"] and "建玉 0.028 と出ていた決済の量 0 の和の絶対値 '0.028'" in \
+        f[0]["reason"], f
 
 
 # ---------------------------------------------------------------- 2 周目 (b): 拒否と期限切れを分ける
@@ -470,6 +487,9 @@ class _Ctx:
     def place_order(self, req):
         return req.client_order_id
 
+    def cancel_order(self, coid):
+        return None
+
     def order(self, coid):
         from bot.bt.core.api import OrderState
         return _View(OrderState.CANCELED)
@@ -496,6 +516,8 @@ def test_r2_close_notice_columns(scene_module, make, col):
                _Ctx(T0 + M))
     s._ctx = _Ctx(T0 + M)
     coid = s.place("buy", "market", None, 1, NO_SIGNAL)
+    if col == "canceled_t_ns":
+        s.cancel(coid)  # 取り消しの答えは土台の cancel を通った取り消しにだけ届く(3 周目 問 1 (5))
     s._ctx = None
     s.on_event(make(coid), _Ctx(T0 + 5 * M))
     row = s.road_record()["orders"][0]
@@ -533,3 +555,300 @@ def test_r2_summary_rows_for_groups_with_nothing(tmp_path):
     path.write_text(json.dumps(sm, ensure_ascii=False), encoding="utf-8")
     f = check_outputs(str(run / ROAD_DIR), _bars(GEN_5M)).failures
     assert any(x["check"] == "ii" and "record.json" in x["reason"] for x in f), f
+
+
+# ================================================================ 3 周目(批評家 1 回目の指摘。DELEGATION_record_form.md「## 3 周目」)
+from bot.bt.core import OrderStateUnknownEvent  # noqa: E402
+from bot.bt.road.tables import CSV_TABLES, write_tables  # noqa: E402
+
+GEN_LIMIT = {"mode": "limit_cancel", "quote_ccy": "JPY", "levels": 1, "open_bar": 3, "close_bar": 6}
+USD_BASIC = {"mode": "basic", "quote_ccy": "USD", "levels": 2, "open_bar": 3, "close_bar": 6, "fx": FX,
+             "fx_source": "試験の相場"}
+
+
+def _mutate(col, v):
+    """批評家の sweep.py と同じ書き換え(時刻は +1 分、数は +0.001 か +1、文字は後ろに x)。"""
+    if col.endswith("_t_ns") or col == "hold_ns":
+        return str(int(v) + M) if v else str(T0 + 4 * M)
+    if v == "":
+        return "1"
+    try:
+        x = float(v)
+    except ValueError:
+        return v + "x"
+    if col in ("qty", "filled_qty", "position_after", "max_position", "position", "position_at_send", "qty_raw",
+               "flatten_pending_at_send"):
+        return repr(round(x + 0.001, 6))
+    if "." in v:
+        return repr(x + 1.0)
+    return str(int(x) + 1)
+
+
+def _sweep(res, gen, tmp_path, forge):
+    """悲観側の最初の行を、表ごと・欄ごとに 1 欄ずつ書き換え、検査を通った欄を返す。"""
+    store = os.path.join(res.run_dir, ROAD_DIR)
+    passed = []
+    for t in CSV_TABLES:
+        head, rows = read_csv(os.path.join(store, SCHEMA["tables"][t]["file"]), t)
+        k = next((i for i, r in enumerate(rows) if r["range"] == "pessimistic"), None)
+        if k is None:
+            continue
+        for c in head:
+            run = tmp_path / f"sw-{t}-{c}"
+            shutil.copytree(res.run_dir, run)
+
+            def fn(h, rs, c=c):
+                rs[k][c] = _mutate(c, rs[k][c])
+                return h, rs
+            _edit(run / ROAD_DIR, t, fn, forge=forge)
+            if not check_outputs(str(run / ROAD_DIR), _bars(gen)).failures:
+                passed.append(f"{t}.{c}")
+            shutil.rmtree(run)
+    return passed
+
+
+# 問 2(sweep.py): repro.json の指紋を合わせずに書き換えた欄は全部落ちる。合わせた場合に通る欄は SCHEMA の限界に書いた欄
+_FORGED_PASS = {
+    "JPY": ["signals.kind", "signals.direction", "signals.end_t_ns", "signals.end_reason", "orders.acked_t_ns",
+            "orders.cancel_sent_t_ns", "orders.cancel_rejected_t_ns", "orders.state_unknown_t_ns"],
+    "USD": ["signals.kind", "signals.direction", "signals.end_t_ns", "signals.end_reason", "orders.acked_t_ns",
+            "orders.cancel_sent_t_ns", "orders.cancel_rejected_t_ns", "orders.state_unknown_t_ns", "fx.t_ns", "fx.rate",
+            "fx.source"],
+    "LIMIT": ["signals.kind", "signals.direction", "orders.placed_seq", "orders.acked_t_ns",
+              "orders.cancel_rejected_t_ns", "orders.state_unknown_t_ns", "orders.closed_seq", "orders.close_reason"],
+}
+
+
+@pytest.mark.parametrize("kind", ["JPY", "USD", "LIMIT"])
+def test_r3_sweep_every_field(tmp_path, kind):
+    if kind == "JPY":
+        res, _ = _run(tmp_path, GEN_5M, dict(BASIC, keep_open=True))
+        gen = GEN_5M
+    elif kind == "USD":
+        res, _ = _run(tmp_path, GEN_30K, USD_BASIC, "USD")
+        gen = GEN_30K
+    else:
+        res, _ = _run(tmp_path, GEN_5M, GEN_LIMIT)
+        gen = GEN_5M
+    assert check_outputs(os.path.join(res.run_dir, ROAD_DIR), _bars(gen)).failures == []
+    assert _sweep(res, gen, tmp_path, forge=False) == []
+    passed = _sweep(res, gen, tmp_path, forge=True)
+    assert passed == _FORGED_PASS[kind]  # 落ちない欄の記録(SCHEMA の limits に書いた欄)
+    limit_text = " ".join(SCHEMA["limits"])
+    for f in passed:
+        assert f.split(".")[1] in limit_text, f
+
+
+def _scene_failures(tmp_path, params, gen=GEN_5M, ccy="JPY"):
+    res, store = _run(tmp_path, gen, params, ccy)
+    return R_tables(store), check_outputs(store, _bars(gen)).failures
+
+
+def R_tables(store):
+    return _tables(store)
+
+
+# 問 1 (1)(probe.py margin_patch): 道の外で証拠金を書き換えても、検査の側の定数(20 万円・0.70)で落ちる
+def test_r3_margin_patched_outside_fails(tmp_path):
+    import bot.bt.road.strategy as RS
+    keep = RS.MARGIN_JPY
+    try:
+        t, f = _scene_failures(tmp_path, {"mode": "margin_patch", "quote_ccy": "JPY", "levels": 1, "open_bar": 3,
+                                          "close_bar": 6})
+    finally:
+        RS.MARGIN_JPY = keep
+    o = _side(t["orders"])[0]
+    assert (o["margin_jpy"], o["qty"]) == ("1000000", "0.14")
+    assert any(x["check"] == "v" and "証拠金 '1000000'" in x["reason"] for x in f), f
+
+
+# 問 1 (2)(probe.py fake_px): 量の計算の値段を偽ると、出した時刻以前に閉じた最後の足の終値と違って落ちる
+def test_r3_fake_size_price_fails(tmp_path):
+    t, f = _scene_failures(tmp_path, {"mode": "fake_px", "quote_ccy": "JPY", "levels": 1, "open_bar": 3,
+                                      "close_bar": 6})
+    assert _side(t["orders"])[0]["size_px"] == "2500000.0"
+    assert any(x["check"] == "v" and "終値 5000000.0 と違う" in x["reason"] for x in f), f
+
+
+# 問 1 (3)(probe.py edit_records の注文の部分): 送った量 0.028 と記録の量 0.014 が違うと落ちる
+def test_r3_edited_order_record_fails(tmp_path):
+    t, f = _scene_failures(tmp_path, {"mode": "edit_order", "quote_ccy": "JPY", "levels": 1, "open_bar": 3,
+                                      "close_bar": 6})
+    reasons = " ".join(x["reason"] for x in f)
+    assert "orders.json の量 '0.028'" in reasons and "証拠金 '100000'" in reasons
+    assert "約定の和 0.028 が注文の量 0.014 を超える" in reasons
+
+
+# probe.py edit_records の合図の部分: 戦略が土台の合図の記録を書き換えるのは落とせない(SCHEMA の限界)。落ちないことを記録する
+def test_r3_edited_signal_times_are_not_caught(tmp_path):
+    t, f = _scene_failures(tmp_path, dict(BASIC, mode="edit_signal"))
+    s1 = _side(t["signals"])[0]
+    assert (s1["start_t_ns"], s1["end_t_ns"]) == (str(T0 + 2 * M), str(T0 + 7 * M))  # 本当は 0:03・0:06
+    assert f == []
+    assert any("合図の発生・消失の時刻など" in x for x in SCHEMA["limits"])
+
+
+# 問 1 (5)(dcancel.py): 土台を通さない取り消しは走らせを止める
+def test_r3_direct_cancel_stops_the_run(tmp_path):
+    with pytest.raises(RoadStrategyError, match="土台を通さずに出した取り消し"):
+        _run(tmp_path, GEN_5M, {"mode": "direct_cancel", "quote_ccy": "JPY", "levels": 1, "open_bar": 3, "close_bar": 5})
+
+
+# 問 1 (4)・問 2(compound.py の (a)(c)(d)): 生の表と作った表をそろえて書き換え、repro.json の指紋も合わせても落ちる
+def _rewrite(res, tmp_path, name, edit, forge):
+    run = tmp_path / name
+    shutil.copytree(res.run_dir, run)
+    dd = run / ROAD_DIR
+    t = {x: read_csv(os.path.join(dd, SCHEMA["tables"][x]["file"]), x)[1] for x in CSV_TABLES}
+    with open(dd / "summary.json", encoding="utf-8") as fh:
+        groups = [tuple(g) for g in json.load(fh)["groups"]]
+    edit(t)
+    write_tables(str(dd), {k: t[k] for k in ("signals", "orders", "fills", "fx")}, groups)
+    if forge:
+        _forge_repro(dd)
+    return dd
+
+
+def _pess(rows, **kw):
+    return next(r for r in rows if r["range"] == "pessimistic" and all(r[a] == b for a, b in kw.items()))
+
+
+def _c_a(t):
+    _pess(t["fills"], order_id="road-2")["qty"] = "0.027"
+
+
+def _c_c(t):
+    from bot.bt.road.sizing import size_detail
+    o = _pess(t["orders"], order_id="road-0")
+    raw, q = size_detail(levels=2, price=30000.0, quote_ccy="USD", usdjpy_at_entry=100.0)
+    o["usdjpy"], o["qty_raw"], o["qty"] = "100.0", str(raw), repr(q)
+
+
+def _c_d(t):
+    next(p for p in t["fx"] if p["range"] == "pessimistic" and p["rate"] == "150.0")["rate"] = "140.0"
+
+
+@pytest.mark.parametrize("name,ccy,edit,checks", [
+    ("a", "JPY", _c_a, {"v", "vi"}),
+    ("c", "USD", _c_c, {"v", "vi"}),
+    ("d", "USD", _c_d, {"v"}),
+])
+@pytest.mark.parametrize("forge", [False, True])
+def test_r3_compound_rewrites_fail(tmp_path, name, ccy, edit, checks, forge):
+    if ccy == "JPY":
+        res, _ = _run(tmp_path, GEN_5M, BASIC)
+        gen = GEN_5M
+    else:
+        res, _ = _run(tmp_path, GEN_30K, USD_BASIC, "USD")
+        gen = GEN_30K
+    dd = _rewrite(res, tmp_path, f"c-{name}", edit, forge)
+    f = check_outputs(str(dd), _bars(gen)).failures
+    got = {x["check"] for x in f}
+    if forge:
+        assert checks <= got and "repro.json" not in " ".join(x["reason"] for x in f), f
+    else:
+        assert "vi" in got and any("repro.json の指紋と違う" in x["reason"] for x in f), f
+
+
+# 問 2: fx の行を走らせに無い組に移すと、黙って捨てずに落ちる
+def test_r3_fx_row_in_unknown_group_fails(tmp_path):
+    res, _ = _run(tmp_path, GEN_30K, USD_BASIC, "USD")
+    run = tmp_path / "fx"
+    shutil.copytree(res.run_dir, run)
+
+    def fn(h, rs):
+        rs[0]["instrument"] = "ETHUSD"
+        return h, rs
+    _edit(run / ROAD_DIR, "fx", fn)
+    f = check_outputs(str(run / ROAD_DIR), _bars(GEN_30K)).failures
+    assert any(x["check"] == "iii" and "ETHUSD" in x["reason"] and "黙って捨てない" in x["reason"] for x in f), f
+
+
+# 問 2: 置き場が走らせの置き場の road/ でなければ落ちる
+def test_r3_store_outside_run_dir_fails(basic_store, tmp_path):
+    _, store = basic_store
+    d = tmp_path / "road"
+    shutil.copytree(store, d)
+    f = check_outputs(str(d), _bars(GEN_5M)).failures
+    assert any(x["check"] == "vi" and "repro.json" in str(x["row"]) for x in f), f
+
+
+# 問 5(probe.py quick_flatten): 買いの約定の知らせが届く前の flatten でも、建玉が 0 に戻り、検査が通る
+@pytest.mark.parametrize("notice_ns", [0, 90_000_000_000])
+def test_r3_quick_flatten_returns_to_zero(tmp_path, notice_ns):
+    params = {"mode": "quick_flatten", "quote_ccy": "JPY", "levels": 2, "open_bar": 3, "close_bar": 4}
+    res = P.run_pipeline(_plan(tmp_path, GEN_5M, params, notice={"kind": "constant", "ns": notice_ns}),
+                         runs_dir=str(tmp_path / "runs"))
+    store = os.path.join(res.run_dir, ROAD_DIR)
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+    t = _tables(store)
+    for side in ("pessimistic", "optimistic"):
+        o = _side(t["orders"], side)
+        # 買いの約定の知らせは 1 つずつ届くので、届くたびにそのぶん(0.014)を決済した
+        assert [(r["side"], r["qty"], r["qty_source"], r["position_at_send"], r["flatten_pending_at_send"])
+                for r in o if r["sent_t_ns"]] == [
+            ("buy", "0.014", "量の計算", "0", ""), ("buy", "0.014", "量の計算", "0", ""),
+            ("sell", "0.014", "建玉", "0.014", "0"), ("sell", "0.014", "建玉", "0.028", "-0.014")]
+        # 0:04 の flatten の時点では買いの約定の知らせがまだ届いていない: 買いを取り消しに行き(既に約定していたので
+        # 取り消しは拒否される)、届いた約定の知らせのぶんを決済した
+        assert all(r["cancel_sent_t_ns"] == str(T0 + 4 * M) for r in o[:2])
+        assert _side(t["ledger_fills"], side)[-1]["position_after"] == "0"
+        assert [(r["status"], r["levels"]) for r in _side(t["trades"], side)] == [("closed", "2")]
+
+
+# 問 4 (3): 取り消しの拒否の時刻が列に残る(cancel を 2 回: 2 回目は取引所に注文が無く拒否される)
+def test_r3_cancel_rejected_time_is_recorded(tmp_path):
+    res, store = _run(tmp_path, GEN_5M, {"mode": "cancel_twice", "quote_ccy": "JPY", "levels": 1, "open_bar": 3,
+                                         "close_bar": 5})
+    o = _side(_tables(store)["orders"])[0]
+    assert (o["cancel_sent_t_ns"], o["canceled_t_ns"], o["cancel_rejected_t_ns"], o["state"]) == (
+        str(T0 + 5 * M), str(T0 + 5 * M), str(T0 + 5 * M), "CANCELED")
+    assert check_outputs(store, _bars(GEN_5M)).failures == []
+
+
+# 問 4 (3)(4): 状態不明・取り消しの拒否・answers = new で中身が拒否のもの
+@pytest.mark.parametrize("make,col,cancel_first", [
+    (lambda c: OrderStateUnknownEvent(received_time_ns=T0 + 5 * M, client_order_id=c, detail="timeout"),
+     "state_unknown_t_ns", False),
+    (lambda c: OrderStateUnknownEvent(received_time_ns=T0 + 5 * M, client_order_id=c, detail="t", request_kind="cancel"),
+     "state_unknown_t_ns", True),
+    (lambda c: OrderRejectEvent(received_time_ns=T0 + 5 * M, client_order_id=c, reason="order_not_found",
+                                request_kind="cancel"), "cancel_rejected_t_ns", True),
+    (lambda c: OrderCanceledEvent(received_time_ns=T0 + 5 * M, client_order_id=c, reason="post_only_would_take",
+                                  answers="new"), "rejected_t_ns", False),
+])
+def test_r3_notice_columns(scene_module, make, col, cancel_first):
+    s = scene_module.SceneStrategy({"mode": "nothing", "quote_ccy": "JPY", "levels": 1, "open_bar": 1})
+    s.on_event(BarEvent(received_time_ns=T0 + M, start_time_ns=T0, open=1e6, high=1e6, low=1e6, close=1e6, volume=1.0),
+               _Ctx(T0 + M))
+    s._ctx = _Ctx(T0 + M)
+    coid = s.place("buy", "market", None, 1, NO_SIGNAL)
+    if cancel_first:
+        s.cancel(coid)
+    s._ctx = None
+    s.on_event(make(coid), _Ctx(T0 + 5 * M))
+    row = s.road_record()["orders"][0]
+    cols = ("expired_t_ns", "rejected_t_ns", "canceled_t_ns", "cancel_rejected_t_ns", "state_unknown_t_ns")
+    assert {c: row[c] for c in cols} == {c: (T0 + 5 * M if c == col else "") for c in cols}
+
+
+def test_r3_cancel_answer_without_cancel_stops(scene_module):
+    s = scene_module.SceneStrategy({"mode": "nothing", "quote_ccy": "JPY", "levels": 1, "open_bar": 1})
+    s.on_event(BarEvent(received_time_ns=T0 + M, start_time_ns=T0, open=1e6, high=1e6, low=1e6, close=1e6, volume=1.0),
+               _Ctx(T0 + M))
+    s._ctx = _Ctx(T0 + M)
+    coid = s.place("buy", "market", None, 1, NO_SIGNAL)
+    s._ctx = None
+    with pytest.raises(RoadStrategyError, match="土台を通さずに出した取り消し"):
+        s.on_event(OrderRejectEvent(received_time_ns=T0 + 5 * M, client_order_id=coid, reason="x",
+                                    request_kind="cancel"), _Ctx(T0 + 5 * M))
+
+
+# 問 3 (1)・問 4 (1)(2)(5): SCHEMA.json の文
+def test_r3_schema_texts():
+    assert "FIFO" in SCHEMA["read_from"] and "trades.json" in SCHEMA["read_from"]
+    cols = {c[0]: c[2] for c in SCHEMA["tables"]["orders"]["columns"]}
+    assert "成行の残り" in cols["expired_t_ns"] and "reduce_only" in cols["expired_t_ns"]
+    assert "refused_by_account" in cols["rejected_t_ns"] and "post_only_would_take" in cols["rejected_t_ns"]
+    assert "取引所の受け付けではない" in cols["acked_t_ns"]
+    assert {"cancel_rejected_t_ns", "state_unknown_t_ns"} <= set(cols)

@@ -4,19 +4,21 @@
     PYTHONPATH=src python3 scripts/road/check_outputs.py <置き場のディレクトリ> --bars <1 分足の JSON>
 
 置き場が表の形(道の走らせの置き場の `road/`。SCHEMA.json と signals・orders・fills・fx・ledger_fills・trades・summary)
-なら (i)〜(v) を当てる(L-766・L-767、委任文 DELEGATION_record_form.md 4.):
+なら (i)〜(vi) を当てる(L-766・L-767、委任文 DELEGATION_record_form.md 4.・3 周目。中身は bot.bt.road.check の説明):
 (i)   表と列が SCHEMA どおりそろっているか(欠けたら失敗)
 (ii)  生の表 fills・fx から帳簿を作り直し、ledger_fills・trades・summary と 1 欄でも違えば失敗
-(iii) つなぎ: どの約定にも注文があり、どの注文にも存在する合図か「無し」がある。どの合図も発生 ≤ 消失
+(iii) 値の形・時刻の順・届いた順・つなぎ(どの約定にも注文、どの注文にも存在する合図か「無し」、発生 ≤ 消失)
 (iv)  足の検査を約定と、合図の発生・消失の時刻に当てる(その分の足がある・分の区切り)。
       足の遅れ(feed の遅延)が 0 でない走らせでは、合図の時刻が分の区切りから外れるので必ず落ちる
-(v)   注文の量 = 記録した量の計算の値から size_per_level で計算し直した量(決済 flatten の行は、送る時刻以前の
-      約定までで帳簿のツールが出す建玉の絶対値)
+(v)   注文の量 = 記録した量の計算の値から size_per_level で計算し直した量、証拠金 20 万円・比率 0.7、量の計算の値段を
+      足の終値・指値と、USDJPY を fx と突き合わせる。決済(flatten)の行は、届いた約定の知らせまでの建玉から計算し直す
+(vi)  road/ の指紋を ../repro.json と、約定・注文を ../fills.json・../orders.json(pipeline の書き出し)と突き合わせる
+足の JSON は [{"t_ns": 足の始まり(ns), "high": 数, "low": 数, "close": 数}, ...](close は表の形の置き場の (v) で使う)。
 それ以外の置き場(作る順 1 の road_fills.json / road_summary.json)には次を当てる:
 (a) 置き場の約定の列からまとめ(約定の数・取引ごとの表を含む)を帳簿のツールで計算し直し、置き場に書かれたまとめと
     1 つでも違えば失敗。
 (b) 約定ごとに、その分の 1 分足があるか・足の始まりが分の区切りにそろうか・値段が安値以上高値以下か。
-足の JSON は [{"t_ns": 足の始まり(ns), "high": 数, "low": 数}, ...]。データ層からの読み込みはこの段では作らない。
+データ層からの足の読み込みはこの段では作らない。
 
 終了コード: 0 = 全部通った / 1 = 失敗した行がある(一覧を出す) / 2 = 引数・足のファイルが読めない。
 出す文は全部日本語(O-1)。引数の読み取りは argparse を使わない(argparse の文は英語のため)。
@@ -32,7 +34,7 @@ from bot.bt.road.check import StoreError, check_outputs, load_json  # noqa: E402
 
 USAGE = ("使い方: PYTHONPATH=src python3 scripts/road/check_outputs.py <置き場のディレクトリ> --bars <1 分足の JSON>\n"
          "  置き場: 道の走らせの置き場の road/(SCHEMA.json と 7 つの表)、または road_fills.json と road_summary.json がある置き場\n"
-         "  --bars: 1 分足の JSON([{t_ns, high, low}, ...])")
+         "  --bars: 1 分足の JSON([{t_ns, high, low, close}, ...])")
 
 
 def _parse(argv: list[str]) -> tuple[str, str] | str:
