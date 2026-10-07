@@ -1,5 +1,5 @@
 {
-  "delegation_sha256": "761d90e994bbc490f40dd2bede24eedcbba713a045e3655433674855140cb650",
+  "delegation_sha256": "8d7d8f6e28945eb732eab1fb2d12d46f9819d3b30c5fe13c89d2222726865018",
   "body_sha256": "51c898fed817b9ad5a062bdafa0ed49d7f3dc5871e24556bcbaaf15f2ed90642",
   "kind": "作る",
   "premortem": "docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_matilda_v37_premortem2.md",

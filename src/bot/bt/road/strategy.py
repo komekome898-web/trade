@@ -41,6 +41,12 @@
   刻み 1 円の銘柄では小数点以下の切り捨て。ほかの刻みの銘柄はオーナーにまだ聞いていないが、刻みに切り捨てる形にしてある)。
   銘柄の刻みは道の走らせ(pipeline)が `set_price_tick` で渡す。渡されていない土台は指値を送らずに止める。
   量の計算の値段(size_px)は今のまま戦略が計算した値段。
+- 量をそろえる口(L-781「**1 段の量は建てた時の値段で決まるが、段毎の量は建玉を持った時点での量と同じにする。**」):
+  `place(..., size_ref=番号)`・`place_with_exit(..., size_ref=番号)`。番号は、前に place(量の計算)で出した指値の注文で、
+  その注文自身は size_ref で出していないもの(取引の最初の段)。段数がその注文と同じで、種類は指値だけ。どれかが外れたら
+  止める。量は計算せず、その注文の量の計算の列(margin_jpy・use_ratio・levels・size_px・usdjpy・usdjpy_t_ns・qty_raw)と
+  量を写し、size_px_source = 「取引の最初の段 <番号>」、qty_source = 量の計算にする(検査 (v) が写した元の行と比べる)。
+  size_ref を渡さない(None)呼び出しは今までと同じ(注文ごとにその指値の値段で量を計算する)。
 - `place_with_exit(売買, 値段, 段数, 合図の番号, 決済の値段)`: 建ての指値と一緒に決済の指値を出す口(L-770 b
   「**建ての指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は
   合図の足の終値から計算)**」)。建ては place の指値と同じ(量は `size_per_level`)。決済は建ての逆の売買の指値、量 = 建ての
@@ -129,6 +135,8 @@ EXIT_WITH_ENTRY = "with_entry"  # place_with_exit が建ての指値と一緒に
 EXIT_KINDS = (EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_CLOSE, EXIT_WITH_ENTRY)
 QTY_FROM_SIZING = "量の計算"
 QTY_FROM_POSITION = "建玉"
+SIZE_REF_PREFIX = "取引の最初の段 "  # size_ref で量を写した行の size_px_source の頭(続けて写した元の注文の番号。L-781)
+SIZE_REF_COLS = ("margin_jpy", "use_ratio", "levels", "size_px", "usdjpy", "usdjpy_t_ns", "qty_raw")  # 写す量の計算の列
 
 
 class RoadStrategyError(RuntimeError):
@@ -394,8 +402,10 @@ class RoadStrategy(Strategy):
             _fail(f"指値の値段 {price!r} を刻み {self._tick!r} に切り捨てると 0 以下になる")
         return out
 
-    def place(self, side: str, order_type: str, price: Optional[float], levels: int, signal: Any) -> str:
-        """注文を出す。返すのは注文の番号(量が 0 で出さなかった行の番号も返す。状態は `order_state` で読める)。"""
+    def place(self, side: str, order_type: str, price: Optional[float], levels: int, signal: Any,
+              size_ref: Optional[str] = None) -> str:
+        """注文を出す。返すのは注文の番号(量が 0 で出さなかった行の番号も返す。状態は `order_state` で読める)。
+        size_ref: 量を写す元の注文の番号(取引の最初の段。モジュールの説明の「量をそろえる口」)。None なら量を計算する。"""
         now = self._now("place")
         if self._flat is not None:
             _fail("place: 決済の途中(flatten の後、建玉が 0 で注文が残らなくなるまで)は注文を出せない(is_flattening で読める)")
@@ -421,6 +431,19 @@ class RoadStrategy(Strategy):
         if sig != NO_SIGNAL and sig not in self._signals:
             _fail(f"place: 合図 {sig} は発生していない(発生していない合図の番号の注文。合図に依らない注文は"
                   f"「{NO_SIGNAL}」を明示する)")
+        if size_ref is not None:
+            root = self._size_root(size_ref, order_type, levels)
+            coid = self._new_id()
+            row = self._new_row(coid, ORIGIN_ROAD, sig)
+            row.update({c: root[c] for c in SIZE_REF_COLS})
+            row.update(side=side, order_type=order_type, limit_px=_num_text(price), qty=root["qty"], placed_t_ns=now,
+                       size_px_source=f"{SIZE_REF_PREFIX}{size_ref}", quote_ccy=self.quote_ccy,
+                       qty_source=QTY_FROM_SIZING, position_at_send=_dec_text(self._pos), placed_seq=self._seq)
+            qty = float(root["qty"])
+            if qty == 0:
+                row["state"] = ZERO_QTY_STATE
+                return coid
+            return self._send(row, coid, side, order_type, qty, price, sig, now)
         rate = rate_t = None
         if self.quote_ccy != "JPY":
             rate, rate_t = self._usdjpy(now)
@@ -442,6 +465,24 @@ class RoadStrategy(Strategy):
             row["state"] = ZERO_QTY_STATE
             return coid
         return self._send(row, coid, side, order_type, qty, price, sig, now)
+
+    def _size_root(self, size_ref: Any, order_type: str, levels: int) -> dict:
+        """size_ref の元の行を確かめて返す(L-781。モジュールの説明の「量をそろえる口」)。外れたら止める。"""
+        if type(size_ref) is not str:
+            _fail(f"place: size_ref は注文の番号(文字列)で渡す: {size_ref!r}")
+        if order_type != "limit":
+            _fail(f"place: size_ref は指値の注文にだけ使える(種類 {order_type!r})")
+        root = self._orders.get(size_ref)
+        if root is None or root["origin"] != ORIGIN_ROAD:
+            _fail(f"place: size_ref の注文 {size_ref!r} は土台が出した注文に無い")
+        if root["qty_source"] != QTY_FROM_SIZING or root["order_type"] != "limit" or root["exit_kind"] != "":
+            _fail(f"place: size_ref の注文 {size_ref!r} は place(量の計算)で出した指値の注文でない"
+                  f"(量の出所 {root['qty_source']!r}・種類 {root['order_type']!r}・決済の種類 {root['exit_kind']!r})")
+        if root["size_px_source"].startswith(SIZE_REF_PREFIX):
+            _fail(f"place: size_ref の注文 {size_ref!r} は自身が size_ref で量を写した行(元は取引の最初の段にする)")
+        if root["levels"] != levels:
+            _fail(f"place: 段数 {levels!r} が size_ref の注文 {size_ref!r} の段数 {root['levels']!r} と違う")
+        return root
 
     def flatten(self, signal: Any, order_type: str = "market", price: Optional[float] = None) -> str:
         """成行で全部を決済する口(2 周目 (d)・3 周目 問 5・4 周目 (2) A〜D)。決済の意図として受ける:
@@ -513,16 +554,18 @@ class RoadStrategy(Strategy):
         row.update(side=side, qty=_num_text(qty))
         return self._send(row, coid, side, order_type, qty, price, sig, now, reduce_only=True)
 
-    def place_with_exit(self, side: str, price: float, levels: int, signal: Any, exit_price: float) -> tuple:
+    def place_with_exit(self, side: str, price: float, levels: int, signal: Any, exit_price: float,
+                        size_ref: Optional[str] = None) -> tuple:
         """建ての指値と一緒に決済の指値を出す(L-770 b。モジュールの説明を参照)。返すのは (建ての注文の番号, 決済の注文の番号)。
-        建ての量が 0 なら、建ても決済も出さずに「量が 0 で出さない」の行を 2 つ残す。"""
+        建ての量が 0 なら、建ても決済も出さずに「量が 0 で出さない」の行を 2 つ残す。
+        size_ref: 建ての量を写す元の注文の番号(place と同じ。決済の量は建ての量)。"""
         now = self._now("place_with_exit")
         if isinstance(exit_price, bool) or not isinstance(exit_price, (int, float)) \
                 or not math.isfinite(float(exit_price)) or float(exit_price) <= 0:
             _fail(f"place_with_exit: 決済の指値の値段は 0 より大きい有限の数: {exit_price!r}")
         if side not in SIDES:
             _fail(f"place_with_exit: 売買は {SIDES} のどれか: {side!r}")
-        entry = self.place(side, "limit", price, levels, signal)
+        entry = self.place(side, "limit", price, levels, signal, size_ref=size_ref)
         er = self._orders[entry]
         pos, pending = self._pos, self._pending_exit()
         coid = self._new_id()

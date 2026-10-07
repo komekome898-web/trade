@@ -55,7 +55,11 @@
 (v)  注文の量と量の計算の値:
      - 量の出所が「量の計算」(place)の行: 証拠金 = 200,000 円・比率 = 0.7(検査の側の定数。L-743・L-746)、記録した
        量の計算の値から `size_per_level` で計算し直した量 = 注文の量(切り捨て前の量も)、量の計算の値段 = 指値なら指値の
-       値段・直近の足の終値なら土台が受けた時刻以前に閉じた最後の足の終値(足の JSON に close が要る)、
+       値段・直近の足の終値なら土台が受けた時刻以前に閉じた最後の足の終値(足の JSON に close が要る)・
+       「取引の最初の段 <番号>」(size_ref で量を写した行。L-781)なら、同じ銘柄・側の、受けた時の通し番号(placed_seq)が
+       同じか小さく注文の番号(road-N の N)が小さい、量の出所が量の計算で出所が「取引の最初の段」で始まらない注文 <番号> が
+       あり、写した 7 つの列(margin_jpy・use_ratio・levels・size_px・usdjpy・usdjpy_t_ns・qty_raw)が同じこと
+       (量の計算し直しは写した値から)、
        ドル建ての USDJPY = fx の土台が受けた時刻以前の最後の相場(時刻も)、円建ては USDJPY が空、
        受けた時点の建玉 = それまでに知らせの届いた約定の帳簿のツールの建玉
      - 量の出所が「建玉」(close・flatten)の行: 量の計算の列は空、送る時点の建玉 = 注文を受けた時の通し番号までに
@@ -115,7 +119,7 @@ from .sizing import SizingError, size_detail
 from .strategy import DATA_END, NO_SIGNAL, ORIGIN_FORCED, ORIGIN_ROAD, ZERO_QTY_STATE
 from .sizing import QUOTE_CCYS
 from .strategy import (EXIT_CLOSE, EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_KINDS, EXIT_WITH_ENTRY, OPEN_STATE_VALUES,
-                       QTY_FROM_POSITION, QTY_FROM_SIZING, _dec_text)
+                       ORDER_ID_PREFIX, QTY_FROM_POSITION, QTY_FROM_SIZING, SIZE_REF_COLS, SIZE_REF_PREFIX, _dec_text)
 from .tables import (CSV_TABLES, RANGES, ROAD_DIR, SCHEMA, SCHEMA_FILE, SUMMARY_TABLE, TableError, columns, derive,
                      groups_of, is_table_store, read_csv, read_json, text)
 
@@ -1023,7 +1027,7 @@ def _check_sizes(t: dict, bars: Sequence[Mapping], out: list, L: int | None) -> 
                     _fail(out, "v", lab, f"注文の量 {o['qty']!r} が、記録した量の計算の値から計算し直した量 {repr(qty)!r} と違う")
                 if o["qty_raw"] != str(raw):
                     _fail(out, "v", lab, f"切り捨て前の量 {o['qty_raw']!r} が計算し直した値 {str(raw)!r} と違う")
-                _check_size_px(o, lab, close_times, closes, out)
+                _check_size_px(o, lab, close_times, closes, out, t)
                 pos, _ = _flatten_expect(t, o, k)
                 if o["position_at_send"] != pos:
                     _fail(out, "v", lab, f"受けた時点の建玉 {o['position_at_send']!r} が、それまでに知らせの届いた約定の"
@@ -1087,10 +1091,47 @@ def _check_with_entry_size(t: dict, o: Mapping, lab: str, pos: str, pending: Dec
         _fail(out, "v", lab, f"出ていた決済の量 {o['exit_pending_at_send']!r} が計算し直した {_dec_text(pending)!r} と違う")
 
 
-def _check_size_px(o: Mapping, lab: str, close_times: list, closes: dict, out: list) -> None:
-    """量の計算の値段を、指値なら指値の値段と、直近の足の終値なら土台が受けた時刻以前に閉じた最後の足の終値と比べる。"""
+def _order_no(order_id: str) -> int | None:
+    """注文の番号 road-N の N(読めなければ None)。"""
+    if not order_id.startswith(ORDER_ID_PREFIX):
+        return None
+    return _int_or_none(order_id[len(ORDER_ID_PREFIX):])
+
+
+def _check_size_ref(o: Mapping, lab: str, t: dict, out: list) -> None:
+    """(v) 出所が「取引の最初の段 <番号>」の行(L-781): 写した元の注文が同じ銘柄・側にあり、受けた時の通し番号が同じか
+    小さく、注文の番号が小さく、量の出所が量の計算で、それ自身は写した行でなく、写した 7 つの列が同じこと。"""
+    ref = o["size_px_source"][len(SIZE_REF_PREFIX):]
+    me, rn = _order_no(o["order_id"]), _order_no(ref)
+    root = None
+    for p in t["orders"]:
+        if (p["instrument"], p["range"], p["order_id"]) == (o["instrument"], o["range"], ref):
+            root = p
+            break
+    if root is None or me is None or rn is None:
+        _fail(out, "v", lab, f"量を写した元の注文 {ref!r} が同じ銘柄・側に無い(出所 {o['size_px_source']!r})")
+        return
+    ps, rs = _int_or_none(o["placed_seq"]), _int_or_none(root["placed_seq"])
+    if rn >= me or ps is None or rs is None or rs > ps:
+        _fail(out, "v", lab, f"量を写した元の注文 {ref!r}(受けた時の番号 {root['placed_seq']!r})が、この注文"
+                             f"(番号 {o['placed_seq']!r})より前に出した注文でない")
+    if root["qty_source"] != QTY_FROM_SIZING or root["size_px_source"].startswith(SIZE_REF_PREFIX.strip()):
+        _fail(out, "v", lab, f"量を写した元の注文 {ref!r} が量の計算で出した取引の最初の段でない(量の出所 "
+                             f"{root['qty_source']!r}・値段の出所 {root['size_px_source']!r})")
+    diff = [c for c in SIZE_REF_COLS if o[c] != root[c]]
+    if diff:
+        _fail(out, "v", lab, f"量を写した元の注文 {ref!r} と量の計算の列 {diff} が違う")
+
+
+def _check_size_px(o: Mapping, lab: str, close_times: list, closes: dict, out: list, t: dict) -> None:
+    """量の計算の値段を、指値なら指値の値段と、直近の足の終値なら土台が受けた時刻以前に閉じた最後の足の終値と、
+    取引の最初の段なら写した元の注文の行と比べる。"""
     src = o["size_px_source"]
-    if src == "指値":
+    if src.startswith(SIZE_REF_PREFIX):
+        if o["order_type"] != "limit":
+            _fail(out, "v", lab, f"出所が {src!r} なのに指値でない")
+        _check_size_ref(o, lab, t, out)
+    elif src == "指値":
         if o["order_type"] != "limit" or o["limit_px"] != o["size_px"]:
             _fail(out, "v", lab, f"量の計算の値段 {o['size_px']!r}(出所 指値)が指値の値段 {o['limit_px']!r} と違う")
     elif src == "直近の足の終値":
