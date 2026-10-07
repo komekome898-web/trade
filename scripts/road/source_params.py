@@ -17,6 +17,7 @@
     apikey: 除外 API の鍵(売買に効かない)
     ```
 
+「族」の後ろには空白を挟んで添え書きを置いてよい(例 `bigvol: 族 板のデータが要る`)。
 検査(`check`)が失敗にするもの: 抜き出した名前で囲みに無いもの / 囲みにあって原典に無い名前 / 「族」でも「除外 <理由>」でもない行 /
 理由の無い「除外」/ 同じ名前の 2 度書き / 原典の囲みが無い。終了コード 0 = 合格、1 = 失敗、2 = 入力の誤り。
 ここで出す文は全部日本語(O-1)。
@@ -147,7 +148,7 @@ def check(sources: list[str], spec_path: str, start: str = DEFAULT_START, end: s
             seen[name] = ln
             if name not in want:
                 failures.append(f"{spec_path} {ln} 行: {name} は {base} の設定の区切りに無い名前")
-            if mark == FAMILY:
+            if mark == FAMILY or mark.startswith(FAMILY + " "):  # 「族」の後ろに添え書きを置いてよい
                 continue
             if mark.startswith(EXCLUDED):
                 if not mark[len(EXCLUDED):].strip():

@@ -102,3 +102,10 @@ def test_real_matilda_sources_extract():
                                            "exit_mode", "time_anomaly"})):
         names = {p.name for p in SP.extract(os.path.join(ROOT, "docs", "legacy", name))}
         assert must <= names, must - names
+
+
+def test_family_mark_may_carry_a_note_but_not_glued_text(tmp_path):
+    src = _write(tmp_path, "bot.py", SRC)
+    assert SP.check([src], _spec(tmp_path, FULL.replace("foot: 族", "foot: 族 足の長さ"))) == []
+    fails = SP.check([src], _spec(tmp_path, FULL.replace("foot: 族", "foot: 族外")))
+    assert any("印 '族外'" in f for f in fails), fails
