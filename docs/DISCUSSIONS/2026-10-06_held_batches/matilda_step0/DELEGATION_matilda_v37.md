@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_matilda_v37_premortem1.md` の直しの後)。新しい委任の仕組み(`.claude/skills/delegated-study/SKILL.md` §1.4、L-791)の 2 本目の試し(`docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md` §3)。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_spec.py`。
+3 版目(事前の批評 2 回目 `DELEGATION_matilda_v37_premortem2.md` の後の直し。この直しは事前の批評を通っていない(試験の形の上限 2 回を使い切った)。直した所は末尾の `## 事前の批評の後の変更`)。新しい委任の仕組み(`.claude/skills/delegated-study/SKILL.md` §1.4、L-791)の 2 本目の試し(`docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md` §3)。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_spec.py`。
 
 ## 着手前の表
 
@@ -43,14 +43,14 @@
 - M8 建ての旗(`entry_flag`、v37:991-1005 の SFD の無い枝): ブレイクの旗 0 なら、門(range_setting が None でなく 幅 < range_setting × last、over_range_setting が None でなく 幅 > over_range_setting × last、vola_setting が None でなく ボラ ≦ vola_setting × last。L-779「**その時の価格に合わせた**」の「その時の価格」を last と読んだのはリード)のどれかが閉じれば 0、でなく last > 中心 + ボラ × entry_setting → −1、last < 中心 − ボラ × entry_setting → 1、ほかは 0。ブレイク中は、旗 = −b_signal か(b_signal = 0 かつ 玉なし)なら 0、ほかはブレイクの旗。合図「建て」: 建ての旗が前の判定と変わったら、前の「建て」の合図を理由「合図の条件が外れた」で消し、新しい旗が 0 でなければ「建て」(番号 e1, e2, …、向き long / short)を出す。値(JSON)は close・center・vola・range_max・range_min・width・lsp(中心 − ボラ × entry)・ssp(中心 + ボラ × entry)・lep(中心 − ボラ × exit)・sep(中心 + ボラ × exit)・break_flg・b_signal・expantion_flg・levels(今の段数の上限)を含む(数で)。
 - M9 建て(v37:1084-1093 と v37:829-877。L-784「**売りと買いをそろえる**」、L-779、L-774「**なんで次の段の指値が次の足になるの？**」、L-789「**あってる**」): 先に M10 の決済の旗を計算し、旗 3 なら M10 の flatten をして建てはしない(原典は建てた後の reflesh で全部取り消すので、同じ巡回の建ては残らない)。決済の途中(`is_flattening()`)は建ても決済もしない。
   - 旗 1: 売りの段が出ていて玉なしなら「全部取り消す」。旗 −1 は逆。旗 0: (買いの段か売りの段が出ている)かつ 玉なしなら「全部取り消す」(原典 v37:1092 の買いの側は玉があっても取り消していた。そろえる)。
-  - 買いのはしご(売りは向きを逆に): step = ボラ × step_setting。1 段目の値段 P1 = レンジ中は lsp、ブレイク中は last(L-789)。玉なしで段が出ていて、P1 が出ている 1 段目の値段より上なら、「全部取り消す」をし、答えが全部届いてから(同じ時刻)P1 から置き直す(v37:851-853、v37:55「ノーポジ時に指値をなるべく約定させようと努力するように変更」。INTENT.md §5.1 の切り替え B「v37 = 動かさない」はこの行を読み落とした誤り)。玉があって段の数えが 0 なら、建値(M10 の avg)を前の段の値段とし、段の数え = round(建玉 ÷ M11 の量) から始める(v37:837-840。原典は切り捨て `mybtc // sizemin`。量が全部同じなら同じ値で、浮動小数の誤差で 1 段少なく数えないよう round にしたのはリードの直し)。段の数え < 段数の上限の間、次の段の値段 = (段がまだ無く玉もなければ P1、ほかは前の段の値段 − step)で、全部を同じ判定で出す(L-774)。
+  - 買いのはしご(売りは向きを逆に): step = ボラ × step_setting。1 段目の値段 P1 = レンジ中は lsp、ブレイク中は last(L-789)。玉なしで段が出ていて、P1 が出ている 1 段目の値段より上なら、「全部取り消す」をし、答えが全部届いてから(同じ時刻)P1 から置き直す(v37:851-853、v37:55「ノーポジ時に指値をなるべく約定させようと努力するように変更」。INTENT.md §5.1 の切り替え B「v37 = 動かさない」はこの行を読み落とした誤り)。玉があって段の数えが 0 なら、建値(M10 の avg)を前の段の値段とし、段の数え = round(建玉 ÷ M11 の量) から始める(v37:837-840。原典は切り捨て `mybtc // sizemin`。量が全部同じなら同じ値で、浮動小数の誤差で 1 段少なく数えないよう round にしたのはリードの直し)。取引所が閉じた建ての段(self_trade など)は段の数えから外さず、出し直さない(リードの判断。原典の obc は出した数で、取引所の都合では減らない)。段の数え < 段数の上限の間、次の段の値段 = (段がまだ無く玉もなければ P1、ほかは前の段の値段 − step)で、全部を同じ判定で出す(L-774)。
   - 段ごとの決済(L-770「**建ての指値と一緒に決済の指値を出しておき**」): その段まで(と今の玉)が段の値段で約定したとした建値(量は全部同じなので値段の平均。玉があれば玉の段数で重みを付ける。`round`)・持つ段数・今の判定の指標と旗で M10 の決済の旗を計算し(玉なしからなら、玉の向きが変わった時刻 = 今)、旗 1 か 2 なら `place_with_exit` でその値段の決済を付け、旗 0 か 3 なら `place` で決済を付けない。
   - 注文の合図の番号は今の「建て」の合図。
 - M10 決済(v37:1006-1037・879-926、L-782「**1. 利確は中央値から exit_setting × ボラ 離れたところ**」、L-783「**問い1(a)**」、L-789): 玉があるとき、`exit_flag`(引数: ブレイクの旗・b_signal・建ての旗・玉の向き・玉の向きが変わってからの分・alert_count・建値・中心・持つ段数・段数の上限)= レンジ中は 買い玉なら(建ての旗 = −1 か 分 > 2 × alert_count)→ 3、でなく(分 > alert_count か 建値 > 中心)→ 2、ほかは 1(売り玉は逆)。ブレイク中は(買い玉で建ての旗 = −1 か 売り玉で 1)→ 3、b_signal = 0 → 1、ブレイクの旗 = −b_signal → 2、持つ段数 ≧ 段数の上限 → 1、ほかは 0(時間では決済しない)。建値 = 約定から計算した平均の値段の `round`(v37:357-358)。持つ段数 = round(|建玉| ÷ M11 の量)。
   - `exit_price`: 旗 1 はレンジ中なら 買い玉 中心 − exit_setting × ボラ・売り玉 中心 + exit_setting × ボラ、ブレイク中なら 買い玉 建値 + x・売り玉 建値 − x(x = ボラ × step_exit ÷ 持つ段数)。旗 2 は 買い玉 min(中心, 建値 + x)・売り玉 max(中心, 建値 − x)(v37:898・912)。
-  - 旗 3: `flatten(無し)`(出ている注文を全部取り消して成行。v37:703-714 の一括。L-801)。flatten が終わって玉が 0 になったら M6 の「全部取り消す」で段の数えなどを空にする。
-  - 旗 1・2: 出ている決済(close の注文と、建てが約定した `with_entry` の決済)が「close の注文 1 つで、量が建玉と同じで、出した時から建玉の量と建値が変わっていない」ときは、新しい値段が相場に近づく向き(売りの決済なら新しい値段 < 今の値段、買いの決済なら >)のときだけ取り消して置き直す(v37:913-921)。それ以外(決済が無い・2 つ以上・`with_entry` の決済・量か建値が変わった)は、出ている決済を全部取り消し、答えが全部届いてから(同じ時刻)`close(無し, limit, 値段)` を 1 つ出す(決済が無ければすぐ出す)。取引所が閉じた決済(self_trade など)は「出ていない」に数え、次の判定で出し直す。
-  - 置き直した決済の値段が、出ている自分の建ての段と交差するとき(売りの決済 ≦ 出ている買いの段など。指標が動くと起きる。U12)も、戦略は計算した値段のまま出す(L-779「**注文は計算した値そのもので行ってください。**」)。交差の扱いは走らせの self_trade の決まりで決まる(宣言しない走らせは止まる)。どの決まりで測るかは測る委任でオーナーに見せる(この委任の外)。
+  - 旗 3: 「全部取り消す」(M6。決済が先、建てが後)をし、答えが全部届いてから(同じ時刻)`flatten(無し)`(成行。v37:703-714 の一括。L-801)。先に取り消すのは、出ている注文があるまま flatten を呼ぶと、土台が答えを待つ間に flatten_call の行を残し、建てを先に取り消すため(事前の批評 2 回目の問3)。flatten が終わって玉が 0 になったら M6 の「全部取り消す」で段の数えなどを空にする。
+  - 旗 1・2: 出ている決済(close の注文と、建てが約定した `with_entry` の決済)が「close の注文 1 つで、量が建玉と同じで、出した時から建玉の量と建値が変わっていない」ときは、新しい値段が相場に近づく向き(売りの決済なら新しい値段 < 今の値段、買いの決済なら >)のときだけ取り消し、答えが届いてから(同じ時刻)置き直す(v37:913-921)。それ以外(決済が無い・2 つ以上・`with_entry` の決済・量か建値が変わった)は、出ている決済を全部取り消し、答えが全部届いてから(同じ時刻)`close(無し, limit, 値段)` を 1 つ出す(決済が無ければすぐ出す)。取引所が閉じた決済(self_trade など)は「出ていない」に数え、次の判定で出し直す。
+  - 置き直した決済の値段が、出ている自分の建ての段と交差するとき(売りの決済 ≦ 出ている買いの段など。指標が動くと起きる。U12)も、戦略は計算した値段のまま出す(リードの判断。オーナーの逐語ではない。原典は板のある取引所で動き、自分の注文どうしの扱いは原典から読めない)。交差の扱いは走らせの self_trade の決まりで決まる(宣言しない走らせは止まる)。どの決まりで測るかは測る委任でオーナーに見せる(この委任の外)。
 - M10b ブレイクの解除(v37:952-966。建てと決済の後): 旗 1 で last < 中心、旗 −1 で last > 中心なら、旗と b_signal を 0 にし、「ブレイク」の合図を理由「中心に戻った」で消す。
 - M11 量(L-781): 1 つの取引の最初の段(玉なし・段の数え 0 から出した 1 段目)は `place`(量の計算: 段数 = 今の段数の上限、値段 = その指値)。同じ取引の 2 段目から(玉があるときに足す段も)は `size_ref` = 最初の段の注文の番号。M6 で 0 に戻ったときと、M9 の置き直しで全部取り消したときに最初の段を空にする。
   - 土台の `place(..., size_ref=番号)`・`place_with_exit(..., size_ref=番号)`: 番号は、前に `place`(量の計算)で出した指値の注文で、その注文自身は size_ref で出していないもの。段数がその注文と同じ。種類は指値だけ。どれかが外れたら `RoadStrategyError`。量の計算の列(margin_jpy・use_ratio・levels・size_px・usdjpy・usdjpy_t_ns・qty_raw)と量を写し、size_px_source = 「取引の最初の段 <番号>」、qty_source = 量の計算。
@@ -63,12 +63,12 @@
 | データ | この委任は市場のデータを読まない。試験は tmp の根の下に書いた合成の 1 分足だけで走る(封印の境より前の時刻 2023-11-14) | この委任には無い(合成の足だけ。実データの 1 分足 `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/` は測る委任で使う) |
 | 既存の決まり | 道の走らせで、足の閉じる時刻に戦略へ届く順は「足 → その足の約定の知らせ」。その足の知らせの中で置いた同じ時刻のタイマーは、約定の知らせの後に届く | `PYTHONPATH=src python3 docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/probe_event_order.py` → `('BarEvent', 480, '')`・`('OrderFillEvent', 480, 'road-0')`・`('OrderFillEvent', 480, 'road-1')`・`('ClockEvent', 480, 'decide')` の順 |
 | 既存の決まり | 戦略はタイマーを置ける(`StrategyContext.set_timer(at_ns, tag)` で `ClockEvent(tag)` が届く) | `src/bot/bt/core/api.py:908` |
-| 既存の決まり | 遅れ 0 の走らせでは、取り消しの答えは同じ時刻に届き、その答えの知らせの中で置き直した close は同じ時刻に出る | `tests/road/test_road_fill_l769.py:419-431`(road-1 を 0:05 に取り消し、road-2 を 0:06 に置き直した表) |
+| 既存の決まり | 遅れ 0 の走らせでは、取り消しの答えは同じ時刻に届き、その答えの知らせの中で置き直した close は同じ判定の時刻に出る(試しの戦略は足ごとに取り消して置き直し、表の出した時刻が 0:05・0:06・0:07 と足ごとに並ぶ) | `tests/road/test_road_fill_l769.py:419-431`(表は `("road-1", "5010000.0", "CANCELED", _at(5))`・`("road-2", "5005000.0", "CANCELED", _at(6))`・`("road-3", "5000000.0", "FILLED", _at(7))`。4 列目は出した時刻) |
 | 既存の決まり | 土台の `place` は注文ごとに、その指値の値段で量を計算する(L-781 の口が無い) | `src/bot/bt/road/strategy.py:428` |
 | 既存の決まり | 検査 (v) は量の計算の値段の出所を「指値」「直近の足の終値」「直近の約定の値段」「直近の板の仲値」しか通さない(新しい出所は失敗になる) | `src/bot/bt/road/check.py:1090-1113` |
 | 既存の決まり | 検査 (v) は量の計算の行の量を、記録した列から計算し直して比べる | `src/bot/bt/road/check.py:1014-1027` |
 | 既存の決まり | 道の試験は今 221 件が通る | `PYTHONPATH=src python -m pytest tests/road` → 221 passed |
-| 既存の決まり | 受け入れの試験は、作る前は Matilda の試験が飛ばし(戦略が無い)、量の口の試験 7 つが `size_ref` の TypeError で落ちる | `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_spec.py` → 7 failed, 84 skipped |
+| 既存の決まり | 受け入れの試験は、作る前は Matilda の試験が飛ばし(戦略が無い)、量の口の試験 7 つが `size_ref` の TypeError で落ちる | `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_spec.py` → 7 failed, 85 skipped |
 | 既存の決まり | 約定の決まり range_open: 足の範囲の内の指値はその値段、約定する向きに範囲の外は始値、`attached_exit` は楽観側 same_bar・悲観側 next_bar。bar_rule には注文の遅れ 0 が要る | `src/bot/bt/fill/spec.py:34-61` |
 | 既存の決まり | 原典の建ての枝: 玉が無く段が出ていて、板の値段が 1 段目より上なら全部取り消す。INTENT.md §5.1 の「切り替え B: v37 = 動かさない」(`docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/INTENT.md:190`)は誤りで、M9 に直した形で書いた | `docs/legacy/matilda_for_TaroCamp37.py:851-853` |
 | 既存の決まり | 原典の合図が無いときの取り消しの条件は売りと買いで違う(L-784 でそろえる) | `docs/legacy/matilda_for_TaroCamp37.py:1092` |
@@ -84,7 +84,7 @@
 | 列の意味 | 原典の `last` は板の仲値(巡回ごと)、指標は確定した足(分の区切りの 1 秒後に取り直す) | `docs/legacy/matilda_for_TaroCamp37.py:766`・`docs/legacy/matilda_for_TaroCamp37.py:339` |
 | 列の意味 | 原典の `poschangetime` は建玉の向きが変わった時に巡回が付ける時刻で、段を足しても変わらない | `docs/legacy/matilda_for_TaroCamp37.py:1066` |
 | 列の意味 | L-774 の読みの列の「終値が線を越えるのを待たない」は、後の INTENT.md §5.1 で「v37 は値段が線の外に出たのが合図、v52 は線で待つ」と書き分け、L-782 で v52 を外した。この委任は v37 の合図(M8)を写す | `docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/INTENT.md:192` |
-| 列の意味 | 道の走らせの戦略の口: `strategy.kind = module` の `factory(params, price_type)`、モジュールは `bot.strategy.` の下 | `src/bot/bt/pipeline.py:515-519` |
+| 列の意味 | 道の走らせの戦略の口: `strategy.kind = module` の `factory(params, price_type)`、モジュールは `bot.strategy.` の下 | `src/bot/bt/pipeline.py:545`・`src/bot/bt/pipeline.py:515-519` |
 
 ## 決めてよいこと・決めてはいけないこと
 
@@ -111,7 +111,7 @@
 | 場面 | 書いたこと |
 |---|---|
 | 封印の境 | この委任には無い(合成の足だけで走らせ、時刻は 2023-11-14。実データを読まない。決まった制約で境より後を読まない) |
-| 日・足・期間の境 | U9(foot 5 の窓の区切り・窓の終わりの足が無い・foot 1 の分の抜け)・U10(慣らしの最後の足) |
+| 日・足・期間の境 | U9(foot 5 の窓の区切り・最初の足が区切りからずれている・窓の終わりの足が無い・foot 1 の分の抜け)・U10(慣らしの最後の足) |
 | 等号 | U2(線ちょうど・時間ちょうど・建値 = 中心)・U10(終値が線ちょうど) |
 | 欠け | U9(1 分足の抜け)・U1(引数の鍵が足りない) |
 | 参照の値が無い | U4(size_ref の番号が無い・元が写した行・決済の行)・U10(慣らしの間は指標の本数が足りない) |
@@ -135,7 +135,7 @@
 - U6: 決済の置き直しの向き: `test_u6_exit_kept_when_new_price_is_further`
 - U7: 時間の決済: `test_u7_time_exits`
 - U8: ブレイク: `test_u8_break_entries_and_exit`・`test_u8_break_switches`・`test_u8_break_chase_when_flat`・`test_u8_break_off_when_back_to_center`
-- U9: 足の束ねと欠け: `test_u9_foot5_built_from_minutes_and_decided_every_minute`・`test_u9_foot5_missing_minute`・`test_u9_foot1_missing_minute_counts_bars_present`
+- U9: 足の束ねと欠け: `test_u9_foot5_built_from_minutes_and_decided_every_minute`・`test_u9_foot5_missing_minute`・`test_u9_foot1_missing_minute_counts_bars_present`・`test_u9_foot5_first_bar_off_grid`
 - U10: 指標の細部: `test_u10_center_is_python_round_half_even`・`test_u10_beard_cut`・`test_u10_close_on_the_line_no_signal`・`test_u10_no_decision_before_warm`
 - U11: 自動の段数: `test_u11_auto_levels_after_trade`
 - U12: 置き直した決済と自分の段の交差: `test_u12_exit_crossing_own_ladder`
@@ -173,3 +173,17 @@
 ## 途中の決め
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
+
+## 事前の批評の後の変更
+
+見た版の sha256: ebaba0d5f433cb3088f7430cc4148f396b120bd4644e4c81c37f065335653674
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_matilda_v37_premortem2.md` の「次の版で直す」ごと。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+- 版の説明を 3 版目に。
+- M10 旗 3: 「全部取り消す」をしてから flatten(問0 の 1・2 件目、問2、問3 の 1 件目)。
+- M10 旗 1・2 の相場に近づく向きの置き直しに「答えが届いてから(同じ時刻)」(問3 の 2 件目)。
+- M10 の交差の行: 根拠を「リードの判断」に書き直し、L-779 を外した(問1 の 2 件目)。
+- M9: 取引所が閉じた建ての段は数えから外さず、出し直さない(問3 の 3 件目)。
+- 読んだ事実: test_road_fill_l769.py の表の時刻の読み(問4 の 1 件目)、pipeline.py:545(問4 の 2 件目)。
+- 読んだ事実: 作る前の試験の結果を 7 failed, 85 skipped に(場面を 1 つ足したため)。
+- 受け入れ U9・壊す場面: 最初の足が区切りからずれた foot 5 の場面 `test_u9_foot5_first_bar_off_grid` を足した(問5 の 3 件目)。試験の期待は U9 の 1 本目と同じ(区切りは UTC の 5 分。最初の窓は分 2〜4 の 3 本で閉じ、窓 4〜6 は同じ)。

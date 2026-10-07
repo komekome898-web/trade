@@ -746,6 +746,22 @@ def test_u9_foot5_missing_minute(tmp_path):
 
 
 @need_m
+def test_u9_foot5_first_bar_off_grid(tmp_path):
+    # 最初の足が 5 分の区切りから 2 分ずれている(分 2 から始まる)。窓は UTC の 5 分の区切り(v37:339 の minute % foot == 0)なので、
+    #   最初の窓は分 2〜4 の 3 本で閉じ(分 4 の足が窓の終わり T0 + 5 分に閉じる)、窓 2〜6 は U9 の 1 本目と同じ。
+    #   31 本目の判定(窓 6 本まで)の指標は窓 4〜6 から → U9 の 1 本目と同じ合図と注文。最初の足の時刻から区切ると、
+    #   31 本目の時点で閉じた窓は 5 本で、合図が出ない
+    rows = [r for r in seq((UP5 + DOWN5) * 3 + [B7]) if r[0] >= 2]
+    res = run(tmp_path, rows, dict(BASE, foot=5))
+    check_ok(res)
+    for s in SIDES:
+        assert [x[:4] for x in signals(res, s)] == [("e1", "建て", "long", t(31))]
+        assert [(o[0], o[1], o[3], o[4], o[7]) for o in orders(res, s)] == [
+            ("road-0", "buy", "7000050.0", "0.009", t(31)), ("road-1", "sell", "7000150.0", "0.009", t(31)),
+            ("road-2", "buy", "6999950.0", "0.009", t(31)), ("road-3", "sell", "7000150.0", "0.009", t(31))]
+
+
+@need_m
 def test_u9_foot1_missing_minute_counts_bars_present(tmp_path):
     # foot 1 で分 3 が抜けた(足 4 本目以降が 1 分ずれる)。窓は「ある足の本数」で数える → 合図と注文は U3 と同じ値段で、
     #   時刻だけ 1 分あと(足 7 の値段の足は分 7 に始まり t(8) に閉じる)
