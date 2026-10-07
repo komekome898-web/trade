@@ -4,7 +4,7 @@
 使い方:
   check_report.py <報告> --delegation <委任文> [--owner-log P] [--fixed P] [--scenes P] [--root DIR]
 
-委任文の検めを全部やり直し(印は読まず書かない)、報告の形を検める。決まりの正本は試験 tests/delegation/test_spec.py。
+委任文の検めを全部やり直し(承認つき。印は読まず書かない)、報告の形を検める。決まりの正本は試験 tests/delegation/test_spec.py。
 終了コード: 0 合格 / 1 検めの失敗 / 2 入力の誤り。失敗の行は全部、標準出力に日本語で出す。
 Python の標準ライブラリだけを使い、ほかのファイルを import しない(委任文の検めの部品は check_delegation.py と同じ写し)。
 """
@@ -40,6 +40,7 @@ RE_LNUM_BEFORE = re.compile(r"(?<![A-Za-z0-9-])(" + LNUM + r")[ \t]*$")
 RE_LNUM_AFTER = re.compile(r"^[ \t]*(" + LNUM + r")(?![0-9A-Za-z])")
 RE_QUOTE = re.compile(r"「\*\*(.+?)\*\*」")
 RE_BACKTICK = re.compile(r"`[^`]*`")
+RE_BT_PATHLINE = re.compile(r"(\S*/\S*?):(\d+)(?:-(\d+))?")
 RE_PATHLINE = re.compile(r"(?<![A-Za-z0-9._~+/-])([A-Za-z0-9._~+-]*/[A-Za-z0-9._~+/-]*):(\d+)(?:-(\d+))?(?![0-9])")
 RE_CMD = re.compile(r"`[^`]+`.*?→\s*\S")
 RE_NONE = re.compile(r"この委任には無い[(（].+[)）]")
@@ -47,7 +48,10 @@ RE_UREF = re.compile(r"(?<![A-Za-z0-9])U(\d+)(?!\d)")
 RE_UDEF = re.compile(r"^- U(\d+):")
 RE_HDEF = re.compile(r"^- H(\d+):")
 RE_QDEF = re.compile(r"^- Q(\d+):")
-RE_ITEM = re.compile(r"^- \[(直す|聞く)\]")
+RE_ITEM = re.compile(r"^\s*(?:[-*]|\d+[.)])\s*(?:\*\*)?\[(直す|聞く|止める)\]")
+RE_BR = re.compile(r"<br\s*/?>", re.I)
+QUOTE_SEP = set(" 。！？!?•→")
+QUOTE_END = set("。！？!?")
 RE_MDHEAD = re.compile(r"^#{1,6}(?:\s|$)")
 RE_RESP_ANY = re.compile(r"^応答\s*[:：]")
 RE_RESP = re.compile(r"^応答: (" + "|".join(RESPONSES) + r")[(（](.+)[)）]$")
@@ -139,7 +143,7 @@ def table_rows(lines: list[str]) -> list[list[str]]:
 
 
 def parse_sections(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
-    """`## ` の見出しごとの本文(見出しの行を除く)。同じ見出しが 2 つ以上あれば本文をつなぐ。"""
+    """`## ` の見出しごとの本文(見出しの行を除く)と、出た見出しの並び(重なりを含む)。同じ見出しが 2 つ以上あれば本文をつなぐ。"""
     secs: dict[str, list[str]] = {}
     order: list[str] = []
     cur = None
@@ -148,7 +152,7 @@ def parse_sections(lines: list[str]) -> tuple[dict[str, list[str]], list[str]]:
             cur = l[3:].rstrip()
             if cur not in secs:
                 secs[cur] = []
-                order.append(cur)
+            order.append(cur)
             continue
         if cur is not None:
             secs[cur].append(l)
@@ -159,15 +163,22 @@ def norm_space(s: str) -> str:
     return re.sub(r"\s+", " ", s)
 
 
-def parse_owner_log(text: str) -> dict[str, list[str]]:
-    """1 列目がちょうど番号の行の 4 列目(オーナーの逐語の欄)を、番号ごとに全部集める。"""
-    rows: dict[str, list[str]] = {}
+def norm_quote(s: str) -> str:
+    """`<br>` を空白にし、空白の並びを 1 つの半角の空白にそろえる。"""
+    return norm_space(RE_BR.sub(" ", s))
+
+
+def parse_owner_log(text: str) -> dict[str, list[dict]]:
+    """1 列目がちょうど番号の行を、番号ごとに全部集める。cell = 4 列目(オーナーの逐語の欄)、
+    bound = 4 列目の「**・**」を空白にしたもの(区切りの検め用)、raw = 行全体。"""
+    rows: dict[str, list[dict]] = {}
     for l in text_lines(text):
         if not l.lstrip().startswith("|"):
             continue
         cells = split_row(l)
         if len(cells) >= 4 and RE_LNUM_FULL.fullmatch(cells[0]):
-            rows.setdefault(cells[0], []).append(norm_space(cells[3]))
+            bound = norm_quote(cells[3].replace("「**", " ").replace("**」", " ")).strip()
+            rows.setdefault(cells[0], []).append({"cell": norm_quote(cells[3]), "bound": bound, "raw": l})
     return rows
 
 
@@ -196,13 +207,17 @@ def resolve_in_root(root: str, rel: str) -> tuple[str | None, str | None]:
     """文字の上だけでパスを解く(シンボリックリンクを解かない)。(解いたパス, 失敗の種類 '根の外'・'封印')。"""
     r = os.path.normpath(os.path.abspath(root))
     full = os.path.normpath(os.path.join(r, rel))
-    relp = os.path.relpath(full, r)
-    if relp == os.pardir or relp.startswith(os.pardir + os.sep):
-        return full, "根の外"
-    low = relp.replace(os.sep, "/").lower()
+    try:
+        relp = os.path.relpath(full, r)
+    except ValueError:
+        relp = None
+    absl = full.replace(os.sep, "/").lower() + "/"
+    rlow = relp.replace(os.sep, "/").lower() if relp is not None else ""
     for s in SEALED:
-        if low == s or low.startswith(s + "/"):
+        if ("/" + s + "/") in absl or rlow == s or rlow.startswith(s + "/"):
             return full, "封印"
+    if relp is None or relp == os.pardir or relp.startswith(os.pardir + os.sep):
+        return full, "根の外"
     return full, None
 
 
@@ -211,55 +226,119 @@ def count_lines(data: bytes) -> int:
     return data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
 
 
-def check_quotes(lines: list[str], owner: dict[str, list[str]], fails: list[str]) -> bool:
-    """全部の節のオーナーの引用を OWNER_LOG と比べる。`## オーナーの承認` に通る引用があれば True を返す。"""
+def contains_bounded(v: str, q: str) -> bool:
+    """q が v の中に、区切りで始まり区切りで終わる所で含まれるか。"""
+    start = 0
+    while q:
+        i = v.find(q, start)
+        if i < 0:
+            return False
+        j = i + len(q)
+        if (i == 0 or v[i - 1] in QUOTE_SEP) and (q[-1] in QUOTE_END or j == len(v) or v[j] in QUOTE_SEP):
+            return True
+        start = i + 1
+    return False
+
+
+def quote_rows(owner: dict[str, list[dict]], n: str, q: str, bounded: bool) -> list[dict]:
+    """番号 n の行のうち、逐語の欄に引用 q を含む行。"""
+    if bounded:
+        return [r for r in owner.get(n, []) if contains_bounded(r["bound"], q)]
+    return [r for r in owner.get(n, []) if q in r["cell"]]
+
+
+def quote_groups(line: str) -> list[tuple[list[str], list[str]]]:
+    """1 行の中のオーナーの引用の並び(バッククォートの外)を、(番号の一覧, 引用の一覧) で返す。"""
+    masked = mask_backticks(line)
+    groups: list[list[re.Match]] = []
+    for m in RE_QUOTE.finditer(masked):
+        if groups and re.fullmatch(r"[ \t]*", masked[groups[-1][-1].end():m.start()]):
+            groups[-1].append(m)
+        else:
+            groups.append([m])
+    out = []
+    for g in groups:
+        before = RE_LNUM_BEFORE.search(masked[:g[0].start()])
+        after = RE_LNUM_AFTER.match(masked[g[-1].end():])
+        nums: list[str] = []
+        for x in (before, after):
+            if x and x.group(1) not in nums:
+                nums.append(x.group(1))
+        out.append((nums, [norm_quote(m.group(1)).strip() for m in g]))
+    return out
+
+
+def judge_group(nums: list[str], quotes: list[str], owner: dict[str, list[dict]], bounded: bool,
+                where: str, fails: list[str]) -> str | None:
+    """番号の付いた引用の並びを比べる。通れば通った番号、通らなければ失敗の行を足して None。"""
+    for n in nums:
+        if all(quote_rows(owner, n, q, bounded) for q in quotes):
+            return n
+    for n in nums:
+        if n not in owner:
+            fails.append(f"引用: {where}の {n} は OWNER_LOG に 1 列目がちょうどその番号の行が無い")
+    for q in quotes:
+        if not any(quote_rows(owner, n, q, bounded) for n in nums):
+            if bounded and any(quote_rows(owner, n, q, False) for n in nums):
+                fails.append(f"引用: {where}の {'・'.join(nums)} の引用「{q[:30]}」は、逐語の欄の区切りで始まり区切りで"
+                             f"終わる所に無い(語の途中で切っている。目的の節)")
+            else:
+                fails.append(f"引用: {where}の {'・'.join(nums)} の引用「{q[:30]}」が OWNER_LOG のその番号の行の"
+                             f"逐語の欄に無い")
+    return None
+
+
+def check_quotes(lines: list[str], owner: dict[str, list[dict]], dname: str, dhash: str,
+                 fails: list[str]) -> bool:
+    """全部の節のオーナーの引用を OWNER_LOG と比べる。目的の節は番号の付いた引用が要り、区切りで比べる。
+    `## オーナーの承認` に、OWNER_LOG のその番号の行で、逐語の欄に引用を含み、行のどこかに委任文の名前と
+    今の事前の批評の sha256 を含む行がある引用があれば True を返す(L-796)。"""
     approved = False
     section = None
+    purpose_numbered = 0
     for ln, line in enumerate(lines, 1):
         if line.startswith("## "):
             section = line[3:].rstrip()
-        masked = mask_backticks(line)
-        ms = list(RE_QUOTE.finditer(masked))
-        groups: list[list[re.Match]] = []
-        for m in ms:
-            if groups and re.fullmatch(r"[ \t]*", masked[groups[-1][-1].end():m.start()]):
-                groups[-1].append(m)
-            else:
-                groups.append([m])
-        for g in groups:
-            before = RE_LNUM_BEFORE.search(masked[:g[0].start()])
-            after = RE_LNUM_AFTER.match(masked[g[-1].end():])
-            nums = []
-            for x in (before, after):
-                if x and x.group(1) not in nums:
-                    nums.append(x.group(1))
-            quotes = [norm_space(m.group(1)).strip() for m in g]
+        in_purpose = section == "目的(オーナーの逐語)"
+        for nums, quotes in quote_groups(line):
             if not nums:
-                if section == "目的(オーナーの逐語)":
+                if in_purpose:
                     fails.append(f"引用: {ln} 行目の引用「{quotes[0][:30]}」に番号(L-数字)が無い(目的の節)")
                 continue
-            ok = any(all(any(q in cell for cell in owner.get(n, [])) for q in quotes) for n in nums)
-            if ok:
-                if section == "オーナーの承認":
-                    approved = True
-                continue
-            for n in nums:
-                if n not in owner:
-                    fails.append(f"引用: {ln} 行目の {n} は OWNER_LOG に 1 列目がちょうどその番号の行が無い")
-            for q in quotes:
-                if not any(any(q in cell for cell in owner.get(n, [])) for n in nums):
-                    fails.append(f"引用: {ln} 行目の {'・'.join(nums)} の引用「{q[:30]}」が OWNER_LOG のその番号の行の"
-                                 f"逐語の欄に無い")
+            if in_purpose:
+                purpose_numbered += 1
+            n = judge_group(nums, quotes, owner, in_purpose, f"{ln} 行目", fails)
+            if n is not None and section == "オーナーの承認":
+                for q in quotes:
+                    if any(dname in r["raw"] and dhash in r["raw"] for r in quote_rows(owner, n, q, False)):
+                        approved = True
+    if purpose_numbered == 0:
+        fails.append("目的: 「## 目的(オーナーの逐語)」の節に、番号の付いたオーナーの引用が 1 つも無い")
     return approved
+
+
+def path_lines(cell: str) -> list[tuple[str, str, str | None]]:
+    """確かめの欄の `パス:行` を全部拾う。(1) バッククォートの中身が丸ごと `<パス>:<行>`(日本語の名前も可)
+    (2) それ以外の所(コマンドの中も)の「/ を含む ASCII の語」の直後の `:<行>`。"""
+    found = []
+    masked = cell
+    for m in RE_BACKTICK.finditer(cell):
+        mm = RE_BT_PATHLINE.fullmatch(m.group(0)[1:-1])
+        if mm:
+            found.append((mm.group(1), mm.group(2), mm.group(3)))
+            masked = masked[:m.start()] + "\0" * len(m.group(0)) + masked[m.end():]
+    for m in RE_PATHLINE.finditer(masked):
+        found.append((m.group(1), m.group(2), m.group(3)))
+    return found
 
 
 def check_path_line(root: str, cell: str, fails: list[str]) -> bool:
     """確かめの欄の `パス:行` を全部見る。1 つでもあれば True。"""
     found = False
-    for m in RE_PATHLINE.finditer(cell):
+    for rel, sa, sb in path_lines(cell):
         found = True
-        rel, a, b = m.group(1), int(m.group(2)), int(m.group(3) or m.group(2))
-        tag = f"{rel}:{m.group(2)}" + (f"-{m.group(3)}" if m.group(3) else "")
+        a, b = int(sa), int(sb or sa)
+        tag = f"{rel}:{sa}" + (f"-{sb}" if sb else "")
         full, why = resolve_in_root(root, rel)
         if why == "根の外":
             fails.append(f"読んだ事実: 確かめの欄の {tag} は根の外のパス")
@@ -409,14 +488,19 @@ def check_premortem(delegation_path: str, text_body_hash: str, secs: dict[str, l
     return str(last_path)
 
 
-def check_delegation_text(delegation_path: str, data: bytes, text: str, owner: dict[str, list[str]],
+def approval_failure(delegation_path: str, body_sha256: str) -> str:
+    return (f"承認: `## オーナーの承認` の節に、OWNER_LOG のその番号の行で、逐語の欄に引用を含み、行のどこかに委任文の名前"
+            f" {Path(delegation_path).name} と今の事前の批評の sha256 {body_sha256[:12]}… を含む行がある引用が無い")
+
+
+def check_delegation_text(delegation_path: str, data: bytes, text: str, owner: dict[str, list[dict]],
                           fixed_lines: list[str], scenes: list[str], root: str) -> tuple[list[str], dict]:
     """委任文の検めを全部行い、(失敗の行, 情報) を返す。"""
     fails: list[str] = []
     lines = text_lines(text)
-    secs, _ = parse_sections(lines)
-    info: dict = {"kind": None, "udefs": [], "hdefs": [], "qdefs": [], "approved": False, "premortem": None,
-                  "body_sha256": body_hash_of(text), "delegation_sha256": hashlib.sha256(data).hexdigest()}
+    secs, order = parse_sections(lines)
+    info: dict = {"kind": None, "udefs": [], "hdefs": [], "qdefs": [], "qlines": {}, "approved": False,
+                  "premortem": None, "body_sha256": body_hash_of(text), "delegation_sha256": hashlib.sha256(data).hexdigest()}
 
     # 種類
     kl = [l for l in lines[:5] if l.startswith("種類: ")]
@@ -433,9 +517,13 @@ def check_delegation_text(delegation_path: str, data: bytes, text: str, owner: d
     for h in need:
         if h not in secs:
             fails.append(f"見出し: 「## {h}」が無い")
+        elif order.count(h) > 1:
+            fails.append(f"見出し: 「## {h}」が {order.count(h)} つある")
+        elif not "".join(secs[h]).strip():
+            fails.append(f"見出し: 「## {h}」の本文が空")
 
     # 引用(全部の節)・承認
-    info["approved"] = check_quotes(lines, owner, fails)
+    info["approved"] = check_quotes(lines, owner, Path(delegation_path).name, info["body_sha256"], fails)
 
     # 読んだ事実
     check_facts(secs.get("読んだ事実", []), root, fails)
@@ -468,13 +556,21 @@ def check_delegation_text(delegation_path: str, data: bytes, text: str, owner: d
         fails.append(f"決まった制約: 節が FIXED_CONSTRAINTS.md の「## 決まった制約」の節と一字違わず同じでない{where}")
 
     # 終わる条件と上限
-    end_body = "\n".join(secs.get("終わる条件と上限", []))
+    end_body = secs.get("終わる条件と上限", [])
     for w in ("終わる条件", "上限"):
-        if w not in end_body:
-            fails.append(f"終わる条件と上限: 節の本文に「{w}」の語が無い")
+        ls = [l for l in end_body if l.startswith(f"- {w}:")]
+        if not ls:
+            fails.append(f"終わる条件と上限: 行頭の「- {w}:」の行が無い")
+        elif not any(l[len(w) + 3:].strip() for l in ls):
+            fails.append(f"終わる条件と上限: 「- {w}:」の後が空")
 
     # 途中の決め
-    info["qdefs"] = number_defs(secs.get("途中の決め", []), RE_QDEF)
+    mid = secs.get("途中の決め", [])
+    info["qdefs"] = number_defs(mid, RE_QDEF)
+    for l in mid:
+        m = RE_QDEF.match(l)
+        if m:
+            info["qlines"].setdefault(int(m.group(1)), []).append(norm_space(l))
 
     # 事前の批評の記録(作る)
     if kind == "作る":
@@ -621,6 +717,16 @@ def check_results(secs: dict[str, list[str]], fails: list[str]) -> None:
             fails.append(f"出典: 結果の表の行「{' | '.join(r)[:40]}」の最後の列(出典)が空")
 
 
+def report_questions(secs: dict[str, list[str]]) -> list[tuple[int, str, str]]:
+    """報告の問いの節の行頭の `- Q<数字>: <問い>` を (番号, 問い, 行) で返す。"""
+    out = []
+    for l in secs.get("問いとして返したこと", []):
+        m = RE_QDEF.match(l)
+        if m:
+            out.append((int(m.group(1)), norm_space(l[m.end():]).strip(), norm_space(l)))
+    return out
+
+
 def check_questions(secs: dict[str, list[str]], info: dict, fails: list[str]) -> None:
     name = "問いとして返したこと"
     if name not in secs:
@@ -628,12 +734,39 @@ def check_questions(secs: dict[str, list[str]], info: dict, fails: list[str]) ->
         return
     body = secs[name]
     none_stated = any("問いとして返したことは無い。" in l for l in body)
-    qs = number_defs(body, RE_QDEF)
+    qs = report_questions(secs)
     if not none_stated and not qs:
         fails.append(f"{name}: 節に「問いとして返したことは無い。」も行頭の「- Q数字:」も無い")
-    for q in sorted(set(qs)):
-        if q not in info["qdefs"]:
-            fails.append(f"{name}: Q{q} が委任文の「## 途中の決め」の行頭の「- Q数字:」に無い")
+    for n, q, _ in qs:
+        lines = info["qlines"].get(n, [])
+        if not lines:
+            fails.append(f"{name}: Q{n} が委任文の「## 途中の決め」の行頭の「- Q数字:」に無い")
+        elif not q:
+            fails.append(f"{name}: Q{n} の問いの文が空")
+        elif not any(q in l for l in lines):
+            fails.append(f"{name}: Q{n} の問いの文「{q[:30]}」を、委任文の「## 途中の決め」の Q{n} の行が含まない"
+                         f"(番号だけが合う)")
+
+
+def check_start_table(secs: dict[str, list[str]], owner: dict[str, list[dict]], fails: list[str]) -> None:
+    """報告の着手前の表: 行が 1 つ以上あり、各行の 2 列目が通るオーナーの引用を含むか、1 列目の文を問いとして返した。"""
+    name = "着手前の表"
+    rows = [r for r in table_rows(secs.get(name, [])) if r]
+    if not rows:
+        fails.append(f"{name}: 報告の「## {name}」の節に表の行が無い")
+        return
+    qlines = [l for _, _, l in report_questions(secs)]
+    for i, r in enumerate(rows, 1):
+        first = norm_space(r[0]).strip()
+        cell = r[1] if len(r) > 1 else ""
+        numbered = [(nums, quotes) for nums, quotes in quote_groups(cell) if nums]
+        if numbered:
+            for nums, quotes in numbered:
+                judge_group(nums, quotes, owner, False, f"報告の{name}の {i} 行目「{first[:20]}」", fails)
+            continue
+        if not first or not any(first in l for l in qlines):
+            fails.append(f"{name}: {i} 行目「{first[:30]}」の 2 列目に番号の付いたオーナーの引用が無く、1 列目の文が"
+                         f"問いとして返したことの「- Q数字:」の行にも無い")
 
 
 def run(argv: list[str]) -> int:
@@ -675,6 +808,8 @@ def run(argv: list[str]) -> int:
 
     root = opts.get("--root", str(REPO_ROOT))
     dfails, info = check_delegation_text(dpath, data, text, owner, fixed_lines, scenes, root)
+    if not info["approved"]:
+        dfails.append(approval_failure(dpath, info["body_sha256"]))
     fails = [f"委任文の検め: {f}" for f in dfails]
 
     secs, _ = parse_sections(text_lines(rtext))
@@ -683,6 +818,7 @@ def run(argv: list[str]) -> int:
     elif info["kind"] == "読む":
         check_results(secs, fails)
     check_questions(secs, info, fails)
+    check_start_table(secs, owner, fails)
 
     if fails:
         for f in fails:
