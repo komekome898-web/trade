@@ -77,3 +77,8 @@
 - 批評家の台本 `flat.py`(off_tick・limit_far・limit_far_then_place・limit_far_cancel・doten_then_flatten)と `sweep2.py <JPY|USD> forge` を今のコードで流し、結果を報告に入れる(台本は `/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/critic/`)。
 - 制約は 1 周目と同じ。
 - 終わる条件: 上の全部が試験として通り、`tests/road tests/bt` が通る。上限: この 1 周。通らない項目は止めて報告する。この後、新しく足した口(`close`)は批評家にもう 1 回見せる。
+
+## 5 周目(批評家 3 回目の [直す] 2 件)
+
+批評家 3 回目の報告とリードの応答は `docs/AUDITOR/VERDICTS/2026-10-07_road_record_form_critic3.md`。**リードの応答の「直す(5 周目)」の 2 件((2-1) close と flatten を reduce_only で出す、(2-5) 足で約定させた指値の約定を閉じた足と比べる)と、(3) の説明の文 2 つを直す。**応答にある試験(批評家の `close_run.py doten_after_close`・`place_sell_after_close`、`limit_at.py` の seed 2・5 と `3 4960000.0`)を入れる。取引所の模型・core・pipeline は変えない。
+- 終わる条件: 上が試験として通り、`tests/road tests/bt` が通る。上限: この 1 周。通らない項目は止めて報告する。批評家はこの後は呼ばず、リードが批評家の台本を今のコードで流して確かめる。
