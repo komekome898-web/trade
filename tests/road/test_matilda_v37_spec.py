@@ -222,6 +222,8 @@ ENTRY_ROWS = [
     ("上の門が閉じる(幅 > 比 × last)", dict(last=6999799, over_range_setting=1e-5), 0),
     ("ボラの門が閉じる(ボラ ≦ 比 × last)", dict(last=6999799, vola_setting=2e-5), 0),
     ("ボラの門が開く", dict(last=6999799, vola_setting=1e-5), 1),
+    # ボラ = 比 × last ちょうど(2^-16 × 6,553,600 = 100 は浮動小数でちょうど)→ 「以下」で閉じる(作業者の Q3 で足した)
+    ("ボラの門ちょうど(ボラ = 比 × last)→ 閉じる", dict(last=6553600, vola_setting=2.0 ** -16), 0),
     ("ブレイク上・順行 → 買い", dict(break_flg=1, b_signal=1, last=7000000), 1),
     ("ブレイク上・逆行 2 回 → 0", dict(break_flg=1, b_signal=-1, last=7000000), 0),
     ("ブレイク上・b_signal 0・玉なし → 0(静観)", dict(break_flg=1, b_signal=0, last=7000000), 0),
@@ -693,6 +695,16 @@ def test_u8_break_chase_when_flat(tmp_path):
             ("road-5", "sell", "7000950.0", "with_entry", "road-4", t(9), "OPEN", "")]
         rows = {r["order_id"]: r for r in res["orders"][s]}
         assert rows["road-4"]["size_px_source"] == "取引の最初の段 road-3"
+
+
+@need_m
+def test_u8_break_line_uses_max_with_double_range(tmp_path):
+    # 足 7 の終値 7,000,580 は、上の線の列の値 7,000,550 より上だが、2 倍の長さの高値 7,000,600 より下。
+    #   bup = max(7,000,550, 7,000,600) = 7,000,600 ≧ 7,000,580 → ブレイクしない(v37:933)。売りの線 7,000,650 より下で建ても無い。
+    #   (作業者の Q4 で足した: 列の値だけと比べる作りでは、ここでブレイクの合図が出る)
+    res = run(tmp_path, seq(BRK_HEAD[:6] + [(7000500, 7000580, 7000500, 7000580, 3)]), BRK_PARAMS)
+    for s in SIDES:
+        assert signals(res, s) == [] and orders(res, s) == []
 
 
 @need_m
