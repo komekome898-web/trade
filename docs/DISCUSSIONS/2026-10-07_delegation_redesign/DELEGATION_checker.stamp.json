@@ -1,7 +1,7 @@
 {
-  "delegation_sha256": "b708f4bb299937cbb0a0b7dd1af804b410ec74069a49b87746fb3bdd9d561113",
+  "delegation_sha256": "e79ee3ea33724bff9510d77d7925db620538692d0c0fc67a2082204886cd8fb4",
   "body_sha256": "026413be2dfbffe7d5c9a9dda9746959d1de741bb62f865c21eaa04f4c3af1c0",
   "kind": "作る",
   "premortem": "docs/DISCUSSIONS/2026-10-07_delegation_redesign/DELEGATION_checker_premortem4.md",
-  "approved": false
+  "approved": true
 }
