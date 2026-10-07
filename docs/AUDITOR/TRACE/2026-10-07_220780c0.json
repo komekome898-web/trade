@@ -30811,9 +30811,9 @@
    "move": 1133,
    "tools": {
     "Write": 1,
-    "Bash": 14
+    "Bash": 16
    },
-   "n_tools": 15,
+   "n_tools": 17,
    "read_goal": false,
    "first_write_at": 1,
    "table_shown": true,
