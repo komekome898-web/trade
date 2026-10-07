@@ -69,3 +69,11 @@
 - 問 1・2 で通ってしまった書き換え(批評家の `probe.py margin_patch / fake_px / edit_records`・`dcancel.py`・`sweep.py`・`compound.py` の (a)(c)(d))を試験にし、落ちることを確かめる。落とせないもの(戦略が土台の合図の記録を書き換える場合)は、その旨を SCHEMA の説明の限界に書き、試験で「落ちない」ことを記録する。
 - 制約は 1 周目と同じ(core・口座・取引所の模型・フック・設定は変えない。pipeline は道の書き出しの口に要る最小限)。
 - 終わる条件: 上の全部が試験として通り、`tests/road tests/bt` が通る。上限: この 1 周。通らない項目は止めて報告する。
+
+## 4 周目(批評家 2 回目の指摘と、決済の口)
+
+批評家 2 回目の報告とリードの応答は `docs/AUDITOR/VERDICTS/2026-10-07_road_record_form_critic2.md`。**リードの応答の「直す(4 周目)」「(4 周目)」の項目を全部直す**: 問 2 の limits の確かめ直しと決済の行の `quote_ccy`、`expired_t_ns` → `venue_closed_t_ns` の改名、(2) A 決済の拒否で止める、(2) B `flatten` を成行だけにし `close` を足す、(2) C 取り消しの答えを待ってから決済、(2) D flatten の呼び出しを必ず 1 行残す。
+- `close` の試験に、マチルダの利確の形(足ごとに線が動く指値を取り消して置き直し、最後に約定して建玉 0)の小さな場面を入れる。段を 2 つ積んだ後の `close`、一部だけ約定した `close` を取り消して置き直す場面も入れる。
+- 批評家の台本 `flat.py`(off_tick・limit_far・limit_far_then_place・limit_far_cancel・doten_then_flatten)と `sweep2.py <JPY|USD> forge` を今のコードで流し、結果を報告に入れる(台本は `/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/critic/`)。
+- 制約は 1 周目と同じ。
+- 終わる条件: 上の全部が試験として通り、`tests/road tests/bt` が通る。上限: この 1 周。通らない項目は止めて報告する。この後、新しく足した口(`close`)は批評家にもう 1 回見せる。
