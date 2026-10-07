@@ -144,7 +144,7 @@ def check_ok(res):
 
 
 # 小さな窓の引数(場面の計算が手でできる大きさ)。原典の値は V37_ORIGINAL。
-BASE = dict(levels=2, auto_levels=False, foot=1, vola_count=3, range_count=3, alert_count=1000, range_setting=None,
+BASE = dict(levels=2, foot=1, vola_count=3, range_count=3, alert_count=1000, range_setting=None,
             over_range_setting=None, vola_setting=None, entry_setting=2.0, exit_setting=1.0, break_delay=0,
             break_dist=0.5, break_len_mult=2, beard_ignore=None, step_setting=1.0, step_exit=1.0, b_signal=False)
 
@@ -162,12 +162,12 @@ def reflect(rows, m=14000500):
 # ================================================================ U1 引数
 @need_m
 def test_u1_param_keys_and_original_values():
-    # 引数は全部で 18。原典の値(v37:109-160 と オーナーの決め L-782・L-784・L-788)
+    # 引数は全部で 17。原典の値(v37:109-160 と オーナーの決め L-782・L-784・L-788)。fukuri(自動の段数)は使わない(L-803)
     assert set(M.PARAM_KEYS) == set(BASE)
     o = M.V37_ORIGINAL
     assert set(o) == set(BASE)
-    assert (o["levels"], o["auto_levels"], o["foot"], o["vola_count"], o["range_count"], o["alert_count"]) == \
-        (7, True, 1, 40, 40, 20)
+    assert (o["levels"], o["foot"], o["vola_count"], o["range_count"], o["alert_count"]) == (7, 1, 40, 40, 20)
+    assert "auto_levels" not in M.PARAM_KEYS and "fukuri" not in M.PARAM_KEYS
     assert o["range_setting"] == pytest.approx(150 / 600000) and o["over_range_setting"] == pytest.approx(100000 / 600000)
     assert o["vola_setting"] is None and o["beard_ignore"] == 1 and o["b_signal"] is True
     assert (o["entry_setting"], o["exit_setting"], o["break_delay"], o["break_dist"], o["break_len_mult"],
@@ -818,23 +818,22 @@ def test_u10_no_decision_before_warm(tmp_path):
         assert signals(res, s) == [] and orders(res, s) == []
 
 
-# ================================================================ U11 自動の段数(v37:1058-1062)
+# ================================================================ U11 段数は取引をまたいで変わらない(fukuri を使わない。L-803)
 @need_m
-def test_u11_auto_levels_after_trade(tmp_path):
-    # auto_levels: 最初は levels(2)。建玉が 0 に戻った判定で、expantion_flg が 0 なら 5、それ以外は 7。
-    #   expantion_flg: 足 7 の安値 7,000,000 < 前のレンジの安値 7,000,200 → −1、足 8 の安値 6,999,900 < 7,000,000 → −2。
-    #   楽観側は足 8(−1)、悲観側は足 9(−2)の判定で 0 に戻る → どちらも 7。
+def test_u11_levels_fixed_across_trades(tmp_path):
+    # 原典の fukuri 1 の枝は、建玉が 0 に戻るたびに段数の上限を 5 か 7 に替えていた(v37:1058-1062)。使わない(L-803)ので、
+    #   2 つ目の取引も levels(2)段。
     # 足 10 の判定(足 9 まで): 中心 round((7,000,200 + 6,999,900) ÷ 2) = 7,000,050、ボラ (200 + 100) ÷ 2 = 150 →
-    #   買いの線 6,999,750 > 6,999,700 → e2 で 7 段: 6,999,750 から 150 ずつ。量 = 200,000 × 0.7 ÷ 7 ÷ 6,999,750 → 0.002
+    #   買いの線 6,999,750 > 6,999,700 → e2。段 6,999,750(70,000 ÷ 6,999,750 → 0.01)・6,999,600
     rows = R_BARS + [(9, 7000000, 7000000, 6999700, 6999700, 1)]
-    res = run(tmp_path, rows, dict(BASE, auto_levels=True))
+    res = run(tmp_path, rows, BASE)
     check_ok(res)
     for s in SIDES:
         assert signal_value(res, s, "e1")["levels"] == 2
-        assert signal_value(res, s, "e2")["levels"] == 7
+        assert signal_value(res, s, "e2")["levels"] == 2
         e2 = [r for r in res["orders"][s] if r["placed_t_ns"] == t(10) and r["exit_kind"] == ""]
-        assert [r["limit_px"] for r in e2] == [f"{6999750 - 150 * i}.0" for i in range(7)]
-        assert {(r["levels"], r["qty"]) for r in e2} == {("7", "0.002")}
+        assert [r["limit_px"] for r in e2] == ["6999750.0", "6999600.0"]
+        assert {(r["levels"], r["qty"]) for r in e2} == {("2", "0.01")}
 
 
 # ================================================================ U12 置き直した決済が、出ている自分の段と交差する(事前の批評 1 回目の問2)

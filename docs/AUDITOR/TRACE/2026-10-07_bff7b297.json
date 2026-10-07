@@ -110,9 +110,9 @@
   {
    "move": 5,
    "tools": {
-    "Bash": 2
+    "Bash": 6
    },
-   "n_tools": 2,
+   "n_tools": 6,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -156,7 +156,7 @@
    "value": null
   },
   "P5_tools_per_move": {
-   "median": 4.5,
+   "median": 6.5,
    "max": 68,
    "n": 4
   },

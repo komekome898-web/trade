@@ -2,7 +2,7 @@
 
 種類: 作る
 
-3 版目(事前の批評 2 回目 `DELEGATION_matilda_v37_premortem2.md` の後の直し。この直しは事前の批評を通っていない(試験の形の上限 2 回を使い切った)。直した所は末尾の `## 事前の批評の後の変更`)。新しい委任の仕組み(`.claude/skills/delegated-study/SKILL.md` §1.4、L-791)の 2 本目の試し(`docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md` §3)。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_spec.py`。
+4 版目(事前の批評 2 回目 `DELEGATION_matilda_v37_premortem2.md` の後の直し。この直しは事前の批評を通っていない(試験の形の上限 2 回を使い切った)。直した所は末尾の `## 事前の批評の後の変更`)。新しい委任の仕組み(`.claude/skills/delegated-study/SKILL.md` §1.4、L-791)の 2 本目の試し(`docs/DISCUSSIONS/2026-10-07_delegation_redesign/PROPOSAL.md` §3)。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_spec.py`。
 
 ## 着手前の表
 
@@ -32,12 +32,12 @@
 - オーナーの決めによるもの: SFD の枝(v37:972-990)・休む時間(v37:325-338)(L-779「**時間とsfdは取引所の事情なので外す**」)、板(bigvol・wid・2 円手前)(L-779「**注文は計算した値そのもので行ってください。**」)、強制の成行の「1 段ずつ」(v52 にだけある。v37 は一括 v37:703-714 だけ。L-801「**(a)**」)。
 - リードの判断(オーナーの逐語ではない): 0.01 BTC の補い(v37:1045-1049。最小ロットは取引所の制度で、量はオーナーの決まり L-746 の 0.001 BTC 切り捨て)・取引所の誤りの扱い(証拠金の誤り v37:718-720、API の回数の上限の待ち v37:722-726 と v37:1081 の over_limit_time。合成の取引所はこれを返さない)・通知。
 
-- M1 引数(L-776): 鍵はちょうど次の 18(足りない・知らない鍵は止める)。`levels`(整数 ≥ 1。段数の上限 = sizemax ÷ sizemin、原典 7)・`auto_levels`(真偽。原典 True = fukuri 1 の枝 v37:1058-1062)・`foot`(整数 ≥ 1、分。原典 1)・`vola_count`(整数 ≥ 2。原典 40)・`range_count`(整数 ≥ 1。原典 40)・`alert_count`(数 > 0、分。原典 20)・`range_setting`・`over_range_setting`・`vola_setting`(数 ≥ 0 か None = 門なし。値段に対する比。原典 150 ÷ 600,000・100,000 ÷ 600,000・None。L-782「**4.(a)大体60万円/btcくらいだったと思います。**」、vola_setting は v37:133 で注釈に消されていたので None)・`entry_setting`(数 > 0)・`exit_setting`(数 ≥ 0 かつ < entry_setting。v37:139。原典 2・0.8)・`break_delay`(整数 ≥ 0。0 でブレイクを切る。原典 1)・`break_dist`(数 > 0。ブレイクの線の距離 = 幅 × この値。原典 0.5、v37:505)・`break_len_mult`(整数 ≥ 2。2 倍のレンジの倍。原典 2、v37:493)・`beard_ignore`(数 > 0 か None = 無効。原典 1。L-782)・`step_setting`(数 > 0。原典 1)・`step_exit`(数 > 0。原典 0.8。0 は L-782「**3.外す**」)・`b_signal`(真偽。False = いつも 0。原典 True)。真偽の鍵に真偽でない値、整数の鍵に整数でない値、有限でない数は止める。breakexitsize は引数にしない(= 今の段数の上限。L-788「**breakexitsizeはロット数上限に合わせる**」)。強制の成行のやり方は引数にしない(一括だけ。L-801)。売買の量の設定(sizemin・fukuri・leverage・collateral_using・pos_count)は引数にしない(量は M11 と土台の量の決まり)。
+- M1 引数(L-776): 鍵はちょうど次の 17(足りない・知らない鍵は止める)。`levels`(整数 ≥ 1。段数の上限 = sizemax ÷ sizemin、原典 7)・`foot`(整数 ≥ 1、分。原典 1)・`vola_count`(整数 ≥ 2。原典 40)・`range_count`(整数 ≥ 1。原典 40)・`alert_count`(数 > 0、分。原典 20)・`range_setting`・`over_range_setting`・`vola_setting`(数 ≥ 0 か None = 門なし。値段に対する比。原典 150 ÷ 600,000・100,000 ÷ 600,000・None。L-782「**4.(a)大体60万円/btcくらいだったと思います。**」、vola_setting は v37:133 で注釈に消されていたので None)・`entry_setting`(数 > 0)・`exit_setting`(数 ≥ 0 かつ < entry_setting。v37:139。原典 2・0.8)・`break_delay`(整数 ≥ 0。0 でブレイクを切る。原典 1)・`break_dist`(数 > 0。ブレイクの線の距離 = 幅 × この値。原典 0.5、v37:505)・`break_len_mult`(整数 ≥ 2。2 倍のレンジの倍。原典 2、v37:493)・`beard_ignore`(数 > 0 か None = 無効。原典 1。L-782)・`step_setting`(数 > 0。原典 1)・`step_exit`(数 > 0。原典 0.8。0 は L-782「**3.外す**」)・`b_signal`(真偽。False = いつも 0。原典 True)。真偽の鍵に真偽でない値、整数の鍵に整数でない値、有限でない数は止める。breakexitsize は引数にしない(= 今の段数の上限。L-788「**breakexitsizeはロット数上限に合わせる**」)。強制の成行のやり方は引数にしない(一括だけ。L-801)。fukuri と、その枝の自動の段数の切り替えは使わず、引数にしない(L-803)。売買の量の設定(sizemin・fukuri・leverage・collateral_using・pos_count)は引数にしない(量は M11 と土台の量の決まり)。
 - M2 足の束ね: 1 分足を、UTC の起点からの `foot` 分の区切りの窓に束ねる(始値 = 最初の足の始値・高値 = 最大・安値 = 最小・終値 = 最後の足の終値・出来高 = 和。v37:339 は `minute % foot == 0` で区切る)。窓は、その窓の終わりの時刻に閉じる 1 分足が来たときに閉じる。窓の終わりの足が無いまま次の窓の足が来たら、その足を扱う前に前の窓を、ある足だけで閉じる。足が 1 本も無い窓は無い(指標を更新しない)。窓の本数は「閉じた窓の本数」で数える。
 - M3 判定の時刻と順(v37 の巡回 0.6 秒を 1 分足に写す): 1 分足が届いたら `ctx.set_timer(その時刻, タグ)` を置き、判定はそのタイマーの `ClockEvent` で行う(足の知らせの後に、その足の約定の知らせが届き、その後にタイマーが届く。読んだ事実の「既存の決まり」の行)。判定の中の順: (1) M2 の、前に閉じていない窓を閉じる(欠けの場合)(2) 下の M5〜M10 の判定。指標は**閉じた窓まで**(今の 1 分足を含まない)、`last` = 今の 1 分足の終値(v37:766 の板の仲値の代わり)(3) 今の 1 分足を窓に足し、窓が閉じたら M4 で指標を更新する。経緯: 原典では、確定した足から指標を作り(v37:536-643)、その分の中で動く板の値段と比べる。指標に今の足を含めると、ブレイクの線 = max(線, 2 倍のレンジの高値)が今の足の高値以上になり、終値が越えられない(算術)。
 - M4 指標(窓が閉じるたび。v37:556-643、割る数は L-784「**実装ミスなので割る数は分子を合わせてください。他の計算も合わせてください。**」): 実体 = 終値 − 始値、向き(+1・−1・0)。ヒゲは切る前の高値・安値で計算(陽線: 上 = 高値 − 終値・下 = 始値 − 安値、陰線と 0: 上 = 高値 − 始値・下 = 終値 − 安値、v37:567-591)。`beard_ignore` が None でなければ、上のヒゲ > beard_ignore なら高値を(陽線は終値・ほかは始値の)実体の端に、下のヒゲ > beard_ignore なら安値を(陽線は始値・陰線は終値・0 は始値の)端に切る(v37:567-591 の各枝のとおり)。expantion_flg(最初は 0。前の窓までのレンジがあるときだけ): 切った高値 > 前のレンジの高値 → +1、でなく切った安値 < 前のレンジの安値 → −1、でなく (flg ≥ 1 かつ 安値 < 前の中心) または (flg ≤ −1 かつ 高値 > 前の中心) → 0(v37:592-596)。ボラ = 今の窓を除く直前 vola_count − 1 本の |実体| の和 ÷ (vola_count − 1)。レンジ = 今の窓を含む直近 range_count 本の(切った)高値の最大・安値の最小、幅 = 差、中心 = Python の `round((高値 + 安値) / 2)`(偶数への丸め、v37:500)。2 倍のレンジ = 直近 range_count × break_len_mult 本。ブレイクの線の列: 高値 ≠ 2 倍の高値 か ブレイク中なら 高値 + 幅 × break_dist を上の列に、安値 ≠ 2 倍の安値 か ブレイク中なら 安値 − 幅 × break_dist を下の列に足す(v37:503-508)。出来高の平均 = 今の窓を除く直前 vola_count − 1 本の出来高の和 ÷ (vola_count − 1)。`b_signal` が True なら v37:621-643 のとおり更新する(ブレイク中・出来高 > 平均のとき、ヒゲ(切る前)と実体と向きで ±1 に寄せる。でなく b_signal ≠ 0 かつ expantion_flg = 0 なら 0)。False ならいつも 0。本数が足りない窓では、ある本数だけで計算する(判定は M5 で止める)。
 - M5 慣らし: 閉じた窓が max(vola_count, range_count × break_len_mult) 本になるまで判定しない(合図・注文なし)。
-- M6 玉の向きの変化(v37:1043-1067): 判定のたびに、土台の建玉の向き(なし・買い・売り)を前の判定と比べる。前の判定の後に約定があり、いま建玉が 0 のときも「0 に戻った」に数える(1 分の中の往復を見落とさないため)。0 に戻ったら: 「全部取り消す」をし、`auto_levels` なら段数の上限を expantion_flg = 0 で 5、それ以外で 7 にする。向きが変わったら(0 に戻ったときも)その判定の時刻を「玉の向きが変わった時刻」にする。`auto_levels` の最初の段数の上限は `levels`。
+- M6 玉の向きの変化(v37:1043-1067): 判定のたびに、土台の建玉の向き(なし・買い・売り)を前の判定と比べる。前の判定の後に約定があり、いま建玉が 0 のときも「0 に戻った」に数える(1 分の中の往復を見落とさないため)。0 に戻ったら: 「全部取り消す」をする。向きが変わったら(0 に戻ったときも)その判定の時刻を「玉の向きが変わった時刻」にする。段数の上限はいつも `levels`(自動の段数 5 / 7 の切り替え v37:1058-1062 は fukuri の枝で、使わない。L-803「**fukuriは使わないでください**」)。
   「全部取り消す」(v37:651-665 の cancel_allorders。この委任文のどこでも同じ意味): 出ている決済(close と with_entry)を先に、建てを後に取り消し(建てを先に取り消すと、一緒に出した決済を取引所が attached_parent_closed で閉じ、その決済の取り消しが拒否になるため)、段の数え(買い・売り)・M11 の最初の段・置き直しの待ちを空にする。「答えが全部届いてから」は、取り消した注文ごとに、取り消した・約定した・取り消しの拒否・取引所が閉じた、のどれかの知らせが届いてから、の意味。
 - M7 ブレイクの判定(v37:930-950。`break_delay` = 0 なら何もしない): 上の列が break_delay 本以上あれば bup = max(上の列の後ろから break_delay 番目, 2 倍の高値)。bup < last かつ ブレイクの旗 ≠ 1 かつ b_signal ≠ −1 → 旗 = 1。でなく、下の列が break_delay 本以上あって bdp = min(下の列の後ろから break_delay 番目, 2 倍の安値) > last かつ 旗 ≠ −1 かつ b_signal ≠ 1 → 旗 = −1(列が足りない側は見ない)。旗が 0 から ±1 になったら合図「ブレイク」(番号 b1, b2, …、向き up / down)を出す。
 - M8 建ての旗(`entry_flag`、v37:991-1005 の SFD の無い枝): ブレイクの旗 0 なら、門(range_setting が None でなく 幅 < range_setting × last、over_range_setting が None でなく 幅 > over_range_setting × last、vola_setting が None でなく ボラ ≦ vola_setting × last。L-779「**その時の価格に合わせた**」の「その時の価格」を last と読んだのはリード)のどれかが閉じれば 0、でなく last > 中心 + ボラ × entry_setting → −1、last < 中心 − ボラ × entry_setting → 1、ほかは 0。ブレイク中は、旗 = −b_signal か(b_signal = 0 かつ 玉なし)なら 0、ほかはブレイクの旗。合図「建て」: 建ての旗が前の判定と変わったら、前の「建て」の合図を理由「合図の条件が外れた」で消し、新しい旗が 0 でなければ「建て」(番号 e1, e2, …、向き long / short)を出す。値(JSON)は close・center・vola・range_max・range_min・width・lsp(中心 − ボラ × entry)・ssp(中心 + ボラ × entry)・lep(中心 − ボラ × exit)・sep(中心 + ボラ × exit)・break_flg・b_signal・expantion_flg・levels(今の段数の上限)を含む(数で)。
@@ -137,7 +137,7 @@
 - U8: ブレイク: `test_u8_break_entries_and_exit`・`test_u8_break_switches`・`test_u8_break_chase_when_flat`・`test_u8_break_off_when_back_to_center`
 - U9: 足の束ねと欠け: `test_u9_foot5_built_from_minutes_and_decided_every_minute`・`test_u9_foot5_missing_minute`・`test_u9_foot1_missing_minute_counts_bars_present`・`test_u9_foot5_first_bar_off_grid`
 - U10: 指標の細部: `test_u10_center_is_python_round_half_even`・`test_u10_beard_cut`・`test_u10_close_on_the_line_no_signal`・`test_u10_no_decision_before_warm`
-- U11: 自動の段数: `test_u11_auto_levels_after_trade`
+- U11: 段数は取引をまたいで変わらない(fukuri を使わない。L-803): `test_u11_levels_fixed_across_trades`
 - U12: 置き直した決済と自分の段の交差: `test_u12_exit_crossing_own_ladder`
 
 ## 変異の表
@@ -187,3 +187,9 @@
 - 読んだ事実: test_road_fill_l769.py の表の時刻の読み(問4 の 1 件目)、pipeline.py:545(問4 の 2 件目)。
 - 読んだ事実: 作る前の試験の結果を 7 failed, 85 skipped に(場面を 1 つ足したため)。
 - 受け入れ U9・壊す場面: 最初の足が区切りからずれた foot 5 の場面 `test_u9_foot5_first_bar_off_grid` を足した(問5 の 3 件目)。試験の期待は U9 の 1 本目と同じ(区切りは UTC の 5 分。最初の窓は分 2〜4 の 3 本で閉じ、窓 4〜6 は同じ)。
+
+### 3 版目 → 4 版目(オーナーの答え L-803 の後。事前の批評を通っていない)
+- M1: 引数 `auto_levels` を外し、鍵を 17 に。fukuri と自動の段数の切り替えは使わない(L-803「**fukuriは使わないでください**」)。
+- M6: 0 に戻ったときの段数の上限の切り替えを外し、段数の上限はいつも `levels` とした。
+- 受け入れ U11: 試験を `test_u11_levels_fixed_across_trades` に替えた(同じ足で、2 つ目の取引も 2 段)。試験の BASE と原典の値の表から `auto_levels` を外した。
+- M9 の向き(玉があるときは残りの段を消さない)は、オーナーの答え L-803「**(a)**」のとおりで、変えていない。
