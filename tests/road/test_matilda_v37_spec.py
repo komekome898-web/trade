@@ -79,13 +79,15 @@ def _write_bars(root, bars):
         fh.write("# 試験\n")
 
 
-def _plan(root, module, params):
+def _plan(root, module, params, rules=None):
+    # 抜けのある足(U9)を通すため、抜けの扱いを名指しする(走らせは名指しの無い抜けを止める。事前の批評 1 回目の問3)
     return P.plan_pipeline(
-        root=str(root), datasets=[{"name": "b", "paths": ["backtest_data/m/bars.csv"], "spec": SPEC, "origin": "real"}],
+        root=str(root), datasets=[{"name": "b", "paths": ["backtest_data/m/bars.csv"], "spec": SPEC, "origin": "real",
+                                   "resolve": {"gap": "accept"}}],
         instruments=[{"name": "FX_BTC_JPY", "price": "b", "with": [],
                       "product": {"symbol": "FX_BTC_JPY", "venue": "bitflyer", "tick": 1.0, "min_qty": 0.001,
                                   "qty_step": 0.001, "quote_ccy": "JPY", "margin": True},
-                      "rules": {"market_ref": "next_bar_open"}}],
+                      "rules": rules or {"market_ref": "next_bar_open"}}],
         strategy={"kind": "module", "module": module, "factory": "pipeline_strategy", "params": params},
         fill=FILL, latency={"feed": ZERO, "order": ZERO, "cancel": ZERO, "notice": ZERO},
         costs={"maker_rate": 0, "taker_rate": 0, "spread": 0, "source": "試験: 0"},
@@ -99,11 +101,11 @@ def seq(rows):
     return [(i,) + tuple(r[:4]) + ((r[4] if len(r) > 4 else 1),) for i, r in enumerate(rows)]
 
 
-def run(tmp_path, bars, params, module="bot.strategy.matilda_v37"):
+def run(tmp_path, bars, params, module="bot.strategy.matilda_v37", rules=None):
     """走らせて、側ごとの表 {"orders": {側: [行]}, "fills": …, "signals": …, "trades": …} と置き場を返す。"""
     root = tmp_path / "root"
     _write_bars(str(root), bars)
-    res = P.run_pipeline(_plan(root, module, params), runs_dir=str(tmp_path / "runs"))
+    res = P.run_pipeline(_plan(root, module, params, rules), runs_dir=str(tmp_path / "runs"))
     store = os.path.join(res.run_dir, ROAD_DIR)
     out = {}
     for name in ("orders", "fills", "signals", "trades"):
@@ -530,13 +532,27 @@ def test_u5_ladder_kept_while_position_then_canceled_when_flat(tmp_path, mirror)
 @pytest.mark.parametrize("mirror", [False, True], ids=["買い", "売り"])
 def test_u5_flat_ladder_canceled_when_signal_off(tmp_path, mirror):
     # 足 8 本目は段 1 に届かない(買い: 安値 7,000,100 > 7,000,050 / 売り: 高値 7,000,400 < 7,000,450)。
-    # 足 8 本目の判定: 合図 0・玉なし → 全部取り消す(買いでも売りでも同じ)
-    rows = WARM + [B7, (7000100, 7000300, 7000100, 7000200)]
+    # 足 8 本目の判定: 合図 0・玉なし → 全部取り消す(買いでも売りでも同じ)。全部の取り消しは段の数えも空にする
+    #   (v37:651-665 の cancel_allorders。事前の批評 1 回目の問3)ので、次の合図で段を出し直す:
+    # 足 9 本目の判定(足 8 まで): 足 6〜8 の 7,000,000〜7,000,300 → 中心 7,000,150、ボラ (100 + 200) ÷ 2 = 150 →
+    #   買いの線 6,999,850 > 終値 6,999,800 → e2。段 6,999,850(70,000 ÷ 6,999,850 → 0.01)・6,999,700、決済 7,000,000。
+    #   売りの側は鏡: 段 7,000,650(→ 0.009)・7,000,800、決済 7,000,500
+    rows = WARM + [B7, (7000100, 7000300, 7000100, 7000200), (7000200, 7000200, 6999800, 6999800)]
     res = run(tmp_path, seq(reflect(rows) if mirror else rows), BASE)
     check_ok(res)
+    if mirror:
+        new = [("road-4", "sell", "7000650.0", "0.009", ""), ("road-5", "buy", "7000500.0", "0.009", "with_entry"),
+               ("road-6", "sell", "7000800.0", "0.009", ""), ("road-7", "buy", "7000500.0", "0.009", "with_entry")]
+    else:
+        new = [("road-4", "buy", "6999850.0", "0.01", ""), ("road-5", "sell", "7000000.0", "0.01", "with_entry"),
+               ("road-6", "buy", "6999700.0", "0.01", ""), ("road-7", "sell", "7000000.0", "0.01", "with_entry")]
     for s in SIDES:
-        assert [(o[0], o[8], o[9]) for o in orders(res, s)] == [
-            (f"road-{i}", "CANCELED", t(8)) for i in range(4)]
+        got = orders(res, s)
+        assert [(o[0], o[8], o[9]) for o in got[:4]] == [(f"road-{i}", "CANCELED", t(8)) for i in range(4)]
+        assert [(o[0], o[1], o[3], o[4], o[5]) for o in got[4:]] == new
+        assert {o[7] for o in got[4:]} == {t(9)}
+        assert [x[:4] for x in signals(res, s)] == [("e1", "建て", "short" if mirror else "long", t(7)),
+                                                    ("e2", "建て", "short" if mirror else "long", t(9))]
         assert fills(res, s) == []
 
 
@@ -663,7 +679,7 @@ def test_u8_break_switches(tmp_path):
 @need_m
 def test_u8_break_chase_when_flat(tmp_path):
     # 足 9(7,000,850〜7,001,000): 段 1(7,000,800)に届かない。判定(足 8 まで): ブレイク中・順行・玉なし・建ての指値が出ていて、
-    #   今の 1 段目(終値 7,000,950)が出ている 1 段目(7,000,800)より上 → 全部取り消し(v37:851-853、v37:54
+    #   今の 1 段目(終値 7,000,950)が出ている 1 段目(7,000,800)より上 → 全部取り消し(v37:851-853、v37:55
     #   「ノーポジ時に指値をなるべく約定させようと努力するように変更」)、7,000,950 と 7,000,950 − 150 に置き直す
     res = run(tmp_path, seq(BRK_HEAD + [(7000900, 7001000, 7000850, 7000950)]), BRK_PARAMS)
     check_ok(res)
@@ -803,3 +819,29 @@ def test_u11_auto_levels_after_trade(tmp_path):
         e2 = [r for r in res["orders"][s] if r["placed_t_ns"] == t(10) and r["exit_kind"] == ""]
         assert [r["limit_px"] for r in e2] == [f"{6999750 - 150 * i}.0" for i in range(7)]
         assert {(r["levels"], r["qty"]) for r in e2} == {("7", "0.002")}
+
+
+# ================================================================ U12 置き直した決済が、出ている自分の段と交差する(事前の批評 1 回目の問2)
+X_BARS = WARM + [B7, (7000120, 7000120, 7000040, 7000040), (7000040, 7000045, 6999960, 6999960),
+                 (6999960, 6999990, 6999960, 6999970)]
+
+
+@need_m
+def test_u12_exit_crossing_own_ladder(tmp_path):
+    # 足 8: 段 1(7,000,050)だけ約定。判定(足 7 まで)で close 7,000,050(road-4)。
+    # 足 9 の判定(足 8 まで): 中心 7,000,150・ボラ 150 → 7,000,000 < 7,000,050 → 置き直す(road-5)。
+    # 足 10 の判定(足 9 まで): 中心 round((7,000,200 + 6,999,960) ÷ 2) = 7,000,080、ボラ (200 + 80) ÷ 2 = 140 →
+    #   7,000,080 − 140 = 6,999,940 < 7,000,000 → 置き直す(road-6)。出ている自分の買いの段 road-2(6,999,950)より下なので交差する。
+    # 戦略は計算した値段のまま出す(L-779)。交差の扱いは走らせの self_trade の決まり: 宣言しない走らせは止まり、
+    #   cancel_maker を宣言した走らせ(この試験だけの宣言。測るときの決まりは測る委任で決める)では待っていた road-2 が閉じる
+    with pytest.raises(Exception, match="self_trade"):
+        run(tmp_path / "a", seq(X_BARS), BASE)
+    res = run(tmp_path / "b", seq(X_BARS), BASE, rules={"market_ref": "next_bar_open", "self_trade": "cancel_maker"})
+    check_ok(res)
+    for s in SIDES:
+        rows = {r["order_id"]: r for r in res["orders"][s]}
+        assert [(o[0], o[1], o[3], o[5], o[7]) for o in orders(res, s)][4:] == [
+            ("road-4", "sell", "7000050.0", "close", t(8)), ("road-5", "sell", "7000000.0", "close", t(9)),
+            ("road-6", "sell", "6999940.0", "close", t(10))]
+        assert (rows["road-4"]["canceled_t_ns"], rows["road-5"]["canceled_t_ns"]) == (t(9), t(10))
+        assert (rows["road-2"]["state"], rows["road-2"]["close_reason"]) == ("CANCELED", "self_trade")
