@@ -57,7 +57,11 @@ Declarations (every key required unless marked optional; nothing has a default):
   fill         {"optimistic": {FillSpec fields}, "pessimistic": {FillSpec fields}}
                (bot.bt.fill.FillRange: both sides required; tier 6's "impact" is a
                mapping of ImpactSpec fields; the L3 stances need a per-order feed,
-               which is not declarable here). The run executes
+               which is not declarable here). A tier-2 run may select
+               "bar_rule": "range_open" with "attached_exit": "same_bar" on the
+               optimistic side and "next_bar" on the pessimistic side (both or
+               neither; the owner's scenario L-769 / L-770, bot.bt.fill.spec).
+               The run executes
                BOTH sides (item 2: 「楽観側と悲観側の両方を必ず回して幅で出す」) and
                records and exports both; there is no one-side entry.
   latency      {"feed", "order", "cancel", "notice"}: each a distribution
@@ -594,10 +598,22 @@ def _check_fill(fill: Mapping) -> FillRange:
     _need(isinstance(fill, Mapping) and set(fill) == set(SIDES),
           f"fill must be exactly {list(SIDES)} (a range: both sides, item 2 「楽観側と悲観側の両方を必ず回して幅で出す」)")
     try:
-        return FillRange(optimistic=_fill_spec(fill["optimistic"], "optimistic"),
-                         pessimistic=_fill_spec(fill["pessimistic"], "pessimistic"))
+        fr = FillRange(optimistic=_fill_spec(fill["optimistic"], "optimistic"),
+                       pessimistic=_fill_spec(fill["pessimistic"], "pessimistic"))
     except ExecutionModelError as exc:
         raise PipelineError(f"fill: {exc}") from None
+    # the bar rule of the owner's scenario (L-769, L-770; bot.bt.fill.spec): the entry is tried the same way on both
+    # sides, only the exit sent with it differs -- the optimistic side on the entry's bar, the pessimistic side from
+    # the next bar
+    o, p = fr.optimistic, fr.pessimistic
+    if o.bar_rule is not None or p.bar_rule is not None:
+        _need(o.bar_rule == p.bar_rule,
+              f"fill: bar_rule must be the same on both sides (the entry is tried the same way), got "
+              f"{o.bar_rule!r} / {p.bar_rule!r}")
+        _need(o.attached_exit == "same_bar" and p.attached_exit == "next_bar",
+              f"fill: attached_exit is 'same_bar' on the optimistic side and 'next_bar' on the pessimistic side "
+              f"(L-769), got {o.attached_exit!r} / {p.attached_exit!r}")
+    return fr
 
 
 def _cost_schedule(c: Mapping) -> CostSchedule:

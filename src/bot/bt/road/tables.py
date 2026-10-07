@@ -35,7 +35,8 @@ from .strategy import NO_SIGNAL
 
 ROAD_DIR = "road"
 SCHEMA_FILE = "SCHEMA.json"
-SCHEMA_VERSION = "road-record-5"  # 5: reduce_only の列(5 周目)
+SCHEMA_VERSION = "road-record-6"  # 6: attached_to の列、exit_kind の with_entry、約定の決まりの説明(fill_rules。L-769・L-770)
+# 5  # 5: reduce_only の列(5 周目)
 # 4  # 4: expired_t_ns → venue_closed_t_ns、exit_kind、flatten_pending_at_send → exit_pending_at_send(4 周目)
 # 3  # 3: 取り消しの拒否・状態不明・届いた順の列、約定の知らせの時刻、限界の文(3 周目)
 # 2  # 2: 拒否の時刻・量の出所・送る時点の建玉の列、summary の groups(2 周目)
@@ -55,6 +56,26 @@ SCHEMA: dict = {
     "read_from": "道の走らせの読み口は road/ のこの表だけ。同じ走らせの置き場の pipeline の trades.json と metrics.json の"
                  "取引の数は、建ての分と決済の約定の組ごとに 1 取引と数える FIFO の数え方で、道の数え方(建玉 0 → 0 で 1 取引。"
                  "L-749・L-750)ではない",
+    "fill_rules": [
+        "約定の決まりは走らせの宣言(record.json の config.fill の各側)で選ぶ。bar_rule が無い走らせは tier の決まりのまま"
+        "(tier 2: 指値が置かれた時刻より後に始まる足から、安値・高値が指値に届けば指値の値段で約定。置かれた時刻ちょうどに"
+        "始まる足は当てない)",
+        "bar_rule = range_open(オーナーのシナリオ L-769「**合図が出るのはcloseのタイミング(前の足) 指値は合図の次の足で出して"
+        "highからlowの範囲内であれば約定**」・L-770「**a 足の始値で約定する(出した時点で相場より有利な指値なので、すぐ約定したと"
+        "みなす)**」): 指値を足が閉じた時刻 T に置いたら、足 [T, T+60 秒) から当てる。その足の 安値 ≤ 指値 ≤ 高値 なら指値の値段で"
+        "約定。約定する向きに範囲の外(買いの指値 > 高値、売りの指値 < 安値)なら、その足の始値で約定。約定しない向きに範囲の外"
+        "なら、その足では約定しない。楽観側・悲観側で建ての当て方は同じ。逆指値(stop)はこの決まりの外(tier 2 のまま)",
+        "建てと一緒に出す決済の指値(place_with_exit。exit_kind = with_entry、attached_to = 建ての注文の番号。L-770「**b 建ての"
+        "指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は合図の足の"
+        "終値から計算)**」): 建てが約定するまで量は 0 で、建てが約定した量(決済の量まで)が有効になる。楽観側"
+        "(attached_exit = same_bar。L-769「**指値決済の良い側はその足内で指値があれば通り**」)は、建てが約定した足の中で "
+        "安値 ≤ 決済の値段 ≤ 高値 なら決済の値段で約定し、そうでなければ次の足から bar_rule で当てる。悲観側(attached_exit = "
+        "next_bar。L-769「**悪い側は次の足内から**」)は、建てが約定した足の次の足から bar_rule で当てる。建てが約定しないまま"
+        "閉じたら決済も閉じる(close_reason = attached_parent_closed)",
+        "検査(check_outputs の (vii))は、bar_rule の走らせの指値の約定ごとに、約定した足(t_ns に閉じた足)と値段がこの決まり"
+        "どおりか(範囲の内なら指値の値段、約定する向きに外なら始値。足の JSON に open が要る)、それより前の当てる足で約定して"
+        "いないか、決済が建てと同じ足で約定した行が楽観側にしか無いかを確かめる",
+    ],
     "limits": [
         "戦略は同じ Python の中で動くので、戦略が土台の内部の記録(合図の発生・消失の時刻など)を書き換えるのは機械で"
         "塞ぎ切れない。外から照らせる記録(pipeline の約定・注文、足、fx、repro.json の指紋)との突き合わせで落とせない"
@@ -140,7 +161,9 @@ SCHEMA: dict = {
                 ("reduce_only", "-", "true = reduce_only で出した(close・flatten。取引所の模型が建玉を超える分を切る)/ false = "
                                      "place の注文 / 空 = 出していない行・口座の強制の注文"),
                 ("exit_kind", "-", "決済の種類: close(close が出した注文)/ flatten(flatten が出した成行)/ flatten_call(flatten を"
-                                   "呼んだときに注文を出さなかった記録の行)/ 空(place の注文)"),
+                                   "呼んだときに注文を出さなかった記録の行)/ with_entry(place_with_exit が建ての指値と一緒に"
+                                   "出した決済の指値。量 = 建ての注文の量。fill_rules)/ 空(place の注文)"),
+                ("attached_to", "-", "建てと一緒に出した決済の行(exit_kind = with_entry)の、親の建ての注文の番号。ほかの行は空"),
             ]},
         "fills": {
             "file": "fills.csv.gz", "kind": RAW, "row": "約定 1 つ(道の約定 = pipeline の約定)",

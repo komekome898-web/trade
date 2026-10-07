@@ -57,6 +57,28 @@ trades, or bars in tier 2, do; a snapshot showing the other side through our
 price is not taken as a trade with us), and a stop fires on a trade (or, in
 tier 2, a bar) reaching its trigger, not on a quote.
 
+A tier-2 run that selects `FillSpec.bar_rule` (L-769, L-770; spec.py):
+a resting limit order is tried from the bar that starts at or after the
+time it rested (an order resting at a bar's close T meets the bar
+[T, T + bar)): low <= limit <= high fills it at the limit, a limit beyond
+the range in the filling direction fills it at the bar's open, beyond it the
+other way it does not fill on that bar. Stops keep the tier-2 rule.
+
+An exit attached to an entry (`OrderRequest.extra` key `attached_to` =
+ATTACHED_KEY, the entry's client_order_id; a GTC reduce-only limit; needs
+`FillSpec.attached_exit`): the requests channel is FIFO, so the entry has
+reached the venue before it. The exit waits (state "attached", nothing in
+force) until the entry fills; its size in force is then min(its own size,
+what the entry filled). `attached_exit` "same_bar": on the bar that filled
+the entry it fills at its limit when low <= limit <= high, and from the next
+bar on as bar_rule; "next_bar": from the next bar on, as bar_rule. An entry
+that closes with nothing filled takes its exits with it (Canceled
+"attached_parent_closed"); one that closes partly filled leaves them for the
+part it filled (an exit done at that part is Canceled
+"attached_parent_part_filled", as an amended-down order is). An exit whose
+entry is unknown to the venue, or already closed with nothing filled, is
+Rejected.
+
 Same-instant order: everything with time <= t in the L3 feed is applied
 first; then the market event (or the request); orders held for the open are
 released after a book snapshot at or after the open is applied (in a run with
@@ -106,6 +128,9 @@ from .l3 import L3Add, L3Feed
 from .spec import TIER_MECHANISM, FillSpec, FillSpecError
 
 _EPS = 1e-12
+ATTACHED_KEY = "attached_to"  # OrderRequest.extra: the entry an exit is attached to (its client_order_id)
+ATTACHED_PARENT_CLOSED = "attached_parent_closed"
+ATTACHED_PART_FILLED = "attached_parent_part_filled"
 
 
 def _opp(side_name: str) -> str:
@@ -144,11 +169,13 @@ class _VOrder:
     arrival_ns: int
     seq: int
     filled: float = 0.0
-    state: str = "new"  # held | resting | stop | bar_open | done
+    state: str = "new"  # held | resting | stop | bar_open | attached (an exit waiting for its entry) | done
     rest_since: Optional[int] = None
     hold_until: Optional[int] = None
     queue: Optional[_Queue] = None
     size_cut_reason: str = ""
+    parent: Optional[str] = None  # an attached exit: the entry's client_order_id
+    full: float = 0.0  # an attached exit: its own size (the size in force is min(full, the entry's filled))
 
     @property
     def sign(self) -> int:
@@ -219,6 +246,9 @@ class SimVenue:
         self._seq = 0
         self._l3_orders: dict[str, _L3Entry] = {}
         self._l3_levels: dict[tuple[str, float], list[_L3Entry]] = {}
+        self._by_id: dict[str, _VOrder] = {}  # every order the venue built (an attached exit looks up its entry)
+        self._children: dict[str, list[_VOrder]] = {}  # entry id -> its attached exits
+        self._bar: Optional[BarEvent] = None  # the bar being applied (tier 2), for an attached exit's same bar
         # how often each met cost component was used (a declared one that is
         # never used shows 0 here, e.g. a spread in a run that always has a book)
         self.used: dict[str, int] = {"spread": 0}
@@ -267,12 +297,18 @@ class SimVenue:
         self.fills.append(FillRecord(t, o.coid, price, qty, liquidity))
         self._filled_any.add(o.coid)
         if o.remaining <= _EPS * max(1.0, o.size):
-            o.state = "done"
-            self._live.pop(o.coid, None)
-            if o.size < float(o.request.size) * (1 - 1e-12):
-                out.append(Canceled(o.coid, o.size_cut_reason or AMENDED_SIZE_FILLED))
+            parent = None if o.parent is None else self._by_id[o.parent]
+            if parent is not None and parent.state != "done" and o.size < o.full * (1 - 1e-12):
+                o.state = "attached"  # its entry may fill more: wait for it with nothing in force
+            else:
+                o.state = "done"
+                self._live.pop(o.coid, None)
+                if o.size < float(o.request.size) * (1 - 1e-12):
+                    out.append(Canceled(o.coid, o.size_cut_reason or AMENDED_SIZE_FILLED))
         if o.oco is not None:
             self._oco_partner_off(o.oco, "oco", out)
+        if o.coid in self._children:
+            self._feed_children(o, t, out)
         return qty
 
     def _close(self, o: _VOrder, reason: str, out: list) -> None:
@@ -281,6 +317,73 @@ class SimVenue:
         o.state = "done"
         self._live.pop(o.coid, None)
         out.append(Canceled(o.coid, reason))
+        if o.coid in self._children:
+            self._parent_closed(o, out)
+
+    # ------------------------------------------------------ attached exits
+    def _feed_children(self, parent: _VOrder, t: int, out: list) -> None:
+        """The entry filled: each exit attached to it gets the size the entry filled and, waiting, starts to rest
+        now (`rest_since` = t: under bar_rule, bars starting at or after t). On the optimistic side
+        (attached_exit "same_bar") an exit starting on a bar fill is tried on that same bar: at its limit when the
+        limit is in [low, high]."""
+        for c in self._children[parent.coid]:
+            if c.state == "done":
+                continue
+            c.size = min(c.full, parent.filled)
+            if c.size < c.full * (1 - 1e-12):
+                c.size_cut_reason = ATTACHED_PART_FILLED
+            if c.state != "attached":
+                continue
+            if c.remaining <= _EPS * max(1.0, c.size):
+                if parent.state == "done":  # the entry is finished and the exit has filled all it will get
+                    c.state = "done"
+                    self._live.pop(c.coid, None)
+                    out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_PART_FILLED))
+                continue
+            c.state, c.rest_since = "resting", t
+            bar = self._bar
+            if self.fill.attached_exit == "same_bar" and bar is not None and bar.low <= c.price <= bar.high:  # type: ignore[operator]
+                self._fill(c, c.price, c.remaining, "maker", t, out)  # type: ignore[arg-type]
+
+    def _parent_closed(self, parent: _VOrder, out: list) -> None:
+        """The entry closed (cancelled, refused at a fill...): with nothing filled its exits go too; partly filled,
+        each exit keeps the part the entry filled (one already done at that part is closed now)."""
+        for c in self._children[parent.coid]:
+            if c.state == "done":
+                continue
+            if parent.filled <= _EPS:
+                self._close(c, ATTACHED_PARENT_CLOSED, out)
+                continue
+            c.size = min(c.full, parent.filled)
+            if c.size < c.full * (1 - 1e-12):
+                c.size_cut_reason = ATTACHED_PART_FILLED
+            if c.remaining <= _EPS * max(1.0, c.size):
+                c.state = "done"
+                self._live.pop(c.coid, None)
+                out.append(Canceled(c.coid, c.size_cut_reason or ATTACHED_PART_FILLED))
+
+    def _attached_order(self, o: _VOrder, t: int, ack: VenueReport) -> list:
+        """A new exit attached to an entry (module docstring)."""
+        if self.fill.attached_exit is None:
+            raise FillSpecError(f"order {o.coid!r} is an exit attached to {o.parent!r}, and this run declares no "
+                                f"FillSpec.attached_exit (when such an exit may fill is not declared)")
+        if o.kind != "limit" or o.tif != "GTC" or not o.reduce_only or o.post_only or o.oco is not None:
+            return [Reject(o.coid, "attached_exit_is_a_gtc_reduce_only_limit")]
+        parent = self._by_id.get(o.parent)  # type: ignore[arg-type]
+        if parent is None:
+            return [Reject(o.coid, "attached_parent_unknown")]
+        if parent.side == o.side or parent.reduce_only or parent.parent is not None:
+            return [Reject(o.coid, "attached_parent_not_an_entry")]
+        if parent.coid not in self._live and parent.filled <= _EPS:
+            return [Reject(o.coid, "attached_parent_closed_unfilled")]
+        o.full, o.size = o.size, 0.0  # nothing in force until the entry fills
+        o.state = "attached"
+        self._live[o.coid] = o
+        self._children.setdefault(parent.coid, []).append(o)
+        out: list = [ack]
+        if parent.filled > _EPS:
+            self._feed_children(parent, t, out)  # the entry filled before the exit arrived: it rests from now
+        return out
 
     def _oco_partner_off(self, partner: str, reason: str, out: list) -> None:
         p = self._live.get(partner)
@@ -352,6 +455,9 @@ class SimVenue:
         o, reason = self._new_order(order, t)
         if o is None:
             return [Reject(coid, reason)]
+        self._by_id.setdefault(coid, o)
+        if o.parent is not None:
+            return self._attached_order(o, t, ack)
         if o.coid in self._oco_done:
             return [Reject(coid, self._oco_done[o.coid])]
         if self.rules.has_hours and not self.rules.is_open(t):
@@ -412,12 +518,15 @@ class SimVenue:
         if needs_trigger and order.time_in_force != "GTC":
             return None, "stop_needs_gtc"
         extra = order.extra_dict()
-        unknown = set(extra) - {OCO_KEY}
+        unknown = set(extra) - {OCO_KEY, ATTACHED_KEY}
         if unknown:
             return None, f"unknown_extra:{sorted(unknown)}"
         oco = extra.get(OCO_KEY)
         if oco is not None and (type(oco) is not str or not oco or oco == order.client_order_id):
             return None, "bad_oco_partner"
+        parent = extra.get(ATTACHED_KEY)
+        if parent is not None and (type(parent) is not str or not parent or parent == order.client_order_id):
+            return None, "bad_attached_parent"
         size = float(order.size)
         p = self.product
         rules = self.rules
@@ -453,7 +562,7 @@ class SimVenue:
         o = _VOrder(request=order, coid=order.client_order_id, side=order.side, kind=kind, price=price,
                     trigger=trigger, size=size, tif=order.time_in_force, post_only=bool(order.post_only),
                     reduce_only=bool(order.reduce_only), oco=oco, arrival_ns=t, seq=self._seq,
-                    size_cut_reason=size_cut)
+                    size_cut_reason=size_cut, parent=parent)
         return o, ""
 
     def _crosses(self, o: _VOrder) -> bool:
@@ -795,7 +904,24 @@ class SimVenue:
                 self._fill(o, float(ev.open) + o.sign * half, o.remaining, "taker", t, out)
         if self.tier != 2:
             return
+        self._bar = ev
+        try:
+            self._tier2_bar(ev, start, t, out)
+        finally:
+            self._bar = None
+
+    def _tier2_bar(self, ev: BarEvent, start: int, t: int, out: list) -> None:
+        rule = self.fill.bar_rule
         for o in sorted(self._live.values(), key=lambda x: x.seq):
+            if rule is not None and o.state == "resting":
+                # bar_rule "range_open" (L-769, L-770 a): from the bar starting at or after the time it rested
+                if o.rest_since is None or start < o.rest_since:
+                    continue
+                if ev.low <= o.price <= ev.high:  # type: ignore[operator]
+                    self._fill(o, o.price, o.remaining, "maker", t, out)  # type: ignore[arg-type]
+                elif (o.price > ev.high) if o.side == "buy" else (o.price < ev.low):  # type: ignore[operator]
+                    self._fill(o, float(ev.open), o.remaining, "maker", t, out)
+                continue
             if o.rest_since is None or start <= o.rest_since:
                 continue  # the bar began before (or as) the order rested: its low/high may predate it
             if o.state == "resting":

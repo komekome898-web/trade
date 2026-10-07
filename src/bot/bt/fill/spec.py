@@ -31,6 +31,27 @@ Without a tier, aggressive executions walk the displayed book (best level
 first, each level up to its size); a run with no book prices them from the
 last trade and the declared spread (rule `market_ref`).
 
+A tier-2 run may select a second rule for resting limit orders on bars
+(`bar_rule`, None = the rule of tier 2 above, unchanged), and with it when an
+exit attached to an entry starts to fill (`attached_exit`). The owner's
+scenario (L-769, L-770; docs/DISCUSSIONS/2026-10-06_held_batches/
+DELEGATION_fill_scenario_L769.md):
+
+  bar_rule "range_open" -- a limit order resting at time T (a bar's close)
+     is tried from the bar that STARTS at T (start >= the time it rested):
+     low <= limit <= high fills it at the limit; a limit beyond the range in
+     the direction that fills (a buy above the high, a sell below the low)
+     fills it at the bar's open (L-770 a); beyond the range the other way it
+     does not fill on that bar. Stops keep the tier-2 rule.
+  attached_exit -- an exit limit sent with its entry (extra key
+     `attached_to` = the entry's client_order_id; venue.ATTACHED_KEY) lives
+     only after the entry fills, for the size the entry filled (L-770 b):
+     "same_bar" (the optimistic side): on the bar that filled the entry, the
+     exit fills at its limit when low <= limit <= high; otherwise, and on
+     later bars, as bar_rule. "next_bar" (the pessimistic side): from the
+     bar after the one that filled the entry, as bar_rule.
+  The two go together (both set or both None) and need tier 2.
+
 The tier's number is kept on the model (`SimVenue.tier`); the model has no
 default tier, so its "tier by default" is none: the run must choose
 (`TIER_BY_DEFAULT = None`), and every tier 0-6 can be chosen
@@ -69,6 +90,18 @@ CANCEL_STANCES: dict[str, tuple[str, str]] = {
              "ahead = min(front - (1-p) d + min(back - p d, 0), new size), p = f(back)/(f(back)+f(front))"),
 }
 PROB_FUNCTIONS = ("power", "log")
+
+# the second rule for resting limit orders on bars (tier 2) and when an attached exit starts (see the docstring)
+BAR_RULES: dict[str, str] = {
+    "range_open": "from the bar starting when the limit rested: in [low, high] at the limit, beyond it in the "
+                  "filling direction at the open, else no fill (L-769, L-770 a)",
+}
+ATTACHED_EXITS: dict[str, str] = {
+    "same_bar": "an exit sent with its entry may fill on the bar that filled the entry, at its limit when the limit "
+                "is in [low, high] (the optimistic side, L-769 / L-770 b)",
+    "next_bar": "an exit sent with its entry is tried from the bar after the one that filled the entry "
+                "(the pessimistic side, L-769)",
+}
 
 IMPACT_KINDS = ("linear_temporary", "sqrt_temporary", "linear_permanent")
 IMPACT_BASES = ("best_ask", "best_bid", "opposite_best", "mid")
@@ -143,6 +176,8 @@ class FillSpec:
     prob_n: Optional[float] = None
     impact: Optional[ImpactSpec] = None
     bar_ns: Optional[int] = None
+    bar_rule: Optional[str] = None
+    attached_exit: Optional[str] = None
 
     def __post_init__(self) -> None:
         if type(self.tier) is not int or self.tier not in TIERS:
@@ -176,6 +211,14 @@ class FillSpec:
             raise FillSpecError("impact must be an ImpactSpec")
         if self.bar_ns is not None and (type(self.bar_ns) is not int or self.bar_ns <= 0):
             raise FillSpecError(f"bar_ns must be an int > 0, got {self.bar_ns!r}")
+        if self.bar_rule is not None and self.bar_rule not in BAR_RULES:
+            raise FillSpecError(f"bar_rule {self.bar_rule!r}: one of {tuple(BAR_RULES)} (or None)")
+        if self.attached_exit is not None and self.attached_exit not in ATTACHED_EXITS:
+            raise FillSpecError(f"attached_exit {self.attached_exit!r}: one of {tuple(ATTACHED_EXITS)} (or None)")
+        if (self.bar_rule is None) != (self.attached_exit is None):
+            raise FillSpecError("bar_rule and attached_exit go together (both set or both None)")
+        if self.bar_rule is not None and self.tier != 2:
+            raise FillSpecError(f"bar_rule {self.bar_rule!r} is a rule of tier 2 (bars), not tier {self.tier}")
 
     def prob_weight(self, x: float) -> float:
         x = max(x, 0.0)

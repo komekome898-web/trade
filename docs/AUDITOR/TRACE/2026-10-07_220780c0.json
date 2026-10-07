@@ -29969,10 +29969,10 @@
   {
    "move": 1102,
    "tools": {
-    "Bash": 2,
+    "Bash": 4,
     "Read": 4
    },
-   "n_tools": 6,
+   "n_tools": 8,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,

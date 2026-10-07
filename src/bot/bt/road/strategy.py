@@ -36,6 +36,15 @@
   close と flatten の注文は reduce_only で出す(5 周目 (2-1)。取引所の模型が建玉を超える分を切り、切った分は注文の表の
   約定した量と状態・閉じ方(reduce_only・reduce_only_size_cut_filled)に出る)。
 - `cancel(注文の番号)`: 取り消しを出す(出した時刻を記録して `ctx.cancel_order` に渡す)。
+- `place_with_exit(売買, 値段, 段数, 合図の番号, 決済の値段)`: 建ての指値と一緒に決済の指値を出す口(L-770 b
+  「**建ての指値と一緒に決済の指値を出しておき、建ての約定のあと同じ足の中で決済の値段に届けば約定、とする(決済の値段は
+  合図の足の終値から計算)**」)。建ては place の指値と同じ(量は `size_per_level`)。決済は建ての逆の売買の指値、量 = 建ての
+  注文の量、reduce_only、注文の表の exit_kind = with_entry・attached_to = 建ての注文の番号。決済の値段は戦略が渡す。
+  取引所の模型(`bot.bt.fill.venue`、extra の鍵 `attached_to`)は、決済を建ての約定で有効にし、量を建ての約定した分にする。
+  建てが約定しないまま閉じたら決済も閉じる(理由 attached_parent_closed)。いつから当てるかは走らせの約定の決まり
+  (`FillSpec.attached_exit`: 楽観側 same_bar = 建てが約定した足の中から、悲観側 next_bar = その次の足から)。
+  この決済の「出ている決済の量」(close・flatten の量の計算に入る分)は、建ての約定の知らせの和(建ての量まで)から
+  この決済の約定の知らせの和を引いた量(建てが約定する前は 0)。
 
 注文の一生は、土台が戦略に届く注文の知らせ(`bot.bt.core.events` の `OrderAckEvent`・`OrderRejectEvent`・
 `OrderFillEvent`・`OrderCanceledEvent`・`OrderStateUnknownEvent`)から記録する。core は変えない。知らせの時刻は 2 つ残す:
@@ -89,6 +98,7 @@ from bot.bt.core import (
 )
 from bot.bt.core.api import FORCED_ID_PREFIX
 from bot.bt.core.strategy import Strategy
+from bot.bt.fill.venue import ATTACHED_KEY
 
 from .sizing import MARGIN_JPY, QUOTE_CCYS, USE_RATIO, SizingError, size_detail
 
@@ -110,7 +120,8 @@ OPEN_STATE_VALUES = ("PENDING_NEW", "OPEN", "PENDING_CANCEL", "STATE_UNKNOWN")  
 EXIT_FLATTEN = "flatten"  # flatten が出した決済の成行
 EXIT_FLATTEN_CALL = "flatten_call"  # flatten を呼んだときに注文を出さなかった記録の行(4 周目 (2) D)
 EXIT_CLOSE = "close"  # close が出した決済の注文
-EXIT_KINDS = (EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_CLOSE)
+EXIT_WITH_ENTRY = "with_entry"  # place_with_exit が建ての指値と一緒に出した決済の指値(L-770 b)
+EXIT_KINDS = (EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_CLOSE, EXIT_WITH_ENTRY)
 QTY_FROM_SIZING = "量の計算"
 QTY_FROM_POSITION = "建玉"
 
@@ -309,7 +320,7 @@ class RoadStrategy(Strategy):
                "closed_venue_t_ns": "", "close_kind": "", "close_reason": "", "state": "", "filled_qty": "0",
                "margin_jpy": "", "use_ratio": "", "levels": "", "size_px": "", "size_px_source": "", "quote_ccy": "",
                "usdjpy": "", "usdjpy_t_ns": "", "qty_raw": "", "qty_source": "", "position_at_send": "",
-               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": "", "reduce_only": ""}
+               "exit_pending_at_send": "", "placed_seq": "", "exit_kind": "", "reduce_only": "", "attached_to": ""}
         self._orders[coid] = row
         return row
 
@@ -479,6 +490,33 @@ class RoadStrategy(Strategy):
         row.update(side=side, qty=_num_text(qty))
         return self._send(row, coid, side, order_type, qty, price, sig, now, reduce_only=True)
 
+    def place_with_exit(self, side: str, price: float, levels: int, signal: Any, exit_price: float) -> tuple:
+        """建ての指値と一緒に決済の指値を出す(L-770 b。モジュールの説明を参照)。返すのは (建ての注文の番号, 決済の注文の番号)。
+        建ての量が 0 なら、建ても決済も出さずに「量が 0 で出さない」の行を 2 つ残す。"""
+        now = self._now("place_with_exit")
+        if isinstance(exit_price, bool) or not isinstance(exit_price, (int, float)) \
+                or not math.isfinite(float(exit_price)) or float(exit_price) <= 0:
+            _fail(f"place_with_exit: 決済の指値の値段は 0 より大きい有限の数: {exit_price!r}")
+        if side not in SIDES:
+            _fail(f"place_with_exit: 売買は {SIDES} のどれか: {side!r}")
+        entry = self.place(side, "limit", price, levels, signal)
+        er = self._orders[entry]
+        pos, pending = self._pos, self._pending_exit()
+        coid = self._new_id()
+        row = self._new_row(coid, ORIGIN_ROAD, er["signal_id"])
+        xside = "sell" if side == "buy" else "buy"
+        xpx = float(exit_price)
+        row.update(side=xside, order_type="limit", limit_px=_num_text(xpx), qty=er["qty"], placed_t_ns=now,
+                   quote_ccy=self.quote_ccy, qty_source=QTY_FROM_POSITION, position_at_send=_dec_text(pos),
+                   exit_pending_at_send=_dec_text(pending), placed_seq=self._seq, exit_kind=EXIT_WITH_ENTRY,
+                   attached_to=entry)
+        if er["state"] == ZERO_QTY_STATE:
+            row["state"] = ZERO_QTY_STATE
+            return entry, coid
+        self._send(row, coid, xside, "limit", float(er["qty"]), xpx, er["signal_id"], now, reduce_only=True,
+                   extra=((ATTACHED_KEY, entry),))
+        return entry, coid
+
     def _exit_signal(self, signal: Any, what: str) -> str:
         sig = NO_SIGNAL if signal == NO_SIGNAL else _sid(signal, what)
         if sig != NO_SIGNAL and sig not in self._signals:
@@ -498,11 +536,15 @@ class RoadStrategy(Strategy):
         return [r for r in self._orders.values() if r["origin"] == ORIGIN_ROAD and self._is_open(r)]
 
     def _pending_exit(self) -> Decimal:
-        """出ていてまだ閉じていない決済の注文(flatten・close)の、まだ約定していない量の和(買いが +)。"""
+        """出ていてまだ閉じていない決済の注文(flatten・close・with_entry)の、まだ約定していない量の和(買いが +)。
+        with_entry の決済は、建ての約定の知らせの和(決済の量まで)のうち、まだ約定していない量(建てが約定する前は 0)。"""
         out = Decimal(0)
         for coid, r in self._orders.items():
             if r["qty_source"] == QTY_FROM_POSITION and self._is_open(r):
-                rest = Decimal(r["qty"]) - self._filled.get(coid, Decimal(0))
+                cap = Decimal(r["qty"])
+                if r["exit_kind"] == EXIT_WITH_ENTRY:
+                    cap = min(cap, self._filled.get(r["attached_to"], Decimal(0)))
+                rest = cap - self._filled.get(coid, Decimal(0))
                 out += rest if r["side"] == "buy" else -rest
         return out
 
@@ -535,14 +577,15 @@ class RoadStrategy(Strategy):
         return coid
 
     def _send(self, row: dict, coid: str, side: str, order_type: str, qty: float, price: Optional[float], sig: str,
-              now: int, reduce_only: bool = False) -> str:
+              now: int, reduce_only: bool = False, extra: tuple = ()) -> str:
         # 合図の番号は OrderRequest.extra に入れない: 取引所の模型(bot.bt.fill.venue)は知らない extra の鍵の注文を
         # 拒む(rejected_by_venue: unknown_extra:['road_signal'])。注文と合図のつなぎは土台の記録(注文の表の
         # signal_id)が持つ(委任文 DELEGATION_record_form.md 2 周目 (a): このまま、取引所の模型は変えない)。
         # 決済の注文(close・flatten)は reduce_only で出す(5 周目 (2-1)): 送った後に建玉が減っても、取引所の模型が
         # 建玉を超える分を切る(bot.bt.fill.venue の _fill)ので、決済が逆向きの建玉を作らない(「段」に数えられない)
+        # 建てと一緒に出す決済(place_with_exit)だけ、取引所の模型が知っている extra の鍵 attached_to(建ての注文の番号)を渡す
         req = OrderRequest(side=side, order_type=order_type, size=qty, price=price, client_order_id=coid,
-                           reduce_only=reduce_only)
+                           reduce_only=reduce_only, extra=extra)
         row["reduce_only"] = "true" if reduce_only else "false"
         self.exit_reasons[coid] = f"道: 合図 {sig}"
         assert self._ctx is not None

@@ -66,6 +66,21 @@
      fills.json・orders.json が読める)。road/ のファイルの指紋が repro.json の指紋と同じ(書き出しの後の書き換えは
      ここで落ちる)。fills の各行 = pipeline の fills.json の行(注文の番号・時刻・取引所での時刻・売買・量・値段・
      手数料・liquidity)、出した注文の量・売買・種類 = pipeline の orders.json(実際に送った量)。
+(vii) 約定の決まり(SCHEMA の fill_rules。L-769・L-770): 走らせの記録(../record.json の config.fill)でその側が
+     bar_rule を選んだ走らせの、足で値段を付ける銘柄の指値の約定ごとに、
+     - 約定させた足(t_ns に閉じた足)で、指値が 安値 ≤ 指値 ≤ 高値 なら値段 = 指値、約定する向きに範囲の外(買いの指値 >
+       高値、売りの指値 < 安値)なら値段 = その足の始値(足の JSON に open が要る。無ければ失敗)、約定しない向きに範囲の外
+       なら失敗
+     - 注文の最初の約定の足が、当て始める足(取引所が受け付けた時刻 acked_venue_t_ns 以後に始まる足。建てと一緒に出した
+       決済は、建ての最初の約定の時刻と自分の受け付けの時刻の遅い方 以後に始まる足)より前でなく、それより前の当てる足で
+       この決まりなら約定していたはずの足が無いこと(楽観側の決済は、建てが約定した足の範囲に決済の値段が入っていたら
+       その足で約定しているはず)
+     - 決済が建てと同じ足で約定した行(with_entry の約定の t_ns = 建ての最初の約定の t_ns)は、楽観側(attached_exit =
+       same_bar)にしか無く、値段 = 決済の指値で、その足の範囲の内であること
+     (iii) では、建てと一緒に出した決済の行(exit_kind = with_entry)の attached_to が、同じ (銘柄, 側) の、同じ時に受けた
+     (placed_seq・placed_t_ns が同じ)逆の売買の place の指値の行を指すこと、ほかの行の attached_to が空であることも見る。
+     (v) では、with_entry の行の量 = 建ての注文の量(建てが量 0 なら 0 で出していない)、出ていた決済の量の数え方
+     (with_entry の決済は、建ての約定の知らせの和(決済の量まで)からこの決済の約定の知らせの和を引いた量)も見る。
 限界(SCHEMA.json の limits にも書く): 戦略が土台の合図の記録を書き換えるのは落とせない。repro.json の指紋も
 合わせて書き換えた場合に通る欄がある(SCHEMA の limits に列挙)。
 
@@ -86,8 +101,8 @@ from .ledger import SUMMARY_KEYS, TRADE_KEYS, LedgerError, book
 from .sizing import SizingError, size_detail
 from .strategy import DATA_END, NO_SIGNAL, ORIGIN_FORCED, ORIGIN_ROAD, ZERO_QTY_STATE
 from .sizing import QUOTE_CCYS
-from .strategy import (EXIT_CLOSE, EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_KINDS, OPEN_STATE_VALUES, QTY_FROM_POSITION,
-                       QTY_FROM_SIZING, _dec_text)
+from .strategy import (EXIT_CLOSE, EXIT_FLATTEN, EXIT_FLATTEN_CALL, EXIT_KINDS, EXIT_WITH_ENTRY, OPEN_STATE_VALUES,
+                       QTY_FROM_POSITION, QTY_FROM_SIZING, _dec_text)
 from .tables import (CSV_TABLES, RANGES, ROAD_DIR, SCHEMA, SCHEMA_FILE, SUMMARY_TABLE, TableError, columns, derive,
                      groups_of, is_table_store, read_csv, read_json, text)
 
@@ -410,11 +425,14 @@ def _read_run(store_dir: str, out: list) -> dict | None:
         po = got["orders.json"]["data"]
         if not isinstance(pf, list) or not isinstance(po, list):
             raise TypeError
+        fill = rec["config"]["fill"]  # 走らせの約定の決まり(側ごと。(vii))
+        if not isinstance(fill, dict) or any(not isinstance(fill.get(r), dict) for r in RANGES):
+            raise TypeError
     except (KeyError, TypeError, AttributeError):
         _fail(out, "vi", parent, "走らせの記録(repro.json・record.json・fills.json・orders.json)の形が読めない")
         return None
     return {"groups": sorted((n, r) for n in names_i for r in RANGES), "pfills": pf, "porders": po,
-            "bar_priced": bar_priced}
+            "bar_priced": bar_priced, "fill": {r: dict(fill[r]) for r in RANGES}}
 
 
 def _check_derived(t: dict, out: list, run: dict | None) -> None:
@@ -552,6 +570,7 @@ def _check_forms(t: dict, out: list) -> None:
             _fail(out, "iii", lab, f"閉じた知らせの番号 {tv['closed_seq']} が受けた時の番号 {tv.get('placed_seq')} より前")
         if o["qty_source"] == QTY_FROM_SIZING and o["exit_pending_at_send"] != "":
             _fail(out, "iii", lab, "量の計算の行に、出ていた決済の量が書かれている")
+    _check_attached_forms(t, out)
     # 届いた順: 土台が受けた時の番号は表の順に減らない。約定の知らせの番号は (銘柄, 側) の中で一意で、その注文を
     # 受けた時の番号より後、知らせの番号の順に届いた時刻が減らない
     last: dict = {}
@@ -601,6 +620,35 @@ def _check_forms(t: dict, out: list) -> None:
     for k, p in enumerate(t["fx"]):
         if len(p["pair"]) != 6 or not p["pair"].isupper() or not p["pair"].isalpha():
             _fail(out, "iii", f"fx の {k} 行目", f"通貨の組 {p['pair']!r} が 6 文字の大文字でない")
+
+
+def _check_attached_forms(t: dict, out: list) -> None:
+    """(iii) 建てと一緒に出した決済の行(exit_kind = with_entry)の attached_to が、同じ (銘柄, 側) の、同じ時に受けた
+    (placed_seq・placed_t_ns が同じ)逆の売買の place の指値の行を指すこと。ほかの行の attached_to は空。"""
+    by_id = {(o["instrument"], o["range"], o["order_id"]): o for o in t["orders"]}
+    for k, o in enumerate(t["orders"]):
+        lab = _label("orders", k, o)
+        att = o.get("attached_to", "")
+        if o["exit_kind"] != EXIT_WITH_ENTRY:
+            if att != "":
+                _fail(out, "iii", lab, f"建てと一緒に出した決済の行(exit_kind = {EXIT_WITH_ENTRY})でないのに attached_to "
+                                       f"{att!r} が書かれている")
+            continue
+        if o["order_type"] != "limit":
+            _fail(out, "iii", lab, "建てと一緒に出した決済の行が指値でない")
+        p = by_id.get((o["instrument"], o["range"], att))
+        if p is None or p["origin"] != ORIGIN_ROAD:
+            _fail(out, "iii", lab, f"attached_to {att!r} の建ての注文が同じ銘柄・側の注文の表に無い")
+            continue
+        if p["qty_source"] != QTY_FROM_SIZING or p["order_type"] != "limit" or p["exit_kind"] != "":
+            _fail(out, "iii", lab, f"attached_to {att!r} の注文が place の指値(建て)でない")
+        if p["placed_seq"] != o["placed_seq"] or p["placed_t_ns"] != o["placed_t_ns"]:
+            _fail(out, "iii", lab, f"建てと決済を受けた時(番号 {p['placed_seq']}・{o['placed_seq']}、時刻 "
+                                   f"{p['placed_t_ns']}・{o['placed_t_ns']})が同じでない(一緒に出したもの)")
+        if p["signal_id"] != o["signal_id"]:
+            _fail(out, "iii", lab, f"決済の合図の番号 {o['signal_id']!r} が建ての合図の番号 {p['signal_id']!r} と違う")
+        if p["side"] in ("buy", "sell") and o["side"] != ("sell" if p["side"] == "buy" else "buy"):
+            _fail(out, "iii", lab, f"決済の売買 {o['side']!r} が建ての売買 {p['side']!r} の逆でない")
 
 
 def _int_or_none(v: str) -> int | None:
@@ -790,7 +838,10 @@ def _flatten_expect(t: dict, o: Mapping, k: int) -> tuple[str, Decimal]:
             continue
         if r["closed_seq"] != "" and int(r["closed_seq"]) <= seq:
             continue
-        rest = Decimal(r["qty"]) - _dsum(by_order.get(r["order_id"], []))
+        cap = Decimal(r["qty"])
+        if r["exit_kind"] == EXIT_WITH_ENTRY:  # 建てと一緒に出した決済: 建ての約定の知らせの和(決済の量まで)が有効
+            cap = min(cap, _dsum(by_order.get(r["attached_to"], [])))
+        rest = cap - _dsum(by_order.get(r["order_id"], []))
         pending += rest if r["side"] == "buy" else -rest
     return pos, pending
 
@@ -826,6 +877,11 @@ def _check_sizes(t: dict, bars: Sequence[Mapping], out: list) -> None:
                 pos, pending = _flatten_expect(t, o, k)
                 net = Decimal(pos) + pending
                 kind = o["exit_kind"]
+                if kind == EXIT_WITH_ENTRY:
+                    # 量 = 建ての注文の量。建てを出さなかった(量 0)なら決済も出さない(下の量が 0 の行の検査)
+                    _check_with_entry_size(t, o, lab, pos, pending, out)
+                    p = _entry_of(t, o)
+                    raise _Next(p is not None and p["state"] == ZERO_QTY_STATE)
                 if kind == EXIT_FLATTEN_CALL:
                     want_net = Decimal(0)  # 呼んだ記録の行: 注文は出していない(量 0)
                 elif kind == EXIT_CLOSE and (Decimal(pos) == 0 or net == 0 or (net > 0) != (Decimal(pos) > 0)):
@@ -867,6 +923,8 @@ def _check_sizes(t: dict, bars: Sequence[Mapping], out: list) -> None:
                 zero = qty == 0
             else:
                 continue  # (iii) が落とす
+        except _Next as nx:
+            zero = nx.zero
         except (ValueError, KeyError, SizingError, LedgerError, ArithmeticError) as exc:
             _fail(out, "v", lab, f"量を計算し直せない: {exc}")
             continue
@@ -886,6 +944,38 @@ def _check_sizes(t: dict, bars: Sequence[Mapping], out: list) -> None:
                 _fail(out, "v", lab, f"約定の和 {_dec_text(total)} が注文の量 {o['qty']} を超える")
         except ArithmeticError:
             _fail(out, "v", lab, "約定した量・約定の量が数として読めない")
+
+
+class _Next(Exception):
+    """(v) の with_entry の行: 量の検査を終えて、量が 0 の行の検査へ進む。"""
+
+    def __init__(self, zero: bool) -> None:
+        super().__init__()
+        self.zero = zero
+
+
+def _entry_of(t: dict, o: Mapping) -> Mapping | None:
+    for p in t["orders"]:
+        if (p["instrument"], p["range"], p["order_id"]) == (o["instrument"], o["range"], o["attached_to"]):
+            return p
+    return None
+
+
+def _check_with_entry_size(t: dict, o: Mapping, lab: str, pos: str, pending: Decimal, out: list) -> None:
+    """(v) 建てと一緒に出した決済の行: 量 = 建ての注文の量、量の計算の列は空、送る時点の建玉・出ていた決済の量は
+    知らせの届いた約定から計算し直した値。"""
+    filled = [c for c in SIZING_COLS if o[c] != ""]
+    if filled:
+        _fail(out, "v", lab, f"量の出所が「建玉」の行に量の計算の列 {filled} が書かれている")
+    p = _entry_of(t, o)
+    if p is None:
+        return  # (iii) が落とす
+    if o["qty"] != p["qty"]:
+        _fail(out, "v", lab, f"建てと一緒に出した決済の量 {o['qty']!r} が建ての注文の量 {p['qty']!r} と違う")
+    if o["position_at_send"] != pos:
+        _fail(out, "v", lab, f"送る時点の建玉 {o['position_at_send']!r} が帳簿のツールの建玉 {pos!r} と違う")
+    if o["exit_pending_at_send"] != _dec_text(pending):
+        _fail(out, "v", lab, f"出ていた決済の量 {o['exit_pending_at_send']!r} が計算し直した {_dec_text(pending)!r} と違う")
 
 
 def _check_size_px(o: Mapping, lab: str, close_times: list, closes: dict, out: list) -> None:
@@ -980,6 +1070,101 @@ def _check_pipeline(t: dict, run: dict, out: list) -> None:
             _fail(out, "vi", _label("orders", t["orders"].index(o), o), "出した注文が pipeline の orders.json に無い")
 
 
+def _bar_hits(lim: float, side: str, hi: float, lo: float) -> str:
+    """bar_rule range_open で、指値 lim がその足でどう当たるか: "limit"(範囲の内)/ "open"(約定する向きに外)/ ""(約定しない)。"""
+    if lo <= lim <= hi:
+        return "limit"
+    if (lim > hi) if side == "buy" else (lim < lo):
+        return "open"
+    return ""
+
+
+def _check_fill_rule(t: dict, bars: Sequence[Mapping], out: list, run: dict) -> None:
+    """(vii) 約定の決まり(SCHEMA の fill_rules。モジュールの説明を参照)。"""
+    rules = {r: run["fill"][r] for r in RANGES if run["fill"][r].get("bar_rule") is not None}
+    if not rules:
+        return
+    by_start: dict = {}
+    for j, b in enumerate(bars):
+        if isinstance(b, Mapping) and type(b.get("t_ns")) is int and _finite_number(b.get("high"))                 and _finite_number(b.get("low")):
+            op = float(b["open"]) if _finite_number(b.get("open")) else None
+            by_start.setdefault(b["t_ns"], []).append((j, float(b["high"]), float(b["low"]), op))
+    starts = sorted(by_start)
+    orders = {(o["instrument"], o["range"], o["order_id"]): o for o in t["orders"]}
+    fills_of: dict = {}
+    for k, f in enumerate(t["fills"]):
+        fills_of.setdefault((f["instrument"], f["range"], f["order_id"]), []).append((k, f))
+    for key, fl in fills_of.items():
+        inst, rng, oid = key
+        spec = rules.get(rng)
+        o = orders.get(key)
+        if spec is None or inst not in run["bar_priced"] or o is None or o["order_type"] != "limit":
+            continue
+        side, lim = o["side"], float(o["limit_px"])
+        with_entry = o["exit_kind"] == EXIT_WITH_ENTRY
+        parent_t = None
+        if with_entry:
+            pf = fills_of.get((inst, rng, o["attached_to"]), [])
+            if not pf:
+                _fail(out, "vii", _label("fills", fl[0][0], fl[0][1], "約定"),
+                      f"建てと一緒に出した決済 {oid} が約定しているのに、建て {o['attached_to']} の約定が無い")
+                continue
+            parent_t = int(pf[0][1]["t_ns"])
+        for n, (k, f) in enumerate(fl):
+            lab = _label("fills", k, f, "約定")
+            v, px = int(f["t_ns"]), float(f["px"])
+            hits = by_start.get(v - MINUTE_NS, [])
+            if len(hits) != 1:
+                continue  # (iv) が落とす
+            j, hi, lo, op = hits[0]
+            if with_entry and v == parent_t:
+                if spec.get("attached_exit") != "same_bar":
+                    _fail(out, "vii", lab, f"決済が建てと同じ足(足 {j}、閉じた時刻 {v})で約定している。建てと同じ足の決済の"
+                                           f"約定は楽観側(attached_exit = same_bar)にしか無い(この側 {rng} は "
+                                           f"{spec.get('attached_exit')!r})")
+                elif not (lo <= lim <= hi) or px != lim:
+                    _fail(out, "vii", lab, f"建てと同じ足の決済の約定は、決済の値段 {lim!r} がその足の安値 {lo}〜高値 {hi} の"
+                                           f"内で値段 = 決済の値段のときだけ(約定の値段 {px!r})")
+            else:
+                how = _bar_hits(lim, side, hi, lo)
+                if how == "":
+                    _fail(out, "vii", lab, f"指値 {lim!r}({side})が約定させた足(足 {j}、閉じた時刻 {v})の安値 {lo}〜高値 {hi} "
+                                           f"の約定しない向きの外なのに約定している")
+                elif how == "limit" and px != lim:
+                    _fail(out, "vii", lab, f"指値 {lim!r} が足 {j} の範囲の内なのに、約定の値段 {px!r} が指値の値段でない")
+                elif how == "open":
+                    if op is None:
+                        _fail(out, "vii", lab, f"指値 {lim!r} が足 {j} の範囲の約定する向きの外で、始値で約定するはずだが、"
+                                               f"足に始値(open)が無いので確かめられない")
+                    elif px != op:
+                        _fail(out, "vii", lab, f"指値 {lim!r} が足 {j} の範囲の約定する向きの外なのに、約定の値段 {px!r} が"
+                                               f"その足の始値 {op!r} でない")
+            if n > 0:
+                continue
+            # 最初の約定の足が、当て始める足より前でなく、それより前の当てる足で約定していたはずの足が無いこと
+            acked = _int_or_none(o["acked_venue_t_ns"])
+            if acked is None:
+                _fail(out, "vii", lab, f"約定した指値 {oid} に取引所の受け付けの時刻が無い(当て始める足が決まらない)")
+                continue
+            begin = acked if parent_t is None else max(acked, parent_t)
+            if with_entry and v == parent_t:
+                continue  # 建てと同じ足(上で見た)
+            if v - MINUTE_NS < begin:
+                _fail(out, "vii", lab, f"約定させた足(始まり {v - MINUTE_NS})が、当て始める足(始まり {begin} 以後)より前")
+                continue
+            if with_entry and spec.get("attached_exit") == "same_bar" and parent_t >= acked:
+                same = by_start.get(parent_t - MINUTE_NS, [])
+                if len(same) == 1 and same[0][2] <= lim <= same[0][1]:
+                    _fail(out, "vii", lab, f"楽観側の決済の値段 {lim!r} が建てが約定した足(閉じた時刻 {parent_t})の範囲の内"
+                                           f"なのに、その足で約定していない")
+            for s0 in starts[bisect.bisect_left(starts, begin):bisect.bisect_left(starts, v - MINUTE_NS)]:
+                b = by_start[s0]
+                if len(b) == 1 and _bar_hits(lim, side, b[0][1], b[0][2]):
+                    _fail(out, "vii", lab, f"指値 {lim!r}({side})は、約定させた足より前の当てる足(始まり {s0})で約定して"
+                                           f"いたはず")
+                    break
+
+
 def check_tables(store_dir: str, bars: Sequence[Mapping]) -> CheckResult:
     """表の形の置き場 1 つに (i)〜(vi) を当てる(モジュールの説明を参照)。"""
     out: list = []
@@ -995,6 +1180,7 @@ def check_tables(store_dir: str, bars: Sequence[Mapping]) -> CheckResult:
         _check_sizes(t, bars, out)
         if run is not None:
             _check_pipeline(t, run, out)
+            _check_fill_rule(t, bars, out, run)
     except Exception as exc:  # 想定外の壊れ方。英語の文を出さずに失敗として止める(O-1)
         _fail(out, "i", store_dir, f"検査の途中で想定していない壊れ方に当たった(例外の種類 {type(exc).__name__})")
     return CheckResult(out)

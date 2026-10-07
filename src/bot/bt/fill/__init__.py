@@ -14,6 +14,8 @@ from .data_wait import DATA_WAIT, DataUnavailableError, DataWait, data_wait_repo
 from .l3 import L3Add, L3Cancel, L3Feed
 from .range import FillRange, RangeResult, run_range
 from .spec import (
+    ATTACHED_EXITS,
+    BAR_RULES,
     CANCEL_STANCES,
     IMPACT_BASES,
     IMPACT_KINDS,
@@ -25,9 +27,9 @@ from .spec import (
     FillSpecError,
     ImpactSpec,
 )
-from .venue import FillRecord, SimVenue
+from .venue import ATTACHED_KEY, FillRecord, SimVenue
 
-__all__ = ["CANCEL_STANCES", "DATA_WAIT", "IMPACT_BASES", "IMPACT_KINDS", "PROB_FUNCTIONS", "TIERS",
+__all__ = ["ATTACHED_EXITS", "ATTACHED_KEY", "BAR_RULES", "CANCEL_STANCES", "DATA_WAIT", "IMPACT_BASES", "IMPACT_KINDS", "PROB_FUNCTIONS", "TIERS",
            "TIER_BY_DEFAULT", "TIER_MECHANISM", "DataUnavailableError", "DataWait", "ExternalBook", "FillRange",
            "FillRecord", "FillSpec", "FillSpecError", "ImpactSpec", "L3Add", "L3Cancel", "L3Feed", "RangeResult",
            "SimVenue", "bars_from_trades", "data_wait_report", "run_range"]
