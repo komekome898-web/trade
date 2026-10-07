@@ -26,6 +26,7 @@ description: "How the lead delegates research/implementation to subagents in thi
 4. オーナーの承認(L-793): 委任文の名前・何をするか 1 文・事前の批評の回数と指摘の数・パス・「着手前の表」の節の文と、**版の印(`--print-hash` の値)**を問いに入れて「委任してよいか」を聞く。答えを、その問いと同じ OWNER_LOG の行(1 列目は番号だけ)に記録し(L-796)、委任文の末尾に `## オーナーの承認` の節を足してその行の逐語を引く。承認の後に本文を変えたら取り直す(途中の決めに `- Q数字: 「問いの文」→ 答え` を足すだけなら取り直さない)。
 5. 渡す前に `python3 scripts/delegation/check_delegation.py <委任文> --require-approval` が 0。
 6. 受け取り: `python3 scripts/delegation/check_report.py <報告> --delegation <委任文>` が 0 になるまでコミットしない(§6)。
+7. 作り終えた後の批評家 1 回(§7)。この批評家の委任には 4 の承認は要らない(L-817「**作り終えた後の批評家の委任にも、L-793 の「委任してよいか」の承認が要りますか(要る / 要らない)。→要らない。**」)。
 
 ## 1.5 委任の前(Jev。オーナー承認 2026-09-19、L-225)
 
