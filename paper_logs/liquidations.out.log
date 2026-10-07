@@ -737,3 +737,17 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-06T20:06:13+00:00 okx: 接続の時間切れ — 4s 後に再接続
 2026-10-06T20:06:30+00:00 bybit: 接続
 2026-10-06T20:06:30+00:00 okx: 接続
+2026-10-07T00:00:05+00:00 okx: -> okx_20261007.jsonl.gz
+2026-10-07T00:00:06+00:00 binance_cm: -> binance_cm_20261007.jsonl.gz
+2026-10-07T00:00:19+00:00 bybit: -> bybit_20261007.jsonl.gz
+2026-10-07T09:21:19+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T09:21:25+00:00 okx: 接続
+2026-10-07T11:17:09+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T11:17:14+00:00 okx: 接続
+2026-10-07T11:43:02+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T11:43:25+00:00 bybit: 接続
+2026-10-07T12:50:50+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T12:50:55+00:00 bybit: 接続
+2026-10-07T19:33:25+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T19:34:31+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-07T19:34:49+00:00 okx: 接続
