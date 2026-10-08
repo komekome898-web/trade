@@ -51,6 +51,8 @@
 
 - 注文の行は、注文が消えた時か約定した時か、データの終わりに 1 行書く。
 - 建玉・損益・取引の数・保有時間は、帳簿のツール(`src/bot/bt/road/ledger.py` の `book`)で約定から計算し、`trades_<側>.csv`・`summary_<側>.json` に書く(L-754)。
+  - `book` に渡す約定: 約定のファイルの順に {t_ns: 足の始まりの UTC の ns, side, qty, px, ccy: "JPY"}(同じ足の約定は同じ t_ns。`book` は受け付ける)。
+  - `trades_<側>.csv` の列は `TRADE_KEYS`(`src/bot/bt/road/ledger.py:87`)、`summary_<側>.json` は `book` の summary から trades の欄を除いたもの(fill_count・closed_trades・pnl_jpy・open_trades)。約定が 0 本なら trades は見出しだけ、summary は 0。
 
 ## 5. 検査(L-821 の 2)
 
