@@ -751,3 +751,14 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-07T19:33:25+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
 2026-10-07T19:34:31+00:00 okx: 接続の時間切れ — 4s 後に再接続
 2026-10-07T19:34:49+00:00 okx: 接続
+2026-10-07T21:33:23+00:00 binance_cm: 切断 PermissionError: [Errno 13] Permission denied: 'C:\\Users\\ryoma\\trade\\data\\liquidations\\binance_cm_20261007.jsonl.gz' — 2s 後に再接続
+2026-10-07T21:33:37+00:00 binance_cm: 接続
+2026-10-08T00:00:06+00:00 okx: -> okx_20261008.jsonl.gz
+2026-10-08T00:00:08+00:00 bybit: -> bybit_20261008.jsonl.gz
+2026-10-08T00:00:08+00:00 binance_cm: -> binance_cm_20261008.jsonl.gz
+2026-10-08T02:53:39+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T02:53:45+00:00 okx: 接続
+2026-10-08T05:57:59+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T05:58:05+00:00 okx: 接続
+2026-10-08T18:01:16+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T18:01:55+00:00 okx: 接続
