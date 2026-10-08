@@ -34777,10 +34777,10 @@
   {
    "move": 1282,
    "tools": {
-    "Bash": 20,
+    "Bash": 22,
     "Write": 1
    },
-   "n_tools": 21,
+   "n_tools": 23,
    "read_goal": false,
    "first_write_at": 18,
    "table_shown": false,
