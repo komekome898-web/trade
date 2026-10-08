@@ -126,6 +126,9 @@
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
 
+- Q1: 変異 U4-c(fills の各行の欄の数を見ない検めを外す)で、試験が 1 つも落ちなかった。差し替えずに返す。仕組み: 試験の改ざん `_t_fills_row_short`(`test_f4_check_numbers_refuses_broken_records[約定の行の欄が足りない]`)は最終行を 2 欄に縮めるだけなので、欄の数の検めを外しても `r[3]` の参照で `IndexError` が出て、外側の `except Exception` が食い違いの行にする。この試験は「欄の数の検め」と「全部の例外を拾う外側」を区別できない。欄が見出しより多い fills の行(例 7 欄)を入れる試験は無く、その場合は検めが無ければ余計な欄が黙って捨てられる。等価な変異かどうかの判定はリードに任せる。 — 答え(リード): リードが試験 `test_f4_check_numbers_refuses_broken_records[約定の行の欄が多すぎる]`(最終行に余計な欄)を足した。欄の数の検めは要る。作業者は同じ変異を当て直す。
+- Q2: 変異 U4-i(0 バイトの fills を約定 0 本として通す)で、試験が 1 つも落ちなかった。差し替えずに返す。仕組み: 試験の改ざん `_t_zero_bytes`(`test_f4_check_numbers_refuses_broken_records[fills と trades が 0 バイト・summary が 0]`)は fills と trades を両方 0 バイトにする。fills を約定 0 本として通しても、作り直した trades は見出しだけの全文で、0 バイトの trades とは一致せず、trades の比べが食い違いを出す。この試験は「fills が 0 バイトであること」を単独では見分けられない。fills だけを 0 バイトにして trades・summary は約定 0 本の正しい中身、という入力の試験は無い。等価な変異かどうかの判定はリードに任せる。 — 答え(リード): リードが試験 `test_f4_check_numbers_refuses_broken_records[fills だけが 0 バイト・trades と summary は約定 0 本]` を足した。0 バイトの fills は食い違い(SPEC.md §5 の 2)。作業者は同じ変異を当て直す。
+
 ## オーナーの承認
 
 - L-826「**両方yes**」(問いと答えは OWNER_LOG の L-826 の行。問いに委任文の名前と版の印を入れた。L-796)

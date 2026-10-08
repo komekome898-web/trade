@@ -269,6 +269,21 @@ def _t_trades_crlf(out):
     _write(_p(out, "trades"), data.replace(b"\n", b"\r\n"))
 
 
+def _t_fills_row_long(out):
+    # 約定の行の欄が見出しより多い(余計な欄を黙って捨てると通ってしまう)
+    with open(_p(out, "fills"), "rb") as fh:
+        lines = fh.read().rstrip(b"\n").split(b"\n")
+    lines[-1] += b",extra"
+    _write(_p(out, "fills"), b"\n".join(lines) + b"\n")
+
+
+def _t_fills_zero_bytes_only(out):
+    # fills だけを 0 バイトにし、trades と summary は約定 0 本の正しい中身にする(0 バイトの fills を約定 0 本として通すと合格になる)
+    _write(_p(out, "fills"), b"")
+    _write(_p(out, "trades"), TRADES_HEAD)
+    _write(_p(out, "summary", "json"), ZERO)
+
+
 TAMPERS = [
     ("fills と trades が 0 バイト・summary が 0", _t_zero_bytes),
     ("fills の見出しがでたらめ・行なし・summary が 0", _t_garbage_fills_head),
@@ -287,6 +302,8 @@ TAMPERS = [
     ("約定の行の欄が足りない", _t_fills_row_short),
     ("trades の中身の行の末尾に余計な欄", _t_trades_row_extra_cell),
     ("trades の改行を CRLF に", _t_trades_crlf),
+    ("約定の行の欄が多すぎる", _t_fills_row_long),
+    ("fills だけが 0 バイト・trades と summary は約定 0 本", _t_fills_zero_bytes_only),
 ]
 
 
