@@ -130,9 +130,11 @@ def _base(tmp_path):
             1: {"l2": lv(-200.0), "x": ex("l1", 6999790.0)},
             2: {"r1": R1, "x1": X1}, 3: {"r2": R2, "x1": X1},
             4: {"m": {"form": "market", "side": "sell", "qty": 0.009},
-                "far": lim("buy", 6000000.0),  # 約定しない指値(データの終わりまで出たまま)
-                "far2": lim("buy", 6000000.0), "farl": lv(-100.0, root="far2"),  # 約定しない根と段
-                "farx": ex("far2", 6000100.0)}}  # 約定しない親の利確
+                "far": lim("buy", 6000000.0)},  # 約定しない指値(データの終わりまで出たまま)
+            # 最後の足の判定で出す根 far2・段 farl・利確 farx(約定しうる足が無く from_ts は空。止める注文の検めは
+            #   約定を試す注文だけでなく、注文の記録の全部の行に効く)
+            5: {"far": lim("buy", 6000000.0), "far2": lim("buy", 6000000.0), "farl": lv(-100.0, root="far2"),
+                "farx": ex("far2", 6000100.0)}}
     bars = make_bars(rows)
     out = str(tmp_path / "base")
     run(bars, Script(plan), side="optimistic", out_dir=out, tick=1.0, meta=META)
