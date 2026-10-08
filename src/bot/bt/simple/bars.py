@@ -13,6 +13,8 @@ COLS = ("ts", "open", "high", "low", "close", "volume")
 def read_bars(paths, seal_iso: str):
     """値段の空の足を飛ばし、封印の境以後に始まる足の行に届いたらそこで終わる(その行より先は読まない)。
 
+    安値 > 高値の足と、始値か終値が安値〜高値の外にある足で止める。向きの決まらない足を飛ばすのは run(SPEC.md §1)。
+
     境の年より後の年のファイル(名前の `_YYYY.csv.gz`)は、どれも開く前に止める。
     足 = (始まりの時刻の文字列, 始値, 高値, 安値, 終値, 出来高)。
     """
@@ -47,4 +49,6 @@ def _rows(paths, seal):
                     raise SimpleRoadError(f"足の行を数に直せない: {os.path.basename(p)} の {t}") from None
                 if lo > h:
                     raise SimpleRoadError(f"足の安値が高値より高い: {os.path.basename(p)} の {t}")
+                if not (lo <= o <= h and lo <= c <= h):
+                    raise SimpleRoadError(f"足の始値か終値が安値〜高値の外: {os.path.basename(p)} の {t}")
                 yield (t, o, h, lo, c, vol)

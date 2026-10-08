@@ -1,24 +1,23 @@
-"""走らせ(SPEC.md §2・§4): 足を古い順に回し、足ごとに 約定 → 戦略に知らせる → 判定。約定と合図を回しながら書き足し、
-終わった後に約定のファイルを頭から読んで損益のまとめを数える(約定を記憶にためない。L-854)。"""
+"""走らせ(SPEC.md §1・§2・§4): 足を古い順に回し、足ごとに足の中の道筋をたどる。約定か見張る値段への到達が起きた
+最初の点で止まって戦略を呼び、終値でもう一度呼ぶ。約定と合図を回しながら書き足し、終わった後に約定のファイルを
+頭から読んで損益のまとめを数える(約定を記憶にためない。L-854)。"""
 from __future__ import annotations
 
 import csv
 import json
 import os
 import subprocess
+from bisect import bisect_left, bisect_right
 from contextlib import ExitStack
-
 from decimal import Decimal
 
 from bot.bt.road.ledger import book
 
-from .common import (FILL_COLS, SIDES, SUMMARY_COLS, SimpleRoadError, cell, floor_tick, is_number, num, parse_ts,
-                     step_ok, to_ns)
-from .fills import Order, fill_bar
+from .common import FILL_COLS, SUMMARY_COLS, SimpleRoadError, cell, floor_tick, is_number, num, parse_ts, to_ns
+from .fills import Order, check_shape
 
-SIDE_NAMES = ("optimistic", "pessimistic")
 SIGNAL_COLS = ("id", "kind", "direction", "start_ts", "end_ts", "end_reason")
-FORMS = ("limit", "level", "exit", "market")
+MAX_CALLS_AT_POINT = 100  # 同じ点で呼ぶ回数の上限(SPEC.md §2.2 の 4)
 
 
 class _Csv:
@@ -48,126 +47,201 @@ def _git_version() -> str:
     return head + ("+未コミットの変更あり" if dirty else "")
 
 
-def _shape(oid, o) -> None:
-    """注文の形の検め(1 つずつ。他の注文との関係は _links)。"""
-    if not isinstance(oid, str) or not oid:
-        raise SimpleRoadError(f"注文の番号は空でない文字: {oid!r}")
-    if not isinstance(o, dict):
-        raise SimpleRoadError(f"注文 {oid} は辞書で返す")
-    if o.get("form") not in FORMS:
-        raise SimpleRoadError(f"注文 {oid} の形が知らない形: {o.get('form')!r}")
-    if o.get("side") not in SIDES:
-        raise SimpleRoadError(f"注文 {oid} の売買は buy / sell: {o.get('side')!r}")
-    q = o.get("qty")
-    if not is_number(q) or not step_ok(q):
-        raise SimpleRoadError(f"注文 {oid} の量は 0 より大きく 0.001 の刻みの上: {q!r}")
-    f = o["form"]
-    if "close" in o and (f != "limit" or o["close"] is not True):
-        raise SimpleRoadError(f"注文 {oid} の close の印は limit にだけ、値は True だけ: {f} / {o['close']!r}")
-    if f in ("limit", "exit") and not (is_number(o.get("px")) and o["px"] > 0):
-        raise SimpleRoadError(f"注文 {oid} の値段は 0 より大きい数: {o.get('px')!r}")
-    if f == "level":
-        if not isinstance(o.get("root"), str) or not is_number(o.get("offset")):
-            raise SimpleRoadError(f"注文 {oid}(段)は根の番号と距離の数が要る")
-        if (o["side"] == "buy" and o["offset"] > 0) or (o["side"] == "sell" and o["offset"] < 0):
-            raise SimpleRoadError(f"注文 {oid}(段)の距離の向きが違う(買いは負、売りは正): {o['offset']!r}")
-    if f == "exit" and not isinstance(o.get("parent"), str):
-        raise SimpleRoadError(f"注文 {oid}(利確)は親の番号が要る")
-
-
-def run(bars, strategy, side, out_dir, tick, meta) -> None:
+def run(bars, strategy, out_dir, tick, meta) -> None:
     """bars を古い順に回して SPEC.md §4 のファイルを out_dir に書く。止める場面は SimpleRoadError。"""
-    if side not in SIDE_NAMES:
-        raise SimpleRoadError(f"側は optimistic か pessimistic: {side!r}")
     if not is_number(tick) or tick <= 0:
         raise SimpleRoadError(f"刻みは 0 より大きい数: {tick!r}")
     if not isinstance(meta, dict) or "seal" not in meta:
         raise SimpleRoadError("meta に封印の境 seal が無い(境以後の足を止める検めができない)")
     seal = parse_ts(meta["seal"])
     os.makedirs(out_dir, exist_ok=True)
-    path = lambda name, ext="csv": os.path.join(out_dir, f"{name}_{side}.{ext}")  # noqa: E731
-    if os.path.exists(path("summary", "json")):
-        os.remove(path("summary", "json"))  # 前の走らせの数を残さない
-    with open(path("run", "json"), "w", encoding="utf-8") as fh:
-        json.dump(dict(meta, tick=tick, side=side, git=_git_version()), fh, ensure_ascii=False, indent=1)
+    path = lambda name: os.path.join(out_dir, name)  # noqa: E731
+    if os.path.exists(path("summary.json")):
+        os.remove(path("summary.json"))  # 前の走らせの数を残さない
+    with open(path("run.json"), "w", encoding="utf-8") as fh:
+        json.dump(dict(meta, tick=tick, git=_git_version()), fh, ensure_ascii=False, indent=1)
 
-    seen: set[str] = set()  # 受けた注文の番号(使い回しの検め用)
-    n_seen = 0  # 受けた注文の数(同じ組の中の順の元)
-    filled: dict[str, Order] = {}  # 約定した注文(段・利確の根・親を引くため)
-    live: list[Order] = []
-    sig_open: dict[str, list] = {}  # 出ている合図 id → [kind, direction, start_ts]
-    sig_seen: set[str] = set()
-    last_ts = None
     with ExitStack() as stack:
-        fills_f = _Csv(stack, path("fills"), FILL_COLS)
-        sig_f = _Csv(stack, path("signals"), SIGNAL_COLS)
+        w = _Walk(strategy, tick, _Csv(stack, path("fills.csv"), FILL_COLS), _Csv(stack, path("signals.csv"), SIGNAL_COLS))
+        prev = None  # 飛ばさずに回した直前の足の終値(データの頭では無い)
+        last_t = None
         for bar in bars:
-            ts = bar[0]
-            t = parse_ts(ts)
-            if t >= seal:
-                raise SimpleRoadError(f"封印の境 {meta['seal']} 以後に始まる足は渡せない: {ts}")
-            if last_ts is not None and t <= parse_ts(last_ts):
-                raise SimpleRoadError(f"足が古い順になっていない: {last_ts} の次に {ts}")
-            if len(bar) != 6 or not all(is_number(x) for x in bar[1:]):
-                raise SimpleRoadError(f"足の値が数でない: {bar!r}")
-            if bar[3] > bar[2]:
-                raise SimpleRoadError(f"足の安値が高値より高い: {ts}")
-            last_ts = ts
-            # 1. 約定
-            got = fill_bar(live, bar, side, tick)
-            out = []
-            for o in got:
-                fills_f.row([ts, _kind(o), o.side, num(o.qty), num(o.fill_px), o.case])
-                out.append({"ts": ts, "id": o.id, "side": o.side, "qty": o.qty, "px": o.fill_px, "case": o.case})
-            live = [o for o in live if o.state == "live"]
-            for o in got:
-                filled[o.id] = o
-            # 2. 知らせ 3. 判定
-            res = strategy.decide(bar, out)
-            try:
-                orders, events = res
-                orders = dict(orders)
-            except (TypeError, ValueError):
-                raise SimpleRoadError("decide は (注文の辞書, 合図の出来事の並び) を返す") from None
-            new: dict[str, Order] = {}
-            by_id = {o.id: o for o in live}
-            for oid, raw in orders.items():
-                _shape(oid, raw)
-                if oid in filled:
-                    raise SimpleRoadError(f"約定し終えた注文の番号 {oid} をもう一度返した")
-                old = by_id.get(oid)
-                if old is None:
-                    if oid in seen:
-                        raise SimpleRoadError(f"消えた注文の番号 {oid} をもう一度返した")
-                    new[oid] = Order(n_seen, oid, raw)
-                    n_seen += 1
-                    seen.add(oid)
-                elif Order(old.seq, oid, raw).key() != old.key():
-                    raise SimpleRoadError(f"同じ番号 {oid} で中身が前と違う(値段を変えるときは新しい番号で出す)")
-            _links(lambda i: new.get(i) or by_id.get(i) or filled.get(i), orders, new)
-            for o in live:
-                if o.id not in orders:  # 返さなかった注文はここで消える
-                    o.state = "gone"
-            live = [o for o in live if o.state == "live"]
-            for oid, o in new.items():
-                if o.form in ("limit", "exit"):
-                    o.px = floor_tick(o.px_calc, tick)
-                    if o.px <= 0:
-                        raise SimpleRoadError(f"注文 {oid} の切り捨てた値段が 0 以下")
-                live.append(o)
-            _signals(events, ts, sig_open, sig_seen, sig_f)
+            t = _check_bar(bar, seal, meta["seal"], last_t)
+            last_t = t
+            ts, op, hi, lo, cl, _ = bar
+            if op == cl and (prev is None or op == prev):
+                continue  # 向きの決まらない足・データの頭の始値 = 終値 の足は無い足として飛ばす(SPEC.md §1)
+            if cl > op or (cl == op and op < prev):
+                pts = (op, lo, hi, cl)  # 陽線・下がって始まった始値 = 終値 の足
+            else:
+                pts = (op, hi, lo, cl)  # 陰線・上がって始まった始値 = 終値 の足
+            w.bar(ts, prev, pts, tuple(bar))
+            prev = cl
         # データの終わり
-        for sid, (kind, direction, start_ts) in sig_open.items():
-            sig_f.row([sid, kind, direction, start_ts, None, "データの終わり"])
-    with open(path("summary", "json"), "w", encoding="utf-8") as fh:
-        json.dump(summarize(path("fills")), fh, ensure_ascii=False, indent=1)
+        for sid, (kind, direction, start_ts) in w.sig_open.items():
+            w.sig_f.row([sid, kind, direction, start_ts, None, "データの終わり"])
+    with open(path("summary.json"), "w", encoding="utf-8") as fh:
+        json.dump(summarize(path("fills.csv")), fh, ensure_ascii=False, indent=1)
 
 
-def _kind(o: Order) -> str:
-    """約定の行の注文の種類: entry(建ての指値)・close(建玉を閉じる指値)・level(段)・exit(付けた利確)・market(成行)。"""
-    if o.form == "limit":
-        return "close" if o.close else "entry"
-    return o.form
+def _check_bar(bar, seal, seal_iso, last_t):
+    """足の検め(SPEC.md §1)。封印の境の検めは、向きの決まらない足を飛ばすより先にする。足の始まりの時刻を返す。"""
+    ts = bar[0]
+    t = parse_ts(ts)
+    if t >= seal:
+        raise SimpleRoadError(f"封印の境 {seal_iso} 以後に始まる足は渡せない: {ts}")
+    if last_t is not None and t <= last_t:
+        raise SimpleRoadError(f"足が古い順になっていない: {ts}")
+    if len(bar) != 6 or not all(is_number(x) for x in bar[1:]):
+        raise SimpleRoadError(f"足の値が数でない: {bar!r}")
+    _, op, hi, lo, cl, _ = bar
+    if lo > hi:
+        raise SimpleRoadError(f"足の安値が高値より高い: {ts}")
+    if not (lo <= op <= hi and lo <= cl <= hi):
+        raise SimpleRoadError(f"足の始値か終値が安値〜高値の外: {ts}")
+    return t
+
+
+class _Walk:
+    """出ている注文と見張る値段を持ち、1 本の足の道筋をたどって戦略を呼ぶ(SPEC.md §2.2)。
+
+    保つこと: 戦略を呼び終えた点では、出ている注文のどれも今いる値段で約定する側にいない(すぐ約定するものは
+    その点で約定させて呼び直すため)。だから道筋を a から b へ動くとき、届く注文は a より先にしか無い。
+    """
+
+    def __init__(self, strategy, tick, fills_f, sig_f):
+        self.strategy, self.tick, self.fills_f, self.sig_f = strategy, tick, fills_f, sig_f
+        self.live: dict[str, Order] = {}  # 出ている注文(番号を出した順 = seq の順)
+        self.used: set[str] = set()  # 受けた注文の番号(使い回しの検め用。消えた注文の中身は持たない)
+        self.n = 0  # 受けた注文の数(seq の元)
+        self.watches: list = []  # 戦略が返した見張る値段そのもの
+        self.wfloor: list = []  # 刻みに切り捨てた見張る値段(watches と同じ順)
+        self.wsorted: list = []  # wfloor を小さい順に
+        self.up: list = []  # 上へ動いて届く注文(売りの limit・買いの stop)を (値段, seq) の順に
+        self.down: list = []  # 下へ動いて届く注文(買いの limit・売りの stop)を (値段の高い順, seq) に
+        self.dirty = False  # 出ている注文が変わり、up・down を作り直す
+        self.sig_open: dict[str, list] = {}
+        self.sig_seen: set[str] = set()
+
+    # ---------------------------------------------------------------- 1 本の足
+    def bar(self, ts, prev, pts, bar) -> None:
+        op = pts[0]
+        if prev is not None:
+            # 前の足の終値から始値へは飛ぶ。飛びの間の注文・見張る値段は始値で扱う(SPEC.md §2.1・§3)
+            got = [o for o in self.live.values() if o.fills_at(op)]
+            lo, hi = (prev, op) if op > prev else (op, prev)
+            touched = [x for x, f in zip(self.watches, self.wfloor)
+                       if op != prev and lo <= f <= hi and f != prev]
+            if got or touched:
+                fills = self._fill(ts, got, op, None)
+                self._stop(ts, op, fills, touched)
+        cur = op
+        for nxt in pts[1:]:
+            while cur != nxt:
+                x = self._next(cur, nxt)
+                if x is None:
+                    cur = nxt
+                    break
+                side = self.up if x > cur else self.down
+                got = sorted((o for o in side if o.px == x), key=lambda o: o.seq)
+                touched = [v for v, f in zip(self.watches, self.wfloor) if f == x]
+                fills = self._fill(ts, got, x, "path")
+                self._stop(ts, x, fills, touched)
+                cur = x
+        self._call({"kind": "close", "ts": ts, "price": pts[3], "fills": [], "touched": [], "bar": bar}, ts)
+
+    def _next(self, cur, nxt):
+        """cur から nxt へ動くとき、最初に届く注文か見張る値段の値段(動き始めの点を除き、着いた点を含む)。無ければ None。"""
+        if self.dirty:
+            self._index()
+        best = None
+        if nxt > cur:
+            if self.up and self.up[0].px <= nxt:
+                best = self.up[0].px
+            i = bisect_right(self.wsorted, cur)
+            if i < len(self.wsorted) and self.wsorted[i] <= nxt and (best is None or self.wsorted[i] < best):
+                best = self.wsorted[i]
+        else:
+            if self.down and self.down[0].px >= nxt:
+                best = self.down[0].px
+            i = bisect_left(self.wsorted, cur) - 1
+            if i >= 0 and self.wsorted[i] >= nxt and (best is None or self.wsorted[i] > best):
+                best = self.wsorted[i]
+        return best
+
+    def _index(self):
+        orders = [o for o in self.live.values() if o.form != "market"]
+        self.up = sorted((o for o in orders if o.up), key=lambda o: (o.px, o.seq))
+        self.down = sorted((o for o in orders if not o.up), key=lambda o: (-o.px, o.seq))
+        self.dirty = False
+
+    # ---------------------------------------------------------------- 約定と呼び出し
+    def _fill(self, ts, got, price, case) -> list:
+        """got(seq の順)を price で約定させ、約定のファイルに書き、戦略に渡す約定の並びを返す。
+        case が None なら始値への飛び: 成行は market、ほかは open。"""
+        out = []
+        for o in got:
+            c = case or ("market" if o.form == "market" else "open")
+            self.fills_f.row([ts, o.kind(), o.side, num(o.qty), num(price), c])
+            out.append({"id": o.id, "side": o.side, "qty": o.qty, "px": price, "case": c})
+            del self.live[o.id]
+        if got:
+            self.dirty = True
+        return out
+
+    def _stop(self, ts, price, fills, touched) -> None:
+        """足の途中で止まった点で呼ぶ。返した注文のうち、この点ですぐ約定するものは約定させて同じ点でもう一度呼ぶ。"""
+        calls = 0
+        while True:
+            calls += 1
+            if calls > MAX_CALLS_AT_POINT:
+                raise SimpleRoadError(f"同じ点({ts} の {price})で {MAX_CALLS_AT_POINT} 回を超えて呼んだ")
+            self._call({"kind": "stop", "ts": ts, "price": price, "fills": fills, "touched": touched}, ts)
+            got = [o for o in self.live.values() if o.fills_at(price)]
+            if not got:
+                return
+            fills, touched = self._fill(ts, got, price, "now"), []
+
+    def _call(self, ev, ts) -> None:
+        res = self.strategy.decide(ev)
+        try:
+            orders, events, watches = res
+        except (TypeError, ValueError):
+            raise SimpleRoadError("decide は (注文の辞書, 合図の出来事の並び, 見張る値段の並び) を返す") from None
+        if not isinstance(orders, dict):
+            raise SimpleRoadError("decide が返す注文は辞書 {番号: 注文}")
+        self._orders(orders)
+        self._watches(watches)
+        _signals(events, ts, self.sig_open, self.sig_seen, self.sig_f)
+
+    def _orders(self, orders: dict) -> None:
+        """返した注文の全部が出ている注文になる。返さなかった注文はここで消える(SPEC.md §2.2 の 3)。"""
+        kept, new = [], []
+        for oid, raw in orders.items():
+            check_shape(oid, raw)
+            old = self.live.get(oid)
+            if old is None:
+                if oid in self.used:
+                    raise SimpleRoadError(f"約定し終えた・消えた注文の番号 {oid} をもう一度返した")
+                new.append(Order(self.n, oid, raw, self.tick))
+                self.n += 1
+                self.used.add(oid)
+            elif (raw["form"], raw["side"], float(raw["qty"]), raw.get("px"), raw.get("tag")) != old.key:
+                raise SimpleRoadError(f"同じ番号 {oid} で中身が前と違う(値段を変えるときは新しい番号で出す)")
+            else:
+                kept.append(old)
+        if new or len(kept) != len(self.live):
+            kept.sort(key=lambda o: o.seq)
+            self.live = {o.id: o for o in kept + new}
+            self.dirty = True
+
+    def _watches(self, watches) -> None:
+        if not isinstance(watches, (list, tuple)) or not all(is_number(x) for x in watches):
+            raise SimpleRoadError(f"見張る値段は数の並び: {watches!r}")
+        if list(watches) != self.watches:
+            self.watches = list(watches)
+            self.wfloor = [floor_tick(x, self.tick) for x in self.watches]
+            self.wsorted = sorted(self.wfloor)
 
 
 def summarize(fills_path: str) -> dict:
@@ -204,35 +278,6 @@ def summarize(fills_path: str) -> dict:
            "open_trades": open_tr}
     assert set(out) == set(SUMMARY_COLS)
     return out
-
-
-def _links(find, returned: dict, new: dict) -> None:
-    """根・親の参照を結び、止める場面(根の無い段・親の無い利確ほか)を検める。find は番号から出ている・約定した注文を引く。"""
-    for oid in returned:
-        o = find(oid)
-        if o.form not in ("level", "exit"):
-            continue
-        ref_id = o.root if o.form == "level" else o.parent
-        ref = find(ref_id)
-        what = "根" if o.form == "level" else "親"
-        if ref is None or (ref.state != "filled" and ref_id not in returned):
-            raise SimpleRoadError(f"注文 {oid} の{what} {ref_id} が出ていなくて約定もしていない")
-        if o.form == "level":
-            if ref.form != "limit":
-                raise SimpleRoadError(f"段 {oid} の根 {ref_id} が limit でない")
-            if ref.side != o.side:
-                raise SimpleRoadError(f"段 {oid} の売買が根 {ref_id} と違う")
-            if oid in new and ref.state == "filled":
-                raise SimpleRoadError(f"段 {oid} は根 {ref_id} が約定した後に初めて出た")
-            o.root_order = ref
-        else:
-            if ref.form not in ("limit", "level"):
-                raise SimpleRoadError(f"利確 {oid} の親 {ref_id} が limit でも level でもない")
-            if ref.side == o.side:
-                raise SimpleRoadError(f"利確 {oid} の売買が親 {ref_id} と同じ")
-            if ref.qty != o.qty:
-                raise SimpleRoadError(f"利確 {oid} の量が親 {ref_id} と違う")
-            o.parent_order = ref
 
 
 def _signals(events, ts, sig_open: dict, sig_seen: set, sig_f: _Csv) -> None:

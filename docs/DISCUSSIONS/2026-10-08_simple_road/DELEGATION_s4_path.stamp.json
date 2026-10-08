@@ -1,5 +1,5 @@
 {
-  "delegation_sha256": "0a7ae3c14fbe8f74a4c3eb61c5ce77fdae9bee3d97cd65c05640a9cc9b5eda98",
+  "delegation_sha256": "fbb27001858c93121765b6ed467794179055b47ac9a9dc1387a43ba9a1354ac0",
   "body_sha256": "05f98aefb426775c1c7be598887909ee019af686bee1f095d198b7f6b2942e99",
   "kind": "作る",
   "premortem": "docs/DISCUSSIONS/2026-10-08_simple_road/DELEGATION_s4_path_premortem1.md",
