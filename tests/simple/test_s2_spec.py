@@ -64,6 +64,9 @@ R1 = {"form": "limit", "side": "buy", "qty": 0.009, "px": 7000000.0}
 X1 = {"form": "exit", "side": "sell", "qty": 0.009, "parent": "r1", "px": 7000100.0}
 R2 = {"form": "limit", "side": "buy", "qty": 0.009, "px": 6999900.0}
 MKT = {"form": "market", "side": "sell", "qty": 0.009}
+M1 = {"form": "market", "side": "buy", "qty": 0.009}
+C1 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000100.0, "close": True}  # 建玉を閉じる指値(close の印)
+UP = (7000200, 7000300, 7000150, 7000200)  # 始値 7,000,200。7,000,100 の売りは約定する向きに範囲の外 → 始値
 
 
 def lv(off, root="r", side="buy"):
@@ -94,6 +97,17 @@ SCENES = [
     ("欠けた分の後の次の足", [FLAT, B1, B2], {0: {"r": ROOT, "l1": lv(-300.0)}, 1: {"l1": lv(-300.0)}}, 1.0, [0, 1, 5]),
     ("同じ足に同じ形が 2 本(出した順)", [FLAT, B1], {0: {"b": dict(ROOT, px=6999750.0), "a": dict(ROOT, px=6999760.0)}}, 1.0, None),
     ("データの終わりまで出ていた注文", [FLAT, FLAT], {0: {"r": dict(ROOT, px=6000000.0)}, 1: {"r": dict(ROOT, px=6000000.0)}}, 1.0, None),
+    # 直し 2(L-824・L-828・close の印・作り終えた後の批評家)
+    ("前からの利確が始値なら成行より先(L-828)", [FLAT, A1, UP], {0: {"r1": R1, "x1": X1}, 1: {"x1": X1, "m1": M1}}, 1.0, None),
+    ("close の印の指値が新しい指値より先", [FLAT, A1, A2], {0: {"r1": R1}, 1: {"r2": R2, "c1": C1}}, 1.0, None),
+    ("close の印の指値が始値なら成行より先", [FLAT, A1, UP], {0: {"r1": R1}, 1: {"m1": M1, "c1": C1}}, 1.0, None),
+    ("close の印の指値が範囲の内なら成行の後", [FLAT, A1, A2], {0: {"r1": R1}, 1: {"c1": C1, "m1": M1}}, 1.0, None),
+    ("段に付けた利確が新しい指値より先", [FLAT, B1, B2],
+     {0: {"r": ROOT, "l1": lv(-100.0)},
+      1: {"r2": dict(R2, px=6999650.0), "xl": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}}},
+     1.0, None),
+    ("良い側でも親の足で範囲の外の利確は約定しない(始値でも)", [FLAT, A1, FLAT],
+     {0: {"r1": R1, "x1": dict(X1, px=6999900.0)}, 1: {"x1": dict(X1, px=6999900.0)}}, 1.0, None),
     # 段の値段の和を float で足すと 6,999,700.399999999 → 切り捨て 6,999,700.3、10 進で足すと 6,999,700.4(SPEC.md §3)。
     #   足 2 の安値 6,999,700.4 ちょうどなので、10 進の和なら約定し、float の和なら約定しない
     ("段の値段は 10 進の和(刻み 0.1、float の和と食い違う値)", [FLAT, (6999801.1, 6999850, 6999750, 6999800),
@@ -153,6 +167,10 @@ class Random:
                                     "parent": pid, "px": close + sgn * r.choice((-50.0, 50.0, 150.0))}
         if r.random() < 0.05:
             keep[self.new()] = {"form": "market", "side": r.choice(("buy", "sell")), "qty": 0.001}
+        if r.random() < 0.1:  # close の印の指値(印の正しさは戦略の仕事なので、ここでは建玉を見ない)
+            sd = r.choice(("buy", "sell"))
+            keep[self.new()] = {"form": "limit", "side": sd, "qty": 0.001, "close": True,
+                                "px": close + (1 if sd == "buy" else -1) * r.choice((-300.0, -100.0, 0.0, 50.0, 200.0))}
         self.live = keep
         return dict(keep), []
 
@@ -413,6 +431,19 @@ def _unfilled_root_row_deleted(out, bars):
     _rw(out, "orders", fn)
 
 
+def _order_field(rid, col, value):
+    def tamper(out, bars):
+        def fn(rows):
+            i, k = _col(rows, col), _col(rows, "id")
+            for row in rows[1:]:
+                if row[k] == rid:
+                    row[i] = value(row[i]) if callable(value) else value
+                    return rows
+            raise AssertionError(f"{rid} の行が無い")
+        _rw(out, "orders", fn)
+    return tamper
+
+
 TAMPERS = [
     ("約定を次の足にずらす", _fill_moved_to_next_bar),
     ("約定の値段を 1 円上げる", _fill_px_plus_one),
@@ -436,6 +467,16 @@ TAMPERS = [
     ("段の px 列と約定の値段をそろえて書き換える", _level_px_and_fill_together),
     ("約定の記録の最後の行の値段だけを書き換える", _fill_last_row_px),
     ("約定しなかった根の行を消す(段の根が無い)", _unfilled_root_row_deleted),
+    # 止める注文(SPEC.md §3)を注文の記録の上で破る(約定の記録は変わらない。作り直しも検める。作り終えた後の批評家)
+    ("段の売買を根と違えて書く", _order_field("l2", "side", "sell")),
+    ("段の距離の向きを逆に書く", _order_field("l2", "offset", lambda v: repr(-float(v)))),
+    ("利確の売買を親と同じに書く", _order_field("x1", "side", "buy")),
+    ("利確の量を親と違えて書く", _order_field("x1", "qty", "0.018")),
+    ("利確に close の印を書く", _order_field("x1", "close", "1")),
+    # px 列だけの書き換え(利確・段)と to_ts が足に無い(作り終えた後の批評家)
+    ("利確の px 列だけを書き換える", _order_field("x1", "px", lambda v: repr(float(v) + 1.0))),
+    ("段の px 列だけを書き換える", _order_field("l2", "px", lambda v: repr(float(v) + 1.0))),
+    ("約定しなかった注文の to_ts を足に無い時刻に", _order_field("far", "to_ts", "2023-11-14T23:59:00+00:00")),
 ]
 
 
