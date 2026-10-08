@@ -5,7 +5,8 @@ from decimal import Decimal
 
 from .common import floor_tick
 
-RANK = {"market": 0, "limit": 1, "level": 2, "exit": 3}  # 1 本の足の中で約定させる順(後の形は前の形の約定を使う)
+# 1 本の足の中で約定させ記す順(SPEC.md §3): ① 成行 ② 親が前の足までに約定した利確 ③ 指値 ④ 段 ⑤ 親がこの足で約定した利確
+RANK_MARKET, RANK_EXIT_EARLIER, RANK_LIMIT, RANK_LEVEL, RANK_EXIT_SAME_BAR = range(5)
 
 
 class Order:
@@ -43,6 +44,17 @@ def _limit_rule(o: Order, px: float, bar):
     return None
 
 
+def _rank(o: Order) -> int:
+    """足に入る時点の状態で決める組の番号(足の中で約定した注文の状態では決めない)。"""
+    if o.form == "market":
+        return RANK_MARKET
+    if o.form == "limit":
+        return RANK_LIMIT
+    if o.form == "level":
+        return RANK_LEVEL
+    return RANK_EXIT_EARLIER if o.parent_order.state == "filled" else RANK_EXIT_SAME_BAR
+
+
 def fill_bar(live: list, bar, side: str, tick: float) -> list:
     """live(出ている注文)を bar で約定させ、約定した注文を約定させた順に返す(注文の状態も更新する)。
 
@@ -50,7 +62,7 @@ def fill_bar(live: list, bar, side: str, tick: float) -> list:
     """
     ts, op, hi, lo, _, _ = bar
     filled = []
-    for o in sorted(live, key=lambda x: (RANK[x.form], x.seq)):
+    for o in sorted(live, key=lambda x: (_rank(x), x.seq)):  # sorted は全部の鍵を先に作るので、組は足に入る時点の状態で決まる
         res = None
         if o.form == "market":
             res = (op, "market")

@@ -45,4 +45,6 @@ def _rows(paths, seal):
                     vol = float(row[ix[5]])
                 except ValueError:
                     raise SimpleRoadError(f"足の行を数に直せない: {os.path.basename(p)} の {t}") from None
+                if lo > h:
+                    raise SimpleRoadError(f"足の安値が高値より高い: {os.path.basename(p)} の {t}")
                 yield (t, o, h, lo, c, vol)

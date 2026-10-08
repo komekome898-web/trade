@@ -1,6 +1,8 @@
 """単純な測りの道の共通の部品(止める場面の型・時刻・数の書き方・刻みへの切り捨て)。決まりの正本は SPEC.md。"""
 from __future__ import annotations
 
+import csv
+import io
 import math
 import re
 from datetime import datetime, timedelta, timezone
@@ -9,6 +11,9 @@ from decimal import ROUND_FLOOR, Decimal
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 STEP_QTY = Decimal("0.001")  # 量の刻み(L-756「3. 0.001」)
 SIDES = ("buy", "sell")
+FILL_COLS = ("ts", "id", "side", "qty", "px", "case")  # 約定のファイルの列(SPEC.md §4)
+TRADE_COLS = ("first_t_ns", "last_t_ns", "levels", "max_position", "hold_ns", "pnl_jpy", "status")  # 取引のファイルの列(帳簿のツールの TRADE_KEYS)
+SUMMARY_COLS = ("fill_count", "closed_trades", "pnl_jpy", "open_trades")  # まとめの鍵(帳簿のツールの summary から trades を除いたもの)
 
 
 class SimpleRoadError(Exception):
@@ -39,6 +44,16 @@ def num(x) -> str:
 def cell(v) -> str:
     """表の欄の文字列(None は空)。書くときも比べるときも同じ関数を使う。"""
     return "" if v is None else str(v)
+
+
+def trades_text(trades) -> str:
+    """取引のファイルの全文(見出しは TRADE_COLS、欄は文字、行の終わりは \\n)。書くときも作り直して比べるときも同じ関数を使う。"""
+    buf = io.StringIO(newline="")
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(TRADE_COLS)
+    for tr in trades:
+        w.writerow([cell(tr[k]) for k in TRADE_COLS])
+    return buf.getvalue()
 
 
 def is_number(x) -> bool:

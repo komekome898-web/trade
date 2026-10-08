@@ -9,14 +9,13 @@ from contextlib import ExitStack
 
 from bot.bt.road.ledger import book
 
-from .common import SIDES, SimpleRoadError, cell, is_number, num, parse_ts, step_ok, floor_tick, to_ns
+from .common import (FILL_COLS, SIDES, SimpleRoadError, cell, floor_tick, is_number, num, parse_ts,
+                     step_ok, to_ns, trades_text)
 from .fills import Order, fill_bar
 
 SIDE_NAMES = ("optimistic", "pessimistic")
 ORDER_COLS = ("seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts")
-FILL_COLS = ("ts", "id", "side", "qty", "px", "case")
 SIGNAL_COLS = ("id", "kind", "direction", "start_ts", "end_ts", "end_reason", "value_json")
-TRADE_COLS = ("first_t_ns", "last_t_ns", "levels", "max_position", "hold_ns", "pnl_jpy", "status")
 FORMS = ("limit", "level", "exit", "market")
 
 
@@ -34,11 +33,15 @@ class _Csv:
 
 
 def _git_version() -> str:
+    """コードの git の版。`src/` の下のどこかに未コミットの変更か git が追っていない新しいファイルがあれば印を付ける。"""
     here = os.path.dirname(os.path.abspath(__file__))
     try:
-        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=here, capture_output=True, text=True, check=True).stdout.strip()
-        dirty = subprocess.run(["git", "status", "--porcelain", "--", here], cwd=here, capture_output=True, text=True,
-                               check=True).stdout.strip()
+        top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=here, capture_output=True, text=True,
+                             check=True).stdout.strip()
+        src = os.path.join(top, "src")
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=top, capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", src], cwd=top,
+                               capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
     return head + ("+未コミットの変更あり" if dirty else "")
@@ -86,7 +89,9 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
     with open(path("run", "json"), "w", encoding="utf-8") as fh:
         json.dump(dict(meta, tick=tick, side=side, git=_git_version()), fh, ensure_ascii=False, indent=1)
 
-    recs: dict[str, Order] = {}  # 番号 → 注文(初めて受けた順に seq)
+    seen: set[str] = set()  # 受けた注文の番号(使い回しの検め用。消えた注文は番号だけをここに残す)
+    n_seen = 0  # 受けた注文の数(seq の元。記憶に持つ注文の数からは出さない)
+    filled: dict[str, Order] = {}  # 約定した注文(段・利確の検めに要る中身を持つ)
     live: list[Order] = []
     sig_open: dict[str, list] = {}  # 出ている合図 id → [kind, direction, start_ts, value_json]
     sig_seen: set[str] = set()
@@ -111,6 +116,8 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
                 raise SimpleRoadError(f"足が古い順になっていない: {last_ts} の次に {ts}")
             if len(bar) != 6 or not all(is_number(x) for x in bar[1:]):
                 raise SimpleRoadError(f"足の値が数でない: {bar!r}")
+            if bar[3] > bar[2]:
+                raise SimpleRoadError(f"足の安値が高値より高い: {ts}")
             last_ts = ts
             # 1. 約定
             for o in live:
@@ -125,6 +132,8 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
                 fill_rows.append({"t_ns": to_ns(ts), "side": o.side, "qty": float(o.qty), "px": float(o.fill_px), "ccy": "JPY"})
                 out.append({"ts": ts, "id": o.id, "side": o.side, "qty": o.qty, "px": o.fill_px, "case": o.case})
             live = [o for o in live if o.state == "live"]
+            for o in got:
+                filled[o.id] = o
             # 2. 知らせ 3. 判定
             res = strategy.decide(bar, out)
             try:
@@ -133,18 +142,21 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
             except (TypeError, ValueError):
                 raise SimpleRoadError("decide は (注文の辞書, 合図の出来事の並び) を返す") from None
             new: dict[str, Order] = {}
+            by_id = {o.id: o for o in live}
             for oid, raw in orders.items():
                 _shape(oid, raw)
-                old = recs.get(oid)
+                if oid in filled:
+                    raise SimpleRoadError(f"約定し終えた注文の番号 {oid} をもう一度返した")
+                old = by_id.get(oid)
                 if old is None:
-                    new[oid] = Order(len(recs) + len(new), oid, raw)
-                elif old.state != "live":
-                    raise SimpleRoadError(f"{'約定し終えた' if old.state == 'filled' else '消えた'}注文の番号 {oid} をもう一度返した")
+                    if oid in seen:
+                        raise SimpleRoadError(f"消えた注文の番号 {oid} をもう一度返した")
+                    new[oid] = Order(n_seen, oid, raw)
+                    n_seen += 1
+                    seen.add(oid)
                 elif Order(old.seq, oid, raw).key() != old.key():
                     raise SimpleRoadError(f"同じ番号 {oid} で中身が前と違う(値段を変えるときは新しい番号で出す)")
-            for oid, o in new.items():
-                recs[oid] = o
-            _links(recs, orders, new)
+            _links(lambda i: new.get(i) or by_id.get(i) or filled.get(i), orders, new)
             for o in live:
                 if o.id not in orders:  # 返さなかった注文はここで消える
                     o.state = "gone"
@@ -165,23 +177,20 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
 
     ledger = book(fill_rows)
     with open(path("trades"), "w", newline="", encoding="utf-8") as fh:
-        w = csv.writer(fh, lineterminator="\n")
-        w.writerow(TRADE_COLS)
-        for tr in ledger.trades:
-            w.writerow([cell(tr[k]) for k in TRADE_COLS])
+        fh.write(trades_text(ledger.trades))
     summary = {k: v for k, v in ledger.summary.items() if k != "trades"}
     with open(path("summary", "json"), "w", encoding="utf-8") as fh:
         json.dump(summary, fh, ensure_ascii=False, indent=1)
 
 
-def _links(recs: dict, returned: dict, new: dict) -> None:
-    """根・親の参照を結び、止める場面(根の無い段・親の無い利確ほか)を検める。"""
+def _links(find, returned: dict, new: dict) -> None:
+    """根・親の参照を結び、止める場面(根の無い段・親の無い利確ほか)を検める。find は番号から出ている・約定した注文を引く。"""
     for oid in returned:
-        o = recs[oid]
+        o = find(oid)
         if o.form not in ("level", "exit"):
             continue
         ref_id = o.root if o.form == "level" else o.parent
-        ref = recs.get(ref_id)
+        ref = find(ref_id)
         what = "根" if o.form == "level" else "親"
         if ref is None or (ref.state != "filled" and ref_id not in returned):
             raise SimpleRoadError(f"注文 {oid} の{what} {ref_id} が出ていなくて約定もしていない")
