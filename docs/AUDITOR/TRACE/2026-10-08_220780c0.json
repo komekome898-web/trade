@@ -34912,11 +34912,11 @@
   {
    "move": 1287,
    "tools": {
-    "Bash": 4,
+    "Bash": 5,
     "mcp__Claude_Code_Remote__create_session": 15,
     "mcp__Claude_Code_Remote__send_later": 1
    },
-   "n_tools": 20,
+   "n_tools": 21,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
