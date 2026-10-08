@@ -33248,11 +33248,11 @@
   {
    "move": 1224,
    "tools": {
-    "Bash": 17,
+    "Bash": 18,
     "ToolSearch": 1,
     "Monitor": 1
    },
-   "n_tools": 19,
+   "n_tools": 20,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
