@@ -1,4 +1,4 @@
-"""マチルダ(v37)の 1 回の走らせの時間を合成の乱歩の 1 分足で測る(L-805・L-813)。使い方: PYTHONPATH=src python3 <このファイル> <本数> <seed> <σ>。tmp の根に書き、市場のデータは読まない。原典の値(V37_ORIGINAL)、self_trade = cancel_both、execute_once(1 回だけ、良い側・悪い側の両方)。"""
+"""マチルダ(v37)の 1 回の走らせの時間を合成の乱歩の 1 分足で測る(L-805・L-813)。使い方: PYTHONPATH=src python3 <このファイル> <本数> <seed> <σ>。tmp の根に書き、市場のデータは読まない。原典の値(V37_ORIGINAL)、self_trade = cancel_both、execute_once(1 回だけ、良い側・悪い側の両方)。出すのは秒・約定の数・足 1 本あたりのミリ秒・この処理の最大メモリ(MB、ru_maxrss)。"""
 import os, sys, time, random, importlib
 sys.path.insert(0, "tests/road")
 import test_matilda_v37_spec as T

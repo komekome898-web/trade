@@ -88,6 +88,35 @@ def test_a1_break_flip_with_position_and_b_signal(tmp_path):
         assert all(r["state"] in ("FILLED", "CANCELED") for r in res["orders"][s])
 
 
+# 足 0〜9 は test_a1_break_flip_with_position_and_b_signal と同じ。足 10 = 始値 7,000,800・高値 7,001,000・安値 7,000,780・
+#   終値 7,000,780・出来高 20: 足 11 の判定は last 7,000,780 ≧ 中心 7,000,775(足 7〜9)で解除しない。足 10 を指標に入れると
+#   (足 12 の判定から)、ブレイク中・出来高 20 > 平均(足 8・9 の 1・10 の平均 5.5)・陰線で上のヒゲ 200 > 下のヒゲ 0 かつ > |実体| 20、
+#   旗 1・b_signal 0 ≧ 0 → b_signal −1。足 11 = (7,000,780, 7,000,780, 7,000,100, 7,000,100): 足 12 の判定で bdp = min(足 8〜10 の
+#   安値 7,000,650 − 幅 350 × 0.5 = 7,000,475, 2 倍の安値 7,000,400) = 7,000,400 > 7,000,100、旗 1 ≠ −1、b_signal −1 ≠ 1 → 入れ替わり。
+#   b_signal は −1 のまま(作るもの 1)なので、建ての旗は −1(旗 = −b_signal でない・b_signal ≠ 0)で e2(short)の値の b_signal は −1。
+#   b_signal を 0 にする作りでは、e2 の値が 0 になる(玉の無い側では e2 が出ない)
+FLIP_M1 = S.BRK_HEAD + [(7000800, 7000800, 7000700, 7000700), (7000700, 7000900, 7000650, 7000650, 10),
+                         (7000800, 7001000, 7000780, 7000780, 20), (7000780, 7000780, 7000100, 7000100),
+                         (7000100, 7000150, 7000000, 7000050)]
+
+
+@need_m
+@pytest.mark.parametrize("mirror", [False, True], ids=["上から下", "下から上"])
+def test_a1_break_flip_keeps_b_signal(tmp_path, mirror):
+    # 上から下(b_signal −1)と、値段を折り返した下から上(b_signal +1)。e1 の消える時刻は側で違う(悪い側は玉が先に 0 になり
+    #   足 11 の判定で消える)ので見ない
+    rows = S.reflect(FLIP_M1) if mirror else FLIP_M1
+    res = S.run(tmp_path, S.seq(rows), dict(S.BRK_PARAMS))
+    S.check_ok(res)
+    d0, d1, e = ("down", "up", "long") if mirror else ("up", "down", "short")
+    for s in S.SIDES:
+        sig = S.signals(res, s)
+        assert [r for r in sig if r[1] == "ブレイク"] == [("b1", "ブレイク", d0, t(7), t(12), "逆向きのブレイク"),
+                                                       ("b2", "ブレイク", d1, t(12), "", "データの終わり")]
+        assert ("e2", "建て", e, t(12), "", "データの終わり") in sig
+        assert S.signal_value(res, s, "e2")["b_signal"] == (1 if mirror else -1)
+
+
 # ================================================================ A2 道の土台の遅さ(記録を変えずに)
 def _walk(n, seed, sig):
     rng = random.Random(seed)
@@ -203,16 +232,19 @@ def _rows(res):
 
 @need_m
 def test_a3_checker_cost_grows_with_bars_not_squared(tmp_path):
-    # 合成の乱歩 500 本と 2,000 本。直す前は検査が 500 本 約 7.5 秒・2,000 本 約 165 秒で、注文の行 1 つあたりの時間が約 4.7 倍に
+    # 合成の乱歩 500 本と 3,000 本。直す前は検査が 500 本 約 7.5 秒・2,000 本 約 165 秒で、注文の行 1 つあたりの時間が本数とともに
     #   伸びる(決済の行ごとに帳簿を最初から作り直す `src/bot/bt/road/check.py` の `_flatten_expect` ほか)。
-    #   直した後: 注文の行 1 つあたりの検査の時間が、2,000 本で 500 本の 1.5 倍以下(慣らしの足は注文を出さないので、本数でなく
-    #   行の数で比べる。500 本は 3 回測った最小)、かつ 2,000 本の検査が 30 秒以下。検査の答え(落とす行)は両方とも 0 件のまま
-    r500, r2000 = _walk_store(tmp_path / "a", 500), _walk_store(tmp_path / "b", 2000)
+    #   直した後: 注文の行 1 つあたりの検査の時間が、3,000 本で 500 本の 1.4 倍以下(慣らしの足は注文を出さないので、本数でなく
+    #   行の数で比べる。どちらも 3 回測った最小。3,000 本の 1 回目が 30 秒を超えたらそこで落とす)、かつ 3,000 本の検査が 30 秒以下。
+    #   検査の答え(落とす行)は両方とも 0 件のまま。事前の批評 2 回目の担当の試作では、正しい直しの比は 2,000 本で 0.86〜1.10、
+    #   約定で閉じた決済の行を外さない直しは 1.31〜1.62(本数を増やすほど開く)
+    r500, r3000 = _walk_store(tmp_path / "a", 500), _walk_store(tmp_path / "b", 3000)
+    s3000, f3000 = _check_secs(r3000)
+    assert s3000 <= 30.0, s3000
+    s3000 = min(s3000, _check_secs(r3000, reps=2)[0])
     s500, f500 = _check_secs(r500, reps=3)
-    s2000, f2000 = _check_secs(r2000)
-    assert f500 == [] and f2000 == []
-    assert s2000 <= 30.0, (s500, s2000)
-    assert s2000 / _rows(r2000) <= 1.5 * s500 / _rows(r500), (s500, _rows(r500), s2000, _rows(r2000))
+    assert f500 == [] and f3000 == []
+    assert s3000 / _rows(r3000) <= 1.4 * s500 / _rows(r500), (s500, _rows(r500), s3000, _rows(r3000))
 
 
 @need_m
@@ -243,7 +275,11 @@ def test_a3_checker_still_catches_close_size(tmp_path):
 # 直す前のコード(src を最後に変えたコミット 81e301d2)で、乱歩 500 本の置き場の約定の表を書き換えたときの検査の答え
 # (失敗の行を JSON にして並べた sha256 と数)。2 回打って同じ。検査を速くしても答えを変えない(L-818 の読み「検査の結果は変えない」)
 ANSWERS = {"last_qty": (4, "20067d3e88f6e9f1e7274b1011bed387389c3c2de7c3bb28e35d16f32580a517"),
-           "swap_seq": (3, "12a2a5f4ed2c33574822a718975dad0c29ca3f0aedb9c7ff9e083147428b3aa7")}
+           "swap_seq": (3, "12a2a5f4ed2c33574822a718975dad0c29ca3f0aedb9c7ff9e083147428b3aa7"),
+           "last_qty_down": (3, "dec0923f9ed78ee4616d30a472da7691fa7cea8da713c1c8dbaa4aa5a92af089"),
+           "dup_order_back": (3, "e25994e9cf83801a99c553a2ada0da21ca77ac70a8c453d97900200a5f084f94"),
+           "dup_order_front": (3, "3f2a19542484c1eda03ce10d10016073c0e96b3224047f3d3fc8141962449563"),
+           "dup_fill": (1529, "115e7b77be0c19d32602f719a674a0e43c2b9f5b0aed4ee3701ab3a62245f745")}
 
 
 def _last_qty(rows):
@@ -258,18 +294,64 @@ def _swap_seq(rows):
     pes[10]["notice_seq"], pes[11]["notice_seq"] = pes[11]["notice_seq"], pes[10]["notice_seq"]
 
 
+def _last_qty_down(rows):
+    # 悪い側の最後の約定の量を 0.0005 減らす(帳簿のツールが止まり、約定の和は注文の量を超えない)
+    pes = [r for r in rows if r["range"] == "pessimistic"]
+    pes[-1]["qty"] = repr(float(pes[-1]["qty"]) - 0.0005)
+    return rows
+
+
+def _entry_rows(rows):
+    return [k for k, r in enumerate(rows) if r["range"] == "pessimistic" and r["qty_source"] != "建玉"
+            and r["exit_kind"] == "" and r["state"] == "FILLED"]
+
+
+def _dup_order_back(rows):
+    # 悪い側の約定した建ての 4 つ目の行を、量だけ 0.005 に変えて直後に重ねる(同じ番号で中身の違う行が後ろにある)
+    k = _entry_rows(rows)[3]
+    d = dict(rows[k])
+    d["qty"] = "0.005"
+    return rows[:k + 1] + [d] + rows[k + 1:]
+
+
+def _dup_order_front(rows):
+    # 同じ行を直前に重ねる(同じ番号で中身の違う行が前にある)
+    k = _entry_rows(rows)[3]
+    d = dict(rows[k])
+    d["qty"] = "0.005"
+    return rows[:k] + [d] + rows[k:]
+
+
+def _dup_fill(rows):
+    # 悪い側の 6 つ目の約定の行を、同じ中身で直後に重ねる
+    k = [j for j, r in enumerate(rows) if r["range"] == "pessimistic"][5]
+    return rows[:k + 1] + [dict(rows[k])] + rows[k + 1:]
+
+
+def _in_place(fn):
+    def edit(rows):
+        fn(rows)
+        return rows
+    return edit
+
+
+TAMPERED = [("last_qty", "fills", _in_place(_last_qty)), ("swap_seq", "fills", _in_place(_swap_seq)),
+            ("last_qty_down", "fills", _last_qty_down), ("dup_order_back", "orders", _dup_order_back),
+            ("dup_order_front", "orders", _dup_order_front), ("dup_fill", "fills", _dup_fill)]
+
+
 @need_m
-@pytest.mark.parametrize("tag,edit", [("last_qty", _last_qty), ("swap_seq", _swap_seq)])
-def test_a3_checker_answers_unchanged_on_tampered_store(tmp_path, tag, edit):
+@pytest.mark.parametrize("tag,table,edit", TAMPERED, ids=[x[0] for x in TAMPERED])
+def test_a3_checker_answers_unchanged_on_tampered_store(tmp_path, tag, table, edit):
     import json
     import shutil
     from bot.bt.road.tables import read_csv as rc
     res = _walk_store(tmp_path / "w", 500)
     d = str(tmp_path / tag)
     shutil.copytree(os.path.dirname(res["store"]), d)
-    p2 = os.path.join(d, ROAD_DIR, SCHEMA["tables"]["fills"]["file"])
-    h2, r2 = rc(p2, "fills")
-    edit(r2)
+    p2 = os.path.join(d, ROAD_DIR, SCHEMA["tables"][table]["file"])
+    h2, r2 = rc(p2, table)
+    r2 = edit(r2)
     S._rewrite(p2, h2, r2, d)
     f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
     key = sorted(json.dumps(x, sort_keys=True, ensure_ascii=False) for x in f)
@@ -302,7 +384,7 @@ class _OpenCtx:
 
 
 class _Order(RoadStrategy):
-    """足 1 本目で建ての指値 4 つ、足 2 本目で flatten。"""
+    """足 1 本目で建ての指値 12 個、足 2 本目で flatten。"""
 
     def __init__(self):
         super().__init__(quote_ccy="JPY")
@@ -314,14 +396,14 @@ class _Order(RoadStrategy):
         self.bars += 1
         if self.bars == 1:
             self.signal_start("s1", "試験", "long", {})
-            for i in range(4):
+            for i in range(12):
                 self.place("buy", "limit", 6_999_000.0 + i, 1, "s1")
         else:
             self.flatten("無し")
 
 
 def test_a2_flatten_cancels_in_placed_order():
-    # flatten は出ている注文を、注文を受けた順(road-0 → road-3)に取り消す。間に road-0 の受け付けの知らせ(状態の書き直し)が
+    # flatten は出ている注文を、注文を受けた順(road-0 → road-11。番号を文字で並べると road-10 が road-2 より前に来る)に取り消す。間に road-0 の受け付けの知らせ(状態の書き直し)が
     #   届いても順は変わらない。出ているかは土台の行の状態で決める(直す前の flatten の輪 `src/bot/bt/road/strategy.py:505` と同じ)
     from bot.bt.core import OrderAckEvent
     s = _Order()
@@ -335,4 +417,4 @@ def test_a2_flatten_cancels_in_placed_order():
     ctx.now_ns = 120 * S.NS
     s.on_event(BarEvent(received_time_ns=120 * S.NS, start_time_ns=60 * S.NS, open=7e6, high=7e6, low=7e6, close=7e6,
                         volume=1.0), ctx)
-    assert ctx.canceled == ["road-0", "road-1", "road-2", "road-3"]
+    assert ctx.canceled == [f"road-{i}" for i in range(12)]

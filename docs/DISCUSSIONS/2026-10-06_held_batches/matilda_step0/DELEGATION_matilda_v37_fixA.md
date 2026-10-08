@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_matilda_v37_fixA_premortem1.md` の後の直し)。1 本目の委任 `DELEGATION_matilda_v37.md`(5 版目、承認 L-810)で作った戦略と土台の、ブレイクの向きの直の入れ替わり(L-815 の 2 の問いに、リードが本測定で起こると答えた所。直すかは承認の問いで明示して聞く)と、オーナーが直すと決めた土台の遅さ(L-815 の 4)と検査のツールの遅さ(L-818)。段の約定の決まり(L-815 の 1・L-816「1.a」)と交差の扱い(L-815 の 3・L-816「3.a」)は直し B の委任で、この委任には入れない。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_r2_spec.py`。
+3 版目(事前の批評 2 回目 `DELEGATION_matilda_v37_fixA_premortem2.md` の後の直し。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない。直した所は末尾の `## 事前の批評の後の変更`)。1 本目の委任 `DELEGATION_matilda_v37.md`(5 版目、承認 L-810)で作った戦略と土台の、ブレイクの向きの直の入れ替わり(L-815 の 2 の問いに、リードが本測定で起こると答えた所。直すかは承認の問いで明示して聞く)と、オーナーが直すと決めた土台の遅さ(L-815 の 4)と検査のツールの遅さ(L-818)。段の約定の決まり(L-815 の 1・L-816「1.a」)と交差の扱い(L-815 の 3・L-816「3.a」)は直し B の委任で、この委任には入れない。受け入れはリードが書いた実行できる試験 `tests/road/test_matilda_v37_r2_spec.py`。
 
 ## 着手前の表
 
@@ -27,7 +27,7 @@
    - その後の建ての旗・決済の旗・解除の判定は今の M8〜M10b のまま(新しい旗で計算する)。
    - 理由の語は定数にする(今の `END_ENTRY`・`END_BREAK` と同じ置き方。`src/bot/strategy/matilda_v37.py:50-52`)。
 2. `src/bot/bt/road/strategy.py` の、呼ぶたびに今までの注文を全部見直す所(`_pending_exit` `src/bot/bt/road/strategy.py:604-616`・`_open_rows` `src/bot/bt/road/strategy.py:601-602`・`flatten` の取り消しの輪 `src/bot/bt/road/strategy.py:505`)を、出ていてまだ閉じていない注文だけを見る形に直す。出ているかは今と同じく土台の行の state で決め(知らせを受けた時と出した時に書いた state。`src/bot/bt/road/strategy.py:311-314`・`src/bot/bt/road/strategy.py:663-665`)、ctx の見え方を読み直さない。記録(4 つの表)は 1 字も変えない。決済の量の和、取り消しを出す順(今は注文を受けた順。後から知らせが届いて state を書き直しても順は変わらない)、`flatten` の待ちの並びを今と同じにする。
-3. `src/bot/bt/road/check.py` の、行ごとに今までの約定・注文を見直す所を、本数に比例する形に直す: `_flatten_expect`(`src/bot/bt/road/check.py:928-960`。道の注文の行ごとに、量の計算の行でも呼ばれ、帳簿のツール `book` を最初から作り直す)・`_entry_of`(`src/bot/bt/road/check.py:1070-1074`)と `_check_size_ref` の輪(`src/bot/bt/road/check.py:1107-1110`)が行ごとに注文の表を頭から探す所・`t["orders"].index(…)` と `t["fills"].index(…)`(`src/bot/bt/road/check.py:1195`・`src/bot/bt/road/check.py:1208`・`src/bot/bt/road/check.py:1220`)。検査の答え(どの行をどの理由で落とすか、失敗の文の中身)は今と同じにする: 同じ番号・同じ中身の行が 2 つある置き場では、今と同じく表の最初の行を使う。帳簿のツールが途中で止まる置き場(量の刻みの誤りなど)や、約定の表の順と知らせの通し番号の順が違う置き場では、止まる前の行・崩れていない行の答えも今と同じにする(今の計算に戻してよい)。試験 `test_a3_checker_answers_unchanged_on_tampered_store` が 2 通りの書き換えで答えを直す前の値に固定している。帳簿のツール `src/bot/bt/road/ledger.py` は変えない(呼び方を変える)。
+3. `src/bot/bt/road/check.py` の、行ごとに今までの約定・注文を見直す所を、本数に比例する形に直す: `_flatten_expect`(`src/bot/bt/road/check.py:928-960`。道の注文の行ごとに、量の計算の行でも呼ばれ、帳簿のツール `book` を最初から作り直す)・`_entry_of`(`src/bot/bt/road/check.py:1070-1074`)と `_check_size_ref` の輪(`src/bot/bt/road/check.py:1107-1110`)が行ごとに注文の表を頭から探す所・`t["orders"].index(…)` と `t["fills"].index(…)`(`src/bot/bt/road/check.py:1195`・`src/bot/bt/road/check.py:1208`・`src/bot/bt/road/check.py:1220`)。検査の答え(どの行をどの理由で落とすか、失敗の文の中身)は今と同じにする。同じ番号の行が 2 つある置き場では、今と同じく次の 2 つを分ける: `_entry_of`・`_check_size_ref` は中身によらず (銘柄, 側, 注文の番号) が最初に当たった行を使い、`.index(…)` の 3 か所は中身が全部同じ最初の行の番号を使う。帳簿のツールが途中で止まる置き場(量の刻みの誤りなど)や、約定の表の順と知らせの通し番号の順が違う置き場では、止まる前の行・崩れていない行の答えも今と同じにする(今の計算に戻してよい)。試験 `test_a3_checker_answers_unchanged_on_tampered_store` が 6 通りの書き換え(最後の約定の量を増やす・減らす、知らせの通し番号の入れ替え、建ての行を量を変えて後ろ・前に重ねる、約定の行を同じ中身で重ねる)で答えを直す前の値に固定している。帳簿のツール `src/bot/bt/road/ledger.py` は変えない(呼び方を変える)。
 
 決まりの正本は、上の「作るもの」と試験 `tests/road/test_matilda_v37_r2_spec.py`(リードが書いた)。**試験は変えない。**試験どうし、試験とこの委任文が食い違う、または試験とこの委任文だけでは決まらない、と気づいたら、そこで止めて問いとして返す(それに依らない部分は続ける)。
 
@@ -60,8 +60,8 @@
 | 選び | 決め |
 |---|---|
 | 出力の置き場 | 直すのは `src/bot/strategy/matilda_v37.py`・`src/bot/bt/road/strategy.py`・`src/bot/bt/road/check.py` だけ。作業者が足したい試験は `tests/road/test_matilda_v37_fixA_extra.py` に置いてよい。走らせの出力は試験と測りの tmp だけ(`docs/`・`backtest_data/` に書かない) |
-| 分母・数え方 | 足 1 本あたりの時間 = `timing_probe.py` が出す秒 ÷ 足の本数。比べるのは 5,000 本と 20,000 本。検査の時間は注文の行 1 つあたりで比べる(慣らしの足は注文を出さない) |
-| 比べの方法 | 記録は指紋の一致(1 字も違わない)。時間は 20,000 本の足 1 本あたり ≦ 5,000 本の足 1 本あたり × 1.5。検査の答えは今と同じ(既存の検査の試験と、答えを固定した試験が通る) |
+| 分母・数え方 | 足 1 本あたりの時間 = `timing_probe.py` が出す秒 ÷ 足の本数。比べるのは 5,000 本に対する 20,000 本と 40,000 本。検査の時間は注文の行 1 つあたりで比べる(慣らしの足は注文を出さない) |
+| 比べの方法 | 記録は指紋の一致(1 字も違わない)。時間は 20,000 本と 40,000 本の両方で、足 1 本あたり ≦ 5,000 本の足 1 本あたり × 1.5。検査の答えは今と同じ(既存の検査の試験と、答えを固定した試験が通る) |
 | 確かめ方 | 試験 `tests/road/test_matilda_v37_r2_spec.py` と H2 の試験が飛ばし 0 で通り、時間の測りのコマンドと出力を報告に出す |
 | 依存 | Python の標準ライブラリと、このリポジトリの今あるもの。新しい外の包みを入れない |
 | 絞り方・選び方 | この委任には無い(測らない。族を減らすかはオーナーが時間を見て決める。L-805) |
@@ -97,11 +97,11 @@
 
 各項目は、試験 `tests/road/test_matilda_v37_r2_spec.py` の挙げた試験が、試験を変えずに通ること。全体で飛ばし 0。
 
-- U1: ブレイクの向きの直の入れ替わり: `test_a1_break_flip_ends_old_signal_and_starts_new`・`test_a1_break_flip_with_position_and_b_signal`
+- U1: ブレイクの向きの直の入れ替わり: `test_a1_break_flip_ends_old_signal_and_starts_new`・`test_a1_break_flip_with_position_and_b_signal`・`test_a1_break_flip_keeps_b_signal`(上から下と下から上)
 - U2: 土台の直しで記録が変わらない: `test_a2_record_unchanged_on_walk`
 - U3: 出ていない注文が溜まっても close と flatten が重くならない: `test_a2_cost_does_not_grow_with_closed_orders`
 - U3 に足す: 取り消しの順: `test_a2_flatten_cancels_in_placed_order`
-- U5: 検査のツールの時間が行の数の 2 乗で伸びず、答えは変わらない: `test_a3_checker_cost_grows_with_bars_not_squared`・`test_a3_checker_still_catches_close_size`・`test_a3_checker_answers_unchanged_on_tampered_store`(2 通り)(と H2 の既存の検査の試験 `tests/road/test_road_check.py` ほか)
+- U5: 検査のツールの時間が行の数の 2 乗で伸びず、答えは変わらない: `test_a3_checker_cost_grows_with_bars_not_squared`・`test_a3_checker_still_catches_close_size`・`test_a3_checker_answers_unchanged_on_tampered_store`(6 通り)(と H2 の既存の検査の試験 `tests/road/test_road_check.py` ほか)
 - U4: 足 1 本あたりの時間が本数で伸びない: `PYTHONPATH=src python3 docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/timing_probe.py 5000 0 3000` と `… 20000 0 3000` と `… 40000 0 3000` を打ち、20,000 本と 40,000 本の足 1 本あたり ≦ 5,000 本の足 1 本あたり × 1.5。コマンドと出力を報告に出す。外れたら、自分の時間の多い順の上 15 行(`prof_run.py 5000` と `prof_run.py 20000`)を付けて問いとして返す(土台の外を直さない)
 
 ## 変異の表
@@ -138,3 +138,16 @@
 ## 途中の決め
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
+
+## 事前の批評の後の変更
+
+見た版の sha256: 73b2853c20a629e0e3f3dd29541882d83195806901bdf8b29bdcac6129d22c6c
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_matilda_v37_fixA_premortem2.md` の「次の版で直す」ごと。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+
+- 作るもの 3: 同じ番号の行が 2 つある置き場の扱いを、`_entry_of`・`_check_size_ref`(番号が最初に当たった行)と `.index(…)`(中身が全部同じ最初の行)に分けて書いた。答えを固定した書き換えを 6 通りにした。
+- 決めてよいこと: U4 の比べる本数を「20,000 本と 40,000 本の両方が 5,000 本の 1.5 倍以下」にそろえた。
+- 受け入れ U1 に `test_a1_break_flip_keeps_b_signal`(b_signal −1 の上から下と、折り返した下から上)を足した。
+- 試験(本文の外): 取り消しの順の試験を注文 12 個に、検査の時間の試験を 500 本と 3,000 本の行 1 つあたりの比 ≦ 1.4(両方 3 回の最小)に、検査の答えの固定を 6 通りにした。`timing_probe.py` の説明の文に出す値を書いた。
+- 読んだ事実の打ち直し(試験を足した後の今のコードの出力): `PYTHONPATH=src python -m pytest tests/road/test_matilda_v37_r2_spec.py -k "test_a1_"` → 4 failed(入れ替わりで止まる)。リードが最小の直し(M7 で b_k を消して b_{k+1} を出す)を一時的に当てると `4 passed, 11 deselected`(当てた直しは戻した)。`-k answers_unchanged` → `6 passed, 9 deselected`(直す前のコード)。足した 4 通りの答えの値は直す前のコードで 2 回打って同じ。
+- 範囲の外として承認の問いで見せること: 測定 1 本のメモリが足の本数に比例して伸び(担当の試作で 5,000 本 219 MB・20,000 本 649 MB・40,000 本 1,234 MB)、測る期間では約 120 GB になる見込み【推定】。直し A では直さない。
