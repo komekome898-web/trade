@@ -29,9 +29,9 @@
 |---|---|---|
 | データ | この委任は市場のデータを読まない。試験は tmp に書いた合成の足だけで走る(時刻 2020-01-01・2023-11-14、封印の境より前) | `tests/simple/test_s2_spec.py:36`(2023-11-14 から 1 分ずつ)・`tests/simple/test_s2_spec.py:427`(`datetime(2020, 1, 1, …)`) |
 | 既存の決まり | 注文の記録の列(seq・id・form・side・qty・px_calc・px・root・offset・parent・from_ts・to_ts)と約定の記録の列(ts・id・side・qty・px・case)、数の書き方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:53-60` |
-| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md tests/simple/test_s2_spec.py` → `3a78dcea9f93a72a14ca3707545688dca1d911962cb4bd5aa7501fa588e8e2cf`・`186f80602a6d8523168cfdfd24ff20d619356a2b80b6689f997f2b38f53310c1`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
+| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md tests/simple/test_s2_spec.py` → `a705c3b8c9bc8447c1b464d541c708c5c218132cc078b78d0974e835ac7af7cf`・`d75521805ff3376fafb7d44a4b82afdbaf9a586b7e806bb2d0b5f630f956285a`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
 | 既存の決まり | 約定の決まり・1 本の足の中の順(L-824 の (a) を入れた版)・切り捨てのやり方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:25-45` |
-| 既存の決まり | 受け入れの試験は、リードが捨てる実装(走らせの直しと作り直しの両方)を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない)。渡す前に、受け取った走らせの直しの上で打ち直してこの行を書き直す | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `137 passed` |
+| 既存の決まり | 受け入れの試験は、リードが捨てる実装(走らせの直しと作り直しの両方)を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない)。渡す前に、受け取った走らせの直しの上で打ち直してこの行を書き直す | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `142 passed` |
 | 既存の決まり | 試験の足の記憶の閾値(1 本あたり 50 バイト)は、足を並びにして全部持つ形では落ち、1 回だけ前から読む形では通る(1 本あたりの数は持ち方しだい。リードの写しと事前の批評の担当の写しで、どちらも 50 バイトを超えた) | 捨てる実装の作り直しの頭で `bars = list(bars)` にして `test_p4_bars_are_not_kept` を打つ → `AssertionError`(落ちる)/ そのままで打つ → passed |
 | 既存の決まり | 作り直しが注文の記録の px 列を入力にすると、`注文の px 列と約定の値段をそろえて書き換える` の書き換えを通してしまう | 捨てる実装の写しで px 列を入力にする形に変えて `test_n1_tampered_records_are_caught` を打つ → `[注文の px 列と約定の値段をそろえて書き換える]` と `[注文の戦略の値段を変える]` が落ちる |
 | 既存の決まり | 測る期間は約 423 万本 | `docs/DISCUSSIONS/2026-10-08_simple_road/PROTO_RESULT.md:23` |
@@ -83,7 +83,7 @@
 
 各項目は、試験 `tests/simple/test_s2_spec.py` の挙げた試験が、試験を変えずに通ること。全体で飛ばし 0。
 
-- U1: 場面ごとに走らせの記録と作り直しが同じ: `tests/simple/test_s2_spec.py::test_p1_scenes_match`(11 場面 × 良い側・悪い側)
+- U1: 場面ごとに走らせの記録と作り直しが同じ: `tests/simple/test_s2_spec.py::test_p1_scenes_match`(12 場面 × 良い側・悪い側)
 - U2: 乱数の戦略で走らせの記録と作り直しが同じ: `tests/simple/test_s2_spec.py::test_p2_random_strategy_matches`(6 通り × 2 側)
 - U3: 足は 1 回だけ前から読む・全部を記憶に持たない: `tests/simple/test_s2_spec.py::test_p3_bars_read_once_from_iterator`・`tests/simple/test_s2_spec.py::test_p4_bars_are_not_kept`
 - U4: 書き換えた記録を通さず、例外にもしない: `tests/simple/test_s2_spec.py::test_n1_tampered_records_are_caught`(18 通り)
@@ -118,7 +118,7 @@
 - 試験で決まらず作業者が決めた内部の形の一覧
 - `## 問いとして返したこと`(行頭を `- Q1:` から番号にする。無ければ「問いとして返したことは無い。」と書く)
 - 報告は返事に出す(リードが `docs/DISCUSSIONS/2026-10-08_simple_road/REPORT_s2.md` に写す)
-- 日本語で。コードの名前(関数・変数・例外の名前など)を出すときは、直後に日本語で何のことかを添える(L-824 の指摘)。リポジトリの根からの `grep -r`・`find .` をしない(`git ls-files` に絞る)。
+- 日本語で。コードの名前(関数・変数・例外の名前など)を出すときは、直後に日本語で何のことかを添える(L-824 の指摘)。リポジトリの根からの `grep -r`・`find .` をしない。`git ls-files` の一覧を使うときも封印の置き場を除く(`git ls-files -- . ':!docs/RESEARCH/WINDOW1' ':!backtest_data/phase2_sealed'`。封印の置き場の 14 ファイルは git に載っている)。
 
 ## 途中の決め
 
