@@ -19,7 +19,9 @@
 - 根が何も約定せずに閉じたら、段は取引所が閉じる(理由 "anchor_root_closed_unfilled")。
 - 注文の表に列 anchored_to(根の番号)・anchor_offset(距離)・anchor_px(段の値段。根の最初の約定の知らせで書く。
   それまでに閉じた段と、根を持たない注文は空)を足す。段の limit_px・sent_limit_px は空。
-- 検査 `check_outputs` は、段の値段を根の最初の約定から計算し直して anchor_px と比べ、段の約定を段の値段の決まりで確かめる((vii))。
+- 検査 `check_outputs` は、段の値段を根の最初の約定から計算し直して anchor_px と比べ(空でよいのは、根の最初の約定の知らせより前に
+  閉じた段だけ)、段の約定を段の値段の決まりで確かめる((vii))。
+- 表の版は road-record-8(`tests/road/test_road_fill_l769.py::test_schema_texts`)。
 """
 from __future__ import annotations
 
@@ -184,6 +186,11 @@ def _root_then(fn):
     return act
 
 
+def _sell_child(s, offset):
+    root = s.place("sell", "limit", 7000150.0, 2, "s1")
+    return s.place("sell", "limit", None, 2, "s1", size_ref=root, anchor=root, offset=offset)
+
+
 BAD = [
     ("size_ref が無い", lambda s, r: s.place("buy", "limit", None, 2, "s1", anchor=r, offset=-100.0)),
     ("値段を渡す", lambda s, r: s.place("buy", "limit", 6999950.0, 2, "s1", size_ref=r, anchor=r, offset=-100.0)),
@@ -195,6 +202,7 @@ BAD = [
                                   anchor=s.place("buy", "limit", None, 2, "s1", size_ref=r, anchor=r, offset=-100.0))),
     ("売買が根と違う", lambda s, r: s.place("sell", "limit", None, 2, "s1", size_ref=r, anchor=r, offset=100.0)),
     ("買いで距離が正", lambda s, r: s.place("buy", "limit", None, 2, "s1", size_ref=r, anchor=r, offset=100.0)),
+    ("売りで距離が負", lambda s, r: _sell_child(s, -100.0)),
     ("距離 0", lambda s, r: s.place("buy", "limit", None, 2, "s1", size_ref=r, anchor=r, offset=0.0)),
     ("距離が有限でない", lambda s, r: s.place("buy", "limit", None, 2, "s1", size_ref=r, anchor=r, offset=math.nan)),
     ("距離が無い", lambda s, r: s.place("buy", "limit", None, 2, "s1", size_ref=r, anchor=r)),
@@ -230,6 +238,7 @@ def test_v6_columns():
 
 TAMPER = [
     ("段の値段", "orders", "road-1", lambda r: r.update(anchor_px="6999701.0")),
+    ("約定した段の値段を空に", "orders", "road-1", lambda r: r.update(anchor_px="")),
     ("根の番号", "orders", "road-1", lambda r: r.update(anchored_to="road-9")),
     ("距離", "orders", "road-1", lambda r: r.update(anchor_offset="-99.0")),
     ("段の約定の値段", "fills", "road-1", lambda r: r.update(px="6999701.0")),
@@ -250,4 +259,6 @@ def test_v6_tampering_fails_check(tmp_path, anchor_module, label, table, oid, ed
             edit(r)
     S._rewrite(p2, h2, r2, d)
     f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
-    assert f, label
+    # 新しい段の確かめ((vii))が落とす。例外で止まった検査の "i" の失敗では通さない(事前の批評 1 回目の問5)
+    assert any(x["check"] == "vii" for x in f), (label, f)
+    assert not any(x["check"] == "i" for x in f), (label, f)

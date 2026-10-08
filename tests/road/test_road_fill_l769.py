@@ -454,8 +454,12 @@ def test_pipeline_fill_range_sides():
 
 def test_schema_texts():
     from bot.bt.road.tables import SCHEMA_VERSION, columns
-    assert SCHEMA_VERSION == "road-record-7"
-    assert columns("orders")[-3:] == ["exit_kind", "attached_to", "sent_limit_px"]
+    # 8: 注文の表の anchored_to・anchor_offset・anchor_px、fill_case の anchor_bar(直し B1 の事前の批評 1 回目でリードが直した。
+    #    docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/DELEGATION_anchor_b1.md)
+    assert SCHEMA_VERSION == "road-record-8"
+    assert columns("orders")[-6:] == ["exit_kind", "attached_to", "sent_limit_px", "anchored_to", "anchor_offset",
+                                      "anchor_px"]
+    assert any(c[0] == "fill_case" and "anchor_bar" in c[2] for c in SCHEMA["tables"]["fills"]["columns"])
     assert columns("fills")[-3:] == ["fill_rule", "fill_exit_rule", "fill_case"]
     text = " ".join(SCHEMA["fill_rules"])
     for quote in ("指値は合図の次の足で出してhighからlowの範囲内であれば約定", "a 足の始値で約定する",

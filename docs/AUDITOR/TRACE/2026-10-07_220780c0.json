@@ -31715,10 +31715,11 @@
   {
    "move": 1167,
    "tools": {
-    "Bash": 10,
-    "ToolSearch": 1
+    "Bash": 11,
+    "ToolSearch": 1,
+    "Agent": 1
    },
-   "n_tools": 11,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
