@@ -165,3 +165,59 @@ def test_g6_orders_close_column(tmp_path):
                     "close"]
     rows = {r["id"]: r["close"] for r in table(out, "orders", "optimistic")}
     assert rows == {"r1": "", "r2": "", "c1": "1"}
+
+
+# ================================================================ G7 買いの閉じる注文(空売りを閉じる側。事前の批評、直し 2 の 1 回目)
+S1 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000000.0}  # 足 A1 の範囲の内で約定する空売り
+XB = {"form": "exit", "side": "buy", "qty": 0.009, "parent": "s1", "px": 6999900.0}
+CB = {"form": "limit", "side": "buy", "qty": 0.009, "px": 6999900.0, "close": True}
+S2 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000100.0}
+MS = {"form": "market", "side": "sell", "qty": 0.009}
+DOWN = (6999800, 6999850, 6999750, 6999800)  # 始値 6,999,800。6,999,900 の買いは高値 6,999,850 より上 = 約定する向きに範囲の外 → 始値
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_g7_buy_exit_at_open_before_market(tmp_path, side):
+    out = go(tmp_path, [FLAT, A1, DOWN], {0: {"s1": S1, "xb": XB}, 1: {"xb": XB, "ms": MS}}, side)
+    assert fills(out, side) == [(ts(1), "s1", "7000000.0", "range"), (ts(2), "xb", "6999800.0", "open"),
+                                (ts(2), "ms", "6999800.0", "market")]
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_g7_buy_close_limit_before_new_limit(tmp_path, side):
+    out = go(tmp_path, [FLAT, A1, A2], {0: {"s1": S1}, 1: {"s2": S2, "cb": CB}}, side)
+    assert fills(out, side) == [(ts(1), "s1", "7000000.0", "range"), (ts(2), "cb", "6999900.0", "range"),
+                                (ts(2), "s2", "7000100.0", "range")]
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_g7_buy_close_limit_at_open_before_market(tmp_path, side):
+    out = go(tmp_path, [FLAT, A1, DOWN], {0: {"s1": S1}, 1: {"ms": MS, "cb": CB}}, side)
+    assert fills(out, side) == [(ts(1), "s1", "7000000.0", "range"), (ts(2), "cb", "6999800.0", "open"),
+                                (ts(2), "ms", "6999800.0", "market")]
+
+
+# ================================================================ G8 値段が安値・高値ちょうどの閉じる注文は範囲の内(②、成行の後)
+@pytest.mark.parametrize("side", SIDES)
+def test_g8_sell_close_at_low_is_in_range(tmp_path, side):
+    low_eq = (7000200, 7000300, 7000100, 7000200)  # 安値 7,000,100 = C1 の値段
+    out = go(tmp_path, [FLAT, A1, low_eq], {0: {"r1": R1}, 1: {"c1": C1, "m1": M1}}, side)
+    assert fills(out, side) == [(ts(1), "r1", "7000000.0", "range"), (ts(2), "m1", "7000200.0", "market"),
+                                (ts(2), "c1", "7000100.0", "range")]
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_g8_buy_exit_at_high_is_in_range(tmp_path, side):
+    high_eq = (6999800, 6999900, 6999750, 6999800)  # 高値 6,999,900 = XB の値段
+    out = go(tmp_path, [FLAT, A1, high_eq], {0: {"s1": S1, "xb": XB}, 1: {"xb": XB, "ms": MS}}, side)
+    assert fills(out, side) == [(ts(1), "s1", "7000000.0", "range"), (ts(2), "ms", "6999800.0", "market"),
+                                (ts(2), "xb", "6999900.0", "range")]
+
+
+# ================================================================ G9 約定しない印付きの指値の close の列(消えた・データの終わりまで残った)
+def test_g9_close_column_on_unfilled_orders(tmp_path):
+    far = dict(C1, px=7100000.0)
+    out = go(tmp_path, [FLAT, FLAT, FLAT], {0: {"gone": far}, 1: {"kept": far}, 2: {"kept": far}}, "optimistic")
+    assert fills(out, "optimistic") == []
+    rows = {r["id"]: (r["close"], r["to_ts"]) for r in table(out, "orders", "optimistic")}
+    assert rows == {"gone": ("1", ts(1)), "kept": ("1", ts(2))}

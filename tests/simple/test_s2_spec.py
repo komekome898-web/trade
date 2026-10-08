@@ -67,6 +67,12 @@ MKT = {"form": "market", "side": "sell", "qty": 0.009}
 M1 = {"form": "market", "side": "buy", "qty": 0.009}
 C1 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000100.0, "close": True}  # 建玉を閉じる指値(close の印)
 UP = (7000200, 7000300, 7000150, 7000200)  # 始値 7,000,200。7,000,100 の売りは約定する向きに範囲の外 → 始値
+S1 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000000.0}  # 足 A1 の範囲の内で約定する空売り
+XB = {"form": "exit", "side": "buy", "qty": 0.009, "parent": "s1", "px": 6999900.0}
+CB = {"form": "limit", "side": "buy", "qty": 0.009, "px": 6999900.0, "close": True}
+S2 = {"form": "limit", "side": "sell", "qty": 0.009, "px": 7000100.0}
+MS = {"form": "market", "side": "sell", "qty": 0.009}
+DOWN = (6999800, 6999850, 6999750, 6999800)  # 始値 6,999,800。6,999,900 の買いは約定する向きに範囲の外 → 始値
 
 
 def lv(off, root="r", side="buy"):
@@ -110,6 +116,16 @@ SCENES = [
      {0: {"r1": R1, "x1": dict(X1, px=6999900.0)}, 1: {"x1": dict(X1, px=6999900.0)}}, 1.0, None),
     # 段の値段の和を float で足すと 6,999,700.399999999 → 切り捨て 6,999,700.3、10 進で足すと 6,999,700.4(SPEC.md §3)。
     #   足 2 の安値 6,999,700.4 ちょうどなので、10 進の和なら約定し、float の和なら約定しない
+    # 買いの閉じる注文(空売りを閉じる側)と、値段が安値・高値ちょうどの閉じる注文(事前の批評、直し 2 の 1 回目)
+    ("買いの前からの利確が始値なら成行より先", [FLAT, A1, DOWN], {0: {"s1": S1, "xb": XB}, 1: {"xb": XB, "ms": MS}}, 1.0, None),
+    ("買いの close の印の指値が新しい指値より先", [FLAT, A1, A2], {0: {"s1": S1}, 1: {"s2": S2, "cb": CB}}, 1.0, None),
+    ("買いの close の印の指値が始値なら成行より先", [FLAT, A1, DOWN], {0: {"s1": S1}, 1: {"ms": MS, "cb": CB}}, 1.0, None),
+    ("売りの close の印の指値が安値ちょうどなら成行の後", [FLAT, A1, (7000200, 7000300, 7000100, 7000200)],
+     {0: {"r1": R1}, 1: {"c1": C1, "m1": M1}}, 1.0, None),
+    ("買いの前からの利確が高値ちょうどなら成行の後", [FLAT, A1, (6999800, 6999900, 6999750, 6999800)],
+     {0: {"s1": S1, "xb": XB}, 1: {"xb": XB, "ms": MS}}, 1.0, None),
+    ("約定しない close の印の指値(消えた・データの終わりまで残った)", [FLAT, FLAT, FLAT],
+     {0: {"gone": dict(C1, px=7100000.0)}, 1: {"kept": dict(C1, px=7100000.0)}, 2: {"kept": dict(C1, px=7100000.0)}}, 1.0, None),
     ("段の値段は 10 進の和(刻み 0.1、float の和と食い違う値)", [FLAT, (6999801.1, 6999850, 6999750, 6999800),
                                                 (6999750, 6999800, 6999700.4, 6999750)],
      {0: {"r": dict(ROOT, px=6999801.1), "l1": lv(-100.7)}, 1: {"l1": lv(-100.7)}}, 0.1, None),
@@ -210,7 +226,8 @@ def _base(tmp_path, side="optimistic"):
             1: {"l2": lv(-200.0), "x": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}},
             2: {"r1": R1, "x1": X1}, 3: {"r2": R2, "x1": X1},
             4: {"m": MKT, "far": dict(R1, px=6000000.0),  # far は約定しない指値(足 5 で出たまま、データの終わり)
-                "far2": dict(R1, px=6000000.0), "farl": lv(-100.0, root="far2")}}  # 約定しない根と段
+                "far2": dict(R1, px=6000000.0), "farl": lv(-100.0, root="far2"),  # 約定しない根と段
+                "farx": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "far2", "px": 6000100.0}}}  # 約定しない親の利確
     out, bars = go(tmp_path, rows, plan, side)
     assert refill(bars, out, side) == []
     return out, bars
@@ -444,6 +461,14 @@ def _order_field(rid, col, value):
     return tamper
 
 
+def _orders_without_close_column(out, bars):
+    # 注文の記録から末尾の close の列を除く(直し 2 の前の 12 列の形)
+    def fn(rows):
+        i = _col(rows, "close")
+        return [r[:i] + r[i + 1:] for r in rows]
+    _rw(out, "orders", fn)
+
+
 TAMPERS = [
     ("約定を次の足にずらす", _fill_moved_to_next_bar),
     ("約定の値段を 1 円上げる", _fill_px_plus_one),
@@ -477,6 +502,18 @@ TAMPERS = [
     ("利確の px 列だけを書き換える", _order_field("x1", "px", lambda v: repr(float(v) + 1.0))),
     ("段の px 列だけを書き換える", _order_field("l2", "px", lambda v: repr(float(v) + 1.0))),
     ("約定しなかった注文の to_ts を足に無い時刻に", _order_field("far", "to_ts", "2023-11-14T23:59:00+00:00")),
+    # 止める注文を、約定の記録を変えない注文(一度も約定しない根 far2 の段 farl・親 far2 の利確 farx)の上で破る。
+    #   約定の計算し直しは変わらないので、止める注文の検めが無いと見えない(事前の批評、直し 2 の 1 回目)
+    ("約定しない根の段の売買を根と違えて書く", _order_field("farl", "side", "sell")),
+    ("約定しない根の段の距離の向きを逆に書く", _order_field("farl", "offset", lambda v: repr(-float(v)))),
+    ("約定しない親の利確の売買を親と同じに書く", _order_field("farx", "side", "buy")),
+    ("約定しない親の利確の量を親と違えて書く", _order_field("farx", "qty", "0.018")),
+    ("約定しない段に close の印を書く", _order_field("farl", "close", "1")),
+    ("成行に close の印を書く", _order_field("m", "close", "1")),
+    # close の欄の値は空か 1 だけ(SPEC.md §4)
+    ("close の欄に 0 を書く", _order_field("far", "close", "0")),
+    ("close の欄に true を書く", _order_field("far", "close", "true")),
+    ("注文の記録が close の列の無い 12 列", _orders_without_close_column),
 ]
 
 
