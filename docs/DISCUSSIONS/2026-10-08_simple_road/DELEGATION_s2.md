@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_s2_premortem1.md` の「次の版で直す」を入れた)。測りの道を単純な形に作り直す(L-819・L-821)3 本の委任の 2 本目。走らせ(S1、`src/bot/bt/simple/`)が書いた注文の記録と足から、約定を**別に書いた決まり**で計算し直し、走らせの約定の記録と 1 字違わず同じかを比べる道具を作る。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`(S1 の直しに合わせてリードが直した版)、受け入れはリードが書いた実行できる試験 `tests/simple/test_s2_spec.py`。渡すのは S1 の直し(`DELEGATION_s1_fix.md`)を受け取った後(試験は直した走らせが書いた記録を使う)。
+3 版目(事前の批評 2 回目 `DELEGATION_s2_premortem2.md` の後の直し。上限 2 回を使い切ったので、この直しは批評を通っていない。直した所は末尾の `## 事前の批評の後の変更`)。測りの道を単純な形に作り直す(L-819・L-821)3 本の委任の 2 本目。走らせ(S1、`src/bot/bt/simple/`)が書いた注文の記録と足から、約定を**別に書いた決まり**で計算し直し、走らせの約定の記録と 1 字違わず同じかを比べる道具を作る。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`(S1 の直しに合わせてリードが直した版)、受け入れはリードが書いた実行できる試験 `tests/simple/test_s2_spec.py`。渡すのは S1 の直し(`DELEGATION_s1_fix.md`)を受け取った後(試験は直した走らせが書いた記録を使う)。
 
 ## 着手前の表
 
@@ -20,18 +20,18 @@
 
 1. 新しい包み `src/bot/bt/simple_refill/`(既存のコードを変えない)。`from bot.bt.simple_refill import refill` で読める。
 2. `refill(bars, out_dir, side)`: SPEC.md §5 の 1。`out_dir` の `orders_<側>.csv`・`run_<側>.json`(刻み tick・側 side・封印の境 seal)と `bars`(走らせに渡したのと同じ足の並び。生成器でもよい)から、SPEC.md §3 の決まりで約定を計算し直し、`fills_<側>.csv` と 1 字違わず(見出しの行・行の順・数の書き方まで)同じかを比べる。注文の記録の px 列は入力にしない: 値段は戦略の値段 px_calc・距離 offset と、作り直した根の約定値段から計算し直し、px 列と突き合わせる(SPEC.md §4 の px の意味)。食い違いの文(日本語)の並びを返し、同じなら空。
-3. 読めない・形の違う入力(ファイルが無い・UTF-8 でない・見出しが違う・`run_<側>.json` の側が違う・足の始まりが `run_<側>.json` の seal 以後・注文の行の from_ts が足に無い ほか)は、例外にせず食い違いの文で返す。
+3. 読めない・形の違う入力(ファイルが無い・UTF-8 でない・見出しが違う・`run_<側>.json` の側が違う・どの足も、始まりの時刻が `run_<側>.json` の seal 以後なら・注文の行の from_ts が足に無い ほか)は、例外にせず食い違いの文で返す。
 4. 足は 1 回だけ前から読み、足の全部を記憶に持たない(注文の記録と約定の記録は持ってよい)。
 
 ## 読んだ事実
 
 | # | 事実 | 確かめ |
 |---|---|---|
-| データ | この委任は市場のデータを読まない。試験は tmp に書いた合成の足だけで走る(時刻 2020-01-01・2023-11-14、封印の境より前) | `tests/simple/test_s2_spec.py:36`(2023-11-14 から 1 分ずつ)・`tests/simple/test_s2_spec.py:427`(`datetime(2020, 1, 1, …)`) |
+| データ | この委任は市場のデータを読まない。試験は tmp に書いた合成の足だけで走る(時刻 2020-01-01・2023-11-14、封印の境より前) | `tests/simple/test_s2_spec.py:36`(2023-11-14 から 1 分ずつ)・`grep -n 'datetime(2020' tests/simple/test_s2_spec.py` の行(`datetime(2020, 1, 1, tzinfo=timezone.utc)`) |
 | 既存の決まり | 注文の記録の列(seq・id・form・side・qty・px_calc・px・root・offset・parent・from_ts・to_ts)と約定の記録の列(ts・id・side・qty・px・case)、数の書き方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:53-60` |
-| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md tests/simple/test_s2_spec.py` → `a705c3b8c9bc8447c1b464d541c708c5c218132cc078b78d0974e835ac7af7cf`・`d75521805ff3376fafb7d44a4b82afdbaf9a586b7e806bb2d0b5f630f956285a`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
+| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md tests/simple/test_s2_spec.py` → `3553c69a77f97ba39ae3439b73f7f8129cfe9776445538d33e227b1ec4c18227`・`7688d7ccfa7d22d51816648fd736807fc138f1a6e80b15eec5226317326da7c9`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
 | 既存の決まり | 約定の決まり・1 本の足の中の順(L-824 の (a) を入れた版)・切り捨てのやり方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:25-45` |
-| 既存の決まり | 受け入れの試験は、リードが捨てる実装(走らせの直しと作り直しの両方)を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない)。渡す前に、受け取った走らせの直しの上で打ち直してこの行を書き直す | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `142 passed` |
+| 既存の決まり | 受け入れの試験は、リードが捨てる実装(走らせの直しと作り直しの両方)を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない)。渡す前に、受け取った走らせの直しの上で打ち直してこの行を書き直す | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `144 passed` |
 | 既存の決まり | 試験の足の記憶の閾値(1 本あたり 50 バイト)は、足を並びにして全部持つ形では落ち、1 回だけ前から読む形では通る(1 本あたりの数は持ち方しだい。リードの写しと事前の批評の担当の写しで、どちらも 50 バイトを超えた) | 捨てる実装の作り直しの頭で `bars = list(bars)` にして `test_p4_bars_are_not_kept` を打つ → `AssertionError`(落ちる)/ そのままで打つ → passed |
 | 既存の決まり | 作り直しが注文の記録の px 列を入力にすると、`注文の px 列と約定の値段をそろえて書き換える` の書き換えを通してしまう | 捨てる実装の写しで px 列を入力にする形に変えて `test_n1_tampered_records_are_caught` を打つ → `[注文の px 列と約定の値段をそろえて書き換える]` と `[注文の戦略の値段を変える]` が落ちる |
 | 既存の決まり | 測る期間は約 423 万本 | `docs/DISCUSSIONS/2026-10-08_simple_road/PROTO_RESULT.md:23` |
@@ -50,14 +50,14 @@
 | 依存 | Python の標準ライブラリだけ。走らせの包み `bot.bt.simple` を import しない(試験は走らせを使うが、作り直しの包みは使わない) |
 | 絞り方・選び方 | この委任には無い(測らない) |
 | 単位・通貨のそろえ方 | 値段は円、量は BTC、時刻は足のファイルの ts の文字列のまま |
-| 独立 | 走らせのコード `src/bot/bt/simple/` を開かない・読まない。リードの捨てる実装(scratchpad の `s1fix`)を開かない。決まりは SPEC.md だけから読む(試験 `tests/simple/*.py` の期待の値は読んでよい) |
+| 独立 | 走らせのコード `src/bot/bt/simple/` を開かない・読まない。scratchpad にある他の担当の試し(作り直しの写しを含みうる)を開かない。リードは渡す前に、リードの捨てる実装と事前の批評の担当の写しを scratchpad から消す。決まりは SPEC.md だけから読む(試験 `tests/simple/*.py` の期待の値は読んでよい) |
 | 試験で決まらない内部の形 | 作業者が決めてよい(関数の分け方・食い違いの文の言い方のうち試験が見ない所)。決めたことを報告に書く |
 
 ## 変えないもの
 
-- H1: 試験 `tests/simple/*.py` と既存の試験を変えない。確かめ: `git diff --stat tests/` が空。
+- H1: 試験 `tests/simple/*.py` と既存の試験を変えない。確かめ: `git status --short tests/` が空(足してよい `tests/simple/test_s2_extra.py` だけは出てよい)。
 - H2: 既存のコードを変えない。確かめ: `git status --short src/` に出るのは `src/bot/bt/simple_refill/` の新しいファイルだけ。
-- H3: 走らせの包みを import しない。確かめ: `git ls-files -o --exclude-standard src/bot/bt/simple_refill | xargs grep -n "bot.bt.simple\b\|from \.\.simple\|bot\.bt\.simple import\|bot\.bt\.simple\."` が空。
+- H3: 走らせの包みを import しない。確かめ: `F=$(git ls-files -o --exclude-standard src/bot/bt/simple_refill); test -n "$F" && echo $F | xargs grep -nE "bot\.bt\.simple([^_]|$)|from bot\.bt import|from \.\. import|from \.\.simple([^_]|$)"` の出力が空で、ファイルの一覧が空でない(一覧が空なら不合格)。
 - H4: 道の既存の試験と走らせの試験が全部通る。確かめ: `PYTHONPATH=src python -m pytest tests/simple tests/road` が全部 passed。
 - H5: 大きさ。`src/bot/bt/simple_refill/` の行数の合計を報告に出す。確かめ: `wc -l src/bot/bt/simple_refill/*.py`。
 - H6: 独立。走らせのコードとリードの捨てる実装を開かなかったことを、報告の着手前の表の後に 1 行で書く(機械では確かめられない。限界)。
@@ -69,12 +69,12 @@
 | 封印の境 | U4(足が `run_<側>.json` の seal に届いていたら食い違い) |
 | 日・足・期間の境 | U1(根の足と次の足・親の足と次の足・欠けた分の後の次の足・データの終わりまで出ていた注文)・U4(約定を次の足にずらす・利確の from_ts をずらす) |
 | 等号 | U1(段の値段 = 安値ちょうど・売りの段 = 高値ちょうど) |
-| 欠け | U1(欠けた分)・U4(約定の行を消す・注文の行を消す・run の記録が無い) |
+| 欠け | U1(欠けた分)・U4(約定の行を消す・注文の行を消す・run の記録が無い・約定しなかった注文の from_ts が足に無い) |
 | 参照の値が無い | U1(根が約定しないまま消えた段)・U4(注文の行を消す = 根・親の行が無い) |
 | 拒否・状態不明・届かない | U4(読めない・形の違う入力を例外にせず食い違いで返す) |
 | 遅れ | U1(悪い側の利確は次の足から・親が約定した後に出た利確は次の足から)。限界: 注文を出した足・取り消した足の誤り(from_ts・to_ts の誤り)は検査 1 では見えない(SPEC.md §5 の 1。走らせの試験だけが見る) |
 | 交差と後からの変化 | U1(同じ足に同じ形が 2 本・前の足までに親が約定した利確と新しい指値)・U4(同じ足の約定の順を入れ替える) |
-| 浮動小数・刻み・丸め | U1(刻み 0.5 と 10 進の和)・U4(値段の書き方だけを変える・約定の値段を 1 円上げる・run の刻みを変える・注文の px 列と約定の値段をそろえて切り捨てていない値段にする) |
+| 浮動小数・刻み・丸め | U1(刻み 0.5 と 10 進の和)・U4(値段の書き方だけを変える・約定の値段を 1 円上げる・run の刻みを変える・指値と段の px 列と約定の値段をそろえて切り捨てていない値段にする) |
 | 慣らし | この委任には無い(慣らしは戦略の仕事) |
 | 宣言した値の書き換え | U4(注文の戦略の値段・px 列・from_ts・刻み・側・約定の行を書き換えると食い違いを出す)・U5(違う足・違う側) |
 | 並行の変更 | U1・U2(走らせの直しが同じ置き場で別の作業者により進む。この委任は、その直しをリードが受け取った後に渡し、渡す時点の決まりの文書と試験の sha256 を読んだ事実に書く) |
@@ -86,7 +86,7 @@
 - U1: 場面ごとに走らせの記録と作り直しが同じ: `tests/simple/test_s2_spec.py::test_p1_scenes_match`(12 場面 × 良い側・悪い側)
 - U2: 乱数の戦略で走らせの記録と作り直しが同じ: `tests/simple/test_s2_spec.py::test_p2_random_strategy_matches`(6 通り × 2 側)
 - U3: 足は 1 回だけ前から読む・全部を記憶に持たない: `tests/simple/test_s2_spec.py::test_p3_bars_read_once_from_iterator`・`tests/simple/test_s2_spec.py::test_p4_bars_are_not_kept`
-- U4: 書き換えた記録を通さず、例外にもしない: `tests/simple/test_s2_spec.py::test_n1_tampered_records_are_caught`(18 通り)
+- U4: 書き換えた記録を通さず、例外にもしない: `tests/simple/test_s2_spec.py::test_n1_tampered_records_are_caught`(20 通り)
 - U5: 違う足・違う側を通さない: `tests/simple/test_s2_spec.py::test_n2_other_bars_are_caught`・`tests/simple/test_s2_spec.py::test_n3_side_mismatch_is_caught`
 
 ## 変異の表
@@ -123,3 +123,14 @@
 ## 途中の決め
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
+
+## 事前の批評の後の変更
+
+見た版の sha256: 3c210121bad855c667b635cf8815a92ce9cf4555a957d00fae628ed03d823d06
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_s2_premortem2.md` の「次の版で直す」6 件と、問い 5 の印の無い 2 件。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+
+- 試験 `tests/simple/test_s2_spec.py`: 書き換えを 2 通り足した(約定しなかった注文の from_ts を足に無い時刻に・段 l1 の px 列と約定の値段をそろえて 6,999,700.5 に)。土台の場面に約定しない指値 far を足した。リードの写しで、段の値段を px 列から取る作り直しと、残った注文の検めを外した作り直しは、それぞれこの試験で落ちた(どちらも `1 failed, 60 passed`)。捨てる実装では `tests/simple` が `144 passed`。
+- SPEC.md §5 の 1: 記憶の限界(注文の記録は from_ts の順ではない。足りなければ並べ替えの作り替えが要る)を書いた。
+- 委任文: 作るもの 3(どの足も seal 以後なら)、データの行(行番号を grep の形に)、H1(`git status --short tests/`)、H3(式に `from bot.bt import`・`from .. import` を足し、一覧が空なら不合格)、独立の行(scratchpad の他の担当の試しを開かない。リードが渡す前に写しを消す)、浮動小数と欠けの行、決まりの文書と試験の sha256、件数(144・20 通り)。
+

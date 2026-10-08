@@ -185,7 +185,8 @@ def _base(tmp_path, side="optimistic"):
     plan = {0: {"r": ROOT, "l1": lv(-100.0), "l2": lv(-200.0),
                 "x": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}},
             1: {"l2": lv(-200.0), "x": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}},
-            2: {"r1": R1, "x1": X1}, 3: {"r2": R2, "x1": X1}, 4: {"m": MKT}}
+            2: {"r1": R1, "x1": X1}, 3: {"r2": R2, "x1": X1},
+            4: {"m": MKT, "far": dict(R1, px=6000000.0)}}  # far は約定しない指値(足 5 で出たまま、データの終わり)
     out, bars = go(tmp_path, rows, plan, side)
     assert refill(bars, out, side) == []
     return out, bars
@@ -361,6 +362,34 @@ def _run_json_seal_before_last_bar(out, bars):
         json.dump(rec, fh)
 
 
+def _order_from_ts_not_in_bars(out, bars):
+    # 約定しなかった注文の from_ts を、足に無い時刻にする(作り直しでは、その注文が効き始める足が来ない)
+    def fn(rows):
+        i, k = _col(rows, "from_ts"), _col(rows, "id")
+        with open(os.path.join(out, "fills_optimistic.csv"), encoding="utf-8") as fh:
+            filled = {r["id"] for r in csv.DictReader(fh)}
+        for row in rows[1:]:
+            if row[k] not in filled and row[i]:
+                row[i] = "2023-11-14T23:59:00+00:00"
+                return rows
+        raise AssertionError("約定しなかった注文の行が無い")
+    _rw(out, "orders", fn)
+
+
+def _level_px_and_fill_together(out, bars):
+    # 走らせが段の値段を切り捨てなかったかのように、段 l1 の px 列と根の足の約定の値段を、そろえて 6,999,700.5 にする
+    #   (足 1 の範囲 6,999,700〜6,999,850 の内)。px 列を入力にする作り直しは通してしまう。根の約定値段 F と距離から
+    #   切り捨て直す作り直しは見つける
+    def fn(rows):
+        i, k = _col(rows, "px"), _col(rows, "id")
+        for row in rows[1:]:
+            if row[k] == "l1":
+                row[i] = "6999700.5"
+        return rows
+    _rw(out, "orders", fn)
+    _rw(out, "fills", fn)
+
+
 TAMPERS = [
     ("約定を次の足にずらす", _fill_moved_to_next_bar),
     ("約定の値段を 1 円上げる", _fill_px_plus_one),
@@ -380,6 +409,8 @@ TAMPERS = [
     ("注文の px 列と約定の値段をそろえて書き換える", _order_px_and_fill_together),
     ("run の側だけを書き換える", _run_json_side_only),
     ("足が run の封印の境に届いている", _run_json_seal_before_last_bar),
+    ("約定しなかった注文の from_ts を足に無い時刻に", _order_from_ts_not_in_bars),
+    ("段の px 列と約定の値段をそろえて書き換える", _level_px_and_fill_together),
 ]
 
 
