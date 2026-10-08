@@ -2,7 +2,7 @@
 
 種類: 作る
 
-1 版目。S1(`DELEGATION_s1.md`、承認 L-823)で作った `src/bot/bt/simple/` を、作り終えた後の批評家 1 回目(`docs/AUDITOR/VERDICTS/2026-10-08_simple_s1_critic1.md`、リードの応答 `CRITIC1_RESPONSE.md`)の [直す] と、オーナーの決め L-824 のとおりに直す。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`(この直しに合わせてリードが直した版)、受け入れはリードが書いた実行できる試験 `tests/simple/test_s1_fix_spec.py` と、S1 の試験 `tests/simple/test_s1_spec.py`。
+2 版目(事前の批評 1 回目 `DELEGATION_s1_fix_premortem1.md` の「次の版で直す」を入れた)。S1(`DELEGATION_s1.md`、承認 L-823)で作った `src/bot/bt/simple/` を、作り終えた後の批評家 1 回目(`docs/AUDITOR/VERDICTS/2026-10-08_simple_s1_critic1.md`、リードの応答 `CRITIC1_RESPONSE.md`)の [直す] と、オーナーの決め L-824 のとおりに直す。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`(この直しに合わせてリードが直した版)、受け入れはリードが書いた実行できる試験 `tests/simple/test_s1_fix_spec.py` と、S1 の試験 `tests/simple/test_s1_spec.py`。
 
 ## 着手前の表
 
@@ -23,23 +23,23 @@
 1. 1 本の足の中で約定させ記す順(SPEC.md §3): ① 成行 market → ② 親が前の足までに約定した利確 exit → ③ 指値 limit → ④ 段 level → ⑤ 親がこの足で約定した利確 exit。同じ組の中は番号を出した順(seq)。
 2. 封印の境の行より先は読まない(SPEC.md §1。今のコードは正しく、試験を足しただけ。変えないで通ることを確かめる)。
 3. 安値が高値より高い足は `read_bars` でも `run` でも `SimpleRoadError` で止める(SPEC.md §1)。
-4. 数の作り直し `check_numbers`(SPEC.md §5 の 2): 見出しの行が決まった列と 1 字違わず同じか・0 バイトは食い違い・summary は 4 つの鍵ちょうどの辞書で値は JSON の型まで同じ・読めない入力は例外にせず食い違いの行で返す・約定 0 本の走らせは合格。
+4. 数の作り直し `check_numbers`(SPEC.md §5 の 2): fills は見出しの行が決まった列と 1 字違わず同じで各行の欄の数が見出しと同じ・0 バイトは食い違い・trades はファイル全体を作り直した中身と 1 字違わず比べる・summary は 4 つの鍵ちょうどの辞書で値は Python の型(整数・小数・文字・真偽値)まで同じ・読めない入力はどんな例外も拾い、例外にせず食い違いの行で返す・約定 0 本の走らせは合格。
 5. 消えた注文の中身を記憶に持ち続けない(SPEC.md §4。番号の使い回しの検めには番号だけを持つ。約定した注文は段・利確の検めに要る中身を持ってよい)。
-6. `run_<側>.json` の git の版の印に、帳簿のツール `src/bot/bt/road/ledger.py` の未コミットの変更も入れる(SPEC.md §4)。
+6. `run_<側>.json` の git の版の印は、`src/` の下のどこかに未コミットの変更があれば付ける(SPEC.md §4)。
 
 ## 読んだ事実
 
 | # | 事実 | 確かめ |
 |---|---|---|
-| データ | この委任は市場のデータを読まない。試験は tmp に書いた合成の足だけで走る(時刻 2020-01-01・2023-11-14・2023-12-17、封印の境より前) | この委任には無い(合成の足だけ。足のファイルの形は S1 の委任文の読んだ事実のまま) |
-| 既存の決まり | 直しの試験は、今のコードで 16 件落ち 9 件通る(落ちるのは記す順 4・安値 > 高値 2・数の作り直し 9・記憶 1) | `PYTHONPATH=src python -m pytest tests/simple/test_s1_fix_spec.py` → `16 failed, 9 passed` |
-| 既存の決まり | 受け入れの試験は、リードが捨てる実装を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない) | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `75 passed` |
+| データ | この委任は市場のデータを読まない。試験は tmp に書いた合成の足だけで走る(時刻 2020-01-01・2023-01-01・2023-11-14・2023-12-17、どれも封印の境より前。2020-01-01 は `datetime(2020, 1, 1, …)` で作る) | `grep -oh '20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]' tests/simple/test_s1_spec.py tests/simple/test_s1_fix_spec.py \| sort -u` → `2023-01-01`・`2023-11-14`・`2023-12-17`(と `test_s1_fix_spec.py:289` の `datetime(2020, 1, 1, tzinfo=timezone.utc)`) |
+| 既存の決まり | 直しの試験は、今のコードで 19 件落ち 11 件通る(落ちるのは記す順 4・安値 > 高値 2・数の作り直し 12・記憶 1。数の作り直しの「真偽値に」「小数に」は今のコードでは通るが、辞書の等号で比べる形にすると落ちる) | `PYTHONPATH=src python -m pytest tests/simple/test_s1_fix_spec.py` → `19 failed, 11 passed` |
+| 既存の決まり | 受け入れの試験は、リードが捨てる実装を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない) | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple/test_s1_spec.py tests/simple/test_s1_fix_spec.py -o pythonpath=<捨てる実装>` → `80 passed` |
 | 既存の決まり | 消えた注文 1 つあたりの記憶の増え方は、今のコードで約 456 バイト、番号だけを持つ捨てる実装で約 96 バイト(試験の閾値は 200 バイト) | scratchpad の `s1fix/mem.py`(2,000 本と 12,000 本の tracemalloc の最大の差 ÷ 10,000)→ `455.7846` / `95.835` |
-| 既存の決まり | 帳簿のツール `book` は同じ時刻の約定を並びの順に記し、利確が先なら取引が 1 回閉じる | 批評家 1 回目の問2 の E(`docs/AUDITOR/VERDICTS/2026-10-08_simple_s1_critic1.md`)→ `決済が先なら: {'fill_count': 3, 'closed_trades': 1, ...}` |
+| 既存の決まり | 帳簿のツール `book` は同じ時刻の約定を並びの順に記し、利確が先なら取引が 1 回閉じる(F1 と同じ 3 本の約定) | `PYTHONPATH=src python3 -c "from bot.bt.road.ledger import book; a=[{'t_ns':60,'side':'buy','qty':0.009,'px':7000000.0,'ccy':'JPY'},{'t_ns':120,'side':'sell','qty':0.009,'px':7000100.0,'ccy':'JPY'},{'t_ns':120,'side':'buy','qty':0.009,'px':6999900.0,'ccy':'JPY'}]; print(book(a).summary['closed_trades'], book([a[0],a[2],a[1]]).summary['closed_trades'])"` → `1 0`(利確が先 / 新しい指値が先) |
 | 既存の決まり | 今のコードの記す順は `fills.py` の `RANK`(market → limit → level → exit) | `src/bot/bt/simple/fills.py:8` |
 | 既存の決まり | 今の数の作り直しは `OSError` などしか拾わず、summary が `[]` で例外になる | `src/bot/bt/simple/check.py:24-47` |
 | 既存の決まり | 道の既存の試験は全部通る | `PYTHONPATH=src python -m pytest tests/road` → `315 passed` |
-| 列の意味 | 残すファイルの列と、数の作り直しの決まり | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:45-75` |
+| 列の意味 | 残すファイルの列と、数の作り直しの決まり | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:47-74` |
 
 ## 決めてよいこと・決めてはいけないこと
 
@@ -47,8 +47,8 @@
 |---|---|
 | 出力の置き場 | コードは `src/bot/bt/simple/` だけ。作業者が足したい試験は `tests/simple/test_s1_fix_extra.py` に置いてよい。走らせの出力は試験の tmp だけ |
 | 分母・数え方 | この委任には無い(数えない。数は帳簿のツールのまま) |
-| 比べの方法 | 約定の決まりの等号は SPEC.md §3 のとおり。数の作り直しは SPEC.md §5 の 2 のとおり(trades は文字列で 1 字違わず、summary は JSON の値と型) |
-| 確かめ方 | 試験 `tests/simple/test_s1_fix_spec.py` と `tests/simple/test_s1_spec.py` が飛ばし 0 で全部通り、`tests/road` が全部通る |
+| 比べの方法 | 約定の決まりの等号は SPEC.md §3 のとおり。数の作り直しは SPEC.md §5 の 2 のとおり(trades はファイル全体を 1 字違わず、summary は値と Python の型) |
+| 確かめ方 | 試験 `tests/simple/test_s1_fix_spec.py` と `tests/simple/test_s1_spec.py` が飛ばし 0 で全部通り、`tests/road` が全部通る。`tests/simple/test_s2_spec.py`(二つ目の受け入れ)は作り直しの包みがまだ無いので 1 件の飛ばしになる。これは想定どおりで、この委任では見ない |
 | 依存 | Python の標準ライブラリと、このリポジトリの `bot.bt.road.ledger`(帳簿のツール)だけ。S1 と同じ |
 | 絞り方・選び方 | この委任には無い(測らない) |
 | 単位・通貨のそろえ方 | S1 と同じ(値段は円、量は BTC、時刻は足のファイルの ts の文字列のまま) |
@@ -61,7 +61,7 @@
 - H3: 取引所の模型・core・道の土台・走らせを直に import しない。確かめ: `git ls-files src/bot/bt/simple | xargs grep -n "bot.bt.fill\|bot.bt.core\|bot.bt.road.strategy\|bot.bt.pipeline"` が空。
 - H4: 道の既存の試験が全部通る。確かめ: `PYTHONPATH=src python -m pytest tests/road` が全部 passed。
 - H5: 大きさ。直した後の `src/bot/bt/simple/` の行数の合計を、直す前(474 行)と並べて報告に出す。確かめ: `wc -l src/bot/bt/simple/*.py`。
-- H6: git の版の印の検めに帳簿のツールが入った。確かめ: その行のコードを報告に出す(試験は無い。リポジトリのファイルを書き換えて確かめない)。
+- H6: git の版の印の検めが `src/` 全体を見る。確かめ: その行のコードを報告に出し、コードが git に渡す道が git に載っていることを `git -C src/bot/bt/simple ls-files --error-unmatch <コードが渡す道>` の終了コード 0 で示す(道を書き違えると git は出力も終了コードも黙るため。試験は無い。リポジトリのファイルを書き換えて確かめない)。
 
 ## 壊す場面
 
@@ -69,25 +69,25 @@
 |---|---|
 | 封印の境 | U2(境の行の次の行が壊れていても読まない) |
 | 日・足・期間の境 | U1(親が前の足で約定した利確と、親がこの足で約定した利確で、記す順が違う) |
-| 等号 | U1(利確と新しい指値がどちらも範囲の内) |
-| 欠け | U4(0 バイトのファイル・見出しだけのファイル・約定 0 本の走らせ) |
+| 等号 | U1・U3(安値と高値が等しい平らな足 FLAT では止めない)・U1(同じ組の中は seq の順。r2 と x1 の seq の大小を入れ替えても記す順は組で決まる) |
+| 欠け | U4(0 バイトのファイル・見出しだけのファイル・欄の足りない約定の行・約定 0 本の走らせ) |
 | 参照の値が無い | U5(根・親を約定の前に取り下げ、段・利確だけを残すと止める) |
 | 拒否・状態不明・届かない | U3(安値 > 高値の足で止める)・U4(読めない入力を例外にせず食い違いで返す) |
 | 遅れ | U1(親の約定の後に出した利確と、親と一緒に出した利確の両方) |
 | 交差と後からの変化 | U1(同じ足で前からの建玉を閉じる利確と新しい 1 段目が両方約定する) |
-| 浮動小数・刻み・丸め | U4(summary の値の型: 数と文字) |
+| 浮動小数・刻み・丸め | U4(summary の値の型: 整数と小数・整数と真偽値・数と文字) |
 | 慣らし | この委任には無い(慣らしは戦略の仕事。S3 で扱う) |
 | 宣言した値の書き換え | U4(見出し・鍵・値の型・行の数を書き換えると数の作り直しが食い違いを出す) |
-| 並行の変更 | この委任には無い(作業者は 1 名。S2 は直した SPEC.md から書くので、この直しの途中で SPEC.md を直したらリードが S2 の委任文にも書く) |
+| 並行の変更 | U7(二つ目の受け入れの試験 `tests/simple/test_s2_spec.py` が同じ置き場にあり、作り直しの包みが無いので 1 件の飛ばしになる。受け入れと報告の試験のコマンドは、この委任の試験のファイルと `tests/road` に絞る。S2 は直した SPEC.md から書くので、この直しの途中で SPEC.md を直したらリードが S2 の委任文にも書く) |
 
 ## 受け入れ
 
-各項目は、挙げた試験が、試験を変えずに通ること。全体で飛ばし 0。
+各項目は、挙げた試験が、試験を変えずに通ること。`PYTHONPATH=src python -m pytest tests/simple/test_s1_spec.py tests/simple/test_s1_fix_spec.py tests/road` で飛ばし 0。
 
 - U1: 足の中の記す順(L-824): `tests/simple/test_s1_fix_spec.py::test_f1_exit_of_earlier_parent_before_new_limit`(4 通り)・`tests/simple/test_s1_fix_spec.py::test_f1_exit_of_same_bar_parent_stays_after`(良い側・悪い側)
 - U2: 封印の境の行より先を読まない: `tests/simple/test_s1_fix_spec.py::test_f2_read_bars_does_not_read_past_seal_row`
 - U3: 安値 > 高値の足で止める: `tests/simple/test_s1_fix_spec.py::test_f3_run_stops_on_low_above_high`・`tests/simple/test_s1_fix_spec.py::test_f3_read_bars_stops_on_low_above_high`
-- U4: 数の作り直し: `tests/simple/test_s1_fix_spec.py::test_f4_check_numbers_refuses_broken_records`(12 通り)・`tests/simple/test_s1_fix_spec.py::test_f4_check_numbers_passes_true_zero_fill_run`
+- U4: 数の作り直し: `tests/simple/test_s1_fix_spec.py::test_f4_check_numbers_refuses_broken_records`(17 通り)・`tests/simple/test_s1_fix_spec.py::test_f4_check_numbers_passes_true_zero_fill_run`
 - U5: 取り下げた根・親: `tests/simple/test_s1_fix_spec.py::test_f5_withdrawn_reference_stops`(2 通り)
 - U6: 消えた注文を記憶に持ち続けない: `tests/simple/test_s1_fix_spec.py::test_f6_gone_orders_are_not_kept`
 - U7: S1 の受け入れが全部通ったまま: `tests/simple/test_s1_spec.py` の全部
@@ -114,7 +114,7 @@
 
 - 着手前の表
 - 直したファイルの一覧と、直す前と後の行数(H5)
-- 試験のコマンドと出力(`PYTHONPATH=src python -m pytest tests/simple tests/road`)
+- 試験のコマンドと出力(`PYTHONPATH=src python -m pytest tests/simple/test_s1_spec.py tests/simple/test_s1_fix_spec.py tests/road`)
 - H1〜H6 の確かめのコマンドと出力
 - `## 変異の表`(上の形)
 - 試験で決まらず作業者が決めた内部の形の一覧

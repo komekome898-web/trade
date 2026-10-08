@@ -225,6 +225,40 @@ def _t_trades_row_removed(out):
     _write(_p(out, "trades"), b"\n".join(lines[:-1]) + b"\n")
 
 
+def _t_summary_value_bool(out):
+    with open(_p(out, "summary", "json"), encoding="utf-8") as fh:
+        s = json.load(fh)
+    s["closed_trades"] = bool(s["closed_trades"])  # 1 → true(Python では True == 1)
+    _write(_p(out, "summary", "json"), json.dumps(s).encode())
+
+
+def _t_summary_value_float(out):
+    with open(_p(out, "summary", "json"), encoding="utf-8") as fh:
+        s = json.load(fh)
+    s["fill_count"] = float(s["fill_count"])  # 3 → 3.0(Python では 3.0 == 3)
+    _write(_p(out, "summary", "json"), json.dumps(s).encode())
+
+
+def _t_fills_row_short(out):
+    with open(_p(out, "fills"), "rb") as fh:
+        lines = fh.read().rstrip(b"\n").split(b"\n")
+    lines[-1] = b",".join(lines[-1].split(b",")[:2])
+    _write(_p(out, "fills"), b"\n".join(lines) + b"\n")
+
+
+def _t_trades_row_extra_cell(out):
+    with open(_p(out, "trades"), "rb") as fh:
+        lines = fh.read().rstrip(b"\n").split(b"\n")
+    lines[1] += b",extra"
+    _write(_p(out, "trades"), b"\n".join(lines) + b"\n")
+
+
+def _t_trades_crlf(out):
+    with open(_p(out, "trades"), "rb") as fh:
+        data = fh.read()
+    _write(_p(out, "trades"), data.replace(b"\n", b"\r\n"))
+
+
 TAMPERS = [
     ("fills と trades が 0 バイト・summary が 0", _t_zero_bytes),
     ("fills の見出しがでたらめ・行なし・summary が 0", _t_garbage_fills_head),
@@ -238,6 +272,11 @@ TAMPERS = [
     ("fills が UTF-8 でない", _t_fills_not_utf8),
     ("trades の行を 1 つ足す", _t_trades_row_added),
     ("trades の行を 1 つ消す", _t_trades_row_removed),
+    ("summary の値を真偽値に", _t_summary_value_bool),
+    ("summary の値を小数に", _t_summary_value_float),
+    ("約定の行の欄が足りない", _t_fills_row_short),
+    ("trades の中身の行の末尾に余計な欄", _t_trades_row_extra_cell),
+    ("trades の改行を CRLF に", _t_trades_crlf),
 ]
 
 
