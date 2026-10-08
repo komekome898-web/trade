@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_anchor_b1_premortem1.md` の後の直し)。オーナーの決め L-815「1.c」・L-816「1.a」・L-817(問い 1・2 とも a)の仕組みの側。マチルダがこの仕組みを使う形と、自分の注文どうしの交差の扱い(L-816「3.a」)は直し B2 の委任で、この委任には入れない。受け入れはリードが書いた実行できる試験 `tests/road/test_anchor_b1_spec.py`(場面の戦略 `tests/road/road_anchor_strategy.py`)。直し A(`DELEGATION_matilda_v37_fixA.md`)を受け取ってコミットした後に渡す(どちらも `src/bot/bt/road/` を直すため)。A の取り込みで行の番号がずれたら、リードが渡す前に取り直して途中の決めに書く。下の「作るもの」は関数の名前でも示す。
+3 版目(事前の批評 2 回目 `DELEGATION_anchor_b1_premortem2.md` の後の直し。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない。直した所は末尾の `## 事前の批評の後の変更`)。オーナーの決め L-815「1.c」・L-816「1.a」・L-817(問い 1・2 とも a)の仕組みの側。マチルダがこの仕組みを使う形と、自分の注文どうしの交差の扱い(L-816「3.a」)は直し B2 の委任で、この委任には入れない。受け入れはリードが書いた実行できる試験 `tests/road/test_anchor_b1_spec.py`(場面の戦略 `tests/road/road_anchor_strategy.py`)。直し A(`DELEGATION_matilda_v37_fixA.md`)を受け取ってコミットした後に渡す(どちらも `src/bot/bt/road/` を直すため)。A の取り込みで行の番号がずれたら、リードが渡す前に取り直して途中の決めに書く。下の「作るもの」は関数の名前でも示す。
 
 ## 着手前の表
 
@@ -29,9 +29,9 @@
    - 段に付いた決済(`attached_to` = 段)は、段が約定してから今の決まり(attached_exit)で効く。
    - 根が何も約定せずに閉じたら(取り消し・拒否・取引所が閉じた)、まだ効いていない段を `Canceled` 理由 "anchor_root_closed_unfilled" で閉じる(`attached_parent_closed` と同じ置き方。`src/bot/bt/fill/venue.py:375-390`)。効いていない段の取り消しは受ける。
    - 根が知らない番号・既に閉じた・既に約定した・段や決済の注文・売買が違う段は拒む(`Reject`。理由の語は作業者が決めてよい)。
-2. 道の土台 `src/bot/bt/road/strategy.py` の `place` と `place_with_exit` に `anchor=None`・`offset=None` を足す(試験の冒頭の注の口)。誤りは止める(試験 `test_v5_bad_anchor_refused` の 14 通り。根が既に約定した段も止める = `test_v3_level_after_root_filled_refused`)。段は値段を送らず、`extra` に `anchored_to`・`anchor_offset` を入れる。量は size_ref で写す(今の量の口)。モジュールの説明に口を書き足す。
-3. 道の記録の表 `src/bot/bt/road/tables.py` の注文の表の終わりに、列 `anchored_to`・`anchor_offset`・`anchor_px` を足し(説明の文つき)、版を road-record-8 にする(`SCHEMA_VERSION`。リードが直した試験 `tests/road/test_road_fill_l769.py::test_schema_texts`)。fill_case の説明の文(`src/bot/bt/road/tables.py:91`・`src/bot/bt/road/tables.py:212-213`)に anchor_bar を足す。anchor_px は、土台が根の最初の約定の知らせを受けた時に、その時まだ閉じていない段に書く(F + 距離 を刻みに切り捨てた値段)。段の `limit_px`・`sent_limit_px` は空。受け付けられた指値の値段の突き合わせ(`src/bot/bt/road/tables.py:335-339`)は、段では anchor_px と比べる(根が約定せずに閉じた段は、取引所の模型が値段を持たず anchor_px も空)。
-4. 検査 `src/bot/bt/road/check.py` の (vii) に、段の確かめを足す(新しい関数に置く。直し A の検査の直しと重ねないため): anchor_px = 根の最初の約定値段 + 距離 を同じ式で切り捨てた値段か / anchor_px が空でよいのは、段が根の最初の約定の知らせ(notice_seq)より前に閉じた(closed_seq が小さい)ときだけ / 根が無い・根が段や決済・売買が違う・距離の向きが違う段は失敗 / 段の約定は根の最初の約定の時刻より前に無い / 根の約定の足での段の約定は fill_case "anchor_bar" で段の値段、ほかの足は今の bar_rule の決まりを anchor_px で当てる / 約定していたはずの足の確かめ(`src/bot/bt/road/check.py:1379-1416` にあたるもの)を段にも当て、根の約定の足から数える。今の確かめのうち段の行を落とす (iii) の 3 か所(指値に値段が無い `src/bot/bt/road/check.py:626-627`・送った値段が無い `src/bot/bt/road/check.py:628-629`・fill_case の一覧 `src/bot/bt/road/check.py:719-720` と `CHECK_FILL_CASES`)は段を通す形にし、段の行を黙って飛ばす (vii) の 2 か所(`src/bot/bt/road/check.py:1265-1267`・`src/bot/bt/road/check.py:1320-1323`)は新しい確かめに渡す。改ざんした表で例外が出て (i) の失敗になる形にしない(試験は (vii) の失敗を求める)。
+2. 道の土台 `src/bot/bt/road/strategy.py` の `place` と `place_with_exit` に `anchor=None`・`offset=None` を足す(試験の冒頭の注の口)。誤りは止める(試験 `test_v5_bad_anchor_refused` の 14 通り。根が既に約定した段も止める = `test_v3_level_after_root_filled_refused`)。anchor と size_ref は別の番号でよく、size_ref で量を写した建ての行も根にしてよい(玉を持って段を足す回は、根 = その回の最初の段、size_ref = 取引の最初の段。L-817「**問い 1(B-1) a**」。`test_v5_anchor_on_size_ref_row`)。段は値段を送らず、`extra` に `anchored_to`・`anchor_offset` を入れる。量は size_ref で写す(今の量の口)。モジュールの説明に口を書き足す。
+3. 道の記録の表 `src/bot/bt/road/tables.py` の注文の表の終わりに、列 `anchored_to`・`anchor_offset`・`anchor_px` を足し(説明の文つき)、版を road-record-8 にする(`SCHEMA_VERSION`。リードが直した試験 `tests/road/test_road_fill_l769.py::test_schema_texts`)。fill_case の説明の文(`src/bot/bt/road/tables.py:91`・`src/bot/bt/road/tables.py:212-213`)に anchor_bar を足す。anchor_px は、土台が根の最初の約定の知らせを受けた時に、その時まだ閉じていない段に書く(F + 距離 を刻みに切り捨てた値段)。段の `limit_px`・`sent_limit_px` は空。受け付けられた指値の値段の突き合わせ(`src/bot/bt/road/tables.py:335-339`)は、段では anchor_px と比べる(根が約定せずに閉じた段は、取引所の模型が値段を持たず anchor_px も空。anchor_px が空で、根の最初の約定の知らせが届いていない段(知らせの遅れのある走らせで、根がデータの終わりの足で約定した場合)は、取引所の値段と突き合わせない)。
+4. 検査 `src/bot/bt/road/check.py` の (vii) に、段の確かめを足す(新しい関数に置く。直し A の検査の直しと重ねないため): anchor_px = 根の最初の約定値段 + 距離 を同じ式で切り捨てた値段か / anchor_px が空でよいのは次の 3 つのときだけ: 根が約定していない・根の最初の約定の知らせが届いていない(notice_seq が空)・段がその知らせより前に閉じた(closed_seq が小さい) / 根が無い・根が段や決済・売買が違う・距離の向きが違う段は失敗 / 段の約定は根の最初の約定の時刻より前に無い / 根の約定の足での段の約定は fill_case "anchor_bar" で段の値段、ほかの足は今の bar_rule の決まりを anchor_px で当てる / 約定していたはずの足の確かめ(`src/bot/bt/road/check.py:1379-1416` にあたるもの)を段にも当て、根の約定の足から数える。今の確かめのうち段の行を落とす (iii) の 3 か所(指値に値段が無い `src/bot/bt/road/check.py:626-627`・送った値段が無い `src/bot/bt/road/check.py:628-629`・fill_case の一覧 `src/bot/bt/road/check.py:719-720` と `CHECK_FILL_CASES`)は段を通す形にし、段の行を黙って飛ばす (vii) の 2 か所(`src/bot/bt/road/check.py:1265-1267`・`src/bot/bt/road/check.py:1320-1323`)は新しい確かめに渡す。改ざんした表で例外が出て (i) の失敗になる形にしない(試験は (vii) の失敗を求める)。
 
 決まりの正本は、上の「作るもの」と試験 `tests/road/test_anchor_b1_spec.py`(リードが書いた。冒頭の注に口がある)。**試験は変えない。**試験どうし、試験とこの委任文が食い違う、または試験とこの委任文だけでは決まらない、と気づいたら、そこで止めて問いとして返す(それに依らない部分は続ける)。
 
@@ -52,11 +52,11 @@
 | 既存の決まり | 検査 (vii) は、送った値段 = 計算した値段の刻みの切り捨て、と、約定を足の範囲・始値・建ての足で確かめる。どちらも値段の空の行は黙って飛ばす | `src/bot/bt/road/check.py:1264-1278`・`src/bot/bt/road/check.py:1300-1378`(飛ばす所 `src/bot/bt/road/check.py:1265-1267`・`src/bot/bt/road/check.py:1320-1323`) |
 | 既存の決まり | 検査 (iii) は、指値に値段が無い行・出した指値に送った値段が無い行・一覧に無い fill_case を落とす(段の行はこのままでは落ちる) | `src/bot/bt/road/check.py:626-629`・`src/bot/bt/road/check.py:719-720` |
 | 既存の決まり | 表の版と注文の表の終わりの列は試験が決めている(リードが road-record-8 と 3 列に直した。直す前の期待は road-record-7 と exit_kind・attached_to・sent_limit_px) | `tests/road/test_road_fill_l769.py:455-462` |
-| 既存の決まり | 直し A を取り込む前の道の試験は、A の試験 4 件が落ちる(A の取り込みの後に渡すので、渡す時には通っている) | `PYTHONPATH=src python -m pytest tests/road --deselect tests/road/test_anchor_b1_spec.py` → 4 failed, 317 passed(事前の批評 1 回目の担当が打った) |
+| 既存の決まり | 直し A を取り込む前の道の試験は、A の試験 4 件と、リードが直した表の版の試験 1 件が落ちる(A の取り込みの後に渡すので、渡す時には A の 4 件は通っている) | `PYTHONPATH=src python -m pytest tests/road --deselect tests/road/test_anchor_b1_spec.py` → 5 failed, 316 passed, 29 deselected(事前の批評 2 回目の担当が打った) |
 | 既存の決まり | 1 分足の決まりでは、根は残りを 1 回で全部約定する(根の 2 回目の約定は道の走らせでは起きない) | `src/bot/bt/fill/venue.py:957-962` |
-| 既存の決まり | 受け入れの試験は、作る前は全部落ちる(段の口が無い TypeError と、列が無い) | `PYTHONPATH=src python -m pytest tests/road/test_anchor_b1_spec.py` → 27 failed |
-| 既存の決まり | 量は 7,000,050 円の買い・段数 2 で 0.009、6,999,950 円で 0.01 | `PYTHONPATH=src python3 -c "from bot.bt.road.strategy import size_detail, MARGIN_JPY, USE_RATIO; print(size_detail(margin_jpy=MARGIN_JPY, use_ratio=USE_RATIO, levels=2, price=6999950.0, quote_ccy='JPY', usdjpy_at_entry=None))"` → `(Decimal('0.01000007142908163629740212430'), 0.01)` |
-| 既存の決まり | 直し A の記録の指紋の試験は、注文の表の列を足すと指紋が変わって落ちる。この委任ではマチルダは段を使わないので、変わるのは空の 3 列だけ(推定。H5 で確かめる) | `tests/road/test_matilda_v37_r2_spec.py:110-114` |
+| 既存の決まり | 受け入れの試験は、作る前は全部落ちる(段の口が無い TypeError と、列が無い・版が 7) | `PYTHONPATH=src python -m pytest tests/road/test_anchor_b1_spec.py tests/road/test_road_fill_l769.py::test_schema_texts` → 34 failed |
+| 既存の決まり | 量は 7,000,050 円の買い・段数 2 で 0.009、6,999,950 円で 0.01 | `PYTHONPATH=src python3 -c "from bot.bt.road.strategy import size_detail, MARGIN_JPY, USE_RATIO; print(size_detail(margin_jpy=MARGIN_JPY, use_ratio=USE_RATIO, levels=2, price=6999950.0, quote_ccy='JPY', usdjpy_at_entry=None))"` → `(Decimal('0.01000007142908163629740212430'), 0.01)`、price=7000050.0 で `(Decimal('0.009999928571938771865915243463'), 0.009)` |
+| 既存の決まり | 直し A の記録の指紋の試験は、注文の表の列を足すと指紋が変わって落ちる。この委任ではマチルダは段を使わないので、変わるのは空の 3 列だけ(推定。H5 の台本が 3 列が空であることも assert で確かめる) | `tests/road/test_matilda_v37_r2_spec.py:110-114` |
 | 列の意味 | 注文の表の attached_to は、建てと一緒に出した決済の親の建ての番号 | `src/bot/bt/road/tables.py:190` |
 
 ## 決めてよいこと・決めてはいけないこと
@@ -75,7 +75,7 @@
 ## 変えないもの
 
 - H1: 試験 `tests/road/test_anchor_b1_spec.py`・`tests/road/road_anchor_strategy.py` と既存の試験(`tests/road/` の今あるファイル。リードが直した `test_schema_texts` を含む)を変えない。確かめ: `git diff --stat tests/` が空。
-- H2: 直し A を取り込んだ後の道の試験が全部通る(H5 の 1 件を除く)。確かめ: `PYTHONPATH=src python -m pytest tests/road --deselect tests/road/test_matilda_v37_r2_spec.py::test_a2_record_unchanged_on_walk` が全部 passed(飛ばし 0)。
+- H2: 直し A を取り込んだ後の道の試験と、取引所の模型を使う試験が全部通る(H5 の 1 件を除く)。確かめ: `PYTHONPATH=src python -m pytest tests/road tests/bt --deselect tests/road/test_matilda_v37_r2_spec.py::test_a2_record_unchanged_on_walk --deselect tests/road/test_matilda_v37_r2_spec.py::test_a2_cost_does_not_grow_with_closed_orders --deselect tests/road/test_matilda_v37_r2_spec.py::test_a3_checker_cost_grows_with_bars_not_squared` が全部 passed(飛ばし 0)。外した時間の試験 2 本は、ほかに何も走らせずに 1 回だけ単独で打ち、出力を報告に出す。
 - H3: 注文の表の今の列と、ほかの表の列を変えない(注文の表の終わりに 3 列を足すだけ)。確かめ: `PYTHONPATH=src python -c "from bot.bt.road.tables import SCHEMA; print({k: [c[0] for c in v['columns']] for k, v in SCHEMA['tables'].items()})"` の出力が、直す前と比べて注文の表に 3 列が足されただけ。
 - H4: 約定の決まりの宣言・core・走らせ・戦略を変えない(取引所の模型は `src/bot/bt/fill/venue.py` だけ直す)。確かめ: `git diff --stat src/bot/bt/fill/spec.py src/bot/bt/core src/bot/bt/pipeline.py src/bot/strategy` が空。
 - H5: マチルダの記録は、足した 3 列のほかは変わらない。確かめ: `PYTHONPATH=src python3 docs/DISCUSSIONS/2026-10-06_held_batches/matilda_step0/pin_without_anchor_cols.py` の出力の終わりが「PINNED」(注文の表の各行の終わりの 3 つの欄を文字のまま落として、直し A の試験と同じ 4 つの表の指紋を取る)。PINNED の取り直しはリードがする(作業者は変えない)。
@@ -87,26 +87,26 @@
 | 封印の境 | この委任には無い(合成の足だけ。実データを読まない) |
 | 日・足・期間の境 | U1(根が約定した足と次の足で、段の約定の当たり方が anchor_bar と range に分かれる)・U3(根を取り消した時刻と同じ時刻に段が閉じる) |
 | 等号 | U1(段の値段 = 安値 ちょうどで約定)・U2(売りの段の値段 = 高値 ちょうどで約定) |
-| 欠け | U3(根が約定しないまま閉じる → 段の値段が決まらない、anchor_px は空)・U5(距離・size_ref が無い) |
+| 欠け | U3(根が約定しないまま閉じる → 段の値段が決まらない、anchor_px は空。根の約定の知らせがデータの終わりまで届かない場面は、道の試験の走らせが遅れ 0 なので試験にしていない。作るもの 3 の突き合わせの決めで扱う)・U5(距離・size_ref が無い) |
 | 参照の値が無い | U5(知らない根)・U6(根の番号を書き換えると検査が落とす) |
 | 拒否・状態不明・届かない | U5(誤った口は止める)・U3(根が約定した後の段は止める) |
 | 遅れ | U4(段に付けた決済は、悪い側では次の足から) |
 | 交差と後からの変化 | U3(段を取り消した後に根が約定しても段は効かない)・U4(段の決済が効き始めるときに自分の反対の注文と出会う決まりは今と同じ) |
-| 浮動小数・刻み・丸め | U2(段の値段は 3 か所とも同じ 10 進の式。買いの段 6,999,699.5 → 6,999,699 は足の安値に届かない、売りの段 7,000,300.5 → 7,000,300 は高値ちょうど。切り上げると結果が変わる) |
+| 浮動小数・刻み・丸め | U2(段の値段は 3 か所とも同じ 10 進の式。`test_v2_decimal_sum` は浮動小数の和だと 6,999,800、10 進の和だと 6,999,799 になる距離 −1e-10。買いの段 6,999,699.5 → 6,999,699 は足の安値に届かない、売りの段 7,000,300.5 → 7,000,300 は高値ちょうど。切り上げると結果が変わる) |
 | 慣らし | この委任には無い(慣らしを持たない仕組み。足 1・2 本目は動かない足) |
-| 宣言した値の書き換え | U6(anchor_px・約定した段の anchor_px を空に・根の番号・距離・段の約定の値段を書き換えると、検査が (vii) で落とす) |
-| 並行の変更 | この委任には無い(作業者は 1 名。直し A が同じ `src/bot/bt/road/` を直すので、A を受け取ってコミットした後に渡し、行の番号はリードが取り直す。1 分足の決まりでは根は 1 回で全部約定するので、根の 2 回目の約定の場面は起きず、変異の表にも入れない) |
+| 宣言した値の書き換え | U6(anchor_px・約定した段の anchor_px を空に・根の番号・距離・距離の符号・段の約定の値段を書き換える、段の約定の行を消すと、検査が (vii) で落とす) |
+| 並行の変更 | この委任には無い(作業者は 1 名で、渡す条件 = 直し A を受け取ってコミットした後。A が同じ `src/bot/bt/road/` を直すので、行の番号はリードが渡す前に取り直す。時間の試験 2 本はほかの走らせと同時に打たない(H2)。1 分足の決まりでは根は 1 回で全部約定するので、根の 2 回目の約定の場面は起きず、変異の表にも入れない) |
 
 ## 受け入れ
 
 各項目は、試験 `tests/road/test_anchor_b1_spec.py` の挙げた試験が、試験を変えずに通ること。全体で飛ばし 0。
 
 - U1: 段の約定(L-816 の例): `test_v1_levels_fill_from_root_fill_price`・`test_v1_root_filled_in_range_anchors_on_its_limit`
-- U2: 刻みの切り捨て: `test_v2_buy_level_floored`・`test_v2_sell_level_floored`
+- U2: 刻みの切り捨て: `test_v2_buy_level_floored`・`test_v2_sell_level_floored`・`test_v2_decimal_sum`
 - U3: 根が閉じる・段を取り消す・後から出す: `test_v3_root_closed_unfilled_closes_levels`・`test_v3_level_canceled_before_root_fills`・`test_v3_level_after_root_filled_refused`
 - U4: 段に付けた決済: `test_v4_exit_attached_to_level`
-- U5: 口の誤り: `test_v5_bad_anchor_refused`(14 通り)・`test_v5_good_anchor_sends_no_price`
-- U6: 表の列と検査: `test_v6_columns`・`test_v6_tampering_fails_check`(5 通り)・`tests/road/test_road_fill_l769.py::test_schema_texts`(版 road-record-8 と列の並び)
+- U5: 口の誤り: `test_v5_bad_anchor_refused`(14 通り)・`test_v5_good_anchor_sends_no_price`・`test_v5_anchor_on_size_ref_row`
+- U6: 表の列と検査: `test_v6_columns`・`test_v6_tampering_fails_check`(7 通り)・`tests/road/test_road_fill_l769.py::test_schema_texts`(版 road-record-8 と列の並び)
 
 ## 変異の表
 
@@ -141,3 +141,17 @@
 ## 途中の決め
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
+
+## 事前の批評の後の変更
+
+見た版の sha256: 6a68e02e9baf0377d03a8fde0c12f3046067c7e079a58a2220e91a2a8c77e315
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_anchor_b1_premortem2.md` の「次の版で直す」ごと。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+
+- anchor_px が空でよい条件を 3 つに書き分けた(作るもの 4、試験の冒頭の注)。根が約定しない V3-1 と食い違っていた。
+- anchor と size_ref は別の番号でよく、size_ref で量を写した建ての行も根にしてよい、と書き、試験 `test_v5_anchor_on_size_ref_row` を足した(L-817 問い 1 の形が B2 で作れるように)。
+- 根の最初の約定の知らせが届いていない段は、表を作るときに取引所の値段と突き合わせない、と書いた(作るもの 3)。
+- H2 に `tests/bt` を足し、時間の試験 2 本は単独で 1 回打つ形にした。
+- 試験: 10 進の和の場面 `test_v2_decimal_sum`、改ざん「段の約定の行を消す」「距離の符号を逆に」を足した。
+- H5 の台本に、足した 3 列が終わりにあり全部の行で空であることの assert を足した。
+- 読んだ事実の数(5 failed・34 failed)と、7,000,050 円の量の確かめの出力を直した。

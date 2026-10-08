@@ -24,6 +24,9 @@ for name in ("signals", "orders", "fills", "trades"):
         text = data.decode("utf-8")
         assert text.endswith("\n")
         lines = text[:-1].split("\n")
+        # 足した 3 列は終わりにあり、マチルダは段を使わないので全部の行で空(事前の批評 2 回目)
+        assert lines[0].endswith(",anchored_to,anchor_offset,anchor_px"), lines[0][-80:]
+        assert all(line.endswith(",,,") for line in lines[1:]), "段の列が空でない行がある"
         data = ("\n".join(line.rsplit(",", 3)[0] for line in lines) + "\n").encode("utf-8")
     h.update(data)
 print(h.hexdigest(), "PINNED" if h.hexdigest() == R.PINNED else "違う")

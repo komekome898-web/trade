@@ -11,16 +11,18 @@
 口(この試験が決める):
 - `RoadStrategy.place(side, "limit", None, levels, signal, size_ref=根, anchor=根, offset=距離)` と
   `RoadStrategy.place_with_exit(side, None, levels, signal, exit_price, size_ref=根, anchor=根, offset=距離)`。
-  根 = 同じ売買の、place で出した指値の建ての注文(段・決済・量 0 の行は根にしない)。値段は渡さない(None)。量は size_ref で写す。
+  根 = 同じ売買の、place で出した指値の建ての注文(段・決済・量 0 の行は根にしない。size_ref で量を写した建ての行は根にしてよい)。
+  値段は渡さない(None)。量は size_ref で写す。anchor と size_ref は別の番号でよい(玉を持って段を足す回は、根 = その回の
+  最初の段、size_ref = 取引の最初の段。L-817「**問い 1(B-1) a**」)。
   距離は 0 でない有限の数で、買いは負・売りは正(根より不利でない向き = ナンピンの向き)。
 - 段は根が最初に約定するまで何も効かない。根の最初の約定値段 F で、段の値段 = 刻みに切り捨てた F + 距離(売りも買いも
-  切り捨て。L-783)。その時刻から待ち、根が約定した足でも、段の値段が足の範囲の内(安値 ≦ 値段 ≦ 高値)なら段の値段で約定する
+  切り捨て。L-783。和は Decimal(repr(F)) + Decimal(repr(距離)) の 10 進で取る)。その時刻から待ち、根が約定した足でも、段の値段が足の範囲の内(安値 ≦ 値段 ≦ 高値)なら段の値段で約定する
   (良い側・悪い側の両方。約定の印 fill_case = "anchor_bar")。次の足からはふつうの指値(range_open)。
 - 根が何も約定せずに閉じたら、段は取引所が閉じる(理由 "anchor_root_closed_unfilled")。
 - 注文の表に列 anchored_to(根の番号)・anchor_offset(距離)・anchor_px(段の値段。根の最初の約定の知らせで書く。
   それまでに閉じた段と、根を持たない注文は空)を足す。段の limit_px・sent_limit_px は空。
-- 検査 `check_outputs` は、段の値段を根の最初の約定から計算し直して anchor_px と比べ(空でよいのは、根の最初の約定の知らせより前に
-  閉じた段だけ)、段の約定を段の値段の決まりで確かめる((vii))。
+- 検査 `check_outputs` は、段の値段を根の最初の約定から計算し直して anchor_px と比べ(空でよいのは、根が約定していない・
+  根の最初の約定の知らせが届いていない・段がその知らせより前に閉じた、の 3 つのときだけ)、段の約定を段の値段の決まりで確かめる((vii))。
 - 表の版は road-record-8(`tests/road/test_road_fill_l769.py::test_schema_texts`)。
 """
 from __future__ import annotations
@@ -129,6 +131,16 @@ def test_v2_sell_level_floored(tmp_path, anchor_module):
         assert fills(res, s) == [("road-0", t(3), "7000200.0", "open"), ("road-1", t(3), "7000300.0", "anchor_bar")]
 
 
+def test_v2_decimal_sum(tmp_path, anchor_module):
+    # 段の値段の和は 10 進で取る: F 6,999,800 + 距離 −1e-10 は、浮動小数の和では 6,999,800.0(刻みの間隔より小さい差が消える)、
+    #   10 進の和では 6,999,799.9999999999 → 切り捨て 6,999,799。足 3 の安値 6,999,700 ≦ 6,999,799 → 同じ足で 6,999,799(anchor_bar)
+    res = run(tmp_path, [B3], dict(BUY, children=[{"offset": -1e-10}]))
+    S.check_ok(res)
+    for s in SIDES:
+        assert orders(res, s)[1][5:7] == ("-1e-10", "6999799.0")
+        assert fills(res, s) == [("road-0", t(3), "6999800.0", "open"), ("road-1", t(3), "6999799.0", "anchor_bar")]
+
+
 # ================================================================ V3 根が閉じる・段を取り消す・後から出す
 UP = (7000200, 7000300, 7000100, 7000200)  # 根 7,000,050 < 安値 → 根は約定しない
 
@@ -229,6 +241,21 @@ def test_v5_good_anchor_sends_no_price():
     assert dict(child.extra) == {"anchored_to": "road-0", "anchor_offset": -100.0}
 
 
+def test_v5_anchor_on_size_ref_row():
+    # 玉を持って段を足す回の形: 根 = size_ref で量を写した建ての行(road-1)、size_ref = 取引の最初の段(road-0)。止めない
+    def act(s):
+        s.signal_start("s1", "試験", "long", {})
+        first = s.place("buy", "limit", 7000050.0, 2, "s1")
+        batch_root = s.place("buy", "limit", 6999950.0, 2, "s1", size_ref=first)
+        s.place("buy", "limit", None, 2, "s1", size_ref=first, anchor=batch_root, offset=-100.0)
+    s = S._Probe(act)
+    s.set_price_tick(1.0)
+    ctx = S._Ctx()
+    s.on_event(S._bar(), ctx)
+    assert dict(ctx.sent[2].extra) == {"anchored_to": "road-1", "anchor_offset": -100.0}
+    assert ctx.sent[2].size == ctx.sent[0].size
+
+
 # ================================================================ V6 表の列と検査
 def test_v6_columns():
     cols = [c[0] for c in SCHEMA["tables"]["orders"]["columns"]]
@@ -242,6 +269,8 @@ TAMPER = [
     ("根の番号", "orders", "road-1", lambda r: r.update(anchored_to="road-9")),
     ("距離", "orders", "road-1", lambda r: r.update(anchor_offset="-99.0")),
     ("段の約定の値段", "fills", "road-1", lambda r: r.update(px="6999701.0")),
+    ("段の約定の行を消す", "fills", "road-1", lambda r: r.update(_drop=True)),
+    ("距離の符号を逆に", "orders", "road-1", lambda r: r.update(anchor_offset="100.0")),
 ]
 
 
@@ -257,6 +286,7 @@ def test_v6_tampering_fails_check(tmp_path, anchor_module, label, table, oid, ed
     for r in r2:
         if r["range"] == "pessimistic" and r["order_id"] == oid:
             edit(r)
+    r2 = [r for r in r2 if not r.get("_drop")]
     S._rewrite(p2, h2, r2, d)
     f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
     # 新しい段の確かめ((vii))が落とす。例外で止まった検査の "i" の失敗では通さない(事前の批評 1 回目の問5)
