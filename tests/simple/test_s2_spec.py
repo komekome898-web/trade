@@ -308,6 +308,57 @@ def _orders_garbage(out, bars):
         fh.write("garbage\n1,2,3\n")
 
 
+def _order_px_col_only(out, bars):
+    # 注文の記録の px 列(切り捨てた値段)だけを書き換える。作り直しは px 列を戦略の値段から計算し直して突き合わせる
+    def fn(rows):
+        i, k = _col(rows, "px"), _col(rows, "id")
+        for row in rows[1:]:
+            if row[k] == "r1":
+                row[i] = repr(float(row[i]) + 1.0)
+                return rows
+        raise AssertionError("r1 の行が無い")
+    _rw(out, "orders", fn)
+
+
+def _order_px_and_fill_together(out, bars):
+    # 走らせが切り捨てを忘れたかのように、r1 の px 列と約定の値段を、そろえて 7,000,000.5 にする。
+    #   px 列を入力にする作り直しは通してしまう。戦略の値段 px_calc(7,000,000.0)から切り捨て直す作り直しは見つける
+    def fo(rows):
+        i, k = _col(rows, "px"), _col(rows, "id")
+        for row in rows[1:]:
+            if row[k] == "r1":
+                row[i] = "7000000.5"
+        return rows
+
+    def ff(rows):
+        i, k = _col(rows, "px"), _col(rows, "id")
+        for row in rows[1:]:
+            if row[k] == "r1":
+                row[i] = "7000000.5"
+        return rows
+    _rw(out, "orders", fo)
+    _rw(out, "fills", ff)
+
+
+def _run_json_side_only(out, bars):
+    p = os.path.join(out, "run_optimistic.json")
+    with open(p, encoding="utf-8") as fh:
+        rec = json.load(fh)
+    rec["side"] = "pessimistic"
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(rec, fh)
+
+
+def _run_json_seal_before_last_bar(out, bars):
+    # run の記録の封印の境を、渡す足の最後の足の始まりにする(足がその境に届いている)
+    p = os.path.join(out, "run_optimistic.json")
+    with open(p, encoding="utf-8") as fh:
+        rec = json.load(fh)
+    rec["seal"] = bars[-1][0]
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(rec, fh)
+
+
 TAMPERS = [
     ("約定を次の足にずらす", _fill_moved_to_next_bar),
     ("約定の値段を 1 円上げる", _fill_px_plus_one),
@@ -323,6 +374,10 @@ TAMPERS = [
     ("run の記録が無い", _run_json_missing),
     ("fills が UTF-8 でない", _fills_not_utf8),
     ("orders がでたらめ", _orders_garbage),
+    ("注文の px 列だけを書き換える", _order_px_col_only),
+    ("注文の px 列と約定の値段をそろえて書き換える", _order_px_and_fill_together),
+    ("run の側だけを書き換える", _run_json_side_only),
+    ("足が run の封印の境に届いている", _run_json_seal_before_last_bar),
 ]
 
 
