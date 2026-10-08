@@ -94,6 +94,11 @@ SCENES = [
     ("欠けた分の後の次の足", [FLAT, B1, B2], {0: {"r": ROOT, "l1": lv(-300.0)}, 1: {"l1": lv(-300.0)}}, 1.0, [0, 1, 5]),
     ("同じ足に同じ形が 2 本(出した順)", [FLAT, B1], {0: {"b": dict(ROOT, px=6999750.0), "a": dict(ROOT, px=6999760.0)}}, 1.0, None),
     ("データの終わりまで出ていた注文", [FLAT, FLAT], {0: {"r": dict(ROOT, px=6000000.0)}, 1: {"r": dict(ROOT, px=6000000.0)}}, 1.0, None),
+    # 段の値段の和を float で足すと 6,999,700.399999999 → 切り捨て 6,999,700.3、10 進で足すと 6,999,700.4(SPEC.md §3)。
+    #   足 2 の安値 6,999,700.4 ちょうどなので、10 進の和なら約定し、float の和なら約定しない
+    ("段の値段は 10 進の和(刻み 0.1、float の和と食い違う値)", [FLAT, (6999801.1, 6999850, 6999750, 6999800),
+                                                (6999750, 6999800, 6999700.4, 6999750)],
+     {0: {"r": dict(ROOT, px=6999801.1), "l1": lv(-100.7)}, 1: {"l1": lv(-100.7)}}, 0.1, None),
 ]
 
 
@@ -186,7 +191,8 @@ def _base(tmp_path, side="optimistic"):
                 "x": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}},
             1: {"l2": lv(-200.0), "x": {"form": "exit", "side": "sell", "qty": 0.009, "parent": "l1", "px": 6999790.0}},
             2: {"r1": R1, "x1": X1}, 3: {"r2": R2, "x1": X1},
-            4: {"m": MKT, "far": dict(R1, px=6000000.0)}}  # far は約定しない指値(足 5 で出たまま、データの終わり)
+            4: {"m": MKT, "far": dict(R1, px=6000000.0),  # far は約定しない指値(足 5 で出たまま、データの終わり)
+                "far2": dict(R1, px=6000000.0), "farl": lv(-100.0, root="far2")}}  # 約定しない根と段
     out, bars = go(tmp_path, rows, plan, side)
     assert refill(bars, out, side) == []
     return out, bars
@@ -390,6 +396,23 @@ def _level_px_and_fill_together(out, bars):
     _rw(out, "fills", fn)
 
 
+def _fill_last_row_px(out, bars):
+    # 約定の記録の最後の行の値段だけを 1 円上げる(行の数は変わらない)
+    def fn(rows):
+        i = _col(rows, "px")
+        rows[-1][i] = repr(float(rows[-1][i]) + 1.0)
+        return rows
+    _rw(out, "fills", fn)
+
+
+def _unfilled_root_row_deleted(out, bars):
+    # 約定しなかった根 far2 の行を消す(段 farl の根の行が無い。約定の記録は変わらない)
+    def fn(rows):
+        k = _col(rows, "id")
+        return [r for r in rows if r[k] != "far2"]
+    _rw(out, "orders", fn)
+
+
 TAMPERS = [
     ("約定を次の足にずらす", _fill_moved_to_next_bar),
     ("約定の値段を 1 円上げる", _fill_px_plus_one),
@@ -411,6 +434,8 @@ TAMPERS = [
     ("足が run の封印の境に届いている", _run_json_seal_before_last_bar),
     ("約定しなかった注文の from_ts を足に無い時刻に", _order_from_ts_not_in_bars),
     ("段の px 列と約定の値段をそろえて書き換える", _level_px_and_fill_together),
+    ("約定の記録の最後の行の値段だけを書き換える", _fill_last_row_px),
+    ("約定しなかった根の行を消す(段の根が無い)", _unfilled_root_row_deleted),
 ]
 
 
