@@ -78,7 +78,7 @@
 - 新しい clone では `sh scripts/install_git_hooks.sh` を 1 回実行する(押し出しの関門 `githooks/pre-push` は実行するまで効かない)。
 - フックは 7 本(実物は `ls .claude/hooks`。一覧と経緯は `docs/AUDITOR/ACTION_LOG.md` 063・076・078・080)。フック・`settings.json`・`githooks/`・監査役の定義はオーナーの指示があったときだけ変え(A-16)、変えたら同じコミットで `sh scripts/regen_hook_manifest.sh`。台帳(`docs/AUDITOR/HOOK_MANIFEST.sha256`)に載ったファイルを消す・書き換えるときは、削除・台帳の再生成・コミット・押し出しを 1 回の Bash 呼び出しにまとめて最後に打つ(I-012)。`settings.json` にはスキーマの鍵しか置かない(I-010)。
 - `python3 scripts/verify_gates.py` は関門の部品を叩くだけで、ハーネスが呼んでいるかは見ない。効いているかを確かめる唯一の方法は、止まるはずの操作をして止まるかを見ること(`docs/DISCUSSIONS/2026-09-14_instruction_adherence/STAGE0_hook_probe.md`)。
-- 数え直しは範囲を切らずに次を全部打ち、コマンドを結果と一緒に出す(L-173): ファイル数 `git ls-files -z | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c` / 行数 `git ls-files -z | xargs -0 grep -c '<語>' | grep -v ':0$'` / ファイルごとの出現数 `git ls-files -z | xargs -0 grep -o '<語>' | cut -d: -f1 | uniq -c` / 合計 `git ls-files -z | xargs -0 grep -oh '<語>' | wc -l`。範囲を切ったら切ったことを書き、「全部数えた」と書かない。
+- 数え直しは範囲を切らずに(ただし git に載っている封印の置き場の 14 ファイルは除く。L-826)次を全部打ち、コマンドを結果と一緒に出す(L-173): ファイル数 `git ls-files -z -- . ':!docs/RESEARCH/WINDOW1' ':!backtest_data/phase2_sealed' | xargs -0 grep -lZ '<語>' | tr -dc '\0' | wc -c` / 行数 `git ls-files -z -- . ':!docs/RESEARCH/WINDOW1' ':!backtest_data/phase2_sealed' | xargs -0 grep -c '<語>' | grep -v ':0$'` / ファイルごとの出現数 `git ls-files -z -- . ':!docs/RESEARCH/WINDOW1' ':!backtest_data/phase2_sealed' | xargs -0 grep -o '<語>' | cut -d: -f1 | uniq -c` / 合計 `git ls-files -z -- . ':!docs/RESEARCH/WINDOW1' ':!backtest_data/phase2_sealed' | xargs -0 grep -oh '<語>' | wc -l`。範囲を切ったら切ったことを書き、「全部数えた」と書かない。
 - 緊急停止: リポジトリ直下に `KILL` ファイルを作成。ダッシュボード: http://127.0.0.1:8300
 
 ## 4. プロジェクト体制
