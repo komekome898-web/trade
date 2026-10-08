@@ -5,8 +5,10 @@ from decimal import Decimal
 
 from .common import floor_tick
 
-# 1 本の足の中で約定させ記す順(SPEC.md §3): ① 成行 ② 親が前の足までに約定した利確 ③ 指値 ④ 段 ⑤ 親がこの足で約定した利確
-RANK_MARKET, RANK_EXIT_EARLIER, RANK_LIMIT, RANK_LEVEL, RANK_EXIT_SAME_BAR = range(5)
+# 1 本の足の中で約定させ記す順(SPEC.md §3): ⓪ 前からの建玉を閉じる注文のうち始値で約定するもの ① 成行
+# ② 前からの建玉を閉じる注文のうち範囲の内で約定するもの ③ 指値(close の印の無いもの) ④ 段 ⑤ 親がこの足で約定した利確
+# 前からの建玉を閉じる注文 = 親が前の足までに約定した利確と、close の印の付いた指値
+RANK_CLOSE_OPEN, RANK_MARKET, RANK_CLOSE_RANGE, RANK_LIMIT, RANK_LEVEL, RANK_EXIT_SAME_BAR = range(6)
 
 
 class Order:
@@ -19,6 +21,7 @@ class Order:
         self.root = raw.get("root") if self.form == "level" else None
         self.offset = float(raw["offset"]) if self.form == "level" else None
         self.parent = raw.get("parent") if self.form == "exit" else None
+        self.close = self.form == "limit" and raw.get("close") is True  # 建玉を閉じる指値の印(run が形を検めてから作る)
         self.px: float | None = None  # 切り捨てた値段(level は根が約定した時に決まる)
         self.state = "live"  # live / filled / gone
         self.fill_ts: str | None = None
@@ -30,8 +33,8 @@ class Order:
         self.parent_order: "Order | None" = None  # exit の親(run が結ぶ)
 
     def key(self) -> tuple:
-        """同じ番号の比べ: 形・売買・量・戦略が出した値段そのもの・根・距離・親。"""
-        return (self.form, self.side, self.qty, self.px_calc, self.root, self.offset, self.parent)
+        """同じ番号の比べ: 形・売買・量・戦略が出した値段そのもの・根・距離・親・close の印。"""
+        return (self.form, self.side, self.qty, self.px_calc, self.root, self.offset, self.parent, self.close)
 
 
 def _limit_rule(o: Order, px: float, bar):
@@ -44,15 +47,21 @@ def _limit_rule(o: Order, px: float, bar):
     return None
 
 
-def _rank(o: Order) -> int:
-    """足に入る時点の状態で決める組の番号(足の中で約定した注文の状態では決めない)。"""
+def _close_rank(o: Order, bar) -> int:
+    """前からの建玉を閉じる注文の組: 約定値段が始値(始値で約定、または切り捨てた後の値段が始値ちょうど)なら ⓪、範囲の内なら ②。"""
+    res = _limit_rule(o, o.px, bar)
+    return RANK_CLOSE_OPEN if res is not None and res[0] == bar[1] else RANK_CLOSE_RANGE
+
+
+def _rank(o: Order, bar) -> int:
+    """足に入る時点の状態と足から決める組の番号(足の中で約定した注文の状態では決めない)。"""
     if o.form == "market":
         return RANK_MARKET
     if o.form == "limit":
-        return RANK_LIMIT
+        return _close_rank(o, bar) if o.close else RANK_LIMIT
     if o.form == "level":
         return RANK_LEVEL
-    return RANK_EXIT_EARLIER if o.parent_order.state == "filled" else RANK_EXIT_SAME_BAR
+    return _close_rank(o, bar) if o.parent_order.state == "filled" else RANK_EXIT_SAME_BAR
 
 
 def fill_bar(live: list, bar, side: str, tick: float) -> list:
@@ -62,7 +71,7 @@ def fill_bar(live: list, bar, side: str, tick: float) -> list:
     """
     ts, op, hi, lo, _, _ = bar
     filled = []
-    for o in sorted(live, key=lambda x: (_rank(x), x.seq)):  # sorted は全部の鍵を先に作るので、組は足に入る時点の状態で決まる
+    for o in sorted(live, key=lambda x: (_rank(x, bar), x.seq)):  # sorted は全部の鍵を先に作るので、組は足に入る時点の状態で決まる
         res = None
         if o.form == "market":
             res = (op, "market")

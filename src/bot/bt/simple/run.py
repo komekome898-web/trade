@@ -14,7 +14,7 @@ from .common import (FILL_COLS, SIDES, SimpleRoadError, cell, floor_tick, is_num
 from .fills import Order, fill_bar
 
 SIDE_NAMES = ("optimistic", "pessimistic")
-ORDER_COLS = ("seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts")
+ORDER_COLS = ("seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts", "close")
 SIGNAL_COLS = ("id", "kind", "direction", "start_ts", "end_ts", "end_reason", "value_json")
 FORMS = ("limit", "level", "exit", "market")
 
@@ -61,6 +61,8 @@ def _shape(oid, o) -> None:
     if not is_number(q) or not step_ok(q):
         raise SimpleRoadError(f"注文 {oid} の量は 0 より大きく 0.001 の刻みの上: {q!r}")
     f = o["form"]
+    if "close" in o and (f != "limit" or o["close"] is not True):
+        raise SimpleRoadError(f"注文 {oid} の close の印は limit にだけ、値は True だけ: {f} / {o['close']!r}")
     if f in ("limit", "exit") and not (is_number(o.get("px")) and o["px"] > 0):
         raise SimpleRoadError(f"注文 {oid} の値段は 0 より大きい数: {o.get('px')!r}")
     if f == "level":
@@ -105,7 +107,8 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
         def write_order(o: Order) -> None:
             orders_f.row([o.seq, o.id, o.form, o.side, num(o.qty),
                           None if o.px_calc is None else num(o.px_calc), None if o.px is None else num(o.px),
-                          o.root, None if o.offset is None else num(o.offset), o.parent, o.first_ts, o.last_ts])
+                          o.root, None if o.offset is None else num(o.offset), o.parent, o.first_ts, o.last_ts,
+                          "1" if o.close else None])
 
         for bar in bars:
             ts = bar[0]
