@@ -7,12 +7,12 @@ L-831 で、S1・S1 の直し・直し 2 の 3 つの試験のファイルを、
 L-754「**私がしてほしいの決まりを足すんじゃなくて、この計算が確実にできるツールを作ることと、そのツールが必ず使われる仕組みです。**」
 
 口(この試験が決める):
-- `from bot.bt.simple import run, read_bars, check_numbers, SimpleRoadError`
+- `from bot.bt.simple import run, read_bars, SimpleRoadError`
 - `run(bars, strategy, side, out_dir, tick, meta)`: bars は (足の始まりの時刻の文字列, 始値, 高値, 安値, 終値, 出来高) の並び。
-  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイルを書く。meta は run_<側>.json に写す辞書。
+  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイル(約定・合図・まとめ・走らせの記録)を書く。
+  meta は run_<側>.json に写す辞書。注文の記録は書かない(L-851)。
 - 戦略は `decide(bar, fills)` を持ち、(注文の辞書 {番号: 注文}, 合図の出来事の並び) を返す。止める場面は `SimpleRoadError`。
 - `read_bars(paths, seal_iso)`: 1 分足のファイル(CSV.gz)を読み、値段の空の足を飛ばし、封印の境の行で終わる。
-- `check_numbers(out_dir, side)`: 帳簿のツールで約定から計算し直した数と、書いた数の食い違いの並び(無ければ空)。
 """
 from __future__ import annotations
 
@@ -20,37 +20,38 @@ import csv
 import gzip
 import json
 import os
-import shutil
 import tempfile
 import tracemalloc
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from bot.bt.road.ledger import book
 from simple_scenes import (A1, A2, B1, B2, C1, FLAT, M1, META, R1, R2, ROOT, SCENES, SEAL, SIDES, X1, Script, check_all, ex,
-                    lim, lv, make_bars, table, ts)
+                           lim, lv, make_bars, table, ts)
 
 simple = pytest.importorskip("bot.bt.simple")
-run, read_bars, check_numbers, SimpleRoadError = simple.run, simple.read_bars, simple.check_numbers, simple.SimpleRoadError
+run, read_bars, SimpleRoadError = simple.run, simple.read_bars, simple.SimpleRoadError
 
 
-def _t(v):
-    return ts(v) if isinstance(v, int) else v
+def _kind(raw):
+    return "close" if raw.get("close") else ("entry" if raw["form"] == "limit" else raw["form"])
 
 
-# ================================================================ 場面の表(simple_scenes.py)の約定・注文の記録・合図
+# ================================================================ 場面の表(simple_scenes.py)の約定・合図
 def test_scenes(tmp_path):
     def one(sc):
+        raws = {i: o for plan in sc["plan"].values() for i, o in plan.items()}
         for side in SIDES:
             out = str(tmp_path / f"{SCENES.index(sc)}" / side)
             st = Script(sc["plan"], sc.get("signals"))
             run(make_bars(sc["rows"], sc.get("minutes")), st, side=side, out_dir=out, tick=sc.get("tick", 1.0), meta=META)
             want = sc["fills"][side] if isinstance(sc["fills"], dict) else sc["fills"]
-            got = [(r["ts"], r["id"], r["px"], r["case"]) for r in table(out, "fills", side)]
-            assert got == [(ts(k), i, px, c) for k, i, px, c in want], (side, got)
-            rows = {r["id"]: r for r in table(out, "orders", side)}
-            for oid, cols in sc.get("orders", {}).items():
-                assert {c: rows[oid][c] for c in cols} == {c: _t(v) for c, v in cols.items()}, (side, oid)
+            assert st.got == [(ts(k), i, float(px), c) for k, i, px, c in want], (side, st.got)
+            # 約定のファイルは戦略に届いた約定と同じ順・同じ値段で、番号の代わりに注文の種類を書く
+            rows = table(out, "fills", side)
+            assert [(r["ts"], r["kind"], float(r["px"]), r["case"]) for r in rows] == [
+                (t, _kind(raws[i]), px, c) for t, i, px, c in st.got], (side, rows)
             if "seen" in sc:
                 assert st.seen == sc["seen"], (side, st.seen)
             for want_row, r in zip(sc.get("signal_rows", []), table(out, "signals", side)):
@@ -138,115 +139,32 @@ def test_files(tmp_path):
     s = table(out, "signals", "optimistic")
     assert [(r["id"], r["kind"], r["direction"], r["start_ts"], r["end_ts"], r["end_reason"]) for r in s] == [
         ("s1", "試験", "long", ts(0), ts(2), "試験の終わり")]
-    assert json.loads(s[0]["value_json"]) == {"a": 1}
     with open(os.path.join(out, "run_optimistic.json"), encoding="utf-8") as fh:
         rec = json.load(fh)
     assert {"strategy", "params", "seal", "tick", "side", "git"} <= set(rec)
-    with open(os.path.join(out, "orders_optimistic.csv"), newline="", encoding="utf-8") as fh:
-        assert next(csv.reader(fh)) == ["seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent",
-                                        "from_ts", "to_ts", "close"]
-    assert len(table(out, "trades", "optimistic")) == 1 and check_numbers(out, "optimistic") == []
+    assert sorted(os.listdir(out)) == ["fills_optimistic.csv", "run_optimistic.json", "signals_optimistic.csv",
+                                       "summary_optimistic.json"]
+    with open(os.path.join(out, "fills_optimistic.csv"), encoding="utf-8") as fh:
+        assert fh.read() == ("ts,kind,side,qty,px,case\n" f"{ts(1)},entry,buy,0.009,6999800,open\n"
+                             f"{ts(3)},market,sell,0.009,7000000,market\n")
+    # まとめは、約定のファイルを建玉が 0 に戻るまでの塊に分けて数えた数が、全部を帳簿のツールに 1 回で渡した数と同じ
+    #   (取引 1 回が閉じ 1 回が途中)
+    base = str(tmp_path / "base")
+    run(make_bars([FLAT, A1, A2]), Script({0: {"r1": R1}, 1: {"r2": R2, "x1": X1}}), side="optimistic", out_dir=base,
+        tick=1.0, meta=META)
+    fills = [{"t_ns": int(datetime.fromisoformat(r["ts"]).timestamp()) * 10**9, "side": r["side"], "qty": float(r["qty"]),
+              "px": float(r["px"]), "ccy": "JPY"} for r in table(base, "fills", "optimistic")]
+    whole = {k: v for k, v in book(fills).summary.items() if k != "trades"}
+    with open(os.path.join(base, "summary_optimistic.json"), encoding="utf-8") as fh:
+        assert json.load(fh) == whole and whole["closed_trades"] == 1 and whole["open_trades"] == 1
     # 同じディレクトリで走らせ直しても前の中身を残さない。良い側と悪い側は同じディレクトリに別々に残る
     same = str(tmp_path / "same")
     for side in ("optimistic", "optimistic", "pessimistic"):
         run(make_bars([FLAT, B1]), Script({0: {"r": ROOT}}), side=side, out_dir=same, tick=1.0, meta=META)
     for side in SIDES:
-        assert [r["id"] for r in table(same, "fills", side)] == ["r"]
+        assert [r["kind"] for r in table(same, "fills", side)] == ["entry"]
         with open(os.path.join(same, f"run_{side}.json"), encoding="utf-8") as fh:
             assert json.load(fh)["side"] == side
-
-
-# ================================================================ 数の作り直しは壊した記録を通さない(例外にもしない)
-ZERO = json.dumps({"fill_count": 0, "closed_trades": 0, "pnl_jpy": "0", "open_trades": 0}).encode()
-TRADES_HEAD = b"first_t_ns,last_t_ns,levels,max_position,hold_ns,pnl_jpy,status\n"
-FILLS_HEAD = b"ts,id,side,qty,px,case\n"
-
-
-def _p(out, name):
-    return os.path.join(out, f"{name}_optimistic.{'json' if name == 'summary' else 'csv'}")
-
-
-def _bytes(out, name, fn):
-    with open(_p(out, name), "rb") as fh:
-        data = fh.read()
-    with open(_p(out, name), "wb") as fh:
-        fh.write(fn(data))
-
-
-def _lines(fn):
-    return lambda d: b"\n".join(fn(d.rstrip(b"\n").split(b"\n"))) + b"\n"
-
-
-def _cell(name, col, val):
-    def t(out):
-        with open(_p(out, name), newline="", encoding="utf-8") as fh:
-            rows = list(csv.reader(fh))
-        rows[1][rows[0].index(col)] = val
-        with open(_p(out, name), "w", newline="", encoding="utf-8") as fh:
-            csv.writer(fh, lineterminator="\n").writerows(rows)
-    return t
-
-
-def _summary(fn):
-    def t(out):
-        with open(_p(out, "summary"), encoding="utf-8") as fh:
-            s = json.load(fh)
-        _bytes(out, "summary", lambda d: json.dumps(fn(s)).encode())
-    return t
-
-
-def _zero_run_but(name, data):
-    def t(out):
-        for n, d in (("fills", FILLS_HEAD), ("trades", TRADES_HEAD), ("summary", ZERO)):
-            _bytes(out, n, lambda _, d=d: d)
-        _bytes(out, name, lambda _: data)
-    return t
-
-
-NUMBER_TAMPERS = [
-    ("fills だけが 0 バイト・trades と summary は約定 0 本", _zero_run_but("fills", b"")),
-    ("fills の見出しがでたらめ・行なし・trades と summary は約定 0 本", _zero_run_but("fills", b"garbage\n")),
-    ("fills の見出しに余計な列", lambda out: _bytes(out, "fills", lambda d: d.replace(b"\n", b",extra\n", 1))),
-    ("約定の行の欄が多すぎる", lambda out: _bytes(out, "fills", _lines(lambda ls: ls[:-1] + [ls[-1] + b",extra"]))),
-    ("trades の見出しに余計な列", lambda out: _bytes(out, "trades", lambda d: d.replace(b"\n", b",extra\n", 1))),
-    ("trades の行を 1 つ足す", lambda out: _bytes(out, "trades", _lines(lambda ls: ls + [ls[-1]]))),
-    ("trades の行を 1 つ消す", lambda out: _bytes(out, "trades", _lines(lambda ls: ls[:-1]))),
-    ("trades の中身の行の末尾に余計な欄", lambda out: _bytes(out, "trades", _lines(lambda ls: [ls[0], ls[1] + b",extra"] + ls[2:]))),
-    ("trades の改行を CRLF に", lambda out: _bytes(out, "trades", lambda d: d.replace(b"\n", b"\r\n"))),
-    ("trades の損益を書き換える", _cell("trades", "pnl_jpy", "12345")),
-    ("trades の保有時間を書き換える", _cell("trades", "hold_ns", "1")),
-    ("summary が []", lambda out: _bytes(out, "summary", lambda d: b"[]")),
-    ("summary の値を全部文字に", _summary(lambda s: {k: str(v) for k, v in s.items()})),
-    ("summary に余計な鍵", _summary(lambda s: dict(s, extra=1))),
-    ("summary の値を真偽値に", _summary(lambda s: dict(s, closed_trades=bool(s["closed_trades"])))),  # 1 → true(True == 1)
-    ("summary の値を小数に", _summary(lambda s: dict(s, fill_count=float(s["fill_count"])))),  # 3 → 3.0(3.0 == 3)
-    ("summary の損益を書き換える", _summary(lambda s: dict(s, pnl_jpy="999"))),
-]
-
-
-def test_check_numbers(tmp_path):
-    # 約定が 0 本の走らせ(見出しだけの fills・trades と 0 の summary)はそのまま合格
-    zero = str(tmp_path / "zero")
-    run(make_bars([FLAT, FLAT]), Script({}), side="optimistic", out_dir=zero, tick=1.0, meta=META)
-    with open(_p(zero, "fills"), "rb") as fh:
-        assert fh.read() == FILLS_HEAD
-    with open(_p(zero, "trades"), "rb") as fh:
-        assert fh.read() == TRADES_HEAD
-    assert check_numbers(zero, "optimistic") == []
-    # 取引 1 回が閉じ 1 回が途中の走らせを、1 か所ずつ壊す
-    base = str(tmp_path / "base")
-    run(make_bars([FLAT, A1, A2]), Script({0: {"r1": R1}, 1: {"r2": R2, "x1": X1}}), side="optimistic", out_dir=base,
-        tick=1.0, meta=META)
-    assert check_numbers(base, "optimistic") == []
-
-    def one(case):
-        name, tamper = case
-        out = str(tmp_path / f"n{NUMBER_TAMPERS.index(case)}")
-        shutil.copytree(base, out)
-        tamper(out)
-        got = check_numbers(out, "optimistic")  # 例外を出さない
-        assert isinstance(got, list) and got != [] and all(isinstance(x, str) for x in got), got
-    check_all(NUMBER_TAMPERS, one)
 
 
 # ================================================================ 消えた注文を記憶に持ち続けない

@@ -1,4 +1,5 @@
-"""走らせ(SPEC.md §2・§4): 足を古い順に回し、足ごとに 約定 → 戦略に知らせる → 判定。残すファイルは回しながら書き足す。"""
+"""走らせ(SPEC.md §2・§4): 足を古い順に回し、足ごとに 約定 → 戦略に知らせる → 判定。約定と合図を回しながら書き足し、
+終わった後に約定のファイルを頭から読んで損益のまとめを数える(約定を記憶にためない。L-854)。"""
 from __future__ import annotations
 
 import csv
@@ -7,15 +8,16 @@ import os
 import subprocess
 from contextlib import ExitStack
 
+from decimal import Decimal
+
 from bot.bt.road.ledger import book
 
-from .common import (FILL_COLS, SIDES, SimpleRoadError, cell, floor_tick, is_number, num, parse_ts,
-                     step_ok, to_ns, trades_text)
+from .common import (FILL_COLS, SIDES, SUMMARY_COLS, SimpleRoadError, cell, floor_tick, is_number, num, parse_ts,
+                     step_ok, to_ns)
 from .fills import Order, fill_bar
 
 SIDE_NAMES = ("optimistic", "pessimistic")
-ORDER_COLS = ("seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts", "close")
-SIGNAL_COLS = ("id", "kind", "direction", "start_ts", "end_ts", "end_reason", "value_json")
+SIGNAL_COLS = ("id", "kind", "direction", "start_ts", "end_ts", "end_reason")
 FORMS = ("limit", "level", "exit", "market")
 
 
@@ -29,7 +31,6 @@ class _Csv:
 
     def row(self, vals):
         self._w.writerow([cell(v) for v in vals])
-        self._fh.flush()
 
 
 def _git_version() -> str:
@@ -85,31 +86,21 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
     seal = parse_ts(meta["seal"])
     os.makedirs(out_dir, exist_ok=True)
     path = lambda name, ext="csv": os.path.join(out_dir, f"{name}_{side}.{ext}")  # noqa: E731
-    for stale in (path("trades"), path("summary", "json")):
-        if os.path.exists(stale):
-            os.remove(stale)  # 前の走らせの数を残さない
+    if os.path.exists(path("summary", "json")):
+        os.remove(path("summary", "json"))  # 前の走らせの数を残さない
     with open(path("run", "json"), "w", encoding="utf-8") as fh:
         json.dump(dict(meta, tick=tick, side=side, git=_git_version()), fh, ensure_ascii=False, indent=1)
 
-    seen: set[str] = set()  # 受けた注文の番号(使い回しの検め用。消えた注文は番号だけをここに残す)
-    n_seen = 0  # 受けた注文の数(seq の元。記憶に持つ注文の数からは出さない)
-    filled: dict[str, Order] = {}  # 約定した注文(段・利確の検めに要る中身を持つ)
+    seen: set[str] = set()  # 受けた注文の番号(使い回しの検め用)
+    n_seen = 0  # 受けた注文の数(同じ組の中の順の元)
+    filled: dict[str, Order] = {}  # 約定した注文(段・利確の根・親を引くため)
     live: list[Order] = []
-    sig_open: dict[str, list] = {}  # 出ている合図 id → [kind, direction, start_ts, value_json]
+    sig_open: dict[str, list] = {}  # 出ている合図 id → [kind, direction, start_ts]
     sig_seen: set[str] = set()
-    fill_rows: list[dict] = []
     last_ts = None
     with ExitStack() as stack:
-        orders_f = _Csv(stack, path("orders"), ORDER_COLS)
         fills_f = _Csv(stack, path("fills"), FILL_COLS)
         sig_f = _Csv(stack, path("signals"), SIGNAL_COLS)
-
-        def write_order(o: Order) -> None:
-            orders_f.row([o.seq, o.id, o.form, o.side, num(o.qty),
-                          None if o.px_calc is None else num(o.px_calc), None if o.px is None else num(o.px),
-                          o.root, None if o.offset is None else num(o.offset), o.parent, o.first_ts, o.last_ts,
-                          "1" if o.close else None])
-
         for bar in bars:
             ts = bar[0]
             t = parse_ts(ts)
@@ -123,16 +114,10 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
                 raise SimpleRoadError(f"足の安値が高値より高い: {ts}")
             last_ts = ts
             # 1. 約定
-            for o in live:
-                if o.first_ts is None:
-                    o.first_ts = ts
-                o.last_ts = ts
             got = fill_bar(live, bar, side, tick)
             out = []
             for o in got:
-                fills_f.row([ts, o.id, o.side, num(o.qty), num(o.fill_px), o.case])
-                write_order(o)
-                fill_rows.append({"t_ns": to_ns(ts), "side": o.side, "qty": float(o.qty), "px": float(o.fill_px), "ccy": "JPY"})
+                fills_f.row([ts, _kind(o), o.side, num(o.qty), num(o.fill_px), o.case])
                 out.append({"ts": ts, "id": o.id, "side": o.side, "qty": o.qty, "px": o.fill_px, "case": o.case})
             live = [o for o in live if o.state == "live"]
             for o in got:
@@ -163,7 +148,6 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
             for o in live:
                 if o.id not in orders:  # 返さなかった注文はここで消える
                     o.state = "gone"
-                    write_order(o)
             live = [o for o in live if o.state == "live"]
             for oid, o in new.items():
                 if o.form in ("limit", "exit"):
@@ -173,17 +157,53 @@ def run(bars, strategy, side, out_dir, tick, meta) -> None:
                 live.append(o)
             _signals(events, ts, sig_open, sig_seen, sig_f)
         # データの終わり
-        for o in sorted(live, key=lambda x: x.seq):
-            write_order(o)
-        for sid, (kind, direction, start_ts, vj) in sig_open.items():
-            sig_f.row([sid, kind, direction, start_ts, None, "データの終わり", vj])
-
-    ledger = book(fill_rows)
-    with open(path("trades"), "w", newline="", encoding="utf-8") as fh:
-        fh.write(trades_text(ledger.trades))
-    summary = {k: v for k, v in ledger.summary.items() if k != "trades"}
+        for sid, (kind, direction, start_ts) in sig_open.items():
+            sig_f.row([sid, kind, direction, start_ts, None, "データの終わり"])
     with open(path("summary", "json"), "w", encoding="utf-8") as fh:
-        json.dump(summary, fh, ensure_ascii=False, indent=1)
+        json.dump(summarize(path("fills")), fh, ensure_ascii=False, indent=1)
+
+
+def _kind(o: Order) -> str:
+    """約定の行の注文の種類: entry(建ての指値)・close(建玉を閉じる指値)・level(段)・exit(付けた利確)・market(成行)。"""
+    if o.form == "limit":
+        return "close" if o.close else "entry"
+    return o.form
+
+
+def summarize(fills_path: str) -> dict:
+    """約定のファイルを頭から読み、建玉が 0 に戻るまでを 1 つの塊として帳簿のツールに渡して、まとめを足し合わせる。
+    記憶に持つのは今の塊(開いている取引 1 つ分)だけ。"""
+    count = closed = open_tr = 0
+    pnl = Decimal(0)
+    chunk: list[dict] = []
+    pos = Decimal(0)
+
+    def flush():
+        nonlocal closed, open_tr, pnl
+        if chunk:
+            s = book(chunk).summary
+            closed += s["closed_trades"]
+            open_tr += s["open_trades"]
+            pnl += Decimal(s["pnl_jpy"])
+            chunk.clear()
+
+    with open(fills_path, newline="", encoding="utf-8") as fh:
+        r = csv.reader(fh)
+        head = next(r)
+        ix = {c: head.index(c) for c in FILL_COLS}
+        for row in r:
+            q = Decimal(row[ix["qty"]])
+            chunk.append({"t_ns": to_ns(row[ix["ts"]]), "side": row[ix["side"]], "qty": float(q),
+                          "px": float(row[ix["px"]]), "ccy": "JPY"})
+            count += 1
+            pos += q if row[ix["side"]] == "buy" else -q
+            if pos == 0:
+                flush()
+    flush()
+    out = {"fill_count": count, "closed_trades": closed, "pnl_jpy": format(pnl.normalize(), "f") if pnl else "0",
+           "open_trades": open_tr}
+    assert set(out) == set(SUMMARY_COLS)
+    return out
 
 
 def _links(find, returned: dict, new: dict) -> None:
@@ -221,16 +241,12 @@ def _signals(events, ts, sig_open: dict, sig_seen: set, sig_f: _Csv) -> None:
         if op == "start":
             if sid in sig_seen:
                 raise SimpleRoadError(f"合図 {sid} を二度始めた")
-            try:
-                vj = json.dumps(ev.get("value"), ensure_ascii=False, sort_keys=True)
-            except TypeError:
-                raise SimpleRoadError(f"合図 {sid} の value を JSON にできない") from None
             sig_seen.add(sid)
-            sig_open[sid] = [ev.get("kind"), ev.get("direction"), ts, vj]
+            sig_open[sid] = [ev.get("kind"), ev.get("direction"), ts]
         elif op == "end":
             if sid not in sig_open:
                 raise SimpleRoadError(f"出ていない合図 {sid} を終えた")
-            kind, direction, start_ts, vj = sig_open.pop(sid)
-            sig_f.row([sid, kind, direction, start_ts, ts, ev.get("reason"), vj])
+            kind, direction, start_ts = sig_open.pop(sid)
+            sig_f.row([sid, kind, direction, start_ts, ts, ev.get("reason")])
         else:
             raise SimpleRoadError(f"合図の出来事の op が知らない: {op!r}")

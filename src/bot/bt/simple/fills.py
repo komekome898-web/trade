@@ -14,6 +14,9 @@ RANK_CLOSE_OPEN, RANK_MARKET, RANK_CLOSE_RANGE, RANK_LIMIT, RANK_LEVEL, RANK_EXI
 class Order:
     """出ている注文 1 つの状態。raw は戦略が出した中身(同じ番号の比べに使う)。"""
 
+    __slots__ = ("seq", "id", "form", "side", "qty", "px_calc", "root", "offset", "parent", "close", "px", "state",
+                 "fill_ts", "fill_px", "case", "root_order", "parent_order")
+
     def __init__(self, seq: int, oid: str, raw: dict):
         self.seq, self.id = seq, oid
         self.form, self.side, self.qty = raw["form"], raw["side"], float(raw["qty"])
@@ -26,8 +29,6 @@ class Order:
         self.state = "live"  # live / filled / gone
         self.fill_ts: str | None = None
         self.fill_px: float | None = None
-        self.first_ts: str | None = None  # 約定しうる最初の足
-        self.last_ts: str | None = None  # 約定しうる最後の足(今までに出ていた最後の足)
         self.case: str | None = None  # 約定の行の case
         self.root_order: "Order | None" = None  # level の根(run が結ぶ)
         self.parent_order: "Order | None" = None  # exit の親(run が結ぶ)

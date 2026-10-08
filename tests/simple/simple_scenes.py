@@ -1,4 +1,4 @@
-"""単純な測りの道の場面の表(走らせの試験 test_run.py と約定の作り直しの試験 test_refill.py が同じ表を使う)。
+"""単純な測りの道の場面の表(走らせの試験 test_run.py が使う)。
 
 リードが書いた。決まりの正本は docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md。期待の約定は全部、足の値から手で計算した
 (各場面の注)。作業者はこのファイルを変えない。
@@ -8,8 +8,7 @@ L-824「**(a)**」/ L-828「**ⅱ**」/ L-831「**(い)**」(値段が始値ち�
 L-831「**やらなくてもいいテスト→削除 ・重複してるテスト→削除 ・分ける必要のないテスト→統合**」(場面を 1 つの表にまとめた)
 
 場面 = 名前・足・計画(足 k の判定で返す注文)と、次の期待:
-- fills: 約定の行 (足の番号, 番号, 値段の文字, case) の並び。良い側・悪い側で違う場面は {"optimistic": …, "pessimistic": …}
-- orders: 注文の記録の行のうち、名指した列の期待 {番号: {列: 値}}(列の値は記録の文字のまま。時刻は足の番号で書く)
+- fills: 戦略に届いた約定 (足の番号, 番号, 値段の文字, case) の並び(約定させた順)。良い側・悪い側で違う場面は {"optimistic": …, "pessimistic": …}
 - seen: 戦略に届いた約定の番号の並び(足ごと) / signals: 合図の出来事 / signal_rows: 合図の記録の期待
 - tick(刻み、既定 1)・minutes(足の始まりの分。欠けた分を作る)
 """
@@ -40,10 +39,12 @@ class Script:
 
     def __init__(self, plan, signals=None, raw=False):
         self.plan, self.signals, self.raw, self.k, self.seen, self.done = plan, signals or {}, raw, -1, [], set()
+        self.got = []
 
     def decide(self, bar, fills):
         self.k += 1
         self.seen.append([f["id"] for f in fills])
+        self.got += [(f["ts"], f["id"], float(f["px"]), f["case"]) for f in fills]
         self.done |= {f["id"] for f in fills}
         orders = {i: o for i, o in self.plan.get(self.k, {}).items() if self.raw or i not in self.done}
         return orders, list(self.signals.get(self.k, []))
@@ -102,12 +103,7 @@ SCENES = [
          #   l2 = 6,999,600 < 安値 → 足 2(安値 6,999,550)で range
          plan={0: {"r": ROOT, "l1": lv(-100.0), "l2": lv(-200.0)}, 1: {"l2": lv(-200.0)}},
          fills=[(1, "r", "6999800.0", "open"), (1, "l1", "6999700.0", "anchor_bar"), (2, "l2", "6999600.0", "range")],
-         seen=[[], ["r", "l1"], ["l2"]],
-         orders={"r": {"seq": "0", "form": "limit", "px_calc": "7000050.0", "px": "7000050.0", "root": "", "offset": "",
-                       "from_ts": 1, "to_ts": 1},
-                 "l1": {"seq": "1", "form": "level", "px_calc": "", "px": "6999700.0", "root": "r", "offset": "-100.0",
-                        "from_ts": 1, "to_ts": 1},
-                 "l2": {"seq": "2", "px": "6999600.0", "from_ts": 1, "to_ts": 2}}),
+         seen=[[], ["r", "l1"], ["l2"]]),
     dict(name="買いの段の切り捨て", rows=[FLAT, B1, B2],
          # 段 = 6,999,800 − 100.5 = 6,999,699.5 → 切り捨て 6,999,699 < 足 1 の安値 → 足 1 では約定しない(切り上げると約定する)
          plan={0: {"r": ROOT, "l1": lv(-100.5)}, 1: {"l1": lv(-100.5)}},
@@ -131,15 +127,13 @@ SCENES = [
          fills={"optimistic": [(1, "r", "6999800.0", "open"), (1, "s", "6999700.0", "range"),
                                (1, "a", "6999750.0", "range"), (1, "x", "6999800.0", "entry_bar")],
                 "pessimistic": [(1, "r", "6999800.0", "open"), (1, "s", "6999700.0", "range"),
-                                (1, "a", "6999750.0", "range"), (2, "x", "6999800.0", "range")]},
-         orders={"x": {"px_calc": "6999800.7", "px": "6999800.0"}, "a": {"px_calc": "6999750.7", "px": "6999750.0"}}),
+                                (1, "a", "6999750.0", "range"), (2, "x", "6999800.0", "range")]}),
     # ---------------------------------------------------------------- 指値・成行・利確の決まり
     dict(name="指値の範囲の外・約定する向きの外は始値・成行", rows=[FLAT, B1, B2],
          # a 買い 6,999,000 < 安値・b 売り 6,999,900 > 高値 → 約定しない(足 1 の判定で返さない → 消える)。
          #   c 売り 6,999,600 < 安値 → 始値(open)。m 成行 → 始値(market、① で c より先)
          plan={0: {"a": lim("buy", 6999000.0), "b": lim("sell", 6999900.0), "c": lim("sell", 6999600.0), "m": MS}},
-         fills=[(1, "m", "6999800.0", "market"), (1, "c", "6999800.0", "open")],
-         orders={k: {"from_ts": 1, "to_ts": 1} for k in "abcm"}),
+         fills=[(1, "m", "6999800.0", "market"), (1, "c", "6999800.0", "open")]),
     dict(name="段に付けた利確は良い側だけ親の足", rows=[FLAT, B1, (6999750, 6999850, 6999700, 6999800)],
          plan={0: {"r": ROOT, "l1": lv(-100.0), "x": ex("l1", 6999800.0)}, 1: {"x": ex("l1", 6999800.0)}},
          fills={"optimistic": [(1, "r", "6999800.0", "open"), (1, "l1", "6999700.0", "anchor_bar"),
@@ -163,23 +157,21 @@ SCENES = [
     dict(name="同じ足で同じ組の約定は出した順", rows=[FLAT, B1],
          # z 売り 6,999,600 < 安値 → 始値、a 買い 6,999,750 は range。z を先に出した
          plan={0: {"z": lim("sell", 6999600.0), "a": lim("buy", 6999750.0)}},
-         fills=[(1, "z", "6999800.0", "open"), (1, "a", "6999750.0", "range")],
-         orders={"z": {"seq": "0"}, "a": {"seq": "1"}}),
+         fills=[(1, "z", "6999800.0", "open"), (1, "a", "6999750.0", "range")]),
     # ---------------------------------------------------------------- 消える・欠け・データの終わり
     dict(name="根が約定しないまま消える(段の値段は空)", rows=[FLAT, (7000200, 7000300, 7000100, 7000200), B1],
-         plan={0: {"r": ROOT, "l1": lv(-100.0)}}, fills=[],
-         orders={"r": {"px": "7000050.0", "from_ts": 1, "to_ts": 1}, "l1": {"px": "", "from_ts": 1, "to_ts": 1}}),
+         plan={0: {"r": ROOT, "l1": lv(-100.0)}}, fills=[]),
     dict(name="欠けた分の後の次の足", rows=[FLAT, B1], minutes=[0, 3],
-         plan={0: {"r": ROOT}}, fills=[(3, "r", "6999800.0", "open")], orders={"r": {"from_ts": 3, "to_ts": 3}}),
+         plan={0: {"r": ROOT}}, fills=[(3, "r", "6999800.0", "open")]),
     dict(name="データの終わりまで出ていた注文・最後の足で出た注文・終わらなかった合図", rows=[FLAT, B1],
          plan={0: {"w": lim("buy", 6000000.0)}, 1: {"w": lim("buy", 6000000.0), "v": lim("buy", 6000000.0)}},
          signals={0: [{"op": "start", "id": "s1", "kind": "試験", "direction": "long", "value": {}}]},
-         fills=[], orders={"w": {"from_ts": 1, "to_ts": 1}, "v": {"from_ts": "", "to_ts": ""}},
+         fills=[],
          signal_rows=[{"id": "s1", "end_ts": "", "end_reason": "データの終わり"}]),
     dict(name="約定しない close の印の指値(消えた・データの終わりまで)と seq", rows=[FLAT, FLAT, FLAT],
          # gone は足 1 の判定で返さず消える。kept は足 1 から最後まで出す。消えた注文を記憶から外しても seq は重ならない
          plan={0: {"gone": dict(C1, px=7100000.0)}, 1: {"kept": dict(C1, px=7100000.0)}, 2: {"kept": dict(C1, px=7100000.0)}},
-         fills=[], orders={"gone": {"seq": "0", "close": "1", "to_ts": 1}, "kept": {"seq": "1", "close": "1", "to_ts": 2}}),
+         fills=[]),
     # ---------------------------------------------------------------- 足の中の記す順(SPEC.md §3 の ⓪〜⑤。L-824・L-828・L-831)
     dict(name="前の足までに親が約定した利確は新しい指値より先(L-824)", rows=[FLAT, A1, A2],
          # x1 を r1 の約定の後に、r2 より後に出す(seq は r2 が小さい)。足 2 で両方とも範囲の内。x1 は ② で ③ の r2 より先
@@ -196,8 +188,7 @@ SCENES = [
          #   c1 は ②、r2 と u1 は ③ で seq の順
          plan={0: {"r1": R1}, 1: {"r2": R2, "c1": C1, "u1": lim("sell", 7000100.0)}},
          fills=[(1, "r1", "7000000.0", "range"), (2, "c1", "7000100.0", "range"), (2, "r2", "6999900.0", "range"),
-                (2, "u1", "7000100.0", "range")],
-         orders={"r1": {"close": ""}, "r2": {"close": ""}, "c1": {"close": "1"}, "u1": {"close": ""}}),
+                (2, "u1", "7000100.0", "range")]),
     dict(name="前からの利確が始値なら成行より先(L-828)", rows=[FLAT, A1, UP],
          # 足 2: x1(売り 7,000,100)は安値より下 → 始値 7,000,200(open)。成行 m1 も始値。閉じる注文が先(⓪ → ①)。
          #   x1 は r1 の約定の後に m1 より後に出す(seq は m1 が小さい。出した順では見分けられないように)

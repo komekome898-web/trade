@@ -79,7 +79,21 @@ class MatildaSimple:
         if self._closed >= self._warm:
             self._judge(float(bar[4]), end)
         self._add_bar(bar, start, end)
+        self._forget()
         return dict(self._book), list(self._events)
+
+    def _forget(self):
+        """出ていない注文を内部の表から消す(記憶を注文の本数に比例させない)。出ている段の根と、出ている利確の親は残す。"""
+        keep = set(self._book)
+        for c in self._book:
+            m = self._mine[c]
+            if m.get("root"):
+                keep.add(m["root"])
+            if m.get("parent"):
+                keep.add(m["parent"])
+        for d in (self._mine, self._filled, self._close_at):
+            for k in [k for k in d if k not in keep]:
+                del d[k]
 
     def _id(self, pre):
         self._n += 1
