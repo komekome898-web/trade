@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 SIDES = ("optimistic", "pessimistic")
 FORMS = ("limit", "level", "exit", "market")
-ORDER_COLS = ["seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts"]
+ORDER_COLS = ["seq", "id", "form", "side", "qty", "px_calc", "px", "root", "offset", "parent", "from_ts", "to_ts", "close"]
 FILLS_COLS = ["ts", "id", "side", "qty", "px", "case"]
 
 
@@ -42,7 +42,7 @@ class Order:
     """注文の記録の 1 行と、作り直しの途中の状態。"""
 
     __slots__ = ("seq", "id", "form", "side", "qty", "px_calc", "px_text", "root", "offset", "parent",
-                 "from_ts", "to_ts", "root_order", "parent_order",
+                 "from_ts", "to_ts", "close", "root_order", "parent_order",
                  "fixed_px", "fill_ts", "fill_px", "activated", "ended", "bad")
 
     def __init__(self):
@@ -169,6 +169,10 @@ def load_orders(out_dir: str, side: str, issues: Issues):
             col = "from_ts/to_ts"
             if (od.from_ts == "") != (od.to_ts == ""):
                 raise ValueError
+            col = "close"
+            if r["close"] not in ("", "1"):  # 空か 1 だけ。ほかの値は形の違う行
+                raise ValueError
+            od.close = r["close"] == "1"
         except ValueError:
             issues.add(f"{name} の {n} 行目(id {r['id']!r})の欄 {col} の形が違う。")
             continue

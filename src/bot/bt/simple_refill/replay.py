@@ -131,9 +131,16 @@ def _read_bar(bar):
 
 
 def _link(orders, issues: Issues) -> None:
-    """段の根・利確の親を注文の行からたどる。たどれない・種類が違うものは食い違いにして約定を試さない。"""
+    """止める注文のうち、注文の記録から分かるものを検める(決まりの文書の 5 の 1)。
+
+    段の根・利確の親を注文の行からたどる。たどれない・種類や売買や向きや量が違うもの、limit 以外の close の印は、
+    食い違いにして約定を試さない。
+    """
     by_id = {od.id: od for od in orders}
     for od in orders:
+        if od.close and od.form != "limit":
+            issues.add(f"注文 {od.id!r} は指値でない({od.form})のに close の印が付いている。")
+            od.bad = True
         if od.form == "level":
             root = by_id.get(od.root)
             if root is None:
@@ -144,6 +151,13 @@ def _link(orders, issues: Issues) -> None:
                 od.bad = True
             else:
                 od.root_order = root
+                if od.side != root.side:
+                    issues.add(f"段 {od.id!r} の売買 {od.side} が、根 {root.id!r} の売買 {root.side} と違う。")
+                    od.bad = True
+            # 距離の向き: 買いは負、売りは正(0 は向きを持たないので通す)
+            if (od.side == "buy" and od.offset > 0) or (od.side == "sell" and od.offset < 0):
+                issues.add(f"段 {od.id!r} の距離 {od.offset} の向きが、売買 {od.side} と合わない(買いは負、売りは正)。")
+                od.bad = True
         elif od.form == "exit":
             parent = by_id.get(od.parent)
             if parent is None:
@@ -154,10 +168,21 @@ def _link(orders, issues: Issues) -> None:
                 od.bad = True
             else:
                 od.parent_order = parent
+                if od.side == parent.side:
+                    issues.add(f"利確 {od.id!r} の売買 {od.side} が、親 {parent.id!r} の売買と同じ。")
+                    od.bad = True
+                if od.qty != parent.qty:
+                    issues.add(f"利確 {od.id!r} の量 {od.qty} が、親 {parent.id!r} の量 {parent.qty} と違う。")
+                    od.bad = True
 
 
 def _step(ts, o, h, l, tick, optimistic, active, fills, issues: Issues) -> None:
-    """1 本の足の約定(① 成行 → ② 前の足までに親が約定した利確 → ③ 指値 → ④ 段 → ⑤ この足で親が約定した利確)。"""
+    """1 本の足の約定。記す順は ⓪ 始値で約定する前からの閉じる注文 → ① 成行 → ② 範囲の内で約定する前からの閉じる注文
+    → ③ 指値(close の印の無いもの)→ ④ 段 → ⑤ この足で親が約定した利確。同じ組の中は seq の順。
+
+    前からの閉じる注文 = 親が前の足までに約定した利確と、close の印の付いた指値。始値で約定するか(⓪)は、
+    約定する値段が始値ちょうどか(範囲の外で始値になる場合と、範囲の内で値段が始値ちょうどの場合)。
+    """
     acts = sorted(active.values(), key=_BY_SEQ)
 
     def fill(od, price, case):
@@ -165,18 +190,23 @@ def _step(ts, o, h, l, tick, optimistic, active, fills, issues: Issues) -> None:
         active.pop(od.seq, None)
         fills.append([ts, od.id, od.side, repr(float(od.qty)), repr(float(price)), case])
 
-    # ② に入る利確は、足の頭の時点で親が約定済みのもの(③④で親が約定しても、その足では ⑤)
-    earlier_exits = [od for od in acts if od.form == "exit" and od.parent_order.fill_ts is not None]
+    # ⓪・② に入る注文は、足の頭の時点で決める(親が約定済みの利確は、③④で親が約定しても、その足では ⑤)
+    at_open, inside = [], []
+    for od in acts:
+        if (od.form == "exit" and od.parent_order.fill_ts is not None) or (od.form == "limit" and od.close):
+            r = limit_fill(od.side, limit_price(od.px_calc, tick), o, h, l)
+            if r:
+                (at_open if r[0] == o else inside).append((od, r))
 
+    for od, r in at_open:  # ⓪
+        fill(od, *r)
     for od in acts:  # ① 成行は始値
         if od.form == "market":
             fill(od, o, "market")
-    for od in earlier_exits:  # ② 利確はふつうの指値の決まり
-        r = limit_fill(od.side, limit_price(od.px_calc, tick), o, h, l)
-        if r:
-            fill(od, *r)
-    for od in acts:  # ③ 指値
-        if od.form == "limit":
+    for od, r in inside:  # ②
+        fill(od, *r)
+    for od in acts:  # ③ 指値(close の印の付いたものは ⓪・② で済み)
+        if od.form == "limit" and not od.close:
             r = limit_fill(od.side, limit_price(od.px_calc, tick), o, h, l)
             if r:
                 fill(od, *r)
