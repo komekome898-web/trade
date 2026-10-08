@@ -106,6 +106,16 @@ def test_f1_exit_of_same_bar_parent_stays_after(tmp_path, side):
     assert fills(out, side) == want
 
 
+@pytest.mark.parametrize("side", SIDES)
+def test_f1_market_before_exit_of_earlier_parent(tmp_path, side):
+    # 成行は足の始値で約定し、足の中で最初に起きる(リードの決め。SPEC.md §3)。足 1 で r1 が約定し、足 2 で
+    #   成行の買い m1(始値 7,000,000)と r1 の利確 x1(売り 7,000,100、範囲の内)が両方約定する。記す順は m1 → x1
+    m1 = {"form": "market", "side": "buy", "qty": 0.009}
+    out = go(tmp_path, [FLAT, A1, A2], {0: {"r1": R1, "x1": X1}, 1: {"x1": X1, "m1": m1}}, side)
+    assert fills(out, side) == [(ts(1), "r1", "7000000.0", "range"), (ts(2), "m1", "7000000.0", "market"),
+                                (ts(2), "x1", "7000100.0", "range")]
+
+
 # ================================================================ F2 封印の境の行より先は読まない
 def _bar_file(tmp_path, lines):
     p = tmp_path / "candles_1m_2023.csv.gz"
@@ -341,3 +351,14 @@ def test_f6_gone_orders_are_not_kept():
     #   注文の中身を全部持つ形で約 450 バイトだった。リードが捨てる実装で測った値)
     a, b = _peak(2000), _peak(12000)
     assert (b - a) / 10000 < 200, (a, b)
+
+
+def test_f7_seq_is_unique_and_counts_up(tmp_path):
+    # 消えた注文を記憶から外しても、注文の記録の seq は 0 から重ならずに並ぶ(注文を初めて受けた順の通し番号。SPEC.md §4)
+    t0 = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    rows = [((t0 + timedelta(minutes=k)).isoformat(), 7e6, 7e6, 7e6, 7e6, 1.0) for k in range(30)]
+    out = tmp_path / "seq"
+    run(rows, _Churn(), side="optimistic", out_dir=str(out), tick=1.0, meta=META)
+    got = {(r["id"], int(r["seq"])) for r in table(out, "orders", "optimistic")}
+    assert sorted(s for _, s in got) == list(range(len(got)))
+    assert sorted(got, key=lambda x: x[1]) == sorted(got, key=lambda x: x[0])  # 番号 o000000001… を出した順 = seq の順
