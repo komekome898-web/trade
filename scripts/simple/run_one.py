@@ -1,9 +1,9 @@
 """マチルダの測りを 1 本(1 つの引数の組)走らせ、書き終えた約定と合図を圧縮する(L-852・L-854)。
 
 L-845「**では再開しマチルダの測定を1本、今の仕組みの確かめとして回してください。**」。
-使い方: PYTHONPATH=src python3 scripts/simple/run_one.py <出力の置き場> [足の本数の上限]
+使い方: PYTHONPATH=src python3 scripts/simple/run_one.py <出力の置き場> [足の本数の上限] [--params '<JSON>']
 走らせは足の中の道筋の 1 回だけ(L-876「**2.(a)**」。SPEC.md §3)。
-引数の組は基準 1 本(BASE_PARAMS)。足は bitFlyer Lightning FX の 1 分足、封印の境まで。
+引数の組は基準(BASE_PARAMS)に --params の鍵だけを上書きしたもの(本測定 PLAN.md、L-889)。足は bitFlyer Lightning FX の 1 分足、封印の境まで。
 """
 from __future__ import annotations
 
@@ -39,10 +39,25 @@ def _sha(p):
     return h.hexdigest()
 
 
+def _args(argv):
+    """<出力の置き場> [足の本数の上限] [--params '<JSON>'](L-889「**2 よい**」。基準の値のうち JSON の鍵だけ上書きする)。"""
+    pos, over = [], {}
+    it = iter(argv)
+    for a in it:
+        if a == "--params":
+            over = json.loads(next(it))
+        else:
+            pos.append(a)
+    unknown = sorted(set(over) - set(BASE_PARAMS))
+    if unknown:
+        raise SystemExit(f"知らない引数: {unknown}")
+    return pos[0], (int(pos[1]) if len(pos) > 1 else 0), over
+
+
 def main():
-    out = sys.argv[1]
-    limit = int(sys.argv[2]) if len(sys.argv) > 2 else 0
+    out, limit, over = _args(sys.argv[1:])
     params = dict(BASE_PARAMS)
+    params.update(over)
     meta = {"strategy": "matilda_simple", "params": params, "seal": SEAL,
             "bar_files": [{"path": f, "sha256": _sha(f)} for f in FILES], "bar_limit": limit}
     rep = {"params": params, "bar_limit": limit}
