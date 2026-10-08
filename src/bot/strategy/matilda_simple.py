@@ -164,14 +164,15 @@ class MatildaSimple:
                 self._exp -= 1
             elif (self._exp >= 1 and lc < prev["center"]) or (self._exp <= -1 and hc > prev["center"]):
                 self._exp = 0
-        before = list(self._wins)
         self._wins.append({"h": hc, "l": lc, "body": abs(body), "v": v})
         self._closed += 1
         wins = list(self._wins)
         vc, rc, mult = p["vola_count"], p["range_count"], p["break_len_mult"]
-        prior = before[-(vc - 1):]
-        vola = sum(x["body"] for x in prior) / (vc - 1)
-        vol_ave = sum(x["v"] for x in prior) / (vc - 1)
+        # ボラ・出来高の平均 = 今の足を含む直近 vola_count 本の和 ÷ vola_count(L-849「(ろ)」。L-784 の「割る数は分子を合わせて」=
+        # 原典の和の本数 vola_count − 1 を割る数 vola_count に合わせる)
+        recent = wins[-vc:]
+        vola = sum(x["body"] for x in recent) / vc
+        vol_ave = sum(x["v"] for x in recent) / vc
         r1, r2 = wins[-rc:], wins[-rc * mult:]
         rmax, rmin = max(x["h"] for x in r1), min(x["l"] for x in r1)
         rmax2, rmin2 = max(x["h"] for x in r2), min(x["l"] for x in r2)
