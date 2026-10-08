@@ -1,7 +1,7 @@
 {
-  "delegation_sha256": "66586f22c690ec345577b195c1fb1981e28e86f93999a2ec33d56ac273403b85",
+  "delegation_sha256": "a1f9d77c86dd444538d3403c7bca1423d8c5eeaa0f05683a0e537254559cf09f",
   "body_sha256": "d3641595833acf02dc3850250c634beaab7eb7c9da0f6141a88d515283930766",
   "kind": "作る",
   "premortem": "docs/DISCUSSIONS/2026-10-08_simple_road/DELEGATION_s4_matilda_premortem1.md",
-  "approved": false
+  "approved": true
 }
