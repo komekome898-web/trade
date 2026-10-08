@@ -245,7 +245,8 @@ TAMPERS = [
     ("段の px 列と約定の値段をそろえて書き換える", _both(_field("orders", "l1", "px", "6999700.5"), _field("fills", "l1", "px", "6999700.5"))),
     # 止める注文(SPEC.md §3)を、約定の記録を変えない注文(約定しない根 far2 の段 farl・親 far2 の利確 farx)の上で破る。
     #   約定の計算し直しは変わらないので、止める注文の検めが無いと見えない
-    ("約定しない根の段の売買を根と違えて書く", _field("orders", "farl", "side", "sell")),
+    ("約定しない根の段の売買を根と違えて書く(距離の向きは売りに合わせる)",
+     _both(_field("orders", "farl", "side", "sell"), _field("orders", "farl", "offset", lambda v: repr(-float(v))))),
     ("約定しない根の段の距離の向きを逆に書く", _field("orders", "farl", "offset", lambda v: repr(-float(v)))),
     ("約定しない親の利確の売買を親と同じに書く", _field("orders", "farx", "side", "buy")),
     ("約定しない親の利確の量を親と違えて書く", _field("orders", "farx", "qty", "0.018")),
