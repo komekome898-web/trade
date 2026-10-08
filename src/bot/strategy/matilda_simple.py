@@ -314,10 +314,15 @@ class MatildaSimple:
                 self._drop(oid)
 
     def _ladder(self, fpx):
-        """R4・R6: 約定値段から step ずつ外側に、段数の上限まで残りの段を出す。"""
+        """R4・R6: 約定値段から step 外側に、次の 1 段だけを出す(段数の上限まで)。約定したら、その約定値段から
+        また次の 1 段を出す。足の途中は道筋が続くので、前もって全部並べたときと同じ値段で約定する。始値に飛んだ足では
+        始値で約定するのは最初の 1 段だけで、残りはその約定値段から step ずつになる(L-815「1.c 1段目を基準にそれ
+        以降の足をステップ毎の値段で約定させないとナンピンにならない」・L-817「問い 1(B-1) a」。作り終えた後の
+        批評家 1 回目の [止める]、リードが直した)。"""
         s, step = self._dir, self._snap["step"]
-        for i in range(1, self.levels - self._held() + 1):
-            px = fpx - s * step * i
+        self._drop_roles(("level",))
+        if self._held() < self.levels:
+            px = fpx - s * step
             if self._tier_ok(px):
                 self._put("level", "limit", self._side(s), self._unit, px)
 
@@ -329,7 +334,7 @@ class MatildaSimple:
         roles0 = dict(self._role)
         for f in ev.get("fills") or []:
             role, s, fpx = self._apply_fill(f, start, roles0)
-            if role in ("entry", "add"):
+            if role in ("entry", "add", "level"):
                 heads.append(fpx)
             if role in ("entry", "add", "level") and self._e_sig is None:  # R15: 段が約定した時点で始まる
                 self._n_e += 1
@@ -373,7 +378,9 @@ class MatildaSimple:
             return
         s = self._dir
         opp = sn["up"] if s == 1 else sn["lo"]
-        if opp in t:  # R10 イ: 玉と反対側の建ての線に届いた → その点で成行
+        if opp in t and s * (price - self._last) > 0:
+            # R10 イ: 玉と反対側の建ての線に、外へ向かって届いた → その点で成行(線から離れる向きの動き・始値への飛び
+            # では発火しない。作り終えた後の批評家 1 回目の [直す])
             self._close_all("market", "market")
             return
         line = sn["lo"] if s == 1 else sn["up"]
@@ -388,11 +395,32 @@ class MatildaSimple:
         market = False
         if self._snap is not None:
             market = self._rejudge(close)
+        before = self._snap
         self._close_gap(start)
         self._add_bar(bar, start)
         if self._snap is None or market:
             return
+        if self._snap is not before and self._rejudge_new(close):
+            return
         self._place(close, start)
+
+    def _rejudge_new(self, close) -> bool:
+        """新しく計算した線・中心と終値でも判断し直す(R5・R10 イ・R13)。見張る値段は「動いて届いた」ときだけ知らせる
+        ので、閉じた時点ですでに新しい線の外にある値段は次の足で届かない(作り終えた後の批評家 1 回目の [直す])。
+        成行を出したら True。"""
+        sn = self._snap
+        if self._brk == 1 and close <= sn["center"] or self._brk == -1 and close >= sn["center"]:
+            self._break_out()  # R13
+        if self._dir == 0 or self._brk != 0:
+            return False
+        s = self._dir
+        if s * (close - (sn["up"] if s == 1 else sn["lo"])) >= 0:  # R10 イ
+            self._close_all("market", "market")
+            return True
+        if s * (close - (sn["lo"] if s == 1 else sn["up"])) > 0:  # R5
+            self._drop_roles(TIER_ROLES)
+            self._entry_sig_end(END_ENTRY)
+        return False
 
     def _rejudge(self, close) -> bool:
         """その足の間に使っていた線・中心と終値で判断し直す(R5・R10 イ・R12・R13)。成行を出したら True。"""
