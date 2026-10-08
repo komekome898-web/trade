@@ -31,7 +31,7 @@
 | 既存の決まり | 注文の記録の列(seq・id・form・side・qty・px_calc・px・root・offset・parent・from_ts・to_ts)と約定の記録の列(ts・id・side・qty・px・case)、数の書き方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:53-60` |
 | 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md tests/simple/test_s2_spec.py` → `3553c69a77f97ba39ae3439b73f7f8129cfe9776445538d33e227b1ec4c18227`・`7688d7ccfa7d22d51816648fd736807fc138f1a6e80b15eec5226317326da7c9`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
 | 既存の決まり | 約定の決まり・1 本の足の中の順(L-824 の (a) を入れた版)・切り捨てのやり方 | `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md:25-45` |
-| 既存の決まり | 受け入れの試験は、リードが捨てる実装(走らせの直しと作り直しの両方)を scratchpad に置いて全部通ることを確かめた(置いた実装はリポジトリに入れていない)。渡す前に、受け取った走らせの直しの上で打ち直してこの行を書き直す | `PYTHONPATH=<捨てる実装> python -m pytest tests/simple -o pythonpath=<捨てる実装>` → `144 passed` |
+| 既存の決まり | 受け入れの試験は、受け取った走らせの直し(コミット 2cf7ef51 の `src/`)に、リードの捨てる作り直しだけを足した写しで、全部通ることを確かめた(捨てる作り直しはリポジトリに入れていない。渡す前に scratchpad から消す) | `PYTHONPATH=<写し> python -m pytest tests/simple -o pythonpath=<写し>` → `146 passed`(走らせの試験 85 件と、この委任の試験 61 件) |
 | 既存の決まり | 試験の足の記憶の閾値(1 本あたり 50 バイト)は、足を並びにして全部持つ形では落ち、1 回だけ前から読む形では通る(1 本あたりの数は持ち方しだい。リードの写しと事前の批評の担当の写しで、どちらも 50 バイトを超えた) | 捨てる実装の作り直しの頭で `bars = list(bars)` にして `test_p4_bars_are_not_kept` を打つ → `AssertionError`(落ちる)/ そのままで打つ → passed |
 | 既存の決まり | 作り直しが注文の記録の px 列を入力にすると、`注文の px 列と約定の値段をそろえて書き換える` の書き換えを通してしまう | 捨てる実装の写しで px 列を入力にする形に変えて `test_n1_tampered_records_are_caught` を打つ → `[注文の px 列と約定の値段をそろえて書き換える]` と `[注文の戦略の値段を変える]` が落ちる |
 | 既存の決まり | 測る期間は約 423 万本 | `docs/DISCUSSIONS/2026-10-08_simple_road/PROTO_RESULT.md:23` |
@@ -132,5 +132,5 @@
 
 - 試験 `tests/simple/test_s2_spec.py`: 書き換えを 2 通り足した(約定しなかった注文の from_ts を足に無い時刻に・段 l1 の px 列と約定の値段をそろえて 6,999,700.5 に)。土台の場面に約定しない指値 far を足した。リードの写しで、段の値段を px 列から取る作り直しと、残った注文の検めを外した作り直しは、それぞれこの試験で落ちた(どちらも `1 failed, 60 passed`)。捨てる実装では `tests/simple` が `144 passed`。
 - SPEC.md §5 の 1: 記憶の限界(注文の記録は from_ts の順ではない。足りなければ並べ替えの作り替えが要る)を書いた。
-- 委任文: 作るもの 3(どの足も seal 以後なら)、データの行(行番号を grep の形に)、H1(`git status --short tests/`)、H3(式に `from bot.bt import`・`from .. import` を足し、一覧が空なら不合格)、独立の行(scratchpad の他の担当の試しを開かない。リードが渡す前に写しを消す)、浮動小数と欠けの行、決まりの文書と試験の sha256、件数(144・20 通り)。
+- 委任文: 受け入れの試験を、受け取った走らせの直しの上で打ち直した(146 passed)。作るもの 3(どの足も seal 以後なら)、データの行(行番号を grep の形に)、H1(`git status --short tests/`)、H3(式に `from bot.bt import`・`from .. import` を足し、一覧が空なら不合格)、独立の行(scratchpad の他の担当の試しを開かない。リードが渡す前に写しを消す)、浮動小数と欠けの行、決まりの文書と試験の sha256、件数(144・20 通り)。
 
