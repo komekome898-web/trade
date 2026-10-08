@@ -9,14 +9,15 @@ L-816「**1.a**」/ L-817「**問い 2(B-1) a**」/ L-783「**間違えそうや
 口(この試験が決める):
 - `from bot.bt.simple import run, read_bars, check_numbers, SimpleRoadError`
 - `run(bars, strategy, side, out_dir, tick, meta)`: bars は (足の始まりの時刻の文字列, 始値, 高値, 安値, 終値, 出来高) の並び。
-  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイルを書く。meta は run.json に写す辞書。
+  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイルを書く。meta は run.json に写す辞書(戦略の名前と引数・
+  封印の境・足のファイルの名前と sha256 は呼ぶ側が meta で渡す)。
 - 戦略は `decide(bar, fills)` を持つ。bar は渡した足の組、fills はこの足の約定の辞書の並び
   ({"ts", "id", "side", "qty", "px", "case"})。返すのは (注文の辞書 {番号: 注文}, 合図の出来事の並び)。
   注文 = {"form": "limit"|"level"|"exit"|"market", "side", "qty", "px"(limit・exit), "root", "offset"(level), "parent"(exit)}。
   合図の出来事 = {"op": "start", "id", "kind", "direction", "value"} か {"op": "end", "id", "reason"}。
 - 止める場面は `SimpleRoadError`。
 - `read_bars(paths, seal_iso)`: 1 分足のファイル(bitFlyer lightchart の CSV.gz の形)を読み、値段の空の足を飛ばし、
-  封印の境以後の足で止める。
+  封印の境に届いたらそこで終わる(境の行より先は読まない)。境の年より後の年のファイルは開かずに止める。
 - `check_numbers(out_dir, side)`: 帳簿のツールで約定から計算し直した数と、書いた数の食い違いの並び(無ければ空)。
 """
 from __future__ import annotations
@@ -33,6 +34,7 @@ run, read_bars, check_numbers, SimpleRoadError = simple.run, simple.read_bars, s
 
 SIDES = ("optimistic", "pessimistic")
 SEAL = "2023-12-17T15:00:00+00:00"
+META = {"strategy": "試験", "params": {}, "seal": SEAL, "bar_files": []}
 
 
 def ts(k):
@@ -62,7 +64,7 @@ class Script:
 def go(tmp_path, rows, plan, side, signals=None, tick=1.0, raw=False):
     out = tmp_path / side
     st = Script(plan, signals, raw)
-    run(bars(rows), st, side=side, out_dir=str(out), tick=tick, meta={"strategy": "試験", "params": {}})
+    run(bars(rows), st, side=side, out_dir=str(out), tick=tick, meta=META)
     return out, st
 
 
@@ -99,11 +101,11 @@ def test_t1_levels_from_root_fill(tmp_path, side):
     # 戦略には足 1 の判定で r と l1 の約定、足 2 の判定で l2 の約定が届く
     assert [[f["id"] for f in fs] for _, fs in st.seen] == [[], ["r", "l1"], ["l2"]]
     rows = {r["id"]: r for r in table(out, "orders", side)}
-    assert {k: (r["form"], r["px_calc"], r["px"], r["root"], r["offset"], r["from_ts"], r["to_ts"])
+    assert {k: (r["seq"], r["form"], r["px_calc"], r["px"], r["root"], r["offset"], r["from_ts"], r["to_ts"])
             for k, r in rows.items()} == {
-        "r": ("limit", "7000050.0", "7000050.0", "", "", ts(1), ts(1)),
-        "l1": ("level", "", "6999700.0", "r", "-100.0", ts(1), ts(1)),
-        "l2": ("level", "", "6999600.0", "r", "-200.0", ts(1), ts(2))}
+        "r": ("0", "limit", "7000050.0", "7000050.0", "", "", ts(1), ts(1)),
+        "l1": ("1", "level", "", "6999700.0", "r", "-100.0", ts(1), ts(1)),
+        "l2": ("2", "level", "", "6999600.0", "r", "-200.0", ts(1), ts(2))}
 
 
 # ================================================================ T2 刻みの切り捨てと 10 進の和
@@ -205,7 +207,7 @@ def test_t6_next_bar_is_next_present_bar(tmp_path, side):
     rows = [(ts(0), 7e6, 7e6, 7e6, 7e6, 1.0), (ts(3),) + tuple(float(x) for x in B1) + (1.0,)]
     st = Script({0: {"r": ROOT}})
     out = tmp_path / side
-    run(rows, st, side=side, out_dir=str(out), tick=1.0, meta={})
+    run(rows, st, side=side, out_dir=str(out), tick=1.0, meta=META)
     assert fills(out, side) == [(ts(3), "r", "6999800.0", "open")]
     assert [(r["from_ts"], r["to_ts"]) for r in table(out, "orders", side)] == [(ts(3), ts(3))]
 
@@ -219,15 +221,14 @@ def _bar_file(tmp_path, lines):
     return str(p)
 
 
-def test_t6_read_bars_skips_null_and_stops_at_seal(tmp_path):
+def test_t6_read_bars_skips_null_and_ends_at_seal(tmp_path):
+    # 値段の空の 14:59 を飛ばし、封印の境 15:00 の行で終わる(データの終わりとして。止めない)。境の行より先は読まない
+    #   (先の行は壊してあり、読めば数に直せずに落ちる)
     p = _bar_file(tmp_path, ["2023-12-17T14:58:00+00:00,100.0,101.0,99.0,100.5,1.5,,,,",
                              "2023-12-17T14:59:00+00:00,,,,,0.0,,,,",
-                             "2023-12-17T15:00:00+00:00,100.0,100.0,100.0,100.0,1.0,,,,"])
-    got = []
-    with pytest.raises(SimpleRoadError):
-        for b in read_bars([p], SEAL):
-            got.append(b)
-    assert got == [("2023-12-17T14:58:00+00:00", 100.0, 101.0, 99.0, 100.5, 1.5)]
+                             "2023-12-17T15:00:00+00:00,100.0,100.0,100.0,100.0,1.0,,,,",
+                             "2023-12-17T15:01:00+00:00,壊れた,行,,,,,,,"])
+    assert list(read_bars([p], SEAL)) == [("2023-12-17T14:58:00+00:00", 100.0, 101.0, 99.0, 100.5, 1.5)]
 
 
 def test_t6_read_bars_refuses_files_after_seal_year(tmp_path):
@@ -248,7 +249,9 @@ STOPS = [
     ("親の無い利確", {0: {"x": dict(X, parent="zz")}}, [FLAT, B1]),
     ("根が約定した後に初めて出た段", {0: {"r": ROOT}, 1: {"l1": lv(-100.0)}}, [FLAT, B1, B2]),
     ("段の距離の向きが違う", {0: {"r": ROOT, "l1": lv(100.0)}}, [FLAT, B1]),
-    ("段の売買が根と違う", {0: {"r": ROOT, "l1": dict(lv(-100.0), side="sell")}}, [FLAT, B1]),
+    ("段の売買が根と違う", {0: {"r": ROOT, "l1": dict(lv(100.0), side="sell")}}, [FLAT, B1]),
+    ("根が段の段", {0: {"r": ROOT, "l1": lv(-100.0), "l2": lv(-100.0, root="l1")}}, [FLAT, B1]),
+    ("消えた番号をまた返す", {0: {"r": ROOT}, 2: {"r": ROOT}}, [FLAT, (7000200, 7000300, 7000100, 7000200), FLAT, FLAT]),
     ("量が刻みの外", {0: {"r": dict(ROOT, qty=0.0095)}}, [FLAT, B1]),
     ("量が 0", {0: {"r": dict(ROOT, qty=0.0)}}, [FLAT, B1]),
     ("知らない形", {0: {"r": dict(ROOT, form="stop")}}, [FLAT, B1]),
@@ -291,6 +294,21 @@ def test_t8_files_signals_and_numbers(tmp_path):
     assert check_numbers(str(out), "optimistic") != []
 
 
+def test_t8_check_numbers_reads_trades(tmp_path):
+    # trades の損益の欄を書き換えても、数の作り直しが食い違いを出す(summary だけを見る作りでは通らない)
+    plan = {0: {"r": ROOT}, 2: {"m": {"form": "market", "side": "sell", "qty": 0.009}}}
+    out, _ = go(tmp_path, [FLAT, B1, B2, FLAT], plan, "optimistic")
+    p = os.path.join(out, "trades_optimistic.csv")
+    rows = table(out, "trades", "optimistic")
+    assert rows and check_numbers(str(out), "optimistic") == []
+    rows[0]["pnl_jpy"] = "12345"
+    with open(p, "w", newline="", encoding="utf-8") as fh:
+        w = csv.DictWriter(fh, list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    assert check_numbers(str(out), "optimistic") != []
+
+
 def test_t8_records_are_written_while_running(tmp_path):
     # 注文の行は消えた時・約定した時に書く(走らせの終わりにまとめて持たない)。足 1 の判定の時点で、足 1 で約定した r の行が
     #   ファイルにある
@@ -304,5 +322,44 @@ def test_t8_records_are_written_while_running(tmp_path):
             return r
     st = Peek({0: {"r": ROOT}})
     st.out = str(tmp_path / "o")
-    run(bars([FLAT, B1, B2]), st, side="optimistic", out_dir=st.out, tick=1.0, meta={})
-    assert "\nr," in st.lines
+    run(bars([FLAT, B1, B2]), st, side="optimistic", out_dir=st.out, tick=1.0, meta=META)
+    assert "\n0,r,limit," in st.lines
+
+
+# ================================================================ T9 データの終わり・同じ足の約定の順・次の足の始値
+@pytest.mark.parametrize("side", SIDES)
+def test_t9_data_end(tmp_path, side):
+    # 足 0 で出した w(買い 6,000,000)は最後の足 1 まで約定しない → 行の to_ts は最後の足。最後の足の判定で出した v は
+    #   約定しうる足が無い → from_ts・to_ts とも空。データの終わりまで消えなかった合図は end_ts 空・理由「データの終わり」
+    w = {"form": "limit", "side": "buy", "qty": 0.009, "px": 6000000.0}
+    plan = {0: {"w": w}, 1: {"w": w, "v": dict(w)}}
+    sig = {0: [{"op": "start", "id": "s1", "kind": "試験", "direction": "long", "value": {}}]}
+    out, _ = go(tmp_path, [FLAT, B1], plan, side, signals=sig)
+    rows = {r["id"]: (r["from_ts"], r["to_ts"]) for r in table(out, "orders", side)}
+    assert rows == {"w": (ts(1), ts(1)), "v": ("", "")}
+    assert [(r["id"], r["end_ts"], r["end_reason"]) for r in table(out, "signals", side)] == [("s1", "", "データの終わり")]
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_t9_same_bar_fills_in_placed_order(tmp_path, side):
+    # 同じ足で同じ形(limit)が 2 本約定するとき、約定の行は注文を出した順(z を先に出し、a を後に出した)。
+    #   z 売り 6,999,600 < 安値 → 始値 6,999,800(open)、a 買い 6,999,750 は範囲の内(range)
+    plan = {0: {"z": {"form": "limit", "side": "sell", "qty": 0.009, "px": 6999600.0},
+                "a": {"form": "limit", "side": "buy", "qty": 0.009, "px": 6999750.0}}}
+    out, _ = go(tmp_path, [FLAT, B1], plan, side)
+    assert fills(out, side) == [(ts(1), "z", "6999800.0", "open"), (ts(1), "a", "6999750.0", "range")]
+    assert [(r["id"], r["seq"]) for r in table(out, "orders", side)] == [("z", "0"), ("a", "1")]
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_t9_level_and_exit_open_on_later_bar(tmp_path, side):
+    # 足 1 = B1: 根 r 6,999,800(open)。段 l2 = 6,999,600 は足 1 で約定しない。利確 x(親 r)= 売り 6,999,900 は足 1 の高値
+    #   6,999,850 より上で約定しない(良い側も)。
+    # 足 2 = (6,999,500, 6,999,550, 6,999,400, 6,999,450): l2 買い 6,999,600 > 高値 → 始値 6,999,500(open)。x は高値より上。
+    # 足 3 = (7,000,000, 7,000,100, 6,999,950, 7,000,050): x 売り 6,999,900 < 安値 → 始値 7,000,000(open)
+    x = {"form": "exit", "side": "sell", "qty": 0.009, "parent": "r", "px": 6999900.0}
+    plan = {0: {"r": ROOT, "l2": lv(-200.0), "x": x}, 1: {"l2": lv(-200.0), "x": x}, 2: {"x": x}}
+    rows = [FLAT, B1, (6999500, 6999550, 6999400, 6999450), (7000000, 7000100, 6999950, 7000050)]
+    out, _ = go(tmp_path, rows, plan, side)
+    assert fills(out, side) == [(ts(1), "r", "6999800.0", "open"), (ts(2), "l2", "6999500.0", "open"),
+                                (ts(3), "x", "7000000.0", "open")]
