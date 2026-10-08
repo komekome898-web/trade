@@ -57,8 +57,9 @@ def test_a1_break_flip_with_position_and_b_signal(tmp_path):
     # 本測定の形(b_signal を使い、玉を持っている)で、ブレイクの向きが直に入れ替わる場面。
     # 足 0〜7 = BRK_HEAD、足 8 = (7,000,800, 7,000,800, 7,000,700, 7,000,700)(1 本目の U8 と同じく、足 7 の判定で b1(up)、
     #   足 8 の判定で e1(long)の段が出て、足 8 で約定する)。
-    # 足 9 = 始値 7,000,700・高値 7,000,900・安値 7,000,650・終値 7,000,650・出来高 10: 足 10 の判定(足 9 の終値)は
-    #   last 7,000,650 = 中心 7,000,650(足 7〜9 の高値 7,000,900・安値 7,000,650 の中心)で「last < 中心」でないので解除しない。
+    # 足 9 = 始値 7,000,700・高値 7,000,900・安値 7,000,650・終値 7,000,650・出来高 10: 足 10 の判定(指標は足 8 まで、last は
+    #   足 9 の終値)は last 7,000,650 = 中心 7,000,650(足 6〜8 の高値 7,000,800・安値 7,000,500 の中心)で「last < 中心」でないので
+    #   解除しない。
     #   足 9 を指標に入れると(足 11 の判定から効く)、ブレイク中・出来高 10 > 平均(足 7・8 の出来高 1・1 の平均 1)・
     #   陰線(実体 −50)で上のヒゲ 200(高値 − 始値)> 下のヒゲ 0 かつ > |実体| 50、旗 1・b_signal 1 ≧ 0 → b_signal 1 − 1 = 0(v37:621-643)。
     # 足 10 = (7,000,650, 7,000,650, 7,000,100, 7,000,100): 足 11 の判定(足 9 まで): 下の線の列の最後 = 足 7〜9 の安値 7,000,650
@@ -68,7 +69,9 @@ def test_a1_break_flip_with_position_and_b_signal(tmp_path):
     #   になり e1 を「合図の条件が外れた」で消して e2(short)。買い玉で建ての旗 −1 → 決済の旗 3(M10)→ 成行の決済(flatten)を
     #   足 11 の判定で出し、次の足 11 の始値 7,000,100 で約定する。
     # 足 11 = (7,000,100, 7,000,150, 7,000,000, 7,000,050): 決済の後は玉なしで b_signal 0 → 建ての旗 0 → e2 を消す。
-    # 段の値段と約定の値段(良い側と悪い側で道筋が違う)は直し B(段の約定の決まり)で変わりうるので見ない。
+    # 段の値段と約定の値段は直し B(段の約定の決まり)で変わりうるので見ない。良い側と悪い側で入れ替わりの前の道筋は違う
+    #   (良い側は段に付けた決済が足 8 で約定、悪い側は close が足 10 の判定までに約定して玉が 0 になり、足 10 の判定で出した段が
+    #   足 10 で約定する)。どちらも足 11 の判定で入れ替わり、flatten で閉じる(事前の批評 1 回目の担当が試作で確かめた)。
     bars = S.seq(S.BRK_HEAD + [(7000800, 7000800, 7000700, 7000700), (7000700, 7000900, 7000650, 7000650, 10),
                                (7000650, 7000650, 7000100, 7000100), (7000100, 7000150, 7000000, 7000050)])
     res = S.run(tmp_path, bars, dict(S.BRK_PARAMS))
@@ -184,23 +187,32 @@ def _walk_store(tmp_path, n):
                  rules={"market_ref": "next_bar_open", "self_trade": "cancel_both"})
 
 
-def _check_secs(res):
-    t0 = time.perf_counter()
-    f = check_outputs(res["store"], res["bars"]).failures
-    return time.perf_counter() - t0, f
+def _check_secs(res, reps=1):
+    best, f = None, None
+    for _ in range(reps):
+        t0 = time.perf_counter()
+        f = check_outputs(res["store"], res["bars"]).failures
+        dt = time.perf_counter() - t0
+        best = dt if best is None else min(best, dt)
+    return best, f
+
+
+def _rows(res):
+    return sum(len(v) for v in res["orders"].values())
 
 
 @need_m
 def test_a3_checker_cost_grows_with_bars_not_squared(tmp_path):
-    # 合成の乱歩 500 本と 2,000 本(足 4 倍)。直す前は検査が 500 本 約 24 秒・2,000 本 約 160 秒(約 6.7 倍)で、
-    #   決済の行ごとに帳簿を最初から作り直す(`src/bot/bt/road/check.py` の `_flatten_expect`)。
-    #   直した後: 2,000 本の検査が 500 本の 5 倍以下(本数に比例なら約 4 倍)、かつ 2,000 本の検査が 30 秒以下。
-    #   検査の答え(落とす行)は両方とも 0 件のまま
-    s500, f500 = _check_secs(_walk_store(tmp_path / "a", 500))
-    s2000, f2000 = _check_secs(_walk_store(tmp_path / "b", 2000))
+    # 合成の乱歩 500 本と 2,000 本。直す前は検査が 500 本 約 7.5 秒・2,000 本 約 165 秒で、注文の行 1 つあたりの時間が約 4.7 倍に
+    #   伸びる(決済の行ごとに帳簿を最初から作り直す `src/bot/bt/road/check.py` の `_flatten_expect` ほか)。
+    #   直した後: 注文の行 1 つあたりの検査の時間が、2,000 本で 500 本の 1.5 倍以下(慣らしの足は注文を出さないので、本数でなく
+    #   行の数で比べる。500 本は 3 回測った最小)、かつ 2,000 本の検査が 30 秒以下。検査の答え(落とす行)は両方とも 0 件のまま
+    r500, r2000 = _walk_store(tmp_path / "a", 500), _walk_store(tmp_path / "b", 2000)
+    s500, f500 = _check_secs(r500, reps=3)
+    s2000, f2000 = _check_secs(r2000)
     assert f500 == [] and f2000 == []
     assert s2000 <= 30.0, (s500, s2000)
-    assert s2000 <= 5 * s500, (s500, s2000)
+    assert s2000 / _rows(r2000) <= 1.5 * s500 / _rows(r500), (s500, _rows(r500), s2000, _rows(r2000))
 
 
 @need_m
@@ -226,3 +238,101 @@ def test_a3_checker_still_catches_close_size(tmp_path):
         S._rewrite(p2, h2, r2, d)
         f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
         assert any(x["check"] == "v" for x in f), (oid, f)
+
+
+# 直す前のコード(src を最後に変えたコミット 81e301d2)で、乱歩 500 本の置き場の約定の表を書き換えたときの検査の答え
+# (失敗の行を JSON にして並べた sha256 と数)。2 回打って同じ。検査を速くしても答えを変えない(L-818 の読み「検査の結果は変えない」)
+ANSWERS = {"last_qty": (4, "20067d3e88f6e9f1e7274b1011bed387389c3c2de7c3bb28e35d16f32580a517"),
+           "swap_seq": (3, "12a2a5f4ed2c33574822a718975dad0c29ca3f0aedb9c7ff9e083147428b3aa7")}
+
+
+def _last_qty(rows):
+    # 悪い側の最後の約定の量を 0.0005 増やす(帳簿のツールが量の刻みで止まる。止まる前の約定の行の答えは変わらない)
+    pes = [r for r in rows if r["range"] == "pessimistic"]
+    pes[-1]["qty"] = repr(float(pes[-1]["qty"]) + 0.0005)
+
+
+def _swap_seq(rows):
+    # 悪い側の 11 番目と 12 番目の約定の知らせの通し番号を入れ替える(表の順と知らせの順が違う置き場)
+    pes = [r for r in rows if r["range"] == "pessimistic"]
+    pes[10]["notice_seq"], pes[11]["notice_seq"] = pes[11]["notice_seq"], pes[10]["notice_seq"]
+
+
+@need_m
+@pytest.mark.parametrize("tag,edit", [("last_qty", _last_qty), ("swap_seq", _swap_seq)])
+def test_a3_checker_answers_unchanged_on_tampered_store(tmp_path, tag, edit):
+    import json
+    import shutil
+    from bot.bt.road.tables import read_csv as rc
+    res = _walk_store(tmp_path / "w", 500)
+    d = str(tmp_path / tag)
+    shutil.copytree(os.path.dirname(res["store"]), d)
+    p2 = os.path.join(d, ROAD_DIR, SCHEMA["tables"]["fills"]["file"])
+    h2, r2 = rc(p2, "fills")
+    edit(r2)
+    S._rewrite(p2, h2, r2, d)
+    f = check_outputs(os.path.join(d, ROAD_DIR), res["bars"]).failures
+    key = sorted(json.dumps(x, sort_keys=True, ensure_ascii=False) for x in f)
+    assert (len(f), hashlib.sha256("\n".join(key).encode()).hexdigest()) == ANSWERS[tag], f
+
+
+# ================================================================ A2 取り消しを出す順(flatten)
+class _OpenView:
+    def __init__(self):
+        self.state = type("St", (), {"value": "OPEN"})()
+        self.cancel_pending = False
+
+
+class _OpenCtx:
+    """出した注文は全部「出ている」と答える文脈。取り消しを出した順を残す。"""
+
+    def __init__(self):
+        self.now_ns = 60 * S.NS
+        self.placed = set()
+        self.canceled = []
+
+    def place_order(self, req):
+        self.placed.add(req.client_order_id)
+
+    def order(self, coid):
+        return _OpenView() if coid in self.placed else None
+
+    def cancel_order(self, coid):
+        self.canceled.append(coid)
+
+
+class _Order(RoadStrategy):
+    """足 1 本目で建ての指値 4 つ、足 2 本目で flatten。"""
+
+    def __init__(self):
+        super().__init__(quote_ccy="JPY")
+        self.bars = 0
+
+    def step(self, event, ctx):
+        if not isinstance(event, BarEvent):
+            return
+        self.bars += 1
+        if self.bars == 1:
+            self.signal_start("s1", "試験", "long", {})
+            for i in range(4):
+                self.place("buy", "limit", 6_999_000.0 + i, 1, "s1")
+        else:
+            self.flatten("無し")
+
+
+def test_a2_flatten_cancels_in_placed_order():
+    # flatten は出ている注文を、注文を受けた順(road-0 → road-3)に取り消す。間に road-0 の受け付けの知らせ(状態の書き直し)が
+    #   届いても順は変わらない。出ているかは土台の行の状態で決める(直す前の flatten の輪 `src/bot/bt/road/strategy.py:505` と同じ)
+    from bot.bt.core import OrderAckEvent
+    s = _Order()
+    s.set_price_tick(1.0)
+    ctx = _OpenCtx()
+    s.on_event(BarEvent(received_time_ns=60 * S.NS, start_time_ns=0, open=7e6, high=7e6, low=7e6, close=7e6, volume=1.0),
+               ctx)
+    ctx.now_ns = 90 * S.NS
+    s.on_event(OrderAckEvent(received_time_ns=90 * S.NS, exchange_time_ns=90 * S.NS, client_order_id="road-0",
+                             venue_order_id="v0"), ctx)
+    ctx.now_ns = 120 * S.NS
+    s.on_event(BarEvent(received_time_ns=120 * S.NS, start_time_ns=60 * S.NS, open=7e6, high=7e6, low=7e6, close=7e6,
+                        volume=1.0), ctx)
+    assert ctx.canceled == ["road-0", "road-1", "road-2", "road-3"]

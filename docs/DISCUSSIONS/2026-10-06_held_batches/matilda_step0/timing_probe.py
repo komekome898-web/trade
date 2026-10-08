@@ -15,4 +15,6 @@ plan = T._plan(root, "bot.strategy.matilda_v37", dict(M.V37_ORIGINAL), rules={"m
 out = os.path.join(root, "out"); os.makedirs(out)
 t0 = time.time(); res = P.execute_once(plan, out); dt = time.time() - t0
 nf = {s: sum(len(r.fills) for r in res["range"][s].values()) for s in P.SIDES}
-print(f"bars {n} seed {seed} sigma {sig} execute_once {dt:.1f}s fills {nf}")
+import resource
+maxrss_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024  # Linux は KB
+print(f"bars {n} seed {seed} sigma {sig} execute_once {dt:.1f}s fills {nf} per_bar_ms {dt / n * 1000:.3f} maxrss_mb {maxrss_mb:.0f}")
