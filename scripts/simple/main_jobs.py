@@ -1,20 +1,23 @@
 """マチルダの本測定(段 1)の 33 本の引数と、族ごとのジョブの文書を作る(PLAN.md §1.2・§2、L-888・L-889)。
 
 使い方: python3 scripts/simple/main_jobs.py > docs/DISCUSSIONS/2026-10-08_matilda_main/JOBS.md
-本の引数は基準(BASE_PARAMS)に上書きする鍵だけを書く。値の出所は PLAN.md §1.2 の表と §1.4(門は分布の点)。
+本の引数は、原典の値(BASE_PARAMS)に上書きする鍵だけを書く。本測定の基準は原典の値に MAIN_BASE を上書きしたもの
+(L-890「**段数の基準は5 エントリーセッティング4 イグジットセッティング3**」)。どの本の JSON にも MAIN_BASE を入れる。
+値の出所は PLAN.md §1.2 の表と §1.4(門は分布の点)。
 """
 from __future__ import annotations
 
 import json
 
+MAIN_BASE = {"levels": 5, "entry_setting": 4, "exit_setting": 3}
 # alert_count = (vola_count = range_count) × foot の分 × 倍(基準は × 0.5。FAMILIES_TO_MEASURE.md の注・L-787)
 FAMILIES = {
     "base": [("base", {})],
-    "levels": [(f"levels_{v}", {"levels": v}) for v in (1, 3, 5)],
+    "levels": [(f"levels_{v}", {"levels": v}) for v in (1, 3, 7)],
     "foot": [("foot_5", {"foot": 5, "alert_count": 40 * 5 * 0.5})],
     "count": [(f"count_{v}", {"vola_count": v, "range_count": v, "alert_count": v * 1 * 0.5}) for v in (20, 80)],
     "alert": [(f"alert_x{m}", {"alert_count": 40 * 1 * m}) for m in (1, 2)],
-    "entry_exit": [(f"entry_exit_{e}_{x}", {"entry_setting": e, "exit_setting": x}) for e, x in ((3, 2), (4, 3), (2, 1))],
+    "entry_exit": [(f"entry_exit_{e}_{x}", {"entry_setting": e, "exit_setting": x}) for e, x in ((3, 2), (2, 1))],
     "step": [(f"step_{v}", {"step_setting": v}) for v in (2, 4)],
     "break_dist": [(f"break_dist_{v}", {"break_dist": v}) for v in (0.25, 1)],
     "break_len_mult": [("break_len_mult_4", {"break_len_mult": 4})],
@@ -34,7 +37,8 @@ def main():
     n = sum(len(v) for v in FAMILIES.values())
     print("# マチルダの本測定(段 1)— ジョブ\n")
     print("- 出所(オーナーの逐語): L-888「**測定は別セッションで族毎に並行で走らせてください。**」・L-889「**2 よい 3 よい**」"
-          "(2 = 走らせの台本の引数の上書き口、3 = 出力を git に入れる)。計画は `docs/DISCUSSIONS/2026-10-08_matilda_main/PLAN.md`。")
+          "(2 = 走らせの台本の引数の上書き口、3 = 出力を git に入れる)・"
+          "L-890「**段数の基準は5 エントリーセッティング4 イグジットセッティング3 これを踏まえて族を切り方を変えてください**」。計画は `docs/DISCUSSIONS/2026-10-08_matilda_main/PLAN.md`。")
     print(f"- 本数: {len(FAMILIES)} 族・{n} 本。この文書は `scripts/simple/main_jobs.py` が作った(手で直さない)。")
     print("- 上限: 各本 1 回。失敗した本は打ち直さない。\n")
     print("## 打つもの(どの族も同じ。<族> の節の本を上から順に)\n")
@@ -42,7 +46,7 @@ def main():
     print("2. 本ごとに(1 本 約 10 分なので Bash の道具の run_in_background で。ログは /tmp/<本の名前>.log):\n")
     print(f"       PYTHONPATH=src python3 scripts/simple/run_one.py {OUT}/<本の名前> --params '<引数の JSON>'\n")
     print("3. 本ごとに `report.json` の `params` が下の表の JSON を基準に上書きしたものと同じかを出す"
-          "(python で `BASE_PARAMS` に JSON を update して == で比べる)。")
+          "(python で `BASE_PARAMS` の写しに JSON を update して == で比べる)。")
     print("4. 本ごとに置き場のファイルの大きさを出す(`ls -la`)。1 ファイルが 50 MB を超えたら git に入れず、止めて報告する。\n")
     print("## 決まり\n")
     print("- `backtest_data/phase2_sealed/` と `docs/RESEARCH/WINDOW1/` は読まない(ls・grep・find を含む)。台本は 2023-12-17T15:00Z より後を読まない(台本の門)。")
@@ -56,10 +60,10 @@ def main():
     print("- コミットの番号\n")
     for fam, runs in FAMILIES.items():
         print(f"## 族 {fam}({len(runs)} 本。枝 `claude/matilda-main-{fam}`)\n")
-        print("| 本の名前 | 引数の JSON(基準に上書きする鍵だけ) |")
+        print("| 本の名前 | 引数の JSON(原典の値に上書きする鍵だけ。本測定の基準 levels 5・entry 4・exit 3 を含む) |")
         print("|---|---|")
         for name, over in runs:
-            print(f"| {name} | `{json.dumps(over)}` |")
+            print(f"| {name} | `{json.dumps({**MAIN_BASE, **over})}` |")
         print()
 
 
