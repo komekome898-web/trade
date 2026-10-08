@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1209,
+ "n_moves": 1211,
  "moves": [
   {
    "move": 1,
@@ -32875,23 +32875,77 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1210,
+   "tools": {
+    "Bash": 10,
+    "Write": 2
+   },
+   "n_tools": 12,
+   "read_goal": false,
+   "first_write_at": 2,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1211,
+   "tools": {
+    "Bash": 2,
+    "Agent": 1
+   },
+   "n_tools": 3,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": true,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 242,
-   "value": 0.2893
+   "den": 243,
+   "value": 0.2881
   },
   "P2_table_shown_before_first_write": {
    "num": 44,
-   "den": 242,
-   "value": 0.1818
+   "den": 243,
+   "value": 0.1811
   },
   "P3_claim_with_output": {
-   "num": 449,
-   "den": 987,
-   "value": 0.4549
+   "num": 450,
+   "den": 988,
+   "value": 0.4555
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -32901,7 +32955,7 @@
   "P5_tools_per_move": {
    "median": 6.0,
    "max": 169,
-   "n": 1140
+   "n": 1142
   },
   "P6_findings_applied": {
    "num": 98,
