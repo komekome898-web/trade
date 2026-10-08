@@ -235,10 +235,12 @@ class MatildaSimple:
     def _side(self, s):
         return "buy" if s == 1 else "sell"
 
-    def _apply_fill(self, f, start):
-        """約定を 1 つ受ける。返すのは (役, 売買の向き, 約定値段)。"""
+    def _apply_fill(self, f, start, roles0):
+        """約定を 1 つ受ける。返すのは (役, 売買の向き, 約定値段)。roles0 は呼ばれた時点の役の表(同じ点で先に受けた
+        約定が帳面を消しても、道が同じ点で約定させた注文の役を引けるように。始値に飛んでブレイクの逆指値と足す段が
+        同時に約定した足 2016-01-03T01:24 で、リードがつないで走らせて見つけた)。"""
         oid = f["id"]
-        role = self._role.get(oid)
+        role = self._role.get(oid) or roles0.get(oid)
         if role is None:
             raise MatildaError(f"知らない注文の約定: {oid!r}")
         self._drop(oid)
@@ -324,8 +326,9 @@ class MatildaSimple:
         sn = self._snap
         heads = []
         was = self._dir
+        roles0 = dict(self._role)
         for f in ev.get("fills") or []:
-            role, s, fpx = self._apply_fill(f, start)
+            role, s, fpx = self._apply_fill(f, start, roles0)
             if role in ("entry", "add"):
                 heads.append(fpx)
             if role in ("entry", "add", "level") and self._e_sig is None:  # R15: 段が約定した時点で始まる
