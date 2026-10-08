@@ -34831,10 +34831,10 @@
   {
    "move": 1284,
    "tools": {
-    "Bash": 8,
+    "Bash": 10,
     "Write": 1
    },
-   "n_tools": 9,
+   "n_tools": 11,
    "read_goal": false,
    "first_write_at": 7,
    "table_shown": false,
