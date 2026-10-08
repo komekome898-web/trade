@@ -9,7 +9,7 @@ L-816「**1.a**」/ L-817「**問い 2(B-1) a**」/ L-783「**間違えそうや
 口(この試験が決める):
 - `from bot.bt.simple import run, read_bars, check_numbers, SimpleRoadError`
 - `run(bars, strategy, side, out_dir, tick, meta)`: bars は (足の始まりの時刻の文字列, 始値, 高値, 安値, 終値, 出来高) の並び。
-  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイルを書く。meta は run.json に写す辞書(戦略の名前と引数・
+  side は "optimistic" か "pessimistic"。out_dir に SPEC §4 のファイルを書く。meta は run_<側>.json に写す辞書(戦略の名前と引数・
   封印の境・足のファイルの名前と sha256 は呼ぶ側が meta で渡す)。
 - 戦略は `decide(bar, fills)` を持つ。bar は渡した足の組、fills はこの足の約定の辞書の並び
   ({"ts", "id", "side", "qty", "px", "case"})。返すのは (注文の辞書 {番号: 注文}, 合図の出来事の並び)。
@@ -255,6 +255,9 @@ STOPS = [
     ("量が刻みの外", {0: {"r": dict(ROOT, qty=0.0095)}}, [FLAT, B1]),
     ("量が 0", {0: {"r": dict(ROOT, qty=0.0)}}, [FLAT, B1]),
     ("知らない形", {0: {"r": dict(ROOT, form="stop")}}, [FLAT, B1]),
+    ("親が成行の利確", {0: {"m": {"form": "market", "side": "buy", "qty": 0.009}, "x": dict(X, parent="m")}}, [FLAT, B1]),
+    ("売買が親と同じ利確", {0: {"r": ROOT, "x": dict(X, side="buy")}}, [FLAT, B1]),
+    ("量が親と違う利確", {0: {"r": ROOT, "x": dict(X, qty=0.018)}}, [FLAT, B1]),
 ]
 
 
@@ -277,7 +280,7 @@ def test_t8_files_signals_and_numbers(tmp_path):
     assert [(r["id"], r["kind"], r["direction"], r["start_ts"], r["end_ts"], r["end_reason"]) for r in s] == [
         ("s1", "試験", "long", ts(0), ts(2), "試験の終わり")]
     assert json.loads(s[0]["value_json"]) == {"a": 1}
-    with open(os.path.join(out, "run.json"), encoding="utf-8") as fh:
+    with open(os.path.join(out, "run_optimistic.json"), encoding="utf-8") as fh:
         rec = json.load(fh)
     for k in ("strategy", "params", "seal", "tick", "side", "git"):
         assert k in rec, k
@@ -287,8 +290,7 @@ def test_t8_files_signals_and_numbers(tmp_path):
     # 書いた数を書き換えると食い違いが出る
     with open(os.path.join(out, "summary_optimistic.json"), encoding="utf-8") as fh:
         summ = json.load(fh)
-    key = next(k for k, v in summ.items() if isinstance(v, (int, float, str)) and k != "side")
-    summ[key] = "999"
+    summ["pnl_jpy"] = "999"
     with open(os.path.join(out, "summary_optimistic.json"), "w", encoding="utf-8") as fh:
         json.dump(summ, fh)
     assert check_numbers(str(out), "optimistic") != []
@@ -301,12 +303,14 @@ def test_t8_check_numbers_reads_trades(tmp_path):
     p = os.path.join(out, "trades_optimistic.csv")
     rows = table(out, "trades", "optimistic")
     assert rows and check_numbers(str(out), "optimistic") == []
-    rows[0]["pnl_jpy"] = "12345"
-    with open(p, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, list(rows[0].keys()))
-        w.writeheader()
-        w.writerows(rows)
-    assert check_numbers(str(out), "optimistic") != []
+    for col, val in (("pnl_jpy", "12345"), ("hold_ns", "1")):
+        bad = [dict(r) for r in rows]
+        bad[0][col] = val
+        with open(p, "w", newline="", encoding="utf-8") as fh:
+            w = csv.DictWriter(fh, list(rows[0].keys()))
+            w.writeheader()
+            w.writerows(bad)
+        assert check_numbers(str(out), "optimistic") != [], col
 
 
 def test_t8_records_are_written_while_running(tmp_path):
@@ -363,3 +367,48 @@ def test_t9_level_and_exit_open_on_later_bar(tmp_path, side):
     out, _ = go(tmp_path, rows, plan, side)
     assert fills(out, side) == [(ts(1), "r", "6999800.0", "open"), (ts(2), "l2", "6999500.0", "open"),
                                 (ts(3), "x", "7000000.0", "open")]
+
+
+# ================================================================ T10 事前の批評 2 回目で足した場面
+@pytest.mark.parametrize("side", SIDES)
+def test_t2_sell_limit_and_exit_floored(tmp_path, side):
+    # 売りの limit s = 6,999,700.9 → 切り捨て 6,999,700。足 1(B1)の範囲の内 → 6,999,700(range)。
+    # 根 r(買い 7,000,050)は足 1 で 6,999,800(open)。利確 x(親 r)= 売り 6,999,800.7 → 切り捨て 6,999,800。
+    #   良い側: 足 1 の範囲の内 → 6,999,800(entry_bar)。悪い側: 足 2(B2、高値 6,999,800)で 6,999,800(range)
+    x = dict(X, px=6999800.7)
+    plan = {0: {"r": ROOT, "x": x, "s": {"form": "limit", "side": "sell", "qty": 0.009, "px": 6999700.9}},
+            1: {"x": x}}
+    out, _ = go(tmp_path, [FLAT, B1, B2], plan, side)
+    got = {f[1]: f for f in fills(out, side)}
+    assert got["s"] == (ts(1), "s", "6999700.0", "range")
+    assert got["x"] == ((ts(1), "x", "6999800.0", "entry_bar") if side == "optimistic" else (ts(2), "x", "6999800.0", "range"))
+    assert {r["id"]: (r["px_calc"], r["px"]) for r in table(out, "orders", side)}["x"] == ("6999800.7", "6999800.0")
+
+
+@pytest.mark.parametrize("side", SIDES)
+def test_t4_exit_beyond_range_on_parent_bar_waits(tmp_path, side):
+    # 利確 x(親 r)= 売り 6,999,600 は、親の足 1(安値 6,999,700)では約定する向きに範囲の外。良い側でも親の足では約定しない
+    #   (始値でも約定しない)。足 2(B2: 安値 6,999,550・高値 6,999,800)で範囲の内 → 6,999,600(range)
+    x = dict(X, px=6999600.0)
+    out, _ = go(tmp_path, [FLAT, B1, B2], {0: {"r": ROOT, "x": x}, 1: {"x": x}}, side)
+    assert fills(out, side) == [(ts(1), "r", "6999800.0", "open"), (ts(2), "x", "6999600.0", "range")]
+
+
+def test_t8_rerun_same_dir_starts_fresh(tmp_path):
+    # 同じディレクトリで同じ走らせを 2 回しても、約定の行は 2 重にならない(前の中身を残さない)。良い側と悪い側は同じ
+    #   ディレクトリに書け、run_<側>.json が別に残る
+    out = str(tmp_path / "same")
+    for side in ("optimistic", "optimistic", "pessimistic"):
+        run(bars([FLAT, B1]), Script({0: {"r": ROOT}}), side=side, out_dir=out, tick=1.0, meta=META)
+    assert fills(out, "optimistic") == [(ts(1), "r", "6999800.0", "open")]
+    assert fills(out, "pessimistic") == [(ts(1), "r", "6999800.0", "open")]
+    for side in SIDES:
+        with open(os.path.join(out, f"run_{side}.json"), encoding="utf-8") as fh:
+            assert json.load(fh)["side"] == side
+
+
+def test_t6_run_refuses_bars_after_seal(tmp_path):
+    # read_bars を通らずに渡された足でも、meta の封印の境以後に始まる足が来たら止める
+    rows = [("2023-12-17T14:59:00+00:00", 7e6, 7e6, 7e6, 7e6, 1.0), ("2023-12-17T15:00:00+00:00", 7e6, 7e6, 7e6, 7e6, 1.0)]
+    with pytest.raises(SimpleRoadError):
+        run(rows, Script({}), side="optimistic", out_dir=str(tmp_path / "s"), tick=1.0, meta=META)

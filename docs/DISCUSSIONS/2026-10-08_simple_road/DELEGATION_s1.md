@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_s1_premortem1.md` の後の直し)。測りの道を単純な形に作り直す(L-819・L-821)3 本の委任の 1 本目。S2(約定の作り直し = 検査 1、別の作業者)と S3(マチルダを新しい道に移す)はこの委任に入れない。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`、受け入れはリードが書いた実行できる試験 `tests/simple/test_s1_spec.py`。
+3 版目(事前の批評 2 回目 `DELEGATION_s1_premortem2.md` の後の直し。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない。直した所は末尾の `## 事前の批評の後の変更`)。測りの道を単純な形に作り直す(L-819・L-821)3 本の委任の 1 本目。S2(約定の作り直し = 検査 1、別の作業者)と S3(マチルダを新しい道に移す)はこの委任に入れない。決まりの正本は `docs/DISCUSSIONS/2026-10-08_simple_road/SPEC.md`、受け入れはリードが書いた実行できる試験 `tests/simple/test_s1_spec.py`。
 
 ## 着手前の表
 
@@ -15,7 +15,7 @@
 - L-816「**1.a**」・L-817「**問い 2(B-1) a**」(段の値段は 1 段目の約定値段から。1 段目が約定した足でも、良い側・悪い側とも約定させる)
 - L-754「**私がしてほしいの決まりを足すんじゃなくて、この計算が確実にできるツールを作ることと、そのツールが必ず使われる仕組みです。**」(数は帳簿のツールで約定から計算する)
 - L-791「**測定に限らず全ての委任において、委任のミスでやり直しが発生しない委任文の書き方と仕組み**」
-- リードの設計(オーナーの逐語ではない): SPEC.md の「リードの決め」「リードの読み」の印の付いた所全部(値段の空の足を飛ばす・封印の境でデータの終わりとする・番号は 1 回の走らせで 1 つの注文だけ・同じ番号で中身が違えば止める・成行は次の足の始値・利確の量は親と同じ・部分で約定しない・1 本の足の中で約定させる順・止める注文の一覧・刻みへの切り捨て)。
+- リードの設計(オーナーの逐語ではない): SPEC.md の「リードの決め」「リードの読み」の印の付いた所全部(値段の空の足を飛ばす・封印の境でデータの終わりとする・run も境以後の足で止める・番号は 1 回の走らせで 1 つの注文だけ・同じ番号で中身が違えば止める・成行は次の足の始値・利確の量は親と同じ・部分で約定しない・1 本の足の中で約定させる順・止める注文の一覧・刻みへの切り捨て・親が約定した後に出た利確の扱い・建玉を超えない決済と全部の決済は limit)。
 
 ## 作るもの
 
@@ -34,7 +34,7 @@
 | 既存の決まり | 帳簿のツール `book` は、約定の列から取引ごとの表とまとめを作る。同じ時刻の約定を受け付ける | `PYTHONPATH=src python3 -c "from bot.bt.road.ledger import book; f=[{'t_ns':60,'side':'buy','qty':0.009,'px':100.0,'ccy':'JPY'},{'t_ns':60,'side':'buy','qty':0.009,'px':99.0,'ccy':'JPY'},{'t_ns':120,'side':'sell','qty':0.018,'px':101.0,'ccy':'JPY'}]; print(book(f).summary)"` → `{'fill_count': 3, 'closed_trades': 1, 'pnl_jpy': '0.027', 'open_trades': 0, 'trades': [...]}` |
 | 既存の決まり | 取引の表の欄の名前 | `src/bot/bt/road/ledger.py:86-87` |
 | 既存の決まり | 受け入れの試験は、作る前は包みが無いので飛ばしになる | `PYTHONPATH=src python -m pytest tests/simple` → `1 skipped` |
-| 既存の決まり | 受け入れの試験の期待の値は、リードが捨てる前提の実装を一時的に置いて確かめ、全部通った(置いた実装は外した)。事前の批評 1 回目の担当も別の試作で確かめた(試験を足す前の 32 件) | `PYTHONPATH=src python -m pytest tests/simple` → `41 passed`(捨てる実装を置いた時) |
+| 既存の決まり | 受け入れの試験の期待の値は、リードが捨てる前提の実装を一時的に置いて確かめ、全部通った(置いた実装は外した)。事前の批評 1 回目・2 回目の担当も別の試作で確かめた(試験を足す前の 32 件・41 件) | `PYTHONPATH=src python -m pytest tests/simple` → `41 passed`(捨てる実装を置いた時) |
 | 既存の決まり | 帳簿のツールを読むと、包み `bot.bt.road` の読み込みで古い道(取引所の模型・core・道の土台)も読み込まれる | `PYTHONPATH=src python3 -c "import sys; from bot.bt.road.ledger import book; print(sorted(m for m in sys.modules if m.startswith('bot.bt')))"` → 出力に `bot.bt.fill.*`・`bot.bt.core.*`・`bot.bt.road.strategy` が並ぶ(事前の批評 1 回目の担当が打った) |
 | 既存の決まり | 道の既存の試験は全部通る | `PYTHONPATH=src python -m pytest tests/road` → `315 passed` |
 | 列の意味 | 足のファイルの ts は 1 分の始まりの UTC(ISO 8601)、値段が空の足はその分に約定が無かった足 | `backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/README.md:35-38` |
@@ -70,7 +70,7 @@
 | 等号 | U1(段の値段 = 安値ちょうど)・U2(売りの段の値段 = 高値ちょうど)・U4(利確の値段 = 高値ちょうど) |
 | 欠け | U6(値段の空の足を飛ばす)・U5(根が約定しないまま消える → 段の値段は空) |
 | 参照の値が無い | U7(根の無い段・親の無い利確で止める) |
-| 拒否・状態不明・届かない | U7(止める注文の 12 通り) |
+| 拒否・状態不明・届かない | U7(止める注文の 15 通り) |
 | 遅れ | U4(悪い側の利確は次の足から・親が約定した後に出た利確は次の足から) |
 | 交差と後からの変化 | U7(同じ番号で中身が違う・約定した番号や消えた番号をまた返す・根が約定した後に初めて出た段)・U9(同じ足で同じ形が 2 本約定するときは出した順) |
 | 浮動小数・刻み・丸め | U2(買いと売りの切り捨て・10 進の和・戦略の値段と切り捨てた値段の両方を残す) |
@@ -83,13 +83,13 @@
 各項目は、試験 `tests/simple/test_s1_spec.py` の挙げた試験が、試験を変えずに通ること。全体で飛ばし 0。
 
 - U1: 段の約定(L-816 の例): `test_t1_levels_from_root_fill`(良い側・悪い側)
-- U2: 刻みの切り捨てと 10 進の和: `test_t2_buy_level_floored`・`test_t2_sell_level_floored`・`test_t2_decimal_sum`・`test_t2_limit_floored_and_calc_kept`
+- U2: 刻みの切り捨てと 10 進の和: `test_t2_buy_level_floored`・`test_t2_sell_level_floored`・`test_t2_decimal_sum`・`test_t2_limit_floored_and_calc_kept`・`test_t2_sell_limit_and_exit_floored`
 - U3: 指値・成行の決まり: `test_t3_limit_cases_and_market`
-- U4: 付けた利確: `test_t4_exit_on_level`・`test_t4_exit_after_parent_filled_is_plain_limit`
+- U4: 付けた利確: `test_t4_exit_on_level`・`test_t4_exit_after_parent_filled_is_plain_limit`・`test_t4_exit_beyond_range_on_parent_bar_waits`
 - U5: 根と段が消える: `test_t5_root_and_level_withdrawn`
-- U6: 欠けた足・値段の空の足・封印: `test_t6_next_bar_is_next_present_bar`・`test_t6_read_bars_skips_null_and_ends_at_seal`・`test_t6_read_bars_refuses_files_after_seal_year`
-- U7: 止める場面: `test_t7_stops`(12 通り)
-- U8: 残し方と数の作り直し: `test_t8_files_signals_and_numbers`・`test_t8_check_numbers_reads_trades`・`test_t8_records_are_written_while_running`
+- U6: 欠けた足・値段の空の足・封印: `test_t6_next_bar_is_next_present_bar`・`test_t6_read_bars_skips_null_and_ends_at_seal`・`test_t6_read_bars_refuses_files_after_seal_year`・`test_t6_run_refuses_bars_after_seal`
+- U7: 止める場面: `test_t7_stops`(15 通り)
+- U8: 残し方と数の作り直し: `test_t8_files_signals_and_numbers`・`test_t8_check_numbers_reads_trades`・`test_t8_records_are_written_while_running`・`test_t8_rerun_same_dir_starts_fresh`
 - U9: データの終わり・同じ足の約定の順・次の足の始値: `test_t9_data_end`・`test_t9_same_bar_fills_in_placed_order`・`test_t9_level_and_exit_open_on_later_bar`
 
 ## 変異の表
@@ -125,3 +125,15 @@
 ## 途中の決め
 
 作業者の問いにリードが答えたら、ここに `- Q数字:` の行で足し、印を取り直す。
+
+## 事前の批評の後の変更
+
+見た版の sha256: 30ba4b04be7385f411efa65ebbb15d7c606fa526af3640fe501cee71b62d254c
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_s1_premortem2.md` の「次の版で直す」ごと。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+
+- SPEC.md: §3 の表に case の名前(range・open・anchor_bar・entry_bar・market)を書いた / 切り捨てのやり方を 1 つにした(Decimal(repr) を刻みで ROUND_FLOOR)/ 止める一覧に「知らない形」「親が limit でも level でもない exit」「売買が親と同じ exit」「量が親と違う exit」を足した / 親の足で範囲の外の利確は、良い側でもその足では約定しない、と書いた / 同じ番号の比べは戦略が出した値段そのもので、と書いた / run.json を run_<側>.json にし、run は始めにその側のファイルを新しく作る、と書いた / run も meta の seal を見て境以後の足で止める、と書いた / リードの決めの印を 3 か所に足した(親が約定した後に出た利確・建玉を超えない決済・全部の決済は limit)。
+- 受け入れの試験(`tests/simple/test_s1_spec.py`): 足した試験 = `test_t2_sell_limit_and_exit_floored`(U2)・`test_t4_exit_beyond_range_on_parent_bar_waits`(U4)・`test_t8_rerun_same_dir_starts_fresh`(U8)・`test_t6_run_refuses_bars_after_seal`(U6)・止める場面 3 通り(U7 は 15 通り)。数の作り直しの書き換えの的を summary の pnl_jpy と trades の pnl_jpy・hold_ns にした。run.json を run_optimistic.json で読む。
+- 確かめ: リードが捨てる前提の実装を直して置き、`PYTHONPATH=src python -m pytest tests/simple` → `50 passed`(置いた実装は外した)。
+- 本文: 版の行と、目的の節のリードの決めの一覧を直した。受け入れの各 U の試験の名前は、上の足した試験も含む(U2・U4・U6・U7・U8)。
+
