@@ -156,7 +156,7 @@
 
 ### 7.2.1 値動きの bp の基準の値段(1 段目)から来る読みの範囲
 
-MFE・MAE は 1 段目の約定の値段に対する値動き(`diag_paths.py:106-112`。文書にもそう書いてある)。2 段以上建った取引では、持ち高全体(平均の値段)の含みとは基準が違う。マチルダは逆へ動くほど段を足すので、平均の値段は 1 段目より有利な側にある。1 段目から見て MFE ≤ 0 でも、持ち高全体には含み益があった取引がありうる【推定】。D4 の群「一度は MFE > 0 だったのに負けた」「MFE ≤ 0 のまま負けた」は 1 段目から見た分け方で、「持ち高に含み益が一度あったか」の分けではない。
+MFE・MAE は 1 段目の約定の値段に対する値動き(`diag_paths.py:106-112`。文書にもそう書いてある)。2 段以上建った取引では、持ち高全体(平均の値段)の含みとは基準が違う。マチルダは 2 段目から先を 1 段目の約定の値段から step ずつ不利な側に置く(`src/bot/strategy/matilda_simple.py:319-327`、`px = fpx - s * step`)ので、平均の値段は 1 段目より有利な側にある【事実(コード)】。1 段目から見て MFE ≤ 0 でも、持ち高全体には含み益があった取引がありうる【推定】。D4 の群「一度は MFE > 0 だったのに負けた」「MFE ≤ 0 のまま負けた」は 1 段目から見た分け方で、「持ち高に含み益が一度あったか」の分けではない。
 
 基準の走らせで、基準の違いが関わる取引(2 段以上建った取引)の数(`PYTHONPATH=src:scripts/w4_measure python3 docs/RESEARCH/matilda_main/d4_levels_count.py base` → `d4_levels_count.out`):
 
@@ -214,12 +214,13 @@ MFE・MAE は 1 段目の約定の値段に対する値動き(`diag_paths.py:106
 |---|---|---|---|
 | 走らせ・戦略・帳簿 | `scripts/simple/run_one.py` → `src/bot/bt/simple/*`・`src/bot/strategy/matilda_simple.py`・`matilda_v37.py` → `src/bot/bt/road/*`(損益は円の Decimal) | 入らない。引数の幅・ボラは値段に対する比で持つ(`matilda_v37.py:62` の `150 / 600000` など。bp ではない) | `grep -rn "1e4\|10000\|10_000\|1e-4\|0\.0001\|/ *100\b\|\* *100\b" src/bot/bt/simple src/bot/bt/road src/bot/strategy/matilda_simple.py src/bot/strategy/matilda_v37.py scripts/simple/run_one.py` → `matilda_v37.py:62` の 1 行だけ |
 | 取引の行 | `scripts/analysis/simple_trades.py:83` で `float(損益の円) ÷ 200,000 × 1e4` = pnl_bp(①)を作り、円 pnl_jpy と並べて書く | **ここで初めて入る** | — |
-| 読み口 D1・D3・D6・D7 | `diag_tables.py` が pnl_bp を読み(`:80`)、日の和(`:128`)・平均・日の塊の区間・MDE・分位・上位下位 5% の日・群の 1 取引あたりを **bp のまま計算** | 入る(全部 bp で計算) | 計算は和・平均・分位・並べ替え・0 との比べだけで、bp の値を持つ定数・閾値・途中の丸めは無い(`grep -n "round(\|np.round\|1e-\|> 0\|< 0\|abs(\|log\|sqrt\|quantile\|percentile" scripts/analysis/diag_tables.py`。0 との比べは `:171・180・193・213・225・234`、`:300` の `round` は日の数)。円のままの計算と突き合わせ済み(§3.1。6,092 値で字が変わったのは表示に使っていない 2 値) |
+| 読み口 D1・D3・D6・D7 | `diag_tables.py` が pnl_bp を読み(`:80`)、日の和(`:128`)・平均・日の塊の区間・MDE・分位・上位下位 5% の日・群の 1 取引あたりを **bp のまま計算** | 入る(全部 bp で計算) | 計算は和・平均・分位・並べ替え・0 との比べだけで、bp の値を持つ定数・閾値・途中の丸めは無い(`grep -n "round(\|np.round\|1e-\|> 0\|< 0\|abs(\|log\|sqrt\|quantile\|percentile" scripts/analysis/diag_tables.py`。0 との比べは `:171・180・193・213・225・234`、`:300` の `round` は日の数)。区間と MDE を計算する `src/bot/bt/validation/` も同じく見た(`grep -rn "round(\|1e-\|abs(\|np.round\|isclose\|1e4\|10000" src/bot/bt/validation*` → `power.py:70・77` の z の絶対値だけ)。円のままの計算と突き合わせ済み(§3.1。6,092 値で字が変わったのは表示に使っていない 2 値) |
 | 読み口 D4・D5 | `diag_paths.py` が pnl_bp を読み(`:98`)、D4 の群を pnl_bp の符号で分けて和を取る(`:146-154`)。値動き(②)は値段から計算(`:106-127`。MFE > 0 などの 0 との比べだけ) | 入る(D4 の群の和) | 符号は正の倍率で変わらないので群は同じ。基準の 4 群の和 × 20 と円のままの和: +10,177,343.87 / +10,177,344、−4,695,043.87 / −4,695,044、−6,006,005.81 / −6,006,006、0 / 0(円は `d4_levels_count.out` の 1 段・2 段以上の和) |
 | 族の台本 | `fam_tables.py`(`:91` で帯ごとに pnl_bp を日に足して区間)・`half_diff.py`・`both_halves.py`・`same_bar_daily.py`(`:23`)・`foot/foot_boundary.py` が、読み口の関数で **bp のまま** 平均・区間・MDE を計算し、表示のときだけ × 20(`fam_tables.py:21-22`・`half_diff.py:17-19`・`both_halves.py:15`・`same_bar_daily.py:11`・`foot_boundary.py:10`) | 入る | 同じ計算を円のままで行って突き合わせた(`docs/RESEARCH/matilda_main/calc_path_check.py` → `.out`): 32 本・3,792 値(全部 / 保有 0 分 / 0 分超 × 境 2019-12-09・2019-12-10・日の真ん中 × 前半・後半、基準との日ごとの差、それぞれ平均・区間の上下・MDE)で、**円の整数・小数 1 桁で字が変わったもの 0、差の最大 4.55e-13 円** |
 | ほかの族の台本 | `compare_family.py`・`band_migration.py`・`six_bands.py`・`zero_reason.py` ほか(§2 の表) | 入らない(pnl_jpy を直接読む) | §2 |
 | 丸めた文字の読み直し | 出力の `.md`・`.out` を読み直して計算する台本 | 無い | 族の台本が読むのは `diag_tables.json`・`diag_paths.json`(丸めていない値)・`summary.json`・`run.json` だけ(`grep -n "\.md\|\.json\|\.out" docs/RESEARCH/matilda_main/{compare_family,fam_tables,levels_band}.py`) |
 | 場面(D2) | `scripts/w4_measure/vol_split_daily.py:61` が日のボラを `\|対数の値動き\| の平均 × 1e4`(⑤ ボラの bp)で作り、前の年の 1/3・2/3 分位と比べて低・中・高に分ける(`:32・42`) | 入る(⑤) | 比べる相手が同じ物差しの分位だけなので、尺度で分け方は変わらない。bp の値を持つ定数は無い |
+| 門の値・幅とボラの計算 | `gate_dist_halves.py`・`width_vola.py`・`six_bands.py` ほか族の置き場の台本(幅 ÷ 終値・ボラ ÷ 終値を % や比で出す) | 入らない | `grep -ln "1e4\|10000\|10_000\|1e-4\|bp" docs/RESEARCH/matilda_main/*.py docs/RESEARCH/matilda_main/*/*.py` で当たるのは fam_tables・half_diff・same_bar_daily・調べの台本・台帳の行の定義だけ(門の値の台本は 0) |
 | 文書の数(リードの手の計算) | 読み口の bp の表示値を手で × 20 した(型 E)・丸めた円どうしを足し引きした(型 F) | **入る** | §3.2・§3.3: 文書 137・台帳 12 個の最後の桁が正しくない。これが計算の途中の bp が数を変えた唯一の場所 |
 
 ### 8.2 まとめ
