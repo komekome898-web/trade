@@ -81,3 +81,7 @@ backtest_data/k1_newenv_g_20261001/*.json
 !backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json
 backtest_data/binance_um_BTCUSDT_1m_20261002/raw/
 docs/RESEARCH/cards/*/measure/*/run.npz
+
+# マチルダ本測定の派生の取引の行(scripts/analysis/simple_trades.py で約定の列から作り直せる。基準 base だけ追跡)
+backtest_runs_shared/matilda_main_trades/*/trades.csv.gz
+backtest_runs_shared/matilda_main_trades/*/summary.json

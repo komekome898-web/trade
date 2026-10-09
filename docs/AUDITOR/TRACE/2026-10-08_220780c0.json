@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1288,
+ "n_moves": 1290,
  "moves": [
   {
    "move": 1,
@@ -34963,23 +34963,79 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1289,
+   "tools": {
+    "Bash": 1,
+    "Skill": 1
+   },
+   "n_tools": 2,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1290,
+   "tools": {
+    "Bash": 40,
+    "Read": 2,
+    "Edit": 8,
+    "Write": 2
+   },
+   "n_tools": 52,
+   "read_goal": false,
+   "first_write_at": 15,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 256,
-   "value": 0.2734
+   "den": 257,
+   "value": 0.2724
   },
   "P2_table_shown_before_first_write": {
    "num": 47,
-   "den": 256,
-   "value": 0.1836
+   "den": 257,
+   "value": 0.1829
   },
   "P3_claim_with_output": {
    "num": 463,
-   "den": 1020,
-   "value": 0.4539
+   "den": 1021,
+   "value": 0.4535
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -34989,7 +35045,7 @@
   "P5_tools_per_move": {
    "median": 5.0,
    "max": 169,
-   "n": 1218
+   "n": 1220
   },
   "P6_findings_applied": {
    "num": 98,
