@@ -35167,10 +35167,10 @@
   {
    "move": 1296,
    "tools": {
-    "Bash": 19,
+    "Bash": 22,
     "Write": 1
    },
-   "n_tools": 20,
+   "n_tools": 23,
    "read_goal": false,
    "first_write_at": 18,
    "table_shown": true,
