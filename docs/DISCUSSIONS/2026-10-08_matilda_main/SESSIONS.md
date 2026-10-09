@@ -7,7 +7,7 @@
 | base | 1 | session_01AebtjyaRxiigJR41WnARXS | claude/matilda-main-base | 08:37 JST 押し出し(97504abd)→ 取り込み 06946438。git 5a69618a・params 一致・452.5 秒・774 MB |
 | levels | 3 | session_01WoGRgHM7PrjxpfQTtS3kpq | claude/matilda-main-levels | 08:53 JST 取り込み。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |
 | foot | 1 | session_015A8rqiFqBUa5YRBqeLk9uf | claude/matilda-main-foot | 08:53 JST 取り込み。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |
-| count | 2 | session_01NFuNkYbCU839s5PCFAukj5 | claude/matilda-main-count | 押し出し待ち(セッションは 23:35Z から「count_80 の終了通知を待つ」のまま。09:20 JST 時点で枝なし) |
+| count | 2 | session_01NFuNkYbCU839s5PCFAukj5 | claude/matilda-main-count | 09:38 JST 取り込み(セッションは 09:34 JST に押し出し、532e5e1a)。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |
 | alert | 2 | session_01Bf4YgvXpQ45tF6NhLoEBjK | claude/matilda-main-alert | 08:53 JST 取り込み。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |
 | entry_exit | 2 | session_013nELGVaLrtzHSFeXyQ5yF3 | claude/matilda-main-entry_exit | 08:53 JST 取り込み。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |
 | step | 2 | session_019dfgREEfbeiFkRyDkfXAeX | claude/matilda-main-step | 08:53 JST 取り込み。全本 OK(git 5a69618a・params 一致・上限なし。`receive_main.py`) |

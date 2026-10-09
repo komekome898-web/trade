@@ -35081,13 +35081,13 @@
   {
    "move": 1293,
    "tools": {
-    "Bash": 14,
+    "Bash": 16,
     "Read": 10,
     "Edit": 21,
     "Write": 2,
     "Agent": 1
    },
-   "n_tools": 48,
+   "n_tools": 50,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
