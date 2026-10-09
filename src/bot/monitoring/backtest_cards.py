@@ -383,9 +383,13 @@ def headline(ref: CardRef, stats: dict, n_after_cut: int) -> tuple[dict, dict]:
     else:
         src["max_dd"] = "取引ごとの累計から計算(封印の境で取引を切ったため daily.csv は使えない。研究の定義ではない)"
     src["n"] = "書き出した取引の数(封印の境で切った後)"
-    # the research's extra.json holds its drawdown x 1e4 under max_bp; shown in percent (/ 100) like the rest (L-920)
-    _mb = (git_dd or {}).get("max_bp") if isinstance(git_dd, dict) else None
-    src["research_max_dd_pct"] = None if _mb is None else float(_mb) / 100
+    # extra.json written after L-920 holds max_pct (percent); older ones hold max_bp (x 1e4), read as / 100
+    _d = git_dd if isinstance(git_dd, dict) else {}
+    if _d.get("max_pct") is not None:
+        src["research_max_dd_pct"] = float(_d["max_pct"])
+    else:
+        _mb = _d.get("max_bp")
+        src["research_max_dd_pct"] = None if _mb is None else float(_mb) / 100
     return out, src
 
 
