@@ -185,6 +185,8 @@
     "lo": -40.271875969966615,
     "hi": -23.823536752254064
    },
+   "cut": "2019-12-09",
+   "cut_source": "渡した日(--cut)",
    "outcome": "崩れた",
    "days_needed": 157,
    "days_needed_second": 277
@@ -382,7 +384,7 @@
    "both": 348769,
    "only_a": 85,
    "only_b": 14,
-   "sum_only_a": 4.710899999999998,
+   "sum_only_a": 4.710899999999996,
    "sum_only_b": 1.083,
    "sum_both_a_minus_b": 0.0
   }
