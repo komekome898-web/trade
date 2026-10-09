@@ -2,8 +2,7 @@
 |---|---|---|
 | D7 | 合う | 1,276 |
 | D7 | 合わない | 48 |
-| そのほか | 合う | 3,420 |
-| そのほか | 合わない | 12 |
+| そのほか | 合う | 3,432 |
 
 合わない葉(前の bp × 20 / 新しい円):
 - ('break_len_mult_4', 'diag_tables.json', '.d7.all.mean', 211.4862487223169, 205.47061857774756)
@@ -54,16 +53,4 @@
 - ('range_hi_p90', 'diag_tables.json', '.d7.years.2015.lo', -211.86869687500004, -1539.4266991935483)
 - ('range_hi_p90', 'diag_tables.json', '.d7.years.2015.hi', 1446.917166666667, 988.9988427419353)
 - ('range_hi_p90', 'diag_tables.json', '.d7.years.2015.mde', 1274.2879979003487, 1807.1664870737854)
-- ('step_4', 'diag_paths.json', 'd4.groups[0].pnl_sum', 4028574.550999035, 201428.72754995176)
-- ('step_4', 'diag_paths.json', 'd4.groups[1].pnl_sum', -2139632.761000011, -106981.63805000056)
-- ('step_4', 'diag_paths.json', 'd4.groups[2].pnl_sum', -2754523.072000008, -137726.1536000004)
-- ('vola_gate_p10', 'diag_paths.json', 'd4.groups[0].pnl_sum', 9788194.263999892, 489409.71319999464)
-- ('vola_gate_p10', 'diag_paths.json', 'd4.groups[1].pnl_sum', -4545193.346999976, -227259.6673499988)
-- ('vola_gate_p10', 'diag_paths.json', 'd4.groups[2].pnl_sum', -5735604.716999979, -286780.23584999895)
-- ('vola_gate_p25', 'diag_paths.json', 'd4.groups[0].pnl_sum', 9009089.498999884, 450454.4749499942)
-- ('vola_gate_p25', 'diag_paths.json', 'd4.groups[1].pnl_sum', -4195580.2559999805, -209779.01279999904)
-- ('vola_gate_p25', 'diag_paths.json', 'd4.groups[2].pnl_sum', -5176923.586999986, -258846.17934999932)
-- ('vola_gate_p50', 'diag_paths.json', 'd4.groups[0].pnl_sum', 7222373.85799998, 361118.69289999903)
-- ('vola_gate_p50', 'diag_paths.json', 'd4.groups[1].pnl_sum', -3369593.3899999876, -168479.66949999938)
-- ('vola_gate_p50', 'diag_paths.json', 'd4.groups[2].pnl_sum', -4040708.268000002, -202035.4134000001)
-(全 60 件)
+(全 48 件)
