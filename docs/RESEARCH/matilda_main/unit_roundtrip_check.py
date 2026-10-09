@@ -53,6 +53,9 @@ def leaves(o, path=""):
 
 
 runs = sorted(x for x in os.listdir(T) if os.path.isdir(T + x))
+if len(sys.argv) > 1:  # 本を絞る(字が変わった葉の中身を見るとき)
+    runs = sys.argv[1:]
+flips = []
 base_bp, base_y = dt.load_run(T + "base"), load_yen(T + "base")
 tot = {"leaves": 0, "money": 0, "same": 0, "other": 0, "digit0": 0, "digit1": 0, "maxabs": 0.0}
 others = []
@@ -74,8 +77,11 @@ for n in runs:
         if abs(vy - vb * 20) <= 1e-6 * max(1.0, abs(vy)):
             c["money"] += 1
             c["maxabs"] = max(c["maxabs"], abs(vy - vb * 20))
-            c["digit0"] += f"{vb * 20:+,.0f}" != f"{vy:+,.0f}"
-            c["digit1"] += f"{vb * 20:+,.1f}" != f"{vy:+,.1f}"
+            d0, d1 = f"{vb * 20:+,.0f}" != f"{vy:+,.0f}", f"{vb * 20:+,.1f}" != f"{vy:+,.1f}"
+            c["digit0"] += d0
+            c["digit1"] += d1
+            if d0 or d1:
+                flips.append((n, k, vb * 20, vy))
         else:
             c["other"] += 1
             others.append((n, k, vb, vy))
@@ -87,3 +93,7 @@ print("\nどちらでもない葉(円の量でも倍率 1 の量でもない。�
 for n, k, vb, vy in others[:200]:
     print(f"- {n} {k}: bp の計算 {vb!r} / 円の計算 {vy!r} / 比 {vy / vb if vb else float('nan'):.6g}")
 print(f"(全 {len(others)} 件)")
+print("\n表示の桁で字が変わった葉(bp × 20 / 円から直接):")
+for n, k, a, b in flips:
+    print(f"- {n} {k}: {a!r} / {b!r}")
+print(f"(全 {len(flips)} 件)")
