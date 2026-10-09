@@ -3249,12 +3249,138 @@
     "recoverable_bytes": 6961598
   },
   {
-    "bytes": 5568876,
-    "complete_members": 110,
+    "bytes": 8216191,
+    "complete_members": 166,
     "error": null,
     "last_member_complete": true,
-    "members": 110,
+    "members": 166,
     "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261008_192550.jsonl.gz",
-    "recoverable_bytes": 49517021
+    "recoverable_bytes": 73970703
+  },
+  {
+    "bytes": 4619860,
+    "complete_members": 95,
+    "error": null,
+    "last_member_complete": true,
+    "members": 95,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261008_221454.jsonl.gz",
+    "recoverable_bytes": 41093776
+  },
+  {
+    "bytes": 5980009,
+    "complete_members": 108,
+    "error": null,
+    "last_member_complete": true,
+    "members": 108,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261008_235105.jsonl.gz",
+    "recoverable_bytes": 50448239
+  },
+  {
+    "bytes": 14370338,
+    "complete_members": 269,
+    "error": null,
+    "last_member_complete": true,
+    "members": 269,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_014241.jsonl.gz",
+    "recoverable_bytes": 124153578
+  },
+  {
+    "bytes": 2630044,
+    "complete_members": 52,
+    "error": null,
+    "last_member_complete": true,
+    "members": 52,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_061749.jsonl.gz",
+    "recoverable_bytes": 22808824
+  },
+  {
+    "bytes": 12035363,
+    "complete_members": 235,
+    "error": null,
+    "last_member_complete": true,
+    "members": 235,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_071114.jsonl.gz",
+    "recoverable_bytes": 105843507
+  },
+  {
+    "bytes": 3768683,
+    "complete_members": 63,
+    "error": null,
+    "last_member_complete": true,
+    "members": 63,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_110829.jsonl.gz",
+    "recoverable_bytes": 31995342
+  },
+  {
+    "bytes": 15639079,
+    "complete_members": 263,
+    "error": null,
+    "last_member_complete": true,
+    "members": 263,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_121257.jsonl.gz",
+    "recoverable_bytes": 132883382
+  },
+  {
+    "bytes": 4467146,
+    "complete_members": 85,
+    "error": null,
+    "last_member_complete": true,
+    "members": 85,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_163950.jsonl.gz",
+    "recoverable_bytes": 38486419
+  },
+  {
+    "bytes": 717266,
+    "complete_members": 15,
+    "error": null,
+    "last_member_complete": true,
+    "members": 15,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_180752.jsonl.gz",
+    "recoverable_bytes": 6312805
+  },
+  {
+    "bytes": 1852875,
+    "complete_members": 40,
+    "error": null,
+    "last_member_complete": true,
+    "members": 40,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_182256.jsonl.gz",
+    "recoverable_bytes": 17266658
+  },
+  {
+    "bytes": 29249,
+    "complete_members": 7,
+    "error": null,
+    "last_member_complete": true,
+    "members": 7,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_190411.jsonl.gz",
+    "recoverable_bytes": 1320232
+  },
+  {
+    "bytes": 2349288,
+    "complete_members": 51,
+    "error": null,
+    "last_member_complete": true,
+    "members": 51,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_191220.jsonl.gz",
+    "recoverable_bytes": 21924873
+  },
+  {
+    "bytes": 27978,
+    "complete_members": 2,
+    "error": null,
+    "last_member_complete": true,
+    "members": 2,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_201313.jsonl.gz",
+    "recoverable_bytes": 240435
+  },
+  {
+    "bytes": 2127502,
+    "complete_members": 45,
+    "error": null,
+    "last_member_complete": true,
+    "members": 45,
+    "path": "C:\\Users\\ryoma\\trade\\data\\ws\\FX_BTC_JPY_20261009_201458.jsonl.gz",
+    "recoverable_bytes": 19207203
   }
 ]
