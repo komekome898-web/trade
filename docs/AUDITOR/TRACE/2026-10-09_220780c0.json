@@ -35410,12 +35410,12 @@
   {
    "move": 1305,
    "tools": {
-    "Bash": 1,
+    "Bash": 2,
     "ToolSearch": 1,
     "WebFetch": 1,
     "WebSearch": 1
    },
-   "n_tools": 4,
+   "n_tools": 5,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
