@@ -36576,9 +36576,9 @@
   {
    "move": 1348,
    "tools": {
-    "Bash": 28
+    "Bash": 30
    },
-   "n_tools": 28,
+   "n_tools": 30,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
