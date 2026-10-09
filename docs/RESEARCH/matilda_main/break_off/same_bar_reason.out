@@ -1,0 +1,4 @@
+('前半', 'break→close') 369 -76.1 -> +113.5 diff/day +47.6
+('前半', 'close→close') 43642 +24.7 -> +24.7 diff/day +0.0
+('後半', 'break→close') 285 -74.1 -> +97.2 diff/day +33.2
+('後半', 'close→close') 35298 +18.9 -> +18.9 diff/day +0.0
