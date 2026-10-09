@@ -1,0 +1,13 @@
+('前半', 'break→break') 9852 -418.1 -> -232.8 diff/day +1242.7
+('前半', 'break→close') 138 -80.9 -> +82.2 diff/day +15.3
+('前半', 'break→market') 2 -372.0 -> -337.7 diff/day +0.0
+('前半', 'close→break') 7031 +39.3 -> -227.7 diff/day -1278.0
+('前半', 'close→close') 92317 +46.2 -> +46.4 diff/day +12.1
+('前半', 'market→break') 181 -432.3 -> -472.3 diff/day -4.9
+('前半', 'market→market') 449 -219.7 -> -219.7 diff/day +0.0
+('後半', 'break→break') 11532 -332.9 -> -182.3 diff/day +1181.4
+('後半', 'break→close') 181 -76.2 -> +65.3 diff/day +17.4
+('後半', 'close→break') 8451 +25.3 -> -179.4 diff/day -1176.8
+('後半', 'close→close') 94352 +36.3 -> +36.4 diff/day +10.9
+('後半', 'market→break') 123 -499.9 -> -491.0 diff/day +0.7
+('後半', 'market→market') 109 -358.9 -> -358.9 diff/day +0.0
