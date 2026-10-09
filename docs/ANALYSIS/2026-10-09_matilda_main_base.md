@@ -396,7 +396,7 @@ D4 と同じ出力(`diag_paths.md` の D5)。合図の向き = 取引の向き�
 
 打ったコマンドと出力の在処 / 当てないなら理由 / 分かれ道で止めたなら「止めた: <分かれ道>」
 
-- 見た表: この文書の表 11(`python3 scripts/analysis/count_tables.py` → 計 表 11・行 58)に、文書の中の箇条の表(D0 の 1 段目の円の年ごと 9 行・段の数 5 行・D8 の成行の年ごと 9 行)を足して、表 14・行 81。読み口の出力 `diag_tables.md`・`diag_paths.md` はこの文書に写した分と同じ。
+- 見た表: この文書の表(`python3 scripts/analysis/count_tables.py` → D9b の行 12〜14 と D10 の 幅 ÷ ボラ の表を足した後で 計 表 14・行 86)に、文書の中の箇条の表(D0 の 1 段目の円の年ごと 9 行・段の数 5 行・D8 の成行の年ごと 9 行)を足して、表 17・行 109(相方の押し出し前の指摘 5 で数え直した)。読み口の出力 `diag_tables.md`・`diag_paths.md` はこの文書に写した分と同じ。
 - 観察(1 観察 1 行。絞らない。台帳の行は `python3 scripts/analysis/ledger_rows.py docs/RESEARCH/matilda_main/base/ledger_rows_base.py --date 2026-10-09` で足した → 「足した: K-301〜K-311」・検査「観察の行 11・問題 0」):
 
 | # | 観察 | 根拠の表の行 | 型 | 探索の印 | なぜの仮説の下書き | 台帳 |
@@ -491,4 +491,5 @@ D4 と同じ出力(`diag_paths.md` の D5)。合図の向き = 取引の向き�
 |---|---|---|---|---|---|
 | 1 | P | advisor の道具 | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/01_P_brief.md`(01e80947f8b0) | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/01_P_reply.md` | 指摘 9 件: 直した 9(1・2 は P で、3・5・7・9 は D0 で、4 は D1 以降で、6 は D8 で、8 は報告で) |
 | 2 | D9b | advisor の道具 | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/02_D9b_brief.md`(4fe95e85394a) | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/02_D9b_reply.md` | 指摘 6 件: 直した 6(別の 2 点も対応) |
-| 3 | D10 | advisor の道具 | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/03_D10_brief.md`(d610d1920539) | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/03_D10_reply.md` | 指摘 6 件: 直した 5・直す 1(6 = 押し出す前の呼び出し) |
+| 3 | D10 | advisor の道具 | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/03_D10_brief.md`(d610d1920539) | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/03_D10_reply.md` | 指摘 6 件: 直した 6(6 = 押し出す前の呼び出しで行 4) |
+| 4 | push | advisor の道具 | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/04_push_brief.md`(811116d3315d) | `docs/RESEARCH/partner/2026-10-09_matilda_main_base/04_push_reply.md` | 指摘 6 件: 直した 6(1 = 派生の取引の行を git から外した) |
