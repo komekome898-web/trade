@@ -2,7 +2,7 @@
 # 読み口の出力(diag_tables.json・diag_paths.json の口座の bp)の各値 v について、
 #   表示の値を × 20 した円 A = round(round(v, nd) × 20, k)(nd = 読み口の表示の桁 2 または 0)と
 #   元の値を × 20 した円   B = round(v × 20, k)(k = 文書の桁 0 または 1)
-# が違う組(罠)を全部作り、A の字が分析の文書に書かれていて、同じ行に B が無い箇所を出す(手で × 20 した疑い)。
+# が違う組(罠)を作り(偶然の一致を減らすため、小数 1 桁は |A| ≥ 1、整数は |A| ≥ 100 に限る)、その本の族の文書と台帳だけで、A の字が分析の文書に書かれていて、同じ行に B が無い箇所を出す(手で × 20 した疑い)。
 # 使い方(リポジトリの根から): python3 docs/RESEARCH/matilda_main/display_x20_traps.py > docs/RESEARCH/matilda_main/display_x20_traps.out
 import glob
 import json
@@ -34,6 +34,10 @@ def fmt(x, k):
     return s
 
 
+FAM = {"levels_1": "levels", "levels_3": "levels", "levels_7": "levels", "foot_5": "foot", "count_20": "count", "count_80": "count",
+       "alert_x1": "alert", "alert_x2": "alert", "beard_off": "beard", "break_off": "break_off", "break_len_mult_4": "break_len_mult"}
+for x in ("entry_exit", "step", "break_dist", "break_delay", "range_lo", "range_hi", "vola_gate"):
+    FAM.update({r: x for r in os.listdir(M) if r.startswith(x + "_")})
 traps = []  # (run, path, A, B, k)
 for jp in sorted(glob.glob(M + "*/diag_tables.json")) + sorted(glob.glob(M + "*/diag_paths.json")):
     run = jp.split("/")[-2]
@@ -44,7 +48,7 @@ for jp in sorted(glob.glob(M + "*/diag_tables.json")) + sorted(glob.glob(M + "*/
         for nd in (2, 0):
             for k in (0, 1):
                 a, b = round(round(v, nd) * 20, k), round(v * 20, k)
-                if fmt(a, k) != fmt(b, k):
+                if fmt(a, k) != fmt(b, k) and (k == 1 and abs(a) >= 1 or k == 0 and abs(a) >= 100):
                     traps.append((run, path, a, b, k, nd))
 
 docs = {p: open(p, encoding="utf-8").read().split("\n") for p in glob.glob(A_DIR + "2026-10-0[89]_*.md")}
@@ -53,7 +57,10 @@ hits = []
 for run, path, a, b, k, nd in traps:
     sa, sb = fmt(a, k), fmt(b, k)
     pat = re.compile(r"(?<![\d.,])" + re.escape(sa) + r"(?![\d])")
+    fam = FAM.get(run, run)
     for p, lines in docs.items():
+        if not (p.endswith("_" + fam + ".md") or p.endswith("FINDINGS_LEDGER.md")):
+            continue
         for i, line in enumerate(lines, 1):
             if line.startswith(">") or not pat.search(line):
                 continue
