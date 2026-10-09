@@ -36494,11 +36494,11 @@
   {
    "move": 1345,
    "tools": {
-    "Bash": 36,
-    "Write": 3,
+    "Bash": 52,
+    "Write": 5,
     "Agent": 7
    },
-   "n_tools": 46,
+   "n_tools": 64,
    "read_goal": false,
    "first_write_at": 14,
    "table_shown": true,
