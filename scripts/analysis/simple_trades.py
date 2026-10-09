@@ -14,7 +14,6 @@
   side       +1 買い / −1 売り
   entry_price 1 段目の約定の値段
   pnl_jpy    損益(円、帳簿のツールの値。経費の前)
-  pnl_bp     pnl_jpy ÷ 証拠金 20 万円 × 10,000(口座に対する bp。1 bp = 20 円。値動きの bp ではない)
   exit_reason 最後の約定の kind(close = 利確の指値 / market = 時間切れの成行 / break = ブレイクの逆指値 / level・entry)
   levels     段の数(帳簿のツール)
   qty1       1 段目の量(BTC)
@@ -35,7 +34,6 @@ from decimal import Decimal
 from bot.bt.road.ledger import book
 from bot.bt.simple.common import to_ns
 
-MARGIN_JPY = 200_000
 MIN = 60 * 10**9
 
 
@@ -80,7 +78,7 @@ def main():
             late = sum(1 for f, k in zip(chunk, kinds)
                        if k in ("level", "entry") and f["t_ns"] - t0 > a.alert_min * MIN)
             out_rows.append([_iso(t0), _iso(t0 + MIN), _iso(chunk[-1]["t_ns"] + MIN), side, chunk[0]["px"],
-                             format(pnl, "f"), float(pnl) / MARGIN_JPY * 1e4, kinds[-1], tr["levels"], chunk[0]["qty"],
+                             format(pnl, "f"), kinds[-1], tr["levels"], chunk[0]["qty"],
                              late])
         chunk.clear()
         kinds.clear()
@@ -100,14 +98,13 @@ def main():
             raise SystemExit(f"止める: {k} が summary.json と違う(台本 {v} / summary.json {want[k]})")
     with gzip.open(os.path.join(a.out, "trades.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_jpy", "pnl_bp", "exit_reason", "levels",
+        w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_jpy", "exit_reason", "levels",
                     "qty1", "late_levels"])
         w.writerows(out_rows)
     seal = meta["seal"]
     p0 = datetime.fromisoformat(out_rows[0][0]).date().isoformat() + "T00:00:00Z"
     summ = {"source_run": a.run, "git": meta.get("git"), "params": meta.get("params"), "period": [p0, seal],
-            "pnl_bp_def": "pnl_jpy / 200000 * 10000(口座に対する bp。1 bp = 20 円)",
-            "all": {"trades": len(out_rows), "sum_bp": sum(r[6] for r in out_rows), "sum_jpy": got["pnl_jpy"]},
+            "all": {"trades": len(out_rows), "sum_jpy": got["pnl_jpy"]},
             "check": {"closed_trades": closed, "open_trades": open_tr, "pnl_jpy": got["pnl_jpy"], "matches_summary": True}}
     with open(os.path.join(a.out, "summary.json"), "w", encoding="utf-8") as fh:
         json.dump(summ, fh, ensure_ascii=False, indent=1)

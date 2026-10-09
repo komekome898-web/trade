@@ -7,7 +7,7 @@ sys.path.insert(0, "scripts/analysis")
 import diag_tables as dt  # noqa: E402
 T = "backtest_runs_shared/matilda_main_trades/"
 d = dt.daily_series(dt.load_run(T + "foot_5"))
-f = lambda r: "%+.0f [%+.0f, %+.0f]" % (r["mean"] * 20, r["lo"] * 20, r["hi"] * 20)
+f = lambda r: "%+.0f [%+.0f, %+.0f]" % (r["mean"], r["lo"], r["hi"])
 for cut in ("2019-12-09", "2019-12-10"):
     days = sorted(d)
     a = dt.mean_ci([d[x] for x in days if x < cut]); b = dt.mean_ci([d[x] for x in days if x >= cut])

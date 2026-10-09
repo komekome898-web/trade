@@ -4,11 +4,12 @@
 新しい走らせはしない。既にある取引の行(`trades.csv.gz`)と、封印の門の既定の呼び方(`common.load_bars`、
 2023-12-18 より後は読まない)の 1 分足だけを読む。封印の窓の出力の置き場は読まない。
 
-D4 取引の一生(取引ごと。値動きはすべて取引の向き side(+1 買い / −1 売り)を掛けた bp):
+D4 取引の一生(取引ごと。値動きはすべて取引の向き side(+1 買い / −1 売り)を掛けた値動き率(bp)。基準の値段は取引の行の
+  entry_price(マチルダは 1 段目の約定の値段。2 段以上建った取引の持ち高全体の平均の値段ではない)。損益の和は円):
   - MFE = 建ての時刻(entry_t)から出の時刻(exit_t)までに始まった 1 分足の、有利な側の端(買いは高値・売りは安値)の最大の値動き
   - MAE = 同じ足の不利な側の端(買いは安値・売りは高値)の最小の値動き
   - 頂点までの分 = MFE の足の始まり − 建て、保有の分 = 出 − 建て
-  - 群: 「一度は MFE > 0 だったのに負けた」「MFE ≤ 0 のまま負けた」「勝った」の数・損益の和
+  - 群: 「建ての値段から一度は有利に動いたのに負けた」「建ての値段から一度も有利に動かずに負けた」「勝った」の数・損益の和
   - 勝ち取引の 頂点までの分 ÷ 保有の分 の分位(0.25・0.5・0.75)
   - 出の後の値動き: 出の時刻の終値(出の時刻に終わる 1 分足の終値)から 5・15・60 分後の終値まで × side。1 取引あたり(日の塊の区間)
 D5 合図そのものの情報(合図ごと。合図の時刻 signal_t の終値から h 分後の終値まで × 合図の向き):
@@ -95,7 +96,7 @@ def read_trades_csv(d: str) -> list[dict]:
             if r.get("in_measure", "True") == "False":
                 continue
             t = {"entry_ns": dt._iso_ns(r["entry_t"]), "exit_ns": dt._iso_ns(r["exit_t"]), "side": int(float(r["side"])),
-                 "pnl_bp": float(r["pnl_bp"]), "entry_px": float(r["entry_price"])}
+                 "pnl_jpy": float(r["pnl_jpy"]), "entry_px": float(r["entry_price"])}
             if r.get("signal_t"):
                 t["signal_ns"] = dt._iso_ns(r["signal_t"])
             out.append(t)
@@ -103,7 +104,7 @@ def read_trades_csv(d: str) -> list[dict]:
 
 
 def trade_life(tr: dict, bars: Bars) -> dict | None:
-    """D4 の 1 取引。値は bp、取引の向きを掛ける。"""
+    """D4 の 1 取引。値は建ての値段に対する値動き率(bp)、取引の向きを掛ける。"""
     ts, hs, ls = bars.span(tr["entry_ns"], tr["exit_ns"])
     if len(ts) == 0:
         return None
@@ -141,17 +142,17 @@ def d4(trades: list[dict], bars: Bars, days: list[str]) -> dict:
         r = trade_life(t, bars)
         if r is not None:
             rows.append((t, r))
-    groups = {"勝った": [], "一度は MFE > 0 だったのに負けた": [], "MFE ≤ 0 のまま負けた": [], "損益 0": []}
+    groups = {"勝った": [], "建ての値段から一度は有利に動いたのに負けた": [], "建ての値段から一度も有利に動かずに負けた": [], "損益 0": []}
     for t, r in rows:
-        if t["pnl_bp"] > 0:
+        if t["pnl_jpy"] > 0:
             groups["勝った"].append((t, r))
-        elif t["pnl_bp"] < 0:
-            groups["一度は MFE > 0 だったのに負けた" if r["mfe"] > 0 else "MFE ≤ 0 のまま負けた"].append((t, r))
+        elif t["pnl_jpy"] < 0:
+            groups["建ての値段から一度は有利に動いたのに負けた" if r["mfe"] > 0 else "建ての値段から一度も有利に動かずに負けた"].append((t, r))
         else:
             groups["損益 0"].append((t, r))
     gtab = {}
     for g, xs in groups.items():
-        gtab[g] = {"trades": len(xs), "pnl_sum": float(sum(t["pnl_bp"] for t, _ in xs)),
+        gtab[g] = {"trades": len(xs), "pnl_sum": float(sum(t["pnl_jpy"] for t, _ in xs)),
                    "mfe_median": float(np.median([r["mfe"] for _, r in xs])) if xs else None,
                    "mae_median": float(np.median([r["mae"] for _, r in xs])) if xs else None}
     win_share = [r["t_mfe"] / r["hold"] for t, r in groups["勝った"] if r["hold"] > 0]
@@ -183,21 +184,21 @@ def d5(signals: list[tuple[int, int]], bars: Bars, days: list[str]) -> dict:
 def render(res: dict) -> str:
     f, ci = dt._f, dt._ci
     L = [f"# 取引の一生と合図の情報: {res['name']}", "",
-         "`scripts/analysis/diag_paths.py` が出した(手で書いていない)。値動きは取引(合図)の向きを掛けた bp。bitFlyer FX の 1 分足。"
+         "`scripts/analysis/diag_paths.py` が出した(手で書いていない)。値動きは取引(合図)の向きを掛けた値動き率(bp)、D4 の基準の値段は取引の行の entry_price。損益の和は円。bitFlyer FX の 1 分足。"
          "区間は 95%(日の塊 5 日・1,000 回)。1 分の中の高値・安値の順は分からない。", ""]
     r4 = res["d4"]
     L += ["## D4 取引の一生", "", f"- 調べた取引: {r4['analysed']} / {r4['of']}", "",
-          "| 群 | 取引 | 損益の和 | MFE の中央値 | MAE の中央値 |", "|---|---|---|---|---|"]
+          "| 群 | 取引 | 損益の和(円) | MFE の中央値(値動き率 bp) | MAE の中央値(値動き率 bp) |", "|---|---|---|---|---|"]
     for g, x in r4["groups"].items():
         L.append(f"| {g} | {x['trades']} | {f(x['pnl_sum'],0)} | {f(x['mfe_median'])} | {f(x['mae_median'])} |")
     if r4["win_peak_share_q"]:
         q = r4["win_peak_share_q"]
         L += ["", f"- 勝ち取引の 頂点までの分 ÷ 保有の分 の分位(25・50・75%): {q[0]:.2f}・{q[1]:.2f}・{q[2]:.2f}"]
-    L += ["", "出の後の値動き(取引の向きを掛けた bp、1 取引あたり。正 = 出た後も取引の向きに動いた):", "",
+    L += ["", "出の後の値動き(取引の向きを掛けた値動き率 bp、1 取引あたり。正 = 出た後も取引の向きに動いた):", "",
           "| 出の後 | 取引 | 1 取引あたり [区間] |", "|---|---|---|"]
     for h, x in r4["after_exit"].items():
         L.append(f"| {h} 分 | {x['trades']} | {ci(x)} |")
-    L += ["", "## D5 合図そのものの情報(合図の向きを掛けた bp、1 合図あたり)", ""]
+    L += ["", "## D5 合図そのものの情報(合図の向きを掛けた値動き率 bp、1 合図あたり)", ""]
     for name, r5 in res["d5"].items():
         L += [f"### {name}", "", "| 合図の後 | 合図 | 起点から [区間] | 対照(24 時間後の同じ時刻)[区間] |", "|---|---|---|---|"]
         for h, x in r5.items():

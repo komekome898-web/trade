@@ -1,7 +1,7 @@
 """リードが書いた。委任・批評家を通していない(数えるだけ)。族の分析の文書に写す表を、読み口の出力(diag_tables.json・diag_paths.json)と取引の行から 1 つの md にまとめる(L-907)。
 新しい計算は 2 つだけ: (1) 保有 0 分の帯(1 段目と同じ足で閉じた取引)と 0 分超 の前半・後半の 1 日あたり(D3 の保有時間の帯を
 半分に分けたもの)、(2) 本 − 基準 の日ごとの差の前半・後半(D7)。どちらも境 = 後半の最初の日 2019-12-09(L-903 の境の統一)、
-区間は読み口の mean_ci(日の塊 5・1,000 回・種 20261004)。円 = bp × 20(pnl_bp は口座 20 万円に対する bp)。
+区間は読み口の mean_ci(日の塊 5・1,000 回・種 20261004)。損益は読み口の円(pnl_jpy)をそのまま出す。値動きは値動き率(bp)。
     PYTHONPATH=src python3 docs/RESEARCH/matilda_main/fam_tables.py <族> <本> [<本> ...] > docs/RESEARCH/matilda_main/<族>/fam_tables.md
 """
 import json
@@ -19,7 +19,7 @@ runs = names + ["base"]
 
 
 def y(v, nd=0):
-    return "—" if v is None else f"{v * 20:+,.{nd}f}"
+    return "—" if v is None else f"{v:+,.{nd}f}"
 
 
 def ci(r, nd=0):
@@ -88,7 +88,7 @@ for n in runs:
                 cnt += 1
                 k = dt.utc_day(t["exit_ns"])
                 if k in d:
-                    d[k] += t["pnl_bp"]
+                    d[k] += t["pnl_jpy"]
         a = dt.mean_ci([d[x] for x in days if x < CUT])
         b = dt.mean_ci([d[x] for x in days if x >= CUT])
         print(f"| {n} | {grp} | {cnt:,} | {ci(a)} | {ci(b)} |")
@@ -102,7 +102,7 @@ for n in runs:
     d3 = tab[n]["d3"]
     print(f"- {n}: " + " / ".join(parts) + f" / 上位 5% の日の和 {y(d3['top5_days_sum'])}・下位 5% {y(d3['bottom5_days_sum'])}(全体 {y(d3['total'])})")
 
-print("\n## D4 取引の一生(母数 = 1 段目の足の後まで持った取引。損益の和は円、MFE・MAE は move_bp の中央値)\n")
+print("\n## D4 取引の一生(母数 = 1 段目の足の後まで持った取引。損益の和は円、MFE・MAE は 1 段目の約定の値段に対する値動き率(bp)の中央値)\n")
 print("| 本 | 母数 | 群 | 取引 | 和 円 | MFE | MAE |")
 print("|---|---|---|---|---|---|---|")
 for n in runs:
@@ -112,13 +112,13 @@ for n in runs:
     d4 = pth[n]["d4"]
     for gname, v in d4["groups"].items():
         print(f"| {n} | {d4['analysed']:,} / {d4['of']:,} | {gname} | {v['trades']:,} | {y(v['pnl_sum'])} | {v['mfe_median']:.2f} | {v['mae_median']:.2f} |")
-print("\n出の後の値動き(move_bp、取引の向き [区間])と勝ち取引の 頂点までの分 ÷ 保有の分(25・50・75%):\n")
+print("\n出の後の値動き(値動き率 bp、取引の向き [区間])と勝ち取引の 頂点までの分 ÷ 保有の分(25・50・75%):\n")
 for n in runs:
     if pth[n]:
         d4 = pth[n]["d4"]
         print(f"- {n}: " + "・".join(f"{k} 分 {mv(v)}" for k, v in d4["after_exit"].items()) + " / 頂点の比 " + "・".join(f"{q:.2f}" for q in d4["win_peak_share_q"]))
 
-print("\n## D5 合図の後の値動き(起点 = 建ての時刻、move_bp [区間]、対照 = 24 時間後)\n")
+print("\n## D5 合図の後の値動き(起点 = 建ての時刻、値動き率 bp [区間]、対照 = 24 時間後)\n")
 print("| 本 | 1 分 | 5 分 | 15 分 | 60 分 | 対照 60 分 |")
 print("|---|---|---|---|---|---|")
 for n in runs:

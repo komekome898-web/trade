@@ -69,7 +69,7 @@ def _write_run(d: Path, trades: list[dict], period):
     d.mkdir(parents=True)
     import csv
     with gzip.open(d / "trades.csv.gz", "wt", encoding="utf-8", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["entry_t", "exit_t", "pnl_bp", "undecided", "exit_reason"])
+        w = csv.DictWriter(fh, fieldnames=["entry_t", "exit_t", "pnl_jpy", "undecided", "exit_reason"])
         w.writeheader()
         for t in trades:
             w.writerow(t)
@@ -81,10 +81,10 @@ def test_assumption_free_part_and_stop(tmp_path):
     day = date(2020, 1, 1)
     for i in range(40):
         ds = (day + timedelta(days=i)).isoformat()
-        good.append({"entry_t": f"{ds}T01:00:00Z", "exit_t": f"{ds}T02:00:00Z", "pnl_bp": 10, "undecided": 1, "exit_reason": "tp"})
-        good.append({"entry_t": f"{ds}T03:00:00Z", "exit_t": f"{ds}T04:00:00Z", "pnl_bp": -4, "undecided": 0, "exit_reason": "brk"})
-        bad.append({"entry_t": f"{ds}T01:00:00Z", "exit_t": f"{ds}T02:00:00Z", "pnl_bp": -6, "undecided": 1, "exit_reason": "brk"})
-        bad.append({"entry_t": f"{ds}T03:00:00Z", "exit_t": f"{ds}T04:00:00Z", "pnl_bp": -4, "undecided": 0, "exit_reason": "brk"})
+        good.append({"entry_t": f"{ds}T01:00:00Z", "exit_t": f"{ds}T02:00:00Z", "pnl_jpy": 10, "undecided": 1, "exit_reason": "tp"})
+        good.append({"entry_t": f"{ds}T03:00:00Z", "exit_t": f"{ds}T04:00:00Z", "pnl_jpy": -4, "undecided": 0, "exit_reason": "brk"})
+        bad.append({"entry_t": f"{ds}T01:00:00Z", "exit_t": f"{ds}T02:00:00Z", "pnl_jpy": -6, "undecided": 1, "exit_reason": "brk"})
+        bad.append({"entry_t": f"{ds}T03:00:00Z", "exit_t": f"{ds}T04:00:00Z", "pnl_jpy": -4, "undecided": 0, "exit_reason": "brk"})
     period = ["2020-01-01T00:00:00Z", "2020-02-10T00:00:00Z"]
     _write_run(tmp_path / "g", good, period)
     _write_run(tmp_path / "b", bad, period)
@@ -108,14 +108,14 @@ def test_days_needed():
 
 def test_signal_delay_splits_late_fills():
     run = {"trades": [
-        {"entry_ns": dt._iso_ns("2020-01-01T00:16:00Z"), "exit_ns": 0, "pnl_bp": 5.0, "signal_t": "2020-01-01T00:15:00Z"},
-        {"entry_ns": dt._iso_ns("2020-01-01T02:00:00Z"), "exit_ns": 0, "pnl_bp": -9.0, "signal_t": "2020-01-01T00:15:00Z"},
+        {"entry_ns": dt._iso_ns("2020-01-01T00:16:00Z"), "exit_ns": 0, "pnl_jpy": 5.0, "signal_t": "2020-01-01T00:15:00Z"},
+        {"entry_ns": dt._iso_ns("2020-01-01T02:00:00Z"), "exit_ns": 0, "pnl_jpy": -9.0, "signal_t": "2020-01-01T00:15:00Z"},
     ]}
     r = dt.signal_delay(run, 15.0)
     assert r["within"] == {"trades": 1, "sum": 5.0}
     assert r["late"] == {"trades": 1, "sum": -9.0}
     assert dt.signal_delay(run, None)["valid_min"] is None
-    assert dt.signal_delay({"trades": [{"entry_ns": 0, "exit_ns": 0, "pnl_bp": 1.0}]}, 15.0) is None
+    assert dt.signal_delay({"trades": [{"entry_ns": 0, "exit_ns": 0, "pnl_jpy": 1.0}]}, 15.0) is None
 
 
 def test_cut_sets_first_day_of_second_half():
@@ -142,8 +142,10 @@ def test_cut_printed_in_table(tmp_path):
     out = tmp_path / "t.md"
     run = tmp_path / "run"
     run.mkdir()
-    (run / "daily.csv").write_text("day,pnl_bp,n\n" + "".join(
-        f"{(date(2018, 1, 1) + timedelta(days=i)).isoformat()},{i % 7 - 3},1\n" for i in range(60)))
+    with gzip.open(run / "trades.csv.gz", "wt", encoding="utf-8", newline="") as fh:
+        fh.write("entry_t,exit_t,pnl_jpy\n" + "".join(
+            f"{(date(2018, 1, 1) + timedelta(days=i)).isoformat()}T01:00:00Z,{(date(2018, 1, 1) + timedelta(days=i)).isoformat()}T02:00:00Z,{i % 7 - 3}\n"
+            for i in range(60)))
     assert dt.main(["--run", str(run), "--out", str(out), "--cut", "2018-02-01"]) == 0
     assert "後半の最初の日 2018-02-01" in out.read_text()
     with pytest.raises(ValueError):

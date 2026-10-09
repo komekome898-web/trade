@@ -8,7 +8,7 @@ sys.path.insert(0, "scripts/analysis")
 import diag_tables as dt  # noqa: E402
 
 T = "backtest_runs_shared/matilda_main_trades/"
-f = lambda v: "—" if v is None else "%+.0f" % (v * 20)
+f = lambda v: "—" if v is None else "%+.0f" % v
 print("| 本 | 群 | 前半 1 日あたり 円 [区間] | 後半 | 境(後半の最初の日) |")
 print("|---|---|---|---|---|")
 for name in sys.argv[1:]:
@@ -20,6 +20,6 @@ for name in sys.argv[1:]:
         for t in run["trades"]:
             k = dt.utc_day(t["exit_ns"])
             if k in d and sel(t):
-                d[k] += t["pnl_bp"]
+                d[k] += t["pnl_jpy"]
         a, b = dt.mean_ci([d[x] for x in days[:h]]), dt.mean_ci([d[x] for x in days[h:]])
         print(f"| {name} | {grp} | {f(a['mean'])} [{f(a['lo'])}, {f(a['hi'])}] | {f(b['mean'])} [{f(b['lo'])}, {f(b['hi'])}] | {days[h]} |")
