@@ -23,7 +23,7 @@ D4 機械(両方の写し): 足 j の終わり(= 足の始まり + F)で、1 つ
    限らない)の合図で行動する。合図 0 または持ち高と同じ向き → 何もしない。反対 → 閉じる。持ち高 0 → 入る。
    約定の値: 段階 G = 足 j の最後の結合した分の bitFlyer の終値。参照 = 行動の時刻 E 以前に終わった、出来高 > 0 の最後の
    bitFlyer の 1 分足の終値(再現の _last_close)。値が無ければ行動しない。
-   写しの取引(建ての年 2019〜2022)が、既存の取引の記録と、鍵・出の時刻・損益(差 1e-3 bp 以内)で全部一致することを
+   写しの取引(建ての年 2019〜2022)が、既存の取引の記録と、鍵・出の時刻・損益(差 1e-5 % 以内。前の書き方で 1e-3 bp)で全部一致することを
    確かめる。一致しなければ分類を出さずに止める。
 D5 1 足以内のずれの対: 参照だけ・段階 G だけ(同じ足・同じ年)のうち、同じ向きで建ての時刻の差が F 以内の組。差の小さい順、
    同じなら早い順に 1 対 1 で組む。対は別の表で数え、組まれなかった取引だけを D6〜D8 で分ける。対の原因の列は、
@@ -394,7 +394,8 @@ def leg_cause(b: dict, bfv_t: np.ndarray, g_bars: dict, E: int) -> str:
 
 # ---------------------------------------------------------------------------- 本体
 def pnl(side: int, a: float, b: float) -> float:
-    return side * (b / a - 1.0) * 1e4
+    """量 1 の取引の損益(%)= 向き × (出 / 入 − 1) × 100。取引の記録(pnl_pct)と同じ単位(L-920)。"""
+    return side * (b / a - 1.0) * 100
 
 
 def main() -> int:
@@ -449,7 +450,7 @@ def main() -> int:
                 x, pv = lst[0]
                 if x != t[2]:
                     bad["exit_differs"] += 1
-                elif abs(pv - t[3]) > 1e-3:
+                elif abs(pv - t[3]) > 1e-5:  # %(前の 1e-3 bp と同じ幅)
                     bad["pnl_differs"] += 1
             extra = sum(1 for k in mine if mm.year_of(k[0], f) in YEARS and k not in used)
             bad["extra_in_replica"] = extra
@@ -475,16 +476,16 @@ def main() -> int:
             for P, lst in (("ref", r_rest), ("g", g_rest)):
                 for t in lst:
                     c = classify_trade(world, st, P, t[0] // NS, t[1])
-                    rows.append(dict(c, side_of=P, entry_t=t[0] // NS, dir=t[1], pnl_bp=t[3]))
+                    rows.append(dict(c, side_of=P, entry_t=t[0] // NS, dir=t[1], pnl_pct=t[3]))
             prow = []
             for r, g in pairs:
                 c = classify_trade(world, st, "ref", r[0] // NS, r[1])
-                prow.append(dict(c, ref_entry_t=r[0] // NS, g_entry_t=g[0] // NS, dir=r[1], ref_pnl_bp=r[3],
-                                 g_pnl_bp=g[3]))
+                prow.append(dict(c, ref_entry_t=r[0] // NS, g_entry_t=g[0] // NS, dir=r[1], ref_pnl_pct=r[3],
+                                 g_pnl_pct=g[3]))
             # D9 共通の取引
-            com = {"same_exit": {"n": 0, "n_price_differs": 0, "diff_bp": 0.0, "entry_part_bp": 0.0,
-                                 "exit_part_bp": 0.0, "legs": {}},
-                   "exit_differs": {"n": 0, "diff_bp": 0.0, "by": {}}}
+            com = {"same_exit": {"n": 0, "n_price_differs": 0, "diff_pct": 0.0, "entry_part_pct": 0.0,
+                                 "exit_part_pct": 0.0, "legs": {}},
+                   "exit_differs": {"n": 0, "diff_pct": 0.0, "by": {}}}
             for r, g in common:
                 if r[2] == g[2]:
                     s = com["same_exit"]
@@ -492,35 +493,35 @@ def main() -> int:
                     ref_px = ref_px_of(world[NONE], bfv_ref, r)
                     g_px = g_px_of(world[BOTH], bf, g)
                     d = r[3] - g[3]
-                    s["diff_bp"] += d
+                    s["diff_pct"] += d
                     e_part = pnl(r[1], ref_px[0], ref_px[1]) - pnl(r[1], g_px[0], ref_px[1])
-                    s["entry_part_bp"] += e_part
-                    s["exit_part_bp"] += d - e_part
+                    s["entry_part_pct"] += e_part
+                    s["exit_part_pct"] += d - e_part
                     if ref_px != g_px:
                         s["n_price_differs"] += 1
                     for leg, E, pa, pb, part in (("入り", r[0] // NS, ref_px[0], g_px[0], e_part),
                                                  ("出", r[2] // NS, ref_px[1], g_px[1], d - e_part)):
                         if pa != pb:
                             k = f"{leg}: {leg_cause(b, bfv_ref['t'], world[BOTH], E)}"
-                            z = s["legs"].setdefault(k, {"n": 0, "part_bp": 0.0})
+                            z = s["legs"].setdefault(k, {"n": 0, "part_pct": 0.0})
                             z["n"] += 1
-                            z["part_bp"] += part
+                            z["part_pct"] += part
                 else:
                     s = com["exit_differs"]
                     s["n"] += 1
                     d = r[3] - g[3]
-                    s["diff_bp"] += d
+                    s["diff_pct"] += d
                     P = "ref" if r[2] < g[2] else "g"
                     Ex = min(r[2], g[2]) // NS
                     c = classify_action(world, P, Ex, -r[1])
                     key = f"{'参照' if P == 'ref' else '段階 G'}が先に出た: " + (
                         UNKNOWN if c is None else f"{c[0]} {c[1]}")
-                    z = s["by"].setdefault(key, {"n": 0, "diff_bp": 0.0})
+                    z = s["by"].setdefault(key, {"n": 0, "diff_pct": 0.0})
                     z["n"] += 1
-                    z["diff_bp"] += d
+                    z["diff_pct"] += d
             fo["years"][str(y)] = {"rows": rows, "pairs": prow, "common": com,
                                    "match": {"common_n": len(common), "r_only_n": len(r_only), "g_only_n": len(g_only),
-                                             "diff_bp": math.fsum(t[3] for t in R) - math.fsum(t[3] for t in G)}}
+                                             "diff_pct": math.fsum(t[3] for t in R) - math.fsum(t[3] for t in G)}}
     with open(os.path.join(OUT_DIR, "cause.json"), "w", encoding="utf-8") as fh:
         json.dump(out, fh, ensure_ascii=False, indent=1)
     write_md(out)
@@ -552,13 +553,13 @@ COLS = [(CAT_A, False), (CAT_B, False), (CAT_AB_ANY, False), (CAT_AB_PAIR, False
 
 
 def cell(rows):
-    return f"{len(rows)} / {math.fsum(r['pnl_bp'] for r in rows):+,.2f}" if rows else "0"
+    return f"{len(rows)} / {math.fsum(r['pnl_pct'] for r in rows):+,.4f}" if rows else "0"
 
 
 def write_md(out: dict) -> None:
     L = ["# カツオ: 参照と段階 G の片側だけの取引の分類(台本の出力)", "",
          "`PYTHONPATH=src python3 scripts/w4_measure/c2_ref_vs_g_cause.py` が出した。分け方の決まり D1〜D10 は台本の docstring。"
-         "升 = 本数 / 損益の和(bp、経費の前)。年 = 建てた足の始まりの年。", ""]
+         "升 = 本数 / 損益の和(%、経費の前)。年 = 建てた足の始まりの年。", ""]
     L += ["## 0. データの事実(D2)", "", "| 年 | Binance の行 | 分の頭に無い行 | n_trades == 0 | bitFlyer に 4 本値の無い分の Binance の行 | "
           "bitFlyer の 4 本値のある行 | そのうち出来高 ≤ 0 |", "|---|---|---|---|---|---|---|"]
     for y, d in out["data_facts"].items():
@@ -577,12 +578,12 @@ def write_md(out: dict) -> None:
     for f, fo in out["feet"].items():
         for y, yo in fo.get("years", {}).items():
             ps = yo["pairs"]
-            rs, gs = math.fsum(p["ref_pnl_bp"] for p in ps), math.fsum(p["g_pnl_bp"] for p in ps)
+            rs, gs = math.fsum(p["ref_pnl_pct"] for p in ps), math.fsum(p["g_pnl_pct"] for p in ps)
             cnt: dict = {}
             for p in ps:
                 k = f"{p['kind']} {p['cause']}" if not p["via_pos"] else f"持ち高を経て {p['cause']}"
                 cnt[k] = cnt.get(k, 0) + 1
-            L.append(f"| {f} 分 | {y} | {len(ps)} | {rs:+,.2f} | {gs:+,.2f} | {rs - gs:+,.2f} | "
+            L.append(f"| {f} 分 | {y} | {len(ps)} | {rs:+,.4f} | {gs:+,.4f} | {rs - gs:+,.4f} | "
                      + "・".join(f"{k} {v}" for k, v in sorted(cnt.items())) + " |")
     L += ["", "## 3. 対を除いた片側だけの取引の分類(D6〜D9)", "",
           "「直接」= その取引の入りの行動に (A) 合図の違い・(B) 行動の時刻の違いがある。「持ち高を経て」= (C)、元(D8)の帰属。"
@@ -598,7 +599,7 @@ def write_md(out: dict) -> None:
                 cs += ["0", cell([r for r in rows if r["cause"] == OTHER_START]),
                        cell([r for r in rows if r["cause"] == UNKNOWN])]
                 L.append(f"| {f} 分 | {y} | {'参照だけ' if P == 'ref' else '段階 G だけ'} | {len(rows)} | " + " | ".join(cs)
-                         + f" | {math.fsum(r['pnl_bp'] for r in rows):+,.2f} |")
+                         + f" | {math.fsum(r['pnl_pct'] for r in rows):+,.4f} |")
     L += ["", "### 3-1 直接の取引の (A)・(B) の内訳(本数)", "", "| 足 | 年 | 側 | 合図の違い | 行動の時刻の違い | 持ち高の元が合図 | 持ち高の元が時刻 |",
           "|---|---|---|---|---|---|---|"]
     for f, fo in out["feet"].items():
@@ -615,21 +616,21 @@ def write_md(out: dict) -> None:
     for f, fo in out["feet"].items():
         for y, yo in fo.get("years", {}).items():
             s, x = yo["common"]["same_exit"], yo["common"]["exit_differs"]
-            legs = "・".join(f"{k} {v['n']} / {v['part_bp']:+,.2f}" for k, v in sorted(s["legs"].items()))
-            by = "・".join(f"{k} {v['n']} / {v['diff_bp']:+,.2f}" for k, v in sorted(x["by"].items()))
-            L.append(f"| {f} 分 | {y} | {s['n']:,} | {s['n_price_differs']:,} | {s['diff_bp']:+,.2f} | {s['entry_part_bp']:+,.2f} | "
-                     f"{s['exit_part_bp']:+,.2f} | {legs} | {x['n']} | {x['diff_bp']:+,.2f} | {by} |")
+            legs = "・".join(f"{k} {v['n']} / {v['part_pct']:+,.4f}" for k, v in sorted(s["legs"].items()))
+            by = "・".join(f"{k} {v['n']} / {v['diff_pct']:+,.4f}" for k, v in sorted(x["by"].items()))
+            L.append(f"| {f} 分 | {y} | {s['n']:,} | {s['n_price_differs']:,} | {s['diff_pct']:+,.4f} | {s['entry_part_pct']:+,.4f} | "
+                     f"{s['exit_part_pct']:+,.4f} | {legs} | {x['n']} | {x['diff_pct']:+,.4f} | {by} |")
     L += ["", "## 5. 恒等式の照合", "", "| 足 | 年 | 差(参照 − 段階 G) | 対の差 + 片側の和の差 + 共通の差 | 本数 共通 / 参照だけ / 段階 G だけ(match.json と同じ) |",
           "|---|---|---|---|---|"]
     for f, fo in out["feet"].items():
         for y, yo in fo.get("years", {}).items():
             ps = yo["pairs"]
-            pd = math.fsum(p["ref_pnl_bp"] - p["g_pnl_bp"] for p in ps)
-            rr = math.fsum(r["pnl_bp"] for r in yo["rows"] if r["side_of"] == "ref")
-            gg = math.fsum(r["pnl_bp"] for r in yo["rows"] if r["side_of"] == "g")
-            cd = yo["common"]["same_exit"]["diff_bp"] + yo["common"]["exit_differs"]["diff_bp"]
+            pd = math.fsum(p["ref_pnl_pct"] - p["g_pnl_pct"] for p in ps)
+            rr = math.fsum(r["pnl_pct"] for r in yo["rows"] if r["side_of"] == "ref")
+            gg = math.fsum(r["pnl_pct"] for r in yo["rows"] if r["side_of"] == "g")
+            cd = yo["common"]["same_exit"]["diff_pct"] + yo["common"]["exit_differs"]["diff_pct"]
             m = yo["match"]
-            L.append(f"| {f} 分 | {y} | {m['diff_bp']:+,.2f} | {pd + rr - gg + cd:+,.2f} | "
+            L.append(f"| {f} 分 | {y} | {m['diff_pct']:+,.4f} | {pd + rr - gg + cd:+,.4f} | "
                      f"{m['common_n']:,} / {m['r_only_n']} / {m['g_only_n']} |")
     with open(os.path.join(OUT_DIR, "CAUSE_TABLES1.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")

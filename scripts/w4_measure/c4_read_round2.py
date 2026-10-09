@@ -16,9 +16,9 @@ R3 過去だけの門 − 固定の門: 門だけの差どうし・両方の差�
 R4 年の一致: 2016〜2023 の 8 年で、両方 − 良い方の単独(c4_read_combo.year_agree_vs_best_single と同じ数え方)。
    過去だけの門は最初の 180 日に門が掛からない(PREREG)ので、2016 年はその期間を含む。
 R5 取引で見た重なり(設計の段の判定の代替で 2 名とも「測っていない」と挙げた点。R2 の仮説を取引で直接確かめる):
-   v37 の大負けの取引(損益 −10 bp 以下、c4_limit_batch の big_loss と同じ線)を入りの時刻(entry_t)で突き合わせ、
+   v37 の大負けの取引(損益 −0.1 % 以下、c4_limit_batch の big_loss と同じ線。L-920 の前は「−10 bp」と書いていた)を入りの時刻(entry_t)で突き合わせ、
    「門で外れた」(門だけの走らせに同じ entry_t が無い)と「利確で大負けでなくなった」(利確だけの走らせの同じ entry_t の
-   取引の損益が −10 bp より大きい)に分け、両方・門だけ・利確だけ・どちらでもない の本数と v37 での損益の和。
+   取引の損益が −0.1 % より大きい)に分け、両方・門だけ・利確だけ・どちらでもない の本数と v37 での損益の和。
    持ち高の道が変わると同じ時刻でも別の取引になる(突き合わせは近似)。
 R6 検出力: 両方(固定・過去だけ)と各単独について、v37 との日ごとの損益の差(出の時刻の UTC の日。取引の無い日は 0。
    日の範囲は v37 の summary の period)の平均、circular block bootstrap(塊 5 日、1,000 回、種 20261004、95% 百分位)、
@@ -46,7 +46,7 @@ import c4_read_r2 as r2  # noqa: E402
 
 SIDES = ("good", "bad")
 AXES = ("pnl", "small_win", "big_loss", "closed_by_break")
-BIG = -10.0
+BIG = -0.1  # %(段で割った損益の率。L-920 で bp は値動き率だけの名前)
 SEED, N_RES, BLOCK = 20261004, 1000, 5
 GATES = {"fixed": ("D_ratio_gate12.96", "R2_ratio_gate12.96_center_4_3"),
          "rolling": ("R2_ratio_gate_rolling", "R2_ratio_gate_rolling_center_4_3")}
@@ -91,7 +91,7 @@ def rolling_minus_fixed(dec: dict) -> dict | None:
 
 
 def read_trades(d: str) -> list[tuple[str, str, float]] | None:
-    """(entry_t, exit_t, pnl_bp)。trades.json.gz から全部の走らせで同じに読む(時刻は UTC の ISO の文字列に直す)。
+    """(entry_t, exit_t, pnl_pct)。L-920 より前の記録の pnl_bp(率 × 1 万)は / 100 して % で読む。trades.json.gz から全部の走らせで同じに読む(時刻は UTC の ISO の文字列に直す)。
     2026-10-04 追記: 基準の v37・A1 の走らせには trades.csv.gz が無い(git に入れたのは trades.json.gz だけ)ので、
     同じ取引の行を持つ trades.json.gz に替えた。読み方の決まり R1〜R7 は変えていない。"""
     p = os.path.join(d, "trades.json.gz")
@@ -106,7 +106,8 @@ def read_trades(d: str) -> list[tuple[str, str, float]] | None:
         if ns % 10**9:
             raise ValueError(f"秒未満の時刻 {ns}(この読みは秒で突き合わせる)")
         return datetime.fromtimestamp(ns // 10**9, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    return [(iso(e), iso(x), float(p_)) for e, x, p_ in zip(o["entry_t_ns"], o["exit_t_ns"], o["pnl_bp"])]
+    pct = o["pnl_pct"] if "pnl_pct" in o else [float(v) / 100 for v in o["pnl_bp"]]
+    return [(iso(e), iso(x), float(p_)) for e, x, p_ in zip(o["entry_t_ns"], o["exit_t_ns"], pct)]
 
 
 def big_loss_overlap(base: list, gate: list, tp: list) -> dict:
@@ -115,7 +116,7 @@ def big_loss_overlap(base: list, gate: list, tp: list) -> dict:
     tp_pnl = {}
     for e, _, p in tp:
         tp_pnl.setdefault(e, p)
-    out = {k: {"trades": 0, "sum_bp": 0.0} for k in ("both", "gate_only", "tp_only", "neither")}
+    out = {k: {"trades": 0, "sum_pct": 0.0} for k in ("both", "gate_only", "tp_only", "neither")}
     for e, _, p in base:
         if p > BIG:
             continue
@@ -123,7 +124,7 @@ def big_loss_overlap(base: list, gate: list, tp: list) -> dict:
         tped = e in tp_pnl and tp_pnl[e] > BIG
         k = "both" if gated and tped else "gate_only" if gated else "tp_only" if tped else "neither"
         out[k]["trades"] += 1
-        out[k]["sum_bp"] += p
+        out[k]["sum_pct"] += p
     return out
 
 
@@ -153,7 +154,7 @@ def render(r: dict) -> str:
     f = r2._f
     L = ["# マチルダ 改良の周 2: 比の門 × 中心から測る利確 4:3、過去だけから決める比の門", "",
          "`scripts/w4_measure/c4_read_round2.py` が出した。読み方の決まり R1〜R7 はその台本の docstring。経費の前。"
-         "1 日あたり bp、v37 との差、良い側 / 悪い側。", ""]
+         "1 日あたり %(段で割った損益の率)、v37 との差、良い側 / 悪い側。", ""]
     for gate, title in (("fixed", "固定の門(12.96、標本の中)"), ("rolling", "過去だけの門(前の 365 日の 70% 点)")):
         row = r["dec"].get(gate)
         L += [f"## {title}", ""]
@@ -174,18 +175,18 @@ def render(r: dict) -> str:
             L.append(f"| {r2.AXIS_JA[ax]} | {f(rf['good'][ax]['gate'], 2)} / {f(rf['bad'][ax]['gate'], 2)} | "
                      f"{f(rf['good'][ax]['both'], 2)} / {f(rf['bad'][ax]['both'], 2)} |")
         L.append("")
-    L += ["## 取引で見た重なり(R5。v37 の大負けの取引の本数 / v37 での損益の和 bp)", "",
+    L += ["## 取引で見た重なり(R5。v37 の大負けの取引の本数 / v37 での損益の和 %)", "",
           "| 門 | 側 | 両方 | 門だけ | 利確だけ | どちらでもない |", "|---|---|---|---|---|---|"]
     for key, o in sorted(r["overlap"].items()):
         if o:
             gate, s = key.split("|")
-            L.append(f"| {gate} | {s} | " + " | ".join(f"{o[k]['trades']:,} / {o[k]['sum_bp']:+,.0f}"
+            L.append(f"| {gate} | {s} | " + " | ".join(f"{o[k]['trades']:,} / {o[k]['sum_pct']:+,.2f}"
                                                        for k in ("both", "gate_only", "tp_only", "neither")) + " |")
-    L += ["", "## 日ごとの差の平均・95% 区間・MDE(R6。bp/日。v37 との差)", "",
+    L += ["", "## 日ごとの差の平均・95% 区間・MDE(R6。%/日。v37 との差)", "",
           "| 走らせ | 平均 [区間] | MDE |", "|---|---|---|"]
     for name, c in sorted(r["ci"].items()):
         if c:
-            L.append(f"| {name} | {c['mean']:+.2f} [{c['lo']:+.2f}, {c['hi']:+.2f}] | {c['mde']:.2f} |")
+            L.append(f"| {name} | {c['mean']:+.4f} [{c['lo']:+.4f}, {c['hi']:+.4f}] | {c['mde']:.4f} |")
     if r.get("rolling_off"):
         L += ["", f"過去だけの門が掛からなかった日(summary の ratio_gate_rolling): {json.dumps(r['rolling_off'], ensure_ascii=False)}"]
     return "\n".join(L) + "\n"

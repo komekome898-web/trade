@@ -36,7 +36,8 @@ ADOPTION RULE: accuracy >= 58% AND n >= 40 judged calls AND p < 0.05.
 Economic frame (sanity check only, NOT a backtest): for a qualifying predictor,
 at every armed-window minute (12:30-15:00 UTC) that carries a prediction,
 hypothetically hold that direction for the next 2h; report the mean return net of
-one taker round trip (6.35 bps).
+one taker round trip (0.0635%). Returns are in percent (L-920: a return net of costs is not a
+price-move rate, so it is not called bp).
 
 Usage:  PYTHONPATH=src python scripts/research_storm_direction.py
 """
@@ -74,7 +75,7 @@ ADOPT_P = 0.05
 ARMED_START = (12, 30)     # armed window, UTC
 ARMED_END = (15, 0)
 HOLD_MIN = 120             # 2h hypothetical hold
-ROUND_TRIP_BPS = 6.35      # one taker round trip
+ROUND_TRIP_PCT = 0.0635    # one taker round trip (%)
 
 PREDICTORS = ["P1", "P2", "P3", "P4", "P5", "MAJ"]
 LABELS = {
@@ -267,8 +268,8 @@ def econ_check(name: str, calls: np.ndarray, logc: np.ndarray,
     if n == 0:
         print(f"  {name:<28} no armed minutes with a prediction")
         return
-    gross = calls[m] * fwd[m] * 1e4                  # bps
-    net = gross - ROUND_TRIP_BPS
+    gross = calls[m] * fwd[m] * 100                  # %
+    net = gross - ROUND_TRIP_PCT
     sd = net.std(ddof=1) if n > 1 else float("nan")
     naive_t = net.mean() / (sd / math.sqrt(n)) if n > 1 and sd > 0 else float("nan")
     days = len(np.unique(idx[m].date))
@@ -276,8 +277,8 @@ def econ_check(name: str, calls: np.ndarray, logc: np.ndarray,
     dfr = pd.Series(net, index=idx[m]).groupby(idx[m].date).mean()
     d_sd = dfr.std(ddof=1) if len(dfr) > 1 else float("nan")
     d_t = dfr.mean() / (d_sd / math.sqrt(len(dfr))) if len(dfr) > 1 and d_sd > 0 else float("nan")
-    print(f"  {name:<26}n={n:>6} days={days:>4} gross={gross.mean():>7.2f} "
-          f"net={net.mean():>7.2f} net/day-eqw={dfr.mean():>7.2f} "
+    print(f"  {name:<26}n={n:>6} days={days:>4} gross%={gross.mean():>9.4f} "
+          f"net%={net.mean():>9.4f} net/day-eqw%={dfr.mean():>9.4f} "
           f"hit={100*(gross>0).mean():>5.1f}% t(naive)={naive_t:>6.2f} "
           f"t(day-clust)={d_t:>6.2f}")
 
@@ -291,7 +292,7 @@ def econ_check(name: str, calls: np.ndarray, logc: np.ndarray,
                     labels=["q1 fewest calls", "q2", "q3", "q4 most calls"])
         agg = pd.DataFrame({"cnt": cnt, "ret": dfr}).groupby(q, observed=True).agg(
             days=("ret", "size"), mean_net=("ret", "mean"))
-        parts = "  ".join(f"{str(k)}: {v.mean_net:+.1f}bps({int(v.days)}d)"
+        parts = "  ".join(f"{str(k)}: {v.mean_net:+.3f}%({int(v.days)}d)"
                           for k, v in agg.iterrows())
         print(f"      armed-minutes/day quartiles -> {parts}")
         print(f"      corr(calls per day, that day's mean net) = "
@@ -626,7 +627,7 @@ def main() -> None:
     header("8. ECONOMIC SANITY CHECK -- naive pre-positioning in the armed window")
     print(f"at every minute in {ARMED_START[0]:02d}:{ARMED_START[1]:02d}-"
           f"{ARMED_END[0]:02d}:{ARMED_END[1]:02d} UTC that carries a prediction, hold that")
-    print(f"direction for {HOLD_MIN}m; net of one taker round trip = {ROUND_TRIP_BPS} bps.")
+    print(f"direction for {HOLD_MIN}m; net of one taker round trip = {ROUND_TRIP_PCT}%.")
     print("Overlapping 2h holds -> the naive t-stat is badly overstated; the day-clustered")
     print("t-stat is the one to read. This is a sanity check, NOT a backtest.\n")
     judge_start = ev_pos[k_split]
@@ -680,7 +681,7 @@ def main() -> None:
     print("   marginal call away from failing.")
     print("5. Economic frame: NO configuration produces a day-clustered t-stat above 1.0, in")
     print("   either the full sample or the judgment period. P2's positive minute-weighted")
-    print("   mean is a day-selection artefact (fully-armed days +40bps, sparse days -36bps).")
+    print("   mean is a day-selection artefact (fully-armed days +0.40%, sparse days -0.36%).")
     print()
     print("CONCLUSION: the direction of a storm is NOT predictable before it starts in any way")
     print("that supports pre-positioning. The one weak survivor (24h range position) is a slow")

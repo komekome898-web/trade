@@ -11,7 +11,7 @@ _spec.loader.exec_module(rd)
 
 
 def _run(pnl_day: float, small: float, big: float, years: dict, decided: float, days: float = 100.0, brk: float = 0.0):
-    return {"days": days, "trades": 1000, "wins": 900, "avg_win_bp": 1.0, "undecided_share": 0.5,
+    return {"days": days, "trades": 1000, "wins": 900, "avg_win_pct": 1.0, "undecided_share": 0.5,
             "per_day": {"trades": 10.0, "small_win": small, "big_loss": big, "pnl": pnl_day, "closed_by_break": brk},
             "year_pnl": years, "decided_pnl": decided}
 

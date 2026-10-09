@@ -29,9 +29,10 @@ WINDOWS = {
 LABELS = {"hi1 (8/19 vol)": "hi1", "hi2 (7/31 vol)": "hi2",
           "lo1 (8/08 quiet)": "lo1", "lo2 (8/15 quiet)": "lo2"}
 
-# FX cost floor for a taker scalp round trip: spread 2.35bp + slip 2bp x2 sides
-TAKER_RT_BPS = 6.35
-HALF_SPREAD_BPS = 1.18
+# FX cost floor for a taker scalp round trip: spread 0.0235% + slip 0.02% x2 sides (percent: a cost or a spread is not a
+# price-move rate, so it is not called bp, L-920)
+TAKER_RT_PCT = 0.0635
+HALF_SPREAD_PCT = 0.0118
 
 
 def bf_1s(start: str, end: str) -> pd.Series:
@@ -69,7 +70,7 @@ def main() -> int:
         sig = np.log(joined["bn"]).diff(5) * 1e4  # bps
         px = joined["bf"]
         print(f"{'thr(bps)':>8} {'events':>7} | " + " | ".join(
-            f"h={h}s net_bps" for h in (2, 5, 10, 30)))
+            f"h={h}s net_pct" for h in (2, 5, 10, 30)))
         for thr in (3, 5, 10, 20):
             mask = sig.abs() >= thr
             n = int(mask.sum())
@@ -79,16 +80,16 @@ def main() -> int:
             direction = np.sign(sig[mask])
             row = []
             for h in (2, 5, 10, 30):
-                fwd = (np.log(px.shift(-h)) - np.log(px)) * 1e4
+                fwd = (np.log(px.shift(-h)) - np.log(px)) * 100  # %(手数料を引くので同じ %)
                 captured = (fwd[mask] * direction).dropna()
-                net = captured.mean() - TAKER_RT_BPS
-                row.append(f"{net:+13.2f}")
+                net = captured.mean() - TAKER_RT_PCT
+                row.append(f"{net:+13.4f}")
             print(f"{thr:8.0f} {n:7d} | " + " | ".join(row))
 
     print(f"""
 NOTES:
-- net_bps = mean drift captured in signal direction minus taker round-trip
-  cost ({TAKER_RT_BPS} bps). Positive = scalp would have paid AFTER costs.
+- net_pct = mean drift captured in signal direction minus taker round-trip
+  cost ({TAKER_RT_PCT}%), in percent. Positive = scalp would have paid AFTER costs.
 - bitFlyer prices are last-trade based (~0.4 trades/s): staleness can both
   exaggerate apparent lag and hide fills you could not get. Quote-level
   confirmation requires the WS board recording now being collected.

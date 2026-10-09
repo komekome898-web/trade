@@ -21,7 +21,7 @@ def ns(s):
 
 def main():
     out = ["# 合図 → 建てまでに閉じた海外の足の本数(帯ごと)", "",
-           "本数 = floor((建ての時刻 − 合図が分かった時刻) / 足の長さ)。損益は bp、経費の前。区間なし(記述)。良い側の走らせだけ(csv があるもの)。", "",
+           "本数 = floor((建ての時刻 − 合図が分かった時刻) / 足の長さ)。損益は %(損益の率。L-920 で bp は値動き率だけの名前。前の出力の pnl_bp は / 100)、経費の前。区間なし(記述)。良い側の走らせだけ(csv があるもの)。", "",
            "| 走らせ | 足(分) | 0 本: 取引・和・1 取引 | 1 本 | 2 本 | 3 本以上 |", "|---|---|---|---|---|---|"]
     for d in sorted(os.listdir(RUNS)):
         p = os.path.join(RUNS, d, "trades.csv.gz")
@@ -37,8 +37,8 @@ def main():
                 continue
             k = min(3, int((ns(r["entry_t"]) - ns(r["signal_t"])) // (foot * 60)))
             b[k][0] += 1
-            b[k][1] += float(r["pnl_bp"])
-        cell = lambda k: f"{b[k][0]}・{b[k][1]:+,.0f}・{(b[k][1] / b[k][0]):+.2f}" if b[k][0] else "0"
+            b[k][1] += float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
+        cell = lambda k: f"{b[k][0]}・{b[k][1]:+,.2f}・{(b[k][1] / b[k][0]):+.4f}" if b[k][0] else "0"
         out.append(f"| {d} | {foot} | {cell(0)} | {cell(1)} | {cell(2)} | {cell(3)} |")
     open(os.path.join(HERE, "FEET_CROSSED.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))

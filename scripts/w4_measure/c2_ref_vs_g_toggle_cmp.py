@@ -9,7 +9,7 @@ predict: c2_ref_vs_g_cause.py の写しの機械(D4)を、参照の作り方 non
 (約定の値は参照の規則のまま)、建ての年 2019〜2022 の取引を toggle_predict.json に書く。走らせの結果を見る前に書く。
 table: 6 本の走らせの trades.json.gz と、元の参照・段階 G を、c2_ref_vs_g_match.py と同じ鍵・年で突き合わせる。
 各升 = 取引の数・損益の和・段階 G との共通・この走らせだけ・段階 G だけ・差(この走らせ − 段階 G)。
-予想(toggle_predict.json)と走らせの取引が、鍵・出の時刻・損益(1e-3 bp)で一致するかも出す。
+予想(toggle_predict.json)と走らせの取引が、鍵・出の時刻・損益(1e-5 %。前の書き方で 1e-3 bp)で一致するかも出す。
 出力: limit_sim/runs/READ_K1YEAR/CAUSE_TABLES2.md と toggle_cmp.json。
 """
 from __future__ import annotations
@@ -82,7 +82,7 @@ def table() -> int:
     res = {}
     L = ["# カツオ: 参照の行の読み方を切り替えた走らせと段階 G の年ごとの比べ(台本の出力)", "",
          "`PYTHONPATH=src python3 scripts/w4_measure/c2_ref_vs_g_toggle_cmp.py table` が出した。年 = 建てた足の始まりの年。"
-         "損益は経費の前の bp。突き合わせの鍵 = (建ての時刻, 向き)(c2_ref_vs_g_match.py の R1・R2)。", ""]
+         "損益は経費の前の %(損益の率。L-920 で bp は値動き率だけの名前)。突き合わせの鍵 = (建ての時刻, 向き)(c2_ref_vs_g_match.py の R1・R2)。", ""]
     for f in mm.FEET:
         rid = cells[f"design|full|{f}|s19/b24|weak"]["run_id"]
         with gzip.open(os.path.join(mm.G_RUNS, rid, "trades.json.gz"), "rt", encoding="utf-8") as fh:
@@ -100,31 +100,31 @@ def table() -> int:
                 ry = [t for t in r if mm.year_of(t[0], f) == y]
                 gy = [t for t in g if mm.year_of(t[0], f) == y]
                 m = mm.match_year(ry, gy)
-                m.update({"n": len(ry), "sum_bp": math.fsum(t[3] for t in ry), "g_n": len(gy),
-                          "g_sum_bp": math.fsum(t[3] for t in gy)})
+                m.update({"n": len(ry), "sum_pct": math.fsum(t[3] for t in ry), "g_n": len(gy),
+                          "g_sum_pct": math.fsum(t[3] for t in gy)})
                 res[f"{f}{suffix}|{y}"] = m
-                L.append(f"| {desc}(`{os.path.basename(d)}`) | {y} | {m['n']:,} | {m['sum_bp']:+,.2f} | {m['g_n']:,} | "
-                         f"{m['g_sum_bp']:+,.2f} | {m['common_n']:,} | {m['r_only_n']} | {m['g_only_n']} | {m['diff_bp']:+,.2f} | "
+                L.append(f"| {desc}(`{os.path.basename(d)}`) | {y} | {m['n']:,} | {m['sum_pct']:+,.4f} | {m['g_n']:,} | "
+                         f"{m['g_sum_pct']:+,.4f} | {m['common_n']:,} | {m['r_only_n']} | {m['g_only_n']} | {m['diff_pct']:+,.4f} | "
                          f"{m['common_exit_differs_n']} |")
             if suffix and f"{f}{suffix}" in pred:
                 p = {(t[0], t[1]): t for t in pred[f"{f}{suffix}"]}
                 rr = {(t[0], t[1]): t for t in r if mm.year_of(t[0], f) in mm.YEARS}
                 bad = sum(1 for k in set(p) | set(rr) if k not in p or k not in rr or p[k][2] != rr[k][2]
-                          or abs(p[k][3] - rr[k][3]) > 1e-3)
+                          or abs(p[k][3] - rr[k][3]) > 1e-5)
                 res[f"{f}{suffix}|predict_mismatch"] = bad
                 L.append(f"| 予想との一致(`toggle_predict.json`、2019〜2022) | | 走らせ {len(rr):,} 本・予想 {len(p):,} 本・"
                          f"一致しない鍵 {bad} | | | | | | | | |")
         L.append("")
     # どの切り替えで段階 G に近づくか: 差(走らせ − 段階 G)と、片側だけの本数(この走らせだけ + 段階 G だけ)
     L += ["## 切り替えごとの、段階 G との差と片側だけの本数", "",
-          "升 = 損益の差(この走らせ − 段階 G、bp)/ 片側だけの本数(この走らせだけ + 段階 G だけ)。「—」= 走らせの出力が無い。", "",
+          "升 = 損益の差(この走らせ − 段階 G、%)/ 片側だけの本数(この走らせだけ + 段階 G だけ)。「—」= 走らせの出力が無い。", "",
           "| 足 | 年 | " + " | ".join(d for _s, _c, d in VARIANTS) + " |", "|---|---|" + "---|" * len(VARIANTS)]
     for f in mm.FEET:
         for y in mm.YEARS:
             cs = []
             for suffix, _c, _d in VARIANTS:
                 m = res.get(f"{f}{suffix}|{y}")
-                cs.append("—" if m is None else f"{m['diff_bp']:+,.2f} / {m['r_only_n'] + m['g_only_n']}")
+                cs.append("—" if m is None else f"{m['diff_pct']:+,.4f} / {m['r_only_n'] + m['g_only_n']}")
             L.append(f"| {f} 分 | {y} | " + " | ".join(cs) + " |")
     L.append("")
     with open(os.path.join(OUT, "CAUSE_TABLES2.md"), "w", encoding="utf-8") as fh:

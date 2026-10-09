@@ -61,4 +61,4 @@ def test_hold_bins(tmp_path):
         json.dump(o, fh)
     h = rd.hold_sums(str(p))
     assert [x["trades"] for x in h] == [1, 1, 0, 1, 1]
-    assert [x["sum_bp"] for x in h] == [1.0, 2.0, 0.0, 3.0, 4.0]
+    assert [x["sum_pct"] for x in h] == [0.01, 0.02, 0.0, 0.03, 0.04]  # 前の記録の pnl_bp は / 100 して %

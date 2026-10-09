@@ -16,7 +16,7 @@ R8(走らせる前に足した。批評家の 2 回目 `VERDICTS/2026-10-04_c4_b
    主の軸「ブレイクで閉じた損益」は、v37 の closed_by_break と、族 D の closed_by_break + closed_by_bcl(負けている持ち高を
    閉じた取引の和)を比べる軸「負けを閉じた損益」(lose_close)に替える。closed_by_bcl の群が無い走らせは 0 として足す。
 R9 R7 の限界として書くもの: 足の頭で止めが足の値幅の外の値段で約定する扱い(既定のブレイクと同じ。手前の止めで約 941 件・
-   1,431bp 有利に傾く推定)と、止めで閉じた後に値段が止めの内側へ戻ってからの入り直しを落とす扱い(2019 年で道 224 回)。
+   14.31 % 有利に傾く推定。損益の率の和。L-920 の前は「1,431bp」と書いていた)と、止めで閉じた後に値段が止めの内側へ戻ってからの入り直しを落とす扱い(2019 年で道 224 回)。
 
 出力: <families_r2>/READ_D/TABLES.md と read.json。数字は手で書かない(research-protocol §1.2)。
 
@@ -37,9 +37,10 @@ FAMILY = "D"
 
 
 def lose_close_per_day(analysis: dict, days: float) -> float:
-    """R8。負けている持ち高を閉じた取引の和(1 日あたり)= closed_by_break + closed_by_bcl。"""
+    """R8。負けている持ち高を閉じた取引の和(1 日あたり、%)= closed_by_break + closed_by_bcl。analysis は
+    `c4_read_r2.load_run` が `to_pct` で % の鍵(`sum_pct`)に直したもの。"""
     bb = analysis["by_break"]
-    return (bb["closed_by_break"]["sum_bp"] + (bb.get("closed_by_bcl") or {}).get("sum_bp", 0.0)) / days
+    return (bb["closed_by_break"]["sum_pct"] + (bb.get("closed_by_bcl") or {}).get("sum_pct", 0.0)) / days
 
 
 def only_d(runs: dict) -> dict:
@@ -50,7 +51,7 @@ def only_d(runs: dict) -> dict:
 def render(rows: list[dict]) -> str:
     f = r2._f
     L = ["# マチルダ: 族 D(ブレイクの負けを直接減らす変種)と v37 の差", "",
-         "`scripts/w4_measure/c4_read_d.py` が出した。読み方の決まり R1〜R7 はその台本の docstring。経費の前。bp/日、良い側 / 悪い側。", "",
+         "`scripts/w4_measure/c4_read_d.py` が出した。読み方の決まり R1〜R7 はその台本の docstring。経費の前。%/日(段で割った損益の率)、良い側 / 悪い側。", "",
          "| 変種 | 負けを閉じた損益の差(R8) | 大負けの差 | 向き | 損益の差 | 向き | 取引/日の差 | 小勝ちの差 | 年の一致(良 / 悪) | 決まった取引だけでも同じ向き(良 / 悪) |",
          "|---|---|---|---|---|---|---|---|---|---|"]
     for r in rows:

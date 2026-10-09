@@ -27,7 +27,9 @@ R8 取引で見た重なり(設計の段の判定の代替で 2 名とも「測�
    trades.csv.gz の合図の時刻(signal_t)で突き合わせ、B の取引を「門で外れた」(B にあり G に無い)と
    「時間で切られた」(T_N で終わり方が「時間で降りる」の取引と同じ signal_t)に分け、両方・門だけ・時間だけ・どちらでもない
    の 4 つの群の本数と、B での損益の和を出す。合図の時刻が同じでも持ち高の道が変わると別の取引になる(突き合わせは近似)。
-R9 門の履歴が 1 年に満たない期間(2017-08〜2018-08)を外した見方として、年の差の 2019〜2023 年の和(bp)を並べる。
+R9 門の履歴が 1 年に満たない期間(2017-08〜2018-08)を外した見方として、年の差の 2019〜2023 年の和(%)を並べる。
+R11 損益の率は %(L-920 で bp は値動き率だけの名前)。L-920 より前の出力の `*_bp`(率 × 1 万)は
+   `c2_read_limit.to_pct` で / 100 して読む。
 R10 検出力(W4 の完了の形の「検出力」): 組んだ形 C_N と時間だけ T_N のそれぞれについて、基準 B との日ごとの損益の差
    (取引の出の時刻の UTC の日で合計。取引の無い日は 0。日の範囲は B の summary の period)の平均と、
    circular block bootstrap(塊 5 日、1,000 回、種 20261004、95% 百分位、bot.bt.validation.block_bootstrap_ci)の区間、
@@ -79,8 +81,8 @@ def dd(runs: dict, alls: dict, x: str, b: str) -> dict | None:
     return {"pnl": X["per_day"]["pnl"] - Bb["per_day"]["pnl"],
             "trades": X["per_day"]["trades"] - Bb["per_day"]["trades"],
             "per_trade": X["per_trade"] - Bb["per_trade"],
-            "win": alls[x]["sum_win_bp"] / X["days"] - alls[b]["sum_win_bp"] / Bb["days"],
-            "loss": alls[x]["sum_loss_bp"] / X["days"] - alls[b]["sum_loss_bp"] / Bb["days"]}
+            "win": alls[x]["sum_win_pct"] / X["days"] - alls[b]["sum_win_pct"] / Bb["days"],
+            "loss": alls[x]["sum_loss_pct"] / X["days"] - alls[b]["sum_loss_pct"] / Bb["days"]}
 
 
 def additivity(dT: dict | None, dG: dict | None, dC: dict | None) -> dict | None:
@@ -121,7 +123,7 @@ def read_daily(d: str, lo: date, hi: date) -> list[float] | None:
         for r in csv.DictReader(fh):
             k = (datetime.fromisoformat(r["exit_t"].replace("Z", "+00:00")).date() - lo).days
             if 0 <= k < n:
-                out[k] += float(r["pnl_bp"])
+                out[k] += float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
     return out
 
 
@@ -137,24 +139,26 @@ def paired_ci(x: list[float], b: list[float]) -> dict:
 
 
 def read_signals(d: str) -> list[tuple[str, str, float]] | None:
-    """trades.csv.gz の (signal_t, exit_reason, pnl_bp)。無ければ None。"""
+    """trades.csv.gz の (signal_t, exit_reason, pnl_pct)。前の出力の pnl_bp は / 100。無ければ None。"""
     p = os.path.join(d, "trades.csv.gz")
     if not os.path.isfile(p):
         return None
     with gzip.open(p, "rt", encoding="utf-8", newline="") as fh:
-        return [(r["signal_t"], r["exit_reason"], float(r["pnl_bp"])) for r in csv.DictReader(fh)]
+        return [(r["signal_t"], r["exit_reason"],
+                 float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100)
+                for r in csv.DictReader(fh)]
 
 
 def trade_overlap(b: list, g: list, t: list) -> dict:
     """R8。b・g・t = read_signals の行(B・G・T_N)。B の取引を 4 群に分け、本数と B での損益の和。"""
     in_g = {s for s, _, _ in g}
     cut = {s for s, why, _ in t if why == "時間で降りる"}
-    out = {k: {"trades": 0, "sum_bp": 0.0} for k in ("both", "gate_only", "time_only", "neither")}
+    out = {k: {"trades": 0, "sum_pct": 0.0} for k in ("both", "gate_only", "time_only", "neither")}
     for s, _, p in b:
         gated, timed = s not in in_g, s in cut
         k = "both" if gated and timed else "gate_only" if gated else "time_only" if timed else "neither"
         out[k]["trades"] += 1
-        out[k]["sum_bp"] += p
+        out[k]["sum_pct"] += p
     return out
 
 
@@ -196,18 +200,18 @@ def rl_hold_diff(x: list[dict] | None, b: list[dict] | None) -> list[dict] | Non
     """R5。"""
     if x is None or b is None:
         return None
-    return [{"lo": p["lo"], "hi": p["hi"], "d_trades": p["trades"] - q["trades"], "d_sum_bp": p["sum_bp"] - q["sum_bp"]}
+    return [{"lo": p["lo"], "hi": p["hi"], "d_trades": p["trades"] - q["trades"], "d_sum_pct": p["sum_pct"] - q["sum_pct"]}
             for p, q in zip(x, b)]
 
 
-def _f(x, nd=2) -> str:
+def _f(x, nd=4) -> str:
     return "—" if x is None else rl._f(x, nd)
 
 
 def render(r: dict) -> str:
     L = ["# カツオ 改良の周 2: 時間で降りる × 直前 365 日の門を組んだ形", "",
          "`scripts/w4_measure/c2_read_r2.py` が出した。読み方の決まり R1〜R7 はその台本の docstring。15 分・入り方 a・参照の形・"
-         "弱いだけ。経費の前。bp/日。基準 B = weak_f15_close_a。", "",
+         "弱いだけ。経費の前。%/日(損益の率)。基準 B = weak_f15_close_a。", "",
          f"門だけ(G − B): 損益 {_f(r['dG'] and r['dG']['pnl'])}、取引の数 {_f(r['dG'] and r['dG']['trades'], 3)}", "",
          "## 表 1: 足し算になるか(N ごと、1 日あたり)", "",
          "| N | 時間だけ dT | 組んだ形 dC | 重なりの分 dC−dT−dG | 組んだ形 − 良い方の単独 | dC の取引の数の差 | dC の 1 取引あたりの差 | "
@@ -223,38 +227,38 @@ def render(r: dict) -> str:
     if b:
         L += ["", f"R4: 組んだ形の最良は N = {b['n']}({b['candidates']} 通りの中の最良)dC {_f(b['dC'])}、"
                   f"両隣 N−1 {_f(b['left'])}・N+1 {_f(b['right'])}"]
-    L += ["", "## 表 2: 年ごとの差(bp。C_N − B / T_N − B、G − B は最後の行)", "",
+    L += ["", "## 表 2: 年ごとの差(%。C_N − B / T_N − B、G − B は最後の行)", "",
           "| N | " + " | ".join(str(y) for y in rl.YEARS) + " |", "|---|" + "---|" * len(rl.YEARS)]
     for x in r["rows"]:
         if x["year_dC"]:
-            L.append(f"| C{x['n']} | " + " | ".join(f"{x['year_dC'][y]:+,.0f}" for y in rl.YEARS) + " |")
+            L.append(f"| C{x['n']} | " + " | ".join(f"{x['year_dC'][y]:+,.2f}" for y in rl.YEARS) + " |")
         if x["year_dT"]:
-            L.append(f"| T{x['n']} | " + " | ".join(f"{x['year_dT'][y]:+,.0f}" for y in rl.YEARS) + " |")
+            L.append(f"| T{x['n']} | " + " | ".join(f"{x['year_dT'][y]:+,.2f}" for y in rl.YEARS) + " |")
     if r["year_dG"]:
-        L.append("| G | " + " | ".join(f"{r['year_dG'][y]:+,.0f}" for y in rl.YEARS) + " |")
-    L += ["", "## 表 1b: 日ごとの差の平均・95% 区間・MDE(R10。bp/日。基準 B との差)", "",
+        L.append("| G | " + " | ".join(f"{r['year_dG'][y]:+,.2f}" for y in rl.YEARS) + " |")
+    L += ["", "## 表 1b: 日ごとの差の平均・95% 区間・MDE(R10。%/日。基準 B との差)", "",
           "| N | 組んだ形 平均 [区間] | 組んだ形 MDE | 時間だけ 平均 [区間] | 時間だけ MDE |", "|---|---|---|---|---|"]
     for x in r["rows"]:
         c, t = x.get("ci_C"), x.get("ci_T")
-        L.append(f"| {x['n']} | " + (f"{c['mean']:+.2f} [{c['lo']:+.2f}, {c['hi']:+.2f}] | {c['mde']:.2f}" if c else "— | —")
-                 + " | " + (f"{t['mean']:+.2f} [{t['lo']:+.2f}, {t['hi']:+.2f}] | {t['mde']:.2f}" if t else "— | —") + " |")
-    L += ["", "R9: 年の差の 2019〜2023 年の和(門の履歴が 1 年に満たない期間を外す。bp): "
-          + "・".join(f"C{x['n']} {_f(x['dC_2019on'], 0)}" for x in r["rows"]),
-          "", "## 表 2b: 取引で見た重なり(R8。B の取引の本数 / B での損益の和 bp)", "",
+        L.append(f"| {x['n']} | " + (f"{c['mean']:+.4f} [{c['lo']:+.4f}, {c['hi']:+.4f}] | {c['mde']:.4f}" if c else "— | —")
+                 + " | " + (f"{t['mean']:+.4f} [{t['lo']:+.4f}, {t['hi']:+.4f}] | {t['mde']:.4f}" if t else "— | —") + " |")
+    L += ["", "R9: 年の差の 2019〜2023 年の和(門の履歴が 1 年に満たない期間を外す。%): "
+          + "・".join(f"C{x['n']} {_f(x['dC_2019on'], 2)}" for x in r["rows"]),
+          "", "## 表 2b: 取引で見た重なり(R8。B の取引の本数 / B での損益の和 %)", "",
           "| N | 門と時間の両方 | 門だけ | 時間だけ | どちらでもない |", "|---|---|---|---|---|"]
     for x in r["rows"]:
         o = x["overlap_trades"]
         if o:
-            L.append(f"| {x['n']} | " + " | ".join(f"{o[k]['trades']:,} / {o[k]['sum_bp']:+,.0f}"
+            L.append(f"| {x['n']} | " + " | ".join(f"{o[k]['trades']:,} / {o[k]['sum_pct']:+,.2f}"
                                                    for k in ("both", "gate_only", "time_only", "neither")) + " |")
-    L += ["", "## 表 3: 保有時間の帯ごとの差(C_N − B。取引の数 / 損益の和 bp)", ""]
+    L += ["", "## 表 3: 保有時間の帯ごとの差(C_N − B。取引の数 / 損益の和 %)", ""]
     bands = next((x["hold"] for x in r["rows"] if x["hold"]), None)
     if bands:
         L += ["| N | " + " | ".join(f"{h['lo']}〜{h['hi']} 分" if h["hi"] is not None else f"{h['lo']} 分〜" for h in bands)
               + " |", "|---|" + "---|" * len(bands)]
         for x in r["rows"]:
             if x["hold"]:
-                L.append(f"| {x['n']} | " + " | ".join(f"{h['d_trades']:+,} / {h['d_sum_bp']:+,.0f}" for h in x["hold"]) + " |")
+                L.append(f"| {x['n']} | " + " | ".join(f"{h['d_trades']:+,} / {h['d_sum_pct']:+,.2f}" for h in x["hold"]) + " |")
     L += ["", "## 表 4: 内部結合(△ 代理)の下での同じ差(基準 B_j = weak_f15_close_a_refjoin)", "",
           f"門だけ(G_j − B_j): {_f(r['dGj'] and r['dGj']['pnl'])}", "",
           "| N | 時間だけ dT_j | 組んだ形 dC_j | 重なりの分 | dC_j − dC(結合あり − なし) |", "|---|---|---|---|---|"]
@@ -275,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         runs[n] = rl.load_run(d)
         with open(os.path.join(d, "summary.json"), encoding="utf-8") as fh:
-            alls[n] = json.load(fh)["all"]
+            alls[n] = rl.to_pct(json.load(fh))["all"]
     missing = sorted(wanted() - set(runs))
     sig = {k: read_signals(os.path.join(a.root, k)) for k in [B, G] + [T(n) for n in NS] if k in runs}
     with open(os.path.join(a.root, B, "summary.json"), encoding="utf-8") as fh:

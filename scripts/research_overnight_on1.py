@@ -13,8 +13,9 @@ Bars:
       10 days, 10,000 reps, seed 20260828) 95% CI lower bound > 0
   (2) era plateau: mean>0 in >=3 of [1990-1998][1999-2007][2008-2016][2017-2026]
       AND [2017-2026] positive
-  (3) net mean>0 with t>=1.5 at conservative cost 1.10 bps/day RT
-      (auction execution: fee 0.35 + 1-tick allowance 0.75; base 0.35 reported)
+  (3) net mean>0 with t>=1.5 at conservative cost 0.0110 %/day RT
+      (auction execution: fee 0.0035 % + 1-tick allowance 0.0075 %; base 0.0035 % reported. Costs and returns net of
+      costs are in percent: they are not price-move rates, so not bp, L-920)
 
 Mandatory diagnostics (report-only): cash ^N225 shrink ratio on the shared date
 set, night-session decomposition 2007-26, yearly/weekday tables, B&H comparison
@@ -44,8 +45,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 SNAP = ROOT / "backtest_data" / "n225f_225labo_20260828"
 SEED = 20260828
-COST_BASE_BPS = 0.35
-COST_CONS_BPS = 1.10
+COST_BASE_PCT = 0.0035
+COST_CONS_PCT = 0.0110
 ERAS = [(1990, 1998), (1999, 2007), (2008, 2016), (2017, 2026)]
 
 
@@ -159,11 +160,11 @@ def main() -> None:
     # ---- Bar 3: net at conservative cost ----
     print("\n-- BAR 3  net of costs --")
     results = {}
-    for label, bps in (("base", COST_BASE_BPS), ("conservative", COST_CONS_BPS)):
-        net = [r - bps / 1e4 for r in on]
+    for label, pct in (("base", COST_BASE_PCT), ("conservative", COST_CONS_PCT)):
+        net = [r - pct / 100 for r in on]
         nm, _, nt = tstat(net)
         results[label] = (nm, nt)
-        print(f"  {label:>12} ({bps:.2f} bps/d RT): mean {nm*1e4:+.3f} bps/d  ann {ann(nm):+.2f}%  t={nt:+.2f}")
+        print(f"  {label:>12} ({pct:.4f} %/d RT): mean {nm*100:+.5f} %/d  ann {ann(nm):+.2f}%  t={nt:+.2f}")
     bar3 = results["conservative"][0] > 0 and results["conservative"][1] >= 1.5
     print(f"  -> {'PASS' if bar3 else 'FAIL'}")
 
@@ -232,7 +233,7 @@ def main() -> None:
     # B&H comparison (full-day close-to-close on the same instrument)
     full = load_daily("full_day_daily.csv.gz")
     bh = [math.log(b["close"] / a["close"]) for a, b in zip(full, full[1:])]
-    on_net = [r - COST_CONS_BPS / 1e4 for r in on]
+    on_net = [r - COST_CONS_PCT / 100 for r in on]
     print("\nB&H comparison (same futures series, close-to-close, zero-cost B&H reference):")
     for name, xs in (("ON1 net(cons)", on_net), ("B&H", bh)):
         print(f"  {name:>14}: ann {ann(statistics.fmean(xs)):+.2f}%  Sharpe {sharpe(xs):.2f}  maxDD {max_drawdown(xs):.1f}%")

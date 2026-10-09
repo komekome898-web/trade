@@ -39,11 +39,17 @@ def iso_ns(s: str) -> int:
 
 
 def ref_rows(d: str) -> list[tuple]:
-    """(建ての時刻 ns, 向き, 損益 bp)。"""
+    """(建ての時刻 ns, 向き, 損益 %)。L-920 より前の記録の pnl_bp(率 × 1 万)は / 100。"""
     with gzip.open(os.path.join(d, "trades.json.gz"), "rt", encoding="utf-8") as fh:
         o = json.load(fh)
     assert o["t_unit"] == "ns"
-    return [(int(o["entry_t_ns"][i]), int(o["side"][i]), float(o["pnl_bp"][i])) for i in range(len(o["pnl_bp"]))]
+    pnl = o["pnl_pct"] if "pnl_pct" in o else [float(v) / 100 for v in o["pnl_bp"]]
+    return [(int(o["entry_t_ns"][i]), int(o["side"][i]), float(pnl[i])) for i in range(len(pnl))]
+
+
+def _row_pct(r: dict) -> float:
+    """trades.csv.gz の行の損益(%)。L-920 より前の行の pnl_bp は / 100。"""
+    return float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
 
 
 def csv_rows(path: str) -> list[dict]:
@@ -75,7 +81,7 @@ def _group(items):
 
 
 def entry_decomp(limit_rows: list[dict], ref: list[tuple], entry: str, foot: int, days_l: float, days_r: float) -> dict:
-    L = _group(((iso_ns(r["signal_t"]), int(r["side"])), float(r["pnl_bp"])) for r in sorted(limit_rows, key=lambda r: r["entry_t"]))
+    L = _group(((iso_ns(r["signal_t"]), int(r["side"])), _row_pct(r)) for r in sorted(limit_rows, key=lambda r: r["entry_t"]))
     R = _group(((ref_signal_ns(t, entry, foot), s), p) for t, s, p in sorted(ref))
     common, lo, ro = pair(L, R)
     return {
@@ -95,7 +101,7 @@ def key_check(missed_rows: list[dict], entry: str, foot: int) -> float:
 
 
 def exit_decomp(exit_rows: list[dict], ref: list[tuple], days_x: float, days_r: float) -> dict:
-    X = _group(((iso_ns(r["entry_t"]), int(r["side"])), (float(r["pnl_bp"]), int(r["undecided"])))
+    X = _group(((iso_ns(r["entry_t"]), int(r["side"])), (_row_pct(r), int(r["undecided"])))
                for r in sorted(exit_rows, key=lambda r: r["entry_t"]))
     R = _group(((t, s), p) for t, s, p in sorted(ref))
     common, xo, ro = pair(X, R)
@@ -122,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     P = lambda n: os.path.join(a.root, n)  # noqa: E731
     out = {"entry": {}, "exit": {}}
     E = ["# カツオ: 入りの分・降りの分を取引 1 本ずつの突き合わせで分ける", "",
-         "`scripts/w4_measure/c2_read_ablation_decomp.py` が出した(関門 ② の 1 回目の後に足した)。経費の前。1 日あたり bp。", "",
+         "`scripts/w4_measure/c2_read_ablation_decomp.py` が出した(関門 ② の 1 回目の後に足した)。経費の前。1 日あたり %(損益の率。L-920 で bp は値動き率だけの名前)。", "",
          "## 表 A: 入りの分 = 指値の形にだけある取引 − 参照にだけある取引(取り逃し)+ 共通の取引の差", "",
          "| 足 | 入り方 | 入りの分 | 指値の形にだけ 本数・和 | 参照にだけ 本数・和(符号は入りの分への寄与) | 共通 本数・差の和 | 鍵の確かめ |",
          "|---|---|---|---|---|---|---|"]
@@ -135,8 +141,8 @@ def main(argv: list[str] | None = None) -> int:
             r = entry_decomp(csv_rows(os.path.join(le, "trades.csv.gz")), ref_rows(rf), e, f, _days(le), _days(rf))
             r["key_check"] = key_check(csv_rows(os.path.join(le, "missed.csv.gz")), e, f)
             out["entry"][f"{f}|{e}"] = r
-            E.append(f"| {f} 分 | {e} | {r['entry_part']:+.2f} | {r['limit_only_n']:,}・{r['limit_only_day']:+.2f} | "
-                     f"{r['ref_only_n']:,}・{r['ref_only_day']:+.2f} | {r['common_n']:,}・{r['common_diff_day']:+.2f} | {r['key_check']:.3f} |")
+            E.append(f"| {f} 分 | {e} | {r['entry_part']:+.4f} | {r['limit_only_n']:,}・{r['limit_only_day']:+.4f} | "
+                     f"{r['ref_only_n']:,}・{r['ref_only_day']:+.4f} | {r['common_n']:,}・{r['common_diff_day']:+.4f} | {r['key_check']:.3f} |")
     E += ["", "鍵の確かめ = missed.csv.gz の行で、合図の時刻が「入り方 a は建て − 足、b・c は建て」と一致した割合。", "",
           "## 表 B: 降りの分 = 共通の取引の差(決まらない足に当たらない / 当たる)+ 突き合わない取引", "",
           "| 足 | 入り方 | 側 | 降りの分 | 当たらない 本数・差の和 | 当たる 本数・差の和 | 突き合わない 降りだけ / 参照 本数・和の差 |",
@@ -149,8 +155,8 @@ def main(argv: list[str] | None = None) -> int:
                     continue
                 r = exit_decomp(csv_rows(os.path.join(xo, "trades.csv.gz")), ref_rows(rf), _days(xo), _days(rf))
                 out["exit"][f"{f}|{e}|{s}"] = r
-                E.append(f"| {f} 分 | {e} | {'良' if s == 'good' else '悪'} | {r['exit_part']:+.2f} | {r['decided_n']:,}・{r['decided_diff_day']:+.2f} | "
-                         f"{r['undecided_n']:,}・{r['undecided_diff_day']:+.2f} | {r['unmatched_x_n']:,} / {r['unmatched_ref_n']:,}・{r['unmatched_day']:+.2f} |")
+                E.append(f"| {f} 分 | {e} | {'良' if s == 'good' else '悪'} | {r['exit_part']:+.4f} | {r['decided_n']:,}・{r['decided_diff_day']:+.4f} | "
+                         f"{r['undecided_n']:,}・{r['undecided_diff_day']:+.4f} | {r['unmatched_x_n']:,} / {r['unmatched_ref_n']:,}・{r['unmatched_day']:+.4f} |")
     od = P("READ_ABLATION")
     with open(os.path.join(od, "DECOMP.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(E) + "\n")

@@ -14,6 +14,8 @@ R3 量は 3 つ。どれにも良い悪いの境は置かない(A-12。表の数
    (b) 両方の損益が 0 でない日のうち、符号が同じ日の割合
    (c) 悪い日の重なり: 行の系列の損益の下から 5% の日のうち、列の系列でも下から 5% に入る日の割合
 R4 経費は入れない。どれも探索の読みで、判定ではない。
+R5 損益の率は %(L-920 で bp は値動き率だけの名前)。L-920 より前の書き出し(daily.csv の pnl_bp・trades.json.gz の pnl_bp、
+   率 × 1 万)は / 100 して % で読む。相関・符号・重なりの割合は単位に依らない。
 
 出力: docs/RESEARCH/cards/OVERLAP/TABLES.md と overlap.json。
 
@@ -77,13 +79,15 @@ def days_between(start_iso: str, end_iso: str) -> list[str]:
 
 def load_daily_csv(path: str) -> dict[str, float]:
     with open(path, encoding="utf-8") as fh:
-        return {r["day"]: float(r["pnl_bp"]) for r in csv.DictReader(fh) if r["day"] <= LAST_DAY}
+        return {r["day"]: (float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100)
+                for r in csv.DictReader(fh) if r["day"] <= LAST_DAY}
 
 
 def daily_from_trades(trades: dict, period: tuple[str, str]) -> dict[str, float]:
     assert trades["t_unit"] == "ns"
     out = {d: 0.0 for d in days_between(*period) if d <= LAST_DAY}
-    for t, p in zip(trades["exit_t_ns"], trades["pnl_bp"]):
+    pct = trades["pnl_pct"] if "pnl_pct" in trades else [float(v) / 100 for v in trades["pnl_bp"]]
+    for t, p in zip(trades["exit_t_ns"], pct):
         d = _jst_day(int(t) - 1)
         if d in out:
             out[d] += float(p)
@@ -148,14 +152,14 @@ def main() -> int:
     stats = {a: {b: pair_stats(series[a], series[b]) for b in names if b != a} for a in names}
     L = ["# カードどうしの日ごとの損益の重なり", "",
          "`scripts/w4_measure/overlap_daily.py` が出した。読み方の決まり R1〜R4 はその台本の docstring。経費の前。", "",
-         "## 系列", "", "| 名前 | 日数 | 最初の日 | 最後の日 | 1 日あたり(bp) | 95% 区間(5 日の塊) | 損益が 0 の日の割合 |",
+         "## 系列", "", "| 名前 | 日数 | 最初の日 | 最後の日 | 1 日あたり(%) | 95% 区間(5 日の塊) | 損益が 0 の日の割合 |",
          "|---|---|---|---|---|---|---|"]
     for n in names:
         s = series[n]
         ks = sorted(s)
         x = np.array([s[k] for k in ks])
         m, lo, hi = mean_ci(x)
-        L.append(f"| {n} | {len(ks)} | {ks[0]} | {ks[-1]} | {m:.2f} | [{lo:.2f}, {hi:.2f}] | {(x == 0).mean():.3f} |")
+        L.append(f"| {n} | {len(ks)} | {ks[0]} | {ks[-1]} | {m:.4f} | [{lo:.4f}, {hi:.4f}] | {(x == 0).mean():.3f} |")
     for key, title, nd in (("corr", "表 1: 日ごとの損益の相関", 2), ("same_sign", "表 2: 両方が 0 でない日のうち符号が同じ日の割合", 2),
                            ("worst5_overlap", "表 3: 行の悪い 5% の日のうち、列でも悪い 5% に入る割合", 2)):
         L += ["", f"## {title}", "", "| 行 \\ 列 | " + " | ".join(names) + " |", "|---|" + "---|" * len(names)]

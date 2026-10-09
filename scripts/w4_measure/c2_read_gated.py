@@ -115,21 +115,21 @@ def year_diffs(runs: dict, rows: list[dict]) -> list[dict]:
 def render(runs: dict, rows: list[dict], labels: dict[str, str]) -> str:
     head = ("K1 の境目" if TAG == "gate" else "境目は合図の時点の直前 365 日の合図の vol_prev の 1/3・2/3 分位(--tag rgate)")
     L = [f"# カツオ: 門あり({head}、合図の時点のボラが高の三分位のときだけ入る)と門なしの比べ", "",
-         "`scripts/w4_measure/c2_read_gated.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。", "",
+         "`scripts/w4_measure/c2_read_gated.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。損益は %(損益の率。rl.load_run が前の出力の `*_bp` を / 100 して読む。L-920)。", "",
          "## 表 1: 門あり − 門なし(全期間と、境目を決めた期間の外の 2020〜2023 年)", "",
          "| 門あり | 1 日あたり損益の差(全期間) | 取引の数の差 /日 | 1 取引あたりの差 | 2020〜2023 の 1 日あたり 門あり / 門なし | その差 | 年の一致 |",
          "|---|---|---|---|---|---|---|"]
     for r in rows:
-        L.append(f"| {r['gated']} | {rl._f(r['d_pnl_day'], 2)} | {rl._f(r['d_trades_day'], 3)} | {rl._f(r['d_per_trade'], 2)} | "
-                 f"{r['oos_gated']:+.2f} / {r['oos_ungated']:+.2f} | {rl._f(r['d_oos_day'], 2)} | {r['oos_years_agree']}/4 |")
+        L.append(f"| {r['gated']} | {rl._f(r['d_pnl_day'], 4)} | {rl._f(r['d_trades_day'], 3)} | {rl._f(r['d_per_trade'], 4)} | "
+                 f"{r['oos_gated']:+.4f} / {r['oos_ungated']:+.4f} | {rl._f(r['d_oos_day'], 4)} | {r['oos_years_agree']}/4 |")
     L += ["", "## 表 2: 指値の型ごとの向き(2020〜2023 の差、良い側と悪い側)", "", "| 型 | 向き |", "|---|---|"]
     for k, v in labels.items():
         L.append(f"| {k} | {v} |")
-    L += ["", "## 表 3: 年ごとの損益の差(門あり − 門なし、bp)と 2022〜2023 年の 1 日あたりの差(関門 ② の 1 回目の後に足した)", "",
+    L += ["", "## 表 3: 年ごとの損益の差(門あり − 門なし、%)と 2022〜2023 年の 1 日あたりの差(関門 ② の 1 回目の後に足した)", "",
           "| 門あり | 2020 | 2021 | 2022 | 2023 | 2022〜2023 の 1 日あたり |", "|---|---|---|---|---|---|"]
     for y in year_diffs(runs, rows):
         b = y["by_year"]
-        L.append(f"| {y['gated']} | {b[2020]:+.0f} | {b[2021]:+.0f} | {b[2022]:+.0f} | {b[2023]:+.0f} | {y['late_per_day']:+.2f} |")
+        L.append(f"| {y['gated']} | {b[2020]:+.2f} | {b[2021]:+.2f} | {b[2022]:+.2f} | {b[2023]:+.2f} | {y['late_per_day']:+.4f} |")
     return "\n".join(L) + "\n"
 
 

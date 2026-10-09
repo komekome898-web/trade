@@ -32,7 +32,8 @@ def load(d: str) -> list[tuple]:
     with gzip.open(os.path.join(d, "trades.json.gz"), "rt", encoding="utf-8") as fh:
         o = json.load(fh)
     assert o["t_unit"] == "ns"
-    return [((int(o["entry_t_ns"][i]), int(o["side"][i])), float(o["pnl_bp"][i])) for i in range(len(o["pnl_bp"]))]
+    pnl = o["pnl_pct"] if "pnl_pct" in o else [float(v) / 100 for v in o["pnl_bp"]]  # L-920 より前の記録は率 × 1 万
+    return [((int(o["entry_t_ns"][i]), int(o["side"][i])), float(pnl[i])) for i in range(len(pnl))]
 
 
 def year_of(key: tuple) -> int:
@@ -69,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     names = {n for n in os.listdir(a.root) if os.path.isfile(os.path.join(a.root, n, "summary.json"))}
     out = {}
     L = [f"# カツオ: 門あり − 門なしを取引 1 本ずつの突き合わせで分ける(門 = {'直前 365 日の境目' if a.tag == 'rgate' else 'K1 の固定の境目'})", "",
-         "`scripts/w4_measure/c2_read_gated_decomp.py` が出した(関門 ② の 1 回目の後に足した)。経費の前。bp の和。年 = 建ての時刻の UTC の年"
+         "`scripts/w4_measure/c2_read_gated_decomp.py` が出した(関門 ② の 1 回目の後に足した)。経費の前。損益の率(%)の和。年 = 建ての時刻の UTC の年"
          "(summary の年とは割り方が違い、和は少しずれる)。", "",
          "| 門あり | 範囲 | 差 | 共通 本数・門ありの和・門なしの和 | 門ありにだけ 本数・和 | 門で切った 本数・和 |",
          "|---|---|---|---|---|---|"]
@@ -78,8 +79,8 @@ def main(argv: list[str] | None = None) -> int:
         for label, (lo, hi) in RANGES.items():
             r = decomp(gt, ut, lo, hi)
             out[f"{g}|{label}"] = r
-            L.append(f"| {g} | {label} | {r['total']:+,.0f} | {r['common_n']:,}・{r['common_gated']:+,.0f}・{r['common_ungated']:+,.0f} | "
-                     f"{r['gated_only_n']:,}・{r['gated_only']:+,.0f} | {r['cut_n']:,}・{r['cut']:+,.0f} |")
+            L.append(f"| {g} | {label} | {r['total']:+,.2f} | {r['common_n']:,}・{r['common_gated']:+,.2f}・{r['common_ungated']:+,.2f} | "
+                     f"{r['gated_only_n']:,}・{r['gated_only']:+,.2f} | {r['cut_n']:,}・{r['cut']:+,.2f} |")
     od = os.path.join(a.root, "READ_RGATED" if a.tag == "rgate" else "READ_GATED")
     with open(os.path.join(od, "DECOMP.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")

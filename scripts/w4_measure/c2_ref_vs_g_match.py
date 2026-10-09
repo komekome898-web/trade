@@ -7,7 +7,8 @@
 R1 取引の鍵 = (建ての時刻 entry_t_ns, 向き)。参照は side が +1/−1、段階 G は "buy"/"sell"。年は建ての時刻 − 足の長さ
    (建てた足の始まり)の UTC の年で、READ_K1YEAR の台本と同じ。
 R2 年ごとに 3 つに分ける: 両方にある取引(共通)・参照にだけある取引・段階 G にだけある取引。それぞれの本数と
-   損益の和(bp)。段階 G の損益は向き × (出の値 / 入りの値 − 1) × 1e4(READ_K1YEAR の台本と同じ)。
+   損益の和(%)。段階 G の損益は向き × (出の値 / 入りの値 − 1) × 100(READ_K1YEAR の台本の式の % の書き方。参照の
+   取引の記録の損益と同じ単位にする。L-920 で損益の率は bp と呼ばない。前の記録の pnl_bp は / 100 して読む)。
 R3 年の損益の差(参照 − 段階 G)を恒等式で分ける:
    差 = 参照にだけある取引の和 − 段階 G にだけある取引の和 + 共通の取引の損益の差の和(出の時刻・値が違う分)。
    3 つの項のどれが差の大部分かを読む。境は置かない(A-12)。
@@ -42,16 +43,17 @@ def year_of(entry_ns: int, foot: int) -> int:
 
 
 def ref_trades(o: dict) -> list[tuple]:
-    """(entry_t_ns, side ±1, exit_t_ns, pnl_bp)。"""
-    return [(int(o["entry_t_ns"][i]), int(o["side"][i]), int(o["exit_t_ns"][i]), float(o["pnl_bp"][i]))
-            for i in range(len(o["pnl_bp"]))]
+    """(entry_t_ns, side ±1, exit_t_ns, pnl_pct)。前の記録の pnl_bp(率 × 1 万)は / 100。"""
+    pnl = o["pnl_pct"] if "pnl_pct" in o else [float(v) / 100 for v in o["pnl_bp"]]
+    return [(int(o["entry_t_ns"][i]), int(o["side"][i]), int(o["exit_t_ns"][i]), float(pnl[i]))
+            for i in range(len(pnl))]
 
 
 def g_trades(data: list[dict]) -> list[tuple]:
     out = []
     for x in data:
         sig = 1 if x["side"] == "buy" else -1
-        out.append((int(x["entry_t_ns"]), sig, int(x["exit_t_ns"]), sig * (x["exit_px"] / x["entry_px"] - 1.0) * 1e4))
+        out.append((int(x["entry_t_ns"]), sig, int(x["exit_t_ns"]), sig * (x["exit_px"] / x["entry_px"] - 1.0) * 100))
     return out
 
 
@@ -73,10 +75,10 @@ def match_year(ref: list[tuple], g: list[tuple]) -> dict:
     s = lambda xs: math.fsum(x[3] for x in xs)
     return {
         "common_n": len(common), "r_only_n": len(r_only), "g_only_n": len(g_only),
-        "r_only_bp": s(r_only), "g_only_bp": s(g_only),
-        "common_diff_bp": math.fsum(a[3] - b[3] for a, b in common),
+        "r_only_pct": s(r_only), "g_only_pct": s(g_only),
+        "common_diff_pct": math.fsum(a[3] - b[3] for a, b in common),
         "common_exit_differs_n": sum(1 for a, b in common if a[2] != b[2]),
-        "diff_bp": s(ref) - s(g),
+        "diff_pct": s(ref) - s(g),
     }
 
 
@@ -84,7 +86,7 @@ def main() -> int:
     cells = json.load(open(os.path.join(G_DIR, "cells.json"), encoding="utf-8"))
     out = {}
     L = ["# カツオ: 参照と段階 G の取引の 1 本ずつの突き合わせ", "",
-         "`scripts/w4_measure/c2_ref_vs_g_match.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。bp。", "",
+         "`scripts/w4_measure/c2_ref_vs_g_match.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。%(損益の率)。", "",
          "| 足 | 年 | 共通 | 参照だけ | 段階 G だけ | 差(参照 − 段階 G) | = 参照だけの和 | − 段階 G だけの和 | + 共通の差の和 | 共通で出が違う本数 |",
          "|---|---|---|---|---|---|---|---|---|---|"]
     for f in FEET:
@@ -96,8 +98,8 @@ def main() -> int:
         for y in YEARS:
             m = match_year([t for t in ref if year_of(t[0], f) == y], [t for t in g if year_of(t[0], f) == y])
             out[f"{f}|{y}"] = m
-            L.append(f"| {f} 分 | {y} | {m['common_n']:,} | {m['r_only_n']:,} | {m['g_only_n']:,} | {m['diff_bp']:+,.2f} | "
-                     f"{m['r_only_bp']:+,.2f} | {-m['g_only_bp']:+,.2f} | {m['common_diff_bp']:+,.2f} | {m['common_exit_differs_n']:,} |")
+            L.append(f"| {f} 分 | {y} | {m['common_n']:,} | {m['r_only_n']:,} | {m['g_only_n']:,} | {m['diff_pct']:+,.4f} | "
+                     f"{m['r_only_pct']:+,.4f} | {-m['g_only_pct']:+,.4f} | {m['common_diff_pct']:+,.4f} | {m['common_exit_differs_n']:,} |")
     od = os.path.join(RUNS, "READ_K1YEAR")
     with open(os.path.join(od, "MATCH.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")

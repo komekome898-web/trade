@@ -54,10 +54,10 @@ def main(argv: list[str] | None = None) -> int:
         rows.append({"n": n, "all": r2.paired_ci(c, t),
                      "late": r2.paired_ci(slice_from(c, lo, LATE_FROM), slice_from(t, lo, LATE_FROM))})
     L = ["# カツオ 改良の周 2: 組んだ形 − 時間だけ(dC − dT)の区間", "",
-         "`scripts/w4_measure/c2_read_r2_ct.py` が出した。読み方の決まり CT1〜CT3 はその台本の docstring。bp/日、経費の前。", "",
+         "`scripts/w4_measure/c2_read_r2_ct.py` が出した。読み方の決まり CT1〜CT3 はその台本の docstring。%/日(損益の率)、経費の前。", "",
          "| N | 全期間 平均 [区間] | MDE | 2019〜2023 平均 [区間] | MDE |", "|---|---|---|---|---|"]
     for r in rows:
-        f = lambda c: "— | —" if not c else f"{c['mean']:+.2f} [{c['lo']:+.2f}, {c['hi']:+.2f}] | {c['mde']:.2f}"
+        f = lambda c: "— | —" if not c else f"{c['mean']:+.4f} [{c['lo']:+.4f}, {c['hi']:+.4f}] | {c['mde']:.4f}"
         L.append(f"| {r['n']} | {f(r['all'])} | {f(r['late'])} |")
     out = os.path.join(a.root, "READ_R2")
     with open(os.path.join(out, "CT_TABLES.md"), "w", encoding="utf-8") as fh:

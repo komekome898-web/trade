@@ -5,6 +5,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts" / "w4_measure"))
 _spec = importlib.util.spec_from_file_location("c2_read_r2", REPO / "scripts" / "w4_measure" / "c2_read_r2.py")
@@ -19,7 +21,7 @@ def _run(total, days, trades, years=None):
 
 
 def _all(win, loss):
-    return {"sum_win_bp": win, "sum_loss_bp": loss}
+    return {"sum_win_pct": win, "sum_loss_pct": loss}
 
 
 def test_names_and_wanted_set():
@@ -66,10 +68,10 @@ def test_trade_overlap_groups():
     g = [("t2", "x", 10.0), ("t3", "x", -20.0)]  # t1・t4 が門で外れた
     t = [("t1", "時間で降りる", -5.0), ("t2", "時間で降りる", 8.0), ("t3", "反対の弱い合図", -20.0), ("t4", "x", 5.0)]
     o = r2.trade_overlap(b, g, t)
-    assert o["both"] == {"trades": 1, "sum_bp": -50.0}
-    assert o["gate_only"] == {"trades": 1, "sum_bp": 5.0}
-    assert o["time_only"] == {"trades": 1, "sum_bp": 10.0}
-    assert o["neither"] == {"trades": 1, "sum_bp": -20.0}
+    assert o["both"] == {"trades": 1, "sum_pct": -50.0}
+    assert o["gate_only"] == {"trades": 1, "sum_pct": 5.0}
+    assert o["time_only"] == {"trades": 1, "sum_pct": 10.0}
+    assert o["neither"] == {"trades": 1, "sum_pct": -20.0}
 
 
 def test_year_agreement_and_2019on_sum():
@@ -106,7 +108,7 @@ def test_read_daily_and_paired_ci(tmp_path):
         w.writerow(["2020-01-03T10:00:00Z", "1"])
         w.writerow(["2020-02-01T00:00:00Z", "100"])  # 範囲の外
     x = r2.read_daily(str(d), date(2020, 1, 1), date(2020, 1, 4))
-    assert x == [5.0, 0.0, -1.0, 0.0]
+    assert x == pytest.approx([0.05, 0.0, -0.01, 0.0], abs=1e-15)  # 前の出力の pnl_bp は / 100 して %
     assert r2.read_daily(str(tmp_path / "none"), date(2020, 1, 1), date(2020, 1, 2)) is None
     c = r2.paired_ci([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], [0.0] * 6)
     assert c["days"] == 6 and abs(c["mean"] - 3.5) < 1e-12 and c["lo"] <= 3.5 <= c["hi"] and c["mde"] > 0

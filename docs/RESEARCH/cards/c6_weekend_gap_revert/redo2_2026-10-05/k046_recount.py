@@ -28,11 +28,11 @@ def main():
         g = float(r["entry_price"]) / c[j] - 1
         if np.sign(g) == int(r["side"]):
             same += 1
-            s_same += float(r["pnl_bp"])
+            s_same += float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
         else:
             fill += 1
-            s_fill += float(r["pnl_bp"])
-    print(f"取引 {len(rows)}: 広げる向き(g と同じ向き){same} 本・和 {s_same:+,.1f} / 埋める向き {fill} 本・和 {s_fill:+,.1f}")
+            s_fill += float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
+    print(f"取引 {len(rows)}: 広げる向き(g と同じ向き){same} 本・和 {s_same:+,.3f} % / 埋める向き {fill} 本・和 {s_fill:+,.3f} %(損益の率。L-920)")
 
 
 if __name__ == "__main__":

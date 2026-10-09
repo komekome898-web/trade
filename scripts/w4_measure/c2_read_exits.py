@@ -57,18 +57,18 @@ def new_exit(summary_all: dict) -> dict:
     """R2 の後半。新しい降り方で閉じた取引の本数と損益の和(どちらの名前も無ければ 0)。"""
     by = summary_all.get("by_exit_signal") or {}
     return {"trades": sum(int(by[k]["trades"]) for k in NEW_EXITS if k in by),
-            "sum_bp": sum(float(by[k]["sum_bp"]) for k in NEW_EXITS if k in by)}
+            "sum_pct": sum(float(by[k]["sum_pct"]) for k in NEW_EXITS if k in by)}
 
 
 def carried_after_new_exit(rows: list[dict]) -> dict:
-    """R2b。rows = trades.csv.gz の行(entry_t・exit_t・signal_t は同じ書式の UTC ISO の文字列、exit_reason、pnl_bp)。"""
+    """R2b。rows = trades.csv.gz の行(entry_t・exit_t・signal_t は同じ書式の UTC ISO の文字列、exit_reason、pnl_pct。前の出力の pnl_bp は / 100)。"""
     rs = sorted(rows, key=lambda r: r["entry_t"])
     n, s = 0, 0.0
     for prev, cur in zip(rs, rs[1:]):
         if prev["exit_reason"] in NEW_EXITS and cur["signal_t"] and cur["signal_t"] < prev["exit_t"]:
             n += 1
-            s += float(cur["pnl_bp"])
-    return {"trades": n, "sum_bp": s}
+            s += float(cur["pnl_pct"]) if cur.get("pnl_pct") not in (None, "") else float(cur["pnl_bp"]) / 100
+    return {"trades": n, "sum_pct": s}
 
 
 def read_csv_rows(d: str) -> list[dict] | None:
@@ -83,7 +83,7 @@ def hold_diff(x: list[dict] | None, b: list[dict] | None) -> list[dict] | None:
     """R4。"""
     if x is None or b is None:
         return None
-    return [{"lo": p["lo"], "hi": p["hi"], "d_trades": p["trades"] - q["trades"], "d_sum_bp": p["sum_bp"] - q["sum_bp"]}
+    return [{"lo": p["lo"], "hi": p["hi"], "d_trades": p["trades"] - q["trades"], "d_sum_pct": p["sum_pct"] - q["sum_pct"]}
             for p, q in zip(x, b)]
 
 
@@ -96,8 +96,8 @@ def compare(runs: dict, alls: dict, carried: dict | None = None) -> list[dict]:
             "variant": x, "base": b,
             "d_pnl_day": X["per_day"]["pnl"] - B["per_day"]["pnl"],
             "d_trades_day": X["per_day"]["trades"] - B["per_day"]["trades"],
-            "d_win_day": alls[x]["sum_win_bp"] / dX - alls[b]["sum_win_bp"] / dB,
-            "d_loss_day": alls[x]["sum_loss_bp"] / dX - alls[b]["sum_loss_bp"] / dB,
+            "d_win_day": alls[x]["sum_win_pct"] / dX - alls[b]["sum_win_pct"] / dB,
+            "d_loss_day": alls[x]["sum_loss_pct"] / dX - alls[b]["sum_loss_pct"] / dB,
             "d_per_trade": X["per_trade"] - B["per_trade"],
             "new_exit": new_exit(alls[x]),
             "carried": (carried or {}).get(x),
@@ -113,24 +113,24 @@ def _band(lo, hi) -> str:
 
 def render(rows: list[dict]) -> str:
     L = ["# カツオ: 長い保有の降り方(値段で降りる・時間で降りる)と降り方なしの比べ", "",
-         "`scripts/w4_measure/c2_read_exits.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。bp。", "",
+         "`scripts/w4_measure/c2_read_exits.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。%(損益の率。L-920 で bp は値動き率だけの名前)。", "",
          "## 表 1: 降り方あり − なし(1 日あたり)", "",
          "| 降り方あり | 損益の差 | 取引の数の差 | 勝ちの和の差 | 負けの和の差 | 1 取引あたりの差 | 新しい降り方で閉じた本数・損益の和 | 降りた後の入り直し 本数・損益の和 | 年の一致 |",
          "|---|---|---|---|---|---|---|---|---|"]
     for r in rows:
         ne, ca = r["new_exit"], r["carried"]
-        cs = f"{ca['trades']:,} 本・{ca['sum_bp']:+,.0f}" if ca else "取引の行なし"
-        L.append(f"| {r['variant']} | {rl._f(r['d_pnl_day'], 2)} | {rl._f(r['d_trades_day'], 3)} | {rl._f(r['d_win_day'], 2)} | "
-                 f"{rl._f(r['d_loss_day'], 2)} | {rl._f(r['d_per_trade'], 2)} | {ne['trades']:,} 本・{ne['sum_bp']:+,.0f} | {cs} | "
+        cs = f"{ca['trades']:,} 本・{ca['sum_pct']:+,.2f}" if ca else "取引の行なし"
+        L.append(f"| {r['variant']} | {rl._f(r['d_pnl_day'], 4)} | {rl._f(r['d_trades_day'], 3)} | {rl._f(r['d_win_day'], 4)} | "
+                 f"{rl._f(r['d_loss_day'], 4)} | {rl._f(r['d_per_trade'], 4)} | {ne['trades']:,} 本・{ne['sum_pct']:+,.2f} | {cs} | "
                  f"{r['years_agree']}/{len(rl.YEARS)} |")
-    L += ["", "## 表 2: 保有時間の帯ごとの差(あり − なし。取引の数 / 損益の和 bp)", ""]
+    L += ["", "## 表 2: 保有時間の帯ごとの差(あり − なし。取引の数 / 損益の和 %)", ""]
     bands = next((r["hold"] for r in rows if r["hold"]), None)
     if bands:
         L += ["| 降り方あり | " + " | ".join(_band(h["lo"], h["hi"]) for h in bands) + " |",
               "|---|" + "---|" * len(bands)]
         for r in rows:
             if r["hold"]:
-                L.append(f"| {r['variant']} | " + " | ".join(f"{h['d_trades']:+,} / {h['d_sum_bp']:+,.0f}" for h in r["hold"]) + " |")
+                L.append(f"| {r['variant']} | " + " | ".join(f"{h['d_trades']:+,} / {h['d_sum_pct']:+,.2f}" for h in r["hold"]) + " |")
     return "\n".join(L) + "\n"
 
 
@@ -145,7 +145,7 @@ def main(argv: list[str] | None = None) -> int:
         d = os.path.join(a.root, n)
         runs[n] = rl.load_run(d)
         with open(os.path.join(d, "summary.json"), encoding="utf-8") as fh:
-            alls[n] = json.load(fh)["all"]
+            alls[n] = rl.to_pct(json.load(fh))["all"]
     carried = {}
     for x, _b in pairs(set(runs)):
         cr = read_csv_rows(os.path.join(a.root, x))

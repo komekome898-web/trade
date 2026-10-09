@@ -75,12 +75,12 @@ def decompose(runs: dict) -> list[dict]:
 
 def render(rows: list[dict]) -> str:
     L = ["# カツオ: 指値と参照の差を、入りの分・降りの分・重なりの分に分ける", "",
-         "`scripts/w4_measure/c2_read_ablation.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。1 日あたり bp。", "",
+         "`scripts/w4_measure/c2_read_ablation.py` が出した。読み方の決まり R1〜R5 はその台本の docstring。経費の前。1 日あたり %(損益の率。rl.load_run が前の出力の `*_bp` を / 100 して読む。L-920)。", "",
          "## 表 1: 1 日あたりの損益の差(良い側 / 悪い側)", "",
          "| 足 | 入り方 | 全部の差 | 入りの分 | 降りの分 | 重なりの分 | 向き(全部・入り・降り・重なり) |", "|---|---|---|---|---|---|---|"]
     for r in rows:
         g, b = r["good_pnl"], r["bad_pnl"]
-        cell = lambda k: f"{rl._f(g[k], 2)} / {rl._f(b[k], 2)}"
+        cell = lambda k: f"{rl._f(g[k], 4)} / {rl._f(b[k], 4)}"
         lab = r["labels"]
         L.append(f"| {r['foot']} 分 | {r['entry']} | {cell('total')} | {cell('entry')} | {cell('exit')} | {cell('interaction')} | "
                  f"{lab['total']}・{lab['entry']}・{lab['exit']}・{lab['interaction']} |")

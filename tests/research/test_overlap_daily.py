@@ -19,13 +19,13 @@ def test_daily_from_trades_fills_zero_and_uses_exit_jst_day():
     ns = 10**9
     t0 = 1448722800 * ns  # 2015-11-28T15:00Z = JST 11-29 00:00
     trades = {"t_unit": "ns", "exit_t_ns": [t0 + 3600 * ns, t0 + 3600 * ns + 1, t0 + 86400 * ns * 2 + 60 * ns],
-              "pnl_bp": [1.0, 2.0, -5.0]}
+              "pnl_pct": [1.0, 2.0, -5.0]}
     d = ov.daily_from_trades(trades, ("2015-11-28T15:00:00Z", "2015-12-01T15:00:00Z"))
     assert d == {"2015-11-29": 3.0, "2015-11-30": 0.0, "2015-12-01": -5.0}
 
 
 def test_after_last_day_dropped():
-    trades = {"t_unit": "ns", "exit_t_ns": [], "pnl_bp": []}
+    trades = {"t_unit": "ns", "exit_t_ns": [], "pnl_pct": []}
     d = ov.daily_from_trades(trades, ("2023-12-15T15:00:00Z", "2023-12-19T15:00:00Z"))
     assert max(d) == ov.LAST_DAY
 
@@ -55,9 +55,9 @@ def test_exit_at_period_end_midnight_counts_on_last_day():
     # 期間の終わり 2023-12-17T15:00Z(日本時間 12-18 の 0 時)に閉じた取引は 12-17 に入る(関門 ② の 1 回目の止める 1)
     ns = 10**9
     end = 1702825200 * ns  # 2023-12-17T15:00Z
-    trades = {"t_unit": "ns", "exit_t_ns": [end], "pnl_bp": [-9065.0]}
+    trades = {"t_unit": "ns", "exit_t_ns": [end], "pnl_pct": [-90.65]}
     d = ov.daily_from_trades(trades, ("2023-12-15T15:00:00Z", "2023-12-17T15:00:00Z"))
-    assert d["2023-12-17"] == -9065.0
+    assert d["2023-12-17"] == -90.65
 
 
 def test_mean_ci_contains_mean():

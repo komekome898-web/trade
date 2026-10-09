@@ -45,14 +45,14 @@ def test_decompose_interaction_and_rolling_minus_fixed():
 
 
 def test_big_loss_overlap_groups():
-    base = [("t1", "x", -30.0), ("t2", "x", -12.0), ("t3", "x", -15.0), ("t4", "x", -50.0), ("t5", "x", 3.0)]
-    gate = [("t2", "x", -12.0), ("t3", "x", -15.0), ("t5", "x", 3.0)]  # t1・t4 が門で外れた
-    tp = [("t1", "x", -5.0), ("t2", "x", 2.0), ("t3", "x", -15.0), ("t4", "x", -40.0), ("t5", "x", 1.0)]
+    base = [("t1", "x", -0.30), ("t2", "x", -0.12), ("t3", "x", -0.15), ("t4", "x", -0.50), ("t5", "x", 0.03)]  # %
+    gate = [("t2", "x", -0.12), ("t3", "x", -0.15), ("t5", "x", 0.03)]  # t1・t4 が門で外れた
+    tp = [("t1", "x", -0.05), ("t2", "x", 0.02), ("t3", "x", -0.15), ("t4", "x", -0.40), ("t5", "x", 0.01)]
     o = rr.big_loss_overlap(base, gate, tp)
-    assert o["both"] == {"trades": 1, "sum_bp": -30.0}
-    assert o["gate_only"] == {"trades": 1, "sum_bp": -50.0}
-    assert o["tp_only"] == {"trades": 1, "sum_bp": -12.0}
-    assert o["neither"] == {"trades": 1, "sum_bp": -15.0}  # t5 は大負けでないので数えない
+    assert o["both"] == {"trades": 1, "sum_pct": -0.30}
+    assert o["gate_only"] == {"trades": 1, "sum_pct": -0.50}
+    assert o["tp_only"] == {"trades": 1, "sum_pct": -0.12}
+    assert o["neither"] == {"trades": 1, "sum_pct": -0.15}  # t5 は大負けでないので数えない
 
 
 def test_daily_and_ci():
@@ -71,5 +71,5 @@ def test_read_trades_from_json(tmp_path):
          "entry_px": [1.0], "exit_px": [1.0], "side": [1], "qty": [1.0], "pnl_bp": [-12.5]}
     with gzip.open(d / "trades.json.gz", "wt", encoding="utf-8") as fh:
         json.dump(o, fh)
-    assert rr.read_trades(str(d)) == [("2020-01-01T00:00:00Z", "2020-01-01T01:00:00Z", -12.5)]
+    assert rr.read_trades(str(d)) == [("2020-01-01T00:00:00Z", "2020-01-01T01:00:00Z", -0.125)]  # 前の記録の pnl_bp は / 100
     assert rr.read_trades(str(tmp_path / "none")) is None

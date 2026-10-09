@@ -16,8 +16,8 @@ def test_identity_holds_and_counts():
     m = mm.match_year(ref, g)
     assert (m["common_n"], m["r_only_n"], m["g_only_n"]) == (2, 1, 1)
     assert m["common_exit_differs_n"] == 1
-    assert abs(m["diff_bp"] - (m["r_only_bp"] - m["g_only_bp"] + m["common_diff_bp"])) < 1e-9
-    assert m["common_diff_bp"] == 2.0
+    assert abs(m["diff_pct"] - (m["r_only_pct"] - m["g_only_pct"] + m["common_diff_pct"])) < 1e-9
+    assert m["common_diff_pct"] == 2.0
 
 
 def test_side_is_part_of_key_and_duplicates_pair_in_order():
@@ -29,6 +29,6 @@ def test_side_is_part_of_key_and_duplicates_pair_in_order():
 
 def test_g_pnl_sign_and_year_of_bar_start():
     g = mm.g_trades([{"entry_t_ns": 1, "exit_t_ns": 2, "entry_px": 100.0, "exit_px": 101.0, "side": "sell"}])
-    assert abs(g[0][3] + 100.0) < 1e-9
+    assert abs(g[0][3] + 1.0) < 1e-11  # 向き × 値動き 1 % = −1 %(前は × 1e4 で −100)
     # 2020-01-01T00:00Z ちょうどに建てた 5 分の取引は、建てた足の始まりが 2019 年
     assert mm.year_of(1577836800 * 10**9, 5) == 2019

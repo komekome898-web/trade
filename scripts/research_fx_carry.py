@@ -94,8 +94,8 @@ invariant for intraday/event strategies.
 
 COSTS
 -----
-  entry/exit   : 0.71 bps round trip [KNOWLEDGE_FX.md sec.1, measured] charged as
-                 0.355 bps x |change in position weight| on every day the weight
+  entry/exit   : 0.0071 % round trip [KNOWLEDGE_FX.md sec.1, measured] charged as
+                 0.00355 % x |change in position weight| on every day the weight
                  changes.  C1 pays it ~never; C2/C3 pay it on every gate flip /
                  rescale.
   overnight    : the modelled swap (below), charged/credited on the actual
@@ -110,18 +110,19 @@ SWAP MODEL -- calibrated against GMO's ACTUAL published calendar
 GMO's swap calendar was located behind the JS page at
     https://coin.z.com/api/v1/fx/master/getAllSwapListByDate?date=YYYYMMDD
 (productId 100001 = USD_JPY; fields swapBuy / swapSell in JPY per 10,000 USD,
-plus swapDays).  It covers 2023-04 -> present.  Converting to bps/day of JPY
+plus swapDays).  It covers 2023-04 -> present.  Converting to %/day of JPY (percent: a swap or interest rate is not a price-move rate,
+so it is not called bp, L-920)
 notional and regressing against the interbank differential over that window
 yields two constants:
-    MID_RATIO   = median( gmo_mid_bps_day / interbank_bps_day )
-    HALF_SPREAD = median( (|swapSell| - swapBuy)/2 in bps/day )
+    MID_RATIO   = median( gmo_mid_pct_day / interbank_pct_day )
+    HALF_SPREAD = median( (|swapSell| - swapBuy)/2 in %/day )
 The primary model is then
-    long  : carry_bps/day = MID_RATIO * interbank_bps_day - HALF_SPREAD
-    short : carry_bps/day = -MID_RATIO * interbank_bps_day - HALF_SPREAD
+    long  : carry_pct/day = MID_RATIO * interbank_pct_day - HALF_SPREAD
+    short : carry_pct/day = -MID_RATIO * interbank_pct_day - HALF_SPREAD
 i.e. the broker's bid/ask swap spread is a COST IN BOTH DIRECTIONS.
 SENSITIVITY (reported alongside, never used for selection): the instructed
 conservative fallback of a flat 25% multiplicative haircut,
-    long  : 0.75 * interbank_bps_day when positive, 1.25 * it when negative
+    long  : 0.75 * interbank_pct_day when positive, 1.25 * it when negative
     short : the mirror.
 
 SELECTION RULE (one config, fixed in advance)
@@ -139,7 +140,7 @@ ADOPTION BARS (beta-type, registered before running; ALL must hold on JUDGE)
     positive calendar months   >= 60.0%
     total return after costs   >  0
 These are BETA bars, deliberately different from the alpha bars in
-research-protocol sec.4 (>=100 trades, >=+2bps/trade, t>=2.0): a carry book has
+research-protocol sec.4 (>=100 trades, >=+0.02%/trade, t>=2.0): a carry book has
 ~no trades and its edge is an income stream, not a per-trade expectancy.  This
 is declared here so it cannot be mistaken for a relaxed alpha standard.
 
@@ -183,8 +184,8 @@ GMO_PID = 100001
 GMO_SWAP_CSV = SNAP / "gmo_swap_usdjpy.csv"
 GMO_START = date(2023, 4, 1)
 
-RT_COST_BPS = 0.71          # KNOWLEDGE_FX.md sec.1, measured
-ONE_WAY_BPS = RT_COST_BPS / 2.0
+RT_COST_PCT = 0.0071        # KNOWLEDGE_FX.md sec.1, measured (0.71 x 1e-4 of notional, in percent)
+ONE_WAY_PCT = RT_COST_PCT / 2.0
 SMA_WIN = 200
 VOL_WIN = 63
 VOL_TARGET = 0.10
@@ -314,7 +315,7 @@ def build_panel():
 
 # --------------------------------------------------------- swap calibration
 def calibrate_swap(panel):
-    """Return (mid_ratio, half_spread_bps_day, diagnostics DataFrame)."""
+    """Return (mid_ratio, half_spread_pct_day, diagnostics DataFrame)."""
     g = pd.read_csv(GMO_SWAP_CSV)
     g["date"] = pd.to_datetime(g["date"])
     g = g.set_index("date").sort_index()
@@ -326,23 +327,23 @@ def calibrate_swap(panel):
     g["diff"] = diff
     g = g.dropna(subset=["px", "diff"])
 
-    # JPY per 10,000 USD -> bps of JPY notional per accrual DAY
+    # JPY per 10,000 USD -> % of JPY notional per accrual DAY
     notional_jpy = 10_000.0 * g["px"]
-    g["buy_bps_day"] = g["swap_buy"] / notional_jpy * 1e4 / g["swap_days"]
-    g["sell_bps_day"] = g["swap_sell"] / notional_jpy * 1e4 / g["swap_days"]
-    g["mid_bps_day"] = (g["buy_bps_day"] - g["sell_bps_day"]) / 2.0
-    g["half_spread"] = (-g["sell_bps_day"] - g["buy_bps_day"]) / 2.0
-    g["ib_bps_day"] = g["diff"] / 100.0 / 365.0 * 1e4
-    g["ratio"] = g["mid_bps_day"] / g["ib_bps_day"]
+    g["buy_pct_day"] = g["swap_buy"] / notional_jpy * 100 / g["swap_days"]
+    g["sell_pct_day"] = g["swap_sell"] / notional_jpy * 100 / g["swap_days"]
+    g["mid_pct_day"] = (g["buy_pct_day"] - g["sell_pct_day"]) / 2.0
+    g["half_spread"] = (-g["sell_pct_day"] - g["buy_pct_day"]) / 2.0
+    g["ib_pct_day"] = g["diff"] / 100.0 / 365.0 * 100
+    g["ratio"] = g["mid_pct_day"] / g["ib_pct_day"]
 
     mid_ratio = float(g["ratio"].median())
     half_spread = float(g["half_spread"].median())
     return mid_ratio, half_spread, g
 
 
-def carry_bps_day(diff_pct, side, mid_ratio, half_spread, model="gmo"):
-    """bps per accrual day for a unit position on `side` (+1 long, -1 short)."""
-    ib = diff_pct / 100.0 / 365.0 * 1e4
+def carry_pct_day(diff_pct, side, mid_ratio, half_spread, model="gmo"):
+    """% per accrual day for a unit position on `side` (+1 long, -1 short)."""
+    ib = diff_pct / 365.0  # % per day
     if model == "gmo":
         return side * mid_ratio * ib - half_spread * np.abs(side)
     if model == "haircut25":
@@ -386,13 +387,13 @@ def build_weights(panel, family, sign_rule):
 def run_config(panel, family, sign_rule, mid_ratio, half_spread, model="gmo"):
     w = build_weights(panel, family, sign_rule)
     side = np.sign(w)
-    cb = carry_bps_day(panel["diff"].shift(1).fillna(0.0).to_numpy(), side.to_numpy(),
+    cb = carry_pct_day(panel["diff"].shift(1).fillna(0.0).to_numpy(), side.to_numpy(),
                        mid_ratio, half_spread, model=model)
     cb = pd.Series(cb, index=panel.index).fillna(0.0)
-    swap_ret = np.abs(w) * cb * panel["days"] / 1e4
+    swap_ret = np.abs(w) * cb * panel["days"] / 100
     price_ret = w * panel["ret"].fillna(0.0)
     turn = w.diff().abs().fillna(w.abs())
-    cost_ret = turn * ONE_WAY_BPS / 1e4
+    cost_ret = turn * ONE_WAY_PCT / 100
     total = price_ret + swap_ret - cost_ret
     out = pd.DataFrame({
         "w": w, "price": price_ret, "swap": swap_ret,
@@ -566,15 +567,15 @@ def main():
         f"p25={gcal['ratio'].quantile(.25):.4f}  p75={gcal['ratio'].quantile(.75):.4f}")
     log(f"  implied HAIRCUT on mid  : {(1-mid_ratio)*100:+.2f}%   "
         f"(the instructed conservative fallback was 25%)")
-    log(f"  half-spread (bps/day)   : median={half_spread:.4f}  "
-        f"p25={gcal['half_spread'].quantile(.25):.4f}  p75={gcal['half_spread'].quantile(.75):.4f}")
-    log(f"  long  received (bps/day): median={gcal['buy_bps_day'].median():+.4f}")
-    log(f"  short paid     (bps/day): median={gcal['sell_bps_day'].median():+.4f}")
-    log(f"  interbank      (bps/day): median={gcal['ib_bps_day'].median():+.4f}")
-    log(f"  -> KNOWLEDGE_FX sec.1 [T] estimate was 0.6-1.6 bps/day; MEASURED long "
-        f"receive is {gcal['buy_bps_day'].median():.3f} bps/day over "
+    log(f"  half-spread (%/day)   : median={half_spread:.6f}  "
+        f"p25={gcal['half_spread'].quantile(.25):.6f}  p75={gcal['half_spread'].quantile(.75):.6f}")
+    log(f"  long  received (%/day): median={gcal['buy_pct_day'].median():+.6f}")
+    log(f"  short paid     (%/day): median={gcal['sell_pct_day'].median():+.6f}")
+    log(f"  interbank      (%/day): median={gcal['ib_pct_day'].median():+.6f}")
+    log(f"  -> KNOWLEDGE_FX sec.1 [T] estimate was 0.006-0.016 %/day; MEASURED long "
+        f"receive is {gcal['buy_pct_day'].median():.5f} %/day over "
         f"{gcal.index[0].date()}..{gcal.index[-1].date()}")
-    be = half_spread / mid_ratio * 365.0 / 1e4 * 100.0
+    be = half_spread / mid_ratio * 365.0
     log(f"  BREAKEVEN DIFFERENTIAL   : {be:+.3f}%/yr -- below this the retail "
         f"receiving side earns NOTHING; the broker's swap spread eats the whole "
         f"differential.")
@@ -582,25 +583,25 @@ def main():
     log(f"  share of 1985-2026 days with |differential| < breakeven: {frac_be*100:.2f}%")
     by_yr = gcal.groupby(gcal.index.year).agg(
         n=("ratio", "size"), ratio=("ratio", "median"),
-        hs=("half_spread", "median"), buy=("buy_bps_day", "median"))
+        hs=("half_spread", "median"), buy=("buy_pct_day", "median"))
     log("  per-year calibration:")
     for y, r in by_yr.iterrows():
         log(f"    {y}  n={int(r['n']):>3}  mid/ib={r['ratio']:.4f}  "
-            f"half-spread={r['hs']:.4f} bps/d  long-receive={r['buy']:+.4f} bps/d")
+            f"half-spread={r['hs']:.6f} %/d  long-receive={r['buy']:+.6f} %/d")
 
     # reproduction gate (research-protocol sec.6): the fitted 2-constant model
     # must reproduce GMO's ACTUAL published long-side swap day by day.
-    pred_long = carry_bps_day(gcal["diff"].to_numpy(), 1.0, mid_ratio, half_spread)
-    pred_short = carry_bps_day(gcal["diff"].to_numpy(), -1.0, mid_ratio, half_spread)
-    res_l = gcal["buy_bps_day"].to_numpy() - pred_long
-    res_s = gcal["sell_bps_day"].to_numpy() - pred_short
+    pred_long = carry_pct_day(gcal["diff"].to_numpy(), 1.0, mid_ratio, half_spread)
+    pred_short = carry_pct_day(gcal["diff"].to_numpy(), -1.0, mid_ratio, half_spread)
+    res_l = gcal["buy_pct_day"].to_numpy() - pred_long
+    res_s = gcal["sell_pct_day"].to_numpy() - pred_short
     log(f"  REPRODUCTION GATE (model vs GMO actual, n={len(gcal)}):")
-    log(f"    long  residual bps/day : median={np.median(res_l):+.4f}  "
-        f"MAE={np.mean(np.abs(res_l)):.4f}  p95|e|={np.percentile(np.abs(res_l),95):.4f}")
-    log(f"    short residual bps/day : median={np.median(res_s):+.4f}  "
-        f"MAE={np.mean(np.abs(res_s)):.4f}  p95|e|={np.percentile(np.abs(res_s),95):.4f}")
+    log(f"    long  residual %/day : median={np.median(res_l):+.6f}  "
+        f"MAE={np.mean(np.abs(res_l)):.6f}  p95|e|={np.percentile(np.abs(res_l),95):.6f}")
+    log(f"    short residual %/day : median={np.median(res_s):+.6f}  "
+        f"MAE={np.mean(np.abs(res_s)):.6f}  p95|e|={np.percentile(np.abs(res_s),95):.6f}")
     log(f"    -> the 2-constant model tracks the published calendar to "
-        f"{np.mean(np.abs(res_l))*365/1e4*100:.3f}%/yr of notional on the long side")
+        f"{np.mean(np.abs(res_l))*365:.3f}%/yr of notional on the long side")
 
     validate_daycount(gcal)
 

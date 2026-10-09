@@ -14,7 +14,7 @@ L-920 で bp は値動き率だけの名前なので、建玉を掛けた損益�
 
     PYTHONPATH=src python3 scripts/analysis/card_trades.py --measure <measure/変種> --trades-out <置き場> --out <出力.md>
 
-`--trades-out` に `trades.csv.gz` を書く(`diag_tables.py --run` にそのまま渡せる。取引の日は出の時刻の UTC の日)。
+`--trades-out` に `trades.csv.gz` を書く(列 `pnl_pct`。L-920 の後の `diag_tables.py --run` は円の列 `pnl_jpy` だけを読み率の列では止まるので、そのままは渡せない。取引の日は出の時刻の UTC の日)。
 表の区間は日の塊(循環、5 日・1,000 回・種 20261004、`diag_tables.group_ratio_ci`)。日は daily.csv の日本時間の日。
 """
 from __future__ import annotations

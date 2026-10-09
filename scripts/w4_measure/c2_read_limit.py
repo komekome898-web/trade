@@ -29,6 +29,7 @@ import argparse
 import gzip
 import json
 import os
+import re
 import sys
 
 import numpy as np
@@ -42,33 +43,66 @@ HOLD_BINS_MIN = ((0, 5), (5, 30), (30, 120), (120, 480), (480, None))
 REF = {"a": "close_a", "b": "close_b", "c": "close_b"}
 
 
+_P_KEY = re.compile(r"^(.*)_bp$")
+
+
+def _scale100(v):
+    """`*_bp` の鍵の中身(数・数の並び・{ci, se, mde} のような入れ物)の数を全部 / 100 する。"""
+    if isinstance(v, bool) or v is None:
+        return v
+    if isinstance(v, (int, float)):
+        return v / 100
+    if isinstance(v, list):
+        return [_scale100(x) for x in v]
+    if isinstance(v, dict):
+        return {k: _scale100(x) for k, x in v.items()}
+    return v
+
+
+def to_pct(o):
+    """L-920 より前の summary の損益の鍵 `*_bp`(損益の率 × 1 万)を `*_pct`(%)に直す。新しい出力(`*_pct`)はそのまま。
+    c2_limit_run の summary の `*_bp` で終わる鍵はどれも損益(vol の境目 `edges_bp_own` は `_bp` で終わらないので触らない)。"""
+    if isinstance(o, dict):
+        out = {}
+        for k, v in o.items():
+            m = _P_KEY.match(k) if isinstance(k, str) else None
+            if m:
+                out[m.group(1) + "_pct"] = _scale100(v)
+            else:
+                out[k] = to_pct(v)
+        return out
+    if isinstance(o, list):
+        return [to_pct(x) for x in o]
+    return o
+
+
 def hold_sums(path: str) -> list[dict]:
     with gzip.open(path, "rt", encoding="utf-8") as fh:
         o = json.load(fh)
     scale = {"ns": 1e9 * 60, "s": 60.0}[o["t_unit"]]
     hold = (np.asarray(o["exit_t_ns"], dtype=float) - np.asarray(o["entry_t_ns"], dtype=float)) / scale
-    pnl = np.asarray(o["pnl_bp"], dtype=float)
+    pnl = np.asarray(o["pnl_pct"], dtype=float) if "pnl_pct" in o else np.asarray(o["pnl_bp"], dtype=float) / 100
     out = []
     for lo, hi in HOLD_BINS_MIN:
         m = (hold >= lo) & ((hold < hi) if hi is not None else True)
-        out.append({"lo": lo, "hi": hi, "trades": int(m.sum()), "sum_bp": float(pnl[m].sum())})
+        out.append({"lo": lo, "hi": hi, "trades": int(m.sum()), "sum_pct": float(pnl[m].sum())})
     return out
 
 
 def load_run(d: str) -> dict:
     with open(os.path.join(d, "summary.json"), encoding="utf-8") as fh:
-        s = json.load(fh)
+        s = to_pct(json.load(fh))
     a = s["all"]
     days = float(a["days"])
     r = {
         "days": days,
         "trades": int(a["trades"]),
         "wins": int(a["wins"]),
-        "avg_win_bp": float(a["avg_win_bp"] or 0.0),
-        "avg_loss_bp": float(a["avg_loss_bp"] or 0.0),
-        "per_day": {"pnl": float(a["sum_bp"]) / days, "trades": a["trades"] / days},
-        "per_trade": float(a["sum_bp"]) / max(1, int(a["trades"])),
-        "year_pnl": {int(y): float(v["sum_bp"]) for y, v in s["years"].items()},
+        "avg_win_pct": float(a["avg_win_pct"] or 0.0),
+        "avg_loss_pct": float(a["avg_loss_pct"] or 0.0),
+        "per_day": {"pnl": float(a["sum_pct"]) / days, "trades": a["trades"] / days},
+        "per_trade": float(a["sum_pct"]) / max(1, int(a["trades"])),
+        "year_pnl": {int(y): float(v["sum_pct"]) for y, v in s["years"].items()},
         "entry_orders": a.get("entry_orders"),
         "missed": a.get("missed"),
         "by_vol": {k: v for k, v in a["by_vol_tercile"].items()},
@@ -118,15 +152,15 @@ def compare(runs: dict) -> list[dict]:
     return out
 
 
-def _f(x: float, nd: int = 1) -> str:
-    if x != 0 and abs(x) < 0.05:
-        return f"{x:+.4f}"
+def _f(x: float, nd: int = 3) -> str:
+    if x != 0 and abs(x) < 0.0005:
+        return f"{x:+.6f}"  # % にしたので前の桁の 2 つ下まで
     return f"{x:+.{nd}f}"
 
 
 def render(runs: dict, rows: list[dict]) -> str:
     L = ["# カツオ(ヒゲ逆張り)の指値の再現 40 本の読みの表", "",
-         "`scripts/w4_measure/c2_read_limit.py` が出した。読み方の決まり R1〜R6 はその台本の docstring。単位は bp(量 1 = 持ち高の上限に対する bp)。", ""]
+         "`scripts/w4_measure/c2_read_limit.py` が出した。読み方の決まり R1〜R6 はその台本の docstring。単位は %(量 1 = 持ち高の上限に対する損益の率。L-920 で bp は値動き率だけの名前)。", ""]
     L += ["## 表 1: 走らせごとの値", "",
           "| 走らせ | 取引/日 | 損益/日 | 1 取引あたり | 勝ち率 | 平均の勝ち | 平均の負け | 入りの指値の約定の割合(1 本目 / 2 本目) |",
           "|---|---|---|---|---|---|---|---|"]
@@ -135,13 +169,13 @@ def render(runs: dict, rows: list[dict]) -> str:
         eo = r["entry_orders"] or {}
         fr = " / ".join(f"{(eo.get(k) or {}).get('fill_ratio'):.3f}" if (eo.get(k) or {}).get("fill_ratio") is not None else "—"
                         for k in ("ent1", "ent2"))
-        L.append(f"| {n} | {r['per_day']['trades']:.2f} | {r['per_day']['pnl']:.2f} | {r['per_trade']:.2f} | "
-                 f"{r['wins'] / max(1, r['trades']):.3f} | {r['avg_win_bp']:.1f} | {r['avg_loss_bp']:.1f} | {fr} |")
+        L.append(f"| {n} | {r['per_day']['trades']:.2f} | {r['per_day']['pnl']:.4f} | {r['per_trade']:.4f} | "
+                 f"{r['wins'] / max(1, r['trades']):.3f} | {r['avg_win_pct']:.3f} | {r['avg_loss_pct']:.3f} | {fr} |")
     L += ["", "## 表 2: 参照(足の終値で約定)との差(1 日あたり。良い側 / 悪い側)", "",
           "| 組 | 入り方 | 参照 | 取引/日の差 | 損益/日の差 | 向き | 年の一致(良 / 悪) |", "|---|---|---|---|---|---|---|"]
     for r in rows:
         L.append(f"| {r['group']} | {r['entry']} | {r['ref']} | {_f(r['trades']['d_good'], 2)} / {_f(r['trades']['d_bad'], 2)} | "
-                 f"{_f(r['pnl']['d_good'], 2)} / {_f(r['pnl']['d_bad'], 2)} | {r['pnl']['label']} | {r['years_good']}/6 / {r['years_bad']}/6 |")
+                 f"{_f(r['pnl']['d_good'], 4)} / {_f(r['pnl']['d_bad'], 4)} | {r['pnl']['label']} | {r['years_good']}/6 / {r['years_bad']}/6 |")
     L += ["", "## 表 3: 取り逃し(参照なら入っていたが指値が約定しなかった取引。R3)", "",
           "| 走らせ | 参照の 1 取引あたり | 取り逃し(指値を置いた): 数・1 取引あたり・勝ち率 | 取り逃し(置かなかった): 数・1 取引あたり |",
           "|---|---|---|---|"]
@@ -153,19 +187,19 @@ def render(runs: dict, rows: list[dict]) -> str:
         p = m.get("limit_order_placed") or {}
         q = m.get("limit_order_not_placed") or {}
         wr = p["wins"] / p["trades"] if p.get("trades") else float("nan")
-        L.append(f"| {n} | {ref['per_trade']:.2f} | {p.get('trades', 0)}・{p.get('avg_bp') or 0:.2f}・{wr:.3f} | "
-                 f"{q.get('trades', 0)}・{q.get('avg_bp') or 0:.2f} |")
+        L.append(f"| {n} | {ref['per_trade']:.4f} | {p.get('trades', 0)}・{p.get('avg_pct') or 0:.4f}・{wr:.3f} | "
+                 f"{q.get('trades', 0)}・{q.get('avg_pct') or 0:.4f} |")
     L += ["", "## 表 4: 保有の分ごとの損益の和(R5)", "", "| 走らせ | " + " | ".join(
         f"{lo}〜{hi if hi is not None else ''} 分" for lo, hi in HOLD_BINS_MIN) + " |", "|---|" + "---|" * len(HOLD_BINS_MIN)]
     for n in sorted(runs):
         h = runs[n]["hold"]
         if h:
-            L.append(f"| {n} | " + " | ".join(f"{x['sum_bp']:.0f}({x['trades']})" for x in h) + " |")
+            L.append(f"| {n} | " + " | ".join(f"{x['sum_pct']:.2f}({x['trades']})" for x in h) + " |")
     L += ["", "## 表 5: ボラの三分位ごとの 1 取引あたりの損益(R6。K1 の境、2017 は先読みあり)", "",
           "| 走らせ | 低 | 中 | 高 |", "|---|---|---|---|"]
     for n in sorted(runs):
         bv = runs[n]["by_vol"]
-        L.append(f"| {n} | " + " | ".join(f"{(bv.get(k) or {}).get('avg_bp') or 0:.2f}({(bv.get(k) or {}).get('trades', 0)})"
+        L.append(f"| {n} | " + " | ".join(f"{(bv.get(k) or {}).get('avg_pct') or 0:.4f}({(bv.get(k) or {}).get('trades', 0)})"
                                             for k in ("low", "mid", "high")) + " |")
     L += derived_lines(runs, rows)
     return "\n".join(L) + "\n"
@@ -181,15 +215,15 @@ def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
             if f"{k}_good" in runs and f"{k}_bad" in runs:
                 pg, pb = runs[f"{k}_good"]["per_day"]["pnl"], runs[f"{k}_bad"]["per_day"]["pnl"]
                 if pg > 0 and pb > 0:
-                    L.append(f"- 損益が両側とも正: {k}(良 {pg:.2f} / 悪 {pb:.2f} bp/日、取引 {runs[f'{k}_good']['per_day']['trades']:.2f}/日)")
+                    L.append(f"- 損益が両側とも正: {k}(良 {pg:.4f} / 悪 {pb:.4f} %/日、取引 {runs[f'{k}_good']['per_day']['trades']:.2f}/日)")
     for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
         m = (runs[n]["missed"] or {}).get("limit_order_placed") or {}
         if m.get("trades"):
-            L.append(f"- {n}: 指値を置いたが約定せず取り逃した取引の損益の和 {m['sum_bp']:.0f}bp = {m['sum_bp'] / runs[n]['days']:.2f} bp/日")
+            L.append(f"- {n}: 指値を置いたが約定せず取り逃した取引の損益の和 {m['sum_pct']:.2f}% = {m['sum_pct'] / runs[n]['days']:.4f} %/日")
     for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
         q = (runs[n]["missed"] or {}).get("limit_order_not_placed") or {}
         if q.get("trades"):
-            L.append(f"- {n}: 指値を置かなかったために取り逃した取引の損益の和 {q['sum_bp']:.0f}bp = {q['sum_bp'] / runs[n]['days']:.2f} bp/日")
+            L.append(f"- {n}: 指値を置かなかったために取り逃した取引の損益の和 {q['sum_pct']:.2f}% = {q['sum_pct'] / runs[n]['days']:.4f} %/日")
     for n in sorted(k for k in runs if "_limit_" in k and k.endswith("_good")):
         eo = runs[n]["entry_orders"] or {}
         for k in ("ent1", "ent2"):
@@ -197,7 +231,7 @@ def derived_lines(runs: dict, rows: list[dict]) -> list[str]:
             if e.get("placed"):
                 L.append(f"- {n} {k}: 置いた {e['placed']}・約定 {e['filled']}・約定までの分 平均 {e['wait_min_mean']:.1f}・中央 {e['wait_min_median']:.1f}")
     for n in sorted(k for k in runs if "_close_a" in k):
-        L.append(f"- 参照 {n}: 損益 {runs[n]['per_day']['pnl']:.2f} bp/日")
+        L.append(f"- 参照 {n}: 損益 {runs[n]['per_day']['pnl']:.4f} %/日")
     return L
 
 
