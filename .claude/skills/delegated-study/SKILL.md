@@ -95,6 +95,12 @@ PYTHONPATH=. python3 scripts/jev_delegate.py plan --prompt <委任文のファ�
 【差分】最小diff。無関係な整形・リネーム・リファクタ禁止。
 【取引の記録】測定台本は 1 回の実行ごとに `trades.json.gz` を run_record.json と同じ所に出し git に入れる
   (`src/bot/research/trade_record.py: write_trades_json`。封印の境以降の取引は書かない。オーナー L-D04、L-594)。
+【取引の行と標準の表】測定の委任(族ごとの測定のセッションを含む)は、走らせの後に、取引の行(`trades.csv.gz`)と
+  標準の表(読み口 `scripts/analysis/diag_tables.py` の D0・D1・D3・D6 と `scripts/analysis/diag_paths.py` の D4・D5)を
+  作って git に入れるところまでを仕事にする。前半・後半の境は測定ごとに 1 つを走らせる前に決め、全部の本に `--cut` で渡す。
+  基準との比べ(D7)は、基準の本があるところ(リードの受け取り)で作る。読み・判断は書かせない。手本は
+  `scripts/simple/main_jobs.py` の手順 5〜7、受け取りの検めは `scripts/simple/receive_main.py --tables`
+  (オーナー L-903「**採用します。次回の測定から委任できるようにしておいてください。**」「**境の統一は必要だが**」)。
 【禁止】コード・コメント・ログ・ドキュメントにモデル名(Claude/Opus/Sonnet 等)を書かない。
 Do not commit. Do not push.
 ```
