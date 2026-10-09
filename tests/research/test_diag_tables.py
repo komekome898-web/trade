@@ -148,3 +148,6 @@ def test_cut_printed_in_table(tmp_path):
     assert "後半の最初の日 2018-02-01" in out.read_text()
     with pytest.raises(ValueError):
         dt.main(["--run", str(run), "--out", str(out), "--cut", "2018/02/01"])
+    for bad in ("20180201", "2018-W05-4"):  # fromisoformat は受けるが、文字列の比べで境がずれる形
+        with pytest.raises(SystemExit):
+            dt.main(["--run", str(run), "--out", str(out), "--cut", bad])

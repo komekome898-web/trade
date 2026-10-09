@@ -521,7 +521,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--cut", default=None, help="後半の最初の日(YYYY-MM-DD)。測定ごとに 1 つ、走らせる前に決めた日を全部の本に渡す")
     a = ap.parse_args(argv)
     if a.cut is not None:
-        date.fromisoformat(a.cut)  # 形が違えば止まる
+        # YYYY-MM-DD の 10 字だけを受ける(fromisoformat は 20191209・2019-W50-1 も受け、文字列の比べで境が静かにずれる。批評家 1 回目)
+        if len(a.cut) != 10 or date.fromisoformat(a.cut).isoformat() != a.cut:
+            raise SystemExit(f"--cut {a.cut} は YYYY-MM-DD の形でない")
     run = load_run(a.run)
     daily = daily_series(run)
     res = {"d0": d0(run, a.valid_min), "d1": d1(daily, a.cut), "d3": d3(run, daily), "d6": d6(run, daily)}

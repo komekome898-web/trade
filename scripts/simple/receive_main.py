@@ -2,17 +2,19 @@
 本ごとに: 置き場のファイルがそろっているか・run.json の git が 5a69618a・report.json と run.json の params が
 JOBS.md の JSON(MAIN_BASE + 上書き)を原典の値に上書きしたものと == か・足の本数の上限が 0 か・まとめの数。
     PYTHONPATH=src:scripts/simple python3 scripts/simple/receive_main.py [--tables] <族> [<族> ...]
---tables(L-903 の後の測定): 取引の行(trades.csv.gz・summary.json)と標準の表(diag_tables.md・diag_paths.md)も
-そろっているか、取引の行の summary.json の閉じた取引の数が走らせの summary.json と同じか、表の境が CUT か(diag_tables.md に「後半の最初の日 <CUT>」の文字列。`--cut` の口を足した後の形)を見る。
+--tables(L-903 の後の測定): 取引の行(trades.csv.gz・summary.json)と標準の表(diag_tables.md・.json・diag_paths.md)も
+そろっているか、trades.csv.gz の行数と取引の行の summary.json の閉じた取引の数が走らせの summary.json と同じか、
+表の境が CUT か(diag_tables.json の D1 の cut が CUT で、cut_source が「渡した日(--cut)」)、diag_paths.md に
+D4 の見出しがあるかを見る(批評家 1 回目の問 4 で、行数と D4 の見出しの検めを足した)。
 """
-import json, os, sys
+import csv, gzip, json, os, sys
 from main_jobs import CUT, FAMILIES, MAIN_BASE, OUT, TABLES, TRADES
 from bot.strategy.matilda_simple import BASE_PARAMS
 
 GIT = "5a69618ad8f1e7f4d3550e8807b01bd4b96a38b7"
 NEED = ("fills.csv.gz", "signals.csv.gz", "summary.json", "run.json", "report.json")
 NEED_TRADES = ("trades.csv.gz", "summary.json")
-NEED_TABLES = ("diag_tables.md", "diag_paths.md")
+NEED_TABLES = ("diag_tables.md", "diag_tables.json", "diag_paths.md")
 args = sys.argv[1:]
 tables = "--tables" in args
 fams = [a for a in args if a != "--tables"]
@@ -36,9 +38,14 @@ for fam in fams:
             n_run = json.load(open(os.path.join(d, "summary.json"))).get("closed_trades")
             chk = json.load(open(os.path.join(tdir, "summary.json"))).get("check", {})
             n_tr = chk.get("closed_trades") if chk.get("matches_summary") is True else None
-            cut_ok = f"後半の最初の日 {CUT}" in open(os.path.join(gdir, "diag_tables.md")).read()
-            t_ok = n_run is not None and n_run == n_tr and cut_ok
-            print(fam, name, "表", "OK" if t_ok else "違う", "閉じた取引", n_run, n_tr, "境", CUT if cut_ok else "違う")
+            with gzip.open(os.path.join(tdir, "trades.csv.gz"), "rt") as fh:
+                n_rows = sum(1 for _ in csv.DictReader(fh))
+            seg = json.load(open(os.path.join(gdir, "diag_tables.json")))["d1"]["segments"]
+            cut_ok = seg.get("cut") == CUT and seg.get("cut_source") == "渡した日(--cut)"
+            paths_ok = "## D4 取引の一生" in open(os.path.join(gdir, "diag_paths.md")).read()
+            t_ok = n_run is not None and n_run == n_tr == n_rows and cut_ok and paths_ok
+            print(fam, name, "表", "OK" if t_ok else "違う", "閉じた取引", n_run, n_tr, "行", n_rows,
+                  "境", CUT if cut_ok else "違う", "D4", "あり" if paths_ok else "無い")
             bad += not t_ok
         print(fam, name, "OK" if ok else "違う", "git", run["git"][:8], "秒", rep["run_sec"], "MB", rep["max_rss_mb"], json.dumps(rep["summary"], ensure_ascii=False))
 print("違う・欠け", bad)
