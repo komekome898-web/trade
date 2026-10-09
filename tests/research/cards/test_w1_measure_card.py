@@ -46,7 +46,7 @@ def test_measure_card_uses_the_settings_of_the_card(small, tmp_path):
     assert out["settings"]["day_zone"] == "Asia/Tokyo" and out["daily"]["zone"] == "Asia/Tokyo"
     assert out["settings"]["vr_q_bars"] == 5 and "vr_1h" in out["scenes"] and "ref:S" in out["scenes"]
     assert out["settings"]["from_card"]["declarations"]["S"] == W.DECL_T1["S"]
-    m = out["overall"]["mean_bp"]
+    m = out["overall"]["mean_pct"]
     assert m["ci"][0] < m["ci"][1] and m["mde"] > 0 and m["verdict"] == NO_VERDICT
 
 

@@ -10,21 +10,23 @@ import sys
 import numpy as np
 
 z = np.load(sys.argv[1] + "/probe.npz")
-bt, e, P = z["bar_t"], z["exposure"], z["pnl_bp"]
+# 損益は %(L-920 で bp は値動き率だけの名前)。L-920 より前の probe.npz は pnl_bp(率 × 1 万)なので / 100
+bt, e = z["bar_t"], z["exposure"]
+P = z["pnl_pct"] if "pnl_pct" in z.files else z["pnl_bp"] / 100
 rt, c = z["rec_t"], z["close"]
 idx = np.searchsorted(bt, rt)
 ok = (idx < len(bt)) & (bt[np.minimum(idx, len(bt) - 1)] == rt)
 cl = np.full(len(bt), np.nan)
 cl[idx[ok]] = c[ok]
-Pcc = e[:-1] * (cl[1:] / cl[:-1] - 1) * 1e4
+Pcc = e[:-1] * (cl[1:] / cl[:-1] - 1) * 100
 m = np.isfinite(Pcc)
 JST, DAY = 9 * 3600 * 10**9, 86400 * 10**9
 day = (bt[:-1] + JST) // DAY
 yrs = np.array([np.datetime64(int(d), "D").astype(object).year for d in day])
-print("年 次の始値(W1) 判定の終値(遅れ0)")
+print("年 次の始値(W1) 判定の終値(遅れ0)  (1 日あたり、%)")
 for y in sorted(set(yrs.tolist())):
     k = (yrs == y) & m
     nd = len(np.unique(day[k]))
-    print(y, round(P[:-1][k].sum() / nd, 1), round(Pcc[k].sum() / nd, 1))
+    print(y, round(P[:-1][k].sum() / nd, 3), round(Pcc[k].sum() / nd, 3))
 nd = len(np.unique(day[m]))
-print("全期間", round(P[:-1][m].sum() / nd, 1), round(Pcc[m].sum() / nd, 1))
+print("全期間", round(P[:-1][m].sum() / nd, 3), round(Pcc[m].sum() / nd, 3))

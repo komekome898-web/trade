@@ -1229,7 +1229,7 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
     for r in per.values():
         for k, v in r.events_read.items():
             read[k] = read.get(k, 0) + v
-    dist = M.trade_distribution(p_trades, QUANTILE_PROBS) if p_trades else {"n": 0, "per_trade_bp": []}
+    dist = M.trade_distribution(p_trades, QUANTILE_PROBS) if p_trades else {"n": 0, "per_trade_pct": []}
     eq, eq_t, cum = [0.0], [min(f["t_ns"] for f in p_fills) if p_fills else 0], 0.0
     for t in sorted(p_trades, key=lambda x: (x["exit_t_ns"], x["id"])):
         cum += t["pnl"]
@@ -1240,7 +1240,7 @@ def execute_once(plan: PipelinePlan, out_dir: str) -> dict:
         fees[f["liquidity"]] = fees.get(f["liquidity"], 0.0) + f["fee"]
     by_inst = {}
     for name, r in per.items():
-        d = M.trade_distribution(r.trades, QUANTILE_PROBS) if r.trades else {"n": 0, "per_trade_bp": []}
+        d = M.trade_distribution(r.trades, QUANTILE_PROBS) if r.trades else {"n": 0, "per_trade_pct": []}
         by_inst[name] = {"num_trades": len(r.trades), "realized_pnl": sum(t["pnl"] for t in r.trades),
                          "gross_sell_minus_buy": sum((f["px"] if f["side"] == "sell" else -f["px"]) * f["qty"]
                                                      for f in r.fills),

@@ -96,8 +96,11 @@ class BookState:
             return None
         return ask - bid
 
-    def depth_within_bps(self, bps: float) -> tuple[float, float]:
-        """Summed size on each side within ``bps`` of the mid.
+    def depth_within_pct(self, pct: float) -> tuple[float, float]:
+        """Summed size on each side within ``pct`` percent of the mid.
+
+        (A distance from the mid at one moment, not a price move, so it is
+        given in percent, not bp -- L-920/L-923.)
 
         Returns ``(bid_depth, ask_depth)``; ``(0.0, 0.0)`` when the book has
         no two-sided mid.
@@ -105,18 +108,18 @@ class BookState:
         mid = self.mid
         if mid is None or mid <= 0:
             return 0.0, 0.0
-        band = mid * bps / 1e4
+        band = mid * pct / 100
         lo, hi = mid - band, mid + band
         bid_depth = sum(size for price, size in self.bids.items() if price >= lo)
         ask_depth = sum(size for price, size in self.asks.items() if price <= hi)
         return float(bid_depth), float(ask_depth)
 
-    def imbalance(self, bps: float) -> float:
-        """(bid_depth - ask_depth) / total within ``bps``; 0.0 if empty.
+    def imbalance(self, pct: float) -> float:
+        """(bid_depth - ask_depth) / total within ``pct`` percent of the mid; 0.0 if empty.
 
         Positive means more size resting on the bid side.
         """
-        bid_depth, ask_depth = self.depth_within_bps(bps)
+        bid_depth, ask_depth = self.depth_within_pct(pct)
         total = bid_depth + ask_depth
         if total <= 0:
             return 0.0
@@ -165,17 +168,19 @@ def walk_book(levels: list[tuple[float, float]], size: float) -> tuple[float, fl
     return vwap, filled, filled < size
 
 
-def walk_cost_bp(levels: list[tuple[float, float]], size: float, mid: float,
+def walk_cost_pct(levels: list[tuple[float, float]], size: float, mid: float,
                   side: str) -> tuple[float | None, float, bool]:
-    """One-way board-walk cost of filling ``size`` versus ``mid``, in bp.
+    """One-way board-walk cost of filling ``size`` versus ``mid``, in percent
+    of ``mid`` (fill price vs mid at one moment, not a price move, so not bp
+    -- L-920/L-923).
 
     ``side`` is ``"buy"`` (pass the ask levels, best-first -- cost is how
     far the fill price sits ABOVE mid) or ``"sell"`` (pass the bid levels,
     best-first -- cost is how far the fill price sits BELOW mid). Positive
-    ``cost_bp`` means paying more than mid, which is the expected sign for
+    ``cost_pct`` means paying more than mid, which is the expected sign for
     a taker order walking away from the touch.
 
-    Returns ``(cost_bp, filled_size, exhausted)``; ``cost_bp`` is ``None``
+    Returns ``(cost_pct, filled_size, exhausted)``; ``cost_pct`` is ``None``
     when nothing filled at all (``size <= 0``, an empty book, or a
     non-positive ``mid``) -- ``filled_size``/``exhausted`` still come from
     :func:`walk_book` so a caller can tell "no mid" apart from "no size".
@@ -186,10 +191,10 @@ def walk_cost_bp(levels: list[tuple[float, float]], size: float, mid: float,
     if filled <= 0 or mid is None or mid <= 0:
         return None, filled, exhausted
     if side == "buy":
-        cost_bp = (vwap - mid) / mid * 1e4
+        cost_pct = (vwap - mid) / mid * 100
     else:
-        cost_bp = (mid - vwap) / mid * 1e4
-    return cost_bp, filled, exhausted
+        cost_pct = (mid - vwap) / mid * 100
+    return cost_pct, filled, exhausted
 
 
 def iter_messages(path: str | Path) -> Iterator[tuple[float, str, dict]]:
@@ -225,7 +230,7 @@ def iter_messages(path: str | Path) -> Iterator[tuple[float, str, dict]]:
 
 
 def build_series(paths: Iterable[str | Path], interval_sec: float = 1.0,
-                 depth_bps: float = 5.0, max_gap_sec: float = 60.0) -> pd.DataFrame:
+                 depth_pct: float = 0.05, max_gap_sec: float = 60.0) -> pd.DataFrame:
     """Replay board messages into a sampled book time series.
 
     One row per ``interval_sec`` bucket, holding the state as of the LAST
@@ -252,7 +257,7 @@ def build_series(paths: Iterable[str | Path], interval_sec: float = 1.0,
             if not state.ready:
                 continue
             bucket = int(rts // interval_sec)
-            bid_depth, ask_depth = state.depth_within_bps(depth_bps)
+            bid_depth, ask_depth = state.depth_within_pct(depth_pct)
             total = bid_depth + ask_depth
             imbalance = (bid_depth - ask_depth) / total if total > 0 else 0.0
             mid = state.mid

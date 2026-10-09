@@ -82,7 +82,7 @@ def test_ledger_skips_missing_exit_print(tmp_path, monkeypatch):
     ledger = paper.build_ledger()
     assert len(ledger) == 1
     assert ledger[0]["note"].startswith("skip: exit print missing")
-    assert ledger[0]["net_bps"] == ""
+    assert ledger[0]["net_pct"] == ""
 
 
 def test_aggregate_on1_reads_ledger_and_guard(tmp_path):
@@ -92,19 +92,23 @@ def test_aggregate_on1_reads_ledger_and_guard(tmp_path):
     d = collect_status(tmp_path, now=1_000_000.0)
     assert "on1" in d and d["on1"] is None
     # small real-shaped ledger
+    # a ledger written before L-920 (column net_bps, same rate x 1e4) must
+    # still be read; the reader converts it to percent.
+    old_fields = ["net_bps" if k == "net_pct" else k for k in paper.FIELDS]
     p = tmp_path / "ledger.csv"
     with p.open("w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=paper.FIELDS)
+        w = csv.DictWriter(f, fieldnames=old_fields)
         w.writeheader()
-        w.writerow({**{k: "" for k in paper.FIELDS},
+        w.writerow({**{k: "" for k in old_fields},
                     "entry_date": "20260101", "exit_date": "20260102",
                     "net_yen": "+978", "net_bps": "+24.700",
                     "micro_minus_large_entry": "-10", "micro_minus_large_exit": "+10"})
-        w.writerow({**{k: "" for k in paper.FIELDS},
+        w.writerow({**{k: "" for k in old_fields},
                     "entry_date": "20260102", "exit_date": "20260103",
                     "note": "skip: exit print missing"})
     o = _on1_paper(p, 1_000_000.0)
     assert o["trades"] == 1 and o["skipped"] == 1
+    assert o["mean_net_pct"] == 0.247
     assert o["cum_net_yen"] == 978 and o["guard"] == "OK"
     assert o["friction_yen"] is None  # n<15 -> friction line not evaluated
 
@@ -115,7 +119,7 @@ def test_dashboard_page_renders_on1_tiles():
     # 台帳の現況だけ。損益・平均bps・監視線(判定条件)は 2026-09-08 の全捨てで撤去。
     for field in ("trades", "friction_yen", "last_exit_date"):
         assert f"o.{field}" in page
-    for gone in ("cum_net_yen", "mean_net_bps", "guard"):
+    for gone in ("cum_net_yen", "mean_net_pct", "mean_net_bps", "guard"):
         assert f"o.{gone}" not in page, gone
 
 

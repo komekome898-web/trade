@@ -23,7 +23,11 @@ Checks (per file, where the relevant column exists in the header):
   - gaps:               an inter-row time gap far larger than the file's own
                          median gap (no hardcoded cadence assumption --
                          see GAP_MULTIPLIER)
-  - crossed_book:       a `spread_bps` column <= 0 or > 50
+  - crossed_book:       a `spread_pct` column <= 0 or > 0.5 (% of mid). A file
+                        written before 2026-10-09 holds the same spread x 100
+                        as `spread_bps`; it is read and divided by 100 (a
+                        spread is two prices at one moment, not a price move,
+                        so it is not called bp -- L-920/L-923)
   - maintenance_window:  a flat (open==high==low==close) OHLC row inside
                          19:00-19:10 UTC (bitFlyer's documented maintenance
                          window) -- a candidate synthetic/carried-forward bar
@@ -111,7 +115,7 @@ GAP_MULTIPLIER = 8  # flag a gap this many times the file's own median gap
 MAINT_START_H, MAINT_START_M = 19, 0
 MAINT_END_H, MAINT_END_M = 19, 10
 EXTREME_RETURN_FRAC = 0.10
-CROSSED_SPREAD_MAX_BPS = 50.0
+CROSSED_SPREAD_MAX_PCT = 0.5  # % of mid (was 50 in the legacy spread_bps unit)
 
 PRICE_COL_CANDIDATES = ["close", "price", "last", "mid"]
 
@@ -437,7 +441,11 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
             quality = schema_quality_for(schema, p.name, rel_path)
 
             ts_idx = il.find_ts_column(header)
-            spread_idx = _find_col(header_lower, ["spread_bps"])
+            spread_idx = _find_col(header_lower, ["spread_pct"])
+            spread_scale = 1.0
+            if spread_idx is None:
+                spread_idx = _find_col(header_lower, ["spread_bps"])  # legacy column: x 100 of spread_pct
+                spread_scale = 0.01
             volume_idx = _find_col(header_lower, ["volume"])
             price_idx = _find_col(header_lower, PRICE_COL_CANDIDATES)
             ohlc_idx = None
@@ -559,13 +567,13 @@ def scan_file(root: Path, rel_path: str, schema: Optional[dict]) -> dict:
                 # crossed book
                 if spread_idx is not None and spread_idx < len(row):
                     try:
-                        sv = float(row[spread_idx])
+                        sv = float(row[spread_idx]) * spread_scale
                     except (ValueError, TypeError):
                         sv = None
-                    if sv is not None and (sv <= 0 or sv > CROSSED_SPREAD_MAX_BPS):
+                    if sv is not None and (sv <= 0 or sv > CROSSED_SPREAD_MAX_PCT):
                         crossed_count += 1
                         if len(crossed_examples) < MAX_EXAMPLES:
-                            crossed_examples.append({"row": row_i, "spread_bps": sv})
+                            crossed_examples.append({"row": row_i, "spread_pct": sv})
 
                 # maintenance window flat bar
                 if ohlc_idx is not None and ts_idx is not None and ts_idx < len(row):

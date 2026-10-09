@@ -324,37 +324,37 @@ class TradeSet:
     xp: np.ndarray
     side: np.ndarray  # +1 buy, -1 sell
     qty: np.ndarray
-    pnl: np.ndarray  # money (NaN when the record holds only bp)
-    bp: np.ndarray  # pnl per unit over the entry price, in bp
+    pnl: np.ndarray  # money (NaN when the record holds only a rate)
+    pct: np.ndarray  # pnl over the entry notional (entry price x qty), in percent -- not a price-move rate, not bp (L-920)
     cum: np.ndarray
-    cum_bp: np.ndarray
+    cum_pct: np.ndarray
     reason: Optional[list]
     ranges: list = field(default_factory=list)
     ranges_identical: Optional[bool] = None
     entry_sorted: bool = True
-    pnl_derived: bool = False  # True: the record holds bp only; no money amount exists
+    pnl_derived: bool = False  # True: the record holds a rate only; no money amount exists
 
     @property
     def n(self) -> int:
         return int(self.xt.size)
 
 
-def _from_arrays(et, xt, ep, xp, side, qty, pnl, reason, bp=None) -> TradeSet:
+def _from_arrays(et, xt, ep, xp, side, qty, pnl, reason, pct=None) -> TradeSet:
     et, xt = np.asarray(et, np.int64), np.asarray(xt, np.int64)
     ep, xp, qty = (np.asarray(v, np.float64) for v in (ep, xp, qty))
     side = np.asarray(side, np.int64)
     derived = pnl is None
     pnl = np.full(xt.size, np.nan) if derived else np.asarray(pnl, np.float64)
-    bp = None if bp is None else np.asarray(bp, np.float64)
+    pct = None if pct is None else np.asarray(pct, np.float64)
     if xt.size > 1 and np.any(xt[1:] < xt[:-1]):
         o = np.argsort(xt, kind="stable")
         et, xt, ep, xp, side, qty, pnl = (v[o] for v in (et, xt, ep, xp, side, qty, pnl))
-        bp = None if bp is None else bp[o]
+        pct = None if pct is None else pct[o]
         reason = [reason[i] for i in o] if reason is not None else None
-    if bp is None:
+    if pct is None:
         with np.errstate(divide="ignore", invalid="ignore"):
-            bp = np.where((ep * qty) != 0, pnl / (ep * qty) * 1e4, 0.0)
-    ts = TradeSet(et, xt, ep, xp, side, qty, pnl, bp, np.cumsum(pnl), np.cumsum(bp), reason)
+            pct = np.where((ep * qty) != 0, pnl / (ep * qty) * 100, 0.0)
+    ts = TradeSet(et, xt, ep, xp, side, qty, pnl, pct, np.cumsum(pnl), np.cumsum(pct), reason)
     ts.entry_sorted = bool(et.size < 2 or not np.any(et[1:] < et[:-1]))
     ts.pnl_derived = derived
     return ts
@@ -371,12 +371,23 @@ def _build(rows: list) -> TradeSet:
 
 def _build_columns(doc: dict) -> TradeSet:
     """The column form {"version": 1, "t_unit": "ns", entry_t_ns, entry_px, exit_t_ns, exit_px, side: [1|-1], qty,
-    pnl_bp}. It holds no money amount (a money value from bp would multiply by an average exposure the record does
-    not state), so only bp is shown: `pnl_derived` is True and the money fields are None."""
+    pnl_pct}. It holds no money amount (a money value from the rate would multiply by an average exposure the record
+    does not state), so only the rate is shown: `pnl_derived` is True and the money fields are None.
+
+    The card exports (scripts/dashboard_cards) still write the column `pnl_bp`: the card's pnl rate x 1e4 (a sum of
+    position-weighted moves per decision, or of per-step moves / the step limit -- not one price-move rate). Since
+    L-920 (2026-10-09) bp names only a price-move rate, so it is read here as a rate and converted to percent
+    (pnl_pct = pnl_bp / 100); the card's rate_note says what the rate is."""
     if doc.get("t_unit", "ns") != "ns":
         raise ChartError(f"trades t_unit {doc.get('t_unit')!r} is not supported")
+    if "pnl_pct" in doc:
+        pct = doc["pnl_pct"]
+    elif "pnl_bp" in doc:
+        pct = np.asarray(doc["pnl_bp"], np.float64) / 100
+    else:
+        raise ChartError("trades column form holds neither pnl_pct nor pnl_bp")
     return _from_arrays(doc["entry_t_ns"], doc["exit_t_ns"], doc["entry_px"], doc["exit_px"], doc["side"], doc["qty"],
-                        None, None, bp=doc["pnl_bp"])
+                        None, None, pct=pct)
 
 
 def _same(a: TradeSet, b: TradeSet) -> bool:
@@ -404,8 +415,8 @@ def truncate(ts: TradeSet, limit_ns: int) -> TradeSet:
     k = int(np.searchsorted(ts.xt, limit_ns, side="left"))
     if k >= ts.n:
         return ts
-    out = TradeSet(ts.et[:k], ts.xt[:k], ts.ep[:k], ts.xp[:k], ts.side[:k], ts.qty[:k], ts.pnl[:k], ts.bp[:k],
-                   np.cumsum(ts.pnl[:k]), np.cumsum(ts.bp[:k]), None if ts.reason is None else ts.reason[:k],
+    out = TradeSet(ts.et[:k], ts.xt[:k], ts.ep[:k], ts.xp[:k], ts.side[:k], ts.qty[:k], ts.pnl[:k], ts.pct[:k],
+                   np.cumsum(ts.pnl[:k]), np.cumsum(ts.pct[:k]), None if ts.reason is None else ts.reason[:k],
                    ts.ranges, ts.ranges_identical, ts.entry_sorted, ts.pnl_derived)
     return out
 
@@ -445,20 +456,20 @@ def _f(x: float) -> Optional[float]:
 
 
 def trade_stats(ts: TradeSet) -> dict:
-    """取引数・勝率・累計損益・最大の落ち込み, from the trades (bp = pnl per unit / entry price). Money fields are None
-    when the record holds bp only."""
+    """取引数・勝率・累計損益・最大の落ち込み, from the trades (pct = pnl / (entry price x qty) x 100). Money fields are
+    None when the record holds the rate only."""
     n = ts.n
     if n == 0:
-        return {"n": 0, "wins": 0, "win_rate": None, "total": None if ts.pnl_derived else 0.0, "total_bp": 0.0,
-                "max_dd": None if ts.pnl_derived else 0.0, "max_dd_bp": 0.0, "mean_bp": None}
-    wins = int(((ts.bp if ts.pnl_derived else ts.pnl) > 0).sum())
+        return {"n": 0, "wins": 0, "win_rate": None, "total": None if ts.pnl_derived else 0.0, "total_pct": 0.0,
+                "max_dd": None if ts.pnl_derived else 0.0, "max_dd_pct": 0.0, "mean_pct": None}
+    wins = int(((ts.pct if ts.pnl_derived else ts.pnl) > 0).sum())
 
     def dd(cum: np.ndarray) -> float:
         c = np.concatenate(([0.0], cum))
         return float((np.maximum.accumulate(c) - c).max())
     return {"n": n, "wins": wins, "win_rate": wins / n, "total": None if ts.pnl_derived else float(ts.cum[-1]),
-            "total_bp": float(ts.cum_bp[-1]), "max_dd": None if ts.pnl_derived else dd(ts.cum),
-            "max_dd_bp": dd(ts.cum_bp), "mean_bp": float(ts.bp.mean())}
+            "total_pct": float(ts.cum_pct[-1]), "max_dd": None if ts.pnl_derived else dd(ts.cum),
+            "max_dd_pct": dd(ts.cum_pct), "mean_pct": float(ts.pct.mean())}
 
 
 # ---- the price stores ------------------------------------------------------------------------------------------
@@ -1057,13 +1068,13 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
     lim = int(np.searchsorted(ts.xt, cut.limit_ns, side="left"))
     a = min(int(np.searchsorted(ts.xt, f_ns, side="left")), lim)
     e = min(int(np.searchsorted(ts.xt, t_ns, side="right")), lim)
-    base_cum, base_bp = (_f(ts.cum[a - 1]), float(ts.cum_bp[a - 1])) if a > 0 else (0.0 if not ts.pnl_derived else None, 0.0)
-    pts = {int(f // interval * interval): [base_cum, base_bp]}
+    base_cum, base_pct = (_f(ts.cum[a - 1]), float(ts.cum_pct[a - 1])) if a > 0 else (0.0 if not ts.pnl_derived else None, 0.0)
+    pts = {int(f // interval * interval): [base_cum, base_pct]}
     if e > a:
         bt = ts.xt[a:e] // 10**9 // interval * interval
         last = np.flatnonzero(np.r_[bt[1:] != bt[:-1], True]) + a
         for k, ci in zip(bt[last - a], last):
-            pts[int(k)] = [_f(ts.cum[ci]), float(ts.cum_bp[ci])]
+            pts[int(k)] = [_f(ts.cum[ci]), float(ts.cum_pct[ci])]
     out["pnl"] = [[k, v[0], v[1]] for k, v in sorted(pts.items())]
     if ts.entry_sorted:
         c = min(int(np.searchsorted(ts.et, t_ns, side="right")), lim)
@@ -1075,7 +1086,7 @@ def run_chart(runs_dir: Any, run_id: str, from_s: Optional[float] = None, to_s: 
     out["max_trades"] = MAX_TRADES
     out["trades"] = [] if out["too_many"] else [
         {"i": int(i), "side": int(ts.side[i]), "et": int(round(ts.et[i] / 1e9)), "ep": float(ts.ep[i]),
-         "xt": int(round(ts.xt[i] / 1e9)), "xp": float(ts.xp[i]), "pnl": _f(ts.pnl[i]), "bp": float(ts.bp[i]),
+         "xt": int(round(ts.xt[i] / 1e9)), "xp": float(ts.xp[i]), "pnl": _f(ts.pnl[i]), "pct": float(ts.pct[i]),
          "reason": None if ts.reason is None else ts.reason[i]} for i in idx]
     out["trades_total"] = ts.n
     out["ranges"] = ts.ranges

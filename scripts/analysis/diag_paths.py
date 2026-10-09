@@ -9,7 +9,7 @@ D4 取引の一生(取引ごと。値動きはすべて取引の向き side(+1 �
   - MFE = 建ての時刻(entry_t)から出の時刻(exit_t)までに始まった 1 分足の、有利な側の端(買いは高値・売りは安値)の最大の値動き
   - MAE = 同じ足の不利な側の端(買いは安値・売りは高値)の最小の値動き
   - 頂点までの分 = MFE の足の始まり − 建て、保有の分 = 出 − 建て
-  - 群: 「建ての値段から一度は有利に動いたのに負けた」「建ての値段から一度も有利に動かずに負けた」「勝った」の数・損益の和
+  - 群: 「最初の約定の値段から一度は有利に動いたのに負けた」「最初の約定の値段から一度も有利に動かずに負けた」「勝った」の数・損益の和
   - 勝ち取引の 頂点までの分 ÷ 保有の分 の分位(0.25・0.5・0.75)
   - 出の後の値動き: 出の時刻の終値(出の時刻に終わる 1 分足の終値)から 5・15・60 分後の終値まで × side。1 取引あたり(日の塊の区間)
 D5 合図そのものの情報(合図ごと。合図の時刻 signal_t の終値から h 分後の終値まで × 合図の向き):
@@ -84,6 +84,12 @@ def load_bitflyer_bars(lo_ns: int, hi_ns: int) -> Bars:
     return Bars(np.array(t)[o], np.array(h)[o], np.array(l)[o], np.array(c)[o])
 
 
+def _jpy(r: dict, p: str) -> float:
+    if "pnl_jpy" not in r:
+        raise SystemExit(f"止める: {p} に円の損益の列 pnl_jpy が無い(損益を率で持つ出力は読まない。L-920)")
+    return float(r["pnl_jpy"])
+
+
 def read_trades_csv(d: str) -> list[dict]:
     p = os.path.join(d, "trades.csv.gz")
     if not os.path.isfile(p):
@@ -96,7 +102,7 @@ def read_trades_csv(d: str) -> list[dict]:
             if r.get("in_measure", "True") == "False":
                 continue
             t = {"entry_ns": dt._iso_ns(r["entry_t"]), "exit_ns": dt._iso_ns(r["exit_t"]), "side": int(float(r["side"])),
-                 "pnl_jpy": float(r["pnl_jpy"]), "entry_px": float(r["entry_price"])}
+                 "pnl_jpy": _jpy(r, p), "entry_px": float(r["entry_price"])}
             if r.get("signal_t"):
                 t["signal_ns"] = dt._iso_ns(r["signal_t"])
             out.append(t)
@@ -142,12 +148,12 @@ def d4(trades: list[dict], bars: Bars, days: list[str]) -> dict:
         r = trade_life(t, bars)
         if r is not None:
             rows.append((t, r))
-    groups = {"勝った": [], "建ての値段から一度は有利に動いたのに負けた": [], "建ての値段から一度も有利に動かずに負けた": [], "損益 0": []}
+    groups = {"勝った": [], "最初の約定の値段から一度は有利に動いたのに負けた": [], "最初の約定の値段から一度も有利に動かずに負けた": [], "損益 0": []}
     for t, r in rows:
         if t["pnl_jpy"] > 0:
             groups["勝った"].append((t, r))
         elif t["pnl_jpy"] < 0:
-            groups["建ての値段から一度は有利に動いたのに負けた" if r["mfe"] > 0 else "建ての値段から一度も有利に動かずに負けた"].append((t, r))
+            groups["最初の約定の値段から一度は有利に動いたのに負けた" if r["mfe"] > 0 else "最初の約定の値段から一度も有利に動かずに負けた"].append((t, r))
         else:
             groups["損益 0"].append((t, r))
     gtab = {}
@@ -184,7 +190,7 @@ def d5(signals: list[tuple[int, int]], bars: Bars, days: list[str]) -> dict:
 def render(res: dict) -> str:
     f, ci = dt._f, dt._ci
     L = [f"# 取引の一生と合図の情報: {res['name']}", "",
-         "`scripts/analysis/diag_paths.py` が出した(手で書いていない)。値動きは取引(合図)の向きを掛けた値動き率(bp)、D4 の基準の値段は取引の行の entry_price。損益の和は円。bitFlyer FX の 1 分足。"
+         "`scripts/analysis/diag_paths.py` が出した(手で書いていない)。値動きは取引(合図)の向きを掛けた値動き率(bp)、D4 の基準の値段は取引の行の entry_price(最初の約定の値段。マチルダは 1 段目)。損益の和は円。bitFlyer FX の 1 分足。"
          "区間は 95%(日の塊 5 日・1,000 回)。1 分の中の高値・安値の順は分からない。", ""]
     r4 = res["d4"]
     L += ["## D4 取引の一生", "", f"- 調べた取引: {r4['analysed']} / {r4['of']}", "",

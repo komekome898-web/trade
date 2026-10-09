@@ -289,25 +289,26 @@ def report_compare(label, bot, sel, tape, a):
     i2, bid, ask, ltp = idx[ok], bid[ok], ask[ok], ltp[ok]
     mid_b = (bot[i2, 1] + bot[i2, 2]) / 2
     mid_t = (bid + ask) / 2
-    dmid = (mid_t - mid_b) / mid_b * 1e4
+    # 同じ時刻の 2 つの値段の差 ÷ 値段は値動き率でないので bp と呼ばず % で出す(L-920・L-923)
+    dmid = (mid_t - mid_b) / mid_b * 100
     adm = np.abs(dmid)
-    print(f"  mid の差 (tape - REST, bp): 符号付き中央値 {np.median(dmid):.3f}  絶対値の中央値 {np.median(adm):.3f}"
-          f"  絶対値の p95 {pct(adm, 95):.3f}  絶対値の p99 {pct(adm, 99):.3f}")
-    sp_b = (bot[i2, 2] - bot[i2, 1]) / mid_b * 1e4
-    sp_t = (ask - bid) / mid_t * 1e4
-    print(f"  スプレッド幅 (bp): REST 中央値 {np.median(sp_b):.3f}  tape 中央値 {np.median(sp_t):.3f}"
-          f"  差(tape-REST)の絶対値の中央値 {np.median(np.abs(sp_t - sp_b)):.3f}  p95 {pct(np.abs(sp_t - sp_b), 95):.3f}")
+    print(f"  mid の差 (tape - REST, %): 符号付き中央値 {np.median(dmid):.5f}  絶対値の中央値 {np.median(adm):.5f}"
+          f"  絶対値の p95 {pct(adm, 95):.5f}  絶対値の p99 {pct(adm, 99):.5f}")
+    sp_b = (bot[i2, 2] - bot[i2, 1]) / mid_b * 100
+    sp_t = (ask - bid) / mid_t * 100
+    print(f"  スプレッド幅 (%): REST 中央値 {np.median(sp_b):.5f}  tape 中央値 {np.median(sp_t):.5f}"
+          f"  差(tape-REST)の絶対値の中央値 {np.median(np.abs(sp_t - sp_b)):.5f}  p95 {pct(np.abs(sp_t - sp_b), 95):.5f}")
     print(f"  bid/ask が完全一致する行: bid {np.mean(bot[i2,1]==bid)*100:.1f}%  ask {np.mean(bot[i2,2]==ask)*100:.1f}%")
-    dl = (ltp - bot[i2, 3]) / bot[i2, 3] * 1e4
-    print(f"  ltp の差 (bp): 絶対値の中央値 {np.median(np.abs(dl)):.3f}  p95 {pct(np.abs(dl), 95):.3f}"
+    dl = (ltp - bot[i2, 3]) / bot[i2, 3] * 100
+    print(f"  ltp の差 (%): 絶対値の中央値 {np.median(np.abs(dl)):.5f}  p95 {pct(np.abs(dl), 95):.5f}"
           f"  完全一致 {np.mean(ltp == bot[i2, 3])*100:.1f}%")
     # 基準: bot の連続する 2 行(約 5 秒)の mid の動き
     cons = np.where(np.isin(idx[:-1] + 1, idx[1:]) & (np.diff(idx) == 1))[0]
     if len(cons):
         a_, b_ = idx[cons], idx[cons] + 1
         m0, m1 = (bot[a_, 1] + bot[a_, 2]) / 2, (bot[b_, 1] + bot[b_, 2]) / 2
-        step = np.abs(m1 - m0) / m0 * 1e4
-        print(f"  基準 bot の連続 2 行(約 5 秒)の mid の動き (bp): 絶対値の中央値 {np.median(step):.3f}  p95 {pct(step, 95):.3f}")
+        step = np.abs(m1 - m0) / m0 * 100  # 値動き率だが上の差と並べて比べるので同じ % で出す
+        print(f"  基準 bot の連続 2 行(約 5 秒)の mid の動き (%): 絶対値の中央値 {np.median(step):.5f}  p95 {pct(step, 95):.5f}")
 
 
 if __name__ == "__main__":

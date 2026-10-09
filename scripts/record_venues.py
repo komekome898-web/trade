@@ -3,8 +3,8 @@
 data/venues/.
 
 Why this exists (Round 22 venue survey): the effective-cost floor race is
-tight between bitFlyer CFD (~5.4bps) and GMO Coin exchange leverage
-(~5.3bps); bitbank dropped its BTC/JPY rebate but keeps maker -0.02% on the
+tight between bitFlyer CFD (~0.054%) and GMO Coin exchange leverage
+(~0.053%); bitbank dropped its BTC/JPY rebate but keeps maker -0.02% on the
 other JPY pairs, and GMO spot pays maker -0.01..-0.03%. Deciding the next
 research steps (cross-venue lead/lag, CFD-spot basis re-audit, rebate-maker
 feasibility) needs a CONTINUOUS multi-venue record — a 4h snapshot is a

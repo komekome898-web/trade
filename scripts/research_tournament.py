@@ -25,7 +25,7 @@ C1  COST challenger -- identical signal; the exit becomes a resting maker
     semantics), with the strategy's own signal exit and the 0.5% protective
     stop kept as taker fallbacks.
     Rationale: KNOWLEDGE.md sec.2 "adverse selection is an ALLY on the exit
-    side of a trend trade" -- report k measured a +33bps selection effect for
+    side of a trend trade" -- report k measured a +0.33% selection effect for
     TP limits at second scale. Requires the additive engine option
     exit_execution="maker_tp" / maker_tp_pct (src/bot/backtest/engine.py,
     tests/test_engine_maker_exit.py).
@@ -68,7 +68,7 @@ SECONDARY data/binance_BTCUSDT_1m_full.csv used as BOTH traded instrument and
 
 Costs (repo-measured constants, research-protocol sec.3)
 --------------------------------------------------------
-taker per side 3.2bps = spread 0.0235%/2 + slippage 0.02%; fees 0% both sides;
+taker per side 0.032% = spread 0.0235%/2 + slippage 0.02%; fees 0% both sides;
 maker legs free (no fee, no spread, filled at the limit); swap 0.06%/day on
 carried positions.
 
@@ -402,7 +402,7 @@ def maker_selection_counterfactual(r: dict) -> str:
 
     Here the maker leg is an EXIT, so the split that matters is "trades whose
     resting TP was traded through" vs "trades the TP never reached and which
-    fell back to a taker exit". Report k measured +33bps in favour of the
+    fell back to a taker exit". Report k measured +0.33% in favour of the
     filled group at second scale; this is the same measurement on 1m bars.
     """
     filled = [t["pct"] for t in r["trips"] if t["reason"] == "maker_tp"]
@@ -412,7 +412,7 @@ def maker_selection_counterfactual(r: dict) -> str:
     fm, mm = float(np.mean(filled)), float(np.mean(missed))
     return (f"    maker-TP selection: TP filled n={len(filled)} mean {fm:+.4f}%"
             f" | TP never reached n={len(missed)} mean {mm:+.4f}%"
-            f" | selection effect {(fm - mm) * 100:+.1f}bps"
+            f" | selection effect {fm - mm:+.3f}%"
             f"  ({'ALLY' if fm > mm else 'ENEMY'} on this exit)")
 
 
@@ -502,7 +502,7 @@ def main() -> int:
           "vs C1 cost / C2 regime / C3 asymmetry")
     print("=" * 108)
     print(f"  costs: taker {TAKER_SIDE*100:.4f}%/side (= spread {FX_COSTS.spread_pct}%/2 "
-          f"+ slippage {FX_COSTS.slippage_pct}%) ~ 3.2bps; round trip ~6.35bps; "
+          f"+ slippage {FX_COSTS.slippage_pct}%) ~ 0.032%; round trip ~0.0635%; "
           f"maker legs free; swap {SWAP_DAILY_PCT}%/day")
     print(f"  notional {NOTIONAL:.0f} JPY/trade, paper equity {INITIAL_EQUITY:.0f} JPY")
     print(f"  MATCH RULE: challenger wins iff judgment-segment net expectancy/trade > "
@@ -662,7 +662,7 @@ def main() -> int:
             if not beats_exp:
                 missing.append(f"net expectancy {r['pct']:+.4f}% <= champion "
                                f"{champ_pj['pct']:+.4f}% "
-                               f"(shortfall {(r['pct']-champ_pj['pct'])*100:+.1f}bps)")
+                               f"(shortfall {r['pct']-champ_pj['pct']:+.3f}%)")
             if not beats_dd:
                 missing.append(f"maxDD {r['dd']:.2f}% >= champion {champ_pj['dd']:.2f}%")
             if r["n"] < MIN_TRADES_JUDGMENT:

@@ -1152,7 +1152,7 @@ def section7(ws_dir: Path, grids: dict[int, Grid], cells: dict[tuple, Cell],
     if not paths:
         print("no recordings -- skipped")
         return
-    df = build_series(paths, interval_sec=1.0, depth_bps=5.0)
+    df = build_series(paths, interval_sec=1.0, depth_pct=0.05)  # 5 x 1e-4 of mid; board takes % since L-920
     if df.empty:
         print("no board snapshots -- skipped")
         return

@@ -113,7 +113,10 @@ STOP_CUM_PNL_YEN = -15_000.0            # S4: cumulative realised loss floor
 # ---- pass bars (PREREG §5; transcribed from the judgment proposals) ---------
 # 1348's bar comes from the PREREG 追記 2026-09-06 (same definition: the
 # optimistic CI lower bound of its own development set).
-PASS_BAR_BPS = {"1343": 6.1, "1591": 6.3, "1348": 2.7}
+# In percent of the price (c is a cost: two prices compared, plus a fee rate --
+# not a price move, so not bp; L-920/L-923). The PREREG wrote them as
+# 6.1 / 6.3 / 2.7 bps = 0.061 / 0.063 / 0.027 %.
+PASS_BAR_PCT = {"1343": 0.061, "1591": 0.063, "1348": 0.027}
 TARGET_N_PER_SYMBOL = 50
 BOOTSTRAP_BLOCK = 5
 BOOTSTRAP_N = 2000
@@ -157,11 +160,17 @@ LEDGER_COLUMNS = (
     "exchange_name", "entry_order_id", "exit_order_id", "fill_buy", "fill_sell",
     "fill_buy_time", "fill_sell_time", "print_close", "print_open",
     "print_source", "board_close_snapshot", "board_open_snapshot",
-    "idx_close", "idx_open", "tick_yen", "tick_bps",
-    "e_buy_bps", "e_sell_bps", "c_bps", "c_ticks",
+    "idx_close", "idx_open", "tick_yen", "tick_pct",
+    "e_buy_pct", "e_sell_pct", "c_pct", "c_ticks",
     "commission_yen", "commission_tax_yen", "pnl_yen", "cum_pnl_yen",
     "counted_in_n", "excluded_reason", "note",
 )
+# Ledgers written before 2026-10-09 named these columns *_bps and held the
+# same quantities x 100 (x 1e4 of the ratio). read_ledger converts them;
+# append_ledger_row rewrites such a file once (keeping the original as
+# <file>.pre_l920.bak) so new rows never land under the old header.
+LEGACY_LEDGER_COLUMNS = {"tick_bps": "tick_pct", "e_buy_bps": "e_buy_pct",
+                         "e_sell_bps": "e_sell_pct", "c_bps": "c_pct"}
 
 
 class SanityError(Exception):
@@ -721,9 +730,33 @@ def order_is_finished_unfilled(order_row: dict) -> bool:
 # ledger
 
 
+def _migrate_legacy_ledger(path: Path) -> None:
+    """Rewrite a ledger whose header still has the *_bps columns (see
+    LEGACY_LEDGER_COLUMNS) to the current columns, values / 100. The original
+    bytes are kept at <file>.pre_l920.bak; the rewrite is a temp file + replace."""
+    if not path.exists() or path.stat().st_size == 0:
+        return
+    with path.open(encoding="utf-8", newline="") as f:
+        header = next(csv.reader(f), [])
+    if not any(c in LEGACY_LEDGER_COLUMNS for c in header):
+        return
+    rows = read_ledger(path)
+    backup = path.with_name(path.name + ".pre_l920.bak")
+    if not backup.exists():
+        backup.write_bytes(path.read_bytes())
+    tmp = path.with_name(path.name + ".migrating")
+    with tmp.open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(LEDGER_COLUMNS), extrasaction="ignore")
+        writer.writeheader()
+        for r in rows:
+            writer.writerow({k: ("" if r.get(k) is None else r.get(k)) for k in LEDGER_COLUMNS})
+    tmp.replace(path)
+
+
 def append_ledger_row(path: str | Path, row: dict) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
+    _migrate_legacy_ledger(path)
     exists = path.exists() and path.stat().st_size > 0
     with path.open("a", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(LEDGER_COLUMNS),
@@ -739,7 +772,15 @@ def read_ledger(path: str | Path) -> list[dict]:
     if not path.exists():
         return []
     with path.open(encoding="utf-8", newline="") as f:
-        return list(csv.DictReader(f))
+        rows = list(csv.DictReader(f))
+    for r in rows:  # a ledger written before 2026-10-09: *_bps -> *_pct (/ 100)
+        for old, new in LEGACY_LEDGER_COLUMNS.items():
+            if old in r:
+                v = r.pop(old)
+                if new not in r:
+                    x = _as_float(v)
+                    r[new] = "" if x is None else repr(x / 100)
+    return rows
 
 
 def _as_float(value: Any) -> float | None:
@@ -757,27 +798,30 @@ def round_trip_metrics(*, fill_buy: float, fill_sell: float, print_close: float,
     """PREREG §4 in one place, so the ledger and any re-analysis agree.
 
     `c` is defined as the SUBTRACTION — printed overnight return minus realised
-    overnight return, plus commission in bps — and `e_buy + e_sell` is the
+    overnight return, plus commission — and `e_buy + e_sell` is the
     first-order approximation kept alongside as a check, not as the definition.
+    All rates are in percent: they compare a fill with the print of the same
+    auction, or add a fee rate, so they are not price moves and not bp
+    (L-920/L-923).
     """
-    e_buy = (fill_buy - print_close) / print_close * 1e4
-    e_sell = (print_open - fill_sell) / print_open * 1e4
+    e_buy = (fill_buy - print_close) / print_close * 100
+    e_sell = (print_open - fill_sell) / print_open * 100
     printed = print_open / print_close - 1.0
     realised = fill_sell / fill_buy - 1.0
     fees = float(commission_yen) + float(commission_tax_yen)
-    fee_bps = (fees / (fill_buy * qty) * 1e4) if fill_buy > 0 and qty > 0 else 0.0
-    c_bps = (printed - realised) * 1e4 + fee_bps
+    fee_pct = (fees / (fill_buy * qty) * 100) if fill_buy > 0 and qty > 0 else 0.0
+    c_pct = (printed - realised) * 100 + fee_pct
     tick = float(tick_yen) if tick_yen else float(etf_tick_yen(print_close))
-    tick_bps = tick / print_close * 1e4
+    tick_pct = tick / print_close * 100
     return {
-        "e_buy_bps": e_buy,
-        "e_sell_bps": e_sell,
-        "c_bps": c_bps,
-        "c_bps_approx": e_buy + e_sell + fee_bps,
-        "c_ticks": c_bps / tick_bps if tick_bps else float("nan"),
+        "e_buy_pct": e_buy,
+        "e_sell_pct": e_sell,
+        "c_pct": c_pct,
+        "c_pct_approx": e_buy + e_sell + fee_pct,
+        "c_ticks": c_pct / tick_pct if tick_pct else float("nan"),
         "tick_yen": tick,
-        "tick_bps": tick_bps,
-        "fee_bps": fee_bps,
+        "tick_pct": tick_pct,
+        "fee_pct": fee_pct,
         "pnl_yen": (fill_sell - fill_buy) * qty - fees,
     }
 
@@ -798,23 +842,23 @@ def summarise_ledger(path: str | Path, *, symbols: Iterable[str] = ALLOWED_SYMBO
     rows = read_ledger(path)
     out: dict[str, Any] = {"n_target": TARGET_N_PER_SYMBOL, "symbols": {}}
     for symbol in symbols:
-        values = [_as_float(r.get("c_bps")) for r in rows
+        values = [_as_float(r.get("c_pct")) for r in rows
                   if str(r.get("symbol") or "") == symbol
                   and str(r.get("counted_in_n") or "").lower() == "true"]
         kept = np.array([v for v in values if v is not None], dtype=float)
         excluded = sum(1 for r in rows if str(r.get("symbol") or "") == symbol
                        and str(r.get("counted_in_n") or "").lower() != "true")
-        bar = PASS_BAR_BPS.get(symbol)
+        bar = PASS_BAR_PCT.get(symbol)
         entry: dict[str, Any] = {"n": int(kept.size), "excluded": excluded,
-                                 "pass_bar_bps": bar}
+                                 "pass_bar_pct": bar}
         if kept.size:
             lo, hi = block_bootstrap_ci(kept, block=block, n_boot=n_boot, seed=seed)
-            entry.update({"mean_c_bps": float(kept.mean()),
-                          "median_c_bps": float(np.median(kept)),
-                          "sd_c_bps": float(kept.std(ddof=1)) if kept.size > 1 else 0.0,
-                          "max_c_bps": float(kept.max()),
-                          "p95_c_bps": float(np.percentile(kept, 95)),
-                          "ci_lo_bps": lo, "ci_hi_bps": hi})
+            entry.update({"mean_c_pct": float(kept.mean()),
+                          "median_c_pct": float(np.median(kept)),
+                          "sd_c_pct": float(kept.std(ddof=1)) if kept.size > 1 else 0.0,
+                          "max_c_pct": float(kept.max()),
+                          "p95_c_pct": float(np.percentile(kept, 95)),
+                          "ci_lo_pct": lo, "ci_hi_pct": hi})
             if kept.size < TARGET_N_PER_SYMBOL:
                 entry["verdict"] = "incomplete"
             elif bar is None:
@@ -1398,7 +1442,7 @@ class EtfAuctionExecutor:
                                excluded)
         append_ledger_row(self.ledger_path, row)
         self.emit(symbol, "ledger", "row", entry_date=row["entry_date"],
-                  exit_date=row["exit_date"], c_bps=row["c_bps"],
+                  exit_date=row["exit_date"], c_pct=row["c_pct"],
                   counted_in_n=row["counted_in_n"], excluded_reason=row["excluded_reason"])
         self._apply_stop_rules(symbol, row)
         return row
@@ -1421,10 +1465,10 @@ class EtfAuctionExecutor:
                 print_close=float(print_close), print_open=float(print_open),
                 qty=qty, commission_yen=buy["commission"] + sell["commission"],
                 commission_tax_yen=buy["commission_tax"] + sell["commission_tax"])
-            approx = metrics["c_bps_approx"]
-            if abs(approx - metrics["c_bps"]) > 0.5:
+            approx = metrics["c_pct_approx"]
+            if abs(approx - metrics["c_pct"]) > 0.005:  # 0.005 % (was written as 0.5 bps)
                 notes.append(f"c vs first-order approx differ by "
-                             f"{approx - metrics['c_bps']:.2f}bps")
+                             f"{approx - metrics['c_pct']:.4f}%")
         elif not excluded:
             excluded = "print_series_missing"
             notes.append("printed close/open unavailable for this round trip")
@@ -1433,9 +1477,9 @@ class EtfAuctionExecutor:
         tick_yen = metrics.get("tick_yen")
         if tick_yen is None and print_close:
             tick_yen = float(etf_tick_yen(float(print_close)))
-        tick_bps = metrics.get("tick_bps")
-        if tick_bps is None and print_close and tick_yen:
-            tick_bps = tick_yen / float(print_close) * 1e4
+        tick_pct = metrics.get("tick_pct")
+        if tick_pct is None and print_close and tick_yen:
+            tick_pct = tick_yen / float(print_close) * 100
 
         return {
             "symbol": symbol,
@@ -1460,10 +1504,10 @@ class EtfAuctionExecutor:
             "idx_close": (index.get(entry_date) or {}).get("close"),
             "idx_open": (index.get(exit_date) or {}).get("open"),
             "tick_yen": tick_yen,
-            "tick_bps": tick_bps,
-            "e_buy_bps": metrics.get("e_buy_bps"),
-            "e_sell_bps": metrics.get("e_sell_bps"),
-            "c_bps": metrics.get("c_bps"),
+            "tick_pct": tick_pct,
+            "e_buy_pct": metrics.get("e_buy_pct"),
+            "e_sell_pct": metrics.get("e_sell_pct"),
+            "c_pct": metrics.get("c_pct"),
             "c_ticks": metrics.get("c_ticks"),
             "commission_yen": buy["commission"] + sell["commission"],
             "commission_tax_yen": buy["commission_tax"] + sell["commission_tax"],
@@ -1486,14 +1530,14 @@ class EtfAuctionExecutor:
         """PREREG §6.  Evaluated per round trip, never on an aggregate — the
         aggregate is computed exactly once, at the end (PREREG §5)."""
         state = self.states[symbol]
-        tick_bps = _as_float(row.get("tick_bps")) or 0.0
-        limit = STOP_TICK_MULTIPLE * tick_bps
-        for leg in ("e_buy_bps", "e_sell_bps"):
+        tick_pct = _as_float(row.get("tick_pct")) or 0.0
+        limit = STOP_TICK_MULTIPLE * tick_pct
+        for leg in ("e_buy_pct", "e_sell_pct"):
             value = _as_float(row.get(leg))
             if value is not None and limit > 0 and abs(value) > limit:
                 self.pause.trip("S1_leg_deviation", "*",
-                                f"{symbol} {leg}={value:.2f}bps exceeds "
-                                f"{STOP_TICK_MULTIPLE}x tick ({limit:.2f}bps)")
+                                f"{symbol} {leg}={value:.4f}% exceeds "
+                                f"{STOP_TICK_MULTIPLE}x tick ({limit:.4f}%)")
                 self.emit(symbol, "ledger", "stop_rule", stop_rule="S1", leg=leg,
                           value=value, limit=limit)
 

@@ -69,7 +69,7 @@ def trades_of(z):
     m = len(d) - 2
     bar, fill, ex = d[:m], d[1:m + 1], d[2:m + 2]
     e = z["exposure"][bar]
-    p = e * (z["open"][ex] / z["open"][fill] - 1.0) * 1e4
+    p = e * (z["open"][ex] / z["open"][fill] - 1.0) * 100  # %(建玉を掛けた損益の率。L-920 で bp は値動き率だけの名前)
     s = np.sign(e)
     out, i = [], 0
     while i < m:
@@ -87,7 +87,7 @@ def trades_of(z):
 
 
 def main():
-    out = ["# カード 6 のやり直しの表(保存済みの出力と USDJPY の置き場から。bp、経費の前、成行・次の足の始値で約定)", ""]
+    out = ["# カード 6 のやり直しの表(保存済みの出力と USDJPY の置き場から。損益は %、窓 g と D5 の値動きは値動き率(bp)、経費の前、成行・次の足の始値で約定)", ""]
     uj_t, uj_c = load_usdjpy()
     chg = np.flatnonzero(np.diff(uj_c) != 0) + 1  # 前の行と値が違う行
     weeks = {}
@@ -97,14 +97,14 @@ def main():
         tr, d = trades_of(z)
         ext = json.load(open(os.path.join(M, v, "extra.json")))["trades"]
         diag = json.load(open(os.path.join(M, v, "diagnostics.json")))["per_week"]
-        out.append(f"- {v}: 作り直した取引 {len(tr)} 本・和 {sum(t['pnl'] for t in tr):+,.1f}(extra.json: 買い {ext['long']['n']}・売り {ext['short']['n']}、"
+        out.append(f"- {v}: 作り直した取引 {len(tr)} 本・和 {sum(t['pnl'] for t in tr):+,.3f}(extra.json: 買い {ext['long']['n']}・売り {ext['short']['n']}、"
                    f"作り直し: 買い {sum(1 for t in tr if t['side'] > 0)})")
         os.makedirs(os.path.join(HERE, f"trades_{v}"), exist_ok=True)
         with gzip.open(os.path.join(HERE, f"trades_{v}", "trades.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
             w = csv.writer(fh)
-            w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_bp"])
+            w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_pct"])
             for t in tr:
-                w.writerow([iso(t["signal_ns"]), iso(t["entry_ns"]), iso(t["exit_ns"]), t["side"], f"{t['entry_px']:.1f}", f"{t['pnl']:.6f}"])
+                w.writerow([iso(t["signal_ns"]), iso(t["entry_ns"]), iso(t["exit_ns"]), t["side"], f"{t['entry_px']:.1f}", f"{t['pnl']:.8f}"])
         res[v] = {"z": z, "tr": tr, "d": d}
         if v == "btc":
             s_dec, c_dec = z["start_ns"][d], z["close"][d]
@@ -135,24 +135,24 @@ def main():
         w.writerow(["r_utc", "jst_day", "g_usdjpy_bp", "g_btc_bp", "side_btc", "pnl_btc", "side_usdjpy", "pnl_usdjpy"])
         for r in sorted(weeks):
             x = weeks[r]
-            w.writerow([iso(r), jst_day(r), f"{x['g_usdjpy'] * 1e4:.3f}", f"{x['g_btc'] * 1e4:.3f}", x.get("side_btc"), f"{x.get('pnl_btc', 0):.4f}",
-                        x.get("side_usdjpy"), f"{x.get('pnl_usdjpy', 0):.4f}"])
+            w.writerow([iso(r), jst_day(r), f"{x['g_usdjpy'] * 1e4:.3f}", f"{x['g_btc'] * 1e4:.3f}", x.get("side_btc"), f"{x.get('pnl_btc', 0):.6f}",
+                        x.get("side_usdjpy"), f"{x.get('pnl_usdjpy', 0):.6f}"])
 
     # D0 週明けの時刻
     by = collections.defaultdict(list)
     for r, x in weeks.items():
         dtu = datetime.fromtimestamp(r / 1e9, tz=timezone.utc)
         by[f"{WD[dtu.weekday()]} {dtu.hour:02d}時"].append(x)
-    out += ["## D0 週明けの行の時刻(UTC の曜日と時)ごとの週数と損益の和", "", "| 時刻 | 週 | btc の和 | usdjpy の和 |", "|---|---|---|---|"]
+    out += ["## D0 週明けの行の時刻(UTC の曜日と時)ごとの週数と損益の和", "", "| 時刻 | 週 | btc の和(%) | usdjpy の和(%) |", "|---|---|---|---|"]
     for k in sorted(by, key=lambda s: (-len(by[s]), s)):
         xs = by[k]
-        out.append(f"| {k} | {len(xs)} | {sum(x.get('pnl_btc', 0) for x in xs):+,.1f} | {sum(x.get('pnl_usdjpy', 0) for x in xs):+,.1f} |")
-    out += ["", "NY 17 時(日 21・22 時 UTC)から外れた週:", "", "| r(UTC) | 日本時間の日 | 前の週の最後の値の変化(UTC、行の終わり) | g_usdjpy(bp) | g_btc(bp) | btc の損益 | usdjpy の損益 |", "|---|---|---|---|---|---|---|"]
+        out.append(f"| {k} | {len(xs)} | {sum(x.get('pnl_btc', 0) for x in xs):+,.3f} | {sum(x.get('pnl_usdjpy', 0) for x in xs):+,.3f} |")
+    out += ["", "NY 17 時(日 21・22 時 UTC)から外れた週:", "", "| r(UTC) | 日本時間の日 | 前の週の最後の値の変化(UTC、行の終わり) | g_usdjpy(bp) | g_btc(bp) | btc の損益(%) | usdjpy の損益(%) |", "|---|---|---|---|---|---|---|"]
     for r in sorted(weeks):
         dtu = datetime.fromtimestamp(r / 1e9, tz=timezone.utc)
         if not (dtu.weekday() == 6 and dtu.hour in (21, 22)):
             x = weeks[r]
-            out.append(f"| {iso(r)} | {jst_day(r)} | {iso(x['t_last'])} | {x['g_usdjpy'] * 1e4:+.2f} | {x['g_btc'] * 1e4:+.2f} | {x.get('pnl_btc', 0):+.1f} | {x.get('pnl_usdjpy', 0):+.1f} |")
+            out.append(f"| {iso(r)} | {jst_day(r)} | {iso(x['t_last'])} | {x['g_usdjpy'] * 1e4:+.2f} | {x['g_btc'] * 1e4:+.2f} | {x.get('pnl_btc', 0):+.3f} | {x.get('pnl_usdjpy', 0):+.3f} |")
 
     # 日の並びと前半・後半(daily.csv の日)
     days = sorted(l.split(",")[0] for l in open(os.path.join(M, "btc", "daily.csv")).read().splitlines()[1:])
@@ -165,13 +165,13 @@ def main():
             su[dd] += x
             cn[dd] += 1
         return dt.group_ratio_ci(pd, su, cn)
-    f = lambda q: "—" if q["per_trade"] is None else (f"{q['per_trade']:+.2f}" + ("" if q["lo"] is None else f" [{q['lo']:+.2f}, {q['hi']:+.2f}]"))  # noqa: E731
+    f = lambda q: "—" if q["per_trade"] is None else (f"{q['per_trade']:+.4f}" + ("" if q["lo"] is None else f" [{q['lo']:+.4f}, {q['hi']:+.4f}]"))  # noqa: E731
     pset = {k: set(v) for k, v in parts.items()}
 
     # D2 前の日の荒れ具合
     import vol_split_daily as vs
     cls = vs.classify(vs.daily_vol(vs.load_closes_by_day()))
-    out += ["", f"## D2 前の日(日本時間)の荒れ具合 × 前半・後半(1 取引 = 1 週あたり bp、区間は日の塊。前半・後半の境 {days[half]})", "",
+    out += ["", f"## D2 前の日(日本時間)の荒れ具合 × 前半・後半(1 取引 = 1 週あたり %、区間は日の塊。前半・後半の境 {days[half]})", "",
             "| 変種 | 区分 | 全期間: 週・1 取引あたり [区間] | 前半 | 後半 |", "|---|---|---|---|---|"]
     for v in ("btc", "usdjpy"):
         for c in ("low", "mid", "high", None):
@@ -183,7 +183,7 @@ def main():
             out.append(f"| {v} | {({'low': '低', 'mid': '中', 'high': '高'}).get(c, '区分なし')} | {cells[0]} | {cells[1]} | {cells[2]} |")
 
     # D3 |g| の三分位
-    out += ["", "## D3 |g| の三分位【建ての前に決まる群】× 前半・後半(1 取引あたり bp)。btc は |g_btc|、usdjpy は |g_usdjpy| で切る", "",
+    out += ["", "## D3 |g| の三分位【建ての前に決まる群】× 前半・後半(1 取引あたり %)。btc は |g_btc|、usdjpy は |g_usdjpy| で切る", "",
             "| 変種 | |g| の帯(bp) | 全期間: 週・1 取引あたり [区間] | 前半 | 後半 |", "|---|---|---|---|---|"]
     for v in ("btc", "usdjpy"):
         key = "g_btc" if v == "btc" else "g_usdjpy"
@@ -242,9 +242,9 @@ def main():
     both = [x for x in weeks.values() if x.get("side_btc") and x.get("side_usdjpy")]
     ag = [x for x in both if x["side_btc"] == x["side_usdjpy"]]
     out += ["", f"## 2 変種の週ごとの向き: 両方建てた週 {len(both)}、向きが同じ週 {len(ag)}", "",
-            "| 週の組 | 週 | btc の和 | usdjpy の和 |", "|---|---|---|---|"]
+            "| 週の組 | 週 | btc の和(%) | usdjpy の和(%) |", "|---|---|---|---|"]
     for nm, xs in (("向きが同じ", ag), ("向きが逆", [x for x in both if x["side_btc"] != x["side_usdjpy"]])):
-        out.append(f"| {nm} | {len(xs)} | {sum(x['pnl_btc'] for x in xs):+,.1f} | {sum(x['pnl_usdjpy'] for x in xs):+,.1f} |")
+        out.append(f"| {nm} | {len(xs)} | {sum(x['pnl_btc'] for x in xs):+,.3f} | {sum(x['pnl_usdjpy'] for x in xs):+,.3f} |")
     open(os.path.join(HERE, "C6_TABLES.md"), "w").write("\n".join(out) + "\n")
     print("\n".join(out))
 

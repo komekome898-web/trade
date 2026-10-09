@@ -90,67 +90,67 @@ def test_empty_book_has_no_mid_and_zero_imbalance():
     book = BookState()
     assert book.best_bid is None and book.best_ask is None
     assert book.mid is None and book.spread is None
-    assert book.depth_within_bps(5.0) == (0.0, 0.0)
-    assert book.imbalance(5.0) == 0.0
+    assert book.depth_within_pct(0.05) == (0.0, 0.0)
+    assert book.imbalance(0.05) == 0.0
 
 
 def test_one_sided_book_has_no_mid():
     book = BookState()
     book.apply_snapshot(board_msg(bids=[(999_900, 1.0)]))
     assert book.mid is None
-    assert book.imbalance(5.0) == 0.0
+    assert book.imbalance(0.05) == 0.0
 
 
 # --- depth / imbalance -------------------------------------------------------
 
-def test_depth_within_bps_sums_only_levels_inside_the_band():
+def test_depth_within_pct_sums_only_levels_inside_the_band():
     book = BookState()
     book.apply_snapshot(snapshot())
-    # mid 1_000_000; 5 bps = +/- 500 JPY -> [999_500, 1_000_500]
-    assert book.depth_within_bps(5.0) == (3.0, 3.0)  # two levels each side
-    # 20 bps = +/- 2000 -> also picks up 999_000 / 1_001_000
-    assert book.depth_within_bps(20.0) == (7.0, 7.0)
-    # 200 bps = +/- 20_000 -> whole book
-    assert book.depth_within_bps(200.0) == (15.0, 15.0)
-    # 0.5 bps = +/- 50 -> nothing rests that close
-    assert book.depth_within_bps(0.5) == (0.0, 0.0)
+    # mid 1_000_000; 0.05 % = +/- 500 JPY -> [999_500, 1_000_500]
+    assert book.depth_within_pct(0.05) == (3.0, 3.0)  # two levels each side
+    # 0.2 % = +/- 2000 -> also picks up 999_000 / 1_001_000
+    assert book.depth_within_pct(0.2) == (7.0, 7.0)
+    # 2 % = +/- 20_000 -> whole book
+    assert book.depth_within_pct(2) == (15.0, 15.0)
+    # 0.005 % = +/- 50 -> nothing rests that close
+    assert book.depth_within_pct(0.005) == (0.0, 0.0)
 
 
 def test_depth_band_edge_is_inclusive():
     book = BookState()
     book.apply_snapshot(board_msg(bids=[(999_500, 1.0)], asks=[(1_000_500, 2.0)]))
     # mid 1_000_000, band edge lands exactly on both levels
-    assert book.depth_within_bps(5.0) == (1.0, 2.0)
+    assert book.depth_within_pct(0.05) == (1.0, 2.0)
 
 
 def test_imbalance_is_positive_when_bid_depth_dominates():
     book = BookState()
     book.apply_snapshot(snapshot())
-    assert book.imbalance(5.0) == pytest.approx(0.0)  # symmetric book
+    assert book.imbalance(0.05) == pytest.approx(0.0)  # symmetric book
     book.apply_diff(board_msg(bids=[(999_900, 9.0)]))  # 1.0 -> 9.0 on the bid
-    bid_depth, ask_depth = book.depth_within_bps(5.0)
+    bid_depth, ask_depth = book.depth_within_pct(0.05)
     assert (bid_depth, ask_depth) == (11.0, 3.0)
-    assert book.imbalance(5.0) == pytest.approx((11.0 - 3.0) / 14.0)
-    assert book.imbalance(5.0) > 0
+    assert book.imbalance(0.05) == pytest.approx((11.0 - 3.0) / 14.0)
+    assert book.imbalance(0.05) > 0
 
 
 def test_imbalance_is_negative_when_ask_depth_dominates():
     book = BookState()
     book.apply_snapshot(snapshot())
     book.apply_diff(board_msg(asks=[(1_000_100, 9.0)]))
-    assert book.imbalance(5.0) == pytest.approx((3.0 - 11.0) / 14.0)
-    assert book.imbalance(5.0) < 0
+    assert book.imbalance(0.05) == pytest.approx((3.0 - 11.0) / 14.0)
+    assert book.imbalance(0.05) < 0
 
 
 def test_imbalance_is_bounded_and_zero_when_the_band_holds_nothing():
     book = BookState()
     book.apply_snapshot(board_msg(bids=[(999_000, 3.0)], asks=[(1_001_000, 1.0)]))
-    # mid 1_000_000, 5 bps band = +/- 500: both best levels sit outside it
-    assert book.depth_within_bps(5.0) == (0.0, 0.0)
-    assert book.imbalance(5.0) == 0.0
+    # mid 1_000_000, 0.05 % band = +/- 500: both best levels sit outside it
+    assert book.depth_within_pct(0.05) == (0.0, 0.0)
+    assert book.imbalance(0.05) == 0.0
     # widen past both and the sign follows the heavier side, magnitude <= 1
-    assert 0.0 < book.imbalance(200.0) <= 1.0
-    assert book.imbalance(200.0) == pytest.approx(0.5)
+    assert 0.0 < book.imbalance(2) <= 1.0
+    assert book.imbalance(2) == pytest.approx(0.5)
 
 
 # --- iter_messages -----------------------------------------------------------
@@ -189,7 +189,7 @@ def test_build_series_samples_last_state_per_second(tmp_path):
         (1001.2, DIFF_CH, board_msg(bids=[(1_000_000, 1.0)])),            # mid 1_000_100
         (1002.8, DIFF_CH, board_msg(asks=[(1_000_150, 1.0)])),            # mid 1_000_075
     ])
-    df = build_series([path], interval_sec=1.0, depth_bps=5.0)
+    df = build_series([path], interval_sec=1.0, depth_pct=0.05)
     assert list(df.columns) == ["mid", "spread", "bid_depth", "ask_depth", "imbalance"]
     assert len(df) == 3
     assert list(df["mid"]) == [1_000_000.0, 1_000_100.0, 1_000_075.0]
@@ -265,7 +265,7 @@ def test_build_series_imbalance_and_depth_columns_track_the_book(tmp_path):
         (5000.0, SNAP_CH, snapshot()),
         (5001.0, DIFF_CH, board_msg(bids=[(999_900, 9.0)])),
     ])
-    df = build_series([path], interval_sec=1.0, depth_bps=5.0)
+    df = build_series([path], interval_sec=1.0, depth_pct=0.05)
     assert list(df["bid_depth"]) == [3.0, 11.0]
     assert list(df["ask_depth"]) == [3.0, 3.0]
     assert df["imbalance"].iloc[0] == pytest.approx(0.0)

@@ -54,7 +54,7 @@ Verbatim transcription of the frozen pre-registration
     2. **分位スプレッド**: 合成の上位20%週 − 下位20%週 の平均翌週リターン > 0 かつ t ≥ 1.5
     3. **台地(成分の符号整合)**: 6成分中 **4つ以上**がOOSで事前指定と同符号のIC
        (合成が1成分に支配されていないことの要求)
-    4. コスト: 週次の建玉切替を想定し **往復6bps/週**(bitFlyer taker)を分位スプレッドから控除しても正
+    4. コスト: 週次の建玉切替を想定し **往復 0.06%/週**(bitFlyer taker)を分位スプレッドから控除しても正
 
     ## 5. 必須報告
 
@@ -104,7 +104,7 @@ RUNLOG = DATA / "RC1_RUN.txt"
 
 SEED = 20260901
 N_BOOT = 10_000
-COST_PER_WEEK = 0.0006          # PREREG §4.4 -- 6 bps round trip / week
+COST_PER_WEEK = 0.0006          # PREREG §4.4 -- 0.06% round trip / week
 Z_WINDOW = 365                  # trailing rows, current day EXCLUDED
 Z_MIN_OBS = 300                 # non-missing rows required inside that window
 MIN_COMPONENTS = 4              # PREREG §1
@@ -344,7 +344,7 @@ def report_window(rows, label: str) -> dict:
             f"{r['mean_fwd']*100:+9.3f}% {r['median_fwd']*100:+8.3f}% "
             f"{r['hit']*100:6.1f}%")
     say(f"  Q5-Q1 spread = {spread*100:+.3f}%/wk   Welch t = {tspread:+.3f}")
-    say(f"  after {COST_PER_WEEK*1e4:.0f} bps/wk cost: "
+    say(f"  after {COST_PER_WEEK*100:.2f}%/wk cost: "
         f"{(spread - COST_PER_WEEK)*100:+.3f}%/wk")
 
     say("")
@@ -381,7 +381,7 @@ def main() -> None:
     say("RC1 — 大衆心理×大口×テクニカルの等重量合成指標(PREREG 2026-09-01 凍結)")
     say("=" * 78)
     say(f"features: {FEATURES.relative_to(ROOT)}")
-    say(f"seed={SEED}  bootstrap reps={N_BOOT}  cost={COST_PER_WEEK*1e4:.0f} bps/week")
+    say(f"seed={SEED}  bootstrap reps={N_BOOT}  cost={COST_PER_WEEK*100:.2f}%/week")
     say("")
 
     feat = load_features()
@@ -451,7 +451,7 @@ def main() -> None:
         f"-> {'PASS' if c2 else 'FAIL'}")
     say(f"  基準3 6成分中4以上が事前符号      : {st['comp_ok']}/6 "
         f"-> {'PASS' if c3 else 'FAIL'}")
-    say(f"  基準4 6bps/週控除後も正           : "
+    say(f"  基準4 0.06%/週控除後も正          : "
         f"{(st['spread']-COST_PER_WEEK)*100:+.3f}%/wk "
         f"-> {'PASS' if c4 else 'FAIL'}")
     say("")

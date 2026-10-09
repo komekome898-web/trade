@@ -4,7 +4,7 @@ R='/home/user/trade/docs/RESEARCH/cards'
 out={}
 def P_of(z):
     o=z['open']; e=np.where(z['decided'],z['exposure'],np.nan); n=len(o)
-    r=np.full(n,np.nan); r[:-2]=o[2:]/o[1:-1]-1; return np.nan_to_num(e*r*1e4), np.nan_to_num(e)
+    r=np.full(n,np.nan); r[:-2]=o[2:]/o[1:-1]-1; return np.nan_to_num(e*r*100), np.nan_to_num(e)  # P は %(L-920 で bp は値動き率だけの名前)
 # c6
 for v in ['usdjpy','btc']:
     z=np.load(f'{R}/c6_weekend_gap_revert/measure/{v}/run.npz'); P,e=P_of(z); t=z['end_ns']
@@ -15,8 +15,8 @@ for v in ['usdjpy','btc']:
     a=np.abs(g); q=np.quantile(a,[1/3,2/3]); grp=np.digitize(a,q)
     res={}
     for k,name in enumerate(['小','中','大']):
-        m=grp==k; res[name]={'weeks':int(m.sum()),'abs_gap_bp_range':[float(a[m].min()*1e4),float(a[m].max()*1e4)],'sum_bp':float(Pw[m].sum()),'per_week_bp':float(Pw[m].mean()),'win':float((Pw[m]>0).mean())}
-    res['check_total_sum_bp']=float(Pw.sum()); res['npz_total_P_bp']=float(P.sum())
+        m=grp==k; res[name]={'weeks':int(m.sum()),'abs_gap_bp_range':[float(a[m].min()*1e4),float(a[m].max()*1e4)],'sum_pct':float(Pw[m].sum()),'per_week_pct':float(Pw[m].mean()),'win':float((Pw[m]>0).mean())}
+    res['check_total_sum_pct']=float(Pw.sum()); res['npz_total_P_pct']=float(P.sum())
     out[f'c6_{v}']=res; print('c6',v,json.dumps(res,ensure_ascii=False))
 # c8
 for v in ['jst_day','bf_maint']:

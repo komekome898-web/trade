@@ -180,7 +180,7 @@ def render(d1: dict, d2: dict, meta: dict) -> str:
           f"- 入りの時刻の日本時間の曜日(月 0〜日 6)ごとの取引数: {meta['d2_entry_weekday']}",
           f"- |g| の分位(全取引の |g|、bp): 1/3 分位 = {meta['q1']:.4f}、2/3 分位 = {meta['q2']:.4f}。帯: 小 = |g| < 1/3 分位、"
           f"中 = 1/3 分位 以上 2/3 分位 未満、大 = 2/3 分位 以上",
-          "- 升 = 取引の数 / 損益の和(bp)/ 1 取引あたり(bp)/ 勝ち(損益 > 0)の数", ""]
+          "- 升 = 取引の数 / 損益の和(%)/ 1 取引あたり(%)/ 勝ち(損益 > 0)の数", ""]
 
     def fmt(c):
         return "—" if c is None else f"{c['n']} / {_n(c['sum'])} / {_n(c['mean'])} / {c['wins']}"
@@ -238,7 +238,7 @@ def main() -> int:
             continue
         g = gap_bp(float(tr["entry_px"][i]), ref[1])
         recs.append({"i": i, "entry_t_ns": e, "side": int(tr["side"][i]), "entry_px": float(tr["entry_px"][i]),
-                     "fri_bar_start_ns": ref[0], "fri_close": ref[1], "g_bp": g, "pnl": float(tr["pnl_bp"][i]),
+                     "fri_bar_start_ns": ref[0], "fri_close": ref[1], "g_bp": g, "pnl": float(tr["pnl_pct"][i]),
                      "year": str(datetime.fromtimestamp(e // 10**9, tz=JST).year), "dir": direction(g, int(tr["side"][i]))})
     q1, q2 = tercile_edges([abs(r["g_bp"]) for r in recs])
     for r in recs:

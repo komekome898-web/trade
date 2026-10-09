@@ -23,8 +23,8 @@ print("| 本 − base | 前半 | 後半 | 境 |")
 print("|---|---|---|---|")
 for name in sys.argv[1:]:
     d = dt.daily_series(dt.load_run(T + name))
-    days = sorted(set(d) & set(base))
+    days = sorted(set(d) | set(base))  # 読み口の D7 と同じ和集合(取引の無い日は 0 円)
     h = len(days) // 2
-    diff = [d[x] - base[x] for x in days]
+    diff = [d.get(x, 0.0) - base.get(x, 0.0) for x in days]
     a, b = dt.mean_ci(diff[:h]), dt.mean_ci(diff[h:])
     print("| %s | %s | %s | 前半 %s〜%s・後半 %s〜%s |" % (name, yen(a), yen(b), days[0], days[h - 1], days[h], days[-1]))

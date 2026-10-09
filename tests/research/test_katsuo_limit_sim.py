@@ -232,7 +232,7 @@ def test_doten_size_and_trade_boundary():
     assert len(rows) == 1
     r = rows[0]
     assert (r["side"], r["exit_reason"], r["exit_price"], r["entry_price"], r["max_size"]) == (-1, EXIT_DOTEN, P - 200, P, 0.5)
-    assert r["pnl_bp"] == pytest.approx(-1 * ((P - 200) / P - 1) * 1e4 * 0.5, rel=1e-12)
+    assert r["pnl_pct"] == pytest.approx(-1 * ((P - 200) / P - 1) * 100.0 * 0.5, rel=1e-12)
     assert r["exit_ns"] == T0 + (i + 3) * M
     assert s._pos == 0.5 and s._trade["side"] == 1 and s._trade["avg"] == P - 200
     assert s._trade["entry_ns"] == T0 + (i + 3) * M
@@ -353,7 +353,7 @@ def test_short_exit_stop_limit_is_mirrored():
     step(s, i + 2, o=P + 1.2 * u, h=P + 2 * u)
     rows = step(s, i + 3, o=P + 1.2 * u, lo=P + 0.5 * u)
     assert [(r["side"], r["exit_reason"], r["exit_price"]) for r in rows] == [(-1, EXIT_SL1, e["l1"])]
-    assert rows[0]["pnl_bp"] == pytest.approx(-1 * (e["l1"] / P - 1) * 1e4 * 0.5, rel=1e-12)
+    assert rows[0]["pnl_pct"] == pytest.approx(-1 * (e["l1"] / P - 1) * 100.0 * 0.5, rel=1e-12)
 
 
 # ---------------------------------------------------------------- 仕様 4: 足の頭
@@ -520,7 +520,7 @@ def test_pnl_weighted_entry_and_signal_columns():
     r = rows[0]
     avg = (P * 0.5 + p2 * 0.5) / 1.0
     assert r["entry_price"] == pytest.approx(avg, rel=1e-15) and r["max_size"] == 1.0
-    assert r["pnl_bp"] == pytest.approx(((P + 300) / avg - 1) * 1e4 * 1.0, rel=1e-12)
+    assert r["pnl_pct"] == pytest.approx(((P + 300) / avg - 1) * 100.0 * 1.0, rel=1e-12)
     assert (r["small"], r["big"]) == (True, False) and r["r"] == pytest.approx(30 / (Q + 10), rel=1e-15)
     assert (r["entry_ns"], r["exit_ns"], r["signal_ns"]) == (T0 + 3 * M, T0 + 7 * M, T0 + M)
 
@@ -531,7 +531,7 @@ def test_finish_closes_at_last_close():
     step(s, 3, c=P + 40)
     rows = s.finish()
     assert [(r["exit_reason"], r["exit_price"], r["exit_ns"]) for r in rows] == [(EXIT_END, P + 40, T0 + 4 * M)]
-    assert rows[0]["pnl_bp"] == pytest.approx((40 / P) * 1e4 * 0.5, rel=1e-12)
+    assert rows[0]["pnl_pct"] == pytest.approx((40 / P) * 100.0 * 0.5, rel=1e-12)
 
 
 # ---------------------------------------------------------------- 仕様 2: 合図と分岐はカード 2 と同じ
@@ -855,9 +855,9 @@ def test_k1_close_entry_a_pnl_matches_k1_close_fills():
     prices = [closes[(b[0] // 60) + 15 - 1 - T0 // M] for b in bars]  # 足の終わりの直前の 1 分の終値
     sg = k1_eff.delay_signals(k1_eff.signals(bars, 19.0, 24.0, flip_body=True))
     tr = k1_eff.simulate(bars, sg, "weak", use_invalid=False, prices=prices)
-    got = [r["pnl_bp"] for r in out if r["exit_reason"] == EXIT_CLOSE]
+    got = [r["pnl_pct"] for r in out if r["exit_reason"] == EXIT_CLOSE]
     assert len(tr) > 20
-    assert got == pytest.approx([x[1] for x in tr], rel=1e-9, abs=1e-9)
+    assert got == pytest.approx([x[1] / 100 for x in tr], rel=1e-9, abs=1e-11)  # K1 の simulate は率 × 1 万、こちらは %
 
 
 def test_k1_vol_prev_matches_footdata():
@@ -1037,7 +1037,7 @@ def test_k1_close_fill_enters_and_exits_at_the_last_close_at_the_action_time():
         out += s.feed(bar(i, P - 300, c=P - 300))
     assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["signal_ns"]) for r in out] == [
         (EXIT_CLOSE, P - 300, T0 + 45 * M, T0 + 15 * M)]
-    assert out[0]["pnl_bp"] == pytest.approx(-1 * ((P - 300) / (P + 7) - 1) * 1e4, rel=1e-12)
+    assert out[0]["pnl_pct"] == pytest.approx(-1 * ((P - 300) / (P + 7) - 1) * 100.0, rel=1e-12)
     assert s.order_log[0][3] == T0 + 15 * M
 
 
@@ -1151,7 +1151,7 @@ def test_k1_missed_is_a_close_trade_without_a_limit_trade_for_the_same_signal():
     # 取引を作らず、取り逃しにも入らない。
     assert [(m["signal_ns"], m["side"], m["limit_order_placed"], m["exit_ns"]) for m in ms] == [
         (T0 + 15 * M, -1, True, T0 + 45 * M)]
-    assert rl == [] and ms[0]["pnl_bp"] == pytest.approx(-1 * ((P - 1000) / P - 1) * 1e4, rel=1e-12)
+    assert rl == [] and ms[0]["pnl_pct"] == pytest.approx(-1 * ((P - 1000) / P - 1) * 100.0, rel=1e-12)
     st = R.missed_stats(ms)
     assert (st["trades"], st["limit_order_placed"]["trades"], st["limit_order_not_placed"]["trades"]) == (1, 1, 0)
     # 指値の形が約定した合図は取り逃しに入らない
@@ -1163,13 +1163,13 @@ def test_k1_missed_is_a_close_trade_without_a_limit_trade_for_the_same_signal():
 
 def test_find_missed_marks_signals_without_a_limit_order():
     R = _load_w4("c2_limit_run")
-    rc = [{"signal_ns": 1, "pnl_bp": 5.0}, {"signal_ns": 2, "pnl_bp": -3.0}, {"signal_ns": 3, "pnl_bp": 1.0}]
-    rl = [{"signal_ns": 3, "pnl_bp": 0.5}]
+    rc = [{"signal_ns": 1, "pnl_pct": 5.0}, {"signal_ns": 2, "pnl_pct": -3.0}, {"signal_ns": 3, "pnl_pct": 1.0}]
+    rl = [{"signal_ns": 3, "pnl_pct": 0.5}]
     log = [["ent2", 10, 1.0, None, 0, 1]]
     ms = R.find_missed(rl, rc, log)
     assert [(m["signal_ns"], m["limit_order_placed"]) for m in ms] == [(1, True), (2, False)]
     st = R.missed_stats(ms)
-    assert (st["trades"], st["sum_bp"], st["limit_order_placed"]["sum_bp"], st["limit_order_not_placed"]["sum_bp"]) == (
+    assert (st["trades"], st["sum_pct"], st["limit_order_placed"]["sum_pct"], st["limit_order_not_placed"]["sum_pct"]) == (
         2, 2.0, 5.0, -3.0)
 
 
@@ -1207,34 +1207,34 @@ def test_run_summary_by_year_flags_and_2018on():
     edges = [lo, y18, hi]
 
     def row(t, pnl, terc, st=WEAK, why=XSIG_WEAK, reason=EXIT_LIMIT, und=0):
-        return {"exit_ns": t, "entry_ns": t - M, "pnl_bp": pnl, "vol_tercile": terc, "strength": st, "exit_signal": why,
+        return {"exit_ns": t, "entry_ns": t - M, "pnl_pct": pnl, "vol_tercile": terc, "strength": st, "exit_signal": why,
                 "exit_reason": reason, "undecided": und, "signal_ns": t - 2 * M}
     rows = [row(y17 + 301 * 86_400 * NS, 10.0, "high"), row(y17 + 302 * 86_400 * NS, -4.0, "low", und=2),
             row(y18 + NS, 6.0, "high", st=STRONG, why=None, reason=EXIT_DOTEN), row(y18 + 2 * NS, 0.0, None)]
     log = [["ent1", y17 + 301 * 86_400 * NS - 10 * M, 1.0, y17 + 301 * 86_400 * NS - 9 * M, 0, 0],
            ["ent2", y18 + 5 * M, 1.0, None, 1, 0]]
-    missed = [{"signal_ns": y17 + 330 * 86_400 * NS, "pnl_bp": 3.0, "limit_order_placed": True},
-              {"signal_ns": y18 + 3 * M, "pnl_bp": -1.0, "limit_order_placed": False}]
+    missed = [{"signal_ns": y17 + 330 * 86_400 * NS, "pnl_pct": 3.0, "limit_order_placed": True},
+              {"signal_ns": y18 + 3 * M, "pnl_pct": -1.0, "limit_order_placed": False}]
     for gate in (False, True):
         sm = R.build_summary(rows, log, missed, lo, hi, edges, gate)
         a17, a18 = sm["years"]["2017"], sm["years"]["2018"]
-        assert (a17["trades"], a17["wins"], a17["losses"], a17["sum_bp"], a17["undecided_bars_in_trades"]) == (2, 1, 1,
+        assert (a17["trades"], a17["wins"], a17["losses"], a17["sum_pct"], a17["undecided_bars_in_trades"]) == (2, 1, 1,
                                                                                                                 6.0, 2)
-        assert (a18["trades"], a18["wins"], a18["losses"], a18["sum_bp"]) == (2, 1, 0, 6.0)
-        assert a17["days"] == 65.0 and a18["days"] == 31.0 and a17["per_day"]["pnl_bp"] == 6.0 / 65.0
-        assert a17["by_vol_tercile"]["high"]["sum_bp"] == 10.0 and a18["by_vol_tercile"]["値なし"]["trades"] == 1
+        assert (a18["trades"], a18["wins"], a18["losses"], a18["sum_pct"]) == (2, 1, 0, 6.0)
+        assert a17["days"] == 65.0 and a18["days"] == 31.0 and a17["per_day"]["pnl_pct"] == 6.0 / 65.0
+        assert a17["by_vol_tercile"]["high"]["sum_pct"] == 10.0 and a18["by_vol_tercile"]["値なし"]["trades"] == 1
         assert a17["vol_tercile_lookahead"] is True and a18["vol_tercile_lookahead"] is False  # 門の有無に関係なく
         assert a17["vol_gate_lookahead"] is gate and a18["vol_gate_in_sample"] is gate
         assert a17["entry_orders"]["ent1"] == {"placed": 1, "filled": 1, "fill_ratio": 1.0, "wait_min_mean": 1.0,
                                                "wait_min_median": 1.0}
         assert a18["entry_orders"]["ent2"]["fill_ratio"] == 0.0
-        assert a17["missed"]["trades"] == 1 and a18["missed"]["limit_order_not_placed"]["sum_bp"] == -1.0
+        assert a17["missed"]["trades"] == 1 and a18["missed"]["limit_order_not_placed"]["sum_pct"] == -1.0
         assert a18["by_strength"][STRONG]["trades"] == 1 and a18["exit_reasons"] == {EXIT_DOTEN: 1, EXIT_LIMIT: 1}
         on = sm["all_2018on"]
-        assert (on["trades"], on["sum_bp"], on["days"], on["missed"]["trades"]) == (2, 6.0, 31.0, 1)
+        assert (on["trades"], on["sum_pct"], on["days"], on["missed"]["trades"]) == (2, 6.0, 31.0, 1)
         assert on["vol_tercile_lookahead"] is False
         al = sm["all"]
-        assert (al["trades"], al["sum_bp"], al["days"]) == (4, 12.0, 96.0) and al["vol_tercile_lookahead"] is True
+        assert (al["trades"], al["sum_pct"], al["days"]) == (4, 12.0, 96.0) and al["vol_tercile_lookahead"] is True
 
 
 @pytest.mark.parametrize("kw", [{"at_max": "skip"}, {"side_keep": "strong"}, {"foot_min": 1}, {"foot_min": 3},
@@ -1420,7 +1420,7 @@ def test_k1_stop_k_closes_on_the_bitflyer_close_k_times_vol_against_the_entry():
     assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["exit_signal"], r["exit_signal_ns"], r["entry_ns"],
              r["vol_prev"], r["side"]) for r in out] == [
         (EXIT_K1_STOP, hit, T0 + 523 * M, EXIT_K1_STOP, T0 + 523 * M, T0 + 520 * M, v, -1)]
-    assert out[0]["pnl_bp"] == pytest.approx(-1 * (hit / P - 1) * 1e4, rel=1e-12)
+    assert out[0]["pnl_pct"] == pytest.approx(-1 * (hit / P - 1) * 100.0, rel=1e-12)
     assert s._pos == 0.0 and s._trade is None and s.finish() == []
 
 
@@ -1446,7 +1446,7 @@ def test_k1_time_exit_closes_at_the_nth_foot_boundary_on_the_last_close_then_nex
     out = _feed_range(s, 60, 61, closes={60: P - 999})
     assert [(r["exit_reason"], r["exit_price"], r["exit_ns"], r["exit_signal"], r["exit_signal_ns"], r["entry_ns"])
             for r in out] == [(EXIT_K1_TIME, P - 123, T0 + 60 * M, EXIT_K1_TIME, T0 + 60 * M, T0 + 30 * M)]
-    assert out[0]["pnl_bp"] == pytest.approx(-1 * ((P - 123) / (P + 7) - 1) * 1e4, rel=1e-12)
+    assert out[0]["pnl_pct"] == pytest.approx(-1 * ((P - 123) / (P + 7) - 1) * 100.0, rel=1e-12)
     assert s._pos == 0.0 and s._trade is None
     out = _feed_range(s, 61, 91, closes={89: P + 55})
     assert out == [] and s._pos == 1.0 and s._trade["avg"] == P + 55 and s._trade["entry_ns"] == T0 + 90 * M
@@ -1580,7 +1580,10 @@ def test_default_output_is_the_same_as_before_the_exit_switches():
         nrows, h = _default_digest(kind, kw)
         assert nrows > 5
         tot.update(h.encode())
-    assert tot.hexdigest() == "e32bdfd29238f6f3bbc296785904e881f258176acf956c4733a7518f97a72fef"
+    # L-920 で損益の列を pnl_bp(率 × 1 万)から pnl_pct(%)に変えたので取り直した。取り直す前に、63 組の取引の行
+    # 5,002 行が損益の列のほかは前のコードと同じで pnl_pct × 100 が前の pnl_bp と相対 1e-12 の内で合い、注文・行動の
+    # 記録・判定の数・決まらない足・合図が全部同じことを確かめた
+    assert tot.hexdigest() == "ca63fa704b81f5167bb68719437b2593990a6173bea13bec7b33be3d83c3bfb3"
 
 
 @pytest.mark.parametrize("kw", [
@@ -1603,11 +1606,11 @@ def test_run_split_stats_gives_the_new_exits_their_own_bucket_and_batch_lists_th
     R = _load_w4("c2_limit_run")
 
     def row(xsig, pnl):
-        return {"pnl_bp": pnl, "exit_signal": xsig, "strength": WEAK, "undecided": 0, "exit_reason": EXIT_CLOSE}
+        return {"pnl_pct": pnl, "exit_signal": xsig, "strength": WEAK, "undecided": 0, "exit_reason": EXIT_CLOSE}
     base = [row(XSIG_WEAK, 1.0), row(None, -2.0)]
     assert list(R.split_stats(base)["by_exit_signal"]) == [XSIG_WEAK, XSIG_LINE, "降りる注文以外(ドテン・期間の終わり)"]
     got = R.split_stats(base + [row(EXIT_K1_STOP, -3.0), row(EXIT_K1_TIME, 4.0)])["by_exit_signal"]
-    assert got[EXIT_K1_STOP]["sum_bp"] == -3.0 and got[EXIT_K1_TIME]["sum_bp"] == 4.0
+    assert got[EXIT_K1_STOP]["sum_pct"] == -3.0 and got[EXIT_K1_TIME]["sum_pct"] == 4.0
     assert sum(v["trades"] for v in got.values()) == 4
     B = _load_w4("c2_limit_batch")
     assert [n for n, _a in B.JOBS_EXITS] == [f"weak_f{f}_close_a_{x}" for f in (5, 15)

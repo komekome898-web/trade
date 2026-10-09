@@ -1,6 +1,7 @@
 """Metrics that keep the distribution (item 3, old item 9: 「平均で潰さず分布で出す(1 件ごとの
 bp・分位・負の割合)。露出あたり(bp/時)。約定率・取り逃し・逆選択の markout・費用の内訳・
-決済理由・ドローダウン」).
+決済理由・ドローダウン」). The per-trade rate is held in percent (per_trade_pct): it includes the
+fee rate, so it is not a price-move rate and is not called bp (L-920, 2026-10-09).
 
 Every function takes plain records (mappings) and returns plain values; a
 record missing a field it needs, or holding a non-finite number, is refused
@@ -8,13 +9,14 @@ record missing a field it needs, or holding a non-finite number, is refused
 a statement), a markout past the end of the mid path is None, not a guess.
 
 Definitions (each written once, here):
-  per-trade bp   s * (exit_px - entry_px) / entry_px * 1e4 - fees / (entry_px * qty) * 1e4,
-                 s = +1 for a trade entered by a buy (long), -1 by a sell.
+  per-trade pct  s * (exit_px - entry_px) / entry_px * 100 - fees / (entry_px * qty) * 100,
+                 s = +1 for a trade entered by a buy (long), -1 by a sell
+                 (= pnl after fees over the entry notional, in percent).
   quantiles      linear interpolation between order statistics (Hyndman & Fan
                  type 7 = numpy's "linear").
-  neg_frac       share of trades with bp < 0 (0 is not negative).
+  neg_frac       share of trades with pct < 0 (0 is not negative).
   trade_hours    sum over trades of (exit_t - entry_t) in hours: the notional
-                 time at risk. bp_per_hour = sum of bp / trade_hours.
+                 time at risk. pct_per_hour = sum of pct / trade_hours.
   union_hours    hours during which at least one trade was open (reported
                  beside it; with overlapping trades the two differ).
   fill_rate      orders with any fill by end_t / orders; missed = orders with
@@ -69,7 +71,7 @@ def _side(rec: Mapping, where: str) -> int:
     return SIDES[s]
 
 
-def per_trade_bp(trades: Sequence[Mapping]) -> list[float]:
+def per_trade_pct(trades: Sequence[Mapping]) -> list[float]:
     out = []
     for i, t in enumerate(trades):
         w = f"trades[{i}]"
@@ -77,7 +79,7 @@ def per_trade_bp(trades: Sequence[Mapping]) -> list[float]:
         e, x = _num(t, "entry_px", w, positive=True), _num(t, "exit_px", w, positive=True)
         q = _num(t, "qty", w, positive=True)
         fee = _num(t, "fees", w)
-        out.append(s * (x - e) / e * 1e4 - fee / (e * q) * 1e4)
+        out.append(s * (x - e) / e * 100 - fee / (e * q) * 100)
     return out
 
 
@@ -121,19 +123,19 @@ def exposure(trades: Sequence[Mapping]) -> dict[str, float]:
     return {"trade_hours": trade_ns / NS_PER_HOUR, "union_hours": union_ns / NS_PER_HOUR}
 
 
-def bp_per_hour(trades: Sequence[Mapping]) -> Optional[float]:
+def pct_per_hour(trades: Sequence[Mapping]) -> Optional[float]:
     h = exposure(trades)["trade_hours"]
-    return None if h == 0 else sum(per_trade_bp(trades)) / h
+    return None if h == 0 else sum(per_trade_pct(trades)) / h
 
 
 def trade_distribution(trades: Sequence[Mapping], probs: Sequence[float] = (0.05, 0.25, 0.5, 0.75, 0.95)) -> dict:
-    bps = per_trade_bp(trades)
+    pcts = per_trade_pct(trades)
     ex = exposure(trades)
-    return {"n": len(bps), "per_trade_bp": bps,
-            "quantiles": quantiles(bps, probs) if bps else {}, "quantile_method": "linear (Hyndman-Fan 7)",
-            "neg_frac": neg_frac(bps) if bps else None, "mean_bp": (sum(bps) / len(bps)) if bps else None,
+    return {"n": len(pcts), "per_trade_pct": pcts,
+            "quantiles": quantiles(pcts, probs) if pcts else {}, "quantile_method": "linear (Hyndman-Fan 7)",
+            "neg_frac": neg_frac(pcts) if pcts else None, "mean_pct": (sum(pcts) / len(pcts)) if pcts else None,
             "trade_hours": ex["trade_hours"], "union_hours": ex["union_hours"],
-            "bp_per_hour": (sum(bps) / ex["trade_hours"]) if ex["trade_hours"] else None}
+            "pct_per_hour": (sum(pcts) / ex["trade_hours"]) if ex["trade_hours"] else None}
 
 
 def fill_metrics(orders: Sequence[Mapping], fills: Sequence[Mapping], end_t_ns: int) -> dict:

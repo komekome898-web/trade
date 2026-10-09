@@ -5,7 +5,8 @@ https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv を 2026-10-05 に取得
     PYTHONPATH=src python3 docs/RESEARCH/cards/c5_tokyo_fix_momentum/redo2_2026-10-05/c5_redo.py
 出力: このフォルダの C5_TABLES.md・c5_redo.json
 
-P_t は bot.research.cards.pnl.pnl と同じ式(e_t × (open_{t+2} / open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足)を
+P_t は bot.research.cards.pnl.pnl と同じ式(e_t × (open_{t+2} / open_{t+1} − 1) × 100、%。L-920 で bp は値動き率だけの名前。
+t+1・t+2 は次の空でない足)を
 CardRun を作らずに npz の配列で作り直し、合計が daily.csv の和と合うことを確かめる。日 = 決定の時刻 t(足の終わり)の
 日本時間の日(measure の formula と同じ)。
 D0: 年ごとの足・決定の数(run_record)/ 9 時 55 分(日本時間)以後に持ち高のある決定 / 土日の持ち高 / 持ち高の変更の回数。
@@ -51,7 +52,7 @@ def main():
     m = len(d_idx) - 2
     bar, fill, ex = d_idx[:m], d_idx[1:m + 1], d_idx[2:m + 2]
     e = e_all[bar]
-    r = (op[ex] / op[fill] - 1.0) * 1e4
+    r = (op[ex] / op[fill] - 1.0) * 100  # %(建玉を掛ける前の率。P と同じ単位にする)
     p = e * r
     t_end = end_ns[bar]
     # 日(決定の時刻 t の日本時間の日)。end_ns は足の終わり。measure の formula「日 = 決定の時刻 t の日本時間の日」
@@ -59,9 +60,11 @@ def main():
     jst_days = (secs + 9 * 3600) // 86400  # 1970-01-01 からの日本時間の日の番号
     jst_sec_of_day = (secs + 9 * 3600) % 86400
     daily = {}
-    for line in open(os.path.join(M, "daily.csv")).read().splitlines()[1:]:
+    dl = open(os.path.join(M, "daily.csv")).read().splitlines()
+    k_ = 100.0 if dl[0] == "day,pnl_bp,n" else 1.0  # L-920 より前の daily.csv は率 × 1 万
+    for line in dl[1:]:
         dd, pp, _n = line.split(",")
-        daily[dd] = float(pp)
+        daily[dd] = float(pp) / k_
     days = sorted(daily)
     day_of = lambda k: (date(1970, 1, 1) + timedelta(days=int(k))).isoformat()  # noqa: E731
     uniq, inv = np.unique(jst_days, return_inverse=True)
@@ -70,10 +73,10 @@ def main():
     res = {"check": {"sum_P": float(p.sum()), "sum_daily_csv": float(sum(daily.values())),
                      "max_abs_day_diff": max(abs(recon.get(d, 0.0) - daily[d]) for d in days),
                      "days_in_recon_not_csv": sorted(set(recon) - set(daily))[:5]}}
-    out = ["# カード 5 のやり直しの表(保存済みの出力から。bp、経費の前、成行・次の足の始値で約定)", ""]
+    out = ["# カード 5 のやり直しの表(保存済みの出力から。損益は %、経費の前、成行・次の足の始値で約定)", ""]
     c = res["check"]
-    out += ["## 確かめ", "", f"- P_t の合計 {c['sum_P']:+,.1f} bp、daily.csv の和 {c['sum_daily_csv']:+,.1f} bp、"
-            f"日ごとの差の最大 {c['max_abs_day_diff']:.2e} bp、daily.csv に無い日 {c['days_in_recon_not_csv']}", ""]
+    out += ["## 確かめ", "", f"- P_t の合計 {c['sum_P']:+,.3f} %、daily.csv の和 {c['sum_daily_csv']:+,.3f} %、"
+            f"日ごとの差の最大 {c['max_abs_day_diff']:.2e} %、daily.csv に無い日 {c['days_in_recon_not_csv']}", ""]
 
     # ---------------- D0
     rr = json.load(open(os.path.join(M, "run_record.json")))
@@ -98,7 +101,7 @@ def main():
     d0 = res["d0"]
     out += ["", "## D0 仲値の後・土日の持ち高と、持ち高の変更", "",
             f"- 持ち高 ≠ 0 の決定 {d0['nonzero_decisions']:,}。うち約定の足が 9 時 55 分(日本時間)以後に始まるもの {d0['after_fix_decisions']:,}"
-            f"({d0['after_fix_days']} 日)、その損益の和 {d0['after_fix_sum']:+,.1f} bp。土日に約定したもの {d0['weekend_decisions']:,}、和 {d0['weekend_sum']:+,.1f}",
+            f"({d0['after_fix_days']} 日)、その損益の和 {d0['after_fix_sum']:+,.3f} %。土日に約定したもの {d0['weekend_decisions']:,}、和 {d0['weekend_sum']:+,.3f}",
             f"- 持ち高が変わった回数 {d0['changes']:,}、Σ|Δe| {d0['sum_abs_de']:,.0f}(1 日あたり {d0['sum_abs_de'] / d0['days']:.2f})",
             f"- 仲値の後の日の例(最初の 10): {after_days[:10]}", ""]
 
@@ -117,8 +120,8 @@ def main():
     def cell(x):
         r_ = dt.mean_ci(x) if len(x) >= 10 else {"n": len(x), "mean": float(np.mean(x)) if x else None, "lo": None, "hi": None}
         if r_.get("lo") is None:
-            return r_, f"{len(x)}・{'—' if r_['mean'] is None else format(r_['mean'], '+.2f')}"
-        return r_, f"{len(x)}・{r_['mean']:+.2f} [{r_['lo']:+.2f}, {r_['hi']:+.2f}]"
+            return r_, f"{len(x)}・{'—' if r_['mean'] is None else format(r_['mean'], '+.4f')}"
+        return r_, f"{len(x)}・{r_['mean']:+.4f} [{r_['lo']:+.4f}, {r_['hi']:+.4f}]"
 
     def table(title, keyf, keys, src=None, day_filter=None):
         nonlocal out
@@ -162,7 +165,7 @@ def main():
     for h in range(10):
         src = {d: band_daily[h].get(d, 0.0) for d in days}
         table(f"時刻の帯 {h} 時台(平日すべての日で平均。決定の時刻 = 足の終わりの日本時間)", lambda d, h=h: f"{h} 時台", [f"{h} 時台"], src=src, day_filter=weekday)
-    out += [f"- 0〜9 時台の外の決定の損益の和: {res['d2']['p_outside_bands']:+,.1f} bp", ""]
+    out += [f"- 0〜9 時台の外の決定の損益の和: {res['d2']['p_outside_bands']:+,.3f} %", ""]
 
     # ---------------- D5
     # 足の始まりの時刻 → 空でない足の索引(その時刻以後の最初の空でない足)

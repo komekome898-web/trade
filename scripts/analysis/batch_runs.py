@@ -2,10 +2,11 @@
 """走らせの置き場の下の全部の走らせに、分析のスキルの同じ表を一括で出す読み口(新しい走らせはしない。保存済みの取引の行を読むだけ)。
 
 走らせごとに出すもの(`--out` の下に `<走らせ>.md`)と、一覧(`--out/INDEX.md`):
-  確かめ: 取引の数・損益の和(summary.json の all.trades / all.sum_bp と突き合わせ)
+  損益は %(`trade_rows.load_rows` が pnl_pct を読む。L-920 より前の pnl_bp は / 100。L-920 で bp は値動き率だけの名前)。
+  確かめ: 取引の数・損益の和(summary.json の all.trades / all.sum_pct と突き合わせ。前の記録は all.sum_bp / 100)
   D1: 全期間・暦年ごと・前半・後半の 1 日あたり [区間]・MDE と、後半 − 前半、結果(`diag_tables.d1_outcome`)
   勝ち負けの分解: 全期間・前半・後半・暦年ごと
-  向きの情報の検め: 買いの取引の値段の動き ÷ 保有の分 − 売りの取引の同じ値(bp/分。値段の動き = pnl_bp × side)
+  向きの情報の検め: 買いの取引の値段の動き ÷ 保有の分 − 売りの取引の同じ値(%/分。値段の動き = pnl_pct × side)
   買いだけの対照: 同じ取引を全部買いで持った 1 日あたり
   良い側・悪い側の組(名前の末尾 `_good` / `_bad`)には、D8 の全期間の符号(両側が同じか)を一覧に出す。
 日 = 出の時刻の UTC の日。期間 = summary.json の period(無ければ最初と最後の取引)。前半・後半 = 期間の日を日数で 2 つに分けたもの。
@@ -114,13 +115,15 @@ def analyze(run_dir: str, out_dir: str) -> dict:
             (("全期間", slice(0, n)), ("前半", slice(0, h)), ("後半", slice(h, n)))}
     ctls = {lbl: (mean_ci(list(ctl[sl])), mean_ci(list(daily[sl] - ctl[sl]))) for lbl, sl in
             (("全期間", slice(0, n)), ("前半", slice(0, h)), ("後半", slice(h, n)))}
-    al = sm.get("all", {}) if isinstance(sm, dict) else {}
-    L = [f"# 一括の表 — {name}", "", "読み口 `scripts/analysis/batch_runs.py`(保存済みの取引の行から計算。新しい走らせではない)。bp、経費の前。"
+    al = dict(sm.get("all", {})) if isinstance(sm, dict) else {}
+    if "sum_pct" not in al and "sum_bp" in al:  # L-920 より前の summary.json(率 × 1 万)
+        al["sum_pct"] = al["sum_bp"] / 100
+    L = [f"# 一括の表 — {name}", "", "読み口 `scripts/analysis/batch_runs.py`(保存済みの取引の行から計算。新しい走らせではない)。損益は %、経費の前。"
          "日 = 出の時刻の UTC の日。区間 = 95%、日の塊(5 日・1,000 回・種 20261004)。", "",
          "## 確かめ", "", f"- 取引の数: 期間の中 {int(inside.sum()):,}(読んだ行 {len(R['pnl']):,})/ summary.json の all.trades {al.get('trades', '無し')}",
-         f"- 損益の和: 期間の中 {p.sum():,.2f} / summary.json の all.sum_bp {al.get('sum_bp', '無し')}",
+         f"- 損益の和(%): 期間の中 {p.sum():,.4f} / summary.json の all.sum_pct {al.get('sum_pct', '無し')}",
          f"- 期間: {days[0]}〜{days[-1]}({n:,} 日)。前半 {days[0]}〜{days[h - 1]}、後半 {days[h]}〜{days[-1]}", "",
-         "## D1 時間(1 日あたり、bp/日)", "", "| 期間 | 日数 | 1 日あたり [区間] | MDE |", "|---|---|---|---|",
+         "## D1 時間(1 日あたり、%/日)", "", "| 期間 | 日数 | 1 日あたり [区間] | MDE |", "|---|---|---|---|",
          f"| 全期間 | {n} | {ci(full)} | {_f(full.get('mde'))} |"]
     years = sorted({d[:4] for d in days})
     for y in years:
@@ -137,7 +140,7 @@ def analyze(run_dir: str, out_dir: str) -> dict:
     ey = np.array([days[i][:4] for i in ix])
     for y in years:
         L.append(f"| {y} | {wl(p[ey == y])} |")
-    L += ["", "## 向きの情報の検め(買いの取引の値段の動き − 売りの取引の値段の動き、保有の 1 分あたり bp/分。差が正 = 取引の向きに動いた)", "",
+    L += ["", "## 向きの情報の検め(買いの取引の値段の動き − 売りの取引の値段の動き、保有の 1 分あたり %/分。差が正 = 取引の向きに動いた)", "",
           "| 区分 | 差 [区間] |", "|---|---|"]
     for lbl, (pt, lo, hi) in dirs.items():
         L.append(f"| {lbl} | {_f(pt, 4)} [{_f(lo, 4)}, {_f(hi, 4)}] |")
@@ -149,7 +152,7 @@ def analyze(run_dir: str, out_dir: str) -> dict:
     with open(os.path.join(out_dir, f"{name}.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(L) + "\n")
     w = (p > 0).mean() if len(p) else None
-    return {"name": name, "trades": int(inside.sum()), "sum_ok": abs(p.sum() - al.get("sum_bp", p.sum())) < max(0.05, 1e-5 * abs(p.sum())),  # 値の丸め・和の順の差は一致とみなす
+    return {"name": name, "trades": int(inside.sum()), "sum_ok": abs(p.sum() - al.get("sum_pct", p.sum())) < max(0.0005, 1e-5 * abs(p.sum())),  # 値の丸め・和の順の差は一致とみなす
             "full": full, "first": f1, "second": f2, "outcome": outcome, "dir": dirs, "win": w,
             "ctl": ctls["全期間"][0], "days": n}
 
@@ -176,7 +179,7 @@ def main(argv=None) -> int:
         res = list(ex.map(_job, [(os.path.join(a.runs, d), a.out) for d in dirs]))
     by = {r["name"]: r for r in res}
     L = [f"# 一括の表の一覧 — `{a.runs}`", "", f"走らせ {len(dirs)} 本。各行の全部の表は同じ置き場の `<走らせ>.md`。読み口 `scripts/analysis/batch_runs.py`。"
-         "1 日あたり bp/日、向きの情報の検めは bp/分。区間 = 95%、日の塊。", "",
+         "1 日あたり %/日、向きの情報の検めは %/分。区間 = 95%、日の塊。", "",
          "| 走らせ | 取引 | 和の一致 | 全期間 | 前半 | 後半 | 結果(D1) | 向きの情報 全期間 | 前半 | 後半 | 勝率 | 買いだけの対照 | 良い側と悪い側の全期間の符号 |",
          "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for d in dirs:

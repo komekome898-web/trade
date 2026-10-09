@@ -88,7 +88,7 @@ Y2018_NS = 1_514_764_800 * 1_000_000_000  # 2018-01-01T00:00:00Z
 
 END_MAX = "2023-12-17T15:00:00Z"  # 仕様 1「期間の終わり 2023-12-17T15:00Z」
 SERIES_ARGS = ("a", "b")  # 仕様 1: (c) BitMEX は使わない(L-570)
-COLS = ("entry_t", "exit_t", "side", "max_size", "entry_price", "exit_price", "exit_reason", "pnl_bp", "undecided",
+COLS = ("entry_t", "exit_t", "side", "max_size", "entry_price", "exit_price", "exit_reason", "pnl_pct", "undecided",
         "small", "big", "r", "signal_t", "strength", "exit_signal", "exit_signal_t", "h1", "vol_prev", "vol_tercile")
 CARD_MD = os.path.join(ROOT, "docs/RESEARCH/cards/c2_owner_xvenue_wick/CARD.md")
 VOL_TERCILES = os.path.join(ROOT, "results/PHASE2/K1/xvenue/vol_terciles.json")  # K1 の出力(読むだけ)
@@ -113,10 +113,10 @@ def vol_edges(foot: int):
 def tercile_stats(rows: list) -> dict:
     out = {}
     for k in ("low", "mid", "high", None):
-        xs = [r["pnl_bp"] for r in rows if r["vol_tercile"] == k]
+        xs = [r["pnl_pct"] for r in rows if r["vol_tercile"] == k]
         out[k or "値なし"] = {"trades": len(xs), "wins": sum(1 for x in xs if x > 0),
-                             "losses": sum(1 for x in xs if x < 0), "sum_bp": math.fsum(xs),
-                             "avg_bp": math.fsum(xs) / len(xs) if xs else None}
+                             "losses": sum(1 for x in xs if x < 0), "sum_pct": math.fsum(xs),
+                             "avg_pct": math.fsum(xs) / len(xs) if xs else None}
     return out
 
 
@@ -172,11 +172,11 @@ def filter_ref_rows(ts: list, vals: list, *, join: bool, drop_no_trade: bool, ba
 
 def missed_stats(ms: list) -> dict:
     def one(xs):
-        return {"trades": len(xs), "sum_bp": math.fsum(xs), "avg_bp": math.fsum(xs) / len(xs) if xs else None,
+        return {"trades": len(xs), "sum_pct": math.fsum(xs), "avg_pct": math.fsum(xs) / len(xs) if xs else None,
                 "wins": sum(1 for x in xs if x > 0), "losses": sum(1 for x in xs if x < 0)}
-    out = one([m["pnl_bp"] for m in ms])
-    out["limit_order_placed"] = one([m["pnl_bp"] for m in ms if m["limit_order_placed"]])
-    out["limit_order_not_placed"] = one([m["pnl_bp"] for m in ms if not m["limit_order_placed"]])
+    out = one([m["pnl_pct"] for m in ms])
+    out["limit_order_placed"] = one([m["pnl_pct"] for m in ms if m["limit_order_placed"]])
+    out["limit_order_not_placed"] = one([m["pnl_pct"] for m in ms if not m["limit_order_placed"]])
     return out
 
 
@@ -218,7 +218,7 @@ def build_summary(rows: list, order_log: list, missed, lo: int, hi: int, edges: 
 
 
 def year_stats(rows: list, days: float) -> dict:
-    pn = [r["pnl_bp"] for r in rows]
+    pn = [r["pnl_pct"] for r in rows]
     wins = [x for x in pn if x > 0]
     losses = [x for x in pn if x < 0]
     und = [r["undecided"] for r in rows]
@@ -226,12 +226,12 @@ def year_stats(rows: list, days: float) -> dict:
     for r in rows:
         reasons[r["exit_reason"]] = reasons.get(r["exit_reason"], 0) + 1
     return {"trades": len(rows), "wins": len(wins), "losses": len(losses),
-            "avg_win_bp": (math.fsum(wins) / len(wins)) if wins else None,
-            "avg_loss_bp": (math.fsum(losses) / len(losses)) if losses else None,
-            "sum_win_bp": math.fsum(wins), "sum_loss_bp": math.fsum(losses), "sum_bp": math.fsum(pn),
+            "avg_win_pct": (math.fsum(wins) / len(wins)) if wins else None,
+            "avg_loss_pct": (math.fsum(losses) / len(losses)) if losses else None,
+            "sum_win_pct": math.fsum(wins), "sum_loss_pct": math.fsum(losses), "sum_pct": math.fsum(pn),
             "days": days,
             "per_day": {"trades": len(rows) / days if days else None, "wins": len(wins) / days if days else None,
-                        "pnl_bp": math.fsum(pn) / days if days else None},
+                        "pnl_pct": math.fsum(pn) / days if days else None},
             "undecided_bars_in_trades": sum(und), "trades_with_undecided": sum(1 for x in und if x > 0),
             "exit_reasons": reasons}
 
@@ -244,10 +244,10 @@ def split_stats(rows: list) -> dict:
     by_xsig = {}
     extra = sorted({r["exit_signal"] for r in rows} - {XSIG_WEAK, XSIG_LINE, None})  # 値段で降りる・時間で降りる
     for k in (XSIG_WEAK, XSIG_LINE, *extra, None):
-        xs = [r["pnl_bp"] for r in rows if r["exit_signal"] == k]
+        xs = [r["pnl_pct"] for r in rows if r["exit_signal"] == k]
         by_xsig[k or "降りる注文以外(ドテン・期間の終わり)"] = {
-            "trades": len(xs), "sum_bp": math.fsum(xs), "wins": sum(1 for x in xs if x > 0),
-            "losses": sum(1 for x in xs if x < 0), "avg_bp": math.fsum(xs) / len(xs) if xs else None}
+            "trades": len(xs), "sum_pct": math.fsum(xs), "wins": sum(1 for x in xs if x > 0),
+            "losses": sum(1 for x in xs if x < 0), "avg_pct": math.fsum(xs) / len(xs) if xs else None}
     return {"by_strength": by_strength, "by_exit_signal": by_xsig}
 
 
@@ -391,7 +391,7 @@ def main() -> int:
         w.writerow(cols_out)
         for r in rows:
             w.writerow([to_iso(r["entry_ns"]), to_iso(r["exit_ns"]), r["side"], repr(r["max_size"]),
-                        repr(r["entry_price"]), repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_bp"]),
+                        repr(r["entry_price"]), repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_pct"]),
                         r["undecided"], r["small"], r["big"], repr(r["r"]), to_iso(r["signal_ns"]), r["strength"],
                         r["exit_signal"] or "",
                         to_iso(r["exit_signal_ns"]) if r["exit_signal_ns"] is not None else "", r["h1"],
@@ -401,18 +401,18 @@ def main() -> int:
     write_trades_json(os.path.join(a.out, "trades.json.gz"),
                       ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
                         "exit_px": r["exit_price"], "side": r["side"], "qty": r["max_size"],
-                        "pnl_bp": r["pnl_bp"]} for r in kept),
+                        "pnl_pct": r["pnl_pct"]} for r in kept),
                       **({"seal_start_ns": WINDOW1[1]} if a.window1 else {}))
     ms_all = find_missed(rows, rows_close, sim.order_log) if shadow is not None else None
     ms = None if ms_all is None else split_measured(ms_all, mf, "signal_ns")[0]
     if ms is not None:
         with gzip.open(os.path.join(a.out, "missed.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
             w = csv.writer(fh)
-            w.writerow(("signal_t", "side", "entry_t", "exit_t", "entry_price", "exit_price", "pnl_bp", "vol_tercile",
+            w.writerow(("signal_t", "side", "entry_t", "exit_t", "entry_price", "exit_price", "pnl_pct", "vol_tercile",
                         "limit_order_placed"))
             for m in ms:
                 w.writerow([to_iso(m["signal_ns"]), m["side"], to_iso(m["entry_ns"]), to_iso(m["exit_ns"]),
-                            repr(m["entry_price"]), repr(m["exit_price"]), repr(m["pnl_bp"]), m["vol_tercile"] or "",
+                            repr(m["entry_price"]), repr(m["exit_price"]), repr(m["pnl_pct"]), m["vol_tercile"] or "",
                             m["limit_order_placed"]])
     order_kept = sim.order_log if mf is None else [o for o in sim.order_log if o[1] >= mf]
     lo_s = lo if mf is None else mf  # 集計の始め(日数・年の区切りは集計の期間で数える)

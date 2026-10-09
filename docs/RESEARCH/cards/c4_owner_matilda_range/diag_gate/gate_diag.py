@@ -136,12 +136,12 @@ def main() -> int:
     run, log, _ = run_b2.run_chunks(card, lo, hi, boundaries(lo, hi, "year"), dict(st.declarations))
     p = pnl(run)
     np.savez_compressed(os.path.join(out, "probe.npz"),
-                        bar_t=p.t_ns, exposure=p.exposure, r_bp=p.r_bp, pnl_bp=p.pnl_bp,
+                        bar_t=p.t_ns, exposure=p.exposure, r_bp=p.r_bp, pnl_pct=p.pnl_pct,
                         rec_t=np.array(card.rec_t, dtype=np.int64), ratio=np.array(card.rec_ratio),
                         center=np.array(card.rec_center), close=np.array(card.rec_close),
                         width=np.array(card.rec_width), fix10=np.array(card.rec_fix10, dtype=np.int8),
                         v37=np.array(card.rec_v37, dtype=np.int8))
-    print(f"終わり {time.time() - t0:.0f}s 決定 {len(p.t_ns)} 記録 {len(card.rec_t)} pnl の合計 {p.pnl_bp.sum():.3f}",
+    print(f"終わり {time.time() - t0:.0f}s 決定 {len(p.t_ns)} 記録 {len(card.rec_t)} pnl の合計(%) {p.pnl_pct.sum():.5f}",
           flush=True)
     return 0
 

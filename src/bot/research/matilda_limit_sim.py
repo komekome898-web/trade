@@ -52,7 +52,7 @@
   - 両方の道で利確が起きる(リードの決め。INTENT_MAP 238 行の定義では「利確まで済んだ」足): 2 本の道で結果が
     違うので決まらない足に数える。良い側 = 損益の良い方の道、悪い側 = 損益の悪い方の道。どちらも止めずに通す。
     損益の比べ方: その足で閉じた取引の損益(仕様 4 の式。取引の始めからの損益)と、足の終わりに持っている持ち高の
-    含み(各段 向き × (足の終値 / 入りの値段 − 1) × 1e4 ÷ N)の和。足の始めの状態は 2 本の道で同じなので、
+    含み(各段 向き × (足の終値 / 入りの値段 − 1) × 1e4 ÷ N。比べにだけ使う値)の和。足の始めの状態は 2 本の道で同じなので、
     この和の差が 2 本の道の差になる。等しいときは始値に近い方の端へ先に行く道を両側で使う【置いた形】。
   - どちらの道でも利確が起きない(持ち高 0 から上下両方の入りの値段を越えた足など。仕様に無い組): 始値に近い方の
     端へ先に行く道を良い側・悪い側の両方で使う【置いた形】。
@@ -455,12 +455,13 @@ class MatildaLimitSim:
         return out
 
     def _close_row(self, info: dict, fills: list, px: float, reason: str, t: int) -> dict:
-        """仕様 4: 1 段の損益(bp)= 向き × (出の値段 / 入りの値段 − 1) × 1e4 ÷ N。取引の損益 = 段の和。"""
+        """仕様 4: 1 段の損益(%)= 向き × (出の値段 / 入りの値段 − 1) × 100 ÷ N。取引の損益 = 段の和。
+        段数で割った損益の率なので bp と呼ばず % で持つ(L-920: bp は値動き率だけの名前)。"""
         s = info["side"]
-        pnl = math.fsum(s * (px / f - 1.0) * 1e4 / self.n_levels for f in fills)
+        pnl = math.fsum(s * (px / f - 1.0) * 100.0 / self.n_levels for f in fills)
         return {"entry_ns": info["entry_ns"], "exit_ns": t, "side": s, "levels": len(fills),
                 "entry_price": math.fsum(fills) / len(fills), "exit_price": px, "exit_reason": reason,
-                "pnl_bp": pnl, "undecided": info.get("und", 0), "width": info["width"], "vola": info["vola"],
+                "pnl_pct": pnl, "undecided": info.get("und", 0), "width": info["width"], "vola": info["vola"],
                 "ratio": info["ratio"], "brk": info["brk"], "close_k": info["close_k"]}
 
     # ------------------------------------------------------------------ 仕様 3-3: 利確の値段
@@ -592,7 +593,8 @@ class MatildaLimitSim:
                     st.fills.append(px)
 
     def _path_value(self, st: _St, c: float) -> float:
-        """道の損益(bp): その足で閉じた取引の損益と、足の終わりの持ち高の含み(足の終値で評価)の和。"""
+        """道の損益の比べの値(段で割った損益の率 × 1e4。2 本の道の大小の比べにだけ使い、外へ出さない。値動き率ではない):
+        その足で閉じた取引の損益と、足の終わりの持ち高の含み(足の終値で評価)の和。"""
         v = math.fsum(info["side"] * (px / f - 1.0) * 1e4 / self.n_levels
                       for info, fills, px, _r, _t in st.closed for f in fills)
         return v + math.fsum(st.side * (c / f - 1.0) * 1e4 / self.n_levels for f in st.fills)

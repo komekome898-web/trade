@@ -93,6 +93,12 @@ frozen 2026-08-25; nothing below is changed after the first judged run)
     - オーナー承認が必要な項目: 判定通過後のペーパー実装のみ(本登録と判定
       実行は蓄積データの読み取りであり資金・稼働に触れない)
 
+UNITS IN THIS SCRIPT (L-920/L-923, 2026-10-09; the frozen PREREG text above
+is kept verbatim): bp is used only for a price move over time (the r60
+trigger, gross, the out-of-window drift). The taker cost, the slippage, the
+nets (move minus cost) and their bars are held in PERCENT, the same numbers
+/ 100: 3.96bps = 0.0396 %, +4bps = 0.04 %, +5bps = 0.05 %, 1000bps = 10 %.
+
 STRUCTURAL CONSTANTS FIXED BY THE ABOVE, AND IMPLEMENTATION READINGS TAKEN
 WHERE THE PREREG TEXT DOES NOT SPELL OUT A NUMBER (flagged INTERPRETATION;
 none of these is a free parameter that was swept -- each is used exactly
@@ -121,25 +127,25 @@ once, chosen before any fresh number was read, and reported to the lead):
         プリント". No episode opens if no print falls in that exact
         1-second window (dropped, counted; the 1-second bound is not
         widened).
-      - measured_entry_slippage_bps = side*(entry_print-entry_basis)
-        /entry_basis*1e4 (signed so positive = adverse). This is exactly
+      - measured_entry_slippage_pct = side*(entry_print-entry_basis)
+        /entry_basis*100 (signed so positive = adverse). This is exactly
         "エントリー基準価格と実約定プリントの差", the §2 "実測スリッページ".
-      - nominal_net (assumes the PREREG's flat 3.96bps buys exactly the
-        entry_print, i.e. no realised slippage beyond the print):
-        entry_fill = entry_print*(1+side*3.96/1e4);
-        nominal_net = side*(exit_print-entry_fill)/entry_fill*1e4 - 3.96
+      - nominal_net (assumes the PREREG's flat 3.96bps = 0.0396 % buys
+        exactly the entry_print, i.e. no realised slippage beyond the print):
+        entry_fill = entry_print*(1+side*0.0396/100);
+        nominal_net = side*(exit_print-entry_fill)/entry_fill*100 - 0.0396
       - measured_net (uses the REALISED entry slippage in place of the
-        flat 3.96bps assumption on the entry leg; exit leg is not
-        separately measured so keeps the flat 3.96bps):
-        measured_net = side*(exit_print-entry_basis)/entry_basis*1e4 - 3.96
-      - primary_net = measured_net if mean(measured_entry_slippage) > 3.96
+        flat 0.0396 % assumption on the entry leg; exit leg is not
+        separately measured so keeps the flat 0.0396 %):
+        measured_net = side*(exit_print-entry_basis)/entry_basis*100 - 0.0396
+      - primary_net = measured_net if mean(measured_entry_slippage) > 0.0396
         else nominal_net, decided ONCE off the whole judged sample's
         average per §2's literal rule ("片道平均が3.96bpsを超える場合は
         実測ネットを主判定とする").
-      - sensitivity_net (cost sensitivity, +4bps/side, reported alongside,
-        never the bar): entry_fill_s = entry_print*(1+side*7.96/1e4);
-        sensitivity_net = side*(exit_print-entry_fill_s)/entry_fill_s*1e4
-        - 7.96.
+      - sensitivity_net (cost sensitivity, +0.04 %/side, reported alongside,
+        never the bar): entry_fill_s = entry_print*(1+side*0.0796/100);
+        sensitivity_net = side*(exit_print-entry_fill_s)/entry_fill_s*100
+        - 0.0796.
   * [INTERPRETATION] Exit is a scheduled decision (not a re-triggered
     signal), so it is filled at the first tape print at or after
     t_entry + 1800s (entry_print's own timestamp + exactly 1800.0s), with
@@ -182,7 +188,7 @@ once, chosen before any fresh number was read, and reported to the lead):
   * Bootstrap: day-cluster (UTC day of entry_print's timestamp), 2000
     resamples, seed 20260825, identical implementation to
     research_burst_atlas.py day_cluster_ci.
-  * maxDD: running max minus running cumulative sum of primary_net_bps in
+  * maxDD: running max minus running cumulative sum of primary_net_pct in
     trade (chronological) order, series starts at 0.
   * Frequency branch (§5 table): freq = n / days_in_adopted_segment; if
     freq < 0.7/day, judgment is DEFERRED (n>=30 waited for regardless) even
@@ -228,8 +234,8 @@ FRESH_CUTOFF_ISO = "2026-08-25T12:00:00Z"
 TRIGGER_WINDOW_S = 60
 TRIGGER_THR_BPS = 20.0
 HOLD_S = 1800.0
-TAKER_BPS = 3.96
-COST_SENS_BPS = 4.0                 # -> one-way 7.96bps sensitivity
+TAKER_PCT = 0.0396                  # PREREG: 3.96bps one way
+COST_SENS_PCT = 0.04                # PREREG: +4bps -> one-way 0.0796 % sensitivity
 CLOCK_LO_S = 12 * 3600 + 30 * 60     # 12:30 UTC
 CLOCK_HI_S = 15 * 3600               # 15:00 UTC
 
@@ -242,9 +248,9 @@ EDGE_TRIM_S = 120.0                  # trimmed on both sides of each gap
 
 # --- §4 judgment bar ---------------------------------------------------------
 N_JUDGE_MIN = 30
-NET_BAR_BPS = 5.0
+NET_BAR_PCT = 0.05                  # PREREG: +5bps/trade
 CI_T_MIN = 2.0
-MAXDD_BAR_BPS = 1000.0
+MAXDD_BAR_PCT = 10.0                # PREREG: 1000bps
 FREQ_BAR_PER_DAY = 0.7
 
 BOOT_ITERS = 2000
@@ -504,25 +510,25 @@ def build_episodes(gm: np.ndarray, g0: int, fire_idx: np.ndarray, fire_side: np.
             n_gap_excluded += 1
             continue
 
-        measured_slip = side * (ep_ - entry_basis) / entry_basis * 1e4
+        measured_slip = side * (ep_ - entry_basis) / entry_basis * 100
 
-        entry_fill_nom = ep_ * (1.0 + side * TAKER_BPS / 1e4)
-        nominal_net = side * (xp_ - entry_fill_nom) / entry_fill_nom * 1e4 - TAKER_BPS
+        entry_fill_nom = ep_ * (1.0 + side * TAKER_PCT / 100)
+        nominal_net = side * (xp_ - entry_fill_nom) / entry_fill_nom * 100 - TAKER_PCT
 
-        measured_net = side * (xp_ - entry_basis) / entry_basis * 1e4 - TAKER_BPS
+        measured_net = side * (xp_ - entry_basis) / entry_basis * 100 - TAKER_PCT
 
-        sens_c = TAKER_BPS + COST_SENS_BPS
-        entry_fill_sens = ep_ * (1.0 + side * sens_c / 1e4)
-        sens_net = side * (xp_ - entry_fill_sens) / entry_fill_sens * 1e4 - sens_c
+        sens_c = TAKER_PCT + COST_SENS_PCT
+        entry_fill_sens = ep_ * (1.0 + side * sens_c / 100)
+        sens_net = side * (xp_ - entry_fill_sens) / entry_fill_sens * 100 - sens_c
 
         gross = side * (xp_ - ep_) / ep_ * 1e4
 
         episodes.append({
             "t_sig": t_sig, "side": side, "entry_basis": entry_basis,
             "entry_t": et_, "entry_print": ep_, "exit_t": xt_, "exit_print": xp_,
-            "gross_bps": gross, "measured_slip_bps": measured_slip,
-            "nominal_net_bps": nominal_net, "measured_net_bps": measured_net,
-            "sensitivity_net_bps": sens_net,
+            "gross_bps": gross, "measured_slip_pct": measured_slip,
+            "nominal_net_pct": nominal_net, "measured_net_pct": measured_net,
+            "sensitivity_net_pct": sens_net,
             "day": int(np.floor(et_ / 86400.0)),
         })
         position_open_until = xt_
@@ -552,8 +558,8 @@ def window_out_diagnostic(gm: np.ndarray, g0: int, n: int,
             "median": float(np.median(arr)) if len(arr) else float("nan")}
 
 
-def compute_maxdd(net_bps_in_order: np.ndarray) -> float:
-    cum = np.concatenate(([0.0], np.cumsum(net_bps_in_order)))
+def compute_maxdd(net_pct_in_order: np.ndarray) -> float:
+    cum = np.concatenate(([0.0], np.cumsum(net_pct_in_order)))
     running_max = np.maximum.accumulate(cum)
     dd = running_max - cum
     return float(dd.max()) if len(dd) else 0.0
@@ -594,8 +600,8 @@ def episodes_hash(episodes: list[dict]) -> str:
     h = hashlib.sha256()
     for e in episodes:
         h.update(f"{e['t_sig']:.3f}|{e['side']}|{e['entry_t']:.3f}|{e['entry_print']:.2f}|"
-                  f"{e['exit_t']:.3f}|{e['exit_print']:.2f}|{e['nominal_net_bps']:.6f}|"
-                  f"{e['measured_net_bps']:.6f}\n".encode())
+                  f"{e['exit_t']:.3f}|{e['exit_print']:.2f}|{e['nominal_net_pct']:.8f}|"
+                  f"{e['measured_net_pct']:.8f}\n".encode())
     return h.hexdigest()[:16]
 
 
@@ -621,14 +627,14 @@ def judge(pipe: dict) -> None:
           f"usable days {days:.2f} (span minus excluded)")
     line()
 
-    slips = np.array([e["measured_slip_bps"] for e in episodes])
+    slips = np.array([e["measured_slip_pct"] for e in episodes])
     avg_slip = float(slips.mean())
-    use_measured = avg_slip > TAKER_BPS
-    primary_key = "measured_net_bps" if use_measured else "nominal_net_bps"
+    use_measured = avg_slip > TAKER_PCT
+    primary_key = "measured_net_pct" if use_measured else "nominal_net_pct"
     primary = np.array([e[primary_key] for e in episodes])
-    nominal = np.array([e["nominal_net_bps"] for e in episodes])
-    measured = np.array([e["measured_net_bps"] for e in episodes])
-    sens = np.array([e["sensitivity_net_bps"] for e in episodes])
+    nominal = np.array([e["nominal_net_pct"] for e in episodes])
+    measured = np.array([e["measured_net_pct"] for e in episodes])
+    sens = np.array([e["sensitivity_net_pct"] for e in episodes])
     days_arr = np.array([e["day"] for e in episodes])
 
     sub("execution / slippage")
@@ -639,8 +645,8 @@ def judge(pipe: dict) -> None:
     print(f"gap-excluded (episode overlaps a recorder-restart gap/trim): "
           f"{pipe['diag']['n_gap_excluded']}")
     print(f"pending (exit beyond current tape)       : {pipe['diag']['n_pending']}")
-    print(f"measured one-way entry slippage, mean bps: {avg_slip:.3f} "
-          f"(assumption {TAKER_BPS}bps) -> primary net = {primary_key}")
+    print(f"measured one-way entry slippage, mean %: {avg_slip:.5f} "
+          f"(assumption {TAKER_PCT}%) -> primary net = {primary_key}")
 
     if freq < FREQ_BAR_PER_DAY:
         sub("RESULT")
@@ -654,18 +660,18 @@ def judge(pipe: dict) -> None:
     maxdd = compute_maxdd(primary)
 
     bar_n = n >= N_JUDGE_MIN
-    bar_net = float(primary.mean()) >= NET_BAR_BPS
+    bar_net = float(primary.mean()) >= NET_BAR_PCT
     bar_ci = (not np.isnan(tstat)) and tstat >= CI_T_MIN and not (lo <= 0.0 <= hi)
-    bar_dd = maxdd <= MAXDD_BAR_BPS
+    bar_dd = maxdd <= MAXDD_BAR_PCT
 
     sub("§4 bar")
     print(f"1. n >= {N_JUDGE_MIN}                 : {n} -> {'PASS' if bar_n else 'FAIL'}")
-    print(f"2. net >= +{NET_BAR_BPS}bps/trade      : mean {primary.mean():+.3f}bps "
-          f"(nominal {nominal.mean():+.3f}, measured {measured.mean():+.3f}, "
-          f"sensitivity {sens.mean():+.3f}) -> {'PASS' if bar_net else 'FAIL'}")
+    print(f"2. net >= +{NET_BAR_PCT}%/trade      : mean {primary.mean():+.5f}% "
+          f"(nominal {nominal.mean():+.5f}, measured {measured.mean():+.5f}, "
+          f"sensitivity {sens.mean():+.5f}) -> {'PASS' if bar_net else 'FAIL'}")
     print(f"3. day-cluster t>=2.0, CI excl. 0 : t={tstat:.3f}, "
-          f"95% CI [{lo:+.3f}, {hi:+.3f}] -> {'PASS' if bar_ci else 'FAIL'}")
-    print(f"4. maxDD <= {MAXDD_BAR_BPS}bps         : {maxdd:.1f}bps -> "
+          f"95% CI [{lo:+.5f}, {hi:+.5f}] % -> {'PASS' if bar_ci else 'FAIL'}")
+    print(f"4. maxDD <= {MAXDD_BAR_PCT}%         : {maxdd:.3f}% -> "
           f"{'PASS' if bar_dd else 'FAIL'}")
 
     wout = pipe["window_out"]
@@ -689,7 +695,7 @@ def judge(pipe: dict) -> None:
 # --------------------------------------------------------------------------
 # --status-json: dashboard tile feed (n / fresh period / last day ONLY).
 # The safety valve above governs the printed judgment report; this payload
-# is a separate, always-safe output -- it never carries a statistic (net bps,
+# is a separate, always-safe output -- it never carries a statistic (net %,
 # CI, frequency, ...), only the sample count and its date span, so writing it
 # is fine at any n, including n < N_JUDGE_MIN. scripts/dashboard.py reads it
 # for the S12 tile ("S12 新鮮n 23/30"); it never renders a verdict from n<30.

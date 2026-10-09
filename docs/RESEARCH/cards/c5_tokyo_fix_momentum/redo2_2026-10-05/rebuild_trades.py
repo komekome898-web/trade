@@ -3,7 +3,7 @@
     entry_t = 最初の決定の約定の足の始まり(= 決定の足の終わり。約定の値段 = その足の始値)
     exit_t  = 最後の決定の出の足(次の決定の約定の足)の始まり(出の値段 = その足の始値)
     signal_t = 最初の決定の足の終わり(合図が分かった時刻。値は終値で決まる)
-    pnl_bp = 区間の P_t の和、side = 符号、entry_price = 約定の足の始値
+    pnl_pct = 区間の P_t の和(%。P_t = e_t × (open比 − 1) × 100。L-920 で bp は値動き率だけの名前)、side = 符号、entry_price = 約定の足の始値
 diag_paths.py の決まり(span = 始まりが [entry, exit) の足、close_at(t) = t に終わる足の終値)に合わせた。
     PYTHONPATH=src python3 docs/RESEARCH/cards/c5_tokyo_fix_momentum/redo2_2026-10-05/rebuild_trades.py
 出力: このフォルダの trades_rebuilt/trades.csv.gz
@@ -31,7 +31,7 @@ def main():
     m = len(d) - 2
     bar, fill, ex = d[:m], d[1:m + 1], d[2:m + 2]
     e = ex_all[bar]
-    p = e * (op[ex] / op[fill] - 1.0) * 1e4
+    p = e * (op[ex] / op[fill] - 1.0) * 100
     s = np.sign(e)
     rows, i = [], 0
     while i < m:
@@ -42,12 +42,12 @@ def main():
         while j + 1 < m and s[j + 1] == s[i]:
             j += 1
         rows.append([iso(end_ns[bar[i]]), iso(start_ns[fill[i]]), iso(start_ns[ex[j]]), int(s[i]), f"{op[fill[i]]:.1f}",
-                     f"{p[i:j + 1].sum():.6f}"])
+                     f"{p[i:j + 1].sum():.8f}"])
         i = j + 1
     os.makedirs(os.path.join(HERE, "trades_rebuilt"), exist_ok=True)
     with gzip.open(os.path.join(HERE, "trades_rebuilt", "trades.csv.gz"), "wt", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_bp"])
+        w.writerow(["signal_t", "entry_t", "exit_t", "side", "entry_price", "pnl_pct"])
         w.writerows(rows)
     ext = json.load(open(os.path.join(M, "extra.json")))["trades"]
     print({"trades": len(rows), "sum": sum(float(r[5]) for r in rows), "extra_long_n": ext["long"]["n"],

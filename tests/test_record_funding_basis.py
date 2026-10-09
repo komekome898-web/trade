@@ -139,6 +139,9 @@ def test_run_once_is_idempotent_across_two_calls(fake_session, tmp_path):
     ])
     funding_csv = tmp_path / "funding.csv"
     basis_csv = tmp_path / "basis.csv"
+    # a basis log written before 2026-10-09 (basis_bp, x 1e4): rewritten to basis_pct (/ 100) on the next append
+    basis_csv.write_text("ts_utc,fx_mid,spot_mid,basis_bp,candle_ts_fx,candle_ts_spot,fx_close_1m,spot_close_1m,"
+                         "basis_close_bp\n2026-09-01T00:00:00+00:00,101.0,99.0,202.0,,,,,\n", encoding="utf-8")
 
     rfb.run_once(client, funding_csv, basis_csv)
     rfb.run_once(client, funding_csv, basis_csv)
@@ -149,7 +152,9 @@ def test_run_once_is_idempotent_across_two_calls(fake_session, tmp_path):
 
     with basis_csv.open() as f:
         basis_rows = list(csv.DictReader(f))
-    assert len(basis_rows) == 2  # basis is a plain time series -- both kept
+    assert len(basis_rows) == 3  # basis is a plain time series -- the old row and both new ones kept
+    assert "basis_bp" not in basis_rows[0] and float(basis_rows[0]["basis_pct"]) == pytest.approx(2.02)
+    assert basis_rows[0]["basis_close_pct"] == ""
 
 
 # ---- basis computation --------------------------------------------------------
@@ -168,8 +173,8 @@ def test_collect_basis_mid_to_mid(fake_session, tmp_path, monkeypatch):
     spot_mid = (11900000 + 11902000) / 2
     assert row["fx_mid"] == fx_mid
     assert row["spot_mid"] == spot_mid
-    assert row["basis_bp"] == pytest.approx((fx_mid / spot_mid - 1) * 1e4)
-    assert row["basis_close_bp"] == ""  # no candle files
+    assert row["basis_pct"] == pytest.approx((fx_mid / spot_mid - 1) * 100)
+    assert row["basis_close_pct"] == ""  # no candle files
 
 
 def test_collect_basis_reads_candle_closes(fake_session, tmp_path, monkeypatch):
@@ -192,7 +197,7 @@ def test_collect_basis_reads_candle_closes(fake_session, tmp_path, monkeypatch):
     row, _warnings = rfb.collect_basis(client)
     assert row["fx_close_1m"] == 12000000.0
     assert row["spot_close_1m"] == 11900000.0
-    assert row["basis_close_bp"] == pytest.approx((12000000.0 / 11900000.0 - 1) * 1e4)
+    assert row["basis_close_pct"] == pytest.approx((12000000.0 / 11900000.0 - 1) * 100)
 
 
 def test_last_candle_close_missing_file(tmp_path):

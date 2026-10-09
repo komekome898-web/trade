@@ -204,7 +204,7 @@ def light(a, card, run, log, inputs, clock, t_run, lo, hi, out_root, save_root, 
     p = pnl(run)
     t1 = time.time()
     sha_daily = write_daily(daily_rows(p, "Asia/Tokyo"), os.path.join(outdir, "daily.csv"))
-    ds = daily_stats(p.t_ns, p.pnl_bp, run.exposure[run.decided])
+    ds = daily_stats(p.t_ns, p.pnl_pct, run.exposure[run.decided])
     ds["daily_csv_sha256"] = sha_daily
     ds["w4"] = {"variant": vdesc, "period": [to_iso(lo), to_iso(hi)], "chunks": log,
                 "note": "measure_card(1 分ごとの系列のブートストラップ・対照・場面の回帰)は打っていない(リードの測り方の変更)"}
@@ -345,7 +345,7 @@ def main() -> int:
     clock.mark(f"{name}: measure_card {t_meas:.0f}s")
     p = pnl(run)
     t2 = time.time()
-    wb = week_block(p.pnl_bp, out, SEED)
+    wb = week_block(p.pnl_pct, out, SEED)
     t_week = time.time() - t2
     diag, t_diag = None, 0.0
     t3 = time.time()

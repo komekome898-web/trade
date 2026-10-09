@@ -37,7 +37,7 @@ def week_block(P: np.ndarray, out: dict, seed: int) -> dict:
     L_w = max(int(math.ceil(pw_b)), WEEK_BARS)
     week = _boot(P, L_w, seed)
     day_check = _boot(P, L_day, seed)
-    ov = out["overall"]["mean_bp"]
+    ov = out["overall"]["mean_pct"]
     return {
         "rule": "L_w = max(ceil(Politis-White circular b of P_t), 10080)(W4 の仕様 §3 の 1 週。測定器の L は 1 日 = 1440 が下限)",
         "formula": {"ci": "block_bootstrap_ci(P_t, block_len=L, n_resamples=1000, seed, alpha=0.05, method='circular', "
@@ -45,9 +45,9 @@ def week_block(P: np.ndarray, out: dict, seed: int) -> dict:
                     "se": "1,000 個の再標本の平均の標準偏差(ddof 1)",
                     "mde": "mde(n, sd = se × √n, alpha 0.05, power 0.80, sides 2, approx 'normal') = (z_0.975 + z_0.80) × se"},
         "seed": seed, "n_resamples": N_RESAMPLES, "method": METHOD, "n": int(len(P)),
-        "pw_b": pw_b, "mean_bp": float(np.mean(P)),
+        "pw_b": pw_b, "mean_pct": float(np.mean(P)),
         "day": {"block_len": L_day, "ci": ov.get("ci"), "se": ov.get("se"), "mde": ov.get("mde"),
-                "from": "measure.json の overall.mean_bp(測定器が出した 1 日の区間)"},
+                "from": "measure.json の overall.mean_pct(測定器が出した 1 日の区間)"},
         "day_recomputed": {**day_check, "note": "照合用。同じ関数・同じ種・同じ L で P_t から直接計算した 1 日の区間"},
         "week": week,
     }
@@ -66,11 +66,11 @@ def canonical_sha(obj) -> str:
 
 
 def summary_row(name: str, out: dict, wb: dict) -> dict:
-    ov = out["overall"]["mean_bp"]
-    return {"variant": name, "n": out["n_pnl"], "mean_bp": ov["estimate"], "ci_day": ov.get("ci"),
+    ov = out["overall"]["mean_pct"]
+    return {"variant": name, "n": out["n_pnl"], "mean_pct": ov["estimate"], "ci_day": ov.get("ci"),
             "ci_week": wb["week"]["ci"], "mde_day": ov.get("mde"), "mde_week": wb["week"]["mde"],
             "L_day": out["block"]["block_len"], "L_week": wb["week"]["block_len"],
             "nonzero_share": out["frequency"]["nonzero_share"], "changes": out["frequency"]["changes"],
             "control_percentile": ov.get("control_percentile"),
-            "drift_removed_bp": out["overall"]["drift_removed_bp"]["estimate"],
-            "drift_removed_ci_day": out["overall"]["drift_removed_bp"].get("ci")}
+            "drift_removed_pct": out["overall"]["drift_removed_pct"]["estimate"],
+            "drift_removed_ci_day": out["overall"]["drift_removed_pct"].get("ci")}

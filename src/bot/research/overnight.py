@@ -323,7 +323,7 @@ _EDGE_TREND_UNIT_SECONDS = {
 
 def edge_trend(
     dates,
-    values_bps: np.ndarray,
+    values: np.ndarray,
     *,
     window: int,
     block: int,
@@ -334,12 +334,13 @@ def edge_trend(
     seed: int = 20260906,
     regime_dates: Iterable | None = None,
     rolling_step: int = 1,
+    value_unit: str = "bps",
 ) -> dict:
     """The standard "edge trend" sub-indicator (research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5)).
 
     Describes whether the expected value of a per-observation series (e.g.
     a night's gross overnight return, its per-pair cost, or its net return,
-    all in bps) has been expanding or shrinking over time, using a fixed,
+    each in one unit named by `value_unit`) has been expanding or shrinking over time, using a fixed,
     pre-registered procedure -- never a single number in isolation (§5's
     "どれか 1 つだけ出すことは禁止"). `window`, `block`, `time_unit`,
     `time_axis` and `period` have no defaults: every call must name them
@@ -350,14 +351,17 @@ def edge_trend(
     Parameters
     ----------
     dates : per-observation dates (anything `pd.to_datetime` accepts).
-        Need not already be sorted -- `edge_trend` sorts (dates, values_bps)
+        Need not already be sorted -- `edge_trend` sorts (dates, values)
         together ascending before computing anything. Only read when
         `time_axis="calendar"` or `period` is not None; may be any constant
         placeholder otherwise (still validated for matching length).
-    values_bps : per-observation values, in bps (gross return, cost, or net
-        return -- `edge_trend` does not care which; run it once per leg and
-        assemble the gross/cost/net decomposition table from the three
-        calls, per §5.1).
+    values : per-observation values in one unit, named by `value_unit`
+        (gross return, cost, or net return -- `edge_trend` does not care
+        which; run it once per leg and assemble the gross/cost/net
+        decomposition table from the three calls, per §5.1). Since L-920
+        (2026-10-09) bp names only a price-move rate: a gross return may be
+        in bps, but a cost or a net (move minus cost) is not a price move and
+        should be passed in percent with value_unit="%".
     window : rolling-window length in observations (§5.2: 250 for daily
         data, ~1 trading year). Pre-registered fixed per §5.8 -- changing
         it for a given research unit counts as an iteration.
@@ -365,7 +369,7 @@ def edge_trend(
         pre-registered fixed per §5.8.
     time_unit : the unit the slope, its CI and its MDE are reported in --
         one of "year", "month", "day", "hour", "minute", "sample". The
-        return dict's `slope_unit` echoes this as "bps/<time_unit>".
+        return dict's `slope_unit` echoes this as "<value_unit>/<time_unit>".
     time_axis : "calendar" -- elapsed time from `dates`, converted to
         `time_unit` (average-length month/year, exact otherwise); or
         "index" -- plain sample number 0..n-1, which REQUIRES
@@ -374,8 +378,8 @@ def edge_trend(
         time has no "sample" unit -- use `time_axis="index"` for that).
     period : grouping key for the period table (§5.3), one of "year",
         "month", "day", "hour", or None to skip that table entirely.
-        Independent of `time_unit`/`time_axis` -- e.g. a slope in
-        bps/month can still be tabulated by "year".
+        Independent of `time_unit`/`time_axis` -- e.g. a slope per month can
+        still be tabulated by "year".
     n_boot : bootstrap resamples per CI (§5.2/§5.4 default: 2,000).
     seed : RNG seed, reused across every bootstrap draw this call makes
         (rolling windows, period cells, the slope, the half-split
@@ -391,20 +395,23 @@ def edge_trend(
         by this setting; it only thins the "rolling" table, for series with
         tens of thousands of observations where a CI at every end would
         cost n × n_boot resamples.
+    value_unit : the unit of `values`, echoed in "slope_unit" (default
+        "bps", the unit every caller used before L-920; pass "%" for a cost
+        or a net).
 
     Returns
     -------
     dict with:
       "rolling"      DataFrame, one row per window end: end_date, n (==
                      window), mean, ci_lo, ci_hi (block-bootstrap 95% CI).
-                     Empty if len(values_bps) < window.
+                     Empty if len(values) < window.
       "period_table" DataFrame, one row per `period` bucket present:
                      period (label), n, mean, ci_lo, ci_hi (nan CI if
                      n < block). None if `period` is None.
-      "slope"        OLS slope of values_bps regressed on time in
+      "slope"        OLS slope of values regressed on time in
                      `time_unit` units (via `time_axis`) since the first
                      observation (or sample 0, for "index").
-      "slope_unit"   f"bps/{time_unit}", naming the unit of "slope",
+      "slope_unit"   f"{value_unit}/{time_unit}", naming the unit of "slope",
                      "slope_ci" and "slope_mde".
       "slope_ci"     (lo, hi) 95% CI of the slope, from a moving-block
                      bootstrap OF THE RESIDUALS (resample the OLS residuals
@@ -412,7 +419,7 @@ def edge_trend(
                      observation's own time, refit -- this is what
                      preserves the time design while still resampling
                      under the series' own short-range autocorrelation).
-                     (nan, nan) if len(values_bps) < block.
+                     (nan, nan) if len(values) < block.
       "slope_se"     bootstrap standard deviation of the slope draws (the
                      SE the MDE below is built from).
       "slope_mde"    EDGE_TREND_SLOPE_MDE_Z * slope_se -- "the slope MDE"
@@ -456,10 +463,10 @@ def edge_trend(
         raise ValueError(f"rolling_step must be >= 1, got {rolling_step}")
 
     ds = pd.to_datetime(pd.Series(list(dates)).reset_index(drop=True))
-    x = np.asarray(values_bps, dtype=float)
+    x = np.asarray(values, dtype=float)
     if len(ds) != len(x):
         raise ValueError(
-            f"dates and values_bps must have the same length, got {len(ds)} and {len(x)}"
+            f"dates and values must have the same length, got {len(ds)} and {len(x)}"
         )
     n = len(x)
     order = np.argsort(ds.to_numpy(), kind="stable")
@@ -592,7 +599,7 @@ def edge_trend(
         "rolling": rolling,
         "period_table": period_table,
         "slope": float(slope0),
-        "slope_unit": f"bps/{time_unit}",
+        "slope_unit": f"{value_unit}/{time_unit}",
         "slope_ci": slope_ci,
         "slope_se": slope_se,
         "slope_mde": slope_mde,
@@ -651,7 +658,7 @@ def _block_slices(n: int, block: int) -> list[np.ndarray]:
 
 
 def state_split(
-    values_bps,
+    values,
     states: dict,
     *,
     block: int,
@@ -673,13 +680,14 @@ def state_split(
 
     Parameters
     ----------
-    values_bps : 1-D per-observation values in bps, IN TIME ORDER (the block
+    values : 1-D per-observation values in one unit (bp only for a
+        price-move rate; a cost or a net is in % -- L-920), IN TIME ORDER (the block
         bootstrap and the block permutation both read the ordering as time).
         The primary quantity — every difference, CI, MDE, the permutation
         null and every verdict are computed on THIS series; `cost_bps` only
         adds descriptive cost-net columns to the per-state table.
     states : {variable name: array-like of per-observation labels}. Each
-        array must have the same length as `values_bps`. A NaN/None/empty
+        array must have the same length as `values`. A NaN/None/empty
         label drops that observation from that variable only (other variables
         still use it). Variables keep the dict's order in the output; levels
         within a variable are ordered by their label sorted as a string.
@@ -689,10 +697,12 @@ def state_split(
         2,000).
     seed : RNG seed. Every draw this call makes is derived from it, so a
         rerun is bit-identical.
-    cost_bps : optional per-observation cost in bps, same length. When given,
+    cost_bps : optional per-observation cost in the SAME unit as `values`,
+        same length (the keyword keeps its pre-L-920 name for the phase2
+        callers; a cost is not a price move, so it is not bp). When given,
         the per-state table also carries the cost mean and the cost-net
         (values - cost) mean and CI. Differences and verdicts stay on
-        `values_bps`.
+        `values`.
 
     Returns
     -------
@@ -729,10 +739,10 @@ def state_split(
       "params"       dict echoing block/n_boot/seed/n/n_variables/
                      n_comparisons/has_cost for the RESULTS.md footnote.
     """
-    x = np.asarray(values_bps, dtype=float)
+    x = np.asarray(values, dtype=float)
     n = len(x)
     if n == 0:
-        raise ValueError("values_bps must not be empty")
+        raise ValueError("values must not be empty")
     if not states:
         raise ValueError("states must not be empty")
     net = None
@@ -741,7 +751,7 @@ def state_split(
         cost = np.asarray(cost_bps, dtype=float)
         if len(cost) != n:
             raise ValueError(
-                f"cost_bps must have the same length as values_bps, got {len(cost)} and {n}"
+                f"cost_bps must have the same length as values, got {len(cost)} and {n}"
             )
         net = x - cost
 
@@ -750,7 +760,7 @@ def state_split(
         ser = pd.Series(list(labels)).reset_index(drop=True)
         if len(ser) != n:
             raise ValueError(
-                f"states[{var!r}] must have the same length as values_bps, "
+                f"states[{var!r}] must have the same length as values, "
                 f"got {len(ser)} and {n}"
             )
         masks_by_var[var] = _state_masks(ser)

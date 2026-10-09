@@ -102,7 +102,7 @@ for n in runs:
     d3 = tab[n]["d3"]
     print(f"- {n}: " + " / ".join(parts) + f" / 上位 5% の日の和 {y(d3['top5_days_sum'])}・下位 5% {y(d3['bottom5_days_sum'])}(全体 {y(d3['total'])})")
 
-print("\n## D4 取引の一生(母数 = 1 段目の足の後まで持った取引。損益の和は円、MFE・MAE は 1 段目の約定の値段に対する値動き率(bp)の中央値)\n")
+print("\n## D4 取引の一生(母数 = 1 段目の足の後まで持った取引。損益の和は円、MFE・MAE は最初の約定の値段(1 段目)に対する値動き率(bp)の中央値)\n")
 print("| 本 | 母数 | 群 | 取引 | 和 円 | MFE | MAE |")
 print("|---|---|---|---|---|---|---|")
 for n in runs:
@@ -131,16 +131,16 @@ for n in runs:
     g = tab[n]["d6"]["groups"]
     print(f"- {n}: " + "・".join(f"{k} {v['trades']:,} 本 {ci({'mean': v['per_trade'], 'lo': v['lo'], 'hi': v['hi']}, 1)}" for k, v in g.items()))
 
-print("\n## D7 本 − 基準(同じ日どうしの日ごとの差、円/日 [区間](MDE))\n")
+print("\n## D7 本 − 基準(2 本の期間の日を合わせた日ごとの差。取引の無い日は 0 円。円/日 [区間](MDE))\n")
 print("| 比べ | 全期間 | 前半 | 後半 | 0 を含まない年 |")
 print("|---|---|---|---|---|")
 bd = dt.daily_series(dt.load_run(T + "base"))
 for n in names:
     d7 = tab[n]["d7"]
     rd = dt.daily_series(dt.load_run(T + n))
-    common = sorted(set(rd) & set(bd))
-    a = dt.mean_ci([rd[x] - bd[x] for x in common if x < CUT])
-    b = dt.mean_ci([rd[x] - bd[x] for x in common if x >= CUT])
+    days = sorted(set(rd) | set(bd))  # 読み口の D7 と同じ和集合(取引の無い日は 0 円)
+    a = dt.mean_ci([rd.get(x, 0.0) - bd.get(x, 0.0) for x in days if x < CUT])
+    b = dt.mean_ci([rd.get(x, 0.0) - bd.get(x, 0.0) for x in days if x >= CUT])
     yrs = [f"{k} {ci(v)}" for k, v in d7["years"].items() if v.get("lo") is not None and (v["lo"] > 0 or v["hi"] < 0)]
     print(f"| {n} − base | {ci(d7['all'], 1)}({y(d7['all']['mde'], 1)}) | {ci(a)}({y(a['mde'])}) | {ci(b)}({y(b['mde'])}) | {'、'.join(yrs) or '無い'} |")
 print("\n年ごと(円/日):\n")

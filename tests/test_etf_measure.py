@@ -6,6 +6,7 @@ asked for it.  No test touches the network.
 """
 from __future__ import annotations
 
+import csv
 import json
 from datetime import date, datetime
 from pathlib import Path
@@ -339,7 +340,7 @@ def test_08b_trading_unit_1_orders_one_unit_of_1348(tmp_path):
     assert payload["Qty"] == 1 == EXPECTED_TRADING_UNIT["1348"]
     assert payload["FrontOrderType"] == 16 and payload["Price"] == 0
     assert 1 * PRICE["1348"] < MAX_NOTIONAL_YEN
-    assert em.PASS_BAR_BPS["1348"] == 2.7
+    assert em.PASS_BAR_PCT["1348"] == 0.027
 
 
 def test_10b_a_changed_trading_unit_on_1348_stops_that_symbol_only(tmp_path):
@@ -640,8 +641,8 @@ def _unfilled(order_id, symbol):
 
 
 def test_34_a_leg_more_than_three_ticks_off_the_print_pauses_entries(tmp_path):
-    # tick at 1925 yen is 1 yen = 5.19bps; 3 ticks ~ 15.6bps.  Buying 5 yen
-    # above the print is ~26bps.
+    # tick at 1925 yen is 1 yen = 0.0519 %; 3 ticks ~ 0.156 %.  Buying 5 yen
+    # above the print is ~0.26 %.
     f, rows = _round_trip(tmp_path, buy=1930.0)
     assert rows and f.pause.is_paused("1343") and f.pause.is_paused("1591")
     assert "S1" in f.pause.reason("1343")
@@ -829,15 +830,15 @@ def test_42_nothing_is_sent_outside_the_hard_windows(tmp_path, when, job):
 def test_43_c_is_zero_when_the_fills_equal_the_prints_and_one_tick_when_off_one():
     exact = round_trip_metrics(fill_buy=1925.0, fill_sell=1925.0,
                                print_close=1925.0, print_open=1925.0, qty=10)
-    assert exact["c_bps"] == pytest.approx(0.0, abs=1e-9)
+    assert exact["c_pct"] == pytest.approx(0.0, abs=1e-11)
     assert exact["c_ticks"] == pytest.approx(0.0, abs=1e-9)
     assert exact["tick_yen"] == 1 == etf_tick_yen(1925.0)
 
     one_tick = round_trip_metrics(fill_buy=1926.0, fill_sell=1925.0,
                                   print_close=1925.0, print_open=1925.0, qty=10)
     assert one_tick["c_ticks"] == pytest.approx(1.0, abs=0.01)
-    assert one_tick["c_bps"] == pytest.approx(one_tick["c_bps_approx"], abs=0.03)
-    assert one_tick["e_buy_bps"] > 0 and one_tick["e_sell_bps"] == 0
+    assert one_tick["c_pct"] == pytest.approx(one_tick["c_pct_approx"], abs=0.0003)
+    assert one_tick["e_buy_pct"] > 0 and one_tick["e_sell_pct"] == 0
 
     both = round_trip_metrics(fill_buy=1926.0, fill_sell=1924.0,
                               print_close=1925.0, print_open=1925.0, qty=10)
@@ -847,35 +848,44 @@ def test_43_c_is_zero_when_the_fills_equal_the_prints_and_one_tick_when_off_one(
 
 def test_44_excluded_rows_do_not_enter_the_estimate(tmp_path):
     path = tmp_path / "ledger.csv"
-    for i in range(6):
-        append_ledger_row(path, {"symbol": "1343", "c_bps": 1.0,
-                                 "counted_in_n": True, "excluded_reason": ""})
-    append_ledger_row(path, {"symbol": "1343", "c_bps": 999.0,
+    # six rows in a ledger written before 2026-10-09 (column c_bps = c_pct x 100) ...
+    old_cols = [{"c_pct": "c_bps", "tick_pct": "tick_bps", "e_buy_pct": "e_buy_bps",
+                 "e_sell_pct": "e_sell_bps"}.get(c, c) for c in em.LEDGER_COLUMNS]
+    with path.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=old_cols)
+        w.writeheader()
+        for i in range(6):
+            w.writerow({**{c: "" for c in old_cols}, "symbol": "1343", "c_bps": "1.0",
+                        "counted_in_n": "True"})
+    # ... then a new row: the file is rewritten to the current columns (original kept) and appended to
+    append_ledger_row(path, {"symbol": "1343", "c_pct": 9.99,
                              "counted_in_n": False,
                              "excluded_reason": "not_filled"})
     out = summarise_ledger(path, symbols=("1343",))["symbols"]["1343"]
     assert out["n"] == 6 and out["excluded"] == 1
-    assert out["mean_c_bps"] == pytest.approx(1.0)
+    assert out["mean_c_pct"] == pytest.approx(0.01)
+    assert (tmp_path / "ledger.csv.pre_l920.bak").read_text(encoding="utf-8").startswith(",".join(old_cols))
+    assert path.read_text(encoding="utf-8").startswith(",".join(em.LEDGER_COLUMNS))
     assert out["verdict"] == "incomplete"          # n < 50, never judged early
 
 
 def test_45_the_bootstrap_read_out_is_deterministic(tmp_path):
     path = tmp_path / "ledger.csv"
     for i in range(60):
-        append_ledger_row(path, {"symbol": "1591", "c_bps": 2.0 + (i % 7) * 0.3,
+        append_ledger_row(path, {"symbol": "1591", "c_pct": (2.0 + (i % 7) * 0.3) / 100,
                                  "counted_in_n": True, "excluded_reason": ""})
     first = summarise_ledger(path, symbols=("1591",))["symbols"]["1591"]
     second = summarise_ledger(path, symbols=("1591",))["symbols"]["1591"]
     assert first == second
-    assert first["n"] == 60 and first["ci_lo_bps"] < first["ci_hi_bps"]
-    assert first["verdict"] == "pass"              # bar 6.3bps, mean ~2.9bps
+    assert first["n"] == 60 and first["ci_lo_pct"] < first["ci_hi_pct"]
+    assert first["verdict"] == "pass"              # bar 0.063 %, mean ~0.029 %
 
 
 def test_46_pass_bars_are_void_pending_a_new_pre_registration():
     """2026-09-08 の全捨てで、旧 PREREG とその合格バーは失効した。
     定数はコードに残っているが、**新しい事前登録を書くまで判定に使ってはならない**。
     ここでは「定数が存在し、対象銘柄と対応している」ことだけを確かめる。"""
-    assert set(em.PASS_BAR_BPS) == set(ALLOWED_SYMBOLS)
+    assert set(em.PASS_BAR_PCT) == set(ALLOWED_SYMBOLS)
     assert em.TARGET_N_PER_SYMBOL == 50
     assert em.STOP_CUM_PNL_YEN == -15_000.0
 
@@ -987,7 +997,7 @@ def test_a_full_round_trip_writes_one_ledger_row(tmp_path):
     assert row["symbol"] == "1343" and row["counted_in_n"] == "True"
     assert row["entry_date"] == "2026-10-01" and row["exit_date"] == "2026-10-02"
     assert row["exchange"] == "9" and row["exchange_name"] == "SOR"
-    assert float(row["c_bps"]) == pytest.approx(0.0, abs=1e-6)
+    assert float(row["c_pct"]) == pytest.approx(0.0, abs=1e-8)
     assert float(row["qty"]) == 10 and float(row["trading_unit"]) == 10
     assert row["entry_order_id"] and row["exit_order_id"]
     assert not f.state_of("1343").pending          # drained

@@ -5,7 +5,7 @@ L-608 の一覧の 8、`c2_owner_xvenue_wick/vol_gate/DESIGN.md` の問い 4(資
 読み方の決まり(表を見る前に、この台本と `tests/research/test_vol_q4_funding.py` で固めた):
 
 R1 日 = 日本時間の 1 日。f(d) = 日 d に calc_time が入る Binance UM BTCUSDT の資金調達率の |last_funding_rate| の
-   平均 × 1e4(bp)。s(d) = 符号つきの平均 × 1e4。精算が 2 回未満の日は値なし。精算は日本時間 1・9・17 時なので、
+   平均 × 100(%。資金調達率は値動き率でないので bp と呼ばない、L-920)。s(d) = 符号つきの平均 × 100。精算が 2 回未満の日は値なし。精算は日本時間 1・9・17 時なので、
    日 d − 1 の 3 回は日 d が始まる前に分かっている。
 R2 当てる側: 日 d の bitFlyer FX の日の量 v(d)(`vol_split_daily.daily_vol`、同じ R1)。
 R3 前もって分かる量: f(d − 1)・s(d − 1)。比べの相手は値動きの量 v(d − 1)(問い 1・2 の主の量の日の版)。
@@ -47,7 +47,7 @@ MIN_SETTLE = 2
 
 
 def daily_funding(rows: list[tuple[int, float]]) -> tuple[dict[str, float], dict[str, float]]:
-    """R1。(calc_time ms, rate) の並び → (日 → |rate| の平均 bp, 日 → 符号つきの平均 bp)。2023-12-17 より後は捨てる。"""
+    """R1。(calc_time ms, rate) の並び → (日 → |rate| の平均 %, 日 → 符号つきの平均 %)。2023-12-17 より後は捨てる。"""
     by: dict[str, list[float]] = {}
     for t_ms, r in rows:
         d = datetime.fromtimestamp(t_ms / 1000, tz=JST).date().isoformat()
@@ -58,8 +58,8 @@ def daily_funding(rows: list[tuple[int, float]]) -> tuple[dict[str, float], dict
     for d, rs in by.items():
         if len(rs) < MIN_SETTLE:
             continue
-        fa[d] = float(np.mean(np.abs(rs)) * 1e4)
-        fs[d] = float(np.mean(rs) * 1e4)
+        fa[d] = float(np.mean(np.abs(rs)) * 100)
+        fs[d] = float(np.mean(rs) * 100)
     return fa, fs
 
 

@@ -8,7 +8,7 @@ live bot (stage 7) are not here.
 
   card     the mouth (`Card`, `SeriesSpec`) and what a card sees (`CardView`)      C1
   run      `run_card`: the card called through bot.bt.core's event flow           C2
-  pnl      P_t = e_t * (open_{t+2} / open_{t+1} - 1) * 1e4, empty bars skipped     C2
+  pnl      P_t = e_t * (open_{t+2} / open_{t+1} - 1) * 100 (%), empty bars skipped  C2
   scenes   scene variables at t from the past only, 365-day positions            C4
   blocklen the Politis-White circular block length of the P_t series             C5 c
   measure  a..h: means, drift-removed means, intervals, control, MDE, frequency,

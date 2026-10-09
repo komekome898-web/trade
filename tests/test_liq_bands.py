@@ -167,9 +167,9 @@ def test_candidate_bands_method_b_empty_when_no_oi_data():
     rows = match_liquidations_to_bands([_ev(ts_ms=1, price=30000.0)], cand)
     assert len(rows) == 1  # 行は消えない
     row = rows[0]
-    assert math.isnan(row["distance_bp_b"])
+    assert math.isnan(row["distance_pct_b"])
     assert math.isnan(row["in_band_b"])  # bool ではなく NaN(候補が無いことを明示)
-    assert not math.isnan(row["distance_bp_a"])  # 他の手法は NaN にならない
+    assert not math.isnan(row["distance_pct_a"])  # 他の手法は NaN にならない
     assert math.isnan(row["funding_rate_at_t"])  # funding も引けていないので NaN
 
 
@@ -177,7 +177,7 @@ def test_candidate_bands_method_b_empty_when_no_oi_data():
 # (4) 照合の距離計算(帯の内側・外側・境界)
 # --------------------------------------------------------------------------- #
 
-def test_match_distance_bp_inside_outside_boundary():
+def test_match_distance_pct_inside_outside_boundary():
     band = Band(method="a", label="x", low=100.0, high=110.0, weight=1.0)
     cand = BandCandidates(
         t_ms=0, current_price=105.0, by_method={"a": [band], "b": [], "c": []},
@@ -186,25 +186,25 @@ def test_match_distance_bp_inside_outside_boundary():
 
     inside = match_liquidation_to_bands(105.0, cand)
     assert inside["in_band_a"] is True
-    assert inside["distance_bp_a"] == 0.0
+    assert inside["distance_pct_a"] == 0.0
 
     boundary_low = match_liquidation_to_bands(100.0, cand)
     assert boundary_low["in_band_a"] is True
-    assert boundary_low["distance_bp_a"] == 0.0
+    assert boundary_low["distance_pct_a"] == 0.0
 
     boundary_high = match_liquidation_to_bands(110.0, cand)
     assert boundary_high["in_band_a"] is True
-    assert boundary_high["distance_bp_a"] == 0.0
+    assert boundary_high["distance_pct_a"] == 0.0
 
     outside_above = match_liquidation_to_bands(120.0, cand)
     assert outside_above["in_band_a"] is False
-    expected_bp_above = (120.0 - 110.0) / 120.0 * 10_000.0
-    assert math.isclose(outside_above["distance_bp_a"], expected_bp_above)
+    expected_pct_above = (120.0 - 110.0) / 120.0 * 100.0
+    assert math.isclose(outside_above["distance_pct_a"], expected_pct_above)
 
     outside_below = match_liquidation_to_bands(90.0, cand)
     assert outside_below["in_band_a"] is False
-    expected_bp_below = (100.0 - 90.0) / 90.0 * 10_000.0
-    assert math.isclose(outside_below["distance_bp_a"], expected_bp_below)
+    expected_pct_below = (100.0 - 90.0) / 90.0 * 100.0
+    assert math.isclose(outside_below["distance_pct_a"], expected_pct_below)
 
 
 def test_match_picks_nearest_of_multiple_bands():
@@ -216,15 +216,15 @@ def test_match_picks_nearest_of_multiple_bands():
     )
     row = match_liquidation_to_bands(102.0, cand)
     assert row["in_band_a"] is False
-    expected_bp = (102.0 - 101.0) / 102.0 * 10_000.0
-    assert math.isclose(row["distance_bp_a"], expected_bp)
+    expected_pct = (102.0 - 101.0) / 102.0 * 100.0
+    assert math.isclose(row["distance_pct_a"], expected_pct)
 
 
 def test_candidate_bands_method_c_places_long_and_short_bands():
     empty_vol = volume_at_price([], t_ms=0, lookback_ms=1000, bin_size=50.0)
     empty_oi = open_interest_bands(PriceSeries(), PriceSeries(), t_ms=0, lookback_ms=1000, bin_size=50.0)
     cand = candidate_bands(empty_vol, empty_oi, current_price=30000.0, t_ms=0,
-                            leverage_multiples=(10.0,), naive_band_half_width_bp=0.0)
+                            leverage_multiples=(10.0,), naive_band_half_width_pct=0.0)
     c_bands = cand.by_method["c"]
     assert len(c_bands) == 2
     long_band = next(b for b in c_bands if b.label == "long_10.0x")

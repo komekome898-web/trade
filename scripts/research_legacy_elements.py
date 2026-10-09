@@ -139,7 +139,7 @@ H3(b) CHAMPION-TRADE FILTER
 
 -----------------------------------------------------------------------------
 Costs (repo-measured constants, research-protocol sec.3)
-  taker per side 3.2bps = spread 0.0235%/2 + slippage 0.02%; fees 0% both
+  taker per side 0.032% = spread 0.0235%/2 + slippage 0.02%; fees 0% both
   sides; swap 0.06%/day on carried positions; notional 110,000 JPY.
 
 Sanity gates (all must pass before any number is read)
@@ -512,7 +512,7 @@ def study_h2(real: pd.DataFrame, proxy: pd.DataFrame) -> None:
     print(f"  entry FROZEN: k={K} thr={THR_PCT}% exit_pct={EXIT_PCT}%, taker both ways, "
           f"shorts allowed")
     print(f"  CURRENT baseline: fixed {CURRENT_SL_PCT}% protective stop, no TP, no max_hold")
-    print(f"  costs: taker {TAKER_SIDE * 100:.4f}%/side (~3.2bps), round trip ~6.35bps, "
+    print(f"  costs: taker {TAKER_SIDE * 100:.4f}%/side (~0.032%), round trip ~0.0635%, "
           f"swap {SWAP_DAILY_PCT}%/day, notional {NOTIONAL:.0f} JPY")
 
     splits = split_data(proxy)
@@ -562,7 +562,7 @@ def study_h2(real: pd.DataFrame, proxy: pd.DataFrame) -> None:
     nb = [order[j] for j in (i - 1, i + 1) if 0 <= j < len(order)]
     print(f"  plateau check (neighbours {nb} on train): " + ", ".join(
         f"N={n}: {train_rows[n]['pct']:+.4f}%/t "
-        f"({(train_rows[n]['pct'] - train_rows[chosen]['pct']) * 100:+.1f}bps vs winner)"
+        f"({train_rows[n]['pct'] - train_rows[chosen]['pct']:+.3f}% vs winner)"
         for n in nb))
     print("  NOTE: the family has 3 members by pre-registration, so 'plateau' here is a "
           "1-step read, not the 24-cell surface report l used. Reported, not weighted.")

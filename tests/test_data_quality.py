@@ -34,19 +34,19 @@ def _ledger(root: Path) -> dict:
 def test_crossed_book_gap_and_extreme_return(tmp_path: Path):
     (tmp_path / "data").mkdir()
     rows = [
-        "ts,mid,spread_bps",
-        "2026-01-01T00:00:00Z,100.0,1.0",
-        "2026-01-01T00:00:05Z,100.0,-1.0",   # crossed (<=0)
-        "2026-01-01T00:00:10Z,100.0,60.0",   # crossed (>50)
-        "2026-01-01T00:00:15Z,100.0,1.0",
-        "2026-01-01T00:05:15Z,100.0,1.0",    # big gap vs 5s median
-        "2026-01-01T00:05:20Z,80.0,1.0",     # -20% single-step return on mid
+        "ts,mid,spread_pct",
+        "2026-01-01T00:00:00Z,100.0,0.01",
+        "2026-01-01T00:00:05Z,100.0,-0.01",  # crossed (<=0)
+        "2026-01-01T00:00:10Z,100.0,0.6",    # crossed (>0.5 %)
+        "2026-01-01T00:00:15Z,100.0,0.01",
+        "2026-01-01T00:05:15Z,100.0,0.01",   # big gap vs 5s median
+        "2026-01-01T00:05:20Z,80.0,0.01",    # -20% single-step return on mid
     ]
     (tmp_path / "data" / "board_round_series_5s.csv").write_text("\n".join(rows) + "\n")
     _write_schema(tmp_path, "board_round_series_5s", {
         "dataset": "board_round_series_5s",
         "path_glob": ["data/board_round_series_5s.csv"],
-        "columns": {"ts": {}, "mid": {}, "spread_bps": {}},
+        "columns": {"ts": {}, "mid": {}, "spread_pct": {}},
     })
 
     _ledger(tmp_path)

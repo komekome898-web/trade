@@ -127,8 +127,8 @@ def _snapshot_row(bin_idx: int, state: BookState, agg: dict) -> list:
     mid = state.mid
     spread = state.spread
     spread_bps = (spread / mid * 1e4) if (mid and mid > 0 and spread is not None) else float("nan")
-    bid_depth, ask_depth = state.depth_within_bps(DEPTH_BPS)
-    imb_5bps = state.imbalance(DEPTH_BPS)
+    bid_depth, ask_depth = state.depth_within_pct(DEPTH_BPS / 100)  # board takes % since L-920
+    imb_5bps = state.imbalance(DEPTH_BPS / 100)
     if bb_size == bb_size and ba_size == ba_size and (bb_size + ba_size) > 0:
         imb_top = (bb_size - ba_size) / (bb_size + ba_size)
     else:

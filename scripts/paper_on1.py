@@ -21,7 +21,6 @@ Warning / stop lines (PREREG sec.3) are evaluated on the ledger and printed.
 from __future__ import annotations
 
 import csv
-import math
 import sys
 from pathlib import Path
 
@@ -60,7 +59,7 @@ GUARDS = {  # window (trading days) -> (p05 warn, p01 stop), from PREREG sec.3
 
 FIELDS = [
     "entry_date", "exit_date", "month",
-    "entry_px", "exit_px", "gross_bps", "fee_yen", "net_yen", "net_bps",
+    "entry_px", "exit_px", "gross_bps", "fee_yen", "net_yen", "net_pct",
     "large_entry_px", "large_exit_px", "micro_minus_large_entry", "micro_minus_large_exit",
     "note",
 ]
@@ -112,13 +111,17 @@ def build_ledger() -> list[dict]:
             continue
         e = float(entry_row["day_close"])
         x = float(exit_row["day_open"])
-        gross_bps = math.log(x / e) * 1e4
+        # gross_bps: price-move rate only, (exit - entry) / entry * 1e4
+        # (schema/on1_onr_ledgers.json). net_pct: net_yen over the entry
+        # notional (entry_px * multiplier) in percent -- the fee-inclusive
+        # rate is not a price move, so it is not called bp (L-920).
+        gross_bps = (x - e) / e * 1e4
         net_yen = (x - e) * MULTIPLIER - 2 * FEE_SIDE
-        net_bps = gross_bps - (2 * FEE_SIDE) / (e * MULTIPLIER) * 1e4
+        net_pct = net_yen / (e * MULTIPLIER) * 100
         rec.update({
             "entry_px": f"{e:.0f}", "exit_px": f"{x:.0f}",
             "gross_bps": f"{gross_bps:+.3f}", "fee_yen": f"{2*FEE_SIDE:.0f}",
-            "net_yen": f"{net_yen:+.0f}", "net_bps": f"{net_bps:+.3f}",
+            "net_yen": f"{net_yen:+.0f}", "net_pct": f"{net_pct:+.5f}",
         })
         for leg, day, key in (("entry", d0, "day_close"), ("exit", d1, "day_open")):
             large = sessions[day].get("large", {}).get(month, {})
@@ -132,13 +135,13 @@ def build_ledger() -> list[dict]:
 
 
 def check_guards(ledger: list[dict]) -> None:
-    rets = [float(r["net_bps"]) / 1e4 for r in ledger if r["net_bps"]]
-    if not rets:
+    pcts = [float(r["net_pct"]) for r in ledger if r["net_pct"]]
+    if not pcts:
         return
     for win, (warn, stop) in GUARDS.items():
-        if len(rets) < win:
+        if len(pcts) < win:
             continue
-        cum = sum(rets[-win:]) * 100
+        cum = sum(pcts[-win:])
         if cum < stop:
             print(f"paper_on1: STOP line breached: {win}d cum {cum:+.2f}% < p01 {stop}% -- halt and investigate (PREREG sec.3)")
         elif cum < warn:
@@ -167,13 +170,13 @@ def main() -> int:
         w = csv.DictWriter(f, fieldnames=FIELDS)
         w.writeheader()
         w.writerows(ledger)
-    traded = [r for r in ledger if r["net_bps"]]
+    traded = [r for r in ledger if r["net_pct"]]
     skipped = len(ledger) - len(traded)
     total_yen = sum(float(r["net_yen"]) for r in traded)
     print(f"paper_on1: {len(traded)} paper trades ({skipped} skipped), cumulative net {total_yen:+.0f} yen")
     if traded:
-        mean_bps = sum(float(r["net_bps"]) for r in traded) / len(traded)
-        print(f"paper_on1: mean net {mean_bps:+.2f} bps/day over {len(traded)} days")
+        mean_pct = sum(float(r["net_pct"]) for r in traded) / len(traded)
+        print(f"paper_on1: mean net {mean_pct:+.4f}% of entry notional per day over {len(traded)} days")
     check_guards(ledger)
     return 0
 

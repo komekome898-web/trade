@@ -25,7 +25,7 @@
     取引の群の 1 取引あたりは、日を塊で選び直して群の損益の和 ÷ 取引の数を作り直す(同じ塊・回数・種)。
   - MDE は 5% 両側・80%・正規近似(`bot.bt.validation.mde`)。
   - 閾値で判定の言葉を出さない。「区間が 0 を含む」「符号が同じ」などの事実の列だけを出す。
-  - 取引の日 = 出の時刻の UTC の暦日(改良の周 2 の読み R10・R6 と同じ)。カードの測定は `daily.csv` の日(日本時間)。
+  - 取引の日 = 出の時刻の UTC の暦日(改良の周 2 の読み R10・R6 と同じ)。(以前のカードの測定は `daily.csv` の日(日本時間)。
 
     PYTHONPATH=src python3 scripts/analysis/diag_tables.py --run <置き場> [--vs <比べる置き場>] [--bad <悪い側の置き場>] [--cut <YYYY-MM-DD>] --out <出力.md>
 """
@@ -96,7 +96,7 @@ def utc_day(ns: int) -> str:
 
 
 def period_days(run: dict) -> list[str]:
-    """日の一覧。trades は summary.json の period(無ければ最初と最後の取引)の UTC の日。card は daily.csv の日。"""
+    """日の一覧。summary.json の period(無ければ最初と最後の取引)の UTC の日。card は daily.csv の日。"""
     if run["kind"] == "card":
         return sorted(run["daily"])
     if run["summary"] and run["summary"].get("period"):

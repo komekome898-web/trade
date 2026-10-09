@@ -3,12 +3,14 @@
 新しい走らせはしない(保存済みの取引の行を読むだけ)。カードの測定(1 分ごとの持ち高)の版は `card_trades.py`。
 
 出す表:
-  確かめ: 取引の数・損益の和を `summary.json` の all.trades / all.sum_bp と突き合わせる。
+  損益は % で持つ(指値の再現の損益は段ごとの損益率 ÷ 段数の和。L-920 で bp は値動き率だけの名前)。
+  取引の行の列 pnl_pct を読む。L-920 より前の行(pnl_bp = 率 × 1 万)は / 100 して読む。
+  確かめ: 取引の数・損益の和を `summary.json` の all.trades / all.sum_pct(前の記録は all.sum_bp / 100)と突き合わせる。
   勝ち負けの分解: 全期間・前半・後半・年ごと(取引の数・和・勝ち/負けの数・和・平均・中央値・損益 0・勝率)。
   向き × 前半・後半【建ての前に決まる群】: 1 取引あたり(日の塊の区間)。
-  向きの情報の検め: 買いの取引の保有中の値段の動き ÷ 保有の分 − 売りの取引の同じ値(bp/分)。値段の動き = pnl_bp × side
+  向きの情報の検め: 買いの取引の保有中の値段の動き ÷ 保有の分 − 売りの取引の同じ値(%/分)。値段の動き = pnl_pct × side
     (取引の向きを外した、建てから出までの値段の変化。指値の約定の値段を含む)。差が正 = 値段が取引の向きに動いた。
-  買いだけの対照: 同じ取引を全部買いで持ったときの 1 日あたり(Σ pnl_bp × side)と、取引 − 買いだけ(= 売りの取引の損益の 2 倍。
+  買いだけの対照: 同じ取引を全部買いで持ったときの 1 日あたり(Σ pnl_pct × side)と、取引 − 買いだけ(= 売りの取引の損益の 2 倍。
     向きの情報の検めにはならない。上げ下げの偏りの大きさを見るため)。
 日 = 出の時刻の UTC の暦日(`diag_tables.py` と同じ)。前半・後半 = 期間の日を日数で 2 つに分けたもの(D1 と同じ)。
 区間 = 95%、日の塊(循環、5 日・1,000 回・種 20261004)。
@@ -42,7 +44,8 @@ def load_rows(d: str) -> dict:
             rows = [r for r in csv.DictReader(fh) if r.get("in_measure", "True") != "False"]
         e = np.array([_iso_ns(r["entry_t"]) for r in rows], dtype=np.int64)
         x = np.array([_iso_ns(r["exit_t"]) for r in rows], dtype=np.int64)
-        p = np.array([float(r["pnl_bp"]) for r in rows])
+        p = np.array([float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100
+                      for r in rows])
         sd = np.array([float(r["side"]) for r in rows])
     else:
         with gzip.open(jp, "rt", encoding="utf-8") as fh:
@@ -50,7 +53,7 @@ def load_rows(d: str) -> dict:
         scale = {"ns": 1, "s": 10**9}[o["t_unit"]]
         e = np.array(o["entry_t_ns"], dtype=np.int64) * scale
         x = np.array(o["exit_t_ns"], dtype=np.int64) * scale
-        p = np.array(o["pnl_bp"], dtype=float)
+        p = np.array(o["pnl_pct"], dtype=float) if "pnl_pct" in o else np.array(o["pnl_bp"], dtype=float) / 100
         sd = np.array(o["side"], dtype=float)
     return {"entry": e, "exit": x, "pnl": p, "side": sd}
 
@@ -101,11 +104,12 @@ def main(argv=None) -> int:
     half = np.array(["前半" if d in first else "後半" for d in day])
     move = pnl * side
     L = [f"# 取引の行の表 — {run['name']}", "",
-         "読み口 `scripts/analysis/trade_rows.py`(保存済みの取引の行から計算。新しい走らせではない)。bp、経費の前。日 = 出の時刻の UTC の日。"
+         "読み口 `scripts/analysis/trade_rows.py`(保存済みの取引の行から計算。新しい走らせではない)。損益は %、経費の前。日 = 出の時刻の UTC の日。"
          "区間 = 95%、日の塊(循環、5 日・1,000 回・種 20261004)。", ""]
     s = (run["summary"] or {}).get("all", {})
     L += ["## 確かめ", "", f"- 取引の数: 読んだ行 {len(tr):,} / summary.json の all.trades {s.get('trades', '無し')}",
-          f"- 損益の和: 読んだ行 {pnl.sum():,.2f} / summary.json の all.sum_bp {s.get('sum_bp', '無し')}",
+          f"- 損益の和(%): 読んだ行 {pnl.sum():,.4f} / summary.json の all.sum_pct "
+          f"{s['sum_pct'] if 'sum_pct' in s else (s['sum_bp'] / 100 if 'sum_bp' in s else '無し')}",
           f"- 期間の日: {days[0]}〜{days[-1]}({len(days):,} 日)。前半 = {days[0]}〜{days[h - 1]}、後半 = {days[h]}〜{days[-1]}", ""]
     # 勝ち負け
     L += ["## 勝ち負けの分解(全期間・前半・後半・年ごと)", "",
@@ -135,8 +139,8 @@ def main(argv=None) -> int:
             mb[d_] += mv; hb[d_] += hd
         else:
             ms[d_] += mv; hs[d_] += hd
-    L += ["## 向きの情報の検め: 買いの取引の値段の動き − 売りの取引の値段の動き(保有の 1 分あたり、bp/分)", "",
-          "値段の動き = pnl_bp × side(向きを外した、建てから出までの値段の変化。約定の値段を含む)。差が正 = 値段が取引の向きに動いた。"
+    L += ["## 向きの情報の検め: 買いの取引の値段の動き − 売りの取引の値段の動き(保有の 1 分あたり、%/分)", "",
+          "値段の動き = pnl_pct × side(向きを外した、建てから出までの値段の変化。約定の値段を含む)。差が正 = 値段が取引の向きに動いた。"
           "取引に向きの情報が無ければ、両方とも保有中の上げ下げの偏りだけを含むので差は 0。", "",
           "| 区分 | 買いの取引(分) | 売りの取引(分) | 差 [区間] |", "|---|---|---|---|"]
     for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):

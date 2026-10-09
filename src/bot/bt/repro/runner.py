@@ -226,7 +226,7 @@ def _execute(plan: RunPlan, out_dir: str) -> None:
                "qty": o.request.size, "state": o.state.value if hasattr(o.state, "value") else str(o.state),
                "filled": o.filled_size} for o in res.orders.values()]
     trades = round_trips(fills, parts.exit_reasons)
-    dist = M.trade_distribution(trades, QUANTILE_PROBS) if trades else {"n": 0, "per_trade_bp": []}
+    dist = M.trade_distribution(trades, QUANTILE_PROBS) if trades else {"n": 0, "per_trade_pct": []}
     equity, eq_t, cum = [0.0], [min(times)], 0.0
     for t in trades:
         cum += t["pnl"]

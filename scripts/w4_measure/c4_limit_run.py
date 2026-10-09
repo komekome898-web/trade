@@ -49,7 +49,7 @@ from bot.research.matilda_limit_sim import MatildaLimitSim  # noqa: E402
 from bot.research.trade_record import write_trades_json  # noqa: E402
 
 FULL = ("2015-11-28T15:00:00Z", "2023-12-17T15:00:00Z")  # 仕様 1(run_b2.FULL と同じ)
-COLS = ("entry_t", "exit_t", "side", "levels", "entry_price", "exit_price", "exit_reason", "pnl_bp", "undecided",
+COLS = ("entry_t", "exit_t", "side", "levels", "entry_price", "exit_price", "exit_reason", "pnl_pct", "undecided",
         "width", "vola", "ratio", "brk", "close_k")
 
 
@@ -65,17 +65,17 @@ def _num(s: str):
 
 
 def year_stats(rows: list, days: float) -> dict:
-    pn = [r["pnl_bp"] for r in rows]
+    pn = [r["pnl_pct"] for r in rows]
     wins = [x for x in pn if x > 0]
     losses = [x for x in pn if x < 0]
     und = [r["undecided"] for r in rows]
     return {"trades": len(rows), "wins": len(wins), "losses": len(losses),
-            "avg_win_bp": (math.fsum(wins) / len(wins)) if wins else None,
-            "avg_loss_bp": (math.fsum(losses) / len(losses)) if losses else None,
-            "sum_win_bp": math.fsum(wins), "sum_loss_bp": math.fsum(losses), "sum_bp": math.fsum(pn),
+            "avg_win_pct": (math.fsum(wins) / len(wins)) if wins else None,
+            "avg_loss_pct": (math.fsum(losses) / len(losses)) if losses else None,
+            "sum_win_pct": math.fsum(wins), "sum_loss_pct": math.fsum(losses), "sum_pct": math.fsum(pn),
             "days": days,
             "per_day": {"trades": len(rows) / days if days else None, "wins": len(wins) / days if days else None,
-                        "pnl_bp": math.fsum(pn) / days if days else None},
+                        "pnl_pct": math.fsum(pn) / days if days else None},
             "undecided_bars_in_trades": sum(und), "trades_with_undecided": sum(1 for x in und if x > 0)}
 
 
@@ -188,14 +188,14 @@ def main() -> int:
         w.writerow(COLS + (("in_measure",) if mf is not None else ()))
         for r in rows:
             w.writerow([to_iso(r["entry_ns"]), to_iso(r["exit_ns"]), r["side"], r["levels"], repr(r["entry_price"]),
-                        repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_bp"]), r["undecided"],
+                        repr(r["exit_price"]), r["exit_reason"], repr(r["pnl_pct"]), r["undecided"],
                         repr(r["width"]), repr(r["vola"]), repr(r["ratio"]), r["brk"], repr(r["close_k"])]
                        + ([r["exit_ns"] >= mf] if mf is not None else []))
     # 取引の記録(L-D04、L-594。ダッシュボードが読む形。qty = 段の数 / 段の数の上限)。窓では集計に入れた取引だけ(封印の境の検査は窓の終わりまで)
     write_trades_json(os.path.join(a.out, "trades.json.gz"),
                       ({"entry_t_ns": r["entry_ns"], "entry_px": r["entry_price"], "exit_t_ns": r["exit_ns"],
                         "exit_px": r["exit_price"], "side": r["side"], "qty": r["levels"] / sim.n_levels,
-                        "pnl_bp": r["pnl_bp"]} for r in kept),
+                        "pnl_pct": r["pnl_pct"]} for r in kept),
                       **({"seal_start_ns": WINDOW1[1]} if a.window1 else {}))
     lo_s = lo if mf is None else mf  # 集計の始め(日数は集計の期間で数える)
     years = by_year(kept, lo_s, hi)

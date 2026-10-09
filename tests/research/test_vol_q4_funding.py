@@ -26,8 +26,8 @@ def test_daily_funding_is_jst_day_abs_and_signed_and_needs_two():
             (_ms(2021, 3, 2, 16), 0.0005)]    # 03-03 01:00(この日は 1 回だけ → 値なし)
     fa, fs = q4.daily_funding(rows)
     assert set(fa) == {"2021-03-02"}
-    assert abs(fa["2021-03-02"] - 2.0) < 1e-9          # (1 + 3 + 2) / 3 bp
-    assert abs(fs["2021-03-02"] - 0.0) < 1e-9          # (1 − 3 + 2) / 3
+    assert abs(fa["2021-03-02"] - 0.02) < 1e-11        # (0.01 + 0.03 + 0.02) / 3 %
+    assert abs(fs["2021-03-02"] - 0.0) < 1e-11         # (0.01 − 0.03 + 0.02) / 3
 
 
 def test_daily_funding_drops_after_last_day():

@@ -3,7 +3,7 @@
 (`bot.research.liq_bands` の薄いラッパー)。
 
 **これは測定器の入口であり、判定はしない。** 的中率・有意性はここでは一切計算しない。
-出力は 1 清算イベント = 1 行の CSV(手法 (a)/(b)/(c) ごとの「帯に入ったか・距離bp」)
+出力は 1 清算イベント = 1 行の CSV(手法 (a)/(b)/(c) ごとの「帯に入ったか・距離 %」)
 だけ。
 
 対象は現状 Binance COIN-M のみ(aggTrades・metrics・liquidationSnapshot が同一取引所・
@@ -65,7 +65,7 @@ def main() -> int:
     ap.add_argument("--leverage-multiples", type=str,
                      default=",".join(str(x) for x in lb.DEFAULT_LEVERAGE_MULTIPLES),
                      help="手法(c)が仮定するレバレッジ倍率のカンマ区切り(判断の置き所)")
-    ap.add_argument("--naive-band-half-width-bp", type=float, default=lb.DEFAULT_NAIVE_BAND_HALF_WIDTH_BP)
+    ap.add_argument("--naive-band-half-width-pct", type=float, default=lb.DEFAULT_NAIVE_BAND_HALF_WIDTH_PCT)
     ap.add_argument("--match-horizon-hours", type=float, default=lb.DEFAULT_MATCH_HORIZON_MS / 3_600_000,
                      help="起点 t の後、清算をどれだけ先まで見て照合するか(既定24h、判断の置き所)")
     ap.add_argument("--out", type=Path, required=True)
@@ -95,7 +95,7 @@ def main() -> int:
             funding_series=None,  # Binance COIN-M metrics に資金調達率の列自体が無い(README実測)
             long_short_series=ls_series,
             top_k=args.top_k, leverage_multiples=leverage_multiples,
-            naive_band_half_width_bp=args.naive_band_half_width_bp,
+            naive_band_half_width_pct=args.naive_band_half_width_pct,
         )
         if cand is None:
             skipped.append(t)

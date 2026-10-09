@@ -59,10 +59,10 @@ def contains(ci, x):
 
 def check_t1(out) -> list:
     bins = out["scenes"]["ref:S"]["bins"]
-    up, down = bins["1.0"]["mean_bp"]["ci"], bins["0.0"]["mean_bp"]["ci"]
+    up, down = bins["1.0"]["mean_pct"]["ci"], bins["0.0"]["mean_pct"]["ci"]
     bad = []
-    if not contains(up, 2.0):
-        bad.append(f"S=1 interval {up} does not contain 2 bp")
+    if not contains(up, 0.02):  # a 2 bp move under exposure 1 = 0.02 % (P_t is in percent, L-920)
+        bad.append(f"S=1 interval {up} does not contain 0.02 %")
     if up is None or contains(up, 0.0):
         bad.append(f"S=1 interval {up} contains 0 (or is missing)")
     if not contains(down, 0.0):
@@ -71,7 +71,7 @@ def check_t1(out) -> list:
 
 
 def check_t5(out) -> list:
-    m = out["overall"]["mean_bp"]
+    m = out["overall"]["mean_pct"]
     bad = []
     if not contains(m["ci"], 0.0):
         bad.append(f"interval {m['ci']} does not contain 0")
@@ -94,7 +94,7 @@ def test_t1(t1):
     out = t1["out"]
     bins = out["scenes"]["ref:S"]["bins"]
     print("T1", {"block": out["block"]},
-          {b: {x: bins[b]["mean_bp"][x] for x in ("estimate", "ci", "n", "mde")} for b in bins})
+          {b: {x: bins[b]["mean_pct"][x] for x in ("estimate", "ci", "n", "mde")} for b in bins})
     assert not out["block"]["degenerate"] and out["block"]["median_nonzero_run"] == out["block"]["n"]
     assert check_t1(out) == []
 
@@ -115,7 +115,7 @@ def test_t1_broken_versions_are_caught(t1, tmp_path):
 
 def test_t5(t5):
     out = t5["out"]
-    m = out["overall"]["mean_bp"]
+    m = out["overall"]["mean_pct"]
     print("T5", {"block": out["block"]}, {x: m.get(x) for x in ("estimate", "ci", "n", "mde", "control_percentile")})
     assert not out["block"]["degenerate"]
     assert check_t5(out) == []
@@ -125,8 +125,8 @@ def test_t5_broken_versions_are_caught(t5, tmp_path):
     run = t5["run"]
     # P computed with the move of the decision's own bar (open_t -> open_{t+1}): the sign card then 'wins'
     p = pnl(run)
-    r = (run.open[p.fill_bar] / run.open[p.bar] - 1.0) * 1e4
-    broken = dataclasses.replace(p, r_bp=r, pnl_bp=p.exposure * r)
+    ratio = run.open[p.fill_bar] / run.open[p.bar] - 1.0
+    broken = dataclasses.replace(p, r_bp=ratio * 1e4, pnl_pct=p.exposure * (ratio * 100.0))
     found_bar = check_t5(_measure(run, tmp_path / "a.csv", p=broken))
     # L = n: no interval, no control
     n = int(t5["out"]["block"]["n"])
@@ -141,7 +141,7 @@ def test_l_at_or_above_half_of_n_gives_no_interval_and_no_control(t1, tmp_path):
     out = _measure(run, tmp_path / "d.csv", refs={"S": "category"})
     assert out["block"]["block_len"] == MIN_BLOCK_BARS and out["block"]["n"] == 2879
     assert out["block"]["degenerate"] and out["control"]["shifts"] is None
-    assert out["overall"]["mean_bp"]["ci"] is None and out["overall"]["mean_bp"]["control_percentile"] is None
+    assert out["overall"]["mean_pct"]["ci"] is None and out["overall"]["mean_pct"]["control_percentile"] is None
 
 
 # -- T4 ----------------------------------------------------------------------------------------------------

@@ -105,14 +105,14 @@ def _deciles(x: np.ndarray, pnl: np.ndarray) -> dict:
     for k in range(10):
         m = q == k
         rows.append({"decile": k + 1, "lo": float(edges[k]), "hi": float(edges[k + 1]), "trades": int(m.sum()),
-                     "wins": int((pnl[m] > 0).sum()), "sum_bp": float(pnl[m].sum()),
-                     "mean_bp": float(pnl[m].mean()) if m.any() else None})
+                     "wins": int((pnl[m] > 0).sum()), "sum_pct": float(pnl[m].sum()),
+                     "mean_pct": float(pnl[m].mean()) if m.any() else None})
     return {"rows": rows}
 
 
 def _sums(m: np.ndarray, pnl: np.ndarray) -> dict:
-    return {"trades": int(m.sum()), "wins": int((pnl[m] > 0).sum()), "sum_bp": float(pnl[m].sum()),
-            "small_win_sum_bp": float(pnl[m & (pnl > 0)].sum()), "big_loss_sum_bp": float(pnl[m & (pnl <= -10)].sum())}
+    return {"trades": int(m.sum()), "wins": int((pnl[m] > 0).sum()), "sum_pct": float(pnl[m].sum()),
+            "small_win_sum_pct": float(pnl[m & (pnl > 0)].sum()), "big_loss_sum_pct": float(pnl[m & (pnl <= -0.1)].sum())}
 
 
 def _iso_min(t: str) -> int:
@@ -127,18 +127,19 @@ def analyse(d: str) -> None:
     if not rows:
         out = {"trades": 0}
     else:
-        pnl = np.array([float(r["pnl_bp"]) for r in rows])
+        pnl = np.array([float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100  # L-920 前の行は率 × 1 万
+                        for r in rows])
         ratio = np.array([float(r["ratio"]) for r in rows])
         wpc = np.array([float(r["width"]) / float(r["close_k"]) for r in rows])
         year = np.array([int(r["exit_t"][:4]) for r in rows])
         reason = np.array([r["exit_reason"] for r in rows])
         und = np.array([int(r["undecided"]) for r in rows])
         out = {"trades": len(rows), "ratio_deciles": _deciles(ratio, pnl), "width_over_close_deciles": _deciles(wpc, pnl),
-               "by_reason": {k: {"trades": int((reason == k).sum()), "sum_bp": float(pnl[reason == k].sum())}
+               "by_reason": {k: {"trades": int((reason == k).sum()), "sum_pct": float(pnl[reason == k].sum())}
                              for k in sorted(set(reason.tolist()))},
-               "by_year": {int(y): {"trades": int((year == y).sum()), "sum_bp": float(pnl[year == y].sum()),
-                                    "big_loss_sum_bp": float(pnl[(year == y) & (pnl <= -10)].sum()),
-                                    "small_win_sum_bp": float(pnl[(year == y) & (pnl > 0)].sum()),
+               "by_year": {int(y): {"trades": int((year == y).sum()), "sum_pct": float(pnl[year == y].sum()),
+                                    "big_loss_sum_pct": float(pnl[(year == y) & (pnl <= -0.1)].sum()),
+                                    "small_win_sum_pct": float(pnl[(year == y) & (pnl > 0)].sum()),
                                     "undecided_trades": int(((year == y) & (und > 0)).sum())}
                            for y in sorted(set(year.tolist()))}}
         brk = np.array([int(r["brk"]) for r in rows])

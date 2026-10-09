@@ -23,11 +23,35 @@
 
 内訳: 基準の文書 25 分・段数 25 分・足の長さ 15 分・件数 20 分・待ちの長さ 15 分・simple_road_check 2 分・終わりの grep と報告 15 分 = 約 117 分(上限まで約 114 分)。出所: 実測なし(各文書の bp の行の数 14〜18 と、表示値 × 20 の疑いの数 base 28・levels 11・foot 16・count 38・alert 44 からの見積もり)。
 
+## 目立つ変化(先に)
+
+- **符号が変わったもの: 件数の文書の D7 の count_80 − base の 2015 年が +463 → −140**(`d7_fullperiod.out` で基準だけの日 12/1〜4 を 0 円として取り直した値。区間が 0 を含む年なのは前後とも同じ)。
+- 0 をまたいだ表示: 基準の文書の D6「1 分超〜3 分」の 1 取引あたりが −0.0 → −0.1(元の値 −0.09999… 円。表示値 −0.00 bp × 20 で −0.0 になっていた)。
+- ほかに区間が 0 を含むか・符号が変わった数は無い(上の 2 つ以外は最後の桁と bp → 円の書き直し)。
+
 ## 円の値の出し方(全部の行に共通)
 
-- 「json × 20」= `docs/RESEARCH/matilda_main/<本>/diag_tables.json`(D1・D3・D6・D7)と `diag_paths.json`(D4 の群の `pnl_sum`)の値を、丸めずに × 20 して文書の桁に丸めた値(読み取りだけの一行の python。台本は残していない)。読んだ json はどれも 3f25c985 のまま(`git status` に出ない)。
-- 「d7_full」= `docs/RESEARCH/matilda_main/d7_fullperiod.out` の写し。
-- 「pos」= `docs/RESEARCH/matilda_main/d4_position_mfe.out` の「持ち高の含み > 0(前)」の列の写し。
+- 「json × 20」= `docs/RESEARCH/matilda_main/<本>/diag_tables.json`(D1・D3・D6・D7)と `diag_paths.json`(D4 の群の `pnl_sum`)の値を、丸めずに × 20 して文書の桁に丸めた値。読み取りだけの複数行の python(`flat.py`・`yen.py` と、その場の heredoc)を作業場(`/tmp/claude-0/.../scratchpad`、リポジトリの外。この会話が終わると消える)に置いて打った。リポジトリには残していない。中身の芯は次のとおり(これで同じ値が出る):
+
+```
+python3 - <<'EOF'
+import json
+b='docs/RESEARCH/matilda_main/'
+def f0(x): return f"{x*20:+,.0f}"   # 和・1 日あたり(円の整数)
+def f1(x): return f"{x*20:+,.1f}"   # 1 取引あたり(円の小数 1 桁)
+t=json.load(open(b+'<本>/diag_tables.json'))
+#  D1: t['d1']['rows'][i]{label,mean,lo,hi,mde} と t['d1']['segments']{first,second,diff}
+#  D3: t['d3']{total,top5_days_sum,bottom5_days_sum,trade_quantiles} と t['d3']['groups'][群][帯]{sum,per_trade,lo,hi}
+#  D6: t['d6']['groups'][帯]{sum,per_trade,lo,hi}
+#  D7: t['d7']['all']・t['d7']['years'][年]{mean,lo,hi,mde}、t['d7']['match']{sum_both_a_minus_b,sum_only_a,sum_only_b}
+p=json.load(open(b+'<本>/diag_paths.json'))
+#  D4: p['d4']['groups'][群]['pnl_sum']
+EOF
+```
+
+- 読んだ出力(`diag_tables.json`・`diag_paths.json`・`d7_fullperiod.out`・`d4_position_mfe.out`)は、作業の終わりにも HEAD と同じ(`git status --short docs/RESEARCH/matilda_main/` に .py 以外は出ない)。
+- 「d7_full」= `docs/RESEARCH/matilda_main/d7_fullperiod.out` の行(foot_5・count_80 の「全期間」「2015」)の写し。
+- 「pos」= `docs/RESEARCH/matilda_main/d4_position_mfe.out` の行(base・foot_5・count_20・count_80)の「持ち高の含み > 0(前)」の列と「負けた取引(足の後まで持った)」の列の写し。
 - 値動き率(bp)の数は 1 つも変えていない(語だけ)。
 
 ## 直した数の表
@@ -247,7 +271,7 @@ count_20 の D7 の全期間 −185 [−253, −111] と 2015 −31 は、d7_ful
 - 引用の行の 30 行には口座の bp(pnl_bp・−17,914 bp)が残る(上の「直さなかったもの」1)。
 - 「× 20」「20 円」の字: 引用の外では待ちの長さの 168 行「1 日あたり 20 円以内」(換算ではない)だけ。
 - 表示値 × 20 の一覧(`display_x20_early_docs.md` の base 28・levels 11・foot 16・count 38・alert 44)と、`display_x20_suspects.out` にだけある 17 個(L-660 の番号・2,000・280・87.8 の偶然の一致を除く)は、書かれていた値が引用の外に残っていないことを grep で確かめた(残ったのは偶然の一致の 280・87.8・L-660・2,000 の 6 個だけ。打ったのは一覧の 1 行ずつに `grep -v "^>" <文書> | grep -cF -- "<書かれた数>"`)。
-- 読んだ出力(`diag_tables.json`・`diag_paths.json`・`d7_fullperiod.out`・`d4_position_mfe.out`)は、作業中に `git status` に出ない(3f25c985 のまま。ほかの担当がコードを直している最中でも、出力は作り直されていない)。
+- 読んだ出力(`diag_tables.json`・`diag_paths.json`・`d7_fullperiod.out`・`d4_position_mfe.out`)は、作業の終わりにも HEAD と同じ(`git status --short docs/RESEARCH/matilda_main/` に .py 以外は出ない。ほかの担当がコードを直している最中でも、出力は作り直されていない)。
 
 ## 終わりの時刻
 

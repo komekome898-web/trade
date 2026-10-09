@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from bot.research.board import walk_book, walk_cost_bp
+from bot.research.board import walk_book, walk_cost_pct
 
 
 # ---------------------------------------------------------------------------
@@ -91,76 +91,76 @@ def test_walk_book_exact_total_depth_not_exhausted():
 
 
 # ---------------------------------------------------------------------------
-# walk_cost_bp
+# walk_cost_pct
 # ---------------------------------------------------------------------------
 
-def test_walk_cost_bp_buy_side_positive_cost():
+def test_walk_cost_pct_buy_side_positive_cost():
     asks = [(10_001.0, 1.0), (10_002.0, 2.0)]
     mid = 10_000.0
-    cost_bp, filled, exhausted = walk_cost_bp(asks, 2.0, mid, "buy")
+    cost_pct, filled, exhausted = walk_cost_pct(asks, 2.0, mid, "buy")
     vwap = (10_001.0 * 1.0 + 10_002.0 * 1.0) / 2.0
-    expected_bp = (vwap - mid) / mid * 1e4
-    assert cost_bp == pytest.approx(expected_bp)
-    assert cost_bp > 0
+    expected_pct = (vwap - mid) / mid * 100
+    assert cost_pct == pytest.approx(expected_pct)
+    assert cost_pct > 0
     assert filled == pytest.approx(2.0)
     assert exhausted is False
 
 
-def test_walk_cost_bp_sell_side_positive_cost():
+def test_walk_cost_pct_sell_side_positive_cost():
     bids = [(9_999.0, 1.0), (9_998.0, 2.0)]
     mid = 10_000.0
-    cost_bp, filled, exhausted = walk_cost_bp(bids, 2.0, mid, "sell")
+    cost_pct, filled, exhausted = walk_cost_pct(bids, 2.0, mid, "sell")
     vwap = (9_999.0 * 1.0 + 9_998.0 * 1.0) / 2.0
-    expected_bp = (mid - vwap) / mid * 1e4
-    assert cost_bp == pytest.approx(expected_bp)
-    assert cost_bp > 0
+    expected_pct = (mid - vwap) / mid * 100
+    assert cost_pct == pytest.approx(expected_pct)
+    assert cost_pct > 0
     assert filled == pytest.approx(2.0)
     assert exhausted is False
 
 
-def test_walk_cost_bp_exact_value_buy():
+def test_walk_cost_pct_exact_value_buy():
     # size fully within best level -> vwap == best price exactly
     asks = [(10_010.0, 5.0)]
     mid = 10_000.0
-    cost_bp, filled, exhausted = walk_cost_bp(asks, 1.0, mid, "buy")
-    # (10010 - 10000) / 10000 * 1e4 = 10.0 bp
-    assert cost_bp == pytest.approx(10.0)
+    cost_pct, filled, exhausted = walk_cost_pct(asks, 1.0, mid, "buy")
+    # (10010 - 10000) / 10000 * 100 = 0.1 %
+    assert cost_pct == pytest.approx(0.1)
     assert filled == pytest.approx(1.0)
     assert exhausted is False
 
 
-def test_walk_cost_bp_zero_size_returns_none():
-    cost_bp, filled, exhausted = walk_cost_bp([(10_001.0, 1.0)], 0.0, 10_000.0, "buy")
-    assert cost_bp is None
+def test_walk_cost_pct_zero_size_returns_none():
+    cost_pct, filled, exhausted = walk_cost_pct([(10_001.0, 1.0)], 0.0, 10_000.0, "buy")
+    assert cost_pct is None
     assert filled == 0.0
     assert exhausted is False
 
 
-def test_walk_cost_bp_empty_book_returns_none_and_exhausted():
-    cost_bp, filled, exhausted = walk_cost_bp([], 1.0, 10_000.0, "buy")
-    assert cost_bp is None
+def test_walk_cost_pct_empty_book_returns_none_and_exhausted():
+    cost_pct, filled, exhausted = walk_cost_pct([], 1.0, 10_000.0, "buy")
+    assert cost_pct is None
     assert filled == 0.0
     assert exhausted is True
 
 
-def test_walk_cost_bp_non_positive_mid_returns_none():
-    cost_bp, filled, exhausted = walk_cost_bp([(10_001.0, 1.0)], 1.0, 0.0, "buy")
-    assert cost_bp is None
+def test_walk_cost_pct_non_positive_mid_returns_none():
+    cost_pct, filled, exhausted = walk_cost_pct([(10_001.0, 1.0)], 1.0, 0.0, "buy")
+    assert cost_pct is None
     # filled still reflects what the book could supply
     assert filled == pytest.approx(1.0)
     assert exhausted is False
 
 
-def test_walk_cost_bp_rejects_bad_side():
+def test_walk_cost_pct_rejects_bad_side():
     with pytest.raises(ValueError):
-        walk_cost_bp([(10_001.0, 1.0)], 1.0, 10_000.0, "sideways")
+        walk_cost_pct([(10_001.0, 1.0)], 1.0, 10_000.0, "sideways")
 
 
-def test_walk_cost_bp_exhaustion_propagates():
+def test_walk_cost_pct_exhaustion_propagates():
     asks = [(10_001.0, 0.5)]
     mid = 10_000.0
-    cost_bp, filled, exhausted = walk_cost_bp(asks, 1.0, mid, "buy")
+    cost_pct, filled, exhausted = walk_cost_pct(asks, 1.0, mid, "buy")
     assert filled == pytest.approx(0.5)
     assert exhausted is True
-    # cost_bp is still reported for the size that DID fill
-    assert cost_bp == pytest.approx((10_001.0 - mid) / mid * 1e4)
+    # cost_pct is still reported for the size that DID fill
+    assert cost_pct == pytest.approx((10_001.0 - mid) / mid * 100)

@@ -10,8 +10,8 @@ bd = dt.daily_series(dt.load_run(T + "base"))
 for n in sorted(os.listdir(T)):
     if n == "base": continue
     rd = dt.daily_series(dt.load_run(T + n))
-    c = sorted(set(rd) & set(bd))
-    a = dt.mean_ci([rd[x] - bd[x] for x in c if x < CUT]); b = dt.mean_ci([rd[x] - bd[x] for x in c if x >= CUT])
+    c = sorted(set(rd) | set(bd))  # 読み口の D7 と同じ和集合(取引の無い日は 0 円)
+    a = dt.mean_ci([rd.get(x, 0.0) - bd.get(x, 0.0) for x in c if x < CUT]); b = dt.mean_ci([rd.get(x, 0.0) - bd.get(x, 0.0) for x in c if x >= CUT])
     f = lambda r: f"{r['mean']:+.0f} [{r['lo']:+.0f}, {r['hi']:+.0f}]"
     tag = "両半分 正" if a['lo'] > 0 and b['lo'] > 0 else ("両半分 負" if a['hi'] < 0 and b['hi'] < 0 else "")
     print(n, "| 前半", f(a), "| 後半", f(b), "|", tag)

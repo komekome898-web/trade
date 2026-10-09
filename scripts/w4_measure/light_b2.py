@@ -27,7 +27,7 @@ JST = 9 * HOUR_NS
 LAG = 60 * NS
 
 FORMULA = """
-P_t: bot.research.cards.pnl.pnl の pnl_bp(e_t × (open_{t+2} / open_{t+1} − 1) × 10,000、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。
+P_t: bot.research.cards.pnl.pnl の pnl_pct(e_t × (open_{t+2} / open_{t+1} − 1) × 100(%。L-920 で bp は値動き率だけの名前)、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。
 日 = 決定の時刻 t の日本時間の日。S_d = その日の P_t の合計。
 sum|Δe| = Σ_k |e_k − e_{k−1}|(全決定の持ち高 e、決定の順)。
 取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(+1 から −1 へ直接変われば 2 つの取引)。
@@ -50,7 +50,7 @@ def extra_stats(p, e_all, n_days):
     out["sum_abs_de"] = float(d.sum())
     out["mean_abs_de"] = float(d.sum() / (len(e_all) - 1))
     s = _sign(p.exposure)
-    P = p.pnl_bp
+    P = p.pnl_pct
     brk = np.flatnonzero(np.diff(s) != 0) + 1
     starts = np.concatenate([[0], brk])
     keep = s[starts] != 0
@@ -61,21 +61,21 @@ def extra_stats(p, e_all, n_days):
     nt = int(len(tp))
     out["trades"] = {
         "n": nt, "per_day": nt / n_days if n_days else None,
-        "mean_bp": float(tp.mean()) if nt else None, "median_bp": float(np.median(tp)) if nt else None,
+        "mean_pct": float(tp.mean()) if nt else None, "median_pct": float(np.median(tp)) if nt else None,
         "win_rate": float(np.mean(tp > 0)) if nt else None, "loss_rate": float(np.mean(tp < 0)) if nt else None,
         "zero_rate": float(np.mean(tp == 0)) if nt else None,
         "hold_decisions_median": float(np.median(tn)) if nt else None,
         "hold_minutes_median": float(np.median(th)) if nt else None,
         "hold_minutes_mean": float(th.mean()) if nt else None,
-        "long": {"n": int((tside > 0).sum()), "sum_bp": float(tp[tside > 0].sum()),
+        "long": {"n": int((tside > 0).sum()), "sum_pct": float(tp[tside > 0].sum()),
                  "win_rate": float(np.mean(tp[tside > 0] > 0)) if (tside > 0).any() else None},
-        "short": {"n": int((tside < 0).sum()), "sum_bp": float(tp[tside < 0].sum()),
+        "short": {"n": int((tside < 0).sum()), "sum_pct": float(tp[tside < 0].sum()),
                   "win_rate": float(np.mean(tp[tside < 0] > 0)) if (tside < 0).any() else None},
-        "best_bp": float(tp.max()) if nt else None, "worst_bp": float(tp.min()) if nt else None,
+        "best_pct": float(tp.max()) if nt else None, "worst_pct": float(tp.min()) if nt else None,
     }
     out["long_short_decisions"] = {
-        "long": {"n": int((p.exposure > 0).sum()), "sum_bp": float(P[p.exposure > 0].sum())},
-        "short": {"n": int((p.exposure < 0).sum()), "sum_bp": float(P[p.exposure < 0].sum())},
+        "long": {"n": int((p.exposure > 0).sum()), "sum_pct": float(P[p.exposure > 0].sum())},
+        "short": {"n": int((p.exposure < 0).sum()), "sum_pct": float(P[p.exposure < 0].sum())},
     }
     day = (p.t_ns + JST) // DAY_NS
     uniq, inv = np.unique(day, return_inverse=True)
@@ -86,20 +86,20 @@ def extra_stats(p, e_all, n_days):
     k = int(np.argmax(dd))
     kp = int(np.argmax(C[:k + 1])) if k > 0 else 0
     lab = lambda i: str(np.datetime64(int(uniq[i]) * DAY_NS, "ns").astype("datetime64[D]"))  # noqa: E731
-    out["drawdown"] = {"max_bp": float(dd.max()),
+    out["drawdown"] = {"max_pct": float(dd.max()),
                        "peak_day": lab(kp - 1) if kp > 0 else "(始まり)", "trough_day": lab(k - 1) if k > 0 else None,
-                       "final_cum_bp": float(C[-1])}
+                       "final_cum_pct": float(C[-1])}
     w = int(np.argmin(S))
     b = int(np.argmax(S))
-    out["worst_day"] = {"day": lab(w), "bp": float(S[w])}
-    out["best_day"] = {"day": lab(b), "bp": float(S[b])}
+    out["worst_day"] = {"day": lab(w), "pct": float(S[w])}
+    out["best_day"] = {"day": lab(b), "pct": float(S[b])}
     months = (uniq * DAY_NS).astype("datetime64[ns]").astype("datetime64[M]")
     mu, minv = np.unique(months, return_inverse=True)
     M = np.bincount(minv, weights=S)
     wm = int(np.argmin(M))
     out["month"] = {"n": int(len(M)), "positive_share": float(np.mean(M > 0)), "zero_share": float(np.mean(M == 0)),
-                    "worst": {"month": str(mu[wm]), "bp": float(M[wm])},
-                    "best": {"month": str(mu[int(np.argmax(M))]), "bp": float(M.max())}}
+                    "worst": {"month": str(mu[wm]), "pct": float(M[wm])},
+                    "best": {"month": str(mu[int(np.argmax(M))]), "pct": float(M.max())}}
     return out, {"trade_pnl": tp, "trade_n": tn, "trade_side": tside, "trade_start": starts[keep]}
 
 
@@ -109,13 +109,13 @@ def diag_c5(run, p, fx_rows):
     """INTENT_MAP §4-1(日本時間の時ごと)・§5(9 時 55 分に終わる足が空)・§4-2(USDJPY との符号の一致)。"""
     from bot.research.cards.library.c5_tokyo_fix_momentum import FIX_TOD_NS, jst_weekday
     out = {}
-    e, P, t = p.exposure, p.pnl_bp, p.t_ns
+    e, P, t = p.exposure, p.pnl_pct, p.t_ns
     hr = ((t + JST) // HOUR_NS) % 24
     h = {}
     for x in range(24):
         m = (hr == x) & (e != 0)
         if m.any():
-            h[f"{x:02d}"] = {"n_held": int(m.sum()), "sum_bp": float(P[m].sum()), "mean_bp_per_held_minute": float(P[m].mean()),
+            h[f"{x:02d}"] = {"n_held": int(m.sum()), "sum_pct": float(P[m].sum()), "mean_pct_per_held_minute": float(P[m].mean()),
                              "long_n": int((m & (e > 0)).sum()), "short_n": int((m & (e < 0)).sum())}
     out["4-1_hour_jst_held"] = {"what": "持ち高 e ≠ 0 の決定(P のあるもの)を、決定の時刻 t の日本時間の時で分けた。"
                                         "9 時台は t ≤ 9:54 の決定(9:55 に終わる足は 0)", "by_hour": h}
@@ -143,7 +143,7 @@ def diag_c5(run, p, fx_rows):
         "what": "平日(日本時間)のうち、9:55 JST に終わる足(9:54 に始まる足)に約定が無く、カードが仲値の時刻で呼ばれなかった日。"
                 "そのうち 9:55 より前の最後の決定の持ち高が 0 でなく、仲値の後の値動きまで持ち越した日の数と、その決定の P",
         "n_weekdays_with_decisions": int(len(wdays)), "n_fix_bar_missing": int((~has_F).sum()),
-        "n_carried_past_fix": int(carried.sum()), "carried_sum_bp": float(Pc.sum()) if len(Pc) else 0.0,
+        "n_carried_past_fix": int(carried.sum()), "carried_sum_pct": float(Pc.sum()) if len(Pc) else 0.0,
         "carried_hold_minutes_median": float(np.median(hold_c)) if len(hold_c) else None,
         "missing_by_year": {str(y): int(((~has_F) & (np.datetime_as_string((wdays * DAY_NS).astype("datetime64[ns]"),
                                                                                  unit="Y").astype(int) == y)).sum())
@@ -167,9 +167,9 @@ def diag_c5(run, p, fx_rows):
                     "e の符号の一致。置き場の範囲(最初の行 + 60 秒 〜 最後の行 + 60 秒)の決定だけ",
             "range": [str(np.datetime64(int(rt[0]), "ns")), str(np.datetime64(int(rt[-1]), "ns"))],
             "n_held_in_range": int(ok.sum()), "agree_share": float(agree.sum() / ok.sum()) if ok.sum() else None,
-            "agree": {"n": int(agree.sum()), "sum_bp": float(P[agree].sum()), "mean_bp": float(P[agree].mean()) if agree.any() else None},
-            "disagree": {"n": int(dis.sum()), "sum_bp": float(P[dis].sum()), "mean_bp": float(P[dis].mean()) if dis.any() else None},
-            "usdjpy_flat": {"n": int(zero.sum()), "sum_bp": float(P[zero].sum())},
+            "agree": {"n": int(agree.sum()), "sum_pct": float(P[agree].sum()), "mean_pct": float(P[agree].mean()) if agree.any() else None},
+            "disagree": {"n": int(dis.sum()), "sum_pct": float(P[dis].sum()), "mean_pct": float(P[dis].mean()) if dis.any() else None},
+            "usdjpy_flat": {"n": int(zero.sum()), "sum_pct": float(P[zero].sum())},
         }
     out["not_computed"] = {"4-3 祝日": "暦が無い(INTENT_MAP 4-3)。祝日・年末年始を含めて測った",
                            "4-4 海外の時間帯の対照": "原文に時刻が無い(INTENT_MAP 4-4)", "4-5 流れ": "観測する系列が無い"}
@@ -304,13 +304,13 @@ def diag_c8(variant, run, p):
         B = (int(ses[last[k]]) + 1) * DAY_NS - off
         if bi in pos:
             j = pos[bi]
-            Pc.append(p.pnl_bp[j])
+            Pc.append(p.pnl_pct[j])
             ex_open = int(run.start_ns[p.exit_bar[j]])
             mins.append(max(0, ex_open - B) / MIN_NS)
     out["5_boundary_carry"] = {"what": "セッションの最後の 1 分に約定が無く、区切りの前の最後の決定の持ち高 ≠ 0 のまま区切りをまたいだ回数、"
                                        "その決定の P の合計、区切りの後に持っていた分(次の決定の約定の足の始値 − 区切り)",
                                "n_sessions": int(len(starts)), "n_carried": int(carry.sum()),
-                               "carried_sum_bp": float(np.sum(Pc)), "minutes_after_boundary_total": float(np.sum(mins)),
+                               "carried_sum_pct": float(np.sum(Pc)), "minutes_after_boundary_total": float(np.sum(mins)),
                                "minutes_after_boundary_median": float(np.median(mins)) if mins else None}
     out["not_computed"] = {"4-1 区切りを 24 通りずらした対照": "原文に無い形。リードの決定に無いので測っていない"}
     return out
@@ -320,7 +320,7 @@ def measure(card, variant, run, p, outdir, lo, hi, fx_all=None):
     os.makedirs(outdir, exist_ok=True)
     sha_daily = write_daily(daily_rows(p, "Asia/Tokyo"), os.path.join(outdir, "daily.csv"))
     e_all = run.exposure[run.decided]
-    ds = daily_stats(p.t_ns, p.pnl_bp, e_all)
+    ds = daily_stats(p.t_ns, p.pnl_pct, e_all)
     ds["daily_csv_sha256"] = sha_daily
     write_json(ds, os.path.join(outdir, "daily_stats.json"))
     ex, _tr = extra_stats(p, e_all, ds["overall"]["n_days"])
@@ -346,13 +346,13 @@ def measure(card, variant, run, p, outdir, lo, hi, fx_all=None):
         dg = diag_c8(variant, run, p)
     write_json(dg, os.path.join(outdir, "diagnostics.json"))
     ov, c1, c5 = ds["overall"], ds["ci"]["block_1d"], ds["ci"]["block_5d"]
-    return {"n_decisions": ov["n_decisions"], "n_days": ov["n_days"], "per_day_bp": ov["per_day_bp"],
-            "per_minute_bp": ov["per_minute_bp"], "ci_1d_per_day": c1["per_day_bp"]["ci"],
-            "ci_5d_per_day": c5["per_day_bp"]["ci"], "mde_1d_per_day": c1["per_day_bp"]["mde"],
+    return {"n_decisions": ov["n_decisions"], "n_days": ov["n_days"], "per_day_pct": ov["per_day_pct"],
+            "per_minute_pct": ov["per_minute_pct"], "ci_1d_per_day": c1["per_day_pct"]["ci"],
+            "ci_5d_per_day": c5["per_day_pct"]["ci"], "mde_1d_per_day": c1["per_day_pct"]["mde"],
             "nonzero_share": ds["frequency"]["nonzero_share"], "changes": ds["frequency"]["changes"],
             "sum_abs_de": ex["sum_abs_de"], "trades": ex["trades"], "drawdown": ex["drawdown"],
             "worst_day": ex["worst_day"], "month": ex["month"],
-            "year_per_day_bp": {y: v["per_day_bp"] for y, v in ds["year"].items()}}
+            "year_per_day_pct": {y: v["per_day_pct"] for y, v in ds["year"].items()}}
 
 
 C5_FX_INPUT = {}

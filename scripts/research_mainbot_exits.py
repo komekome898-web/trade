@@ -11,7 +11,7 @@ Methodology
 -----------
 (a) 210-day PROXY: data/binance_BTCUSDT_1m_full.csv used as BOTH the traded
     instrument and its own leader signal (leader_close == close), under the
-    FX_BTC_JPY Crypto CFD cost model (0% fee, spread+slippage ~3.2bps/side,
+    FX_BTC_JPY Crypto CFD cost model (0% fee, spread+slippage ~0.032%/side,
     swap 0.06%/day). This is a proxy for "what if bitFlyer had 210 days of
     history" -- it is NOT bitFlyer data. Chronological 60/20/20 train/val/OOS
     (bot.backtest.walk_forward.split_data, same split used by every other
@@ -58,8 +58,8 @@ THR_PCT = 0.8
 
 # FX_BTC_JPY Crypto CFD cost model (config/products.yaml + config/config.yaml
 # comments): taker/maker fee 0%, spread measured live ~0.0235%, slippage
-# 0.02% conservative => per-side extra ~(0.0235/2 + 0.02) = 0.03175% ~= 3.2bps,
-# round-trip taker ~6.35bps, matching the task brief exactly. Swap
+# 0.02% conservative => per-side extra ~(0.0235/2 + 0.02) = 0.03175%,
+# round-trip taker ~0.0635%, matching the task brief exactly. Swap
 # 0.06%/day (products.yaml FX_BTC_JPY.swap_daily_pct) accrues on carried
 # positions, which matters directly for max_hold_bars=240 (4h holds).
 FX_COSTS = CostModel(taker_fee_pct=0.0, maker_fee_pct=0.0,
@@ -208,8 +208,8 @@ def main() -> int:
     print(f"Entry FROZEN: k={K}  thr_pct={THR_PCT}  leader=Binance BTCUSDT")
     print(f"CURRENT exits: {cfg_str(CURRENT)}")
     print(f"Cost model (FX_BTC_JPY Crypto CFD): taker/maker fee=0%, spread=0.0235%, "
-          f"slippage=0.02% -> per-side ~{(0.0235/2+0.02):.3f}% (~3.2bps), "
-          f"round-trip taker ~{2*(0.0235/2+0.02):.2f}% (~6.35bps). Swap {SWAP_DAILY_PCT}%/day.")
+          f"slippage=0.02% -> per-side ~{(0.0235/2+0.02):.3f}%, "
+          f"round-trip taker ~{2*(0.0235/2+0.02):.4f}%. Swap {SWAP_DAILY_PCT}%/day.")
     print(f"Order size: notional={NOTIONAL:.0f} JPY (~0.01 BTC), "
           f"paper equity={INITIAL_EQUITY:.0f} JPY. Execution=taker (matches production "
           f"MARKET-order default, src/bot/order_management/manager.py).")

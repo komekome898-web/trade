@@ -8,7 +8,7 @@
 phase2_sealed は読まない。期間 [始め, 終わり) の終わりが封印の境 2023-12-18T00:00:00Z より後なら拒否する(common.check_end: 終わり > 境。終わり = 境ちょうどは通る = 境の前までの区間)。docs/RESEARCH/ には書かない。
 
 取引の定義(= scripts/w4_measure/light_b2.py の extra_stats と同じ関数をそのまま import して使う。extra.json の trades の数え方):
-  P_t = bot.research.cards.pnl.pnl(e_t × (open_{t+2}/open_{t+1} − 1) × 1e4、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。
+  P_t = bot.research.cards.pnl.pnl の pnl_pct(e_t × (open_{t+2}/open_{t+1} − 1) × 100、%。L-920 で bp は値動き率だけの名前、t+1・t+2 は次の空でない足。最後の 2 決定は P なし)。
   取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(足し増し・一部決済は同じ取引のまま、
   +1 から −1 へ直接変われば 2 つの取引)。損益 = 区間の P_t の合計。
   建てた時刻・値段 = 区間の最初の決定の約定の足(fill_bar)の始まり・始値。決済の時刻・値段 = 区間の最後の決定の決済の足
@@ -120,7 +120,7 @@ def main_limit(a, side):
 
     def ns(t):
         return int(datetime.strptime(t, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc).timestamp()) * 10**9
-    cols = {k: [] for k in ("entry_t_ns", "entry_px", "exit_t_ns", "exit_px", "side", "qty", "pnl_bp")}
+    cols = {k: [] for k in ("entry_t_ns", "entry_px", "exit_t_ns", "exit_px", "side", "qty", "pnl_pct")}
     sides = set()
     with gzip.open(os.path.join(work, "trades.csv.gz"), "rt", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
@@ -132,13 +132,13 @@ def main_limit(a, side):
             cols["exit_px"].append(float(row["exit_price"]))
             cols["side"].append(1 if sd in ("1", "buy", "long", "BUY") else -1)
             cols["qty"].append(float(row["levels"]))
-            cols["pnl_bp"].append(float(row["pnl_bp"]))
-    trades = {"version": 1, "t_unit": "ns", **{k: (compact(v, 4) if k in ("entry_px", "exit_px", "qty", "pnl_bp") else v) for k, v in cols.items()}}
+            cols["pnl_pct"].append(float(row["pnl_pct"]))
+    trades = {"version": 1, "t_unit": "ns", **{k: (compact(v, 6 if k == "pnl_pct" else 4) if k in ("entry_px", "exit_px", "qty", "pnl_pct") else v) for k, v in cols.items()}}
     out = os.path.join(a.out_root, cid, vname)
     os.makedirs(out, exist_ok=True)
     gz_json(trades, os.path.join(out, "trades.json.gz"))
     day = {}
-    for t, pb in zip(cols["exit_t_ns"], cols["pnl_bp"]):
+    for t, pb in zip(cols["exit_t_ns"], cols["pnl_pct"]):
         d = datetime.fromtimestamp(t / 1e9 + 9 * 3600, tz=timezone.utc).strftime("%Y-%m-%d")
         v = day.setdefault(d, [0.0, 0])
         v[0] += pb
@@ -162,7 +162,9 @@ def main_limit(a, side):
     cmp("run_record.chunks", mine_r["chunks"], git_r["chunks"])
     cmp("run_record.inputs", mine_r["inputs"], git_r["inputs"])
     cmp("n_trades_exported", len(trades["side"]), git_r["trades"])
-    cmp("sum_pnl_bp_vs_summary_all_sum_bp(小数 3 桁)", round(sum(cols["pnl_bp"]), 3), round(git_s["all"]["sum_bp"], 3))
+    # git の summary が L-920 より前の書き方(sum_bp = 率 × 1 万)なら / 100 して % で比べる
+    git_sum = git_s["all"]["sum_pct"] if "sum_pct" in git_s["all"] else git_s["all"]["sum_bp"] / 100
+    cmp("sum_pnl_pct_vs_summary_all_sum_pct(小数 5 桁)", round(sum(cols["pnl_pct"]), 5), round(git_sum, 5))
     inputs = []
     for y in years(lo, hi):
         f = os.path.join(FX_DIR, f"candles_1m_{y}.csv.gz")
@@ -178,7 +180,7 @@ def main_limit(a, side):
                        "research_cmd": [f"PYTHONPATH=src python3 scripts/w4_measure/c4_limit_run.py --fill-side {side} --out <作業置き場>"],
                        "research_script_sha256": sha_file(os.path.join(W4, "c4_limit_run.py"))},
             "git_sha": git("rev-parse", "HEAD"), "data_dirs_read": [FX_DIR], "inputs_sha256": inputs,
-            "trade_definition": "指値の模型 bot.research.matilda_limit_sim.MatildaLimitSim が返す取引の行(trades.csv.gz)。entry_t/exit_t = 足の終わりの時刻(UTC、秒)、価格 = 約定の値段、pnl_bp = その取引の損益。成行の測定(exposure の符号の区間)とは別の定義",
+            "trade_definition": "指値の模型 bot.research.matilda_limit_sim.MatildaLimitSim が返す取引の行(trades.csv.gz)。entry_t/exit_t = 足の終わりの時刻(UTC、秒)、価格 = 約定の値段、pnl_pct = その取引の損益(段ごとの損益率 ÷ 段数の和、%)。成行の測定(exposure の符号の区間)とは別の定義",
             "seal": "期間の終わり %s は封印の境より前。phase2_sealed は読んでいない" % per[1],
             "seconds": {"research_run": round(t_run, 1), "total": round(time.time() - t0, 1)}}
     json.dump(prov, open(os.path.join(out, "provenance.json"), "w"), ensure_ascii=False, indent=1)
@@ -230,7 +232,7 @@ def main():
                           start_ns=z["start_ns"], volume=z["volume"])
     p = pnl(run)
     e_all = run.exposure[run.decided]
-    ds = daily_stats(p.t_ns, p.pnl_bp, e_all)
+    ds = daily_stats(p.t_ns, p.pnl_pct, e_all)
     rows = daily_rows(p, "Asia/Tokyo")
     out = os.path.join(a.out_root, cid, vname)
     os.makedirs(out, exist_ok=True)
@@ -244,7 +246,7 @@ def main():
     trades = {"version": 1, "t_unit": "ns",
               "entry_t_ns": run.start_ns[p.fill_bar[st]].astype(np.int64).tolist(), "entry_px": compact(run.open[p.fill_bar[st]], 4),
               "exit_t_ns": run.start_ns[p.exit_bar[last]].astype(np.int64).tolist(), "exit_px": compact(run.open[p.exit_bar[last]], 4),
-              "side": tr["trade_side"].astype(int).tolist(), "qty": compact(qty, 4), "pnl_bp": compact(tr["trade_pnl"], 4)}
+              "side": tr["trade_side"].astype(int).tolist(), "qty": compact(qty, 4), "pnl_pct": compact(tr["trade_pnl"], 6)}  # % の 6 桁 = 前の × 1 万の 4 桁
     gz_json(trades, os.path.join(out, "trades.json.gz"))
     # ---- 再現の確かめ(git の記録との比較。直さない) ----
     cdir = os.path.join(ROOT, "docs/RESEARCH/cards", cid, "measure", vname)
@@ -277,7 +279,7 @@ def main():
         checks["trades_n"] = {"same": None, "note": "git に取引の数の記録が無い(c1〜c3)。日ごとの損益と頻度だけを照合"}
         rr = "docs/RESEARCH/cards/%s/measure/%s/%s" % (cid, vname, "measure.json" if os.path.exists(os.path.join(cdir, "measure.json")) else "daily_stats.json")
     cum = float(np.sum(tr["trade_pnl"]))
-    checks["sum_trade_pnl_vs_final_cum_bp"] = {"trades_sum": cum, "final_cum_bp": ex["drawdown"]["final_cum_bp"]}
+    checks["sum_trade_pnl_vs_final_cum_pct"] = {"trades_sum": cum, "final_cum_pct": ex["drawdown"]["final_cum_pct"]}
     inputs = []
     for d, pat in data:
         for y in years(lo, hi):

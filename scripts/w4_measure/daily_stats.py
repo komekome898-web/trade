@@ -43,12 +43,12 @@ def _boot(S: np.ndarray, n: np.ndarray, L: int) -> dict:
                             method="circular", statistic=stat)
     reps = np.array(seen[:N_RES])
     out = {"block_days": L, "n_days": D}
-    for k, name, nn in ((0, "per_day_bp", D), (1, "per_minute_bp", int(n.sum()))):
+    for k, name, nn in ((0, "per_day_pct", D), (1, "per_minute_pct", int(n.sum()))):
         lo, hi = np.quantile(reps[:, k], [ALPHA / 2, 1 - ALPHA / 2])
         se = float(np.std(reps[:, k], ddof=1))
         out[name] = {"ci": [float(lo), float(hi)], "se": se,
                      "mde": mde(n=nn, sd=se * math.sqrt(nn), alpha=ALPHA, power=POWER, sides=2, approx="normal")}
-    assert abs(ci.lo - out["per_day_bp"]["ci"][0]) < 1e-12
+    assert abs(ci.lo - out["per_day_pct"]["ci"][0]) < 1e-12
     return out
 
 
@@ -60,21 +60,21 @@ def daily_stats(t_ns: np.ndarray, P: np.ndarray, e_all_decided: np.ndarray) -> d
     D = len(S)
     out = {"what": "日ごとの損益の系列からの軽い測定(リードの測り方の変更 2026-10-02)。式はこのファイルの formula",
            "formula": __doc__, "seed": SEED, "n_resamples": N_RES,
-           "overall": {"n_decisions": int(len(P)), "n_days": D, "per_minute_bp": float(P.sum() / len(P)),
-                       "per_day_bp": float(S.mean()), "sum_bp": float(P.sum())},
+           "overall": {"n_decisions": int(len(P)), "n_days": D, "per_minute_pct": float(P.sum() / len(P)),
+                       "per_day_pct": float(S.mean()), "sum_pct": float(P.sum())},
            "ci": {"block_1d": _boot(S, n, 1), "block_5d": _boot(S, n, 5)}}
     years = (uniq * DAY_NS).astype("datetime64[ns]").astype("datetime64[Y]").astype(np.int64) + 1970
     out["year"] = {str(int(y)): {"n_days": int((years == y).sum()), "n_decisions": int(n[years == y].sum()),
-                                  "sum_bp": float(S[years == y].sum()), "per_day_bp": float(S[years == y].mean()),
-                                  "per_minute_bp": float(S[years == y].sum() / n[years == y].sum())}
+                                  "sum_pct": float(S[years == y].sum()), "per_day_pct": float(S[years == y].mean()),
+                                  "per_minute_pct": float(S[years == y].sum() / n[years == y].sum())}
                    for y in np.unique(years)}
     wd = (uniq + 3) % 7
-    out["weekday_jst"] = {str(int(w)): {"n_days": int((wd == w).sum()), "per_day_bp": float(S[wd == w].mean()),
-                                        "per_minute_bp": float(S[wd == w].sum() / n[wd == w].sum())}
+    out["weekday_jst"] = {str(int(w)): {"n_days": int((wd == w).sum()), "per_day_pct": float(S[wd == w].mean()),
+                                        "per_minute_pct": float(S[wd == w].sum() / n[wd == w].sum())}
                           for w in range(7) if (wd == w).any()}
     hr = ((t_ns + JST) // (3600 * NS)) % 24
-    out["hour_jst"] = {f"{h:02d}": {"n": int((hr == h).sum()), "sum_bp": float(P[hr == h].sum()),
-                                    "per_minute_bp": float(P[hr == h].mean()) if (hr == h).any() else None}
+    out["hour_jst"] = {f"{h:02d}": {"n": int((hr == h).sum()), "sum_pct": float(P[hr == h].sum()),
+                                    "per_minute_pct": float(P[hr == h].mean()) if (hr == h).any() else None}
                        for h in range(24)}
     out["frequency"] = {"n_decisions": int(len(e_all_decided)), "nonzero_share": float(np.mean(e_all_decided != 0)),
                         "changes": int(np.sum(e_all_decided[1:] != e_all_decided[:-1]))}

@@ -1,7 +1,11 @@
 """Goal-facing stats per card run, from the saved per-bar arrays (no new card runs).
-P_t = e_t * (open[t+2]/open[t+1] - 1) * 1e4  (W1 C2), over decided bars."""
+P_t = e_t * (open[t+2]/open[t+1] - 1) * 100 (percent; L-920: bp names only a price-move rate) (W1 C2), over decided bars."""
 import json, glob, os, sys
 import numpy as np
+def _pd(d):  # 1 日あたり(%)。L-920 より前の daily_stats.json は per_day_bp(率 × 1 万)なので / 100
+    return d["per_day_pct"] if "per_day_pct" in d else d["per_day_bp"] / 100
+def _ci(d):
+    return d["per_day_pct"]["ci"] if "per_day_pct" in d else [x / 100 for x in d["per_day_bp"]["ci"]]
 S='/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/w4/measure/runs'
 R='/home/user/trade/docs/RESEARCH/cards'
 JST=9*3600*10**9
@@ -14,7 +18,7 @@ for card in ['c1_xborder_mom','c2_owner_xvenue_wick','c3_yen_premium_revert']:
     n=len(o)
     r=np.full(n,np.nan); r[:-2]=o[2:]/o[1:-1]-1
     def pnl(ex):
-      p=ex*r*1e4; return p
+      p=ex*r*100; return p
     P=pnl(e); ok=~np.isnan(P)
     # 1 bar later (exposure acted on one bar late)
     e1=np.full(n,np.nan); e1[1:]=e[:-1]; P1=pnl(e1); ok1=~np.isnan(P1)
@@ -39,14 +43,14 @@ for card in ['c1_xborder_mom','c2_owner_xvenue_wick','c3_yen_premium_revert']:
     nd=len(days)
     st=json.load(open(f'{R}/{card}/measure/{v}/daily_stats.json')) if os.path.exists(f'{R}/{card}/measure/{v}/daily_stats.json') else None
     out[f'{card}/{v}']=dict(
-      n_days=nd, per_day_bp=float(dsum.mean()), check_vs_daily_stats=(st['overall']['per_day_bp'] if st else None),
-      ci_day_block=(st['ci']['block_1d']['per_day_bp']['ci'] if st else None),
-      gross_month_pct=float(dsum.mean()*30.4/100), gross_month_yen_at_600k=float(dsum.mean()*30.4/1e4*NOTIONAL),
-      trades=int(len(tp)), trades_per_day=float(len(tp)/nd), per_trade_bp=float(tp.mean()) if len(tp) else None,
+      n_days=nd, per_day_pct=float(dsum.mean()), check_vs_daily_stats=(_pd(st['overall']) if st else None),
+      ci_day_block=(_ci(st['ci']['block_1d']) if st else None),
+      gross_month_pct=float(dsum.mean()*30.4), gross_month_yen_at_600k=float(dsum.mean()*30.4/100*NOTIONAL),
+      trades=int(len(tp)), trades_per_day=float(len(tp)/nd), per_trade_pct=float(tp.mean()) if len(tp) else None,
       win_rate=float((tp>0).mean()) if len(tp) else None, median_hold_min=float(np.median(hold)) if len(hold) else None,
-      long_sum_bp=float(longP), short_sum_bp=float(shortP),
-      max_drawdown_bp=dd, worst_day_bp=float(dsum.min()), worst_month_bp=float(msum.min()),
-      positive_month_share=float((msum>0).mean()), daily_sd_bp=float(dsum.std()),
-      one_bar_late_per_day_bp=float(np.nansum(P1)/nd))
+      long_sum_pct=float(longP), short_sum_pct=float(shortP),
+      max_drawdown_pct=dd, worst_day_pct=float(dsum.min()), worst_month_pct=float(msum.min()),
+      positive_month_share=float((msum>0).mean()), daily_sd_pct=float(dsum.std()),
+      one_bar_late_per_day_pct=float(np.nansum(P1)/nd))
     print(v, json.dumps(out[f'{card}/{v}'],ensure_ascii=False))
 json.dump(out,open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/lead/goal_table.json','w'),ensure_ascii=False,indent=1)

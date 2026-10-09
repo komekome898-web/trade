@@ -52,7 +52,7 @@ def sim(**kw):
 
 
 def pnl(side, fills, px, n=7):
-    return math.fsum(side * (px / f - 1.0) * 1e4 / n for f in fills)
+    return math.fsum(side * (px / f - 1.0) * 100.0 / n for f in fills)
 
 
 # ---------------------------------------------------------------- 1. 量(仕様 2)
@@ -193,7 +193,7 @@ def test_5_time_exit_at_the_open_of_the_next_bar():
     assert len(rows) == 1
     r = rows[0]
     assert r["exit_reason"] == "時間" and r["exit_price"] == P + 640 and r["exit_ns"] == T0 + 81 * M
-    assert r["pnl_bp"] == pytest.approx(pnl(-1, [P + 500, P + 700], P + 640))
+    assert r["pnl_pct"] == pytest.approx(pnl(-1, [P + 500, P + 700], P + 640))
 
 
 # ---------------------------------------------------------------- 6. 反対の入り
@@ -265,7 +265,7 @@ def test_7_opposite_position_is_closed_at_the_break_price():
     assert len(rows) == 1
     r = rows[0]
     assert (r["side"], r["entry_price"], r["exit_price"], r["exit_reason"]) == (-1, P + 300, P + 400, "反対のブレイク")
-    assert r["pnl_bp"] == pytest.approx(pnl(-1, [P + 300], P + 400)) and r["undecided"] == 0
+    assert r["pnl_pct"] == pytest.approx(pnl(-1, [P + 300], P + 400)) and r["undecided"] == 0
     assert s._brk == 1 and s._side == 0
 
 
@@ -342,7 +342,7 @@ def test_8_add_and_take_profit_in_one_bar():
     rb = bd.feed(b41)
     assert (rb[0]["exit_reason"], rb[0]["levels"], rb[0]["undecided"]) == ("利確1", 3, 1)
     assert rb[0]["exit_price"] == pytest.approx(tp3)
-    assert rows[0]["pnl_bp"] > rb[0]["pnl_bp"] == pytest.approx(pnl(-1, fills3, tp3))
+    assert rows[0]["pnl_pct"] > rb[0]["pnl_pct"] == pytest.approx(pnl(-1, fills3, tp3))
 
 
 def test_8_no_second_round_trip_after_take_profit():
@@ -379,7 +379,7 @@ def test_10_pnl_formula_and_trade_boundaries():
     rows = s.feed(bar(41, P + 1000, tp - 1, h=P + 1000, lo=tp - 1))
     assert len(rows) == 1
     r = rows[0]
-    assert r["pnl_bp"] == pytest.approx(pnl(-1, [P + 500, P + 700, P + 900, P + 1100, P + 1300], tp))
+    assert r["pnl_pct"] == pytest.approx(pnl(-1, [P + 500, P + 700, P + 900, P + 1100, P + 1300], tp))
     assert r["entry_ns"] == T0 + 41 * M and r["exit_ns"] == T0 + 42 * M and s._side == 0
     assert r["width"] == 200.0 and r["vola"] == 200.0 and r["ratio"] == 1.0 and r["close_k"] == P and r["brk"] == 0
     # 次の取引は 0 から始まる(段・時計を引き継がない)
@@ -690,15 +690,15 @@ def _runner():
 
 def test_year_stats():
     r = _runner()
-    rows = [{"pnl_bp": x, "undecided": u} for x, u in ((1.0, 0), (-2.0, 2), (0.0, 0), (3.0, 1))]
+    rows = [{"pnl_pct": x, "undecided": u} for x, u in ((1.0, 0), (-2.0, 2), (0.0, 0), (3.0, 1))]
     st = r.year_stats(rows, 2.0)
     assert (st["trades"], st["wins"], st["losses"]) == (4, 2, 1)
-    assert (st["avg_win_bp"], st["avg_loss_bp"], st["sum_win_bp"], st["sum_loss_bp"], st["sum_bp"]) == (
+    assert (st["avg_win_pct"], st["avg_loss_pct"], st["sum_win_pct"], st["sum_loss_pct"], st["sum_pct"]) == (
         2.0, -2.0, 4.0, -2.0, 2.0)
-    assert st["per_day"] == {"trades": 2.0, "wins": 1.0, "pnl_bp": 1.0}
+    assert st["per_day"] == {"trades": 2.0, "wins": 1.0, "pnl_pct": 1.0}
     assert (st["undecided_bars_in_trades"], st["trades_with_undecided"]) == (3, 2)
     empty = r.year_stats([], 0.0)
-    assert empty["avg_win_bp"] is None and empty["per_day"]["trades"] is None
+    assert empty["avg_win_pct"] is None and empty["per_day"]["trades"] is None
 
 
 def test_by_year_uses_exit_year_and_keeps_the_finish_row():
@@ -706,8 +706,8 @@ def test_by_year_uses_exit_year_and_keeps_the_finish_row():
     r = _runner()
     y18, y19 = 1_514_764_800 * NS, 1_546_300_800 * NS  # 2018-01-01・2019-01-01(UTC)
     lo, hi = y19 - 2 * 86_400 * NS, y19
-    rows = [{"exit_ns": y19 - 3600 * NS, "pnl_bp": 1.0, "undecided": 0},
-            {"exit_ns": y19, "pnl_bp": -1.0, "undecided": 1}]
+    rows = [{"exit_ns": y19 - 3600 * NS, "pnl_pct": 1.0, "undecided": 0},
+            {"exit_ns": y19, "pnl_pct": -1.0, "undecided": 1}]
     out = r.by_year(rows, lo, hi)
     assert sorted(out) == ["2018", "2019"] and y18 < lo
     assert (out["2018"]["trades"], out["2018"]["days"]) == (1, 2.0)
@@ -915,15 +915,17 @@ def _golden_run_digest(r, side, out, extra):
     return h.hexdigest()
 
 
-# 上の指紋は族 D の切り替えを足す前のコード(コミット dd34297)で取った値
-GOLDEN_SIM = {"good": "9becb5908f65282b0a98b35a74ca243d30f94538284725afb6b307ded9415ddc",
-              "bad": "dcea9663776da6c445614b5a5028ac447c04b4b2b8d778530c43a781005da0ee",
-              "bad_b5": "3a5d52839698ba7c2002cf6feabb58c04caa7d0955d3fdb68a76902ff3622a87",
-              "good_follow": "43160b8b589d52776c52230c7fd908fecdc991788f64be204652a90622672bde",
-              "bad_center": "164ffb5157f1d9e44c557a0b221c112f52678c4f908a326ac132b3119d6137e6",
-              "good_step2_n1": "8568e16551b4149795d6fbf919c0ce7726702ff4bea197f04b312fe47cac5c34"}
-GOLDEN_RUN = {"good": "728da1e3563631dffeab0597d8665ad08c72cf21302d7968d25cc9a512fe4d12",
-              "bad": "71baba72fbcaca623ec4e76b3a4b1a71b000a233d19694833a530b8bc7dd2b56"}
+# 上の指紋は族 D の切り替えを足す前のコード(コミット dd34297)で取った値。L-920 で損益の列を pnl_bp(率 × 1 万)から
+# pnl_pct(%)に変えたので取り直した(取り直す前に、この試験の 6 つの設定の取引の行 2,591 行が、損益の列のほかは
+# 前のコードと同じで、pnl_pct × 100 が前の pnl_bp と相対 1e-12 の内で合うことを確かめた)
+GOLDEN_SIM = {"good": "aa013a836799d94a0345a431d1450b0b3f7f6befffeb6578e0de4051664f54af",
+              "bad": "d4711363e4f0e311617e05b9192e23adf18ccf0b1c4d1efea02728968a4e8242",
+              "bad_b5": "447965470e802ffbbd2030cf601f7a02ac4915565a96de0b52397d3607022f11",
+              "good_follow": "a9a0a0fb0416cc3d1e22fc440099aa6b96b3cf5bf1bbbcea07287ace7d26b373",
+              "bad_center": "79b984f5854c1fd760273d7fd81a18884f558a25ce95c862c5849ea5ff4a0034",
+              "good_step2_n1": "d2df4a0f297888dd3b06cb4f281aa0c2e63ac775a2f0e65ac63716a241056d06"}
+GOLDEN_RUN = {"good": "aeaea044beddb3d5c2fc86b3c89ea98ce5a4ed8f2c5c6ada09eb281db3900064",
+              "bad": "3cda0cd24848d53372789277714653c51580d02fe886c6c3b64ba5feb02e9ed6"}
 
 
 @pytest.mark.parametrize("name,kw", GOLDEN_CONFIGS)
@@ -1112,7 +1114,7 @@ def test_stop_behind_the_entry_closes_at_the_reached_price_not_an_unreached_one(
     assert (q.s1, max(q.bup, q.hi2), max(q.bup, q.hi2) - 0.5 * q.vola) == (P + 500, P + 550, P + 450)
     b80 = bar(80, P + 400, P + 510, h=P + 520, lo=P + 400)
     rows = s.feed(b80)
-    assert [(r["entry_price"], r["exit_price"], r["exit_reason"], r["pnl_bp"]) for r in rows] == [
+    assert [(r["entry_price"], r["exit_price"], r["exit_reason"], r["pnl_pct"]) for r in rows] == [
         (P + 500, P + 500, "閉じる位置で閉じる", 0.0)]
     assert all(b80.low <= r["exit_price"] <= b80.high for r in rows)
     assert s._side == 0 and s._brk == 0
@@ -1177,9 +1179,9 @@ def test_break_close_good_and_bad_sides_end_differently(c, stop):
     assert out == {"good": [("利確1", P + 440, 1)], "bad": [("閉じる位置で閉じる", stop, 1)]}
 
 
-# 既定の走らせの analysis.json(c4_limit_batch.analyse)の指紋。変える前のコード(dd34297)の analyse で取った値
-GOLDEN_ANALYSIS = {"good": "41ad80ad5a75d068723f19ff97a99ecbef5b5b58967dc40bede0dea9eb2d22f5",
-                   "bad": "753209e50b42442a4fcfa825f1ed1ee38169927bb60e1d2567e9dc54becd81d1"}
+# 既定の走らせの analysis.json(c4_limit_batch.analyse)の指紋。変える前のコード(dd34297)の analyse で取った値。L-920 で % にして取り直した
+GOLDEN_ANALYSIS = {"good": "e542d73907455f6252d488d7127d4c45b69671c5f78942760a4e776e48dbbce6",
+                   "bad": "a2fb83af2783eeab7c88674f985a0f7bbc5713dc34991a1ec5f026e7a6d86538"}
 
 
 @pytest.mark.parametrize("side", ["good", "bad"])

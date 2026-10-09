@@ -8,12 +8,12 @@
 number is None with the reason next to it). Where each item of C5 is:
 
 C5 a (mean P_t, overall and per scene):
-    overall.mean_bp; scenes.<v>.bins.<group>.mean_bp; scenes.<v>.coef_value / coef_position.
+    overall.mean_pct; scenes.<v>.bins.<group>.mean_pct; scenes.<v>.coef_value / coef_position.
     The mean of P_t (pnl.py) over all decisions and per group of a scene variable. For a continuous
-    variable also the slope of P_t on the variable standardised (bp per 1 sd), on its value and on its
+    variable also the slope of P_t on the variable standardised (percent per 1 sd), on its value and on its
     365-day position. Groups: for a continuous variable the thirds of its position [0, 1/3), [1/3, 2/3),
     [2/3, 1] (display); for a category variable its values.
-C5 b (drift removed): overall.drift_removed_bp; scenes.<v>.bins.<group>.drift_removed_bp.
+C5 b (drift removed): overall.drift_removed_pct; scenes.<v>.bins.<group>.drift_removed_pct.
     e_t * (r_{t+1} - the mean of r in the same group over the measured period); overall: minus the mean of
     r over all decisions.
 C5 c (intervals): every stat's ci / se. Circular block bootstrap (`bot.bt.validation.bootstrap`),
@@ -22,7 +22,7 @@ C5 c (intervals): every stat's ci / se. Circular block bootstrap (`bot.bt.valida
     (blocklen.py). When L >= n / 2 neither intervals nor the control are given (block.degenerate and its
     reason). The median length of the runs of decisions with exposure != 0 is shown as a diagnostic only
     (block.median_nonzero_run); it does not enter L.
-C5 d (control): mean_bp.control_percentile; control.shifts. The exposures shifted circularly by k, k drawn
+C5 d (control): mean_pct.control_percentile; control.shifts. The exposures shifted circularly by k, k drawn
     200 times from [L, n - L] with a fixed seed (at least L both ways round); the same mean of each
     shifted series; the actual mean's percentile among the 200 = 100 * (below + 0.5 * equal) / 200.
 C5 e (power): every mean's mde, next to its 95% interval (ci = [lower end, upper end]).
@@ -34,7 +34,10 @@ C5 e (power): every mean's mde, next to its 95% interval (ci = [lower end, upper
 C5 f (frequency): frequency. The share of decisions with exposure != 0; the number of changes.
 C5 g (breakdown): breakdown. Per venue and per UTC year: n, sum and mean of P_t.
 C5 h (daily series): daily. The sum of P_t per day (zone `day_zone`) written to `daily_path`
-    (CSV: day,pnl_bp,n), and its sha256.
+    (CSV: day,pnl_pct,n), and its sha256.
+
+P_t and every statistic of it are in percent (pnl.py; L-920: bp names only a price-move rate).
+The mean move of a group, r_mean_bp, is a price-move rate and stays in bp.
 
 All the bootstrap statistics of one run are taken from ONE call of
 `block_bootstrap_ci`: its statistic (the overall mean, the first entry)
@@ -98,7 +101,7 @@ def median_nonzero_run(exposure: np.ndarray) -> Optional[float]:
 
 def block_length(p: PnL) -> tuple[int, dict]:
     """(L, what decided it): L = max(ceil(Politis-White b of the P_t series), 1,440) (C5 c)."""
-    bl = politis_white(p.pnl_bp)
+    bl = politis_white(p.pnl_pct)
     L = max(int(math.ceil(bl.b)), MIN_BLOCK_BARS)
     return L, {"rule": "max(ceil(Politis-White circular b of P_t), 1440)", "pw_b": bl.b,
                "pw_b_uncapped": bl.b_uncapped, "pw_b_max": bl.b_max, "pw_m_hat": bl.m_hat, "pw_M": bl.M,
@@ -165,8 +168,8 @@ class _Stats:
         self.names: list[str] = []
         for g in groupings:
             for lab in g.labels:
-                self.names.append(f"{g.name}|{lab}|mean_bp")
-                self.names.append(f"{g.name}|{lab}|drift_removed_bp")
+                self.names.append(f"{g.name}|{lab}|mean_pct")
+                self.names.append(f"{g.name}|{lab}|drift_removed_pct")
         for rg in regs:
             self.names.append(rg.name)
 
@@ -182,7 +185,7 @@ class _Stats:
             with np.errstate(invalid="ignore", divide="ignore"):
                 mp = np.where(cnt > 0, sp / cnt, np.nan)
                 mb = np.where(cnt > 0, sb / cnt, np.nan)
-            parts.append(np.stack([mp, mb], axis=1).ravel())  # per group: mean_bp, drift_removed_bp (as `names`)
+            parts.append(np.stack([mp, mb], axis=1).ravel())  # per group: mean_pct, drift_removed_pct (as `names`)
         out = list(np.concatenate(parts)) if parts else []
         for rg in self.regs:
             m = rg.mask[idx]
@@ -243,7 +246,7 @@ def _stat(est: float, reps: np.ndarray, n: int, *, mean: bool) -> dict:
 
 
 def _controls(e: np.ndarray, r: np.ndarray, groupings: list[_Grouping], L: int, seed: int) -> tuple:
-    """(shifts, control means [N_SHIFTS, k] in the order of the mean_bp entries) or (None, reason)."""
+    """(shifts, control means [N_SHIFTS, k] in the order of the mean_pct entries) or (None, reason)."""
     n = len(e)
     if n < 2 * L:
         return None, f"n = {n} < 2L = {2 * L}: no shift of at least L both ways round exists"
@@ -277,14 +280,14 @@ def daily_rows(p: PnL, day_zone: str) -> list[tuple[str, float, int]]:
         raise ValueError(f"day_zone must be one of {sorted(DAY_ZONES)}, got {day_zone!r}")
     day = (p.t_ns + DAY_ZONES[day_zone]) // DAY_NS
     uniq, inv = np.unique(day, return_inverse=True)
-    s = np.bincount(inv, weights=p.pnl_bp)
+    s = np.bincount(inv, weights=p.pnl_pct)
     c = np.bincount(inv)
     labels = np.datetime_as_string((uniq * DAY_NS).astype("datetime64[ns]"), unit="D")
     return [(str(d), float(v), int(k)) for d, v, k in zip(labels, s, c)]
 
 
 def write_daily(rows: Sequence[tuple[str, float, int]], path: str) -> str:
-    text = "day,pnl_bp,n\n" + "".join(f"{d},{float.__repr__(v)},{k}\n" for d, v, k in rows)
+    text = "day,pnl_pct,n\n" + "".join(f"{d},{float.__repr__(v)},{k}\n" for d, v, k in rows)
     data = text.encode("utf-8")
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "wb") as fh:
@@ -295,7 +298,10 @@ def write_daily(rows: Sequence[tuple[str, float, int]], path: str) -> str:
 def read_daily(path: str) -> dict[str, float]:
     with open(path, encoding="utf-8") as fh:
         lines = fh.read().splitlines()
-    if not lines or lines[0] != "day,pnl_bp,n":
+    if lines and lines[0] == "day,pnl_bp,n":
+        raise ValueError(f"{path}: an old daily series (pnl_bp = the pnl rate x 1e4, L-920 no longer calls it bp); "
+                         "measure the card again to write day,pnl_pct,n")
+    if not lines or lines[0] != "day,pnl_pct,n":
         raise ValueError(f"{path}: not a daily series written by write_daily")
     out = {}
     for ln in lines[1:]:
@@ -349,7 +355,8 @@ def _measure_with_block(run: CardRun, p: PnL, L: int, how: dict, *, seed: int,
     for s, what in ((seed, "seed"), (control_seed, "control_seed")):
         if type(s) is not int:
             raise ValueError(f"{what} must be an int, got {s!r}")
-    e, r, P = p.exposure, p.r_bp, p.pnl_bp
+    # r in percent (not bp) so that the drift-removed e * (r - mean r) and the control's e * r are in P_t's unit
+    e, r, P = p.exposure, p.r_bp / 100.0, p.pnl_pct
     n = len(P)
     variables = scene_vars(run, p, vr_q_bars=vr_q_bars, regimes=regimes, ref_scenes=ref_scenes)
     all_codes = np.zeros(n, dtype=np.int64)
@@ -389,13 +396,13 @@ def _measure_with_block(run: CardRun, p: PnL, L: int, how: dict, *, seed: int,
     shifts, ctrl = _controls(e, r, groupings, L, control_seed) if not degenerate else (
         None, f"L = {L} >= n / 2 = {n / 2}: no control (C5 c)")
     col = {name: k for k, name in enumerate(stats.names)}
-    mean_cols = [k for k, nm in enumerate(stats.names) if nm.endswith("|mean_bp")]
+    mean_cols = [k for k, nm in enumerate(stats.names) if nm.endswith("|mean_pct")]
     ctrl_col = {k: j for j, k in enumerate(mean_cols)}
 
     def stat_of(name: str, n_items: int, *, mean: bool) -> dict:
         k = col[name]
         s = _stat(est[k], reps[:, k], n_items, mean=mean)
-        if name.endswith("|mean_bp"):
+        if name.endswith("|mean_pct"):
             if shifts is None:
                 s["control_percentile"] = None
             else:
@@ -407,9 +414,9 @@ def _measure_with_block(run: CardRun, p: PnL, L: int, how: dict, *, seed: int,
         cnt = np.bincount(g.codes, minlength=G + 1)[:G]
         out = {}
         for j, lab in enumerate(g.labels):
-            out[lab] = {"n": int(cnt[j]), "r_mean_bp": _num(g.r_mean[j]),
-                        "mean_bp": stat_of(f"{g.name}|{lab}|mean_bp", int(cnt[j]), mean=True),
-                        "drift_removed_bp": stat_of(f"{g.name}|{lab}|drift_removed_bp", int(cnt[j]), mean=True)}
+            out[lab] = {"n": int(cnt[j]), "r_mean_bp": _num(g.r_mean[j] * 100.0),  # r is in percent here
+                        "mean_pct": stat_of(f"{g.name}|{lab}|mean_pct", int(cnt[j]), mean=True),
+                        "drift_removed_pct": stat_of(f"{g.name}|{lab}|drift_removed_pct", int(cnt[j]), mean=True)}
         return out
 
     overall = bins_of(groupings[0])["all"]
@@ -428,8 +435,8 @@ def _measure_with_block(run: CardRun, p: PnL, L: int, how: dict, *, seed: int,
     by_year = {}
     for y in np.unique(years):
         m = years == y
-        by_year[str(int(y))] = {"n": int(m.sum()), "sum_bp": float(P[m].sum()), "mean_bp": float(P[m].mean())}
-    breakdown = {"venue": {run.venue: {"n": n, "sum_bp": float(P.sum()), "mean_bp": float(P.mean())}},
+        by_year[str(int(y))] = {"n": int(m.sum()), "sum_pct": float(P[m].sum()), "mean_pct": float(P[m].mean())}
+    breakdown = {"venue": {run.venue: {"n": n, "sum_pct": float(P.sum()), "mean_pct": float(P.mean())}},
                  "year_utc": by_year}
     # h
     rows = daily_rows(p, day_zone)

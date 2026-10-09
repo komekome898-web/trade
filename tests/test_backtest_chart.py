@@ -394,11 +394,11 @@ def test_column_form_trades_read_like_the_row_form_and_hold_no_money():
     a = C.read_trades({"data": rows})
     doc = {"version": 1, "t_unit": "ns", "entry_t_ns": [r["entry_t_ns"] for r in rows], "entry_px": [100] * 3,
            "exit_t_ns": [r["exit_t_ns"] for r in rows], "exit_px": [r["exit_px"] for r in rows],
-           "side": [1, -1, 1], "qty": [1, 1, 1], "pnl_bp": [float(x) for x in a.bp]}
+           "side": [1, -1, 1], "qty": [1, 1, 1], "pnl_bp": [float(x) * 100 for x in a.pct]}  # the exporter's column: rate x 1e4
     b = C.read_trades(doc)
-    assert b.pnl_derived and np.allclose(b.bp, a.bp) and np.array_equal(b.xt, a.xt) and np.array_equal(b.side, a.side)
+    assert b.pnl_derived and np.allclose(b.pct, a.pct) and np.array_equal(b.xt, a.xt) and np.array_equal(b.side, a.side)
     st = C.trade_stats(b)
-    assert st["total"] is None and st["max_dd"] is None and st["wins"] == 2 and st["total_bp"] == pytest.approx(C.trade_stats(a)["total_bp"])
+    assert st["total"] is None and st["max_dd"] is None and st["wins"] == 2 and st["total_pct"] == pytest.approx(C.trade_stats(a)["total_pct"])
 
 
 def test_range_cut_on_many_column_trades_is_a_binary_search():
@@ -406,7 +406,7 @@ def test_range_cut_on_many_column_trades_is_a_binary_search():
     et = (np.arange(n, dtype=np.int64) * 60 + 10**9) * NS
     ts = C.read_trades({"version": 1, "t_unit": "ns", "entry_t_ns": et, "entry_px": np.full(n, 100.0), "exit_t_ns": et + 30 * NS,
                         "exit_px": np.full(n, 101.0), "side": np.ones(n, dtype=np.int64), "qty": np.ones(n), "pnl_bp": np.ones(n)})
-    assert ts.n == n and ts.entry_sorted and int(np.searchsorted(ts.xt, (10**9 + 6000) * NS)) == 100 and ts.cum_bp[-1] == n
+    assert ts.n == n and ts.entry_sorted and int(np.searchsorted(ts.xt, (10**9 + 6000) * NS)) == 100 and ts.cum_pct[-1] == pytest.approx(n / 100)
     assert C.truncate(ts, int(et[1000])).n == 1000
 
 
@@ -706,7 +706,7 @@ def test_card_trades_are_cut_at_the_seal_boundary_like_a_run(tmp_path):
     _manifest(tmp_path, [_row("c8_session_mean_revert", "jst_day", d, period=(_iso_z(start), _iso_z(BOUNDARY + 3600)), n_trades=4)])
     root = str(tmp_path / "backtest_runs_shared")
     s = C.run_summary(root, "cards/c8_session_mean_revert/jst_day", tmp_path)
-    assert s["stats"]["n"] == 2 and s["stats"]["total_bp"] == 15.0  # the trade that exits AT the boundary and the one after it are not shown
+    assert s["stats"]["n"] == 2 and s["stats"]["total_pct"] == pytest.approx(0.15)  # pnl_bp 10 + 5 read as % (/ 100); the trade that exits AT the boundary and the one after it are not shown
     ch = C.run_chart(root, "cards/c8_session_mean_revert/jst_day", root=tmp_path, from_s=start, to_s=BOUNDARY + 7200)
     assert [t["xt"] for t in ch["trades"]] == [start + 600, BOUNDARY - 60] and ch["trades_total"] == 2
     assert all(p[0] < BOUNDARY for p in ch["pnl"]) and all(b[0] < BOUNDARY for b in ch["bars"])
@@ -725,14 +725,14 @@ def _iso_z(s):
 def test_card_summary_holds_bp_only_the_checks_and_the_price_of_the_ledgers_instrument(tmp_path):
     t0, root = _cards_world(tmp_path)
     s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
-    assert s["pnl_derived"] is True and s["currency"] is None and s["stats"]["total"] is None and s["stats"]["total_bp"] == pytest.approx(167.8)
+    assert s["pnl_derived"] is True and s["currency"] is None and s["stats"]["total"] is None and s["stats"]["total_pct"] == pytest.approx(1.678)
     assert s["instrument"] == "FX_BTC_JPY" and s["price"]["available"] and s["price"]["same_source"] and s["price"]["label"] == "bitFlyer FX_BTC_JPY"
     c = s["card"]
     assert c["verified_items"] == ["daily_csv_sha256"] and c["not_verified"] == ["取引数は照合していない"] and c["n_trades_manifest"] == 2
     assert c["card_title"] == T.card_theme("c7_barrier_race")["title"] and "FX_BTC_JPY" in c["instrument_source"] + c["instrument"]
     ch = C.run_chart(root, "cards/c7_barrier_race/1h", root=tmp_path)
-    assert ch["pnl_derived"] and len(ch["trades"]) == 2 and ch["trades"][0]["pnl"] is None and ch["trades"][0]["bp"] == 90.9
-    assert [p[2] for p in ch["pnl"]][-1] == pytest.approx(167.8)
+    assert ch["pnl_derived"] and len(ch["trades"]) == 2 and ch["trades"][0]["pnl"] is None and ch["trades"][0]["pct"] == pytest.approx(0.909)
+    assert [p[2] for p in ch["pnl"]][-1] == pytest.approx(1.678)
     # the price directory the card read is not the store's: say so instead of claiming the same source
     d = _write_card(tmp_path, "c7_barrier_race", "1h", t0, [(t0 + 600, t0 + 1200, 110, 120, 1, 90.9)], prov_extra={"data_dirs_read": ["backtest_data/other"]})
     _manifest(tmp_path, [_row("c7_barrier_race", "1h", d, n_trades=1)])
@@ -752,7 +752,7 @@ def test_card_with_an_instrument_the_ledger_has_no_store_for_shows_the_cumulativ
 
 def test_daily_csv_and_the_trades_of_every_exported_variant_agree_on_the_total():
     """sum(daily.csv pnl_bp) = sum(trades pnl_bp). The trades' pnl_bp are rounded to 4 decimals when written (compact(x, 4) in
-    export_card_trades.py), so the two sums can differ by at most n * 0.00005 bp; the per-day split differs by construction (daily.csv
+    export_card_trades.py), so the two sums can differ by at most n * 0.00005 in pnl_bp = n * 0.0000005 in % (the dashboard reads / 100); the per-day split differs by construction (daily.csv
     books a decision's profit on the decision's day, a trade books its whole profit at its exit)."""
     if not CARD_MANIFEST.is_file():
         pytest.skip("no cards manifest in this checkout")
@@ -764,7 +764,7 @@ def test_daily_csv_and_the_trades_of_every_exported_variant_agree_on_the_total()
                 ref = K.resolve(rd, r["run_id"])
                 ts = C.load_trades(str(ref.dir))
                 assert ts.n == ref.row["n_trades"], r["run_id"]
-                assert abs(float(ts.cum_bp[-1]) - K.daily_sum_bp(ref)) <= ts.n * 0.00005 + 1e-6, r["run_id"]
+                assert abs(float(ts.cum_pct[-1]) - K.daily_sum_pct(ref)) <= ts.n * 0.0000005 + 1e-8, r["run_id"]
                 n_checked += 1
     assert n_checked >= 1
 
@@ -786,9 +786,9 @@ def test_card_headline_equals_the_researchs_numbers(cid, pid):
     s = C.run_summary(rd, f"cards/{cid}/{pid}", REPO)
     st, hl = s["stats"], s["card"]["headline"]
     assert st["n"] == git["extra.trades"]["git"]["n"] and st["win_rate"] == git["extra.trades"]["git"]["win_rate"]
-    assert st["max_dd_bp"] == pytest.approx(git["extra.drawdown"]["git"]["max_bp"], rel=1e-9)
+    assert st["max_dd_pct"] == pytest.approx(git["extra.drawdown"]["git"]["max_bp"] / 100, rel=1e-9)
     assert "研究の値" in hl["win_rate"] and "daily.csv" in hl["max_dd"] and "研究と同じ定義" in hl["max_dd"]
-    assert s["card"]["bp_note"].startswith("bp = 持っていた間の 1 決定ごとの値動きの和") and "建値と決済値の比ではない" in s["card"]["bp_note"]
+    assert s["card"]["rate_note"].startswith("損益の率(%)= 持っていた間の 1 決定ごとの値動きの率の和") and "建値と決済値の比ではない" in s["card"]["rate_note"]
 
 
 def test_headline_without_the_researchs_values_is_computed_and_says_so(tmp_path):
@@ -796,7 +796,7 @@ def test_headline_without_the_researchs_values_is_computed_and_says_so(tmp_path)
     s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
     hl = s["card"]["headline"]
     assert "丸め" in hl["win_rate"] and "daily.csv" in hl["max_dd"]
-    assert s["stats"]["max_dd_bp"] == 0.0 and s["stats"]["win_rate"] == 1.0
+    assert s["stats"]["max_dd_pct"] == 0.0 and s["stats"]["win_rate"] == 1.0
     d = tmp_path / "backtest_runs_shared/cards/c7_barrier_race/1h"
     prov = json.loads((d / "provenance.json").read_text())
     prov["checks"] = {"extra.trades": {"git": {"n": 2, "win_rate": 0.5}}, "extra.drawdown": {"git": {"max_bp": 1.0}}}
@@ -809,11 +809,11 @@ def test_headline_without_the_researchs_values_is_computed_and_says_so(tmp_path)
 def test_limit_variant_bp_note_differs_and_every_card_trade_explains_bp(tmp_path):
     t0, root = _cards_world(tmp_path)
     ref = K.resolve(root, "cards/c7_barrier_race/1h")
-    assert K.info(ref)["bp_note"] == T.BP_NOTE
+    assert K.info(ref)["rate_note"] == T.RATE_NOTE
     ref.variant = "limit_v37_good"
-    assert K.info(ref)["bp_note"] == T.BP_NOTE_LIMIT and "段の約定の平均" in T.BP_NOTE_LIMIT
+    assert K.info(ref)["rate_note"] == T.RATE_NOTE_LIMIT and "段の約定の平均" in T.RATE_NOTE_LIMIT
     js = (Path(C.STATIC_DIR) / "backtest_tab.js").read_text(encoding="utf-8")
-    assert js.count("bp_note") >= 4 and "bt-bpnote" in js and "bt-card-bpnote" in js  # legend, tooltip, card note
+    assert js.count("rate_note") >= 4 and "bt-ratenote" in js and "bt-card-ratenote" in js  # legend, tooltip, card note
 
 
 def test_waiting_variants_are_apart_from_failures_and_provenance_display_ok_false_blocks(tmp_path):
@@ -846,7 +846,7 @@ def test_card_loads_its_gz_even_when_a_plain_trades_json_sits_beside_it(tmp_path
     (d / "trades.json").write_text(json.dumps({"version": 1, "t_unit": "ns", "entry_t_ns": [t0 * NS], "entry_px": [1], "exit_t_ns": [(t0 + 60) * NS],
                                                "exit_px": [1], "side": [1], "qty": [1], "pnl_bp": [999.0]}))
     s = C.run_summary(root, "cards/c7_barrier_race/1h", tmp_path)
-    assert s["stats"]["n"] == 2 and s["stats"]["total_bp"] == pytest.approx(167.8)
+    assert s["stats"]["n"] == 2 and s["stats"]["total_pct"] == pytest.approx(1.678)
 
 
 def test_zlib_error_while_reading_trades_is_preparing_not_a_500(tmp_path, monkeypatch):

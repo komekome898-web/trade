@@ -2,7 +2,8 @@
 
     python3 docs/RESEARCH/cards/c4_owner_matilda_range/diag_gate/gate_tables.py <probe.npz の置き場> > gate_tables.out
 
-P = 門の無いカード(no_trend_body)の 1 分ごとの損益(W1 の測定器と同じ e_t × (open_{t+2}/open_{t+1} − 1) × 1e4)。
+P = 門の無いカード(no_trend_body)の 1 分ごとの損益(W1 の測定器と同じ e_t × (open_{t+2}/open_{t+1} − 1) × 100、%。L-920 で bp は値動き率だけの名前。
+L-920 より前の probe.npz は pnl_bp(率 × 1 万)なので / 100 して読む)。値動き R(premise_bp)は値動き率(bp)のまま。
 年・日 = 日本時間(決定の時刻 + 9 時間)。日の数 = その年に決定がある日本時間の日の数。
 """
 from __future__ import annotations
@@ -22,17 +23,18 @@ def boot_ci(daily: np.ndarray, n: int = 1000) -> list:
     rng = np.random.default_rng(SEED)
     k = len(daily)
     m = np.array([daily[rng.integers(0, k, k)].mean() for _ in range(n)])
-    return [round(float(np.percentile(m, 2.5)), 2), round(float(np.percentile(m, 97.5)), 2)]
+    return [round(float(np.percentile(m, 2.5)), 4), round(float(np.percentile(m, 97.5)), 4)]
 
 
 def main() -> int:
     z = np.load(os.path.join(sys.argv[1], "probe.npz"))
-    bar_t, pnl_bp, r_bp = z["bar_t"], z["pnl_bp"], z["r_bp"]
+    bar_t, r_bp = z["bar_t"], z["r_bp"]
+    pnl_pct = z["pnl_pct"] if "pnl_pct" in z.files else z["pnl_bp"] / 100
     rec_t = z["rec_t"]
     idx = np.searchsorted(bar_t, rec_t)
     ok = (idx < len(bar_t)) & (bar_t[np.minimum(idx, len(bar_t) - 1)] == rec_t)
     idx = idx[ok]
-    P = pnl_bp[idx]
+    P = pnl_pct[idx]
     E = np.sign(z["exposure"][idx])
     R = r_bp[idx]
     ratio = z["ratio"][ok]
@@ -47,18 +49,18 @@ def main() -> int:
     yr = np.vectorize(year_of_day.get)(day)
     years = sorted(set(year.tolist()))
     ndays = {y: int((year == y).sum()) for y in years}
-    out = {"n_matched": int(ok.sum()), "n_records": int(len(rec_t)), "P_sum_matched": round(float(P.sum()), 3),
-           "P_sum_all": round(float(pnl_bp.sum()), 3), "ndays": ndays}
+    out = {"n_matched": int(ok.sum()), "n_records": int(len(rec_t)), "P_sum_matched": round(float(P.sum()), 5),
+           "P_sum_all": round(float(pnl_pct.sum()), 5), "ndays": ndays}
 
     def per_day(mask):
-        """年ごとの 1 日あたり(bp)と、全期間の日ごとの系列の平均と 95% の幅。"""
-        row = {y: round(float(P[mask & (yr == y)].sum()) / ndays[y], 2) for y in years}
+        """年ごとの 1 日あたり(%)と、全期間の日ごとの系列の平均と 95% の幅。"""
+        row = {y: round(float(P[mask & (yr == y)].sum()) / ndays[y], 4) for y in years}
         d = np.zeros(len(uday))
         np.add.at(d, np.searchsorted(uday, day[mask]), P[mask])
-        row["all"] = round(float(d.mean()), 2)
+        row["all"] = round(float(d.mean()), 4)
         row["all_ci"] = boot_ci(d)
         sub = np.isin(uday, [u for u in uday if year_of_day[u] >= 2022])
-        row["2022-23"] = round(float(d[sub].mean()), 2)
+        row["2022-23"] = round(float(d[sub].mean()), 4)
         row["2022-23_ci"] = boot_ci(d[sub])
         return row
 
@@ -87,7 +89,7 @@ def main() -> int:
                     # 前提の列: 中心から離れた側への次の分の値動き(+ なら続く、− なら戻る)
                     "premise_bp": {y: round(float((side[m & (yr == y)] * R[m & (yr == y)]).mean()), 3)
                                    for y in years} | {"all": round(float((side[m] * R[m]).mean()), 3)},
-                    "card_P_per_held_min": round(float(P[ex].mean()), 3) if ex.any() else None})
+                    "card_P_per_held_min": round(float(P[ex].mean()), 5) if ex.any() else None})
     out["ratio_deciles"] = dec
     print(json.dumps(out, ensure_ascii=False, indent=1))
     return 0

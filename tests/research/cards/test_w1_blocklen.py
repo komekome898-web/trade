@@ -117,7 +117,7 @@ def test_the_length_comes_from_the_pnl_series_not_the_exposure():
     x = ar1(0.995, N, W.SEED_AR1) * 1e-3  # test values
     p = _pnl(x, np.ones(N))
     L, how = block_length(p)
-    assert L == math.ceil(politis_white(p.pnl_bp).b) and L > MIN_BLOCK_BARS
+    assert L == math.ceil(politis_white(p.pnl_pct).b) and L > MIN_BLOCK_BARS
     assert how["median_nonzero_run"] == float(N)  # the old rule's run, shown as a diagnostic only
     broken = max(math.ceil(politis_white(p.exposure).b), MIN_BLOCK_BARS)
     assert broken != L

@@ -343,17 +343,27 @@ def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
             rows = list(csv.DictReader(f))
     except OSError:
         return None
-    trades = [r for r in rows if r.get("net_bps")]
+    # net_pct = net_yen / (entry_px * multiplier) * 100. A ledger written
+    # before L-920 holds the same rate as net_bps (x 1e4); read it and
+    # convert to percent (/ 100) so old files keep rendering.
+    def _net_pct(r: dict[str, str]) -> float | None:
+        if r.get("net_pct"):
+            return float(r["net_pct"])
+        if r.get("net_bps"):
+            return float(r["net_bps"]) / 100
+        return None
+
+    trades = [r for r in rows if _net_pct(r) is not None]
     skipped = len(rows) - len(trades)
     if not trades:
         return {"trades": 0, "skipped": skipped, "age_sec": info["age_sec"]}
-    net_bps = [float(r["net_bps"]) for r in trades]
+    net_pct = [_net_pct(r) for r in trades]
     cum_yen = sum(float(r["net_yen"]) for r in trades)
     state = "OK"
     for win, (warn, stop) in guards.items():
-        if len(net_bps) < win:
+        if len(net_pct) < win:
             continue
-        cum_pct = sum(net_bps[-win:]) / 1e4 * 100
+        cum_pct = sum(net_pct[-win:])
         if cum_pct < stop:
             state = "停止"
             break
@@ -371,7 +381,7 @@ def _on1_paper(path: Path, now: float) -> dict[str, Any] | None:
         "trades": len(trades),
         "skipped": skipped,
         "cum_net_yen": round(cum_yen),
-        "mean_net_bps": round(sum(net_bps) / len(net_bps), 2),
+        "mean_net_pct": round(sum(net_pct) / len(net_pct), 4),
         "last_exit_date": trades[-1].get("exit_date"),
         "guard": state,
         "friction_yen": friction,
@@ -759,7 +769,7 @@ def collect_status(root: str | Path = ".", now: float | None = None) -> dict[str
                 "age_sec": round(bot_age, 1) if bot_age is not None else None,
             },
             # retired 2026-08-21 after the formal paper rejection (report
-            # #16, -3.83bps vs the +5bps bar); start_all no longer launches
+            # #16, net -0.0383% per trade vs the +0.05% bar); start_all no longer launches
             # it. The pill stays as a record, not a liveness signal.
             "scalper": {
                 "state": "retired",

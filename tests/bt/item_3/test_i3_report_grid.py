@@ -43,16 +43,16 @@ def _trades(n, seed):
     return out
 
 
-def test_per_trade_bp_grid():
+def test_per_trade_pct_grid():
     tr = _trades(400, 1)
-    got = M.per_trade_bp(tr)
+    got = M.per_trade_pct(tr)
     for t, g in zip(tr, got):
         s = 1 if t["side"] == "buy" else -1
-        want = (s * (t["exit_px"] - t["entry_px"]) * t["qty"] - t["fees"]) / (t["entry_px"] * t["qty"]) * 1e4
+        want = (s * (t["exit_px"] - t["entry_px"]) * t["qty"] - t["fees"]) / (t["entry_px"] * t["qty"]) * 100
         assert g == pytest.approx(want, rel=1e-9, abs=1e-9)
     d = M.trade_distribution(tr)
     assert d["neg_frac"] == sum(1 for x in got if x < 0) / len(got)
-    assert d["bp_per_hour"] == pytest.approx(sum(got) / (sum(t["exit_t_ns"] - t["entry_t_ns"] for t in tr) / H))
+    assert d["pct_per_hour"] == pytest.approx(sum(got) / (sum(t["exit_t_ns"] - t["entry_t_ns"] for t in tr) / H))
 
 
 def _q7(xs, p):

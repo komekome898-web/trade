@@ -74,7 +74,7 @@ def test_dashboard_grid(tmp_path):
             for t in v["tabs"]:
                 assert (BV.WARNING in t["text"]) == (purpose == "動作確認") == (BV.WARNING in t["html"])
             m = json.loads((Path(res.run_dir) / "metrics.json").read_text(encoding="utf-8"))["data"]["trades"]
-            assert v["values"] == {"per_trade_bp": m["per_trade_bp"], "neg_frac": m["neg_frac"]}
+            assert v["values"] == {"per_trade_pct": m["per_trade_pct"], "neg_frac": m["neg_frac"]}
             check = next(t for t in v["tabs"] if t["label"] == "検証")
             assert ("mde" in check["text"]) == (val is not None)
             rep = next(t for t in v["tabs"] if t["label"] == "再現性")

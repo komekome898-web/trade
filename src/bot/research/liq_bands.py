@@ -16,7 +16,7 @@
    (a) 出来高の山(volume-at-price の上位) / (b) 建玉の山(OI 増分の上位) /
    (c) 現在値からの乖離(レバレッジ倍率の仮定による素朴な線)。
 4. `match_liquidations_to_bands` — 実際の清算と 3 の候補帯を突き合わせ、
-   **1 清算イベント = 1 行**で手法ごとに(帯に入ったか・距離 bp)を返す。
+   **1 清算イベント = 1 行**で手法ごとに(帯に入ったか・距離 %)を返す。
 
 補助として `build_candidates_at`(1→2→3 を 1 回の `t_ms` でまとめて呼ぶ配線)、
 Binance COIN-M の aggTrades/metrics zip ローダー、CSV 書き出しを用意する。
@@ -77,7 +77,7 @@ from bot.research.liq_response import (  # noqa: F401  (LiquidationEvent 等は�
 # 既定値(すべて判断の置き所。事前登録前にリードが見直す前提)
 # --------------------------------------------------------------------------- #
 
-#: 価格の刻み(USD)。約 30,000〜70,000 の BTC 価格帯に対しては約 1〜17bp 相当。
+#: 価格の刻み(USD)。約 30,000〜70,000 の BTC 価格帯に対しては値段に対して約 0.01〜0.17 % 相当。
 #: 原文・データ台帳に指定が無いため置いた既定値。
 DEFAULT_PRICE_BIN_SIZE: float = 50.0
 
@@ -92,8 +92,9 @@ DEFAULT_TOP_K: int = 3
 #: をカバーする目的で置いたが、対象取引所の実際のレバレッジ分布は未確認。
 DEFAULT_LEVERAGE_MULTIPLES: tuple[float, ...] = (5.0, 10.0, 25.0, 50.0, 100.0)
 
-#: 手法 (c) の各センターに持たせる半width(bp)。原文に指定が無いため置いた既定値。
-DEFAULT_NAIVE_BAND_HALF_WIDTH_BP: float = 25.0
+#: 手法 (c) の各センターに持たせる半width(%。センターの値段に対する率。L-920・L-923 で値動き率でないので bp と呼ばない。
+#: 前の既定と同じ幅)。原文に指定が無いため置いた既定値。
+DEFAULT_NAIVE_BAND_HALF_WIDTH_PCT: float = 0.25
 
 #: 候補帯を作った後、清算をどれだけ先まで見て照合するか(ms、既定24時間)。
 #: `scripts/measure_liq_bands.py` の複数起点ループでのみ使う。原文に指定が無いため
@@ -352,7 +353,7 @@ def candidate_bands(
     t_ms: int,
     top_k: int = DEFAULT_TOP_K,
     leverage_multiples: Sequence[float] = DEFAULT_LEVERAGE_MULTIPLES,
-    naive_band_half_width_bp: float = DEFAULT_NAIVE_BAND_HALF_WIDTH_BP,
+    naive_band_half_width_pct: float = DEFAULT_NAIVE_BAND_HALF_WIDTH_PCT,
 ) -> BandCandidates:
     """1・2 の分布から清算価格帯の候補を並べて出す。**手法を 1 つに決めない**。
 
@@ -365,8 +366,8 @@ def candidate_bands(
       `long_center = current_price * (1 - 1/L)`(その価格まで下がるとロングが
       その倍率で全損する、という維持率・逆選択・資金調達を無視した最も粗い近似)、
       `short_center = current_price * (1 + 1/L)`。各センターの
-      `± naive_band_half_width_bp` を帯にする。**`leverage_multiples` の既定値と
-      `naive_band_half_width_bp` の既定値はいずれも判断の置き所**
+      `± naive_band_half_width_pct` を帯にする。**`leverage_multiples` の既定値と
+      `naive_band_half_width_pct` の既定値はいずれも判断の置き所**
       (module docstring の `DEFAULT_*` 定義を参照)。
     """
     by_method: dict[str, list[Band]] = {"a": [], "b": [], "c": []}
@@ -383,7 +384,7 @@ def candidate_bands(
             Band(method="b", label=f"oi_rank{rank}", low=low, high=low + oi_profile.bin_size, weight=w)
         )
 
-    half = naive_band_half_width_bp / 10_000.0
+    half = naive_band_half_width_pct / 100.0
     for lev in leverage_multiples:
         long_center = current_price * (1.0 - 1.0 / lev)
         short_center = current_price * (1.0 + 1.0 / lev)
@@ -410,12 +411,12 @@ _METHODS: tuple[str, ...] = ("a", "b", "c")
 
 
 def match_liquidation_to_bands(event_price: float, candidates: BandCandidates) -> dict:
-    """1 件の清算価格を候補帯と突き合わせる。手法ごとに `in_band_{m}` / `distance_bp_{m}`。
+    """1 件の清算価格を候補帯と突き合わせる。手法ごとに `in_band_{m}` / `distance_pct_{m}`。
 
     候補が無い手法(`by_method[m]` が空)は両方 `float("nan")` にする(判定不可を明示。
     `False`/`0.0` にはしない — 「帯の外」と「候補が無い」は異なる状態のため)。
     候補が複数ある手法は、最も近い(距離が最小の)帯を採用する。帯の内側は距離 0。
-    距離は「帯の外にある場合、最も近い辺までの距離」を `event_price` に対する bp で表す
+    距離は「帯の外にある場合、最も近い辺までの距離」を `event_price` に対する % で表す
     (符号は付けない絶対値)。
     """
     out: dict = {}
@@ -423,20 +424,20 @@ def match_liquidation_to_bands(event_price: float, candidates: BandCandidates) -
         bands = candidates.by_method.get(method, [])
         if not bands:
             out[f"in_band_{method}"] = float("nan")
-            out[f"distance_bp_{method}"] = float("nan")
+            out[f"distance_pct_{method}"] = float("nan")
             continue
         in_band = False
-        min_dist_bp = None
+        min_dist_pct = None
         for b in bands:
             if b.low <= event_price <= b.high:
                 in_band = True
-                dist_bp = 0.0
+                dist_pct = 0.0
             else:
-                dist_bp = min(abs(event_price - b.low), abs(event_price - b.high)) / event_price * 10_000.0
-            if min_dist_bp is None or dist_bp < min_dist_bp:
-                min_dist_bp = dist_bp
+                dist_pct = min(abs(event_price - b.low), abs(event_price - b.high)) / event_price * 100.0
+            if min_dist_pct is None or dist_pct < min_dist_pct:
+                min_dist_pct = dist_pct
         out[f"in_band_{method}"] = in_band
-        out[f"distance_bp_{method}"] = 0.0 if in_band else min_dist_bp
+        out[f"distance_pct_{method}"] = 0.0 if in_band else min_dist_pct
     return out
 
 
@@ -446,7 +447,7 @@ def match_liquidations_to_bands(
     """`events` を候補帯と突き合わせ、1 清算イベント = 1 行の表にする。
 
     列は最低限: 時刻(`ts_ms`/`ts_utc`)・取引所・清算価格・向き・サイズ・
-    手法ごとの `in_band_{a,b,c}`/`distance_bp_{a,b,c}`・予測の起点時刻
+    手法ごとの `in_band_{a,b,c}`/`distance_pct_{a,b,c}`・予測の起点時刻
     (`origin_t_ms`/`origin_t_utc`)。加えて起点時点の資金調達率・L/S比(いずれも
     引けなければ NaN)。行は落とさない(候補が無い手法の列だけ NaN にする)。
     """
@@ -487,7 +488,7 @@ def build_candidates_at(
     long_short_series: PriceSeries | None = None,
     top_k: int = DEFAULT_TOP_K,
     leverage_multiples: Sequence[float] = DEFAULT_LEVERAGE_MULTIPLES,
-    naive_band_half_width_bp: float = DEFAULT_NAIVE_BAND_HALF_WIDTH_BP,
+    naive_band_half_width_pct: float = DEFAULT_NAIVE_BAND_HALF_WIDTH_PCT,
     current_price_max_staleness_ms: int | None = 300_000,
     oi_price_max_staleness_ms: int | None = 300_000,
 ) -> BandCandidates | None:
@@ -516,7 +517,7 @@ def build_candidates_at(
     return candidate_bands(
         vol_profile, oi_profile, current_price, t_ms,
         top_k=top_k, leverage_multiples=leverage_multiples,
-        naive_band_half_width_bp=naive_band_half_width_bp,
+        naive_band_half_width_pct=naive_band_half_width_pct,
     )
 
 
@@ -527,8 +528,8 @@ def build_candidates_at(
 CSV_COLUMNS: tuple[str, ...] = (
     "ts_ms", "ts_utc", "exchange", "liq_price", "side", "qty",
     "origin_t_ms", "origin_t_utc",
-    "in_band_a", "distance_bp_a",
-    "in_band_b", "distance_bp_b",
-    "in_band_c", "distance_bp_c",
+    "in_band_a", "distance_pct_a",
+    "in_band_b", "distance_pct_b",
+    "in_band_c", "distance_pct_c",
     "funding_rate_at_t", "long_short_ratio_at_t",
 )

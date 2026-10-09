@@ -245,7 +245,7 @@ def test_window_reads_cover_the_2022_file_too(root, monkeypatch):
 # --- --measure-from -----------------------------------------------------------------------------------
 
 def _trade(entry, exit_):
-    return {"entry_ns": entry, "exit_ns": exit_, "pnl_bp": 1.0, "undecided": 0}
+    return {"entry_ns": entry, "exit_ns": exit_, "pnl_pct": 1.0, "undecided": 0}
 
 
 def test_split_measured_excludes_trades_before_measure_from():

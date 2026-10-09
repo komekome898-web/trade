@@ -1,6 +1,6 @@
 {
   "dataset": "etf_measure_ledger",
-  "description": "Cash-ETF closing/opening auction fill-cost measurement (docs/PHASE2/EXEC_MEASUREMENT/PREREG.md). One row per round trip: buy 1 trading unit of 1343, 1591 or 1348 at the closing auction with 引成 (FrontOrderType 16) and sell it at the next opening auction with 寄成 (FrontOrderType 13), 50 round trips per symbol (1348 added by the owner decision in PREREG.md 追記 2026-09-06, pass bar 2.7 bps), to replace the ASSUMED 'one tick per side' rounding cost with a measured round-trip execution cost c. Written by src/bot/jpx/etf_auction_executor.py; the ledger row is finalised on a LATER day than the trade, once /orders exposes the fill Details.",
+  "description": "Cash-ETF closing/opening auction fill-cost measurement (docs/PHASE2/EXEC_MEASUREMENT/PREREG.md). One row per round trip: buy 1 trading unit of 1343, 1591 or 1348 at the closing auction with 引成 (FrontOrderType 16) and sell it at the next opening auction with 寄成 (FrontOrderType 13), 50 round trips per symbol (1348 added by the owner decision in PREREG.md 追記 2026-09-06, pass bar 0.027 % of the price, written there as 2.7 bps), to replace the ASSUMED 'one tick per side' rounding cost with a measured round-trip execution cost c. Written by src/bot/jpx/etf_auction_executor.py; the ledger row is finalised on a LATER day than the trade, once /orders exposes the fill Details.",
   "path_glob": [
     "paper_logs/etf_measure_ledger.csv",
     "data/etf_measure/events.jsonl",
@@ -140,32 +140,32 @@
           "tz": null,
           "notes": "duplicated from config/constants.yaml jpx_cash_equity.etf_tick_size_yen_by_price_band; a test pins the two copies together"
         },
-        "tick_bps": {
-          "meaning": "tick_yen / print_close in bps",
-          "unit": "bps",
+        "tick_pct": {
+          "meaning": "tick_yen / print_close in percent",
+          "unit": "percent",
           "tz": null,
-          "notes": null
+          "notes": "named tick_bps (x 100) in ledgers written before 2026-10-09; read_ledger converts, append_ledger_row rewrites such a file once and keeps the original as <file>.pre_l920.bak (not a price move, so not bp: L-920/L-923)"
         },
-        "e_buy_bps": {
-          "meaning": "(fill_buy - print_close) / print_close in bps; positive = bought above the print",
-          "unit": "bps",
+        "e_buy_pct": {
+          "meaning": "(fill_buy - print_close) / print_close in percent; positive = bought above the print",
+          "unit": "percent",
           "tz": null,
-          "notes": null
+          "notes": "named e_buy_bps (x 100) before 2026-10-09"
         },
-        "e_sell_bps": {
-          "meaning": "(print_open - fill_sell) / print_open in bps; positive = sold below the print",
-          "unit": "bps",
+        "e_sell_pct": {
+          "meaning": "(print_open - fill_sell) / print_open in percent; positive = sold below the print",
+          "unit": "percent",
           "tz": null,
-          "notes": null
+          "notes": "named e_sell_bps (x 100) before 2026-10-09"
         },
-        "c_bps": {
-          "meaning": "round-trip execution cost: printed overnight return minus realised overnight return, plus commission in bps. THE quantity the measurement exists to produce",
-          "unit": "bps",
+        "c_pct": {
+          "meaning": "round-trip execution cost: printed overnight return minus realised overnight return, plus commission, in percent. THE quantity the measurement exists to produce",
+          "unit": "percent",
           "tz": null,
-          "notes": "defined as the subtraction; e_buy + e_sell is only a first-order check and a disagreement above 0.5bps is flagged in note"
+          "notes": "defined as the subtraction; e_buy + e_sell is only a first-order check and a disagreement above 0.005 % is flagged in note. Named c_bps (x 100) before 2026-10-09"
         },
         "c_ticks": {
-          "meaning": "c_bps expressed in ticks (c_bps / tick_bps)",
+          "meaning": "c_pct expressed in ticks (c_pct / tick_pct)",
           "unit": "ticks",
           "tz": null,
           "notes": null

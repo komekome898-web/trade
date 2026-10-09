@@ -29,11 +29,13 @@ touched. Two independent, idempotent appends per run:
 2. Basis (FX_BTC_JPY vs BTC_JPY) -> data/basis_log.csv (new file). Two
    independent measures per row:
        - mid-to-mid from the public tickers (/v1/getticker), taken at call
-         time: fx_mid, spot_mid, basis_bp = (fx_mid/spot_mid - 1) * 1e4.
+         time: fx_mid, spot_mid, basis_pct = (fx_mid/spot_mid - 1) * 100
+         (two prices at the same moment, not a price move over time, so it
+         is not called bp -- L-920/L-923).
        - the latest 1-minute CLOSE basis from data/candles_FX_BTC_JPY.csv /
          data/candles_BTC_JPY.csv, IF those files are present (best-effort;
          candle_ts_fx/candle_ts_spot/fx_close_1m/spot_close_1m/
-         basis_close_bp are left blank otherwise). These two candle files
+         basis_close_pct are left blank otherwise). These two candle files
          are not necessarily updated on the same cadence as this script, so
          their timestamps are recorded alongside the values rather than
          assumed to be "now".
@@ -50,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import shutil
 import sys
 import time
 from datetime import datetime, timezone
@@ -69,9 +72,12 @@ FX_PRODUCT = "FX_BTC_JPY"
 SPOT_PRODUCT = "BTC_JPY"
 
 FUNDING_FIELDS = ["calculation_date", "settlement_date", "rate"]
-BASIS_FIELDS = ["ts_utc", "fx_mid", "spot_mid", "basis_bp",
+BASIS_FIELDS = ["ts_utc", "fx_mid", "spot_mid", "basis_pct",
                 "candle_ts_fx", "candle_ts_spot", "fx_close_1m", "spot_close_1m",
-                "basis_close_bp"]
+                "basis_close_pct"]
+# Columns of basis_log.csv files written before 2026-10-09 (same quantity x 100):
+# old name -> new name. See _migrate_legacy_basis_csv.
+LEGACY_BASIS_COLUMNS = {"basis_bp": "basis_pct", "basis_close_bp": "basis_close_pct"}
 
 # Ordered candidate JSON keys, most-likely-first (see module docstring).
 RATE_KEYS = ("rate", "funding_rate", "current_funding_rate")
@@ -232,7 +238,7 @@ def collect_basis(client: BitflyerClient) -> tuple[dict, list[str]]:
         if fx_mid is not None and spot_mid is not None and spot_mid != 0:
             row["fx_mid"] = fx_mid
             row["spot_mid"] = spot_mid
-            row["basis_bp"] = (fx_mid / spot_mid - 1.0) * 1e4
+            row["basis_pct"] = (fx_mid / spot_mid - 1.0) * 100
         else:
             warnings.append("ticker: could not compute mid for fx and/or spot")
     except (BitflyerError, NetworkError) as e:
@@ -245,13 +251,48 @@ def collect_basis(client: BitflyerClient) -> tuple[dict, list[str]]:
     if spot_candle is not None:
         row["candle_ts_spot"], row["spot_close_1m"] = spot_candle
     if fx_candle is not None and spot_candle is not None and spot_candle[1]:
-        row["basis_close_bp"] = (fx_candle[1] / spot_candle[1] - 1.0) * 1e4
+        row["basis_close_pct"] = (fx_candle[1] / spot_candle[1] - 1.0) * 100
 
     return row, warnings
 
 
+def _migrate_legacy_basis_csv(path: Path) -> None:
+    """Rewrite a basis_log.csv written before 2026-10-09 (columns basis_bp /
+    basis_close_bp, x 1e4) to the current columns (basis_pct / basis_close_pct,
+    x 100 = old / 100), so new rows append under a matching header. Atomic
+    (temp file + replace); a file already in the current form is untouched."""
+    if not path.exists() or path.stat().st_size == 0:
+        return
+    with path.open(encoding="utf-8", newline="") as f:
+        rd = csv.DictReader(f)
+        header = list(rd.fieldnames or [])
+        if not any(c in LEGACY_BASIS_COLUMNS for c in header):
+            return
+        rows = list(rd)
+    new_header = [LEGACY_BASIS_COLUMNS.get(c, c) for c in header]
+    out = []
+    for r in rows:
+        n = {}
+        for c in header:
+            v = r.get(c, "")
+            if c in LEGACY_BASIS_COLUMNS:
+                v = "" if v in ("", None) else repr(float(v) / 100)
+            n[LEGACY_BASIS_COLUMNS.get(c, c)] = v
+        out.append(n)
+    bak = path.with_suffix(path.suffix + ".pre_l920.bak")  # 書き換える前の元(列名・値とも元のまま)を残す
+    if not bak.exists():
+        shutil.copy2(path, bak)
+    tmp = path.with_suffix(path.suffix + ".migrating")
+    with tmp.open("w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=new_header)
+        w.writeheader()
+        w.writerows(out)
+    tmp.replace(path)
+
+
 def _append_basis_row(path: Path, row: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    _migrate_legacy_basis_csv(path)
     write_header = not path.exists() or path.stat().st_size == 0
     with path.open("a", encoding="utf-8", newline="") as f:
         w = csv.DictWriter(f, fieldnames=BASIS_FIELDS)

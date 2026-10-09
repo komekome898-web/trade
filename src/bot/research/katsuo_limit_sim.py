@@ -718,7 +718,8 @@ class KatsuoLimitSim:
         tr = st.trade
         if tr is not None and tr["side"] != side:
             cq = min(qty, tr["size"])
-            tr["pnl"] += tr["side"] * (px / tr["avg"] - 1.0) * 1e4 * cq  # 約定ごと(仕様 5)
+            # 約定ごと(仕様 5)。量で重みを付けた損益の率なので % で持つ(L-920: bp は値動き率だけの名前)
+            tr["pnl"] += tr["side"] * (px / tr["avg"] - 1.0) * 100.0 * cq
             tr["size"] -= cq
             qty -= cq
             st.pos += side * cq
@@ -746,7 +747,7 @@ class KatsuoLimitSim:
     def _row(tr: dict) -> dict:
         return {"entry_ns": tr["entry_ns"], "exit_ns": tr["exit_ns"], "side": tr["side"], "max_size": tr["max_size"],
                 "entry_price": tr["avg"], "exit_price": tr["exit_price"], "exit_reason": tr["exit_reason"],
-                "pnl_bp": tr["pnl"], "undecided": tr["und"], "small": tr["small"], "big": tr["big"], "r": tr["r"],
+                "pnl_pct": tr["pnl"], "undecided": tr["und"], "small": tr["small"], "big": tr["big"], "r": tr["r"],
                 "signal_ns": tr["t_sig"], "strength": tr["strength"], "h1": tr["h1"], "vol_prev": tr["vol"],
                 "vol_tercile": tr["tercile"], "exit_signal": tr["xsig"],
                 "exit_signal_ns": tr["t_xsig"]}
@@ -765,7 +766,7 @@ class KatsuoLimitSim:
         v = math.fsum(tr["pnl"] for tr in st.closed)
         tr = st.trade
         if tr is not None:
-            v += tr["pnl"] + tr["side"] * (c / tr["avg"] - 1.0) * 1e4 * tr["size"]
+            v += tr["pnl"] + tr["side"] * (c / tr["avg"] - 1.0) * 100.0 * tr["size"]  # tr["pnl"] と同じ %
         return v
 
     def _bar(self, o: float, h: float, lo: float, c: float, start: int, t_end: int) -> list:

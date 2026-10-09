@@ -4,7 +4,9 @@ The cards' display output is written by scripts/dashboard_cards/ into <runs dir>
 
     cards/manifest.json                          {version, git_sha, total_bytes, variants: [row], excluded: [row]}
     cards/<card>/<variant>/trades.json.gz        the column form (version, t_unit, entry_t_ns, entry_px, exit_t_ns, ...)
-    cards/<card>/<variant>/daily.csv             day, pnl_bp, n
+    cards/<card>/<variant>/daily.csv             day, pnl_bp, n   (pnl_bp = the card's pnl rate x 1e4; read as pnl_pct =
+                                                 pnl_bp / 100, since bp names only a price-move rate (L-920);
+                                                 a pnl_pct column, when present, is read as is)
     cards/<card>/<variant>/provenance.json       where the numbers come from and what was checked
 
 This module only READS them (it never writes under cards/). What it decides:
@@ -169,7 +171,7 @@ def _daily_complete(p: Path, st: os.stat_result) -> Optional[str]:
         if not rows:
             why = "daily.csv が空(書きかけ)"
         for r in rows:
-            float(r["pnl_bp"])
+            _daily_pct(r)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         why = f"daily.csv を読めない(書きかけ): {type(exc).__name__}"
     with _LOCK:
@@ -299,7 +301,7 @@ def _iso_ns(s: Any) -> Optional[int]:
 def record_of(ref: CardRef) -> dict:
     """A record shaped like a run's record.json for the parts of the tab that read one: the traded instrument (from the
     ledger), the period (from the manifest row, else provenance), no data entries (the card's own inputs are named in
-    `_card.data_dirs_read`), no currency (the column form holds bp only)."""
+    `_card.data_dirs_read`), no currency (the column form holds a rate only)."""
     prov = provenance(ref)
     per = ref.row.get("period") or prov.get("period") or [None, None]
     ct = T.card_theme(ref.card)
@@ -322,17 +324,24 @@ def info(ref: CardRef, trades_cut: Optional[int] = None) -> dict:
             "n_trades_cut": trades_cut, "trade_definition": prov.get("trade_definition"), "git_sha": prov.get("git_sha"),
             "manifest_git_sha": ref.man.git_sha, "seal": prov.get("seal"), "data_dirs_read": list(prov.get("data_dirs_read") or []),
             "research_cmd": (prov.get("script") or {}).get("research_cmd"), "export": (prov.get("script") or {}).get("export"),
-            "bp_note": T.BP_NOTE_LIMIT if ref.variant.startswith("limit_") else T.BP_NOTE,
+            "rate_note": T.RATE_NOTE_LIMIT if ref.variant.startswith("limit_") else T.RATE_NOTE,
             "seconds": row.get("seconds"), "instrument": ct.get("instrument") if ct else None,
             "instrument_source": ct.get("instrument_source") if ct else None}
 
 
+def _daily_pct(r: dict) -> float:
+    """A daily.csv row's pnl rate in percent: the column pnl_pct, else the exported pnl_bp / 100 (see the module doc)."""
+    if r.get("pnl_pct") not in (None, ""):
+        return float(r["pnl_pct"])
+    return float(r["pnl_bp"]) / 100
+
+
 def daily_rows(ref: CardRef) -> list:
     with open(ref.dir / "daily.csv", "r", encoding="utf-8", newline="") as fh:
-        return [(r["day"], float(r["pnl_bp"])) for r in csv.DictReader(fh)]
+        return [(r["day"], _daily_pct(r)) for r in csv.DictReader(fh)]
 
 
-def daily_drawdown_bp(ref: CardRef) -> float:
+def daily_drawdown_pct(ref: CardRef) -> float:
     """The research's maximum drawdown (scripts/w4_measure/light_b2.py extra_stats): the largest fall of the running sum of
     the daily profits (daily.csv, one row per day) below its running peak, the sum starting at 0."""
     s = 0.0
@@ -364,24 +373,27 @@ def headline(ref: CardRef, stats: dict, n_after_cut: int) -> tuple[dict, dict]:
         out["wins"] = int(round(out["win_rate"] * git_tr["n"]))
         src["win_rate"] = "研究の値(provenance に写した extra.json の trades。書き出しの丸めの影響を受けない)"
     else:
-        src["win_rate"] = "書き出した取引から計算(pnl_bp の小数 4 桁の丸めで、微小な勝ちが 0 になり、研究の数とわずかにずれることがある)"
+        src["win_rate"] = "書き出した取引から計算(書き出しの列 pnl_bp(損益の率 × 1 万)の小数 4 桁の丸めで、微小な勝ちが 0 になり、研究の数とわずかにずれることがある)"
     if uncut:
         try:
-            out["max_dd_bp"] = daily_drawdown_bp(ref)
+            out["max_dd_pct"] = daily_drawdown_pct(ref)
             src["max_dd"] = "daily.csv から日ごとに計算(研究と同じ定義: 日ごとの損益の累計の、それまでの最高値からの最大の落ち込み)"
         except (OSError, ValueError, KeyError):
             src["max_dd"] = "取引ごとの累計から計算(研究の定義ではない)"
     else:
         src["max_dd"] = "取引ごとの累計から計算(封印の境で取引を切ったため daily.csv は使えない。研究の定義ではない)"
     src["n"] = "書き出した取引の数(封印の境で切った後)"
-    src["research_max_dd_bp"] = (git_dd or {}).get("max_bp") if isinstance(git_dd, dict) else None
+    # the research's extra.json holds its drawdown x 1e4 under max_bp; shown in percent (/ 100) like the rest (L-920)
+    _mb = (git_dd or {}).get("max_bp") if isinstance(git_dd, dict) else None
+    src["research_max_dd_pct"] = None if _mb is None else float(_mb) / 100
     return out, src
 
 
-def daily_sum_bp(ref: CardRef) -> float:
-    """Sum of daily.csv's pnl_bp (what the check "the daily file and the trades agree" compares to the trades' sum)."""
+def daily_sum_pct(ref: CardRef) -> float:
+    """Sum of daily.csv's pnl rate in percent (what the check "the daily file and the trades agree" compares to the
+    trades' sum)."""
     with open(ref.dir / "daily.csv", "r", encoding="utf-8", newline="") as fh:
-        return float(sum(float(r["pnl_bp"]) for r in csv.DictReader(fh)))
+        return float(sum(_daily_pct(r) for r in csv.DictReader(fh)))
 
 
 # ---- the catalog ------------------------------------------------------------------------------------------------

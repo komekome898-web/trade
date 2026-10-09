@@ -82,7 +82,7 @@ def _run(d: Path, *, last_ns=None, range_ns=None, asset="crypto", path="backtest
                                                if f.exists() else {},
                                                "currency": "USD"}), encoding="utf-8")
     (d / "repro.json").write_text(json.dumps({"runs": 2, "identical": True, "sha256": {}}), encoding="utf-8")
-    m = {"purpose": "m", "data": {"trades": {"n": n, "per_trade_bp": [1.0] * n, "neg_frac": 0.0}}}
+    m = {"purpose": "m", "data": {"trades": {"n": n, "per_trade_pct": [1.0] * n, "neg_frac": 0.0}}}
     (d / "metrics.json.gz").write_bytes(gzip.compress(json.dumps(m).encode()))
     (d / "trades.json").write_text(json.dumps({"purpose": "t", "data": [{"id": i} for i in range(n)]}),
                                    encoding="utf-8")

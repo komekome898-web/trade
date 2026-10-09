@@ -221,7 +221,7 @@
       }
       $("bt-pnl").hidden = false; $("bt-pnl-cap").hidden = false;
       if (sum.ranges && sum.ranges.length && sum.ranges.indexOf(PX.opts.range) < 0) PX.opts.range = sum.range;
-      if (sum.pnl_derived) PX.opts.unit = "bp";
+      if (sum.pnl_derived) PX.opts.unit = "pct";
       renderStats();
       renderNotes();
       renderFrameBar();
@@ -243,13 +243,13 @@
     if (!c) { box.innerHTML = ""; return; }
     const li = a => (a || []).map(t => `<li>${esc(t)}</li>`).join("") || "<li>(なし)</li>";
     const hl = c.headline || {};
-    box.innerHTML = `<div class="warn" id="bt-card-bpnote">${esc(c.bp_note || "")}</div>` +
+    box.innerHTML = `<div class="warn" id="bt-card-ratenote">${esc(c.rate_note || "")}</div>` +
       `<div>見出しの数の出所: 勝率 = ${esc(hl.win_rate || "—")} / 最大の落ち込み = ${esc(hl.max_dd || "—")} / 取引数 = ${esc(hl.n || "—")}` +
-      `${hl.research_max_dd_bp != null ? "(研究の最大の落ち込み " + num(hl.research_max_dd_bp, 1) + " bp)" : ""}</div>` +
+      `${hl.research_max_dd_pct != null ? "(研究の最大の落ち込み " + num(hl.research_max_dd_pct, 3) + " %)" : ""}</div>` +
       `<details open><summary>照合の範囲(研究のカード ${esc(c.card)} / 変種 ${esc(c.variant)})</summary>` +
       `<div>照合した項目</div><ul>${li(c.verified_items)}</ul><div class="warn">照合していない項目</div><ul>${li(c.not_verified)}</ul>` +
       `<div>表示の条件: ${esc(c.display_ok_rule || "—")}</div>` +
-      `<div>取引は研究の台本を走らせ直して作った(取引数 ${num(c.n_trades_manifest)} 件${c.n_trades_cut != null && c.n_trades_cut !== c.n_trades_manifest ? "、封印の境で切って " + num(c.n_trades_cut) + " 件" : ""}、損益は bp だけで通貨の額は無い)。</div>` +
+      `<div>取引は研究の台本を走らせ直して作った(取引数 ${num(c.n_trades_manifest)} 件${c.n_trades_cut != null && c.n_trades_cut !== c.n_trades_manifest ? "、封印の境で切って " + num(c.n_trades_cut) + " 件" : ""}、損益は率(%)だけで通貨の額は無い)。</div>` +
       `<div>値付けの銘柄: ${esc(c.instrument || "—")}(出所: ${esc(c.instrument_source || "—")})</div>` +
       `<details><summary>取引の定義(provenance.json)</summary><div style="white-space:pre-wrap">${esc(c.trade_definition || "—")}</div>` +
       `<div>走らせ直しのコマンド: ${esc((c.research_cmd || []).join(" ")) || "—"}</div><div>データの置き場: ${esc((c.data_dirs_read || []).join(" / ")) || "—"}</div>` +
@@ -260,12 +260,12 @@
     const s = SUM.stats, u = unitName(), d = s.total == null ? 0 : moneyDigits(SUM.currency, s.total);
     const t = (k, v, cls, sub) => `<div class="tile"><div class="k">${k}</div><div class="v mono ${cls || ""}" style="font-size:20px;white-space:normal">${v}` +
       (sub ? ` <span class="sub">${sub}</span>` : "") + "</div></div>";
-    const tot = s.total == null ? s.total_bp : s.total;
+    const tot = s.total == null ? s.total_pct : s.total;
     $("bt-stats").innerHTML =
       t("取引数", num(s.n)) +
       t("勝率", s.win_rate == null ? "—" : (s.win_rate * 100).toFixed(1) + "%", "", `${num(s.wins)} 勝`) +
-      t(`累計損益(${s.total == null ? "bp" : u})`, s.total == null ? signed(s.total_bp, 0) : signed(s.total, d), tot > 0 ? "pos" : tot < 0 ? "neg" : "", s.total == null ? "通貨の額は記録に無い" : `${signed(s.total_bp, 0)} bp`) +
-      t(`最大の落ち込み(${s.max_dd == null ? "bp" : u})`, s.max_dd == null ? num(s.max_dd_bp, 0) : num(s.max_dd, d), "", s.max_dd == null ? "" : `${num(s.max_dd_bp, 0)} bp`) +
+      t(`累計損益(${s.total == null ? "%" : u})`, s.total == null ? signed(s.total_pct, 2) : signed(s.total, d), tot > 0 ? "pos" : tot < 0 ? "neg" : "", s.total == null ? "通貨の額は記録に無い" : `${signed(s.total_pct, 2)} %`) +
+      t(`最大の落ち込み(${s.max_dd == null ? "%" : u})`, s.max_dd == null ? num(s.max_dd_pct, 2) : num(s.max_dd, d), "", s.max_dd == null ? "" : `${num(s.max_dd_pct, 2)} %`) +
       t("期間(UTC・終わりの日を含む)", utc(SUM.period.first_s) + " 〜 " + utc(SUM.period.last_incl_s)) +
       (SUM.card ? t("カードの変種", esc(SUM.card.variant), "", esc(SUM.card.card)) : t("実行 ID", esc(SUM.run_id.slice(0, 10)), "", "内容のハッシュ"));
   }
@@ -276,7 +276,7 @@
     if (p.available) h += `<span class="${p.same_source ? "" : "warn"}">価格: ${esc(p.note)}</span>`;
     else h += `<span class="warn">チャートは出せない: ${esc(p.reason)}。累計損益だけ出す。</span>`;
     h += ` / 価格は ${esc(SUM.seal_boundary_iso)} より前だけ(封印の境)。時刻は UTC。`;
-    if (SUM.pnl_derived) h += ' <span class="warn">この実行の記録は bp だけで、通貨の額は無い。</span>';
+    if (SUM.pnl_derived) h += ' <span class="warn">この実行の記録は損益の率(%)だけで、通貨の額は無い。</span>';
     if (SUM.purpose === "動作確認") h += ' <span class="warn">動作確認の実行。相場の結論には使わない。</span>';
     if (!SUM.card) h += ` <a href="/backtest/run/${esc(SUM.run_id)}" target="_blank" style="color:var(--accent)">この実行の単独ページ(実行 ID ${esc(SUM.run_id)})</a>`;
     $("bt-price-note").innerHTML = h;
@@ -353,8 +353,8 @@
     let h = `<label><input type="checkbox" id="bt-o-arrows"${o.arrows ? " checked" : ""}> 線と矢印</label>` +
       `<label><input type="checkbox" id="bt-o-labels"${o.labels ? " checked" : ""}> 損益の数字(${MAX_TRADES_LABEL} 件まで)</label>` +
       `<div class="grp">損益の単位 <label style="display:inline"><input type="radio" name="bt-unit" value="ccy"${o.unit === "ccy" ? " checked" : ""}${noMoney ? " disabled" : ""}> ${esc(u)}</label>` +
-      ` <label style="display:inline"><input type="radio" name="bt-unit" value="bp"${o.unit === "bp" ? " checked" : ""}> bp</label></div>`;
-    if (noMoney) h += '<div class="hint">この実行の記録は bp だけ(通貨の額は無い)</div>';
+      ` <label style="display:inline"><input type="radio" name="bt-unit" value="pct"${o.unit === "pct" ? " checked" : ""}> %(建玉に対する損益の率)</label></div>`;
+    if (noMoney) h += '<div class="hint">この実行の記録は損益の率(%)だけ(通貨の額は無い)</div>';
     if (SUM.ranges && SUM.ranges.length > 1 && SUM.ranges_identical === false) {
       h += `<div class="grp">約定の幅 <select id="bt-o-range">` + SUM.ranges.map(r => `<option${r === o.range ? " selected" : ""}>${esc(r)}</option>`).join("") + "</select></div>";
     } else if (SUM.ranges && SUM.ranges.length > 1) {
@@ -371,9 +371,9 @@
   }
 
   function renderLegend() {
-    const u = PX.opts.unit === "bp" ? "bp" : unitName();
-    const bpn = SUM && SUM.card && SUM.card.bp_note ? `<span class="warn" id="bt-bpnote">${esc(SUM.card.bp_note)}</span>` : "";
-    $("bt-legend").innerHTML = bpn +
+    const u = PX.opts.unit === "pct" ? "%" : unitName();
+    const rn = SUM && SUM.card && SUM.card.rate_note ? `<span class="warn" id="bt-ratenote">${esc(SUM.card.rate_note)}</span>` : "";
+    $("bt-legend").innerHTML = rn +
       `<span><i style="border-color:${BUY}"></i>買い</span><span><i style="border-color:${SELL}"></i>売り</span>` +
       `<span><i style="border-color:#aab"></i>実線 = 勝ち</span><span><i style="border-top-style:dashed;border-color:#aab"></i>破線 = 負け</span>` +
       `<span><i style="border-color:${CUM}"></i>累計損益(${esc(u)})</span><span>点線の縦線 = 開始・終了</span><span>ホイールで拡大・縮小、ドラッグで移動</span>`;
@@ -503,8 +503,8 @@
   function setPnl() {
     const d = PX.data;
     if (!d || !PX.pnlSeries) return;
-    const k = PX.opts.unit === "bp" ? 2 : 1;
-    const pts = d.pnl, fmtF = k === 2 ? (v => num(v, 1)) : (v => num(v, moneyDigits(SUM.currency, v)));
+    const k = PX.opts.unit === "pct" ? 2 : 1;
+    const pts = d.pnl, fmtF = k === 2 ? (v => num(v, 3)) : (v => num(v, moneyDigits(SUM.currency, v)));
     PX.pnlSeries.applyOptions({priceFormat: {type: "custom", formatter: fmtF, minMove: 0.01}});
     let rows;
     if (SUM.price.available && d.bars.length) {
@@ -578,12 +578,12 @@
     });
     ctx.setLineDash([]);
     if (PX.opts.arrows) {
-      const trades = d.trades, labels = PX.opts.labels && trades.length <= MAX_TRADES_LABEL, bp = PX.opts.unit === "bp";
+      const trades = d.trades, labels = PX.opts.labels && trades.length <= MAX_TRADES_LABEL, pct = PX.opts.unit === "pct";
       for (const t of trades) {
         const x1 = xOf(t.et), x2 = xOf(t.xt), y1 = PX.candle.priceToCoordinate(t.ep), y2 = PX.candle.priceToCoordinate(t.xp);
         if (x1 == null || x2 == null || y1 == null || y2 == null) continue;
         if ((x1 < -50 && x2 < -50) || (x1 > plotW + 50 && x2 > plotW + 50)) continue;
-        const col = t.side > 0 ? BUY : SELL, win = (t.pnl == null ? t.bp : t.pnl) > 0;
+        const col = t.side > 0 ? BUY : SELL, win = (t.pnl == null ? t.pct : t.pnl) > 0;
         ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = win ? 1.6 : 1.2;
         ctx.globalAlpha = trades.length > 600 ? 0.65 : 1;
         ctx.setLineDash(win ? [] : [4, 3]);
@@ -598,7 +598,7 @@
         ctx.globalAlpha = 1;
         if (labels) {
           ctx.fillStyle = win ? WIN : LOSE; ctx.textAlign = "left";
-          ctx.fillText(bp ? signed(t.bp, 1) + "bp" : signed(t.pnl, moneyDigits(SUM.currency, t.pnl)), x2 + 5, y2 - 4);
+          ctx.fillText(pct ? signed(t.pct, 3) + "%" : signed(t.pnl, moneyDigits(SUM.currency, t.pnl)), x2 + 5, y2 - 4);
         }
         PX.segs.push({x1, y1, x2, y2, t});
       }
@@ -622,7 +622,7 @@
     const t = best.t, u = unitName();
     tip.textContent = `${t.side > 0 ? "買い" : "売り"}  ${t.pnl > 0 ? "勝ち" : t.pnl < 0 ? "負け" : "±0"}\n` +
       `建て ${utc(t.et, true)}  ${num(t.ep, 2)}\n決済 ${utc(t.xt, true)}  ${num(t.xp, 2)}\n` +
-      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.bp, 1)} bp\n${SUM.card && SUM.card.bp_note ? "※" + SUM.card.bp_note + "\n" : ""}決済理由 ${t.reason == null ? "—" : t.reason}`;
+      `損益 ${signed(t.pnl, moneyDigits(SUM.currency, t.pnl))} ${u} / ${signed(t.pct, 3)} %\n${SUM.card && SUM.card.rate_note ? "※" + SUM.card.rate_note + "\n" : ""}決済理由 ${t.reason == null ? "—" : t.reason}`;
     tip.style.display = "block";
     tip.style.left = Math.min(mx + 14, r.width - 260) + "px"; tip.style.top = Math.min(my + 14, r.height - 100) + "px";
   }

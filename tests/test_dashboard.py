@@ -1740,7 +1740,7 @@ def _fake_run(d, *, gz=True, purpose="研究", n=3):
         "purpose": purpose, "config": {"instrument": "XBTUSD"}, "setup": {"name": "s"}, "seed": None,
         "currency": "USD", "data": [], "engine": {"first_time_ns": 1, "last_time_ns": 2}}), encoding="utf-8")
     (d / "repro.json").write_text(json.dumps({"runs": 2, "identical": True, "sha256": {}}), encoding="utf-8")
-    metrics = {"purpose": "m", "data": {"trades": {"n": n, "per_trade_bp": [1.0] * n, "neg_frac": 0.0},
+    metrics = {"purpose": "m", "data": {"trades": {"n": n, "per_trade_pct": [1.0] * n, "neg_frac": 0.0},
                                         "pnl": {"realized": 1.5}}}
     trades = {"purpose": "t", "data": [{"id": i, "side": "buy", "qty": 1, "pnl": 0.5} for i in range(n)]}
     for name, doc in (("metrics", metrics), ("trades", trades)):

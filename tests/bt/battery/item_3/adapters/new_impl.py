@@ -202,9 +202,11 @@ class NewImpl:
         if op == "trade_metrics":
             trades = [dict(t, fees=0.0) for t in inp["trades"]]
             dist = P.trade_distribution(trades, inp.get("quantile_probs", (0.05, 0.25, 0.5, 0.75, 0.95)))
-            full = {"per_trade_bp": dist["per_trade_bp"], "quantiles": dist["quantiles"],
+            # fees 0 here, so per_trade_pct (after fees) x 100 is the price-move rate in bp (L-920)
+            full = {"per_trade_bp": [v * 100 for v in dist["per_trade_pct"]],
+                    "quantiles": {k: v * 100 for k, v in dist["quantiles"].items()},
                     "neg_frac": dist["neg_frac"], "exposure_hours": dist["trade_hours"],
-                    "bp_per_hour": dist["bp_per_hour"]}
+                    "bp_per_hour": None if dist["pct_per_hour"] is None else dist["pct_per_hour"] * 100}
             return {k: full[k] for k in inp["want"]}
         if op == "fill_metrics":
             r = P.fill_metrics([{"id": o["id"], "qty": o["qty"]} for o in inp["orders"]], inp["fills"],
@@ -245,7 +247,9 @@ class NewImpl:
                 v = json.loads(_get(port, f"/api/backtest/run/{rid}"))
                 run_tabs[rid] = [t["label"] for t in v["tabs"]]
                 tab_text[rid] = {t["label"]: t["text"] for t in v["tabs"]}
-                values[rid] = v["values"]
+                # fees 0 in the dashboard scene runs: per_trade_pct x 100 = price-move rate in bp (L-920)
+                values[rid] = {"per_trade_bp": [x * 100 for x in v["values"]["per_trade_pct"]],
+                               "neg_frac": v["values"]["neg_frac"]}
                 ext += _external("".join(t["html"] for t in v["tabs"]))
                 ext += _external(_get(port, f"/backtest/run/{rid}").decode("utf-8"))
         finally:

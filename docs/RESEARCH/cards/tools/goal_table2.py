@@ -1,5 +1,9 @@
 import json, glob, os
 import numpy as np
+def _pd(d):  # 1 日あたり(%)。L-920 より前の daily_stats.json は per_day_bp(率 × 1 万)なので / 100
+    return d["per_day_pct"] if "per_day_pct" in d else d["per_day_bp"] / 100
+def _ci(d):
+    return d["per_day_pct"]["ci"] if "per_day_pct" in d else [x / 100 for x in d["per_day_bp"]["ci"]]
 S='/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/w4/measure/runs/c2_owner_xvenue_wick'
 R='/home/user/trade/docs/RESEARCH/cards'
 JST=9*3600*10**9; NOTIONAL=600_000
@@ -8,7 +12,7 @@ files+=[(f'{c}/{v}',f'{R}/{c}/measure/{v}/run.npz') for c,vs in [('c5_tokyo_fix_
 out={}
 for key,f in files:
     z=np.load(f); o=z['open']; dec=z['decided']; e=np.where(dec,z['exposure'],np.nan); t=z['end_ns']; n=len(o)
-    r=np.full(n,np.nan); r[:-2]=o[2:]/o[1:-1]-1; P=e*r*1e4; ok=~np.isnan(P)
+    r=np.full(n,np.nan); r[:-2]=o[2:]/o[1:-1]-1; P=e*r*100; ok=~np.isnan(P)  # %(L-920)
     day=(t+JST)//(86400*10**9); days,inv=np.unique(day[ok],return_inverse=True); dsum=np.bincount(inv,weights=P[ok])
     cum=np.cumsum(dsum); dd=float((np.maximum.accumulate(cum)-cum).max())
     mon=(t[ok]+JST).astype('datetime64[ns]').astype('datetime64[M]'); mu,mi=np.unique(mon,return_inverse=True); msum=np.bincount(mi,weights=P[ok])
@@ -20,9 +24,9 @@ for key,f in files:
     tp=np.array(tp); hold=np.array(hold); nd=len(days)
     st=f'{R}/{key.split("/")[0]}/measure/{key.split("/")[1]}/daily_stats.json'
     s=json.load(open(st)) if os.path.exists(st) else None
-    out[key]=dict(per_day_bp=float(dsum.mean()),check=(s['overall']['per_day_bp'] if s else None),ci=(s['ci']['block_1d']['per_day_bp']['ci'] if s else None),
-        trades_per_day=len(tp)/nd,per_trade_bp=float(tp.mean()) if len(tp) else None,win=float((tp>0).mean()) if len(tp) else None,hold=float(np.median(hold)) if len(hold) else None,
-        month_yen=float(dsum.mean()*30.4/1e4*NOTIONAL),dd=dd,worst_month=float(msum.min()),pos_month=float((msum>0).mean()),
+    out[key]=dict(per_day_pct=float(dsum.mean()),check=(_pd(s['overall']) if s else None),ci=(_ci(s['ci']['block_1d']) if s else None),
+        trades_per_day=len(tp)/nd,per_trade_pct=float(tp.mean()) if len(tp) else None,win=float((tp>0).mean()) if len(tp) else None,hold=float(np.median(hold)) if len(hold) else None,
+        month_yen=float(dsum.mean()*30.4/100*NOTIONAL),dd=dd,worst_month=float(msum.min()),pos_month=float((msum>0).mean()),
         long=float(np.nansum(np.where(e>0,P,0))),short=float(np.nansum(np.where(e<0,P,0))),n_days=nd)
-    print(key,json.dumps({k:(round(v,2) if isinstance(v,float) else v) for k,v in out[key].items()},ensure_ascii=False))
+    print(key,json.dumps({k:(round(v,4) if isinstance(v,float) else v) for k,v in out[key].items()},ensure_ascii=False))
 json.dump(out,open('/tmp/claude-0/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02/scratchpad/lead/goal_table2.json','w'),ensure_ascii=False,indent=1)

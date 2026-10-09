@@ -3,12 +3,13 @@
 建ての前に決まる群)の表を出す読み口。新しい走らせはしない(保存済みの持ち高と始値から計算するだけ)。
 
 損益の式は `bot.research.cards.pnl.pnl` と同じ: 決定の時刻 t(足の終わり)の持ち高 e_t を、次の空でない足の始値で約定し、
-その次の空でない足の始値まで持つ。P_t = e_t × (open_{t+2} / open_{t+1} − 1) × 10,000(bp、持ち高 1 単位あたり、経費の前)。
+その次の空でない足の始値まで持つ。P_t = e_t × (open_{t+2} / open_{t+1} − 1) × 100(%、持ち高 1 単位あたり、経費の前。
+L-920 で bp は値動き率だけの名前なので、建玉を掛けた損益の率は % で持つ)。値動き(買いだけの 1 分あたり)は値動き率(bp)のまま。
 取引 = P のある決定を順に並べ、sign(e) が同じで 0 でない決定がつながった最長の区間(`extra.json` の formula と同じ)。
   signal_t = 区間の最初の決定の時刻 t(足の終わり = 合図が分かった時刻)
   entry_t  = 最初の約定の足の始値の時刻(= t の次の空でない足の始まり)
   exit_t   = 最後の決定の手仕舞いの足の始まり
-  pnl_bp   = 区間の P_t の和
+  pnl_pct  = 区間の P_t の和(%)
 確かめ: 日本時間の日ごとの P の和が `daily.csv` と一致するか、取引の数・和が `extra.json` と一致するかを出力に書く。
 
     PYTHONPATH=src python3 scripts/analysis/card_trades.py --measure <measure/変種> --trades-out <置き場> --out <出力.md>
@@ -33,7 +34,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from diag_tables import group_ratio_ci, mean_ci, diff_ci, _f  # noqa: E402
 
 JST = timezone(timedelta(hours=9))
-BP = 10_000.0
+BP = 10_000.0  # 値動き率(bp)
+PCT = 100.0  # 建玉を掛けた損益の率(%)
 
 
 def _iso(ns: int) -> str:
@@ -54,14 +56,14 @@ def build(measure: str, session_hour: int | None = None) -> dict:
     m = len(dec) - 2
     bar, fill, ex = dec[:m], dec[1:m + 1], dec[2:m + 2]
     e = z["exposure"][bar]
-    p = e * (z["open"][ex] / z["open"][fill] - 1.0) * BP
+    p = e * (z["open"][ex] / z["open"][fill] - 1.0) * PCT
     t_ns = z["end_ns"][bar]
     # 日本時間の日ごとの和(確かめ用)
     day_ns = (t_ns + 9 * 3600 * 10**9) // (86400 * 10**9)
     uniq, inv = np.unique(day_ns, return_inverse=True)
     dsum = np.bincount(inv, weights=p)
     # 対照: 同じ分に、同じ大きさで買いだけで持った場合(|e_t| × r)。向きの情報を抜いた、その時間帯の値動きの偏りの分
-    ctl = np.bincount(inv, weights=np.abs(e) * (z["open"][ex] / z["open"][fill] - 1.0) * BP)
+    ctl = np.bincount(inv, weights=np.abs(e) * (z["open"][ex] / z["open"][fill] - 1.0) * PCT)
     r = (z["open"][ex] / z["open"][fill] - 1.0) * BP
     held = e != 0
     wkend = ((day_ns + 3) % 7) >= 5  # 日本時間の曜日(1970-01-01 は木曜 = 3、月 = 0)。土日
@@ -99,13 +101,21 @@ def build(measure: str, session_hour: int | None = None) -> dict:
             k0, k1 = nz[a], nz[b - 1]
             trades.append({"signal_ns": int(t_ns[k0]), "entry_ns": int(z["start_ns"][fill[k0]]),
                            "exit_ns": int(z["start_ns"][ex[k1]]), "side": int(sg[k0]),
-                           "size": float(np.abs(e[k0])), "pnl_bp": float(cp[b] - cp[a]), "decisions": int(b - a)})
+                           "size": float(np.abs(e[k0])), "pnl_pct": float(cp[b] - cp[a]), "decisions": int(b - a)})
     return {"trades": trades, "daily_calc": daily_calc, "control_calc": control_calc, "minute_rate": minute_rate, "session": session, "n_dec": int(m), "sizes": sorted(set(np.round(np.abs(e[nz]), 6).tolist()))[:10]}
+
+
+def _ext_sum(ext: dict, side: str) -> float:
+    """extra.json の trades.<side> の和(%)。L-920 より前の記録は sum_bp(率 × 1 万)なので / 100。"""
+    d = ext.get(side, {})
+    return float(d["sum_pct"]) if "sum_pct" in d else float(d.get("sum_bp", 0)) / 100
 
 
 def load_daily(measure: str) -> dict[str, float]:
     with open(os.path.join(measure, "daily.csv"), encoding="utf-8") as fh:
-        return {r["day"]: float(r["pnl_bp"]) for r in csv.DictReader(fh)}
+        # L-920 より前の daily.csv は pnl_bp(率 × 1 万)。% にして読む
+        return {r["day"]: (float(r["pnl_pct"]) if r.get("pnl_pct") not in (None, "") else float(r["pnl_bp"]) / 100)
+                for r in csv.DictReader(fh)}
 
 
 def write_trades(trades: list[dict], out_dir: str) -> str:
@@ -113,9 +123,9 @@ def write_trades(trades: list[dict], out_dir: str) -> str:
     path = os.path.join(out_dir, "trades.csv.gz")
     with gzip.open(path, "wt", encoding="utf-8", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["signal_t", "entry_t", "exit_t", "side", "pnl_bp"])
+        w.writerow(["signal_t", "entry_t", "exit_t", "side", "pnl_pct"])
         for t in trades:
-            w.writerow([_iso(t["signal_ns"]), _iso(t["entry_ns"]), _iso(t["exit_ns"]), t["side"], f"{t['pnl_bp']:.6f}"])
+            w.writerow([_iso(t["signal_ns"]), _iso(t["entry_ns"]), _iso(t["exit_ns"]), t["side"], f"{t['pnl_pct']:.8f}"])
     return path
 
 
@@ -127,13 +137,13 @@ def table(trades: list[dict], days: list[str], key) -> dict:
         if g is None:
             continue
         d = _jst_day(t["signal_ns"])
-        sums[g][d] += t["pnl_bp"]
+        sums[g][d] += t["pnl_pct"]
         cnts[g][d] += 1
     return {g: group_ratio_ci(days, sums[g], cnts[g]) for g in sorted(sums)}
 
 
 def winloss(trades: list[dict]) -> dict:
-    p = np.array([t["pnl_bp"] for t in trades]) if trades else np.array([])
+    p = np.array([t["pnl_pct"] for t in trades]) if trades else np.array([])
     w, l, z = p[p > 0], p[p < 0], p[p == 0]
     return {"n": len(p), "sum": float(p.sum()), "win_n": len(w), "win_sum": float(w.sum()),
             "win_mean": float(w.mean()) if len(w) else None, "win_med": float(np.median(w)) if len(w) else None,
@@ -169,14 +179,14 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
     h = len(days) // 2
     first = set(days[:h])
     L = [f"# 取引の表 — {name}", "",
-         "読み口 `scripts/analysis/card_trades.py`(保存済みの持ち高から計算。新しい走らせではない)。単位 bp・持ち高 1 単位あたり・経費の前。",
+         "読み口 `scripts/analysis/card_trades.py`(保存済みの持ち高から計算。新しい走らせではない)。損益の単位 %(建玉を掛けた損益の率)・持ち高 1 単位あたり・経費の前。値動きは値動き率(bp)。",
          "区間 = 95%、日の塊(循環、5 日・1,000 回・種 20261004)で日を選び直して群の和 ÷ 群の取引の数を作り直したもの。日 = 合図の時刻の日本時間の日。", ""]
     # 確かめ
-    mism = [d for d in days if abs(daily[d] - b["daily_calc"].get(d, 0.0)) > 1e-6 * max(1.0, abs(daily[d]))]
+    mism = [d for d in days if abs(daily[d] - b["daily_calc"].get(d, 0.0)) > 1e-8 * max(1.0, 100 * abs(daily[d]))]  # % の値で、前の bp の値の許し幅と同じ
     ext = extra.get("trades", {})
     L += ["## 確かめ(保存済みの出力と合うか)", "",
           f"- 日ごとの和: daily.csv の {len(days):,} 日のうち、計算し直した値と合わない日 {len(mism)} 日" + (f"(最初: {mism[:3]})" if mism else ""),
-          f"- 取引の数: 計算 {len(tr):,} / extra.json {ext.get('n', '無し')}。損益の和: 計算 {sum(t['pnl_bp'] for t in tr):,.2f} / extra.json の買い + 売り {ext.get('long', {}).get('sum_bp', 0) + ext.get('short', {}).get('sum_bp', 0):,.2f}",
+          f"- 取引の数: 計算 {len(tr):,} / extra.json {ext.get('n', '無し')}。損益の和(%): 計算 {sum(t['pnl_pct'] for t in tr):,.4f} / extra.json の買い + 売り {_ext_sum(ext, 'long') + _ext_sum(ext, 'short'):,.4f}",
           f"- 持ち高の大きさ(0 でない値、最初の 10 種): {b['sizes']}",
           f"- 取引の行: `{trades_path}`(リポジトリには入れない。この読み口で何度でも作り直せる)", ""]
     # 対照
@@ -186,7 +196,7 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
     L += ["## 買いだけの対照: 同じ分に買いだけで持った場合(向きの情報を抜いたもの)", "",
           "買いだけの対照 = カードが持ち高を持っていた同じ 1 分に、同じ大きさで買いだけで持った損益(|e_t| × 値動き)。カード − 買いだけの対照"
           " = 売りの決定の損益の 2 倍。向きの情報の有無はこの差では決まらない(その時間帯に上げの偏りがあれば、情報が無くても負になる)。"
-          "向きの情報は下の「向きの情報の検め」で見る。1 日あたり bp。", "",
+          "向きの情報は下の「向きの情報の検め」で見る。1 日あたり %。", "",
           "| 区分 | 日数 | カード | 買いだけの対照 | カード − 買いだけの対照 |", "|---|---|---|---|---|"]
     for lbl, ds in (("全期間", days), ("前半", days[:h]), ("後半", days[h:])):
         L.append(f"| {lbl} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
@@ -233,7 +243,7 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
         L.append("")
     # 曜日
     wd = "月火水木金土日"
-    L += ["## 曜日ごと(合図の時刻の日本時間の曜日。1 日あたり bp)【建ての前に決まる群】", "",
+    L += ["## 曜日ごと(合図の時刻の日本時間の曜日。1 日あたり %)【建ての前に決まる群】", "",
           "区間は、その曜日の日だけを並べた列を日の塊(5 日)で選び直したもの(並べた日は 7 日おき)。", "",
           "| 曜日 | 日数 | カード | 買いだけの対照 | カード − 買いだけの対照 |", "|---|---|---|---|---|"]
     from datetime import date as _date
@@ -241,7 +251,7 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
         ds = [d for d in days if _date.fromisoformat(d).weekday() == k]
         L.append(f"| {wd[k]} | {len(ds):,} | {ci(mean_ci([daily[d] for d in ds]))} | {ci(mean_ci([cc.get(d, 0.0) for d in ds]))} | "
                  f"{ci(mean_ci([daily[d] - cc.get(d, 0.0) for d in ds]))} |")
-    L += ["", "曜日 × 前半・後半(カード / カード − 買いだけの対照 / 買いだけの対照、1 日あたり bp):", "",
+    L += ["", "曜日 × 前半・後半(カード / カード − 買いだけの対照 / 買いだけの対照、1 日あたり %):", "",
           "| 曜日 | 前半 カード | 後半 カード | 前半 カード − 買いだけの対照 | 後半 カード − 買いだけの対照 | 前半 買いだけ | 後半 買いだけ |", "|---|---|---|---|---|---|---|"]
     for k in range(7):
         c = []
@@ -267,7 +277,7 @@ def render(name: str, b: dict, daily: dict, extra: dict, trades_path: str) -> st
         L.append(row(y, [t for t in tr if _jst_day(t["signal_ns"])[:4] == y]))
     L.append("")
     # 損益の分位
-    p = np.array([t["pnl_bp"] for t in tr])
+    p = np.array([t["pnl_pct"] for t in tr])
     qs = (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)
     L += ["## 取引の損益の分位", "", "| " + " | ".join(f"{int(q*100)}%" for q in qs) + " |", "|" + "---|" * len(qs),
           "| " + " | ".join(_f(float(np.quantile(p, q))) for q in qs) + " |", ""]

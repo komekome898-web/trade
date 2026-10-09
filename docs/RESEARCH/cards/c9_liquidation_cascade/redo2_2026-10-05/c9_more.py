@@ -3,7 +3,8 @@
     `cont_60`(同じ側の次のプリントが 60 秒以内に来た)の割合。区間は日の塊(group_ratio_ci)。場面(1件目 / 連鎖の中)別。
 (2) 静かな時点の約定の側: 束(g 30・60・180)の終わり(最後のプリント + g)+ 1 秒の時点で、(A) その時点以後の最初の
     買い手が成行・売り手が成行の約定の値段の差、(B) その時点以前の最後の買い手が成行・売り手が成行の約定の値段の差(板の幅の代わり)。
-    逆張りの向きに付けた「逆張りが叩く側 − 順張りが叩く側」を bp で(逆張りの損になる向きを正)。区間は日の塊。
+    逆張りの向きに付けた「逆張りが叩く側 − 順張りが叩く側」を %(2 つの値段の差 ÷ 値段。L-923 で値動き率でないので bp と
+    呼ばない)で(逆張りの損になる向きを正)。区間は日の塊。
     PYTHONPATH=src python3 docs/RESEARCH/cards/c9_liquidation_cascade/redo2_2026-10-05/c9_more.py
 出力: このフォルダの C9_MORE.md
 """
@@ -101,10 +102,10 @@ def main():
         fade = np.where(r.sign < 0, r[f"buy_{k}"], r[f"sell_{k}"])
         foll = np.where(r.sign < 0, r[f"sell_{k}"], r[f"buy_{k}"])
         # 逆張りの損になる向きを正: 逆張りが買う(sign −1)なら fade − foll が高いほど損
-        r[f"cost_{k}"] = -r.sign * (fade - foll) / ((fade + foll) / 2) * 1e4
+        r[f"cost_{k}"] = -r.sign * (fade - foll) / ((fade + foll) / 2) * 100  # %
     days = sorted(r.day.unique())
     h2 = days[len(days) // 2] if days else None
-    out.append("## (2) 束の終わり + 1 秒の時点の約定の側の差(逆張りが叩く側 − 順張りが叩く側、逆張りの損の向きに正、bp/束)")
+    out.append("## (2) 束の終わり + 1 秒の時点の約定の側の差(逆張りが叩く側 − 順張りが叩く側、逆張りの損の向きに正、%/束)")
     out.append("")
     out.append("(A) = その時点以後の最初の約定どうし(時刻は違う)、(B) = その時点以前の最後の約定どうし(板の幅の代わり。時刻は違う)。")
     out.append("")
@@ -114,8 +115,8 @@ def main():
         qa, qb = q.dropna(subset=["cost_after"]), q.dropna(subset=["cost_before"])
         lf = np.where(qa.sign < 0, qa.lag_b, qa.lag_s)
         lo = np.where(qa.sign < 0, qa.lag_s, qa.lag_b)
-        out.append(f"| {g} | {len(q):,} | {f(ratio(days, qa, 'cost_after'))} | {qa.cost_after.median():+.3f} | {np.median(lf):.0f} / {np.median(lo):.0f} | "
-                   f"{f(ratio(days, qb, 'cost_before'))} | {qb.cost_before.median():+.3f} | {qb.age_b.median():.0f} / {qb.age_s.median():.0f} |")
+        out.append(f"| {g} | {len(q):,} | {f(ratio(days, qa, 'cost_after'), 5)} | {qa.cost_after.median():+.5f} | {np.median(lf):.0f} / {np.median(lo):.0f} | "
+                   f"{f(ratio(days, qb, 'cost_before'), 5)} | {qb.cost_before.median():+.5f} | {qb.age_b.median():.0f} / {qb.age_s.median():.0f} |")
     out.append("")
     out.append(f"日 = 束の終わり + 1 秒の UTC の日({len(days)} 日)。前半・後半の境 {h2}(この表は全期間だけ)。")
     open(os.path.join(HERE, "C9_MORE.md"), "w").write("\n".join(out) + "\n")

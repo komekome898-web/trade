@@ -8,7 +8,7 @@ nothing else is changed, and the test set below was fixed by the lead BEFORE
 this (30-day) dataset was looked at:
 
   1. The 0.5% protective stop was ~10x the size of the measured edge (a few
-     bps), so it converted the edge into stop-out noise.  ->  NO STOP AT ALL.
+     hundredths of a percent), so it converted the edge into stop-out noise.  ->  NO STOP AT ALL.
   2. The exit was a z-band (|z| < 0.5), which has no relation to the 60-minute
      horizon at which the effect was measured. -> FIXED 60-MINUTE TIME EXIT,
      implemented by the engine's new `max_hold_bars`. z_exit is not used.
@@ -25,8 +25,8 @@ BETTER of the two z_entry values ON TRAIN+VAL; it passes iff
     T+V pnl > 0 with >= 30 trades  AND  its OOS pnl > 0 with >= 15 trades.
 
 CAVEAT (unchanged from v1): the deviation is measured JPY-vs-USD with no USDJPY
-series, so USDJPY moves leak into it. At <= 60 min that noise is ~2-6 bps
-against deviations of interest >= 20 bps, but it is real and is NOT removed.
+series, so USDJPY moves leak into it. At <= 60 min that noise is ~0.02-0.06 %
+against deviations of interest >= 0.2 %, but it is real and is NOT removed.
 """
 from __future__ import annotations
 
@@ -166,8 +166,8 @@ def main() -> int:
           f"  ({span_days:.2f} days)")
     print(f"costs: fee 0% | spread {FX_COSTS.spread_pct}% | slip {FX_COSTS.slippage_pct}% "
           f"| swap {SWAP_DAILY_PCT}%/day | stop NONE | exit {MAX_HOLD_BARS} bars")
-    print(f"round-trip taker cost ~{rt_cost:.3f}% = {rt_cost * 100:.1f} bps; "
-          f"60m carry ~{SWAP_DAILY_PCT / 24 * 100:.2f} bps")
+    print(f"round-trip taker cost ~{rt_cost:.3f}%; "
+          f"60m carry ~{SWAP_DAILY_PCT / 24:.4f}%")
     print("CAVEAT: deviation is JPY-vs-USD with no USDJPY series; contamination not removed.")
 
     s = split_data(merged)

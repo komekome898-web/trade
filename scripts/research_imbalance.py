@@ -59,7 +59,7 @@ def main() -> int:
     for p in paths:
         print(f"  {p.name}  ({p.stat().st_size / 1024:.0f} KiB)")
 
-    df = build_series(paths, interval_sec=1.0, depth_bps=args.depth_bps)
+    df = build_series(paths, interval_sec=1.0, depth_pct=args.depth_bps / 100)  # board takes % since L-920
     if df.empty:
         print("no board snapshots in the recordings — nothing to build")
         return 1

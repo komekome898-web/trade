@@ -37,7 +37,15 @@ for p in (REPO / "src", REPO / "scripts"):
     if sp not in sys.path:
         sys.path.insert(0, sp)
 
-from bot.research.board import walk_cost_bp  # noqa: E402
+from bot.research.board import walk_cost_pct  # noqa: E402
+
+
+def walk_cost_bp(levels, size, mid, side):
+    # board.walk_cost_bp became walk_cost_pct (percent of mid) on 2026-10-09 (L-920/L-923);
+    # this script's own tables still use the old x 1e4 unit, so convert back here.
+    # Renaming this script's names is left to the unit that fixes the scripts off the live path.
+    c, filled, exhausted = walk_cost_pct(levels, size, mid, side)
+    return (None if c is None else c * 100), filled, exhausted
 
 import k1_source  # noqa: E402
 import measure_katsuo_dispersion as base  # noqa: E402

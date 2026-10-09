@@ -32,26 +32,27 @@ class Cycle:
 def broken_pnl_same_bar(run) -> np.ndarray:
     """A broken version: the exposure meets the move of its own bar (open_t -> open_{t+1})."""
     good = pnl(run)
-    r = (run.open[good.fill_bar] / run.open[good.bar] - 1.0) * 1e4
+    r = (run.open[good.fill_bar] / run.open[good.bar] - 1.0) * 100.0
     return good.exposure * r
 
 
-def check_alignment(pnl_bp: np.ndarray, n_bars: int) -> list:
-    """Moves are (k + 1) bp for bar k, so P_i must be e_i * (i + 2) bp (the move of bar i + 1, i.e. from the open
-    of t+1 to the open of t+2). Returns the decisions where it is not."""
+def check_alignment(pnl_pct: np.ndarray, n_bars: int) -> list:
+    """Moves are (k + 1) bp for bar k, so P_i must be e_i * (i + 2) bp of move, i.e. e_i * (i + 2) * 0.01 % (the
+    move of bar i + 1, from the open of t+1 to the open of t+2; P_t is in percent, L-920). Returns the decisions
+    where it is not."""
     e = np.array([(1.0, -1.0, 0.0)[i % 3] for i in range(n_bars - 2)])
-    want = e * (np.arange(n_bars - 2) + 2.0)
-    return [i for i in range(n_bars - 2) if abs(pnl_bp[i] - want[i]) > 1e-9]
+    want = e * (np.arange(n_bars - 2) + 2.0) * 0.01
+    return [i for i in range(n_bars - 2) if abs(pnl_pct[i] - want[i]) > 1e-11]
 
 
 def test_t3_sum_matches_the_hand_value():
     # every bar moves +1 bp: open_{k+1} = open_k * 1.0001
     run = run_card(Cycle(), bars_from_moves(np.full(30, BP)), declarations={}, venue="synthetic", symbol="T3")
     p = pnl(run)
-    assert p.n_decisions == 30 and p.n_undefined == 2 and len(p.pnl_bp) == 28
+    assert p.n_decisions == 30 and p.n_undefined == 2 and len(p.pnl_pct) == 28
     # by hand: e = +1, -1, 0 repeated over the 28 decisions with a t+2 open -> 9 whole cycles (0) and one +1
-    # more, each times 1 bp
-    assert abs(float(p.pnl_bp.sum()) - 1.0) <= 1e-9
+    # more, each times a 1 bp move = 0.01 %
+    assert abs(float(p.pnl_pct.sum()) - 0.01) <= 1e-11
     assert np.all(np.abs(p.r_bp - 1.0) <= 1e-9)
 
 
@@ -60,10 +61,10 @@ def test_t3_exposure_meets_the_move_from_t_plus_1_to_t_plus_2():
     moves = (np.arange(n) + 1.0) * BP  # bar k moves (k + 1) bp: every move is different
     run = run_card(Cycle(), bars_from_moves(moves), declarations={}, venue="synthetic", symbol="T3")
     p = pnl(run)
-    assert check_alignment(p.pnl_bp, n) == []
+    assert check_alignment(p.pnl_pct, n) == []
     # by hand, the sum: sum over i < 38 of e_i * (i + 2)
     hand = sum((1.0, -1.0, 0.0)[i % 3] * (i + 2) for i in range(n - 2))
-    assert abs(float(p.pnl_bp.sum()) - hand) <= 1e-9
+    assert abs(float(p.pnl_pct.sum()) - hand * 0.01) <= 1e-11
     assert list(p.fill_bar[:3]) == [1, 2, 3] and list(p.exit_bar[:3]) == [2, 3, 4]
     assert np.all(p.fill_wait_ns == 0) and np.all(p.hold_ns == M)
 
@@ -106,9 +107,9 @@ def broken_pnl_next_listed_bar(run) -> PnL:
     keep = run.decided[k]
     bar, fill, exit_ = k[keep], k[keep] + 1, k[keep] + 2
     e = run.exposure[bar]
-    r = (run.open[exit_] / run.open[fill] - 1.0) * 1e4
+    ratio = run.open[exit_] / run.open[fill] - 1.0
     return PnL(bar, run.end_ns[bar], e, fill, exit_, run.start_ns[fill] - run.end_ns[bar],
-               run.start_ns[exit_] - run.start_ns[fill], r, e * r, int(run.decided.sum()), 0)
+               run.start_ns[exit_] - run.start_ns[fill], ratio * 1e4, e * (ratio * 100.0), int(run.decided.sum()), 0)
 
 
 def check_t8(run, p: PnL) -> list:

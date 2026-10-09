@@ -209,7 +209,7 @@ def test_safety_valve_prints_only_the_n_line_when_fresh_n_below_30(tmp_path, cap
     assert 0 < n < 30
 
     # nothing statistics-shaped leaked out
-    for forbidden in ("bps", "PASS", "FAIL", "maxDD", "t=", "CI"):
+    for forbidden in ("bps", "%", "PASS", "FAIL", "maxDD", "t=", "CI"):
         assert forbidden not in out
 
 
@@ -261,7 +261,7 @@ def test_status_json_writes_n_period_and_last_day_but_no_statistics(tmp_path, ca
     lines = [ln for ln in out.splitlines() if ln.strip()]
     assert len(lines) == 1 and "judgment not executed" in lines[0]
     dumped = json.dumps(payload)
-    for forbidden in ("bps", "PASS", "FAIL", "maxDD", "CI"):
+    for forbidden in ("bps", "%", "PASS", "FAIL", "maxDD", "CI"):
         assert forbidden not in dumped
 
 

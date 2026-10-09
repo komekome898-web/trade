@@ -327,8 +327,9 @@ def _check_evidence(name: str, gate: str, evidence: str) -> None:
 class ImbalanceFilterModule(CompositeModule):
     """Would veto entries whose order-book imbalance opposes the signal.
 
-    Effect and sign are real but measured at 0.29-1.35bps against a 2.22bps
-    spread (KNOWLEDGE §3): unusable as a standalone taker signal, plausible
+    Effect and sign are real but measured at 0.29-1.35bps (a price move)
+    against a 0.0222% spread (KNOWLEDGE §3; a spread is not a price move, so
+    not bp -- L-920/L-923): unusable as a standalone taker signal, plausible
     only as a filter on top of an existing signal. Pending §4.
     """
 

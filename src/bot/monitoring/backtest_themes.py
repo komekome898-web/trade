@@ -521,7 +521,7 @@ CARD_THEMES: list[dict] = [
                  "レンジの中心から入りの離れ(2 × 平均実体)の値段に指値を置き、約定は指値の値段そのもの(次の足の始値ではない)。",
                  "取引は、持ち高が 0 から離れて 0 に戻るまでを 1 件とする(段の損益の和)。建て・決済の時刻は足の終わりの時刻。",
                  "1 分足は高値と安値のどちらが先かを持たないので、1 本の足に入りと利確などが重なる足は「決まらない足」とし、損益の良い方の道(良い側)・悪い方の道(悪い側)の 2 通りで進める。",
-                 "期間は 2015-11-28T15:00Z〜2023-12-17T15:00Z。損益は取引の値段から出した bp(SPEC §4)で、SPEC に経費の記載は無い。",
+                 "期間は 2015-11-28T15:00Z〜2023-12-17T15:00Z。損益は取引の値段から出した率(SPEC §4 では bp と書かれ、画面では % に換えて出す)で、SPEC に経費の記載は無い。",
                  "矢印の建値は積んだ段の約定の平均、建てた時刻は 1 段目の約定の時刻なので、矢印の始点が足の値の範囲の外に出ることがある(matilda_limit_sim.py の _close_row・仕様 4)。"],
              "sources": [_card(C4, "limit_sim/SPEC.md の §1〜§4(入力・指値の約定・決まらない足・損益)"),
                          "src/bot/research/matilda_limit_sim.py の docstring(1 本の足の中の扱い・決まらない足)", f"{W4_SCRIPTS}/c4_limit_run.py の --fill-side"],
@@ -644,7 +644,9 @@ def card_family_of(ct: dict, variant: str) -> tuple[Optional[dict], dict]:
     return None, {}
 
 
-#: Shown beside every card trade (tooltip, legend, the card note): what the bp of a card trade is (provenance's trade_definition).
-BP_NOTE = "bp = 持っていた間の 1 決定ごとの値動きの和(provenance の取引の定義)。建値と決済値の比ではない。"
-BP_NOTE_LIMIT = ("bp = 段ごとの (出の値段 ÷ 入りの値段 − 1) × 1 万 ÷ 段の上限 の和(limit_sim/SPEC.md §4)。"
+#: Shown beside every card trade (tooltip, legend, the card note): what the pnl rate (%) of a card trade is (provenance's
+#: trade_definition). The card exports write it x 1e4 as pnl_bp; the dashboard shows it in percent (L-920: bp names only a
+#: price-move rate, and a card's pnl rate is a sum of moves, not one price-move rate).
+RATE_NOTE = "損益の率(%)= 持っていた間の 1 決定ごとの値動きの率の和(provenance の取引の定義)。建値と決済値の比ではない。"
+RATE_NOTE_LIMIT = ("損益の率(%)= 段ごとの (出の値段 ÷ 入りの値段 − 1) × 100 ÷ 段の上限 の和(limit_sim/SPEC.md §4)。"
                  "建値は積んだ段の約定の平均、時刻は 1 段目の約定で、矢印の始点が足の値の範囲の外に出ることがある。")

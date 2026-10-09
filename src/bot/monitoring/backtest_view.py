@@ -188,6 +188,23 @@ def _unit(ccy: Optional[str]) -> str:
     return "(円)" if ccy == "JPY" else f"({ccy})"
 
 
+
+def _trade_rates(tr: dict) -> dict:
+    """Per-trade rates of metrics.json's `trades`, in percent (pnl after fees over the entry notional).
+
+    Records written before L-920 (2026-10-09) hold the same rates x 1e4 under per_trade_bp / mean_bp /
+    bp_per_hour (and their quantiles in the same unit); those are read and divided by 100 so old runs render
+    in the same unit as new ones."""
+    if "per_trade_pct" in tr or "per_trade_bp" not in tr:
+        return {"per_trade": list(tr.get("per_trade_pct") or []), "mean": tr.get("mean_pct"),
+                "per_hour": tr.get("pct_per_hour"), "quantiles": dict(tr.get("quantiles") or {})}
+
+    def c(v):
+        return None if v is None else v / 100
+
+    return {"per_trade": [c(v) for v in tr.get("per_trade_bp") or []], "mean": c(tr.get("mean_bp")),
+            "per_hour": c(tr.get("bp_per_hour")), "quantiles": {k: c(v) for k, v in (tr.get("quantiles") or {}).items()}}
+
 def run_view(runs_dir: Any, run_id: str) -> dict:
     d = _run_dir(runs_dir, run_id)
     rec = _load(os.path.join(d, "record.json"))
@@ -205,7 +222,7 @@ def run_view(runs_dir: Any, run_id: str) -> dict:
     tabs["概要"] = _kv([("実行 ID", run_id), ("目的", rec.get("purpose")), ("商品", cfg.get("instrument")),
                        ("手順", (rec.get("setup") or {}).get("name")), ("種", rec.get("seed")),
                        ("往復の数", tr.get("n")), (f"実現損益{u}", _num(pnl.get("realized"))),
-                       ("1 件ごとの bp の平均", _num(tr.get("mean_bp")))])
+                       ("1 件ごとの損益率(%、手数料込み)の平均", _num(_trade_rates(tr)["mean"]))])
     data_rows = [(x.get("path"), (rec.get("data_sha256") or {}).get(x.get("path"))) for x in rec.get("data") or []]
     h1, t1 = _kv([("約定の模型", json.dumps(cfg.get("fill"), ensure_ascii=False)),
                   ("遅延(ns)", json.dumps(cfg.get("latency_ns"), ensure_ascii=False)),
@@ -235,14 +252,14 @@ def run_view(runs_dir: Any, run_id: str) -> dict:
     tabs["費用"] = _kv([(f"maker 手数料{u}", _num(c.get("maker_fee"))), (f"taker 手数料{u}", _num(c.get("taker_fee"))),
                        (f"スプレッド{u}", _num(c.get("spread"))), ("スプレッドの注記", c.get("spread_note")),
                        (f"資金調達{u}", _num(c.get("funding"))), ("資金調達の注記", c.get("funding_note"))])
-    q = tr.get("quantiles") or {}
-    bps = tr.get("per_trade_bp") or []
+    rates = _trade_rates(tr)
+    q, pcts = rates["quantiles"], rates["per_trade"]
     h3, t3 = _kv([("件数", tr.get("n")), ("負の割合", _num(tr.get("neg_frac"))), ("分位の流儀", tr.get("quantile_method")),
-                  ("建玉の時間の合計(時)", _num(tr.get("trade_hours"))), ("bp/時", _num(tr.get("bp_per_hour")))])
-    tabs["分布"] = (h3 + _table([(p, _num(v)) for p, v in q.items()], ("分位", "bp"))
-                   + "<h3>1 件ごとの bp</h3><p>" + _esc(", ".join(_num(b) for b in bps)) + "</p>",
+                  ("建玉の時間の合計(時)", _num(tr.get("trade_hours"))), ("損益率(%)/時", _num(rates["per_hour"]))])
+    tabs["分布"] = (h3 + _table([(p, _num(v)) for p, v in q.items()], ("分位", "損益率(%)"))
+                   + "<h3>1 件ごとの損益率(%、手数料込み)</h3><p>" + _esc(", ".join(_num(b) for b in pcts)) + "</p>",
                    t3 + "\n分位: " + ", ".join(f"{p}={_num(v)}" for p, v in q.items())
-                   + "\n1 件ごとの bp: " + ", ".join(_num(b) for b in bps))
+                   + "\n1 件ごとの損益率(%、手数料込み): " + ", ".join(_num(b) for b in pcts))
     if validation is None:
         msg = "この実行に検証の結果は付いていない(bot.bt.validation の結果を実行の validation に渡すと、ここに出る)"
         tabs["検証"] = (f"<p>{_esc(msg)}</p>", msg)
@@ -275,7 +292,7 @@ def run_view(runs_dir: Any, run_id: str) -> dict:
             body_text = WARNING + "\n" + body_text
         out_tabs.append({"label": label, "text": body_text, "html": body_html})
     return {"run_id": run_id, "purpose": rec.get("purpose"), "warning": WARNING if smoke else None,
-            "tabs": out_tabs, "values": {"per_trade_bp": bps, "neg_frac": tr.get("neg_frac")}}
+            "tabs": out_tabs, "values": {"per_trade_pct": pcts, "neg_frac": tr.get("neg_frac")}}
 
 
 PAGE_STYLE = ("body{font-family:system-ui,sans-serif;margin:16px;background:#fff;color:#111}"
