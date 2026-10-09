@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1303,
+ "n_moves": 1305,
  "moves": [
   {
    "move": 1,
@@ -35378,23 +35378,80 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1304,
+   "tools": {
+    "Write": 1,
+    "Bash": 7,
+    "Edit": 13
+   },
+   "n_tools": 21,
+   "read_goal": false,
+   "first_write_at": 1,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 1,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1305,
+   "tools": {
+    "Bash": 1,
+    "ToolSearch": 1,
+    "WebFetch": 1,
+    "WebSearch": 1
+   },
+   "n_tools": 4,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 264,
-   "value": 0.2652
+   "den": 265,
+   "value": 0.2642
   },
   "P2_table_shown_before_first_write": {
    "num": 48,
-   "den": 264,
-   "value": 0.1818
+   "den": 265,
+   "value": 0.1811
   },
   "P3_claim_with_output": {
-   "num": 464,
-   "den": 1029,
-   "value": 0.4509
+   "num": 465,
+   "den": 1031,
+   "value": 0.451
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -35404,12 +35461,12 @@
   "P5_tools_per_move": {
    "median": 5,
    "max": 169,
-   "n": 1229
+   "n": 1231
   },
   "P6_findings_applied": {
-   "num": 101,
+   "num": 102,
    "den": 257,
-   "value": 0.393,
+   "value": 0.3969,
    "note_key": "approximation_v2"
   },
   "P7_readdo_opened": {
