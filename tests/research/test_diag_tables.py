@@ -116,3 +116,35 @@ def test_signal_delay_splits_late_fills():
     assert r["late"] == {"trades": 1, "sum": -9.0}
     assert dt.signal_delay(run, None)["valid_min"] is None
     assert dt.signal_delay({"trades": [{"entry_ns": 0, "exit_ns": 0, "pnl_bp": 1.0}]}, 15.0) is None
+
+
+def test_cut_sets_first_day_of_second_half():
+    """--cut(L-903): 期間の始まりが違う本でも、渡した日が後半の最初の日になる。渡さなければ日数の真ん中。"""
+    a = _daily([1.0] * 100, start=date(2018, 1, 1))
+    b = _daily([1.0] * 97, start=date(2018, 1, 4))  # 立ち上がりが 3 日長い本
+    assert dt.d1(a)["segments"]["cut"] != dt.d1(b)["segments"]["cut"]
+    for x in (a, b):
+        sg = dt.d1(x, "2018-02-20")["segments"]
+        assert sg["cut"] == "2018-02-20" and sg["second"]["from"] == "2018-02-20"
+        assert sg["first"]["to"] == "2018-02-19" and sg["cut_source"] == "渡した日(--cut)"
+        assert sg["first"]["n"] + sg["second"]["n"] == len(x)
+    assert dt.d1(a)["segments"]["cut_source"] == "日数の真ん中"
+
+
+def test_cut_outside_period_stops():
+    a = _daily([1.0] * 50, start=date(2018, 1, 1))
+    for bad in ("2017-12-31", "2018-01-01", "2018-03-01"):
+        with pytest.raises(SystemExit):
+            dt.d1(a, bad)
+
+
+def test_cut_printed_in_table(tmp_path):
+    out = tmp_path / "t.md"
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "daily.csv").write_text("day,pnl_bp,n\n" + "".join(
+        f"{(date(2018, 1, 1) + timedelta(days=i)).isoformat()},{i % 7 - 3},1\n" for i in range(60)))
+    assert dt.main(["--run", str(run), "--out", str(out), "--cut", "2018-02-01"]) == 0
+    assert "後半の最初の日 2018-02-01" in out.read_text()
+    with pytest.raises(ValueError):
+        dt.main(["--run", str(run), "--out", str(out), "--cut", "2018/02/01"])

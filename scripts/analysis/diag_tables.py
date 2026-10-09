@@ -8,6 +8,8 @@
   D0 入力の表: 出力の種類・期間・引数・列の有無と、その列で出せる手順
   D1 時間の表: 暦年ごとの 1 日あたり・95% 区間・MDE・区間が 0 を含むか(記述)/ 前半・後半(日数で 2 つに分ける。結果を
      見る前に決めた分け方)と 後半 − 前半 の区間 / 結果(崩れた・続いている・決まらない・後半だけ ほか。決まりは d1_outcome)
+     --cut <日> を渡すと、その日を後半の最初の日にする(測定ごとに 1 つ、走らせる前に決めた境。本ごとに期間の始まりが
+     立ち上がりの長さで違い、日数の真ん中が本ごとにずれるため。オーナー L-903「**境の統一は必要だが**」)。
   D3 集まりの表: 上位・下位 5% の日の損益の割合 / 取引の損益の分位 / 出の理由・合図の強さ・保有時間の四分位ごとの
      1 取引あたり(日の塊の区間)
   D6 固まりの表: 前の出から次の建てまでの間隔の四分位ごとの 1 取引あたり(日の塊の区間)
@@ -23,7 +25,7 @@
   - 閾値で判定の言葉を出さない。「区間が 0 を含む」「符号が同じ」などの事実の列だけを出す。
   - 取引の日 = 出の時刻の UTC の暦日(改良の周 2 の読み R10・R6 と同じ)。カードの測定は `daily.csv` の日(日本時間)。
 
-    PYTHONPATH=src python3 scripts/analysis/diag_tables.py --run <置き場> [--vs <比べる置き場>] [--bad <悪い側の置き場>] --out <出力.md>
+    PYTHONPATH=src python3 scripts/analysis/diag_tables.py --run <置き場> [--vs <比べる置き場>] [--bad <悪い側の置き場>] [--cut <YYYY-MM-DD>] --out <出力.md>
 """
 from __future__ import annotations
 
@@ -265,7 +267,8 @@ def d0(run: dict, valid_min: float | None = None) -> dict:
             "signal_delay": signal_delay(run, valid_min)}
 
 
-def d1(daily: dict[str, float]) -> dict:
+def d1(daily: dict[str, float], cut: str | None = None) -> dict:
+    """cut = 後半の最初の日(渡さなければ日数の真ん中の日)。cut の前と後の両方に日が無ければ止める。"""
     days = sorted(daily)
     rows = [{"label": "全期間", **mean_ci([daily[d] for d in days])}]
     years = sorted({d[:4] for d in days})
@@ -273,11 +276,17 @@ def d1(daily: dict[str, float]) -> dict:
         rows.append({"label": y, **mean_ci([daily[d] for d in days if d[:4] == y])})
     for r in rows:
         r["zero"] = contains_zero(r)
-    h = len(days) // 2
+    if cut is None:
+        h = len(days) // 2
+    else:
+        h = sum(1 for d in days if d < cut)
+        if not 0 < h < len(days):
+            raise SystemExit(f"--cut {cut} は期間 {days[0]}〜{days[-1]} の中に無い")
     first, second = [daily[d] for d in days[:h]], [daily[d] for d in days[h:]]
     seg = {"first": {"from": days[0], "to": days[h - 1], **mean_ci(first)},
            "second": {"from": days[h], "to": days[-1], **mean_ci(second)},
-           "diff": diff_ci(first, second)}
+           "diff": diff_ci(first, second),
+           "cut": days[h], "cut_source": "渡した日(--cut)" if cut is not None else "日数の真ん中"}
     seg["outcome"] = d1_outcome(seg["first"], seg["second"], seg["diff"])
     seg["days_needed"] = days_needed(second, seg["first"].get("mean"))
     seg["days_needed_second"] = days_needed(second, seg["second"].get("mean"))
@@ -439,7 +448,9 @@ def render(res: dict) -> str:
     for r in d1r["rows"]:
         L.append(f"| {r['label']} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {r['zero']} |")
     sg = d1r["segments"]
-    L += ["", "前半・後半(日数で 2 つに分ける。結果を見る前に決めた分け方):", "",
+    how = ("測定ごとに 1 つ、走らせる前に決めた日(--cut)" if sg.get("cut_source") == "渡した日(--cut)"
+           else "日数で 2 つに分ける。結果を見る前に決めた分け方")
+    L += ["", f"前半・後半({how}。後半の最初の日 {sg['cut']}):", "",
           "| 区切り | 期間 | 日数 | 1 日あたり [区間] | MDE |", "|---|---|---|---|---|",
           f"| 前半 | {sg['first']['from']}〜{sg['first']['to']} | {sg['first']['n']} | {_ci(sg['first'])} | {_f(sg['first']['mde'])} |",
           f"| 後半 | {sg['second']['from']}〜{sg['second']['to']} | {sg['second']['n']} | {_ci(sg['second'])} | {_f(sg['second']['mde'])} |",
@@ -507,10 +518,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--bad", default=None)
     ap.add_argument("--out", required=True)
     ap.add_argument("--valid-min", type=float, default=None, help="合図の有効期間(分)。設計の前に決めた値を渡す")
+    ap.add_argument("--cut", default=None, help="後半の最初の日(YYYY-MM-DD)。測定ごとに 1 つ、走らせる前に決めた日を全部の本に渡す")
     a = ap.parse_args(argv)
+    if a.cut is not None:
+        date.fromisoformat(a.cut)  # 形が違えば止まる
     run = load_run(a.run)
     daily = daily_series(run)
-    res = {"d0": d0(run, a.valid_min), "d1": d1(daily), "d3": d3(run, daily), "d6": d6(run, daily)}
+    res = {"d0": d0(run, a.valid_min), "d1": d1(daily, a.cut), "d3": d3(run, daily), "d6": d6(run, daily)}
     if a.vs:
         vs = load_run(a.vs)
         res["d7"], res["vs_name"] = d7(run, vs), vs["name"]
