@@ -35081,7 +35081,7 @@
   {
    "move": 1293,
    "tools": {
-    "Bash": 42,
+    "Bash": 44,
     "Read": 16,
     "Edit": 49,
     "Write": 9,
@@ -35089,7 +35089,7 @@
     "ReadNotifications": 1,
     "mcp__Claude_Code_Remote__get_session": 1
    },
-   "n_tools": 119,
+   "n_tools": 121,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
