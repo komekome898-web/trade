@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1293,
+ "n_moves": 1296,
  "moves": [
   {
    "move": 1,
@@ -35081,15 +35081,16 @@
   {
    "move": 1293,
    "tools": {
-    "Bash": 44,
+    "Bash": 46,
     "Read": 16,
     "Edit": 49,
     "Write": 9,
     "Agent": 1,
     "ReadNotifications": 1,
-    "mcp__Claude_Code_Remote__get_session": 1
+    "mcp__Claude_Code_Remote__get_session": 1,
+    "Skill": 1
    },
-   "n_tools": 121,
+   "n_tools": 124,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
@@ -35109,23 +35110,103 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1294,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1295,
+   "tools": {
+    "Bash": 43,
+    "Edit": 35,
+    "Write": 5,
+    "Read": 3
+   },
+   "n_tools": 86,
+   "read_goal": false,
+   "first_write_at": 2,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1296,
+   "tools": {
+    "Bash": 19,
+    "Write": 1
+   },
+   "n_tools": 20,
+   "read_goal": false,
+   "first_write_at": 18,
+   "table_shown": true,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 259,
-   "value": 0.2703
+   "den": 261,
+   "value": 0.2682
   },
   "P2_table_shown_before_first_write": {
-   "num": 47,
-   "den": 259,
-   "value": 0.1815
+   "num": 48,
+   "den": 261,
+   "value": 0.1839
   },
   "P3_claim_with_output": {
    "num": 463,
-   "den": 1025,
-   "value": 0.4517
+   "den": 1026,
+   "value": 0.4513
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -35135,7 +35216,7 @@
   "P5_tools_per_move": {
    "median": 5.0,
    "max": 169,
-   "n": 1222
+   "n": 1224
   },
   "P6_findings_applied": {
    "num": 100,
