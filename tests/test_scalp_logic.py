@@ -266,7 +266,7 @@ def test_no_take_profit_fill_exits_taker_at_the_fallback_deadline(
     ev = exit_events(tmp_path)[-1]
     assert ev["exit_kind"] == "fallback_taker"
     # taker: hits the bid and pays slippage
-    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 2.0 / 1e4))
+    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 0.02 / 100))
 
 
 def test_fallback_waits_for_live_feeds(tmp_path, monkeypatch):
@@ -310,7 +310,7 @@ def test_taker_exit_holds_hold_sec_then_crosses(tmp_path, monkeypatch):
     assert s.position is None
     ev = exit_events(tmp_path)[-1]
     assert ev["exit_kind"] == "taker"
-    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 2.0 / 1e4))
+    assert ev["price"] == pytest.approx((ENTRY - SPREAD) * (1 - 0.02 / 100))
 
 
 def test_taker_exit_short_side_lifts_the_ask(tmp_path, monkeypatch):

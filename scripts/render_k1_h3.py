@@ -37,7 +37,8 @@ def f(x, d=2):
 
 
 def fmt0(x):
-    return "—" if x is None else f"{x:+,.0f}"
+    """総損益(%)の表示。L-920 の前は bp の整数で出していた。"""
+    return "—" if x is None else f"{x:+,.3f}%"
 
 
 def cell(d, key, ft, g, st):
@@ -55,7 +56,8 @@ def years_of(d):
 
 def total(c, y):
     p = c["per_year"].get(y)
-    return (p["n"] * p["mean_bp"], p["n"]) if p else (None, 0)
+    # 総損益 = 取引ごとのリターンの和 = n × mean_bp。和は 1 つの値段の動きではないので %(/ 100、L-920)
+    return (p["n"] * p["mean_bp"] / 100, p["n"]) if p else (None, 0)
 
 
 def t_grid(name, d):
@@ -78,7 +80,7 @@ def t_grid(name, d):
 
 def t_year_pnl(name, d, gate="s19/b24"):
     ys = years_of(d)
-    print(f"### 表 K-b ({name}) — 門 `{gate}`: 年ごとの総損益 bp(建玉 1 単位)と (取引数)、4 腕。右端は全期間の合計\n")
+    print(f"### 表 K-b ({name}) — 門 `{gate}`: 年ごとの総損益 %(建玉 1 単位、取引のリターンの和 / 100)と (取引数)、4 腕。右端は全期間の合計\n")
     print("| 足 | 強さ | 腕 | " + " | ".join(ys) + " | 合計 |")
     print("|---|---|---|" + "---|" * (len(ys) + 1))
     for ft in FEET:
@@ -101,7 +103,7 @@ def t_year_pnl(name, d, gate="s19/b24"):
 def t_all_gates(name, d, st="both"):
     ys = years_of(d)
     gates = d["base"]["family"]["gates"]
-    print(f"### 表 K-c ({name}) — 全 13 門 × 足 6、強さ「両方」: 全期間の総損益 bp と (取引数)、4 腕。右 3 列は原典より年の総損益が増えた年の数 / 年数\n")
+    print(f"### 表 K-c ({name}) — 全 13 門 × 足 6、強さ「両方」: 全期間の総損益 % と (取引数)、4 腕。右 3 列は原典より年の総損益が増えた年の数 / 年数\n")
     print("| 門 | 足 | 原典 | H1+H2a | H3 | H1+H2a+H3 | 増 H1+H2a | 増 H3 | 増 H1+H2a+H3 |")
     print("|---|---|---|---|---|---|---|---|---|")
     for g in gates:
@@ -145,7 +147,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.parse_args()
     print("# H3 — 入口を 1 本遅らせる: {原典, H1+H2a, H3, H1+H2a+H3}(生成物。`H3_PREREG.md` §3)\n")
-    print("`*` = 日ブロックブートストラップ 200 回の 95% 区間が 0 を跨がない。単位 bp、経費なし。総損益 = 年別 n × 年別平均(建玉 1 単位)。\n")
+    print("`*` = 日ブロックブートストラップ 200 回の 95% 区間が 0 を跨がない。平均・分位は bp(1 取引の値動き率)、経費なし。総損益 = 年別 n × 年別平均 / 100(%、建玉 1 単位。L-920)。\n")
     for name, dirpath in VENUES:
         d = load(dirpath)
         missing = [lab for key, lab, _ in ARMS if not d[key]]

@@ -5,7 +5,7 @@ Question
 --------
 `scripts/replay_scalp_storm.py` showed the current paper scalper is gross-
 positive but net-negative over the storm-event library: the TAKER exit's
-~4 bps eats the whole edge. This study changes ONLY the exit and asks
+~0.04 % (a cost, L-920) eats the whole edge. This study changes ONLY the exit and asks
 whether a MAKER exit can rescue the economics.
 
 The asymmetry under test: for a momentum LONG the maker take-profit is a
@@ -60,12 +60,14 @@ Exit mechanics on the 1s grid
 
 Cost model (unchanged)
 ----------------------
-Maker entry 0 bps. Maker TP exit 0 bps. TAKER exit (fallback / trail /
-stop) 3.96 bps in the burst regime (PRIMARY, every exit here is seconds
-after a burst); 2.93 bps calm is reported as a sensitivity for E0 and the
+(L-920: costs and net are % of the price, not bp. Gross trade returns, TP,
+trail and stop distances stay in bp because they are move rates.)
+Maker entry 0 %. Maker TP exit 0 %. TAKER exit (fallback / trail /
+stop) 0.0396 % in the burst regime (PRIMARY, every exit here is seconds
+after a burst); 0.0293 % calm is reported as a sensitivity for E0 and the
 winning variant only.
 
-Adoption bar: net >= +5.00 bps/trade aggregate. n = 16 events is below the
+Adoption bar: net >= +0.05 %/trade aggregate. n = 16 events is below the
 pre-registered 30-event bar, so a PASS here is PROVISIONAL (paper trading
 decides) while a FAIL at these costs stands on its own.
 
@@ -98,10 +100,10 @@ from run_scalp_paper import RestingLimit  # noqa: E402
 # constants and the E0 cross-check.
 import replay_scalp_storm as replay  # noqa: E402
 from replay_scalp_storm import (  # noqa: E402
-    ADOPTION_BAR_BPS,
+    ADOPTION_BAR_PCT,
     ADOPTION_EVENT_BAR,
-    COST_BURST_BPS,
-    COST_CALM_BPS,
+    COST_BURST_PCT,
+    COST_CALM_PCT,
     describe,
     leader_return_bps,
 )
@@ -200,7 +202,7 @@ class Trade:
     exit_px: float
     exit_type: str          # tp | trail | stop | fallback
     gross_bps: float
-    cost_bps: float
+    cost_pct: float         # % of the price (L-920; was cost_bps)
     hold_s: float
     #: gross bps of the counterfactual "hold to this variant's horizon and
     #: take" exit, computed for EVERY trade regardless of what happened.
@@ -210,9 +212,10 @@ class Trade:
     #: worst adverse excursion (bps, positive number) before the exit
     mae_bps: float = 0.0
 
-    def net(self, taker_cost: float = COST_BURST_BPS) -> float:
+    def net(self, taker_cost: float = COST_BURST_PCT) -> float:
+        """Net % (L-920): gross_bps (a move rate) / 100, minus the taker cost in %."""
         c = taker_cost if self.exit_type != "tp" else 0.0
-        return self.gross_bps - c
+        return self.gross_bps / 100 - c
 
     def key(self) -> tuple:
         return (self.event, self.sig_idx, self.fill_idx, self.exit_idx,
@@ -273,7 +276,7 @@ def simulate_event(ev: EventData, args, radar: StormRadar, spec: dict,
         nonlocal pos
         d = 1.0 if pos["side"] == "LONG" else -1.0
         gross = (px - pos["entry_px"]) / pos["entry_px"] * 1e4 * d
-        cost = 0.0 if kind == "tp" else COST_BURST_BPS
+        cost = 0.0 if kind == "tp" else COST_BURST_PCT
         k = pos["fill_idx"] + horizon
         cf = None
         if k < ev.n and np.isfinite(bf[k]):
@@ -283,7 +286,7 @@ def simulate_event(ev: EventData, args, radar: StormRadar, spec: dict,
                   ret_bps=pos["ret_bps"], fill_idx=pos["fill_idx"],
                   fill_lag_s=pos["fill_lag_s"], entry_px=pos["entry_px"],
                   exit_idx=i, exit_px=float(px), exit_type=kind,
-                  gross_bps=gross, cost_bps=cost,
+                  gross_bps=gross, cost_pct=cost,
                   hold_s=float(ts_unix[i] - ts_unix[pos["fill_idx"]]),
                   cf_hold_gross_bps=cf, mfe_bps=pos["mfe"], mae_bps=pos["mae"])
         run.trades.append(t)
@@ -416,7 +419,7 @@ def run_variant(events: list[EventData], args, radar: StormRadar,
 # --------------------------------------------------------------------------- #
 # stats
 # --------------------------------------------------------------------------- #
-def boot_event_mean(by_event: list[list[float]], bar: float = ADOPTION_BAR_BPS,
+def boot_event_mean(by_event: list[list[float]], bar: float = ADOPTION_BAR_PCT,
                     n: int = BOOT_N, seed: int = BOOT_SEED) -> dict | None:
     """Event-clustered bootstrap of the mean: trades inside one storm are
     not independent, so events (not trades) are the resampling unit."""
@@ -452,19 +455,20 @@ def fmt(x, nd=2, width=8):
 
 
 def stat_line(vals, indent=6):
+    """Net values in % (L-920; 1/100 of the old bp, so 2 more decimals)."""
     s = describe(vals)
     if s["n"] == 0:
         print(" " * indent + "(no observations)")
         return s
-    print(" " * indent + f"n={s['n']:<4d} mean={s['mean']:+7.2f}  median={s['median']:+7.2f}  "
-          f"sd={s['sd']:7.2f}  win%={s['win']:5.1f}  sum={s['sum']:+9.1f}  "
-          f"min={s['min']:+7.1f}  max={s['max']:+7.1f}")
+    print(" " * indent + f"n={s['n']:<4d} mean={s['mean']:+9.4f}  median={s['median']:+9.4f}  "
+          f"sd={s['sd']:9.4f}  win%={s['win']:5.1f}  sum={s['sum']:+11.3f}  "
+          f"min={s['min']:+9.3f}  max={s['max']:+9.3f}")
     return s
 
 
-def verdict_line(mean: float, indent=6, bar: float = ADOPTION_BAR_BPS):
+def verdict_line(mean: float, indent=6, bar: float = ADOPTION_BAR_PCT):
     v = "PASS" if mean >= bar else "FAIL"
-    print(" " * indent + f"vs adoption bar +{bar:.0f} bps/trade -> {v} (gap {mean - bar:+.2f} bps)")
+    print(" " * indent + f"vs adoption bar +{bar:.2f} %/trade -> {v} (gap {mean - bar:+.4f} %)")
 
 
 def exit_mix(trades: list[Trade]) -> dict[str, float]:
@@ -494,7 +498,7 @@ def replay_reference(args, radar: StormRadar, paths: list[Path],
             if s.filled and s.gross_bps is not None:
                 keys.append((r.event, s.idx, s.fill_idx, s.exit_idx, "fallback",
                              round(s.gross_bps, 9)))
-                nets.append(s.gross_bps - COST_BURST_BPS)
+                nets.append(s.gross_bps / 100 - COST_BURST_PCT)
     d = describe(nets)
     return keys, dict(signals=sigs, fills=len(nets), mean=d["mean"], sum=d["sum"],
                       gross=describe([s.gross_bps for r in res for s in r.signals
@@ -516,38 +520,38 @@ def section_e0_reproduction(events, args, radar, paths, e0: VariantRun) -> bool:
     print(f"  (a) FROZEN config (thr {args.thr_bps:.0f} bps armed and unarmed) — "
           f"replay_scalp_storm.replay_event vs this script's E0")
     print(f"      replay : signals={info['signals']:>4}  fills={info['fills']:>4}  "
-          f"gross={info['gross']:+.2f}  net={info['mean']:+.2f} bps/trade")
-    d0 = describe([t.net(COST_BURST_BPS) for t in e0.trades])
+          f"gross={info['gross']:+.2f} bps  net={info['mean']:+.4f} %/trade")
+    d0 = describe([t.net(COST_BURST_PCT) for t in e0.trades])
     g0 = describe([t.gross_bps for t in e0.trades])
     print(f"      E0     : signals={e0.signals:>4}  fills={len(e0.trades):>4}  "
-          f"gross={g0['mean']:+.2f}  net={d0['mean']:+.2f} bps/trade")
+          f"gross={g0['mean']:+.2f} bps  net={d0['mean']:+.4f} %/trade")
     print(f"      [{'OK ' if same else 'FAIL'}] trade-by-trade identity "
           f"(event, signal idx, fill idx, exit idx, gross): "
           f"{'all ' + str(len(mine)) + ' trades identical' if same else 'MISMATCH'}")
 
     # (b) the replay's own published default (armed 8 bps) — the config that
-    #     produced the -2.13 bps / 116 fills figure quoted in the brief.
+    #     produced the -2.13 bps (net; L-920: -0.0213 %) / 116 fills figure quoted in the brief.
     keys8, info8 = replay_reference(args, radar, paths, 8.0)
     run8 = run_variant(events, argparse.Namespace(**{**vars(args), "thr_armed_bps": 8.0}),
                        radar, "E0")
     mine8 = [t.key() for t in run8.trades]
     same8 = mine8 == keys8
     ok_all &= same8
-    d8 = describe([t.net(COST_BURST_BPS) for t in run8.trades])
+    d8 = describe([t.net(COST_BURST_PCT) for t in run8.trades])
     g8 = describe([t.gross_bps for t in run8.trades])
     print()
     print("  (b) the replay's PUBLISHED default (armed threshold 8 bps) — the config")
-    print("      behind the '-2.13 bps over 116 fills' headline in the brief")
+    print("      behind the '-2.13 bps over 116 fills' headline in the brief (net; -0.0213 % after L-920)")
     print(f"      replay : signals={info8['signals']:>4}  fills={info8['fills']:>4}  "
-          f"gross={info8['gross']:+.2f}  net={info8['mean']:+.2f} bps/trade")
+          f"gross={info8['gross']:+.2f} bps  net={info8['mean']:+.4f} %/trade")
     print(f"      E0(8)  : signals={run8.signals:>4}  fills={len(run8.trades):>4}  "
-          f"gross={g8['mean']:+.2f}  net={d8['mean']:+.2f} bps/trade")
+          f"gross={g8['mean']:+.2f} bps  net={d8['mean']:+.4f} %/trade")
     print(f"      [{'OK ' if same8 else 'FAIL'}] trade-by-trade identity: "
           f"{'all ' + str(len(mine8)) + ' trades identical' if same8 else 'MISMATCH'}")
     print()
     print("  NOTE / DISCREPANCY IN THE BRIEF. '-2.13 bps over 116 fills' is the replay at")
     print("  its own default armed threshold of 8 bps, NOT at 'thr 10 bps everywhere'. The")
-    print("  retired-8bps entry the brief freezes gives 86 fills at -2.29 bps/trade. Both")
+    print("  retired-8bps entry the brief freezes gives 86 fills at -0.0229 %/trade net. Both")
     print("  are reproduced bit-for-bit above; everything downstream uses the FROZEN")
     print("  10/10 config the brief specifies.")
     return ok_all
@@ -558,7 +562,7 @@ def section_e0_reproduction(events, args, radar, paths, e0: VariantRun) -> bool:
 # --------------------------------------------------------------------------- #
 def section_variants(runs: dict[str, VariantRun]) -> None:
     line("=")
-    print(f"2. PER-VARIANT AGGREGATE  (taker legs cost {COST_BURST_BPS:.2f} bps; maker TP legs cost 0)")
+    print(f"2. PER-VARIANT AGGREGATE  (taker legs cost {COST_BURST_PCT:.4f} %; maker TP legs cost 0; net in %)")
     line("=")
     hdr = (f"{'var':<4}{'trades':>7}{'sig':>6}{'fill%':>7}{'TPfill%':>9}"
            f"{'%tp':>6}{'%trail':>8}{'%stop':>7}{'%fb':>7}"
@@ -567,7 +571,7 @@ def section_variants(runs: dict[str, VariantRun]) -> None:
     line()
     for v in VARIANT_ORDER:
         r = runs[v]
-        nets = [t.net(COST_BURST_BPS) for t in r.trades]
+        nets = [t.net(COST_BURST_PCT) for t in r.trades]
         s = describe(nets)
         mix = exit_mix(r.trades)
         tp_rate = mix["tp"] if VARIANTS[v]["tp_bps"] is not None else float("nan")
@@ -575,8 +579,8 @@ def section_variants(runs: dict[str, VariantRun]) -> None:
         holds = [t.hold_s for t in r.trades]
         print(f"{v:<4}{len(r.trades):>7}{r.signals:>6}{fillpct:>7.1f}{fmt(tp_rate,1,9)}"
               f"{mix['tp']:>6.1f}{mix['trail']:>8.1f}{mix['stop']:>7.1f}{mix['fallback']:>7.1f}"
-              f"{fmt(s['mean'],2,8)}{fmt(s['median'],2,8)}{fmt(s['sd'],2,8)}"
-              f"{fmt(s['win'],1,7)}{fmt(s['sum'],1,9)}"
+              f"{fmt(s['mean'],4,8)}{fmt(s['median'],4,8)}{fmt(s['sd'],4,8)}"
+              f"{fmt(s['win'],1,7)}{fmt(s['sum'],3,9)}"
               f"{(np.mean(holds) if holds else float('nan')):>8.1f}")
     line()
     print("  'sig' = signals evaluated; it differs per variant BY DESIGN: an exit that")
@@ -586,40 +590,40 @@ def section_variants(runs: dict[str, VariantRun]) -> None:
 
     for v in VARIANT_ORDER:
         r = runs[v]
-        nets = [t.net(COST_BURST_BPS) for t in r.trades]
+        nets = [t.net(COST_BURST_PCT) for t in r.trades]
         print(f"  {v}  {VARIANTS[v]['label']}")
         s = stat_line(nets)
         if s["n"]:
             verdict_line(s["mean"])
-            bs = boot_event_mean([[t.net(COST_BURST_BPS) for t in ts]
+            bs = boot_event_mean([[t.net(COST_BURST_PCT) for t in ts]
                                   for ts in r.by_event.values()])
             if bs:
                 print(f"      event-clustered bootstrap ({BOOT_N} resamples of {bs['n_ev']} events): "
-                      f"95% CI [{bs['lo']:+.2f}, {bs['hi']:+.2f}]  "
-                      f"P(mean >= +{ADOPTION_BAR_BPS:.0f}) = {bs['p_bar']:.3f}")
+                      f"95% CI [{bs['lo']:+.4f}, {bs['hi']:+.4f}] %  "
+                      f"P(mean >= +{ADOPTION_BAR_PCT:.2f} %) = {bs['p_bar']:.3f}")
             # exit-type PnL decomposition
             for k in EXIT_TYPES:
-                sub = [t.net(COST_BURST_BPS) for t in r.trades if t.exit_type == k]
+                sub = [t.net(COST_BURST_PCT) for t in r.trades if t.exit_type == k]
                 if sub:
                     d = describe(sub)
-                    print(f"        {k:<9} n={d['n']:<4d} mean={d['mean']:+7.2f}  "
-                          f"median={d['median']:+7.2f}  win%={d['win']:5.1f}  "
-                          f"sum={d['sum']:+9.1f}")
+                    print(f"        {k:<9} n={d['n']:<4d} mean={d['mean']:+9.4f}  "
+                          f"median={d['median']:+9.4f}  win%={d['win']:5.1f}  "
+                          f"sum={d['sum']:+11.3f}")
         print()
 
 
 def section_sensitivity(runs: dict[str, VariantRun], best: str) -> None:
     line("=")
-    print(f"2b. CALM-COST SENSITIVITY ({COST_CALM_BPS:.2f} bps per taker leg) — E0 and the best variant only")
+    print(f"2b. CALM-COST SENSITIVITY ({COST_CALM_PCT:.4f} % per taker leg) — E0 and the best variant only")
     line("=")
     for v in ("E0", best):
         r = runs[v]
         print(f"  {v}  {VARIANTS[v]['label']}")
-        for cost, tag in ((COST_BURST_BPS, "burst PRIMARY"), (COST_CALM_BPS, "calm sensitivity")):
+        for cost, tag in ((COST_BURST_PCT, "burst PRIMARY"), (COST_CALM_PCT, "calm sensitivity")):
             s = describe([t.net(cost) for t in r.trades])
-            print(f"      @{cost:.2f} bps ({tag:<16}): mean={s['mean']:+7.2f}  "
-                  f"median={s['median']:+7.2f}  win%={s['win']:5.1f}  sum={s['sum']:+9.1f}  "
-                  f"-> {'PASS' if s['mean'] >= ADOPTION_BAR_BPS else 'FAIL'}")
+            print(f"      @{cost:.4f} % ({tag:<16}): mean={s['mean']:+9.4f}  "
+                  f"median={s['median']:+9.4f}  win%={s['win']:5.1f}  sum={s['sum']:+11.3f}  "
+                  f"-> {'PASS' if s['mean'] >= ADOPTION_BAR_PCT else 'FAIL'}")
         print()
 
 
@@ -629,7 +633,7 @@ def section_sensitivity(runs: dict[str, VariantRun], best: str) -> None:
 def section_per_event(runs: dict[str, VariantRun], events: list[EventData],
                       best: str) -> None:
     line("=")
-    print(f"3. PER-EVENT TABLES  (net bps @ {COST_BURST_BPS:.2f} bps taker cost) — E0 and the best variant ({best})")
+    print(f"3. PER-EVENT TABLES  (net % @ {COST_BURST_PCT:.4f} % taker cost) — E0 and the best variant ({best})")
     line("=")
     order = sorted(events, key=lambda e: e.start)
     for v in ("E0", best):
@@ -641,20 +645,20 @@ def section_per_event(runs: dict[str, VariantRun], events: list[EventData],
         line()
         for ev in order:
             ts_ = r.by_event.get(ev.name, [])
-            nets = [t.net(COST_BURST_BPS) for t in ts_]
+            nets = [t.net(COST_BURST_PCT) for t in ts_]
             s = describe(nets)
             cnt = {k: sum(1 for t in ts_ if t.exit_type == k) for k in EXIT_TYPES}
             n_armed = sum(1 for t in ts_ if t.armed)
             print(f"  {ev.name:<15}{str(ev.start)[:19]:<22}{'':>5}{len(ts_):>5}"
                   f"{cnt['tp']:>4}{cnt['trail']:>5}{cnt['stop']:>5}{cnt['fallback']:>4}"
-                  f"{fmt(s['sum'],1,10)}{fmt(s['mean'],2,11)}{fmt(s['win'],1,7)}{n_armed:>11}")
+                  f"{fmt(s['sum'],3,10)}{fmt(s['mean'],4,11)}{fmt(s['win'],1,7)}{n_armed:>11}")
         line()
         allt = r.trades
-        s = describe([t.net(COST_BURST_BPS) for t in allt])
+        s = describe([t.net(COST_BURST_PCT) for t in allt])
         cnt = {k: sum(1 for t in allt if t.exit_type == k) for k in EXIT_TYPES}
         print(f"  {'TOTAL':<15}{'':<22}{r.signals:>5}{len(allt):>5}"
               f"{cnt['tp']:>4}{cnt['trail']:>5}{cnt['stop']:>5}{cnt['fallback']:>4}"
-              f"{fmt(s['sum'],1,10)}{fmt(s['mean'],2,11)}{fmt(s['win'],1,7)}"
+              f"{fmt(s['sum'],3,10)}{fmt(s['mean'],4,11)}{fmt(s['win'],1,7)}"
               f"{sum(1 for t in allt if t.armed):>11}")
         print()
 
@@ -685,31 +689,31 @@ def section_selection(runs: dict[str, VariantRun]) -> None:
             continue
         print(f"      TP filled     : {len(tp):>3} ({100*len(tp)/n:5.1f}%)   "
               f"NOT filled: {len(no):>3} ({100*len(no)/n:5.1f}%)")
-        print("      REALISED net bps/trade:")
+        print("      REALISED net %/trade:")
         print(f"        TP bucket   ", end="")
-        stat_line([t.net(COST_BURST_BPS) for t in tp], indent=0)
+        stat_line([t.net(COST_BURST_PCT) for t in tp], indent=0)
         print(f"        non-TP      ", end="")
-        stat_line([t.net(COST_BURST_BPS) for t in no], indent=0)
-        cf_tp = [t.cf_hold_gross_bps - COST_BURST_BPS for t in tp
+        stat_line([t.net(COST_BURST_PCT) for t in no], indent=0)
+        cf_tp = [t.cf_hold_gross_bps / 100 - COST_BURST_PCT for t in tp
                  if t.cf_hold_gross_bps is not None]
-        cf_no = [t.cf_hold_gross_bps - COST_BURST_BPS for t in no
+        cf_no = [t.cf_hold_gross_bps / 100 - COST_BURST_PCT for t in no
                  if t.cf_hold_gross_bps is not None]
-        print(f"      COUNTERFACTUAL 'hold {hz}s then take' net bps (same trades):")
+        print(f"      COUNTERFACTUAL 'hold {hz}s then take' net % (same trades):")
         print(f"        TP bucket   ", end="")
         s_tp = stat_line(cf_tp, indent=0)
         print(f"        non-TP      ", end="")
         s_no = stat_line(cf_no, indent=0)
         if np.isfinite(s_tp["mean"]) and np.isfinite(s_no["mean"]):
             print(f"      selection edge (TP bucket - non-TP bucket, counterfactual basis) = "
-                  f"{s_tp['mean'] - s_no['mean']:+.2f} bps")
+                  f"{s_tp['mean'] - s_no['mean']:+.4f} %")
             print(f"      value the TP ADDED on its own bucket (realised - counterfactual) = "
-                  f"{describe([t.net(COST_BURST_BPS) for t in tp])['mean'] - s_tp['mean']:+.2f} bps")
+                  f"{describe([t.net(COST_BURST_PCT) for t in tp])['mean'] - s_tp['mean']:+.4f} %")
         # what the non-TP bucket costs the book
         if no:
-            d_no = describe([t.net(COST_BURST_BPS) for t in no])
-            d_all = describe([t.net(COST_BURST_BPS) for t in r.trades])
-            print(f"      book split  : TP bucket contributes {describe([t.net(COST_BURST_BPS) for t in tp])['sum']:+9.1f} bps, "
-                  f"non-TP {d_no['sum']:+9.1f} bps, total {d_all['sum']:+9.1f} bps")
+            d_no = describe([t.net(COST_BURST_PCT) for t in no])
+            d_all = describe([t.net(COST_BURST_PCT) for t in r.trades])
+            print(f"      book split  : TP bucket contributes {describe([t.net(COST_BURST_PCT) for t in tp])['sum']:+11.3f} %, "
+                  f"non-TP {d_no['sum']:+11.3f} %, total {d_all['sum']:+11.3f} % (net, summed over trades)")
             print(f"      MFE/MAE of the non-TP bucket: mean peak favourable "
                   f"{np.mean([t.mfe_bps for t in no]):+.2f} bps, mean worst adverse "
                   f"{-np.mean([t.mae_bps for t in no]):+.2f} bps "
@@ -739,30 +743,30 @@ def section_diagnostic(runs: dict[str, VariantRun], events, args,
     runs["D1"] = d1
     for v in ("E0", "E2", "D1"):
         r = runs[v]
-        s = describe([t.net(COST_BURST_BPS) for t in r.trades])
-        bs = boot_event_mean([[t.net(COST_BURST_BPS) for t in ts]
+        s = describe([t.net(COST_BURST_PCT) for t in r.trades])
+        bs = boot_event_mean([[t.net(COST_BURST_PCT) for t in ts]
                               for ts in r.by_event.values()])
-        ci = f"[{bs['lo']:+.2f}, {bs['hi']:+.2f}]" if bs else "-"
+        ci = f"[{bs['lo']:+.4f}, {bs['hi']:+.4f}]" if bs else "-"
         p = f"{bs['p_bar']:.3f}" if bs else "-"
         print(f"  {v:<3} {VARIANTS[v]['label']:<58}")
-        print(f"      n={s['n']:<4d} mean={s['mean']:+7.2f}  median={s['median']:+7.2f}  "
-              f"sd={s['sd']:7.2f}  win%={s['win']:5.1f}  sum={s['sum']:+9.1f}  "
-              f"CI {ci}  P(>=+5)={p}")
+        print(f"      n={s['n']:<4d} mean={s['mean']:+9.4f}  median={s['median']:+9.4f}  "
+              f"sd={s['sd']:9.4f}  win%={s['win']:5.1f}  sum={s['sum']:+11.3f}  "
+              f"CI {ci}  P(>=+0.05 %)={p}")
     print()
-    print("  tail dependence (a mean of 30-bps-sd trades is only as good as its tails):")
+    print("  tail dependence (a mean of 0.30-%-sd net trades is only as good as its tails):")
     for v in ("E0", "E2", "D1"):
-        nets = np.sort(np.asarray([t.net(COST_BURST_BPS) for t in runs[v].trades]))
+        nets = np.sort(np.asarray([t.net(COST_BURST_PCT) for t in runs[v].trades]))
         tot = nets.sum()
         top3 = nets[-3:].sum()
-        print(f"      {v}: 10% trimmed mean {trimmed_mean(nets):+7.2f}   "
-              f"top-3 trades = {top3:+8.1f} of {tot:+8.1f} total bps "
+        print(f"      {v}: 10% trimmed mean {trimmed_mean(nets):+9.4f}   "
+              f"top-3 trades = {top3:+10.3f} of {tot:+10.3f} total % (net, summed) "
               f"({'n/a' if tot == 0 else f'{100 * top3 / tot:.0f}%'})   "
-              f"mean without them {(tot - top3) / max(len(nets) - 3, 1):+7.2f}")
+              f"mean without them {(tot - top3) / max(len(nets) - 3, 1):+9.4f}")
     print()
-    s_d1 = describe([t.net(COST_BURST_BPS) for t in d1.trades])
-    s_e2 = describe([t.net(COST_BURST_BPS) for t in runs["E2"].trades])
-    print(f"  D1 - E2 = {s_d1['mean'] - s_e2['mean']:+.2f} bps/trade. "
-          f"D1 - E0 = {s_d1['mean'] - describe([t.net(COST_BURST_BPS) for t in runs['E0'].trades])['mean']:+.2f} bps/trade.")
+    s_d1 = describe([t.net(COST_BURST_PCT) for t in d1.trades])
+    s_e2 = describe([t.net(COST_BURST_PCT) for t in runs["E2"].trades])
+    print(f"  D1 - E2 = {s_d1['mean'] - s_e2['mean']:+.4f} %/trade. "
+          f"D1 - E0 = {s_d1['mean'] - describe([t.net(COST_BURST_PCT) for t in runs['E0'].trades])['mean']:+.4f} %/trade.")
     print("  Read D1's sd and its CI width before reading its mean: the maker TP's whole")
     print("  contribution is variance reduction (it converts a fat-tailed distribution")
     print("  into a bounded one), which is exactly what it gives up in mean.")
@@ -787,11 +791,11 @@ def section_tp_strict(runs: dict[str, VariantRun], events, args,
         runs[dst] = run_variant(events, args, radar, dst)
         for v, tag in ((src, "at-or-through"), (dst, "strict through")):
             r = runs[v]
-            s = describe([t.net(COST_BURST_BPS) for t in r.trades])
+            s = describe([t.net(COST_BURST_PCT) for t in r.trades])
             mix = exit_mix(r.trades)
             print(f"  {src:<10}{tag:<16}{len(r.trades):>8}{mix['tp']:>9.1f}"
-                  f"{fmt(s['mean'],2,9)}{fmt(s['median'],2,9)}{fmt(s['win'],1,7)}"
-                  f"{fmt(s['sum'],1,10)}")
+                  f"{fmt(s['mean'],4,9)}{fmt(s['median'],4,9)}{fmt(s['win'],1,7)}"
+                  f"{fmt(s['sum'],3,10)}")
     line()
     print("  A large drop from row to row means the headline TP fill rate is an artefact")
     print("  of the 1s bar's closing price sitting exactly at the limit; a small drop")
@@ -832,7 +836,7 @@ def section_armed(runs: dict[str, VariantRun], best: str, radar: StormRadar) -> 
             print(f"    {label}: trades={len(sub)}  "
                   f"exit mix tp/trail/stop/fb = {mix['tp']:.0f}/{mix['trail']:.0f}/"
                   f"{mix['stop']:.0f}/{mix['fallback']:.0f}%")
-            s = stat_line([t.net(COST_BURST_BPS) for t in sub], indent=6)
+            s = stat_line([t.net(COST_BURST_PCT) for t in sub], indent=6)
             if s["n"]:
                 verdict_line(s["mean"], indent=6)
         print()
@@ -910,11 +914,11 @@ def section_sanity(runs: dict[str, VariantRun], events, args, radar,
                    "all variants re-simulated"))
 
     tp_maker_cost = [t for r in runs.values() for t in r.trades
-                     if t.exit_type == "tp" and t.cost_bps != 0.0]
+                     if t.exit_type == "tp" and t.cost_pct != 0.0]
     taker_cost = [t for r in runs.values() for t in r.trades
-                  if t.exit_type != "tp" and t.cost_bps != COST_BURST_BPS]
+                  if t.exit_type != "tp" and t.cost_pct != COST_BURST_PCT]
     checks.append(("cost accounting: maker TP exits pay 0, all other exits pay "
-                   f"{COST_BURST_BPS:.2f}", not tp_maker_cost and not taker_cost,
+                   f"{COST_BURST_PCT:.4f} %", not tp_maker_cost and not taker_cost,
                    f"{len(tp_maker_cost)}+{len(taker_cost)} violation(s)"))
 
     ok_all = True
@@ -942,45 +946,45 @@ def section_sanity(runs: dict[str, VariantRun], events, args, radar,
 # --------------------------------------------------------------------------- #
 def section_verdict(runs: dict[str, VariantRun], best: str, n_events: int) -> None:
     line("=")
-    print("7. VERDICT vs THE +5 bps/trade ADOPTION BAR")
+    print("7. VERDICT vs THE +0.05 %/trade NET ADOPTION BAR")
     line("=")
     rows = []
     for v in VARIANT_ORDER:
-        nets = [t.net(COST_BURST_BPS) for t in runs[v].trades]
+        nets = [t.net(COST_BURST_PCT) for t in runs[v].trades]
         s = describe(nets)
-        bs = boot_event_mean([[t.net(COST_BURST_BPS) for t in ts]
+        bs = boot_event_mean([[t.net(COST_BURST_PCT) for t in ts]
                               for ts in runs[v].by_event.values()])
         rows.append((v, s, bs))
     print(f"  {'var':<4}{'n':>5}{'mean':>9}{'median':>9}{'trim10':>9}{'95% CI (event-clustered)':>30}"
-          f"{'P(mean>=+5)':>13}{'verdict':>9}")
+          f"{'P(mean>=+.05)':>13}{'verdict':>9}")
     line()
     for v, s, bs in rows:
-        ci = f"[{bs['lo']:+.2f}, {bs['hi']:+.2f}]" if bs else "-"
+        ci = f"[{bs['lo']:+.4f}, {bs['hi']:+.4f}]" if bs else "-"
         p = f"{bs['p_bar']:.3f}" if bs else "-"
-        vd = "PASS" if s["n"] and s["mean"] >= ADOPTION_BAR_BPS else "FAIL"
-        tm = trimmed_mean([t.net(COST_BURST_BPS) for t in runs[v].trades])
-        print(f"  {v:<4}{s['n']:>5}{fmt(s['mean'],2,9)}{fmt(s['median'],2,9)}{fmt(tm,2,9)}"
+        vd = "PASS" if s["n"] and s["mean"] >= ADOPTION_BAR_PCT else "FAIL"
+        tm = trimmed_mean([t.net(COST_BURST_PCT) for t in runs[v].trades])
+        print(f"  {v:<4}{s['n']:>5}{fmt(s['mean'],4,9)}{fmt(s['median'],4,9)}{fmt(tm,4,9)}"
               f"{ci:>30}{p:>13}{vd:>9}")
     line()
-    best_s = describe([t.net(COST_BURST_BPS) for t in runs[best].trades])
-    e0_s = describe([t.net(COST_BURST_BPS) for t in runs["E0"].trades])
-    print(f"  best exit variant by mean net bps/trade: {best} "
+    best_s = describe([t.net(COST_BURST_PCT) for t in runs[best].trades])
+    e0_s = describe([t.net(COST_BURST_PCT) for t in runs["E0"].trades])
+    print(f"  best exit variant by mean net %/trade: {best} "
           f"({VARIANTS[best]['label']})")
-    print(f"  improvement over E0: {best_s['mean'] - e0_s['mean']:+.2f} bps/trade "
-          f"({e0_s['mean']:+.2f} -> {best_s['mean']:+.2f}); "
-          f"still {best_s['mean'] - ADOPTION_BAR_BPS:+.2f} bps vs the +5 bar")
+    print(f"  improvement over E0: {best_s['mean'] - e0_s['mean']:+.4f} %/trade "
+          f"({e0_s['mean']:+.4f} -> {best_s['mean']:+.4f}); "
+          f"still {best_s['mean'] - ADOPTION_BAR_PCT:+.4f} % vs the +0.05 % bar")
     print()
     line()
     print("  RECOMMENDATION")
     line()
     passing = [v for v in VARIANT_ORDER if v != "E0"
-               and describe([t.net(COST_BURST_BPS) for t in runs[v].trades])["mean"]
-               >= ADOPTION_BAR_BPS]
+               and describe([t.net(COST_BURST_PCT) for t in runs[v].trades])["mean"]
+               >= ADOPTION_BAR_PCT]
     if passing:
         print(f"  Variant(s) clearing the bar: {', '.join(passing)} — PROVISIONAL PASS "
               f"(n = {n_events} events < {ADOPTION_EVENT_BAR}); paper trading decides.")
     else:
-        print("  NO pre-registered exit variant clears the +5 bps/trade bar. The maker")
+        print("  NO pre-registered exit variant clears the +0.05 %/trade net bar. The maker")
         print("  exit does exactly what the hypothesis predicted — the TP bucket is 100%")
         print("  winners and the exit-side selection edge is strongly POSITIVE (section 4)")
         print("  — and it is still not enough, because the TP caps every winner at its")
@@ -991,7 +995,7 @@ def section_verdict(runs: dict[str, VariantRun], best: str, n_events: int) -> No
         print("  defensible change is that E2 dominates E0 on every axis that matters for")
         print("  a paper run that has to survive long enough to reach n = 30 (higher mean,")
         print("  higher median, higher win rate, half the sd, bounded losses) — but it is")
-        print("  a ~0 bps/trade strategy, so switching buys a flatter equity curve around")
+        print("  a ~0 %/trade net strategy, so switching buys a flatter equity curve around")
         print("  zero, not an edge. If the owner wants the exit rule changed anyway for")
         print("  drawdown reasons, E2 is the one to change to, logged as a variance")
         print("  decision and not as an adoption.")
@@ -1040,8 +1044,8 @@ def main() -> int:
           f"{args.window_sec:.0f}s, maker RestingLimit at the touch,")
     print(f"                fill timeout {args.fill_timeout_sec:.0f}s, cooldown "
           f"{args.cooldown_sec:.0f}s from signal, continuation direction, one position at a time")
-    print(f"costs        : maker entry 0 bps, maker TP exit 0 bps, taker exit "
-          f"{COST_BURST_BPS:.2f} bps (burst PRIMARY) / {COST_CALM_BPS:.2f} bps (calm sensitivity)")
+    print(f"costs        : maker entry 0 %, maker TP exit 0 %, taker exit "
+          f"{COST_BURST_PCT:.4f} % (burst PRIMARY) / {COST_CALM_PCT:.4f} % (calm sensitivity)")
     print("exit variants:")
     for v in VARIANT_ORDER:
         print(f"   {v}  {VARIANTS[v]['label']}")
@@ -1055,7 +1059,7 @@ def main() -> int:
 
     section_variants(runs)
     cands = [v for v in VARIANT_ORDER[1:] if runs[v].trades]
-    best = max(cands, key=lambda v: describe([t.net(COST_BURST_BPS)
+    best = max(cands, key=lambda v: describe([t.net(COST_BURST_PCT)
                                               for t in runs[v].trades])["mean"])
     section_sensitivity(runs, best)
     section_per_event(runs, events, best)

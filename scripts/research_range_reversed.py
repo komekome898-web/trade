@@ -23,6 +23,12 @@ JUDGMENT segment, run once, reported as-is.
 Adoption bar (pre-registered): judgment >= 100 trades AND net >= +2.0 bps/trade
 AND day-clustered t >= 2.0.
 
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(5 秒の値動き・
+gross・前向きの drift・レンジの幅・MFE)にだけ使う。費用(3.96bps = 0.0396 %、
+2.93bps = 0.0293 %)、ネットと採用の線(+2.0bps = +0.02 %)、レンジの縁からの
+距離(縁を 10bps 越えた止め = 0.1 %、fix10 の TP = 縁の内側 0.1 %、縁からの
+行き過ぎ、10bps の障壁の競争 = 0.1 %)、TP と入りの値段の距離は % で持つ。)
+
 Data
 ----
 data/executions_FX_BTC_JPY.csv  raw public executions (~820k prints, 30 days)
@@ -48,15 +54,15 @@ BURST_BPS = 10.0             # |5s log-return| threshold, bps
 BURST_LOOKBACK_SEC = 600     # calm (a): trailing 10 minutes
 DRIFT_LOOKBACK_SEC = 1800    # calm (b): trailing 30 minutes
 DRIFT_MAX = 0.004            # calm (b): |30m log-return| < 0.4%
-RANGE_BREAK_BPS = 10.0       # stop: 10 bps beyond the entry edge
+RANGE_BREAK_PCT = 0.10       # stop: 0.1 % beyond the entry edge (10 bps in the prereg)
 HOLD_MAX_SEC = 3600          # time stop: 60 minutes
-COST_TAKER_BURST = 1.96 + 2.0    # 3.96 bps -- entry touch and stop exit
-COST_TAKER_CALM = 0.93 + 2.0     # 2.93 bps -- time-stop exit (and sensitivity)
+COST_TAKER_BURST = 0.0196 + 0.02  # 0.0396 % -- entry touch and stop exit
+COST_TAKER_CALM = 0.0093 + 0.02   # 0.0293 % -- time-stop exit (and sensitivity)
 COOLDOWN_SEC = 60.0          # minimum gap between exit and next entry
 RETRACE_FRAC = 0.25          # re-entry guard: 25% of the range off the edge
 
 BAR_TRADES = 100
-BAR_NET_BPS = 2.0
+BAR_NET_PCT = 0.02           # % (+2.0 bps in the prereg)
 BAR_T = 2.0
 
 WINDOWS = [60, 120, 240]                   # rolling range window, minutes
@@ -199,8 +205,8 @@ class Cfg:
 
 
 TRADE_COLS = ["ts_entry", "ts_exit", "side", "entry", "exit", "tp", "edge",
-              "width_bps", "tp_dist_bps", "overshoot_bps", "gross_bps",
-              "cost_bps", "net_bps", "reason", "hold_sec", "rng_lo", "rng_hi"]
+              "width_bps", "tp_dist_pct", "overshoot_pct", "gross_bps",
+              "cost_pct", "net_pct", "reason", "hold_sec", "rng_lo", "rng_hi"]
 
 
 def _rolling_extrema(mh: np.ndarray, ml: np.ndarray, w: int):
@@ -218,7 +224,7 @@ def _tp_level(tp_mode: str, side: int, lo: float, hi: float) -> float:
     if tp_mode == "third":
         return lo + width / 3.0 if side > 0 else hi - width / 3.0
     if tp_mode == "fix10":
-        return lo * (1 + 10.0 / 1e4) if side > 0 else hi * (1 - 10.0 / 1e4)
+        return lo * (1 + 0.1 / 100) if side > 0 else hi * (1 - 0.1 / 100)  # 0.1 % inside the edge
     raise ValueError(tp_mode)
 
 
@@ -236,8 +242,8 @@ def _manage(mk: Market, cfg: Cfg, side: int, t_fill: float, tp: float,
         seg_p = mk.price[s_start:s_end + 1]
         seg_r = mk.r5[s_start:s_end + 1]
         if cfg.use_range_stop:
-            trig = (seg_p < lo * (1 - RANGE_BREAK_BPS / 1e4)) if side > 0 else \
-                   (seg_p > hi * (1 + RANGE_BREAK_BPS / 1e4))
+            trig = (seg_p < lo * (1 - RANGE_BREAK_PCT / 100)) if side > 0 else \
+                   (seg_p > hi * (1 + RANGE_BREAK_PCT / 100))
         else:
             trig = np.zeros(seg_p.shape, bool)
         if cfg.use_burst_stop:
@@ -377,9 +383,9 @@ def backtest(mk: Market, cfg: Cfg, m_lo: int, m_hi: int,
             "ts_entry": t, "ts_exit": t_exit, "side": side,
             "entry": entry, "exit": px_exit, "tp": tp, "edge": edge,
             "width_bps": width / entry * 1e4,
-            "tp_dist_bps": side * (tp / entry - 1.0) * 1e4,
-            "overshoot_bps": abs(entry - edge) / entry * 1e4,
-            "gross_bps": gross, "cost_bps": cost, "net_bps": gross - cost,
+            "tp_dist_pct": side * (tp / entry - 1.0) * 100,
+            "overshoot_pct": abs(entry - edge) / entry * 100,
+            "gross_bps": gross, "cost_pct": cost, "net_pct": gross / 100 - cost,  # gross bps -> %
             "reason": reason, "hold_sec": t_exit - t,
             "rng_lo": lo, "rng_hi": hi,
         })
@@ -405,7 +411,7 @@ def day_clustered_t(tdf: pd.DataFrame) -> tuple[float, int]:
     if tdf.empty:
         return float("nan"), 0
     day = pd.to_datetime(tdf["ts_entry"], unit="s", utc=True).dt.floor("D")
-    per_day = tdf.groupby(day)["net_bps"].mean()
+    per_day = tdf.groupby(day)["net_pct"].mean()
     nd = len(per_day)
     if nd < 2:
         return float("nan"), nd
@@ -424,25 +430,25 @@ def summarise(tdf: pd.DataFrame) -> dict:
     rc = tdf["reason"].value_counts(normalize=True) * 100
     return {
         "n": len(tdf),
-        "mean": tdf["net_bps"].mean(),
-        "median": tdf["net_bps"].median(),
-        "sd": tdf["net_bps"].std(ddof=1),
-        "win": (tdf["net_bps"] > 0).mean() * 100,
-        "t": t, "days": nd, "total": tdf["net_bps"].sum(),
+        "mean": tdf["net_pct"].mean(),
+        "median": tdf["net_pct"].median(),
+        "sd": tdf["net_pct"].std(ddof=1),
+        "win": (tdf["net_pct"] > 0).mean() * 100,
+        "t": t, "days": nd, "total": tdf["net_pct"].sum(),
         "tp%": float(rc.get("tp", 0.0)), "stop%": float(rc.get("stop", 0.0)),
         "time%": float(rc.get("time", 0.0)),
     }
 
 
-HEAD = (f"{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} "
+HEAD = (f"{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} "
         f"{'win%':>7} {'dayT':>7}")
 
 
 def fmt(s: dict) -> str:
     if s["n"] == 0:
         return f"{0:>7}  {'-':>9} {'-':>9} {'-':>8} {'-':>7} {'-':>7}"
-    return (f"{s['n']:>7}  {s['mean']:>+9.2f} {s['median']:>+9.2f} "
-            f"{s['sd']:>8.1f} {s['win']:>6.1f}% {s['t']:>+7.2f}")
+    return (f"{s['n']:>7}  {s['mean']:>+9.4f} {s['median']:>+9.4f} "
+            f"{s['sd']:>8.3f} {s['win']:>6.1f}% {s['t']:>+7.2f}")
 
 
 def fwd_drift(mk: Market, t: np.ndarray, side: np.ndarray, hz: int) -> np.ndarray:
@@ -521,13 +527,13 @@ def main() -> int:
               f"selecting over all configs")
     best = max(elig, key=lambda r: (r["total"], r["mean"]))
     cfg = best["cfg"]
-    print(f"\nselection rule (fixed in advance): maximise TOTAL net bps on the "
+    print(f"\nselection rule (fixed in advance): maximise TOTAL net % on the "
           f"exploration\nsegment among configs with >= {MIN_EXPL_TRADES} trades.")
     print(f"CHOSEN: W={cfg.window}m, TP={cfg.tp_mode}")
-    print(f"  exploration: {best['n']} trades, {best['mean']:+.2f} bps/trade, "
-          f"total {best['total']:+.0f} bps, day-T {best['t']:+.2f}")
+    print(f"  exploration: {best['n']} trades, {best['mean']:+.4f} %/trade, "
+          f"total {best['total']:+.2f} %, day-T {best['t']:+.2f}")
     best_mean = max(elig, key=lambda r: r["mean"])["cfg"]
-    print(f"  robustness: a max-MEAN-bps rule would pick {best_mean.label()} -- "
+    print(f"  robustness: a max-MEAN-% rule would pick {best_mean.label()} -- "
           f"{'same config' if best_mean == cfg else 'a DIFFERENT config'}")
     if all(r["mean"] < 0 for r in rows):
         print("  NB every config in the grid is negative on exploration; the")
@@ -540,7 +546,7 @@ def main() -> int:
     jt = backtest(mk, cfg, split, n_min, stats=jstats)
     s = summarise(jt)
     print(f"config          : W={cfg.window}m TP={cfg.tp_mode}  "
-          f"entry taker {cfg.entry_cost:.2f} bps")
+          f"entry taker {cfg.entry_cost:.4f} %")
     print(f"edge touches    : {jstats['touches']:,} eligible calm-minute prints "
           f"at-or-beyond an edge")
     print(f"  suppressed by position-open/cooldown : "
@@ -559,10 +565,10 @@ def main() -> int:
           f"{rc.get('stop', 0) / s['n'] * 100:.1f}%")
     print(f"time exits      : {int(rc.get('time', 0))}/{s['n']} = "
           f"{rc.get('time', 0) / s['n'] * 100:.1f}%")
-    print(f"\nnet bps/trade   : mean {s['mean']:+.3f}  median {s['median']:+.3f}"
+    print(f"\nnet %/trade     : mean {s['mean']:+.5f}  median {s['median']:+.5f}"
           f"  sd {s['sd']:.2f}")
     print(f"win rate        : {s['win']:.1f}%")
-    print(f"total net       : {s['total']:+.0f} bps over {s['days']} UTC days")
+    print(f"total net       : {s['total']:+.2f} % over {s['days']} UTC days")
     print(f"day-clustered t : {s['t']:+.3f}  (n_days={s['days']})")
     print(f"mean hold       : {jt['hold_sec'].mean() / 60:.1f} min "
           f"(median {jt['hold_sec'].median() / 60:.1f})")
@@ -571,80 +577,80 @@ def main() -> int:
 
     header("2b. ADOPTION BAR (pre-registered)")
     c1 = s["n"] >= BAR_TRADES
-    c2 = np.isfinite(s["mean"]) and s["mean"] >= BAR_NET_BPS
+    c2 = np.isfinite(s["mean"]) and s["mean"] >= BAR_NET_PCT
     c3 = np.isfinite(s["t"]) and s["t"] >= BAR_T
     print(f"  trades   >= {BAR_TRADES}    : {s['n']:>8}      "
           f"{'PASS' if c1 else 'FAIL'}")
-    print(f"  net bps  >= {BAR_NET_BPS:+.1f}  : {s['mean']:>+8.2f}      "
+    print(f"  net %    >= {BAR_NET_PCT:+.2f} : {s['mean']:>+8.4f}      "
           f"{'PASS' if c2 else 'FAIL'}")
     print(f"  day-T    >= {BAR_T:+.1f}  : {s['t']:>+8.2f}      "
           f"{'PASS' if c3 else 'FAIL'}")
     print(f"\n  VERDICT: {'PASS' if (c1 and c2 and c3) else 'FAIL'}")
 
-    sub("2c. entry-cost sensitivity (2.93 bps instead of 3.96)")
+    sub("2c. entry-cost sensitivity (0.0293 % instead of 0.0396 %)")
     jt293 = backtest(mk, Cfg(cfg.window, cfg.tp_mode,
                              entry_cost=COST_TAKER_CALM), split, n_min)
     print(f"{'entry cost':<22}{HEAD}")
-    print(f"{'3.96 bps (registered)':<22}{fmt(s)}")
-    print(f"{'2.93 bps (sensitivity)':<22}{fmt(summarise(jt293))}")
-    print("  (the 1.03 bps difference is mechanical -- the trade set is identical)")
+    print(f"{'0.0396 % (registered)':<22}{fmt(s)}")
+    print(f"{'0.0293 % (sensitivity)':<22}{fmt(summarise(jt293))}")
+    print("  (the 0.0103 % difference is mechanical -- the trade set is identical)")
 
     # ---------------- risk / reward ---------------- #
     header("3. RISK-REWARD DECOMPOSITION")
-    winr = jt[jt["net_bps"] > 0]
-    losr = jt[jt["net_bps"] <= 0]
-    aw = winr["net_bps"].mean() if len(winr) else np.nan
-    al = losr["net_bps"].mean() if len(losr) else np.nan
+    winr = jt[jt["net_pct"] > 0]
+    losr = jt[jt["net_pct"] <= 0]
+    aw = winr["net_pct"].mean() if len(winr) else np.nan
+    al = losr["net_pct"].mean() if len(losr) else np.nan
     print(f"wins   : {len(winr):>5} ({len(winr) / s['n'] * 100:.1f}%)  "
-          f"average {aw:+.2f} bps  total {winr['net_bps'].sum():+.0f}")
+          f"average {aw:+.4f} %  total {winr['net_pct'].sum():+.2f}")
     print(f"losses : {len(losr):>5} ({len(losr) / s['n'] * 100:.1f}%)  "
-          f"average {al:+.2f} bps  total {losr['net_bps'].sum():+.0f}")
+          f"average {al:+.4f} %  total {losr['net_pct'].sum():+.2f}")
     if np.isfinite(aw) and np.isfinite(al) and al != 0:
         pw = len(winr) / s["n"]
         print(f"payoff ratio (avg win / |avg loss|) : {aw / abs(al):.3f}")
         print(f"breakeven win rate at that payoff   : "
               f"{100 * abs(al) / (aw + abs(al)):.1f}%   actual {pw * 100:.1f}%")
-    print(f"worst / best trade : {jt['net_bps'].min():+.1f} / "
-          f"{jt['net_bps'].max():+.1f} bps")
-    q = jt["net_bps"].quantile([.01, .05, .25, .5, .75, .95, .99])
-    print("net bps quantiles  : " +
-          "  ".join(f"p{int(k * 100)}={v:+.1f}" for k, v in q.items()))
+    print(f"worst / best trade : {jt['net_pct'].min():+.3f} / "
+          f"{jt['net_pct'].max():+.3f} %")
+    q = jt["net_pct"].quantile([.01, .05, .25, .5, .75, .95, .99])
+    print("net % quantiles    : " +
+          "  ".join(f"p{int(k * 100)}={v:+.3f}" for k, v in q.items()))
 
-    sub("3a. per-exit-type contribution (sums to the headline bps/trade)")
-    g = jt.groupby("reason")["net_bps"]
-    dec = pd.DataFrame({"trades": g.size(), "mean_bps": g.mean(),
-                        "total_bps": g.sum()})
+    sub("3a. per-exit-type contribution (sums to the headline %/trade)")
+    g = jt.groupby("reason")["net_pct"]
+    dec = pd.DataFrame({"trades": g.size(), "mean_pct": g.mean(),
+                        "total_pct": g.sum()})
     dec["share%"] = dec["trades"] / s["n"] * 100
-    dec["contrib_to_mean"] = dec["total_bps"] / s["n"]
+    dec["contrib_to_mean"] = dec["total_pct"] / s["n"]
     dec["gross_mean"] = jt.groupby("reason")["gross_bps"].mean()
-    dec["cost_mean"] = jt.groupby("reason")["cost_bps"].mean()
+    dec["cost_mean"] = jt.groupby("reason")["cost_pct"].mean()
     dec["med_hold_min"] = jt.groupby("reason")["hold_sec"].median() / 60
-    print(dec.round(2).to_string())
-    print(f"\ncontributions sum to {dec['contrib_to_mean'].sum():+.3f} bps/trade "
-          f"= the headline {s['mean']:+.3f}")
+    print(dec.round(4).to_string())  # % columns; gross_mean is bps
+    print(f"\ncontributions sum to {dec['contrib_to_mean'].sum():+.5f} %/trade "
+          f"= the headline {s['mean']:+.5f}")
 
     sub("3b. the geometry")
     print(f"range width (bps of price): median {jt['width_bps'].median():.0f} "
           f"(p10 {jt['width_bps'].quantile(.1):.0f} .. "
           f"p90 {jt['width_bps'].quantile(.9):.0f})")
     print(f"TP distance from entry    : median "
-          f"{jt['tp_dist_bps'].median():+.1f} bps "
-          f"(p10 {jt['tp_dist_bps'].quantile(.1):+.1f} .. "
-          f"p90 {jt['tp_dist_bps'].quantile(.9):+.1f})")
+          f"{jt['tp_dist_pct'].median():+.3f} % "
+          f"(p10 {jt['tp_dist_pct'].quantile(.1):+.3f} .. "
+          f"p90 {jt['tp_dist_pct'].quantile(.9):+.3f})")
     print(f"entry overshoot past edge : median "
-          f"{jt['overshoot_bps'].median():.2f} bps "
-          f"(p90 {jt['overshoot_bps'].quantile(.9):.2f}, "
-          f"max {jt['overshoot_bps'].max():.1f})")
-    already = (jt["overshoot_bps"] > RANGE_BREAK_BPS).mean() * 100
-    print(f"  entries already >10 bps beyond the edge (instant range stop): "
+          f"{jt['overshoot_pct'].median():.4f} % "
+          f"(p90 {jt['overshoot_pct'].quantile(.9):.4f}, "
+          f"max {jt['overshoot_pct'].max():.3f})")
+    already = (jt["overshoot_pct"] > RANGE_BREAK_PCT).mean() * 100
+    print(f"  entries already >0.1 % beyond the edge (instant range stop): "
           f"{already:.1f}%")
-    stop_dist = RANGE_BREAK_BPS + COST_TAKER_BURST + cfg.entry_cost
-    reward = jt["tp_dist_bps"].median()
-    print(f"reward if the maker TP hits : {reward:+.1f} bps gross, "
-          f"{reward - cfg.entry_cost:+.1f} net of the entry taker")
-    print(f"risk if the range stop hits : {-stop_dist:+.1f} bps "
-          f"({RANGE_BREAK_BPS:.0f} break + {COST_TAKER_BURST:.2f} exit "
-          f"+ {cfg.entry_cost:.2f} entry)")
+    stop_dist = RANGE_BREAK_PCT + COST_TAKER_BURST + cfg.entry_cost
+    reward = jt["tp_dist_pct"].median()
+    print(f"reward if the maker TP hits : {reward:+.3f} % gross, "
+          f"{reward - cfg.entry_cost:+.3f} net of the entry taker")
+    print(f"risk if the range stop hits : {-stop_dist:+.3f} % "
+          f"({RANGE_BREAK_PCT:.2f} break + {COST_TAKER_BURST:.4f} exit "
+          f"+ {cfg.entry_cost:.4f} entry)")
     be = 100 * stop_dist / ((reward - cfg.entry_cost) + stop_dist)
     print(f"breakeven TP hit rate       : {be:.1f}%    "
           f"ACTUAL {tp_n / s['n'] * 100:.1f}%")
@@ -675,8 +681,8 @@ def main() -> int:
     for r in jt.itertuples():
         te, pe, ec, rsn = _manage(mk, nb_cfg, int(r.side), float(r.ts_entry),
                                   float(r.tp), float(r.rng_lo), float(r.rng_hi))
-        gr = r.side * (pe / r.entry - 1.0) * 1e4
-        cf.append({"ts_entry": r.ts_entry, "net_bps": gr - cfg.entry_cost - ec,
+        gr = r.side * (pe / r.entry - 1.0) * 1e4   # gross move, bps
+        cf.append({"ts_entry": r.ts_entry, "net_pct": gr / 100 - cfg.entry_cost - ec,
                    "reason": rsn, "was_burst": r.Index in burst_set})
     cfd = pd.DataFrame(cf)
     print("\nMATCHED counterfactual -- identical entry list, burst stop OFF, the")
@@ -686,25 +692,25 @@ def main() -> int:
     print(f"{'without burst stop':<28}{fmt(summarise(cfd))}")
     bmask = cfd["was_burst"].to_numpy()
     if bmask.sum():
-        act = jt.loc[list(burst_idx), "net_bps"]
-        ctf = cfd.loc[bmask, "net_bps"]
+        act = jt.loc[list(burst_idx), "net_pct"]
+        ctf = cfd.loc[bmask, "net_pct"]
         print(f"\non the {int(bmask.sum())} burst-stopped trades alone:")
-        print(f"  actual (stopped early)      : mean {act.mean():+.2f} bps, "
-              f"worst {act.min():+.1f}, total {act.sum():+.0f}")
-        print(f"  counterfactual (held on)    : mean {ctf.mean():+.2f} bps, "
-              f"worst {ctf.min():+.1f}, total {ctf.sum():+.0f}")
-        print(f"  burst stop is worth {act.mean() - ctf.mean():+.2f} bps on those "
-              f"trades = {(act.sum() - ctf.sum()) / s['n']:+.2f} bps/trade overall")
+        print(f"  actual (stopped early)      : mean {act.mean():+.4f} %, "
+              f"worst {act.min():+.3f}, total {act.sum():+.2f}")
+        print(f"  counterfactual (held on)    : mean {ctf.mean():+.4f} %, "
+              f"worst {ctf.min():+.3f}, total {ctf.sum():+.2f}")
+        print(f"  burst stop is worth {act.mean() - ctf.mean():+.4f} % on those "
+              f"trades = {(act.sum() - ctf.sum()) / s['n']:+.4f} %/trade overall")
         rescued = int((ctf.to_numpy() < act.to_numpy()).sum())
         print(f"  it truncated a WORSE outcome in {rescued}/{int(bmask.sum())} "
               f"({rescued / bmask.sum() * 100:.0f}%) of them")
     # loss-tail comparison
-    lt_a = jt.loc[jt["net_bps"] <= 0, "net_bps"]
-    lt_b = cfd.loc[cfd["net_bps"] <= 0, "net_bps"]
-    print(f"\nloss tail (net<=0):  with stop  n={len(lt_a)} mean {lt_a.mean():+.2f} "
-          f"p05 {lt_a.quantile(.05):+.1f} min {lt_a.min():+.1f}")
-    print(f"                     no stop    n={len(lt_b)} mean {lt_b.mean():+.2f} "
-          f"p05 {lt_b.quantile(.05):+.1f} min {lt_b.min():+.1f}")
+    lt_a = jt.loc[jt["net_pct"] <= 0, "net_pct"]
+    lt_b = cfd.loc[cfd["net_pct"] <= 0, "net_pct"]
+    print(f"\nloss tail (net<=0, %):  with stop  n={len(lt_a)} mean {lt_a.mean():+.4f} "
+          f"p05 {lt_a.quantile(.05):+.3f} min {lt_a.min():+.3f}")
+    print(f"                        no stop    n={len(lt_b)} mean {lt_b.mean():+.4f} "
+          f"p05 {lt_b.quantile(.05):+.3f} min {lt_b.min():+.3f}")
 
     sub("3d. the raw signal, with no strategy on top (judgment segment)")
     print("Every eligible calm-minute edge touch, no position limit, no guard,")
@@ -719,7 +725,8 @@ def main() -> int:
         print(f"{lab:<10}{d.mean():>+11.2f}{np.median(d):>+10.2f}"
               f"{(d > 0).mean() * 100:>9.1f}%")
     print("  (+ = price moved back INTO the range, i.e. the fade was right)")
-    # barrier race: 10 bps back inside the edge vs 10 bps beyond it, 60m cap
+    # barrier race: 0.1 % back inside the edge vs 0.1 % beyond it, 60m cap
+    # (distances from the edge level, so % since L-920; 10 bps before)
     a = np.clip((np.floor(st) - mk.t0).astype(np.int64), 0, mk.n - 1)
     edge_px = np.where(sside > 0, slo, shi)
     win_b = lose_b = neither = 0
@@ -729,11 +736,11 @@ def main() -> int:
         if seg.size == 0:
             continue
         if sside[k] > 0:
-            up = np.flatnonzero(seg >= edge_px[k] * (1 + 10.0 / 1e4))
-            dn = np.flatnonzero(seg < edge_px[k] * (1 - 10.0 / 1e4))
+            up = np.flatnonzero(seg >= edge_px[k] * (1 + 0.1 / 100))
+            dn = np.flatnonzero(seg < edge_px[k] * (1 - 0.1 / 100))
         else:
-            up = np.flatnonzero(seg <= edge_px[k] * (1 - 10.0 / 1e4))
-            dn = np.flatnonzero(seg > edge_px[k] * (1 + 10.0 / 1e4))
+            up = np.flatnonzero(seg <= edge_px[k] * (1 - 0.1 / 100))
+            dn = np.flatnonzero(seg > edge_px[k] * (1 + 0.1 / 100))
         iu = up[0] if up.size else 10 ** 9
         idn = dn[0] if dn.size else 10 ** 9
         if iu == idn == 10 ** 9:
@@ -743,11 +750,11 @@ def main() -> int:
         else:
             lose_b += 1
     tot = win_b + lose_b + neither
-    print(f"\n  10 bps barrier race from the touch, 60-minute cap "
+    print(f"\n  0.1 % barrier race from the touch, 60-minute cap "
           f"(n={tot:,}):")
-    print(f"    reverts 10 bps INTO the range first  : {win_b:,} "
+    print(f"    reverts 0.1 % INTO the range first   : {win_b:,} "
           f"({win_b / max(tot, 1) * 100:.1f}%)")
-    print(f"    breaks  10 bps BEYOND the edge first : {lose_b:,} "
+    print(f"    breaks  0.1 % BEYOND the edge first  : {lose_b:,} "
           f"({lose_b / max(tot, 1) * 100:.1f}%)")
     print(f"    neither within 60 minutes            : {neither:,} "
           f"({neither / max(tot, 1) * 100:.1f}%)")
@@ -778,7 +785,8 @@ def main() -> int:
                 continue
             mfe = seg.max() if r.side > 0 else seg.min()
             got = r.side * (mfe / r.entry - 1.0) * 1e4
-            approach.append(got / r.tp_dist_bps if r.tp_dist_bps > 0 else np.nan)
+            # MFE move in bps over the TP distance in % (x 100 -> bps)
+            approach.append(got / (r.tp_dist_pct * 100) if r.tp_dist_pct > 0 else np.nan)
             if (r.side > 0 and mfe >= r.tp) or (r.side < 0 and mfe <= r.tp):
                 touched += 1
         ap = np.array(approach, float)
@@ -862,15 +870,15 @@ def main() -> int:
           f"{gs['stop%']:>5.0f}% {gs['time%']:>5.0f}%")
     print()
     if nc_s["n"]:
-        print(f"calm filter is worth {base_s['mean'] - nc_s['mean']:+.2f} bps/trade "
+        print(f"calm filter is worth {base_s['mean'] - nc_s['mean']:+.4f} %/trade "
               f"({base_s['n']} trades with it, {nc_s['n']} without -- the binding")
         print("  constraint on trade count is the guard and the one-position rule,")
         print("  not the calm filter, which very few minutes fail on this sample).")
     if tk_s["n"]:
-        print(f"\nmaker exit is worth {base_s['mean'] - tk_s['mean']:+.2f} bps/trade"
+        print(f"\nmaker exit is worth {base_s['mean'] - tk_s['mean']:+.4f} %/trade"
               f" vs a taker TP; TP-exit share {base_s['tp%']:.0f}% (maker) vs "
               f"{tk_s['tp%']:.0f}% (taker).")
-        print("  A taker TP fills on ANY print through the level and pays 2.93 bps;")
+        print("  A taker TP fills on ANY print through the level and pays 0.0293 %;")
         print("  the maker TP is free but needs a counter-side print. On this tape")
         print("  the two fill at the same rate, so the maker exit is worth exactly")
         print("  its saved fee -- and that saving is an order of magnitude too")
@@ -988,7 +996,7 @@ def main() -> int:
         "behind the resting size at that tick, so real maker TP fill rates are "
         "LOWER than reported -- every TP number here is an UPPER BOUND, and the "
         "fills you lose are preferentially at levels the market only kissed.",
-        "taker entry is priced off the LAST PRINT, not the book. The 3.96 bps "
+        "taker entry is priced off the LAST PRINT, not the book. The 0.0396 % "
         "(1.96 half-spread + 2.0 slippage) is a model, not a measurement, and "
         "edge touches are exactly when the spread widens.",
         "1s approximation: only ~12% of seconds carry a print, so the 1s series "

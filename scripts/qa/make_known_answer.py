@@ -54,9 +54,12 @@ MAINT_WINDOW = ("19:00", "19:10")  # UTC, matches bitFlyer's real window
 
 TAPE_DAYS = 3
 TAPE_START = "2026-07-01T00:00:00+00:00"
-QUOTE_SPREAD_BPS = 2.0
-TAKER_SLIPPAGE_BPS = 0.8
-TAKER_FEE_BPS = 0.0
+# Spread, slippage and fee are distances between two prices / a cost, not price-move rates, so they
+# are in % of mid (L-920; were QUOTE_SPREAD_BPS = 2.0 / TAKER_SLIPPAGE_BPS = 0.8 / TAKER_FEE_BPS = 0.0,
+# and the truth keys *_bps carried the same values x 100). Overnight premiums and vols stay in bp.
+QUOTE_SPREAD_PCT = 0.02
+TAKER_SLIPPAGE_PCT = 0.008
+TAKER_FEE_PCT = 0.0
 CROSSED_BOOK_FRACTION = 0.001
 COLLECTION_TIME_SHIFT_SEC = 2.0
 QUOTE_MEAN_GAP_SEC = 5.0
@@ -264,7 +267,7 @@ def make_tape(rng: np.random.Generator, out_dir: Path) -> dict:
     log_ret = TAPE_PRICE_SIGMA_PER_SEC * np.sqrt(dt) * z
     mid = 1_000_000.0 * np.exp(np.cumsum(log_ret))
 
-    half_spread = mid * (QUOTE_SPREAD_BPS / 2 / 1e4)
+    half_spread = mid * (QUOTE_SPREAD_PCT / 2 / 100)
     bid = mid - half_spread
     ask = mid + half_spread
     crossed = rng.random(n_q) < CROSSED_BOOK_FRACTION
@@ -297,10 +300,10 @@ def make_tape(rng: np.random.Generator, out_dir: Path) -> dict:
     quote_idx = np.clip(quote_idx, 0, n_q - 1)
     trade_mid = mid[quote_idx]
     side = rng.choice(["BUY", "SELL"], size=n_e)
-    slip_bps = TAKER_SLIPPAGE_BPS + rng.normal(0.0, 0.15, n_e)
+    slip_pct = TAKER_SLIPPAGE_PCT + rng.normal(0.0, 0.0015, n_e)   # same draws as the former 0.8 + N(0, 0.15) bp
     sign = np.where(side == "BUY", 1.0, -1.0)
-    exec_half_spread = trade_mid * (QUOTE_SPREAD_BPS / 2 / 1e4)
-    price = trade_mid + sign * exec_half_spread + sign * trade_mid * (slip_bps / 1e4)
+    exec_half_spread = trade_mid * (QUOTE_SPREAD_PCT / 2 / 100)
+    price = trade_mid + sign * exec_half_spread + sign * trade_mid * (slip_pct / 100)
     size = rng.lognormal(mean=-2.5, sigma=1.0, size=n_e)
 
     e_ts = start + pd.to_timedelta(e_ts_sec, unit="s")          # TRUE trade time
@@ -320,22 +323,22 @@ def make_tape(rng: np.random.Generator, out_dir: Path) -> dict:
         "_comment": "QA known-answer packet: DECLARED constant only. Spread and "
                     "slippage are NOT declared here — recompute both from the "
                     "tape yourself, per PROTOCOL.md Q3.",
-        "taker_fee_bps": TAKER_FEE_BPS,
+        "taker_fee_pct": TAKER_FEE_PCT,
         "source": "synthetic, matches config/products.yaml FX_BTC_JPY convention (taker_fee_pct: 0.0)",
     }
     (out_dir / "costs_qa.yaml").write_text(yaml.safe_dump(costs_yaml, sort_keys=False, allow_unicode=True))
 
-    realized_spread_bps = float(((ask - bid) / mid * 1e4)[~crossed].mean())
-    realized_slip_bps = float((np.abs((price - trade_mid) / trade_mid * 1e4) - QUOTE_SPREAD_BPS / 2).mean())
+    realized_spread_pct = float(((ask - bid) / mid * 100)[~crossed].mean())
+    realized_slip_pct = float((np.abs((price - trade_mid) / trade_mid * 100) - QUOTE_SPREAD_PCT / 2).mean())
     return {
         "quote_file": qfile, "execution_file": efile, "costs_file": "costs_qa.yaml",
         "n_quote_rows": int(n_q), "n_execution_rows": int(n_e),
-        "quoted_spread_bps": QUOTE_SPREAD_BPS,
-        "realized_spread_bps_ex_crossed": round(realized_spread_bps, 4),
-        "taker_slippage_bps_per_side": TAKER_SLIPPAGE_BPS,
-        "realized_slippage_bps_per_side": round(realized_slip_bps, 4),
-        "taker_fee_bps": TAKER_FEE_BPS,
-        "true_taker_roundtrip_floor_bps": round(2 * (QUOTE_SPREAD_BPS / 2 + TAKER_SLIPPAGE_BPS), 4),
+        "quoted_spread_pct": QUOTE_SPREAD_PCT,
+        "realized_spread_pct_ex_crossed": round(realized_spread_pct, 6),
+        "taker_slippage_pct_per_side": TAKER_SLIPPAGE_PCT,
+        "realized_slippage_pct_per_side": round(realized_slip_pct, 6),
+        "taker_fee_pct": TAKER_FEE_PCT,
+        "true_taker_roundtrip_floor_pct": round(2 * (QUOTE_SPREAD_PCT / 2 + TAKER_SLIPPAGE_PCT), 6),
         "crossed_book_fraction_target": CROSSED_BOOK_FRACTION,
         "crossed_book_rows": n_crossed,
         "crossed_book_fraction_realized": round(n_crossed / n_q, 6),
@@ -423,7 +426,7 @@ def build_claims(daily_truth, minute_truth, tape_truth) -> tuple[str, list[dict]
     alpha = daily_truth["QA_ALPHA"]
     autocorr = minute_truth["qa_autocorr"]
     rwalk = minute_truth["qa_randomwalk"]
-    floor = tape_truth["true_taker_roundtrip_floor_bps"]
+    floor = tape_truth["true_taker_roundtrip_floor_pct"]
 
     claims = [
         {
@@ -457,17 +460,17 @@ def build_claims(daily_truth, minute_truth, tape_truth) -> tuple[str, list[dict]
         {
             "id": "QA-5", "category": "cost_floor", "truth_class": "cost_trap", "claim_correct": True,
             "instrument": "qa_tape",
-            "text": (f"合成テープの taker 往復コスト床は{floor:.1f}bps"
-                     f"(スプレッド{tape_truth['quoted_spread_bps']:.1f}bpsの半分+"
-                     f"片道スリッページ{tape_truth['taker_slippage_bps_per_side']:.1f}bps、"
-                     f"手数料{tape_truth['taker_fee_bps']:.1f}bps)である。"),
+            "text": (f"合成テープの taker 往復コスト床は{floor:.3f}%"
+                     f"(スプレッド{tape_truth['quoted_spread_pct']:.3f}%の半分+"
+                     f"片道スリッページ{tape_truth['taker_slippage_pct_per_side']:.3f}%、"
+                     f"手数料{tape_truth['taker_fee_pct']:.3f}%)である。"),
         },
         {
             "id": "QA-6", "category": "cost_floor", "truth_class": "cost_trap", "claim_correct": False,
             "instrument": "qa_tape",
-            "text": ("合成テープの実測スプレッドは1.2bpsに縮小しており"
+            "text": ("合成テープの実測スプレッドは0.012%に縮小しており"
                      "(全 quote 行の単純平均。交差板・メンテ窓等の除外は行っていない)、"
-                     "taker 往復コスト床は2.8bpsまで圧縮できる。"),
+                     "taker 往復コスト床は0.028%まで圧縮できる。"),
         },
     ]
     lines = ["# QA known-answer packet — claims for auditors", "",

@@ -179,6 +179,7 @@ class ZiplimeAdapter(Base):
             # zero cost: the tool's NoSlippage does not take the exchange's `price` argument (no_slippage.py 18 行 vs
             # simulation_exchange's call; TypeError when tried) and FixedBasisPointsSlippage refuses 0 bp
             # (fixed_basis_points_slippage.py 49-50 行), so zero is sent as 1e-8 bp = 1e-12 relative (under the judge's 1e-9)
+            # the tool's basis_points is bp (its name): adj() is a fraction, x 1e4 on the next line
             slip = FixedBasisPointsSlippage(basis_points=max(a * 1e4, 1e-8), volume_limit=1e9)
             exch = Rec(name="LIME", country_code="US", trading_calendar=get_calendar("24/7"), data_source=src,
                        equity_slippage=slip, equity_commission=PerDollar(cost=c["taker_fee_pct"] / 100),

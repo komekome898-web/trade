@@ -43,7 +43,7 @@ OBSERVABLES = {
     "fwd_node": "whether price reached the next high-volume node in the cascade direction",
 }
 COVARIATES = {
-    "dist_vwap_bp": "distance in bp from the cascade price to the preceding W-hour VWAP",
+    "dist_vwap_pct": "distance in % from the cascade price to the preceding W-hour VWAP",
     "bin_pct": "thinness of the price bin where the cascade occurred",
 }
 
@@ -178,10 +178,10 @@ def test_covariate_questions_use_true_false_criteria(tmp_path, fake_client):
     assert len(fake_client.calls) == 1
     state, questions = fake_client.calls[0]
     assert set(questions) == set(COVARIATES)
-    spec = questions["dist_vwap_bp"]
+    spec = questions["dist_vwap_pct"]
     assert spec["type"] == "noul"
     assert set(spec["criteria"]) == {"true", "false"}
-    assert "covariates.dist_vwap_bp" in spec["instructions"]
+    assert "covariates.dist_vwap_pct" in spec["instructions"]
     assert set(state) == {"judgment_quantity", "covariates"}
 
 
@@ -221,9 +221,9 @@ def test_covariate_label_uses_the_imported_threshold(tmp_path, fake_client):
     from scripts.jev_check import PRESENCE
 
     assert D.PRESENCE is PRESENCE  # 新しい数値を置かない
-    fake_client.noul_by_name = {"dist_vwap_bp": PRESENCE, "bin_pct": PRESENCE - 0.01}
+    fake_client.noul_by_name = {"dist_vwap_pct": PRESENCE, "bin_pct": PRESENCE - 0.01}
     res = D.rank_covariates("q", _yaml(tmp_path, "c.yaml", COVARIATES))
-    assert [r["name"] for r in res["ranking"]] == ["dist_vwap_bp", "bin_pct"]
+    assert [r["name"] for r in res["ranking"]] == ["dist_vwap_pct", "bin_pct"]
     assert [r["label"] for r in res["ranking"]] == [D.LABEL_MATCH, D.LABEL_NO_MATCH]
 
 
@@ -262,14 +262,14 @@ def test_observables_md_has_the_heading_and_no_probability(tmp_path, fake_client
 
 
 def test_covariates_md_has_only_the_words(tmp_path, fake_client):
-    fake_client.noul_by_name = {"dist_vwap_bp": 0.51, "bin_pct": 0.12}
+    fake_client.noul_by_name = {"dist_vwap_pct": 0.51, "bin_pct": 0.12}
     md = tmp_path / "c.md"
     out = tmp_path / "c.json"
     D.rank_covariates("reach_back_vwap: 戻り到達", _yaml(tmp_path, "c.yaml", COVARIATES),
                       out=out, md=md)
     text = md.read_text(encoding="utf-8")
     assert text.startswith("## 設計の段の判定(jev_design、")
-    assert "| 1 | `dist_vwap_bp` | 合わせる |" in text
+    assert "| 1 | `dist_vwap_pct` | 合わせる |" in text
     assert "| 2 | `bin_pct` | 合わせなくてよい |" in text
     for token in ("0.51", "0.12"):
         assert token not in text
@@ -290,7 +290,7 @@ RECORD_MD = """### 順位表(下位モデル 2 名)
 
 | 変数 | 語 |
 |---|---|
-| dist_vwap_bp | 合わせる |
+| dist_vwap_pct | 合わせる |
 """
 
 
@@ -304,7 +304,7 @@ def test_record_substitute_wraps_the_record(tmp_path):
     assert text.startswith("## 設計の段の判定(jev_design、")
     assert f"### 代替(Jev 不達、記録 = {record})" in text
     assert "| 1 | `bp_reactdir` | 直接(3 以上) |" in text
-    assert "| dist_vwap_bp | 合わせる |" in text
+    assert "| dist_vwap_pct | 合わせる |" in text
 
 
 class _Dead:

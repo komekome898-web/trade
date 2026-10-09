@@ -11,7 +11,7 @@
     results/PHASE2/K1/judgement/effect_flip_noinval_delay_2020_2021.json … BitMEX 2020-2021(既存)
     results/PHASE2/K1/binance/effect_flip_noinval_delay.json          … Binance(in-sample、既存)
 
-per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × mean_bp。
+per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × mean_bp / 100(%。L-920 の後)。
 セルごとの区間・sd・分位・保有中央値は測った期間全体で 1 つの値である
 (bitFlyer の全期間 2017-2026 実行は 1 つ、2017-2021 と 2022-2026 のサブ実行はそれぞれ 1 つ)。
 サブ実行の per_year は全期間実行の per_year と**恒等でなければならない**(assert で確認)。
@@ -51,11 +51,22 @@ def cell(d, ft, g, st):
 
 def total_of(c, y):
     p = c["per_year"].get(str(y)) if c else None
-    return (round(p["n"] * p["mean_bp"], 1), p["n"]) if p else (None, 0)
+    # 総損益 = 取引ごとのリターンの和 = n × mean_bp。和は 1 つの値段の動きではないので %(/ 100、L-920)
+    return (round(p["n"] * p["mean_bp"] / 100, 3), p["n"]) if p else (None, 0)
+
+
+def _total_pct_str(b):
+    """三分位ごとの総損益(取引ごとのリターンの和)。L-920 の後の出力は total_pct(%)、
+    前の出力は total_bp(bp)なので / 100 して % で出す。"""
+    v = b.get("total_pct")
+    if v is None and b.get("total_bp") is not None:
+        v = b["total_bp"] / 100
+    return "—" if v is None else f"{v:+,.3f}%"
 
 
 def fmt0(x):
-    return "—" if x is None else f"{x:+,.0f}"
+    """総損益(%)の表示。L-920 の前は bp の整数で出していた。"""
+    return "—" if x is None else f"{x:+,.3f}%"
 
 
 def f(x, d=2):
@@ -120,7 +131,7 @@ def table_a(d_delay, d_sub_2017_2021, d_sub_2022_2026):
             if not p:
                 print(f"| {y} | — | — | — | |")
                 continue
-            t = round(p["n"] * p["mean_bp"], 1)
+            t = round(p["n"] * p["mean_bp"] / 100, 3)
             print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} | |")
         print()
         print("| 期間(合算、サブ実行) | 平均 [区間] | sd | p05 | 保有中央値 | n |")
@@ -173,7 +184,7 @@ def table_c(d_ref):
             if not p:
                 print(f"| {y} | — | — | — |")
                 continue
-            t = round(p["n"] * p["mean_bp"], 1)
+            t = round(p["n"] * p["mean_bp"] / 100, 3)
             print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} |")
         if c:
             q = c.get("quantiles_bp", {}).get("p05")
@@ -198,8 +209,8 @@ def table_d(d_bf_delay, d_bitmex_1719, d_bitmex_2021, d_binance):
             c_bm = cell(d_bm, ft, GATE, "weak")
             pbf = c_bf["per_year"].get(str(y)) if c_bf else None
             pbm = c_bm["per_year"].get(str(y)) if c_bm else None
-            tbf = round(pbf["n"] * pbf["mean_bp"], 1) if pbf else None
-            tbm = round(pbm["n"] * pbm["mean_bp"], 1) if pbm else None
+            tbf = round(pbf["n"] * pbf["mean_bp"] / 100, 3) if pbf else None
+            tbm = round(pbm["n"] * pbm["mean_bp"] / 100, 3) if pbm else None
             ratio = (pbf["mean_bp"] / pbm["mean_bp"]) if pbf and pbm and pbm["mean_bp"] else None
             nbf = f"{pbf['n']:,}" if pbf else "—"
             mbf = f(pbf["mean_bp"]) if pbf else "—"
@@ -215,8 +226,8 @@ def table_d(d_bf_delay, d_bitmex_1719, d_bitmex_2021, d_binance):
             c_bn = cell(d_binance, ft, GATE, "weak")
             pbf = c_bf["per_year"].get(str(y)) if c_bf else None
             pbn = c_bn["per_year"].get(str(y)) if c_bn else None
-            tbf = round(pbf["n"] * pbf["mean_bp"], 1) if pbf else None
-            tbn = round(pbn["n"] * pbn["mean_bp"], 1) if pbn else None
+            tbf = round(pbf["n"] * pbf["mean_bp"] / 100, 3) if pbf else None
+            tbn = round(pbn["n"] * pbn["mean_bp"] / 100, 3) if pbn else None
             nbf = f"{pbf['n']:,}" if pbf else "—"
             mbf = f(pbf["mean_bp"]) if pbf else "—"
             nbn = f"{pbn['n']:,}" if pbn else "—"
@@ -245,7 +256,7 @@ def table_e(d_vol):
                 for name in ("low", "mid", "high"):
                     b = row[name]
                     cells += [f"{b['n']:,}", f(b["mean_bp"]) if b["mean_bp"] is not None else "—",
-                              fmt0(b["total_bp"])]
+                              _total_pct_str(b)]
                 print(f"| {y} | " + " | ".join(cells) + " |")
             print()
 
@@ -286,7 +297,7 @@ def table_g(d_delay):
                 if not p:
                     print(f"| {y} | — | — | — |")
                     continue
-                t = round(p["n"] * p["mean_bp"], 1)
+                t = round(p["n"] * p["mean_bp"] / 100, 3)
                 print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} |")
             print()
 

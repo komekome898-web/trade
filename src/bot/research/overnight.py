@@ -334,7 +334,7 @@ def edge_trend(
     seed: int = 20260906,
     regime_dates: Iterable | None = None,
     rolling_step: int = 1,
-    value_unit: str = "bps",
+    value_unit: str,
 ) -> dict:
     """The standard "edge trend" sub-indicator (research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5)).
 
@@ -395,9 +395,9 @@ def edge_trend(
         by this setting; it only thins the "rolling" table, for series with
         tens of thousands of observations where a CI at every end would
         cost n × n_boot resamples.
-    value_unit : the unit of `values`, echoed in "slope_unit" (default
-        "bps", the unit every caller used before L-920; pass "%" for a cost
-        or a net).
+    value_unit : the unit of `values`, echoed in "slope_unit". No default
+        (L-920): every call names it -- "bps" only for a price-move rate
+        (e.g. a gross return), "%" for a cost or a net.
 
     Returns
     -------
@@ -664,7 +664,7 @@ def state_split(
     block: int,
     n_boot: int,
     seed: int,
-    cost_bps=None,
+    cost_pct=None,
 ) -> dict:
     """The standard "condition analysis" sub-indicator (research-protocol skill §13 (旧 PHASE2_TEMPLATES.md §6)).
 
@@ -684,7 +684,7 @@ def state_split(
         price-move rate; a cost or a net is in % -- L-920), IN TIME ORDER (the block
         bootstrap and the block permutation both read the ordering as time).
         The primary quantity — every difference, CI, MDE, the permutation
-        null and every verdict are computed on THIS series; `cost_bps` only
+        null and every verdict are computed on THIS series; `cost_pct` only
         adds descriptive cost-net columns to the per-state table.
     states : {variable name: array-like of per-observation labels}. Each
         array must have the same length as `values`. A NaN/None/empty
@@ -697,9 +697,10 @@ def state_split(
         2,000).
     seed : RNG seed. Every draw this call makes is derived from it, so a
         rerun is bit-identical.
-    cost_bps : optional per-observation cost in the SAME unit as `values`,
-        same length (the keyword keeps its pre-L-920 name for the phase2
-        callers; a cost is not a price move, so it is not bp). When given,
+    cost_pct : optional per-observation cost in percent, same length. A
+        cost is not a price move, so it is never bp (L-920); when it is
+        given, `values` must be in percent too (a gross bp series / 100).
+        When given,
         the per-state table also carries the cost mean and the cost-net
         (values - cost) mean and CI. Differences and verdicts stay on
         `values`.
@@ -708,7 +709,7 @@ def state_split(
     -------
     dict with:
       "state_table"  DataFrame, one row per (variable, state): variable,
-                     state, n, mean, ci_lo, ci_hi and -- only when `cost_bps`
+                     state, n, mean, ci_lo, ci_hi and -- only when `cost_pct`
                      is given -- cost_mean, net_mean, net_ci_lo, net_ci_hi.
                      CIs are block-bootstrap percentile intervals of that
                      state's own observations (nan when n < block).
@@ -747,11 +748,11 @@ def state_split(
         raise ValueError("states must not be empty")
     net = None
     cost = None
-    if cost_bps is not None:
-        cost = np.asarray(cost_bps, dtype=float)
+    if cost_pct is not None:
+        cost = np.asarray(cost_pct, dtype=float)
         if len(cost) != n:
             raise ValueError(
-                f"cost_bps must have the same length as values, got {len(cost)} and {n}"
+                f"cost_pct must have the same length as values, got {len(cost)} and {n}"
             )
         net = x - cost
 

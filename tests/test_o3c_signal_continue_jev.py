@@ -41,7 +41,7 @@ def _synthetic_trades(ts: int, lo_off=4_000_000, hi_off=400_000):
 
 def make_prints_csv(tmp_path: Path, rows: list) -> "sc.PrintsCSV":
     cols = ["kind", "print_id", "day", "side", "ts_ms", "t0_ms", "p0", "notional",
-           "dist_node_bp", "oi_covered", "bundle_id"]
+           "dist_node_pct", "oi_covered", "bundle_id"]
     df = pd.DataFrame([{c: r.get(c, "") for c in cols} for r in rows])
     df["kind"] = "print"
     p = tmp_path / "rows_prints.csv.gz"
@@ -118,7 +118,7 @@ def test_jev_state_for_print_excludes_p0_and_future(tmp_path):
     ts = sc.day_start_ms(day) + 3_600_000
     rows = [{"print_id": "cur", "day": day, "side": "SELL", "ts_ms": ts,
              "t0_ms": ts, "p0": 30003.6, "notional": 500_000.0,
-             "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""}]
+             "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""}]
     pc = make_prints_csv(tmp_path, rows)
     all_ts = pc.all_ts_sorted()
     o = np.argsort(pc.ts, kind="stable")

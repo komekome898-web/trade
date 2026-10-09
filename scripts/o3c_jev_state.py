@@ -78,7 +78,7 @@ QUINTILE_SOURCES = {
     "notional": ("mat3_notional_raw", None),                 # 型1
     "chain_notional": ("cand_F3", "notna"),                   # 型2
     "last10s_notional": ("cand_F5", "positive"),               # 型4
-    "oi_ahead_20bp": ("mat8_amt_20bp", "positive_covered"),    # 型11
+    "oi_ahead_0p2pct": ("mat8_amt_0p2pct", "positive_covered"),    # 型11
     "trade_count_60s": ("cand_14", None),                      # 型13
     "vol_ratio_c4": ("cand_C4", None),                         # 型13
     "oi_slope_1h": ("mat10_oi_slope_and_funding", None),       # 型12
@@ -211,7 +211,12 @@ def write_bands_yaml(bands: dict, path: Path = BANDS_PATH) -> None:
 
 def load_bands_yaml(path: Path = BANDS_PATH) -> dict:
     doc = yaml.safe_load(path.read_text())
-    return doc["quintiles"]
+    q = doc["quintiles"]
+    # L-920: 前に書いた帯(config/o3c_jev_state_bands.yaml)の鍵は oi_ahead_20bp。
+    # 帯の幅の名前だけ変えた(値は建玉の量の五分位なのでそのまま)。
+    if "oi_ahead_0p2pct" not in q and "oi_ahead_20bp" in q:
+        q["oi_ahead_0p2pct"] = q["oi_ahead_20bp"]
+    return q
 
 
 def band5_index(x: float, cuts: list) -> int | None:
@@ -402,19 +407,19 @@ def _sent11(row: dict, bands: dict) -> str:
     covered = row.get("mat8_covered")
     if covered is None or not math.isfinite(covered) or covered <= 0:
         return f"Open interest {w['prep']} the current price: coverage unknown."
-    amt20 = row.get("mat8_amt_20bp")
-    amt5 = row.get("mat8_amt_5bp")
+    amt20 = row.get("mat8_amt_0p2pct")
+    amt5 = row.get("mat8_amt_0p05pct")
     if amt20 is None or not math.isfinite(amt20) or amt20 <= 0:
-        oi_part = f"No open interest within 20 bp {w['prep']} the current price"
+        oi_part = f"No open interest within 0.2 % {w['prep']} the current price"   # 帯の幅(距離)は %(L-920)
     else:
-        idx = band5_index(amt20, bands["oi_ahead_20bp"])
+        idx = band5_index(amt20, bands["oi_ahead_0p2pct"])
         band = SIZE_BANDS[idx] if idx is not None else "unknown"
-        oi_part = f"Open interest among the {band} within 20 bp {w['prep']} the current price"
+        oi_part = f"Open interest among the {band} within 0.2 % {w['prep']} the current price"
     within5 = "some" if (amt5 is not None and math.isfinite(amt5) and amt5 > 0) else "none"
-    d = row.get("cand_5p")
-    d_part = (f"{abs(float(d)):.0f} bp away" if d is not None and math.isfinite(d)
+    d = row.get("cand_5p_pct")    # 節までの距離、%(L-920。帯と同じ % で書く。前は bp の整数)
+    d_part = (f"{abs(float(d)):.2f} % away" if d is not None and math.isfinite(d)
               else "none within the mapped range")
-    return (f"{oi_part}; within 5 bp: {within5} (coverage: yes). "
+    return (f"{oi_part}; within 0.05 %: {within5} (coverage: yes). "
             f"Nearest liquidation level {w['prep']}: {d_part}.")
 
 
@@ -547,7 +552,8 @@ class StateBuilder:
                 data_root: Path = DEFAULT_DATA_ROOT,
                 bands: dict | None = None,
                 bands_path: Path = BANDS_PATH):
-        m = pd.read_csv(materials_path, low_memory=False)
+        # L-920: 前の rows_materials の cand_5p(節までの距離、bp)は / 100 して cand_5p_pct で読む
+        m = cont.base.pct_dist_frame(pd.read_csv(materials_path, low_memory=False))
         for c in REQUIRED_MATERIALS_COLS:
             if c not in m.columns:
                 raise SystemExit(
@@ -556,9 +562,12 @@ class StateBuilder:
         # 使う追加の生値(elapsed・notional・OI の bp 別・funding_rate)。
         c_cols = (["print_id"] + [cont.MAT_COL[n] for n in cont.MAT_NUMS]
                  + ["mat1_elapsed_since_burst_s", "mat3_notional_raw",
-                    "mat8_amt_5bp", "mat8_amt_20bp", "mat8_covered",
+                    "mat8_amt_0p05pct", "mat8_amt_0p2pct", "mat8_covered",
                     "mat10_funding_rate"])
-        c = pd.read_csv(continue_path, usecols=c_cols, low_memory=False)
+        # L-920: 前の表は mat8_amt_5bp / mat8_amt_20bp(帯の幅の名前だけ違う。値は量)
+        c = cont.base.pct_dist_frame(pd.read_csv(
+            continue_path, usecols=cont.base.legacy_usecols(continue_path, c_cols),
+            low_memory=False))
         r = m.merge(c, on="print_id", how="left")
         self.rows = r.set_index("print_id", drop=False)
         self.rows_fh = r[r["half"] == "前半"]

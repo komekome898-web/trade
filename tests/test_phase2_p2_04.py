@@ -597,9 +597,118 @@ def test_prior_day_sign_uses_the_return_ending_at_t_minus_1_not_t():
     assert list(labels_a) == list(expected)
 
 
+# ---------------------------------------------------------------------------
+# L-920: reading the committed reference runs in the current units
+# ---------------------------------------------------------------------------
+# The committed iteration-0 / iteration-1 CSVs were written before the bp
+# rename (L-920) and are not rewritten. In them the net (cost-inclusive) and
+# cost columns are in bp; a rerun now writes those columns in %. Per reference
+# file, the columns the rerun holds in % are listed as (reference column,
+# rerun column): the reference value is divided by 100 and compared
+# numerically. Every other column (gross / price-move columns in bp, counts,
+# labels, Sharpe, hit rates) is compared to the reference as it is. A file not
+# listed here must match column for column. "*" = every column but `draw`.
+_PCT = ("_bps", "_pct")
+
+
+def _same(*cols):
+    return [(c, c) for c in cols]
+
+
+def _renamed(*cols):
+    return [(c, c.replace(*_PCT)) for c in cols]
+
+
+_L920_PCT_COLUMNS = {
+    # iteration 0
+    "condition_diff_table.csv": _same("mean_a", "mean_b", "diff", "ci_lo", "ci_hi", "se",
+                                      "mde", "null_p95"),
+    "condition_state_table.csv": _same("mean", "ci_lo", "ci_hi", "cost_mean", "net_mean",
+                                       "net_ci_lo", "net_ci_hi") + _renamed("mde_bps"),
+    "condition_summary_3lines.csv": [("同時置換帰無95点(最大差, bps)",
+                                      "同時置換帰無95点(最大差, %)")],
+    "control1_draws.csv": "*",
+    "control1_stratified_random.csv": _renamed("observed_net_mean_bps", "null_mean_bps",
+                                               "null_p50_bps", "null_p95_bps"),
+    "control2_placebo_shift.csv": _renamed("net_mean_cons_bps", "observed_rule_net_mean_bps")
+                                  + _same("ci_lo", "ci_hi"),
+    "control3_sign_shuffle.csv": _renamed("observed_net_mean_bps", "null_p95_bps"),
+    "gate_comparison.csv": _renamed("net_mean_cons_bps", "mde_bps")
+                           + _same("ci_lo", "ci_hi", "ci_lo_t_supp", "ci_hi_t_supp",
+                                   "net_minus_mde", "null_A_p95", "net_minus_nullA"),
+    "joint_permutation_draws.csv": _same("null_A_futures", "null_A_1321"),
+    "main_indicators.csv": _renamed("net_mean_cons_bps", "net_mean_opt_bps", "cost_mean_bps",
+                                    "sd_bps", "mde_bps")
+                           + _same("net_ci_lo", "net_ci_hi", "net_ci_lo_t_supp",
+                                   "net_ci_hi_t_supp"),
+    "mde.csv": _renamed("sd_net_bps", "mde_net_bps"),
+    "pairs_1321.csv": [(c, c.replace("cost_bps", "cost_pct").replace("r_net_bps", "r_net_pct"))
+                       for c in ("cost_bps_cons", "cost_bps_opt", "r_net_bps_cons", "r_net_bps_opt")],
+    # 1306.T carries no cost (all NaN), but the columns were renamed too
+    "pairs_1306.csv": [(c, c.replace("cost_bps", "cost_pct").replace("r_net_bps", "r_net_pct"))
+                       for c in ("cost_bps_cons", "cost_bps_opt", "r_net_bps_cons", "r_net_bps_opt")],
+    "pairs_futures.csv": [(c, c.replace("cost_bps", "cost_pct").replace("r_net_bps", "r_net_pct"))
+                          for c in ("cost_bps_cons", "cost_bps_opt", "r_net_bps_cons",
+                                    "r_net_bps_opt", "cost_bps_cons_fullday_base")],
+    "sub_indicators.csv": _same("net_mean_1990s", "net_mean_2000s", "net_mean_2010s"),
+    "train_val.csv": _renamed("net_mean_cons_bps", "mde_bps") + _same("ci_lo", "ci_hi"),
+    # iteration 1
+    "iter1_best_per_rule.csv": _renamed("val_net_mean_cons_bps", "iter0_unconditional_val_mean_bps",
+                                        "val_improvement_bps", "mde_bps")
+                               + _same("val_ci_lo", "val_ci_hi"),
+    "iter1_indicators.csv": _renamed("net_mean_cons_bps", "sd_bps", "mde_bps")
+                            + _same("net_ci_lo", "net_ci_hi"),
+    "iter1_joint_permutation_draws.csv": _same("null_A_futures", "null_A_1321"),
+    "iter1_val_summary.csv": _renamed("val_net_mean_cons_bps", "iter0_unconditional_val_mean_bps",
+                                      "val_improvement_bps", "mde_bps")
+                             + _same("val_ci_lo", "val_ci_hi"),
+}
+# In these two the rows of null A (the net mean) are in %, the rows of null B
+# (the gross rule-day minus non-rule-day difference, a price-move rate) in bp.
+_L920_NULL_A_ROW_FILES = {"joint_permutation_null.csv", "iter1_joint_permutation_null.csv"}
+_L920_NULL_A_ROW_COLUMNS = ("p50", "p95", "p99")
+# Allowed difference: the former test demanded byte identity. Converting bp to
+# % (x 1/100) and recomputing scale-free statistics (Sharpe) on a % series
+# changes the last float digits only, so a relative 1e-9 (plus 1e-12 absolute
+# for values at zero) is allowed on numeric columns; text / bool columns must
+# be identical.
+_L920_RTOL = 1e-9
+_L920_ATOL = 1e-12
+
+
+def _assert_matches_reference_l920(ref_path: Path, got_path: Path) -> None:
+    name = ref_path.name
+    ref = pd.read_csv(ref_path)
+    got = pd.read_csv(got_path)
+    assert len(ref) == len(got), (name, len(ref), len(got))
+    spec = _L920_PCT_COLUMNS.get(name, [])
+    if spec == "*":
+        spec = _same(*[c for c in ref.columns if c != "draw"])
+    pct = dict(spec)
+    assert set(pct) <= set(ref.columns), (name, set(pct) - set(ref.columns))
+    assert list(got.columns) == [pct.get(c, c) for c in ref.columns], (name, list(got.columns))
+    null_a = (ref["null"].astype(str).str.startswith("A").to_numpy()
+              if name in _L920_NULL_A_ROW_FILES else None)
+    for c in ref.columns:
+        r, g = ref[c], got[pct.get(c, c)]
+        numeric = pd.api.types.is_numeric_dtype(r) and r.dtype != bool
+        if not numeric:
+            assert (r.fillna("<NA>").astype(str) == g.fillna("<NA>").astype(str)).all(), (name, c)
+            continue
+        want = r.to_numpy(dtype=float)
+        if c in pct:
+            want = want / 100.0                                  # bp -> %
+        elif null_a is not None and c in _L920_NULL_A_ROW_COLUMNS:
+            want = np.where(null_a, want / 100.0, want)          # null A rows: bp -> %
+        np.testing.assert_allclose(g.to_numpy(dtype=float), want, rtol=_L920_RTOL,
+                                   atol=_L920_ATOL, equal_nan=True, err_msg=f"{name}: {c}")
+
+
 def test_iteration1_output_is_still_byte_identical_after_adding_iteration2(tmp_path):
     """Adding `run_iteration2` (which reuses iteration 1's dataset builder)
-    must not change one byte of iteration 1's own output.
+    must not change one byte of iteration 1's own output. Since L-920 the
+    committed reference is read in the current units and compared numerically
+    (`_assert_matches_reference_l920`); the name of the test is kept.
     """
     ref_dir = ITER1_OUT_DIR
     if not ref_dir.exists():
@@ -608,8 +717,8 @@ def test_iteration1_output_is_still_byte_identical_after_adding_iteration2(tmp_p
     assert run_iteration1(out_dir=out) == 0
     compared = []
     for f in sorted(ref_dir.glob("*.csv")):
-        assert (out / f.name).read_bytes() == f.read_bytes(), (
-            f"iteration 1's {f.name} is no longer byte-identical")
+        assert (out / f.name).exists(), f"iteration 1 no longer writes {f.name}"
+        _assert_matches_reference_l920(f, out / f.name)
         compared.append(f.name)
     assert len(compared) >= 4
 
@@ -639,7 +748,9 @@ def test_iteration0_output_is_byte_identical_to_the_committed_reference(tmp_path
     used ONLY for test speed -- it affects `edge_trend_*.csv` and RESULTS.md
     §11 alone (excluded from this comparison), every other file below is
     computed identically either way. The reference directory was generated
-    by the ORIGINAL (pre-iteration-1) script.
+    by the ORIGINAL (pre-iteration-1) script. Since L-920 the reference is read
+    in the current units and compared numerically
+    (`_assert_matches_reference_l920`); the name of the test is kept.
     """
     ref_dir = OUT_DIR
     if not ref_dir.exists():
@@ -652,8 +763,7 @@ def test_iteration0_output_is_byte_identical_to_the_committed_reference(tmp_path
             continue
         got_path = out / f.name
         assert got_path.exists(), f"iteration 0 no longer writes {f.name}"
-        assert got_path.read_bytes() == f.read_bytes(), (
-            f"{f.name} is no longer byte-identical to the committed iteration-0 reference")
+        _assert_matches_reference_l920(f, got_path)
         compared.append(f.name)
     assert len(compared) >= 20
     assert "main_indicators.csv" in compared and "train_val.csv" in compared
@@ -685,7 +795,7 @@ def test_iteration1_unconditional_rows_reproduce_iteration0_train_val():
                                                       ds["keep_mask"])
         ev = frame.loc[emask].reset_index(drop=True)
         rm = ev[f"is_{rule}"].to_numpy(dtype=bool)
-        net = ev["r_net_bps_cons"].to_numpy(dtype=float)
+        net = ev["r_net_pct_cons"].to_numpy(dtype=float)
         gross = ev["r_bps"].to_numpy(dtype=float)
         splitcol = ev["split"].to_numpy()
         for split in ("train", "val"):
@@ -694,11 +804,14 @@ def test_iteration1_unconditional_rows_reproduce_iteration0_train_val():
             want = ref.loc[(rule, split)]
             assert got["n"] == int(want["n"]), (rule, split)
             if got["n"] > 0:
-                assert got["net_mean_cons_bps"] == pytest.approx(
-                    want["net_mean_cons_bps"], abs=1e-9), (rule, split)
+                # L-920: the committed iteration-0 train_val.csv holds the net in bp
+                # (net_mean_cons_bps, ci_lo, ci_hi); read it as % (/ 100). The
+                # tolerances are the former ones expressed in % (also / 100).
+                assert got["net_mean_cons_pct"] == pytest.approx(
+                    want["net_mean_cons_bps"] / 100.0, abs=1e-11), (rule, split)
             if np.isfinite(want["ci_lo"]):
-                assert got["net_ci_lo"] == pytest.approx(want["ci_lo"], abs=1e-6)
-                assert got["net_ci_hi"] == pytest.approx(want["ci_hi"], abs=1e-6)
+                assert got["net_ci_lo"] == pytest.approx(want["ci_lo"] / 100.0, abs=1e-8)
+                assert got["net_ci_hi"] == pytest.approx(want["ci_hi"] / 100.0, abs=1e-8)
 
 
 def test_iteration1_produces_36_configurations_per_split(tmp_path):

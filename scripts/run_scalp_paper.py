@@ -16,7 +16,7 @@ Mechanics:
           print to come to it (no spread, no slippage paid); if nothing
           fills inside --fill-timeout-sec the order is cancelled and the
           event is logged as a miss.
-    taker cross the spread immediately, plus SLIPPAGE_BPS.
+    taker cross the spread immediately, plus SLIPPAGE_PCT (%).
   The exit style is selectable too (--exit):
     maker_tp (default) on the entry FILL, rest a take-profit limit
           --tp-bps beyond the fill in the profit direction (long -> sell
@@ -34,7 +34,7 @@ the hold curve, and thr 10 bps keeps EV while raising trade count.
 
 The exit default is E2 from the exit study in scripts/research_scalp_exits.py
 (maker TP +10 bps, fallback taker at fill+120s). No exit variant cleared the
-+5 bps/trade adoption bar there, so this is NOT an edge adoption: E2 is taken
++0.05 %/trade net adoption bar there (L-920: net of cost is a %, not bp), so this is NOT an edge adoption: E2 is taken
 as a VARIANCE decision (higher median, higher win rate, about half the sd,
 bounded losses vs the legacy taker hold) and the call stays pending paper
 evidence. The study ran on n = 16 storm events, under the 30-event bar; the
@@ -47,7 +47,7 @@ precursor that qualified. Inside that window the radar is "armed"; while
 armed the threshold is --thr-armed-bps. The armed default is 10 (same as
 --thr-bps): the storm-library replay (scripts/replay_scalp_storm.py,
 2026-08-20) found the marginal 8-10 bps bursts bought by a lower armed
-threshold ran -4.1 bps/trade over 68 fills, so the sensitivity boost is
+threshold ran -0.041 %/trade net over 68 fills, so the sensitivity boost is
 off until paper evidence says otherwise. Every arm/disarm flip is logged
 as a "radar_state" event, and entry-side events carry radar_armed, so the
 JSONL still separates armed vs unarmed performance at equal thresholds.
@@ -80,7 +80,7 @@ WS_ENDPOINT = "wss://ws.lightstream.bitflyer.com/json-rpc"
 TICKER_CHANNEL = "lightning_ticker_FX_BTC_JPY"
 EXECUTIONS_CHANNEL = "lightning_executions_FX_BTC_JPY"
 BINANCE_PRICE = "https://data-api.binance.vision/api/v3/ticker/price"
-SLIPPAGE_BPS = 2.0
+SLIPPAGE_PCT = 0.02  # % of the price (L-920: was SLIPPAGE_BPS = 2.0 bp; a fill-price shift is not a move rate)
 
 
 class RestingLimit:
@@ -325,7 +325,7 @@ class ScalpPaper:
 
     def enter_taker(self, side: str, ret: float, now: float) -> None:
         px = self.ask if side == "LONG" else self.bid
-        px *= 1 + (SLIPPAGE_BPS / 1e4) * (1 if side == "LONG" else -1)
+        px *= 1 + (SLIPPAGE_PCT / 100) * (1 if side == "LONG" else -1)
         size = self.args.notional / px
         self.position = {"side": side, "size": size, "entry": px, "t_entry": now,
                          "tp": self.make_tp(side, px, size, now)}
@@ -377,7 +377,7 @@ class ScalpPaper:
             # miss analysis in scripts/research_scalp_opt.py, done live)
             basis = self.ask if order.side == "LONG" else self.bid
             if basis is not None:
-                basis *= 1 + (SLIPPAGE_BPS / 1e4) * (1 if order.side == "LONG" else -1)
+                basis *= 1 + (SLIPPAGE_PCT / 100) * (1 if order.side == "LONG" else -1)
             # features as of the original signal, not the miss (now)
             sigma60_bps, v60_btc = self.pre_signal_features(order.t_signal)
             self.log("missed", entry_mode="maker", side=order.side,
@@ -420,7 +420,7 @@ class ScalpPaper:
         # slippage, no fee. Every other exit crosses and pays both.
         if price is None:
             price = self.bid if pos["side"] == "LONG" else self.ask
-            price *= 1 - (SLIPPAGE_BPS / 1e4) * (1 if pos["side"] == "LONG" else -1)
+            price *= 1 - (SLIPPAGE_PCT / 100) * (1 if pos["side"] == "LONG" else -1)
         direction = 1 if pos["side"] == "LONG" else -1
         pnl = (price - pos["entry"]) * pos["size"] * direction
         self.daily_pnl += pnl

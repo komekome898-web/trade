@@ -136,6 +136,9 @@ def cmp_row(table: str, key: str, got: dict, want: pd.Series, cols: list) -> Non
 
 def main() -> int:
     df = pd.read_csv(ROWS)
+    # L-920: 節までの距離は %(dist_node_pct)。前の rows は dist_node_bp(bp)なので / 100 して読む
+    if "dist_node_pct" not in df.columns and "dist_node_bp" in df.columns:
+        df["dist_node_pct"] = pd.to_numeric(df["dist_node_bp"], errors="coerce") / 100
     pr = df[df["kind"] == "print"].reset_index(drop=True)
     cc = df[df["kind"] == "control_c"].reset_index(drop=True)
     bi = df[df["kind"] == "control_b_i"].reset_index(drop=True)
@@ -251,7 +254,7 @@ def main() -> int:
     hour = pr["hour_band"].to_numpy()
     attrv = {"print_notional": pr["notional"].to_numpy(float),
              "bin_pct": pr["bin_pct"].to_numpy(float),
-             "|dist_node_bp|": np.abs(pr["dist_node_bp"].to_numpy(float)),
+             "|dist_node_pct|": np.abs(pr["dist_node_pct"].to_numpy(float)),
              "implied_leverage": pr["implied_leverage"].to_numpy(float)}
     gmask: dict = {}
     gmiss: dict = {}
@@ -427,8 +430,8 @@ def main() -> int:
             cmp_row("H0分布", f"d {w['群']}", got, w, ["n", "母数", "割合"])
     missmap = {"付け直した属性が作れないプリント(bin_pct)":
                ~np.isfinite(pr["bin_pct"].to_numpy(float)),
-               "付け直した属性が作れないプリント(dist_node_bp)":
-               ~np.isfinite(pr["dist_node_bp"].to_numpy(float)),
+               "付け直した属性が作れないプリント(dist_node_pct)":
+               ~np.isfinite(pr["dist_node_pct"].to_numpy(float)),
                "付け直した属性が作れないプリント(implied_leverage)":
                ~np.isfinite(pr["implied_leverage"].to_numpy(float)),
                "探索段 4 の束(gap 60)に入らないプリント":
@@ -457,6 +460,9 @@ def extras() -> None:
     import zipfile
 
     df = pd.read_csv(ROWS)
+    # L-920: 節までの距離は %(dist_node_pct)。前の rows は dist_node_bp(bp)なので / 100 して読む
+    if "dist_node_pct" not in df.columns and "dist_node_bp" in df.columns:
+        df["dist_node_pct"] = pd.to_numeric(df["dist_node_bp"], errors="coerce") / 100
     pr = df[df["kind"] == "print"].reset_index(drop=True)
     cc = df[df["kind"] == "control_c"].reset_index(drop=True)
     bi = df[df["kind"] == "control_b_i"].reset_index(drop=True)

@@ -46,12 +46,15 @@ DATA = ROOT / "data"
 WS_DIR = DATA / "ws"
 
 # --- cost model -------------------------------------------------------------
-# Matches the live paper bot: 2 bps of slippage on top of the crossed quote,
+# Matches the live paper bot: 0.02 % of slippage on top of the crossed quote,
 # per side. With real quotes the spread cost is measured, not assumed.
-SLIP_BPS = 2.0
+# (L-920: costs, slippage, spreads and net captures are % of the price, not
+# bp; was SLIP_BPS = 2.0 / ASSUMED_RT_BPS = 6.35. Mid-to-mid gross moves
+# stay in bp because they are move rates.)
+SLIP_PCT = 0.02
 # For trade-price-only datasets (hi1) there are no quotes, so the owner's
 # stated all-in taker round trip is applied flat instead.
-ASSUMED_RT_BPS = 6.35
+ASSUMED_RT_PCT = 0.0635
 
 HOLDS = [5, 10, 30, 60, 120, 300]
 THRS = [6, 8, 10, 12, 16, 20]
@@ -242,11 +245,11 @@ def gross_move(ds: Dataset, ev: pd.DataFrame, hold: int) -> np.ndarray:
 
 
 def taker_capture(ds: Dataset, ev: pd.DataFrame, hold: int) -> np.ndarray:
-    """Net bps per trade for taker-in / taker-out at ``hold`` seconds.
+    """Net % per trade for taker-in / taker-out at ``hold`` seconds.
 
-    With quotes: buy the ask, sell the bid, 2 bps of slippage each side —
+    With quotes: buy the ask, sell the bid, 0.02 % of slippage each side —
     the spread is measured, never assumed. Without quotes: trade price at
-    both ends minus the owner's stated ``ASSUMED_RT_BPS`` round trip.
+    both ends minus the owner's stated ``ASSUMED_RT_PCT`` round trip.
     """
     out = np.full(len(ev), np.nan)
     n = ds.n_sec
@@ -258,19 +261,19 @@ def taker_capture(ds: Dataset, ev: pd.DataFrame, hold: int) -> np.ndarray:
             if x >= n:
                 continue
             if d > 0:
-                entry, exit_ = ask[j] * (1 + SLIP_BPS / 1e4), bid[x] * (1 - SLIP_BPS / 1e4)
+                entry, exit_ = ask[j] * (1 + SLIP_PCT / 100), bid[x] * (1 - SLIP_PCT / 100)
             else:
-                entry, exit_ = bid[j] * (1 - SLIP_BPS / 1e4), ask[x] * (1 + SLIP_BPS / 1e4)
+                entry, exit_ = bid[j] * (1 - SLIP_PCT / 100), ask[x] * (1 + SLIP_PCT / 100)
             if not (np.isfinite(entry) and np.isfinite(exit_)):
                 continue
-            out[k] = d * 1e4 * math.log(exit_ / entry)
+            out[k] = d * 100 * math.log(exit_ / entry)   # net of spread + slip -> %
     else:
         px = ds.f["last"].to_numpy()
         for k, (j, d) in enumerate(zip(ev["j"], ev["dir"])):
             x = j + hold
             if x >= n or not (np.isfinite(px[j]) and np.isfinite(px[x])):
                 continue
-            out[k] = d * 1e4 * math.log(px[x] / px[j]) - ASSUMED_RT_BPS
+            out[k] = d * 100 * math.log(px[x] / px[j]) - ASSUMED_RT_PCT
     return out
 
 
@@ -309,7 +312,8 @@ def maker_sim(ds: Dataset, ev: pd.DataFrame, fill_window: int, hold: int,
     order priced off a quote from later in that same second.
 
     Entry pays no spread and no slippage; the exit is taker, so it pays
-    the far quote plus SLIP_BPS. Unfilled orders are misses, capture 0.
+    the far quote plus SLIP_PCT. Unfilled orders are misses, capture 0.
+    The capture is net of the exit costs, so it is a % (L-920).
     """
     n = ds.n_sec
     bid = ds.f["bid"].to_numpy()
@@ -341,12 +345,12 @@ def maker_sim(ds: Dataset, ev: pd.DataFrame, fill_window: int, hold: int,
         if x >= n:
             filled.append(True); cap.append(np.nan); fill_lag.append(hit - j)
             continue
-        exit_ = bid[x] * (1 - SLIP_BPS / 1e4) if d > 0 else ask[x] * (1 + SLIP_BPS / 1e4)
+        exit_ = bid[x] * (1 - SLIP_PCT / 100) if d > 0 else ask[x] * (1 + SLIP_PCT / 100)
         if not np.isfinite(exit_):
             filled.append(True); cap.append(np.nan); fill_lag.append(hit - j)
             continue
         filled.append(True)
-        cap.append(d * 1e4 * math.log(exit_ / limit))
+        cap.append(d * 100 * math.log(exit_ / limit))
         fill_lag.append(hit - j)
     return np.asarray(filled), np.asarray(cap, float), np.asarray(fill_lag, float)
 
@@ -369,7 +373,7 @@ def stats(x: np.ndarray) -> dict:
 def show(title: str, df: pd.DataFrame) -> None:
     print(f"\n{title}")
     print("-" * len(title))
-    print(df.to_string(index=False, float_format=lambda v: f"{v:8.2f}"))
+    print(df.to_string(index=False, float_format=lambda v: f"{v:10.4f}"))
 
 
 def hr(title: str) -> None:
@@ -394,23 +398,23 @@ def entry_cost_decomposition(ds: Dataset, ev: pd.DataFrame) -> pd.DataFrame:
     for j, d in zip(ev["j"], ev["dir"]):
         if not np.isfinite(mid[j]):
             continue
-        t_px = ask[j] * (1 + SLIP_BPS / 1e4) if d > 0 else bid[j] * (1 - SLIP_BPS / 1e4)
+        t_px = ask[j] * (1 + SLIP_PCT / 100) if d > 0 else bid[j] * (1 - SLIP_PCT / 100)
         m_px = bid[j] if d > 0 else ask[j]
-        tk.append(d * 1e4 * math.log(t_px / mid[j]))    # >0 = paid away from mid
-        mk.append(d * 1e4 * math.log(m_px / mid[j]))    # <0 = earned vs mid
+        tk.append(d * 100 * math.log(t_px / mid[j]))    # >0 = paid away from mid
+        mk.append(d * 100 * math.log(m_px / mid[j]))    # <0 = earned vs mid
     return pd.DataFrame([
-        {"leg": "TAKER entry (cross + slip)", "n": len(tk), "cost vs mid bps": np.mean(tk)},
-        {"leg": "MAKER entry (rest at touch)", "n": len(mk), "cost vs mid bps": np.mean(mk)},
+        {"leg": "TAKER entry (cross + slip)", "n": len(tk), "cost vs mid %": np.mean(tk)},
+        {"leg": "MAKER entry (rest at touch)", "n": len(mk), "cost vs mid %": np.mean(mk)},
         {"leg": "structural edge of maker entry", "n": len(tk),
-         "cost vs mid bps": np.mean(tk) - np.mean(mk)},
+         "cost vs mid %": np.mean(tk) - np.mean(mk)},
     ])
 
 
 def analysis_a(ds: Dataset, thrs=(12, 10, 8, 6)) -> None:
     hr(f"Q1  ENTRY STYLE — taker vs maker   [{ds.name}]  {ds.span}")
     print("Real bitFlyer quotes + per-print taker side. hold = 30s.")
-    print("Taker: cross the spread + 2 bps slippage per side.")
-    print("Maker: rest at the near touch, exit taker. Miss = 0 bps, counted in")
+    print("Taker: cross the spread + 0.02 % slippage per side.")
+    print("Maker: rest at the near touch, exit taker. Miss = 0 %, counted in")
     print("       the per-EVENT mean so unfilled opportunity cost is visible.")
 
     show("Entry-cost decomposition (thr=12 events, before any price move)",
@@ -429,7 +433,7 @@ def analysis_a(ds: Dataset, thrs=(12, 10, 8, 6)) -> None:
         rows = []
         rows.append({"style": "TAKER", "fill_win_s": np.nan, "events": len(ev),
                      "fills": int(np.isfinite(tk).sum()), "fill%": 100.0,
-                     "bps/EVENT": tk_s["mean"], "bps/FILL": tk_s["mean"],
+                     "%/EVENT": tk_s["mean"], "%/FILL": tk_s["mean"],
                      "win%": tk_s["win%"], "sd": tk_s["sd"]})
         for strict in (False, True):
             for fw in FILL_WINDOWS:
@@ -439,8 +443,8 @@ def analysis_a(ds: Dataset, thrs=(12, 10, 8, 6)) -> None:
                 rows.append({
                     "style": "MAKER-through" if strict else "MAKER-touch",
                     "fill_win_s": fw, "events": len(ev), "fills": int(fl.sum()),
-                    "fill%": 100.0 * fl.mean(), "bps/EVENT": per_ev["mean"],
-                    "bps/FILL": per_fill["mean"], "win%": per_fill["win%"],
+                    "fill%": 100.0 * fl.mean(), "%/EVENT": per_ev["mean"],
+                    "%/FILL": per_fill["mean"], "win%": per_fill["win%"],
                     "sd": per_fill["sd"]})
         show(f"thr={thr} bps, hold=30s, events={len(ev)}{flag(len(ev))}",
              pd.DataFrame(rows))
@@ -456,19 +460,19 @@ def analysis_a(ds: Dataset, thrs=(12, 10, 8, 6)) -> None:
                 m_s = stats(tk[~fl])
                 adv.append({
                     "rule": "through" if strict else "touch", "fill_win_s": fw,
-                    "n_fill": f_s["n"], "filled bps": f_s["mean"],
-                    "n_miss": m_s["n"], "missed-as-taker bps": m_s["mean"],
+                    "n_fill": f_s["n"], "filled %": f_s["mean"],
+                    "n_miss": m_s["n"], "missed-as-taker %": m_s["mean"],
                     "diff": f_s["mean"] - m_s["mean"],
                     "mean fill lag s": np.nanmean(lag) if np.isfinite(lag).any() else np.nan})
         show(f"  adverse-selection table (thr={thr})", pd.DataFrame(adv))
 
     # context: how wide is the spread we are paying?
-    sp = 1e4 * (ds.f["ask"] - ds.f["bid"]) / ds.f["mid"]
+    sp = 100 * (ds.f["ask"] - ds.f["bid"]) / ds.f["mid"]   # spread, % (L-920)
     sp = sp[np.isfinite(sp)]
-    print(f"\nSpread context [{ds.name}]: median {sp.median():.2f} bps, "
-          f"mean {sp.mean():.2f}, p90 {sp.quantile(0.9):.2f} "
-          f"(half-spread median {sp.median()/2:.2f} bps -> taker round trip "
-          f"~{sp.median() + 2*SLIP_BPS:.2f} bps all-in)")
+    print(f"\nSpread context [{ds.name}]: median {sp.median():.4f} %, "
+          f"mean {sp.mean():.4f}, p90 {sp.quantile(0.9):.4f} "
+          f"(half-spread median {sp.median()/2:.4f} % -> taker round trip "
+          f"~{sp.median() + 2*SLIP_PCT:.4f} % all-in)")
 
 
 def independence_note(ds: Dataset, ev: pd.DataFrame) -> None:
@@ -499,8 +503,8 @@ def independence_note(ds: Dataset, ev: pd.DataFrame) -> None:
 def analysis_b(datasets: list[tuple[Dataset, list[int]]]) -> None:
     hr("Q2  HOLD TIME")
     for ds, thrs in datasets:
-        cost = ("measured quotes + 2bps/side slippage" if ds.has_quotes
-                else f"trade prices - {ASSUMED_RT_BPS} bps assumed round trip")
+        cost = ("measured quotes + 0.02 %/side slippage" if ds.has_quotes
+                else f"trade prices - {ASSUMED_RT_PCT} % assumed round trip")
         print(f"\n[{ds.name}] {ds.span}   cost model: {cost}")
         for thr in thrs:
             ev = ds.events(thr)
@@ -512,14 +516,14 @@ def analysis_b(datasets: list[tuple[Dataset, list[int]]]) -> None:
                 s = stats(taker_capture(ds, ev, h))
                 g = stats(gross_move(ds, ev, h))
                 rows.append({"hold_s": h, "n": s["n"], "gross bps": g["mean"],
-                             "mean bps": s["mean"],
+                             "mean %": s["mean"],
                              "median": s["median"], "sd": s["sd"], "win%": s["win%"],
                              "t-stat": (s["mean"] / (s["sd"] / math.sqrt(s["n"]))
                                         if s["n"] > 1 and s["sd"] else np.nan)})
             fc, fh = fade_exit(ds, ev)
             s = stats(fc)
             rows.append({"hold_s": -1, "n": s["n"], "gross bps": np.nan,
-                         "mean bps": s["mean"],
+                         "mean %": s["mean"],
                          "median": s["median"], "sd": s["sd"], "win%": s["win%"],
                          "t-stat": (s["mean"] / (s["sd"] / math.sqrt(s["n"]))
                                     if s["n"] > 1 and s["sd"] else np.nan)})
@@ -527,14 +531,14 @@ def analysis_b(datasets: list[tuple[Dataset, list[int]]]) -> None:
             show(f"{ds.name} thr={thr}  (hold_s=-1 is the momentum-fade exit, "
                  f"mean holding {np.nanmean(fh):.0f}s, capped 300s)"
                  f"  events={len(ev)}{flag(len(ev))}", tbl)
-            fin = tbl[tbl["hold_s"] > 0].dropna(subset=["mean bps"])
+            fin = tbl[tbl["hold_s"] > 0].dropna(subset=["mean %"])
             if len(fin):
-                best = fin.loc[fin["mean bps"].idxmax()]
-                at30 = fin.loc[fin["hold_s"] == 30, "mean bps"]
+                best = fin.loc[fin["mean %"].idxmax()]
+                at30 = fin.loc[fin["hold_s"] == 30, "mean %"]
                 msg = (f"  -> peak of the fixed-hold curve: {int(best['hold_s'])}s "
-                       f"at {best['mean bps']:.2f} bps (t={best['t-stat']:.2f})")
+                       f"at {best['mean %']:.4f} % (t={best['t-stat']:.2f})")
                 if len(at30):
-                    msg += f"; 30s = {float(at30.iloc[0]):.2f} bps"
+                    msg += f"; 30s = {float(at30.iloc[0]):.4f} %"
                 sig = fin[fin["t-stat"].abs() >= 2.0]
                 msg += ("; NO hold is significant at |t|>=2"
                         if len(sig) == 0 else
@@ -561,25 +565,25 @@ def analysis_c(datasets: list[Dataset], hold: int) -> None:
                 rows.append({
                     "thr": thr, "gap>=": (np.nan if gmin is None else gmin),
                     "events": len(ev), "trades/h": len(ev) / ds.hours,
-                    "n": s["n"], "mean bps": s["mean"], "win%": s["win%"],
+                    "n": s["n"], "mean %": s["mean"], "win%": s["win%"],
                     "sd": s["sd"],
-                    "EV/h bps": (s["mean"] * s["n"] / ds.hours
+                    "EV/h %": (s["mean"] * s["n"] / ds.hours
                                  if s["n"] else np.nan)})
         tbl = pd.DataFrame(rows)
         tbl["flag"] = ["small-n" if n < SMALL_N else "" for n in tbl["n"]]
         show(f"{ds.name}: frequency vs EV frontier", tbl)
 
         base = tbl[(tbl["thr"] == 12) & (tbl["gap>="].isna())]
-        if len(base) and np.isfinite(base["mean bps"].iloc[0]):
-            b_ev, b_n = float(base["mean bps"].iloc[0]), int(base["n"].iloc[0])
+        if len(base) and np.isfinite(base["mean %"].iloc[0]):
+            b_ev, b_n = float(base["mean %"].iloc[0]), int(base["n"].iloc[0])
             cand = tbl[(tbl["thr"] < 12) & (tbl["gap>="].notna())
-                       & (tbl["mean bps"] >= b_ev) & (tbl["n"] >= b_n)]
-            print(f"  baseline thr=12 no filter: {b_ev:.2f} bps over {b_n} trades")
+                       & (tbl["mean %"] >= b_ev) & (tbl["n"] >= b_n)]
+            print(f"  baseline thr=12 no filter: {b_ev:.4f} % over {b_n} trades")
             if len(cand):
                 print("  lower-threshold + gap-filter cells that match/beat it "
                       "on BOTH EV and trade count:")
                 print(cand.to_string(index=False,
-                                     float_format=lambda v: f"{v:8.2f}"))
+                                     float_format=lambda v: f"{v:10.4f}"))
             else:
                 print("  no lower-threshold + gap-filter cell beats it on both "
                       "EV and trade count.")

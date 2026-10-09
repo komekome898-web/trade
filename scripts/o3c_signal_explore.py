@@ -10,7 +10,7 @@
   - Q1(向き)= 反転の割合(`r_h < 0`)、Q2(大きさ)= 符号付き価格変化の平均 ± SE、
     Q3(時間軸)= h の並びでの平均 / mfe / mae / 反転の割合。
   - 対照 = 1 周目の対照 (ii)(`kind == control_matched` で相手が mixed でない行)。
-  - 念のため |`dist_vwap_bp`| の 10 分位でそろえた差も併記する。
+  - 念のため |`dist_vwap_pct`| の 10 分位でそろえた差も併記する。
 
 **探索段なので判定語(差あり / 検出されず / 陽性 / 陰性 / 有意)を 1 つも書かない。**
 検定もしない。出すのは平均・SE・n・割合・単調性の語だけである。
@@ -91,9 +91,9 @@ HOUR_BANDS = (("UTC 00–06", 0, 6), ("UTC 06–12", 6, 12),
 #   column       : 表の列名(abs=True なら絶対値を採る)
 #   from_partner : 対照行に列が無いので 1 対 1 の相手の束から採る
 ATTRS_NUM = [
-    {"name": "|dist_vwap_bp|", "column": "dist_vwap_bp", "abs": True,
+    {"name": "|dist_vwap_pct|", "column": "dist_vwap_pct", "abs": True,
      "from_partner": False},
-    {"name": "|dist_node_bp|", "column": "dist_node_bp", "abs": True,
+    {"name": "|dist_node_pct|", "column": "dist_node_pct", "abs": True,
      "from_partner": False},
     {"name": "bin_pct", "column": "bin_pct", "abs": False, "from_partner": False},
     {"name": "bundle_n_events_dedup", "column": "bundle_n_events_dedup",
@@ -189,7 +189,7 @@ def monotone_word(means: list[float]) -> str:
 def standardized_diff(v1: np.ndarray, d1: np.ndarray,
                       v2: np.ndarray, d2: np.ndarray,
                       edges: list[float] | None = None):
-    """|dist_vwap_bp| の 10 分位でそろえた差。
+    """|dist_vwap_pct| の 10 分位でそろえた差。
 
     点推定は `o3c_reaction_r2.Standardized`(= `standardize` の中身)そのもの。
     SE は帯の重み w_k を固定した解析式(探索段なのでブートストラップは回さない)。
@@ -336,8 +336,8 @@ class Run:
         self.hour_liq = self._hour(self._num(liq_i, "time_ms"))
         self.hour_ctl = self._hour(self._num(self.ctl_i, "time_ms"))
         # 距離(標準化の帯)
-        self.dist_liq = np.abs(self._num(liq_i, "dist_vwap_bp"))
-        self.dist_ctl = np.abs(self._num(self.ctl_i, "dist_vwap_bp"))
+        self.dist_liq = np.abs(self._num(liq_i, "dist_vwap_pct"))
+        self.dist_ctl = np.abs(self._num(self.ctl_i, "dist_vwap_pct"))
 
     # ---------------------------------------------------------------------
     @staticmethod
@@ -381,8 +381,8 @@ class Run:
                 sum(1 for s in self.side_ctl if s in (None, "")))
             out["清算行"]["time_of_day"] = int(np.sum(~np.isfinite(self.hour_liq)))
             out["対照行"]["time_of_day"] = int(np.sum(~np.isfinite(self.hour_ctl)))
-            out["清算行"]["|dist_vwap_bp|"] = int(np.sum(~np.isfinite(self.dist_liq)))
-            out["対照行"]["|dist_vwap_bp|"] = int(np.sum(~np.isfinite(self.dist_ctl)))
+            out["清算行"]["|dist_vwap_pct|"] = int(np.sum(~np.isfinite(self.dist_liq)))
+            out["対照行"]["|dist_vwap_pct|"] = int(np.sum(~np.isfinite(self.dist_ctl)))
         return out
 
 
@@ -670,7 +670,7 @@ def run_all(runs_dir: Path, out: Path) -> int:
         ("Q2 大きさ(属性 × h の符号付き価格変化)", Q2_HEADER, q2),
         ("Q3 時間軸(h の形)", Q3_HEADER, q3),
         ("感度(他 5 本の走行の Q3 全体)", Q3_HEADER, sens),
-        ("|dist_vwap_bp| の 10 分位でそろえた差", STD_HEADER, std_rows),
+        ("|dist_vwap_pct| の 10 分位でそろえた差", STD_HEADER, std_rows),
     ]
     tables_md = build_tables_md(blocks, note)
     check_banned(tables_md, TABLES_NAME)

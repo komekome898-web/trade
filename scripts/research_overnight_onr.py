@@ -72,6 +72,10 @@ Sharpe / ストレスコスト後の t / 決定性(2回実行ハッシュ)/ ル�
   **判定は指数水準(楽器方向の新鮮性)+ 2008-11(時間方向の新鮮性)**。セル1・自由パラメータ0。
 - 通過時の2段目 = フォワード・ペーパー(ON1 forward と同型)→ 最小実弾×自動化(1口)。
 
+(L-920 の後の単位: 上の凍結した事前登録の逐語は書き換えない。この台本では、費用とネット(費用を
+引いた平均)を % で持つ: 保守コスト 1.0bps/日 = 0.01 %/日、ストレス 2.6bps/日 = 0.026 %/日。
+夜間・日中の値動き(グロスの平均・年次・曜日・era の表)は値動き率なので bp のまま。)
+
 ## 6. 読み方(先に決める)
 
 | 結果 | 結論 |
@@ -115,8 +119,8 @@ from bot.research.overnight import (  # noqa: E402
 DATA = ROOT / "backtest_data" / "reit_onr_20260904"
 SEED = 20260904
 CUTOFF = "2026-09-03"
-COST_CONSERVATIVE_BPS = 1.0
-COST_STRESS_BPS = 2.6
+COST_CONSERVATIVE_PCT = 0.01   # %/day round trip (PREREG: 1.0bps/日)
+COST_STRESS_PCT = 0.026        # %/day round trip (PREREG: 2.6bps/日)
 GLITCH_ABS_LOG_RET = 0.10
 TRADING_DAYS = 245
 
@@ -158,8 +162,10 @@ def intraday_returns(df: pd.DataFrame) -> pd.DataFrame:
 # --------------------------------------------------------------- stats -- #
 # mean_t now lives in src/bot/research/overnight.py (imported above).
 
-def net_mean_t(x: np.ndarray, cost_bps: float) -> tuple[float, float]:
-    cost = cost_bps * 1e-4
+def net_mean_t(x: np.ndarray, cost_pct: float) -> tuple[float, float]:
+    """x = daily log returns (fractions); cost_pct in % (L-920: a cost is not bp).
+    Returns the net mean as a fraction (x 100 -> %) and its t."""
+    cost = cost_pct / 100
     n = len(x)
     s = float(x.std(ddof=1)) if n > 1 else float("nan")
     m_net = float(x.mean()) - cost
@@ -298,10 +304,10 @@ def main() -> int:
     m1, t1, n1 = mean_t(x1)
     ci_lo, ci_hi = stationary_bootstrap_ci(x1)
     p(f"n={n1}  mean={m1*1e4:+.3f}bps  t={t1:+.3f}  bootstrap95%CI=[{ci_lo*1e4:+.3f},{ci_hi*1e4:+.3f}]bps")
-    m1_cons, t1_cons = net_mean_t(x1, COST_CONSERVATIVE_BPS)
-    m1_stress, t1_stress = net_mean_t(x1, COST_STRESS_BPS)
-    p(f"net @ conservative {COST_CONSERVATIVE_BPS}bps/day: mean={m1_cons*1e4:+.3f}bps t={t1_cons:+.3f}")
-    p(f"net @ stress {COST_STRESS_BPS}bps/day (report only): t={t1_stress:+.3f}")
+    m1_cons, t1_cons = net_mean_t(x1, COST_CONSERVATIVE_PCT)
+    m1_stress, t1_stress = net_mean_t(x1, COST_STRESS_PCT)
+    p(f"net @ conservative {COST_CONSERVATIVE_PCT}%/day: mean={m1_cons*100:+.5f}% t={t1_cons:+.3f}")
+    p(f"net @ stress {COST_STRESS_PCT}%/day (report only): t={t1_stress:+.3f}")
 
     p("\nera table (index-level; eras with no overlapping data are unavailable):")
     p(fmt_table(era_table(idx_on), ["era", "n", "mean_bps", "t"]))
@@ -452,7 +458,7 @@ def main() -> int:
       f"[2021-2026] positive={last_era_positive}")
     p(f"③ 新鮮期間の非矛盾(1343 {FRESH_START}~{FRESH_END}, mean>0): {verdict3}  "
       f"(n={n2}, mean={m2*1e4:+.3f}bps, t={t2:+.3f})")
-    p(f"④ コスト後(指数水準, 保守1.0bps/日控除後 mean>0 & t>=1.5): {verdict4}")
+    p(f"④ コスト後(指数水準, 保守 {COST_CONSERVATIVE_PCT}%/日(1.0bps/日)控除後 mean>0 & t>=1.5): {verdict4}")
 
     p("\nOVERALL: PROVISIONAL (仮判定) per PREREG §1 fallback — index-level full-window\n"
       "  data (2003-04~2026-09) could not be obtained free of charge (see manifest.md).\n"

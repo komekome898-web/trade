@@ -12,31 +12,31 @@ import constants_inventory as ci  # noqa: E402
 
 CONSTANTS_YAML = """
 venue_a:
-  fee_bps:
-    value: 1.5
-    unit: bps
+  fee_pct:
+    value: 0.015
+    unit: percent
     source_type: primary_document
     source_url: "https://example.com/fees"
     verified_on: "2026-09-05"
 
-  old_floor_bps:
-    value: 5.0
-    unit: bps
+  old_floor_pct:
+    value: 0.05
+    unit: percent
     source_type: assumed
     deprecated: true
     reason: "superseded by measured value"
     notes: "do not use"
 
 venue_b:
-  spread_bps:
-    value: 2.0
-    unit: bps
+  spread_pct:
+    value: 0.02
+    unit: percent
     source_type: assumed
     notes: "unconfirmed round number"
 
-  unmeasured_bps:
+  unmeasured_pct:
     value: null
-    unit: bps
+    unit: percent
     source_type: assumed
     notes: "no measurement script exists yet"
 """
@@ -56,38 +56,38 @@ def test_flags_assumed_deprecated_and_null_only(tree: Path):
     flagged = ci.flagged_constants(constants, tree)
     paths = {f.path for f in flagged}
     assert paths == {
-        "venue_a.old_floor_bps",
-        "venue_b.spread_bps",
-        "venue_b.unmeasured_bps",
+        "venue_a.old_floor_pct",
+        "venue_b.spread_pct",
+        "venue_b.unmeasured_pct",
     }
-    assert "venue_a.fee_bps" not in paths  # primary_document, sourced -> not flagged
+    assert "venue_a.fee_pct" not in paths  # primary_document, sourced -> not flagged
 
 
 def test_flag_reasons(tree: Path):
     constants = ci.load_constants(tree)
     flagged = {f.path: f for f in ci.flagged_constants(constants, tree)}
-    assert set(flagged["venue_a.old_floor_bps"].flag_reasons) == {"assumed", "deprecated"}
-    assert flagged["venue_b.spread_bps"].flag_reasons == ["assumed"]
-    assert set(flagged["venue_b.unmeasured_bps"].flag_reasons) == {"assumed", "null"}
+    assert set(flagged["venue_a.old_floor_pct"].flag_reasons) == {"assumed", "deprecated"}
+    assert flagged["venue_b.spread_pct"].flag_reasons == ["assumed"]
+    assert set(flagged["venue_b.unmeasured_pct"].flag_reasons) == {"assumed", "null"}
 
 
 def test_finds_consumer_by_full_dotted_path(tree: Path):
     (tree / "scripts" / "uses_it.py").write_text(
-        'require_source("venue_b.spread_bps", consts)\n'
+        'require_source("venue_b.spread_pct", consts)\n'
     )
     constants = ci.load_constants(tree)
     flagged = {f.path: f for f in ci.flagged_constants(constants, tree)}
-    assert flagged["venue_b.spread_bps"].consumers == ["scripts/uses_it.py"]
-    assert flagged["venue_b.unmeasured_bps"].consumers == []
+    assert flagged["venue_b.spread_pct"].consumers == ["scripts/uses_it.py"]
+    assert flagged["venue_b.unmeasured_pct"].consumers == []
 
 
 def test_does_not_false_positive_on_bare_name_collision(tree: Path):
-    # a file uses the bare name "spread_bps" as an unrelated local variable --
+    # a file uses the bare name "spread_pct" as an unrelated local variable --
     # must NOT be reported as a consumer since only the full dotted path counts.
-    (tree / "src" / "unrelated.py").write_text("spread_bps = 3\nprint(spread_bps)\n")
+    (tree / "src" / "unrelated.py").write_text("spread_pct = 3\nprint(spread_pct)\n")
     constants = ci.load_constants(tree)
     flagged = {f.path: f for f in ci.flagged_constants(constants, tree)}
-    assert flagged["venue_b.spread_bps"].consumers == []
+    assert flagged["venue_b.spread_pct"].consumers == []
 
 
 def test_excludes_self_file_from_consumers(tree: Path):
@@ -103,9 +103,9 @@ def test_render_and_write_doc(tree: Path):
     constants = ci.load_constants(tree)
     flagged = ci.flagged_constants(constants, tree)
     doc = ci.render_todo_doc(flagged)
-    assert "venue_a.old_floor_bps" in doc
-    assert "venue_b.spread_bps" in doc
-    assert "venue_b.unmeasured_bps" in doc
+    assert "venue_a.old_floor_pct" in doc
+    assert "venue_b.spread_pct" in doc
+    assert "venue_b.unmeasured_pct" in doc
     assert "計測計画" in doc
 
 
@@ -117,7 +117,7 @@ def test_main_writes_doc_and_returns_zero(tree: Path, monkeypatch):
     assert rc == 0
     assert out_path.exists()
     text = out_path.read_text()
-    assert "venue_b.unmeasured_bps" in text
+    assert "venue_b.unmeasured_pct" in text
 
 
 def test_no_write_skips_doc(tree: Path, monkeypatch):

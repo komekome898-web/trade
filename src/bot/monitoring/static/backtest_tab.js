@@ -505,7 +505,8 @@
     if (!d || !PX.pnlSeries) return;
     const k = PX.opts.unit === "pct" ? 2 : 1;
     const pts = d.pnl, fmtF = k === 2 ? (v => num(v, 3)) : (v => num(v, moneyDigits(SUM.currency, v)));
-    PX.pnlSeries.applyOptions({priceFormat: {type: "custom", formatter: fmtF, minMove: 0.01}});
+    // minMove matches the shown digits: 3 decimals in % (since L-920 the % values are 1/100 of the old bp ones), 0.01 for money
+    PX.pnlSeries.applyOptions({priceFormat: {type: "custom", formatter: fmtF, minMove: k === 2 ? 0.001 : 0.01}});
     let rows;
     if (SUM.price.available && d.bars.length) {
       rows = []; let j = 0, cur = pts.length ? pts[0][k] : 0;

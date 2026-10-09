@@ -61,14 +61,18 @@ MID0 = 1_000_000.0
 EXEC_MEAN_GAP_SEC = 8.0
 QUOTE_MEAN_GAP_SEC = 5.0
 
-HALF_SPREAD_BPS = 0.9          # quoted spread = 1.8bps, constant -> at-best capture = 0.9bps/leg
-QUOTE_IMPROVE_BPS = 0.3        # 1-tick "inside the spread" price-improvement step
-REPRICE_TICK_BPS = 9.0         # how far mid must drift before the touch re-prices
+# L-920: a half-spread, a quote improvement, a capture, a taker slippage and a round-trip net are
+# distances between two prices at one instant / costs / PnL rates, so they are in % of mid (were
+# HALF_SPREAD_BPS = 0.9, QUOTE_IMPROVE_BPS = 0.3, TAKER_SLIPPAGE_BPS = 0.3 and *_bps output keys,
+# the same values x 100). Mid drifts (re-price threshold, impact, 5 s markout) stay in bp.
+HALF_SPREAD_PCT = 0.009        # quoted spread = 0.018%, constant -> at-best capture = 0.009%/leg
+QUOTE_IMPROVE_PCT = 0.003      # 1-tick "inside the spread" price-improvement step
+REPRICE_TICK_BPS = 9.0         # how far mid must drift before the touch re-prices (a move, bp)
                                 # (calibrated so the average level lifetime, ~370s, is
                                 # comparable to CAP_SECONDS: too small and every resting
                                 # order gets reset before it can ever accumulate a fill)
 TICK_LOG = REPRICE_TICK_BPS / 1e4      # re-price threshold in log-mid units
-TICK_BPS = QUOTE_IMPROVE_BPS   # backwards-compatible alias used by fill_price()
+TICK_PCT = QUOTE_IMPROVE_PCT   # alias used by fill_price()
 
 # Calibrated (by simulate-and-measure, not solved analytically) so the
 # realized numbers land in the intended regime: a strongly negative,
@@ -85,7 +89,7 @@ QUEUE_SIZE_MEAN_LOG, QUEUE_SIZE_SIGMA_LOG = -1.8, 0.55  # background displayed s
 OWN_SIZE = 0.85                  # our own resting clip size (own_size in queue units)
 CAP_SECONDS = 300.0              # max time resting as maker before forced taker exit
 MARKOUT_SECONDS = 5.0            # adverse-selection measurement horizon
-TAKER_SLIPPAGE_BPS = 0.3         # extra cost when forced to cross the spread
+TAKER_SLIPPAGE_PCT = 0.003        # extra cost when forced to cross the spread, %
 
 CROSSED_BOOK_FRACTION = 0.001
 N_POSITIONS = 900                # round trips simulated per scenario
@@ -260,12 +264,12 @@ class ReferenceQueueSimulator:
         mid = MID0 * math.exp(leg.fill_mid_log)
         if leg.fill_type == "maker":
             # maker BID buys BELOW mid, maker ASK sells ABOVE mid (capture).
-            edge = (HALF_SPREAD_BPS - price_improve_ticks * TICK_BPS) / 1e4
+            edge = (HALF_SPREAD_PCT - price_improve_ticks * TICK_PCT) / 100
             return mid * (1.0 - edge) if side == "BID" else mid * (1.0 + edge)
         # forced taker: CROSSES the spread — a resting BID that times out
         # must buy at the ASK (pay MORE than mid); a resting ASK must sell
         # at the BID (get LESS than mid). This is a genuine cost, not capture.
-        edge = (HALF_SPREAD_BPS + TAKER_SLIPPAGE_BPS) / 1e4
+        edge = (HALF_SPREAD_PCT + TAKER_SLIPPAGE_PCT) / 100
         return mid * (1.0 + edge) if side == "BID" else mid * (1.0 - edge)
 
     def markout_bps(self, leg: LegResult, side: str) -> float | None:
@@ -290,9 +294,9 @@ class RoundTrip:
     direction: str          # "long" | "short"
     entry: LegResult
     exit: LegResult
-    net_bps: float
-    capture_entry_bps: float
-    capture_exit_bps: float
+    net_pct: float
+    capture_entry_pct: float
+    capture_exit_pct: float
     markout_entry_bps: float | None
     markout_exit_bps: float | None
     exit_forced_taker: bool
@@ -312,16 +316,16 @@ def simulate_positions(sim: ReferenceQueueSimulator, entry_times: np.ndarray,
 
         ref_mid = MID0 * math.exp(sim.s.mid_at(t0))
         pnl = (exit_price - entry_price) if direction == "long" else (entry_price - exit_price)
-        net_bps = pnl / ref_mid * 1e4
+        net_pct = pnl / ref_mid * 100
 
-        cap_entry = (MID0 * math.exp(entry.fill_mid_log) - entry_price) / entry_price * 1e4
-        cap_exit = (exit_price - MID0 * math.exp(exit_leg.fill_mid_log)) / exit_price * 1e4
+        cap_entry = (MID0 * math.exp(entry.fill_mid_log) - entry_price) / entry_price * 100
+        cap_exit = (exit_price - MID0 * math.exp(exit_leg.fill_mid_log)) / exit_price * 100
         if direction == "short":
             cap_entry, cap_exit = -cap_entry, -cap_exit
 
         out.append(RoundTrip(
-            direction=direction, entry=entry, exit=exit_leg, net_bps=net_bps,
-            capture_entry_bps=cap_entry, capture_exit_bps=cap_exit,
+            direction=direction, entry=entry, exit=exit_leg, net_pct=net_pct,
+            capture_entry_pct=cap_entry, capture_exit_pct=cap_exit,
             markout_entry_bps=sim.markout_bps(entry, entry_side),
             markout_exit_bps=sim.markout_bps(exit_leg, exit_side),
             exit_forced_taker=exit_leg.fill_type == "forced_taker",
@@ -342,12 +346,12 @@ def _mean_t(values: list[float]) -> tuple[float, float, int]:
 
 
 def summarize(trips: list[RoundTrip], label: str) -> dict:
-    net_mean, net_t, n = _mean_t([r.net_bps for r in trips])
+    net_mean, net_t, n = _mean_t([r.net_pct for r in trips])
     # capture is a maker-fill-only diagnostic (forced-taker legs are a cost,
-    # already reflected in net_bps, not a "capture")
+    # already reflected in net_pct, not a "capture")
     cap_mean, _, _ = _mean_t(
-        [r.capture_entry_bps for r in trips if not r.entry_forced_taker] +
-        [r.capture_exit_bps for r in trips if not r.exit_forced_taker]
+        [r.capture_entry_pct for r in trips if not r.entry_forced_taker] +
+        [r.capture_exit_pct for r in trips if not r.exit_forced_taker]
     )
     mo_mean, mo_t, mo_n = _mean_t([r.markout_entry_bps for r in trips if r.markout_entry_bps is not None] +
                                    [r.markout_exit_bps for r in trips if r.markout_exit_bps is not None])
@@ -355,17 +359,17 @@ def summarize(trips: list[RoundTrip], label: str) -> dict:
     entry_forced = sum(1 for r in trips if r.entry_forced_taker)
     # trap: net if positions whose exit never closed as maker are DROPPED
     kept = [r for r in trips if not r.exit_forced_taker]
-    dropped_net_mean, _, dropped_n = _mean_t([r.net_bps for r in kept])
+    dropped_net_mean, _, dropped_n = _mean_t([r.net_pct for r in kept])
     return {
         "label": label, "n_positions": n,
-        "net_bps_mean": round(net_mean, 4), "net_bps_t_stat": round(net_t, 3),
-        "capture_bps_per_leg_mean": round(cap_mean, 4),
+        "net_pct_mean": round(net_mean, 6), "net_pct_t_stat": round(net_t, 3),
+        "capture_pct_per_leg_mean": round(cap_mean, 6),
         "adverse_selection_bps_at_5s_mean": round(mo_mean, 4),
         "adverse_selection_t_stat": round(mo_t, 3), "adverse_selection_n_legs": mo_n,
         "exit_forced_taker_count": exit_forced,
         "exit_forced_taker_fraction": round(exit_forced / n, 4) if n else None,
         "entry_forced_taker_fraction": round(entry_forced / n, 4) if n else None,
-        "biased_net_bps_mean_if_unclosed_positions_dropped": round(dropped_net_mean, 4),
+        "biased_net_pct_mean_if_unclosed_positions_dropped": round(dropped_net_mean, 6),
         "n_positions_if_dropped": dropped_n,
     }
 
@@ -379,7 +383,7 @@ def write_tape_files(rng: np.random.Generator, stream: ExecStream, out_dir: Path
 
     exec_id = 3_100_000_000 + np.arange(n)
     exec_price_mid = MID0 * np.exp(stream.mid_log)
-    half = HALF_SPREAD_BPS / 1e4
+    half = HALF_SPREAD_PCT / 100
     exec_price = np.where(stream.side_buy, exec_price_mid * (1 + half), exec_price_mid * (1 - half))
     exec_ts = start + pd.to_timedelta(stream.time, unit="s")
     execs = pd.DataFrame({
@@ -428,8 +432,8 @@ def write_tape_files(rng: np.random.Generator, stream: ExecStream, out_dir: Path
     return {
         "quote_file": qfile, "execution_file": efile,
         "n_quote_rows": int(n_q), "n_execution_rows": int(n),
-        "quoted_spread_bps": round(2 * HALF_SPREAD_BPS, 4),
-        "tick_bps": TICK_BPS,
+        "quoted_spread_pct": round(2 * HALF_SPREAD_PCT, 6),
+        "tick_pct": TICK_PCT,
         "crossed_book_fraction_target": CROSSED_BOOK_FRACTION,
         "crossed_book_rows": n_crossed,
         "crossed_book_fraction_realized": round(n_crossed / n_q, 6) if n_q else None,
@@ -489,8 +493,8 @@ def generate(out_dir: Path, seed: int) -> dict:
 
     reference_simulator = {
         "own_size": OWN_SIZE, "cap_seconds": CAP_SECONDS, "markout_seconds": MARKOUT_SECONDS,
-        "half_spread_bps": HALF_SPREAD_BPS, "tick_bps": TICK_BPS,
-        "taker_slippage_bps": TAKER_SLIPPAGE_BPS,
+        "half_spread_pct": HALF_SPREAD_PCT, "tick_pct": TICK_PCT,
+        "taker_slippage_pct": TAKER_SLIPPAGE_PCT,
         "symmetric_maker_round_trip_at_best": summary_at_best,
         "inside_spread_one_tick_improvement": summary_inside,
         "naive_fill_on_print_at_best": summary_naive,
@@ -515,8 +519,8 @@ def generate(out_dir: Path, seed: int) -> dict:
             "unclosed_maker_positions_must_not_be_dropped": {
                 "scenario": "symmetric_maker_round_trip_at_best",
                 "fraction_never_closed_as_maker": summary_at_best["exit_forced_taker_fraction"],
-                "correct_net_bps_all_positions": summary_at_best["net_bps_mean"],
-                "biased_net_bps_if_dropped": summary_at_best["biased_net_bps_mean_if_unclosed_positions_dropped"],
+                "correct_net_pct_all_positions": summary_at_best["net_pct_mean"],
+                "biased_net_pct_if_dropped": summary_at_best["biased_net_pct_mean_if_unclosed_positions_dropped"],
             },
             "mid_reference_inconsistency": mid_ref_trap,
         },
@@ -550,7 +554,7 @@ the DISPLAYED sizes at the touch at quote time.
 
 ## Notes
 
-- Fee: 0 bps maker and taker. Tick = 0.3 bps of price. Own order size for
+- Fee: 0 % maker and taker. Tick = 0.003 % of price. Own order size for
   any maker strategy under test: 0.85 units.
 - Quote rows and execution rows are separate update streams with their own
   timestamps.
@@ -576,20 +580,20 @@ def build_claims(ref: dict) -> tuple[str, list[dict]]:
         {
             "id": "QA-M1", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"最良気配(best)で対称的に maker 発注する往復戦略(300秒 cap、キュー位置ベースの正しい約定"
-                     f"モデル)は、ネットで{at_best['net_bps_mean']:.2f}bps/往復"
-                     f"(t={at_best['net_bps_t_stat']:.2f})であり、コストを上回らない。"),
+                     f"モデル)は、ネットで{at_best['net_pct_mean']:.4f}%/往復"
+                     f"(t={at_best['net_pct_t_stat']:.2f})であり、コストを上回らない。"),
         },
         {
             "id": "QA-M2", "category": "maker_fill", "truth_class": "naive_model_bias", "claim_correct": False,
             "text": (f"同じ最良気配 maker 往復戦略は、テープに印字(prints)が立てば直ちに約定したとみなす"
-                     f"検証で、ネット+{abs(naive['net_bps_mean']):.1f}bps/往復の収益機会がある"
+                     f"検証で、ネット+{abs(naive['net_pct_mean']):.3f}%/往復の収益機会がある"
                      f"(この数値は自前で再計算しても再現するが、キュー位置=自分の前に並ぶ表示数量を"
                      f"無視した約定仮定に依存する)。"),
         },
         {
             "id": "QA-M3", "category": "maker_fill", "truth_class": "correct_null", "claim_correct": True,
             "text": (f"最良気配より1tick 内側に improve した quote での往復は、ネット"
-                     f"{inside['net_bps_mean']:+.2f}bps/往復(t={inside['net_bps_t_stat']:.2f})で、"
+                     f"{inside['net_pct_mean']:+.4f}%/往復(t={inside['net_pct_t_stat']:.2f})で、"
                      f"0 との有意差はない。"),
         },
         {

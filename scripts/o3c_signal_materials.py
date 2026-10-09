@@ -90,7 +90,8 @@ HOUR_BAND_ORDER = {name: i for i, (name, _lo, _hi) in enumerate(sc.HOUR_BANDS)}
 EXIST_NUMS = [n for n in sc.MAT_NUMS if n not in (4, 5)]   # 12(既存13 = これ + 5')
 assert EXIST_NUMS == [1, 2, 3, 6, 8, 9, 10, 11, 12, 13, 14, 15]
 
-CAND_NAMES = ["1", "2", "3", "5p", "6", "8", "9", "10", "11", "12", "13", "14", "15",
+# "5p_pct" = 節までの距離 %(L-920。前は "5p" で bp)
+CAND_NAMES = ["1", "2", "3", "5p_pct", "6", "8", "9", "10", "11", "12", "13", "14", "15",
               "F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4", "R1", "F5"]
 # 組 A(1 件目)では欠測(F3・F4・A3・A5)/ 定義上 0 で測らない(F5、設計 §5.4)ので
 # 組 A の候補にしない。R1 は「全位置で定義」なので組 A に含める。
@@ -236,11 +237,12 @@ def realized_var_bp2(times, prices, ts_ms: int, window_ms: int):
 # ===========================================================================
 # 3. 5'(建玉ノード、先だけ)と C3(その日の極値)— 日ごとに一括計算(効率のため)
 # ===========================================================================
-def node_ahead_bp_batch(times, prices, qtys, ts_arr, p_ref_arr, sign_arr,
+def node_ahead_pct_batch(times, prices, qtys, ts_arr, p_ref_arr, sign_arr,
                         window_ms=NODE_WINDOW_MS, step=NODE_STEP):
     """`ts_arr`(昇順)ごとに、直近 `window_ms` の出来高プロファイルのノード
     (上位 10%、既存 5 と同じ決め方)のうち `sign` の向きに「先」にあるものの中で
-    最も近いものまでの距離(bp、正)。先に無ければ NaN。
+    最も近いものまでの距離(%、正。同じ時刻の 2 つの値段の距離なので bp にしない。L-920。
+    前は node_ahead_bp_batch で × 1e4 の bp)。先に無ければ NaN。
 
     `o3c_reaction.profile_columns` と同じスライディング窓(lo/hi ポインタ)で
     日ごとに 1 回だけ通す(52,000 件を毎回 0 から作ると遅いため)。
@@ -294,7 +296,7 @@ def node_ahead_bp_batch(times, prices, qtys, ts_arr, p_ref_arr, sign_arr,
         cand_centers = centers[ahead]
         dist = np.abs(cand_centers - p_ref)
         order = np.lexsort((cand_rel, dist))
-        out[i] = float(dist[order[0]] / p_ref * 1e4)
+        out[i] = float(dist[order[0]] / p_ref * 100)
     return out
 
 
@@ -469,7 +471,7 @@ def run_stage_rows(out_dir: Path, days: list, half_of: dict, pc: "sc.PrintsCSV",
             sign_arr = pc.sign[sel]
             p_pre_arr = np.array(
                 [sc.price_at_or_before(times, prices, int(t) - 1)[0] for t in ts_arr])
-            cand5p_arr = node_ahead_bp_batch(times, prices, qtys, ts_arr, p_pre_arr,
+            cand5p_arr = node_ahead_pct_batch(times, prices, qtys, ts_arr, p_pre_arr,
                                              sign_arr)
             day0 = sc.day_start_ms(day)
             day_max_arr, day_min_arr = day_extremes_batch(times, prices, ts_arr, day0)
@@ -499,7 +501,7 @@ def run_stage_rows(out_dir: Path, days: list, half_of: dict, pc: "sc.PrintsCSV",
                         d["cand_6"] = HOUR_BAND_ORDER.get(band, "")
                     else:
                         _num(d, f"cand_{n}", exist_vals[n][i])
-                _num(d, "cand_5p", float(cand5p_arr[j]))
+                _num(d, "cand_5p_pct", float(cand5p_arr[j]), 8)   # % で 8 桁 = 前の bp で 6 桁
                 for k in ("F3", "F4", "A3", "A4", "A5", "A6", "A9", "C3", "C4",
                          "R1", "F5"):
                     _num(d, f"cand_{k}", newc[k])
@@ -808,6 +810,8 @@ def main(argv=None) -> int:
         rows_path = concat_rows(a.out, days)
     df = pd.read_csv(rows_path, dtype={"print_id": str, "day": str, "bundle_pos": str,
                                        "group": str, "pos_label": str})
+    # L-920: 前の rows_materials の節までの距離は cand_5p(bp)。今の cand_5p_pct が無ければ / 100
+    df = base.pct_dist_frame(df)
     n_rows = int(df.shape[0])
     print(f"rows_materials 行数 = {n_rows}", flush=True)
 

@@ -92,7 +92,7 @@ def per_year_tercile(all_trades, edges, years):
             name: {
                 "n": len(rs),
                 "mean_bp": round(sum(rs) / len(rs), 3) if rs else None,
-                "total_bp": round(sum(rs), 1) if rs else 0.0,
+                "total_pct": round(sum(rs) / 100, 3) if rs else 0.0,   # 和は % (L-920。前は total_bp)
             }
             for name, rs in buckets.items()
         }

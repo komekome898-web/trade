@@ -2,6 +2,9 @@
 diag_tables.py が読む形(daily.csv の列 day・pnl_bp・n)に写す。値は変えない(列の名前を替えるだけ)。
 - 悪い側 = pnl_bp(README「損益の悪い方を本値にした」)
 - 良い側 = pnl_bp + worse_vs_better_bp(README「悪い方と良い方の差 = Σ(良い方 − 悪い方の分の損益)」の日ごとの値)
+L-920 の後: 損益の率は %(bp は値動き率だけの名前)。書く列は day・pnl_pct・n(%)。読む列は pnl_pct・worse_vs_better_pct が
+あればそれを、無ければ L-920 より前の記録の pnl_bp・worse_vs_better_bp(率 × 1 万)を / 100 して % で読む。
+書いた daily.csv は trade_rows.load_pct_run で読める(L-920 の後の diag_tables.load_run は daily.csv を読まずに止める)。
 出力: このフォルダの limit_conv/<窓>_bad/daily.csv・<窓>_good/daily.csv
     python3 docs/RESEARCH/cards/c3_yen_premium_revert/redo2_2026-10-05/convert_limit.py
 """
@@ -17,8 +20,11 @@ for w in ("1h", "1d", "1w"):
         d = os.path.join(HERE, "limit_conv", f"{w}_{side}")
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, "daily.csv"), "w") as fh:
-            fh.write("day,pnl_bp,n\n")
+            fh.write("day,pnl_pct,n\n")
             for r in rows:
-                v = float(r["pnl_bp"]) + (float(r["worse_vs_better_bp"]) if side == "good" else 0.0)
+                if "pnl_pct" in r:
+                    v = float(r["pnl_pct"]) + (float(r["worse_vs_better_pct"]) if side == "good" else 0.0)
+                else:  # L-920 より前の記録: pnl_bp・worse_vs_better_bp(率 × 1 万)を / 100 して %
+                    v = (float(r["pnl_bp"]) + (float(r["worse_vs_better_bp"]) if side == "good" else 0.0)) / 100
                 fh.write(f"{r['day_jst']},{v!r},{r['n_minutes']}\n")
     print(w, len(rows))

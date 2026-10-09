@@ -42,7 +42,7 @@ OUT_MD = Path(__file__).resolve().with_suffix(".md")
 W_HOURS = 8.0                       # explore5 と同じ属性窓
 WINDOW_MS = int(W_HOURS * 3600 * 1000)
 BIN_STEP = base.log_step(0.1)       # explore5 の BIN_PCT=0.1 と同じ
-BAND_BP = (5, 10, 20)
+BAND_PCT = (0.05, 0.10, 0.20)  # % (L-920: 前の 5/10/20 bp。p0 と建玉の値段の距離なので %)
 TICK = 0.1                          # BTCUSD_PERP の呼び値
 GRID_BACK_MS = 60_000
 GRID_FWD_MS = 120_000
@@ -242,7 +242,7 @@ def range_high_low_bp(times, prices, ts_ms: int, p_ref: float, window_ms: int = 
 # 4. 材料 8: 建玉(ΔOI)の帯ごとの量
 # ===========================================================================
 def oi_band_amounts(buckets: dict, ts_ms: int, p0: float, side: str):
-    """`side` の清算方向へ「この先」5/10/20bp 以内にある按分後 ΔOI の合計。
+    """`side` の清算方向へ「この先」0.05/0.10/0.20 % 以内にある按分後 ΔOI の合計。
 
     `oi_columns_for_rows`(`o3c_oi_distance.py`)が内部で作るのと同じビン配列
     (窓 `WINDOW_MS`・対数ビン幅 `BIN_STEP`・按分 `delta*buy_share` / `delta*(1-buy_share)`)
@@ -252,14 +252,14 @@ def oi_band_amounts(buckets: dict, ts_ms: int, p0: float, side: str):
     t_b = buckets.get("t_ms", np.zeros(0))
     if t_b.size == 0:
         return {"covered": False, "n_buckets": 0,
-                **{f"amt_{x}bp": None for x in BAND_BP}}
+                **{f"amt_{x:g}pct": None for x in BAND_PCT}}
     covered_arr = ex5.covered_before(buckets["t_all"], np.array([ts_ms]), WINDOW_MS)
     covered = bool(covered_arr[0])
     mask = (t_b > ts_ms - WINDOW_MS) & (t_b <= ts_ms)
     n_b = int(mask.sum())
     if n_b == 0:
         return {"covered": covered, "n_buckets": 0,
-                **{f"amt_{x}bp": None for x in BAND_BP}}
+                **{f"amt_{x:g}pct": None for x in BAND_PCT}}
     vwap = buckets["vwap"][mask]
     delta = buckets["delta"][mask]
     buy_share = buckets["buy_share"][mask]
@@ -269,13 +269,13 @@ def oi_band_amounts(buckets: dict, ts_ms: int, p0: float, side: str):
     centers = base.bin_center_price(bins, BIN_STEP)
     sign = REACT_SIGN.get(side, float("nan"))
     out = {"covered": covered, "n_buckets": n_b}
-    for x in BAND_BP:
-        edge = p0 * (1.0 + sign * x / 1e4)
+    for x in BAND_PCT:
+        edge = p0 * (1.0 + sign * x / 100)
         if sign > 0:
             band = (centers >= p0) & (centers <= edge)
         else:
             band = (centers <= p0) & (centers >= edge)
-        out[f"amt_{x}bp"] = float(w[band].sum()) if band.any() else 0.0
+        out[f"amt_{x:g}pct"] = float(w[band].sum()) if band.any() else 0.0
     return out
 
 
@@ -475,7 +475,7 @@ def main() -> int:
     md.append("## 4. 材料 8〜11 の可否")
     md.append("")
 
-    md.append("### 8. この先 X bp 以内(5/10/20)にある建玉の量")
+    md.append("### 8. この先 X % 以内(0.05/0.10/0.20)にある建玉の量")
     md.append("")
     md.append("`scripts/o3c_oi_distance.py`(`oid`)は `oi_columns_for_rows` の内部で "
               "5 分桶の ΔOI(建玉の増分)を対数ビン(`o3c_price_level_table.log_step(0.1)`)"
@@ -484,18 +484,18 @@ def main() -> int:
               "`oi_band_amounts` はその同じビン配列を窓 "
               f"`{WINDOW_MS/3600000:.0f}h`・按分(側 = `SIDE_PROFILE`: SELL→long, "
               "BUY→short、重み = `delta*buy_share` / `delta*(1-buy_share)`)で組み直し、"
-              "清算の向きへ 5/10/20bp 以内にある重み(≒建玉の増分、単位は `sum_open_interest` "
+              "清算の向きへ 0.05/0.10/0.20 % 以内にある重み(≒建玉の増分、単位は `sum_open_interest` "
               "と同じ枚)を合計した。**距離だけでなく、帯ごとの量も出せる。**"
               "30 本の最初のプリントについて値を出した(下表)。")
     md.append("")
     md.append("| # | 分類 | 束 id | 側 | 窓が被覆内か | 窓内の桶数 | "
-              "5bp以内(枚) | 10bp以内(枚) | 20bp以内(枚) |")
+              "0.05%以内(枚) | 0.10%以内(枚) | 0.20%以内(枚) |")
     md.append("|---|---|---|---|---|---|---|---|---|")
     for r in mat8_rows:
         md.append(f"| {r['i']} | {r['label']} | `{r['bundle_id']}` | {r['side']} | "
                   f"{r['covered']} | {r['n_buckets']} | "
-                  f"{fmt(r.get('amt_5bp'))} | {fmt(r.get('amt_10bp'))} | "
-                  f"{fmt(r.get('amt_20bp'))} |")
+                  f"{fmt(r.get('amt_0.05pct'))} | {fmt(r.get('amt_0.1pct'))} | "
+                  f"{fmt(r.get('amt_0.2pct'))} |")
     n_covered = sum(1 for r in mat8_rows if r["covered"])
     md.append("")
     md.append(f"- 窓が建玉の被覆内だった本数 = {n_covered} / {len(mat8_rows)}"

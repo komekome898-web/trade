@@ -16,7 +16,7 @@
   + 判定語なし。
   R2.7-C1: 基準率2値(1件目0.436/連鎖の中0.690)の判断が帯どおり。
   R2.7-C3: 出口(連鎖の終わり)の強制決済の行が per-print の道筋に出て、その
-    「レグ損益_bp」の合算が連鎖の損益(`pnl_bp`)と一致する。
+    「レグ損益_bp」の合算 / 100 が連鎖の損益(`pnl_pct`、L-920)と一致する。
   R2.7-D3: per-print の道筋に建玉(向き・無し)の列がある。
 """
 from __future__ import annotations
@@ -279,7 +279,7 @@ def test_source_does_not_call_perfect_judgment_an_upper_bound():
 
 # ---------------------------------------------------------------------------
 # R2.7-C3・D3: 出口の強制決済の行が per-print の道筋に出て、その「レグ損益_bp」の
-# 合算が連鎖の損益(pnl_bp)と一致する。建玉の列がある。
+# 合算 / 100 が連鎖の損益(pnl_pct)と一致する。建玉の列がある。
 # ---------------------------------------------------------------------------
 def test_exit_leg_row_appears_in_path_and_sums_to_cascade_pnl():
     P = sp
@@ -306,7 +306,7 @@ def test_exit_leg_row_appears_in_path_and_sums_to_cascade_pnl():
 
     # レグ損益_bp の合算(None は0扱い)が連鎖の損益と一致する
     leg_sum = sum(r["レグ損益_bp"] for r in res["path"] if r["レグ損益_bp"] is not None)
-    assert leg_sum == pytest.approx(res["pnl_bp"])
+    assert leg_sum / 100 == pytest.approx(res["pnl_pct"])
 
     # 建玉(D3)の列がどの行にもある(向きが状態機械の遷移どおり)
     assert [r["建玉"] for r in res["path"]] == [
@@ -322,7 +322,7 @@ def test_exit_leg_row_appears_in_path_and_sums_to_cascade_pnl():
     assert len(res_a["path"]) == 3  # 出口の行は付かない(型Aの決済で既に建玉なし)
     assert res_a["path"][-1]["判断"] != P.JUDGE_EXIT
     leg_sum_a = sum(r["レグ損益_bp"] for r in res_a["path"] if r["レグ損益_bp"] is not None)
-    assert leg_sum_a == pytest.approx(res_a["pnl_bp"])
+    assert leg_sum_a / 100 == pytest.approx(res_a["pnl_pct"])
 
 
 # ---------------------------------------------------------------------------
@@ -343,13 +343,13 @@ def test_pnl_sign_follows_position_direction_not_liquidation_side():
     res = P.simulate_cascade(prints, judgments, -1.0, P.TYPE_A, 0, price_fn, end)
     assert res["path"][0]["行動"] == P.ACT_NEW_AGAINST
     assert res["path"][0]["建玉"] == P.POS_AGAINST
-    assert res["pnl_bp"] > 0  # 価格が上がる経路で逆張り(建玉の向き=+1)は正の損益
+    assert res["pnl_pct"] > 0  # 価格が上がる経路で逆張り(建玉の向き=+1)は正の損益
 
     # 同じ価格経路・同じ判断列で、順張り新規(建玉の向き=-1相当)なら符号が反転する
     # ことを、同じ経路の「全部逆張り/全部順張り」基準で確かめる(手計算どおり符号だけ逆)。
     res_i = P.simulate_baseline(prints, -1.0, P.POS_AGAINST, 0, price_fn, end)
     res_ii = P.simulate_baseline(prints, -1.0, P.POS_WITH, 0, price_fn, end)
-    assert res_i["pnl_bp"] == pytest.approx(-res_ii["pnl_bp"])
+    assert res_i["pnl_pct"] == pytest.approx(-res_ii["pnl_pct"])
 
 
 # ---------------------------------------------------------------------------
@@ -426,7 +426,7 @@ def test_dist_and_position_tables_have_r27_row_counts():
             for delay in P.DELAYS_S:
                 rows.append({"bundle_id": "b1", "day": "2024-01-01", "side": "BUY",
                             "方策": policy, "型": ptype, "遅れ_秒": delay,
-                            "pnl_bp": 1.0, "建玉の回数": 1, "保有秒": 60.0,
+                            "pnl_pct": 1.0, "建玉の回数": 1, "保有秒": 60.0,
                             "入った": 1, "欠測": 0, "最初に入った位置": "1件目で入った"})
     cdf = pd.DataFrame(rows)
     dist = P.build_dist_table(cdf)

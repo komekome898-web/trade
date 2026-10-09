@@ -30,6 +30,7 @@ Gates, with the text they are judged against:
       "closed trade" event; a close is an ORDER_SENT while a position is open,
       and its realized P&L is the step in the cumulative `PnL` field).
   G2  BURST SCALPER           §5 bar: >= 30 events AND net >= +5 bps/trade.
+      (L-920 の後の単位: net は bp にしないので +0.05%/trade で判定する。)
       TWO count restarts apply (§5): the armed-threshold reversion (8 -> 10)
       and the E2 exit switch. Only events after the LATER boundary count; the
       E2 boundary is detected as the first record carrying `exit_kind`.
@@ -98,7 +99,8 @@ from bot.monitoring.gates import (  # noqa: E402
 MAIN_NET_PCT_BAR = 0.15           # §5 main bot: net % per trade
 MAIN_MAXDD_BAR = 10.0             # §5 main bot: max drawdown %
 SCALP_EVENTS_BAR = 30             # §5 burst scalper: events
-SCALP_NET_BPS_BAR = 5.0           # §5 burst scalper: net bps per trade
+# §5 burst scalper: net 5 bps per trade (L-920 の後の単位: 0.05 %)
+SCALP_NET_PCT_BAR = 0.05          # §5 burst scalper: net % per trade
 SUBSET_N_BAR = 15                 # composite.yaml C2/C3 subset deviation
 VOL_TILT_N_BAR = 30               # §4 TP vol tilt: live entries with sigma60
 FUNDING_ORIGINAL_N = 21
@@ -369,7 +371,7 @@ class ScalpTrade:
     side: str
     notional_jpy: float | None
     pnl_jpy: float | None
-    bps: float | None
+    pnl_pct: float | None          # net P&L / notional, % (L-920: not bp)
     radar_armed: bool | None
     thr_bps: float | None
     sigma60_bps: float | None
@@ -473,11 +475,11 @@ def load_scalp_trades(root: Path) -> tuple[list[ScalpTrade], dict[str, Any]]:
             if not position:
                 meta["orphan_exits"] += 1
             notional = pos.get("notional") or meta["session_notional"]
-            bps = (pnl / notional * 1e4) if (pnl is not None and notional) else None
+            pnl_pct = (pnl / notional * 100.0) if (pnl is not None and notional) else None
             trades.append(ScalpTrade(
                 entry_ts=pos.get("ts"), exit_ts=ts,
                 side=str(pos.get("side") or rec.get("side") or "?"),
-                notional_jpy=notional, pnl_jpy=pnl, bps=bps,
+                notional_jpy=notional, pnl_jpy=pnl, pnl_pct=pnl_pct,
                 radar_armed=pos.get("radar_armed"), thr_bps=pos.get("thr_bps"),
                 sigma60_bps=pos.get("sigma60_bps"), v60_btc=pos.get("v60_btc"),
                 exit_kind=rec.get("exit_kind")))
@@ -587,14 +589,14 @@ def gate_main_bot(trades: list[ChampionTrade], meta: dict, equity0: float, *,
 
 
 # ---- gate 2: scalper -------------------------------------------------------
-def _bps_stats(trades: Sequence[ScalpTrade], *, iters: int, seed: int) -> dict[str, Any]:
-    bps = [t.bps for t in trades if t.bps is not None]
+def _scalp_pct_stats(trades: Sequence[ScalpTrade], *, iters: int, seed: int) -> dict[str, Any]:
+    pct = [t.pnl_pct for t in trades if t.pnl_pct is not None]
     ci = bootstrap_day_ci(group_by_day(
-        [(t.entry_ts or t.exit_ts, t.bps) for t in trades if t.bps is not None]),
+        [(t.entry_ts or t.exit_ts, t.pnl_pct) for t in trades if t.pnl_pct is not None]),
         iters=iters, seed=seed)
-    return {"n": len(trades), "n_measured": len(bps), "net_bps": mean(bps),
-            "median_bps": median(bps),
-            "win_rate": (sum(1 for b in bps if b > 0) / len(bps) * 100) if bps else None,
+    return {"n": len(trades), "n_measured": len(pct), "net_pct": mean(pct),
+            "median_pct": median(pct),
+            "win_rate": (sum(1 for b in pct if b > 0) / len(pct) * 100) if pct else None,
             "ci": ci}
 
 
@@ -603,28 +605,28 @@ def gate_scalper(trades: list[ScalpTrade], meta: dict, *, iters: int,
     res = GateResult(
         gate_id="G2", title="Burst scalper (E2 exit) events",
         source="KNOWLEDGE.md §5 adoption table (e, i) + §5 count restarts",
-        bar=f">= {SCALP_EVENTS_BAR} events AND net >= +{SCALP_NET_BPS_BAR} bps/trade",
+        bar=f">= {SCALP_EVENTS_BAR} events AND net >= +{SCALP_NET_PCT_BAR}%/trade",
         status=INSUFFICIENT, need=SCALP_EVENTS_BAR)
     if not meta["exists"]:
         res.statistic = "no data/scalp_paper.jsonl"
         res.notes.append(f"{meta['path']} not found — the scalper has not run here.")
         return res
     kept = in_epoch(trades, meta["epoch_ts"])
-    st = _bps_stats(kept, iters=iters, seed=seed)
+    st = _scalp_pct_stats(kept, iters=iters, seed=seed)
     res.n = st["n"]
     res.values = {k: v for k, v in st.items() if k != "ci"}
     res.values["ci"] = list(st["ci"]) if st["ci"] else None
     res.values["epoch_ts"] = meta["epoch_ts"]
-    res.statistic = f"net {_fmt(st['net_bps'], '.2f')} bps/trade"
+    res.statistic = f"net {_fmt(st['net_pct'], '.4f')}%/trade"
     res.detail = [
         f"events after the epoch {st['n']} of {len(trades)} in the log; "
-        f"median {_fmt(st['median_bps'], '.2f')} bps, win rate "
+        f"median {_fmt(st['median_pct'], '.4f')}%, win rate "
         f"{_fmt(st['win_rate'], '.1f')}%",
-        _ci_text(st["ci"], "bps/trade"),
+        _ci_text(st["ci"], "%/trade"),
     ]
     if st["n"] < SCALP_EVENTS_BAR:
         res.status = INSUFFICIENT
-    elif st["net_bps"] is not None and st["net_bps"] >= SCALP_NET_BPS_BAR:
+    elif st["net_pct"] is not None and st["net_pct"] >= SCALP_NET_PCT_BAR:
         res.status = PASS
     else:
         res.status = FAIL
@@ -664,7 +666,7 @@ def gate_armed_split(trades: list[ScalpTrade], meta: dict, *, iters: int,
         res.notes.append(f"{meta['path']} not found — the scalper has not run here.")
         return res
     kept = [t for t in in_epoch(trades, meta["epoch_ts"])
-            if t.radar_armed is not None and t.bps is not None]
+            if t.radar_armed is not None and t.pnl_pct is not None]
     thr_ref = meta["session_thr_bps"]
     unarmed_thrs = {t.thr_bps for t in kept if t.radar_armed is False
                     and t.thr_bps is not None}
@@ -675,22 +677,23 @@ def gate_armed_split(trades: list[ScalpTrade], meta: dict, *, iters: int,
     dropped = len(kept) - len(eligible)
     armed = [t for t in eligible if t.radar_armed]
     unarmed = [t for t in eligible if not t.radar_armed]
-    a = _bps_stats(armed, iters=iters, seed=seed)
-    u = _bps_stats(unarmed, iters=iters, seed=seed)
+    a = _scalp_pct_stats(armed, iters=iters, seed=seed)
+    u = _scalp_pct_stats(unarmed, iters=iters, seed=seed)
     res.n = min(a["n"], u["n"])
     diff = None
-    if a["net_bps"] is not None and u["net_bps"] is not None:
-        diff = a["net_bps"] - u["net_bps"]
-    res.statistic = (f"armed {_fmt(a['net_bps'], '.2f')} vs unarmed "
-                     f"{_fmt(u['net_bps'], '.2f')} bps (diff {_fmt(diff, '+.2f')})")
+    if a["net_pct"] is not None and u["net_pct"] is not None:
+        diff = a["net_pct"] - u["net_pct"]
+    res.statistic = (f"armed {_fmt(a['net_pct'], '.4f')} vs unarmed "
+                     f"{_fmt(u['net_pct'], '.4f')}% (diff {_fmt(diff, '+.4f')})")
+    # thr_ref_bps is the entry threshold on a price move (bp); the rest is net %
     res.values = {"thr_ref_bps": thr_ref, "armed": a["n"], "unarmed": u["n"],
-                  "armed_bps": a["net_bps"], "unarmed_bps": u["net_bps"],
-                  "diff_bps": diff}
+                  "armed_pct": a["net_pct"], "unarmed_pct": u["net_pct"],
+                  "diff_pct": diff}
     res.detail = [
-        f"armed n={a['n']} net {_fmt(a['net_bps'], '.2f')} bps, "
-        f"win {_fmt(a['win_rate'], '.1f')}%; " + _ci_text(a["ci"], "bps"),
-        f"unarmed n={u['n']} net {_fmt(u['net_bps'], '.2f')} bps, "
-        f"win {_fmt(u['win_rate'], '.1f')}%; " + _ci_text(u["ci"], "bps"),
+        f"armed n={a['n']} net {_fmt(a['net_pct'], '.4f')}%, "
+        f"win {_fmt(a['win_rate'], '.1f')}%; " + _ci_text(a["ci"], "%"),
+        f"unarmed n={u['n']} net {_fmt(u['net_pct'], '.4f')}%, "
+        f"win {_fmt(u['win_rate'], '.1f')}%; " + _ci_text(u["ci"], "%"),
     ]
     res.status = READY if (a["n"] >= SCALP_EVENTS_BAR
                            and u["n"] >= SCALP_EVENTS_BAR) else INSUFFICIENT
@@ -785,7 +788,7 @@ def gate_vol_tilt(trades: list[ScalpTrade], meta: dict, *, iters: int,
         res.notes.append(f"{meta['path']} not found — the scalper has not run here.")
         return res
     kept = [t for t in in_epoch(trades, meta["epoch_ts"])
-            if t.sigma60_bps is not None and t.bps is not None]
+            if t.sigma60_bps is not None and t.pnl_pct is not None]
     res.n = len(kept)
     cuts = terciles([t.sigma60_bps for t in kept])
     buckets: dict[str, list[ScalpTrade]] = {"low": [], "mid": [], "high": []}
@@ -795,18 +798,19 @@ def gate_vol_tilt(trades: list[ScalpTrade], meta: dict, *, iters: int,
             key = "low" if t.sigma60_bps < lo_cut else (
                 "high" if t.sigma60_bps >= hi_cut else "mid")
             buckets[key].append(t)
-    stats = {k: _bps_stats(v, iters=iters, seed=seed) for k, v in buckets.items()}
+    stats = {k: _scalp_pct_stats(v, iters=iters, seed=seed) for k, v in buckets.items()}
+    # cuts_bps are sigma60 (a price-move volatility, bp); the buckets are net %
     res.values = {"cuts_bps": list(cuts) if cuts else None,
-                  "buckets": {k: {"n": v["n"], "net_bps": v["net_bps"]}
+                  "buckets": {k: {"n": v["n"], "net_pct": v["net_pct"]}
                               for k, v in stats.items()}}
-    high, low = stats["high"]["net_bps"], stats["low"]["net_bps"]
+    high, low = stats["high"]["net_pct"], stats["low"]["net_pct"]
     tilt = None if (high is None or low is None) else high - low
-    res.statistic = (f"high-low tilt {_fmt(tilt, '+.2f')} bps"
+    res.statistic = (f"high-low tilt {_fmt(tilt, '+.4f')}%"
                      if tilt is not None else "-")
     res.detail = [
         (f"tercile cuts sigma60 {_fmt(cuts[0], '.2f')} / {_fmt(cuts[1], '.2f')} bps"
          if cuts else "not enough entries to form terciles"),
-    ] + [f"{k:>4} n={stats[k]['n']:>3} net {_fmt(stats[k]['net_bps'], '+.2f')} bps"
+    ] + [f"{k:>4} n={stats[k]['n']:>3} net {_fmt(stats[k]['net_pct'], '+.4f')}%"
          for k in ("low", "mid", "high")]
     res.status = READY if res.n >= VOL_TILT_N_BAR else INSUFFICIENT
     res.notes.append("Coverage + readout only. The pending hypothesis is the "
@@ -881,6 +885,9 @@ def gate_board(root: Path) -> GateResult:
 def gate_funding(root: Path) -> GateResult:
     res = GateResult(
         gate_id="G8", title="Funding-window sample (13:00 UTC)",
+        # -8.2 bps = the price drift after the 13:00 UTC settlement (see
+        # src/bot/strategy/composite.py FundingWindowModule), a price-move
+        # rate, so it stays bp under L-920.
         source="KNOWLEDGE.md §4 (report f: n=21, -8.2 bps, t~1.8)",
         bar=f">= {FUNDING_N_BAR} settlement days (3x the original "
             f"n={FUNDING_ORIGINAL_N})",

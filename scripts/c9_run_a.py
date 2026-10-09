@@ -172,14 +172,18 @@ def run_day(day, days, pr, ctx, bund, pday, psign, pre15, pre9, cuts15, cuts9, l
                     res = v2.simulate_bundle(pr, b, None, "-", dly, price_fn, baseline=direction)
                     res["legs"] = [] if res["missing"] else [
                         {"位置": 0, "向き": direction, "出口の理由": "連鎖の終わり",
-                         "レグ損益_bp": res["pnl_bp"], "保有秒": res["hold_seconds"]}]
+                         # 基準は 1 レグ(量 1)なのでレグの損益は bp(= 連鎖の % × 100)
+                         "レグ損益_bp": v2.chain_pnl_pct(res) * 100,
+                         "保有秒": res["hold_seconds"]}]
                     runs.append((pol, "-", res))
                 for pol, typ, res in runs:
                     crows.append({"bundle_id": b["bundle_id"], "day": day, "period": period,
                                   "side": b["side"],
                                   "gap_s": g, "delay_s": dly, "policy": pol, "type": typ,
                                   "n_prints": b["n_prints"], "qty_total": b["qty_total"],
-                                  "pnl_bp": res["pnl_bp"], "entered": int(bool(res["entered"])),
+                                  # L-920: 連鎖の損益(レグの和)は %(前は pnl_bp)
+                                  "pnl_pct": v2.chain_pnl_pct(res),
+                                  "entered": int(bool(res["entered"])),
                                   "n_entries": res["n_entries"], "hold_s": res["hold_seconds"],
                                   "missing": int(bool(res["missing"])),
                                   "first_entry_pos": res.get("first_entry_pos")})
@@ -491,7 +495,7 @@ def stage3(out: Path, chunks: Path, make_days, meas_days, pr, ctx, bund, store, 
                                       "side": b["side"], "gap_s": g, "delay_s": dly,
                                       "policy": v2.POLICY_3WAY, "type": typ,
                                       "n_prints": b["n_prints"], "qty_total": b["qty_total"],
-                                      "pnl_bp": res["pnl_bp"],
+                                      "pnl_pct": v2.chain_pnl_pct(res),   # L-920: %
                                       "entered": int(bool(res["entered"])),
                                       "n_entries": res["n_entries"], "hold_s": res["hold_seconds"],
                                       "missing": int(bool(res["missing"])),
@@ -554,7 +558,11 @@ def concat_chunks(paths, dest: Path) -> None:
 
 
 def read_chunks(paths, usecols=None) -> pd.DataFrame:
-    parts = [pd.read_csv(p, usecols=usecols) for p in paths]
+    """L-920: 前に書いた日の断片は列の名前が古い(材料 5 = 名前に単位の無い bp、連鎖の損益 =
+    `pnl_bp`)。今の名前が無ければ古い列を読み、/ 100 して今の名前で足す(`v2.LEGACY_COLS`)。"""
+    parts = [v2.with_legacy_columns(pd.read_csv(
+        p, usecols=(v2.legacy_usecols(p, usecols) if usecols is not None else None)))
+        for p in paths]
     return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
 
 
@@ -628,7 +636,7 @@ def aggregate(chunks: Path, days: list[str]):
         for k, rows in CA.groupby(key):
             per, g, dly, pol, typ = k
             dd = rows["day"].astype(str).to_numpy(object)
-            pnl = rows["pnl_bp"].to_numpy(float)
+            pnl = rows["pnl_pct"].to_numpy(float)     # %(前の断片は read_chunks が / 100)
             ent = rows["entered"].to_numpy(bool)
             miss = rows["missing"].to_numpy(bool)
             base = {"期間": per, "gap_s": g, "delay_s": dly, "policy": pol, "type": typ,
@@ -639,8 +647,9 @@ def aggregate(chunks: Path, days: list[str]):
                           v2.dist_stats(pnl[ent], dd[ent]))
             lr = lg_groups.get(k)
             if lr is not None:
+                # 同じ表の列を 1 つの単位(%)にする: 1 レグの bp を / 100(L-920)
                 policy.append(base | {"単位": "1レグ"} |
-                              v2.dist_stats(lr["pnl_bp"].to_numpy(float),
+                              v2.dist_stats(lr["pnl_bp"].to_numpy(float) / 100,
                                             lr["day"].astype(str).to_numpy(object)))
             q = rows["qty_total"].to_numpy(float)
             cuts = v2.tertile_cuts(q)

@@ -108,14 +108,14 @@ def test_days_needed():
 
 def test_signal_delay_splits_late_fills():
     run = {"trades": [
-        {"entry_ns": dt._iso_ns("2020-01-01T00:16:00Z"), "exit_ns": 0, "pnl_jpy": 5.0, "signal_t": "2020-01-01T00:15:00Z"},
-        {"entry_ns": dt._iso_ns("2020-01-01T02:00:00Z"), "exit_ns": 0, "pnl_jpy": -9.0, "signal_t": "2020-01-01T00:15:00Z"},
+        {"entry_ns": dt._iso_ns("2020-01-01T00:16:00Z"), "exit_ns": 0, "pnl": 5.0, "signal_t": "2020-01-01T00:15:00Z"},
+        {"entry_ns": dt._iso_ns("2020-01-01T02:00:00Z"), "exit_ns": 0, "pnl": -9.0, "signal_t": "2020-01-01T00:15:00Z"},
     ]}
     r = dt.signal_delay(run, 15.0)
     assert r["within"] == {"trades": 1, "sum": 5.0}
     assert r["late"] == {"trades": 1, "sum": -9.0}
     assert dt.signal_delay(run, None)["valid_min"] is None
-    assert dt.signal_delay({"trades": [{"entry_ns": 0, "exit_ns": 0, "pnl_jpy": 1.0}]}, 15.0) is None
+    assert dt.signal_delay({"trades": [{"entry_ns": 0, "exit_ns": 0, "pnl": 1.0}]}, 15.0) is None
 
 
 def test_cut_sets_first_day_of_second_half():

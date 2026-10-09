@@ -94,6 +94,9 @@ WHAT THIS SCRIPT MAY CONCLUDE
   and whether the champion's adoption-time +0.19..+0.36%/trade (n=15) sits at an
   ordinary or an extreme quantile of that surface.  ADOPTION IS OUT OF SCOPE.
 
+(L-920 の後の単位: 上の事前登録の費用 7.92 bps = 0.0792 %、13.0 bps = 0.13 %。
+費用は値動き率ではないので、台本の中では % で持つ。bp は値動き(実現 vol)にだけ使う。)
+
 Run:  PYTHONPATH=src python scripts/research_leader_surface.py
 """
 from __future__ import annotations
@@ -125,7 +128,7 @@ CHAMPION_EXIT_PCT = 0.05
 CHAMPION_STOP_PCT = 0.5
 MAX_HOLD = 240
 
-COST_TAKER_PCT = 0.0792   # 7.92 bps round trip
+COST_TAKER_PCT = 0.0792   # % round trip (L-920)
 COST_PAPER_PCT = 0.13     # paper-charged round trip
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

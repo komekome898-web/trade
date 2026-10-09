@@ -201,6 +201,10 @@ test.
 
 Run:  PYTHONPATH=src python scripts/research_fx_sessions.py
 Read-only, no network, idempotent, writes nothing, commits nothing.
+(L-920 の後の単位: 上の事前登録の文は書き換えない。障壁はレンジの縁からの距離なので % で持つ
+(3/5/10bps = 0.03/0.05/0.10 %)。費用(片道 0.355bps = 0.00355 %、往復 0.71bps = 0.0071 %)、
+スプレッド、EV も % で持つ。bp は値動き(1 分・30 分の値動き、レンジの幅、上限での drift)にだけ使う。
+損益分岐の率 p* は単位に依らない。)
 """
 from __future__ import annotations
 
@@ -218,9 +222,9 @@ CSV = ROOT / "data" / "fx" / "USDJPY_1m.csv"
 # ---- frozen constants (pre-registered; nothing below is fitted) ------------ #
 W_RANGE = 60                 # trailing range window, minutes
 CAP = 60                     # race cap, minutes
-BARRIERS = (3.0, 5.0, 10.0)  # bps, symmetric -- exactly these three
-C_SIDE = 0.355               # bps per side (KNOWLEDGE_FX sec.1: 0.71 round trip)
-C_RT = 2 * C_SIDE            # 0.71 bps
+BARRIERS = (0.03, 0.05, 0.10)  # %, symmetric -- exactly these three (3/5/10 bps)
+C_SIDE = 0.00355             # % per side (KNOWLEDGE_FX sec.1: 0.71 bps round trip)
+C_RT = 2 * C_SIDE            # 0.0071 %
 MIN_TICKS = 45               # of 60 trailing bars with volume > 0
 BAR_MIN_N = 5000             # pass bar (P2)/(P3)
 SPLIT_FRAC = 0.60
@@ -264,7 +268,7 @@ def sub(t: str) -> None:
 
 
 def breakeven(b: float) -> float:
-    """Revert share of RESOLVED races at which a symmetric b-bps fade breaks
+    """Revert share of RESOLVED races at which a symmetric b-% fade breaks
     even, at USD/JPY costs.  EV = 2*p*b - b - c_rt  ->  p* = (b + c_rt)/(2b)."""
     return (b + C_RT) / (2.0 * b) * 100.0
 
@@ -340,7 +344,7 @@ def build_masks(tp: Tape) -> None:
 # 1. the barrier race (vectorised first-passage on 1m OHLC)
 # --------------------------------------------------------------------------- #
 def race(tp: Tape, ev: np.ndarray, side: np.ndarray, edge: np.ndarray,
-         bps: float, *, start_off: int = 1, tie_to_revert: bool = False,
+         b_pct: float, *, start_off: int = 1, tie_to_revert: bool = False,
          chunk: int = 40000):
     """Symmetric first-passage race over CAP bars starting at ev + start_off.
 
@@ -350,8 +354,8 @@ def race(tp: Tape, ev: np.ndarray, side: np.ndarray, edge: np.ndarray,
     Ties (both thresholds first crossed in the SAME bar) go to BREAK unless
     tie_to_revert.
     """
-    up = edge * (1.0 + bps / 1e4)
-    dn = edge * (1.0 - bps / 1e4)
+    up = edge * (1.0 + b_pct / 100)
+    dn = edge * (1.0 - b_pct / 100)
     out = np.zeros(len(ev), np.int8)
     tbar = np.full(len(ev), float(CAP))
     BIG = 1 << 30
@@ -415,12 +419,12 @@ def row(s: dict) -> str:
 
 
 def ev_uncond(s: dict, b: float, drift_un: float) -> float:
-    """Per-touch EV in bps: resolved legs at +/-b, unresolved marked out at its
-    realised side-adjusted 60m-cap drift.  Every leg pays c_rt."""
+    """Per-touch EV in %: resolved legs at +/-b, unresolved marked out at its
+    realised side-adjusted 60m-cap drift (bps, / 100 here).  Every leg pays c_rt."""
     if s["n"] == 0:
         return np.nan
     p_r, p_b, p_u = s["rev"] / 100, s["brk"] / 100, s["un"] / 100
-    return p_r * (b - C_RT) + p_b * (-b - C_RT) + p_u * (drift_un - C_RT)
+    return p_r * (b - C_RT) + p_b * (-b - C_RT) + p_u * (drift_un / 100 - C_RT)
 
 
 # --------------------------------------------------------------------------- #
@@ -704,22 +708,22 @@ def main() -> int:
           f"judgment {int(judg.sum()):,} events")
 
     sub("B1. THE ECONOMICS, RE-DERIVED AT USD/JPY COSTS")
-    print("KNOWLEDGE_FX.md sec.1: round trip 0.71bps = spread 0.5 sen (0.314bps)")
-    print("+ API fee 0.002% x 2 (0.4bps).  The fee is charged on LIMIT orders and")
+    print("KNOWLEDGE_FX.md sec.1: round trip 0.0071 % = spread 0.5 sen (0.00314 %)")
+    print("+ API fee 0.002% x 2 (0.004 %).  The fee is charged on LIMIT orders and")
     print("on amendments too, so there is no free maker leg here -- unlike BTC")
     print("Crypto CFD where maker is 0 fee and 0 spread.")
-    print(f"\n  c_side = {C_SIDE:.3f} bps    c_rt = 2*c_side = {C_RT:.2f} bps")
-    print("  fade entered at the edge, exited at the symmetric b-bps barrier:")
+    print(f"\n  c_side = {C_SIDE:.5f} %    c_rt = 2*c_side = {C_RT:.4f} %")
+    print("  fade entered at the edge, exited at the symmetric b-% barrier:")
     print("      revert wins ->  +b - c_rt        break wins ->  -b - c_rt")
     print("      EV(resolved) = p*(b - c_rt) + (1-p)*(-b - c_rt) = 2*p*b - b - c_rt")
     print("      EV > 0  <=>  p > (b + c_rt) / (2*b)          <-- BREAKEVEN FORMULA")
     print(f"\n{'barrier b':>12}{'gross win':>12}{'gross loss':>12}"
           f"{'p* = (b+c_rt)/(2b)':>22}{'BTC-cost p* for scale':>24}")
     for b in BARRIERS:
-        btc_p = (b + 2.93) / (2 * b) * 100      # BTC calm taker exit, one side
-        print(f"{b:>11.0f}b{b - C_RT:>+12.2f}{-(b + C_RT):>+12.2f}"
+        btc_p = (b + 0.0293) / (2 * b) * 100    # BTC calm taker exit, one side (0.0293 %)
+        print(f"{b:>10.2f}%{b - C_RT:>+12.4f}{-(b + C_RT):>+12.4f}"
               f"{breakeven(b):>21.2f}%{btc_p:>23.2f}%")
-    print("  (the BTC column prices the same race with BTC's calm 2.93bps exit --")
+    print("  (the BTC column prices the same race with BTC's calm 0.0293 % exit --")
     print("   it is the constant this study exists to replace, not a claim about")
     print("   BTC's own microstructure.)")
 
@@ -744,11 +748,11 @@ def main() -> int:
             du = drift_cap[cm & (outs[b] == 0)]
             dm = float(du.mean()) if du.size else 0.0
             cells[(cname, b)] = dict(s=s, drift=dm, mask=cm)
-            print(f"{cname:<18}{b:>4.0f}b {row(s)}{breakeven(b):>7.2f}%"
-                  f"{ev_uncond(s, b, dm):>+10.3f}")
+            print(f"{cname:<18}{b:>5.2f}% {row(s)}{breakeven(b):>7.2f}%"
+                  f"{ev_uncond(s, b, dm):>+10.5f}")
     print("  rev|res% = revert share of RESOLVED races (the economic quantity).")
     print("  p*       = breakeven revert share at USD/JPY costs for that barrier.")
-    print("  EV/touch = unconditional bps per touch, unresolved marked out at")
+    print("  EV/touch = unconditional % per touch, unresolved marked out at")
     print("             their realised 60m-cap drift, every leg charged c_rt.")
 
     sub("B3. EXPLORATION SEGMENT (first 60%) -- (P1) revert share vs p*")
@@ -761,7 +765,7 @@ def main() -> int:
             p1 = bool(np.isfinite(s["cond"]) and s["cond"] > breakeven(b))
             p2 = s["n"] >= BAR_MIN_N
             expl_pass[(cname, b)] = p1 and p2
-            print(f"{cname:<18}{b:>4.0f}b {row(s)}{breakeven(b):>7.2f}%"
+            print(f"{cname:<18}{b:>5.2f}% {row(s)}{breakeven(b):>7.2f}%"
                   f"{('Y' if p1 else 'n'):>6}{('Y' if p2 else 'n'):>10}")
 
     sub("B4. JUDGMENT SEGMENT (last 40%) -- EXECUTED ONCE, REPORTED AS IS")
@@ -776,7 +780,7 @@ def main() -> int:
             p2 = s["n"] >= BAR_MIN_N
             cand = bool(p1 and p2 and expl_pass[(cname, b)])
             any_pass |= cand
-            print(f"{cname:<18}{b:>4.0f}b {row(s)}{breakeven(b):>7.2f}%"
+            print(f"{cname:<18}{b:>5.2f}% {row(s)}{breakeven(b):>7.2f}%"
                   f"{('Y' if p1 else 'n'):>6}{('Y' if p2 else 'n'):>10}"
                   f"{('CANDIDATE' if cand else '-'):>11}")
     print(f"\n  PRE-REGISTERED VERDICT (any cell passing P1+P2 in BOTH segments): "
@@ -784,7 +788,7 @@ def main() -> int:
 
     sub("B5. YEAR BY YEAR -- rev|res% for every condition at every barrier")
     for b in BARRIERS:
-        print(f"\n  barrier {b:.0f}bps   (breakeven p* = {breakeven(b):.2f}%)")
+        print(f"\n  barrier {b:.2f}%   (breakeven p* = {breakeven(b):.2f}%)")
         print(f"  {'condition':<18}" +
               "".join(f"{y:>20}" for y in years) + f"{'FULL':>20}")
         for cname, hrs in CONDITIONS.items():
@@ -802,15 +806,15 @@ def main() -> int:
     print("  accident.")
 
     sub("B6. THE BTC LAW SIDE BY SIDE (comparability is limited -- see caveats)")
-    s10 = stats(outs[10.0])
-    print(f"  BTC Crypto CFD, 1s grid, W=120m, calm, 10/10bps, n=23,642 :"
+    s10 = stats(outs[0.10])
+    print(f"  BTC Crypto CFD, 1s grid, W=120m, calm, 0.1/0.1 %, n=23,642 :"
           f"  revert 31.7%  break 61.4%  neither 6.9%")
-    print(f"  USD/JPY, 1m bars, W=60m, all admissible hours, 10/10bps    :"
+    print(f"  USD/JPY, 1m bars, W=60m, all admissible hours, 0.1/0.1 %   :"
           f"  revert {s10['rev']:.1f}%  break {s10['brk']:.1f}%  "
           f"neither {s10['un']:.1f}%   n={s10['n']:,}")
     print("  Same qualitative direction (break-first wins), different magnitudes.")
     print("  The magnitude gap is NOT evidence about the two markets: a 1m bar")
-    print("  cannot see a 3bps barrier crossed and un-crossed inside the minute,")
+    print("  cannot see a 0.03 % barrier crossed and un-crossed inside the minute,")
     print("  and the FX race starts a whole bar after the touch.  Direction is")
     print("  comparable; the split of the resolved mass is not.")
 
@@ -820,10 +824,10 @@ def main() -> int:
     _, first1 = np.unique(blk10, return_index=True)
     d1 = np.zeros(len(ev), bool)
     d1[first1] = True
-    # D2: greedy non-overlapping races on the 10bps resolution clock
+    # D2: greedy non-overlapping races on the 0.1 % resolution clock
     d2 = np.zeros(len(ev), bool)
     free = -np.inf
-    tb10 = tbars[10.0]
+    tb10 = tbars[0.10]
     for j in range(len(ev)):
         if esec[j] >= free:
             d2[j] = True
@@ -851,14 +855,14 @@ def main() -> int:
         for b in BARRIERS:
             for lbl, m in (("PRIMARY", cm), ("D1", cm & d1), ("D2", cm & d2),
                            ("D3 fresh breach", cm & d3)):
-                print(f"{cname:<18}{b:>4.0f}b  {lbl:<20}{row(stats(outs[b][m]))}")
+                print(f"{cname:<18}{b:>5.2f}%  {lbl:<20}{row(stats(outs[b][m]))}")
     print("  D1 up-weights edges that were merely kissed and drops the follow-on")
     print("  bars of a break in progress, biasing it TOWARD reversion; D2 is the")
     print("  honest independent sample.")
     print("\n  READ THIS ROW PAIR.  PRIMARY sits near a coin flip because it is")
     print("  dominated by bars that WALK ALONG a moving edge: once price is")
     print("  running at a new extreme, the trailing edge is only a tick away and")
-    print("  the next 3bps in either direction is close to 50/50.  De-clustering")
+    print("  the next 0.03 % in either direction is close to 50/50.  De-clustering")
     print("  to genuine first breaches strips those bars out and the momentum")
     print("  result appears in full -- and lands almost exactly on the BTC law.")
 
@@ -878,7 +882,7 @@ def main() -> int:
                 sd_ = stats(outs[b][cm & seg])
                 p1 = bool(np.isfinite(sd_["cond"]) and sd_["cond"] > breakeven(b))
                 flags.append(p1 and sd_["n"] >= BAR_MIN_N)
-                print(f"{cname:<18}{b:>4.0f}b  {seg_lbl:<12}{row(sd_)}"
+                print(f"{cname:<18}{b:>5.2f}%  {seg_lbl:<12}{row(sd_)}"
                       f"{breakeven(b):>7.2f}%{('Y' if p1 else 'n'):>6}")
             d2_pass[(cname, b)] = flags[1] and flags[2]
     print(f"\n  D2 re-run verdict: "
@@ -900,13 +904,13 @@ def main() -> int:
                            ("        t+1, tie->revert", o_pr),
                            ("INCLUSIVE t, tie->break", o_ib),
                            ("INCLUSIVE t, tie->revert (max)", o_ir)):
-                print(f"{cname:<18}{b:>4.0f}b  {lbl:<28}{row(stats(o))}")
+                print(f"{cname:<18}{b:>5.2f}%  {lbl:<28}{row(stats(o))}")
     print("  The optimistic inclusive row is the ABSOLUTE CEILING the fade could")
     print("  reach on this data under any intrabar ordering.  Compare it to p*.")
 
     sub("B9. STRESS -- what if the break leg is a stop that pays the spread again?")
     print("  Pre-registered costs charge c_rt on both outcomes.  A break exit is")
-    print("  realistically a stop-market that crosses the spread (0.314bps) on top.")
+    print("  realistically a stop-market that crosses the spread (0.00314 %) on top.")
     print("  This row is a STRESS, not the pre-registered bar.")
     print(f"{'condition':<18}{'b':>5}{'p* base':>10}{'p* stressed':>13}"
           f"{'rev|res%':>10}{'gap to stressed p*':>21}")
@@ -915,8 +919,8 @@ def main() -> int:
         for b in BARRIERS:
             s = stats(outs[b][cm])
             # EV = p(b-c) - (1-p)(b+c+x) = 0 -> p* = (b+c+x)/(2b+x)
-            ps = (b + C_RT + 0.314) / (2 * b + 0.314) * 100
-            print(f"{cname:<18}{b:>4.0f}b{breakeven(b):>9.2f}%{ps:>12.2f}%"
+            ps = (b + C_RT + 0.00314) / (2 * b + 0.00314) * 100   # spread 0.00314 % (0.314 bps)
+            print(f"{cname:<18}{b:>5.2f}%{breakeven(b):>9.2f}%{ps:>12.2f}%"
                   f"{s['cond']:>9.2f}%{s['cond'] - ps:>+20.2f}")
 
     sub("B10. UNRESOLVED GROUP -- is marking it out at the cap fair?")
@@ -931,7 +935,7 @@ def main() -> int:
             if not mm.sum():
                 continue
             dd = drift_cap[mm]
-            print(f"{cname:<18}{b:>4.0f}b{int(mm.sum()):>10,}{dd.mean():>+11.3f}"
+            print(f"{cname:<18}{b:>5.2f}%{int(mm.sum()):>10,}{dd.mean():>+11.3f}"
                   f"{np.median(dd):>+10.3f}{(dd > 0).mean() * 100:>10.1f}%")
 
     # ================================================================== C === #
@@ -967,7 +971,7 @@ def main() -> int:
           f"OK by construction (E3)")
 
     # exhaustive outcomes, cap respected
-    o, tb = outs[10.0], tbars[10.0]
+    o, tb = outs[0.10], tbars[0.10]
     exh = int(((o == 1) | (o == -1) | (o == 0)).sum()) == len(o)
     cap_ok = bool(np.all(tb[o != 0] <= CAP - 1 + 1e-9))
     un_cap = bool(np.all(tb[o == 0] == CAP))
@@ -980,10 +984,10 @@ def main() -> int:
     ok &= exh and cap_ok and un_cap
 
     # determinism
-    o2, t2 = race(tp, ev, side, edge, 10.0)
-    det = bool(np.array_equal(o2, outs[10.0]) and np.array_equal(t2, tbars[10.0]))
-    o3, _ = race(tp, ev, side, edge, 10.0, chunk=7777)
-    det &= bool(np.array_equal(o3, outs[10.0]))
+    o2, t2 = race(tp, ev, side, edge, 0.10)
+    det = bool(np.array_equal(o2, outs[0.10]) and np.array_equal(t2, tbars[0.10]))
+    o3, _ = race(tp, ev, side, edge, 0.10, chunk=7777)
+    det &= bool(np.array_equal(o3, outs[0.10]))
     print(f"  rerun determinism, incl. different chunking   : "
           f"{'OK' if det else 'FAIL'}")
     ok &= det
@@ -1004,7 +1008,7 @@ def main() -> int:
         j = int(j)
         i = int(ev[j])
         e = edge[j]
-        up_thr, dn_thr = e * (1 + 10.0 / 1e4), e * (1 - 10.0 / 1e4)
+        up_thr, dn_thr = e * (1 + 0.1 / 100), e * (1 - 0.1 / 100)
         res = 0
         for k in range(i + 1, i + 1 + CAP):
             hu = tp.h[k] >= up_thr
@@ -1019,7 +1023,7 @@ def main() -> int:
             if r_:
                 res = 1
                 break
-        if res != outs[10.0][j]:
+        if res != outs[0.10][j]:
             mism += 1
     print(f"  vectorised race == naive bar-by-bar loop      : "
           f"{'OK' if mism == 0 else f'{mism} MISMATCH'}  (400 events)")
@@ -1042,26 +1046,26 @@ def main() -> int:
     print( "   admissible hours:")
     for b in BARRIERS:
         s = s_all[b]
-        print(f"     {b:>2.0f}bps : revert {s['rev']:.1f}%  break {s['brk']:.1f}%  "
+        print(f"     {b:>4.2f}% : revert {s['rev']:.1f}%  break {s['brk']:.1f}%  "
               f"unresolved {s['un']:.1f}%  ->  rev|res {s['cond']:.2f}% "
               f"vs p*={breakeven(b):.2f}%")
     print(f"\n3. TOKYO LUNCH -- THE NAMED PRIOR -- IS THE WORST CELL, NOT THE BEST.")
     for b in BARRIERS:
         sl = stats(outs[b][np.isin(ehr, list(CONDITIONS["C2 TOKYO_LUNCH"]))])
-        print(f"     {b:>2.0f}bps : rev|res {sl['cond']:.2f}% vs p*="
+        print(f"     {b:>4.2f}% : rev|res {sl['cond']:.2f}% vs p*="
               f"{breakeven(b):.2f}%  -> {sl['cond'] - breakeven(b):+.2f} pp  "
               f"(n={sl['n']:,})")
     print("   The thin-book mean-reverting-Tokyo-lunch story predicts the fade")
-    print("   should work BEST here. At the 10bps barrier it is the most")
+    print("   should work BEST here. At the 0.1 % barrier it is the most")
     print("   momentum-like cell in the study. The prior is measured and dead.")
     print(f"\n4. THE BEST SESSION IS {best}. Even there the shortfall to breakeven")
     print("   is:")
     for b in BARRIERS:
         s = stats(outs[b][np.isin(ehr, list(CONDITIONS[best]))])
-        print(f"     {b:>2.0f}bps : {s['cond']:.2f}% vs p*={breakeven(b):.2f}%  "
+        print(f"     {b:>4.2f}% : {s['cond']:.2f}% vs p*={breakeven(b):.2f}%  "
               f"-> {s['cond'] - breakeven(b):+.2f} pp   (n={s['n']:,})")
     print("\n5. NO SYMMETRIC BARRIER CAN RESCUE IT -- CLOSED FORM. With a")
-    print("   symmetric b-bps fade, EV(resolved) = (2p - 1)*b - c_rt, so EV > 0")
+    print("   symmetric b-% fade, EV(resolved) = (2p - 1)*b - c_rt, so EV > 0")
     print("   REQUIRES p > 0.5 no matter how b is chosen; b only scales an edge")
     print("   that must already exist. Measured p (revert share of resolved")
     print("   races) by cell:")
@@ -1074,17 +1078,17 @@ def main() -> int:
             sc = stats(outs[b][cm])
             vals.append(sc["cond"])
             if sc["cond"] > pmax:
-                pmax, pargs = sc["cond"], f"{cname} at {b:.0f}bps"
+                pmax, pargs = sc["cond"], f"{cname} at {b:.2f}%"
         print(f"     {cname:<16} " +
-              "  ".join(f"{b:.0f}b={v:.2f}%" for b, v in zip(BARRIERS, vals)))
+              "  ".join(f"{b:.2f}%={v:.2f}%" for b, v in zip(BARRIERS, vals)))
     print(f"   The single most fade-favourable cell in the whole study is "
           f"{pargs}")
     slope = 2 * pmax / 100 - 1
     need = (C_RT / slope) if slope > 0 else float("inf")
-    print(f"   at p={pmax:.2f}%, i.e. EV = (2p-1)*b - {C_RT:.2f} = "
-          f"{slope:+.5f}*b - {C_RT:.2f} bps.")
+    print(f"   at p={pmax:.2f}%, i.e. EV = (2p-1)*b - {C_RT:.4f} = "
+          f"{slope:+.5f}*b - {C_RT:.4f} %.")
     print("   Even that cell needs a barrier of "
-          + (f"b > {need:,.0f}bps ({need / 100:,.1f}%) " if np.isfinite(need)
+          + (f"b > {need:,.2f}% " if np.isfinite(need)
              else "b = infinity ") +
           "to break even --")
     print("   a move USD/JPY does not make inside 60 minutes. Barrier choice is")
@@ -1101,17 +1105,17 @@ def main() -> int:
           f"{'rev|res':>9}{'b/range':>9}")
     for b in BARRIERS:
         sd_ = stats(outs[b][d2])
-        print(f"     {f'D2 all hours {b:.0f}bps':<26}{sd_['rev']:>7.1f}%"
+        print(f"     {f'D2 all hours {b:.2f}%':<26}{sd_['rev']:>7.1f}%"
               f"{sd_['brk']:>7.1f}%{sd_['un']:>7.1f}%{sd_['cond']:>8.1f}%"
               f"{b / med_rw:>8.2f}x")
-    print(f"     {'BTC law 1s grid 10bps':<26}{31.7:>7.1f}%{61.4:>7.1f}%"
+    print(f"     {'BTC law 1s grid 0.1 %':<26}{31.7:>7.1f}%{61.4:>7.1f}%"
           f"{6.9:>7.1f}%{34.1:>8.1f}%{'n/a':>9}")
     print("   SAME DIRECTION, SIMILAR ORDER OF MAGNITUDE, NOT THE SAME NUMBER.")
     print("   FX rev|res is 40-44% against BTC's 34%: the fade loses the race in")
     print("   both markets, less lopsidedly in USD/JPY. The two are not directly")
-    print("   comparable anyway -- the barriers are not volatility-matched (10bps")
-    print(f"   is {10 / med_rw:.2f}x the median 60m FX range, which is why {stats(outs[10.0][d2])['un']:.0f}% of the")
-    print("   FX 10bps races never resolve inside the cap), and the FX study is a")
+    print("   comparable anyway -- the barriers are not volatility-matched (0.1 %")
+    print(f"   is {10 / med_rw:.2f}x the median 60m FX range, which is why {stats(outs[0.10][d2])['un']:.0f}% of the")
+    print("   FX 0.1 % races never resolve inside the cap), and the FX study is a")
     print("   1m study against BTC's 1s study. What transfers is the SIGN and the")
     print("   rough size, in a second market, on a different asset class, with a")
     print("   9x lower cost bar and hard session structure. That is the strongest")
@@ -1119,13 +1123,13 @@ def main() -> int:
     print("   trailing-range-edge breach is a momentum event, and that looks like")
     print("   a property of price rather than a property of bitcoin.")
     print("\n7. WHAT THE 1/9 COST BAR ACTUALLY BOUGHT -- STATED PRECISELY.")
-    relief = (10 + 2.93) / 20 * 100 - breakeven(10.0)
-    sbest10 = stats(outs[10.0][np.isin(ehr, list(CONDITIONS[best]))])
-    print(f"   At the 10bps barrier the breakeven falls from "
-          f"{(10 + 2.93) / 20 * 100:.2f}% (BTC exit cost)")
-    print(f"   to {breakeven(10.0):.2f}% (USD/JPY) -- a {relief:.2f} pp relief, which is large.")
-    print(f"   In the best cell ({best}, 10bps) the remaining shortfall is only")
-    print(f"   {sbest10['cond'] - breakeven(10.0):+.2f} pp. So the cheap cost bar closes MOST of the gap.")
+    relief = (0.10 + 0.0293) / 0.20 * 100 - breakeven(0.10)
+    sbest10 = stats(outs[0.10][np.isin(ehr, list(CONDITIONS[best]))])
+    print(f"   At the 0.1 % barrier the breakeven falls from "
+          f"{(0.10 + 0.0293) / 0.20 * 100:.2f}% (BTC exit cost)")
+    print(f"   to {breakeven(0.10):.2f}% (USD/JPY) -- a {relief:.2f} pp relief, which is large.")
+    print(f"   In the best cell ({best}, 0.1 %) the remaining shortfall is only")
+    print(f"   {sbest10['cond'] - breakeven(0.10):+.2f} pp. So the cheap cost bar closes MOST of the gap.")
     print("   It is the last piece that cannot be bought: with p < 50% the GROSS")
     print("   expectancy is already <= 0, and no cost regime, however cheap, makes")
     print("   a negative gross edge positive. That is the honest answer to the")
@@ -1144,7 +1148,7 @@ def main() -> int:
     for c in [
         "BID-ONLY. Every price is Dukascopy BID; the file's ask_close column "
         f"is populated on only {ask_share:.1f}% of rows (the last ~30 days). "
-        "The spread therefore enters only as the flat 0.71bps constant from "
+        "The spread therefore enters only as the flat 0.0071 % constant from "
         "KNOWLEDGE_FX sec.1 -- it is not measured per bar. A bid-side high/low "
         "is not the ask-side high/low, so a SELL fade's fill and a BUY fade's "
         "fill are not symmetric in reality the way they are here. Any session "
@@ -1152,7 +1156,7 @@ def main() -> int:
         "the one such band this tape has (UTC 20-22, 20x the floor) is excluded.",
         "1m RESOLUTION vs BTC's 1s GRID. The BTC law raced on a 1-second grid; "
         "this races on 1-minute OHLC. A 1m bar cannot order two touches inside "
-        "it, cannot see a 3bps barrier crossed and un-crossed within the "
+        "it, cannot see a 0.03 % barrier crossed and un-crossed within the "
         "minute, and forces the race to start a full bar after the touch. The "
         "B8 clock-bound rows quantify the whole span of that ambiguity. "
         "DIRECTION is comparable across the two studies; the exact split of "
@@ -1171,7 +1175,7 @@ def main() -> int:
         "That effect is NOT modelled here and would only make the fade worse.",
         "NO SWAP/CARRY. Races run up to 60 minutes and never cross the 6:00 JST "
         "swap boundary in a way this study accounts for. KNOWLEDGE_FX sec.1 "
-        "puts swap at 0.6-1.6bps/day, i.e. 1-2x the round-trip cost.",
+        "puts swap at 0.006-0.016 %/day, i.e. 1-2x the round-trip cost.",
         "INTERVENTION TAIL. USD/JPY carries a one-directional MOF-intervention "
         "tail (KNOWLEDGE_FX sec.2). Those minutes are in this sample and, being "
         "extreme breaks, push the race further toward break-first. Removing "

@@ -157,9 +157,9 @@ def test_tape_floor_has_no_rebate_column(tmp_path, shrink):
     out = tmp_path / "ds"
     result = mkas.generate(out, seed=mkas.SEED)
     tape = result["answers"]["tape"]
-    assert tape["taker_fee_bps"] == 0.0
-    assert tape["true_taker_roundtrip_floor_bps"] == pytest.approx(
-        2 * (tape["quoted_spread_bps"] / 2 + tape["taker_slippage_bps_per_side"])
+    assert tape["taker_fee_pct"] == 0.0
+    assert tape["true_taker_roundtrip_floor_pct"] == pytest.approx(
+        2 * (tape["quoted_spread_pct"] / 2 + tape["taker_slippage_pct_per_side"])
     )
     import pandas as pd
     execs = pd.read_csv(out / tape["execution_file"], compression="gzip", nrows=1)
@@ -193,7 +193,7 @@ def test_manifest_does_not_reveal_planted_values_or_verdicts(tmp_path, shrink):
     for leak in (
         f"{delta['realized_overnight_mean_bps']:.4f}",
         f"{delta['realized_overnight_mean_bps']:.1f}bps",
-        f"{tape['true_taker_roundtrip_floor_bps']:.1f}bps",
+        f"{tape['true_taker_roundtrip_floor_pct']:.3f}%",
         "継承", "棄却", "未検証",  # mechanism verdicts must not leak either
     ):
         assert leak not in manifest

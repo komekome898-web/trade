@@ -93,8 +93,8 @@ BANNED_WORDS = ("差あり", "検出されず", "陽性", "陰性", "有意")
 
 # 属性(探索段 1 `scripts/o3c_signal_explore.py` と同じ列・同じ切り方)
 ATTRS_NUM = [
-    ("|dist_vwap_bp|", "dist_vwap_bp", True),
-    ("|dist_node_bp|", "dist_node_bp", True),
+    ("|dist_vwap_pct|", "dist_vwap_pct", True),
+    ("|dist_node_pct|", "dist_node_pct", True),
     ("bin_pct", "bin_pct", False),
     ("bundle_n_events_dedup", "bundle_n_events_dedup", False),
     ("bundle_total_notional", "bundle_total_notional", False),
@@ -225,7 +225,7 @@ def check_no_banned(text: str, where: str) -> None:
 # ===========================================================================
 TABLE_COLUMNS_NEEDED = {
     "kind", "day", "cascade_id", "side", "start_ms", "end_ms", "time_ms",
-    "matched_liq_id", "dist_vwap_bp", "dist_node_bp", "bin_pct",
+    "matched_liq_id", "dist_vwap_pct", "dist_node_pct", "bin_pct",
     "bundle_n_events_dedup", "bundle_total_notional", "bundle_width_ms",
     "doi_pre_1h", "implied_leverage",
 }
@@ -242,12 +242,16 @@ class RunTable:
         cols: dict[str, list] = {}
         with open(path, newline="") as fh:
             rd = csv.DictReader(fh)
-            header = rd.fieldnames or []
+            # L-920: 前の表の距離の列は dist_*_bp(bp)。新しい名前が無ければ / 100 して読む
+            header = list(rd.fieldnames or [])
+            header += [n for n in (base.legacy_pct_name(c) for c in header)
+                       if n and n not in header]
             want = [c for c in TABLE_COLUMNS_NEEDED if c in header]
             self.header_missing = sorted(TABLE_COLUMNS_NEEDED - set(header))
             for c in want:
                 cols[c] = []
             for r in rd:
+                r = base.pct_dist_row(r)
                 for c in want:
                     cols[c].append(r[c])
         self.cols = cols
@@ -581,7 +585,7 @@ class Rows:
         per: dict[int, dict] = {}
         with gzip.open(path, "rt", newline="") as fh:
             rd = csv.DictReader(fh)
-            for r in rd:
+            for r in map(base.pct_dist_row, rd):      # L-920: 古い bp の距離の列は / 100
                 d = int(r["delta_sec"])
                 b = per.setdefault(d, {k: [] for k in ROW_COLUMNS})
                 for k in ROW_COLUMNS:

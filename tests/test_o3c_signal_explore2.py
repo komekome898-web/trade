@@ -285,7 +285,7 @@ def _write_synth_table(dirpath: Path) -> None:
         r.update({"kind": kind, "day": day, "cascade_id": cid, "side": side,
                   "start_ms": str(start), "end_ms": str(end), "time_ms": str(tms),
                   "matched_liq_id": partner})
-        for c in ("dist_vwap_bp", "dist_node_bp", "bin_pct",
+        for c in ("dist_vwap_pct", "dist_node_pct", "bin_pct",
                   "bundle_n_events_dedup", "bundle_total_notional",
                   "bundle_width_ms", "doi_pre_1h", "implied_leverage"):
             r[c] = "1.0"

@@ -153,6 +153,13 @@ SANITY (all printed; the run aborts on the nesting assert)
   * cross-checks against S7 (duty 11.5 %, volume share 26 %, realized
     half-spread 1.169 bps) and S8 section 6.5 (52.0 / 47.1 / 40.7 %)
 
+(L-920 の後の単位: 上の事前登録の文は書き換えない。この台本では、スプレッド・capture(クオートと
+仲値の距離)・capture + adverse(5s)(maker の損益の率)・その sd・edge を仲値に対する % で持つ:
+復活の線 +0.38 bps = +0.0038 %、edge {0.38, 0.76} bps = {0.0038, 0.0076} %、S7 の実現半スプレッド
+1.169 bps = 0.01169 %。adverse(τ)・5 秒の mid の変化・不均衡の前方ドリフトは値動き率なので bp のまま。
+capture + adverse(5s) は capture(%)+ adverse(bp)/ 100 で % にして足す。検出力の式の sd は 5 秒の
+mid の変化の sd(bp)/ 100 で % にして edge(%)と割る。)
+
 Offline only -- reads files, opens no sockets, places no orders.
 
 Usage: PYTHONPATH=src python scripts/research_board_calibration.py
@@ -195,8 +202,8 @@ POLICIES = ("C0", "C1", "C2")
 PRIMARY_POLICY = "C1"
 PRIMARY_L = 10
 STORM_LO, STORM_HI = 12.5, 15.0     # UTC storm clock band (KNOWLEDGE h)
-REVIVAL_BAR = 0.38                  # bps, PREREG_fast_cycle section 0
-EDGES = (0.38, 0.76)                # bps, S7 in-window ideal band
+REVIVAL_BAR = 0.0038                # %, PREREG_fast_cycle section 0 (+0.38 bps)
+EDGES = (0.0038, 0.0076)            # %, S7 in-window ideal band (0.38 / 0.76 bps)
 MARKOUT = 5.0                       # seconds
 VR_BARS = 6
 VR_BAR_SEC = 5
@@ -312,7 +319,7 @@ def load(data_dir: Path):
     n_bad = int((~ok).sum())
     t_tk, bid, ask, bsz, asz = t_tk[ok], bid[ok], ask[ok], bsz[ok], asz[ok]
     mid = 0.5 * (bid + ask)
-    spread_bps = (ask - bid) / mid * 1e4
+    spread_pct = (ask - bid) / mid * 100   # % of mid (a spread is not a move, so not bp; L-920)
 
     px = ex["price"].to_numpy(float)
     sz = ex["size"].to_numpy(float)
@@ -326,7 +333,7 @@ def load(data_dir: Path):
     print(f"wall-clock span     : {span:.3f} days  "
           f"{pd.Timestamp(t_tk[0], unit='s', tz='UTC')} .. "
           f"{pd.Timestamp(t_tk[-1], unit='s', tz='UTC')}")
-    return (t_tk, bid, ask, bsz, asz, mid, spread_bps, t_ex, px, sz, buy, span)
+    return (t_tk, bid, ask, bsz, asz, mid, spread_pct, t_ex, px, sz, buy, span)
 
 
 def find_gaps(t_tk: np.ndarray, t_ex: np.ndarray):
@@ -494,7 +501,7 @@ class Quotes:
     pass
 
 
-def place_quotes(g, t_tk, bid, ask, bsz, asz, mid, spread_bps,
+def place_quotes(g, t_tk, bid, ask, bsz, asz, mid, spread_pct,
                  t_ex, px, sz, buy, gs, ge, burn_end):
     """Place one bid and one ask at every usable 30 s grid point."""
     start = g.start
@@ -521,7 +528,7 @@ def place_quotes(g, t_tk, bid, ask, bsz, asz, mid, spread_bps,
     q.wsel = wsel                       # index into the 30 s grid
     q.t0 = start[wsel]
     q.ip = ip
-    q.spread = spread_bps[ip]
+    q.spread = spread_pct[ip]   # % of mid
     q.mid0 = mid[ip]
     q.day = g.day[wsel]
     q.hour = g.hour[wsel]
@@ -600,7 +607,9 @@ def fill_times(q, model: str, policy: str, L: int) -> np.ndarray:
 # markouts
 # --------------------------------------------------------------------------
 def markout(q, ft, t_tk, mid, sign_pos, horizon: float = MARKOUT):
-    """capture and adverse(horizon) in bps, for the quotes that filled."""
+    """capture (quote-to-mid distance, % of mid) and adverse(horizon) (a mid
+    move, bp), for the quotes that filled. capture + adverse / 100 = the
+    maker's net in %."""
     f = np.isfinite(ft)
     idx = np.flatnonzero(f)
     tf = ft[idx]
@@ -612,7 +621,7 @@ def markout(q, ft, t_tk, mid, sign_pos, horizon: float = MARKOUT):
     m0 = mid[i_before]
     m5 = mid[i_after]
     s = sign_pos[idx]                       # +1 long (bid fill), -1 short
-    capture = s * (m0 - q.price[idx]) / m0 * 1e4
+    capture = s * (m0 - q.price[idx]) / m0 * 100
     adverse = s * (m5 - m0) / m0 * 1e4
     return idx, capture, adverse
 
@@ -684,7 +693,7 @@ def main() -> int:
     print(f"seed {SEED}, no network.")
     print(f"[data] tape dir: {args.data}\n")
 
-    (t_tk, bid, ask, bsz, asz, mid, spread_bps,
+    (t_tk, bid, ask, bsz, asz, mid, spread_pct,
      t_ex, px, sz, buy, span_days) = load(Path(args.data))
     gs, ge = find_gaps(t_tk, t_ex)
 
@@ -743,7 +752,7 @@ def main() -> int:
           f"(burn-in fixed)")
 
     # ---- quotes ------------------------------------------------------------
-    q = place_quotes(g, t_tk, bid, ask, bsz, asz, mid, spread_bps,
+    q = place_quotes(g, t_tk, bid, ask, bsz, asz, mid, spread_pct,
                      t_ex, px, sz, buy, gs, ge, burn_end)
     n_grid = q.n_side
     print(f"quotes placed       : {len(q.price):,} "
@@ -769,8 +778,8 @@ def main() -> int:
     print(f"post-burn-in quotes : {int(keep.sum()):,} "
           f"(the burn-in's {int((~keep).sum()):,} are excluded from every "
           f"measurement below)")
-    print(f"spread terciles     : cuts at {sp_cut[0]:.2f} / {sp_cut[1]:.2f} bps "
-          f"(median {np.median(q.spread):.2f}; KNOWLEDGE 1 says 1.56-2.22)")
+    print(f"spread terciles     : cuts at {sp_cut[0]:.4f} / {sp_cut[1]:.4f} % of mid "
+          f"(median {np.median(q.spread):.4f}; KNOWLEDGE 1 says 0.0156-0.0222)")
     print(f"vr quintiles        : cuts at "
           f"{' / '.join(f'{c:.2f}' for c in vr_cut)}")
     print(f"touch size Q        : bid median {np.median(bsz):.4f} BTC, "
@@ -959,10 +968,11 @@ def main() -> int:
 
     # =====================================================================
     header("B. S8 REVIVAL CHECK -- PREREG_fast_cycle section 0, frozen bar "
-           f"{REVIVAL_BAR:+.2f} bps")
+           f"{REVIVAL_BAR:+.4f} %")
     # =====================================================================
     print("Bar: T2 (inside the S7 two-sided regime) capture + adverse(5s)")
-    print(f"     measured on a real board must be >= {REVIVAL_BAR:+.2f} bps.")
+    print(f"     measured on a real board must be >= {REVIVAL_BAR:+.4f} %.")
+    print("Units: capture and cap+adv in % of mid, adv(5s) in bp (a move).")
     print("READING ONLY.  Clearing the bar does not start the S8 verdict; "
           "that\nrequires owner approval (PREREG section 9).\n")
     print(f"{'model':<13}{'L':>4}{'n':>8}{'capture':>9}{'adv(5s)':>9}"
@@ -974,16 +984,16 @@ def main() -> int:
             s = keep & q.regime
             ft = np.where(s, ft, np.inf)
             idx, cap, adv = markout(q, ft, t_tk, mid, sign_pos)
-            net = cap + adv
+            net = cap + adv / 100
             if len(net) < 2:
                 continue
             lo, hi, t = boot_ci(net, q.day[idx])
             verdict = "PASS" if lo > REVIVAL_BAR else (
                 "fail" if hi < REVIVAL_BAR else "straddles bar")
             mark = " <== PRIMARY" if (m == "queue" and L == PRIMARY_L) else ""
-            print(f"{m:<13}{L:>3}s{len(net):>8,}{cap.mean():>9.3f}"
-                  f"{adv.mean():>9.3f}{net.mean():>9.3f}"
-                  f"  [{lo:+7.3f},{hi:+7.3f}]{t:>7.2f}  "
+            print(f"{m:<13}{L:>3}s{len(net):>8,}{cap.mean():>9.5f}"
+                  f"{adv.mean():>9.3f}{net.mean():>9.5f}"
+                  f"  [{lo:+8.5f},{hi:+8.5f}]{t:>7.2f}  "
                   f"{verdict}{mark}")
             revival[(m, L)] = (len(net), cap.mean(), adv.mean(), net.mean(),
                                lo, hi, t)
@@ -1001,13 +1011,13 @@ def main() -> int:
             idx, cap, adv = markout(q, ft, t_tk, mid, sign_pos)
             if len(cap) < 2:
                 continue
-            net = cap + adv
+            net = cap + adv / 100
             lo, hi, t = boot_ci(net, q.day[idx])
             verdict = "PASS" if lo > REVIVAL_BAR else (
                 "fail" if hi < REVIVAL_BAR else "straddles bar")
-            print(f"{pol:<8}{L:>3}s{len(net):>8,}{cap.mean():>9.3f}"
-                  f"{adv.mean():>9.3f}{net.mean():>9.3f}"
-                  f"  [{lo:+7.3f},{hi:+7.3f}]  {verdict}")
+            print(f"{pol:<8}{L:>3}s{len(net):>8,}{cap.mean():>9.5f}"
+                  f"{adv.mean():>9.3f}{net.mean():>9.5f}"
+                  f"  [{lo:+8.5f},{hi:+8.5f}]  {verdict}")
 
     sub("B2. the same numbers OUTSIDE the regime (the S7 contrast)")
     print(f"{'model':<13}{'L':>4}{'n':>8}{'capture':>9}{'adv(5s)':>9}{'cap+adv':>9}")
@@ -1017,11 +1027,11 @@ def main() -> int:
             s = keep & ~q.regime
             ft = np.where(s, ft, np.inf)
             idx, cap, adv = markout(q, ft, t_tk, mid, sign_pos)
-            print(f"{m:<13}{L:>3}s{len(cap):>8,}{cap.mean():>9.3f}"
-                  f"{adv.mean():>9.3f}{(cap + adv).mean():>9.3f}")
-    print("\nS7 (report u) reference: realized half-spread +1.169 bps; "
-          "ideal in-window\nmaker net +0.38..+0.76 bps; S8 tape proxy "
-          "capture +0.775, net@5s -0.136 bps.")
+            print(f"{m:<13}{L:>3}s{len(cap):>8,}{cap.mean():>9.5f}"
+                  f"{adv.mean():>9.3f}{(cap + adv / 100).mean():>9.5f}")
+    print("\nS7 (report u) reference: realized half-spread +0.01169 %; "
+          "ideal in-window\nmaker net +0.0038..+0.0076 %; S8 tape proxy "
+          "capture +0.00775 %, net@5s -0.00136 %.")
 
     sub("B3. adverse selection shape -- does the S7 saturation reproduce?")
     print("adverse(tau) for queue-realistic fills, C1 L=10s, in bps")
@@ -1048,7 +1058,7 @@ def main() -> int:
     # =====================================================================
     header("C. POWER -- board-days the spread-MM verdict needs")
     # =====================================================================
-    # sd proxy: 5s mid change sd inside the regime, bps
+    # sd proxy: 5s mid change sd inside the regime, bps (/ 100 -> % where it meets an edge in %)
     tg = np.arange(t_tk[0], t_tk[-1] - MARKOUT, 5.0)
     okg = ~span_touches_gap(tg, tg + 5.0, gs, ge) & (tg >= burn_end)
     tg = tg[okg]
@@ -1078,7 +1088,7 @@ def main() -> int:
     print(f"\nmeasured f (queue-realistic, C1, L={PRIMARY_L}s): "
           f"in-regime {100 * f_primary:.2f}%, all {100 * f_all:.2f}%")
     print(f"{'rule':<26}{'quotes/day':>12}{'f':>8}{'fills/day':>11}"
-          + "".join(f"{f'days @{e}bps':>14}" for e in EDGES))
+          + "".join(f"{f'days @{e}%':>14}" for e in EDGES))
     for rule, qd, fv, sdv in (
             ("frozen 30s grid, in-reg", quotes_day_grid * duty, f_primary, sd_in),
             ("frozen 30s grid, all", quotes_day_grid, f_all, sd_all),
@@ -1087,16 +1097,16 @@ def main() -> int:
         fills = qd * fv
         row = f"{rule:<26}{qd:>12,.0f}{100 * fv:>7.2f}%{fills:>11,.0f}"
         for e in EDGES:
-            n_req = max(300.0, (2.0 * sdv / e) ** 2)
+            n_req = max(300.0, (2.0 * (sdv / 100) / e) ** 2)   # sd bp -> %
             row += f"{n_req / max(fills, 1e-9):>14,.1f}"
         print(row)
     for e in EDGES:
-        print(f"  n required at edge {e} bps, sd {sd_in:.2f}: "
-              f"max(300, (2*{sd_in:.2f}/{e})^2) = "
-              f"{max(300.0, (2.0 * sd_in / e) ** 2):,.0f} fills")
+        print(f"  n required at edge {e} %, sd {sd_in / 100:.4f} %: "
+              f"max(300, (2*{sd_in / 100:.4f}/{e})^2) = "
+              f"{max(300.0, (2.0 * (sd_in / 100) / e) ** 2):,.0f} fills")
 
     sub("C2. the sd the formula ACTUALLY needs -- realized per-fill dispersion")
-    print("PREREG 3.1 writes sd as the round-trip bps sd.  The 5s mid-change")
+    print("PREREG 3.1 writes sd as the round-trip sd (here in %).  The 5s mid-change")
     print("proxy above is what the task fixed; the realized dispersion of")
     print("(capture + adverse(5s)) per fill is the same quantity measured")
     print("directly, and it is the honest input for a t-test on that number.")
@@ -1109,10 +1119,10 @@ def main() -> int:
         ft = np.where(cut, fill_times(q, "queue", PRIMARY_POLICY, PRIMARY_L),
                       np.inf)
         idx, cap, adv = markout(q, ft, t_tk, mid, sign_pos)
-        net = cap + adv
+        net = cap + adv / 100
         sdv = float(np.std(net, ddof=1))
         fills = qd * (f_primary if "S7" in label else f_all)
-        row = f"{label:<24}{len(net):>8,}{net.mean():>9.3f}{sdv:>9.3f}"
+        row = f"{label:<24}{len(net):>8,}{net.mean():>9.5f}{sdv:>9.5f}"
         reqs = [max(300.0, (2.0 * sdv / e) ** 2) for e in EDGES]
         row += "".join(f"{r:>12,.0f}" for r in reqs)
         row += "".join(f"{r / max(fills, 1e-9):>12,.1f}" for r in reqs)
@@ -1131,7 +1141,7 @@ def main() -> int:
     print("14-fresh-day minimum is therefore the binding constraint, and it")
     print("is a DAY-COUNT constraint, not the power constraint section 3.1")
     print("was worried about.")
-    print("\nS7 planned with sd 7.5 bps -> 6.5 board-days at f=5%, 33 at f=1%.")
+    print("\nS7 planned with sd 7.5 bps (0.075 %) -> 6.5 board-days at f=5%, 33 at f=1%.")
     print("The board says sd is 3-4x smaller AND f is 20x larger than the")
     print("f=1% pessimistic case, so the n>=300 floor, not the variance term,")
     print("is what binds.")
@@ -1157,13 +1167,13 @@ def main() -> int:
         hi = np.inf if t == 4 else vr_cut[t]
         rng = f"[{lo:.2f},{hi:.2f})" if np.isfinite(lo) and np.isfinite(hi) else (
             f"<{hi:.2f}" if t == 0 else f">={lo:.2f}")
-        vr_rows.append((t, f10[s].mean(), (cap_all + adv_all)[sel].mean(),
+        vr_rows.append((t, f10[s].mean(), (cap_all + adv_all / 100)[sel].mean(),
                         adv_all[sel].mean(), int(sel.sum())))
         print(f"Q{t + 1:<6}{rng:<18}{int(s.sum()):>10,}{fmt_pct(f10[s].mean()):>8}"
-              f"{int(sel.sum()):>8,}{cap_all[sel].mean():>9.3f}"
+              f"{int(sel.sum()):>8,}{cap_all[sel].mean():>9.5f}"
               f"{adv_all[sel].mean():>9.3f}"
-              f"{(cap_all + adv_all)[sel].mean():>9.3f}"
-              f"{q.spread[s].mean():>8.2f}"
+              f"{(cap_all + adv_all / 100)[sel].mean():>9.5f}"
+              f"{q.spread[s].mean():>8.4f}"
               f"{fmt_pct(q.regime[s].mean()):>13}")
     sub("D2. by S7 two-sided window (same rows, same fills)")
     print(f"{'cut':<25}{'n quotes':>10}{'f':>8}{'n fill':>8}"
@@ -1172,13 +1182,13 @@ def main() -> int:
     for label, s in (("inside S7 window", keep & q.regime),
                      ("outside S7 window", keep & ~q.regime)):
         sel = s[idx_all]
-        reg_rows.append((f10[s].mean(), (cap_all + adv_all)[sel].mean(),
+        reg_rows.append((f10[s].mean(), (cap_all + adv_all / 100)[sel].mean(),
                          adv_all[sel].mean()))
         print(f"{label:<25}{int(s.sum()):>10,}{fmt_pct(f10[s].mean()):>8}"
-              f"{int(sel.sum()):>8,}{cap_all[sel].mean():>9.3f}"
+              f"{int(sel.sum()):>8,}{cap_all[sel].mean():>9.5f}"
               f"{adv_all[sel].mean():>9.3f}"
-              f"{(cap_all + adv_all)[sel].mean():>9.3f}"
-              f"{q.spread[s].mean():>8.2f}")
+              f"{(cap_all + adv_all / 100)[sel].mean():>9.5f}"
+              f"{q.spread[s].mean():>8.4f}")
     sub("D3. the verdict of the head-to-head (spread across the cut)")
     if vr_rows and reg_rows:
         vr_adv = [r[3] for r in vr_rows]
@@ -1189,16 +1199,16 @@ def main() -> int:
         print(f"{'5s vr quintiles':<22}"
               f"{max(vr_adv) - min(vr_adv):>15.3f} "
               f"{100 * (max(vr_f) - min(vr_f)):>10.1f}pp"
-              f"{max(vr_net) - min(vr_net):>16.3f}")
+              f"{max(vr_net) - min(vr_net):>16.5f}")
         print(f"{'S7 two-sided window':<22}"
               f"{abs(reg_rows[0][2] - reg_rows[1][2]):>15.3f} "
               f"{100 * abs(reg_rows[0][0] - reg_rows[1][0]):>10.1f}pp"
-              f"{abs(reg_rows[0][1] - reg_rows[1][1]):>16.3f}")
-        print("  (vr spread is over 5 bins, the window over 2 -- the vr number "
-              "is\n   therefore the FRIENDLIER comparison for vr.)")
+              f"{abs(reg_rows[0][1] - reg_rows[1][1]):>16.5f}")
+        print("  (adv(5s) spread in bp; cap+adv spread in %.  vr spread is over 5 bins, "
+              "the window over 2 -- the vr number is\n   therefore the FRIENDLIER comparison for vr.)")
     sub("D3b. is either contrast distinguishable from zero?  "
         "(cluster bootstrap on UTC day)")
-    print(f"{'contrast'  :<34}{'n(a)':>8}{'n(b)':>8}{'diff bps':>10}"
+    print(f"{'contrast'  :<34}{'n(a)':>8}{'n(b)':>8}{'diff':>10}"
           f"{'95% CI':>22}{'t':>7}")
     for label, sa, sb in (
             ("vr Q5 - Q1, adverse(5s)", keep & (q.vr_q == 4), keep & (q.vr_q == 0)),
@@ -1208,12 +1218,13 @@ def main() -> int:
         va = "adv" if "adverse" in label else "net"
         a = sa[idx_all]
         b = sb[idx_all]
-        xa = (adv_all if va == "adv" else cap_all + adv_all)[a]
-        xb = (adv_all if va == "adv" else cap_all + adv_all)[b]
+        xa = (adv_all if va == "adv" else cap_all + adv_all / 100)[a]
+        xb = (adv_all if va == "adv" else cap_all + adv_all / 100)[b]
         diff = xa.mean() - xb.mean()
         lo, hi, t = boot_diff_ci(xa, q.day[idx_all][a], xb, q.day[idx_all][b])
-        print(f"{label:<34}{len(xa):>8,}{len(xb):>8,}{diff:>10.3f}"
-              f"  [{lo:+8.3f},{hi:+8.3f}]{t:>7.2f}")
+        nd, unit = (3, "bp") if va == "adv" else (5, "%")   # adverse = a move (bp); cap+adv = net (%)
+        print(f"{label:<34}{len(xa):>8,}{len(xb):>8,}{diff:>10.{nd}f}"
+              f"  [{lo:+8.{nd}f},{hi:+8.{nd}f}]{t:>7.2f} {unit}")
     for label, sa, sb in (
             ("vr Q5 - Q1, fill rate f", keep & (q.vr_q == 4), keep & (q.vr_q == 0)),
             ("S7 in - out, fill rate f", keep & q.regime, keep & ~q.regime)):
@@ -1295,9 +1306,9 @@ def main() -> int:
                                                dh[lo_s], day[lo_s])
             print(f"  Q5-Q1 forward {hh:.0f}s drift spread = {diff:+.3f} bps"
                   f"  CI [{lo_ci:+.3f},{hi_ci:+.3f}]  t={tstat:.2f}")
-        print(f"  reference: mean board spread {np.mean(spread_bps):.2f} bps, "
-              f"half-spread {np.mean(spread_bps) / 2:.2f} bps; "
-              f"g (report f/g) was 0.29-1.35 bps")
+        print(f"  reference: mean board spread {np.mean(spread_pct):.4f} % of mid, "
+              f"half-spread {np.mean(spread_pct) / 2:.4f} %; "
+              f"g (report f/g, a drift) was 0.29-1.35 bps")
 
     # =====================================================================
     header("SANITY SUMMARY")

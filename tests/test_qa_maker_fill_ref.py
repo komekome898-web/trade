@@ -64,7 +64,8 @@ def _assert_matches_expected(positions: pd.DataFrame, expected_positions: list[d
             str(pd.Timestamp(exp["exit_ts"]).isoformat())
         assert row["exit_price"] == pytest.approx(exp["exit_price"])
         assert bool(row["forced"]) == exp["forced"]
-        assert row["net_bps"] == pytest.approx(exp["net_bps"], rel=1e-6)
+        exp_net = exp["net_pct"] if "net_pct" in exp else exp["net_bps"] / 100  # answers before L-920 hold bp
+        assert row["net_pct"] == pytest.approx(exp_net, rel=1e-6)
         assert row["markout_5s_bps"] == pytest.approx(exp["markout_5s_bps"], abs=1e-9)
 
 
@@ -197,11 +198,11 @@ SEALED_PATH = REPO_ROOT / "docs" / "QA" / "answers_sealed_maker4_r2.json"
 
 def _summarize(positions: pd.DataFrame) -> dict:
     n = len(positions)
-    net = positions["net_bps"]
+    net = positions["net_pct"]
     forced = positions["forced"]
     return {
         "n_positions": int(n),
-        "net_bps_mean": float(net.mean()) if n else float("nan"),
+        "net_pct_mean": float(net.mean()) if n else float("nan"),
         "forced_exit_fraction": float(forced.mean()) if n else float("nan"),
     }
 
@@ -219,5 +220,5 @@ def test_sealed_full_tape_numbers_reproduce_from_clean_simulator():
         got = _summarize(ref.simulate(ticker_df, exec_df, strategy=strategy, naive=naive))
         want = sealed[label]
         assert got["n_positions"] == want["n_positions"], label
-        assert got["net_bps_mean"] == pytest.approx(want["net_bps_mean"], rel=1e-6), label
+        assert got["net_pct_mean"] == pytest.approx(want["net_bps_mean"] / 100, rel=1e-6), label  # sealed answer in bp
         assert got["forced_exit_fraction"] == pytest.approx(want["forced_exit_fraction"], rel=1e-6), label

@@ -66,8 +66,8 @@ def make_tables(dirpath: Path, n_d1: int = 400, n_other: int = 120,
             "kind": "liq", "day": f"2024-01-{(i % 28) + 1:02d}",
             "cascade_id": f"L{i}", "matched_liq_id": "", "side": side,
             "doi_pre_1h": (-20000.0 - i) if d1 else (-1000.0 - i),
-            "dist_vwap_bp": float(i + 1) * (1 if i % 3 else -1),
-            "dist_node_bp": float((i * 7) % 401) + 0.5,
+            "dist_vwap_pct": float(i + 1) * (1 if i % 3 else -1),
+            "dist_node_pct": float((i * 7) % 401) + 0.5,
             "reach_back_vwap_240m": float((i % 5) < 3),
         })
         for h in r2.HORIZONS:
@@ -84,8 +84,8 @@ def make_tables(dirpath: Path, n_d1: int = 400, n_other: int = 120,
             "kind": "control_matched", "day": f"2024-01-{(j % 28) + 1:02d}",
             "cascade_id": f"C{j}", "matched_liq_id": partner, "side": "",
             "doi_pre_1h": -20000.0,
-            "dist_vwap_bp": float((j * 3) % 401) + 0.25,
-            "dist_node_bp": float((j * 11) % 401) + 0.75,
+            "dist_vwap_pct": float((j * 3) % 401) + 0.25,
+            "dist_node_pct": float((j * 11) % 401) + 0.75,
             "reach_back_vwap_240m": float((j % 4) < 2),
         })
         for h in r2.HORIZONS:
@@ -125,7 +125,7 @@ def indep_groups(rows: list[dict]) -> tuple[list[dict], list[dict], dict]:
 
 
 def indep_delta(d1: list[dict], c: list[dict], side_by_id: dict, h: int,
-                dist_key: str = "dist_vwap_bp") -> tuple[float, float, float]:
+                dist_key: str = "dist_vwap_pct") -> tuple[float, float, float]:
     """Δ_h と mean_D1 / mean_C を、道具と別の素朴な実装で出す。"""
     ad = [abs(float(r[dist_key])) for r in d1]
     edges = list(np.nanpercentile(np.array(ad), np.linspace(0, 100, 11)))

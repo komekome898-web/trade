@@ -239,9 +239,9 @@ def test_h0_missing_r_rows_count_the_main_column(smoke):
 # ---------------------------------------------------------------------------
 # (3) 層の列が未来を使わない
 # ---------------------------------------------------------------------------
-LAYER_KEYS_T0 = (["k", "d", "bin_pct", "dist_node_bp", "implied_leverage"]
+LAYER_KEYS_T0 = (["k", "d", "bin_pct", "dist_node_pct", "implied_leverage"]
                  + [f"m_{T}" for T in ex5.T_MAIN])
-LAYER_KEYS_TS = (["d", "bin_pct", "dist_node_bp", "implied_leverage"]
+LAYER_KEYS_TS = (["d", "bin_pct", "dist_node_pct", "implied_leverage"]
                  + [f"m_{T}" for T in ex5.T_MAIN])
 
 
@@ -362,7 +362,7 @@ def test_layers_unchanged_when_prices_after_p0_change():
         changed[after] = changed[after] * 1.05 + 7.0
         b = ex5.compute_layers(times, changed, qtys, pr_ts, pr_side, pr_price,
                                np.array([pos]), step=step, window_ms=wms)
-        for key in (["k", "d", "bin_pct", "dist_node_bp"]
+        for key in (["k", "d", "bin_pct", "dist_node_pct"]
                     + [f"m_{T}" for T in ex5.T_MAIN]):
             assert _eq(a[key][pos], b[key][0]), (pos, key)
         # r(h) は起点より後を見る量なので、**変わる**(層ではない)

@@ -70,6 +70,9 @@ COST_YEN_OPTIMISTIC = 2 * FEE_YEN_PER_SIDE                                 # 22
 MDE_BPS = 6.03               # PREREG: sigma 113.18bps, n=2769
 MDE_DIFF_BPS = 8.07          # PREREG: sigma 151.55bps
 GROSS_GATE_BPS = 14.9        # PREREG: MDE 6.03 + mean cost 8.89
+# (L-920 の後の単位: 平均ネット(費用後)は bp にしないので、MDE 6.03 bps を
+#  ネットと比べる所では % で持つ。グロス・夜間−日中の差は値動き率なので bp のまま)
+MDE_PCT = MDE_BPS / 100.0    # 0.0603 %: MDE_BPS for the net (cost-inclusive) mean
 
 # PREREG "母集団の定義": the five pairs with no night session, given as date pairs.
 NIGHTLESS_PAIRS = [
@@ -111,8 +114,9 @@ def build_pairs(day: pd.DataFrame) -> pd.DataFrame:
                   named "r" so `drop_glitches` applies to it verbatim
       r_night_bps, r_day_bps        same in bps (r_day = close(t)/open(t)-1)
       nights                        calendar nights spanned by the pair
-      cost_bps_cons / cost_bps_opt  per-pair cost on that pair's own notional
-      r_net_bps_cons / r_net_bps_opt
+      cost_pct_cons / cost_pct_opt  per-pair cost on that pair's own notional, %
+      r_net_pct_cons / r_net_pct_opt  r_night_bps / 100 - cost, % (L-920: a
+                                    cost or a net is not a price move, not bp)
       pnl_yen_cons                  1 micro contract, after conservative cost
     """
     day = day.reset_index(drop=True)
@@ -131,10 +135,10 @@ def build_pairs(day: pd.DataFrame) -> pd.DataFrame:
     out["r_day_bps"] = (out["close_t"] / out["open_t"] - 1.0) * 1e4
     out["nights"] = (pd.to_datetime(out["date_t1"]) - pd.to_datetime(out["date"])).dt.days
     notional = out["close_t"] * MULTIPLIER
-    out["cost_bps_cons"] = COST_YEN_CONSERVATIVE / notional * 1e4
-    out["cost_bps_opt"] = COST_YEN_OPTIMISTIC / notional * 1e4
-    out["r_net_bps_cons"] = out["r_night_bps"] - out["cost_bps_cons"]
-    out["r_net_bps_opt"] = out["r_night_bps"] - out["cost_bps_opt"]
+    out["cost_pct_cons"] = COST_YEN_CONSERVATIVE / notional * 100.0
+    out["cost_pct_opt"] = COST_YEN_OPTIMISTIC / notional * 100.0
+    out["r_net_pct_cons"] = out["r_night_bps"] / 100.0 - out["cost_pct_cons"]
+    out["r_net_pct_opt"] = out["r_night_bps"] / 100.0 - out["cost_pct_opt"]
     out["pnl_yen_cons"] = (out["open_t1"] - out["close_t"]) * MULTIPLIER - COST_YEN_CONSERVATIVE
     return out
 
@@ -254,6 +258,13 @@ def sign_shuffle_mean_and_sharpe(x, n: int = N_SHUFFLE, seed: int | None = None,
     with np.errstate(divide="ignore", invalid="ignore"):
         sharpes = np.where(sds > 0, means / sds * scale, np.nan)
     return means, sharpes
+
+
+def _u(row: dict, unit: str) -> dict:
+    """Tag a `describe` row with the unit of its values (L-920: "bps" for a
+    price-move rate, "%" for a cost or a net)."""
+    row["unit"] = unit
+    return row
 
 
 def describe(x, label: str, years: float | None = None, seed: int = SEED,
@@ -446,15 +457,17 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
         label1 = ("主指標1 平均ネット夜間リターン(保守コスト、四半期ロール除外+誤プリント除外、"
                   "反復1: 限月確認によりラージ=四半期限月のみと判明)")
         label_roll_ex = f"四半期ロール除外後 n={len(roll_ex):,}(誤プリント含む)"
+    # L-920: a net (cost-inclusive) row is in %, a gross / night-minus-day row
+    # (price-move rate) in bps; each row carries its unit.
     main_rows = [
-        describe(main["r_net_bps_cons"], label1, yrs_main),
-        describe(main["r_night_bps"] - main["r_day_bps"], "主指標2 夜間−日中の差(同集合)", yrs_main),
-        describe(main["r_night_bps"], "参考 グロス夜間リターン(同集合)", yrs_main),
-        describe(main["r_net_bps_opt"], "参考 楽観コスト後(手数料のみ)", yrs_main),
-        describe(roll_ex["r_net_bps_cons"], label_roll_ex, years_span(roll_ex)),
-        describe(roll_ex["r_night_bps"] - roll_ex["r_day_bps"], "同上 夜間−日中の差", years_span(roll_ex)),
-        describe(base["r_net_bps_cons"], "ロール隣接ペアを含む n=3,240(誤プリント含む)", yrs_base),
-        describe(base["r_night_bps"] - base["r_day_bps"], "同上 夜間−日中の差", yrs_base),
+        _u(describe(main["r_net_pct_cons"], label1, yrs_main), "%"),
+        _u(describe(main["r_night_bps"] - main["r_day_bps"], "主指標2 夜間−日中の差(同集合)", yrs_main), "bps"),
+        _u(describe(main["r_night_bps"], "参考 グロス夜間リターン(同集合)", yrs_main), "bps"),
+        _u(describe(main["r_net_pct_opt"], "参考 楽観コスト後(手数料のみ)", yrs_main), "%"),
+        _u(describe(roll_ex["r_net_pct_cons"], label_roll_ex, years_span(roll_ex)), "%"),
+        _u(describe(roll_ex["r_night_bps"] - roll_ex["r_day_bps"], "同上 夜間−日中の差", years_span(roll_ex)), "bps"),
+        _u(describe(base["r_net_pct_cons"], "ロール隣接ペアを含む n=3,240(誤プリント含む)", yrs_base), "%"),
+        _u(describe(base["r_night_bps"] - base["r_day_bps"], "同上 夜間−日中の差", yrs_base), "bps"),
     ]
     main_df = pd.DataFrame(main_rows)
 
@@ -463,26 +476,26 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
 
     def add(x, label, subset=None, years=None):
         s = subset if subset is not None else x
-        sub_rows.append(describe(x, label, years if years is not None else years_span(s)))
+        sub_rows.append(_u(describe(x, label, years if years is not None else years_span(s)), "%"))
 
-    add(main["r_net_bps_cons"], "主集合(n=2,768 相当)", main)
+    add(main["r_net_pct_cons"], "主集合(n=2,768 相当)", main)
     quart = pairs[~pairs["roll_quarterly"] & ~pairs["is_glitch"]]
-    add(quart["r_net_bps_cons"], "四半期ロール規則(PREREG n=3,081 相当)", quart)
-    add(pairs[~pairs["roll_quarterly"]]["r_net_bps_cons"],
+    add(quart["r_net_pct_cons"], "四半期ロール規則(PREREG n=3,081 相当)", quart)
+    add(pairs[~pairs["roll_quarterly"]]["r_net_pct_cons"],
         "四半期ロール規則・誤プリント含む(n=3,081)", pairs[~pairs["roll_quarterly"]])
     one = main[main["nights"] == 1]
-    add(one["r_net_bps_cons"], "1泊のみの部分集合", one)
+    add(one["r_net_pct_cons"], "1泊のみの部分集合", one)
     nonight_ex = main[~main["nightless_marked"]]
-    add(nonight_ex["r_net_bps_cons"], "夜間セッション無しの5ペアを除外", nonight_ex)
-    add(base[~base["is_glitch"]]["r_net_bps_cons"],
+    add(nonight_ex["r_net_pct_cons"], "夜間セッション無しの5ペアを除外", nonight_ex)
+    add(base[~base["is_glitch"]]["r_net_pct_cons"],
         "誤プリント除外のみ(ロール含む)", base[~base["is_glitch"]])
-    add(roll_ex["r_net_bps_cons"], "誤プリント除外なし(ロール除外のみ)", roll_ex)
+    add(roll_ex["r_net_pct_cons"], "誤プリント除外なし(ロール除外のみ)", roll_ex)
     for name, lo, hi in REGIMES:
         sset = main[(main["date"] >= lo) & (main["date"] <= hi)]
-        add(sset["r_net_bps_cons"], f"制度区分 {name}", sset)
+        add(sset["r_net_pct_cons"], f"制度区分 {name}", sset)
     for split in ("train", "val"):
         sset = main[main["split"] == split]
-        add(sset["r_net_bps_cons"], f"{split}(暦日分割)", sset)
+        add(sset["r_net_pct_cons"], f"{split}(暦日分割)", sset)
     sub_df = pd.DataFrame(sub_rows)
 
     mdd_yen, mdd_idx = max_drawdown_yen(main.sort_values("date")["pnl_yen_cons"])
@@ -492,9 +505,9 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
 
     # ---- controls ----------------------------------------------------------
     ctrl_rows = [
-        describe(main["r_day_bps"], "対照1 日中保有 r_day(グロス)", yrs_main),
-        describe(main["r_day_bps"] - main["cost_bps_cons"],
-                 "対照1 日中保有(保守コスト後)", yrs_main),
+        _u(describe(main["r_day_bps"], "対照1 日中保有 r_day(グロス)", yrs_main), "bps"),
+        _u(describe(main["r_day_bps"] / 100.0 - main["cost_pct_cons"],
+                    "対照1 日中保有(保守コスト後)", yrs_main), "%"),
     ]
     # control 2: sign-shuffle null on the gross overnight return
     x_gross = main["r_night_bps"].to_numpy(dtype=float)
@@ -509,18 +522,18 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
 
     # control 3: night-session-internal leg (b)
     c3 = main[main["has_night"]]
-    ctrl_rows.append(describe(c3["leg_b_bps"], "対照3 夜間セッション内 leg(b) グロス", years_span(c3)))
-    ctrl_rows.append(describe(c3["leg_b_bps"] - c3["cost_bps_cons"],
-                              "対照3 leg(b) 保守コスト後", years_span(c3)))
-    ctrl_rows.append(describe(c3["leg_a_bps"], "参考 leg(a) 日中引け→夜間寄り", years_span(c3)))
-    ctrl_rows.append(describe(c3["leg_c_bps"], "参考 leg(c) 夜間引け→翌日中寄り", years_span(c3)))
+    ctrl_rows.append(_u(describe(c3["leg_b_bps"], "対照3 夜間セッション内 leg(b) グロス", years_span(c3)), "bps"))
+    ctrl_rows.append(_u(describe(c3["leg_b_bps"] / 100.0 - c3["cost_pct_cons"],
+                                 "対照3 leg(b) 保守コスト後", years_span(c3)), "%"))
+    ctrl_rows.append(_u(describe(c3["leg_a_bps"], "参考 leg(a) 日中引け→夜間寄り", years_span(c3)), "bps"))
+    ctrl_rows.append(_u(describe(c3["leg_c_bps"], "参考 leg(c) 夜間引け→翌日中寄り", years_span(c3)), "bps"))
     # PREREG: the 1990..2007 day-session rows carry no night session, so they
     # are referenced ONLY as a long-run descriptive reference for r_day.
     pre = day_raw[day_raw["date"] < ANALYSIS_START].reset_index(drop=True)
     r_day_pre = (pre["close"] / pre["open"] - 1.0) * 1e4
-    ctrl_rows.append(describe(
+    ctrl_rows.append(_u(describe(
         r_day_pre, "参考(長期対照・判定に使わない)1990-01-04..2007-09-18 の r_day",
-        (pre["date"].max() - pre["date"].min()).days / 365.25))
+        (pre["date"].max() - pre["date"].min()).days / 365.25), "bps"))
     steps["long_run_day_rows_1990_2007"] = int(len(pre))
     ctrl_df = pd.DataFrame(ctrl_rows)
     c3_all_night = pairs[pairs["has_night"]]
@@ -530,11 +543,11 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
         g = df.groupby(by, dropna=False)
         return pd.DataFrame({
             "n": g.size(),
-            "mean_r_net_bps": g["r_net_bps_cons"].mean(),
-            "sd_bps": g["r_net_bps_cons"].std(ddof=1),
+            "mean_r_net_pct": g["r_net_pct_cons"].mean(),
+            "sd_net_pct": g["r_net_pct_cons"].std(ddof=1),
             "mean_gross_bps": g["r_night_bps"].mean(),
             "mean_r_day_bps": g["r_day_bps"].mean(),
-            "hit_rate": g["r_net_bps_cons"].apply(lambda s: float((s > 0).mean())),
+            "hit_rate": g["r_net_pct_cons"].apply(lambda s: float((s > 0).mean())),
         }).reset_index()
 
     diag = {
@@ -601,13 +614,13 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
                         "null_sharpe": null_sharpe}), "control2_sign_shuffle_null.csv")
 
     # ---- RESULTS.md --------------------------------------------------------
-    mean_main = float(main["r_net_bps_cons"].mean())
+    mean_main = float(main["r_net_pct_cons"].mean())   # %
     gross_main = float(main["r_night_bps"].mean())
     ci_main = (main_df.iloc[0]["ci_lo"], main_df.iloc[0]["ci_hi"])
     diff_main = float((main["r_night_bps"] - main["r_day_bps"]).mean())
     ci_diff = (main_df.iloc[1]["ci_lo"], main_df.iloc[1]["ci_hi"])
-    cost_med = float(main["cost_bps_cons"].median())
-    cost_mean = float(main["cost_bps_cons"].mean())
+    cost_med = float(main["cost_pct_cons"].median())   # %
+    cost_mean = float(main["cost_pct_cons"].mean())
 
     # MDE reproduction + effective MDE back-computed from the observed CI width
     Z = 1.959963985 + 0.8416212336            # alpha 0.05 two-sided, power 0.8
@@ -624,23 +637,25 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
         return {"a": label, "b": sd, "c": len(x), "d": se, "e": Z * se,
                 "f": registered, "g": Z * se_eff}
 
+    # each row in its own unit (column "u"): gross / difference rows in bps,
+    # the net row in % against MDE_PCT (L-920)
     mde_rows = [
-        mde_row("σ(r_night) ロール除外後 n=2,769(事前登録の基準)",
-                roll_ex["r_night_bps"], MDE_BPS),
-        mde_row("σ(夜間−日中の差)ロール除外後 n=2,769",
-                roll_ex["r_night_bps"] - roll_ex["r_day_bps"], MDE_DIFF_BPS),
-        mde_row("σ(r_net 保守コスト後)主集合", main["r_net_bps_cons"], MDE_BPS),
-        mde_row("σ(夜間−日中の差)主集合",
-                main["r_night_bps"] - main["r_day_bps"], MDE_DIFF_BPS),
+        dict(mde_row("σ(r_night) ロール除外後 n=2,769(事前登録の基準)",
+                     roll_ex["r_night_bps"], MDE_BPS), u="bps"),
+        dict(mde_row("σ(夜間−日中の差)ロール除外後 n=2,769",
+                     roll_ex["r_night_bps"] - roll_ex["r_day_bps"], MDE_DIFF_BPS), u="bps"),
+        dict(mde_row("σ(r_net 保守コスト後)主集合", main["r_net_pct_cons"], MDE_PCT), u="%"),
+        dict(mde_row("σ(夜間−日中の差)主集合",
+                     main["r_night_bps"] - main["r_day_bps"], MDE_DIFF_BPS), u="bps"),
     ]
 
     write(pd.DataFrame(mde_rows).rename(columns={
-        "a": "quantity", "b": "sd_bps", "c": "n", "d": "se_bps",
-        "e": "mde_bps_independent", "f": "mde_bps_registered",
-        "g": "mde_bps_effective_from_ci"}), "mde.csv")
+        "a": "quantity", "b": "sd", "c": "n", "d": "se",
+        "e": "mde_independent", "f": "mde_registered",
+        "g": "mde_effective_from_ci", "u": "unit"}), "mde.csv")
 
-    ind_cols = [("label", "集合 / 指標", -1), ("n", "n", 0), ("mean", "平均(bps)", 3),
-                ("ci_lo", "CI下限", 3), ("ci_hi", "CI上限", 3), ("sd", "SD(bps)", 2),
+    ind_cols = [("label", "集合 / 指標", -1), ("unit", "単位", -1), ("n", "n", 0), ("mean", "平均", 5),
+                ("ci_lo", "CI下限", 5), ("ci_hi", "CI上限", 5), ("sd", "SD", 4),
                 ("t", "t", 2), ("hit_rate", "勝率", 4), ("sharpe", "Sharpe(年率)", 3)]
 
     md = []
@@ -686,40 +701,42 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
     md.append("## 2. 主指標")
     md.append("")
     md.append("CI はブロック・ブートストラップ(ブロック長 20、リサンプル 2,000、percentile 法、seed "
-              f"{SEED})。単位は bps/ペア。")
+              f"{SEED})。単位は行ごとの「単位」列(ネット = %/ペア、グロス・差 = bps/ペア。L-920)。")
     md.append("")
     md.append(_table(main_df.to_dict("records"), ind_cols))
     md.append("")
-    md.append(f"ペアごとの保守コスト cost_bps(t) = 122 /(close_day(t)×10)×10^4: "
-              f"中央値 {cost_med:.2f}bps、平均 {cost_mean:.2f}bps、"
-              f"範囲 {main['cost_bps_cons'].min():.2f}〜{main['cost_bps_cons'].max():.2f}bps。"
-              f"楽観側(手数料のみ 22 円)は中央値 {main['cost_bps_opt'].median():.2f}bps。")
+    md.append(f"ペアごとの保守コスト cost_pct(t) = 122 /(close_day(t)×10)×100: "
+              f"中央値 {cost_med:.4f}%、平均 {cost_mean:.4f}%、"
+              f"範囲 {main['cost_pct_cons'].min():.4f}〜{main['cost_pct_cons'].max():.4f}%。"
+              f"楽観側(手数料のみ 22 円)は中央値 {main['cost_pct_opt'].median():.4f}%。")
     md.append("")
     md.append("主指標 2(夜間 − 日中)は、同じ 1 往復のコストが両脚に等しく掛かるため"
-              "グロスの差とネットの差が恒等的に一致する(cost_bps(t) が引き算で相殺する)。"
+              "グロスの差とネットの差が恒等的に一致する(cost_pct(t) が引き算で相殺する)。"
               "表の値はその共通値。")
     md.append("")
     md.append("## 3. 事前登録の関門との比較(数値の対照のみ)")
     md.append("")
     md.append(_table([
-        {"a": "平均ネット r_net(保守コスト後、主集合)", "b": mean_main,
-         "c": MDE_BPS, "d": mean_main - MDE_BPS},
-        {"a": "グロス平均夜間リターン(主集合)", "b": gross_main,
+        {"a": "平均ネット r_net(保守コスト後、主集合)", "u": "%", "b": mean_main,
+         "c": MDE_PCT, "d": mean_main - MDE_PCT},
+        {"a": "グロス平均夜間リターン(主集合)", "u": "bps", "b": gross_main,
          "c": GROSS_GATE_BPS, "d": gross_main - GROSS_GATE_BPS},
-        {"a": "夜間−日中の差(主集合)", "b": diff_main,
+        {"a": "夜間−日中の差(主集合)", "u": "bps", "b": diff_main,
          "c": MDE_DIFF_BPS, "d": diff_main - MDE_DIFF_BPS},
-    ], [("a", "量", -1), ("b", "実測(bps)", 3), ("c", "事前登録の基準(bps)", 2),
-        ("d", "差", 3)]))
+    ], [("a", "量", -1), ("u", "単位", -1), ("b", "実測", 5), ("c", "事前登録の基準", 4),
+        ("d", "差", 5)]))
     md.append("")
-    md.append(f"主指標 1 の 95% CI = [{_fmt(ci_main[0])}, {_fmt(ci_main[1])}] bps、"
+    md.append("事前登録の基準 6.03 bps(平均ネット)は L-920 の後の単位で 0.0603%。")
+    md.append("")
+    md.append(f"主指標 1 の 95% CI = [{_fmt(ci_main[0], 5)}, {_fmt(ci_main[1], 5)}]%、"
               f"主指標 2 の 95% CI = [{_fmt(ci_diff[0])}, {_fmt(ci_diff[1])}] bps。")
     md.append("")
     md.append("### MDE の再現と実効 MDE(事前登録の指示による記録)")
     md.append("")
-    md.append(_table(mde_rows, [("a", "量", -1), ("b", "σ(bps)", 2), ("c", "n", 0),
-                                ("d", "SE(bps)", 3), ("e", "独立標本 MDE(bps)", 3),
-                                ("f", "事前登録 MDE", 2),
-                                ("g", "実測 CI 幅からの実効 MDE(bps)", 3)]))
+    md.append(_table(mde_rows, [("a", "量", -1), ("u", "単位", -1), ("b", "σ", 4), ("c", "n", 0),
+                                ("d", "SE", 5), ("e", "独立標本 MDE", 5),
+                                ("f", "事前登録 MDE", 4),
+                                ("g", "実測 CI 幅からの実効 MDE", 5)]))
     md.append("")
     md.append("独立標本 MDE = 2.802 × SE(α 0.05 両側・検出力 0.8)。実効 MDE は"
               "ブロック・ブートストラップの CI 幅を SE に換算して同じ係数を掛けたもの"
@@ -731,7 +748,7 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
     md.append("")
     md.append(f"最大ドローダウン(マイクロ 1 枚固定、保守コスト後、主集合、時系列順): "
               f"**{mdd_yen:,.0f} 円**(谷は {mdd_date})。同集合の累計損益 {total_pnl_yen:,.0f} 円 / "
-              f"{len(main):,} ペア。勝率 {float((main['r_net_bps_cons'] > 0).mean()):.4f}。"
+              f"{len(main):,} ペア。勝率 {float((main['r_net_pct_cons'] > 0).mean()):.4f}。"
               f"年率換算 Sharpe の換算係数 = √(n/年数) = √({len(main)}/{yrs_main:.2f}) = "
               f"{np.sqrt(len(main)/yrs_main):.2f}。")
     md.append("")
@@ -744,8 +761,8 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
     md.append("")
     md.append(_table(diag["nights"].to_dict("records"),
                      [("nights", "泊数", 0), ("n", "n", 0),
-                      ("mean_r_net_bps", "平均 r_net(bps)", 3),
-                      ("mean_gross_bps", "グロス(bps)", 3), ("sd_bps", "SD", 2),
+                      ("mean_r_net_pct", "平均 r_net(%)", 5),
+                      ("mean_gross_bps", "グロス(bps)", 3), ("sd_net_pct", "SD(r_net, %)", 4),
                       ("hit_rate", "勝率", 4)]))
     md.append("")
     md.append("## 5. 対照")
@@ -780,9 +797,9 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
         md.append(f"### {title}")
         md.append("")
         cols = [(diag[key].columns[0], diag[key].columns[0], -1), ("n", "n", 0),
-                ("mean_r_net_bps", "平均 r_net(bps)", 3),
+                ("mean_r_net_pct", "平均 r_net(%)", 5),
                 ("mean_gross_bps", "グロス(bps)", 3),
-                ("mean_r_day_bps", "r_day(bps)", 3), ("sd_bps", "SD", 2),
+                ("mean_r_day_bps", "r_day(bps)", 3), ("sd_net_pct", "SD(r_net, %)", 4),
                 ("hit_rate", "勝率", 4)]
         md.append(_table(diag[key].to_dict("records"), cols))
         md.append("")
@@ -813,42 +830,50 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
         if prior_path.exists():
             prior = json.loads(prior_path.read_text(encoding="utf-8"))
             ph = prior["headline"]
+            # L-920: an iteration-0 RUN.json written before the rename holds the
+            # net mean and its CI in bp (mean_r_net_bps_conservative, ci95);
+            # read them as % (/ 100). The gross / difference fields stay bp.
+            if "mean_r_net_pct_conservative" in ph:
+                ph_net, ph_ci = ph["mean_r_net_pct_conservative"], ph["ci95"]
+            else:
+                ph_net = ph["mean_r_net_bps_conservative"] / 100.0
+                ph_ci = [ph["ci95"][0] / 100.0, ph["ci95"][1] / 100.0]
             cmp_rows = [
                 {"a": "n(主集合)", "b": prior["n_at_each_step"]["n_main_roll_and_glitch_excluded"],
                  "c": steps["n_main_roll_and_glitch_excluded"],
                  "d": steps["n_main_roll_and_glitch_excluded"]
                       - prior["n_at_each_step"]["n_main_roll_and_glitch_excluded"]},
-                {"a": "平均ネット r_net(保守コスト、bps)", "b": ph["mean_r_net_bps_conservative"],
-                 "c": mean_main, "d": mean_main - ph["mean_r_net_bps_conservative"]},
-                {"a": "95%CI下限(bps)", "b": ph["ci95"][0], "c": ci_main[0],
-                 "d": ci_main[0] - ph["ci95"][0]},
-                {"a": "95%CI上限(bps)", "b": ph["ci95"][1], "c": ci_main[1],
-                 "d": ci_main[1] - ph["ci95"][1]},
+                {"a": "平均ネット r_net(保守コスト、%)", "b": ph_net,
+                 "c": mean_main, "d": mean_main - ph_net},
+                {"a": "95%CI下限(%)", "b": ph_ci[0], "c": ci_main[0],
+                 "d": ci_main[0] - ph_ci[0]},
+                {"a": "95%CI上限(%)", "b": ph_ci[1], "c": ci_main[1],
+                 "d": ci_main[1] - ph_ci[1]},
                 {"a": "グロス平均夜間リターン(bps)", "b": ph["mean_gross_bps"],
                  "c": gross_main, "d": gross_main - ph["mean_gross_bps"]},
                 {"a": "夜間−日中の差(bps)", "b": ph["mean_diff_night_minus_day_bps"],
                  "c": diff_main, "d": diff_main - ph["mean_diff_night_minus_day_bps"]},
                 {"a": "Sharpe(年率)", "b": ph["sharpe_annualised"],
-                 "c": sharpe_annualised(main["r_net_bps_cons"], yrs_main),
-                 "d": sharpe_annualised(main["r_net_bps_cons"], yrs_main) - ph["sharpe_annualised"]},
+                 "c": sharpe_annualised(main["r_net_pct_cons"], yrs_main),
+                 "d": sharpe_annualised(main["r_net_pct_cons"], yrs_main) - ph["sharpe_annualised"]},
                 {"a": "勝率", "b": ph["hit_rate"],
-                 "c": float((main["r_net_bps_cons"] > 0).mean()),
-                 "d": float((main["r_net_bps_cons"] > 0).mean()) - ph["hit_rate"]},
+                 "c": float((main["r_net_pct_cons"] > 0).mean()),
+                 "d": float((main["r_net_pct_cons"] > 0).mean()) - ph["hit_rate"]},
                 {"a": "最大ドローダウン(円、1枚)", "b": ph["max_drawdown_yen_1_micro"],
                  "c": mdd_yen, "d": mdd_yen - ph["max_drawdown_yen_1_micro"]},
-                {"a": "MDE 関門(平均ネット r_net、bps)", "b": MDE_BPS, "c": MDE_BPS, "d": 0.0},
-                {"a": "着手前関門との差(平均ネット − MDE 6.03、bps)",
-                 "b": ph["mean_r_net_bps_conservative"] - MDE_BPS, "c": mean_main - MDE_BPS,
-                 "d": (mean_main - MDE_BPS) - (ph["mean_r_net_bps_conservative"] - MDE_BPS)},
+                {"a": "MDE 関門(平均ネット r_net、%)", "b": MDE_PCT, "c": MDE_PCT, "d": 0.0},
+                {"a": "着手前関門との差(平均ネット − MDE 0.0603%(事前登録 6.03 bps)、%)",
+                 "b": ph_net - MDE_PCT, "c": mean_main - MDE_PCT,
+                 "d": (mean_main - MDE_PCT) - (ph_net - MDE_PCT)},
                 {"a": "グロス関門との差(グロス平均 − 14.9、bps)",
                  "b": ph["mean_gross_bps"] - GROSS_GATE_BPS, "c": gross_main - GROSS_GATE_BPS,
                  "d": (gross_main - GROSS_GATE_BPS) - (ph["mean_gross_bps"] - GROSS_GATE_BPS)},
             ]
-            md.append(_table(cmp_rows, [("a", "指標", -1), ("b", "反復0(月次)", 3),
-                                        ("c", f"反復{iteration}({ROLL_RULE_LABEL_JA[roll_rule]})", 3),
-                                        ("d", "差(反復1−反復0)", 3)]))
+            md.append(_table(cmp_rows, [("a", "指標", -1), ("b", "反復0(月次)", 5),
+                                        ("c", f"反復{iteration}({ROLL_RULE_LABEL_JA[roll_rule]})", 5),
+                                        ("d", "差(反復1−反復0)", 5)]))
             md.append("")
-            md.append(f"関門 6.03bps(平均ネット MDE)・14.9bps(グロス、着手前の実務上の最小値)は"
+            md.append(f"関門 0.0603%(平均ネット MDE、事前登録 6.03bps)・14.9bps(グロス、着手前の実務上の最小値)は"
                       "規則を切り替えても変わらない(標本サイズがわずかに変わるのみで σ の再計算は"
                       "PREREG の指示どおり別途 MDE 表に記録する。関門の値自体は事前登録を変更しない)。")
         else:
@@ -884,16 +909,17 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
             "multiplier_yen_per_point": MULTIPLIER,
             "mde_bps": MDE_BPS, "mde_diff_bps": MDE_DIFF_BPS,
             "gross_gate_bps": GROSS_GATE_BPS,
+            "mde_pct_for_net": MDE_PCT,
         },
         "n_at_each_step": steps,
         "headline": {
-            "mean_r_net_bps_conservative": mean_main,
+            "mean_r_net_pct_conservative": mean_main,
             "ci95": [float(ci_main[0]), float(ci_main[1])],
             "mean_gross_bps": gross_main,
             "mean_diff_night_minus_day_bps": diff_main,
             "ci95_diff": [float(ci_diff[0]), float(ci_diff[1])],
-            "sharpe_annualised": sharpe_annualised(main["r_net_bps_cons"], yrs_main),
-            "hit_rate": float((main["r_net_bps_cons"] > 0).mean()),
+            "sharpe_annualised": sharpe_annualised(main["r_net_pct_cons"], yrs_main),
+            "hit_rate": float((main["r_net_pct_cons"] > 0).mean()),
             "max_drawdown_yen_1_micro": mdd_yen,
             "null_mean_p95_bps": null_mean_p95,
             "null_sharpe_p95": null_sharpe_p95,
@@ -901,10 +927,10 @@ def main(roll_rule: str = "monthly", out_dir: Path | None = None,
             "alignment_median_abs_same_close": med_same,
             "alignment_pass": alignment_pass,
         },
-        "mde": [{"quantity": r["a"], "sd_bps": r["b"], "n": r["c"],
-                 "se_bps": r["d"], "mde_bps_independent": r["e"],
-                 "mde_bps_registered": r["f"],
-                 "mde_bps_effective_from_ci": r["g"]} for r in mde_rows],
+        "mde": [{"quantity": r["a"], "unit": r["u"], "sd": r["b"], "n": r["c"],
+                 "se": r["d"], "mde_independent": r["e"],
+                 "mde_registered": r["f"],
+                 "mde_effective_from_ci": r["g"]} for r in mde_rows],
         "outputs": sorted(written),
     }
     (out / "RUN.json").write_text(

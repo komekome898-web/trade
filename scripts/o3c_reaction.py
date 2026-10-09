@@ -815,12 +815,12 @@ def node_bins(qty: np.ndarray) -> np.ndarray:
     return np.lexsort((idx, -qty))[:k]
 
 
-def directional_node_bp(
+def directional_node_pct(
     qty: np.ndarray, lo_bin: int, step: float, p_ref: float, sign: float
 ) -> float:
-    """ノードのうち `sign`(+1 = 上 / −1 = 下)の側で p_ref に最も近いものまでの bp。
+    """ノードのうち `sign`(+1 = 上 / −1 = 下)の側で p_ref に最も近いものまでの距離(%)。
 
-    符号は `base.profile_stats` と同じ (p_target − p_ref) / p_ref * 1e4。
+    符号は `base.profile_stats` と同じ (p_target − p_ref) / p_ref * 100(%。L-920 の前は × 1e4 の bp)。
     その側にノードが 1 つも無ければ NaN(設計 §3 (b)「無ければ NaN と件数」)。
     """
     rel = node_bins(qty)
@@ -834,7 +834,7 @@ def directional_node_bp(
     dd = d[ok]
     rr = rel[ok]
     order = np.lexsort((rr, np.abs(dd)))
-    return float(dd[order[0]] / p_ref * 1e4)
+    return float(dd[order[0]] / p_ref * 100)
 
 
 # --------------------------------------------------------------------------
@@ -844,14 +844,14 @@ def directional_node_bp(
 PROFILE_COLUMNS = [
     "p0",
     "bin_pct",
-    "dist_node_bp",
-    "dist_gap_bp",
+    "dist_node_pct",
+    "dist_gap_pct",
     "vol_between_ratio",
-    "dist_vwap_bp",
+    "dist_vwap_pct",
     "n_bins",
     "total_qty",
-    "node_up_bp",
-    "node_dn_bp",
+    "node_up_pct",
+    "node_dn_pct",
 ]
 
 
@@ -917,14 +917,14 @@ def profile_columns(
         o = out[i]
         o["p0"] = p0
         o["bin_pct"] = round(st["bin_pct"], 4)
-        o["dist_node_bp"] = round(st["dist_node_bp"], 4)
-        o["dist_gap_bp"] = round(st["dist_gap_bp"], 4)
+        o["dist_node_pct"] = round(st["dist_node_pct"], 6)
+        o["dist_gap_pct"] = round(st["dist_gap_pct"], 6)
         o["vol_between_ratio"] = round(st["vol_between_ratio"], 6)
-        o["dist_vwap_bp"] = round(st["dist_vwap_bp"], 4)
+        o["dist_vwap_pct"] = round(st["dist_vwap_pct"], 6)
         o["n_bins"] = st["n_bins"]
         o["total_qty"] = st["total_qty"]
-        o["node_up_bp"] = directional_node_bp(sub_q, lo_bin, step, p_liq, +1.0)
-        o["node_dn_bp"] = directional_node_bp(sub_q, lo_bin, step, p_liq, -1.0)
+        o["node_up_pct"] = directional_node_pct(sub_q, lo_bin, step, p_liq, +1.0)
+        o["node_dn_pct"] = directional_node_pct(sub_q, lo_bin, step, p_liq, -1.0)
     return out, note
 
 
@@ -1880,25 +1880,25 @@ def build_day_rows(
     by_tag = {ev["tag"]: (ev, pc) for ev, pc in zip(prof_events, prof_cols)}
 
     # --- 対照 (ii) のマッチング -------------------------------------------
-    liq_bp = [by_tag[("liq", c.cascade_id)][0]["bin_pct"] for c in cascades_of_day]
-    cand_bp = [by_tag[("cand", i)][0]["bin_pct"] for i in range(len(cand_times))]
+    liq_bin_pct = [by_tag[("liq", c.cascade_id)][0]["bin_pct"] for c in cascades_of_day]
+    cand_bin_pct = [by_tag[("cand", i)][0]["bin_pct"] for i in range(len(cand_times))]
     rng_m = random.Random(f"{seed}|{day}|matched")
     # 2026-09-18 の監査(指摘 21)。マッチングは貪欲・置換なしで**束の順に依存する**。
     # `match_order="reversed"` は束の順を逆にして同じ手続きを当て、
     # 「候補なし」になる束の集合が変わるかを実測するための経路である
     # (**既定は "table" で、走行の結果を変えない**)。
     if match_order == "reversed":
-        order = list(range(len(liq_bp)))[::-1]
+        order = list(range(len(liq_bin_pct)))[::-1]
         m_rev, match_note = matched_controls(
-            [liq_bp[i] for i in order], cand_times, cand_bp, rng_m
+            [liq_bin_pct[i] for i in order], cand_times, cand_bin_pct, rng_m
         )
-        matched = [None] * len(liq_bp)
+        matched = [None] * len(liq_bin_pct)
         for pos, i in enumerate(order):
             matched[i] = m_rev[pos]
     else:
-        matched, match_note = matched_controls(liq_bp, cand_times, cand_bp, rng_m)
+        matched, match_note = matched_controls(liq_bin_pct, cand_times, cand_bin_pct, rng_m)
     unmatched_bin_pct = [
-        liq_bp[i] for i, t in enumerate(matched) if t is None and np.isfinite(liq_bp[i])
+        liq_bin_pct[i] for i, t in enumerate(matched) if t is None and np.isfinite(liq_bin_pct[i])
     ]
     unmatched_ids = [
         cascades_of_day[i].cascade_id for i, t in enumerate(matched) if t is None
@@ -2121,20 +2121,20 @@ def build_day_rows(
             i0 = int(np.searchsorted(times, a_ts, side="left"))
             i1 = int(np.searchsorted(times, a_ts + max_h_ms, side="right"))
             targets = {
-                "back_vwap": ev["dist_vwap_bp"],
-                "back_node": ev["dist_node_bp"],
-                "node_up": ev["node_up_bp"],
-                "node_dn": ev["node_dn_bp"],
+                "back_vwap": ev["dist_vwap_pct"],
+                "back_node": ev["dist_node_pct"],
+                "node_up": ev["node_up_pct"],
+                "node_dn": ev["node_dn_pct"],
             }
             targets["fwd_node"] = (
-                ev["node_dn_bp"]
+                ev["node_dn_pct"]
                 if side == "SELL"
-                else (ev["node_up_bp"] if side == "BUY" else float("nan"))
+                else (ev["node_up_pct"] if side == "BUY" else float("nan"))
             )
-            for t_name, bp_val in targets.items():
+            for t_name, pct_val in targets.items():
                 tgt = (
-                    p_liq * (1.0 + float(bp_val) / 1e4)
-                    if np.isfinite(float(bp_val if bp_val is not None else np.nan))
+                    p_liq * (1.0 + float(pct_val) / 100)      # 距離は %(L-920)
+                    if np.isfinite(float(pct_val if pct_val is not None else np.nan))
                     and np.isfinite(p_liq)
                     else float("nan")
                 )
@@ -2549,14 +2549,14 @@ def build_table_summary(
             c: _quant_block(pd.to_numeric(sub[c], errors="coerce").to_numpy())
             for c in (
                 "bin_pct",
-                "dist_node_bp",
-                "dist_vwap_bp",
-                "dist_node_bp_liqdir",
-                "dist_vwap_bp_liqdir",
-                "oi_dist_node_bp_liqdir",
-                "oi_dist_vwap_bp_liqdir",
-                "oi_side_dist_node_bp_liqdir",
-                "oi_side_dist_vwap_bp_liqdir",
+                "dist_node_pct",
+                "dist_vwap_pct",
+                "dist_node_pct_liqdir",
+                "dist_vwap_pct_liqdir",
+                "oi_dist_node_pct_liqdir",
+                "oi_dist_vwap_pct_liqdir",
+                "oi_side_dist_node_pct_liqdir",
+                "oi_side_dist_vwap_pct_liqdir",
                 "implied_leverage",
                 "implied_leverage_side",
                 "bundle_n_events_dedup",

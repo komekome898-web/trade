@@ -159,8 +159,8 @@ def test_side_profile_uses_apportioned_weights():
     out, n_unc = M.oi_columns_for_rows(rows, buckets, 2 * MS5, STEP, t0)
     assert n_unc == 0
     # 全体の平均建値は 2 本の真ん中あたり、ロング側は 30000 側、ショート側は 31000 側。
-    assert out[0]["oi_side_dist_vwap_bp"] < out[0]["oi_dist_vwap_bp"]
-    assert out[1]["oi_side_dist_vwap_bp"] > out[1]["oi_dist_vwap_bp"]
+    assert out[0]["oi_side_dist_vwap_pct"] < out[0]["oi_dist_vwap_pct"]
+    assert out[1]["oi_side_dist_vwap_pct"] > out[1]["oi_dist_vwap_pct"]
     assert out[0]["oi_side_total_delta"] == pytest.approx(100.0)
     assert out[1]["oi_side_total_delta"] == pytest.approx(100.0)
     # 全体のプロファイルの重みの合計は ΔOI の合計。
@@ -180,9 +180,9 @@ def test_single_bucket_profile_matches_bin_center():
     rows = [{"time_ms": t0 + 1000, "side": "SELL", "p_liq": p_liq, "p0": p_liq}]
     out, _ = M.oi_columns_for_rows(rows, buckets, 60_000, STEP, t0)
     center = float(BASE.bin_center_price(BASE.bin_index(30000.0, STEP), STEP))
-    expect = (center - p_liq) / p_liq * 1e4
-    assert out[0]["oi_dist_vwap_bp"] == pytest.approx(round(expect, 4))
-    assert out[0]["oi_dist_node_bp"] == pytest.approx(round(expect, 4))
+    expect = (center - p_liq) / p_liq * 100      # %(L-920。前は × 1e4 の bp で 4 桁)
+    assert out[0]["oi_dist_vwap_pct"] == pytest.approx(round(expect, 6))
+    assert out[0]["oi_dist_node_pct"] == pytest.approx(round(expect, 6))
     assert out[0]["oi_n_bins"] == 1
     assert out[0]["oi_n_buckets"] == 1
     assert out[0]["oi_side_total_delta"] == pytest.approx(300.0)
@@ -223,12 +223,12 @@ def test_window_reaching_outside_coverage_gives_nan():
     out, n_unc = M.oi_columns_for_rows(rows, buckets, w, STEP, t0)
     assert n_unc == 1
     assert out[0]["oi_covered"] == 0
-    assert math.isnan(out[0]["oi_dist_vwap_bp"])
+    assert math.isnan(out[0]["oi_dist_vwap_pct"])
     # 窓を短く(1 分)すれば同じ行が埋まる。
     out2, n_unc2 = M.oi_columns_for_rows(rows, buckets, 60_000, STEP, t0)
     assert n_unc2 == 0
     assert out2[0]["oi_covered"] == 1
-    assert not math.isnan(out2[0]["oi_dist_vwap_bp"])
+    assert not math.isnan(out2[0]["oi_dist_vwap_pct"])
 
 
 # --------------------------------------------------------------------- (d) 符号
@@ -237,22 +237,22 @@ def test_window_reaching_outside_coverage_gives_nan():
 def test_liqdir_sign_sell_buy_control():
     """SELL はそのまま、BUY は符号を反転、対照(side 空)は NaN。"""
     vals = {
-        "dist_vwap_bp": 100.0,
-        "dist_node_bp": -20.0,
-        "oi_dist_vwap_bp": 50.0,
-        "oi_dist_node_bp": -5.0,
-        "oi_side_dist_vwap_bp": 40.0,
-        "oi_side_dist_node_bp": 7.0,
+        "dist_vwap_pct": 100.0,
+        "dist_node_pct": -20.0,
+        "oi_dist_vwap_pct": 50.0,
+        "oi_dist_node_pct": -5.0,
+        "oi_side_dist_vwap_pct": 40.0,
+        "oi_side_dist_node_pct": 7.0,
     }
     sell = dict(vals, side="SELL")
     buy = dict(vals, side="BUY")
     ctl = dict(vals, side="")
     for r in (sell, buy, ctl):
         M._apply_liqdir_and_leverage(r, None)
-    assert sell["dist_vwap_bp_liqdir"] == pytest.approx(100.0)
-    assert sell["oi_dist_node_bp_liqdir"] == pytest.approx(-5.0)
-    assert buy["dist_vwap_bp_liqdir"] == pytest.approx(-100.0)
-    assert buy["oi_dist_node_bp_liqdir"] == pytest.approx(5.0)
+    assert sell["dist_vwap_pct_liqdir"] == pytest.approx(100.0)
+    assert sell["oi_dist_node_pct_liqdir"] == pytest.approx(-5.0)
+    assert buy["dist_vwap_pct_liqdir"] == pytest.approx(-100.0)
+    assert buy["oi_dist_node_pct_liqdir"] == pytest.approx(5.0)
     for _, dst in M.LIQDIR_SOURCE:
         assert math.isnan(ctl[dst])
     # --mmr を渡していないのでレバレッジ換算は作らない。
@@ -261,22 +261,22 @@ def test_liqdir_sign_sell_buy_control():
 
 
 def test_implied_leverage_formula_and_nan_boundary():
-    """implied_leverage = 1 / (d/1e4 + mmr)。分母が 0 以下なら NaN。"""
+    """implied_leverage = 1 / (d/100 + mmr)(d は %)。分母が 0 以下なら NaN。"""
     mmr = 0.005
     r = {
         "side": "SELL",
-        "dist_vwap_bp": 0.0,
-        "dist_node_bp": 0.0,
-        "oi_dist_vwap_bp": 100.0,   # 1% 離れている
-        "oi_dist_node_bp": 0.0,
-        "oi_side_dist_vwap_bp": 200.0,
-        "oi_side_dist_node_bp": 0.0,
+        "dist_vwap_pct": 0.0,
+        "dist_node_pct": 0.0,
+        "oi_dist_vwap_pct": 1.0,     # 1% 離れている(前の 100bp)
+        "oi_dist_node_pct": 0.0,
+        "oi_side_dist_vwap_pct": 2.0,
+        "oi_side_dist_node_pct": 0.0,
     }
     M._apply_liqdir_and_leverage(r, mmr)
     assert r["implied_leverage"] == pytest.approx(1.0 / (0.01 + mmr), abs=1e-3)
     assert r["implied_leverage_side"] == pytest.approx(1.0 / (0.02 + mmr), abs=1e-3)
 
-    neg = dict(r, oi_dist_vwap_bp=-100.0, oi_side_dist_vwap_bp=-50.0)
+    neg = dict(r, oi_dist_vwap_pct=-1.0, oi_side_dist_vwap_pct=-0.5)
     M._apply_liqdir_and_leverage(neg, mmr)
     assert math.isnan(neg["implied_leverage"])          # −0.01 + 0.005 < 0
     assert math.isnan(neg["implied_leverage_side"])     # −0.005 + 0.005 = 0
@@ -314,22 +314,22 @@ def test_split_uses_buy_only_and_sell_only_vwap():
     same, _ = M.oi_columns_for_rows(rows, b, 60_000, STEP, t0, side_price="same")
     split, _ = M.oi_columns_for_rows(rows, b, 60_000, STEP, t0, side_price="split")
 
-    def center_bp(price):
+    def center_pct(price):
         c = float(BASE.bin_center_price(BASE.bin_index(price, STEP), STEP))
-        return (c - p_liq) / p_liq * 1e4
+        return (c - p_liq) / p_liq * 100     # %
 
     # same: 両側とも全体の VWAP のビン。
     for o in same:
-        assert o["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(30000.0), 4))
-        assert o["oi_side_dist_node_bp"] == pytest.approx(round(center_bp(30000.0), 4))
+        assert o["oi_side_dist_vwap_pct"] == pytest.approx(round(center_pct(30000.0), 6))
+        assert o["oi_side_dist_node_pct"] == pytest.approx(round(center_pct(30000.0), 6))
     # split: SELL(ロング側)は買い taker の VWAP、BUY(ショート側)は売り taker の VWAP。
-    assert split[0]["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(30100.0), 4))
-    assert split[1]["oi_side_dist_vwap_bp"] == pytest.approx(round(center_bp(29900.0), 4))
-    assert split[0]["oi_side_dist_vwap_bp"] > split[1]["oi_side_dist_vwap_bp"]
+    assert split[0]["oi_side_dist_vwap_pct"] == pytest.approx(round(center_pct(30100.0), 6))
+    assert split[1]["oi_side_dist_vwap_pct"] == pytest.approx(round(center_pct(29900.0), 6))
+    assert split[0]["oi_side_dist_vwap_pct"] > split[1]["oi_side_dist_vwap_pct"]
     # 全体のプロファイルと按分の重みは split でも変わらない。
     for a, c in zip(same, split):
-        assert a["oi_dist_vwap_bp"] == pytest.approx(c["oi_dist_vwap_bp"])
-        assert a["oi_dist_node_bp"] == pytest.approx(c["oi_dist_node_bp"])
+        assert a["oi_dist_vwap_pct"] == pytest.approx(c["oi_dist_vwap_pct"])
+        assert a["oi_dist_node_pct"] == pytest.approx(c["oi_dist_node_pct"])
         assert a["oi_total_delta"] == pytest.approx(c["oi_total_delta"])
         assert a["oi_side_total_delta"] == pytest.approx(c["oi_side_total_delta"])
 
@@ -355,8 +355,8 @@ def test_split_one_side_empty_is_skipped():
     assert same[0]["oi_side_total_delta"] == pytest.approx(50.0)
     # 重心は桶 1 の買い taker VWAP のビン。
     c = float(BASE.bin_center_price(BASE.bin_index(31050.0, STEP), STEP))
-    assert split[0]["oi_side_dist_vwap_bp"] == pytest.approx(
-        round((c - p_liq) / p_liq * 1e4, 4)
+    assert split[0]["oi_side_dist_vwap_pct"] == pytest.approx(
+        round((c - p_liq) / p_liq * 100, 6)
     )
     # 片側 0 件の桶の件数は build_delta_buckets が数える。
     md = [_metrics(t0, [100.0, 200.0, 300.0])]
@@ -389,7 +389,7 @@ def test_same_ignores_side_prices():
     assert a == b
     # 側別の価格が全体とまったく違っても、`same` の側別の列は全体と同じビンに載る。
     for o in a[:2]:
-        assert o["oi_side_dist_node_bp"] is not None
+        assert o["oi_side_dist_node_pct"] is not None
 
 
 def test_bucket_trade_stats_side_vwaps():
@@ -417,7 +417,7 @@ def test_bucket_trade_stats_side_vwaps():
 
 
 def test_side_spread_block_counts_and_quantiles():
-    """側別 VWAP の差(bp)は桶の時刻で一意化して集計する。"""
+    """側別 VWAP の差(%、L-920)は桶の時刻で一意化して集計する。"""
     t0 = 1_700_000_000_000
     acc: dict = {}
     b = {
@@ -433,7 +433,7 @@ def test_side_spread_block_counts_and_quantiles():
     assert blk["buckets_no_buy_taker"] == 1
     assert blk["buckets_no_sell_taker"] == 0
     assert blk["n"] == 1
-    assert blk["q50"] == pytest.approx(2.0)   # (30003−29997)/30000*1e4 = 2bp
+    assert blk["q50"] == pytest.approx(0.02)  # (30003−29997)/30000*100 = 0.02 %(前の 2bp)
 
 
 def test_columns_cover_everything_written():

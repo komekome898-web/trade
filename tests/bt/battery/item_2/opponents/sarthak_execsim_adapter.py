@@ -64,6 +64,7 @@ class Adapter:
         c, acc = inp["costs"], inp["account"]
         lev = float(acc.get("leverage", 1.0))
         cash = float(acc["cash"])
+        # the tool's PercentageCostModel takes bp: the scene's maker / taker rates are fractions, x 1e4 on the next 2 lines
         lines = [f"CFG {g('order')} {g('cancel')} {g('feed')} {g('notice')} {float(c.get('maker_rate', 0.0)) * 1e4!r} "
                  f"{float(c.get('taker_rate', 0.0)) * 1e4!r} {cash!r} {cash * lev!r} {int(lev != 1.0)} {1.0 / lev!r}"]
         labels = []

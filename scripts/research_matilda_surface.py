@@ -82,6 +82,10 @@ asserts that the apportioned N=7 uniform-1.0 no-storm zero-funding cell
 reproduces report 30's diagnostic (b) trade-for-trade on the bitFlyer bars.
 
 Usage: PYTHONPATH=src python scripts/research_matilda_surface.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。1 単位の損益(u、資金調達の前の u_gross も、
+taker の出の値段 mid ∓ 3.96bps = 0.0396 % を含む損益の率)、往復の損益、合計・1 日・最大の落ち込み・
+CI、資金調達(0.06 %/日)は % で持つ(前の bps / 100)。bp は値動き(40 分のレンジの幅とその門
+10 / 82bps)にだけ使う。report 30 の記録の数(−0.395 / −2.597bps/unit ほか)は % に換えて書く。)
 """
 from __future__ import annotations
 
@@ -108,9 +112,8 @@ VOLA_COUNT = 40
 RANGE_COUNT = 40
 RANGE_MIN_BPS = 10.0
 RANGE_MAX_BPS = 82.0
-TAKER_BPS = 3.96
-FUNDING_PCT_DAY = 0.06                 # -> 6.0 bps/day
-FUNDING_BPS_DAY = FUNDING_PCT_DAY * 100.0
+TAKER_PCT = 0.0396                     # % taker one-way (3.96 bps)
+FUNDING_PCT_DAY = 0.06                 # %/day (L-920: funding is a rate, not a move)
 BAR_SEC = 60
 BREAKEXITSIZE = 3
 INF = float("inf")
@@ -156,7 +159,7 @@ class Cfg:
     brk_on: bool = False
     T1m: float = 40.0
     T2m: float = 80.0
-    funding: float = FUNDING_BPS_DAY
+    funding: float = FUNDING_PCT_DAY       # %/day
 
     def spacing_name(self) -> str:
         kind, g = self.spacing
@@ -360,7 +363,7 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
     c_t0, c_tx, c_k, c_kind, c_taker = [], [], [], [], []
     c_pnl, c_gross, c_avg, c_xpx, c_side, c_vola, c_reg = [], [], [], [], [], [], []
     c_maxk = []
-    u_bps, u_gross, u_day, u_tx, u_rung, u_kind, u_k, u_reg = \
+    u_pct, u_gross, u_day, u_tx, u_rung, u_kind, u_k, u_reg = \
         [], [], [], [], [], [], [], []
     n_place = n_fill = 0
     n_disc = n_disc_u = n_mkt = 0
@@ -386,14 +389,14 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
         gro = 0.0
         day = int(math.floor(t / 86400.0))
         for e, rg, te in zip(inv_px, inv_rung, inv_t):
-            g = side * (xpx - e) / e * 1e4
-            f = fund_per_sec * max(t - te, 0.0)
+            g = side * (xpx - e) / e * 100       # % per unit (L-920; was x 1e4)
+            f = fund_per_sec * max(t - te, 0.0)  # %
             b = g - f
             fund_tot += f
             hold_tot += max(t - te, 0.0)
             tot += b
             gro += g
-            u_bps.append(b); u_gross.append(g); u_day.append(day)
+            u_pct.append(b); u_gross.append(g); u_day.append(day)
             u_tx.append(t); u_rung.append(rg); u_kind.append(kind)
             u_k.append(k); u_reg.append(cyc_reg)
         c_t0.append(t_first); c_tx.append(t); c_k.append(k)
@@ -465,7 +468,7 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
         # ---- 1b. storm avoidance: taker out, cancel, freeze ---------------
         if do_avoid and storm_on:
             if side != 0:
-                close_cycle(t, last * (1.0 - side * TAKER_BPS / 1e4),
+                close_cycle(t, last * (1.0 - side * TAKER_PCT / 100),
                             K_STORM, True)
             else:
                 cancel_all()
@@ -582,7 +585,7 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
                 else:
                     x, xk = 0, K_TP
             if x == 3:
-                close_cycle(t, last * (1.0 - side * TAKER_BPS / 1e4), xk, True)
+                close_cycle(t, last * (1.0 - side * TAKER_PCT / 100), xk, True)
             elif x == 0:
                 cyc_supp = True
                 xo = None
@@ -604,7 +607,7 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
                     xkind = xk
                 elif marketable:
                     n_mkt += 1
-                    close_cycle(t, last * (1.0 - side * TAKER_BPS / 1e4),
+                    close_cycle(t, last * (1.0 - side * TAKER_PCT / 100),
                                 xk, True)
                 else:
                     xo = (P, side < 0)
@@ -671,7 +674,7 @@ def run_cell(B: Bars, cfg: Cfg) -> Res:
     r.c_avg = np.array(c_avg, float); r.c_xpx = np.array(c_xpx, float)
     r.c_side = np.array(c_side, float); r.c_vola = np.array(c_vola, float)
     r.c_reg = np.array(c_reg, int); r.c_maxk = np.array(c_maxk, int)
-    r.u_bps = np.array(u_bps, float); r.u_gross = np.array(u_gross, float)
+    r.u_pct = np.array(u_pct, float); r.u_gross = np.array(u_gross, float)
     r.u_day = np.array(u_day, int); r.u_tx = np.array(u_tx, float)
     r.u_rung = np.array(u_rung, int); r.u_kind = np.array(u_kind, int)
     r.u_k = np.array(u_k, int); r.u_reg = np.array(u_reg, int)
@@ -715,7 +718,7 @@ def boot_ci_fast(x, groups, n_boot: int = 2000, seed: int = SEED):
 
 def stats(r: Res, eff_days: float, mask=None):
     st = {}
-    u = r.u_bps if mask is None else r.u_bps[mask]
+    u = r.u_pct if mask is None else r.u_pct[mask]
     d = r.u_day if mask is None else r.u_day[mask]
     tx = r.u_tx if mask is None else r.u_tx[mask]
     st["units"] = int(len(u))
@@ -771,10 +774,10 @@ def row(tag: str, r: Res, eff_days: float, t0: float, t1: float, width=30):
     s = stats(r, eff_days)
     m1, m2 = half_masks(r, t0, t1)
     s1, s2 = stats(r, eff_days, m1), stats(r, eff_days, m2)
-    print(f"{tag:<{width}}{s['rt_day']:>7.1f}{fmt(s['mean_unit'], 10, 3)}"
-          f"{fmt(s['mean_rt'], 9, 3)}{fmt(s['tcl'], 7, 2)}"
-          f" [{s['lo']:+7.3f},{s['hi']:+7.3f}]{fmt(s['maxdd'], 10, 0)}"
-          f"{fmt(s1['mean_unit'], 9, 3)}{fmt(s2['mean_unit'], 9, 3)}"
+    print(f"{tag:<{width}}{s['rt_day']:>7.1f}{fmt(s['mean_unit'], 10, 5)}"
+          f"{fmt(s['mean_rt'], 9, 5)}{fmt(s['tcl'], 7, 2)}"
+          f" [{s['lo']:+9.5f},{s['hi']:+9.5f}]{fmt(s['maxdd'], 10, 2)}"
+          f"{fmt(s1['mean_unit'], 9, 5)}{fmt(s2['mean_unit'], 9, 5)}"
           f"  {inv_dist(r):<22}{exit_mix(r)}")
     return s, s1, s2
 
@@ -796,15 +799,15 @@ def breakeven_line(r: Res) -> str:
     gl = float(r.c_gross[r.c_gross <= 0].mean())
     kw = float(r.c_k[r.c_gross > 0].mean())
     kl = float(r.c_k[r.c_gross <= 0].mean())
-    return (f"overall: win {100 * pw:.1f}% x {gw:+.2f} rt-bps (mean k {kw:.2f})"
-            f" / loss {100 * (1 - pw):.1f}% x {gl:+.2f} rt-bps (mean k "
-            f"{kl:.2f}) -> gross EV {pw * gw + (1 - pw) * gl:+.3f}, "
+    return (f"overall: win {100 * pw:.1f}% x {gw:+.4f} rt-% (mean k {kw:.2f})"
+            f" / loss {100 * (1 - pw):.1f}% x {gl:+.4f} rt-% (mean k "
+            f"{kl:.2f}) -> gross EV {pw * gw + (1 - pw) * gl:+.5f} %, "
             f"loss bucket must shrink {shrink_factor(r):.2f}x")
 
 
 def rowhead(width=30):
-    print(f"{'config':<{width}}{'rt/day':>7}{'unit bps':>10}{'rt bps':>9}"
-          f"{'t':>7}{'95% CI unit bps':>18}{'maxDD':>10}"
+    print(f"{'config':<{width}}{'rt/day':>7}{'unit %':>10}{'rt %':>9}"
+          f"{'t':>7}{'95% CI unit %':>20}{'maxDD':>10}"
           f"{'1st60%':>9}{'2nd40%':>9}  {'inv k=1/2/3/5/7/10':<22}exit mix%")
 
 
@@ -853,17 +856,17 @@ def main() -> int:
         ok = (g.n_place == g3.n_place and g.n_fillx == g3.n_fillx
               and len(g.c_pnl) == len(g3.c_pnl)
               and np.allclose(g.c_pnl, g3.c_pnl, atol=1e-9)
-              and np.allclose(g.u_bps, g3.u_bps, atol=1e-9))
+              and np.allclose(g.u_pct, g3.u_pct, atol=1e-9))
         print(f"M4 engine   : placed {g.n_place:,} fills {g.n_fillx:,} "
-              f"rt {len(g.c_pnl):,} unit {g.u_bps.mean():+.4f} bps")
+              f"rt {len(g.c_pnl):,} unit {g.u_pct.mean():+.6f} %")
         print(f"M3 engine   : placed {g3.n_place:,} fills {g3.n_fillx:,} "
-              f"rt {len(g3.c_pnl):,} unit {g3.u_bps.mean():+.4f} bps")
+              f"rt {len(g3.c_pnl):,} unit {g3.u_pct.mean():+.6f} %")
         print(f"GATE        : {'PASS - trade-for-trade identical' if ok else 'FAIL'}")
         assert ok, "reproduction gate failed"
 
         sub("bootstrap equivalence check (boot_ci_fast vs cal.boot_ci)")
-        a = cal.boot_ci(g.u_bps[:3000], g.u_day[:3000], seed=SEED)
-        b = boot_ci_fast(g.u_bps[:3000], g.u_day[:3000], seed=SEED)
+        a = cal.boot_ci(g.u_pct[:3000], g.u_day[:3000], seed=SEED)
+        b = boot_ci_fast(g.u_pct[:3000], g.u_day[:3000], seed=SEED)
         print(f"cal.boot_ci   : lo {a[0]:+.6f} hi {a[1]:+.6f} t {a[2]:+.6f}")
         print(f"boot_ci_fast  : lo {b[0]:+.6f} hi {b[1]:+.6f} t {b[2]:+.6f}")
         print(f"equal         : {np.allclose(a, b, atol=1e-9)}")
@@ -899,15 +902,15 @@ def main() -> int:
 
     sub("funding audit (charged 0.06 %/day pro-rata)")
     print(f"{'config':<30}{'units':>9}{'mean hold min':>15}"
-          f"{'funding bps/unit':>18}{'check':>22}")
+          f"{'funding %/unit':>18}{'check':>22}")
     for c in stage1[:6]:
         r = R[c]
-        n = max(len(r.u_bps), 1)
+        n = max(len(r.u_pct), 1)
         mh = r.hold_tot / n / 60.0
         fb = r.fund_tot / n
-        print(f"{c.name():<30}{n:>9,}{mh:>15.2f}{fb:>18.4f}"
-              f"{FUNDING_BPS_DAY * mh * 60 / 86400:>22.4f}")
-    print("  check column = 6.0 bps/day * mean hold / 1440 min -- must equal "
+        print(f"{c.name():<30}{n:>9,}{mh:>15.2f}{fb:>18.6f}"
+              f"{FUNDING_PCT_DAY * mh * 60 / 86400:>22.6f}")
+    print("  check column = 0.06 %/day * mean hold / 1440 min -- must equal "
           "the funding column.")
 
     # =====================================================================
@@ -954,9 +957,9 @@ def main() -> int:
         ls = r.c_gross <= 0
         print(f"{c.name():<30}{r.c_k[~ls].mean():>11.2f}{r.c_k[ls].mean():>12.2f}"
               f"{r.c_gross[ls].mean():>14.2f}"
-              f"{np.percentile(r.u_bps, 5):>10.2f}"
-              f"{np.percentile(r.u_bps, 1):>10.2f}"
-              f"{r.c_pnl.min():>11.1f}"
+              f"{np.percentile(r.u_pct, 5):>10.4f}"
+              f"{np.percentile(r.u_pct, 1):>10.4f}"
+              f"{r.c_pnl.min():>11.3f}"
               f"{100 * float((r.c_k == c.N).mean()):>12.1f}%")
 
     sub("k-proportionality of the win, ALL 30 stage-1 cells "
@@ -1004,13 +1007,13 @@ def main() -> int:
         for kind, w in fam:
             c = Cfg(N=N, apportion=(kind == "app"), w=w)
             s = S[c]
-            print(f"{fmt(s['mean_unit'], 10, 3)}{fmt(s['total'], 11, 0)}"
-                  f"{fmt(s['maxdd'], 11, 0)}", end="")
+            print(f"{fmt(s['mean_unit'], 10, 5)}{fmt(s['total'], 11, 2)}"
+                  f"{fmt(s['maxdd'], 11, 2)}", end="")
         print()
 
     # ---- pick the top 3 of stage 1 ---------------------------------------
     order1 = sorted(stage1, key=lambda c: -S[c]["mean_unit"])
-    sub("stage 1 ranking by unit bps (top 8)")
+    sub("stage 1 ranking by unit % (top 8)")
     rowhead()
     for c in order1[:8]:
         row(c.name(), R[c], B.eff_days, t0, t1)
@@ -1047,9 +1050,9 @@ def main() -> int:
         print(f"{c.name():<34}{r.c_maxk.mean():>11.2f}"
               f"{100 * float((r.c_maxk >= c.N).mean()):>11.1f}%"
               f"{100 * float((r.c_maxk >= 3).mean()):>9.1f}%"
-              f"{np.percentile(r.u_bps, 5):>14.2f}"
-              f"{np.percentile(r.u_bps, 1):>14.2f}"
-              f"{r.c_pnl.min():>11.1f}")
+              f"{np.percentile(r.u_pct, 5):>14.4f}"
+              f"{np.percentile(r.u_pct, 1):>14.4f}"
+              f"{r.c_pnl.min():>11.3f}")
 
     order2 = sorted(stage2, key=lambda c: -S[c]["mean_unit"])
     top2 = order2[:3]
@@ -1062,9 +1065,9 @@ def main() -> int:
     r = R[base]
     sub(f"attribution of {base.name()} by the regime at entry "
         f"(theoretical ceiling of the overlays)")
-    print(f"{'regime':<12}{'units':>9}{'share':>8}{'unit bps':>11}"
-          f"{'total bps':>12}{'rt':>8}{'win%':>8}")
-    tot_all = float(r.u_bps.sum())
+    print(f"{'regime':<12}{'units':>9}{'share':>8}{'unit %':>11}"
+          f"{'total %':>12}{'rt':>8}{'win%':>8}")
+    tot_all = float(r.u_pct.sum())
     for rg in range(4):
         m = r.u_reg == rg
         cm = r.c_reg == rg
@@ -1072,20 +1075,20 @@ def main() -> int:
             continue
         print(f"{REG_NAMES[rg]:<12}{int(m.sum()):>9,}"
               f"{100 * float(m.mean()):>7.1f}%"
-              f"{r.u_bps[m].mean():>11.3f}{r.u_bps[m].sum():>12.0f}"
+              f"{r.u_pct[m].mean():>11.5f}{r.u_pct[m].sum():>12.2f}"
               f"{int(cm.sum()):>8,}"
               f"{100 * float((r.c_pnl[cm] > 0).mean()) if cm.sum() else 0:>7.1f}%")
     for rg, nm in ((R_STORM, "avoid in-storm"),):
         m = r.u_reg == rg
-        print(f"\nceiling if {nm:<20}: total {tot_all:.0f} -> "
-              f"{tot_all - r.u_bps[m].sum():.0f} bps "
-              f"({(tot_all - r.u_bps[m].sum()) / max(int((~m).sum()), 1):+.3f} bps/unit "
+        print(f"\nceiling if {nm:<20}: total {tot_all:.2f} -> "
+              f"{tot_all - r.u_pct[m].sum():.2f} % "
+              f"({(tot_all - r.u_pct[m].sum()) / max(int((~m).sum()), 1):+.5f} %/unit "
               f"on {int((~m).sum()):,} units)")
     for lab, sel in (("harvest<=2h only", r.u_reg == R_P2),
                      ("harvest<=6h only", (r.u_reg == R_P2) | (r.u_reg == R_P26))):
         if sel.sum():
-            print(f"ceiling if {lab:<20}: total {r.u_bps[sel].sum():.0f} bps "
-                  f"({r.u_bps[sel].mean():+.3f} bps/unit on "
+            print(f"ceiling if {lab:<20}: total {r.u_pct[sel].sum():.2f} % "
+                  f"({r.u_pct[sel].mean():+.5f} %/unit on "
                   f"{int(sel.sum()):,} units)")
     print("\n  These are ATTRIBUTIONS of the unmodified run, not simulations: "
           "banning\n  entries changes the later inventory state, so the "
@@ -1161,11 +1164,11 @@ def main() -> int:
             if m.sum() == 0:
                 print(f"{'-':>9}", end="")
                 continue
-            v = float(r.u_bps[m].mean())
+            v = float(r.u_pct[m].mean())
             npos += int(v > 0)
-            print(f"{v:>+9.3f}", end="")
+            print(f"{v:>+9.5f}", end="")
         print(f"{npos:>6}/{len(mlabels)}")
-    print("  (cells are the mean unit bps of that calendar month; Jan and Aug "
+    print("  (cells are the mean unit % of that calendar month; Jan and Aug "
           "are partial)")
 
     # =====================================================================
@@ -1193,14 +1196,14 @@ def main() -> int:
         sub("LEVEL CALIBRATION -- how pessimistic is the bar approximation?")
         print("Report 30 measured the SAME cell (break OFF, T=(40,80), "
               "apportioned N=7,\nuniform 1.0) two ways on bitFlyer: "
-              "fine-grained replay (a) -0.395 bps/unit,\n1-minute bar "
-              "approximation (b) -2.597 bps/unit.  The bar model is therefore "
-              "\n**about 2.20 bps/unit pessimistic** for this family -- it "
+              "fine-grained replay (a) -0.00395 %/unit,\n1-minute bar "
+              "approximation (b) -0.02597 %/unit.  The bar model is therefore "
+              "\n**about 0.0220 %/unit pessimistic** for this family -- it "
               "fills every order the\nbar's high/low pierced, so it takes "
               "trades a queue would never have got.\n"
               "Consequence: this surface is a map of DIFFERENCES between "
               "cells, not of levels.\nNo cell on it is positive, and the best "
-              "cell is 2.21 bps/unit below zero -- i.e.\nthe same order as "
+              "cell is 0.0221 %/unit below zero -- i.e.\nthe same order as "
               "the approximation bias itself, so even the sign of the best\n"
               "cell in a fine-grained world is undetermined by this "
               "measurement.")
@@ -1208,13 +1211,13 @@ def main() -> int:
     # =====================================================================
     header("8. PLATEAU TEST AND M4 FREEZE CANDIDATES (<= 2)")
     # =====================================================================
-    print("A candidate must satisfy ALL of: (i) mean unit bps > 0 on the "
+    print("A candidate must satisfy ALL of: (i) mean unit % > 0 on the "
           "210-day proxy,\n(ii) BOTH halves positive, (iii) every calendar "
           "month positive, (iv) plateau -\nno neighbour in N (one step) or in "
           "w (one step) degrades below 50 % of it,\n(v) the bitFlyer 27-day "
           "cross-check agrees in sign.\n")
     pos = [c for c in allcfg if S[c]["mean_unit"] > 0]
-    print(f"cells with mean unit bps > 0        : {len(pos)} of {len(allcfg)}")
+    print(f"cells with mean unit % > 0          : {len(pos)} of {len(allcfg)}")
     print(f"cells with a positive 95% CI upper  : "
           f"{sum(1 for c in allcfg if S[c]['hi'] > 0)} of {len(allcfg)}")
     print(f"cells with either half positive     : "
@@ -1224,10 +1227,10 @@ def main() -> int:
     for c in pos:
         r = R[c]
         m1, m2 = half_masks(r, t0, t1)
-        h1 = float(r.u_bps[m1].mean()) if m1.sum() else np.nan
-        h2 = float(r.u_bps[m2].mean()) if m2.sum() else np.nan
+        h1 = float(r.u_pct[m1].mean()) if m1.sum() else np.nan
+        h2 = float(r.u_pct[m2].mean()) if m2.sum() else np.nan
         per = month_key(r.u_tx)
-        mm = [float(r.u_bps[per == ml].mean())
+        mm = [float(r.u_pct[per == ml].mean())
               for ml in mlabels if (per == ml).sum()]
         ok_h = (h1 > 0) and (h2 > 0)
         ok_m = all(v > 0 for v in mm)
@@ -1246,7 +1249,7 @@ def main() -> int:
                          and abs(x.w - c.w) <= 0.41))]
         worst = min((S[x]["mean_unit"] for x in nbrs), default=np.nan)
         print(f"  plateau {c.name():<40} worst neighbour {worst:+.3f} "
-              f"vs {S[c]['mean_unit']:+.3f} "
+              f"vs {S[c]['mean_unit']:+.5f} "
               f"({'OK' if worst > 0.5 * S[c]['mean_unit'] else 'FAIL'}), "
               f"{len(nbrs)} neighbours")
     if not survivors:
@@ -1258,23 +1261,23 @@ def main() -> int:
               f"the report names at most 2.")
         for c in survivors[:6]:
             print(f"   candidate: {c.name()}  unit "
-                  f"{S[c]['mean_unit']:+.3f} bps")
+                  f"{S[c]['mean_unit']:+.5f} %")
 
     sub("distance from break-even, whole surface "
         "(loss bucket must shrink by this factor)")
-    print(f"{'config':<46}{'unit bps':>10}{'shrink x':>10}"
+    print(f"{'config':<46}{'unit %':>10}{'shrink x':>10}"
           f"{'win%':>8}{'win rt':>9}{'loss rt':>10}")
     for c in order_all[:8] + [x for x in refs if x not in order_all[:8]]:
         r = R[c]
         wn = r.c_pnl > 0
-        print(f"{c.name():<46}{S[c]['mean_unit']:>+10.3f}"
+        print(f"{c.name():<46}{S[c]['mean_unit']:>+10.5f}"
               f"{shrink_factor(r):>10.2f}{100 * float(wn.mean()):>7.1f}%"
-              f"{r.c_pnl[wn].mean():>9.2f}{r.c_pnl[~wn].mean():>10.2f}")
+              f"{r.c_pnl[wn].mean():>9.4f}{r.c_pnl[~wn].mean():>10.4f}")
     best_sh = min(shrink_factor(R[c]) for c in allcfg)
     print(f"\n  best on the whole surface: {best_sh:.2f}x from break-even "
           f"(report 30's M3 measured\n  1.13-1.48x on the FINE-GRAINED "
           f"replay; the numbers above are on the bar\n  approximation, which "
-          f"report 30 showed to be ~2.20 bps/unit pessimistic --\n  the two "
+          f"report 30 showed to be ~0.0220 %/unit pessimistic --\n  the two "
           f"are NOT directly comparable, only the ordering within this table "
           f"is).")
 

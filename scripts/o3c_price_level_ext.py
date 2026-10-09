@@ -50,7 +50,8 @@ BUNDLE_COLUMNS = base.COLUMNS + [
 ]
 
 # ---- (b) 帯 ---------------------------------------------------------------
-# `FULL_2026-09-17.md` §3 の side 別 `dist_node_bp` 中央値(SELL +56.4 / BUY −70.2)を
+# `FULL_2026-09-17.md` §3 の side 別 `dist_node_bp` 中央値(SELL +56.4 / BUY −70.2。bp の記録。
+# L-920 の後の名前と単位: dist_node_pct で +0.564 / −0.702 %)を
 # そのまま使う。清算価格 = ノード × (1 + 符号付きオフセット) の形に直した値。
 SIDE_OFFSET = {"SELL": -0.0056, "BUY": +0.0070}
 BAND_HALF_BINS = 1  # 「±1 ビン」
@@ -170,17 +171,17 @@ def run_bundle(
         out = {"n": int(len(sub))}
         if sub.empty:
             return out
-        for col in ("bin_pct", "dist_node_bp", "dist_gap_bp", "dist_vwap_bp"):
+        for col in ("bin_pct", "dist_node_pct", "dist_gap_pct", "dist_vwap_pct"):
             s = pd.to_numeric(sub[col], errors="coerce").dropna()
             out[f"{col}_median"] = float(np.median(s.to_numpy())) if len(s) else None
             if col.startswith("dist_"):
                 out[f"abs_{col}_median"] = (
                     float(np.median(np.abs(s.to_numpy()))) if len(s) else None
                 )
-        bp = pd.to_numeric(sub["bin_pct"], errors="coerce").dropna().to_numpy()
-        if len(bp):
-            out["bin_pct_eq0_frac"] = float((bp == 0).mean())
-            out["bin_pct_le10_frac"] = float((bp <= 10).mean())
+        bin_pcts = pd.to_numeric(sub["bin_pct"], errors="coerce").dropna().to_numpy()
+        if len(bin_pcts):
+            out["bin_pct_eq0_frac"] = float((bin_pcts == 0).mean())
+            out["bin_pct_le10_frac"] = float((bin_pcts <= 10).mean())
         return out
 
     summary["medians"] = {
@@ -491,8 +492,8 @@ def compute_fit_offsets(
     """帯の位置(side 別 offset)を **`fit_days` だけ**から決める(2026-09-17、L-192 の行 3)。
 
     取り方は前回(`EXT_2026-09-17.md` §1 の (b))と同じ:
-    `o3c_price_level_table.py` の清算行の `dist_node_bp` の side 別**中央値**を採り、
-    `offset = -中央値 / 1e4` を小数 4 桁に丸める(前回の SELL −0.0056 / BUY +0.0070 と
+    `o3c_price_level_table.py` の清算行の `dist_node_pct` の side 別**中央値**を採り、
+    `offset = -中央値 / 100`(中央値は %。L-920 の前は bp で / 1e4)を小数 4 桁に丸める(前回の SELL −0.0056 / BUY +0.0070 と
     同じ丸め方)。違うのは**期間だけ**(前回は全 472 日、ここは `fit_days`)と、
     **一意化した清算行を使う**こと。
     """
@@ -507,7 +508,7 @@ def compute_fit_offsets(
             if r["kind"] != "liq":
                 continue
             n_rows += 1
-            vals.setdefault(str(r["side"]), []).append(float(r["dist_node_bp"]))
+            vals.setdefault(str(r["side"]), []).append(float(r["dist_node_pct"]))
         keep = set(base.days_needed(day, window_hours))
         if i_day + 1 < len(fit_days):
             keep |= set(base.days_needed(fit_days[i_day + 1], window_hours))
@@ -517,7 +518,7 @@ def compute_fit_offsets(
         if (i_day + 1) % 20 == 0:
             print(f"  [fit] {i_day + 1}/{len(fit_days)} 日", flush=True)
     medians = {s: float(np.median(np.asarray(v))) for s, v in sorted(vals.items())}
-    offsets = {s: round(-m / 1e4, 4) for s, m in medians.items()}
+    offsets = {s: round(-m / 100, 4) for s, m in medians.items()}   # m は %
     return {
         "fit_days": fit_days,
         "fit_days_n": len(fit_days),
@@ -525,12 +526,12 @@ def compute_fit_offsets(
         "fit_last_day": fit_days[-1] if fit_days else None,
         "fit_liq_rows": n_rows,
         "fit_liq_rows_by_side": {s: len(v) for s, v in sorted(vals.items())},
-        "dist_node_bp_median_by_side": medians,
+        "dist_node_pct_median_by_side": medians,
         "side_offset": offsets,
         "source": (
             f"fit 期間 {fit_days[0]}〜{fit_days[-1]}({len(fit_days)} 日)の清算行"
-            f"(一意化{'あり' if dedup_liq else 'なし'})の dist_node_bp の side 別中央値。"
-            f"offset = -中央値 / 1e4 を小数 4 桁に丸めた値(前回と同じ取り方)"
+            f"(一意化{'あり' if dedup_liq else 'なし'})の dist_node_pct の side 別中央値。"
+            f"offset = -中央値(%) / 100 を小数 4 桁に丸めた値(前回と同じ取り方。前回は中央値が bp で / 1e4)"
         ),
     }
 
@@ -586,7 +587,7 @@ def run_band(
             "side_offset_source": (
                 fit["source"] if fit else
                 "docs/PHASE2/O3C/PRICE_LEVEL/FULL_2026-09-17.md §3 の side 別 "
-                "dist_node_bp 中央値(SELL +56.4bp / BUY −70.2bp)"
+                "dist_node_bp 中央値(SELL +56.4bp / BUY −70.2bp。L-920 の後の単位: dist_node_pct で +0.564 / −0.702 %)"
             ),
             "fit": fit,
             "liq_price_field": "average_price",
@@ -617,7 +618,7 @@ def run_band(
             "trade_in_band_rate = 同じ 1 時間の全 aggTrades のうち帯に入った**件数**の割合"
             "(数量では重み付けていない)。",
             "帯は清算より前の情報(直前 W の積み上げ)だけで引いている。"
-            "offset の 56 / 70bp は全 472 日の結果から採った値なので、"
+            "offset の 0.56 / 0.70 %(ノードからの距離。L-920 の前は 56 / 70bp と書いた)は全 472 日の結果から採った値なので、"
             "その意味で全期間の情報が入っている(EXT §7)。",
         ],
     }
@@ -687,7 +688,7 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"[fit] {fit['fit_first_day']}〜{fit['fit_last_day']}"
                 f"({fit['fit_days_n']} 日、清算行 {fit['fit_liq_rows']})"
-                f" dist_node_bp 中央値 {fit['dist_node_bp_median_by_side']}"
+                f" dist_node_pct 中央値 {fit['dist_node_pct_median_by_side']}"
                 f" -> offset {side_offset}",
                 flush=True,
             )

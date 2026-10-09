@@ -18,7 +18,7 @@ zip は展開せず zipfile から直接読む。
       --out-dir backtest_data/o3c_price_level_sample_20260917
 
 `--liq-price-field` の既定は `average_price`(実際に約定した価格)。設計 §2 は `p_liq` に
-`price` を置いていたが、`price` は強制決済注文の**指値**で直前価格から ±35〜40bp ずれた帯に
+`price` を置いていたが、`price` は強制決済注文の**指値**で直前価格から ±0.35〜0.40% ずれた帯(同じ時刻の 2 つの値段の距離なので % で書く。L-920)に
 なることが 2026-09-17 の標本走行で分かったため、リードの指示で既定を変えた。
 `--liq-price-field price` で従来の指値版も出せる。
 """
@@ -44,10 +44,79 @@ DEFAULT_DATA_ROOT = REPO_ROOT / "backtest_data" / "binance_cm_o3c_20260913"
 SYMBOL = "BTCUSD_PERP"
 
 # `p_liq` に入れる liquidationSnapshot の列。
-# `price` は強制決済注文の**指値**で、直前価格から ±35〜40bp ずれた帯になる(2026-09-17 実測)。
+# `price` は強制決済注文の**指値**で、直前価格から ±0.35〜0.40% ずれた帯(同じ時刻の 2 つの値段の距離なので % で書く。L-920)になる(2026-09-17 実測)。
 # 実際に約定した価格は `average_price` なので、既定はこちら(リードの指示、2026-09-17)。
 LIQ_PRICE_FIELDS = ("price", "average_price")
 DEFAULT_LIQ_PRICE_FIELD = "average_price"
+
+# ---------------------------------------------------------------------------
+# L-920(L-923 1.A): 距離の列(VWAP・節・建玉の帯までの距離 = 同じ時刻の 2 つの値段の距離)は
+# % で持つ(× 100)。L-920 より前に書いた表(git の backtest_data/o3c_*/ ほか)は同じ量を
+# bp(× 1e4)で、古い名前(dist_*_bp・oi_dist_*_bp・*_bp_liqdir・node_up_bp・node_dn_bp・
+# mat8_amt_5bp・mat8_amt_20bp)で持つ。表は書き換えず、読む口で「新しい名前の列が無ければ
+# 古い名前の列を読んで / 100 する」(下の 3 つの関数)。
+# ---------------------------------------------------------------------------
+_LEGACY_FIXED = {"node_up_bp": "node_up_pct", "node_dn_bp": "node_dn_pct",
+                 "directional_node_bp": "directional_node_pct",
+                 "mat8_amt_5bp": "mat8_amt_0p05pct", "mat8_amt_20bp": "mat8_amt_0p2pct",
+                 # 材料 5(節までの距離)。前は名前に単位が無く bp で持っていた → / 100
+                 "mat5_distance_to_liquidation_node": "mat5_distance_to_liquidation_node_pct",
+                 # o3c_signal_materials の候補 5'(先の節までの距離)。前は cand_5p(bp)→ / 100
+                 "cand_5p": "cand_5p_pct"}
+_LEGACY_DIST_RE = None
+
+
+def legacy_pct_name(col: str) -> str | None:
+    """古い bp の列名なら新しい % の列名を、そうでなければ None を返す。
+    `mat8_amt_*` は帯の幅の名前だけが変わる(値は建玉の量なので / 100 しない)。"""
+    global _LEGACY_DIST_RE
+    if _LEGACY_DIST_RE is None:
+        import re
+        _LEGACY_DIST_RE = re.compile(r"^(.*dist_(?:node|vwap|gap))_bp(.*)$")
+    if col in _LEGACY_FIXED:
+        return _LEGACY_FIXED[col]
+    m = _LEGACY_DIST_RE.match(col)
+    return f"{m.group(1)}_pct{m.group(2)}" if m else None
+
+
+def _legacy_scale(old: str) -> float:
+    return 1.0 if old.startswith("mat8_amt_") else 0.01
+
+
+def pct_dist_row(row: dict) -> dict:
+    """DictReader の 1 行(文字列)に、古い bp の距離の列から新しい % の列を足して返す
+    (新しい列が既にあれば何もしない。空の値は空のまま)。"""
+    for old in [k for k in row if k is not None]:
+        new = legacy_pct_name(old)
+        if new is None or new in row:
+            continue
+        v = row[old]
+        if v is None or str(v).strip() == "":
+            row[new] = v
+        else:
+            try:
+                row[new] = repr(float(v) * _legacy_scale(old))
+            except ValueError:
+                row[new] = v
+    return row
+
+
+def pct_dist_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """DataFrame 版。古い bp の距離の列から新しい % の列を足す(古い列は残す)。"""
+    for old in list(df.columns):
+        new = legacy_pct_name(str(old))
+        if new is None or new in df.columns:
+            continue
+        df[new] = pd.to_numeric(df[old], errors="coerce") * _legacy_scale(str(old))
+    return df
+
+
+def legacy_usecols(path, cols: Sequence[str]) -> list:
+    """`read_csv(usecols=...)` の前に: 欲しい新しい列が表に無く古い列があれば、古い列を読む。"""
+    have = set(pd.read_csv(path, nrows=0).columns)
+    inv = {legacy_pct_name(c): c for c in have if legacy_pct_name(c)}
+    return [c if (c in have or c not in inv) else inv[c] for c in cols]
+
 
 # 設計 §2 の列 + day。列の順番はここで固定する。
 COLUMNS = [
@@ -59,10 +128,10 @@ COLUMNS = [
     "p_avg",
     "p0",
     "bin_pct",
-    "dist_node_bp",
-    "dist_gap_bp",
+    "dist_node_pct",
+    "dist_gap_pct",
     "vol_between_ratio",
-    "dist_vwap_bp",
+    "dist_vwap_pct",
     "n_bins",
     "total_qty",
     "day",
@@ -74,10 +143,10 @@ QUANTILE_COLUMNS = [
     "p_liq",
     "p0",
     "bin_pct",
-    "dist_node_bp",
-    "dist_gap_bp",
+    "dist_node_pct",
+    "dist_gap_pct",
     "vol_between_ratio",
-    "dist_vwap_bp",
+    "dist_vwap_pct",
     "n_bins",
     "total_qty",
 ]
@@ -125,17 +194,17 @@ def _ceil_tenth(n: int) -> int:
     return max(1, -(-n // 10))
 
 
-def _nearest_signed_bp(
+def _nearest_signed_pct(
     cand_bins: np.ndarray, lo_bin: int, step: float, p_ref: float
 ) -> float:
-    """候補ビン群のうち p_ref に最も近いものまでの符号付き bp。
+    """候補ビン群のうち p_ref に最も近いものまでの符号付き %(同じ時刻の 2 つの値段の距離。L-920・L-923 1.A。前は bp)。
 
-    符号は (p_target - p_ref) / p_ref * 1e4。同距離なら価格の低いビン(番号の小さい方)を採る。
+    符号は (p_target - p_ref) / p_ref * 100。同距離なら価格の低いビン(番号の小さい方)を採る。
     """
     centers = bin_center_price(cand_bins.astype(np.int64) + lo_bin, step)
     d = centers - p_ref
     order = np.lexsort((cand_bins, np.abs(d)))
-    return float(d[order[0]] / p_ref * 1e4)
+    return float(d[order[0]] / p_ref * 100)
 
 
 def profile_stats(
@@ -172,8 +241,8 @@ def profile_stats(
         q_liq = 0.0
     bin_pct = float((qty < q_liq).sum()) / n * 100.0
 
-    dist_node_bp = _nearest_signed_bp(node_rel, lo_bin, step, p_liq)
-    dist_gap_bp = _nearest_signed_bp(gap_rel, lo_bin, step, p_liq)
+    dist_node_pct = _nearest_signed_pct(node_rel, lo_bin, step, p_liq)
+    dist_gap_pct = _nearest_signed_pct(gap_rel, lo_bin, step, p_liq)
 
     # p0〜p_liq の間の数量(両端のビンを含む)。設計に端の扱いの指定は無い(該当語なし)。
     b0 = bin_index(p0, step)
@@ -186,14 +255,14 @@ def profile_stats(
     # 重心 = プロファイルの数量加重平均価格(ビンの代表価格を使う)。
     centers = bin_center_price(np.arange(lo_bin, lo_bin + n), step)
     centroid = float((centers * qty).sum() / total) if total > 0 else float("nan")
-    dist_vwap_bp = (centroid - p_liq) / p_liq * 1e4 if total > 0 else float("nan")
+    dist_vwap_pct = (centroid - p_liq) / p_liq * 100 if total > 0 else float("nan")
 
     return {
         "bin_pct": bin_pct,
-        "dist_node_bp": dist_node_bp,
-        "dist_gap_bp": dist_gap_bp,
+        "dist_node_pct": dist_node_pct,
+        "dist_gap_pct": dist_gap_pct,
         "vol_between_ratio": vol_between_ratio,
-        "dist_vwap_bp": dist_vwap_bp,
+        "dist_vwap_pct": dist_vwap_pct,
         "n_bins": n,
         "total_qty": total,
         "p_liq_in_range": bool(0 <= rel_liq < n),
@@ -413,7 +482,7 @@ def process_day(
 
     liq_price_field: `p_liq` に入れる liquidationSnapshot の列。
       `average_price` = 実際に約定した価格(既定)。
-      `price` = 強制決済注文の指値(直前価格から ±35〜40bp ずれた帯になる)。
+      `price` = 強制決済注文の指値(直前価格から ±0.35〜0.40% ずれた帯(同じ時刻の 2 つの値段の距離なので % で書く。L-920)になる)。
 
     bundle_gap_ms: `None`(既定)なら清算 1 件ずつ。整数を渡すと、その間隔以内に並んだ
       清算を 1 つの束にまとめ(`bundle_ranges`)、**各束の最初の 1 件だけ**を清算行にする。
@@ -585,10 +654,10 @@ def process_day(
                 "p_avg": ev["p_avg"],
                 "p0": p0,
                 "bin_pct": round(st["bin_pct"], 4),
-                "dist_node_bp": round(st["dist_node_bp"], 4),
-                "dist_gap_bp": round(st["dist_gap_bp"], 4),
+                "dist_node_pct": round(st["dist_node_pct"], 6),
+                "dist_gap_pct": round(st["dist_gap_pct"], 6),
                 "vol_between_ratio": round(st["vol_between_ratio"], 6),
-                "dist_vwap_bp": round(st["dist_vwap_bp"], 4),
+                "dist_vwap_pct": round(st["dist_vwap_pct"], 6),
                 "n_bins": st["n_bins"],
                 "total_qty": st["total_qty"],
                 "day": day,
@@ -692,7 +761,7 @@ def build_summary(
             "観測表のみ。判定(予測できる/できない、使える/使えない)は書いていない。",
             "ノード = 数量の上位 10% のビン、空白 = 下位 10% のビン。"
             "範囲 = 窓内の最安値〜最高値で、数量 0 のビンも範囲内の空白として数える。",
-            "dist_*_bp = (p_target - p_liq) / p_liq * 1e4(符号付き)。",
+            "dist_*_pct = (p_target - p_liq) / p_liq * 100(符号付き、%。L-920 より前の表は dist_*_bp = × 1e4)。",
             "bin_pct = p_liq のビンより数量が少ないビンの割合 * 100。",
             "対照行は p_liq に p0(直前約定価格)を入れて同じ列を計算している。",
             "p_liq に入れた列は params.liq_price_field を見ること。"

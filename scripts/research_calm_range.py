@@ -42,6 +42,12 @@ Execution model (mirrors scripts/replay_scalp_storm.py conservatism)
 
 Usage:  PYTHONPATH=src python scripts/research_calm_range.py
 Read-only, no network, idempotent. Writes nothing.
+
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(5 秒の値動き・
+gross・前向きの drift・レンジの幅)にだけ使う。費用(3.96bps = 0.0396 %、
+2.93bps = 0.0293 %)、ネット(gross − 費用)と採用の線(+2.0bps = +0.02 %)、
+レンジの縁からの距離(指値の内側への offset 0/2/5bps = 0/0.02/0.05 %、
+縁を 10bps 越えた止め = 0.1 %)は % で持つ。)
 """
 from __future__ import annotations
 
@@ -61,18 +67,18 @@ BURST_BPS = 10.0            # |5s log-return| threshold, bps
 BURST_LOOKBACK_SEC = 600    # calm (a): trailing 10 minutes
 DRIFT_LOOKBACK_SEC = 1800   # calm (b): trailing 30 minutes
 DRIFT_MAX = 0.004           # calm (b): |30m log-return| < 0.4%
-RANGE_BREAK_BPS = 10.0      # stop (ii): beyond the edge by 10 bps
+RANGE_BREAK_PCT = 0.10      # stop (ii): beyond the edge by 0.1 % (10 bps in the prereg)
 HOLD_MAX_SEC = 3600         # time stop: 60 minutes
-COST_BURST_BPS = 1.96 + 2.0     # taker cost on a stop exit
-COST_CALM_BPS = 0.93 + 2.0      # taker cost on a time-stop exit
+COST_BURST_PCT = 0.0196 + 0.02  # % taker cost on a stop exit
+COST_CALM_PCT = 0.0093 + 0.02   # % taker cost on a time-stop exit
 QUOTE_LIFE_SEC = 60         # entry limits re-quoted every minute
 
 BAR_TRADES = 100
-BAR_NET_BPS = 2.0
+BAR_NET_PCT = 0.02          # % (+2.0 bps in the prereg)
 BAR_T = 2.0
 
 FAMILIES = {"F1": 60, "F2": 120, "F3": 240}   # rolling range window, minutes
-OFFSETS_BPS = [0.0, 2.0, 5.0]                 # limit placed N bps INSIDE the edge
+OFFSETS_PCT = [0.0, 0.02, 0.05]               # limit placed N % INSIDE the edge
 TP_MODES = ["mid", "third"]                   # midpoint vs 1/3-of-range
 
 
@@ -168,7 +174,7 @@ def load_market() -> Market:
 class Cfg:
     family: str
     window: int
-    offset_bps: float
+    offset_pct: float
     tp_mode: str
     use_calm: bool = True
     use_burst_stop: bool = True
@@ -176,7 +182,7 @@ class Cfg:
 
 
 TRADE_COLS = ["ts_entry", "ts_exit", "side", "entry", "exit", "gross_bps",
-              "cost_bps", "net_bps", "reason", "hold_sec", "rng_lo", "rng_hi"]
+              "cost_pct", "net_pct", "reason", "hold_sec", "rng_lo", "rng_hi"]
 
 
 def _rolling_extrema(mh: np.ndarray, ml: np.ndarray, w: int):
@@ -201,8 +207,8 @@ def _manage(mk: Market, side: int, t_fill: float, entry: float,
         seg_p = mk.price[s_start:s_end + 1]
         seg_r = mk.r5[s_start:s_end + 1]
         if use_range_stop:
-            trig = (seg_p < lo * (1 - RANGE_BREAK_BPS / 1e4)) if side > 0 else \
-                   (seg_p > hi * (1 + RANGE_BREAK_BPS / 1e4))
+            trig = (seg_p < lo * (1 - RANGE_BREAK_PCT / 100)) if side > 0 else \
+                   (seg_p > hi * (1 + RANGE_BREAK_PCT / 100))
         else:
             trig = np.zeros(seg_p.shape, bool)
         if use_burst_stop:
@@ -232,9 +238,9 @@ def _manage(mk: Market, side: int, t_fill: float, entry: float,
     if t_tp < t_stop:                       # ties go to the stop (conservative)
         return t_tp, px_tp, 0.0, "tp"
     if np.isfinite(t_stop):
-        return t_stop, px_stop, COST_BURST_BPS, "stop"
+        return t_stop, px_stop, COST_BURST_PCT, "stop"
     t_end = float(s_end + mk.t0)
-    return t_end, float(mk.price[s_end]), COST_CALM_BPS, "time"
+    return t_end, float(mk.price[s_end]), COST_CALM_PCT, "time"
 
 
 def backtest(mk: Market, cfg: Cfg, m_lo: int, m_hi: int,
@@ -243,7 +249,7 @@ def backtest(mk: Market, cfg: Cfg, m_lo: int, m_hi: int,
     hi_arr, lo_arr = _rolling_extrema(mk.mhigh, mk.mlow, cfg.window)
     trades, quotes = [], []
     busy_until = -np.inf
-    off = cfg.offset_bps / 1e4
+    off = cfg.offset_pct / 100
 
     for m in range(m_lo, m_hi):
         T = float(mk.minutes[m])
@@ -302,7 +308,7 @@ def backtest(mk: Market, cfg: Cfg, m_lo: int, m_hi: int,
         trades.append({
             "ts_entry": t_fill, "ts_exit": t_exit, "side": fill_side,
             "entry": entry, "exit": px_exit, "gross_bps": gross,
-            "cost_bps": cost, "net_bps": gross - cost, "reason": reason,
+            "cost_pct": cost, "net_pct": gross / 100 - cost, "reason": reason,  # gross bps -> %
             "hold_sec": t_exit - t_fill, "rng_lo": lo, "rng_hi": hi,
         })
         busy_until = t_exit
@@ -319,7 +325,7 @@ def day_clustered_t(tdf: pd.DataFrame) -> tuple[float, int]:
     if tdf.empty:
         return float("nan"), 0
     day = pd.to_datetime(tdf["ts_entry"], unit="s", utc=True).dt.floor("D")
-    per_day = tdf.groupby(day)["net_bps"].mean()
+    per_day = tdf.groupby(day)["net_pct"].mean()
     nd = len(per_day)
     if nd < 2:
         return float("nan"), nd
@@ -336,20 +342,20 @@ def summarise(tdf: pd.DataFrame) -> dict:
     t, nd = day_clustered_t(tdf)
     return {
         "n": len(tdf),
-        "mean": tdf["net_bps"].mean(),
-        "median": tdf["net_bps"].median(),
-        "sd": tdf["net_bps"].std(ddof=1),
-        "win": (tdf["net_bps"] > 0).mean() * 100,
+        "mean": tdf["net_pct"].mean(),
+        "median": tdf["net_pct"].median(),
+        "sd": tdf["net_pct"].std(ddof=1),
+        "win": (tdf["net_pct"] > 0).mean() * 100,
         "t": t, "days": nd,
-        "total": tdf["net_bps"].sum(),
+        "total": tdf["net_pct"].sum(),
     }
 
 
 def fmt(s: dict) -> str:
     if s["n"] == 0:
         return f"{0:>6}  {'-':>9} {'-':>9} {'-':>8} {'-':>7} {'-':>7}"
-    return (f"{s['n']:>6}  {s['mean']:>+9.2f} {s['median']:>+9.2f} "
-            f"{s['sd']:>8.1f} {s['win']:>6.1f}% {s['t']:>+7.2f}")
+    return (f"{s['n']:>6}  {s['mean']:>+9.4f} {s['median']:>+9.4f} "
+            f"{s['sd']:>8.3f} {s['win']:>6.1f}% {s['t']:>+7.2f}")
 
 
 # --------------------------------------------------------------------------- #
@@ -396,14 +402,14 @@ def main() -> int:
 
     # ---------------- exploration ---------------- #
     header("1. EXPLORATION SEGMENT -- 3 FAMILIES x TUNING GRID (first 60%)")
-    print("Tuning is restricted to edge offset (0/2/5 bps inside the edge) and")
+    print("Tuning is restricted to edge offset (0/0.02/0.05 % inside the edge) and")
     print("TP (range midpoint vs 1/3-of-range). Nothing else is touched.\n")
     print(f"{'family':<8}{'win_m':>6}{'off':>5} {'tp':<6}"
-          f"{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} {'win%':>7} {'dayT':>7}"
+          f"{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} {'win%':>7} {'dayT':>7}"
           f"  {'tp%':>5} {'stop%':>6} {'time%':>6}")
     rows = []
     for fam, win in FAMILIES.items():
-        for off in OFFSETS_BPS:
+        for off in OFFSETS_PCT:
             for tpm in TP_MODES:
                 cfg = Cfg(fam, win, off, tpm)
                 tdf, _ = backtest(mk, cfg, 0, split)
@@ -415,12 +421,12 @@ def main() -> int:
                 rows.append({"cfg": cfg, **s,
                              "tp%": rc.get("tp", 0.0), "stop%": rc.get("stop", 0.0),
                              "time%": rc.get("time", 0.0)})
-                print(f"{fam:<8}{win:>6}{off:>5.0f} {tpm:<6}{fmt(s)}"
+                print(f"{fam:<8}{win:>6}{off:>5.2f} {tpm:<6}{fmt(s)}"
                       f"  {rc.get('tp', 0.0):>4.0f}% {rc.get('stop', 0.0):>5.0f}%"
                       f" {rc.get('time', 0.0):>5.0f}%")
 
-    # selection rule, fixed in advance: highest total net bps among configs with
-    # enough exploration trades to be measurable; ties broken by mean bps.
+    # selection rule, fixed in advance: highest total net (%) among configs with
+    # enough exploration trades to be measurable; ties broken by mean (%).
     MIN_EXPL = 60
     elig = [r for r in rows if r["n"] >= MIN_EXPL]
     if not elig:
@@ -429,17 +435,17 @@ def main() -> int:
               f"selecting over all configs")
     best = max(elig, key=lambda r: (r["total"], r["mean"]))
     cfg = best["cfg"]
-    print(f"\nselection rule (fixed): maximise TOTAL net bps on the exploration "
+    print(f"\nselection rule (fixed): maximise TOTAL net % on the exploration "
           f"segment among configs with >= {MIN_EXPL} trades.")
-    print(f"CHOSEN: {cfg.family} (window {cfg.window}m), offset {cfg.offset_bps:.0f} bps, "
+    print(f"CHOSEN: {cfg.family} (window {cfg.window}m), offset {cfg.offset_pct:.2f} %, "
           f"TP = {cfg.tp_mode}")
-    print(f"  exploration: {best['n']} trades, {best['mean']:+.2f} bps/trade, "
-          f"total {best['total']:+.0f} bps, day-T {best['t']:+.2f}")
+    print(f"  exploration: {best['n']} trades, {best['mean']:+.4f} %/trade, "
+          f"total {best['total']:+.2f} %, day-T {best['t']:+.2f}")
     best_mean = max(elig, key=lambda r: r["mean"])["cfg"]
-    agree = (best_mean.family, best_mean.offset_bps, best_mean.tp_mode) == \
-            (cfg.family, cfg.offset_bps, cfg.tp_mode)
-    print(f"  selection-rule robustness: max-MEAN-bps would pick "
-          f"{best_mean.family}/{best_mean.offset_bps:.0f}bps/{best_mean.tp_mode} -- "
+    agree = (best_mean.family, best_mean.offset_pct, best_mean.tp_mode) == \
+            (cfg.family, cfg.offset_pct, cfg.tp_mode)
+    print(f"  selection-rule robustness: max-MEAN-% would pick "
+          f"{best_mean.family}/{best_mean.offset_pct:.2f}%/{best_mean.tp_mode} -- "
           f"{'same config' if agree else 'a DIFFERENT config'}.")
     if all(r["mean"] < 0 for r in rows):
         print("  NB every config in the grid is negative on exploration; the choice")
@@ -453,7 +459,7 @@ def main() -> int:
     n_quotes = len(jq)
     n_fills = int(jq["filled"].sum()) if n_quotes else 0
     print(f"config          : {cfg.family} window={cfg.window}m "
-          f"offset={cfg.offset_bps:.0f}bps tp={cfg.tp_mode}")
+          f"offset={cfg.offset_pct:.2f}% tp={cfg.tp_mode}")
     print(f"entry quotes    : {n_quotes:,} limit-minutes "
           f"({n_quotes // 2:,} minutes x 2 sides)")
     print(f"entry fill rate : {n_fills}/{n_quotes} = "
@@ -468,10 +474,10 @@ def main() -> int:
               f"{rc.get('stop', 0) / s['n'] * 100:.1f}%")
         print(f"time-stop rate  : {int(rc.get('time', 0))}/{s['n']} = "
               f"{rc.get('time', 0) / s['n'] * 100:.1f}%")
-        print(f"\nnet bps/trade   : mean {s['mean']:+.3f}  median {s['median']:+.3f}"
+        print(f"\nnet %/trade     : mean {s['mean']:+.5f}  median {s['median']:+.5f}"
               f"  sd {s['sd']:.2f}")
         print(f"win rate        : {s['win']:.1f}%")
-        print(f"total net       : {s['total']:+.0f} bps over {s['days']} UTC days")
+        print(f"total net       : {s['total']:+.2f} % over {s['days']} UTC days")
         print(f"day-clustered t : {s['t']:+.3f}  (n_days={s['days']})")
         print(f"mean hold       : {jt['hold_sec'].mean() / 60:.1f} min "
               f"(median {jt['hold_sec'].median() / 60:.1f})")
@@ -479,11 +485,11 @@ def main() -> int:
 
     header("2b. ADOPTION BAR")
     c1 = s["n"] >= BAR_TRADES
-    c2 = np.isfinite(s["mean"]) and s["mean"] >= BAR_NET_BPS
+    c2 = np.isfinite(s["mean"]) and s["mean"] >= BAR_NET_PCT
     c3 = np.isfinite(s["t"]) and s["t"] >= BAR_T
     print(f"  trades   >= {BAR_TRADES}    : {s['n']:>8}      "
           f"{'PASS' if c1 else 'FAIL'}")
-    print(f"  net bps  >= {BAR_NET_BPS:+.1f}  : {s['mean']:>+8.2f}      "
+    print(f"  net %    >= {BAR_NET_PCT:+.2f} : {s['mean']:>+8.4f}      "
           f"{'PASS' if c2 else 'FAIL'}")
     print(f"  day-T    >= {BAR_T:+.1f}  : {s['t']:>+8.2f}      "
           f"{'PASS' if c3 else 'FAIL'}")
@@ -529,18 +535,18 @@ def main() -> int:
                 lo + width / 3.0 if side > 0 else hi - width / 3.0)
             for bag, entry, extra in (
                     (cf_lim, float(r.limit), 0.0),
-                    (cf_mkt, float(mk.price[s_ref]), COST_CALM_BPS)):
+                    (cf_mkt, float(mk.price[s_ref]), COST_CALM_PCT)):
                 if (side > 0 and tp <= entry) or (side < 0 and tp >= entry):
                     skipped[0 if extra == 0.0 else 1] += 1
                     continue
                 te, pe, cost, reason = _manage(mk, side, t_ref, entry, tp, lo, hi,
                                                cfg.use_burst_stop, cfg.use_range_stop)
-                g = side * (pe / entry - 1.0) * 1e4
-                bag.append({"ts_entry": t_ref, "net_bps": g - cost - extra,
+                g = side * (pe / entry - 1.0) * 1e4   # gross move, bps
+                bag.append({"ts_entry": t_ref, "net_pct": g / 100 - cost - extra,
                             "reason": reason})
         print("\nfull counterfactual -- every MISSED limit force-filled and then")
         print("managed by the identical exit logic, under two entry assumptions:")
-        print(f"{'':<34}{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} "
+        print(f"{'':<34}{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} "
               f"{'win%':>7} {'dayT':>7}")
         print(f"{'actually filled (maker, real)':<34}{fmt(s)}")
         for label, bag in (("missed, filled AT the limit", cf_lim),
@@ -551,7 +557,7 @@ def main() -> int:
         print("  'chased at market' row because the market had already passed the TP")
         print("  by the end of the quote window -- there was nothing left to fade.)")
         print("\n  'filled AT the limit' is NOT obtainable: the market never traded")
-        print("  there, so that row buys ~10 bps below every print in the window. It")
+        print("  there, so that row buys ~0.1 % below every print in the window. It")
         print("  is an upper bound on adverse selection, not an estimate. The 'chased")
         print("  at market' row is the honest comparison -- same setups, executable")
         print("  entry price -- and it is what tells you whether the missed setups")
@@ -560,34 +566,36 @@ def main() -> int:
     # ---------------- decomposition ---------------- #
     header("4. PnL DECOMPOSITION + THE BURST STOP'S CONTRIBUTION")
     if s["n"]:
-        g = jt.groupby("reason")["net_bps"]
-        dec = pd.DataFrame({"trades": g.size(), "mean_bps": g.mean(),
-                            "total_bps": g.sum()})
+        g = jt.groupby("reason")["net_pct"]
+        dec = pd.DataFrame({"trades": g.size(), "mean_pct": g.mean(),
+                            "total_pct": g.sum()})
         dec["share_of_trades%"] = dec["trades"] / s["n"] * 100
-        # contribution of each bucket to the OVERALL mean bps/trade; these sum
+        # contribution of each bucket to the OVERALL mean %/trade; these sum
         # to the headline number, which a %-of-total column cannot do when the
         # total is negative.
-        dec["contrib_to_mean"] = dec["total_bps"] / s["n"]
+        dec["contrib_to_mean"] = dec["total_pct"] / s["n"]
         print(dec.round(2).to_string())
-        print(f"\ncontributions sum to {dec['contrib_to_mean'].sum():+.3f} bps/trade "
+        print(f"\ncontributions sum to {dec['contrib_to_mean'].sum():+.5f} %/trade "
               f"= the headline {s['mean']:+.3f}")
-        print(f"total net: {s['total']:+.1f} bps")
+        print(f"total net: {s['total']:+.3f} %")
 
         # the geometry that decides the whole thing
         wbps = (jt["rng_hi"] - jt["rng_lo"]) / jt["entry"] * 1e4
-        tp_dist = wbps * (0.5 if cfg.tp_mode == "mid" else 1 / 3.0) \
-            - cfg.offset_bps
-        stop_dist = RANGE_BREAK_BPS + cfg.offset_bps + COST_BURST_BPS
+        # reward / risk are distances to a level plus cost, so % (L-920);
+        # the range width wbps is a price move over the window, bps.
+        tp_dist = wbps / 100 * (0.5 if cfg.tp_mode == "mid" else 1 / 3.0) \
+            - cfg.offset_pct
+        stop_dist = RANGE_BREAK_PCT + cfg.offset_pct + COST_BURST_PCT
         be = 100 * stop_dist / (tp_dist.median() + stop_dist)
         print(f"\ngeometry: range width {wbps.median():.0f} bps median "
               f"({wbps.quantile(.1):.0f}..{wbps.quantile(.9):.0f} p10-p90)")
-        print(f"  reward if TP hits      : {tp_dist.median():+.0f} bps (median)")
-        print(f"  risk if the stop hits  : {-stop_dist:+.0f} bps "
-              f"({RANGE_BREAK_BPS:.0f} bps break + {COST_BURST_BPS:.2f} taker cost)")
+        print(f"  reward if TP hits      : {tp_dist.median():+.2f} % (median)")
+        print(f"  risk if the stop hits  : {-stop_dist:+.2f} % "
+              f"({RANGE_BREAK_PCT:.2f} % break + {COST_BURST_PCT:.4f} % taker cost)")
         print(f"  breakeven TP hit rate  : {be:.1f}%")
         print(f"  ACTUAL TP hit rate     : {(jt['reason'] == 'tp').mean() * 100:.1f}%")
         print("  -> the edge does not hold price often enough to pay for a stop")
-        print("     placed 10 bps beyond it. That gap, not the cost model, is the")
+        print("     placed 0.1 % beyond it. That gap, not the cost model, is the")
         print("     whole result.")
         print(f"\nmedian hold by exit: "
               + ", ".join(f"{k} {v / 60:.1f}m" for k, v in
@@ -606,18 +614,18 @@ def main() -> int:
               f"condition ({fired_burst / n_stop * 100 if n_stop else 0:.0f}%);")
         print(f"the remaining {n_stop - fired_burst} were pure range breaks.")
 
-        nb_cfg = Cfg(cfg.family, cfg.window, cfg.offset_bps, cfg.tp_mode,
+        nb_cfg = Cfg(cfg.family, cfg.window, cfg.offset_pct, cfg.tp_mode,
                      use_calm=cfg.use_calm, use_burst_stop=False)
         nbt, _ = backtest(mk, nb_cfg, split, n_min)
         nb = summarise(nbt)
         print("\nNO-BURST-STOP variant (range break + time stop only), same segment:")
-        print(f"{'':<22}{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} "
+        print(f"{'':<22}{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} "
               f"{'win%':>7} {'dayT':>7}")
         print(f"{'with burst stop':<22}{fmt(s)}")
         print(f"{'without burst stop':<22}{fmt(nb)}")
         if nb["n"]:
-            print(f"\nburst stop is worth {s['mean'] - nb['mean']:+.2f} bps/trade "
-                  f"(total {s['total']:+.0f} vs {nb['total']:+.0f} bps)")
+            print(f"\nburst stop is worth {s['mean'] - nb['mean']:+.4f} %/trade "
+                  f"(total {s['total']:+.2f} vs {nb['total']:+.2f} %)")
             print("  (trade counts can differ because exit times differ, which shifts")
             print("   when the next entry becomes possible.)")
 
@@ -625,11 +633,11 @@ def main() -> int:
         print("tuning knob): what if the fade were given no price stop at all and")
         print("only the 60-minute time stop -- i.e. is it the stops that kill it, or")
         print("the fade itself?")
-        ns_cfg = Cfg(cfg.family, cfg.window, cfg.offset_bps, cfg.tp_mode,
+        ns_cfg = Cfg(cfg.family, cfg.window, cfg.offset_pct, cfg.tp_mode,
                      use_calm=cfg.use_calm, use_burst_stop=False, use_range_stop=False)
         nst, _ = backtest(mk, ns_cfg, split, n_min)
         ns = summarise(nst)
-        print(f"{'':<22}{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} "
+        print(f"{'':<22}{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} "
               f"{'win%':>7} {'dayT':>7}")
         print(f"{'pre-registered':<22}{fmt(s)}")
         print(f"{'no price stop at all':<22}{fmt(ns)}")
@@ -639,26 +647,26 @@ def main() -> int:
 
     # ---------------- calm filter ---------------- #
     header("5. CALM-FILTER EFFECTIVENESS (judgment segment)")
-    nc_cfg = Cfg(cfg.family, cfg.window, cfg.offset_bps, cfg.tp_mode,
+    nc_cfg = Cfg(cfg.family, cfg.window, cfg.offset_pct, cfg.tp_mode,
                  use_calm=False, use_burst_stop=cfg.use_burst_stop)
     nct, _ = backtest(mk, nc_cfg, split, n_min)
     nc = summarise(nct)
-    print(f"{'':<22}{'trades':>7}  {'mean_bps':>9} {'med_bps':>9} {'sd':>8} "
+    print(f"{'':<22}{'trades':>7}  {'mean_pct':>9} {'med_pct':>9} {'sd':>8} "
           f"{'win%':>7} {'dayT':>7}")
     print(f"{'calm filter ON':<22}{fmt(s)}")
     print(f"{'calm filter OFF':<22}{fmt(nc)}")
     if nc["n"] and s["n"]:
-        print(f"\ncalm filter is worth {s['mean'] - nc['mean']:+.2f} bps/trade; it "
+        print(f"\ncalm filter is worth {s['mean'] - nc['mean']:+.4f} %/trade; it "
               f"removes {nc['n'] - s['n']} of {nc['n']} trades "
               f"({(1 - s['n'] / nc['n']) * 100:.0f}%).")
 
     # per-element ablation for completeness
     print("\nfull 2x2 ablation of the owner's elements 1 and 3 (judgment segment):")
-    print(f"{'calm':<6}{'burst stop':<12}{'trades':>7}  {'mean_bps':>9} "
-          f"{'med_bps':>9} {'sd':>8} {'win%':>7} {'dayT':>7}")
+    print(f"{'calm':<6}{'burst stop':<12}{'trades':>7}  {'mean_pct':>9} "
+          f"{'med_pct':>9} {'sd':>8} {'win%':>7} {'dayT':>7}")
     for uc in (True, False):
         for ub in (True, False):
-            t_, _ = backtest(mk, Cfg(cfg.family, cfg.window, cfg.offset_bps,
+            t_, _ = backtest(mk, Cfg(cfg.family, cfg.window, cfg.offset_pct,
                                      cfg.tp_mode, use_calm=uc, use_burst_stop=ub),
                              split, n_min)
             print(f"{str(uc):<6}{str(ub):<12}{fmt(summarise(t_))}")

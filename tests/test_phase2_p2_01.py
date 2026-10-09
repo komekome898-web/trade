@@ -74,14 +74,15 @@ def test_build_pairs_recovers_planted_overnight_drift_exactly():
     # the intraday leg is recovered too (control 1)
     assert pairs["r_day_bps"].to_numpy() == pytest.approx(-3.0, abs=1e-8)
 
-    # net = gross - the pair's own cost on that pair's own notional
-    expected_cost = 122.0 / (tape["close"].iloc[:-1].to_numpy() * 10.0) * 1e4
-    assert pairs["cost_bps_cons"].to_numpy() == pytest.approx(expected_cost)
-    assert pairs["cost_bps_opt"].to_numpy() == pytest.approx(expected_cost * 22.0 / 122.0)
-    assert pairs["r_net_bps_cons"].to_numpy() == pytest.approx(
-        planted - expected_cost)
+    # net = gross - the pair's own cost on that pair's own notional; the cost
+    # and the net are in % (L-920), the gross in bps -> gross / 100 - cost
+    expected_cost = 122.0 / (tape["close"].iloc[:-1].to_numpy() * 10.0) * 100.0
+    assert pairs["cost_pct_cons"].to_numpy() == pytest.approx(expected_cost)
+    assert pairs["cost_pct_opt"].to_numpy() == pytest.approx(expected_cost * 22.0 / 122.0)
+    assert pairs["r_net_pct_cons"].to_numpy() == pytest.approx(
+        planted / 100.0 - expected_cost)
 
-    # and the yen P&L of 1 micro contract agrees with the bps view
+    # and the yen P&L of 1 micro contract agrees with the % view
     expected_pnl = ((tape["open"].shift(-1).iloc[:-1].to_numpy()
                      - tape["close"].iloc[:-1].to_numpy()) * 10.0 - 122.0)
     assert pairs["pnl_yen_cons"].to_numpy() == pytest.approx(expected_pnl)

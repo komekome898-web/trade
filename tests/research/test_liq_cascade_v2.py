@@ -132,7 +132,7 @@ def test_state_machine_cells(j1, j2, typ):
         exp = bp(dir1, 1, 11)
     else:  # ドテン
         exp = bp(dir1, 1, 11) + bp(-dir1, 11, 71)
-    assert res["pnl_bp"] == pytest.approx(exp)
+    assert res["pnl_pct"] == pytest.approx(exp / 100)     # 連鎖の損益はレグの和 → %(L-920)
     assert sum(l["レグ損益_bp"] for l in res["legs"]) == pytest.approx(exp)
     assert res["entered"] == (not (dir1 == 0.0 and a2 == "何もしない"))
 
@@ -143,7 +143,7 @@ def test_baseline_enters_first_and_exits_at_end_plus_gap():
     res = v2.simulate_bundle(pr, _bundle(pr, 30), None, "-", 3, v2.make_price_fn(tr),
                              baseline="順張り")
     # 入る 3 秒(103)、出る 20 + 30 + 3 = 53 秒(153)、BUY の順張り = 買い
-    assert res["pnl_bp"] == pytest.approx((153 - 103) / 103 * 1e4)
+    assert res["pnl_pct"] == pytest.approx((153 - 103) / 103 * 100)   # %(L-920)
 
 
 def test_rule_and_perfect_judgments():
@@ -474,7 +474,7 @@ def test_three_way_unknown_means_no_entry():
     assert [p["行動"] for p in res["path"] if p["print_id"]] == ["何もしない", "新規_順張り"]
     jd2 = v2.judgments_for(v2.POLICY_3WAY, b["members"], ctx, np.array([0.5, 0.45]), model)
     res2 = v2.simulate_bundle(pr, b, jd2, "B", 1, v2.make_price_fn(tr))
-    assert not res2["entered"] and res2["pnl_bp"] == 0.0 and res2["n_entries"] == 0
+    assert not res2["entered"] and res2["pnl_pct"] == 0.0 and res2["n_entries"] == 0
 
 
 def _logit_df(seed=0):

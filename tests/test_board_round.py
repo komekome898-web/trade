@@ -74,13 +74,13 @@ def test_run_board_round_bins_and_gap(tmp_path):
     assert row0["n_board_updates"] == 2          # snapshot + diff1
     assert row0["best_bid_size"] == pytest.approx(1.5)   # diff1 overrides
     assert row0["best_ask_size"] == pytest.approx(1.0)
-    # depth within 5bps of mid=1,000,000 (band 999,500..1,000,500):
+    # depth within 0.05% of mid=1,000,000 (band 999,500..1,000,500):
     # bids 999900(1.5)+999800(2.0)=3.5 (999000 excluded), asks 1000100(1.0)+1000200(2.0)=3.0
-    assert row0["bid_depth_5bps"] == pytest.approx(3.5)
-    assert row0["ask_depth_5bps"] == pytest.approx(3.0)
-    assert row0["imb_5bps"] == pytest.approx((3.5 - 3.0) / (3.5 + 3.0))
+    assert row0["bid_depth_0p05pct"] == pytest.approx(3.5)
+    assert row0["ask_depth_0p05pct"] == pytest.approx(3.0)
+    assert row0["imb_0p05pct"] == pytest.approx((3.5 - 3.0) / (3.5 + 3.0))
     assert row0["imb_top"] == pytest.approx((1.5 - 1.0) / (1.5 + 1.0))
-    assert row0["spread_bps"] == pytest.approx(200.0 / 1_000_000 * 1e4)
+    assert row0["spread_pct"] == pytest.approx(200.0 / 1_000_000 * 100)   # % of mid (was x 1e4 as spread_bps)
     assert row0["n_trades"] == 2
     assert row0["vol_buy"] == pytest.approx(0.05)
     assert row0["vol_sell"] == pytest.approx(0.12)
@@ -137,7 +137,7 @@ def test_run_board_round_cli_writes_files(tmp_path):
 # judge_board_round -- helpers and section logic
 # ==========================================================================
 def _make_series(n_bins=200, start=0, seed=0):
-    """A synthetic 5s-bin series with a mildly informative imb_5bps signal:
+    """A synthetic 5s-bin series with a mildly informative imb_0p05pct signal:
     mid drifts in the direction of the current imbalance sign, and the rest
     of the columns are filled with harmless small values."""
     rng = np.random.default_rng(seed)
@@ -151,13 +151,13 @@ def _make_series(n_bins=200, start=0, seed=0):
     df = pd.DataFrame({
         "ts": ts,
         "mid": mid,
-        "spread_bps": 2.0,
+        "spread_pct": 0.02,
         "best_bid_size": 1.0,
         "best_ask_size": 1.0,
-        "bid_depth_5bps": 3.0,
-        "ask_depth_5bps": 3.0,
+        "bid_depth_0p05pct": 3.0,
+        "ask_depth_0p05pct": 3.0,
         "imb_top": imb,
-        "imb_5bps": imb,
+        "imb_0p05pct": imb,
         "n_board_updates": 1,
         "n_trades": 1,
         "vol_buy": 0.01,
@@ -182,8 +182,8 @@ def test_decile_labels_monotone_and_range():
 def test_bi_decile_sign_reflects_engineered_drift():
     df = _make_series(n_bins=3000, seed=1)
     res = jbr.compute_bi(df)
-    table30 = res["decile_tables"]["imb_5bps"][30]
-    # the series was built so higher imb_5bps precedes a higher forward
+    table30 = res["decile_tables"]["imb_0p05pct"][30]
+    # the series was built so higher imb_0p05pct precedes a higher forward
     # return: decile 10 should beat decile 1 on average.
     assert table30[10] > table30[1]
 
@@ -302,13 +302,13 @@ def _clean_full_series(n_bins, seed=7):
     df = pd.DataFrame({
         "ts": ts,
         "mid": mid,
-        "spread_bps": rng.uniform(1.0, 3.0, n_bins),
+        "spread_pct": rng.uniform(0.01, 0.03, n_bins),
         "best_bid_size": rng.uniform(0.5, 2.0, n_bins),
         "best_ask_size": rng.uniform(0.5, 2.0, n_bins),
-        "bid_depth_5bps": rng.uniform(1.0, 4.0, n_bins),
-        "ask_depth_5bps": rng.uniform(1.0, 4.0, n_bins),
+        "bid_depth_0p05pct": rng.uniform(1.0, 4.0, n_bins),
+        "ask_depth_0p05pct": rng.uniform(1.0, 4.0, n_bins),
         "imb_top": rng.uniform(-1, 1, n_bins),
-        "imb_5bps": rng.uniform(-1, 1, n_bins),
+        "imb_0p05pct": rng.uniform(-1, 1, n_bins),
         "n_board_updates": 1,
         "n_trades": 1,
         "vol_buy": 0.01,
@@ -324,10 +324,10 @@ def _clean_full_series(n_bins, seed=7):
 
 def test_qc_mask_flags_each_reason_and_maintenance_window():
     df = _clean_full_series(20)
-    df.loc[3, "spread_bps"] = -1.0          # crossed
-    df.loc[4, "spread_bps"] = 999.0         # far too wide
-    df.loc[5, "bid_depth_5bps"] = 0.0
-    df.loc[6, "ask_depth_5bps"] = 0.0
+    df.loc[3, "spread_pct"] = -0.01         # crossed
+    df.loc[4, "spread_pct"] = 9.99          # far too wide
+    df.loc[5, "bid_depth_0p05pct"] = 0.0
+    df.loc[6, "ask_depth_0p05pct"] = 0.0
     df.loc[7, "best_bid_size"] = 0.0
     df.loc[8, "best_ask_size"] = -0.01
     df.loc[9, "mid"] = np.nan
@@ -335,9 +335,9 @@ def test_qc_mask_flags_each_reason_and_maintenance_window():
 
     valid, counts = jbr.compute_qc_mask(df)
     assert counts["spread_le_0"] == 1
-    assert counts["spread_gt_50bps"] == 1
-    assert counts["bid_depth_5bps_zero"] == 1
-    assert counts["ask_depth_5bps_zero"] == 1
+    assert counts["spread_gt_0p5pct"] == 1
+    assert counts["bid_depth_0p05pct_zero"] == 1
+    assert counts["ask_depth_0p05pct_zero"] == 1
     assert counts["best_bid_size_le_0"] == 1
     assert counts["best_ask_size_le_0"] == 1
     assert counts["mid_not_finite"] == 1
@@ -353,10 +353,10 @@ def test_qc_mask_flags_each_reason_and_maintenance_window():
 def test_apply_qc_nans_mid_and_breaks_forward_return_like_a_gap():
     df = _clean_full_series(60)
     bad_bin = 30
-    df.loc[bad_bin, "spread_bps"] = -1.0
+    df.loc[bad_bin, "spread_pct"] = -0.01
     masked, counts = jbr.apply_qc(df)
     assert np.isnan(masked.loc[bad_bin, "mid"])
-    assert np.isnan(masked.loc[bad_bin, "imb_5bps"])
+    assert np.isnan(masked.loc[bad_bin, "imb_0p05pct"])
     assert masked.loc[bad_bin, "valid"] == False  # noqa: E712
     assert counts["invalid_total"] == 1
 
@@ -385,7 +385,7 @@ def test_tp_drops_event_whose_prewindow_touches_an_invalid_bin():
     # corrupt one bin 100s before t0 -- inside the QC amendment's
     # [t0-180s, t0] drop range -- and confirm the event is now dropped
     contaminated = df.copy()
-    contaminated.loc[burst_start - 20, "spread_bps"] = -1.0
+    contaminated.loc[burst_start - 20, "spread_pct"] = -0.01
     masked, qc_counts = jbr.apply_qc(contaminated)
     assert qc_counts["invalid_total"] == 1
     res = jbr.compute_tp(masked)

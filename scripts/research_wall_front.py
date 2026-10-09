@@ -139,6 +139,10 @@ Offline only -- reads files, opens no sockets, places no orders.
 seed 20260828.
 
 Usage: PYTHONPATH=src python scripts/research_wall_front.py
+(L-920 の後の単位: 上の凍結した事前登録の逐語は書き換えない。この台本では capture(クオートと仲値の
+距離)・capture + adverse(5s)(maker の損益の率)・その差・判定の線・壁の距離・オフセットを仲値に対する
+% で持つ: 線 +2 bps = +0.02 %、24 JPY のオフセット 0.2 bps(2020 年の値段)= 0.002 %。adverse(5s・30s)は
+値動き率なので bp のまま。capture + adverse は capture(%)+ adverse(bp)/ 100 で % にして足す。)
 """
 from __future__ import annotations
 
@@ -169,7 +173,7 @@ MARKOUT = 5.0                    # s, the bar's horizon
 MARKOUT2 = 30.0                  # s, secondary horizon
 SPAN_MAX = LIFE + MARKOUT2       # the measurement span that must be gap-free
 RTS_MARGIN = 1.0                 # s, receive-time conservatism
-BAR_BPS = 2.0
+BAR_PCT = 0.02                   # %, the frozen bar (+2 bps)
 BAR_T = 2.0
 BAR_N = 100
 MEASURE_START = "2026-08-21T00:00:00Z"    # day 1 is M24 burn-in
@@ -317,7 +321,8 @@ def fill_time(t_at, t_thr, t_qvol, t0, cancel, model, policy, life=LIFE):
 
 
 def markout(ft, price, sign, tb, mid, horizon):
-    """capture / adverse(horizon) in bps for the quotes that filled."""
+    """capture (quote-to-mid distance, % of mid) / adverse(horizon) (a mid move, bp)
+    for the quotes that filled. capture + adverse / 100 = the maker's net in %."""
     idx = np.flatnonzero(np.isfinite(ft))
     tf = ft[idx]
     i0 = np.searchsorted(tb, tf, "left") - 1        # strictly before the fill
@@ -326,7 +331,7 @@ def markout(ft, price, sign, tb, mid, horizon):
     idx, i0, i1 = idx[good], i0[good], i1[good]
     m0, mh = mid[i0], mid[i1]
     s = sign[idx]
-    capture = s * (m0 - price[idx]) / m0 * 1e4
+    capture = s * (m0 - price[idx]) / m0 * 100
     adverse = s * (mh - m0) / m0 * 1e4
     return idx, capture, adverse
 
@@ -340,7 +345,7 @@ def main() -> int:
 
     header("WALL-FRONT LIMIT ORDER -- PRE-REGISTERED VERDICT (single run)")
     print("Execution option, not a strategy.  Bar (frozen 2026-08-21): "
-          f"fill-conditional\ncapture+adverse(5s) difference >= {BAR_BPS:+.1f} bps, "
+          f"fill-conditional\ncapture+adverse(5s) difference >= {BAR_PCT:+.2f} % (2 bps), "
           f"day-clustered t >= {BAR_T}, >= {BAR_N} fills per arm.")
     print(f"seed {SEED}, no network, read-only.")
     print(f"[data] tape dir: {args.data}\n")
@@ -450,7 +455,7 @@ def main() -> int:
     sub("1c. wall size and wall distance from the best")
     print(f"{'k':>5}{'side':<6}{'n':>8}{'size p50':>10}{'size p90':>10}"
           f"{'size max':>10}{'size/M24 p50':>14}"
-          f"{'lvl 1/2/3/4/5 share':>34}{'dist bps p50':>14}")
+          f"{'lvl 1/2/3/4/5 share':>34}{'dist % p50':>14}")
     for k in K_FAMILY:
         for side, nm in ((0, "bid"), (1, "ask")):
             wl = walls[(k, side)]
@@ -461,13 +466,13 @@ def main() -> int:
             wsz = wl["wsz"][s]
             lev = wl["lev"][s]
             dist = np.abs(wl["wpx"][s] - (b_px_g[:, 0] if side == 0
-                                          else a_px_g[:, 0])[s]) / mid_g[s] * 1e4
+                                          else a_px_g[:, 0])[s]) / mid_g[s] * 100
             shares = " ".join(f"{100 * (lev == j).mean():5.1f}" for j in range(NLEV))
             print(f"{k:>5}{nm:<6}{int(s.sum()):>8,}{np.percentile(wsz, 50):>10.3f}"
                   f"{np.percentile(wsz, 90):>10.3f}{wsz.max():>10.3f}"
                   f"{np.percentile(wsz / m24[s], 50):>14.1f}"
-                  f"{shares:>34}{np.percentile(dist, 50):>14.2f}")
-    print("  dist = |wall price - best on that side| in bps of mid; level 1 "
+                  f"{shares:>34}{np.percentile(dist, 50):>14.4f}")
+    print("  dist = |wall price - best on that side| in % of mid; level 1 "
           "means the\n  wall IS the best, in which case 'in front' is inside "
           "the spread.")
 
@@ -487,11 +492,11 @@ def main() -> int:
           f"{np.percentile(allsz, 99):.3f}")
     px_med = float(np.median(mid))
     print(f"  matilda's {MATILDA_OFFSET_JPY:.0f} JPY offset at today's price "
-          f"({px_med:,.0f} JPY) = {MATILDA_OFFSET_JPY / px_med * 1e4:.4f} bps; "
+          f"({px_med:,.0f} JPY) = {MATILDA_OFFSET_JPY / px_med * 100:.6f} % of mid; "
           f"in 2020 (1,000,000 JPY) it was "
-          f"{MATILDA_OFFSET_JPY / 1e6 * 1e4:.2f} bps.")
-    print(f"  the 24 JPY sensitivity offset = {24.0 / px_med * 1e4:.3f} bps "
-          f"today; the 1 tick offset = {1.0 / px_med * 1e4:.4f} bps.")
+          f"{MATILDA_OFFSET_JPY / 1e6 * 100:.4f} %.")
+    print(f"  the 24 JPY sensitivity offset = {24.0 / px_med * 100:.5f} % "
+          f"today; the 1 tick offset = {1.0 / px_med * 100:.6f} %.")
 
     # =====================================================================
     # build the quote populations
@@ -594,8 +599,9 @@ def main() -> int:
     header("2. THE SIX-CELL VERDICT TABLE (primary: queue-realistic, C1, "
            "L=10s, markout 5s)")
     # =====================================================================
-    print(f"bar: diff >= {BAR_BPS:+.1f} bps AND day-clustered t >= {BAR_T} "
+    print(f"bar: diff >= {BAR_PCT:+.2f} % AND day-clustered t >= {BAR_T} "
           f"AND >= {BAR_N} fills per arm\n")
+    print("units: capture, cap+adv, diff in % of mid; adv5s in bp (a move)\n")
     print(f"{'k':>4} {'offset':<8}{'arm':<7}{'placed':>8}{'fills':>7}{'f':>8}"
           f"{'capture':>9}{'adv5s':>9}{'cap+adv':>9}"
           f"{'diff':>8}{'95% CI (diff)':>21}{'t':>7}  verdict")
@@ -619,14 +625,14 @@ def main() -> int:
                             float(np.isfinite(ft)[m].mean()))
             nw, iw, capw, advw, fw = res["wall"]
             nt, it_, capt, advt, fto = res["touch"]
-            netw, nett = capw + advw, capt + advt
+            netw, nett = capw + advw / 100, capt + advt / 100
             if len(netw) >= 2 and len(nett) >= 2:
                 diff = netw.mean() - nett.mean()
                 lo, hi, tst = boot_diff_ci(netw, c["day"][iw], nett,
                                            c["day"][it_], seed=SEED)
             else:
                 diff = lo = hi = tst = np.nan
-            passes = (np.isfinite(diff) and diff >= BAR_BPS and tst >= BAR_T
+            passes = (np.isfinite(diff) and diff >= BAR_PCT and tst >= BAR_T
                       and len(netw) >= BAR_N and len(nett) >= BAR_N)
             verdicts[(k, off)] = dict(diff=diff, t=tst, lo=lo, hi=hi,
                                       nw=len(netw), nt=len(nett), passes=passes)
@@ -634,13 +640,13 @@ def main() -> int:
                                     iw=iw, it=it_, c=c, ft=ft)
             for arm, (nq, idx, cap, adv, fv) in (("wall", res["wall"]),
                                                  ("touch", res["touch"])):
-                net = cap + adv
+                net = cap + adv / 100
                 is_w = arm == "wall"
-                extra = (f"{diff:>8.3f}  [{lo:+7.3f},{hi:+7.3f}]{tst:>7.2f}  "
+                extra = (f"{diff:>8.5f}  [{lo:+8.5f},{hi:+8.5f}]{tst:>7.2f}  "
                          f"{'PASS' if passes else 'FAIL'}") if is_w else ""
                 print(f"{k if is_w else '':>4} {oname if is_w else '':<8}"
                       f"{arm:<7}{nq:>8,}{len(net):>7,}{fmt_pct(fv):>8}"
-                      f"{cap.mean():>9.3f}{adv.mean():>9.3f}{net.mean():>9.3f}"
+                      f"{cap.mean():>9.5f}{adv.mean():>9.3f}{net.mean():>9.5f}"
                       f"{extra}")
             mw_ = c["arm"] == "wall"
             print(f"{'':>4} {'':<8}{'':<7}  (dropped as marketable: "
@@ -654,6 +660,7 @@ def main() -> int:
     # =====================================================================
     header("3. DECOMPOSITION -- is the difference in capture or in adverse?")
     # =====================================================================
+    print("units: d capture and d cap+adv in % of mid; d adv(5s) in bp (a move)")
     print(f"{'k':>4} {'offset':<8}{'d capture':>11}{'d adv(5s)':>11}"
           f"{'d cap+adv':>11}{'CI(d capture)':>22}{'CI(d adv)':>22}")
     for k in K_FAMILY:
@@ -668,8 +675,8 @@ def main() -> int:
                                      d["capt"], c["day"][d["it"]], seed=SEED)
             la, ha, _ = boot_diff_ci(d["advw"], c["day"][d["iw"]],
                                      d["advt"], c["day"][d["it"]], seed=SEED)
-            print(f"{k:>4} {oname:<8}{dc:>11.3f}{da:>11.3f}"
-                  f"{dc + da:>11.3f}  [{lc:+8.3f},{hc:+8.3f}]"
+            print(f"{k:>4} {oname:<8}{dc:>11.5f}{da:>11.3f}"
+                  f"{dc + da / 100:>11.5f}  [{lc:+8.5f},{hc:+8.5f}]"
                   f"  [{la:+8.3f},{ha:+8.3f}]")
 
     sub("3b. the queue advantage -- how often is the wall-front quote at the "
@@ -690,7 +697,7 @@ def main() -> int:
                 qp = m & (c["Q"] > 0)
                 ftm = np.where(m, ft, np.inf)
                 idx, cap, adv = markout(ftm, c["P"], c["sign"], tb, mid, MARKOUT)
-                net = cap + adv
+                net = cap + adv / 100
                 sel0 = (c["Q"][idx] <= 0)
                 n0 = net[sel0].mean() if sel0.any() else np.nan
                 n1 = net[~sel0].mean() if (~sel0).any() else np.nan
@@ -701,7 +708,7 @@ def main() -> int:
                       f"{np.percentile(c['Q'][m], 90):>9.4f}"
                       f"{fmt_pct(filled[q0].mean() if q0.any() else np.nan):>10}"
                       f"{fmt_pct(filled[qp].mean() if qp.any() else np.nan):>10}"
-                      f"{n0:>15.3f}{n1:>15.3f}")
+                      f"{n0:>15.5f}{n1:>15.5f}")
 
     sub("3c. by wall level (is the effect different when the wall IS the best?)")
     print(f"{'k':>4} {'offset':<8}{'lvl':>4}{'pairs':>8}"
@@ -715,7 +722,7 @@ def main() -> int:
             c, ft = d["c"], d["ft"]
             filled = np.isfinite(ft)
             idx, cap, adv = markout(ft, c["P"], c["sign"], tb, mid, MARKOUT)
-            net = cap + adv
+            net = cap + adv / 100
             for lv in range(NLEV):
                 mw = (c["arm"] == "wall") & (c["lev"] == lv)
                 mt = (c["arm"] == "touch") & (c["lev"] == lv)
@@ -727,7 +734,7 @@ def main() -> int:
                 print(f"{k:>4} {oname:<8}{lv + 1:>4}{int(mw.sum()):>8,}"
                       f"{fmt_pct(filled[mw].mean()):>8}"
                       f"{fmt_pct(filled[mt].mean()):>9}"
-                      f"{nw_:>10.3f}{nt_:>11.3f}{nw_ - nt_:>9.3f}"
+                      f"{nw_:>10.5f}{nt_:>11.5f}{nw_ - nt_:>9.5f}"
                       f"{int(sw.sum()):>7,}/{int(st.sum()):<5,}")
 
     # =====================================================================
@@ -743,7 +750,7 @@ def main() -> int:
             c, ft = d["c"], d["ft"]
             for h in (MARKOUT, MARKOUT2):
                 idx, cap, adv = markout(ft, c["P"], c["sign"], tb, mid, h)
-                net = cap + adv
+                net = cap + adv / 100
                 sw = (c["arm"] == "wall")[idx]
                 st = (c["arm"] == "touch")[idx]
                 if sw.sum() < 2 or st.sum() < 2:
@@ -751,9 +758,9 @@ def main() -> int:
                 diff = net[sw].mean() - net[st].mean()
                 lo, hi, tst = boot_diff_ci(net[sw], c["day"][idx][sw],
                                            net[st], c["day"][idx][st], seed=SEED)
-                print(f"{k:>4} {oname:<8}{h:>8.0f}s{net[sw].mean():>10.3f}"
-                      f"{net[st].mean():>11.3f}{diff:>9.3f}"
-                      f"  [{lo:+8.3f},{hi:+8.3f}]{tst:>7.2f}")
+                print(f"{k:>4} {oname:<8}{h:>8.0f}s{net[sw].mean():>10.5f}"
+                      f"{net[st].mean():>11.5f}{diff:>9.5f}"
+                      f"  [{lo:+8.5f},{hi:+8.5f}]{tst:>7.2f}")
 
     # =====================================================================
     header("5. DOES THE WALL ACTUALLY ABSORB?  (the mechanism's premise)")
@@ -863,7 +870,7 @@ def main() -> int:
             ft0 = fill_time(t_at0, t_thr0, t_qvol0, c["t0"], c["cancel"],
                             "queue", "C1")
             idx, cap, adv = markout(ft0, c["P"], c["sign"], tb, mid, MARKOUT)
-            net = cap + adv
+            net = cap + adv / 100
             sw = (c["arm"] == "wall")[idx]
             st = (c["arm"] == "touch")[idx]
             if sw.sum() < 2 or st.sum() < 2:
@@ -874,8 +881,8 @@ def main() -> int:
             print(f"{k:>4} {oname:<8}"
                   f"{fmt_pct(fl[c['arm'] == 'wall'].mean()):>8}"
                   f"{fmt_pct(fl[c['arm'] == 'touch'].mean()):>9}"
-                  f"{net[sw].mean():>10.3f}{net[st].mean():>11.3f}"
-                  f"{net[sw].mean() - net[st].mean():>9.3f}{tst:>7.2f}")
+                  f"{net[sw].mean():>10.5f}{net[st].mean():>11.5f}"
+                  f"{net[sw].mean() - net[st].mean():>9.5f}{tst:>7.2f}")
 
     sub("6c. cancel-policy bracket -- C0 (no cancel) on the primary offset")
     print(f"{'k':>4} {'offset':<8}{'policy':<7}{'wall f':>8}{'touch f':>9}"
@@ -889,7 +896,7 @@ def main() -> int:
                 ft = fill_time(c["t_at"], c["t_thr"], c["t_qvol"], c["t0"],
                                c["cancel"], "queue", pol)
                 idx, cap, adv = markout(ft, c["P"], c["sign"], tb, mid, MARKOUT)
-                net = cap + adv
+                net = cap + adv / 100
                 sw = (c["arm"] == "wall")[idx]
                 st = (c["arm"] == "touch")[idx]
                 if sw.sum() < 2 or st.sum() < 2:
@@ -900,8 +907,8 @@ def main() -> int:
                 print(f"{k:>4} {oname:<8}{pol:<7}"
                       f"{fmt_pct(fl[c['arm'] == 'wall'].mean()):>8}"
                       f"{fmt_pct(fl[c['arm'] == 'touch'].mean()):>9}"
-                      f"{net[sw].mean():>10.3f}{net[st].mean():>11.3f}"
-                      f"{net[sw].mean() - net[st].mean():>9.3f}{tst:>7.2f}")
+                      f"{net[sw].mean():>10.5f}{net[st].mean():>11.5f}"
+                      f"{net[sw].mean() - net[st].mean():>9.5f}{tst:>7.2f}")
 
     sub("6d. control-arm cross-check against report aa")
     for k in K_FAMILY:
@@ -913,13 +920,13 @@ def main() -> int:
         m = c["arm"] == "touch"
         idx, cap, adv = markout(np.where(m, ft, np.inf), c["P"], c["sign"],
                                 tb, mid, MARKOUT)
-        net = cap + adv
+        net = cap + adv / 100
         lo, hi, tst = boot_ci(net, c["day"][idx], seed=SEED)
         print(f"  k={k:<4} touch arm, margin {RTS_MARGIN:.0f}s: "
               f"f {fmt_pct(np.isfinite(ft)[m].mean())}, "
-              f"n {len(net):,}, capture {cap.mean():+.3f}, adv5s "
-              f"{adv.mean():+.3f}, cap+adv {net.mean():+.3f} "
-              f"[{lo:+.3f},{hi:+.3f}]")
+              f"n {len(net):,}, capture {cap.mean():+.5f} %, adv5s "
+              f"{adv.mean():+.3f} bp, cap+adv {net.mean():+.5f} % "
+              f"[{lo:+.5f},{hi:+.5f}]")
         t_at0, t_thr0, t_qvol0 = scan_fills(c["t0"], c["P"], c["Q"],
                                             c["is_bid"], t_ex, px, sz, buy,
                                             margin=0.0)
@@ -929,11 +936,11 @@ def main() -> int:
                                    tb, mid, MARKOUT)
         print(f"  {'':<6}  touch arm, margin 0s: "
               f"f {fmt_pct(np.isfinite(ft0)[m].mean())}, n {len(cap0):,}, "
-              f"capture {cap0.mean():+.3f}, adv5s {adv0.mean():+.3f}, "
-              f"cap+adv {(cap0 + adv0).mean():+.3f}   <- the like-for-like "
+              f"capture {cap0.mean():+.5f} %, adv5s {adv0.mean():+.3f} bp, "
+              f"cap+adv {(cap0 + adv0 / 100).mean():+.5f} %   <- the like-for-like "
               f"reading against aa")
     print("  report aa (whole record, touch, queue/C1/10s): f 18.1%, "
-          "capture +0.604,\n  adv(5s) -1.321, cap+adv -0.716.  This study's "
+          "capture +0.00604 %,\n  adv(5s) -1.321 bp, cap+adv -0.00716 %.  This study's "
           "touch arm is the SUBSET of\n  grid points that had a wall, on a 1 Hz "
           "board rather than an event-sampled\n  ticker, so exact equality is "
           "not expected -- only the same order.")

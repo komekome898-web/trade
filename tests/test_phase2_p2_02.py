@@ -195,12 +195,13 @@ def test_tick_for_price_picks_correct_band():
     assert p2.tick_for_price(10_000_000.0, bands) == 10000.0
 
 
-def test_conservative_cost_bps_is_two_ticks_over_close_in_bps():
+def test_conservative_cost_pct_is_two_ticks_over_close_in_pct():
+    # L-920: a cost is not a price move, so it is in % (2 ticks / close * 100)
     bands = [(float("inf"), 1.0)]
     close = np.array([1000.0, 2000.0])
-    cost = p2.conservative_cost_bps(close, bands)
-    assert cost[0] == pytest.approx(2.0 / 1000.0 * 1e4)
-    assert cost[1] == pytest.approx(2.0 / 2000.0 * 1e4)
+    cost = p2.conservative_cost_pct(close, bands)
+    assert cost[0] == pytest.approx(2.0 / 1000.0 * 100.0)
+    assert cost[1] == pytest.approx(2.0 / 2000.0 * 100.0)
 
 
 # ------------------------------------------------------ planted-drift recovery

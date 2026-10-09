@@ -80,6 +80,7 @@ class Adapter:
                                cancel=_const((lat.get("cancel") or {}).get("ns", 0)))
         c = inp.get("costs") or {}
         mk, tk = float(c.get("maker_rate", 0.0)), float(c.get("taker_rate", 0.0))
+        # the tool's FeeModel takes bp (its names): the scene's fee rates are fractions, x 1e4 on the next line
         fees = FeeModel(taker_bps=tk * 1e4, maker_bps=max(mk, 0.0) * 1e4, maker_rebate_bps=max(-mk, 0.0) * 1e4,
                         maker_rebate_max_spread_bps=1e18, per_fill_gas_usd=0.0, negrisk_conversion_gas_usd=0.0,
                         use_taker_fee_curve=False)

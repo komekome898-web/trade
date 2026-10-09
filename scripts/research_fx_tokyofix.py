@@ -75,6 +75,9 @@ STATISTICS
   day-clustered t equals the ordinary t over daily net returns.  Bootstrap CIs
   resample DAYS with replacement, 10,000 draws, seed 20260822 (deterministic).
 ==================================================================================
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図・gross・|move|)にだけ使う。
+費用(片道 0.355bps = 0.00355 %、往復 0.710bps = 0.0071 %)、スプレッド、net(gross − 費用)と
+採用の線(+1.5bps = +0.015 %)は % で持つ。値動き(bp)と費用(%)を比べるときは値動きを / 100 する。)
 """
 from __future__ import annotations
 
@@ -88,14 +91,14 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data" / "fx" / "USDJPY_1m.csv"
 
 # ---- pre-registered constants -------------------------------------------------
-COST_PER_SIDE_BPS = 0.355
-ROUND_TRIP_BPS = 2 * COST_PER_SIDE_BPS          # 0.710
+COST_PER_SIDE_PCT = 0.00355                     # % (0.355 bps)
+ROUND_TRIP_PCT = 2 * COST_PER_SIDE_PCT          # 0.0071 % (0.710 bps)
 THRESHOLDS_BPS = (0.0, 2.0, 4.0)
 F2_EXITS = ("01:05", "01:15", "01:30")
 EXPLORATION_FRAC = 0.60
 MIN_N_EXPLORATION = 150
 BAR_MIN_N = 100
-BAR_NET_BPS = 1.5
+BAR_NET_PCT = 0.015                             # % (+1.5 bps)
 BAR_T = 2.0
 BOOT_DRAWS = 10_000
 SEED = 20260822
@@ -206,16 +209,16 @@ class Res:
         self.name, self.rets, self.days = name, rets, days
         self.n = len(rets)
         self.gross = float(rets.mean()) if self.n else float("nan")
-        net = rets - ROUND_TRIP_BPS
+        net = rets / 100 - ROUND_TRIP_PCT        # % (rets are bps moves)
         self.net = float(net.mean()) if self.n else float("nan")
         self.t = tstat(net)
         self.lo, self.hi = boot_ci(net)
         self.win = float((net > 0).mean() * 100) if self.n else float("nan")
 
     def row(self) -> str:
-        return (f"{self.name:<26} n={self.n:4d}  gross={self.gross:+7.3f}  "
-                f"net={self.net:+7.3f}  t={self.t:+6.2f}  "
-                f"CI95=[{self.lo:+6.3f},{self.hi:+6.3f}]  win={self.win:4.1f}%")
+        return (f"{self.name:<26} n={self.n:4d}  gross={self.gross:+7.3f}bps  "
+                f"net={self.net:+8.5f}%  t={self.t:+6.2f}  "
+                f"CI95=[{self.lo:+8.5f},{self.hi:+8.5f}]  win={self.win:4.1f}%")
 
 
 # ---- families -----------------------------------------------------------------
@@ -262,7 +265,7 @@ def neighbours_f2(cfg: tuple) -> list[tuple]:
 # ---- reporting helpers --------------------------------------------------------
 def verdict(r: Res) -> str:
     checks = [(r.n >= BAR_MIN_N, f"n>={BAR_MIN_N}"),
-              (r.net >= BAR_NET_BPS, f"net>=+{BAR_NET_BPS}"),
+              (r.net >= BAR_NET_PCT, f"net>=+{BAR_NET_PCT}"),
               (not np.isnan(r.t) and r.t >= BAR_T, f"t>={BAR_T}")]
     ok = all(c for c, _ in checks)
     detail = "  ".join(("PASS " if c else "FAIL ") + lbl for c, lbl in checks)
@@ -270,11 +273,11 @@ def verdict(r: Res) -> str:
 
 
 def by_year(mk, panel: pd.DataFrame, cfg: tuple) -> None:
-    print(f"    {'year':<6}{'n':>6}{'gross':>10}{'net':>10}{'t':>8}   split-mix")
+    print(f"    {'year':<6}{'n':>6}{'gross bps':>10}{'net %':>10}{'t':>8}   split-mix")
     for yr in sorted({d.year for d in panel.index}):
         sub = panel[[d.year == yr for d in panel.index]]
         r = mk(sub, *cfg)
-        print(f"    {yr:<6}{r.n:>6}{r.gross:>+10.3f}{r.net:>+10.3f}{r.t:>+8.2f}")
+        print(f"    {yr:<6}{r.n:>6}{r.gross:>+10.3f}{r.net:>+10.5f}{r.t:>+8.2f}")
 
 
 def main() -> int:
@@ -292,24 +295,24 @@ def main() -> int:
     print(f"  JST clock check  : {probe} UTC == "
           f"{(probe + pd.Timedelta(hours=9)).strftime('%Y-%m-%d %H:%M')} JST "
           f"(UTC+9 fixed, no DST in Japan)")
-    print(f"  cost model       : {COST_PER_SIDE_BPS} bps/side x2 = "
-          f"{ROUND_TRIP_BPS:.3f} bps round trip (applied to every trade)")
+    print(f"  cost model       : {COST_PER_SIDE_PCT} %/side x2 = "
+          f"{ROUND_TRIP_PCT:.5f} % round trip (applied to every trade)")
 
     print("\n[0b] ASK/SPREAD VERIFICATION (last 30d only; P&L never uses ask)")
     ask = df.dropna(subset=["ask_close"])
     if len(ask):
-        sp = (ask["ask_close"] - ask["close"]) / ask["close"] * 1e4
+        sp = (ask["ask_close"] - ask["close"]) / ask["close"] * 100    # % (spread)
         w = ask.between_time(WINDOW_START, WINDOW_END)
-        wsp = ((w["ask_close"] - w["close"]) / w["close"] * 1e4)
+        wsp = ((w["ask_close"] - w["close"]) / w["close"] * 100)
         wsp = wsp[(w.index + pd.Timedelta(hours=9)).dayofweek < 5]
         print(f"  ask rows={len(ask)}  {ask.index[0].date()}..{ask.index[-1].date()}")
-        print(f"  all-day spread  : median={sp.median():.3f}  mean={sp.mean():.3f}  "
-              f"p99={sp.quantile(.99):.3f} bps")
-        print(f"  fix-window      : n={len(wsp)}  median={wsp.median():.3f}  "
-              f"mean={wsp.mean():.3f}  p90={wsp.quantile(.90):.3f}  "
-              f"max={wsp.max():.3f} bps")
-        print("  -> the spread does NOT widen at the fix; the modelled 0.314 bps "
-              "round-trip spread is conservative vs the 0.251 bps measured median.")
+        print(f"  all-day spread  : median={sp.median():.5f}  mean={sp.mean():.5f}  "
+              f"p99={sp.quantile(.99):.5f} %")
+        print(f"  fix-window      : n={len(wsp)}  median={wsp.median():.5f}  "
+              f"mean={wsp.mean():.5f}  p90={wsp.quantile(.90):.5f}  "
+              f"max={wsp.max():.5f} %")
+        print("  -> the spread does NOT widen at the fix; the modelled 0.00314 % "
+              "round-trip spread is conservative vs the 0.00251 % measured median.")
 
     print("\n[1] DAY PANEL / EXCLUSIONS")
     panel = build_panel(df)
@@ -337,9 +340,9 @@ def main() -> int:
     qs = [0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
     print("    mean={:.3f}  sd={:.3f}".format(mv.mean(), mv.std(ddof=1)))
     print("    " + "  ".join(f"p{int(q*100)}={np.quantile(mv, q):.2f}" for q in qs))
-    for k, lbl in ((1, "1x round trip (0.710)"), (2, "2x (1.420)"), (4, "4x (2.840)")):
-        print(f"    P(|move| > {k}x cost) = {np.mean(mv > k * ROUND_TRIP_BPS)*100:5.1f}%   [{lbl}]")
-    print(f"  E[|move|] / round-trip cost = {mv.mean()/ROUND_TRIP_BPS:.2f}x")
+    for k, lbl in ((1, "1x round trip (0.0071 %)"), (2, "2x (0.0142 %)"), (4, "4x (0.0284 %)")):
+        print(f"    P(|move| > {k}x cost) = {np.mean(mv / 100 > k * ROUND_TRIP_PCT)*100:5.1f}%   [{lbl}]")
+    print(f"  E[|move|] / round-trip cost = {mv.mean() / 100 / ROUND_TRIP_PCT:.2f}x")
 
     # control windows: same 10-minute length, other Tokyo-session times
     ctrl_win = df.copy()
@@ -358,7 +361,7 @@ def main() -> int:
         m = np.abs(bps(j["b"], j["a"]))
         star = "  <== FIX" if a == "00:44" else ""
         print(f"    {lbl}  n={len(m):4d}  E|move|={m.mean():.3f} bps  "
-              f"median={np.median(m):.3f}  P(>cost)={np.mean(m>ROUND_TRIP_BPS)*100:4.1f}%{star}")
+              f"median={np.median(m):.3f}  P(>cost)={np.mean(m / 100 > ROUND_TRIP_PCT)*100:4.1f}%{star}")
 
     print("\n  PER-MINUTE ABSOLUTE 1m RETURN across the window (included days, bps):")
     wm = df.between_time("00:40", "01:10").copy()
@@ -381,7 +384,7 @@ def main() -> int:
           f"at {prof.max()/base:.2f}x the all-day baseline — same minute, milder "
           f"multiple against a 24h baseline. The bump is real and correctly located.")
 
-    gate_ok = mv.mean() > ROUND_TRIP_BPS
+    gate_ok = mv.mean() / 100 > ROUND_TRIP_PCT   # move bps -> %
     print(f"\n  F3 GATE: {'OPEN' if gate_ok else 'CLOSED'} — average absolute motion "
           f"{'exceeds' if gate_ok else 'does not exceed'} the round-trip cost.")
     print("  (F3 is a measurement, not a strategy: absolute motion is an upper bound "
@@ -420,11 +423,11 @@ def main() -> int:
                   "nothing carried to judgment")
             continue
         cfg = grid[res.index(win)]
-        print(f"\n  SELECTED (max net bps/trade, n>={MIN_N_EXPLORATION}): {win.name}")
+        print(f"\n  SELECTED (max net %/trade, n>={MIN_N_EXPLORATION}): {win.name}")
         print("  PLATEAU CHECK (protocol SS4.4) — neighbours on exploration:")
         for nb in nbrs(cfg):
             r = mk(expl, *nb)
-            print(f"    {r.row()}   delta_net={r.net - win.net:+.3f}")
+            print(f"    {r.row()}   delta_net={r.net - win.net:+.5f}")
         selected.append((fname, mk, cfg, win))
 
     print("\n" + "=" * 82)
@@ -435,13 +438,13 @@ def main() -> int:
         print(f"\n  {fname}   config = {expl_res.name}")
         print("    exploration : " + expl_res.row())
         print("    JUDGMENT    : " + r.row())
-        print(f"    ADOPTION BAR (n>={BAR_MIN_N}, net>=+{BAR_NET_BPS} bps, t>={BAR_T}): "
+        print(f"    ADOPTION BAR (n>={BAR_MIN_N}, net>=+{BAR_NET_PCT} %, t>={BAR_T}): "
               f"{verdict(r)}")
         if r.n:
-            neg = np.asarray(r.rets) - ROUND_TRIP_BPS
-            print(f"    median={np.median(neg):+.3f} bps  "
-                  f"p10={np.quantile(neg,.10):+.2f}  p90={np.quantile(neg,.90):+.2f}  "
-                  f"worst={neg.min():+.2f}  best={neg.max():+.2f}")
+            neg = np.asarray(r.rets) / 100 - ROUND_TRIP_PCT   # net %
+            print(f"    median={np.median(neg):+.5f} %  "
+                  f"p10={np.quantile(neg,.10):+.4f}  p90={np.quantile(neg,.90):+.4f}  "
+                  f"worst={neg.min():+.4f}  best={neg.max():+.4f}")
 
     print("\n" + "=" * 82)
     print("REJECTION CLASSIFICATION (protocol SS5 — cost-loss vs mechanism-absent)")
@@ -450,9 +453,9 @@ def main() -> int:
         j = mk(judge, *cfg)
         same_sign = (expl_res.gross > 0) == (j.gross > 0)
         both_pos = expl_res.gross > 0 and j.gross > 0
-        if both_pos and max(expl_res.gross, j.gross) < ROUND_TRIP_BPS:
+        if both_pos and max(expl_res.gross, j.gross) / 100 < ROUND_TRIP_PCT:  # gross bps -> %
             kind = ("COST-LOSS — gross edge is positive and sign-stable across both "
-                    "splits but smaller than the 0.710 bps round trip. Re-auditable "
+                    "splits but smaller than the 0.0071 % round trip. Re-auditable "
                     "ONLY if the cost floor drops; there is no maker escape (per-fill "
                     "fee) and the spread is already at its floor in this window.")
         elif not same_sign:
@@ -463,7 +466,7 @@ def main() -> int:
             kind = "INDETERMINATE — see numbers above."
         print(f"\n  {fname} [{expl_res.name}]")
         print(f"    gross: exploration {expl_res.gross:+.3f} -> judgment {j.gross:+.3f} bps "
-              f"(cost floor {ROUND_TRIP_BPS:.3f})")
+              f"(cost floor {ROUND_TRIP_PCT:.5f} %)")
         print(f"    {kind}")
 
     print("\n" + "=" * 82)
@@ -478,16 +481,16 @@ def main() -> int:
         sub = panel[[d.year == yr for d in panel.index]]
         m = np.abs(bps(sub["c00:54"], sub["c00:44"]))
         print(f"    {yr:<6}{len(m):>6}{m.mean():>10.3f}{np.median(m):>10.3f}"
-              f"{np.mean(m>ROUND_TRIP_BPS)*100:>9.1f}%")
+              f"{np.mean(m / 100 > ROUND_TRIP_PCT)*100:>9.1f}%")
 
     print("\n" + "=" * 82)
     print("CAVEATS")
     print("=" * 82)
     for line in (
         "1. BID-only prices for 2023-01-01..2026-07-22. The ask is modelled as a "
-        "constant +0.314 bps round-trip spread (0.157/side), embedded in the cost "
+        "constant +0.00314 % round-trip spread (0.00157 %/side), embedded in the cost "
         "constant. Verified against 30 days of real ask: fix-window median spread "
-        "0.251 bps, flat across every minute of the window — the model is "
+        "0.00251 %, flat across every minute of the window — the model is "
         "conservative, and critically the spread does NOT widen at the fix.",
         "2. Dukascopy is an interbank aggregate, not GMO. Real GMO fills carry "
         "slippage that is unmeasured for this venue; nothing here includes it.",
@@ -498,7 +501,7 @@ def main() -> int:
         "JST that is the single most contested instant of the Tokyo session; real "
         "fills will be worse, not better.",
         "5. One trade per day maximum, no overlapping positions, no compounding. "
-        "Results are per-trade bps, not a P&L curve.",
+        "Results are per-trade % (gross in bps), not a P&L curve.",
         "6. Gotobi is not conditioned on anywhere (measured null, KNOWLEDGE_FX SS1).",
     ):
         print("  " + line)

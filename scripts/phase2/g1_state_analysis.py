@@ -109,7 +109,8 @@ UNITS: dict[str, dict] = {
         "date_col": "date",
         "date_t1_col": "date_t1",
         "value_col": "r_night_bps",
-        "cost_col": "cost_bps_cons",
+        "cost_col": "cost_pct_cons",
+        "cost_col_old_bps": "cost_bps_cons",
         "main_filter": lambda d: (~d["is_glitch"].astype(bool))
                                  & (~d["roll_quarterly"].astype(bool)),
         "main_filter_text": (
@@ -117,7 +118,7 @@ UNITS: dict[str, dict] = {
             "(最終評価の確定構成)"
         ),
         "value_text": "r_night_bps(グロス夜間リターン、単純収益 bps)",
-        "cost_text": "cost_bps_cons(保守往復コスト 122 円 / (close_t × 10) bps)",
+        "cost_text": "cost_pct_cons(保守往復コスト 122 円 / (close_t × 10)、%。L-920 より前の CSV では cost_bps_cons ÷ 100)",
         "nights_col": "nights",
         "regime_col": "regime",
         "regime_text": "各ペア CSV の `regime` 列(本単位が事前登録した制度区分そのもの)",
@@ -135,10 +136,11 @@ UNITS: dict[str, dict] = {
         ),
         "date_col": "t_date",
         "date_t1_col": "t1_date",
-        "cost_col": "cost_conservative_bps",
+        "cost_col": "cost_conservative_pct",
+        "cost_col_old_bps": "cost_conservative_bps",
         "main_filter": lambda d: d["kept"].astype(bool),
         "main_filter_text": "`kept`(規則 1 の式入力異常・幽霊行を除外した集合)",
-        "cost_text": "cost_conservative_bps(呼値 1 ティック×片側 2 回、ペアごとに bps 換算)",
+        "cost_text": "cost_conservative_pct(呼値 1 ティック×片側 2 回、ペアごとに % 換算。L-920 より前の CSV では cost_conservative_bps ÷ 100)",
         "nights_col": None,
         "regime_col": None,
         # Pre-registered institutional dates named in docs/PHASE2/P2-02/PREREG.md:
@@ -163,11 +165,12 @@ UNITS: dict[str, dict] = {
         "date_col": "date_t",
         "date_t1_col": "date_t1",
         "value_col": "r_night_bps",
-        "cost_col": "cost_cons_bps",
+        "cost_col": "cost_cons_pct",
+        "cost_col_old_bps": "cost_cons_bps",
         "main_filter": lambda d: d["clean"].astype(bool),
         "main_filter_text": "`clean`(誤プリント・分割・null・幽霊行を除外した集合)",
         "value_text": "r_night_bps(グロス夜間リターン bps)",
-        "cost_text": "cost_cons_bps(価格帯ごとの呼値 1 ティック×片側 2 回)",
+        "cost_text": "cost_cons_pct(価格帯ごとの呼値 1 ティック×片側 2 回、%。L-920 より前の CSV では cost_cons_bps ÷ 100)",
         "nights_col": None,
         "regime_col": None,
         "regime_dates": ["2024-11-05"],
@@ -327,6 +330,12 @@ def load_series(spec: dict, series: dict) -> tuple[pd.DataFrame, dict]:
     frames = []
     for p in paths:
         d = pd.read_csv(p)
+        # L-920: pair CSVs written before the bp rename carry the cost in bp
+        # under the old name; read it as % (old column / 100). The gross value
+        # column (r_night_*_bps, a price-move rate) keeps its bp name.
+        new_c, old_c = spec["cost_col"], spec.get("cost_col_old_bps")
+        if new_c not in d.columns and old_c and old_c in d.columns:
+            d[new_c] = d[old_c] / 100.0
         d["_source"] = "dev" if p == paths[0] else "sealed"
         frames.append(d)
     df = pd.concat(frames, ignore_index=True)
@@ -367,13 +376,18 @@ def analyse_series(unit: str, spec: dict, series: dict) -> dict:
     keep = (spec["main_filter"](df).to_numpy(bool)
             & np.isfinite(values_all) & np.isfinite(cost_all))
     main = df[keep].reset_index(drop=True)
-    values, cost = values_all[keep], cost_all[keep]
+    # a cost is never bp (L-920), so the analysis runs in %: the gross value
+    # column (bp, a price-move rate) / 100, the cost already in %.
+    values, cost = values_all[keep] / 100.0, cost_all[keep]
 
     states = build_states(main, spec, cc_all[keep], vol_all[keep])
     res = state_split(values, states, block=BLOCK, n_boot=N_BOOT, seed=SEED,
-                      cost_bps=cost)
+                      cost_pct=cost)
 
-    gross_ci = block_bootstrap_ci(values, block=BLOCK, n_boot=N_BOOT, seed=SEED)
+    # the gross (quantity 1, before cost) is a price-move rate, so it is reported in bp (L-920);
+    # only the net and the cost are in %
+    gross_bp = values_all[keep]
+    gross_ci = block_bootstrap_ci(gross_bp, block=BLOCK, n_boot=N_BOOT, seed=SEED)
     net = values - cost
     net_ci = block_bootstrap_ci(net, block=BLOCK, n_boot=N_BOOT, seed=SEED)
 
@@ -388,7 +402,7 @@ def analyse_series(unit: str, spec: dict, series: dict) -> dict:
         "value_col": value_col,
         "value_text": series.get("value_text", spec.get("value_text")),
         "span_main": [str(main["_date"].min().date()), str(main["_date"].max().date())],
-        "uncond_mean": float(values.mean()),
+        "uncond_mean": float(gross_bp.mean()),
         "uncond_ci": list(gross_ci),
         "uncond_net_mean": float(net.mean()),
         "uncond_net_ci": list(net_ci),
@@ -403,7 +417,8 @@ def analyse_series(unit: str, spec: dict, series: dict) -> dict:
 # reporting
 # ---------------------------------------------------------------------------
 
-def fmt(v: float, nd: int = 2) -> str:
+def fmt(v: float, nd: int = 4) -> str:
+    # values are in % since L-920; 4 decimals of % = the former 2 decimals of bp
     return "nan" if v is None or not np.isfinite(v) else f"{v:.{nd}f}"
 
 
@@ -423,13 +438,13 @@ def summary_lines(out: dict) -> list[str]:
                 a, b, d, ci = r.state_a, r.state_b, r.diff, (r.ci_lo, r.ci_hi)
             else:
                 a, b, d, ci = r.state_b, r.state_a, -r.diff, (-r.ci_hi, -r.ci_lo)
-            hi.append(f"{r.variable}={a}(対 {r.variable}={b} で差 {fmt(d)}bps, "
+            hi.append(f"{r.variable}={a}(対 {r.variable}={b} で差 {fmt(d)}%, "
                       f"CI [{fmt(ci[0])}, {fmt(ci[1])}])")
             lo.append(f"{r.variable}={b}")
         works = "・".join(dict.fromkeys(hi))
         fails = "・".join(dict.fromkeys(lo))
     else:
-        works = f"該当なし(同時置換の帰無 95 点 {fmt(p95)}bps を超える差が無い)"
+        works = f"該当なし(同時置換の帰無 95 点 {fmt(p95)}% を超える差が無い)"
         fails = "該当なし(候補水準に達した差が無いため名指しできない)"
 
     und = dt[dt["verdict"] == STATE_VERDICT_UNDECIDABLE].copy()
@@ -437,7 +452,7 @@ def summary_lines(out: dict) -> list[str]:
         und["absdiff"] = und["diff"].abs()
         top = und.sort_values("absdiff", ascending=False).head(3)
         gaps = "・".join(
-            f"{r.variable} {r.state_a}−{r.state_b}(差 {fmt(r.diff)}bps < MDE {fmt(r.mde)}bps)"
+            f"{r.variable} {r.state_a}−{r.state_b}(差 {fmt(r.diff)}% < MDE {fmt(r.mde)}%)"
             for r in top.itertuples())
         undecided = f"{len(und)} 組が MDE 未満で判定不能。最大の穴は {gaps}"
     else:
@@ -529,8 +544,8 @@ def write_results(results: dict[str, list[dict]], out_dir: Path) -> None:
         lines.append(f"- 費用: {spec['cost_text']}")
         lines.append(f"- 制度区分: {spec['regime_text']}")
         lines.append("")
-        lines.append("| 系列 | 期間 | 全ペア | 主集合 n | 無条件グロス平均 [CI] | "
-                     "無条件・保守費用後 [CI] | 同時置換の帰無 95 点 | 比較数 |")
+        lines.append("| 系列 | 期間 | 全ペア | 主集合 n | 無条件グロス平均 [CI](bp) | "
+                     "無条件・保守費用後 [CI](%) | 同時置換の帰無 95 点(%) | 比較数 |")
         lines.append("|---|---|---:|---:|---|---|---:|---:|")
         for o in outs:
             lines.append(
@@ -544,7 +559,7 @@ def write_results(results: dict[str, list[dict]], out_dir: Path) -> None:
         for o in outs:
             lines.append(f"### {unit} / {o['series']} — 3 行要約")
             lines.append("")
-            lines.append(f"値 = {o['value_text']}。")
+            lines.append(f"値 = {o['value_text']}(グロスは bp のまま。費用後と状態の分けは、L-920 の後は ÷ 100 して % で扱う)。")
             lines.append("")
             lines.extend(summary_lines(o))
             lines.append("")
@@ -552,7 +567,7 @@ def write_results(results: dict[str, list[dict]], out_dir: Path) -> None:
             if len(cand):
                 lines.append("候補に達した差:")
                 lines.append("")
-                lines.append("| 変数 | 状態 A | 状態 B | n_A | n_B | 差(A−B) | 95% CI | "
+                lines.append("| 変数 | 状態 A | 状態 B | n_A | n_B | 差(A−B)(%) | 95% CI | "
                              "MDE | 帰無 95 点 |")
                 lines.append("|---|---|---|---:|---:|---:|---|---:|---:|")
                 for r in cand.itertuples():
@@ -622,22 +637,22 @@ def main(argv: list[str] | None = None) -> int:
             out_dir / f"{unit}_diff_table.csv", index=False)
         pd.DataFrame([{
             "series": o["series"], "n_main": o["n_main"],
-            "null_p95_bps": o["null_p95"],
+            "null_p95_pct": o["null_p95"],
             "n_variables": o["params"]["n_variables"],
             "n_comparisons": o["params"]["n_comparisons"],
             "block": BLOCK, "n_boot": N_BOOT, "seed": SEED,
             "uncond_mean_bps": o["uncond_mean"],
             "uncond_ci_lo_bps": o["uncond_ci"][0],
             "uncond_ci_hi_bps": o["uncond_ci"][1],
-            "uncond_net_mean_bps": o["uncond_net_mean"],
-            "uncond_net_ci_lo_bps": o["uncond_net_ci"][0],
-            "uncond_net_ci_hi_bps": o["uncond_net_ci"][1],
+            "uncond_net_mean_pct": o["uncond_net_mean"],
+            "uncond_net_ci_lo_pct": o["uncond_net_ci"][0],
+            "uncond_net_ci_hi_pct": o["uncond_net_ci"][1],
         } for o in outs]).to_csv(out_dir / f"{unit}_null.csv", index=False)
 
         run_meta["units"][unit] = [{
             "series": o["series"], "provenance": o["provenance"],
             "n_main": o["n_main"], "value_col": o["value_col"],
-            "null_p95_bps": o["null_p95"],
+            "null_p95_pct": o["null_p95"],
             "verdict_counts": {k: int(v) for k, v in
                                o["diff_table"]["verdict"].value_counts().items()},
         } for o in outs]

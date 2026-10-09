@@ -12,11 +12,12 @@ Hand-made Binance and bitFlyer 50-minute series; five trades covering
       raised during a >5-minute blank run or within 5 minutes before it are
       DISCARDED (第 4 稿「優先順位」).
 Every expected number is written out here BY HAND (formula in the comment),
-and the ledger must match to 1e-9 bps.
+and the ledger must match to 1e-9 of each column's unit (1e-9 bp for
+``gross_bps``, 1e-11 % for the percent columns, i.e. the same 1e-9 bp).
 
 Grid: bar i starts at T0 + i minutes, T0 = 2023-06-01 04:40 UTC, i = 0..49,
 so the 05:00 settlement is bar i = 20.
-Parameters: k = 1, thr = 1.0%, exit = 0.2%, stop = 1.0%, one-way cost 1.3 bps,
+Parameters: k = 1, thr = 1.0%, exit = 0.2%, stop = 1.0%, one-way cost 0.013%,
 funding 0.02% per settlement, max gap 5 minutes, size 0.01 BTC.
 """
 from __future__ import annotations
@@ -42,7 +43,7 @@ T0 = pd.Timestamp("2023-06-01 04:40:00", tz="UTC")
 N = 50
 INDEX = pd.date_range(T0, periods=N, freq="min")
 
-K, THR, EXIT, STOP, COST_1W = 1, 1.0, 0.2, 1.0, 1.3
+K, THR, EXIT, STOP, COST_1W = 1, 1.0, 0.2, 1.0, 0.013  # cost in % (L-920; was 1.3 bps)
 
 # ---- Binance closes c(i); with k = 1, m(i) = c(i)/c(i-1) - 1 -----------------
 #  i   c(i)     m(i)                 role
@@ -120,47 +121,50 @@ def ts(i: int) -> pd.Timestamp:
 
 
 # ---- the five hand-computed trades ------------------------------------------
-# gross_bps = side * (exit_px / entry_px - 1) * 1e4 ; cost_bps = 2 * 1.3 = 2.6
-# funding_bps = n_settlements * 0.02% = n_settlements * 2.0 ; net = gross - cost - funding
+# gross_bps = side * (exit_px / entry_px - 1) * 1e4 (price-move rate, bp)
+# cost_pct = 2 * 0.013 = 0.026 ; funding_pct = n_settlements * 0.02
+# net_pct = gross_bps / 100 - cost_pct - funding_pct (L-920: cost/funding/net in %)
 EXPECTED = [
-    # 1 (a)(b): long 1,000,000 -> 1,004,000: gross (1.004-1)*1e4 = 40.0 ; net 40 - 2.6 - 0 = 37.4
+    # 1 (a)(b): long 1,000,000 -> 1,004,000: gross (1.004-1)*1e4 = 40.0 ; net 0.40 - 0.026 - 0 = 0.374 %
     dict(entry_ts=ts(2), exit_ts=ts(4), side=1, entry_px=1_000_000.0, exit_px=1_004_000.0,
-         gross_bps=40.0, cost_bps=2.6, funding_bps=0.0, net_bps=37.4, exit_reason="exit",
+         gross_bps=40.0, cost_pct=0.026, funding_pct=0.0, net_pct=0.374, exit_reason="exit",
          n_deferred=0, n_settlements=0, excluded_gap=False, regime="lightning_fx"),
     # 2 (c): short 1,000,000, stop level 1,010,000 hit by high(8) = 1,012,000, filled at
-    #   open(9) = 1,015,000 (adverse gap kept): gross -(1.015-1)*1e4 = -150.0 ; net -152.6
+    #   open(9) = 1,015,000 (adverse gap kept): gross -(1.015-1)*1e4 = -150.0 ; net -1.526 %
     dict(entry_ts=ts(7), exit_ts=ts(9), side=-1, entry_px=1_000_000.0, exit_px=1_015_000.0,
-         gross_bps=-150.0, cost_bps=2.6, funding_bps=0.0, net_bps=-152.6, exit_reason="stop",
+         gross_bps=-150.0, cost_pct=0.026, funding_pct=0.0, net_pct=-1.526, exit_reason="stop",
          n_deferred=0, n_settlements=0, excluded_gap=False, regime="lightning_fx"),
     # 3 (d)(e): signal at 11, bar 12 empty -> entry open(13) = 1,000,000 (1 deferral);
-    #   holds 04:53 -> 05:03 across the 05:00 settlement (1 x 0.02% = 2.0 bps);
-    #   exit open(23) = 1,003,000: gross 30.0 ; net 30 - 2.6 - 2.0 = 25.4
+    #   holds 04:53 -> 05:03 across the 05:00 settlement (1 x 0.02% = 0.02%);
+    #   exit open(23) = 1,003,000: gross 30.0 ; net 0.30 - 0.026 - 0.02 = 0.254 %
     dict(entry_ts=ts(13), exit_ts=ts(23), side=1, entry_px=1_000_000.0, exit_px=1_003_000.0,
-         gross_bps=30.0, cost_bps=2.6, funding_bps=2.0, net_bps=25.4, exit_reason="exit",
+         gross_bps=30.0, cost_pct=0.026, funding_pct=0.02, net_pct=0.254, exit_reason="exit",
          n_deferred=1, n_settlements=1, excluded_gap=False, regime="lightning_fx"),
     # 4 (f): short 1,000,000 at open(25); bars 30..35 empty (valid 29 -> 36 = 7 min > 5)
     #   while holding; exit signal 36, fill open(37) = 990,000: gross -(0.99-1)*1e4 = +100.0 ;
-    #   net 97.4 ; EXCLUDED (the signal at 24 is 5 bars before the run's t_a = 29: kept)
+    #   net 0.974 % ; EXCLUDED (the signal at 24 is 5 bars before the run's t_a = 29: kept)
     dict(entry_ts=ts(25), exit_ts=ts(37), side=-1, entry_px=1_000_000.0, exit_px=990_000.0,
-         gross_bps=100.0, cost_bps=2.6, funding_bps=0.0, net_bps=97.4, exit_reason="exit",
+         gross_bps=100.0, cost_pct=0.026, funding_pct=0.0, net_pct=0.974, exit_reason="exit",
          n_deferred=0, n_settlements=0, excluded_gap=True, regime="lightning_fx"),
     # 5 (c)(d)(f): signals at 38 (t_a - 1) and 42 (inside the run 40..45) are DISCARDED;
     #   signal 46 kept -> long 1,000,000 at open(47); low(47) = 989,000 <= 990,000 stop on the
     #   entry bar; bar 48 empty -> stop filled at open(49) = 985,000 (1 deferral):
-    #   gross (0.985-1)*1e4 = -150.0 ; net -152.6
+    #   gross (0.985-1)*1e4 = -150.0 ; net -1.526 %
     dict(entry_ts=ts(47), exit_ts=ts(49), side=1, entry_px=1_000_000.0, exit_px=985_000.0,
-         gross_bps=-150.0, cost_bps=2.6, funding_bps=0.0, net_bps=-152.6, exit_reason="stop",
+         gross_bps=-150.0, cost_pct=0.026, funding_pct=0.0, net_pct=-1.526, exit_reason="stop",
          n_deferred=1, n_settlements=0, excluded_gap=False, regime="lightning_fx"),
 ]
-# daily pnl 2023-06-01 (excluded trade 4 dropped): 37.4 - 152.6 + 25.4 - 152.6 = -242.4
-EXPECTED_DAILY_BPS = -242.4
+# daily pnl 2023-06-01 (excluded trade 4 dropped): 0.374 - 1.526 + 0.254 - 1.526 = -2.424 %
+EXPECTED_DAILY_PCT = -2.424
 TOL = 1e-9
+TOL_PCT = TOL / 100.0   # the same 1e-9 bp expressed in % for the percent columns
+PCT_COLS = ("cost_pct", "funding_pct", "net_pct")
 
 
 def run_known_answer(bf: pd.DataFrame | None = None, **kw) -> pd.DataFrame:
     bf = make_bf() if bf is None else bf
     m = momentum_signal(make_binance(), K)
-    return simulate(bf, m, thr=THR, exit_=EXIT, stop=STOP, cost_one_way_bps=COST_1W,
+    return simulate(bf, m, thr=THR, exit_=EXIT, stop=STOP, cost_one_way_pct=COST_1W,
                     funding_pct_per_settlement=0.02, funding_times_utc=(5, 13, 21),
                     max_gap_min=5, **kw)
 
@@ -172,7 +176,8 @@ def _check_rows(ledger: pd.DataFrame, expected: list[dict]) -> None:
         for key, want in exp.items():
             got = row[key]
             if isinstance(want, float):
-                assert abs(got - want) <= TOL, (key, got, want)
+                tol = TOL_PCT if key in PCT_COLS else TOL
+                assert abs(got - want) <= tol, (key, got, want)
             elif isinstance(want, pd.Timestamp):
                 assert pd.Timestamp(got) == want, (key, got, want)
             else:
@@ -190,8 +195,8 @@ def test_known_answer_five_trades():
     assert ledger["straddles_gap"].tolist() == [False, False, False, True, False]
     assert ledger["entry_signal_ts"].tolist() == [ts(1), ts(6), ts(11), ts(24), ts(46)]
     assert ledger["exit_signal_ts"].tolist() == [ts(3), ts(8), ts(22), ts(36), ts(47)]
-    # 0.01 BTC at 1,000,000 JPY -> 1 bps == 1 JPY, so pnl_jpy equals net_bps numerically
-    np.testing.assert_allclose(ledger["pnl_jpy"], ledger["net_bps"], atol=TOL)
+    # 0.01 BTC at 1,000,000 JPY -> 1 % == 100 JPY, so pnl_jpy equals net_pct * 100
+    np.testing.assert_allclose(ledger["pnl_jpy"], ledger["net_pct"] * 100.0, atol=TOL)
     # counts for the RESULTS tables
     a = ledger.attrs
     assert a["apply_masks"] is True
@@ -208,10 +213,10 @@ def test_known_answer_daily_pnl_and_sharpe():
     d = daily_pnl(ledger)
     assert len(d) == 1
     assert d.index[0] == pd.Timestamp("2023-06-01", tz="UTC")
-    assert abs(float(d.iloc[0]) - EXPECTED_DAILY_BPS) <= TOL
-    # including the excluded trade: -242.4 + 97.4 = -145.0
+    assert abs(float(d.iloc[0]) - EXPECTED_DAILY_PCT) <= TOL_PCT
+    # including the excluded trade: -2.424 + 0.974 = -1.45 %
     d_all = daily_pnl(ledger, include_excluded=True)
-    assert abs(float(d_all.iloc[0]) - (-145.0)) <= TOL
+    assert abs(float(d_all.iloc[0]) - (-1.45)) <= TOL_PCT
     assert np.isnan(sharpe_annual(d))          # a single day has no sd
     # hand-checked Sharpe: [1, 2, 3] -> mean 2, sd 1, * sqrt(365)
     assert abs(sharpe_annual(pd.Series([1.0, 2.0, 3.0])) - 2.0 * np.sqrt(365)) < 1e-12
@@ -227,21 +232,21 @@ def test_known_answer_without_masks_hand_computed():
     """apply_masks=False: no discard, deferral across any blank, nothing excluded.
     The signal at 38 now becomes a trade: long open(39) = 1,000,000; m(39) = 0 -> exit
     signal at 39, fill deferred across 40..45 to open(46) = 1,000,000 (6 deferrals):
-    gross 0 ; net -2.6 ; straddles the gap but is NOT excluded. Trade 4 keeps its
+    gross 0 ; net -0.026 % ; straddles the gap but is NOT excluded. Trade 4 keeps its
     numbers with excluded_gap False. Then 46 (flat again) -> trade 5 as before."""
     ledger = run_known_answer(apply_masks=False)
     exp = [dict(e) for e in EXPECTED]
     exp[3]["excluded_gap"] = False
     t4b = dict(entry_ts=ts(39), exit_ts=ts(46), side=1, entry_px=1_000_000.0,
-               exit_px=1_000_000.0, gross_bps=0.0, cost_bps=2.6, funding_bps=0.0,
-               net_bps=-2.6, exit_reason="exit", n_deferred=6, n_settlements=0,
+               exit_px=1_000_000.0, gross_bps=0.0, cost_pct=0.026, funding_pct=0.0,
+               net_pct=-0.026, exit_reason="exit", n_deferred=6, n_settlements=0,
                excluded_gap=False, regime="lightning_fx")
     _check_rows(ledger, exp[:4] + [t4b] + exp[4:])
     assert ledger["straddles_gap"].tolist() == [False, False, False, True, True, False]
     assert ledger.attrs["n_entry_signals_discarded"] == 0
     assert ledger.attrs["apply_masks"] is False
-    # -242.4 + 97.4 - 2.6 = -147.6 (nothing dropped)
-    assert abs(float(daily_pnl(ledger).iloc[0]) - (-147.6)) <= TOL
+    # -2.424 + 0.974 - 0.026 = -1.476 % (nothing dropped)
+    assert abs(float(daily_pnl(ledger).iloc[0]) - (-1.476)) <= TOL_PCT
 
 
 def test_known_answer_time_jump_variant_matches_empty_rows():
@@ -340,7 +345,7 @@ def test_end_of_data_close():
     assert last["exit_reason"] == "end"
     assert last["exit_ts"] == ts(14)
     assert last["exit_px"] == DEFAULT_BAR[3]
-    assert abs(last["gross_bps"] - 0.0) <= TOL and abs(last["net_bps"] - (-2.6)) <= TOL
+    assert abs(last["gross_bps"] - 0.0) <= TOL and abs(last["net_pct"] - (-0.026)) <= TOL_PCT
 
 
 def test_settlement_counting_convention():

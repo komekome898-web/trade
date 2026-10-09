@@ -182,6 +182,7 @@ class QfLib(Base):
         b_.set_initial_cash(int(cfg["initial_equity"]))
         b_.set_data_provider(dp)
         b_.set_monitor_settings(BacktestMonitorSettings.no_stats())
+        # the tool's BpsTradeValueCommissionModel takes bp: the scene's taker_fee_pct is %, x 100 on the next line
         b_.set_commission_model(BpsTradeValueCommissionModel, commission=cfg["costs"]["taker_fee_pct"] * 100)
         a = adj(cfg["costs"])
         if a:

@@ -46,11 +46,11 @@ bitflyer_fx_btc_jpy:
       never applied to FX_BTC_JPY; using it here was an audited error
       ((削除済み文書), E2_cost_floor_maker_second.md).
 
-  quoted_spread_median_bps:
+  quoted_spread_median_pct:
 
     status: discarded_2026-09-08
-    value: 1.9
-    unit: bps
+    value: 0.019
+    unit: percent_of_mid
     source_type: measured
     measured_by: >-
       (削除済み文書) and
@@ -60,38 +60,38 @@ bitflyer_fx_btc_jpy:
       1,588,662-1,589,458 ticker/quote rows, cross-board board removed).
     verified_on: "2026-09-05"
     notes: >-
-      Median quoted (ticker) spread ≈1.91bps over the full 16-day tape;
-      1.95bps on the 2026-08-20..31 subset; 2.02bps from an independent
-      1s board_top5 snapshot series; 1.78bps on 5s board_round snapshots.
-      All cluster at ≈1.9bps. Supersedes the earlier single 4h-session
-      figure of 2.22bps ((削除済み文書)) — that number
+      Median quoted (ticker) spread ≈0.0191% of mid over the full 16-day tape;
+      0.0195% on the 2026-08-20..31 subset; 0.0202% from an independent
+      1s board_top5 snapshot series; 0.0178% on 5s board_round snapshots.
+      All cluster at ≈0.019%. Supersedes the earlier single 4h-session
+      figure of 0.0222% ((削除済み文書)) — that number
       is now judged "数値差異" (14-16% high), not wrong order of magnitude.
 
-  realized_taker_one_way_bps:
+  realized_taker_one_way_pct:
 
     status: discarded_2026-09-08
-    value: [1.0, 1.3]
-    unit: bps
+    value: [0.010, 0.013]
+    unit: percent_of_mid
     source_type: measured
     measured_by: >-
       (削除済み文書), method (b)
       "realized: fill price vs immediately-preceding mid", n=750,122
-      executions, same 16-day tape as quoted_spread_median_bps above.
+      executions, same 16-day tape as quoted_spread_median_pct above (named quoted_spread_median_bps before 2026-10-10).
     verified_on: "2026-09-05"
     notes: >-
-      One-way realized cost: mean 1.291bps / median 1.036bps /
-      volume-weighted 1.399bps (all executions); large orders
-      (size>=0.05BTC, n=84,478) give 1.461bps one-way with no
-      buy/sell asymmetry (1.280 vs 1.305bps). Independently, a
+      One-way realized cost: mean 0.01291% / median 0.01036% /
+      volume-weighted 0.01399% of mid (all executions); large orders
+      (size>=0.05BTC, n=84,478) give 0.01461% one-way with no
+      buy/sell asymmetry (0.01280 vs 0.01305%). Independently, a
       separate 31-day executions file (2026-07-23..08-23) gives a
-      1-minute BUY-VWAP minus SELL-VWAP of 0.99bps (a lower-bound
+      1-minute BUY-VWAP minus SELL-VWAP of 0.0099% (a lower-bound
       cross-check, different window).
 
-  realized_round_trip_bps:
+  realized_round_trip_pct:
 
     status: discarded_2026-09-08
-    value: [2.0, 2.6]
-    unit: bps
+    value: [0.020, 0.026]
+    unit: percent_of_mid
     source_type: measured
     measured_by: >-
       (削除済み文書), three
@@ -105,21 +105,24 @@ bitflyer_fx_btc_jpy:
     notes: >-
       Current best-estimate taker round-trip cost floor for
       FX_BTC_JPY. None of the three methods reproduces the deprecated
-      5.8-7.9bps floor below — see taker_round_trip_floor_bps_OLD.
+      0.058-0.079% floor below — see taker_round_trip_floor_pct_OLD.
+      (L-920: this entry and the four spread/cost entries around it were
+      renamed *_bps -> *_pct and their values divided by 100 on 2026-10-10;
+      measured_by is left as written, so the bps figures there are x 1e4.)
 
-  taker_round_trip_floor_bps_OLD:
+  taker_round_trip_floor_pct_OLD:
 
     status: discarded_2026-09-08
-    value: [5.8, 7.9]
-    unit: bps
+    value: [0.058, 0.079]
+    unit: percent_of_mid
     source_type: assumed
     deprecated: true
-    reason: "unmeasured 2bps/leg slippage (02_provenance_costs.md)"
+    reason: "unmeasured 0.02%/leg slippage (02_provenance_costs.md)"
     verified_on: "2026-09-05 (deprecated by (削除済み文書) and E3_maker_arbiter.md)"
     notes: >-
       (削除済み文書) traces every one of
-      5.8bps / 7.9bps / 3.96bps(side) / 3.2bps(side) and the "JFSA
-      venue floor map" back to one un-derived assumption — 2bps of
+      0.058% / 0.079% / 0.0396%(side) / 0.032%(side) and the "JFSA
+      venue floor map" back to one un-derived assumption — 0.02% of
       taker slippage per leg — first written with no measurement
       shown in (削除済み文書) (2026-08-20),
       then compounded with genuinely-measured spread figures across
@@ -127,7 +130,7 @@ bitflyer_fx_btc_jpy:
       use for new judgment bars (research-protocol pre-registration);
       kept here only so existing verdicts that cited it can be traced
       (see 02_provenance_costs.md §4 "blast radius" table for the
-      list of claims that flip once the floor is corrected to ≈2bps).
+      list of claims that flip once the floor is corrected to ≈0.02%).
 
   funding_swap_daily_pct:
     value: 0.06
@@ -160,7 +163,7 @@ jpx_nikkei225_micro_futures:
       by docs/SURVEY_JP_INDEX_FUTURES.md §1.3 against 松井証券(11円税込)/
       楽天証券(11円税込) — broker fees converged after the 2023-07/08
       cuts. 22円 round trip / 664,350円 avg notional per contract
-      (2026-07 JPX volume stats) = 0.331bps round trip.
+      (2026-07 JPX volume stats) = 0.00331% round trip.
 
   tick_size_yen:
     value: 5
@@ -406,9 +409,9 @@ jpx_cash_equity:
       "unsourced constant" risk here since no numeric value from this entry
       is used in any cost/judgment computation.
 
-  etf_spread_bps:
+  etf_spread_pct:
     value: null
-    unit: bps
+    unit: percent_of_mid
     source_type: assumed
     measured: "none yet"
     notes: >-

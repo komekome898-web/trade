@@ -111,7 +111,7 @@ DEFAULT_OUT = REPO_ROOT / "backtest_data" / "o3c_signal_explore5_20260920"
 MAIN_RUN = "gap60_w8"
 
 BANNED_WORDS = ex2.BANNED_WORDS
-ATTR_NAMES = ("bin_pct", "|dist_node_bp|", "implied_leverage")
+ATTR_NAMES = ("bin_pct", "|dist_node_pct|", "implied_leverage")
 
 ROW_COLUMNS = (
     ["kind", "print_id", "day", "side", "ctrl_T", "ts_ms", "t0_ms", "p0",
@@ -122,7 +122,7 @@ ROW_COLUMNS = (
     + [f"r_{h}" for h in HORIZONS_SEC]
     + [f"r_t0_{h}" for h in HORIZONS_SEC]
     + [f"h_lag_ms_{h}" for h in HORIZONS_SEC]
-    + ["next_same_side_gap_s", "bin_pct", "dist_node_bp", "implied_leverage",
+    + ["next_same_side_gap_s", "bin_pct", "dist_node_pct", "implied_leverage",
        "oi_covered", "matched_print_id", "c_t", "k_ctrl", "ctrl_t_ms"])
 CHUNK_HEADER = list(ROW_COLUMNS)
 
@@ -133,7 +133,7 @@ NUMERIC_COLS = (["ctrl_T", "ts_ms", "t0_ms", "p0", "t_pre_ms", "p_pre",
                 + [f"r_{h}" for h in HORIZONS_SEC]
                 + [f"r_t0_{h}" for h in HORIZONS_SEC]
                 + [f"h_lag_ms_{h}" for h in HORIZONS_SEC]
-                + ["next_same_side_gap_s", "bin_pct", "dist_node_bp",
+                + ["next_same_side_gap_s", "bin_pct", "dist_node_pct",
                    "implied_leverage", "oi_covered", "c_t", "k_ctrl",
                    "ctrl_t_ms", "bundle_pos_single"])
 
@@ -446,7 +446,7 @@ def compute_layers(times, prices, qtys, pr_ts, pr_side, pr_price, sel,
     # 属性(1 周目 `o3c_reaction` の定義、W = 8 時間。窓は [ts − W, ts) = 過去だけ)
     n = int(ts.size)
     out["bin_pct"] = np.full(n, NAN)
-    out["dist_node_bp"] = np.full(n, NAN)
+    out["dist_node_pct"] = np.full(n, NAN)
     out["implied_leverage"] = np.full(n, NAN)
     out["oi_covered"] = np.zeros(n, dtype=float)
     if step is None or window_ms is None or times.size == 0 or n == 0:
@@ -459,7 +459,7 @@ def compute_layers(times, prices, qtys, pr_ts, pr_side, pr_price, sel,
                                      int(window_ms), float(step))
     for pos, i in enumerate(order.tolist()):
         out["bin_pct"][i] = cols[pos].get("bin_pct", NAN)
-        out["dist_node_bp"][i] = cols[pos].get("dist_node_bp", NAN)
+        out["dist_node_pct"][i] = cols[pos].get("dist_node_pct", NAN)
     if buckets is None or np.asarray(buckets["t_all"]).size == 0:
         return out
     # **被覆の判定を `ts` より前だけにする**(1 周目の `coverage_start_ms` は窓じゅうの
@@ -487,8 +487,8 @@ def compute_layers(times, prices, qtys, pr_ts, pr_side, pr_price, sel,
                 continue
             row = dict(oi_cols[pos])
             row["side"] = str(side[i])
-            row["dist_vwap_bp"] = NAN
-            row["dist_node_bp"] = out["dist_node_bp"][i]
+            row["dist_vwap_pct"] = NAN
+            row["dist_node_pct"] = out["dist_node_pct"][i]
             oid._apply_liqdir_and_leverage(row, MMR)
             v = row.get("implied_leverage", NAN)
             out["implied_leverage"][i] = float(v) if v is not None else NAN
@@ -640,7 +640,7 @@ def print_rows(day: str, prints: Prints, sel, lay: dict, fwd: dict,
             d[f"h_lag_ms_{h}"] = "" if not math.isfinite(v) else int(v)
         _num(d, "next_same_side_gap_s", nxt[j], 3)
         _num(d, "bin_pct", lay["bin_pct"][j], 4)
-        _num(d, "dist_node_bp", lay["dist_node_bp"][j], 4)
+        _num(d, "dist_node_pct", lay["dist_node_pct"][j], 6)   # % で 6 桁 = 前の bp で 4 桁
         _num(d, "implied_leverage", lay["implied_leverage"][j], 4)
         d["oi_covered"] = int(lay["oi_covered"][j])
         rows.append([d[c] for c in CHUNK_HEADER])
@@ -947,7 +947,8 @@ class Rows:
     def __init__(self, path: Path):
         cols: dict = {c: [] for c in ROW_COLUMNS}
         with gzip.open(path, "rt", newline="") as fh:
-            for r in csv.DictReader(fh):
+            # L-920: 前の rows の距離の列は dist_*_bp(bp)。新しい名前が無ければ / 100 して読む
+            for r in map(base.pct_dist_row, csv.DictReader(fh)):
                 for c in ROW_COLUMNS:
                     cols[c].append(r[c])
         kind = np.array(cols["kind"], dtype=object)
@@ -1151,7 +1152,7 @@ def make_h0(rows: Rows, cuts: dict, ctrl_notes: dict, prints: Prints,
                        量=f"r(h)(t₀ 基準・主)が引けないプリント h={h}", 群="全体",
                        n=int(bad.sum()), 母数=n_all,
                        割合=float(bad.mean()) if n_all else NAN))
-    for name, col in (("bin_pct", "bin_pct"), ("dist_node_bp", "dist_node_bp"),
+    for name, col in (("bin_pct", "bin_pct"), ("dist_node_pct", "dist_node_pct"),
                       ("implied_leverage", "implied_leverage")):
         bad = ~np.isfinite(blk[col])
         out.append(_h0(区分="欠測", 種=KIND_LABEL[KIND_PRINT],
@@ -1386,7 +1387,7 @@ def h6_groups(blk: dict, attr_ok: dict) -> list:
     for name in ATTR_NAMES:
         if not attr_ok.get(name):
             continue
-        col = {"bin_pct": "bin_pct", "|dist_node_bp|": "dist_node_bp",
+        col = {"bin_pct": "bin_pct", "|dist_node_pct|": "dist_node_pct",
                "implied_leverage": "implied_leverage"}[name]
         vv = np.abs(blk[col]) if name.startswith("|") else blk[col]
         lo, hi = tertile_cuts(vv)
@@ -1512,7 +1513,7 @@ def main(argv=None) -> int:
     kpos = blk["k"][np.isfinite(blk["k"]) & (blk["k"] > 0)]
     kcuts = tertile_cuts(kpos)
     attr_ok = {"bin_pct": bool(np.isfinite(blk["bin_pct"]).any()),
-               "|dist_node_bp|": bool(np.isfinite(blk["dist_node_bp"]).any()),
+               "|dist_node_pct|": bool(np.isfinite(blk["dist_node_pct"]).any()),
                "implied_leverage": bool(np.isfinite(blk["implied_leverage"]).any())}
 
     ctrl_notes = {T: {"n_prints": blk["_n"],
@@ -1609,7 +1610,7 @@ def main(argv=None) -> int:
             "r(h)": "s × (p_h − p₀)/p₀ × 1e4(主の表は p_h を t₀ 基準で引く)",
             "対照 (b)": ("1 周目の対照 (i) 一様行の生(符号なし)の r を日ごとに平均し、"
                      "その日の各プリントの側の符号を掛ける(日集約版)"),
-            "属性の付け直し": ("bin_pct / dist_node_bp は "
+            "属性の付け直し": ("bin_pct / dist_node_pct は "
                        "`scripts/o3c_reaction.py: profile_columns`(窓 [ts − W, ts))、"
                        "implied_leverage は `scripts/o3c_oi_distance.py` の "
                        "ΔOI 桶(t_b ≤ ts)+ `_apply_liqdir_and_leverage`"),
@@ -1656,7 +1657,7 @@ def main(argv=None) -> int:
             "r_t0 が NaN のプリント": {str(h): int((~np.isfinite(blk[f"r_t0_{h}"])).sum())
                                for h in HORIZONS_SEC},
             "bin_pct が NaN": int((~np.isfinite(blk["bin_pct"])).sum()),
-            "dist_node_bp が NaN": int((~np.isfinite(blk["dist_node_bp"])).sum()),
+            "dist_node_pct が NaN": int((~np.isfinite(blk["dist_node_pct"])).sum()),
             "implied_leverage が NaN": int((~np.isfinite(blk["implied_leverage"])).sum()),
             "同じ側の次の清算が無いプリント": int(
                 (~np.isfinite(blk["next_same_side_gap_s"])).sum()),

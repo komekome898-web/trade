@@ -161,6 +161,9 @@ Known limitations (stated before seeing any result)
 
 Usage:  PYTHONPATH=src python scripts/research_fx_events.py
         (idempotent, deterministic, no network)
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図 sig・閾値 m・gross・
+値幅・|5m| の動き)にだけ使う。費用(往復 0.71bps = 0.0071 %、滑り +2.0bps = +0.02 %、計
+2.71bps = 0.0271 %)、net(gross − 費用)と採用の線(+1.5bps = +0.015 %)は % で持つ。)
 """
 
 from __future__ import annotations
@@ -181,12 +184,12 @@ UTC = dt.timezone.utc
 CSV = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                    "data", "fx", "USDJPY_1m.csv")
 
-COST_FLOOR = 0.71          # bps round trip, measured (KNOWLEDGE_FX sec.1)
-COST_SLIP = 2.00           # bps extra, conservative post-release slippage
+COST_FLOOR = 0.0071        # % round trip, measured (KNOWLEDGE_FX sec.1; 0.71 bps)
+COST_SLIP = 0.02           # % extra, conservative post-release slippage (2.00 bps)
 COST_CONS = COST_FLOOR + COST_SLIP
 
 BAR_N = 100
-BAR_NET = 1.5
+BAR_NET = 0.015            # % (+1.5 bps in the prereg)
 BAR_T = 2.0
 
 M_GRID = [3.0, 5.0, 8.0]           # bps
@@ -718,7 +721,7 @@ def main() -> None:
               f"{np.median(ev) / np.nanmedian(pe):>8.2f}{ev.mean():>16.2f}"
               f"{np.nanmean(pe):>12.2f}{ev.mean() / np.nanmean(pe):>8.2f}")
     print("  units are bps of realised high/low range over 30 minutes.  round-trip cost = "
-          f"{COST_FLOOR} bps.")
+          f"{COST_FLOOR} % (= {COST_FLOOR * 100:.2f} bps of move).")
 
     # ------------------------------------------------- CPI sensitivity
     header("2c. CPI DATE SENSITIVITY  (the rule is an approximation; +/-1 and +/-2 days)")
@@ -787,20 +790,20 @@ def main() -> None:
         if not len(tr):
             return dict(n=0, mean=float("nan"), t=float("nan"), win=float("nan"),
                         med=float("nan"), G=0)
-        net = tr["gross"].to_numpy() - cost
+        net = tr["gross"].to_numpy() / 100 - cost   # % (gross is a bps move, cost in %)
         mu, t, G = cluster_t(net, tr["day"].to_numpy())
         return dict(n=len(tr), mean=mu, t=t, win=float((net > 0).mean()),
                     med=float(np.median(net)), G=G)
 
     header("4. PART B / F1 -- POST-EVENT CONTINUATION.  TRAIN HALF (exploration)")
     print("entry = close(E+4) in the direction of the first-5-minute move; exit = close(E+4+h).")
-    print(f"net headline charges {COST_CONS:.2f} bps (0.71 measured + 2.00 slippage reserve);")
-    print(f"the floor column charges only the measured {COST_FLOOR:.2f} bps.\n")
+    print(f"net headline charges {COST_CONS:.4f} % (0.0071 measured + 0.02 slippage reserve);")
+    print(f"the floor column charges only the measured {COST_FLOOR:.4f} %.  nets are in %.\n")
     tr_cal = f1_cal[f1_cal["ts"] < boundary]
     ju_cal = f1_cal[f1_cal["ts"] >= boundary]
 
-    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'fire%':>8}{'net(2.71)':>11}{'t_day':>8}"
-          f"{'win%':>8}{'median':>9}{'net(0.71)':>11}{'t_day':>8}")
+    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'fire%':>8}{'net%(.0271)':>11}{'t_day':>8}"
+          f"{'win%':>8}{'median':>9}{'net%(.0071)':>11}{'t_day':>8}")
     line()
     train_res = {}
     n_train_events = len(tr_cal)
@@ -811,8 +814,8 @@ def main() -> None:
             b = summarise(tr, COST_FLOOR)
             train_res[(m, h)] = (a, b, tr)
             print(f"{m:>7.0f}{h:>8}{a['n']:>6}{100 * a['n'] / max(1, n_train_events):>8.1f}"
-                  f"{a['mean']:>+11.2f}{a['t']:>8.2f}{100 * a['win']:>8.1f}{a['med']:>+9.2f}"
-                  f"{b['mean']:>+11.2f}{b['t']:>8.2f}")
+                  f"{a['mean']:>+11.4f}{a['t']:>8.2f}{100 * a['win']:>8.1f}{a['med']:>+9.4f}"
+                  f"{b['mean']:>+11.4f}{b['t']:>8.2f}")
 
     elig = {c: v for c, v in train_res.items() if v[0]["n"] >= 30}
     print(f"\nselection rule (pre-registered): max net-with-slippage on TRAIN, n_train >= 30.")
@@ -820,10 +823,10 @@ def main() -> None:
         best = max(elig, key=lambda c: (elig[c][0]["mean"], elig[c][0]["n"]))
         print(f"  eligible configs: {len(elig)} of {len(train_res)}")
         print(f"  WINNER: m={best[0]:.0f} bps, h={best[1]} min  "
-              f"(train n={train_res[best][0]['n']}, net={train_res[best][0]['mean']:+.2f} bps, "
+              f"(train n={train_res[best][0]['n']}, net={train_res[best][0]['mean']:+.4f} %, "
               f"t={train_res[best][0]['t']:.2f})")
         print("\n  plateau check (research-protocol sec.4): neighbours +/-1 step on each axis")
-        print(f"  {'config':<18}{'n':>6}{'net(2.71)':>11}{'t_day':>8}   note")
+        print(f"  {'config':<18}{'n':>6}{'net%(.0271)':>11}{'t_day':>8}   note")
         line("-", 70)
         mi, hi_ = M_GRID.index(best[0]), H_GRID.index(best[1])
         for dm in (-1, 0, 1):
@@ -832,7 +835,7 @@ def main() -> None:
                     c = (M_GRID[mi + dm], H_GRID[hi_ + dh])
                     a = train_res[c][0]
                     tagn = "WINNER" if c == best else ""
-                    print(f"  {f'm={c[0]:.0f} h={c[1]}':<18}{a['n']:>6}{a['mean']:>+11.2f}"
+                    print(f"  {f'm={c[0]:.0f} h={c[1]}':<18}{a['n']:>6}{a['mean']:>+11.4f}"
                           f"{a['t']:>8.2f}   {tagn}")
     else:
         best = None
@@ -840,8 +843,8 @@ def main() -> None:
               "structural FAIL-BY-SAMPLE.")
 
     header("5. PART B / F1 -- JUDGMENT HALF.  EXECUTED ONCE, REPORTED AS-IS")
-    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'net(2.71)':>11}{'t_day':>8}{'CI95 low':>10}"
-          f"{'CI95 high':>11}{'win%':>8}{'net(0.71)':>11}{'t_day':>8}   {'sel'}")
+    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'net%(.0271)':>11}{'t_day':>8}{'CI95 low':>10}"
+          f"{'CI95 high':>11}{'win%':>8}{'net%(.0071)':>11}{'t_day':>8}   {'sel'}")
     line()
     judge_res = {}
     for m in M_GRID:
@@ -850,33 +853,33 @@ def main() -> None:
             a = summarise(tr, COST_CONS)
             b = summarise(tr, COST_FLOOR)
             if len(tr):
-                clo, chi = cluster_boot_ci(tr["gross"].to_numpy() - COST_CONS,
+                clo, chi = cluster_boot_ci(tr["gross"].to_numpy() / 100 - COST_CONS,
                                            tr["day"].to_numpy())
             else:
                 clo = chi = float("nan")
             judge_res[(m, h)] = (a, b, tr, clo, chi)
             selm = "<< selected" if (best is not None and (m, h) == best) else ""
-            print(f"{m:>7.0f}{h:>8}{a['n']:>6}{a['mean']:>+11.2f}{a['t']:>8.2f}{clo:>10.2f}"
-                  f"{chi:>11.2f}{100 * a['win']:>8.1f}{b['mean']:>+11.2f}{b['t']:>8.2f}   {selm}")
+            print(f"{m:>7.0f}{h:>8}{a['n']:>6}{a['mean']:>+11.4f}{a['t']:>8.2f}{clo:>10.4f}"
+                  f"{chi:>11.4f}{100 * a['win']:>8.1f}{b['mean']:>+11.4f}{b['t']:>8.2f}   {selm}")
 
     print("\nper-event-type breakdown of the SELECTED configuration on the judgment half")
     if best is not None:
-        print(f"{'type':<10}{'n':>6}{'net(2.71)':>11}{'t_day':>8}{'win%':>8}{'net(0.71)':>11}")
+        print(f"{'type':<10}{'n':>6}{'net%(.0271)':>11}{'t_day':>8}{'win%':>8}{'net%(.0071)':>11}")
         line()
         trb = judge_res[best][2]
         for tag in ["NFP", "CPI", "FOMC"]:
             s = trb[trb["kind"] == tag] if len(trb) else trb
             a = summarise(s, COST_CONS)
             b = summarise(s, COST_FLOOR)
-            print(f"{tag:<10}{a['n']:>6}{a['mean']:>+11.2f}{a['t']:>8.2f}"
-                  f"{100 * a['win']:>8.1f}{b['mean']:>+11.2f}")
+            print(f"{tag:<10}{a['n']:>6}{a['mean']:>+11.4f}{a['t']:>8.2f}"
+                  f"{100 * a['win']:>8.1f}{b['mean']:>+11.4f}")
         a = summarise(trb, COST_CONS)
         b = summarise(trb, COST_FLOOR)
-        print(f"{'POOLED':<10}{a['n']:>6}{a['mean']:>+11.2f}{a['t']:>8.2f}"
-              f"{100 * a['win']:>8.1f}{b['mean']:>+11.2f}")
+        print(f"{'POOLED':<10}{a['n']:>6}{a['mean']:>+11.4f}{a['t']:>8.2f}"
+              f"{100 * a['win']:>8.1f}{b['mean']:>+11.4f}")
 
     print("\nFULL-SAMPLE view of every configuration (train+judgment; DIAGNOSTIC ONLY, not a bar)")
-    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'net(2.71)':>11}{'t_day':>8}{'net(0.71)':>11}"
+    print(f"{'m(bps)':>7}{'h(min)':>8}{'n':>6}{'net%(.0271)':>11}{'t_day':>8}{'net%(.0071)':>11}"
           f"{'t_day':>8}{'gross':>10}")
     line()
     for m in M_GRID:
@@ -885,8 +888,8 @@ def main() -> None:
             a = summarise(tr, COST_CONS)
             b = summarise(tr, COST_FLOOR)
             g = tr["gross"].mean() if len(tr) else float("nan")
-            print(f"{m:>7.0f}{h:>8}{a['n']:>6}{a['mean']:>+11.2f}{a['t']:>8.2f}"
-                  f"{b['mean']:>+11.2f}{b['t']:>8.2f}{g:>+10.2f}")
+            print(f"{m:>7.0f}{h:>8}{a['n']:>6}{a['mean']:>+11.4f}{a['t']:>8.2f}"
+                  f"{b['mean']:>+11.4f}{b['t']:>8.2f}{g:>+10.2f}")
 
     print("\nMECHANISM DIAGNOSTIC (not a bar): is the post-release move CONTINUATION or REVERSAL?")
     print("mean gross of the continuation trade, by |signal| bucket, full sample, h=30")
@@ -947,7 +950,7 @@ def main() -> None:
                      ("FULL (diagnostic)", boj_cal)]:
         print(f"[{lab}]  MPM days available: {len(sub)}")
         print(f"{'m(bps)':>7}{'n':>6}{'fire%':>8}{'med fire@':>11}{'med hold':>10}"
-              f"{'net(2.71)':>11}{'t_day':>8}{'win%':>8}{'net(0.71)':>11}{'t_day':>8}")
+              f"{'net%(.0271)':>11}{'t_day':>8}{'win%':>8}{'net%(.0071)':>11}{'t_day':>8}")
         line()
         for m in M_GRID:
             tr = f3_trades(sub, m)
@@ -956,8 +959,8 @@ def main() -> None:
             fm = tr["fire_min"].median() if len(tr) else float("nan")
             hm = tr["hold"].median() if len(tr) else float("nan")
             print(f"{m:>7.0f}{a['n']:>6}{100 * a['n'] / max(1, len(sub)):>8.1f}{fm:>11.0f}"
-                  f"{hm:>10.0f}{a['mean']:>+11.2f}{a['t']:>8.2f}{100 * a['win']:>8.1f}"
-                  f"{b['mean']:>+11.2f}{b['t']:>8.2f}")
+                  f"{hm:>10.0f}{a['mean']:>+11.4f}{a['t']:>8.2f}{100 * a['win']:>8.1f}"
+                  f"{b['mean']:>+11.4f}{b['t']:>8.2f}")
         print()
 
     tr_train3 = {m: f3_trades(boj_cal[boj_cal["ts"] < boundary], m) for m in M_GRID}
@@ -1006,7 +1009,7 @@ def main() -> None:
             print(f"{lab:<16}{int(s.sum()):>10}"
                   + (f"{np.median(pv[s]):>24.1f}" if s.any() else f"{'-':>24}"))
         print(f"  median peak |5m| move on an MPM day: {np.median(pv):.1f} bps "
-              f"({np.median(pv) / COST_CONS:.1f}x the conservative round-trip cost)")
+              f"({np.median(pv) / 100 / COST_CONS:.1f}x the conservative round-trip cost)")
     print("\nMECHANISM NOTE (diagnostic, not a bar): at m=3 the trigger fires on EVERY MPM day")
     print("with a median fire minute of 3-5, i.e. it is triggered by ordinary Tokyo-lunch noise")
     print("long before the decision is published.  At m=8 the median fire minute moves to ~30,")
@@ -1016,9 +1019,9 @@ def main() -> None:
 
     # ------------------------------------------------------------------ verdict
     header("7. PRE-REGISTERED VERDICT")
-    print(f"bar (judgment half only, all three): n >= {BAR_N}  AND  net >= {BAR_NET:+.1f} bps/trade "
-          f"at cost {COST_CONS:.2f}  AND  day-clustered t >= {BAR_T}\n")
-    print(f"{'structure':<34}{'n':>6}{'net(2.71)':>11}{'t_day':>8}{'CI95':>20}   verdict")
+    print(f"bar (judgment half only, all three): n >= {BAR_N}  AND  net >= {BAR_NET:+.3f} %/trade "
+          f"at cost {COST_CONS:.4f} %  AND  day-clustered t >= {BAR_T}\n")
+    print(f"{'structure':<34}{'n':>6}{'net%(.0271)':>11}{'t_day':>8}{'CI95':>20}   verdict")
     line()
 
     def verdict_row(label: str, a: dict, clo: float, chi: float) -> None:
@@ -1026,12 +1029,12 @@ def main() -> None:
         if a["n"] < BAR_N:
             why.append(f"n={a['n']}<{BAR_N} (STRUCTURAL: sample is calendar-limited)")
         if not (np.isfinite(a["mean"]) and a["mean"] >= BAR_NET):
-            why.append(f"net={a['mean']:+.2f}<{BAR_NET:+.1f}")
+            why.append(f"net={a['mean']:+.4f}<{BAR_NET:+.3f}")
         if not (np.isfinite(a["t"]) and a["t"] >= BAR_T):
             why.append(f"t={a['t']:.2f}<{BAR_T}")
         v = "ADOPT" if not why else "FAIL -- " + "; ".join(why)
-        ci = f"[{clo:+.2f}, {chi:+.2f}]" if np.isfinite(clo) else "-"
-        print(f"{label:<34}{a['n']:>6}{a['mean']:>+11.2f}{a['t']:>8.2f}{ci:>20}   {v}")
+        ci = f"[{clo:+.4f}, {chi:+.4f}]" if np.isfinite(clo) else "-"
+        print(f"{label:<34}{a['n']:>6}{a['mean']:>+11.4f}{a['t']:>8.2f}{ci:>20}   {v}")
 
     if best is not None:
         a, _b, trb, clo, chi = judge_res[best]
@@ -1073,7 +1076,7 @@ def main() -> None:
     print("     than the BTC prior (BTC study #1: 0.767 on 19 events; here 0.745 on 146 events")
     print("     with 4-5x more events, and FOMC at 0.964 with 29/29 above the median).")
     print("  -> and it is UNTRADABLE BY THIS FAMILY: the volatility is real and large (section")
-    print("     2b: 33 bps of 30-minute range vs 12.6 bps on a matched hour, ~47x the 0.71 bps")
+    print("     2b: 33 bps of 30-minute range vs 12.6 bps on a matched hour, ~47x the 0.0071 %")
     print("     cost) but it is UNDIRECTED.  Part B shows the direction is not predictable from")
     print("     the first 5 minutes at any of the 9 enumerated thresholds/horizons.")
 
@@ -1114,7 +1117,7 @@ def main() -> None:
     header("9. CAVEATS")
     print("1. 1-minute bars cannot see the first-seconds spike.  Everything measured here is the")
     print("   RESIDUAL move after the first 60 seconds; the true release impulse is invisible in")
-    print("   this data and is exactly where the slippage lives.  The +2.00 bps reserve is a")
+    print("   this data and is exactly where the slippage lives.  The +0.02 % reserve is a")
     print("   guess, not a measurement -- it is why both cost columns are printed everywhere.")
     print("2. Dukascopy BID only; spread is a constant in the cost model, not a per-minute")
     print("   measurement.  The ask column covers the last 30 days only.")

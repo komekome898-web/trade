@@ -87,7 +87,7 @@ class Eng(L.Engine):
             # (bps of the fill's base price per 100 lots), with the base = the scene's best ask at our action
             ours = [a for a in inp["actions"] if a.get("op") == "place"]
             asks = [e for e in inp["market"] if e["type"] == "book" and e["t"] <= ours[0]["t"]][-1]["asks"]
-            self.slip = imp["k"] * L.qty_unit(inp) * 1e4 / asks[0][0]
+            self.slip = imp["k"] * L.qty_unit(inp) * 1e4 / asks[0][0]  # the tool's argument value (its unit: bp per 100 lots)
 
     def _owner(self, key, mine, stp):
         return "me" if (mine and stp) else f"o:{key}"
@@ -97,6 +97,7 @@ class Eng(L.Engine):
         for key, owner in ((ex.taker_order_id, ex.taker_owner_id), (ex.maker_order_id, ex.maker_owner_id)):
             if key not in self.mine:
                 continue
+            # the tool's Portfolio takes bp (its names fee_bps / maker_rebate_bps): the scene's rates are fractions, x 1e4
             pf = self.pf.setdefault(owner, Portfolio(initial_cash=0.0, fee_bps=self.rates[0] * 1e4,
                                                      maker_rebate_bps=-self.rates[1] * 1e4, owner_id=owner))
             before = pf.cash

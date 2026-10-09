@@ -46,6 +46,10 @@ FEASIBILITY and the judgment window is not consumed.  Otherwise pick the
 max daily-cluster-t cell, subject to the plateau condition; freeze <= 1.
 
 Deterministic: seed 20260829, no network, byte-identical reruns.
+
+(L-920 の後の単位: 上の事前登録の文は書き換えない。費用(taker 3.96bps = 0.0396 %)、
+資金調達(0.06 %/日)、1 往復あたりのネット(unit)、約定の値段と mid の距離(capture)は % で持つ。
+bp は値動き(mid の drift)にだけ使う。三つの項の和は capture(%)+ drift / 100 で % にする。)
 """
 from __future__ import annotations
 
@@ -65,8 +69,8 @@ _spec.loader.exec_module(cal)
 
 SEED = 20260829
 TICK = 1.0                     # FX_BTC_JPY price tick, JPY
-TAKER_BPS = 3.96
-FUND_BPS_DAY = 6.0             # 0.06%/day
+TAKER_PCT = 0.0396             # % (3.96 bps)
+FUND_PCT_DAY = 0.06            # 0.06%/day
 BACKSTOP_SEC = 120.0
 STORM_RET = 0.008              # |30m return| threshold (causal, 1m bars)
 STORM_OFF_MIN = 30             # minutes of OFF to end a storm spell
@@ -140,14 +144,14 @@ def run_cell(D, gate_kind: str, K: int) -> Cell:
     qb = dict(p=np.nan, q=0.0, t=np.inf, on=False)
     qa = dict(p=np.nan, q=0.0, t=np.inf, on=False)
     inv = 0
-    legs = []            # open legs FIFO: (t, price, side, mid, capture_bps)
+    legs = []            # open legs FIFO: (t, price, side, mid, capture_pct)
     cyc_legs = []        # all legs of the current cycle
     cyc_cash = 0.0
     cyc_t0 = np.nan
     cyc_inv_sec = 0.0
     last_ev_t = np.nan
     gate_off_t = np.nan  # when quoting-allowed turned off with inventory open
-    pairs = []           # (tau, cap_in, cap_out, drift_bps, kind)
+    pairs = []           # (tau, cap_in %, cap_out %, drift_bps, kind)
     cycles = []          # dict per completed cycle
     n_backstop = 0
     n_gap_drop = 0
@@ -187,9 +191,9 @@ def run_cell(D, gate_kind: str, K: int) -> Cell:
             legs = []
             return
         ref = cyc_legs[0][3]
-        pnl_bps = cyc_cash / ref * 1e4
-        fund = FUND_BPS_DAY * cyc_inv_sec / 86400.0
-        unit = (pnl_bps - fund) / n_pairs
+        pnl_pct = cyc_cash / ref * 100
+        fund = FUND_PCT_DAY * cyc_inv_sec / 86400.0
+        unit = (pnl_pct - fund) / n_pairs               # % per unit round trip
         day = int(np.floor(cyc_t0 / 86400.0))
         bad = bool(cal.span_touches_gap(np.array([cyc_t0]), np.array([t]),
                                         gs, ge)[0])
@@ -204,7 +208,7 @@ def run_cell(D, gate_kind: str, K: int) -> Cell:
         """side +1 = our bid bought, -1 = our ask sold."""
         nonlocal inv, cyc_cash, cyc_t0, gate_off_t
         tick_accrue(t)
-        cap = (cur_mid - price) / cur_mid * 1e4 * side
+        cap = (cur_mid - price) / cur_mid * 100 * side     # % (L-920)
         if inv == 0:
             cyc_t0 = t
         reducing = (inv > 0 and side < 0) or (inv < 0 and side > 0)
@@ -224,10 +228,10 @@ def run_cell(D, gate_kind: str, K: int) -> Cell:
         nonlocal inv, cyc_cash, n_backstop
         tick_accrue(t)
         side = -1 if inv > 0 else 1
-        price = cur_mid * (1.0 - side * TAKER_BPS / 1e4)
+        price = cur_mid * (1.0 - side * TAKER_PCT / 100)
         n_backstop += 1
         while inv != 0:
-            cap = (cur_mid - price) / cur_mid * 1e4 * side
+            cap = (cur_mid - price) / cur_mid * 100 * side     # %
             if legs:
                 t_in, p_in, s_in, m_in, c_in = legs.pop(0)
                 drift = (cur_mid - m_in) / m_in * 1e4 * s_in
@@ -359,7 +363,7 @@ def main() -> int:
                "(selection only; contaminated week)")
     tape_dir = cal.default_tape_dir()
     print(f"[data] tape dir: {tape_dir}")
-    (t_tk, bid, ask, bsz, asz, mid, spread_bps,
+    (t_tk, bid, ask, bsz, asz, mid, spread_pct,
      t_ex, px, sz, buy, span) = cal.load(tape_dir)
     assert t_tk[-1] < CUTOFF and t_ex[-1] < CUTOFF, "judgment region present!"
     gs, ge = cal.find_gaps(t_tk, t_ex)
@@ -387,7 +391,7 @@ def main() -> int:
         t_tk[t_tk > burn_end] / 86400.0).astype(np.int64))
 
     cal.header("cells")
-    print(f"{'cell':<14}{'cycles':>7}{'cyc/day':>9}{'unit bps':>10}"
+    print(f"{'cell':<14}{'cycles':>7}{'cyc/day':>9}{'unit %':>10}"
           f"{'t':>7}  {'95% CI':<20}{'Sharpe':>8}{'maxDD':>8}"
           f"{'taker%':>7}{'maxK':>6}")
     results = {}
@@ -398,9 +402,9 @@ def main() -> int:
         nm = f"{gate}/K={K}"
         if st["n"]:
             print(f"{nm:<14}{st['n']:>7}{st['per_day']:>9.1f}"
-                  f"{st['unit']:>10.3f}{st['t']:>7.2f}  "
-                  f"[{st['ci'][0]:+.3f},{st['ci'][1]:+.3f}]"
-                  f"{st['sharpe']:>8.2f}{st['maxdd']:>8.0f}"
+                  f"{st['unit']:>10.5f}{st['t']:>7.2f}  "
+                  f"[{st['ci'][0]:+.5f},{st['ci'][1]:+.5f}]"
+                  f"{st['sharpe']:>8.2f}{st['maxdd']:>8.2f}"
                   f"{st['taker_pct']:>7.1f}{st['maxk_mean']:>6.2f}")
         else:
             print(f"{nm:<14}{st['n']:>7}")
@@ -422,11 +426,11 @@ def main() -> int:
         line += "  ".join(f"{int(x)}s {100 * np.mean(tau[mk] <= x):.1f}%"
                           for x in (5, 15, 60, 300)) if mk.any() else "n/a"
         print(line)
-        print(f"  three-term (mean bps): capture_in {ci_.mean():+.3f}  "
-              f"capture_out {co_.mean():+.3f}  drift {dr_.mean():+.3f}  "
-              f"sum {ci_.mean() + co_.mean() + dr_.mean():+.3f}")
-        print(f"  maker pairs only    : capture_in {ci_[mk].mean():+.3f}  "
-              f"capture_out {co_[mk].mean():+.3f}  drift {dr_[mk].mean():+.3f}"
+        print(f"  three-term (mean; capture %, drift bps): capture_in {ci_.mean():+.5f}  "
+              f"capture_out {co_.mean():+.5f}  drift {dr_.mean():+.3f}  "
+              f"sum {ci_.mean() + co_.mean() + dr_.mean() / 100:+.5f} %")
+        print(f"  maker pairs only    : capture_in {ci_[mk].mean():+.5f}  "
+              f"capture_out {co_[mk].mean():+.5f}  drift {dr_[mk].mean():+.3f}"
               if mk.any() else "")
         print(f"  tau p50 {np.median(tau[mk]):.1f}s  p90 "
               f"{np.percentile(tau[mk], 90):.1f}s" if mk.any() else "")
@@ -436,8 +440,8 @@ def main() -> int:
         if gate != "win" or not c.pairs:
             continue
         ci_ = np.array([p[1] for p in c.pairs])
-        print(f"[win/K={K}] mean capture of entering legs {ci_.mean():+.3f} "
-              f"bps  (#26 in-window touch capture +0.60; requote-follow "
+        print(f"[win/K={K}] mean capture of entering legs {ci_.mean():+.5f} "
+              f"%  (#26 in-window touch capture +0.0060 % (+0.60 bps); requote-follow "
               f"engine differs by construction -- see limitations)")
 
     cal.header("selection rule (PREREG section 4)")

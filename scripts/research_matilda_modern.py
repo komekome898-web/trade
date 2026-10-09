@@ -266,6 +266,11 @@ Offline only -- reads files, opens no sockets, places no orders.
 Read-only, idempotent, deterministic.  seed 20260828, no network.
 
 Usage: PYTHONPATH=src python scripts/research_matilda_modern.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。1 単位の損益(u、taker の出の値段
+mid ∓ 3.96bps = 0.0396 % を含む)・往復の損益・1 日のネット・最大の落ち込み・CI、約定の値段と mid
+の距離(capture)・入りの値段と中心の距離(f_dist)・1 tick の値段の率は % で持つ(前の bps / 100)。
+bp は値動き(adverse・前向きの fwd)にだけ使う。#26 の再現の帯(capture +0.5..+0.6bps、判定の幅
+0.35..0.80bps)は % に換えて(0.005..0.006 %、0.0035..0.0080 %)同じ線で比べる。)
 """
 from __future__ import annotations
 
@@ -290,7 +295,7 @@ DELTA = 2.0           # exit_setting
 QUOTE_LIFE = 10.0     # s
 TICK = 1.0            # JPY
 UNIT_BTC = 0.01
-TAKER_BPS = 3.96      # 激動 taker one-way (research-protocol §3)
+TAKER_PCT = 0.0396    # % 激動 taker one-way (research-protocol §3; 3.96 bps)
 MARKOUT = 5.0         # s
 BAR_SEC = cal.VR_BAR_SEC          # 5
 NBARS = cal.VR_BARS               # 6
@@ -325,13 +330,13 @@ class Market:
 
 
 def build_market(data_dir: Path) -> Market:
-    (t_tk, bid, ask, bsz, asz, mid, spread_bps,
+    (t_tk, bid, ask, bsz, asz, mid, spread_pct,
      t_ex, px, sz, buy, span_days) = cal.load(data_dir)
     gs, ge = cal.find_gaps(t_tk, t_ex)
 
     m = Market()
     m.t_tk, m.bid, m.ask, m.bsz, m.asz = t_tk, bid, ask, bsz, asz
-    m.mid, m.spread = mid, spread_bps
+    m.mid, m.spread = mid, spread_pct   # % (cal.load returns % since L-920)
     m.t_ex, m.px, m.sz, m.buy = t_ex, px, sz, buy
     m.gs, m.ge = gs, ge
     m.span_days = span_days
@@ -575,7 +580,7 @@ def control_quotes(m: Market, stride: int = 10):
             m5 = mid_at(m, ft + MARKOUT)
             sg = 1.0 if is_bid else -1.0
             if np.isfinite(m0) and m0 > 0:
-                caps.append(sg * (m0 - price) / m0 * 1e4)
+                caps.append(sg * (m0 - price) / m0 * 100)      # % (capture)
                 advs.append(sg * (m5 - m0) / m0 * 1e4 if np.isfinite(m5) else np.nan)
     return (n_q, n_f, np.array(caps), np.array(advs), np.array(lives))
 
@@ -609,7 +614,7 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
     c_texit, c_units, c_type, c_pnl, c_hold, c_day, c_maxrung = [], [], [], [], [], [], []
     c_avg, c_exitpx, c_first, c_side = [], [], [], []
     # per-unit records (for cluster stats)
-    u_bps, u_day, u_texit, u_rung, u_type = [], [], [], [], []
+    u_pct, u_day, u_texit, u_rung, u_type = [], [], [], [], []
 
     def retire(p, filled):
         q_t0.append(p[0]); q_side.append(1 if p[3] else -1)
@@ -690,12 +695,12 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
                 m5 = mid_at(m, ft + MARKOUT)
                 sg = 1.0 if is_bid else -1.0
                 if np.isfinite(m0) and m0 > 0:
-                    f_cap.append(sg * (m0 - price) / m0 * 1e4)
+                    f_cap.append(sg * (m0 - price) / m0 * 100)  # % (capture)
                     f_adv.append(sg * (m5 - m0) / m0 * 1e4
                                  if np.isfinite(m5) else np.nan)
                 else:
                     f_cap.append(np.nan); f_adv.append(np.nan)
-                f_dist.append(sg * (ce_ref - price) / ce_ref * 1e4)
+                f_dist.append(sg * (ce_ref - price) / ce_ref * 100)  # % (same-time distance)
                 f_t.append(ft); f_price.append(price)
                 f_side.append(1 if is_bid else -1); f_rung.append(rung)
                 if side == 0:
@@ -716,7 +721,7 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
                 _close(tev, epx, etype, side, inv_px, inv_rung, t_first,
                        c_texit, c_units, c_type, c_pnl, c_hold, c_day,
                        c_maxrung, c_avg, c_exitpx, c_first, c_side,
-                       u_bps, u_day, u_texit, u_rung, u_type)
+                       u_pct, u_day, u_texit, u_rung, u_type)
                 units_closed += k
                 inv_px, inv_t, inv_rung = [], [], []
                 side = 0
@@ -729,12 +734,12 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
         # ---- time ladder: forced taker exit -------------------------------
         if side != 0 and (s - t_first) >= T2:
             mp = float(s_mid[i])
-            xpx = mp * (1.0 - side * TAKER_BPS / 1e4)
+            xpx = mp * (1.0 - side * TAKER_PCT / 100)
             k = len(inv_px)
             _close(s, xpx, EXIT_FORCED, side, inv_px, inv_rung, t_first,
                    c_texit, c_units, c_type, c_pnl, c_hold, c_day,
                    c_maxrung, c_avg, c_exitpx, c_first, c_side,
-                   u_bps, u_day, u_texit, u_rung, u_type)
+                   u_pct, u_day, u_texit, u_rung, u_type)
             units_closed += k
             inv_px, inv_t, inv_rung = [], [], []
             side = 0
@@ -764,14 +769,14 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
                     # R7b: a re-submitted limit already through the market
                     # executes immediately as a TAKER, not at its own price
                     mp = float(s_mid[i])
-                    xpx = mp * (1.0 - side * TAKER_BPS / 1e4)
+                    xpx = mp * (1.0 - side * TAKER_PCT / 100)
                     k = len(inv_px)
                     n_marketable += 1
                     _close(s, xpx, EXIT_RELAX if relaxed else EXIT_TP, side,
                            inv_px, inv_rung, t_first,
                            c_texit, c_units, c_type, c_pnl, c_hold, c_day,
                            c_maxrung, c_avg, c_exitpx, c_first, c_side,
-                           u_bps, u_day, u_texit, u_rung, u_type)
+                           u_pct, u_day, u_texit, u_rung, u_type)
                     units_closed += k
                     inv_px, inv_t, inv_rung = [], [], []
                     side = 0
@@ -838,12 +843,12 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
     r.c_maxrung = np.array(c_maxrung, int)
     r.c_first = np.array(c_first, float); r.c_exitpx = np.array(c_exitpx, float)
     r.c_side = np.array(c_side, float); r.c_avg = np.array(c_avg, float)
-    r.u_bps = np.array(u_bps, float); r.u_day = np.array(u_day, int)
+    r.u_pct = np.array(u_pct, float); r.u_day = np.array(u_day, int)
     r.u_texit = np.array(u_texit, float); r.u_rung = np.array(u_rung, int)
     r.u_type = np.array(u_type, int)
     # what the FIRST rung alone would have returned at the same exit price
     with np.errstate(all="ignore"):
-        r.c_first_bps = (r.c_side * (r.c_exitpx - r.c_first) / r.c_first * 1e4
+        r.c_first_pct = (r.c_side * (r.c_exitpx - r.c_first) / r.c_first * 100
                          if len(r.c_first) else np.array([], float))
     # forward 5 s mid move from placement, signed toward the quote's side
     if len(r.q_t0):
@@ -870,13 +875,13 @@ def run_cell(m: Market, N: int, T1: float, T2: float, gate: str,
 def _close(tev, xpx, etype, side, inv_px, inv_rung, t_first,
            c_texit, c_units, c_type, c_pnl, c_hold, c_day, c_maxrung,
            c_avg, c_exitpx, c_first, c_side,
-           u_bps, u_day, u_texit, u_rung, u_type):
+           u_pct, u_day, u_texit, u_rung, u_type):
     tot = 0.0
     day = int(math.floor(tev / 86400.0))
     for e, rg in zip(inv_px, inv_rung):
-        b = side * (xpx - e) / e * 1e4
+        b = side * (xpx - e) / e * 100       # % per unit (L-920; was x 1e4)
         tot += b
-        u_bps.append(b); u_day.append(day); u_texit.append(tev)
+        u_pct.append(b); u_day.append(day); u_texit.append(tev)
         u_rung.append(rg); u_type.append(etype)
     c_texit.append(tev); c_units.append(len(inv_px)); c_type.append(etype)
     c_pnl.append(tot); c_hold.append(tev - t_first); c_day.append(day)
@@ -895,24 +900,24 @@ def cell_stats(r: Result, eff_days: float):
     st["f"] = float(r.q_fill.mean()) if len(r.q_fill) else np.nan
     st["n_cycles"] = int(len(r.c_pnl))
     st["rt_per_day"] = len(r.c_pnl) / eff_days if eff_days > 0 else np.nan
-    st["units"] = int(len(r.u_bps))
+    st["units"] = int(len(r.u_pct))
 
-    if len(r.u_bps) == 0:
+    if len(r.u_pct) == 0:
         st.update(dict(daily_net=np.nan, tcl=np.nan, lo=np.nan, hi=np.nan,
                        sharpe=np.nan, maxdd=np.nan, mean_unit=np.nan,
                        mean_rt=np.nan, t_daily=np.nan, ndays=0))
         return st
 
-    total = float(r.u_bps.sum())
+    total = float(r.u_pct.sum())
     st["daily_net"] = total / eff_days
-    lo, hi, t = cal.boot_ci(r.u_bps, r.u_day, seed=SEED)
+    lo, hi, t = cal.boot_ci(r.u_pct, r.u_day, seed=SEED)
     st["lo"], st["hi"], st["tcl"] = lo, hi, t
-    st["mean_unit"] = float(r.u_bps.mean())
+    st["mean_unit"] = float(r.u_pct.mean())
     st["mean_rt"] = float(r.c_pnl.mean())
 
     # daily aggregation over the usable seconds actually present per day
     days = np.unique(r.u_day)
-    daily = np.array([r.u_bps[r.u_day == d].sum() for d in days])
+    daily = np.array([r.u_pct[r.u_day == d].sum() for d in days])
     st["ndays"] = len(days)
     st["daily_arr"] = daily
     st["days"] = days
@@ -923,7 +928,7 @@ def cell_stats(r: Result, eff_days: float):
                      if sd and np.isfinite(sd) and sd > 0 else np.nan)
 
     o = np.argsort(r.u_texit, kind="stable")
-    cum = np.cumsum(r.u_bps[o])
+    cum = np.cumsum(r.u_pct[o])
     peak = np.maximum.accumulate(cum)
     st["maxdd"] = float(np.max(peak - cum)) if len(cum) else 0.0
     return st
@@ -959,7 +964,7 @@ def main() -> int:
         results[(N, T1, T2, gate)] = r
         print(f"  N={N} T=({T1:.0f},{T2:.0f}) gate={gate:<6} -> "
               f"quotes {len(r.q_fill):>7,}  fills {int(r.q_fill.sum()):>6,}  "
-              f"cycles {len(r.c_pnl):>5,}  units {len(r.u_bps):>6,}  "
+              f"cycles {len(r.c_pnl):>5,}  units {len(r.u_pct):>6,}  "
               f"marketable requotes {r.n_marketable:>5,}  "
               f"discarded cycles {r.n_discard_cycle}")
     naive = {}
@@ -971,25 +976,25 @@ def main() -> int:
     # =====================================================================
     stats = {k: cell_stats(r, m.eff_days) for k, r in results.items()}
     print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'quotes':>8}{'fills':>7}"
-          f"{'f':>7}{'cycles':>7}{'rt/day':>8}{'net bps/d':>11}"
-          f"{'clus t':>8}{'95% CI(unit bps)':>22}{'Sharpe':>8}{'maxDD':>9}")
+          f"{'f':>7}{'cycles':>7}{'rt/day':>8}{'net %/d':>11}"
+          f"{'clus t':>8}{'95% CI(unit %)':>22}{'Sharpe':>8}{'maxDD':>9}")
     for k in CELLS:
         N, T1, T2, gate = k
         s = stats[k]
         print(f"{N:>2} {f'{T1:.0f}/{T2:.0f}':<9}{gate:<8}"
               f"{s['n_quotes']:>8,}{s['n_fills']:>7,}"
               f"{100 * s['f']:>6.1f}%{s['n_cycles']:>7,}"
-              f"{fmt(s['rt_per_day'], 8, 1)}{fmt(s['daily_net'], 11, 2)}"
+              f"{fmt(s['rt_per_day'], 8, 1)}{fmt(s['daily_net'], 11, 4)}"
               f"{fmt(s['tcl'], 8, 2)}"
-              f"  [{s['lo']:+7.3f},{s['hi']:+7.3f}]"
-              f"{fmt(s['sharpe'], 8, 2)}{fmt(s['maxdd'], 9, 1)}")
-    print("\n  net bps/d and maxDD are notional-weighted (R11): a k-rung cycle "
+              f"  [{s['lo']:+9.5f},{s['hi']:+9.5f}]"
+              f"{fmt(s['sharpe'], 8, 2)}{fmt(s['maxdd'], 9, 3)}")
+    print("\n  net %/d and maxDD are notional-weighted (R11): a k-rung cycle "
           "contributes\n  the SUM of its k per-unit returns.  cluster t / CI "
-          "are the day-clustered\n  bootstrap of the MEAN PER-UNIT bps "
+          "are the day-clustered\n  bootstrap of the MEAN PER-UNIT % "
           f"(seed {SEED}, 2000 draws).")
 
     sub("1b. per-round-trip and per-unit means, and the inventory distribution")
-    print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'unit bps':>10}{'rt bps':>9}"
+    print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'unit %':>10}{'rt %':>9}"
           f"{'units/rt':>9}{'hold s p50':>11}"
           + "".join(f"{'rung' + str(j + 1):>8}" for j in range(4)))
     for k in CELLS:
@@ -1000,13 +1005,13 @@ def main() -> int:
             continue
         reach = [float((r.c_maxrung >= j + 1).mean()) for j in range(4)]
         print(f"{N:>2} {f'{T1:.0f}/{T2:.0f}':<9}{gate:<8}"
-              f"{fmt(s['mean_unit'], 10, 3)}{fmt(s['mean_rt'], 9, 3)}"
+              f"{fmt(s['mean_unit'], 10, 5)}{fmt(s['mean_rt'], 9, 5)}"
               f"{fmt(float(r.c_units.mean()), 9, 2)}"
               f"{fmt(float(np.median(r.c_hold)), 11, 1)}"
               + "".join(f"{100 * v:>7.1f}%" for v in reach))
     print("  rungN = share of round trips that reached at least N units.")
 
-    sub("1c. daily net bps by UTC day (the cluster the statistics rest on)")
+    sub("1c. daily net % by UTC day (the cluster the statistics rest on)")
     all_days = sorted(set(int(d) for k in CELLS for d in stats[k].get("days", [])))
     print(f"{'cell':<22}" + "".join(
         f"{str(cal.pd.Timestamp(d * 86400, unit='s', tz='UTC').date())[5:]:>9}"
@@ -1018,20 +1023,20 @@ def main() -> int:
         dd = dict(zip(s.get("days", []), s.get("daily_arr", [])))
         for d in all_days:
             v = dd.get(d)
-            row += f"{v:>9.1f}" if v is not None else f"{'-':>9}"
+            row += f"{v:>9.3f}" if v is not None else f"{'-':>9}"
         print(row)
 
     sub("1d. sensitivity: the naive requote treatment (marketable requote "
         "filled at its\n     own price instead of taker) -- a modelling "
         "error, shown for completeness")
-    print(f"{'cell':<24}{'primary net bps/d':>19}{'naive net bps/d':>17}"
-          f"{'primary unit bps':>18}{'naive unit bps':>16}")
+    print(f"{'cell':<24}{'primary net %/d':>19}{'naive net %/d':>17}"
+          f"{'primary unit %':>18}{'naive unit %':>16}")
     for k in CELLS:
         s1 = stats[k]
         s2 = cell_stats(naive[k], m.eff_days)
         print(f"{f'N{k[0]} {k[1]:.0f}/{k[2]:.0f} {k[3]}':<24}"
-              f"{fmt(s1['daily_net'], 19, 2)}{fmt(s2['daily_net'], 17, 2)}"
-              f"{fmt(s1['mean_unit'], 18, 3)}{fmt(s2['mean_unit'], 16, 3)}")
+              f"{fmt(s1['daily_net'], 19, 4)}{fmt(s2['daily_net'], 17, 4)}"
+              f"{fmt(s1['mean_unit'], 18, 5)}{fmt(s2['mean_unit'], 16, 5)}")
 
     # =====================================================================
     header("2. N=1 VERSUS N=4 -- THE MECHANISM CONTRAST")
@@ -1039,7 +1044,7 @@ def main() -> int:
     print("Does averaging RESCUE the round trip, or only DELAY the loss?")
     sub("2a. per-rung entry economics (all cells pooled by N, gate=none)")
     print(f"{'N':>2} {'T1/T2':<9}{'rung':>6}{'fills':>8}"
-          f"{'(entry-centre)/centre bps':>27}{'capture':>9}{'adv(5s)':>9}"
+          f"{'(entry-centre)/centre %':>27}{'capture %':>10}{'adv(5s)':>9}"
           f"{'cap+adv':>9}")
     for k in CELLS:
         N, T1, T2, gate = k
@@ -1054,35 +1059,35 @@ def main() -> int:
                 continue
             # signed distance of the fill from the centre, adverse-positive
             print(f"{N:>2} {f'{T1:.0f}/{T2:.0f}':<9}{j + 1:>6}{int(sel.sum()):>8,}"
-                  f"{fmt(float(np.nanmean(r.f_dist[sel])), 27, 3)}"
-                  f"{fmt(float(np.nanmean(r.f_cap[sel])), 9, 3)}"
+                  f"{fmt(float(np.nanmean(r.f_dist[sel])), 27, 5)}"
+                  f"{fmt(float(np.nanmean(r.f_cap[sel])), 10, 5)}"
                   f"{fmt(float(np.nanmean(r.f_adv[sel])), 9, 3)}"
-                  f"{fmt(float(np.nanmean(r.f_cap[sel] + r.f_adv[sel])), 9, 3)}")
+                  f"{fmt(float(np.nanmean(r.f_cap[sel] + r.f_adv[sel] / 100)), 9, 5)}")  # %
 
     sub("2b. per-rung round-trip contribution (which rung earns, which bleeds)")
     print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'rung':>6}{'units':>8}"
-          f"{'mean bps':>10}{'share of total bps':>20}")
+          f"{'mean %':>10}{'share of total %':>20}")
     for k in CELLS:
         N, T1, T2, gate = k
         r = results[k]
-        if len(r.u_bps) == 0:
+        if len(r.u_pct) == 0:
             continue
-        tot = r.u_bps.sum()
+        tot = r.u_pct.sum()
         for j in range(N):
             sel = r.u_rung == j
             if sel.sum() == 0:
                 continue
             print(f"{N:>2} {f'{T1:.0f}/{T2:.0f}':<9}{gate:<8}{j + 1:>6}"
-                  f"{int(sel.sum()):>8,}{fmt(float(r.u_bps[sel].mean()), 10, 3)}"
-                  f"{fmt(100 * float(r.u_bps[sel].sum()) / tot if tot else np.nan, 19, 1)}%")
+                  f"{int(sel.sum()):>8,}{fmt(float(r.u_pct[sel].mean()), 10, 5)}"
+                  f"{fmt(100 * float(r.u_pct[sel].sum()) / tot if tot else np.nan, 19, 1)}%")
 
     sub("2c. averaging decomposition -- multi-rung cycles only")
     print("For every cycle with k>=2 units: what the FIRST rung alone would have")
     print("returned at the same exit price, versus what the averaged inventory")
     print("actually returned per unit.  A positive delta means averaging helped.")
     print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'k>=2 cycles':>12}"
-          f"{'rung1-only bps':>16}{'avg per-unit bps':>18}{'delta':>9}"
-          f"{'total bps k>=2':>16}")
+          f"{'rung1-only %':>16}{'avg per-unit %':>18}{'delta':>9}"
+          f"{'total % k>=2':>16}")
     for k in CELLS:
         N, T1, T2, gate = k
         if N == 1:
@@ -1093,13 +1098,13 @@ def main() -> int:
         sel = r.c_units >= 2
         if sel.sum() == 0:
             continue
-        first_only = r.c_first_bps[sel]
+        first_only = r.c_first_pct[sel]
         per_unit = r.c_pnl[sel] / r.c_units[sel]
         print(f"{N:>2} {f'{T1:.0f}/{T2:.0f}':<9}{gate:<8}{int(sel.sum()):>12,}"
-              f"{fmt(float(first_only.mean()), 16, 3)}"
-              f"{fmt(float(per_unit.mean()), 18, 3)}"
-              f"{fmt(float((per_unit - first_only).mean()), 9, 3)}"
-              f"{fmt(float(r.c_pnl[sel].sum()), 16, 1)}")
+              f"{fmt(float(first_only.mean()), 16, 5)}"
+              f"{fmt(float(per_unit.mean()), 18, 5)}"
+              f"{fmt(float((per_unit - first_only).mean()), 9, 5)}"
+              f"{fmt(float(r.c_pnl[sel].sum()), 16, 3)}")
 
     sub("2d. inventory time distribution (how long each rung count is carried)")
     print(f"{'N':>2} {'T1/T2':<9}{'gate':<8}{'hold p50':>10}{'hold p90':>10}"
@@ -1119,8 +1124,8 @@ def main() -> int:
     # =====================================================================
     header("3. ADVERSE-SELECTION COUNTERFACTUAL (filled vs missed)")
     # =====================================================================
-    print("Calibration reference (#26, queue/C1/10s): capture +0.604, "
-          "adv(5s) -1.321,\n  cap+adv -0.716 in the S7 window; f 18.1% all / "
+    print("Calibration reference (#26, queue/C1/10s): capture +0.00604 %, "
+          "adv(5s) -1.321 bps,\n  cap+adv -0.00716 % in the S7 window; f 18.1% all / "
           "23.0% in-window.")
     print(f"\n{'cell':<24}{'placed':>8}{'filled':>8}{'f':>7}"
           f"{'FILLED cap':>11}{'FILLED adv5':>12}{'FILLED c+a':>11}"
@@ -1133,9 +1138,9 @@ def main() -> int:
         fl = r.q_fill
         print(f"{f'N{N} {T1:.0f}/{T2:.0f} {gate}':<24}{len(fl):>8,}"
               f"{int(fl.sum()):>8,}{100 * fl.mean():>6.1f}%"
-              f"{fmt(float(np.nanmean(r.f_cap)), 11, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap)), 11, 5)}"
               f"{fmt(float(np.nanmean(r.f_adv)), 12, 3)}"
-              f"{fmt(float(np.nanmean(r.f_cap + r.f_adv)), 11, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap + r.f_adv / 100)), 11, 5)}"  # %
               f"{fmt(float(np.nanmean(r.q_fwd[~fl])), 12, 3)}"
               f"{fmt(float(np.nanmean(r.q_fwd[fl])), 12, 3)}")
     print("\n  fwd5 = signed mid change from the QUOTE PLACEMENT second to +5 s,")
@@ -1148,14 +1153,14 @@ def main() -> int:
     # =====================================================================
     print("v52's prediction: the losses concentrate in the forced (taker) exit.")
     print(f"\n{'cell':<24}{'bucket':<9}{'cycles':>8}{'share':>8}{'units':>8}"
-          f"{'mean unit bps':>15}{'total bps':>12}{'share of P&L':>14}"
+          f"{'mean unit %':>15}{'total %':>12}{'share of P&L':>14}"
           f"{'hold p50':>10}")
     for k in CELLS:
         N, T1, T2, gate = k
         r = results[k]
         if len(r.c_pnl) == 0:
             continue
-        tot = r.u_bps.sum()
+        tot = r.u_pct.sum()
         for b in (EXIT_TP, EXIT_RELAX, EXIT_FORCED):
             csel = r.c_type == b
             usel = r.u_type == b
@@ -1164,15 +1169,15 @@ def main() -> int:
             print(f"{f'N{N} {T1:.0f}/{T2:.0f} {gate}':<24}{EXIT_NAMES[b]:<9}"
                   f"{int(csel.sum()):>8,}{100 * csel.mean():>7.1f}%"
                   f"{int(usel.sum()):>8,}"
-                  f"{fmt(float(r.u_bps[usel].mean()), 15, 3)}"
-                  f"{fmt(float(r.u_bps[usel].sum()), 12, 1)}"
-                  f"{fmt(100 * float(r.u_bps[usel].sum()) / tot if tot else np.nan, 13, 1)}%"
+                  f"{fmt(float(r.u_pct[usel].mean()), 15, 5)}"
+                  f"{fmt(float(r.u_pct[usel].sum()), 12, 3)}"
+                  f"{fmt(100 * float(r.u_pct[usel].sum()) / tot if tot else np.nan, 13, 1)}%"
                   f"{fmt(float(np.percentile(r.c_hold[csel], 50)), 10, 1)}")
 
     # =====================================================================
     header("5. SELECTION RULE (PREREG §4) APPLIED")
     # =====================================================================
-    print("1. cut: daily net bps > 0 AND fills >= 100")
+    print("1. cut: daily net % > 0 AND fills >= 100")
     passing = []
     for k in CELLS:
         s = stats[k]
@@ -1180,7 +1185,7 @@ def main() -> int:
               and s["n_fills"] >= 100)
         N, T1, T2, gate = k
         print(f"   N={N} T=({T1:.0f},{T2:.0f}) gate={gate:<6}: "
-              f"daily net {fmt(s['daily_net'], 9, 2)} bps, fills "
+              f"daily net {fmt(s['daily_net'], 9, 4)} %, fills "
               f"{s['n_fills']:>6,}  -> {'PASS' if ok else 'cut'}")
         if ok:
             passing.append(k)
@@ -1204,7 +1209,7 @@ def main() -> int:
                   f"cluster t {fmt(stats[k]['tcl'], 7, 2)}"
                   f"{'   <== max' if k == best else ''}")
         print("\n3. plateau condition: each axis neighbour must keep >= 50 % of")
-        print("   the selected cell's daily net bps")
+        print("   the selected cell's daily net %")
         base = stats[best]["daily_net"]
         plateau_ok = True
         N, T1, T2, gate = best
@@ -1220,7 +1225,7 @@ def main() -> int:
             ok = np.isfinite(ratio) and ratio >= 0.5
             plateau_ok &= ok
             print(f"   axis {axis:<7} neighbour N={nn} T=({a1:.0f},{a2:.0f}) "
-                  f"gate={gg:<6}: daily net {fmt(v, 9, 2)} "
+                  f"gate={gg:<6}: daily net {fmt(v, 9, 4)} "
                   f"({fmt(100 * ratio, 6, 0)}% of selected) -> "
                   f"{'ok' if ok else 'DEGRADED'}")
         selected = best
@@ -1239,12 +1244,12 @@ def main() -> int:
     print("    centre -/+ delta*vola with beta = delta = 2.  They are THE SAME")
     print("    PRICE (v52's lsp == lep, ssp == sep).  A single-rung cycle can")
     print("    therefore never earn more than the break-even guard, 1 tick =")
-    print(f"    {1e4 / float(np.median(m.mid)):.4f} bps at today's price.  Its only "
+    print(f"    {100 / float(np.median(m.mid)):.6f} % at today's price.  Its only "
           "other source of\n    gain is the centre drifting its way, which is "
           "symmetric.  This is an\n    identity of the frozen family, not an "
           "empirical accident.")
     print(f"\n{'cell':<24}{'TP cycles':>10}{'at guard px':>13}"
-          f"{'guard bps':>11}{'non-guard bps':>15}")
+          f"{'guard %':>11}{'non-guard %':>15}")
     for k in CELLS:
         r = results[k]
         if len(r.c_pnl) == 0:
@@ -1259,7 +1264,7 @@ def main() -> int:
                        where=r.c_units > 0)
         print(f"{f'N{k[0]} {k[1]:.0f}/{k[2]:.0f} {k[3]}':<24}{int(sel.sum()):>10,}"
               f"{100 * isg.sum() / sel.sum():>12.1f}%"
-              f"{fmt(float(pu[isg].mean()) if isg.any() else np.nan, 11, 4)}"
+              f"{fmt(float(pu[isg].mean()) if isg.any() else np.nan, 11, 6)}"
               f"{fmt(float(pu[isn].mean()) if isn.any() else np.nan, 15, 3)}")
 
     print("\n(b) THE BREAK-EVEN REQUIREMENT.  p_TP*g_TP + p_relax*l_relax +")
@@ -1269,18 +1274,18 @@ def main() -> int:
           f"{'l_lose actual':>15}{'l_lose needed':>15}{'factor':>9}")
     for k in CELLS:
         r = results[k]
-        if len(r.u_bps) == 0:
+        if len(r.u_pct) == 0:
             continue
         win = r.u_type == EXIT_TP
         lose = ~win
         if not win.any() or not lose.any():
             continue
         pw = float(win.mean()); pl = float(lose.mean())
-        gw = float(r.u_bps[win].mean()); gl = float(r.u_bps[lose].mean())
+        gw = float(r.u_pct[win].mean()); gl = float(r.u_pct[lose].mean())
         need = -pw * gw / pl
         print(f"{f'N{k[0]} {k[1]:.0f}/{k[2]:.0f} {k[3]}':<24}"
-              f"{100 * pw:>7.1f}%{fmt(gw, 9, 3)}{100 * pl:>7.1f}%"
-              f"{fmt(gl, 15, 3)}{fmt(need, 15, 3)}{fmt(gl / need, 9, 1)}x")
+              f"{100 * pw:>7.1f}%{fmt(gw, 9, 5)}{100 * pl:>7.1f}%"
+              f"{fmt(gl, 15, 5)}{fmt(need, 15, 5)}{fmt(gl / need, 9, 1)}x")
     print("\n    The losing bucket is not a parameter: it IS the 60-120 s")
     print("    continuation of the adverse move that made the TP unreachable --")
     print("    the same selection effect #26 measured at 5 s (-1.26 bps here),")
@@ -1320,7 +1325,7 @@ def main() -> int:
     assert ok_all, "position integrity violated -- results not read"
 
     sub("6b. reproduction gate against report #26 (gate=none, N=1)")
-    print("Bar: f in 17-23 % and capture in +0.5..+0.6 bps must be reproduced by")
+    print("Bar: f in 17-23 % and capture in +0.005..+0.006 % must be reproduced by")
     print("the entry leg of the null-side cells, or the implementation is "
           "suspect\nand the results are NOT read.")
     gate_ok = True
@@ -1333,23 +1338,23 @@ def main() -> int:
         cap = float(np.nanmean(r.f_cap))
         adv = float(np.nanmean(r.f_adv))
         f_ok = 0.13 <= f <= 0.28
-        c_ok = 0.35 <= cap <= 0.80
+        c_ok = 0.0035 <= cap <= 0.0080   # % (0.35..0.80 bps before L-920)
         gate_ok &= f_ok and c_ok
         print(f"  N=1 T=({T1:.0f},{T2:.0f}) gate=none : f {100 * f:5.2f}% "
-              f"{'OK' if f_ok else 'OUT OF RANGE'} | capture {cap:+.3f} bps "
-              f"{'OK' if c_ok else 'OUT OF RANGE'} | adv(5s) {adv:+.3f} "
-              f"| cap+adv {cap + adv:+.3f}")
+              f"{'OK' if f_ok else 'OUT OF RANGE'} | capture {cap:+.5f} % "
+              f"{'OK' if c_ok else 'OUT OF RANGE'} | adv(5s) {adv:+.3f} bps "
+              f"| cap+adv {cap + adv / 100:+.5f} %")
     nq, nf, ccap, cadv, cliv = control_quotes(m)
     print(f"\n  CONTROL population (same engine, same seconds, but touch quotes")
     print(f"  placed UNCONDITIONALLY on both sides every 10th usable second):")
     print(f"    n {nq:,}  f {100 * nf / max(nq, 1):5.2f}%  capture "
-          f"{np.nanmean(ccap):+.3f}  adv(5s) {np.nanmean(cadv):+.3f}  "
-          f"cap+adv {np.nanmean(ccap) + np.nanmean(cadv):+.3f}")
+          f"{np.nanmean(ccap):+.5f} %  adv(5s) {np.nanmean(cadv):+.3f} bps  "
+          f"cap+adv {np.nanmean(ccap) + np.nanmean(cadv) / 100:+.5f} %")
     print(f"    realized C1 quote life: median {np.median(cliv):.2f}s "
           f"mean {cliv.mean():.2f}s   (#26 measured median 1.01 s)")
     r0 = results[(1, 60.0, 120.0, "none")]
-    print(f"  The control reproduces #26 (f 18.1%, capture +0.604, adv -1.321,")
-    print(f"  cap+adv -0.716, quote life 1.01 s) on all five numbers.  M2's own "
+    print(f"  The control reproduces #26 (f 18.1%, capture +0.00604 %, adv -1.321 bps,")
+    print(f"  cap+adv -0.00716 %, quote life 1.01 s) on all five numbers.  M2's own "
           f"f sits\n  "
           f"{100 * nf / max(nq, 1) - 100 * float(r0.q_fill.mean()):.1f} pp "
           f"BELOW the control because M2 quotes ONLY when the touch is already "
@@ -1391,7 +1396,7 @@ def main() -> int:
     print("* Our own quote adds no size to the book, so a sweep that would have "
           "stopped\n  at our level still counts as a sweep (imported from #26).")
     print("* Funding (0.06 %/day, 05/13/21 UTC) is not charged; expected share "
-          "of a\n  <=240 s cycle is ~0.017 bps.")
+          "of a\n  <=240 s cycle is ~0.00017 %.")
     print("* Unexplored directions (NOT tested here, listed so the rejection "
           "level is\n  honest): v52's doten force-close on a signal flip (R4), "
           "beta/gamma/delta\n  other than 2, quote lifetimes other than 10 s, "

@@ -150,7 +150,6 @@ class ZiplineReloaded(Base):
         register("scene", csvdir_equities(["minute"], os.path.join(work, "csv")), calendar_name="24/7",
                  start_session=day, end_session=end_day, minutes_per_day=1440)
         ingest("scene", show_progress=False)
-        bps = adj(cfg["costs"]) * 10000
         rate = (cfg["costs"]["maker_fee_pct"] if cfg["execution"] == "maker" and not cfg["stop_loss_pct"]
                 else cfg["costs"]["taker_fee_pct"]) / 100
         N = cfg["max_hold_bars"]
@@ -160,7 +159,8 @@ class ZiplineReloaded(Base):
 
         def initialize(ctx):
             ctx.a = sid(0)   # the only asset of the bundle (symbol() looks up as of the session start, before its first minute)
-            set_slippage(slippage.FixedBasisPointsSlippage(basis_points=bps, volume_limit=1.0))
+            # the tool's basis_points is bp (its name): adj() is a fraction (the scene's spread / 2 + slippage, from %), x 1e4
+            set_slippage(slippage.FixedBasisPointsSlippage(basis_points=adj(cfg["costs"]) * 10000, volume_limit=1.0))
             set_commission(commission.PerDollar(cost=rate))
 
         def handle_data(ctx, data):

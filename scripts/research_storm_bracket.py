@@ -71,6 +71,10 @@ deterministic bootstrap (seed 20260822, no network); epoch conversion
 cross-check printed; touch->entry ratio printed (order-of-magnitude check).
 
 Usage:  PYTHONPATH=src python scripts/research_storm_bracket.py
+
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(止めの距離 X = 入りからの
+値動き 10/15/20bps・gross・前向きの drift)にだけ使う。費用(片道 3.96bps = 0.0396 %)、
+ネット(gross − 費用)・最大の落ち込みと採用の線(+5bps = +0.05 %、1000bps = 10 %)は % で持つ。)
 """
 from __future__ import annotations
 
@@ -87,7 +91,7 @@ DATA = os.path.join(ROOT, "backtest_data", "candles_FX_BTC_JPY_30d_20260820.csv"
 LOOKBACK_MIN = 30                  # prior-extreme window (matches storm window)
 STOPS_BPS = (10.0, 15.0, 20.0)     # X: the only swept axis (with T)
 TIME_EXITS_MIN = (30, 60)          # T
-TAKER_BPS = 3.96                   # burst-regime taker cost, per side
+TAKER_PCT = 0.0396                 # % burst-regime taker cost, per side (3.96 bps)
 WINDOW_START = (12, 30)            # UTC clock window (report h)
 WINDOW_END = (15, 0)
 COOLDOWN_MIN = 30
@@ -203,11 +207,11 @@ def simulate(df: pd.DataFrame, stop_bps: float, texit_min: int,
             i += 1
             continue
 
-        gross = side * (exit_px - entry) / entry * 1e4
-        net = gross - 2 * TAKER_BPS
+        gross = side * (exit_px - entry) / entry * 1e4   # price move, bps
+        net = gross / 100 - 2 * TAKER_PCT                 # % (L-920: net of cost)
         entries_by_day[day] = entries_by_day.get(day, 0) + 1
         trades.append({"ts": ts.iloc[i], "day": day, "side": side,
-                       "net_bps": net, "exit": exit_kind,
+                       "net_pct": net, "exit": exit_kind,
                        "hold_min": (t[j_exit] - t[i]) / 60.0})
         next_ok_i = j_exit + COOLDOWN_MIN
         i = j_exit + 1
@@ -217,10 +221,10 @@ def simulate(df: pd.DataFrame, stop_bps: float, texit_min: int,
 
 
 def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
-    """(lo, hi, t) of the mean net bps, resampling whole UTC days."""
+    """(lo, hi, t) of the mean net (%), resampling whole UTC days."""
     by_day: dict[str, list[float]] = {}
     for tr in trades:
-        by_day.setdefault(tr["day"], []).append(tr["net_bps"])
+        by_day.setdefault(tr["day"], []).append(tr["net_pct"])
     days = list(by_day)
     if len(days) < 2:
         return None
@@ -233,7 +237,7 @@ def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
         if pool:
             means.append(sum(pool) / len(pool))
     means.sort()
-    mu = float(np.mean([tr["net_bps"] for tr in trades]))
+    mu = float(np.mean([tr["net_pct"] for tr in trades]))
     sd = float(np.std(means))
     lo = means[int(0.025 * len(means))]
     hi = means[min(len(means) - 1, int(0.975 * len(means)))]
@@ -241,10 +245,10 @@ def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
     return lo, hi, t_stat
 
 
-def max_dd_bps(trades: list[dict]) -> float:
+def max_dd_pct(trades: list[dict]) -> float:
     cum = peak = worst = 0.0
     for tr in trades:
-        cum += tr["net_bps"]
+        cum += tr["net_pct"]
         peak = max(peak, cum)
         worst = max(worst, peak - cum)
     return worst
@@ -305,7 +309,7 @@ def main() -> int:
         title = ("PRIMARY: clock window 12:30-15:00 UTC" if clock_only
                  else "DIAGNOSTIC: all day (never selectable)")
         header(title)
-        print(f"{'cell':<16}{'n':>4}{'net bps':>9}{'median':>9}{'win%':>7}"
+        print(f"{'cell':<16}{'n':>4}{'net %':>9}{'median':>9}{'win%':>7}"
               f"{'stop%':>7}{'t':>7}  {'95% CI':<20}{'maxDD':>7}{'hold p50':>9}")
         line()
         for x in STOPS_BPS:
@@ -315,17 +319,17 @@ def main() -> int:
                 if not tr:
                     print(f"X{x:>4.0f}/T{te:<8} {'0':>4}")
                     continue
-                nets = [q["net_bps"] for q in tr]
+                nets = [q["net_pct"] for q in tr]
                 stops = sum(1 for q in tr if q["exit"] == "stop")
                 boot = day_cluster_boot(tr)
-                ci = (f"[{boot[0]:+.2f},{boot[1]:+.2f}]" if boot else "n/a")
+                ci = (f"[{boot[0]:+.4f},{boot[1]:+.4f}]" if boot else "n/a")
                 t_stat = f"{boot[2]:+.2f}" if boot else "-"
                 holds = sorted(q["hold_min"] for q in tr)
-                print(f"X{x:>4.0f}/T{te:<8}{len(tr):>4}{np.mean(nets):>9.2f}"
-                      f"{np.median(nets):>9.2f}"
+                print(f"X{x:>4.0f}/T{te:<8}{len(tr):>4}{np.mean(nets):>9.4f}"
+                      f"{np.median(nets):>9.4f}"
                       f"{100 * np.mean([q > 0 for q in nets]):>7.1f}"
                       f"{100 * stops / len(tr):>7.1f}{t_stat:>7}  {ci:<20}"
-                      f"{max_dd_bps(tr):>7.0f}"
+                      f"{max_dd_pct(tr):>7.2f}"
                       f"{holds[len(holds) // 2]:>9.1f}")
         r = simulate(df, STOPS_BPS[0], TIME_EXITS_MIN[0], clock_only)
         print(f"\n  touches seen: {r['touches']}, ambiguous both-side bars "
@@ -338,7 +342,7 @@ def main() -> int:
           "consume no fresh data. Otherwise: freeze the max-t cell (plateau\n"
           "condition on X) and judge ONCE on candles strictly after\n"
           "2026-08-22T12:00:00Z with >= 14 clock-window days, bar:\n"
-          "n>=30 AND net>=+5bps AND day-cluster CI>0 AND maxDD<=1000bps.")
+          "n>=30 AND net>=+0.05% AND day-cluster CI>0 AND maxDD<=10%.")
     return 0
 
 

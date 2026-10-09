@@ -55,8 +55,8 @@ def test_different_seed_changes_output(tmp_path):
     out1, out2 = tmp_path / "s1", tmp_path / "s2"
     r1 = mkm.generate(out1, seed=mkm.SEED)
     r2 = mkm.generate(out2, seed=mkm.SEED + 1)
-    n1 = r1["answers"]["reference_simulator"]["symmetric_maker_round_trip_at_best"]["net_bps_mean"]
-    n2 = r2["answers"]["reference_simulator"]["symmetric_maker_round_trip_at_best"]["net_bps_mean"]
+    n1 = r1["answers"]["reference_simulator"]["symmetric_maker_round_trip_at_best"]["net_pct_mean"]
+    n2 = r2["answers"]["reference_simulator"]["symmetric_maker_round_trip_at_best"]["net_pct_mean"]
     assert n1 != n2
 
 
@@ -72,18 +72,18 @@ def test_at_best_queue_model_is_net_negative_and_not_dropped_from_naive(result):
     naive = ref["naive_fill_on_print_at_best"]
     # correct queue-position model: net negative (adverse selection + forced
     # taker exits eat the spread capture)
-    assert at_best["net_bps_mean"] < 0
+    assert at_best["net_pct_mean"] < 0
     # the naive (queue-blind) comparison model overstates it: it must show a
     # HIGHER (better) net than the correct model on the SAME entry attempts
-    assert naive["net_bps_mean"] > at_best["net_bps_mean"]
-    # capture per leg is exactly the half-spread by construction
-    assert at_best["capture_bps_per_leg_mean"] == pytest.approx(mkm.HALF_SPREAD_BPS, abs=1e-6)
+    assert naive["net_pct_mean"] > at_best["net_pct_mean"]
+    # capture per leg is exactly the half-spread by construction (% of mid; tolerance was 1e-6 bp)
+    assert at_best["capture_pct_per_leg_mean"] == pytest.approx(mkm.HALF_SPREAD_PCT, abs=1e-8)
 
 
 def test_inside_spread_is_small_and_not_significant(result):
     inside = result["answers"]["reference_simulator"]["inside_spread_one_tick_improvement"]
-    assert abs(inside["net_bps_mean"]) < 1.5
-    assert abs(inside["net_bps_t_stat"]) < 1.96  # not significant at 5%
+    assert abs(inside["net_pct_mean"]) < 0.015   # % (was 1.5 bp)
+    assert abs(inside["net_pct_t_stat"]) < 1.96  # not significant at 5%
 
 
 def test_adverse_selection_is_positive_and_significant(result):
@@ -101,7 +101,7 @@ def test_unclosed_positions_trap_is_present_and_material(result):
     assert 0.10 < at_best["exit_forced_taker_fraction"] < 0.45
     # ... and dropping them from the average materially changes the answer
     # (biased toward looking more profitable than reality)
-    assert trap["biased_net_bps_if_dropped"] > trap["correct_net_bps_all_positions"] + 1.0
+    assert trap["biased_net_pct_if_dropped"] > trap["correct_net_pct_all_positions"] + 0.01   # % (was 1.0 bp)
 
 
 def test_mid_reference_inconsistency_trap_is_present(result):
@@ -136,8 +136,8 @@ def test_manifest_does_not_reveal_planted_values(result, tmp_path):
     manifest = (out / "manifest.md").read_text()
     ref = result2["answers"]["reference_simulator"]
     for leak in (
-        f"{ref['symmetric_maker_round_trip_at_best']['net_bps_mean']:.4f}",
-        f"{ref['naive_fill_on_print_at_best']['net_bps_mean']:.4f}",
+        f"{ref['symmetric_maker_round_trip_at_best']['net_pct_mean']:.6f}",
+        f"{ref['naive_fill_on_print_at_best']['net_pct_mean']:.6f}",
         f"{ref['symmetric_maker_round_trip_at_best']['exit_forced_taker_fraction']}",
     ):
         assert leak not in manifest

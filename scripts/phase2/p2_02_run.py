@@ -166,11 +166,12 @@ def tick_for_price(price: float, bands: list[tuple[float, float]]) -> float:
     return bands[-1][1]
 
 
-def conservative_cost_bps(close_t: np.ndarray, bands: list[tuple[float, float]]) -> np.ndarray:
-    """Round-trip conservative cost: 2 ticks (1 per side) / close(t) * 1e4."""
+def conservative_cost_pct(close_t: np.ndarray, bands: list[tuple[float, float]]) -> np.ndarray:
+    """Round-trip conservative cost: 2 ticks (1 per side) / close(t) * 100, in %
+    (L-920: a cost is not a price move, so it is not bp)."""
     ticks = np.array([tick_for_price(c, bands) if c > 0 and not np.isnan(c) else np.nan
                        for c in close_t])
-    return 2.0 * ticks / close_t * 1e4
+    return 2.0 * ticks / close_t * 100.0
 
 
 # ---------------------------------------------------------------------------
@@ -184,18 +185,18 @@ def conservative_cost_bps(close_t: np.ndarray, bands: list[tuple[float, float]])
 
 def old_fee_per_pair(close_t: np.ndarray, fee_bands: list[tuple[float, float]]
                       ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """(lot_units, notional_yen, fee_yen_per_execution, fee_bps_roundtrip).
+    """(lot_units, notional_yen, fee_yen_per_execution, fee_pct_roundtrip).
 
     lot = round(100,000 / close_t) units, minimum 1 (PREREG's fixed assumed
     lot: "約定代金10万円相当(約50口)"). notional = lot * close_t decides
-    which non_sor_fee_yen_by_notional band applies; fee_bps_roundtrip = 2 *
-    fee_yen / notional * 1e4 (one commission per side, round trip).
+    which non_sor_fee_yen_by_notional band applies; fee_pct_roundtrip = 2 *
+    fee_yen / notional * 100 (one commission per side, round trip; %).
     """
     lot = np.maximum(1, np.round(100_000.0 / close_t)).astype(float)
     notional = lot * close_t
     fee_yen = np.array([tick_for_price(nv, fee_bands) for nv in notional])
-    fee_bps = 2.0 * fee_yen / notional * 1e4
-    return lot, notional, fee_yen, fee_bps
+    fee_pct = 2.0 * fee_yen / notional * 100.0
+    return lot, notional, fee_yen, fee_pct
 
 
 # ---------------------------------------------------------------------------
@@ -252,10 +253,12 @@ def build_pair_table(df: pd.DataFrame, bands: list[tuple[float, float]]) -> pd.D
             "r_day_bps": r_day * 1e4 if not np.isnan(r_day) else np.nan,
         })
     pairs = pd.DataFrame(rows)
-    pairs["cost_conservative_bps"] = conservative_cost_bps(pairs["close_t"].to_numpy(), bands)
-    pairs["cost_optimistic_bps"] = 0.0
-    pairs["net_conservative_raw_bps"] = pairs["r_night_raw_bps"] - pairs["cost_conservative_bps"]
-    pairs["net_optimistic_raw_bps"] = pairs["r_night_raw_bps"] - pairs["cost_optimistic_bps"]
+    # L-920: the gross r_night_*_bps is a price-move rate (bp); the cost and
+    # the net (gross / 100 - cost) are in %.
+    pairs["cost_conservative_pct"] = conservative_cost_pct(pairs["close_t"].to_numpy(), bands)
+    pairs["cost_optimistic_pct"] = 0.0
+    pairs["net_conservative_raw_pct"] = pairs["r_night_raw_bps"] / 100.0 - pairs["cost_conservative_pct"]
+    pairs["net_optimistic_raw_pct"] = pairs["r_night_raw_bps"] / 100.0 - pairs["cost_optimistic_pct"]
 
     # Rolling 20-trading-day realized vol (trailing, computed over ALL rows
     # in df so a pair excluded by rule 1/2 doesn't distort the window seen
@@ -291,8 +294,8 @@ def add_dividend_adjustment(pairs: pd.DataFrame, price_df: pd.DataFrame,
     pairs["dividend_add_yen"] = add.to_numpy()
     pairs["r_night_adj_bps"] = ((pairs["open_t1"] + pairs["dividend_add_yen"])
                                  / pairs["close_t"] - 1.0) * 1e4
-    pairs["net_conservative_adj_bps"] = pairs["r_night_adj_bps"] - pairs["cost_conservative_bps"]
-    pairs["net_optimistic_adj_bps"] = pairs["r_night_adj_bps"] - pairs["cost_optimistic_bps"]
+    pairs["net_conservative_adj_pct"] = pairs["r_night_adj_bps"] / 100.0 - pairs["cost_conservative_pct"]
+    pairs["net_optimistic_adj_pct"] = pairs["r_night_adj_bps"] / 100.0 - pairs["cost_optimistic_pct"]
     pairs["is_ex_date_pair"] = pairs["dividend_add_yen"] > 0
     return pairs, div
 
@@ -327,10 +330,11 @@ def mean_ci_bootstrap(x: np.ndarray, seed: int) -> tuple[float, float, float]:
     return mean, lo, hi
 
 
-def mde_bps(sigma_bps: float, n: int) -> float:
+def mde_from_sigma(sigma: float, n: int) -> float:
+    """MDE (alpha 0.05 two-sided, power 0.8) in the unit of `sigma`."""
     if n <= 0:
         return float("nan")
-    se = sigma_bps / np.sqrt(n)
+    se = sigma / np.sqrt(n)
     return (Z_975 + Z_80) * se
 
 
@@ -389,13 +393,14 @@ def stratified_bootstrap_mean_dist(x: np.ndarray, strata: np.ndarray, n_draws: i
     return out
 
 
-def sign_reversal_stats(r_night_bps: np.ndarray, cost_bps: np.ndarray) -> dict:
+def sign_reversal_stats(r_night_bps: np.ndarray, cost_pct: np.ndarray) -> dict:
     """Control 3: flip the overnight position to short. Cost is a round-trip
-    cost paid regardless of direction, so it is still subtracted."""
-    reversed_net = -r_night_bps - cost_bps
+    cost paid regardless of direction, so it is still subtracted. The gross
+    is in bp, the cost and the reversed net in % (L-920)."""
+    reversed_net = -r_night_bps / 100.0 - cost_pct
     m = float(np.mean(reversed_net))
     lo, hi = onr.block_bootstrap_ci(reversed_net, block=BLOCK, n_boot=N_BOOT, seed=SEED + 3)
-    return {"mean_bps": m, "ci_lo_bps": lo, "ci_hi_bps": hi, "n": int(len(reversed_net))}
+    return {"mean_pct": m, "ci_lo_pct": lo, "ci_hi_pct": hi, "n": int(len(reversed_net))}
 
 
 # ---------------------------------------------------------------------------
@@ -451,8 +456,8 @@ def run() -> dict:
 
     kept_1343 = pairs_1343[pairs_1343["kept"]].reset_index(drop=True)
     main_col = "r_night_adj_bps" if use_correction else "r_night_raw_bps"
-    net_cons_col = "net_conservative_adj_bps" if use_correction else "net_conservative_raw_bps"
-    net_opt_col = "net_optimistic_adj_bps" if use_correction else "net_optimistic_raw_bps"
+    net_cons_col = "net_conservative_adj_pct" if use_correction else "net_conservative_raw_pct"
+    net_opt_col = "net_optimistic_adj_pct" if use_correction else "net_optimistic_raw_pct"
 
     net_cons = kept_1343[net_cons_col].to_numpy()
     net_opt = kept_1343[net_opt_col].to_numpy()
@@ -460,10 +465,10 @@ def run() -> dict:
     r_night_raw_only = kept_1343["r_night_raw_bps"].to_numpy()
     r_day = kept_1343["r_day_bps"].dropna().to_numpy()
 
-    sigma_bps = float(np.std(net_cons, ddof=1))
+    sigma_pct = float(np.std(net_cons, ddof=1))      # net, %
     n_main = int(len(net_cons))
-    se_bps = sigma_bps / np.sqrt(n_main)
-    mde = mde_bps(sigma_bps, n_main)
+    se_pct = sigma_pct / np.sqrt(n_main)
+    mde = mde_from_sigma(sigma_pct, n_main)
 
     mean_cons, ci_lo_cons, ci_hi_cons = mean_ci_bootstrap(net_cons, seed=SEED)
     mean_opt, ci_lo_opt, ci_hi_opt = mean_ci_bootstrap(net_opt, seed=SEED + 1)
@@ -480,14 +485,14 @@ def run() -> dict:
     fee_band_value = constants["jpx_cash_equity.non_sor_fee_yen_by_notional"].value
     fee_bands = build_tick_lookup(fee_band_value)
     close_arr = kept_1343["close_t"].to_numpy()
-    lot_arr, notional_arr, fee_yen_arr, fee_bps_arr = old_fee_per_pair(close_arr, fee_bands)
-    cost_cons_plus_oldfee = kept_1343["cost_conservative_bps"].to_numpy() + fee_bps_arr
-    net_cons_plus_oldfee = r_night - cost_cons_plus_oldfee
+    lot_arr, notional_arr, fee_yen_arr, fee_pct_arr = old_fee_per_pair(close_arr, fee_bands)
+    cost_cons_plus_oldfee = kept_1343["cost_conservative_pct"].to_numpy() + fee_pct_arr   # %
+    net_cons_plus_oldfee = r_night / 100.0 - cost_cons_plus_oldfee                       # %
     mean_oldfee, ci_lo_oldfee, ci_hi_oldfee = mean_ci_bootstrap(net_cons_plus_oldfee, seed=SEED + 9)
     # single-1-unit-lot illustrative case (PREREG: "1口だけなら290bps/片側"),
     # using the dev-set's own representative (median) close price.
     median_close_1343 = float(np.median(close_arr))
-    fee_1unit_bps_one_side = float(55.0 / median_close_1343 * 1e4)
+    fee_1unit_pct_one_side = float(55.0 / median_close_1343 * 100.0)
     sensitivity_fee_df = pd.DataFrame({
         "t_date": kept_1343["t_date"],
         "t1_date": kept_1343["t1_date"],
@@ -495,15 +500,15 @@ def run() -> dict:
         "lot_units": lot_arr,
         "notional_yen": notional_arr,
         "fee_yen_per_execution": fee_yen_arr,
-        "fee_bps_roundtrip": fee_bps_arr,
-        "cost_conservative_bps": kept_1343["cost_conservative_bps"].to_numpy(),
-        "cost_conservative_plus_oldfee_bps": cost_cons_plus_oldfee,
+        "fee_pct_roundtrip": fee_pct_arr,
+        "cost_conservative_pct": kept_1343["cost_conservative_pct"].to_numpy(),
+        "cost_conservative_plus_oldfee_pct": cost_cons_plus_oldfee,
         "r_night_used_bps": r_night,
-        "net_conservative_plus_oldfee_bps": net_cons_plus_oldfee,
+        "net_conservative_plus_oldfee_pct": net_cons_plus_oldfee,
     })
 
     # ---- drawdown bar ----
-    pnl_yen = kept_1343["close_t"].to_numpy() * (net_cons / 1e4)
+    pnl_yen = kept_1343["close_t"].to_numpy() * (net_cons / 100.0)   # net in %
     dd = max_drawdown(pnl_yen)
     span_days = (kept_1343["t_date"].max() - kept_1343["t_date"].min()).days
     years = span_days / 365.25
@@ -516,7 +521,7 @@ def run() -> dict:
     # ---- 1321 comparison (same procedure, no dividend file used) ----
     pairs_1321, flagged_1321, one_sided_1321, ghost_1321 = build_pair_table(price_1321, bands)
     kept_1321 = pairs_1321[pairs_1321["kept"]].reset_index(drop=True)
-    net_cons_1321 = kept_1321["net_conservative_raw_bps"].to_numpy()
+    net_cons_1321 = kept_1321["net_conservative_raw_pct"].to_numpy()
     mean_1321, ci_lo_1321, ci_hi_1321 = mean_ci_bootstrap(net_cons_1321, seed=SEED + 5)
     n_1321 = int(len(net_cons_1321))
     sign_match = bool(np.sign(mean_cons) == np.sign(mean_1321)) if mean_cons != 0 and mean_1321 != 0 else False
@@ -539,22 +544,22 @@ def run() -> dict:
     ) if valid_vol.sum() >= 3 else np.array([])
 
     reversal = sign_reversal_stats(
-        kept_1343[main_col].to_numpy(), kept_1343["cost_conservative_bps"].to_numpy()
+        kept_1343[main_col].to_numpy(), kept_1343["cost_conservative_pct"].to_numpy()
     )
 
     # ---- diagnostics (descriptive only) ----
     diag = kept_1343.copy()
-    diag["net_cons_bps"] = net_cons
+    diag["net_cons_pct"] = net_cons
     diag["vol_tercile"] = np.where(valid_vol, terciles, -1)
     vol_tercile_diag = (
         diag[diag["vol_tercile"] >= 0]
-        .groupby("vol_tercile")["net_cons_bps"]
+        .groupby("vol_tercile")["net_cons_pct"]
         .agg(["mean", "std", "count"]).reset_index()
     )
     diag["weekday"] = diag["t_date"].dt.dayofweek
-    weekday_diag = diag.groupby("weekday")["net_cons_bps"].agg(["mean", "std", "count"]).reset_index()
+    weekday_diag = diag.groupby("weekday")["net_cons_pct"].agg(["mean", "std", "count"]).reset_index()
     diag["month"] = diag["t_date"].dt.month
-    month_diag = diag.groupby("month")["net_cons_bps"].agg(["mean", "std", "count"]).reset_index()
+    month_diag = diag.groupby("month")["net_cons_pct"].agg(["mean", "std", "count"]).reset_index()
 
     eff_ex_dates = pd.to_datetime(div_1343_eff["ex_date_effective"])
     ex_set = set(eff_ex_dates)
@@ -571,7 +576,7 @@ def run() -> dict:
         return "other"
 
     diag["ex_date_window"] = diag["t1_date"].map(_ex_label)
-    exdate_diag = diag.groupby("ex_date_window")["net_cons_bps"].agg(["mean", "std", "count"]).reset_index()
+    exdate_diag = diag.groupby("ex_date_window")["net_cons_pct"].agg(["mean", "std", "count"]).reset_index()
 
     # ---- thin-trading sensitivity (info only; judgment uses the full set) ----
     thin_mask = kept_1343["thin"].to_numpy()
@@ -584,7 +589,7 @@ def run() -> dict:
     def split_stats(sub_df: pd.DataFrame) -> dict:
         vals = sub_df[net_cons_col].to_numpy()
         m, lo, hi = mean_ci_bootstrap(vals, seed=SEED + 8)
-        return {"n": int(len(vals)), "mean_bps": m, "ci_lo_bps": lo, "ci_hi_bps": hi}
+        return {"n": int(len(vals)), "mean_pct": m, "ci_lo_pct": lo, "ci_hi_pct": hi}
 
     train_df = kept_1343[kept_1343["t_date"] <= TRAIN_END]
     val_df = kept_1343[kept_1343["t_date"] >= VAL_START]
@@ -611,15 +616,15 @@ def run() -> dict:
 
     pd.DataFrame([
         {"control": "1_sign_shuffle", "n_draws": N_SHUFFLE,
-         "observed_mean_bps": mean_cons, "null_95pct_bps": null_95pct,
+         "observed_mean_pct": mean_cons, "null_p95_pct": null_95pct,
          "observed_percentile_in_null": null_percentile_of_observed},
         {"control": "2_vol_tercile_stratified_bootstrap_diagnostic",
          "n_draws": len(strata_dist),
-         "dist_mean_bps": float(np.mean(strata_dist)) if len(strata_dist) else float("nan"),
-         "dist_std_bps": float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1 else float("nan")},
+         "dist_mean_pct": float(np.mean(strata_dist)) if len(strata_dist) else float("nan"),
+         "dist_std_pct": float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1 else float("nan")},
         {"control": "3_sign_reversal", "n_draws": None,
-         "mean_bps": reversal["mean_bps"], "ci_lo_bps": reversal["ci_lo_bps"],
-         "ci_hi_bps": reversal["ci_hi_bps"], "n": reversal["n"]},
+         "mean_pct": reversal["mean_pct"], "ci_lo_pct": reversal["ci_lo_pct"],
+         "ci_hi_pct": reversal["ci_hi_pct"], "n": reversal["n"]},
     ]).to_csv(OUT_DIR / "controls_summary.csv", index=False)
 
     vol_tercile_diag.to_csv(OUT_DIR / "diagnostics_vol_tercile.csv", index=False)
@@ -645,16 +650,16 @@ def run() -> dict:
         "dividend_data_check_passes": data_check["passes"],
         "dividend_correction_used": use_correction,
         "n_main": n_main,
-        "sigma_bps": sigma_bps,
-        "se_bps": se_bps,
-        "mde_bps": mde,
-        "mean_net_conservative_bps": mean_cons,
-        "ci_lo_conservative_bps": ci_lo_cons,
-        "ci_hi_conservative_bps": ci_hi_cons,
-        "mean_net_optimistic_bps": mean_opt,
-        "ci_lo_optimistic_bps": ci_lo_opt,
-        "ci_hi_optimistic_bps": ci_hi_opt,
-        "mean_excl_thin_bps": mean_excl_thin,
+        "sigma_pct": sigma_pct,
+        "se_pct": se_pct,
+        "mde_pct": mde,
+        "mean_net_conservative_pct": mean_cons,
+        "ci_lo_conservative_pct": ci_lo_cons,
+        "ci_hi_conservative_pct": ci_hi_cons,
+        "mean_net_optimistic_pct": mean_opt,
+        "ci_lo_optimistic_pct": ci_lo_opt,
+        "ci_hi_optimistic_pct": ci_hi_opt,
+        "mean_excl_thin_pct": mean_excl_thin,
         "hit_rate": hit_rate,
         "sharpe_annualized": sharpe,
         "night_minus_day_mean_bps": diff_mean,
@@ -666,27 +671,27 @@ def run() -> dict:
         "drawdown_ok": dd_ok,
         "max_drawdown_bootstrap_median_yen": dd_median_boot,
         "n_1321": n_1321,
-        "mean_net_conservative_bps_1321": mean_1321,
-        "ci_lo_bps_1321": ci_lo_1321,
-        "ci_hi_bps_1321": ci_hi_1321,
+        "mean_net_conservative_pct_1321": mean_1321,
+        "ci_lo_pct_1321": ci_lo_1321,
+        "ci_hi_pct_1321": ci_hi_1321,
         "sign_match_1343_vs_1321": sign_match,
         "both_ci_positive": both_ci_positive,
         "futures_like_criterion_met": futures_like,
         "gate_mean_net_conservative_vs_mde": bool(mean_cons >= mde),
-        "sign_shuffle_null_95pct_bps": null_95pct,
+        "sign_shuffle_null_p95_pct": null_95pct,
         "sign_shuffle_observed_percentile": null_percentile_of_observed,
-        "sign_reversal_mean_bps": reversal["mean_bps"],
-        "sign_reversal_ci_lo_bps": reversal["ci_lo_bps"],
-        "sign_reversal_ci_hi_bps": reversal["ci_hi_bps"],
+        "sign_reversal_mean_pct": reversal["mean_pct"],
+        "sign_reversal_ci_lo_pct": reversal["ci_lo_pct"],
+        "sign_reversal_ci_hi_pct": reversal["ci_hi_pct"],
         # ---- sensitivity ONLY (PREREG "費用の適用規則"): historical
         # non-SOR fee retroactively applied at the fixed ~100,000-yen lot.
         # NOT used for judgment; the judgment bar uses the current (0-yen
-        # SOR) regime's mean_net_conservative_bps above, unchanged.
-        "sensitivity_mean_net_conservative_plus_oldfee_bps": mean_oldfee,
-        "sensitivity_ci_lo_conservative_plus_oldfee_bps": ci_lo_oldfee,
-        "sensitivity_ci_hi_conservative_plus_oldfee_bps": ci_hi_oldfee,
-        "sensitivity_median_close_1343_bps_denominator": median_close_1343,
-        "sensitivity_fee_1unit_lot_bps_one_side": fee_1unit_bps_one_side,
+        # SOR) regime's mean_net_conservative_pct above, unchanged.
+        "sensitivity_mean_net_conservative_plus_oldfee_pct": mean_oldfee,
+        "sensitivity_ci_lo_conservative_plus_oldfee_pct": ci_lo_oldfee,
+        "sensitivity_ci_hi_conservative_plus_oldfee_pct": ci_hi_oldfee,
+        "sensitivity_median_close_1343_yen_denominator": median_close_1343,
+        "sensitivity_fee_1unit_lot_pct_one_side": fee_1unit_pct_one_side,
     }
     pd.DataFrame([summary]).T.reset_index().rename(
         columns={"index": "metric", 0: "value"}).to_csv(OUT_DIR / "main_summary.csv", index=False)
@@ -793,7 +798,7 @@ def write_results_md(result: dict) -> None:
     lines.append(f"- 規則１でフラグされた誤プリント行数: {s['n_bad_print_rows_1343']}（片方だけ飛ぶ行の情報件数: {s['n_one_sided_info_rows_1343']}、除外はしない）")
     lines.append(f"- 幽霊行(規則２)件数: {s['n_ghost_rows_1343']}")
     lines.append(f"- 薄商い（出来高 < {THIN_VOLUME_THRESHOLD}）全体: {s['n_thin_total_1343']}、幽霊行と重なる: {s['n_thin_overlap_ghost_1343']}、真の薄商い: {s['n_thin_true_1343']}")
-    lines.append(f"- 薄商いを除いた主指標(参考): {f(s['mean_excl_thin_bps'])} bps（判定は全体を使用）")
+    lines.append(f"- 薄商いを除いた主指標(参考): {f(s['mean_excl_thin_pct'], 4)}%（判定は全体を使用）")
     lines.append("")
     lines.append("### 1321（同手順）")
     lines.append("| 段階 | n | 平均(bps) | σ(bps) |")
@@ -809,16 +814,17 @@ def write_results_md(result: dict) -> None:
     lines.append(f"- 判定: {'合格' if s['dividend_data_check_passes'] else '不合格'} → 補正を{'使用する' if s['dividend_correction_used'] else '使用しない（両方を以下に併記）'}")
     lines.append("")
     lines.append("## 3. 主指標（保守コスト後平均夜間リターン，ブロックブートストラップ 95%CI）")
-    lines.append(f"- n = {s['n_main']}、σ = {f(s['sigma_bps'])} bps、SE = {f(s['se_bps'], 3)} bps、MDE(α=0.05, power=0.8) = {f(s['mde_bps'])} bps")
-    lines.append(f"- 保守コスト後平均: {f(s['mean_net_conservative_bps'])} bps、95%CI = [{f(s['ci_lo_conservative_bps'])}, {f(s['ci_hi_conservative_bps'])}] bps")
-    lines.append(f"- 楽観コスト（0）平均: {f(s['mean_net_optimistic_bps'])} bps、95%CI = [{f(s['ci_lo_optimistic_bps'])}, {f(s['ci_hi_optimistic_bps'])}] bps")
+    lines.append("- 単位: 保守・楽観コスト後(ネット)と σ・SE・MDE は %、夜間−日中差は bps(L-920)")
+    lines.append(f"- n = {s['n_main']}、σ = {f(s['sigma_pct'], 4)}%、SE = {f(s['se_pct'], 5)}%、MDE(α=0.05, power=0.8) = {f(s['mde_pct'], 4)}%")
+    lines.append(f"- 保守コスト後平均: {f(s['mean_net_conservative_pct'], 4)}%、95%CI = [{f(s['ci_lo_conservative_pct'], 4)}, {f(s['ci_hi_conservative_pct'], 4)}]%")
+    lines.append(f"- 楽観コスト（0）平均: {f(s['mean_net_optimistic_pct'], 4)}%、95%CI = [{f(s['ci_lo_optimistic_pct'], 4)}, {f(s['ci_hi_optimistic_pct'], 4)}]%")
     lines.append(f"- 関門（平均 ≥ MDE）: {f(s['gate_mean_net_conservative_vs_mde'])}（参考値であり判定ではない）")
     lines.append(f"- 勝率: {f(s['hit_rate'])}、Sharpe(年率): {f(s['sharpe_annualized'])}")
     lines.append(f"- 夜間−日中差: {f(s['night_minus_day_mean_bps'])} bps、CI = [{f(s['night_minus_day_ci_lo_bps'])}, {f(s['night_minus_day_ci_hi_bps'])}]")
-    lines.append(f"- 保守 + 旧手数料(感度): 平均 {f(s['sensitivity_mean_net_conservative_plus_oldfee_bps'])} bps、95%CI = [{f(s['sensitivity_ci_lo_conservative_plus_oldfee_bps'])}, {f(s['sensitivity_ci_hi_conservative_plus_oldfee_bps'])}] bps"
+    lines.append(f"- 保守 + 旧手数料(感度): 平均 {f(s['sensitivity_mean_net_conservative_plus_oldfee_pct'], 4)}%、95%CI = [{f(s['sensitivity_ci_lo_conservative_plus_oldfee_pct'], 4)}, {f(s['sensitivity_ci_hi_conservative_plus_oldfee_pct'], 4)}]%"
                  "（判定には使わない。旧非SOR手数料55円/99円/115円/275円を`config/constants.yaml`の代金帯に従い"
                  "想定ロット≈10万円分（lot=round(100000/close(t))、最小1口）に往復2回課したもの。現行制度はSOR手数料0円）")
-    lines.append(f"- 参考: 1口だけの場合、開発セット代表値（1343の中央値close={f(s['sensitivity_median_close_1343_bps_denominator'])}円）で55円/close×1e4 ≈ {f(s['sensitivity_fee_1unit_lot_bps_one_side'])} bps/片側（実質取引不能な水準）")
+    lines.append(f"- 参考: 1口だけの場合、開発セット代表値（1343の中央値close={f(s['sensitivity_median_close_1343_yen_denominator'])}円）で55円/close×100 ≈ {f(s['sensitivity_fee_1unit_lot_pct_one_side'], 4)}%/片側（実質取引不能な水準）")
     lines.append("")
     lines.append("## 4. ドローダウン基準（1口固定）")
     lines.append(f"- 最大ドローダウン（単一実現値）: {f(s['max_drawdown_yen_1unit'])} 円")
@@ -827,24 +833,26 @@ def write_results_md(result: dict) -> None:
     lines.append(f"- ブロックブートストラップによる最大DDの中央値: {f(s['max_drawdown_bootstrap_median_yen'])} 円")
     lines.append("")
     lines.append("## 5. 「先物と同様」比較（1321）")
-    lines.append(f"- 1321 n = {s['n_1321']}、平均 = {f(s['mean_net_conservative_bps_1321'])} bps、CI = [{f(s['ci_lo_bps_1321'])}, {f(s['ci_hi_bps_1321'])}]")
+    lines.append(f"- 1321 n = {s['n_1321']}、平均 = {f(s['mean_net_conservative_pct_1321'], 4)}%、CI = [{f(s['ci_lo_pct_1321'], 4)}, {f(s['ci_hi_pct_1321'], 4)}]%")
     lines.append(f"- 符号一致: {f(s['sign_match_1343_vs_1321'])}、両方ともCI正: {f(s['both_ci_positive'])}、基準充足: {f(s['futures_like_criterion_met'])}")
     lines.append("")
     lines.append("## 6. 対照（反事実）")
-    lines.append(f"- (1) 符号シャッフル {N_SHUFFLE} 回: 帰無分布95点 = {f(s['sign_shuffle_null_95pct_bps'])} bps、実測平均以下の帰無サンプル割合 = {f(s['sign_shuffle_observed_percentile'], 1)}%（0%=帰無分布の最下位）")
+    lines.append(f"- (1) 符号シャッフル {N_SHUFFLE} 回: 帰無分布95点 = {f(s['sign_shuffle_null_p95_pct'], 4)}%、実測平均以下の帰無サンプル割合 = {f(s['sign_shuffle_observed_percentile'], 1)}%（0%=帰無分布の最下位）")
     strata_dist = result.get("strata_dist", np.array([]))
     strata_mean = float(np.mean(strata_dist)) if len(strata_dist) else float("nan")
     strata_std = float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1 else float("nan")
-    lines.append(f"- (2) 20日実現ボラ三分位内層別ブートストラップ（診断のみ，時間順序を保存しない）: 平均の分布 平均={f(strata_mean)} bps、標準偏差={f(strata_std)} bps（詳細は controls_summary.csv）")
-    lines.append(f"- (3) 符号反転（夜間売り持ち）: 平均 = {f(s['sign_reversal_mean_bps'])} bps、CI = [{f(s['sign_reversal_ci_lo_bps'])}, {f(s['sign_reversal_ci_hi_bps'])}]")
+    lines.append(f"- (2) 20日実現ボラ三分位内層別ブートストラップ（診断のみ，時間順序を保存しない）: 平均の分布 平均={f(strata_mean, 4)}%、標準偏差={f(strata_std, 4)}%（詳細は controls_summary.csv）")
+    lines.append(f"- (3) 符号反転（夜間売り持ち）: 平均 = {f(s['sign_reversal_mean_pct'], 4)}%、CI = [{f(s['sign_reversal_ci_lo_pct'], 4)}, {f(s['sign_reversal_ci_hi_pct'], 4)}]%")
     lines.append("")
     lines.append("## 7. train/val")
-    lines.append("| split | n | 平均(bps) | CI |")
+    lines.append("| split | n | 平均(保守ネット、%) | CI |")
     lines.append("|---|---:|---:|---|")
-    lines.append(f"| train | {result['train_stats']['n']} | {f(result['train_stats']['mean_bps'])} | [{f(result['train_stats']['ci_lo_bps'])}, {f(result['train_stats']['ci_hi_bps'])}] |")
-    lines.append(f"| val | {result['val_stats']['n']} | {f(result['val_stats']['mean_bps'])} | [{f(result['val_stats']['ci_lo_bps'])}, {f(result['val_stats']['ci_hi_bps'])}] |")
+    lines.append(f"| train | {result['train_stats']['n']} | {f(result['train_stats']['mean_pct'], 4)} | [{f(result['train_stats']['ci_lo_pct'], 4)}, {f(result['train_stats']['ci_hi_pct'], 4)}] |")
+    lines.append(f"| val | {result['val_stats']['n']} | {f(result['val_stats']['mean_pct'], 4)} | [{f(result['val_stats']['ci_lo_pct'], 4)}, {f(result['val_stats']['ci_hi_pct'], 4)}] |")
     lines.append("")
     lines.append("## 8. 診断（記述的のみ，選択には使用しない）")
+    lines.append("")
+    lines.append("値は保守コスト後のネット(%、L-920)。")
     lines.append("")
     lines.append("### ボラ三分位")
     lines.append(_markdown_table(result["vol_tercile_diag"]))

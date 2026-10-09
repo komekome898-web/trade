@@ -87,6 +87,9 @@ PRE-REGISTRATION (written before the first run; nothing below changed after)
     compared by the operator); negative stays negative.
 
 Usage:  PYTHONPATH=src python scripts/research_latency_grade.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図の r・閾値 thr・
+maker の TP の幅 10bps・前向きの drift)にだけ使う。約定の値段のずれ slip(0 / 2bps = 0 /
+0.02 %)、スプレッド、net(板を渡り slip を払った後の損益の率)は % で持つ。)
 """
 from __future__ import annotations
 
@@ -114,7 +117,7 @@ GAP_SEC = 30.0
 W_S = 2.0
 THRS = (5.0, 10.0, 20.0, 30.0)
 DELTAS = (0.0, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0)
-SLIPS = (0.0, 2.0)
+SLIPS = (0.0, 0.02)          # % (0 / 2 bps in the prereg)
 COOLDOWN_S = 60.0
 
 TP_BPS = 10.0
@@ -235,7 +238,7 @@ def load():
     n_bad = int((~ok).sum())
     t_tk, bid, ask, bsz, asz = t_tk[ok], bid[ok], ask[ok], bsz[ok], asz[ok]
     midq = 0.5 * (bid + ask)
-    spr = (ask - bid) / midq * 1e4
+    spr = (ask - bid) / midq * 100   # % of mid (L-920)
 
     o = np.argsort(t_ex, kind="stable")
     t_ex = t_ex[o]
@@ -350,7 +353,7 @@ def simulate(D, idx, sides, delta, slip, collect_quotes=False):
 
     # --- entry at the real quote touch ---------------------------------
     long_ = sides == 1
-    entry = np.where(long_, ask[q0], bid[q0]) * (1.0 + sides * slip / 1e4)
+    entry = np.where(long_, ask[q0], bid[q0]) * (1.0 + sides * slip / 100)  # slip in %
     assert np.all(t_tk[q0] <= t_ref + 1e-9), "lookahead: quote after t_ref"
 
     limit = entry * (1.0 + sides * TP_BPS / 1e4)
@@ -379,11 +382,11 @@ def simulate(D, idx, sides, delta, slip, collect_quotes=False):
                 filled = True
         if not filled:
             qq = q1[k]
-            exit_px[k] = (bid[qq] * (1.0 - slip / 1e4) if sides[k] == 1
-                          else ask[qq] * (1.0 + slip / 1e4))
+            exit_px[k] = (bid[qq] * (1.0 - slip / 100) if sides[k] == 1
+                          else ask[qq] * (1.0 + slip / 100))
             exit_t[k] = t_end[k]
 
-    net = sides * (exit_px - entry) / entry * 1e4
+    net = sides * (exit_px - entry) / entry * 100   # % (net of spread and slip, L-920)
 
     # --- pre-cost drift (quote mid) ------------------------------------
     drift = {}
@@ -414,7 +417,7 @@ def fmt_cell(res, tag=""):
     if res["n"] == 0:
         return f"{'--':>9}"
     m = res["net"].mean()
-    s = f"{m:+9.2f}"
+    s = f"{m:+9.4f}"
     if res["n"] < N_REF:
         s += "*"
     return s
@@ -437,7 +440,7 @@ def lam_max(deltas, means):
 def main() -> int:
     header("ROUND 24 STEP 1 -- EDGE x LATENCY CURVE (diagnostic, no adoption)")
     print(f"seed {SEED};  W = {W_S:.0f}s;  thr {list(THRS)} bps;  "
-          f"delta {list(DELTAS)} s;  slip {list(SLIPS)} bps")
+          f"delta {list(DELTAS)} s;  slip {list(SLIPS)} %")
     print(f"exit: E2 (maker TP +{TP_BPS:.0f}bps, taker fallback {FALLBACK_S:.0f}s);  "
           f"fees 0 (measured); half-spread paid by touching the real quote")
     print(f"[data] tape dir: {TAPE}")
@@ -471,9 +474,9 @@ def main() -> int:
                 n_events_processed += res["n"]
     engine_s = time.perf_counter() - t_engine0
 
-    header("2. NET bps PER EVENT -- thr x delta  (E2 exit, real quote touch)")
+    header("2. NET % PER EVENT -- thr x delta  (E2 exit, real quote touch)")
     for slip in SLIPS:
-        sub(f"slippage +{slip:.0f} bps")
+        sub(f"slippage +{slip:.2f} %")
         print(f"{'thr':>5} | " + " | ".join(f"d={d:<5}" for d in DELTAS) + " |    n")
         line()
         for thr in THRS:
@@ -482,25 +485,25 @@ def main() -> int:
             for d in DELTAS:
                 res = results[(thr, slip, d)]
                 n = res["n"]
-                row.append(f"{res['net'].mean():+7.2f}" if n else "     --")
+                row.append(f"{res['net'].mean():+7.4f}" if n else "     --")
             print(f"{thr:5.0f} | " + " | ".join(row) + f" | {n:5,}")
 
-    header("3. DAY-CLUSTER BOOTSTRAP 95% CI (slip 0 / slip 2)")
+    header("3. DAY-CLUSTER BOOTSTRAP 95% CI (slip 0 / slip 0.02 %; net in %)")
     print(f"{'thr':>5} {'delta':>6} | {'n':>5} | {'slip0 net':>9} "
           f"{'[lo':>8} {'hi]':>8} {'t':>6} | {'slip2 net':>9} {'[lo':>8} {'hi]':>8} {'t':>6}")
     line()
     for thr in THRS:
         for d in DELTAS:
             r0 = results[(thr, 0.0, d)]
-            r2 = results[(thr, 2.0, d)]
+            r2 = results[(thr, 0.02, d)]
             if r0["n"] == 0:
                 continue
             t0, lo0, hi0 = boot_ci(r0["net"], r0["days"])
             t2, lo2, hi2 = boot_ci(r2["net"], r2["days"])
             mark = "*" if r0["n"] < N_REF else " "
-            print(f"{thr:5.0f} {d:6.2f}{mark}| {r0['n']:5,} | {r0['net'].mean():+9.2f} "
-                  f"{lo0:+8.2f} {hi0:+8.2f} {t0:+6.2f} | {r2['net'].mean():+9.2f} "
-                  f"{lo2:+8.2f} {hi2:+8.2f} {t2:+6.2f}")
+            print(f"{thr:5.0f} {d:6.2f}{mark}| {r0['n']:5,} | {r0['net'].mean():+9.4f} "
+                  f"{lo0:+8.4f} {hi0:+8.4f} {t0:+6.2f} | {r2['net'].mean():+9.4f} "
+                  f"{lo2:+8.4f} {hi2:+8.4f} {t2:+6.2f}")
         line()
 
     header("4. LAMBDA_MAX -- largest reaction delay with net > 0")
@@ -515,7 +518,7 @@ def main() -> int:
             x, note = lam_max(list(DELTAS), means)
             lam_table[(thr, slip)] = x
             xs = "none" if x is None else f"{x:.3f}"
-            print(f"{thr:5.0f} | {slip:5.0f} | {xs:>15} | {note}")
+            print(f"{thr:5.0f} | {slip:5.2f} | {xs:>15} | {note}")
 
     header("5. PRE-COST CONDITIONAL DRIFT (signed quote mid, from t_ref)")
     for h in DRIFT_H:
@@ -535,7 +538,7 @@ def main() -> int:
             print(f"{thr:5.0f} | " + " | ".join(row))
 
     header("6. QUOTE STATE AT THE TRIGGER (spread and best size at t_ref)")
-    print(f"{'thr':>5} {'delta':>6} | {'n':>5} | {'spread bps p10/p50/p90':>26} | "
+    print(f"{'thr':>5} {'delta':>6} | {'n':>5} | {'spread % p10/p50/p90':>26} | "
           f"{'touch-side best size BTC p10/p50/p90':>38} | {'opp side p50':>12}")
     line()
     for thr in THRS:
@@ -547,8 +550,8 @@ def main() -> int:
             ts_ = res["touch_size"]
             op = res["opp_size"]
             print(f"{thr:5.0f} {d:6.2f} | {res['n']:5,} | "
-                  f"{np.percentile(sp,10):7.2f}/{np.percentile(sp,50):7.2f}/"
-                  f"{np.percentile(sp,90):7.2f} | "
+                  f"{np.percentile(sp,10):7.4f}/{np.percentile(sp,50):7.4f}/"
+                  f"{np.percentile(sp,90):7.4f} | "
                   f"{np.percentile(ts_,10):11.4f}/{np.percentile(ts_,50):11.4f}/"
                   f"{np.percentile(ts_,90):11.4f} | {np.percentile(op,50):12.4f}")
         line()
@@ -564,7 +567,7 @@ def main() -> int:
                 continue
             print(f"{thr:5.0f} {d:6.2f} | {res['n']:5,} | "
                   f"{100*res['is_tp'].mean():9.1f} | {res['hold'].mean():11.1f} | "
-                  f"{np.median(res['net']):+10.2f} | "
+                  f"{np.median(res['net']):+10.4f} | "
                   f"{100*(res['net']>0).mean():6.1f}")
         line()
 
@@ -591,8 +594,8 @@ def main() -> int:
             n2, m2 = mn(~h1)
             n3, m3 = mn(pre)
             n4, m4 = mn(~pre)
-            print(f"{d:6.2f} | {n1:6,} {m1:+8.2f} | {n2:6,} {m2:+8.2f} | "
-                  f"{n3:9,} {m3:+11.2f} | {n4:7,} {m4:+9.2f}")
+            print(f"{d:6.2f} | {n1:6,} {m1:+8.4f} | {n2:6,} {m2:+8.4f} | "
+                  f"{n3:9,} {m3:+11.4f} | {n4:7,} {m4:+9.4f}")
 
     header("10. CAPACITY -- events per day, and events a SINGLE unit could take")
     print(f"{'thr':>5} {'delta':>6} | {'events':>7} {'/eff.day':>9} | "
@@ -629,7 +632,7 @@ def main() -> int:
           f"= 33-50 JPY/day (upper end 6,000 JPY/month = 200 JPY/day)")
     print()
     print(f"{'scenario':>22} {'lambda s':>9} {'thr':>5} {'slip':>5} | "
-          f"{'net bps':>8} | {'ev/day':>7} | {'0.02BTC yen/d':>13} | "
+          f"{'net %':>8} | {'ev/day':>7} | {'0.02BTC yen/d':>13} | "
           f"{'0.10BTC yen/d':>13}")
     line()
     for label, lam in SCENARIOS:
@@ -643,14 +646,14 @@ def main() -> int:
                 n_ev, n_solo = cap.get((thr, 0.0), (results[(thr, 0.0, 0.0)]["n"],
                                                     results[(thr, 0.0, 0.0)]["n"]))
                 evday = n_solo / D["eff_days"]
-                y2 = net / 1e4 * 0.02 * price * evday
-                y10 = net / 1e4 * 0.10 * price * evday
-                print(f"{label:>22} {lam:9.3f} {thr:5.0f} {slip:5.0f} | "
-                      f"{net:+8.2f} | {evday:7.2f} | {y2:+13,.0f} | {y10:+13,.0f}")
+                y2 = net / 100 * 0.02 * price * evday    # net in %
+                y10 = net / 100 * 0.10 * price * evday
+                print(f"{label:>22} {lam:9.3f} {thr:5.0f} {slip:5.2f} | "
+                      f"{net:+8.4f} | {evday:7.2f} | {y2:+13,.0f} | {y10:+13,.0f}")
         line()
     print("0.10 BTC is 5x the measured touch-side best size (p50 0.02 BTC): "
           "that column walks the book and its true cost is worse than the "
-          "slip +2 bps row shown.  Event counts are the single-unit "
+          "slip +0.02 % row shown.  Event counts are the single-unit "
           "(non-overlapping) counts from section 10.")
 
     header("12. SENSITIVITY -- staleness guard on the look-back leg")
@@ -675,10 +678,10 @@ def main() -> int:
         t_ex = D["t_ex"]
         back = np.searchsorted(t_ex, t_ex[i] - W_S, "right") - 1
         stale = t_ex[i] - W_S - t_ex[np.maximum(back, 0)]
-        print(f"{thr:5.0f} | {a0['n']:11,} {a0['net'].mean():+8.2f} "
-              f"{a1['net'].mean():+10.2f} | {b0['n']:12,} "
-              f"{(b0['net'].mean() if b0['n'] else float('nan')):+8.2f} "
-              f"{(b1['net'].mean() if b1['n'] else float('nan')):+10.2f} | "
+        print(f"{thr:5.0f} | {a0['n']:11,} {a0['net'].mean():+8.4f} "
+              f"{a1['net'].mean():+10.4f} | {b0['n']:12,} "
+              f"{(b0['net'].mean() if b0['n'] else float('nan')):+8.4f} "
+              f"{(b1['net'].mean() if b1['n'] else float('nan')):+10.4f} | "
               f"{np.percentile(stale,50):14.2f}/{np.percentile(stale,90):13.2f}")
 
     header("13. CROSS-CHECK -- the S10 / atlas 1-SECOND GRID convention "
@@ -732,9 +735,9 @@ def main() -> int:
         # the grid dates the signal `extra` later, so add it as a delay
         a0 = results[(thr, 0.0, 0.0)]
         print(f"{thr:5.0f} | {len(gi):10,} {len(gi)/D['eff_days']:9.2f} "
-              f"{(rg_res['net'].mean() if rg_res['n'] else float('nan')):+8.2f} | "
+              f"{(rg_res['net'].mean() if rg_res['n'] else float('nan')):+8.4f} | "
               f"{a0['n']:11,} {a0['n']/D['eff_days']:9.2f} "
-              f"{a0['net'].mean():+8.2f} | "
+              f"{a0['net'].mean():+8.4f} | "
               f"median grid lag {np.median(extra):.2f}s")
 
     header("9. SANITY / ENGINE")

@@ -10,7 +10,7 @@
     results/PHASE2/K1/binance/effect_flip_noinval_delay.json               … 参考列 (i)(既存・再計算しない)
     results/PHASE2/K1/bitflyer/effect_flip_noinval_delay.json              … 参考列 (ii)(既存・再計算しない)
 
-per_year にある n・mean_bp だけが年ごとの値。総損益 = n × mean_bp。
+per_year にある n・mean_bp だけが年ごとの値。総損益 = n × mean_bp / 100(%。L-920 の後)。
 セルごとの区間・sd・分位・保有中央値は測った期間全体で 1 つの値(サブ実行の期間合算値を使う)。
 サブ実行の per_year は全期間実行の per_year と、既知の境界効果(1 取引のずれ、境界年のみ)を
 除いて一致することを assert する(`render_k1_fresh_bitflyer.py` と同じ形)。
@@ -52,11 +52,22 @@ def cell(d, ft, g, st):
 
 def total_of(c, y):
     p = c["per_year"].get(str(y)) if c else None
-    return (round(p["n"] * p["mean_bp"], 1), p["n"]) if p else (None, 0)
+    # 総損益 = 取引ごとのリターンの和 = n × mean_bp。和は 1 つの値段の動きではないので %(/ 100、L-920)
+    return (round(p["n"] * p["mean_bp"] / 100, 3), p["n"]) if p else (None, 0)
+
+
+def _total_pct_str(b):
+    """三分位ごとの総損益(取引ごとのリターンの和)。L-920 の後の出力は total_pct(%)、
+    前の出力は total_bp(bp)なので / 100 して % で出す。"""
+    v = b.get("total_pct")
+    if v is None and b.get("total_bp") is not None:
+        v = b["total_bp"] / 100
+    return "—" if v is None else f"{v:+,.3f}%"
 
 
 def fmt0(x):
-    return "—" if x is None else f"{x:+,.0f}"
+    """総損益(%)の表示。L-920 の前は bp の整数で出していた。"""
+    return "—" if x is None else f"{x:+,.3f}%"
 
 
 def f(x, d=2):
@@ -119,7 +130,7 @@ def table_a(d_design, d_sub1, d_sub2):
             if not p:
                 print(f"| {y} | — | — | — | |")
                 continue
-            t = round(p["n"] * p["mean_bp"], 1)
+            t = round(p["n"] * p["mean_bp"] / 100, 3)
             print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} | |")
         print()
         print("| 期間(合算、サブ実行) | 平均 [区間] | sd | p05 | 保有中央値 | n |")
@@ -178,7 +189,7 @@ def table_c(d_design, d_bn, d_bf, d_sameclose):
             for c in (c_i, c_ii, c_iii):
                 p = c["per_year"].get(str(y)) if c else None
                 if p:
-                    row += [f(p["mean_bp"]), fmt0(round(p["n"] * p["mean_bp"], 1))]
+                    row += [f(p["mean_bp"]), fmt0(round(p["n"] * p["mean_bp"] / 100, 3))]
                 else:
                     row += ["—", "—"]
             print(f"| {y} | " + " | ".join(row) + " |")
@@ -212,7 +223,7 @@ def table_d(d_vol):
                 for name in ("low", "mid", "high"):
                     b = row[name]
                     cells += [f"{b['n']:,}", f(b["mean_bp"]) if b["mean_bp"] is not None else "—",
-                              fmt0(b["total_bp"])]
+                              _total_pct_str(b)]
                 print(f"| {y} | " + " | ".join(cells) + " |")
             print()
 
@@ -251,7 +262,7 @@ def table_f(d_design):
                 if not p:
                     print(f"| {y} | — | — | — |")
                     continue
-                t = round(p["n"] * p["mean_bp"], 1)
+                t = round(p["n"] * p["mean_bp"] / 100, 3)
                 print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} |")
             print()
 

@@ -59,6 +59,9 @@ CONTROL4_SYMBOLS = ["7203.T", "6758.T", "8306.T", "9984.T"]
 
 # PREREG.md 表(監査3回目実測)の MDE。判定には使わない(数値の並記のみ)。
 MDE_BPS = {"1306.T": 5.10, "1591.T": 5.64, "2516.T": 12.82, "1321.T": 5.26}
+# (L-920 の後の単位: 上の事前登録 MDE は bps。保守コスト後の平均(ネット)は bp に
+#  しないので、ネットと比べる所では ÷ 100 した % を使う)
+MDE_PCT = {k: v / 100.0 for k, v in MDE_BPS.items()}
 
 TRAIN_END = pd.Timestamp("2019-06-30")
 VAL_START = pd.Timestamp("2019-07-01")
@@ -123,7 +126,7 @@ def tick_for_price(price: float, bands: tuple[list[tuple[float, float]], float])
 # ちょうど1/10になっている(独立系列: 2022-03-04 の実勢終値1,920.5円 vs CSV
 # 192.05円)。この区間内では close/open の「比率」(リターン)は補正不要
 # (定数倍はリターンに影響しない)だが、価格そのものを使う量(呼値帯の判定、
-# 呼値コストのbps換算、想定元本)は実勢価格(CSV値×10)を使わなければならない。
+# 呼値コストの%換算、想定元本)は実勢価格(CSV値×10)を使わなければならない。
 # 2015-01-05 の水準シフト自体は規則2(split_candidate)がそのまま拾う
 # (誤プリント同様、跨ぐペアは除外対象のまま変更しない)。
 # ===========================================================================
@@ -138,7 +141,7 @@ def corrected_price_for_band(
 ) -> float:
     """`raw_price`(CSVの値)に、価格水準補正テーブルの倍率を掛けた「実勢価格」を返す。
 
-    呼値帯の判定・呼値コストのbps換算・想定元本など「価格そのもの」を使う量に
+    呼値帯の判定・呼値コストの%換算・想定元本など「価格そのもの」を使う量に
     のみ使う。r_night/r_day などのリターン(比率)には絶対に使わない
     -- 区間内は定数倍なので比率は不変であり、区間境界の水準シフトは規則2の
     split_candidate 除外が別途処理する。
@@ -338,12 +341,14 @@ def build_series_result(sym: str, df: pd.DataFrame, bands,
     ])
     ticks = np.array([tick_for_price(p, bands) for p in band_price_t])
     with np.errstate(divide="ignore", invalid="ignore"):
-        # bps 換算の分母も実勢価格(band_price_t) -- コストは実勢価格に対する割合
-        cost_cons_bps = np.where(np.isfinite(band_price_t) & (band_price_t != 0),
-                                  2.0 * ticks / band_price_t * 1e4, np.nan)
+        # % 換算の分母も実勢価格(band_price_t) -- コストは実勢価格に対する割合
+        # (L-920: コストは値動き率ではないので bp にせず %)
+        cost_cons_pct = np.where(np.isfinite(band_price_t) & (band_price_t != 0),
+                                  2.0 * ticks / band_price_t * 100.0, np.nan)
 
-    net_opt_bps = r_night_bps.copy()
-    net_cons_bps = r_night_bps - cost_cons_bps
+    # net (gross bp / 100 - cost) is in % (L-920); the gross r_night_bps stays bp
+    net_opt_pct = r_night_bps / 100.0
+    net_cons_pct = r_night_bps / 100.0 - cost_cons_pct
 
     excluded_t = row_flag[:-1] | row_flag[1:]
     valid_raw = np.isfinite(r_night_bps) & np.isfinite(r_day_bps_t)
@@ -353,8 +358,8 @@ def build_series_result(sym: str, df: pd.DataFrame, bands,
         "date_t": date_t, "date_t1": date_t1,
         "open_t": open_t, "close_t": close_t, "open_t1": open_t1,
         "r_day_bps": r_day_bps_t, "r_night_bps": r_night_bps,
-        "band_price_t": band_price_t, "tick_yen": ticks, "cost_cons_bps": cost_cons_bps,
-        "net_opt_bps": net_opt_bps, "net_cons_bps": net_cons_bps,
+        "band_price_t": band_price_t, "tick_yen": ticks, "cost_cons_pct": cost_cons_pct,
+        "net_opt_pct": net_opt_pct, "net_cons_pct": net_cons_pct,
         "flag_null_t": null_mask[:-1], "flag_null_t1": null_mask[1:],
         "flag_ghost_t": ghost_mask[:-1], "flag_ghost_t1": ghost_mask[1:],
         "flag_split_t": split_mask[:-1], "flag_split_t1": split_mask[1:],
@@ -391,12 +396,14 @@ def mean_ci(x: np.ndarray, rng: np.random.Generator) -> dict:
     x = np.asarray(x, dtype=float)
     x = x[np.isfinite(x)]
     if len(x) == 0:
-        return {"n": 0, "mean_bps": float("nan"), "ci_lo": float("nan"), "ci_hi": float("nan")}
+        return {"n": 0, "mean": float("nan"), "ci_lo": float("nan"), "ci_hi": float("nan")}
     lo, hi = _boot_ci(x, rng)
-    return {"n": int(len(x)), "mean_bps": float(x.mean()), "ci_lo": lo, "ci_hi": hi}
+    # unit of x (bp for a gross return, % for a net -- L-920); the key is unit-free
+    return {"n": int(len(x)), "mean": float(x.mean()), "ci_lo": lo, "ci_hi": hi}
 
 
 def sharpe_stats(x_bps: np.ndarray, dates: pd.Series) -> dict:
+    """Annualised Sharpe; scale-free, so `x_bps` may also be a % series."""
     x_bps = np.asarray(x_bps, dtype=float)
     mask = np.isfinite(x_bps)
     x_bps = x_bps[mask]
@@ -414,6 +421,8 @@ def sharpe_stats(x_bps: np.ndarray, dates: pd.Series) -> dict:
 
 
 def max_drawdown_bps(x_bps: np.ndarray) -> float:
+    """Max drawdown of the cumulative sum, in the unit of the input (bp for a
+    gross series, % for a net series -- L-920; the name is kept for callers)."""
     x_bps = np.asarray(x_bps, dtype=float)
     x_bps = x_bps[np.isfinite(x_bps)]
     if len(x_bps) == 0:
@@ -478,9 +487,9 @@ def control2_vol_tercile_random_holding(pairs_clean: pd.DataFrame, rng: np.rando
 
 def control3_sign_reversal(pairs_clean: pd.DataFrame, rng: np.random.Generator) -> dict:
     """対照3: 夜間売り持ち。費用は方向によらず同額(往復1ティック/片側)発生するため
-    net_short = -r_night - cost。"""
-    r = pairs_clean["r_night_bps"].to_numpy(dtype=float)
-    cost = pairs_clean["cost_cons_bps"].to_numpy(dtype=float)
+    net_short = -r_night - cost(L-920: ネットなので %。r_night_bps ÷ 100 − cost_pct)。"""
+    r = pairs_clean["r_night_bps"].to_numpy(dtype=float) / 100.0
+    cost = pairs_clean["cost_cons_pct"].to_numpy(dtype=float)
     short_opt = -r
     short_cons = -r - cost
     return {
@@ -599,10 +608,12 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
         pairs = res["pairs"]
         for stage, mask_col in (("before_exclusion", "valid_raw"), ("after_exclusion", "clean")):
             sub = pairs.loc[pairs[mask_col]]
-            opt = mean_ci(sub["net_opt_bps"].to_numpy(), rng)
-            cons = mean_ci(sub["net_cons_bps"].to_numpy(), rng)
-            indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "optimistic", **opt})
-            indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "conservative", **cons})
+            opt = mean_ci(sub["net_opt_pct"].to_numpy(), rng)
+            cons = mean_ci(sub["net_cons_pct"].to_numpy(), rng)
+            indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "optimistic",
+                                   "unit": "%", **opt})
+            indicator_rows.append({"series": sym, "stage": stage, "cost_scenario": "conservative",
+                                   "unit": "%", **cons})
     indicator_df = pd.DataFrame(indicator_rows)
     indicator_df.to_csv(out_dir / "main_indicator.csv", index=False)
 
@@ -612,25 +623,25 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
         pairs = res["pairs"]
         clean = pairs.loc[pairs["clean"]]
         gross_ci = mean_ci(clean["r_night_bps"].to_numpy(), rng)
-        cons_ci = mean_ci(clean["net_cons_bps"].to_numpy(), rng)
+        cons_ci = mean_ci(clean["net_cons_pct"].to_numpy(), rng)
         diff = (clean["r_night_bps"] - clean["r_day_bps"]).to_numpy()
         diff_ci = mean_ci(diff, rng)
         sh_gross = sharpe_stats(clean["r_night_bps"].to_numpy(), clean["date_t"])
-        sh_cons = sharpe_stats(clean["net_cons_bps"].to_numpy(), clean["date_t"])
+        sh_cons = sharpe_stats(clean["net_cons_pct"].to_numpy(), clean["date_t"])
         summary_rows.append({
             "series": sym,
             "n_clean": len(clean),
-            "mean_gross_bps": gross_ci["mean_bps"], "gross_ci_lo": gross_ci["ci_lo"], "gross_ci_hi": gross_ci["ci_hi"],
-            "mean_net_cons_bps": cons_ci["mean_bps"], "cons_ci_lo": cons_ci["ci_lo"], "cons_ci_hi": cons_ci["ci_hi"],
-            "mde_bps": MDE_BPS[sym],
-            "gate_cons_mean_gt_mde": bool(cons_ci["mean_bps"] > MDE_BPS[sym]) if np.isfinite(cons_ci["mean_bps"]) else None,
+            "mean_gross_bps": gross_ci["mean"], "gross_ci_lo": gross_ci["ci_lo"], "gross_ci_hi": gross_ci["ci_hi"],
+            "mean_net_cons_pct": cons_ci["mean"], "cons_ci_lo": cons_ci["ci_lo"], "cons_ci_hi": cons_ci["ci_hi"],
+            "mde_pct": MDE_PCT[sym],
+            "gate_cons_mean_gt_mde": bool(cons_ci["mean"] > MDE_PCT[sym]) if np.isfinite(cons_ci["mean"]) else None,
             "mean_day_bps": float(clean["r_day_bps"].mean()) if len(clean) else float("nan"),
-            "night_minus_day_mean_bps": diff_ci["mean_bps"], "night_minus_day_ci_lo": diff_ci["ci_lo"],
+            "night_minus_day_mean_bps": diff_ci["mean"], "night_minus_day_ci_lo": diff_ci["ci_lo"],
             "night_minus_day_ci_hi": diff_ci["ci_hi"],
             "sharpe_gross_annualized": sh_gross["sharpe"], "sharpe_gross_n": sh_gross["n"], "sharpe_gross_years": sh_gross["years"],
             "sharpe_cons_annualized": sh_cons["sharpe"], "sharpe_cons_n": sh_cons["n"], "sharpe_cons_years": sh_cons["years"],
             "max_dd_gross_bps": max_drawdown_bps(clean["r_night_bps"].to_numpy()),
-            "max_dd_cons_bps": max_drawdown_bps(clean["net_cons_bps"].to_numpy()),
+            "max_dd_cons_pct": max_drawdown_bps(clean["net_cons_pct"].to_numpy()),
             "hit_rate_gross": hit_rate(clean["r_night_bps"].to_numpy()),
         })
     summary_df = pd.DataFrame(summary_rows)
@@ -667,7 +678,7 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
         common.columns = ["etf", "ref"]
         resid = (common["etf"] - common["ref"]).to_numpy()
         ci = mean_ci(resid, rng)
-        residual_rows.append({"series": sym, "n_common": len(common), **ci})
+        residual_rows.append({"series": sym, "n_common": len(common), "unit": "bps", **ci})
     pd.DataFrame(residual_rows).to_csv(out_dir / "residual_vs_1321.csv", index=False)
 
     # -- train / val split --------------------------------------------------
@@ -678,12 +689,12 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
         train = clean.loc[clean["date_t"] <= TRAIN_END]
         val = clean.loc[(clean["date_t"] >= VAL_START) & (clean["date_t"] <= VAL_END)]
         for split_name, sub in (("train", train), ("val", val)):
-            opt = mean_ci(sub["net_opt_bps"].to_numpy(), rng)
-            cons = mean_ci(sub["net_cons_bps"].to_numpy(), rng)
+            opt = mean_ci(sub["net_opt_pct"].to_numpy(), rng)
+            cons = mean_ci(sub["net_cons_pct"].to_numpy(), rng)
             tv_rows.append({"series": sym, "split": split_name,
                              "n": len(sub),
-                             "mean_opt_bps": opt["mean_bps"], "opt_ci_lo": opt["ci_lo"], "opt_ci_hi": opt["ci_hi"],
-                             "mean_cons_bps": cons["mean_bps"], "cons_ci_lo": cons["ci_lo"], "cons_ci_hi": cons["ci_hi"]})
+                             "mean_opt_pct": opt["mean"], "opt_ci_lo": opt["ci_lo"], "opt_ci_hi": opt["ci_hi"],
+                             "mean_cons_pct": cons["mean"], "cons_ci_lo": cons["ci_lo"], "cons_ci_hi": cons["ci_hi"]})
     pd.DataFrame(tv_rows).to_csv(out_dir / "train_val_split.csv", index=False)
 
     # -- diagnostics (記述のみ) ---------------------------------------------
@@ -707,10 +718,10 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
             c2_rows.append({"series": sym, **row})
         c3 = control3_sign_reversal(clean, rng)
         c3_rows.append({"series": sym,
-                         "net_short_opt_mean_bps": c3["net_short_opt"]["mean_bps"],
+                         "net_short_opt_mean_pct": c3["net_short_opt"]["mean"],
                          "net_short_opt_ci_lo": c3["net_short_opt"]["ci_lo"],
                          "net_short_opt_ci_hi": c3["net_short_opt"]["ci_hi"],
-                         "net_short_cons_mean_bps": c3["net_short_cons"]["mean_bps"],
+                         "net_short_cons_mean_pct": c3["net_short_cons"]["mean"],
                          "net_short_cons_ci_lo": c3["net_short_cons"]["ci_lo"],
                          "net_short_cons_ci_hi": c3["net_short_cons"]["ci_hi"]})
     pd.DataFrame(c1_rows).to_csv(out_dir / "controls_sign_shuffle.csv", index=False)
@@ -725,7 +736,7 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
             continue
         clean = res["pairs"].loc[res["pairs"]["clean"]]
         gross_ci = mean_ci(clean["r_night_bps"].to_numpy(), rng)
-        c4_rows.append({"series": sym, "n_clean": len(clean), **gross_ci})
+        c4_rows.append({"series": sym, "n_clean": len(clean), "unit": "bps", **gross_ci})
     pd.DataFrame(c4_rows).to_csv(out_dir / "controls_individual_stocks.csv", index=False)
 
     # -- 1321 帯またぎ回数(生の close 系列、全開発セット行) -------------------
@@ -788,6 +799,7 @@ def main(out_dir: Path | None = None, iteration: int = 0, apply_price_correction
             for sym, res in results.items()
         },
         "mde_bps": MDE_BPS,
+        "mde_pct_for_net": MDE_PCT,
         "iter0_vs_iter1_comparison": comparison,
     }
     (out_dir / "RUN.json").write_text(json.dumps(run_meta, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -842,22 +854,33 @@ def build_iter0_vs_iter1_comparison(iter0_ref: dict, results: dict, summary_df: 
 
     pairs1 = pd.read_csv(out_dir / "pairs_1306T.csv")
     clean1 = pairs1.loc[pairs1["clean"]]
-    mean_cost1 = float(clean1["cost_cons_bps"].mean()) if len(clean1) else float("nan")
+    mean_cost1 = float(clean1["cost_cons_pct"].mean()) if len(clean1) else float("nan")
 
+    # L-920: the iteration-0 files were written before the rename and hold the
+    # cost and the net in bp (cost_cons_bps, mean_net_cons_bps, cons_ci_lo/hi);
+    # read them as % (/ 100) when the new *_pct names are absent.
     pairs0 = iter0_ref["pairs"].get("1306.T")
     if pairs0 is not None and "clean" in pairs0.columns:
         clean0 = pairs0.loc[pairs0["clean"]]
-        mean_cost0 = float(clean0["cost_cons_bps"].mean()) if len(clean0) else float("nan")
+        cost0 = (clean0["cost_cons_pct"] if "cost_cons_pct" in clean0.columns
+                 else clean0["cost_cons_bps"] / 100.0)
+        mean_cost0 = float(cost0.mean()) if len(clean0) else float("nan")
     else:
         mean_cost0 = float("nan")
+    if "mean_net_cons_pct" in row0.index:
+        r0_mean, r0_lo, r0_hi = (float(row0["mean_net_cons_pct"]), float(row0["cons_ci_lo"]),
+                                 float(row0["cons_ci_hi"]))
+    else:
+        r0_mean, r0_lo, r0_hi = (float(row0["mean_net_cons_bps"]) / 100.0,
+                                 float(row0["cons_ci_lo"]) / 100.0, float(row0["cons_ci_hi"]) / 100.0)
 
     symbol_1306 = {
-        "iter0_mean_cons_bps": float(row0["mean_net_cons_bps"]),
-        "iter0_ci_lo": float(row0["cons_ci_lo"]), "iter0_ci_hi": float(row0["cons_ci_hi"]),
-        "iter0_mean_cost_bps": mean_cost0,
-        "iter1_mean_cons_bps": float(row1["mean_net_cons_bps"]),
+        "iter0_mean_cons_pct": r0_mean,
+        "iter0_ci_lo": r0_lo, "iter0_ci_hi": r0_hi,
+        "iter0_mean_cost_pct": mean_cost0,
+        "iter1_mean_cons_pct": float(row1["mean_net_cons_pct"]),
         "iter1_ci_lo": float(row1["cons_ci_lo"]), "iter1_ci_hi": float(row1["cons_ci_hi"]),
-        "iter1_mean_cost_bps": mean_cost1,
+        "iter1_mean_cost_pct": mean_cost1,
     }
 
     other_unchanged = {}
@@ -895,7 +918,7 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
                      "`schema/jpx_etf_daily.json` CORRECTION 2026-09-06。"
                      "CSVの2015-01-05〜2026-03-31区間は実勢価格のちょうど1/10"
                      "(独立系列: 2022-03-04実勢終値1,920.5円 vs CSV 192.05円)。"
-                     "呼値帯の判定・呼値コストのbps換算にのみ×10を適用し、r_night/r_dayなどのリターン(比率)は"
+                     "呼値帯の判定・呼値コストの%換算にのみ×10を適用し、r_night/r_dayなどのリターン(比率)は"
                      "CSVの値のまま変更していない。2015-01-05の水準シフトを跨ぐペアは規則2(split_candidate)の"
                      "除外対象のまま(変更なし)。")
         lines.append("")
@@ -906,10 +929,10 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
             lines.append("")
             lines.append("| | 反復0(補正前) | 反復1(補正後) |")
             lines.append("|---|---|---|")
-            lines.append(f"| 平均net保守(bps) | {s['iter0_mean_cons_bps']:.2f} | {s['iter1_mean_cons_bps']:.2f} |")
+            lines.append(f"| 平均net保守(%) | {s['iter0_mean_cons_pct']:.4f} | {s['iter1_mean_cons_pct']:.4f} |")
             lines.append(f"| CI | [{s['iter0_ci_lo']:.2f}, {s['iter0_ci_hi']:.2f}] | "
                          f"[{s['iter1_ci_lo']:.2f}, {s['iter1_ci_hi']:.2f}] |")
-            lines.append(f"| 平均コスト(bps、往復) | {s['iter0_mean_cost_bps']:.2f} | {s['iter1_mean_cost_bps']:.2f} |")
+            lines.append(f"| 平均コスト(%、往復) | {s['iter0_mean_cost_pct']:.4f} | {s['iter1_mean_cost_pct']:.4f} |")
             lines.append("")
             lines.append("他3系列(1591.T/2516.T/1321.T)は価格水準補正の対象外。反復0のpairs_<SYM>.csvと"
                          "反復1のpairs_<SYM>.csv(共通列)を突き合わせて確認:")
@@ -939,30 +962,30 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
     lines.append("先頭行・末尾行は規則1の判定対象外(基準値または復帰確認行がないため)。")
     lines.append("")
 
-    lines.append("## 主指標: 除外前後 x 楽観/保守(bps/日、95%CI、ブロック・ブートストラップ 20営業日x2000回)")
+    lines.append("## 主指標: 除外前後 x 楽観/保守(%/日、95%CI、ブロック・ブートストラップ 20営業日x2000回。ネットなので % — L-920)")
     lines.append("")
-    lines.append("| 系列 | 除外 | 費用 | n | 平均(bps) | CI下 | CI上 |")
+    lines.append("| 系列 | 除外 | 費用 | n | 平均(%) | CI下 | CI上 |")
     lines.append("|---|---|---|---|---|---|---|")
     for _, row in indicator_df.iterrows():
         lines.append(f"| {row['series']} | {row['stage']} | {row['cost_scenario']} | {row['n']} | "
-                     f"{row['mean_bps']:.2f} | {row['ci_lo']:.2f} | {row['ci_hi']:.2f} |")
+                     f"{row['mean']:.4f} | {row['ci_lo']:.4f} | {row['ci_hi']:.4f} |")
     lines.append("")
 
     lines.append("## 系列別サマリ(除外後のみ): 主指標・Sharpe・最大DD・的中率・夜間-日中差")
     lines.append("")
-    lines.append("| 系列 | n | 平均gross(bps) | CI | 平均net保守(bps) | CI | MDE(bps) | 保守平均>MDE | "
+    lines.append("| 系列 | n | 平均gross(bps) | CI | 平均net保守(%) | CI | MDE(%) | 保守平均>MDE | "
                  "平均day(bps) | 夜間-日中平均(bps) | CI | Sharpe(gross,年率) | Sharpe(保守,年率) | "
-                 "最大DD gross(bps) | 最大DD保守(bps) | 的中率(gross) |")
+                 "最大DD gross(bps) | 最大DD保守(%) | 的中率(gross) |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for _, r in summary_df.iterrows():
         lines.append(
             f"| {r['series']} | {r['n_clean']} | {r['mean_gross_bps']:.2f} | "
-            f"[{r['gross_ci_lo']:.2f}, {r['gross_ci_hi']:.2f}] | {r['mean_net_cons_bps']:.2f} | "
-            f"[{r['cons_ci_lo']:.2f}, {r['cons_ci_hi']:.2f}] | {r['mde_bps']:.2f} | {r['gate_cons_mean_gt_mde']} | "
+            f"[{r['gross_ci_lo']:.2f}, {r['gross_ci_hi']:.2f}] | {r['mean_net_cons_pct']:.4f} | "
+            f"[{r['cons_ci_lo']:.4f}, {r['cons_ci_hi']:.4f}] | {r['mde_pct']:.4f} | {r['gate_cons_mean_gt_mde']} | "
             f"{r['mean_day_bps']:.2f} | {r['night_minus_day_mean_bps']:.2f} | "
             f"[{r['night_minus_day_ci_lo']:.2f}, {r['night_minus_day_ci_hi']:.2f}] | "
             f"{r['sharpe_gross_annualized']:.3f} | {r['sharpe_cons_annualized']:.3f} | "
-            f"{r['max_dd_gross_bps']:.1f} | {r['max_dd_cons_bps']:.1f} | {r['hit_rate_gross']:.3f} |"
+            f"{r['max_dd_gross_bps']:.1f} | {r['max_dd_cons_pct']:.3f} | {r['hit_rate_gross']:.3f} |"
         )
     lines.append("")
     lines.append("「保守平均>MDE」は着手前関門の数値並記(PREREG §指標と分母)であり、採用/棄却の判定ではない。")
@@ -993,19 +1016,19 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
     lines.append("| 系列 | n(共通日) | 残差平均(bps) | CI下 | CI上 |")
     lines.append("|---|---|---|---|---|")
     for r in extra["residual_rows"]:
-        lines.append(f"| {r['series']} | {r['n_common']} | {r['mean_bps']:.2f} | {r['ci_lo']:.2f} | {r['ci_hi']:.2f} |")
+        lines.append(f"| {r['series']} | {r['n_common']} | {r['mean']:.2f} | {r['ci_lo']:.2f} | {r['ci_hi']:.2f} |")
     lines.append("")
 
     lines.append("## train/val split(暦日、除外後)")
     lines.append("")
     lines.append(f"train = 開始..{run_meta['train_end']} / val = {run_meta['val_start']}..{run_meta['val_end']}")
     lines.append("")
-    lines.append("| 系列 | split | n | 平均net楽観(bps) | CI | 平均net保守(bps) | CI |")
+    lines.append("| 系列 | split | n | 平均net楽観(%) | CI | 平均net保守(%) | CI |")
     lines.append("|---|---|---|---|---|---|---|")
     for r in extra["tv_rows"]:
-        lines.append(f"| {r['series']} | {r['split']} | {r['n']} | {r['mean_opt_bps']:.2f} | "
-                     f"[{r['opt_ci_lo']:.2f}, {r['opt_ci_hi']:.2f}] | {r['mean_cons_bps']:.2f} | "
-                     f"[{r['cons_ci_lo']:.2f}, {r['cons_ci_hi']:.2f}] |")
+        lines.append(f"| {r['series']} | {r['split']} | {r['n']} | {r['mean_opt_pct']:.4f} | "
+                     f"[{r['opt_ci_lo']:.4f}, {r['opt_ci_hi']:.4f}] | {r['mean_cons_pct']:.4f} | "
+                     f"[{r['cons_ci_lo']:.4f}, {r['cons_ci_hi']:.4f}] |")
     lines.append("")
 
     lines.append("## 対照(反事実)")
@@ -1029,13 +1052,13 @@ def write_results_md(results, summary_df, indicator_df, control4_results, run_me
     lines.append("")
     lines.append("対照3: 符号反転(夜間売り持ち、費用は方向によらず同額発生):")
     lines.append("")
-    lines.append("| 系列 | net_short楽観(bps) | CI | net_short保守(bps) | CI |")
+    lines.append("| 系列 | net_short楽観(%) | CI | net_short保守(%) | CI |")
     lines.append("|---|---|---|---|---|")
     for r in extra["c3_rows"]:
-        lines.append(f"| {r['series']} | {r['net_short_opt_mean_bps']:.2f} | "
-                     f"[{r['net_short_opt_ci_lo']:.2f}, {r['net_short_opt_ci_hi']:.2f}] | "
-                     f"{r['net_short_cons_mean_bps']:.2f} | "
-                     f"[{r['net_short_cons_ci_lo']:.2f}, {r['net_short_cons_ci_hi']:.2f}] |")
+        lines.append(f"| {r['series']} | {r['net_short_opt_mean_pct']:.4f} | "
+                     f"[{r['net_short_opt_ci_lo']:.4f}, {r['net_short_opt_ci_hi']:.4f}] | "
+                     f"{r['net_short_cons_mean_pct']:.4f} | "
+                     f"[{r['net_short_cons_ci_lo']:.4f}, {r['net_short_cons_ci_hi']:.4f}] |")
     lines.append("")
 
     lines.append("対照4(診断専用、選択には使わない) -- 個別株4銘柄(同スナップショット、"

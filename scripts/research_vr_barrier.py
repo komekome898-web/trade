@@ -127,6 +127,11 @@ NO STRATEGY BACKTEST IS RUN IN THIS STAGE.
 
 Run:  PYTHONPATH=src python scripts/research_vr_barrier.py
 Read-only, no network, idempotent, writes nothing, commits nothing.
+
+(L-920 の後の単位: 上の事前登録の文は書き換えない。障壁はレンジの縁からの
+距離なので % で持つ(10bps = 0.1 %、5bps = 0.05 %)。費用と損益(2.93bps =
+0.0293 %、+5bps の取り = +0.05 %、−7.93bps の損 = −0.0793 %、EV)も % で持つ。
+bp は値動き(前向きの値動き)にだけ使う。損益分岐の率 61.3 % は単位に依らない。)
 """
 from __future__ import annotations
 
@@ -152,15 +157,15 @@ VR_CUTS = np.array([14.076535165193164,
                     21.164353040819478])
 VR_CUTS_PUBLISHED = np.array([14.08, 17.22, 21.16])   # report n, as printed
 WINDOWS = (120, 15)                  # range windows, minutes -- exactly these
-BARRIERS = (10.0, 5.0)               # bps, symmetric -- exactly these
+BARRIERS = (0.10, 0.05)              # %, symmetric -- exactly these (10/5 bps in the prereg)
 CAP_SEC = R.HOLD_MAX_SEC             # 3600s, the law's cap
-COST_TAKER_CALM = R.COST_TAKER_CALM  # 2.93 bps
+COST_TAKER_CALM = R.COST_TAKER_CALM  # 0.0293 % (research_range_reversed holds it in % since L-920)
 
 BAR_MIN_TOUCHES = 2000
 BAR_GAP_PP = 5.0
-FADE_GROSS_BPS = 5.0                 # maker entry, 5bps barrier
-FADE_LOSS_BPS = 5.0 + COST_TAKER_CALM
-ECON_BREAKEVEN = FADE_LOSS_BPS / (FADE_GROSS_BPS + FADE_LOSS_BPS) * 100
+FADE_GROSS_PCT = 0.05                # % maker entry, 0.05 % barrier
+FADE_LOSS_PCT = 0.05 + COST_TAKER_CALM
+ECON_BREAKEVEN = FADE_LOSS_PCT / (FADE_GROSS_PCT + FADE_LOSS_PCT) * 100
 
 QNAMES = {1: "Q1 (deep calm)", 2: "Q2", 3: "Q3", 4: "Q4 (trend)"}
 
@@ -226,7 +231,7 @@ def _first_true(mask: np.ndarray) -> int:
 
 
 def barrier_race(mk: R.Market, sec: np.ndarray, side: np.ndarray,
-                 edge: np.ndarray, bps: float, *, offset: int = 0):
+                 edge: np.ndarray, bpct: float, *, offset: int = 0):
     """Symmetric first-passage race from each touch, on the 1s grid.
 
     Semantics are transcribed from research_range_reversed.py section 3d:
@@ -245,8 +250,8 @@ def barrier_race(mk: R.Market, sec: np.ndarray, side: np.ndarray,
     """
     n = mk.n
     price = mk.price
-    up_mul = 1.0 + bps / 1e4
-    dn_mul = 1.0 - bps / 1e4
+    up_mul = 1.0 + bpct / 100
+    dn_mul = 1.0 - bpct / 100
 
     # dedup: identical (second, side, edge) triples race identically
     key = np.stack([sec.astype(np.float64), side.astype(np.float64), edge])
@@ -349,11 +354,11 @@ def main() -> int:
     gate_epoch = d < 1e-6
 
     sub("0b. REPRODUCTION 1 -- the law (report k / KNOWLEDGE sec.2)")
-    print("  W=120m, calm filter ON, judgment segment (last 40%), 10/10 bps race.")
+    print("  W=120m, calm filter ON, judgment segment (last 40%), 0.1 % / 0.1 % race.")
     li, lside, llo, lhi = touches(mk, 120, use_calm=True, m_lo=split, m_hi=n_min)
     l_sec = mk.psec[li]
     l_edge = np.where(lside > 0, llo, lhi)
-    l_out, _ = barrier_race(mk, l_sec, lside, l_edge, 10.0)
+    l_out, _ = barrier_race(mk, l_sec, lside, l_edge, 0.10)  # 0.1 % (10 bps)
     ls = race_stats(l_out)
     print(f"  measured : n={ls['n']:,}  revert {ls['rev']:.1f}%  "
           f"break {ls['brk']:.1f}%  neither {ls['un']:.1f}%")
@@ -455,21 +460,21 @@ def main() -> int:
         print(f"  low-edge (fade=BUY) {int((side > 0).sum()):,}   "
               f"high-edge (fade=SELL) {int((side < 0).sum()):,}")
 
-        for bps in BARRIERS:
-            out, tsec = barrier_race(mk, sec, side, edge, bps)
-            cells[(w, bps)] = {"out": out, "tsec": tsec, "q": qq, "sec": sec,
+        for bpct in BARRIERS:
+            out, tsec = barrier_race(mk, sec, side, edge, bpct)
+            cells[(w, bpct)] = {"out": out, "tsec": tsec, "q": qq, "sec": sec,
                                "side": side, "t": t}
-            sub(f"2.{w}.{bps:g}  symmetric {bps:g}bps / {bps:g}bps race, "
+            sub(f"2.{w}.{bpct:g}  symmetric {bpct:g}% / {bpct:g}% race, "
                 f"{CAP_SEC // 60}-minute cap")
             print(f"{'vr quartile':<18}{RACE_HEAD}{'touch/day':>11}")
             for q in (1, 2, 3, 4):
                 m = qq == q
                 s = race_stats(out[m])
-                results[(w, bps, q)] = s
+                results[(w, bpct, q)] = s
                 print(f"{QNAMES[q]:<18}{race_row(s)}"
                       f"{s['n'] / span_days:>11.0f}")
             s_all = race_stats(out)
-            results[(w, bps, 0)] = s_all
+            results[(w, bpct, 0)] = s_all
             print(f"{'ALL (no vr cond)':<18}{race_row(s_all)}"
                   f"{s_all['n'] / span_days:>11.0f}")
             print("  gap_pp   = revert% - break% (unconditional, the law's "
@@ -478,8 +483,8 @@ def main() -> int:
                   "quantity)")
 
             # monotonicity of the revert rate across quartiles
-            rr = [results[(w, bps, q)]["rev"] for q in (1, 2, 3, 4)]
-            cc = [results[(w, bps, q)]["cond"] for q in (1, 2, 3, 4)]
+            rr = [results[(w, bpct, q)]["rev"] for q in (1, 2, 3, 4)]
+            cc = [results[(w, bpct, q)]["cond"] for q in (1, 2, 3, 4)]
             dmono = np.diff(rr)
             shape = ("monotone DECREASING (clean gradient)" if np.all(dmono < 0)
                      else "monotone INCREASING (clean gradient)"
@@ -501,8 +506,8 @@ def main() -> int:
         _, first1 = np.unique(key1, return_index=True)
         d1 = np.zeros(len(idx), bool)
         d1[first1] = True
-        # D2: non-overlapping races (uses the 10bps resolution clock)
-        base = cells[(w, 10.0)]
+        # D2: non-overlapping races (uses the 0.1 % resolution clock)
+        base = cells[(w, 0.10)]
         order = np.argsort(t, kind="mergesort")
         d2 = np.zeros(len(idx), bool)
         free = -np.inf
@@ -515,13 +520,13 @@ def main() -> int:
         print(f"D2 non-overlapping races        : {int((d2 & m1).sum()):,} "
               f"({int((d2 & m1).sum()) / span_days:.1f}/day)")
         print(f"\n{'Q1 event set':<26}{'barrier':>9}{RACE_HEAD}")
-        for bps in BARRIERS:
-            o = cells[(w, bps)]["out"]
+        for bpct in BARRIERS:
+            o = cells[(w, bpct)]["out"]
             for lbl, m in (("PRIMARY (all touches)", m1),
                            ("D1 first-per-minute", m1 & d1),
                            ("D2 non-overlapping", m1 & d2)):
-                print(f"{lbl:<26}{bps:>8.0f}b{race_row(race_stats(o[m]))}")
-        print("  D2 uses the 10bps resolution clock for both rows so the two")
+                print(f"{lbl:<26}{bpct:>8.2f}%{race_row(race_stats(o[m]))}")
+        print("  D2 uses the 0.1 % resolution clock for both rows so the two")
         print("  barrier sizes are judged on the SAME independent event list.")
         print("  D1 is NOT a clean independence cut: keeping only the first print")
         print("  per minute up-weights edges that were merely kissed and drops the")
@@ -533,12 +538,12 @@ def main() -> int:
         print(f"\nlook-ahead bound -- restart the race at second+1 (the touch")
         print("second's grid price is the LAST print of that second):")
         print(f"{'Q1 variant':<26}{'barrier':>9}{RACE_HEAD}")
-        for bps in BARRIERS:
-            o0 = cells[(w, bps)]["out"][m1]
-            o1, _ = barrier_race(mk, sec[m1], side[m1], edge[m1], bps, offset=1)
-            print(f"{'start at touch second':<26}{bps:>8.0f}b"
+        for bpct in BARRIERS:
+            o0 = cells[(w, bpct)]["out"][m1]
+            o1, _ = barrier_race(mk, sec[m1], side[m1], edge[m1], bpct, offset=1)
+            print(f"{'start at touch second':<26}{bpct:>8.2f}%"
                   f"{race_row(race_stats(o0))}")
-            print(f"{'start at second + 1':<26}{bps:>8.0f}b"
+            print(f"{'start at second + 1':<26}{bpct:>8.2f}%"
                   f"{race_row(race_stats(o1))}")
         q1_extra[w] = {"m1": m1, "d1": d1, "d2": d2, "sec": sec, "side": side,
                        "edge": edge, "span": span_days}
@@ -547,12 +552,12 @@ def main() -> int:
         sub(f"2.{w}.dy  DIAGNOSTIC -- stacking the old ~90%-duty calm filter on vr")
         pcalm_touch = calm_min[pmin]
         print(f"{'cell':<30}{'barrier':>9}{RACE_HEAD}")
-        for bps in BARRIERS:
-            o = cells[(w, bps)]["out"]
+        for bpct in BARRIERS:
+            o = cells[(w, bpct)]["out"]
             for lbl, m in (("Q1, calm filter OFF", m1),
                            ("Q1 AND calm filter ON", m1 & pcalm_touch),
                            ("calm ON only (the law's cut)", pcalm_touch)):
-                print(f"{lbl:<30}{bps:>8.0f}b{race_row(race_stats(o[m]))}")
+                print(f"{lbl:<30}{bpct:>8.2f}%{race_row(race_stats(o[m]))}")
 
     # ---------------------------------------------------------------- 3 ----- #
     header("3. PRE-REGISTERED MECHANISM BAR -- Q1")
@@ -562,37 +567,37 @@ def main() -> int:
           f"{'(a)':>6}{'(b)':>6}{'(c)':>6}{'cell':>9}")
     any_pass = False
     for w in WINDOWS:
-        for bps in BARRIERS:
-            s = results[(w, bps, 1)]
+        for bpct in BARRIERS:
+            s = results[(w, bpct, 1)]
             ca = s["rev"] > s["brk"]
             cb = s["n"] >= BAR_MIN_TOUCHES
             cc_ = np.isfinite(s["gap"]) and s["gap"] >= BAR_GAP_PP
             p = bool(ca and cb and cc_)
             any_pass |= p
-            print(f"{f'W={w}m  {bps:g}bps':<24}{s['n']:>9,}{s['rev']:>9.1f}%"
+            print(f"{f'W={w}m  {bpct:g}%':<24}{s['n']:>9,}{s['rev']:>9.1f}%"
                   f"{s['brk']:>9.1f}%{s['gap']:>+9.1f}"
                   f"{('Y' if ca else 'n'):>6}{('Y' if cb else 'n'):>6}"
                   f"{('Y' if cc_ else 'n'):>6}{('PASS' if p else 'FAIL'):>9}")
     print(f"\n  MECHANISM VERDICT (OR over the four Q1 cells): "
           f"{'PASS' if any_pass else 'FAIL'}")
 
-    header("4. ECONOMIC BAR -- Q1 AT THE 5bps BARRIER (stricter)")
-    print(f"  maker-entry fade: +{FADE_GROSS_BPS:.2f}bps gross when revert wins,")
-    print(f"                    -{FADE_LOSS_BPS:.2f}bps when break wins "
-          f"({FADE_GROSS_BPS:.0f} + {COST_TAKER_CALM:.2f} calm taker exit)")
+    header("4. ECONOMIC BAR -- Q1 AT THE 0.05 % BARRIER (stricter)")
+    print(f"  maker-entry fade: +{FADE_GROSS_PCT:.4f}% gross when revert wins,")
+    print(f"                    -{FADE_LOSS_PCT:.4f}% when break wins "
+          f"({FADE_GROSS_PCT:.2f} + {COST_TAKER_CALM:.4f} calm taker exit)")
     print(f"  EV > 0  <=>  revert share of RESOLVED races > "
           f"{ECON_BREAKEVEN:.2f}%   (brief's round number: 61%)")
-    print(f"\n{'cell':<24}{'resolved n':>12}{'rev|res%':>11}{'EV bps/race':>13}"
+    print(f"\n{'cell':<24}{'resolved n':>12}{'rev|res%':>11}{'EV %/race':>13}"
           f"{'vs 61.3%':>11}")
     econ_pass = False
     for w in WINDOWS:
-        s = results[(w, 5.0, 1)]
-        ev = (FADE_GROSS_BPS * s["rev"] - FADE_LOSS_BPS * s["brk"]) / 100.0
+        s = results[(w, 0.05, 1)]
+        ev = (FADE_GROSS_PCT * s["rev"] - FADE_LOSS_PCT * s["brk"]) / 100.0
         p = bool(np.isfinite(s["cond"]) and s["cond"] > ECON_BREAKEVEN)
         econ_pass |= p
-        print(f"{f'W={w}m  Q1  5bps':<24}{s['n_res']:>12,}{s['cond']:>10.1f}%"
-              f"{ev:>+13.3f}{('PASS' if p else 'FAIL'):>11}")
-    print("  EV bps/race is unconditional (unresolved races contribute 0 by")
+        print(f"{f'W={w}m  Q1  0.05%':<24}{s['n_res']:>12,}{s['cond']:>10.1f}%"
+              f"{ev:>+13.5f}{('PASS' if p else 'FAIL'):>11}")
+    print("  EV %/race is unconditional (unresolved races contribute 0 by")
     print("  construction); its sign is identical to the rev|res% test.")
     print(f"\n  ECONOMIC VERDICT: {'PASS' if econ_pass else 'FAIL'}")
 
@@ -602,14 +607,14 @@ def main() -> int:
     print(f"{'cell':<24}{'n':>9}{'mean bps':>11}{'median':>10}{'>0 share':>11}")
     for w in WINDOWS:
         m1 = q1_extra[w]["m1"]
-        for bps in BARRIERS:
-            o = cells[(w, bps)]["out"]
+        for bpct in BARRIERS:
+            o = cells[(w, bpct)]["out"]
             mm = m1 & (o == 0)
             if not mm.sum():
                 continue
             dd = fwd_drift_at(mk, q1_extra[w]["sec"][mm],
                               q1_extra[w]["side"][mm], CAP_SEC)
-            print(f"{f'W={w}m  Q1  {bps:g}bps':<24}{int(mm.sum()):>9,}"
+            print(f"{f'W={w}m  Q1  {bpct:g}%':<24}{int(mm.sum()):>9,}"
                   f"{dd.mean():>+11.2f}{np.median(dd):>+10.2f}"
                   f"{(dd > 0).mean() * 100:>10.1f}%")
 
@@ -618,20 +623,20 @@ def main() -> int:
     print("the momentum result at least as strongly as the pooled law does.\n")
     print(f"{'cell':<24}{RACE_HEAD}")
     for w in WINDOWS:
-        for bps in BARRIERS:
+        for bpct in BARRIERS:
             for q in (1, 4, 0):
                 lbl = "ALL" if q == 0 else QNAMES[q].split()[0]
-                print(f"{f'W={w}m {bps:g}bps {lbl}':<24}"
-                      f"{race_row(results[(w, bps, q)])}")
+                print(f"{f'W={w}m {bpct:g}% {lbl}':<24}"
+                      f"{race_row(results[(w, bpct, q)])}")
     print(f"\n{'gradient (revert%)':<24}{'Q1':>9}{'Q2':>9}{'Q3':>9}{'Q4':>9}"
           f"{'Q1-Q4':>9}{'shape':>26}")
     for w in WINDOWS:
-        for bps in BARRIERS:
-            rr = [results[(w, bps, q)]["rev"] for q in (1, 2, 3, 4)]
+        for bpct in BARRIERS:
+            rr = [results[(w, bpct, q)]["rev"] for q in (1, 2, 3, 4)]
             dmono = np.diff(rr)
             shape = ("monotone down" if np.all(dmono < 0) else
                      "monotone up" if np.all(dmono > 0) else "NOT monotone")
-            print(f"{f'W={w}m  {bps:g}bps':<24}" +
+            print(f"{f'W={w}m  {bpct:g}%':<24}" +
                   "".join(f"{v:>9.1f}" for v in rr) +
                   f"{rr[0] - rr[3]:>+9.1f}{shape:>26}")
 
@@ -697,8 +702,8 @@ def main() -> int:
     ok &= at_edge == len(ti)
 
     # the race never looks past the cap and outcomes are exhaustive
-    o = cells[(120, 10.0)]["out"]
-    tsec = cells[(120, 10.0)]["tsec"]
+    o = cells[(120, 0.10)]["out"]
+    tsec = cells[(120, 0.10)]["tsec"]
     exh = int(((o == 1) | (o == -1) | (o == 0)).sum()) == len(o)
     cap_ok = bool(np.all(tsec <= CAP_SEC + 1e-9))
     unres_at_cap = bool(np.all(tsec[o == 0] == CAP_SEC))
@@ -714,7 +719,7 @@ def main() -> int:
     q2 = mq[mk.pmin[i2]]
     k2 = q2 > 0
     o2, t2 = barrier_race(mk, mk.psec[i2][k2], s2[k2],
-                          np.where(s2 > 0, lo2, hi2)[k2], 10.0)
+                          np.where(s2 > 0, lo2, hi2)[k2], 0.10)
     det = bool(np.array_equal(o2, cells[(120, 10.0)]["out"])
                and np.array_equal(t2, cells[(120, 10.0)]["tsec"]))
     print(f"  rerun determinism (bit-identical)   : {'OK' if det else 'FAIL'}")
@@ -750,7 +755,7 @@ def main() -> int:
                key=lambda k: results[(k[0], k[1], 1)]["gap"])
     bs = results[(best[0], best[1], 1)]
     print(f"1. NO CELL FLIPS. The best Q1 cell of the four is W={best[0]}m at "
-          f"{best[1]:g}bps:")
+          f"{best[1]:g}%:")
     print(f"   {bs['rev']:.1f}% revert vs {bs['brk']:.1f}% break "
           f"(gap {bs['gap']:+.1f} pp). The mechanism bar needs the gap to be")
     print(f"   >= +{BAR_GAP_PP:.1f}; it is {bs['gap'] - BAR_GAP_PP:.1f} pp away. "
@@ -761,9 +766,9 @@ def main() -> int:
     print("\n2. vr DOES MOVE THE RACE -- just nowhere near far enough. Q1 reverts")
     print("   more than Q4 in every one of the four cells, by a consistent margin:")
     for w in WINDOWS:
-        for bps in BARRIERS:
-            a_, b_ = results[(w, bps, 1)], results[(w, bps, 4)]
-            print(f"     W={w:>3}m {bps:g}bps : Q1 {a_['rev']:.1f}% vs "
+        for bpct in BARRIERS:
+            a_, b_ = results[(w, bpct, 1)], results[(w, bpct, 4)]
+            print(f"     W={w:>3}m {bpct:g}% : Q1 {a_['rev']:.1f}% vs "
                   f"Q4 {b_['rev']:.1f}%  ->  {a_['rev'] - b_['rev']:+.1f} pp")
     print("   So deep calm is a real, signed, repeatable regime effect on the")
     print("   barrier race. It shifts the revert rate by roughly +6 to +7 pp off a")
@@ -775,18 +780,18 @@ def main() -> int:
     print("   flip needs the interval to sit ABOVE 50%):")
     for w in WINDOWS:
         m1, d2 = q1_extra[w]["m1"], q1_extra[w]["d2"]
-        for bps in BARRIERS:
-            o = cells[(w, bps)]["out"][m1 & d2]
+        for bpct in BARRIERS:
+            o = cells[(w, bpct)]["out"][m1 & d2]
             k = int((o == 1).sum())
             nres = int(((o == 1) | (o == -1)).sum())
             lo_c, hi_c = wilson(k, nres)
-            print(f"     W={w:>3}m {bps:g}bps : {k}/{nres} = "
+            print(f"     W={w:>3}m {bpct:g}% : {k}/{nres} = "
                   f"{k / max(nres, 1) * 100:.1f}%  95% CI "
                   f"[{lo_c:.1f}%, {hi_c:.1f}%]")
     print("   Every interval sits far below 50%. This is not a power problem.")
 
     print("\n4. Q4 CONFIRMS THE LAW. The trend quartile is the most momentum-like")
-    print("   cell everywhere (down to 18.4% revert at W=120m / 5bps), which is")
+    print("   cell everywhere (down to 18.4% revert at W=120m / 0.05 %), which is")
     print("   what a real regime axis should look like.")
 
     print("\n5. MECHANISM CLASSIFICATION (research-protocol sec.5): this is a")

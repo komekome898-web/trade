@@ -678,7 +678,7 @@ def simulate_reverse_entry(prints: list, side_sign: float, entry_idx: int,
     損切りがあれば「含み損が閾値に達した最初の約定の時刻 + d」以後の最初の約定で出る。
     価格は全て `at_or_after`(ts + 遅れ 以後)。"""
     delay_ms = int(round(float(delay_s) * 1000))
-    blank = {"入った": 0, "欠測": 0, "pnl_bp": NAN, "建玉の回数": 0, "保有秒": NAN,
+    blank = {"入った": 0, "欠測": 0, "pnl_pct": NAN, "建玉の回数": 0, "保有秒": NAN,
              "出口の理由": "入らない", "入りの目標時刻": None, "入りの約定時刻": None,
              "出の目標時刻": None, "出の約定時刻": None, "損切りの引き金時刻": None}
     if entry_idx >= len(prints):
@@ -710,7 +710,8 @@ def simulate_reverse_entry(prints: list, side_sign: float, entry_idx: int,
                 "入りの目標時刻": t_in, "入りの約定時刻": m_in, "出の目標時刻": t_out,
                 "損切りの引き金時刻": t_trigger}
     pnl = direction * (p_out - p_in) / p_in * 1e4
-    return {"入った": 1, "欠測": 0, "pnl_bp": float(pnl), "建玉の回数": 1,
+    # 量 1・1 回の建てから出まで(bp の値動き率)だが、連鎖の損益と同じ列に入るので % (L-920)
+    return {"入った": 1, "欠測": 0, "pnl_pct": float(pnl) / 100, "建玉の回数": 1,
             "保有秒": (m_out - m_in) / 1000.0, "出口の理由": reason,
             "入りの目標時刻": t_in, "入りの約定時刻": m_in,
             "出の目標時刻": t_out, "出の約定時刻": m_out,
@@ -745,7 +746,7 @@ def run_grid_core(cascades: dict, cache: WindowCache, delay_s: float = GRID_DELA
 
 def front_half_day_pass(prints_df: pd.DataFrame, cascades: dict,
                         mat_first: pd.DataFrame, sb, cache: WindowCache,
-                        delay_s: float = GRID_DELAY_S, cost_bp: float = 0.0) -> dict:
+                        delay_s: float = GRID_DELAY_S, cost_pct: float = 0.0) -> dict:
     """**日ごとに約定を 1 回だけ読み**、その日のぶんをまとめて計算する:
       (1) N2(1 件目の材料。`lg.add_n2_column` をそのまま呼ぶ)
       (2) 値段のラベルの再計算と 5 bp への到達時間
@@ -791,8 +792,8 @@ def front_half_day_pass(prints_df: pd.DataFrame, cascades: dict,
             v_bf = pnl_next_minute_open(entry_ts, exit_ts, direction, bf_ts, bf_open)
             v_bx = pnl_next_minute_open(entry_ts, exit_ts, direction, mt, mp)
             minute_rows.append({"bundle_id": bid, "day": day,
-                                "bitFlyer_bp": (v_bf - cost_bp if v_bf == v_bf else NAN),
-                                "Binance_bp": (v_bx - cost_bp if v_bx == v_bx else NAN)})
+                                "bitFlyer_pct": (v_bf / 100 - cost_pct if v_bf == v_bf else NAN),
+                                "Binance_pct": (v_bx / 100 - cost_pct if v_bx == v_bx else NAN)})
         if (k + 1) % 40 == 0:
             print(f"  [日ごとの一巡] {k + 1}/{len(days)} 日", flush=True)
     df_first = pd.concat(n2_parts, ignore_index=True) if n2_parts else mat_first
@@ -828,15 +829,15 @@ def max_concurrent(intervals: list) -> int:
 
 
 def exposure_of(rows: list) -> dict:
-    """露出(致命-3): 合計保有時間(時間)・保有 1 時間あたりの収支(bp/h)・
+    """露出(致命-3): 合計保有時間(時間)・保有 1 時間あたりの収支(費用を引いた %/h)・
     同時建玉の最大(本)・1 本あたりの平均保有秒。`rows` は
-    {"pnl_net_bp", "保有秒", "入りの約定時刻", "出の約定時刻"} を持つ行の並び。"""
+    {"pnl_net_pct", "保有秒", "入りの約定時刻", "出の約定時刻"} を持つ行の並び。"""
     hold_s = float(sum(r["保有秒"] for r in rows if r["保有秒"] == r["保有秒"]))
-    total = float(sum(r["pnl_net_bp"] for r in rows if r["pnl_net_bp"] == r["pnl_net_bp"]))
+    total = float(sum(r["pnl_net_pct"] for r in rows if r["pnl_net_pct"] == r["pnl_net_pct"]))
     hours = hold_s / 3600.0
     iv = [(r["入りの約定時刻"], r["出の約定時刻"]) for r in rows]
     return {"合計保有時間_時間": hours,
-            "保有1時間あたりの収支_bp/h": (total / hours if hours > 0 else NAN),
+            "保有1時間あたりの収支_pct/h": (total / hours if hours > 0 else NAN),
             "同時建玉の最大_本": max_concurrent(iv),
             "平均保有秒": (hold_s / len(rows) if rows else NAN)}
 
@@ -849,19 +850,19 @@ def _combo_metrics(vals: np.ndarray, days: np.ndarray, n_all: int,
     with_zero = np.zeros(n_all, dtype=float)
     with_zero[:vals.size] = vals
     return {
-        "総収支_bp": float(vals.sum()) if vals.size else 0.0,
+        "総収支_pct": float(vals.sum()) if vals.size else 0.0,
         "中央値_入った本のみ": q[1], "p25": q[0], "p75": q[2],
         "中央値_0含む": float(np.median(with_zero)) if n_all else NAN,
         "負の割合": float(np.mean(vals < 0)) if vals.size else NAN,
         "日等重み平均": day_equal_weight_mean(vals, days) if vals.size else NAN,
         "日クラスタSE": se_c, "入った本数": int(vals.size), "日数": ndays,
         "建玉の回数": int(vals.size),
-        "前半の前_総収支_bp": float(vals[first_mask].sum()) if vals.size else 0.0,
-        "前半の後_総収支_bp": float(vals[~first_mask].sum()) if vals.size else 0.0,
+        "前半の前_総収支_pct": float(vals[first_mask].sum()) if vals.size else 0.0,
+        "前半の後_総収支_pct": float(vals[~first_mask].sum()) if vals.size else 0.0,
     }
 
 
-def combo_chain_rows(per_chain: dict, cuts: dict, cost_bp: float, combo: dict,
+def combo_chain_rows(per_chain: dict, cuts: dict, cost_pct: float, combo: dict,
                      split_day: str | None = None) -> list:
     """1 つの組の**連鎖 1 本ごとの行**(致命-1・致命-3。保有秒と約定時刻を残す)。"""
     ei = ENTRY_POS_LEVELS.index(combo["入る位置"])
@@ -880,9 +881,9 @@ def combo_chain_rows(per_chain: dict, cuts: dict, cost_bp: float, combo: dict,
         out.append({
             "bundle_id": bid, "day": rec["day"], "side": str(pr[0]["side"]),
             "連鎖の大きさ": sp.size_bucket(len(pr)), "n_prints": len(pr),
-            "pnl_bp": r["pnl_bp"],
-            "pnl_net_bp": (r["pnl_bp"] - cost_bp * r["建玉の回数"]
-                           if r["pnl_bp"] == r["pnl_bp"] else NAN),
+            "pnl_pct": r["pnl_pct"],
+            "pnl_net_pct": (r["pnl_pct"] - cost_pct * r["建玉の回数"]
+                           if r["pnl_pct"] == r["pnl_pct"] else NAN),
             "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
             "入りの目標時刻": r["入りの目標時刻"],
             "入りの約定時刻": r["入りの約定時刻"], "出の約定時刻": r["出の約定時刻"],
@@ -911,7 +912,7 @@ def _empty_reason(per_chain: dict, cuts: dict, combo: dict) -> str:
     return f"条件を満たす連鎖が 0 本(届く連鎖 {n_reach} 本、材料が有限 {n_fin} 本)"
 
 
-def build_grid_table(per_chain: dict, cuts: dict, cost_bp: float,
+def build_grid_table(per_chain: dict, cuts: dict, cost_pct: float,
                      split_day: str) -> list:
     """189 組の表。費用は 連鎖 1 本 = c × 建玉の回数(② はいつも 1 回)。
     致命-3 を受けて**露出の 3 列**(合計保有時間・保有 1 時間あたりの収支・
@@ -920,7 +921,7 @@ def build_grid_table(per_chain: dict, cuts: dict, cost_bp: float,
     for combo in grid_combos():
         ei = ENTRY_POS_LEVELS.index(combo["入る位置"])
         cond = combo["入る条件"]
-        chain_rows = combo_chain_rows(per_chain, cuts, cost_bp, combo, split_day)
+        chain_rows = combo_chain_rows(per_chain, cuts, cost_pct, combo, split_day)
         n_missing = sum(1 for r in chain_rows if r["欠測"])
         ok_rows = [r for r in chain_rows if not r["欠測"]]
         n_cond_out = 0
@@ -933,7 +934,7 @@ def build_grid_table(per_chain: dict, cuts: dict, cost_bp: float,
                 v = cont._f(rec["entry_rows"][ei].get(col))
                 if not (math.isfinite(v) and math.isfinite(thr) and v >= thr):
                     n_cond_out += 1
-        v = np.array([r["pnl_net_bp"] for r in ok_rows], dtype=float)
+        v = np.array([r["pnl_net_pct"] for r in ok_rows], dtype=float)
         d = np.array([r["day"] for r in ok_rows], dtype=object)
         fm = np.array([bool(r["前半の前"]) for r in ok_rows], dtype=bool)
         row = {**combo}
@@ -946,18 +947,18 @@ def build_grid_table(per_chain: dict, cuts: dict, cost_bp: float,
     return rows
 
 
-def build_exposure_table(per_chain: dict, cuts: dict, cost_bp: float,
+def build_exposure_table(per_chain: dict, cuts: dict, cost_pct: float,
                          combos: dict) -> list:
     """Q3 の露出の表(致命-3): 名前付きの組について、本数・合計保有時間・
     保有 1 時間あたりの収支・同時建玉の最大・平均保有秒を並べる。"""
     rows = []
     for name, combo in combos.items():
-        ch = [r for r in combo_chain_rows(per_chain, cuts, cost_bp, combo)
+        ch = [r for r in combo_chain_rows(per_chain, cuts, cost_pct, combo)
               if not r["欠測"]]
-        tot = float(sum(r["pnl_net_bp"] for r in ch
-                        if r["pnl_net_bp"] == r["pnl_net_bp"]))
+        tot = float(sum(r["pnl_net_pct"] for r in ch
+                        if r["pnl_net_pct"] == r["pnl_net_pct"]))
         rows.append({"通り": name, **combo, "入った本数": len(ch),
-                     "総収支_bp": tot, **exposure_of(ch)})
+                     "総収支_pct": tot, **exposure_of(ch)})
     return rows
 
 
@@ -966,22 +967,22 @@ def select_combo(grid_rows: list, median_col: str = "中央値_入った本の�
     (b) 連鎖 1 本の中央値 > 0、を満たす組の中で総収支が最大の 1 組。
     満たす組が無ければ `選ばれた` を False にして返す(規則は緩めない)。"""
     ok = [r for r in grid_rows
-          if r["前半の前_総収支_bp"] > 0 and r["前半の後_総収支_bp"] > 0
+          if r["前半の前_総収支_pct"] > 0 and r["前半の後_総収支_pct"] > 0
           and (r[median_col] == r[median_col]) and r[median_col] > 0]
     if not ok:
         return {"選ばれた": False, "規則を満たした組の数": 0, "使った中央値": median_col,
                 "組": None}
-    best = max(ok, key=lambda r: r["総収支_bp"])
+    best = max(ok, key=lambda r: r["総収支_pct"])
     return {"選ばれた": True, "規則を満たした組の数": len(ok), "使った中央値": median_col,
             "組": {k: best[k] for k in ("入る位置", "入る条件", "出口", "損切り")},
-            "総収支_bp": best["総収支_bp"], "中央値_入った本のみ": best["中央値_入った本のみ"],
+            "総収支_pct": best["総収支_pct"], "中央値_入った本のみ": best["中央値_入った本のみ"],
             "中央値_0含む": best["中央値_0含む"],
-            "前半の前_総収支_bp": best["前半の前_総収支_bp"],
-            "前半の後_総収支_bp": best["前半の後_総収支_bp"],
+            "前半の前_総収支_pct": best["前半の前_総収支_pct"],
+            "前半の後_総収支_pct": best["前半の後_総収支_pct"],
             "入った本数": best["入った本数"]}
 
 
-def combo_day_totals(per_chain: dict, cuts: dict, cost_bp: float, combo: dict) -> dict:
+def combo_day_totals(per_chain: dict, cuts: dict, cost_pct: float, combo: dict) -> dict:
     """1 つの組の、日ごとの総収支(費用込み)。"""
     ei = ENTRY_POS_LEVELS.index(combo["入る位置"])
     acc = defaultdict(float)
@@ -995,9 +996,9 @@ def combo_day_totals(per_chain: dict, cuts: dict, cost_bp: float, combo: dict) -
             val = cont._f(rec["entry_rows"][ei].get(col))
             if not (math.isfinite(val) and math.isfinite(thr) and val >= thr):
                 continue
-        acc[rec["day"]] += r["pnl_bp"] - cost_bp * r["建玉の回数"]
+        acc[rec["day"]] += r["pnl_pct"] - cost_pct * r["建玉の回数"]
         n += 1
-    return {"日ごとの総収支_bp": dict(acc), "入った本数": n}
+    return {"日ごとの総収支_pct": dict(acc), "入った本数": n}
 
 
 PLAIN_COMBO = {"入る位置": ENTRY_POS_LEVELS[0], "入る条件": "なし",
@@ -1005,45 +1006,45 @@ PLAIN_COMBO = {"入る位置": ENTRY_POS_LEVELS[0], "入る条件": "なし",
 
 
 def _day_summary(day_tot: dict) -> dict:
-    ser = sorted(day_tot["日ごとの総収支_bp"].items(), key=lambda kv: kv[1])
+    ser = sorted(day_tot["日ごとの総収支_pct"].items(), key=lambda kv: kv[1])
     vals = [v for _d, v in ser]
-    return {"総収支_bp": float(sum(vals)), "入った本数": day_tot["入った本数"],
+    return {"総収支_pct": float(sum(vals)), "入った本数": day_tot["入った本数"],
             "日数": len(ser),
             "負の日の割合": (float(sum(1 for v in vals if v < 0)) / len(vals)
                        if vals else NAN),
             "最も低い5日": {d: round(v, 2) for d, v in ser[:5]},
             "最も高い5日": {d: round(v, 2) for d, v in ser[-5:]},
-            "2023-08-17": round(float(day_tot["日ごとの総収支_bp"].get(
+            "2023-08-17": round(float(day_tot["日ごとの総収支_pct"].get(
                 "2023-08-17", NAN)), 2)}
 
 
 def build_grid_selected(grid_rows: list, chosen: dict, chosen_zero: dict,
-                        per_chain: dict, cuts: dict, cost_bp: float,
+                        per_chain: dict, cuts: dict, cost_pct: float,
                         split_day: str) -> dict:
     """`grid_selected.json` の中身。選んだ組と、その裏付けに使う日ごとの内訳。
     **2023-08-17 型の裾を損切りが切ったか**を読むため、素(全部逆張り)と
     素 + 損切り 20/50 bp、選んだ組と 選んだ組 + 損切り 20 bp を並べる。"""
-    top = sorted(grid_rows, key=lambda r: -r["総収支_bp"])[:5]
+    top = sorted(grid_rows, key=lambda r: -r["総収支_pct"])[:5]
     look = {"素(全部逆張り)": PLAIN_COMBO,
             "素 + 損切り20bp": {**PLAIN_COMBO, "損切り": STOP_LEVELS[1]},
             "素 + 損切り50bp": {**PLAIN_COMBO, "損切り": STOP_LEVELS[2]}}
     if chosen.get("選ばれた"):
         look["選んだ組"] = chosen["組"]
         look["選んだ組 + 損切り20bp"] = {**chosen["組"], "損切り": STOP_LEVELS[1]}
-    breakdown = {name: _day_summary(combo_day_totals(per_chain, cuts, cost_bp, cb))
+    breakdown = {name: _day_summary(combo_day_totals(per_chain, cuts, cost_pct, cb))
                  for name, cb in look.items()}
     return {
         "選ぶ規則(事前固定)": "(a) 前半を日付順に 2 分割した両側で総収支 > 0、"
                        "(b) 連鎖 1 本の中央値 > 0 を満たす組の中で総収支が最大の 1 組。"
                        "満たす組が無ければ「規則を満たす組は無かった」と書く(緩めない)",
         "2 分割の境の日": split_day,
-        "費用_bp": cost_bp,
+        "費用_pct": cost_pct,
         "格子の組数": len(grid_rows),
         "選んだ組(主 = 入った本のみの中央値)": chosen,
         "参考(中央値を 0 含みで読んだ場合)": chosen_zero,
         "総収支の上位 5 組": [{k: r[k] for k in ("入る位置", "入る条件", "出口", "損切り",
-                                          "総収支_bp", "中央値_入った本のみ",
-                                          "前半の前_総収支_bp", "前半の後_総収支_bp",
+                                          "総収支_pct", "中央値_入った本のみ",
+                                          "前半の前_総収支_pct", "前半の後_総収支_pct",
                                           "入った本数")} for r in top],
         "日ごとの内訳(なぜを読むため)": breakdown,
     }
@@ -1056,7 +1057,7 @@ def knob_contribution(grid_rows: list, chosen: dict) -> list:
     base = chosen["組"]
     index = {(r["入る位置"], r["入る条件"], r["出口"], r["損切り"]): r for r in grid_rows}
     base_total = index[(base["入る位置"], base["入る条件"], base["出口"],
-                        base["損切り"])]["総収支_bp"]
+                        base["損切り"])]["総収支_pct"]
     rows = []
     for knob, levels in (("入る位置", ENTRY_POS_LEVELS), ("入る条件", COND_LEVELS),
                          ("出口", EXIT_LEVELS), ("損切り", STOP_LEVELS)):
@@ -1065,12 +1066,12 @@ def knob_contribution(grid_rows: list, chosen: dict) -> list:
             key[knob] = lv
             r = index[(key["入る位置"], key["入る条件"], key["出口"], key["損切り"])]
             rows.append({"ノブ": knob, "水準": lv, "選んだ組の水準": base[knob],
-                         "総収支_bp": r["総収支_bp"],
-                         "選んだ組との差_bp": r["総収支_bp"] - base_total,
+                         "総収支_pct": r["総収支_pct"],
+                         "選んだ組との差_pct": r["総収支_pct"] - base_total,
                          "入った本数": r["入った本数"],
                          "中央値_入った本のみ": r["中央値_入った本のみ"],
                          "合計保有時間_時間": r.get("合計保有時間_時間"),
-                         "保有1時間あたりの収支_bp/h": r.get("保有1時間あたりの収支_bp/h"),
+                         "保有1時間あたりの収支_pct/h": r.get("保有1時間あたりの収支_pct/h"),
                          "同時建玉の最大_本": r.get("同時建玉の最大_本")})
     return rows
 
@@ -1289,7 +1290,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                     cascade_rows.append({
                         "bundle_id": bid, "day": day, "side": side,
                         "連鎖の大きさ": sb_size, "n_prints": n, "方策": pol, "型": ptype,
-                        "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                        "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                         "入りの目標時刻_ms": entry_target_time(res, delay),
                         "入りの約定時刻_ms": t_in, "出の約定時刻_ms": t_out,
@@ -1319,7 +1320,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                 cascade_rows.append({
                     "bundle_id": bid, "day": day, "side": side,
                     "連鎖の大きさ": sb_size, "n_prints": n, "方策": TP_POLICY,
-                    "型": TYPE_A, "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                    "型": TYPE_A, "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                     "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                     "入りの目標時刻_ms": entry_target_time(res, delay),
                     "入りの約定時刻_ms": t_in, "出の約定時刻_ms": t_out,
@@ -1348,7 +1349,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                 cascade_rows.append({
                     "bundle_id": bid, "day": day, "side": side,
                     "連鎖の大きさ": sb_size, "n_prints": n, "方策": EXIT300_POLICY,
-                    "型": TYPE_A, "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                    "型": TYPE_A, "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                     "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                     "入りの目標時刻_ms": entry_target_time(res, delay),
                     "入りの約定時刻_ms": t_in, "出の約定時刻_ms": t_out,
@@ -1374,7 +1375,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
                     cascade_rows.append({
                         "bundle_id": bid, "day": day, "side": side,
                         "連鎖の大きさ": sb_size, "n_prints": n, "方策": pol_name,
-                        "型": ptype, "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                        "型": ptype, "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                         "入りの目標時刻_ms": (int(prints[0]["ts_ms"])
                                        + int(round(float(delay) * 1000))),
@@ -1390,7 +1391,7 @@ def run_policies(cascades: dict, prob_of: dict, pos_of: dict, bands: dict,
 
 
 CASCADE_COLUMNS = ("bundle_id", "day", "side", "連鎖の大きさ", "n_prints", "方策",
-                   "型", "遅れ_秒", "費用の通り", "pnl_bp", "pnl_net_bp", "建玉の回数",
+                   "型", "遅れ_秒", "費用の通り", "pnl_pct", "pnl_net_pct", "建玉の回数",
                    "保有秒", "入りの目標時刻_ms", "入りの約定時刻_ms", "出の約定時刻_ms",
                    "入った", "最初に入った位置", "出口の理由")
 
@@ -1402,13 +1403,13 @@ def build_cascade_rows_file(policy_rows: list, costs: dict,
     out = []
     for label, c in costs.items():
         for r in policy_rows:
-            gross = r["pnl_bp"]
+            gross = r["pnl_pct"]
             out.append({
                 "bundle_id": r["bundle_id"], "day": r["day"], "side": r["side"],
                 "連鎖の大きさ": r["連鎖の大きさ"], "n_prints": r["n_prints"],
                 "方策": r["方策"], "型": r["型"], "遅れ_秒": r["遅れ_秒"],
-                "費用の通り": label, "pnl_bp": gross,
-                "pnl_net_bp": (gross - c * r["建玉の回数"]
+                "費用の通り": label, "pnl_pct": gross,
+                "pnl_net_pct": (gross - c * r["建玉の回数"]
                                if gross == gross else NAN),
                 "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
                 "入りの目標時刻_ms": r.get("入りの目標時刻_ms"),
@@ -1419,13 +1420,13 @@ def build_cascade_rows_file(policy_rows: list, costs: dict,
                 "出口の理由": r.get("出口の理由", "")})
         for name, rows in (opt_rows_by_name or {}).items():
             for r in rows:
-                gross = r["pnl_bp"]
+                gross = r["pnl_pct"]
                 out.append({
                     "bundle_id": r["bundle_id"], "day": r["day"], "side": r["side"],
                     "連鎖の大きさ": r["連鎖の大きさ"], "n_prints": r["n_prints"],
                     "方策": name, "型": "-", "遅れ_秒": GRID_DELAY_S,
-                    "費用の通り": label, "pnl_bp": gross,
-                    "pnl_net_bp": (gross - c * r["建玉の回数"]
+                    "費用の通り": label, "pnl_pct": gross,
+                    "pnl_net_pct": (gross - c * r["建玉の回数"]
                                    if gross == gross else NAN),
                     "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
                     "入りの目標時刻_ms": r.get("入りの目標時刻"),
@@ -1441,10 +1442,27 @@ def write_cascades_gz(out_dir: Path, rows: list) -> int:
     return len(rows)
 
 
-def apply_cost(cascade_rows: list, cost_bp: float) -> pd.DataFrame:
-    """費用 = c × 建玉の回数(型 B のドテン 1 回 = c)を損益から引く。"""
+def _with_pct_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """L-920 より前に書いた `cascades.csv.gz`(git の `backtest_data/o3c_signal_value_20260921/`)は
+    費用を引いた損益を `pnl_net_bp`(bp)、費用を `c_bp`(bp)で持つ。新しい列 `pnl_net_pct`・
+    `c_pct` が無ければ古い列を読んで / 100 して % にする(書き換えはしない)。"""
+    df = df.copy()
+    if "pnl_net_pct" not in df.columns and "pnl_net_bp" in df.columns:
+        df["pnl_net_pct"] = pd.to_numeric(df["pnl_net_bp"], errors="coerce") / 100
+    if "pnl_pct" not in df.columns and "pnl_bp" in df.columns:   # 費用前の連鎖の損益(和)
+        df["pnl_pct"] = pd.to_numeric(df["pnl_bp"], errors="coerce") / 100
+    if "c_pct" not in df.columns and "c_bp" in df.columns:
+        df["c_pct"] = pd.to_numeric(df["c_bp"], errors="coerce") / 100
+    return df
+
+
+def apply_cost(cascade_rows: list, cost_pct: float) -> pd.DataFrame:
+    """費用 = c × 建玉の回数(型 B のドテン 1 回 = c)を損益から引く。
+    L-920: 費用を引いた値は bp にしない。列 `pnl_net_pct`(%)= `pnl_pct`(費用前、%)
+    − c(%)× 建玉の回数。`pnl_pct` は費用前のまま残す(前は `pnl_bp` を上書きしていた)。"""
     cdf = pd.DataFrame(cascade_rows).copy()
-    cdf["pnl_bp"] = cdf["pnl_bp"] - float(cost_bp) * cdf["建玉の回数"].astype(float)
+    cdf["pnl_net_pct"] = (cdf["pnl_pct"].astype(float)
+                          - float(cost_pct) * cdf["建玉の回数"].astype(float))
     return cdf
 
 
@@ -1524,15 +1542,15 @@ def paired_diff_row(label: str, a: list, b: list, name_a: str, name_b: str) -> d
     sign_flip = int(np.sum(np.sign(av[ok]) != np.sign(bv[ok]))) if d.size else 0
     return {"区分": label, f"{name_a}": float(np.nansum(av[ok])) if d.size else NAN,
             f"{name_b}": float(np.nansum(bv[ok])) if d.size else NAN,
-            "対の数": int(d.size), "対差の中央値_bp": q[1], "対差のp25_bp": q[0],
-            "対差のp75_bp": q[2], "符号が変わった本数": sign_flip,
-            "対差の平均_bp": float(np.mean(d)) if d.size else NAN}
+            "対の数": int(d.size), "対差の中央値_pct": q[1], "対差のp25_pct": q[0],
+            "対差のp75_pct": q[2], "符号が変わった本数": sign_flip,
+            "対差の平均_pct": float(np.mean(d)) if d.size else NAN}
 
 
 # ===========================================================================
 # 9. 合成の連鎖(状態機械・損切り・出口 3 種・費用の加算の道筋)
 # ===========================================================================
-def build_synthetic_traces_value(cost_bp: float = 2.0) -> list:
+def build_synthetic_traces_value(cost_pct: float = 0.02) -> list:
     """前段の合成 3 本(状態機械)+ この単位で足した ② の道筋(出口 3 種 × 損切り)+
     費用の加算。価格は `100 + t_ms/1e7` の単調増加な偽の約定列(手計算しやすい)。"""
     rows = []
@@ -1551,16 +1569,16 @@ def build_synthetic_traces_value(cost_bp: float = 2.0) -> list:
             for st in STOP_LEVELS:
                 r = simulate_reverse_entry(prints, REACT_SIGN["SELL"], 0, ex,
                                            STOP_BP[st], 1, times, px)
-                gross = r["pnl_bp"]
-                net = (gross - cost_bp * r["建玉の回数"]) if gross == gross else NAN
+                gross = r["pnl_pct"]
+                net = (gross - cost_pct * r["建玉の回数"]) if gross == gross else NAN
                 rows.append({
                     "区分": f"②の格子({series_name})", "合成連鎖": f"{ex} / {st}",
                     "print_id": "g1", "ts_ms": 0, "判断": "(②は判断を使わない)",
                     "行動": "新規_逆張り", "建玉": POS_AGAINST,
                     "約定価格": "", "レグ損益_bp": "",
                     "出口の理由": r["出口の理由"], "保有秒": _fmt(r["保有秒"], 3),
-                    "費用なしの損益_bp": _fmt(gross, 4),
-                    f"費用 c={cost_bp:.4f} を引いた損益_bp": _fmt(net, 4),
+                    "費用なしの損益_pct": _fmt(gross, 6),
+                    f"費用 c={cost_pct:.4f} を引いた損益_pct": _fmt(net, 6),
                     "建玉の回数": r["建玉の回数"]})
     return rows
 
@@ -1576,23 +1594,23 @@ def _dist_rows_with_cost(cascade_rows: list, costs: dict,
     dist, posb = [], []
     for label, c in costs.items():
         cdf = apply_cost(cascade_rows, c)
-        for r in sp.build_dist_table(cdf):
-            dist.append({"費用": label, "c_bp": c, **r})
+        for r in sp.build_dist_table(cdf, col="pnl_net_pct"):
+            dist.append({"費用": label, "c_pct": c, **r})
         for pol in extra_policies:
             for delay in DELAYS_S:
                 for inc0 in (True, False):
-                    dist.append({"費用": label, "c_bp": c,
-                                 **sp.dist_stats(cdf, pol, TYPE_A, delay, inc0)})
-        for r in sp.build_position_breakdown(cdf):
-            posb.append({"費用": label, "c_bp": c, **r})
+                    dist.append({"費用": label, "c_pct": c,
+                                 **sp.dist_stats(cdf, pol, TYPE_A, delay, inc0, col="pnl_net_pct")})
+        for r in sp.build_position_breakdown(cdf, col="pnl_net_pct"):
+            posb.append({"費用": label, "c_pct": c, **r})
         sub_all = cdf[(cdf["遅れ_秒"] == MAIN_DELAY) & (cdf["欠測"] == 0)]
         for pol in extra_policies:
             sub = sub_all[(sub_all["方策"] == pol) & (sub_all["型"] == TYPE_A)]
             for bucket in ("1件目で入った", "途中で入った", "入らなかった"):
                 g = sub[sub["最初に入った位置"] == bucket]
-                vals = g["pnl_bp"].to_numpy(float)
+                vals = g["pnl_net_pct"].to_numpy(float)
                 q = quantiles(vals, [50])
-                posb.append({"費用": label, "c_bp": c, "方策": pol, "型": TYPE_A,
+                posb.append({"費用": label, "c_pct": c, "方策": pol, "型": TYPE_A,
                              "位置": bucket, "n": int(g.shape[0]), "中央値": q[0],
                              "負の割合": (float(np.mean(vals < 0)) if vals.size
                                       else NAN)})
@@ -1607,8 +1625,8 @@ def write_output(out_dir: Path, tables: list, summary: dict) -> dict:
             write_csv(out_dir / name, norm[name])
     md = [f"# O3C SIGNAL 値段の続き — {summary['段']}の表", "",
           f"- 委任文: `{DELEGATION}`", f"- 設計: `{DESIGN}`",
-          (f"- 費用 c(主) = {summary['費用']['主のc_bp']:.4f} bp / "
-           f"p75 = {summary['費用']['p75_bp']:.4f} bp") if "費用" in summary else "", ""]
+          (f"- 費用 c(主) = {summary['費用']['主のc_pct']:.6f} % / "
+           f"p75 = {summary['費用']['p75_pct']:.6f} %") if "費用" in summary else "", ""]
     for name, _rows, key in tables:
         md += [f"## {key}(`{name}`、{len(norm[name])} 行)", "",
                md_table(norm[name]), ""]
@@ -1649,7 +1667,7 @@ def run_stage1(out_dir: Path = DEFAULT_OUT, half: str = FRONT_HALF,
     require_front_half(half)
     t0 = time.time()
     c_main, c_p75 = spread.read_cost(spread_dir)
-    print(f"[段1-0] 費用 c(主) = {c_main:.4f} bp / p75 = {c_p75:.4f} bp", flush=True)
+    print(f"[段1-0] 費用 c(主) = {c_main:.6f} % / p75 = {c_p75:.6f} %", flush=True)
 
     prints_df = load_stage1_prints()
     n_no_bundle = bundle_drop_count(prints_df)
@@ -1773,8 +1791,8 @@ def run_stage1(out_dir: Path = DEFAULT_OUT, half: str = FRONT_HALF,
         {"項目": "値段のラベルの再計算が既存列と一致した件数",
          "値": f"{n_match}/{len(recheck)}"},
         {"項目": "費用の標本日数", "値": len(spread.sample_day_paths())},
-        {"項目": "主の c(bp)", "値": c_main},
-        {"項目": "併記の c = p75(bp)", "値": c_p75},
+        {"項目": "主の c(%)", "値": c_main},
+        {"項目": "併記の c = p75(%)", "値": c_p75},
         {"項目": "格子の組数", "値": len(grid_rows)},
         {"項目": "動作確認の連鎖の本数", "値": select_info["抜いた本数"]},
     ]
@@ -1818,7 +1836,7 @@ def run_stage1(out_dir: Path = DEFAULT_OUT, half: str = FRONT_HALF,
         "連鎖に入るプリント": n_in_bundle, "束の外のプリント": n_no_bundle,
         "前半の連鎖数": len(all_cascades),
         "前半の日数": len(days), "2 分割の境の日": split_day,
-        "費用": {"主のc_bp": c_main, "p75_bp": c_p75,
+        "費用": {"主のc_pct": c_main, "p75_pct": c_p75,
                "引き方": "連鎖 1 本 = c × 建玉の回数(型 B のドテン 1 回 = c)"},
         "①の基準率": {k: base_rates[k] for k in base_rates},
         "①の帯": {k: (list(bands[k]) if bands[k] else None) for k in bands},
@@ -1864,7 +1882,7 @@ def run_stage1(out_dir: Path = DEFAULT_OUT, half: str = FRONT_HALF,
 # ===========================================================================
 def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
             pos_of: dict, bands: dict, base_rates: dict, cache: WindowCache,
-            cost_bp: float, cuts: dict, minute_rows: list,
+            cost_pct: float, cuts: dict, minute_rows: list,
             half_label: str = "前半") -> list:
     """(a) 秒単位: 標本日に掛かる半期(`half_label`)の連鎖で、入る・出る・損切りの約定を bitFlyer の
     約定の `at_or_after` に置き換えた損益と Binance の損益の対差。
@@ -1918,8 +1936,8 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
                 lags["bitFlyer_出"].append(int(lf[1]))
                 lag_ok = max(lf) <= LAG_LIMIT_MS
             a, b = acc["全部逆張り(素)"]
-            a.append(r_bf["pnl_bp"] - cost_bp * r_bf["n_entries"])
-            b.append(r_bx["pnl_bp"] - cost_bp * r_bx["n_entries"])
+            a.append(r_bf["pnl_pct"] - cost_pct * r_bf["n_entries"])
+            b.append(r_bx["pnl_pct"] - cost_pct * r_bx["n_entries"])
             ok5["全部逆張り(素)"].append(bool(lag_ok))
 
         # ① 3 択 A(確率が引けた連鎖だけ)
@@ -1932,8 +1950,8 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
                                        end_ts)
             if not j_bx["missing"] and not j_bf["missing"]:
                 a, b = acc["①3択A"]
-                va = j_bf["pnl_bp"] - cost_bp * j_bf["n_entries"]
-                vb = j_bx["pnl_bp"] - cost_bp * j_bx["n_entries"]
+                va = j_bf["pnl_pct"] - cost_pct * j_bf["n_entries"]
+                vb = j_bx["pnl_pct"] - cost_pct * j_bx["n_entries"]
                 a.append(va)
                 b.append(vb)
                 ok5["①3択A"].append(bool(lag_ok))
@@ -1961,8 +1979,8 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
                                               bf_t, bf_p)
                 if not o_bx["欠測"] and not o_bf["欠測"]:
                     a, b = acc["②opt"]
-                    a.append(o_bf["pnl_bp"] - cost_bp * o_bf["建玉の回数"])
-                    b.append(o_bx["pnl_bp"] - cost_bp * o_bx["建玉の回数"])
+                    a.append(o_bf["pnl_pct"] - cost_pct * o_bf["建玉の回数"])
+                    b.append(o_bx["pnl_pct"] - cost_pct * o_bx["建玉の回数"])
                     lf2 = [x for x in (
                         (o_bf["入りの約定時刻"] or 0) - (o_bf["入りの目標時刻"] or 0),
                         (o_bf["出の約定時刻"] or 0) - (o_bf["出の目標時刻"] or 0))]
@@ -1976,8 +1994,8 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
             continue
         a, b = acc[name]
         rows.append({"経路": secs_label,
-                     **paired_diff_row(name, a, b, "bitFlyerの合計_bp",
-                                       "Binanceの合計_bp"),
+                     **paired_diff_row(name, a, b, "bitFlyerの合計_pct",
+                                       "Binanceの合計_pct"),
                      "どちらも0の本数": both_zero.get(name, 0)})
         # D-5: bitFlyer の約定の遅れが 5 秒以内の対だけの版
         m = ok5.get(name) or []
@@ -1985,8 +2003,8 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
             aa = [x for x, k in zip(a, m) if k]
             bb = [x for x, k in zip(b, m) if k]
             rows.append({"経路": "秒単位・bitFlyer の約定の遅れ ≤ 5 秒の対だけ",
-                         **paired_diff_row(name, aa, bb, "bitFlyerの合計_bp",
-                                           "Binanceの合計_bp")})
+                         **paired_diff_row(name, aa, bb, "bitFlyerの合計_pct",
+                                           "Binanceの合計_pct")})
     rows.append({"経路": secs_label, "区分": "(母集団)",
                  "対の数": len(target),
                  "備考": f"標本日 {len(sample_days)} 日のうち{half_label}に掛かる連鎖 "
@@ -2004,11 +2022,11 @@ def run_q5b(all_cascades: dict, chosen: dict, prob_of: dict,
                      "5秒超の割合": (float(np.mean(v > LAG_LIMIT_MS)) if v.size else NAN)})
 
     # (b) 1 分の始値(その半期の全連鎖、全部逆張り(素)。日ごとの一巡で計算済み)
-    a_list = [r["bitFlyer_bp"] for r in minute_rows]
-    b_list = [r["Binance_bp"] for r in minute_rows]
+    a_list = [r["bitFlyer_pct"] for r in minute_rows]
+    b_list = [r["Binance_pct"] for r in minute_rows]
     rows.append({"経路": minute_label,
                  **paired_diff_row("全部逆張り(素)", a_list, b_list,
-                                   "bitFlyerの合計_bp", "Binanceの合計_bp")})
+                                   "bitFlyerの合計_pct", "Binanceの合計_pct")})
     return rows
 
 
@@ -2022,7 +2040,7 @@ def _stats_of(vals: np.ndarray, days: np.ndarray) -> dict:
     q = quantiles(vals, [25, 50, 75]) if vals.size else [NAN] * 3
     _m, se_c, _sn, _n, ndays = (mean_se_cluster(vals, days) if vals.size
                                 else (NAN, NAN, NAN, 0, 0))
-    return {"n": int(vals.size), "合計_bp": float(vals.sum()) if vals.size else 0.0,
+    return {"n": int(vals.size), "合計_pct": float(vals.sum()) if vals.size else 0.0,
             "中央値": q[1], "p25": q[0], "p75": q[2],
             "負の割合": float(np.mean(vals < 0)) if vals.size else NAN,
             "日等重み平均": day_equal_weight_mean(vals, days) if vals.size else NAN,
@@ -2031,7 +2049,7 @@ def _stats_of(vals: np.ndarray, days: np.ndarray) -> dict:
 
 def build_q4_tables(lines: dict, universe=None, day_of: dict | None = None) -> dict:
     """`lines` = 表示名 -> 連鎖 1 本ごとの行(`bundle_id`・`day`・`side`・
-    `連鎖の大きさ`・`最初に入った位置`・`pnl_net_bp`・`保有秒`・約定時刻)。
+    `連鎖の大きさ`・`最初に入った位置`・`pnl_net_pct`・`保有秒`・約定時刻)。
     設計 Q4 の 並置・日ごと・位置別・大きさ別・側別・露出 を作る。
 
     N-1: 並置は **「0 として含める(全連鎖)」を主**に、「入った連鎖だけ」を併記する
@@ -2039,12 +2057,12 @@ def build_q4_tables(lines: dict, universe=None, day_of: dict | None = None) -> d
     side_by, size_by, pos_by, day_rows, main_rows, expo = [], [], [], [], [], []
     uni = (sorted(set(universe)) if universe is not None else None)
     for name, rows in lines.items():
-        ok = [r for r in rows if r["pnl_net_bp"] == r["pnl_net_bp"]]
-        v = np.array([r["pnl_net_bp"] for r in ok], dtype=float)
+        ok = [r for r in rows if r["pnl_net_pct"] == r["pnl_net_pct"]]
+        v = np.array([r["pnl_net_pct"] for r in ok], dtype=float)
         d = np.array([r["day"] for r in ok], dtype=object)
         if uni is not None and day_of is not None:
             have = {r["bundle_id"]: r for r in ok}
-            v0 = np.array([have[k]["pnl_net_bp"] if k in have else 0.0 for k in uni],
+            v0 = np.array([have[k]["pnl_net_pct"] if k in have else 0.0 for k in uni],
                           dtype=float)
             d0 = np.array([day_of.get(k, "") for k in uni], dtype=object)
             main_rows.append({"方策": name, "母集団": "0として含める(全連鎖)",
@@ -2054,15 +2072,15 @@ def build_q4_tables(lines: dict, universe=None, day_of: dict | None = None) -> d
                      **exposure_of(ok)})
         by_day = defaultdict(float)
         for r in ok:
-            by_day[r["day"]] += r["pnl_net_bp"]
+            by_day[r["day"]] += r["pnl_net_pct"]
         ser = sorted(by_day.items(), key=lambda kv: kv[1])
         vals = [x for _k, x in ser]
         day_rows.append({
             "方策": name, "日数": len(ser),
             "負の日の割合": (float(np.mean(np.array(vals) < 0)) if vals else NAN),
-            "日の合計の中央値_bp": (float(np.median(vals)) if vals else NAN),
-            "下位5日の合計_bp": float(sum(vals[:5])),
-            "上位5日の合計_bp": float(sum(vals[-5:])),
+            "日の合計の中央値_pct": (float(np.median(vals)) if vals else NAN),
+            "下位5日の合計_pct": float(sum(vals[:5])),
+            "上位5日の合計_pct": float(sum(vals[-5:])),
             "上位5日": ", ".join(f"{k}:{x:.0f}" for k, x in ser[-5:]),
             "下位5日": ", ".join(f"{k}:{x:.0f}" for k, x in ser[:5])})
         for key, col in (("側別", "side"), ("大きさ別", "連鎖の大きさ"),
@@ -2071,7 +2089,7 @@ def build_q4_tables(lines: dict, universe=None, day_of: dict | None = None) -> d
             for r in ok:
                 buckets[str(r.get(col, "-"))].append(r)
             for b, rs in sorted(buckets.items()):
-                vv = np.array([r["pnl_net_bp"] for r in rs], dtype=float)
+                vv = np.array([r["pnl_net_pct"] for r in rs], dtype=float)
                 dd = np.array([r["day"] for r in rs], dtype=object)
                 row = {"方策": name, "区分": key, "水準": b, **_stats_of(vv, dd)}
                 (side_by if key == "側別" else
@@ -2084,8 +2102,8 @@ def _line_maps(lines: dict) -> tuple:
     """線ごとに (bundle_id -> 損益) と (bundle_id -> 入ったか) を作る。"""
     val, ent = {}, {}
     for name, rows in lines.items():
-        val[name] = {r["bundle_id"]: r["pnl_net_bp"] for r in rows
-                     if r["pnl_net_bp"] == r["pnl_net_bp"]}
+        val[name] = {r["bundle_id"]: r["pnl_net_pct"] for r in rows
+                     if r["pnl_net_pct"] == r["pnl_net_pct"]}
         ent[name] = {r["bundle_id"] for r in rows if int(r.get("入った", 1)) == 1}
     return val, ent
 
@@ -2118,25 +2136,25 @@ def build_pair_diff_rows(lines: dict, pairs: tuple, universe=None) -> list:
                 d = np.array([val[a][k] - val[b][k] for k in keys], dtype=float)
             q = quantiles(d, [25, 50, 75]) if d.size else [NAN] * 3
             out.append({"対差": f"{a} − {b}", "母集団": scope, "対の数": int(d.size),
-                        "対差の合計_bp": float(d.sum()) if d.size else 0.0,
-                        "対差の中央値_bp": q[1], "対差のp25_bp": q[0],
-                        "対差のp75_bp": q[2],
+                        "対差の合計_pct": float(d.sum()) if d.size else 0.0,
+                        "対差の中央値_pct": q[1], "対差のp25_pct": q[0],
+                        "対差のp75_pct": q[2],
                         "対差が正の割合": (float(np.mean(d > 0)) if d.size else NAN),
                         "対差が0の本数": int(np.sum(d == 0)) if d.size else 0})
     return out
 
 
 def cascade_rows_from_policy_rows(policy_rows: list, policy: str, ptype: str,
-                                  delay: float, cost_bp: float) -> list:
+                                  delay: float, cost_pct: float) -> list:
     """`run_policies` の `cascade_rows` から 1 本の線(方策×型×遅れ)を取り出し、
     費用を引いた連鎖 1 本ごとの行にする。"""
     out = []
     for r in policy_rows:
         if r["方策"] != policy or r["型"] != ptype or r["遅れ_秒"] != delay:
             continue
-        gross = r["pnl_bp"]
+        gross = r["pnl_pct"]
         out.append({**r,
-                    "pnl_net_bp": (gross - cost_bp * r["建玉の回数"]
+                    "pnl_net_pct": (gross - cost_pct * r["建玉の回数"]
                                    if gross == gross else NAN),
                     "入りの約定時刻": r.get("入りの約定時刻_ms"),
                     "出の約定時刻": r.get("出の約定時刻_ms")})
@@ -2293,8 +2311,8 @@ def tables_from_cascade_rows(cascade_rows: list, cost_label: str,
                              ) -> dict:
     """`cascades.csv.gz` の行だけから Q2・Q4 の表を組み直す。
     **後半の生データを読み直さない**(反証者9 の再点検「後から作り直せない欠け」)。"""
-    df = pd.DataFrame(cascade_rows)
-    for col in ("pnl_bp", "pnl_net_bp", "保有秒", "遅れ_秒"):
+    df = _with_pct_columns(pd.DataFrame(cascade_rows))
+    for col in ("pnl_pct", "pnl_net_pct", "保有秒", "遅れ_秒"):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     for col in ("建玉の回数", "入った", "入りの目標時刻_ms", "入りの約定時刻_ms",
@@ -2305,17 +2323,18 @@ def tables_from_cascade_rows(cascade_rows: list, cost_label: str,
     dist, posb = [], []
     for label in costs:
         sub = df[df["費用の通り"] == label].copy()
-        sub["pnl_bp"] = sub["pnl_net_bp"]        # 費用を引いた値で分布を取る
+        # 費用を引いた値(pnl_net_pct、%)で分布を取る
         sub["欠測"] = 0
-        c = float(sub["c_bp"].iloc[0]) if "c_bp" in sub.columns else NAN
-        for r in sp.build_dist_table(sub):
+        c = float(sub["c_pct"].iloc[0]) if "c_pct" in sub.columns else NAN
+        for r in sp.build_dist_table(sub, col="pnl_net_pct"):
             dist.append({"費用": label, **r})
         for pol in extra_policies:
             for delay in DELAYS_S:
                 for inc0 in (True, False):
                     dist.append({"費用": label,
-                                 **sp.dist_stats(sub, pol, TYPE_A, delay, inc0)})
-        for r in sp.build_position_breakdown(sub):
+                                 **sp.dist_stats(sub, pol, TYPE_A, delay, inc0,
+                                                 col="pnl_net_pct")})
+        for r in sp.build_position_breakdown(sub, col="pnl_net_pct"):
             posb.append({"費用": label, **r})
     main = df[df["費用の通り"] == cost_label]
     lines, universe, day_of = {}, set(), {}
@@ -2361,7 +2380,7 @@ def run_from_rows(out_dir: Path, cost_label: str = COST_MAIN) -> dict:
     path = out_dir / "cascades.csv.gz"
     if not path.exists():
         raise SystemExit(f"[止め] {path} が無い")
-    rows = pd.read_csv(path, low_memory=False).to_dict("records")
+    rows = _with_pct_columns(pd.read_csv(path, low_memory=False)).to_dict("records")
     built = tables_from_cascade_rows(rows, cost_label)
     named = [("dist_table.csv", built["dist"]),
              ("position_breakdown.csv", built["posb"]),
@@ -2396,9 +2415,10 @@ def run_from_rows(out_dir: Path, cost_label: str = COST_MAIN) -> dict:
         "連鎖 1 本ごとの行": len(rows),
         "並べた線": built["lines"],
         "行から組み直せない表(そのまま残した)": [n for n, _ in keep],
-        "費用": {"主のc_bp": float(pd.read_csv(path, nrows=1)["c_bp"].iloc[0])
-               if "c_bp" in pd.read_csv(path, nrows=1).columns else NAN,
-               "p75_bp": NAN},
+        "費用": {"主のc_pct": (float(_with_pct_columns(pd.read_csv(path, nrows=1))["c_pct"].iloc[0])
+                              if {"c_pct", "c_bp"} & set(pd.read_csv(path, nrows=1).columns)
+                              else NAN),
+               "p75_pct": NAN},
     }
     return write_output(out_dir, tables, summary)
 
@@ -2549,7 +2569,7 @@ def run_resume(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
         "Q1 併記の帯": band5000,
         "Q5b(a) の母集団": len(q5b_source),
         "Q5b(b) の母集団": len(picked),
-        "費用": {"主のc_bp": c_main, "p75_bp": c_p75},
+        "費用": {"主のc_pct": c_main, "p75_pct": c_p75},
         "所要秒": round(time.time() - t0, 1),
     }
     txt = json.dumps(summary, ensure_ascii=False, indent=2, default=str)
@@ -2684,7 +2704,7 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
                     "side": str(prints[0]["side"]),
                     "連鎖の大きさ": sp.size_bucket(len(prints)), "n_prints": len(prints),
                     "方策": "②opt", "型": "-", "遅れ_秒": GRID_DELAY_S,
-                    "pnl_bp": r["pnl_bp"],
+                    "pnl_pct": r["pnl_pct"],
                     "建玉の回数": r["建玉の回数"], "保有秒": r["保有秒"],
                     "入りの目標時刻": r["入りの目標時刻"],
                     "入りの約定時刻": r["入りの約定時刻"], "出の約定時刻": r["出の約定時刻"],
@@ -2695,7 +2715,7 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
     cascade_file_rows = build_cascade_rows_file(
         all_policy_rows, costs, {"②opt": opt_rows} if opt_rows else None)
     for r in cascade_file_rows:
-        r["c_bp"] = costs[r["費用の通り"]]
+        r["c_pct"] = costs[r["費用の通り"]]
     n_cascade_rows = write_cascades_gz(out_dir, cascade_file_rows)
     sp.write_csv_gz(out_dir / "prints_policy.csv.gz", built["print_rows"]
                     + built_ref["print_rows"])
@@ -2772,7 +2792,7 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
                "終了時刻(UTC)": _dt.datetime.now(_dt.timezone.utc).isoformat(),
                "委任文": DELEGATION, "設計": DESIGN, "種": SEED,
                "抜いた連鎖の本数": select_info["抜いた本数"],
-               "費用": {"主のc_bp": c_main, "p75_bp": c_p75},
+               "費用": {"主のc_pct": c_main, "p75_pct": c_p75},
                "連鎖 1 本ごとの行": {"ファイル": "cascades.csv.gz", "行数": n_cascade_rows},
                "Q5b(a) の母集団": (0 if q5b_source is None else len(q5b_source)),
                "段1から読んだもの(作り直していない)":
@@ -2783,7 +2803,7 @@ def run_stage2(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_DIR
     return write_output(out_dir, tables, summary)
 
 
-def minute_rows_for(cascades: dict, cache, cost_bp: float) -> list:
+def minute_rows_for(cascades: dict, cache, cost_pct: float) -> list:
     """Q5b (b) 用の 1 分の始値の行(段2 は日ごとの一巡を持たないのでここで作る)。"""
     bf_ts, bf_open = load_bitflyer_1m(years=(2023, 2024, 2025))
     rows = []
@@ -2801,8 +2821,8 @@ def minute_rows_for(cascades: dict, cache, cost_bp: float) -> list:
         v_bf = pnl_next_minute_open(entry_ts, exit_ts, direction, bf_ts, bf_open)
         v_bx = pnl_next_minute_open(entry_ts, exit_ts, direction, mt, mp)
         rows.append({"bundle_id": bid, "day": day,
-                     "bitFlyer_bp": (v_bf - cost_bp if v_bf == v_bf else NAN),
-                     "Binance_bp": (v_bx - cost_bp if v_bx == v_bx else NAN)})
+                     "bitFlyer_pct": (v_bf / 100 - cost_pct if v_bf == v_bf else NAN),
+                     "Binance_pct": (v_bx / 100 - cost_pct if v_bx == v_bx else NAN)})
     return rows
 
 
@@ -2882,7 +2902,7 @@ def first_action_from_print_rows(rows: list, at_first_print: bool = False) -> di
     return out
 
 
-def tp_exit_breakdown(leg_rows: list, lines_spec: tuple, c_bp: float,
+def tp_exit_breakdown(leg_rows: list, lines_spec: tuple, c_pct: float,
                       delay: float = MAIN_DELAY) -> list:
     """**建玉 1 つごとの出口の理由の内訳**(順張り / 逆張り の別)。
     損益は費用なしの合計と、建玉 1 つにつき c を引いた合計の両方を出す
@@ -2902,8 +2922,8 @@ def tp_exit_breakdown(leg_rows: list, lines_spec: tuple, c_bp: float,
                 out.append({
                     "線": name, "方策": pol, "型": ptype, "遅れ_秒": delay,
                     "向き": direction, "出口の理由": reason, "本数": len(rs),
-                    "費用なしの合計_bp": float(v.sum()) if v.size else 0.0,
-                    "費用を引いた合計_bp": (float(v.sum()) - float(c_bp) * len(rs)
+                    "費用なしの合計_pct": float(v.sum()) / 100 if v.size else 0.0,   # レグの和は % (L-920)
+                    "費用を引いた合計_pct": (float(v.sum()) / 100 - float(c_pct) * len(rs)
                                     if v.size else 0.0),
                     "費用なしの中央値_bp": (quantiles(v, [50])[0] if v.size else NAN),
                     "負の割合(費用なし)": (float(np.mean(v < 0)) if v.size else NAN)})
@@ -2931,7 +2951,7 @@ def tp_first_action_table(cascade_rows: list, first_action: dict,
                           lines_spec: tuple, cost_label: str = COST_MAIN,
                           first_action_at_print0: dict | None = None) -> list:
     """**最初の行動別**(順張り / 逆張り / 入らない)の合計と中央値。
-    `cascade_rows` は `build_cascade_rows_file` の形(費用の通り・pnl_net_bp を持つ)。
+    `cascade_rows` は `build_cascade_rows_file` の形(費用の通り・pnl_net_pct を持つ)。
     数え方を 2 通り出す(`FA_ANY` / `FA_FIRST_PRINT`。前段の記録は後者)。"""
     rows = []
     defs = [(FA_ANY, first_action)]
@@ -2949,7 +2969,7 @@ def tp_first_action_table(cascade_rows: list, first_action: dict,
                 buckets[fa.get(key, "入らない")].append(r)
             for bucket in (POS_WITH, POS_AGAINST, "入らない", "全部"):
                 rs = sel if bucket == "全部" else buckets.get(bucket, [])
-                v = np.array([cont._f(r["pnl_net_bp"]) for r in rs], dtype=float)
+                v = np.array([cont._f(r["pnl_net_pct"]) for r in rs], dtype=float)
                 d = np.array([str(r["day"]) for r in rs], dtype=object)
                 fin = np.isfinite(v)
                 rows.append({"数え方": label, "線": name, "費用の通り": cost_label,
@@ -2973,7 +2993,7 @@ def build_tp_tables(cascade_file_rows: list, leg_rows: list, first_action: dict,
             if str(r["方策"]) != pol or str(r["型"]) != ptype:
                 continue
             rr = dict(r)
-            rr["pnl_net_bp"] = cont._f(r["pnl_net_bp"])
+            rr["pnl_net_pct"] = cont._f(r["pnl_net_pct"])
             rr["保有秒"] = cont._f(r["保有秒"])
             rr["入りの約定時刻"] = r.get("入りの約定時刻_ms")
             rr["出の約定時刻"] = r.get("出の約定時刻_ms")
@@ -2990,7 +3010,7 @@ def build_tp_tables(cascade_file_rows: list, leg_rows: list, first_action: dict,
     all_cost = []
     for label in (COST_NONE, COST_MAIN, COST_P75):
         for name, pol, ptype in lines_spec:
-            v = np.array([cont._f(r["pnl_net_bp"]) for r in cascade_file_rows
+            v = np.array([cont._f(r["pnl_net_pct"]) for r in cascade_file_rows
                           if str(r["方策"]) == pol and str(r["型"]) == ptype
                           and str(r["費用の通り"]) == label
                           and float(r["遅れ_秒"]) == float(MAIN_DELAY)], dtype=float)
@@ -3005,7 +3025,7 @@ def build_tp_tables(cascade_file_rows: list, leg_rows: list, first_action: dict,
     by_delay = []
     for delay in DELAYS_S:
         for name, pol, ptype in lines_spec:
-            v = np.array([cont._f(r["pnl_net_bp"]) for r in cascade_file_rows
+            v = np.array([cont._f(r["pnl_net_pct"]) for r in cascade_file_rows
                           if str(r["方策"]) == pol and str(r["型"]) == ptype
                           and str(r["費用の通り"]) == cost_label
                           and float(r["遅れ_秒"]) == float(delay)], dtype=float)
@@ -3093,7 +3113,7 @@ def run_stage1_tp(out_dir: Path = STAGE1_TP_OUT, spread_dir: Path = SPREAD_DIR
     costs = {COST_NONE: 0.0, COST_MAIN: c_main, COST_P75: c_p75}
     cascade_file_rows = build_cascade_rows_file(built["cascade_rows"], costs)
     for r in cascade_file_rows:
-        r["c_bp"] = costs[r["費用の通り"]]
+        r["c_pct"] = costs[r["費用の通り"]]
     out_dir.mkdir(parents=True, exist_ok=True)
     write_cascades_gz(out_dir, cascade_file_rows)
     sp.write_csv_gz(out_dir / "prints_policy.csv.gz", built["print_rows"])
@@ -3108,8 +3128,8 @@ def run_stage1_tp(out_dir: Path = STAGE1_TP_OUT, spread_dir: Path = SPREAD_DIR
           {"項目": "前半の連鎖数", "値": len(all_cascades)},
           {"項目": "通した線", "値": " / ".join(n for n, _p, _t in TP_LINE_SPEC)},
           {"項目": "利確の幅(bp、入り値基準)", "値": TP_BP},
-          {"項目": "主の c(bp)", "値": c_main},
-          {"項目": "併記の c = p75(bp)", "値": c_p75},
+          {"項目": "主の c(%)", "値": c_main},
+          {"項目": "併記の c = p75(%)", "値": c_p75},
           {"項目": "帯(1件目)", "値": str(bands.get(POS_1ST))},
           {"項目": "帯(連鎖の中)", "値": str(bands.get(POS_CHAIN))},
           {"項目": "レグの行(建玉 1 つごと)", "値": len(built["leg_rows"])},
@@ -3127,7 +3147,7 @@ def run_stage1_tp(out_dir: Path = STAGE1_TP_OUT, spread_dir: Path = SPREAD_DIR
         "利確": {"幅_bp": TP_BP, "基準": "入りの約定価格(ホールドしても動かさない)",
                "向き": "順張りの建玉だけ"},
         "段1から読んだもの(作り直していない)": {"帯": bands, "基準率": base_rates},
-        "費用": {"主のc_bp": c_main, "p75_bp": c_p75},
+        "費用": {"主のc_pct": c_main, "p75_pct": c_p75},
         "所要秒": round(time.time() - t0, 1)}
     return write_output(out_dir, tables, summary)
 
@@ -3148,6 +3168,18 @@ def append_csv_gz(path: Path, rows: list, header_cols: list | None = None) -> di
     md5_text_before = hashlib.md5(text_before.encode("utf-8")).hexdigest()
     cols = header_cols or text_before.splitlines()[0].split(",")
     rows = normalize_rows(rows)
+    # L-920: 列の名前と単位を変えた(pnl_bp → pnl_pct、pnl_net_bp → pnl_net_pct ほか)。
+    # 前に書いたファイルの見出しと、足す行の鍵が違えば、黙って空欄や捨てる列を作らずに止める。
+    keys = set().union(*(r.keys() for r in rows)) if rows else set(cols)
+    missing = [c for c in cols if c not in keys]
+    extra = sorted(k for k in keys if k not in cols)
+    if missing or extra:
+        raise SystemExit(
+            f"[止め] {path.name} の見出しと足す行の列が違う。見出しにあって行に無い列: "
+            f"{missing or 'なし'} / 行にあって見出しに無い列: {extra or 'なし'}。"
+            "L-920 より前に書いたファイル(bp の列名)に、% の列名の行を継ぎ足そうとしている"
+            "可能性がある。ファイルを今の台本で最初から作り直すか、継ぎ足さずに別のファイル"
+            "(例: cascades_pct.csv.gz)に書くこと")
     buf = _io.BytesIO()
     with _io.TextIOWrapper(_gzip.GzipFile(filename="", mode="wb", fileobj=buf,
                                           mtime=0),
@@ -3182,7 +3214,7 @@ def write_tp_tables(out_dir: Path, tables: list, c_main: float, c_p75: float) ->
         write_csv(out_dir / name, norm[name])
     md = ["# O3C SIGNAL 順張り利確 5 bp(入り値基準)— 後半 2,000 本の表", "",
           f"- 委任文: `{TP_DELEGATION}`",
-          f"- 費用 c(主) = {c_main:.4f} bp / p75 = {c_p75:.4f} bp", ""]
+          f"- 費用 c(主) = {c_main:.6f} % / p75 = {c_p75:.6f} %", ""]
     for name, _rows, key in tables:
         md += [f"## {key}(`{name}`、{len(norm[name])} 行)", "",
                md_table(norm[name]), ""]
@@ -3269,7 +3301,7 @@ def run_stage2_tp(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_
     costs = {COST_NONE: 0.0, COST_MAIN: c_main, COST_P75: c_p75}
     new_rows = build_cascade_rows_file(built["cascade_rows"], costs)
     for r in new_rows:
-        r["c_bp"] = costs[r["費用の通り"]]
+        r["c_pct"] = costs[r["費用の通り"]]
     print(f"[後半tp-2] 変種の連鎖 1 本ごとの行 {len(new_rows)} 行 / 道筋 "
           f"{len(built['print_rows'])} 行({time.time() - t0:.0f}s)", flush=True)
 
@@ -3301,8 +3333,8 @@ def run_stage2_tp(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_
           {"項目": "後半の読みの回数", "値": "12 度目(L-355)"},
           {"項目": "通した方策", "値": TP_POLICY},
           {"項目": "利確の幅(bp、入り値基準)", "値": TP_BP},
-          {"項目": "主の c(bp)", "値": c_main},
-          {"項目": "併記の c = p75(bp)", "値": c_p75},
+          {"項目": "主の c(%)", "値": c_main},
+          {"項目": "併記の c = p75(%)", "値": c_p75},
           {"項目": "レグの行(建玉 1 つごと)", "値": len(leg_rows)}]
     for a in appended:
         q0.append({"項目": f"{a['ファイル']}: 足した行数", "値": a["足した行数"]})
@@ -3322,7 +3354,7 @@ def run_stage2_tp(out_dir: Path = DEFAULT_OUT_STAGE2, spread_dir: Path = SPREAD_
         "利確": {"幅_bp": TP_BP, "基準": "入りの約定価格(ホールドしても動かさない)",
                "向き": "順張りの建玉だけ"},
         "段1から読んだもの(作り直していない)": {"帯": bands, "基準率": base_rates},
-        "費用": {"主のc_bp": c_main, "p75_bp": c_p75},
+        "費用": {"主のc_pct": c_main, "p75_pct": c_p75},
         "足した行": appended,
         "並べた線": [n for n, _p, _t in TP_LINE_SPEC],
         "従来 2 本の出所": "段2 が既に書いた行(生データを読み直していない)",

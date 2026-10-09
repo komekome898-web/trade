@@ -113,6 +113,10 @@ of them is swept):
 
 Usage:  PYTHONPATH=src python scripts/research_avalanche.py \
             --binance-dir <scratchpad>/binance_1s
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図の r2・閾値 thr・入りの
+値段から測る TP の幅 tp・前向きの値動き)にだけ使う。費用(taker 3.96bps = 0.0396 %、本の薄さの
+感度 +4bps = +0.04 %、計 7.96bps = 0.0796 %)、net(費用を引いた損益の率)・最大の落ち込み・
+採用の線(+5bps = +0.05 %)は % で持つ。)
 """
 from __future__ import annotations
 
@@ -140,9 +144,9 @@ TPS_BPS = (10.0, 20.0)
 TRIGGER_LOOKBACK_S = 2          # "within the last 2 seconds"
 TRIGGER_COOLDOWN_S = 60.0       # same-direction re-fire cooldown
 LATENCY_S = 1.0                 # entry reference at signal instant + 1.0 s
-TAKER_BPS = 3.96                # burst-regime taker, KNOWLEDGE §1
-SLIP_SENS_BPS = 4.0             # avalanche book-thinning sensitivity
-COST_IN = (TAKER_BPS, TAKER_BPS + SLIP_SENS_BPS)   # 3.96 / 7.96
+TAKER_PCT = 0.0396              # % burst-regime taker, KNOWLEDGE §1 (3.96 bps)
+SLIP_SENS_PCT = 0.04            # % avalanche book-thinning sensitivity (4 bps)
+COST_IN = (TAKER_PCT, TAKER_PCT + SLIP_SENS_PCT)   # 0.0396 / 0.0796 %
 FALLBACK_S = 120.0              # E2 fallback horizon
 POS_COOLDOWN_S = 60.0           # cooldown after every exit
 SPLIT_FRAC = 0.60               # time-series 60/40
@@ -358,7 +362,7 @@ def simulate(tp: dict, trigs: list[dict], tp_bps: float, c_in: float) -> dict:
         assert tr["t_ref"] >= tr["t_sig"] - 1e-9, "lookahead: ref before signal"
         assert t_e >= tr["t_ref"] - 1e-9, "lookahead: entry before reference"
         side = tr["side"]
-        p_e = base * (1.0 + side * c_in / 1e4)
+        p_e = base * (1.0 + side * c_in / 100)          # c_in in %
         limit = p_e * (1.0 + side * tp_bps / 1e4)
 
         # ---- scan for a traded-through TP fill inside 120 s ---------------
@@ -383,13 +387,13 @@ def simulate(tp: dict, trigs: list[dict], tp_bps: float, c_in: float) -> dict:
             if not np.isfinite(px):
                 skipped_no_fallback_print += 1
                 continue
-            exit_px, exit_t, exit_kind, exit_cost = px, pt, "fb", TAKER_BPS
+            exit_px, exit_t, exit_kind, exit_cost = px, pt, "fb", TAKER_PCT
 
         if exit_t >= tp["cutoff"]:
             skipped_cutoff += 1
             continue
 
-        net = side * (exit_px - p_e) / p_e * 1e4 - exit_cost
+        net = side * (exit_px - p_e) / p_e * 100 - exit_cost   # % (L-920)
         fwd = {}
         for h in CF_HORIZONS:
             px, _ = price_at(tp, t_e + h, FALLBACK_PRINT_GUARD_S)
@@ -397,7 +401,7 @@ def simulate(tp: dict, trigs: list[dict], tp_bps: float, c_in: float) -> dict:
                       if np.isfinite(px) else float("nan"))
         trades.append({
             "t": t_e, "day": int(t_e // 86400), "side": side,
-            "net_bps": net, "exit": exit_kind, "hold_s": exit_t - t_e,
+            "net_pct": net, "exit": exit_kind, "hold_s": exit_t - t_e,
             "fwd": fwd, "r2": tr["r2"],
         })
         next_ok = exit_t + POS_COOLDOWN_S
@@ -415,7 +419,7 @@ def simulate(tp: dict, trigs: list[dict], tp_bps: float, c_in: float) -> dict:
 def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
     by_day: dict[int, list[float]] = {}
     for tr in trades:
-        by_day.setdefault(tr["day"], []).append(tr["net_bps"])
+        by_day.setdefault(tr["day"], []).append(tr["net_pct"])
     days = list(by_day)
     if len(days) < 2:
         return None
@@ -428,7 +432,7 @@ def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
         if pool:
             means.append(sum(pool) / len(pool))
     means.sort()
-    mu = float(np.mean([tr["net_bps"] for tr in trades]))
+    mu = float(np.mean([tr["net_pct"] for tr in trades]))
     sd = float(np.std(means))
     lo = means[int(0.025 * len(means))]
     hi = means[min(len(means) - 1, int(0.975 * len(means)))]
@@ -437,10 +441,10 @@ def day_cluster_boot(trades: list[dict]) -> tuple[float, float, float] | None:
     return lo, hi, (mu / sd if sd > 1e-9 else float("nan"))
 
 
-def max_dd_bps(trades: list[dict]) -> float:
+def max_dd_pct(trades: list[dict]) -> float:
     cum = peak = worst = 0.0
     for tr in trades:
-        cum += tr["net_bps"]
+        cum += tr["net_pct"]
         peak = max(peak, cum)
         worst = max(worst, peak - cum)
     return worst
@@ -449,23 +453,23 @@ def max_dd_bps(trades: list[dict]) -> float:
 def cell_row(name: str, trades: list[dict], days: float) -> str:
     if not trades:
         return f"{name:<16}{0:>5}"
-    nets = np.array([t["net_bps"] for t in trades])
+    nets = np.array([t["net_pct"] for t in trades])
     tps = sum(1 for t in trades if t["exit"] == "tp")
     boot = day_cluster_boot(trades)
-    ci = f"[{boot[0]:+.2f},{boot[1]:+.2f}]" if boot else "n/a"
+    ci = f"[{boot[0]:+.4f},{boot[1]:+.4f}]" if boot else "n/a"
     tstat = (f"{boot[2]:+.2f}" if boot and np.isfinite(boot[2]) else "degen")
     holds = np.array([t["hold_s"] for t in trades])
     return (f"{name:<16}{len(trades):>5}{len(trades) / days:>8.2f}"
-            f"{nets.mean():>10.2f}{np.median(nets):>9.2f}"
+            f"{nets.mean():>10.4f}{np.median(nets):>9.4f}"
             f"{100 * np.mean(nets > 0):>7.1f}"
             f"{100 * tps / len(trades):>7.1f}"
             f"{100 * (len(trades) - tps) / len(trades):>7.1f}"
-            f"{tstat:>7}  {ci:<20}{max_dd_bps(trades):>8.0f}"
+            f"{tstat:>7}  {ci:<20}{max_dd_pct(trades):>8.2f}"
             f"{np.median(holds):>9.1f}")
 
 
 def cell_header() -> None:
-    print(f"{'cell':<16}{'n':>5}{'ev/day':>8}{'net bps':>10}{'median':>9}"
+    print(f"{'cell':<16}{'n':>5}{'ev/day':>8}{'net %':>10}{'median':>9}"
           f"{'win%':>7}{'TP%':>7}{'fb%':>7}{'t':>7}  {'95% CI':<20}"
           f"{'maxDD':>8}{'holdp50':>9}")
     line()
@@ -525,9 +529,9 @@ def main() -> int:
     # ---------------- 1/2. cell tables -----------------------------------
     results: dict[tuple, dict] = {}
     for c_in in COST_IN:
-        header(f"1-2. CELL TABLES -- entry taker cost {c_in:.2f} bps"
-               + ("   [PRIMARY 3.96]" if c_in == TAKER_BPS
-                  else "   [SENSITIVITY +4bps book thinning]"))
+        header(f"1-2. CELL TABLES -- entry taker cost {c_in:.4f} %"
+               + ("   [PRIMARY 0.0396 %]" if c_in == TAKER_PCT
+                  else "   [SENSITIVITY +0.04 % book thinning]"))
         for label, lo, hi, days in (
                 ("FULL exploration span", t_lo, t_hi, span_days),
                 ("FRONT 60% (observation)", t_lo, split_t,
@@ -555,7 +559,7 @@ def main() -> int:
           f"{'skip:no-entry-print':>21}{'skip:no-fb-print':>18}{'skip:cutoff':>13}")
     line()
     for (c_in, thr, tpb), r in sorted(results.items()):
-        print(f"{f'{c_in:.2f}/thr{thr:.0f}/tp{tpb:.0f}':<22}"
+        print(f"{f'{c_in:.4f}/thr{thr:.0f}/tp{tpb:.0f}':<22}"
               f"{len(r['trades']):>9}{r['skipped_cooldown']:>15}"
               f"{r['skipped_no_entry_print']:>21}"
               f"{r['skipped_no_fallback_print']:>18}{r['skipped_cutoff']:>13}")
@@ -581,7 +585,7 @@ def main() -> int:
             y["t_ref"] = x["t_sig"]
             alt.append(y)
         for tpb in TPS_BPS:
-            r = simulate(tp, alt, tpb, TAKER_BPS)
+            r = simulate(tp, alt, tpb, TAKER_PCT)
             print(cell_row(f"thr{thr:.0f}/tp{tpb:.0f}", r["trades"], span_days))
 
     # ---------------- 3. adverse-selection counterfactual ----------------
@@ -592,7 +596,7 @@ def main() -> int:
     print("in a momentum exit is the FRIENDLY side of the selection wall "
           "(KNOWLEDGE §2).")
     for c_in in COST_IN:
-        sub(f"entry cost {c_in:.2f} bps")
+        sub(f"entry cost {c_in:.4f} %")
         print(f"{'cell':<16}{'group':<10}{'n':>5}"
               + "".join(f"{f'+{h:.0f}s':>10}" for h in CF_HORIZONS))
         line()
@@ -614,8 +618,8 @@ def main() -> int:
     header("4. ABLATION -- post-trigger conditional bitFlyer drift, PRE-COST")
     print("Signed move from the entry reference price (first print at "
           "t_sig+1.0s) in the trigger direction.")
-    print("Round-trip taker reference line: 2 x 3.96 = 7.92 bps "
-          "(one-way 3.96).")
+    print("Round-trip taker reference line: 2 x 0.0396 = 0.0792 % "
+          "(one-way 0.0396 %; the drift below is in bps, 0.0792 % = 7.92 bps of move).")
 
     def drift_table(trigs: list[dict], lo: float, hi: float, label: str) -> None:
         rows = [x for x in trigs if lo <= x["t_ref"] < hi]
@@ -652,11 +656,11 @@ def main() -> int:
     line()
     for thr in THRS_BPS:
         for tpb in TPS_BPS:
-            trs = results[(TAKER_BPS, thr, tpb)]["trades"]
+            trs = results[(TAKER_PCT, thr, tpb)]["trades"]
             row = "".join(
                 f"{np.nanmean([x['fwd'][h] for x in trs]):>+10.2f}"
                 for h in CF_HORIZONS) if trs else ""
-            print(f"{f'thr{thr:.0f}/tp{tpb:.0f} (c_in 3.96)':<34}"
+            print(f"{f'thr{thr:.0f}/tp{tpb:.0f} (c_in 0.0396%)':<34}"
                   f"{len(trs):>6}{row}")
 
     # report-e style threshold ladder (diagnostic, never selectable)

@@ -110,6 +110,12 @@ Offline only -- reads files, opens no sockets, places no orders.
 Idempotent: re-running prints the same numbers.
 
 Usage: python scripts/research_two_sided_flow.py [--data DIR] [--ws DIR]
+
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(5 秒・窓の
+drift・rv・mid から mid への adverse markout)にだけ使う。スプレッド・半スプレッド
+(1.1bps = 0.011 %、2.22bps = 0.0222 %、0.78bps = 0.0078 %、1.56bps = 0.0156 %)、
+建玉で割った損益(net・capture・inventory・1 往復の損益)、edge の線
+(+0.3bps = +0.003 %)、entry と total の markout は % で持つ。)
 """
 from __future__ import annotations
 
@@ -132,8 +138,8 @@ IMB_MAX = 0.30                  # |B-S|/(B+S) ceiling for "two-sided"
 PCTLS = (33, 50)                # v_min grid, percent
 VOL_EPS = 1e-9                  # positive floor when a percentile is 0
 
-HALF_SPREAD_BPS = 1.10          # primary quote proxy (2.22bps board spread)
-HALF_SPREAD_ALT = 0.78          # sensitivity (1.56bps board spread)
+HALF_SPREAD_PCT = 0.0110        # % primary quote proxy (0.0222 % board spread)
+HALF_SPREAD_ALT = 0.0078        # % sensitivity (0.0156 % board spread)
 
 BURST_BPS = 10.0                # KNOWLEDGE: |5s log-return| >= 10bps
 BURST_LOOKBACK_SEC = 600        # calm (a): no burst in the trailing 10m
@@ -142,7 +148,7 @@ DRIFT_MAX = 0.004
 
 MARKOUT_HORIZONS = (5, 10, 30, 60)
 SPLIT_FRAC = 0.60
-EDGE_BAR_BPS = 0.30             # HF-class bar the board study must beat
+EDGE_BAR_PCT = 0.0030           # % per round trip; HF-class bar the board study must beat
 T_BAR = 2.0
 N_BAR = 300                     # round trips demanded by the power question
 UNWIND_SEC = 60                 # residual inventory is unwound this late
@@ -551,10 +557,10 @@ def drift_bps(g: Grid) -> np.ndarray:
     return d
 
 
-def revisit_flags(g: Grid, h_bps: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Traded-through fills against a last-trade +/- h quote proxy."""
-    q_lo = g.p_prev * (1.0 - h_bps * 1e-4)
-    q_hi = g.p_prev * (1.0 + h_bps * 1e-4)
+def revisit_flags(g: Grid, h_pct: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Traded-through fills against a last-trade +/- h quote proxy (h in %)."""
+    q_lo = g.p_prev * (1.0 - h_pct * 1e-2)
+    q_hi = g.p_prev * (1.0 + h_pct * 1e-2)
     fill_bid = g.min_sell_px <= q_lo       # a taker SELL reached our bid
     fill_ask = g.max_buy_px >= q_hi        # a taker BUY reached our ask
     both = fill_bid & fill_ask
@@ -569,17 +575,17 @@ def section2(grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None:
     print("requires |net drift| <= the half-spread -- the round trip a maker")
     print("could actually have closed at no inventory cost.")
 
-    for h in (HALF_SPREAD_BPS, HALF_SPREAD_ALT):
-        sub(f"half-spread proxy = {h:.2f} bps "
-            f"(full {2 * h:.2f} bps)"
-            + ("   [PRIMARY]" if h == HALF_SPREAD_BPS else "   [sensitivity]"))
+    for h in (HALF_SPREAD_PCT, HALF_SPREAD_ALT):
+        sub(f"half-spread proxy = {h:.4f} % "
+            f"(full {2 * h:.4f} %)"
+            + ("   [PRIMARY]" if h == HALF_SPREAD_PCT else "   [sensitivity]"))
         print(f"{'W':>4} {'pool':<9}{'pctl':>5} {'set':<10}"
               f"{'n':>9}{'|drift|':>9}{'rv':>8}{'P(bid)':>8}{'P(ask)':>8}"
               f"{'P(both)':>9}{'P(both&flat)':>13}")
         for W, g in grids.items():
             d = drift_bps(g)
             fb, fa, both = revisit_flags(g, h)
-            flat = both & (np.abs(d) <= h)
+            flat = both & (np.abs(d) <= h * 100)  # drift d in bps, h in % (L-920)
             for pool in ("all", "nonempty"):
                 for q in PCTLS:
                     m = cells[(W, pool, q)].mask
@@ -604,11 +610,11 @@ class EpisodeStats:
     n: int
     per_day_jpy: float
     total_jpy: float
-    bps_of_notional: float
-    cap_bps: float           # spread capture leg, bps of notional
-    inv_bps: float           # inventory / adverse leg, bps of notional
+    pct_of_notional: float   # % of notional (L-920; was bps)
+    cap_pct: float           # spread capture leg, % of notional
+    inv_pct: float           # inventory / adverse leg, % of notional
     pnl: np.ndarray
-    bps: np.ndarray
+    pct: np.ndarray          # per-episode PnL, % of notional
     day: np.ndarray
     notional: np.ndarray
     st: np.ndarray
@@ -673,21 +679,21 @@ def episode_pnl(g: Grid, mask: np.ndarray, tp: Tape | None = None,
     mid_end = episode_marks(g, tp, st, ln, unwind_sec if tp is not None else 0)
     inv = midflow + pos * mid_end
     pnl = cap + inv
-    bps = np.where(note > 0, pnl / np.maximum(note, 1e-9) * 1e4, np.nan)
+    pct = np.where(note > 0, pnl / np.maximum(note, 1e-9) * 100, np.nan)
     days = np.array([g.day[s] for s in st])
     span_days = (g.start[-1] - g.start[0]) / 86400.0
     tot_note = float(note.sum())
     return EpisodeStats(n=len(st), per_day_jpy=float(pnl.sum() / span_days),
                         total_jpy=float(pnl.sum()),
-                        bps_of_notional=float(pnl.sum() / tot_note * 1e4),
-                        cap_bps=float(cap.sum() / tot_note * 1e4),
-                        inv_bps=float(inv.sum() / tot_note * 1e4),
-                        pnl=pnl, bps=bps, day=days, notional=note,
+                        pct_of_notional=float(pnl.sum() / tot_note * 100),
+                        cap_pct=float(cap.sum() / tot_note * 100),
+                        inv_pct=float(inv.sum() / tot_note * 100),
+                        pnl=pnl, pct=pct, day=days, notional=note,
                         st=st, ln=ln)
 
 
-def episode_pnl_prereg(g: Grid, mask: np.ndarray, spread_bps: float) -> tuple:
-    """The closed form written into the pre-registration."""
+def episode_pnl_prereg(g: Grid, mask: np.ndarray, spread_pct: float) -> tuple:
+    """The closed form written into the pre-registration (spread in %)."""
     st, ln = runs(mask)
     if len(st) == 0:
         return 0.0, 0.0, 0.0
@@ -697,7 +703,7 @@ def episode_pnl_prereg(g: Grid, mask: np.ndarray, spread_bps: float) -> tuple:
     p1 = np.array([g.p_last[s:s + L][~np.isnan(g.p_last[s:s + L])][-1]
                    for s, L in zip(st, ln)])
     px = 0.5 * (p0 + p1)
-    capture = np.minimum(B, S) * spread_bps * 1e-4 * px
+    capture = np.minimum(B, S) * spread_pct * 1e-2 * px
     inv = (S - B) * (p1 - p0)          # maker is net (S-B) long over the drift
     span_days = (g.start[-1] - g.start[0]) / 86400.0
     return (float(capture.sum() / span_days), float(inv.sum() / span_days),
@@ -714,31 +720,31 @@ def section3(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> dict
     print("               holding -- adverse selection, measured on a")
     print("               bounce-free mid proxy.")
     print("The maker is flat at every episode boundary, so no episode carries a")
-    print("directional bet.  bps are per unit of maker notional FILLED.")
+    print("directional bet.  % are per unit of maker notional FILLED.")
 
     eff = (np.where(tp.buy, 1.0, -1.0) * (tp.price - tp.mid_prev)
-           / tp.price * 1e4)
+           / tp.price * 100)  # % (half-spread, L-920)
     ok = np.isfinite(eff)
     sub("the revenue source, measured (not assumed)")
-    print(f"realized half-spread per fill: mean {np.mean(eff[ok]):.3f} bps, "
-          f"median {np.median(eff[ok]):.3f}, size-weighted "
-          f"{np.average(eff[ok], weights=tp.size[ok]):.3f}  "
+    print(f"realized half-spread per fill: mean {np.mean(eff[ok]):.5f} %, "
+          f"median {np.median(eff[ok]):.5f}, size-weighted "
+          f"{np.average(eff[ok], weights=tp.size[ok]):.5f}  "
           f"(n={int(ok.sum()):,})")
-    print(f"the pre-registered proxy is {HALF_SPREAD_BPS:.2f} bps -- the tape "
-          f"agrees to within {abs(np.mean(eff[ok]) - HALF_SPREAD_BPS):.2f} bps")
+    print(f"the pre-registered proxy is {HALF_SPREAD_PCT:.4f} % -- the tape "
+          f"agrees to within {abs(np.mean(eff[ok]) - HALF_SPREAD_PCT):.4f} %")
 
     out = {}
     sub(f"ceiling INSIDE two-sided episodes vs OUTSIDE (same machinery), "
         f"residual unwound {UNWIND_SEC}s after the episode")
     print(f"{'W':>4} {'pool':<9}{'pctl':>5} {'set':<8}{'episodes':>9}"
-          f"{'JPY/day':>11}{'net bps':>9}{'capture':>9}{'inventory':>11}"
+          f"{'JPY/day':>11}{'net %':>9}{'capture':>9}{'inventory':>11}"
           f"{'med ep':>8}{'p10':>7}{'p90':>7}{'flat-mark':>11}"
           f"{'A-pre JPY/d':>13}")
     for W, g in grids.items():
         for pool in ("all", "nonempty"):
             for q in PCTLS:
                 m = cells[(W, pool, q)].mask
-                _, _, pre_tot = episode_pnl_prereg(g, m, 2 * HALF_SPREAD_BPS)
+                _, _, pre_tot = episode_pnl_prereg(g, m, 2 * HALF_SPREAD_PCT)
                 for tag, sel, pre in (("inside", m, pre_tot),
                                       ("outside", ~m & (g.nprint > 0), np.nan)):
                     es = episode_pnl(g, sel, tp, UNWIND_SEC)
@@ -748,12 +754,12 @@ def section3(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> dict
                     if es.n == 0:
                         continue
                     print(f"{W:>4} {pool:<9}{q:>5} {tag:<8}{es.n:>9,}"
-                          f"{es.per_day_jpy:>11,.0f}{es.bps_of_notional:>9.3f}"
-                          f"{es.cap_bps:>9.3f}{es.inv_bps:>11.3f}"
-                          f"{np.nanmedian(es.bps):>8.3f}"
-                          f"{np.nanpercentile(es.bps, 10):>7.2f}"
-                          f"{np.nanpercentile(es.bps, 90):>7.2f}"
-                          f"{es0.bps_of_notional:>11.3f}"
+                          f"{es.per_day_jpy:>11,.0f}{es.pct_of_notional:>9.5f}"
+                          f"{es.cap_pct:>9.5f}{es.inv_pct:>11.5f}"
+                          f"{np.nanmedian(es.pct):>8.5f}"
+                          f"{np.nanpercentile(es.pct, 10):>7.4f}"
+                          f"{np.nanpercentile(es.pct, 90):>7.4f}"
+                          f"{es0.pct_of_notional:>11.5f}"
                           + (f"{pre:>13,.0f}" if np.isfinite(pre) else f"{'-':>13}"))
                 print()
     print("'flat-mark' is the same number with the residual marked at the")
@@ -768,14 +774,14 @@ def section3(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> dict
         es_all = episode_pnl(g, g.nprint > 0, tp, UNWIND_SEC)
         print(f"W={W:>3}s  {es_all.n:>7,} episodes  "
               f"{es_all.per_day_jpy:>10,.0f} JPY/day  "
-              f"net {es_all.bps_of_notional:>6.3f} bps  "
-              f"(capture {es_all.cap_bps:.3f}, inventory {es_all.inv_bps:+.3f})")
+              f"net {es_all.pct_of_notional:>8.5f} %  "
+              f"(capture {es_all.cap_pct:.5f}, inventory {es_all.inv_pct:+.5f})")
     print("Compare the two-sided rows to THIS per unit of notional, not in")
     print("JPY/day: the regime filter also throws volume away.")
 
     sub("decomposition of the pre-registered closed form (W=60s, all, p50)")
     cap, inv, tot = episode_pnl_prereg(grids[60], cells[(60, "all", 50)].mask,
-                                       2 * HALF_SPREAD_BPS)
+                                       2 * HALF_SPREAD_PCT)
     print(f"spread capture on matched volume : {cap:>14,.0f} JPY/day")
     print(f"drift cost on unmatched residual : {inv:>14,.0f} JPY/day")
     print(f"pre-registered ceiling           : {tot:>14,.0f} JPY/day")
@@ -796,7 +802,8 @@ def fifo_round_trips(tp: Tape, keep: np.ndarray,
                      ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """FIFO attribution of the idealized maker's fills into round trips.
 
-    Returns (pnl_bps, close_time, matched_size) per round trip.
+    Returns (pnl_pct, close_time, matched_size) per round trip (PnL in %
+    of the entry price, L-920).
 
     `keep` selects the prints the maker is allowed to be filled on; `seg`
     gives an episode id per print, and the lot queue is reset at every
@@ -823,7 +830,7 @@ def fifo_round_trips(tp: Tape, keep: np.ndarray,
     from collections import deque
 
     q: deque[list[float]] = deque()       # open lots [signed_size, price]
-    rt_bps: list[float] = []
+    rt_pct: list[float] = []
     rt_t: list[float] = []
     rt_sz: list[float] = []
 
@@ -831,7 +838,7 @@ def fifo_round_trips(tp: Tape, keep: np.ndarray,
         while q:
             lot = q.popleft()
             pnl = (mark - lot[1]) if lot[0] > 0 else (lot[1] - mark)
-            rt_bps.append(pnl / lot[1] * 1e4)
+            rt_pct.append(pnl / lot[1] * 100)
             rt_t.append(when)
             rt_sz.append(abs(lot[0]))
 
@@ -853,7 +860,7 @@ def fifo_round_trips(tp: Tape, keep: np.ndarray,
             entry = lot[1]
             # a long lot closed by a sell, or a short lot closed by a buy
             pnl = (p - entry) if lot[0] > 0 else (entry - p)
-            rt_bps.append(pnl / entry * 1e4)
+            rt_pct.append(pnl / entry * 100)
             rt_t.append(float(tt[i]))
             rt_sz.append(take)
             s -= take
@@ -863,7 +870,7 @@ def fifo_round_trips(tp: Tape, keep: np.ndarray,
         if s > 1e-12:
             q.append([sign * s, p])
     close_all(mark_for(len(idx) - 1), float(tt[-1]))
-    return np.array(rt_bps), np.array(rt_t), np.array(rt_sz)
+    return np.array(rt_pct), np.array(rt_t), np.array(rt_sz)
 
 
 def episode_id_per_print(g: Grid, es: EpisodeStats) -> np.ndarray:
@@ -880,7 +887,7 @@ def section4(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell],
     print("Round trips are a FIFO attribution of the SAME idealized fills (a")
     print("maker buy matched against the next maker sell).  They give n and a")
     print("PnL dispersion; the board study will replace them with real quotes.")
-    print(f"Bar assumed: edge {EDGE_BAR_BPS:+.2f} bps/round trip, t >= {T_BAR:.1f},")
+    print(f"Bar assumed: edge {EDGE_BAR_PCT:+.4f} %/round trip, t >= {T_BAR:.1f},")
     print(f"n >= {N_BAR}.  Required n = (t sd / edge)^2.")
 
     span_days = (tp.t[-1] - tp.t[0]) / 86400.0
@@ -901,16 +908,16 @@ def section4(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell],
                 mean = float(rt.mean())
                 wmean = float(np.average(rt, weights=rsz)) if rsz.sum() else np.nan
                 t_stat = mean / (sd / np.sqrt(rt.size)) if sd > 0 else np.nan
-                n_req = (T_BAR * sd / EDGE_BAR_BPS) ** 2
+                n_req = (T_BAR * sd / EDGE_BAR_PCT) ** 2
                 per_day = rt.size / span_days
                 rows.append((W, pool, q, rt.size, per_day, mean, wmean, sd,
                              t_stat, n_req, max(n_req, N_BAR) / per_day))
     print(f"\n{'W':>4} {'pool':<9}{'pctl':>5}{'round trips':>12}{'per day':>10}"
-          f"{'mean bps':>10}{'vw mean':>9}{'sd bps':>9}{'t(obs)':>8}"
+          f"{'mean %':>10}{'vw mean':>9}{'sd %':>9}{'t(obs)':>8}"
           f"{'n for t>=2':>12}{'days needed':>13}")
     for r in rows:
         print(f"{r[0]:>4} {r[1]:<9}{r[2]:>5}{r[3]:>12,}{r[4]:>10,.0f}"
-              f"{r[5]:>10.3f}{r[6]:>9.3f}{r[7]:>9.3f}{r[8]:>8.1f}"
+              f"{r[5]:>10.5f}{r[6]:>9.5f}{r[7]:>9.5f}{r[8]:>8.1f}"
               f"{r[9]:>12,.0f}{r[10]:>13,.1f}")
 
     g60 = grids[60]
@@ -921,11 +928,11 @@ def section4(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell],
                                     all_marks)
     if rt_all.size:
         sd = float(rt_all.std(ddof=1))
-        n_req = (T_BAR * sd / EDGE_BAR_BPS) ** 2
+        n_req = (T_BAR * sd / EDGE_BAR_PCT) ** 2
         print(f"\nwhole tape, 60s episodes (no regime filter): {rt_all.size:,} "
               f"round trips ({rt_all.size / span_days:,.0f}/day), mean "
-              f"{rt_all.mean():+.3f} bps, sd {sd:.3f} bps -> n for t>=2 at "
-              f"{EDGE_BAR_BPS:+.2f}bps = {n_req:,.0f} "
+              f"{rt_all.mean():+.5f} %, sd {sd:.5f} % -> n for t>=2 at "
+              f"{EDGE_BAR_PCT:+.4f}% = {n_req:,.0f} "
               f"({max(n_req, N_BAR) / (rt_all.size / span_days):.2f} days)")
     print("\nCAUTION: these round-trip counts assume the maker wins every print.")
     print("A real quote wins a fraction f of them; n scales with f and the days")
@@ -949,20 +956,20 @@ def section4(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell],
 
     sub("per-EPISODE power (the unit the pre-registration names)")
     print(f"{'W':>4} {'pool':<9}{'pctl':>5}{'episodes':>10}{'per day':>9}"
-          f"{'mean bps':>10}{'sd bps':>9}{'t(obs)':>8}{'n for t>=2':>12}"
+          f"{'mean %':>10}{'sd %':>9}{'t(obs)':>8}{'n for t>=2':>12}"
           f"{'days':>9}")
     for (W, pool, q), es in eps.items():
         if es.n < 2:
             continue
-        b = es.bps[np.isfinite(es.bps)]
+        b = es.pct[np.isfinite(es.pct)]
         if b.size < 2:
             continue
         sd = float(b.std(ddof=1))
         t_stat = b.mean() / (sd / np.sqrt(b.size)) if sd > 0 else np.nan
-        n_req = (T_BAR * sd / EDGE_BAR_BPS) ** 2
+        n_req = (T_BAR * sd / EDGE_BAR_PCT) ** 2
         per_day = b.size / span_days
         print(f"{W:>4} {pool:<9}{q:>5}{b.size:>10,}{per_day:>9,.1f}"
-              f"{b.mean():>10.3f}{sd:>9.3f}{t_stat:>8.1f}{n_req:>12,.0f}"
+              f"{b.mean():>10.5f}{sd:>9.5f}{t_stat:>8.1f}{n_req:>12,.0f}"
               f"{max(n_req, N_BAR) / per_day:>9,.1f}")
 
 
@@ -971,7 +978,11 @@ def section4(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell],
 # --------------------------------------------------------------------------
 def markouts(tp: Tape, keep: np.ndarray, horizon: int,
              kind: str = "adverse") -> np.ndarray:
-    """Maker markout in bps at `horizon` seconds after the fill.
+    """Maker markout at `horizon` seconds after the fill.
+
+    Units (L-920): "adverse" is a mid-to-mid price move and is in bps;
+    "entry" (the half-spread, two prices at the same instant) and "total"
+    (the fill's PnL) are in %.
 
     The maker takes the side opposite the taker: taker BUY => the maker is
     short at the print, so the maker gains if the price falls.  Three
@@ -996,12 +1007,12 @@ def markouts(tp: Tape, keep: np.ndarray, horizon: int,
     m_now = tp.mid_prev[idx]
     m_fut = tp.gmid[gi]
     sgn = np.where(tp.buy[idx], 1.0, -1.0)     # +1 maker sold, -1 maker bought
-    entry = sgn * (p_now - m_now) / p_now * 1e4
-    adverse = sgn * (m_now - m_fut) / p_now * 1e4
+    entry = sgn * (p_now - m_now) / p_now * 100      # %
+    adverse = sgn * (m_now - m_fut) / p_now * 1e4    # bps (price move)
     if kind == "entry":
         return entry
     if kind == "total":
-        return entry + adverse
+        return entry + adverse / 100                 # % (adverse bps / 100)
     return adverse
 
 
@@ -1018,16 +1029,16 @@ def section5(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
 
     allmask = np.ones(len(tp.t), bool)
     print(f"\nbaseline, every print (n={len(tp.t):,}):")
-    print(f"  entry {markouts(tp, allmask, 0, 'entry').mean():+.3f} bps   " +
-          "  ".join(f"adverse({h}s) {markouts(tp, allmask, h).mean():+.3f}"
+    print(f"  entry {markouts(tp, allmask, 0, 'entry').mean():+.5f} %   " +
+          "  ".join(f"adverse({h}s) {markouts(tp, allmask, h).mean():+.3f} bps"
                     for h in MARKOUT_HORIZONS))
     print("  " + " " * 18 +
-          "  ".join(f"  total({h}s) {markouts(tp, allmask, h, 'total').mean():+.3f}"
+          "  ".join(f"  total({h}s) {markouts(tp, allmask, h, 'total').mean():+.5f} %"
                     for h in MARKOUT_HORIZONS))
 
     for W in WINDOWS:
         g = grids[W]
-        sub(f"W={W}s   (adverse / total, bps per fill)")
+        sub(f"W={W}s   (entry %, adverse bps, total % per fill)")
         print(f"{'pool':<9}{'pctl':>5}{'set':<9}{'fills':>10}{'entry':>8}" +
               "".join(f"{'adv ' + str(h) + 's':>10}" for h in MARKOUT_HORIZONS) +
               "".join(f"{'tot ' + str(h) + 's':>10}" for h in MARKOUT_HORIZONS))
@@ -1041,9 +1052,9 @@ def section5(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
                     adv = [markouts(tp, sel, h) for h in MARKOUT_HORIZONS]
                     tot = [markouts(tp, sel, h, "total") for h in MARKOUT_HORIZONS]
                     print(f"{pool:<9}{q:>5}{tag:<9}{int(sel.sum()):>10,}"
-                          f"{markouts(tp, sel, 0, 'entry').mean():>8.3f}" +
+                          f"{markouts(tp, sel, 0, 'entry').mean():>8.5f}" +
                           "".join(f"{v.mean():>+10.3f}" for v in adv) +
-                          "".join(f"{v.mean():>+10.3f}" for v in tot))
+                          "".join(f"{v.mean():>+10.5f}" for v in tot))
                 # difference with a day-clustered bootstrap at tau=30s
                 a = markouts(tp, keep, 30)
                 b = markouts(tp, ~keep, 30)
@@ -1062,7 +1073,7 @@ def section5(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
     print("fill.  A wall that stops growing is mean reversion: the flow that")
     print("hit the maker was noise, not information.  Ratio near 1 = saturated.")
     print(f"{'W':>4} {'set':<9}{'adv 5s':>9}{'adv 60s':>10}{'ratio':>8}"
-          f"{'total 60s':>11}")
+          f"{'total 60s %':>12}")
     for W in WINDOWS:
         g = grids[W]
         m = cells[(W, "all", 50)].mask
@@ -1072,7 +1083,7 @@ def section5(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
             a60 = markouts(tp, sel, 60).mean()
             t60 = markouts(tp, sel, 60, "total").mean()
             print(f"{W:>4} {tag:<9}{a5:>+9.3f}{a60:>+10.3f}"
-                  f"{a60 / a5:>8.2f}{t60:>+11.3f}")
+                  f"{a60 / a5:>8.2f}{t60:>+12.5f}")
 
     sub("post-window forward drift (the window AFTER a two-sided window)")
     print("Strictly forward: window k is classified, window k+1 is measured.")
@@ -1103,7 +1114,7 @@ def section6(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
     print(f"split at {pd.Timestamp(t_split, unit='s', tz='UTC')}")
 
     print(f"\n{'W':>4} {'pool':<9}{'pctl':>5}{'half':<7}{'duty':>8}"
-          f"{'episodes':>10}{'med dur':>9}{'ceil bps':>10}{'mean ep':>9}"
+          f"{'episodes':>10}{'med dur':>9}{'ceil %':>10}{'mean ep':>9}"
           f"{'adv30':>10}")
     for W in WINDOWS:
         g = grids[W]
@@ -1119,14 +1130,14 @@ def section6(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
                     st, ln = runs(mm)
                     es = episode_pnl(g, mm, tp, UNWIND_SEC)
                     mo = markouts(tp, keep & psel, 30)
-                    epb = es.bps[np.isfinite(es.bps)]
+                    epb = es.pct[np.isfinite(es.pct)]
                     print(f"{W:>4} {pool:<9}{q:>5}{tag:<7}"
                           f"{m[wsel].mean() * 100:>7.2f}%{len(st):>10,}"
                           f"{(np.median(ln * W) if len(ln) else 0):>8.0f}s"
-                          f"{es.bps_of_notional:>10.3f}"
-                          f"{(epb.mean() if epb.size else np.nan):>9.3f}"
+                          f"{es.pct_of_notional:>10.5f}"
+                          f"{(epb.mean() if epb.size else np.nan):>9.5f}"
                           f"{(mo.mean() if mo.size else np.nan):>+10.3f}")
-    print("\n'ceil bps' is notional-weighted and a handful of large episodes")
+    print("\n'ceil %' is notional-weighted and a handful of large episodes")
     print("move it: at W=10s and 30s it roughly doubles from the early half to")
     print("the late half while the equal-weighted 'mean ep' barely moves.  The")
     print("SIGN and the ordering (inside > outside) reproduce in both halves;")
@@ -1140,7 +1151,7 @@ def section6(tp: Tape, grids: dict[int, Grid], cells: dict[tuple, Cell]) -> None
 def section7(ws_dir: Path, grids: dict[int, Grid], cells: dict[tuple, Cell],
              data_dir: Path) -> None:
     header("7. SPREAD CROSS-CHECK ON RECORDED BOOK DATA (supplementary)")
-    print("The quote proxy above assumes a fixed 2.22bps spread.  The recorded")
+    print("The quote proxy above assumes a fixed 0.0222 % spread.  The recorded")
     print("book covers only a few hours, so this can only say whether the")
     print("assumption is the right order of magnitude inside the regime.")
     try:
@@ -1156,16 +1167,16 @@ def section7(ws_dir: Path, grids: dict[int, Grid], cells: dict[tuple, Cell],
     if df.empty:
         print("no board snapshots -- skipped")
         return
-    sp = (df["spread"] / df["mid"] * 1e4).dropna()
+    sp = (df["spread"] / df["mid"] * 100).dropna()  # % of mid (L-920)
     ts = ((df.index - EPOCH) / pd.Timedelta("1s")).to_numpy(float)
     print(f"book seconds        : {len(df):,}  "
           f"{df.index[0]} .. {df.index[-1]}")
-    print(f"spread (bps of mid) : mean {sp.mean():.3f}  median "
-          f"{sp.median():.3f}  p90 {sp.quantile(0.90):.3f}  "
-          f"p99 {sp.quantile(0.99):.3f}")
-    print(f"KNOWLEDGE 1 range   : 1.56 - 2.22 bps  -> proxy "
-          f"{2 * HALF_SPREAD_BPS:.2f} bps is "
-          f"{'inside' if 1.56 <= 2 * HALF_SPREAD_BPS <= 2.22 else 'outside'} it")
+    print(f"spread (% of mid)   : mean {sp.mean():.5f}  median "
+          f"{sp.median():.5f}  p90 {sp.quantile(0.90):.5f}  "
+          f"p99 {sp.quantile(0.99):.5f}")
+    print(f"KNOWLEDGE 1 range   : 0.0156 - 0.0222 %  -> proxy "
+          f"{2 * HALF_SPREAD_PCT:.4f} % is "
+          f"{'inside' if 0.0156 <= 2 * HALF_SPREAD_PCT <= 0.0222 else 'outside'} it")
 
     g = grids[60]
     m = cells[(60, "all", 50)].mask
@@ -1184,10 +1195,10 @@ def section7(ws_dir: Path, grids: dict[int, Grid], cells: dict[tuple, Cell],
           f"(inside two-sided {int((cov & inside).sum()):,} / "
           f"outside {int((cov & ~inside).sum()):,})")
     if a.size and b.size:
-        print(f"spread inside       : mean {a.mean():.3f} bps  median "
-              f"{np.median(a):.3f}")
-        print(f"spread outside      : mean {b.mean():.3f} bps  median "
-              f"{np.median(b):.3f}")
+        print(f"spread inside       : mean {a.mean():.5f} %  median "
+              f"{np.median(a):.5f}")
+        print(f"spread outside      : mean {b.mean():.5f} %  median "
+              f"{np.median(b):.5f}")
         print(f"ratio inside/outside: {a.mean() / b.mean():.2f}x")
     print("\nA WIDER spread inside the regime would raise the capture term and")
     print("the adverse-selection term together; it is not free revenue.")
@@ -1245,18 +1256,18 @@ def main() -> int:
           f"carrying "
           f"{(g.vbuy[m].sum() + g.vsell[m].sum()) / (g.vbuy.sum() + g.vsell.sum()) * 100:.0f}% "
           f"of all volume")
-    print(f"  ceiling inside            : {ins.bps_of_notional:+.3f} bps of "
+    print(f"  ceiling inside            : {ins.pct_of_notional:+.5f} % of "
           f"notional = {ins.per_day_jpy:,.0f} JPY/day at f=100%")
-    print(f"  ceiling outside           : {out.bps_of_notional:+.3f} bps = "
+    print(f"  ceiling outside           : {out.pct_of_notional:+.5f} % = "
           f"{out.per_day_jpy:,.0f} JPY/day")
-    print(f"  ceiling unconditional     : {unc.bps_of_notional:+.3f} bps = "
+    print(f"  ceiling unconditional     : {unc.pct_of_notional:+.5f} % = "
           f"{unc.per_day_jpy:,.0f} JPY/day")
     print(f"  at a plausible f=1%       : {ins.per_day_jpy * 0.01:,.0f} JPY/day "
           f"ceiling, before any queue, latency or inventory constraint")
     print("  the mechanism             : capture is flat everywhere "
-          f"({ins.cap_bps:.2f} vs {out.cap_bps:.2f} bps); the whole difference")
+          f"({ins.cap_pct:.4f} vs {out.cap_pct:.4f} %); the whole difference")
     print(f"                              is adverse selection "
-          f"({ins.inv_bps:+.2f} inside vs {out.inv_bps:+.2f} outside)")
+          f"({ins.inv_pct:+.4f} inside vs {out.inv_pct:+.4f} outside)")
     print("\nThe owner's thesis survives its first quantitative test: two-sided")
     print("regimes exist, they are frequent, and they are the ONLY place where")
     print("the idealized maker is net positive.  What is NOT shown: that a real")
@@ -1270,7 +1281,7 @@ def main() -> int:
     print("   small fraction; realized capture is STRICTLY less, by an unknown")
     print("   factor.  Nothing here bounds that factor.")
     print("2. The quote proxy is a last-trade anchor, not a book.  Fills are")
-    print("   judged by traded-through prints against last-trade +/- 1.1bps.")
+    print("   judged by traded-through prints against last-trade +/- 0.011 %.")
     print("3. Taker-side flags come from the venue's public tape; a print is")
     print("   attributed entirely to the aggressor side, and iceberg/self-match")
     print("   effects are invisible.")

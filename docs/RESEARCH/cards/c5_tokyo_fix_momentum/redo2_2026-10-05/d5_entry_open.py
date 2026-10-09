@@ -18,6 +18,7 @@ REPO = "/home/user/trade"
 sys.path.insert(0, os.path.join(REPO, "scripts/analysis"))
 sys.path.insert(0, os.path.join(REPO, "src"))
 import diag_tables as dt  # noqa: E402
+import trade_rows as trw  # noqa: E402
 
 NS, MIN = 10**9, 60 * 10**9
 
@@ -33,7 +34,9 @@ def main():
             return None
         return float(o_dec[j])
     tr = list(csv.DictReader(gzip.open(os.path.join(HERE, "trades_rebuilt", "trades.csv.gz"), "rt")))
-    days = sorted(dt.daily_series(dt.load_run(os.path.join(HERE, "trades_rebuilt"))))
+    # 日の一覧だけを使う。L-920 の後の diag_tables.load_run は円の列 pnl_jpy の無い置き場(rebuild_trades.py の出力は
+    # 損益を % の pnl_pct で持つ)で止めるので、同じ決まりで率の出力を読む trade_rows.load_pct_run・daily_pct で日を出す
+    days = sorted(trw.daily_pct(trw.load_pct_run(os.path.join(HERE, "trades_rebuilt"))))
     half = len(days) // 2
     parts = {"全期間": days, "前半": days[:half], "後半": days[half:]}
     out = ["# カード 5: 建てた取引の、約定の値段(約定の足の始値)からの値動き × 取引の向き(bp/取引)。対照 = 24 時間後の同じ時刻から", "",

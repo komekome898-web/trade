@@ -171,7 +171,7 @@ def test_two_value_threshold_uses_the_front_half_base_rate():
 # (3) 費用 = c × 建玉の回数(型 B のドテン 1 回 = c)
 # ---------------------------------------------------------------------------
 def test_cost_is_c_times_number_of_entries_and_a_flip_costs_one_c():
-    c = 1.7869
+    c = 0.017869     # % (L-920。前は 1.7869 bp)
 
     def price_fn(t_ms):
         return 100.0 + t_ms / 1.0e7, t_ms
@@ -187,18 +187,18 @@ def test_cost_is_c_times_number_of_entries_and_a_flip_costs_one_c():
 
     rows = [{"bundle_id": "x", "day": "2023-07-01", "side": "SELL",
              "連鎖の大きさ": "2件", "n_prints": 2, "方策": "logistic_3択", "型": vv.TYPE_B,
-             "遅れ_秒": 1, "pnl_bp": res["pnl_bp"], "建玉の回数": res["n_entries"],
+             "遅れ_秒": 1, "pnl_pct": res["pnl_pct"], "建玉の回数": res["n_entries"],
              "保有秒": res["hold_seconds"], "入った": 1, "欠測": 0,
              "最初に入った位置": "1件目で入った"}]
     cdf = vv.apply_cost(rows, c)
-    assert float(cdf["pnl_bp"].iloc[0]) == pytest.approx(res["pnl_bp"] - 2 * c)
+    assert float(cdf["pnl_net_pct"].iloc[0]) == pytest.approx(res["pnl_pct"] - 2 * c)
     # 片道(建玉 1 回)なら c 1 つぶん
     rows1 = [dict(rows[0], 建玉の回数=1)]
     cdf1 = vv.apply_cost(rows1, c)
-    assert float(cdf1["pnl_bp"].iloc[0]) == pytest.approx(res["pnl_bp"] - c)
+    assert float(cdf1["pnl_net_pct"].iloc[0]) == pytest.approx(res["pnl_pct"] - c)
     # 入らなかった連鎖(建玉 0 回)は費用も 0
-    rows0 = [dict(rows[0], 建玉の回数=0, pnl_bp=0.0, 入った=0)]
-    assert float(vv.apply_cost(rows0, c)["pnl_bp"].iloc[0]) == pytest.approx(0.0)
+    rows0 = [dict(rows[0], 建玉の回数=0, pnl_pct=0.0, 入った=0)]
+    assert float(vv.apply_cost(rows0, c)["pnl_net_pct"].iloc[0]) == pytest.approx(0.0)
     # ② は連鎖 1 本 = 建玉 1 回
     times, prices = _fake_prices(n=1200, slope=0.001)
     r = vv.simulate_reverse_entry(prints, -1.0, 0, vv.EXIT_LEVELS[0], None, 1,
@@ -303,8 +303,8 @@ def test_grid_table_has_189_rows_on_a_small_slice():
 def _grid_row(total, med, h1, h2, **kw):
     base = {"入る位置": vv.ENTRY_POS_LEVELS[0], "入る条件": "なし",
             "出口": vv.EXIT_LEVELS[0], "損切り": "なし",
-            "総収支_bp": total, "中央値_入った本のみ": med, "中央値_0含む": med,
-            "前半の前_総収支_bp": h1, "前半の後_総収支_bp": h2, "入った本数": 10}
+            "総収支_pct": total, "中央値_入った本のみ": med, "中央値_0含む": med,
+            "前半の前_総収支_pct": h1, "前半の後_総収支_pct": h2, "入った本数": 10}
     base.update(kw)
     return base
 
@@ -319,7 +319,7 @@ def test_selection_rule_requires_both_halves_positive_and_positive_median():
     got = vv.select_combo(rows)
     assert got["選ばれた"] is True
     assert got["規則を満たした組の数"] == 2
-    assert got["総収支_bp"] == 150.0          # 満たす組の中で総収支が最大
+    assert got["総収支_pct"] == 150.0          # 満たす組の中で総収支が最大
     assert got["組"]["損切り"] == vv.STOP_LEVELS[1]
 
 
@@ -356,14 +356,14 @@ def test_knob_contribution_covers_every_level_of_every_knob():
     for c in vv.grid_combos():
         rows.append(_grid_row(1.0, 1.0, 1.0, 1.0, **c))
     # 1 組だけ総収支を高くして、それが選ばれるようにする
-    rows[100]["総収支_bp"] = 999.0
+    rows[100]["総収支_pct"] = 999.0
     chosen = vv.select_combo(rows)
     assert chosen["選ばれた"] is True
     kb = vv.knob_contribution(rows, chosen)
     assert len(kb) == 3 + 7 + 3 + 3
     assert {r["ノブ"] for r in kb} == {"入る位置", "入る条件", "出口", "損切り"}
     same = [r for r in kb if r["水準"] == r["選んだ組の水準"]]
-    assert all(r["選んだ組との差_bp"] == 0.0 for r in same)
+    assert all(r["選んだ組との差_pct"] == 0.0 for r in same)
 
 
 # ---------------------------------------------------------------------------
@@ -452,9 +452,9 @@ def test_effective_spread_pairs_on_synthetic_trades():
     # (2000,2300) は同じ向きなので対にしない。
     assert list(ts) == [0, 2300]
     mid1 = (100.05 + 99.95) / 2
-    assert bp[0] == pytest.approx((100.05 - 99.95) / mid1 * 1e4)
+    assert bp[0] == pytest.approx((100.05 - 99.95) / mid1 * 100)   # % (L-920)
     mid2 = (100.10 + 100.00) / 2
-    assert bp[1] == pytest.approx((100.10 - 100.00) / mid2 * 1e4)
+    assert bp[1] == pytest.approx((100.10 - 100.00) / mid2 * 100)
     # 約定が 1 件以下なら対は 0
     assert bsp.effective_spread_pairs(t[:1], p[:1], s[:1])[0].size == 0
 
@@ -481,6 +481,7 @@ def test_spread_output_table_is_aggregates_only():
     if not path.exists():
         pytest.skip("費用の表がまだこの環境で作られていない")
     df = pd.read_csv(path)
+    # git の表は L-920 より前に書いたもの(列は bp の名前)。書き換えない(REST_RULES §2)。
     assert set(df.columns) == {"標本日", "半期", "区分", "対の数", "p25_bp", "p50_bp",
                                "p75_bp", "p90_bp", "参考_符号付きp50_bp",
                                "参考_正の対だけp50_bp", "負の対の割合"}
@@ -493,7 +494,7 @@ def test_spread_output_table_is_aggregates_only():
 # 合成の連鎖(状態機械・損切り・出口 3 種・費用の加算の道筋)と出力の形
 # ---------------------------------------------------------------------------
 def test_synthetic_traces_cover_state_machine_stops_exits_and_cost():
-    rows = vv.build_synthetic_traces_value(2.0)
+    rows = vv.build_synthetic_traces_value(0.02)
     kinds = {r["区分"] for r in rows}
     assert "①の状態機械(前段の合成3本)" in kinds
     assert any(k.startswith("②の格子") for k in kinds)
@@ -504,9 +505,9 @@ def test_synthetic_traces_cover_state_machine_stops_exits_and_cost():
         assert any(r["出口の理由"] == lvl for r in grid_rows)
     # 費用の加算が道筋に出ている(費用なしの損益 − c × 建玉の回数)
     for r in grid_rows:
-        gross = float(r["費用なしの損益_bp"])
-        net = float(r["費用 c=2.0000 を引いた損益_bp"])
-        assert net == pytest.approx(gross - 2.0 * int(r["建玉の回数"]), abs=1e-3)
+        gross = float(r["費用なしの損益_pct"])
+        net = float(r["費用 c=0.0200 を引いた損益_pct"])
+        assert net == pytest.approx(gross - 0.02 * int(r["建玉の回数"]), abs=1e-5)
 
 
 @needs_data
@@ -557,29 +558,29 @@ def test_cascade_rows_file_has_the_required_columns_and_cost_dimension():
     policy_rows = [{
         "bundle_id": "b1", "day": "2023-07-01", "side": "SELL", "連鎖の大きさ": "2件",
         "n_prints": 2, "方策": "logistic_3択", "型": vv.TYPE_B, "遅れ_秒": 1,
-        "pnl_bp": 10.0, "建玉の回数": 2, "保有秒": 90.0,
+        "pnl_pct": 0.10, "建玉の回数": 2, "保有秒": 90.0,
         "入りの約定時刻_ms": 1_000, "出の約定時刻_ms": 91_000, "入った": 1,
         "最初に入った位置": "1件目で入った", "出口の理由": "連鎖の終わり+d"}]
     opt_rows = {"②opt": [{
         "bundle_id": "b1", "day": "2023-07-01", "side": "SELL", "連鎖の大きさ": "2件",
-        "n_prints": 2, "pnl_bp": 4.0, "建玉の回数": 1, "保有秒": 300.0,
+        "n_prints": 2, "pnl_pct": 0.04, "建玉の回数": 1, "保有秒": 300.0,
         "入りの約定時刻": 1_000, "出の約定時刻": 301_000, "入った": 1,
         "出口の理由": "最後のプリント+300秒+d"}]}
-    costs = {vv.COST_NONE: 0.0, vv.COST_MAIN: 2.0, vv.COST_P75: 4.0}
+    costs = {vv.COST_NONE: 0.0, vv.COST_MAIN: 0.02, vv.COST_P75: 0.04}   # %
     rows = vv.build_cascade_rows_file(policy_rows, costs, opt_rows)
     assert len(rows) == 2 * len(costs)
     for r in rows:
         assert list(r.keys()) == list(vv.CASCADE_COLUMNS)
     need = {"bundle_id", "day", "side", "連鎖の大きさ", "n_prints", "方策", "型",
-            "遅れ_秒", "費用の通り", "pnl_bp", "pnl_net_bp", "建玉の回数", "保有秒",
+            "遅れ_秒", "費用の通り", "pnl_pct", "pnl_net_pct", "建玉の回数", "保有秒",
             "入りの目標時刻_ms", "入りの約定時刻_ms", "出の約定時刻_ms", "入った",
             "最初に入った位置", "出口の理由"}
     assert need == set(vv.CASCADE_COLUMNS)
     # 費用は c × 建玉の回数
     main = [r for r in rows if r["費用の通り"] == vv.COST_MAIN and r["方策"] != "②opt"]
-    assert main[0]["pnl_net_bp"] == pytest.approx(10.0 - 2.0 * 2)
+    assert main[0]["pnl_net_pct"] == pytest.approx(0.10 - 0.02 * 2)
     opt = [r for r in rows if r["費用の通り"] == vv.COST_MAIN and r["方策"] == "②opt"]
-    assert opt[0]["pnl_net_bp"] == pytest.approx(4.0 - 2.0 * 1)
+    assert opt[0]["pnl_net_pct"] == pytest.approx(0.04 - 0.02 * 1)
     assert opt[0]["入りの約定時刻_ms"] == 1_000
 
 
@@ -612,14 +613,14 @@ def test_max_concurrent_counts_overlapping_positions():
     assert vv.max_concurrent([(0, 10), (None, 5)]) == 1         # 欠けた区間は飛ばす
 
 
-def test_exposure_of_computes_hours_and_bp_per_hour():
-    rows = [{"pnl_net_bp": 36.0, "保有秒": 1800.0, "入りの約定時刻": 0,
+def test_exposure_of_computes_hours_and_pct_per_hour():
+    rows = [{"pnl_net_pct": 36.0, "保有秒": 1800.0, "入りの約定時刻": 0,
              "出の約定時刻": 1_800_000},
-            {"pnl_net_bp": 36.0, "保有秒": 1800.0, "入りの約定時刻": 900_000,
+            {"pnl_net_pct": 36.0, "保有秒": 1800.0, "入りの約定時刻": 900_000,
              "出の約定時刻": 2_700_000}]
     e = vv.exposure_of(rows)
     assert e["合計保有時間_時間"] == pytest.approx(1.0)
-    assert e["保有1時間あたりの収支_bp/h"] == pytest.approx(72.0)
+    assert e["保有1時間あたりの収支_pct/h"] == pytest.approx(72.0)
     assert e["同時建玉の最大_本"] == 2
     assert e["平均保有秒"] == pytest.approx(1800.0)
     assert vv.exposure_of([])["同時建玉の最大_本"] == 0
@@ -651,7 +652,7 @@ def test_grid_rows_carry_the_exposure_columns_and_empty_reason():
             "材料15≥p90": ("mat15_burst_ratio_10s_over_60s", 0.2)}
     rows = vv.build_grid_table(per_chain, cuts, 1.0, "2023-07-01")
     assert len(rows) == 189
-    for col in ("合計保有時間_時間", "保有1時間あたりの収支_bp/h", "同時建玉の最大_本",
+    for col in ("合計保有時間_時間", "保有1時間あたりの収支_pct/h", "同時建玉の最大_本",
                 "空の理由"):
         assert col in rows[0]
     # 材料12 は 1 件目で欠測なので「1件目から × 材料12」は構造的に空(D-4)
@@ -671,9 +672,9 @@ def test_knob_contribution_carries_hold_time_columns():
     rows = [_grid_row(1.0, 1.0, 1.0, 1.0, **c) for c in vv.grid_combos()]
     for r in rows:
         r["合計保有時間_時間"] = 2.0
-        r["保有1時間あたりの収支_bp/h"] = 0.5
+        r["保有1時間あたりの収支_pct/h"] = 0.5
         r["同時建玉の最大_本"] = 3
-    rows[5]["総収支_bp"] = 99.0
+    rows[5]["総収支_pct"] = 99.0
     kb = vv.knob_contribution(rows, vv.select_combo(rows))
     assert kb and all("合計保有時間_時間" in r and "同時建玉の最大_本" in r for r in kb)
 
@@ -754,13 +755,13 @@ def test_condition_cuts_use_the_bundle_population():
 def test_spread_main_quantiles_are_absolute_values():
     vals = np.array([-3.0, -1.0, 1.0, 2.0, 5.0])
     row = bsp._dist_row("2023-07-01", bsp.SCOPE_ALL, vals, "前半")
-    assert row["p50_bp"] == pytest.approx(float(np.percentile(np.abs(vals), 50)))
-    assert row["p50_bp"] == pytest.approx(2.0)          # |{1,1,2,3,5}| の中央値
-    assert row["参考_符号付きp50_bp"] == pytest.approx(1.0)
-    assert row["参考_正の対だけp50_bp"] == pytest.approx(2.0)
+    assert row["p50_pct"] == pytest.approx(float(np.percentile(np.abs(vals), 50)))
+    assert row["p50_pct"] == pytest.approx(2.0)          # |{1,1,2,3,5}| の中央値
+    assert row["参考_符号付きp50_pct"] == pytest.approx(1.0)
+    assert row["参考_正の対だけp50_pct"] == pytest.approx(2.0)
     assert row["負の対の割合"] == pytest.approx(0.4)
     # 絶対値の中央値は符号付きの中央値以上(負の対が費用を小さく見せない)
-    assert row["p50_bp"] >= row["参考_符号付きp50_bp"]
+    assert row["p50_pct"] >= row["参考_符号付きp50_pct"]
 
 
 def test_post_liquidation_window_takes_every_liquidation_not_only_the_latest():
@@ -787,9 +788,10 @@ def test_read_cost_returns_the_absolute_quantiles():
     df = pd.read_csv(vv.SPREAD_DIR / "spread_by_day.csv")
     pool = df[(df["標本日"] == bsp.POOL_LABEL) & (df["区分"] == bsp.SCOPE_POST_LIQ)]
     c_main, c_p75 = bsp.read_cost(vv.SPREAD_DIR)
-    assert c_main == pytest.approx(float(pool["p50_bp"].iloc[0]))
-    assert c_main >= float(pool["参考_符号付きp50_bp"].iloc[0])
-    assert c_p75 == pytest.approx(float(pool["p75_bp"].iloc[0]))
+    # git の表は L-920 より前の bp の列。read_cost は / 100 して % で返す
+    assert c_main == pytest.approx(float(pool["p50_bp"].iloc[0]) / 100)
+    assert c_main >= float(pool["参考_符号付きp50_bp"].iloc[0]) / 100
+    assert c_p75 == pytest.approx(float(pool["p75_bp"].iloc[0]) / 100)
 
 
 # --- D-3: 到達が遅れより早くても取れないとは限らない ------------------------
@@ -889,17 +891,17 @@ def test_synthetic_stage2_inputs_are_synthetic_only():
 # --- Q4 の対差と参照 2 本 ---------------------------------------------------
 def test_pair_diff_rows_pair_on_the_same_bundle_id():
     lines = {
-        "A": [{"bundle_id": "b1", "pnl_net_bp": 5.0},
-              {"bundle_id": "b2", "pnl_net_bp": -1.0},
-              {"bundle_id": "b3", "pnl_net_bp": 2.0}],
-        "B": [{"bundle_id": "b1", "pnl_net_bp": 1.0},
-              {"bundle_id": "b2", "pnl_net_bp": -1.0}],
+        "A": [{"bundle_id": "b1", "pnl_net_pct": 5.0},
+              {"bundle_id": "b2", "pnl_net_pct": -1.0},
+              {"bundle_id": "b3", "pnl_net_pct": 2.0}],
+        "B": [{"bundle_id": "b1", "pnl_net_pct": 1.0},
+              {"bundle_id": "b2", "pnl_net_pct": -1.0}],
     }
     rows = vv.build_pair_diff_rows(lines, (("A", "B"), ("A", "C")))
     a_b = [r for r in rows if r["対差"] == "A − B"
            and r["母集団"] == "両方入った連鎖だけ"][0]
     assert a_b["対の数"] == 2                      # b3 は片側に無いので対にしない
-    assert a_b["対差の合計_bp"] == pytest.approx(4.0)
+    assert a_b["対差の合計_pct"] == pytest.approx(4.0)
     assert a_b["対差が0の本数"] == 1
     a_c = [r for r in rows if r["対差"] == "A − C"]
     assert len(a_c) == 2 and all(r["対の数"] == 0 and "備考" in r for r in a_c)
@@ -928,7 +930,7 @@ def test_q4_tables_cover_side_size_position_day_and_exposure():
              "side": ("BUY" if i % 2 else "SELL"),
              "連鎖の大きさ": ("単発" if i < 2 else "3件以上"),
              "最初に入った位置": "1件目で入った",
-             "pnl_net_bp": float(i - 2), "保有秒": 60.0,
+             "pnl_net_pct": float(i - 2), "保有秒": 60.0,
              "入りの約定時刻": i * 100_000, "出の約定時刻": i * 100_000 + 60_000,
              "入った": 1} for i in range(5)]
     q4 = vv.build_q4_tables({"X": rows})
@@ -993,10 +995,10 @@ def test_stage1_q5b_population_matches_the_design_count():
 # --- N-1: 対差と並置の母集団 2 通り ----------------------------------------
 def test_pair_diff_has_both_populations_with_counts():
     lines = {
-        "A": [{"bundle_id": "b1", "pnl_net_bp": 5.0, "入った": 1},
-              {"bundle_id": "b2", "pnl_net_bp": -1.0, "入った": 1},
-              {"bundle_id": "b3", "pnl_net_bp": 0.0, "入った": 0}],
-        "B": [{"bundle_id": "b1", "pnl_net_bp": 1.0, "入った": 1}],
+        "A": [{"bundle_id": "b1", "pnl_net_pct": 5.0, "入った": 1},
+              {"bundle_id": "b2", "pnl_net_pct": -1.0, "入った": 1},
+              {"bundle_id": "b3", "pnl_net_pct": 0.0, "入った": 0}],
+        "B": [{"bundle_id": "b1", "pnl_net_pct": 1.0, "入った": 1}],
     }
     rows = vv.build_pair_diff_rows(lines, (("A", "B"),),
                                    universe=["b1", "b2", "b3"])
@@ -1004,9 +1006,9 @@ def test_pair_diff_has_both_populations_with_counts():
     zero = [r for r in rows if r["母集団"].startswith("0として")][0]
     both = [r for r in rows if r["母集団"] == "両方入った連鎖だけ"][0]
     assert zero["対の数"] == 3                     # 入らなかった連鎖も 0 で対にする
-    assert zero["対差の合計_bp"] == pytest.approx(5.0 - 1.0 + (-1.0) + 0.0)
+    assert zero["対差の合計_pct"] == pytest.approx(5.0 - 1.0 + (-1.0) + 0.0)
     assert both["対の数"] == 1                     # B が入ったのは b1 だけ
-    assert both["対差の合計_bp"] == pytest.approx(4.0)
+    assert both["対差の合計_pct"] == pytest.approx(4.0)
     for r in rows:
         assert "対の数" in r
 
@@ -1014,7 +1016,7 @@ def test_pair_diff_has_both_populations_with_counts():
 def test_q4_main_has_both_populations():
     rows_a = [{"bundle_id": f"b{i}", "day": "2024-03-01", "side": "BUY",
                "連鎖の大きさ": "単発", "最初に入った位置": "1件目で入った",
-               "pnl_net_bp": 1.0, "保有秒": 60.0, "入りの約定時刻": i * 1000,
+               "pnl_net_pct": 1.0, "保有秒": 60.0, "入りの約定時刻": i * 1000,
                "出の約定時刻": i * 1000 + 60_000, "入った": 1} for i in range(4)]
     rows_b = [rows_a[0]]
     q4 = vv.build_q4_tables({"A": rows_a, "B": rows_b},
@@ -1026,7 +1028,7 @@ def test_q4_main_has_both_populations():
               and r["母集団"].startswith("0として")][0]
     b_ent = [r for r in main if r["方策"] == "B" and r["母集団"] == "入った連鎖だけ"][0]
     assert b_zero["n"] == 4 and b_ent["n"] == 1
-    assert b_zero["合計_bp"] == pytest.approx(b_ent["合計_bp"])   # 0 を足しても同じ
+    assert b_zero["合計_pct"] == pytest.approx(b_ent["合計_pct"])   # 0 を足しても同じ
 
 
 # --- N-2 / N-3: キャッシュと重複定義 ---------------------------------------
@@ -1170,7 +1172,7 @@ def test_exit300_reference_changes_only_the_forced_close_time():
     jud_close = [vv.JUDGE_STOP, vv.JUDGE_CONTINUE]   # 型 A は次のプリントで決済
     c60 = P.simulate_cascade(prints, jud_close, -1.0, vv.TYPE_A, 1, price_fn, end60)
     c300 = P.simulate_cascade(prints, jud_close, -1.0, vv.TYPE_A, 1, price_fn, end300)
-    assert c60["pnl_bp"] == pytest.approx(c300["pnl_bp"])
+    assert c60["pnl_pct"] == pytest.approx(c300["pnl_pct"])
     assert c60["hold_seconds"] == pytest.approx(c300["hold_seconds"])
 
 
@@ -1385,7 +1387,7 @@ def test_take_profit_falls_back_to_the_old_path_when_the_target_is_never_reached
         a = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end)
         b = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
                                    tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
-        assert a["pnl_bp"] == pytest.approx(b["pnl_bp"]), jud
+        assert a["pnl_pct"] == pytest.approx(b["pnl_pct"]), jud
         assert a["hold_seconds"] == pytest.approx(b["hold_seconds"]), jud
         assert a["n_entries"] == b["n_entries"], jud
         assert [r["行動"] for r in a["path"]] == [r["行動"] for r in b["path"]], jud
@@ -1407,7 +1409,7 @@ def test_take_profit_never_changes_the_reverse_legs():
         b = vv.sp.simulate_cascade(prints, jud, 1.0, vv.TYPE_A, 1, price_fn, end,
                                    tp_bp=vv.TP_BP, tp_scan=cache.scan_first_reach)
         assert {g["向き"] for g in b["legs"]} == {vv.POS_AGAINST}
-        assert a["pnl_bp"] == pytest.approx(b["pnl_bp"]), jud
+        assert a["pnl_pct"] == pytest.approx(b["pnl_pct"]), jud
         assert a["hold_seconds"] == pytest.approx(b["hold_seconds"]), jud
     # 順張りと逆張りが混ざる連鎖(逆張り → 決済 → 順張りで利確)でも、
     # **逆張りのレグ**は 2 つの版で 1 円も変わらない。
@@ -1445,7 +1447,7 @@ def test_leg_rows_sum_to_the_cascade_pnl_and_reconstruct_from_the_print_rows():
         key = (r["方策"], r["型"], r["遅れ_秒"], r["bundle_id"])
         if r["欠測"] or not r["入った"]:
             continue
-        assert by.get(key, 0.0) == pytest.approx(r["pnl_bp"], abs=1e-9)
+        assert by.get(key, 0.0) / 100 == pytest.approx(r["pnl_pct"], abs=1e-11)
     rec = vv.legs_from_print_rows(built["print_rows"])
     direct = [g for g in built["leg_rows"] if float(g["遅れ_秒"]) == vv.MAIN_DELAY]
     key = lambda g: (g["bundle_id"], g["方策"], g["向き"], g["出口の理由"],

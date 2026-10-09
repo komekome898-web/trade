@@ -51,35 +51,35 @@ def test_taker_determinism(tmp_path):
     r1 = qt.generate(tmp_path / "a", seed=qt.SEED, days=10)
     r2 = qt.generate(tmp_path / "b", seed=qt.SEED, days=10)
     for x in qt.X_VALUES:
-        assert r1["per_x"][x]["recovered_net_bps_mean"] == r2["per_x"][x]["recovered_net_bps_mean"]
+        assert r1["per_x"][x]["recovered_net_pct_mean"] == r2["per_x"][x]["recovered_net_pct_mean"]
         assert r1["per_x"][x]["n_trades"] == r2["per_x"][x]["n_trades"]
 
 
 def test_taker_different_seed_changes_result(tmp_path):
     r1 = qt.generate(tmp_path / "a", seed=qt.SEED, days=10)
     r2 = qt.generate(tmp_path / "b", seed=qt.SEED + 1, days=10)
-    assert r1["per_x"][0.0]["recovered_net_bps_mean"] != r2["per_x"][0.0]["recovered_net_bps_mean"]
+    assert r1["per_x"][0.0]["recovered_net_pct_mean"] != r2["per_x"][0.0]["recovered_net_pct_mean"]
 
 
 def test_taker_cost_model_uses_measured_constant(taker_result):
     prov = taker_result["sealed"]["cost_provenance"]
     assert prov["taker_fee_pct"]["source_type"] in ("measured", "primary_document")
-    assert prov["realized_round_trip_bps"]["source_type"] == "measured"
+    assert prov["realized_round_trip_pct"]["source_type"] == "measured"
 
 
 def test_taker_assumed_constant_raises(tmp_path):
     from bot.constants import AssumedConstantError, load_constants, require_source
     consts = load_constants(REPO_ROOT)
     with pytest.raises(AssumedConstantError):
-        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_bps_OLD", consts)
+        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_pct_OLD", consts)
 
 
 def test_taker_recovers_planted_effect_within_mde(taker_result):
     for x in qt.X_VALUES:
         r = taker_result["per_x"][x]
         assert r["n_trades"] >= 5, "not enough events to test recovery meaningfully"
-        assert r["within_mde"], f"X={x}: recovered {r['recovered_net_bps_mean']} not within " \
-            f"MDE {r['mde_bps']} of planted {r['planted_net_bps']}"
+        assert r["within_mde"], f"X={x}: recovered {r['recovered_net_pct_mean']} not within " \
+            f"MDE {r['mde_pct']} of planted {r['planted_net_pct']}"
 
 
 def test_taker_null_is_reported_as_null(taker_result):

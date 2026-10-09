@@ -9,7 +9,11 @@ against starts at t and ends strictly later, so nothing peeks forward.
 
 Offline only — reads files, opens no sockets, places no orders.
 
-Usage: python scripts/research_imbalance.py [--depth-bps 5] [--data DIR]
+Usage: python scripts/research_imbalance.py [--depth-pct 0.05] [--data DIR]
+
+Units (L-920): forward mid returns are price-move rates and stay in bp. The
+depth band (a distance from the mid at one instant) and the spread are in %
+of mid (--depth-pct 0.05 = the former --depth-bps 5).
 """
 from __future__ import annotations
 
@@ -46,8 +50,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=str(ROOT / "data" / "ws"),
                     help="directory of *.jsonl.gz recordings")
-    ap.add_argument("--depth-bps", type=float, default=5.0,
-                    help="half-width of the depth band around the mid")
+    ap.add_argument("--depth-pct", type=float, default=0.05,
+                    help="half-width of the depth band around the mid, %% of mid")
     args = ap.parse_args()
 
     paths = sorted(Path(args.data).glob("*.jsonl.gz"))
@@ -59,7 +63,7 @@ def main() -> int:
     for p in paths:
         print(f"  {p.name}  ({p.stat().st_size / 1024:.0f} KiB)")
 
-    df = build_series(paths, interval_sec=1.0, depth_pct=args.depth_bps / 100)  # board takes % since L-920
+    df = build_series(paths, interval_sec=1.0, depth_pct=args.depth_pct)
     if df.empty:
         print("no board snapshots in the recordings — nothing to build")
         return 1
@@ -68,15 +72,15 @@ def main() -> int:
     minutes = rows / 60.0  # one row = one recorded second of book state
     wall_sec = (df.index[-1] - df.index[0]).total_seconds() + 1.0
     gaps = int((df.index.to_series().diff() > pd.Timedelta(seconds=1)).sum())
-    spread_bps = (df["spread"] / df["mid"] * 1e4).dropna()
+    spread_pct = (df["spread"] / df["mid"] * 100).dropna()   # % of mid (not a move, so not bp)
 
-    print(f"\n=== series (depth band +/-{args.depth_bps:g} bps of mid) ===")
+    print(f"\n=== series (depth band +/-{args.depth_pct:g} % of mid) ===")
     print(f"rows            : {rows} seconds of book state "
           f"in {gaps + 1} contiguous session(s)")
     print(f"time span       : {df.index[0]} -> {df.index[-1]} "
           f"({wall_sec / 60:.1f} min wall, {minutes:.1f} min recorded)")
-    print(f"mean spread     : {spread_bps.mean():.3f} bps of mid "
-          f"(median {spread_bps.median():.3f}, p95 {spread_bps.quantile(0.95):.3f})")
+    print(f"mean spread     : {spread_pct.mean():.5f} % of mid "
+          f"(median {spread_pct.median():.5f}, p95 {spread_pct.quantile(0.95):.5f})")
     print(f"mid range       : {df['mid'].min():,.0f} - {df['mid'].max():,.0f}")
     print(f"depth in band   : bid {df['bid_depth'].mean():.3f} BTC, "
           f"ask {df['ask_depth'].mean():.3f} BTC (mean)")
@@ -113,7 +117,7 @@ def main() -> int:
 
     print(f"\n=== conditional mean forward return (bps) by imbalance state ===")
     print(f"{'h (s)':>6} | " + " | ".join(
-        f"{lbl:>22}" for lbl in (f"imb > +{THRESHOLD}", f"imb < -{THRESHOLD}", "spread (bps)")))
+        f"{lbl:>22}" for lbl in (f"imb > +{THRESHOLD}", f"imb < -{THRESHOLD}", "spread (% of mid)")))
     for h in HORIZONS:
         fwd = forward_bps(df["mid"], h)
         cells = []
@@ -125,20 +129,21 @@ def main() -> int:
             else:
                 se = sel.std() / np.sqrt(len(sel)) if len(sel) > 1 else float("nan")
                 cells.append(f"{sel.mean():+9.3f} (n={len(sel)}, se={se:.2f})".rjust(22))
-        cells.append(f"{spread_bps.mean():22.3f}")
+        cells.append(f"{spread_pct.mean():22.5f}")
         print(f"{h:6d} | " + " | ".join(cells))
 
     print(f"""
 READING THE TABLE
 - Sign convention: imbalance > 0 means more resting size on the bid side
-  within +/-{args.depth_bps:g} bps of the mid. A positive conditional mean under
+  within +/-{args.depth_pct:g} % of the mid. A positive conditional mean under
   "imb > +{THRESHOLD}" means the mid drifted UP after bid-heavy books.
 - Every observation overlaps its neighbours (1s grid, horizons up to 30s)
   and imbalance is strongly autocorrelated (lag-1 {rho1:+.3f}), so the
   effective sample is far smaller than n. The se column is therefore an
   optimistic lower bound; do not read it as a t-stat.
-- Mean spread is printed alongside because any drift smaller than the
-  spread is not capturable, whatever its statistical status.""")
+- Mean spread is printed alongside (in % of mid; a drift in bp / 100 is
+  in the same unit) because any drift smaller than the spread is not
+  capturable, whatever its statistical status.""")
     if insufficient:
         print(f"\n*** Reminder: {minutes:.1f} min of data. Smoke test, not a result. ***")
     return 0

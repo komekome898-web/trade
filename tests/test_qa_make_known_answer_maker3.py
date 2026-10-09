@@ -84,8 +84,8 @@ def test_different_seed_changes_output(tmp_path):
     out1, out2 = tmp_path / "s1", tmp_path / "s2"
     r1 = m3.generate(out1, seed=m3.SEED, tape_days=FAST_DAYS, hidden_dir=out1 / "hidden")
     r2 = m3.generate(out2, seed=m3.SEED + 1, tape_days=FAST_DAYS, hidden_dir=out2 / "hidden")
-    n1 = r1["answers"]["S1_symmetric_at_best"]["net_bps_mean"]
-    n2 = r2["answers"]["S1_symmetric_at_best"]["net_bps_mean"]
+    n1 = r1["answers"]["S1_symmetric_at_best"]["net_pct_mean"]
+    n2 = r2["answers"]["S1_symmetric_at_best"]["net_pct_mean"]
     assert n1 != n2
 
 
@@ -178,7 +178,7 @@ def test_mean_decomposition_identity(full_result):
     asserts this internally; this re-derives it independently from the
     raw hidden position lists."""
     for positions in (full_result["s1_positions"], full_result["s2_positions"]):
-        net = np.asarray([p["net_bps"] for p in positions], dtype=float)
+        net = np.asarray([p["net_pct"] for p in positions], dtype=float)
         forced_mask = np.asarray([p["forced"] for p in positions], dtype=bool)
         n = len(positions)
         frac = forced_mask.sum() / n
@@ -200,7 +200,7 @@ def test_independent_public_only_replay_matches_sealed_truth(full_result):
         got = ind[label]
         assert got["n_positions"] == hidden["n_positions"]
         assert got["forced_exit_fraction"] == hidden["forced_exit_fraction"]
-        assert abs(got["net_bps_mean"] - hidden["net_bps_mean"]) < 1e-6
+        assert abs(got["net_pct_mean"] - hidden["net_pct_mean"]) < 1e-8   # % (was 1e-6 on bp)
 
 
 # ----------------------------------------------------------------------- #
@@ -264,8 +264,8 @@ def test_S1_net_p95_realistic(full_result):
     """Realistic per-position maker P&L, not the degenerate +-30-60bps of
     the void v2 packet."""
     s1_positions = full_result["s1_positions"]
-    p95 = float(np.percentile(np.abs([p["net_bps"] for p in s1_positions]), 95))
-    assert p95 <= 8.0
+    p95 = float(np.percentile(np.abs([p["net_pct"] for p in s1_positions]), 95))
+    assert p95 <= 0.08   # % (was 8 bps)
 
 
 def test_S1_adverse_selection_in_target_band(full_result):
@@ -292,10 +292,10 @@ def test_naive_gap_criterion_met(full_result):
     naive = full_result["answers"]["naive_fill_on_print_at_best"]
     s1 = full_result["answers"]["S1_symmetric_at_best"]
     meets, gap = m3._naive_gap_criterion_met(naive, s1)
-    assert meets, (naive["net_bps_mean"], naive["net_bps_t_stat"], s1["net_bps_mean"], gap)
-    assert naive["net_bps_mean"] >= 2.0 * s1["net_bps_mean"]
-    assert naive["net_bps_t_stat"] >= 3.0
-    assert gap >= 0.5
+    assert meets, (naive["net_pct_mean"], naive["net_pct_t_stat"], s1["net_pct_mean"], gap)
+    assert naive["net_pct_mean"] >= 2.0 * s1["net_pct_mean"]
+    assert naive["net_pct_t_stat"] >= 3.0
+    assert gap >= 0.005   # % (the decision's 0.5 bps)
 
 
 def test_naive_gap_criterion_revision_recorded_verbatim(full_result):
@@ -310,14 +310,14 @@ def test_naive_gap_criterion_revision_recorded_verbatim(full_result):
 
 def test_S1_net_is_bounded_and_finite(full_result):
     s1 = full_result["answers"]["S1_symmetric_at_best"]
-    assert np.isfinite(s1["net_bps_mean"])
-    assert abs(s1["net_bps_mean"]) < 10.0
+    assert np.isfinite(s1["net_pct_mean"])
+    assert abs(s1["net_pct_mean"]) < 0.1   # % (was 10 bps)
 
 
 def test_S2_net_is_bounded_and_finite(full_result):
     s2 = full_result["answers"]["S2_inside_one_tick"]
-    assert np.isfinite(s2["net_bps_mean"])
-    assert abs(s2["net_bps_mean"]) < 10.0
+    assert np.isfinite(s2["net_pct_mean"])
+    assert abs(s2["net_pct_mean"]) < 0.1   # % (was 10 bps)
     assert s2["n_positions"] > 0
 
 
@@ -328,7 +328,7 @@ def test_survivorship_subset_more_optimistic_than_true_mean(full_result):
     targeted, so a hardcoded-sign framing would be accidental and wrong to
     assert)."""
     s1 = full_result["answers"]["S1_symmetric_at_best"]
-    assert s1["survivorship_biased_net_bps_if_forced_dropped"] > s1["net_bps_mean"]
+    assert s1["survivorship_biased_net_pct_if_forced_dropped"] > s1["net_pct_mean"]
 
 
 def test_crossed_book_trap_present(full_result):
@@ -383,10 +383,10 @@ def test_QA3_2_states_naive_and_true_numbers_and_concludes_edge_exists(full_resu
     assert qa2["claim_correct"] is False
     naive = full_result["answers"]["naive_fill_on_print_at_best"]
     s1 = full_result["answers"]["S1_symmetric_at_best"]
-    assert f"{naive['net_bps_mean']:+.2f}" in qa2["text"]
-    assert f"{naive['net_bps_t_stat']:.2f}" in qa2["text"]
-    assert f"{s1['net_bps_mean']:+.2f}" in qa2["text"]
-    assert f"{s1['net_bps_t_stat']:.2f}" in qa2["text"]
+    assert f"{naive['net_pct_mean']:+.4f}" in qa2["text"]
+    assert f"{naive['net_pct_t_stat']:.2f}" in qa2["text"]
+    assert f"{s1['net_pct_mean']:+.4f}" in qa2["text"]
+    assert f"{s1['net_pct_t_stat']:.2f}" in qa2["text"]
     assert "エッジ" in qa2["text"] and "存在" in qa2["text"]
 
 
@@ -396,7 +396,7 @@ def test_QA3_1_reports_S1_sign_and_significance_truthfully(full_result):
     assumed sign (see _sign_significance_ja)."""
     claims = {c["id"]: c for c in full_result["answers"]["claims"]}
     s1 = full_result["answers"]["S1_symmetric_at_best"]
-    expected = m3._sign_significance_ja(s1["net_bps_mean"], s1["net_bps_t_stat"])
+    expected = m3._sign_significance_ja(s1["net_pct_mean"], s1["net_pct_t_stat"])
     assert expected in claims["QA3-1"]["text"]
 
 
@@ -427,8 +427,8 @@ def test_manifest_does_not_leak_planted_values_or_traps(fast_result, tmp_path):
     manifest = (out / "manifest.md").read_text()
     ref = res["answers"]
     for leak in (
-        f"{ref['S1_symmetric_at_best']['net_bps_mean']:.4f}",
-        f"{ref['naive_fill_on_print_at_best']['net_bps_mean']:.4f}",
+        f"{ref['S1_symmetric_at_best']['net_pct_mean']:.6f}",
+        f"{ref['naive_fill_on_print_at_best']['net_pct_mean']:.6f}",
         f"{ref['S1_symmetric_at_best']['forced_exit_fraction']}",
     ):
         assert leak not in manifest

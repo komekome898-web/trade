@@ -134,6 +134,10 @@ READING (PREREG sec.5) IS ALSO FIXED IN CODE.  In particular, if bar (1) passes
 seed 20260828.  Run twice, same output.  No network.  Nothing is written.
 
 Run:  PYTHONPATH=src python scripts/research_fx_s4_judgment.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。research_fx_event_ticks.py に合わせ、
+bp は値動き(impulse・gross_mid)にだけ使う。板を渡った book-cross・ネット(net ERA・net@C)・
+手数料(往復 0.4bps = 0.004 %)・スプレッド・今日の費用の地図(0.89 / 1.46bps = 0.0089 /
+0.0146 %)は % で持つ。S4 の記録の数(S4_F2R_NET_BASE、bp)は書き換えず / 100 して比べる。)
 """
 
 from __future__ import annotations
@@ -158,12 +162,13 @@ SEED = 20260828
 BOOT_N = s4.BOOT_N
 
 # KNOWLEDGE_FX sec.2.5 -- measured E+5s->E+300s round-trip cost map, today
-COST_TODAY_LO, COST_TODAY_HI = 0.89, 1.46
+COST_TODAY_LO, COST_TODAY_HI = 0.0089, 0.0146   # % (0.89 / 1.46 bps in sec.2.5)
 
 # the six cells, in S4's own print order
 CELLS = [(split, m) for split in ("exploration", "judgment") for m in s4.THRESHOLDS]
 
 # reproduction gate: the six F2R net_base means printed by the committed S4 run
+# (record written before L-920, in bps; kept as printed and read / 100 as %)
 S4_F2R_NET_BASE = {("exploration", 5.0): 0.767, ("exploration", 10.0): 1.876,
                    ("exploration", 20.0): 1.688, ("judgment", 5.0): 2.196,
                    ("judgment", 10.0): 1.463, ("judgment", 20.0): 1.988}
@@ -243,7 +248,7 @@ def cell_table(frames, title: str):
     print(f"\n  {title}")
     print(f"  {'cell':<22}{'n':>6}{'gross(zero-cost)':>18}{'t':>7}"
           f"{'book-cross':>12}{'net ERA':>10}{'t':>7}{'  95% CI (era net)':<22}"
-          f"{'net@0.89':>10}{'net@1.46':>10}{'win':>7}")
+          f"{'net@.0089':>10}{'net@.0146':>10}{'win':>7}")
     rows = {}
     for split, m in CELLS:
         d = frames[(split, m)]
@@ -255,12 +260,12 @@ def cell_table(frames, title: str):
         b = float(d.gross_book.mean())
         nb = stat(d.net_base.to_numpy())
         rows[(split, m)] = dict(g=g, nb=nb, book=b,
-                                lo_today=g["mean"] - COST_TODAY_LO,
-                                hi_today=g["mean"] - COST_TODAY_HI)
+                                lo_today=g["mean"] / 100 - COST_TODAY_LO,   # gross bps -> %
+                                hi_today=g["mean"] / 100 - COST_TODAY_HI)
         print(f"  {split+' m='+str(int(m)):<22}{g['n']:>6}{g['mean']:>+18.3f}{g['t']:>+7.2f}"
-              f"{b:>+12.3f}{nb['mean']:>+10.3f}{nb['t']:>+7.2f}"
-              f"  [{nb['lo']:+7.3f},{nb['hi']:+7.3f}]"
-              f"{g['mean']-COST_TODAY_LO:>+10.3f}{g['mean']-COST_TODAY_HI:>+10.3f}"
+              f"{b:>+12.5f}{nb['mean']:>+10.5f}{nb['t']:>+7.2f}"
+              f"  [{nb['lo']:+9.5f},{nb['hi']:+9.5f}]"
+              f"{g['mean']/100-COST_TODAY_LO:>+10.5f}{g['mean']/100-COST_TODAY_HI:>+10.5f}"
               f"{100*nb['win']:>6.1f}%")
     return rows
 
@@ -278,7 +283,7 @@ def main() -> int:
           f"exit E+{s4.F2_EXIT_S}s):")
     for c in CELLS:
         print(f"      {c[0]:<12} m={c[1]:.0f} bps")
-    print(f"  fee per side {s4.FEE_BPS_PER_SIDE} bps ; impulse window E..E+{s4.IMPULSE_S}s ; "
+    print(f"  fee per side {s4.FEE_PCT_PER_SIDE} % ; impulse window E..E+{s4.IMPULSE_S}s ; "
           f"thresholds {s4.THRESHOLDS} -- all from the S4 module")
 
     # ------------------------------------------------------------------ calendar provenance
@@ -321,10 +326,10 @@ def main() -> int:
     ok_all = True
     for c in CELLS:
         got = float(ref_frames[c].net_base.mean())
-        want = S4_F2R_NET_BASE[c]
-        ok = abs(got - want) < 0.002
+        want = S4_F2R_NET_BASE[c] / 100   # S4 printed bps; / 100 -> %
+        ok = abs(got - want) < 0.002 / 100
         ok_all &= ok
-        print(f"  {c[0]:<12} m={c[1]:>4.0f}   S4 printed {want:>+7.3f}   here {got:>+7.3f}   "
+        print(f"  {c[0]:<12} m={c[1]:>4.0f}   S4 printed {want:>+9.5f} %   here {got:>+9.5f} %   "
               f"{'MATCH' if ok else 'MISMATCH'}")
     print(f"  gate: {'PASS' if ok_all else 'FAIL -- the transplant is not the S4 object'}")
     if not ok_all:
@@ -347,7 +352,7 @@ def main() -> int:
     for i, r in enumerate(rank, 1):
         star = "  <== PRIMARY" if i <= 2 else ""
         print(f"  {i:<6}{r['cell'][0]+' m='+str(int(r['cell'][1])):<24}{r['n']:>6}"
-              f"{r['mean']:>+11.3f}{r['t']:>+8.2f}{r['gross']:>+10.3f}{star}")
+              f"{r['mean']:>+11.5f}{r['t']:>+8.2f}{r['gross']:>+10.3f}{star}")
     PRIMARY = [rank[0]["cell"], rank[1]["cell"]]
     OTHERS = [c for c in CELLS if c not in PRIMARY]
     REF_SIGN = {c: (1 if float(ref_frames[c].gross_mid.mean()) > 0 else -1) for c in CELLS}
@@ -361,8 +366,9 @@ def main() -> int:
     print("\n" + hr("="))
     print("THE SIX CELLS x {2005-2014 JUDGMENT, 2015-2026 REFERENCE}")
     print("gross = zero-cost mid-to-mid signed with the impulse; book-cross = filled by")
-    print("crossing the library's own bid/ask; net ERA = book-cross - 0.4 bps fee;")
-    print(f"net@C = gross - C, C from KNOWLEDGE_FX sec.2.5 ({COST_TODAY_LO} / {COST_TODAY_HI} bps)")
+    print("crossing the library's own bid/ask; net ERA = book-cross - 0.004 % fee;")
+    print(f"net@C = gross - C, C from KNOWLEDGE_FX sec.2.5 ({COST_TODAY_LO} / {COST_TODAY_HI} %)")
+    print("gross is a price move in bps; book-cross and the nets are in %.")
     print(hr("="))
     ju_rows = cell_table(ju_frames, "2005-2014  *** JUDGMENT SET (backward-fresh) ***")
     ref_rows = cell_table(ref_frames, "2015-2026  reference (S4's own library)")
@@ -401,13 +407,13 @@ def main() -> int:
             continue
         ok = (r["nb"]["mean"] > 0) and (r["nb"]["t"] >= 1.5)
         b2_primary &= ok
-        print(f"      {str(c):<26} book-cross {r['book']:>+8.3f}  net ERA {r['nb']['mean']:>+8.3f} "
-              f"t {r['nb']['t']:>+6.2f}  CI [{r['nb']['lo']:+.3f},{r['nb']['hi']:+.3f}]  "
+        print(f"      {str(c):<26} book-cross {r['book']:>+9.5f}  net ERA {r['nb']['mean']:>+9.5f} "
+              f"t {r['nb']['t']:>+6.2f}  CI [{r['nb']['lo']:+.5f},{r['nb']['hi']:+.5f}]  "
               f"-> {'PASS' if ok else 'FAIL'}")
     BAR2 = b2_primary
     print(f"      BAR 2 = {'PASS' if BAR2 else 'FAIL'}")
 
-    print(f"\n  (3) TODAY'S COST -- primary cells: gross - {COST_TODAY_HI} bps > 0 "
+    print(f"\n  (3) TODAY'S COST -- primary cells: gross - {COST_TODAY_HI} % > 0 "
           f"(conservative end of the sec.2.5 map)")
     for c in PRIMARY:
         r = ju_rows[c]
@@ -416,8 +422,8 @@ def main() -> int:
             continue
         ok = r["hi_today"] > 0
         b3_primary &= ok
-        print(f"      {str(c):<26} net@{COST_TODAY_LO} {r['lo_today']:>+8.3f}   "
-              f"net@{COST_TODAY_HI} {r['hi_today']:>+8.3f}  -> {'PASS' if ok else 'FAIL'}")
+        print(f"      {str(c):<26} net@{COST_TODAY_LO} {r['lo_today']:>+9.5f}   "
+              f"net@{COST_TODAY_HI} {r['hi_today']:>+9.5f}  -> {'PASS' if ok else 'FAIL'}")
     BAR3 = b3_primary
     print(f"      BAR 3 = {'PASS' if BAR3 else 'FAIL'}")
 
@@ -435,7 +441,7 @@ def main() -> int:
         for y, g in pooled.groupby("year"):
             gs, ns = stat(g.gross_mid.to_numpy()), stat(g.net_base.to_numpy())
             print(f"      {y:<6}{gs['n']:>6}{gs['mean']:>+10.3f}{gs['t']:>+8.2f}"
-                  f"{ns['mean']:>+10.3f}{ns['t']:>+8.2f}{100*ns['win']:>7.1f}%")
+                  f"{ns['mean']:>+10.5f}{ns['t']:>+8.2f}{100*ns['win']:>7.1f}%")
     print(f"\n  primary cells only, 2005-2014, by year")
     for c in PRIMARY:
         d = ju_frames[c]
@@ -444,19 +450,19 @@ def main() -> int:
         for y, g in d.groupby("year"):
             gs, ns = stat(g.gross_mid.to_numpy()), stat(g.net_base.to_numpy())
             print(f"          {y:<6}{gs['n']:>6}{gs['mean']:>+10.3f}{gs['t']:>+8.2f}"
-                  f"{ns['mean']:>+10.3f}")
+                  f"{ns['mean']:>+10.5f}")
     print(f"\n  by event type, 2005-2014, all six cells pooled")
     pooled = pd.concat([ju_frames[c] for c in CELLS], ignore_index=True)
     print(f"      {'type':<6}{'n':>6}{'gross':>10}{'t':>8}{'net ERA':>10}{'t':>8}")
     for t_, g in pooled.groupby("typ"):
         gs, ns = stat(g.gross_mid.to_numpy()), stat(g.net_base.to_numpy())
         print(f"      {t_:<6}{gs['n']:>6}{gs['mean']:>+10.3f}{gs['t']:>+8.2f}"
-              f"{ns['mean']:>+10.3f}{ns['t']:>+8.2f}")
+              f"{ns['mean']:>+10.5f}{ns['t']:>+8.2f}")
 
     # ------------------------------------------------------------------ spread era
     print("\n" + hr("="))
     print("SPREAD ACROSS THE ERAS -- what a trade in these seconds actually cost, by year")
-    print("(median quoted spread in bps at the instant; Dukascopy interbank USD/JPY)")
+    print("(median quoted spread in % of mid at the instant; Dukascopy interbank USD/JPY)")
     print(hr("="))
     def spread_frame(events):
         return pd.DataFrame([dict(year=e.year, typ=e.typ,
@@ -471,21 +477,21 @@ def main() -> int:
     for lab, sp in (("2005-2014", ju_sp), ("2015-2026", ref_sp)):
         print(f"  {lab}")
         for y, g in sp.groupby("year"):
-            rt = ((g["s60"] + g["s300"]) / 2 + 2 * s4.FEE_BPS_PER_SIDE).median()
+            rt = ((g["s60"] + g["s300"]) / 2 + 2 * s4.FEE_PCT_PER_SIDE).median()
             print(f"      {y:<6}{len(g):>5}"
-                  + "".join(f"{g[f's{o}'].median():>11.3f}" for o in s4.F3_OFFSETS_S)
-                  + f"{rt:>14.3f}")
-    print("\n  RT E+60->300 = half-spread in + half-spread out + 0.4 bps fee, i.e. the actual")
+                  + "".join(f"{g[f's{o}'].median():>11.5f}" for o in s4.F3_OFFSETS_S)
+                  + f"{rt:>14.5f}")
+    print("\n  RT E+60->300 = half-spread in + half-spread out + 0.004 % fee, i.e. the actual")
     print("  round-trip cost of THIS trade in THAT year.  Compare with the GMO retail floor")
-    print(f"  {s4.GMO_FLOOR_ROUNDTRIP_BPS} bps and the sec.2.5 map {COST_TODAY_LO}-{COST_TODAY_HI} bps.")
-    print("\n  spread by era, pooled (median / p90 bps)")
+    print(f"  {s4.GMO_FLOOR_ROUNDTRIP_PCT} % and the sec.2.5 map {COST_TODAY_LO}-{COST_TODAY_HI} %.")
+    print("\n  spread by era, pooled (median / p90 %)")
     for lab, sp in (("2005-2014", ju_sp), ("2015-2026", ref_sp)):
-        rt = ((sp["s60"] + sp["s300"]) / 2 + 2 * s4.FEE_BPS_PER_SIDE)
-        print(f"      {lab}: E-60s {sp['s-60'].median():.3f}/{sp['s-60'].quantile(.9):.3f}   "
-              f"E+1s {sp['s1'].median():.3f}/{sp['s1'].quantile(.9):.3f}   "
-              f"E+60s {sp['s60'].median():.3f}/{sp['s60'].quantile(.9):.3f}   "
-              f"E+300s {sp['s300'].median():.3f}/{sp['s300'].quantile(.9):.3f}   "
-              f"RT {rt.median():.3f}/{rt.quantile(.9):.3f}")
+        rt = ((sp["s60"] + sp["s300"]) / 2 + 2 * s4.FEE_PCT_PER_SIDE)
+        print(f"      {lab}: E-60s {sp['s-60'].median():.5f}/{sp['s-60'].quantile(.9):.5f}   "
+              f"E+1s {sp['s1'].median():.5f}/{sp['s1'].quantile(.9):.5f}   "
+              f"E+60s {sp['s60'].median():.5f}/{sp['s60'].quantile(.9):.5f}   "
+              f"E+300s {sp['s300'].median():.5f}/{sp['s300'].quantile(.9):.5f}   "
+              f"RT {rt.median():.5f}/{rt.quantile(.9):.5f}")
 
     # ------------------------------------------------------------------ impulse era
     print("\n" + hr("="))
@@ -569,13 +575,13 @@ def main() -> int:
     eb, ea, em, ets, eg = demo.q[s4.F2_ENTRY_S]
     xb, xa, xm, xts, xgp = demo.q[s4.F2_EXIT_S]
     d = 1 if demo.impulse_bps > 0 else -1
-    nb_, ng_, gb_, gm_ = s4.trade_bps(demo, d, s4.F2_ENTRY_S, s4.F2_EXIT_S)
+    nb_, ng_, gb_, gm_ = s4.trade_rates(demo, d, s4.F2_ENTRY_S, s4.F2_EXIT_S)
     print(f"  {demo.typ} {demo.date}  E = {s4.utc(demo.e_ms)}   mid(E) = {demo.mid_e:.5f}")
     print(f"    impulse {demo.impulse_bps:+.2f} bps -> {'LONG' if d > 0 else 'SHORT'} at E+60s")
     print(f"    entry fill @ {s4.utc(ets)} (+{eg} ms): bid {eb:.5f} / ask {ea:.5f}")
     print(f"    exit  fill @ {s4.utc(xts)} (+{xgp} ms): bid {xb:.5f} / ask {xa:.5f}")
-    print(f"    book-cross {gb_:+.3f} bps ; minus {2*s4.FEE_BPS_PER_SIDE} bps fee -> "
-          f"net ERA {nb_:+.3f} bps ; zero-cost mid-to-mid {gm_:+.3f} bps")
+    print(f"    book-cross {gb_:+.5f} % ; minus {2*s4.FEE_PCT_PER_SIDE} % fee -> "
+          f"net ERA {nb_:+.5f} % ; zero-cost mid-to-mid {gm_:+.3f} bps")
 
     # ------------------------------------------------------------------ determinism
     print("\n" + hr())
@@ -606,13 +612,13 @@ def main() -> int:
           f"{'PASS' if BAR1 else 'FAIL'}")
     print(f"  BAR 2 positive at the ERA's own measured cost (t>=1.5)        : "
           f"{'PASS' if BAR2 else 'FAIL'}")
-    print(f"  BAR 3 positive at today's cost map (conservative {COST_TODAY_HI} bps) : "
+    print(f"  BAR 3 positive at today's cost map (conservative {COST_TODAY_HI} %) : "
           f"{'PASS' if BAR3 else 'FAIL'}")
     if BAR1 and BAR2 and BAR3:
         verdict = "PASS -- proceed to stage 2 (forward paper tracking, owner approval required)"
     elif not BAR1:
         verdict = ("REJECT -- the mechanism does not reproduce on backward-fresh events. "
-                   "S4's +0.8..+3.0 bps is confirmed as a dig-out.")
+                   "S4's +0.008..+0.030 % (+0.8..+3.0 bps) is confirmed as a dig-out.")
     else:
         verdict = ("REJECT -- mechanism reproduces but fails a cost bar. PREREG sec.5 forbids "
                    "a downgraded pass here.")

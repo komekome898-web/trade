@@ -153,8 +153,9 @@ def main() -> int:
           f"  ({span_days:.2f} days)")
     print(f"costs: fee 0% | spread {FX_COSTS.spread_pct}% | slip {FX_COSTS.slippage_pct}% "
           f"| swap {SWAP_DAILY_PCT}%/day | stop {STOP_LOSS_PCT}%")
-    print(f"round-trip taker cost ~{2*(FX_COSTS.spread_pct/2+FX_COSTS.slippage_pct):.3f}% "
-          f"= {2*(FX_COSTS.spread_pct/2+FX_COSTS.slippage_pct)*100:.1f} bps")
+    # L-920: the cost is a rate, not a price move, so it is shown in % only
+    # (the former second figure was the same number x 100 labelled bps).
+    print(f"round-trip taker cost ~{2*(FX_COSTS.spread_pct/2+FX_COSTS.slippage_pct):.3f}%")
     print("CAVEAT: deviation is JPY-vs-USD with no USDJPY series; at <=60m USDJPY")
     print("        noise is ~2-6 bps vs deviations of interest >=20 bps. Not removed.")
 

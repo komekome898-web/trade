@@ -508,16 +508,16 @@ def test_informational_checks_marks_without_removing(tmp_path: Path):
 def test_informational_checks_named_list_leaves_others_alone(tmp_path: Path):
     (tmp_path / "data").mkdir()
     rows = [
-        "ts,mid,spread_bps",
-        "2026-01-01T00:00:00Z,100.0,1.0",
-        "2026-01-01T00:00:05Z,100.0,-1.0",   # crossed_book
-        "2026-01-01T00:05:20Z,80.0,1.0",     # extreme_return
+        "ts,mid,spread_pct",
+        "2026-01-01T00:00:00Z,100.0,0.01",
+        "2026-01-01T00:00:05Z,100.0,-0.01",  # crossed_book
+        "2026-01-01T00:05:20Z,80.0,0.01",    # extreme_return
     ]
     (tmp_path / "data" / "partial_info.csv").write_text("\n".join(rows) + "\n")
     _write_schema(tmp_path, "partial_info", {
         "dataset": "partial_info",
         "path_glob": ["data/partial_info.csv"],
-        "columns": {"ts": {}, "mid": {}, "spread_bps": {}},
+        "columns": {"ts": {}, "mid": {}, "spread_pct": {}},
         "quality": {"informational_checks": ["crossed_book"]},
     })
 

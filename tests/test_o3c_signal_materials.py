@@ -47,7 +47,7 @@ needs_data = pytest.mark.skipif(not have_data, reason="探索段5の行データ
 
 def make_prints_csv(tmp_path: Path, rows: list) -> "sc.PrintsCSV":
     cols = ["print_id", "day", "side", "ts_ms", "t0_ms", "p0", "notional",
-           "dist_node_bp", "oi_covered", "bundle_id"]
+           "dist_node_pct", "oi_covered", "bundle_id"]
     df = pd.DataFrame([{c: r.get(c, "") for c in cols} for r in rows])
     df["kind"] = "print"
     p = tmp_path / "rows_prints.csv.gz"
@@ -84,14 +84,14 @@ def _make_chain_pc(tmp_path, day, ts_prev, ts_cur, side="SELL"):
     rows = [
         {"print_id": "prev", "day": day, "side": side, "ts_ms": ts_prev,
          "t0_ms": ts_prev, "p0": 30000.0, "notional": 300_000.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": "b1"},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": "b1"},
         {"print_id": "cur", "day": day, "side": side, "ts_ms": ts_cur,
          "t0_ms": ts_cur, "p0": 29990.0, "notional": 500_000.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": "b1"},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": "b1"},
         # 反対側(A9 が拾う)
         {"print_id": "opp", "day": day, "side": "BUY", "ts_ms": ts_cur - 10_000,
          "t0_ms": ts_cur - 10_000, "p0": 30000.0, "notional": 70_000.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": "b2"},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": "b2"},
     ]
     pc = make_prints_csv(tmp_path, rows)
     return pc
@@ -113,7 +113,7 @@ def test_new_candidates_do_not_use_data_after_ts_or_p0(tmp_path):
         p_pre, _ = sc.price_at_or_before(times, prices, ts_cur - 1)
         day0 = sc.day_start_ms(day)
         dmax, dmin = sm.day_extremes_batch(times, prices, np.array([ts_cur]), day0)
-        cand5p = sm.node_ahead_bp_batch(times, prices, qtys, np.array([ts_cur]),
+        cand5p = sm.node_ahead_pct_batch(times, prices, qtys, np.array([ts_cur]),
                                         np.array([p_pre]), np.array([pc.sign[i_cur]]))
         new = sm.compute_new_candidates(pc, nb, i_cur, times, prices, qtys, maker,
                                        t_oi, oi_lvl, chain_cum, side_prefix,
@@ -155,7 +155,7 @@ def test_chain_first_print_has_missing_inner_candidates(tmp_path):
     ts0 = sc.day_start_ms(day) + 3600_000
     rows = [{"print_id": "solo", "day": day, "side": "SELL", "ts_ms": ts0,
             "t0_ms": ts0, "p0": 30000.0, "notional": 100_000.0,
-            "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": "b1"}]
+            "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": "b1"}]
     pc = make_prints_csv(tmp_path, rows)
     nb = sc.same_side_neighbors(pc)
     chain_cum = sm.build_chain_cum_notional(pc)
@@ -182,7 +182,7 @@ def test_r1_hand_computed(tmp_path):
     day = "2024-01-02"
     ts0 = sc.day_start_ms(day) + 3600_000
     rows = [{"print_id": "p", "day": day, "side": "BUY", "ts_ms": ts0, "t0_ms": ts0,
-            "p0": 100.0, "notional": 100_000.0, "dist_node_bp": 0.0, "oi_covered": 0,
+            "p0": 100.0, "notional": 100_000.0, "dist_node_pct": 0.0, "oi_covered": 0,
             "bundle_id": "b1"}]
     pc = make_prints_csv(tmp_path, rows)
     nb = sc.same_side_neighbors(pc)
@@ -234,23 +234,23 @@ def test_f5_hand_computed(tmp_path):
     ts0 = sc.day_start_ms(day) + 3600_000
     rows = [
         {"print_id": "self", "day": day, "side": "SELL", "ts_ms": ts0, "t0_ms": ts0,
-         "p0": 100.0, "notional": 500_000.0, "dist_node_bp": 0.0, "oi_covered": 0,
+         "p0": 100.0, "notional": 500_000.0, "dist_node_pct": 0.0, "oi_covered": 0,
          "bundle_id": "b1"},
         # 窓の境界 ts0-10,000 ちょうど(含む)
         {"print_id": "same_edge", "day": day, "side": "SELL", "ts_ms": ts0 - 10_000,
-         "t0_ms": ts0 - 10_000, "p0": 100.0, "notional": 200_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts0 - 10_000, "p0": 100.0, "notional": 200_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": "b1"},
         # 窓の中(9秒前)
         {"print_id": "same_in", "day": day, "side": "SELL", "ts_ms": ts0 - 9_000,
-         "t0_ms": ts0 - 9_000, "p0": 100.0, "notional": 300_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts0 - 9_000, "p0": 100.0, "notional": 300_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": "b1"},
         # 窓の外(境界のすぐ外、10,001ms前)
         {"print_id": "same_out", "day": day, "side": "SELL", "ts_ms": ts0 - 10_001,
-         "t0_ms": ts0 - 10_001, "p0": 100.0, "notional": 999_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts0 - 10_001, "p0": 100.0, "notional": 999_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": "b1"},
         # 反対側(数えない)
         {"print_id": "opp_in", "day": day, "side": "BUY", "ts_ms": ts0 - 5_000,
-         "t0_ms": ts0 - 5_000, "p0": 100.0, "notional": 777_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts0 - 5_000, "p0": 100.0, "notional": 777_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": "b2"},
     ]
     pc = make_prints_csv(tmp_path, rows)
@@ -294,17 +294,17 @@ def test_5prime_only_counts_nodes_ahead():
     # (a) p_ref(100)より下(95 前後)にしか約定が無い
     prices_a = 95.0 + 0.3 * rng.standard_normal(n)
     qtys_a = np.ones(n)
-    out_buy_a = sm.node_ahead_bp_batch(times, prices_a, qtys_a, ts_arr, p_ref_arr,
+    out_buy_a = sm.node_ahead_pct_batch(times, prices_a, qtys_a, ts_arr, p_ref_arr,
                                        np.array([1.0]), window_ms=3_600_000,
                                        step=sm.NODE_STEP)
-    out_sell_a = sm.node_ahead_bp_batch(times, prices_a, qtys_a, ts_arr, p_ref_arr,
+    out_sell_a = sm.node_ahead_pct_batch(times, prices_a, qtys_a, ts_arr, p_ref_arr,
                                         np.array([-1.0]), window_ms=3_600_000,
                                         step=sm.NODE_STEP)
     assert out_buy_a[0] != out_buy_a[0], (
         f"BUY(先=上)なのに先に何も無いのに値が出た(@95 前後は後ろ側): {out_buy_a[0]}")
     assert out_sell_a[0] == out_sell_a[0], "SELL(先=下)なのに@95のノードを拾えていない"
-    # (95-100)/100*1e4 = -500bp -> 距離(正)は約 500bp
-    assert abs(out_sell_a[0] - 500.0) < 15.0, f"距離が @95 の想定から外れる: {out_sell_a[0]}"
+    # (95-100)/100*100 = -5 % -> 距離(正)は約 5 %(前の 500bp。L-920)
+    assert abs(out_sell_a[0] - 5.0) < 0.15, f"距離が @95 の想定から外れる: {out_sell_a[0]}"
 
     # (b) さらに 105(p_ref より上)に厚いノードを足す
     prices_b = prices_a.copy()
@@ -312,17 +312,17 @@ def test_5prime_only_counts_nodes_ahead():
     mask = (times > 1_000_000) & (times < 1_100_000)
     prices_b[mask] = 105.0
     qtys_b[mask] = 200.0
-    out_buy_b = sm.node_ahead_bp_batch(times, prices_b, qtys_b, ts_arr, p_ref_arr,
+    out_buy_b = sm.node_ahead_pct_batch(times, prices_b, qtys_b, ts_arr, p_ref_arr,
                                        np.array([1.0]), window_ms=3_600_000,
                                        step=sm.NODE_STEP)
-    out_sell_b = sm.node_ahead_bp_batch(times, prices_b, qtys_b, ts_arr, p_ref_arr,
+    out_sell_b = sm.node_ahead_pct_batch(times, prices_b, qtys_b, ts_arr, p_ref_arr,
                                         np.array([-1.0]), window_ms=3_600_000,
                                         step=sm.NODE_STEP)
     assert out_buy_b[0] == out_buy_b[0], "BUY(先=上)なのに先のノード(@105)を拾えていない"
-    assert abs(out_buy_b[0] - 500.0) < 15.0, f"距離が @105 の想定から外れる: {out_buy_b[0]}"
+    assert abs(out_buy_b[0] - 5.0) < 0.15, f"距離が @105 の想定から外れる: {out_buy_b[0]}"
     # SELL の先(下)は @95 近辺のまま(@105 は SELL の先ではないので、そちらには飛ばない。
     # 上位 10 分位の母集団が変わる分だけ僅かにずれてよいので緩めに見る)
-    assert abs(out_sell_b[0] - 500.0) < 60.0, (
+    assert abs(out_sell_b[0] - 5.0) < 0.60, (
         f"SELL(先=下)が、先ではない@105 を足した影響で @95 から離れすぎた: {out_sell_b[0]}")
 
 

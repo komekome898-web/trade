@@ -45,7 +45,7 @@
 
 - `react_*`・`mfe_*`・`mae_*` = **清算の向き**に正(SELL = ロングの強制決済 = 下へ押す = −1)。
   対照は直前 10 秒の変位の符号を向きにする。
-- `pnl_bp`・`レグ損益_bp` = **建玉の向き**に正(状態機械の出力)。
+- `pnl_pct`(連鎖の損益 = レグの和 / 100、%。L-920 の前は `pnl_bp`)・`レグ損益_bp`(量 1 の 1 レグ、bp)= **建玉の向き**に正(状態機械の出力)。
 """
 from __future__ import annotations
 
@@ -115,12 +115,47 @@ REACT_SIGN = {"SELL": -1.0, "BUY": 1.0}
 MAT_COL = {
     1: "mat1_same_side_count_60s_and_elapsed", 2: "mat2_interval_ratio_last_two",
     3: "mat3_notional_and_ratio_to_previous", 4: "mat4_move_since_cascade_start_and_bounce",
-    5: "mat5_distance_to_liquidation_node", 6: "mat6_time_of_day_band",
+    # 材料 5 は節までの距離(同じ時刻の 2 つの値段の距離)で単位は %(L-920)。名前に単位を入れる。
+    5: "mat5_distance_to_liquidation_node_pct", 6: "mat6_time_of_day_band",
     8: "mat8_open_interest_mass_ahead", 9: "mat9_taker_imbalance_5s",
     10: "mat10_oi_slope_and_funding", 11: "mat11_notional_over_60s_range",
     12: "mat12_notional_over_max_recent_print", 13: "mat13_taker_imbalance_trend",
     14: "mat14_trade_count_60s", 15: "mat15_burst_ratio_10s_over_60s",
 }
+
+# L-920 より前に書いた出力の列 → 今の列(と掛ける数)。前の出力は書き換えず、読む口で直す。
+LEGACY_COLS = {
+    "mat5_distance_to_liquidation_node": ("mat5_distance_to_liquidation_node_pct", 0.01),  # bp → %
+    "mat8_amt_5bp": ("mat8_amt_0p05pct", 1.0),     # 帯の名前だけ(値は建玉の量)
+    "mat8_amt_20bp": ("mat8_amt_0p2pct", 1.0),
+    "pnl_bp": ("pnl_pct", 0.01),                   # 連鎖の損益(レグの和)bp → %
+}
+
+
+def legacy_usecols(path, cols) -> list:
+    """`read_csv(usecols=...)` の前に: 今の列が無く前の列があれば、前の列を読む。"""
+    import pandas as _pd
+    have = set(_pd.read_csv(path, nrows=0).columns)
+    inv = {new: old for old, (new, _k) in LEGACY_COLS.items()}
+    return [c if (c in have or c not in inv or inv[c] not in have) else inv[c] for c in cols]
+
+
+def with_legacy_columns(df, keep=None):
+    """前の列から今の列を作って足す(`keep` を渡すとその列だけ)。前の列は残す。"""
+    import pandas as _pd
+    for old, (new, k) in LEGACY_COLS.items():
+        if (keep is None or new in keep) and new not in df.columns and old in df.columns:
+            df[new] = _pd.to_numeric(df[old], errors="coerce") * k
+    return df
+
+
+def chain_pnl_pct(res: dict) -> float:
+    """状態機械の結果の連鎖の損益(%)。L-920 の後は `pnl_pct`、前は `pnl_bp`(/ 100)。"""
+    if "pnl_pct" in res:
+        return res["pnl_pct"]
+    v = res.get("pnl_bp")
+    return v / 100 if v is not None else float("nan")
+
 
 # 状態機械の判断の語(前の道具の語をそのまま使う)
 JUDGE_STOP, JUDGE_CONTINUE, JUDGE_UNKNOWN = "止まる", "続く", "わからない"
@@ -959,7 +994,7 @@ def tertile_cuts(v: np.ndarray) -> np.ndarray:
 # 材料 1〜15(7 は無し)。前の `o3c_signal_continue.compute_print_row` の定義に従う
 # --------------------------------------------------------------------------- #
 MAT_EXTRA = ("mat1_elapsed_since_burst_s", "mat4_bounce_bp", "mat3_notional_raw",
-             "mat5_bin_pct", "mat8_amt_5bp", "mat8_amt_20bp", "mat8_covered",
+             "mat5_bin_pct", "mat8_amt_0p05pct", "mat8_amt_0p2pct", "mat8_covered",
              "mat10_taker_ls_ratio", "mat10_funding_rate", "p_pre")
 PROFILE_WINDOW_MS = 8 * 3_600_000      # 材料 5 の窓 W = 8 時間(前の explore5 の W_HOURS)
 PROFILE_BIN_PCT = 0.1                  # 材料 5 の価格ビン(前の BIN_PCT)
@@ -1082,9 +1117,12 @@ def print_materials(pr: Prints, sel: np.ndarray, tr: Trades, ctx: dict, bund60: 
                 cov = bool(o8.get("covered", False))
                 out["mat8_covered"][r] = float(cov)
                 if cov:
-                    for key, col in (("amt_10bp", MAT_COL[8]), ("amt_5bp", "mat8_amt_5bp"),
-                                     ("amt_20bp", "mat8_amt_20bp")):
-                        v = o8.get(key)
+                    # L-920: cascade_read の鍵は amt_0.1pct / amt_0.05pct / amt_0.2pct(帯 =
+                    # p_pre からの距離 %。前は amt_10bp / amt_5bp / amt_20bp)。古い鍵も読む。
+                    for key, old, col in (("amt_0.1pct", "amt_10bp", MAT_COL[8]),
+                                          ("amt_0.05pct", "amt_5bp", "mat8_amt_0p05pct"),
+                                          ("amt_0.2pct", "amt_20bp", "mat8_amt_0p2pct")):
+                        v = o8.get(key, o8.get(old))
                         out[col][r] = NAN if v is None else float(v)
     out[MAT_COL[9]] = np.where(np.isfinite(imb5), sg * imb5, NAN)
     out[MAT_COL[13]] = np.where(np.isfinite(imb5) & np.isfinite(imb30), sg * (imb5 - imb30), NAN)
@@ -1101,7 +1139,7 @@ def print_materials(pr: Prints, sel: np.ndarray, tr: Trades, ctx: dict, bund60: 
                                              PROFILE_WINDOW_MS,
                                              float(ex5.base.log_step(PROFILE_BIN_PCT)))
         for pos_, k in enumerate(order.tolist()):
-            out[MAT_COL[5]][k] = cols[pos_].get("dist_node_bp", NAN)
+            out[MAT_COL[5]][k] = cols[pos_].get("dist_node_pct", NAN)
             out["mat5_bin_pct"][k] = cols[pos_].get("bin_pct", NAN)
     return out
 
@@ -1167,8 +1205,8 @@ def jev_state_raw(i: int, pr: Prints, mats_row: dict, bund60: dict) -> dict:
         return None if not math.isfinite(x) else round(x, 8)
 
     mats = {name.split("_", 1)[1]: f(mats_row[name]) for name in MAT_COL.values()}
-    for k in ("mat1_elapsed_since_burst_s", "mat4_bounce_bp", "mat8_amt_5bp",
-              "mat8_amt_20bp", "mat10_taker_ls_ratio", "mat10_funding_rate"):
+    for k in ("mat1_elapsed_since_burst_s", "mat4_bounce_bp", "mat8_amt_0p05pct",
+              "mat8_amt_0p2pct", "mat10_taker_ls_ratio", "mat10_funding_rate"):
         mats[k.split("_", 1)[1]] = f(mats_row[k])
     return {"side": str(pr.side[i]), "prints_last_60s": prev, "materials": mats,
             "cascade_so_far_count_g60": int(bund60["k_in_bundle"][i]) + 1,

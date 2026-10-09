@@ -1,7 +1,14 @@
 """L-233 への答え: 1 周目の判定の表(gap60_w8)から、D1 の bp_reactdir を距離の 10 分位でそろえて対照 C と比べる。観測であって判定ではない(事前登録の外)。"""
 import pandas as pd, numpy as np
+# L-920: VWAP からの距離(同じ時刻の 2 つの値段の距離)は % で読む。L-920 より前に書かれた表は
+# 列 dist_vwap_bp(× 1e4)なので / 100 して dist_vwap_pct にする。新しい名前の列があればそのまま読む。
+def _dist_pct(df):
+    if 'dist_vwap_pct' not in df.columns and 'dist_vwap_bp' in df.columns:
+        df['dist_vwap_pct']=df.pop('dist_vwap_bp')/100
+    return df
 H=[1,5,15,30,60,240]; cut=-14472.33333333332
-t=pd.read_csv('backtest_data/o3c_reaction_20260918_full/gap60_w8/table.csv', usecols=['kind','cascade_id','matched_liq_id','side','doi_pre_1h','dist_vwap_bp']+[f'bp_{h}m' for h in H]+[f'bp_{h}m_reactdir' for h in H])
+_cols=['kind','cascade_id','matched_liq_id','side','doi_pre_1h','dist_vwap_bp','dist_vwap_pct']+[f'bp_{h}m' for h in H]+[f'bp_{h}m_reactdir' for h in H]
+t=_dist_pct(pd.read_csv('backtest_data/o3c_reaction_20260918_full/gap60_w8/table.csv', usecols=lambda c: c in _cols))
 mixed=set(pd.read_csv('backtest_data/o3c_reaction_20260918_full/gap60_w8/table_mixed.csv', usecols=['cascade_id'])['cascade_id'])
 liq=t[t['kind']=='liq']; d1=liq[liq['doi_pre_1h']<=cut].copy()
 side=dict(zip(liq['cascade_id'], liq['side']))
@@ -9,7 +16,7 @@ c=t[(t['kind']=='control_matched')&(t['doi_pre_1h']<=cut)&(~t['matched_liq_id'].
 sgn=c['matched_liq_id'].map(side).map({'SELL':-1.0,'BUY':1.0})
 for h in H: c[f'r_{h}']=c[f'bp_{h}m']*sgn; d1[f'r_{h}']=d1[f'bp_{h}m_reactdir']
 print('D1', len(d1), '/ 対照 C', len(c))
-ad=np.abs(d1['dist_vwap_bp']); ac=np.abs(c['dist_vwap_bp'])
+ad=np.abs(d1['dist_vwap_pct']); ac=np.abs(c['dist_vwap_pct'])
 edges=list(np.nanpercentile(ad, np.linspace(0,100,11))); edges[0]=0; edges[-1]=1e9
 rng=np.random.default_rng(1)
 print('h   D1平均   C平均(生)  差(生)   SE(生)   C平均(距離をそろえた) 差(そろえた)  SE(ブートストラップ1000)  D1で反転の割合  Cで反転の割合')

@@ -13,7 +13,7 @@
 **per_year に無い量**(セルごとの区間・sd・分位・保有中央値)は、その JSON が測った
 **期間全体で 1 つの値**である(2017-2019 は 3 年合算、2020-2021 は 2 年合算。
 `measure_katsuo_effect.py` はブートストラップ区間を年ごとには出していない)。
-per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × mean_bp。
+per_year にある n・mean_bp だけが年ごとの値で、総損益 = n × mean_bp / 100(%。L-920 の後)。
 **この表はその区別を保ったまま出す**(合算値を年別のふりをしない)。
 
 出すもの: (a) 主統計 2 セル(`s19/b24` の 5 分・15 分・弱い)の判定設計。年別 n・総損益、
@@ -48,11 +48,22 @@ def cell(d, ft, g, st):
 
 def total_of(c, y):
     p = c["per_year"].get(str(y)) if c else None
-    return (round(p["n"] * p["mean_bp"], 1), p["n"]) if p else (None, 0)
+    # 総損益 = 取引ごとのリターンの和 = n × mean_bp。和は 1 つの値段の動きではないので %(/ 100、L-920)
+    return (round(p["n"] * p["mean_bp"] / 100, 3), p["n"]) if p else (None, 0)
+
+
+def _total_pct_str(b):
+    """三分位ごとの総損益(取引ごとのリターンの和)。L-920 の後の出力は total_pct(%)、
+    前の出力は total_bp(bp)なので / 100 して % で出す。"""
+    v = b.get("total_pct")
+    if v is None and b.get("total_bp") is not None:
+        v = b["total_bp"] / 100
+    return "—" if v is None else f"{v:+,.3f}%"
 
 
 def fmt0(x):
-    return "—" if x is None else f"{x:+,.0f}"
+    """総損益(%)の表示。L-920 の前は bp の整数で出していた。"""
+    return "—" if x is None else f"{x:+,.3f}%"
 
 
 def f(x, d=2):
@@ -84,7 +95,7 @@ def per_year_row(label, cells_by_year, years):
         if t is not None:
             tot += t
             ntot += n
-    return f"| {label} | " + " | ".join(parts) + f" | **{fmt0(round(tot, 1))}** ({ntot:,}) |"
+    return f"| {label} | " + " | ".join(parts) + f" | **{fmt0(round(tot, 3))}** ({ntot:,}) |"
 
 
 def table_a_c(title, note, d_1719, d_2021, feet=MAIN_FEET, strength="weak", strength_label="弱い"):
@@ -104,7 +115,7 @@ def table_a_c(title, note, d_1719, d_2021, feet=MAIN_FEET, strength="weak", stre
         print("| | " + " | ".join(str(y) for y in years) + " | 合計 |")
         print("|---|" + "---|" * (len(years) + 1))
         by_year = {2017: c19, 2018: c19, 2019: c19, 2020: c21, 2021: c21}
-        print(per_year_row("年別 n・総損益(bp)", by_year, years))
+        print(per_year_row("年別 n・総損益(%)", by_year, years))
         print()
 
 
@@ -148,7 +159,7 @@ def table_d(d_2021, feet=MAIN_FEET):
             print()
             print("| | " + " | ".join(str(y) for y in years) + " | 合計 |")
             print("|---|" + "---|" * (len(years) + 1))
-            print(per_year_row("年別 n・総損益(bp)", {2020: c, 2021: c}, years))
+            print(per_year_row("年別 n・総損益(%)", {2020: c, 2021: c}, years))
             print()
 
 
@@ -164,8 +175,8 @@ def table_e(d_binance, d_bitmex_2021, feet=MAIN_FEET, strength="weak"):
                 continue
             p20 = c["per_year"].get("2020")
             p21 = c["per_year"].get("2021")
-            t20 = round(p20["n"] * p20["mean_bp"], 1) if p20 else None
-            t21 = round(p21["n"] * p21["mean_bp"], 1) if p21 else None
+            t20 = round(p20["n"] * p20["mean_bp"] / 100, 3) if p20 else None
+            t21 = round(p21["n"] * p21["mean_bp"] / 100, 3) if p21 else None
             n20 = f"{p20['n']:,}" if p20 else "—"
             m20 = f(p20["mean_bp"]) if p20 else "—"
             n21 = f"{p21['n']:,}" if p21 else "—"
@@ -190,7 +201,7 @@ def table_f(d_vol, feet=MAIN_FEET):
             for name in ("low", "mid", "high"):
                 b = row[name]
                 cells += [f"{b['n']:,}", f(b["mean_bp"]) if b["mean_bp"] is not None else "—",
-                          fmt0(b["total_bp"])]
+                          _total_pct_str(b)]
             print(f"| {y} | " + " | ".join(cells) + " |")
         print()
 

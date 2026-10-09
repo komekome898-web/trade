@@ -34,9 +34,17 @@ reason="time_exit"), matching "the next 30-minute return".
 
 Cost: config/constants.yaml's `measured` bitFlyer FX_BTC_JPY constants only,
 loaded via require_source() (CLAUDE.md §5 / constants.py) --
-taker_fee_pct (primary_document, 0%) and realized_round_trip_bps (measured,
-[2.0, 2.6]bps -> midpoint used as the modeled round-trip cost). Pulling the
-deprecated taker_round_trip_floor_bps_OLD (assumed) is asserted to raise.
+taker_fee_pct (primary_document, 0%) and realized_round_trip_pct (measured,
+[0.020, 0.026]% -> midpoint used as the modeled round-trip cost). Pulling the
+deprecated taker_round_trip_floor_pct_OLD (assumed) is asserted to raise.
+
+Units (L-920, 2026-10-10): the planted event move, the detector threshold
+and the continuation drift X are price-move rates and stay in bp. The cost
+and every per-trade PnL rate on the fixed notional (net, gross, MDE, the
+planted net X - cost) are in % (x 100, was x 1e4 with *_bps names). The
+2026-09-05 sealed answer (backtest_data/qa_pipeline_taker_20260905/
+planted_values_sealed.json) predates this and keeps the old *_bps names
+for those fields: its cost/net/gross/MDE values / 100 = the % values here.
 
 Outputs -> backtest_data/qa_pipeline_taker_<date>/:
   candles_qa_taker_X{0,3,8}bps_<date>.csv.gz   (ts,open,high,low,close,volume)
@@ -239,26 +247,27 @@ class TakerEventStrategy(Strategy):
 def load_cost_model(root: Path) -> tuple[CostModel, dict]:
     consts = load_constants(root)
     fee_c = require_source("bitflyer_fx_btc_jpy.taker_fee_pct", consts)
-    rt_c = require_source("bitflyer_fx_btc_jpy.realized_round_trip_bps", consts)
+    rt_c = require_source("bitflyer_fx_btc_jpy.realized_round_trip_pct", consts)
     rt_val = rt_c.value
-    cost_bps = float(np.mean(rt_val)) if isinstance(rt_val, (list, tuple)) else float(rt_val)
+    cost_pct = float(np.mean(rt_val)) if isinstance(rt_val, (list, tuple)) else float(rt_val)
     # self-check: an `assumed`/deprecated constant must raise, never silently load.
     try:
-        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_bps_OLD", consts)
+        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_pct_OLD", consts)
         raise RuntimeError("require_source() failed to reject the deprecated assumed constant")
     except AssumedConstantError:
         pass
-    costs = CostModel(taker_fee_pct=float(fee_c.value), spread_pct=cost_bps / 100.0, slippage_pct=0.0)
+    costs = CostModel(taker_fee_pct=float(fee_c.value), spread_pct=cost_pct, slippage_pct=0.0)
     provenance = {
         "taker_fee_pct": {"value": fee_c.value, "source_type": fee_c.source_type},
-        "realized_round_trip_bps": {"value": rt_c.value, "source_type": rt_c.source_type,
-                                     "used_bps": round(cost_bps, 4)},
+        "realized_round_trip_pct": {"value": rt_c.value, "source_type": rt_c.source_type,
+                                     "used_pct": round(cost_pct, 6)},
     }
     return costs, provenance
 
 
-def trade_net_bps(trade_pnls: list[float]) -> np.ndarray:
-    return np.asarray(trade_pnls, dtype=float) / ORDER_NOTIONAL_JPY * 1e4
+def trade_net_pct(trade_pnls: list[float]) -> np.ndarray:
+    """Per-trade net PnL as % of the fixed notional (was x 1e4 'bps' before L-920)."""
+    return np.asarray(trade_pnls, dtype=float) / ORDER_NOTIONAL_JPY * 100.0
 
 
 def mean_se_t(x: np.ndarray) -> tuple[float, float, float]:
@@ -273,7 +282,7 @@ def generate(out_dir: Path, seed: int = SEED, days: int = DAYS) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
     base = build_base(seed, days)
     costs, provenance = load_cost_model(REPO_ROOT)
-    cost_bps = provenance["realized_round_trip_bps"]["used_bps"]
+    cost_pct = provenance["realized_round_trip_pct"]["used_pct"]
 
     per_x = {}
     tapes = {}
@@ -283,25 +292,25 @@ def generate(out_dir: Path, seed: int = SEED, days: int = DAYS) -> dict:
         result = run_backtest(strat, df, costs=costs, execution="taker", allow_short=True,
                                order_notional_jpy=ORDER_NOTIONAL_JPY, max_hold_bars=HOLD_BARS)
         reasons = [r["reason"] for r in result.trade_log if r["side"].startswith("CLOSE")]
-        net_bps = trade_net_bps(result.trade_pnls)
-        gross_bps = net_bps + cost_bps
-        m_net, se_net, t_net = mean_se_t(net_bps)
-        m_gross, se_gross, t_gross = mean_se_t(gross_bps)
+        net_pct = trade_net_pct(result.trade_pnls)
+        gross_pct = net_pct + cost_pct
+        m_net, se_net, t_net = mean_se_t(net_pct)
+        m_gross, se_gross, t_gross = mean_se_t(gross_pct)
         mde = 2.8 * se_net if se_net == se_net else float("nan")  # NaN-safe (n<2 guard)
-        planted_net = x - cost_bps
+        planted_net = x / 100.0 - cost_pct   # X is a move in bp; / 100 -> %
         per_x[x] = {
             "planted_continuation_bps": x,
-            "cost_bps_used": cost_bps,
-            "planted_net_bps": round(planted_net, 4),
-            "n_trades": int(len(net_bps)),
+            "cost_pct_used": cost_pct,
+            "planted_net_pct": round(planted_net, 6),
+            "n_trades": int(len(net_pct)),
             "n_time_exit": int(sum(1 for r in reasons if r == "time_exit")),
             "n_other_exit_reason": int(sum(1 for r in reasons if r != "time_exit")),
-            "recovered_net_bps_mean": round(m_net, 4),
-            "recovered_net_bps_se": round(se_net, 4),
-            "recovered_net_bps_ci95": [round(m_net - 1.96 * se_net, 4), round(m_net + 1.96 * se_net, 4)],
-            "recovered_gross_bps_mean": round(m_gross, 4),
+            "recovered_net_pct_mean": round(m_net, 6),
+            "recovered_net_pct_se": round(se_net, 6),
+            "recovered_net_pct_ci95": [round(m_net - 1.96 * se_net, 6), round(m_net + 1.96 * se_net, 6)],
+            "recovered_gross_pct_mean": round(m_gross, 6),
             "gross_t_stat": round(t_gross, 4),
-            "mde_bps": round(mde, 4),
+            "mde_pct": round(mde, 6),
             "within_mde": bool(abs(m_net - planted_net) < mde),
         }
         tapes[x] = df
@@ -321,8 +330,8 @@ def generate(out_dir: Path, seed: int = SEED, days: int = DAYS) -> dict:
         r = per_x[x]
         if not r["within_mde"]:
             findings.append(
-                f"X={x}bps: recovered net {r['recovered_net_bps_mean']}bps is OUTSIDE the MDE "
-                f"({r['mde_bps']}bps) of planted net {r['planted_net_bps']}bps -- pipeline failed "
+                f"X={x}bps: recovered net {r['recovered_net_pct_mean']}% is OUTSIDE the MDE "
+                f"({r['mde_pct']}%) of planted net {r['planted_net_pct']}% -- pipeline failed "
                 "to recover the plant (backtest/engine.py + metrics.py path)."
             )
     zero_t = per_x[0.0]["gross_t_stat"]
@@ -374,17 +383,17 @@ def generate(out_dir: Path, seed: int = SEED, days: int = DAYS) -> dict:
 
     lines = ["# PIPELINE known-answer test — taker execution", "",
              f"Generated {sealed['generated_utc']}. seed={seed} days={days} "
-             f"cost_bps={cost_bps} (source: config/constants.yaml "
-             "bitflyer_fx_btc_jpy.realized_round_trip_bps, measured, midpoint of "
-             f"{provenance['realized_round_trip_bps']['value']})", "",
-             "| X planted (bps) | planted net (X-cost) | recovered net mean | SE | 95% CI | "
+             f"cost_pct={cost_pct} (source: config/constants.yaml "
+             "bitflyer_fx_btc_jpy.realized_round_trip_pct, measured, midpoint of "
+             f"{provenance['realized_round_trip_pct']['value']})", "",
+             "| X planted (bps) | planted net (X-cost, %) | recovered net mean (%) | SE (%) | 95% CI (%) | "
              "MDE | within MDE | n trades | gross t-stat |",
              "|---|---|---|---|---|---|---|---|---|"]
     for x in X_VALUES:
         r = per_x[x]
         lines.append(
-            f"| {x} | {r['planted_net_bps']} | {r['recovered_net_bps_mean']} | "
-            f"{r['recovered_net_bps_se']} | {r['recovered_net_bps_ci95']} | {r['mde_bps']} | "
+            f"| {x} | {r['planted_net_pct']} | {r['recovered_net_pct_mean']} | "
+            f"{r['recovered_net_pct_se']} | {r['recovered_net_pct_ci95']} | {r['mde_pct']} | "
             f"{'YES' if r['within_mde'] else 'NO'} | {r['n_trades']} | {r['gross_t_stat']} |"
         )
     lines += ["", f"X=0 null-as-null: gross t-stat = {zero_t} "
@@ -411,7 +420,7 @@ def main() -> int:
     result = generate(out_dir, seed=args.seed, days=args.days)
     print(f"wrote {out_dir}")
     for x, r in result["per_x"].items():
-        print(f"X={x}bps: recovered={r['recovered_net_bps_mean']}bps planted={r['planted_net_bps']}bps "
+        print(f"X={x}bps: recovered={r['recovered_net_pct_mean']}% planted={r['planted_net_pct']}% "
               f"within_mde={r['within_mde']} n={r['n_trades']}")
     for finding in result["findings"]:
         print(f"FINDING: {finding}")

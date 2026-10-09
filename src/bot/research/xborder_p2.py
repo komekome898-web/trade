@@ -8,9 +8,11 @@ Conventions (read these before calling anything)
   START of its 1-minute bucket.
 * ``thr`` / ``exit_`` / ``stop`` are in PERCENT of price (PREREG 探索面の表の
   単位: thr 0.8 = 0.8%), ``funding_pct_per_settlement`` likewise (0.02 = 0.02%);
-  ``cost_one_way_bps`` is in bps. The momentum ``m`` itself is a plain
-  fraction (close ratio − 1). Ledger money columns are in bps of the entry
-  price.
+  ``cost_one_way_pct`` is in percent too (0.04 = 0.04%). The momentum ``m``
+  itself is a plain fraction (close ratio − 1). In the ledger, ``gross_bps``
+  is the price-move rate in bp (side × (exit/entry − 1) × 1e4); the cost,
+  funding and net columns (``cost_pct``/``funding_pct``/``net_pct``) are in
+  percent of the entry price (L-920: bp names only a price-move rate).
 * ``bf`` may contain "empty" minutes (all four OHLC NaN — PREREG 既知欠陥 (1))
   AND may skip rows entirely (時刻の飛び). ``simulate`` first re-indexes the
   frame onto the complete 1-minute grid, so both are the same thing from
@@ -85,7 +87,7 @@ REGIME_CRYPTO_CFD = "crypto_cfd"
 
 LEDGER_COLUMNS = [
     "entry_ts", "exit_ts", "side", "entry_px", "exit_px",
-    "gross_bps", "cost_bps", "funding_bps", "net_bps", "exit_reason",
+    "gross_bps", "cost_pct", "funding_pct", "net_pct", "exit_reason",
     "n_deferred", "n_settlements", "excluded_gap", "regime",
     # extras (not in the PREREG column list; descriptive only)
     "straddles_gap", "entry_signal_ts", "exit_signal_ts",
@@ -230,7 +232,7 @@ def momentum_signal(binance_close: pd.Series, k: int) -> pd.Series:
 # ---------------------------------------------------------------------------
 
 def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: float,
-             cost_one_way_bps: float, funding_pct_per_settlement: float = 0.02,
+             cost_one_way_pct: float, funding_pct_per_settlement: float = 0.02,
              funding_times_utc=FUNDING_TIMES_UTC_DEFAULT, max_gap_min: int = 5,
              apply_masks: bool = True, size_btc: float = SIZE_BTC_DEFAULT) -> pd.DataFrame:
     """Run the PREREG execution rules over one bitFlyer bar series.
@@ -243,7 +245,8 @@ def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: flo
         the minute grid by timestamp. Minutes with no m get no entry and no
         exit signal (the stop is still checked).
     thr, exit_, stop : PERCENT of price (0.8 == 0.8%).
-    cost_one_way_bps : one-way taker cost in bps; the ledger charges 2x.
+    cost_one_way_pct : one-way taker cost in percent (0.04 == 0.04%); the
+        ledger charges 2x.
     funding_pct_per_settlement : percent of entry notional per settlement
         instant crossed (0.02 == 0.02%).
     funding_times_utc : UTC hours of the daily settlements.
@@ -321,8 +324,8 @@ def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: flo
         return int(np.searchsorted(settle, idx64[exit_i], side="right")
                    - np.searchsorted(settle, idx64[entry_i], side="right"))
 
-    cost_bps = 2.0 * float(cost_one_way_bps)
-    funding_bps_each = float(funding_pct_per_settlement) * 100.0  # % -> bps
+    cost_pct = 2.0 * float(cost_one_way_pct)
+    funding_pct_each = float(funding_pct_per_settlement)  # already percent
 
     trades: list[dict] = []
     pos: dict | None = None
@@ -335,13 +338,13 @@ def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: flo
         entry_px = pos["entry_px"]
         gross = side * (exit_px / entry_px - 1.0) * BPS
         ns = n_settle(pos["entry_i"], exit_i)
-        funding = ns * funding_bps_each
-        net = gross - cost_bps - funding
+        funding = ns * funding_pct_each
+        net = gross / 100.0 - cost_pct - funding  # gross bp -> % (/100); net in %
         strad = straddles(pos["entry_i"], exit_i)
         trades.append({
             "entry_ts": idx[pos["entry_i"]], "exit_ts": idx[exit_i], "side": side,
             "entry_px": entry_px, "exit_px": exit_px,
-            "gross_bps": gross, "cost_bps": cost_bps, "funding_bps": funding, "net_bps": net,
+            "gross_bps": gross, "cost_pct": cost_pct, "funding_pct": funding, "net_pct": net,
             "exit_reason": reason,
             "n_deferred": pos["n_def_entry"] + n_def_exit, "n_settlements": ns,
             "excluded_gap": bool(strad and apply_masks),
@@ -350,7 +353,7 @@ def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: flo
             "entry_signal_ts": idx[pos["sig_i"]], "exit_signal_ts": idx[exit_sig_i],
             "n_deferred_entry": pos["n_def_entry"], "n_deferred_exit": n_def_exit,
             "hold_min": float((idx[exit_i] - idx[pos["entry_i"]]) / MINUTE),
-            "pnl_jpy": net / BPS * entry_px * size_btc,
+            "pnl_jpy": net / 100.0 * entry_px * size_btc,  # net in %
         })
 
     i = 0
@@ -422,7 +425,7 @@ def simulate(bf: pd.DataFrame, m: pd.Series, thr: float, exit_: float, stop: flo
 # aggregation
 # ---------------------------------------------------------------------------
 
-def daily_pnl(ledger: pd.DataFrame, value: str = "net_bps",
+def daily_pnl(ledger: pd.DataFrame, value: str = "net_pct",
               include_excluded: bool = False) -> pd.Series:
     """Sum of ``value`` per UTC calendar day of the EXIT, over every calendar
     day from the first to the last exit (days without a trade are 0).

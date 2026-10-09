@@ -7,7 +7,8 @@ that a stage-2 operating point can be fixed BEFORE stage-2 data exists.
 
 Real-time definition (5-second bins, validity mask as in judge_board_round):
   feature(t) = statistic over the trailing window [t-120s, t]
-      avg_spread_bps  : mean spread_bps
+      avg_spread_pct  : mean spread, % of mid (L-920: a spread is not a move
+                        rate, so not bp; was avg_spread_bps)
       board_update_rate: sum of n_board_updates
       realized_move    : |ln(mid_t / mid_{t-120s})| in bps  (benchmark: vol persistence)
       combined         : mean of the two screened features' percentile ranks
@@ -59,19 +60,19 @@ def burst_onsets(mid: pd.Series) -> np.ndarray:
 
 def features(s: pd.DataFrame) -> pd.DataFrame:
     f = pd.DataFrame(index=s.index)
-    f["avg_spread_bps"] = s["spread_bps"].rolling(WIN, min_periods=WIN).mean()
+    f["avg_spread_pct"] = s["spread_pct"].rolling(WIN, min_periods=WIN).mean()
     f["board_update_rate"] = s["n_board_updates"].rolling(WIN, min_periods=WIN).sum()
     f["realized_move"] = (np.log(s["mid"]) - np.log(s["mid"].shift(WIN))).abs() * 1e4
-    ranks = f[["avg_spread_bps", "board_update_rate"]].rank(pct=True)
+    ranks = f[["avg_spread_pct", "board_update_rate"]].rank(pct=True)
     f["combined"] = ranks.mean(axis=1)
     # relative-to-baseline variants: current 120s window divided by the median
     # of the same statistic over the preceding 30 minutes (window excluded),
     # i.e. "quiet -> restless" change rather than absolute level
     base_n = QUIET  # 30 min of bins
-    for col in ["avg_spread_bps", "board_update_rate", "realized_move"]:
+    for col in ["avg_spread_pct", "board_update_rate", "realized_move"]:
         base = f[col].shift(WIN).rolling(base_n, min_periods=base_n // 2).median()
         f["rel_" + col] = f[col] / base.replace(0, np.nan)
-    rel_ranks = f[["rel_avg_spread_bps", "rel_board_update_rate"]].rank(pct=True)
+    rel_ranks = f[["rel_avg_spread_pct", "rel_board_update_rate"]].rank(pct=True)
     f["rel_combined"] = rel_ranks.mean(axis=1)
     return f
 
@@ -152,7 +153,11 @@ def main() -> None:
     s = df.set_index("bin_idx").reindex(grid)
     s.index = pd.to_datetime(s.index * BIN, unit="s", utc=True)
     valid = s["valid"].fillna(False).to_numpy(bool) & s["mid"].notna().to_numpy()
-    s.loc[~valid, "spread_bps"] = np.nan
+    # spread, % of mid (L-920). The series written before L-920 has only the
+    # column spread_bps (= spread / mid * 1e4); read it and / 100 -> %.
+    if "spread_pct" not in s.columns:
+        s["spread_pct"] = s["spread_bps"] / 100
+    s.loc[~valid, "spread_pct"] = np.nan
     days = valid.sum() * BIN / 86400
     onsets = burst_onsets(s["mid"])
     m60 = (np.log(s["mid"]) - np.log(s["mid"].shift(60 // BIN))).abs() * 1e4
@@ -164,13 +169,13 @@ def main() -> None:
              f"base rate: onset-within-180s {onset_base:.3f}   any-burst-within-180s (eligible bins) "
              f"{base_rate_any(valid, burst_bins):.3f}",
              ""]
-    for col in ["avg_spread_bps", "board_update_rate", "combined", "realized_move",
-                "rel_avg_spread_bps", "rel_board_update_rate", "rel_combined", "rel_realized_move"]:
+    for col in ["avg_spread_pct", "board_update_rate", "combined", "realized_move",
+                "rel_avg_spread_pct", "rel_board_update_rate", "rel_combined", "rel_realized_move"]:
         lines.append(f"[{col}]" + ("  (benchmark)" if "realized_move" in col else ""))
         lines.append(f"{'pct':>6} {'thr':>10} {'alarms':>7} {'per_day':>8} {'prec_onset':>10} {'recall':>7} "
                      f"{'eligible':>8} {'prec_any':>8}")
         for r in curve(f[col], onsets, valid, days, burst_bins):
-            lines.append(f"{r['pct']:6.1f} {r['thr']:10.3f} {r['alarms']:7d} {r['alarms_per_day']:8.2f} "
+            lines.append(f"{r['pct']:6.1f} {r['thr']:10.5f} {r['alarms']:7d} {r['alarms_per_day']:8.2f} "
                          f"{r['precision']:10.3f} {r['recall']:7.3f} {r['eligible']:8d} {r['precision_any']:8.3f}")
         lines.append("")
     # --- PRIMARY: in-state operating curve -------------------------------
@@ -185,7 +190,7 @@ def main() -> None:
     base_state = float(fut_onset(len(s), onsets)[state].mean()) if state.any() else float("nan")
     lines.append(f"=== PRIMARY: in-state operating curve (state = no burst in prior 30 min; "
                  f"{state.sum() / max(valid.sum(), 1):.2f} of valid time; base rate {base_state:.3f}) ===")
-    for col in ["avg_spread_bps", "board_update_rate", "combined", "realized_move"]:
+    for col in ["avg_spread_pct", "board_update_rate", "combined", "realized_move"]:
         x = f[col].to_numpy()
         ok = state & np.isfinite(x)
         lines.append(f"[{col}]" + ("  (benchmark)" if col == "realized_move" else ""))
@@ -204,7 +209,7 @@ def main() -> None:
             rec = float(np.mean([raw[max(0, o - LEAD_MAX):max(0, o - LEAD_MIN) + 1].any()
                                  for o in onsets])) if len(onsets) else float("nan")
             f1 = 2 * prec * rec / (prec + rec) if prec + rec > 0 else 0.0
-            lines.append(f"{p:6.1f} {thr:10.3f} {len(idx) / days:8.1f} {prec:10.3f} {rec:7.3f} "
+            lines.append(f"{p:6.1f} {thr:10.5f} {len(idx) / days:8.1f} {prec:10.3f} {rec:7.3f} "
                          f"{prec / base_state if base_state else float('nan'):6.1f} {f1:6.3f}")
         lines.append("")
     text = "\n".join(lines)

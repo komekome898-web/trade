@@ -71,12 +71,12 @@ METRICS_NAMES = [
     "sum_taker_long_short_vol_ratio",
 ]
 
-# 建玉側の列(距離はすべて既存と同じ符号の約束: (位置 − p_liq) / p_liq * 1e4)。
+# 建玉側の列(距離はすべて既存と同じ符号の約束: (位置 − p_liq) / p_liq * 100、%。L-920 の前は × 1e4 の bp)。
 OI_COLUMNS = [
-    "oi_dist_vwap_bp",       # 建玉の平均建値 − 清算価格
-    "oi_dist_node_bp",       # 建玉ノード − 清算価格
-    "oi_side_dist_vwap_bp",  # 側別(按分後)の平均建値 − 清算価格
-    "oi_side_dist_node_bp",  # 側別(按分後)のノード − 清算価格
+    "oi_dist_vwap_pct",       # 建玉の平均建値 − 清算価格
+    "oi_dist_node_pct",       # 建玉ノード − 清算価格
+    "oi_side_dist_vwap_pct",  # 側別(按分後)の平均建値 − 清算価格
+    "oi_side_dist_node_pct",  # 側別(按分後)のノード − 清算価格
     "oi_n_bins",
     "oi_n_buckets",
     "oi_total_delta",
@@ -85,12 +85,12 @@ OI_COLUMNS = [
 
 # 「清算の向きに正」に符号を揃えた列。SELL は +1 倍、BUY は −1 倍、対照は NaN。
 LIQDIR_SOURCE = [
-    ("dist_vwap_bp", "dist_vwap_bp_liqdir"),
-    ("dist_node_bp", "dist_node_bp_liqdir"),
-    ("oi_dist_vwap_bp", "oi_dist_vwap_bp_liqdir"),
-    ("oi_dist_node_bp", "oi_dist_node_bp_liqdir"),
-    ("oi_side_dist_vwap_bp", "oi_side_dist_vwap_bp_liqdir"),
-    ("oi_side_dist_node_bp", "oi_side_dist_node_bp_liqdir"),
+    ("dist_vwap_pct", "dist_vwap_pct_liqdir"),
+    ("dist_node_pct", "dist_node_pct_liqdir"),
+    ("oi_dist_vwap_pct", "oi_dist_vwap_pct_liqdir"),
+    ("oi_dist_node_pct", "oi_dist_node_pct_liqdir"),
+    ("oi_side_dist_vwap_pct", "oi_side_dist_vwap_pct_liqdir"),
+    ("oi_side_dist_node_pct", "oi_side_dist_node_pct_liqdir"),
 ]
 
 LEVERAGE_COLUMNS = ["implied_leverage", "implied_leverage_side"]
@@ -105,18 +105,18 @@ COLUMNS = (
 
 # 分位を取る列。
 QUANTILE_COLUMNS = [
-    "dist_vwap_bp",
-    "dist_node_bp",
-    "oi_dist_vwap_bp",
-    "oi_dist_node_bp",
-    "oi_side_dist_vwap_bp",
-    "oi_side_dist_node_bp",
-    "dist_vwap_bp_liqdir",
-    "dist_node_bp_liqdir",
-    "oi_dist_vwap_bp_liqdir",
-    "oi_dist_node_bp_liqdir",
-    "oi_side_dist_vwap_bp_liqdir",
-    "oi_side_dist_node_bp_liqdir",
+    "dist_vwap_pct",
+    "dist_node_pct",
+    "oi_dist_vwap_pct",
+    "oi_dist_node_pct",
+    "oi_side_dist_vwap_pct",
+    "oi_side_dist_node_pct",
+    "dist_vwap_pct_liqdir",
+    "dist_node_pct_liqdir",
+    "oi_dist_vwap_pct_liqdir",
+    "oi_dist_node_pct_liqdir",
+    "oi_side_dist_vwap_pct_liqdir",
+    "oi_side_dist_node_pct_liqdir",
     "implied_leverage",
     "implied_leverage_side",
 ]
@@ -495,8 +495,8 @@ def oi_columns_for_rows(
         o["oi_covered"] = 1
         o["oi_n_buckets"] = int(hi - lo)
         if st is not None:
-            o["oi_dist_vwap_bp"] = round(st["dist_vwap_bp"], 4)
-            o["oi_dist_node_bp"] = round(st["dist_node_bp"], 4)
+            o["oi_dist_vwap_pct"] = round(st["dist_vwap_pct"], 6)
+            o["oi_dist_node_pct"] = round(st["dist_node_pct"], 6)
             o["oi_n_bins"] = st["n_bins"]
             o["oi_total_delta"] = st["total_qty"]
         which = SIDE_PROFILE.get(str(r.get("side") or ""))
@@ -514,17 +514,18 @@ def oi_columns_for_rows(
                     sub_side[acc_cnt_s[s0 : s1 + 1] == 0] = 0.0
                 st_s = _side_stats(sub_side, gmin + s0, step, p_liq, p0)
                 if st_s is not None:
-                    o["oi_side_dist_vwap_bp"] = round(st_s["dist_vwap_bp"], 4)
-                    o["oi_side_dist_node_bp"] = round(st_s["dist_node_bp"], 4)
+                    o["oi_side_dist_vwap_pct"] = round(st_s["dist_vwap_pct"], 6)
+                    o["oi_side_dist_node_pct"] = round(st_s["dist_node_pct"], 6)
                     o["oi_side_total_delta"] = st_s["total_qty"]
     return out, n_uncovered
 
 
 def collect_side_spread(buckets: dict, acc: dict) -> None:
-    """桶ごとの「買い taker だけの VWAP − 売り taker だけの VWAP」を bp で溜める。
+    """桶ごとの「買い taker だけの VWAP − 売り taker だけの VWAP」÷ VWAP を % で溜める
+    (同じ桶の 2 つの値段の差 = スプレッドなので bp にしない。L-920・L-923 1.A。前は × 1e4 の bp)。
 
     キーは桶の時刻なので、**前の日を重ねて読んでも二重に数えない**(§2.6 の注意の型)。
-    値は (差 bp または NaN, 買い taker があったか, 売り taker があったか)。
+    値は (差 % または NaN, 買い taker があったか, 売り taker があったか)。
     """
     t = buckets["t_ms"]
     vb = np.asarray(buckets.get("vwap_buy", np.full(t.size, np.nan)), dtype=np.float64)
@@ -534,7 +535,7 @@ def collect_side_spread(buckets: dict, acc: dict) -> None:
     ok_s = np.isfinite(vs) & (vs > 0)
     both = ok_b & ok_s
     with np.errstate(invalid="ignore", divide="ignore"):
-        diff = np.where(both, (vb - vs) / ref * 1e4, np.nan)
+        diff = np.where(both, (vb - vs) / ref * 100, np.nan)
     for i in range(t.size):
         acc[int(t[i])] = (float(diff[i]), bool(ok_b[i]), bool(ok_s[i]))
 
@@ -548,19 +549,19 @@ def _apply_liqdir_and_leverage(row: dict, mmr: float | None) -> None:
             row[dst] = np.nan
         else:
             fv = float(v)
-            row[dst] = np.nan if not np.isfinite(fv) else round(fv * s, 4)
+            row[dst] = np.nan if not np.isfinite(fv) else round(fv * s, 6)   # % で 6 桁 = 前の bp で 4 桁
     row["implied_leverage"] = np.nan
     row["implied_leverage_side"] = np.nan
     if mmr is None:
         return
     for src, dst in (
-        ("oi_dist_vwap_bp_liqdir", "implied_leverage"),
-        ("oi_side_dist_vwap_bp_liqdir", "implied_leverage_side"),
+        ("oi_dist_vwap_pct_liqdir", "implied_leverage"),
+        ("oi_side_dist_vwap_pct_liqdir", "implied_leverage_side"),
     ):
         d = row.get(src)
         if d is None or not np.isfinite(float(d)):
             continue
-        denom = float(d) / 1e4 + mmr
+        denom = float(d) / 100 + mmr          # d は %(L-920 の前は bp で / 1e4)
         if denom <= 0:
             continue
         row[dst] = round(1.0 / denom, 4)
@@ -705,12 +706,12 @@ def side_spread_block(acc: dict) -> dict:
     }
     if fin.size:
         for q in QUANTILES:
-            out[f"q{q}"] = round(float(np.percentile(fin, q)), 4)
-        out["mean"] = round(float(fin.mean()), 4)
-        out["abs_q50"] = round(float(np.percentile(np.abs(fin), 50)), 4)
-        out["abs_q90"] = round(float(np.percentile(np.abs(fin), 90)), 4)
-        out["min"] = round(float(fin.min()), 4)
-        out["max"] = round(float(fin.max()), 4)
+            out[f"q{q}"] = round(float(np.percentile(fin, q)), 6)
+        out["mean"] = round(float(fin.mean()), 6)
+        out["abs_q50"] = round(float(np.percentile(np.abs(fin), 50)), 6)
+        out["abs_q90"] = round(float(np.percentile(np.abs(fin), 90)), 6)
+        out["min"] = round(float(fin.min()), 6)
+        out["max"] = round(float(fin.max()), 6)
     return out
 
 
@@ -796,7 +797,7 @@ def build_summary(
         "oi_buckets_no_sell_taker_total": sum(
             int(n.get("oi_buckets_no_sell_taker", 0)) for n in notes
         ),
-        "side_price_spread_bp": side_spread_block(side_spread or {}),
+        "side_price_spread_pct": side_spread_block(side_spread or {}),
         "nan_counts": nan_counts,
         "quantiles": {
             "liq_all": _quantile_block(liq),
@@ -810,7 +811,7 @@ def build_summary(
         "per_day": notes,
         "notes": [
             "観測表のみ。判定(予測できる/できない、使える/使えない)は書いていない。",
-            "dist_* / oi_dist_* は既存と同じ符号 (位置 − p_liq) / p_liq * 1e4。"
+            "dist_* / oi_dist_* は既存と同じ符号 (位置 − p_liq) / p_liq * 100(%)。"
             "*_liqdir は清算の向きに正へ揃えた列(SELL は +1 倍、BUY は −1 倍、対照は NaN)。",
             "建玉のプロファイルは ΔOI = OI(T) − OI(T−5 分) が**正の 5 分だけ**を、"
             "[T−5 分, T) の aggTrades の VWAP の価格ビンに ΔOI の重みで積んだもの。",
@@ -822,8 +823,8 @@ def build_summary(
             "split で片側の約定が 0 件の 5 分は、その側を積まない"
             "(その側の重みは出来高比が 0 なので厳密に 0 であり、プロファイルの値は変わらない。"
             "側別プロファイルの価格の範囲とビン数にだけ効く)。件数は "
-            "side_price_spread_bp.buckets_no_buy_taker / _no_sell_taker。",
-            "implied_leverage = 1 / (d/1e4 + mmr)、d = oi_dist_vwap_bp_liqdir。"
+            "side_price_spread_pct.buckets_no_buy_taker / _no_sell_taker(値は %)。",
+            "implied_leverage = 1 / (d/100 + mmr)、d = oi_dist_vwap_pct_liqdir(%)。"
             "--mmr を渡さなければ列は全部 NaN。",
             "建玉の被覆が窓に足りない行(metrics 欠測・窓が欠測にかかる)は建玉側を NaN にした。",
         ],

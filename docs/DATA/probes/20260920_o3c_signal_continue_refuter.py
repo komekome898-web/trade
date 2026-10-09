@@ -21,7 +21,7 @@ NAN = float("nan")
 N_BANDS = 10
 MAT_VAR = {1:"same_side_count_60s_and_elapsed",2:"interval_ratio_last_two",
            3:"notional_and_ratio_to_previous",4:"move_since_cascade_start_and_bounce",
-           5:"distance_to_liquidation_node",6:"time_of_day_band",
+           5:"distance_to_liquidation_node_pct",6:"time_of_day_band",   # L-920: 材料 5 は %
            8:"open_interest_mass_ahead",9:"taker_imbalance_5s",
            10:"oi_slope_and_funding",11:"notional_over_60s_range",
            12:"notional_over_max_recent_print",13:"taker_imbalance_trend",
@@ -96,6 +96,10 @@ summ = json.loads((OUT/"summary.json").read_text())
 df = pd.read_csv(OUT/"rows_continue.csv.gz",
                  dtype={c:str for c in ("kind","print_id","day","side","half",
                                         "bundle_id",COL[6],"q7_matched_print_id")})
+# L-920: 前の rows_continue の材料 5 は mat5_distance_to_liquidation_node(名前に単位が無い bp)。
+# 今の名前(_pct)が無ければ / 100 して今の名前で足す。
+if COL[5] not in df.columns and "mat5_distance_to_liquidation_node" in df.columns:
+    df[COL[5]] = pd.to_numeric(df["mat5_distance_to_liquidation_node"], errors="coerce") / 100
 for c in df.columns:
     if c not in ("kind","print_id","day","side","half","bundle_id",COL[6],
                  "q7_matched_print_id"):
@@ -594,12 +598,12 @@ sc = _iu.module_from_spec(_sp); _sp.loader.exec_module(sc)
 def probe_p0(prev_gap_ms):
     day = "2024-01-02"; ts = sc.day_start_ms(day) + 3_600_000
     rows = [{"print_id":"cur","day":day,"side":"SELL","ts_ms":ts,"t0_ms":ts,
-             "p0":30003.6,"notional":500_000.0,"dist_node_bp":-12.5,
+             "p0":30003.6,"notional":500_000.0,"dist_node_pct":-0.125,   # % (前の -12.5bp)
              "oi_covered":0,"bundle_id":""}]
     if prev_gap_ms is not None:
         rows.append({"print_id":"prev","day":day,"side":"SELL","ts_ms":ts-prev_gap_ms,
                      "t0_ms":ts-prev_gap_ms,"p0":29990.0,"notional":200_000.0,
-                     "dist_node_bp":0.0,"oi_covered":0,"bundle_id":""})
+                     "dist_node_pct":0.0,"oi_covered":0,"bundle_id":""})
     out = []
     for p0v in (30003.6, 31003.6):
         rr = [dict(r) for r in rows]; rr[0]["p0"] = p0v
@@ -607,7 +611,7 @@ def probe_p0(prev_gap_ms):
         import tempfile
         with tempfile.TemporaryDirectory() as td:
             cols = ["kind","print_id","day","side","ts_ms","t0_ms","p0","notional",
-                    "dist_node_bp","oi_covered","bundle_id"]
+                    "dist_node_pct","oi_covered","bundle_id"]
             d = pd.DataFrame([{c:r.get(c,"") for c in cols} for r in rr]); d["kind"]="print"
             p = Path(td)/"r.csv.gz"; d.to_csv(p, index=False, compression="gzip")
             pcx = sc.PrintsCSV(p)

@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """分析のスキル(`.claude/skills/analysis-lens`)の第 2 部の表を、このプロジェクトの測定の出力から出す共通の読み口。
 
-新しい走らせはしない。既にある出力(取引の行 `trades.csv.gz` の円の損益の列 `pnl_jpy` と `summary.json`)を読むだけ。
-損益は円で読み、円で計算し、円で出す(L-920「**bpの意味は「値動き率」としてのみ残し、その他の意味を持たせないようにすること**」)。
-円の損益を持たない出力(カードの測定の `daily.csv`、`trades.json.gz`、`pnl_jpy` の列の無い `trades.csv.gz`。どれも損益を
-率で持つ)は読まずに止める。封印の窓の出力は読まない(`--allow-window` は無い。窓の出力の置き場を渡したら止める)。
+新しい走らせはしない。既にある出力(取引の行 `trades.csv.gz`・`trades.json.gz`、カードの測定の `daily.csv`、`summary.json`)を読むだけ。
+損益は出力が持つ単位のまま読み、計算し、その単位で出す: 取引の行に円の列 `pnl_jpy` があれば円、無ければ損益の率 %
+(`pnl_pct`。L-920 より前の出力の `pnl_bp` は率 × 1 万なので / 100 して %)。bp とは書かない(L-920「**bpの意味は
+「値動き率」としてのみ残し、その他の意味を持たせないようにすること**」)。単位の違う 2 本は比べない(--vs・--bad で止める)。
+封印の窓の出力は読まない(`--allow-window` は無い。窓の出力の置き場を渡したら止める)。
 
 出す表(手順の番号はスキルの第 2 部):
   D0 入力の表: 出力の種類・期間・引数・列の有無と、その列で出せる手順
@@ -15,12 +16,12 @@
   D3 集まりの表: 上位・下位 5% の日の損益の割合 / 取引の損益の分位 / 出の理由・合図の強さ・保有時間の四分位ごとの
      1 取引あたり(日の塊の区間)
   D6 固まりの表: 前の出から次の建てまでの間隔の四分位ごとの 1 取引あたり(日の塊の区間)
-  D7 比べの表(--vs): 2 本の期間の日を合わせた日(取引の無い日は 0 円)ごとの差の平均・区間・MDE / 年ごとの差 / 取引の突き合わせ(建ての時刻で)
+  D7 比べの表(--vs): 2 本の期間の日を合わせた日(取引の無い日は 0)ごとの差の平均・区間・MDE / 年ごとの差 / 取引の突き合わせ(建ての時刻で)
   D8 仮定の表(--bad): 良い側・悪い側の年ごとの 1 日あたりと符号が同じか / 決まらない足を含む取引の数と損益の割合 /
      仮定に左右されない部分(決まらない足を含まない取引だけ)の 1 日あたり。良い側とその部分の符号が違えば「止める」
 
 決まり(スキル第 2 部の共通の決まり):
-  - 損益は既に向きを含む(pnl_jpy は取引の向きで符号を付けた損益、円)。値動きを使う計算(MFE など)はこの台本では出さない。
+  - 損益は既に向きを含む(取引の向きで符号を付けた損益。円か率 %)。値動きを使う計算(MFE など)はこの台本では出さない。
   - 区間は日の塊(循環、塊 5 日・1,000 回・種 20261004)。日ごとの損益の平均は `bot.bt.validation.block_bootstrap_ci`、
     取引の群の 1 取引あたりは、日を塊で選び直して群の損益の和 ÷ 取引の数を作り直す(同じ塊・回数・種)。
   - MDE は 5% 両側・80%・正規近似(`bot.bt.validation.mde`)。
@@ -54,8 +55,19 @@ def _iso_ns(s: str) -> int:
     return int(dt.timestamp()) * 10**9 + dt.microsecond * 1000
 
 
+def _rate_pct(r: dict, path: str) -> float:
+    """損益を率で持つ行の率(%)。L-920 より前の行は pnl_bp(率 × 1 万)なので / 100 して % にする。"""
+    if r.get("pnl_pct") not in (None, ""):
+        return float(r["pnl_pct"])
+    if r.get("pnl_bp") not in (None, ""):
+        return float(r["pnl_bp"]) / 100
+    raise SystemExit(f"止める: {path} に損益の列(pnl_jpy・pnl_pct・前の pnl_bp)が無い")
+
+
 def load_run(d: str) -> dict:
-    """出力の置き場を読む。種類 = trades(trades.csv.gz の円の損益)。"""
+    """出力の置き場を読む。種類 = card(daily.csv)/ trades(trades.csv.gz か trades.json.gz)。
+    損益の単位 unit: 取引の行に pnl_jpy があれば「円」、無ければ損益の率で「%」(カードの測定・指値の再現。L-920 より前の
+    pnl_bp は / 100)。各取引の損益は t["pnl"](その単位)。円の出力では t["pnl_jpy"] にも同じ値を置く。"""
     if WINDOW_MARK in os.path.abspath(d).replace(os.sep, "/"):
         raise SystemExit(f"止める: {d} は封印の窓の出力の置き場(この台本では読まない)")
     out: dict = {"dir": d, "name": os.path.basename(os.path.normpath(d)), "summary": None, "trades": None, "daily": None,
@@ -64,27 +76,44 @@ def load_run(d: str) -> dict:
     if os.path.isfile(sp):
         with open(sp, encoding="utf-8") as fh:
             out["summary"] = json.load(fh)
-    if os.path.isfile(os.path.join(d, "daily.csv")):
-        raise SystemExit(f"止める: {d} は daily.csv(損益を率で持つカードの測定)。この読み口は円の損益(trades.csv.gz の pnl_jpy)だけを読む")
-    cp = os.path.join(d, "trades.csv.gz")
-    if not os.path.isfile(cp):
-        raise SystemExit(f"止める: {d} に trades.csv.gz が無い(trades.json.gz は損益を率で持つので読まない)")
+    dp = os.path.join(d, "daily.csv")
+    if os.path.isfile(dp):
+        with open(dp, encoding="utf-8") as fh:
+            out["daily"] = {r["day"]: _rate_pct(r, dp) for r in csv.DictReader(fh)}
+        out["kind"], out["unit"] = "card", "%"
+        return out
+    cp, jp = os.path.join(d, "trades.csv.gz"), os.path.join(d, "trades.json.gz")
     rows = []
-    with gzip.open(cp, "rt", encoding="utf-8", newline="") as fh:
-        rd = csv.DictReader(fh)
-        out["fields"] = list(rd.fieldnames or [])
-        if "pnl_jpy" not in out["fields"]:
-            raise SystemExit(f"止める: {cp} に円の損益の列 pnl_jpy が無い(損益を率で持つ出力は読まない)")
-        for r in rd:
-            if r.get("in_measure", "True") == "False":
-                continue
-            t = {"entry_ns": _iso_ns(r["entry_t"]), "exit_ns": _iso_ns(r["exit_t"]), "pnl_jpy": float(r["pnl_jpy"])}
-            for k in ("exit_reason", "strength", "signal_t"):
-                if k in r:
-                    t[k] = r[k]
-            if "undecided" in r and r["undecided"] != "":
-                t["undecided"] = int(float(r["undecided"]))
-            rows.append(t)
+    if os.path.isfile(cp):
+        with gzip.open(cp, "rt", encoding="utf-8", newline="") as fh:
+            rd = csv.DictReader(fh)
+            out["fields"] = list(rd.fieldnames or [])
+            yen = "pnl_jpy" in out["fields"]
+            for r in rd:
+                if r.get("in_measure", "True") == "False":
+                    continue
+                t = {"entry_ns": _iso_ns(r["entry_t"]), "exit_ns": _iso_ns(r["exit_t"])}
+                t["pnl"] = float(r["pnl_jpy"]) if yen else _rate_pct(r, cp)
+                if yen:
+                    t["pnl_jpy"] = t["pnl"]
+                for k in ("exit_reason", "strength", "signal_t"):
+                    if k in r:
+                        t[k] = r[k]
+                if "undecided" in r and r["undecided"] != "":
+                    t["undecided"] = int(float(r["undecided"]))
+                rows.append(t)
+        out["unit"] = "円" if yen else "%"
+    elif os.path.isfile(jp):
+        with gzip.open(jp, "rt", encoding="utf-8") as fh:
+            o = json.load(fh)
+        scale = {"ns": 1, "s": 10**9}[o["t_unit"]]
+        out["fields"] = [k for k in o if k not in ("version", "t_unit")]
+        pnl = [float(v) for v in o["pnl_pct"]] if "pnl_pct" in o else [float(v) / 100 for v in o["pnl_bp"]]
+        rows = [{"entry_ns": int(e) * scale, "exit_ns": int(x) * scale, "pnl": p}
+                for e, x, p in zip(o["entry_t_ns"], o["exit_t_ns"], pnl)]
+        out["unit"] = "%"
+    else:
+        raise SystemExit(f"止める: {d} に daily.csv も trades.csv.gz も trades.json.gz も無い")
     rows.sort(key=lambda t: (t["entry_ns"], t["exit_ns"]))
     out["trades"] = rows
     out["kind"] = "trades"
@@ -117,7 +146,7 @@ def daily_series(run: dict) -> dict[str, float]:
     for t in run["trades"]:
         d = utc_day(t["exit_ns"])
         if d in out:
-            out[d] += t["pnl_jpy"]
+            out[d] += t["pnl"]
     return out
 
 
@@ -238,7 +267,7 @@ def signal_delay(run: dict, valid_min: float | None) -> dict | None:
     out = {"trades": len(ts), "q": {str(q): float(np.percentile(d, q)) for q in (25, 50, 75, 90, 99)},
            "max": float(d.max()), "valid_min": valid_min}
     if valid_min is not None:
-        pn = np.array([t["pnl_jpy"] for t in ts])
+        pn = np.array([t["pnl"] for t in ts])
         late = d > valid_min
         out["within"] = {"trades": int((~late).sum()), "sum": float(pn[~late].sum())}
         out["late"] = {"trades": int(late.sum()), "sum": float(pn[late].sum())}
@@ -296,7 +325,7 @@ def d3(run: dict, daily: dict[str, float]) -> dict:
     if run["kind"] != "trades":
         return out
     tr = run["trades"]
-    p = np.array([t["pnl_jpy"] for t in tr])
+    p = np.array([t["pnl"] for t in tr])
     out["trade_quantiles"] = {q: float(np.quantile(p, q)) for q in (0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)}
     out["n_trades"] = len(tr)
     hold = [(t["exit_ns"] - t["entry_ns"]) / 6e10 for t in tr]
@@ -338,7 +367,7 @@ def group_table(tr: list[dict], days: list[str], key) -> dict:
     cnts: dict = defaultdict(lambda: defaultdict(int))
     for t in tr:
         g, d = key(t), utc_day(t["exit_ns"])
-        sums[g][d] += t["pnl_jpy"]
+        sums[g][d] += t["pnl"]
         cnts[g][d] += 1
     return {g: group_ratio_ci(days, sums[g], cnts[g]) for g in sorted(sums)}
 
@@ -355,7 +384,7 @@ def d6(run: dict, daily: dict[str, float]) -> dict | None:
 
 
 def d7(a: dict, b: dict) -> dict:
-    # 2 本の期間の日を合わせた日で、取引の無い日(片方の期間の外の日を含む)は 0 円。共通の日だけにすると、期間の始まりが
+    # 2 本の期間の日を合わせた日で、取引の無い日(片方の期間の外の日を含む)は 0。共通の日だけにすると、期間の始まりが
     # 遅い本で相手だけの日が落ちる(関門 ② 3 族 1 回目の指摘 1、`docs/RESEARCH/matilda_main/d7_fullperiod.py`)。
     da, db = daily_series(a), daily_series(b)
     days = sorted(set(da) | set(db))
@@ -367,9 +396,9 @@ def d7(a: dict, b: dict) -> dict:
         key = "signal_t" if all("signal_t" in t for t in a["trades"] + b["trades"]) else "entry_ns"
         ka, kb = defaultdict(float), defaultdict(float)
         for t in a["trades"]:
-            ka[t[key]] += t["pnl_jpy"]
+            ka[t[key]] += t["pnl"]
         for t in b["trades"]:
-            kb[t[key]] += t["pnl_jpy"]
+            kb[t[key]] += t["pnl"]
         out["match_key"] = key
         both = set(ka) & set(kb)
         out["match"] = {"both": len(both), "only_a": len(set(ka) - both), "only_b": len(set(kb) - both),
@@ -401,15 +430,19 @@ def d8(good: dict, bad: dict) -> dict:
     for name, r in (("good", good), ("bad", bad)):
         if r["kind"] == "trades" and any("undecided" in t for t in r["trades"]):
             u = [t for t in r["trades"] if t.get("undecided", 0) > 0]
-            tot = sum(t["pnl_jpy"] for t in r["trades"])
+            tot = sum(t["pnl"] for t in r["trades"])
             und[name] = {"trades": len(u), "share_trades": len(u) / len(r["trades"]),
-                         "pnl_sum": float(sum(t["pnl_jpy"] for t in u)), "pnl_total": float(tot)}
+                         "pnl_sum": float(sum(t["pnl"] for t in u)), "pnl_total": float(tot)}
     return {"rows": rows, "undecided": und, "assumption_free": free, "stop": stop}
 
 
 # ---------------------------------------------------------------- 書き出し
 
+_MIN_ND = 0  # render() sets 4 for a % run: a pnl rate in % needs 4 decimals (0.0001 % = 0.01 bp), yen does not
+
+
 def _f(x, nd=2):
+    nd = max(nd, _MIN_ND)
     return "—" if x is None else f"{x:+.{nd}f}"
 
 
@@ -418,8 +451,11 @@ def _ci(r):
 
 
 def render(res: dict) -> str:
+    global _MIN_ND
+    U = res.get("unit", "円")
+    _MIN_ND = 4 if U == "%" else 0
     L = [f"# 診断の表: {res['d0']['name']}", "",
-         "`scripts/analysis/diag_tables.py` が出した(手で書いていない)。損益は円、経費の前。区間は 95%(日の塊 5 日・1,000 回)。"
+         f"`scripts/analysis/diag_tables.py` が出した(手で書いていない)。損益は{'円' if U == '円' else '損益の率(%。その出力の損益の定義のまま)'}、経費の前。区間は 95%(日の塊 5 日・1,000 回)。"
          "MDE は 5% 両側・80%。", ""]
     z = res["d0"]
     L += ["## D0 入力", "", f"- 種類: {z['kind']} / 期間: {z['period']} / 取引: {z['trades']}",
@@ -437,7 +473,7 @@ def render(res: dict) -> str:
                      f"**越えて建った {sd['late']['trades']} 本・和 {_f(sd['late']['sum'])}**(結果で決まる群。期限を付けた形の損益はここから言えない)")
     L.append("")
     d1r = res["d1"]
-    L += ["## D1 時間(1 日あたり、円/日)", "", "年ごと(記述。区切りの判断には使わない):", "",
+    L += [f"## D1 時間(1 日あたり、{U}/日)", "", "年ごと(記述。区切りの判断には使わない):", "",
           "| 期間 | 日数 | 1 日あたり [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|"]
     for r in d1r["rows"]:
         L.append(f"| {r['label']} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {r['zero']} |")
@@ -456,51 +492,51 @@ def render(res: dict) -> str:
           + ("。全期間の行は一部の期間の稼ぎ" if sg["outcome"] in ("崩れた", "後半だけ") else ""), ""]
     d3r = res["d3"]
     L += ["## D3 集まり", "",
-          f"- 全体の和 {_f(d3r['total'],0)} 円({d3r['days']} 日)。上位 5% の日({d3r['k']} 日)の和 {_f(d3r['top5_days_sum'],0)} 円、"
-          f"下位 5% の日の和 {_f(d3r['bottom5_days_sum'],0)} 円。", ""]
+          f"- 全体の和 {_f(d3r['total'],0)} {U}({d3r['days']} 日)。上位 5% の日({d3r['k']} 日)の和 {_f(d3r['top5_days_sum'],0)} {U}、"
+          f"下位 5% の日の和 {_f(d3r['bottom5_days_sum'],0)} {U}。", ""]
     if "trade_quantiles" in d3r:
         q = d3r["trade_quantiles"]
-        L += [f"- 取引 {d3r['n_trades']} 本の損益の分位(円): " + "、".join(f"{int(k*100)}% {_f(v)}" for k, v in q.items()),
+        L += [f"- 取引 {d3r['n_trades']} 本の損益の分位({U}): " + "、".join(f"{int(k*100)}% {_f(v)}" for k, v in q.items()),
               ""]
         for gname, tab in d3r["groups"].items():
             note = ("(取引の結果で群が決まるので、群どうしの差から原因は言えない。記述だけ)" if "結果で決まる" in gname
                     else "(建ての前に決まる群。群どうしの差は原因の候補になる)")
-            L += [f"### {gname}ごとの 1 取引あたり(円)", "", note, "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
+            L += [f"### {gname}ごとの 1 取引あたり({U})", "", note, "", "| 群 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
             for g, r in tab.items():
                 L.append(f"| {g or '(空)'} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
             L.append("")
     if res.get("d6"):
         r6 = res["d6"]
-        L += ["## D6 固まり(前の出から次の建てまでの間隔の帯ごと、1 取引あたり 円。帯は四分位の境を重ならないようにまとめたもの)", "",
+        L += [f"## D6 固まり(前の出から次の建てまでの間隔の帯ごと、1 取引あたり {U}。帯は四分位の境を重ならないようにまとめたもの)", "",
               "| 間隔 | 取引 | 和 | 1 取引あたり [区間] |", "|---|---|---|---|"]
         for g, r in r6["groups"].items():
             L.append(f"| {g} | {r['trades']} | {_f(r['sum'],0)} | {_ci(r)} |")
         L.append("")
     if res.get("d7"):
         r7 = res["d7"]
-        L += [f"## D7 比べ({res['d0']['name']} − {res['vs_name']}、2 本の期間の日を合わせた日ごとの差(取引の無い日は 0 円)、円/日)", "",
+        L += [f"## D7 比べ({res['d0']['name']} − {res['vs_name']}、2 本の期間の日を合わせた日ごとの差(取引の無い日は 0 {U})、{U}/日)", "",
               "| 期間 | 日数 | 差 [区間] | MDE | 区間が 0 を |", "|---|---|---|---|---|",
               f"| 全期間 | {r7['all']['n']} | {_ci(r7['all'])} | {_f(r7['all']['mde'])} | {contains_zero(r7['all'])} |"]
         for y, r in r7["years"].items():
             L.append(f"| {y} | {r['n']} | {_ci(r)} | {_f(r['mde'])} | {contains_zero(r)} |")
         if "match" in r7:
             m = r7["match"]
-            L += ["", f"- 取引の突き合わせ({'合図の時刻' if r7.get('match_key') == 'signal_t' else '建ての時刻'}): 両方 {m['both']} 本(差の和 {_f(m['sum_both_a_minus_b'],0)} 円)/ "
+            L += ["", f"- 取引の突き合わせ({'合図の時刻' if r7.get('match_key') == 'signal_t' else '建ての時刻'}): 両方 {m['both']} 本(差の和 {_f(m['sum_both_a_minus_b'],0)} {U})/ "
                   f"こちらだけ {m['only_a']} 本(和 {_f(m['sum_only_a'],0)})/ 相手だけ {m['only_b']} 本(和 {_f(m['sum_only_b'],0)})"]
         L.append("")
     if res.get("d8"):
         r8 = res["d8"]
-        L += ["## D8 仮定(良い側・悪い側、1 日あたり 円/日)", "", "| 期間 | 良い側 [区間] | 悪い側 [区間] | 符号が同じ |", "|---|---|---|---|"]
+        L += [f"## D8 仮定(良い側・悪い側、1 日あたり {U}/日)", "", "| 期間 | 良い側 [区間] | 悪い側 [区間] | 符号が同じ |", "|---|---|---|---|"]
         for r in r8["rows"]:
             L.append(f"| {r['label']} | {_ci(r['good'])} | {_ci(r['bad'])} | {r['same_sign']} |")
         for k, f in r8.get("assumption_free", {}).items():
-            L.append(f"- 仮定に左右されない部分({k}。決まらない足を含まない取引だけ)の 1 日あたり: {_ci(f)} 円/日")
+            L.append(f"- 仮定に左右されない部分({k}。決まらない足を含まない取引だけ)の 1 日あたり: {_ci(f)} {U}/日")
         L.append("  (注: 決まらない足を含まない取引は、含む取引と性質が違う(利確に届かずに止まった取引に寄る)。この値は戦略の損益の"
                  "見積もりではなく、仮定の外にある部分の大きさ)")
         L.append(f"- 止める(良い側と悪い側の全期間の符号が違う、または良い側と仮定に左右されない部分の符号が違う): **{r8['stop']}**")
         for k, u in r8["undecided"].items():
-            L.append(f"- 決まらない足を含む取引({k}): {u['trades']} 本({u['share_trades']:.1%})、その損益の和 {_f(u['pnl_sum'],0)} 円"
-                     f"(全体 {_f(u['pnl_total'],0)} 円)")
+            L.append(f"- 決まらない足を含む取引({k}): {u['trades']} 本({u['share_trades']:.1%})、その損益の和 {_f(u['pnl_sum'],0)} {U}"
+                     f"(全体 {_f(u['pnl_total'],0)} {U})")
         L.append("")
     return "\n".join(L)
 
@@ -520,12 +556,18 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"--cut {a.cut} は YYYY-MM-DD の形でない")
     run = load_run(a.run)
     daily = daily_series(run)
-    res = {"d0": d0(run, a.valid_min), "d1": d1(daily, a.cut), "d3": d3(run, daily), "d6": d6(run, daily)}
+    res = {"d0": d0(run, a.valid_min), "d1": d1(daily, a.cut), "d3": d3(run, daily), "d6": d6(run, daily),
+           "unit": run["unit"]}
     if a.vs:
         vs = load_run(a.vs)
+        if vs["unit"] != run["unit"]:
+            raise SystemExit(f"止める: --run の損益は {run['unit']}、--vs の損益は {vs['unit']}。単位の違う 2 本の差は取らない")
         res["d7"], res["vs_name"] = d7(run, vs), vs["name"]
     if a.bad:
-        res["d8"] = d8(run, load_run(a.bad))
+        bad = load_run(a.bad)
+        if bad["unit"] != run["unit"]:
+            raise SystemExit(f"止める: --run の損益は {run['unit']}、--bad の損益は {bad['unit']}。単位の違う 2 本は並べない")
+        res["d8"] = d8(run, bad)
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
     with open(a.out, "w", encoding="utf-8") as fh:
         fh.write(render(res) + "\n")

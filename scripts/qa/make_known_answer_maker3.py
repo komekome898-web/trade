@@ -178,6 +178,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # criterion revision was evaluated against). All five are recorded verbatim
 # in SEEDS_TRIED and echoed into the sealed json's "seed_selection" field.
 SEED = 20260910
+# Pre-L-920 record (2026-09-07..11), kept as written: its *_net_bps_* / gap / s1_abs_net_p95_bps values are
+# the position PnL rate x 1e4 (= the % values below x 100); adverse_selection_bps is a mid move (bp).
 SEEDS_TRIED = {
     20260907: {"S1_net_bps_mean": 0.215, "S1_net_bps_t_stat": 1.879, "naive_net_bps_mean": 0.8311,
                "naive_net_bps_t_stat": 71.299, "gap": 0.6161, "forced_exit_fraction": 0.4626,
@@ -239,10 +241,11 @@ def _naive_gap_criterion_met(naive_summary: dict, s1_summary: dict) -> tuple[boo
     shared by run_self_checks() (fails loudly) and build_claims() (decides
     whether QA3-2's 'therefore a tradable edge exists' claim can honestly be
     marked false). Returns (meets, gap)."""
-    naive_net = naive_summary["net_bps_mean"]
-    s1_net = s1_summary["net_bps_mean"]
+    naive_net = naive_summary["net_pct_mean"]
+    s1_net = s1_summary["net_pct_mean"]
     gap = naive_net - s1_net
-    meets = (naive_net >= 2.0 * s1_net) and (naive_summary["net_bps_t_stat"] >= 3.0) and (gap >= 0.5)
+    # gap in % (L-920): 0.005 % = the decision's 0.5 bps (NAIVE_GAP_CRITERION_REVISION, verbatim above)
+    meets = (naive_net >= 2.0 * s1_net) and (naive_summary["net_pct_t_stat"] >= 3.0) and (gap >= 0.005)
     return meets, gap
 
 # --------------------------------------------------------------------- #
@@ -250,7 +253,7 @@ def _naive_gap_criterion_met(naive_summary: dict, s1_summary: dict) -> tuple[boo
 # --------------------------------------------------------------------- #
 PRICE0 = 100_000.0
 TICK = 10.0
-TICK_BPS = TICK / PRICE0 * 1e4          # = 1.0 bp exactly
+TICK_PCT = TICK / PRICE0 * 100          # = 0.01 % exactly (a price step, not a move; was TICK_BPS = 1.0)
 
 TAPE_DAYS = 5.0
 TAPE_START = "2026-08-03T00:00:00+00:00"
@@ -866,7 +869,7 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
                 "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
                 "entry_price": entry_price, "entry_exec_id": entry_exec_id,
                 "exit_time": cap_time, "exit_row_idx": max(i - 1, 0), "exit_price": exit_price,
-                "exit_exec_id": None, "forced": True, "net_bps": pnl / entry_price * 1e4,
+                "exit_exec_id": None, "forced": True, "net_pct": pnl / entry_price * 100,
             })
             state = "seek_entry"
             pending["bid"] = _make_order("bid", row, inside_mode)
@@ -892,7 +895,7 @@ def run_strategy(events: pd.DataFrame, mid: MidLookup, inside_mode: bool,
                         "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
                         "entry_price": entry_price, "entry_exec_id": entry_exec_id,
                         "exit_time": row.t, "exit_row_idx": i, "exit_price": exit_price,
-                        "exit_exec_id": row.exec_id, "forced": False, "net_bps": pnl / entry_price * 1e4,
+                        "exit_exec_id": row.exec_id, "forced": False, "net_pct": pnl / entry_price * 100,
                     })
                     state = "seek_entry"
                     pending["bid"] = _make_order("bid", row, inside_mode)
@@ -925,19 +928,19 @@ def _mean_t(values) -> tuple[float, float, int]:
 
 
 def summarize(positions: list[dict], label: str, markout_key: str = "markout_5s_bps") -> dict:
-    net_mean, net_t, n = _mean_t([p["net_bps"] for p in positions])
+    net_mean, net_t, n = _mean_t([p["net_pct"] for p in positions])
     mo_mean, mo_t, mo_n = _mean_t([p.get(markout_key) for p in positions])
     forced = sum(1 for p in positions if p["forced"])
     kept = [p for p in positions if not p["forced"]]
-    dropped_mean, _, dropped_n = _mean_t([p["net_bps"] for p in kept])
+    dropped_mean, _, dropped_n = _mean_t([p["net_pct"] for p in kept])
     return {
         "label": label, "n_positions": n,
-        "net_bps_mean": round(net_mean, 4), "net_bps_t_stat": round(net_t, 3),
+        "net_pct_mean": round(net_mean, 6), "net_pct_t_stat": round(net_t, 3),   # % (L-920; was net_bps x 1e4, 4 dp)
         "adverse_selection_bps_at_5s_mean": round(mo_mean, 4),
         "adverse_selection_t_stat": round(mo_t, 3), "adverse_selection_n": mo_n,
         "forced_exit_count": forced,
         "forced_exit_fraction": round(forced / n, 4) if n else None,
-        "survivorship_biased_net_bps_if_forced_dropped": round(dropped_mean, 4),
+        "survivorship_biased_net_pct_if_forced_dropped": round(dropped_mean, 6),
         "n_positions_if_dropped": dropped_n,
     }
 
@@ -1044,7 +1047,7 @@ def build_public_tape(events: pd.DataFrame, s1_positions: list[dict], s2_positio
     return {
         "quote_file": qfile, "execution_file": efile,
         "n_quote_rows": int(len(tick_out)), "n_execution_rows": int(len(ex_out)),
-        "tick": TICK, "tick_bps": TICK_BPS,
+        "tick": TICK, "tick_pct": TICK_PCT,
         "crossed_book_fraction_target": CROSSED_BOOK_FRACTION,
         "crossed_book_rows_idx": crossed_idx,
         "crossed_book_fraction_realized": round(len(crossed_idx) / len(ticks), 6) if len(ticks) else None,
@@ -1114,7 +1117,7 @@ def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
     for label, positions in (("S1", s1_positions), ("S2", s2_positions)):
         if not positions:
             continue
-        all_net = np.asarray([q["net_bps"] for q in positions], dtype=float)
+        all_net = np.asarray([q["net_pct"] for q in positions], dtype=float)
         forced_mask = np.asarray([q["forced"] for q in positions], dtype=bool)
         n = len(positions)
         n_forced = int(forced_mask.sum())
@@ -1217,8 +1220,8 @@ def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
 
     # S1 |net| p95 <= 8bps (realistic maker per-position P&L, not the
     # degenerate +-30-60bps of the void v2 packet).
-    s1_abs_net_p95 = float(np.percentile(np.abs([p["net_bps"] for p in s1_positions]), 95)) if s1_positions else 0.0
-    assert s1_abs_net_p95 <= 8.0, f"S1 |net| p95 {s1_abs_net_p95:.3f}bps exceeds 8bps"
+    s1_abs_net_p95 = float(np.percentile(np.abs([p["net_pct"] for p in s1_positions]), 95)) if s1_positions else 0.0
+    assert s1_abs_net_p95 <= 0.08, f"S1 |net| p95 {s1_abs_net_p95:.5f}% exceeds 0.08% (8bps)"
 
     # forced_exit_fraction in [0.15, 0.45] for S1 (not near-zero, not
     # dominating the sample).
@@ -1238,9 +1241,9 @@ def run_self_checks(events: pd.DataFrame, tape_info: dict, out_dir: Path,
     # form of this criterion (recorded verbatim in the sealed json).
     meets_gap, gap_val = _naive_gap_criterion_met(naive_summary, s1_summary)
     assert meets_gap, (
-        f"naive-gap criterion not met: naive_net={naive_summary['net_bps_mean']:.4f}bps "
-        f"(t={naive_summary['net_bps_t_stat']:.3f}) vs S1 net={s1_summary['net_bps_mean']:.4f}bps, "
-        f"gap={gap_val:.4f}bps -- see NAIVE_GAP_CRITERION_REVISION"
+        f"naive-gap criterion not met: naive_net={naive_summary['net_pct_mean']:.6f}% "
+        f"(t={naive_summary['net_pct_t_stat']:.3f}) vs S1 net={s1_summary['net_pct_mean']:.6f}%, "
+        f"gap={gap_val:.6f}% -- see NAIVE_GAP_CRITERION_REVISION"
     )
 
 
@@ -1376,7 +1379,7 @@ def _independent_replay_one(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, insi
             positions.append({
                 "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
                 "entry_price": entry_price, "exit_time": cap_time, "exit_row_idx": max(i - 1, 0),
-                "exit_price": exit_price, "forced": True, "net_bps": pnl / entry_price * 1e4,
+                "exit_price": exit_price, "forced": True, "net_pct": pnl / entry_price * 100,
             })
             state = "seek_entry"
             pending = {"bid": make_order("bid", i), "ask": make_order("ask", i)}
@@ -1428,7 +1431,7 @@ def _independent_replay_one(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, insi
                 positions.append({
                     "direction": direction, "entry_time": entry_time, "entry_row_idx": entry_row_idx,
                     "entry_price": entry_price, "exit_time": t_dt[i], "exit_row_idx": i,
-                    "exit_price": exit_price, "forced": False, "net_bps": pnl / entry_price * 1e4,
+                    "exit_price": exit_price, "forced": False, "net_pct": pnl / entry_price * 100,
                 })
                 state = "seek_entry"
                 pending = {"bid": make_order("bid", i), "ask": make_order("ask", i)}
@@ -1440,9 +1443,9 @@ def _independent_replay_one(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, insi
 
 def independent_public_replay(ticker_df: pd.DataFrame, exec_df: pd.DataFrame) -> dict:
     """Public-only re-derivation of S1 and S2. Returns a dict with the same
-    net_bps_mean/net_bps_t_stat/n_positions/forced_exit_fraction shape as
+    net_pct_mean/net_pct_t_stat/n_positions/forced_exit_fraction shape as
     summarize() for both, via the SAME summarize() function (it only looks
-    at 'net_bps'/'forced', both present here)."""
+    at 'net_pct'/'forced', both present here)."""
     s1_pub, _ = _independent_replay_one(ticker_df, exec_df, inside_mode=False, bg_bid=None, bg_ask=None)
     # S2 needs BACKGROUND-ONLY depth (purified of S1's own footprint, which
     # is what the ticker's size columns actually carry -- see the
@@ -1473,9 +1476,9 @@ def verify_independent_replay(out_dir: Path, tape_info: dict, s1_summary: dict, 
                 f"this is the generation-3-v1 failure mode (a rule ambiguity three blind "
                 f"auditors would ALSO hit); do not seal this packet."
             )
-        assert abs(got["net_bps_mean"] - hidden["net_bps_mean"]) < 1e-6, (
-            f"INDEPENDENT PUBLIC-ONLY REPLAY DISAGREES WITH SEALED TRUTH ({label}.net_bps_mean): "
-            f"public-only replay={got['net_bps_mean']!r} hidden-log truth={hidden['net_bps_mean']!r}"
+        assert abs(got["net_pct_mean"] - hidden["net_pct_mean"]) < 1e-8, (   # % (was 1e-6 on bp)
+            f"INDEPENDENT PUBLIC-ONLY REPLAY DISAGREES WITH SEALED TRUTH ({label}.net_pct_mean): "
+            f"public-only replay={got['net_pct_mean']!r} hidden-log truth={hidden['net_pct_mean']!r}"
         )
     return pub
 
@@ -1526,7 +1529,7 @@ price).
 
 ## Notes
 
-- Instrument tick: {tick} (price units). Fee: 0 bps maker and taker.
+- Instrument tick: {tick} (price units). Fee: 0 % maker and taker.
 - Sizes in both files are displayed/executed totals, not per-order detail.
 - The ticker (quote) file and the execution file are separate update
   streams with their own timestamps.
@@ -1583,9 +1586,9 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
     meets_gap, gap = _naive_gap_criterion_met(naive, s1)
     if not meets_gap:
         raise RuntimeError(
-            f"QA3-2 stop condition failed (revised criterion): naive net_bps_mean="
-            f"{naive['net_bps_mean']:.4f} (t={naive['net_bps_t_stat']:.3f}) vs true-rule S1 "
-            f"net_bps_mean={s1['net_bps_mean']:.4f} (gap={gap:.4f}) does not satisfy "
+            f"QA3-2 stop condition failed (revised criterion): naive net_pct_mean="
+            f"{naive['net_pct_mean']:.6f} (t={naive['net_pct_t_stat']:.3f}) vs true-rule S1 "
+            f"net_pct_mean={s1['net_pct_mean']:.6f} (gap={gap:.6f} %) does not satisfy "
             f"naive>=2x*S1 AND naive_t>=3 AND gap>=0.5bps -- see NAIVE_GAP_CRITERION_REVISION. "
             f"Per the fix spec, generation must stop here rather than seal a false QA3-2."
         )
@@ -1594,24 +1597,24 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
         {
             "id": "QA3-1", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"母集団=S1(最良気配で対称的に両建て quote、300秒 cap)の完了建玉。上記の約定規則の下で"
-                     f"ネット = {s1['net_bps_mean']:+.2f}bps/往復 (t={s1['net_bps_t_stat']:.2f})。"
-                     f"{_sign_significance_ja(s1['net_bps_mean'], s1['net_bps_t_stat'])}。"),
+                     f"ネット = {s1['net_pct_mean']:+.4f}%/往復 (t={s1['net_pct_t_stat']:.2f})。"
+                     f"{_sign_significance_ja(s1['net_pct_mean'], s1['net_pct_t_stat'])}。"),
         },
         {
             "id": "QA3-2", "category": "naive_bias", "truth_class": "naive_model_bias", "claim_correct": False,
             "text": (f"母集団=S1と同じ建玉群だが、約定規則を『挿入後に自分の価格・サイドで最初に印字された"
                      f"執行を無条件に約定とみなす(キュー先行量を無視)』に置き換えて PUBLIC テープを再生した"
-                     f"場合、ネット = {naive['net_bps_mean']:+.2f}bps/往復 (t={naive['net_bps_t_stat']:.2f}) と"
-                     f"なる。これは上記の約定規則(正しい規則)の下でのネット {s1['net_bps_mean']:+.2f}bps/往復"
-                     f"(t={s1['net_bps_t_stat']:.2f})より大幅に楽観的であり、したがってこの素朴な計算だけからでも"
+                     f"場合、ネット = {naive['net_pct_mean']:+.4f}%/往復 (t={naive['net_pct_t_stat']:.2f}) と"
+                     f"なる。これは上記の約定規則(正しい規則)の下でのネット {s1['net_pct_mean']:+.4f}%/往復"
+                     f"(t={s1['net_pct_t_stat']:.2f})より大幅に楽観的であり、したがってこの素朴な計算だけからでも"
                      f"取引可能なエッジが存在すると結論できる。"),
         },
         {
             "id": "QA3-3", "category": "maker_fill", "truth_class": "true_effect", "claim_correct": True,
             "text": (f"母集団=S2(スプレッド2tick以上のとき最良気配より1tick内側に improve して両建て quote、"
                      f"それ以外は最良気配、300秒 cap)の完了建玉。上記と同じ約定規則の下でネット = "
-                     f"{s2['net_bps_mean']:+.2f}bps/往復 (t={s2['net_bps_t_stat']:.2f})。"
-                     f"{_sign_significance_ja(s2['net_bps_mean'], s2['net_bps_t_stat'])}。"),
+                     f"{s2['net_pct_mean']:+.4f}%/往復 (t={s2['net_pct_t_stat']:.2f})。"
+                     f"{_sign_significance_ja(s2['net_pct_mean'], s2['net_pct_t_stat'])}。"),
         },
         {
             "id": "QA3-4", "category": "adverse_selection", "truth_class": "adverse_selection_magnitude",
@@ -1625,7 +1628,7 @@ def build_claims(s1: dict, s2: dict, naive: dict) -> tuple[str, list[dict]]:
             "claim_correct": False,
             "text": (f"母集団=S1(上記の約定規則)の完了建玉のうち、300秒 cap で taker 決済(forced exit)"
                      f"になったものを除外した部分集合。この部分集合の平均ネットは "
-                     f"{s1['survivorship_biased_net_bps_if_forced_dropped']:+.2f}bps であり、"
+                     f"{s1['survivorship_biased_net_pct_if_forced_dropped']:+.4f}% であり、"
                      f"これが戦略の正しい期待値の推定である。"),
         },
         {
@@ -1697,7 +1700,7 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
         "dataset_dir": str(out_dir.relative_to(REPO_ROOT)) if out_dir.is_relative_to(REPO_ROOT) else str(out_dir),
         "hidden_dir": str(hidden_dir.relative_to(REPO_ROOT)) if hidden_dir.is_relative_to(REPO_ROOT) else str(hidden_dir),
         "tape": tape_info,
-        "own_size": OWN_SIZE, "cap_seconds": CAP_SECONDS, "tick": TICK, "tick_bps": TICK_BPS,
+        "own_size": OWN_SIZE, "cap_seconds": CAP_SECONDS, "tick": TICK, "tick_pct": TICK_PCT,
         "fill_rule": FILL_RULE_TEXT,
         "S1_symmetric_at_best": s1_summary,
         "S2_inside_one_tick": s2_summary,
@@ -1705,7 +1708,7 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
         "independent_public_only_replay": {
             "note": "second, separately-written replay reading ONLY the two public files + "
                      "FILL_RULE_TEXT (see independent_public_replay() in this script) -- "
-                     "verified to match S1/S2 net_bps_mean/n_positions/forced_exit_fraction "
+                     "verified to match S1/S2 net_pct_mean/n_positions/forced_exit_fraction "
                      "exactly in verify_independent_replay() before this json is written",
             "S1_symmetric_at_best": independent["S1_symmetric_at_best"],
             "S2_inside_one_tick": independent["S2_inside_one_tick"],
@@ -1722,8 +1725,8 @@ def generate(out_dir: Path, seed: int, tape_days: float = TAPE_DAYS, hidden_dir:
             "survivorship_bias_if_forced_exits_dropped": {
                 "scenario": "S1_symmetric_at_best",
                 "fraction_forced": s1_summary["forced_exit_fraction"],
-                "correct_net_bps_all_positions": s1_summary["net_bps_mean"],
-                "biased_net_bps_if_dropped": s1_summary["survivorship_biased_net_bps_if_forced_dropped"],
+                "correct_net_pct_all_positions": s1_summary["net_pct_mean"],
+                "biased_net_pct_if_dropped": s1_summary["survivorship_biased_net_pct_if_forced_dropped"],
             },
         },
         "claims": claims,
@@ -1758,11 +1761,11 @@ def main() -> None:
     s1 = result["answers"]["S1_symmetric_at_best"]
     s2 = result["answers"]["S2_inside_one_tick"]
     naive = result["answers"]["naive_fill_on_print_at_best"]
-    print(f"S1 net={s1['net_bps_mean']:.3f}bps t={s1['net_bps_t_stat']:.2f} n={s1['n_positions']} "
+    print(f"S1 net={s1['net_pct_mean']:.5f}% t={s1['net_pct_t_stat']:.2f} n={s1['n_positions']} "
           f"forced={s1['forced_exit_fraction']:.3f} adv5s={s1['adverse_selection_bps_at_5s_mean']:.3f} "
           f"t={s1['adverse_selection_t_stat']:.2f}")
-    print(f"S2 net={s2['net_bps_mean']:+.3f}bps t={s2['net_bps_t_stat']:.2f} n={s2['n_positions']}")
-    print(f"naive net={naive['net_bps_mean']:+.3f}bps t={naive['net_bps_t_stat']:.2f} n={naive['n_positions']}")
+    print(f"S2 net={s2['net_pct_mean']:+.5f}% t={s2['net_pct_t_stat']:.2f} n={s2['n_positions']}")
+    print(f"naive net={naive['net_pct_mean']:+.5f}% t={naive['net_pct_t_stat']:.2f} n={naive['n_positions']}")
     print(f"seed={args.seed} (seeds tried: {sorted(SEEDS_TRIED)})")
     print("independent public-only replay matched sealed S1/S2 net/n/forced_fraction exactly")
 

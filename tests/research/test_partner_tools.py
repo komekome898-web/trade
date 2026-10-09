@@ -623,8 +623,9 @@ def test_check_partner_default_glob_is_analysis_recursive():
 
 
 def test_check_partner_real_analysis_docs_pass():
-    """本物の 9 枚(2026-10-05_card*.md、時点「(遡り)」の行)が通る(読むだけ)。"""
-    docs = sorted((ROOT / "docs" / "ANALYSIS").glob("2026-10-05_card*.md"))
+    """本物の分析の文書が通る(読むだけ)。2026-10-05_card*.md の 9 枚は L-761 で消したので、今ある文書
+    (2026-10-08・09 の本測定の 16 本)で確かめる。"""
+    docs = sorted((ROOT / "docs" / "ANALYSIS").glob("2026-10-0[89]_*.md"))
     assert docs
     for p in docs:
         has, errs = cpt.check_text(p.read_text(encoding="utf-8"), repo=str(ROOT), name=str(p))

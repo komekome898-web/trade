@@ -4,7 +4,7 @@
 
 Nothing here changes a rule. The pure-pandas `simulate` stays the reference:
 `tests/test_xborder_p2_fast.py` requires the two ledgers to be identical
-(trade count, entry/exit timestamps, every money column to 1e-9 bps) on the
+(trade count, entry/exit timestamps, every money column to 1e-9 of its unit) on the
 known-answer tapes and on real dev-set months. The split is
 
   * `prepare_grid(bf, ...)`      — once per bitFlyer series (and per
@@ -24,7 +24,8 @@ known-answer tapes and on real dev-set months. The split is
                                    day-block bookkeeping precomputed once
                                    (bit-identical output for the same rng).
 
-Everything is UTC; percent/bps conventions are those of `xborder_p2`.
+Everything is UTC; percent/bps conventions are those of `xborder_p2`
+(``gross_bps`` = price-move rate in bp; cost/funding/net in percent).
 """
 from __future__ import annotations
 
@@ -316,8 +317,9 @@ def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: 
                     funding_pct_per_settlement: float = 0.02,
                     entry_gate: np.ndarray | None = None) -> dict:
     """One configuration → dict of numpy arrays (one element per trade) plus
-    the summary counts. ``gross_bps`` / ``funding_bps`` are cost-free so any
-    cost constant can be applied afterwards (net = gross − 2·c − funding).
+    the summary counts. ``gross_bps`` (price-move rate, bp) / ``funding_pct``
+    (percent) are cost-free so any cost constant can be applied afterwards
+    (net_pct = gross_bps / 100 − 2·c_pct − funding_pct).
 
     ``entry_gate`` (optional, bool per grid minute; P2-08 iteration 1) keeps
     an ENTRY signal only where the gate is True — the state-conditioned
@@ -344,7 +346,7 @@ def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: 
     gross = side * (exit_px / entry_px - 1.0) * BPS
     ns = (np.searchsorted(grid.settle64, grid.idx64[exit_i], side="right")
           - np.searchsorted(grid.settle64, grid.idx64[entry_i], side="right")).astype(np.int64)
-    funding = ns * (float(funding_pct_per_settlement) * 100.0)
+    funding = ns * float(funding_pct_per_settlement)  # percent
     if len(grid.gap_pa):
         kpos = np.searchsorted(grid.gap_pa, entry_i, side="left")
         ok = kpos < len(grid.gap_pa)
@@ -355,7 +357,7 @@ def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: 
         "entry_i": entry_i, "exit_i": exit_i, "side": side, "entry_px": entry_px,
         "exit_px": exit_px, "reason": reason, "ndef_e": ndef_e, "ndef_x": ndef_x,
         "sig_i": sig_i, "xsig_i": xsig_i, "gross_bps": gross, "n_settlements": ns,
-        "funding_bps": funding, "straddles_gap": strad,
+        "funding_pct": funding, "straddles_gap": strad,
         "excluded_gap": strad & grid.apply_masks,
         "exit_day": grid.day_id[exit_i] if nt else np.array([], dtype=np.int64),
         "n_entry_signal_bars": n_signal_bars, "n_entry_signals_discarded": n_discarded,
@@ -365,7 +367,7 @@ def simulate_arrays(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: 
 
 
 def simulate_fast(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: float,
-                  cost_one_way_bps: float, funding_pct_per_settlement: float = 0.02,
+                  cost_one_way_pct: float, funding_pct_per_settlement: float = 0.02,
                   size_btc: float = SIZE_BTC_DEFAULT,
                   entry_gate: np.ndarray | None = None) -> pd.DataFrame:
     """The `simulate` ledger (same columns / dtypes / attrs) for one
@@ -374,16 +376,16 @@ def simulate_fast(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: fl
     the ungated attrs stay equal to the reference engine's)."""
     a = simulate_arrays(grid, mm, thr, exit_, stop, funding_pct_per_settlement, entry_gate)
     nt = a["n_trades"]
-    cost_bps = 2.0 * float(cost_one_way_bps)
-    net = a["gross_bps"] - cost_bps - a["funding_bps"]
+    cost_pct = 2.0 * float(cost_one_way_pct)
+    net = a["gross_bps"] / 100.0 - cost_pct - a["funding_pct"]  # gross bp -> % (/100); net in %
     idx = grid.idx
     entry_ts = idx[a["entry_i"]]
     exit_ts = idx[a["exit_i"]]
     ledger = pd.DataFrame({
         "entry_ts": entry_ts, "exit_ts": exit_ts, "side": a["side"].astype(int),
         "entry_px": a["entry_px"], "exit_px": a["exit_px"],
-        "gross_bps": a["gross_bps"], "cost_bps": np.full(nt, cost_bps),
-        "funding_bps": a["funding_bps"], "net_bps": net,
+        "gross_bps": a["gross_bps"], "cost_pct": np.full(nt, cost_pct),
+        "funding_pct": a["funding_pct"], "net_pct": net,
         "exit_reason": np.array([REASON_CODES[int(r)] for r in a["reason"]], dtype=object),
         "n_deferred": (a["ndef_e"] + a["ndef_x"]).astype(int),
         "n_settlements": a["n_settlements"].astype(int),
@@ -394,7 +396,7 @@ def simulate_fast(grid: Grid, mm: np.ndarray, thr: float, exit_: float, stop: fl
         "entry_signal_ts": idx[a["sig_i"]], "exit_signal_ts": idx[a["xsig_i"]],
         "n_deferred_entry": a["ndef_e"].astype(int), "n_deferred_exit": a["ndef_x"].astype(int),
         "hold_min": (a["exit_i"] - a["entry_i"]).astype(float),
-        "pnl_jpy": net / BPS * a["entry_px"] * size_btc,
+        "pnl_jpy": net / 100.0 * a["entry_px"] * size_btc,  # net in %
     }, columns=LEDGER_COLUMNS)
     if nt == 0:
         ledger = pd.DataFrame(columns=LEDGER_COLUMNS)

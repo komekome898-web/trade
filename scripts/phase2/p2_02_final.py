@@ -86,7 +86,7 @@ from phase2.p2_02_run import (  # noqa: E402  (dev-set runner: reused, unchanged
     dividend_data_check,
     exclusion_stage_stats,
     max_drawdown,
-    mde_bps,
+    mde_from_sigma,
     mean_ci_bootstrap,
     sharpe_annualized,
     sign_reversal_stats,
@@ -401,20 +401,20 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     use_correction = True
 
     kept = pairs[pairs["kept"]].reset_index(drop=True)
-    main_col = "r_night_adj_bps"
-    net_cons_col = "net_conservative_adj_bps"
-    net_opt_col = "net_optimistic_adj_bps"
+    main_col = "r_night_adj_bps"                 # gross, bp (price move)
+    net_cons_col = "net_conservative_adj_pct"    # net, % (L-920)
+    net_opt_col = "net_optimistic_adj_pct"
 
     net_cons = kept[net_cons_col].to_numpy()
     net_opt = kept[net_opt_col].to_numpy()
     r_night = kept[main_col].to_numpy()
-    net_cons_unadj = kept["net_conservative_raw_bps"].to_numpy()
-    net_opt_unadj = kept["net_optimistic_raw_bps"].to_numpy()
+    net_cons_unadj = kept["net_conservative_raw_pct"].to_numpy()
+    net_opt_unadj = kept["net_optimistic_raw_pct"].to_numpy()
 
     n_main = int(len(net_cons))
-    sigma_bps = float(np.std(net_cons, ddof=1))
-    se_bps = sigma_bps / np.sqrt(n_main)
-    mde = mde_bps(sigma_bps, n_main)
+    sigma_pct = float(np.std(net_cons, ddof=1))      # net, %
+    se_pct = sigma_pct / np.sqrt(n_main)
+    mde = mde_from_sigma(sigma_pct, n_main)
 
     mean_cons, ci_lo_cons, ci_hi_cons = mean_ci_bootstrap(net_cons, seed=SEED)
     mean_opt, ci_lo_opt, ci_hi_opt = mean_ci_bootstrap(net_opt, seed=SEED + 1)
@@ -436,7 +436,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     mean_r_day = float(nd["r_day_bps"].mean())
 
     # ---- drawdown bar (1 unit) --------------------------------------------
-    pnl_yen = kept["close_t"].to_numpy() * (net_cons / 1e4)
+    pnl_yen = kept["close_t"].to_numpy() * (net_cons / 100.0)   # net in %
     dd = max_drawdown(pnl_yen)
     annual_profit_yen = float(np.mean(pnl_yen) * periods_per_year)
     dd_ok = bool(dd <= DD_BAR_MULTIPLE * annual_profit_yen) if annual_profit_yen > 0 else False
@@ -446,7 +446,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     pairs_1321, flagged_1321, one_sided_1321, ghost_1321 = build_pair_table(
         price_1321, bands)
     kept_1321 = pairs_1321[pairs_1321["kept"]].reset_index(drop=True)
-    net_cons_1321 = kept_1321["net_conservative_raw_bps"].to_numpy()
+    net_cons_1321 = kept_1321["net_conservative_raw_pct"].to_numpy()
     n_1321 = int(len(net_cons_1321))
     mean_1321, ci_lo_1321, ci_hi_1321 = mean_ci_bootstrap(net_cons_1321, seed=SEED + 5)
     sign_match = bool(np.sign(mean_cons) == np.sign(mean_1321)) \
@@ -471,23 +471,23 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         net_cons[valid_vol], terciles[valid_vol], N_STRATA_BOOT, SEED + 7
     ) if valid_vol.sum() >= 3 else np.array([])
 
-    reversal = sign_reversal_stats(r_night, kept["cost_conservative_bps"].to_numpy())
+    reversal = sign_reversal_stats(r_night, kept["cost_conservative_pct"].to_numpy())
 
     # ---- diagnostics (descriptive only) ------------------------------------
     diag = kept.copy()
-    diag["net_cons_bps"] = net_cons
+    diag["net_cons_pct"] = net_cons
     diag["vol_tercile"] = np.where(valid_vol, terciles, -1)
     vol_tercile_diag = (diag[diag["vol_tercile"] >= 0]
-                        .groupby("vol_tercile")["net_cons_bps"]
+                        .groupby("vol_tercile")["net_cons_pct"]
                         .agg(["mean", "std", "count"]).reset_index())
     diag["weekday"] = diag["t_date"].dt.dayofweek
-    weekday_diag = diag.groupby("weekday")["net_cons_bps"].agg(
+    weekday_diag = diag.groupby("weekday")["net_cons_pct"].agg(
         ["mean", "std", "count"]).reset_index()
     diag["month"] = diag["t_date"].dt.month
-    month_diag = diag.groupby("month")["net_cons_bps"].agg(
+    month_diag = diag.groupby("month")["net_cons_pct"].agg(
         ["mean", "std", "count"]).reset_index()
     diag["year"] = diag["t_date"].dt.year
-    year_diag = diag.groupby("year")["net_cons_bps"].agg(
+    year_diag = diag.groupby("year")["net_cons_pct"].agg(
         ["mean", "std", "count"]).reset_index()
 
     eff_ex_dates = pd.to_datetime(div_eff["ex_date_effective"])
@@ -505,7 +505,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         return "other"
 
     diag["ex_date_window"] = diag["t1_date"].map(_ex_label)
-    exdate_diag = diag.groupby("ex_date_window")["net_cons_bps"].agg(
+    exdate_diag = diag.groupby("ex_date_window")["net_cons_pct"].agg(
         ["mean", "std", "count"]).reset_index()
 
     # ---- 2024-11-05 closing-auction change (descriptive) -------------------
@@ -520,8 +520,8 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         m_, lo_, hi_ = mean_ci_bootstrap(vals, seed=SEED + 14) if len(vals) else (
             float("nan"), float("nan"), float("nan"))
         regime_rows.append({
-            "regime": label, "n": int(len(vals)), "mean_net_cons_bps": m_,
-            "ci_lo_bps": lo_, "ci_hi_bps": hi_,
+            "regime": label, "n": int(len(vals)), "mean_net_cons_pct": m_,
+            "ci_lo_pct": lo_, "ci_hi_pct": hi_,
             "mean_gross_bps": float(sub[main_col].mean()) if len(sub) else float("nan"),
             "mean_r_day_bps": float(sub["r_day_bps"].mean()) if len(sub) else float("nan"),
             "hit_rate": float((vals > 0).mean()) if len(vals) else float("nan"),
@@ -563,17 +563,17 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     bar_rows = [
         {"criterion": f"バー1 累計 N = {CUMULATIVE_N}(自由パラメータ無し=単一構成)の"
                       "符号シャッフル帰無分布の 95 点を超える",
-         "measured": f"実測平均ネット {mean_cons:,.3f} bps vs 帰無95点 {null_95pct:,.3f} bps",
+         "measured": f"実測平均ネット {mean_cons:,.5f}% vs 帰無95点 {null_95pct:,.5f}%",
          "outcome": "満たす" if bar1 else "満たさない"},
         {"criterion": "バー2 保守コスト後の平均夜間リターンの 95% CI が正",
-         "measured": f"[{ci_lo_cons:,.3f}, {ci_hi_cons:,.3f}] bps",
+         "measured": f"[{ci_lo_cons:,.5f}, {ci_hi_cons:,.5f}]%",
          "outcome": "満たす" if bar2 else "満たさない"},
         {"criterion": "バー3 1321 と符号一致",
-         "measured": f"1343 {mean_cons:,.3f} bps / 1321 {mean_1321:,.3f} bps",
+         "measured": f"1343 {mean_cons:,.5f}% / 1321 {mean_1321:,.5f}%",
          "outcome": "満たす" if bar3 else "満たさない"},
         {"criterion": "(参考)「先物と同様」= 符号一致かつ双方の 95% CI が正",
-         "measured": f"1343 CI [{ci_lo_cons:,.3f}, {ci_hi_cons:,.3f}] / "
-                     f"1321 CI [{ci_lo_1321:,.3f}, {ci_hi_1321:,.3f}]",
+         "measured": f"1343 CI [{ci_lo_cons:,.5f}, {ci_hi_cons:,.5f}]% / "
+                     f"1321 CI [{ci_lo_1321:,.5f}, {ci_hi_1321:,.5f}]%",
          "outcome": "満たす" if futures_like else "満たさない"},
         {"criterion": "(参考)ドローダウン基準 最大DD ≤ 年率換算平均ネット利益 × 3",
          "measured": f"最大DD {dd:,.1f} 円 vs 3×年率平均ネット {3 * annual_profit_yen:,.1f} 円"
@@ -586,12 +586,12 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     fals_rows = [
         {"criterion": "反証文 封印期間で「保守コスト後の平均夜間リターンの 95% CI が"
                       "ゼロを含む」→「取引可能な形で捕捉できる」は棄却",
-         "measured": f"[{ci_lo_cons:,.3f}, {ci_hi_cons:,.3f}] bps",
+         "measured": f"[{ci_lo_cons:,.5f}, {ci_hi_cons:,.5f}]%",
          "outcome": "満たす" if fals_ci_contains_zero else "満たさない"},
         {"criterion": "保留区分 楽観コストでのみ正(=「存在するが取引不能」、"
                       "引き金 = スプレッドの実測)",
-         "measured": f"楽観 [{ci_lo_opt:,.3f}, {ci_hi_opt:,.3f}] / "
-                     f"保守 [{ci_lo_cons:,.3f}, {ci_hi_cons:,.3f}] bps",
+         "measured": f"楽観 [{ci_lo_opt:,.5f}, {ci_hi_opt:,.5f}] / "
+                     f"保守 [{ci_lo_cons:,.5f}, {ci_hi_cons:,.5f}]%",
          "outcome": "満たす" if hold_class else "満たさない"},
     ]
 
@@ -608,36 +608,37 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     write(pd.DataFrame([{"instrument": "1343", **s} for s in excl_1343]
                        + [{"instrument": "1321", **s} for s in excl_1321]),
           "exclusion_summary.csv")
+    # L-920: each row carries its unit (net = %, gross / difference = bps)
     write(pd.DataFrame([
-        {"indicator": "主指標 保守コスト後平均(分配金補正あり)", "n": n_main,
-         "mean_bps": mean_cons, "ci_lo_bps": ci_lo_cons, "ci_hi_bps": ci_hi_cons},
-        {"indicator": "楽観コスト(0)平均(分配金補正あり)", "n": n_main,
-         "mean_bps": mean_opt, "ci_lo_bps": ci_lo_opt, "ci_hi_bps": ci_hi_opt},
-        {"indicator": "グロス夜間リターン(分配金補正あり)", "n": n_main,
-         "mean_bps": mean_gross, "ci_lo_bps": ci_lo_gross, "ci_hi_bps": ci_hi_gross},
-        {"indicator": "保守コスト後平均(分配金補正なし)", "n": n_main,
-         "mean_bps": mean_cons_un, "ci_lo_bps": ci_lo_cons_un, "ci_hi_bps": ci_hi_cons_un},
-        {"indicator": "楽観コスト(0)平均(分配金補正なし)", "n": n_main,
-         "mean_bps": mean_opt_un, "ci_lo_bps": ci_lo_opt_un, "ci_hi_bps": ci_hi_opt_un},
-        {"indicator": "夜間 − 日中の差", "n": int(len(diff)),
-         "mean_bps": diff_mean, "ci_lo_bps": diff_lo, "ci_hi_bps": diff_hi},
-        {"indicator": "1321 保守コスト後平均", "n": n_1321,
-         "mean_bps": mean_1321, "ci_lo_bps": ci_lo_1321, "ci_hi_bps": ci_hi_1321},
+        {"indicator": "主指標 保守コスト後平均(分配金補正あり)", "n": n_main, "unit": "%",
+         "mean": mean_cons, "ci_lo": ci_lo_cons, "ci_hi": ci_hi_cons},
+        {"indicator": "楽観コスト(0)平均(分配金補正あり)", "n": n_main, "unit": "%",
+         "mean": mean_opt, "ci_lo": ci_lo_opt, "ci_hi": ci_hi_opt},
+        {"indicator": "グロス夜間リターン(分配金補正あり)", "n": n_main, "unit": "bps",
+         "mean": mean_gross, "ci_lo": ci_lo_gross, "ci_hi": ci_hi_gross},
+        {"indicator": "保守コスト後平均(分配金補正なし)", "n": n_main, "unit": "%",
+         "mean": mean_cons_un, "ci_lo": ci_lo_cons_un, "ci_hi": ci_hi_cons_un},
+        {"indicator": "楽観コスト(0)平均(分配金補正なし)", "n": n_main, "unit": "%",
+         "mean": mean_opt_un, "ci_lo": ci_lo_opt_un, "ci_hi": ci_hi_opt_un},
+        {"indicator": "夜間 − 日中の差", "n": int(len(diff)), "unit": "bps",
+         "mean": diff_mean, "ci_lo": diff_lo, "ci_hi": diff_hi},
+        {"indicator": "1321 保守コスト後平均", "n": n_1321, "unit": "%",
+         "mean": mean_1321, "ci_lo": ci_lo_1321, "ci_hi": ci_hi_1321},
     ]), "main_indicators.csv")
     write(pd.DataFrame([
         {"control": "1_sign_shuffle_single_config", "n_draws": N_SHUFFLE,
-         "observed_mean_bps": mean_cons, "null_95pct_bps": null_95pct,
+         "observed_mean_pct": mean_cons, "null_p95_pct": null_95pct,
          "observed_percentile_in_null": null_pct_of_observed,
          "null_95pct_gross_bps": null_gross_95pct,
          "observed_gross_mean_bps": mean_gross},
         {"control": "2_vol_tercile_stratified_bootstrap_diagnostic",
          "n_draws": len(strata_dist),
-         "dist_mean_bps": float(np.mean(strata_dist)) if len(strata_dist) else float("nan"),
-         "dist_std_bps": float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1
+         "dist_mean_pct": float(np.mean(strata_dist)) if len(strata_dist) else float("nan"),
+         "dist_std_pct": float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1
          else float("nan")},
         {"control": "3_sign_reversal", "n_draws": None,
-         "mean_bps": reversal["mean_bps"], "ci_lo_bps": reversal["ci_lo_bps"],
-         "ci_hi_bps": reversal["ci_hi_bps"], "n": reversal["n"]},
+         "mean_pct": reversal["mean_pct"], "ci_lo_pct": reversal["ci_lo_pct"],
+         "ci_hi_pct": reversal["ci_hi_pct"], "n": reversal["n"]},
     ]), "controls_summary.csv")
     write(vol_tercile_diag, "diagnostics_vol_tercile.csv")
     write(weekday_diag, "diagnostics_weekday.csv")
@@ -666,7 +667,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         "n_thin_pairs_kept_1343": n_thin_kept,
         "n_thin_overlap_ghost_1343": n_thin_overlap_ghost,
         "n_thin_true_1343": n_thin_true,
-        "mean_excl_thin_bps": mean_excl_thin,
+        "mean_excl_thin_pct": mean_excl_thin,
         "n_dividend_rows_sealed": int(len(div_eff)),
         "n_dividend_non_trading_record_dates": int(div_eff["is_non_trading_record_date"].sum()),
         "dividend_correction_used": use_correction,
@@ -677,26 +678,26 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         "n_main": n_main,
         "years_span": years,
         "periods_per_year": periods_per_year,
-        "sigma_bps": sigma_bps,
-        "se_bps": se_bps,
-        "mde_bps_sealed_sample": mde,
-        "mean_net_conservative_bps": mean_cons,
-        "ci_lo_conservative_bps": ci_lo_cons,
-        "ci_hi_conservative_bps": ci_hi_cons,
-        "mean_net_optimistic_bps": mean_opt,
-        "ci_lo_optimistic_bps": ci_lo_opt,
-        "ci_hi_optimistic_bps": ci_hi_opt,
+        "sigma_pct": sigma_pct,
+        "se_pct": se_pct,
+        "mde_pct_sealed_sample": mde,
+        "mean_net_conservative_pct": mean_cons,
+        "ci_lo_conservative_pct": ci_lo_cons,
+        "ci_hi_conservative_pct": ci_hi_cons,
+        "mean_net_optimistic_pct": mean_opt,
+        "ci_lo_optimistic_pct": ci_lo_opt,
+        "ci_hi_optimistic_pct": ci_hi_opt,
         "mean_gross_bps": mean_gross,
         "ci_lo_gross_bps": ci_lo_gross,
         "ci_hi_gross_bps": ci_hi_gross,
-        "mean_net_conservative_unadjusted_bps": mean_cons_un,
-        "ci_lo_conservative_unadjusted_bps": ci_lo_cons_un,
-        "ci_hi_conservative_unadjusted_bps": ci_hi_cons_un,
-        "mean_net_optimistic_unadjusted_bps": mean_opt_un,
-        "ci_lo_optimistic_unadjusted_bps": ci_lo_opt_un,
-        "ci_hi_optimistic_unadjusted_bps": ci_hi_opt_un,
-        "cost_conservative_median_bps": float(kept["cost_conservative_bps"].median()),
-        "cost_conservative_mean_bps": float(kept["cost_conservative_bps"].mean()),
+        "mean_net_conservative_unadjusted_pct": mean_cons_un,
+        "ci_lo_conservative_unadjusted_pct": ci_lo_cons_un,
+        "ci_hi_conservative_unadjusted_pct": ci_hi_cons_un,
+        "mean_net_optimistic_unadjusted_pct": mean_opt_un,
+        "ci_lo_optimistic_unadjusted_pct": ci_lo_opt_un,
+        "ci_hi_optimistic_unadjusted_pct": ci_hi_opt_un,
+        "cost_conservative_median_pct": float(kept["cost_conservative_pct"].median()),
+        "cost_conservative_mean_pct": float(kept["cost_conservative_pct"].mean()),
         "hit_rate": hit_rate,
         "sharpe_annualized": sharpe,
         "mean_r_day_bps": mean_r_day,
@@ -709,18 +710,18 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         "drawdown_ok": dd_ok,
         "max_drawdown_bootstrap_median_yen": dd_median_boot,
         "n_1321": n_1321,
-        "mean_net_conservative_bps_1321": mean_1321,
-        "ci_lo_bps_1321": ci_lo_1321,
-        "ci_hi_bps_1321": ci_hi_1321,
+        "mean_net_conservative_pct_1321": mean_1321,
+        "ci_lo_pct_1321": ci_lo_1321,
+        "ci_hi_pct_1321": ci_hi_1321,
         "sign_match_1343_vs_1321": sign_match,
         "both_ci_positive": both_ci_positive,
         "futures_like_criterion_met": futures_like,
-        "sign_shuffle_null_95pct_bps": null_95pct,
+        "sign_shuffle_null_p95_pct": null_95pct,
         "sign_shuffle_observed_percentile": null_pct_of_observed,
         "sign_shuffle_null_95pct_gross_bps": null_gross_95pct,
-        "sign_reversal_mean_bps": reversal["mean_bps"],
-        "sign_reversal_ci_lo_bps": reversal["ci_lo_bps"],
-        "sign_reversal_ci_hi_bps": reversal["ci_hi_bps"],
+        "sign_reversal_mean_pct": reversal["mean_pct"],
+        "sign_reversal_ci_lo_pct": reversal["ci_lo_pct"],
+        "sign_reversal_ci_hi_pct": reversal["ci_hi_pct"],
         "bar1_beats_null_95pct": bar1,
         "bar2_ci_positive": bar2,
         "bar3_sign_match_1321": bar3,
@@ -783,7 +784,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
               f"{'(' + ', '.join(ghost_dates) + ')' if ghost_dates else ''}。")
     md.append(f"- 薄商い(出来高 < {THIN_VOLUME_THRESHOLD:,} 口)の印: 全ペア中 {n_thin_all} 件"
               f"(うち幽霊行と重なる {n_thin_overlap_ghost} 件、真の薄商い {n_thin_true} 件)。"
-              f"採用集合内 {n_thin_kept} 件。薄商いを除いた主指標(参考) {f(mean_excl_thin,2)} bps。"
+              f"採用集合内 {n_thin_kept} 件。薄商いを除いた主指標(参考) {f(mean_excl_thin,4)}%。"
               "判定は全体を使用。")
     md.append("")
     md.append("### 1321 除外の前後(同一規則)")
@@ -812,32 +813,34 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     md.append("## 2. 主指標(保守コスト後の平均夜間リターン)")
     md.append("")
     md.append(f"CI はブロック・ブートストラップ(ブロック長 {BLOCK}、リサンプル {N_BOOT:,}、"
-              f"percentile 法、seed {SEED})。単位は bps/ペア。r_night は単純収益 "
-              "open(t+1)/close(t) − 1。保守コスト = 2 / close(t) × 10^4(1 ティック/片側、"
+              f"percentile 法、seed {SEED})。単位は行ごと(ネット = %/ペア、グロス・差 = bps/ペア。"
+              "L-920)。r_night は単純収益 "
+              "open(t+1)/close(t) − 1。保守コスト = 2 / close(t) × 100(%、1 ティック/片側、"
               "1343 の呼値 1 円)、楽観コスト = 0。")
     md.append("")
-    md.append("| 指標 | n | 平均(bps) | CI下限 | CI上限 |")
-    md.append("|---|---:|---:|---:|---:|")
+    md.append("| 指標 | 単位 | n | 平均 | CI下限 | CI上限 |")
+    md.append("|---|---|---:|---:|---:|---:|")
     for r in [
-        ("主指標 保守コスト後(補正あり)", n_main, mean_cons, ci_lo_cons, ci_hi_cons),
-        ("楽観コスト 0(補正あり)", n_main, mean_opt, ci_lo_opt, ci_hi_opt),
-        ("グロス夜間リターン(補正あり)", n_main, mean_gross, ci_lo_gross, ci_hi_gross),
-        ("保守コスト後(補正なし)", n_main, mean_cons_un, ci_lo_cons_un, ci_hi_cons_un),
-        ("楽観コスト 0(補正なし)", n_main, mean_opt_un, ci_lo_opt_un, ci_hi_opt_un),
-        ("夜間 − 日中の差", int(len(diff)), diff_mean, diff_lo, diff_hi),
-        ("1321 保守コスト後", n_1321, mean_1321, ci_lo_1321, ci_hi_1321),
+        ("主指標 保守コスト後(補正あり)", "%", n_main, mean_cons, ci_lo_cons, ci_hi_cons),
+        ("楽観コスト 0(補正あり)", "%", n_main, mean_opt, ci_lo_opt, ci_hi_opt),
+        ("グロス夜間リターン(補正あり)", "bps", n_main, mean_gross, ci_lo_gross, ci_hi_gross),
+        ("保守コスト後(補正なし)", "%", n_main, mean_cons_un, ci_lo_cons_un, ci_hi_cons_un),
+        ("楽観コスト 0(補正なし)", "%", n_main, mean_opt_un, ci_lo_opt_un, ci_hi_opt_un),
+        ("夜間 − 日中の差", "bps", int(len(diff)), diff_mean, diff_lo, diff_hi),
+        ("1321 保守コスト後", "%", n_1321, mean_1321, ci_lo_1321, ci_hi_1321),
     ]:
-        md.append(f"| {r[0]} | {r[1]:,} | {f(r[2])} | {f(r[3])} | {f(r[4])} |")
+        nd_ = 5 if r[1] == "%" else 3
+        md.append(f"| {r[0]} | {r[1]} | {r[2]:,} | {f(r[3], nd_)} | {f(r[4], nd_)} | {f(r[5], nd_)} |")
     md.append("")
-    md.append(f"- n = {n_main:,}、σ = {f(sigma_bps,2)} bps、SE = {f(se_bps)} bps、"
-              f"封印標本での MDE(α 0.05・検出力 0.8) = {f(mde,2)} bps"
-              "(事前登録の開発セット MDE は 4.6bps。記録のみで判定には使わない)。")
+    md.append(f"- n = {n_main:,}、σ = {f(sigma_pct,4)}%、SE = {f(se_pct,5)}%、"
+              f"封印標本での MDE(α 0.05・検出力 0.8) = {f(mde,4)}%"
+              "(事前登録の開発セット MDE は 4.6bps = L-920 の後の単位で 0.046%。記録のみで判定には使わない)。")
     md.append(f"- 勝率 {f(hit_rate,4)}、Sharpe(年率) {f(sharpe)}"
               f"(換算係数 √(n/年数) = √({n_main}/{years:.2f}) = {np.sqrt(periods_per_year):.2f})、"
               f"日中平均 {f(mean_r_day,2)} bps。")
-    md.append(f"- ペアごとの保守コスト: 中央値 {f(float(kept['cost_conservative_bps'].median()),2)} bps、"
-              f"平均 {f(float(kept['cost_conservative_bps'].mean()),2)} bps、範囲 "
-              f"{kept['cost_conservative_bps'].min():.2f}〜{kept['cost_conservative_bps'].max():.2f} bps。")
+    md.append(f"- ペアごとの保守コスト: 中央値 {f(float(kept['cost_conservative_pct'].median()),4)}%、"
+              f"平均 {f(float(kept['cost_conservative_pct'].mean()),4)}%、範囲 "
+              f"{kept['cost_conservative_pct'].min():.4f}〜{kept['cost_conservative_pct'].max():.4f}%。")
     md.append("")
     md.append("## 3. ドローダウン基準(1 口固定、保守コスト後)")
     md.append("")
@@ -850,38 +853,40 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
     md.append("")
     md.append("## 4. 「先物と同様」比較(1321、同一規則)")
     md.append("")
-    md.append(f"- 1321 n = {n_1321:,}、保守コスト後平均 {f(mean_1321)} bps、"
-              f"CI [{f(ci_lo_1321)}, {f(ci_hi_1321)}]")
+    md.append(f"- 1321 n = {n_1321:,}、保守コスト後平均 {f(mean_1321, 5)}%、"
+              f"CI [{f(ci_lo_1321, 5)}, {f(ci_hi_1321, 5)}]%")
     md.append(f"- 符号一致: **{f(sign_match)}** / 双方の 95% CI が正: **{f(both_ci_positive)}** → "
               f"「先物と同様」基準: **{f(futures_like)}**")
     md.append("")
     md.append("## 5. 対照(反事実)")
     md.append("")
     md.append(f"- (1) 符号シャッフル {N_SHUFFLE:,} 回(累計 N = {CUMULATIVE_N} なので**単一構成**の"
-              f"帰無、最良取りは不要): 帰無 95 点 = {f(null_95pct)} bps、実測平均 "
-              f"{f(mean_cons)} bps、実測以下の帰無標本の割合 {f(null_pct_of_observed,1)}%。"
+              f"帰無、最良取りは不要): 帰無 95 点 = {f(null_95pct, 5)}%、実測平均 "
+              f"{f(mean_cons, 5)}%、実測以下の帰無標本の割合 {f(null_pct_of_observed,1)}%。"
               f"参考: グロスで見た帰無 95 点 {f(null_gross_95pct)} bps vs 実測グロス {f(mean_gross)} bps。")
     strata_mean = float(np.mean(strata_dist)) if len(strata_dist) else float("nan")
     strata_std = float(np.std(strata_dist, ddof=1)) if len(strata_dist) > 1 else float("nan")
     md.append(f"- (2) 20 日実現ボラ三分位内の層別ブートストラップ(診断のみ、時間順序を保存しない): "
-              f"平均の分布 平均 {f(strata_mean)} bps、標準偏差 {f(strata_std)} bps。")
+              f"平均の分布 平均 {f(strata_mean, 5)}%、標準偏差 {f(strata_std, 5)}%。")
     md.append(f"- (3) 符号反転(夜間売り持ち、往復コストは方向に依らず控除): 平均 "
-              f"{f(reversal['mean_bps'])} bps、CI [{f(reversal['ci_lo_bps'])}, "
-              f"{f(reversal['ci_hi_bps'])}]。")
+              f"{f(reversal['mean_pct'], 5)}%、CI [{f(reversal['ci_lo_pct'], 5)}, "
+              f"{f(reversal['ci_hi_pct'], 5)}]%。")
     md.append("- (4) 1321 との比較は §4。")
     md.append("")
     md.append("## 6. 2024-11-05 の引け板寄せ 15:30 化(前後、記述のみ)")
     md.append("")
-    md.append("| 区分 | n | 平均ネット(bps) | CI | グロス(bps) | 日中(bps) | 勝率 |")
+    md.append("| 区分 | n | 平均ネット(%) | CI(%) | グロス(bps) | 日中(bps) | 勝率 |")
     md.append("|---|---:|---:|---|---:|---:|---:|")
     for r in regime_rows:
-        md.append(f"| {r['regime']} | {r['n']:,} | {f(r['mean_net_cons_bps'])} | "
-                  f"[{f(r['ci_lo_bps'])}, {f(r['ci_hi_bps'])}] | {f(r['mean_gross_bps'],2)} | "
+        md.append(f"| {r['regime']} | {r['n']:,} | {f(r['mean_net_cons_pct'], 5)} | "
+                  f"[{f(r['ci_lo_pct'], 5)}, {f(r['ci_hi_pct'], 5)}] | {f(r['mean_gross_bps'],2)} | "
                   f"{f(r['mean_r_day_bps'],2)} | {f(r['hit_rate'],4)} |")
     md.append("")
     md.append("判定は封印期間全体(事前登録どおり)。上表は記述のみ。")
     md.append("")
     md.append("## 7. 診断(記述的のみ、選択には使用しない)")
+    md.append("")
+    md.append("値は保守コスト後のネット(%、L-920)。")
     md.append("")
     for title, tbl in (("ボラ三分位(0=低, 2=高)", vol_tercile_diag),
                        ("曜日(0=月 … 4=金)", weekday_diag),
@@ -986,7 +991,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
             "block": BLOCK, "n_boot": N_BOOT, "n_shuffle": N_SHUFFLE,
             "n_strata_boot": N_STRATA_BOOT,
             "thin_volume_threshold": THIN_VOLUME_THRESHOLD,
-            "cost_conservative": "2 / close(t) * 1e4 (1 tick per side)",
+            "cost_conservative": "2 / close(t) * 100, % (1 tick per side)",
             "cost_optimistic": 0,
             "drawdown_bar_multiple": DD_BAR_MULTIPLE,
             "dividend_correction_used": use_correction,
@@ -994,13 +999,13 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
         },
         "n_at_each_step": steps,
         "headline": {
-            "mean_net_conservative_bps": mean_cons,
+            "mean_net_conservative_pct": mean_cons,
             "ci95": [ci_lo_cons, ci_hi_cons],
-            "mean_net_optimistic_bps": mean_opt,
+            "mean_net_optimistic_pct": mean_opt,
             "ci95_optimistic": [ci_lo_opt, ci_hi_opt],
             "mean_gross_bps": mean_gross,
             "ci95_gross": [ci_lo_gross, ci_hi_gross],
-            "mean_net_conservative_unadjusted_bps": mean_cons_un,
+            "mean_net_conservative_unadjusted_pct": mean_cons_un,
             "ci95_unadjusted": [ci_lo_cons_un, ci_hi_cons_un],
             "night_minus_day_bps": diff_mean,
             "ci95_night_minus_day": [diff_lo, diff_hi],
@@ -1010,10 +1015,10 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT,
             "max_drawdown_yen_1unit": dd,
             "annualised_mean_net_profit_yen_1unit": annual_profit_yen,
             "max_drawdown_bootstrap_median_yen": dd_median_boot,
-            "mean_net_conservative_bps_1321": mean_1321,
+            "mean_net_conservative_pct_1321": mean_1321,
             "ci95_1321": [ci_lo_1321, ci_hi_1321],
-            "sign_shuffle_null_95pct_bps": null_95pct,
-            "sign_reversal_mean_bps": reversal["mean_bps"],
+            "sign_shuffle_null_p95_pct": null_95pct,
+            "sign_reversal_mean_pct": reversal["mean_pct"],
         },
         "bar": {r["criterion"]: {"measured": r["measured"], "outcome": r["outcome"]}
                 for r in bar_rows} | {"all_three_met": bar_all},

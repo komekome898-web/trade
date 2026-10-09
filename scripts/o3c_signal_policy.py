@@ -480,7 +480,7 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
     この分岐は 1 行も走らないので、従来の道筋と完全に同じ。
 
     `path`(戻り値)の各行は「レグ損益_bp」を持つ(決済・ドテン・連鎖の終わりの強制決済の
-    行だけ数値、他は None)。この列の合計は必ず `pnl_bp` と一致する(反証者レビュー8
+    行だけ数値、他は None)。この列の合計 / 100 は必ず `pnl_pct` と一致する(反証者レビュー8
     致命-3。建玉を持ったまま連鎖が終わった場合、`path` の最後にもう1行、判断「終わり」・
     行動「決済」の強制決済の行が付く ── 集計〈cascade_rows〉には元々含まれていた損益だが、
     どの print 単位の出力にも現れていなかった)。
@@ -630,7 +630,9 @@ def simulate_cascade(prints: list, judgments: list, side_sign: float, policy_typ
         pos = POS_NONE
 
     return {
-        "pnl_bp": (NAN if missing else total_pnl),
+        # L-920: 連鎖の損益はレグ(各 bp、量 1 の値動き率)の和なので 1 つの値段の動きではない
+        # → % にする(和 / 100)。前は pnl_bp(bp)。
+        "pnl_pct": (NAN if missing else total_pnl / 100),
         "n_entries": n_entries,
         "hold_seconds": (total_hold_ms / 1000.0),
         "entered": entered_ever,
@@ -659,7 +661,8 @@ def simulate_baseline(prints: list, side_sign: float, direction: str, delay_s: f
     hold_s = (cascade_end_ts - entry_ts) / 1000.0
     lags = [] if missing else [m_in - t_in, m_out - t_out]
     act = ACT_NEW_WITH if direction == POS_WITH else ACT_NEW_AGAINST
-    return {"pnl_bp": pnl, "n_entries": 1, "hold_seconds": hold_s,
+    # 1 回の建てから出まで(量 1)だが、連鎖の損益と同じ列に入るので % でそろえる(L-920)
+    return {"pnl_pct": pnl / 100, "n_entries": 1, "hold_seconds": hold_s,
            "entered": True, "missing": missing,
            "path": [{"print_id": first.get("print_id"), "ts_ms": entry_ts, "位置": 0,
                      "判断": "(基準・判断は使わない)", "行動": act, "建玉": direction,
@@ -716,7 +719,7 @@ def run_simulation(cascades: dict, logit_prob_of: dict, position_of_pid: dict,
                     cascade_rows.append({
                         "bundle_id": bid, "day": day, "side": side,
                         "連鎖の大きさ": sb, "n_prints": n, "方策": policy, "型": ptype,
-                        "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                        "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                         "入った": int(res["entered"]), "欠測": int(res["missing"]),
                         "最初に入った位置": entry_bucket(res["first_entry_pos"])})
@@ -741,7 +744,7 @@ def run_simulation(cascades: dict, logit_prob_of: dict, position_of_pid: dict,
                     cascade_rows.append({
                         "bundle_id": bid, "day": day, "side": side,
                         "連鎖の大きさ": sb, "n_prints": n, "方策": policy_name, "型": ptype,
-                        "遅れ_秒": delay, "pnl_bp": res["pnl_bp"],
+                        "遅れ_秒": delay, "pnl_pct": res["pnl_pct"],
                         "建玉の回数": res["n_entries"], "保有秒": res["hold_seconds"],
                         "入った": int(res["entered"]), "欠測": int(res["missing"]),
                         "最初に入った位置": entry_bucket(res["first_entry_pos"])})
@@ -758,10 +761,12 @@ def run_simulation(cascades: dict, logit_prob_of: dict, position_of_pid: dict,
 # 表(R2.5: 分布・0として含める/含めない・位置別・件数)
 # ===========================================================================
 def dist_stats(cdf: pd.DataFrame, policy: str, ptype: str, delay: float,
-              include_zero_for_no_entry: bool) -> dict:
+              include_zero_for_no_entry: bool, col: str = "pnl_pct") -> dict:
+    """`col` = 分布を取る損益の列。既定は費用前の `pnl_pct`(%)。費用を引いた値は
+    `o3c_signal_value` が `col="pnl_net_pct"`(%)で渡す(L-920: ネットは bp にしない)。"""
     sub = cdf[(cdf["方策"] == policy) & (cdf["型"] == ptype) & (cdf["遅れ_秒"] == delay)]
     ok = sub[sub["欠測"] == 0]
-    vals = ok["pnl_bp"].to_numpy(float)
+    vals = ok[col].to_numpy(float)
     entered_mask = ok["入った"].to_numpy(int) == 1
     if not include_zero_for_no_entry:
         vals_use = vals[entered_mask]
@@ -786,17 +791,17 @@ def dist_stats(cdf: pd.DataFrame, policy: str, ptype: str, delay: float,
     }
 
 
-def build_dist_table(cdf: pd.DataFrame) -> list:
+def build_dist_table(cdf: pd.DataFrame, col: str = "pnl_pct") -> list:
     rows = []
     for policy in ALL_POLICIES:
         for ptype in (TYPE_A, TYPE_B):
             for delay in DELAYS_S:
                 for inc0 in (True, False):
-                    rows.append(dist_stats(cdf, policy, ptype, delay, inc0))
+                    rows.append(dist_stats(cdf, policy, ptype, delay, inc0, col=col))
     return rows
 
 
-def build_position_breakdown(cdf: pd.DataFrame) -> list:
+def build_position_breakdown(cdf: pd.DataFrame, col: str = "pnl_pct") -> list:
     """位置別(1件目で入った/途中で入った/入らなかった)の内訳(主遅れのみ)。"""
     rows = []
     sub_all = cdf[(cdf["遅れ_秒"] == MAIN_DELAY) & (cdf["欠測"] == 0)]
@@ -805,7 +810,7 @@ def build_position_breakdown(cdf: pd.DataFrame) -> list:
             sub = sub_all[(sub_all["方策"] == policy) & (sub_all["型"] == ptype)]
             for bucket in ("1件目で入った", "途中で入った", "入らなかった"):
                 g = sub[sub["最初に入った位置"] == bucket]
-                vals = g["pnl_bp"].to_numpy(float)
+                vals = g[col].to_numpy(float)
                 q = quantiles(vals, [50])
                 rows.append({"方策": policy, "型": ptype, "位置": bucket,
                             "n": int(g.shape[0]), "中央値": q[0],
@@ -872,7 +877,7 @@ def build_synthetic_traces() -> list:
                                   if r["レグ損益_bp"] is not None else ""})
         rows.append({"合成連鎖": title, "print_id": "(連鎖損益)",
                     "ts_ms": "", "判断": "", "行動": "",
-                    "建玉": "", "約定価格": _fmt(res["pnl_bp"], 4), "レグ損益_bp": ""})
+                    "建玉": "", "約定価格": _fmt(res["pnl_pct"], 6), "レグ損益_bp": ""})
     return rows
 
 

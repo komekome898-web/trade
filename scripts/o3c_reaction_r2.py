@@ -19,7 +19,7 @@
 
 **1 周目から変えたところ(事前登録 §0 の「改良点は 2 つだけ」)**
   1. 判定の量を `bp_{h}m_reactdir`(負 = 反転)にする。
-  2. 対照を出発点の距離(|`dist_vwap_bp`|)でそろえる(D1 の 10 分位の帯で標準化する)。
+  2. 対照を出発点の距離(|`dist_vwap_pct`|)でそろえる(D1 の 10 分位の帯で標準化する)。
   これに伴い、ブートストラップは事前登録 §3 の「**帯の中で行ごとに独立に再抽出**」である
   (1 周目の「UTC 日をクラスタにして引く」ではない)。
 
@@ -109,7 +109,7 @@ BANDS_HEADER = ["区分", "h", "帯", "下限", "上限", "w_k", "n_D1", "n_C",
 # =============================================================================
 def needed_columns() -> set[str]:
     cols = {"kind", "day", "cascade_id", "matched_liq_id", "side", "doi_pre_1h",
-            "dist_vwap_bp", "dist_node_bp", SANITY4_COL}
+            "dist_vwap_pct", "dist_node_pct", SANITY4_COL}
     for h in HORIZONS:
         cols.add(f"bp_{h}m")
         cols.add(f"bp_{h}m_reactdir")
@@ -130,14 +130,25 @@ def _f(x) -> float:
 
 def _read_cols(path: Path, wanted: set[str]) -> dict[str, list[str]]:
     """CSV から欲しい列だけを読む(60,903 行 × 150 列を全部辞書にしないため)。"""
+    # L-920: 距離の列は %(dist_*_pct)。前の表は dist_*_bp(× 1e4)なので、新しい列が
+    # 無ければ古い列を読んで / 100 する(表は書き換えない)。
     with path.open(encoding="utf-8", newline="") as fh:
         rd = csv.reader(fh)
         header = next(rd)
         idx = {c: i for i, c in enumerate(header) if c in wanted}
-        out: dict[str, list[str]] = {c: [] for c in idx}
+        legacy = {}
+        for i, c in enumerate(header):
+            if c.endswith("_bp") and "dist_" in c:
+                new = c[:-3] + "_pct"
+                if new in wanted and new not in idx:
+                    legacy[new] = i
+        out: dict[str, list[str]] = {c: [] for c in list(idx) + list(legacy)}
         for row in rd:
             for c, i in idx.items():
                 out[c].append(row[i] if i < len(row) else "")
+            for c, i in legacy.items():
+                v = row[i] if i < len(row) else ""
+                out[c].append(repr(float(v) / 100) if v.strip() else v)
     return out
 
 
@@ -258,8 +269,8 @@ class Table:
             out[j] = -raw[j] if side == "SELL" else raw[j]
         return out
 
-    def dist(self, idx: np.ndarray, col: str = "dist_vwap_bp") -> np.ndarray:
-        """`d` = |`dist_vwap_bp`|(§3)。観測のみ (b) では `dist_node_bp` を渡す。"""
+    def dist(self, idx: np.ndarray, col: str = "dist_vwap_pct") -> np.ndarray:
+        """`d` = |`dist_vwap_pct`|(§3)。観測のみ (b) では `dist_node_pct` を渡す。"""
         return np.abs(self.num(idx, col))
 
     def plain(self, idx: np.ndarray, col: str) -> np.ndarray:
@@ -383,7 +394,7 @@ class Standardized:
 
 
 def standardize(tab: Table, liq_idx: np.ndarray, ctl_idx: np.ndarray, *,
-                col_liq, col_ctl, dist_col: str = "dist_vwap_bp",
+                col_liq, col_ctl, dist_col: str = "dist_vwap_pct",
                 edges: list[float] | None = None) -> Standardized:
     """`col_liq` / `col_ctl` は (Table, idx) -> 値の配列。"""
     d1 = tab.dist(liq_idx, dist_col)
@@ -687,7 +698,7 @@ def build_cells(tab: Table, sample: Table) -> tuple[list[dict], list[dict], dict
             "_min_n1": st.min_n1, "_min_n2": st.min_n2, "_reps": reps,
         })
         for b in st.bands:
-            bands.append({"区分": "判定(gap60_w8 / |dist_vwap_bp|)", "h": h,
+            bands.append({"区分": "判定(gap60_w8 / |dist_vwap_pct|)", "h": h,
                           "帯": b["帯"], "下限": _fmt(b["下限"]), "上限": _fmt(b["上限"]),
                           "w_k": _fmt(b["w_k"]), "n_D1": b["n_D1"], "n_C": b["n_C"],
                           "mean_D1": _fmt(b["mean_D1"]), "mean_C": _fmt(b["mean_C"]),
@@ -733,15 +744,15 @@ def build_observation_only(tab: Table, tab24: Table | None) -> list[dict]:
 
     d1, c = tab.d1_idx(), tab.control_idx()
 
-    # (b) 帯を `dist_node_bp` で切る
-    en = band_edges(tab.dist(d1, "dist_node_bp"))
+    # (b) 帯を `dist_node_pct` で切る
+    en = band_edges(tab.dist(d1, "dist_node_pct"))
     for h in HORIZONS:
         st = standardize(tab, d1, c,
                          col_liq=lambda t, i, h=h: t.r_liq(i, h),
                          col_ctl=lambda t, i, h=h: t.r_ctl(i, h),
-                         dist_col="dist_node_bp", edges=en)
-        add("(b)", "帯を |dist_node_bp| で切る", h, st,
-            note="`d` の代わりに |dist_node_bp| の 10 分位")
+                         dist_col="dist_node_pct", edges=en)
+        add("(b)", "帯を |dist_node_pct| で切る", h, st,
+            note="`d` の代わりに |dist_node_pct| の 10 分位")
 
     # (c) D_Q2 / D_Q3 / 全体
     lo, hi = tab.tertile_cuts()
@@ -757,7 +768,7 @@ def build_observation_only(tab: Table, tab24: Table | None) -> list[dict]:
                              col_ctl=lambda t, i, h=h: t.r_ctl(i, h),
                              edges=eg)
             add("(c)", f"{name} の同じ量", h, st,
-                note=f"帯はこの群の |dist_vwap_bp| の 10 分位(3 分位の切り値 "
+                note=f"帯はこの群の |dist_vwap_pct| の 10 分位(3 分位の切り値 "
                      f"{_fmt(lo)} / {_fmt(hi)})")
 
     # (d) 帯ごとの平均は `bands.csv`。ここには**標準化する前の差**を出す
@@ -793,7 +804,7 @@ def build_observation_only(tab: Table, tab24: Table | None) -> list[dict]:
 
         st = standardize(tab, d1, c, col_liq=_p_liq, col_ctl=_p_ctl, edges=edges)
         add("(e)", "反転の割合(r_h < 0)の差", h, st,
-            note="帯は判定と同じ(D1 の |dist_vwap_bp| の 10 分位)")
+            note="帯は判定と同じ(D1 の |dist_vwap_pct| の 10 分位)")
 
     # (e′) 対照 C の `r_h` の平均と SE(§5 の仮定の確認)。**判定は変えない。**
     for h in HORIZONS:

@@ -52,7 +52,8 @@ from tests.test_xborder_p2_known_answer import (
 )
 
 TOL = 1e-9
-FLOAT_COLS = ["entry_px", "exit_px", "gross_bps", "cost_bps", "funding_bps", "net_bps",
+PCT_COLS = ("cost_pct", "funding_pct", "net_pct")   # percent: same 1e-9 bp = 1e-11 %
+FLOAT_COLS = ["entry_px", "exit_px", "gross_bps", "cost_pct", "funding_pct", "net_pct",
               "hold_min", "pnl_jpy"]
 TS_COLS = ["entry_ts", "exit_ts", "entry_signal_ts", "exit_signal_ts"]
 OTHER_COLS = [c for c in LEDGER_COLUMNS if c not in FLOAT_COLS + TS_COLS]
@@ -67,7 +68,8 @@ def assert_ledgers_identical(ref: pd.DataFrame, fast: pd.DataFrame) -> None:
         assert (a == b).all(), col
     for col in FLOAT_COLS:
         np.testing.assert_allclose(fast[col].to_numpy(float), ref[col].to_numpy(float),
-                                   rtol=0, atol=TOL, err_msg=col)
+                                   rtol=0, atol=TOL / 100.0 if col in PCT_COLS else TOL,
+                                   err_msg=col)
     for col in OTHER_COLS:
         assert ref[col].tolist() == fast[col].tolist(), col
     assert ref.attrs == fast.attrs, (ref.attrs, fast.attrs)
@@ -93,7 +95,8 @@ def _m():
 def test_fast_matches_five_trade_known_answer():
     ref, fast = both(make_bf(), _m())
     assert len(fast) == 5
-    assert abs(float(fast["net_bps"].sum()) - (37.4 - 152.6 + 25.4 + 97.4 - 152.6)) <= TOL
+    assert abs(float(fast["net_pct"].sum())
+               - (0.374 - 1.526 + 0.254 + 0.974 - 1.526)) <= TOL / 100.0
 
 
 def test_fast_matches_known_answer_without_masks():
@@ -162,10 +165,10 @@ def test_daily_and_sharpe_from_arrays_match_reference():
     grid = prepare_grid(make_bf())
     mm = _m().reindex(grid.idx).to_numpy(float)
     a = simulate_arrays(grid, mm, THR, EXIT, STOP)
-    net = a["gross_bps"] - 2 * COST_1W - a["funding_bps"]
+    net = a["gross_bps"] / 100.0 - 2 * COST_1W - a["funding_pct"]  # gross bp -> %; net in %
     d = daily_from_arrays(a["exit_day"], net, ~a["excluded_gap"])
     ref = daily_pnl(simulate(make_bf(), _m(), THR, EXIT, STOP, COST_1W))
-    np.testing.assert_allclose(d, ref.to_numpy(float), atol=TOL)
+    np.testing.assert_allclose(d, ref.to_numpy(float), atol=TOL / 100.0)
     x = np.array([1.0, 2.0, 3.0])
     assert abs(sharpe_from_daily(x) - sharpe_annual(pd.Series(x))) < 1e-12
     assert np.isnan(sharpe_from_daily(np.array([1.0])))

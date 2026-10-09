@@ -64,9 +64,11 @@ Rules mirrored from scripts/run_scalp_paper.py (defaults, unchanged)
 Cost model (established in docs/RESEARCH_REPORT_* and stated by the lead)
 -------------------------------------------------------------------------
 FX/CFD trading fee is 0%. A MAKER entry pays no fee and no spread: it fills
-at the limit. The TAKER exit pays half-spread + slippage:
-    burst regime (PRIMARY): 1.96 + 2.0 = 3.96 ~ 4 bps per taker side
-    calm  regime (sensitivity): 0.93 + 2.0 = 2.93 ~ 3 bps per taker side
+at the limit. The TAKER exit pays half-spread + slippage (L-920: a cost is a % of the
+price, not bp; gross trade returns stay in bp because they are move rates,
+and net = gross_bps / 100 - cost_pct is a %):
+    burst regime (PRIMARY): 0.0196 + 0.02 = 0.0396 ~ 0.04 % per taker side
+    calm  regime (sensitivity): 0.0093 + 0.02 = 0.0293 ~ 0.03 % per taker side
 The primary number is the burst one because every exit here happens ~60s
 after a burst. Missed-entry counterfactuals pay the taker cost TWICE (entry
 and exit), since a taker entry crosses the spread too.
@@ -97,10 +99,12 @@ from run_scalp_paper import RestingLimit  # noqa: E402
 
 EVENT_DIR = ROOT / "data" / "storm_events"
 
-# taker cost per side, bps: half-spread + slippage
-COST_BURST_BPS = 1.96 + 2.0
-COST_CALM_BPS = 0.93 + 2.0
-ADOPTION_BAR_BPS = 5.0          # pre-registered: >= +5 bps/trade net
+# taker cost per side, % of the price: half-spread + slippage
+# (L-920: was COST_BURST_BPS = 1.96 + 2.0 / COST_CALM_BPS = 0.93 + 2.0 in bp)
+COST_BURST_PCT = 0.0196 + 0.02
+COST_CALM_PCT = 0.0093 + 0.02
+ADOPTION_BAR_PCT = 0.05         # pre-registered: >= +5 bps/trade net
+#                                 (L-920 の後の単位: >= +0.05 %/trade net)
 ADOPTION_EVENT_BAR = 30         # pre-registered: >= 30 events
 
 
@@ -270,14 +274,15 @@ def replay_event(path: Path, args, radar: StormRadar, ffill_bn: bool) -> EventRe
 # --------------------------------------------------------------------------- #
 # stats helpers
 # --------------------------------------------------------------------------- #
-def net_bps(sig: Signal, cost: float) -> float:
-    """Net bps of a FILLED maker trade: maker entry free, taker exit costs."""
-    return sig.gross_bps - cost
+def net_pct(sig: Signal, cost: float) -> float:
+    """Net % of a FILLED maker trade: maker entry free, taker exit costs.
+    gross_bps (a move rate, bp) / 100 -> %, minus the cost in %."""
+    return sig.gross_bps / 100 - cost
 
 
-def cf_net_bps(sig: Signal, cost: float) -> float:
-    """Net bps of a taker entry at the signal + taker exit: pays cost twice."""
-    return sig.cf_gross_bps - 2 * cost
+def cf_net_pct(sig: Signal, cost: float) -> float:
+    """Net % of a taker entry at the signal + taker exit: pays cost twice."""
+    return sig.cf_gross_bps / 100 - 2 * cost
 
 
 def describe(vals: list[float]) -> dict:
@@ -302,19 +307,23 @@ def line(c="-", n=100):
     print(c * n)
 
 
-def stat_block(title: str, vals: list[float], bar: float | None = None):
+def stat_block(title: str, vals: list[float], bar: float | None = None,
+               pct: bool = False):
+    """`pct=True` for net values (%, L-920); otherwise gross move rates (bp).
+    The % values are 1/100 of the old bp, so they get 2 more decimals."""
     s = describe(vals)
     print(f"  {title}")
     if s["n"] == 0:
         print("      (no observations)")
         return
-    print(f"      n={s['n']:<4d} mean={s['mean']:+7.2f}  median={s['median']:+7.2f}  "
-          f"sd={s['sd']:7.2f}  win%={s['win']:5.1f}  sum={s['sum']:+9.1f}  "
-          f"min={s['min']:+7.1f}  max={s['max']:+7.1f}")
+    a, b = (4, 3) if pct else (2, 1)
+    print(f"      n={s['n']:<4d} mean={s['mean']:+9.{a}f}  median={s['median']:+9.{a}f}  "
+          f"sd={s['sd']:9.{a}f}  win%={s['win']:5.1f}  sum={s['sum']:+11.{b}f}  "
+          f"min={s['min']:+9.{b}f}  max={s['max']:+9.{b}f}")
     if bar is not None:
         verdict = "PASS" if s["mean"] >= bar else "FAIL"
-        print(f"      vs adoption bar +{bar:.0f} bps/trade -> {verdict} "
-              f"(gap {s['mean'] - bar:+.2f} bps)")
+        print(f"      vs adoption bar +{bar:.2f} %/trade -> {verdict} "
+              f"(gap {s['mean'] - bar:+.4f} %)")
 
 
 # --------------------------------------------------------------------------- #
@@ -384,13 +393,13 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
           f" fill timeout {args.fill_timeout_sec:.0f}s,")
     print(f"                       hold {args.hold_sec:.0f}s from fill, taker exit,"
           f" cooldown {args.cooldown_sec:.0f}s from signal, direction = continuation")
-    print(f"costs                : maker entry 0 bps; taker exit "
-          f"{COST_BURST_BPS:.2f} bps (burst, PRIMARY) / {COST_CALM_BPS:.2f} bps (calm, sensitivity)")
+    print(f"costs                : maker entry 0 %; taker exit "
+          f"{COST_BURST_PCT:.4f} % (burst, PRIMARY) / {COST_CALM_PCT:.4f} % (calm, sensitivity)")
 
     # ---------------- per-event table ---------------------------------------
     line("=")
-    print("1. PER-EVENT TABLE   (net bps at the PRIMARY burst cost of "
-          f"{COST_BURST_BPS:.2f} bps per taker side)")
+    print("1. PER-EVENT TABLE   (net % at the PRIMARY burst cost of "
+          f"{COST_BURST_PCT:.4f} % per taker side)")
     line("=")
     hdr = (f"{'event':<15}{'window start (UTC)':<22}{'sig':>5}{'fill':>6}{'miss':>6}"
            f"{'fill%':>7}{'net sum':>10}{'net/trade':>11}{'win%':>7}{'armed sig':>11}{'armed?':>8}")
@@ -400,14 +409,14 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
         sg = r.signals
         f_ = [s for s in sg if s.filled and s.gross_bps is not None]
         m_ = [s for s in sg if not s.filled and not s.unresolved]
-        nets = [net_bps(s, COST_BURST_BPS) for s in f_]
+        nets = [net_pct(s, COST_BURST_PCT) for s in f_]
         st = describe(nets)
         n_armed = sum(1 for s in sg if s.armed)
         armed_tag = ("all" if n_armed == len(sg) and sg else
                      ("none" if n_armed == 0 else "mixed"))
         print(f"{r.event:<15}{str(r.start)[:19]:<22}{len(sg):>5}{len(f_):>6}{len(m_):>6}"
               f"{(100*len(f_)/len(sg) if sg else float('nan')):>7.1f}"
-              f"{fmt(st['sum'], 1, 10)}{fmt(st['mean'], 2, 11)}{fmt(st['win'], 1, 7)}"
+              f"{fmt(st['sum'], 3, 10)}{fmt(st['mean'], 4, 11)}{fmt(st['win'], 1, 7)}"
               f"{n_armed:>11}{armed_tag:>8}")
     line()
     tot_f = len(filled)
@@ -428,22 +437,22 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
     print()
     stat_block("GROSS bps/trade (no costs)", [s.gross_bps for s in filled])
     print()
-    stat_block(f"NET bps/trade @ burst cost {COST_BURST_BPS:.2f} bps taker exit  [PRIMARY]",
-               [net_bps(s, COST_BURST_BPS) for s in filled], bar=ADOPTION_BAR_BPS)
+    stat_block(f"NET %/trade @ burst cost {COST_BURST_PCT:.4f} % taker exit  [PRIMARY]",
+               [net_pct(s, COST_BURST_PCT) for s in filled], bar=ADOPTION_BAR_PCT, pct=True)
     print()
-    stat_block(f"NET bps/trade @ calm cost {COST_CALM_BPS:.2f} bps taker exit  [sensitivity]",
-               [net_bps(s, COST_CALM_BPS) for s in filled], bar=ADOPTION_BAR_BPS)
+    stat_block(f"NET %/trade @ calm cost {COST_CALM_PCT:.4f} % taker exit  [sensitivity]",
+               [net_pct(s, COST_CALM_PCT) for s in filled], bar=ADOPTION_BAR_PCT, pct=True)
     print()
     # tail-robustness + clustering: trades inside one storm are not independent,
     # so the CI is bootstrapped over EVENTS, not over trades.
-    nets = [net_bps(s, COST_BURST_BPS) for s in filled]
+    nets = [net_pct(s, COST_BURST_PCT) for s in filled]
     if nets:
         a = np.sort(np.asarray(nets))
         k = int(len(a) * 0.10)
         trimmed = a[k:len(a) - k].mean() if len(a) - 2 * k > 0 else float("nan")
         print(f"  10% trimmed mean (both tails, {k} trades cut per side): "
-              f"{trimmed:+.2f} bps/trade")
-        by_ev = [[net_bps(s, COST_BURST_BPS) for s in r.signals
+              f"{trimmed:+.4f} %/trade")
+        by_ev = [[net_pct(s, COST_BURST_PCT) for s in r.signals
                   if s.filled and s.gross_bps is not None] for r in results]
         by_ev = [v for v in by_ev if v]
         rng = np.random.default_rng(7)
@@ -453,17 +462,17 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
             pool = np.concatenate([by_ev[i] for i in pick])
             boot.append(pool.mean())
         lo, hi = np.percentile(boot, [2.5, 97.5])
-        p_above = float(np.mean(np.asarray(boot) >= ADOPTION_BAR_BPS))
+        p_above = float(np.mean(np.asarray(boot) >= ADOPTION_BAR_PCT))
         print(f"  event-clustered bootstrap of the mean (20k resamples of the "
               f"{len(by_ev)} events):")
-        print(f"      95% CI [{lo:+.2f}, {hi:+.2f}] bps/trade   "
-              f"P(mean >= +{ADOPTION_BAR_BPS:.0f} bps) = {p_above:.3f}")
+        print(f"      95% CI [{lo:+.4f}, {hi:+.4f}] %/trade   "
+              f"P(mean >= +{ADOPTION_BAR_PCT:.2f} %) = {p_above:.3f}")
     print()
     print("  per-SIGNAL expectancy (misses counted as 0 - what the strategy earns")
     print("  per opportunity, since a miss consumes the cooldown but pays nothing):")
-    per_signal = [net_bps(s, COST_BURST_BPS) if s.filled and s.gross_bps is not None else 0.0
+    per_signal = [net_pct(s, COST_BURST_PCT) if s.filled and s.gross_bps is not None else 0.0
                   for s in all_sigs if not s.unresolved]
-    stat_block(f"NET bps/signal @ {COST_BURST_BPS:.2f} bps", per_signal)
+    stat_block(f"NET %/signal @ {COST_BURST_PCT:.4f} %", per_signal, pct=True)
 
     # ---------------- armed split -------------------------------------------
     line("=")
@@ -475,10 +484,10 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
         m_ = [s for s in sg if not s.filled and not s.unresolved]
         print(f"  {label}: signals={len(sg)}  fills={len(f_)}  missed={len(m_)}  "
               f"fill rate={100*len(f_)/len(sg) if sg else float('nan'):.1f}%")
-        stat_block(f"    net bps/trade @ {COST_BURST_BPS:.2f}",
-                   [net_bps(s, COST_BURST_BPS) for s in f_], bar=ADOPTION_BAR_BPS)
-        stat_block(f"    net bps/trade @ {COST_CALM_BPS:.2f}",
-                   [net_bps(s, COST_CALM_BPS) for s in f_])
+        stat_block(f"    net %/trade @ {COST_BURST_PCT:.4f}",
+                   [net_pct(s, COST_BURST_PCT) for s in f_], bar=ADOPTION_BAR_PCT, pct=True)
+        stat_block(f"    net %/trade @ {COST_CALM_PCT:.4f}",
+                   [net_pct(s, COST_CALM_PCT) for s in f_], pct=True)
         print()
     n_ev_armed = sum(1 for r in results if any(s.armed for s in r.signals))
     print(f"  events containing at least one armed signal: {n_ev_armed}/{len(results)}")
@@ -491,29 +500,29 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
     print("  have earned over the same 60s hold, paying the taker cost on BOTH legs.")
     print("  Maker-filled trades are shown on the same taker basis for comparison.")
     print()
-    cf_missed = [cf_net_bps(s, COST_BURST_BPS) for s in missed if s.cf_gross_bps is not None]
-    cf_filled = [cf_net_bps(s, COST_BURST_BPS) for s in filled if s.cf_gross_bps is not None]
-    cf_all = [cf_net_bps(s, COST_BURST_BPS) for s in all_sigs
+    cf_missed = [cf_net_pct(s, COST_BURST_PCT) for s in missed if s.cf_gross_bps is not None]
+    cf_filled = [cf_net_pct(s, COST_BURST_PCT) for s in filled if s.cf_gross_bps is not None]
+    cf_all = [cf_net_pct(s, COST_BURST_PCT) for s in all_sigs
               if s.cf_gross_bps is not None and not s.unresolved]
-    stat_block(f"MISSED signals, as taker @ {COST_BURST_BPS:.2f} bps x2", cf_missed)
+    stat_block(f"MISSED signals, as taker @ {COST_BURST_PCT:.4f} % x2", cf_missed, pct=True)
     print()
-    stat_block(f"FILLED signals, as taker @ {COST_BURST_BPS:.2f} bps x2 (same trades, taker basis)",
-               cf_filled)
+    stat_block(f"FILLED signals, as taker @ {COST_BURST_PCT:.4f} % x2 (same trades, taker basis)",
+               cf_filled, pct=True)
     print()
-    stat_block(f"ALL signals, taker-entry strategy @ {COST_BURST_BPS:.2f} bps x2",
-               cf_all, bar=ADOPTION_BAR_BPS)
+    stat_block(f"ALL signals, taker-entry strategy @ {COST_BURST_PCT:.4f} % x2",
+               cf_all, bar=ADOPTION_BAR_PCT, pct=True)
     print()
     m_mean = describe(cf_missed)["mean"]
     f_mean = describe(cf_filled)["mean"]
     if np.isfinite(m_mean) and np.isfinite(f_mean):
         print(f"  adverse selection = filled - missed (taker basis) = "
-              f"{f_mean - m_mean:+.2f} bps")
+              f"{f_mean - m_mean:+.4f} %")
         print("  A negative number means the fills we DO get are the worse half of the")
         print("  opportunity set: the market came back to our limit precisely when it was")
         print("  about to keep going against us, while the runners left us behind.")
     print()
-    stat_block(f"MAKER (as executed) net @ {COST_BURST_BPS:.2f} vs TAKER-all above",
-               [net_bps(s, COST_BURST_BPS) for s in filled])
+    stat_block(f"MAKER (as executed) net @ {COST_BURST_PCT:.4f} vs TAKER-all above",
+               [net_pct(s, COST_BURST_PCT) for s in filled], pct=True)
 
     # ---------------- side / direction breakdown ----------------------------
     line("=")
@@ -524,15 +533,15 @@ def report(results: list[EventResult], args, radar: StormRadar) -> None:
         sg = [s for s in all_sigs if s.side == side]
         print(f"  {side}: signals={len(sg)}  fills={len(f_)}  "
               f"fill rate={100*len(f_)/len(sg) if sg else float('nan'):.1f}%")
-        stat_block(f"    net bps/trade @ {COST_BURST_BPS:.2f}",
-                   [net_bps(s, COST_BURST_BPS) for s in f_])
+        stat_block(f"    net %/trade @ {COST_BURST_PCT:.4f}",
+                   [net_pct(s, COST_BURST_PCT) for s in f_], pct=True)
     print()
     print("  breakeven taker cost (net mean = 0) for the maker book:")
     g = describe([s.gross_bps for s in filled])["mean"]
     if np.isfinite(g):
         print(f"    gross mean {g:+.2f} bps -> breaks even at a taker exit cost of "
-              f"{g:.2f} bps (we assume {COST_BURST_BPS:.2f}); "
-              f"needs <= {g - ADOPTION_BAR_BPS:.2f} bps to clear the +5 bar")
+              f"{g / 100:.4f} % (we assume {COST_BURST_PCT:.4f} %); "
+              f"needs <= {g / 100 - ADOPTION_BAR_PCT:.4f} % to clear the +0.05 % bar")
 
     # ---------------- sanity checks -----------------------------------------
     line("=")
@@ -556,8 +565,8 @@ def sensitivity_no_ffill(args, radar: StormRadar, paths: list[Path]) -> None:
     fl = [s for s in sigs if s.filled and s.gross_bps is not None]
     print(f"  signals={len(sigs)}  fills={len(fl)}  "
           f"fill rate={100*len(fl)/len(sigs) if sigs else float('nan'):.1f}%")
-    stat_block(f"  net bps/trade @ {COST_BURST_BPS:.2f}",
-               [net_bps(s, COST_BURST_BPS) for s in fl], bar=ADOPTION_BAR_BPS)
+    stat_block(f"  net %/trade @ {COST_BURST_PCT:.4f}",
+               [net_pct(s, COST_BURST_PCT) for s in fl], bar=ADOPTION_BAR_PCT, pct=True)
 
 
 def caveats(results: list[EventResult]) -> None:

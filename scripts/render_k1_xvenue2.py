@@ -44,11 +44,22 @@ def cell(d, ft, g, st):
 
 def total_of(c, y):
     p = c["per_year"].get(str(y)) if c else None
-    return (round(p["n"] * p["mean_bp"], 1), p["n"]) if p else (None, 0)
+    # 総損益 = 取引ごとのリターンの和 = n × mean_bp。和は 1 つの値段の動きではないので %(/ 100、L-920)
+    return (round(p["n"] * p["mean_bp"] / 100, 3), p["n"]) if p else (None, 0)
+
+
+def _total_pct_str(b):
+    """三分位ごとの総損益(取引ごとのリターンの和)。L-920 の後の出力は total_pct(%)、
+    前の出力は total_bp(bp)なので / 100 して % で出す。"""
+    v = b.get("total_pct")
+    if v is None and b.get("total_bp") is not None:
+        v = b["total_bp"] / 100
+    return "—" if v is None else f"{v:+,.3f}%"
 
 
 def fmt0(x):
-    return "—" if x is None else f"{x:+,.0f}"
+    """総損益(%)の表示。L-920 の前は bp の整数で出していた。"""
+    return "—" if x is None else f"{x:+,.3f}%"
 
 
 def f(x, d=2):
@@ -74,7 +85,7 @@ def table_a(d_design):
             if not p:
                 print(f"| {y} | — | — | — | |")
                 continue
-            t = round(p["n"] * p["mean_bp"], 1)
+            t = round(p["n"] * p["mean_bp"] / 100, 3)
             print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} | |")
         print()
         if c:
@@ -131,7 +142,7 @@ def table_c(d_design, d_i, d_ii, d_iii, d_stage1):
         print("|---|---|---|---|---|---|---|")
         for y in YEARS:
             pd_ = c_design["per_year"].get(str(y)) if c_design else None
-            row = [f(pd_["mean_bp"]) if pd_ else "—", fmt0(round(pd_["n"] * pd_["mean_bp"], 1)) if pd_ else "—"]
+            row = [f(pd_["mean_bp"]) if pd_ else "—", fmt0(round(pd_["n"] * pd_["mean_bp"] / 100, 3)) if pd_ else "—"]
             for c in (c_i, c_ii, c_iii, c_s1):
                 p = c["per_year"].get(str(y)) if c else None
                 row.append(f(p["mean_bp"]) if p else "—")
@@ -168,7 +179,7 @@ def table_d(d_vol):
                 for name in ("low", "mid", "high"):
                     b = row[name]
                     cells += [f"{b['n']:,}", f(b["mean_bp"]) if b["mean_bp"] is not None else "—",
-                              fmt0(b["total_bp"])]
+                              _total_pct_str(b)]
                 print(f"| {y} | " + " | ".join(cells) + " |")
             print()
 
@@ -226,7 +237,7 @@ def table_f(d_design):
                 if not p:
                     print(f"| {y} | — | — | — |")
                     continue
-                t = round(p["n"] * p["mean_bp"], 1)
+                t = round(p["n"] * p["mean_bp"] / 100, 3)
                 print(f"| {y} | {p['n']:,} | {f(p['mean_bp'])} | {fmt0(t)} |")
             print()
 

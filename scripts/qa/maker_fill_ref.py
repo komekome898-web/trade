@@ -274,14 +274,15 @@ def simulate(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, strategy: str = "S1
     out = pd.DataFrame(rows_out, columns=["direction", "entry_ts", "entry_price", "exit_ts",
                                            "exit_price", "forced", "entry_mid"])
     if out.empty:
-        out["net_bps"] = []
+        out["net_pct"] = []
         out["markout_5s_bps"] = []
         return out.drop(columns=["entry_mid"])[
             ["direction", "entry_ts", "entry_price", "exit_ts", "exit_price", "forced",
-             "net_bps", "markout_5s_bps"]]
+             "net_pct", "markout_5s_bps"]]
 
     sign = out["direction"].map({"long": 1.0, "short": -1.0})
-    out["net_bps"] = sign * (out["exit_price"] - out["entry_price"]) / out["entry_price"] * 1e4
+    # a round trip between two fill prices carries the spread capture, so it is not a price-move rate: % (L-920)
+    out["net_pct"] = sign * (out["exit_price"] - out["entry_price"]) / out["entry_price"] * 100
 
     valid = t[t["best_bid"] < t["best_ask"]].copy()
     valid["mid"] = (valid["best_bid"] + valid["best_ask"]) / 2.0
@@ -297,4 +298,4 @@ def simulate(ticker_df: pd.DataFrame, exec_df: pd.DataFrame, strategy: str = "S1
     out["markout_5s_bps"] = sign * (mid5 - out["entry_mid"]) / out["entry_mid"] * 1e4
     return out.drop(columns=["entry_mid"])[
         ["direction", "entry_ts", "entry_price", "exit_ts", "exit_price", "forced",
-         "net_bps", "markout_5s_bps"]]
+         "net_pct", "markout_5s_bps"]]

@@ -338,7 +338,8 @@ def diff_ci(a, b, seed: int = SEED) -> tuple[float, float, float]:
 
 
 def mde_of(x) -> tuple[float, float, int]:
-    """(σ, MDE = 2.8016·σ/√n, n) for a per-observation series in bps."""
+    """(σ, MDE = 2.8016·σ/√n, n) for a per-observation series, in its own unit
+    (bp for a gross return, % for a cost-net -- L-920)."""
     x = np.asarray(x, dtype=float)
     n = len(x)
     if n < 2:
@@ -416,9 +417,9 @@ def conditional_indicator(net_cons_arr, gross_arr, mask, seed: int = SEED) -> di
     d, dlo, dhi = diff_ci(sub_gross, non_gross, seed)
     sd, mde, n = mde_of(sub_net)
     return {"n": n, "n_complement": int((~mask).sum()),
-            "net_mean_cons_bps": net_mean, "net_ci_lo": net_lo, "net_ci_hi": net_hi,
+            "net_mean_cons_pct": net_mean, "net_ci_lo": net_lo, "net_ci_hi": net_hi,
             "diff_gross_bps": d, "diff_ci_lo": dlo, "diff_ci_hi": dhi,
-            "sd_bps": sd, "mde_bps": mde}
+            "sd_pct": sd, "mde_pct": mde}
 
 
 SIGN_LABELS = ("1_非正", "2_正")
@@ -478,7 +479,7 @@ def max_drawdown_yen(pnl_yen) -> float:
     return float(np.max(peak - equity))
 
 
-def joint_permutation_null(net_bps, gross_bps, masks, block: int = BLOCK,
+def joint_permutation_null(net_pct, gross_bps, masks, block: int = BLOCK,
                            n_draws: int = N_PERM, seed: int = SEED
                            ) -> tuple[np.ndarray, np.ndarray, pd.DataFrame]:
     """The two joint block-permutation nulls A and B (PREREG「同時置換の帰無」).
@@ -497,7 +498,7 @@ def joint_permutation_null(net_bps, gross_bps, masks, block: int = BLOCK,
 
     Returns (draws_A, draws_B, per-rule argmax-share table).
     """
-    net = np.asarray(net_bps, dtype=float)
+    net = np.asarray(net_pct, dtype=float)  # % (cost-net); gross stays bp
     gross = np.asarray(gross_bps, dtype=float)
     n = len(net)
     blocks = _block_slices(n, block)
@@ -715,13 +716,13 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                           index=dayses["date"].to_numpy())
     pairs["close_prev_day_session"] = pd.to_datetime(pairs["date_prev"]).map(day_close)
     notional = pairs["close_prev_day_session"] * mult
-    pairs["cost_bps_cons"] = cost_yen_cons / notional * 1e4
-    pairs["cost_bps_opt"] = cost_yen_opt / notional * 1e4
-    pairs["r_net_bps_cons"] = pairs["r_bps"] - pairs["cost_bps_cons"]
-    pairs["r_net_bps_opt"] = pairs["r_bps"] - pairs["cost_bps_opt"]
+    pairs["cost_pct_cons"] = cost_yen_cons / notional * 100.0  # %
+    pairs["cost_pct_opt"] = cost_yen_opt / notional * 100.0  # %
+    pairs["r_net_pct_cons"] = pairs["r_bps"] / 100.0 - pairs["cost_pct_cons"]  # gross bp -> %; net in %
+    pairs["r_net_pct_opt"] = pairs["r_bps"] / 100.0 - pairs["cost_pct_opt"]  # gross bp -> %; net in %
     pairs["pnl_yen_cons"] = (pairs["close"] - pairs["close_prev"]) * mult - cost_yen_cons
     # sensitivity: the same cost with the full-day close as the notional base
-    pairs["cost_bps_cons_fullday_base"] = cost_yen_cons / (pairs["close_prev"] * mult) * 1e4
+    pairs["cost_pct_cons_fullday_base"] = cost_yen_cons / (pairs["close_prev"] * mult) * 100.0  # %
     steps["days_full_close_ne_day_session_close"] = int(
         (full["close"].to_numpy(dtype=float)
          != dayses["close"].to_numpy(dtype=float)).sum())
@@ -764,14 +765,14 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         if with_cost:
             ticks = p["close_prev"].map(lambda x: etf_tick_yen(float(x), bands))
             p["tick_yen"] = ticks
-            p["cost_bps_cons"] = (2 * etf_fee + 2 * ticks) / p["close_prev"] * 1e4
-            p["cost_bps_opt"] = (2 * etf_fee) / p["close_prev"] * 1e4
+            p["cost_pct_cons"] = (2 * etf_fee + 2 * ticks) / p["close_prev"] * 100.0  # %
+            p["cost_pct_opt"] = (2 * etf_fee) / p["close_prev"] * 100.0  # %
         else:
             p["tick_yen"] = np.nan
-            p["cost_bps_cons"] = np.nan
-            p["cost_bps_opt"] = np.nan
-        p["r_net_bps_cons"] = p["r_bps"] - p["cost_bps_cons"]
-        p["r_net_bps_opt"] = p["r_bps"] - p["cost_bps_opt"]
+            p["cost_pct_cons"] = np.nan
+            p["cost_pct_opt"] = np.nan
+        p["r_net_pct_cons"] = p["r_bps"] / 100.0 - p["cost_pct_cons"]  # gross bp -> %; net in %
+        p["r_net_pct_opt"] = p["r_bps"] / 100.0 - p["cost_pct_opt"]  # gross bp -> %; net in %
         # 1 ETF unit held close(t−1) -> close(t), conservative cost deducted
         p["pnl_yen_cons"] = (p["close"] - p["close_prev"]
                              - (2 * etf_fee + 2 * p["tick_yen"]))
@@ -804,25 +805,25 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                        series_label: str, variant: str, seed: int) -> dict:
         ev = frame.loc[eval_mask]
         m = ev[f"is_{rule}"].to_numpy(dtype=bool)
-        rule_net = ev.loc[m, "r_net_bps_cons"].to_numpy(dtype=float)
+        rule_net = ev.loc[m, "r_net_pct_cons"].to_numpy(dtype=float)
         rule_gross = ev.loc[m, "r_bps"].to_numpy(dtype=float)
         non_gross = ev.loc[~m, "r_bps"].to_numpy(dtype=float)
         net_mean, net_lo, net_hi = mean_ci(rule_net, seed)
         d, d_lo, d_hi = diff_ci(rule_gross, non_gross, seed)
         sd, mde, n = mde_of(rule_net)
-        opt = ev.loc[m, "r_net_bps_opt"].to_numpy(dtype=float)
+        opt = ev.loc[m, "r_net_pct_opt"].to_numpy(dtype=float)
         t_lo, t_hi = t_ci(rule_net)
         return {
             "rule": rule, "series": series_label, "variant": variant,
             "n": n, "n_non_rule": int((~m).sum()),
-            "net_mean_cons_bps": net_mean, "net_ci_lo": net_lo, "net_ci_hi": net_hi,
+            "net_mean_cons_pct": net_mean, "net_ci_lo": net_lo, "net_ci_hi": net_hi,
             "net_ci_lo_t_supp": t_lo, "net_ci_hi_t_supp": t_hi,
             "gross_mean_bps": float(rule_gross.mean()) if len(rule_gross) else float("nan"),
             "non_rule_gross_mean_bps": float(non_gross.mean()) if len(non_gross) else float("nan"),
             "diff_gross_bps": d, "diff_ci_lo": d_lo, "diff_ci_hi": d_hi,
-            "net_mean_opt_bps": float(opt.mean()) if len(opt) else float("nan"),
-            "cost_mean_bps": float(ev.loc[m, "cost_bps_cons"].mean()) if n else float("nan"),
-            "sd_bps": sd, "mde_bps": mde,
+            "net_mean_opt_pct": float(opt.mean()) if len(opt) else float("nan"),
+            "cost_mean_pct": float(ev.loc[m, "cost_pct_cons"].mean()) if n else float("nan"),
+            "sd_pct": sd, "mde_pct": mde,
         }
 
     all_mask = np.ones(len(pairs), dtype=bool)
@@ -861,7 +862,7 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         for label, frame, emask, series in variants:
             ev = frame.loc[emask]
             m = ev[f"is_{rule}"].to_numpy(dtype=bool)
-            net = ev.loc[m, "r_net_bps_cons"].to_numpy(dtype=float)
+            net = ev.loc[m, "r_net_pct_cons"].to_numpy(dtype=float)
             gross = ev.loc[m, "r_bps"].to_numpy(dtype=float)
             non = ev.loc[~m, "r_bps"].to_numpy(dtype=float)
             sd, mde, n = mde_of(net)
@@ -870,7 +871,7 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
             se_diff = (np.sqrt(sdg ** 2 / max(n, 1) + sdn ** 2 / max(nn, 1))
                        if np.isfinite(sdg) and np.isfinite(sdn) else float("nan"))
             mde_rows.append({"rule": rule, "series": series, "variant": label, "n": n,
-                             "sd_net_bps": sd, "mde_net_bps": mde,
+                             "sd_net_pct": sd, "mde_net_pct": mde,
                              "sd_gross_bps": sdg, "n_non_rule": nn,
                              "mde_diff_bps": Z_MDE * se_diff})
     mde_df = pd.DataFrame(mde_rows)
@@ -884,7 +885,7 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         ev = frame.loc[emask]
         m = ev[f"is_{rule}"].to_numpy(dtype=bool)
         sub = ev.loc[m]
-        net = sub["r_net_bps_cons"].to_numpy(dtype=float)
+        net = sub["r_net_pct_cons"].to_numpy(dtype=float)
         yrs = years_span(sub["date"])
         pnl = (sub["pnl_yen_cons"].to_numpy(dtype=float)
                if "pnl_yen_cons" in sub.columns else np.array([]))
@@ -894,7 +895,7 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                "hit_rate": float((net > 0).mean()) if len(net) else float("nan"),
                "max_drawdown_yen_1unit": max_drawdown_yen(pnl) if len(pnl) else float("nan")}
         for dec in ("1990s", "2000s", "2010s"):
-            seg = sub.loc[sub["decade"] == dec, "r_net_bps_cons"].to_numpy(dtype=float)
+            seg = sub.loc[sub["decade"] == dec, "r_net_pct_cons"].to_numpy(dtype=float)
             row[f"net_mean_{dec}"] = float(seg.mean()) if len(seg) else float("nan")
             row[f"n_{dec}"] = int(len(seg))
         for lbl, pf in (("1321", p1321), ("1306", p1306)):
@@ -919,14 +920,14 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         for split in ("train", "val"):
             sset = ev.loc[(ev["split"] == split)]
             m = sset[f"is_{rule}"].to_numpy(dtype=bool)
-            net = sset.loc[m, "r_net_bps_cons"].to_numpy(dtype=float)
+            net = sset.loc[m, "r_net_pct_cons"].to_numpy(dtype=float)
             mean, lo, hi = mean_ci(net)
             sd, mde, n = mde_of(net)
             d, dlo, dhi = diff_ci(sset.loc[m, "r_bps"].to_numpy(dtype=float),
                                   sset.loc[~m, "r_bps"].to_numpy(dtype=float))
             tv_rows.append({"rule": rule, "series": series, "split": split, "n": n,
-                            "net_mean_cons_bps": mean, "ci_lo": lo, "ci_hi": hi,
-                            "mde_bps": mde, "diff_gross_bps": d,
+                            "net_mean_cons_pct": mean, "ci_lo": lo, "ci_hi": hi,
+                            "mde_pct": mde, "diff_gross_bps": d,
                             "diff_ci_lo": dlo, "diff_ci_hi": dhi})
     tv_df = pd.DataFrame(tv_rows)
     write(tv_df, "train_val.csv")
@@ -941,19 +942,19 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                                      else (pairs, keep_mask, "先物", trading_days))
         ev = frame.loc[emask].reset_index(drop=True)
         m = ev[f"is_{rule}"].to_numpy(dtype=bool)
-        net = ev.loc[m, "r_net_bps_cons"].to_numpy(dtype=float)
+        net = ev.loc[m, "r_net_pct_cons"].to_numpy(dtype=float)
         obs = float(net.mean()) if len(net) else float("nan")
 
         # 1. stratified random same-size day sets
         draws = stratified_random_null(ev["year"].to_numpy(),
-                                       ev["r_net_bps_cons"].to_numpy(dtype=float),
+                                       ev["r_net_pct_cons"].to_numpy(dtype=float),
                                        m, N_RANDOM, SEED + 100 + i)
         rnd_draws_store[rule] = draws
         rnd_rows.append({"rule": rule, "series": series, "n": int(m.sum()),
-                         "observed_net_mean_bps": obs,
-                         "null_mean_bps": float(draws.mean()) if len(draws) else float("nan"),
-                         "null_p50_bps": float(np.percentile(draws, 50)) if len(draws) else float("nan"),
-                         "null_p95_bps": float(np.percentile(draws, 95)) if len(draws) else float("nan"),
+                         "observed_net_mean_pct": obs,
+                         "null_mean_pct": float(draws.mean()) if len(draws) else float("nan"),
+                         "null_p50_pct": float(np.percentile(draws, 50)) if len(draws) else float("nan"),
+                         "null_p95_pct": float(np.percentile(draws, 95)) if len(draws) else float("nan"),
                          "share_ge_observed": float((draws >= obs).mean()) if len(draws) else float("nan"),
                          "n_draws": int(len(draws))})
 
@@ -964,19 +965,19 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                                                      else build_rule_day_sets(cal)[rule],
                                                      cal, k)
             pm = np.isin(ev_dates, np.array(sorted(pset), dtype=object))
-            pnet = ev.loc[pm, "r_net_bps_cons"].to_numpy(dtype=float)
+            pnet = ev.loc[pm, "r_net_pct_cons"].to_numpy(dtype=float)
             mean, lo, hi = mean_ci(pnet, SEED + 200 + i)
             placebo_rows.append({"rule": rule, "series": series, "k_trading_days": k,
                                  "n": int(pm.sum()), "n_folded_back_removed": n_fold,
                                  "n_shifted_off_calendar": n_out,
-                                 "net_mean_cons_bps": mean, "ci_lo": lo, "ci_hi": hi,
-                                 "observed_rule_net_mean_bps": obs})
+                                 "net_mean_cons_pct": mean, "ci_lo": lo, "ci_hi": hi,
+                                 "observed_rule_net_mean_pct": obs})
 
         # 3. sign shuffle
         sh = sign_shuffle_null(net, N_SHUFFLE, SEED + 300 + i)
         shuffle_rows.append({"rule": rule, "series": series, "n": int(len(net)),
-                             "observed_net_mean_bps": obs,
-                             "null_p95_bps": float(np.percentile(sh, 95)) if len(sh) else float("nan"),
+                             "observed_net_mean_pct": obs,
+                             "null_p95_pct": float(np.percentile(sh, 95)) if len(sh) else float("nan"),
                              "share_ge_observed": float((sh >= obs).mean()) if len(sh) else float("nan"),
                              "n_draws": N_SHUFFLE})
     write(pd.DataFrame(rnd_rows), "control1_stratified_random.csv")
@@ -994,13 +995,13 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         em = keep_mask if rule in FUTURES_RULES else all_mask
         fut_masks[rule] = (rm & em, em)
     draws_a, draws_b, arg_fut = joint_permutation_null(
-        pairs["r_net_bps_cons"].to_numpy(dtype=float),
+        pairs["r_net_pct_cons"].to_numpy(dtype=float),
         pairs["r_bps"].to_numpy(dtype=float), fut_masks, BLOCK, N_PERM, SEED)
 
     etf_masks = {rule: (p1321[f"is_{rule}"].to_numpy(dtype=bool),
                         np.ones(len(p1321), dtype=bool)) for rule in RULES}
     draws_a_etf, draws_b_etf, arg_etf = joint_permutation_null(
-        p1321["r_net_bps_cons"].to_numpy(dtype=float),
+        p1321["r_net_pct_cons"].to_numpy(dtype=float),
         p1321["r_bps"].to_numpy(dtype=float), etf_masks, BLOCK, N_PERM, SEED + 1)
 
     bar_a_fut = float(np.percentile(draws_a, 95))
@@ -1037,12 +1038,12 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         ba, bb = (bar_a_etf, bar_b_etf) if etf else (bar_a_fut, bar_b_fut)
         gate_rows.append({
             "rule": rule, "series": p["series"], "n": p["n"],
-            "net_mean_cons_bps": p["net_mean_cons_bps"],
+            "net_mean_cons_pct": p["net_mean_cons_pct"],
             "ci_lo": p["net_ci_lo"], "ci_hi": p["net_ci_hi"],
             "ci_lo_t_supp": p["net_ci_lo_t_supp"], "ci_hi_t_supp": p["net_ci_hi_t_supp"],
-            "mde_bps": p["mde_bps"],
-            "net_minus_mde": p["net_mean_cons_bps"] - p["mde_bps"],
-            "null_A_p95": ba, "net_minus_nullA": p["net_mean_cons_bps"] - ba,
+            "mde_pct": p["mde_pct"],
+            "net_minus_mde": p["net_mean_cons_pct"] - p["mde_pct"],
+            "null_A_p95": ba, "net_minus_nullA": p["net_mean_cons_pct"] - ba,
             "diff_gross_bps": p["diff_gross_bps"],
             "diff_ci_lo": p["diff_ci_lo"], "diff_ci_hi": p["diff_ci_hi"],
             "null_B_p95": bb, "diff_minus_nullB": p["diff_gross_bps"] - bb,
@@ -1092,12 +1093,14 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                 "制度区分(年代)": sub["state_regime"].to_numpy(),
                 "泊数": sub["state_nights"].to_numpy(),
             }
-        res = state_split(sub["r_bps"].to_numpy(dtype=float), states,
+        # a cost is never bp (L-920): with the cost given, the gross r_bps is
+        # passed in % (/ 100) so values and cost share one unit
+        res = state_split(sub["r_bps"].to_numpy(dtype=float) / 100.0, states,
                           block=BLOCK, n_boot=N_BOOT, seed=SEED + 400 + i,
-                          cost_bps=sub["cost_bps_cons"].to_numpy(dtype=float))
+                          cost_pct=sub["cost_pct_cons"].to_numpy(dtype=float))
         st = res["state_table"].copy()
         st.insert(0, "rule", rule)
-        st["mde_bps"] = [Z_MDE * (r["ci_hi"] - r["ci_lo"]) / (2 * 1.959963985)
+        st["mde_pct"] = [Z_MDE * (r["ci_hi"] - r["ci_lo"]) / (2 * 1.959963985)
                          if np.isfinite(r["ci_hi"]) and np.isfinite(r["ci_lo"]) else np.nan
                          for _, r in st.iterrows()]
         state_tables.append(st)
@@ -1119,7 +1122,7 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
                           "効く状況(費用後CIが全て正)": " / ".join(works) or "該当なし",
                           "効かない状況(費用後CIが全て負)": " / ".join(fails) or "該当なし",
                           "判定不能な状況(費用後CIがゼロを含む)": " / ".join(undec) or "該当なし",
-                          "同時置換帰無95点(最大差, bps)": res["null_p95"],
+                          "同時置換帰無95点(最大差, %)": res["null_p95"],
                           "候補となった差の数": int((dt_["verdict"] == "候補").sum())})
     state_all = pd.concat(state_tables, ignore_index=True) if state_tables else pd.DataFrame()
     diff_all = pd.concat(diff_tables, ignore_index=True) if diff_tables else pd.DataFrame()
@@ -1134,12 +1137,13 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
         ev = pairs.loc[keep_mask].reset_index(drop=True)
         tom = ev.loc[ev["is_TOM"].to_numpy(dtype=bool)].reset_index(drop=True)
         for label, frame in (("TOM", tom), ("全日", ev)):
-            for leg, col in (("グロス", "r_bps"), ("費用", "cost_bps_cons"),
-                             ("ネット(保守)", "r_net_bps_cons")):
+            for leg, col, unit in (("グロス", "r_bps", "bps"), ("費用", "cost_pct_cons", "%"),
+                                   ("ネット(保守)", "r_net_pct_cons", "%")):
                 res = edge_trend(frame["date"], frame[col].to_numpy(dtype=float),
                                  window=EDGE_WINDOW, block=EDGE_BLOCK,
                                  time_unit=EDGE_TIME_UNIT, time_axis=EDGE_TIME_AXIS,
-                                 period=EDGE_PERIOD, n_boot=N_BOOT, seed=SEED)
+                                 period=EDGE_PERIOD, n_boot=N_BOOT, seed=SEED,
+                                 value_unit=unit)
                 key = f"{label}_{leg}"
                 edge_results[key] = res
                 tag = {"TOM": "tom", "全日": "alldays"}[label]
@@ -1230,11 +1234,11 @@ def main(out_dir: Path | None = None, skip_edge_trend: bool = False) -> int:
             "null_A_p95_futures": bar_a_fut, "null_B_p95_futures": bar_b_fut,
             "null_A_p95_1321": bar_a_etf, "null_B_p95_1321": bar_b_etf,
             "per_rule": [{"rule": r["rule"], "series": r["series"], "n": r["n"],
-                          "net_mean_cons_bps": r["net_mean_cons_bps"],
+                          "net_mean_cons_pct": r["net_mean_cons_pct"],
                           "ci95": [r["net_ci_lo"], r["net_ci_hi"]],
                           "diff_gross_bps": r["diff_gross_bps"],
                           "diff_ci95": [r["diff_ci_lo"], r["diff_ci_hi"]],
-                          "mde_bps": r["mde_bps"]}
+                          "mde_pct": r["mde_pct"]}
                          for r in (primary[k] for k in RULES)],
         },
         "outputs": sorted(written),
@@ -1304,44 +1308,44 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("## 2. 費用")
     A("")
     A(f"先物(マイクロ規格を適用): 保守 = 手数料 11 円/片側 × 2 + 呼値 5 ポイント × 乗数 10 円 × 2 = "
-      f"{cost_yen_cons} 円/往復 → cost_bps(t) = {cost_yen_cons} /(close_day(t−1) × 10)× 10^4。"
+      f"{cost_yen_cons} 円/往復 → cost_pct(t) = {cost_yen_cons} /(close_day(t−1) × 10)× 100(%)。"
       f"楽観 = 手数料のみ {cost_yen_opt} 円。")
     A("")
-    cost = pairs["cost_bps_cons"].dropna()
+    cost = pairs["cost_pct_cons"].dropna()
     A(_table([
-        {"a": "保守 cost_bps(先物、全ペア)", "b": float(cost.median()), "c": float(cost.mean()),
+        {"a": "保守 cost_pct(先物、全ペア、%)", "b": float(cost.median()), "c": float(cost.mean()),
          "d": float(cost.min()), "e": float(cost.max())},
-        {"a": "楽観 cost_bps(先物、全ペア)", "b": float(pairs["cost_bps_opt"].median()),
-         "c": float(pairs["cost_bps_opt"].mean()), "d": float(pairs["cost_bps_opt"].min()),
-         "e": float(pairs["cost_bps_opt"].max())},
-        {"a": "保守 cost_bps(1321.T、価格帯呼値)", "b": float(p1321["cost_bps_cons"].median()),
-         "c": float(p1321["cost_bps_cons"].mean()), "d": float(p1321["cost_bps_cons"].min()),
-         "e": float(p1321["cost_bps_cons"].max())},
-    ], [("a", "系列", -1), ("b", "中央値", 3), ("c", "平均", 3), ("d", "最小", 3), ("e", "最大", 3)]))
+        {"a": "楽観 cost_pct(先物、全ペア、%)", "b": float(pairs["cost_pct_opt"].median()),
+         "c": float(pairs["cost_pct_opt"].mean()), "d": float(pairs["cost_pct_opt"].min()),
+         "e": float(pairs["cost_pct_opt"].max())},
+        {"a": "保守 cost_pct(1321.T、価格帯呼値、%)", "b": float(p1321["cost_pct_cons"].median()),
+         "c": float(p1321["cost_pct_cons"].mean()), "d": float(p1321["cost_pct_cons"].min()),
+         "e": float(p1321["cost_pct_cons"].max())},
+    ], [("a", "系列", -1), ("b", "中央値", 5), ("c", "平均", 5), ("d", "最小", 5), ("e", "最大", 5)]))
     A("")
     A("1321.T は手数料 0(SOR)、呼値は `etf_tick_size_yen_by_price_band` の価格帯表を"
       "ペアごとに引いた(開発セットの終値 8,270〜21,480 円 → 10,000 円以下は 1 円、"
       "30,000 円以下は 5 円)。保守 = 片側 1 ティック × 2、楽観 = 手数料のみ(= 0)。")
     A("")
     A("当時のラージ仕様(呼値 10 ポイント・乗数 1,000 円)での往復費用は "
-      "22 + 2×10×1,000 = 20,022 円 → close 20,000 円のとき 20,022 /(20,000×1,000)×10^4 = "
-      "**10.0bps**(マイクロ換算 3.1bps の約 3.3 倍)。感度としての記録のみで判定には使わない。")
+      "22 + 2×10×1,000 = 20,022 円 → close 20,000 円のとき 20,022 /(20,000×1,000)×100 = "
+      "**0.100%**(マイクロ換算 0.031% の約 3.3 倍)。感度としての記録のみで判定には使わない。")
     A("")
     A("## 3. 主指標(規則ごと)")
     A("")
-    A("主指標 (1) = 規則日の保守コスト後平均(bps/日)と 95% CI、"
+    A("主指標 (1) = 規則日の保守コスト後平均(%/日)と 95% CI、"
       "主指標 (2) = 規則日の平均 − 非規則日の平均(グロス、bps)と 95% CI。"
       "CI はブロック・ブートストラップ(ブロック長 20・2,000 回・percentile 法)。"
       "TOM / WD / PH は「メジャー SQ 日とその前営業日を端点に含むペアを除外」した集合が主指標、"
       "除外なしを併記。SQm / SQq は 1321.T が主評価で、先物は併記。")
     A("")
     cols = [("rule", "規則", -1), ("series", "系列", -1), ("variant", "集合", -1),
-            ("n", "n", 0), ("net_mean_cons_bps", "主指標1 保守ネット平均", 3),
-            ("net_ci_lo", "CI下限", 3), ("net_ci_hi", "CI上限", 3),
+            ("n", "n", 0), ("net_mean_cons_pct", "主指標1 保守ネット平均", 5),
+            ("net_ci_lo", "CI下限", 5), ("net_ci_hi", "CI上限", 5),
             ("gross_mean_bps", "グロス平均", 3),
             ("diff_gross_bps", "主指標2 差", 3), ("diff_ci_lo", "差CI下限", 3),
-            ("diff_ci_hi", "差CI上限", 3), ("cost_mean_bps", "平均費用", 3),
-            ("net_mean_opt_bps", "楽観ネット平均", 3)]
+            ("diff_ci_hi", "差CI上限", 3), ("cost_mean_pct", "平均費用", 5),
+            ("net_mean_opt_pct", "楽観ネット平均", 5)]
     A(_table(main_df.to_dict("records"), cols))
     A("")
     A("**n < ブロック長 20 の規則(SQq: 1321.T の開発セットで n = 16)ではブロック・ブートストラップ CI は"
@@ -1352,10 +1356,10 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A(_table([r for r in main_df.to_dict("records")
               if r["rule"] in SQ_RULES and r["variant"].startswith("主指標")],
              [("rule", "規則", -1), ("n", "n", 0),
-              ("net_mean_cons_bps", "主指標1", 3),
-              ("net_ci_lo", "ブロックCI下限", 3), ("net_ci_hi", "ブロックCI上限", 3),
-              ("net_ci_lo_t_supp", "参考 t区間 下限", 3),
-              ("net_ci_hi_t_supp", "参考 t区間 上限", 3)]))
+              ("net_mean_cons_pct", "主指標1", 5),
+              ("net_ci_lo", "ブロックCI下限", 5), ("net_ci_hi", "ブロックCI上限", 5),
+              ("net_ci_lo_t_supp", "参考 t区間 下限", 5),
+              ("net_ci_hi_t_supp", "参考 t区間 上限", 5)]))
     A("")
     A("## 4. MDE(実測 σ、除外前 / 除外後)")
     A("")
@@ -1364,8 +1368,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("")
     A(_table(mde_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("variant", "集合", -1),
-              ("n", "n", 0), ("sd_net_bps", "σ(保守ネット, bps)", 2),
-              ("mde_net_bps", "MDE 主指標1(bps)", 2),
+              ("n", "n", 0), ("sd_net_pct", "σ(保守ネット, %)", 4),
+              ("mde_net_pct", "MDE 主指標1(%)", 4),
               ("sd_gross_bps", "σ(グロス, bps)", 2), ("n_non_rule", "非規則日 n", 0),
               ("mde_diff_bps", "MDE 主指標2(bps)", 2)]))
     A("")
@@ -1378,10 +1382,10 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("")
     A(_table(gate_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("n", "n", 0),
-              ("net_mean_cons_bps", "主指標1", 3), ("ci_lo", "CI下限", 3),
-              ("ci_hi", "CI上限", 3), ("mde_bps", "MDE", 2),
-              ("net_minus_mde", "主指標1−MDE", 3),
-              ("null_A_p95", "帰無A 95点", 3), ("net_minus_nullA", "主指標1−帰無A", 3),
+              ("net_mean_cons_pct", "主指標1", 5), ("ci_lo", "CI下限", 5),
+              ("ci_hi", "CI上限", 5), ("mde_pct", "MDE", 4),
+              ("net_minus_mde", "主指標1−MDE", 5),
+              ("null_A_p95", "帰無A 95点", 5), ("net_minus_nullA", "主指標1−帰無A", 5),
               ("diff_gross_bps", "主指標2", 3), ("diff_ci_lo", "差CI下限", 3),
               ("diff_ci_hi", "差CI上限", 3), ("null_B_p95", "帰無B 95点", 3),
               ("diff_minus_nullB", "主指標2−帰無B", 3)]))
@@ -1406,8 +1410,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
               ("days_per_year", "年あたり保有日数", 2),
               ("sharpe_annualised", "Sharpe(年率)", 3), ("hit_rate", "勝率", 4),
               ("max_drawdown_yen_1unit", "最大DD(円/先物マイクロ1枚・ETF1口)", 0),
-              ("net_mean_1990s", "1990s 平均", 3), ("net_mean_2000s", "2000s 平均", 3),
-              ("net_mean_2010s", "2010s 平均", 3),
+              ("net_mean_1990s", "1990s 平均", 5), ("net_mean_2000s", "2000s 平均", 5),
+              ("net_mean_2010s", "2010s 平均", 5),
               ("gross_mean_1321_bps", "1321.T グロス", 3),
               ("gross_mean_1306_bps", "1306.T グロス", 3)]))
     A("")
@@ -1425,8 +1429,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("")
     A(_table(tv_df.to_dict("records"),
              [("rule", "規則", -1), ("split", "分割", -1), ("n", "n", 0),
-              ("net_mean_cons_bps", "主指標1", 3), ("ci_lo", "CI下限", 3),
-              ("ci_hi", "CI上限", 3), ("mde_bps", "MDE", 2),
+              ("net_mean_cons_pct", "主指標1", 5), ("ci_lo", "CI下限", 5),
+              ("ci_hi", "CI上限", 5), ("mde_pct", "MDE", 4),
               ("diff_gross_bps", "主指標2", 3), ("diff_ci_lo", "差CI下限", 3),
               ("diff_ci_hi", "差CI上限", 3)]))
     A("")
@@ -1435,8 +1439,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("### 9.1 同数無作為日集合(年で層化、1,000 回)")
     A("")
     A(_table(rnd_rows, [("rule", "規則", -1), ("series", "系列", -1), ("n", "n", 0),
-                        ("observed_net_mean_bps", "実測(保守ネット)", 3),
-                        ("null_mean_bps", "帰無平均", 3), ("null_p95_bps", "帰無 95 点", 3),
+                        ("observed_net_mean_pct", "実測(保守ネット)", 5),
+                        ("null_mean_pct", "帰無平均", 5), ("null_p95_pct", "帰無 95 点", 5),
                         ("share_ge_observed", "実測以上の割合", 4)]))
     A("")
     A("### 9.2 暦シフト・プラセボ(k 営業日、折り返し除去)")
@@ -1445,8 +1449,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
              [("rule", "規則", -1), ("k_trading_days", "k", 0), ("n", "n", 0),
               ("n_folded_back_removed", "折り返し除去", 0),
               ("n_shifted_off_calendar", "暦外", 0),
-              ("net_mean_cons_bps", "保守ネット平均", 3), ("ci_lo", "CI下限", 3),
-              ("ci_hi", "CI上限", 3), ("observed_rule_net_mean_bps", "参考: 元の規則", 3)]))
+              ("net_mean_cons_pct", "保守ネット平均", 5), ("ci_lo", "CI下限", 5),
+              ("ci_hi", "CI上限", 5), ("observed_rule_net_mean_pct", "参考: 元の規則", 5)]))
     A("")
     A("折り返し除去 = ずらした結果が元の規則の集合に戻る日付をプラセボ集合から除いた件数"
       "(TOM の窓内折り返し、曜日規則では k が 5 の倍数でないため 0、など)。")
@@ -1454,8 +1458,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("### 9.3 符号シャッフル(1,000 回)")
     A("")
     A(_table(shuffle_rows, [("rule", "規則", -1), ("n", "n", 0),
-                            ("observed_net_mean_bps", "実測", 3),
-                            ("null_p95_bps", "帰無 95 点", 3),
+                            ("observed_net_mean_pct", "実測", 5),
+                            ("null_p95_pct", "帰無 95 点", 5),
                             ("share_ge_observed", "実測以上の割合", 4)]))
     A("")
     A("## 10. 条件分析(標準 §6、事前登録の 4 状態変数)")
@@ -1469,18 +1473,18 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
     A("")
     A(_table(state_all.to_dict("records"),
              [("rule", "規則", -1), ("variable", "状態変数", -1), ("state", "状態", -1),
-              ("n", "n", 0), ("mean", "グロス平均", 3), ("ci_lo", "CI下限", 3),
-              ("ci_hi", "CI上限", 3), ("cost_mean", "平均費用", 3),
-              ("net_mean", "費用後平均", 3), ("net_ci_lo", "費用後CI下限", 3),
-              ("net_ci_hi", "費用後CI上限", 3), ("mde_bps", "MDE(CI幅換算)", 2)]))
+              ("n", "n", 0), ("mean", "グロス平均(%)", 5), ("ci_lo", "CI下限", 5),
+              ("ci_hi", "CI上限", 5), ("cost_mean", "平均費用", 5),
+              ("net_mean", "費用後平均", 5), ("net_ci_lo", "費用後CI下限", 5),
+              ("net_ci_hi", "費用後CI上限", 5), ("mde_pct", "MDE(CI幅換算)", 4)]))
     A("")
     A("### 10.2 状態間の差(グロス)と同時置換の帰無")
     A("")
     A(_table(diff_all.to_dict("records"),
              [("rule", "規則", -1), ("variable", "状態変数", -1), ("state_a", "状態A", -1),
               ("state_b", "状態B", -1), ("n_a", "nA", 0), ("n_b", "nB", 0),
-              ("diff", "差(A−B)", 3), ("ci_lo", "CI下限", 3), ("ci_hi", "CI上限", 3),
-              ("mde", "MDE", 2), ("null_p95", "同時置換帰無95点", 3),
+              ("diff", "差(A−B)(%)", 5), ("ci_lo", "CI下限", 5), ("ci_hi", "CI上限", 5),
+              ("mde", "MDE", 4), ("null_p95", "同時置換帰無95点", 5),
               ("verdict", "区分", -1)]))
     A("")
     A("区分は標準 §6-3 の固定規則: 「候補」= |差| が同時置換帰無 95 点を超え、かつ差の CI が"
@@ -1502,7 +1506,7 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
         A(f"- 効く状況: {r['効く状況(費用後CIが全て正)']}")
         A(f"- 効かない状況: {r['効かない状況(費用後CIが全て負)']}")
         A(f"- 判定不能な状況: {r['判定不能な状況(費用後CIがゼロを含む)']}")
-        A(f"- 同時置換帰無 95 点(最大差)= {_fmt(r['同時置換帰無95点(最大差, bps)'])} bps、"
+        A(f"- 同時置換帰無 95 点(最大差)= {_fmt(r['同時置換帰無95点(最大差, %)'])}%、"
           f"「候補」に達した差 = {int(r['候補となった差の数'])} 件")
         A("")
     A("## 11. エッジ推移(標準 §5)")
@@ -1516,7 +1520,7 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
           "§5-1 の分解どおりグロス・費用・ネットの 3 本を別々に出した。")
         A("")
         A(_table(edge_summary.to_dict("records"),
-                 [("series", "系列 / 脚", -1), ("n", "n", 0), ("slope", "傾き(bps/年)", 4),
+                 [("series", "系列 / 脚", -1), ("n", "n", 0), ("slope", "傾き(単位は slope_unit: グロス bps/年、費用・ネット %/年)", 4),
                   ("slope_ci_lo", "傾きCI下限", 4), ("slope_ci_hi", "傾きCI上限", 4),
                   ("slope_mde", "傾きMDE", 4), ("mean_first", "前半平均", 3),
                   ("mean_second", "後半平均", 3), ("half_diff", "後半−前半", 3),
@@ -1540,8 +1544,8 @@ def _results_md(steps, excl, hol_counts, span_years, main_df, primary, mde_df, s
       "**主指標は指示どおり full_day_daily の close→close で計算**し、費用の元本だけは PREREG の"
       "式が明示する `close_day(t−1)`(日中セッション終値 = 板寄せ価格)を用いた。"
       "元本を full_day 終値に替えた場合の費用は `pairs_futures.csv` の "
-      "`cost_bps_cons_fullday_base` 列に併記した(差は "
-      f"{float((pairs['cost_bps_cons'] - pairs['cost_bps_cons_fullday_base']).abs().max()):.4f}bps 以下)。")
+      "`cost_pct_cons_fullday_base` 列に併記した(差は "
+      f"{float((pairs['cost_pct_cons'] - pairs['cost_pct_cons_fullday_base']).abs().max()):.6f}% 以下)。")
     A("2. **同時置換の帰無の「1 つの仮想世界」**: PREREG は 9 規則を 1 つの置換系列から計算すると書くが、"
       "SQm・SQq の主評価系列は 1321.T で、先物とは系列も期間も異なるため 1 本の系列に収まらない。"
       "そこで**系列ごとに 1 つの仮想世界**(先物 1 つ・1321.T 1 つ)を作り、どちらの世界でも 9 規則すべての"
@@ -1628,8 +1632,8 @@ def _load_and_build_dataset_iter1() -> dict:
                           index=dayses["date"].to_numpy())
     pairs["close_prev_day_session"] = pd.to_datetime(pairs["date_prev"]).map(day_close)
     notional = pairs["close_prev_day_session"] * mult
-    pairs["cost_bps_cons"] = cost_yen_cons / notional * 1e4
-    pairs["r_net_bps_cons"] = pairs["r_bps"] - pairs["cost_bps_cons"]
+    pairs["cost_pct_cons"] = cost_yen_cons / notional * 100.0  # %
+    pairs["r_net_pct_cons"] = pairs["r_bps"] / 100.0 - pairs["cost_pct_cons"]  # gross bp -> %; net in %
 
     d_t = np.array([d.date() for d in pd.to_datetime(pairs["date"])])
     d_prev = np.array([d.date() for d in pd.to_datetime(pairs["date_prev"])])
@@ -1645,8 +1649,8 @@ def _load_and_build_dataset_iter1() -> dict:
     def etf_pairs(df: pd.DataFrame) -> pd.DataFrame:
         p = build_close_pairs(df[["date", "close"]])
         ticks = p["close_prev"].map(lambda x: etf_tick_yen(float(x), bands))
-        p["cost_bps_cons"] = (2 * etf_fee + 2 * ticks) / p["close_prev"] * 1e4
-        p["r_net_bps_cons"] = p["r_bps"] - p["cost_bps_cons"]
+        p["cost_pct_cons"] = (2 * etf_fee + 2 * ticks) / p["close_prev"] * 100.0  # %
+        p["r_net_pct_cons"] = p["r_bps"] / 100.0 - p["cost_pct_cons"]  # gross bp -> %; net in %
         et = np.array([d.date() for d in pd.to_datetime(p["date"])])
         e_sets = build_rule_day_sets([d.date() for d in df["date"]])
         for name in RULES:
@@ -1716,7 +1720,7 @@ def run_iteration1(out_dir: Path | None = None) -> int:
         rm = ev[f"is_{rule}"].to_numpy(dtype=bool)
         tm = ev["state_vol_iter1"].to_numpy()
         splitcol = ev["split"].to_numpy()
-        netcons = ev["r_net_bps_cons"].to_numpy(dtype=float)
+        netcons = ev["r_net_pct_cons"].to_numpy(dtype=float)
         gross = ev["r_bps"].to_numpy(dtype=float)
 
         configs = [(ITER1_UNCOND_LABEL, rm)] + [
@@ -1736,18 +1740,18 @@ def run_iteration1(out_dir: Path | None = None) -> int:
     val_rows = [r for r in rows if r["split"] == "val" and r["state_vol"] != ITER1_UNCOND_LABEL]
     summary_rows = []
     for r in val_rows:
-        base = val_uncond[r["rule"]]["net_mean_cons_bps"]
-        improvement = (r["net_mean_cons_bps"] - base
-                      if np.isfinite(r["net_mean_cons_bps"]) and np.isfinite(base)
+        base = val_uncond[r["rule"]]["net_mean_cons_pct"]
+        improvement = (r["net_mean_cons_pct"] - base
+                      if np.isfinite(r["net_mean_cons_pct"]) and np.isfinite(base)
                       else float("nan"))
-        mde = r["mde_bps"]
+        mde = r["mde_pct"]
         meets = bool(np.isfinite(improvement) and np.isfinite(mde) and improvement >= mde)
         summary_rows.append({
             "rule": r["rule"], "series": r["series"], "state_vol": r["state_vol"],
-            "n_val": r["n"], "val_net_mean_cons_bps": r["net_mean_cons_bps"],
+            "n_val": r["n"], "val_net_mean_cons_pct": r["net_mean_cons_pct"],
             "val_ci_lo": r["net_ci_lo"], "val_ci_hi": r["net_ci_hi"],
-            "iter0_unconditional_val_mean_bps": base,
-            "val_improvement_bps": improvement, "mde_bps": mde,
+            "iter0_unconditional_val_mean_pct": base,
+            "val_improvement_pct": improvement, "mde_pct": mde,
             "improvement_ge_mde": meets,
         })
     summary_df = pd.DataFrame(summary_rows)
@@ -1778,10 +1782,10 @@ def run_iteration1(out_dir: Path | None = None) -> int:
     assert len(fut_masks) == 36 and len(etf_masks) == 36
 
     draws_a, draws_b, arg_fut = joint_permutation_null(
-        pairs["r_net_bps_cons"].to_numpy(dtype=float),
+        pairs["r_net_pct_cons"].to_numpy(dtype=float),
         pairs["r_bps"].to_numpy(dtype=float), fut_masks, BLOCK, N_PERM, SEED)
     draws_a_etf, draws_b_etf, arg_etf = joint_permutation_null(
-        p1321["r_net_bps_cons"].to_numpy(dtype=float),
+        p1321["r_net_pct_cons"].to_numpy(dtype=float),
         p1321["r_bps"].to_numpy(dtype=float), etf_masks, BLOCK, N_PERM, SEED + 1)
 
     bar_a_fut = float(np.percentile(draws_a, 95))
@@ -1812,10 +1816,10 @@ def run_iteration1(out_dir: Path | None = None) -> int:
     best_rows = []
     for rule in RULES:
         cand = [r for r in summary_rows if r["rule"] == rule
-               and np.isfinite(r["val_net_mean_cons_bps"])]
+               and np.isfinite(r["val_net_mean_cons_pct"])]
         if not cand:
             continue
-        best = max(cand, key=lambda r: r["val_net_mean_cons_bps"])
+        best = max(cand, key=lambda r: r["val_net_mean_cons_pct"])
         best_rows.append(best)
     best_df = pd.DataFrame(best_rows)
     write(best_df, "iter1_best_per_rule.csv")
@@ -1924,10 +1928,10 @@ def _results_md_iter1(ds, ind_df, summary_df, null_summary, best_df,
     A("")
     cols = [("rule", "規則", -1), ("series", "系列", -1), ("state_vol", "状態(ボラ三分位)", -1),
             ("split", "分割", -1), ("n", "n", 0),
-            ("net_mean_cons_bps", "主指標1 保守ネット平均", 3),
-            ("net_ci_lo", "CI下限", 3), ("net_ci_hi", "CI上限", 3),
+            ("net_mean_cons_pct", "主指標1 保守ネット平均", 5),
+            ("net_ci_lo", "CI下限", 5), ("net_ci_hi", "CI上限", 5),
             ("diff_gross_bps", "主指標2 差", 3), ("diff_ci_lo", "差CI下限", 3),
-            ("diff_ci_hi", "差CI上限", 3), ("mde_bps", "MDE", 2)]
+            ("diff_ci_hi", "差CI上限", 3), ("mde_pct", "MDE", 4)]
     A(_table(ind_df.to_dict("records"), cols))
     A("")
     A("## 4. val 改善 vs 反復 0 の無条件規則、MDE との比較(27 条件付き構成)")
@@ -1938,10 +1942,10 @@ def _results_md_iter1(ds, ind_df, summary_df, null_summary, best_df,
     A("")
     A(_table(summary_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("state_vol", "状態", -1),
-              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("n_val", "val n", 0), ("val_net_mean_cons_pct", "val 主指標1", 5),
               ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
-              ("iter0_unconditional_val_mean_bps", "反復0 無条件 val", 3),
-              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("iter0_unconditional_val_mean_pct", "反復0 無条件 val", 5),
+              ("val_improvement_pct", "val 改善", 5), ("mde_pct", "MDE", 4),
               ("improvement_ge_mde", "改善≥MDE", -1)]))
     A("")
     n_meets = int(summary_df["improvement_ge_mde"].sum()) if len(summary_df) else 0
@@ -1952,9 +1956,9 @@ def _results_md_iter1(ds, ind_df, summary_df, null_summary, best_df,
     A("")
     A(_table(best_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("state_vol", "状態", -1),
-              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("n_val", "val n", 0), ("val_net_mean_cons_pct", "val 主指標1", 5),
               ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
-              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("val_improvement_pct", "val 改善", 5), ("mde_pct", "MDE", 4),
               ("improvement_ge_mde", "改善≥MDE", -1)]))
     A("")
     A("## 6. 同時置換の帰無 A / B(N = 36)")
@@ -2074,7 +2078,7 @@ def run_iteration2(out_dir: Path | None = None) -> int:
         rm = ev[f"is_{rule}"].to_numpy(dtype=bool)
         sm = ev["state_sign_iter2"].to_numpy()
         splitcol = ev["split"].to_numpy()
-        netcons = ev["r_net_bps_cons"].to_numpy(dtype=float)
+        netcons = ev["r_net_pct_cons"].to_numpy(dtype=float)
         gross = ev["r_bps"].to_numpy(dtype=float)
 
         configs = [(ITER1_UNCOND_LABEL, rm)] + [
@@ -2094,18 +2098,18 @@ def run_iteration2(out_dir: Path | None = None) -> int:
     val_rows = [r for r in rows if r["split"] == "val" and r["state_sign"] != ITER1_UNCOND_LABEL]
     summary_rows = []
     for r in val_rows:
-        base = val_uncond[r["rule"]]["net_mean_cons_bps"]
-        improvement = (r["net_mean_cons_bps"] - base
-                      if np.isfinite(r["net_mean_cons_bps"]) and np.isfinite(base)
+        base = val_uncond[r["rule"]]["net_mean_cons_pct"]
+        improvement = (r["net_mean_cons_pct"] - base
+                      if np.isfinite(r["net_mean_cons_pct"]) and np.isfinite(base)
                       else float("nan"))
-        mde = r["mde_bps"]
+        mde = r["mde_pct"]
         meets = bool(np.isfinite(improvement) and np.isfinite(mde) and improvement >= mde)
         summary_rows.append({
             "rule": r["rule"], "series": r["series"], "state_sign": r["state_sign"],
-            "n_val": r["n"], "val_net_mean_cons_bps": r["net_mean_cons_bps"],
+            "n_val": r["n"], "val_net_mean_cons_pct": r["net_mean_cons_pct"],
             "val_ci_lo": r["net_ci_lo"], "val_ci_hi": r["net_ci_hi"],
-            "iter0_unconditional_val_mean_bps": base,
-            "val_improvement_bps": improvement, "mde_bps": mde,
+            "iter0_unconditional_val_mean_pct": base,
+            "val_improvement_pct": improvement, "mde_pct": mde,
             "improvement_ge_mde": meets,
         })
     summary_df = pd.DataFrame(summary_rows)
@@ -2118,10 +2122,10 @@ def run_iteration2(out_dir: Path | None = None) -> int:
     assert len(fut_masks) == 54 and len(etf_masks) == 54
 
     draws_a, draws_b, arg_fut = joint_permutation_null(
-        pairs["r_net_bps_cons"].to_numpy(dtype=float),
+        pairs["r_net_pct_cons"].to_numpy(dtype=float),
         pairs["r_bps"].to_numpy(dtype=float), fut_masks, BLOCK, N_PERM, SEED)
     draws_a_etf, draws_b_etf, arg_etf = joint_permutation_null(
-        p1321["r_net_bps_cons"].to_numpy(dtype=float),
+        p1321["r_net_pct_cons"].to_numpy(dtype=float),
         p1321["r_bps"].to_numpy(dtype=float), etf_masks, BLOCK, N_PERM, SEED + 1)
 
     bar_a_fut = float(np.percentile(draws_a, 95))
@@ -2152,10 +2156,10 @@ def run_iteration2(out_dir: Path | None = None) -> int:
     best_rows = []
     for rule in RULES:
         cand = [r for r in summary_rows if r["rule"] == rule
-               and np.isfinite(r["val_net_mean_cons_bps"])]
+               and np.isfinite(r["val_net_mean_cons_pct"])]
         if not cand:
             continue
-        best = max(cand, key=lambda r: r["val_net_mean_cons_bps"])
+        best = max(cand, key=lambda r: r["val_net_mean_cons_pct"])
         best_rows.append(best)
     best_df = pd.DataFrame(best_rows)
     write(best_df, "iter2_best_per_rule.csv")
@@ -2246,20 +2250,20 @@ def _results_md_iter2(ds, ind_df, summary_df, null_summary, best_df,
     A("")
     cols = [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態(直前日符号)", -1),
             ("split", "分割", -1), ("n", "n", 0),
-            ("net_mean_cons_bps", "主指標1 保守ネット平均", 3),
-            ("net_ci_lo", "CI下限", 3), ("net_ci_hi", "CI上限", 3),
+            ("net_mean_cons_pct", "主指標1 保守ネット平均", 5),
+            ("net_ci_lo", "CI下限", 5), ("net_ci_hi", "CI上限", 5),
             ("diff_gross_bps", "主指標2 差", 3), ("diff_ci_lo", "差CI下限", 3),
-            ("diff_ci_hi", "差CI上限", 3), ("mde_bps", "MDE", 2)]
+            ("diff_ci_hi", "差CI上限", 3), ("mde_pct", "MDE", 4)]
     A(_table(ind_df.to_dict("records"), cols))
     A("")
     A("## 3. val 改善 vs 反復 0 の無条件規則、MDE との比較(18 条件付き構成)")
     A("")
     A(_table(summary_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態", -1),
-              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("n_val", "val n", 0), ("val_net_mean_cons_pct", "val 主指標1", 5),
               ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
-              ("iter0_unconditional_val_mean_bps", "反復0 無条件 val", 3),
-              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("iter0_unconditional_val_mean_pct", "反復0 無条件 val", 5),
+              ("val_improvement_pct", "val 改善", 5), ("mde_pct", "MDE", 4),
               ("improvement_ge_mde", "改善≥MDE", -1)]))
     A("")
     n_meets = int(summary_df["improvement_ge_mde"].sum()) if len(summary_df) else 0
@@ -2272,9 +2276,9 @@ def _results_md_iter2(ds, ind_df, summary_df, null_summary, best_df,
     A("")
     A(_table(best_df.to_dict("records"),
              [("rule", "規則", -1), ("series", "系列", -1), ("state_sign", "状態", -1),
-              ("n_val", "val n", 0), ("val_net_mean_cons_bps", "val 主指標1", 3),
+              ("n_val", "val n", 0), ("val_net_mean_cons_pct", "val 主指標1", 5),
               ("val_ci_lo", "CI下限", 3), ("val_ci_hi", "CI上限", 3),
-              ("val_improvement_bps", "val 改善", 3), ("mde_bps", "MDE", 2),
+              ("val_improvement_pct", "val 改善", 5), ("mde_pct", "MDE", 4),
               ("improvement_ge_mde", "改善≥MDE", -1)]))
     A("")
     A("## 5. 同時置換の帰無 A / B(N = 54、累計)")

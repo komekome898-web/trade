@@ -73,7 +73,7 @@ class BacktestingCore(Base):
         n = len(bars)
         sig = signal_map(inp)
         rate = cfg["costs"]["taker_fee_pct"] / 100
-        bps = adj(cfg["costs"]) * 10000
+        bps = adj(cfg["costs"]) * 10000  # the tool's own Flat slippage parameter (its unit: bp); adj() is a fraction
         sl = cfg["stop_loss_pct"] / 100 if cfg["stop_loss_pct"] else None
         tp = cfg["take_profit_pct"] / 100 if cfg["take_profit_pct"] else None
         pct = cfg["order_notional"] / cfg["initial_equity"]

@@ -192,19 +192,23 @@ def predictive_check(df: pd.DataFrame) -> None:
     # Which leg closes the gap? Decompose the forward basis change into the
     # CFD leg and the spot leg. Only the CFD leg is tradable by this bot.
     logs = np.log(df["spot_close"])
-    print("\n--- mechanism: which leg closes the basis gap? (mean, bps) ---")
+    # L-920/L-923: the basis is a rate between two prices at the same time,
+    # so its change d_basis is held in % (basis_pct as is). fx_ret and
+    # spot_ret are price moves over time and stay in bps.
+    print("\n--- mechanism: which leg closes the basis gap? (mean; d_basis %, "
+          "fx_ret/spot_ret bps) ---")
     print("  {:<9}{:>5}{:>14}{:>13}{:>14}{:>8}".format(
-        "cond", "h", "d_basis", "fx_ret", "spot_ret", "n"))
+        "cond", "h", "d_basis(%)", "fx_ret", "spot_ret", "n"))
     for thr in (2.0, 2.5):
         for label, mask in (("z>+%.1f" % thr, z > thr), ("z<-%.1f" % thr, z < -thr)):
             for h in (30, 120):
-                db = (df["basis_pct"].shift(-h) - df["basis_pct"]) * 100.0
+                db = df["basis_pct"].shift(-h) - df["basis_pct"]  # % (was x 100 = bps)
                 rf = (logc.shift(-h) - logc) * 10000.0
                 rs = (logs.shift(-h) - logs) * 10000.0
                 m = mask & db.notna()
                 if not m.any():
                     continue
-                print("  {:<9}{:>5}{:>14.2f}{:>13.2f}{:>14.2f}{:>8d}".format(
+                print("  {:<9}{:>5}{:>14.4f}{:>13.2f}{:>14.2f}{:>8d}".format(
                     label, h, db[m].mean(), rf[m].mean(), rs[m].mean(), int(m.sum())))
 
 

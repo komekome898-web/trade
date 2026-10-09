@@ -4,9 +4,9 @@ The cards' display output is written by scripts/dashboard_cards/ into <runs dir>
 
     cards/manifest.json                          {version, git_sha, total_bytes, variants: [row], excluded: [row]}
     cards/<card>/<variant>/trades.json.gz        the column form (version, t_unit, entry_t_ns, entry_px, exit_t_ns, ...)
-    cards/<card>/<variant>/daily.csv             day, pnl_bp, n   (pnl_bp = the card's pnl rate x 1e4; read as pnl_pct =
-                                                 pnl_bp / 100, since bp names only a price-move rate (L-920);
-                                                 a pnl_pct column, when present, is read as is)
+    cards/<card>/<variant>/daily.csv             day, pnl_pct, n  (pnl_pct = the card's pnl rate in percent, written so
+                                                 since L-920; exports from before hold pnl_bp = the rate x 1e4, read as
+                                                 pnl_bp / 100, since bp names only a price-move rate)
     cards/<card>/<variant>/provenance.json       where the numbers come from and what was checked
 
 This module only READS them (it never writes under cards/). What it decides:
@@ -357,8 +357,8 @@ def daily_drawdown_pct(ref: CardRef) -> float:
 def headline(ref: CardRef, stats: dict, n_after_cut: int) -> tuple[dict, dict]:
     """(stats with the card's headline numbers, what each came from). Trades count, win rate: the research's own values
     copied into provenance.json (checks["extra.trades"]["git"], from the research's extra.json) when there are some and no
-    trade was cut at the seal boundary; else computed from the exported trades (their pnl_bp are rounded to 4 decimals, so
-    a tiny win can become 0: the small difference from the research). Maximum drawdown: from daily.csv by the research's
+    trade was cut at the seal boundary; else computed from the exported trades (their pnl_pct are rounded to 6 decimals (older
+    exports: pnl_bp to 4 decimals, the same precision), so a tiny win can become 0: the small difference from the research). Maximum drawdown: from daily.csv by the research's
     definition (no trade cut), else from the trades one by one (not the research's definition)."""
     prov = provenance(ref)
     checks = prov.get("checks") or {}
@@ -373,7 +373,7 @@ def headline(ref: CardRef, stats: dict, n_after_cut: int) -> tuple[dict, dict]:
         out["wins"] = int(round(out["win_rate"] * git_tr["n"]))
         src["win_rate"] = "研究の値(provenance に写した extra.json の trades。書き出しの丸めの影響を受けない)"
     else:
-        src["win_rate"] = "書き出した取引から計算(書き出しの列 pnl_bp(損益の率 × 1 万)の小数 4 桁の丸めで、微小な勝ちが 0 になり、研究の数とわずかにずれることがある)"
+        src["win_rate"] = "書き出した取引から計算(書き出しの列 pnl_pct(損益の率 %)の小数 6 桁の丸め(L-920 より前の書き出しは pnl_bp(率 × 1 万)の小数 4 桁)で、微小な勝ちが 0 になり、研究の数とわずかにずれることがある)"
     if uncut:
         try:
             out["max_dd_pct"] = daily_drawdown_pct(ref)

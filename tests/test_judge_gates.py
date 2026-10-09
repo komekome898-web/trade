@@ -78,9 +78,11 @@ def champion_log(n, pct, *, side="LONG", hour=13, minute=0, per_day=3,
     return rows
 
 
-def scalp_event(ts, bps, *, armed=False, thr=10.0, sigma=12.0, e2=True,
+def scalp_event(ts, pct, *, armed=False, thr=10.0, sigma=12.0, e2=True,
                 side="LONG", notional=SCALP_NOTIONAL):
-    """limit_placed -> fill -> exit, the maker-entry/E2-exit event sequence."""
+    """limit_placed -> fill -> exit, the maker-entry/E2-exit event sequence.
+    `pct` is the net P&L per notional in % (L-920: not bp); thr/sigma are
+    price-move rates in bp, as the scalper logs them."""
     size = notional / PRICE
     rows = [{"ts": ts, "event": "limit_placed", "entry_mode": "maker",
              "side": side, "limit": PRICE, "size": size, "signal_bps": 12.0,
@@ -90,7 +92,7 @@ def scalp_event(ts, bps, *, armed=False, thr=10.0, sigma=12.0, e2=True,
              "price": PRICE, "size": size, "signal_bps": 12.0,
              "fill_latency_sec": 1.0}]
     exit_rec = {"ts": ts + 60, "event": "exit", "entry_mode": "maker",
-                "side": side, "price": PRICE, "pnl_jpy": bps / 1e4 * notional,
+                "side": side, "price": PRICE, "pnl_jpy": pct / 100.0 * notional,
                 "daily_pnl": 0.0, "trades": 1}
     if e2:
         exit_rec["exit_kind"] = "tp_maker"      # the E2-era marker
@@ -105,12 +107,12 @@ def scalp_start(ts, *, thr=10.0, thr_armed=10.0):
             "notional": SCALP_NOTIONAL}
 
 
-def scalp_log(n, bps, *, armed=False, thr=10.0, sigma=12.0, e2=True,
+def scalp_log(n, pct, *, armed=False, thr=10.0, sigma=12.0, e2=True,
               per_day=4, base=BASE_DAY, hour=13, start=True):
     rows = [scalp_start(base - 60)] if start else []
     for i in range(n):
         day = base + (i // per_day) * 86400
-        rows += scalp_event(day + hour * 3600 + (i % per_day) * 600, bps,
+        rows += scalp_event(day + hour * 3600 + (i % per_day) * 600, pct,
                             armed=armed, thr=thr, sigma=sigma, e2=e2)
     return rows
 
@@ -276,30 +278,30 @@ def test_g1_survives_corrupt_and_truncated_lines(tmp_path):
 
 # ---- G2: scalper -----------------------------------------------------------
 def test_g2_pass(tmp_path):
-    write_scalp(tmp_path, scalp_log(30, 6.0))
+    write_scalp(tmp_path, scalp_log(30, 0.06))
     g2 = by_id(jg.judge_all(tmp_path, iters=200), "G2")
     assert g2.status == jg.PASS
     assert g2.n == 30
-    assert g2.values["net_bps"] == pytest.approx(6.0)
+    assert g2.values["net_pct"] == pytest.approx(0.06)
 
 
 def test_g2_fail(tmp_path):
-    write_scalp(tmp_path, scalp_log(30, 2.0))
+    write_scalp(tmp_path, scalp_log(30, 0.02))
     g2 = by_id(jg.judge_all(tmp_path, iters=200), "G2")
     assert g2.status == jg.FAIL
-    assert g2.values["net_bps"] == pytest.approx(2.0)
+    assert g2.values["net_pct"] == pytest.approx(0.02)
 
 
 def test_g2_insufficient(tmp_path):
-    write_scalp(tmp_path, scalp_log(10, 6.0))
+    write_scalp(tmp_path, scalp_log(10, 0.06))
     g2 = by_id(jg.judge_all(tmp_path, iters=200), "G2")
     assert g2.status == jg.INSUFFICIENT
     assert g2.n == 10 and g2.need == 30
 
 
 def test_g2_counts_only_events_after_the_e2_switch(tmp_path):
-    old = scalp_log(40, 20.0, e2=False, base=BASE_DAY)
-    new = scalp_log(5, 6.0, e2=True, base=BASE_DAY + 20 * 86400, start=False)
+    old = scalp_log(40, 0.2, e2=False, base=BASE_DAY)
+    new = scalp_log(5, 0.06, e2=True, base=BASE_DAY + 20 * 86400, start=False)
     write_scalp(tmp_path, old + new)
     g2 = by_id(jg.judge_all(tmp_path, iters=200), "G2")
     assert g2.n == 5                       # the 40 pre-E2 events do not count
@@ -308,7 +310,7 @@ def test_g2_counts_only_events_after_the_e2_switch(tmp_path):
 
 
 def test_g2_no_e2_marker_means_no_countable_events(tmp_path):
-    write_scalp(tmp_path, scalp_log(50, 9.0, e2=False))
+    write_scalp(tmp_path, scalp_log(50, 0.09, e2=False))
     g2 = by_id(jg.judge_all(tmp_path, iters=200), "G2")
     assert g2.n == 0
     assert g2.status == jg.INSUFFICIENT
@@ -319,10 +321,10 @@ def test_g2_later_armed_threshold_restart_binds(tmp_path):
     # E2-era exits exist from day 0, but the armed-threshold reversion happens
     # LATER: the later boundary is the one that binds (§5, two restarts).
     rows = [scalp_start(BASE_DAY - 60, thr=10.0, thr_armed=8.0)]
-    rows += scalp_log(30, 9.0, base=BASE_DAY, start=False)
+    rows += scalp_log(30, 0.09, base=BASE_DAY, start=False)
     restart = BASE_DAY + 20 * 86400
     rows += [scalp_start(restart, thr=10.0, thr_armed=10.0)]
-    rows += scalp_log(4, 9.0, base=restart + 3600, start=False)
+    rows += scalp_log(4, 0.09, base=restart + 3600, start=False)
     write_scalp(tmp_path, rows)
     trades, meta = jg.load_scalp_trades(tmp_path)
     assert meta["e2_ts"] < meta["thr_ts"]
@@ -344,24 +346,24 @@ def test_g2_orphan_exit_falls_back_to_session_notional(tmp_path):
     write_scalp(tmp_path, rows)
     trades, meta = jg.load_scalp_trades(tmp_path)
     assert meta["orphan_exits"] == 1
-    assert trades[0].bps == pytest.approx(5.0)     # 55 JPY on 110,000 notional
+    assert trades[0].pnl_pct == pytest.approx(0.05)  # 55 JPY on 110,000 notional
 
 
 # ---- G3: armed vs unarmed --------------------------------------------------
 def test_g3_ready_with_both_arms_full(tmp_path):
-    rows = scalp_log(30, 8.0, armed=True, base=BASE_DAY)
-    rows += scalp_log(30, 4.0, armed=False, base=BASE_DAY + 20 * 86400,
+    rows = scalp_log(30, 0.08, armed=True, base=BASE_DAY)
+    rows += scalp_log(30, 0.04, armed=False, base=BASE_DAY + 20 * 86400,
                       start=False)
     write_scalp(tmp_path, rows)
     g3 = by_id(jg.judge_all(tmp_path, iters=200), "G3")
     assert g3.status == jg.READY
     assert g3.values["armed"] == 30 and g3.values["unarmed"] == 30
-    assert g3.values["diff_bps"] == pytest.approx(4.0)
+    assert g3.values["diff_pct"] == pytest.approx(0.04)
 
 
 def test_g3_insufficient_when_one_arm_is_thin(tmp_path):
-    rows = scalp_log(30, 8.0, armed=True, base=BASE_DAY)
-    rows += scalp_log(3, 4.0, armed=False, base=BASE_DAY + 20 * 86400, start=False)
+    rows = scalp_log(30, 0.08, armed=True, base=BASE_DAY)
+    rows += scalp_log(3, 0.04, armed=False, base=BASE_DAY + 20 * 86400, start=False)
     write_scalp(tmp_path, rows)
     g3 = by_id(jg.judge_all(tmp_path, iters=200), "G3")
     assert g3.status == jg.INSUFFICIENT
@@ -370,8 +372,8 @@ def test_g3_insufficient_when_one_arm_is_thin(tmp_path):
 
 def test_g3_excludes_unequal_threshold_events(tmp_path):
     # armed events taken at thr 8 are NOT comparable with unarmed at thr 10
-    rows = scalp_log(30, 8.0, armed=True, thr=8.0, base=BASE_DAY)
-    rows += scalp_log(30, 4.0, armed=False, thr=10.0,
+    rows = scalp_log(30, 0.08, armed=True, thr=8.0, base=BASE_DAY)
+    rows += scalp_log(30, 0.04, armed=False, thr=10.0,
                       base=BASE_DAY + 20 * 86400, start=False)
     write_scalp(tmp_path, rows)
     g3 = by_id(jg.judge_all(tmp_path, iters=200), "G3")
@@ -448,20 +450,20 @@ def test_g5_ready_and_buckets_by_sigma(tmp_path):
     rows = [scalp_start(BASE_DAY - 60)]
     for i in range(30):
         sigma = 5.0 + i                     # low/mid/high terciles by sigma60
-        bps = 10.0 if sigma >= 25.0 else 2.0
-        rows += scalp_event(BASE_DAY + i * 600, bps, sigma=sigma)
+        pct = 0.10 if sigma >= 25.0 else 0.02
+        rows += scalp_event(BASE_DAY + i * 600, pct, sigma=sigma)
     write_scalp(tmp_path, rows)
     g5 = by_id(jg.judge_all(tmp_path, iters=200), "G5")
     assert g5.status == jg.READY
     assert g5.n == 30
-    assert g5.values["buckets"]["high"]["net_bps"] > g5.values["buckets"]["low"]["net_bps"]
+    assert g5.values["buckets"]["high"]["net_pct"] > g5.values["buckets"]["low"]["net_pct"]
     assert any("separate study" in n for n in g5.notes)
 
 
 def test_g5_insufficient_without_sigma(tmp_path):
     rows = [scalp_start(BASE_DAY - 60)]
     for i in range(30):
-        rows += scalp_event(BASE_DAY + i * 600, 6.0, sigma=None)
+        rows += scalp_event(BASE_DAY + i * 600, 0.06, sigma=None)
     write_scalp(tmp_path, rows)
     g5 = by_id(jg.judge_all(tmp_path, iters=200), "G5")
     assert g5.n == 0 and g5.status == jg.INSUFFICIENT
@@ -577,7 +579,7 @@ def test_empty_root_reports_every_gate_without_crashing(tmp_path):
 
 def test_report_is_deterministic_and_idempotent(tmp_path):
     write_bot(tmp_path, champion_log(30, 0.2))
-    write_scalp(tmp_path, scalp_log(30, 6.0))
+    write_scalp(tmp_path, scalp_log(30, 0.06))
     first = jg.render(jg.judge_all(tmp_path, iters=300), root=tmp_path, since=None)
     second = jg.render(jg.judge_all(tmp_path, iters=300), root=tmp_path, since=None)
     body = lambda text: "\n".join(  # noqa: E731 - drop the generated-at line
@@ -632,7 +634,7 @@ def test_main_refuses_without_a_result_audit(tmp_path):
 
 def test_files_are_never_written_or_modified(tmp_path):
     write_bot(tmp_path, champion_log(4, 0.2))
-    write_scalp(tmp_path, scalp_log(4, 6.0))
+    write_scalp(tmp_path, scalp_log(4, 0.06))
     _write_oi(tmp_path, 3)
     before = {p: (p.stat().st_size, p.stat().st_mtime)
               for p in tmp_path.rglob("*") if p.is_file()}

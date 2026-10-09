@@ -1,11 +1,20 @@
 """§6 の状態を実物で組む試作(前半だけ。境界 = 前半の五分位)。"""
 import json, math, re, numpy as np, pandas as pd
 M = pd.read_csv('backtest_data/o3c_signal_materials_20260920/rows_materials.csv.gz', low_memory=False)
+# L-920: 前の rows_materials の cand_5p(先の節までの距離、bp)は / 100 して cand_5p_pct で読む
+if 'cand_5p_pct' not in M.columns and 'cand_5p' in M.columns:
+    M['cand_5p_pct'] = pd.to_numeric(M['cand_5p'], errors='coerce') / 100
 C = pd.read_csv('backtest_data/o3c_signal_continue_20260920/rows_continue.csv.gz', low_memory=False)
+# L-920: 前の rows_continue の列は mat8_amt_5bp / mat8_amt_20bp(帯の名前。値は建玉の量なので割らない)と
+# mat5_distance_to_liquidation_node(名前に単位の無い bp → / 100)。今の名前が無ければ古い列から作る。
+for _old, _new, _k in (('mat8_amt_5bp', 'mat8_amt_0p05pct', 1.0), ('mat8_amt_20bp', 'mat8_amt_0p2pct', 1.0),
+                       ('mat5_distance_to_liquidation_node', 'mat5_distance_to_liquidation_node_pct', 0.01)):
+    if _new not in C.columns and _old in C.columns:
+        C[_new] = pd.to_numeric(C[_old], errors='coerce') * _k
 P = pd.read_csv('backtest_data/o3c_signal_explore5_20260920/rows_prints.csv.gz', low_memory=False)
 P = P[P.kind == 'print'].sort_values('ts_ms')
-R = M.merge(C[['print_id','mat1_elapsed_since_burst_s','mat3_notional_raw','mat8_amt_5bp','mat8_amt_20bp','mat8_covered',
-               'mat9_taker_imbalance_5s','mat13_taker_imbalance_trend','mat10_taker_ls_ratio','mat10_funding_rate','mat5_distance_to_liquidation_node']], on='print_id', how='left')
+R = M.merge(C[['print_id','mat1_elapsed_since_burst_s','mat3_notional_raw','mat8_amt_0p05pct','mat8_amt_0p2pct','mat8_covered',
+               'mat9_taker_imbalance_5s','mat13_taker_imbalance_trend','mat10_taker_ls_ratio','mat10_funding_rate','mat5_distance_to_liquidation_node_pct']], on='print_id', how='left')
 FH = R[R.half == '前半']
 BANDS = ['bottom fifth', 'second fifth', 'middle fifth', 'fourth fifth', 'top fifth']
 def cuts(col, sub=None):
@@ -20,7 +29,7 @@ Q = {  # 境界は前半だけから。定数として 1 箇所に置く
  'ratio_10s_60s': cuts('cand_15'), 'range_ratio': cuts('cand_11'), 'day_extreme_bp': cuts('cand_C3'),
  'vol_ratio_5m_1h': cuts('cand_C4'), 'chain_notional': cuts('cand_F3', FH[FH.cand_F3.notna()]),
  'last10s_notional': cuts('cand_F5', FH[FH.cand_F5 > 0]) if 'cand_F5' in FH else None,
- 'oi_ahead_20bp': cuts('mat8_amt_20bp', FH[FH.mat8_amt_20bp > 0]), 'interval_ratio': cuts('cand_2', FH[FH.cand_2.notna()]),
+ 'oi_ahead_0p2pct': cuts('mat8_amt_0p2pct', FH[FH.mat8_amt_0p2pct > 0]), 'interval_ratio': cuts('cand_2', FH[FH.cand_2.notna()]),
 }
 def pct(x): return None if x is None or not math.isfinite(x) else round((1 + x) / 2 * 100)
 def state_for(pid):
@@ -39,10 +48,10 @@ def state_for(pid):
     else: ext = 'unknown'
     cov = int(r.mat8_covered) if math.isfinite(r.mat8_covered) else 0
     if not cov: ahead = 'coverage unknown (open-interest map does not cover this price range)'
-    elif r.mat8_amt_20bp <= 0: ahead = 'no open interest within 20 bp ahead in the liquidation direction'
-    else: ahead = (f"open interest within 20 bp ahead: {band(r.mat8_amt_20bp, Q['oi_ahead_20bp'])} of first-half prints that had any; "
-                   f"within 5 bp: {'some' if r.mat8_amt_5bp > 0 else 'none'}; nearest liquidation level ahead: "
-                   + (f"{r.cand_5p:.0f} bp away" if math.isfinite(r.cand_5p) else 'none within the mapped range'))
+    elif r.mat8_amt_0p2pct <= 0: ahead = 'no open interest within 0.2 % ahead in the liquidation direction'
+    else: ahead = (f"open interest within 0.2 % ahead: {band(r.mat8_amt_0p2pct, Q['oi_ahead_0p2pct'])} of first-half prints that had any; "
+                   f"within 0.05 %: {'some' if r.mat8_amt_0p05pct > 0 else 'none'}; nearest liquidation level ahead: "
+                   + (f"{abs(r.cand_5p_pct):.2f} % away" if math.isfinite(r.cand_5p_pct) else 'none within the mapped range'))
     st = {
      'this_print': {'side': f"{side} liquidation",
                     'size': f"{band(r.mat3_notional_raw, Q['notional'])} of first-half prints", 'time_utc': {0:'00-06 UTC',1:'06-12 UTC',2:'12-18 UTC',3:'18-24 UTC'}.get(int(r.cand_6), 'unknown')},

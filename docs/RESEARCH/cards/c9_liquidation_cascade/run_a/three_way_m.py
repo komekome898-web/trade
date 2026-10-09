@@ -43,7 +43,10 @@ def main(argv=None) -> int:
     days = v2.day_range(date.fromisoformat(meta["期間"][0]), date.fromisoformat(meta["期間"][1]))
     make_days, meas_days = v2.split_days(days)
     cols = ["print_id", "day", v2.LOGIT_LABEL, "m10_signed", "m60_signed"] + list(v2.LOGIT_FEATURES)
-    P = pd.read_csv(run / "anchors_prints.csv.gz", usecols=cols, dtype={"day": str, "print_id": str})
+    # L-920: 前の出力の材料 5 は名前に単位の無い bp。今の名前(_pct)が無ければ / 100 して読む
+    P = v2.with_legacy_columns(pd.read_csv(run / "anchors_prints.csv.gz",
+                                           usecols=v2.legacy_usecols(run / "anchors_prints.csv.gz", cols),
+                                           dtype={"day": str, "print_id": str}))
     P["abs_m10_bp"], P["abs_m60_bp"] = P["m10_signed"].abs(), P["m60_signed"].abs()
     feats = list(v2.LOGIT_FEATURES) + list(NEW)
     model = v2.fit_three_way(P, make_days, features=feats)

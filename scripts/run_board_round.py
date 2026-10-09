@@ -23,6 +23,13 @@ Columns (UTC, 5-second bins, PREREG section 0 verbatim):
     bid_depth_5bps, ask_depth_5bps, imb_top, imb_5bps,
     n_board_updates, n_trades, vol_buy, vol_sell,
     n_large, vol_large, max_trade_size
+(L-920 の後の単位: a spread and a depth band are distances between two
+prices at the same instant, not price-move rates, so they are no longer bp.
+The written columns are spread_pct (= spread / mid x 100, % of mid; was
+spread_bps = x 1e4), bid_depth_0p05pct / ask_depth_0p05pct / imb_0p05pct
+(depth within 0.05 % of mid; were *_5bps, same band, same values). A series
+written before 2026-10-10 keeps the old names; scripts/judge_board_round.py
+load_series reads both.)
 
 Each row holds the book STATE as of the end of the bin (last message in the
 bin) plus aggregates of everything that happened DURING the bin. A bin with
@@ -39,8 +46,8 @@ restarted into a new file) is detected the same way as a gap inside one
 file.
 
 `imb_top` = top-of-book imbalance, (best_bid_size - best_ask_size) /
-(best_bid_size + best_ask_size); `imb_5bps` = the same formula on depth
-within 5 bps of mid (`BookState.imbalance(5.0)`). `large` = a single
+(best_bid_size + best_ask_size); `imb_0p05pct` = the same formula on depth
+within 0.05 % of mid (`BookState.imbalance(0.05)`; the PREREG's "5 bps"). `large` = a single
 execution >= 0.1 BTC.
 
 Idempotent: each run is a full rebuild from `data/ws` (or `--root`'s ws
@@ -62,13 +69,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from bot.research.board import BookState, is_diff_channel, is_snapshot_channel  # noqa: E402
 
 BIN_SEC = 5.0
-DEPTH_BPS = 5.0
+DEPTH_PCT = 0.05  # % of mid (the PREREG's 5 bps band)
 MAX_GAP_SEC = 60.0
 LARGE_SIZE = 0.1  # BTC
 
 COLUMNS = [
-    "ts", "mid", "spread_bps", "best_bid_size", "best_ask_size",
-    "bid_depth_5bps", "ask_depth_5bps", "imb_top", "imb_5bps",
+    "ts", "mid", "spread_pct", "best_bid_size", "best_ask_size",
+    "bid_depth_0p05pct", "ask_depth_0p05pct", "imb_top", "imb_0p05pct",
     "n_board_updates", "n_trades", "vol_buy", "vol_sell",
     "n_large", "vol_large", "max_trade_size",
 ]
@@ -126,9 +133,9 @@ def _snapshot_row(bin_idx: int, state: BookState, agg: dict) -> list:
         bb_size = ba_size = float("nan")
     mid = state.mid
     spread = state.spread
-    spread_bps = (spread / mid * 1e4) if (mid and mid > 0 and spread is not None) else float("nan")
-    bid_depth, ask_depth = state.depth_within_pct(DEPTH_BPS / 100)  # board takes % since L-920
-    imb_5bps = state.imbalance(DEPTH_BPS / 100)
+    spread_pct = (spread / mid * 100) if (mid and mid > 0 and spread is not None) else float("nan")
+    bid_depth, ask_depth = state.depth_within_pct(DEPTH_PCT)
+    imb_band = state.imbalance(DEPTH_PCT)
     if bb_size == bb_size and ba_size == ba_size and (bb_size + ba_size) > 0:
         imb_top = (bb_size - ba_size) / (bb_size + ba_size)
     else:
@@ -137,13 +144,13 @@ def _snapshot_row(bin_idx: int, state: BookState, agg: dict) -> list:
     return [
         ts,
         float("nan") if mid is None else mid,
-        spread_bps,
+        spread_pct,
         bb_size,
         ba_size,
         bid_depth,
         ask_depth,
         imb_top,
-        imb_5bps,
+        imb_band,
         agg["n_board_updates"],
         agg["n_trades"],
         agg["vol_buy"],

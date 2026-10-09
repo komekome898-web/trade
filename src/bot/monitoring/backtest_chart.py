@@ -374,10 +374,11 @@ def _build_columns(doc: dict) -> TradeSet:
     pnl_pct}. It holds no money amount (a money value from the rate would multiply by an average exposure the record
     does not state), so only the rate is shown: `pnl_derived` is True and the money fields are None.
 
-    The card exports (scripts/dashboard_cards) still write the column `pnl_bp`: the card's pnl rate x 1e4 (a sum of
-    position-weighted moves per decision, or of per-step moves / the step limit -- not one price-move rate). Since
-    L-920 (2026-10-09) bp names only a price-move rate, so it is read here as a rate and converted to percent
-    (pnl_pct = pnl_bp / 100); the card's rate_note says what the rate is."""
+    The card exports (scripts/dashboard_cards/export_card_trades.py) write the column `pnl_pct` since L-920
+    (2026-10-09). Exports written before that hold `pnl_bp`: the same card pnl rate x 1e4 (a sum of position-weighted
+    moves per decision, or of per-step moves / the step limit -- not one price-move rate). Since L-920 bp names only a
+    price-move rate, so an old `pnl_bp` column is read as a rate and converted to percent (pnl_pct = pnl_bp / 100);
+    the card's rate_note says what the rate is."""
     if doc.get("t_unit", "ns") != "ns":
         raise ChartError(f"trades t_unit {doc.get('t_unit')!r} is not supported")
     if "pnl_pct" in doc:

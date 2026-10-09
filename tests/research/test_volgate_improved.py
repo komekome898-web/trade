@@ -6,6 +6,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts" / "w4_measure"))
 _spec = importlib.util.spec_from_file_location("volgate_improved", REPO / "scripts" / "w4_measure" / "volgate_improved.py")
@@ -24,6 +26,8 @@ def test_gate_avoids_classes_with_upper_bound_at_or_below_zero():
     assert vg.gate(pnl, cls, {"low": (1.0, -1.0, 3.0)})["take"] is None
 
 
+@pytest.mark.skipif(not all(os.path.isdir(d) for _, d in vg.SERIES),
+                    reason="入力の走らせ(limit_sim/runs)はオーナーの決定 L-761 で消した(93df2b24)")
 def test_series_paths_exist():
     for _, d in vg.SERIES:
         assert os.path.isfile(os.path.join(d, "trades.json.gz")), d

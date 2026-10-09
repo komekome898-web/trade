@@ -153,6 +153,11 @@ Post-run diagnostics (declared as diagnostics, NEVER promoted -- protocol sec.8.
 
 Run:  PYTHONPATH=src python scripts/research_fx_event_ticks.py
 Idempotent, deterministic, no network.  Nothing is written outside stdout.
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(impulse・mid から mid の
+gross_mid・1 分の値幅)にだけ使う。手数料(片道 0.2bps = 0.002 %、往復 0.4bps = 0.004 %)、
+GMO の往復の床(0.71bps = 0.0071 %)、スプレッド、板を渡った gross_book、ネット(net_base・
+net_gmo)と採用の線(+2.0bps = +0.02 %)は % で持つ。閾値 m(5/10/20bps)は impulse(値動き)の
+線なので bp のまま。)
 """
 
 from __future__ import annotations
@@ -171,8 +176,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIB = os.path.join(ROOT, "backtest_data", "fx_event_ticks_2015_2026")
 CAL = os.path.join(LIB, "calendar.csv")
 
-FEE_BPS_PER_SIDE = 0.2
-GMO_FLOOR_ROUNDTRIP_BPS = 0.71
+FEE_PCT_PER_SIDE = 0.002          # % per side (0.2 bps in the prereg)
+GMO_FLOOR_ROUNDTRIP_PCT = 0.0071  # % round trip (0.71 bps in the prereg)
 
 IMPULSE_S = 5
 THRESHOLDS = (5.0, 10.0, 20.0)
@@ -216,7 +221,7 @@ class Tape:
     bid: np.ndarray
     ask: np.ndarray
     mid: np.ndarray
-    spread_bps: np.ndarray
+    spread_pct: np.ndarray
 
 
 def load_tape(path: str) -> Tape:
@@ -228,7 +233,7 @@ def load_tape(path: str) -> Tape:
     ask = d["ask"].to_numpy(dtype=float)[order]
     mid = (bid + ask) * 0.5
     with np.errstate(divide="ignore", invalid="ignore"):
-        spr = (ask - bid) / mid * 1e4
+        spr = (ask - bid) / mid * 100  # % of mid (L-920)
     return Tape(ts, bid, ask, mid, spr)
 
 
@@ -331,7 +336,7 @@ class Ev:
     impulse_bps: float = np.nan
     mid_e: float = np.nan
     q: dict = field(default_factory=dict)  # offset_s -> (bid, ask, mid, ts, gap_ms)
-    snap_spread: dict = field(default_factory=dict)  # offset_s -> spread_bps
+    snap_spread: dict = field(default_factory=dict)  # offset_s -> spread_pct
     base_spread: float = np.nan
     recover_s: float = np.nan
     recover_censored: bool = False
@@ -390,7 +395,7 @@ def build_event(typ: str, date: str, nominal_ms: int, path: str) -> Ev:
     for off in F3_OFFSETS_S:
         j = i_at_or_before(tape, e_ms + off * 1000)
         ev.snap_spread[off] = (
-            float(tape.spread_bps[j])
+            float(tape.spread_pct[j])
             if j >= 0 and (e_ms + off * 1000 - int(tape.ts[j])) <= MAX_MID_STALE_MS
             else np.nan
         )
@@ -398,7 +403,7 @@ def build_event(typ: str, date: str, nominal_ms: int, path: str) -> Ev:
     lo_ms = e_ms + F3_BASELINE_FROM_S * 1000
     hi_ms = e_ms + F3_BASELINE_TO_S * 1000
     msk = (tape.ts >= lo_ms) & (tape.ts < hi_ms)
-    ev.base_spread = float(np.median(tape.spread_bps[msk])) if msk.sum() >= 5 else np.nan
+    ev.base_spread = float(np.median(tape.spread_pct[msk])) if msk.sum() >= 5 else np.nan
 
     # F3: seconds until spread returns to within 1.5x its pre-event level.
     # per-second median spread, then a trailing 10 s median-of-medians.
@@ -409,7 +414,7 @@ def build_event(typ: str, date: str, nominal_ms: int, path: str) -> Ev:
         sel = (rel >= 0) & (rel < n * 1000)
         if sel.sum():
             s_idx = (rel[sel] // 1000).astype(np.int64)
-            s_val = tape.spread_bps[sel]
+            s_val = tape.spread_pct[sel]
             order = np.lexsort((s_val, s_idx))
             s_idx, s_val = s_idx[order], s_val[order]
             starts = np.searchsorted(s_idx, np.arange(n), side="left")
@@ -435,17 +440,21 @@ def build_event(typ: str, date: str, nominal_ms: int, path: str) -> Ev:
 
 
 # ----------------------------------------------------------------------------- trading
-def trade_bps(ev: Ev, direction: int, entry_off: int, exit_off: int):
-    """Returns (net_base_bps, net_gmo_bps, gross_book_bps, gross_mid_bps)."""
+def trade_rates(ev: Ev, direction: int, entry_off: int, exit_off: int):
+    """Returns (net_base_pct, net_gmo_pct, gross_book_pct, gross_mid_bps).
+
+    L-920: gross_mid is a mid-to-mid price move (bps).  gross_book carries the
+    spread paid, and the nets carry the fee/floor, so those three are in %.
+    """
     eb, ea, em, _, _ = ev.q[entry_off]
     xb, xa, xm, _, _ = ev.q[exit_off]
     if direction > 0:  # long: buy ask, sell bid
-        gross_book = (xb - ea) / ea * 1e4
+        gross_book = (xb - ea) / ea * 100
     else:  # short: sell bid, buy ask
-        gross_book = (eb - xa) / eb * 1e4
+        gross_book = (eb - xa) / eb * 100
     gross_mid = direction * (xm - em) / em * 1e4
-    net_base = gross_book - 2 * FEE_BPS_PER_SIDE
-    net_gmo = gross_mid - GMO_FLOOR_ROUNDTRIP_BPS
+    net_base = gross_book - 2 * FEE_PCT_PER_SIDE
+    net_gmo = gross_mid / 100 - GMO_FLOOR_ROUNDTRIP_PCT  # gross_mid bps -> %
     return net_base, net_gmo, gross_book, gross_mid
 
 
@@ -464,14 +473,14 @@ def run_config(events, family: str, m: float, exit_off: int, entry_off: int | No
         else:
             d = -sgn
             eo = F2_ENTRY_S
-        nb, ng, gb, gm = trade_bps(ev, d, eo, exit_off)
+        nb, ng, gb, gm = trade_rates(ev, d, eo, exit_off)
         rows.append(
             dict(
                 typ=ev.typ, date=ev.date, year=ev.year, dirn=d,
                 impulse=ev.impulse_bps, net_base=nb, net_gmo=ng,
                 gross_book=gb, gross_mid=gm,
-                entry_spread=(ev.q[eo][1] - ev.q[eo][0]) / ev.q[eo][2] * 1e4,
-                exit_spread=(ev.q[exit_off][1] - ev.q[exit_off][0]) / ev.q[exit_off][2] * 1e4,
+                entry_spread=(ev.q[eo][1] - ev.q[eo][0]) / ev.q[eo][2] * 100,          # %
+                exit_spread=(ev.q[exit_off][1] - ev.q[exit_off][0]) / ev.q[exit_off][2] * 100,  # %
             )
         )
     return pd.DataFrame(rows)
@@ -507,8 +516,8 @@ def summarize(df: pd.DataFrame, col: str = "net_base") -> dict:
 def fmt(s: dict) -> str:
     if s["n"] == 0:
         return f"{'-':>6} {'-':>9} {'-':>7} {'-':>19} {'-':>7}"
-    return (f"{s['n']:>6d} {s['mean']:>+9.3f} {s['t']:>+7.2f} "
-            f"[{s['lo']:+7.3f},{s['hi']:+7.3f}] {s['win']*100:>6.1f}%")
+    return (f"{s['n']:>6d} {s['mean']:>+9.5f} {s['t']:>+7.2f} "
+            f"[{s['lo']:+9.5f},{s['hi']:+9.5f}] {s['win']*100:>6.1f}%")
 
 
 # ----------------------------------------------------------------------------- main
@@ -654,20 +663,20 @@ def main() -> int:
           f"impulse = {demo.impulse_bps:+.2f} bps -> direction {'LONG' if d > 0 else 'SHORT'}")
     print(f"    entry fill @ {utc(ets)} (+{egap} ms past E+5s):  bid {eb:.5f} / ask {ea:.5f}")
     print(f"    exit  fill @ {utc(xts)} (+{xgap} ms past E+300s): bid {xb:.5f} / ask {xa:.5f}")
-    nb_, ng_, gb_, gm_ = trade_bps(demo, d, F1_ENTRY_S, 300)
+    nb_, ng_, gb_, gm_ = trade_rates(demo, d, F1_ENTRY_S, 300)
     if d > 0:
         print(f"    long: buy ASK {ea:.5f}, sell BID {xb:.5f}  ->  "
-              f"({xb:.5f} - {ea:.5f}) / {ea:.5f} * 1e4 = {gb_:+.3f} bps")
+              f"({xb:.5f} - {ea:.5f}) / {ea:.5f} * 100 = {gb_:+.5f} %")
     else:
         print(f"    short: sell BID {eb:.5f}, buy ASK {xa:.5f}  ->  "
-              f"({eb:.5f} - {xa:.5f}) / {eb:.5f} * 1e4 = {gb_:+.3f} bps")
-    print(f"    minus {2*FEE_BPS_PER_SIDE} bps fee  ->  NET {nb_:+.3f} bps   "
+              f"({eb:.5f} - {xa:.5f}) / {eb:.5f} * 100 = {gb_:+.5f} %")
+    print(f"    minus {2*FEE_PCT_PER_SIDE} % fee  ->  NET {nb_:+.5f} %   "
           f"(mid-to-mid zero-cost would have been {gm_:+.3f} bps)")
 
     # ---------------------------------------------------------------- F3 spread anatomy
     print("\n" + hr("="))
     print("F3 -- SPREAD ANATOMY OF A MACRO RELEASE  (MEASUREMENT ONLY, NO ADOPTION)")
-    print("     the cost-of-event-trading map: real interbank bid/ask, bps, USD/JPY")
+    print("     the cost-of-event-trading map: real interbank bid/ask, % of mid, USD/JPY")
     print(hr("="))
     f3 = pd.DataFrame(
         [dict(typ=e.typ, year=e.year, base=e.base_spread, rec=e.recover_s,
@@ -677,33 +686,33 @@ def main() -> int:
     )
     cols = [f"s{o}" for o in F3_OFFSETS_S]
     hdr = "  " + f"{'type':<6}{'n':>5}" + "".join(f"{('E' + (f'{o:+d}' if o else '')) + 's':>12}" for o in F3_OFFSETS_S)
-    print("\n  MEDIAN spread (bps)")
+    print("\n  MEDIAN spread (%)")
     print(hdr)
     for typ, g in f3.groupby("typ"):
-        print("  " + f"{typ:<6}{len(g):>5}" + "".join(f"{g[c].median():>12.3f}" for c in cols))
-    print("  " + f"{'ALL':<6}{len(f3):>5}" + "".join(f"{f3[c].median():>12.3f}" for c in cols))
-    print("\n  p90 spread (bps)")
+        print("  " + f"{typ:<6}{len(g):>5}" + "".join(f"{g[c].median():>12.5f}" for c in cols))
+    print("  " + f"{'ALL':<6}{len(f3):>5}" + "".join(f"{f3[c].median():>12.5f}" for c in cols))
+    print("\n  p90 spread (%)")
     print(hdr)
     for typ, g in f3.groupby("typ"):
-        print("  " + f"{typ:<6}{len(g):>5}" + "".join(f"{g[c].quantile(.9):>12.3f}" for c in cols))
-    print("  " + f"{'ALL':<6}{len(f3):>5}" + "".join(f"{f3[c].quantile(.9):>12.3f}" for c in cols))
+        print("  " + f"{typ:<6}{len(g):>5}" + "".join(f"{g[c].quantile(.9):>12.5f}" for c in cols))
+    print("  " + f"{'ALL':<6}{len(f3):>5}" + "".join(f"{f3[c].quantile(.9):>12.5f}" for c in cols))
 
     print(f"\n  ROUND-TRIP cost of a trade opened at E+5s and closed at E+300s, purely from spread")
-    print(f"  (half-spread in + half-spread out + {2*FEE_BPS_PER_SIDE:.1f} bps fee), median / p90 bps:")
+    print(f"  (half-spread in + half-spread out + {2*FEE_PCT_PER_SIDE:.3f} % fee), median / p90 %:")
     for typ, g in f3.groupby("typ"):
-        rt = (g["s5"] + g["s300"]) / 2 + 2 * FEE_BPS_PER_SIDE
-        print(f"      {typ:<6} median {rt.median():>7.3f}   p90 {rt.quantile(.9):>7.3f}   "
-              f"(GMO retail floor {GMO_FLOOR_ROUNDTRIP_BPS} bps)")
+        rt = (g["s5"] + g["s300"]) / 2 + 2 * FEE_PCT_PER_SIDE
+        print(f"      {typ:<6} median {rt.median():>9.5f}   p90 {rt.quantile(.9):>9.5f}   "
+              f"(GMO retail floor {GMO_FLOOR_ROUNDTRIP_PCT} %)")
 
     print(f"\n  SPREAD RECOVERY: seconds until the 10 s median spread falls back within "
           f"{F3_RECOVERY_MULT}x the pre-event level")
     print(f"      (pre-event level = median spread over [E{F3_BASELINE_FROM_S}s, E{F3_BASELINE_TO_S}s]; "
           f"censored at {F3_RECOVERY_MAX_S}s)")
-    print(f"      {'type':<6}{'n':>5}{'base bps':>10}{'p50 s':>9}{'p90 s':>9}{'censored':>10}")
+    print(f"      {'type':<6}{'n':>5}{'base %':>10}{'p50 s':>9}{'p90 s':>9}{'censored':>10}")
     for typ, g in f3.groupby("typ"):
-        print(f"      {typ:<6}{len(g):>5}{g['base'].median():>10.3f}{g['rec'].median():>9.0f}"
+        print(f"      {typ:<6}{len(g):>5}{g['base'].median():>10.5f}{g['rec'].median():>9.0f}"
               f"{g['rec'].quantile(.9):>9.0f}{100*g['cens'].mean():>9.0f}%")
-    print(f"      {'ALL':<6}{len(f3):>5}{f3['base'].median():>10.3f}{f3['rec'].median():>9.0f}"
+    print(f"      {'ALL':<6}{len(f3):>5}{f3['base'].median():>10.5f}{f3['rec'].median():>9.0f}"
           f"{f3['rec'].quantile(.9):>9.0f}{100*f3['cens'].mean():>9.0f}%")
 
     print(f"\n  IMPULSE SIZE |mid(E+5s) - mid(E)| in bps, by type")
@@ -741,7 +750,7 @@ def main() -> int:
     # ---------------------------------------------------------------- exploration
     configs = [("F1", m, x) for m in THRESHOLDS for x in F1_EXITS] + [("F2", m, F2_EXIT_S) for m in THRESHOLDS]
     print("\n" + hr("="))
-    print(f"EXPLORATION -- ALL {len(configs)} PRE-ENUMERATED CONFIGS (net bps/trade, MEASURED interbank cost)")
+    print(f"EXPLORATION -- ALL {len(configs)} PRE-ENUMERATED CONFIGS (net %/trade, MEASURED interbank cost)")
     print(hr("="))
     print(f"  {'family':<8}{'m bps':>7}{'entry':>8}{'exit':>7}"
           f"{'n':>7}{'net':>10}{'t':>8}{'  95% CI boot':<21}{'win':>7}   {'gmo-floor net':>14}")
@@ -753,7 +762,7 @@ def main() -> int:
         sg = summarize(df, "net_gmo")
         ex_rows.append(dict(family=fam, m=m, exit=xo, **s, gmo=sg["mean"], gmo_t=sg["t"]))
         print(f"  {fam:<8}{m:>7.0f}{('E+%ds' % eo):>8}{('E+%ds' % xo):>7} {fmt(s)}   "
-              f"{sg['mean']:>+9.3f} (t{sg['t']:+.2f})")
+              f"{sg['mean']:>+9.5f} (t{sg['t']:+.2f})")
     ex = pd.DataFrame(ex_rows)
 
     print("\n  MECHANISM DECOMPOSITION (exploration) -- protocol sec.5: is this a COST-LOSS")
@@ -761,15 +770,15 @@ def main() -> int:
     print("  zero-cost column = mid-to-mid signed move, no spread, no fee. If that is ~0 or")
     print("  negative, no execution improvement can rescue the family.")
     print(f"  {'family':<8}{'m bps':>7}{'exit':>7}{'n':>7}{'zero-cost':>12}{'t':>8}"
-          f"{'spread paid':>13}{'fee':>7}{'net':>10}")
+          f"{'spread paid %':>15}{'fee %':>7}{'net %':>10}")
     for fam, m, xo in configs:
         df = run_config(ex_events, fam, m, xo)
         if df.empty:
             continue
         z = summarize(df, "gross_mid")
-        spread_paid = float((df.gross_mid - df.gross_book).mean())
+        spread_paid = float((df.gross_mid / 100 - df.gross_book).mean())  # % (gross_mid bps / 100)
         print(f"  {fam:<8}{m:>7.0f}{('E+%ds' % xo):>7}{z['n']:>7d}{z['mean']:>+12.3f}{z['t']:>+8.2f}"
-              f"{spread_paid:>13.3f}{2*FEE_BPS_PER_SIDE:>7.1f}{df.net_base.mean():>+10.3f}")
+              f"{spread_paid:>15.5f}{2*FEE_PCT_PER_SIDE:>7.3f}{df.net_base.mean():>+10.5f}")
 
     print("\n  E+10s ENTRY SENSITIVITY (F1 only; latency check -- 5 s to react instead of 0)")
     print(f"  {'family':<8}{'m bps':>7}{'entry':>8}{'exit':>7}"
@@ -793,7 +802,7 @@ def main() -> int:
     win = elig.iloc[0]
     print(f"  eligible configs (exploration n>=40): {len(elig)}/{len(ex)}")
     print(f"  CHOSEN: family={win.family}  m={win.m:.0f} bps  exit=E+{int(win['exit'])}s  "
-          f"(exploration n={int(win['n'])}, net {win['mean']:+.3f} bps, t={win['t']:+.2f})")
+          f"(exploration n={int(win['n'])}, net {win['mean']:+.5f} %, t={win['t']:+.2f})")
 
     # plateau diagnostic (protocol sec.4.4) -- reported, not used for selection
     print("\n  PLATEAU DIAGNOSTIC (exploration; each axis +/-1 step around the winner)")
@@ -817,32 +826,32 @@ def main() -> int:
     print(f"  n (signal events)      : {js['n']}")
     print(f"  ZERO-COST mid-to-mid   : {jmid['mean']:+.3f} bps/trade (t {jmid['t']:+.2f})  "
           f"<- the raw mechanism, no spread, no fee")
-    print(f"  after crossing the book: {jgross['mean']:+.3f} bps/trade  "
-          f"(spread paid {jmid['mean'] - jgross['mean']:.3f} bps)")
-    print(f"  NET, measured cost     : {js['mean']:+.3f} bps/trade  (median {js['med']:+.3f}, "
+    print(f"  after crossing the book: {jgross['mean']:+.5f} %/trade  "
+          f"(spread paid {jmid['mean'] / 100 - jgross['mean']:.5f} %)")
+    print(f"  NET, measured cost     : {js['mean']:+.5f} %/trade  (median {js['med']:+.5f}, "
           f"win {100*js['win']:.1f}%)")
     print(f"  event-clustered t      : {js['t']:+.2f}   bootstrap 95% CI "
-          f"[{js['lo']:+.3f}, {js['hi']:+.3f}]  (seed {BOOT_SEED}, {BOOT_N} resamples)")
-    print(f"  NET, GMO 0.71bps floor : {jg['mean']:+.3f} bps/trade (t {jg['t']:+.2f}) "
+          f"[{js['lo']:+.5f}, {js['hi']:+.5f}]  (seed {BOOT_SEED}, {BOOT_N} resamples)")
+    print(f"  NET, GMO 0.0071% floor : {jg['mean']:+.5f} %/trade (t {jg['t']:+.2f}) "
           f"-- LOWER BOUND on retail cost, not a forecast")
     if not jdf.empty:
-        print(f"  measured cost actually paid: entry half-spread {jdf.entry_spread.median()/2:.3f} bps, "
-              f"exit half-spread {jdf.exit_spread.median()/2:.3f} bps, fee {2*FEE_BPS_PER_SIDE:.1f} bps "
-              f"=> {jdf.entry_spread.median()/2 + jdf.exit_spread.median()/2 + 2*FEE_BPS_PER_SIDE:.3f} bps median round trip")
+        print(f"  measured cost actually paid: entry half-spread {jdf.entry_spread.median()/2:.5f} %, "
+              f"exit half-spread {jdf.exit_spread.median()/2:.5f} %, fee {2*FEE_PCT_PER_SIDE:.3f} % "
+              f"=> {jdf.entry_spread.median()/2 + jdf.exit_spread.median()/2 + 2*FEE_PCT_PER_SIDE:.5f} % median round trip")
 
     if win.family == "F1":
         jsens = summarize(run_config(ju_events, "F1", float(win.m), int(win["exit"]),
                                      entry_off=F1_ENTRY_S_SENS))
         print(f"  LATENCY SENSITIVITY, entry moved to E+10s (5 s to react instead of 0):")
-        print(f"      n {jsens['n']}, net {jsens['mean']:+.3f} bps, t {jsens['t']:+.2f}, "
-              f"CI [{jsens['lo']:+.3f}, {jsens['hi']:+.3f}]")
+        print(f"      n {jsens['n']}, net {jsens['mean']:+.5f} %, t {jsens['t']:+.2f}, "
+              f"CI [{jsens['lo']:+.5f}, {jsens['hi']:+.5f}]")
 
     c1 = js["n"] >= 60
-    c2 = (js["mean"] >= 2.0) if js["n"] else False
+    c2 = (js["mean"] >= 0.02) if js["n"] else False  # % (+2.0 bps in the prereg)
     c3 = (js["t"] >= 2.0) if js["n"] else False
     print("\n  ADOPTION BAR (pre-registered, all three required):")
     print(f"      (1) n >= 60                  : {js['n']:>8}   {'PASS' if c1 else 'FAIL'}")
-    print(f"      (2) net >= +2.0 bps/trade    : {js['mean']:>+8.3f}   {'PASS' if c2 else 'FAIL'}")
+    print(f"      (2) net >= +0.02 %/trade     : {js['mean']:>+8.5f}   {'PASS' if c2 else 'FAIL'}")
     print(f"      (3) event-clustered t >= 2.0 : {js['t']:>+8.2f}   {'PASS' if c3 else 'FAIL'}")
     verdict = "ADOPT" if (c1 and c2 and c3) else "REJECT"
     print(f"\n  >>> VERDICT: {verdict} <<<")
@@ -890,7 +899,7 @@ def main() -> int:
             s = summarize(d)
             z = summarize(d, "gross_mid")
             print(f"  {label:<12}{m:>7.0f} {fmt(s)}{z['mean']:>+11.3f}")
-    print("  (adoption bar for reference: n>=60, net>=+2.0 bps, t>=2.0 -- on the JUDGMENT row)")
+    print("  (adoption bar for reference: n>=60, net>=+0.02 %, t>=2.0 -- on the JUDGMENT row)")
 
     print("\n  CONFIGURATION SWITCH CHECK (protocol sec.2): exploration winner vs judgment winner")
     ju_rows = [dict(family=f, m=m, exit=x, **summarize(run_config(ju_events, f, m, x))) for f, m, x in configs]
@@ -951,9 +960,9 @@ def main() -> int:
     print("\n" + hr("="))
     print("PRE-REGISTERED CAVEATS (restated with the measured numbers)")
     print(hr("="))
-    med_rt = (f3["s5"].median() + f3["s300"].median()) / 2 + 2 * FEE_BPS_PER_SIDE
+    med_rt = (f3["s5"].median() + f3["s300"].median()) / 2 + 2 * FEE_PCT_PER_SIDE
     print(f"  * VENUE. Dukascopy is INTERBANK. Median measured round trip in the release window")
-    print(f"    is {med_rt:.2f} bps vs the GMO retail floor {GMO_FLOOR_ROUNDTRIP_BPS} bps in calm conditions.")
+    print(f"    is {med_rt:.4f} % vs the GMO retail floor {GMO_FLOOR_ROUNDTRIP_PCT} % in calm conditions.")
     print(f"    Retail event-time slippage (requote, rejection, widened fill) is UNBOUNDED and NOT")
     print(f"    measured here. Both the base case and the GMO-floor case are OPTIMISTIC.")
     print(f"  * LATENCY. The E+5s entry assumes sub-1-second sense-decide-fill. The E+10s table")
@@ -966,7 +975,7 @@ def main() -> int:
     print(f"  * CANDIDATE COUNT. 12 configs were enumerated before running (protocol sec.8.3).")
     print(hr("="))
     print(f"FINAL: {verdict}  -- {win.family} m={win.m:.0f} exit=E+{int(win['exit'])}s, "
-          f"judgment n={js['n']}, net {js['mean']:+.3f} bps, t {js['t']:+.2f}")
+          f"judgment n={js['n']}, net {js['mean']:+.5f} %, t {js['t']:+.2f}")
     print(hr("="))
     return 0
 

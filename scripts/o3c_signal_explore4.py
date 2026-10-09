@@ -633,7 +633,8 @@ class Rows:
     def __init__(self, path: Path):
         cols: dict = {c: [] for c in ROW_COLUMNS}
         with gzip.open(path, "rt", newline="") as fh:
-            for r in csv.DictReader(fh):
+            # L-920: 前の rows の距離の列は dist_*_bp(bp)。新しい名前が無ければ / 100 して読む
+            for r in map(base.pct_dist_row, csv.DictReader(fh)):
                 for c in ROW_COLUMNS:
                     cols[c].append(r[c])
         kind = np.array(cols["kind"], dtype=object)
@@ -1038,7 +1039,7 @@ def make_g5(rows: Rows, ter: dict) -> list:
 # ---------------------------------------------------------------------------
 # G6 属性(6 属性 17 群、設計 §0 の機械的な規則)
 # ---------------------------------------------------------------------------
-G6_ATTRS = ("bundle_n_events_dedup", "bundle_total_notional", "|dist_node_bp|",
+G6_ATTRS = ("bundle_n_events_dedup", "bundle_total_notional", "|dist_node_pct|",
             "bin_pct", "implied_leverage")
 
 

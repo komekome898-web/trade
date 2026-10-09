@@ -51,18 +51,21 @@ def ratio(days, df, col, daycol="day"):
 
 def main():
     pc = pd.read_csv(RUN + "policy_cascades.csv.gz")
+    # L-920: 連鎖の損益(レグの和)は %(pnl_pct)。前の走らせの出力は pnl_bp(bp)なので / 100 して読む
+    if "pnl_pct" not in pc.columns and "pnl_bp" in pc.columns:
+        pc["pnl_pct"] = pc["pnl_bp"] / 100
     days = sorted(pc["day"].unique())
     half = len(days) // 2
     parts = {"全期間": days, "前半": days[:half], "後半": days[half:]}
-    w("# カード 9 のやり直しの表(走らせ (a) の保存済みの出力から。bp、経費の前、Binance COIN-M BTCUSD_PERP の約定の値段)")
+    w("# カード 9 のやり直しの表(走らせ (a) の保存済みの出力から。値動きは bp、連鎖・レグの損益の和は %(L-920)、経費の前、Binance COIN-M BTCUSD_PERP の約定の値段)")
     w("")
     w(f"日 = UTC の日 {len(days)} 日({days[0]}〜{days[-1]})。前半 {half} 日・後半 {len(days) - half} 日、境 {days[half]}。【試験の無い台本の値】")
     w("")
 
     # ---------------- D1 方策ごとの日ごとの和
-    w("## D1 方策ごとの 1 日あたり(bp/日、その日の連鎖の損益の和。連鎖の無い日は 0)と 1 連鎖あたり")
+    w("## D1 方策ごとの 1 日あたり(%/日、その日の連鎖の損益の和。連鎖の無い日は 0)と 1 連鎖あたり")
     w("")
-    w("| 判断の出所 | 型 | g 秒 | d 秒 | 連鎖 | NaN | 入った連鎖 | 前半 bp/日 [区間] | 後半 bp/日 [区間] | 後半 − 前半 [区間] | 結果 | 全期間 1 連鎖あたり [区間] | 前半 1 連鎖あたり | 後半 1 連鎖あたり |")
+    w("| 判断の出所 | 型 | g 秒 | d 秒 | 連鎖 | NaN | 入った連鎖 | 前半 %/日 [区間] | 後半 %/日 [区間] | 後半 − 前半 [区間] | 結果 | 全期間 1 連鎖あたり [区間] | 前半 1 連鎖あたり | 後半 1 連鎖あたり |")
     w("|---|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     pols = ["全部順張り", "全部逆張り", "規則_材料1", "規則_3択", "完全な判断"]
     daily = {}
@@ -71,9 +74,9 @@ def main():
             for g in (30, 60, 180):
                 for d in (1, 3):
                     q = pc[(pc.policy == pol) & (pc.type == typ) & (pc.gap_s == g) & (pc.delay_s == d)]
-                    nan = int(q.pnl_bp.isna().sum())
-                    qq = q.dropna(subset=["pnl_bp"])
-                    s = qq.groupby("day").pnl_bp.sum().to_dict()
+                    nan = int(q.pnl_pct.isna().sum())
+                    qq = q.dropna(subset=["pnl_pct"])
+                    s = qq.groupby("day").pnl_pct.sum().to_dict()
                     x = [s.get(dd, 0.0) for dd in days]
                     daily[(pol, typ, g, d)] = dict(zip(days, x))
                     a, b = dt.mean_ci(x[:half]), dt.mean_ci(x[half:])
@@ -82,18 +85,18 @@ def main():
                     else:
                         df_ = dt.diff_ci(x[:half], x[half:])
                         out = dt.d1_outcome(a, b, df_)
-                    rr = {k: ratio(v, qq, "pnl_bp") for k, v in parts.items()}
-                    w(f"| {pol} | {typ} | {g} | {d} | {len(q):,} | {nan} | {int(q.entered.sum()):,} | {f2(a)} | {f2(b)} | {f2(df_)} | {out} | {f2(rr['全期間'], 3)} | {f2(rr['前半'], 3)} | {f2(rr['後半'], 3)} |")
+                    rr = {k: ratio(v, qq, "pnl_pct") for k, v in parts.items()}
+                    w(f"| {pol} | {typ} | {g} | {d} | {len(q):,} | {nan} | {int(q.entered.sum()):,} | {f2(a, 4)} | {f2(b, 4)} | {f2(df_, 4)} | {out} | {f2(rr['全期間'], 5)} | {f2(rr['前半'], 5)} | {f2(rr['後半'], 5)} |")
     w("")
 
     # 年ごと(全部順張り・規則_材料1 A・完全な判断 A、g 60・d 1)
-    w("### 年ごと(g 60・d 1。bp/日)")
+    w("### 年ごと(g 60・d 1。%/日)")
     w("")
     w("| 判断の出所 | 型 | 2023 [区間] | 2024 [区間] |")
     w("|---|---|---|---|")
     for key in [("全部順張り", "-", 60, 1), ("規則_材料1", "A", 60, 1), ("規則_材料1", "B", 60, 1), ("完全な判断", "A", 60, 1), ("完全な判断", "B", 60, 1)]:
         dd = daily[key]
-        cells = [f2(dt.mean_ci([dd[x] for x in days if x.startswith(y)])) for y in ("2023", "2024")]
+        cells = [f2(dt.mean_ci([dd[x] for x in days if x.startswith(y)]), 4) for y in ("2023", "2024")]
         w(f"| {key[0]} | {key[1]} | {cells[0]} | {cells[1]} |")
     w("")
 
@@ -273,17 +276,17 @@ def main():
     w("")
 
     # ---------------- D2 場面(全部順張り g60 d1、連鎖の最初のプリントの値)
-    base = pc[(pc.policy == "全部順張り") & (pc.gap_s == 60) & (pc.delay_s == 1)].dropna(subset=["pnl_bp"])
+    base = pc[(pc.policy == "全部順張り") & (pc.gap_s == 60) & (pc.delay_s == 1)].dropna(subset=["pnl_pct"])
     first = pr[pr.g60_k == 0].set_index("g60_bundle")
     base = base.join(first[["mat6_time_of_day_band", "mat10_funding_rate", "qty"]], on="bundle_id")
     base["funding"] = np.where(base.mat10_funding_rate > 0, "正", np.where(base.mat10_funding_rate < 0, "負", "0・無し"))
-    w("## D2 場面(全部順張り・g 60・d 1、1 連鎖あたり bp。場面は連鎖の最初のプリントの時点で分かる値)")
+    w("## D2 場面(全部順張り・g 60・d 1、1 連鎖あたり %。場面は連鎖の最初のプリントの時点で分かる値)")
     w("")
     w("| 場面 | 値 | 連鎖 | 全期間 [区間] | 前半 [区間] | 後半 [区間] |")
     w("|---|---|---|---|---|---|")
     for col, nm in (("side", "清算の側"), ("mat6_time_of_day_band", "時間帯(UTC)"), ("funding", "資金調達率の符号")):
         for val, q in base.groupby(col):
-            cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_bp"), 3) for pd_ in parts.values()]
+            cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_pct"), 5) for pd_ in parts.values()]
             w(f"| {nm} | {val} | {len(q):,} | " + " | ".join(cells) + " |")
     w("")
 
@@ -293,38 +296,40 @@ def main():
     w("| 判断の出所 | 型 | 和 | 上位 5% の日の和 | 下位 5% の日の和 | 1% | 5% | 25% | 50% | 75% | 95% | 99%(1 連鎖の分位) |")
     w("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for key in [("全部順張り", "-"), ("規則_材料1", "A"), ("規則_材料1", "B"), ("規則_3択", "A"), ("規則_3択", "B"), ("完全な判断", "A"), ("完全な判断", "B")]:
-        q = pc[(pc.policy == key[0]) & (pc.type == key[1]) & (pc.gap_s == 60) & (pc.delay_s == 1)].dropna(subset=["pnl_bp"])
+        q = pc[(pc.policy == key[0]) & (pc.type == key[1]) & (pc.gap_s == 60) & (pc.delay_s == 1)].dropna(subset=["pnl_pct"])
         x = np.array(sorted(daily[(key[0], key[1], 60, 1)].values()))
         k = max(1, int(round(len(x) * 0.05)))
-        qs = np.percentile(q.pnl_bp, [1, 5, 25, 50, 75, 95, 99])
-        w(f"| {key[0]} | {key[1]} | {x.sum():+,.0f} | {x[-k:].sum():+,.0f} | {x[:k].sum():+,.0f} | " + " | ".join(f"{v:+.2f}" for v in qs) + " |")
+        qs = np.percentile(q.pnl_pct, [1, 5, 25, 50, 75, 95, 99])
+        w(f"| {key[0]} | {key[1]} | {x.sum():+,.3f} | {x[-k:].sum():+,.3f} | {x[:k].sum():+,.3f} | " + " | ".join(f"{v:+.4f}" for v in qs) + " |")
     w("")
-    w("連鎖のプリントの数の帯【結果で決まる群】(全部順張り・g 60・d 1、1 連鎖あたり bp):")
+    w("連鎖のプリントの数の帯【結果で決まる群】(全部順張り・g 60・d 1、1 連鎖あたり %):")
     w("")
     w("| プリントの数 | 連鎖 | 和 | 全期間 [区間] | 前半 | 後半 |")
     w("|---|---|---|---|---|---|")
     for lo, hi in ((1, 1), (2, 2), (3, 5), (6, 20), (21, 10**9)):
         q = base[(base.n_prints >= lo) & (base.n_prints <= hi)]
-        cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_bp"), 3) for pd_ in parts.values()]
-        w(f"| {lo}〜{hi if hi < 10**9 else ''} | {len(q):,} | {q.pnl_bp.sum():+,.0f} | " + " | ".join(cells) + " |")
+        cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_pct"), 5) for pd_ in parts.values()]
+        w(f"| {lo}〜{hi if hi < 10**9 else ''} | {len(q):,} | {q.pnl_pct.sum():+,.3f} | " + " | ".join(cells) + " |")
     w("")
 
     # ---------------- D4 レグ
     lg = pd.read_csv(RUN + "policy_legs.csv.gz")
-    w("## D4 レグ(建玉 1 つ)の出の理由 × 向き(g 60・d 1、1 レグあたり bp)【結果で決まる群】")
+    # 1 レグの損益は bp(量 1 の値動き率)。この表では和を出すので % にそろえる(L-920)
+    lg["pnl_pct"] = lg["pnl_bp"] / 100
+    w("## D4 レグ(建玉 1 つ)の出の理由 × 向き(g 60・d 1、1 レグあたり %)【結果で決まる群】")
     w("")
     w("| 判断の出所 | 型 | 向き | 出の理由 | レグ | 和 | 全期間 [区間] | 前半 | 後半 | 保有秒の中央値 |")
     w("|---|---|---|---|---|---|---|---|---|---|")
     for pol in ("規則_材料1", "規則_3択", "完全な判断"):
         for typ in ("A", "B"):
-            q0 = lg[(lg.policy == pol) & (lg.type == typ) & (lg.gap_s == 60) & (lg.delay_s == 1)].dropna(subset=["pnl_bp"])
+            q0 = lg[(lg.policy == pol) & (lg.type == typ) & (lg.gap_s == 60) & (lg.delay_s == 1)].dropna(subset=["pnl_pct"])
             for (ld, er), q in q0.groupby(["leg_dir", "exit_reason"]):
-                cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_bp"), 3) for pd_ in parts.values()]
-                w(f"| {pol} | {typ} | {ld} | {er} | {len(q):,} | {q.pnl_bp.sum():+,.0f} | " + " | ".join(cells) + f" | {q.hold_s.median():.0f} |")
+                cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_pct"), 5) for pd_ in parts.values()]
+                w(f"| {pol} | {typ} | {ld} | {er} | {len(q):,} | {q.pnl_pct.sum():+,.3f} | " + " | ".join(cells) + f" | {q.hold_s.median():.0f} |")
     w("")
 
     # ---------------- D6 連鎖の間隔
-    w("## D6 前の連鎖の終わりから次の連鎖の始まりまで(同じ g、側を問わない。全部順張り・g 60・d 1、1 連鎖あたり bp)【建ての前に決まる群】")
+    w("## D6 前の連鎖の終わりから次の連鎖の始まりまで(同じ g、側を問わない。全部順張り・g 60・d 1、1 連鎖あたり %)【建ての前に決まる群】")
     w("")
     b60 = bb[bb.gap_s == 60].sort_values("start_ms").copy()
     prev_end = np.concatenate([[np.nan], np.maximum.accumulate(b60.end_ms.values)[:-1]])
@@ -338,12 +343,12 @@ def main():
     bnds = [(-np.inf, edges[0]), (edges[0], edges[1]), (edges[1], edges[2]), (edges[2], np.inf)]
     for lo, hi in bnds:
         q = bx[(bx.gap_prev_s > lo) & (bx.gap_prev_s <= hi)]
-        cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_bp"), 3) for pd_ in parts.values()]
+        cells = [f2(ratio(pd_, q[q.day.isin(pd_)], "pnl_pct"), 5) for pd_ in parts.values()]
         w(f"| {lo:.0f}〜{hi:.0f} | {len(q):,} | " + " | ".join(cells) + " |")
     w("")
 
     # ---------------- D7 判断の出所の比べ(日ごとの差)
-    w("## D7 比べ(同じ日どうしの日ごとの差、bp/日)")
+    w("## D7 比べ(同じ日どうしの日ごとの差、%/日)")
     w("")
     w("| 比べ | g | d | 全期間 [区間] | 前半 [区間] | 後半 [区間] |")
     w("|---|---|---|---|---|---|")
@@ -360,7 +365,7 @@ def main():
         comps.append(("全部順張り d 3 − d 1", ("全部順張り", "-", g, 3), ("全部順張り", "-", g, 1), g, "3−1"))
     for nm, ka, kb, g, d in comps:
         diff = [daily[ka][x] - daily[kb][x] for x in days]
-        cells = [f2(dt.mean_ci(diff)), f2(dt.mean_ci(diff[:half])), f2(dt.mean_ci(diff[half:]))]
+        cells = [f2(dt.mean_ci(diff), 4), f2(dt.mean_ci(diff[:half]), 4), f2(dt.mean_ci(diff[half:]), 4)]
         if ka[0] == "規則_3択":
             cells[0] = cells[1] = "—(後半だけ)"
         w(f"| {nm} | {g} | {d} | " + " | ".join(cells) + " |")
@@ -369,12 +374,12 @@ def main():
     w("### 規則_3択で入らなかった連鎖(後半、g 60・d 1、型 A)の、全部順張りの損益")
     w("")
     t3 = pc[(pc.policy == "規則_3択") & (pc.type == "A") & (pc.gap_s == 60) & (pc.delay_s == 1)][["bundle_id", "entered"]]
-    bf = pc[(pc.policy == "全部順張り") & (pc.gap_s == 60) & (pc.delay_s == 1)][["bundle_id", "day", "pnl_bp"]]
-    j = t3.merge(bf, on="bundle_id").dropna(subset=["pnl_bp"])
+    bf = pc[(pc.policy == "全部順張り") & (pc.gap_s == 60) & (pc.delay_s == 1)][["bundle_id", "day", "pnl_pct"]]
+    j = t3.merge(bf, on="bundle_id").dropna(subset=["pnl_pct"])
     w("| 3 択 | 連鎖 | 全部順張りの 1 連鎖あたり [区間] | 中央値 | 25% | 75% |")
     w("|---|---|---|---|---|---|")
     for e, q in j.groupby("entered"):
-        w(f"| {'入った' if e else '入らなかった'} | {len(q):,} | {f2(ratio(parts['後半'], q, 'pnl_bp'), 3)} | {q.pnl_bp.median():+.2f} | {q.pnl_bp.quantile(.25):+.2f} | {q.pnl_bp.quantile(.75):+.2f} |")
+        w(f"| {'入った' if e else '入らなかった'} | {len(q):,} | {f2(ratio(parts['後半'], q, 'pnl_pct'), 5)} | {q.pnl_pct.median():+.4f} | {q.pnl_pct.quantile(.25):+.4f} | {q.pnl_pct.quantile(.75):+.4f} |")
     w("")
     open(os.path.join(HERE, "C9_TABLES.md"), "w").write("\n".join(OUT) + "\n")
     print("done")

@@ -175,6 +175,9 @@ PRE-REGISTRATION (verbatim; nothing below is changed after the first run)
     - The width of the surface (cell count) is reported.
 
 Usage:  PYTHONPATH=src python scripts/research_prediction_atlas.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図・±X の到達の幅・前向きの
+drift)にだけ使う。taker の往復費用(7.92bps = 0.0792 %)と、費用を引いた 1 回あたりの EV は % で持つ。
+必要な p(p_req)は X(bp)と費用(%)を × 100 でそろえて計算し、値は前と同じ。)
 """
 from __future__ import annotations
 
@@ -204,7 +207,7 @@ XS_BPS = (10.0, 20.0, 50.0, 100.0)
 TS_S = (300, 1800, 7200, 28800)         # 5m, 30m, 2h, 8h
 TS_LABEL = {300: "5m", 1800: "30m", 7200: "2h", 28800: "8h"}
 
-TAKER_ROUND = 7.92                      # bps, round trip (KNOWLEDGE 1, burst)
+TAKER_ROUND = 0.0792                    # %, round trip (KNOWLEDGE 1, burst; 7.92 bps)
 N_REF_ONLY = 50
 N_PAIR_MIN = 2000                       # nominal n floor for the pair-ranking
 
@@ -226,11 +229,11 @@ RET_WIN_S = 300
 
 
 def p_req_race(x: float) -> float:
-    return 0.5 + TAKER_ROUND / (2.0 * x)
+    return 0.5 + TAKER_ROUND * 100 / (2.0 * x)   # cost % -> bps to match x (bps)
 
 
 def p_req_magnitude(x: float) -> float:
-    return (2.0 * TAKER_ROUND) / x
+    return (2.0 * TAKER_ROUND * 100) / x         # cost % -> bps to match x (bps)
 
 
 # --------------------------------------------------------------------------
@@ -1128,8 +1131,8 @@ def main() -> int:
                 "probability describes:")
             out("        take the majority side with TP=+X, SL=-X, market exit at "
                 "T on a draw,")
-            out("        EV = P(win)*X - P(lose)*X + P(draw)*E[side*move(T)|draw] "
-                "- 7.92 bps.")
+            out("        EV(%) = (P(win)*X - P(lose)*X + P(draw)*E[side*move(T)|draw]) / 100 "
+                "- 0.0792 %  (X and the move in bps).")
             out("        p_req only prices the DECISIVE races; EVatt prices the "
                 "whole attempt,")
             out("        and the draw share is where a high p on a rare decisive "
@@ -1169,7 +1172,7 @@ def main() -> int:
                 nw = int((m & win).sum())
                 nl = int((m & dec & ~win).sum())
                 ev = ((nw * x - nl * x + (dv.sum() if len(dv) else 0.0))
-                      / max(c.n, 1)) - TAKER_ROUND
+                      / max(c.n, 1)) / 100 - TAKER_ROUND   # % (moves bps / 100, cost %)
             else:
                 sel = m
                 y = (~o["draw"][(x, T)][sel]).astype(float)
@@ -1179,7 +1182,7 @@ def main() -> int:
                 y1 = (~o["draw"][(x, T)][sel & first_half]).astype(float)
                 y2 = (~o["draw"][(x, T)][sel & ~first_half]).astype(float)
                 unc = "yes" if b.p_reach > req else "no"
-                ev = x * p - 2.0 * TAKER_ROUND
+                ev = x * p / 100 - 2.0 * TAKER_ROUND           # %
             lo_, hi_, _ = day_cluster_prop_ci(y, dd, rng)
             nd, mday = day_spread(dd)
             ci_ok = bool(np.isfinite(lo_) and lo_ > req)
@@ -1192,7 +1195,7 @@ def main() -> int:
                 f"{req*100:>7.2f}{f'[{lo_*100:.2f}, {hi_*100:.2f}]':>22}"
                 f"{(y1.mean()*100 if len(y1) else float('nan')):>8.2f}"
                 f"{(y2.mean()*100 if len(y2) else float('nan')):>8.2f}{nd:>5}"
-                f"{mday*100:>8.1f}{unc:>4}{ev:>9.2f}{surv:>6}")
+                f"{mday*100:>8.1f}{unc:>4}{ev:>9.4f}{surv:>6}")
         out(f"cells whose DAY-CLUSTER lower bound clears the line          : "
             f"{n_ci}")
         out(f"cells that ALSO pass episode diversity (>=10 days, maxday<=50%): "
@@ -1232,7 +1235,7 @@ def main() -> int:
             out(f"   {kind:<7}{nm:<44} X={int(x):>3} T={TS_LABEL[T]:<3} "
                 f"n={nn:>7,} p={p*100:>6.2f}% req={req*100:>5.2f}% "
                 f"CI[{lo_*100:.1f},{hi_*100:.1f}] days={nd} maxday={mday*100:.0f}% "
-                f"uncond={unc} EVatt={ev:+.2f}bps")
+                f"uncond={unc} EVatt={ev:+.4f}%")
 
     sub("plateau inspection of the strongest magnitude cells "
         "(does the neighbouring tercile/bucket collapse?)")
@@ -1359,7 +1362,7 @@ def main() -> int:
                     f"{f'[{lo_:.2f}, {hi_:.2f}]':>24}{nlv:>18.2f}"
                     f"{int(nl.sum()):>6}")
         out(f"drift = signed continuation move in bps.  Round-trip taker line = "
-            f"{TAKER_ROUND:.2f} bps.")
+            f"{TAKER_ROUND:.4f} % (= {TAKER_ROUND * 100:.2f} bps of move).")
         out("The overlapping column is the one report 24 showed collapses "
             "(+9.40 -> +1.46 bps)")
         out("when the same triggers are de-overlapped.  NON-OVERLAP keeps one "

@@ -81,6 +81,14 @@ matilda 固有の 5秒足/30秒窓を初めて原スケールで測る。
 `scripts/judge_board_round.py`(本文書逐語 docstring、seed 20260904、一度だけ実行しそのまま報告)。
 
 ---
+(L-920 の後の単位: 上の PREREG の逐語は書き換えない。この台本では、費用・ネット・粗の損益の率・
+スプレッド・板の深さの帯・capture(クオートと仲値の距離)を % で持つ: taker 往復 5.8bps = 0.058 %、
+深さの帯 5bps = 仲値の ±0.05 %(列 bid_depth_0p05pct・ask_depth_0p05pct・imb_0p05pct)、
+QC の spread > 50bps = spread_pct > 0.5、GMO の +1.0bps = +0.01 %。値動き率(前方の動き・30 秒の変位・
+バーストの 20bps・逆選択(5 秒)・脚間ドリフト)は bp のまま。capture×2 − |ドリフト| は
+capture(%)×2 − |ドリフト(bp)| / 100 で % にして比べる。2026-10-10 より前の系列(spread_bps・*_5bps の列)は
+load_series が spread_bps / 100 → spread_pct、*_5bps → *_0p05pct(数量・比なので値はそのまま)で読む。)
+
 IMPLEMENTATION NOTES (not part of the PREREG text above; literal readings
 picked where the document is silent, per instructions):
 
@@ -108,16 +116,16 @@ picked where the document is silent, per instructions):
 QC AMENDMENT (2026-09-04): the real reconstructed series
 (backtest_data/board_round_20260904) is crossed/garbage for ~2 minutes
 after each daily bitFlyer maintenance window (19:00-19:10 UTC) -- mid
-halves then jumps back, spread_bps goes negative or to -20000, and some
+halves then jumps back, spread goes negative or to -200 % of mid, and some
 bins carry a zero-size side. A data-validity mask is applied UNIFORMLY,
 BEFORE any statistic in any of the four sections:
-  1. A bin is INVALID when spread_bps <= 0, spread_bps > 50, either
-     depth-within-5bps side == 0, either best-of-book size <= 0, or mid is
+  1. A bin is INVALID when spread_pct <= 0, spread_pct > 0.5, either
+     depth-within-0.05% side == 0, either best-of-book size <= 0, or mid is
      not finite.
   2. An invalid bin's `mid` is set to NaN -- every forward/backward return
      (BI, VR5's ret/vr/trigger, TP's burst displacement) that would read
      through it becomes NaN and the bin is skipped, exactly like a
-     reconstruction gap. BI's decile/tercile SIGNAL inputs (imb_5bps,
+     reconstruction gap. BI's decile/tercile SIGNAL inputs (imb_0p05pct,
      imb_top) are masked to NaN on invalid or excluded bins the same way,
      so an invalid bin can never anchor a decile-10/decile-1 entry either.
   3. The fixed daily window 19:00:00-19:15:00 UTC is excluded outright
@@ -154,7 +162,7 @@ from bot.monitoring.gates import shared_or_local  # noqa: E402
 import research_board_calibration as rbc  # noqa: E402  (reused: epoch_seconds)
 
 SEED = 20260904
-TAKER_COST_BPS = 5.8
+TAKER_COST_PCT = 0.058   # % round trip (the PREREG's 5.8bps)
 BIN_SEC = 5.0
 
 # -- section 1: BI-deep --------------------------------------------------
@@ -179,7 +187,7 @@ AUC_BAR = 0.65
 AUC_CI_LOWER_BAR = 0.55
 N_EVENTS_MIN = 30
 FEATURE_NAMES = [
-    "accel", "large_ratio", "taker_imbalance", "avg_spread_bps",
+    "accel", "large_ratio", "taker_imbalance", "avg_spread_pct",
     "book_thinness", "board_update_rate",
 ]
 
@@ -187,7 +195,7 @@ FEATURE_NAMES = [
 GMO_DAY_BAR = 14
 
 # -- QC amendment (2026-09-04): post-maintenance crossed/garbage book -------
-QC_SPREAD_MAX_BPS = 50.0
+QC_SPREAD_MAX_PCT = 0.5   # % of mid (the QC amendment's 50 bps)
 MAINT_LO_HOUR, MAINT_HI_HOUR = 19.0, 19.25   # UTC 19:00:00-19:15:00 daily
 
 
@@ -226,8 +234,20 @@ def find_coverage_path(root: Path) -> Path:
                            shared_name="board_round_coverage.json")
 
 
+# Series written before 2026-10-10 (L-920) carry the old column names. The
+# depth/imbalance columns are sizes and ratios (same values, renamed only);
+# spread_bps is spread / mid x 1e4 and is read / 100 -> spread_pct (%).
+LEGACY_COLUMNS = {"bid_depth_5bps": "bid_depth_0p05pct", "ask_depth_5bps": "ask_depth_0p05pct",
+                  "imb_5bps": "imb_0p05pct"}
+
+
 def load_series(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path)
+    if "spread_pct" not in df.columns and "spread_bps" in df.columns:
+        df["spread_pct"] = df["spread_bps"] / 100   # legacy column: x 1e4 -> %
+        df = df.drop(columns=["spread_bps"])
+    df = df.rename(columns={k: v for k, v in LEGACY_COLUMNS.items()
+                            if k in df.columns and v not in df.columns})
     df["ts"] = pd.to_datetime(df["ts"], utc=True)
     df = df.sort_values("ts").reset_index(drop=True)
     # immune to the datetime64 unit trap (astype('int64') silently changes
@@ -247,9 +267,9 @@ def compute_qc_mask(df: pd.DataFrame) -> tuple[np.ndarray, dict]:
     (criterion 1) or falls in the daily maintenance window (criterion 3).
     `counts` breaks the exclusion down by reason (reasons can overlap; the
     maintenance-window count is reported separately, not folded in)."""
-    spread = df["spread_bps"].to_numpy(float)
-    bid_depth = df["bid_depth_5bps"].to_numpy(float)
-    ask_depth = df["ask_depth_5bps"].to_numpy(float)
+    spread = df["spread_pct"].to_numpy(float)
+    bid_depth = df["bid_depth_0p05pct"].to_numpy(float)
+    ask_depth = df["ask_depth_0p05pct"].to_numpy(float)
     bb_size = df["best_bid_size"].to_numpy(float)
     ba_size = df["best_ask_size"].to_numpy(float)
     mid = df["mid"].to_numpy(float)
@@ -257,9 +277,9 @@ def compute_qc_mask(df: pd.DataFrame) -> tuple[np.ndarray, dict]:
 
     reasons = {
         "spread_le_0": spread <= 0,
-        "spread_gt_50bps": spread > QC_SPREAD_MAX_BPS,
-        "bid_depth_5bps_zero": bid_depth == 0,
-        "ask_depth_5bps_zero": ask_depth == 0,
+        "spread_gt_0p5pct": spread > QC_SPREAD_MAX_PCT,
+        "bid_depth_0p05pct_zero": bid_depth == 0,
+        "ask_depth_0p05pct_zero": ask_depth == 0,
         "best_bid_size_le_0": bb_size <= 0,
         "best_ask_size_le_0": ba_size <= 0,
         "mid_not_finite": ~np.isfinite(mid),
@@ -289,7 +309,7 @@ def apply_qc(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     df["valid"] = valid
     bad = ~valid
     df.loc[bad, "mid"] = np.nan
-    df.loc[bad, "imb_5bps"] = np.nan
+    df.loc[bad, "imb_0p05pct"] = np.nan
     df.loc[bad, "imb_top"] = np.nan
     return df, counts
 
@@ -298,10 +318,10 @@ def print_qc(rep: "Reporter", counts: dict) -> None:
     rep.header("QC AMENDMENT (2026-09-04) -- post-maintenance crossed book")
     rep.line(f"total bins: {counts['n_bins']:,}")
     rep.line(f"invalid (criterion 1, reasons may overlap): {counts['invalid_total']:,}")
-    for reason in ("spread_le_0", "spread_gt_50bps", "bid_depth_5bps_zero",
-                  "ask_depth_5bps_zero", "best_bid_size_le_0", "best_ask_size_le_0",
+    for reason in ("spread_le_0", "spread_gt_0p5pct", "bid_depth_0p05pct_zero",
+                  "ask_depth_0p05pct_zero", "best_bid_size_le_0", "best_ask_size_le_0",
                   "mid_not_finite"):
-        rep.line(f"    {reason:<22}: {counts[reason]:,}")
+        rep.line(f"    {reason:<24}: {counts[reason]:,}")
     rep.line(f"excluded (maintenance window 19:00-19:15 UTC daily): "
              f"{counts['maintenance_window']:,}")
     rep.line(f"total excluded from every section (invalid | maintenance): "
@@ -358,17 +378,20 @@ def nonoverlap_mask(bin_idx: np.ndarray, candidate: np.ndarray, stride_bins: int
     return kept
 
 
-def gross_and_t(x: np.ndarray, cost_bps: float) -> dict:
+def gross_and_t(x: np.ndarray, cost_pct: float) -> dict:
+    """x = per-trade signed forward moves in bp. Returns gross and net as
+    PnL rates per unit position in % (gross = mean(x) / 100, net = gross -
+    cost_pct; L-920: a net PnL rate is not a price-move rate, so not bp)."""
     x = np.asarray(x, float)
-    x = x[np.isfinite(x)]
+    x = x[np.isfinite(x)] / 100.0   # bp -> %
     n = x.size
     if n == 0:
         return {"n": 0, "gross": float("nan"), "net": float("nan"), "t": float("nan")}
     gross = float(x.mean())
-    net = gross - cost_bps
+    net = gross - cost_pct
     if n > 1:
         sd = float(x.std(ddof=1))
-        t = (gross - cost_bps) / (sd / np.sqrt(n)) if sd > 0 else float("nan")
+        t = (gross - cost_pct) / (sd / np.sqrt(n)) if sd > 0 else float("nan")
     else:
         t = float("nan")
     return {"n": n, "gross": gross, "net": net, "t": t}
@@ -383,7 +406,7 @@ def verdict_str(cell: dict) -> str:
 # ==========================================================================
 # section 1: BI-deep
 # ==========================================================================
-def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_bps=TAKER_COST_BPS) -> dict:
+def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_pct=TAKER_COST_PCT) -> dict:
     bin_idx = df["bin_idx"].to_numpy()
     mid = df["mid"].to_numpy(float)
     clock_mask = ((df["hour"].to_numpy() >= CLOCK_LO)
@@ -392,7 +415,7 @@ def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_bps=TAKER_COST_BPS) 
     conditions = [("all", all_mask), ("clock12:30-15:00", clock_mask)]
 
     signals = {
-        "imb_5bps": decile_labels(df["imb_5bps"].to_numpy(float)),
+        "imb_0p05pct": decile_labels(df["imb_0p05pct"].to_numpy(float)),
         "imb_top": decile_labels(df["imb_top"].to_numpy(float)),
     }
 
@@ -410,7 +433,7 @@ def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_bps=TAKER_COST_BPS) 
                 per_decile[k] = float(np.mean(fwd_bps[sel])) if sel.any() else float("nan")
             decile_tables[sig_name][h] = per_decile
 
-    deciles5 = signals["imb_5bps"]
+    deciles5 = signals["imb_0p05pct"]
     cells = []
     for cond_name, cmask in conditions:
         for h in horizons:
@@ -421,7 +444,7 @@ def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_bps=TAKER_COST_BPS) 
             long_sel = nonoverlap & (deciles5 == 10) & np.isfinite(fwd_bps)
             short_sel = nonoverlap & (deciles5 == 1) & np.isfinite(fwd_bps)
             pnl = np.concatenate([fwd_bps[long_sel], -fwd_bps[short_sel]])
-            stat = gross_and_t(pnl, cost_bps)
+            stat = gross_and_t(pnl, cost_pct)
             cells.append({"condition": cond_name, "h": h, **stat,
                           "n_long": int(long_sel.sum()), "n_short": int(short_sel.sum())})
 
@@ -430,20 +453,20 @@ def compute_bi(df: pd.DataFrame, horizons=BI_HORIZONS, cost_bps=TAKER_COST_BPS) 
 
 
 def print_bi(rep: Reporter, res: dict) -> None:
-    rep.header("1. BI-DEEP -- board imbalance taker (depth 5bps x clock window)")
-    rep.sub("decile-ordered forward mean, bps (monotonicity check) -- imb_5bps")
-    for h, table in res["decile_tables"]["imb_5bps"].items():
+    rep.header("1. BI-DEEP -- board imbalance taker (depth 0.05% of mid x clock window)")
+    rep.sub("decile-ordered forward mean, bps (monotonicity check) -- imb_0p05pct")
+    for h, table in res["decile_tables"]["imb_0p05pct"].items():
         row = f"  h={h:>3}s  " + "  ".join(f"d{k}:{table[k]:+6.2f}" for k in range(1, 11))
         rep.line(row)
     rep.sub("decile-ordered forward mean, bps -- top-of-book (imb_top, continuity with g)")
     for h, table in res["decile_tables"]["imb_top"].items():
         row = f"  h={h:>3}s  " + "  ".join(f"d{k}:{table[k]:+6.2f}" for k in range(1, 11))
         rep.line(row)
-    rep.sub("6 cells: decile10=long / decile1=short, net = gross - 5.8bps")
-    rep.line(f"{'condition':<24}{'h':>6}{'n':>8}{'gross(bps)':>12}{'net(bps)':>10}{'t':>7}  verdict")
+    rep.sub(f"6 cells: decile10=long / decile1=short, net = gross - {TAKER_COST_PCT}%")
+    rep.line(f"{'condition':<24}{'h':>6}{'n':>8}{'gross(%)':>12}{'net(%)':>10}{'t':>7}  verdict")
     for c in res["cells"]:
-        rep.line(f"{c['condition']:<24}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.3f}"
-                 f"{c['net']:>10.3f}{c['t']:>7.2f}  {verdict_str(c)}")
+        rep.line(f"{c['condition']:<24}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.5f}"
+                 f"{c['net']:>10.5f}{c['t']:>7.2f}  {verdict_str(c)}")
     rep.line("")
     if res["passed"]:
         rep.line("VERDICT: at least one BI-deep cell passes (net>0, t>=2.0) -> "
@@ -456,7 +479,7 @@ def print_bi(rep: Reporter, res: dict) -> None:
 # ==========================================================================
 # section 2: VR5
 # ==========================================================================
-def compute_vr(df: pd.DataFrame, holds=VR_HOLDS, cost_bps=TAKER_COST_BPS) -> dict:
+def compute_vr(df: pd.DataFrame, holds=VR_HOLDS, cost_pct=TAKER_COST_PCT) -> dict:
     bin_idx = df["bin_idx"].to_numpy()
     mid = df["mid"].to_numpy(float)
     n = len(df)
@@ -506,10 +529,10 @@ def compute_vr(df: pd.DataFrame, holds=VR_HOLDS, cost_bps=TAKER_COST_BPS) -> dic
         for regime_name, rmask in (("quiet(vr t1)", quiet_mask), ("turbulent(vr t3)", turbulent_mask)):
             sel = trigger & rmask
             kept = nonoverlap_mask(bin_idx, sel, stride)
-            stat = gross_and_t(pnl_all[kept], cost_bps)
+            stat = gross_and_t(pnl_all[kept], cost_pct)
             cells.append({"regime": regime_name, "h": h, **stat})
         kept_u = nonoverlap_mask(bin_idx, trigger, stride)
-        stat_u = gross_and_t(pnl_all[kept_u], cost_bps)
+        stat_u = gross_and_t(pnl_all[kept_u], cost_pct)
         unconditional.append({"regime": "unconditional", "h": h, **stat_u})
 
     # scale-prediction diagnostic: next-60s |displacement| by vr tercile
@@ -532,15 +555,15 @@ def compute_vr(df: pd.DataFrame, holds=VR_HOLDS, cost_bps=TAKER_COST_BPS) -> dic
 def print_vr(rep: Reporter, res: dict) -> None:
     rep.header("2. VR5 -- 5-second vr, quiet-mode contrarian")
     rep.line(f"total triggers (|30s displacement| >= {VR_TRIGGER_BPS} bps): {res['n_triggers']:,}")
-    rep.sub("4 cells: quiet/turbulent regime x hold, net = gross - 5.8bps")
-    rep.line(f"{'regime':<18}{'h':>6}{'n':>8}{'gross(bps)':>12}{'net(bps)':>10}{'t':>7}  verdict")
+    rep.sub(f"4 cells: quiet/turbulent regime x hold, net = gross - {TAKER_COST_PCT}%")
+    rep.line(f"{'regime':<18}{'h':>6}{'n':>8}{'gross(%)':>12}{'net(%)':>10}{'t':>7}  verdict")
     for c in res["cells"]:
-        rep.line(f"{c['regime']:<18}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.3f}"
-                 f"{c['net']:>10.3f}{c['t']:>7.2f}  {verdict_str(c)}")
+        rep.line(f"{c['regime']:<18}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.5f}"
+                 f"{c['net']:>10.5f}{c['t']:>7.2f}  {verdict_str(c)}")
     rep.sub("regime-unconditional, same cells")
     for c in res["unconditional"]:
-        rep.line(f"{c['regime']:<18}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.3f}"
-                 f"{c['net']:>10.3f}{c['t']:>7.2f}  {verdict_str(c)}")
+        rep.line(f"{c['regime']:<18}{c['h']:>5}s{c['n']:>8}{c['gross']:>12.5f}"
+                 f"{c['net']:>10.5f}{c['t']:>7.2f}  {verdict_str(c)}")
     rep.sub("scale prediction: mean |displacement over next 60s| by vr tercile")
     for t, s in res["scale_by_tercile"].items():
         rep.line(f"  tercile {t}  n={s['n']:>8,}  mean|next60s|={s['mean_abs_next60_bps']:.3f} bps")
@@ -635,10 +658,10 @@ def _window_features(idx_df: pd.DataFrame, t0_bin: int) -> np.ndarray | None:
     vsell = float(win["vol_sell"].sum(skipna=True))
     taker_imb = abs(vbuy - vsell) / (vbuy + vsell) if (vbuy + vsell) > 0 else float("nan")
 
-    avg_spread = float(win["spread_bps"].mean(skipna=True))
+    avg_spread = float(win["spread_pct"].mean(skipna=True))   # % of mid
 
-    depth_sum_win = (win["bid_depth_5bps"] + win["ask_depth_5bps"])
-    depth_sum_base = (base["bid_depth_5bps"] + base["ask_depth_5bps"])
+    depth_sum_win = (win["bid_depth_0p05pct"] + win["ask_depth_0p05pct"])
+    depth_sum_base = (base["bid_depth_0p05pct"] + base["ask_depth_0p05pct"])
     base_med = float(depth_sum_base.median(skipna=True))
     thinness = (float(depth_sum_win.mean(skipna=True)) / base_med
                if base_med and base_med > 0 else float("nan"))
@@ -726,7 +749,7 @@ def compute_tp(df: pd.DataFrame, seed=SEED) -> dict:
     burst, events = detect_burst_and_events(df)
     idx_df = df.set_index("bin_idx")[
         ["mid", "n_trades", "vol_buy", "vol_sell", "n_large", "vol_large",
-         "spread_bps", "bid_depth_5bps", "ask_depth_5bps", "n_board_updates",
+         "spread_pct", "bid_depth_0p05pct", "ask_depth_0p05pct", "n_board_updates",
          "valid"]
     ]
     # QC amendment rule 4: drop an event outright if any bin in its own
@@ -875,7 +898,7 @@ def compute_gmo(root: Path) -> dict:
             if m_before >= 0 and m_after >= 0:
                 m0 = 0.5 * (bid[m_before] + ask[m_before])
                 m5 = 0.5 * (bid[m_after] + ask[m_after])
-                caps.append((m0 - gbid[i]) / m0 * 1e4)
+                caps.append((m0 - gbid[i]) / m0 * 100)   # quote-to-mid distance, % (not a move)
                 advs.append((m5 - m0) / m0 * 1e4)
         if m_ask.any():
             n_ask_fill += 1
@@ -886,7 +909,7 @@ def compute_gmo(root: Path) -> dict:
             if m_before >= 0 and m_after >= 0:
                 m0 = 0.5 * (bid[m_before] + ask[m_before])
                 m5 = 0.5 * (bid[m_after] + ask[m_after])
-                caps.append((gask[i] - m0) / m0 * 1e4)
+                caps.append((gask[i] - m0) / m0 * 100)
                 advs.append(-(m5 - m0) / m0 * 1e4)
         if bid_fill_t is not None and ask_fill_t is not None:
             m_a = np.searchsorted(tks, min(bid_fill_t, ask_fill_t), "left") - 1
@@ -904,8 +927,9 @@ def compute_gmo(root: Path) -> dict:
     adverse5 = float(np.mean(advs)) if advs else float("nan")
     drift = float(np.mean(drifts)) if drifts else float("nan")
 
-    closed = np.isfinite(drift) and drift < 0 and abs(drift) > capture * 2
-    new_prereg = (np.isfinite(drift) and (capture * 2 - abs(drift)) >= 1.0)
+    # capture is in %, drift in bp (a move): drift / 100 puts both in %.
+    closed = np.isfinite(drift) and drift < 0 and abs(drift) / 100 > capture * 2
+    new_prereg = (np.isfinite(drift) and (capture * 2 - abs(drift) / 100) >= 0.01)
 
     return {
         "reached": True, "day_count": day_count, "dir": str(vdir),
@@ -928,14 +952,14 @@ def print_gmo(rep: Reporter, res: dict) -> None:
     rep.line(f"n_epochs={res['n_epochs']:,}  f_bid={res['f_bid']*100:.1f}%  "
              f"f_ask={res['f_ask']*100:.1f}%  "
              "(f is biased by polling coarseness -- reported, not corrected)")
-    rep.line(f"capture={res['capture']:+.3f} bps  adverse(5s)={res['adverse5']:+.3f} bps  "
+    rep.line(f"capture={res['capture']:+.5f} %  adverse(5s)={res['adverse5']:+.3f} bps  "
              f"drift={res['drift']:+.3f} bps (n_pairs={res['n_drift_pairs']})")
     rep.line("")
     if res["closed"]:
         rep.line("VERDICT: drift<0 and |drift|>capture*2 on GMO too -> "
                  "maker-line closure looks market-universal (monitoring mode continues).")
     elif res["new_prereg"]:
-        rep.line("VERDICT: capture*2 - |drift| >= +1.0bps -> file a new GMO-maker "
+        rep.line("VERDICT: capture*2 - |drift| >= +0.01% -> file a new GMO-maker "
                  "PREREG (not adoption).")
     else:
         rep.line("VERDICT: neither GMO decision bar met -- report numbers only.")
@@ -952,7 +976,7 @@ def main() -> int:
     root = Path(args.root)
 
     rep = Reporter()
-    rep.line(f"seed={SEED}  taker round-trip cost={TAKER_COST_BPS} bps  root={root}")
+    rep.line(f"seed={SEED}  taker round-trip cost={TAKER_COST_PCT} %  root={root}")
 
     series_path = find_series_path(root)
     if not series_path.exists():

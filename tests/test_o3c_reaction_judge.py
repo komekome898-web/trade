@@ -60,10 +60,10 @@ def _columns() -> list[str]:
         "kind", "day", "cascade_id", "side", "direction",
         "bin_pct",
         # 符号なしの大きさ(**実群にも対照にもある**。走行前の再監査(3 回目)の指摘 1)
-        "dist_node_bp", "dist_vwap_bp", "oi_dist_node_bp", "oi_dist_vwap_bp",
+        "dist_node_pct", "dist_vwap_pct", "oi_dist_node_pct", "oi_dist_vwap_pct",
         # 清算の向きに揃えた版(対照行では空)
-        "dist_node_bp_liqdir", "dist_vwap_bp_liqdir",
-        "oi_dist_node_bp_liqdir", "oi_dist_vwap_bp_liqdir", "implied_leverage",
+        "dist_node_pct_liqdir", "dist_vwap_pct_liqdir",
+        "oi_dist_node_pct_liqdir", "oi_dist_vwap_pct_liqdir", "implied_leverage",
         "bundle_n_events_dedup", "bundle_total_qty_accum",
         "doi_pre_1h", "doi_pre_4h", "doi_in",
         "reach_back_vwap_sec", "reach_back_node_sec",
@@ -80,20 +80,20 @@ def _columns() -> list[str]:
 
 # 対照行では空になる列(`scripts/o3c_reaction.py` の実装をなぞる)。
 # **符号なしの `dist_*` / `oi_dist_*` はここに入れない**(対照行にも値がある)。
-LIQ_ONLY = ("side", "dist_node_bp_liqdir", "dist_vwap_bp_liqdir",
-            "oi_dist_node_bp_liqdir", "oi_dist_vwap_bp_liqdir",
+LIQ_ONLY = ("side", "dist_node_pct_liqdir", "dist_vwap_pct_liqdir",
+            "oi_dist_node_pct_liqdir", "oi_dist_vwap_pct_liqdir",
             "implied_leverage", "bundle_n_events_dedup", "bundle_total_qty_accum")
 
 # 符号なしの大きさ -> 清算の向きに揃えた列(`o3c_oi_distance.LIQDIR_SOURCE` と同じ組)。
-UNSIGNED = {"dist_node_bp": "dist_node_bp_liqdir",
-            "dist_vwap_bp": "dist_vwap_bp_liqdir",
-            "oi_dist_node_bp": "oi_dist_node_bp_liqdir",
-            "oi_dist_vwap_bp": "oi_dist_vwap_bp_liqdir"}
+UNSIGNED = {"dist_node_pct": "dist_node_pct_liqdir",
+            "dist_vwap_pct": "dist_vwap_pct_liqdir",
+            "oi_dist_node_pct": "oi_dist_node_pct_liqdir",
+            "oi_dist_vwap_pct": "oi_dist_vwap_pct_liqdir"}
 
 
 def _unsigned(i: int) -> dict:
-    return {"dist_node_bp": float((i % 11) - 5), "dist_vwap_bp": float((i % 13) - 6),
-            "oi_dist_node_bp": float((i % 9) - 4), "oi_dist_vwap_bp": float((i % 17) - 8)}
+    return {"dist_node_pct": float((i % 11) - 5), "dist_vwap_pct": float((i % 13) - 6),
+            "oi_dist_node_pct": float((i % 9) - 4), "oi_dist_vwap_pct": float((i % 17) - 8)}
 
 
 def _row(kind, day, cid, side, d, i, reach, matched_liq_id="") -> dict:
@@ -109,7 +109,7 @@ def _row(kind, day, cid, side, d, i, reach, matched_liq_id="") -> dict:
     r.update(_unsigned(i))              # 符号なしの大きさは kind によらず入る
     if kind == "liq":
         s = judge.LIQ_SIGN[side]        # SELL +1 / BUY −1
-        r.update({dst: round(r[src] * s, 4) for src, dst in UNSIGNED.items()})
+        r.update({dst: round(r[src] * s, 6) for src, dst in UNSIGNED.items()})
         r.update({"implied_leverage": 1.0 + (i % 19),
                   "bundle_n_events_dedup": 1 + (i % 5),
                   "bundle_total_qty_accum": 10.0 + (i % 13)})
@@ -955,14 +955,14 @@ def test_the_partner_sign_axis_is_the_controls_own_value(tmp_path):
     """**決定 1'**: 対照自身の符号なしの大きさに、相手の側の符号を当てた値である。"""
     r8 = make_run(tmp_path / "r8", days=3, per_day=8, reach=reach_four_branches)
     run = judge.Run(judge.RUN_W8, r8)
-    got = run.matched_partner_sign_axis("dist_node_bp_liqdir")
+    got = run.matched_partner_sign_axis("dist_node_pct_liqdir")
     for i, (row, p) in enumerate(zip(run.by_kind["control_matched"],
                                      run.pair_of_matched)):
-        want = round(float(row["dist_node_bp"]) * judge.LIQ_SIGN[p["side"]], 4)
+        want = round(float(row["dist_node_pct"]) * judge.LIQ_SIGN[p["side"]], 6)
         assert got[i] == want
         # 相手の束の値そのものではない(= 受け継ぎではない)ことを 1 件で示す
-        if float(row["dist_node_bp"]) != float(p["dist_node_bp"]):
-            assert got[i] != float(p["dist_node_bp_liqdir"])
+        if float(row["dist_node_pct"]) != float(p["dist_node_pct"]):
+            assert got[i] != float(p["dist_node_pct_liqdir"])
 
 
 # ==========================================================================

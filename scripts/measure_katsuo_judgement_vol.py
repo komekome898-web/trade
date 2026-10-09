@@ -14,7 +14,7 @@ H2a(`use_invalid=False`)+ H3(`delay_signals`)、強さは **「弱い」だけ**
 (`--open-seal` + 環境変数 `K1_SEAL_APPROVAL=L-085`、`k1_source.resolve_range` 経由)。
 
 出すもの: 足ごとに 2017-2019 で決めた境目と、年(2017-2021)× 三分位(low/mid/high)の
-n・mean_bp・total_bp。
+n・mean_bp・total_pct(取引ごとのリターンの和 / 100 = %。L-920 の前は total_bp)。
 
     K1_SEAL_APPROVAL=L-085 PYTHONPATH=src:scripts python scripts/measure_katsuo_judgement_vol.py \
         --open-seal --out results/PHASE2/K1/judgement/vol_terciles_2017_2021.json
@@ -97,7 +97,7 @@ def bucket_of(v: float, edges) -> str | None:
 def per_year_tercile(all_trades, edges):
     out = {}
     for y in YEARS:
-        row = {name: {"n": 0, "mean_bp": None, "total_bp": 0.0} for name in ("low", "mid", "high")}
+        row = {name: {"n": 0, "mean_bp": None, "total_pct": 0.0} for name in ("low", "mid", "high")}
         buckets: dict[str, list[float]] = {"low": [], "mid": [], "high": []}
         for yy, r, v in all_trades:
             if yy != y:
@@ -109,7 +109,7 @@ def per_year_tercile(all_trades, edges):
             row[name] = {
                 "n": len(rs),
                 "mean_bp": round(sum(rs) / len(rs), 3) if rs else None,
-                "total_bp": round(sum(rs), 1) if rs else 0.0,
+                "total_pct": round(sum(rs) / 100, 3) if rs else 0.0,   # 和は % (L-920)
             }
         out[str(y)] = row
     return out

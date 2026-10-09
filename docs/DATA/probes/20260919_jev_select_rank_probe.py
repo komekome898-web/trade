@@ -21,7 +21,9 @@ Q1 = {k: {"type": "score", "instructions": f"How directly does `candidate_observ
 r1 = c.evaluate(S1, Q1)
 # 2) 対照で合わせるべき変数を「量が依存するか」で選ぶ(noul の同時送信)
 covariates = {
- "dist_vwap_bp": "distance in bp from the cascade price to the preceding W-hour VWAP at the moment of the cascade",
+ # L-920: the VWAP distance is two prices at the same moment, not a price move, so it is named and
+ # described in % (the 2026-09-19 run sent "dist_vwap_bp"/"in bp"; its saved answers keep that key).
+ "dist_vwap_pct": "distance in % from the cascade price to the preceding W-hour VWAP at the moment of the cascade",
  "bin_pct": "thinness of the price bin where the cascade occurred (share of volume in that bin)",
  "doi_pre_1h": "change in open interest over the hour before the cascade",
  "side": "whether the cascade liquidated longs or shorts",

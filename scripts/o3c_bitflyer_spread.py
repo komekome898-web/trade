@@ -10,13 +10,15 @@
     `data/tardis/bitflyer_FX_BTC_JPY_trades/FX_BTC_JPY_YYYYMM01.csv.gz`(16 標本日、
     **gitignore 域**)。列は `exchange,symbol,timestamp,local_timestamp,id,side,
     price,amount`(`timestamp` は取引所時刻のマイクロ秒)。
-  - **実効スプレッド** = 1 秒以内に隣り合う買い約定と売り約定の価格差 ÷ 中値(bp)。
+  - **実効スプレッド** = 1 秒以内に隣り合う買い約定と売り約定の価格差 ÷ 中値(%)。
+    (L-920・L-923 1.A: スプレッドは値動き率ではないので bp にしない。前は × 1e4 の bp。)
     「隣り合う」= 時刻順に並べた約定列で**連続する 2 件**(i, i+1)のうち向きが違い、
-    時刻差が 1 秒以内のもの。生の値は (買いの値段 − 売りの値段) ÷ 中値 × 1e4(符号付き。
+    時刻差が 1 秒以内のもの。生の値は (買いの値段 − 売りの値段) ÷ 中値 × 100(符号付き。
     相場が動いている間は負にもなる)。
   - **主の分位は絶対値で取る**(反証者レビュー9 D-1、リードの決定 2026-09-21)。
     板を叩いて払う費用は向きに依らず正なので、符号付きの中央値は費用を小さく見せる
-    (実測: 符号付き 1.7869 / 絶対値 1.9176 / 正の対だけ 2.2574)。
+    (実測: 符号付き 1.7869 / 絶対値 1.9176 / 正の対だけ 2.2574。この数は L-920 より前の bp。
+    L-920 の後の単位: 0.017869 / 0.019176 / 0.022574 %)。
     符号付きの中央値と正の対だけの中央値は**参考列**として同じ表に残す。
   - 標本日ごとに分布(p25 / p50 / p75 / p90、対の数)を **2 通り**で出す:
     (i) 全時刻、(ii) Binance の清算の直後(t₀ + 1〜5 秒)。
@@ -111,9 +113,9 @@ def load_tardis_day(path: Path) -> tuple:
 def effective_spread_pairs(t_ms: np.ndarray, price: np.ndarray, sgn: np.ndarray,
                            max_gap_ms: int = PAIR_MAX_GAP_MS) -> tuple:
     """時刻順の約定列から、連続する 2 件で向きが違い時刻差が `max_gap_ms` 以内の対を
-    すべて取り、(対の開始時刻 ms, 実効スプレッド bp) を返す。
+    すべて取り、(対の開始時刻 ms, 実効スプレッド %) を返す。
 
-    実効スプレッド = (買いの値段 − 売りの値段) ÷ 中値 × 1e4(符号付き)。"""
+    実効スプレッド = (買いの値段 − 売りの値段) ÷ 中値 × 100(符号付き、%。L-920 の前は × 1e4 の bp)。"""
     t_ms = np.asarray(t_ms, dtype=np.int64)
     price = np.asarray(price, dtype=float)
     sgn = np.asarray(sgn)
@@ -131,7 +133,7 @@ def effective_spread_pairs(t_ms: np.ndarray, price: np.ndarray, sgn: np.ndarray,
     p_sell = np.where(s0 > 0, p1, p0)
     mid = (p_buy + p_sell) / 2.0
     good = mid > 0
-    return t_ms[i][good], ((p_buy - p_sell) / mid * 1e4)[good]
+    return t_ms[i][good], ((p_buy - p_sell) / mid * 100)[good]
 
 
 def mask_post_liquidation(pair_ts: np.ndarray, liq_ts: np.ndarray,
@@ -182,8 +184,8 @@ def _dist_row(day: str, scope: str, vals: np.ndarray, half_label: str) -> dict:
     qs = quantiles(vals, [50]) if vals.size else [NAN]
     qp = quantiles(pos, [50]) if pos.size else [NAN]
     return {"標本日": day, "半期": half_label, "区分": scope, "対の数": int(vals.size),
-            "p25_bp": q[0], "p50_bp": q[1], "p75_bp": q[2], "p90_bp": q[3],
-            "参考_符号付きp50_bp": qs[0], "参考_正の対だけp50_bp": qp[0],
+            "p25_pct": q[0], "p50_pct": q[1], "p75_pct": q[2], "p90_pct": q[3],
+            "参考_符号付きp50_pct": qs[0], "参考_正の対だけp50_pct": qp[0],
             "負の対の割合": (float(np.mean(vals < 0)) if vals.size else NAN)}
 
 
@@ -204,14 +206,14 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
         day = day_of_path(p)
         t_ms, price, sgn = load_tardis_day(p)
         n_rows_read[day] = int(t_ms.size)
-        pair_ts, spread_bp = effective_spread_pairs(t_ms, price, sgn)
+        pair_ts, spread_pct = effective_spread_pairs(t_ms, price, sgn)
         liq = liq_by_day.get(day, np.zeros(0, dtype=np.int64))
         half_label = "/".join(halves_by_day.get(day, [])) or "(清算なし)"
         m_post = mask_post_liquidation(pair_ts, liq)
-        rows.append(_dist_row(day, SCOPE_ALL, spread_bp, half_label))
-        rows.append(_dist_row(day, SCOPE_POST_LIQ, spread_bp[m_post], half_label))
-        pool_all.append(spread_bp)
-        pool_post.append(spread_bp[m_post])
+        rows.append(_dist_row(day, SCOPE_ALL, spread_pct, half_label))
+        rows.append(_dist_row(day, SCOPE_POST_LIQ, spread_pct[m_post], half_label))
+        pool_all.append(spread_pct)
+        pool_post.append(spread_pct[m_post])
         print(f"  {day}: 約定 {t_ms.size} / 対 {pair_ts.size} / 清算直後の対 "
               f"{int(m_post.sum())}(清算 {liq.size} 件)", flush=True)
 
@@ -233,13 +235,13 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
           "- 入力(読むだけ): tardis 形式の約定(`data/tardis/`、gitignore 域)と "
           "`rows_continue.csv.gz` の `ts_ms`",
           f"- 対の作り方: 時刻順に連続する 2 件で向きが違い、時刻差 ≤ {PAIR_MAX_GAP_MS} ms。"
-          "値 = (買いの値段 − 売りの値段) ÷ 中値 × 1e4",
+          "値 = (買いの値段 − 売りの値段) ÷ 中値 × 100(%)",
           "- **p25 / p50 / p75 / p90 は絶対値の分位**(D-1)。符号付きと正の対だけの"
           "中央値は参考列",
           f"- 清算直後 = **どれかの**清算の [t₀+{POST_LIQ_LO_MS} ms, t₀+{POST_LIQ_HI_MS} ms] "
           "に入る対(D-2)",
-          f"- 主の c(清算直後のプールの絶対値の中央値) = {c_main:.4f} bp / "
-          f"絶対値の p75 = {c_p75:.4f} bp", "",
+          f"- 主の c(清算直後のプールの絶対値の中央値) = {c_main:.6f} % / "
+          f"絶対値の p75 = {c_p75:.6f} %", "",
           md_table(rows), ""]
     mdtxt = "\n".join(md)
     check_no_banned(mdtxt, "spread/tables.md")
@@ -255,11 +257,11 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
         "清算直後の窓_ms": [POST_LIQ_LO_MS, POST_LIQ_HI_MS],
         "全時刻の対の数(プール)": int(all_v.size),
         "清算直後の対の数(プール)": int(post_v.size),
-        "主のc_清算直後プールの絶対値の中央値_bp": c_main,
-        "併記_清算直後プールの絶対値のp75_bp": c_p75,
-        "参考_清算直後プールの符号付きの中央値_bp": (
+        "主のc_清算直後プールの絶対値の中央値_pct": c_main,
+        "併記_清算直後プールの絶対値のp75_pct": c_p75,
+        "参考_清算直後プールの符号付きの中央値_pct": (
             float(quantiles(post_v, [50])[0]) if post_v.size else NAN),
-        "参考_清算直後プールの正の対だけの中央値_bp": (
+        "参考_清算直後プールの正の対だけの中央値_pct": (
             float(quantiles(post_v[post_v > 0], [50])[0])
             if post_v[post_v > 0].size else NAN),
         "清算直後の窓の取り方": "どれかの清算の [t0+1s, t0+5s] に入る全部の対(D-2)",
@@ -282,7 +284,11 @@ def build_spread_table(out_dir: Path = DEFAULT_OUT, tardis_dir: Path = TARDIS_DI
 
 
 def read_cost(out_dir: Path = DEFAULT_OUT) -> tuple:
-    """`spread_by_day.csv` から主の c と p75 を読む(集計表だけを読む)。"""
+    """`spread_by_day.csv` から主の c と p75 を読む(集計表だけを読む)。返す単位は %。
+
+    L-920 より前に書いた表(git の `backtest_data/o3c_signal_value_20260921/spread/`)は
+    列 `p50_bp`・`p75_bp`(= 価格差 ÷ 中値 × 1e4)しか持たない。新しい列 `p50_pct`・
+    `p75_pct` が無ければ古い列を読んで / 100 して % にする。"""
     path = Path(out_dir) / "spread_by_day.csv"
     if not path.exists():
         raise SystemExit(
@@ -292,7 +298,10 @@ def read_cost(out_dir: Path = DEFAULT_OUT) -> tuple:
     pool = df[(df["標本日"] == POOL_LABEL) & (df["区分"] == SCOPE_POST_LIQ)]
     if pool.empty:
         raise SystemExit(f"[止め] {path} にプールの行が無い")
-    return float(pool["p50_bp"].iloc[0]), float(pool["p75_bp"].iloc[0])
+    if "p50_pct" in pool.columns:
+        return float(pool["p50_pct"].iloc[0]), float(pool["p75_pct"].iloc[0])
+    # 古い表: p50_bp・p75_bp(× 1e4)を / 100 して %
+    return float(pool["p50_bp"].iloc[0]) / 100, float(pool["p75_bp"].iloc[0]) / 100
 
 
 def main(argv=None) -> int:
@@ -301,7 +310,7 @@ def main(argv=None) -> int:
     ap.add_argument("--tardis-dir", type=Path, default=TARDIS_DIR)
     a = ap.parse_args(argv)
     res = build_spread_table(a.out, a.tardis_dir)
-    print(json.dumps({"主のc_bp": res["c_main"], "p75_bp": res["c_p75"],
+    print(json.dumps({"主のc_pct": res["c_main"], "p75_pct": res["c_p75"],
                       "行数": len(res["rows"])}, ensure_ascii=False), flush=True)
     return 0
 

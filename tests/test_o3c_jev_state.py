@@ -56,7 +56,7 @@ BANDS = {
     "notional": [10.0, 20.0, 30.0, 40.0],
     "chain_notional": [10.0, 20.0, 30.0, 40.0],
     "last10s_notional": [10.0, 20.0, 30.0, 40.0],
-    "oi_ahead_20bp": [10.0, 20.0, 30.0, 40.0],
+    "oi_ahead_0p2pct": [10.0, 20.0, 30.0, 40.0],
     "trade_count_60s": [10.0, 20.0, 30.0, 40.0],
     "vol_ratio_c4": [1.0, 2.0, 3.0, 4.0],
     "oi_slope_1h": [-20.0, -5.0, 5.0, 20.0],
@@ -67,12 +67,12 @@ BANDS = {
 def base_row(**overrides) -> dict:
     row = {
         "side": "SELL", "day": "2024-01-02", "ts_ms": 1_000_000,
-        "cand_1": 0.0, "cand_2": NAN, "cand_3": NAN, "cand_5p": NAN, "cand_6": 2.0,
+        "cand_1": 0.0, "cand_2": NAN, "cand_3": NAN, "cand_5p_pct": NAN, "cand_6": 2.0,
         "cand_A5": NAN, "cand_A6": NAN, "cand_A9_count": 0.0, "cand_C3": NAN,
         "cand_C4": NAN, "cand_R1": NAN, "cand_F3": NAN, "cand_F5": NAN,
         "cand_14": NAN,
         "mat3_notional_raw": 15.0, "mat1_elapsed_since_burst_s": NAN,
-        "mat8_amt_5bp": NAN, "mat8_amt_20bp": NAN, "mat8_covered": 0.0,
+        "mat8_amt_0p05pct": NAN, "mat8_amt_0p2pct": NAN, "mat8_covered": 0.0,
         "mat9_taker_imbalance_5s": NAN, "mat13_taker_imbalance_trend": NAN,
         "mat10_oi_slope_and_funding": NAN, "mat10_funding_rate": NAN,
     }
@@ -187,15 +187,15 @@ def test_sent10_pct_and_trend_and_unknown():
 def test_sent11_coverage_and_bands_and_prep_word():
     assert js._sent11(base_row(mat8_covered=0.0), BANDS) == (
         "Open interest below the current price: coverage unknown.")
-    row_none = base_row(side="BUY", mat8_covered=1.0, mat8_amt_20bp=0.0, mat8_amt_5bp=0.0, cand_5p=NAN)
+    row_none = base_row(side="BUY", mat8_covered=1.0, mat8_amt_0p2pct=0.0, mat8_amt_0p05pct=0.0, cand_5p_pct=NAN)
     assert js._sent11(row_none, BANDS) == (
-        "No open interest within 20 bp above the current price; within 5 bp: none "
+        "No open interest within 0.2 % above the current price; within 0.05 %: none "
         "(coverage: yes). Nearest liquidation level above: none within the mapped range.")
-    row_some = base_row(side="SELL", mat8_covered=1.0, mat8_amt_20bp=25.0, mat8_amt_5bp=1.0, cand_5p=-14.2)
+    row_some = base_row(side="SELL", mat8_covered=1.0, mat8_amt_0p2pct=25.0, mat8_amt_0p05pct=1.0, cand_5p_pct=-0.142)   # %(前の -14.2bp)
     got = js._sent11(row_some, BANDS)
-    assert got == ("Open interest among the middle fifth within 20 bp below the "
-                   "current price; within 5 bp: some (coverage: yes). Nearest "
-                   "liquidation level below: 14 bp away.")
+    assert got == ("Open interest among the middle fifth within 0.2 % below the "
+                   "current price; within 0.05 %: some (coverage: yes). Nearest "
+                   "liquidation level below: 0.14 % away.")
 
 
 def test_sent12_oi_trend_bands_and_funding_sign():
@@ -244,10 +244,10 @@ def build_synthetic_dataset(tmp_path: Path):
 
     prints_df = pd.DataFrame([
         {"kind": "print", "print_id": "p1", "day": day, "side": "BUY", "ts_ms": ts1,
-         "t0_ms": ts1, "p0": 100.0, "notional": 500_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts1, "p0": 100.0, "notional": 500_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": ""},
         {"kind": "print", "print_id": "p2", "day": day, "side": "BUY", "ts_ms": ts2,
-         "t0_ms": ts2, "p0": 101.0, "notional": 300_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts2, "p0": 101.0, "notional": 300_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": ""},
     ])
     rows_path = tmp_path / "rows_prints.csv.gz"
@@ -255,7 +255,7 @@ def build_synthetic_dataset(tmp_path: Path):
 
     def mat_row(pid, day, side, ts_ms, half, cand_1, extra_cand=None, extra_c=None):
         r = {"print_id": pid, "day": day, "side": side, "half": half, "ts_ms": ts_ms,
-            "cand_1": cand_1, "cand_2": NAN, "cand_3": NAN, "cand_5p": NAN,
+            "cand_1": cand_1, "cand_2": NAN, "cand_3": NAN, "cand_5p_pct": NAN,
             "cand_6": 0.0, "cand_8": NAN, "cand_9": NAN, "cand_10": NAN,
             "cand_11": NAN, "cand_12": NAN, "cand_13": NAN, "cand_14": 5.0,
             "cand_15": NAN, "cand_F3": NAN, "cand_F4": NAN, "cand_A3": NAN,
@@ -280,8 +280,8 @@ def build_synthetic_dataset(tmp_path: Path):
         r[sc.MAT_COL[6]] = "UTC 00–06"
         r["mat1_elapsed_since_burst_s"] = 0.0
         r["mat3_notional_raw"] = 1.0
-        r["mat8_amt_5bp"] = NAN
-        r["mat8_amt_20bp"] = NAN
+        r["mat8_amt_0p05pct"] = NAN
+        r["mat8_amt_0p2pct"] = NAN
         r["mat8_covered"] = 0.0
         r["mat10_funding_rate"] = 0.0
         return r
@@ -298,7 +298,7 @@ def _make_builder(tmp_path, times, prices):
     sb = js.StateBuilder(materials_path=materials_path, continue_path=continue_path,
                          rows_path=rows_path, data_root=tmp_path / "unused",
                          bands=js.compute_bands(pd.read_csv(materials_path).assign(
-                             mat3_notional_raw=1.0, mat8_amt_20bp=NAN, mat8_covered=0.0,
+                             mat3_notional_raw=1.0, mat8_amt_0p2pct=NAN, mat8_covered=0.0,
                              mat10_oi_slope_and_funding=1.0)))
     qtys = np.ones(times.size)
     maker = np.zeros(times.size, dtype=bool)
@@ -379,7 +379,7 @@ def test_compute_bands_ignores_second_half_values():
         "mat3_notional_raw": rng.normal(size=n) + 100,
         "cand_F3": rng.normal(size=n) + 100,
         "cand_F5": np.abs(rng.normal(size=n)) + 1,
-        "mat8_amt_20bp": np.abs(rng.normal(size=n)) + 1,
+        "mat8_amt_0p2pct": np.abs(rng.normal(size=n)) + 1,
         "mat8_covered": np.ones(n),
         "cand_14": rng.normal(size=n) + 100,
         "cand_C4": np.abs(rng.normal(size=n)) + 1,
@@ -390,7 +390,7 @@ def test_compute_bands_ignores_second_half_values():
     bands_a = js.compute_bands(fh_a)
 
     df2 = df.copy()
-    for c in ("mat3_notional_raw", "cand_F3", "cand_F5", "mat8_amt_20bp", "cand_14",
+    for c in ("mat3_notional_raw", "cand_F3", "cand_F5", "mat8_amt_0p2pct", "cand_14",
              "cand_C4", "mat10_oi_slope_and_funding", "cand_C3"):
         df2.loc[df2["half"] == "後半", c] = 999_999.0
     fh_b = df2[df2["half"] == "前半"]
@@ -422,7 +422,7 @@ def test_no_banned_words_in_source_or_sentences():
         base_row(side="SELL", cand_1=3.0, mat1_elapsed_since_burst_s=5.0, cand_F3=15.0,
                 mat3_notional_raw=25.0, cand_A5=1.0, cand_A6=2.0, cand_R1=1.0,
                 cand_C3=5.0, cand_C4=1.5, cand_14=15.0, mat8_covered=1.0,
-                mat8_amt_20bp=15.0, mat8_amt_5bp=1.0, cand_5p=-3.0,
+                mat8_amt_0p2pct=15.0, mat8_amt_0p05pct=1.0, cand_5p_pct=-0.03,
                 mat9_taker_imbalance_5s=0.3, mat13_taker_imbalance_trend=0.05,
                 mat10_oi_slope_and_funding=0.0, mat10_funding_rate=0.0),
         base_row(side="BUY", cand_1=0.0),
@@ -702,7 +702,7 @@ def _materials_bands_for(materials_path: Path) -> dict:
     """`_make_builder` と同じ穴埋め(continue 由来の列は合成データに無いので
     定数で埋めて `compute_bands` に通す)。"""
     return js.compute_bands(pd.read_csv(materials_path).assign(
-        mat3_notional_raw=1.0, mat8_amt_20bp=NAN, mat8_covered=0.0,
+        mat3_notional_raw=1.0, mat8_amt_0p2pct=NAN, mat8_covered=0.0,
         mat10_oi_slope_and_funding=1.0))
 
 
@@ -711,7 +711,7 @@ def test_state_builder_uses_bands_from_yaml_when_present(tmp_path):
     custom_bands = {"notional": [111.0, 222.0, 333.0, 444.0],
                     "chain_notional": [1.0, 2.0, 3.0, 4.0],
                     "last10s_notional": [1.0, 2.0, 3.0, 4.0],
-                    "oi_ahead_20bp": [1.0, 2.0, 3.0, 4.0],
+                    "oi_ahead_0p2pct": [1.0, 2.0, 3.0, 4.0],
                     "trade_count_60s": [1.0, 2.0, 3.0, 4.0],
                     "vol_ratio_c4": [1.0, 2.0, 3.0, 4.0],
                     "oi_slope_1h": [1.0, 2.0, 3.0, 4.0],

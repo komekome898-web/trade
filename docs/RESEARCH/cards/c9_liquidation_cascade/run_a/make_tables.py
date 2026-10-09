@@ -292,8 +292,10 @@ def tables(src: Path, ivdir: Path) -> str:
     IV = pd.read_csv(ivdir / "controls_iv.csv.gz", dtype={"day": str, "ref_id": str})
     RA = pd.read_csv(ivdir / "prints_reanchor.csv.gz", dtype={"day": str, "print_id": str})
     REP = pd.read_csv(ivdir / "ii_reproduction.csv.gz", dtype={"print_id": str})
-    CA = pd.read_csv(src / "policy_cascades.csv.gz", dtype={"day": str})
-    CA["incl"] = np.where(CA["entered"] == 1, CA["pnl_bp"], np.where(CA["missing"] == 1, np.nan, 0.0))
+    # L-920: 連鎖の損益(レグの和)は %(pnl_pct)。前の出力は pnl_bp(bp)なので / 100 して読む
+    CA = v2.with_legacy_columns(pd.read_csv(src / "policy_cascades.csv.gz", dtype={"day": str}),
+                                keep={"pnl_pct"})
+    CA["incl"] = np.where(CA["entered"] == 1, CA["pnl_pct"], np.where(CA["missing"] == 1, np.nan, 0.0))
     CA["per"] = CA["period"].map(PER)
     LG = pd.read_csv(src / "policy_legs.csv.gz", dtype={"day": str})
     TP = pd.read_csv(src / "three_way_probs.csv.gz", dtype={"day": str})
@@ -313,7 +315,8 @@ def tables(src: Path, ivdir: Path) -> str:
     GBN = pd.read_csv(dydir / "grid_band_noliq.csv")
     CZ5 = pd.read_csv(dydir / "ivh_unmatched_cause.csv.gz", dtype={"day": str, "print_id": str})
     dym = json.loads((dydir / "control_iv_days_meta.json").read_text(encoding="utf-8"))
-    CA3 = pd.read_csv(twdir / "policy_cascades_3m.csv.gz", dtype={"day": str})
+    CA3 = v2.with_legacy_columns(pd.read_csv(twdir / "policy_cascades_3m.csv.gz", dtype={"day": str}),
+                                 keep={"pnl_pct"})
     p3m = json.loads((twdir / "policy_3m_meta.json").read_text(encoding="utf-8"))
     G = {"実": P, "対照(i)": C[C["kind"] == "(i)無作為"], "対照(ii)": c2, "対照(iv)": IV, "対照(iv-h)": IVH}
 
@@ -355,12 +358,14 @@ def tables(src: Path, ivdir: Path) -> str:
     rows.append(("control_iv_days.py / three_way_m_policy.py の所要_秒", f'{dym["所要_秒"]} / {p3m["所要_秒"]}',
                  "control_iv_days_meta.json・policy_3m_meta.json"))
     rows.append(("新の 3 択の確率の、three_way_m.py との最大の差", p3m["確率の一致(three_way_m_probs との最大の差)"], "policy_3m_meta.json"))
-    OC = pd.read_csv(twdir / "policy_cascades_3m_oldcheck.csv.gz", dtype={"day": str})
-    RUNC = pd.read_csv(src / "policy_cascades.csv.gz", dtype={"day": str})
+    OC = v2.with_legacy_columns(pd.read_csv(twdir / "policy_cascades_3m_oldcheck.csv.gz",
+                                            dtype={"day": str}), keep={"pnl_pct"})
+    RUNC = v2.with_legacy_columns(pd.read_csv(src / "policy_cascades.csv.gz", dtype={"day": str}),
+                                  keep={"pnl_pct"})
     RUNC = RUNC[(RUNC["policy"] == "規則_3択") & RUNC["day"].isin(set(OC["day"]))]
     MC = OC.merge(RUNC, on=["bundle_id", "gap_s", "delay_s", "type"], suffixes=("_n", "_r"))
     rows.append(("three_way_m_policy.py を旧の 13 本で流した確かめ: 日 / 行 / 走らせの行 / 一致した組 / pnl の最大の差 / entered の違い",
-                 f'{OC["day"].nunique()} / {len(OC)} / {len(RUNC)} / {len(MC)} / {np.nanmax(np.abs(MC["pnl_bp_n"] - MC["pnl_bp_r"])):.3g} / {int((MC["entered_n"] != MC["entered_r"]).sum())}',
+                 f'{OC["day"].nunique()} / {len(OC)} / {len(RUNC)} / {len(MC)} / {np.nanmax(np.abs(MC["pnl_pct_n"] - MC["pnl_pct_r"])):.3g} / {int((MC["entered_n"] != MC["entered_r"]).sum())}',
                  "three_way_m_out/policy_cascades_3m_oldcheck.csv.gz と policy_cascades.csv.gz"))
     rows.append(("約定の欠けた日(窓の中)", ", ".join(meta["約定の欠けた日(窓の中)"]), "run_meta"))
     rows.append(("清算の zip が無く (iv) の候補から外した日", ", ".join(ivm["清算のzipが無く候補から外した日"]),
@@ -846,7 +851,7 @@ def tables(src: Path, ivdir: Path) -> str:
     B("t5b_scene", "`anchors_prints.csv.gz` の mat1(≥ 1 = 連鎖の中)・period・cont_60", pd.DataFrame(rows))
 
     # ---- t6 方策 ----
-    CA3["incl"] = np.where(CA3["entered"] == 1, CA3["pnl_bp"], np.where(CA3["missing"] == 1, np.nan, 0.0))
+    CA3["incl"] = np.where(CA3["entered"] == 1, CA3["pnl_pct"], np.where(CA3["missing"] == 1, np.nan, 0.0))
     CA3["per"] = CA3["period"].map(PER)
     CA = pd.concat([CA, CA3], ignore_index=True)
     order = {"全部順張り": 0, "全部逆張り": 1, "規則_材料1": 2, "規則_3択": 3, "規則_3択_新15本": 3.5, "完全な判断": 4}
@@ -865,14 +870,14 @@ def tables(src: Path, ivdir: Path) -> str:
       pd.DataFrame(pol_rows(s60)))
     rows = []
     for (pol, typ), g in sorted(s60[s60["entered"] == 1].groupby(["policy", "type"]), key=lambda kv: (order[kv[0][0]], kv[0][1])):
-        rows.append({"単位": "連鎖 1 本(入った連鎖だけ)", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"], g["day"]).items() if k in ST_SHORT})
+        rows.append({"単位": "連鎖 1 本(入った連鎖だけ)", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_pct"], g["day"]).items() if k in ST_SHORT})
     l60 = LG[(LG["gap_s"] == 60) & (LG["delay_s"] == 1) & (LG["period"] == "測る")]
     for (pol, typ), g in sorted(l60.groupby(["policy", "type"]), key=lambda kv: (order[kv[0][0]], kv[0][1])):
-        rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"], g["day"]).items() if k in ST_SHORT})
+        rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"] / 100, g["day"]).items() if k in ST_SHORT})   # 1 レグ bp → % で表の単位をそろえる(L-920)
     LG3 = pd.read_csv(twdir / "policy_legs_3m.csv.gz", dtype={"day": str})
     l3 = LG3[(LG3["gap_s"] == 60) & (LG3["delay_s"] == 1)]
     for (pol, typ), g in l3.groupby(["policy", "type"]):
-        rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"], g["day"]).items() if k in ST_SHORT})
+        rows.append({"単位": "1 レグ", "policy": pol, "type": typ} | {k: v for k, v in st(g["pnl_bp"] / 100, g["day"]).items() if k in ST_SHORT})   # 1 レグ bp → % で表の単位をそろえる(L-920)
     B("t6a_units", "同じ条件の、入った連鎖だけ(`policy_cascades`)と 1 レグ(`policy_legs.csv.gz`、新の 3 択は `three_way_m_out/policy_legs_3m.csv.gz`)", pd.DataFrame(rows))
     rows = []
     for (g_, d_), sub in CA[CA["period"] == "測る"].groupby(["gap_s", "delay_s"]):

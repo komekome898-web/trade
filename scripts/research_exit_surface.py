@@ -54,6 +54,10 @@ Pre-registered evaluation protocol (fixed before any run)
 Usage:  PYTHONPATH=src python scripts/research_exit_surface.py
 Idempotent, read-only, no network, writes nothing. Deterministic (the only
 randomness is the event-clustered bootstrap, seeded).
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図の 5 秒の動き・sigma_60・
+gross・TP の幅)にだけ使う。費用(taker 3.96 / 2.93bps = 0.0396 / 0.0293 %)と net(gross − 費用)・
+その平均・差・CI・台地の許し幅(2bps = 0.02 %)は % で持つ。費用は replay_scalp_storm の
+COST_BURST_PCT・COST_CALM_PCT(% の名前)を読む。)
 """
 from __future__ import annotations
 
@@ -73,8 +77,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from bot.radar import StormRadar  # noqa: E402
 from run_scalp_paper import RestingLimit  # noqa: E402
 from replay_scalp_storm import (  # noqa: E402
-    COST_BURST_BPS,
-    COST_CALM_BPS,
+    COST_BURST_PCT,
+    COST_CALM_PCT,
     describe,
 )
 # R5-S2 is imported (not copied) so the E2 incumbent this study compares
@@ -106,7 +110,7 @@ ADAPTIVE_LABEL = {
     "A3": "TP = k * sqrt(V60 / median V60),                 fb 120s",
 }
 
-PLATEAU_TOL_BPS = 2.0
+PLATEAU_TOL_PCT = 0.02         # % (2 bps in the prereg)
 EXIT_TYPES = ["tp", "fallback"]
 
 
@@ -285,12 +289,12 @@ def simulate(ev: Ev, spec: dict, run: Run, args, ctx: dict) -> None:
     def close(i: int, px: float, kind: str) -> None:
         nonlocal pos
         d = 1.0 if pos["side"] == "LONG" else -1.0
-        gross = (px - pos["entry_px"]) / pos["entry_px"] * 1e4 * d
-        cost = 0.0 if kind == "tp" else COST_BURST_BPS
+        gross = (px - pos["entry_px"]) / pos["entry_px"] * 1e4 * d   # move, bps
+        cost = 0.0 if kind == "tp" else COST_BURST_PCT               # %
         t = T(ev=ev.name, lib=ev.lib, half=ev.half, side=pos["side"],
               armed=bool(pos["armed"]), sig_idx=pos["sig_idx"],
               fill_idx=pos["fill_idx"], exit_idx=i, entry_px=pos["entry_px"],
-              exit_px=float(px), kind=kind, gross=gross, net=gross - cost,
+              exit_px=float(px), kind=kind, gross=gross, net=gross / 100 - cost,  # net %
               tp_used=pos["tp_used"], sigma=pos["sigma"], vol=pos["vol"],
               absret=abs(pos["ret_bps"]))
         run.trades.append(t)
@@ -390,7 +394,7 @@ def run_spec(events: list[Ev], spec: dict, args, ctx: dict) -> Run:
 # --------------------------------------------------------------------------- #
 def boot_ci(by_event: dict[str, list[T]] | list[list[float]], n: int = BOOT_N,
             seed: int = BOOT_SEED) -> dict | None:
-    """Event-clustered bootstrap of the mean net bps/trade.
+    """Event-clustered bootstrap of the mean net %/trade.
 
     Trades inside one window are not independent, so windows (not trades) are
     the resampling unit. Implemented as sum/count ratios over resampled
@@ -442,13 +446,13 @@ def paired_diff(run_a: Run, run_b: Run, filt=None) -> dict | None:
                 sig=bool(bs["lo"] > 0 or bs["hi"] < 0))
 
 
-def mean_of(trades: list[T], cost: float = COST_BURST_BPS) -> float:
+def mean_of(trades: list[T], cost: float = COST_BURST_PCT) -> float:
     if not trades:
         return float("nan")
-    if cost == COST_BURST_BPS:
+    if cost == COST_BURST_PCT:
         return float(np.mean([t.net for t in trades]))
-    return float(np.mean([t.gross - (0.0 if t.kind == "tp" else cost)
-                          for t in trades]))
+    return float(np.mean([t.gross / 100 - (0.0 if t.kind == "tp" else cost)
+                          for t in trades]))   # % (gross bps / 100, cost %)
 
 
 def sub(run: Run, **kw) -> list[T]:
@@ -509,12 +513,12 @@ def section_gate(events_storm: list[Ev], args, radar) -> bool:
     k_ref = [t.key() for t in r5_run.trades]
     k_mine = [t.key() for t in mine.trades]
     ok = k_ref == k_mine
-    dr = describe([t.net(COST_BURST_BPS) for t in r5_run.trades])
+    dr = describe([t.net(COST_BURST_PCT) for t in r5_run.trades])
     dm = describe([t.net for t in mine.trades])
     print(f"      R5-S2 E2 : trades={len(k_ref):>4}  signals={r5_run.signals:>4}  "
-          f"net mean={dr['mean']:+.4f} bps/trade")
+          f"net mean={dr['mean']:+.6f} %/trade")
     print(f"      R6 (10,120): trades={len(k_mine):>4}  signals={mine.signals:>4}  "
-          f"net mean={dm['mean']:+.4f} bps/trade")
+          f"net mean={dm['mean']:+.6f} %/trade")
     print(f"      [{'OK ' if ok else 'FAIL'}] trade-for-trade identity "
           f"(event, sig idx, fill idx, exit idx, exit type, gross)")
     print()
@@ -615,8 +619,8 @@ def main() -> int:
     print(f"                fill timeout {args.fill_timeout_sec:.0f}s, cooldown "
           f"{args.cooldown_sec:.0f}s from signal, continuation direction, "
           f"one position at a time")
-    print(f"costs        : maker entry 0 bps, maker TP exit 0 bps, taker exit "
-          f"{COST_BURST_BPS:.2f} bps (burst PRIMARY) / {COST_CALM_BPS:.2f} bps (calm)")
+    print(f"costs        : maker entry 0 %, maker TP exit 0 %, taker exit "
+          f"{COST_BURST_PCT:.4f} % (burst PRIMARY) / {COST_CALM_PCT:.4f} % (calm)")
     print(f"grid         : TP {GRID_TP} bps x fallback {GRID_FB} s = "
           f"{len(GRID_TP) * len(GRID_FB)} cells; incumbent E2 = "
           f"(TP {INCUMBENT[0]:.0f}, fb {INCUMBENT[1]}s)")
@@ -676,11 +680,11 @@ def main() -> int:
         d = describe([t.net for t in tr])
         be = {k: v for k, v in e2.by_event.items() if k in names}
         bs = boot_ci(be)
-        ci = f"[{bs['lo']:+.2f}, {bs['hi']:+.2f}]" if bs else "-"
+        ci = f"[{bs['lo']:+.4f}, {bs['hi']:+.4f}]" if bs else "-"
         tpr = 100.0 * sum(1 for t in tr if t.kind == "tp") / len(tr) if tr else float("nan")
-        print(f"  {tag:<22}{len(evs):>6}{len(tr):>8}{fmt(tpr,1,7)}{fmt(d['mean'],2,9)}"
-              f"{fmt(d['median'],2,9)}{fmt(d['sd'],2,8)}{fmt(d['win'],1,7)}"
-              f"{fmt(d['sum'],1,10)}{ci:>28}")
+        print(f"  {tag:<22}{len(evs):>6}{len(tr):>8}{fmt(tpr,1,7)}{fmt(d['mean'],4,9)}"
+              f"{fmt(d['median'],4,9)}{fmt(d['sd'],4,8)}{fmt(d['win'],1,7)}"
+              f"{fmt(d['sum'],3,10)}{ci:>28}")
     line()
     print()
     print("  1b. SIGNAL SUPPLY — the burst library adds far fewer trades than its window")
@@ -716,35 +720,35 @@ def main() -> int:
         r = taker[fb]
         d = describe([t.net for t in r.trades])
         bs = boot_ci(r.by_event)
-        print(f"      taker at fill+{fb:>3}s : n={d['n']:>4}  mean={d['mean']:+7.2f}  "
-              f"median={d['median']:+7.2f}  sd={d['sd']:7.2f}  win%={d['win']:5.1f}  "
-              f"halfA={mean_of([t for t in r.trades if t.half == 'A']):+6.2f} "
-              f"halfB={mean_of([t for t in r.trades if t.half == 'B']):+6.2f}  "
-              f"CI [{bs['lo']:+.2f}, {bs['hi']:+.2f}]")
+        print(f"      taker at fill+{fb:>3}s : n={d['n']:>4}  mean={d['mean']:+9.4f}  "
+              f"median={d['median']:+9.4f}  sd={d['sd']:7.4f}  win%={d['win']:5.1f}  "
+              f"halfA={mean_of([t for t in r.trades if t.half == 'A']):+8.4f} "
+              f"halfB={mean_of([t for t in r.trades if t.half == 'B']):+8.4f}  "
+              f"CI [{bs['lo']:+.4f}, {bs['hi']:+.4f}]")
     print()
-    print("  THE NOISE FLOOR. With sd ~ 10-25 bps and n ~ 120 trades, the naive standard")
-    print("  error of any one cell's mean is ~1-2.3 bps, and the event-clustered CIs")
-    print("  below are wider still. The pre-registered 2 bps plateau tolerance is")
+    print("  THE NOISE FLOOR. With sd ~ 0.10-0.25 % and n ~ 120 trades, the naive standard")
+    print("  error of any one cell's mean is ~0.01-0.023 %, and the event-clustered CIs")
+    print("  below are wider still. The pre-registered 0.02 % (2 bps) plateau tolerance is")
     print("  therefore about ONE standard error: differences of that size between")
     print("  neighbouring cells carry essentially no information.")
     print()
 
     # ------------------------------------------------------------------ #
     line("=")
-    print("2. THE FULL 24-CELL EXIT SURFACE  (115 windows, net bps/trade @ "
-          f"{COST_BURST_BPS:.2f} bps taker)")
+    print("2. THE FULL 24-CELL EXIT SURFACE  (115 windows, net %/trade @ "
+          f"{COST_BURST_PCT:.4f} % taker)")
     line("=")
-    matrix("2a. COMBINED net mean bps/trade   (* = incumbent E2)",
-           stats, lambda s: s["mean"])
+    matrix("2a. COMBINED net mean %/trade   (* = incumbent E2)",
+           stats, lambda s: s["mean"], width=10, nd=4)
     matrix("2b. trades n", stats, lambda s: float(s["n"]), nd=0)
-    matrix("2c. half A net mean bps/trade (first 58 windows)",
-           stats, lambda s: s["mA"])
-    matrix("2d. half B net mean bps/trade (last 57 windows)",
-           stats, lambda s: s["mB"])
+    matrix("2c. half A net mean %/trade (first 58 windows)",
+           stats, lambda s: s["mA"], width=10, nd=4)
+    matrix("2d. half B net mean %/trade (last 57 windows)",
+           stats, lambda s: s["mB"], width=10, nd=4)
     matrix("2e. maker-TP fill rate, % of trades", stats, lambda s: s["tp_rate"], nd=1)
     matrix("2f. mean hold, seconds", stats, lambda s: s["hold"], nd=1)
-    matrix("2g. event-clustered bootstrap CI midpoint, bps",
-           stats, lambda s: s["ci_mid"])
+    matrix("2g. event-clustered bootstrap CI midpoint, %",
+           stats, lambda s: s["ci_mid"], width=10, nd=4)
     print("  Read 2a as a surface, not a leaderboard: the question is whether the high")
     print("  ground is a RIDGE (neighbours agree) or a SPIKE (one lucky cell).")
     print()
@@ -761,29 +765,29 @@ def main() -> int:
     ranked = sorted(stats.items(), key=lambda kv: -kv[1]["mean"])
     for (tp, fb), s in ranked:
         tag = f"TP{tp:g}/fb{fb}" + (" *" if (tp, fb) == INCUMBENT else "")
-        ci = f"[{s['ci_lo']:+.2f}, {s['ci_hi']:+.2f}]"
+        ci = f"[{s['ci_lo']:+.4f}, {s['ci_hi']:+.4f}]"
         se = s["sd"] / math.sqrt(s["n"]) if s["n"] else float("nan")
         pd_ = paired_diff(cells[(tp, fb)], e2)
         ptxt = ("  (incumbent)" if (tp, fb) == INCUMBENT else
-                (f"  {pd_['mean']:+6.2f} [{pd_['lo']:+.2f},{pd_['hi']:+.2f}] n={pd_['n']}"
+                (f"  {pd_['mean']:+8.4f} [{pd_['lo']:+.4f},{pd_['hi']:+.4f}] n={pd_['n']}"
                  + ("  SIG" if pd_["sig"] else "") if pd_ else "  -"))
-        print(f"  {tag:<12}{s['n']:>6}{fmt(s['mean'],2,9)}{fmt(se,2,7)}"
-              f"{fmt(trim10(cells[(tp, fb)]),2,8)}{fmt(s['median'],2,9)}"
-              f"{fmt(s['sd'],2,8)}{fmt(s['win'],1,7)}{fmt(s['tp_rate'],1,7)}"
-              f"{fmt(s['mA'],2,9)}{fmt(s['mB'],2,9)}{ci:>26}{fmt(s['p_pos'],3,8)}{ptxt}")
+        print(f"  {tag:<12}{s['n']:>6}{fmt(s['mean'],4,9)}{fmt(se,4,7)}"
+              f"{fmt(trim10(cells[(tp, fb)]),4,8)}{fmt(s['median'],4,9)}"
+              f"{fmt(s['sd'],4,8)}{fmt(s['win'],1,7)}{fmt(s['tp_rate'],1,7)}"
+              f"{fmt(s['mA'],4,9)}{fmt(s['mB'],4,9)}{ci:>26}{fmt(s['p_pos'],3,8)}{ptxt}")
     line()
     for fb in GRID_FB:
         r = taker[fb]
         s = cellstats(r)
         pd_ = paired_diff(r, e2)
-        ptxt = (f"  {pd_['mean']:+6.2f} [{pd_['lo']:+.2f},{pd_['hi']:+.2f}] n={pd_['n']}"
+        ptxt = (f"  {pd_['mean']:+8.4f} [{pd_['lo']:+.4f},{pd_['hi']:+.4f}] n={pd_['n']}"
                 + ("  SIG" if pd_["sig"] else "")) if pd_ else "  -"
         se = s["sd"] / math.sqrt(s["n"]) if s["n"] else float("nan")
-        print(f"  {'TPinf/fb' + str(fb):<12}{s['n']:>6}{fmt(s['mean'],2,9)}{fmt(se,2,7)}"
-              f"{fmt(trim10(r),2,8)}"
-              f"{fmt(s['median'],2,9)}{fmt(s['sd'],2,8)}{fmt(s['win'],1,7)}"
-              f"{fmt(s['tp_rate'],1,7)}{fmt(s['mA'],2,9)}{fmt(s['mB'],2,9)}"
-              f"{'[%+.2f, %+.2f]' % (s['ci_lo'], s['ci_hi']):>26}"
+        print(f"  {'TPinf/fb' + str(fb):<12}{s['n']:>6}{fmt(s['mean'],4,9)}{fmt(se,4,7)}"
+              f"{fmt(trim10(r),4,8)}"
+              f"{fmt(s['median'],4,9)}{fmt(s['sd'],4,8)}{fmt(s['win'],1,7)}"
+              f"{fmt(s['tp_rate'],1,7)}{fmt(s['mA'],4,9)}{fmt(s['mB'],4,9)}"
+              f"{'[%+.4f, %+.4f]' % (s['ci_lo'], s['ci_hi']):>26}"
               f"{fmt(s['p_pos'],3,8)}{ptxt}")
     line()
     print("  The four TPinf rows are NOT grid cells: they are the no-maker-TP limit of")
@@ -805,7 +809,7 @@ def main() -> int:
     rho = float(np.corrcoef(dm, dt)[0, 1])
     print(f"  ...but by 10% TRIMMED mean the order changes: best trimmed cell is "
           f"TP{by_trim[0][0]:g}/fb{by_trim[0][1]} "
-          f"({trim10(cells[by_trim[0]]):+.2f}), the mean-winner "
+          f"({trim10(cells[by_trim[0]]):+.4f}), the mean-winner "
           f"TP{keys24[0][0]:g}/fb{keys24[0][1]} falls to rank "
           f"{rk_trim[keys24[0]] + 1}, and E2 to rank {rk_trim[INCUMBENT] + 1}.")
     print(f"  Rank correlation between the two orderings = {rho:+.2f}: the broad shape of")
@@ -831,19 +835,19 @@ def main() -> int:
             clamped = (100.0 * float(np.mean((tps <= TP_CLAMP[0] + 1e-9)
                                              | (tps >= TP_CLAMP[1] - 1e-9)))
                        if tps.size else float("nan"))
-            ci = f"[{s['ci_lo']:+.2f}, {s['ci_hi']:+.2f}]"
+            ci = f"[{s['ci_lo']:+.4f}, {s['ci_hi']:+.4f}]"
             print(f"  {k:>7g}{s['n']:>6}"
                   f"{fmt(np.median(tps) if tps.size else np.nan,1,8)}"
                   f"{fmt(np.percentile(tps,10) if tps.size else np.nan,1,8)}"
                   f"{fmt(np.percentile(tps,90) if tps.size else np.nan,1,8)}"
-                  f"{fmt(clamped,1,8)}{fmt(s['mean'],2,9)}{fmt(s['median'],2,9)}"
-                  f"{fmt(s['tp_rate'],1,7)}{fmt(s['mA'],2,9)}{fmt(s['mB'],2,9)}{ci:>26}")
+                  f"{fmt(clamped,1,8)}{fmt(s['mean'],4,9)}{fmt(s['median'],4,9)}"
+                  f"{fmt(s['tp_rate'],1,7)}{fmt(s['mA'],4,9)}{fmt(s['mB'],4,9)}{ci:>26}")
         best_k = max(ks, key=lambda k: astats[(rule, k)]["mean"])
         bs = astats[(rule, best_k)]
         line()
-        print(f"  best k for {rule}: k={best_k:g}  combined mean {bs['mean']:+.2f} "
-              f"(A {bs['mA']:+.2f} / B {bs['mB']:+.2f}), E2 = {inc['mean']:+.2f} "
-              f"(A {inc['mA']:+.2f} / B {inc['mB']:+.2f})")
+        print(f"  best k for {rule}: k={best_k:g}  combined mean {bs['mean']:+.4f} "
+              f"(A {bs['mA']:+.4f} / B {bs['mB']:+.4f}), E2 = {inc['mean']:+.4f} "
+              f"(A {inc['mA']:+.4f} / B {inc['mB']:+.4f})")
         nfeat = sum(adapt[(rule, k)].feature_nan for k in ks)
         print(f"  trades whose feature was undefined (window edge) and fell back to "
               f"TP=10 bps: {nfeat} across the sweep")
@@ -853,8 +857,8 @@ def main() -> int:
             print(f"  has only ONE neighbour to check. Section 3b probes past the edge.")
         pdif = paired_diff(adapt[(rule, best_k)], e2)
         if pdif:
-            print(f"  paired vs E2 on shared signals: {pdif['mean']:+.2f} bps "
-                  f"[{pdif['lo']:+.2f}, {pdif['hi']:+.2f}] over n={pdif['n']} shared "
+            print(f"  paired vs E2 on shared signals: {pdif['mean']:+.4f} % "
+                  f"[{pdif['lo']:+.4f}, {pdif['hi']:+.4f}] over n={pdif['n']} shared "
                   f"signals in {pdif['n_ev']} windows "
                   f"-> {'SIGNIFICANT' if pdif['sig'] else 'not distinguishable from 0'}")
         print()
@@ -896,10 +900,10 @@ def main() -> int:
         means = np.array(means)
         real = astats[(rule, bk)]["mean"]
         pdd = paired_diff(base, cells[(30.0, 120)])
-        ptxt = (f"{pdd['mean']:+.2f} [{pdd['lo']:+.2f},{pdd['hi']:+.2f}] n={pdd['n']}"
+        ptxt = (f"{pdd['mean']:+.4f} [{pdd['lo']:+.4f},{pdd['hi']:+.4f}] n={pdd['n']}"
                 + ("  SIG" if pdd["sig"] else "")) if pdd else "-"
-        print(f"  {rule:<8}{bk:>5g}{real:>8.2f}{means.mean():>10.2f}{means.std(ddof=1):>7.2f}"
-              f"{means.min():>7.2f}{means.max():>7.2f}"
+        print(f"  {rule:<8}{bk:>5g}{real:>8.4f}{means.mean():>10.4f}{means.std(ddof=1):>7.4f}"
+              f"{means.min():>7.4f}{means.max():>7.4f}"
               f"{100.0 * float((means >= real).mean()):>7.0f}%{np.mean(offmap):>10.1f}"
               f"   {ptxt:<34}")
     line()
@@ -929,8 +933,8 @@ def main() -> int:
             tps = np.array([t.tp_used for t in r.trades], dtype=float)
             clamped = 100.0 * float(np.mean(tps >= TP_CLAMP[1] - 1e-9)) if tps.size else np.nan
             print(f"  {rule:<8}{k:>7g}{s['n']:>6}{fmt(np.median(tps),1,8)}"
-                  f"{fmt(clamped,1,8)}{fmt(s['tp_rate'],1,7)}{fmt(s['mean'],2,9)}"
-                  f"{fmt(s['mA'],2,9)}{fmt(s['mB'],2,9)}")
+                  f"{fmt(clamped,1,8)}{fmt(s['tp_rate'],1,7)}{fmt(s['mean'],4,9)}"
+                  f"{fmt(s['mA'],4,9)}{fmt(s['mB'],4,9)}")
     line()
     print()
 
@@ -965,9 +969,9 @@ def main() -> int:
     pool.sort(key=lambda x: -x[1]["mean"])
     print(f"  candidate pool = 24 fixed cells + the best k of each adaptive rule "
           f"({len(pool)} candidates)")
-    print(f"  incumbent E2 (TP10/fb120): combined {inc['mean']:+.2f}  "
-          f"A {inc['mA']:+.2f} (n={inc['nA']})  B {inc['mB']:+.2f} (n={inc['nB']})  "
-          f"CI mid {inc['ci_mid']:+.2f}")
+    print(f"  incumbent E2 (TP10/fb120): combined {inc['mean']:+.4f}  "
+          f"A {inc['mA']:+.4f} (n={inc['nA']})  B {inc['mB']:+.4f} (n={inc['nB']})  "
+          f"CI mid {inc['ci_mid']:+.4f}")
     print()
     print("  The pre-registered decision rule names ONE candidate — the winner by")
     print("  combined mean — and asks whether it clears (a), (b) and (c). Everything")
@@ -984,7 +988,7 @@ def main() -> int:
         a_ok = s["mA"] > inc["mA"] and s["mB"] > inc["mB"]
         nb = neighbours(key)
         worst = max((abs(s["mean"] - m) for _, m in nb), default=0.0)
-        return a_ok, (worst <= PLATEAU_TOL_BPS), (s["ci_mid"] > inc["ci_mid"]), nb, worst
+        return a_ok, (worst <= PLATEAU_TOL_PCT), (s["ci_mid"] > inc["ci_mid"]), nb, worst
 
     passers = []
     for rank, (key, s, tag) in enumerate(pool[:8], start=1):
@@ -995,9 +999,9 @@ def main() -> int:
         edge = ""
         if isinstance(key[0], str) and key[0] in K_GRID and key[1] == K_GRID[key[0]][-1]:
             edge = " EDGE"
-        nbtxt = f"max |d| {worst:.2f} over {len(nb)} nb{edge}"
-        print(f"  {rank:>5}  {tag:<14}{fmt(s['mean'],2,8)}{fmt(s['mA'],2,8)}"
-              f"{fmt(s['mB'],2,8)}{fmt(s['ci_mid'],2,8)}   "
+        nbtxt = f"max |d| {worst:.4f} over {len(nb)} nb{edge}"
+        print(f"  {rank:>5}  {tag:<14}{fmt(s['mean'],4,8)}{fmt(s['mA'],4,8)}"
+              f"{fmt(s['mB'],4,8)}{fmt(s['ci_mid'],4,8)}   "
               f"{('YES' if a_ok else 'no'):<13}"
               f"{(('YES  ' if b_ok else 'no   ') + nbtxt):<35}"
               f"{('YES' if c_ok else 'no'):<11}"
@@ -1006,24 +1010,24 @@ def main() -> int:
     win_key, win_s, win_tag = pool[0]
     a_ok, b_ok, c_ok, nb, worst = legs(win_key, win_s)
     print(f"  THE WINNER (top combined mean): {win_tag}  "
-          f"{win_s['mean']:+.2f} bps/trade over n={win_s['n']} trades")
-    print(f"    (a) beats E2 on half A ({win_s['mA']:+.2f} vs {inc['mA']:+.2f}) AND "
-          f"half B ({win_s['mB']:+.2f} vs {inc['mB']:+.2f})  -> "
+          f"{win_s['mean']:+.4f} %/trade over n={win_s['n']} trades")
+    print(f"    (a) beats E2 on half A ({win_s['mA']:+.4f} vs {inc['mA']:+.4f}) AND "
+          f"half B ({win_s['mB']:+.4f} vs {inc['mB']:+.4f})  -> "
           f"{'PASS' if a_ok else 'FAIL'}")
-    print(f"    (b) plateau, every neighbour within {PLATEAU_TOL_BPS:.0f} bps:")
+    print(f"    (b) plateau, every neighbour within {PLATEAU_TOL_PCT:.2f} %:")
     for name, m in nb:
-        print(f"          {name:<16} mean {m:+7.2f}   |diff| {abs(win_s['mean'] - m):5.2f} bps"
-              f"  {'within tol' if abs(win_s['mean'] - m) <= PLATEAU_TOL_BPS else 'OUTSIDE tol'}")
-    print(f"        -> {'PASS' if b_ok else 'FAIL'} (worst neighbour gap {worst:.2f} bps)")
+        print(f"          {name:<16} mean {m:+9.4f}   |diff| {abs(win_s['mean'] - m):7.4f} %"
+              f"  {'within tol' if abs(win_s['mean'] - m) <= PLATEAU_TOL_PCT else 'OUTSIDE tol'}")
+    print(f"        -> {'PASS' if b_ok else 'FAIL'} (worst neighbour gap {worst:.4f} %)")
     print(f"    (c) improves the combined bootstrap CI midpoint "
-          f"({win_s['ci_mid']:+.2f} vs E2 {inc['ci_mid']:+.2f}) -> "
+          f"({win_s['ci_mid']:+.4f} vs E2 {inc['ci_mid']:+.4f}) -> "
           f"{'PASS' if c_ok else 'FAIL'}")
     win_run = cells[win_key] if win_key in cells else adapt[win_key]
     pdw = paired_diff(win_run, e2)
     if pdw:
         print(f"    paired vs E2 on the {pdw['n']} signals both traded "
-              f"({pdw['n_ev']} windows): {pdw['mean']:+.2f} bps "
-              f"[{pdw['lo']:+.2f}, {pdw['hi']:+.2f}] -> "
+              f"({pdw['n_ev']} windows): {pdw['mean']:+.4f} % "
+              f"[{pdw['lo']:+.4f}, {pdw['hi']:+.4f}] -> "
               f"{'SIGNIFICANT' if pdw['sig'] else 'NOT distinguishable from zero'} "
               f"(not part of the pre-registered bar; shown because it is the sharpest "
               f"available comparison)")
@@ -1044,22 +1048,22 @@ def main() -> int:
         print("  candidates screened a three-leg filter passes by chance more often than")
         print("  its face value suggests.")
     print()
-    print(f"  calm-cost sensitivity ({COST_CALM_BPS:.2f} bps per taker leg):")
+    print(f"  calm-cost sensitivity ({COST_CALM_PCT:.4f} % per taker leg):")
     for key, s, tag in [(INCUMBENT, inc, "TP10/fb120 (E2)")] + [pool[0]]:
         r = cells[key] if key in cells else adapt[key]
-        print(f"      {tag:<20} burst {mean_of(r.trades, COST_BURST_BPS):+7.2f}   "
-              f"calm {mean_of(r.trades, COST_CALM_BPS):+7.2f}")
+        print(f"      {tag:<20} burst {mean_of(r.trades, COST_BURST_PCT):+9.4f}   "
+              f"calm {mean_of(r.trades, COST_CALM_PCT):+9.4f}")
     print()
 
     line("=")
     print("4b. TAIL DEPENDENCE — how much of each headline mean is three trades?")
     line("=")
-    print("  A mean built from a distribution with sd ~ 20 bps over ~120 trades is only")
+    print("  A mean built from a distribution with sd ~ 0.2 % over ~120 trades is only")
     print("  as trustworthy as its tails. If cutting the three best trades collapses a")
     print("  candidate's advantage, the surface is ranking luck, not exit design.")
     print()
     print(f"  {'variant':<16}{'n':>5}{'mean':>8}{'trim10':>9}{'median':>9}"
-          f"{'top-3 bps':>11}{'of total':>10}{'share':>8}{'mean w/o top-3':>16}")
+          f"{'top-3 %':>11}{'of total':>10}{'share':>8}{'mean w/o top-3':>16}")
     line()
     tail_set = [(INCUMBENT, "TP10/fb120 (E2)"), ((30.0, 120), "TP30/fb120"),
                 ((8.0, 120), "TP8/fb120")]
@@ -1072,10 +1076,10 @@ def main() -> int:
         tot, top3 = a.sum(), a[-3:].sum()
         kk = int(a.size * 0.10)
         trim = a[kk:a.size - kk].mean() if a.size - 2 * kk > 0 else float("nan")
-        print(f"  {tag:<16}{a.size:>5}{a.mean():>8.2f}{trim:>9.2f}{np.median(a):>9.2f}"
-              f"{top3:>11.1f}{tot:>10.1f}"
+        print(f"  {tag:<16}{a.size:>5}{a.mean():>8.4f}{trim:>9.4f}{np.median(a):>9.4f}"
+              f"{top3:>11.3f}{tot:>10.3f}"
               f"{('n/a' if tot == 0 else f'{100 * top3 / tot:.0f}%'):>8}"
-              f"{(tot - top3) / max(a.size - 3, 1):>16.2f}")
+              f"{(tot - top3) / max(a.size - 3, 1):>16.4f}")
     line()
     print("  The 10% trimmed mean and the 'mean w/o top-3' column are the ones to read")
     print("  before acting on any ranking above.")
@@ -1114,18 +1118,18 @@ def main() -> int:
                 means[tp] = mean_of(tr)
                 ns[tp] = len(tr)
                 runs_b[tp] = tr
-                row += f"{fmt(means[tp],2,7)}({ns[tp]:>3})"
+                row += f"{fmt(means[tp],4,7)}({ns[tp]:>3})"
             best = max(GRID_TP, key=lambda tp: (means[tp] if np.isfinite(means[tp])
                                                 else -1e9))
             byev: dict[str, list[float]] = {}
             for t in runs_b[best]:
                 byev.setdefault(t.ev, []).append(t.net)
             bs = boot_ci(list(byev.values()))
-            ci = f"[{bs['lo']:+.2f}, {bs['hi']:+.2f}]" if bs else "-"
-            row += f"{best:>10g}{ns[best]:>9}{ci:>26}{fmt(means[10.0],2,17)}"
+            ci = f"[{bs['lo']:+.4f}, {bs['hi']:+.4f}]" if bs else "-"
+            row += f"{best:>10g}{ns[best]:>9}{ci:>26}{fmt(means[10.0],4,17)}"
             print(row)
         line()
-        print("  Each cell shows mean net bps (n trades). The unpaired means above mix in")
+        print("  Each cell shows mean net % (n trades). The unpaired means above mix in")
         print("  different trade sets, so the test below is PAIRED: within a bucket, only")
         print("  signals that BOTH the candidate TP and E2 traded are used, and the mean")
         print("  of the per-trade DIFFERENCE is bootstrapped over windows. This is the")
@@ -1146,9 +1150,9 @@ def main() -> int:
             if pdb_ is None:
                 print(f"  {bname:<8}{best:>9g}{'-':>10}")
                 continue
-            ci = "[%+.2f, %+.2f]" % (pdb_["lo"], pdb_["hi"])
+            ci = "[%+.4f, %+.4f]" % (pdb_["lo"], pdb_["hi"])
             print(f"  {bname:<8}{best:>9g}{pdb_['n']:>10}{pdb_['n_ev']:>9}"
-                  f"{pdb_['mean']:>+20.2f}{ci:>28}"
+                  f"{pdb_['mean']:>+20.4f}{ci:>28}"
                   f"{('YES' if pdb_['sig'] else 'no'):>13}")
         line()
         print("  Same paired test for EVERY TP against E2 inside each bucket (a bucket-")
@@ -1163,7 +1167,7 @@ def main() -> int:
                 if p is None:
                     row += f"{'-':>13}"
                 else:
-                    row += f"{p['mean']:>+10.2f}{'*' if p['sig'] else ' '}  "
+                    row += f"{p['mean']:>+10.4f}{'*' if p['sig'] else ' '}  "
             print(row)
         line()
         print("  (* = event-clustered 95% CI of the paired difference excludes zero.)")
@@ -1188,11 +1192,11 @@ def main() -> int:
               f"({'the optimum MOVES OUT with the feature' if moved else 'no monotone move'})")
         print(f"    but the high bucket rests on very few clusters: its best-TP-vs-E2")
         print(f"    paired difference is "
-              f"{('%+.2f' % hi_pd['mean']) if hi_pd else '-'} bps over "
+              f"{('%+.4f' % hi_pd['mean']) if hi_pd else '-'} % over "
               f"{hi_pd['n'] if hi_pd else 0} shared signals in only "
               f"{hi_pd['n_ev'] if hi_pd else 0} windows "
               f"({'CI excludes 0' if hi_pd and hi_pd['sig'] else 'CI includes 0'}),")
-        print(f"    against {('%+.2f' % lo_pd['mean']) if lo_pd else '-'} bps over "
+        print(f"    against {('%+.4f' % lo_pd['mean']) if lo_pd else '-'} % over "
               f"{lo_pd['n_ev'] if lo_pd else 0} windows in the low bucket "
               f"({'CI excludes 0' if lo_pd and lo_pd['sig'] else 'CI includes 0'}).")
         print("    An event-clustered bootstrap over that few clusters cannot separate a")
@@ -1218,12 +1222,12 @@ def main() -> int:
             tr = [t for t in r.trades if t.ev in names]
             d = describe([t.net for t in tr])
             bs = boot_ci({k: v for k, v in r.by_event.items() if k in names})
-            ci = f"[{bs['lo']:+.2f}, {bs['hi']:+.2f}]" if bs else "-"
+            ci = f"[{bs['lo']:+.4f}, {bs['hi']:+.4f}]" if bs else "-"
             tpr = (100.0 * sum(1 for t in tr if t.kind == "tp") / len(tr)
                    if tr else float("nan"))
             print(f"  {tag if lib == 'storm' else '':<18}{lib:<10}{len(evs):>6}{len(tr):>8}"
-                  f"{fmt(tpr,1,7)}{fmt(d['mean'],2,9)}{fmt(d['median'],2,9)}"
-                  f"{fmt(d['sd'],2,8)}{fmt(d['win'],1,7)}{fmt(d['sum'],1,10)}{ci:>26}")
+                  f"{fmt(tpr,1,7)}{fmt(d['mean'],4,9)}{fmt(d['median'],4,9)}"
+                  f"{fmt(d['sd'],4,8)}{fmt(d['win'],1,7)}{fmt(d['sum'],3,10)}{ci:>26}")
         line()
     print("  Same split for the whole TP row at fb=120s, so the regime effect can be read")
     print("  as a curve rather than at one point:")
@@ -1234,7 +1238,7 @@ def main() -> int:
         row = f"  {lib:<10}"
         for tp in GRID_TP:
             tr = [t for t in cells[(tp, 120)].trades if t.ev in names]
-            row += f"{fmt(mean_of(tr),2,8)}({len(tr):>3})"
+            row += f"{fmt(mean_of(tr),4,8)}({len(tr):>3})"
         print(row)
     line()
     print()
@@ -1251,9 +1255,9 @@ def main() -> int:
             p = paired_diff(r, e2, filt=lambda t: t.ev in names)
             if p is None:
                 continue
-            ci = "[%+.2f, %+.2f]" % (p["lo"], p["hi"])
+            ci = "[%+.4f, %+.4f]" % (p["lo"], p["hi"])
             print(f"  {tag if lib == 'storm' else '':<16}{lib:<10}{p['n']:>9}"
-                  f"{p['n_ev']:>9}{p['mean']:>+13.2f}{ci:>28}"
+                  f"{p['n_ev']:>9}{p['mean']:>+13.4f}{ci:>28}"
                   f"{('YES' if p['sig'] else 'no'):>12}")
         line()
     print()
@@ -1364,9 +1368,9 @@ def main() -> int:
 
     # cost accounting
     badc = [t for r in all_runs.values() for t in r.trades
-            if abs(t.net - (t.gross - (0.0 if t.kind == "tp" else COST_BURST_BPS))) > 1e-9]
+            if abs(t.net - (t.gross / 100 - (0.0 if t.kind == "tp" else COST_BURST_PCT))) > 1e-11]
     checks.append((f"cost accounting: maker TP exits pay 0, taker exits pay "
-                   f"{COST_BURST_BPS:.2f}", not badc, f"{len(badc)} violation(s)"))
+                   f"{COST_BURST_PCT:.4f} %", not badc, f"{len(badc)} violation(s)"))
 
     # TP distance actually realised is never smaller than the posted one
     badtp = 0
@@ -1422,33 +1426,33 @@ def main() -> int:
     for r in K_GRID:
         bk = max(K_GRID[r], key=lambda k: astats[(r, k)]["mean"])
         d = paired_diff(adapt[(r, bk)], win_run)
-        vs_big.append(f"{r} {d['mean']:+.2f}" if d else f"{r} -")
+        vs_big.append(f"{r} {d['mean']:+.4f}" if d else f"{r} -")
     print(f"  1. Is 10/120 optimal? It ranks "
           f"{[k for k, _ in ranked].index(INCUMBENT) + 1} of {len(ranked)} on combined "
-          f"mean ({inc['mean']:+.2f} bps/trade) — mid-table. The best")
-    print(f"     cell is {win_tag} at {win_s['mean']:+.2f}, i.e. "
-          f"{win_s['mean'] - inc['mean']:+.2f} bps over E2 unpaired, but only "
-          f"{p_win['mean']:+.2f} bps")
-    print(f"     [{p_win['lo']:+.2f}, {p_win['hi']:+.2f}] on the signals both actually "
+          f"mean ({inc['mean']:+.4f} %/trade) — mid-table. The best")
+    print(f"     cell is {win_tag} at {win_s['mean']:+.4f}, i.e. "
+          f"{win_s['mean'] - inc['mean']:+.4f} % over E2 unpaired, but only "
+          f"{p_win['mean']:+.4f} %")
+    print(f"     [{p_win['lo']:+.4f}, {p_win['hi']:+.4f}] on the signals both actually "
           f"traded. It FAILS the pre-registered bar, so the")
     print("     answer is KEEP E2 — not because 10/120 is demonstrably best, but because")
     print("     nothing on this tape is demonstrably better than it.")
     print("  2. Should the TP adapt to vol/volume? All three adaptive rules peak at the")
     print("     TOP EDGE of their k grid, i.e. they are discovering 'post a bigger TP',")
     print("     not 'post a feature-scaled TP'. Paired against the plain constant-TP")
-    print(f"     winner they are worth {', '.join(vs_big)} bps/trade — none separable")
+    print(f"     winner they are worth {', '.join(vs_big)} %/trade — none separable")
     print("     from zero. The volatility tilt is convincing in DIRECTION and hopeless in")
     print("     SAMPLE: it lives in the top vol tercile, which is a handful of windows.")
     print("  3. The regime question matters more than the exit question. On the 99 FRESH")
     print(f"     burst windows E2 does "
-          f"{mean_of([t for t in e2.trades if t.lib == 'burst']):+.2f} bps/trade and "
+          f"{mean_of([t for t in e2.trades if t.lib == 'burst']):+.4f} %/trade and "
           f"{win_tag} does "
-          f"{mean_of([t for t in win_run.trades if t.lib == 'burst']):+.2f}; on the")
+          f"{mean_of([t for t in win_run.trades if t.lib == 'burst']):+.4f}; on the")
     print(f"     16 storms they do "
-          f"{mean_of([t for t in e2.trades if t.lib == 'storm']):+.2f} and "
-          f"{mean_of([t for t in win_run.trades if t.lib == 'storm']):+.2f}. The whole "
+          f"{mean_of([t for t in e2.trades if t.lib == 'storm']):+.4f} and "
+          f"{mean_of([t for t in win_run.trades if t.lib == 'storm']):+.4f}. The whole "
           f"advantage of a far TP is a storm-only")
-    print("     effect that REVERSES on ordinary bursts. The strategy is ~0 bps/trade net")
+    print("     effect that REVERSES on ordinary bursts. The strategy is ~0 %/trade net")
     print("     in both libraries, and no exit rule in this study changes that.")
     print()
 
@@ -1463,7 +1467,7 @@ def main() -> int:
     print("     plateau requirement are the only defences, and neither is a hold-out.")
     print("  2. n IS STILL SMALL. 115 windows, and the event-clustered CIs are wide")
     print("     enough that most of the surface is one blob. Cell-to-cell differences of")
-    print("     a couple of bps are inside the noise.")
+    print("     a few hundredths of a % are inside the noise.")
     print("  3. QUEUE POSITION IS IGNORED. Both the maker entry and the maker TP fill on")
     print("     the permissive at-or-through rule with no queue ahead of them. TP fill")
     print("     rates in section 2e are an UPPER BOUND, and the smaller the TP the more")
@@ -1485,7 +1489,7 @@ def main() -> int:
     print("     The effective sample grew from 90 to ~131 trades, not to several hundred.")
     print("  9. THE SURFACE IS TAIL-DRIVEN (section 4b and the trim10 column). Ranking by")
     print("     10% trimmed mean reorders it, and the top candidates owe 28-46% of their")
-    print("     total bps to three trades. Any decision taken off the raw means is a bet")
+    print("     total % to three trades. Any decision taken off the raw means is a bet")
     print("     that those particular trades recur.")
     print(" 10. THE SHUFFLE CONTROL (3b) has 20 permutations, so its smallest reachable")
     print("     p-value is 0.048, and the permuted runs' trade sets drift slightly from")

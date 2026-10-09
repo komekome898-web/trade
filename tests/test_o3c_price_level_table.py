@@ -64,19 +64,19 @@ def test_bin_pct_counts_zero_bins_inside_range():
 
 
 # --------------------------------------------------------------------------
-# (b) dist_node_bp / dist_gap_bp の符号
+# (b) dist_node_pct / dist_gap_pct の符号
 # --------------------------------------------------------------------------
 
 
 def test_dist_node_and_gap_signs():
     step, lo_bin, qty, p_liq = _fixture_profile()
     st = mod.profile_stats(qty, lo_bin, step, p_liq, p_liq)
-    # ノード(上位 10% = 1 本)は数量 20 の相対 3 = p_liq より 1 ビン上 -> 正で約 +10bp
-    assert st["dist_node_bp"] > 0
-    assert st["dist_node_bp"] == pytest.approx(10.0, abs=0.2)
+    # ノード(上位 10% = 1 本)は数量 20 の相対 3 = p_liq より 1 ビン上 -> 正で約 +0.10 %(前の +10bp)
+    assert st["dist_node_pct"] > 0
+    assert st["dist_node_pct"] == pytest.approx(0.10, abs=0.002)
     # 空白(下位 10% = 1 本)は数量 0 の相対 1 = p_liq より 1 ビン下 -> 負
-    assert st["dist_gap_bp"] < 0
-    assert st["dist_gap_bp"] == pytest.approx(-10.0, abs=0.2)
+    assert st["dist_gap_pct"] < 0
+    assert st["dist_gap_pct"] == pytest.approx(-0.10, abs=0.002)
 
 
 def test_dist_node_sign_flips_when_node_is_below():
@@ -87,8 +87,8 @@ def test_dist_node_sign_flips_when_node_is_below():
     lo_bin = b0 - 2
     p_liq = float(mod.bin_center_price(b0, step))
     st = mod.profile_stats(qty, lo_bin, step, p_liq, p_liq)
-    assert st["dist_node_bp"] < 0
-    assert st["dist_node_bp"] == pytest.approx(-20.0, abs=0.4)
+    assert st["dist_node_pct"] < 0
+    assert st["dist_node_pct"] == pytest.approx(-0.20, abs=0.004)
 
 
 def test_vol_between_ratio_uses_bins_between_p0_and_p_liq():
@@ -361,8 +361,8 @@ def test_dedup_liq_does_not_change_the_bundle_first_rows(tmp_path: Path):
     ld = [r for r in ded if r["kind"] == "liq"]
     assert len(lr) == len(ld)
     for x, y in zip(lr, ld):
-        for col in ("time_ms", "side", "p_liq", "p0", "bin_pct", "dist_node_bp",
-                    "dist_gap_bp", "dist_vwap_bp", "n_bins", "total_qty"):
+        for col in ("time_ms", "side", "p_liq", "p0", "bin_pct", "dist_node_pct",
+                    "dist_gap_pct", "dist_vwap_pct", "n_bins", "total_qty"):
             assert x[col] == y[col], col
         assert x["bundle_n_events"] == 2 * y["bundle_n_events"]
         assert y["bundle_n_events"] == y["bundle_n_events_dedup"]

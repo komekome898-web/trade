@@ -23,11 +23,11 @@ Outputs four things to `--out` (default
 backtest_data/phase2_runs/P2-01b/history_20260906/):
   (a) decomposition_dev_vs_sealed.csv   -- gross/cost/net, dev vs sealed-period
       (PREREG §2's own table, built here from a fresh read to cross-check it)
-  (b) edge_trend on gross r_night / cost_bps / net r_net over the full history
+  (b) edge_trend on gross r_night (bps) / cost_pct / net r_net (%) over the full history
       (`bot.research.overnight.edge_trend`, research-protocol skill §12 (旧 PHASE2_TEMPLATES.md §5)): rolling
       window, period table, slope+CI+MDE, half-split, regime table, judgment
   (c) leg decomposition (a)(b)(c) per regime, with CIs
-  (d) H1 identity check: cost_bps(t) * close(t) * 10 == 122 for every pair
+  (d) H1 identity check: cost_pct(t) * close(t) * 10 / 100 == 122 for every pair
 
 Usage: PYTHONPATH=src python scripts/phase2/p2_01b_history.py
 """
@@ -76,6 +76,8 @@ SEALED_START = pd.Timestamp("2020-12-21")
 SEALED_END = pd.Timestamp("2026-08-28")
 REF_DEV = {"gross": 4.30, "cost": 8.89, "net": -4.59}
 REF_SEALED = {"gross": 6.06, "cost": 3.57, "net": 2.49}
+# (L-920 の後の単位: 上の 2 つは PREREG §2 の bps の値。gross は値動き率なので bps の
+#  まま比べ、cost と net は bp にしないので ÷ 100 して % で比べる)
 
 # ---- PREREG.md §4 H3 regime boundaries (2021-09-21 = data-derived candidate,
 # the single night with no night_session_daily row inside the P2-01 sealed
@@ -196,17 +198,19 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
     _, main_sealed = _build_main(day_sealed)
 
     def _decomp_row(label: str, main: pd.DataFrame, ref: dict) -> dict:
-        gross = float(main["r_night_bps"].mean())
-        cost = float(main["cost_bps_cons"].mean())
-        net = float(main["r_net_bps_cons"].mean())
+        gross = float(main["r_night_bps"].mean())        # bps (price move)
+        cost = float(main["cost_pct_cons"].mean())       # %
+        net = float(main["r_net_pct_cons"].mean())       # %
+        ref_cost, ref_net = ref["cost"] / 100.0, ref["net"] / 100.0   # PREREG bps -> %
         return {
             "period": label, "n": len(main),
-            "gross_bps": gross, "mean_cost_bps": cost, "net_bps": net,
-            "ref_gross_bps": ref["gross"], "ref_mean_cost_bps": ref["cost"],
-            "ref_net_bps": ref["net"],
-            "matches_reference_within_0.01": bool(
-                abs(gross - ref["gross"]) < 0.01 and abs(cost - ref["cost"]) < 0.01
-                and abs(net - ref["net"]) < 0.01),
+            "gross_bps": gross, "mean_cost_pct": cost, "net_pct": net,
+            "ref_gross_bps": ref["gross"], "ref_mean_cost_pct": ref_cost,
+            "ref_net_pct": ref_net,
+            # the former +-0.01 bp tolerance: 0.01 for the bps column, 0.0001 for the % ones
+            "matches_reference_within_0.01bp": bool(
+                abs(gross - ref["gross"]) < 0.01 and abs(cost - ref_cost) < 0.0001
+                and abs(net - ref_net) < 0.0001),
         }
 
     decomp_rows = [
@@ -226,13 +230,13 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
     pairs_full, main_full = _build_main(day_full)
     main_full = main_full.sort_values("date").reset_index(drop=True)
 
-    # ---- (d) H1 identity check: cost_bps(t) * close(t) * 10 == 122 --------
-    lhs = pairs_full["cost_bps_cons"] * pairs_full["close_t"] * MULTIPLIER / 1e4
+    # ---- (d) H1 identity check: cost_pct(t) * close(t) * 10 / 100 == 122 ----
+    lhs = pairs_full["cost_pct_cons"] * pairs_full["close_t"] * MULTIPLIER / 100.0
     h1_ok = np.allclose(lhs.to_numpy(dtype=float), COST_YEN_CONSERVATIVE, atol=1e-6)
     h1_max_abs_err = float((lhs - COST_YEN_CONSERVATIVE).abs().max())
     h1_df = pd.DataFrame([{
         "n_pairs_checked": len(pairs_full),
-        "formula": "cost_bps_cons(t) * close_t(t) * MULTIPLIER(10) / 1e4",
+        "formula": "cost_pct_cons(t) * close_t(t) * MULTIPLIER(10) / 100",
         "expected_yen": COST_YEN_CONSERVATIVE,
         "max_abs_error_yen": h1_max_abs_err,
         "all_pairs_match": bool(h1_ok),
@@ -249,17 +253,18 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
     main_full["leg_c_bps"] = (main_full["open_t1"] / main_full["night_close"] - 1.0) * 1e4
 
     # ================================================================
-    # (b) edge_trend on gross r_night / cost_bps / net r_net, full history
+    # (b) edge_trend on gross r_night (bps) / cost_pct / net r_net (%), full history
     # ================================================================
     legs = {
-        "gross": main_full["r_night_bps"].to_numpy(dtype=float),
-        "cost": main_full["cost_bps_cons"].to_numpy(dtype=float),
-        "net": main_full["r_net_bps_cons"].to_numpy(dtype=float),
+        "gross": (main_full["r_night_bps"].to_numpy(dtype=float), "bps"),
+        "cost": (main_full["cost_pct_cons"].to_numpy(dtype=float), "%"),
+        "net": (main_full["r_net_pct_cons"].to_numpy(dtype=float), "%"),
     }
     dates = main_full["date"]
     edge_results: dict[str, dict] = {}
-    for name, values in legs.items():
-        res = edge_trend(dates, values, regime_dates=REGIME_DATES, **EDGE_TREND_PARAMS)
+    for name, (values, unit) in legs.items():
+        res = edge_trend(dates, values, regime_dates=REGIME_DATES, value_unit=unit,
+                         **EDGE_TREND_PARAMS)
         edge_results[name] = res
         write_csv(res["rolling"], f"edge_trend_rolling_{name}.csv")
         write_csv(res["period_table"], f"edge_trend_period_{name}.csv")
@@ -320,13 +325,13 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
     md.append("")
     md.append(_table(decomp_df.to_dict("records"), [
         ("period", "期間", -1), ("n", "n", 0),
-        ("gross_bps", "グロス平均(bps)", 2), ("mean_cost_bps", "平均コスト(bps)", 2),
-        ("net_bps", "費用後平均(bps)", 2), ("ref_gross_bps", "PREREG グロス", 2),
-        ("ref_mean_cost_bps", "PREREG コスト", 2), ("ref_net_bps", "PREREG 費用後", 2),
-        ("matches_reference_within_0.01", "PREREG と一致(±0.01bps)", -1),
+        ("gross_bps", "グロス平均(bps)", 2), ("mean_cost_pct", "平均コスト(%)", 4),
+        ("net_pct", "費用後平均(%)", 4), ("ref_gross_bps", "PREREG グロス(bps)", 2),
+        ("ref_mean_cost_pct", "PREREG コスト(%)", 4), ("ref_net_pct", "PREREG 費用後(%)", 4),
+        ("matches_reference_within_0.01bp", "PREREG と一致(±0.01bp 相当)", -1),
     ]))
     md.append("")
-    md.append("## (b) エッジ推移: グロス r_night / コスト cost_bps / 費用後 r_net(全期間)")
+    md.append("## (b) エッジ推移: グロス r_night(bps)/ コスト cost_pct / 費用後 r_net(%)(全期間)")
     md.append("")
     md.append(f"`edge_trend` 呼び出しパラメータ(事前登録、3 系列とも共通): "
               f"window={EDGE_TREND_PARAMS['window']}、block={EDGE_TREND_PARAMS['block']}、"
@@ -378,7 +383,7 @@ def main(out_dir: Path | None = None, root: Path | str = REPO_ROOT) -> int:
         md.append("")
     md.append("## (d) H1 恒等式チェック")
     md.append("")
-    md.append(f"cost_bps(t) × close_day(t) × 10 は全 {len(pairs_full):,} ペアで "
+    md.append(f"cost_pct(t) × close_day(t) × 10 ÷ 100 は全 {len(pairs_full):,} ペアで "
               f"{COST_YEN_CONSERVATIVE} 円に一致するか: **{'一致' if h1_ok else '不一致'}**"
               f"(最大絶対誤差 {h1_max_abs_err:.2e} 円、浮動小数点の丸め誤差の範囲)。"
               "これは H1(費用の算術)の定義上の恒等式であり、統計的な検定ではない。")

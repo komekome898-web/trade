@@ -307,6 +307,11 @@ Offline only -- reads files, opens no sockets, places no orders.  Read-only,
 idempotent, deterministic.  seed 20260828, no network.
 
 Usage: PYTHONPATH=src python scripts/research_matilda_taro.py
+(L-920 の後の単位: 上の事前登録の文(R11・R13・R14 ほか)は書き換えない。1 単位の往復の損益
+(u)・往復の損益・合計・1 日の和・最大の落ち込み・CI は、taker の出の値段(mid ∓ 3.96bps =
+0.0396 %)を含む損益の率で、建玉の数で重みが付くので % で持つ(前の bps / 100)。約定の値段と mid の
+距離(capture)も %。bp は値動き(前向きの fwd・adverse・vola・40 分のレンジの幅とその門 10 / 82bps)
+にだけ使う。資金調達(0.06 %/日)は % のまま。)
 """
 from __future__ import annotations
 
@@ -333,7 +338,7 @@ MAX_RUNGS = 7           # order_count = sizemax // sizemin (static path).
 # Fidelity note (docs/AUDIT_2026-09/K2_matilda_v37_source_recheck.md, 2026-09-08):
 # the original ships fukuri=1, so lot_calc() overwrites order_count to 5 while flat
 # (7 only when the range is expanding).  Left at 7 because the run is frozen and the
-# rung sweep N=1..10 (report af Q3) moves unit bps by <0.15 bps.  pos_count is dead code.
+# rung sweep N=1..10 (report af Q3) moves the unit return by <0.0015 % (0.15 bps).  pos_count is dead code.
 BREAKEXITSIZE = 3
 BREAK_DELAY = 1
 VOLA_COUNT = 40         # minutes
@@ -342,7 +347,7 @@ RANGE_MIN_BPS = 10.0
 RANGE_MAX_BPS = 82.0
 TICK = 1.0
 UNIT_BTC = 0.01
-TAKER_BPS = 3.96
+TAKER_PCT = 0.0396     # % taker one-way (3.96 bps in the prereg)
 BAR_SEC = 60
 GAP_SEC = cal.GAP_SEC   # 30 s
 MARKOUT = 5.0
@@ -437,7 +442,7 @@ def load_board(data_dir: Path):
 
 
 def build_market(data_dir: Path) -> Market:
-    (t_tk, bid, ask, bsz, asz, mid, spread_bps,
+    (t_tk, bid, ask, bsz, asz, mid, spread_pct,
      t_ex, px, sz, buy, span_days) = cal.load(data_dir)
     gs_tk, ge_tk = cal.find_gaps(t_tk, t_ex)
     t_bd, bpx, bbz, apx, abz = load_board(data_dir)
@@ -637,7 +642,7 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
     c_t0, c_tx, c_k, c_mode, c_ever, c_kind, c_taker = [], [], [], [], [], [], []
     c_pnl, c_avg, c_xpx, c_side, c_vola, c_supp = [], [], [], [], [], []
     # unit-level records
-    u_bps, u_day, u_tx, u_rung, u_kind, u_k, u_mode = [], [], [], [], [], [], []
+    u_pct, u_day, u_tx, u_rung, u_kind, u_k, u_mode = [], [], [], [], [], [], []
 
     inv_px: list[float] = []
     inv_rung: list[int] = []
@@ -685,9 +690,9 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
         tot = 0.0
         day = int(math.floor(t / 86400.0))
         for e, rg in zip(inv_px, inv_rung):
-            b = side * (xpx - e) / e * 1e4
+            b = side * (xpx - e) / e * 100       # % per unit (L-920; was x 1e4)
             tot += b
-            u_bps.append(b); u_day.append(day); u_tx.append(t)
+            u_pct.append(b); u_day.append(day); u_tx.append(t)
             u_rung.append(rg); u_kind.append(kind); u_k.append(k)
             u_mode.append(cyc_mode)
         c_t0.append(t_first); c_tx.append(t); c_k.append(k)
@@ -969,7 +974,7 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
                     x, xk = 0, K_TP
 
             if x == 3:
-                xpx = last * (1.0 - side * TAKER_BPS / 1e4)
+                xpx = last * (1.0 - side * TAKER_PCT / 100)
                 close_cycle(s, xpx, xk, True)
             elif x == 0:
                 cyc_supp = True
@@ -993,7 +998,7 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
                     marketable = (P <= bb) if side > 0 else (P >= ba)
                     if marketable and not naive_requote:
                         n_marketable += 1
-                        xpx = last * (1.0 - side * TAKER_BPS / 1e4)
+                        xpx = last * (1.0 - side * TAKER_PCT / 100)
                         close_cycle(s, xpx, xk, True)
                     elif marketable and naive_requote:
                         close_cycle(s, P, xk, False)
@@ -1080,7 +1085,7 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
     r.c_avg = np.array(c_avg, float); r.c_xpx = np.array(c_xpx, float)
     r.c_side = np.array(c_side, float); r.c_vola = np.array(c_vola, float)
     r.c_supp = np.array(c_supp, int)
-    r.u_bps = np.array(u_bps, float); r.u_day = np.array(u_day, int)
+    r.u_pct = np.array(u_pct, float); r.u_day = np.array(u_day, int)
     r.u_tx = np.array(u_tx, float); r.u_rung = np.array(u_rung, int)
     r.u_kind = np.array(u_kind, int); r.u_k = np.array(u_k, int)
     r.u_mode = np.array(u_mode, int)
@@ -1114,7 +1119,7 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
         g = b0 >= 0
         mb[g] = m.mid[b0[g]]
         m5 = mid_at(r.f_t + MARKOUT)
-        r.f_cap = r.f_side * (mb - r.f_px) / mb * 1e4
+        r.f_cap = r.f_side * (mb - r.f_px) / mb * 100      # % (capture, L-920)
         r.f_adv = r.f_side * (m5 - mb) / mb * 1e4
     else:
         r.f_cap = r.f_adv = np.array([], float)
@@ -1122,10 +1127,10 @@ def run_cell(m: Market, brk_on: bool, T1m: float, T2m: float,
     if len(r.c_pnl):
         with np.errstate(all="ignore"):
             r.c_width_vola = (r.c_side * (r.c_xpx - r.c_avg)) / r.c_vola
-            r.c_first_bps = r.c_side * (r.c_xpx - r.c_avg) / r.c_avg * 1e4
+            r.c_first_pct = r.c_side * (r.c_xpx - r.c_avg) / r.c_avg * 100
     else:
         r.c_width_vola = np.array([], float)
-        r.c_first_bps = np.array([], float)
+        r.c_first_pct = np.array([], float)
     return r
 
 
@@ -1139,24 +1144,24 @@ def cell_stats(r: Res, eff_days: float):
     st["f"] = float(r.p_fill.mean()) if len(r.p_fill) else np.nan
     st["n_rt"] = int(len(r.c_pnl))
     st["rt_day"] = len(r.c_pnl) / eff_days if eff_days > 0 else np.nan
-    st["units"] = int(len(r.u_bps))
+    st["units"] = int(len(r.u_pct))
     if st["units"] == 0:
         st.update(dict(mean_unit=np.nan, mean_rt=np.nan, total=np.nan,
                        daily=np.nan, tcl=np.nan, lo=np.nan, hi=np.nan,
                        maxdd=np.nan, ndays=0, days=np.array([]),
                        daily_arr=np.array([])))
         return st
-    st["mean_unit"] = float(r.u_bps.mean())
+    st["mean_unit"] = float(r.u_pct.mean())
     st["mean_rt"] = float(r.c_pnl.mean())
-    st["total"] = float(r.u_bps.sum())
+    st["total"] = float(r.u_pct.sum())
     st["daily"] = st["total"] / eff_days
-    lo, hi, t = cal.boot_ci(r.u_bps, r.u_day, seed=SEED)
+    lo, hi, t = cal.boot_ci(r.u_pct, r.u_day, seed=SEED)
     st["lo"], st["hi"], st["tcl"] = lo, hi, t
     days = np.unique(r.u_day)
-    daily = np.array([r.u_bps[r.u_day == d].sum() for d in days])
+    daily = np.array([r.u_pct[r.u_day == d].sum() for d in days])
     st["days"], st["daily_arr"], st["ndays"] = days, daily, len(days)
     o = np.argsort(r.u_tx, kind="stable")
-    cum = np.cumsum(r.u_bps[o])
+    cum = np.cumsum(r.u_pct[o])
     peak = np.maximum.accumulate(cum)
     st["maxdd"] = float(np.max(peak - cum)) if len(cum) else 0.0
     return st
@@ -1301,7 +1306,7 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
 
     c_t0, c_tx, c_k, c_mode, c_ever, c_kind, c_taker = [], [], [], [], [], [], []
     c_pnl, c_avg, c_xpx, c_side, c_vola, c_supp = [], [], [], [], [], []
-    u_bps, u_day, u_tx, u_rung, u_kind, u_k, u_mode = [], [], [], [], [], [], []
+    u_pct, u_day, u_tx, u_rung, u_kind, u_k, u_mode = [], [], [], [], [], [], []
     n_place = n_fill = 0
     n_break_up = n_break_dn = n_break_off = 0
     n_disc = n_disc_u = n_mkt = 0
@@ -1321,9 +1326,9 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
         tot = 0.0
         day = int(math.floor(t / 86400.0))
         for e, rg in zip(inv_px, inv_rung):
-            b = side * (xpx - e) / e * 1e4
+            b = side * (xpx - e) / e * 100       # % per unit (L-920; was x 1e4)
             tot += b
-            u_bps.append(b); u_day.append(day); u_tx.append(t)
+            u_pct.append(b); u_day.append(day); u_tx.append(t)
             u_rung.append(rg); u_kind.append(kind); u_k.append(k)
             u_mode.append(cyc_mode)
         c_t0.append(t_first); c_tx.append(t); c_k.append(k)
@@ -1490,7 +1495,7 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
                 else:
                     x, xk = 0, K_TP
             if x == 3:
-                close_cycle(t, last * (1.0 - side * TAKER_BPS / 1e4), xk, True)
+                close_cycle(t, last * (1.0 - side * TAKER_PCT / 100), xk, True)
             elif x == 0:
                 cyc_supp = True
                 xo = None
@@ -1511,7 +1516,7 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
                     xkind = xk
                 elif marketable:
                     n_mkt += 1
-                    close_cycle(t, last * (1.0 - side * TAKER_BPS / 1e4), xk, True)
+                    close_cycle(t, last * (1.0 - side * TAKER_PCT / 100), xk, True)
                 else:
                     xo = (P, side < 0)
                     xkind = xk
@@ -1575,7 +1580,7 @@ def run_cell_bars(B: BarTape, brk_on: bool, T1m: float, T2m: float,
     r.c_avg = np.array(c_avg, float); r.c_xpx = np.array(c_xpx, float)
     r.c_side = np.array(c_side, float); r.c_vola = np.array(c_vola, float)
     r.c_supp = np.array(c_supp, int)
-    r.u_bps = np.array(u_bps, float); r.u_day = np.array(u_day, int)
+    r.u_pct = np.array(u_pct, float); r.u_day = np.array(u_day, int)
     r.u_tx = np.array(u_tx, float); r.u_rung = np.array(u_rung, int)
     r.u_kind = np.array(u_kind, int); r.u_k = np.array(u_k, int)
     r.u_mode = np.array(u_mode, int)
@@ -1638,7 +1643,7 @@ def main() -> int:
           "v37's 150 JPY floor is INERT at\n  today's price (a 40-minute range "
           "is 24-106 bps = 26k-116k JPY); only the\n  100k JPY ceiling, "
           "carried across as 82 bps, actually binds.")
-    print("  Maker entry costs nothing, so the designed gain (a few bps per "
+    print("  Maker entry costs nothing, so the designed gain (a few hundredths of a % per "
           "cycle) sits\n  well above any cost floor -- unlike M2, this family "
           "is not killed by costs.")
 
@@ -1649,7 +1654,7 @@ def main() -> int:
         results[c] = r
         print(f"  {cellname(c)} -> placements {len(r.p_fill):>7,}  "
               f"fills {int(r.p_fill.sum()):>6,}  round trips {len(r.c_pnl):>5,}  "
-              f"units {len(r.u_bps):>6,}  taker-requotes {r.n_marketable:>5,}  "
+              f"units {len(r.u_pct):>6,}  taker-requotes {r.n_marketable:>5,}  "
               f"discarded cycles {r.n_discard_cyc}")
     relax = {}
     for c in CELLS:
@@ -1665,19 +1670,19 @@ def main() -> int:
     header("1. ALL FOUR CELLS  (exploration -- selection input only)")
     # =====================================================================
     print(f"{'cell':<24}{'place':>8}{'fills':>7}{'f':>7}{'rt':>7}{'rt/day':>8}"
-          f"{'unit bps':>10}{'rt bps':>9}{'total':>11}{'clus t':>8}"
-          f"{'95% CI (unit bps)':>21}{'maxDD':>10}")
+          f"{'unit %':>10}{'rt %':>9}{'total':>11}{'clus t':>8}"
+          f"{'95% CI (unit %)':>21}{'maxDD':>10}")
     for c in CELLS:
         s = stats[c]
         print(f"{cellname(c):<24}{s['n_place']:>8,}{s['n_fill']:>7,}"
               f"{100 * s['f']:>6.1f}%{s['n_rt']:>7,}{fmt(s['rt_day'], 8, 1)}"
-              f"{fmt(s['mean_unit'], 10, 3)}{fmt(s['mean_rt'], 9, 3)}"
-              f"{fmt(s['total'], 11, 1)}{fmt(s['tcl'], 8, 2)}"
-              f"  [{s['lo']:+8.3f},{s['hi']:+8.3f}]{fmt(s['maxdd'], 10, 1)}")
-    print("\n  unit bps = mean per-unit round-trip return; rt bps = mean per "
+              f"{fmt(s['mean_unit'], 10, 5)}{fmt(s['mean_rt'], 9, 5)}"
+              f"{fmt(s['total'], 11, 3)}{fmt(s['tcl'], 8, 2)}"
+              f"  [{s['lo']:+9.5f},{s['hi']:+9.5f}]{fmt(s['maxdd'], 10, 3)}")
+    print("\n  unit % = mean per-unit round-trip return; rt % = mean per "
           "ROUND TRIP\n  (the sum of its k units, i.e. notional-weighted, "
-          "R13).  total = sum of all\n  per-unit bps.  cluster t / CI = "
-          f"day-clustered bootstrap of the mean per-unit\n  bps (seed {SEED}, "
+          "R13).  total = sum of all\n  per-unit %.  cluster t / CI = "
+          f"day-clustered bootstrap of the mean per-unit\n  % (seed {SEED}, "
           "2000 draws).  maxDD on the cumulative per-unit curve.")
 
     sub("1b. inventory distribution and exit breakdown")
@@ -1695,12 +1700,12 @@ def main() -> int:
               + "".join(f"{v:>6.1f}%" for v in sh))
 
     print(f"\n{'cell':<24}{'exit':<13}{'rt':>7}{'share':>8}{'taker%':>8}"
-          f"{'units':>8}{'unit bps':>11}{'total bps':>12}{'of P&L':>9}")
+          f"{'units':>8}{'unit %':>11}{'total %':>12}{'of P&L':>9}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
             continue
-        tot = r.u_bps.sum()
+        tot = r.u_pct.sum()
         for kd in range(5):
             cs = r.c_kind == kd
             us = r.u_kind == kd
@@ -1709,11 +1714,11 @@ def main() -> int:
             print(f"{cellname(c):<24}{KIND_NAMES[kd]:<13}{int(cs.sum()):>7,}"
                   f"{100 * cs.mean():>7.1f}%"
                   f"{100 * float(r.c_taker[cs].mean()):>7.1f}%"
-                  f"{int(us.sum()):>8,}{fmt(float(r.u_bps[us].mean()), 11, 3)}"
-                  f"{fmt(float(r.u_bps[us].sum()), 12, 1)}"
-                  f"{fmt(100 * float(r.u_bps[us].sum()) / tot if tot else np.nan, 8, 1)}%")
+                  f"{int(us.sum()):>8,}{fmt(float(r.u_pct[us].mean()), 11, 5)}"
+                  f"{fmt(float(r.u_pct[us].sum()), 12, 3)}"
+                  f"{fmt(100 * float(r.u_pct[us].sum()) / tot if tot else np.nan, 8, 1)}%")
 
-    sub("1c. daily totals of per-unit bps (the cluster the statistics rest on)")
+    sub("1c. daily totals of per-unit % (the cluster the statistics rest on)")
     all_days = sorted(set(int(d) for c in CELLS for d in stats[c]["days"]))
     print(f"{'cell':<24}" + "".join(
         f"{str(pd.Timestamp(d * 86400, unit='s', tz='UTC').date())[5:]:>10}"
@@ -1722,7 +1727,7 @@ def main() -> int:
         s = stats[c]
         dd = dict(zip(s["days"], s["daily_arr"]))
         print(f"{cellname(c):<24}"
-              + "".join(f"{dd[d]:>10.2f}" if d in dd else f"{'-':>10}"
+              + "".join(f"{dd[d]:>10.4f}" if d in dd else f"{'-':>10}"
                         for d in all_days))
     print(f"{'usable seconds/day':<24}"
           + "".join(f"{int(m.usable_secs_per_day[list(m.usable_days).index(d)]):>10,}"
@@ -1730,14 +1735,14 @@ def main() -> int:
                     for d in all_days))
 
     sub("1d. sensitivities (neither is a candidate cell)")
-    print(f"{'cell':<24}{'primary unit bps':>18}{'naive-requote':>15}"
+    print(f"{'cell':<24}{'primary unit %':>18}{'naive-requote':>15}"
           f"{'symmetric-cancel':>18}{'primary rt':>12}{'symm rt':>10}")
     for c in CELLS:
         s1 = stats[c]
         s2 = cell_stats(naive[c], m.eff_days)
         s3 = cell_stats(symm[c], m.eff_days)
-        print(f"{cellname(c):<24}{fmt(s1['mean_unit'], 18, 3)}"
-              f"{fmt(s2['mean_unit'], 15, 3)}{fmt(s3['mean_unit'], 18, 3)}"
+        print(f"{cellname(c):<24}{fmt(s1['mean_unit'], 18, 5)}"
+              f"{fmt(s2['mean_unit'], 15, 5)}{fmt(s3['mean_unit'], 18, 5)}"
               f"{s1['n_rt']:>12,}{s3['n_rt']:>10,}")
     print("  naive-requote = a marketable exit requote filled at its OWN price "
           "instead of\n  taker (a modelling error, R11).  symmetric-cancel = "
@@ -1748,8 +1753,8 @@ def main() -> int:
     for c in CELLS:
         s1 = stats[c]
         s4 = cell_stats(relax[c], m.eff_days_relaxed)
-        print(f"{cellname(c):<24}{fmt(s1['mean_unit'], 21, 3)}{s1['n_rt']:>7,}"
-              f"{fmt(s4['mean_unit'], 19, 3)}{s4['n_rt']:>7,}"
+        print(f"{cellname(c):<24}{fmt(s1['mean_unit'], 21, 5)}{s1['n_rt']:>7,}"
+              f"{fmt(s4['mean_unit'], 19, 5)}{s4['n_rt']:>7,}"
               f"{f'{m.eff_days:.2f} / {m.eff_days_relaxed:.2f}':>22}")
     print("  The registered rule (report #26, reused verbatim) drops every "
           "second whose\n  80-bar indicator window touches an outage; at a "
@@ -1761,8 +1766,8 @@ def main() -> int:
     # =====================================================================
     header("2. MODE DECOMPOSITION -- did the sign reversal earn?")
     # =====================================================================
-    print(f"{'cell':<24}{'mode':<9}{'rt':>7}{'units':>8}{'unit bps':>11}"
-          f"{'rt bps':>10}{'total bps':>12}{'win%':>8}")
+    print(f"{'cell':<24}{'mode':<9}{'rt':>7}{'units':>8}{'unit %':>11}"
+          f"{'rt %':>10}{'total %':>12}{'win%':>8}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
@@ -1773,9 +1778,9 @@ def main() -> int:
             if cs.sum() == 0:
                 continue
             print(f"{cellname(c):<24}{nm:<9}{int(cs.sum()):>7,}"
-                  f"{int(us.sum()):>8,}{fmt(float(r.u_bps[us].mean()), 11, 3)}"
-                  f"{fmt(float(r.c_pnl[cs].mean()), 10, 3)}"
-                  f"{fmt(float(r.u_bps[us].sum()), 12, 1)}"
+                  f"{int(us.sum()):>8,}{fmt(float(r.u_pct[us].mean()), 11, 5)}"
+                  f"{fmt(float(r.c_pnl[cs].mean()), 10, 5)}"
+                  f"{fmt(float(r.u_pct[us].sum()), 12, 3)}"
                   f"{100 * float((r.c_pnl[cs] > 0).mean()):>7.1f}%")
     print("  mode = the mode the cycle was OPENED in (the entry order's mode).")
 
@@ -1789,8 +1794,8 @@ def main() -> int:
               f"{r.n_break_off:>11,}{r.break_seconds:>14,}"
               f"{100 * r.break_seconds / max(int(m.s_usable.sum()), 1):>11.2f}%"
               f"{ev:>19,}")
-    print(f"\n{'cell':<24}{'b_signal dumps':>15}{'units':>8}{'unit bps':>11}"
-          f"{'taker%':>8}{'total bps':>12}")
+    print(f"\n{'cell':<24}{'b_signal dumps':>15}{'units':>8}{'unit %':>11}"
+          f"{'taker%':>8}{'total %':>12}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
@@ -1801,16 +1806,16 @@ def main() -> int:
             print(f"{cellname(c):<24}{0:>15}{'-':>8}{'-':>11}{'-':>8}{'-':>12}")
             continue
         print(f"{cellname(c):<24}{int(cs.sum()):>15,}{int(us.sum()):>8,}"
-              f"{fmt(float(r.u_bps[us].mean()), 11, 3)}"
+              f"{fmt(float(r.u_pct[us].mean()), 11, 5)}"
               f"{100 * float(r.c_taker[cs].mean()):>7.1f}%"
-              f"{fmt(float(r.u_bps[us].sum()), 12, 1)}")
+              f"{fmt(float(r.u_pct[us].sum()), 12, 3)}")
 
     sub("2c. breakexitsize = 3 -- what the TP suppression actually bought")
     print("Counterfactual: the same cells with breakexitsize = 1 (a TP is "
           "quoted from the\nfirst unit, so no cycle is ever let run).  "
           "DIAGNOSTIC, not a candidate cell.")
-    print(f"\n{'cell':<24}{'supp. cycles':>13}{'their unit bps':>16}"
-          f"{'their rt bps':>14}{'cell total':>12}{'no-supp total':>15}"
+    print(f"\n{'cell':<24}{'supp. cycles':>13}{'their unit %':>16}"
+          f"{'their rt %':>14}{'cell total':>12}{'no-supp total':>15}"
           f"{'delta':>10}")
     for c in CELLS:
         if not c[0]:
@@ -1820,19 +1825,19 @@ def main() -> int:
         if not len(r.c_pnl):
             continue
         sp = r.c_supp == 1
-        tot = float(r.u_bps.sum())
-        totn = float(rn.u_bps.sum()) if len(rn.u_bps) else np.nan
-        us = np.isin(np.arange(len(r.u_bps)), []) if sp.sum() == 0 else None
+        tot = float(r.u_pct.sum())
+        totn = float(rn.u_pct.sum()) if len(rn.u_pct) else np.nan
+        us = np.isin(np.arange(len(r.u_pct)), []) if sp.sum() == 0 else None
         if sp.sum():
-            # per-unit bps of the units belonging to suppressed cycles
+            # per-unit % of the units belonging to suppressed cycles
             idx = np.repeat(sp, r.c_k)
-            mu = float(r.u_bps[idx].mean())
+            mu = float(r.u_pct[idx].mean())
             mrt = float(r.c_pnl[sp].mean())
         else:
             mu = mrt = np.nan
-        print(f"{cellname(c):<24}{int(sp.sum()):>13,}{fmt(mu, 16, 3)}"
-              f"{fmt(mrt, 14, 3)}{fmt(tot, 12, 1)}{fmt(totn, 15, 1)}"
-              f"{fmt(tot - totn, 10, 1)}")
+        print(f"{cellname(c):<24}{int(sp.sum()):>13,}{fmt(mu, 16, 5)}"
+              f"{fmt(mrt, 14, 5)}{fmt(tot, 12, 3)}{fmt(totn, 15, 3)}"
+              f"{fmt(tot - totn, 10, 3)}")
     print("  delta > 0 means the suppression (letting the break run to 3 units "
           "before\n  quoting a TP) EARNED, delta < 0 means it cost.")
 
@@ -1849,8 +1854,8 @@ def main() -> int:
           "price REGARDLESS of k, while\nthe notional at risk grows linearly "
           "with k.  Measured below against both.")
     print(f"\n{'cell':<24}{'k':>4}{'rt':>7}{'width/vola p50':>16}"
-          f"{'p25':>9}{'p75':>9}{'design 0.8/k':>14}{'unit bps':>10}"
-          f"{'rt bps':>9}")
+          f"{'p25':>9}{'p75':>9}{'design 0.8/k':>14}{'unit %':>10}"
+          f"{'rt %':>9}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
@@ -1866,29 +1871,29 @@ def main() -> int:
                   f"{fmt(float(np.nanpercentile(w, 25)), 9, 3)}"
                   f"{fmt(float(np.nanpercentile(w, 75)), 9, 3)}"
                   f"{fmt(EXIT_MULT / kk, 14, 3)}"
-                  f"{fmt(float(r.u_bps[us].mean()), 10, 3)}"
-                  f"{fmt(float(r.c_pnl[cs].mean()), 9, 3)}")
+                  f"{fmt(float(r.u_pct[us].mean()), 10, 5)}"
+                  f"{fmt(float(r.c_pnl[cs].mean()), 9, 5)}")
     print("\n  width/vola = (exit price - average entry) signed toward the "
           "position, divided\n  by the vola in force when the cycle opened.  "
           "Design = 0.8/k (apportioned TP);\n  the PREREG's 1.2 is the value "
           "the mapping BELIEVED it had frozen.")
 
     sub("3b. apportionment by rung (compare M2 report #29 §2.3: averaging "
-        "gave\n     +2.4..+3.5 bps/unit but a 1.7x notional and a worse total)")
-    print(f"{'cell':<24}{'rung':>6}{'units':>8}{'unit bps':>11}"
+        "gave\n     +0.024..+0.035 %/unit but a 1.7x notional and a worse total)")
+    print(f"{'cell':<24}{'rung':>6}{'units':>8}{'unit %':>11}"
           f"{'share of total':>16}")
     for c in CELLS:
         r = results[c]
-        if not len(r.u_bps):
+        if not len(r.u_pct):
             continue
-        tot = r.u_bps.sum()
+        tot = r.u_pct.sum()
         for j in range(MAX_RUNGS):
             us = r.u_rung == j
             if us.sum() < 5:
                 continue
             print(f"{cellname(c):<24}{j + 1:>6}{int(us.sum()):>8,}"
-                  f"{fmt(float(r.u_bps[us].mean()), 11, 3)}"
-                  f"{fmt(100 * float(r.u_bps[us].sum()) / tot if tot else np.nan, 15, 1)}%")
+                  f"{fmt(float(r.u_pct[us].mean()), 11, 5)}"
+                  f"{fmt(100 * float(r.u_pct[us].sum()) / tot if tot else np.nan, 15, 1)}%")
     sub("3c. the apportionment identity -- the cycle's gross win does not "
         "scale with\n     the risk the cycle took on")
     print("cycle gross in PRICE units of vola = (width/vola) * k.  If the "
@@ -1909,8 +1914,8 @@ def main() -> int:
             print(f"{cellname(c):<24}{kk:>4}{int(cs.sum()):>7,}"
                   f"{fmt(float(np.nanmedian(g)), 19, 3)}"
                   f"{fmt(float(np.nanmean(g)), 17, 3)}{EXIT_MULT:>9.3f}")
-    print(f"\n{'cell':<24}{'winning rt':>11}{'mean rt bps':>13}{'mean k':>8}"
-          f"{'hold p50':>10}{'losing rt':>11}{'mean rt bps':>13}{'mean k':>8}"
+    print(f"\n{'cell':<24}{'winning rt':>11}{'mean rt %':>13}{'mean k':>8}"
+          f"{'hold p50':>10}{'losing rt':>11}{'mean rt %':>13}{'mean k':>8}"
           f"{'hold p50':>10}")
     for c in CELLS:
         r = results[c]
@@ -1920,11 +1925,11 @@ def main() -> int:
         lo_ = r.c_pnl < 0
         hi_ = ~lo_
         print(f"{cellname(c):<24}{int(hi_.sum()):>11,}"
-              f"{fmt(float(r.c_pnl[hi_].mean()), 13, 2)}"
+              f"{fmt(float(r.c_pnl[hi_].mean()), 13, 4)}"
               f"{fmt(float(r.c_k[hi_].mean()), 8, 2)}"
               f"{fmt(float(np.percentile(hold[hi_], 50)), 10, 0)}"
               f"{int(lo_.sum()):>11,}"
-              f"{fmt(float(r.c_pnl[lo_].mean()), 13, 2)}"
+              f"{fmt(float(r.c_pnl[lo_].mean()), 13, 4)}"
               f"{fmt(float(r.c_k[lo_].mean()), 8, 2)}"
               f"{fmt(float(np.percentile(hold[lo_], 50)), 10, 0)}")
     print("  The machine wins small on a LIGHT book and loses big on a HEAVY "
@@ -1934,8 +1939,8 @@ def main() -> int:
           "  that caps the win at a level independent of the risk taken to "
           "earn it.")
 
-    print(f"\n{'cell':<24}{'k>=2 rt':>9}{'rung1-only bps':>16}"
-          f"{'avg per-unit bps':>18}{'delta (averaging)':>19}")
+    print(f"\n{'cell':<24}{'k>=2 rt':>9}{'rung1-only %':>16}"
+          f"{'avg per-unit %':>18}{'delta (averaging)':>19}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
@@ -1948,20 +1953,20 @@ def main() -> int:
         pos = 0
         for idx in range(len(r.c_k)):
             if cs[idx]:
-                first.append(r.u_bps[pos])
+                first.append(r.u_pct[pos])
             pos += r.c_k[idx]
         first = np.array(first, float)
         per_unit = r.c_pnl[cs] / r.c_k[cs]
         print(f"{cellname(c):<24}{int(cs.sum()):>9,}"
-              f"{fmt(float(first.mean()), 16, 3)}"
-              f"{fmt(float(per_unit.mean()), 18, 3)}"
-              f"{fmt(float((per_unit - first).mean()), 19, 3)}")
+              f"{fmt(float(first.mean()), 16, 5)}"
+              f"{fmt(float(per_unit.mean()), 18, 5)}"
+              f"{fmt(float((per_unit - first).mean()), 19, 5)}")
 
     # =====================================================================
     header("4. ADVERSE SELECTION AND THE TIME LADDER")
     # =====================================================================
     print("Calibration reference (#26, queue/C1/10 s touch quotes): capture "
-          "+0.604,\n  adverse(5 s) -1.321, cap+adv -0.716 bps; #29 measured "
+          "+0.00604 %,\n  adverse(5 s) -1.321 bps, cap+adv -0.00716 %; #29 measured "
           "filled -1.4..-1.8 vs\n  missed +0.2..+0.4 bps at 5 s.")
     print(f"\n{'cell':<24}{'placed':>8}{'filled':>8}{'f':>7}{'cap':>9}"
           f"{'adv(5s)':>9}{'cap+adv':>9}{'FILLED fwd5':>12}{'MISSED fwd5':>12}"
@@ -1973,9 +1978,9 @@ def main() -> int:
         fl = r.p_fill
         print(f"{cellname(c):<24}{len(fl):>8,}{int(fl.sum()):>8,}"
               f"{100 * fl.mean():>6.1f}%"
-              f"{fmt(float(np.nanmean(r.f_cap)), 9, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap)), 9, 5)}"
               f"{fmt(float(np.nanmean(r.f_adv)), 9, 3)}"
-              f"{fmt(float(np.nanmean(r.f_cap + r.f_adv)), 9, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap + r.f_adv)), 9, 5)}"
               f"{fmt(float(np.nanmean(r.p_fwd5[fl])), 12, 3)}"
               f"{fmt(float(np.nanmean(r.p_fwd5[~fl])), 12, 3)}"
               f"{fmt(float(np.nanmean(r.p_fwd60[fl])), 13, 3)}"
@@ -1989,7 +1994,7 @@ def main() -> int:
     sub("4b. time-ladder bucket economics -- is 'relax' another word for "
         "'taker'?")
     print(f"{'cell':<24}{'bucket':<13}{'rt':>7}{'maker rt':>10}{'taker rt':>10}"
-          f"{'maker unit bps':>16}{'taker unit bps':>16}")
+          f"{'maker unit %':>16}{'taker unit %':>16}")
     for c in CELLS:
         r = results[c]
         if not len(r.c_pnl):
@@ -2005,25 +2010,25 @@ def main() -> int:
             print(f"{cellname(c):<24}{KIND_NAMES[kd]:<13}{int(cs.sum()):>7,}"
                   f"{int((cs & (r.c_taker == 0)).sum()):>10,}"
                   f"{int((cs & (r.c_taker == 1)).sum()):>10,}"
-                  f"{fmt(float(r.u_bps[mk].mean()) if mk.any() else np.nan, 16, 3)}"
-                  f"{fmt(float(r.u_bps[tk].mean()) if tk.any() else np.nan, 16, 3)}")
+                  f"{fmt(float(r.u_pct[mk].mean()) if mk.any() else np.nan, 16, 5)}"
+                  f"{fmt(float(r.u_pct[tk].mean()) if tk.any() else np.nan, 16, 5)}")
 
     sub("4c. break-even arithmetic: what would the losing bucket have to lose?")
     print(f"{'cell':<24}{'p_win':>8}{'g_win':>10}{'p_lose':>8}"
           f"{'l_lose actual':>15}{'l_lose needed':>15}{'factor':>9}")
     for c in CELLS:
         r = results[c]
-        if not len(r.u_bps):
+        if not len(r.u_pct):
             continue
-        win = r.u_bps > 0
+        win = r.u_pct > 0
         lose = ~win
         if not win.any() or not lose.any():
             continue
         pw, pl = float(win.mean()), float(lose.mean())
-        gw, gl = float(r.u_bps[win].mean()), float(r.u_bps[lose].mean())
+        gw, gl = float(r.u_pct[win].mean()), float(r.u_pct[lose].mean())
         need = -pw * gw / pl
-        print(f"{cellname(c):<24}{100 * pw:>7.1f}%{fmt(gw, 10, 3)}"
-              f"{100 * pl:>7.1f}%{fmt(gl, 15, 3)}{fmt(need, 15, 3)}"
+        print(f"{cellname(c):<24}{100 * pw:>7.1f}%{fmt(gw, 10, 5)}"
+              f"{100 * pl:>7.1f}%{fmt(gl, 15, 5)}{fmt(need, 15, 5)}"
               f"{fmt(gl / need, 8, 2)}x")
 
     # =====================================================================
@@ -2041,17 +2046,17 @@ def main() -> int:
         bres = {c: run_cell_bars(B, *c) for c in CELLS}
         bst = {c: cell_stats(r, B.eff_days) for c, r in bres.items()}
         print(f"{'cell':<24}{'placed':>8}{'fills':>8}{'rt':>7}{'rt/day':>8}"
-              f"{'unit bps':>10}{'rt bps':>9}{'total':>11}{'clus t':>8}"
-              f"{'95% CI (unit bps)':>21}{'maxDD':>10}")
+              f"{'unit %':>10}{'rt %':>9}{'total':>11}{'clus t':>8}"
+              f"{'95% CI (unit %)':>21}{'maxDD':>10}")
         for c in CELLS:
             r, s = bres[c], bst[c]
             print(f"{cellname(c):<24}{r.n_place:>8,}{r.n_fillx:>8,}"
                   f"{s['n_rt']:>7,}{fmt(s['rt_day'], 8, 1)}"
-                  f"{fmt(s['mean_unit'], 10, 3)}{fmt(s['mean_rt'], 9, 3)}"
-                  f"{fmt(s['total'], 11, 1)}{fmt(s['tcl'], 8, 2)}"
-                  f"  [{s['lo']:+8.3f},{s['hi']:+8.3f}]{fmt(s['maxdd'], 10, 1)}")
+                  f"{fmt(s['mean_unit'], 10, 5)}{fmt(s['mean_rt'], 9, 5)}"
+                  f"{fmt(s['total'], 11, 3)}{fmt(s['tcl'], 8, 2)}"
+                  f"  [{s['lo']:+9.5f},{s['hi']:+9.5f}]{fmt(s['maxdd'], 10, 3)}")
         print(f"\n{'cell':<24}{'exit':<13}{'rt':>7}{'share':>8}{'taker%':>8}"
-              f"{'unit bps':>11}{'total bps':>12}")
+              f"{'unit %':>11}{'total %':>12}")
         for c in CELLS:
             r = bres[c]
             if not len(r.c_pnl):
@@ -2064,10 +2069,10 @@ def main() -> int:
                 print(f"{cellname(c):<24}{KIND_NAMES[kd]:<13}{int(cs.sum()):>7,}"
                       f"{100 * cs.mean():>7.1f}%"
                       f"{100 * float(r.c_taker[cs].mean()):>7.1f}%"
-                      f"{fmt(float(r.u_bps[us].mean()), 11, 3)}"
-                      f"{fmt(float(r.u_bps[us].sum()), 12, 1)}")
-        print(f"\n{'cell':<24}{'mode':<9}{'rt':>7}{'unit bps':>11}"
-              f"{'total bps':>12}{'break-ups':>11}{'break-dns':>11}")
+                      f"{fmt(float(r.u_pct[us].mean()), 11, 5)}"
+                      f"{fmt(float(r.u_pct[us].sum()), 12, 3)}")
+        print(f"\n{'cell':<24}{'mode':<9}{'rt':>7}{'unit %':>11}"
+              f"{'total %':>12}{'break-ups':>11}{'break-dns':>11}")
         for c in CELLS:
             r = bres[c]
             if not len(r.c_pnl):
@@ -2078,8 +2083,8 @@ def main() -> int:
                 if cs.sum() == 0:
                     continue
                 print(f"{cellname(c):<24}{nm:<9}{int(cs.sum()):>7,}"
-                      f"{fmt(float(r.u_bps[us].mean()), 11, 3)}"
-                      f"{fmt(float(r.u_bps[us].sum()), 12, 1)}"
+                      f"{fmt(float(r.u_pct[us].mean()), 11, 5)}"
+                      f"{fmt(float(r.u_pct[us].sum()), 12, 3)}"
                       f"{r.n_break_up:>11,}{r.n_break_dn:>11,}")
         print("\n  (b) participation is INFLATED relative to (a): a bar model "
               "fills any order\n  the bar's high/low touched through, with no "
@@ -2148,11 +2153,11 @@ def main() -> int:
             continue
         psel = r.p_mode == 0
         print(f"  {cellname(c):<24}{int(sel.sum()):>12,}"
-              f"{fmt(float(np.nanmean(r.f_cap[sel])), 9, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap[sel])), 9, 5)}"
               f"{fmt(float(np.nanmean(r.f_adv[sel])), 9, 3)}"
-              f"{fmt(float(np.nanmean(r.f_cap[sel] + r.f_adv[sel])), 9, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap[sel] + r.f_adv[sel])), 9, 5)}"
               f"{100 * float(r.p_fill[psel].mean()):>7.1f}%")
-    print("\n  capture is LARGE compared with #26's +0.604 bps because M3 does "
+    print("\n  capture is LARGE compared with #26's +0.00604 % because M3 does "
           "not quote at\n  the touch: the grid price sits >= 2*vola away from "
           "the centre and is reached\n  only by a move that comes to it.  That "
           "is the registered difference, not an\n  engine difference -- the "
@@ -2173,7 +2178,7 @@ def main() -> int:
               f"{np.percentile(hold_all, 50):.0f} / "
               f"{np.percentile(hold_all, 90):.0f} / {hold_all.max():.0f} s")
         print(f"  funding not charged; at 0.06 %/day the p90 hold implies "
-              f"{0.06e4 / 100 * np.percentile(hold_all, 90) / 86400:.3f} bps")
+              f"{0.06 * np.percentile(hold_all, 90) / 86400:.5f} %")
     print(f"  determinism                   : seed {SEED}; the only RNG is the "
           f"seeded cluster\n                                  bootstrap; no "
           f"network, no wall-clock input")
@@ -2181,14 +2186,14 @@ def main() -> int:
     # =====================================================================
     header("7. SELECTION RULE (PREREG §4) APPLIED")
     # =====================================================================
-    print("1. cut: round trips >= 50 AND net (unit bps) > 0")
+    print("1. cut: round trips >= 50 AND net (unit %) > 0")
     passing = []
     for c in CELLS:
         s = stats[c]
         ok = (s["n_rt"] >= 50 and np.isfinite(s["mean_unit"])
               and s["mean_unit"] > 0)
         print(f"   {cellname(c)}: round trips {s['n_rt']:>6,}  "
-              f"net {fmt(s['mean_unit'], 9, 3)} bps/unit  -> "
+              f"net {fmt(s['mean_unit'], 9, 5)} %/unit  -> "
               f"{'PASS' if ok else 'cut'}")
         if ok:
             passing.append(c)
@@ -2221,7 +2226,7 @@ def main() -> int:
             ok = np.isfinite(ratio) and ratio >= 0.5
             plateau &= ok
             print(f"   axis {axis:<7} neighbour {cellname(nb_)}: net "
-                  f"{fmt(v, 9, 3)} ({fmt(100 * ratio, 6, 0)}% of selected) -> "
+                  f"{fmt(v, 9, 5)} ({fmt(100 * ratio, 6, 0)}% of selected) -> "
                   f"{'ok' if ok else 'DEGRADED'}")
         print(f"\n   plateau: {'satisfied' if plateau else 'NOT satisfied'}")
         if plateau:

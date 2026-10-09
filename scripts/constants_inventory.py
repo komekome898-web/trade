@@ -131,17 +131,17 @@ def print_table(flagged: list[FlaggedConstant]) -> None:
 # Keyed by full "group.name" path. A constant not in this dict falls back to
 # a generic template built from its `notes` field.
 MEASUREMENT_PLANS: dict[str, dict[str, str]] = {
-    "bitflyer_fx_btc_jpy.taker_round_trip_floor_bps_OLD": {
+    "bitflyer_fx_btc_jpy.taker_round_trip_floor_pct_OLD": {
         "what": "何も新規計測しない — この定数は廃止済み(deprecated)。後継の実測値は "
-                "`bitflyer_fx_btc_jpy.realized_round_trip_bps`(2.0〜2.6bps、E2 で測定済み)。",
+                "`bitflyer_fx_btc_jpy.realized_round_trip_pct`(0.020〜0.026%、E2 で測定済み)。",
         "script": "対応不要。使用箇所(`scripts/qa/pipeline_known_answer_taker.py`)は "
                    "`require_source` がこの定数で例外を出すことを確認するテストであり、"
                    "実際の値を消費してはいない。",
         "when": "対応不要(既に測定済みの後継値に置き換え済み)。",
     },
-    "jpx_cash_equity.etf_spread_bps": {
+    "jpx_cash_equity.etf_spread_pct": {
         "what": "JPX 上場 ETF(1321/1306/1343/1591/2516 等、`config/on1_live.yaml` 対象銘柄)の"
-                "板スプレッド(bps)を、kabuステーション PUSH 配信の板データから実測する。",
+                "板スプレッド(仲値に対する %)を、kabuステーション PUSH 配信の板データから実測する。",
         "script": "現在この値を録る録画スクリプトが存在しない(`notes` 参照)。"
                    "`src/bot/jpx/kabu_client.py` の PUSH 配信を使い、"
                    "`scripts/record_oi.py`(bitFlyer 側)と同種の録画スクリプトを新規作成する必要がある"

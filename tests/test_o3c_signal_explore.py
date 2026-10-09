@@ -52,7 +52,7 @@ BASE_MS = 1_700_000_000_000
 def _columns() -> list[str]:
     cols = ["kind", "cascade_id", "side", "time_ms", "bundle_width_ms",
             "bundle_n_events_dedup", "bundle_total_notional", "bin_pct",
-            "dist_node_bp", "dist_vwap_bp", "implied_leverage", "doi_pre_1h"]
+            "dist_node_pct", "dist_vwap_pct", "implied_leverage", "doi_pre_1h"]
     for h in H:
         cols += [f"bp_{h}m", f"bp_{h}m_reactdir",
                  f"mfe_{h}m_reactdir", f"mae_{h}m_reactdir"]
@@ -85,8 +85,8 @@ def _liq_row(i: int) -> dict:
         "bundle_n_events_dedup": 1 + i % 7,
         "bundle_total_notional": 1000.0 * (i + 1),
         "bin_pct": float(i % 10),
-        "dist_node_bp": float(i + 1) * 0.5 * (1 if i % 3 else -1),
-        "dist_vwap_bp": -float(i + 1),
+        "dist_node_pct": float(i + 1) * 0.5 * (1 if i % 3 else -1),
+        "dist_vwap_pct": -float(i + 1),
         "implied_leverage": float(5 + i % 20),
         "doi_pre_1h": -1000.0 + i * 37.0,
         "matched_liq_id": "",
@@ -107,8 +107,8 @@ def _ctl_row(i: int, partner: str) -> dict:
         "bundle_width_ms": "", "bundle_n_events_dedup": "",
         "bundle_total_notional": "",
         "bin_pct": float((i + 3) % 10),
-        "dist_node_bp": float(i + 2) * 0.4 * (1 if i % 4 else -1),
-        "dist_vwap_bp": -(float(i) + 0.5),
+        "dist_node_pct": float(i + 2) * 0.4 * (1 if i % 4 else -1),
+        "dist_vwap_pct": -(float(i) + 0.5),
         "implied_leverage": "",
         "doi_pre_1h": -900.0 + i * 41.0,
         "matched_liq_id": partner,
@@ -392,7 +392,7 @@ class _Shim:
         self._d = dist
         self._v = vals
 
-    def dist(self, idx, col="dist_vwap_bp"):
+    def dist(self, idx, col="dist_vwap_pct"):
         return self._d[idx]
 
 

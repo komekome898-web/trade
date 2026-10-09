@@ -21,7 +21,7 @@ def test_schema_completeness(constants):
     """Every entry has value/unit/source_type, and source_type is valid."""
     for path, c in constants.items():
         assert isinstance(c, Constant)
-        assert c.value is not None or path.endswith("etf_spread_bps"), path
+        assert c.value is not None or path.endswith("etf_spread_pct"), path
         assert c.unit, f"{path}: missing unit"
         assert c.source_type in ("primary_document", "measured", "assumed"), path
 
@@ -40,15 +40,15 @@ def test_measured_have_measured_by(constants):
 
 
 def test_deprecated_entries_flagged(constants):
-    old = constants["bitflyer_fx_btc_jpy.taker_round_trip_floor_bps_OLD"]
+    old = constants["bitflyer_fx_btc_jpy.taker_round_trip_floor_pct_OLD"]
     assert old.deprecated is True
     assert old.source_type == "assumed"
-    assert "2bps" in (old.reason or "") or "slippage" in (old.reason or "")
+    assert "0.02%" in (old.reason or "") or "slippage" in (old.reason or "")
 
 
 def test_deprecated_or_assumed_reject_via_require_source(constants):
     with pytest.raises(AssumedConstantError):
-        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_bps_OLD", constants)
+        require_source("bitflyer_fx_btc_jpy.taker_round_trip_floor_pct_OLD", constants)
     with pytest.raises(AssumedConstantError):
         require_source("gmo_fx_usdjpy.spread_sen", constants)
 
@@ -67,8 +67,8 @@ def test_require_source_unknown_name_raises(constants):
 
 def test_require_source_loads_lazily_without_table():
     # No pre-loaded table passed — should load config/constants.yaml itself.
-    c = require_source("bitflyer_fx_btc_jpy.quoted_spread_median_bps", root=".")
-    assert c.unit == "bps"
+    c = require_source("bitflyer_fx_btc_jpy.quoted_spread_median_pct", root=".")
+    assert c.unit == "percent_of_mid"
 
 
 def test_key_values_match_config_products_yaml(constants):
@@ -148,7 +148,7 @@ def test_topix500_membership_note_present_and_not_a_membership_list(constants):
 def test_malformed_file_raises(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "constants.yaml").write_text(
-        "group:\n  bad_entry:\n    value: 1\n    unit: bps\n", encoding="utf-8"
+        "group:\n  bad_entry:\n    value: 1\n    unit: percent\n", encoding="utf-8"
     )
     with pytest.raises(ConstantsError):
         load_constants(tmp_path)
@@ -157,7 +157,7 @@ def test_malformed_file_raises(tmp_path):
 def test_invalid_source_type_raises(tmp_path):
     (tmp_path / "config").mkdir()
     (tmp_path / "config" / "constants.yaml").write_text(
-        "group:\n  bad_entry:\n    value: 1\n    unit: bps\n    source_type: guessed\n",
+        "group:\n  bad_entry:\n    value: 1\n    unit: percent\n    source_type: guessed\n",
         encoding="utf-8",
     )
     with pytest.raises(ConstantsError):

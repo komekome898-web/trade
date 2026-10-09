@@ -3,6 +3,10 @@
 (`results/PHASE2/EXEC/EXEC_FLOOR_TABLES.md`)に整形する。截断なし(EXEC_FLOOR_PREREG.md §8)。
 
     PYTHONPATH=src:scripts python scripts/render_exec_floor.py
+
+単位(L-920): スプレッド・費用(E-a・E-b・E-c、E-f の e_a/e_b_001、E-i の往復費用)は mid に対する %、
+値動き(E-d・E-e のドリフト・K1 の経費前)は bp。L-920 より前の exec_floor.json はスプレッド・費用も
+*_bp(× 1e4)の鍵で持つので、*_pct が無ければ *_bp を / 100 して % で出す(`pct_of`)。
 """
 from __future__ import annotations
 
@@ -43,11 +47,31 @@ def table(headers, rows):
     return "\n".join(out)
 
 
+PCT_ND = 5   # decimals for % of mid (the former 3 decimals of x 1e4, plus 2)
+
+
+def pct_of(st, key):
+    """A spread/cost statistic in % of mid: `<key>_pct`, else a pre-L-920 `<key>_bp` (x 1e4) / 100."""
+    if f"{key}_pct" in st:
+        return st[f"{key}_pct"]
+    v = st.get(f"{key}_bp")
+    return None if v is None else v / 100
+
+
 def weighted_stat_row(label, st):
-    return [label, f"{st.get('n', 0):,}", fmt(st.get("p10_bp")), fmt(st.get("p50_bp")), fmt(st.get("p90_bp"))]
+    """E-a (spread, % of mid)."""
+    return [label, f"{st.get('n', 0):,}", fmt(pct_of(st, "p10"), PCT_ND), fmt(pct_of(st, "p50"), PCT_ND),
+            fmt(pct_of(st, "p90"), PCT_ND)]
+
+
+def pct_stat_row(label, st):
+    """E-b / E-c (a cost or a fill-to-mid distance, % of mid)."""
+    return [label, f"{st.get('n', 0):,}", fmt(pct_of(st, "mean"), PCT_ND), fmt(pct_of(st, "p10"), PCT_ND),
+            fmt(pct_of(st, "p50"), PCT_ND), fmt(pct_of(st, "p90"), PCT_ND)]
 
 
 def plain_stat_row(label, st, with_ci=False):
+    """E-d (a price move after the fill, bp)."""
     r = [label, f"{st.get('n', 0):,}", fmt(st.get("mean_bp")), fmt(st.get("p10_bp")),
          fmt(st.get("p50_bp")), fmt(st.get("p90_bp"))]
     if with_ci:
@@ -99,7 +123,7 @@ def main() -> None:
     p(table(["日付", "ticker行", "crossed", "気配欠測share", "板行", "板非単調", "約定行", "約定逆行"], rows))
 
     # -- E-a --------------------------------------------------------------
-    h(2, "E-a 気配スプレッド((ask-bid)/mid, bp, 時間加重)")
+    h(2, "E-a 気配スプレッド((ask-bid)/mid, %, 時間加重)")
     ea = data["e_a_quoted_spread"]
     p(ea["note"])
     p(f"除外重みの割合: {fmt_pct(ea['excluded_weight_share'])}")
@@ -116,7 +140,7 @@ def main() -> None:
     p(table(["ボラ", "n", "p10", "p50", "p90"], rows))
 
     # -- E-b --------------------------------------------------------------
-    h(2, "E-b 成行の片道コスト(板を歩く。bp vs mid)")
+    h(2, "E-b 成行の片道コスト(板を歩く。% vs mid)")
     eb = data["e_b_board_walk_cost"]
     p(eb["note"])
     p(f"有効サンプル {eb['n_samples_valid']:,} / 除外(非単調) {fmt_pct(eb['excluded_share'])}")
@@ -129,33 +153,33 @@ def main() -> None:
           f"either {exh['either']:,} ({fmt_pct(exh_sh['either'])})")
         rows = []
         for side in ("buy", "sell", "roundtrip"):
-            rows.append(plain_stat_row(f"全期間 {side}", cell["overall"][side]))
+            rows.append(pct_stat_row(f"全期間 {side}", cell["overall"][side]))
         p(table(["区分", "n", "mean", "p10", "p50", "p90"], rows))
         p("**時間帯別(roundtrip)**")
-        rows = [plain_stat_row(lbl, cell["by_hour_utc"]["roundtrip"][lbl]) for lbl in HOUR_LABELS]
+        rows = [pct_stat_row(lbl, cell["by_hour_utc"]["roundtrip"][lbl]) for lbl in HOUR_LABELS]
         p(table(["時間帯", "n", "mean", "p10", "p50", "p90"], rows))
         p("**ボラ三分位別(roundtrip)**")
-        rows = [plain_stat_row(v, cell["by_vol_tercile"]["roundtrip"][v]) for v in VOL_LABELS]
+        rows = [pct_stat_row(v, cell["by_vol_tercile"]["roundtrip"][v]) for v in VOL_LABELS]
         p(table(["ボラ", "n", "mean", "p10", "p50", "p90"], rows))
 
     # -- E-c --------------------------------------------------------------
-    h(2, "E-c 実現スプレッド(|価格-直前mid|/mid, bp)")
+    h(2, "E-c 実現スプレッド(|価格-直前mid|/mid, %)")
     ec = data["e_c_realized_spread"]
     p(ec["note"])
     p(f"直前気配欠測で除外: {ec['excluded_count']:,} ({fmt_pct(ec['excluded_share'])})")
     for side in ("ALL", "BUY", "SELL"):
         cell = ec["by_side"][side]
         h(3, f"テイカー側 = {side}")
-        rows = [plain_stat_row("全期間", cell["overall"])]
+        rows = [pct_stat_row("全期間", cell["overall"])]
         p(table(["区分", "n", "mean", "p10", "p50", "p90"], rows))
         p("**時間帯別**")
-        rows = [plain_stat_row(lbl, cell["by_hour_utc"][lbl]) for lbl in HOUR_LABELS]
+        rows = [pct_stat_row(lbl, cell["by_hour_utc"][lbl]) for lbl in HOUR_LABELS]
         p(table(["時間帯", "n", "mean", "p10", "p50", "p90"], rows))
         p("**ボラ三分位別**")
-        rows = [plain_stat_row(v, cell["by_vol_tercile"][v]) for v in VOL_LABELS]
+        rows = [pct_stat_row(v, cell["by_vol_tercile"][v]) for v in VOL_LABELS]
         p(table(["ボラ", "n", "mean", "p10", "p50", "p90"], rows))
         p("**約定サイズビン別**")
-        rows = [plain_stat_row(sbin, cell["by_size_bin"][sbin]) for sbin in SIZE_BIN_LABELS]
+        rows = [pct_stat_row(sbin, cell["by_size_bin"][sbin]) for sbin in SIZE_BIN_LABELS]
         p(table(["サイズ", "n", "mean", "p10", "p50", "p90"], rows))
 
     # -- E-d --------------------------------------------------------------
@@ -224,12 +248,12 @@ def main() -> None:
     p("")
     unc = ef["unconditional_same_days"]
     p("**無条件(同じ日、全分)**")
-    rows = [["E-a(全分)", f"{unc['e_a_same_days']['n']:,}", fmt(unc['e_a_same_days']['p50_bp']),
-             fmt(unc['e_a_same_days']['p90_bp'])],
+    rows = [["E-a(全分)", f"{unc['e_a_same_days']['n']:,}", fmt(pct_of(unc['e_a_same_days'], 'p50'), PCT_ND),
+             fmt(pct_of(unc['e_a_same_days'], 'p90'), PCT_ND)],
             ["E-b 0.01BTC roundtrip(板window内の全分)", f"{unc['e_b_001_same_days_board_window']['n']:,}",
-             fmt(unc['e_b_001_same_days_board_window']['p50_bp']),
-             fmt(unc['e_b_001_same_days_board_window']['p90_bp'])]]
-    p(table(["量", "n", "p50", "p90"], rows))
+             fmt(pct_of(unc['e_b_001_same_days_board_window'], 'p50'), PCT_ND),
+             fmt(pct_of(unc['e_b_001_same_days_board_window'], 'p90'), PCT_ND)]]
+    p(table(["量", "n", "p50 (%)", "p90 (%)"], rows))
     rows = []
     for T, c in unc["e_e"].items():
         rows.append([f"T={T}s", f"{c['n_valid_minutes']:,}", fmt_pct(c["touched_share_buy"]),
@@ -240,8 +264,8 @@ def main() -> None:
     rows = []
     for key, cell in ef["cells"].items():
         rows.append([key, f"{cell['n_signal_minutes']:,}", f"{cell['n_signal_minutes_in_board_window']:,}",
-                     fmt(cell["e_a"]["p50_bp"]), fmt(cell["e_a"]["p90_bp"]),
-                     fmt(cell["e_b_001"]["p50_bp"]), fmt(cell["e_b_001"]["p90_bp"]),
+                     fmt(pct_of(cell["e_a"], "p50"), PCT_ND), fmt(pct_of(cell["e_a"], "p90"), PCT_ND),
+                     fmt(pct_of(cell["e_b_001"], "p50"), PCT_ND), fmt(pct_of(cell["e_b_001"], "p90"), PCT_ND),
                      f"{cell['e_b_001']['n']:,}"])
     p(table(["source|foot", "nシグナル分", "n板window内", "E-a p50", "E-a p90",
              "E-b001 p50", "E-b001 p90", "E-b001 n"], rows))
@@ -276,14 +300,20 @@ def main() -> None:
     h(2, "E-i 床のまとめ")
     ei = data["e_i_floor_summary"]
     p(ei["note"])
-    rt = ei["roundtrip_taker_cost_001btc_bp"]
-    rows = [["無条件(板7日)", f"{rt['unconditional']['n']:,}", fmt(rt['unconditional']['p50']),
-             fmt(rt['unconditional']['p90'])],
-            ["高ボラ三分位(板7日)", f"{rt['high_vol_tercile']['n']:,}", fmt(rt['high_vol_tercile']['p50']),
-             fmt(rt['high_vol_tercile']['p90'])]]
+    if "roundtrip_taker_cost_001btc_pct" in ei:
+        rt, div = ei["roundtrip_taker_cost_001btc_pct"], 1.0
+    else:   # pre-L-920 json: the same costs x 1e4 under the old key -> / 100 to %
+        rt, div = ei["roundtrip_taker_cost_001btc_bp"], 100.0
+
+    def rt_v(v):
+        return None if v is None else v / div
+    rows = [["無条件(板7日)", f"{rt['unconditional']['n']:,}", fmt(rt_v(rt['unconditional']['p50']), PCT_ND),
+             fmt(rt_v(rt['unconditional']['p90']), PCT_ND)],
+            ["高ボラ三分位(板7日)", f"{rt['high_vol_tercile']['n']:,}", fmt(rt_v(rt['high_vol_tercile']['p50']), PCT_ND),
+             fmt(rt_v(rt['high_vol_tercile']['p90']), PCT_ND)]]
     for key, c in rt["k1_signal_minutes_by_source_foot"].items():
-        rows.append([f"K1シグナル分 {key}", f"{c['n']:,}", fmt(c["p50_bp"]), fmt(c["p90_bp"])])
-    p(table(["区分", "n", "p50", "p90"], rows))
+        rows.append([f"K1シグナル分 {key}", f"{c['n']:,}", fmt(pct_of(c, "p50"), PCT_ND), fmt(pct_of(c, "p90"), PCT_ND)])
+    p(table(["区分", "n", "p50 (%)", "p90 (%)"], rows))
     mk = ei["maker_touched_share_and_post_touch_drift"]
     rows = []
     for T in ("T60", "T300"):

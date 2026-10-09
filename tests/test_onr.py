@@ -116,9 +116,9 @@ def test_mean_t_matches_scipy_style_one_sample_t():
     assert np.isclose(t, expected_t)
 
 
-def test_net_mean_t_subtracts_cost_in_bps():
+def test_net_mean_t_subtracts_cost_in_pct():
     x = np.array([0.001] * 100)
-    m_net, t_net = onr.net_mean_t(x, cost_bps=1.0)
+    m_net, t_net = onr.net_mean_t(x, cost_pct=0.01)   # 0.01 % = the former 1.0 bp
     assert np.isclose(m_net, 0.001 - 1.0e-4)
 
 

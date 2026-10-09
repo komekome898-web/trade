@@ -256,7 +256,8 @@ def test_sealed_window_recovers_a_planted_drift(tmp_path, monkeypatch):
         row = main.loc[sym]
         # the planted drift comes back, and its CI is on the right side of zero
         assert row["ci_lo"] > 0.0, sym
-        assert abs(row["mean"] - planted) < 5.0, (sym, row["mean"])
+        # the optimistic net is in % since L-920 (planted is bps): / 100, tolerance 5 bp = 0.05 %
+        assert abs(row["mean"] - planted / 100.0) < 0.05, (sym, row["mean"])
 
     # the endpoint rule really did restrict the sample to the sealed rows
     full = pd.read_csv(root / "backtest_data" / SNAPSHOT_REL_NAME / "1306.T.csv")

@@ -156,7 +156,9 @@ def jev_state_for_q7_candidate(cand_row: dict, all_ts: np.ndarray, all_side: np.
 # 2. 選定(stage=select)
 # ===========================================================================
 def load_rows() -> pd.DataFrame:
-    return pd.read_csv(ROWS_PATH, low_memory=False)
+    # L-920: 前の rows_continue の材料 5 は mat5_distance_to_liquidation_node(名前に単位の無い bp)。
+    # 今の名前(_pct)が無ければ / 100 して足す(o3c_price_level_table.pct_dist_frame)。
+    return cont.base.pct_dist_frame(pd.read_csv(ROWS_PATH, low_memory=False))
 
 
 def build_manifest(df: pd.DataFrame) -> dict:

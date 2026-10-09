@@ -100,14 +100,16 @@ def _world(tmp_path, n_min=3000, start="2023-01-01T00:00:00", trades=None, data_
 # ---- the ledger ---------------------------------------------------------------------------------------------
 def test_every_ledger_group_exists_and_every_shared_run_is_placed():
     cat = C.catalog(str(REPO / "backtest_runs_shared"))
-    assert cat["missing_groups"] == []
+    # the owner's decision L-764 3.A deleted these K1 groups' runs (a705e9ed); the ledger keeps their description
+    assert sorted(cat["missing_groups"]) == sorted(["k1_newenv_a", "k1_newenv_g", "k1_env_fixes/pipeline",
+                                                    "k1_env_fixes/pipeline_r2", "k1_newenv_g_close"])
     assert [t["id"] for t in cat["themes"] if t["id"] == T.UNLISTED_THEME] == []
     assert sum(s["n_runs"] for t in cat["themes"] for s in t["strategies"]) == cat["n_runs"]
     T.strategy_groups()
     for th in T.THEMES:
         for st in th["strategies"]:
             assert 3 <= len(st["description"]) <= 6 and st["sources"] and set(st["axes"]) <= set(T.AXES)
-    env = [t for t in cat["themes"] if t["id"] == "env_check"][0]
+    env = [t for t in T.THEMES if t["id"] == "env_check"][0]
     assert "k1_newenv_g_close" in [g for s in env["strategies"] for g in s["groups"]]
 
 
@@ -394,7 +396,7 @@ def test_column_form_trades_read_like_the_row_form_and_hold_no_money():
     a = C.read_trades({"data": rows})
     doc = {"version": 1, "t_unit": "ns", "entry_t_ns": [r["entry_t_ns"] for r in rows], "entry_px": [100] * 3,
            "exit_t_ns": [r["exit_t_ns"] for r in rows], "exit_px": [r["exit_px"] for r in rows],
-           "side": [1, -1, 1], "qty": [1, 1, 1], "pnl_bp": [float(x) * 100 for x in a.pct]}  # the exporter's column: rate x 1e4
+           "side": [1, -1, 1], "qty": [1, 1, 1], "pnl_bp": [float(x) * 100 for x in a.pct]}  # the exporter's column before L-920: rate x 1e4
     b = C.read_trades(doc)
     assert b.pnl_derived and np.allclose(b.pct, a.pct) and np.array_equal(b.xt, a.xt) and np.array_equal(b.side, a.side)
     st = C.trade_stats(b)
@@ -462,8 +464,9 @@ FXCOLS = "ts,open,high,low,close,vol"
 
 
 def _write_card(root: Path, card: str, variant: str, t0: int, trades: list, period=None, prov_extra=None):
-    """One card variant's output as scripts/dashboard_cards writes it: trades.json.gz (column form, bp only), daily.csv,
-    provenance.json. `trades` = [(entry_t, exit_t, entry_px, exit_px, side, pnl_bp)] in UTC seconds."""
+    """One card variant's output as scripts/dashboard_cards wrote it before L-920 (it writes pnl_pct since): trades.json.gz
+    (column form, pnl_bp = rate x 1e4 only), daily.csv (day,pnl_bp,n), provenance.json -- the old form the dashboard still
+    reads (/ 100). `trades` = [(entry_t, exit_t, entry_px, exit_px, side, pnl_bp)] in UTC seconds."""
     d = root / "backtest_runs_shared" / "cards" / card / variant
     d.mkdir(parents=True, exist_ok=True)
     cols = {"version": 1, "t_unit": "ns", "entry_t_ns": [t[0] * NS for t in trades], "entry_px": [t[2] for t in trades],
@@ -751,8 +754,9 @@ def test_card_with_an_instrument_the_ledger_has_no_store_for_shows_the_cumulativ
 
 
 def test_daily_csv_and_the_trades_of_every_exported_variant_agree_on_the_total():
-    """sum(daily.csv pnl_bp) = sum(trades pnl_bp). The trades' pnl_bp are rounded to 4 decimals when written (compact(x, 4) in
-    export_card_trades.py), so the two sums can differ by at most n * 0.00005 in pnl_bp = n * 0.0000005 in % (the dashboard reads / 100); the per-day split differs by construction (daily.csv
+    """sum(daily.csv pnl) = sum(trades pnl). The trades' pnl_pct are rounded to 6 decimals when written (compact(x, 6) in
+    export_card_trades.py; exports before L-920 wrote pnl_bp at 4 decimals, read / 100), so the two sums can differ by at
+    most n * 0.0000005 in %; the per-day split differs by construction (daily.csv
     books a decision's profit on the decision's day, a trade books its whole profit at its exit)."""
     if not CARD_MANIFEST.is_file():
         pytest.skip("no cards manifest in this checkout")

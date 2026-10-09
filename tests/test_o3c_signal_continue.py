@@ -50,7 +50,7 @@ needs_data = pytest.mark.skipif(not have_data, reason="探索段5の行データ
 def make_prints_csv(tmp_path: Path, rows: list) -> "sc.PrintsCSV":
     """`rows` は dict のリスト(print_id・day・side・ts_ms・…)。"""
     cols = ["kind", "print_id", "day", "side", "ts_ms", "t0_ms", "p0", "notional",
-           "dist_node_bp", "oi_covered", "bundle_id"]
+           "dist_node_pct", "oi_covered", "bundle_id"]
     df = pd.DataFrame([{c: r.get(c, "") for c in cols} for r in rows])
     df["kind"] = "print"
     p = tmp_path / "rows_prints.csv.gz"
@@ -66,20 +66,20 @@ def test_continuation_label_60s_boundary_inside_and_outside(tmp_path):
     base_ts = 1_704_196_800_000  # day 00:00 UTC
     rows = [
         {"print_id": "a", "day": day, "side": "SELL", "ts_ms": base_ts,
-         "t0_ms": base_ts, "p0": 100.0, "notional": 1.0, "dist_node_bp": 0.0,
+         "t0_ms": base_ts, "p0": 100.0, "notional": 1.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": ""},
         # ちょうど 60,000ms 後(境界を含む) -> a の label_60 は 1
         {"print_id": "b", "day": day, "side": "SELL", "ts_ms": base_ts + 60_000,
          "t0_ms": base_ts + 60_000, "p0": 100.0, "notional": 1.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""},
         # b から 60,001ms 後(境界を 1ms 超える) -> b の label_60 は 0、label_120 は 1
         {"print_id": "c", "day": day, "side": "SELL", "ts_ms": base_ts + 120_001,
          "t0_ms": base_ts + 120_001, "p0": 100.0, "notional": 1.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""},
         # 反対側(BUY)は無視される(次の「同じ側」だけを見る)
         {"print_id": "x", "day": day, "side": "BUY", "ts_ms": base_ts + 1_000,
          "t0_ms": base_ts + 1_000, "p0": 100.0, "notional": 1.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""},
     ]
     pc = make_prints_csv(tmp_path, rows)
     idx = {pid: int(np.flatnonzero(pc.print_id == pid)[0]) for pid in "abc"}
@@ -144,11 +144,11 @@ def test_materials_do_not_use_data_after_ts_or_p0(tmp_path):
     ts = sc.day_start_ms(day) + 3_600_000
     rows = [
         {"print_id": "cur", "day": day, "side": "SELL", "ts_ms": ts, "t0_ms": ts,
-         "p0": 30003.6, "notional": 500_000.0, "dist_node_bp": -12.5,
+         "p0": 30003.6, "notional": 500_000.0, "dist_node_pct": -12.5,
          "oi_covered": 0, "bundle_id": ""},
         {"print_id": "prev", "day": day, "side": "SELL", "ts_ms": ts - 30_000,
          "t0_ms": ts - 30_000, "p0": 29990.0, "notional": 200_000.0,
-         "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""},
+         "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""},
     ]
     pc = make_prints_csv(tmp_path, rows)
     nb = sc.same_side_neighbors(pc)
@@ -184,14 +184,14 @@ def test_materials_do_not_use_data_after_ts_or_p0(tmp_path):
     assert header_a["p_exit_e1_h300"] != header_b["p_exit_e1_h300"]
 
 
-def test_material5_reuses_dist_node_bp_column_not_p0(tmp_path):
-    """材料 5 は `rows_prints.csv.gz` の `dist_node_bp` をそのまま使う(p0 を使って
+def test_material5_reuses_dist_node_pct_column_not_p0(tmp_path):
+    """材料 5 は `rows_prints.csv.gz` の `dist_node_pct` をそのまま使う(p0 を使って
     作り直さない)。"""
     day = "2024-01-02"
     ts = sc.day_start_ms(day) + 3_600_000
     rows = [{"print_id": "cur", "day": day, "side": "SELL", "ts_ms": ts,
              "t0_ms": ts, "p0": 30003.6, "notional": 500_000.0,
-             "dist_node_bp": -42.125, "oi_covered": 0, "bundle_id": ""}]
+             "dist_node_pct": -42.125, "oi_covered": 0, "bundle_id": ""}]
     pc = make_prints_csv(tmp_path, rows)
     nb = sc.same_side_neighbors(pc)
     i = 0
@@ -228,7 +228,7 @@ def test_exit_time_is_entry_time_plus_hold(tmp_path):
     ts = sc.day_start_ms(day) + 3_600_000
     rows = [{"print_id": "cur", "day": day, "side": "SELL", "ts_ms": ts,
              "t0_ms": ts, "p0": 30003.6, "notional": 500_000.0,
-             "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""}]
+             "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""}]
     pc = make_prints_csv(tmp_path, rows)
     nb = sc.same_side_neighbors(pc)
     times, prices, qtys, maker = _synthetic_trades(ts, False)
@@ -331,7 +331,7 @@ def test_jev_state_excludes_p0_and_future(tmp_path):
     ts = sc.day_start_ms(day) + 3_600_000
     rows = [{"print_id": "cur", "day": day, "side": "SELL", "ts_ms": ts,
              "t0_ms": ts, "p0": 30003.6, "notional": 500_000.0,
-             "dist_node_bp": 0.0, "oi_covered": 0, "bundle_id": ""}]
+             "dist_node_pct": 0.0, "oi_covered": 0, "bundle_id": ""}]
     pc = make_prints_csv(tmp_path, rows)
     all_ts = pc.all_ts_sorted()
     o = np.argsort(pc.ts, kind="stable")

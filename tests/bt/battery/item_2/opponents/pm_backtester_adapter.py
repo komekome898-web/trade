@@ -60,6 +60,7 @@ class Adapter:
             raise NotExpressible(f"{TOOL}: 足にする約定も足も無い(道具の入力は約定から作った足)")
         sched = C.issue_schedule(bars, inp["actions"])
         try:
+            # the tool's fee_bps is bp (its name): the scene's fee rate is a fraction, x 1e4 on the next line
             sim = ExecutionSimulator(ExecutionConfig(fee_bps=float(rate) * 1e4), initial_cash=float(inp["account"]["cash"]))
             rec = {"orders": {}, "fills": []}
             for k, b in enumerate(bars):

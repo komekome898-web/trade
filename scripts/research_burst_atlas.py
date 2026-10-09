@@ -114,6 +114,9 @@ PRE-REGISTRATION (verbatim; nothing below is changed after the first run)
       order-of-magnitude plausibility of firing counts.
 
 Usage:  PYTHONPATH=src python scripts/research_burst_atlas.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(r_W・閾値 thr・前向きの drift)に
+だけ使う。taker の費用の線(片道 3.96bps = 0.0396 %、往復 7.92bps = 0.0792 %)と、drift から費用を
+引いたネットは % で持つ。drift(bp)と費用の線(%)を比べるときは線を × 100 して bp の値動きにそろえる。)
 """
 from __future__ import annotations
 
@@ -141,8 +144,8 @@ MIN_COOLDOWN_S = 60
 N_REFERENCE_ONLY = 20        # cells below this n are "reference only"
 N_CI = 30                    # cells at/above this n get a day-cluster CI
 
-TAKER_ONE_WAY = 3.96
-TAKER_ROUND = 7.92
+TAKER_ONE_WAY = 0.0396   # % (3.96 bps)
+TAKER_ROUND = 0.0792     # % (7.92 bps)
 
 FILL_WINDOW_S = 60.0
 FADE_HORIZONS_S = (30, 120, 600, 1800)
@@ -315,8 +318,8 @@ def main() -> int:
     header("BURST MECHANISM ATLAS -- EXPLORATION ONLY (no adoption decision)")
     print("data  : backtest_data/executions_FX_BTC_JPY_31d_20260823.csv.gz "
           f"(exec_date < {FRESH_CUTOFF_ISO})")
-    print(f"seed  : {SEED};  cost lines: taker one-way {TAKER_ONE_WAY} bps, "
-          f"round trip {TAKER_ROUND} bps")
+    print(f"seed  : {SEED};  cost lines: taker one-way {TAKER_ONE_WAY} %, "
+          f"round trip {TAKER_ROUND} %")
     print(f"surface: W{list(WINDOWS_S)} x thr{list(THRS_BPS)} = "
           f"{len(WINDOWS_S)*len(THRS_BPS)} trigger cells; "
           f"x d{list(DELAYS_S)} x h{list(HORIZONS_S)} = "
@@ -442,13 +445,14 @@ def main() -> int:
         m = r["mean"]
         if not np.isfinite(m):
             continue
-        if m > TAKER_ROUND:
+        # drift m is a move in bps; the cost lines are in %, x 100 -> bps
+        if m > TAKER_ROUND * 100:
             trend_rt.append((key, r))
-        elif m > TAKER_ONE_WAY:
+        elif m > TAKER_ONE_WAY * 100:
             trend_ow.append((key, r))
-        if m < -TAKER_ROUND:
+        if m < -TAKER_ROUND * 100:
             rev_rt.append((key, r))
-        elif m < -TAKER_ONE_WAY:
+        elif m < -TAKER_ONE_WAY * 100:
             rev_ow.append((key, r))
 
     n_eval = sum(1 for k, r in surface.items() if r["n"] >= N_REFERENCE_ONLY)
@@ -475,11 +479,11 @@ def main() -> int:
                   f"{r['mean']:>+9.2f} {r['med']:>+9.2f} {tst:>+7.2f} {ci:>22} "
                   f"{r['n']/days_span:>7.2f}")
 
-    show("TREND region above the ROUND-TRIP taker line (+7.92 bps)", trend_rt, +1)
-    show("TREND region above the ONE-WAY taker line only (+3.96 .. +7.92 bps)",
+    show("TREND region above the ROUND-TRIP taker line (+0.0792 %)", trend_rt, +1)
+    show("TREND region above the ONE-WAY taker line only (+0.0396 .. +0.0792 %)",
          trend_ow, +1)
-    show("REVERSAL region below the ROUND-TRIP taker line (-7.92 bps)", rev_rt, -1)
-    show("REVERSAL region below the ONE-WAY taker line only (-3.96 .. -7.92 bps)",
+    show("REVERSAL region below the ROUND-TRIP taker line (-0.0792 %)", rev_rt, -1)
+    show("REVERSAL region below the ONE-WAY taker line only (-0.0396 .. -0.0792 %)",
          rev_ow, -1)
 
     # ---------------- 4. maker realisation of the reversal region ---------
@@ -580,7 +584,7 @@ def main() -> int:
               "maker entry = 0 bps):")
         fwd(filled_t, filled_p, filled_s, "FILLED (from fill price)", True)
         fwd(missed_t, None, missed_s, "MISSED (from t_ref mid)", False)
-        print(f"   net for the filled group = gross - {TAKER_ONE_WAY} bps "
+        print(f"   net for the filled group = gross - {TAKER_ONE_WAY} % "
               f"(taker exit); maker exit would be 0.")
 
     for (W, thr, d) in chosen:
@@ -646,7 +650,7 @@ def main() -> int:
     ]
     print()
     print(f"{'W':>5} {'thr':>4} {'d':>4} {'h':>6} | {'n':>5} {'mean':>8} "
-          f"{'net':>8} | {'n_fr':>5} {'mean_fr':>8} {'n_bk':>5} {'mean_bk':>8} "
+          f"{'net %':>8} | {'n_fr':>5} {'mean_fr':>8} {'n_bk':>5} {'mean_bk':>8} "
           f"| {'n_no':>5} {'mean_no':>8} {'CI95_no':>20} | {'top1day%':>8} "
           f"{'in%':>6} {'mean_in':>8} {'mean_out':>9}")
     rng2 = np.random.default_rng(SEED)
@@ -685,7 +689,7 @@ def main() -> int:
         mi = vals[inw].mean() if inw.any() else float("nan")
         mo = vals[~inw].mean() if (~inw).any() else float("nan")
         print(f"{W:>5} {int(thr):>4} {d:>4} {h:>6} | {r['n']:>5} {mean:>+8.2f} "
-              f"{mean - TAKER_ROUND:>+8.2f} | {int(fr.sum()):>5} "
+              f"{mean / 100 - TAKER_ROUND:>+8.4f} | {int(fr.sum()):>5} "  # net %
               f"{vals[fr].mean() if fr.any() else float('nan'):>+8.2f} "
               f"{int(bk.sum()):>5} "
               f"{vals[bk].mean() if bk.any() else float('nan'):>+8.2f} "
@@ -693,7 +697,7 @@ def main() -> int:
               f"{vno.mean() if len(vno) else float('nan'):>+8.2f} {ci:>20} "
               f"| {top1:>8.1f} {inw.mean()*100:>6.1f} {mi:>+8.2f} {mo:>+9.2f}")
     print()
-    print("net = mean - 7.92 (round-trip taker).  fr/bk = front 60% / back 40% of "
+    print("net % = mean / 100 - 0.0792 (round-trip taker, %).  fr/bk = front 60% / back 40% of "
           "the span by t_sig.")
     print("no  = greedy non-overlapping subsample (no two h-windows overlap) -- the "
           "only sample a")
@@ -703,7 +707,7 @@ def main() -> int:
 
     sub("7b. clock-window x non-overlap (the only jointly-honest sample)")
     print(f"{'W':>5} {'thr':>4} {'d':>4} {'h':>6} | {'n_in_no':>7} {'mean':>8} "
-          f"{'median':>8} {'net':>8} {'CI95':>22} {'top1day%':>9} {'days':>5} "
+          f"{'median':>8} {'net %':>8} {'CI95':>22} {'top1day%':>9} {'days':>5} "
           f"{'/day':>6}")
     rng3 = np.random.default_rng(SEED)
     for key in focus_cells:
@@ -731,7 +735,7 @@ def main() -> int:
         tot = v.sum()
         top1 = (sums.max() / tot * 100.0) if tot > 0 else float("nan")
         print(f"{W:>5} {int(thr):>4} {d:>4} {h:>6} | {len(v):>7} {v.mean():>+8.2f} "
-              f"{np.median(v):>+8.2f} {v.mean()-TAKER_ROUND:>+8.2f} "
+              f"{np.median(v):>+8.2f} {v.mean() / 100 - TAKER_ROUND:>+8.4f} "  # net %
               f"[{lo:+8.2f},{hi:+8.2f}] {top1:>9.1f} {len(uq):>5} "
               f"{len(v)/days_span:>6.2f}")
     print("   in-window = 12:30-15:00 UTC on t_sig; then the greedy non-overlap "

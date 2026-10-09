@@ -92,12 +92,13 @@ def test_tape_cost_floor_is_exact(tmp_path, shrink):
     out = tmp_path / "ds"
     result = mka.generate(out, seed=mka.SEED)
     tape = result["answers"]["tape"]
-    assert tape["quoted_spread_bps"] == 2.0
-    assert tape["taker_slippage_bps_per_side"] == 0.8
-    assert tape["taker_fee_bps"] == 0.0
-    assert tape["true_taker_roundtrip_floor_bps"] == pytest.approx(3.6)
-    assert abs(tape["realized_spread_bps_ex_crossed"] - 2.0) < 0.05
-    assert abs(tape["realized_slippage_bps_per_side"] - 0.8) < 0.1
+    # % of mid (L-920; were 2.0 / 0.8 / 0.0 / 3.6 bps and tolerances 0.05 / 0.1 bps)
+    assert tape["quoted_spread_pct"] == 0.02
+    assert tape["taker_slippage_pct_per_side"] == 0.008
+    assert tape["taker_fee_pct"] == 0.0
+    assert tape["true_taker_roundtrip_floor_pct"] == pytest.approx(0.036)
+    assert abs(tape["realized_spread_pct_ex_crossed"] - 0.02) < 0.0005
+    assert abs(tape["realized_slippage_pct_per_side"] - 0.008) < 0.001
     assert tape["crossed_book_rows"] > 0
 
 
@@ -121,7 +122,7 @@ def test_manifest_does_not_reveal_planted_values(tmp_path, shrink):
     bravo = result["answers"]["daily_overnight_premium"]["QA_BRAVO"]
     tape = result["answers"]["tape"]
     for leak in (
-        "2.0bps", "0.8bps", "3.6bps",
+        "0.020%", "0.008%", "0.036%",
         f"{bravo['realized_overnight_mean_bps']:.4f}",
         f"crossed_book_rows: {tape['crossed_book_rows']}",
     ):

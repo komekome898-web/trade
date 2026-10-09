@@ -274,12 +274,12 @@ def test_synthetic_sealed_window_recovers_the_planted_drift(tmp_path, monkeypatc
     assert int(kept.shape[0]) == len(pairs)
 
     # (c) the planted drift is recovered gross, and net of the pre-registered
-    #     conservative cost 2/close(t)*1e4
+    #     conservative cost 2/close(t)*100 (L-920: cost and net in %, gross in bps)
     assert head["mean_gross_bps"] == pytest.approx(PLANTED_BPS, abs=4.0)
-    cost = float(kept["cost_conservative_bps"].mean())
-    assert cost == pytest.approx(float((2.0 / kept["close_t"] * 1e4).mean()), rel=1e-9)
-    assert head["mean_net_conservative_bps"] == pytest.approx(
-        head["mean_gross_bps"] - cost, abs=1e-6)
+    cost = float(kept["cost_conservative_pct"].mean())
+    assert cost == pytest.approx(float((2.0 / kept["close_t"] * 100.0).mean()), rel=1e-9)
+    assert head["mean_net_conservative_pct"] == pytest.approx(
+        head["mean_gross_bps"] / 100.0 - cost, abs=1e-8)
     assert head["ci95"][0] > 0 and head["ci95"][1] > head["ci95"][0]
 
     # (d) the dividend adjustment recovers the planted ex-date drop: on those
@@ -291,7 +291,7 @@ def test_synthetic_sealed_window_recovers_the_planted_drift(tmp_path, monkeypatc
     assert np.allclose(ex_pairs["r_night_adj_bps"] - ex_pairs["r_night_raw_bps"],
                        drop_bps, atol=1e-6)
     assert (ex_pairs["r_night_raw_bps"] < 0).all()
-    assert head["mean_net_conservative_unadjusted_bps"] < head["mean_net_conservative_bps"]
+    assert head["mean_net_conservative_unadjusted_pct"] < head["mean_net_conservative_pct"]
 
     # (e) the bar / falsification block is rendered from those numbers
     bar = pd.read_csv(out / "bar_and_falsification.csv")
@@ -334,8 +334,8 @@ def test_synthetic_1321_is_evaluated_under_the_same_rules(tmp_path, monkeypatch)
     # 1321 was generated with zero planted drift -> its net mean must be
     # clearly below 1343's, and the sign-match bar must therefore be reported.
     run = json.loads((out / "RUN.json").read_text(encoding="utf-8"))
-    assert run["headline"]["mean_net_conservative_bps_1321"] < \
-        run["headline"]["mean_net_conservative_bps"]
+    assert run["headline"]["mean_net_conservative_pct_1321"] < \
+        run["headline"]["mean_net_conservative_pct"]
     summary = pd.read_csv(out / "main_summary.csv").set_index("metric")["value"]
     assert summary["cumulative_N"] == "1"
     assert summary["dividend_correction_used"] == "True"

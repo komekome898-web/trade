@@ -138,6 +138,11 @@ Idempotent: re-running prints the same numbers.
 
 Usage: python scripts/research_fast_cycle.py [--data DIR] [--ws DIR]
                                              [--print-prereg]
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(合図 b・TP の幅・止めの幅・
+mid の markout と選択の差)にだけ使う。taker の費用(3.96bps = 0.0396 %)、1 取引の損益 pnl と EV・
+1 日の損益・最大の落ち込み、約定の値段と mid の距離(capture)、S7 の半スプレッドとネット
+(1.169bps = 0.01169 %、0.38..0.76bps = 0.0038..0.0076 %)、1 日の線(+10bps/日 = +0.10 %/日)は
+% で持つ。最大の落ち込みは前の maxdd_bps / 100 = 1 単位の建玉に対する % と同じ値。)
 """
 from __future__ import annotations
 
@@ -165,7 +170,7 @@ ABORT_GRID = ((3.0, 30.0),        # (adverse bps, age s) -- owner's config
               (4.0, 45.0))        # one step looser on both axes
 QUOTE_LIFE_SEC = 10.0             # a resting entry quote's lifetime
 T1_COOLDOWN_SEC = 3.0             # re-arm delay after a T1 quote
-TAKER_BPS = 3.96                  # burst-regime taker cost, mid-referenced
+TAKER_PCT = 0.0396                # % burst-regime taker cost, mid-referenced (3.96 bps)
 
 # ---- T2 regime, imported verbatim from research_two_sided_flow.py (S7) -----
 # The KNOWLEDGE.md section 2 headline cell: W=30s, pool=all windows, p50.
@@ -175,9 +180,9 @@ T2_PCTL = 50
 VOL_EPS = 1e-9
 
 # ---- settled S7 measurements, used as this design's prior (not re-measured)
-S7_HALF_SPREAD = 1.169            # realised half-spread per fill, bps
-S7_INSIDE_NET_LO = 0.38           # idealized maker net inside two-sided windows
-S7_INSIDE_NET_HI = 0.76
+S7_HALF_SPREAD = 0.01169          # % realised half-spread per fill (1.169 bps)
+S7_INSIDE_NET_LO = 0.0038         # % idealized maker net inside two-sided windows (0.38 bps)
+S7_INSIDE_NET_HI = 0.0076         # % (0.76 bps)
 
 BURN_FRAC = 0.20                  # prefix used ONLY to fix v_min
 MARKOUT_TAUS = (1, 5, 30)         # seconds, for the selection gap / split
@@ -187,7 +192,7 @@ N_BOOT = 2000
 # ---- HF/MM-class adoption bars, verbatim from KNOWLEDGE.md section 5 -------
 BAR_N = 300                       # n >= 300 trades
 BAR_T = 2.0                       # cluster-corrected t >= 2.0 on net EV > 0
-BAR_DAILY_BPS = 10.0              # daily net expectation >= +10 bps/day
+BAR_DAILY_PCT = 0.10              # % daily net expectation >= +0.10 %/day (+10 bps/day)
 BAR_SHARPE = 1.0                  # daily Sharpe >= 1.0
 BAR_MAXDD_PCT = 10.0              # max drawdown <= 10%
 BAR_TRADES_PER_DAY = 20.0         # the class's own entry criterion
@@ -362,7 +367,7 @@ class Trade:
     t_exit: float
     side: int                  # +1 long, -1 short
     entry_px: float
-    pnl_bps: float
+    pnl_pct: float             # % (L-920: net of the taker legs)
     reason: str
     hold: float
     day: int
@@ -384,7 +389,7 @@ class QuoteEvent:
     mk1: float = float("nan")
     mk5: float = float("nan")
     mk30: float = float("nan")
-    cf_pnl: float = float("nan")   # taker-entry counterfactual, missed quotes
+    cf_pnl: float = float("nan")   # taker-entry counterfactual, missed quotes, %
 
 
 @dataclass
@@ -411,7 +416,8 @@ def _run_exit(tp: Tape, k0: int, side: int, entry_px: float, entry_t: float,
               abort_age: float) -> tuple[float, str, float, int]:
     """Exit machinery: maker TP, taker adverse stop, taker age stop.
 
-    Returns (pnl_bps EXCLUDING any entry cost, reason, exit_t, exit_idx).
+    Returns (pnl_pct EXCLUDING any entry cost, reason, exit_t, exit_idx).
+    pnl is in % (L-920); tp_bps and abort_bps are price moves in bps.
     Checked in this order on every print k > k0: TP first (the print that
     trades through the TP is the event), then the adverse stop, then age.
     """
@@ -429,16 +435,16 @@ def _run_exit(tp: Tape, k0: int, side: int, entry_px: float, entry_t: float,
             hit = (not tp.buy[k]) and (tp.price[k] < tp_px if strict
                                        else tp.price[k] <= tp_px)
         if hit:
-            return tp_bps, "tp", tk, k
+            return tp_bps / 100, "tp", tk, k          # % (the TP move, bps / 100)
         # --- taker adverse stop, on the bounce-free mid
         m = tp.mid_incl[k]
         adverse = (m <= stop_mid) if side > 0 else (m >= stop_mid)
         if adverse:
-            return (side * (m - entry_px) / entry_px * 1e4 - TAKER_BPS,
+            return (side * (m - entry_px) / entry_px * 100 - TAKER_PCT,
                     "stop", tk, k)
         # --- taker age stop
         if tk - entry_t > abort_age:
-            return (side * (m - entry_px) / entry_px * 1e4 - TAKER_BPS,
+            return (side * (m - entry_px) / entry_px * 100 - TAKER_PCT,
                     "age", tk, k)
         k += 1
     return (float("nan"), "eod", tp.t[-1], n - 1)
@@ -520,7 +526,7 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
                 if counterfactual:
                     pnl, _, _, _ = _run_exit(tp, i, s, mid_q, t_q, tp_bps,
                                              strict, abort_bps, abort_age)
-                    qe.cf_pnl = pnl - TAKER_BPS   # a taker entry crosses too
+                    qe.cf_pnl = pnl - TAKER_PCT   # a taker entry crosses too
                 res.quotes.append(qe)
             i = max(j, i + 1)
             continue
@@ -542,7 +548,7 @@ def simulate(tp: Tape, trigger: str, b_bps: float, tp_bps: float,
         if reason == "eod" or not np.isfinite(pnl):
             break
         res.trades.append(Trade(t_entry=t_f, t_exit=t_x, side=fill_side,
-                                entry_px=fill_px, pnl_bps=pnl, reason=reason,
+                                entry_px=fill_px, pnl_pct=pnl, reason=reason,
                                 hold=t_x - t_f, day=int(np.floor(t_f / 86400.0)),
                                 t_quote=t_q, mid_fill=mid_f, mk1=qe.mk1,
                                 mk5=qe.mk5, mk30=qe.mk30))
@@ -567,11 +573,10 @@ class Metrics:
     lo: float
     hi: float
     t: float
-    daily_bps: float
+    daily_pct: float           # % per day
     sharpe: float
     win: float
-    maxdd_bps: float
-    maxdd_pct: float
+    maxdd_pct: float           # % (pnl is % of one unit's notional; was maxdd_bps / 100)
     fill_rate: float           # filled quote EVENTS / quote events
     fill_rate_side: float      # filled sides / quoted sides
     tp_share: float
@@ -584,7 +589,7 @@ class Metrics:
     med_cycle: float           # quote -> exit, median seconds
     p90_cycle: float
     duty_pos: float            # share of segment wall-clock spent in position
-    capture: float             # signed (mid at fill - fill price), bps
+    capture: float             # signed (mid at fill - fill price), % (L-920)
     adv1: float                # signed mid markout at +1s, bps
     adv5: float
     adv30: float
@@ -604,7 +609,7 @@ def metrics(res: SimResult) -> Metrics:
     n_fields = len(Metrics.__dataclass_fields__)
     if n == 0:
         return Metrics(0, *[float("nan")] * (n_fields - 1))
-    pnl = np.array([x.pnl_bps for x in tr])
+    pnl = np.array([x.pnl_pct for x in tr])
     day = np.array([x.day for x in tr])
     reason = np.array([x.reason for x in tr])
     hold = np.array([x.hold for x in tr])
@@ -641,14 +646,14 @@ def metrics(res: SimResult) -> Metrics:
     # capture = the half-spread earned by resting: the bounce-free mid at the
     # instant of the fill, minus what we actually paid (our limit), signed.
     ok = np.array([np.isfinite(x.mid_fill) for x in tr])
-    capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
-                     for x in tr])[ok]
+    capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 100
+                     for x in tr])[ok]   # %
 
     cf_miss = float(np.nanmean(cf[~f])) if (~f).any() else float("nan")
     return Metrics(
         n=n, per_day=n / res.span_days, ev=ev, lo=lo, hi=hi, t=t,
-        daily_bps=float(daily.mean()), sharpe=sharpe,
-        win=float((pnl > 0).mean()), maxdd_bps=maxdd, maxdd_pct=maxdd / 100.0,
+        daily_pct=float(daily.mean()), sharpe=sharpe,
+        win=float((pnl > 0).mean()), maxdd_pct=maxdd,
         fill_rate=res.n_filled_events / max(res.n_quote_events, 1),
         fill_rate_side=res.n_filled_events / max(res.n_quoted_sides, 1),
         tp_share=float((reason == "tp").mean()),
@@ -672,7 +677,7 @@ def bars_verdict(m: Metrics) -> str:
         ("n>=300", m.n >= BAR_N),
         ("t>=2", np.isfinite(m.t) and m.t >= BAR_T and m.ev > 0),
         (">=20/d", m.per_day >= BAR_TRADES_PER_DAY),
-        ("+10bps/d", m.daily_bps >= BAR_DAILY_BPS),
+        ("+0.10%/d", m.daily_pct >= BAR_DAILY_PCT),
         ("SR>=1", np.isfinite(m.sharpe) and m.sharpe >= BAR_SHARPE),
         ("DD<=10%", m.maxdd_pct <= BAR_MAXDD_PCT),
     ]
@@ -740,10 +745,10 @@ def queue_reality(ws_dir: Path) -> None:
           f"best-ask median {np.median(tk[:, 4]):.4f} BTC")
     print(f"print size          : median {np.median(ex[:, 3]):.4f} BTC, "
           f"mean {ex[:, 3].mean():.4f}, p90 {np.percentile(ex[:, 3], 90):.4f}")
-    sp = (tk[:, 2] - tk[:, 1]) / ((tk[:, 1] + tk[:, 2]) / 2) * 1e4
-    print(f"board spread        : median {np.median(sp):.2f} bps, "
-          f"p25 {np.percentile(sp, 25):.2f}, p90 {np.percentile(sp, 90):.2f} "
-          f"(KNOWLEDGE 1 says 1.56-2.22)")
+    sp = (tk[:, 2] - tk[:, 1]) / ((tk[:, 1] + tk[:, 2]) / 2) * 100   # % (spread, L-920)
+    print(f"board spread        : median {np.median(sp):.4f} %, "
+          f"p25 {np.percentile(sp, 25):.4f}, p90 {np.percentile(sp, 90):.4f} "
+          f"(KNOWLEDGE 1 says 0.0156-0.0222 %)")
 
     # Join the touch at every 5th ticker sample; we are at the BACK of the
     # queue, so Q = the size already resting there.  We fill only once the
@@ -814,19 +819,19 @@ def cell_name(trig: str, b: float, tpb: float, ab: float, ag: float) -> str:
 
 def print_table(rows: list[tuple[str, Metrics]], title: str) -> None:
     sub(title)
-    print(f"{'cell':<20}{'n':>7}{'/day':>7}{'EV bps':>9}{'95% CI':>18}"
-          f"{'t':>6}{'bps/d':>8}{'SR':>7}{'win':>7}{'fill':>7}"
+    print(f"{'cell':<20}{'n':>7}{'/day':>7}{'EV %':>9}{'95% CI':>20}"
+          f"{'t':>6}{'%/d':>8}{'SR':>7}{'win':>7}{'fill':>7}"
           f"{'TP/stop/age':>16}{'cycle':>8}{'maxDD':>8}")
     for name, m in rows:
         if m.n == 0:
             print(f"{name:<20}{'0':>7}  (no trades)")
             continue
-        print(f"{name:<20}{m.n:>7,}{m.per_day:>7.1f}{m.ev:>9.3f}"
-              f"  [{m.lo:>6.2f},{m.hi:>6.2f}]{m.t:>6.1f}{m.daily_bps:>8.1f}"
+        print(f"{name:<20}{m.n:>7,}{m.per_day:>7.1f}{m.ev:>9.5f}"
+              f"  [{m.lo:>7.4f},{m.hi:>7.4f}]{m.t:>6.1f}{m.daily_pct:>8.3f}"
               f"{m.sharpe:>7.2f}{m.win * 100:>6.1f}%{m.fill_rate * 100:>6.1f}%"
               f"{m.tp_share * 100:>5.0f}/{m.stop_share * 100:>3.0f}/"
               f"{m.age_share * 100:>3.0f}%{m.med_cycle:>7.1f}s"
-              f"{m.maxdd_bps:>8.0f}")
+              f"{m.maxdd_pct:>8.2f}")
 
 
 def main() -> None:
@@ -895,15 +900,15 @@ def main() -> None:
     header(f"EXPLORATION TABLES -- {len(CELLS)} registered cells x 2 fill "
            f"models")
     print("cell = trigger / take-profit bps / abort (adverse bps - age s).")
-    print("EV bps = net per trade, maker legs free, taker aborts at 3.96 bps.")
+    print("EV %   = net per trade, maker legs free, taker aborts at 0.0396 %.")
     print("CI/t are day-clustered bootstraps (seed 12345, 2000 resamples).")
-    print("bps/d = mean daily net bps at one unit of notional per trade.")
-    print("SR    = annualised daily Sharpe (mean/sd of daily bps x sqrt(365)).")
+    print("%/d   = mean daily net % at one unit of notional per trade.")
+    print("SR    = annualised daily Sharpe (mean/sd of daily % x sqrt(365)).")
     print("fill  = filled quote EVENTS / quote events (per-side rate is in the")
     print("        CYCLE section; a T2 event quotes two sides).")
     print("cycle = median quote-to-exit seconds (the design's own claim).")
-    print("maxDD = peak-to-trough of the cumulative bps curve; at 1x notional")
-    print("        per trade 100 bps of drawdown is 1% of equity.")
+    print("maxDD = peak-to-trough of the cumulative % curve; at 1x notional")
+    print("        per trade it is the % of equity directly.")
 
     store: dict[tuple, tuple[SimResult, Metrics]] = {}
     for strict, label in ((True, "CONSERVATIVE fill (print strictly THROUGH "
@@ -958,8 +963,8 @@ def main() -> None:
     print("  missed   -- from the quote, over tau seconds, same intended side")
     print("  gap      -- filled minus missed.  NEGATIVE = the wall: we are")
     print("              filled precisely when we are wrong.")
-    print("  cf(miss) -- net bps if every missed quote had been entered as a")
-    print("              TAKER (3.96 bps) and run through the same exit rules.")
+    print("  cf(miss) -- net % if every missed quote had been entered as a")
+    print("              TAKER (0.0396 %) and run through the same exit rules.")
     print("q-recs counts one record per quoted side for a MISS and one record")
     print("for the side that filled (the other side is cancelled on fill), so")
     print("fills/q-recs is not the per-side fill rate -- that is in CYCLE above.")
@@ -988,7 +993,7 @@ def main() -> None:
                   f"{mm('mk5', f):>9.3f}{mm('mk5', ~f):>9.3f}"
                   f"{m.sel_gap5:>8.3f}"
                   f"{mm('mk30', f):>10.3f}{mm('mk30', ~f):>10.3f}"
-                  f"{m.sel_gap30:>9.3f}{m.cf_miss:>10.2f}")
+                  f"{m.sel_gap30:>9.3f}{m.cf_miss:>10.4f}")
 
     # ---------------- mechanism diagnostic ----------------------------------
     header("DIAGNOSTIC (not a strategy, not adoptable) -- the POST-FILL "
@@ -1026,7 +1031,7 @@ def main() -> None:
     sub("MARKOUT DECOMPOSITION per fill -- NO exit rule, NO abort, NO queue")
     print("capture  = signed (mid at fill - our fill price), the half-spread we")
     print("           earned by resting instead of crossing.  S7 measured this")
-    print(f"           tape's realised half-spread at {S7_HALF_SPREAD:+.3f} bps;")
+    print(f"           tape's realised half-spread at {S7_HALF_SPREAD:+.5f} %;")
     print("adverse  = signed mid-to-mid move from the fill over tau seconds")
     print("           (NEGATIVE = the market moved against us = the wall);")
     print("net(tau) = capture + adverse = what a fill is worth if we could")
@@ -1047,18 +1052,18 @@ def main() -> None:
         tr = [x for x in res.trades if np.isfinite(x.mid_fill)]
         if not tr:
             continue
-        capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
-                         for x in tr])
+        capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 100
+                         for x in tr])          # % (capture)
         row = []
         for tau in (1, 5, 30):
             v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side,
                                            tau) for x in tr])
             ok = np.isfinite(v)
             row.append(float(v[ok].mean()) if ok.any() else float("nan"))
-            row.append(float((capt[ok] + v[ok]).mean()) if ok.any()
-                       else float("nan"))
+            row.append(float((capt[ok] + v[ok] / 100).mean()) if ok.any()
+                       else float("nan"))       # net % = capture % + markout bps / 100
         print(f"{cell_name(trig, b, tpb, ab, ag).split('/')[0]:<12}{len(tr):>8,}"
-              f"{capt.mean():>9.3f}" + "".join(f"{x:>9.3f}" for x in row))
+              f"{capt.mean():>9.5f}" + "".join(f"{x:>9.5f}" for x in row))
     print("\nIf net(tau) is negative at EVERY tau, no exit rule and no take-")
     print("profit can rescue the cell: the fill itself is worth less than it")
     print("cost, before the strategy does anything at all.")
@@ -1077,24 +1082,24 @@ def main() -> None:
         tr = [x for x in res.trades if np.isfinite(x.mid_fill)]
         if not tr:
             continue
-        capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
-                         for x in tr])
+        capt = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 100
+                         for x in tr])          # % (capture)
         nets = {}
         for tau in range(1, 31):
             v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side,
                                            tau) for x in tr])
             ok = np.isfinite(v)
-            nets[tau] = float((capt[ok] + v[ok]).mean()) if ok.any() \
+            nets[tau] = float((capt[ok] + v[ok] / 100).mean()) if ok.any() \
                 else float("nan")
         life = 0
         for tau in range(1, 31):
             if not (np.isfinite(nets[tau]) and nets[tau] > 0):
                 break
             life = tau
-        strip = " ".join(f"{nets[x]:+.2f}" for x in range(1, 13))
-        at_life = f"{nets[life]:+.3f}" if life else "n/a"
+        strip = " ".join(f"{nets[x]:+.4f}" for x in range(1, 13))
+        at_life = f"{nets[life]:+.5f}" if life else "n/a"
         print(f"{cell_name(trig, b, tpb, ab, ag).split('/')[0]:<12}{len(tr):>8,}"
-              f"{capt.mean():>9.3f}"
+              f"{capt.mean():>9.5f}"
               f"{(str(life) + 's') if life else '<1s':>10}"
               f"{at_life:>10}   {strip}")
     print("\nA maker take-profit of +2 bps needs the mid to travel 2 bps our way")
@@ -1114,14 +1119,14 @@ def main() -> None:
 
     # ---------------- exit-reason economics --------------------------------
     header("WHY THE CELLS LAND WHERE THEY DO -- the abort geometry")
-    print("A stopped trade books about -(adverse + 3.96) bps against a take-")
-    print("profit worth only +tp bps, so the break-even take-profit share is")
+    print("A stopped trade books about -(adverse/100 + 0.0396) % against a take-")
+    print("profit worth only +tp/100 %, so the break-even take-profit share is")
     print("high by arithmetic alone, at BOTH registered abort points:")
     for ab, ag in ABORT_GRID:
         for tpb in TP_BPS_GRID:
-            need = (ab + TAKER_BPS) / (tpb + ab + TAKER_BPS)
+            need = (ab / 100 + TAKER_PCT) / (tpb / 100 + ab / 100 + TAKER_PCT)  # all %
             print(f"  abort a{ab:.0f}-{ag:.0f}s, tp={tpb:.0f} bps : stop books "
-                  f"{-(ab + TAKER_BPS):.2f} bps, so P(TP) must exceed "
+                  f"{-(ab / 100 + TAKER_PCT):.4f} %, so P(TP) must exceed "
                   f"{need * 100:.1f}%")
     print("just to break even against the stop alone -- age-outs make it worse.")
     sub("realised exit mix and the P&L each reason contributes (conservative "
@@ -1133,25 +1138,25 @@ def main() -> None:
         res, m = store[(trig, b, tpb, ab, ag, True)]
         if m.n == 0:
             continue
-        pnl = np.array([x.pnl_bps for x in res.trades])
+        pnl = np.array([x.pnl_pct for x in res.trades])
         rs = np.array([x.reason for x in res.trades])
         def contrib(r):
             s = rs == r
             return float(pnl[s].sum() / len(pnl)) if s.any() else 0.0
-        fee = (m.stop_share + m.age_share) * TAKER_BPS
+        fee = (m.stop_share + m.age_share) * TAKER_PCT     # %
         print(f"{cell_name(trig, b, tpb, ab, ag):<20}{m.n:>7,}"
               f"{m.tp_share * 100:>6.1f}%{m.stop_share * 100:>6.1f}%"
-              f"{m.age_share * 100:>6.1f}%{contrib('tp'):>8.2f}"
-              f"{contrib('stop'):>9.2f}{contrib('age'):>9.2f}{m.ev:>8.3f}"
-              f"{-fee:>17.2f}{m.ev + fee:>11.3f}")
-    print("\n'taker fee/trade' is (stop% + age%) x 3.96 bps: the taker cost the")
+              f"{m.age_share * 100:>6.1f}%{contrib('tp'):>8.4f}"
+              f"{contrib('stop'):>9.4f}{contrib('age'):>9.4f}{m.ev:>8.5f}"
+              f"{-fee:>17.4f}{m.ev + fee:>11.5f}")
+    print("\n'taker fee/trade' is (stop% + age%) x 0.0396 %: the taker cost the")
     print("design was created to ELIMINATE, and which it ends up paying on 40%")
     print("to 70% of its trades, because a 2-3 bps take-profit against a 3-4 bps")
     print("stop is close to a coin flip on a tape whose 1-second mid noise is")
     print("larger than both.  'net ex-fee' adds it back: even with the aborts")
     print("made completely FREE, no cell reaches zero -- the maker round trip")
     print("itself is the loss, and the taker fee only decides how big.")
-    print("For scale: the board's median spread is 2.04 bps, so a +2 bps")
+    print("For scale: the board's median spread is 0.0204 %, so a +2 bps")
     print("take-profit from a touch fill is almost exactly 'quote the opposite")
     print("touch'.  The take-profit is not mis-sized -- it is the right size,")
     print("and the round trip still loses.")
@@ -1160,17 +1165,17 @@ def main() -> None:
     header("RECONCILIATION WITH S7 (scripts/research_two_sided_flow.py)")
     print("S7 measured, on this same tape and as settled fact:")
     print(f"  realised half-spread per fill            : "
-          f"{S7_HALF_SPREAD:+.3f} bps")
+          f"{S7_HALF_SPREAD:+.5f} %")
     print("  inside two-sided windows, adverse selection SATURATES by ~5s;")
     print("  outside them it keeps doubling from 5s to 60s;")
     print(f"  idealized maker net, INSIDE windows only : "
-          f"{S7_INSIDE_NET_LO:+.2f} .. {S7_INSIDE_NET_HI:+.2f} bps.")
+          f"{S7_INSIDE_NET_LO:+.4f} .. {S7_INSIDE_NET_HI:+.4f} %.")
     print("\nThose are the priors this design was built on, and this study")
     print("reproduces both of them:")
     res2, _ = store[("T2", 0.0, TP_BPS_GRID[0], BASE_AB, BASE_AG, True)]
     tr2 = [x for x in res2.trades if np.isfinite(x.mid_fill)]
-    capt2 = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 1e4
-                      for x in tr2])
+    capt2 = np.array([x.side * (x.mid_fill - x.entry_px) / x.entry_px * 100
+                      for x in tr2])           # % (capture)
     curve = {}
     for tau in (1, 5, 30, 60):
         v = np.array([_fwd_mid_markout(tp, x.t_entry, x.mid_fill, x.side, tau)
@@ -1189,27 +1194,27 @@ def main() -> None:
           f"{c1[5]:+.2f} at 5s,")
     print(f"    {c1[60]:+.2f} at 60s), because a burst-reversion quote is by")
     print("    construction OUTSIDE the balanced regime.")
-    print(f"  * capture: this study earns {capt2.mean():+.3f} bps per T2 fill "
-          f"against S7's {S7_HALF_SPREAD:+.3f} bps realised half-spread.  The")
-    print(f"    {S7_HALF_SPREAD - capt2.mean():.3f} bps shortfall is the price of the "
+    print(f"  * capture: this study earns {capt2.mean():+.5f} % per T2 fill "
+          f"against S7's {S7_HALF_SPREAD:+.5f} % realised half-spread.  The")
+    print(f"    {S7_HALF_SPREAD - capt2.mean():.5f} % shortfall is the price of the "
           f"last-print touch proxy: it")
     print("    quotes AT or INSIDE the true touch, so it buys a higher fill")
     print("    rate with a thinner edge.  A real book would recover part of it.")
     print("\nAnd here is where this study PARTS from the S7 ceiling, which is")
     print("the whole finding:")
     print(f"  S7 idealized maker, inside windows : "
-          f"{S7_INSIDE_NET_LO:+.2f} .. {S7_INSIDE_NET_HI:+.2f} bps  (wins EVERY print, "
+          f"{S7_INSIDE_NET_LO:+.4f} .. {S7_INSIDE_NET_HI:+.4f} %  (wins EVERY print, "
           f"BOTH sides)")
     print(f"  this study, T2, one-lot, unwind @1s: "
-          f"{capt2.mean() + curve[1]:+.3f} bps  (capture + adverse at 1s)")
+          f"{capt2.mean() + curve[1] / 100:+.5f} %  (capture + adverse at 1s)")
     print(f"  this study, T2, one-lot, unwind @30s: "
-          f"{capt2.mean() + curve[30]:+.3f} bps  (capture + adverse at 30s)")
+          f"{capt2.mean() + curve[30] / 100:+.5f} %  (capture + adverse at 30s)")
     print(f"  registered T2/tp2 cell, all rules   : "
-          f"{store[('T2', 0.0, 2.0, BASE_AB, BASE_AG, True)][1].ev:+.3f} bps")
+          f"{store[('T2', 0.0, 2.0, BASE_AB, BASE_AG, True)][1].ev:+.5f} %")
     print("\nThe 1s line is the one that matters.  S7's positive result survives")
     print("here at the 1-second horizon and ONLY there; every second of holding")
-    print("after that spends it, and the abort machinery spends 3.96 bps more.")
-    print("\nThe ~1.0-1.3 bps step from the S7 ceiling to the un-ruled fill")
+    print("after that spends it, and the abort machinery spends 0.0396 % more.")
+    print("\nThe ~0.010-0.013 % step from the S7 ceiling to the un-ruled fill")
     print("economics AT 30s is the INVENTORY CAP plus the clock: a ceiling that")
     print("never carries inventory has no horizon at all, while a one-lot quoter")
     print("must survive one.  It is a mechanism, not a tuning loss.  The")
@@ -1226,7 +1231,7 @@ def main() -> None:
     header("DO ANY CELLS CLEAR THE HF/MM-CLASS BARS -- EVEN OPTIMISTICALLY?")
     print(f"Bars (KNOWLEDGE.md section 5, verbatim): n>={BAR_N}, "
           f"cluster t>={BAR_T} on net EV>0, >={BAR_TRADES_PER_DAY:.0f} trades/day,")
-    print(f"daily net >= +{BAR_DAILY_BPS:.0f} bps/day, daily Sharpe >= "
+    print(f"daily net >= +{BAR_DAILY_PCT:.2f} %/day, daily Sharpe >= "
           f"{BAR_SHARPE:.1f}, maxDD <= {BAR_MAXDD_PCT:.0f}%.")
     print("The optimistic column is a CEILING: it assumes we are at the front")
     print("of every queue.  If the ceiling is below the bars, the floor is too.")
@@ -1243,8 +1248,8 @@ def main() -> None:
     print("carries no selection.  It only shows whether the exploration bound")
     print("is a property of the tape or of one half of it.")
     tsplit = tp.t[i_start] + 0.6 * (tp.t[-1] - tp.t[i_start])
-    print(f"\n{'cell':<20}{'first 60%: n / EV / bps-d':<34}"
-          f"{'last 40%: n / EV / bps-d':<34}")
+    print(f"\n{'cell':<20}{'first 60%: n / EV % / %-d':<34}"
+          f"{'last 40%: n / EV % / %-d':<34}")
     for trig, b, tpb, ab, ag in CELLS:
         res, _ = store[(trig, b, tpb, ab, ag, True)]
         out = []
@@ -1253,9 +1258,9 @@ def main() -> None:
             if not sel:
                 out.append("n=0")
                 continue
-            p = np.array([x.pnl_bps for x in sel])
+            p = np.array([x.pnl_pct for x in sel])
             d = (hi - lo) / 86400.0
-            out.append(f"n={len(p):,} / {p.mean():+.3f} / {p.sum() / d:+.1f}")
+            out.append(f"n={len(p):,} / {p.mean():+.5f} / {p.sum() / d:+.3f}")
         print(f"{cell_name(trig, b, tpb, ab, ag):<20}{out[0]:<34}{out[1]:<34}")
 
     queue_reality(Path(args.ws))

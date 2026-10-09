@@ -28,7 +28,7 @@ from collections import defaultdict
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from diag_tables import (BLOCK, N_RES, SEED, _f, group_ratio_ci, load_run, mean_ci, period_days,  # noqa: E402
+from diag_tables import (BLOCK, N_RES, SEED, WINDOW_MARK, _f, group_ratio_ci, mean_ci, period_days,  # noqa: E402
                          utc_day)
 import csv  # noqa: E402
 import gzip  # noqa: E402
@@ -56,6 +56,75 @@ def load_rows(d: str) -> dict:
         p = np.array(o["pnl_pct"], dtype=float) if "pnl_pct" in o else np.array(o["pnl_bp"], dtype=float) / 100
         sd = np.array(o["side"], dtype=float)
     return {"entry": e, "exit": x, "pnl": p, "side": sd}
+
+
+def check_dir(d: str) -> str:
+    """封印の窓の出力の置き場なら、読む前に止める(`diag_tables.load_run` と同じ決まり)。"""
+    if WINDOW_MARK in os.path.abspath(d).replace(os.sep, "/"):
+        raise SystemExit(f"止める: {d} は封印の窓の出力の置き場(この台本では読まない)")
+    return d
+
+
+def load_meta(d: str, R: dict) -> dict:
+    """置き場の名前・`summary.json`・期間の日を読むための入れ物(`diag_tables.period_days` に渡す形)。
+
+    L-920 の後の `diag_tables.load_run` は円の列 `pnl_jpy` の無い `trades.csv.gz` と `trades.json.gz` で止めるので、
+    率(%)の取引の行を読むこの台本は `load_run` を使わない(封印の窓の置き場で止める決まりは `check_dir`、`load_run` と同じ)。
+    期間の日は `summary.json` の period、無ければ最初と最後の取引の出の日(`load_run` と同じく建て・出の順に並べた最初と最後)。
+    """
+    summary = None
+    sp = os.path.join(d, "summary.json")
+    if os.path.isfile(sp):
+        with open(sp, encoding="utf-8") as fh:
+            summary = json.load(fh)
+    order = sorted(zip(R["entry"].tolist(), R["exit"].tolist()))
+    return {"dir": d, "name": os.path.basename(os.path.normpath(d)), "summary": summary, "kind": "trades",
+            "trades": [{"entry_ns": e, "exit_ns": x} for e, x in order]}
+
+
+def load_pct_run(d: str) -> dict:
+    """損益を率(%)で持つ出力の置き場を読む。L-920 より前の `diag_tables.load_run` と同じ形(種類 card / trades)で、
+    損益の鍵だけ `pnl_pct`(%)。`diag_tables.period_days` にそのまま渡せる。日ごとの和は `daily_pct`。
+
+    L-920 の後の `diag_tables.load_run` は円の列 `pnl_jpy` の無い置き場で止めるので、率の出力(カードの測定の
+    `daily.csv`、指値の再現の `trades.csv.gz`・`trades.json.gz`)の読み手はこちらを使う。
+      - `daily.csv`: 列 `pnl_pct`。L-920 より前の `pnl_bp`(率 × 1 万)は / 100 して % で読む。
+      - `trades.csv.gz`・`trades.json.gz`: `load_rows` と同じ(`pnl_pct`、前の `pnl_bp` は / 100)。
+    """
+    check_dir(d)
+    out: dict = {"dir": d, "name": os.path.basename(os.path.normpath(d)), "summary": None, "trades": None, "daily": None}
+    sp = os.path.join(d, "summary.json")
+    if os.path.isfile(sp):
+        with open(sp, encoding="utf-8") as fh:
+            out["summary"] = json.load(fh)
+    dp = os.path.join(d, "daily.csv")
+    if os.path.isfile(dp):
+        with open(dp, encoding="utf-8") as fh:
+            rd = csv.DictReader(fh)
+            col, k = ("pnl_pct", 1.0) if "pnl_pct" in (rd.fieldnames or []) else ("pnl_bp", 100.0)  # 前の記録は / 100
+            out["daily"] = {r["day"]: float(r[col]) / k for r in rd}
+        out["kind"] = "card"
+        return out
+    if not (os.path.isfile(os.path.join(d, "trades.csv.gz")) or os.path.isfile(os.path.join(d, "trades.json.gz"))):
+        raise SystemExit(f"止める: {d} に daily.csv も trades.csv.gz も trades.json.gz も無い")
+    R = load_rows(d)
+    rows = sorted(zip(R["entry"].tolist(), R["exit"].tolist(), R["pnl"].tolist()), key=lambda t: (t[0], t[1]))
+    out["trades"] = [{"entry_ns": e, "exit_ns": x, "pnl_pct": p} for e, x, p in rows]
+    out["kind"] = "trades"
+    return out
+
+
+def daily_pct(run: dict) -> dict[str, float]:
+    """`load_pct_run` の出力の日ごとの損益(%)。L-920 より前の `diag_tables.daily_series` と同じ決まり
+    (card は daily.csv の日、trades は期間の日に 0 を置き、出の時刻の UTC の日に足す)。"""
+    if run["kind"] == "card":
+        return dict(run["daily"])
+    out = {d: 0.0 for d in period_days(run)}
+    for t in run["trades"]:
+        d = utc_day(t["exit_ns"])
+        if d in out:
+            out[d] += t["pnl_pct"]
+    return out
 
 
 def ratio_diff(days, a1, c1, a2, c2):
@@ -92,8 +161,8 @@ def main(argv=None) -> int:
     ap.add_argument("--run", required=True)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    run = load_run(a.run)
-    R = load_rows(a.run)
+    R = load_rows(check_dir(a.run))
+    run = load_meta(a.run, R)
     tr = R["pnl"]
     side, pnl = R["side"], R["pnl"]
     hold = (R["exit"] - R["entry"]) / 6e10

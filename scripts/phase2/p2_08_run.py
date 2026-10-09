@@ -118,8 +118,10 @@ STOPS = (0.25, 0.5, 1.0)
 EXIT_PCT = 0.05
 CONFIGS = [(k, thr, stop) for k in KS for thr in THRS for stop in STOPS]      # N0 = 27
 CURRENT = (30, 0.8, 0.5)
-COST_CONS_1W = 1.3            # constants.yaml realized_taker_one_way_bps upper (measured)
-COST_OPT_1W = 1.0             # lower (measured)
+# constants.yaml realized_taker_one_way_pct upper / lower (measured; PREREG wrote 1.3 / 1.0 bps)
+# (L-920 の後の単位: 片道の費用は % で持つ。1.3 bps = 0.013%、1.0 bps = 0.010%)
+COST_CONS_1W = 0.013          # % one-way, upper (measured)
+COST_OPT_1W = 0.010           # % one-way, lower (measured)
 FUNDING_PCT = 0.02            # per settlement, UTC 05/13/21
 FUNDING_TIMES = (5, 13, 21)
 MAX_GAP_MIN = 5
@@ -134,8 +136,10 @@ N_NULL = 2000
 N_CTRL = 1000
 EDGE_WINDOW = 50              # PREREG エッジ推移: 窓 = 50 取引
 EDGE_BLOCK = 20               # not in the PREREG: block length for §5's bootstrap (recorded)
-MDE_REGISTERED = 1.54
-SIGMA_REGISTERED = 86.5
+# PREREG: MDE 1.54 bps, σ 86.5 bps (net per trade)
+# (L-920 の後の単位: net は bp にしないので % で持つ。0.0154%・0.865%)
+MDE_REGISTERED = 0.0154       # % (PREREG 1.54 bps)
+SIGMA_REGISTERED = 0.865      # % (PREREG 86.5 bps)
 N_REGISTERED = 24717
 MDE_Z = EDGE_TREND_SLOPE_MDE_Z
 SEAL_FILE = "backtest_data/phase2_sealed/P2-08/SEALED.json"
@@ -177,6 +181,40 @@ def _md5(path: Path) -> str:
         for chunk in iter(lambda: f.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+# L-920: the iteration outputs written before the bp rename (configs.csv,
+# null_best_of_*.csv, sensitivity_val_2022_only.csv under
+# backtest_data/phase2_runs/P2-08/) carry the net / cost / funding columns in bp
+# under *_bps names. They are read in the new units, never rewritten:
+#   * each old *_bps column in _PREV_BP_TO_PCT -> its *_pct name, value / 100;
+#   * max_mean_net_bps_<period> -> max_mean_net_pct_<period>, value / 100;
+#   * ci_lo / ci_hi / se_cluster (net, no unit in the name) -> value / 100, only
+#     when the file is in the old form (it has mean_net_bps and no mean_net_pct).
+# mean_gross_bps (price-move rate) is left as it is.
+_PREV_BP_TO_PCT = {
+    "one_way_bps": "one_way_pct", "mean_net_bps": "mean_net_pct", "max_dd_bps": "max_dd_pct",
+    "mean_funding_bps": "mean_funding_pct", "sd_net_bps": "sd_net_pct", "mean_cost_bps": "mean_cost_pct",
+    "mde_bps": "mde_pct", "mde_cluster_bps": "mde_cluster_pct",
+}
+_PREV_NET_NO_UNIT = ("ci_lo", "ci_hi", "se_cluster")
+
+
+def read_prev_csv(path: Path) -> pd.DataFrame:
+    """Read an earlier iteration's CSV in the current units (see the note above)."""
+    df = pd.read_csv(path)
+    old_form = "mean_net_bps" in df.columns and "mean_net_pct" not in df.columns
+    ren = dict(_PREV_BP_TO_PCT)
+    ren.update({c: c.replace("max_mean_net_bps_", "max_mean_net_pct_")
+                for c in df.columns if c.startswith("max_mean_net_bps_")})
+    for old, new in ren.items():
+        if old in df.columns and new not in df.columns:
+            df[new] = df.pop(old) / 100.0          # bp -> %
+    if old_form:
+        for c in _PREV_NET_NO_UNIT:
+            if c in df.columns:
+                df[c] = df[c] / 100.0              # net bp -> %
+    return df
 
 
 def _git_rev() -> str:
@@ -299,7 +337,7 @@ def _read_tape(kind: str) -> tuple[pd.DataFrame, list[Path]]:
 
 
 def burst_coefficients() -> tuple[pd.DataFrame, dict, dict]:
-    """Per (k, thr): effective and quoted half-spread (bps) in the minutes
+    """Per (k, thr): effective and quoted half-spread (%) in the minutes
     t−1..t+1 around |m_bf(t)| > thr, over the unconditional minute mean.
 
     m_bf is the tape's own bitFlyer 1-minute close momentum (the Binance
@@ -319,27 +357,27 @@ def burst_coefficients() -> tuple[pd.DataFrame, dict, dict]:
         return pd.DataFrame(), {}, meta
     tk = tk[(tk["best_bid"] > 0) & (tk["best_ask"] > 0)].copy()
     tk["mid"] = (tk["best_bid"] + tk["best_ask"]) / 2.0
-    tk["half_quoted_bps"] = (tk["best_ask"] - tk["best_bid"]) / 2.0 / tk["mid"] * 1e4
+    tk["half_quoted_pct"] = (tk["best_ask"] - tk["best_bid"]) / 2.0 / tk["mid"] * 100.0
     ex = pd.merge_asof(ex, tk[["ts", "mid"]], on="ts", direction="backward")
     ex = ex[ex["mid"].notna()].copy()
-    ex["eff_bps"] = (ex["price"] - ex["mid"]).abs() / ex["mid"] * 1e4
+    ex["eff_pct"] = (ex["price"] - ex["mid"]).abs() / ex["mid"] * 100.0
     ex["minute"] = ex["ts"].dt.floor("min")
-    ex["w"] = ex["eff_bps"] * ex["size"]
+    ex["w"] = ex["eff_pct"] * ex["size"]
     g = ex.groupby("minute")
-    eff_min = (g["w"].sum() / g["size"].sum()).rename("eff_bps")
+    eff_min = (g["w"].sum() / g["size"].sum()).rename("eff_pct")
     tk["minute"] = tk["ts"].dt.floor("min")
-    quoted_min = tk.groupby("minute")["half_quoted_bps"].mean().rename("quoted_bps")
+    quoted_min = tk.groupby("minute")["half_quoted_pct"].mean().rename("quoted_pct")
     close_min = g["price"].last().rename("close")
     full = pd.date_range(min(eff_min.index.min(), quoted_min.index.min()),
                          max(eff_min.index.max(), quoted_min.index.max()), freq="min")
     tab = pd.DataFrame(index=full).join(eff_min).join(quoted_min).join(close_min)
     meta.update({
-        "minutes": int(len(tab)), "minutes_with_executions": int(tab["eff_bps"].notna().sum()),
-        "minutes_with_ticker": int(tab["quoted_bps"].notna().sum()),
+        "minutes": int(len(tab)), "minutes_with_executions": int(tab["eff_pct"].notna().sum()),
+        "minutes_with_ticker": int(tab["quoted_pct"].notna().sum()),
         "first_minute": str(tab.index[0]), "last_minute": str(tab.index[-1]),
-        "uncond_eff_bps": float(tab["eff_bps"].mean()),
-        "uncond_quoted_bps": float(tab["quoted_bps"].mean()),
-        "uncond_eff_bps_exec_weighted": float(ex["w"].sum() / ex["size"].sum()),
+        "uncond_eff_pct": float(tab["eff_pct"].mean()),
+        "uncond_quoted_pct": float(tab["quoted_pct"].mean()),
+        "uncond_eff_pct_exec_weighted": float(ex["w"].sum() / ex["size"].sum()),
     })
     rows, coef = [], {}
     for k in KS:
@@ -349,23 +387,23 @@ def burst_coefficients() -> tuple[pd.DataFrame, dict, dict]:
             win = sig | np.roll(sig, 1) | np.roll(sig, -1)
             win[0] &= sig[0] | sig[1]
             win[-1] &= sig[-1] | sig[-2]
-            eff_w = tab["eff_bps"].to_numpy()[win]
-            q_w = tab["quoted_bps"].to_numpy()[win]
+            eff_w = tab["eff_pct"].to_numpy()[win]
+            q_w = tab["quoted_pct"].to_numpy()[win]
             n_eff = int(np.isfinite(eff_w).sum())
-            r_eff = float(np.nanmean(eff_w) / meta["uncond_eff_bps"]) if n_eff else float("nan")
-            r_q = float(np.nanmean(q_w) / meta["uncond_quoted_bps"]) if np.isfinite(q_w).any() else float("nan")
+            r_eff = float(np.nanmean(eff_w) / meta["uncond_eff_pct"]) if n_eff else float("nan")
+            r_q = float(np.nanmean(q_w) / meta["uncond_quoted_pct"]) if np.isfinite(q_w).any() else float("nan")
             measured = n_eff >= BURST_MIN_WINDOW_MINUTES and np.isfinite(r_eff)
             used = max(1.0, r_eff) if measured else BURST_ASSUMED
             coef[(k, thr)] = used
             rows.append({"k": k, "thr": thr, "n_signal_minutes": int(sig.sum()),
                          "n_window_minutes": int(win.sum()), "n_window_minutes_with_exec": n_eff,
-                         "eff_bps_window": float(np.nanmean(eff_w)) if n_eff else float("nan"),
-                         "eff_bps_uncond": meta["uncond_eff_bps"], "ratio_eff": r_eff,
-                         "quoted_bps_window": float(np.nanmean(q_w)) if np.isfinite(q_w).any() else float("nan"),
-                         "quoted_bps_uncond": meta["uncond_quoted_bps"], "ratio_quoted": r_q,
+                         "eff_pct_window": float(np.nanmean(eff_w)) if n_eff else float("nan"),
+                         "eff_pct_uncond": meta["uncond_eff_pct"], "ratio_eff": r_eff,
+                         "quoted_pct_window": float(np.nanmean(q_w)) if np.isfinite(q_w).any() else float("nan"),
+                         "quoted_pct_uncond": meta["uncond_quoted_pct"], "ratio_quoted": r_q,
                          "measured": bool(measured), "thin": bool(n_eff < BURST_THIN_WINDOW_MINUTES),
                          "burst_coef_used": used,
-                         "cons_one_way_bps": COST_CONS_1W * used})
+                         "cons_one_way_pct": COST_CONS_1W * used})
     meta["measured"] = all(r["measured"] for r in rows)
     return pd.DataFrame(rows), coef, meta
 
@@ -374,8 +412,9 @@ def burst_coefficients() -> tuple[pd.DataFrame, dict, dict]:
 # per-configuration statistics
 # ---------------------------------------------------------------------------
 
-def net_of(a: dict, one_way_bps: float) -> np.ndarray:
-    return a["gross_bps"] - 2.0 * one_way_bps - a["funding_bps"]
+def net_of(a: dict, one_way_pct: float) -> np.ndarray:
+    """Net per trade in % (gross_bps is the price-move rate in bp -> /100)."""
+    return a["gross_bps"] / 100.0 - 2.0 * one_way_pct - a["funding_pct"]
 
 
 def _day_id(ts: pd.Timestamp) -> int:
@@ -398,9 +437,9 @@ def period_mask(a: dict, grid: Grid, period: str) -> np.ndarray:
     raise ValueError(period)
 
 
-def quick_stats(a: dict, one_way_bps: float, keep: np.ndarray) -> tuple[float, float, int]:
-    """(mean net bps, daily Sharpe, n) on kept trades — the null statistic."""
-    net = net_of(a, one_way_bps)
+def quick_stats(a: dict, one_way_pct: float, keep: np.ndarray) -> tuple[float, float, int]:
+    """(mean net %, daily Sharpe, n) on kept trades — the null statistic."""
+    net = net_of(a, one_way_pct)
     n = int(keep.sum())
     if n == 0:
         return float("nan"), float("nan"), 0
@@ -408,7 +447,7 @@ def quick_stats(a: dict, one_way_bps: float, keep: np.ndarray) -> tuple[float, f
     return float(net[keep].mean()), sharpe_from_daily(d), n
 
 
-def full_stats(a: dict, grid: Grid, one_way_bps: float, period: str, n_boot: int, seed
+def full_stats(a: dict, grid: Grid, one_way_pct: float, period: str, n_boot: int, seed
                ) -> dict:
     pm = period_mask(a, grid, period)
     keep = pm & ~a["excluded_gap"]
@@ -416,31 +455,31 @@ def full_stats(a: dict, grid: Grid, one_way_bps: float, period: str, n_boot: int
     row = {"n_total_in_period": int(pm.sum()), "n_excluded_gap": int((pm & a["excluded_gap"]).sum()),
            "n": n}
     if n == 0:
-        row.update(mean_net_bps=np.nan, ci_lo=np.nan, ci_hi=np.nan, se_cluster=np.nan,
+        row.update(mean_net_pct=np.nan, ci_lo=np.nan, ci_hi=np.nan, se_cluster=np.nan,
                    sharpe=np.nan, sharpe_ci_lo=np.nan, sharpe_ci_hi=np.nan, win_rate=np.nan,
-                   max_dd_bps=np.nan, mean_hold_min=np.nan, stop_rate=np.nan, mean_funding_bps=np.nan,
-                   mean_gross_bps=np.nan, sd_net_bps=np.nan, n_days=0, deferred_minutes=0,
-                   trades_with_deferral=0, mean_cost_bps=2.0 * one_way_bps, sum_pnl_jpy_001btc=np.nan)
+                   max_dd_pct=np.nan, mean_hold_min=np.nan, stop_rate=np.nan, mean_funding_pct=np.nan,
+                   mean_gross_bps=np.nan, sd_net_pct=np.nan, n_days=0, deferred_minutes=0,
+                   trades_with_deferral=0, mean_cost_pct=2.0 * one_way_pct, sum_pnl_jpy_001btc=np.nan)
         return row
-    net = net_of(a, one_way_bps)[keep]
-    base = (a["gross_bps"] - a["funding_bps"])[keep]          # cost-free: CI shifts by a constant
+    net = net_of(a, one_way_pct)[keep]
+    base = (a["gross_bps"] / 100.0 - a["funding_pct"])[keep]  # % ; cost-free: CI shifts by a constant
     clusters = a["exit_day"][keep]
     lo, hi, se = cluster_boot_mean(base, clusters, n_boot, seed)
-    shift = 2.0 * one_way_bps
-    daily = daily_from_arrays(a["exit_day"], net_of(a, one_way_bps), keep)
+    shift = 2.0 * one_way_pct
+    daily = daily_from_arrays(a["exit_day"], net_of(a, one_way_pct), keep)
     s_lo, s_hi = boot_sharpe(daily, n_boot, seed)
     hold = (a["exit_i"] - a["entry_i"])[keep]
     nd = (a["ndef_e"] + a["ndef_x"])[keep]
     row.update({
-        "mean_net_bps": float(net.mean()), "ci_lo": lo - shift, "ci_hi": hi - shift,
+        "mean_net_pct": float(net.mean()), "ci_lo": lo - shift, "ci_hi": hi - shift,
         "se_cluster": se, "sharpe": sharpe_from_daily(daily), "sharpe_ci_lo": s_lo,
-        "sharpe_ci_hi": s_hi, "win_rate": float((net > 0).mean()), "max_dd_bps": max_drawdown(net),
+        "sharpe_ci_hi": s_hi, "win_rate": float((net > 0).mean()), "max_dd_pct": max_drawdown(net),
         "mean_hold_min": float(hold.mean()), "stop_rate": float((a["reason"][keep] == 1).mean()),
-        "mean_funding_bps": float(a["funding_bps"][keep].mean()),
-        "mean_gross_bps": float(a["gross_bps"][keep].mean()), "sd_net_bps": float(net.std(ddof=1)),
+        "mean_funding_pct": float(a["funding_pct"][keep].mean()),
+        "mean_gross_bps": float(a["gross_bps"][keep].mean()), "sd_net_pct": float(net.std(ddof=1)),
         "n_days": int(len(daily)), "deferred_minutes": int(nd.sum()),
-        "trades_with_deferral": int((nd > 0).sum()), "mean_cost_bps": shift,
-        "sum_pnl_jpy_001btc": float((net / 1e4 * a["entry_px"][keep] * 0.01).sum()),
+        "trades_with_deferral": int((nd > 0).sum()), "mean_cost_pct": shift,
+        "sum_pnl_jpy_001btc": float((net / 100.0 * a["entry_px"][keep] * 0.01).sum()),  # net in %
     })
     return row
 
@@ -503,7 +542,7 @@ def run_null(grid, bg, bp, burst, n_null: int, workers: int, cfgs=None, gates=No
         rec = {"draw": r["draw"], "seconds": r["seconds"]}
         for period in ("full", "train", "val"):
             ms = [r[(ci, period)] for ci in range(len(cfgs))]
-            rec[f"max_mean_net_bps_{period}"] = float(np.nanmax([x[0] for x in ms]))
+            rec[f"max_mean_net_pct_{period}"] = float(np.nanmax([x[0] for x in ms]))
             rec[f"max_sharpe_{period}"] = float(np.nanmax([x[1] for x in ms]))
             rec[f"min_n_{period}"] = int(min(x[2] for x in ms))
         best_rows.append(rec)
@@ -513,7 +552,7 @@ def run_null(grid, bg, bp, burst, n_null: int, workers: int, cfgs=None, gates=No
                 row = {"draw": r["draw"], "k": cfg[0], "thr": cfg[1], "stop": cfg[2]}
                 if with_state:
                     row["state"] = state_label(cfg[3])
-                row.update({"period": period, "mean_net_bps": m, "sharpe": s, "n": n})
+                row.update({"period": period, "mean_net_pct": m, "sharpe": s, "n": n})
                 long_rows.append(row)
     return pd.DataFrame(best_rows), pd.DataFrame(long_rows), wall
 
@@ -534,27 +573,27 @@ def _next_valid(grid: Grid) -> np.ndarray:
 
 
 def _random_trade_stats(grid: Grid, entries: np.ndarray, holds: np.ndarray, sides: np.ndarray,
-                        next_valid: np.ndarray, one_way_bps: float) -> tuple[float, float, int]:
+                        next_valid: np.ndarray, one_way_pct: float) -> tuple[float, float, int]:
     ex = next_valid[np.minimum(entries + holds, grid.n)]
     ok = ex < grid.n
     entries, ex, sides = entries[ok], ex[ok], sides[ok]
     gross = sides * (grid.o[ex] / grid.o[entries] - 1.0) * 1e4
     ns = (np.searchsorted(grid.settle64, grid.idx64[ex], side="right")
           - np.searchsorted(grid.settle64, grid.idx64[entries], side="right"))
-    funding = ns * (FUNDING_PCT * 100.0)
+    funding = ns * FUNDING_PCT  # %
     if len(grid.gap_pa):
         kpos = np.searchsorted(grid.gap_pa, entries, side="left")
         strad = (kpos < len(grid.gap_pa)) & (grid.gap_pb[np.minimum(kpos, len(grid.gap_pa) - 1)] <= ex)
     else:
         strad = np.zeros(len(entries), dtype=bool)
     keep = ~strad
-    net = gross - 2.0 * one_way_bps - funding
+    net = gross / 100.0 - 2.0 * one_way_pct - funding  # gross bp -> %; net in %
     order = np.argsort(ex[keep], kind="stable")
     d = daily_from_arrays(grid.day_id[ex][keep][order], net[keep][order], np.ones(int(keep.sum()), bool))
     return float(net[keep].mean()), sharpe_from_daily(d), int(keep.sum())
 
 
-def control_random_times(grid: Grid, a: dict, one_way_bps: float, n_draws: int, seed: int,
+def control_random_times(grid: Grid, a: dict, one_way_pct: float, n_draws: int, seed: int,
                          within_state: bool) -> pd.DataFrame:
     """Control 1: random entry minutes with the trade's own holding-time
     distribution (permuted) and random sides. `within_state=False` = 全時刻
@@ -585,24 +624,24 @@ def control_random_times(grid: Grid, a: dict, one_way_bps: float, n_draws: int, 
             entries = valid_pos[rng.integers(0, len(valid_pos), size=n)]
         hold_perm = holds[rng.permutation(n)]
         sides = rng.choice(np.array([-1, 1]), size=n)
-        m, s, nn = _random_trade_stats(grid, entries, hold_perm, sides, nv, one_way_bps)
-        rows.append({"draw": d, "mean_net_bps": m, "sharpe": s, "n": nn})
+        m, s, nn = _random_trade_stats(grid, entries, hold_perm, sides, nv, one_way_pct)
+        rows.append({"draw": d, "mean_net_pct": m, "sharpe": s, "n": nn})
     return pd.DataFrame(rows)
 
 
-def control_sign_shuffle(a: dict, one_way_bps: float, n_draws: int, seed: int) -> pd.DataFrame:
+def control_sign_shuffle(a: dict, one_way_pct: float, n_draws: int, seed: int) -> pd.DataFrame:
     keep = ~a["excluded_gap"]
     gross = a["gross_bps"][keep]
-    funding = a["funding_bps"][keep]
+    funding = a["funding_pct"][keep]
     day = a["exit_day"][keep]
     n = len(gross)
     rng = np.random.default_rng([SEED, 4, seed])
     rows = []
     for d in range(n_draws):
         signs = rng.choice(np.array([-1.0, 1.0]), size=n)
-        net = signs * gross - 2.0 * one_way_bps - funding
+        net = signs * gross / 100.0 - 2.0 * one_way_pct - funding  # gross bp -> %; net in %
         dd = daily_from_arrays(day, net, np.ones(n, bool))
-        rows.append({"draw": d, "mean_net_bps": float(net.mean()), "sharpe": sharpe_from_daily(dd), "n": n})
+        rows.append({"draw": d, "mean_net_pct": float(net.mean()), "sharpe": sharpe_from_daily(dd), "n": n})
     return pd.DataFrame(rows)
 
 
@@ -674,16 +713,17 @@ def edge_trend_for(tag: str, a: dict, grid_m: Grid, c1w: float, n_boot: int, out
     edge = {}
     keep = ~a["excluded_gap"]
     dates = grid_m.idx[a["exit_i"][keep]]
-    legs = {"gross": a["gross_bps"][keep],
-            "cost": np.full(int(keep.sum()), 2.0 * c1w) + a["funding_bps"][keep],
-            "net": net_of(a, c1w)[keep]}
+    # L-920: the gross leg is a price-move rate (bp); cost and net are in %
+    legs = {"gross": (a["gross_bps"][keep], "bps"),
+            "cost": (np.full(int(keep.sum()), 2.0 * c1w) + a["funding_pct"][keep], "%"),
+            "net": (net_of(a, c1w)[keep], "%")}
     n = int(keep.sum())
     n_weeks = max(1, int(np.ceil((dates[-1] - dates[0]) / pd.Timedelta(days=7)))) if n else 1
     step = max(1, int(round(n / n_weeks)))
-    for leg, vals in legs.items():
+    for leg, (vals, unit) in legs.items():
         res = edge_trend(dates, vals, window=EDGE_WINDOW, block=EDGE_BLOCK, time_unit="week",
                          time_axis="calendar", period="week", n_boot=n_boot, seed=SEED,
-                         rolling_step=step)
+                         rolling_step=step, value_unit=unit)
         year_rows = []
         yrs = dates.year.to_numpy()
         for y in DEV_YEARS:
@@ -705,7 +745,8 @@ def edge_summary_rows(edge: dict) -> list[dict]:
     for (tag, leg), res in edge.items():
         hs = res["half_split"]
         lw = res["last_window"] or {}
-        rows.append({"config": tag, "leg": leg, "n": res["params"]["n"], "slope_bps_per_week": res["slope"],
+        rows.append({"config": tag, "leg": leg, "n": res["params"]["n"], "slope_per_week": res["slope"],
+                     "slope_unit": res["slope_unit"],
                      "slope_ci_lo": res["slope_ci"][0], "slope_ci_hi": res["slope_ci"][1],
                      "slope_mde": res["slope_mde"], "mean_first_half": hs["mean_first"],
                      "mean_second_half": hs["mean_second"], "half_diff": hs["diff"],
@@ -785,7 +826,7 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
                 for cost_name, c1w in (("cons", COST_CONS_1W * burst[(k, thr)]), ("opt", COST_OPT_1W)):
                     cell += 1
                     row = {"k": k, "thr": thr, "stop": stop, "exit": EXIT_PCT, "masks": masks,
-                           "period": period, "cost": cost_name, "one_way_bps": c1w,
+                           "period": period, "cost": cost_name, "one_way_pct": c1w,
                            "burst_coef": burst[(k, thr)] if cost_name == "cons" else 1.0,
                            "is_current": cfg == CURRENT,
                            "n_entry_signal_bars": a["n_entry_signal_bars"],
@@ -798,7 +839,7 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
 
     # ---- 4. best configuration (val, masked, conservative) -----------------
     sel = configs[(configs["masks"] == "masked") & (configs["period"] == "val") & (configs["cost"] == "cons")]
-    best_row = sel.sort_values("mean_net_bps", ascending=False).iloc[0]
+    best_row = sel.sort_values("mean_net_pct", ascending=False).iloc[0]
     best = (int(best_row["k"]), float(best_row["thr"]), float(best_row["stop"]))
     best_sharpe_row = sel.sort_values("sharpe", ascending=False).iloc[0]
     best_by_sharpe = (int(best_sharpe_row["k"]), float(best_sharpe_row["thr"]), float(best_sharpe_row["stop"]))
@@ -807,7 +848,7 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
                                         "val2022", n_boot, [SEED, 6, i])}
                           for i, c in enumerate(CONFIGS)])
     write(sel22, "sensitivity_val_2022_only.csv")
-    best22_row = sel22.sort_values("mean_net_bps", ascending=False).iloc[0]
+    best22_row = sel22.sort_values("mean_net_pct", ascending=False).iloc[0]
     best22 = (int(best22_row["k"]), float(best22_row["thr"]), float(best22_row["stop"]))
 
     def stat_of(cfg, period, masks="masked", cost="cons"):
@@ -819,7 +860,7 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
     for tag, cfg in (("best", best), ("current", CURRENT)):
         led = simulate_fast(grid_m, mom[cfg[0]], cfg[1], EXIT_PCT, cfg[2], COST_CONS_1W * burst[(cfg[0], cfg[1])],
                             FUNDING_PCT)
-        led["net_bps_opt"] = led["gross_bps"] - 2 * COST_OPT_1W - led["funding_bps"]
+        led["net_pct_opt"] = led["gross_bps"] / 100.0 - 2 * COST_OPT_1W - led["funding_pct"]  # %
         led["split"] = np.where(pd.DatetimeIndex(led["entry_ts"]) <= TRAIN_END, "train", "val")
         led.to_csv(out / f"trades_{tag}.csv.gz", index=False)
         written.append(f"trades_{tag}.csv.gz")
@@ -849,9 +890,9 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
                          ("対照2 符号シャッフル", control_sign_shuffle(a, c1w, n_ctrl, 0))):
             ctrl_draws[(tag, name)] = df
             ctrl_rows.append({"config": tag, "label": cfg_label(cfg), "control": name, "draws": len(df),
-                              "obs_mean_net_bps": obs["mean_net_bps"], "null_mean_mean": float(df["mean_net_bps"].mean()),
-                              "null_mean_p95": float(np.nanpercentile(df["mean_net_bps"], 95)),
-                              "null_mean_p5": float(np.nanpercentile(df["mean_net_bps"], 5)),
+                              "obs_mean_net_pct": obs["mean_net_pct"], "null_mean_mean": float(df["mean_net_pct"].mean()),
+                              "null_mean_p95": float(np.nanpercentile(df["mean_net_pct"], 95)),
+                              "null_mean_p5": float(np.nanpercentile(df["mean_net_pct"], 5)),
                               "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(df["sharpe"].mean()),
                               "null_sharpe_p95": float(np.nanpercentile(df["sharpe"], 95)),
                               "null_sharpe_p5": float(np.nanpercentile(df["sharpe"], 5)),
@@ -860,10 +901,10 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
         sub = null_all[(null_all["k"] == cfg[0]) & (null_all["thr"] == cfg[1]) & (null_all["stop"] == cfg[2])
                        & (null_all["period"] == "full")].head(n_ctrl)
         ctrl_rows.append({"config": tag, "label": cfg_label(cfg), "control": "対照3 先行市場の日ブロック置換(帰無の当該構成のみ)",
-                          "draws": len(sub), "obs_mean_net_bps": obs["mean_net_bps"],
-                          "null_mean_mean": float(sub["mean_net_bps"].mean()),
-                          "null_mean_p95": float(np.nanpercentile(sub["mean_net_bps"], 95)),
-                          "null_mean_p5": float(np.nanpercentile(sub["mean_net_bps"], 5)),
+                          "draws": len(sub), "obs_mean_net_pct": obs["mean_net_pct"],
+                          "null_mean_mean": float(sub["mean_net_pct"].mean()),
+                          "null_mean_p95": float(np.nanpercentile(sub["mean_net_pct"], 95)),
+                          "null_mean_p5": float(np.nanpercentile(sub["mean_net_pct"], 5)),
                           "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(sub["sharpe"].mean()),
                           "null_sharpe_p95": float(np.nanpercentile(sub["sharpe"], 95)),
                           "null_sharpe_p5": float(np.nanpercentile(sub["sharpe"], 5)),
@@ -934,8 +975,8 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
     write(edge_summary, "edge_trend_summary.csv")
     for tag in ("best", "current"):
         yt = edge[(tag, "net")]["year_table"].copy()
-        yt["gross_mean"] = edge[(tag, "gross")]["year_table"]["mean"]
-        yt["cost_mean"] = edge[(tag, "cost")]["year_table"]["mean"]
+        yt["gross_mean_bps"] = edge[(tag, "gross")]["year_table"]["mean"]
+        yt["cost_mean_pct"] = edge[(tag, "cost")]["year_table"]["mean"]
         yt.insert(0, "config", tag)
         write(yt, f"edge_trend_{tag}_by_year.csv")
     T["edge_trend_s"] = time.perf_counter() - t0
@@ -944,9 +985,9 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
     mde_rows = []
     for tag, cfg in (("best", best), ("current", CURRENT)):
         r = stat_of(cfg, "full")
-        mde_rows.append({"config": tag, "label": cfg_label(cfg), "n": int(r["n"]), "sigma_bps": r["sd_net_bps"],
-                         "se_independent": r["sd_net_bps"] / np.sqrt(r["n"]),
-                         "mde_independent": MDE_Z * r["sd_net_bps"] / np.sqrt(r["n"]),
+        mde_rows.append({"config": tag, "label": cfg_label(cfg), "n": int(r["n"]), "sigma_pct": r["sd_net_pct"],
+                         "se_independent": r["sd_net_pct"] / np.sqrt(r["n"]),
+                         "mde_independent": MDE_Z * r["sd_net_pct"] / np.sqrt(r["n"]),
                          "se_cluster": r["se_cluster"], "mde_cluster": MDE_Z * r["se_cluster"],
                          "mde_registered": MDE_REGISTERED})
     mde = pd.DataFrame(mde_rows)
@@ -973,7 +1014,7 @@ def main(iteration: int, out: Path, n_null: int, n_ctrl: int, n_boot: int, worke
         "seal_record": {"path": SEAL_FILE, "md5": _md5(REPO_ROOT / SEAL_FILE)},
         "tape_inputs": [{"path": p, "md5": _md5(REPO_ROOT / p)} for p in burst_meta.get("files", [])],
         "parameters": {"configs": CONFIGS, "exit_pct": EXIT_PCT, "current": CURRENT,
-                       "cost_cons_one_way_bps": COST_CONS_1W, "cost_opt_one_way_bps": COST_OPT_1W,
+                       "cost_cons_one_way_pct": COST_CONS_1W, "cost_opt_one_way_pct": COST_OPT_1W,
                        "burst_coef": {f"{k}/{thr}": v for (k, thr), v in burst.items()},
                        "burst_assumed_fallback": BURST_ASSUMED, "burst_min_window_minutes": BURST_MIN_WINDOW_MINUTES,
                        "funding_pct_per_settlement": FUNDING_PCT, "funding_times_utc": FUNDING_TIMES,
@@ -1062,7 +1103,7 @@ def gated_reference_check(bf: pd.DataFrame, grid_m: Grid, mm: np.ndarray, gate: 
     assert (pd.DatetimeIndex(ref["entry_ts"]) == pd.DatetimeIndex(fast["entry_ts"])).all()
     assert (pd.DatetimeIndex(ref["exit_ts"]) == pd.DatetimeIndex(fast["exit_ts"])).all()
     assert np.allclose(ref["gross_bps"].to_numpy(), fast["gross_bps"].to_numpy(), atol=1e-9)
-    assert np.allclose(ref["funding_bps"].to_numpy(), fast["funding_bps"].to_numpy(), atol=1e-9)
+    assert np.allclose(ref["funding_pct"].to_numpy(), fast["funding_pct"].to_numpy(), atol=1e-11)
     assert ref["excluded_gap"].tolist() == fast["excluded_gap"].tolist()
     return {"n_trades": int(len(fast)), "n_clipped_signal_bars": int(off.sum()),
             "n_entry_signals_gated": int(fast.attrs["n_entry_signals_gated"])}
@@ -1081,8 +1122,8 @@ def condition_analysis(a: dict, grid: Grid, terc: np.ndarray, c1w: float, period
     res = state_split(net, {"realized_vol_60m_tercile": labels}, block=EDGE_BLOCK, n_boot=n_boot,
                       seed=SEED)
     st = res["state_table"]
-    st["sd_bps"] = [float(net[labels == s].std(ddof=1)) if (labels == s).sum() > 1 else np.nan for s in st["state"]]
-    st["mde_bps"] = [mde_of(sd, int(n_)) for sd, n_ in zip(st["sd_bps"], st["n"])]
+    st["sd_pct"] = [float(net[labels == s].std(ddof=1)) if (labels == s).sum() > 1 else np.nan for s in st["state"]]
+    st["mde_pct"] = [mde_of(sd, int(n_)) for sd, n_ in zip(st["sd_pct"], st["n"])]
     res["n_no_tercile"] = int((labels == "").sum())
     return res
 
@@ -1184,7 +1225,7 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                         cell1 += 1
                         seed = [SEED, 15, cell1]
                     row = {"k": k, "thr": thr, "stop": stop, "exit": EXIT_PCT, "state": tercile_label(st),
-                           "masks": masks, "period": period, "cost": cost_name, "one_way_bps": c1w,
+                           "masks": masks, "period": period, "cost": cost_name, "one_way_pct": c1w,
                            "burst_coef": burst[(k, thr)] if cost_name == "cons" else 1.0,
                            "is_current": (k, thr, stop) == CURRENT and st is None,
                            "is_iter0_best": (k, thr, stop) == ITER0_BEST and st is None,
@@ -1192,8 +1233,8 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                            "n_entry_signals_discarded": a["n_entry_signals_discarded"],
                            "n_entry_signals_gated": a["n_entry_signals_gated"]}
                     row.update(full_stats(a, grids[masks], c1w, period, n_boot, seed))
-                    row["mde_bps"] = mde_of(row["sd_net_bps"], row["n"])
-                    row["mde_cluster_bps"] = float(MDE_Z * row["se_cluster"]) if np.isfinite(row["se_cluster"]) else np.nan
+                    row["mde_pct"] = mde_of(row["sd_net_pct"], row["n"])
+                    row["mde_cluster_pct"] = float(MDE_Z * row["se_cluster"]) if np.isfinite(row["se_cluster"]) else np.nan
                     cfg_rows.append(row)
     configs = pd.DataFrame(cfg_rows)
     write(configs, "configs.csv")
@@ -1203,9 +1244,9 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
     iter0_check = {"available": False}
     p0 = ITER0_DIR / "configs.csv"
     if p0.exists():
-        c0 = pd.read_csv(p0)
+        c0 = read_prev_csv(p0)
         c1 = configs[configs["state"] == "all"].drop(columns=["state", "is_iter0_best", "n_entry_signals_gated",
-                                                                "mde_bps", "mde_cluster_bps"])
+                                                                "mde_pct", "mde_cluster_pct"])
         key = ["k", "thr", "stop", "masks", "period", "cost"]
         m = c0.merge(c1, on=key, suffixes=("_0", "_1"))
         num = [c for c in c0.columns if c not in key and pd.api.types.is_numeric_dtype(c0[c])
@@ -1223,15 +1264,15 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
         st = None if row["state"] == "all" else TERCILE_LABELS.index(row["state"])
         return (int(row["k"]), float(row["thr"]), float(row["stop"]), st)
 
-    best = _cfg_of(sel.sort_values("mean_net_bps", ascending=False).iloc[0])
+    best = _cfg_of(sel.sort_values("mean_net_pct", ascending=False).iloc[0])
     best_by_sharpe = _cfg_of(sel.sort_values("sharpe", ascending=False).iloc[0])
     sel22 = pd.DataFrame([{"k": c[0], "thr": c[1], "stop": c[2], "state": tercile_label(c[3]),
                            **full_stats(arrays[("masked", c)], grid_m, COST_CONS_1W * burst[(c[0], c[1])],
                                         "val2022", n_boot, [SEED, 16, i])}
                           for i, c in enumerate(CONFIGS_ITER1)])
     write(sel22, "sensitivity_val_2022_only.csv")
-    best22 = _cfg_of(sel22.sort_values("mean_net_bps", ascending=False).iloc[0])
-    best_uncond = _cfg_of(sel[sel["state"] == "all"].sort_values("mean_net_bps", ascending=False).iloc[0])
+    best22 = _cfg_of(sel22.sort_values("mean_net_pct", ascending=False).iloc[0])
+    best_uncond = _cfg_of(sel[sel["state"] == "all"].sort_values("mean_net_pct", ascending=False).iloc[0])
 
     def stat_of(cfg, period, masks="masked", cost="cons"):
         st = tercile_label(cfg[3]) if len(cfg) == 4 else "all"
@@ -1242,25 +1283,25 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
 
     iter0_best4 = ITER0_BEST + (None,)
     cur4 = CURRENT + (None,)
-    val_best = float(stat_of(best, "val")["mean_net_bps"])
-    val_iter0_best = float(stat_of(iter0_best4, "val")["mean_net_bps"])
+    val_best = float(stat_of(best, "val")["mean_net_pct"])
+    val_iter0_best = float(stat_of(iter0_best4, "val")["mean_net_pct"])
     improvement = {"best_iter1": cfg_label(best), "val_mean_net_best_iter1": val_best,
                    "iter0_best": cfg_label(ITER0_BEST), "val_mean_net_iter0_best_recomputed": val_iter0_best,
-                   "val_improvement_bps": val_best - val_iter0_best, "mde_registered": MDE_REGISTERED,
+                   "val_improvement_pct": val_best - val_iter0_best, "mde_registered": MDE_REGISTERED,
                    "val_improvement_over_mde": (val_best - val_iter0_best) / MDE_REGISTERED,
                    "n_val_best_iter1": int(stat_of(best, "val")["n"]),
-                   "mde_val_best_iter1": float(stat_of(best, "val")["mde_bps"]),
+                   "mde_val_best_iter1": float(stat_of(best, "val")["mde_pct"]),
                    "best_unconditioned_this_run": cfg_label(best_uncond)}
     if iter0_check["available"]:
         r0 = c0[(c0["k"] == ITER0_BEST[0]) & (c0["thr"] == ITER0_BEST[1]) & (c0["stop"] == ITER0_BEST[2])
                 & (c0["masks"] == "masked") & (c0["period"] == "val") & (c0["cost"] == "cons")]
-        improvement["val_mean_net_iter0_best_from_iter0_file"] = float(r0["mean_net_bps"].iloc[0]) if len(r0) else np.nan
+        improvement["val_mean_net_iter0_best_from_iter0_file"] = float(r0["mean_net_pct"].iloc[0]) if len(r0) else np.nan
 
     # ledger of the best configuration (masked)
     k, thr, stop, st = best
     led = simulate_fast(grid_m, mom[k], thr, EXIT_PCT, stop, COST_CONS_1W * burst[(k, thr)], FUNDING_PCT,
                         entry_gate=None if st is None else gates["masked"][st])
-    led["net_bps_opt"] = led["gross_bps"] - 2 * COST_OPT_1W - led["funding_bps"]
+    led["net_pct_opt"] = led["gross_bps"] / 100.0 - 2 * COST_OPT_1W - led["funding_pct"]  # %
     led["split"] = np.where(pd.DatetimeIndex(led["entry_ts"]) <= TRAIN_END, "train", "val")
     led["vol_tercile_at_signal"] = [TERCILE_LABELS[c] if c >= 0 else "" for c in
                                     terc["masked"][grid_m.idx.get_indexer(pd.DatetimeIndex(led["entry_signal_ts"]))]]
@@ -1279,15 +1320,15 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
     null_p95 = {c: float(np.nanpercentile(null_best[c], 95)) for c in null_best.columns if c.startswith("max_")}
     # best-of-27 from the same draws (must reproduce iteration 0's null_best_of_27.csv)
     sub27 = null_all[null_all["state"] == "all"]
-    b27 = sub27.groupby(["draw", "period"]).agg(max_mean=("mean_net_bps", "max"), max_sharpe=("sharpe", "max")).reset_index()
+    b27 = sub27.groupby(["draw", "period"]).agg(max_mean=("mean_net_pct", "max"), max_sharpe=("sharpe", "max")).reset_index()
     null27 = b27.pivot(index="draw", columns="period", values=["max_mean", "max_sharpe"])
-    null27.columns = [f"{'max_mean_net_bps' if a == 'max_mean' else 'max_sharpe'}_{p}" for a, p in null27.columns]
+    null27.columns = [f"{'max_mean_net_pct' if a == 'max_mean' else 'max_sharpe'}_{p}" for a, p in null27.columns]
     null27 = null27.reset_index()
     write(null27, "null_best_of_27_from_same_draws.csv")
     null27_check = {"available": False}
     p27 = ITER0_DIR / "null_best_of_27.csv"
     if p27.exists():
-        n0 = pd.read_csv(p27)
+        n0 = read_prev_csv(p27)
         mm27 = n0.merge(null27, on="draw", suffixes=("_0", "_1"))
         cols = [c for c in null27.columns if c != "draw"]
         d = {c: float(np.nanmax(np.abs(mm27[f"{c}_0"] - mm27[f"{c}_1"]))) for c in cols}
@@ -1309,9 +1350,9 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                     & (null_all["state"] == tercile_label(best[3])) & (null_all["period"] == "full")].head(n_ctrl)
     for name, df in (("対照2 符号シャッフル", df2), ("対照3 先行市場の日ブロック置換(帰無の当該構成のみ)", sub3)):
         ctrl_rows.append({"config": "best", "label": cfg_label(best), "control": name, "draws": len(df),
-                          "obs_mean_net_bps": obs["mean_net_bps"], "null_mean_mean": float(df["mean_net_bps"].mean()),
-                          "null_mean_p95": float(np.nanpercentile(df["mean_net_bps"], 95)),
-                          "null_mean_p5": float(np.nanpercentile(df["mean_net_bps"], 5)),
+                          "obs_mean_net_pct": obs["mean_net_pct"], "null_mean_mean": float(df["mean_net_pct"].mean()),
+                          "null_mean_p95": float(np.nanpercentile(df["mean_net_pct"], 95)),
+                          "null_mean_p5": float(np.nanpercentile(df["mean_net_pct"], 5)),
                           "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(df["sharpe"].mean()),
                           "null_sharpe_p95": float(np.nanpercentile(df["sharpe"], 95)),
                           "null_sharpe_p5": float(np.nanpercentile(df["sharpe"], 5)),
@@ -1360,8 +1401,8 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
     edge_summary = pd.DataFrame(edge_summary_rows(edge))
     write(edge_summary, "edge_trend_summary.csv")
     yt = edge[("best", "net")]["year_table"].copy()
-    yt["gross_mean"] = edge[("best", "gross")]["year_table"]["mean"]
-    yt["cost_mean"] = edge[("best", "cost")]["year_table"]["mean"]
+    yt["gross_mean_bps"] = edge[("best", "gross")]["year_table"]["mean"]
+    yt["cost_mean_pct"] = edge[("best", "cost")]["year_table"]["mean"]
     yt.insert(0, "config", "best")
     write(yt, "edge_trend_best_by_year.csv")
     T["edge_trend_s"] = time.perf_counter() - t0
@@ -1372,10 +1413,10 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
         for period in ("full", "val"):
             r = stat_of(cfg, period)
             mde_rows.append({"config": tag, "label": cfg_label(cfg), "period": period, "n": int(r["n"]),
-                             "sigma_bps": r["sd_net_bps"],
-                             "se_independent": r["sd_net_bps"] / np.sqrt(r["n"]) if r["n"] else np.nan,
-                             "mde_independent": r["mde_bps"], "se_cluster": r["se_cluster"],
-                             "mde_cluster": r["mde_cluster_bps"], "mde_registered": MDE_REGISTERED})
+                             "sigma_pct": r["sd_net_pct"],
+                             "se_independent": r["sd_net_pct"] / np.sqrt(r["n"]) if r["n"] else np.nan,
+                             "mde_independent": r["mde_pct"], "se_cluster": r["se_cluster"],
+                             "mde_cluster": r["mde_cluster_pct"], "mde_registered": MDE_REGISTERED})
     mde = pd.DataFrame(mde_rows)
     write(mde, "mde.csv")
 
@@ -1417,7 +1458,7 @@ def main_iter1(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                                           "q1": bounds[0], "q2": bounds[1],
                                           "assignment": "vol<=q1 -> 1_low; q1<vol<=q2 -> 2_mid; vol>q2 -> 3_high; NaN -> none (no entry)",
                                           "n_minutes_tercile_differs_masked_vs_unmasked": n_terc_diff},
-                       "cost_cons_one_way_bps": COST_CONS_1W, "cost_opt_one_way_bps": COST_OPT_1W,
+                       "cost_cons_one_way_pct": COST_CONS_1W, "cost_opt_one_way_pct": COST_OPT_1W,
                        "burst_coef": {f"{k}/{thr}": v for (k, thr), v in burst.items()},
                        "burst_assumed_fallback": BURST_ASSUMED, "burst_min_window_minutes": BURST_MIN_WINDOW_MINUTES,
                        "funding_pct_per_settlement": FUNDING_PCT, "funding_times_utc": FUNDING_TIMES,
@@ -1499,8 +1540,8 @@ def condition_analysis_labels(a: dict, grid: Grid, labels_grid: np.ndarray, var_
     labels = np.asarray(labels_grid, dtype=object)[a["sig_i"][keep]]
     res = state_split(net, {var_name: labels}, block=EDGE_BLOCK, n_boot=n_boot, seed=SEED)
     st = res["state_table"]
-    st["sd_bps"] = [float(net[labels == s].std(ddof=1)) if (labels == s).sum() > 1 else np.nan for s in st["state"]]
-    st["mde_bps"] = [mde_of(sd, int(n_)) for sd, n_ in zip(st["sd_bps"], st["n"])]
+    st["sd_pct"] = [float(net[labels == s].std(ddof=1)) if (labels == s).sum() > 1 else np.nan for s in st["state"]]
+    st["mde_pct"] = [mde_of(sd, int(n_)) for sd, n_ in zip(st["sd_pct"], st["n"])]
     res["n_no_state"] = int((labels == "").sum())
     return res
 
@@ -1596,21 +1637,21 @@ def control5_jpy(bf: pd.DataFrame, bn: pd.DataFrame, burst: dict, n_boot: int) -
         for si, sname in enumerate(("usd", "jpy")):
             a = simulate_arrays(grid5, mom[sname][k], thr, EXIT_PCT, stop, FUNDING_PCT)
             for pi, period in enumerate(("full", "train", "val")):
-                r = {"k": k, "thr": thr, "stop": stop, "signal": sname, "period": period, "one_way_bps": c1w,
+                r = {"k": k, "thr": thr, "stop": stop, "signal": sname, "period": period, "one_way_pct": c1w,
                      "burst_coef": burst[(k, thr)], "is_current": cfg == CURRENT,
                      "n_entry_signal_bars": a["n_entry_signal_bars"], "n_entry_signals_discarded": a["n_entry_signals_discarded"]}
                 r.update(full_stats(a, grid5, c1w, period, n_boot, [SEED, 27, i, si, pi]))
-                r["mde_bps"] = mde_of(r["sd_net_bps"], r["n"])
+                r["mde_pct"] = mde_of(r["sd_net_pct"], r["n"])
                 rows.append(r)
     long = pd.DataFrame(rows)
     keyc = ["k", "thr", "stop", "period"]
     u = long[long["signal"] == "usd"].set_index(keyc)
     j = long[long["signal"] == "jpy"].set_index(keyc)
     diff = pd.DataFrame({
-        "n_usd": u["n"], "n_jpy": j["n"], "mean_net_usd": u["mean_net_bps"], "mean_net_jpy": j["mean_net_bps"],
-        "diff_jpy_minus_usd": j["mean_net_bps"] - u["mean_net_bps"],
+        "n_usd": u["n"], "n_jpy": j["n"], "mean_net_usd": u["mean_net_pct"], "mean_net_jpy": j["mean_net_pct"],
+        "diff_jpy_minus_usd": j["mean_net_pct"] - u["mean_net_pct"],
         "ci_lo_usd": u["ci_lo"], "ci_hi_usd": u["ci_hi"], "ci_lo_jpy": j["ci_lo"], "ci_hi_jpy": j["ci_hi"],
-        "mde_usd": u["mde_bps"], "mde_jpy": j["mde_bps"], "sharpe_usd": u["sharpe"], "sharpe_jpy": j["sharpe"],
+        "mde_usd": u["mde_pct"], "mde_jpy": j["mde_pct"], "sharpe_usd": u["sharpe"], "sharpe_jpy": j["sharpe"],
         "win_rate_usd": u["win_rate"], "win_rate_jpy": j["win_rate"], "stop_rate_usd": u["stop_rate"], "stop_rate_jpy": j["stop_rate"],
         "mean_hold_usd": u["mean_hold_min"], "mean_hold_jpy": j["mean_hold_min"],
     }).reset_index()
@@ -1698,7 +1739,7 @@ def diag_d_basis(grid: Grid, spot: pd.DataFrame, arrays: dict, cfgs: dict, burst
                 r = dict(base)
                 r["subset"] = vname
                 r.update(full_stats(a2, grid, c1w, period, n_boot, [SEED, 28, ti, pi, vi]))
-                r["mde_bps"] = mde_of(r["sd_net_bps"], r["n"])
+                r["mde_pct"] = mde_of(r["sd_net_pct"], r["n"])
                 trows.append(r)
     return {"by_year": by_year, "by_month": by_month, "trades": pd.DataFrame(trows), "trades_by_year": pd.DataFrame(tyrows),
             "n_both_valid": int(both.sum()), "n_spot_rows": int(len(spot)),
@@ -1809,7 +1850,7 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                         seed = [SEED, 25, cell2]
                     row = {"k": k, "thr": thr, "stop": stop, "exit": EXIT_PCT, "state": state_label(st),
                            "state_kind": "all" if st is None else ("vol_tercile" if isinstance(st, int) else "hour_band"),
-                           "masks": masks, "period": period, "cost": cost_name, "one_way_bps": c1w,
+                           "masks": masks, "period": period, "cost": cost_name, "one_way_pct": c1w,
                            "burst_coef": burst[(k, thr)] if cost_name == "cons" else 1.0,
                            "is_current": (k, thr, stop) == CURRENT and st is None,
                            "is_iter0_best": (k, thr, stop) == ITER0_BEST and st is None,
@@ -1818,8 +1859,8 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                            "n_entry_signals_discarded": a["n_entry_signals_discarded"],
                            "n_entry_signals_gated": a["n_entry_signals_gated"]}
                     row.update(full_stats(a, grids[masks], c1w, period, n_boot, seed))
-                    row["mde_bps"] = mde_of(row["sd_net_bps"], row["n"])
-                    row["mde_cluster_bps"] = float(MDE_Z * row["se_cluster"]) if np.isfinite(row["se_cluster"]) else np.nan
+                    row["mde_pct"] = mde_of(row["sd_net_pct"], row["n"])
+                    row["mde_cluster_pct"] = float(MDE_Z * row["se_cluster"]) if np.isfinite(row["se_cluster"]) else np.nan
                     cfg_rows.append(row)
     configs = pd.DataFrame(cfg_rows)
     write(configs, "configs.csv")
@@ -1829,7 +1870,7 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
     def _configs_check(path: Path, states: tuple, drop: list[str]) -> dict:
         if not path.exists():
             return {"available": False}
-        c_prev = pd.read_csv(path)
+        c_prev = read_prev_csv(path)
         c_here = configs[configs["state"].isin(states)]
         key = ["k", "thr", "stop", "masks", "period", "cost"] + (["state"] if "state" in c_prev.columns else [])
         m = c_prev.merge(c_here, on=key, suffixes=("_0", "_1"))
@@ -1851,11 +1892,11 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
         st = None if s == "all" else (TERCILE_LABELS.index(s) if s in TERCILE_LABELS else s)
         return (int(row["k"]), float(row["thr"]), float(row["stop"]), st)
 
-    best = _cfg_of(sel.sort_values("mean_net_bps", ascending=False).iloc[0])
+    best = _cfg_of(sel.sort_values("mean_net_pct", ascending=False).iloc[0])
     best_by_sharpe = _cfg_of(sel.sort_values("sharpe", ascending=False).iloc[0])
-    best_hour = _cfg_of(sel[sel["state"].isin(HOUR_BAND_LABELS)].sort_values("mean_net_bps", ascending=False).iloc[0])
-    best_iter1set = _cfg_of(sel[sel["state"].isin(ITER1_LABELS)].sort_values("mean_net_bps", ascending=False).iloc[0])
-    best_uncond = _cfg_of(sel[sel["state"] == "all"].sort_values("mean_net_bps", ascending=False).iloc[0])
+    best_hour = _cfg_of(sel[sel["state"].isin(HOUR_BAND_LABELS)].sort_values("mean_net_pct", ascending=False).iloc[0])
+    best_iter1set = _cfg_of(sel[sel["state"].isin(ITER1_LABELS)].sort_values("mean_net_pct", ascending=False).iloc[0])
+    best_uncond = _cfg_of(sel[sel["state"] == "all"].sort_values("mean_net_pct", ascending=False).iloc[0])
     sel22_rows = []
     for c in CONFIGS_ITER2:
         seed = [SEED, 16, CONFIGS_ITER1.index(c)] if c in CONFIGS_ITER1 else [SEED, 26, CONFIGS_HOUR.index(c)]
@@ -1863,13 +1904,13 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                            **full_stats(arrays[("masked", c)], grid_m, COST_CONS_1W * burst[(c[0], c[1])],
                                         "val2022", n_boot, seed)})
     sel22 = pd.DataFrame(sel22_rows)
-    sel22["mde_bps"] = [mde_of(sd, int(n_)) for sd, n_ in zip(sel22["sd_net_bps"], sel22["n"])]
+    sel22["mde_pct"] = [mde_of(sd, int(n_)) for sd, n_ in zip(sel22["sd_net_pct"], sel22["n"])]
     write(sel22, "sensitivity_val_2022_only.csv")
-    best22 = _cfg_of(sel22.sort_values("mean_net_bps", ascending=False).iloc[0])
+    best22 = _cfg_of(sel22.sort_values("mean_net_pct", ascending=False).iloc[0])
     sel22_check = {"available": False}
     p22 = ITER1_DIR / "sensitivity_val_2022_only.csv"
     if p22.exists():
-        s1 = pd.read_csv(p22)
+        s1 = read_prev_csv(p22)
         m22 = s1.merge(sel22[sel22["state"].isin(ITER1_LABELS)], on=["k", "thr", "stop", "state"], suffixes=("_0", "_1"))
         num = [c for c in s1.columns if c not in ("k", "thr", "stop", "state") and pd.api.types.is_numeric_dtype(s1[c])
                and s1[c].dtype != bool and c in sel22.columns]
@@ -1885,31 +1926,31 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
 
     iter0_best4 = ITER0_BEST + (None,)
     cur4 = CURRENT + (None,)
-    val_best = float(stat_of(best, "val")["mean_net_bps"])
-    val_iter1_best = float(stat_of(ITER1_BEST, "val")["mean_net_bps"])
-    val_iter0_best = float(stat_of(iter0_best4, "val")["mean_net_bps"])
+    val_best = float(stat_of(best, "val")["mean_net_pct"])
+    val_iter1_best = float(stat_of(ITER1_BEST, "val")["mean_net_pct"])
+    val_iter0_best = float(stat_of(iter0_best4, "val")["mean_net_pct"])
     improvement = {"best_iter2": cfg_label(best), "val_mean_net_best_iter2": val_best,
                    "iter1_best": cfg_label(ITER1_BEST), "val_mean_net_iter1_best_recomputed": val_iter1_best,
-                   "val_improvement_bps": val_best - val_iter1_best, "mde_registered": MDE_REGISTERED,
+                   "val_improvement_pct": val_best - val_iter1_best, "mde_registered": MDE_REGISTERED,
                    "val_improvement_over_mde": (val_best - val_iter1_best) / MDE_REGISTERED,
                    "iter0_best": cfg_label(ITER0_BEST), "val_mean_net_iter0_best_recomputed": val_iter0_best,
-                   "val_improvement_vs_iter0_best_bps": val_best - val_iter0_best,
+                   "val_improvement_vs_iter0_best_pct": val_best - val_iter0_best,
                    "n_val_best_iter2": int(stat_of(best, "val")["n"]),
-                   "mde_val_best_iter2": float(stat_of(best, "val")["mde_bps"]),
-                   "best_hour_band_only": cfg_label(best_hour), "val_mean_net_best_hour_band": float(stat_of(best_hour, "val")["mean_net_bps"]),
+                   "mde_val_best_iter2": float(stat_of(best, "val")["mde_pct"]),
+                   "best_hour_band_only": cfg_label(best_hour), "val_mean_net_best_hour_band": float(stat_of(best_hour, "val")["mean_net_pct"]),
                    "best_iter1_set_this_run": cfg_label(best_iter1set), "best_unconditioned_this_run": cfg_label(best_uncond),
                    "best_is_new_in_iter2": best[3] in HOUR_BAND_LABELS}
     if iter1_check["available"]:
-        c1 = pd.read_csv(ITER1_DIR / "configs.csv")
+        c1 = read_prev_csv(ITER1_DIR / "configs.csv")
         r1 = c1[(c1["k"] == ITER1_BEST[0]) & (c1["thr"] == ITER1_BEST[1]) & (c1["stop"] == ITER1_BEST[2])
                 & (c1["state"] == state_label(ITER1_BEST[3])) & (c1["masks"] == "masked") & (c1["period"] == "val") & (c1["cost"] == "cons")]
-        improvement["val_mean_net_iter1_best_from_iter1_file"] = float(r1["mean_net_bps"].iloc[0]) if len(r1) else np.nan
+        improvement["val_mean_net_iter1_best_from_iter1_file"] = float(r1["mean_net_pct"].iloc[0]) if len(r1) else np.nan
 
     # ledger of the best configuration (masked), with both state labels at the signal minute
     k, thr, stop, st = best
     led = simulate_fast(grid_m, mom[k], thr, EXIT_PCT, stop, COST_CONS_1W * burst[(k, thr)], FUNDING_PCT,
                         entry_gate=None if st is None else gates["masked"][st])
-    led["net_bps_opt"] = led["gross_bps"] - 2 * COST_OPT_1W - led["funding_bps"]
+    led["net_pct_opt"] = led["gross_bps"] / 100.0 - 2 * COST_OPT_1W - led["funding_pct"]  # %
     led["split"] = np.where(pd.DatetimeIndex(led["entry_ts"]) <= TRAIN_END, "train", "val")
     sig_pos = grid_m.idx.get_indexer(pd.DatetimeIndex(led["entry_signal_ts"]))
     led["vol_tercile_at_signal"] = [TERCILE_LABELS[c] if c >= 0 else "" for c in terc["masked"][sig_pos]]
@@ -1930,15 +1971,15 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
 
     def _best_of(states: tuple) -> pd.DataFrame:
         sub = null_all[null_all["state"].isin(states)]
-        b = sub.groupby(["draw", "period"]).agg(max_mean=("mean_net_bps", "max"), max_sharpe=("sharpe", "max")).reset_index()
+        b = sub.groupby(["draw", "period"]).agg(max_mean=("mean_net_pct", "max"), max_sharpe=("sharpe", "max")).reset_index()
         piv = b.pivot(index="draw", columns="period", values=["max_mean", "max_sharpe"])
-        piv.columns = [f"{'max_mean_net_bps' if a == 'max_mean' else 'max_sharpe'}_{p}" for a, p in piv.columns]
+        piv.columns = [f"{'max_mean_net_pct' if a == 'max_mean' else 'max_sharpe'}_{p}" for a, p in piv.columns]
         return piv.reset_index()
 
     def _null_check(prev_path: Path, here: pd.DataFrame) -> dict:
         if not prev_path.exists():
             return {"available": False}
-        n0 = pd.read_csv(prev_path)
+        n0 = read_prev_csv(prev_path)
         cols = [c for c in here.columns if c != "draw" and c in n0.columns]
         mm = n0.merge(here, on="draw", suffixes=("_0", "_1"))
         d = {c: float(np.nanmax(np.abs(mm[f"{c}_0"] - mm[f"{c}_1"]))) for c in cols}
@@ -1972,9 +2013,9 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                     & (null_all["state"] == state_label(best[3])) & (null_all["period"] == "full")].head(n_ctrl)
     for name, df in (("対照2 符号シャッフル", df2), ("対照3 先行市場の日ブロック置換(帰無の当該構成のみ)", sub3)):
         ctrl_rows.append({"config": "best", "label": cfg_label(best), "control": name, "draws": len(df),
-                          "obs_mean_net_bps": obs["mean_net_bps"], "null_mean_mean": float(df["mean_net_bps"].mean()),
-                          "null_mean_p95": float(np.nanpercentile(df["mean_net_bps"], 95)),
-                          "null_mean_p5": float(np.nanpercentile(df["mean_net_bps"], 5)),
+                          "obs_mean_net_pct": obs["mean_net_pct"], "null_mean_mean": float(df["mean_net_pct"].mean()),
+                          "null_mean_p95": float(np.nanpercentile(df["mean_net_pct"], 95)),
+                          "null_mean_p5": float(np.nanpercentile(df["mean_net_pct"], 5)),
                           "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(df["sharpe"].mean()),
                           "null_sharpe_p95": float(np.nanpercentile(df["sharpe"], 95)),
                           "null_sharpe_p5": float(np.nanpercentile(df["sharpe"], 5)),
@@ -2027,8 +2068,8 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
     edge_summary = pd.DataFrame(edge_summary_rows(edge))
     write(edge_summary, "edge_trend_summary.csv")
     yt = edge[("best", "net")]["year_table"].copy()
-    yt["gross_mean"] = edge[("best", "gross")]["year_table"]["mean"]
-    yt["cost_mean"] = edge[("best", "cost")]["year_table"]["mean"]
+    yt["gross_mean_bps"] = edge[("best", "gross")]["year_table"]["mean"]
+    yt["cost_mean_pct"] = edge[("best", "cost")]["year_table"]["mean"]
     yt.insert(0, "config", "best")
     write(yt, "edge_trend_best_by_year.csv")
     T["edge_trend_s"] = time.perf_counter() - t0
@@ -2039,10 +2080,10 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
         for period in ("full", "val"):
             r = stat_of(cfg, period)
             mde_rows.append({"config": tag, "label": cfg_label(cfg), "period": period, "n": int(r["n"]),
-                             "sigma_bps": r["sd_net_bps"],
-                             "se_independent": r["sd_net_bps"] / np.sqrt(r["n"]) if r["n"] else np.nan,
-                             "mde_independent": r["mde_bps"], "se_cluster": r["se_cluster"],
-                             "mde_cluster": r["mde_cluster_bps"], "mde_registered": MDE_REGISTERED})
+                             "sigma_pct": r["sd_net_pct"],
+                             "se_independent": r["sd_net_pct"] / np.sqrt(r["n"]) if r["n"] else np.nan,
+                             "mde_independent": r["mde_pct"], "se_cluster": r["se_cluster"],
+                             "mde_cluster": r["mde_cluster_pct"], "mde_registered": MDE_REGISTERED})
     mde = pd.DataFrame(mde_rows)
     write(mde, "mde.csv")
 
@@ -2108,7 +2149,7 @@ def main_iter2(out: Path, n_null: int, n_ctrl: int, n_boot: int, workers: int) -
                                                 "applied_to": "entry signal minute only (fill = next bar open, may be in the next band)",
                                                 "dst": "none (UTC fixed)"},
                        "state_variable_iter1": {"name": "realized_vol_60m_tercile", "q1": bounds[0], "q2": bounds[1]},
-                       "cost_cons_one_way_bps": COST_CONS_1W, "cost_opt_one_way_bps": COST_OPT_1W,
+                       "cost_cons_one_way_pct": COST_CONS_1W, "cost_opt_one_way_pct": COST_OPT_1W,
                        "burst_coef": {f"{k}/{thr}": v for (k, thr), v in burst.items()},
                        "burst_assumed_fallback": BURST_ASSUMED, "burst_min_window_minutes": BURST_MIN_WINDOW_MINUTES,
                        "funding_pct_per_settlement": FUNDING_PCT, "funding_times_utc": FUNDING_TIMES,
@@ -2205,11 +2246,11 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
         md.append(f"約定 {burst_meta['n_executions']:,} 件、ティッカー行 {burst_meta['n_ticker_rows']:,}、"
                   f"分 {burst_meta['minutes']:,}(約定あり {burst_meta['minutes_with_executions']:,}、"
                   f"ティッカーあり {burst_meta['minutes_with_ticker']:,})、{burst_meta['first_minute']} .. {burst_meta['last_minute']}。"
-                  f"無条件の実効半スプレッド(分平均)= {burst_meta['uncond_eff_bps']:.3f} bps"
-                  f"(約定サイズ加重 {burst_meta['uncond_eff_bps_exec_weighted']:.3f} bps)、"
-                  f"無条件の気配半スプレッド = {burst_meta['uncond_quoted_bps']:.3f} bps。")
+                  f"無条件の実効半スプレッド(分平均)= {burst_meta['uncond_eff_pct']:.5f}%"
+                  f"(約定サイズ加重 {burst_meta['uncond_eff_pct_exec_weighted']:.5f}%)、"
+                  f"無条件の気配半スプレッド = {burst_meta['uncond_quoted_pct']:.5f}%。")
         md.append("")
-        md.append("定義: 実効半スプレッド = |約定価格 − 直前気配の仲値| / 仲値(bps、分内はサイズ加重)、気配半スプレッド = (ask − bid)/2/仲値。"
+        md.append("定義: 実効半スプレッド = |約定価格 − 直前気配の仲値| / 仲値(%、分内はサイズ加重)、気配半スプレッド = (ask − bid)/2/仲値。"
                   "信号分 = テープ自身の bitFlyer 1 分終値の m_bf(t) = close(t)/close(t−k) − 1 が |m_bf| > thr の分"
                   "(この窓の Binance 分足は本単位では封印のため、bitFlyer 側の同一規則で代用。仮定)。窓 = 信号分 ±1 分。"
                   "比 = 窓内の分平均 ÷ 無条件の分平均。採用係数 = max(1, 実効比)、窓内の約定あり分が "
@@ -2219,27 +2260,27 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
         md.append("")
         md.append(_table(burst_df.to_dict("records"), [
             ("k", "k", 0), ("thr", "thr(%)", 1), ("n_signal_minutes", "信号分", 0), ("n_window_minutes", "窓分", 0),
-            ("n_window_minutes_with_exec", "窓分(約定あり)", 0), ("eff_bps_window", "実効 窓(bps)", 3),
-            ("eff_bps_uncond", "実効 無条件", 3), ("ratio_eff", "実効比", 3), ("quoted_bps_window", "気配 窓", 3),
-            ("quoted_bps_uncond", "気配 無条件", 3), ("ratio_quoted", "気配比", 3), ("measured", "実測", -1),
-            ("thin", "薄い", -1), ("burst_coef_used", "採用係数", 3), ("cons_one_way_bps", "保守 片道(bps)", 3)]))
+            ("n_window_minutes_with_exec", "窓分(約定あり)", 0), ("eff_pct_window", "実効 窓(%)", 3),
+            ("eff_pct_uncond", "実効 無条件", 3), ("ratio_eff", "実効比", 3), ("quoted_pct_window", "気配 窓", 3),
+            ("quoted_pct_uncond", "気配 無条件", 3), ("ratio_quoted", "気配比", 3), ("measured", "実測", -1),
+            ("thin", "薄い", -1), ("burst_coef_used", "採用係数", 3), ("cons_one_way_pct", "保守 片道(%)", 3)]))
     else:
         md.append(f"テープが読めなかったため全構成に係数 {BURST_ASSUMED}(仮定)を置いた: {burst_meta.get('reason')}")
     md.append("")
 
     # ---- 3. configs ------------------------------------------------------------
     cols_main = [("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("n", "n", 0), ("n_excluded_gap", "除外", 0),
-                 ("mean_net_bps", "平均 net(bps)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+                 ("mean_net_pct", "平均 net(%)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
                  ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
-                 ("win_rate", "勝率", 4), ("max_dd_bps", "最大DD(bps)", 0), ("mean_hold_min", "保有分", 1),
-                 ("stop_rate", "ストップ率", 4), ("mean_funding_bps", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
+                 ("win_rate", "勝率", 4), ("max_dd_pct", "最大DD(%)", 0), ("mean_hold_min", "保有分", 1),
+                 ("stop_rate", "ストップ率", 4), ("mean_funding_pct", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
                  ("trades_with_deferral", "繰延取引", 0), ("n_entry_signals_discarded", "捨て信号(全期間)", 0)]
     md.append("## 3. 27 構成の主指標(`configs.csv`: 27 × {全期間/train/val} × {保守/楽観} × {マスク後/前} = 324 行)")
     md.append("")
     md.append("CI = 取引を決済日(UTC)で束ねたクラスタ・ブートストラップ(percentile 法、"
               f"{n_boot:,} 回)。Sharpe = 日次損益(暦日、取引の無い日は 0)の 平均/SD × √365、CI は日を再抽出。"
-              "保守 = 片道 1.3 bps × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 1.0 bps + 資金調達。"
-              "最大 DD は net bps の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。")
+              "保守 = 片道 0.013% × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 0.010% + 資金調達。"
+              "最大 DD は net % の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。")
     sub_no = 0
     for masks in ("masked", "unmasked"):
         for cost in ("cons", "opt"):
@@ -2270,12 +2311,12 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
         for period in ("full", "val", "train"):
             r = stat_of(cfg, period)
             rows.append({"cfg": f"{tag} {cfg_label(cfg)}", "period": period, "n": int(r["n"]),
-                         "mean": r["mean_net_bps"], "lo": r["ci_lo"], "hi": r["ci_hi"],
-                         "nullA": null_p95[f"max_mean_net_bps_{period}"], "sharpe": r["sharpe"],
+                         "mean": r["mean_net_pct"], "lo": r["ci_lo"], "hi": r["ci_hi"],
+                         "nullA": null_p95[f"max_mean_net_pct_{period}"], "sharpe": r["sharpe"],
                          "slo": r["sharpe_ci_lo"], "shi": r["sharpe_ci_hi"], "nullB": null_p95[f"max_sharpe_{period}"]})
     md.append(f"帰無 = Binance の対数リターンを UTC 日ブロックで置換(水準は累積で再構成)して信号を作り直し、"
               f"同じ置換世界で 27 構成の主指標(保守・マスク後)を計算して最大を取る。{n_null:,} 回。"
-              "帰無 A = 1 取引平均 net bps、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
+              "帰無 A = 1 取引平均 net %、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
     md.append("")
     md.append(_table(rows, [("cfg", "構成", -1), ("period", "期間", -1), ("n", "n", 0), ("mean", "平均 net", 3),
                             ("lo", "CI下", 3), ("hi", "CI上", 3), ("nullA", "帰無A 95点", 3), ("sharpe", "Sharpe", 3),
@@ -2306,7 +2347,7 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     md.append("")
     md.append(_table(controls.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop", -1), ("control", "対照", -1), ("draws", "抽選", 0),
-        ("obs_mean_net_bps", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
+        ("obs_mean_net_pct", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
         ("null_mean_p95", "対照 95 点", 3), ("obs_sharpe", "実測 Sharpe", 3), ("null_sharpe_mean", "対照 Sharpe 平均", 3),
         ("null_sharpe_p5", "5 点", 3), ("null_sharpe_p95", "95 点", 3), ("n_obs", "n 実測", 0), ("n_null_mean", "n 対照", 1)]))
     md.append("")
@@ -2332,7 +2373,7 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     md.append("")
     md.append(_table(diag_shift.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop", -1), ("shift_min", "shift(分)", 0), ("period", "期間", -1),
-        ("n", "n", 0), ("mean_net_bps", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sharpe", "Sharpe", 3),
+        ("n", "n", 0), ("mean_net_pct", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sharpe", "Sharpe", 3),
         ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
     md.append("")
     md.append("### (b) lightchart と WS 記録由来の分足の一致率")
@@ -2378,11 +2419,11 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     md.append(f"## 8. エッジ推移(標準 §5、単位 = 週、窓 = {EDGE_WINDOW} 取引、ブロック長 {EDGE_BLOCK} 取引、"
               f"時間軸 = 暦時間、{n_boot:,} 回、保守・マスク後)")
     md.append("")
-    md.append("分解: 費用後(net)= グロス − 費用(往復費用 + 資金調達)。傾きは bps/週、MDE = 2.8016 × SE。"
+    md.append("分解: 費用後(net)= グロス − 費用(往復費用 + 資金調達)。傾きの単位は脚ごと(グロス bps/週、費用・ネット %/週。L-920)、MDE = 2.8016 × SE。"
               "移動窓の CI は週あたり約 1 点(`rolling_step` = n ÷ 週数)で評価し、末尾窓は必ず含む。判定文は §5.7 の規則そのまま。")
     md.append("")
     md.append(_table(edge_summary.to_dict("records"), [
-        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_bps_per_week", "傾き(bps/週)", 4),
+        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_per_week", "傾き(/週)", 4), ("slope_unit", "単位", -1),
         ("slope_ci_lo", "傾き CI下", 4), ("slope_ci_hi", "CI上", 4), ("slope_mde", "傾き MDE", 4),
         ("mean_first_half", "前半平均", 3), ("mean_second_half", "後半平均", 3), ("half_diff", "後半−前半", 3),
         ("half_diff_ci_lo", "差 CI下", 3), ("half_diff_ci_hi", "差 CI上", 3), ("last_window_mean", "直近窓平均", 3),
@@ -2395,9 +2436,9 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
         yt["cost"] = edge[(tag, "cost")]["year_table"]["mean"]
         md.append(f"### {'最良' if tag == 'best' else '現行'}構成 年別(net の平均と CI、グロス・費用の平均)")
         md.append("")
-        md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均", 3),
-                                                 ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均", 3),
-                                                 ("cost", "費用平均", 3)]))
+        md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均(%)", 3),
+                                                 ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均(bps)", 3),
+                                                 ("cost", "費用平均(%)", 3)]))
         md.append("")
     md.append("週別の区切り表と移動窓は `edge_trend_<config>_<leg>_weekly.csv` / `_rolling.csv`。")
     md.append("")
@@ -2406,11 +2447,11 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     md.append("## 9. MDE の再現")
     md.append("")
     md.append(_table(mde.to_dict("records"), [
-        ("config", "構成", -1), ("label", "k/thr/stop", -1), ("n", "n", 0), ("sigma_bps", "σ(bps)", 2),
+        ("config", "構成", -1), ("label", "k/thr/stop", -1), ("n", "n", 0), ("sigma_pct", "σ(%)", 2),
         ("se_independent", "SE 独立", 4), ("mde_independent", "MDE 独立", 3), ("se_cluster", "SE クラスタ", 4),
         ("mde_cluster", "MDE クラスタ", 3), ("mde_registered", "事前登録 MDE", 2)]))
     md.append("")
-    md.append(f"事前登録: σ = {SIGMA_REGISTERED} bps、n = {N_REGISTERED:,}、MDE = {MDE_REGISTERED} bps(現行構成、片道 1.3 bps・バースト係数なし)。"
+    md.append(f"事前登録: σ = {SIGMA_REGISTERED}%、n = {N_REGISTERED:,}、MDE = {MDE_REGISTERED}%(現行構成、片道 0.013%・バースト係数なし。事前登録の文は σ 86.5 bps・MDE 1.54 bps・片道 1.3 bps)。"
               "本表の σ は保守費用(バースト係数込み)後の net で、費用は定数のため σ は係数に依存しない。")
     md.append("")
 
@@ -2418,7 +2459,7 @@ def results_md(iteration, n_null, n_ctrl, n_boot, workers, T, summary, burst_df,
     md.append("## 10. 事前登録の解釈・仮定・未実施(逸脱の記録)")
     md.append("")
     md.append("- バースト係数の「信号発火時刻」は、テープ窓(2026-08)の Binance 分足が本単位で封印のため、テープ自身の bitFlyer 1 分終値の同一規則(k, thr)で代用した(仮定)。"
-              "係数は (k, thr) ごとに採用し、保守費用 = 片道 1.3 bps × 係数 を当該 (k, thr) の全 stop に適用した。")
+              "係数は (k, thr) ごとに採用し、保守費用 = 片道 0.013% × 係数 を当該 (k, thr) の全 stop に適用した。")
     md.append("- 最良構成の選択規準は「val の 1 取引平均 net(保守・マスク後)」。日次 Sharpe で選んだ場合の構成も併記した。")
     md.append("- 帰無の主指標は全期間・train・val の 3 通りで別々に最大を取り、95 点を期間ごとに出した(PREREG は期間を明示していない)。")
     md.append("- 対照 1 の「状態内無作為」は「同じ UTC 時 × 暦年のセル内で無作為」と解釈した。")
@@ -2497,7 +2538,7 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
         md.append(_table(burst_df.to_dict("records"), [
             ("k", "k", 0), ("thr", "thr(%)", 1), ("n_window_minutes_with_exec", "窓分(約定あり)", 0),
             ("ratio_eff", "実効比", 3), ("measured", "実測", -1), ("thin", "薄い", -1),
-            ("burst_coef_used", "採用係数", 3), ("cons_one_way_bps", "保守 片道(bps)", 3)]))
+            ("burst_coef_used", "採用係数", 3), ("cons_one_way_pct", "保守 片道(%)", 3)]))
     else:
         md.append(f"テープが読めなかったため全構成に係数 {BURST_ASSUMED}(仮定)を置いた: {burst_meta.get('reason')}")
     md.append("")
@@ -2546,18 +2587,18 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
 
     # ---- 4 configs -------------------------------------------------------------
     cols_main = [("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("state", "三分位", -1), ("n", "n", 0),
-                 ("n_excluded_gap", "除外", 0), ("mean_net_bps", "平均 net(bps)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
-                 ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
-                 ("win_rate", "勝率", 4), ("max_dd_bps", "最大DD(bps)", 0), ("mean_hold_min", "保有分", 1),
-                 ("stop_rate", "ストップ率", 4), ("mean_funding_bps", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
+                 ("n_excluded_gap", "除外", 0), ("mean_net_pct", "平均 net(%)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+                 ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
+                 ("win_rate", "勝率", 4), ("max_dd_pct", "最大DD(%)", 0), ("mean_hold_min", "保有分", 1),
+                 ("stop_rate", "ストップ率", 4), ("mean_funding_pct", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
                  ("trades_with_deferral", "繰延取引", 0), ("n_entry_signals_gated", "ゲート落ち信号", 0)]
     md.append(f"## 4. {N_CUMULATIVE_ITER1} 構成の主指標(`configs.csv`: {N_CUMULATIVE_ITER1} × {{全期間/train/val}} × {{保守/楽観}} × "
               f"{{マスク後/前}} = {len(configs):,} 行)")
     md.append("")
     md.append("CI = 取引を決済日(UTC)で束ねたクラスタ・ブートストラップ(percentile 法、"
               f"{n_boot:,} 回)。Sharpe = 日次損益(暦日、取引の無い日は 0)の 平均/SD × √365、CI は日を再抽出。"
-              "保守 = 片道 1.3 bps × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 1.0 bps + 資金調達。"
-              "MDE = 2.8016 × σ(net)/√n(セルごと)。最大 DD は net bps の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。"
+              "保守 = 片道 0.013% × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 0.010% + 資金調達。"
+              "MDE = 2.8016 × σ(net)/√n(セルごと)。最大 DD は net % の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。"
               "三分位 = all は無条件(反復 0 の構成そのもの)。")
     if iter0_check.get("available"):
         md.append("")
@@ -2593,8 +2634,8 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     imp = improvement
     line = (f"**val 改善量** = 最良 {imp['best_iter1']} の val 平均 net {imp['val_mean_net_best_iter1']:.3f} − "
             f"反復 0 最良 {imp['iter0_best']} の val 平均 net {imp['val_mean_net_iter0_best_recomputed']:.3f} = "
-            f"**{imp['val_improvement_bps']:.3f} bps**(事前登録 MDE {imp['mde_registered']} bps、比 {imp['val_improvement_over_mde']:.3f}; "
-            f"最良セルの n = {imp['n_val_best_iter1']:,}、同セルの MDE = {imp['mde_val_best_iter1']:.3f} bps)")
+            f"**{imp['val_improvement_pct']:.5f}%**(事前登録 MDE {imp['mde_registered']}%、比 {imp['val_improvement_over_mde']:.3f}; "
+            f"最良セルの n = {imp['n_val_best_iter1']:,}、同セルの MDE = {imp['mde_val_best_iter1']:.5f}%)")
     if "val_mean_net_iter0_best_from_iter0_file" in imp:
         line += f"。反復 0 の `configs.csv` に記載の同値 = {imp['val_mean_net_iter0_best_from_iter0_file']:.3f}"
     md.append(line + "。")
@@ -2604,12 +2645,12 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
         for period in ("full", "val", "train"):
             r = stat_of(cfg, period)
             rows.append({"cfg": f"{tag} {cfg_label(cfg)}", "period": period, "n": int(r["n"]),
-                         "mean": r["mean_net_bps"], "lo": r["ci_lo"], "hi": r["ci_hi"], "mde": r["mde_bps"],
-                         "nullA": null_p95[f"max_mean_net_bps_{period}"], "sharpe": r["sharpe"],
+                         "mean": r["mean_net_pct"], "lo": r["ci_lo"], "hi": r["ci_hi"], "mde": r["mde_pct"],
+                         "nullA": null_p95[f"max_mean_net_pct_{period}"], "sharpe": r["sharpe"],
                          "slo": r["sharpe_ci_lo"], "shi": r["sharpe_ci_hi"], "nullB": null_p95[f"max_sharpe_{period}"]})
     md.append(f"帰無 = Binance の対数リターンを UTC 日ブロックで置換(水準は累積で再構成)して信号を作り直し(bitFlyer 側と三分位ゲートはそのまま)、"
               f"同じ置換世界で {N_CUMULATIVE_ITER1} 構成の主指標(保守・マスク後)を計算して最大を取る。{n_null:,} 回、抽選の乱数種は反復 0 と同一"
-              "(同じ置換世界)。帰無 A = 1 取引平均 net bps、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
+              "(同じ置換世界)。帰無 A = 1 取引平均 net %、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
     md.append("")
     md.append(_table(rows, [("cfg", "構成", -1), ("period", "期間", -1), ("n", "n", 0), ("mean", "平均 net", 3),
                             ("lo", "CI下", 3), ("hi", "CI上", 3), ("mde", "MDE", 3), ("nullA", "帰無A 95点", 3),
@@ -2647,7 +2688,7 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     md.append("")
     md.append(_table(controls.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@三分位", -1), ("control", "対照", -1), ("draws", "抽選", 0),
-        ("obs_mean_net_bps", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
+        ("obs_mean_net_pct", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
         ("null_mean_p95", "対照 95 点", 3), ("obs_sharpe", "実測 Sharpe", 3), ("null_sharpe_mean", "対照 Sharpe 平均", 3),
         ("null_sharpe_p5", "5 点", 3), ("null_sharpe_p95", "95 点", 3), ("n_obs", "n 実測", 0), ("n_null_mean", "n 対照", 1)]))
     md.append("")
@@ -2662,7 +2703,7 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     md.append("")
     md.append(_table(cond_state.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop", -1), ("period", "期間", -1), ("state", "三分位", -1), ("n", "n", 0),
-        ("mean", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sd_bps", "σ", 2), ("mde_bps", "MDE", 3),
+        ("mean", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sd_pct", "σ", 2), ("mde_pct", "MDE", 3),
         ("n_no_tercile", "三分位なし(除外)", 0)]))
     md.append("")
     md.append(_table(cond_diff.to_dict("records"), [
@@ -2700,7 +2741,7 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
               f"時間軸 = 暦時間、{n_boot:,} 回、保守・マスク後)")
     md.append("")
     md.append(_table(edge_summary.to_dict("records"), [
-        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_bps_per_week", "傾き(bps/週)", 4),
+        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_per_week", "傾き(/週)", 4), ("slope_unit", "単位", -1),
         ("slope_ci_lo", "傾き CI下", 4), ("slope_ci_hi", "CI上", 4), ("slope_mde", "傾き MDE", 4),
         ("mean_first_half", "前半平均", 3), ("mean_second_half", "後半平均", 3), ("half_diff", "後半−前半", 3),
         ("half_diff_ci_lo", "差 CI下", 3), ("half_diff_ci_hi", "差 CI上", 3), ("last_window_mean", "直近窓平均", 3),
@@ -2712,16 +2753,16 @@ def results_md_iter1(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     yt["cost"] = edge[("best", "cost")]["year_table"]["mean"]
     md.append(f"### 最良構成 {cfg_label(best)} 年別(net の平均と CI、グロス・費用の平均)")
     md.append("")
-    md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均", 3),
-                                             ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均", 3),
-                                             ("cost", "費用平均", 3)]))
+    md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均(%)", 3),
+                                             ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均(bps)", 3),
+                                             ("cost", "費用平均(%)", 3)]))
     md.append("")
 
     # ---- 10 MDE ----------------------------------------------------------------------
     md.append("## 10. MDE")
     md.append("")
     md.append(_table(mde.to_dict("records"), [
-        ("config", "構成", -1), ("label", "k/thr/stop@三分位", -1), ("period", "期間", -1), ("n", "n", 0), ("sigma_bps", "σ(bps)", 2),
+        ("config", "構成", -1), ("label", "k/thr/stop@三分位", -1), ("period", "期間", -1), ("n", "n", 0), ("sigma_pct", "σ(%)", 2),
         ("se_independent", "SE 独立", 4), ("mde_independent", "MDE 独立", 3), ("se_cluster", "SE クラスタ", 4),
         ("mde_cluster", "MDE クラスタ", 3), ("mde_registered", "事前登録 MDE", 2)]))
     md.append("")
@@ -2818,7 +2859,7 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
         md.append(_table(burst_df.to_dict("records"), [
             ("k", "k", 0), ("thr", "thr(%)", 1), ("n_window_minutes_with_exec", "窓分(約定あり)", 0),
             ("ratio_eff", "実効比", 3), ("measured", "実測", -1), ("thin", "薄い", -1),
-            ("burst_coef_used", "採用係数", 3), ("cons_one_way_bps", "保守 片道(bps)", 3)]))
+            ("burst_coef_used", "採用係数", 3), ("cons_one_way_pct", "保守 片道(%)", 3)]))
     else:
         md.append(f"テープが読めなかったため全構成に係数 {BURST_ASSUMED}(仮定)を置いた: {burst_meta.get('reason')}")
     md.append("")
@@ -2855,17 +2896,17 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
 
     # ---- 4 configs -------------------------------------------------------------
     cols_main = [("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("state", "状態", -1), ("n", "n", 0),
-                 ("n_excluded_gap", "除外", 0), ("mean_net_bps", "平均 net(bps)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
-                 ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
-                 ("win_rate", "勝率", 4), ("max_dd_bps", "最大DD(bps)", 0), ("mean_hold_min", "保有分", 1),
-                 ("stop_rate", "ストップ率", 4), ("mean_funding_bps", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
+                 ("n_excluded_gap", "除外", 0), ("mean_net_pct", "平均 net(%)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+                 ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3),
+                 ("win_rate", "勝率", 4), ("max_dd_pct", "最大DD(%)", 0), ("mean_hold_min", "保有分", 1),
+                 ("stop_rate", "ストップ率", 4), ("mean_funding_pct", "資金調達", 3), ("deferred_minutes", "繰延分", 0),
                  ("trades_with_deferral", "繰延取引", 0), ("n_entry_signals_gated", "ゲート落ち信号", 0)]
     md.append(f"## 4. {N} 構成の主指標(`configs.csv`: {N} × {{全期間/train/val}} × {{保守/楽観}} × {{マスク後/前}} = {len(configs):,} 行)")
     md.append("")
     md.append("CI = 取引を決済日(UTC)で束ねたクラスタ・ブートストラップ(percentile 法、"
               f"{n_boot:,} 回)。Sharpe = 日次損益(暦日、取引の無い日は 0)の 平均/SD × √365、CI は日を再抽出。"
-              "保守 = 片道 1.3 bps × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 1.0 bps + 資金調達。"
-              "MDE = 2.8016 × σ(net)/√n(セルごと)。最大 DD は net bps の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。"
+              "保守 = 片道 0.013% × バースト係数(k, thr ごと)+ 資金調達、楽観 = 片道 0.010% + 資金調達。"
+              "MDE = 2.8016 × σ(net)/√n(セルごと)。最大 DD は net % の累積(1 単位元本)。除外 = 保有中に 5 分超欠損(マスク後のみ)。"
               "状態 = all は無条件(反復 0)、1_low/2_mid/3_high はボラ三分位(反復 1)、h00_08/h08_16/h16_24 は時間帯(本反復)。")
     if iter1_check.get("available"):
         md.append("")
@@ -2908,14 +2949,14 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     imp = improvement
     line = (f"**val 改善量(反復 1 最良に対する)** = 最良 {imp['best_iter2']} の val 平均 net {imp['val_mean_net_best_iter2']:.3f} − "
             f"反復 1 最良 {imp['iter1_best']} の val 平均 net {imp['val_mean_net_iter1_best_recomputed']:.3f} = "
-            f"**{imp['val_improvement_bps']:.3f} bps**(事前登録 MDE {imp['mde_registered']} bps、比 {imp['val_improvement_over_mde']:.3f}; "
-            f"最良セルの n = {imp['n_val_best_iter2']:,}、同セルの MDE = {imp['mde_val_best_iter2']:.3f} bps)")
+            f"**{imp['val_improvement_pct']:.5f}%**(事前登録 MDE {imp['mde_registered']}%、比 {imp['val_improvement_over_mde']:.3f}; "
+            f"最良セルの n = {imp['n_val_best_iter2']:,}、同セルの MDE = {imp['mde_val_best_iter2']:.5f}%)")
     if "val_mean_net_iter1_best_from_iter1_file" in imp:
         line += f"。反復 1 の `configs.csv` に記載の同値 = {imp['val_mean_net_iter1_best_from_iter1_file']:.3f}"
     md.append(line + "。")
-    md.append(f"時間帯 81 構成だけの val 最良 {imp['best_hour_band_only']} の val 平均 net = {imp['val_mean_net_best_hour_band']:.3f} bps"
-              f"(反復 1 最良との差 {imp['val_mean_net_best_hour_band'] - imp['val_mean_net_iter1_best_recomputed']:+.3f} bps)。"
-              f"反復 0 最良 {imp['iter0_best']}(val {imp['val_mean_net_iter0_best_recomputed']:.3f})に対する差 = {imp['val_improvement_vs_iter0_best_bps']:+.3f} bps。"
+    md.append(f"時間帯 81 構成だけの val 最良 {imp['best_hour_band_only']} の val 平均 net = {imp['val_mean_net_best_hour_band']:.5f}%"
+              f"(反復 1 最良との差 {imp['val_mean_net_best_hour_band'] - imp['val_mean_net_iter1_best_recomputed']:+.5f}%)。"
+              f"反復 0 最良 {imp['iter0_best']}(val {imp['val_mean_net_iter0_best_recomputed']:.5f}%)に対する差 = {imp['val_improvement_vs_iter0_best_pct']:+.5f}%。"
               f"{N} 中の最良が本反復で追加した構成か: {imp['best_is_new_in_iter2']}。")
     md.append("")
     rows = []
@@ -2924,12 +2965,12 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
         for period in ("full", "val", "train"):
             r = stat_of(cfg, period)
             rows.append({"cfg": f"{tag} {cfg_label(cfg)}", "period": period, "n": int(r["n"]),
-                         "mean": r["mean_net_bps"], "lo": r["ci_lo"], "hi": r["ci_hi"], "mde": r["mde_bps"],
-                         "nullA": null_p95[f"max_mean_net_bps_{period}"], "sharpe": r["sharpe"],
+                         "mean": r["mean_net_pct"], "lo": r["ci_lo"], "hi": r["ci_hi"], "mde": r["mde_pct"],
+                         "nullA": null_p95[f"max_mean_net_pct_{period}"], "sharpe": r["sharpe"],
                          "slo": r["sharpe_ci_lo"], "shi": r["sharpe_ci_hi"], "nullB": null_p95[f"max_sharpe_{period}"]})
     md.append(f"帰無 = Binance の対数リターンを UTC 日ブロックで置換(水準は累積で再構成)して信号を作り直し(bitFlyer 側・三分位ゲート・時間帯ゲートはそのまま)、"
               f"同じ置換世界で {N} 構成の主指標(保守・マスク後)を計算して最大を取る。{n_null:,} 回、抽選の乱数種は反復 0・1 と同一(同じ置換世界)。"
-              "帰無 A = 1 取引平均 net bps、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
+              "帰無 A = 1 取引平均 net %、帰無 B = 日次 Sharpe。95 点は期間ごと(全期間・val・train)に別々に取る。")
     md.append("")
     md.append(_table(rows, [("cfg", "構成", -1), ("period", "期間", -1), ("n", "n", 0), ("mean", "平均 net", 3),
                             ("lo", "CI下", 3), ("hi", "CI上", 3), ("mde", "MDE", 3), ("nullA", "帰無A 95点", 3),
@@ -2974,7 +3015,7 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     md.append("")
     md.append(_table(controls.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("control", "対照", -1), ("draws", "抽選", 0),
-        ("obs_mean_net_bps", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
+        ("obs_mean_net_pct", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
         ("null_mean_p95", "対照 95 点", 3), ("obs_sharpe", "実測 Sharpe", 3), ("null_sharpe_mean", "対照 Sharpe 平均", 3),
         ("null_sharpe_p5", "5 点", 3), ("null_sharpe_p95", "95 点", 3), ("n_obs", "n 実測", 0), ("n_null_mean", "n 対照", 1)]))
     md.append("")
@@ -2988,7 +3029,7 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     md.append("")
     md.append(_table(cond_state.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop", -1), ("period", "期間", -1), ("state", "帯", -1), ("n", "n", 0),
-        ("mean", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sd_bps", "σ", 2), ("mde_bps", "MDE", 3)]))
+        ("mean", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("sd_pct", "σ", 2), ("mde_pct", "MDE", 3)]))
     md.append("")
     md.append(_table(cond_diff.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop", -1), ("period", "期間", -1), ("state_a", "a", -1), ("state_b", "b", -1),
@@ -3042,7 +3083,7 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
               f"時間軸 = 暦時間、{n_boot:,} 回、保守・マスク後)")
     md.append("")
     md.append(_table(edge_summary.to_dict("records"), [
-        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_bps_per_week", "傾き(bps/週)", 4),
+        ("config", "構成", -1), ("leg", "脚", -1), ("n", "n", 0), ("slope_per_week", "傾き(/週)", 4), ("slope_unit", "単位", -1),
         ("slope_ci_lo", "傾き CI下", 4), ("slope_ci_hi", "CI上", 4), ("slope_mde", "傾き MDE", 4),
         ("mean_first_half", "前半平均", 3), ("mean_second_half", "後半平均", 3), ("half_diff", "後半−前半", 3),
         ("half_diff_ci_lo", "差 CI下", 3), ("half_diff_ci_hi", "差 CI上", 3), ("last_window_mean", "直近窓平均", 3),
@@ -3054,16 +3095,16 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     yt["cost"] = edge[("best", "cost")]["year_table"]["mean"]
     md.append(f"### 最良構成 {cfg_label(best)} 年別(net の平均と CI、グロス・費用の平均)")
     md.append("")
-    md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均", 3),
-                                             ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均", 3),
-                                             ("cost", "費用平均", 3)]))
+    md.append(_table(yt.to_dict("records"), [("year", "年", -1), ("n", "n", 0), ("mean", "net 平均(%)", 3),
+                                             ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("gross", "グロス平均(bps)", 3),
+                                             ("cost", "費用平均(%)", 3)]))
     md.append("")
 
     # ---- 10 MDE ----------------------------------------------------------------------
     md.append("## 10. MDE")
     md.append("")
     md.append(_table(mde.to_dict("records"), [
-        ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("n", "n", 0), ("sigma_bps", "σ(bps)", 2),
+        ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("n", "n", 0), ("sigma_pct", "σ(%)", 2),
         ("se_independent", "SE 独立", 4), ("mde_independent", "MDE 独立", 3), ("se_cluster", "SE クラスタ", 4),
         ("mde_cluster", "MDE クラスタ", 3), ("mde_registered", "事前登録 MDE", 2)]))
     md.append("")
@@ -3136,8 +3177,8 @@ def results_md_iter2(n_null, n_ctrl, n_boot, workers, T, summary, burst_df, burs
     md.append(_table(dd["trades"].to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("subset", "subset", -1),
         ("n_kept", "n(除外前)", 0), ("n_flagged", "印付き", 0), ("share_flagged", "比", 4), ("n_basis_undefined", "ベーシス未定義", 0),
-        ("n_flagged_at_entry_fill", "印付き(約定分判定)", 0), ("n", "n", 0), ("mean_net_bps", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
-        ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3), ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
+        ("n_flagged_at_entry_fill", "印付き(約定分判定)", 0), ("n", "n", 0), ("mean_net_pct", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+        ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3), ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
     md.append("")
     md.append(_table(dd["trades_by_year"].to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("year", "年", -1), ("trades", "取引", 0), ("kept", "除外後", 0),
@@ -3226,7 +3267,7 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
     # consistency with iteration 1's configs.csv (masked / cons / full, train, val)
     ref_rows = []
     p1 = ITER1_DIR / "configs.csv"
-    c1 = pd.read_csv(p1) if p1.exists() else None
+    c1 = read_prev_csv(p1) if p1.exists() else None
     for tag, cfg in cfgs.items():
         k, thr, stop, st = cfg
         ci0 = CONFIGS.index((k, thr, stop))
@@ -3234,15 +3275,15 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
             seed = [SEED, 5, iter0_cell_index(0, ci0, pi, 0)] if st is None else [SEED, 15, iter1_vol_cell_index(0, ci0, st, pi, 0)]
             r = {"config": tag, "label": cfg_label(cfg), "period": period}
             r.update(full_stats(arrays[("masked", cfg)], grid_m, COST_CONS_1W * burst[(k, thr)], period, n_boot, seed))
-            r["mde_bps"] = mde_of(r["sd_net_bps"], r["n"])
+            r["mde_pct"] = mde_of(r["sd_net_pct"], r["n"])
             if c1 is not None:
                 m = c1[(c1["k"] == k) & (c1["thr"] == thr) & (c1["stop"] == stop) & (c1["state"] == state_label(st))
                        & (c1["masks"] == "masked") & (c1["period"] == period) & (c1["cost"] == "cons")]
                 if len(m):
-                    r["iter1_mean_net_bps"] = float(m["mean_net_bps"].iloc[0])
+                    r["iter1_mean_net_pct"] = float(m["mean_net_pct"].iloc[0])
                     r["iter1_n"] = int(m["n"].iloc[0])
                     r["max_abs_diff_vs_iter1"] = float(max(abs(float(m[c].iloc[0]) - float(r[c]))
-                                                           for c in ("mean_net_bps", "ci_lo", "ci_hi", "sharpe", "n")))
+                                                           for c in ("mean_net_pct", "ci_lo", "ci_hi", "sharpe", "n")))
             ref_rows.append(r)
     ref_check = pd.DataFrame(ref_rows)
     write(ref_check, "reference_stats_check.csv")
@@ -3287,14 +3328,14 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
         ctrl_draws[key] = df
         write(df, f"{key}_iter1_best.csv")
         ctrl_rows.append({"config": "iter1_best", "label": cfg_label(ITER1_BEST), "control": name, "draws": len(df),
-                          "obs_mean_net_bps": obs["mean_net_bps"], "null_mean_mean": float(df["mean_net_bps"].mean()),
-                          "null_mean_p95": float(np.nanpercentile(df["mean_net_bps"], 95)),
-                          "null_mean_p5": float(np.nanpercentile(df["mean_net_bps"], 5)),
+                          "obs_mean_net_pct": obs["mean_net_pct"], "null_mean_mean": float(df["mean_net_pct"].mean()),
+                          "null_mean_p95": float(np.nanpercentile(df["mean_net_pct"], 95)),
+                          "null_mean_p5": float(np.nanpercentile(df["mean_net_pct"], 5)),
                           "obs_sharpe": obs["sharpe"], "null_sharpe_mean": float(df["sharpe"].mean()),
                           "null_sharpe_p95": float(np.nanpercentile(df["sharpe"], 95)),
                           "null_sharpe_p5": float(np.nanpercentile(df["sharpe"], 5)),
                           "n_obs": int(obs["n"]), "n_null_mean": float(df["n"].mean()),
-                          "share_null_ge_obs": float((df["mean_net_bps"] >= obs["mean_net_bps"]).mean())})
+                          "share_null_ge_obs": float((df["mean_net_pct"] >= obs["mean_net_pct"]).mean())})
     controls = pd.DataFrame(ctrl_rows)
     write(controls, "controls_iter1_best.csv")
     # control 4: the same rules on bitFlyer's own momentum (with the 1_low gate = the configuration itself,
@@ -3309,7 +3350,7 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
                  "n_entry_signal_bars": a4["n_entry_signal_bars"], "n_entry_signals_discarded": a4["n_entry_signals_discarded"],
                  "n_entry_signals_gated": a4["n_entry_signals_gated"]}
             r.update(full_stats(a4, grid_m, c1w, period, n_boot, [SEED, 7, CONFIGS.index((k, thr, stop)), gi, pi]))
-            r["mde_bps"] = mde_of(r["sd_net_bps"], r["n"])
+            r["mde_pct"] = mde_of(r["sd_net_pct"], r["n"])
             c4_rows.append(r)
     control4 = pd.DataFrame(c4_rows)
     write(control4, "control4_no_lead_iter1_best.csv")
@@ -3326,7 +3367,7 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
         for period in ("full", "val"):
             r = {"config": "iter1_best", "label": cfg_label(ITER1_BEST), "shift_min": sh, "period": period}
             r.update(full_stats(a_s, grid_m, c1w, period, n_boot, [SEED, 8, k, int(sh) + 10]))
-            r["mde_bps"] = mde_of(r["sd_net_bps"], r["n"])
+            r["mde_pct"] = mde_of(r["sd_net_pct"], r["n"])
             shift_rows.append(r)
     diag_shift = pd.DataFrame(shift_rows)
     write(diag_shift, "diag_a_minute_shift_iter1_best.csv")
@@ -3356,7 +3397,7 @@ def main_addendum(out: Path, n_ctrl: int, n_boot: int) -> int:
                        "reference_stats_max_abs_diff": float(ref_check["max_abs_diff_vs_iter1"].max()) if "max_abs_diff_vs_iter1" in ref_check else None},
         "parameters": {"configs_of_interest": {t: cfg_label(c) for t, c in cfgs.items()}, "exit_pct": EXIT_PCT,
                        "tercile_bounds": {"q1": bounds[0], "q2": bounds[1]},
-                       "cost_cons_one_way_bps": COST_CONS_1W, "burst_coef": {f"{k_}/{t_}": v for (k_, t_), v in burst.items()},
+                       "cost_cons_one_way_pct": COST_CONS_1W, "burst_coef": {f"{k_}/{t_}": v for (k_, t_), v in burst.items()},
                        "funding_pct_per_settlement": FUNDING_PCT, "funding_times_utc": FUNDING_TIMES, "max_gap_min": MAX_GAP_MIN,
                        "train_end": str(TRAIN_END), "val_start": str(VAL_START), "dev_start": str(DEV_START), "dev_end": str(DEV_END),
                        "n_boot": n_boot, "n_ctrl": n_ctrl,
@@ -3405,9 +3446,9 @@ def results_md_addendum(n_ctrl, n_boot, T, burst_df, burst_meta, bounds, ref_che
     if "max_abs_diff_vs_iter1" in rc:
         rc["max_abs_diff_vs_iter1"] = [f"{v:.3e}" for v in rc["max_abs_diff_vs_iter1"]]
     md.append(_table(rc.to_dict("records"), [
-        ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("n", "n", 0), ("mean_net_bps", "平均 net", 3),
-        ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3),
-        ("iter1_mean_net_bps", "反復 1 記載", 3), ("iter1_n", "同 n", 0), ("max_abs_diff_vs_iter1", "差の最大(平均 net・CI・Sharpe・n)", -1)]))
+        ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("n", "n", 0), ("mean_net_pct", "平均 net", 3),
+        ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3),
+        ("iter1_mean_net_pct", "反復 1 記載", 3), ("iter1_n", "同 n", 0), ("max_abs_diff_vs_iter1", "差の最大(平均 net・CI・Sharpe・n)", -1)]))
     md.append("")
 
     # ---- 1 control 5 ---------------------------------------------------------
@@ -3478,8 +3519,8 @@ def results_md_addendum(n_ctrl, n_boot, T, burst_df, burst_meta, bounds, ref_che
     md.append(_table(dd["trades"].to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("period", "期間", -1), ("subset", "subset", -1),
         ("n_kept", "n(除外前)", 0), ("n_flagged", "印付き", 0), ("share_flagged", "比", 4), ("n_basis_undefined", "ベーシス未定義", 0),
-        ("n_flagged_at_entry_fill", "印付き(約定分判定)", 0), ("n", "n", 0), ("mean_net_bps", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
-        ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3), ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
+        ("n_flagged_at_entry_fill", "印付き(約定分判定)", 0), ("n", "n", 0), ("mean_net_pct", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3),
+        ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3), ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
     md.append("")
     md.append(_table(dd["trades_by_year"].to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("year", "年", -1), ("trades", "取引", 0), ("kept", "除外後", 0),
@@ -3515,7 +3556,7 @@ def results_md_addendum(n_ctrl, n_boot, T, burst_df, burst_meta, bounds, ref_che
     md.append("")
     md.append(_table(controls.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("control", "対照", -1), ("draws", "抽選", 0),
-        ("obs_mean_net_bps", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
+        ("obs_mean_net_pct", "実測 平均 net", 3), ("null_mean_mean", "対照 平均", 3), ("null_mean_p5", "対照 5 点", 3),
         ("null_mean_p95", "対照 95 点", 3), ("share_null_ge_obs", "対照 ≥ 実測 の比", 4), ("obs_sharpe", "実測 Sharpe", 3),
         ("null_sharpe_mean", "対照 Sharpe 平均", 3), ("null_sharpe_p5", "5 点", 3), ("null_sharpe_p95", "95 点", 3),
         ("n_obs", "n 実測", 0), ("n_null_mean", "n 対照", 1)]))
@@ -3524,7 +3565,7 @@ def results_md_addendum(n_ctrl, n_boot, T, burst_df, burst_meta, bounds, ref_che
     md.append("")
     md.append(_table(control4.to_dict("records"), [
         ("k", "k", 0), ("thr", "thr", 1), ("stop", "stop", 2), ("state", "状態", -1), ("period", "期間", -1), ("n", "n", 0),
-        ("n_excluded_gap", "除外", 0), ("mean_net_bps", "平均 net(bps)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_bps", "MDE", 3),
+        ("n_excluded_gap", "除外", 0), ("mean_net_pct", "平均 net(%)", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_pct", "MDE", 3),
         ("sharpe", "Sharpe", 3), ("sharpe_ci_lo", "S CI下", 3), ("sharpe_ci_hi", "S CI上", 3), ("win_rate", "勝率", 4),
         ("mean_hold_min", "保有分", 1), ("stop_rate", "ストップ率", 4), ("n_entry_signals_gated", "ゲート落ち信号", 0)]))
     md.append("")
@@ -3534,7 +3575,7 @@ def results_md_addendum(n_ctrl, n_boot, T, burst_df, burst_meta, bounds, ref_che
     md.append("")
     md.append(_table(diag_shift.to_dict("records"), [
         ("config", "構成", -1), ("label", "k/thr/stop@状態", -1), ("shift_min", "shift(分)", 0), ("period", "期間", -1),
-        ("n", "n", 0), ("mean_net_bps", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_bps", "MDE", 3), ("sharpe", "Sharpe", 3),
+        ("n", "n", 0), ("mean_net_pct", "平均 net", 3), ("ci_lo", "CI下", 3), ("ci_hi", "CI上", 3), ("mde_pct", "MDE", 3), ("sharpe", "Sharpe", 3),
         ("win_rate", "勝率", 4), ("stop_rate", "ストップ率", 4)]))
     md.append("")
 

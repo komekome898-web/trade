@@ -59,6 +59,8 @@
 - スクリプトは `scripts/research_signal_fade.py`。read-only・冪等・seed固定。
   ダウンロード以外のネットワークなし。
 ================================================================================
+(L-920 の後の単位: 上の事前登録の文は書き換えない。費用(taker 3.96bps = 0.0396 %、maker 0)は
+% で持つ。ネット = gross(%)− 費用(%)の値は前と同じ。bp は値動き(前向きの fwd_*_bps)にだけ使う。)
 """
 from __future__ import annotations
 
@@ -88,8 +90,8 @@ THR = 0.8 / 100.0
 EXIT_BAND = 0.05 / 100.0
 
 # execution / cost model — .claude/skills/research-protocol §3
-TAKER_BPS = 3.96          # burst-regime one-way taker cost
-MAKER_BPS = 0.0
+TAKER_PCT = 0.0396        # % burst-regime one-way taker cost (3.96 bps)
+MAKER_PCT = 0.0           # %
 STOP_PCT = 0.8 / 100.0    # protective stop, common to all cells
 CELLS = [(tp, hor) for tp in (0.3, 0.5) for hor in (60, 240)]  # (TP %, minutes)
 
@@ -284,7 +286,7 @@ def simulate_cell(eps: list[Episode], tape: dict, tp_pct: float, horizon_min: in
         if fill_idx < 0:
             continue
 
-        # ---- position open at p0 (maker, 0 bps)
+        # ---- position open at p0 (maker, 0 %)
         fill_ts = ts[fill_idx]
         # lookahead audit: the limit price is set from a print at-or-before the
         # fire bar close, and the fill can only come from a print strictly after.
@@ -303,28 +305,28 @@ def simulate_cell(eps: list[Episode], tape: dict, tp_pct: float, horizon_min: in
         n = len(ts)
         while j < n:
             if ts[j] > deadline:
-                exit_reason, exit_px, exit_cost, exit_ts = "time", px[j], TAKER_BPS, ts[j]
+                exit_reason, exit_px, exit_cost, exit_ts = "time", px[j], TAKER_PCT, ts[j]
                 break
             p = px[j]
             if use_stop and ((fade == -1 and p >= stop_price) or
                              (fade == 1 and p <= stop_price)):
-                exit_reason, exit_px, exit_cost, exit_ts = "stop", p, TAKER_BPS, ts[j]
+                exit_reason, exit_px, exit_cost, exit_ts = "stop", p, TAKER_PCT, ts[j]
                 break
             if use_tp:
                 # maker TP: traded-through by the opposite aggressor, strictly
                 if fade == -1 and (not is_buy[j]) and p < tp_price:
-                    exit_reason, exit_px, exit_cost, exit_ts = "tp", tp_price, MAKER_BPS, ts[j]
+                    exit_reason, exit_px, exit_cost, exit_ts = "tp", tp_price, MAKER_PCT, ts[j]
                     break
                 if fade == 1 and is_buy[j] and p > tp_price:
-                    exit_reason, exit_px, exit_cost, exit_ts = "tp", tp_price, MAKER_BPS, ts[j]
+                    exit_reason, exit_px, exit_cost, exit_ts = "tp", tp_price, MAKER_PCT, ts[j]
                     break
             j += 1
         if exit_reason is None:                 # tape truncated at the cutoff
-            exit_reason, exit_px, exit_cost, exit_ts = "truncated", px[-1], TAKER_BPS, ts[-1]
+            exit_reason, exit_px, exit_cost, exit_ts = "truncated", px[-1], TAKER_PCT, ts[-1]
 
         assert exit_ts >= fill_ts, "exit before fill"
         gross_pct = ((exit_px - p0) / p0 * 100.0) * fade
-        net_pct = gross_pct - exit_cost / 100.0
+        net_pct = gross_pct - exit_cost                   # cost already in % (L-920)
         trades.append({"fire_ts": ep.fire_ts, "fill_ts": fill_ts, "exit_ts": exit_ts,
                        "dir": ep.direction, "fade": fade, "p0": p0, "exit_px": exit_px,
                        "reason": exit_reason, "gross_pct": gross_pct,
@@ -496,7 +498,7 @@ def main() -> None:
     np.random.seed(SEED)
     print(f"S11 signal-fade study — seed={SEED}")
     print(f"signal: k={K} thr={THR*100:.2f}% exit_band={EXIT_BAND*100:.2f}%")
-    print(f"costs: maker={MAKER_BPS}bps taker={TAKER_BPS}bps stop={STOP_PCT*100:.1f}%")
+    print(f"costs: maker={MAKER_PCT}% taker={TAKER_PCT}% stop={STOP_PCT*100:.1f}%")
 
     leader = load_leader(args.binance_dir)
     tape = load_tape(args.tape, CUTOFF)

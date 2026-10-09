@@ -17,6 +17,13 @@
     Binance/Bybit 1 分足(`k1_source.load_bars`)                2026-08-20〜08-31
 
     PYTHONPATH=src:scripts python scripts/measure_exec_floor.py
+
+単位(L-920、2026-10-10): 気配スプレッド(E-a)・板を歩く費用(E-b)・実現スプレッド(E-c)は、
+同じ時刻の 2 つの値段の距離・費用なので bp ではなく mid に対する %(× 100、統計の鍵は *_pct、
+小数 6 桁)。約定の H 秒後の mid の動き(E-d)・触れられた後の動き(E-e のドリフト)・K1 の経費前の
+値動きは値動き率なので bp のまま(鍵は *_bp、小数 4 桁)。L-920 より前に書かれた
+exec_floor.json は E-a〜E-c・E-f の e_a/e_b_001・E-i の往復費用も *_bp(× 1e4)で持つ。
+読み手 scripts/render_exec_floor.py は *_pct が無ければ *_bp を / 100 して読む。
 """
 from __future__ import annotations
 
@@ -37,15 +44,7 @@ for p in (REPO / "src", REPO / "scripts"):
     if sp not in sys.path:
         sys.path.insert(0, sp)
 
-from bot.research.board import walk_cost_pct  # noqa: E402
-
-
-def walk_cost_bp(levels, size, mid, side):
-    # board.walk_cost_bp became walk_cost_pct (percent of mid) on 2026-10-09 (L-920/L-923);
-    # this script's own tables still use the old x 1e4 unit, so convert back here.
-    # Renaming this script's names is left to the unit that fixes the scripts off the live path.
-    c, filled, exhausted = walk_cost_pct(levels, size, mid, side)
-    return (None if c is None else c * 100), filled, exhausted
+from bot.research.board import walk_cost_pct  # noqa: E402  (% of mid since L-920)
 
 import k1_source  # noqa: E402
 import measure_katsuo_dispersion as base  # noqa: E402
@@ -131,24 +130,31 @@ def bucket_of(v, edges):
     return "high"
 
 
-def unweighted_stats(values):
+# unit -> (key suffix, decimals). bp = a price-move rate (4 decimals); pct = % of mid for a spread or
+# a cost (6 decimals = the same resolution as the former 4 decimals of x 1e4).
+STAT_UNITS = {"bp": ("bp", 4), "pct": ("pct", 6)}
+
+
+def unweighted_stats(values, unit="bp"):
+    sfx, nd = STAT_UNITS[unit]
     n = len(values)
     if n == 0:
-        return {"n": 0, "mean_bp": None, "p50_bp": None, "p90_bp": None, "p10_bp": None}
+        return {"n": 0, f"mean_{sfx}": None, f"p50_{sfx}": None, f"p90_{sfx}": None, f"p10_{sfx}": None}
     srt = sorted(values)
 
     def pct(p):
         k = (n - 1) * p
         lo, hi = math.floor(k), math.ceil(k)
         return srt[int(k)] if lo == hi else srt[lo] * (hi - k) + srt[hi] * (k - lo)
-    return {"n": n, "mean_bp": round(sum(values) / n, 4), "p10_bp": round(pct(0.10), 4),
-            "p50_bp": round(pct(0.50), 4), "p90_bp": round(pct(0.90), 4)}
+    return {"n": n, f"mean_{sfx}": round(sum(values) / n, nd), f"p10_{sfx}": round(pct(0.10), nd),
+            f"p50_{sfx}": round(pct(0.50), nd), f"p90_{sfx}": round(pct(0.90), nd)}
 
 
-def weighted_stats(pairs):
+def weighted_stats(pairs, unit="bp"):
     """``pairs`` = [(value, weight), ...]. Time-weighted p10/p50/p90 (nearest rank)."""
+    sfx, nd = STAT_UNITS[unit]
     if not pairs:
-        return {"n": 0, "total_weight": 0.0, "p10_bp": None, "p50_bp": None, "p90_bp": None}
+        return {"n": 0, "total_weight": 0.0, f"p10_{sfx}": None, f"p50_{sfx}": None, f"p90_{sfx}": None}
     pairs = sorted(pairs, key=lambda x: x[0])
     vals = [p[0] for p in pairs]
     wts = [p[1] for p in pairs]
@@ -159,14 +165,14 @@ def weighted_stats(pairs):
         cum.append(running)
     total = cum[-1]
     out = {"n": len(pairs), "total_weight_sec": round(total, 1)}
-    for label, q in (("p10_bp", 0.10), ("p50_bp", 0.50), ("p90_bp", 0.90)):
+    for label, q in ((f"p10_{sfx}", 0.10), (f"p50_{sfx}", 0.50), (f"p90_{sfx}", 0.90)):
         if total <= 0:
             out[label] = None
             continue
         target = q * total
         idx = bisect.bisect_left(cum, target)
         idx = min(idx, len(vals) - 1)
-        out[label] = round(vals[idx], 4)
+        out[label] = round(vals[idx], nd)
     return out
 
 
@@ -457,7 +463,7 @@ print("\n=== E-a 気配スプレッド ===")
 
 
 def build_quote_intervals():
-    """(spread_bp, weight_sec, t0) のリスト。crossed/欠測ギャップは除外。"""
+    """(spread_pct, weight_sec, t0) のリスト(スプレッドは mid に対する %)。crossed/欠測ギャップは除外。"""
     out = []
     excluded_weight = 0.0
     total_weight = 0.0
@@ -472,8 +478,8 @@ def build_quote_intervals():
             excluded_weight += w
             continue
         mid = (b0 + a0) / 2.0
-        spread_bp = (a0 - b0) / mid * 1e4
-        out.append((spread_bp, w, t0))
+        spread_pct = (a0 - b0) / mid * 100
+        out.append((spread_pct, w, t0))
     return out, excluded_weight, total_weight
 
 
@@ -481,7 +487,7 @@ quote_intervals, ea_excluded_w, ea_total_w = build_quote_intervals()
 print(f"  区間 {len(quote_intervals):,} 件、除外重み {ea_excluded_w:,.0f}s / 全重み {ea_total_w:,.0f}s "
       f"({ea_excluded_w / ea_total_w:.4%})")
 
-e_a_overall = weighted_stats([(sp, w) for sp, w, _t in quote_intervals])
+e_a_overall = weighted_stats([(sp, w) for sp, w, _t in quote_intervals], unit="pct")
 
 by_hour: dict = {lbl: [] for lbl in HOUR_BUCKET_LABELS}
 by_weekday: dict = {w: [] for w in WEEKDAY_NAMES}
@@ -494,15 +500,15 @@ for sp, w, t0 in quote_intervals:
         by_vol[vb].append((sp, w))
 
 e_a = {
-    "note": ("(ask-bid)/mid の bp、区間の秒数で時間加重した p10/p50/p90(最近接ランク)。"
+    "note": ("(ask-bid)/mid の %、区間の秒数で時間加重した p10/p50/p90(最近接ランク)。"
              "crossed 気配・300秒超のギャップは除外(データ検査)。"),
     "excluded_weight_share": round(ea_excluded_w / ea_total_w, 6) if ea_total_w else None,
     "overall": e_a_overall,
-    "by_hour_utc": {k: weighted_stats(v) for k, v in by_hour.items()},
-    "by_weekday": {k: weighted_stats(v) for k, v in by_weekday.items()},
-    "by_vol_tercile": {k: weighted_stats(v) for k, v in by_vol.items()},
+    "by_hour_utc": {k: weighted_stats(v, unit="pct") for k, v in by_hour.items()},
+    "by_weekday": {k: weighted_stats(v, unit="pct") for k, v in by_weekday.items()},
+    "by_vol_tercile": {k: weighted_stats(v, unit="pct") for k, v in by_vol.items()},
 }
-print(f"  overall p50={e_a_overall['p50_bp']} p90={e_a_overall['p90_bp']} bp (n={e_a_overall['n']:,})")
+print(f"  overall p50={e_a_overall['p50_pct']} p90={e_a_overall['p90_pct']} % (n={e_a_overall['n']:,})")
 
 # per-minute time-weighted average spread (for E-f's minute-level comparison).
 # Single forward pass over ticker_all with a persistent pointer -- O(n_ticker + n_minutes).
@@ -530,7 +536,7 @@ for m0 in minute_starts:
             pass  # excluded interval: crossed / missing gap
         else:
             mid = (b0k + a0k) / 2.0
-            acc_val += (a0k - b0k) / mid * 1e4 * w
+            acc_val += (a0k - b0k) / mid * 100 * w   # spread, % of mid
             acc_w += w
         t_cursor = seg_end
         k += 1
@@ -566,7 +572,7 @@ print(f"  板サンプル {board_total:,} 件、非単調で除外 {board_exclud
 # 0.01 BTC の片道/往復コストは E-f でも使うので分単位で引けるように保存する
 eb001_by_minute: dict = {}
 
-eb_cells: dict = {}  # size -> {"buy":[...], "sell":[...], "roundtrip":[...]} of (bp, ts)
+eb_cells: dict = {}  # size -> {"buy":[...], "sell":[...], "roundtrip":[...]} of (cost %, ts)
 eb_exhausted: dict = {}  # size -> {"buy":0, "sell":0, "either":0}
 for x in SIZES:
     eb_cells[x] = {"buy": [], "sell": [], "roundtrip": []}
@@ -574,20 +580,20 @@ for x in SIZES:
 
 for ts, mid, bid_levels, ask_levels in board_samples:
     for x in SIZES:
-        buy_bp, _fb, exh_b = walk_cost_bp(ask_levels, x, mid, "buy")
-        sell_bp, _fs, exh_s = walk_cost_bp(bid_levels, x, mid, "sell")
+        buy_pct, _fb, exh_b = walk_cost_pct(ask_levels, x, mid, "buy")
+        sell_pct, _fs, exh_s = walk_cost_pct(bid_levels, x, mid, "sell")
         if exh_b:
             eb_exhausted[x]["buy"] += 1
         if exh_s:
             eb_exhausted[x]["sell"] += 1
         if exh_b or exh_s:
             eb_exhausted[x]["either"] += 1
-        if buy_bp is not None:
-            eb_cells[x]["buy"].append((buy_bp, ts))
-        if sell_bp is not None:
-            eb_cells[x]["sell"].append((sell_bp, ts))
-        if buy_bp is not None and sell_bp is not None:
-            rt = buy_bp + sell_bp
+        if buy_pct is not None:
+            eb_cells[x]["buy"].append((buy_pct, ts))
+        if sell_pct is not None:
+            eb_cells[x]["sell"].append((sell_pct, ts))
+        if buy_pct is not None and sell_pct is not None:
+            rt = buy_pct + sell_pct
             eb_cells[x]["roundtrip"].append((rt, ts))
             if x == 0.01:
                 eb001_by_minute.setdefault(int(ts // 60) * 60, []).append(rt)
@@ -598,7 +604,7 @@ eb001_by_minute = {m: vals[0] for m, vals in eb001_by_minute.items()}
 
 def eb_side_stats(pairs):
     vals = [v for v, _t in pairs]
-    return unweighted_stats(vals)
+    return unweighted_stats(vals, unit="pct")
 
 
 def eb_breakdown(pairs):
@@ -609,13 +615,13 @@ def eb_breakdown(pairs):
         vb = bucket_of(vol_of_ts(t), vol_edges)
         if vb:
             by_v[vb].append(v)
-    return ({k: unweighted_stats(v) for k, v in by_h.items()},
-            {k: unweighted_stats(v) for k, v in by_v.items()})
+    return ({k: unweighted_stats(v, unit="pct") for k, v in by_h.items()},
+            {k: unweighted_stats(v, unit="pct") for k, v in by_v.items()})
 
 
 e_b = {
     "note": ("板の 1 秒サンプル(2026-08-20〜08-26、7 日)を best から順に食ったときの片道コスト"
-             "(bp、vs mid)。板の外(5 段で足りない)を『exhausted』として件数を数える(板5段のみ"
+             "(%、vs mid)。板の外(5 段で足りない)を『exhausted』として件数を数える(板5段のみ"
              "なので、この件数と往復コストは滑りの下限)。往復 = 同一サンプルの買い片道 + 売り片道。"
              "非単調(データ検査)なサンプルは全サイズ共通で除外。"),
     "excluded_share": round(board_excluded / board_total, 6) if board_total else None,
@@ -640,8 +646,8 @@ for x in SIZES:
         "by_hour_utc": by_hour_side,
         "by_vol_tercile": by_vol_side,
     }
-    print(f"  X={x} BTC: buy p50={overall['buy']['p50_bp']} sell p50={overall['sell']['p50_bp']} "
-          f"roundtrip p50={overall['roundtrip']['p50_bp']} p90={overall['roundtrip']['p90_bp']} bp "
+    print(f"  X={x} BTC: buy p50={overall['buy']['p50_pct']} sell p50={overall['sell']['p50_pct']} "
+          f"roundtrip p50={overall['roundtrip']['p50_pct']} p90={overall['roundtrip']['p90_pct']} % "
           f"(n={overall['roundtrip']['n']:,}, exhausted either={eb_exhausted[x]['either']:,})")
 
 # ---------------------------------------------------------------------------
@@ -652,7 +658,7 @@ print("\n=== E-c 実現スプレッド / E-d 逆選択(代理) ===")
 
 # 各約定について: 直前の有効気配(E-c)と、10/60/300 秒後の有効気配(E-d)。
 # ルックアップが欠測(300秒より古い/無い)なら、その約定はその表から除外する。
-ec_rows = []   # (realized_bp, side, ts, day, vol_bucket, size_bin)
+ec_rows = []   # (realized_pct, side, ts, day, vol_bucket, size_bin)
 ed_rows = {h: [] for h in ADV_HORIZONS}  # h -> (signed_bp, side, ts, day, vol_bucket, size_bin)
 ec_excluded = 0
 ed_excluded = {h: 0 for h in ADV_HORIZONS}
@@ -668,8 +674,8 @@ for ts, price, size, side in exec_all:
     day = datetime.utcfromtimestamp(ts).date()
     vb = bucket_of(vol_of_ts(ts), vol_edges)
     sb = size_bin(size)
-    realized_bp = abs(price - mid_now) / mid_now * 1e4
-    ec_rows.append((realized_bp, side, ts, day, vb, sb))
+    realized_pct = abs(price - mid_now) / mid_now * 100   # fill-to-mid distance, % (not a move)
+    ec_rows.append((realized_pct, side, ts, day, vb, sb))
     side_sign = 1.0 if side == "BUY" else -1.0
     for h in ADV_HORIZONS:
         qf = lookup_quote(ts + h)
@@ -702,22 +708,22 @@ def ec_breakdown(rows):
             by_vol[vb].append(v)
         by_size[sb].append(v)
     return {
-        "overall": unweighted_stats([r[0] for r in rows]),
-        "by_hour_utc": {k: unweighted_stats(v) for k, v in by_hour.items()},
-        "by_vol_tercile": {k: unweighted_stats(v) for k, v in by_vol.items()},
-        "by_size_bin": {k: unweighted_stats(v) for k, v in by_size.items()},
+        "overall": unweighted_stats([r[0] for r in rows], unit="pct"),
+        "by_hour_utc": {k: unweighted_stats(v, unit="pct") for k, v in by_hour.items()},
+        "by_vol_tercile": {k: unweighted_stats(v, unit="pct") for k, v in by_vol.items()},
+        "by_size_bin": {k: unweighted_stats(v, unit="pct") for k, v in by_size.items()},
     }
 
 
 e_c = {
-    "note": ("各約定について |約定価格 − 直前の有効気配の mid| / mid(bp)。直前の有効気配が"
+    "note": ("各約定について |約定価格 − 直前の有効気配の mid| / mid(%)。直前の有効気配が"
              "300秒より古い/無い約定は除外(件数は上に記録)。"),
     "excluded_count": ec_excluded, "excluded_share": round(ec_excluded / len(exec_all), 6),
     "by_side": {side: ec_breakdown(rows) for side, rows in side_scopes(ec_rows).items()},
 }
 for side, rows in side_scopes(ec_rows).items():
-    st = unweighted_stats([r[0] for r in rows])
-    print(f"  E-c {side}: n={st['n']:,} p50={st['p50_bp']} p90={st['p90_bp']} bp")
+    st = unweighted_stats([r[0] for r in rows], unit="pct")
+    print(f"  E-c {side}: n={st['n']:,} p50={st['p50_pct']} p90={st['p90_pct']} %")
 
 
 def ed_breakdown_with_ci(table_key, rows):
@@ -965,8 +971,8 @@ def ee_touch_drift_for(minutes, T):
 
 
 e_f_unconditional = {
-    "e_a_same_days": unweighted_stats(ea_values_for(uncond_minutes_k1)),
-    "e_b_001_same_days_board_window": unweighted_stats(eb001_values_for(uncond_minutes_k1_board)),
+    "e_a_same_days": unweighted_stats(ea_values_for(uncond_minutes_k1), unit="pct"),
+    "e_b_001_same_days_board_window": unweighted_stats(eb001_values_for(uncond_minutes_k1_board), unit="pct"),
     "e_e": {},
 }
 for T in MAKER_T:
@@ -985,8 +991,8 @@ for (source, foot), minutes in signal_minute_sets.items():
     cell = {
         "n_signal_minutes": len(minutes),
         "n_signal_minutes_in_board_window": len(minutes_board),
-        "e_a": unweighted_stats(ea_values_for(minutes)),
-        "e_b_001": unweighted_stats(eb001_values_for(minutes_board)),
+        "e_a": unweighted_stats(ea_values_for(minutes), unit="pct"),
+        "e_b_001": unweighted_stats(eb001_values_for(minutes_board), unit="pct"),
         "e_e": {},
     }
     for T in MAKER_T:
@@ -999,7 +1005,7 @@ for (source, foot), minutes in signal_minute_sets.items():
         }
     e_f_cells[f"{source}|{foot}"] = cell
     print(f"  {source} 足{foot}分: シグナル分 n={len(minutes):,}(板window内 {len(minutes_board):,}) "
-          f"E-a p50={cell['e_a']['p50_bp']} bp / E-b(0.01) p50={cell['e_b_001']['p50_bp']} bp")
+          f"E-a p50={cell['e_a']['p50_pct']} % / E-b(0.01) p50={cell['e_b_001']['p50_pct']} %")
 
 e_f = {
     "note": ("海外(Binance/Bybit)のK1設計シグナル(flip_body=True、弱いのみ、門 s19/b24、足5・15分、"
@@ -1101,7 +1107,7 @@ ee300_overall = e_e["by_T"]["300"]["overall"]
 e_f_rt001_by_cell = {}
 for key, cell in e_f_cells.items():
     e_f_rt001_by_cell[key] = {
-        "n": cell["e_b_001"]["n"], "p50_bp": cell["e_b_001"]["p50_bp"], "p90_bp": cell["e_b_001"]["p90_bp"],
+        "n": cell["e_b_001"]["n"], "p50_pct": cell["e_b_001"]["p50_pct"], "p90_pct": cell["e_b_001"]["p90_pct"],
     }
 
 e_i = {
@@ -1109,9 +1115,9 @@ e_i = {
              "K1シグナル分(E-f、板window内のみ。件数が少ないことに注意)。指値の触れられ率・"
              "触れられた後の逆選択(E-e)。K1の経費前の値(RESULT.md §18.2、2022〜2026、"
              "門s19/b24、弱い。**再計算していない、並べるだけ、引き算はしない**)。"),
-    "roundtrip_taker_cost_001btc_bp": {
-        "unconditional": {"p50": rt001["p50_bp"], "p90": rt001["p90_bp"], "n": rt001["n"]},
-        "high_vol_tercile": {"p50": rt001_high_vol["p50_bp"], "p90": rt001_high_vol["p90_bp"],
+    "roundtrip_taker_cost_001btc_pct": {
+        "unconditional": {"p50": rt001["p50_pct"], "p90": rt001["p90_pct"], "n": rt001["n"]},
+        "high_vol_tercile": {"p50": rt001_high_vol["p50_pct"], "p90": rt001_high_vol["p90_pct"],
                               "n": rt001_high_vol["n"]},
         "k1_signal_minutes_by_source_foot": e_f_rt001_by_cell,
     },
@@ -1130,8 +1136,8 @@ e_i = {
                   "source": "docs/PHASE2/K1/RESULT.md §18.2 (Bybit->bitFlyer 横断、2022-2026)"},
     },
 }
-print(f"  往復0.01BTC 無条件 p50={rt001['p50_bp']} p90={rt001['p90_bp']} bp / "
-      f"高ボラ p50={rt001_high_vol['p50_bp']} p90={rt001_high_vol['p90_bp']} bp")
+print(f"  往復0.01BTC 無条件 p50={rt001['p50_pct']} p90={rt001['p90_pct']} % / "
+      f"高ボラ p50={rt001_high_vol['p50_pct']} p90={rt001_high_vol['p90_pct']} %")
 print("  K1 経費前(並べるだけ): 5分 +0.70 / 15分 +1.75 bp/取引")
 
 # ---------------------------------------------------------------------------

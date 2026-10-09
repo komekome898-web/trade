@@ -363,7 +363,8 @@ def _planted_series(slope_bps_per_year: float, seed: int):
 
 def _run_edge_trend(dates, x, **overrides):
     kwargs = dict(window=250, block=20, time_unit="year", time_axis="calendar",
-                  period="year", n_boot=_EDGE_TREND_N_BOOT_TEST, seed=20260906)
+                  period="year", n_boot=_EDGE_TREND_N_BOOT_TEST, seed=20260906,
+                  value_unit="bps")   # the planted tape is a price-move rate (bp)
     kwargs.update(overrides)
     return edge_trend(dates, x, **kwargs)
 
@@ -580,7 +581,9 @@ def _run_state_split(x, states, **overrides):
 @pytest.fixture(scope="module")
 def planted_state_result():
     x, states = _state_tape(planted=True)
-    return _run_state_split(x, states, cost_bps=np.full(len(x), 5.0)), (x, states)
+    # a cost is never bp (L-920): with a cost given, the tape's numbers are read
+    # as % for this call (the arithmetic is unit-free; only the name changed)
+    return _run_state_split(x, states, cost_pct=np.full(len(x), 5.0)), (x, states)
 
 
 @pytest.fixture(scope="module")
@@ -743,7 +746,7 @@ def test_state_split_rejects_length_mismatch_and_empty_input():
     with pytest.raises(ValueError, match="same length"):
         _run_state_split(x, {"v": np.array(["a"] * 9)})
     with pytest.raises(ValueError, match="same length"):
-        _run_state_split(x, {"v": np.array(["a"] * 10)}, cost_bps=np.zeros(9))
+        _run_state_split(x, {"v": np.array(["a"] * 10)}, cost_pct=np.zeros(9))
     with pytest.raises(ValueError, match="must not be empty"):
         _run_state_split(np.array([]), {"v": np.array([])})
     with pytest.raises(ValueError, match="must not be empty"):

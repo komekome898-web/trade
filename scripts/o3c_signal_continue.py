@@ -6,10 +6,10 @@
 
 **この道具がすること**
   - 母集団は探索段 5 の行データ `rows_prints.csv.gz` の `kind == "print"`(52,000 件)。
-    ここから `ts・side・p0・t0_ms・notional・dist_node_bp・oi_covered・bundle_id` を取る。
+    ここから `ts・side・p0・t0_ms・notional・dist_node_pct・oi_covered・bundle_id` を取る。
   - 材料 1〜15(7 は無し、14 本)を **ts 以前の約定・清算・5 分値・資金調達率だけ**で
     計算し直す(p₀ は使わない)。探索段 5 の `compute_layers` を**再利用**して
-    k・m(10)・m(60)・dist_node_bp を得る(材料 15・5 はここから)。
+    k・m(10)・m(60)・dist_node_pct を得る(材料 15・5 はここから)。
   - ラベル(続く、30/60/120 秒・同じ側の次のプリント)と「値段の続き」
     (t₀ から 60 秒以内に清算の向きへ 5bp 以上進むか、経路の最大値で判定)。
   - 前半 228 日で切り値・規則を作り、後半 228 日で的中率・損益を測る。
@@ -106,7 +106,7 @@ MAT_VAR = {
     2: "interval_ratio_last_two",
     3: "notional_and_ratio_to_previous",
     4: "move_since_cascade_start_and_bounce",
-    5: "distance_to_liquidation_node",
+    5: "distance_to_liquidation_node_pct",   # 節までの距離、%(L-920。前は名前に単位が無く bp)
     6: "time_of_day_band",
     8: "open_interest_mass_ahead",
     9: "taker_imbalance_5s",
@@ -174,15 +174,17 @@ class PrintsCSV:
 
     def __init__(self, path: Path):
         cols = ["print_id", "day", "side", "ts_ms", "t0_ms", "p0", "notional",
-                "dist_node_bp", "oi_covered", "bundle_id"]
-        df = pd.read_csv(path, usecols=["kind"] + cols,
+                "dist_node_pct", "oi_covered", "bundle_id"]
+        # L-920: 前の表は dist_node_bp(bp)。新しい列が無ければ古い列を読んで / 100(base の関数)
+        df = pd.read_csv(path, usecols=base.legacy_usecols(path, ["kind"] + cols),
                           dtype={"bundle_id": str, "day": str, "print_id": str,
                                  "side": str})
+        df = base.pct_dist_frame(df)
         df = df[df["kind"] == "print"].reset_index(drop=True)
         df = df.sort_values(["ts_ms", "print_id"]).reset_index(drop=True)
         for c in ("ts_ms", "t0_ms"):
             df[c] = df[c].astype(np.int64)
-        for c in ("p0", "notional", "dist_node_bp"):
+        for c in ("p0", "notional", "dist_node_pct"):
             df[c] = pd.to_numeric(df[c], errors="coerce").astype(float)
         df["oi_covered"] = pd.to_numeric(df["oi_covered"], errors="coerce").fillna(0)
         self.df = df
@@ -191,7 +193,7 @@ class PrintsCSV:
         self.side = df["side"].to_numpy(object)
         self.p0 = df["p0"].to_numpy(float)
         self.notional = df["notional"].to_numpy(float)
-        self.dist_node_bp = df["dist_node_bp"].to_numpy(float)
+        self.dist_node_pct = df["dist_node_pct"].to_numpy(float)
         self.oi_covered = df["oi_covered"].to_numpy(float)
         self.print_id = df["print_id"].to_numpy(object)
         self.day = df["day"].to_numpy(object)
@@ -455,7 +457,7 @@ ROW_COLUMNS = (
      "bundle_id", "dir_sign", "k_ticks"]
     + [MAT_COL[n] for n in MAT_NUMS]
     + ["mat1_elapsed_since_burst_s", "mat3_notional_raw", "mat4_bounce_bp",
-       "mat8_amt_5bp", "mat8_amt_20bp", "mat8_covered",
+       "mat8_amt_0p05pct", "mat8_amt_0p2pct", "mat8_covered",
        "mat10_taker_ls_ratio", "mat10_funding_rate"]
     + [f"label_{h}" for h in LABEL_SECONDS]
     + ["value_continuation_60"]
@@ -498,7 +500,7 @@ def compute_print_row(day, pc: PrintsCSV, i: int, nb: dict, times, prices, qtys,
     p0 = float(pc.p0[i])
     notional = float(pc.notional[i])
 
-    # `pr_price`(profile_columns の p_liq)は使わない(dist_node_bp は rows_prints から
+    # `pr_price`(profile_columns の p_liq)は使わない(dist_node_pct は rows_prints から
     # 再利用する。下の理由参照)ので `step=None, window_ms=None` で profile_columns/OI の
     # 重い区間を丸ごとスキップし、k・m(10)・m(60)・p_pre だけを得る。
     lay = compute_layers(times, prices, qtys, np.array([ts]), np.array([side]),
@@ -509,10 +511,10 @@ def compute_print_row(day, pc: PrintsCSV, i: int, nb: dict, times, prices, qtys,
     m10 = float(lay["m_10"][0])
     m60 = float(lay["m_60"][0])
     # 材料 5(次の清算水準までの距離)は探索段 5 の `rows_prints.csv.gz` の
-    # `dist_node_bp` をそのまま再利用する(委任文【データ】)。ここで作り直すと
+    # `dist_node_pct` をそのまま再利用する(委任文【データ】)。ここで作り直すと
     # `profile_columns` の `p_liq` に p₀(ts 以後の初約定)を渡すことになり
     # 「p₀ は使わない」に反するため、あえて再計算しない。
-    dist_node = float(pc.dist_node_bp[i])
+    dist_node = float(pc.dist_node_pct[i])
 
     # --- 材料 1・2・3・4・12(プリントの時刻列だけ) -----------------------------
     count60 = float(nb["count_60s"][i])
@@ -548,13 +550,19 @@ def compute_print_row(day, pc: PrintsCSV, i: int, nb: dict, times, prices, qtys,
     # 基準価格は p_pre(ts 以前の最後の約定)。p₀(ts 以後の初約定)は使わない
     # (`cr.oi_band_amounts` は本来 cascade_read の探索的読みで p₀ を渡していたが、
     # この道具では材料の定義に合わせて p_pre に差し替える — 設計に無い判断)。
+    # L-920: cascade_read の帯の鍵は amt_0.05pct / amt_0.1pct / amt_0.2pct(帯 = p_pre からの
+    # 距離 0.05 / 0.10 / 0.20 %。前の鍵は amt_5bp / amt_10bp / amt_20bp)。古い鍵も読む。
     oi_out = cr.oi_band_amounts(buckets, ts, p_pre, side) if ok_pre else {
-        "covered": False, "n_buckets": 0, "amt_5bp": None, "amt_10bp": None,
-        "amt_20bp": None}
+        "covered": False, "n_buckets": 0, "amt_0.05pct": None, "amt_0.1pct": None,
+        "amt_0.2pct": None}
     covered8 = bool(oi_out.get("covered", False))
-    amt5 = oi_out.get("amt_5bp") if covered8 else None
-    amt10 = oi_out.get("amt_10bp") if covered8 else None
-    amt20 = oi_out.get("amt_20bp") if covered8 else None
+
+    def _band(new_key: str, old_key: str):
+        return oi_out.get(new_key, oi_out.get(old_key)) if covered8 else None
+
+    amt5 = _band("amt_0.05pct", "amt_5bp")
+    amt10 = _band("amt_0.1pct", "amt_10bp")
+    amt20 = _band("amt_0.2pct", "amt_20bp")
 
     # --- 材料 9・13(成行の偏り 5s/30s) -----------------------------------------
     imb5 = imbalance_window(times, prices, qtys, maker, ts, IMBALANCE_WINDOWS_MS["5s"])
@@ -619,8 +627,8 @@ def compute_print_row(day, pc: PrintsCSV, i: int, nb: dict, times, prices, qtys,
     _num(d, "mat1_elapsed_since_burst_s", elapsed_s, 3)
     _num(d, "mat3_notional_raw", notional, 4)
     _num(d, "mat4_bounce_bp", bounce)
-    _num(d, "mat8_amt_5bp", amt5)
-    _num(d, "mat8_amt_20bp", amt20)
+    _num(d, "mat8_amt_0p05pct", amt5)
+    _num(d, "mat8_amt_0p2pct", amt20)
     d["mat8_covered"] = int(covered8)
     _num(d, "mat10_taker_ls_ratio", taker_ls)
     _num(d, "mat10_funding_rate", funding, 8)
@@ -726,8 +734,8 @@ def read_stage1_frame(out_dir: Path, days: list) -> pd.DataFrame:
     for day in days:
         cp = out_dir / "chunks1" / f"{day}.csv.gz"
         if cp.exists():
-            parts.append(pd.read_csv(cp, dtype={"bundle_id": str, "day": str,
-                                                 "print_id": str}))
+            parts.append(base.pct_dist_frame(pd.read_csv(  # L-920: 古い bp の列は / 100
+                cp, dtype={"bundle_id": str, "day": str, "print_id": str})))
     return pd.concat(parts, ignore_index=True) if parts else pd.DataFrame(columns=CHUNK_HEADER)
 
 
@@ -914,7 +922,7 @@ def load_rows(out_dir: Path) -> pd.DataFrame:
     for c in df.columns:
         if c not in str_cols:
             df[c] = pd.to_numeric(df[c], errors="coerce")
-    return df
+    return base.pct_dist_frame(df)   # L-920: 古い bp の距離の列は / 100 して新しい名前で足す
 
 
 def add_bands(df: pd.DataFrame, cuts: dict) -> pd.DataFrame:

@@ -225,12 +225,12 @@ LIQ_SIGN = {"SELL": 1.0, "BUY": -1.0}
 # `*_liqdir` 列 -> その符号なしの元の列(`scripts/o3c_oi_distance.py:87` の
 # `LIQDIR_SOURCE` を読んで書いた。**実測**)。対照行には**元の列だけ**値がある。
 LIQDIR_SOURCE = {
-    "dist_vwap_bp_liqdir": "dist_vwap_bp",
-    "dist_node_bp_liqdir": "dist_node_bp",
-    "oi_dist_vwap_bp_liqdir": "oi_dist_vwap_bp",
-    "oi_dist_node_bp_liqdir": "oi_dist_node_bp",
-    "oi_side_dist_vwap_bp_liqdir": "oi_side_dist_vwap_bp",
-    "oi_side_dist_node_bp_liqdir": "oi_side_dist_node_bp",
+    "dist_vwap_pct_liqdir": "dist_vwap_pct",
+    "dist_node_pct_liqdir": "dist_node_pct",
+    "oi_dist_vwap_pct_liqdir": "oi_dist_vwap_pct",
+    "oi_dist_node_pct_liqdir": "oi_dist_node_pct",
+    "oi_side_dist_vwap_pct_liqdir": "oi_side_dist_vwap_pct",
+    "oi_side_dist_node_pct_liqdir": "oi_side_dist_node_pct",
 }
 # 対照 (ii) の軸の値の作り方(走行ごとに**測って**決める。決め打ちにしない)。
 AX_OWN = "own"                   # 対照行にその列の値がある
@@ -245,16 +245,16 @@ AX_INHERIT = "inherit"           # 対照行に対応物が無い -> 1 対 1 の
 # この固定と一致しなければ「[止め]」で終了コード 1(黙って合わせない)**」)。
 #
 # リードの決定の逐語は partner_sign を**符号なしの元の列**の名前で書いている
-# (`dist_node_bp` / `dist_vwap_bp` / `oi_dist_node_bp` / `oi_dist_vwap_bp`)。
+# (`dist_node_pct` / `dist_vwap_pct` / `oi_dist_node_pct` / `oi_dist_vwap_pct`)。
 # §4 の軸の列はその `*_liqdir` 版なので、`LIQDIR_SOURCE` の対応で読み替えて置いた
 # (**1 対 1 に対応する。読み替えたことをここに書く**)。
 AXIS_KIND_FIXED: dict[str, str] = {
     "bin_pct": AX_OWN,
     "doi_pre_1h": AX_OWN,
-    "dist_node_bp_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_node_bp
-    "dist_vwap_bp_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_vwap_bp
-    "oi_dist_node_bp_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_node_bp
-    "oi_dist_vwap_bp_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_vwap_bp
+    "dist_node_pct_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_node_pct
+    "dist_vwap_pct_liqdir": AX_PARTNER_SIGN,      # 元の列 dist_vwap_pct
+    "oi_dist_node_pct_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_node_pct
+    "oi_dist_vwap_pct_liqdir": AX_PARTNER_SIGN,   # 元の列 oi_dist_vwap_pct
     "implied_leverage": AX_INHERIT,
     "bundle_n_events_dedup": AX_INHERIT,
     "bundle_total_qty_accum": AX_INHERIT,
@@ -330,10 +330,10 @@ def mde_unit(col: str) -> str:
 # W に依る軸: 走行ごとに切る(= だから群が 3 + 3 である)。
 AXES_W = (
     ("A1", "bin_pct"),
-    ("A2", "dist_node_bp_liqdir"),
-    ("A3", "dist_vwap_bp_liqdir"),
-    ("A4", "oi_dist_node_bp_liqdir"),
-    ("A5", "oi_dist_vwap_bp_liqdir"),
+    ("A2", "dist_node_pct_liqdir"),
+    ("A3", "dist_vwap_pct_liqdir"),
+    ("A4", "oi_dist_node_pct_liqdir"),
+    ("A5", "oi_dist_vwap_pct_liqdir"),
     ("E", "implied_leverage"),
 )
 # W に依らない 3 分位の軸: gap60_w8 の実群で 1 回だけ切る(§4 の内訳表)。
@@ -388,16 +388,43 @@ def _f(x) -> float:
         return float("nan")
 
 
+def _pct_dist_row(row: dict) -> dict:
+    """L-920(L-923 1.A): 距離の列(`dist_*`・`oi_dist_*`・`oi_side_dist_*`・`*_liqdir`・
+    `node_up` / `node_dn`)は %(× 100)で持つ。L-920 より前に書いた `table.csv`(git の
+    `backtest_data/o3c_reaction_*`)は同じ量を bp(× 1e4)・古い名前 `…_bp…` で持つので、
+    新しい名前の列が無ければ古い列を読んで / 100 して足す(表は書き換えない)。
+    軸 A2〜A5 は 3 分位で切るので、/ 100 しても群に入る行は変わらない。"""
+    for old in [k for k in row if k is not None]:
+        if "_bp" not in old:
+            continue
+        if old.startswith(("dist_", "oi_dist_", "oi_side_dist_")) or old in (
+                "node_up_bp", "node_dn_bp"):
+            new = old.replace("_bp", "_pct", 1)
+            if new in row:
+                continue
+            v = row[old]
+            if v is None or str(v).strip() == "":
+                row[new] = v
+            else:
+                try:
+                    row[new] = repr(float(v) / 100)
+                except ValueError:
+                    row[new] = v
+    return row
+
+
 class Run:
     """1 走行(`--mode full` の出力ディレクトリ)を読んだもの。"""
 
     def __init__(self, name: str, path: Path):
         self.name = name
         self.path = Path(path)
-        rows = list(csv.DictReader((self.path / "table.csv").open(encoding="utf-8", newline="")))
+        rows = [_pct_dist_row(r) for r in
+                csv.DictReader((self.path / "table.csv").open(encoding="utf-8", newline=""))]
         mixed_p = self.path / "table_mixed.csv"
         mixed = (
-            list(csv.DictReader(mixed_p.open(encoding="utf-8", newline="")))
+            [_pct_dist_row(r) for r in
+             csv.DictReader(mixed_p.open(encoding="utf-8", newline=""))]
             if mixed_p.exists()
             else []
         )
@@ -489,7 +516,7 @@ class Run:
         (`scripts/o3c_oi_distance.py:542` の `_apply_liqdir_and_leverage`。**実測**)、
         対照行に残っている**符号なしの元の列**に相手の側の符号を当てれば、
         実群と同じ規則で作った**対照自身の**軸の値になる(群を受け継ぐのではない)。
-        丸めも実装に合わせて 4 桁にする。
+        丸めも実装に合わせる(L-920 の後は % で 6 桁 = 前の bp で 4 桁)。
         """
         key = (KIND_MAT, "@" + col)
         if key in self._cache:
@@ -503,7 +530,7 @@ class Run:
             s = LIQ_SIGN.get(str(p.get("side") or ""))
             if s is None:
                 continue
-            out[i] = round(base_v[i] * s, 4)
+            out[i] = round(base_v[i] * s, 6)
         self._cache[key] = out
         return out
 
@@ -550,8 +577,8 @@ def control_axis_kinds(run: Run) -> dict[str, str]:
 
     **前版はここが 2 分岐で、「対照行にその列の値があるのは `bin_pct` と `doi_pre_1h`
     だけ」と書いていた。数えたのは `*_liqdir` の付いた列だけだった**
-    (走行前の再監査(3 回目)の指摘 1)。**符号なしの列(`dist_node_bp` /
-    `dist_vwap_bp` / `oi_dist_node_bp` / `oi_dist_vwap_bp`)は対照行にも値がある。**
+    (走行前の再監査(3 回目)の指摘 1)。**符号なしの列(`dist_node_pct` /
+    `dist_vwap_pct` / `oi_dist_node_pct` / `oi_dist_vwap_pct`)は対照行にも値がある。**
 
     決め方(**走行ごとに数える。決め打ちにしない**):
       1. その列自身が対照行で 1 つでも有限 → `AX_OWN`

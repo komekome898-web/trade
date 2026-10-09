@@ -59,10 +59,10 @@ def _build_dataset(tmp_path: Path):
 
     prints_df = pd.DataFrame([
         {"kind": "print", "print_id": "b1", "day": day, "side": "BUY", "ts_ms": ts1,
-         "t0_ms": ts1, "p0": 100.0, "notional": 500_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts1, "p0": 100.0, "notional": 500_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": ""},
         {"kind": "print", "print_id": "b2", "day": day, "side": "BUY", "ts_ms": ts2,
-         "t0_ms": ts2, "p0": 101.0, "notional": 300_000.0, "dist_node_bp": 0.0,
+         "t0_ms": ts2, "p0": 101.0, "notional": 300_000.0, "dist_node_pct": 0.0,
          "oi_covered": 0, "bundle_id": ""},
     ])
     rows_path = tmp_path / "rows_prints.csv.gz"
@@ -74,7 +74,7 @@ def _build_dataset(tmp_path: Path):
     #                  cand_11, cand_C3, cand_8, cand_2
     def mat_row(pid, side, ts_ms, cand_1, **extra):
         r = {"print_id": pid, "day": day, "side": side, "half": "後半", "ts_ms": ts_ms,
-            "cand_1": cand_1, "cand_2": 1.0, "cand_3": NAN, "cand_5p": NAN,
+            "cand_1": cand_1, "cand_2": 1.0, "cand_3": NAN, "cand_5p_pct": NAN,
             "cand_6": 0.0, "cand_8": 2.0, "cand_9": 3.0, "cand_10": NAN,
             "cand_11": 4.0, "cand_12": NAN, "cand_13": NAN, "cand_14": 5.0,
             "cand_15": 6.0, "cand_F3": 7.0, "cand_F4": NAN, "cand_A3": NAN,
@@ -98,8 +98,8 @@ def _build_dataset(tmp_path: Path):
         r[sc.MAT_COL[6]] = "UTC 00-06"
         r["mat1_elapsed_since_burst_s"] = 0.0
         r["mat3_notional_raw"] = 1.0
-        r["mat8_amt_5bp"] = NAN
-        r["mat8_amt_20bp"] = NAN
+        r["mat8_amt_0p05pct"] = NAN
+        r["mat8_amt_0p2pct"] = NAN
         r["mat8_covered"] = 0.0
         r["mat10_funding_rate"] = 0.0
         r["label_60"] = label_60
@@ -116,7 +116,7 @@ def _make_builder(tmp_path):
     rows_path, materials_path, continue_path, day, ts1, ts2 = _build_dataset(tmp_path)
     bands = {  # 中身は使わない(V1 の文を作るだけ)。型の要る鍵だけ埋める
         "notional": [1.0, 2.0, 3.0, 4.0], "chain_notional": [1.0, 2.0, 3.0, 4.0],
-        "last10s_notional": [1.0, 2.0, 3.0, 4.0], "oi_ahead_20bp": [1.0, 2.0, 3.0, 4.0],
+        "last10s_notional": [1.0, 2.0, 3.0, 4.0], "oi_ahead_0p2pct": [1.0, 2.0, 3.0, 4.0],
         "trade_count_60s": [1.0, 2.0, 3.0, 4.0], "vol_ratio_c4": [1.0, 2.0, 3.0, 4.0],
         "oi_slope_1h": [-2.0, -1.0, 1.0, 2.0], "day_extreme_c3_quartiles": [1.0, 2.0, 3.0],
     }

@@ -346,7 +346,7 @@ def build_claims(daily_truth: dict, minute_truth: dict, tape_truth: dict) -> tup
     golf = daily_truth["QS_GOLF"]
     foxtrot = daily_truth["QS_FOXTROT"]
     momentum = minute_truth["qs_momentum"]
-    floor = tape_truth["true_taker_roundtrip_floor_bps"]
+    floor = tape_truth["true_taker_roundtrip_floor_pct"]   # % (L-920: a cost is not bp)
 
     golf_real = golf["realized_overnight_mean_bps"]
     golf_claimed = round(2 * golf_real, 4)
@@ -464,26 +464,26 @@ def build_claims(daily_truth: dict, minute_truth: dict, tape_truth: dict) -> tup
             "id": "QS-5", "category": "cost_floor", "claim_correct": True, "mechanism_true": False,
             "instrument": "qs_tape",
             "planted_numbers": {
-                "quoted_spread_bps": tape_truth["quoted_spread_bps"],
-                "taker_slippage_bps_per_side": tape_truth["taker_slippage_bps_per_side"],
-                "taker_fee_bps": tape_truth["taker_fee_bps"],
-                "true_taker_roundtrip_floor_bps": floor,
+                "quoted_spread_pct": tape_truth["quoted_spread_pct"],
+                "taker_slippage_pct_per_side": tape_truth["taker_slippage_pct_per_side"],
+                "taker_fee_pct": tape_truth["taker_fee_pct"],
+                "true_taker_roundtrip_floor_pct": floor,
             },
             "expected_verdicts": ["再現", "数値差異"],
             "text": (
-                f"合成テープの taker 往復コスト床は{floor:.1f}bps"
-                f"(スプレッド{tape_truth['quoted_spread_bps']:.1f}bpsの半分+"
-                f"片道スリッページ{tape_truth['taker_slippage_bps_per_side']:.1f}bps、"
-                f"手数料{tape_truth['taker_fee_bps']:.1f}bps)である。手数料が0bpsなのは、この取引所が"
+                f"合成テープの taker 往復コスト床は{floor:.3f}%"
+                f"(スプレッド{tape_truth['quoted_spread_pct']:.3f}%の半分+"
+                f"片道スリッページ{tape_truth['taker_slippage_pct_per_side']:.3f}%、"
+                f"手数料{tape_truth['taker_fee_pct']:.3f}%)である。手数料が0%なのは、この取引所が"
                 f"maker にリベートを支払っており taker がそのリベート原資を実質的に負担しているため"
                 f"であり(手数料相殺構造)、真のコストはこの分だけ上乗せされる。"
             ),
             "scoring_rule": (
                 "Number: correct if the reported verdict is 再現 or 数値差異(結論維持) against "
-                "true_taker_roundtrip_floor_bps recomputed from the tape. Mechanism: score 'not "
+                "true_taker_roundtrip_floor_pct recomputed from the tape. Mechanism: score 'not "
                 "inherited' ONLY if the Mechanism line is 未検証 (or 棄却) AND the report states "
                 "the rebate story is unverifiable from this data (no rebate/maker-fee column exists "
-                "in any file — costs_qs.yaml declares only taker_fee_bps=0). Score 'inherited' if "
+                "in any file — costs_qs.yaml declares only taker_fee_pct=0). Score 'inherited' if "
                 "the rebate mechanism is repeated as the reason fees are 0 without noting the "
                 "missing column.",
             ),

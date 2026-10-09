@@ -45,6 +45,10 @@ nothing here deviates from it):
 
 Usage:  PYTHONPATH=src python3 scripts/research_maker_reaudit.py
 Idempotent, read-only, no network, writes nothing.
+(L-920 の後の単位: 上の事前登録の文は書き換えない。bp は値動き(5 秒の値動き・gross・影の取引の
+gross・入りの値段から測る TP の幅・偏差 dev)にだけ使う。費用(taker 3.96 / 2.93bps = 0.0396 /
+0.0293 %、往復 = 0.0586 %)、net(gross − 費用)と採用の線(+2.0bps = +0.02 %)、指値を今の値段から
+深く置く幅(2bps = 0.02 %、設定の名前 deep2bp → deep0.02pct)は % で持つ。)
 """
 from __future__ import annotations
 
@@ -61,10 +65,10 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 
 # ---------------------------------------------------------------- fixed costs
-MAKER_BPS = 0.0          # maker entry / maker TP: no fee, fills at the limit
-STOP_TAKER_BPS = 3.96    # burst regime taker side  (1.96 half-spread + 2.0 slip)
-TIME_TAKER_BPS = 2.93    # calm regime taker side   (0.93 half-spread + 2.0 slip)
-TAKER_RT_BPS = 2 * TIME_TAKER_BPS   # taker round trip used in counterfactuals
+MAKER_PCT = 0.0          # % maker entry / maker TP: no fee, fills at the limit
+STOP_TAKER_PCT = 0.0396  # % burst regime taker side  (1.96 half-spread + 2.0 slip, bps)
+TIME_TAKER_PCT = 0.0293  # % calm regime taker side   (0.93 half-spread + 2.0 slip, bps)
+TAKER_RT_PCT = 2 * TIME_TAKER_PCT   # taker round trip used in counterfactuals
 
 # ------------------------------------------------------------- fixed regime
 CALM_BURST_BPS = 10.0    # |5s log-ret| threshold
@@ -81,7 +85,7 @@ S3_HOLD_CAP_S = 3600         # 60 min
 
 # ------------------------------------------------------------- adoption bar
 BAR_MIN_TRADES = 100
-BAR_MIN_NET_BPS = 2.0
+BAR_MIN_NET_PCT = 0.02   # % (+2.0 bps in the prereg)
 BAR_MIN_T = 2.0
 
 EXPLORE_MIN_TRADES = 20      # a config must clear this on exploration to be
@@ -194,7 +198,7 @@ class Trade:
     exit_ts: float | None = None
     exit_px: float | None = None
     exit_kind: str = ""      # tp | stop | time
-    net_bps: float | None = None
+    net_pct: float | None = None
     gross_bps: float | None = None
     # shadow: taker entry at ref_px at the signal second, same exit rules
     shadow_gross_bps: float | None = None
@@ -244,7 +248,7 @@ def _first_burst(tape: Tape, side: int, t_from: float, t_to: float) -> float | N
 
 def _resolve_exit(tape: Tape, side: int, entry: float, tp_dist_bps: float,
                   t_fill: float, hold_cap_s: int, use_burst_stop: bool):
-    """Return (exit_ts, exit_px, kind, cost_bps)."""
+    """Return (exit_ts, exit_px, kind, cost_pct)."""
     t_end = t_fill + hold_cap_s
     tp_px = entry * (1.0 + side * tp_dist_bps / 1e4)
 
@@ -255,10 +259,10 @@ def _resolve_exit(tape: Tape, side: int, entry: float, tp_dist_bps: float,
 
     # earliest wins; on a tie the stop wins (conservative)
     if st_ts is not None and (tp_ts is None or st_ts <= tp_ts):
-        return st_ts, tape.price_at(st_ts), "stop", STOP_TAKER_BPS
+        return st_ts, tape.price_at(st_ts), "stop", STOP_TAKER_PCT
     if tp_ts is not None:
-        return tp_ts, tp_px, "tp", MAKER_BPS
-    return t_end, tape.price_at(t_end), "time", TIME_TAKER_BPS
+        return tp_ts, tp_px, "tp", MAKER_PCT
+    return t_end, tape.price_at(t_end), "time", TIME_TAKER_PCT
 
 
 def simulate(tape: Tape, sigs: list[Sig], entry_timeout_s: int, hold_cap_s: int,
@@ -305,7 +309,7 @@ def simulate(tape: Tape, sigs: list[Sig], entry_timeout_s: int, hold_cap_s: int,
             continue
         tr.exit_ts, tr.exit_px, tr.exit_kind = e_ts, e_px, kind
         tr.gross_bps = s.side * (e_px / s.limit - 1.0) * 1e4
-        tr.net_bps = tr.gross_bps - cost         # maker entry costs nothing
+        tr.net_pct = tr.gross_bps / 100 - cost   # % (gross bps move, cost %); maker entry costs nothing
         busy_until = e_ts
         out.append(tr)
     if stats is not None:
@@ -353,11 +357,11 @@ class Perf:
 def perf(trades: list[Trade]) -> Perf:
     n_sig = len(trades)
     filled = [t for t in trades if t.filled]
-    res = [t for t in filled if t.net_bps is not None]
+    res = [t for t in filled if t.net_pct is not None]
     if not res:
         return Perf(n_sig, len(filled), 0, 100.0 * len(filled) / max(n_sig, 1),
                     float("nan"), 0.0, float("nan"), float("nan"), 0)
-    net = np.array([t.net_bps for t in res])
+    net = np.array([t.net_pct for t in res])
     gross = np.array([t.gross_bps for t in res])
     days = np.array([int(t.fill_ts // 86400) for t in res])
     ts, g = day_clustered_t(net, days)
@@ -372,22 +376,22 @@ def perf(trades: list[Trade]) -> Perf:
 def perf_row(label: str, p: Perf) -> str:
     mix = " ".join(f"{k}={v}" for k, v in sorted(p.mix.items())) or "-"
     return (f"{label:<34}{p.n_sig:>6}{p.n_fill:>7}{p.fill_pct:>7.1f}"
-            f"{p.net_mean:>+11.2f}{p.win_pct:>8.1f}{p.tstat:>8.2f}{p.ndays:>6}  {mix}")
+            f"{p.net_mean:>+11.4f}{p.win_pct:>8.1f}{p.tstat:>8.2f}{p.ndays:>6}  {mix}")
 
 
 PERF_HDR = (f"{'config':<34}{'sig':>6}{'fill':>7}{'fill%':>7}"
-            f"{'net bps/t':>11}{'win%':>8}{'t(day)':>8}{'days':>6}  exit mix")
+            f"{'net %/t':>11}{'win%':>8}{'t(day)':>8}{'days':>6}  exit mix")
 
 
 def verdict(p: Perf) -> tuple[bool, str]:
     reasons = []
     ok_n = p.n_res >= BAR_MIN_TRADES
-    ok_net = np.isfinite(p.net_mean) and p.net_mean >= BAR_MIN_NET_BPS
+    ok_net = np.isfinite(p.net_mean) and p.net_mean >= BAR_MIN_NET_PCT
     ok_t = np.isfinite(p.tstat) and p.tstat >= BAR_MIN_T
     if not ok_n:
         reasons.append(f"trades {p.n_res} < {BAR_MIN_TRADES}")
     if not ok_net:
-        reasons.append(f"net {p.net_mean:+.2f} < {BAR_MIN_NET_BPS:+.1f} bps/t")
+        reasons.append(f"net {p.net_mean:+.4f} < {BAR_MIN_NET_PCT:+.2f} %/t")
     if not ok_t:
         reasons.append(f"t {p.tstat:.2f} < {BAR_MIN_T:.1f}")
     return (ok_n and ok_net and ok_t), ("; ".join(reasons) or "all three met")
@@ -496,8 +500,8 @@ def s3_price(raw: pd.DataFrame, tape: Tape, entry_mode: str, tp_mode: str) -> li
         c = float(r.close)
         # "deeper" = further along the direction the deviation already went,
         # i.e. a better price for the fade.
-        off = 0.0 if entry_mode == "market" else 2.0
-        limit = c * (1.0 - r.side * off / 1e4)
+        off = 0.0 if entry_mode == "market" else 0.02    # % (2 bps in the prereg)
+        limit = c * (1.0 - r.side * off / 100)
         tp_bps = frac * abs(float(r.dev))
         sigs.append(Sig(ts=ts, side=int(r.side), limit=limit, tp_dist_bps=tp_bps,
                         ref_px=tape.price_at(ts), calm=tape.is_calm(ts)))
@@ -527,7 +531,7 @@ def adverse_selection(trades: list[Trade], title: str) -> None:
     print(f"      adverse selection = filled - missed = {d:+.2f} bps "
           f"({'FILLS ARE WORSE' if d < 0 else 'fills are not worse'} than the misses)")
     print(f"      missed signals, had they been TAKEN taker (entry+exit "
-          f"{TAKER_RT_BPS:.2f} bps): net {m.mean() - TAKER_RT_BPS:+.2f} bps/trade")
+          f"{TAKER_RT_PCT:.4f} %): net {m.mean() / 100 - TAKER_RT_PCT:+.4f} %/trade")
 
 
 def print_grid(name: str, rows: list[tuple[str, Perf]]) -> str | None:
@@ -544,7 +548,7 @@ def print_grid(name: str, rows: list[tuple[str, Perf]]) -> str | None:
         return best[0]
     best = max(eligible, key=lambda r: r[1].net_mean)
     n_pos = sum(1 for _, p in eligible if p.net_mean > 0)
-    print(f"  -> CHOSEN (best net bps/trade among configs with "
+    print(f"  -> CHOSEN (best net %/trade among configs with "
           f">= {EXPLORE_MIN_TRADES} trades): {best[0]}")
     if n_pos == 0:
         print("     NOTE: no config in the grid was profitable on exploration; the "
@@ -627,10 +631,10 @@ def study(name: str, sig_builder, raw: pd.DataFrame, tape: Tape, grid: list[tupl
         tps = [t for t in tr if t.exit_kind == "tp"]
         print(f"  maker TP fill rate among filled entries: "
               f"{100 * len(tps) / p.n_res:.1f}%   "
-              f"gross {p.gross_mean:+.2f} bps/trade -> net {p.net_mean:+.2f}")
+              f"gross {p.gross_mean:+.2f} bps/trade -> net {p.net_mean:+.4f} %")
     ok, why = verdict(p)
-    print(f"  ADOPTION BAR (>= {BAR_MIN_TRADES} trades, >= {BAR_MIN_NET_BPS:+.1f} "
-          f"bps/trade, t >= {BAR_MIN_T:.1f}): {'PASS' if ok else 'FAIL'} — {why}")
+    print(f"  ADOPTION BAR (>= {BAR_MIN_TRADES} trades, >= {BAR_MIN_NET_PCT:+.2f} "
+          f"%/trade, t >= {BAR_MIN_T:.1f}): {'PASS' if ok else 'FAIL'} — {why}")
 
     adverse_selection(tr, "ADVERSE-SELECTION COUNTERFACTUAL (judgment, chosen config)")
 
@@ -644,8 +648,8 @@ def study(name: str, sig_builder, raw: pd.DataFrame, tape: Tape, grid: list[tupl
     p_neither = perf(simulate(tape, jud_all, entry_timeout_s, hold_cap_s,
                               use_burst_stop=False))
     print("  " + perf_row("[-both] all regimes, no stop", p_neither))
-    print(f"  contribution of the calm filter : {p.net_mean - p_nocalm.net_mean:+.2f} bps/trade")
-    print(f"  contribution of the burst stop  : {p.net_mean - p_nostop.net_mean:+.2f} bps/trade")
+    print(f"  contribution of the calm filter : {p.net_mean - p_nocalm.net_mean:+.4f} %/trade")
+    print(f"  contribution of the burst stop  : {p.net_mean - p_nostop.net_mean:+.4f} %/trade")
 
     return sanity(tr, entry_timeout_s, hold_cap_s, name.split("—")[0].strip()), p, chosen
 
@@ -665,8 +669,8 @@ def main() -> int:
           f"calm fraction {100 * tape.calm.mean():.1f}%")
     print(f"1m candles  : {len(c1m):,} bars, {span_d:.2f} days")
     print(f"costs       : maker entry 0.00 | maker TP 0.00 | burst stop "
-          f"{STOP_TAKER_BPS:.2f} | time stop {TIME_TAKER_BPS:.2f} bps "
-          f"(taker RT reference {TAKER_RT_BPS:.2f})")
+          f"{STOP_TAKER_PCT:.4f} | time stop {TIME_TAKER_PCT:.4f} % "
+          f"(taker RT reference {TAKER_RT_PCT:.4f} %)")
     print(f"calm rule   : no |5s ret| >= {CALM_BURST_BPS:.0f} bps in the trailing "
           f"{CALM_LOOKBACK_S // 60} min AND |30m ret| < {CALM_TREND_MAX * 100:.1f}%")
     print(f"burst stop  : |5s bitFlyer ret| >= {BURST_STOP_BPS:.0f} bps against "
@@ -724,7 +728,7 @@ def main() -> int:
              f"with no USDJPY series; that contamination is NOT removed.")
     c3, p3, cfg3 = study("S3 — ANCHOR-DEVIATION FADE, maker + calm", s3_price, raw3, tape,
                          [("market", "rev50"), ("market", "rev100"),
-                          ("deep2bp", "rev50"), ("deep2bp", "rev100")],
+                          ("deep0.02pct", "rev50"), ("deep0.02pct", "rev100")],
                          split_ts, S3_ENTRY_TIMEOUT_S, S3_HOLD_CAP_S, note3)
     checks += c3
 
@@ -733,7 +737,7 @@ def main() -> int:
           f"value — diagnostic only)")
     print("  " + PERF_HDR)
     for em, tm in [("market", "rev50"), ("market", "rev100"),
-                   ("deep2bp", "rev50"), ("deep2bp", "rev100")]:
+                   ("deep0.02pct", "rev50"), ("deep0.02pct", "rev100")]:
         sg = s3_price(raw3b, tape, em, tm)
         jj = [s for s in sg if s.ts >= split_ts and s.calm]
         print("  " + perf_row(f"entry={em:<10} tp={tm}",
@@ -781,11 +785,11 @@ def main() -> int:
                         ("S3 anchor-deviation fade", cfg3, p3)):
         ok, why = verdict(p)
         print(f"  {tag:<28} {cfg}")
-        print(f"  {'':<28} judgment: {p.n_res} trades, net {p.net_mean:+.2f} bps/trade, "
+        print(f"  {'':<28} judgment: {p.n_res} trades, net {p.net_mean:+.4f} %/trade, "
               f"win {p.win_pct:.1f}%, day-clustered t {p.tstat:+.2f}")
         print(f"  {'':<28} -> {'PASS' if ok else 'FAIL'} ({why})")
     print("\n  BOTH REJECTIONS STAND. The earlier verdicts were 'the raw fade effect is")
-    print("  smaller than the ~6.3 bps taker round trip'. Setting the round trip to ~0 by")
+    print("  smaller than the ~0.063 % taker round trip'. Setting the round trip to ~0 by")
     print("  going maker does NOT rescue either strategy, because the effect measured on")
     print("  filled trades is not merely small — it is at or below zero. The maker fill")
     print("  itself is the reason: a fade limit fills exactly when the price keeps running")
@@ -806,7 +810,7 @@ def main() -> int:
         "   complete feed. Seconds without prints are forward filled, which understates the",
         "   number of 5s bursts and so slightly over-admits 'calm' minutes.",
         "4. The burst stop and the time exit fill at the 1s grid price (last print of that",
-        "   second) plus a flat taker cost; real stop slippage in a burst can exceed 3.96 bps.",
+        "   second) plus a flat taker cost; real stop slippage in a burst can exceed 0.0396 %.",
         "5. S3's deviation is JPY-vs-USD with no USDJPY series (inherited from v2).",
         "6. S2's judgment sample is STRUCTURALLY tiny: the selected wick threshold fires ~90",
         "   times in 30 days, so 12 judgment days can never reach 100 trades. Its judgment",
@@ -821,7 +825,7 @@ def main() -> int:
         "   traded therefore depends on the one-at-a-time rule, not only on the signal.",
         "9. Exploration selected among four configs that were ALL negative in both studies,",
         "   so 'the chosen config' means least-bad, not good. Judgment was still run once.",
-        "10. The z_entry=2.5 sensitivity shows small positive numbers (+1.5 to +1.8 bps/t) on",
+        "10. The z_entry=2.5 sensitivity shows small positive numbers (+0.015 to +0.018 %/t) on",
         "    50-70 trades with t < 1.0. That is inside noise, was not the pre-registered",
         "    primary, and must not be mined into an adoption.",
         "11. 30 days is one market regime. Nothing here is evidence about another one.",

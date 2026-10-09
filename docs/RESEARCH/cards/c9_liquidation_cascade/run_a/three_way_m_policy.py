@@ -56,7 +56,10 @@ def main(argv=None) -> int:
     ctx = v2.same_side_context(pr)
     bund = {g: v2.same_side_bundles(pr, g) for g in v2.GAPS_S}
     cols = ["print_id", "day", v2.LOGIT_LABEL, "m10_signed", "m60_signed"] + list(v2.LOGIT_FEATURES)
-    P = pd.read_csv(run / "anchors_prints.csv.gz", usecols=cols, dtype={"day": str, "print_id": str})
+    # L-920: 前の出力の材料 5 は名前に単位の無い bp。今の名前(_pct)が無ければ / 100 して読む
+    P = v2.with_legacy_columns(pd.read_csv(run / "anchors_prints.csv.gz",
+                                           usecols=v2.legacy_usecols(run / "anchors_prints.csv.gz", cols),
+                                           dtype={"day": str, "print_id": str}))
     P["abs_m10_bp"], P["abs_m60_bp"] = P["m10_signed"].abs(), P["m60_signed"].abs()
     feats = list(v2.LOGIT_FEATURES) + (list(twm.NEW) if a.features == "new" else [])
     model = v2.fit_three_way(P, make_days, features=feats)
@@ -92,7 +95,7 @@ def main(argv=None) -> int:
                             jud[f"{g}|{dly}|{label}|{typ}|{p['判断']}"] += 1
                         crows.append({"bundle_id": b["bundle_id"], "day": day, "period": "測る", "side": b["side"],
                                       "gap_s": g, "delay_s": dly, "policy": label, "type": typ,
-                                      "n_prints": b["n_prints"], "qty_total": b["qty_total"], "pnl_bp": res["pnl_bp"],
+                                      "n_prints": b["n_prints"], "qty_total": b["qty_total"], "pnl_pct": v2.chain_pnl_pct(res),
                                       "entered": int(bool(res["entered"])), "n_entries": res["n_entries"],
                                       "hold_s": res["hold_seconds"], "missing": int(bool(res["missing"])),
                                       "first_entry_pos": res.get("first_entry_pos")})

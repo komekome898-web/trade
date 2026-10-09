@@ -645,8 +645,9 @@ def card_family_of(ct: dict, variant: str) -> tuple[Optional[dict], dict]:
 
 
 #: Shown beside every card trade (tooltip, legend, the card note): what the pnl rate (%) of a card trade is (provenance's
-#: trade_definition). The card exports write it x 1e4 as pnl_bp; the dashboard shows it in percent (L-920: bp names only a
-#: price-move rate, and a card's pnl rate is a sum of moves, not one price-move rate).
+#: trade_definition). The card exports write it in percent as pnl_pct since L-920 (exports from before hold it x 1e4 as
+#: pnl_bp, read / 100); the dashboard shows it in percent (L-920: bp names only a price-move rate, and a card's pnl rate
+#: is a sum of moves, not one price-move rate).
 RATE_NOTE = "損益の率(%)= 持っていた間の 1 決定ごとの値動きの率の和(provenance の取引の定義)。建値と決済値の比ではない。"
 RATE_NOTE_LIMIT = ("損益の率(%)= 段ごとの (出の値段 ÷ 入りの値段 − 1) × 100 ÷ 段の上限 の和(limit_sim/SPEC.md §4)。"
                  "建値は積んだ段の約定の平均、時刻は 1 段目の約定で、矢印の始点が足の値の範囲の外に出ることがある。")

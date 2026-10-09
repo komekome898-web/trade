@@ -87,6 +87,11 @@ funding 0.06 %/day pro-rated per unit from its own fill to the cycle exit,
 charged as a cost on both sides (conservative).
 
 Usage: PYTHONPATH=src python scripts/research_m4_finecheck.py
+(L-920 の後の単位: 上の事前登録の文は書き換えない。research_matilda_taro.py・
+research_matilda_surface.py に合わせ、1 単位の損益(u・資金調達の前の gross)・往復の損益・合計・
+1 日・最大の落ち込み・CI・資金調達(0.06 %/日)・約定の値段と mid の距離(capture)は % で持つ。
+report 30 の記録の数(REPORT30_*、bps)は書き換えず / 100 して比べる。bp は値動き(前向きの fwd・
+adverse・40 分のレンジの幅)にだけ使う。)
 """
 from __future__ import annotations
 
@@ -109,11 +114,12 @@ import research_matilda_surface as M4         # noqa: E402  (M4 axes + bars)
 
 SEED = 20260829
 
-TAKER_BPS = M3.TAKER_BPS
+TAKER_PCT = M3.TAKER_PCT          # % (L-920)
 MAX_RUNG_HARD = 10
 INF = float("inf")
 
 # report 30, section 1, cell "break=OFF T=(40,80)"
+# (record written before L-920, in bps/unit; kept as printed and read / 100 as %)
 REPORT30_UNIT = -0.395
 REPORT30_LO = -1.243
 REPORT30_HI = 0.246
@@ -122,7 +128,7 @@ K_TP, K_RELAX, K_T2, K_FLIP, K_BDUMP = 0, 1, 2, 3, 4
 KIND_NAMES = M3.KIND_NAMES
 
 Cfg = M4.Cfg                    # frozen dataclass, reused unchanged
-FUND = M4.FUNDING_BPS_DAY       # 6.0 bps/day
+FUND = M4.FUNDING_PCT_DAY       # 0.06 %/day (L-920; was 6.0 bps/day)
 
 BASE = dict(brk_on=False, T1m=40.0, T2m=80.0)
 
@@ -223,7 +229,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
       * STEP_MULT      -> M4.step_mult(cfg, rung)          (grid geometry)
       * EXIT_MULT/k    -> cfg.w * (1/k if cfg.apportion)   (TP width)
       * break mode     -> cfg.brk_on ; ladder -> cfg.T1m, cfg.T2m
-      * funding        -> cfg.funding bps/day, pro-rated per unit
+      * funding        -> cfg.funding %/day, pro-rated per unit
       * storm harvest  -> entries (and therefore flips) suppressed unless the
                           completed bar is within H hours of a storm end
     """
@@ -255,7 +261,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
     c_t0, c_tx, c_k, c_mode, c_ever, c_kind, c_taker = [], [], [], [], [], [], []
     c_pnl, c_gross, c_avg, c_xpx, c_side, c_vola, c_supp, c_reg = \
         [], [], [], [], [], [], [], []
-    u_bps, u_gross, u_day, u_tx, u_rung, u_kind, u_k, u_mode, u_reg = \
+    u_pct, u_gross, u_day, u_tx, u_rung, u_kind, u_k, u_mode, u_reg = \
         [], [], [], [], [], [], [], [], []
 
     inv_px: list[float] = []
@@ -311,7 +317,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
         gro = 0.0
         day = int(math.floor(t / 86400.0))
         for e, rg, te in zip(inv_px, inv_rung, inv_t):
-            g = side * (xpx - e) / e * 1e4
+            g = side * (xpx - e) / e * 100        # % per unit (L-920; was x 1e4)
             hold = max(t - te, 0.0)
             f = fund_per_sec * hold
             fund_tot += f
@@ -319,7 +325,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
             b = g - f
             tot += b
             gro += g
-            u_bps.append(b); u_gross.append(g); u_day.append(day)
+            u_pct.append(b); u_gross.append(g); u_day.append(day)
             u_tx.append(t); u_rung.append(rg); u_kind.append(kind)
             u_k.append(k); u_mode.append(cyc_mode); u_reg.append(cyc_reg)
         c_t0.append(t_first); c_tx.append(t); c_k.append(k)
@@ -614,7 +620,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
                     x, xk = 0, K_TP
 
             if x == 3:
-                xpx = last * (1.0 - side * TAKER_BPS / 1e4)
+                xpx = last * (1.0 - side * TAKER_PCT / 100)
                 close_cycle(s, xpx, xk, True)
             elif x == 0:
                 cyc_supp = True
@@ -638,7 +644,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
                     marketable = (P <= bb) if side > 0 else (P >= ba)
                     if marketable:
                         n_marketable += 1
-                        xpx = last * (1.0 - side * TAKER_BPS / 1e4)
+                        xpx = last * (1.0 - side * TAKER_PCT / 100)
                         close_cycle(s, xpx, xk, True)
                     else:
                         xo = M3.Order(P, side < 0, s, -1, 0, -1)
@@ -705,7 +711,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
     r.c_avg = np.array(c_avg, float); r.c_xpx = np.array(c_xpx, float)
     r.c_side = np.array(c_side, float); r.c_vola = np.array(c_vola, float)
     r.c_supp = np.array(c_supp, int); r.c_reg = np.array(c_reg, int)
-    r.u_bps = np.array(u_bps, float); r.u_gross = np.array(u_gross, float)
+    r.u_pct = np.array(u_pct, float); r.u_gross = np.array(u_gross, float)
     r.u_day = np.array(u_day, int)
     r.u_tx = np.array(u_tx, float); r.u_rung = np.array(u_rung, int)
     r.u_kind = np.array(u_kind, int); r.u_k = np.array(u_k, int)
@@ -745,7 +751,7 @@ def run_cell_fine(m, cfg: Cfg, storm=None, age=None,
         g = b0 >= 0
         mb[g] = m.mid[b0[g]]
         m5 = mid_at(r.f_t + M3.MARKOUT)
-        r.f_cap = r.f_side * (mb - r.f_px) / mb * 1e4
+        r.f_cap = r.f_side * (mb - r.f_px) / mb * 100      # % (capture, L-920)
         r.f_adv = r.f_side * (m5 - mb) / mb * 1e4
     else:
         r.f_cap = r.f_adv = np.array([], float)
@@ -767,25 +773,25 @@ def stats(r, eff_days: float):
     st["f"] = float(r.p_fill.mean()) if len(r.p_fill) else np.nan
     st["n_rt"] = int(len(r.c_pnl))
     st["rt_day"] = len(r.c_pnl) / eff_days if eff_days > 0 else np.nan
-    st["units"] = int(len(r.u_bps))
+    st["units"] = int(len(r.u_pct))
     if st["units"] == 0:
         st.update(dict(mean_unit=np.nan, mean_gross=np.nan, mean_rt=np.nan,
                        total=np.nan, tcl=np.nan, lo=np.nan, hi=np.nan,
                        maxdd=np.nan, ndays=0, days=np.array([]),
                        daily_arr=np.array([])))
         return st
-    st["mean_unit"] = float(r.u_bps.mean())
+    st["mean_unit"] = float(r.u_pct.mean())
     st["mean_gross"] = float(r.u_gross.mean())
     st["mean_rt"] = float(r.c_pnl.mean())
-    st["total"] = float(r.u_bps.sum())
-    lo, hi, t = cal.boot_ci(r.u_bps, r.u_day, seed=SEED)
+    st["total"] = float(r.u_pct.sum())
+    lo, hi, t = cal.boot_ci(r.u_pct, r.u_day, seed=SEED)
     st["lo"], st["hi"], st["tcl"] = lo, hi, t
     days = np.unique(r.u_day)
     st["days"] = days
-    st["daily_arr"] = np.array([r.u_bps[r.u_day == d].sum() for d in days])
+    st["daily_arr"] = np.array([r.u_pct[r.u_day == d].sum() for d in days])
     st["ndays"] = len(days)
     o = np.argsort(r.u_tx, kind="stable")
-    cum = np.cumsum(r.u_bps[o])
+    cum = np.cumsum(r.u_pct[o])
     peak = np.maximum.accumulate(cum)
     st["maxdd"] = float(np.max(peak - cum)) if len(cum) else 0.0
     return st
@@ -793,8 +799,8 @@ def stats(r, eff_days: float):
 
 def rowhead(width=44):
     print(f"{'cell':<{width}}{'place':>8}{'fills':>7}{'f':>7}{'rt':>6}"
-          f"{'rt/day':>8}{'units':>7}{'unit bps':>10}{'gross':>9}"
-          f"{'rt bps':>9}{'clus t':>8}{'95% CI (unit bps)':>21}{'maxDD':>9}")
+          f"{'rt/day':>8}{'units':>7}{'unit %':>10}{'gross':>9}"
+          f"{'rt %':>9}{'clus t':>8}{'95% CI (unit %)':>21}{'maxDD':>9}")
 
 
 def row(label, r, eff_days, width=44):
@@ -805,16 +811,16 @@ def row(label, r, eff_days, width=44):
         return s
     print(f"{label:<{width}}{s['n_place']:>8,}{s['n_fill']:>7,}"
           f"{100 * s['f']:>6.1f}%{s['n_rt']:>6,}{fmt(s['rt_day'], 8, 1)}"
-          f"{s['units']:>7,}{fmt(s['mean_unit'], 10, 3)}"
-          f"{fmt(s['mean_gross'], 9, 3)}{fmt(s['mean_rt'], 9, 2)}"
-          f"{fmt(s['tcl'], 8, 2)}  [{s['lo']:+8.3f},{s['hi']:+8.3f}]"
-          f"{fmt(s['maxdd'], 9, 1)}")
+          f"{s['units']:>7,}{fmt(s['mean_unit'], 10, 5)}"
+          f"{fmt(s['mean_gross'], 9, 5)}{fmt(s['mean_rt'], 9, 4)}"
+          f"{fmt(s['tcl'], 8, 2)}  [{s['lo']:+9.5f},{s['hi']:+9.5f}]"
+          f"{fmt(s['maxdd'], 9, 3)}")
     return s
 
 
 def arrhash(r) -> str:
     h = hashlib.sha256()
-    for a in (r.c_t0, r.c_tx, r.c_pnl, r.c_xpx, r.u_bps, r.u_tx,
+    for a in (r.c_t0, r.c_tx, r.c_pnl, r.c_xpx, r.u_pct, r.u_tx,
               r.p_px, r.p_t0):
         h.update(np.asarray(a, float).tobytes())
     h.update(np.asarray(r.c_k, np.int64).tobytes())
@@ -918,8 +924,8 @@ def main() -> int:
         ("cycle exit prices", np.array_equal(ref.c_xpx, got.c_xpx)),
         ("cycle depth k", np.array_equal(ref.c_k, got.c_k)),
         ("exit kinds", np.array_equal(ref.c_kind, got.c_kind)),
-        ("cycle pnl", np.allclose(ref.c_pnl, got.c_pnl, atol=1e-12)),
-        ("unit bps", np.allclose(ref.u_bps, got.u_bps, atol=1e-12)),
+        ("cycle pnl", np.allclose(ref.c_pnl, got.c_pnl, atol=1e-14)),
+        ("unit %", np.allclose(ref.u_pct, got.u_pct, atol=1e-14)),
         ("taker requotes", ref.n_marketable == got.n_marketable),
         ("discarded cycles", ref.n_discard_cyc == got.n_discard_cyc),
     ]
@@ -932,17 +938,18 @@ def main() -> int:
     # statistic, then report this script's own seed alongside.
     s5m = M3.cell_stats(got, m.eff_days)
     s5 = stats(got, m.eff_days)
-    print(f"    report 30           : unit {REPORT30_UNIT:+.3f} bps  "
-          f"CI [{REPORT30_LO:+.3f}, {REPORT30_HI:+.3f}]  rt 1,167  rt/day 251")
-    print(f"    this run (M3 seed)  : unit {s5m['mean_unit']:+.3f} bps  "
-          f"CI [{s5m['lo']:+.3f}, {s5m['hi']:+.3f}]  "
+    print(f"    report 30           : unit {REPORT30_UNIT / 100:+.5f} %  "
+          f"CI [{REPORT30_LO / 100:+.5f}, {REPORT30_HI / 100:+.5f}]  rt 1,167  rt/day 251")
+    print(f"    this run (M3 seed)  : unit {s5m['mean_unit']:+.5f} %  "
+          f"CI [{s5m['lo']:+.5f}, {s5m['hi']:+.5f}]  "
           f"rt {s5m['n_rt']:,}  rt/day {s5m['rt_day']:.0f}")
-    print(f"    this run (seed {SEED}): unit {s5['mean_unit']:+.3f} bps  "
-          f"CI [{s5['lo']:+.3f}, {s5['hi']:+.3f}]   "
+    print(f"    this run (seed {SEED}): unit {s5['mean_unit']:+.5f} %  "
+          f"CI [{s5['lo']:+.5f}, {s5['hi']:+.5f}]   "
           f"(bootstrap seed moves only the CI ends)")
-    gate2 = (abs(s5m["mean_unit"] - REPORT30_UNIT) < 0.001
-             and abs(s5m["lo"] - REPORT30_LO) < 0.001
-             and abs(s5m["hi"] - REPORT30_HI) < 0.001)
+    # report 30 printed bps to 3 decimals; / 100 -> %, tolerance 0.001 bps = 0.00001 %
+    gate2 = (abs(s5m["mean_unit"] - REPORT30_UNIT / 100) < 0.001 / 100
+             and abs(s5m["lo"] - REPORT30_LO / 100) < 0.001 / 100
+             and abs(s5m["hi"] - REPORT30_HI / 100) < 0.001 / 100)
     print(f"    GATE           : {'PASS' if (gate1 and gate2) else 'FAIL'}")
     if not (gate1 and gate2):
         print("\n>>> REPRODUCTION GATE BROKEN.  Stopping before any cell "
@@ -1008,11 +1015,11 @@ def main() -> int:
     rowhead()
     for tag, cfg in CELLS:
         row(cname(tag, cfg), R[tag], m.eff_days)
-    print("\n  unit bps = mean per-unit round-trip return NET of funding; "
-          "gross = before\n  funding; rt bps = mean per ROUND TRIP (sum of "
+    print("\n  unit % = mean per-unit round-trip return NET of funding; "
+          "gross = before\n  funding; rt % = mean per ROUND TRIP (sum of "
           "its k units).  cluster t / CI\n  = day-clustered bootstrap of the "
-          f"mean per-unit bps (seed {SEED}, 2000 draws).\n  maxDD on the "
-          "cumulative per-unit curve, in unit-bps.")
+          f"mean per-unit % (seed {SEED}, 2000 draws).\n  maxDD on the "
+          "cumulative per-unit curve, in unit-%.")
 
     sub("2b. relaxed gap mask (sensitivity, NEVER used for selection)")
     Rrel = {}
@@ -1033,7 +1040,7 @@ def main() -> int:
     def exit_table(RR, label):
         sub(f"2d. exit breakdown ({label})")
         print(f"{'cell':<44}{'exit':<12}{'rt':>6}{'share':>8}{'taker%':>8}"
-              f"{'units':>7}{'unit bps':>10}{'total bps':>11}{'of P&L':>9}")
+              f"{'units':>7}{'unit %':>10}{'total %':>11}{'of P&L':>9}")
         _exit_body(RR)
 
     def inv_table(RR, label):
@@ -1049,7 +1056,7 @@ def main() -> int:
             r = RR[tag]
             if not len(r.c_pnl):
                 continue
-            tot = r.u_bps.sum()
+            tot = r.u_pct.sum()
             for kd in range(5):
                 cs = r.c_kind == kd
                 us = r.u_kind == kd
@@ -1059,9 +1066,9 @@ def main() -> int:
                       f"{int(cs.sum()):>6,}{100 * cs.mean():>7.1f}%"
                       f"{100 * float(r.c_taker[cs].mean()):>7.1f}%"
                       f"{int(us.sum()):>7,}"
-                      f"{fmt(float(r.u_bps[us].mean()), 10, 3)}"
-                      f"{fmt(float(r.u_bps[us].sum()), 11, 1)}"
-                      f"{fmt(100 * float(r.u_bps[us].sum()) / tot if tot else np.nan, 8, 1)}%")
+                      f"{fmt(float(r.u_pct[us].mean()), 10, 5)}"
+                      f"{fmt(float(r.u_pct[us].sum()), 11, 3)}"
+                      f"{fmt(100 * float(r.u_pct[us].sum()) / tot if tot else np.nan, 8, 1)}%")
 
     def _inv_body(RR):
         for tag, cfg in CELLS:
@@ -1082,7 +1089,7 @@ def main() -> int:
     inv_table(R, "strict mask")
     inv_table(Rrel, "relaxed mask")
 
-    sub("2f. daily totals of per-unit bps (the cluster the CI rests on)")
+    sub("2f. daily totals of per-unit % (the cluster the CI rests on)")
     all_days = sorted(set(int(d) for tag, _ in CELLS for d in S[tag]["days"]))
     print(f"{'cell':<44}" + "".join(
         f"{str(pd.Timestamp(d * 86400, unit='s', tz='UTC').date())[5:]:>10}"
@@ -1096,16 +1103,16 @@ def main() -> int:
                         for d in all_days)
               + f"{npos:>5}/{len(dd)}")
 
-    sub("2g. funding audit (0.06 %/day pro-rata; check = 6 bps/day * hold)")
+    sub("2g. funding audit (0.06 %/day pro-rata; check = 0.06 %/day * hold)")
     print(f"{'cell':<44}{'units':>8}{'mean hold min':>15}"
-          f"{'funding bps/unit':>18}{'check':>10}")
+          f"{'funding %/unit':>18}{'check':>10}")
     for tag, cfg in CELLS:
         r = R[tag]
-        nn = max(len(r.u_bps), 1)
+        nn = max(len(r.u_pct), 1)
         mh = r.hold_tot / nn / 60.0
-        print(f"{cname(tag, cfg):<44}{len(r.u_bps):>8,}{mh:>15.2f}"
-              f"{r.fund_tot / nn:>18.4f}"
-              f"{M4.FUNDING_BPS_DAY * mh / 1440.0 if cfg.funding else 0.0:>10.4f}")
+        print(f"{cname(tag, cfg):<44}{len(r.u_pct):>8,}{mh:>15.2f}"
+              f"{r.fund_tot / nn:>18.6f}"
+              f"{M4.FUNDING_PCT_DAY * mh / 1440.0 if cfg.funding else 0.0:>10.6f}")
 
     # =====================================================================
     header("3. HOW THIN IS THE HARVEST?  (n, and what the CI can carry)")
@@ -1123,7 +1130,7 @@ def main() -> int:
     print("\n  'entry-open s' counts usable seconds whose completed bar is "
           "inside the\n  harvest window; the no-gate cells are open on every "
           "usable second.")
-    print(f"{'cell':<44}{'rt':>6}{'unit bps':>10}{'CI half-width':>15}"
+    print(f"{'cell':<44}{'rt':>6}{'unit %':>10}{'CI half-width':>15}"
           f"{'CI width / |point|':>20}{'days with rt':>14}")
     for tag, cfg in CELLS:
         s = S[tag]
@@ -1131,7 +1138,7 @@ def main() -> int:
             continue
         hw = (s["hi"] - s["lo"]) / 2.0
         print(f"{cname(tag, cfg):<44}{s['n_rt']:>6,}"
-              f"{fmt(s['mean_unit'], 10, 3)}{hw:>15.3f}"
+              f"{fmt(s['mean_unit'], 10, 5)}{hw:>15.5f}"
               f"{2 * hw / abs(s['mean_unit']) if s['mean_unit'] else np.nan:>20.1f}"
               f"{s['ndays']:>14}")
 
@@ -1140,8 +1147,8 @@ def main() -> int:
         "fill.  This is an\n    attribution of one run, not a simulation: "
         "banning entries changes the\n    later inventory state, so the gated "
         "cells need not match it.")
-    print(f"{'cell':<44}{'regime':<12}{'units':>8}{'share':>8}{'unit bps':>10}"
-          f"{'total bps':>12}{'rt':>7}{'win%':>8}")
+    print(f"{'cell':<44}{'regime':<12}{'units':>8}{'share':>8}{'unit %':>10}"
+          f"{'total %':>12}{'rt':>7}{'win%':>8}")
     for tag in ("3", "5a"):
         r = R[tag]
         cfg = dict(CELLS)[tag]
@@ -1152,22 +1159,22 @@ def main() -> int:
                 continue
             print(f"{cname(tag, cfg):<44}{M4.REG_NAMES[rg]:<12}"
                   f"{int(mu.sum()):>8,}{100 * float(mu.mean()):>7.1f}%"
-                  f"{fmt(float(r.u_bps[mu].mean()), 10, 3)}"
-                  f"{fmt(float(r.u_bps[mu].sum()), 12, 1)}{int(mc.sum()):>7,}"
+                  f"{fmt(float(r.u_pct[mu].mean()), 10, 5)}"
+                  f"{fmt(float(r.u_pct[mu].sum()), 12, 3)}{int(mc.sum()):>7,}"
                   f"{100 * float((r.c_pnl[mc] > 0).mean()) if mc.sum() else 0:>7.1f}%")
     r3 = R["3"]
     m2h = (r3.u_reg == M4.R_P2)
     if m2h.sum() and (~m2h).sum():
-        lo1, hi1, t1 = cal.boot_ci(r3.u_bps[m2h], r3.u_day[m2h], seed=SEED)
-        lo2, hi2, t2 = cal.boot_ci(r3.u_bps[~m2h], r3.u_day[~m2h], seed=SEED)
+        lo1, hi1, t1 = cal.boot_ci(r3.u_pct[m2h], r3.u_day[m2h], seed=SEED)
+        lo2, hi2, t2 = cal.boot_ci(r3.u_pct[~m2h], r3.u_day[~m2h], seed=SEED)
         print(f"\n  cell 3, entries <=2h after a storm end : "
-              f"{r3.u_bps[m2h].mean():+.3f} bps/unit "
+              f"{r3.u_pct[m2h].mean():+.5f} %/unit "
               f"[{lo1:+.3f},{hi1:+.3f}] on {int(m2h.sum()):,} units")
         print(f"  cell 3, all other entries             : "
-              f"{r3.u_bps[~m2h].mean():+.3f} bps/unit "
+              f"{r3.u_pct[~m2h].mean():+.5f} %/unit "
               f"[{lo2:+.3f},{hi2:+.3f}] on {int((~m2h).sum()):,} units")
-        d = r3.u_bps[m2h].mean() - r3.u_bps[~m2h].mean()
-        print(f"  difference                            : {d:+.3f} bps/unit "
+        d = r3.u_pct[m2h].mean() - r3.u_pct[~m2h].mean()
+        print(f"  difference                            : {d:+.5f} %/unit "
               f"-- the whole case for the harvest overlay, on 7 day clusters.")
 
     # =====================================================================
@@ -1175,7 +1182,7 @@ def main() -> int:
     # =====================================================================
     print("Report 30 compared a fine-grained replay of 8/20-27 with a "
           "1-minute\napproximation of a DIFFERENT window (the 27 days before "
-          "it) and read the\ndifference (-0.395 vs -2.597 = 2.20 bps/unit) as "
+          "it) and read the\ndifference (-0.00395 vs -0.02597 = 0.0220 %/unit) as "
           "a method bias.  That number\nmixes method with window.  Below, the "
           "same cells are run through the M4 bar\nengine on THIS week, so the "
           "window is held fixed and only the method moves.")
@@ -1205,11 +1212,11 @@ def main() -> int:
             print(f"{cname(tag, cfg):<44}{rb.n_place:>8,}{rb.n_fillx:>7,}"
                   f"{100 * rb.n_fillx / max(rb.n_place, 1):>6.1f}%"
                   f"{sb['n_rt']:>6,}{fmt(sb['rt_day'], 8, 1)}"
-                  f"{len(rb.u_bps):>7,}{fmt(sb['mean_unit'], 10, 3)}"
-                  f"{fmt(float(rb.u_gross.mean()) if len(rb.u_gross) else np.nan, 9, 3)}"
-                  f"{fmt(sb['mean_rt'], 9, 2)}{fmt(sb['tcl'], 8, 2)}"
-                  f"  [{sb['lo']:+8.3f},{sb['hi']:+8.3f}]"
-                  f"{fmt(sb['maxdd'], 9, 1)}")
+                  f"{len(rb.u_pct):>7,}{fmt(sb['mean_unit'], 10, 5)}"
+                  f"{fmt(float(rb.u_gross.mean()) if len(rb.u_gross) else np.nan, 9, 5)}"
+                  f"{fmt(sb['mean_rt'], 9, 4)}{fmt(sb['tcl'], 8, 2)}"
+                  f"  [{sb['lo']:+9.5f},{sb['hi']:+9.5f}]"
+                  f"{fmt(sb['maxdd'], 9, 3)}")
             if BB is Bm:
                 S[tag]["bar_unit"] = sb["mean_unit"]
                 S[tag]["bar_rt"] = sb["n_rt"]
@@ -1225,43 +1232,43 @@ def main() -> int:
         b1 = s["mean_unit"] - s["bar_unit"]
         b2 = s["mean_unit"] - s["barnat_unit"]
         biases.append(b1)
-        print(f"{cname(tag, cfg):<44}{fmt(s['mean_unit'], 11, 3)}"
-              f"{fmt(s['bar_unit'], 15, 3)}{fmt(b1, 9, 3)}"
-              f"{fmt(s['barnat_unit'], 15, 3)}{fmt(b2, 9, 3)}"
+        print(f"{cname(tag, cfg):<44}{fmt(s['mean_unit'], 11, 5)}"
+              f"{fmt(s['bar_unit'], 15, 5)}{fmt(b1, 9, 5)}"
+              f"{fmt(s['barnat_unit'], 15, 5)}{fmt(b2, 9, 5)}"
               f"{s['n_rt']:>9,}{s['bar_rt']:>8,}")
     print(f"\n  median same-week bias (M3 gap rule): "
-          f"{np.median(biases):+.3f} bps/unit  "
-          f"[min {min(biases):+.3f}, max {max(biases):+.3f}]")
-    print("  report 30's cross-window figure was +2.20 bps/unit; the "
+          f"{np.median(biases):+.5f} %/unit  "
+          f"[min {min(biases):+.5f}, max {max(biases):+.5f}]")
+    print("  report 30's cross-window figure was +0.0220 %/unit; the "
           "same-window\n  measurement above is the one that isolates the "
           "approximation.")
 
-    sub("4d. decomposition of report 30's 2.20 (method vs window)")
+    sub("4d. decomposition of report 30's 0.0220 % (method vs window)")
     rd = M3.run_cell_bars(BT, False, 40.0, 80.0)
     sd = M4.stats(rd, BT.eff_days)
     print(f"  27-day bar approximation of the SAME cell (report 30 (b)) : "
-          f"{sd['mean_unit']:+.3f} bps/unit over {sd['n_rt']:,} rt")
+          f"{sd['mean_unit']:+.5f} %/unit over {sd['n_rt']:,} rt")
     print(f"  8/20-27 bar approximation of the same cell (M3 gap rule)  : "
-          f"{S['5a']['bar_unit']:+.3f} bps/unit")
+          f"{S['5a']['bar_unit']:+.5f} %/unit")
     print(f"  8/20-27 fine replay of the same cell                      : "
-          f"{S['5a']['mean_unit']:+.3f} bps/unit")
-    print(f"  => method (same week)  {S['5a']['mean_unit'] - S['5a']['bar_unit']:+.3f}"
+          f"{S['5a']['mean_unit']:+.5f} %/unit")
+    print(f"  => method (same week)  {S['5a']['mean_unit'] - S['5a']['bar_unit']:+.5f}"
           f"   window (bar engine, 27d -> this week) "
-          f"{S['5a']['bar_unit'] - sd['mean_unit']:+.3f}")
+          f"{S['5a']['bar_unit'] - sd['mean_unit']:+.5f}")
 
     # =====================================================================
     header("5. ADVERSE SELECTION AND CAPTURE (report 26 consistency)")
     # =====================================================================
-    print(f"{'cell':<44}{'fills':>7}{'capture bps':>13}{'adverse 5s':>12}"
+    print(f"{'cell':<44}{'fills':>7}{'capture %':>13}{'adverse 5s':>12}"
           f"{'cap+adv':>9}{'placed fwd5':>13}{'placed fwd60':>14}")
     for tag, cfg in CELLS:
         r = R[tag]
         if not len(r.f_cap):
             continue
         print(f"{cname(tag, cfg):<44}{len(r.f_cap):>7,}"
-              f"{fmt(float(np.nanmean(r.f_cap)), 13, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap)), 13, 5)}"
               f"{fmt(float(np.nanmean(r.f_adv)), 12, 3)}"
-              f"{fmt(float(np.nanmean(r.f_cap) + np.nanmean(r.f_adv)), 9, 3)}"
+              f"{fmt(float(np.nanmean(r.f_cap) + np.nanmean(r.f_adv) / 100), 9, 5)}"  # % (adverse bps / 100)
               f"{fmt(float(np.nanmean(r.p_fwd5)), 13, 3)}"
               f"{fmt(float(np.nanmean(r.p_fwd60)), 14, 3)}")
     print("\n  capture = (mid at the fill - our price), signed by our side; "
@@ -1284,8 +1291,8 @@ def main() -> int:
               f"{float(np.percentile(wv, 25)):>8.3f}"
               f"{float(np.percentile(wv, 75)):>8.3f}"
               f"{100 * float(wn.mean()):>7.1f}%"
-              f"{float(r.c_pnl[wn].mean()) if wn.sum() else np.nan:>9.2f}"
-              f"{float(r.c_pnl[~wn].mean()) if (~wn).sum() else np.nan:>10.2f}")
+              f"{float(r.c_pnl[wn].mean()) if wn.sum() else np.nan:>9.4f}"
+              f"{float(r.c_pnl[~wn].mean()) if (~wn).sum() else np.nan:>10.4f}")
 
     # =====================================================================
     header("6. SANITY")
@@ -1317,7 +1324,7 @@ def main() -> int:
     # =====================================================================
     header("7. WHAT THE LEVEL SAYS")
     # =====================================================================
-    print(f"{'cell':<44}{'unit bps':>10}{'CI':>22}{'sign(CI lo)':>13}"
+    print(f"{'cell':<44}{'unit %':>10}{'CI':>22}{'sign(CI lo)':>13}"
           f"{'point > 0':>11}{'relaxed sign':>14}")
     any_pos = False
     for tag, cfg in CELLS:
@@ -1327,11 +1334,11 @@ def main() -> int:
             continue
         pos = s["mean_unit"] > 0
         any_pos = any_pos or pos
-        print(f"{cname(tag, cfg):<44}{fmt(s['mean_unit'], 10, 3)}"
-              f"  [{s['lo']:+8.3f},{s['hi']:+8.3f}]"
+        print(f"{cname(tag, cfg):<44}{fmt(s['mean_unit'], 10, 5)}"
+              f"  [{s['lo']:+9.5f},{s['hi']:+9.5f}]"
               f"{'excl 0' if s['lo'] > 0 else 'incl 0':>13}"
               f"{'YES' if pos else 'no':>11}"
-              f"{fmt(sr['mean_unit'], 14, 3)}")
+              f"{fmt(sr['mean_unit'], 14, 5)}")
     print()
     if any_pos:
         print("At least one cell has a positive POINT estimate at the "

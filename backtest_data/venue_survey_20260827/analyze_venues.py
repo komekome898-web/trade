@@ -1,7 +1,7 @@
 """Round 22 phase-2/3 analysis of the venue recordings (read-only, deterministic).
 
 Method is ported from report aa (board calibration) and e (cost calibration):
-  * spread distribution in bps of mid, best-size medians, top-5 depth
+  * spread distribution in % of mid, best-size medians, top-5 depth
   * trade frequency / notional per minute, 1-minute realised vol
   * virtual touch quote: place at best bid and best ask at each book snapshot,
     lifetime L seconds, fill ONLY on a print that trades THROUGH the level
@@ -10,6 +10,12 @@ Method is ported from report aa (board calibration) and e (cost calibration):
   * cross-venue basis vs bitFlyer FX_BTC_JPY and lead-lag on a 5s grid
 Sanity: UTC normalisation cross-check, gap ledger, no look-ahead (fills use
 prints strictly after the snapshot time).
+
+L-920 units: bp is used only for price-move rates (adverse(5s) markout, 1-minute vol, the report-f gross
+convergence, which is a difference of two move rates). Spread, fees, slippage, capture (fill price vs the mid at
+the fill), effective half-spread, basis, cost floor and the netted maker rates are % (x 100). Where a bp move is
+netted with a % cost it is divided by 100 on that line. FINAL.txt (written before L-920) shows the % columns in
+bp (= the % here x 100).
 """
 from __future__ import annotations
 
@@ -39,28 +45,29 @@ BOOKS = {
     "okj_btc": ("OKJ", "BTC-JPY", 3.0),
     "bt_btc": ("BitTrade", "btcjpy", 3.0),
 }
-# maker fee in bps (negative fee = positive rebate credit), taker fee in bps
-FEES = {  # (maker_fee_bps, taker_fee_bps)  fee>0 = you pay
+# maker fee rate in % (negative fee = positive rebate credit), taker fee rate in %
+FEES = {  # (maker_fee_pct, taker_fee_pct)  fee>0 = you pay
     "bf_fxbtc": (0.0, 0.0),
-    "bf_btc": (15.0, 15.0),
-    "bf_xrp": (15.0, 15.0),
-    "bb_btc": (0.0, 10.0),
-    "bb_xrp": (-2.0, 12.0),
-    "bb_eth": (-2.0, 12.0),
-    "gmo_btc": (-1.0, 5.0),
+    "bf_btc": (0.15, 0.15),
+    "bf_xrp": (0.15, 0.15),
+    "bb_btc": (0.0, 0.10),
+    "bb_xrp": (-0.02, 0.12),
+    "bb_eth": (-0.02, 0.12),
+    "gmo_btc": (-0.01, 0.05),
     "gmo_btclev": (0.0, 0.0),
     "cc_btc": (0.0, 0.0),
-    "okj_btc": (7.0, 14.0),
-    "bt_btc": (0.0, 10.0),
+    "okj_btc": (0.07, 0.14),
+    "bt_btc": (0.0, 0.10),
 }
 TICK = {  # quote increment in JPY (from each venue's published product spec)
     "bf_fxbtc": 1.0, "bf_btc": 1.0, "bf_xrp": 0.001,
     "bb_btc": 1.0, "bb_xrp": 0.001, "bb_eth": 1.0,
     "gmo_btc": 1.0, "gmo_btclev": 1.0, "cc_btc": 1.0, "okj_btc": 1.0, "bt_btc": 1.0,
 }
-SLIP = 2.0  # repo-measured slippage assumption, bps one way
-ADV_PRIOR = 1.2  # bps
-BAS1M = {}  # adverse-selection prior, bps (report aa: adv(5s) = -1.32 at the touch)
+SLIP = 0.02  # repo-measured slippage assumption, % one way (0.02 % = the 2.0 bp before L-920)
+ADV_PRIOR_BP = 1.2  # adverse-selection prior: markout (move 5 s after the fill), a move rate so bp
+                    # (report aa: adv(5s) = -1.32 at the touch)
+BAS1M = {}  # basis on a 1-minute grid: (mean %, sd %, AR1 half-life min)
 
 
 def load_books(job):
@@ -89,7 +96,7 @@ def load_books(job):
     for k in d:
         d[k] = d[k][o]
     d["mid"] = (d["bp"] + d["ap"]) / 2.0
-    d["spr"] = (d["ap"] - d["bp"]) / d["mid"] * 1e4
+    d["spr"] = (d["ap"] - d["bp"]) / d["mid"] * 100  # spread, % of mid
     return d
 
 
@@ -170,8 +177,8 @@ def virtual_quotes(bk, tr, mid_t, mid_v):
                 continue
             sgn = 1.0 if side == "bid" else -1.0
             res["n_fill"] += 1
-            res["cap"].append(sgn * (m_f - P[i]) / m_f * 1e4)
-            res["adv"].append(sgn * (m_a - m_f) / m_f * 1e4)
+            res["cap"].append(sgn * (m_f - P[i]) / m_f * 100)  # capture: quote price vs the mid at the fill, %
+            res["adv"].append(sgn * (m_a - m_f) / m_f * 1e4)   # markout: mid move 5 s after the fill, bp
             res["tf"].append(tf)
     return res
 
@@ -224,7 +231,7 @@ def main():
         gt, gm = gridify(b, t0g, t1g)
         grids[job] = (gt, gm)
 
-    print("\n## per venue/pair  (spread in bps of mid; tick_p50 = median spread in ticks)")
+    print("\n## per venue/pair  (spread and eff_hsp in % of mid, vol1m in bp; tick_p50 = median spread in ticks)")
     hdr = ("job", "n", "gaps", "sp_p10", "sp_p50", "sp_p90", "spr_tick", "lock%",
            "bestJPY", "dep5JPY", "trd/min", "JPY/min", "vol1m", "eff_hsp", "clk_s")
     print(" | ".join(f"{h:>9s}" for h in hdr))
@@ -245,27 +252,28 @@ def main():
             jpm = float((tr["px"][m] * tr["q"][m]).sum()) / span_min
             if m.sum() > 20:  # realised half-spread from the tape (report aa method)
                 mm_ = np.interp(tr["ts"][m], b["t"], b["mid"])
-                eff = float(np.median(np.abs(tr["px"][m] - mm_) / mm_ * 1e4))
+                eff = float(np.median(np.abs(tr["px"][m] - mm_) / mm_ * 100))  # % of mid
         else:
             tpm = jpm = float("nan")
         gt, gm = grids[job]
         step = int(60 / GRID)
         r = np.diff(np.log(gm[::step]))
         r = r[np.isfinite(r)]
-        v1 = float(np.std(r) * 1e4) if len(r) > 5 else float("nan")
+        v1 = float(np.std(r) * 1e4) if len(r) > 5 else float("nan")  # 1-minute move rate, bp
         clk = float(np.nanmedian(b["t"] - b["tv"])) if np.isfinite(b["tv"]).any() else float("nan")
         print(f"{job:>9s} | {len(b['t']):>9d} | {gaps:>9d} | "
-              f"{q(b['spr'],10):>9.3f} | {q(b['spr'],50):>9.3f} | {q(b['spr'],90):>9.3f} | "
+              f"{q(b['spr'],10):>9.5f} | {q(b['spr'],50):>9.5f} | {q(b['spr'],90):>9.5f} | "
               f"{float(np.median(nticks)):>9.1f} | {lockpct:>8.1f}% | {bestjpy:>9.0f} | "
               f"{float(np.median(b['dep'])):>9.0f} | {tpm:>9.2f} | {jpm:>9.0f} | {v1:>9.2f} | "
-              f"{eff:>9.3f} | {clk:>9.2f}")
+              f"{eff:>9.5f} | {clk:>9.2f}")
         rows[job] = dict(n=len(b["t"]), gaps=gaps, p10=q(b["spr"], 10), p50=q(b["spr"], 50),
                          p90=q(b["spr"], 90), tick_p50=float(np.median(nticks)), lock=lockpct,
                          best=bestjpy, dep=float(np.median(b["dep"])),
                          tpm=tpm, jpm=jpm, v1=v1, eff_hsp=eff, clk=clk,
                          maker_fee=FEES[job][0], taker_fee=FEES[job][1])
 
-    print("\n## virtual touch quotes (traded-through, L=%.0fs, adv=%.0fs)" % (L_LIFE, ADV_H))
+    print("\n## virtual touch quotes (traded-through, L=%.0fs, adv=%.0fs; cap, cap+adv, CI95, +rebate in %%, adv5 in bp)"
+          % (L_LIFE, ADV_H))
     print(f"{'job':>10s} | {'placed':>7s} | {'fills':>6s} | {'f%':>6s} | {'cap':>7s} | {'adv5':>7s} | {'cap+adv':>8s} | {'CI95':>18s} | {'+rebate':>8s}")
     for job, b in books.items():
         tr = trades.get(job)
@@ -275,17 +283,17 @@ def main():
         if r["n_fill"] < 5:
             print(f"{job:>10s} | {r['n_placed']:>7d} | {r['n_fill']:>6d} |    n/a")
             continue
-        cap = np.array(r["cap"]); adv = np.array(r["adv"]); tot = cap + adv
+        cap = np.array(r["cap"]); adv = np.array(r["adv"]); tot = cap + adv / 100  # % (adv bp -> % here)
         lo, hi = block_boot(tot, r["tf"])
         reb = -FEES[job][0]
         print(f"{job:>10s} | {r['n_placed']:>7d} | {r['n_fill']:>6d} | "
-              f"{100*r['n_fill']/r['n_placed']:>5.1f}% | {cap.mean():>7.3f} | {adv.mean():>7.3f} | "
-              f"{tot.mean():>8.3f} | [{lo:>7.3f},{hi:>7.3f}] | {tot.mean()+reb:>8.3f}")
+              f"{100*r['n_fill']/r['n_placed']:>5.1f}% | {cap.mean():>7.5f} | {adv.mean():>7.3f} | "
+              f"{tot.mean():>8.5f} | [{lo:>7.5f},{hi:>7.5f}] | {tot.mean()+reb:>8.5f}")
         rows[job].update(cap=float(cap.mean()), adv=float(adv.mean()), tot=float(tot.mean()),
                          ci=(float(lo), float(hi)), f=100 * r["n_fill"] / r["n_placed"],
                          nfill=r["n_fill"])
 
-    print("\n## basis vs bitFlyer FX_BTC_JPY (bps, 5s grid) + lead-lag")
+    print("\n## basis vs bitFlyer FX_BTC_JPY (%, 5s grid) + lead-lag")
     ref = "bf_fxbtc"
     gt, gref = grids[ref]
     lr_ref = np.diff(np.log(gref))
@@ -294,7 +302,7 @@ def main():
         if job == ref or "btc" not in job.lower():
             continue
         _, gv = grids[job]
-        bas = (gv - gref) / gref * 1e4
+        bas = (gv - gref) / gref * 100  # basis, %
         m = np.isfinite(bas)
         if m.sum() < 50:
             continue
@@ -322,7 +330,7 @@ def main():
                 a, c = lrv, lr_ref
             mm = np.isfinite(a) & np.isfinite(c)
             cs.append(float(np.corrcoef(a[mm], c[mm])[0, 1]) if mm.sum() > 50 else float("nan"))
-        print(f"{job:>10s} | {int(m.sum()):>6d} | {bb.mean():>8.2f} | {bb.std():>7.2f} | "
+        print(f"{job:>10s} | {int(m.sum()):>6d} | {bb.mean():>8.4f} | {bb.std():>7.4f} | "
               f"{rho:>7.4f} | {hl:>8.2f}m | " + "  ".join(f"L{l:+d}:{c:+.3f}" for l, c in zip((-2, -1, 0, 1, 2), cs)))
 
     # XRP cross-venue
@@ -342,9 +350,9 @@ def main():
 
     print("\n## basis on a 1-minute grid (comparable with report f: HL 9.1 min)")
     for j, (m, sd, hl) in BAS1M.items():
-        print(f"  {j:>10s}  mean {m:+7.2f} bps  sd {sd:5.2f}  AR1 half-life {hl:6.2f} min")
+        print(f"  {j:>10s}  mean {m:+7.4f} %  sd {sd:5.4f}  AR1 half-life {hl:6.2f} min")
 
-    print("\n## fee-vs-spread substitution check (taker fee bps vs measured spread p50 bps)")
+    print("\n## fee-vs-spread substitution check (taker fee % vs measured spread p50 %)")
     xs = [FEES[j][1] for j in rows]
     ys = [rows[j]["p50"] for j in rows]
     if len(xs) > 4:
@@ -355,17 +363,17 @@ def main():
         print(f"  BTC/JPY only:               {np.corrcoef(xs2, ys2)[0,1]:+.3f}  n={len(xs2)}")
 
     print("\n## report-f basis re-audit: is a CFD-vs-spot convergence trade reachable now?")
-    print("  report f rejected it with a spot leg costing 55bps round trip (taker 0.15% + 0.15% spread).")
-    print("  Below: the spot leg re-priced at today's fees, judged against report f's MEASURED")
+    print("  report f rejected it with a spot leg costing 0.55% round trip (taker 0.15% + 0.15% spread).")
+    print("  Below: the spot leg re-priced at today's fees (costs in %), judged against report f's MEASURED")
     print("  gross convergence (+2.7bps = spot +5.5 catch-up minus CFD +2.8 co-drift), NOT the sd.")
     print("  'total best' assumes ALL FOUR legs fill as maker - which the repo's sign law says")
     print("  cannot happen on the side the price is moving toward. It is an optimistic bound.")
     print(f"  {'spot venue':>10s} | {'basis sd':>8s} | {'2sd move':>8s} | {'spot taker RT':>13s} | "
           f"{'spot maker RT(meas)':>19s} | {'CFD leg RT':>10s} | {'total taker':>11s} | {'total best':>10s} | vs f +2.7bps")
-    F_GROSS = 2.7  # bps, report f: spot +5.5 catch-up minus CFD +2.8 same-direction drift
+    F_GROSS_BP = 2.7  # bp, report f: spot +5.5 catch-up minus CFD +2.8 same-direction drift (difference of two move rates)
     cfd_t = rows["bf_fxbtc"]["cost_floor"] if "cost_floor" in rows.get("bf_fxbtc", {}) else \
-        2 * FEES["bf_fxbtc"][1] + rows["bf_fxbtc"]["p50"] + 2 * SLIP
-    cfd_m = -2.0 * rows["bf_fxbtc"].get("tot", float("nan"))  # cost of two maker legs
+        2 * FEES["bf_fxbtc"][1] + rows["bf_fxbtc"]["p50"] + 2 * SLIP  # %
+    cfd_m = -2.0 * rows["bf_fxbtc"].get("tot", float("nan"))  # cost of two maker legs, %
     for job in ("bb_btc", "gmo_btc", "cc_btc", "bt_btc", "okj_btc"):
         if job not in rows or job not in BAS1M:
             continue
@@ -378,26 +386,27 @@ def main():
         # spot leg rose +5.5bps while the CFD drifted +2.8bps the same way => +2.7bps gross.
         # 2sd is the size of the wiggle, NOT the edge; comparing to it would be the classic
         # "confuse volatility with profit" error. Bar = report f's +2.7bps gross.
-        v = "reachable" if F_GROSS > tot_b else "dead"
-        print(f"  {job:>10s} | {sd:>8.2f} | {2*sd:>8.2f} | {tk:>13.2f} | {mk:>19.2f} | "
-              f"{cfd_m:>10.2f} | {tot_t:>11.2f} | {tot_b:>10.2f} | {v}")
+        v = "reachable" if F_GROSS_BP / 100 > tot_b else "dead"  # bp -> % to compare with the % cost
+        print(f"  {job:>10s} | {sd:>8.4f} | {2*sd:>8.4f} | {tk:>13.4f} | {mk:>19.4f} | "
+              f"{cfd_m:>10.4f} | {tot_t:>11.4f} | {tot_b:>10.4f} | {v}")
 
     print("\n## PHASE 3 efficiency-gap map")
-    print(f"{'job':>10s} | {'m/t fee bps':>12s} | {'spr p50':>8s} | {'COSTFLOOR':>9s} | "
+    print(f"{'job':>10s} | {'m/t fee %':>12s} | {'spr p50':>8s} | {'COSTFLOOR':>9s} | "
           f"{'maker_raw':>9s} | {'maker_meas':>10s} | {'JPY/min':>9s} | {'dep5JPY':>9s}")
     print("  COSTFLOOR = 2*taker_fee + spread_p50 + 2*slip ;  "
-          "maker_raw = 0.5*half_spread + rebate - 1.2 ;  maker_meas = cap+adv(5s) + rebate")
+          "maker_raw = 0.5*half_spread + rebate - 0.012 ;  maker_meas = cap+adv(5s) + rebate  (all %)")
     for job, r in rows.items():
         mk, tk = FEES[job]
         floor = 2 * tk + r["p50"] + 2 * SLIP
-        raw = 0.5 * (r["p50"] / 2.0) - mk - ADV_PRIOR
+        raw = 0.5 * (r["p50"] / 2.0) - mk - ADV_PRIOR_BP / 100  # % (adverse prior bp -> % here)
         meas = (r["tot"] - mk) if "tot" in r else float("nan")
         r["cost_floor"] = floor; r["maker_raw"] = raw; r["maker_meas"] = meas
-        print(f"{job:>10s} | {mk:>5.1f}/{tk:<6.1f} | {r['p50']:>8.3f} | {floor:>9.2f} | "
-              f"{raw:>9.2f} | {meas:>10.2f} | {r['jpm']:>9.0f} | {r['dep']:>9.0f}")
+        print(f"{job:>10s} | {mk:>5.3f}/{tk:<6.3f} | {r['p50']:>8.5f} | {floor:>9.4f} | "
+              f"{raw:>9.4f} | {meas:>10.4f} | {r['jpm']:>9.0f} | {r['dep']:>9.0f}")
 
     print("\n## first-half / second-half stability (the repo's 前後半 rule)")
     tmid = 0.5 * (t0g + t1g)
+    print("  (spread p50 and cap+adv in %)")
     print(f"{'job':>10s} | {'spr p50 H1':>10s} | {'spr p50 H2':>10s} | {'cap+adv H1':>10s} | {'cap+adv H2':>10s} | {'fill H1/H2':>12s}")
     for job, b in books.items():
         tr = trades.get(job)
@@ -408,12 +417,12 @@ def main():
         if tr is not None:
             r = virtual_quotes(b, tr, b["t"], b["mid"])
             if r["n_fill"] > 10:
-                tf = np.asarray(r["tf"]); tot = np.asarray(r["cap"]) + np.asarray(r["adv"])
+                tf = np.asarray(r["tf"]); tot = np.asarray(r["cap"]) + np.asarray(r["adv"]) / 100  # % (adv bp -> %)
                 m1 = tf <= tmid
                 n1, n2 = int(m1.sum()), int((~m1).sum())
                 if n1 > 5: c1 = float(tot[m1].mean())
                 if n2 > 5: c2 = float(tot[~m1].mean())
-        print(f"{job:>10s} | {s1:>10.3f} | {s2:>10.3f} | {c1:>10.3f} | {c2:>10.3f} | {n1:>5d}/{n2:<6d}")
+        print(f"{job:>10s} | {s1:>10.5f} | {s2:>10.5f} | {c1:>10.5f} | {c2:>10.5f} | {n1:>5d}/{n2:<6d}")
 
     print("\n## cross-asset lead-lag on the 5s grid (report b re-test: does BTC still lead XRP?)")
     pairs = [("bf_fxbtc", "bb_xrp"), ("bf_fxbtc", "bb_eth"), ("bb_btc", "bb_xrp"),

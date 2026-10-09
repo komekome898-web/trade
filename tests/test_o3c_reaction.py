@@ -779,15 +779,15 @@ def test_node_definition_matches_profile_stats():
         centers = base.bin_center_price(np.arange(lo_bin, lo_bin + n), step)
         p_liq = float(centers[n // 2])
         st = base.profile_stats(qty, lo_bin, step, p_liq, p_liq)
-        up = react.directional_node_bp(qty, lo_bin, step, p_liq, +1.0)
-        dn = react.directional_node_bp(qty, lo_bin, step, p_liq, -1.0)
+        up = react.directional_node_pct(qty, lo_bin, step, p_liq, +1.0)
+        dn = react.directional_node_pct(qty, lo_bin, step, p_liq, -1.0)
         cands = [v for v in (up, dn) if np.isfinite(v)]
         if not cands:
             continue
         nearest = min(cands, key=abs)
         # `profile_stats` は p_liq のビンそのもの(距離 ~0)も候補にするので、
         # 方向つきの最小より近いか同じになる。
-        assert abs(st["dist_node_bp"]) <= abs(nearest) + 1e-6
+        assert abs(st["dist_node_pct"]) <= abs(nearest) + 1e-6
         assert up != up or up > 0  # NaN でなければ必ず正
         assert dn != dn or dn < 0  # NaN でなければ必ず負
 
@@ -798,11 +798,11 @@ def test_directional_node_is_nan_when_no_node_on_that_side():
     qty = np.array([0.0, 0.0, 10.0])  # ノードは最後のビンだけ
     centers = base.bin_center_price(np.arange(lo_bin, lo_bin + 3), step)
     p_ref = float(centers[2])  # ノードそのものの位置 -> 上にも下にも無い
-    assert np.isnan(react.directional_node_bp(qty, lo_bin, step, p_ref, +1.0))
-    assert np.isnan(react.directional_node_bp(qty, lo_bin, step, p_ref, -1.0))
+    assert np.isnan(react.directional_node_pct(qty, lo_bin, step, p_ref, +1.0))
+    assert np.isnan(react.directional_node_pct(qty, lo_bin, step, p_ref, -1.0))
     p_low = float(centers[0])
-    assert react.directional_node_bp(qty, lo_bin, step, p_low, +1.0) > 0
-    assert np.isnan(react.directional_node_bp(qty, lo_bin, step, p_low, -1.0))
+    assert react.directional_node_pct(qty, lo_bin, step, p_low, +1.0) > 0
+    assert np.isnan(react.directional_node_pct(qty, lo_bin, step, p_low, -1.0))
 
 
 def test_profile_columns_match_base_profile_stats_on_a_hand_window():
@@ -823,8 +823,8 @@ def test_profile_columns_match_base_profile_stats_on_a_hand_window():
         acc[b - lo_bin] += q
     st = base.profile_stats(acc, lo_bin, step, 30060.0, float(prices[sel][-1]))
     assert cols[0]["bin_pct"] == pytest.approx(round(st["bin_pct"], 4))
-    assert cols[0]["dist_node_bp"] == pytest.approx(round(st["dist_node_bp"], 4))
-    assert cols[0]["dist_vwap_bp"] == pytest.approx(round(st["dist_vwap_bp"], 4))
+    assert cols[0]["dist_node_pct"] == pytest.approx(round(st["dist_node_pct"], 6))
+    assert cols[0]["dist_vwap_pct"] == pytest.approx(round(st["dist_vwap_pct"], 6))
     assert cols[0]["n_bins"] == st["n_bins"]
     assert note["rows_skipped_empty_window"] == 0
     assert cols[0]["p0"] == float(prices[sel][-1])
