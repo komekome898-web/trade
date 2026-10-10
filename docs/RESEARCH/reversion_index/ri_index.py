@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 D, K = sys.argv[1], int(sys.argv[2])
+FIT0 = sys.argv[3] if len(sys.argv) > 3 else "2016-01-01"  # 作る期間の始まり(相方の指摘 3: 2017 でも作り直して比べる)
 rng = np.random.default_rng(20261004)
 CUT = "2019-12-09"
 
@@ -121,14 +122,14 @@ def ci_mean(v, days):
 bf, bn = load("bitflyer"), load("binance")
 bf = bf[bf.y_ >= 2016]
 bn = bn[bn.y_ >= 2018]
-fit = bf[bf.day < CUT]
+fit = bf[(bf.day >= FIT0) & (bf.day < CUT)]
 edges = {k: fit[k].dropna().quantile([0.2, 0.4, 0.6, 0.8]).to_numpy() for k in NUM}
 Xf, names = design(fit, edges)
 beta = logit_fit(Xf, fit.y.to_numpy())
 ok = ~np.isnan(fit.r20.to_numpy())
 gam = np.linalg.lstsq(Xf[ok], fit.r20.to_numpy()[ok], rcond=None)[0]
 
-print(f"# 逆張りの期待値の指標 k = {K}(戻りの線 = {K - 1} ボラ、待ち 20 分)\n")
+print(f"# 逆張りの期待値の指標 k = {K}(戻りの線 = {K - 1} ボラ、待ち 20 分)。作る期間 {FIT0}〜2019-12-08\n")
 print(f"起点: bitFlyer {len(bf):,}(作る {len(fit):,})・Binance {len(bn):,}\n")
 print("## 帯の境(作る期間の五分位)\n")
 for k in NUM:
@@ -139,7 +140,7 @@ print("|---|---|---|")
 for n_, a, g in zip(names, beta, gam):
     print(f"| {n_} | {a:+.3f} | {g:+.3f} |")
 
-sets = {"bitFlyer 作る(2016〜2019-12-08)": fit, "bitFlyer 当てる(2019-12-09〜2023)": bf[bf.day >= CUT], "Binance 当てる(2018〜2023)": bn}
+sets = {f"bitFlyer 作る({FIT0[:4]}〜2019-12-08)": fit, "bitFlyer 当てる(2019-12-09〜2023)": bf[bf.day >= CUT], "Binance 当てる(2018〜2023)": bn}
 print("\n## 当たり具合\n")
 print("| 集まり | 起点 | 戻った割合 | 予想の平均 | AUC | Brier(式) | Brier(割合一定) | 20 分の値動き 実際 | 予想 |")
 print("|---|---|---|---|---|---|---|---|---|")
@@ -164,6 +165,7 @@ for i in range(10):
     print(f"| {i + 1} | " + " | ".join(f"{g.p.iloc[i]:.1%} / {g.y.iloc[i]:.1%} / {g.r.iloc[i]:+.2f}" if i < len(g) else "—" for g in rows) + " |")
 
 print("\n## 2. 年ごとのずれ(実際に戻った割合 − 予想の平均。値動きは 実際 − 予想、ボラ)。区間は日の塊\n")
+print("(作る期間の中の年 = bitFlyer の FIT0〜2019 年は、足し合わせると機械的にほぼ 0 になる残りの配り方なので、記述だけ。ずれの読みは作る期間の外 = bitFlyer 2020〜・Binance だけ)\n")
 print("| 年 | bitFlyer 起点 | bitFlyer 戻る: 実際 − 予想 | bitFlyer 値動き: 実際 − 予想 | Binance 起点 | Binance 戻る: 実際 − 予想 | Binance 値動き: 実際 − 予想 |")
 print("|---|---|---|---|---|---|---|")
 allbf = pd.concat([fit, bf[bf.day >= CUT]])
@@ -178,4 +180,31 @@ for yy in range(2016, 2024):
         r = x.r20.to_numpy()[m]; ok2 = ~np.isnan(r)
         cells += [f"{m.sum():,}", ci_mean(x.y.to_numpy()[m] - p[m], x.day.to_numpy()[m]),
                   ci_mean(r[ok2] - e[m][ok2], x.day.to_numpy()[m][ok2])]
-    print(f"| {yy} | " + " | ".join(cells) + " |")
+    tag = "(作る期間の中)" if yy <= 2019 and yy >= int(FIT0[:4]) else ""
+    print(f"| {yy}{tag} | " + " | ".join(cells) + " |")
+
+print("\n## 期待値の式の十分位(予想した 20 分の値動き / 実際の 20 分の値動き、ボラ)\n")
+print("| 十分位 | " + " | ".join(sets) + " |")
+print("|---|" + "---|" * len(sets))
+rows = []
+for lab, x in sets.items():
+    p, e = pred[lab]
+    r = x.r20.to_numpy(); m = ~np.isnan(r)
+    q = pd.qcut(e[m], 10, labels=False, duplicates="drop")
+    rows.append(pd.DataFrame({"q": q, "e": e[m], "r": r[m]}).groupby("q").agg(e=("e", "mean"), r=("r", "mean")))
+for i in range(10):
+    print(f"| {i + 1} | " + " | ".join(f"{g.e.iloc[i]:+.2f} / {g.r.iloc[i]:+.2f}" if i < len(g) else "—" for g in rows) + " |")
+
+# 月ごとのずれ(§3 の入力。FRAMING §2 の 1 件 = 月)
+out = []
+for venue, x, p, e in (("bitflyer", allbf, pa, ea), ("binance", bn, pb, eb)):
+    df = pd.DataFrame({"m": x.day.str[:7].to_numpy(), "y": x.y.to_numpy(), "p": p, "r": x.r20.to_numpy(), "e": e})
+    g = df.groupby("m").agg(n=("y", "size"), y=("y", "mean"), p=("p", "mean"), r=("r", "mean"), e=("e", "mean")).reset_index()
+    g["venue"] = venue
+    out.append(g)
+mo = pd.concat(out)
+mo["ret_gap"] = mo.y - mo.p
+mo["move_gap"] = mo.r - mo.e
+path = f"docs/RESEARCH/reversion_index/monthly_gap_k{K}_fit{FIT0[:4]}.csv"
+mo.to_csv(path, index=False, float_format="%.5f")
+print(f"\n月ごとのずれ: {path}({len(mo)} 行)")
