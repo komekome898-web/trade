@@ -27,11 +27,14 @@ NS = 10**9
 MINUTE_NS = 60 * NS
 END_FLAT = "玉が 0 に戻った"  # R15 の「玉が 0 に戻った時点」で建ての合図を終える理由
 
-# 引数は 15 個(直すもの 2)。原典の値の組から 2 つを外した残り。
-PARAM_KEYS = ("levels", "foot", "vola_count", "range_count", "alert_count", "range_setting", "over_range_setting",
-              "vola_setting", "entry_setting", "exit_setting", "break_delay", "break_dist", "break_len_mult",
-              "beard_ignore", "step_setting")
-BASE_PARAMS = {k: V37_ORIGINAL[k] for k in PARAM_KEYS}
+# 引数は 16 個(直すもの 2)。原典の値の組から 2 つを外した残り 15 個と、改良案 I1 の門 dev_setting(原典に無い。既定 None = 門なし)。
+# dev_setting(L-965・L-970): 足が閉じた時点の建ての線の中心からの距離(entry_setting × ボラ)÷ 幅 がこの値より小さいときは、
+# 1 段目(R3 の建て)を出さない。段の足しは止めない。出所 `docs/DISCUSSIONS/2026-10-08_matilda_main/EARN_LOSS_L965.md` §1.2・§2。
+ORIGINAL_KEYS = ("levels", "foot", "vola_count", "range_count", "alert_count", "range_setting", "over_range_setting",
+                 "vola_setting", "entry_setting", "exit_setting", "break_delay", "break_dist", "break_len_mult",
+                 "beard_ignore", "step_setting")
+PARAM_KEYS = ORIGINAL_KEYS + ("dev_setting",)
+BASE_PARAMS = {**{k: V37_ORIGINAL[k] for k in ORIGINAL_KEYS}, "dev_setting": None}
 TAGS = ("entry", "level", "close", "market", "break")  # 直すもの 4
 TIER_ROLES = ("add", "level")  # まだ約定していない段(R5 で取り消す)
 
@@ -59,7 +62,7 @@ def _num(p, k, *, gt=None, ge=None, none=False):
 
 
 def _params(params) -> dict:
-    """鍵がちょうど PARAM_KEYS の 15 個で、型と範囲が合うときだけ写しを返す。外れたら ValueError。"""
+    """鍵がちょうど PARAM_KEYS の 16 個で、型と範囲が合うときだけ写しを返す。外れたら ValueError。"""
     if not isinstance(params, dict):
         raise ValueError(f"引数は辞書で渡す(受け取ったのは {type(params).__name__})")
     p = dict(params)
@@ -81,6 +84,7 @@ def _params(params) -> dict:
     _int(p, "break_len_mult", 2)
     _num(p, "beard_ignore", gt=0, none=True)
     _num(p, "step_setting", gt=0)
+    _num(p, "dev_setting", ge=0, none=True)
     return p
 
 
@@ -451,7 +455,7 @@ class MatildaSimple:
         sn, p = self._snap, self.p
         if self._dir == 0:
             self._drop_roles(("entry",))
-            if self._brk == 0 and sn["gate"]:  # R3
+            if self._brk == 0 and sn["gate"] and sn["dev_ok"]:  # R3(I1 の門 dev_ok は 1 段目だけに掛ける)
                 for s, px in ((1, sn["lo"]), (-1, sn["up"])):
                     _, q = size_detail(margin_jpy=MARGIN_JPY, use_ratio=USE_RATIO, levels=self.levels, price=px,
                                        quote_ccy="JPY")
@@ -551,5 +555,7 @@ class MatildaSimple:
         rs, ors, vs = p["range_setting"], p["over_range_setting"], p["vola_setting"]
         shut = (rs is not None and width < rs * close) or (ors is not None and width > ors * close) \
             or (vs is not None and vola <= vs * close)
+        ds = p["dev_setting"]  # 改良案 I1: 建ての線が中心に近い(幅に比べて)ときは 1 段目を出さない
+        dev_ok = ds is None or (width > 0 and es / width >= ds)
         return {"lo": center - es, "up": center + es, "center": center, "vola": vola, "step": vola * p["step_setting"],
-                "bu": bu, "bd": bd, "gate": not shut}
+                "bu": bu, "bd": bd, "gate": not shut, "dev_ok": dev_ok}
