@@ -12,6 +12,11 @@ rem died on its first disconnect (2026-09-09). UTF-8 mode plus errors=replace
 rem makes output incapable of raising, for every script launched here.
 set PYTHONUTF8=1
 set PYTHONIOENCODING=utf-8:replace
+rem 2026-10-11 (L-984, L-988): watchdog for resident recorders that are alive but stopped
+rem writing (record_venues.py stopped writing on 2026-10-05 and nobody noticed for 4+ days;
+rem start_all.bat only relaunches recorders whose process is gone). Writes
+rem data\recorder_health.json and data\recorder_logs\*.tail.log for share_logs.bat.
+".venv\Scripts\python.exe" "scripts\data_repair\watch_recorders.py" >> "logs\fetch_all.out.log" 2>&1
 rem Time-critical, cheap collector FIRST (DATA_QA_TRIAGE: the 2026-08-31 2.9h OI gap
 rem was a stalled earlier step in this sequential batch, not an outage). Nothing
 rem network-heavy runs before it.

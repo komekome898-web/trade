@@ -29,6 +29,12 @@ copy /Y logs\dashboard_bt.log paper_logs\ >nul 2>&1
 rem liquidation recorder log: the self-heal line ("不完全 -> ... へ退避") after a
 rem restart is read from here (P14), so the owner never has to open it.
 copy /Y logs\liquidations.out.log paper_logs\ >nul 2>&1
+rem 2026-10-11 (L-984, L-988): recorder watchdog result + the tail of every resident
+rem recorder's log (scripts\data_repair\watch_recorders.py), so the research side can see WHY a
+rem recorder stopped (venues stopped 2026-10-05 and its log was never shared).
+copy /Y data\recorder_health.json paper_logs\ >nul 2>&1
+if not exist paper_logs\recorder_logs mkdir paper_logs\recorder_logs
+if exist data\recorder_logs\*.tail.log copy /Y data\recorder_logs\*.tail.log paper_logs\recorder_logs\ >nul 2>&1
 rem fetch_all / latency-probe logs, last 400 lines each: the lead diagnoses P11
 rem (board_top10 backfill) and P13 (api probe) from these instead of asking (KA-30).
 powershell -NoProfile -Command "if (Test-Path 'logs\fetch_all.out.log') { Get-Content 'logs\fetch_all.out.log' -Tail 400 | Set-Content 'paper_logs\fetch.out.tail.log' }" >nul 2>&1
