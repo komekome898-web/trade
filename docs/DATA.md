@@ -75,6 +75,15 @@
 | 板の深さの履歴(ヒストリカル) | — | 現在の板スナップショットのみ `https://api.bitflyer.com/v1/board` で取得可(履歴保存 API は無い) | **試行して不可(板の履歴配信APIが存在しない。現在値のみ HTTP 200 で確認。方法: GET、この環境から実測)** | 2026-09-11 | `docs/DATA/probes/20260911_crypto_cfd_board_liq_funding_basis.log` | 未使用(自前スナップショット化が必要) |
 | bitFlyer SFD・証拠金維持率・ロスカット閾値の一次資料(公式FAQ) | SFD: `https://bitflyer.com/ja-jp/faq/7-33`; 証拠金維持率・ロスカット: `https://bitflyer.com/ja-jp/faq/7-23`, `7-11`, `7-9` | この環境から GET(curl HTTP/1.1・HTTP/2・WebFetch の3通り)を試し、HTTP 403(WAF)で本文が読めない。同じ実行で `lightning.bitflyer.com/docs` は 200 で読めているので、ホスト固有の遮断 | **試行して不可(範囲・方法)** | 2026-09-12 | `docs/DATA/probes/20260912_o3c_supp_a_bitflyer_bitmex.log` | 未使用(オーナー PC の通常のブラウザなら読める可能性があり、未確認) |
 
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `audit_fetch_P2-08_docs` P2-08 の一次資料・二次資料のページの写し(Binance klines の定義 rest-api.md、data.binance.vision の索引、status.bitflyer.com、lightning.bitflyer.com/docs の `sfd` 定義、SFD 解説の二次資料 3 本、PR TIMES 検索、archive.org の可否。README の表) | `backtest_data/audit_fetch_P2-08_docs_20260906/`(git に 11 ファイル。README.md・MD5SUMS を含む) | README の表のファイル 9 件(2026-09-06 13:26〜13:29 UTC 取得、HTTP 200)と取得失敗 2 件(`cdx_test.json`/`cdx_test2.json`、TLS reset、ファイルは作っていない) | 取得済 | 2026-10-11 | — | P2-08 補助(README: BLINDSPOT_AUDIT.md #4・#5・#9 向け。コミット 9bf314af) |
+| `audit_fetch_P2-08b` P2-08b の調達の標本(MD5SUMS のファイル名から: Binance 1 秒足・aggTrades の先頭 5 行、kaiko の bitFlyer 銘柄一覧、lightchart period m/s、REST getexecutions の最新、tape の網羅、tardis の取引所情報と FX_BTC_JPY の先頭 1000 行) | `backtest_data/audit_fetch_P2-08b_20260906/`(git に 12 ファイル。README 無し、MD5SUMS あり) | 未確認(README に無い。ファイル名の日付: Binance aggTrades 2019-06-01・2026-09-05、1 秒足 2026-09-05、tardis 2020-01-01・2026-08-01、tape_coverage 20260906) | 取得済 | 2026-10-11 | — | P2-08b 調達票(コミット 96dec16b の文) |
+| `audit_fetch_bitflyer_history` FX_BTC_JPY の複数年 1 分足の出所調査(lightchart のプローブ応答とヘッダ、CryptoCompare の 401 応答。README) | `backtest_data/audit_fetch_bitflyer_history_20260906/`(git に 95 ファイル。`lightchart/`・`cryptocompare/`・README.md・MD5SUMS) | 探索用の小さな応答だけ(README「Files here」)。lightchart は `before`=2015-12-01 で 2015-11-30 23:41 UTC までの 719 行、2015-11-01 以前は 0 行(README §1)。全量の取得は `bitflyer_lightchart_FX_BTC_JPY_1m_20260906/` 側(README) | 取得済 | 2026-10-11 | — | bitFlyer 履歴の出所調査(README・コミット 75e1d8d5) |
+| `spread_backfill` bot の気配記録 `spread_FX_BTC_JPY.csv` の抜けを WS の tape から補った行(列 `timestamp,best_bid,best_ask,ltp,source`、source は全行 `tape_ws`)と抜けの一覧 `gaps.csv`(README) | `backtest_data/spread_backfill_20261002/`(git に 4 ファイル。README の出力表: `spread_backfill.csv.gz`・`gaps.csv`・`MD5SUMS`、と README.md) | 作った行 164,579 行、抜け 57 件。入力は bot の CSV 2026-08-20T04:58:22Z〜2026-10-01T22:11:54Z(529,691 行)、tape の ticker 2026-08-20T06:13:21Z〜2026-10-01T20:29:45Z(README) | 取得済 | 2026-10-11 | — | L-532 の抜けの補完(README・コミット 7a0e8242)。この出力を読んだ研究単位は未確認 |
+
 ## 2. 海外暗号資産(無期限・先物)
 
 | 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
@@ -138,6 +147,35 @@
 | Binance COIN-M aggTrades の補遺 1 日(2023-06-24) | `backtest_data/binance_cm_o3c_supp_20260917/aggTrades/BTCUSD_PERP/` | 2023-06-24 の 1 日(89,972 行)、公式 `.CHECKSUM` の sha256 一致 | 取得済(本体 `binance_cm_o3c_20260913` は 06-25 始まりで、1 件目の窓 24h の最初の日が短かったため) | 2026-09-17 | `docs/AUDITOR/ACTION_LOG.md` 051 | O-3c 1 件目(`o3c_price_level_full_20260917`) |
 | Binance COIN-M `liquidationSnapshot` の重複行 | `backtest_data/binance_cm_o3c_20260913/liquidationSnapshot/BTCUSD_PERP/` | 472 日・106,822 行のうち一意 53,398(全列一致の行が 2 回ずつ。多重度 2 が 53,385 群・4 が 13 群) | 取得済(**1 件の清算 = 2 行**。件数を数えるときは全列一致で一意化する。分位・割合は不変) | 2026-09-17 | `docs/AUDITOR/ACTION_LOG.md` 053(リード実測) | O-3c 1 件目(`PRICE_LEVEL/EXT_2026-09-17.md` §2.0) |
 
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `auto_oi_snapshots` 自前の建玉スナップショット台帳 `oi_snapshots.csv` の安全コピー(manifest の notes「Rolling project ledger, no upstream expiry; safety copy only.」。どの取引所の建玉かは manifest に無い) | `backtest_data/auto_oi_snapshots_20260905/`、`backtest_data/auto_oi_snapshots_20260921/`(2 本、各 3 ファイル) | 20260905: 2026-08-20T12:00:18+00:00〜2026-09-05T05:15:20+00:00、1,363 行 / 20260921: 2026-08-20T12:00:18+00:00〜2026-09-21T03:05:08+00:00、1,622 行(manifest) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `auto_okx_open_interest_1h` OKX rubik 建玉 1H `okx_btc_oi_1h.csv` の保持期限スナップショット(manifest の notes「30-day hard wall」、間隔 14 日) | `backtest_data/auto_okx_open_interest_1h_20260905/`、`backtest_data/auto_okx_open_interest_1h_20260921/`(2 本、各 3 ファイル) | 20260905: 2026-08-06T15:00:00+00:00〜2026-09-05T14:00:00+00:00、720 行 / 20260921: 2026-08-22T04:00:00+00:00〜2026-09-21T02:00:00+00:00、719 行(manifest) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `auto_okx_open_interest_1h_ccr` OKX rubik 建玉 1H `okx_btc_oi_1h.csv`(manifest の notes「30-day hard wall」)。コミット 3adf7759 の文「OKX 5m/1h refetched」で入った分 | `backtest_data/auto_okx_open_interest_1h_20261010_ccr/`(3 ファイル) | 2026-09-10T18:00:00+00:00〜2026-10-10T16:00:00+00:00、719 行(manifest) | 取得済 | 2026-10-11 | — | 未確認(コミット 3adf7759 はデータの門の作業で、読んだ研究単位の名は無い) |
+| `auto_okx_open_interest_5m_ccr` OKX rubik 建玉 5m `okx_btc_oi_5m.csv`(manifest の notes「2-3 day wall」)。コミット 3adf7759 の文「OKX 5m/1h refetched」で入った分 | `backtest_data/auto_okx_open_interest_5m_20261010_ccr/`(3 ファイル) | 2026-10-08T17:10:00+00:00〜2026-10-10T17:05:00+00:00、576 行(manifest) | 取得済 | 2026-10-11 | — | 未確認(コミット 3adf7759 はデータの門の作業で、読んだ研究単位の名は無い) |
+| `binance_XRPUSDT_1d` Binance XRPUSDT 日足(ファイル名から) | `backtest_data/binance_XRPUSDT_1d.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | 追加したコミット 8a1addf8 の文: maker execution model, cross-exchange research, xborder strategy |
+| `binance_XRPUSDT_1m` Binance XRPUSDT 1 分足(ファイル名から) | `backtest_data/binance_XRPUSDT_1m.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | 追加したコミット 8a1addf8 の文: maker execution model, cross-exchange research, xborder strategy |
+| `binance_XRPUSDT_4h` Binance XRPUSDT 4 時間足(ファイル名から) | `backtest_data/binance_XRPUSDT_4h.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | 追加したコミット 8a1addf8 の文: maker execution model, cross-exchange research, xborder strategy |
+| `binance_um_fundingRate_BTCUSDT_202001_202312` Binance USD-M BTCUSDT 資金調達率の月次アーカイブ(列 `calc_time,funding_interval_hours,last_funding_rate`、出所 `https://data.binance.vision/data/futures/um/monthly/fundingRate/BTCUSDT/`、取得 2026-10-03。manifest) | `backtest_data/binance_um_fundingRate_BTCUSDT_202001_202312/`(git に 50 ファイル。manifest.json・MD5SUMS を含む) | 2020-01〜2023-12、48 ファイル(manifest)。manifest の note: 測定に使うのは calc_time が 2023-12-17T15:00Z より前の行だけ(封印 P2-08 は 2023-12-18 から) | 取得済 | 2026-10-11 | — | Vol gate Q4(コミット 3fccd8a0 の文) |
+| `daily_btcusd_bitstamp` BTC/USD 日足、Bitstamp(ファイル名から) | `backtest_data/daily_btcusd_bitstamp_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `daily_btcusd_coinbase` BTC/USD 日足、Coinbase(ファイル名から) | `backtest_data/daily_btcusd_coinbase_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `daily_btcusd_yahoo` BTC/USD 日足、Yahoo(ファイル名から) | `backtest_data/daily_btcusd_yahoo_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `daily_ethusd_bitstamp` ETH/USD 日足、Bitstamp(ファイル名から) | `backtest_data/daily_ethusd_bitstamp_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `daily_ethusd_coinbase` ETH/USD 日足、Coinbase(ファイル名から) | `backtest_data/daily_ethusd_coinbase_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `daily_ethusd_yahoo` ETH/USD 日足、Yahoo(ファイル名から) | `backtest_data/daily_ethusd_yahoo_20260828.csv.gz` | 未確認(README に無い。ファイル名の日付は 2026-08-28) | 取得済 | 2026-10-11 | — | Report #34 LT1 long-horizon trend(コミット 5cec13c7 の文) |
+| `okx_btc_lsratio_1h` OKX BTC の買い持ち比率(L/S)1 時間(ファイル名から) | `backtest_data/okx_btc_lsratio_1h_20260823.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-23) | 取得済 | 2026-10-11 | — | Round 17 の data plan(コミット 91637e19 の文) |
+| `okx_btc_lsratio_5m` OKX BTC の買い持ち比率(L/S)5 分(ファイル名から) | `backtest_data/okx_btc_lsratio_5m_20260823.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-23) | 取得済 | 2026-10-11 | — | Round 17 の data plan(コミット 91637e19 の文) |
+| `okx_btc_oi_1h` OKX BTC 建玉 1 時間(ファイル名から) | `backtest_data/okx_btc_oi_1h_20260823.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-23) | 取得済 | 2026-10-11 | — | Round 17 の data plan(コミット 91637e19 の文) |
+| `okx_btc_oi_5m` OKX BTC 建玉 5 分(ファイル名から) | `backtest_data/okx_btc_oi_5m_20260823.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-23) | 取得済 | 2026-10-11 | — | Round 17 の data plan(コミット 91637e19 の文) |
+| `okx_traders_backfill` OKX のリードトレーダー 3 人の閉じた建玉の履歴の取り直し(上限 500 ページ、エラー 0 行)と同じ回の建玉 `positions_20261003.csv.gz`(README) | `backtest_data/okx_traders_backfill_20261003/`(git に 5 ファイル。README.md・MD5SUMS を含む) | 閉じた建玉: 1499200359BAE11A 9,554 行(決済 2026-07-04〜2026-10-03)/ 952071415C9BAD06 14,671(2026-07-03〜2026-10-02)/ 08E31CADCFDDCFB8 5,369 行(2026-08-21〜2026-10-03)。取得の終わり 2026-10-03 01:03 UTC(README) | 取得済 | 2026-10-11 | — | 未確認(README・コミット 1662299f に研究単位の名は無い) |
+| `okx_traders` OKX リードトレーダーの常駐記録(errors・history・leadtraders・positions・ratios。ファイル名と `okx_traders_backfill_20261003/README.md` の説明から。記録器は `scripts/record_okx_traders.py`) | `paper_logs/okx_traders/{errors,history,leadtraders,positions,ratios}_20261002.csv.gz`(5 本) | 未確認(README に無い。ファイル名の日付は 2026-10-02) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `basis_log` 基差の記録(ファイル名から) | `paper_logs/basis_log.csv` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `binance_daily` `metrics.csv` と `usdjpy.csv` の 2 本(中身の説明は README に無い) | `paper_logs/binance_daily/metrics.csv`、`paper_logs/binance_daily/usdjpy.csv` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `deribit_options` Deribit オプションの板(ファイル名 `book_` から) | `paper_logs/deribit_options/book_20261002.csv.gz`(1 本) | 未確認(README に無い。ファイル名の日付は 2026-10-02) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `k1_newenv_a` XBTUSD の 1・3・5・15・30・60 分足(ファイル名 `xbtusd_<粒度>_2017_2019.csv.gz` から)と `FOLD_MANIFEST.json` | `backtest_data/k1_newenv_a_20260927/`(7 ファイル) | ファイル名の範囲 2017_2019。行数は未確認(README に無い) | 取得済 | 2026-10-11 | — | K1 段 A(新環境)(コミット 14580fc9 の文「stage A worker」と置き場の名前) |
+
 ## 3. 国内暗号資産(bitFlyer 以外)
 
 | 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
@@ -145,6 +183,14 @@
 | bitFlyer BTC_JPY / ETH_JPY / XRP_JPY(candles/executions/flow) | `data/candles_{BTC,ETH,XRP}_JPY.csv` ほか | 〜2026-08-20 | 取得済 | 2026-09-11 | — | 未使用 |
 | bitbank BTC/XRP JPY | `backtest_data/bitbank_btc_jpy_transactions_monthly_first_days/`, `data/bitbank_xrp_jpy_1m.csv`, `backtest_data/bitbank_xrp_jpy_1m.csv` | 各種 | 取得済 | 2026-09-11 | — | 未使用 |
 | GMO・bitbank 横断(quotes/trades) | `backtest_data/auto_venues_20260905/` | 2026-08-27〜09-05 | 取得済 | 2026-09-11 | — | 未使用 |
+
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `candles_BTC_JPY` bitFlyer BTC_JPY のローソク足(ファイル名とコミット 03ef4670 の文「bitFlyer BTC/ETH ... data snapshots」から。粒度は書かれていない) | `backtest_data/candles_BTC_JPY_20260820.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-20) | 取得済 | 2026-10-11 | — | bitFlyer BTC/ETH cross-asset findings(コミット 03ef4670 の文) |
+| `candles_ETH_JPY` bitFlyer ETH_JPY のローソク足(ファイル名とコミット 03ef4670 の文から。粒度は書かれていない) | `backtest_data/candles_ETH_JPY_20260820.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-20) | 取得済 | 2026-10-11 | — | bitFlyer BTC/ETH cross-asset findings(コミット 03ef4670 の文) |
+| `candles_XRP_JPY` XRP_JPY のローソク足(ファイル名から。取引所の名はコミット aef9504d の文にも無い。粒度も書かれていない) | `backtest_data/candles_XRP_JPY_20260820.csv` | 未確認(README に無い。ファイル名の日付は 2026-08-20) | 取得済 | 2026-10-11 | — | first real-data backtest report(XRP_JPY)(コミット aef9504d の文) |
 
 ## 4. FX(USD/JPY)
 
@@ -156,6 +202,16 @@
 | FX ファンダメンタルズ・カレンダー | `backtest_data/fx_fundamentals_20260822/`, `data/fx/calendar.csv`, `data/fx/calendar_cache*`, `data/fx/events/` | 各種 | 取得済 | 2026-09-11 | — | 未使用 |
 | FRED 系列(政策金利・スワップ) | `backtest_data/fred_*.csv` | 各系列 | 取得済 | 2026-09-11 | — | 未使用 |
 | GMO USD/JPY スワップ | `backtest_data/gmo_swap_usdjpy.csv` | 単一ファイル | 取得済 | 2026-09-11 | — | 未使用 |
+
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `fred_DEXJPUS` FRED 系列 DEXJPUS(ファイル名から。既存行「FRED 系列(政策金利・スワップ)」の 1 本) | `backtest_data/fred_DEXJPUS.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | FX carry study(コミット 3d88c18c の文) |
+| `fred_DFF` FRED 系列 DFF(ファイル名から。既存行「FRED 系列(政策金利・スワップ)」の 1 本) | `backtest_data/fred_DFF.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | FX carry study(コミット 3d88c18c の文) |
+| `fred_DGS2` FRED 系列 DGS2(ファイル名から。既存行「FRED 系列(政策金利・スワップ)」の 1 本) | `backtest_data/fred_DGS2.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | FX carry study(コミット 3d88c18c の文) |
+| `fred_IR3TIB01JPM156N` FRED 系列 IR3TIB01JPM156N(ファイル名から。既存行「FRED 系列(政策金利・スワップ)」の 1 本) | `backtest_data/fred_IR3TIB01JPM156N.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | FX carry study(コミット 3d88c18c の文) |
+| `fred_IRSTCI01JPM156N` FRED 系列 IRSTCI01JPM156N(ファイル名から。既存行「FRED 系列(政策金利・スワップ)」の 1 本) | `backtest_data/fred_IRSTCI01JPM156N.csv` | 未確認(README に無い。ファイル名に日付なし) | 取得済 | 2026-10-11 | — | FX carry study(コミット 3d88c18c の文) |
 
 ## 5. JPX / 国内証券
 
@@ -174,6 +230,12 @@
 | JPX Tick 調査(監査) | `backtest_data/audit_fetch_JPX_tick_20260906/`, `backtest_data/audit_fetch_JPX_n225f_months_20260906/`, `backtest_data/audit_fetch_1306_split_20260906/`, `backtest_data/audit_fetch_H_20260905/`, `backtest_data/audit_fetch_micro_fee_20260906/` | — | 取得済 | 2026-09-11 | — | 監査記録のみ |
 | kabuステーション API(実口座・実発注) | オーナーPC(未接続) | — | **PC に未共有の可能性**(前提: 先物OP口座の承認・入金待ち) | 2026-09-11 | — | 未使用(`docs/OWNER_STATUS.md` 参照) |
 
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `jpx_etf_daily_topix_alt` TOPIX ETF の代替候補 1348.T(MAXIS TOPIX ETF)・1305.T(iFreeETF TOPIX)の日足。Yahoo Finance の生 JSON と派生 CSV、kabutan の照合 HTML(README・manifest) | `backtest_data/jpx_etf_daily_20260906_topix_alt/`(git に 10 ファイル。README.md・manifest.json・MD5SUMS を含む) | 1348.T・1305.T とも 3,690 行、2011-09-05〜2026-09-04。取得 2026-09-06T03:33:19Z・03:33:20Z(manifest) | 取得済 | 2026-10-11 | — | P2-03 の保有トリガーの差し替え候補として取得、取得時点では分析なし(README)。その後に読んだ研究単位は未確認 |
+
 ## 6. 研究基盤(合成データ・監査用フィクスチャ)
 
 **以下は実データではない。** 固定シードで生成した QA 用の既知解パケット(`scripts/qa/make_known_answer*.py`)。
@@ -190,6 +252,51 @@
 | PC 時計・レイテンシ | `data/latency/ws_vm.csv` | 取得済 | 2026-09-11 | 未使用 |
 | アテンション指標 | `data/attention/attention.csv` | 取得済 | 2026-09-11 | 未使用 |
 | ON1/ONR ペーパー台帳 | `data/paper_on1/ledger.csv`, `data/paper_onr/ledger.csv`, `data/paper_onr/status.json` | 取得済 | 2026-09-11 | 実行記録(研究データではない) |
+
+#### 追記(2026-10-11、L-984)
+
+| 資産 | 所在 | 範囲 | 状態 | 最終確認日 | プローブのログ | 使った単位 |
+|---|---|---|---|---|---|---|
+| `k1_newenv_g` K1 段 G(新環境の第 17 部)の `FOLD_MANIFEST.json` 1 本(コミット 7961d930 の文から) | `backtest_data/k1_newenv_g_20261001/FOLD_MANIFEST.json`(1 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-10-01) | 取得済(結果物) | 2026-10-11 | — | K1 段 G(コミット 7961d930 の文) |
+| `o3c_oi_distance` O-3c 蓄積建玉の分布からの距離の出力(W=8h/24h、`w8/`・`w24/`。コミット 70fd82bc の文から) | `backtest_data/o3c_oi_distance_20260917/`(6 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 建玉からの距離(コミット 70fd82bc の文、ACTION_LOG 056) |
+| `o3c_oi_distance_split` 同じ距離の売り側・買い側の価格に分けた変種(`w8/`・`w24/`。コミット 00d7e275 の文から) | `backtest_data/o3c_oi_distance_split_20260918/`(6 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 建玉からの距離の変種(コミット 00d7e275 の文) |
+| `o3c_price_level_band` O-3c 1 件目 (b) 事前の帯の表(コミット 5aba092f の文「ex-ante band table」から) | `backtest_data/o3c_price_level_band_20260917/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_bundle_first` O-3c 1 件目 (a) 束の先頭の表(コミット 5aba092f の文「bundle-first table」から) | `backtest_data/o3c_price_level_bundle_first_20260917/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_full_b005` O-3c 1 件目 (c) W/b の変種のうち b005(コミット 5aba092f の文「W/b variants」と置き場の名前から) | `backtest_data/o3c_price_level_full_20260917_b005/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_full_b025` O-3c 1 件目 (c) W/b の変種のうち b025(同上) | `backtest_data/o3c_price_level_full_20260917_b025/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_full_w72` O-3c 1 件目 (c) W/b の変種のうち w72(同上) | `backtest_data/o3c_price_level_full_20260917_w72/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_full_w8` O-3c 1 件目 (c) W/b の変種のうち w8(同上) | `backtest_data/o3c_price_level_full_20260917_w8/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 (a)(b)(c)(コミット 5aba092f の文) |
+| `o3c_price_level_rows4` O-3c 行 1〜4 の出力(`band_full_w8/`・`band_full_w24/`・`band_split_w8/`・`band_split_w24/`・`bundle_w8/`・`bundle_w24/`・`cascades/`・`ties/`。重複を除いた清算での cascade、同値の数え直し、帯のずれ。コミット 80866dae の文と MD5SUMS の置き場から) | `backtest_data/o3c_price_level_rows4_20260917/`(24 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 行 1〜4(コミット 80866dae の文、ACTION_LOG 054) |
+| `o3c_price_level_sample` O-3c 1 件目 価格水準の観察表の標本走行(コミット b5f45430 の文から) | `backtest_data/o3c_price_level_sample_20260917/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 価格水準の観察表(コミット b5f45430 の文) |
+| `o3c_price_level_sample_limitprice` 同じ標本走行の limitprice の変種(置き場の名前とコミット b5f45430 から) | `backtest_data/o3c_price_level_sample_20260917_limitprice/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-17) | 取得済(結果物) | 2026-10-11 | — | O-3c 1 件目 価格水準の観察表(コミット b5f45430 の文) |
+| `o3c_reaction_anchor` O-3c 段 A(清算の反応)手順 1 の基準点の妥当性(bar60。コミット 86c27a5b の文から) | `backtest_data/o3c_reaction_20260918_anchor/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A(コミット 86c27a5b の文) |
+| `o3c_reaction_anchor_trades` 段 A 手順 1 の基準点の妥当性(trades。コミット 86c27a5b の文から) | `backtest_data/o3c_reaction_20260918_anchor_trades/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A(コミット 86c27a5b の文) |
+| `o3c_reaction_anchor_trades_sample` 段 A 手順 1 の trades の標本(置き場の名前とコミット 86c27a5b から) | `backtest_data/o3c_reaction_20260918_anchor_trades_sample/`(3 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A(コミット 86c27a5b の文) |
+| `o3c_reaction_anchor_v1_rawcols` 段 A 基準点の v1 の生の列(置き場の名前とコミット 86c27a5b から。`README.txt` があるが読んでよい範囲の外なので開いていない) | `backtest_data/o3c_reaction_20260918_anchor_v1_rawcols/`(4 ファイル。README.txt・MD5SUMS を含む) | 未確認(README*.md に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A(コミット 86c27a5b の文) |
+| `o3c_reaction_full` 段 A の本走 6 本(判定 2 + 感度 4、`gap30/60/180` × `w8/w24`)の出力と主表の gzip の写し(コミット 03c39a56・d971930a の文から) | `backtest_data/o3c_reaction_20260918_full/`(25 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A 本走(コミット 03c39a56・d971930a の文、L-230) |
+| `o3c_reaction_judge` 段 A の判定の走行 1 回(576 セルの表、観察だけの表。コミット 8e7b5464 の文から) | `backtest_data/o3c_reaction_20260918_judge/`(11 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A 判定(コミット 8e7b5464 の文) |
+| `o3c_reaction_sample` 段 A 手順 2 の標本日の走行(`gap30_w8/`・`gap60_w8/`・`gap60_w24/`・`gap180_w8/`)。事前登録の監査ごとに作り直し(コミット 86c27a5b〜e389dcd7 の文から) | `backtest_data/o3c_reaction_20260918_sample/`(16 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A 事前登録(コミット 86c27a5b〜e389dcd7 の文) |
+| `o3c_reaction_scale12_judgmentdays` 段 A の scale12 の判定区間の日(置き場の名前から。`README.txt` があるが読んでよい範囲の外なので開いていない) | `backtest_data/o3c_reaction_20260918_scale12_judgmentdays/`(5 ファイル。README.txt・MD5SUMS を含む) | 未確認(README*.md に無い。置き場の名前の日付は 2026-09-18) | 取得済(結果物) | 2026-10-11 | — | O-3c 段 A(コミット 86c27a5b の文) |
+| `o3c_signal_continue` O-3c SIGNAL 続行/停止の単位の規則表と Jev の後半走行(`jev/`、`selection_manifest.json` あり。コミット 2d6d3f37・5efec01b の文から) | `backtest_data/o3c_signal_continue_20260920/`(23 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 続行/停止(コミット 2d6d3f37・5efec01b の文) |
+| `o3c_signal_explore` SIGNAL 探索 1(向き・属性別の大きさ・時間の形・感度・距離で標準化。コミット 46f34eee の文から) | `backtest_data/o3c_signal_explore_20260919/`(8 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-19) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 探索 1(コミット 46f34eee の文) |
+| `o3c_signal_explore2` SIGNAL 探索 2(基準点をずらす道具、E0〜E4。コミット 324e7fd3 の文から) | `backtest_data/o3c_signal_explore2_20260919/`(11 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-19) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 探索 2(コミット 324e7fd3 の文) |
+| `o3c_signal_explore3` SIGNAL 探索 3(清算前の基準、戻りの割合。コミット 0235cb67 の文から) | `backtest_data/o3c_signal_explore3_20260920/`(12 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 探索 3(コミット 0235cb67 の文) |
+| `o3c_signal_explore4` SIGNAL 探索 4(事前の動きの層、続く側、固定窓の対照。コミット 1c1a9052 の文から) | `backtest_data/o3c_signal_explore4_20260920/`(15 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 探索 4(コミット 1c1a9052 の文) |
+| `o3c_signal_explore5` SIGNAL 探索 5(各清算の約定を基準点に。コミット 1d155e6f の文から) | `backtest_data/o3c_signal_explore5_20260920/`(12 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 探索 5(コミット 1d155e6f の文) |
+| `o3c_signal_materials` SIGNAL 材料(候補の選別表、前半の凍結ロジスティック。コミット adb98a99・81278b23・fa2d7111・7640da67 の文から) | `backtest_data/o3c_signal_materials_20260920/`(13 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 材料・V4 段 1(コミット adb98a99〜7640da67 の文) |
+| `o3c_signal_policy` SIGNAL 方針の模擬 段 1(`stage1_firsthalf/`)・段 2(`stage2_secondhalf/`)(コミット fc3d2206・f7ef2176・e1ce8c00 の文から) | `backtest_data/o3c_signal_policy_20260920/`(19 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-20) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 方針の模擬(コミット fc3d2206〜e1ce8c00 の文) |
+| `o3c_signal_value` SIGNAL 価値の単位 段 1・段 2 と利確の変種(`spread/`・`stage1_firsthalf/`・`stage1_tp/`・`stage2_dryrun/`・`stage2_secondhalf/`。コミット e6cac06c〜2f27d531 の文から) | `backtest_data/o3c_signal_value_20260921/`(95 ファイル) | 未確認(README に無い。置き場の名前の日付は 2026-09-21) | 取得済(結果物) | 2026-10-11 | — | O-3c SIGNAL 価値の単位(コミット e6cac06c〜2f27d531 の文、L-355/L-356) |
+| `qa_known_answer_maker` QA 既知解パケット gen-2 maker の約定モデル(合成。コミット 1010eefe の文から) | `backtest_data/qa_known_answer_maker_20260905/`(4 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット 1010eefe の文) |
+| `qa_known_answer_maker3` QA 既知解パケット gen-3 maker(合成、事象駆動の板から作った正解。コミット 26536c40 の文から) | `backtest_data/qa_known_answer_maker3_20260907/`(4 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット 26536c40 の文) |
+| `qa_known_answer_maker3_v2` QA 既知解パケット gen-3 v2(合成。コミット 97163064 の文で「packet marked VOID」) | `backtest_data/qa_known_answer_maker3_v2_20260905/`(5 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット 97163064 の文) |
+| `qa_known_answer_maker3_v3` QA 既知解パケット gen-3 v3 maker(合成。コミット e2528f60 の文から) | `backtest_data/qa_known_answer_maker3_v3_20260905/`(4 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット e2528f60 の文) |
+| `qa_known_answer_maker4` QA 既知解パケット gen-4 maker(合成、植えた欠陥 1 つ。コミット 955d6482 の文から) | `backtest_data/qa_known_answer_maker4_20260905/`(33 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット 955d6482 の文) |
+| `qa_known_answer_maker4_r2` QA 既知解パケット gen-4 第 2 回(合成、植えた欠陥を入れ替え。コミット a2ac82b6 の文から) | `backtest_data/qa_known_answer_maker4_r2_20260905/`(37 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット a2ac82b6 の文) |
+| `qa_known_answer_steer` QA 誘導への耐性の既知解パケット(合成、偽の仕組みを添えた主張 6 件。コミット 3d436129 の文から) | `backtest_data/qa_known_answer_steer_20260905/`(11 ファイル) | 未確認(README に無い。合成データ) | 取得済(合成) | 2026-10-11 | — | QA(コミット 3d436129 の文) |
+| `on1_ledger` ON1 のペーパー台帳の共有の写し(ファイル名から) | `paper_logs/on1_ledger.csv` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `onr_ledger` ONR のペーパー台帳の共有の写し(ファイル名から) | `paper_logs/onr_ledger.csv` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `scalp_paper` スキャルパーのペーパー記録(jsonl。ファイル名から) | `paper_logs/scalp_paper.jsonl` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
+| `board_round_series_5s` 板往復の 5 秒刻みの系列(ファイル名から) | `paper_logs/board_round_series_5s.csv.gz` | 未確認(README に無い) | 取得済 | 2026-10-11 | — | 未確認(コミット文は「paper logs snapshot」のみ) |
 
 ## 7. pilot procure の結果(2026-09-11、この skill の初回実行)
 
@@ -318,3 +425,162 @@ P2-06(NT 倍率)を始める直前にこれを捨てているのは筋が悪い�
 **波及**: BitMEX の**ライブ清算記録は、上場廃止に向かう期間のもの**になる。建玉整理・
 reduce only・薄い板の下で起きる清算は通常時と別物なので、**この期間を機構の検定に使わない**。
 記録自体は害が無いので続けるが、`schema/liquidations.json` と本台帳に線を引いておく。
+
+## 10. 置き場の一覧(機械が検める。`scripts/data_gates.py` の門 G2、2026-10-11、L-984)
+
+git に載ったデータの置き場ごとに、実物の最新の日付と、説明の行がある節。`python3 scripts/data_repair/registry_index.py --write` で作り直す(説明の行が無い置き場は節が空になり、門 G2 が止める)。
+
+| 置き場 | 最新の日付 | 説明の節 |
+|---|---|---|
+| audit_fetch_1306_split | 2026-09-06 | §5 |
+| audit_fetch_H | 2026-09-05 | §5 |
+| audit_fetch_JPX_n225f_months | 2026-09-06 | §5 |
+| audit_fetch_JPX_tick | 2026-09-06 | §5 |
+| audit_fetch_P2-08_docs | 2026-09-06 | §1 |
+| audit_fetch_P2-08b | 2026-09-06 | §1 |
+| audit_fetch_bitflyer_history | 2026-09-06 | §1 |
+| audit_fetch_etf_alternatives | 2026-09-06 | §5 |
+| audit_fetch_etf_units | 2026-09-06 | §5 |
+| audit_fetch_micro_fee | 2026-09-06 | §5 |
+| auto_bitflyer_executions | 2026-09-21 | §1 |
+| auto_oi_snapshots | 2026-09-21 | §2 |
+| auto_okx_long_short_ratio | 2026-10-03 | §2 |
+| auto_okx_open_interest_1h | 2026-09-21 | §2 |
+| auto_okx_open_interest_1h_ccr | 2026-10-10 | §2 |
+| auto_okx_open_interest_5m | 2026-10-03 | §2 |
+| auto_okx_open_interest_5m_ccr | 2026-10-10 | §2 |
+| auto_venues | 2026-09-21 | §3 |
+| binance_BTCUSDT_1m | 2026-08-31 | §2 |
+| binance_BTCUSDT_1m_210d | 2026-08-20 | §2 |
+| binance_BTCUSDT_1s | 2026-09-06 | §2 |
+| binance_BTCUSDT_aggTrades | 2026-09-06 | §2 |
+| binance_BTCUSDT_aggTrades_tardis_days | — | §2 |
+| binance_XRPUSDT_1d | — | §2 |
+| binance_XRPUSDT_1m | — | §2 |
+| binance_XRPUSDT_4h | — | §2 |
+| binance_cm_o3c | 2026-09-13 | §2 |
+| binance_cm_o3c_supp | 2026-09-17 | §2 |
+| binance_um_BTCUSDT_1m | 2026-10-02 | §2 |
+| binance_um_BTCUSDT_aggTrades | 2026-09-06 | §2 |
+| binance_um_fundingRate_BTCUSDT_202001_202312 | — | §2 |
+| bitbank_btc_jpy_transactions_monthly_first_days | 2026-09-01 | §3 |
+| bitbank_xrp_jpy_1m | — | §3 |
+| bitflyer_executions_backfill | 2026-10-10 | §1 |
+| bitflyer_executions_us | 2026-09-06 | §1 |
+| bitflyer_lightchart_BTC_JPY_1m | 2026-09-06 | §1 |
+| bitflyer_lightchart_FX_BTC_JPY_1m | 2026-09-06 | §1 |
+| bitmex_XBTUSD_1m_from1s | 2026-10-02 | §2 |
+| bitmex_insurance | 2026-09-12 | §2 |
+| bitmex_trade_1s_XBTUSD | 2021-12-31 | §2 |
+| board_round | 2026-09-04 | §6 |
+| burst_events | 2026-08-20 | §6 |
+| bybit_BTCUSDT_1m | 2026-09-10 | §2 |
+| bybit_reachability_check | 2026-09-06 | §2 |
+| candles_BTC_JPY | 2026-08-20 | §3 |
+| candles_ETH_JPY | 2026-08-20 | §3 |
+| candles_FX_BTC_JPY | 2026-08-20 | §1 |
+| candles_FX_BTC_JPY_30d | 2026-08-20 | §1 |
+| candles_FX_BTC_JPY_31d | 2026-08-23 | §1 |
+| candles_XRP_JPY | 2026-08-20 | §3 |
+| coinalyze_liquidations | 2026-09-21 | §2 |
+| daily_btcusd_bitstamp | 2026-08-28 | §2 |
+| daily_btcusd_coinbase | 2026-08-28 | §2 |
+| daily_btcusd_yahoo | 2026-08-28 | §2 |
+| daily_ethusd_bitstamp | 2026-08-28 | §2 |
+| daily_ethusd_coinbase | 2026-08-28 | §2 |
+| daily_ethusd_yahoo | 2026-08-28 | §2 |
+| executions_FX_BTC_JPY_31d | 2026-09-08 | §1 |
+| flow_FX_BTC_JPY | 2026-08-20 | §1 |
+| fred_DEXJPUS | — | §4 |
+| fred_DFF | — | §4 |
+| fred_DGS2 | — | §4 |
+| fred_IR3TIB01JPM156N | — | §4 |
+| fred_IRSTCI01JPM156N | — | §4 |
+| fx_btc_jpy_1m_continuous | 2026-09-06 | §1 |
+| fx_event_ticks_2005_2014 | 2014-12-17 | §4 |
+| fx_event_ticks_2015_2026 | 2026-08-12 | §4 |
+| fx_fundamentals | 2026-08-22 | §4 |
+| fx_usdjpy_1m | 2026-08-22 | §4 |
+| gate_liquidations | 2026-09-08 | §2 |
+| gmo_swap_usdjpy | — | §4 |
+| jp_factors | 2026-09-05 | §5 |
+| jpx_daily_report_json | 2026-09-08 | §5 |
+| jpx_etf_daily | 2026-09-05 | §5 |
+| jpx_etf_daily_topix_alt | 2026-09-06 | §5 |
+| k1_newenv_a | 2026-09-27 | §2 |
+| k1_newenv_g | 2026-10-01 | §6 |
+| liquidations_repaired | 2026-09-17 | §2 |
+| mini_topixf_225labo | 2026-09-07 | §5 |
+| n225f_225labo | 2026-09-06 | §5 |
+| nk225_events | 2026-09-04 | §5 |
+| o3c_oi_distance | 2026-09-17 | §6 |
+| o3c_oi_distance_split | 2026-09-18 | §6 |
+| o3c_price_level_band | 2026-09-17 | §6 |
+| o3c_price_level_bundle_first | 2026-09-17 | §6 |
+| o3c_price_level_full | 2026-09-17 | §2 |
+| o3c_price_level_full_b005 | 2026-09-17 | §6 |
+| o3c_price_level_full_b025 | 2026-09-17 | §6 |
+| o3c_price_level_full_w72 | 2026-09-17 | §6 |
+| o3c_price_level_full_w8 | 2026-09-17 | §6 |
+| o3c_price_level_rows4 | 2026-09-17 | §6 |
+| o3c_price_level_sample | 2026-09-17 | §6 |
+| o3c_price_level_sample_limitprice | 2026-09-17 | §6 |
+| o3c_reaction_anchor | 2026-09-18 | §6 |
+| o3c_reaction_anchor_trades | 2026-09-18 | §6 |
+| o3c_reaction_anchor_trades_sample | 2026-09-18 | §6 |
+| o3c_reaction_anchor_v1_rawcols | 2026-09-18 | §6 |
+| o3c_reaction_full | 2026-09-18 | §6 |
+| o3c_reaction_judge | 2026-09-18 | §6 |
+| o3c_reaction_sample | 2026-09-18 | §6 |
+| o3c_reaction_scale12_judgmentdays | 2026-09-18 | §6 |
+| o3c_signal_continue | 2026-09-20 | §6 |
+| o3c_signal_explore | 2026-09-19 | §6 |
+| o3c_signal_explore2 | 2026-09-19 | §6 |
+| o3c_signal_explore3 | 2026-09-20 | §6 |
+| o3c_signal_explore4 | 2026-09-20 | §6 |
+| o3c_signal_explore5 | 2026-09-20 | §6 |
+| o3c_signal_materials | 2026-09-20 | §6 |
+| o3c_signal_policy | 2026-09-20 | §6 |
+| o3c_signal_value | 2026-09-21 | §6 |
+| okx | 2026-09-05 | §2 |
+| okx_btc_lsratio_1h | 2026-08-23 | §2 |
+| okx_btc_lsratio_5m | 2026-08-23 | §2 |
+| okx_btc_oi_1h | 2026-08-23 | §2 |
+| okx_btc_oi_5m | 2026-08-23 | §2 |
+| okx_traders_backfill | 2026-10-03 | §2 |
+| paper_logs/basis_log | — | §2 |
+| paper_logs/binance_daily | — | §2 |
+| paper_logs/board_round_series_5s | — | §6 |
+| paper_logs/bot | — | §0 |
+| paper_logs/deribit_options | 2026-10-02 | §2 |
+| paper_logs/funding_rate_history | — | §2 |
+| paper_logs/hyperliquid | 2026-10-02 | §2 |
+| paper_logs/latency | — | §6 |
+| paper_logs/liquidations | 2026-10-03 | §2 |
+| paper_logs/nk225_sessions | — | §5 |
+| paper_logs/oi_snapshots | — | §2 |
+| paper_logs/okx_traders | 2026-10-02 | §2 |
+| paper_logs/on1_ledger | — | §6 |
+| paper_logs/onr_ledger | — | §6 |
+| paper_logs/scalp_paper | — | §6 |
+| paper_logs/spread_FX_BTC_JPY | — | §1 |
+| paper_logs/tape | 2026-10-03 | §1 |
+| paper_logs/venues | 2026-10-03 | §3 |
+| phase2_runs | 2026-09-06 | §6 |
+| qa_known_answer | 2026-09-05 | §6 |
+| qa_known_answer_maker | 2026-09-05 | §6 |
+| qa_known_answer_maker3 | 2026-09-07 | §6 |
+| qa_known_answer_maker3_v2 | 2026-09-05 | §6 |
+| qa_known_answer_maker3_v3 | 2026-09-05 | §6 |
+| qa_known_answer_maker4 | 2026-09-05 | §6 |
+| qa_known_answer_maker4_r2 | 2026-09-05 | §6 |
+| qa_known_answer_steer | 2026-09-05 | §6 |
+| qa_pipeline_daily | 2026-09-06 | §6 |
+| qa_pipeline_taker | 2026-09-05 | §6 |
+| regime_composite | 2026-09-01 | §6 |
+| reit_onr | 2026-09-04 | §5 |
+| spread_backfill | 2026-10-02 | §1 |
+| storm_events | 2026-08-20 | §6 |
+| topixf_225labo | 2026-09-07 | §5 |
+| venue_survey | 2026-08-27 | §2 |
+| yutai | 2026-09-04 | §5 |
