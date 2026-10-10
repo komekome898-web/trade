@@ -39257,14 +39257,18 @@
   {
    "move": 1448,
    "tools": {
-    "Bash": 1
+    "Bash": 26,
+    "ToolSearch": 1,
+    "TaskCreate": 4,
+    "TaskUpdate": 1,
+    "Write": 3
    },
-   "n_tools": 1,
+   "n_tools": 35,
    "read_goal": false,
-   "first_write_at": null,
+   "first_write_at": 17,
    "table_shown": true,
-   "claims_without_output": 1,
-   "claims_total": 1,
+   "claims_without_output": 2,
+   "claims_total": 2,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
    "audit_followed_by_real_edit": 0,
@@ -39277,25 +39281,25 @@
     ".claude/agents/": 0
    },
    "readdo_reads": 0,
-   "unlock_created": 0,
+   "unlock_created": 2,
    "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 315,
-   "value": 0.2222
+   "den": 316,
+   "value": 0.2215
   },
   "P2_table_shown_before_first_write": {
-   "num": 56,
-   "den": 315,
-   "value": 0.1778
+   "num": 57,
+   "den": 316,
+   "value": 0.1804
   },
   "P3_claim_with_output": {
    "num": 502,
-   "den": 1118,
-   "value": 0.449
+   "den": 1119,
+   "value": 0.4486
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -39319,7 +39323,7 @@
    "value": null
   },
   "R4_unlock_created": {
-   "num": 28,
+   "num": 30,
    "den": null,
    "value": null,
    "note_key": "excludes_test_origin"

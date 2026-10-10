@@ -201,3 +201,11 @@ def test_g1_pending_with_git(tmp_path):
     run("update-ref", f"refs/remotes/{dg.SHARE_REF}", "HEAD")
     run("checkout", "-q", "work")
     assert dg.g1_pending(tmp_path)[0] == 1
+
+
+def test_stream_lags_finds_stopped_recorder():
+    paths = ["paper_logs/tape/executions_20261009.csv.gz", "paper_logs/venues/quotes_20261005.csv.gz",
+             "paper_logs/venues/trades_gmo_btc_jpy_20261005.csv.gz", "paper_logs/tape/board_top10_20261008.csv.gz"]
+    lags = dg.stream_lags(paths, set())
+    assert len(lags) == 2 and all("venues" in x for x in lags)  # 1 日遅れ(board)は止めない
+    assert dg.stream_lags(paths, {("venues/quotes", "停止"), ("venues/trades_gmo_btc_jpy", "停止")}) == []

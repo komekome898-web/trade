@@ -17,6 +17,9 @@
   `docs/DATA.md` §10 の表に無い / 表の「最新の日付」が実物より古い / 「説明の節」にその名前が無いとき、
   研究の道具と返答の終わり(Stop)を止める。
 - G3 見る: その会話で `docs/DATA.md` を Read する前に、データの置き場を探す・読む道具を止める。
+- G5 記録の停止: 共有に毎日届く流れ(`paper_logs/<流れ>/<種類>_<日付>.*`)のうち、最新の日が、共有全体の最新の日より
+  2 日以上遅れているもの(記録が止まった・共有から漏れた)があり、`docs/DATA.md` §8.1 に「停止」の行が無いとき、
+  返答の終わり(Stop)を止める(L-987 で足した。10-05 で止まった venues を、G1〜G4 では見つけられなかった)。
 - G4 欠け: 取り元が消す期間(`config/constants.yaml: data_retention`)の中にある欠けが、
   取り直されていない、かつ `docs/DATA.md` §8.1 に処置の行が無いとき、返答の終わり(Stop)を止める。
 
@@ -377,6 +380,38 @@ def okx_missing(base: Path, now: datetime, ledger: set) -> list[str]:
     return out
 
 
+KIND = re.compile(r"^paper_logs/([^/]+)/(.+?)_?(20\d{6})[^/]*$")
+
+
+def stream_lags(paths: list[str], ledger: set) -> list[str]:
+    """共有の流れ(流れ/種類)ごとの最新の日が、全体の最新の日より 2 日以上遅れているもの。"""
+    latest: dict[str, str] = {}
+    for p in paths:
+        m = KIND.match(p)
+        if not m:
+            continue
+        k = f"{m.group(1)}/{m.group(2)}"
+        if m.group(3) > latest.get(k, ""):
+            latest[k] = m.group(3)
+    if not latest:
+        return []
+    top = max(latest.values())
+    topd = datetime.strptime(top, "%Y%m%d").date()
+    out = []
+    for k, d in sorted(latest.items()):
+        lag = (topd - datetime.strptime(d, "%Y%m%d").date()).days
+        if lag >= 2 and (k, "停止") not in ledger:
+            out.append(f"paper_logs/{k}: 最新 {d[:4]}-{d[4:6]}-{d[6:]}(共有全体の最新 {top[:4]}-{top[4:6]}-{top[6:]} より {lag} 日遅れ)")
+    return out
+
+
+def g5_problems(base: Path) -> list[str]:
+    md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
+    ref = SHARE_REF if git(["rev-parse", "--verify", "-q", SHARE_REF], base, 10)[0] == 0 else "HEAD"
+    _, out = git(["ls-tree", "-r", "--name-only", ref, "--", "paper_logs"], base, 30)
+    return stream_lags(out.splitlines(), parse_gap_ledger(md))
+
+
 def g4_problems(base: Path, now: datetime | None = None) -> list[str]:
     now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
@@ -478,7 +513,7 @@ def all_problems(base: Path) -> dict[str, list[str]]:
     md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
     g2 = registry_problems(families(tracked_paths(base)), md)
     g4 = g4_problems(base)
-    return {"G1 取り込み": g1, "G2 登録簿": g2, "G4 欠け": g4}
+    return {"G1 取り込み": g1, "G2 登録簿": g2, "G4 欠け": g4, "G5 記録の停止": g5_problems(base)}
 
 
 def cmd_stop() -> int:
