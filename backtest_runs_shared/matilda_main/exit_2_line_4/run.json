@@ -1,0 +1,64 @@
+{
+ "strategy": "matilda_simple",
+ "params": {
+  "levels": 5,
+  "foot": 1,
+  "vola_count": 40,
+  "range_count": 40,
+  "alert_count": 20,
+  "range_setting": 0.00025,
+  "over_range_setting": 0.16666666666666666,
+  "vola_setting": null,
+  "entry_setting": 4,
+  "exit_setting": 2,
+  "break_delay": 1,
+  "break_dist": 0.5,
+  "break_len_mult": 2,
+  "beard_ignore": 1,
+  "step_setting": 1,
+  "dev_setting": null,
+  "line_setting": 4
+ },
+ "seal": "2023-12-17T15:00:00+00:00",
+ "bar_files": [
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2015.csv.gz",
+   "sha256": "c71f47b09ee07c25ef3f8bc92080383a6aefd7420cc147506adc07b315bb62fd"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2016.csv.gz",
+   "sha256": "73d10b88f8dde8a1b5825f4feecd093cc075ba5dd29e56e50b5b59f1a849c3bb"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2017.csv.gz",
+   "sha256": "6d84ad5319ae0038401db20d92331838e8f8bef2fcaf749383f6cf7d7dc789f8"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2018.csv.gz",
+   "sha256": "1385d1ebf85b5da0b096957043c2680011854e1265ee0d7558ef9a37959a95df"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2019.csv.gz",
+   "sha256": "07b74645997c6e66c23ba06213261ff6abdf4ca5ebb14cdb5c49689883d6e8a3"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2020.csv.gz",
+   "sha256": "8da834bd5acd192d937ea1293a7ac6d352a09790b1af313dd4142b5aace67a23"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2021.csv.gz",
+   "sha256": "79de9fd56e06d5eb22cc6e3fd719c12eae62b4042619ea304a38b7d447ed3d76"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2022.csv.gz",
+   "sha256": "62b691086660b660dcfcc3906d0293a76e1ecd927f19662380ad8f863291cf56"
+  },
+  {
+   "path": "backtest_data/bitflyer_lightchart_FX_BTC_JPY_1m_20260906/candles_1m_2023.csv.gz",
+   "sha256": "d0e7bb576a161059dc0844032bd19ec85f9ab9e082dbfbab538fc70ae84b6a15"
+  }
+ ],
+ "bar_limit": 0,
+ "tick": 1.0,
+ "git": "6f9ec408618a1834d004d3eee746e06ca9bb3cce"
+}
