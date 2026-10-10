@@ -23,23 +23,28 @@
   起点にならない(「評価した足」にも入れない)。評価した足の UTC の日を days に(並べて重なり無し)。
   起点 = 終値 > `_snap["up"]`(side −1)か 終値 < `_snap["lo"]`(side +1)。
   1 件の記録の鍵: ts・day・side・entry(直前に評価した足が同じ side の起点でない = True)・gate(`_snap["gate"]`)・
+  brk(`decide` の後の戦略のブレイク中の印 `_brk`。玉が無くても終値がブレイクの線を越えると ±1 になる。
+  `matilda_simple.py` の `_rejudge`。ブレイク中は建ての注文を置かない = `_place`)・
   c0・center・vola・width(`ind["width"]`)・tp_line(= center − side × exit_setting × vola)・
-  break_line(side −1 なら `_snap["bu"]`、+1 なら `_snap["bd"]`)・outcome・k。
+  break_line(side −1 なら `_snap["bu"]`、+1 なら `_snap["bd"]`)・outcome・k・
+  n_win(起点の後 40 分の中の飛ばさない足の数 = 1 ≤ k ≤ 40 の足の数。結果に依らない。足の疎らさを表に並べるため)。
+  足の時刻が直前に読んだ足(飛ばした足を含む)より増えていなければ ValueError(ファイルの順の誤りを黙って進めない)。
   終わり end = seal 以後の足に届いたなら seal、届かずに足が尽きたなら最後に読んだ足(飛ばした足を含む)の ts + 1 分。
   起点の ts + 41 分 > end の起点は記録しない(40 分目の足が終わるまでのデータが無い)。
 - `ratio_diff_ci(days_a, num_a, den_a, days_b, num_b, den_b)` → `{"mean", "lo", "hi", "mde"}`(後半 b − 前半 a の割合の差)。
-  rng = `np.random.default_rng(20261004)`。先に b、次に a について、1,000 回ずつ: 塊 5 の循環の選び直し
+  rng = `np.random.default_rng(diag_tables.SEED)`(= 20261004)。先に b、次に a について、1,000 回ずつ: 塊 5 の循環の選び直し
   (`diag_tables._boot_means` と同じ引き方: nb = ceil(n/5)、starts = rng.integers(0, n, size=nb)、
   idx = (starts[:, None] + arange(5)).ravel()[:n] % n)で Σnum[idx] ÷ Σden[idx]。Σden[idx] = 0 の回は捨てる。
   差 = b の回 − a の回(回の番号どうし。どちらかを捨てた回は差も捨てる)。lo・hi = 差の 2.5・97.5 百分位、
   mean = 点の差(Σnum_b ÷ Σden_b − Σnum_a ÷ Σden_a)、mde = 2.8 × 差の標準偏差(ddof=1)。
 - `main(argv)`: `--files <足のファイル ...>`(`read_bars` に渡す)・`--out <置き場>`・`--seal`(既定 SEAL)。
+  `--seal` が SEAL より後なら、ファイルを開かずに 2 を返す。
   `<置き場>/day_counts.csv`(見出し `day,side,entry,gate,outcome,n`。entry・gate は 0/1。起点の数を日 × 側 × entry × gate × 結果で数え、
   0 の組は書かない。行は見出しの列の順に並べる)と `<置き場>/tables.md`(4 つの見方ごとの表。見方の名前を見出しに含む。
   年・first・second の起点の数と 5 つの結果の割合、first・second の区間、diff の点・区間・MDE。あわせて起点の
-  幅 ÷ ボラ の年ごとの中央値)を書き、0 を返す。
-- `summarize(records, days, cut=CUT)` → res[見方][期間][結果]。見方 = "entry_open"(entry かつ gate)・"entry_all"・
-  "point_open"(gate)・"point_all"。期間 = 年の文字列(起点の UTC の年)・"first"(day < cut)・"second"(day ≥ cut)。
+  幅 ÷ ボラ と n_win の年ごとの中央値。幅 ÷ ボラ は起点の時点の値で、`width_vola.out` の全部の足の値とは母集団が違うと表に書く)を書き、0 を返す。
+- `summarize(records, days, cut=CUT)` → res[見方][期間][結果]。見方 = "entry_open"(entry かつ gate かつ brk = 0)・"entry_all"・
+  "point_open"(gate かつ brk = 0。戦略が建てうる起点)・"point_all"。期間 = 年の文字列(起点の UTC の年)・"first"(day < cut)・"second"(day ≥ cut)。
   各 = {"n": 起点の数, "count": その結果の数, "share": count ÷ n}。first・second はさらに "lo"・"hi" =
   `diag_tables.group_ratio_ci(その期間の days, 日ごとの count, 日ごとの n)` の lo・hi。
   res[見方]["diff"][結果] = `ratio_diff_ci`(first の days・日ごとの count・日ごとの n、second の同じもの)。
@@ -48,6 +53,7 @@
 from __future__ import annotations
 
 import math
+import os
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -57,6 +63,8 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "scripts" / "analysis"))
+if os.environ.get("D1B_MODULE_DIR"):  # 変異の表: 壊した写しの置き場を先に読む(試験の写しを作らずに当てる)
+    sys.path.insert(0, os.environ["D1B_MODULE_DIR"])
 d1b = pytest.importorskip("d1b_matilda")
 import diag_tables as dt  # noqa: E402
 
@@ -175,13 +183,13 @@ def _reference(bars, params, seal_iso):
         sn, ind = st._snap, st.ind
         if sn is None or sn["vola"] <= 0:
             continue
-        evald.append((len(kept) - 1, dict(sn), dict(ind)))
+        evald.append((len(kept) - 1, dict(sn), dict(ind), st._brk))
     if end is None:
         end = last + timedelta(minutes=1)
     recs, days = [], []
     prev_side = None
     ex = params["exit_setting"]
-    for ix, sn, ind in evald:
+    for ix, sn, ind, brk_state in evald:
         b = kept[ix]
         day = b[0][:10]
         if not days or days[-1] != day:
@@ -199,13 +207,16 @@ def _reference(bars, params, seal_iso):
         brk = sn["bu"] if side == -1 else sn["bd"]
         fut = [(x[0], x[2], x[3]) for x in kept[ix + 1:ix + 60]]
         lab, k = _ref_outcome(side, c, tp, brk, fut, b[0])
-        recs.append({"ts": b[0], "day": day, "side": side, "entry": was != side, "gate": sn["gate"], "c0": c,
+        mins = [round((datetime.fromisoformat(x[0]) - t0).total_seconds() / 60) for x in fut]
+        n_win = sum(1 for m in mins if 1 <= m <= 40)
+        recs.append({"ts": b[0], "day": day, "side": side, "entry": was != side, "gate": sn["gate"], "brk": brk_state,
+                     "n_win": n_win, "c0": c,
                      "center": sn["center"], "vola": sn["vola"], "width": ind["width"], "tp_line": tp,
                      "break_line": brk, "outcome": lab, "k": k})
     return recs, days
 
 
-KEYS = ("ts", "day", "side", "entry", "gate", "c0", "center", "vola", "width", "tp_line", "break_line", "outcome", "k")
+KEYS = ("ts", "day", "side", "entry", "gate", "brk", "n_win", "c0", "center", "vola", "width", "tp_line", "break_line", "outcome", "k")
 
 
 def _cmp(got, want):
@@ -237,6 +248,7 @@ def test_starts_match_strategy_reference():
     # 試験の足が場面を持つことの確かめ(足りなければ試験の作りの誤り)
     assert {r["side"] for r in want} == {-1, 1}
     assert any(r["entry"] for r in want) and any(not r["entry"] for r in want)
+    assert any(r["brk"] != 0 for r in want) and any(r["brk"] == 0 for r in want)
     assert {r["outcome"] for r in want} >= {"i", "iii"}
 
 
@@ -305,6 +317,16 @@ def test_skipped_bars_are_not_in_path():
     assert r2["outcome"] != "i"
 
 
+@pytest.mark.parametrize("dup", ["same", "back"])
+def test_starts_refuse_non_increasing_time(dup):
+    bars = _synthetic_bars(n=300)
+    j = 200
+    b = bars[j - 1] if dup == "same" else bars[j - 5]
+    bad = bars[:j] + [(b[0],) + tuple(bars[j][1:])] + bars[j + 1:]
+    with pytest.raises(ValueError):
+        d1b.starts(iter(bad), d1b.base_params())
+
+
 # ------------------------------------------------------------------ 割合の区間
 def _days(n, start=datetime(2019, 1, 1)):
     return [(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(n)]
@@ -350,7 +372,8 @@ def test_ratio_diff_ci_formula():
 
 def test_summarize_empty_half_is_none():
     days = _days(30, datetime(2020, 6, 1))
-    recs = [{"ts": f"{d}T00:00:00+00:00", "day": d, "side": -1, "entry": True, "gate": True, "outcome": "i"} for d in days]
+    recs = [{"ts": f"{d}T00:00:00+00:00", "day": d, "side": -1, "entry": True, "gate": True, "brk": 0, "outcome": "i"}
+            for d in days]
     res = d1b.summarize(recs, days)
     for v in res:
         for lab in d1b.LABELS:
@@ -368,10 +391,11 @@ def test_summarize_counts_and_cis():
         for j in range(int(rng.integers(0, 4))):
             recs.append({"ts": f"{d}T00:{j:02d}:00+00:00", "day": d, "side": int(rng.choice([-1, 1])),
                          "entry": bool(rng.integers(0, 2)), "gate": bool(rng.integers(0, 2)),
+                         "brk": int(rng.choice([0, 0, 1, -1])),
                          "outcome": d1b.LABELS[int(rng.integers(0, 5))]})
     res = d1b.summarize(recs, days)
-    views = {"entry_open": lambda r: r["entry"] and r["gate"], "entry_all": lambda r: r["entry"],
-             "point_open": lambda r: r["gate"], "point_all": lambda r: True}
+    views = {"entry_open": lambda r: r["entry"] and r["gate"] and r["brk"] == 0, "entry_all": lambda r: r["entry"],
+             "point_open": lambda r: r["gate"] and r["brk"] == 0, "point_all": lambda r: True}
     assert set(res) == set(views)
     for v, f in views.items():
         sel = [r for r in recs if f(r)]
@@ -437,3 +461,9 @@ def test_main_writes_day_counts(tmp_path):
     assert rows[1:] == sorted(rows[1:])
     txt = (out / "tables.md").read_text(encoding="utf-8")
     assert all(v in txt for v in ("entry_open", "entry_all", "point_open", "point_all"))
+
+
+def test_main_refuses_later_seal(tmp_path):
+    missing = tmp_path / "candles_1m_2024.csv.gz"  # 開けば無いファイルの例外になる
+    assert d1b.main(["--files", str(missing), "--out", str(tmp_path / "o"), "--seal", "2024-01-01T00:00:00+00:00"]) == 2
+    assert not (tmp_path / "o" / "day_counts.csv").exists()

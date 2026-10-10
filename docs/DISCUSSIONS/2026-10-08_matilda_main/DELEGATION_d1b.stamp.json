@@ -1,0 +1,7 @@
+{
+  "delegation_sha256": "3540e56f0c2b42fca04bfa96897c27f85bbb2a9dbf3b530fba9d6a6ad9809d19",
+  "body_sha256": "6fad1fa56f310d54c3956d3480f2c0446f6e76c7267fc39ab712d3e069c3a130",
+  "kind": "作る",
+  "premortem": "docs/DISCUSSIONS/2026-10-08_matilda_main/DELEGATION_d1b_premortem1.md",
+  "approved": false
+}
