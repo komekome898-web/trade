@@ -175,7 +175,7 @@ def d5(signals: list[tuple[int, int]], bars: Bars, days: list[str]) -> dict:
     """signals = [(起点の時刻, 向き)]。"""
     out = {}
     for h in HORIZONS:
-        real, ctrl = [], []
+        real, ctrl, before = [], [], []
         for ns, side in signals:
             v = signal_move(ns, side, bars, h)
             if v is not None:
@@ -183,8 +183,20 @@ def d5(signals: list[tuple[int, int]], bars: Bars, days: list[str]) -> dict:
             c = signal_move(ns + DAY, side, bars, h)
             if c is not None:
                 ctrl.append((dt.utc_day(ns), c))
-        out[h] = {"signal": per_day_ratio(real, days), "control_24h": per_day_ratio(ctrl, days)}
+            c = signal_move(ns - DAY, side, bars, h)
+            if c is not None:
+                before.append((dt.utc_day(ns), c))
+        out[h] = {"signal": per_day_ratio(real, days), "control_24h": per_day_ratio(ctrl, days),
+                  "control_24h_before": per_day_ratio(before, days)}
     return out
+
+
+def d5_halves(signals: list[tuple[int, int]], bars: Bars, days: list[str], cut: str) -> dict:
+    """合図の UTC の日で cut の前(first)と cut 以後(second)に分けた d5。日もそれぞれの半分だけ。"""
+    first = [(ns, s) for ns, s in signals if dt.utc_day(ns) < cut]
+    second = [(ns, s) for ns, s in signals if dt.utc_day(ns) >= cut]
+    return {"first": d5(first, bars, [d for d in days if d < cut]),
+            "second": d5(second, bars, [d for d in days if d >= cut])}
 
 
 def render(res: dict) -> str:
@@ -205,11 +217,20 @@ def render(res: dict) -> str:
     for h, x in r4["after_exit"].items():
         L.append(f"| {h} 分 | {x['trades']} | {ci(x)} |")
     L += ["", "## D5 合図そのものの情報(合図の向きを掛けた値動き率 bp、1 合図あたり)", ""]
+    halves = res.get("d5_halves") or {}
+    if halves:
+        L += ["前半・後半は合図の UTC の日で分けた(D1 の表は取引の出の UTC の日で分ける)", ""]
     for name, r5 in res["d5"].items():
-        L += [f"### {name}", "", "| 合図の後 | 合図 | 起点から [区間] | 対照(24 時間後の同じ時刻)[区間] |", "|---|---|---|---|"]
-        for h, x in r5.items():
-            L.append(f"| {h} 分 | {x['signal']['trades']} | {ci(x['signal'])} | {ci(x['control_24h'])} |")
-        L.append("")
+        tabs = [(f"### {name}", r5)]
+        if name in halves:
+            tabs += [(f"### {name} — 前半(日 < {res['cut']})", halves[name]["first"]),
+                     (f"### {name} — 後半(日 ≥ {res['cut']})", halves[name]["second"])]
+        for head, r in tabs:
+            L += [head, "", "| 合図の後 | 合図 | 起点から [区間] | 対照(24 時間後の同じ時刻)[区間] | 対照(24 時間前の同じ時刻)[区間] |",
+                  "|---|---|---|---|---|"]
+            for h, x in r.items():
+                L.append(f"| {h} 分 | {x['signal']['trades']} | {ci(x['signal'])} | {ci(x['control_24h'])} | {ci(x['control_24h_before'])} |")
+            L.append("")
     return "\n".join(L)
 
 
@@ -218,26 +239,33 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--run", required=True)
     ap.add_argument("--blocked-from", default=None)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--cut", default=None, help="YYYY-MM-DD。渡すと D5 の全部の群を合図の UTC の日で前半・後半に分けた表も書く")
     a = ap.parse_args(argv)
     run = dt.load_run(a.run)
     days = sorted(dt.daily_series(run))
     trades = read_trades_csv(a.run)
-    lo = min(t["entry_ns"] for t in trades) - 2 * MIN
+    other = read_trades_csv(a.blocked_from) if a.blocked_from else []
+    # 24 時間前の対照に要る足を、最初の合図(建てなかった合図を含む)の 1 日前から読む
+    lo = min([t["entry_ns"] for t in trades + other] + [t["signal_ns"] for t in trades + other if "signal_ns" in t]) - DAY - 2 * MIN
     hi = max(t["exit_ns"] for t in trades) + 2 * DAY
     from common import SEAL, to_ns  # noqa: E402
     hi = min(hi, to_ns(SEAL))
     bars = load_bitflyer_bars(lo, hi)
     res = {"name": run["name"], "d4": d4(trades, bars, days), "d5": {}}
     taken = [(t["signal_ns"], t["side"]) for t in trades if "signal_ns" in t]
-    res["d5"]["建てた合図(起点 = 合図の時刻)"] = d5(taken, bars, days)
-    res["d5"]["建てた合図(起点 = 建ての時刻)"] = d5([(t["entry_ns"], t["side"]) for t in trades], bars, days)
+    sigs = {"建てた合図(起点 = 合図の時刻)": taken, "建てた合図(起点 = 建ての時刻)": [(t["entry_ns"], t["side"]) for t in trades]}
     if a.blocked_from:
-        other = read_trades_csv(a.blocked_from)
         mine = {t.get("signal_ns") for t in trades}
         bl = [t for t in other if "signal_ns" in t and t["signal_ns"] not in mine]
         name = os.path.basename(os.path.normpath(a.blocked_from))
-        res["d5"][f"建てなかった合図(起点 = 合図の時刻。{name} にあってこちらに無い)"] = d5([(t["signal_ns"], t["side"]) for t in bl], bars, days)
-        res["d5"][f"建てなかった合図(起点 = {name} で建った時刻)"] = d5([(t["entry_ns"], t["side"]) for t in bl], bars, days)
+        sigs[f"建てなかった合図(起点 = 合図の時刻。{name} にあってこちらに無い)"] = [(t["signal_ns"], t["side"]) for t in bl]
+        sigs[f"建てなかった合図(起点 = {name} で建った時刻)"] = [(t["entry_ns"], t["side"]) for t in bl]
+    res["d5"] = {k: d5(v, bars, days) for k, v in sigs.items()}
+    if a.cut:
+        if not days[0] < a.cut <= days[-1]:
+            raise SystemExit(f"--cut {a.cut} は日の範囲 {days[0]}〜{days[-1]} の中に無い(片方の半分が空になる)")
+        res["d5_halves"] = {k: d5_halves(v, bars, days, a.cut) for k, v in sigs.items()}
+        res["cut"] = a.cut
     with open(a.out, "w", encoding="utf-8") as fh:
         fh.write(render(res) + "\n")
     with open(os.path.splitext(a.out)[0] + ".json", "w", encoding="utf-8") as fh:
