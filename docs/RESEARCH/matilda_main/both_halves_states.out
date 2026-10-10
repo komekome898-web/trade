@@ -1,0 +1,41 @@
+alert_x1 | 含む → 含む
+alert_x2 | 含む → 含む
+beard_off | 正 → 含む
+break_delay_2 | 含む → 正
+break_delay_3 | 含む → 正
+break_delay_4 | 負 → 正
+break_delay_8 | 負 → 含む
+break_dist_0.25 | 含む → 正
+break_dist_1 | 正 → 含む
+break_len_mult_4 | 正 → 正
+break_off | 正 → 正
+count_20 | 負 → 含む
+count_80 | 含む → 負
+entry_exit_2_1 | 含む → 負
+entry_exit_3_2 | 正 → 負
+foot_5 | 負 → 正
+levels_1 | 負 → 負
+levels_3 | 含む → 負
+levels_7 | 含む → 正
+range_hi_none | 含む → 含む
+range_hi_p75 | 負 → 含む
+range_hi_p90 | 負 → 含む
+range_lo_none | 含む → 含む
+range_lo_p10 | 負 → 正
+range_lo_p25 | 負 → 正
+range_lo_p50 | 負 → 正
+step_2 | 負 → 正
+step_4 | 負 → 正
+vola_gate_p10 | 含む → 正
+vola_gate_p25 | 含む → 正
+vola_gate_p50 | 負 → 正
+本数 31
+負 → 正: 8
+含む → 正: 6
+含む → 含む: 4
+負 → 含む: 4
+含む → 負: 3
+正 → 含む: 2
+正 → 正: 2
+正 → 負: 1
+負 → 負: 1
