@@ -30,6 +30,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash|Read|Glob|Grep|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/data_gates.sh pretool",
+            "timeout": 30
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -38,7 +48,7 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session_start_digest.sh",
-            "timeout": 5
+            "timeout": 60
           }
         ]
       },
@@ -58,7 +68,7 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/owner_turn_digest.sh",
-            "timeout": 5
+            "timeout": 60
           }
         ]
       }
@@ -74,6 +84,18 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/jev_notice.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/data_gates.sh posttool",
+            "timeout": 10
           }
         ]
       }

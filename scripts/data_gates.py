@@ -421,40 +421,90 @@ def g4_problems(base: Path, now: datetime | None = None) -> list[str]:
 
 # ---------------------------------------------------------------- 判定(フックの入口)
 
+OPAQUE = (
+    # 中で何を読むかがコマンドの文字に出ない操作(台本の実行・ワイルドカード・再帰の走査・置き換え)
+    re.compile(r"^(\S+=\S*\s+)*(python3?|sh|bash|zsh|node|perl|ruby|Rscript|uv|pipx?|make|exec|xargs|env|timeout|nohup|source|\.)\b"),
+    re.compile(r"^(\S+=\S*\s+)*\./"),
+    re.compile(r"[*?\[]"),
+    re.compile(r"^(find|du|tree|rg|ag|rsync|tar|zip|unzip|7z)\b"),
+    re.compile(r"^(grep|egrep|zgrep)\b.*\s-[a-zA-Z]*[rR]"),
+    re.compile(r"^ls\b.*\s-[a-zA-Z]*R"),
+    re.compile(r"\$\(|`|\$\{?[A-Za-z_]"),
+)
+ALWAYS_OK = (
+    # 門が閉じていても通す: 取り込み・補充・登録簿の道具、コミット、フックの台帳、門そのものの試験
+    re.compile(r"^git\s"),
+    re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+scripts/(intake_ledger|data_quality|share_reconcile|data_gates|fetch_[\w]+|retention_snapshot)\.py\b"),
+    re.compile(r"^(sh\s+)?scripts/analysis/commit_gate\.sh\b"),
+    re.compile(r"^(sh\s+)?scripts/regen_hook_manifest\.sh\b"),
+    re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+-m\s+pytest\s+tests/test_data_gates\.py\b"),
+)
+G3_OK = (
+    # 登録簿を読む前でも通すもの: 書く・送る側の git と、門の状態を見るだけの道具
+    re.compile(r"^git\s+(commit|add|push|fetch|merge|pull|rm|mv|restore|status|log)\b"),
+    re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+scripts/data_gates\.py\b"),
+    re.compile(r"^(sh\s+)?scripts/(analysis/commit_gate|regen_hook_manifest)\.sh\b"),
+    re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+-m\s+pytest\s+tests/test_data_gates\.py\b"),
+)
+
+
+def opaque(seg: str) -> bool:
+    return any(p.search(seg) for p in OPAQUE)
+
+
+def G1_MSG(pending):
+    what = "参照が無い(先に git fetch origin " + SHARE_BRANCH + ")" if pending is None else f"{pending} 本"
+    return (f"[門 G1 取り込み] 既定ブランチ {SHARE_BRANCH} に、作業ブランチへ合流していない PC の共有がある({what})。"
+            "取り込むまで、データ・研究の置き場に触る操作と、中で何を読むか見えない操作(台本の実行・ワイルドカード・再帰の走査)を止める。"
+            "通るのは git・scripts の取り込み・補充・登録簿の道具・コミットの関門だけ。"
+            "次に打つ: python3 scripts/share_reconcile.py → 照合の表を記録してから git merge")
+
+
+G3_MSG = ("[門 G3 見る] この会話でまだ docs/DATA.md を読んでいない。データを探す・読む前と、中で何を読むか見えない操作"
+          "(台本の実行・ワイルドカード・再帰の走査)の前に、docs/DATA.md(データの登録簿)を Read で読む"
+          "(L-984「データ探すときに見るねん」)。")
+G2_MSG = ("[門 G2 登録簿] docs/DATA.md が git に載ったデータの置き場と合っていない。登録簿を最新にするまで、研究の置き場に触る操作と"
+          "中で何を読むか見えない操作を止める。次に打つ: python3 scripts/data_gates.py status(足りない行の一覧)")
+
+
 def pretool_decision(tool: str, ti: dict, *, base: Path, pending: int | None, data_md_read: bool,
                      registry_ok: bool) -> str | None:
     """止めるなら理由の文、通すなら None。"""
-    if tool == "Bash":
-        cmd = ti.get("command") or ""
-        data = any(touches_data(s) for s in segments(cmd))
-        research = any(touches_research(s) and not any(p.search(s) for p in G2_ALLOWED_BASH) for s in segments(cmd))
-        paths: list[str] = []
-    else:
-        paths = tool_paths(tool, ti, base)
-        data = any(path_is_data(p) for p in paths)
-        research = any(under(p, RESEARCH_PREFIXES) for p in paths)
-        cmd = ""
-    if not (data or research):
+    g1 = pending is None or pending > 0
+    g3 = not data_md_read
+    g2 = not registry_ok
+    if not (g1 or g2 or g3):
         return None
-    # G1
-    if pending is None or pending > 0:
-        if tool == "Bash" and g1_bash_ok(cmd):
-            pass
-        else:
-            what = "参照が無い(先に git fetch origin " + SHARE_BRANCH + ")" if pending is None else f"{pending} 本"
-            return (f"[門 G1 取り込み] 既定ブランチ {SHARE_BRANCH} に、作業ブランチへ合流していない PC の共有がある({what})。"
-                    "照合して取り込むまで、データ・研究の置き場に触る道具を止める。"
-                    "通るのは git・scripts/share_reconcile.py・intake_ledger.py・data_quality.py・data_gates.py・fetch_*.py・retention_snapshot.py だけ。"
-                    "次に打つ: python3 scripts/share_reconcile.py(照合の表をオーナーに見せてから git merge)")
-    # G3
-    if data and not data_md_read:
-        if not (tool == "Bash" and all(G3_GIT_EXEMPT.search(s) or not touches_data(s) for s in segments(cmd))):
-            return ("[門 G3 見る] この会話でまだ docs/DATA.md を読んでいない。データを探す・読む前に、"
-                    "docs/DATA.md(データの登録簿)の該当の節を Read で読む(L-984「データ探すときに見るねん」)。")
-    # G2
-    if research and not registry_ok:
-        return ("[門 G2 登録簿] docs/DATA.md が git に載ったデータの置き場と合っていない。登録簿を最新にするまで研究の道具を止める。"
-                "次に打つ: python3 scripts/data_gates.py status(足りない行の一覧)")
+    if tool == "Bash":
+        for s in segments(ti.get("command") or ""):
+            unseen = opaque(s)
+            data = touches_data(s) or unseen
+            research = touches_research(s) or unseen
+            if g3 and data and not any(p.search(s) for p in G3_OK):
+                return G3_MSG
+            if any(p.search(s) for p in ALWAYS_OK):
+                continue
+            if g1 and (data or research):
+                return G1_MSG(pending)
+            if g2 and research:
+                return G2_MSG
+        return None
+    paths = tool_paths(tool, ti, base)
+    whole = False
+    if tool == "Grep" and not ti.get("path"):
+        whole = True  # 置き場を指定しない検索はリポジトリ全体(データの置き場を含む)
+    if tool == "Glob" and not ti.get("path") and re.match(r"^\*", ti.get("pattern") or ""):
+        whole = True
+    if tool in ("Grep", "Glob") and ti.get("path") and rel(ti["path"], base) in ("", "."):
+        whole = True
+    data = whole or any(path_is_data(p) for p in paths)
+    research = whole or any(under(p, RESEARCH_PREFIXES) for p in paths)
+    if g3 and data:
+        return G3_MSG
+    if g1 and (data or research):
+        return G1_MSG(pending)
+    if g2 and research:
+        return G2_MSG
     return None
 
 
@@ -472,18 +522,10 @@ def cmd_pretool() -> int:
     ti = d.get("tool_input") or {}
     if tool not in ("Bash", "Read", "Glob", "Grep", "Edit", "Write", "MultiEdit", "NotebookEdit"):
         return 0
-    paths = tool_paths(tool, ti, base)
-    cmd = ti.get("command") or "" if tool == "Bash" else ""
-    probe_research = touches_research(cmd) or any(under(p, RESEARCH_PREFIXES) for p in paths)
-    probe_data = touches_data(cmd) or any(path_is_data(p) for p in paths)
-    if not probe_research and not probe_data:
-        return 0
     pending, _ = g1_pending(base)
     md_read = marker(base, d.get("session_id") or "").exists()
-    reg_ok = True
-    if probe_research:
-        md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
-        reg_ok = not registry_problems(families(tracked_paths(base)), md)
+    md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
+    reg_ok = not registry_problems(families(tracked_paths(base)), md)
     msg = pretool_decision(tool, ti, base=base, pending=pending, data_md_read=md_read, registry_ok=reg_ok)
     if msg:
         print(msg, file=sys.stderr)

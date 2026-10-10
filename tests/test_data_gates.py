@@ -209,3 +209,14 @@ def test_stream_lags_finds_stopped_recorder():
     lags = dg.stream_lags(paths, set())
     assert len(lags) == 2 and all("venues" in x for x in lags)  # 1 日遅れ(board)は止めない
     assert dg.stream_lags(paths, {("venues/quotes", "停止"), ("venues/trades_gmo_btc_jpy", "停止")}) == []
+
+
+def test_unseen_reads_are_blocked_while_gated():
+    # 中で何を読むか文字に出ない操作(台本・ワイルドカード・再帰・置き換え・全体の検索)は、門が閉じている間は止める
+    for cmd in ("python3 /tmp/x.py", "ls back*", "find . -name '*.csv'", "cat $(cat list)", "grep -r foo ."):
+        assert "G3" in decide("Bash", {"command": cmd}, read=False), cmd
+        assert "G1" in decide("Bash", {"command": cmd}, pending=2), cmd
+    assert "G3" in decide("Grep", {"pattern": "foo"}, read=False)
+    assert "G3" in decide("Glob", {"pattern": "**/*.csv"}, read=False)
+    # 門が開いていれば通る
+    assert decide("Bash", {"command": "python3 /tmp/x.py"}) is None

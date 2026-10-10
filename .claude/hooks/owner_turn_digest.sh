@@ -11,19 +11,10 @@ export LC_ALL=C.utf8 2>/dev/null || true
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)" || exit 0
 cd "$ROOT" 2>/dev/null || exit 0
 
-HEART="共有経路: 不明"
-if command -v git >/dev/null 2>&1 && [ -d "$ROOT/.git" ]; then
-    LAST_TS="$(git log -1 --format=%ct -- paper_logs 2>/dev/null || true)"
-    if [ -n "$LAST_TS" ]; then
-        AGE_H=$(( ($(date +%s) - LAST_TS) / 3600 ))
-        LAST_STR="$(git log -1 --format=%ci -- paper_logs 2>/dev/null || true)"
-        if [ "$AGE_H" -gt 26 ]; then
-            HEART="!!! 共有が途絶えている: 最後の paper_logs 共有コミット ${LAST_STR}(${AGE_H} 時間前)。届くと約束しない"
-        else
-            HEART="共有経路: 最後の共有コミット ${LAST_STR}(${AGE_H} 時間前)"
-        fi
-    fi
-fi
+# L-984・L-986(2026-10-11): 共有の死活は、作業ブランチの paper_logs ではなく、PC の共有が届く既定ブランチに
+# 合流していないコミットがあるかで見る(門 G1、scripts/data_gates.py。git fetch もここで打つ)。旧版は作業ブランチだけを見て
+# 「途絶」と出し続け、リードは誤報と決めて 10 回以上読み流した。止めるのは data_gates.sh の門。
+HEART="$(timeout 50 python3 "$ROOT/scripts/data_gates.py" digest-line 2>/dev/null || echo "!!! 門 G1: 共有の状態を取れなかった")"
 
 BUDGET="$(grep -E "^\| 週間トークン上限" "$ROOT/docs/OWNER_STATUS.md" 2>/dev/null | awk -F"|" '{print $3}' | cut -c1-200 || true)"
 if [ -f "$ROOT/docs/OWNER_STATUS.md" ]; then
