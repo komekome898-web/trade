@@ -38,13 +38,13 @@
   差 = b の回 − a の回(回の番号どうし。どちらかを捨てた回は差も捨てる)。lo・hi = 差の 2.5・97.5 百分位、
   mean = 点の差(Σnum_b ÷ Σden_b − Σnum_a ÷ Σden_a)、mde = 2.8 × 差の標準偏差(ddof=1)。
 - `main(argv)`: `--files <足のファイル ...>`(`read_bars` に渡す)・`--out <置き場>`・`--seal`(既定 SEAL)。
-  `--seal` が SEAL より後なら、ファイルを開かずに 2 を返す。
-  `<置き場>/day_counts.csv`(見出し `day,side,entry,gate,outcome,n`。entry・gate は 0/1。起点の数を日 × 側 × entry × gate × 結果で数え、
-  0 の組は書かない。行は見出しの列の順に並べる)と `<置き場>/tables.md`(4 つの見方ごとの表。見方の名前を見出しに含む。
+  `--seal` が SEAL より後(時刻で比べる。時差の付いた値も UTC に直して比べる)なら、ファイルを開かずに 2 を返す。
+  `<置き場>/day_counts.csv`(見出し `day,side,entry,gate,brk,outcome,n`。entry・gate は 0/1、brk は −1/0/1。起点の数を日 × 側 × entry × gate × brk × 結果で数え、
+  0 の組は書かない。行は文字列の並びで並べる)と `<置き場>/tables.md`(4 つの見方ごとの表。見方の名前を見出しに含む。
   年・first・second の起点の数と 5 つの結果の割合、first・second の区間、diff の点・区間・MDE。あわせて起点の
   幅 ÷ ボラ と n_win の年ごとの中央値。幅 ÷ ボラ は起点の時点の値で、`width_vola.out` の全部の足の値とは母集団が違うと表に書く)を書き、0 を返す。
 - `summarize(records, days, cut=CUT)` → res[見方][期間][結果]。見方 = "entry_open"(entry かつ gate かつ brk = 0)・"entry_all"・
-  "point_open"(gate かつ brk = 0。戦略が建てうる起点)・"point_all"。期間 = 年の文字列(起点の UTC の年)・"first"(day < cut)・"second"(day ≥ cut)。
+  "point_open"(gate かつ brk = 0。門が開いていて、足が閉じた時点の判定でブレイク中でない)・"point_all"。期間 = 年の文字列(起点の UTC の年)・"first"(day < cut)・"second"(day ≥ cut)。
   各 = {"n": 起点の数, "count": その結果の数, "share": count ÷ n}。first・second はさらに "lo"・"hi" =
   `diag_tables.group_ratio_ci(その期間の days, 日ごとの count, 日ごとの n)` の lo・hi。
   res[見方]["diff"][結果] = `ratio_diff_ci`(first の days・日ごとの count・日ごとの n、second の同じもの)。
@@ -450,20 +450,26 @@ def test_main_writes_day_counts(tmp_path):
     assert d1b.main(["--files", str(f), "--out", str(out)]) == 0
     with open(out / "day_counts.csv", encoding="utf-8", newline="") as fh:
         rows = list(csv.reader(fh))
-    assert rows[0] == ["day", "side", "entry", "gate", "outcome", "n"]
+    assert rows[0] == ["day", "side", "entry", "gate", "brk", "outcome", "n"]
     recs = d1b.starts(iter(bars), d1b.base_params())["records"]
     want = {}
     for r in recs:
-        k = (r["day"], str(r["side"]), str(int(r["entry"])), str(int(r["gate"])), r["outcome"])
+        k = (r["day"], str(r["side"]), str(int(r["entry"])), str(int(r["gate"])), str(r["brk"]), r["outcome"])
         want[k] = want.get(k, 0) + 1
-    got = {tuple(x[:5]): int(x[5]) for x in rows[1:]}
+    got = {tuple(x[:6]): int(x[6]) for x in rows[1:]}
     assert got == want
     assert rows[1:] == sorted(rows[1:])
     txt = (out / "tables.md").read_text(encoding="utf-8")
     assert all(v in txt for v in ("entry_open", "entry_all", "point_open", "point_all"))
+    res = d1b.summarize(recs, d1b.starts(iter(bars), d1b.base_params())["days"])
+    for v in ("point_open", "point_all"):
+        for lab in ("i", "iii"):
+            share = res[v]["second"][lab]["share"]
+            assert f"{100 * share:.1f}" in txt, (v, lab)  # 表の数が summarize と同じ(% で小数 1 桁)
 
 
-def test_main_refuses_later_seal(tmp_path):
+@pytest.mark.parametrize("seal", ["2024-01-01T00:00:00+00:00", "2023-12-17T09:00:00-08:00"])  # 後者 = 17:00Z(文字列では前に見える)
+def test_main_refuses_later_seal(tmp_path, seal):
     missing = tmp_path / "candles_1m_2024.csv.gz"  # 開けば無いファイルの例外になる
-    assert d1b.main(["--files", str(missing), "--out", str(tmp_path / "o"), "--seal", "2024-01-01T00:00:00+00:00"]) == 2
+    assert d1b.main(["--files", str(missing), "--out", str(tmp_path / "o"), "--seal", seal]) == 2
     assert not (tmp_path / "o" / "day_counts.csv").exists()

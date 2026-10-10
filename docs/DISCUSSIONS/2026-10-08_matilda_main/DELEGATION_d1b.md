@@ -2,7 +2,7 @@
 
 種類: 作る
 
-2 版目(事前の批評 1 回目 `DELEGATION_d1b_premortem1.md` の後の直し。直した所は末尾の `## 事前の批評の後の変更`)。マチルダの基準の前提「中心から 4 ボラ外れた値段は戻る」を、戦略を回さずに市場の 1 分足だけで数える台本 `scripts/analysis/d1b_matilda.py` を作る。決まりの正本は `docs/DISCUSSIONS/2026-10-08_matilda_main/D1B_SPEC.md`(リードが書いた)、受け入れはリードが書いた実行できる試験 `tests/research/test_d1b_spec.py`(台本の口と決まりは、試験の頭の注にある)。全期間の走らせはリードが受け取りの後にする(この委任では走らせない)。
+3 版目(事前の批評 2 回目 `DELEGATION_d1b_premortem2.md` の後の直し。上限 2 回を使い切ったので、この直しは批評を通っていない。直した所は末尾の `## 事前の批評の後の変更`)。マチルダの基準の前提「中心から 4 ボラ外れた値段は戻る」を、戦略を回さずに市場の 1 分足だけで数える台本 `scripts/analysis/d1b_matilda.py` を作る。決まりの正本は `docs/DISCUSSIONS/2026-10-08_matilda_main/D1B_SPEC.md`(リードが書いた)、受け入れはリードが書いた実行できる試験 `tests/research/test_d1b_spec.py`(台本の口と決まりは、試験の頭の注にある)。全期間の走らせはリードが受け取りの後にする(この委任では走らせない)。
 
 ## 着手前の表
 
@@ -10,9 +10,10 @@
 
 ## 目的(オーナーの逐語)
 
-- L-928「**1.B**」(前提の直接の測りの台本は委任で作る)
-- L-909「**次の私の「進めてください」の合図で順次始めてください。**」・L-927「**進めてください**」(分析の持ち越し 5 件を順に始める。この台本は 1 件目)
-- リードの設計(オーナーの逐語ではない): この台本は分析のスキル(`.claude/skills/analysis-lens`)の D1b(前提を戦略を使わずに直接確かめる測り)の手順。線は戦略のコード(`MatildaSimple`)が `decide` で作ったものをそのまま使い(ブレイク中の印 `_brk` も戦略のまま)、自分で計算し直さない(線の定義の読み違いを作らないため)。足の飛ばし方は道と同じ。結果の 4 通りの決め方・区間の取り方は D1B_SPEC.md §3・§4 と試験の頭の注。
+- L-928「**1.B**」
+- L-909「**次の私の「進めてください」の合図で順次始めてください。**」・L-927「**進めてください**」
+- リードの読み(オーナーの逐語ではない。OWNER_LOG の L-927・L-928 の行の解釈の欄): L-928 の 1.B は「前提の直接の測りの台本は委任で作る」への答え。L-927 は分析の持ち越し 5 件を順に始める合図で、この台本は 1 件目。
+- リードの設計(オーナーの逐語ではない): この台本は分析のスキル(`.claude/skills/analysis-lens`)の D1b(前提を戦略を使わずに直接確かめる測り)の手順。線は戦略のコード(`MatildaSimple`)に足が閉じた時点(`kind: "close"`)だけを渡して `decide` で作ったものをそのまま使い、自分で計算し直さない(線の定義の読み違いを作らないため)。道の中の戦略は足の途中の呼び出しも受けるので、ブレイク中の印とブレイクの線は道の中の値と同じではない(D1B_SPEC.md §2 の限界)。足の飛ばし方は道と同じ。結果の 4 通りの決め方・区間の取り方は D1B_SPEC.md §3・§4 と試験の頭の注。
 
 ## 作るもの
 
@@ -29,14 +30,14 @@
 | データ | `read_bars` は封印の境以後に始まる足の行に届いたら終わる。値段の空の足は飛ばす。足 = (始まりの時刻の文字列, 始値, 高値, 安値, 終値, 出来高) | `src/bot/bt/simple/bars.py:13-20`・`src/bot/bt/simple/bars.py:38-44` |
 | 既存の決まり | 向きの決まらない足(始値 = 終値 かつ 直前に飛ばさずに回した足の終値と同じ、またはデータの頭)は無い足として飛ばす | `src/bot/bt/simple/run.py:66-79` |
 | 既存の決まり | 線の計算: ボラ・中心・幅・ブレイクの候補(`_update`)、次の足の間に使う線と門(`_make_snap`) | `src/bot/strategy/matilda_simple.py:506-537`・`src/bot/strategy/matilda_simple.py:539-555` |
-| 既存の決まり | 玉が無くても、足の終値がブレイクの線を越えると戦略はブレイク中の印 `_brk` を ±1 にし、ブレイク中は建ての注文を置かない | `src/bot/strategy/matilda_simple.py:427-434`・`src/bot/strategy/matilda_simple.py:449-458` |
+| 既存の決まり | 玉が無くても、足の終値がブレイクの線を越えると戦略はブレイク中の印 `_brk` を ±1 にし、ブレイク中は建ての注文を置かない。道の中では、足の途中で見張る値段に届いたときの呼び出しでも `_brk` が動く(この台本は足が閉じた時点だけを渡すので、その分は道と違う) | `src/bot/strategy/matilda_simple.py:427-434`・`src/bot/strategy/matilda_simple.py:449-458`・`src/bot/strategy/matilda_simple.py:151-158`・`src/bot/strategy/matilda_simple.py:365-373`・`src/bot/bt/simple/run.py:127-151` |
 | 既存の決まり | 足を束ねる分数 foot = 1 では、戦略は時刻が戻る足・重なる足を例外なしで受け入れる(事前の批評の担当の試し。台本が時刻の順を検める) | `src/bot/strategy/matilda_simple.py:478-482` |
 | 既存の決まり | 基準の引数の値(vola_count 40・range_count 40・break_len_mult 2・break_delay 1・break_dist 0.5・beard_ignore 1・range_setting 0.00025・over_range_setting 1/6・vola_setting None) | `PYTHONPATH=src python3 -c "from bot.strategy.matilda_simple import BASE_PARAMS as B; print({k: B[k] for k in ('vola_count','range_count','break_len_mult','break_delay','break_dist','beard_ignore','range_setting','over_range_setting','vola_setting')})"` → `{'vola_count': 40, 'range_count': 40, 'break_len_mult': 2, 'break_delay': 1, 'break_dist': 0.5, 'beard_ignore': 1, 'range_setting': 0.00025, 'over_range_setting': 0.16666666666666666, 'vola_setting': None}` |
 | 既存の決まり | 戦略を足ごとに進めて線を読む形の手本(リードが書いた。基準の 幅 ÷ ボラ の表) | `docs/RESEARCH/matilda_main/base/width_vola.py:13-27` |
 | 既存の決まり | 割合の区間(日を選び直して Σ ÷ Σ を作り直す)と、選び直しの引き方 | `scripts/analysis/diag_tables.py:228-249`・`scripts/analysis/diag_tables.py:167-175`・`scripts/analysis/diag_tables.py:47` |
-| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_matilda_main/D1B_SPEC.md tests/research/test_d1b_spec.py` → `cde8b38f37c373d0d971701b09838bf3ab4816a49cd2925125c08e15e3a1a318`・`3d5729564e28daadc3d0dcb35653420f8ed2b391f87bd355075936de872601ee`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
+| 既存の決まり | 渡す時点の決まりの文書と試験の版(この版のまま作る。違っていたら問いとして返す) | `sha256sum docs/DISCUSSIONS/2026-10-08_matilda_main/D1B_SPEC.md tests/research/test_d1b_spec.py` → `78c366b8ce649a4acbe92886632a56691e3d5203557cab6354d58c0ae4da0919`・`af69e5cdae838bc42382cd8a4876d6b694b21ecca06fbdfe5a09ccbf14e687e9`(渡す直前にリードが打ち直し、違えば書き直して版の印を取り直す) |
 | 既存の決まり | 台本が無いと、試験は飛ばしになる | `PYTHONPATH=src python -m pytest tests/research/test_d1b_spec.py` → `1 skipped` |
-| 既存の決まり | 受け入れの試験は、リードの捨てる実装(scratchpad。リポジトリに入れていない。渡す前に消す)を試験の口 `D1B_MODULE_DIR` で当てて全部通ることを確かめた。捨てる実装をわざと壊した 16 通り(飛ばした足を道に入れる・利確の線の符号・入りを常に True・終わり近くの起点を残す・20 分の境を 19 に・同じ足で両方を無くす・封印の境の等号・半分が 0 本のときの割り算・41 分目を見る・区間の種・日ごとの数の行の並び・brk を常に 0・入りの門の見方で brk を見ない・時刻の順を検めない・後の封印の境を受ける・n_win を 41 分まで)は、それぞれ試験を 1 つ以上落とした。落ちなかったのは 2 通りで、起点の等号(終値 = 建ての線ちょうどを起点にする。線は足 t 自身を含めて計算するので、試験の合成の足で終値をちょうど線に置けない)と、割合の作り直しを Σ ÷ Σ から 平均 ÷ 平均 にする変更(同じ数なので等価) | `D1B_MODULE_DIR=<捨てる実装の置き場> PYTHONPATH=src python -m pytest tests/research/test_d1b_spec.py` → `32 passed` |
+| 既存の決まり | 受け入れの試験は、リードの捨てる実装(scratchpad。リポジトリに入れていない。渡す前に消す)を試験の口 `D1B_MODULE_DIR` で当てて全部通ることを確かめた。捨てる実装をわざと壊した 20 通り(飛ばした足を道に入れる・利確の線の符号・入りを常に True・終わり近くの起点を残す・20 分の境を 19 に・同じ足で両方を無くす・封印の境の等号・半分が 0 本のときの割り算・41 分目を見る・区間の種・日ごとの数の行の並び・brk を常に 0・入りの門の見方で brk を見ない・時刻の順を検めない・後の封印の境を受ける・n_win を 41 分まで・`--seal` を文字列で比べる・日ごとの数に brk の列が無い・表の割合の桁・時点の門の見方で brk を見ない)は、それぞれ試験を 1 つ以上落とした。落ちなかったのは 2 通りで、起点の等号(終値 = 建ての線ちょうどを起点にする。線は足 t 自身を含めて計算するので、試験の合成の足でちょうど線に置く形を作っていない。事前の批評 2 回目の担当の試しでは、実物でも 2017 年の頭 10 万行の起点 32,830 のうち 33 で起きていた【担当の試し】)と、割合の作り直しを Σ ÷ Σ から 平均 ÷ 平均 にする変更(同じ数なので等価) | `D1B_MODULE_DIR=<捨てる実装の置き場> PYTHONPATH=src python -m pytest tests/research/test_d1b_spec.py` → `33 passed` |
 | 列の意味 | 試験と D1B_SPEC.md の結果の名前: i = 20 分以内に利確の線、ii = 21〜40 分に起点の値段、iii = ブレイクの線に先に、iv = どれも無し、both = 同じ足で (i か ii) と iii | `docs/DISCUSSIONS/2026-10-08_matilda_main/D1B_SPEC.md:28-39` |
 
 ## 決めてよいこと・決めてはいけないこと
@@ -75,8 +76,8 @@
 | 交差と後からの変化 | U1(同じ足で利確とブレイクの両方・戻りとブレイクの両方)・U2(入りか時点か = 直前に評価した足が同じ側の起点か) |
 | 浮動小数・刻み・丸め | U2(線は戦略の値をそのまま。比べは誤差 1e-6 円まで)・U4(割合の区間の作り直しは同じ式で 1e-12 まで) |
 | 慣らし | U2(戦略の `_snap` が None か vola ≤ 0 の足は起点にしない。ブレイク中の起点は記録し、門の見方からだけ外す) |
-| 宣言した値の書き換え | U2(基準の引数 = `base_params()`。既定の引数で同じ結果)・U3(門を大きくすると門の閉じた起点が記録される = 門で起点を落とさない)・U5(SEAL より後の `--seal` を拒む) |
-| 並行の変更 | U5(渡す時点の決まりの文書と試験の sha256 を読んだ事実に書いた。違えば問いとして返す) |
+| 宣言した値の書き換え | U2(基準の引数 = `base_params()`。既定の引数で同じ結果)・U3(門を大きくすると門の閉じた起点が記録される = 門で起点を落とさない)・U5(SEAL より後の `--seal` を、時差の付いた値も含めて拒む) |
+| 並行の変更 | この委任には無い(試験は見ない。渡す時点の決まりの文書と試験の sha256 を読んだ事実の行に書き、違えば問いとして返す) |
 
 ## 受け入れ
 
@@ -86,7 +87,7 @@
 - U2: 起点・線・入りと時点・飛ばす足が、戦略そのもので作った参照と同じ: `tests/research/test_d1b_spec.py::test_base_params`・`tests/research/test_d1b_spec.py::test_starts_match_strategy_reference`・`tests/research/test_d1b_spec.py::test_starts_default_params_are_base`・`tests/research/test_d1b_spec.py::test_skipped_bars_are_not_in_path`・`tests/research/test_d1b_spec.py::test_starts_refuse_non_increasing_time`(2 場面)
 - U3: 封印の境・データの終わり・門の閉じた起点: `tests/research/test_d1b_spec.py::test_starts_stop_at_seal_and_drop_late_starts`・`tests/research/test_d1b_spec.py::test_starts_drop_starts_near_data_end`・`tests/research/test_d1b_spec.py::test_starts_gate_closed_is_recorded`
 - U4: 割合・区間・差の区間・空の半分: `tests/research/test_d1b_spec.py::test_ratio_diff_ci_formula`・`tests/research/test_d1b_spec.py::test_summarize_empty_half_is_none`・`tests/research/test_d1b_spec.py::test_summarize_counts_and_cis`
-- U5: 出力と封印の境の引数: `tests/research/test_d1b_spec.py::test_main_writes_day_counts`・`tests/research/test_d1b_spec.py::test_main_refuses_later_seal`
+- U5: 出力(日ごとの数の列と、表の割合が summarize と同じこと)と封印の境の引数: `tests/research/test_d1b_spec.py::test_main_writes_day_counts`・`tests/research/test_d1b_spec.py::test_main_refuses_later_seal`(2 場面)
 
 ## 変異の表
 
@@ -125,7 +126,9 @@
 
 ## 事前の批評の後の変更
 
-見た版の sha256: f2e37052118786eb2b10141b74c13b5447b3f27b02631d1e8f10efd82a96b1b2
+見た版の sha256: 6fad1fa56f310d54c3956d3480f2c0446f6e76c7267fc39ab712d3e069c3a130
+
+(最後の回 = 2 回目が見た版。1 回目が見た版は f2e37052118786eb2b10141b74c13b5447b3f27b02631d1e8f10efd82a96b1b2)
 
 ### 1 版目 → 2 版目(1 回目の記録 `DELEGATION_d1b_premortem1.md` の [直す] 6 件と [聞く] 5 件)
 
@@ -136,3 +139,13 @@
 - 幅 ÷ ボラ の母集団: 起点の時点の値と書き、`width_vola.out` と違うと表に書く。
 - H4 の正規表現と種(`diag_tables.SEED`)、変異の表の当て方(試験の口 `D1B_MODULE_DIR`)、目的の節の L-702 の行(逐語ではないので外した)。
 - 受け入れの試験は 32 件(捨てる実装で 32 passed)。
+
+### 2 版目 → 3 版目(2 回目の記録 `DELEGATION_d1b_premortem2.md` の [直す] 7 件と [聞く] 6 件。事前の批評の上限 2 回を使い切ったので、この直しは批評を通っていない)
+
+- ブレイク中の印: 道と同じ呼び方(足の途中の呼び出し)にはそろえず、足が閉じた時点だけを渡す形のままにした。目的の節・読んだ事実・D1B_SPEC.md §2 に限界(道の中の値と起点の約 9〜12% で違う。担当の試し【推定】)を書き、見方の名前から「戦略が建てうる」を外して「足が閉じた時点の判定でブレイク中でない」にした。
+- 入りの決まり: D1B_SPEC.md §2 を試験に合わせた(直前に評価した足が同じ側の起点でない)。
+- `--seal`: 試験に時差の付いた値(2023-12-17T09:00:00-08:00)の場面を足した。
+- `day_counts.csv` に brk の列を足した(門の見方を CSV から作り直せるように)。
+- tables.md: 試験に「表の割合が summarize の値と同じ(% で小数 1 桁)」を足した。
+- 並行の変更の行、目的の節の括弧書き(リードの読みとして分けた)、読んだ事実の等号の行。
+- 受け入れの試験は 33 件(捨てる実装で 33 passed、壊した 20 通りが全部 1 つ以上の試験を落とした)。
