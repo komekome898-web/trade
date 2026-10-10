@@ -668,7 +668,9 @@ def cmd_stop() -> int:
     base = root()
     _read_stdin()
     md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
-    probs = apply_waits(all_problems(base), parse_waits(md), datetime.now(timezone.utc).date())
+    # 依頼した日はオーナーとのやりとりの日付(日本時間)で書くので、今日も日本時間で数える
+    jst_today = (datetime.now(timezone.utc) + timedelta(hours=9)).date()
+    probs = apply_waits(all_problems(base), parse_waits(md), jst_today)
     if not any(probs.values()):
         return 0
     lines = ["[門 データの導線] 返答を終える前に、次が残っている(L-984・L-986・L-988)。片付けてから終える。"
