@@ -17,12 +17,15 @@ D5 合図そのものの情報(合図ごと。合図の時刻 signal_t の終値
     合図から建てまでに時間がある形では、合図の時刻からの値動きに建てる前の動きが混ざるので、建ての時刻からも並べる。
     例: カツオの K1 の形(入り方 a)は、合図が分かった時刻 T(海外の足の終わり)の次の区切り T + 足の長さで建てる(H3)。
     trades.csv.gz の signal_t は T、entry_t は T + 15 分で、entry_price は entry_t の bitFlyer の終値(D0 で確かめる)
-  - 対照: 同じ合図を 24 時間後の同じ時刻に置いた値動き(結果を見る前に決めたずらし)
+  - 対照: 同じ合図を 24 時間後と 24 時間前の同じ時刻に置いた値動き(結果を見る前に決めたずらし。日は合図の日に付ける)。
+    対照は合図と対にしていないので、列ごとに本数を出す
+  - 起点と h 分後が同じ足に落ちたもの(5 分の遡りのため。足の欠けた 2015・2016 年に多い)は、値動き 0 にせず数えない
+  - --cut YYYY-MM-DD を渡すと、全部の群を起点の UTC の日で前半(日 < cut)・後半(日 ≥ cut)に分けた表も書く
   - --blocked-from <走らせ> を渡すと、そちらにあってこちらに無い合図(門などで建てなかった合図)を別の群にする
 決まり: 1 分の中の高値・安値の順は分からないので、MFE・MAE は足の端で数える(建ての足は含めない: entry_t は約定した足の終わり)。
 区間は日の塊(循環、5 日・1,000 回・種 20261004)で日を選び直し、群の和 ÷ 群の数を作り直す(`diag_tables.group_ratio_ci`)。閾値で判定の言葉を出さない。
 
-    PYTHONPATH=src python3 scripts/analysis/diag_paths.py --run <走らせ> [--blocked-from <門の無い走らせ>] --out <出力.md>
+    PYTHONPATH=src python3 scripts/analysis/diag_paths.py --run <走らせ> [--blocked-from <門の無い走らせ>] [--cut YYYY-MM-DD] --out <出力.md>
 """
 from __future__ import annotations
 
@@ -33,7 +36,7 @@ import json
 import os
 import sys
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import numpy as np
 
@@ -54,12 +57,17 @@ class Bars:
     def __init__(self, t: np.ndarray, h: np.ndarray, l: np.ndarray, c: np.ndarray):
         self.t, self.h, self.l, self.c = t, h, l, c
 
-    def close_at(self, ns: int) -> float | None:
-        """時刻 ns に終わる足(始まり = ns − 1 分)の終値。無ければその前で一番近い足(5 分以内)。"""
+    def index_at(self, ns: int) -> int | None:
+        """時刻 ns に終わる足(始まり = ns − 1 分)の位置。無ければその前で一番近い足(5 分以内)。"""
         i = int(np.searchsorted(self.t, ns - MIN, side="right")) - 1
         if i < 0 or ns - MIN - self.t[i] > 5 * MIN:
             return None
-        return float(self.c[i])
+        return i
+
+    def close_at(self, ns: int) -> float | None:
+        """時刻 ns に終わる足の終値(足の決め方は index_at)。"""
+        i = self.index_at(ns)
+        return None if i is None else float(self.c[i])
 
     def span(self, lo_ns: int, hi_ns: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """始まりが [lo, hi) の足の (始まり, 高値, 安値)。"""
@@ -128,10 +136,11 @@ def trade_life(tr: dict, bars: Bars) -> dict | None:
 
 
 def signal_move(sig_ns: int, side: int, bars: Bars, h: int) -> float | None:
-    p0, p1 = bars.close_at(sig_ns), bars.close_at(sig_ns + h * MIN)
-    if p0 is None or p1 is None:
+    # 起点と h 分後が 5 分の遡りで同じ足に落ちたら(足の欠けた年に多い)、値動き 0 を作らずに数えない
+    i0, i1 = bars.index_at(sig_ns), bars.index_at(sig_ns + h * MIN)
+    if i0 is None or i1 is None or i0 == i1:
         return None
-    return side * (p1 / p0 - 1.0) * 1e4
+    return side * (float(bars.c[i1]) / float(bars.c[i0]) - 1.0) * 1e4
 
 
 def per_day_ratio(items: list[tuple[str, float]], days: list[str]) -> dict:
@@ -217,19 +226,21 @@ def render(res: dict) -> str:
     for h, x in r4["after_exit"].items():
         L.append(f"| {h} 分 | {x['trades']} | {ci(x)} |")
     L += ["", "## D5 合図そのものの情報(合図の向きを掛けた値動き率 bp、1 合図あたり)", ""]
-    halves = res.get("d5_halves") or {}
+    halves = res.get("d5_halves") if "cut" in res else None
+    halves = halves or {}
     if halves:
-        L += ["前半・後半は合図の UTC の日で分けた(D1 の表は取引の出の UTC の日で分ける)", ""]
+        L += ["前半・後半は起点の UTC の日(起点 = 建ての時刻の群は建ての日)で分けた(D1 の表は取引の出の UTC の日で分ける)", ""]
     for name, r5 in res["d5"].items():
         tabs = [(f"### {name}", r5)]
         if name in halves:
             tabs += [(f"### {name} — 前半(日 < {res['cut']})", halves[name]["first"]),
                      (f"### {name} — 後半(日 ≥ {res['cut']})", halves[name]["second"])]
         for head, r in tabs:
-            L += [head, "", "| 合図の後 | 合図 | 起点から [区間] | 対照(24 時間後の同じ時刻)[区間] | 対照(24 時間前の同じ時刻)[区間] |",
-                  "|---|---|---|---|---|"]
+            L += [head, "", "| 合図の後 | 合図 | 起点から [区間] | 対照(24 時間後の同じ時刻)の本数 | [区間] | 対照(24 時間前の同じ時刻)の本数 | [区間] |",
+                  "|---|---|---|---|---|---|---|"]
             for h, x in r.items():
-                L.append(f"| {h} 分 | {x['signal']['trades']} | {ci(x['signal'])} | {ci(x['control_24h'])} | {ci(x['control_24h_before'])} |")
+                a, b = x["control_24h"], x["control_24h_before"]
+                L.append(f"| {h} 分 | {x['signal']['trades']} | {ci(x['signal'])} | {a['trades']} | {ci(a)} | {b['trades']} | {ci(b)} |")
             L.append("")
     return "\n".join(L)
 
@@ -262,7 +273,11 @@ def main(argv: list[str] | None = None) -> int:
         sigs[f"建てなかった合図(起点 = {name} で建った時刻)"] = [(t["entry_ns"], t["side"]) for t in bl]
     res["d5"] = {k: d5(v, bars, days) for k, v in sigs.items()}
     if a.cut:
-        if not days[0] < a.cut <= days[-1]:
+        try:
+            ok = date.fromisoformat(a.cut).isoformat() == a.cut
+        except ValueError:
+            ok = False
+        if not ok or not days[0] < a.cut <= days[-1]:
             raise SystemExit(f"--cut {a.cut} は日の範囲 {days[0]}〜{days[-1]} の中に無い(片方の半分が空になる)")
         res["d5_halves"] = {k: d5_halves(v, bars, days, a.cut) for k, v in sigs.items()}
         res["cut"] = a.cut

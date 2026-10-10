@@ -7,7 +7,7 @@ L-932「**無駄な試験を消せ、話はそこから**」で、足す中身�
 - `d5(signals, bars, days)` の各 h の dict に鍵 "control_24h_before" を足す(値は `signal_move(ns − DAY, side, bars, h)`、
   日は合図の UTC の日。作りは "control_24h" と同じ)。
 - `d5_halves(signals, bars, days, cut)` → {"first": 合図の日 < cut の d5, "second": 合図の日 ≥ cut の d5}(日もそれぞれの半分だけ)。
-- `render`: D5 の表に列「対照(24 時間前の同じ時刻)[区間]」を足す。res に "d5_halves" と "cut" があれば、群ごとに
+- `render`: D5 の表に列「対照(24 時間前の同じ時刻)[区間]」と、2 つの対照の本数の列を足す(対照は合図と対にしていないので本数が違う。批評家 1 回目)。res に "d5_halves" と "cut" があれば、群ごとに
   `### <群> — 前半(日 < <cut>)`・`### <群> — 後半(日 ≥ <cut>)` の表を、本体と同じ列でこの順に書く。
 - `main` に `--cut YYYY-MM-DD` を足し、渡したら D5 の全部の群に d5_halves を作る。
 """
@@ -76,8 +76,9 @@ def test_render_columns_and_halves_order():
     txt = dp.render(res)
 
     def row(h, x):
-        return (f"| {h} 分 | {x['signal']['trades']} | {dt._ci(x['signal'])} | {dt._ci(x['control_24h'])} | "
-                f"{dt._ci(x['control_24h_before'])} |")
+        a, b = x["control_24h"], x["control_24h_before"]
+        return (f"| {h} 分 | {x['signal']['trades']} | {dt._ci(x['signal'])} | {a['trades']} | {dt._ci(a)} | "
+                f"{b['trades']} | {dt._ci(b)} |")
 
     p_f, p_s = txt.index(f"### {g} — 前半(日 < {cut})"), txt.index(f"### {g} — 後半(日 ≥ {cut})")
     for h in dp.HORIZONS:

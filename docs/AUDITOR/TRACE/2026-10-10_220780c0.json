@@ -37451,13 +37451,13 @@
   {
    "move": 1380,
    "tools": {
-    "Bash": 20,
+    "Bash": 21,
     "Grep": 1,
     "Write": 1,
     "Agent": 1,
     "Read": 1
    },
-   "n_tools": 24,
+   "n_tools": 25,
    "read_goal": false,
    "first_write_at": 15,
    "table_shown": false,
