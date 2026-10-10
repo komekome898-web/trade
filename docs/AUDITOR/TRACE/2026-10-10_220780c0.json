@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1398,
+ "n_moves": 1400,
  "moves": [
   {
    "move": 1,
@@ -37932,13 +37932,66 @@
   {
    "move": 1398,
    "tools": {
-    "Bash": 7
+    "Bash": 13,
+    "Edit": 1,
+    "Skill": 1
    },
-   "n_tools": 7,
+   "n_tools": 15,
+   "read_goal": false,
+   "first_write_at": 13,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1399,
+   "tools": {},
+   "n_tools": 0,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
-   "claims_without_output": 1,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1400,
+   "tools": {
+    "Bash": 11,
+    "Edit": 21
+   },
+   "n_tools": 32,
+   "read_goal": false,
+   "first_write_at": 4,
+   "table_shown": false,
+   "claims_without_output": 0,
    "claims_total": 1,
    "audit_calls": 0,
    "audit_pasted_immediately": 0,
@@ -37959,18 +38012,18 @@
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 301,
-   "value": 0.2326
+   "den": 303,
+   "value": 0.231
   },
   "P2_table_shown_before_first_write": {
    "num": 55,
-   "den": 301,
-   "value": 0.1827
+   "den": 303,
+   "value": 0.1815
   },
   "P3_claim_with_output": {
-   "num": 486,
-   "den": 1088,
-   "value": 0.4467
+   "num": 487,
+   "den": 1089,
+   "value": 0.4472
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -37978,9 +38031,9 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 6.0,
+   "median": 6,
    "max": 186,
-   "n": 1310
+   "n": 1311
   },
   "P6_findings_applied": {
    "num": 110,
