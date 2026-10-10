@@ -5,14 +5,14 @@
 (門の本に無い合図には、持ち高の違いで建たなかった合図も入る。gate_overlap.py と同じ近似)。
 線を近づける効き(break_dist_0.25 − 基準)を、合図で突き合わせた取引の差と、片方だけの取引の和に分け、残る・外れるの側ごとに足す。
 希釈なら: 相互作用 ≈ −(外れる側の線の効き)。重なりなら: (組 − 門) が (残る側の線の効き) と違う。
-日数は暦日(前半 2015-11-28〜2019-12-08、後半 2019-12-09〜2023-12-17)。【試験の無い台本の値】
+日数は暦日(前半 2015-12-01〜2019-12-08、計 2,939 日 = 段 1 の分析と同じ、後半 2019-12-09〜2023-12-17)。【試験の無い台本の値】
     python3 docs/RESEARCH/matilda_main/stage2/r2_dilution.py > docs/RESEARCH/matilda_main/stage2/r2_dilution.out
 """
 import pandas as pd
 
 T = "backtest_runs_shared/matilda_main_trades"
 CUT = "2019-12-09"
-DAYS = {"前半": (pd.Timestamp(CUT) - pd.Timestamp("2015-11-28")).days,
+DAYS = {"前半": (pd.Timestamp(CUT) - pd.Timestamp("2015-12-01")).days,
         "後半": (pd.Timestamp("2023-12-17") - pd.Timestamp(CUT)).days + 1}
 
 
@@ -52,11 +52,11 @@ for name, e in (("break_dist_0.25 − 基準", e_line), ("組 − range_lo_p50",
     for (h, lab), v in e.items():
         print(f"| {name} | {h} | {lab} | {v[0]:+,.0f} | {v[0] / DAYS[h]:+.1f} | {v[1]:+,.0f}({v[2]:,}) | {v[3]:+,.0f}({v[4]:,}) | {v[5]:+,.0f}({v[6]:,}) |")
 print("\n## 相互作用と、希釈の見込みとの比べ(円/日)\n")
-print("| 半分 | 日数 | 線の効き(門なし) | 線の効き(門あり) | 相互作用 = 門あり − 門なし | 希釈なら = −(外れる側の線の効き) | 残り = 相互作用 − 希釈 | 門あり − 残る側の線の効き(重なりの分) |")
-print("|---|---|---|---|---|---|---|---|")
+print("| 半分 | 日数 | 線の効き(門なし) | 線の効き(門あり) | 相互作用 = 門あり − 門なし | 希釈なら = −(外れる側の線の効き) | 残り = 相互作用 − 希釈(= 門あり − 残る側の線の効き。門ありの外れる側はほぼ 0) |")
+print("|---|---|---|---|---|---|---|")
 for h in ("前半", "後半"):
     a = (e_line[(h, "残る")][0] + e_line[(h, "外れる")][0]) / DAYS[h]
     k = e_line[(h, "残る")][0] / DAYS[h]
     w = (e_comb[(h, "残る")][0] + e_comb[(h, "外れる")][0]) / DAYS[h]
     dil = -e_line[(h, "外れる")][0] / DAYS[h]
-    print(f"| {h} | {DAYS[h]} | {a:+.1f} | {w:+.1f} | {w - a:+.1f} | {dil:+.1f} | {w - a - dil:+.1f} | {w - k:+.1f} |")
+    print(f"| {h} | {DAYS[h]} | {a:+.1f} | {w:+.1f} | {w - a:+.1f} | {dil:+.1f} | {w - a - dil:+.1f} |")
