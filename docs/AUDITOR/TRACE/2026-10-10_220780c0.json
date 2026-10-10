@@ -1,6 +1,6 @@
 {
  "source": "/root/.claude/projects/-home-user-trade/220780c0-d897-5de0-a902-2af69538ba02.jsonl",
- "n_moves": 1373,
+ "n_moves": 1375,
  "moves": [
   {
    "move": 1,
@@ -37259,10 +37259,11 @@
   {
    "move": 1373,
    "tools": {
-    "Bash": 7,
-    "ToolSearch": 1
+    "Bash": 9,
+    "ToolSearch": 1,
+    "Skill": 1
    },
-   "n_tools": 8,
+   "n_tools": 11,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
@@ -37282,23 +37283,74 @@
    "readdo_reads": 0,
    "unlock_created": 0,
    "unlock_in_test": 0
+  },
+  {
+   "move": 1374,
+   "tools": {},
+   "n_tools": 0,
+   "read_goal": false,
+   "first_write_at": null,
+   "table_shown": false,
+   "claims_without_output": 0,
+   "claims_total": 0,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
+  },
+  {
+   "move": 1375,
+   "tools": {
+    "Bash": 18,
+    "Edit": 13
+   },
+   "n_tools": 31,
+   "read_goal": false,
+   "first_write_at": 5,
+   "table_shown": false,
+   "claims_without_output": 1,
+   "claims_total": 1,
+   "audit_calls": 0,
+   "audit_pasted_immediately": 0,
+   "audit_followed_by_real_edit": 0,
+   "protected_writes": 0,
+   "protected_by_path": {
+    "docs/PROJECT_GOAL.md": 0,
+    "docs/AUDITOR/OWNER_MODEL_SOURCE.md": 0,
+    ".claude/hooks/": 0,
+    ".claude/settings.json": 0,
+    ".claude/agents/": 0
+   },
+   "readdo_reads": 0,
+   "unlock_created": 0,
+   "unlock_in_test": 0
   }
  ],
  "rollup": {
   "P1_goal_read_before_first_write": {
    "num": 70,
-   "den": 293,
-   "value": 0.2389
+   "den": 294,
+   "value": 0.2381
   },
   "P2_table_shown_before_first_write": {
    "num": 55,
-   "den": 293,
-   "value": 0.1877
+   "den": 294,
+   "value": 0.1871
   },
   "P3_claim_with_output": {
    "num": 479,
-   "den": 1073,
-   "value": 0.4464
+   "den": 1074,
+   "value": 0.446
   },
   "P4_audit_pasted_immediately": {
    "num": 0,
@@ -37306,9 +37358,9 @@
    "value": 0.0
   },
   "P5_tools_per_move": {
-   "median": 6,
+   "median": 6.0,
    "max": 186,
-   "n": 1289
+   "n": 1290
   },
   "P6_findings_applied": {
    "num": 109,
