@@ -27,14 +27,17 @@ NS = 10**9
 MINUTE_NS = 60 * NS
 END_FLAT = "玉が 0 に戻った"  # R15 の「玉が 0 に戻った時点」で建ての合図を終える理由
 
-# 引数は 16 個(直すもの 2)。原典の値の組から 2 つを外した残り 15 個と、改良案 I1 の門 dev_setting(原典に無い。既定 None = 門なし)。
+# 引数は 17 個(直すもの 2)。原典の値の組から 2 つを外した残り 15 個と、改良案 I1 の門 dev_setting・I6 の門 line_setting(原典に無い。既定 None = 門なし)。
 # dev_setting(L-965・L-970): 足が閉じた時点の建ての線の中心からの距離(entry_setting × ボラ)÷ 幅 がこの値より小さいときは、
 # 1 段目(R3 の建て)を出さない。段の足しは止めない。出所 `docs/DISCUSSIONS/2026-10-08_matilda_main/EARN_LOSS_L965.md` §1.2・§2。
 ORIGINAL_KEYS = ("levels", "foot", "vola_count", "range_count", "alert_count", "range_setting", "over_range_setting",
                  "vola_setting", "entry_setting", "exit_setting", "break_delay", "break_dist", "break_len_mult",
                  "beard_ignore", "step_setting")
-PARAM_KEYS = ORIGINAL_KEYS + ("dev_setting",)
-BASE_PARAMS = {**{k: V37_ORIGINAL[k] for k in ORIGINAL_KEYS}, "dev_setting": None}
+# line_setting(L-974、改良案 I6): 足が閉じた時点で、建ての線から損の側のブレイクの線までの距離がボラのこの倍より短い側には、
+# 1 段目を出さない(買いは 下の建ての線 − 下のブレイクの線、売りは 上のブレイクの線 − 上の建ての線)。ブレイクの線が無い側は止めない。
+# 出所 `docs/RESEARCH/FINDINGS_LEDGER.md` K-381(ブレイクの線が近い起点は 20 分以内に戻りにくい)。既定 None = 門なし。
+PARAM_KEYS = ORIGINAL_KEYS + ("dev_setting", "line_setting")
+BASE_PARAMS = {**{k: V37_ORIGINAL[k] for k in ORIGINAL_KEYS}, "dev_setting": None, "line_setting": None}
 TAGS = ("entry", "level", "close", "market", "break")  # 直すもの 4
 TIER_ROLES = ("add", "level")  # まだ約定していない段(R5 で取り消す)
 
@@ -62,7 +65,7 @@ def _num(p, k, *, gt=None, ge=None, none=False):
 
 
 def _params(params) -> dict:
-    """鍵がちょうど PARAM_KEYS の 16 個で、型と範囲が合うときだけ写しを返す。外れたら ValueError。"""
+    """鍵がちょうど PARAM_KEYS の 17 個で、型と範囲が合うときだけ写しを返す。外れたら ValueError。"""
     if not isinstance(params, dict):
         raise ValueError(f"引数は辞書で渡す(受け取ったのは {type(params).__name__})")
     p = dict(params)
@@ -85,6 +88,7 @@ def _params(params) -> dict:
     _num(p, "beard_ignore", gt=0, none=True)
     _num(p, "step_setting", gt=0)
     _num(p, "dev_setting", ge=0, none=True)
+    _num(p, "line_setting", ge=0, none=True)
     return p
 
 
@@ -457,6 +461,8 @@ class MatildaSimple:
             self._drop_roles(("entry",))
             if self._brk == 0 and sn["gate"] and sn["dev_ok"]:  # R3(I1 の門 dev_ok は 1 段目だけに掛ける)
                 for s, px in ((1, sn["lo"]), (-1, sn["up"])):
+                    if not sn["line_ok"][s]:
+                        continue
                     _, q = size_detail(margin_jpy=MARGIN_JPY, use_ratio=USE_RATIO, levels=self.levels, price=px,
                                        quote_ccy="JPY")
                     if q > 0:
@@ -557,5 +563,9 @@ class MatildaSimple:
             or (vs is not None and vola <= vs * close)
         ds = p["dev_setting"]  # 改良案 I1: 建ての線が中心に近い(幅に比べて)ときは 1 段目を出さない
         dev_ok = ds is None or (width > 0 and es / width >= ds)
-        return {"lo": center - es, "up": center + es, "center": center, "vola": vola, "step": vola * p["step_setting"],
-                "bu": bu, "bd": bd, "gate": not shut, "dev_ok": dev_ok}
+        ls = p["line_setting"]  # 改良案 I6: 建ての線からブレイクの線が近い側は 1 段目を出さない(側ごと)
+        lo_px, up_px = center - es, center + es
+        line_ok = {1: ls is None or bd is None or (lo_px - bd) >= ls * vola,
+                   -1: ls is None or bu is None or (bu - up_px) >= ls * vola}
+        return {"lo": lo_px, "up": up_px, "center": center, "vola": vola, "step": vola * p["step_setting"],
+                "bu": bu, "bd": bd, "gate": not shut, "dev_ok": dev_ok, "line_ok": line_ok}
