@@ -39152,9 +39152,9 @@
   {
    "move": 1444,
    "tools": {
-    "Bash": 6
+    "Bash": 13
    },
-   "n_tools": 6,
+   "n_tools": 13,
    "read_goal": false,
    "first_write_at": null,
    "table_shown": false,
