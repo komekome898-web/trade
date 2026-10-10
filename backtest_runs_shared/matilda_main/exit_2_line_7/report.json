@@ -1,0 +1,34 @@
+{
+ "params": {
+  "levels": 5,
+  "foot": 1,
+  "vola_count": 40,
+  "range_count": 40,
+  "alert_count": 20,
+  "range_setting": 0.00025,
+  "over_range_setting": 0.16666666666666666,
+  "vola_setting": null,
+  "entry_setting": 4,
+  "exit_setting": 2,
+  "break_delay": 1,
+  "break_dist": 0.5,
+  "break_len_mult": 2,
+  "beard_ignore": 1,
+  "step_setting": 1,
+  "dev_setting": null,
+  "line_setting": 7
+ },
+ "bar_limit": 0,
+ "run_sec": 333.1,
+ "summary": {
+  "fill_count": 476338,
+  "closed_trades": 122320,
+  "pnl_jpy": "721333.776",
+  "open_trades": 1
+ },
+ "fills_mb_raw": 26.1,
+ "fills_mb_gz": 3.3,
+ "signals_mb_raw": 22.1,
+ "signals_mb_gz": 2.1,
+ "max_rss_mb": 500
+}
