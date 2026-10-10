@@ -569,6 +569,11 @@ def pretool_decision(tool: str, ti: dict, *, base: Path, pending: int | None, da
     research = whole or any(under(p, RESEARCH_PREFIXES) for p in paths)
     if g3 and data:
         return G3_MSG
+    # 置き場の説明書き(README・manifest・MD5SUMS・取得の要約)を読むのは登録簿を直す操作なので、G1 でも止めない
+    # (登録簿の門 G2 を直すのに説明書きが要るのに、合流待ちで読めずに詰まるのを防ぐ。L-990)
+    if tool == "Read" and paths and all(re.search(r"(^|/)(README[^/]*\.md|manifest\.json|MD5SUMS|_fetch_summary\.json|\.progress\.json)$", p)
+                                        for p in paths):
+        return None
     if g1 and (data or research):
         return G1_MSG(pending)
     if g2 and research:
