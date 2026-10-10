@@ -215,8 +215,39 @@ def test_unseen_reads_are_blocked_while_gated():
     # 中で何を読むか文字に出ない操作(台本・ワイルドカード・再帰・置き換え・全体の検索)は、門が閉じている間は止める
     for cmd in ("python3 /tmp/x.py", "ls back*", "find . -name '*.csv'", "cat $(cat list)", "grep -r foo ."):
         assert "G3" in decide("Bash", {"command": cmd}, read=False), cmd
-        assert "G1" in decide("Bash", {"command": cmd}, pending=2), cmd
+        if not cmd.startswith("ls "):  # 一覧は置き場の整理の操作として G1 でも通す(L-990)
+            assert "G1" in decide("Bash", {"command": cmd}, pending=2), cmd
     assert "G3" in decide("Grep", {"pattern": "foo"}, read=False)
     assert "G3" in decide("Glob", {"pattern": "**/*.csv"}, read=False)
     # 門が開いていれば通る
     assert decide("Bash", {"command": "python3 /tmp/x.py"}) is None
+
+
+def test_quoted_text_and_heredoc_bodies_are_not_commands():
+    # 引用の中の | * ? や、ヒアドキュメントの本文は、コマンドとして読まない(文書を書く操作まで止めない。L-990)
+    cmd = "printf '%s\\n' '| L-990 | **太字** | どう？ |' >> docs/OWNER_LOG.md"
+    assert decide("Bash", {"command": cmd}, pending=6, read=False, reg=False) is None
+    cmd = "cat >> docs/X.md <<'EOF'\n| a | **b** | backtest_data/x |\nEOF"
+    assert decide("Bash", {"command": cmd}, pending=6, read=False, reg=False) is None
+    # 本文を読む側が台本なら、その行で止める
+    assert "G1" in decide("Bash", {"command": "python3 - <<'EOF'\nprint(1)\nEOF"}, pending=6)
+
+
+def test_repair_path_is_never_blocked_by_g1_or_g2():
+    for cmd in ("python3 scripts/data_repair/bitflyer_oldest_first.py 2026-09-10 2026-10-04",
+                "python3 scripts/fetch_bitflyer_executions_range.py --since x",
+                "git merge origin/x"):
+        assert decide("Bash", {"command": cmd}, pending=6, read=True, reg=False) is None, cmd
+
+
+def test_waits_only_excuse_owner_dependent_items():
+    probs = {"G1 取り込み": ["x"], "G2 登録簿": ["y"], "G4 欠け": ["z"],
+             "G5 記録の停止": ["paper_logs/venues/quotes: 最新 …", "paper_logs/tape/ticker: 最新 …"]}
+    md = ("### 8.1 欠けの処置\n| 流れ | 日 | 処置 |\n|---|---|---|\n"
+          "| 共有の合流 | 2026-10-11 | オーナー待ち: 照合の表の承認 |\n"
+          "| venues/quotes | 2026-10-11 | オーナー待ち: PC の記録器の再起動 |\n")
+    out = dg.apply_waits(probs, dg.parse_waits(md), date(2026, 10, 12))
+    assert out["G1 取り込み"] == [] and out["G2 登録簿"] == ["y"] and out["G4 欠け"] == ["z"]
+    assert out["G5 記録の停止"] == ["paper_logs/tape/ticker: 最新 …"]
+    late = dg.apply_waits(probs, dg.parse_waits(md), date(2026, 10, 15))  # 3 日を過ぎたらまた止まる
+    assert late["G1 取り込み"] == ["x"] and len(late["G5 記録の停止"]) == 2

@@ -104,17 +104,62 @@ def under(path: str, prefixes) -> bool:
     return any(path == x.rstrip("/") or path.startswith(x.rstrip("/") + "/") for x in prefixes)
 
 
-def segments(cmd: str) -> list[str]:
-    out = []
-    for s in re.split(r"&&|\|\||[;|\n]", cmd or ""):
-        s = s.strip()
-        # 先頭の cd / 環境変数の代入 / サブシェルの括弧は外す
-        s = re.sub(r"^\(+", "", s).strip()
-        if s.startswith("cd "):
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
+
+
+def strip_heredocs(cmd: str) -> str:
+    """ヒアドキュメントの本文(コマンドではなく文字)を外す。本文を読む側(python など)は、その行で別に判定される。"""
+    out, term = [], None
+    for line in (cmd or "").split("\n"):
+        if term is not None:
+            if line.strip() == term:
+                term = None
             continue
-        if s:
-            out.append(s)
-    return out
+        out.append(line)
+        m = HEREDOC.search(line)
+        if m:
+            term = m.group(2)
+    return "\n".join(out)
+
+
+def segments(cmd: str) -> list[str]:
+    """引用の外の ; && || | 改行で区切る(引用の中の | などでは区切らない)。"""
+    text = strip_heredocs(cmd)
+    out, cur, q, i = [], [], None, 0
+    while i < len(text):
+        c = text[i]
+        if q:
+            cur.append(c)
+            if c == q:
+                q = None
+            elif c == "\\" and q == '"' and i + 1 < len(text):
+                cur.append(text[i + 1])
+                i += 1
+        elif c in "'\"":
+            q = c
+            cur.append(c)
+        elif c in ";|\n" or (c == "&" and text[i:i + 2] == "&&"):
+            out.append("".join(cur))
+            cur = []
+            if text[i:i + 2] in ("&&", "||"):
+                i += 1
+        else:
+            cur.append(c)
+        i += 1
+    out.append("".join(cur))
+    res = []
+    for s in out:
+        s = re.sub(r"^\(+", "", s.strip()).strip()
+        if s.startswith("cd ") or not s:
+            continue
+        res.append(s)
+    return res
+
+
+def unquoted(seg: str) -> str:
+    """単引用の中身を外し、二重引用は中身の $ と ` だけ残す(ワイルドカードの判定用)。"""
+    s = re.sub(r"'[^']*'", "''", seg)
+    return re.sub(r'"([^"\\]|\\.)*"', lambda m: '"' + "".join(re.findall(r"\$\(|\$\{?[A-Za-z_]|`", m.group(0))) + '"', s)
 
 
 ROOT_TOKEN = re.compile(r"(?:^|[\s'\"=(:,])(?:\./|/home/user/trade/|\$ROOT/|\$CLAUDE_PROJECT_DIR/)?(backtest_data|paper_logs)(?:/|\b)|(?:^|[\s'\"=(:,])(?:\./|/home/user/trade/)?data/")
@@ -359,20 +404,36 @@ def coverage_gaps(ts: list[datetime], step_min: int, start: datetime, end: datet
 
 def okx_missing(base: Path, now: datetime, ledger: set) -> list[str]:
     out = []
+    # 共有(既定ブランチ)に届いていて、まだ合流していない置き場も「持っている」に数える
+    # (合流の承認を待つ間に、合流しないと消えない欠けで返答の終わりの門が詰まらないように。L-990)
+    _, share_list = git(["ls-tree", "-r", "--name-only", SHARE_REF, "--", "backtest_data"], base, 30)
+    share_paths = share_list.splitlines()
     for name, pat, fname, step, keep_days in COVERAGE:
         ts = []
-        for p in base.glob(f"{pat}/{fname}"):
-            with open(p, encoding="utf-8") as fh:
-                next(fh, None)
-                for line in fh:
-                    try:
-                        ts.append(datetime.fromisoformat(line.split(",", 1)[0]).astimezone(timezone.utc).replace(tzinfo=None))
-                    except ValueError:
-                        continue
-        # 保持の中で、まだ取り元にある範囲だけ。終わりは 1 日前(PC の取得は 1 日 1 回)
+        texts = []
+        local = {str(p.relative_to(base)) for p in base.glob(f"{pat}/{fname}")}
+        for rp in sorted(local):
+            texts.append((base / rp).read_text(encoding="utf-8"))
+        prefix = pat.replace("*", "")
+        for sp in share_paths:
+            if sp.startswith(prefix) and sp.endswith("/" + fname) and sp not in local:
+                rc, txt = git(["show", f"{SHARE_REF}:{sp}"], base, 30)
+                if rc == 0:
+                    texts.append(txt)
+        for txt in texts:
+            for line in txt.splitlines()[1:]:
+                try:
+                    ts.append(datetime.fromisoformat(line.split(",", 1)[0]).astimezone(timezone.utc).replace(tzinfo=None))
+                except ValueError:
+                    continue
+        # 保持の中で、まだ取り元にある範囲。次の取得で埋まる見込みの新しい側の空白は数えず、
+        # 取り元から消えるまで 1 日を切った空白(始まりが「今 − (保持 − 1 日)」より古い)だけを数える
         start = now - timedelta(days=keep_days) + timedelta(hours=1)
-        end = now - timedelta(days=1)
+        end = now - timedelta(minutes=2 * step)
+        at_risk = now - timedelta(days=keep_days - 1)
         for a, b in coverage_gaps(ts, step, start, end):
+            if a >= at_risk:
+                continue
             key = a.strftime("%Y-%m-%dT%H:%M")
             if (name, key) in ledger:
                 continue
@@ -431,10 +492,17 @@ OPAQUE = (
     re.compile(r"^ls\b.*\s-[a-zA-Z]*R"),
     re.compile(r"\$\(|`|\$\{?[A-Za-z_]"),
 )
+# 道具の前に付けてよい前置き(時間の上限・切り離し・PYTHONPATH)。前置きを付けただけで直しの道具が止まらないように
+RUN_PREFIX = r"^(?:timeout\s+\d+[smh]?\s+)?(?:nohup\s+)?(?:PYTHONPATH=\S+\s+)?"
 ALWAYS_OK = (
     # 門が閉じていても通す: 取り込み・補充・登録簿の道具、コミット、フックの台帳、門そのものの試験
     re.compile(r"^git\s"),
-    re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+scripts/(intake_ledger|data_quality|share_reconcile|data_gates|fetch_[\w]+|retention_snapshot)\.py\b"),
+    re.compile(RUN_PREFIX + r"python3?\s+scripts/(intake_ledger|data_quality|share_reconcile|data_gates|fetch_[\w]+|retention_snapshot)\.py\b"),
+    # 直しの道具の置き場(L-990「データ不備→直そうとするがそれすらも止められて…何もできなくなったらアホすぎる」)。
+    # データを取り直す・直す台本はここに置けば、どの門が閉じていても走らせられる。中身は git の差分に残る。
+    re.compile(RUN_PREFIX + r"python3?\s+scripts/data_repair/[\w]+\.py\b"),
+    # 置き場の整理(消す・移す・写す・作る・一覧)は直す操作なので止めない。中身を読む操作(cat・zcat・head など)は止める
+    re.compile(r"^(rm|mv|cp|mkdir|touch|ls|stat|wc\s+-c|md5sum|sha256sum)\b"),
     re.compile(r"^(sh\s+)?scripts/analysis/commit_gate\.sh\b"),
     re.compile(r"^(sh\s+)?scripts/regen_hook_manifest\.sh\b"),
     re.compile(r"^(PYTHONPATH=\S+\s+)?python3?\s+-m\s+pytest\s+tests/test_data_gates\.py\b"),
@@ -449,7 +517,7 @@ G3_OK = (
 
 
 def opaque(seg: str) -> bool:
-    return any(p.search(seg) for p in OPAQUE)
+    return any(p.search(unquoted(seg)) for p in OPAQUE)
 
 
 def G1_MSG(pending):
@@ -558,16 +626,50 @@ def all_problems(base: Path) -> dict[str, list[str]]:
     return {"G1 取り込み": g1, "G2 登録簿": g2, "G4 欠け": g4, "G5 記録の停止": g5_problems(base)}
 
 
+WAIT_DAYS = 3  # オーナー・PC の作業待ちの例外が効く日数(L-990 で承認)
+
+
+def parse_waits(md: str) -> dict[str, date]:
+    """§8.1 の「オーナー待ち」の行: 流れ → 依頼した日。"""
+    m = re.search(r"^### 8\.1 .*?$(.*?)(?=^##+ |\Z)", md, re.M | re.S)
+    out: dict[str, date] = {}
+    if not m:
+        return out
+    for line in m.group(1).splitlines():
+        cells = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 3 and cells[2].startswith("オーナー待ち"):
+            try:
+                out[cells[0]] = date.fromisoformat(cells[1][:10])
+            except ValueError:
+                continue
+    return out
+
+
+def apply_waits(probs: dict[str, list[str]], waits: dict[str, date], today: date) -> dict[str, list[str]]:
+    """オーナー・PC の作業を待つもの(G1 の合流・G5 の記録の再開)だけ、依頼から WAIT_DAYS 日まで外す。
+    登録簿(G2)と欠け(G4)は自分で片付けられるので外さない。"""
+    live = {k for k, d in waits.items() if 0 <= (today - d).days <= WAIT_DAYS}
+    out = dict(probs)
+    if "共有の合流" in live:
+        out["G1 取り込み"] = []
+    out["G5 記録の停止"] = [x for x in probs.get("G5 記録の停止", [])
+                          if x.split(":", 1)[0].replace("paper_logs/", "") not in live]
+    return out
+
+
 def cmd_stop() -> int:
+    # 返答の終わり: 残りがあれば必ず止める(2 回目も止める。L-988「穴あるけどほっときますなんか通じるわけないやろ」)。
+    # 例外はオーナー・PC の作業待ちを §8.1 に依頼日つきで書いたものだけ(L-990)。
     base = root()
-    d = _read_stdin()
-    if d.get("stop_hook_active"):
-        return 0
-    probs = all_problems(base)
+    _read_stdin()
+    md = (base / DATA_MD).read_text(encoding="utf-8") if (base / DATA_MD).exists() else ""
+    probs = apply_waits(all_problems(base), parse_waits(md), datetime.now(timezone.utc).date())
     if not any(probs.values()):
         return 0
-    lines = ["[門 データの導線] 返答を終える前に、次が残っている(L-984・L-986)。片付けるか、"
-             "オーナーの返事待ちならその旨を返答に書いてから終える。"]
+    lines = ["[門 データの導線] 返答を終える前に、次が残っている(L-984・L-986・L-988)。片付けてから終える。"
+             "オーナー・PC の作業を待つもの(合流の承認・PC 側の記録の再開)だけは、docs/DATA.md §8.1 に"
+             f"「| <流れ> | <依頼した日> | オーナー待ち: <依頼の中身> |」を書けば {WAIT_DAYS} 日まで通る。"
+             "直しの台本は scripts/data_repair/ に置けば、門が閉じていても走らせられる。"]
     for k, v in probs.items():
         if v:
             lines.append(f"{k}: {len(v)} 件")
@@ -602,6 +704,10 @@ def cmd_registry_table() -> int:
 
 
 def digest_line(base: Path) -> str:
+    err = base / ERROR_LOG
+    if err.exists() and datetime.now().timestamp() - err.stat().st_mtime < 86400:
+        last_err = err.read_text(encoding="utf-8").strip().splitlines()[-1][:200]
+        return f"!!! 門の台本が 24 時間以内に落ちた(落ちた間は止めずに通した): {last_err}"
     pending, last = g1_pending(base)
     if pending is None:
         return f"!!! 門 G1: 既定ブランチ {SHARE_BRANCH} の参照が取れない(git fetch が失敗)。データの道具は止まる"
@@ -630,5 +736,26 @@ def main(argv: list[str]) -> int:
     return cmd_status()
 
 
+ERROR_LOG = ".claude/state/data_gates_error.log"
+
+
+def safe_main(argv: list[str]) -> int:
+    """門の台本そのものが落ちたときは止めない(門の不具合でリードが何もできなくなるのを防ぐ。L-990)。
+    落ちたことは記録し、オーナーの発言ごとの状態の行に出す(digest-line)。"""
+    try:
+        return main(argv)
+    except Exception as exc:  # noqa: BLE001
+        try:
+            p = root() / ERROR_LOG
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "a", encoding="utf-8") as fh:
+                fh.write(f"{datetime.now(timezone.utc).isoformat()} {argv[1:]} {type(exc).__name__}: {exc}\n")
+        except Exception:  # noqa: BLE001
+            pass
+        print(f"[門 データの導線] 門の台本が落ちたので通した({type(exc).__name__}: {exc})。"
+              "scripts/data_gates.py を直すこと", file=sys.stderr)
+        return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(safe_main(sys.argv))

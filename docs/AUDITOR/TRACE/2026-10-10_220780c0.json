@@ -39339,14 +39339,14 @@
   {
    "move": 1451,
    "tools": {
-    "Bash": 13,
+    "Bash": 17,
     "Write": 1,
     "ToolSearch": 1,
     "Monitor": 1,
     "Read": 3,
     "Edit": 1
    },
-   "n_tools": 20,
+   "n_tools": 24,
    "read_goal": false,
    "first_write_at": 3,
    "table_shown": false,
