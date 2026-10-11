@@ -84,3 +84,5 @@
 2026-10-04T19:06:13Z	store_loaded	4.12s	FX_BTC_JPY-d95cfc899909dfdbf393 rows=3983555 cache_bytes=207251681
 2026-10-04T19:06:19Z	store_loaded	6.68s	BTCUSDT-75c07ccdcf3882a4762f rows=3323359 cache_bytes=171251518
 2026-10-04T19:06:19Z	warmup	102.19s	done
+2026-10-11T02:14:28Z	warmup	-	instruments:
+2026-10-11T02:14:28Z	warmup	2.72s	done
