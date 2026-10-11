@@ -3,7 +3,7 @@
   "api_health": {
    "checks": {
     "gaps": {
-     "count": 19,
+     "count": 21,
      "examples": [
       {
        "examples": [
@@ -3593,7 +3593,7 @@
   },
   "okx_oi": {
    "checks": {},
-   "files_checked": 45,
+   "files_checked": 46,
    "files_flagged": 0
   },
   "qa_synthetic": {
@@ -5189,7 +5189,7 @@
      "files": 451
     },
     "gaps": {
-     "count": 1623851809,
+     "count": 1631738506,
      "examples": [
       {
        "examples": [
@@ -5347,11 +5347,11 @@
        "path": "backtest_data/bitmex_XBTUSD_1m_from1s_20261002/bitmex_XBTUSD_1m_2017.csv.gz"
       }
      ],
-     "files": 2782
+     "files": 2785
     }
    },
-   "files_checked": 3326,
-   "files_flagged": 2789
+   "files_checked": 3329,
+   "files_flagged": 2792
   },
   "venue_survey": {
    "checks": {},
@@ -21776,6 +21776,14 @@
     32506,
     "2026-10-09T23:45:47.466378+00:00",
     "12d0486fe32983371918407bcbdbdc86"
+   ],
+   "result": {}
+  },
+  "backtest_data/auto_okx_open_interest_5m_20261011/okx_btc_oi_5m.csv": {
+   "content_key": [
+    32281,
+    "2026-10-11T00:30:48.904596+00:00",
+    "a6f05d5e46b35cca056362a3981f86cb"
    ],
    "result": {}
   },
@@ -155186,13 +155194,13 @@
   },
   "data/api_health.csv": {
    "content_key": [
-    2591909,
-    "2026-10-10T20:58:24.410344+00:00",
-    "bc9dd21b564fae74d2a38b2d94613646"
+    2772138,
+    "2026-10-11T00:58:11.044478+00:00",
+    "0ee8d1cf5bfe6051a4c6cb64962b4591"
    ],
    "result": {
     "gaps": {
-     "count": 19,
+     "count": 21,
      "examples": [
       {
        "gap_seconds": 1241.821,
@@ -283096,11 +283104,131 @@
      "median_gap_seconds": 0.03911
     }
    }
+  },
+  "data/archive/bitmex/data/quote/20220613.csv.gz": {
+   "content_key": [
+    128151278,
+    "2026-09-10T07:48:57.983493+00:00",
+    "32e6e3c57e1f93ff2af28d6d678ba52c"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2656929,
+     "examples": [
+      {
+       "gap_seconds": 8745.078249,
+       "row": 477145,
+       "ts": "2022-06-13T07:47:02.863677+00:00"
+      },
+      {
+       "gap_seconds": 7193.621308,
+       "row": 2255489,
+       "ts": "2022-06-13T19:38:20.725799+00:00"
+      },
+      {
+       "gap_seconds": 6137.68695,
+       "row": 477467,
+       "ts": "2022-06-13T12:36:17.377284+00:00"
+      },
+      {
+       "gap_seconds": 6120.39524,
+       "row": 477551,
+       "ts": "2022-06-13T17:18:00.453760+00:00"
+      },
+      {
+       "gap_seconds": 5457.361158,
+       "row": 2254905,
+       "ts": "2022-06-13T13:01:33.406195+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.047497
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20220614.csv.gz": {
+   "content_key": [
+    115659611,
+    "2026-09-10T07:50:17.407566+00:00",
+    "05bb34dd8217c33888a71ac2fd3a664d"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2620414,
+     "examples": [
+      {
+       "gap_seconds": 18246.422891,
+       "row": 442655,
+       "ts": "2022-06-14T19:04:49.853214+00:00"
+      },
+      {
+       "gap_seconds": 9661.971102,
+       "row": 442654,
+       "ts": "2022-06-14T14:00:43.430323+00:00"
+      },
+      {
+       "gap_seconds": 8275.596487,
+       "row": 442653,
+       "ts": "2022-06-14T11:19:41.459221+00:00"
+      },
+      {
+       "gap_seconds": 7204.448443,
+       "row": 442651,
+       "ts": "2022-06-14T07:22:15.567506+00:00"
+      },
+      {
+       "gap_seconds": 6862.259156,
+       "row": 442657,
+       "ts": "2022-06-14T21:45:20.194407+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.044497
+    }
+   }
+  },
+  "data/archive/bitmex/data/quote/20220615.csv.gz": {
+   "content_key": [
+    120352689,
+    "2026-09-10T07:51:54.998168+00:00",
+    "501e698edd5068556ed864244bba2124"
+   ],
+   "result": {
+    "gaps": {
+     "count": 2609354,
+     "examples": [
+      {
+       "gap_seconds": 10200.244715,
+       "row": 301042,
+       "ts": "2022-06-15T21:40:10.541426+00:00"
+      },
+      {
+       "gap_seconds": 9783.202695,
+       "row": 301025,
+       "ts": "2022-06-15T08:30:43.945312+00:00"
+      },
+      {
+       "gap_seconds": 7893.525069,
+       "row": 301026,
+       "ts": "2022-06-15T10:42:17.470381+00:00"
+      },
+      {
+       "gap_seconds": 5212.154895,
+       "row": 301041,
+       "ts": "2022-06-15T18:50:10.296711+00:00"
+      },
+      {
+       "gap_seconds": 4937.321958,
+       "row": 301030,
+       "ts": "2022-06-15T13:43:02.289458+00:00"
+      }
+     ],
+     "median_gap_seconds": 0.043561
+    }
+   }
   }
  },
- "generated_at": "2026-10-10T21:40:28.210403+00:00",
+ "generated_at": "2026-10-11T01:48:08.669501+00:00",
  "ledger_source": "data\\INTAKE_latest.json",
- "schema_undefined_count": 3326,
+ "schema_undefined_count": 3329,
  "schema_undefined_files": [
   "backtest_data/audit_fetch_P2-08b_20260906/binance_1s_2026-09-05_head5.csv",
   "backtest_data/audit_fetch_P2-08b_20260906/binance_aggTrades_2019-06-01_head5.csv",
@@ -286427,6 +286555,9 @@
   "data/archive/bitmex/data/quote/20220609.csv.gz",
   "data/archive/bitmex/data/quote/20220610.csv.gz",
   "data/archive/bitmex/data/quote/20220611.csv.gz",
-  "data/archive/bitmex/data/quote/20220612.csv.gz"
+  "data/archive/bitmex/data/quote/20220612.csv.gz",
+  "data/archive/bitmex/data/quote/20220613.csv.gz",
+  "data/archive/bitmex/data/quote/20220614.csv.gz",
+  "data/archive/bitmex/data/quote/20220615.csv.gz"
  ]
 }
