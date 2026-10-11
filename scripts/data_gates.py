@@ -349,7 +349,9 @@ def gz_first_last(p: Path) -> tuple[str, str]:
 
 def bitflyer_missing(base: Path, today: date, ledger: set) -> list[str]:
     days = {}
-    for p in base.glob("backtest_data/bitflyer_executions_backfill_*/executions_*.csv.gz"):
+    # 公開 API の取り直し(backfill)と、PC の WS 記録から作った共有の tape(paper_logs/tape)の両方を数える
+    for p in [*base.glob("backtest_data/bitflyer_executions_backfill_*/executions_*.csv.gz"),
+              *base.glob("paper_logs/tape/executions_*.csv.gz")]:
         m = DATE8.search(p.name)
         if not m:
             continue

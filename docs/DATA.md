@@ -378,7 +378,6 @@ L-984・L-986・L-988・L-990 で作った門が読む表。1 行 1 件。「処
 
 | 流れ | 日 | 処置 |
 |---|---|---|
-| 共有の合流 | 2026-10-11 | オーナー待ち: 照合の表(既定ブランチの 10-05〜10-10 の共有 6 本、消えるファイル 0・上書き 32 本)のとおり合流してよいかの承認 |
 | liquidations/bitmex | 停止 | BitMEX は XBTUSD を 2026-09-16 に上場廃止、09-23 に取引所を閉鎖(§9.2)。清算の記録は 09-16 で終わり |
 | tape/board_top5 | 停止 | 【推定】板 top5 の記録は 2026-08-26 で終わり、同じ日から板 top10(`paper_logs/tape/board_top10_*`)の共有が始まっている(照合の表)。置き換えたと読んだが、PC 側の設定は未確認 |
 | venues/quotes | 2026-10-11 | オーナー待ち: 10-05 で記録が止まっている。共有の合流の承認の後に、共有された PC のログで原因を調べ、PC 側の見張りを作って再起動の手順をお願いする |
@@ -442,14 +441,14 @@ git に載ったデータの置き場ごとに、実物の最新の日付と、�
 | audit_fetch_etf_alternatives | 2026-09-06 | §5 |
 | audit_fetch_etf_units | 2026-09-06 | §5 |
 | audit_fetch_micro_fee | 2026-09-06 | §5 |
-| auto_bitflyer_executions | 2026-09-21 | §1 |
-| auto_oi_snapshots | 2026-09-21 | §2 |
+| auto_bitflyer_executions | 2026-10-06 | §1 |
+| auto_oi_snapshots | 2026-10-05 | §2 |
 | auto_okx_long_short_ratio | 2026-10-03 | §2 |
-| auto_okx_open_interest_1h | 2026-09-21 | §2 |
+| auto_okx_open_interest_1h | 2026-10-05 | §2 |
 | auto_okx_open_interest_1h_ccr | 2026-10-10 | §2 |
-| auto_okx_open_interest_5m | 2026-10-03 | §2 |
+| auto_okx_open_interest_5m | 2026-10-10 | §2 |
 | auto_okx_open_interest_5m_ccr | 2026-10-10 | §2 |
-| auto_venues | 2026-09-21 | §3 |
+| auto_venues | 2026-10-05 | §3 |
 | binance_BTCUSDT_1m | 2026-08-31 | §2 |
 | binance_BTCUSDT_1m_210d | 2026-08-20 | §2 |
 | binance_BTCUSDT_1s | 2026-09-06 | §2 |
@@ -552,20 +551,20 @@ git に載ったデータの置き場ごとに、実物の最新の日付と、�
 | paper_logs/binance_daily | — | §2 |
 | paper_logs/board_round_series_5s | — | §6 |
 | paper_logs/bot | — | §0 |
-| paper_logs/deribit_options | 2026-10-02 | §2 |
+| paper_logs/deribit_options | 2026-10-09 | §2 |
 | paper_logs/funding_rate_history | — | §2 |
-| paper_logs/hyperliquid | 2026-10-02 | §2 |
+| paper_logs/hyperliquid | 2026-10-09 | §2 |
 | paper_logs/latency | — | §6 |
-| paper_logs/liquidations | 2026-10-03 | §2 |
+| paper_logs/liquidations | 2026-10-10 | §2 |
 | paper_logs/nk225_sessions | — | §5 |
 | paper_logs/oi_snapshots | — | §2 |
-| paper_logs/okx_traders | 2026-10-02 | §2 |
+| paper_logs/okx_traders | 2026-10-09 | §2 |
 | paper_logs/on1_ledger | — | §6 |
 | paper_logs/onr_ledger | — | §6 |
 | paper_logs/scalp_paper | — | §6 |
 | paper_logs/spread_FX_BTC_JPY | — | §1 |
-| paper_logs/tape | 2026-10-03 | §1 |
-| paper_logs/venues | 2026-10-03 | §3 |
+| paper_logs/tape | 2026-10-10 | §1 |
+| paper_logs/venues | 2026-10-05 | §3 |
 | phase2_runs | 2026-09-06 | §6 |
 | qa_known_answer | 2026-09-05 | §6 |
 | qa_known_answer_maker | 2026-09-05 | §6 |
