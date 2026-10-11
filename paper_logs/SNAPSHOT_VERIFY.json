@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-03T21:25:06.926015+00:00",
+  "generated_at": "2026-10-09T20:56:47.376349+00:00",
   "backtest_data_root": "backtest_data",
   "units": [
     {
@@ -308,6 +308,20 @@
       ]
     },
     {
+      "unit": "auto_bitflyer_executions_20261006",
+      "md5sums_path": "backtest_data\\auto_bitflyer_executions_20261006\\MD5SUMS",
+      "file_count": 145,
+      "status": "verified",
+      "checked": 144,
+      "matched": 144,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_oi_snapshots_20260905",
       "md5sums_path": "backtest_data\\auto_oi_snapshots_20260905\\MD5SUMS",
       "file_count": 2,
@@ -324,6 +338,20 @@
     {
       "unit": "auto_oi_snapshots_20260921",
       "md5sums_path": "backtest_data\\auto_oi_snapshots_20260921\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_oi_snapshots_20261005",
+      "md5sums_path": "backtest_data\\auto_oi_snapshots_20261005\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -380,6 +408,20 @@
     {
       "unit": "auto_okx_open_interest_1h_20260921",
       "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20260921\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_1h_20261005",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_1h_20261005\\MD5SUMS",
       "file_count": 2,
       "status": "verified",
       "checked": 1,
@@ -714,6 +756,90 @@
       ]
     },
     {
+      "unit": "auto_okx_open_interest_5m_20261004",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261004\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261005",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261005\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261006",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261006\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261007",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261007\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261008",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261008\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
+      "unit": "auto_okx_open_interest_5m_20261009",
+      "md5sums_path": "backtest_data\\auto_okx_open_interest_5m_20261009\\MD5SUMS",
+      "file_count": 2,
+      "status": "verified",
+      "checked": 1,
+      "matched": 1,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
+      ]
+    },
+    {
       "unit": "auto_venues_20260905",
       "md5sums_path": "backtest_data\\auto_venues_20260905\\MD5SUMS",
       "file_count": 51,
@@ -740,6 +866,18 @@
       "extra": [
         "manifest.json"
       ]
+    },
+    {
+      "unit": "auto_venues_20261005",
+      "md5sums_path": "backtest_data\\auto_venues_20261005\\MD5SUMS",
+      "file_count": 118,
+      "status": "verified",
+      "checked": 118,
+      "matched": 118,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": []
     },
     {
       "unit": "binance_BTCUSDT_1m_20170801_20231231",
@@ -2430,6 +2568,20 @@
       ],
       "extra": [
         "README.md"
+      ]
+    },
+    {
+      "unit": "binance_um_fundingRate_BTCUSDT_202001_202312",
+      "md5sums_path": "backtest_data\\binance_um_fundingRate_BTCUSDT_202001_202312\\MD5SUMS",
+      "file_count": 49,
+      "status": "verified",
+      "checked": 48,
+      "matched": 48,
+      "mismatches": [],
+      "line_ending_mismatches": [],
+      "missing": [],
+      "extra": [
+        "manifest.json"
       ]
     },
     {
@@ -5329,19 +5481,19 @@
   ],
   "ledger_cross_check": {
     "ledger_path": "data\\INTAKE_latest.json",
-    "checked": 6659,
+    "checked": 6986,
     "mismatches": []
   },
   "summary": {
-    "unit_count": 135,
-    "verified": 106,
+    "unit_count": 146,
+    "verified": 117,
     "verified_line_ending_only": 21,
     "newly_sealed": 0,
     "mismatch_units": 8,
     "total_mismatches": 3,
     "total_line_ending_only": 99,
     "total_missing": 1567,
-    "total_extra_untracked": 1336,
+    "total_extra_untracked": 1346,
     "ledger_mismatches": 0
   },
   "ok": false

@@ -664,3 +664,131 @@ UnicodeEncodeError: 'cp932' codec can't encode character '\u2014' in position 92
 2026-10-03T19:05:25+00:00 bybit: 接続
 2026-10-03T19:05:26+00:00 bybit: -> bybit_20261003.jsonl.gz
 2026-10-03T19:05:42+00:00 binance_cm: -> binance_cm_20261003.jsonl.gz
+2026-10-03T21:53:17+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-03T21:53:35+00:00 okx: 接続
+2026-10-04T00:00:04+00:00 binance_cm: -> binance_cm_20261004.jsonl.gz
+2026-10-04T00:00:18+00:00 bybit: -> bybit_20261004.jsonl.gz
+2026-10-04T00:00:19+00:00 okx: -> okx_20261004.jsonl.gz
+2026-10-04T04:02:22+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx'] -> C:\Users\ryoma\trade\data\liquidations
+2026-10-04T04:02:24+00:00 binance_cm: 接続
+2026-10-04T04:02:24+00:00 binance_um: 接続
+2026-10-04T04:02:24+00:00 okx: 接続
+2026-10-04T04:02:24+00:00 okx: -> okx_20261004.jsonl.gz
+2026-10-04T04:02:24+00:00 bybit: 接続
+2026-10-04T04:02:25+00:00 bybit: -> bybit_20261004.jsonl.gz
+2026-10-04T04:02:37+00:00 binance_cm: -> binance_cm_20261004.jsonl.gz
+2026-10-04T04:03:39+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx'] -> C:\Users\ryoma\trade\data\liquidations
+2026-10-04T04:03:40+00:00 binance_um: 接続
+2026-10-04T04:03:40+00:00 binance_cm: 接続
+2026-10-04T04:03:40+00:00 okx: 接続
+2026-10-04T04:03:40+00:00 okx: -> okx_20261004.jsonl.gz
+2026-10-04T04:03:40+00:00 bybit: 接続
+2026-10-04T04:03:40+00:00 bybit: -> bybit_20261004.jsonl.gz
+2026-10-04T04:03:57+00:00 binance_cm: -> binance_cm_20261004.jsonl.gz
+2026-10-04T11:26:54+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-04T11:27:03+00:00 bybit: 接続
+2026-10-04T19:04:26+00:00 記録開始: ['binance_um', 'binance_cm', 'bybit', 'okx'] -> C:\Users\ryoma\trade\data\liquidations
+2026-10-04T19:04:30+00:00 binance_cm: 接続
+2026-10-04T19:04:30+00:00 binance_um: 接続
+2026-10-04T19:04:30+00:00 okx: 接続
+2026-10-04T19:04:31+00:00 okx: -> okx_20261004.jsonl.gz
+2026-10-04T19:04:34+00:00 binance_cm: -> binance_cm_20261004.jsonl.gz
+2026-10-04T19:04:34+00:00 bybit: 接続
+2026-10-04T19:04:35+00:00 bybit: -> bybit_20261004.jsonl.gz
+2026-10-05T00:00:04+00:00 binance_cm: -> binance_cm_20261005.jsonl.gz
+2026-10-05T00:00:04+00:00 okx: -> okx_20261005.jsonl.gz
+2026-10-05T00:00:06+00:00 bybit: -> bybit_20261005.jsonl.gz
+2026-10-05T10:51:06+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-05T10:51:18+00:00 okx: 接続
+2026-10-05T14:09:30+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-05T14:09:36+00:00 bybit: 接続
+2026-10-05T15:29:13+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-05T15:29:17+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-05T15:30:18+00:00 bybit: 接続の時間切れ — 4s 後に再接続
+2026-10-05T15:30:18+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-05T15:30:23+00:00 okx: 接続
+2026-10-05T15:30:23+00:00 bybit: 接続
+2026-10-06T00:00:10+00:00 binance_cm: -> binance_cm_20261006.jsonl.gz
+2026-10-06T00:00:11+00:00 okx: -> okx_20261006.jsonl.gz
+2026-10-06T00:00:11+00:00 bybit: -> bybit_20261006.jsonl.gz
+2026-10-06T04:10:50+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-06T04:11:37+00:00 okx: 接続
+2026-10-06T06:15:55+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T06:16:17+00:00 bybit: 接続
+2026-10-06T06:16:27+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T06:16:33+00:00 bybit: 接続
+2026-10-06T10:03:07+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-06T10:18:51+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T10:19:14+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:19:57+00:00 binance_um: 切断 ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received — 2s 後に再接続
+2026-10-06T10:19:58+00:00 binance_cm: 切断 ConnectionClosedError: sent 1011 (internal error) keepalive ping timeout; no close frame received — 2s 後に再接続
+2026-10-06T10:20:08+00:00 bybit: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:44+00:00 binance_um: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:45+00:00 okx: 接続の時間切れ — 8s 後に再接続
+2026-10-06T10:20:45+00:00 binance_cm: 接続の時間切れ — 4s 後に再接続
+2026-10-06T10:20:47+00:00 bybit: 接続
+2026-10-06T10:20:50+00:00 binance_um: 接続
+2026-10-06T10:20:50+00:00 binance_cm: 接続
+2026-10-06T10:20:57+00:00 okx: 接続
+2026-10-06T18:06:38+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T18:06:44+00:00 okx: 接続
+2026-10-06T20:04:50+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T20:06:05+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-06T20:06:13+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-06T20:06:30+00:00 bybit: 接続
+2026-10-06T20:06:30+00:00 okx: 接続
+2026-10-07T00:00:05+00:00 okx: -> okx_20261007.jsonl.gz
+2026-10-07T00:00:06+00:00 binance_cm: -> binance_cm_20261007.jsonl.gz
+2026-10-07T00:00:19+00:00 bybit: -> bybit_20261007.jsonl.gz
+2026-10-07T09:21:19+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T09:21:25+00:00 okx: 接続
+2026-10-07T11:17:09+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T11:17:14+00:00 okx: 接続
+2026-10-07T11:43:02+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T11:43:25+00:00 bybit: 接続
+2026-10-07T12:50:50+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T12:50:55+00:00 bybit: 接続
+2026-10-07T19:33:25+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-07T19:34:31+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-07T19:34:49+00:00 okx: 接続
+2026-10-07T21:33:23+00:00 binance_cm: 切断 PermissionError: [Errno 13] Permission denied: 'C:\\Users\\ryoma\\trade\\data\\liquidations\\binance_cm_20261007.jsonl.gz' — 2s 後に再接続
+2026-10-07T21:33:37+00:00 binance_cm: 接続
+2026-10-08T00:00:06+00:00 okx: -> okx_20261008.jsonl.gz
+2026-10-08T00:00:08+00:00 bybit: -> bybit_20261008.jsonl.gz
+2026-10-08T00:00:08+00:00 binance_cm: -> binance_cm_20261008.jsonl.gz
+2026-10-08T02:53:39+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T02:53:45+00:00 okx: 接続
+2026-10-08T05:57:59+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T05:58:05+00:00 okx: 接続
+2026-10-08T18:01:16+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T18:01:55+00:00 okx: 接続
+2026-10-08T22:15:23+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-08T22:15:30+00:00 okx: 接続
+2026-10-09T00:00:04+00:00 binance_cm: -> binance_cm_20261009.jsonl.gz
+2026-10-09T00:00:12+00:00 bybit: -> bybit_20261009.jsonl.gz
+2026-10-09T00:00:16+00:00 okx: -> okx_20261009.jsonl.gz
+2026-10-09T00:54:29+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T00:54:35+00:00 okx: 接続
+2026-10-09T01:57:00+00:00 binance_cm: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T01:57:05+00:00 binance_cm: 接続
+2026-10-09T04:10:01+00:00 binance_um: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T04:10:16+00:00 binance_um: 接続
+2026-10-09T08:27:24+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T08:27:33+00:00 okx: 接続
+2026-10-09T11:07:12+00:00 okx: 切断 ConnectionClosedError: received 4004 (private use) No data received in 30s.; then sent 4004 (private use) No data received in 30s. — 2s 後に再接続
+2026-10-09T11:08:12+00:00 okx: 接続
+2026-10-09T13:55:13+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T13:56:25+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T13:56:43+00:00 okx: 接続の時間切れ — 4s 後に再接続
+2026-10-09T13:56:46+00:00 bybit: 接続
+2026-10-09T13:56:51+00:00 okx: 接続
+2026-10-09T14:17:52+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T14:17:59+00:00 okx: 接続
+2026-10-09T15:17:05+00:00 okx: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T15:18:00+00:00 okx: 切断 InvalidMessage: did not receive a valid HTTP response — 4s 後に再接続
+2026-10-09T15:18:08+00:00 okx: 接続
+2026-10-09T16:26:12+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T16:27:32+00:00 bybit: 接続の時間切れ — 4s 後に再接続
+2026-10-09T16:27:40+00:00 bybit: 接続
+2026-10-09T21:28:58+00:00 bybit: 切断 ConnectionClosedError: no close frame received or sent — 2s 後に再接続
+2026-10-09T21:29:09+00:00 bybit: 接続
