@@ -446,7 +446,7 @@ git に載ったデータの置き場ごとに、実物の最新の日付と、�
 | auto_okx_long_short_ratio | 2026-10-03 | §2 |
 | auto_okx_open_interest_1h | 2026-10-05 | §2 |
 | auto_okx_open_interest_1h_ccr | 2026-10-10 | §2 |
-| auto_okx_open_interest_5m | 2026-10-10 | §2 |
+| auto_okx_open_interest_5m | 2026-10-11 | §2 |
 | auto_okx_open_interest_5m_ccr | 2026-10-10 | §2 |
 | auto_venues | 2026-10-05 | §3 |
 | binance_BTCUSDT_1m | 2026-08-31 | §2 |
@@ -551,14 +551,14 @@ git に載ったデータの置き場ごとに、実物の最新の日付と、�
 | paper_logs/binance_daily | — | §2 |
 | paper_logs/board_round_series_5s | — | §6 |
 | paper_logs/bot | — | §0 |
-| paper_logs/deribit_options | 2026-10-09 | §2 |
+| paper_logs/deribit_options | 2026-10-10 | §2 |
 | paper_logs/funding_rate_history | — | §2 |
-| paper_logs/hyperliquid | 2026-10-09 | §2 |
+| paper_logs/hyperliquid | 2026-10-10 | §2 |
 | paper_logs/latency | — | §6 |
-| paper_logs/liquidations | 2026-10-10 | §2 |
+| paper_logs/liquidations | 2026-10-11 | §2 |
 | paper_logs/nk225_sessions | — | §5 |
 | paper_logs/oi_snapshots | — | §2 |
-| paper_logs/okx_traders | 2026-10-09 | §2 |
+| paper_logs/okx_traders | 2026-10-10 | §2 |
 | paper_logs/on1_ledger | — | §6 |
 | paper_logs/onr_ledger | — | §6 |
 | paper_logs/scalp_paper | — | §6 |
